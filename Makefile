@@ -14,5 +14,5 @@ endif
 	@go-bindata \
 		-nometadata	\
 		-o internal/bindata/bindata.go -pkg bindata \
-	    data;
+	    data/...;
 .PHONY: bindata
