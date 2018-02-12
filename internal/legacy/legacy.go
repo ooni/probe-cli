@@ -10,6 +10,7 @@ import (
 	"gopkg.in/AlecAivazis/survey.v1"
 )
 
+// HomePath returns the path to the OONI Home
 func HomePath() (string, error) {
 	home, err := homedir.Dir()
 	if err != nil {

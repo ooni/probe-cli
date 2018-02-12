@@ -5,11 +5,55 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 
+	"github.com/apex/log"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/openobservatory/gooni/config"
+	"github.com/openobservatory/gooni/internal/legacy"
 	"github.com/pkg/errors"
 )
+
+// Onboarding process
+func Onboarding(c *Config) error {
+	log.Info("Onboarding starting")
+
+	// To prevent races we always must acquire the config file lock before
+	// changing it.
+	c.Lock()
+	c.InformedConsent = true
+	c.Unlock()
+
+	if err := c.Write(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// OONI manager.
+type OONI struct {
+	config *Config
+}
+
+// Init the OONI manager
+func (o *OONI) Init() error {
+	if err := legacy.MaybeMigrateHome(); err != nil {
+		return errors.Wrap(err, "migrating home")
+	}
+	if o.config.InformedConsent == false {
+		if err := Onboarding(o.config); err != nil {
+			return errors.Wrap(err, "onboarding")
+		}
+	}
+	return nil
+}
+
+// New OONI manager instance.
+func New(c *Config) *OONI {
+	return &OONI{
+		config: c,
+	}
+}
 
 // GetOONIHome returns the path to the OONI Home
 func GetOONIHome() (string, error) {
@@ -35,6 +79,33 @@ type Config struct {
 	AutomatedTesting config.AutomatedTesting `json:"automated_testing"`
 	NettestGroups    config.NettestGroups    `json:"test_settings"`
 	Advanced         config.Sharing          `json:"advanced"`
+
+	mutex sync.Mutex
+	path  string
+}
+
+// Write the config file in json to the path
+func (c *Config) Write() error {
+	c.Lock()
+	configJSON, _ := json.MarshalIndent(c, "", "  ")
+	if c.path == "" {
+		return errors.New("config file path is empty")
+	}
+	if err := ioutil.WriteFile(c.path, configJSON, 0644); err != nil {
+		return errors.Wrap(err, "writing config JSON")
+	}
+	c.Unlock()
+	return nil
+}
+
+// Lock acquires the write mutex
+func (c *Config) Lock() {
+	c.mutex.Lock()
+}
+
+// Unlock releases the write mutex
+func (c *Config) Unlock() {
+	c.mutex.Unlock()
 }
 
 // Default config settings
@@ -86,5 +157,31 @@ func ReadConfig(path string) (*Config, error) {
 		return nil, errors.Wrap(err, "reading file")
 	}
 
-	return ParseConfig(b)
+	c, err := ParseConfig(b)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing config")
+	}
+	c.path = path
+	return c, err
+}
+
+// ReadDefaultConfigPaths from common locations.
+func ReadDefaultConfigPaths() (*Config, error) {
+	home, err := GetOONIHome()
+	if err != nil {
+		return nil, errors.Wrap(err, "reading default config paths")
+	}
+	var paths = []string{
+		filepath.Join(home, "config.json"),
+	}
+	for _, path := range paths {
+		if _, err := os.Stat(path); err == nil {
+			c, err := ReadConfig(path)
+			if err != nil {
+				return nil, err
+			}
+			return c, nil
+		}
+	}
+	return nil, errors.New("failed to find a config")
 }
