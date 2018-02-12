@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/apex/log"
+	"github.com/jmoiron/sqlx"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/openobservatory/gooni/config"
 	"github.com/openobservatory/gooni/internal/legacy"
@@ -30,28 +31,30 @@ func Onboarding(c *Config) error {
 	return nil
 }
 
-// OONI manager.
-type OONI struct {
+// Context for OONI Probe
+type Context struct {
 	config *Config
+	db     *sqlx.DB
 }
 
 // Init the OONI manager
-func (o *OONI) Init() error {
+func (c *Context) Init() error {
 	if err := legacy.MaybeMigrateHome(); err != nil {
 		return errors.Wrap(err, "migrating home")
 	}
-	if o.config.InformedConsent == false {
-		if err := Onboarding(o.config); err != nil {
+	if c.config.InformedConsent == false {
+		if err := Onboarding(c.config); err != nil {
 			return errors.Wrap(err, "onboarding")
 		}
 	}
 	return nil
 }
 
-// New OONI manager instance.
-func New(c *Config) *OONI {
-	return &OONI{
+// New Context instance.
+func New(c *Config, d *sqlx.DB) *Context {
+	return &Context{
 		config: c,
+		db:     d,
 	}
 }
 
