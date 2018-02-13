@@ -5,7 +5,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" // this is needed to load the sqlite3 driver
 	ooni "github.com/openobservatory/gooni"
 	"github.com/openobservatory/gooni/internal/bindata"
 	"github.com/pkg/errors"
@@ -14,6 +14,7 @@ import (
 
 // RunMigrations runs the database migrations
 func RunMigrations(db *sqlx.DB) error {
+	log.Debugf("running migrations")
 	migrations := &migrate.AssetMigrationSource{
 		Asset:    bindata.Asset,
 		AssetDir: bindata.AssetDir,
@@ -27,19 +28,24 @@ func RunMigrations(db *sqlx.DB) error {
 	return nil
 }
 
+// Connect to the database
 func Connect(path string) (*sqlx.DB, error) {
 	db, err := sqlx.Connect("sqlite3", path)
 	if err != nil {
 		return nil, err
 	}
-	// XXX RunMigrations(db)
+	err = RunMigrations(db)
+	if err != nil {
+		return nil, err
+	}
 	return db, nil
 }
 
+// DefaultDatabasePath for the main database
 func DefaultDatabasePath() (string, error) {
 	home, err := ooni.GetOONIHome()
 	if err != nil {
 		return "", errors.Wrap(err, "default database path")
 	}
-	return filepath.Join(home, "db", "main.db"), nil
+	return filepath.Join(home, "db", "main.sqlite3"), nil
 }

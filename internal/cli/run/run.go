@@ -1,10 +1,14 @@
 package run
 
 import (
+	"time"
+
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/openobservatory/gooni/internal/cli/root"
+	"github.com/openobservatory/gooni/internal/database"
 	"github.com/openobservatory/gooni/internal/util"
+	"github.com/openobservatory/gooni/nettests"
 	"github.com/openobservatory/gooni/nettests/groups"
 )
 
@@ -15,15 +19,33 @@ func init() {
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		util.Log("Starting %s", *nettestGroup)
-		config, ooni, err := root.Init()
+		_, ctx, err := root.Init()
 		if err != nil {
 			log.Errorf("%s", err)
 			return err
 		}
-		log.Infof("%s", config)
-		log.Infof("%s", ooni)
+		group := groups.NettestGroups[*nettestGroup]
+		log.Debugf("Running test group %s", group.Label)
 
-		groups.Run(*nettestGroup, ooni)
+		result, err := database.CreateResult(ctx.DB, database.Result{
+			Name:      *nettestGroup,
+			StartTime: time.Now().UTC(), // XXX get this from MK
+		})
+		if err != nil {
+			log.Errorf("%s", err)
+			return err
+		}
+
+		for _, nt := range group.Nettests {
+			ctl := nettests.NewController(ctx)
+			nt.Run(ctl)
+			// XXX
+			// 1. Generate the summary
+			// 2. Link the measurement to the Result (this should probably happen in
+			// the nettest class)
+			// 3. Update the summary of the result and the other metadata in the db
+		}
+		result.Update(ctx.DB)
 		return nil
 	})
 }
