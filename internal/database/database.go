@@ -6,6 +6,7 @@ import (
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	ooni "github.com/openobservatory/gooni"
 	"github.com/openobservatory/gooni/internal/bindata"
 	"github.com/pkg/errors"
 	migrate "github.com/rubenv/sql-migrate"
@@ -36,9 +37,9 @@ func Connect(path string) (*sqlx.DB, error) {
 }
 
 func DefaultDatabasePath() (string, error) {
-	home, err := GetOONIHome()
+	home, err := ooni.GetOONIHome()
 	if err != nil {
-		return errors.Wrap(err, "default database path")
+		return "", errors.Wrap(err, "default database path")
 	}
 	return filepath.Join(home, "db", "main.db"), nil
 }

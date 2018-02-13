@@ -84,6 +84,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/measurement-kit/go-measurement-kit"
+  packages = ["."]
+  revision = "93d8ecd6537d99a83845a9e6928dfd27b665ad6a"
+
+[[projects]]
+  branch = "master"
   name = "github.com/mgutz/ansi"
   packages = ["."]
   revision = "9520e82c474b0a04dd04f8a40959027271bab992"
@@ -168,6 +174,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d1ff03c816b12576a88c6ab2c3ffab44bf0fd40a67d765965f06fd9ac9e58d99"
+  inputs-digest = "348ea586d927a4a6ce2aef27d7734ba88a12917b9b074ae2d41b229731c9bc33"
   solver-name = "gps-cdcl"
   solver-version = 1

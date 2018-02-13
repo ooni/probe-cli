@@ -44,7 +44,7 @@ func init() {
 				return nil, nil, err
 			}
 
-			dbPath, err := DefaultDatabasePath()
+			dbPath, err := database.DefaultDatabasePath()
 			if err != nil {
 				return nil, nil, err
 			}
