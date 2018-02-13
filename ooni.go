@@ -33,8 +33,8 @@ func Onboarding(c *Config) error {
 
 // Context for OONI Probe
 type Context struct {
-	config *Config
-	db     *sqlx.DB
+	Config *Config
+	DB     *sqlx.DB
 }
 
 // Init the OONI manager
@@ -42,8 +42,8 @@ func (c *Context) Init() error {
 	if err := legacy.MaybeMigrateHome(); err != nil {
 		return errors.Wrap(err, "migrating home")
 	}
-	if c.config.InformedConsent == false {
-		if err := Onboarding(c.config); err != nil {
+	if c.Config.InformedConsent == false {
+		if err := Onboarding(c.Config); err != nil {
 			return errors.Wrap(err, "onboarding")
 		}
 	}
@@ -53,8 +53,8 @@ func (c *Context) Init() error {
 // New Context instance.
 func New(c *Config, d *sqlx.DB) *Context {
 	return &Context{
-		config: c,
-		db:     d,
+		Config: c,
+		DB:     d,
 	}
 }
 
@@ -81,7 +81,7 @@ type Config struct {
 	Notifications    config.Notifications    `json:"notifications"`
 	AutomatedTesting config.AutomatedTesting `json:"automated_testing"`
 	NettestGroups    config.NettestGroups    `json:"test_settings"`
-	Advanced         config.Sharing          `json:"advanced"`
+	Advanced         config.Advanced         `json:"advanced"`
 
 	mutex sync.Mutex
 	path  string

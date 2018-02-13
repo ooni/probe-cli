@@ -1,7 +1,7 @@
 package websites
 
 import (
-	"github.com/openobservatory/gooni/internal/database"
+	"github.com/measurement-kit/go-measurement-kit"
 	"github.com/openobservatory/gooni/nettests"
 )
 
@@ -11,12 +11,14 @@ type WebConnectivity struct {
 
 // Run starts the test
 func (n WebConnectivity) Run(ctl *nettests.Controller) error {
-	return nil
+	nt := mk.Nettest{Name: "WebConnectivity"}
+	ctl.Init(&nt)
+	return nt.Run()
 }
 
 // Summary generates a summary for a test run
-func (n WebConnectivity) Summary(m *database.Measurement) string {
-	return ""
+func (n WebConnectivity) Summary(tk map[string]interface{}) interface{} {
+	return nil
 }
 
 // LogSummary writes the summary to the standard output

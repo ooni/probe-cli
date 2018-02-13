@@ -1,16 +1,18 @@
 package nettests
 
 import (
+	"fmt"
+
 	"github.com/apex/log"
 	"github.com/measurement-kit/go-measurement-kit"
 	ooni "github.com/openobservatory/gooni"
-	"github.com/openobservatory/gooni/internal/database"
+	"github.com/openobservatory/gooni/internal/cli/version"
 )
 
 // Nettest interface. Every Nettest should implement this.
 type Nettest interface {
 	Run(*Controller) error
-	Summary(*database.Measurement) string
+	Summary(map[string]interface{}) interface{}
 	LogSummary(string) error
 }
 
@@ -21,21 +23,38 @@ type NettestGroup struct {
 	Summary  func(s string) string
 }
 
-// Controller is passed to the run method of every Nettest
-type Controller struct {
-	ctx *ooni.Context
-}
-
-// New Nettest Controller
-func (c *Controller) New(ctx *ooni.Context) *Controller {
+// NewController creates a nettest controller
+func NewController(ctx *ooni.Context) *Controller {
 	return &Controller{
 		ctx,
 	}
 }
 
+// Controller is passed to the run method of every Nettest
+type Controller struct {
+	ctx *ooni.Context
+}
+
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) {
 	log.Debugf("Init: %s", nt)
+	nt.Options = mk.NettestOptions{
+		IncludeIP:        c.ctx.Config.Sharing.IncludeIP,
+		IncludeASN:       c.ctx.Config.Sharing.IncludeASN,
+		IncludeCountry:   c.ctx.Config.Advanced.IncludeCountry,
+		DisableCollector: false,
+		SoftwareName:     "ooniprobe",
+		SoftwareVersion:  version.Version,
+
+		// XXX
+		GeoIPCountryPath: "",
+		GeoASNPath:       "",
+		OutputPath:       "",
+		CaBundlePath:     "",
+	}
+	nt.RegisterEventHandler(func(event interface{}) {
+		fmt.Println("Got event", event)
+	})
 }
 
 // OnProgress should be called when a new progress event is available.

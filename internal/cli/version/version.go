@@ -7,7 +7,7 @@ import (
 	"github.com/openobservatory/gooni/internal/cli/root"
 )
 
-const Version = "0.0.1"
+const Version = "3.0.0-dev.0"
 
 func init() {
 	cmd := root.Command("version", "Show version.")

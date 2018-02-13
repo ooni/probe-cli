@@ -5,6 +5,7 @@ import (
 	"github.com/apex/log"
 	"github.com/openobservatory/gooni/internal/cli/root"
 	"github.com/openobservatory/gooni/internal/util"
+	"github.com/openobservatory/gooni/nettests/groups"
 )
 
 func init() {
@@ -21,6 +22,8 @@ func init() {
 		}
 		log.Infof("%s", config)
 		log.Infof("%s", ooni)
+
+		groups.Run(*nettestGroup, ooni)
 		return nil
 	})
 }
