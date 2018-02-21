@@ -3,9 +3,10 @@ package root
 import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
-	"github.com/apex/log/handlers/cli"
 	ooni "github.com/openobservatory/gooni"
 	"github.com/openobservatory/gooni/internal/database"
+	"github.com/openobservatory/gooni/internal/log/handlers/batch"
+	"github.com/openobservatory/gooni/internal/log/handlers/cli"
 	"github.com/prometheus/common/version"
 )
 
@@ -20,11 +21,17 @@ var Init func() (*ooni.Config, *ooni.Context, error)
 
 func init() {
 	configPath := Cmd.Flag("config", "Set a custom config file path").Short('c').String()
-	verbose := Cmd.Flag("verbose", "Enable verbose log output.").Short('v').Bool()
+
+	isVerbose := Cmd.Flag("verbose", "Enable verbose log output.").Short('v').Bool()
+	isBatch := Cmd.Flag("batch", "Enable batch command line usage.").Bool()
 
 	Cmd.PreAction(func(ctx *kingpin.ParseContext) error {
-		log.SetHandler(cli.Default)
-		if *verbose {
+		if *isBatch {
+			log.SetHandler(batch.Default)
+		} else {
+			log.SetHandler(cli.Default)
+		}
+		if *isVerbose {
 			log.SetLevel(log.DebugLevel)
 			log.Debugf("ooni version %s", version.Version)
 		}

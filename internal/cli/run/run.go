@@ -7,7 +7,6 @@ import (
 	"github.com/apex/log"
 	"github.com/openobservatory/gooni/internal/cli/root"
 	"github.com/openobservatory/gooni/internal/database"
-	"github.com/openobservatory/gooni/internal/util"
 	"github.com/openobservatory/gooni/nettests"
 	"github.com/openobservatory/gooni/nettests/groups"
 )
@@ -18,7 +17,7 @@ func init() {
 	nettestGroup := cmd.Arg("name", "the nettest group to run").Required().String()
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
-		util.Log("Starting %s", *nettestGroup)
+		log.Infof("Starting %s", *nettestGroup)
 		_, ctx, err := root.Init()
 		if err != nil {
 			log.Errorf("%s", err)
@@ -37,7 +36,7 @@ func init() {
 		}
 
 		for _, nt := range group.Nettests {
-			ctl := nettests.NewController(ctx)
+			ctl := nettests.NewController(ctx, result)
 			nt.Run(ctl)
 			// XXX
 			// 1. Generate the summary

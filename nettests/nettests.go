@@ -1,12 +1,11 @@
 package nettests
 
 import (
-	"fmt"
-
 	"github.com/apex/log"
 	"github.com/measurement-kit/go-measurement-kit"
 	ooni "github.com/openobservatory/gooni"
 	"github.com/openobservatory/gooni/internal/cli/version"
+	"github.com/openobservatory/gooni/internal/database"
 )
 
 // Nettest interface. Every Nettest should implement this.
@@ -24,15 +23,17 @@ type NettestGroup struct {
 }
 
 // NewController creates a nettest controller
-func NewController(ctx *ooni.Context) *Controller {
+func NewController(ctx *ooni.Context, res *database.Result) *Controller {
 	return &Controller{
 		ctx,
+		res,
 	}
 }
 
 // Controller is passed to the run method of every Nettest
 type Controller struct {
 	ctx *ooni.Context
+	res *database.Result
 }
 
 // Init should be called once to initialise the nettest
@@ -53,7 +54,23 @@ func (c *Controller) Init(nt *mk.Nettest) {
 		CaBundlePath:     "",
 	}
 	nt.RegisterEventHandler(func(event interface{}) {
-		fmt.Println("Got event", event)
+		e := event.(map[string]interface{})
+		if e["type"].(string) == "LOG" {
+			msg := e["message"].(string)
+			switch level := e["verbosity"].(string); level {
+			case "ERROR":
+				log.Error(msg)
+			case "INFO":
+				log.Info(msg)
+			default:
+				log.Debug(msg)
+			}
+		} else {
+			log.WithFields(log.Fields{
+				"key":   "event",
+				"value": e,
+			}).Info("got event")
+		}
 	})
 }
 
@@ -70,7 +87,7 @@ func (c *Controller) OnEntry(entry string) {
 // MKStart is the interface for the mk.Nettest Start() function
 type MKStart func(name string) (chan bool, error)
 
-// Start should be called every time there is a new entry
+// Start should be called to start the test
 func (c *Controller) Start(f MKStart) {
 	log.Debugf("MKStart: %s", f)
 }

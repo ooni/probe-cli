@@ -2,6 +2,8 @@ package main
 
 import (
 	// commands
+	"github.com/apex/log"
+
 	_ "github.com/openobservatory/gooni/internal/cli/info"
 	_ "github.com/openobservatory/gooni/internal/cli/list"
 	_ "github.com/openobservatory/gooni/internal/cli/nettest"
@@ -9,7 +11,6 @@ import (
 	_ "github.com/openobservatory/gooni/internal/cli/show"
 	_ "github.com/openobservatory/gooni/internal/cli/upload"
 	_ "github.com/openobservatory/gooni/internal/cli/version"
-	"github.com/openobservatory/gooni/internal/util"
 
 	"github.com/openobservatory/gooni/internal/cli/app"
 )
@@ -19,5 +20,5 @@ func main() {
 	if err == nil {
 		return
 	}
-	util.Fatal(err)
+	log.WithError(err).Fatal("main exit")
 }

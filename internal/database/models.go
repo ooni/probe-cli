@@ -37,9 +37,9 @@ func CreateMeasurement(db *sqlx.DB, m Measurement) (*Measurement, error) {
 			report_id, input, measurement_id,
 			result_id)
 		VALUES (:name,:start_time,
-			:summary,:asn,:ip,:country,
+			:asn,:ip,:country,
 			:state,:failure,:report_file,
-			:report_id,:input,:measurement_id,
+			:report_id,:input,
 			:result_id)`,
 		m)
 	if err != nil {
