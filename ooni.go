@@ -26,6 +26,7 @@ func Onboarding(c *Config) error {
 	c.Unlock()
 
 	if err := c.Write(); err != nil {
+		log.Warnf("Failed to save informed consent: %v", err)
 		return err
 	}
 	return nil
@@ -113,6 +114,11 @@ func (c *Config) Unlock() {
 
 // Default config settings
 func (c *Config) Default() error {
+	home, err := GetOONIHome()
+	if err != nil {
+		return err
+	}
+	c.path = filepath.Join(home, "config.json")
 	return nil
 }
 
