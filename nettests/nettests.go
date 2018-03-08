@@ -38,7 +38,6 @@ type Controller struct {
 
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) {
-	log.Debugf("Init: %s", nt)
 	nt.Options = mk.NettestOptions{
 		IncludeIP:        c.ctx.Config.Sharing.IncludeIP,
 		IncludeASN:       c.ctx.Config.Sharing.IncludeASN,
@@ -49,39 +48,73 @@ func (c *Controller) Init(nt *mk.Nettest) {
 
 		// XXX
 		GeoIPCountryPath: "",
-		GeoASNPath:       "",
-		OutputPath:       "",
-		CaBundlePath:     "",
+		GeoIPASNPath:     "",
+		OutputPath:       "/tmp/measurement.jsonl",
+		CaBundlePath:     "/etc/ssl/cert.pem",
 	}
-	nt.RegisterEventHandler(func(event interface{}) {
-		e := event.(map[string]interface{})
-		if e["type"].(string) == "LOG" {
-			msg := e["message"].(string)
-			switch level := e["verbosity"].(string); level {
-			case "ERROR":
-				log.Error(msg)
-			case "INFO":
-				log.Info(msg)
-			default:
-				log.Debug(msg)
-			}
-		} else {
-			log.WithFields(log.Fields{
-				"key":   "event",
-				"value": e,
-			}).Info("got event")
+	nt.On("log", func(e mk.Event) {
+		level := e.Value["verbosity"].(string)
+		msg := e.Value["message"].(string)
+
+		switch level {
+		case "ERROR":
+			log.Error(msg)
+		case "INFO":
+			log.Info(msg)
+		default:
+			log.Debug(msg)
 		}
+
 	})
+
+	nt.On("status.queued", func(e mk.Event) {
+		log.Debugf("%s", e.Key)
+	})
+
+	nt.On("status.started", func(e mk.Event) {
+		log.Debugf("%s", e.Key)
+	})
+
+	nt.On("status.report_created", func(e mk.Event) {
+		log.Debugf("%s", e.Key)
+	})
+
+	nt.On("status.geoip_lookup", func(e mk.Event) {
+		log.Debugf("%s", e.Key)
+	})
+
+	nt.On("status.progress", func(e mk.Event) {
+		perc := e.Value["percentage"].(float64)
+		msg := e.Value["message"].(string)
+		c.OnProgress(perc, msg)
+	})
+
+	nt.On("status.update.*", func(e mk.Event) {
+		log.Debugf("%s", e.Key)
+	})
+
+	nt.On("failure.measurement", func(e mk.Event) {
+		log.Debugf("%s", e.Key)
+	})
+
+	nt.On("failure.report_submission", func(e mk.Event) {
+		log.Debugf("%s", e.Key)
+	})
+
+	nt.On("measurement", func(e mk.Event) {
+		c.OnEntry(e.Value["json_str"].(string))
+	})
+
 }
 
 // OnProgress should be called when a new progress event is available.
-func (c *Controller) OnProgress(perc float32, msg string) {
+func (c *Controller) OnProgress(perc float64, msg string) {
 	log.Debugf("OnProgress: %f - %s", perc, msg)
 }
 
 // OnEntry should be called every time there is a new entry
-func (c *Controller) OnEntry(entry string) {
-	log.Debugf("OnEntry: %s", entry)
+func (c *Controller) OnEntry(jsonStr string) {
+	log.Debugf("OnEntry: %s", jsonStr)
 }
 
 // MKStart is the interface for the mk.Nettest Start() function
