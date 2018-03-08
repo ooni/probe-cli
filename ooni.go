@@ -119,13 +119,6 @@ func (c *Config) Default() error {
 		return err
 	}
 
-	if _, e := os.Stat(filepath.Join(home, "db")); e != nil {
-		err = os.MkdirAll(filepath.Join(home, "db"), 0700)
-		if err != nil {
-			return err
-		}
-	}
-
 	c.path = filepath.Join(home, "config.json")
 	return nil
 }
@@ -154,11 +147,29 @@ func ParseConfig(b []byte) (*Config, error) {
 	return c, nil
 }
 
+func EnsureDefaultConfigDir() error {
+	home, err := GetOONIHome()
+	if err != nil {
+		return err
+	}
+
+	if _, e := os.Stat(filepath.Join(home, "db")); e != nil {
+		err = os.MkdirAll(filepath.Join(home, "db"), 0700)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ReadConfig reads the configuration from the path
 func ReadConfig(path string) (*Config, error) {
 	b, err := ioutil.ReadFile(path)
 
 	if os.IsNotExist(err) {
+		if err = EnsureDefaultConfigDir(); err != nil {
+			return nil, errors.Wrap(err, "Creating new config")
+		}
 		c := &Config{}
 
 		if err = c.Default(); err != nil {
