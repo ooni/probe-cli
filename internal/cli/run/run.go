@@ -28,7 +28,7 @@ func init() {
 
 		result, err := database.CreateResult(ctx.DB, database.Result{
 			Name:      *nettestGroup,
-			StartTime: time.Now().UTC(), // XXX get this from MK
+			StartTime: time.Now().UTC(),
 		})
 		if err != nil {
 			log.Errorf("DB result error: %s", err)
@@ -37,14 +37,17 @@ func init() {
 
 		for _, nt := range group.Nettests {
 			ctl := nettests.NewController(ctx, result)
-			nt.Run(ctl)
+			if err := nt.Run(ctl); err != nil {
+				log.WithError(err).Errorf("Failed to run %s", group.Label)
+				return err
+			}
 			// XXX
 			// 1. Generate the summary
 			// 2. Link the measurement to the Result (this should probably happen in
 			// the nettest class)
 			// 3. Update the summary of the result and the other metadata in the db
 		}
-		result.Update(ctx.DB)
+		// result.Update(ctx.DB)
 		return nil
 	})
 }
