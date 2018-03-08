@@ -73,14 +73,22 @@ type Result struct {
 
 // Update the Result in the database
 func (r Result) Update(db *sqlx.DB) error {
-	// XXX implement me
+	log.Debugf("Updating result %v", r)
+	_, err := db.NamedExec(`UPDATE results SET
+	(name, start_time, end_time, summary, done, data_usage_up, data_usage_down) =
+	(:name, :start_time, :end_time, :summary, :done, :data_usage_up, :data_usage_down)
+	WHERE id = :id`, r)
+
+	if err != nil {
+		return errors.Wrap(err, "updating result")
+	}
 	return nil
 }
 
 // CreateResult writes the Result to the database a returns a pointer
 // to the Result
 func CreateResult(db *sqlx.DB, r Result) (*Result, error) {
-	log.Debugf("Creating result %s", r)
+	log.Debugf("Creating result %v", r)
 	res, err := db.NamedExec(`INSERT INTO results
 		(name, start_time)
 		VALUES (:name,:start_time)`,

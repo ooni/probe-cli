@@ -38,7 +38,7 @@ type Controller struct {
 
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) {
-	log.Debugf("Init: %s", nt)
+	log.Debugf("Init: %v", nt)
 	nt.Options = mk.NettestOptions{
 		IncludeIP:        c.ctx.Config.Sharing.IncludeIP,
 		IncludeASN:       c.ctx.Config.Sharing.IncludeASN,

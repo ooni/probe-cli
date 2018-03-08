@@ -31,7 +31,7 @@ func init() {
 			StartTime: time.Now().UTC(), // XXX get this from MK
 		})
 		if err != nil {
-			log.Errorf("%s", err)
+			log.Errorf("DB result error: %s", err)
 			return err
 		}
 
