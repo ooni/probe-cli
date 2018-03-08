@@ -118,6 +118,14 @@ func (c *Config) Default() error {
 	if err != nil {
 		return err
 	}
+
+	if _, e := os.Stat(filepath.Join(home, "db")); e != nil {
+		err = os.MkdirAll(filepath.Join(home, "db"), 0700)
+		if err != nil {
+			return err
+		}
+	}
+
 	c.path = filepath.Join(home, "config.json")
 	return nil
 }

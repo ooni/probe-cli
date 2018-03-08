@@ -1,7 +1,6 @@
 package database
 
 import (
-	"os"
 	"path/filepath"
 
 	"github.com/apex/log"
@@ -31,18 +30,6 @@ func RunMigrations(db *sqlx.DB) error {
 
 // Connect to the database
 func Connect(path string) (db *sqlx.DB, err error) {
-	home, err := ooni.GetOONIHome()
-	if err != nil {
-		return
-	}
-
-	if _, e := os.Stat(filepath.Join(home, "db")); e != nil {
-		err = os.MkdirAll(filepath.Join(home, "db"), 0700)
-		if err != nil {
-			return
-		}
-	}
-
 	db, err = sqlx.Connect("sqlite3", path)
 	if err != nil {
 		return
