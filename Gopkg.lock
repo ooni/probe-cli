@@ -153,6 +153,15 @@
   revision = "f33734611e84d5fe45f35eccf0174f4836af4542"
 
 [[projects]]
+  name = "github.com/shuLhan/go-bindata"
+  packages = [
+    ".",
+    "go-bindata"
+  ]
+  revision = "73d86c43eaae43914eb3ef264bcb4d8cb604fb51"
+  version = "v3.3.0"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
@@ -177,6 +186,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "03c2415c162eb74c1efe403a53e129a83d3612e0b21ac4ec8ea88dd27ea3f145"
+  inputs-digest = "cfd4567b0cd553bc4594b7f8bebcb91be475dfd112fd8740f65b5ba4a8253181"
   solver-name = "gps-cdcl"
   solver-version = 1

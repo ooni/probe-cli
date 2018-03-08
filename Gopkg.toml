@@ -24,6 +24,7 @@
 #   go-tests = true
 #   unused-packages = true
 
+required = ["github.com/shuLhan/go-bindata/go-bindata"]
 
 [[constraint]]
   name = "github.com/alecthomas/kingpin"
@@ -56,3 +57,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/measurement-kit/go-measurement-kit"
+
+[[constraint]]
+  name = "github.com/shuLhan/go-bindata"
+  version = "3.3.0"
