@@ -154,6 +154,8 @@ func ReadConfig(path string) (*Config, error) {
 		if err = c.Validate(); err != nil {
 			return nil, errors.Wrap(err, "validating")
 		}
+
+		return c, nil
 	}
 
 	if err != nil {
@@ -186,5 +188,7 @@ func ReadDefaultConfigPaths() (*Config, error) {
 			return c, nil
 		}
 	}
-	return nil, errors.New("failed to find a config")
+
+	// Run from the default config
+	return ReadConfig(paths[0])
 }
