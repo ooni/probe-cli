@@ -17,6 +17,7 @@ var NettestGroups = map[string]nettests.NettestGroup{
 	"performance": nettests.NettestGroup{
 		Label: "Performance",
 		Nettests: []nettests.Nettest{
+			performance.Dash{},
 			performance.NDT{},
 		},
 	},

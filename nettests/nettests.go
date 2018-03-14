@@ -32,7 +32,7 @@ func NewController(ctx *ooni.Context, res *database.Result) *Controller {
 
 // Controller is passed to the run method of every Nettest
 type Controller struct {
-	ctx *ooni.Context
+	Ctx *ooni.Context
 	res *database.Result
 }
 
@@ -40,9 +40,9 @@ type Controller struct {
 func (c *Controller) Init(nt *mk.Nettest) {
 	log.Debugf("Init: %v", nt)
 	nt.Options = mk.NettestOptions{
-		IncludeIP:        c.ctx.Config.Sharing.IncludeIP,
-		IncludeASN:       c.ctx.Config.Sharing.IncludeASN,
-		IncludeCountry:   c.ctx.Config.Advanced.IncludeCountry,
+		IncludeIP:        c.Ctx.Config.Sharing.IncludeIP,
+		IncludeASN:       c.Ctx.Config.Sharing.IncludeASN,
+		IncludeCountry:   c.Ctx.Config.Advanced.IncludeCountry,
 		DisableCollector: false,
 		SoftwareName:     "ooniprobe",
 		SoftwareVersion:  version.Version,

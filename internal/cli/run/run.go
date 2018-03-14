@@ -36,6 +36,7 @@ func init() {
 		}
 
 		for _, nt := range group.Nettests {
+			log.Debugf("Running test %T", nt)
 			ctl := nettests.NewController(ctx, result)
 			if err := nt.Run(ctl); err != nil {
 				log.WithError(err).Errorf("Failed to run %s", group.Label)
