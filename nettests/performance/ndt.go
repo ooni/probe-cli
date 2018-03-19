@@ -26,7 +26,7 @@ type NDTSummary struct {
 	MinRTT     int64
 	MSS        int64
 	OutOfOrder int64
-	PacketLoss float32
+	PacketLoss float64
 	Timeouts   int64
 }
 
@@ -44,7 +44,7 @@ func (n NDT) Summary(tk map[string]interface{}) interface{} {
 		MinRTT:     advanced["min_rtt"].(int64),
 		MSS:        advanced["mss"].(int64),
 		OutOfOrder: advanced["out_of_order"].(int64),
-		PacketLoss: advanced["packet_loss"].(float32),
+		PacketLoss: advanced["packet_loss"].(float64),
 		Timeouts:   advanced["timeouts"].(int64),
 	}
 }

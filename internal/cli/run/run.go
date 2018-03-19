@@ -40,7 +40,7 @@ func init() {
 		for _, nt := range group.Nettests {
 			log.Debugf("Running test %T", nt)
 			msmtPath := filepath.Join(ctx.TempDir,
-				fmt.Sprintf("msmt-%s-%T.jsonl", nt,
+				fmt.Sprintf("msmt-%T-%s.jsonl", nt,
 					time.Now().UTC().Format(time.RFC3339Nano)))
 
 			ctl := nettests.NewController(nt, ctx, result, msmtPath)

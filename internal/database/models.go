@@ -128,7 +128,7 @@ func CreateMeasurement(db *sqlx.DB, m Measurement, i string) (*Measurement, erro
 		(name, start_time,
 			asn, ip, country,
 			state, failure, report_file,
-			report_id, input, measurement_id,
+			report_id, input,
 			result_id)
 		VALUES (:name,:start_time,
 			:asn,:ip,:country,

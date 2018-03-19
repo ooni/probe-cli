@@ -47,6 +47,7 @@ type Controller struct {
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
+	c.msmts = make(map[int64]*database.Measurement)
 
 	msmtTemplate := database.Measurement{
 		ASN:            "",
@@ -75,8 +76,8 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	}
 
 	nt.On("log", func(e mk.Event) {
-		level := e.Value["verbosity"].(string)
-		msg := e.Value["message"].(string)
+		level := e.Value.LogLevel
+		msg := e.Value.Message
 
 		switch level {
 		case "ERROR":
@@ -100,23 +101,22 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	nt.On("status.report_created", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
 
-		msmtTemplate.ReportID = e.Value["report_id"].(string)
+		msmtTemplate.ReportID = e.Value.ReportID
 	})
 
 	nt.On("status.geoip_lookup", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
 
-		msmtTemplate.ASN = e.Value["probe_asn"].(string)
-		msmtTemplate.IP = e.Value["probe_ip"].(string)
-		msmtTemplate.CountryCode = e.Value["probe_cc"].(string)
+		msmtTemplate.ASN = e.Value.ProbeASN
+		msmtTemplate.IP = e.Value.ProbeIP
+		msmtTemplate.CountryCode = e.Value.ProbeCC
 	})
 
 	nt.On("status.measurement_started", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
 
-		idx := e.Value["idx"].(int64)
-		input := e.Value["input"].(string)
-		msmt, err := database.CreateMeasurement(c.Ctx.DB, msmtTemplate, input)
+		idx := e.Value.Idx
+		msmt, err := database.CreateMeasurement(c.Ctx.DB, msmtTemplate, e.Value.Input)
 		if err != nil {
 			log.WithError(err).Error("Failed to create measurement")
 			return
@@ -125,9 +125,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	})
 
 	nt.On("status.progress", func(e mk.Event) {
-		perc := e.Value["percentage"].(float64)
-		msg := e.Value["message"].(string)
-		c.OnProgress(perc, msg)
+		c.OnProgress(e.Value.Percentage, e.Value.Message)
 	})
 
 	nt.On("status.update.*", func(e mk.Event) {
@@ -137,36 +135,30 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	nt.On("failure.measurement", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
 
-		idx := e.Value["idx"].(int64)
-		failure := e.Value["failure"].(string)
-		c.msmts[idx].Failed(c.Ctx.DB, failure)
+		c.msmts[e.Value.Idx].Failed(c.Ctx.DB, e.Value.Failure)
 	})
 
 	nt.On("failure.measurement_submission", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
 
-		idx := e.Value["idx"].(int64)
-		failure := e.Value["failure"].(string)
-		c.msmts[idx].UploadFailed(c.Ctx.DB, failure)
+		failure := e.Value.Failure
+		c.msmts[e.Value.Idx].UploadFailed(c.Ctx.DB, failure)
 	})
 
 	nt.On("status.measurement_uploaded", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
 
-		idx := e.Value["idx"].(int64)
-		c.msmts[idx].UploadSucceeded(c.Ctx.DB)
+		c.msmts[e.Value.Idx].UploadSucceeded(c.Ctx.DB)
 	})
 
 	nt.On("status.measurement_done", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
 
-		idx := e.Value["idx"].(int64)
-		c.msmts[idx].Done(c.Ctx.DB)
+		c.msmts[e.Value.Idx].Done(c.Ctx.DB)
 	})
 
 	nt.On("measurement", func(e mk.Event) {
-		idx := e.Value["idx"].(int64)
-		c.OnEntry(idx, e.Value["json_str"].(string))
+		c.OnEntry(e.Value.Idx, e.Value.JSONStr)
 	})
 
 	nt.On("end", func(e mk.Event) {
@@ -188,7 +180,7 @@ type Entry struct {
 
 // OnEntry should be called every time there is a new entry
 func (c *Controller) OnEntry(idx int64, jsonStr string) {
-	log.Debugf("OnEntry: %s", jsonStr)
+	log.Debugf("OnEntry")
 
 	var entry Entry
 	json.Unmarshal([]byte(jsonStr), &entry)
@@ -197,6 +189,7 @@ func (c *Controller) OnEntry(idx int64, jsonStr string) {
 	if err != nil {
 		log.WithError(err).Error("failed to serialize summary")
 	}
+	log.Debugf("Fetching: %s %v", idx, c.msmts[idx])
 	c.msmts[idx].WriteSummary(c.Ctx.DB, string(summaryBytes))
 }
 
