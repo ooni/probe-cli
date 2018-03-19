@@ -147,19 +147,20 @@ func ParseConfig(b []byte) (*Config, error) {
 	return c, nil
 }
 
-func EnsureDefaultConfigDir() error {
+//EnsureDefaultOONIHomeDir makes sure the paths to the OONI Home exist
+func EnsureDefaultOONIHomeDir() (string, error) {
 	home, err := GetOONIHome()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if _, e := os.Stat(filepath.Join(home, "db")); e != nil {
 		err = os.MkdirAll(filepath.Join(home, "db"), 0700)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
-	return nil
+	return home, nil
 }
 
 // ReadConfig reads the configuration from the path
@@ -167,9 +168,6 @@ func ReadConfig(path string) (*Config, error) {
 	b, err := ioutil.ReadFile(path)
 
 	if os.IsNotExist(err) {
-		if err = EnsureDefaultConfigDir(); err != nil {
-			return nil, errors.Wrap(err, "Creating new config")
-		}
 		c := &Config{}
 
 		if err = c.Default(); err != nil {
@@ -197,7 +195,7 @@ func ReadConfig(path string) (*Config, error) {
 
 // ReadDefaultConfigPaths from common locations.
 func ReadDefaultConfigPaths() (*Config, error) {
-	home, err := GetOONIHome()
+	home, err := EnsureDefaultOONIHomeDir()
 	if err != nil {
 		return nil, errors.Wrap(err, "reading default config paths")
 	}
