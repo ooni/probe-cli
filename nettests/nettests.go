@@ -23,22 +23,27 @@ type NettestGroup struct {
 }
 
 // NewController creates a nettest controller
-func NewController(ctx *ooni.Context, res *database.Result) *Controller {
+func NewController(ctx *ooni.Context, res *database.Result, msmtPath string) *Controller {
 	return &Controller{
 		ctx,
 		res,
+		msmtPath,
 	}
 }
 
 // Controller is passed to the run method of every Nettest
+// each nettest instance has one controller
 type Controller struct {
-	Ctx *ooni.Context
-	res *database.Result
+	Ctx      *ooni.Context
+	res      *database.Result
+	msmtPath string
 }
 
 // Init should be called once to initialise the nettest
-func (c *Controller) Init(nt *mk.Nettest) {
+func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
+
+	log.Debugf("OutputPath: %s", c.msmtPath)
 	nt.Options = mk.NettestOptions{
 		IncludeIP:        c.Ctx.Config.Sharing.IncludeIP,
 		IncludeASN:       c.Ctx.Config.Sharing.IncludeASN,
@@ -50,9 +55,10 @@ func (c *Controller) Init(nt *mk.Nettest) {
 		// XXX
 		GeoIPCountryPath: "",
 		GeoIPASNPath:     "",
-		OutputPath:       "/tmp/measurement.jsonl",
+		OutputPath:       c.msmtPath,
 		CaBundlePath:     "/etc/ssl/cert.pem",
 	}
+
 	nt.On("log", func(e mk.Event) {
 		level := e.Value["verbosity"].(string)
 		msg := e.Value["message"].(string)
@@ -106,6 +112,11 @@ func (c *Controller) Init(nt *mk.Nettest) {
 		c.OnEntry(e.Value["json_str"].(string))
 	})
 
+	nt.On("end", func(e mk.Event) {
+		c.OnEntry(e.Value["json_str"].(string))
+	})
+
+	return nil
 }
 
 // OnProgress should be called when a new progress event is available.

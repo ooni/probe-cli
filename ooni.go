@@ -34,8 +34,9 @@ func Onboarding(c *Config) error {
 
 // Context for OONI Probe
 type Context struct {
-	Config *Config
-	DB     *sqlx.DB
+	Config  *Config
+	DB      *sqlx.DB
+	TempDir string
 }
 
 // Init the OONI manager
@@ -48,6 +49,13 @@ func (c *Context) Init() error {
 			return errors.Wrap(err, "onboarding")
 		}
 	}
+
+	tempDir, err := ioutil.TempDir("", "ooni")
+	if err != nil {
+		return errors.Wrap(err, "creating TempDir")
+	}
+	c.TempDir = tempDir
+
 	return nil
 }
 
@@ -154,12 +162,16 @@ func EnsureDefaultOONIHomeDir() (string, error) {
 		return "", err
 	}
 
-	if _, e := os.Stat(filepath.Join(home, "db")); e != nil {
-		err = os.MkdirAll(filepath.Join(home, "db"), 0700)
-		if err != nil {
-			return "", err
+	requiredDirs := []string{"db", "msmts"}
+	for _, d := range requiredDirs {
+		if _, e := os.Stat(filepath.Join(home, d)); e != nil {
+			err = os.MkdirAll(filepath.Join(home, d), 0700)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
+
 	return home, nil
 }
 

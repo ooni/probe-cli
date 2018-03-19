@@ -37,15 +37,15 @@ func init() {
 		}
 
 		Init = func() (*ooni.Config, *ooni.Context, error) {
-			var c *ooni.Config
+			var config *ooni.Config
 			var err error
 
 			if *configPath != "" {
 				log.Debugf("Reading config file from %s", *configPath)
-				c, err = ooni.ReadConfig(*configPath)
+				config, err = ooni.ReadConfig(*configPath)
 			} else {
 				log.Debug("Reading default config file")
-				c, err = ooni.ReadDefaultConfigPaths()
+				config, err = ooni.ReadDefaultConfigPaths()
 			}
 			if err != nil {
 				return nil, nil, err
@@ -62,9 +62,13 @@ func init() {
 				return nil, nil, err
 			}
 
-			o := ooni.New(c, db)
-			o.Init()
-			return c, o, nil
+			ctx := ooni.New(config, db)
+			err = ctx.Init()
+			if err != nil {
+				return nil, nil, err
+			}
+
+			return config, ctx, nil
 		}
 
 		return nil
