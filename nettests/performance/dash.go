@@ -11,8 +11,8 @@ type Dash struct {
 
 // Run starts the test
 func (d Dash) Run(ctl *nettests.Controller) error {
-	dash := mk.Nettest{Name: "Dash"}
-	ctl.Init(&dash)
+	dash := mk.NewNettest("Dash")
+	ctl.Init(dash)
 	return dash.Run()
 }
 

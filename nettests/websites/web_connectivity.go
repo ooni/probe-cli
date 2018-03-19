@@ -11,8 +11,8 @@ type WebConnectivity struct {
 
 // Run starts the test
 func (n WebConnectivity) Run(ctl *nettests.Controller) error {
-	nt := mk.Nettest{Name: "WebConnectivity"}
-	ctl.Init(&nt)
+	nt := mk.NewNettest("WebConnectivity")
+	ctl.Init(nt)
 	return nt.Run()
 }
 

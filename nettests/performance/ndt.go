@@ -11,8 +11,8 @@ type NDT struct {
 
 // Run starts the test
 func (n NDT) Run(ctl *nettests.Controller) error {
-	nt := mk.Nettest{Name: "Ndt"}
-	ctl.Init(&nt)
+	nt := mk.NewNettest("Ndt")
+	ctl.Init(nt)
 	return nt.Run()
 }
 
