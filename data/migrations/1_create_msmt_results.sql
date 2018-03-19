@@ -24,18 +24,19 @@ CREATE TABLE `measurements` (
     `id` INTEGER PRIMARY KEY AUTOINCREMENT,
     `name` VARCHAR(255),
     `start_time` DATETIME,
-    `end_time` DATETIME,
+    `runtime` INTEGER,
     `summary` JSON,
     `ip` VARCHAR(255),
-    `asn` INTEGER,
+    `asn` VARCHAR(16),
     `country` VARCHAR(2),
     `network_name` VARCHAR(255),
     `state` TEXT,
     `failure` VARCHAR(255),
+    `upload_failure` VARCHAR(255),
+    `uploaded` TINYINT(1),
     `report_file` VARCHAR(255),
     `report_id` VARCHAR(255),
     `input` VARCHAR(255),
-    `measurement_id` VARCHAR(255),
     `result_id` INTEGER REFERENCES `results` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
