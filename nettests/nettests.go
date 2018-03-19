@@ -1,6 +1,8 @@
 package nettests
 
 import (
+	"encoding/json"
+
 	"github.com/apex/log"
 	"github.com/measurement-kit/go-measurement-kit"
 	ooni "github.com/openobservatory/gooni"
@@ -23,11 +25,12 @@ type NettestGroup struct {
 }
 
 // NewController creates a nettest controller
-func NewController(ctx *ooni.Context, res *database.Result, msmtPath string) *Controller {
+func NewController(nt Nettest, ctx *ooni.Context, res *database.Result, msmtPath string) *Controller {
 	return &Controller{
-		ctx,
-		res,
-		msmtPath,
+		Ctx:      ctx,
+		nt:       nt,
+		res:      res,
+		msmtPath: msmtPath,
 	}
 }
 
@@ -36,12 +39,24 @@ func NewController(ctx *ooni.Context, res *database.Result, msmtPath string) *Co
 type Controller struct {
 	Ctx      *ooni.Context
 	res      *database.Result
+	nt       Nettest
+	msmts    map[int64]*database.Measurement
 	msmtPath string
 }
 
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
+
+	msmtTemplate := database.Measurement{
+		ASN:            "",
+		IP:             "",
+		CountryCode:    "",
+		ReportID:       "",
+		Name:           nt.Name,
+		ResultID:       c.res.ID,
+		ReportFilePath: c.msmtPath,
+	}
 
 	log.Debugf("OutputPath: %s", c.msmtPath)
 	nt.Options = mk.NettestOptions{
@@ -84,10 +99,29 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 	nt.On("status.report_created", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
+
+		msmtTemplate.ReportID = e.Value["report_id"].(string)
 	})
 
 	nt.On("status.geoip_lookup", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
+
+		msmtTemplate.ASN = e.Value["probe_asn"].(string)
+		msmtTemplate.IP = e.Value["probe_ip"].(string)
+		msmtTemplate.CountryCode = e.Value["probe_cc"].(string)
+	})
+
+	nt.On("status.measurement_started", func(e mk.Event) {
+		log.Debugf("%s", e.Key)
+
+		idx := e.Value["idx"].(int64)
+		input := e.Value["input"].(string)
+		msmt, err := database.CreateMeasurement(c.Ctx.DB, msmtTemplate, input)
+		if err != nil {
+			log.WithError(err).Error("Failed to create measurement")
+			return
+		}
+		c.msmts[idx] = msmt
 	})
 
 	nt.On("status.progress", func(e mk.Event) {
@@ -102,18 +136,41 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 	nt.On("failure.measurement", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
+
+		idx := e.Value["idx"].(int64)
+		failure := e.Value["failure"].(string)
+		c.msmts[idx].Failed(c.Ctx.DB, failure)
 	})
 
-	nt.On("failure.report_submission", func(e mk.Event) {
+	nt.On("failure.measurement_submission", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
+
+		idx := e.Value["idx"].(int64)
+		failure := e.Value["failure"].(string)
+		c.msmts[idx].UploadFailed(c.Ctx.DB, failure)
+	})
+
+	nt.On("status.measurement_uploaded", func(e mk.Event) {
+		log.Debugf("%s", e.Key)
+
+		idx := e.Value["idx"].(int64)
+		c.msmts[idx].UploadSucceeded(c.Ctx.DB)
+	})
+
+	nt.On("status.measurement_done", func(e mk.Event) {
+		log.Debugf("%s", e.Key)
+
+		idx := e.Value["idx"].(int64)
+		c.msmts[idx].Done(c.Ctx.DB)
 	})
 
 	nt.On("measurement", func(e mk.Event) {
-		c.OnEntry(e.Value["json_str"].(string))
+		idx := e.Value["idx"].(int64)
+		c.OnEntry(idx, e.Value["json_str"].(string))
 	})
 
 	nt.On("end", func(e mk.Event) {
-		c.OnEntry(e.Value["json_str"].(string))
+		log.Debugf("end")
 	})
 
 	return nil
@@ -124,9 +181,23 @@ func (c *Controller) OnProgress(perc float64, msg string) {
 	log.Debugf("OnProgress: %f - %s", perc, msg)
 }
 
+// Entry is an opaque measurement entry
+type Entry struct {
+	TestKeys map[string]interface{} `json:"test_keys"`
+}
+
 // OnEntry should be called every time there is a new entry
-func (c *Controller) OnEntry(jsonStr string) {
+func (c *Controller) OnEntry(idx int64, jsonStr string) {
 	log.Debugf("OnEntry: %s", jsonStr)
+
+	var entry Entry
+	json.Unmarshal([]byte(jsonStr), &entry)
+	summary := c.nt.Summary(entry.TestKeys)
+	summaryBytes, err := json.Marshal(summary)
+	if err != nil {
+		log.WithError(err).Error("failed to serialize summary")
+	}
+	c.msmts[idx].WriteSummary(c.Ctx.DB, string(summaryBytes))
 }
 
 // MKStart is the interface for the mk.Nettest Start() function

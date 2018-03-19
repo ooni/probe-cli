@@ -43,7 +43,7 @@ func init() {
 				fmt.Sprintf("msmt-%s-%T.jsonl", nt,
 					time.Now().UTC().Format(time.RFC3339Nano)))
 
-			ctl := nettests.NewController(ctx, result, msmtPath)
+			ctl := nettests.NewController(nt, ctx, result, msmtPath)
 			if err := nt.Run(ctl); err != nil {
 				log.WithError(err).Errorf("Failed to run %s", group.Label)
 				return err
