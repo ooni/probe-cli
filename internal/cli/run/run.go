@@ -44,12 +44,12 @@ func init() {
 					time.Now().UTC().Format(time.RFC3339Nano)))
 
 			ctl := nettests.NewController(nt, ctx, result, msmtPath)
-			if err := nt.Run(ctl); err != nil {
+			if err = nt.Run(ctl); err != nil {
 				log.WithError(err).Errorf("Failed to run %s", group.Label)
 				return err
 			}
 		}
-		if err = result.Finished(ctx.DB); err != nil {
+		if err = result.Finished(ctx.DB, group.Summary); err != nil {
 			return err
 		}
 		return nil

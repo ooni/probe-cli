@@ -21,9 +21,9 @@ type NDTSummary struct {
 	Upload     int64
 	Download   int64
 	Ping       int64
-	MaxRTT     int64
-	AvgRTT     int64
-	MinRTT     int64
+	MaxRTT     float64
+	AvgRTT     float64
+	MinRTT     float64
 	MSS        int64
 	OutOfOrder int64
 	PacketLoss float64
@@ -39,9 +39,9 @@ func (n NDT) Summary(tk map[string]interface{}) interface{} {
 		Upload:     int64(simple["upload"].(float64)),
 		Download:   int64(simple["download"].(float64)),
 		Ping:       int64(simple["ping"].(float64)),
-		MaxRTT:     int64(advanced["max_rtt"].(float64)),
-		AvgRTT:     int64(advanced["avg_rtt"].(float64)),
-		MinRTT:     int64(advanced["min_rtt"].(float64)),
+		MaxRTT:     advanced["max_rtt"].(float64),
+		AvgRTT:     advanced["avg_rtt"].(float64),
+		MinRTT:     advanced["min_rtt"].(float64),
 		MSS:        int64(advanced["mss"].(float64)),
 		OutOfOrder: int64(advanced["out_of_order"].(float64)),
 		PacketLoss: advanced["packet_loss"].(float64),

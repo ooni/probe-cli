@@ -12,6 +12,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ResultSummaryFunc is the function used to generate result summaries
+type ResultSummaryFunc func(SummaryMap) (string, error)
+
+// SummaryMap contains a mapping from test name to serialized summary for it
+type SummaryMap map[string]string
+
 // UpdateOne will run the specified update query and check that it only affected one row
 func UpdateOne(db *sqlx.DB, query string, arg interface{}) error {
 	res, err := db.NamedExec(query, arg)
@@ -187,17 +193,43 @@ type Result struct {
 	MeasurementDir string    `db:"measurement_dir"`
 }
 
+// MakeSummaryMap return a mapping of test names to summaries for the given
+// result
+func MakeSummaryMap(db *sqlx.DB, r *Result) (SummaryMap, error) {
+	summaryMap := SummaryMap{}
+
+	msmts := []Measurement{}
+	// XXX maybe we only want to select some of the columns
+	err := db.Select(&msmts, "SELECT name, summary FROM measurements WHERE result_id = $1", r.ID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get measurements")
+	}
+	for _, msmt := range msmts {
+		summaryMap[msmt.Name] = msmt.Summary
+	}
+	return summaryMap, nil
+}
+
 // Finished marks the result as done and sets the runtime
-func (r *Result) Finished(db *sqlx.DB) error {
+func (r *Result) Finished(db *sqlx.DB, makeSummary ResultSummaryFunc) error {
 	if r.Done == true || r.Runtime != 0 {
 		return errors.New("Result is already finished")
 	}
 	r.Runtime = time.Now().UTC().Sub(r.StartTime).Seconds()
 	r.Done = true
 	// XXX add in here functionality to compute the summary
+	summaryMap, err := MakeSummaryMap(db, r)
+	if err != nil {
+		return err
+	}
 
-	err := UpdateOne(db, `UPDATE results
-		SET done = :done, runtime = :runtime
+	r.Summary, err = makeSummary(summaryMap)
+	if err != nil {
+		return err
+	}
+
+	err = UpdateOne(db, `UPDATE results
+		SET done = :done, runtime = :runtime, summary = :summary
 		WHERE id = :id`, r)
 	if err != nil {
 		return errors.Wrap(err, "updating finished result")
