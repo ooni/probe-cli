@@ -33,3 +33,27 @@ was built as
 ```
 CGO_LDFLAGS="-L/path/to/measurement-kit/.libs/" CGO_CFLAGS="-I/path/to/measurement-kit/include" make build
 ```
+
+## Todo
+
+* Add support for generating the Result Summary based on the measurements. I
+  would imagine this would lookup the summary of every measurement that we care
+  about in the DB and based on that generate the summary with a function that
+  lives inside of the groups definition.
+
+* Add support for outputing structured logging messages, while tests are
+  running, to be consumed by the desktop app
+
+* Add support for the missing tests, namely:
+- HTTP Invalid Request Line
+- HTTP Header Field Manipulation
+- Facebook Messenger
+- Telegram
+- WhatsApp
+- WebConnectivity
+
+* Fix issue with the informed consent being bypassed on first run
+
+* Finish the config file implementation
+
+* Add support for listing results in the CLI
