@@ -56,7 +56,7 @@ var NettestGroups = map[string]NettestGroup{
 			}
 			err = json.Unmarshal([]byte(m["Ndt"]), &ndtSummary)
 			if err != nil {
-				log.WithError(err).Error("failed to unmarshal Dash summary")
+				log.WithError(err).Error("failed to unmarshal NDT summary")
 				return "", err
 			}
 			summary.Bitrate = dashSummary.Bitrate

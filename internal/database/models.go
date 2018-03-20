@@ -128,7 +128,7 @@ func (m *Measurement) WriteSummary(db *sqlx.DB, summary string) error {
 	return nil
 }
 
-//AddToResult adds a measurement to a result
+// AddToResult adds a measurement to a result
 func (m *Measurement) AddToResult(db *sqlx.DB, result *Result) error {
 	m.ResultID = result.ID
 	finalPath := filepath.Join(result.MeasurementDir,
