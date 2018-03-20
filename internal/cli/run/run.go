@@ -48,14 +48,10 @@ func init() {
 				log.WithError(err).Errorf("Failed to run %s", group.Label)
 				return err
 			}
-			// XXX
-			// 1. Generate the summary
-			// 2. Link the measurement to the Result (this should probably happen in
-			// the nettest class)
-			// 3. Update the summary of the result and the other metadata in the db
-			// 4. Move the msmtPath into the final location ~/.ooni/msmts/
 		}
-		// result.Update(ctx.DB)
+		if err = result.Finished(ctx.DB); err != nil {
+			return err
+		}
 		return nil
 	})
 }

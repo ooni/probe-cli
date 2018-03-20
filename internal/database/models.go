@@ -1,10 +1,14 @@
 package database
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
+	ooni "github.com/openobservatory/gooni"
 	"github.com/pkg/errors"
 )
 
@@ -30,7 +34,7 @@ type Measurement struct {
 	ID             int64     `db:"id"`
 	Name           string    `db:"name"`
 	StartTime      time.Time `db:"start_time"`
-	Runtime        float64   `db:"runtime"`
+	Runtime        float64   `db:"runtime"` // Fractional number of seconds
 	Summary        string    `db:"summary"` // XXX this should be JSON
 	ASN            string    `db:"asn"`
 	IP             string    `db:"ip"`
@@ -65,10 +69,12 @@ func (m *Measurement) Failed(db *sqlx.DB, failure string) error {
 
 // Done marks the measurement as completed
 func (m *Measurement) Done(db *sqlx.DB) error {
+	runtime := time.Now().UTC().Sub(m.StartTime)
+	m.Runtime = runtime.Seconds()
 	m.State = "done"
 
 	err := UpdateOne(db, `UPDATE measurements
-		SET state = :state
+		SET state = :state, runtime = :runtime
 		WHERE id = :id`, m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
@@ -116,6 +122,27 @@ func (m *Measurement) WriteSummary(db *sqlx.DB, summary string) error {
 	return nil
 }
 
+//AddToResult adds a measurement to a result
+func (m *Measurement) AddToResult(db *sqlx.DB, result *Result) error {
+	m.ResultID = result.ID
+	finalPath := filepath.Join(result.MeasurementDir,
+		filepath.Base(m.ReportFilePath))
+
+	err := os.Rename(m.ReportFilePath, finalPath)
+	if err != nil {
+		return errors.Wrap(err, "moving report file")
+	}
+	m.ReportFilePath = finalPath
+
+	err = UpdateOne(db, `UPDATE measurements
+		SET result_id = :result_id, report_file = :report_file
+		WHERE id = :id`, m)
+	if err != nil {
+		return errors.Wrap(err, "updating measurement")
+	}
+	return nil
+}
+
 // CreateMeasurement writes the measurement to the database a returns a pointer
 // to the Measurement
 func CreateMeasurement(db *sqlx.DB, m Measurement, i string) (*Measurement, error) {
@@ -149,22 +176,15 @@ func CreateMeasurement(db *sqlx.DB, m Measurement, i string) (*Measurement, erro
 
 // Result model
 type Result struct {
-	ID            int64     `db:"id"`
-	Name          string    `db:"name"`
-	StartTime     time.Time `db:"start_time"`
-	Runtime       float64   `db:"runtime"` // Runtime is expressed in Microseconds
-	Summary       string    `db:"summary"` // XXX this should be JSON
-	Done          bool      `db:"done"`
-	DataUsageUp   int64     `db:"data_usage_up"`
-	DataUsageDown int64     `db:"data_usage_down"`
-
-	started time.Time
-}
-
-// Started marks the Result as having started
-func (r *Result) Started(db *sqlx.DB) error {
-	r.started = time.Now()
-	return nil
+	ID             int64     `db:"id"`
+	Name           string    `db:"name"`
+	StartTime      time.Time `db:"start_time"`
+	Runtime        float64   `db:"runtime"` // Runtime is expressed in fractional seconds
+	Summary        string    `db:"summary"` // XXX this should be JSON
+	Done           bool      `db:"done"`
+	DataUsageUp    int64     `db:"data_usage_up"`
+	DataUsageDown  int64     `db:"data_usage_down"`
+	MeasurementDir string    `db:"measurement_dir"`
 }
 
 // Finished marks the result as done and sets the runtime
@@ -172,22 +192,50 @@ func (r *Result) Finished(db *sqlx.DB) error {
 	if r.Done == true || r.Runtime != 0 {
 		return errors.New("Result is already finished")
 	}
-	r.Runtime = float64(time.Now().Sub(r.started)) / float64(time.Microsecond)
+	r.Runtime = time.Now().UTC().Sub(r.StartTime).Seconds()
 	r.Done = true
+	// XXX add in here functionality to compute the summary
 
 	err := UpdateOne(db, `UPDATE results
-		SET done = true, runtime = :runtime
+		SET done = :done, runtime = :runtime
 		WHERE id = :id`, r)
 	if err != nil {
-		return errors.Wrap(err, "updating result")
+		return errors.Wrap(err, "updating finished result")
 	}
 	return nil
+}
+
+// MakeResultsPath creates and returns a directory for the result
+func MakeResultsPath(r *Result) (string, error) {
+	home, err := ooni.GetOONIHome()
+	if err != nil {
+		return "", errors.Wrap(err, "default measurements path")
+	}
+	p := filepath.Join(home, "msmts",
+		fmt.Sprintf("%s-%s", r.Name, r.StartTime.Format(time.RFC3339Nano)))
+
+	// If the path already exists, this is a problem. It should not clash, because
+	// we are using nanosecond precision for the starttime.
+	if _, e := os.Stat(p); e == nil {
+		return "", errors.New("results path already exists")
+	}
+	err = os.MkdirAll(p, 0700)
+	if err != nil {
+		return "", err
+	}
+	return p, nil
 }
 
 // CreateResult writes the Result to the database a returns a pointer
 // to the Result
 func CreateResult(db *sqlx.DB, r Result) (*Result, error) {
 	log.Debugf("Creating result %v", r)
+
+	p, err := MakeResultsPath(&r)
+	if err != nil {
+		return nil, err
+	}
+	r.MeasurementDir = p
 	res, err := db.NamedExec(`INSERT INTO results
 		(name, start_time)
 		VALUES (:name,:start_time)`,

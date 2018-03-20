@@ -7,6 +7,7 @@ import (
 	"github.com/measurement-kit/go-measurement-kit"
 	ooni "github.com/openobservatory/gooni"
 	"github.com/openobservatory/gooni/internal/cli/version"
+	"github.com/openobservatory/gooni/internal/colors"
 	"github.com/openobservatory/gooni/internal/database"
 )
 
@@ -15,13 +16,6 @@ type Nettest interface {
 	Run(*Controller) error
 	Summary(map[string]interface{}) interface{}
 	LogSummary(string) error
-}
-
-// NettestGroup base structure
-type NettestGroup struct {
-	Label    string
-	Nettests []Nettest
-	Summary  func(s string) string
 }
 
 // NewController creates a nettest controller
@@ -41,7 +35,7 @@ type Controller struct {
 	res      *database.Result
 	nt       Nettest
 	msmts    map[int64]*database.Measurement
-	msmtPath string
+	msmtPath string // XXX maybe we can drop this and just use a temporary file
 }
 
 // Init should be called once to initialise the nettest
@@ -105,7 +99,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	})
 
 	nt.On("status.geoip_lookup", func(e mk.Event) {
-		log.Debugf("%s", e.Key)
+		log.Debugf(colors.Red(e.Key))
 
 		msmtTemplate.ASN = e.Value.ProbeASN
 		msmtTemplate.IP = e.Value.ProbeIP
@@ -113,7 +107,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	})
 
 	nt.On("status.measurement_started", func(e mk.Event) {
-		log.Debugf("%s", e.Key)
+		log.Debugf(colors.Red(e.Key))
 
 		idx := e.Value.Idx
 		msmt, err := database.CreateMeasurement(c.Ctx.DB, msmtTemplate, e.Value.Input)
@@ -125,44 +119,55 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	})
 
 	nt.On("status.progress", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
 		c.OnProgress(e.Value.Percentage, e.Value.Message)
 	})
 
 	nt.On("status.update.*", func(e mk.Event) {
-		log.Debugf("%s", e.Key)
+		log.Debugf(colors.Red(e.Key))
 	})
 
 	nt.On("failure.measurement", func(e mk.Event) {
-		log.Debugf("%s", e.Key)
+		log.Debugf(colors.Red(e.Key))
 
 		c.msmts[e.Value.Idx].Failed(c.Ctx.DB, e.Value.Failure)
 	})
 
 	nt.On("failure.measurement_submission", func(e mk.Event) {
-		log.Debugf("%s", e.Key)
+		log.Debugf(colors.Red(e.Key))
 
 		failure := e.Value.Failure
 		c.msmts[e.Value.Idx].UploadFailed(c.Ctx.DB, failure)
 	})
 
 	nt.On("status.measurement_uploaded", func(e mk.Event) {
-		log.Debugf("%s", e.Key)
+		log.Debugf(colors.Red(e.Key))
 
-		c.msmts[e.Value.Idx].UploadSucceeded(c.Ctx.DB)
+		if err := c.msmts[e.Value.Idx].UploadSucceeded(c.Ctx.DB); err != nil {
+			log.WithError(err).Error("failed to mark msmt as uploaded")
+		}
 	})
 
 	nt.On("status.measurement_done", func(e mk.Event) {
-		log.Debugf("%s", e.Key)
+		log.Debugf(colors.Red(e.Key))
 
-		c.msmts[e.Value.Idx].Done(c.Ctx.DB)
+		if err := c.msmts[e.Value.Idx].Done(c.Ctx.DB); err != nil {
+			log.WithError(err).Error("failed to mark msmt as done")
+		}
 	})
 
 	nt.On("measurement", func(e mk.Event) {
 		c.OnEntry(e.Value.Idx, e.Value.JSONStr)
 	})
 
-	nt.On("end", func(e mk.Event) {
-		log.Debugf("end")
+	nt.On("status.end", func(e mk.Event) {
+		log.Debugf("status.end")
+		for idx, msmt := range c.msmts {
+			log.Debugf("adding msmt#%d to result", idx)
+			if err := msmt.AddToResult(c.Ctx.DB, c.res); err != nil {
+				log.WithError(err).Error("failed to add to result")
+			}
+		}
 	})
 
 	return nil
