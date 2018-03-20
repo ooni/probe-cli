@@ -36,11 +36,6 @@ CGO_LDFLAGS="-L/path/to/measurement-kit/.libs/" CGO_CFLAGS="-I/path/to/measureme
 
 ## Todo
 
-* Add support for generating the Result Summary based on the measurements. I
-  would imagine this would lookup the summary of every measurement that we care
-  about in the DB and based on that generate the summary with a function that
-  lives inside of the groups definition.
-
 * Add support for outputing structured logging messages, while tests are
   running, to be consumed by the desktop app
 
