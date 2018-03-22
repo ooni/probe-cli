@@ -1,11 +1,16 @@
 package nettests
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/apex/log"
 	"github.com/measurement-kit/go-measurement-kit"
 	ooni "github.com/openobservatory/gooni"
 	"github.com/openobservatory/gooni/internal/cli/version"
+	"github.com/openobservatory/gooni/internal/colors"
 	"github.com/openobservatory/gooni/internal/database"
+	"github.com/openobservatory/gooni/internal/output"
 )
 
 // Nettest interface. Every Nettest should implement this.
@@ -15,19 +20,13 @@ type Nettest interface {
 	LogSummary(string) error
 }
 
-// NettestGroup base structure
-type NettestGroup struct {
-	Label    string
-	Nettests []Nettest
-	Summary  func(s string) string
-}
-
 // NewController creates a nettest controller
-func NewController(ctx *ooni.Context, res *database.Result, msmtPath string) *Controller {
+func NewController(nt Nettest, ctx *ooni.Context, res *database.Result, msmtPath string) *Controller {
 	return &Controller{
-		ctx,
-		res,
-		msmtPath,
+		Ctx:      ctx,
+		nt:       nt,
+		res:      res,
+		msmtPath: msmtPath,
 	}
 }
 
@@ -36,12 +35,25 @@ func NewController(ctx *ooni.Context, res *database.Result, msmtPath string) *Co
 type Controller struct {
 	Ctx      *ooni.Context
 	res      *database.Result
-	msmtPath string
+	nt       Nettest
+	msmts    map[int64]*database.Measurement
+	msmtPath string // XXX maybe we can drop this and just use a temporary file
 }
 
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
+	c.msmts = make(map[int64]*database.Measurement)
+
+	msmtTemplate := database.Measurement{
+		ASN:            "",
+		IP:             "",
+		CountryCode:    "",
+		ReportID:       "",
+		Name:           nt.Name,
+		ResultID:       c.res.ID,
+		ReportFilePath: c.msmtPath,
+	}
 
 	log.Debugf("OutputPath: %s", c.msmtPath)
 	nt.Options = mk.NettestOptions{
@@ -60,8 +72,8 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	}
 
 	nt.On("log", func(e mk.Event) {
-		level := e.Value["verbosity"].(string)
-		msg := e.Value["message"].(string)
+		level := e.Value.LogLevel
+		msg := e.Value.Message
 
 		switch level {
 		case "ERROR":
@@ -84,36 +96,80 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 	nt.On("status.report_created", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
+
+		msmtTemplate.ReportID = e.Value.ReportID
 	})
 
 	nt.On("status.geoip_lookup", func(e mk.Event) {
-		log.Debugf("%s", e.Key)
+		log.Debugf(colors.Red(e.Key))
+
+		msmtTemplate.ASN = e.Value.ProbeASN
+		msmtTemplate.IP = e.Value.ProbeIP
+		msmtTemplate.CountryCode = e.Value.ProbeCC
+	})
+
+	nt.On("status.measurement_started", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
+
+		idx := e.Value.Idx
+		msmt, err := database.CreateMeasurement(c.Ctx.DB, msmtTemplate, e.Value.Input)
+		if err != nil {
+			log.WithError(err).Error("Failed to create measurement")
+			return
+		}
+		c.msmts[idx] = msmt
 	})
 
 	nt.On("status.progress", func(e mk.Event) {
-		perc := e.Value["percentage"].(float64)
-		msg := e.Value["message"].(string)
-		c.OnProgress(perc, msg)
+		log.Debugf(colors.Red(e.Key))
+		c.OnProgress(e.Value.Percentage, e.Value.Message)
 	})
 
 	nt.On("status.update.*", func(e mk.Event) {
-		log.Debugf("%s", e.Key)
+		log.Debugf(colors.Red(e.Key))
 	})
 
 	nt.On("failure.measurement", func(e mk.Event) {
-		log.Debugf("%s", e.Key)
+		log.Debugf(colors.Red(e.Key))
+
+		c.msmts[e.Value.Idx].Failed(c.Ctx.DB, e.Value.Failure)
 	})
 
-	nt.On("failure.report_submission", func(e mk.Event) {
-		log.Debugf("%s", e.Key)
+	nt.On("failure.measurement_submission", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
+
+		failure := e.Value.Failure
+		c.msmts[e.Value.Idx].UploadFailed(c.Ctx.DB, failure)
+	})
+
+	nt.On("status.measurement_uploaded", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
+
+		if err := c.msmts[e.Value.Idx].UploadSucceeded(c.Ctx.DB); err != nil {
+			log.WithError(err).Error("failed to mark msmt as uploaded")
+		}
+	})
+
+	nt.On("status.measurement_done", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
+
+		if err := c.msmts[e.Value.Idx].Done(c.Ctx.DB); err != nil {
+			log.WithError(err).Error("failed to mark msmt as done")
+		}
 	})
 
 	nt.On("measurement", func(e mk.Event) {
-		c.OnEntry(e.Value["json_str"].(string))
+		c.OnEntry(e.Value.Idx, e.Value.JSONStr)
 	})
 
-	nt.On("end", func(e mk.Event) {
-		c.OnEntry(e.Value["json_str"].(string))
+	nt.On("status.end", func(e mk.Event) {
+		log.Debugf("status.end")
+		for idx, msmt := range c.msmts {
+			log.Debugf("adding msmt#%d to result", idx)
+			if err := msmt.AddToResult(c.Ctx.DB, c.res); err != nil {
+				log.WithError(err).Error("failed to add to result")
+			}
+		}
 	})
 
 	return nil
@@ -122,11 +178,29 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 // OnProgress should be called when a new progress event is available.
 func (c *Controller) OnProgress(perc float64, msg string) {
 	log.Debugf("OnProgress: %f - %s", perc, msg)
+
+	key := fmt.Sprintf("%T", c.nt)
+	output.Progress(key, perc, msg)
+}
+
+// Entry is an opaque measurement entry
+type Entry struct {
+	TestKeys map[string]interface{} `json:"test_keys"`
 }
 
 // OnEntry should be called every time there is a new entry
-func (c *Controller) OnEntry(jsonStr string) {
-	log.Debugf("OnEntry: %s", jsonStr)
+func (c *Controller) OnEntry(idx int64, jsonStr string) {
+	log.Debugf("OnEntry")
+
+	var entry Entry
+	json.Unmarshal([]byte(jsonStr), &entry)
+	summary := c.nt.Summary(entry.TestKeys)
+	summaryBytes, err := json.Marshal(summary)
+	if err != nil {
+		log.WithError(err).Error("failed to serialize summary")
+	}
+	log.Debugf("Fetching: %s %v", idx, c.msmts[idx])
+	c.msmts[idx].WriteSummary(c.Ctx.DB, string(summaryBytes))
 }
 
 // MKStart is the interface for the mk.Nettest Start() function

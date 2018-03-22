@@ -1,6 +1,7 @@
 package run
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -25,7 +26,11 @@ func init() {
 			log.Errorf("%s", err)
 			return err
 		}
-		group := groups.NettestGroups[*nettestGroup]
+		group, ok := groups.NettestGroups[*nettestGroup]
+		if !ok {
+			log.Errorf("No test group named %s", *nettestGroup)
+			return errors.New("invalid test group name")
+		}
 		log.Debugf("Running test group %s", group.Label)
 
 		result, err := database.CreateResult(ctx.DB, database.Result{
@@ -40,22 +45,18 @@ func init() {
 		for _, nt := range group.Nettests {
 			log.Debugf("Running test %T", nt)
 			msmtPath := filepath.Join(ctx.TempDir,
-				fmt.Sprintf("msmt-%s-%T.jsonl", nt,
+				fmt.Sprintf("msmt-%T-%s.jsonl", nt,
 					time.Now().UTC().Format(time.RFC3339Nano)))
 
-			ctl := nettests.NewController(ctx, result, msmtPath)
-			if err := nt.Run(ctl); err != nil {
+			ctl := nettests.NewController(nt, ctx, result, msmtPath)
+			if err = nt.Run(ctl); err != nil {
 				log.WithError(err).Errorf("Failed to run %s", group.Label)
 				return err
 			}
-			// XXX
-			// 1. Generate the summary
-			// 2. Link the measurement to the Result (this should probably happen in
-			// the nettest class)
-			// 3. Update the summary of the result and the other metadata in the db
-			// 4. Move the msmtPath into the final location ~/.ooni/msmts/
 		}
-		// result.Update(ctx.DB)
+		if err = result.Finished(ctx.DB, group.Summary); err != nil {
+			return err
+		}
 		return nil
 	})
 }

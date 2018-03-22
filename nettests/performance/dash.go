@@ -19,9 +19,9 @@ func (d Dash) Run(ctl *nettests.Controller) error {
 // DashSummary for the test
 // TODO: process 'receiver_data' to provide an array of performance for a chart.
 type DashSummary struct {
-	Latency float32
+	Latency float64
 	Bitrate int64
-	Delay   float32
+	Delay   float64
 }
 
 // Summary generates a summary for a test run
@@ -29,9 +29,9 @@ func (d Dash) Summary(tk map[string]interface{}) interface{} {
 	simple := tk["simple"].(map[string]interface{})
 
 	return DashSummary{
-		Latency: simple["connect_latency"].(float32),
-		Bitrate: simple["median_bitrate"].(int64),
-		Delay:   simple["min_playout_delay"].(float32),
+		Latency: simple["connect_latency"].(float64),
+		Bitrate: int64(simple["median_bitrate"].(float64)),
+		Delay:   simple["min_playout_delay"].(float64),
 	}
 }
 
