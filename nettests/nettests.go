@@ -2,6 +2,7 @@ package nettests
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/apex/log"
 	"github.com/measurement-kit/go-measurement-kit"
@@ -9,6 +10,7 @@ import (
 	"github.com/openobservatory/gooni/internal/cli/version"
 	"github.com/openobservatory/gooni/internal/colors"
 	"github.com/openobservatory/gooni/internal/database"
+	"github.com/openobservatory/gooni/internal/output"
 )
 
 // Nettest interface. Every Nettest should implement this.
@@ -176,6 +178,9 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 // OnProgress should be called when a new progress event is available.
 func (c *Controller) OnProgress(perc float64, msg string) {
 	log.Debugf("OnProgress: %f - %s", perc, msg)
+
+	key := fmt.Sprintf("%T", c.nt)
+	output.Progress(key, perc, msg)
 }
 
 // Entry is an opaque measurement entry

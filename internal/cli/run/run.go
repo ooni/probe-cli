@@ -1,6 +1,7 @@
 package run
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -25,7 +26,11 @@ func init() {
 			log.Errorf("%s", err)
 			return err
 		}
-		group := groups.NettestGroups[*nettestGroup]
+		group, ok := groups.NettestGroups[*nettestGroup]
+		if !ok {
+			log.Errorf("No test group named %s", *nettestGroup)
+			return errors.New("invalid test group name")
+		}
 		log.Debugf("Running test group %s", group.Label)
 
 		result, err := database.CreateResult(ctx.DB, database.Result{

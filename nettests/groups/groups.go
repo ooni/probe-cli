@@ -82,7 +82,7 @@ var NettestGroups = map[string]NettestGroup{
 			return string(summaryBytes), nil
 		},
 	},
-	"middleboxes": NettestGroup{
+	"middlebox": NettestGroup{
 		Label: "Middleboxes",
 		Nettests: []nettests.Nettest{
 			middlebox.HTTPInvalidRequestLine{},
