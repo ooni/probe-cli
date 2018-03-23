@@ -34,7 +34,8 @@ type MiddleboxSummary struct {
 
 // IMSummary is the summary for the im tests
 type IMSummary struct {
-	Detected bool
+	Tested  uint
+	Blocked uint
 }
 
 // WebsitesSummary is the summary for the websites test
@@ -148,7 +149,47 @@ var NettestGroups = map[string]NettestGroup{
 			im.WhatsApp{},
 		},
 		Summary: func(m database.SummaryMap) (string, error) {
-			return "{}", nil
+			var (
+				err       error
+				waSummary im.WhatsAppSummary
+				tgSummary im.TelegramSummary
+				fbSummary im.FacebookMessengerSummary
+				summary   IMSummary
+			)
+			err = json.Unmarshal([]byte(m["Whatsapp"][0]), &waSummary)
+			if err != nil {
+				log.WithError(err).Error("failed to unmarshal whatsapp summary")
+				return "", err
+			}
+			err = json.Unmarshal([]byte(m["Telegram"][0]), &tgSummary)
+			if err != nil {
+				log.WithError(err).Error("failed to unmarshal telegram summary")
+				return "", err
+			}
+			err = json.Unmarshal([]byte(m["FacebookMessenger"][0]), &fbSummary)
+			if err != nil {
+				log.WithError(err).Error("failed to unmarshal facebook summary")
+				return "", err
+			}
+			// XXX it could actually be that some are not tested when the
+			// configuration is changed.
+			summary.Tested = 3
+			summary.Blocked = 0
+			if fbSummary.Blocked == true {
+				summary.Blocked++
+			}
+			if tgSummary.Blocked == true {
+				summary.Blocked++
+			}
+			if waSummary.Blocked == true {
+				summary.Blocked++
+			}
+
+			summaryBytes, err := json.Marshal(summary)
+			if err != nil {
+				return "", err
+			}
+			return string(summaryBytes), nil
 		},
 	},
 }
