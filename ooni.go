@@ -77,7 +77,7 @@ func (c *Context) Init() error {
 		return errors.Wrap(err, "migrating home")
 	}
 
-	if err = CreateHomeDirs(c.Home); err != nil {
+	if err = MaybeInitializeHome(c.Home); err != nil {
 		return err
 	}
 
@@ -212,14 +212,26 @@ func ParseConfig(b []byte) (*Config, error) {
 	return c, nil
 }
 
-// CreateHomeDirs creates the OONI home subdirectories
-func CreateHomeDirs(home string) error {
+// MaybeInitializeHome does the setup for a new OONI Home
+func MaybeInitializeHome(home string) error {
+	firstRun := false
 	requiredDirs := []string{"db", "msmts", "geoip"}
 	for _, d := range requiredDirs {
 		if _, e := os.Stat(filepath.Join(home, d)); e != nil {
+			firstRun = true
 			if err := os.MkdirAll(filepath.Join(home, d), 0700); err != nil {
 				return err
 			}
+		}
+	}
+	if firstRun == true {
+		log.Info("This is the first time you are running OONI Probe. Downloading some files.")
+		geoipDir := utils.GeoIPDir(home)
+		if err := utils.DownloadGeoIPDatabaseFiles(geoipDir); err != nil {
+			return err
+		}
+		if err := utils.DownloadLegacyGeoIPDatabaseFiles(geoipDir); err != nil {
+			return err
 		}
 	}
 
