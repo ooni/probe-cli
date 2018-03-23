@@ -15,7 +15,7 @@ import (
 type ResultSummaryFunc func(SummaryMap) (string, error)
 
 // SummaryMap contains a mapping from test name to serialized summary for it
-type SummaryMap map[string]string
+type SummaryMap map[string][]string
 
 // UpdateOne will run the specified update query and check that it only affected one row
 func UpdateOne(db *sqlx.DB, query string, arg interface{}) error {
@@ -210,7 +210,12 @@ func MakeSummaryMap(db *sqlx.DB, r *Result) (SummaryMap, error) {
 		return nil, errors.Wrap(err, "failed to get measurements")
 	}
 	for _, msmt := range msmts {
-		summaryMap[msmt.Name] = msmt.Summary
+		val, ok := summaryMap[msmt.Name]
+		if ok {
+			summaryMap[msmt.Name] = append(val, msmt.Summary)
+		} else {
+			summaryMap[msmt.Name] = []string{msmt.Summary}
+		}
 	}
 	return summaryMap, nil
 }

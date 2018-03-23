@@ -52,7 +52,27 @@ var NettestGroups = map[string]NettestGroup{
 		},
 		Summary: func(m database.SummaryMap) (string, error) {
 			// XXX to generate this I need to create the summary map as a list
-			return "{}", nil
+			var summary WebsitesSummary
+			summary.Tested = 0
+			summary.Blocked = 0
+			for _, msmtSummaryStr := range m["WebConnectivity"] {
+				var wcSummary websites.WebConnectivitySummary
+
+				err := json.Unmarshal([]byte(msmtSummaryStr), &wcSummary)
+				if err != nil {
+					log.WithError(err).Error("failed to unmarshal WebConnectivity summary")
+					return "", err
+				}
+				if wcSummary.Blocked {
+					summary.Blocked++
+				}
+				summary.Tested++
+			}
+			summaryBytes, err := json.Marshal(summary)
+			if err != nil {
+				return "", err
+			}
+			return string(summaryBytes), nil
 		},
 	},
 	"performance": NettestGroup{
@@ -68,12 +88,12 @@ var NettestGroups = map[string]NettestGroup{
 				dashSummary performance.DashSummary
 				summary     PerformanceSummary
 			)
-			err = json.Unmarshal([]byte(m["Dash"]), &dashSummary)
+			err = json.Unmarshal([]byte(m["Dash"][0]), &dashSummary)
 			if err != nil {
 				log.WithError(err).Error("failed to unmarshal Dash summary")
 				return "", err
 			}
-			err = json.Unmarshal([]byte(m["Ndt"]), &ndtSummary)
+			err = json.Unmarshal([]byte(m["Ndt"][0]), &ndtSummary)
 			if err != nil {
 				log.WithError(err).Error("failed to unmarshal NDT summary")
 				return "", err
@@ -102,12 +122,12 @@ var NettestGroups = map[string]NettestGroup{
 				hirlSummary middlebox.HTTPInvalidRequestLineSummary
 				summary     MiddleboxSummary
 			)
-			err = json.Unmarshal([]byte(m["HttpHeaderFieldManipulation"]), &hhfmSummary)
+			err = json.Unmarshal([]byte(m["HttpHeaderFieldManipulation"][0]), &hhfmSummary)
 			if err != nil {
 				log.WithError(err).Error("failed to unmarshal hhfm summary")
 				return "", err
 			}
-			err = json.Unmarshal([]byte(m["HttpInvalidRequestLine"]), &hirlSummary)
+			err = json.Unmarshal([]byte(m["HttpInvalidRequestLine"][0]), &hirlSummary)
 			if err != nil {
 				log.WithError(err).Error("failed to unmarshal hirl summary")
 				return "", err
