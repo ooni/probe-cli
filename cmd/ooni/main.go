@@ -4,6 +4,7 @@ import (
 	// commands
 	"github.com/apex/log"
 
+	_ "github.com/openobservatory/gooni/internal/cli/geoip"
 	_ "github.com/openobservatory/gooni/internal/cli/info"
 	_ "github.com/openobservatory/gooni/internal/cli/list"
 	_ "github.com/openobservatory/gooni/internal/cli/nettest"

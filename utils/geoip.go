@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -97,8 +96,7 @@ func DownloadGeoIPDatabaseFiles(dir string) error {
 
 // LookupLocation resolves an IP to a location according to the Maxmind DB
 func LookupLocation(dbPath string, ipStr string) (LocationInfo, error) {
-	loc := LocationInfo{}
-	fmt.Printf("Opening %s", filepath.Join(dbPath, "GeoLite2-ASN.mmdb"))
+	loc := LocationInfo{IP: ipStr}
 
 	asnDB, err := geoip2.Open(filepath.Join(dbPath, "GeoLite2-ASN.mmdb"))
 	if err != nil {
