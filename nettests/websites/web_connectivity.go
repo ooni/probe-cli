@@ -11,11 +11,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// URLInfo contains the URL and the citizenlab category code for that URL
 type URLInfo struct {
 	URL          string `json:"url"`
 	CategoryCode string `json:"category_code"`
 }
 
+// URLResponse is the orchestrate url response containing a list of URLs
 type URLResponse struct {
 	Results []URLInfo `json:"results"`
 }
@@ -69,9 +71,46 @@ func (n WebConnectivity) Run(ctl *nettests.Controller) error {
 	return nt.Run()
 }
 
+// WebConnectivitySummary for the test
+type WebConnectivitySummary struct {
+	Accessible bool
+	Blocking   string
+	Blocked    bool
+}
+
 // Summary generates a summary for a test run
 func (n WebConnectivity) Summary(tk map[string]interface{}) interface{} {
-	return nil
+	var (
+		blocked    bool
+		blocking   string
+		accessible bool
+	)
+
+	// We need to do these complicated type assertions, because some of the fields
+	// are "nullable" and/or can be of different types
+	switch v := tk["blocking"].(type) {
+	case bool:
+		blocked = false
+		blocking = "none"
+	case string:
+		blocked = true
+		blocking = v
+	default:
+		blocked = false
+		blocking = "none"
+	}
+
+	if tk["accessible"] == nil {
+		accessible = false
+	} else {
+		accessible = tk["accessible"].(bool)
+	}
+
+	return WebConnectivitySummary{
+		Accessible: accessible,
+		Blocking:   blocking,
+		Blocked:    blocked,
+	}
 }
 
 // LogSummary writes the summary to the standard output

@@ -37,6 +37,12 @@ type IMSummary struct {
 	Detected bool
 }
 
+// WebsitesSummary is the summary for the websites test
+type WebsitesSummary struct {
+	Tested  uint
+	Blocked uint
+}
+
 // NettestGroups that can be run by the user
 var NettestGroups = map[string]NettestGroup{
 	"websites": NettestGroup{
@@ -45,6 +51,7 @@ var NettestGroups = map[string]NettestGroup{
 			websites.WebConnectivity{},
 		},
 		Summary: func(m database.SummaryMap) (string, error) {
+			// XXX to generate this I need to create the summary map as a list
 			return "{}", nil
 		},
 	},

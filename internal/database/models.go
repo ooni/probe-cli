@@ -129,13 +129,19 @@ func (m *Measurement) WriteSummary(db *sqlx.DB, summary string) error {
 
 // AddToResult adds a measurement to a result
 func (m *Measurement) AddToResult(db *sqlx.DB, result *Result) error {
+	var err error
+
 	m.ResultID = result.ID
 	finalPath := filepath.Join(result.MeasurementDir,
 		filepath.Base(m.ReportFilePath))
 
-	err := os.Rename(m.ReportFilePath, finalPath)
-	if err != nil {
-		return errors.Wrap(err, "moving report file")
+	// If the finalPath already exists, it means it has already been moved there.
+	// This happens in multi input reports
+	if _, err = os.Stat(finalPath); os.IsNotExist(err) {
+		err = os.Rename(m.ReportFilePath, finalPath)
+		if err != nil {
+			return errors.Wrap(err, "moving report file")
+		}
 	}
 	m.ReportFilePath = finalPath
 
