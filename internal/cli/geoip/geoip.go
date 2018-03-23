@@ -1,8 +1,6 @@
 package geoip
 
 import (
-	"path/filepath"
-
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/openobservatory/gooni/internal/cli/root"
@@ -21,10 +19,10 @@ func init() {
 			return err
 		}
 
-		geoipPath := filepath.Join(ctx.Home, "geoip")
-
+		geoipPath := utils.GeoIPDir(ctx.Home)
 		if *shouldUpdate {
 			utils.DownloadGeoIPDatabaseFiles(geoipPath)
+			utils.DownloadLegacyGeoIPDatabaseFiles(geoipPath)
 		}
 
 		loc, err := utils.GeoIPLookup(geoipPath)

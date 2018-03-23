@@ -3,6 +3,7 @@ package nettests
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	"github.com/apex/log"
 	"github.com/measurement-kit/go-measurement-kit"
@@ -11,6 +12,7 @@ import (
 	"github.com/openobservatory/gooni/internal/colors"
 	"github.com/openobservatory/gooni/internal/database"
 	"github.com/openobservatory/gooni/internal/output"
+	"github.com/openobservatory/gooni/utils"
 )
 
 // Nettest interface. Every Nettest should implement this.
@@ -72,8 +74,8 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		SoftwareVersion:  version.Version,
 
 		// XXX
-		GeoIPCountryPath: "",
-		GeoIPASNPath:     "",
+		GeoIPCountryPath: filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIP.dat"),
+		GeoIPASNPath:     filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIPASNum.dat"),
 		OutputPath:       c.msmtPath,
 		CaBundlePath:     "/etc/ssl/cert.pem",
 	}
