@@ -43,6 +43,8 @@ type Controller struct {
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
+	c.Ctx.LocationLookup()
+
 	c.msmts = make(map[int64]*database.Measurement)
 
 	msmtTemplate := database.Measurement{
@@ -57,9 +59,14 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 	log.Debugf("OutputPath: %s", c.msmtPath)
 	nt.Options = mk.NettestOptions{
-		IncludeIP:        c.Ctx.Config.Sharing.IncludeIP,
-		IncludeASN:       c.Ctx.Config.Sharing.IncludeASN,
-		IncludeCountry:   c.Ctx.Config.Advanced.IncludeCountry,
+		IncludeIP:      c.Ctx.Config.Sharing.IncludeIP,
+		IncludeASN:     c.Ctx.Config.Sharing.IncludeASN,
+		IncludeCountry: c.Ctx.Config.Advanced.IncludeCountry,
+
+		ProbeCC:  c.Ctx.Location.CountryCode,
+		ProbeASN: fmt.Sprintf("AS%d", c.Ctx.Location.ASN),
+		ProbeIP:  c.Ctx.Location.IP,
+
 		DisableCollector: false,
 		SoftwareName:     "ooniprobe",
 		SoftwareVersion:  version.Version,

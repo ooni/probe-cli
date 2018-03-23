@@ -13,6 +13,7 @@ import (
 	"github.com/openobservatory/gooni/config"
 	"github.com/openobservatory/gooni/internal/database"
 	"github.com/openobservatory/gooni/internal/legacy"
+	"github.com/openobservatory/gooni/utils"
 	"github.com/pkg/errors"
 )
 
@@ -35,13 +36,37 @@ func Onboarding(c *Config) error {
 
 // Context for OONI Probe
 type Context struct {
-	Config *Config
-	DB     *sqlx.DB
+	Config   *Config
+	DB       *sqlx.DB
+	Location *utils.LocationInfo
 
-	Home       string
-	TempDir    string
+	Home    string
+	TempDir string
+
 	dbPath     string
 	configPath string
+}
+
+// MaybeLocationLookup will lookup the location of the user unless it's already cached
+func (c *Context) MaybeLocationLookup() error {
+	if c.Location == nil {
+		return c.LocationLookup()
+	}
+	return nil
+}
+
+// LocationLookup lookup the location of the user via geoip
+func (c *Context) LocationLookup() error {
+	var err error
+
+	dbPath := filepath.Join(c.Home, "geoip")
+
+	c.Location, err = utils.GeoIPLookup(dbPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Init the OONI manager
