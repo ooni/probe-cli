@@ -11,6 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/openobservatory/gooni/config"
+	"github.com/openobservatory/gooni/internal/database"
 	"github.com/openobservatory/gooni/internal/legacy"
 	"github.com/pkg/errors"
 )
@@ -34,21 +35,51 @@ func Onboarding(c *Config) error {
 
 // Context for OONI Probe
 type Context struct {
-	Config  *Config
-	DB      *sqlx.DB
-	TempDir string
+	Config *Config
+	DB     *sqlx.DB
+
+	Home       string
+	TempDir    string
+	dbPath     string
+	configPath string
 }
 
 // Init the OONI manager
 func (c *Context) Init() error {
-	if err := legacy.MaybeMigrateHome(); err != nil {
+	var err error
+
+	if err = legacy.MaybeMigrateHome(); err != nil {
 		return errors.Wrap(err, "migrating home")
 	}
+
+	if err = CreateHomeDirs(c.Home); err != nil {
+		return err
+	}
+
+	if c.configPath != "" {
+		log.Debugf("Reading config file from %s", c.configPath)
+		c.Config, err = ReadConfig(c.configPath)
+	} else {
+		log.Debug("Reading default config file")
+		c.Config, err = ReadDefaultConfigPaths(c.Home)
+	}
+	if err != nil {
+		return err
+	}
+
+	c.dbPath = filepath.Join(c.Home, "db", "main.sqlite3")
 	if c.Config.InformedConsent == false {
-		if err := Onboarding(c.Config); err != nil {
+		if err = Onboarding(c.Config); err != nil {
 			return errors.Wrap(err, "onboarding")
 		}
 	}
+
+	log.Debugf("Connecting to database sqlite3://%s", c.dbPath)
+	db, err := database.Connect(c.dbPath)
+	if err != nil {
+		return err
+	}
+	c.DB = db
 
 	tempDir, err := ioutil.TempDir("", "ooni")
 	if err != nil {
@@ -59,11 +90,12 @@ func (c *Context) Init() error {
 	return nil
 }
 
-// New Context instance.
-func New(c *Config, d *sqlx.DB) *Context {
+// NewContext instance.
+func NewContext(configPath string, homePath string) *Context {
 	return &Context{
-		Config: c,
-		DB:     d,
+		Home:       homePath,
+		Config:     &Config{},
+		configPath: configPath,
 	}
 }
 
@@ -155,24 +187,18 @@ func ParseConfig(b []byte) (*Config, error) {
 	return c, nil
 }
 
-//EnsureDefaultOONIHomeDir makes sure the paths to the OONI Home exist
-func EnsureDefaultOONIHomeDir() (string, error) {
-	home, err := GetOONIHome()
-	if err != nil {
-		return "", err
-	}
-
-	requiredDirs := []string{"db", "msmts"}
+// CreateHomeDirs creates the OONI home subdirectories
+func CreateHomeDirs(home string) error {
+	requiredDirs := []string{"db", "msmts", "geoip"}
 	for _, d := range requiredDirs {
 		if _, e := os.Stat(filepath.Join(home, d)); e != nil {
-			err = os.MkdirAll(filepath.Join(home, d), 0700)
-			if err != nil {
-				return "", err
+			if err := os.MkdirAll(filepath.Join(home, d), 0700); err != nil {
+				return err
 			}
 		}
 	}
 
-	return home, nil
+	return nil
 }
 
 // ReadConfig reads the configuration from the path
@@ -206,11 +232,7 @@ func ReadConfig(path string) (*Config, error) {
 }
 
 // ReadDefaultConfigPaths from common locations.
-func ReadDefaultConfigPaths() (*Config, error) {
-	home, err := EnsureDefaultOONIHomeDir()
-	if err != nil {
-		return nil, errors.Wrap(err, "reading default config paths")
-	}
+func ReadDefaultConfigPaths(home string) (*Config, error) {
 	var paths = []string{
 		filepath.Join(home, "config.json"),
 	}

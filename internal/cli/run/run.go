@@ -21,7 +21,7 @@ func init() {
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		log.Infof("Starting %s", *nettestGroup)
-		_, ctx, err := root.Init()
+		ctx, err := root.Init()
 		if err != nil {
 			log.Errorf("%s", err)
 			return err
@@ -33,7 +33,7 @@ func init() {
 		}
 		log.Debugf("Running test group %s", group.Label)
 
-		result, err := database.CreateResult(ctx.DB, database.Result{
+		result, err := database.CreateResult(ctx.DB, ctx.Home, database.Result{
 			Name:      *nettestGroup,
 			StartTime: time.Now().UTC(),
 		})
