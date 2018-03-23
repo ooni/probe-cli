@@ -1,14 +1,10 @@
 package database
 
 import (
-	"path/filepath"
-
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3" // this is needed to load the sqlite3 driver
-	ooni "github.com/openobservatory/gooni"
 	"github.com/openobservatory/gooni/internal/bindata"
-	"github.com/pkg/errors"
 	migrate "github.com/rubenv/sql-migrate"
 )
 
@@ -40,13 +36,4 @@ func Connect(path string) (db *sqlx.DB, err error) {
 		db = nil
 	}
 	return
-}
-
-// DefaultDatabasePath for the main database
-func DefaultDatabasePath() (string, error) {
-	home, err := ooni.GetOONIHome()
-	if err != nil {
-		return "", errors.Wrap(err, "default database path")
-	}
-	return filepath.Join(home, "db", "main.sqlite3"), nil
 }

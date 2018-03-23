@@ -104,6 +104,18 @@
   revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
 
 [[projects]]
+  name = "github.com/oschwald/geoip2-golang"
+  packages = ["."]
+  revision = "7118115686e16b77967cdbf55d1b944fe14ad312"
+  version = "v1.2.1"
+
+[[projects]]
+  name = "github.com/oschwald/maxminddb-golang"
+  packages = ["."]
+  revision = "c5bec84d1963260297932a1b7a1753c8420717a7"
+  version = "v1.3.0"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -164,7 +176,10 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
+  packages = [
+    "unix",
+    "windows"
+  ]
   revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
 
 [[projects]]
@@ -186,6 +201,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "cfd4567b0cd553bc4594b7f8bebcb91be475dfd112fd8740f65b5ba4a8253181"
+  inputs-digest = "46860a32f649dbb2e01b285c0d5581078ba4b28a21e21175d47ccb2725a9c9fb"
   solver-name = "gps-cdcl"
   solver-version = 1

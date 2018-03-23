@@ -8,7 +8,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
-	ooni "github.com/openobservatory/gooni"
 	"github.com/pkg/errors"
 )
 
@@ -238,11 +237,7 @@ func (r *Result) Finished(db *sqlx.DB, makeSummary ResultSummaryFunc) error {
 }
 
 // MakeResultsPath creates and returns a directory for the result
-func MakeResultsPath(r *Result) (string, error) {
-	home, err := ooni.GetOONIHome()
-	if err != nil {
-		return "", errors.Wrap(err, "default measurements path")
-	}
+func MakeResultsPath(home string, r *Result) (string, error) {
 	p := filepath.Join(home, "msmts",
 		fmt.Sprintf("%s-%s", r.Name, r.StartTime.Format(time.RFC3339Nano)))
 
@@ -251,7 +246,7 @@ func MakeResultsPath(r *Result) (string, error) {
 	if _, e := os.Stat(p); e == nil {
 		return "", errors.New("results path already exists")
 	}
-	err = os.MkdirAll(p, 0700)
+	err := os.MkdirAll(p, 0700)
 	if err != nil {
 		return "", err
 	}
@@ -260,10 +255,10 @@ func MakeResultsPath(r *Result) (string, error) {
 
 // CreateResult writes the Result to the database a returns a pointer
 // to the Result
-func CreateResult(db *sqlx.DB, r Result) (*Result, error) {
+func CreateResult(db *sqlx.DB, homePath string, r Result) (*Result, error) {
 	log.Debugf("Creating result %v", r)
 
-	p, err := MakeResultsPath(&r)
+	p, err := MakeResultsPath(homePath, &r)
 	if err != nil {
 		return nil, err
 	}
