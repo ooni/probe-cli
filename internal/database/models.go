@@ -1,13 +1,13 @@
 package database
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
+	"github.com/openobservatory/gooni/utils"
 	"github.com/pkg/errors"
 )
 
@@ -247,29 +247,12 @@ func (r *Result) Finished(db *sqlx.DB, makeSummary ResultSummaryFunc) error {
 	return nil
 }
 
-// MakeResultsPath creates and returns a directory for the result
-func MakeResultsPath(home string, r *Result) (string, error) {
-	p := filepath.Join(home, "msmts",
-		fmt.Sprintf("%s-%s", r.Name, r.StartTime.Format(time.RFC3339Nano)))
-
-	// If the path already exists, this is a problem. It should not clash, because
-	// we are using nanosecond precision for the starttime.
-	if _, e := os.Stat(p); e == nil {
-		return "", errors.New("results path already exists")
-	}
-	err := os.MkdirAll(p, 0700)
-	if err != nil {
-		return "", err
-	}
-	return p, nil
-}
-
 // CreateResult writes the Result to the database a returns a pointer
 // to the Result
 func CreateResult(db *sqlx.DB, homePath string, r Result) (*Result, error) {
 	log.Debugf("Creating result %v", r)
 
-	p, err := MakeResultsPath(homePath, &r)
+	p, err := utils.MakeResultsDir(homePath, r.Name, r.StartTime)
 	if err != nil {
 		return nil, err
 	}
