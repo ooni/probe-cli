@@ -20,13 +20,31 @@ func (h FacebookMessenger) Run(ctl *nettests.Controller) error {
 type FacebookMessengerSummary struct {
 	DNSBlocking bool
 	TCPBlocking bool
+	Blocked     bool
 }
 
 // Summary generates a summary for a test run
 func (h FacebookMessenger) Summary(tk map[string]interface{}) interface{} {
+	var (
+		dnsBlocking bool
+		tcpBlocking bool
+	)
+	if tk["facebook_dns_blocking"] == nil {
+		dnsBlocking = false
+	} else {
+		dnsBlocking = tk["facebook_dns_blocking"].(bool)
+	}
+
+	if tk["facebook_tcp_blocking"] == nil {
+		tcpBlocking = false
+	} else {
+		tcpBlocking = tk["facebook_tcp_blocking"].(bool)
+	}
+
 	return FacebookMessengerSummary{
-		DNSBlocking: tk["facebook_dns_blocking"].(bool),
-		TCPBlocking: tk["facebook_tcp_blocking"].(bool),
+		DNSBlocking: dnsBlocking,
+		TCPBlocking: tcpBlocking,
+		Blocked:     dnsBlocking || tcpBlocking,
 	}
 }
 

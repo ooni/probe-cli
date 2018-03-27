@@ -13,6 +13,7 @@ import (
 	"github.com/openobservatory/gooni/config"
 	"github.com/openobservatory/gooni/internal/database"
 	"github.com/openobservatory/gooni/internal/legacy"
+	"github.com/openobservatory/gooni/utils"
 	"github.com/pkg/errors"
 )
 
@@ -35,13 +36,37 @@ func Onboarding(c *Config) error {
 
 // Context for OONI Probe
 type Context struct {
-	Config *Config
-	DB     *sqlx.DB
+	Config   *Config
+	DB       *sqlx.DB
+	Location *utils.LocationInfo
 
-	Home       string
-	TempDir    string
+	Home    string
+	TempDir string
+
 	dbPath     string
 	configPath string
+}
+
+// MaybeLocationLookup will lookup the location of the user unless it's already cached
+func (c *Context) MaybeLocationLookup() error {
+	if c.Location == nil {
+		return c.LocationLookup()
+	}
+	return nil
+}
+
+// LocationLookup lookup the location of the user via geoip
+func (c *Context) LocationLookup() error {
+	var err error
+
+	dbPath := filepath.Join(c.Home, "geoip")
+
+	c.Location, err = utils.GeoIPLookup(dbPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Init the OONI manager
@@ -52,7 +77,7 @@ func (c *Context) Init() error {
 		return errors.Wrap(err, "migrating home")
 	}
 
-	if err = CreateHomeDirs(c.Home); err != nil {
+	if err = MaybeInitializeHome(c.Home); err != nil {
 		return err
 	}
 
@@ -187,14 +212,26 @@ func ParseConfig(b []byte) (*Config, error) {
 	return c, nil
 }
 
-// CreateHomeDirs creates the OONI home subdirectories
-func CreateHomeDirs(home string) error {
+// MaybeInitializeHome does the setup for a new OONI Home
+func MaybeInitializeHome(home string) error {
+	firstRun := false
 	requiredDirs := []string{"db", "msmts", "geoip"}
 	for _, d := range requiredDirs {
 		if _, e := os.Stat(filepath.Join(home, d)); e != nil {
+			firstRun = true
 			if err := os.MkdirAll(filepath.Join(home, d), 0700); err != nil {
 				return err
 			}
+		}
+	}
+	if firstRun == true {
+		log.Info("This is the first time you are running OONI Probe. Downloading some files.")
+		geoipDir := utils.GeoIPDir(home)
+		if err := utils.DownloadGeoIPDatabaseFiles(geoipDir); err != nil {
+			return err
+		}
+		if err := utils.DownloadLegacyGeoIPDatabaseFiles(geoipDir); err != nil {
+			return err
 		}
 	}
 

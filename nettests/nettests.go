@@ -3,6 +3,7 @@ package nettests
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	"github.com/apex/log"
 	"github.com/measurement-kit/go-measurement-kit"
@@ -11,6 +12,7 @@ import (
 	"github.com/openobservatory/gooni/internal/colors"
 	"github.com/openobservatory/gooni/internal/database"
 	"github.com/openobservatory/gooni/internal/output"
+	"github.com/openobservatory/gooni/utils"
 )
 
 // Nettest interface. Every Nettest should implement this.
@@ -43,6 +45,8 @@ type Controller struct {
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
+	c.Ctx.LocationLookup()
+
 	c.msmts = make(map[int64]*database.Measurement)
 
 	msmtTemplate := database.Measurement{
@@ -57,16 +61,21 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 	log.Debugf("OutputPath: %s", c.msmtPath)
 	nt.Options = mk.NettestOptions{
-		IncludeIP:        c.Ctx.Config.Sharing.IncludeIP,
-		IncludeASN:       c.Ctx.Config.Sharing.IncludeASN,
-		IncludeCountry:   c.Ctx.Config.Advanced.IncludeCountry,
+		IncludeIP:      c.Ctx.Config.Sharing.IncludeIP,
+		IncludeASN:     c.Ctx.Config.Sharing.IncludeASN,
+		IncludeCountry: c.Ctx.Config.Advanced.IncludeCountry,
+
+		ProbeCC:  c.Ctx.Location.CountryCode,
+		ProbeASN: fmt.Sprintf("AS%d", c.Ctx.Location.ASN),
+		ProbeIP:  c.Ctx.Location.IP,
+
 		DisableCollector: false,
 		SoftwareName:     "ooniprobe",
 		SoftwareVersion:  version.Version,
 
 		// XXX
-		GeoIPCountryPath: "",
-		GeoIPASNPath:     "",
+		GeoIPCountryPath: filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIP.dat"),
+		GeoIPASNPath:     filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIPASNum.dat"),
 		OutputPath:       c.msmtPath,
 		CaBundlePath:     "/etc/ssl/cert.pem",
 	}

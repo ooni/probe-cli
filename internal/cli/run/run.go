@@ -33,6 +33,12 @@ func init() {
 		}
 		log.Debugf("Running test group %s", group.Label)
 
+		err = ctx.MaybeLocationLookup()
+		if err != nil {
+			log.WithError(err).Error("Failed to lookup the location of the probe")
+			return err
+		}
+
 		result, err := database.CreateResult(ctx.DB, ctx.Home, database.Result{
 			Name:      *nettestGroup,
 			StartTime: time.Now().UTC(),

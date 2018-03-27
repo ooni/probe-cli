@@ -15,7 +15,7 @@ import (
 type ResultSummaryFunc func(SummaryMap) (string, error)
 
 // SummaryMap contains a mapping from test name to serialized summary for it
-type SummaryMap map[string]string
+type SummaryMap map[string][]string
 
 // UpdateOne will run the specified update query and check that it only affected one row
 func UpdateOne(db *sqlx.DB, query string, arg interface{}) error {
@@ -129,13 +129,19 @@ func (m *Measurement) WriteSummary(db *sqlx.DB, summary string) error {
 
 // AddToResult adds a measurement to a result
 func (m *Measurement) AddToResult(db *sqlx.DB, result *Result) error {
+	var err error
+
 	m.ResultID = result.ID
 	finalPath := filepath.Join(result.MeasurementDir,
 		filepath.Base(m.ReportFilePath))
 
-	err := os.Rename(m.ReportFilePath, finalPath)
-	if err != nil {
-		return errors.Wrap(err, "moving report file")
+	// If the finalPath already exists, it means it has already been moved there.
+	// This happens in multi input reports
+	if _, err = os.Stat(finalPath); os.IsNotExist(err) {
+		err = os.Rename(m.ReportFilePath, finalPath)
+		if err != nil {
+			return errors.Wrap(err, "moving report file")
+		}
 	}
 	m.ReportFilePath = finalPath
 
@@ -204,7 +210,12 @@ func MakeSummaryMap(db *sqlx.DB, r *Result) (SummaryMap, error) {
 		return nil, errors.Wrap(err, "failed to get measurements")
 	}
 	for _, msmt := range msmts {
-		summaryMap[msmt.Name] = msmt.Summary
+		val, ok := summaryMap[msmt.Name]
+		if ok {
+			summaryMap[msmt.Name] = append(val, msmt.Summary)
+		} else {
+			summaryMap[msmt.Name] = []string{msmt.Summary}
+		}
 	}
 	return summaryMap, nil
 }

@@ -21,14 +21,38 @@ type TelegramSummary struct {
 	HTTPBlocking bool
 	TCPBlocking  bool
 	WebBlocking  bool
+	Blocked      bool
 }
 
 // Summary generates a summary for a test run
 func (h Telegram) Summary(tk map[string]interface{}) interface{} {
+	var (
+		tcpBlocking  bool
+		httpBlocking bool
+		webBlocking  bool
+	)
+
+	if tk["telegram_tcp_blocking"] == nil {
+		tcpBlocking = false
+	} else {
+		tcpBlocking = tk["telegram_tcp_blocking"].(bool)
+	}
+	if tk["telegram_http_blocking"] == nil {
+		httpBlocking = false
+	} else {
+		httpBlocking = tk["telegram_http_blocking"].(bool)
+	}
+	if tk["telegram_web_status"] == nil {
+		webBlocking = false
+	} else {
+		webBlocking = tk["telegram_web_status"].(string) == "blocked"
+	}
+
 	return TelegramSummary{
-		TCPBlocking:  tk["telegram_tcp_blocking"].(bool) == true,
-		HTTPBlocking: tk["telegram_http_blocking"].(bool) == true,
-		WebBlocking:  tk["telegram_web_status"].(string) == "blocked",
+		TCPBlocking:  tcpBlocking,
+		HTTPBlocking: httpBlocking,
+		WebBlocking:  webBlocking,
+		Blocked:      webBlocking || httpBlocking || tcpBlocking,
 	}
 }
 
