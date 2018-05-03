@@ -15,7 +15,7 @@ var Cmd = kingpin.New("ooni", "")
 // Command is syntax sugar for defining sub-commands
 var Command = Cmd.Command
 
-// Init should be called by all subcommand that care to have a ooni.OONI instance
+// Init should be called by all subcommand that care to have a ooni.Context instance
 var Init func() (*ooni.Context, error)
 
 func init() {

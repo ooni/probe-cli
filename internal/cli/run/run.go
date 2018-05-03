@@ -40,8 +40,11 @@ func init() {
 		}
 
 		result, err := database.CreateResult(ctx.DB, ctx.Home, database.Result{
-			Name:      *nettestGroup,
-			StartTime: time.Now().UTC(),
+			Name:        *nettestGroup,
+			StartTime:   time.Now().UTC(),
+			Country:     ctx.Location.CountryCode,
+			NetworkName: ctx.Location.NetworkName,
+			ASN:         fmt.Sprintf("%d", ctx.Location.ASN),
 		})
 		if err != nil {
 			log.Errorf("DB result error: %s", err)

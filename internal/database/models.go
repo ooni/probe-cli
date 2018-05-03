@@ -190,12 +190,74 @@ type Result struct {
 	ID             int64     `db:"id"`
 	Name           string    `db:"name"`
 	StartTime      time.Time `db:"start_time"`
+	Country        string    `db:"country"`
+	ASN            string    `db:"asn"`
+	NetworkName    string    `db:"network_name"`
 	Runtime        float64   `db:"runtime"` // Runtime is expressed in fractional seconds
 	Summary        string    `db:"summary"` // XXX this should be JSON
 	Done           bool      `db:"done"`
 	DataUsageUp    int64     `db:"data_usage_up"`
 	DataUsageDown  int64     `db:"data_usage_down"`
 	MeasurementDir string    `db:"measurement_dir"`
+}
+
+// ListResults return the list of results
+func ListResults(db *sqlx.DB) ([]*Result, []*Result, error) {
+	doneResults := []*Result{}
+	incompleteResults := []*Result{}
+
+	rows, err := db.Query(`SELECT id, name,
+		start_time, runtime,
+		network_name, country,
+		asn,
+		summary, done
+		FROM results
+		WHERE done = 1
+		ORDER BY start_time;`)
+	if err != nil {
+		return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
+	}
+
+	for rows.Next() {
+		result := Result{}
+		err = rows.Scan(&result.ID, &result.Name,
+			&result.StartTime, &result.Runtime,
+			&result.NetworkName, &result.Country,
+			&result.ASN,
+			&result.Summary, &result.Done,
+			//&result.DataUsageUp, &result.DataUsageDown)
+		)
+		if err != nil {
+			log.WithError(err).Error("failed to fetch a row")
+			continue
+		}
+		doneResults = append(doneResults, &result)
+	}
+
+	rows, err = db.Query(`SELECT
+		id, name,
+		start_time,
+		network_name, country,
+		asn
+		FROM results
+		WHERE done != 1
+		ORDER BY start_time;`)
+	if err != nil {
+		return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
+	}
+
+	for rows.Next() {
+		result := Result{Done: false}
+		err = rows.Scan(&result.ID, &result.Name, &result.StartTime,
+			&result.NetworkName, &result.Country,
+			&result.ASN)
+		if err != nil {
+			log.WithError(err).Error("failed to fetch a row")
+			continue
+		}
+		incompleteResults = append(incompleteResults, &result)
+	}
+	return doneResults, incompleteResults, nil
 }
 
 // MakeSummaryMap return a mapping of test names to summaries for the given
@@ -258,8 +320,8 @@ func CreateResult(db *sqlx.DB, homePath string, r Result) (*Result, error) {
 	}
 	r.MeasurementDir = p
 	res, err := db.NamedExec(`INSERT INTO results
-		(name, start_time)
-		VALUES (:name,:start_time)`,
+		(name, start_time, country, network_name, asn)
+		VALUES (:name,:start_time,:country,:network_name,:asn)`,
 		r)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating result")

@@ -16,6 +16,9 @@ CREATE TABLE `results` (
     `runtime` REAL,
     `summary` JSON,
     `done` TINYINT(1),
+    `country` VARCHAR(2),
+    `asn` VARCHAR(16),
+    `network_name` VARCHAR(255),
     `data_usage_up` INTEGER,
     `data_usage_down` INTEGER
 );

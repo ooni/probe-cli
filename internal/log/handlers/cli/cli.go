@@ -68,6 +68,8 @@ func (h *Handler) TypedLog(t string, e *log.Entry) error {
 		fmt.Fprintf(h.Writer, "%.1f%% [%s]: %s", e.Fields.Get("percentage").(float64)*100, e.Fields.Get("key"), e.Message)
 		fmt.Fprintln(h.Writer)
 		return nil
+	case "result_item":
+		return logResultItem(h.Writer, e.Fields)
 	default:
 		return h.DefaultLog(e)
 	}
