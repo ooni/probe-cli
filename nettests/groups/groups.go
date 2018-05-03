@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 
 	"github.com/apex/log"
-	"github.com/openobservatory/gooni/internal/database"
-	"github.com/openobservatory/gooni/nettests"
-	"github.com/openobservatory/gooni/nettests/im"
-	"github.com/openobservatory/gooni/nettests/middlebox"
-	"github.com/openobservatory/gooni/nettests/performance"
-	"github.com/openobservatory/gooni/nettests/websites"
+	"github.com/ooni/probe-cli/internal/database"
+	"github.com/ooni/probe-cli/nettests"
+	"github.com/ooni/probe-cli/nettests/im"
+	"github.com/ooni/probe-cli/nettests/middlebox"
+	"github.com/ooni/probe-cli/nettests/performance"
+	"github.com/ooni/probe-cli/nettests/websites"
 )
 
 // NettestGroup base structure

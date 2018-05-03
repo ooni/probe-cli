@@ -2,7 +2,7 @@ package im
 
 import (
 	"github.com/measurement-kit/go-measurement-kit"
-	"github.com/openobservatory/gooni/nettests"
+	"github.com/ooni/probe-cli/nettests"
 )
 
 // WhatsApp test implementation

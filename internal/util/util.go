@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/openobservatory/gooni/internal/colors"
+	"github.com/ooni/probe-cli/internal/colors"
 )
 
 // Log outputs a log message.

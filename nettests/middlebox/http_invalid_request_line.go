@@ -2,7 +2,7 @@ package middlebox
 
 import (
 	"github.com/measurement-kit/go-measurement-kit"
-	"github.com/openobservatory/gooni/nettests"
+	"github.com/ooni/probe-cli/nettests"
 )
 
 // HTTPInvalidRequestLine test implementation

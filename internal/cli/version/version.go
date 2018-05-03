@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/openobservatory/gooni/internal/cli/root"
+	"github.com/ooni/probe-cli/internal/cli/root"
 )
 
 const Version = "3.0.0-dev.0"

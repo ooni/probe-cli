@@ -7,12 +7,12 @@ import (
 
 	"github.com/apex/log"
 	"github.com/measurement-kit/go-measurement-kit"
-	ooni "github.com/openobservatory/gooni"
-	"github.com/openobservatory/gooni/internal/cli/version"
-	"github.com/openobservatory/gooni/internal/colors"
-	"github.com/openobservatory/gooni/internal/database"
-	"github.com/openobservatory/gooni/internal/output"
-	"github.com/openobservatory/gooni/utils"
+	ooni "github.com/ooni/probe-cli"
+	"github.com/ooni/probe-cli/internal/cli/version"
+	"github.com/ooni/probe-cli/internal/colors"
+	"github.com/ooni/probe-cli/internal/database"
+	"github.com/ooni/probe-cli/internal/output"
+	"github.com/ooni/probe-cli/utils"
 )
 
 // Nettest interface. Every Nettest should implement this.

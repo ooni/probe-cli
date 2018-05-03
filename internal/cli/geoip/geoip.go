@@ -3,8 +3,8 @@ package geoip
 import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
-	"github.com/openobservatory/gooni/internal/cli/root"
-	"github.com/openobservatory/gooni/utils"
+	"github.com/ooni/probe-cli/internal/cli/root"
+	"github.com/ooni/probe-cli/utils"
 )
 
 func init() {

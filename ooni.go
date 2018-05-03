@@ -10,10 +10,10 @@ import (
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/openobservatory/gooni/config"
-	"github.com/openobservatory/gooni/internal/database"
-	"github.com/openobservatory/gooni/internal/legacy"
-	"github.com/openobservatory/gooni/utils"
+	"github.com/ooni/probe-cli/config"
+	"github.com/ooni/probe-cli/internal/database"
+	"github.com/ooni/probe-cli/internal/legacy"
+	"github.com/ooni/probe-cli/utils"
 	"github.com/pkg/errors"
 )
 

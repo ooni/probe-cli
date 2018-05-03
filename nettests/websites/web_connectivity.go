@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/measurement-kit/go-measurement-kit"
-	"github.com/openobservatory/gooni/nettests"
+	"github.com/ooni/probe-cli/nettests"
 	"github.com/pkg/errors"
 )
 

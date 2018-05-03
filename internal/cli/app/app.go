@@ -3,8 +3,8 @@ package app
 import (
 	"os"
 
-	"github.com/openobservatory/gooni/internal/cli/root"
-	"github.com/openobservatory/gooni/internal/cli/version"
+	"github.com/ooni/probe-cli/internal/cli/root"
+	"github.com/ooni/probe-cli/internal/cli/version"
 )
 
 // Run the app. This is the main app entry point

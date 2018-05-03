@@ -4,16 +4,16 @@ import (
 	// commands
 	"github.com/apex/log"
 
-	_ "github.com/openobservatory/gooni/internal/cli/geoip"
-	_ "github.com/openobservatory/gooni/internal/cli/info"
-	_ "github.com/openobservatory/gooni/internal/cli/list"
-	_ "github.com/openobservatory/gooni/internal/cli/nettest"
-	_ "github.com/openobservatory/gooni/internal/cli/run"
-	_ "github.com/openobservatory/gooni/internal/cli/show"
-	_ "github.com/openobservatory/gooni/internal/cli/upload"
-	_ "github.com/openobservatory/gooni/internal/cli/version"
+	_ "github.com/ooni/probe-cli/internal/cli/geoip"
+	_ "github.com/ooni/probe-cli/internal/cli/info"
+	_ "github.com/ooni/probe-cli/internal/cli/list"
+	_ "github.com/ooni/probe-cli/internal/cli/nettest"
+	_ "github.com/ooni/probe-cli/internal/cli/run"
+	_ "github.com/ooni/probe-cli/internal/cli/show"
+	_ "github.com/ooni/probe-cli/internal/cli/upload"
+	_ "github.com/ooni/probe-cli/internal/cli/version"
 
-	"github.com/openobservatory/gooni/internal/cli/app"
+	"github.com/ooni/probe-cli/internal/cli/app"
 )
 
 func main() {

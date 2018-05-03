@@ -8,10 +8,10 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
-	"github.com/openobservatory/gooni/internal/cli/root"
-	"github.com/openobservatory/gooni/internal/database"
-	"github.com/openobservatory/gooni/nettests"
-	"github.com/openobservatory/gooni/nettests/groups"
+	"github.com/ooni/probe-cli/internal/cli/root"
+	"github.com/ooni/probe-cli/internal/database"
+	"github.com/ooni/probe-cli/nettests"
+	"github.com/ooni/probe-cli/nettests/groups"
 )
 
 func init() {

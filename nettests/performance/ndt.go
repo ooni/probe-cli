@@ -2,7 +2,7 @@ package performance
 
 import (
 	"github.com/measurement-kit/go-measurement-kit"
-	"github.com/openobservatory/gooni/nettests"
+	"github.com/ooni/probe-cli/nettests"
 )
 
 // NDT test implementation

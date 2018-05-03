@@ -3,7 +3,7 @@ package list
 import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
-	"github.com/openobservatory/gooni/internal/cli/root"
+	"github.com/ooni/probe-cli/internal/cli/root"
 )
 
 func init() {

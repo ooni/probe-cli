@@ -3,9 +3,9 @@ package root
 import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
-	ooni "github.com/openobservatory/gooni"
-	"github.com/openobservatory/gooni/internal/log/handlers/batch"
-	"github.com/openobservatory/gooni/internal/log/handlers/cli"
+	ooni "github.com/ooni/probe-cli"
+	"github.com/ooni/probe-cli/internal/log/handlers/batch"
+	"github.com/ooni/probe-cli/internal/log/handlers/cli"
 	"github.com/prometheus/common/version"
 )
 

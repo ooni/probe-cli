@@ -4,7 +4,7 @@ import (
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3" // this is needed to load the sqlite3 driver
-	"github.com/openobservatory/gooni/internal/bindata"
+	"github.com/ooni/probe-cli/internal/bindata"
 	migrate "github.com/rubenv/sql-migrate"
 )
 

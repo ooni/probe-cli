@@ -7,7 +7,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
-	"github.com/openobservatory/gooni/utils"
+	"github.com/ooni/probe-cli/utils"
 	"github.com/pkg/errors"
 )
 
