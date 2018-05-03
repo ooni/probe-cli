@@ -36,11 +36,6 @@ var legacyGeoipFiles = map[string]string{
 	"GeoIP.dat":      "http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz",
 }
 
-// GeoIPDir returns the geoip data dir for the given OONI Home
-func GeoIPDir(home string) string {
-	return filepath.Join(home, "geoip")
-}
-
 // Download the file to a temporary location
 func downloadToTemp(url string) (string, error) {
 	out, err := ioutil.TempFile(os.TempDir(), "maxmind")
