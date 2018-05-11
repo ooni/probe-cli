@@ -3,6 +3,7 @@ package nettests
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/apex/log"
@@ -42,6 +43,14 @@ type Controller struct {
 	msmtPath string // XXX maybe we can drop this and just use a temporary file
 }
 
+func getCaBundlePath() {
+	path := os.Getenv("SSL_CERT_FILE")
+	if path != "" {
+		return path
+	}
+	return "/etc/ssl/cert.pem"
+}
+
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
@@ -77,7 +86,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		GeoIPCountryPath: filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIP.dat"),
 		GeoIPASNPath:     filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIPASNum.dat"),
 		OutputPath:       c.msmtPath,
-		CaBundlePath:     "/etc/ssl/cert.pem",
+		CaBundlePath:     getCaBundlePath(),
 	}
 
 	nt.On("log", func(e mk.Event) {
