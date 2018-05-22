@@ -2,6 +2,7 @@ package groups
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/database"
@@ -44,6 +45,16 @@ type WebsitesSummary struct {
 	Blocked uint
 }
 
+func checkRequiredKeys(rk []string, m database.SummaryMap) error {
+	for _, key := range rk {
+		if _, ok := m[key]; ok {
+			continue
+		}
+		return fmt.Errorf("missing SummaryMap key '%s'", key)
+	}
+	return nil
+}
+
 // NettestGroups that can be run by the user
 var NettestGroups = map[string]NettestGroup{
 	"websites": NettestGroup{
@@ -52,6 +63,11 @@ var NettestGroups = map[string]NettestGroup{
 			websites.WebConnectivity{},
 		},
 		Summary: func(m database.SummaryMap) (string, error) {
+			if err := checkRequiredKeys([]string{"WebConnectivity"}, m); err != nil {
+				log.WithError(err).Error("missing keys")
+				return "", err
+			}
+
 			// XXX to generate this I need to create the summary map as a list
 			var summary WebsitesSummary
 			summary.Tested = 0
@@ -83,6 +99,11 @@ var NettestGroups = map[string]NettestGroup{
 			performance.NDT{},
 		},
 		Summary: func(m database.SummaryMap) (string, error) {
+			if err := checkRequiredKeys([]string{"Dash", "Ndt"}, m); err != nil {
+				log.WithError(err).Error("missing keys")
+				return "", err
+			}
+
 			var (
 				err         error
 				ndtSummary  performance.NDTSummary
@@ -117,6 +138,11 @@ var NettestGroups = map[string]NettestGroup{
 			middlebox.HTTPHeaderFieldManipulation{},
 		},
 		Summary: func(m database.SummaryMap) (string, error) {
+			if err := checkRequiredKeys([]string{"WebConnectivity"}, m); err != nil {
+				log.WithError(err).Error("missing keys")
+				return "", err
+			}
+
 			var (
 				err         error
 				hhfmSummary middlebox.HTTPHeaderFieldManipulationSummary
@@ -149,6 +175,10 @@ var NettestGroups = map[string]NettestGroup{
 			im.WhatsApp{},
 		},
 		Summary: func(m database.SummaryMap) (string, error) {
+			if err := checkRequiredKeys([]string{"Whatsapp", "Telegram", "FacebookMessenger"}, m); err != nil {
+				log.WithError(err).Error("missing keys")
+				return "", err
+			}
 			var (
 				err       error
 				waSummary im.WhatsAppSummary
