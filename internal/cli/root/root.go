@@ -6,6 +6,7 @@ import (
 	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/log/handlers/batch"
 	"github.com/ooni/probe-cli/internal/log/handlers/cli"
+	"github.com/ooni/probe-cli/utils"
 	"github.com/prometheus/common/version"
 )
 
@@ -38,7 +39,7 @@ func init() {
 		Init = func() (*ooni.Context, error) {
 			var err error
 
-			homePath, err := ooni.GetOONIHome()
+			homePath, err := utils.GetOONIHome()
 			if err != nil {
 				return nil, err
 			}

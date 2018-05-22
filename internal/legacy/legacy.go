@@ -5,13 +5,13 @@ import (
 	"os"
 	"path/filepath"
 
-	homedir "github.com/mitchellh/go-homedir"
+	"github.com/ooni/probe-cli/utils/homedir"
 	"github.com/pkg/errors"
 	"gopkg.in/AlecAivazis/survey.v1"
 )
 
 // HomePath returns the path to the OONI Home
-func HomePath() (string, error) {
+func homePath() (string, error) {
 	home, err := homedir.Dir()
 	if err != nil {
 		return "", err
@@ -20,8 +20,11 @@ func HomePath() (string, error) {
 }
 
 // HomeExists returns true if a legacy home exists
-func HomeExists() (bool, error) {
-	home, err := HomePath()
+func homeExists() (bool, error) {
+	home, err := homePath()
+	if err == homedir.ErrNoHomeDir {
+		return false, nil
+	}
 	if err != nil {
 		return false, err
 	}
@@ -33,7 +36,7 @@ func HomeExists() (bool, error) {
 }
 
 // BackupHome the legacy home directory
-func BackupHome() error {
+func backupHome() error {
 	home, err := homedir.Dir()
 	if err != nil {
 		return errors.Wrap(err, "backing up home")
@@ -48,14 +51,14 @@ func BackupHome() error {
 
 // MaybeMigrateHome prompts the user if we should backup the legacy home
 func MaybeMigrateHome() error {
-	exists, err := HomeExists()
+	exists, err := homeExists()
 	if err != nil {
 		return err
 	}
 	if !exists {
 		return nil
 	}
-	home, err := HomePath()
+	home, err := homePath()
 	if err != nil {
 		return err
 	}
@@ -72,7 +75,7 @@ func MaybeMigrateHome() error {
 		}
 	} else {
 		logf("Backing up ~/.ooni to ~/.ooni-legacy")
-		if err := BackupHome(); err != nil {
+		if err := backupHome(); err != nil {
 			return err
 		}
 	}

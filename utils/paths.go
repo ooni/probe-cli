@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/ooni/probe-cli/utils/homedir"
 )
 
 // RequiredDirs returns the required ooni home directories
@@ -45,4 +47,19 @@ func MakeResultsDir(home string, name string, ts time.Time) (string, error) {
 		return "", err
 	}
 	return p, nil
+}
+
+// GetOONIHome returns the path to the OONI Home
+func GetOONIHome() (string, error) {
+	if ooniHome := os.Getenv("OONI_HOME"); ooniHome != "" {
+		return ooniHome, nil
+	}
+
+	home, err := homedir.Dir()
+	if err != nil {
+		return "", err
+	}
+
+	path := filepath.Join(home, ".ooni")
+	return path, nil
 }

@@ -43,7 +43,7 @@ type Controller struct {
 	msmtPath string // XXX maybe we can drop this and just use a temporary file
 }
 
-func getCaBundlePath() {
+func getCaBundlePath() string {
 	path := os.Getenv("SSL_CERT_FILE")
 	if path != "" {
 		return path
