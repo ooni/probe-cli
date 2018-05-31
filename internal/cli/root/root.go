@@ -6,6 +6,7 @@ import (
 	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/log/handlers/batch"
 	"github.com/ooni/probe-cli/internal/log/handlers/cli"
+	"github.com/ooni/probe-cli/utils"
 	"github.com/prometheus/common/version"
 )
 
@@ -15,7 +16,7 @@ var Cmd = kingpin.New("ooni", "")
 // Command is syntax sugar for defining sub-commands
 var Command = Cmd.Command
 
-// Init should be called by all subcommand that care to have a ooni.OONI instance
+// Init should be called by all subcommand that care to have a ooni.Context instance
 var Init func() (*ooni.Context, error)
 
 func init() {
@@ -38,7 +39,7 @@ func init() {
 		Init = func() (*ooni.Context, error) {
 			var err error
 
-			homePath, err := ooni.GetOONIHome()
+			homePath, err := utils.GetOONIHome()
 			if err != nil {
 				return nil, err
 			}

@@ -3,10 +3,12 @@ package nettests
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/apex/log"
 	"github.com/measurement-kit/go-measurement-kit"
+	homedir "github.com/mitchellh/go-homedir"
 	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/cli/version"
 	"github.com/ooni/probe-cli/internal/colors"
@@ -42,6 +44,14 @@ type Controller struct {
 	msmtPath string // XXX maybe we can drop this and just use a temporary file
 }
 
+func getCaBundlePath() string {
+	path := os.Getenv("SSL_CERT_FILE")
+	if path != "" {
+		return path
+	}
+	return "/etc/ssl/cert.pem"
+}
+
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
@@ -59,26 +69,67 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		ReportFilePath: c.msmtPath,
 	}
 
-	log.Debugf("OutputPath: %s", c.msmtPath)
+	// This is to workaround homedirs having UTF-8 characters in them.
+	// See: https://github.com/measurement-kit/measurement-kit/issues/1635
+	geoIPCountryPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIP.dat")
+	geoIPASNPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIPASNum.dat")
+	caBundlePath := getCaBundlePath()
+	msmtPath := c.msmtPath
+
+	userHome, err := homedir.Dir()
+	if err != nil {
+		log.WithError(err).Error("failed to figure out the homedir")
+		return err
+	}
+
+	relPath, err := filepath.Rel(userHome, caBundlePath)
+	if err != nil {
+		log.WithError(err).Error("caBundlePath is not relative to the users home")
+	} else {
+		caBundlePath = relPath
+	}
+	relPath, err = filepath.Rel(userHome, geoIPASNPath)
+	if err != nil {
+		log.WithError(err).Error("geoIPASNPath is not relative to the users home")
+	} else {
+		geoIPASNPath = relPath
+	}
+	relPath, err = filepath.Rel(userHome, geoIPCountryPath)
+	if err != nil {
+		log.WithError(err).Error("geoIPCountryPath is not relative to the users home")
+	} else {
+		geoIPCountryPath = relPath
+	}
+
+	log.Debugf("Chdir to: %s", userHome)
+	if err := os.Chdir(userHome); err != nil {
+		log.WithError(err).Errorf("failed to chdir to %s", userHome)
+		return err
+	}
+
+	log.Debugf("OutputPath: %s", msmtPath)
 	nt.Options = mk.NettestOptions{
 		IncludeIP:      c.Ctx.Config.Sharing.IncludeIP,
 		IncludeASN:     c.Ctx.Config.Sharing.IncludeASN,
 		IncludeCountry: c.Ctx.Config.Advanced.IncludeCountry,
+		LogLevel:       "INFO",
 
 		ProbeCC:  c.Ctx.Location.CountryCode,
 		ProbeASN: fmt.Sprintf("AS%d", c.Ctx.Location.ASN),
 		ProbeIP:  c.Ctx.Location.IP,
 
-		DisableCollector: false,
-		SoftwareName:     "ooniprobe",
-		SoftwareVersion:  version.Version,
+		DisableReportFile: false,
+		DisableCollector:  false,
+		SoftwareName:      "ooniprobe",
+		SoftwareVersion:   version.Version,
 
-		// XXX
-		GeoIPCountryPath: filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIP.dat"),
-		GeoIPASNPath:     filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIPASNum.dat"),
-		OutputPath:       c.msmtPath,
-		CaBundlePath:     "/etc/ssl/cert.pem",
+		OutputPath:       msmtPath,
+		GeoIPCountryPath: geoIPCountryPath,
+		GeoIPASNPath:     geoIPASNPath,
+		CaBundlePath:     caBundlePath,
 	}
+	log.Debugf("GeoIPASNPath: %s", nt.Options.GeoIPASNPath)
+	log.Debugf("GeoIPCountryPath: %s", nt.Options.GeoIPCountryPath)
 
 	nt.On("log", func(e mk.Event) {
 		level := e.Value.LogLevel
@@ -117,7 +168,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		msmtTemplate.CountryCode = e.Value.ProbeCC
 	})
 
-	nt.On("status.measurement_started", func(e mk.Event) {
+	nt.On("status.measurement_start", func(e mk.Event) {
 		log.Debugf(colors.Red(e.Key))
 
 		idx := e.Value.Idx
@@ -151,7 +202,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		c.msmts[e.Value.Idx].UploadFailed(c.Ctx.DB, failure)
 	})
 
-	nt.On("status.measurement_uploaded", func(e mk.Event) {
+	nt.On("status.measurement_submission", func(e mk.Event) {
 		log.Debugf(colors.Red(e.Key))
 
 		if err := c.msmts[e.Value.Idx].UploadSucceeded(c.Ctx.DB); err != nil {

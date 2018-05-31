@@ -9,7 +9,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/ooni/probe-cli/config"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/legacy"
@@ -124,17 +123,6 @@ func NewContext(configPath string, homePath string) *Context {
 	}
 }
 
-// GetOONIHome returns the path to the OONI Home
-func GetOONIHome() (string, error) {
-	home, err := homedir.Dir()
-	if err != nil {
-		return "", err
-	}
-
-	path := filepath.Join(home, ".ooni")
-	return path, nil
-}
-
 // Config for the OONI Probe installation
 type Config struct {
 	// Private settings
@@ -179,7 +167,7 @@ func (c *Config) Unlock() {
 
 // Default config settings
 func (c *Config) Default() error {
-	home, err := GetOONIHome()
+	home, err := utils.GetOONIHome()
 	if err != nil {
 		return err
 	}

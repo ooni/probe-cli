@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/ooni/probe-cli/utils/homedir"
 )
 
 // RequiredDirs returns the required ooni home directories
@@ -28,10 +30,13 @@ func DBDir(home string, name string) string {
 	return filepath.Join(home, "db", fmt.Sprintf("%s.sqlite3", name))
 }
 
+// ResultTimestamp is a windows friendly timestamp
+const ResultTimestamp = "2006-01-02T150405.999999999Z0700"
+
 // MakeResultsDir creates and returns a directory for the result
 func MakeResultsDir(home string, name string, ts time.Time) (string, error) {
 	p := filepath.Join(home, "msmts",
-		fmt.Sprintf("%s-%s", name, ts.Format(time.RFC3339Nano)))
+		fmt.Sprintf("%s-%s", name, ts.Format(ResultTimestamp)))
 
 	// If the path already exists, this is a problem. It should not clash, because
 	// we are using nanosecond precision for the starttime.
@@ -43,4 +48,19 @@ func MakeResultsDir(home string, name string, ts time.Time) (string, error) {
 		return "", err
 	}
 	return p, nil
+}
+
+// GetOONIHome returns the path to the OONI Home
+func GetOONIHome() (string, error) {
+	if ooniHome := os.Getenv("OONI_HOME"); ooniHome != "" {
+		return ooniHome, nil
+	}
+
+	home, err := homedir.Dir()
+	if err != nil {
+		return "", err
+	}
+
+	path := filepath.Join(home, ".ooni")
+	return path, nil
 }
