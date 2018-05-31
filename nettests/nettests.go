@@ -8,6 +8,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/measurement-kit/go-measurement-kit"
+	homedir "github.com/mitchellh/go-homedir"
 	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/cli/version"
 	"github.com/ooni/probe-cli/internal/colors"
@@ -68,11 +69,56 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		ReportFilePath: c.msmtPath,
 	}
 
-	log.Debugf("OutputPath: %s", c.msmtPath)
+	// This is to workaround homedirs having UTF-8 characters in them.
+	// See: https://github.com/measurement-kit/measurement-kit/issues/1635
+	geoIPCountryPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIP.dat")
+	geoIPASNPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIPASNum.dat")
+	caBundlePath := getCaBundlePath()
+	msmtPath := c.msmtPath
+
+	userHome, err := homedir.Dir()
+	if err != nil {
+		log.WithError(err).Error("failed to figure out the homedir")
+		return err
+	}
+
+	relPath, err := filepath.Rel(userHome, caBundlePath)
+	if err != nil {
+		log.WithError(err).Error("caBundlePath is not relative to the users home")
+	} else {
+		caBundlePath = relPath
+	}
+	relPath, err = filepath.Rel(userHome, geoIPASNPath)
+	if err != nil {
+		log.WithError(err).Error("geoIPASNPath is not relative to the users home")
+	} else {
+		geoIPASNPath = relPath
+	}
+	relPath, err = filepath.Rel(userHome, geoIPCountryPath)
+	if err != nil {
+		log.WithError(err).Error("geoIPCountryPath is not relative to the users home")
+	} else {
+		geoIPCountryPath = relPath
+	}
+	relPath, err = filepath.Rel(userHome, msmtPath)
+	if err != nil {
+		log.WithError(err).Error("msmtPath is not relative to the users home")
+	} else {
+		msmtPath = relPath
+	}
+
+	log.Debugf("Chdir to: %s", userHome)
+	if err := os.Chdir(userHome); err != nil {
+		log.WithError(err).Errorf("failed to chdir to %s", userHome)
+		return err
+	}
+
+	log.Debugf("OutputPath: %s", msmtPath)
 	nt.Options = mk.NettestOptions{
 		IncludeIP:      c.Ctx.Config.Sharing.IncludeIP,
 		IncludeASN:     c.Ctx.Config.Sharing.IncludeASN,
 		IncludeCountry: c.Ctx.Config.Advanced.IncludeCountry,
+		LogLevel:       "DEBUG",
 
 		ProbeCC:  c.Ctx.Location.CountryCode,
 		ProbeASN: fmt.Sprintf("AS%d", c.Ctx.Location.ASN),
@@ -82,12 +128,13 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		SoftwareName:     "ooniprobe",
 		SoftwareVersion:  version.Version,
 
-		// XXX
-		GeoIPCountryPath: filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIP.dat"),
-		GeoIPASNPath:     filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIPASNum.dat"),
-		OutputPath:       c.msmtPath,
-		CaBundlePath:     getCaBundlePath(),
+		OutputPath:       msmtPath,
+		GeoIPCountryPath: geoIPCountryPath,
+		GeoIPASNPath:     geoIPASNPath,
+		CaBundlePath:     caBundlePath,
 	}
+	log.Debugf("GeoIPASNPath: %s", nt.Options.GeoIPASNPath)
+	log.Debugf("GeoIPCountryPath: %s", nt.Options.GeoIPCountryPath)
 
 	nt.On("log", func(e mk.Event) {
 		level := e.Value.LogLevel
