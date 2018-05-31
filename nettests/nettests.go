@@ -100,12 +100,6 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	} else {
 		geoIPCountryPath = relPath
 	}
-	relPath, err = filepath.Rel(userHome, msmtPath)
-	if err != nil {
-		log.WithError(err).Error("msmtPath is not relative to the users home")
-	} else {
-		msmtPath = relPath
-	}
 
 	log.Debugf("Chdir to: %s", userHome)
 	if err := os.Chdir(userHome); err != nil {
@@ -118,15 +112,16 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		IncludeIP:      c.Ctx.Config.Sharing.IncludeIP,
 		IncludeASN:     c.Ctx.Config.Sharing.IncludeASN,
 		IncludeCountry: c.Ctx.Config.Advanced.IncludeCountry,
-		LogLevel:       "DEBUG",
+		LogLevel:       "INFO",
 
 		ProbeCC:  c.Ctx.Location.CountryCode,
 		ProbeASN: fmt.Sprintf("AS%d", c.Ctx.Location.ASN),
 		ProbeIP:  c.Ctx.Location.IP,
 
-		DisableCollector: false,
-		SoftwareName:     "ooniprobe",
-		SoftwareVersion:  version.Version,
+		DisableReportFile: false,
+		DisableCollector:  false,
+		SoftwareName:      "ooniprobe",
+		SoftwareVersion:   version.Version,
 
 		OutputPath:       msmtPath,
 		GeoIPCountryPath: geoIPCountryPath,
@@ -173,7 +168,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		msmtTemplate.CountryCode = e.Value.ProbeCC
 	})
 
-	nt.On("status.measurement_started", func(e mk.Event) {
+	nt.On("status.measurement_start", func(e mk.Event) {
 		log.Debugf(colors.Red(e.Key))
 
 		idx := e.Value.Idx
@@ -207,7 +202,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		c.msmts[e.Value.Idx].UploadFailed(c.Ctx.DB, failure)
 	})
 
-	nt.On("status.measurement_uploaded", func(e mk.Event) {
+	nt.On("status.measurement_submission", func(e mk.Event) {
 		log.Debugf(colors.Red(e.Key))
 
 		if err := c.msmts[e.Value.Idx].UploadSucceeded(c.Ctx.DB); err != nil {
