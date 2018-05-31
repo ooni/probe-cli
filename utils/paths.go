@@ -30,12 +30,13 @@ func DBDir(home string, name string) string {
 	return filepath.Join(home, "db", fmt.Sprintf("%s.sqlite3", name))
 }
 
-const resultdirFormat = "2006-01-02T150405.999999999Z0700"
+// ResultTimestamp is a windows friendly timestamp
+const ResultTimestamp = "2006-01-02T150405.999999999Z0700"
 
 // MakeResultsDir creates and returns a directory for the result
 func MakeResultsDir(home string, name string, ts time.Time) (string, error) {
 	p := filepath.Join(home, "msmts",
-		fmt.Sprintf("%s-%s", name, ts.Format(resultdirFormat)))
+		fmt.Sprintf("%s-%s", name, ts.Format(ResultTimestamp)))
 
 	// If the path already exists, this is a problem. It should not clash, because
 	// we are using nanosecond precision for the starttime.

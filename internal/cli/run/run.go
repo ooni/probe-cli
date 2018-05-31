@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
 	"github.com/ooni/probe-cli/nettests/groups"
+	"github.com/ooni/probe-cli/utils"
 )
 
 func init() {
@@ -55,7 +56,7 @@ func init() {
 			log.Debugf("Running test %T", nt)
 			msmtPath := filepath.Join(ctx.TempDir,
 				fmt.Sprintf("msmt-%T-%s.jsonl", nt,
-					time.Now().UTC().Format(time.RFC3339Nano)))
+					time.Now().UTC().Format(utils.ResultTimestamp)))
 
 			ctl := nettests.NewController(nt, ctx, result, msmtPath)
 			if err = nt.Run(ctl); err != nil {
