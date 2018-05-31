@@ -89,19 +89,13 @@
   branch = "master"
   name = "github.com/measurement-kit/go-measurement-kit"
   packages = ["."]
-  revision = "0869994e6afcfd1d72f53a4621ce48ed218c3f51"
+  revision = "4b936beabe952b25d4d550304c9a04f2277fb4ff"
 
 [[projects]]
   branch = "master"
   name = "github.com/mgutz/ansi"
   packages = ["."]
   revision = "9520e82c474b0a04dd04f8a40959027271bab992"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/mitchellh/go-homedir"
-  packages = ["."]
-  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
 
 [[projects]]
   name = "github.com/oschwald/geoip2-golang"
@@ -201,6 +195,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "46860a32f649dbb2e01b285c0d5581078ba4b28a21e21175d47ccb2725a9c9fb"
+  inputs-digest = "3a330031044d75d519fd996eae4ab4eabc740557fa32d99abb5cfa9fdd1e6ad6"
   solver-name = "gps-cdcl"
   solver-version = 1

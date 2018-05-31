@@ -43,10 +43,6 @@ required = ["github.com/shuLhan/go-bindata/go-bindata"]
   version = "0.8.0"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/mitchellh/go-homedir"
-
-[[constraint]]
   name = "gopkg.in/AlecAivazis/survey.v1"
   version = "1.4.1"
 
