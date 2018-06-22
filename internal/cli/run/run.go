@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/cli/root"
+	"github.com/ooni/probe-cli/internal/colors"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
 	"github.com/ooni/probe-cli/nettests/groups"
@@ -18,7 +20,14 @@ import (
 func init() {
 	cmd := root.Command("run", "Run a test group or OONI Run link")
 
-	nettestGroup := cmd.Arg("name", "the nettest group to run").Required().String()
+	var nettestGroupNames []string
+	for name := range groups.NettestGroups {
+		nettestGroupNames = append(nettestGroupNames, colors.Blue(name))
+	}
+
+	nettestGroup := cmd.Arg("name",
+		fmt.Sprintf("the nettest group to run. Supported tests are: %s",
+			strings.Join(nettestGroupNames, ", "))).Required().String()
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		log.Infof("Starting %s", *nettestGroup)
