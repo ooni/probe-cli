@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -60,6 +61,16 @@ func New(w io.Writer) *Handler {
 	}
 }
 
+func logSectionTitle(w io.Writer, f log.Fields) error {
+	colWidth := 24
+
+	title := f.Get("title").(string)
+	fmt.Fprintf(w, "┏"+strings.Repeat("━", colWidth+2)+"┓\n")
+	fmt.Fprintf(w, "┃ %s ┃\n", RightPad(title, colWidth))
+	fmt.Fprintf(w, "┗"+strings.Repeat("━", colWidth+2)+"┛\n")
+	return nil
+}
+
 // TypedLog is used for handling special "typed" logs to the CLI
 func (h *Handler) TypedLog(t string, e *log.Entry) error {
 	switch t {
@@ -70,6 +81,10 @@ func (h *Handler) TypedLog(t string, e *log.Entry) error {
 		return nil
 	case "result_item":
 		return logResultItem(h.Writer, e.Fields)
+	case "result_summary":
+		return logResultSummary(h.Writer, e.Fields)
+	case "section_title":
+		return logSectionTitle(h.Writer, e.Fields)
 	default:
 		return h.DefaultLog(e)
 	}

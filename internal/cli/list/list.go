@@ -23,24 +23,9 @@ func init() {
 			return err
 		}
 
-		log.Info("Results")
-		for idx, result := range doneResults {
-			output.ResultItem(output.ResultItemData{
-				ID:            result.ID,
-				Index:         idx,
-				TotalCount:    len(doneResults),
-				Name:          result.Name,
-				StartTime:     result.StartTime,
-				NetworkName:   result.NetworkName,
-				Country:       result.Country,
-				ASN:           result.ASN,
-				Summary:       result.Summary,
-				Done:          result.Done,
-				DataUsageUp:   result.DataUsageUp,
-				DataUsageDown: result.DataUsageDown,
-			})
+		if len(incompleteResults) > 0 {
+			output.SectionTitle("Incomplete results")
 		}
-		log.Info("Incomplete results")
 		for idx, result := range incompleteResults {
 			output.ResultItem(output.ResultItemData{
 				ID:            result.ID,
@@ -57,6 +42,34 @@ func init() {
 				DataUsageDown: result.DataUsageDown,
 			})
 		}
+
+		resultSummary := output.ResultSummaryData{}
+		netCount := make(map[string]int)
+		output.SectionTitle("Results")
+		for idx, result := range doneResults {
+			output.ResultItem(output.ResultItemData{
+				ID:            result.ID,
+				Index:         idx,
+				TotalCount:    len(doneResults),
+				Name:          result.Name,
+				StartTime:     result.StartTime,
+				NetworkName:   result.NetworkName,
+				Country:       result.Country,
+				ASN:           result.ASN,
+				Summary:       result.Summary,
+				Done:          result.Done,
+				DataUsageUp:   result.DataUsageUp,
+				DataUsageDown: result.DataUsageDown,
+			})
+			resultSummary.TotalTests++
+			netCount[result.ASN]++
+			resultSummary.TotalDataUsageUp += result.DataUsageUp
+			resultSummary.TotalDataUsageDown += result.DataUsageDown
+		}
+		resultSummary.TotalNetworks = int64(len(netCount))
+
+		output.ResultSummary(resultSummary)
+
 		return nil
 	})
 }

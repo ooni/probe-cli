@@ -51,3 +51,28 @@ func ResultItem(result ResultItemData) {
 		"total_count":     result.TotalCount,
 	}).Info("result item")
 }
+
+type ResultSummaryData struct {
+	TotalTests         int64
+	TotalDataUsageUp   int64
+	TotalDataUsageDown int64
+	TotalNetworks      int64
+}
+
+func ResultSummary(result ResultSummaryData) {
+	log.WithFields(log.Fields{
+		"type":                  "result_summary",
+		"total_tests":           result.TotalTests,
+		"total_data_usage_up":   result.TotalDataUsageUp,
+		"total_data_usage_down": result.TotalDataUsageDown,
+		"total_networks":        result.TotalNetworks,
+	}).Info("result summary")
+}
+
+// SectionTitle is the title of a section
+func SectionTitle(text string) {
+	log.WithFields(log.Fields{
+		"type":  "section_title",
+		"title": text,
+	}).Info(text)
+}

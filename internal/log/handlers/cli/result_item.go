@@ -10,10 +10,6 @@ import (
 	"github.com/apex/log"
 )
 
-func RightPad(str string, length int) string {
-	return str + strings.Repeat(" ", length-len(str))
-}
-
 // XXX Copy-pasta from nettest/groups
 // PerformanceSummary is the result summary for a performance test
 type PerformanceSummary struct {
@@ -143,5 +139,22 @@ func logResultItem(w io.Writer, f log.Fields) error {
 		fmt.Fprintf(w, strings.Repeat("─", colWidth*2-44))
 		fmt.Fprintf(w, "┘\n")
 	}
+	return nil
+}
+
+func logResultSummary(w io.Writer, f log.Fields) error {
+
+	networks := f.Get("total_networks").(int64)
+	tests := f.Get("total_tests").(int64)
+	dataUp := f.Get("total_data_usage_up").(int64)
+	dataDown := f.Get("total_data_usage_down").(int64)
+
+	//              └┬──────────────┬──────────────┬──────────────┬
+	fmt.Fprintf(w, " │ %s │ %s │ %s │\n",
+		RightPad(fmt.Sprintf("%d tests", tests), 12),
+		RightPad(fmt.Sprintf("%d nets", networks), 12),
+		RightPad(fmt.Sprintf("%d ⬆ %d ⬇", dataUp, dataDown), 12))
+	fmt.Fprintf(w, " └──────────────┴──────────────┴──────────────┘\n")
+
 	return nil
 }
