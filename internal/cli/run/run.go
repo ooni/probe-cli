@@ -27,6 +27,12 @@ func init() {
 			log.Errorf("%s", err)
 			return err
 		}
+
+		if err = ctx.MaybeOnboarding(); err != nil {
+			log.WithError(err).Error("failed to perform onboarding")
+			return err
+		}
+
 		group, ok := groups.NettestGroups[*nettestGroup]
 		if !ok {
 			log.Errorf("No test group named %s", *nettestGroup)

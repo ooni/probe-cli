@@ -66,6 +66,17 @@ func (c *Context) LocationLookup() error {
 	return nil
 }
 
+// MaybeOnboarding will run the onboarding process only if the informed consent
+// config option is set to false
+func (c *Context) MaybeOnboarding() error {
+	if c.Config.InformedConsent == false {
+		if err := Onboarding(c.Config); err != nil {
+			return errors.Wrap(err, "onboarding")
+		}
+	}
+	return nil
+}
+
 // Init the OONI manager
 func (c *Context) Init() error {
 	var err error
@@ -90,12 +101,6 @@ func (c *Context) Init() error {
 	}
 
 	c.dbPath = utils.DBDir(c.Home, "main")
-	if c.Config.InformedConsent == false {
-		if err = Onboarding(c.Config); err != nil {
-			return errors.Wrap(err, "onboarding")
-		}
-	}
-
 	log.Debugf("Connecting to database sqlite3://%s", c.dbPath)
 	db, err := database.Connect(c.dbPath)
 	if err != nil {

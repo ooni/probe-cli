@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"sync"
 
@@ -14,21 +13,6 @@ import (
 // ReadConfig reads the configuration from the path
 func ReadConfig(path string) (*Config, error) {
 	b, err := ioutil.ReadFile(path)
-
-	if os.IsNotExist(err) {
-		c := &Config{}
-
-		if err = c.Default(); err != nil {
-			return nil, errors.Wrap(err, "defaulting")
-		}
-
-		if err = c.Validate(); err != nil {
-			return nil, errors.Wrap(err, "validating")
-		}
-
-		return c, nil
-	}
-
 	if err != nil {
 		return nil, errors.Wrap(err, "reading file")
 	}
@@ -43,9 +27,9 @@ func ReadConfig(path string) (*Config, error) {
 
 // ParseConfig returns config from JSON bytes.
 func ParseConfig(b []byte) (*Config, error) {
-	c := &Config{}
+	var c Config
 
-	if err := json.Unmarshal(b, c); err != nil {
+	if err := json.Unmarshal(b, &c); err != nil {
 		return nil, errors.Wrap(err, "parsing json")
 	}
 
@@ -57,7 +41,7 @@ func ParseConfig(b []byte) (*Config, error) {
 		return nil, errors.Wrap(err, "validating")
 	}
 
-	return c, nil
+	return &c, nil
 }
 
 // Config for the OONI Probe installation
