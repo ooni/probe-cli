@@ -73,6 +73,35 @@ func logSectionTitle(w io.Writer, f log.Fields) error {
 	return nil
 }
 
+func logTable(w io.Writer, f log.Fields) error {
+	color := color.New(color.FgBlue)
+
+	names := f.Names()
+
+	var lines []string
+	colWidth := 0
+	for _, name := range names {
+		if name == "type" {
+			continue
+		}
+		line := fmt.Sprintf("%s: %s", color.Sprint(name), f.Get(name))
+		lineLength := escapeAwareRuneCountInString(line)
+		lines = append(lines, line)
+		if colWidth < lineLength {
+			colWidth = lineLength
+		}
+	}
+
+	fmt.Fprintf(w, "┏"+strings.Repeat("━", colWidth+2)+"┓\n")
+	for _, line := range lines {
+		fmt.Fprintf(w, "┃ %s ┃\n",
+			RightPad(line, colWidth),
+		)
+	}
+	fmt.Fprintf(w, "┗"+strings.Repeat("━", colWidth+2)+"┛\n")
+	return nil
+}
+
 var bar *progress.Bar
 var lastBarChars int64
 
@@ -88,6 +117,8 @@ func (h *Handler) TypedLog(t string, e *log.Entry) error {
 		bar.Text(e.Message)
 		lastBarChars, err = bar.WriteTo(h.Writer)
 		return err
+	case "table":
+		return logTable(h.Writer, e.Fields)
 	case "result_item":
 		return logResultItem(h.Writer, e.Fields)
 	case "result_summary":
