@@ -1,5 +1,7 @@
 {
-  "_": "This is your OONI Probe config file. See https://ooni.io/help/ooniprobe-cli for help",
+  "_": "This is your OONI Probe config file. See https://ooni.io/help/probe-cli for help",
+  "_version": 0,
+  "_informed_consent": false,
   "auto_update": true,
   "sharing": {
     "include_ip": false,
@@ -56,8 +58,6 @@
   },
   "advanced": {
     "include_country": true,
-    "use_domain_fronting": true
+    "use_domain_fronting": false
   },
-  "_config_version": "0.0.1",
-  "_informed_consent": true
 }
