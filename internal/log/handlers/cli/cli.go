@@ -7,10 +7,12 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/apex/log"
 	"github.com/fatih/color"
 	colorable "github.com/mattn/go-colorable"
+	"github.com/ooni/probe-cli/internal/log/handlers/cli/progress"
 )
 
 // Default handler outputting to stderr.
@@ -71,14 +73,21 @@ func logSectionTitle(w io.Writer, f log.Fields) error {
 	return nil
 }
 
+var bar *progress.Bar
+var lastBarChars int64
+
 // TypedLog is used for handling special "typed" logs to the CLI
 func (h *Handler) TypedLog(t string, e *log.Entry) error {
 	switch t {
 	case "progress":
-		// XXX replace this with something more fancy like https://github.com/tj/go-progress
-		fmt.Fprintf(h.Writer, "%.1f%% [%s]: %s", e.Fields.Get("percentage").(float64)*100, e.Fields.Get("key"), e.Message)
-		fmt.Fprintln(h.Writer)
-		return nil
+		var err error
+		if bar == nil {
+			bar = progress.New(1.0)
+		}
+		bar.Value(e.Fields.Get("percentage").(float64))
+		bar.Text(e.Message)
+		lastBarChars, err = bar.WriteTo(h.Writer)
+		return err
 	case "result_item":
 		return logResultItem(h.Writer, e.Fields)
 	case "result_summary":
@@ -96,16 +105,28 @@ func (h *Handler) DefaultLog(e *log.Entry) error {
 	level := Strings[e.Level]
 	names := e.Fields.Names()
 
-	color.Fprintf(h.Writer, "%s %-25s", bold.Sprintf("%*s", h.Padding+1, level), e.Message)
-
+	s := color.Sprintf("%s %-25s", bold.Sprintf("%*s", h.Padding+1, level), e.Message)
 	for _, name := range names {
 		if name == "source" {
 			continue
 		}
-		fmt.Fprintf(h.Writer, " %s=%s", color.Sprint(name), e.Fields.Get(name))
+		s += fmt.Sprintf(" %s=%s", color.Sprint(name), e.Fields.Get(name))
 	}
 
-	fmt.Fprintln(h.Writer)
+	if bar != nil {
+		// We need to move the cursor back to the begging of the line and add some
+		// padding to the end of the string to delete the previous line written to
+		// the console.
+		sChars := int64(utf8.RuneCountInString(s))
+		fmt.Fprintf(h.Writer,
+			fmt.Sprintf("\r%s%s", s, strings.Repeat(" ", int(lastBarChars-sChars))),
+		)
+		fmt.Fprintln(h.Writer)
+		bar.WriteTo(h.Writer)
+	} else {
+		fmt.Fprintf(h.Writer, s)
+		fmt.Fprintln(h.Writer)
+	}
 
 	return nil
 }
