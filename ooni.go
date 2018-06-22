@@ -3,6 +3,7 @@ package ooni
 import (
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/apex/log"
@@ -56,8 +57,11 @@ func (c *Context) MaybeLocationLookup() error {
 func (c *Context) LocationLookup() error {
 	var err error
 
-	geoipDir := utils.GeoIPDir(c.Home)
+	if err = c.MaybeDownloadDataFiles(); err != nil {
+		log.WithError(err).Error("failed to download data files")
+	}
 
+	geoipDir := utils.GeoIPDir(c.Home)
 	c.Location, err = utils.GeoIPLookup(geoipDir)
 	if err != nil {
 		return err
@@ -72,6 +76,24 @@ func (c *Context) MaybeOnboarding() error {
 	if c.Config.InformedConsent == false {
 		if err := Onboarding(c.Config); err != nil {
 			return errors.Wrap(err, "onboarding")
+		}
+	}
+	return nil
+}
+
+// MaybeDownloadDataFiles will download geoip data files if they are not present
+func (c *Context) MaybeDownloadDataFiles() error {
+	geoipDir := utils.GeoIPDir(c.Home)
+	if _, err := os.Stat(path.Join(geoipDir, "GeoLite2-Country.mmdb")); os.IsNotExist(err) {
+		log.Debugf("Downloading GeoIP database files")
+		if err := utils.DownloadGeoIPDatabaseFiles(geoipDir); err != nil {
+			return err
+		}
+	}
+	if _, err := os.Stat(path.Join(geoipDir, "GeoIP.dat")); os.IsNotExist(err) {
+		log.Debugf("Downloading legacy GeoIP database Files")
+		if err := utils.DownloadLegacyGeoIPDatabaseFiles(geoipDir); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -128,28 +150,13 @@ func NewContext(configPath string, homePath string) *Context {
 
 // MaybeInitializeHome does the setup for a new OONI Home
 func MaybeInitializeHome(home string) error {
-	firstRun := false
 	for _, d := range utils.RequiredDirs(home) {
 		if _, e := os.Stat(d); e != nil {
-			firstRun = true
 			if err := os.MkdirAll(d, 0700); err != nil {
 				return err
 			}
 		}
 	}
-	if firstRun == true {
-		log.Info("This is the first time you are running OONI Probe. Downloading some files.")
-		geoipDir := utils.GeoIPDir(home)
-		log.Debugf("Downloading GeoIP database files")
-		if err := utils.DownloadGeoIPDatabaseFiles(geoipDir); err != nil {
-			return err
-		}
-		log.Debugf("Downloading legacy GeoIP database Files")
-		if err := utils.DownloadLegacyGeoIPDatabaseFiles(geoipDir); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 

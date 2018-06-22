@@ -19,6 +19,10 @@ func init() {
 			return err
 		}
 
+		if err = ctx.MaybeDownloadDataFiles(); err != nil {
+			log.WithError(err).Error("failed to download data files")
+		}
+
 		geoipPath := utils.GeoIPDir(ctx.Home)
 		if *shouldUpdate {
 			utils.DownloadGeoIPDatabaseFiles(geoipPath)
