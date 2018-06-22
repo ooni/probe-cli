@@ -10,7 +10,12 @@ func init() {
 	cmd := root.Command("show", "Show a specific measurement")
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
-		log.Info("Show")
+		_, err := root.Init()
+		if err != nil {
+			log.WithError(err).Error("failed to initialize root context")
+			return err
+		}
+
 		return nil
 	})
 }

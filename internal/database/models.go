@@ -34,6 +34,42 @@ func UpdateOne(db *sqlx.DB, query string, arg interface{}) error {
 	return nil
 }
 
+// ListMeasurements given a result ID
+func ListMeasurements(db *sqlx.DB, resultID int64) ([]*Measurement, error) {
+	measurements := []*Measurement{}
+
+	rows, err := db.Query(`SELECT id, name,
+		start_time, runtime,
+		country,
+		asn,
+		summary,
+		input
+		FROM measurements
+		WHERE result_id = ?
+		ORDER BY start_time;`, resultID)
+	if err != nil {
+		return measurements, errors.Wrap(err, "failed to get measurement list")
+	}
+
+	for rows.Next() {
+		msmt := Measurement{}
+		err = rows.Scan(&msmt.ID, &msmt.Name,
+			&msmt.StartTime, &msmt.Runtime,
+			&msmt.CountryCode,
+			&msmt.ASN,
+			&msmt.Summary, &msmt.Input,
+			//&result.DataUsageUp, &result.DataUsageDown)
+		)
+		if err != nil {
+			log.WithError(err).Error("failed to fetch a row")
+			continue
+		}
+		measurements = append(measurements, &msmt)
+	}
+
+	return measurements, nil
+}
+
 // Measurement model
 type Measurement struct {
 	ID             int64     `db:"id"`
