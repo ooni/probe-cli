@@ -148,7 +148,12 @@ func logResultSummary(w io.Writer, f log.Fields) error {
 	tests := f.Get("total_tests").(int64)
 	dataUp := f.Get("total_data_usage_up").(int64)
 	dataDown := f.Get("total_data_usage_down").(int64)
-
+	if tests == 0 {
+		fmt.Fprintf(w, "No results\n")
+		fmt.Fprintf(w, "Try running:\n")
+		fmt.Fprintf(w, "  ooni run websites\n")
+		return nil
+	}
 	//              └┬──────────────┬──────────────┬──────────────┬
 	fmt.Fprintf(w, " │ %s │ %s │ %s │\n",
 		RightPad(fmt.Sprintf("%d tests", tests), 12),
