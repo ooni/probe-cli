@@ -15,6 +15,11 @@ func init() {
 	cmd := root.Command("onboard", "Starts the onboarding process")
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
+		ctx, err := root.Init()
+		if err != nil {
+			return err
+		}
+
 		output.SectionTitle("What is OONI Probe?")
 
 		fmt.Println()
@@ -128,7 +133,20 @@ func init() {
 			}
 		}
 
-		log.Error("this function is not implemented")
+		ctx.Config.Lock()
+		ctx.Config.InformedConsent = true
+		ctx.Config.Advanced.IncludeCountry = settings.IncludeCountry
+		ctx.Config.Sharing.IncludeIP = settings.IncludeIP
+		ctx.Config.Sharing.IncludeASN = settings.IncludeNetwork
+		ctx.Config.Sharing.UploadResults = settings.UploadResults
+		ctx.Config.Sharing.SendCrashReports = settings.SendCrashReports
+		ctx.Config.Unlock()
+
+		if err := ctx.Config.Write(); err != nil {
+			log.WithError(err).Error("failed to write config file")
+			return err
+		}
+
 		return nil
 	})
 }
