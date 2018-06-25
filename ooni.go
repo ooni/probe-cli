@@ -11,26 +11,10 @@ import (
 	"github.com/ooni/probe-cli/config"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/legacy"
+	"github.com/ooni/probe-cli/internal/onboard"
 	"github.com/ooni/probe-cli/utils"
 	"github.com/pkg/errors"
 )
-
-// Onboarding process
-func Onboarding(c *config.Config) error {
-	log.Info("Onboarding starting")
-
-	// To prevent races we always must acquire the config file lock before
-	// changing it.
-	c.Lock()
-	c.InformedConsent = true
-	c.Unlock()
-
-	if err := c.Write(); err != nil {
-		log.Warnf("Failed to save informed consent: %v", err)
-		return err
-	}
-	return nil
-}
 
 // Context for OONI Probe
 type Context struct {
@@ -74,7 +58,7 @@ func (c *Context) LocationLookup() error {
 // config option is set to false
 func (c *Context) MaybeOnboarding() error {
 	if c.Config.InformedConsent == false {
-		if err := Onboarding(c.Config); err != nil {
+		if err := onboard.Onboarding(c.Config); err != nil {
 			return errors.Wrap(err, "onboarding")
 		}
 	}
