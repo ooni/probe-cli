@@ -13,6 +13,7 @@ import (
 	"github.com/fatih/color"
 	colorable "github.com/mattn/go-colorable"
 	"github.com/ooni/probe-cli/internal/log/handlers/cli/progress"
+	"github.com/ooni/probe-cli/internal/util"
 )
 
 // Default handler outputting to stderr.
@@ -68,7 +69,7 @@ func logSectionTitle(w io.Writer, f log.Fields) error {
 
 	title := f.Get("title").(string)
 	fmt.Fprintf(w, "┏"+strings.Repeat("━", colWidth+2)+"┓\n")
-	fmt.Fprintf(w, "┃ %s ┃\n", RightPad(title, colWidth))
+	fmt.Fprintf(w, "┃ %s ┃\n", util.RightPad(title, colWidth))
 	fmt.Fprintf(w, "┗"+strings.Repeat("━", colWidth+2)+"┛\n")
 	return nil
 }
@@ -85,7 +86,7 @@ func logTable(w io.Writer, f log.Fields) error {
 			continue
 		}
 		line := fmt.Sprintf("%s: %s", color.Sprint(name), f.Get(name))
-		lineLength := escapeAwareRuneCountInString(line)
+		lineLength := util.EscapeAwareRuneCountInString(line)
 		lines = append(lines, line)
 		if colWidth < lineLength {
 			colWidth = lineLength
@@ -95,7 +96,7 @@ func logTable(w io.Writer, f log.Fields) error {
 	fmt.Fprintf(w, "┏"+strings.Repeat("━", colWidth+2)+"┓\n")
 	for _, line := range lines {
 		fmt.Fprintf(w, "┃ %s ┃\n",
-			RightPad(line, colWidth),
+			util.RightPad(line, colWidth),
 		)
 	}
 	fmt.Fprintf(w, "┗"+strings.Repeat("━", colWidth+2)+"┛\n")

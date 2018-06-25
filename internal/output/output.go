@@ -1,9 +1,13 @@
 package output
 
 import (
+	"bufio"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/internal/util"
 )
 
 // Progress logs a progress type event
@@ -75,4 +79,19 @@ func SectionTitle(text string) {
 		"type":  "section_title",
 		"title": text,
 	}).Info(text)
+}
+
+func Paragraph(text string) {
+	const width = 80
+	fmt.Println(util.WrapString(text, width))
+}
+
+func Bullet(text string) {
+	const width = 80
+	fmt.Printf("• %s\n", util.WrapString(text, width))
+}
+
+func PressEnterToContinue(text string) {
+	fmt.Print(text)
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }

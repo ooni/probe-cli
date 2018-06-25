@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/internal/util"
 )
 
 // XXX Copy-pasta from nettest/groups
@@ -118,21 +119,21 @@ func logResultItem(w io.Writer, f log.Fields) error {
 		fmt.Fprintf(w, "┢"+strings.Repeat("━", colWidth*2+2)+"┪\n")
 	}
 
-	firstRow := RightPad(fmt.Sprintf("#%d - %s", rID, startTime.Format(time.RFC822)), colWidth*2)
+	firstRow := util.RightPad(fmt.Sprintf("#%d - %s", rID, startTime.Format(time.RFC822)), colWidth*2)
 	fmt.Fprintf(w, "┃ "+firstRow+" ┃\n")
 	fmt.Fprintf(w, "┡"+strings.Repeat("━", colWidth*2+2)+"┩\n")
 
 	summary := makeSummary(name, f.Get("summary").(string))
 
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
-		RightPad(name, colWidth),
-		RightPad(summary[0], colWidth)))
+		util.RightPad(name, colWidth),
+		util.RightPad(summary[0], colWidth)))
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
-		RightPad(networkName, colWidth),
-		RightPad(summary[1], colWidth)))
+		util.RightPad(networkName, colWidth),
+		util.RightPad(summary[1], colWidth)))
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
-		RightPad(asn, colWidth),
-		RightPad(summary[2], colWidth)))
+		util.RightPad(asn, colWidth),
+		util.RightPad(summary[2], colWidth)))
 
 	if index == totalCount-1 {
 		fmt.Fprintf(w, "└┬──────────────┬──────────────┬──────────────┬")
@@ -156,9 +157,9 @@ func logResultSummary(w io.Writer, f log.Fields) error {
 	}
 	//              └┬──────────────┬──────────────┬──────────────┬
 	fmt.Fprintf(w, " │ %s │ %s │ %s │\n",
-		RightPad(fmt.Sprintf("%d tests", tests), 12),
-		RightPad(fmt.Sprintf("%d nets", networks), 12),
-		RightPad(fmt.Sprintf("%d ⬆ %d ⬇", dataUp, dataDown), 12))
+		util.RightPad(fmt.Sprintf("%d tests", tests), 12),
+		util.RightPad(fmt.Sprintf("%d nets", networks), 12),
+		util.RightPad(fmt.Sprintf("%d ⬆ %d ⬇", dataUp, dataDown), 12))
 	fmt.Fprintf(w, " └──────────────┴──────────────┴──────────────┘\n")
 
 	return nil
