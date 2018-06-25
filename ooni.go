@@ -4,11 +4,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
 	"github.com/ooni/probe-cli/config"
+	"github.com/ooni/probe-cli/internal/bindata"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/legacy"
 	"github.com/ooni/probe-cli/internal/onboard"
@@ -100,7 +100,7 @@ func (c *Context) Init() error {
 		c.Config, err = config.ReadConfig(c.configPath)
 	} else {
 		log.Debug("Reading default config file")
-		c.Config, err = ReadDefaultConfigPaths(c.Home)
+		c.Config, err = InitDefaultConfig(c.Home)
 	}
 	if err != nil {
 		return err
@@ -144,21 +144,36 @@ func MaybeInitializeHome(home string) error {
 	return nil
 }
 
-// ReadDefaultConfigPaths from common locations.
-func ReadDefaultConfigPaths(home string) (*config.Config, error) {
-	var paths = []string{
-		filepath.Join(home, "config.json"),
-	}
-	for _, path := range paths {
-		if _, err := os.Stat(path); err == nil {
-			c, err := config.ReadConfig(path)
+// InitDefaultConfig reads the config from common locations or creates it if
+// missing.
+func InitDefaultConfig(home string) (*config.Config, error) {
+	var (
+		err        error
+		c          *config.Config
+		configPath = utils.ConfigPath(home)
+	)
+
+	c, err = config.ReadConfig(configPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Debugf("writing default config to %s", configPath)
+			var data []byte
+			data, err = bindata.Asset("data/default-config.json")
 			if err != nil {
 				return nil, err
 			}
-			return c, nil
+			err = ioutil.WriteFile(
+				configPath,
+				data,
+				0644,
+			)
+			if err != nil {
+				return nil, err
+			}
+			return InitDefaultConfig(home)
 		}
+		return nil, err
 	}
 
-	// Run from the default config
-	return config.ReadConfig(paths[0])
+	return c, nil
 }

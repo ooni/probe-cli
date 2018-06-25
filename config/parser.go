@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
-	"path/filepath"
 	"sync"
 
 	"github.com/ooni/probe-cli/utils"
@@ -14,7 +13,7 @@ import (
 func ReadConfig(path string) (*Config, error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading file")
+		return nil, err
 	}
 
 	c, err := ParseConfig(b)
@@ -93,7 +92,7 @@ func (c *Config) Default() error {
 		return err
 	}
 
-	c.path = filepath.Join(home, "config.json")
+	c.path = utils.ConfigPath(home)
 	return nil
 }
 
