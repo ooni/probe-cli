@@ -15,6 +15,7 @@ func init() {
 			log.WithError(err).Error("failed to initialize root context")
 			return err
 		}
+		log.Error("this function is not implemented")
 
 		return nil
 	})
