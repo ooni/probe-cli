@@ -7,15 +7,10 @@ import (
 
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
+	"github.com/ooni/probe-cli/nettests/summary"
 	"github.com/ooni/probe-cli/utils"
 	"github.com/pkg/errors"
 )
-
-// ResultSummaryFunc is the function used to generate result summaries
-type ResultSummaryFunc func(SummaryMap) (string, error)
-
-// SummaryMap contains a mapping from test name to serialized summary for it
-type SummaryMap map[string][]string
 
 // UpdateOne will run the specified update query and check that it only affected one row
 func UpdateOne(db *sqlx.DB, query string, arg interface{}) error {
@@ -298,8 +293,8 @@ func ListResults(db *sqlx.DB) ([]*Result, []*Result, error) {
 
 // MakeSummaryMap return a mapping of test names to summaries for the given
 // result
-func MakeSummaryMap(db *sqlx.DB, r *Result) (SummaryMap, error) {
-	summaryMap := SummaryMap{}
+func MakeSummaryMap(db *sqlx.DB, r *Result) (summary.SummaryMap, error) {
+	summaryMap := summary.SummaryMap{}
 
 	msmts := []Measurement{}
 	// XXX maybe we only want to select some of the columns
@@ -319,7 +314,7 @@ func MakeSummaryMap(db *sqlx.DB, r *Result) (SummaryMap, error) {
 }
 
 // Finished marks the result as done and sets the runtime
-func (r *Result) Finished(db *sqlx.DB, makeSummary ResultSummaryFunc) error {
+func (r *Result) Finished(db *sqlx.DB, makeSummary summary.ResultSummaryFunc) error {
 	if r.Done == true || r.Runtime != 0 {
 		return errors.New("Result is already finished")
 	}

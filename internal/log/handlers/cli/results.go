@@ -9,33 +9,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/util"
+	"github.com/ooni/probe-cli/nettests/summary"
 )
-
-// XXX Copy-pasta from nettest/groups
-// PerformanceSummary is the result summary for a performance test
-type PerformanceSummary struct {
-	Upload   int64
-	Download int64
-	Ping     float64
-	Bitrate  int64
-}
-
-// MiddleboxSummary is the summary for the middlebox tests
-type MiddleboxSummary struct {
-	Detected bool
-}
-
-// IMSummary is the summary for the im tests
-type IMSummary struct {
-	Tested  uint
-	Blocked uint
-}
-
-// WebsitesSummary is the summary for the websites test
-type WebsitesSummary struct {
-	Tested  uint
-	Blocked uint
-}
 
 func formatSpeed(speed int64) string {
 	if speed < 1000 {
@@ -51,7 +26,7 @@ func formatSpeed(speed int64) string {
 
 var summarizers = map[string]func(string) []string{
 	"websites": func(ss string) []string {
-		var summary WebsitesSummary
+		var summary summary.WebsitesSummary
 		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
 			return nil
 		}
@@ -62,7 +37,7 @@ var summarizers = map[string]func(string) []string{
 		}
 	},
 	"performance": func(ss string) []string {
-		var summary PerformanceSummary
+		var summary summary.PerformanceSummary
 		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
 			return nil
 		}
@@ -73,7 +48,7 @@ var summarizers = map[string]func(string) []string{
 		}
 	},
 	"im": func(ss string) []string {
-		var summary IMSummary
+		var summary summary.IMSummary
 		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
 			return nil
 		}
@@ -84,7 +59,7 @@ var summarizers = map[string]func(string) []string{
 		}
 	},
 	"middlebox": func(ss string) []string {
-		var summary MiddleboxSummary
+		var summary summary.MiddleboxSummary
 		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
 			return nil
 		}

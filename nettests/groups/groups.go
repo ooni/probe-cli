@@ -2,14 +2,13 @@ package groups
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
 	"github.com/ooni/probe-cli/nettests/im"
 	"github.com/ooni/probe-cli/nettests/middlebox"
 	"github.com/ooni/probe-cli/nettests/performance"
+	"github.com/ooni/probe-cli/nettests/summary"
 	"github.com/ooni/probe-cli/nettests/websites"
 )
 
@@ -17,42 +16,7 @@ import (
 type NettestGroup struct {
 	Label    string
 	Nettests []nettests.Nettest
-	Summary  database.ResultSummaryFunc
-}
-
-// PerformanceSummary is the result summary for a performance test
-type PerformanceSummary struct {
-	Upload   int64
-	Download int64
-	Ping     float64
-	Bitrate  int64
-}
-
-// MiddleboxSummary is the summary for the middlebox tests
-type MiddleboxSummary struct {
-	Detected bool
-}
-
-// IMSummary is the summary for the im tests
-type IMSummary struct {
-	Tested  uint
-	Blocked uint
-}
-
-// WebsitesSummary is the summary for the websites test
-type WebsitesSummary struct {
-	Tested  uint
-	Blocked uint
-}
-
-func checkRequiredKeys(rk []string, m database.SummaryMap) error {
-	for _, key := range rk {
-		if _, ok := m[key]; ok {
-			continue
-		}
-		return fmt.Errorf("missing SummaryMap key '%s'", key)
-	}
-	return nil
+	Summary  summary.ResultSummaryFunc
 }
 
 // NettestGroups that can be run by the user
@@ -62,14 +26,14 @@ var NettestGroups = map[string]NettestGroup{
 		Nettests: []nettests.Nettest{
 			websites.WebConnectivity{},
 		},
-		Summary: func(m database.SummaryMap) (string, error) {
+		Summary: func(m summary.SummaryMap) (string, error) {
 			if err := checkRequiredKeys([]string{"WebConnectivity"}, m); err != nil {
 				log.WithError(err).Error("missing keys")
 				return "", err
 			}
 
 			// XXX to generate this I need to create the summary map as a list
-			var summary WebsitesSummary
+			var summary summary.WebsitesSummary
 			summary.Tested = 0
 			summary.Blocked = 0
 			for _, msmtSummaryStr := range m["WebConnectivity"] {
@@ -98,7 +62,7 @@ var NettestGroups = map[string]NettestGroup{
 			performance.Dash{},
 			performance.NDT{},
 		},
-		Summary: func(m database.SummaryMap) (string, error) {
+		Summary: func(m summary.SummaryMap) (string, error) {
 			if err := checkRequiredKeys([]string{"Dash", "Ndt"}, m); err != nil {
 				log.WithError(err).Error("missing keys")
 				return "", err
@@ -108,7 +72,7 @@ var NettestGroups = map[string]NettestGroup{
 				err         error
 				ndtSummary  performance.NDTSummary
 				dashSummary performance.DashSummary
-				summary     PerformanceSummary
+				summary     summary.PerformanceSummary
 			)
 			err = json.Unmarshal([]byte(m["Dash"][0]), &dashSummary)
 			if err != nil {
@@ -137,7 +101,7 @@ var NettestGroups = map[string]NettestGroup{
 			middlebox.HTTPInvalidRequestLine{},
 			middlebox.HTTPHeaderFieldManipulation{},
 		},
-		Summary: func(m database.SummaryMap) (string, error) {
+		Summary: func(m summary.SummaryMap) (string, error) {
 			if err := checkRequiredKeys([]string{"WebConnectivity"}, m); err != nil {
 				log.WithError(err).Error("missing keys")
 				return "", err
@@ -147,7 +111,7 @@ var NettestGroups = map[string]NettestGroup{
 				err         error
 				hhfmSummary middlebox.HTTPHeaderFieldManipulationSummary
 				hirlSummary middlebox.HTTPInvalidRequestLineSummary
-				summary     MiddleboxSummary
+				summary     summary.MiddleboxSummary
 			)
 			err = json.Unmarshal([]byte(m["HttpHeaderFieldManipulation"][0]), &hhfmSummary)
 			if err != nil {
@@ -174,7 +138,7 @@ var NettestGroups = map[string]NettestGroup{
 			im.Telegram{},
 			im.WhatsApp{},
 		},
-		Summary: func(m database.SummaryMap) (string, error) {
+		Summary: func(m summary.SummaryMap) (string, error) {
 			if err := checkRequiredKeys([]string{"Whatsapp", "Telegram", "FacebookMessenger"}, m); err != nil {
 				log.WithError(err).Error("missing keys")
 				return "", err
@@ -184,7 +148,7 @@ var NettestGroups = map[string]NettestGroup{
 				waSummary im.WhatsAppSummary
 				tgSummary im.TelegramSummary
 				fbSummary im.FacebookMessengerSummary
-				summary   IMSummary
+				summary   summary.IMSummary
 			)
 			err = json.Unmarshal([]byte(m["Whatsapp"][0]), &waSummary)
 			if err != nil {
