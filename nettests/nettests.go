@@ -132,6 +132,8 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("GeoIPCountryPath: %s", nt.Options.GeoIPCountryPath)
 
 	nt.On("log", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
+
 		level := e.Value.LogLevel
 		msg := e.Value.Message
 
@@ -189,6 +191,41 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		log.Debugf(colors.Red(e.Key))
 	})
 
+	// XXX should these be made into permanent failures?
+	nt.On("failure.asn_lookup", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
+		log.Debugf("%v", e.Value)
+	})
+	nt.On("failure.cc_lookup", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
+		log.Debugf("%v", e.Value)
+	})
+	nt.On("failure.ip_lookup", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
+		log.Debugf("%v", e.Value)
+	})
+
+	nt.On("failure.resolver_lookup", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
+		log.Debugf("%v", e.Value)
+	})
+
+	nt.On("failure.report_create", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
+		log.Debugf("%v", e.Value)
+	})
+
+	nt.On("failure.report_close", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
+		log.Debugf("%v", e.Value)
+	})
+
+	nt.On("failure.startup", func(e mk.Event) {
+		log.Debugf(colors.Red(e.Key))
+
+		c.msmts[e.Value.Idx].Failed(c.Ctx.DB, e.Value.Failure)
+	})
+
 	nt.On("failure.measurement", func(e mk.Event) {
 		log.Debugf(colors.Red(e.Key))
 
@@ -219,6 +256,8 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	})
 
 	nt.On("measurement", func(e mk.Event) {
+		log.Debugf("status.end")
+
 		c.OnEntry(e.Value.Idx, e.Value.JSONStr)
 	})
 
