@@ -33,7 +33,7 @@ type WebsitesSummary struct {
 	Blocked uint
 }
 
-func checkRequiredKeys(rk []string, m SummaryMap) error {
+func CheckRequiredKeys(rk []string, m SummaryMap) error {
 	for _, key := range rk {
 		if _, ok := m[key]; ok {
 			continue

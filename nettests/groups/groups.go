@@ -27,7 +27,7 @@ var NettestGroups = map[string]NettestGroup{
 			websites.WebConnectivity{},
 		},
 		Summary: func(m summary.SummaryMap) (string, error) {
-			if err := checkRequiredKeys([]string{"WebConnectivity"}, m); err != nil {
+			if err := summary.CheckRequiredKeys([]string{"WebConnectivity"}, m); err != nil {
 				log.WithError(err).Error("missing keys")
 				return "", err
 			}
@@ -63,7 +63,7 @@ var NettestGroups = map[string]NettestGroup{
 			performance.NDT{},
 		},
 		Summary: func(m summary.SummaryMap) (string, error) {
-			if err := checkRequiredKeys([]string{"Dash", "Ndt"}, m); err != nil {
+			if err := summary.CheckRequiredKeys([]string{"Dash", "Ndt"}, m); err != nil {
 				log.WithError(err).Error("missing keys")
 				return "", err
 			}
@@ -102,7 +102,7 @@ var NettestGroups = map[string]NettestGroup{
 			middlebox.HTTPHeaderFieldManipulation{},
 		},
 		Summary: func(m summary.SummaryMap) (string, error) {
-			if err := checkRequiredKeys([]string{"WebConnectivity"}, m); err != nil {
+			if err := summary.CheckRequiredKeys([]string{"WebConnectivity"}, m); err != nil {
 				log.WithError(err).Error("missing keys")
 				return "", err
 			}
@@ -139,7 +139,7 @@ var NettestGroups = map[string]NettestGroup{
 			im.WhatsApp{},
 		},
 		Summary: func(m summary.SummaryMap) (string, error) {
-			if err := checkRequiredKeys([]string{"Whatsapp", "Telegram", "FacebookMessenger"}, m); err != nil {
+			if err := summary.CheckRequiredKeys([]string{"Whatsapp", "Telegram", "FacebookMessenger"}, m); err != nil {
 				log.WithError(err).Error("missing keys")
 				return "", err
 			}
