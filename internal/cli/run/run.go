@@ -9,8 +9,8 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
+	"github.com/fatih/color"
 	"github.com/ooni/probe-cli/internal/cli/root"
-	"github.com/ooni/probe-cli/internal/colors"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
 	"github.com/ooni/probe-cli/nettests/groups"
@@ -22,7 +22,7 @@ func init() {
 
 	var nettestGroupNames []string
 	for name := range groups.NettestGroups {
-		nettestGroupNames = append(nettestGroupNames, colors.Blue(name))
+		nettestGroupNames = append(nettestGroupNames, color.BlueString(name))
 	}
 
 	nettestGroup := cmd.Arg("name",

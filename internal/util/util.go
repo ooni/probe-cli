@@ -9,17 +9,17 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/ooni/probe-cli/internal/colors"
+	"github.com/fatih/color"
 )
 
 // Log outputs a log message.
 func Log(msg string, v ...interface{}) {
-	fmt.Printf("     %s\n", colors.Purple(fmt.Sprintf(msg, v...)))
+	fmt.Printf("     %s\n", color.CyanString(msg, v...))
 }
 
 // Fatal error
 func Fatal(err error) {
-	fmt.Fprintf(os.Stderr, "\n     %s %s\n\n", colors.Red("Error:"), err)
+	fmt.Fprintf(os.Stderr, "\n     %s %s\n\n", color.RedString("Error:"), err)
 	os.Exit(1)
 }
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/apex/log"
+	"github.com/fatih/color"
 	"github.com/ooni/probe-cli/config"
-	"github.com/ooni/probe-cli/internal/colors"
 	"github.com/ooni/probe-cli/internal/output"
 	survey "gopkg.in/AlecAivazis/survey.v1"
 )
@@ -42,10 +42,10 @@ func Onboarding(config *config.Config) error {
 	}
 	survey.AskOne(quiz1, &answer, nil)
 	if answer != "true" {
-		output.Paragraph(colors.Red("Actually..."))
+		output.Paragraph(color.RedString("Actually..."))
 		output.Paragraph("OONI Probe is not a privacy tool. Therefore, anyone monitoring your internet activity may be able to see which software you are running.")
 	} else {
-		output.Paragraph(colors.Blue("Good job!"))
+		output.Paragraph(color.BlueString("Good job!"))
 	}
 	answer = ""
 	quiz2 := &survey.Select{
@@ -55,10 +55,10 @@ func Onboarding(config *config.Config) error {
 	}
 	survey.AskOne(quiz2, &answer, nil)
 	if answer != "true" {
-		output.Paragraph(colors.Red("Actually..."))
+		output.Paragraph(color.RedString("Actually..."))
 		output.Paragraph("The network data you will collect will automatically be published to increase transparency of internet censorship (unless you opt-out in the settings).")
 	} else {
-		output.Paragraph(colors.Blue("Well done!"))
+		output.Paragraph(color.BlueString("Well done!"))
 	}
 
 	changeDefaults := false
