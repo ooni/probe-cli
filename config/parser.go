@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"sync"
 
+	"github.com/apex/log"
+	"github.com/ooni/probe-cli/internal/crashreport"
 	"github.com/ooni/probe-cli/utils"
 	"github.com/pkg/errors"
 )
@@ -38,6 +40,10 @@ func ParseConfig(b []byte) (*Config, error) {
 
 	if err := c.Validate(); err != nil {
 		return nil, errors.Wrap(err, "validating")
+	}
+	if c.Advanced.SendCrashReports == false {
+		log.Info("Disabling crash reporting.")
+		crashreport.Disabled = true
 	}
 
 	return &c, nil

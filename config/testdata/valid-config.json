@@ -7,8 +7,7 @@
     "include_ip": false,
     "include_asn": true,
     "include_gps": true,
-    "upload_results": true,
-    "send_crash_reports": true
+    "upload_results": true
   },
   "notifications": {
     "enabled": true,
@@ -58,6 +57,7 @@
   },
   "advanced": {
     "include_country": true,
-    "use_domain_fronting": false
+    "use_domain_fronting": false,
+    "send_crash_reports": true
   }
 }
