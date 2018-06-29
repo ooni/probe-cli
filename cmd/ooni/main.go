@@ -3,6 +3,7 @@ package main
 import (
 	// commands
 	"github.com/apex/log"
+	"github.com/getsentry/raven-go"
 
 	_ "github.com/ooni/probe-cli/internal/cli/geoip"
 	_ "github.com/ooni/probe-cli/internal/cli/info"
@@ -18,6 +19,8 @@ import (
 )
 
 func main() {
+	raven.SetDSN("https://cb4510e090f64382ac371040c19b2258:8448daeebfa643c289ef398f8645980b@sentry.io/1234954")
+
 	err := app.Run()
 	if err == nil {
 		return
