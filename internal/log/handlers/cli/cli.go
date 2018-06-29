@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unicode/utf8"
 
 	"github.com/apex/log"
 	"github.com/fatih/color"
@@ -104,7 +103,7 @@ func logTable(w io.Writer, f log.Fields) error {
 }
 
 var bar *progress.Bar
-var lastBarChars int64
+var lastBarChars int
 
 // TypedLog is used for handling special "typed" logs to the CLI
 func (h *Handler) TypedLog(t string, e *log.Entry) error {
@@ -116,7 +115,9 @@ func (h *Handler) TypedLog(t string, e *log.Entry) error {
 		}
 		bar.Value(e.Fields.Get("percentage").(float64))
 		bar.Text(e.Message)
-		lastBarChars, err = bar.WriteTo(h.Writer)
+		barStr := bar.String()
+		fmt.Fprintf(h.Writer, "\r   %s", barStr)
+		lastBarChars = util.EscapeAwareRuneCountInString(barStr) + 3
 		return err
 	case "table":
 		return logTable(h.Writer, e.Fields)
@@ -149,10 +150,11 @@ func (h *Handler) DefaultLog(e *log.Entry) error {
 		// We need to move the cursor back to the begging of the line and add some
 		// padding to the end of the string to delete the previous line written to
 		// the console.
-		sChars := int64(utf8.RuneCountInString(s))
+		sChars := util.EscapeAwareRuneCountInString(s)
 		fmt.Fprintf(h.Writer,
-			fmt.Sprintf("\r%s%s", s, strings.Repeat(" ", int(lastBarChars-sChars))),
+			fmt.Sprintf("\r%s%s", s, strings.Repeat(" ", lastBarChars-sChars)),
 		)
+		//fmt.Fprintf(h.Writer, "\n(%d,%d)\n", lastBarChars, sChars)
 		fmt.Fprintln(h.Writer)
 		bar.WriteTo(h.Writer)
 	} else {
