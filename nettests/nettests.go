@@ -9,7 +9,6 @@ import (
 	"github.com/apex/log"
 	"github.com/fatih/color"
 	"github.com/measurement-kit/go-measurement-kit"
-	homedir "github.com/mitchellh/go-homedir"
 	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/cli/version"
 	"github.com/ooni/probe-cli/internal/database"
@@ -76,11 +75,13 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	caBundlePath := getCaBundlePath()
 	msmtPath := c.msmtPath
 
-	userHome, err := homedir.Dir()
+	userHome, err := utils.GetOONIHome()
 	if err != nil {
 		log.WithError(err).Error("failed to figure out the homedir")
 		return err
 	}
+	// Get the parent of it
+	userHome = filepath.Dir(userHome)
 
 	relPath, err := filepath.Rel(userHome, caBundlePath)
 	if err != nil {
