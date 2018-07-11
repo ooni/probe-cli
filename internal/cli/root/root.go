@@ -7,7 +7,7 @@ import (
 	"github.com/ooni/probe-cli/internal/log/handlers/batch"
 	"github.com/ooni/probe-cli/internal/log/handlers/cli"
 	"github.com/ooni/probe-cli/utils"
-	"github.com/prometheus/common/version"
+	"github.com/ooni/probe-cli/internal/cli/version/version.go"
 )
 
 // Cmd is the root command
