@@ -16,6 +16,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const Version = "3.0.0-dev.0"
+
 // Context for OONI Probe
 type Context struct {
 	Config   *config.Config

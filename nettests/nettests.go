@@ -10,7 +10,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/measurement-kit/go-measurement-kit"
 	ooni "github.com/ooni/probe-cli"
-	"github.com/ooni/probe-cli/internal/cli/version"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/output"
 	"github.com/ooni/probe-cli/utils"
@@ -122,7 +121,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		DisableReportFile: false,
 		DisableCollector:  false,
 		SoftwareName:      "ooniprobe",
-		SoftwareVersion:   version.Version,
+		SoftwareVersion:   ooni.Version,
 
 		OutputPath:       msmtPath,
 		GeoIPCountryPath: geoIPCountryPath,

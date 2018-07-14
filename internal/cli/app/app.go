@@ -3,13 +3,13 @@ package app
 import (
 	"os"
 
+	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/cli/root"
-	"github.com/ooni/probe-cli/internal/cli/version"
 )
 
 // Run the app. This is the main app entry point
 func Run() error {
-	root.Cmd.Version(version.Version)
+	root.Cmd.Version(ooni.Version)
 	_, err := root.Cmd.Parse(os.Args[1:])
 	return err
 }
