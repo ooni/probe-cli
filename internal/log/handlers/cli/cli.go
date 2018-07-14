@@ -11,7 +11,6 @@ import (
 	"github.com/apex/log"
 	"github.com/fatih/color"
 	colorable "github.com/mattn/go-colorable"
-	"github.com/ooni/probe-cli/internal/log/handlers/cli/progress"
 	"github.com/ooni/probe-cli/internal/util"
 )
 
@@ -102,22 +101,14 @@ func logTable(w io.Writer, f log.Fields) error {
 	return nil
 }
 
-var bar *progress.Bar
-var lastBarChars int
-
 // TypedLog is used for handling special "typed" logs to the CLI
 func (h *Handler) TypedLog(t string, e *log.Entry) error {
 	switch t {
 	case "progress":
 		var err error
-		if bar == nil {
-			bar = progress.New(1.0)
-		}
-		bar.Value(e.Fields.Get("percentage").(float64))
-		bar.Text(e.Message)
-		barStr := bar.String()
-		fmt.Fprintf(h.Writer, "\r   %s", barStr)
-		lastBarChars = util.EscapeAwareRuneCountInString(barStr) + 3
+		s := fmt.Sprintf("%.2f%%: %s", e.Fields.Get("percentage").(float64), e.Message)
+		fmt.Fprintf(h.Writer, s)
+		fmt.Fprintln(h.Writer)
 		return err
 	case "table":
 		return logTable(h.Writer, e.Fields)
@@ -146,21 +137,8 @@ func (h *Handler) DefaultLog(e *log.Entry) error {
 		s += fmt.Sprintf(" %s=%s", color.Sprint(name), e.Fields.Get(name))
 	}
 
-	if bar != nil {
-		// We need to move the cursor back to the begging of the line and add some
-		// padding to the end of the string to delete the previous line written to
-		// the console.
-		sChars := util.EscapeAwareRuneCountInString(s)
-		fmt.Fprintf(h.Writer,
-			fmt.Sprintf("\r%s%s", s, strings.Repeat(" ", lastBarChars-sChars)),
-		)
-		//fmt.Fprintf(h.Writer, "\n(%d,%d)\n", lastBarChars, sChars)
-		fmt.Fprintln(h.Writer)
-		bar.WriteTo(h.Writer)
-	} else {
-		fmt.Fprintf(h.Writer, s)
-		fmt.Fprintln(h.Writer)
-	}
+	fmt.Fprintf(h.Writer, s)
+	fmt.Fprintln(h.Writer)
 
 	return nil
 }
