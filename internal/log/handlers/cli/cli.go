@@ -106,7 +106,7 @@ func (h *Handler) TypedLog(t string, e *log.Entry) error {
 	switch t {
 	case "progress":
 		var err error
-		s := fmt.Sprintf("%.2f%%: %s", e.Fields.Get("percentage").(float64), e.Message)
+		s := fmt.Sprintf("%.2f%%: %-25s", e.Fields.Get("percentage").(float64)*100, e.Message)
 		fmt.Fprintf(h.Writer, s)
 		fmt.Fprintln(h.Writer)
 		return err
