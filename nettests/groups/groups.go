@@ -102,7 +102,7 @@ var NettestGroups = map[string]NettestGroup{
 			middlebox.HTTPHeaderFieldManipulation{},
 		},
 		Summary: func(m summary.SummaryMap) (string, error) {
-			if err := summary.CheckRequiredKeys([]string{"WebConnectivity"}, m); err != nil {
+			if err := summary.CheckRequiredKeys([]string{"HttpInvalidRequestLine", "HttpHeaderFieldManipulation"}, m); err != nil {
 				log.WithError(err).Error("missing keys")
 				return "", err
 			}
