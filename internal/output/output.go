@@ -1,9 +1,13 @@
 package output
 
 import (
+	"bufio"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/internal/util"
 )
 
 // Progress logs a progress type event
@@ -50,4 +54,44 @@ func ResultItem(result ResultItemData) {
 		"index":           result.Index,
 		"total_count":     result.TotalCount,
 	}).Info("result item")
+}
+
+type ResultSummaryData struct {
+	TotalTests         int64
+	TotalDataUsageUp   int64
+	TotalDataUsageDown int64
+	TotalNetworks      int64
+}
+
+func ResultSummary(result ResultSummaryData) {
+	log.WithFields(log.Fields{
+		"type":                  "result_summary",
+		"total_tests":           result.TotalTests,
+		"total_data_usage_up":   result.TotalDataUsageUp,
+		"total_data_usage_down": result.TotalDataUsageDown,
+		"total_networks":        result.TotalNetworks,
+	}).Info("result summary")
+}
+
+// SectionTitle is the title of a section
+func SectionTitle(text string) {
+	log.WithFields(log.Fields{
+		"type":  "section_title",
+		"title": text,
+	}).Info(text)
+}
+
+func Paragraph(text string) {
+	const width = 80
+	fmt.Println(util.WrapString(text, width))
+}
+
+func Bullet(text string) {
+	const width = 80
+	fmt.Printf("• %s\n", util.WrapString(text, width))
+}
+
+func PressEnterToContinue(text string) {
+	fmt.Print(text)
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }

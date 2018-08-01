@@ -7,7 +7,6 @@ import (
 	"github.com/ooni/probe-cli/internal/log/handlers/batch"
 	"github.com/ooni/probe-cli/internal/log/handlers/cli"
 	"github.com/ooni/probe-cli/utils"
-	"github.com/prometheus/common/version"
 )
 
 // Cmd is the root command
@@ -33,7 +32,7 @@ func init() {
 		}
 		if *isVerbose {
 			log.SetLevel(log.DebugLevel)
-			log.Debugf("ooni version %s", version.Version)
+			log.Debugf("ooni version %s", ooni.Version)
 		}
 
 		Init = func() (*ooni.Context, error) {

@@ -20,6 +20,11 @@ func RequiredDirs(home string) []string {
 	return requiredDirs
 }
 
+// ConfigPath returns the default path to the config file
+func ConfigPath(home string) string {
+	return filepath.Join(home, "config.json")
+}
+
 // GeoIPDir returns the geoip data dir for the given OONI Home
 func GeoIPDir(home string) string {
 	return filepath.Join(home, "geoip")

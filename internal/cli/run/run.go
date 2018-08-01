@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
+	"github.com/fatih/color"
 	"github.com/ooni/probe-cli/internal/cli/root"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
@@ -18,7 +20,14 @@ import (
 func init() {
 	cmd := root.Command("run", "Run a test group or OONI Run link")
 
-	nettestGroup := cmd.Arg("name", "the nettest group to run").Required().String()
+	var nettestGroupNames []string
+	for name := range groups.NettestGroups {
+		nettestGroupNames = append(nettestGroupNames, color.BlueString(name))
+	}
+
+	nettestGroup := cmd.Arg("name",
+		fmt.Sprintf("the nettest group to run. Supported tests are: %s",
+			strings.Join(nettestGroupNames, ", "))).Required().String()
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		log.Infof("Starting %s", *nettestGroup)
@@ -27,6 +36,12 @@ func init() {
 			log.Errorf("%s", err)
 			return err
 		}
+
+		if err = ctx.MaybeOnboarding(); err != nil {
+			log.WithError(err).Error("failed to perform onboarding")
+			return err
+		}
+
 		group, ok := groups.NettestGroups[*nettestGroup]
 		if !ok {
 			log.Errorf("No test group named %s", *nettestGroup)

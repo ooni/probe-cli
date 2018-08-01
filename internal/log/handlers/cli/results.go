@@ -8,37 +8,9 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/internal/util"
+	"github.com/ooni/probe-cli/nettests/summary"
 )
-
-func RightPad(str string, length int) string {
-	return str + strings.Repeat(" ", length-len(str))
-}
-
-// XXX Copy-pasta from nettest/groups
-// PerformanceSummary is the result summary for a performance test
-type PerformanceSummary struct {
-	Upload   int64
-	Download int64
-	Ping     float64
-	Bitrate  int64
-}
-
-// MiddleboxSummary is the summary for the middlebox tests
-type MiddleboxSummary struct {
-	Detected bool
-}
-
-// IMSummary is the summary for the im tests
-type IMSummary struct {
-	Tested  uint
-	Blocked uint
-}
-
-// WebsitesSummary is the summary for the websites test
-type WebsitesSummary struct {
-	Tested  uint
-	Blocked uint
-}
 
 func formatSpeed(speed int64) string {
 	if speed < 1000 {
@@ -54,7 +26,7 @@ func formatSpeed(speed int64) string {
 
 var summarizers = map[string]func(string) []string{
 	"websites": func(ss string) []string {
-		var summary WebsitesSummary
+		var summary summary.WebsitesSummary
 		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
 			return nil
 		}
@@ -65,7 +37,7 @@ var summarizers = map[string]func(string) []string{
 		}
 	},
 	"performance": func(ss string) []string {
-		var summary PerformanceSummary
+		var summary summary.PerformanceSummary
 		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
 			return nil
 		}
@@ -76,7 +48,7 @@ var summarizers = map[string]func(string) []string{
 		}
 	},
 	"im": func(ss string) []string {
-		var summary IMSummary
+		var summary summary.IMSummary
 		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
 			return nil
 		}
@@ -87,7 +59,7 @@ var summarizers = map[string]func(string) []string{
 		}
 	},
 	"middlebox": func(ss string) []string {
-		var summary MiddleboxSummary
+		var summary summary.MiddleboxSummary
 		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
 			return nil
 		}
@@ -122,26 +94,48 @@ func logResultItem(w io.Writer, f log.Fields) error {
 		fmt.Fprintf(w, "┢"+strings.Repeat("━", colWidth*2+2)+"┪\n")
 	}
 
-	firstRow := RightPad(fmt.Sprintf("#%d - %s", rID, startTime.Format(time.RFC822)), colWidth*2)
+	firstRow := util.RightPad(fmt.Sprintf("#%d - %s", rID, startTime.Format(time.RFC822)), colWidth*2)
 	fmt.Fprintf(w, "┃ "+firstRow+" ┃\n")
 	fmt.Fprintf(w, "┡"+strings.Repeat("━", colWidth*2+2)+"┩\n")
 
 	summary := makeSummary(name, f.Get("summary").(string))
 
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
-		RightPad(name, colWidth),
-		RightPad(summary[0], colWidth)))
+		util.RightPad(name, colWidth),
+		util.RightPad(summary[0], colWidth)))
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
-		RightPad(networkName, colWidth),
-		RightPad(summary[1], colWidth)))
+		util.RightPad(networkName, colWidth),
+		util.RightPad(summary[1], colWidth)))
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
-		RightPad(asn, colWidth),
-		RightPad(summary[2], colWidth)))
+		util.RightPad(asn, colWidth),
+		util.RightPad(summary[2], colWidth)))
 
 	if index == totalCount-1 {
 		fmt.Fprintf(w, "└┬──────────────┬──────────────┬──────────────┬")
 		fmt.Fprintf(w, strings.Repeat("─", colWidth*2-44))
 		fmt.Fprintf(w, "┘\n")
 	}
+	return nil
+}
+
+func logResultSummary(w io.Writer, f log.Fields) error {
+
+	networks := f.Get("total_networks").(int64)
+	tests := f.Get("total_tests").(int64)
+	dataUp := f.Get("total_data_usage_up").(int64)
+	dataDown := f.Get("total_data_usage_down").(int64)
+	if tests == 0 {
+		fmt.Fprintf(w, "No results\n")
+		fmt.Fprintf(w, "Try running:\n")
+		fmt.Fprintf(w, "  ooni run websites\n")
+		return nil
+	}
+	//              └┬──────────────┬──────────────┬──────────────┬
+	fmt.Fprintf(w, " │ %s │ %s │ %s │\n",
+		util.RightPad(fmt.Sprintf("%d tests", tests), 12),
+		util.RightPad(fmt.Sprintf("%d nets", networks), 12),
+		util.RightPad(fmt.Sprintf("%d ⬆ %d ⬇", dataUp, dataDown), 12))
+	fmt.Fprintf(w, " └──────────────┴──────────────┴──────────────┘\n")
+
 	return nil
 }

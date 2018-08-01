@@ -7,11 +7,9 @@ import (
 	"path/filepath"
 
 	"github.com/apex/log"
+	"github.com/fatih/color"
 	"github.com/measurement-kit/go-measurement-kit"
-	homedir "github.com/mitchellh/go-homedir"
 	ooni "github.com/ooni/probe-cli"
-	"github.com/ooni/probe-cli/internal/cli/version"
-	"github.com/ooni/probe-cli/internal/colors"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/output"
 	"github.com/ooni/probe-cli/utils"
@@ -76,11 +74,13 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	caBundlePath := getCaBundlePath()
 	msmtPath := c.msmtPath
 
-	userHome, err := homedir.Dir()
+	userHome, err := utils.GetOONIHome()
 	if err != nil {
 		log.WithError(err).Error("failed to figure out the homedir")
 		return err
 	}
+	// Get the parent of it
+	userHome = filepath.Dir(userHome)
 
 	relPath, err := filepath.Rel(userHome, caBundlePath)
 	if err != nil {
@@ -121,7 +121,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		DisableReportFile: false,
 		DisableCollector:  false,
 		SoftwareName:      "ooniprobe",
-		SoftwareVersion:   version.Version,
+		SoftwareVersion:   ooni.Version,
 
 		OutputPath:       msmtPath,
 		GeoIPCountryPath: geoIPCountryPath,
@@ -132,6 +132,8 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("GeoIPCountryPath: %s", nt.Options.GeoIPCountryPath)
 
 	nt.On("log", func(e mk.Event) {
+		log.Debugf(color.RedString(e.Key))
+
 		level := e.Value.LogLevel
 		msg := e.Value.Message
 
@@ -161,7 +163,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	})
 
 	nt.On("status.geoip_lookup", func(e mk.Event) {
-		log.Debugf(colors.Red(e.Key))
+		log.Debugf(color.RedString(e.Key))
 
 		msmtTemplate.ASN = e.Value.ProbeASN
 		msmtTemplate.IP = e.Value.ProbeIP
@@ -169,7 +171,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	})
 
 	nt.On("status.measurement_start", func(e mk.Event) {
-		log.Debugf(colors.Red(e.Key))
+		log.Debugf(color.RedString(e.Key))
 
 		idx := e.Value.Idx
 		msmt, err := database.CreateMeasurement(c.Ctx.DB, msmtTemplate, e.Value.Input)
@@ -181,29 +183,64 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	})
 
 	nt.On("status.progress", func(e mk.Event) {
-		log.Debugf(colors.Red(e.Key))
+		log.Debugf(color.RedString(e.Key))
 		c.OnProgress(e.Value.Percentage, e.Value.Message)
 	})
 
 	nt.On("status.update.*", func(e mk.Event) {
-		log.Debugf(colors.Red(e.Key))
+		log.Debugf(color.RedString(e.Key))
+	})
+
+	// XXX should these be made into permanent failures?
+	nt.On("failure.asn_lookup", func(e mk.Event) {
+		log.Debugf(color.RedString(e.Key))
+		log.Debugf("%v", e.Value)
+	})
+	nt.On("failure.cc_lookup", func(e mk.Event) {
+		log.Debugf(color.RedString(e.Key))
+		log.Debugf("%v", e.Value)
+	})
+	nt.On("failure.ip_lookup", func(e mk.Event) {
+		log.Debugf(color.RedString(e.Key))
+		log.Debugf("%v", e.Value)
+	})
+
+	nt.On("failure.resolver_lookup", func(e mk.Event) {
+		log.Debugf(color.RedString(e.Key))
+		log.Debugf("%v", e.Value)
+	})
+
+	nt.On("failure.report_create", func(e mk.Event) {
+		log.Debugf(color.RedString(e.Key))
+		log.Debugf("%v", e.Value)
+	})
+
+	nt.On("failure.report_close", func(e mk.Event) {
+		log.Debugf(color.RedString(e.Key))
+		log.Debugf("%v", e.Value)
+	})
+
+	nt.On("failure.startup", func(e mk.Event) {
+		log.Debugf(color.RedString(e.Key))
+
+		c.msmts[e.Value.Idx].Failed(c.Ctx.DB, e.Value.Failure)
 	})
 
 	nt.On("failure.measurement", func(e mk.Event) {
-		log.Debugf(colors.Red(e.Key))
+		log.Debugf(color.RedString(e.Key))
 
 		c.msmts[e.Value.Idx].Failed(c.Ctx.DB, e.Value.Failure)
 	})
 
 	nt.On("failure.measurement_submission", func(e mk.Event) {
-		log.Debugf(colors.Red(e.Key))
+		log.Debugf(color.RedString(e.Key))
 
 		failure := e.Value.Failure
 		c.msmts[e.Value.Idx].UploadFailed(c.Ctx.DB, failure)
 	})
 
 	nt.On("status.measurement_submission", func(e mk.Event) {
-		log.Debugf(colors.Red(e.Key))
+		log.Debugf(color.RedString(e.Key))
 
 		if err := c.msmts[e.Value.Idx].UploadSucceeded(c.Ctx.DB); err != nil {
 			log.WithError(err).Error("failed to mark msmt as uploaded")
@@ -211,7 +248,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	})
 
 	nt.On("status.measurement_done", func(e mk.Event) {
-		log.Debugf(colors.Red(e.Key))
+		log.Debugf(color.RedString(e.Key))
 
 		if err := c.msmts[e.Value.Idx].Done(c.Ctx.DB); err != nil {
 			log.WithError(err).Error("failed to mark msmt as done")
@@ -219,6 +256,8 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	})
 
 	nt.On("measurement", func(e mk.Event) {
+		log.Debugf("status.end")
+
 		c.OnEntry(e.Value.Idx, e.Value.JSONStr)
 	})
 

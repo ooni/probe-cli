@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/apex/log"
 	"github.com/fatih/color"
 	colorable "github.com/mattn/go-colorable"
+	"github.com/ooni/probe-cli/internal/util"
 )
 
 // Default handler outputting to stderr.
@@ -60,16 +62,62 @@ func New(w io.Writer) *Handler {
 	}
 }
 
+func logSectionTitle(w io.Writer, f log.Fields) error {
+	colWidth := 24
+
+	title := f.Get("title").(string)
+	fmt.Fprintf(w, "┏"+strings.Repeat("━", colWidth+2)+"┓\n")
+	fmt.Fprintf(w, "┃ %s ┃\n", util.RightPad(title, colWidth))
+	fmt.Fprintf(w, "┗"+strings.Repeat("━", colWidth+2)+"┛\n")
+	return nil
+}
+
+func logTable(w io.Writer, f log.Fields) error {
+	color := color.New(color.FgBlue)
+
+	names := f.Names()
+
+	var lines []string
+	colWidth := 0
+	for _, name := range names {
+		if name == "type" {
+			continue
+		}
+		line := fmt.Sprintf("%s: %s", color.Sprint(name), f.Get(name))
+		lineLength := util.EscapeAwareRuneCountInString(line)
+		lines = append(lines, line)
+		if colWidth < lineLength {
+			colWidth = lineLength
+		}
+	}
+
+	fmt.Fprintf(w, "┏"+strings.Repeat("━", colWidth+2)+"┓\n")
+	for _, line := range lines {
+		fmt.Fprintf(w, "┃ %s ┃\n",
+			util.RightPad(line, colWidth),
+		)
+	}
+	fmt.Fprintf(w, "┗"+strings.Repeat("━", colWidth+2)+"┛\n")
+	return nil
+}
+
 // TypedLog is used for handling special "typed" logs to the CLI
 func (h *Handler) TypedLog(t string, e *log.Entry) error {
 	switch t {
 	case "progress":
-		// XXX replace this with something more fancy like https://github.com/tj/go-progress
-		fmt.Fprintf(h.Writer, "%.1f%% [%s]: %s", e.Fields.Get("percentage").(float64)*100, e.Fields.Get("key"), e.Message)
+		var err error
+		s := fmt.Sprintf("%.2f%%: %-25s", e.Fields.Get("percentage").(float64)*100, e.Message)
+		fmt.Fprintf(h.Writer, s)
 		fmt.Fprintln(h.Writer)
-		return nil
+		return err
+	case "table":
+		return logTable(h.Writer, e.Fields)
 	case "result_item":
 		return logResultItem(h.Writer, e.Fields)
+	case "result_summary":
+		return logResultSummary(h.Writer, e.Fields)
+	case "section_title":
+		return logSectionTitle(h.Writer, e.Fields)
 	default:
 		return h.DefaultLog(e)
 	}
@@ -81,15 +129,15 @@ func (h *Handler) DefaultLog(e *log.Entry) error {
 	level := Strings[e.Level]
 	names := e.Fields.Names()
 
-	color.Fprintf(h.Writer, "%s %-25s", bold.Sprintf("%*s", h.Padding+1, level), e.Message)
-
+	s := color.Sprintf("%s %-25s", bold.Sprintf("%*s", h.Padding+1, level), e.Message)
 	for _, name := range names {
 		if name == "source" {
 			continue
 		}
-		fmt.Fprintf(h.Writer, " %s=%s", color.Sprint(name), e.Fields.Get(name))
+		s += fmt.Sprintf(" %s=%s", color.Sprint(name), e.Fields.Get(name))
 	}
 
+	fmt.Fprintf(h.Writer, s)
 	fmt.Fprintln(h.Writer)
 
 	return nil

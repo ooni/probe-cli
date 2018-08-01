@@ -61,3 +61,7 @@ required = ["github.com/shuLhan/go-bindata/go-bindata"]
 [[constraint]]
   name = "github.com/oschwald/geoip2-golang"
   version = "1.2.1"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/getsentry/raven-go"

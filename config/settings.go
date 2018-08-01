@@ -82,11 +82,10 @@ func (s *InstantMessaging) NettestConfigs() []NettestConfig {
 
 // Performance nettest group
 type Performance struct {
-	EnabledTests   []string `json:"enabled_tests"`
-	NDTServer      string   `json:"ndt_server"`
-	NDTServerPort  string   `json:"ndt_server_port"`
-	DashServer     string   `json:"dash_server"`
-	DashServerPort string   `json:"dash_server_port"`
+	NDTServer      string `json:"ndt_server"`
+	NDTServerPort  string `json:"ndt_server_port"`
+	DashServer     string `json:"dash_server"`
+	DashServerPort string `json:"dash_server_port"`
 }
 
 // Middlebox nettest group
@@ -100,4 +99,33 @@ type NettestGroups struct {
 	InstantMessaging InstantMessaging `json:"instant_messaging"`
 	Performance      Performance      `json:"performance"`
 	Middlebox        Middlebox        `json:"middlebox"`
+}
+
+// Notifications settings
+type Notifications struct {
+	Enabled                bool `json:"enabled"`
+	NotifyOnTestCompletion bool `json:"notify_on_test_completion"`
+	NotifyOnNews           bool `json:"notify_on_news"`
+}
+
+// Sharing settings
+type Sharing struct {
+	IncludeIP     bool `json:"include_ip"`
+	IncludeASN    bool `json:"include_asn"`
+	IncludeGPS    bool `json:"include_gps"`
+	UploadResults bool `json:"upload_results"`
+}
+
+// Advanced settings
+type Advanced struct {
+	IncludeCountry    bool `json:"include_country"`
+	UseDomainFronting bool `json:"use_domain_fronting"`
+	SendCrashReports  bool `json:"send_crash_reports"`
+}
+
+// AutomatedTesting settings
+type AutomatedTesting struct {
+	Enabled          bool     `json:"enabled"`
+	EnabledTests     []string `json:"enabled_tests"`
+	MonthlyAllowance string   `json:"monthly_allowance"`
 }

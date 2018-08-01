@@ -7,15 +7,10 @@ import (
 
 	"github.com/apex/log"
 	"github.com/jmoiron/sqlx"
+	"github.com/ooni/probe-cli/nettests/summary"
 	"github.com/ooni/probe-cli/utils"
 	"github.com/pkg/errors"
 )
-
-// ResultSummaryFunc is the function used to generate result summaries
-type ResultSummaryFunc func(SummaryMap) (string, error)
-
-// SummaryMap contains a mapping from test name to serialized summary for it
-type SummaryMap map[string][]string
 
 // UpdateOne will run the specified update query and check that it only affected one row
 func UpdateOne(db *sqlx.DB, query string, arg interface{}) error {
@@ -32,6 +27,42 @@ func UpdateOne(db *sqlx.DB, query string, arg interface{}) error {
 		return errors.New("inconsistent update count")
 	}
 	return nil
+}
+
+// ListMeasurements given a result ID
+func ListMeasurements(db *sqlx.DB, resultID int64) ([]*Measurement, error) {
+	measurements := []*Measurement{}
+
+	rows, err := db.Query(`SELECT id, name,
+		start_time, runtime,
+		country,
+		asn,
+		summary,
+		input
+		FROM measurements
+		WHERE result_id = ?
+		ORDER BY start_time;`, resultID)
+	if err != nil {
+		return measurements, errors.Wrap(err, "failed to get measurement list")
+	}
+
+	for rows.Next() {
+		msmt := Measurement{}
+		err = rows.Scan(&msmt.ID, &msmt.Name,
+			&msmt.StartTime, &msmt.Runtime,
+			&msmt.CountryCode,
+			&msmt.ASN,
+			&msmt.Summary, &msmt.Input,
+			//&result.DataUsageUp, &result.DataUsageDown)
+		)
+		if err != nil {
+			log.WithError(err).Error("failed to fetch a row")
+			continue
+		}
+		measurements = append(measurements, &msmt)
+	}
+
+	return measurements, nil
 }
 
 // Measurement model
@@ -262,8 +293,8 @@ func ListResults(db *sqlx.DB) ([]*Result, []*Result, error) {
 
 // MakeSummaryMap return a mapping of test names to summaries for the given
 // result
-func MakeSummaryMap(db *sqlx.DB, r *Result) (SummaryMap, error) {
-	summaryMap := SummaryMap{}
+func MakeSummaryMap(db *sqlx.DB, r *Result) (summary.SummaryMap, error) {
+	summaryMap := summary.SummaryMap{}
 
 	msmts := []Measurement{}
 	// XXX maybe we only want to select some of the columns
@@ -283,7 +314,7 @@ func MakeSummaryMap(db *sqlx.DB, r *Result) (SummaryMap, error) {
 }
 
 // Finished marks the result as done and sets the runtime
-func (r *Result) Finished(db *sqlx.DB, makeSummary ResultSummaryFunc) error {
+func (r *Result) Finished(db *sqlx.DB, makeSummary summary.ResultSummaryFunc) error {
 	if r.Done == true || r.Runtime != 0 {
 		return errors.New("Result is already finished")
 	}

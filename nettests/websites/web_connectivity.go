@@ -29,6 +29,7 @@ func lookupURLs(ctl *nettests.Controller) ([]string, error) {
 		parsed = new(URLResponse)
 		urls   []string
 	)
+	// XXX pass in the configuration for category codes
 	reqURL := fmt.Sprintf("%s/api/v1/urls?probe_cc=%s",
 		orchestrateBaseURL,
 		ctl.Ctx.Location.CountryCode)

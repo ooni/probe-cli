@@ -11,6 +11,7 @@ func init() {
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		log.Info("Nettest")
+		log.Error("this function is not implemented")
 		return nil
 	})
 }
