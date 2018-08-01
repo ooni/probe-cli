@@ -1,8 +1,8 @@
-# gooni
+# OONI Probe CLI
 
-An attempt at writing OONI Probe in golang.
+The next generation OONI Probe Command Line Interface.
 
-This is heavy work in progress.
+:skull: **Attention** This is under heavy development and should only be run and used by OONI developers. Use at your own risk and if you do use it, you may have to do some cleanup when we release the first public release of OONI Probe.
 
 ## Development setup
 
@@ -33,22 +33,3 @@ was built as
 ```
 CGO_LDFLAGS="-L/path/to/measurement-kit/.libs/" CGO_CFLAGS="-I/path/to/measurement-kit/include" make build
 ```
-
-## Todo
-
-* Add support for outputing structured logging messages, while tests are
-  running, to be consumed by the desktop app
-
-* Add support for the missing tests, namely:
-- HTTP Invalid Request Line
-- HTTP Header Field Manipulation
-- Facebook Messenger
-- Telegram
-- WhatsApp
-- WebConnectivity
-
-* Fix issue with the informed consent being bypassed on first run
-
-* Finish the config file implementation
-
-* Add support for listing results in the CLI
