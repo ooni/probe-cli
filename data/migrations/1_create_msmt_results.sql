@@ -129,7 +129,7 @@ CREATE TABLE `measurements` (
 
 CREATE TABLE `urls` (
   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-  `input` VARCHAR(255) NOT NULL,
+  `url` VARCHAR(255) NOT NULL, -- XXX is this long enough?
   `category_code` VARCHAR(5) NOT NULL, -- The citizenlab category code for the
                                        -- site. We use the string NONE to denote
                                        -- no known category code.
@@ -161,7 +161,7 @@ CREATE TABLE `networks` (
                                -- 0000:0000:0000:0000:0000:0000:0000:0000,
                                -- which is 39 chars.
   `asn` INT(4) NOT NULL,
-  `country` VARCHAR(2) NOT NULL, -- The two letter country code
+  `country_code` VARCHAR(2) NOT NULL, -- The two letter country code
 );
 
 -- +migrate StatementEnd
