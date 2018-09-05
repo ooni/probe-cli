@@ -11,6 +11,44 @@ DROP TABLE `networks`;
 -- +migrate Up
 -- +migrate StatementBegin
 
+CREATE TABLE `urls` (
+  `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+  `url` VARCHAR(255) NOT NULL, -- XXX is this long enough?
+  `category_code` VARCHAR(5) NOT NULL, -- The citizenlab category code for the
+                                       -- site. We use the string NONE to denote
+                                       -- no known category code.
+
+  `country_code` VARCHAR(2) NOT NULL -- The two letter country code which this
+                                     -- URL belongs to
+);
+
+-- We create a separate table for networks for 2 reasons:
+-- 1. For some of the views where need the total number of measured networks,
+-- it's going to be much more efficient to just lookup the count of rows in this
+-- table.
+-- 2. (most important) We want to avoid duplicating a bunch of information that
+-- is going to be common to several networks the user is on.
+-- Example:
+-- We may wish to add to this table the location from of the probe from the GPS
+-- or add support for allowing the user to "correct" a misclassified measurement
+-- or distinguishing between wifi and mobile.
+CREATE TABLE `networks` (
+  `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+  `network_name` VARCHAR(255), -- String name representing the network_name which by default is populated based
+                               -- on the ASN.
+                               -- We use a separate key to reference the rows in
+                               -- this tables, because we may wish to "enrich"
+                               -- this with more data in the future.
+  `network_type` VARCHAR(16), -- One of wifi, mobile
+
+   `ip` VARCHAR(40) NOT NULL,  -- Stores a string representation of an ipv4 or ipv6 address.
+                               -- The longest ip is an ipv6 address like:
+                               -- 0000:0000:0000:0000:0000:0000:0000:0000,
+                               -- which is 39 chars.
+  `asn` INT(4) NOT NULL,
+  `country_code` VARCHAR(2) NOT NULL -- The two letter country code
+);
+
 CREATE TABLE `results` (
     `id` INTEGER PRIMARY KEY AUTOINCREMENT,
     -- This can be one of "websites", "im", "performance", "middlebox".
@@ -55,7 +93,6 @@ CREATE TABLE `measurements` (
     -- You don't have the guarantee that every (ip, asn, country, network_name)
     -- is the same in a "measurement set" associated to a "result".
     `network_id` INTEGER NOT NULL,
-    FOREIGN KEY (`network_id`) REFERENCES `networks`(`id`),
 
     -- Note for golang: we used to have state be one of `done` and `active`, so
     -- this is equivalent to done being true or false.
@@ -93,7 +130,6 @@ CREATE TABLE `measurements` (
                               -- created.
 
     `url_id` INTEGER NOT NULL,
-    FOREIGN KEY (`url_id`) REFERENCES `urls`(`id`),
 
     -- This is not yet a feature of the collector, but we are planning to add
     -- this at some point in the near future.
@@ -116,53 +152,19 @@ CREATE TABLE `measurements` (
 
     -- The cross table reference to JOIN the two tables together.
     `result_id` INTEGER NOT NULL,
-    FOREIGN KEY (`result_id`) REFERENCES `results`(`id`)
-      ON DELETE CASCADE ON UPDATE CASCADE, -- If we delete a result we also want
-                                           -- all the measurements to be deleted as well.
+
 
     -- This is a variable used internally to track the path to the on-disk
     -- measurements.json. It may make sense to write one file per entry by
     -- hooking MK and preventing it from writing to a file on disk which may
     -- have many measurements per file.
     `report_file_path` VARCHAR(260) NOT NULL,
-);
 
-CREATE TABLE `urls` (
-  `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-  `url` VARCHAR(255) NOT NULL, -- XXX is this long enough?
-  `category_code` VARCHAR(5) NOT NULL, -- The citizenlab category code for the
-                                       -- site. We use the string NONE to denote
-                                       -- no known category code.
-
-  `country_code` VARCHAR(2) NOT NULL -- The two letter country code which this
-                                     -- URL belongs to
-)
-
--- We create a separate table for networks for 2 reasons:
--- 1. For some of the views where need the total number of measured networks,
--- it's going to be much more efficient to just lookup the count of rows in this
--- table.
--- 2. (most important) We want to avoid duplicating a bunch of information that
--- is going to be common to several networks the user is on.
--- Example:
--- We may wish to add to this table the location from of the probe from the GPS
--- or add support for allowing the user to "correct" a misclassified measurement
--- or distinguishing between wifi and mobile.
-CREATE TABLE `networks` (
-  `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-  `network_name` VARCHAR(255), -- String name representing the network_name which by default is populated based
-                               -- on the ASN.
-                               -- We use a separate key to reference the rows in
-                               -- this tables, because we may wish to "enrich"
-                               -- this with more data in the future.
-  `network_type` VARCHAR(16), -- One of wifi, mobile
-
-   `ip` VARCHAR(40) NOT NULL,  -- Stores a string representation of an ipv4 or ipv6 address.
-                               -- The longest ip is an ipv6 address like:
-                               -- 0000:0000:0000:0000:0000:0000:0000:0000,
-                               -- which is 39 chars.
-  `asn` INT(4) NOT NULL,
-  `country_code` VARCHAR(2) NOT NULL, -- The two letter country code
+    FOREIGN KEY (`result_id`) REFERENCES `results`(`id`)
+      ON DELETE CASCADE ON UPDATE CASCADE, -- If we delete a result we also want
+                                           -- all the measurements to be deleted as well.
+    FOREIGN KEY (`url_id`) REFERENCES `urls`(`id`),
+    FOREIGN KEY(`network_id`) REFERENCES `networks` (`id`)
 );
 
 -- +migrate StatementEnd
