@@ -65,3 +65,7 @@ required = ["github.com/shuLhan/go-bindata/go-bindata"]
 [[constraint]]
   branch = "master"
   name = "github.com/getsentry/raven-go"
+
+[[constraint]]
+  name = "upper.io/db.v3"
+  version = "3.5.4"

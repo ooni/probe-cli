@@ -146,9 +146,26 @@
   revision = "c87af80f3cc5036b55b83d77171e156791085e2e"
   version = "v1.7.1"
 
+[[projects]]
+  name = "upper.io/db.v3"
+  packages = [
+    ".",
+    "internal/cache",
+    "internal/cache/hashstructure",
+    "internal/immutable",
+    "internal/sqladapter",
+    "internal/sqladapter/compat",
+    "internal/sqladapter/exql",
+    "lib/reflectx",
+    "lib/sqlbuilder",
+    "sqlite"
+  ]
+  revision = "199d13d76c7cfba05ea0327375056fdabc8bea80"
+  version = "v3.5.4"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b2f5c39222a1fb405e3f48d2ae3b4758757fe708e12dbd23743c19135e225579"
+  inputs-digest = "bb552d1e6530dab8cdd5cc7a6c60bf2b9afbe77e6ea20a31b6d60fc44ad05e26"
   solver-name = "gps-cdcl"
   solver-version = 1

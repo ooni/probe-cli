@@ -45,13 +45,13 @@ func init() {
 					ID:            result.ID,
 					Index:         idx,
 					TotalCount:    len(incompleteResults),
-					Name:          result.Name,
+					Name:          result.TestGroupName,
 					StartTime:     result.StartTime,
-					NetworkName:   result.NetworkName,
-					Country:       result.Country,
-					ASN:           result.ASN,
-					Summary:       result.Summary,
-					Done:          result.Done,
+					NetworkName:   "FIXME", //result.NetworkName,
+					Country:       "FIXME", //result.Country,
+					ASN:           "FIXME", //result.ASN,
+					Summary:       "{}",    //result.Summary,
+					Done:          result.IsDone,
 					DataUsageUp:   result.DataUsageUp,
 					DataUsageDown: result.DataUsageDown,
 				})
@@ -65,18 +65,19 @@ func init() {
 					ID:            result.ID,
 					Index:         idx,
 					TotalCount:    len(doneResults),
-					Name:          result.Name,
+					Name:          result.TestGroupName,
 					StartTime:     result.StartTime,
-					NetworkName:   result.NetworkName,
-					Country:       result.Country,
-					ASN:           result.ASN,
-					Summary:       result.Summary,
-					Done:          result.Done,
+					NetworkName:   "FIXME", //result.NetworkName,
+					Country:       "FIXME", //result.Country,
+					ASN:           "FIXME", //result.ASN,
+					Summary:       "{}",    //result.Summary,
+					Done:          result.IsDone,
 					DataUsageUp:   result.DataUsageUp,
 					DataUsageDown: result.DataUsageDown,
 				})
 				resultSummary.TotalTests++
-				netCount[result.ASN]++
+				// FIXME
+				// netCount[result.ASN]++
 				resultSummary.TotalDataUsageUp += result.DataUsageUp
 				resultSummary.TotalDataUsageDown += result.DataUsageDown
 			}

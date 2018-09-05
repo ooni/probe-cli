@@ -6,7 +6,6 @@ import (
 	"path"
 
 	"github.com/apex/log"
-	"github.com/jmoiron/sqlx"
 	"github.com/ooni/probe-cli/config"
 	"github.com/ooni/probe-cli/internal/bindata"
 	"github.com/ooni/probe-cli/internal/database"
@@ -14,6 +13,7 @@ import (
 	"github.com/ooni/probe-cli/internal/onboard"
 	"github.com/ooni/probe-cli/utils"
 	"github.com/pkg/errors"
+	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 const Version = "3.0.0-dev.0"
@@ -21,7 +21,7 @@ const Version = "3.0.0-dev.0"
 // Context for OONI Probe
 type Context struct {
 	Config   *config.Config
-	DB       *sqlx.DB
+	DB       sqlbuilder.Database
 	Location *utils.LocationInfo
 
 	Home    string
