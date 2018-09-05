@@ -155,6 +155,7 @@ CREATE TABLE `networks` (
                                -- We use a separate key to reference the rows in
                                -- this tables, because we may wish to "enrich"
                                -- this with more data in the future.
+  `network_type` VARCHAR(16), -- One of wifi, mobile
 
    `ip` VARCHAR(40) NOT NULL,  -- Stores a string representation of an ipv4 or ipv6 address.
                                -- The longest ip is an ipv6 address like:
