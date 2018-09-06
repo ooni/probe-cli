@@ -86,3 +86,9 @@ It should now be possible to build ooni by running:
 ```
 make build
 ```
+
+To run internal tests do:
+
+```
+make test-internal
+```
