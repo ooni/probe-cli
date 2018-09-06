@@ -34,12 +34,12 @@ CREATE TABLE `urls` (
 -- or distinguishing between wifi and mobile.
 CREATE TABLE `networks` (
   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-  `network_name` VARCHAR(255), -- String name representing the network_name which by default is populated based
+  `network_name` VARCHAR(255) NOT NULL, -- String name representing the network_name which by default is populated based
                                -- on the ASN.
                                -- We use a separate key to reference the rows in
                                -- this tables, because we may wish to "enrich"
                                -- this with more data in the future.
-  `network_type` VARCHAR(16), -- One of wifi, mobile
+  `network_type` VARCHAR(16) NOT NULL, -- One of wifi, mobile
 
    `ip` VARCHAR(40) NOT NULL,  -- Stores a string representation of an ipv4 or ipv6 address.
                                -- The longest ip is an ipv6 address like:
@@ -59,7 +59,7 @@ CREATE TABLE `results` (
     -- That is to say: `SUM(runtime) FROM measurements` will always be <=
     -- `runtime FROM results` (most times <)
     `start_time` DATETIME NOT NULL,
-    `runtime` REAL NOT NULL,
+    `runtime` REAL,
 
     -- Used to indicate if the user has seen this result
     `is_viewed` TINYINT(1) NOT NULL,
@@ -70,7 +70,10 @@ CREATE TABLE `results` (
     `data_usage_down` INTEGER NOT NULL,
     -- It's probably reasonable to set the maximum length to 260 as this is the
     -- maximum length of file paths on windows.
-    `measurement_dir` VARCHAR(260) NOT NULL
+    `measurement_dir` VARCHAR(260) NOT NULL,
+
+    `network_id` INTEGER NOT NULL,
+    FOREIGN KEY(`network_id`) REFERENCES `networks` (`id`)
 );
 
 CREATE TABLE `measurements` (
@@ -86,13 +89,6 @@ CREATE TABLE `measurements` (
     `test_name` VARCHAR(64) NOT NULL,
     `start_time` DATETIME NOT NULL,
     `runtime` REAL NOT NULL,
-
-    -- For the purpose of populating the probe information in the results
-    -- views, you should pick the first measurement in the JOIN sorted by
-    -- start_time.
-    -- You don't have the guarantee that every (ip, asn, country, network_name)
-    -- is the same in a "measurement set" associated to a "result".
-    `network_id` INTEGER NOT NULL,
 
     -- Note for golang: we used to have state be one of `done` and `active`, so
     -- this is equivalent to done being true or false.
@@ -163,7 +159,6 @@ CREATE TABLE `measurements` (
     FOREIGN KEY (`result_id`) REFERENCES `results`(`id`)
       ON DELETE CASCADE ON UPDATE CASCADE, -- If we delete a result we also want
                                            -- all the measurements to be deleted as well.
-    FOREIGN KEY (`url_id`) REFERENCES `urls`(`id`),
-    FOREIGN KEY(`network_id`) REFERENCES `networks` (`id`)
+    FOREIGN KEY (`url_id`) REFERENCES `urls`(`id`)
 );
 -- +migrate StatementEnd

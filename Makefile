@@ -19,4 +19,8 @@ bindata:
 		-nometadata	\
 		-o internal/bindata/bindata.go -pkg bindata \
 	    data/...;
+
+test-internal:
+	@$(GO) test -v ./internal/...
+
 .PHONY: bindata

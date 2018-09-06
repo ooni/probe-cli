@@ -55,12 +55,23 @@ func init() {
 			return err
 		}
 
-		result, err := database.CreateResult(ctx.DB, ctx.Home, database.Result{
-			Name:        *nettestGroup,
-			StartTime:   time.Now().UTC(),
-			Country:     ctx.Location.CountryCode,
+		network := database.Network{
+			ASN:         ctx.Location.ASN,
+			CountryCode: ctx.Location.CountryCode,
 			NetworkName: ctx.Location.NetworkName,
-			ASN:         fmt.Sprintf("%d", ctx.Location.ASN),
+			IP:          ctx.Location.IP,
+		}
+		newID, err := ctx.DB.Collection("networks").Insert(network)
+		if err != nil {
+			log.WithError(err).Error("Failed to create the network row")
+			return nil
+		}
+		network.ID = newID.(int64)
+
+		result, err := database.CreateResult(ctx.DB, ctx.Home, database.Result{
+			TestGroupName: *nettestGroup,
+			StartTime:     time.Now().UTC(),
+			NetworkID:     network.ID,
 		})
 		if err != nil {
 			log.Errorf("DB result error: %s", err)

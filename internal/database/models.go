@@ -16,10 +16,11 @@ type Network struct {
 	ID          int64  `db:"id"`
 	NetworkName string `db:"network_name"`
 	IP          string `db:"ip"`
-	ASN         int    `db:"asn"`
+	ASN         uint   `db:"asn"`
 	CountryCode string `db:"country_code"`
 }
 
+// URL represents URLs from the testing lists
 type URL struct {
 	ID           int64  `db:"id"`
 	URL          int64  `db:"url"`
@@ -32,8 +33,7 @@ type Measurement struct {
 	ID               int64          `db:"id"`
 	TestName         string         `db:"test_name"`
 	StartTime        time.Time      `db:"start_time"`
-	Runtime          float64        `db:"runtime"`    // Fractional number of seconds
-	NetworkID        int64          `db:"network_id"` // Used to include a Network
+	Runtime          float64        `db:"runtime"` // Fractional number of seconds
 	IsDone           bool           `db:"is_done"`
 	IsUploaded       bool           `db:"is_uploaded"`
 	IsFailed         string         `db:"is_failed"`
@@ -56,7 +56,8 @@ type Result struct {
 	ID             int64     `db:"id"`
 	TestGroupName  string    `db:"test_group_name"`
 	StartTime      time.Time `db:"start_time"`
-	Runtime        float64   `db:"runtime"` // Runtime is expressed in fractional seconds
+	NetworkID      int64     `db:"network_id"` // Used to include a Network
+	Runtime        float64   `db:"runtime"`    // Runtime is expressed in fractional seconds
 	IsViewed       bool      `db:"is_viewed"`
 	IsDone         bool      `db:"is_done"`
 	DataUsageUp    int64     `db:"data_usage_up"`

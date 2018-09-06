@@ -1,6 +1,7 @@
 package nettests
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -58,7 +59,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	c.msmts = make(map[int64]*database.Measurement)
 
 	msmtTemplate := database.Measurement{
-		ReportID:       "",
+		ReportID:       sql.NullString{String: "", Valid: false},
 		TestName:       nt.Name,
 		ResultID:       c.res.ID,
 		ReportFilePath: c.msmtPath,
@@ -156,7 +157,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	nt.On("status.report_created", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
 
-		msmtTemplate.ReportID = e.Value.ReportID
+		msmtTemplate.ReportID = sql.NullString{String: e.Value.ReportID, Valid: true}
 	})
 
 	nt.On("status.geoip_lookup", func(e mk.Event) {
