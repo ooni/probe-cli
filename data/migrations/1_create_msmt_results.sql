@@ -70,7 +70,7 @@ CREATE TABLE `results` (
     `data_usage_down` INTEGER NOT NULL,
     -- It's probably reasonable to set the maximum length to 260 as this is the
     -- maximum length of file paths on windows.
-    `log_file_path` VARCHAR(260) NOT NULL
+    `measurement_dir` VARCHAR(260) NOT NULL
 );
 
 CREATE TABLE `measurements` (
@@ -148,7 +148,7 @@ CREATE TABLE `measurements` (
     -- we need for the measurement details views and some result views (ex. the
     -- upload/download speed of NDT, the reason for blocking of a site,
     -- etc.)
-    `test_keys` JSON,
+    `test_keys` JSON NOT NULL,
 
     -- The cross table reference to JOIN the two tables together.
     `result_id` INTEGER NOT NULL,
@@ -166,5 +166,4 @@ CREATE TABLE `measurements` (
     FOREIGN KEY (`url_id`) REFERENCES `urls`(`id`),
     FOREIGN KEY(`network_id`) REFERENCES `networks` (`id`)
 );
-
 -- +migrate StatementEnd

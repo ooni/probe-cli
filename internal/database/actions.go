@@ -122,6 +122,7 @@ func CreateMeasurement(sess sqlbuilder.Database, m Measurement, i string) (*Meas
 
 	// XXX Do we want to have this be part of something else?
 	m.StartTime = time.Now().UTC()
+	m.TestKeys = ""
 
 	// XXX insert also the URL and stuff
 	//m.Input = i

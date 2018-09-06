@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"os"
 	"path/filepath"
 	"time"
@@ -28,25 +29,26 @@ type URL struct {
 
 // Measurement model
 type Measurement struct {
-	ID               int64     `db:"id"`
-	TestName         string    `db:"test_name"`
-	StartTime        time.Time `db:"start_time"`
-	Runtime          float64   `db:"runtime"`    // Fractional number of seconds
-	NetworkID        int64     `db:"network_id"` // Used to include a Network
-	IsDone           bool      `db:"is_done"`
-	IsUploaded       bool      `db:"is_uploaded"`
-	IsFailed         string    `db:"is_failed"`
-	FailureMsg       string    `db:"failure_msg"`
-	IsUploadFailed   bool      `db:"is_upload_failed"`
-	UploadFailureMsg string    `db:"upload_failure_msg"`
-	IsRerun          bool      `db:"is_rerun"`
-	ReportID         string    `db:"report_id"`
-	URLID            string    `db:"url_id"` // Used to reference URL
-	MeasurementID    int64     `db:"measurement_id"`
-	IsAnomaly        bool      `db:"is_anomaly"`
-	TestKeys         struct{}  `db:"test_keys"`
-	ResultID         int64     `db:"result_id"`
-	ReportFilePath   string    `db:"report_file_path"`
+	ID               int64          `db:"id"`
+	TestName         string         `db:"test_name"`
+	StartTime        time.Time      `db:"start_time"`
+	Runtime          float64        `db:"runtime"`    // Fractional number of seconds
+	NetworkID        int64          `db:"network_id"` // Used to include a Network
+	IsDone           bool           `db:"is_done"`
+	IsUploaded       bool           `db:"is_uploaded"`
+	IsFailed         string         `db:"is_failed"`
+	FailureMsg       sql.NullString `db:"failure_msg,omitempty"`
+	IsUploadFailed   bool           `db:"is_upload_failed"`
+	UploadFailureMsg sql.NullString `db:"upload_failure_msg,omitempty"`
+	IsRerun          bool           `db:"is_rerun"`
+	ReportID         sql.NullString `db:"report_id,omitempty"`
+	URLID            string         `db:"url_id"` // Used to reference URL
+	MeasurementID    sql.NullInt64  `db:"measurement_id,omitempty"`
+	IsAnomaly        sql.NullBool   `db:"is_anomaly,omitempty"`
+	// FIXME we likely want to support JSON. See: https://github.com/upper/db/issues/462
+	TestKeys       string `db:"test_keys"`
+	ResultID       int64  `db:"result_id"`
+	ReportFilePath string `db:"report_file_path"`
 }
 
 // Result model
@@ -84,7 +86,7 @@ func (m *Measurement) SetGeoIPInfo() error {
 
 // Failed writes the error string to the measurement
 func (m *Measurement) Failed(sess sqlbuilder.Database, failure string) error {
-	m.FailureMsg = failure
+	m.FailureMsg = sql.NullString{String: failure, Valid: true}
 	err := sess.Collection("measurements").Find("id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
@@ -107,7 +109,7 @@ func (m *Measurement) Done(sess sqlbuilder.Database) error {
 
 // UploadFailed writes the error string for the upload failure to the measurement
 func (m *Measurement) UploadFailed(sess sqlbuilder.Database, failure string) error {
-	m.UploadFailureMsg = failure
+	m.UploadFailureMsg = sql.NullString{String: failure, Valid: true}
 	m.IsUploaded = false
 
 	err := sess.Collection("measurements").Find("id", m.ID).Update(m)

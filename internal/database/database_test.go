@@ -13,6 +13,8 @@ func TestConnect(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	defer os.Remove(tmpfile.Name())
+
 	sess, err := Connect(tmpfile.Name())
 	if err != nil {
 		t.Error(err)
@@ -27,5 +29,4 @@ func TestConnect(t *testing.T) {
 		log.Fatal("missing tables")
 	}
 
-	defer os.Remove(tmpfile.Name())
 }
