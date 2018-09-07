@@ -125,7 +125,7 @@ CREATE TABLE `measurements` (
     `report_id` VARCHAR(255), -- This can be NULL when no report file has been
                               -- created.
 
-    `url_id` INTEGER NOT NULL,
+    `url_id` INTEGER,
 
     -- This is not yet a feature of the collector, but we are planning to add
     -- this at some point in the near future.
