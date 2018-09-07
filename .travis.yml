@@ -1,3 +1,5 @@
+# Due to MK dependencies only macOS development is supported
+os: osx
 language: go
 go:
 - 1.9.x
