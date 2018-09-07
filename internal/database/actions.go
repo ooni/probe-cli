@@ -125,3 +125,49 @@ func CreateNetwork(sess sqlbuilder.Database, location *utils.LocationInfo) (*Net
 	network.ID = newID.(int64)
 	return &network, nil
 }
+
+// CreateOrUpdateURL will create a new URL entry to the urls table if it doesn't
+// exists, otherwise it will update the category code of the one already in
+// there.
+func CreateOrUpdateURL(sess sqlbuilder.Database, url string, categoryCode string, countryCode string) (int64, error) {
+	var urlID int64
+
+	res, err := sess.Update("urls").Set(
+		"url", url,
+		"category_code", categoryCode,
+		"country_code", countryCode,
+	).Where("url = ? AND country_code = ?", url, countryCode).Exec()
+
+	if err != nil {
+		log.Error("Failed to write to the URL table")
+		return 0, err
+	}
+	affected, err := res.RowsAffected()
+
+	if err != nil {
+		log.Error("Failed to get affected row count")
+		return 0, err
+	}
+	if affected == 0 {
+		newID, err := sess.Collection("urls").Insert(
+			URL{
+				URL:          sql.NullString{String: url, Valid: true},
+				CategoryCode: sql.NullString{String: categoryCode, Valid: true},
+				CountryCode:  sql.NullString{String: countryCode, Valid: true},
+			})
+		if err != nil {
+			log.Error("Failed to insert into the URLs table")
+			return 0, err
+		}
+		urlID = newID.(int64)
+	} else {
+		lastID, err := res.LastInsertId()
+		if err != nil {
+			log.Error("failed to get URL ID")
+			return 0, err
+		}
+		urlID = lastID
+	}
+
+	return urlID, nil
+}

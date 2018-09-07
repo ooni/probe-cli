@@ -53,41 +53,10 @@ func lookupURLs(ctl *nettests.Controller) ([]string, map[int64]int64, error) {
 	}
 
 	for idx, url := range parsed.Results {
-		var urlID int64
-
-		res, err := ctl.Ctx.DB.Update("urls").Set(
-			"url", url.URL,
-			"category_code", url.CategoryCode,
-			"country_code", url.CountryCode,
-		).Where("url = ? AND country_code = ?", url.URL, url.CountryCode).Exec()
-
+		urlID, err := database.CreateOrUpdateURL(ctl.Ctx.DB, url.URL, url.CategoryCode, url.CountryCode)
 		if err != nil {
-			log.Error("Failed to write to the URL table")
-		} else {
-			affected, err := res.RowsAffected()
-
-			if err != nil {
-				log.Error("Failed to get affected row count")
-			} else if affected == 0 {
-				newID, err := ctl.Ctx.DB.Collection("urls").Insert(
-					database.URL{
-						URL:          url.URL,
-						CategoryCode: url.CategoryCode,
-						CountryCode:  url.CountryCode,
-					})
-				if err != nil {
-					log.Error("Failed to insert into the URLs table")
-				}
-				urlID = newID.(int64)
-			} else {
-				lastID, err := res.LastInsertId()
-				if err != nil {
-					log.Error("failed to get URL ID")
-				}
-				urlID = lastID
-			}
+			log.Error("failed to add to the URL table")
 		}
-
 		urlIDMap[int64(idx)] = urlID
 		urls = append(urls, url.URL)
 	}
