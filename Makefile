@@ -1,5 +1,10 @@
 GO ?= go
 
+install-dev-deps:
+	@$(GO) get -u github.com/golang/dep/...
+	@$(GO) get golang.org/x/tools/cmd/cover
+	@$(GO) get github.com/mattn/goveralls
+
 build:
 	@echo "Building dist/ooni"
 	@$(GO) build -i -o dist/ooni cmd/ooni/main.go

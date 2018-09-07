@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/utils"
 )
 
@@ -14,7 +15,8 @@ func TestMeasurementWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpfile.Name())
+	log.Infof("%s", tmpfile.Name())
+	//defer os.Remove(tmpfile.Name())
 
 	tmpdir, err := ioutil.TempDir("", "oonitest")
 	if err != nil {
@@ -62,4 +64,23 @@ func TestMeasurementWorkflow(t *testing.T) {
 		t.Error("result_id mismatch")
 	}
 
+	done, incomplete, err := ListResults(sess)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(incomplete) != 1 {
+		t.Error("there should be 1 incomplete measurement")
+	}
+	if len(done) != 0 {
+		t.Error("there should be 0 done measurements")
+	}
+
+	msmts, err := ListMeasurements(sess, resultID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if msmts[0].Network.NetworkType != "wifi" {
+		t.Error("network_type should be wifi")
+	}
 }

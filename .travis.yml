@@ -6,7 +6,7 @@ go:
 - 1.x
 
 install:
-- go get -u github.com/golang/dep/...
+- make install-dev-deps
 - dep ensure
 - make update-mk-libs
 

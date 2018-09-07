@@ -11,6 +11,21 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
+// ResultNetwork is used to represent the structure made from the JOIN
+// between the results and networks tables.
+type ResultNetwork struct {
+	Result  `db:",inline"`
+	Network `db:",inline"`
+}
+
+// MeasurementURLNetwork is used for the JOIN between Measurement and URL
+type MeasurementURLNetwork struct {
+	Measurement `db:",inline"`
+	Network     `db:",inline"`
+	NetworkID   int64 `db:"network_id"`
+	URL         `db:",inline"`
+}
+
 // Network represents a network tested by the user
 type Network struct {
 	ID          int64  `db:"id"`
@@ -23,10 +38,10 @@ type Network struct {
 
 // URL represents URLs from the testing lists
 type URL struct {
-	ID           int64  `db:"id"`
-	URL          string `db:"url"`
-	CategoryCode string `db:"category_code"`
-	CountryCode  string `db:"country_code"`
+	ID           sql.NullInt64  `db:"id"`
+	URL          sql.NullString `db:"url"`
+	CategoryCode sql.NullString `db:"category_code"`
+	CountryCode  sql.NullString `db:"country_code"`
 }
 
 // Measurement model

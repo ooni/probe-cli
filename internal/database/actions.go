@@ -7,111 +7,54 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/utils"
 	"github.com/pkg/errors"
+	db "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 // ListMeasurements given a result ID
-func ListMeasurements(db sqlbuilder.Database, resultID int64) ([]*Measurement, error) {
-	measurements := []*Measurement{}
+func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementURLNetwork, error) {
+	measurements := []MeasurementURLNetwork{}
 
-	/*
-		FIXME
-		rows, err := db.Query(`SELECT id, name,
-			start_time, runtime,
-			country,
-			asn,
-			summary,
-			input
-			FROM measurements
-			WHERE result_id = ?
-			ORDER BY start_time;`, resultID)
-		if err != nil {
-			return measurements, errors.Wrap(err, "failed to get measurement list")
-		}
+	req := sess.Select(
+		"networks.id as network_id",
+		"results.id as result_id",
+		"urls.id as url_id",
+		db.Raw("networks.*"),
+		db.Raw("urls.*"),
+		db.Raw("measurements.*"),
+	).From("results").
+		Join("measurements").On("results.id = measurements.result_id").
+		Join("networks").On("results.network_id = networks.id").
+		LeftJoin("urls").On("urls.id = measurements.url_id").
+		OrderBy("measurements.start_time").
+		Where("results.id = ?", resultID)
 
-			for rows.Next() {
-				msmt := Measurement{}
-				err = rows.Scan(&msmt.ID, &msmt.Name,
-					&msmt.StartTime, &msmt.Runtime,
-					&msmt.CountryCode,
-					&msmt.ASN,
-					&msmt.Summary, &msmt.Input,
-					//&result.DataUsageUp, &result.DataUsageDown)
-				)
-				if err != nil {
-					log.WithError(err).Error("failed to fetch a row")
-					continue
-				}
-				measurements = append(measurements, &msmt)
-			}
-	*/
-
+	if err := req.All(&measurements); err != nil {
+		log.Errorf("failed to run query %s: %v", req.String(), err)
+		return measurements, err
+	}
 	return measurements, nil
 }
 
 // ListResults return the list of results
-func ListResults(db sqlbuilder.Database) ([]*Result, []*Result, error) {
-	doneResults := []*Result{}
-	incompleteResults := []*Result{}
+func ListResults(sess sqlbuilder.Database) ([]ResultNetwork, []ResultNetwork, error) {
+	doneResults := []ResultNetwork{}
+	incompleteResults := []ResultNetwork{}
 
-	/*
-		FIXME
-		rows, err := db.Query(`SELECT id, name,
-			start_time, runtime,
-			network_name, country,
-			asn,
-			summary, done
-			FROM results
-			WHERE done = 1
-			ORDER BY start_time;`)
-		if err != nil {
-			return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
-		}
-			for rows.Next() {
-				result := Result{}
-				err = rows.Scan(&result.ID, &result.Name,
-					&result.StartTime, &result.Runtime,
-					&result.NetworkName, &result.Country,
-					&result.ASN,
-					&result.Summary, &result.Done,
-					//&result.DataUsageUp, &result.DataUsageDown)
-				)
-				if err != nil {
-					log.WithError(err).Error("failed to fetch a row")
-					continue
-				}
-				doneResults = append(doneResults, &result)
-			}
-	*/
+	req := sess.Select(
+		"networks.id AS network_id",
+		db.Raw("results.*"),
+		db.Raw("networks.*"),
+	).From("results").
+		Join("networks").On("results.network_id = networks.id").
+		OrderBy("results.start_time")
 
-	/*
-			FIXME
-		rows, err := db.Query(`SELECT
-			id, name,
-			start_time,
-			network_name, country,
-			asn
-			FROM results
-			WHERE done != 1
-			ORDER BY start_time;`)
-		if err != nil {
-			return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
-		}
-	*/
-
-	/*
-		for rows.Next() {
-			result := Result{Done: false}
-			err = rows.Scan(&result.ID, &result.Name, &result.StartTime,
-				&result.NetworkName, &result.Country,
-				&result.ASN)
-			if err != nil {
-				log.WithError(err).Error("failed to fetch a row")
-				continue
-			}
-			incompleteResults = append(incompleteResults, &result)
-		}
-	*/
+	if err := req.Where("is_done = true").All(&doneResults); err != nil {
+		return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
+	}
+	if err := req.Where("is_done = false").All(&incompleteResults); err != nil {
+		return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
+	}
 
 	return doneResults, incompleteResults, nil
 }
