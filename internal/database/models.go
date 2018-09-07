@@ -15,6 +15,7 @@ import (
 type Network struct {
 	ID          int64  `db:"id"`
 	NetworkName string `db:"network_name"`
+	NetworkType string `db:"network_type"`
 	IP          string `db:"ip"`
 	ASN         uint   `db:"asn"`
 	CountryCode string `db:"country_code"`

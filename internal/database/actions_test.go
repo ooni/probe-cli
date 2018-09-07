@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/ooni/probe-cli/utils"
 )
 
 func TestMeasurementWorkflow(t *testing.T) {
@@ -24,7 +26,18 @@ func TestMeasurementWorkflow(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	result, err := CreateResult(sess, tmpdir, "websites", 0)
+
+	location := utils.LocationInfo{
+		ASN:         0,
+		CountryCode: "IT",
+		NetworkName: "Unknown",
+	}
+	network, err := CreateNetwork(sess, &location)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := CreateResult(sess, tmpdir, "websites", network.ID)
 	if err != nil {
 		t.Fatal(err)
 	}

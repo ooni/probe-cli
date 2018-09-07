@@ -170,6 +170,8 @@ func CreateNetwork(sess sqlbuilder.Database, location *utils.LocationInfo) (*Net
 		ASN:         location.ASN,
 		CountryCode: location.CountryCode,
 		NetworkName: location.NetworkName,
+		// On desktop we consider it to always be wifi
+		NetworkType: "wifi",
 		IP:          location.IP,
 	}
 	newID, err := sess.Collection("networks").Insert(network)
