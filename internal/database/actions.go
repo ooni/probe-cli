@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/apex/log"
@@ -117,41 +118,65 @@ func ListResults(db sqlbuilder.Database) ([]*Result, []*Result, error) {
 
 // CreateMeasurement writes the measurement to the database a returns a pointer
 // to the Measurement
-func CreateMeasurement(sess sqlbuilder.Database, m Measurement, i string) (*Measurement, error) {
-	col := sess.Collection("measurements")
+func CreateMeasurement(sess sqlbuilder.Database, reportID sql.NullString, testName string, resultID int64, reportFilePath string, urlID sql.NullInt64) (*Measurement, error) {
+	msmt := Measurement{
+		ReportID:       reportID,
+		TestName:       testName,
+		ResultID:       resultID,
+		ReportFilePath: reportFilePath,
+		URLID:          urlID,
+		// XXX Do we want to have this be part of something else?
+		StartTime: time.Now().UTC(),
+		TestKeys:  "",
+	}
 
-	// XXX Do we want to have this be part of something else?
-	m.StartTime = time.Now().UTC()
-	m.TestKeys = ""
-
-	// XXX insert also the URL and stuff
-	//m.Input = i
-	//m.State = "active"
-
-	newID, err := col.Insert(m)
+	newID, err := sess.Collection("measurements").Insert(msmt)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating measurement")
 	}
-	m.ID = newID.(int64)
-	return &m, nil
+	msmt.ID = newID.(int64)
+	return &msmt, nil
 }
 
 // CreateResult writes the Result to the database a returns a pointer
 // to the Result
-func CreateResult(sess sqlbuilder.Database, homePath string, r Result) (*Result, error) {
-	log.Debugf("Creating result %v", r)
+func CreateResult(sess sqlbuilder.Database, homePath string, testGroupName string, networkID int64) (*Result, error) {
+	startTime := time.Now().UTC()
 
-	col := sess.Collection("results")
-
-	p, err := utils.MakeResultsDir(homePath, r.TestGroupName, r.StartTime)
+	p, err := utils.MakeResultsDir(homePath, testGroupName, startTime)
 	if err != nil {
 		return nil, err
 	}
-	r.MeasurementDir = p
-	newID, err := col.Insert(r)
+
+	result := Result{
+		TestGroupName: testGroupName,
+		StartTime:     startTime,
+		NetworkID:     networkID,
+	}
+	result.MeasurementDir = p
+	log.Debugf("Creating result %v", result)
+
+	newID, err := sess.Collection("results").Insert(result)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating result")
 	}
-	r.ID = newID.(int64)
-	return &r, nil
+	result.ID = newID.(int64)
+	return &result, nil
+}
+
+// CreateNetwork will create a new network in the network table
+func CreateNetwork(sess sqlbuilder.Database, location *utils.LocationInfo) (*Network, error) {
+	network := Network{
+		ASN:         location.ASN,
+		CountryCode: location.CountryCode,
+		NetworkName: location.NetworkName,
+		IP:          location.IP,
+	}
+	newID, err := sess.Collection("networks").Insert(network)
+	if err != nil {
+		return nil, err
+	}
+
+	network.ID = newID.(int64)
+	return &network, nil
 }

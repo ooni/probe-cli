@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/fatih/color"
@@ -24,7 +25,10 @@ type Nettest interface {
 }
 
 // NewController creates a nettest controller
-func NewController(nt Nettest, ctx *ooni.Context, res *database.Result, msmtPath string) *Controller {
+func NewController(nt Nettest, ctx *ooni.Context, res *database.Result) *Controller {
+	msmtPath := filepath.Join(ctx.TempDir,
+		fmt.Sprintf("msmt-%T-%s.jsonl", nt,
+			time.Now().UTC().Format(utils.ResultTimestamp)))
 	return &Controller{
 		Ctx:      ctx,
 		nt:       nt,
@@ -36,11 +40,12 @@ func NewController(nt Nettest, ctx *ooni.Context, res *database.Result, msmtPath
 // Controller is passed to the run method of every Nettest
 // each nettest instance has one controller
 type Controller struct {
-	Ctx      *ooni.Context
-	res      *database.Result
-	nt       Nettest
-	msmts    map[int64]*database.Measurement
-	msmtPath string // XXX maybe we can drop this and just use a temporary file
+	Ctx         *ooni.Context
+	res         *database.Result
+	nt          Nettest
+	msmts       map[int64]*database.Measurement
+	msmtPath    string          // XXX maybe we can drop this and just use a temporary file
+	inputIdxMap map[int64]int64 // Used to map mk idx to database id
 }
 
 func getCaBundlePath() string {
@@ -51,6 +56,11 @@ func getCaBundlePath() string {
 	return "/etc/ssl/cert.pem"
 }
 
+func (c *Controller) SetInputIdxMap(inputIdxMap map[int64]int64) error {
+	c.inputIdxMap = inputIdxMap
+	return nil
+}
+
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
@@ -58,12 +68,11 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 	c.msmts = make(map[int64]*database.Measurement)
 
-	msmtTemplate := database.Measurement{
-		ReportID:       sql.NullString{String: "", Valid: false},
-		TestName:       nt.Name,
-		ResultID:       c.res.ID,
-		ReportFilePath: c.msmtPath,
-	}
+	// These values are shared by every measurement
+	reportID := sql.NullString{String: "", Valid: false}
+	testName := nt.Name
+	resultID := c.res.ID
+	reportFilePath := c.msmtPath
 
 	// This is to workaround homedirs having UTF-8 characters in them.
 	// See: https://github.com/measurement-kit/measurement-kit/issues/1635
@@ -157,7 +166,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	nt.On("status.report_created", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
 
-		msmtTemplate.ReportID = sql.NullString{String: e.Value.ReportID, Valid: true}
+		reportID = sql.NullString{String: e.Value.ReportID, Valid: true}
 	})
 
 	nt.On("status.geoip_lookup", func(e mk.Event) {
@@ -175,7 +184,11 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		log.Debugf(color.RedString(e.Key))
 
 		idx := e.Value.Idx
-		msmt, err := database.CreateMeasurement(c.Ctx.DB, msmtTemplate, e.Value.Input)
+		urlID := sql.NullInt64{Int64: 0, Valid: false}
+		if c.inputIdxMap != nil {
+			urlID = sql.NullInt64{Int64: c.inputIdxMap[idx], Valid: true}
+		}
+		msmt, err := database.CreateMeasurement(c.Ctx.DB, reportID, testName, resultID, reportFilePath, urlID)
 		if err != nil {
 			log.WithError(err).Error("Failed to create measurement")
 			return

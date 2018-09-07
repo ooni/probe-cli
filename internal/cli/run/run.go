@@ -3,9 +3,7 @@ package run
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
@@ -14,7 +12,6 @@ import (
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
 	"github.com/ooni/probe-cli/nettests/groups"
-	"github.com/ooni/probe-cli/utils"
 )
 
 func init() {
@@ -55,24 +52,13 @@ func init() {
 			return err
 		}
 
-		network := database.Network{
-			ASN:         ctx.Location.ASN,
-			CountryCode: ctx.Location.CountryCode,
-			NetworkName: ctx.Location.NetworkName,
-			IP:          ctx.Location.IP,
-		}
-		newID, err := ctx.DB.Collection("networks").Insert(network)
+		network, err := database.CreateNetwork(ctx.DB, ctx.Location)
 		if err != nil {
 			log.WithError(err).Error("Failed to create the network row")
 			return nil
 		}
-		network.ID = newID.(int64)
 
-		result, err := database.CreateResult(ctx.DB, ctx.Home, database.Result{
-			TestGroupName: *nettestGroup,
-			StartTime:     time.Now().UTC(),
-			NetworkID:     network.ID,
-		})
+		result, err := database.CreateResult(ctx.DB, ctx.Home, *nettestGroup, network.ID)
 		if err != nil {
 			log.Errorf("DB result error: %s", err)
 			return err
@@ -80,16 +66,13 @@ func init() {
 
 		for _, nt := range group.Nettests {
 			log.Debugf("Running test %T", nt)
-			msmtPath := filepath.Join(ctx.TempDir,
-				fmt.Sprintf("msmt-%T-%s.jsonl", nt,
-					time.Now().UTC().Format(utils.ResultTimestamp)))
-
-			ctl := nettests.NewController(nt, ctx, result, msmtPath)
+			ctl := nettests.NewController(nt, ctx, result)
 			if err = nt.Run(ctl); err != nil {
 				log.WithError(err).Errorf("Failed to run %s", group.Label)
 				return err
 			}
 		}
+
 		if err = result.Finished(ctx.DB, group.Summary); err != nil {
 			return err
 		}

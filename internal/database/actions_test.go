@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-	"time"
 )
 
 func TestMeasurementWorkflow(t *testing.T) {
@@ -25,21 +24,18 @@ func TestMeasurementWorkflow(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	result, err := CreateResult(sess, tmpdir, Result{
-		TestGroupName: "websites",
-		StartTime:     time.Now().UTC(),
-	})
+	result, err := CreateResult(sess, tmpdir, "websites", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	msmtTemplate := Measurement{
-		ReportID:       sql.NullString{String: "", Valid: false},
-		TestName:       "antani",
-		ResultID:       result.ID,
-		ReportFilePath: tmpdir,
-	}
-	m1, err := CreateMeasurement(sess, msmtTemplate, "")
+	reportID := sql.NullString{String: "", Valid: false}
+	testName := "antani"
+	resultID := result.ID
+	reportFilePath := tmpdir
+	urlID := sql.NullInt64{Int64: 0, Valid: false}
+
+	m1, err := CreateMeasurement(sess, reportID, testName, resultID, reportFilePath, urlID)
 	if err != nil {
 		t.Fatal(err)
 	}

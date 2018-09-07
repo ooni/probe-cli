@@ -23,7 +23,7 @@ type Network struct {
 // URL represents URLs from the testing lists
 type URL struct {
 	ID           int64  `db:"id"`
-	URL          int64  `db:"url"`
+	URL          string `db:"url"`
 	CategoryCode string `db:"category_code"`
 	CountryCode  string `db:"country_code"`
 }
@@ -42,7 +42,7 @@ type Measurement struct {
 	UploadFailureMsg sql.NullString `db:"upload_failure_msg,omitempty"`
 	IsRerun          bool           `db:"is_rerun"`
 	ReportID         sql.NullString `db:"report_id,omitempty"`
-	URLID            string         `db:"url_id"` // Used to reference URL
+	URLID            sql.NullInt64  `db:"url_id,omitempty"` // Used to reference URL
 	MeasurementID    sql.NullInt64  `db:"measurement_id,omitempty"`
 	IsAnomaly        sql.NullBool   `db:"is_anomaly,omitempty"`
 	// FIXME we likely want to support JSON. See: https://github.com/upper/db/issues/462
