@@ -1,0 +1,11 @@
+language: go
+go:
+  - 1.9.x
+  - 1.x
+install:
+	- go get -u github.com/golang/dep/...
+  - dep ensure
+  - make update-mk-libs
+
+script:
+  - make build
