@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/apex/log"
 	"github.com/ooni/probe-cli/utils"
 )
 
@@ -15,8 +14,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Infof("%s", tmpfile.Name())
-	//defer os.Remove(tmpfile.Name())
+	defer os.Remove(tmpfile.Name())
 
 	tmpdir, err := ioutil.TempDir("", "oonitest")
 	if err != nil {
@@ -26,7 +24,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 
 	sess, err := Connect(tmpfile.Name())
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	location := utils.LocationInfo{
@@ -82,5 +80,38 @@ func TestMeasurementWorkflow(t *testing.T) {
 	}
 	if msmts[0].Network.NetworkType != "wifi" {
 		t.Error("network_type should be wifi")
+	}
+}
+
+func TestURLCreation(t *testing.T) {
+	tmpfile, err := ioutil.TempFile("", "dbtest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	tmpdir, err := ioutil.TempDir("", "oonitest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpdir)
+
+	sess, err := Connect(tmpfile.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newID1, err := CreateOrUpdateURL(sess, "https://google.com", "SRCH", "XX")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newID2, err := CreateOrUpdateURL(sess, "https://google.com", "GMB", "XX")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if newID2 != newID1 {
+		t.Error("inserting the same URL with different category code should produce the same result")
 	}
 }
