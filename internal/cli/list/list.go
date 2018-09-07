@@ -42,15 +42,15 @@ func init() {
 			}
 			for idx, result := range incompleteResults {
 				output.ResultItem(output.ResultItemData{
-					ID:            result.ID,
+					ID:            result.Result.ID,
 					Index:         idx,
 					TotalCount:    len(incompleteResults),
 					Name:          result.TestGroupName,
 					StartTime:     result.StartTime,
-					NetworkName:   "FIXME", //result.NetworkName,
-					Country:       "FIXME", //result.Country,
-					ASN:           "FIXME", //result.ASN,
-					Summary:       "{}",    //result.Summary,
+					NetworkName:   result.Network.NetworkName,
+					Country:       result.Network.CountryCode,
+					ASN:           fmt.Sprintf("AS%d", result.Network.ASN),
+					Summary:       "{}", //result.Summary,
 					Done:          result.IsDone,
 					DataUsageUp:   result.DataUsageUp,
 					DataUsageDown: result.DataUsageDown,
@@ -58,26 +58,25 @@ func init() {
 			}
 
 			resultSummary := output.ResultSummaryData{}
-			netCount := make(map[string]int)
+			netCount := make(map[uint]int)
 			output.SectionTitle("Results")
 			for idx, result := range doneResults {
 				output.ResultItem(output.ResultItemData{
-					ID:            result.ID,
+					ID:            result.Result.ID,
 					Index:         idx,
 					TotalCount:    len(doneResults),
 					Name:          result.TestGroupName,
 					StartTime:     result.StartTime,
-					NetworkName:   "FIXME", //result.NetworkName,
-					Country:       "FIXME", //result.Country,
-					ASN:           "FIXME", //result.ASN,
-					Summary:       "{}",    //result.Summary,
+					NetworkName:   result.Network.NetworkName,
+					Country:       result.Network.CountryCode,
+					ASN:           fmt.Sprintf("AS%d", result.Network.ASN),
+					Summary:       "{}", //result.Summary,
 					Done:          result.IsDone,
 					DataUsageUp:   result.DataUsageUp,
 					DataUsageDown: result.DataUsageDown,
 				})
 				resultSummary.TotalTests++
-				// FIXME
-				// netCount[result.ASN]++
+				netCount[result.Network.ASN]++
 				resultSummary.TotalDataUsageUp += result.DataUsageUp
 				resultSummary.TotalDataUsageDown += result.DataUsageDown
 			}
