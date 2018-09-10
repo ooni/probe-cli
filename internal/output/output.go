@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/util"
 )
 
@@ -17,6 +18,32 @@ func Progress(key string, perc float64, msg string) {
 		"key":        key,
 		"percentage": perc,
 	}).Info(msg)
+}
+
+// MeasurementItem logs a progress type event
+func MeasurementItem(msmt database.MeasurementURLNetwork) {
+	log.WithFields(log.Fields{
+		"type":               "measurement_item",
+		"id":                 msmt.MsmtTblID,
+		"test_name":          msmt.TestName,
+		"start_time":         msmt.StartTime,
+		"test_keys":          msmt.TestKeys,
+		"probe_cc":           msmt.Network.CountryCode,
+		"network_name":       msmt.Network.NetworkName,
+		"asn":                msmt.Network.ASN,
+		"runtime":            msmt.Runtime,
+		"url":                msmt.URL.URL,
+		"url_category_code":  msmt.URL.CategoryCode,
+		"url_country_code":   msmt.URL.CountryCode,
+		"is_anomaly":         msmt.IsAnomaly,
+		"is_uploaded":        msmt.IsUploaded,
+		"is_upload_failed":   msmt.IsUploadFailed,
+		"upload_failure_msg": msmt.UploadFailureMsg.String,
+		"is_failed":          msmt.IsFailed,
+		"failure_msg":        msmt.FailureMsg.String,
+		"is_done":            msmt.IsDone,
+		"report_file_path":   msmt.ReportFilePath,
+	}).Info("measurement")
 }
 
 // ResultItemData is the metadata about a result

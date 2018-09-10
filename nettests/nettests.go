@@ -172,13 +172,6 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 	nt.On("status.geoip_lookup", func(e mk.Event) {
 		log.Debugf(color.RedString(e.Key))
-
-		/* FIXME
-		Put this into the network table
-		msmtTemplate.ASN = e.Value.ProbeASN
-		msmtTemplate.IP = e.Value.ProbeIP
-		msmtTemplate.CountryCode = e.Value.ProbeCC
-		*/
 	})
 
 	nt.On("status.measurement_start", func(e mk.Event) {

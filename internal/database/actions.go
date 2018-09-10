@@ -18,6 +18,7 @@ func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementUR
 	measurements := []MeasurementURLNetwork{}
 
 	req := sess.Select(
+		"measurements.id as msmt_tbl_id",
 		"networks.id as network_id",
 		"results.id as result_id",
 		"urls.id as url_id",

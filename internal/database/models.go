@@ -22,6 +22,7 @@ type ResultNetwork struct {
 // MeasurementURLNetwork is used for the JOIN between Measurement and URL
 type MeasurementURLNetwork struct {
 	Measurement `db:",inline"`
+	MsmtTblID   int64 `db:"msmt_tbl_id"`
 	Network     `db:",inline"`
 	NetworkID   int64 `db:"network_id"`
 	URL         `db:",inline"`

@@ -27,8 +27,8 @@ func init() {
 				log.WithError(err).Error("failed to list measurements")
 				return err
 			}
-			for idx, msmt := range measurements {
-				fmt.Printf("%d: %v\n", idx, msmt)
+			for _, msmt := range measurements {
+				output.MeasurementItem(msmt)
 			}
 		} else {
 			doneResults, incompleteResults, err := database.ListResults(ctx.DB)

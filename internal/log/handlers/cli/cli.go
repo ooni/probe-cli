@@ -136,10 +136,10 @@ func (h *Handler) DefaultLog(e *log.Entry) error {
 		if name == "source" {
 			continue
 		}
-		s += fmt.Sprintf(" %s=%s", color.Sprint(name), e.Fields.Get(name))
+		s += fmt.Sprintf(" %s=%v", color.Sprint(name), e.Fields.Get(name))
 	}
 
-	fmt.Fprintf(h.Writer, s)
+	fmt.Fprint(h.Writer, s)
 	fmt.Fprintln(h.Writer)
 
 	return nil
