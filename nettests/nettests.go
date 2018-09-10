@@ -12,9 +12,11 @@ import (
 	"github.com/fatih/color"
 	"github.com/measurement-kit/go-measurement-kit"
 	ooni "github.com/ooni/probe-cli"
+	"github.com/ooni/probe-cli/internal/crashreport"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/output"
 	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/utils/strcase"
 )
 
 // Nettest interface. Every Nettest should implement this.
@@ -70,7 +72,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 	// These values are shared by every measurement
 	reportID := sql.NullString{String: "", Valid: false}
-	testName := nt.Name
+	testName := strcase.ToSnake(nt.Name)
 	resultID := c.res.ID
 	reportFilePath := c.msmtPath
 
@@ -270,7 +272,9 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	nt.On("measurement", func(e mk.Event) {
 		log.Debugf("status.end")
 
-		c.OnEntry(e.Value.Idx, e.Value.JSONStr)
+		crashreport.CapturePanicAndWait(func() {
+			c.OnEntry(e.Value.Idx, e.Value.JSONStr)
+		}, nil)
 	})
 
 	nt.On("status.end", func(e mk.Event) {

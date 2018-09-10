@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"encoding/json"
+	"reflect"
 	"time"
 
 	"github.com/apex/log"
@@ -221,16 +222,29 @@ func CreateOrUpdateURL(sess sqlbuilder.Database, url string, categoryCode string
 
 // AddTestKeys writes the summary to the measurement
 func AddTestKeys(sess sqlbuilder.Database, msmt *Measurement, tk interface{}) error {
+	var (
+		isAnomaly      bool
+		isAnomalyValid bool
+	)
 	tkBytes, err := json.Marshal(tk)
 	if err != nil {
 		log.WithError(err).Error("failed to serialize summary")
 	}
-	isAnomaly := tk.(struct{ IsAnomaly bool }).IsAnomaly
+
+	// This is necessary so that we can extract from the the opaque testKeys just
+	// the IsAnomaly field of bool type.
+	// Maybe generics are not so bad after-all, heh golang?
+	isAnomalyValue := reflect.ValueOf(tk).FieldByName("IsAnomaly")
+	if isAnomalyValue.IsValid() == true && isAnomalyValue.Kind() == reflect.Bool {
+		isAnomaly = isAnomalyValue.Bool()
+		isAnomalyValid = true
+	}
 	msmt.TestKeys = string(tkBytes)
-	msmt.IsAnomaly = sql.NullBool{Bool: isAnomaly, Valid: true}
+	msmt.IsAnomaly = sql.NullBool{Bool: isAnomaly, Valid: isAnomalyValid}
 
 	err = sess.Collection("measurements").Find("id", msmt.ID).Update(msmt)
 	if err != nil {
+		log.WithError(err).Error("failed to update measurement")
 		return errors.Wrap(err, "updating measurement")
 	}
 	return nil
