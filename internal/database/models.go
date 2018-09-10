@@ -95,11 +95,6 @@ func (r *Result) Finished(sess sqlbuilder.Database) error {
 	return nil
 }
 
-// SetGeoIPInfo for the Measurement
-func (m *Measurement) SetGeoIPInfo() error {
-	return nil
-}
-
 // Failed writes the error string to the measurement
 func (m *Measurement) Failed(sess sqlbuilder.Database, failure string) error {
 	m.FailureMsg = sql.NullString{String: failure, Valid: true}
