@@ -47,15 +47,6 @@
   revision = "ed7bcb39ff10f39ab08e317ce16df282845852fa"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/jmoiron/sqlx"
-  packages = [
-    ".",
-    "reflectx"
-  ]
-  revision = "2aeb6a910c2b94f2d5eb53d9895d80e27264ec41"
-
-[[projects]]
   name = "github.com/mattn/go-colorable"
   packages = ["."]
   revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
@@ -77,7 +68,7 @@
   branch = "master"
   name = "github.com/measurement-kit/go-measurement-kit"
   packages = ["."]
-  revision = "4fe2e61c300930aedc10713557b6e05f29631fc0"
+  revision = "b44943bb7da37f768d30315a2227dac86feac546"
 
 [[projects]]
   branch = "master"
@@ -166,6 +157,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bb552d1e6530dab8cdd5cc7a6c60bf2b9afbe77e6ea20a31b6d60fc44ad05e26"
+  inputs-digest = "45f2fee1cf7e2abceb2500715c0f158ad17d51b52f8200cb1bb51c369b15402f"
   solver-name = "gps-cdcl"
   solver-version = 1
