@@ -9,6 +9,7 @@ import (
 	_ "github.com/ooni/probe-cli/internal/cli/list"
 	_ "github.com/ooni/probe-cli/internal/cli/nettest"
 	_ "github.com/ooni/probe-cli/internal/cli/onboard"
+	_ "github.com/ooni/probe-cli/internal/cli/reset"
 	_ "github.com/ooni/probe-cli/internal/cli/run"
 	_ "github.com/ooni/probe-cli/internal/cli/show"
 	_ "github.com/ooni/probe-cli/internal/cli/upload"
