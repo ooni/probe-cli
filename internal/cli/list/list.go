@@ -41,7 +41,6 @@ func init() {
 				output.SectionTitle("Incomplete results")
 			}
 			for idx, result := range incompleteResults {
-
 				output.ResultItem(output.ResultItemData{
 					ID:                      result.Result.ID,
 					Index:                   idx,
@@ -68,6 +67,10 @@ func init() {
 				if err != nil {
 					log.WithError(err).Error("failed to list measurement counts")
 				}
+				testKeys, err := database.GetResultTestKeys(ctx.DB, result.Result.ID)
+				if err != nil {
+					log.WithError(err).Error("failed to get testKeys")
+				}
 				output.ResultItem(output.ResultItemData{
 					ID:                      result.Result.ID,
 					Index:                   idx,
@@ -77,7 +80,7 @@ func init() {
 					NetworkName:             result.Network.NetworkName,
 					Country:                 result.Network.CountryCode,
 					ASN:                     fmt.Sprintf("AS%d", result.Network.ASN),
-					TestKeys:                "{}", // FIXME this used to be Summary we probably need to use a list now
+					TestKeys:                testKeys,
 					MeasurementCount:        totalCount,
 					MeasurementAnomalyCount: anmlyCount,
 					Done:          result.IsDone,

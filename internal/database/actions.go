@@ -37,6 +37,24 @@ func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementUR
 	return measurements, nil
 }
 
+// GetResultTestKeys returns a list of TestKeys for a given measurements
+func GetResultTestKeys(sess sqlbuilder.Database, resultID int64) (string, error) {
+	res := sess.Collection("measurements").Find("result_id", resultID)
+	defer res.Close()
+
+	var msmt Measurement
+	for res.Next(&msmt) {
+		if msmt.TestName == "web_connectivity" {
+			break
+		}
+		// We only really care about the NDT TestKeys
+		if msmt.TestName == "ndt" {
+			return msmt.TestKeys, nil
+		}
+	}
+	return "{}", nil
+}
+
 // GetMeasurementCounts returns the number of anomalous and total measurement for a given result
 func GetMeasurementCounts(sess sqlbuilder.Database, resultID int64) (uint64, uint64, error) {
 	var (
