@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ooni/probe-cli/nettests/summary"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -28,7 +27,7 @@ type MeasurementURLNetwork struct {
 
 // Network represents a network tested by the user
 type Network struct {
-	ID          int64  `db:"id"`
+	ID          int64  `db:"id,omitempty"`
 	NetworkName string `db:"network_name"`
 	NetworkType string `db:"network_type"`
 	IP          string `db:"ip"`
@@ -38,7 +37,7 @@ type Network struct {
 
 // URL represents URLs from the testing lists
 type URL struct {
-	ID           sql.NullInt64  `db:"id"`
+	ID           sql.NullInt64  `db:"id,omitempty"`
 	URL          sql.NullString `db:"url"`
 	CategoryCode sql.NullString `db:"category_code"`
 	CountryCode  sql.NullString `db:"country_code"`
@@ -46,7 +45,7 @@ type URL struct {
 
 // Measurement model
 type Measurement struct {
-	ID               int64          `db:"id"`
+	ID               int64          `db:"id,omitempty"`
 	TestName         string         `db:"test_name"`
 	StartTime        time.Time      `db:"start_time"`
 	Runtime          float64        `db:"runtime"` // Fractional number of seconds
@@ -69,7 +68,7 @@ type Measurement struct {
 
 // Result model
 type Result struct {
-	ID             int64     `db:"id"`
+	ID             int64     `db:"id,omitempty"`
 	TestGroupName  string    `db:"test_group_name"`
 	StartTime      time.Time `db:"start_time"`
 	NetworkID      int64     `db:"network_id"` // Used to include a Network
@@ -82,7 +81,7 @@ type Result struct {
 }
 
 // Finished marks the result as done and sets the runtime
-func (r *Result) Finished(sess sqlbuilder.Database, makeSummary summary.ResultSummaryFunc) error {
+func (r *Result) Finished(sess sqlbuilder.Database) error {
 	if r.IsDone == true || r.Runtime != 0 {
 		return errors.New("Result is already finished")
 	}
@@ -139,17 +138,6 @@ func (m *Measurement) UploadFailed(sess sqlbuilder.Database, failure string) err
 // UploadSucceeded writes the error string for the upload failure to the measurement
 func (m *Measurement) UploadSucceeded(sess sqlbuilder.Database) error {
 	m.IsUploaded = true
-
-	err := sess.Collection("measurements").Find("id", m.ID).Update(m)
-	if err != nil {
-		return errors.Wrap(err, "updating measurement")
-	}
-	return nil
-}
-
-// WriteSummary writes the summary to the measurement
-func (m *Measurement) WriteSummary(sess sqlbuilder.Database, summary string) error {
-	// XXX remove m.Summary = summary
 
 	err := sess.Collection("measurements").Find("id", m.ID).Update(m)
 	if err != nil {

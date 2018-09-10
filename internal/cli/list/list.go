@@ -41,19 +41,22 @@ func init() {
 				output.SectionTitle("Incomplete results")
 			}
 			for idx, result := range incompleteResults {
+
 				output.ResultItem(output.ResultItemData{
-					ID:            result.Result.ID,
-					Index:         idx,
-					TotalCount:    len(incompleteResults),
-					Name:          result.TestGroupName,
-					StartTime:     result.StartTime,
-					NetworkName:   result.Network.NetworkName,
-					Country:       result.Network.CountryCode,
-					ASN:           fmt.Sprintf("AS%d", result.Network.ASN),
-					Summary:       "{}", //result.Summary,
-					Done:          result.IsDone,
-					DataUsageUp:   result.DataUsageUp,
-					DataUsageDown: result.DataUsageDown,
+					ID:                      result.Result.ID,
+					Index:                   idx,
+					TotalCount:              len(incompleteResults),
+					Name:                    result.TestGroupName,
+					StartTime:               result.StartTime,
+					NetworkName:             result.Network.NetworkName,
+					Country:                 result.Network.CountryCode,
+					ASN:                     fmt.Sprintf("AS%d", result.Network.ASN),
+					MeasurementCount:        0,
+					MeasurementAnomalyCount: 0,
+					TestKeys:                "{}", // FIXME this used to be Summary we probably need to use a list now
+					Done:                    result.IsDone,
+					DataUsageUp:             result.DataUsageUp,
+					DataUsageDown:           result.DataUsageDown,
 				})
 			}
 
@@ -61,16 +64,22 @@ func init() {
 			netCount := make(map[uint]int)
 			output.SectionTitle("Results")
 			for idx, result := range doneResults {
+				totalCount, anmlyCount, err := database.GetMeasurementCounts(ctx.DB, result.Result.ID)
+				if err != nil {
+					log.WithError(err).Error("failed to list measurement counts")
+				}
 				output.ResultItem(output.ResultItemData{
-					ID:            result.Result.ID,
-					Index:         idx,
-					TotalCount:    len(doneResults),
-					Name:          result.TestGroupName,
-					StartTime:     result.StartTime,
-					NetworkName:   result.Network.NetworkName,
-					Country:       result.Network.CountryCode,
-					ASN:           fmt.Sprintf("AS%d", result.Network.ASN),
-					Summary:       "{}", //result.Summary,
+					ID:                      result.Result.ID,
+					Index:                   idx,
+					TotalCount:              len(doneResults),
+					Name:                    result.TestGroupName,
+					StartTime:               result.StartTime,
+					NetworkName:             result.Network.NetworkName,
+					Country:                 result.Network.CountryCode,
+					ASN:                     fmt.Sprintf("AS%d", result.Network.ASN),
+					TestKeys:                "{}", // FIXME this used to be Summary we probably need to use a list now
+					MeasurementCount:        totalCount,
+					MeasurementAnomalyCount: anmlyCount,
 					Done:          result.IsDone,
 					DataUsageUp:   result.DataUsageUp,
 					DataUsageDown: result.DataUsageDown,

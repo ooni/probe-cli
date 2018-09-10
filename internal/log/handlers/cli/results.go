@@ -9,7 +9,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/util"
-	"github.com/ooni/probe-cli/nettests/summary"
 )
 
 func formatSpeed(speed int64) string {
@@ -24,55 +23,51 @@ func formatSpeed(speed int64) string {
 	return fmt.Sprintf("%.2f Tbit/s", float32(speed)/(1000*1000*1000))
 }
 
-var summarizers = map[string]func(string) []string{
-	"websites": func(ss string) []string {
-		var summary summary.WebsitesSummary
-		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
-			return nil
-		}
+// PerformanceTestKeys is the result summary for a performance test
+type PerformanceTestKeys struct {
+	Upload   int64   `json:"upload"`
+	Download int64   `json:"download"`
+	Ping     float64 `json:"ping"`
+	Bitrate  int64   `json:"median_bitrate"`
+}
+
+var summarizers = map[string]func(uint64, uint64, string) []string{
+	"websites": func(totalCount uint64, anomalyCount uint64, ss string) []string {
 		return []string{
-			fmt.Sprintf("%d tested", summary.Tested),
-			fmt.Sprintf("%d blocked", summary.Blocked),
+			fmt.Sprintf("%d tested", totalCount),
+			fmt.Sprintf("%d blocked", anomalyCount),
 			"",
 		}
 	},
-	"performance": func(ss string) []string {
-		var summary summary.PerformanceSummary
-		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
+	"performance": func(totalCount uint64, anomalyCount uint64, ss string) []string {
+		var tk PerformanceTestKeys
+		if err := json.Unmarshal([]byte(ss), &tk); err != nil {
 			return nil
 		}
 		return []string{
-			fmt.Sprintf("Download: %s", formatSpeed(summary.Download)),
-			fmt.Sprintf("Upload: %s", formatSpeed(summary.Upload)),
-			fmt.Sprintf("Ping: %.2fms", summary.Ping),
+			fmt.Sprintf("Download: %s", formatSpeed(tk.Download)),
+			fmt.Sprintf("Upload: %s", formatSpeed(tk.Upload)),
+			fmt.Sprintf("Ping: %.2fms", tk.Ping),
 		}
 	},
-	"im": func(ss string) []string {
-		var summary summary.IMSummary
-		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
-			return nil
-		}
+	"im": func(totalCount uint64, anomalyCount uint64, ss string) []string {
 		return []string{
-			fmt.Sprintf("%d tested", summary.Tested),
-			fmt.Sprintf("%d blocked", summary.Blocked),
+			fmt.Sprintf("%d tested", totalCount),
+			fmt.Sprintf("%d blocked", anomalyCount),
 			"",
 		}
 	},
-	"middlebox": func(ss string) []string {
-		var summary summary.MiddleboxSummary
-		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
-			return nil
-		}
+	"middlebox": func(totalCount uint64, anomalyCount uint64, ss string) []string {
 		return []string{
-			fmt.Sprintf("Detected: %v", summary.Detected),
+			fmt.Sprintf("Detected: %v", anomalyCount > 0),
 			"",
 			"",
 		}
 	},
 }
 
-func makeSummary(name string, ss string) []string {
-	return summarizers[name](ss)
+func makeSummary(name string, totalCount uint64, anomalyCount uint64, ss string) []string {
+	return summarizers[name](totalCount, anomalyCount, ss)
 }
 
 func logResultItem(w io.Writer, f log.Fields) error {
@@ -98,7 +93,10 @@ func logResultItem(w io.Writer, f log.Fields) error {
 	fmt.Fprintf(w, "┃ "+firstRow+" ┃\n")
 	fmt.Fprintf(w, "┡"+strings.Repeat("━", colWidth*2+2)+"┩\n")
 
-	summary := makeSummary(name, f.Get("summary").(string))
+	summary := makeSummary(name,
+		f.Get("measurement_count").(uint64),
+		f.Get("measurement_anomaly_count").(uint64),
+		f.Get("test_keys").(string))
 
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
 		util.RightPad(name, colWidth),

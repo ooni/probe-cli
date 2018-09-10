@@ -20,7 +20,7 @@ import (
 // Nettest interface. Every Nettest should implement this.
 type Nettest interface {
 	Run(*Controller) error
-	Summary(map[string]interface{}) interface{}
+	GetTestKeys(map[string]interface{}) interface{}
 	LogSummary(string) error
 }
 
@@ -119,7 +119,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		IncludeIP:      c.Ctx.Config.Sharing.IncludeIP,
 		IncludeASN:     c.Ctx.Config.Sharing.IncludeASN,
 		IncludeCountry: c.Ctx.Config.Advanced.IncludeCountry,
-		LogLevel:       "INFO",
+		LogLevel:       "DEBUG",
 
 		ProbeCC:  c.Ctx.Location.CountryCode,
 		ProbeASN: fmt.Sprintf("AS%d", c.Ctx.Location.ASN),
@@ -139,18 +139,16 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("GeoIPCountryPath: %s", nt.Options.GeoIPCountryPath)
 
 	nt.On("log", func(e mk.Event) {
-		log.Debugf(color.RedString(e.Key))
-
 		level := e.Value.LogLevel
 		msg := e.Value.Message
 
 		switch level {
 		case "ERROR":
-			log.Error(msg)
+			log.Errorf("%v: %s", color.RedString("mklog"), msg)
 		case "INFO":
-			log.Info(msg)
+			log.Infof("%v: %s", color.BlueString("mklog"), msg)
 		default:
-			log.Debug(msg)
+			log.Debugf("%v: %s", color.WhiteString("mklog"), msg)
 		}
 
 	})
@@ -285,6 +283,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		}
 	})
 
+	log.Debugf("Registered all the handlers")
 	return nil
 }
 
@@ -307,13 +306,13 @@ func (c *Controller) OnEntry(idx int64, jsonStr string) {
 
 	var entry Entry
 	json.Unmarshal([]byte(jsonStr), &entry)
-	summary := c.nt.Summary(entry.TestKeys)
-	summaryBytes, err := json.Marshal(summary)
-	if err != nil {
-		log.WithError(err).Error("failed to serialize summary")
-	}
+	tk := c.nt.GetTestKeys(entry.TestKeys)
+
 	log.Debugf("Fetching: %s %v", idx, c.msmts[idx])
-	c.msmts[idx].WriteSummary(c.Ctx.DB, string(summaryBytes))
+	err := database.AddTestKeys(c.Ctx.DB, c.msmts[idx], tk)
+	if err != nil {
+		log.WithError(err).Error("failed to add test keys to summary")
+	}
 }
 
 // MKStart is the interface for the mk.Nettest Start() function

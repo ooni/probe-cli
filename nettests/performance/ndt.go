@@ -16,26 +16,27 @@ func (n NDT) Run(ctl *nettests.Controller) error {
 	return nt.Run()
 }
 
-// NDTSummary for the test
-type NDTSummary struct {
-	Upload     int64
-	Download   int64
-	Ping       int64
-	MaxRTT     float64
-	AvgRTT     float64
-	MinRTT     float64
-	MSS        int64
-	OutOfOrder int64
-	PacketLoss float64
-	Timeouts   int64
+// NDTTestKeys for the test
+type NDTTestKeys struct {
+	Upload     int64   `json:"upload"`
+	Download   int64   `json:"download"`
+	Ping       int64   `json:"ping"`
+	MaxRTT     float64 `json:"max_rtt"`
+	AvgRTT     float64 `json:"avg_rtt"`
+	MinRTT     float64 `json:"min_rtt"`
+	MSS        int64   `json:"mss"`
+	OutOfOrder int64   `json:"out_of_order"`
+	PacketLoss float64 `json:"packet_loss"`
+	Timeouts   int64   `json:"timeouts"`
+	IsAnomaly  bool    `json:"-"`
 }
 
-// Summary generates a summary for a test run
-func (n NDT) Summary(tk map[string]interface{}) interface{} {
+// GetTestKeys generates a summary for a test run
+func (n NDT) GetTestKeys(tk map[string]interface{}) interface{} {
 	simple := tk["simple"].(map[string]interface{})
 	advanced := tk["advanced"].(map[string]interface{})
 
-	return NDTSummary{
+	return NDTTestKeys{
 		Upload:     int64(simple["upload"].(float64)),
 		Download:   int64(simple["download"].(float64)),
 		Ping:       int64(simple["ping"].(float64)),

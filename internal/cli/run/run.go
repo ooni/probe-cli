@@ -73,7 +73,7 @@ func init() {
 			}
 		}
 
-		if err = result.Finished(ctx.DB, group.Summary); err != nil {
+		if err = result.Finished(ctx.DB); err != nil {
 			return err
 		}
 		return nil

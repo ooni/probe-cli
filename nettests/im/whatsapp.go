@@ -16,16 +16,16 @@ func (h WhatsApp) Run(ctl *nettests.Controller) error {
 	return mknt.Run()
 }
 
-// WhatsAppSummary for the test
-type WhatsAppSummary struct {
-	RegistrationServerBlocking bool
-	WebBlocking                bool
-	EndpointsBlocking          bool
-	Blocked                    bool
+// WhatsAppTestKeys for the test
+type WhatsAppTestKeys struct {
+	RegistrationServerBlocking bool `json:"registration_server_blocking"`
+	WebBlocking                bool `json:"whatsapp_web_blocking"`
+	EndpointsBlocking          bool `json:"whatsapp_endpoints_blocking"`
+	IsAnomaly                  bool `json:"-"`
 }
 
-// Summary generates a summary for a test run
-func (h WhatsApp) Summary(tk map[string]interface{}) interface{} {
+// GetTestKeys generates a summary for a test run
+func (h WhatsApp) GetTestKeys(tk map[string]interface{}) interface{} {
 	var (
 		webBlocking          bool
 		registrationBlocking bool
@@ -46,11 +46,11 @@ func (h WhatsApp) Summary(tk map[string]interface{}) interface{} {
 	webBlocking = computeBlocking("whatsapp_web_status")
 	endpointsBlocking = computeBlocking("whatsapp_endpoints_status")
 
-	return WhatsAppSummary{
+	return WhatsAppTestKeys{
 		RegistrationServerBlocking: registrationBlocking,
 		WebBlocking:                webBlocking,
 		EndpointsBlocking:          endpointsBlocking,
-		Blocked:                    registrationBlocking || webBlocking || endpointsBlocking,
+		IsAnomaly:                  registrationBlocking || webBlocking || endpointsBlocking,
 	}
 }
 

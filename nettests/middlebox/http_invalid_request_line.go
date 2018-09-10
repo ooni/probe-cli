@@ -16,17 +16,17 @@ func (h HTTPInvalidRequestLine) Run(ctl *nettests.Controller) error {
 	return mknt.Run()
 }
 
-// HTTPInvalidRequestLineSummary for the test
-type HTTPInvalidRequestLineSummary struct {
-	Tampering bool
+// HTTPInvalidRequestLineTestKeys for the test
+type HTTPInvalidRequestLineTestKeys struct {
+	IsAnomaly bool `json:"-"`
 }
 
-// Summary generates a summary for a test run
-func (h HTTPInvalidRequestLine) Summary(tk map[string]interface{}) interface{} {
+// GetTestKeys generates a summary for a test run
+func (h HTTPInvalidRequestLine) GetTestKeys(tk map[string]interface{}) interface{} {
 	tampering := tk["tampering"].(bool)
 
-	return HTTPInvalidRequestLineSummary{
-		Tampering: tampering,
+	return HTTPInvalidRequestLineTestKeys{
+		IsAnomaly: tampering,
 	}
 }
 

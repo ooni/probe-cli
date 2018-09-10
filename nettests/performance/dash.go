@@ -16,22 +16,24 @@ func (d Dash) Run(ctl *nettests.Controller) error {
 	return dash.Run()
 }
 
-// DashSummary for the test
+// DashTestKeys for the test
 // TODO: process 'receiver_data' to provide an array of performance for a chart.
-type DashSummary struct {
-	Latency float64
-	Bitrate int64
-	Delay   float64
+type DashTestKeys struct {
+	Latency   float64 `json:"connect_latency"`
+	Bitrate   int64   `json:"median_bitrate"`
+	Delay     float64 `json:"min_playout_delay"`
+	IsAnomaly bool    `json:"-"`
 }
 
-// Summary generates a summary for a test run
-func (d Dash) Summary(tk map[string]interface{}) interface{} {
+// GetTestKeys generates a summary for a test run
+func (d Dash) GetTestKeys(tk map[string]interface{}) interface{} {
 	simple := tk["simple"].(map[string]interface{})
 
-	return DashSummary{
-		Latency: simple["connect_latency"].(float64),
-		Bitrate: int64(simple["median_bitrate"].(float64)),
-		Delay:   simple["min_playout_delay"].(float64),
+	return DashTestKeys{
+		IsAnomaly: false,
+		Latency:   simple["connect_latency"].(float64),
+		Bitrate:   int64(simple["median_bitrate"].(float64)),
+		Delay:     simple["min_playout_delay"].(float64),
 	}
 }
 

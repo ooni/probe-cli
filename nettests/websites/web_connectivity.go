@@ -29,10 +29,11 @@ const orchestrateBaseURL = "https://events.proteus.test.ooni.io"
 
 func lookupURLs(ctl *nettests.Controller) ([]string, map[int64]int64, error) {
 	var (
-		parsed   = new(URLResponse)
-		urls     []string
-		urlIDMap map[int64]int64
+		parsed = new(URLResponse)
+		urls   []string
 	)
+	urlIDMap := make(map[int64]int64)
+	log.Debug("Looking up URLs")
 	// XXX pass in the configuration for category codes
 	reqURL := fmt.Sprintf("%s/api/v1/urls?probe_cc=%s",
 		orchestrateBaseURL,
@@ -53,6 +54,7 @@ func lookupURLs(ctl *nettests.Controller) ([]string, map[int64]int64, error) {
 	}
 
 	for idx, url := range parsed.Results {
+		log.Debugf("Going over URL %d", idx)
 		urlID, err := database.CreateOrUpdateURL(ctl.Ctx.DB, url.URL, url.CategoryCode, url.CountryCode)
 		if err != nil {
 			log.Error("failed to add to the URL table")
@@ -82,15 +84,15 @@ func (n WebConnectivity) Run(ctl *nettests.Controller) error {
 	return nt.Run()
 }
 
-// WebConnectivitySummary for the test
-type WebConnectivitySummary struct {
-	Accessible bool
-	Blocking   string
-	Blocked    bool
+// WebConnectivityTestKeys for the test
+type WebConnectivityTestKeys struct {
+	Accessible bool   `json:"accessible"`
+	Blocking   string `json:"blocking"`
+	IsAnomaly  bool   `json:"-"`
 }
 
-// Summary generates a summary for a test run
-func (n WebConnectivity) Summary(tk map[string]interface{}) interface{} {
+// GetTestKeys generates a summary for a test run
+func (n WebConnectivity) GetTestKeys(tk map[string]interface{}) interface{} {
 	var (
 		blocked    bool
 		blocking   string
@@ -117,10 +119,10 @@ func (n WebConnectivity) Summary(tk map[string]interface{}) interface{} {
 		accessible = tk["accessible"].(bool)
 	}
 
-	return WebConnectivitySummary{
+	return WebConnectivityTestKeys{
 		Accessible: accessible,
 		Blocking:   blocking,
-		Blocked:    blocked,
+		IsAnomaly:  blocked,
 	}
 }
 

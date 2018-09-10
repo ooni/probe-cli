@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 
 	"github.com/apex/log"
@@ -34,6 +35,33 @@ func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementUR
 		return measurements, err
 	}
 	return measurements, nil
+}
+
+// GetMeasurementCounts returns the number of anomalous and total measurement for a given result
+func GetMeasurementCounts(sess sqlbuilder.Database, resultID int64) (uint64, uint64, error) {
+	var (
+		totalCount uint64
+		anmlyCount uint64
+		err        error
+	)
+	col := sess.Collection("measurements")
+
+	// XXX these two queries can be done with a single query
+	totalCount, err = col.Find("result_id", resultID).
+		Count()
+	if err != nil {
+		log.WithError(err).Error("failed to get total count")
+		return totalCount, anmlyCount, err
+	}
+
+	anmlyCount, err = col.Find("result_id", resultID).
+		And(db.Cond{"is_anomaly": true}).Count()
+	if err != nil {
+		log.WithError(err).Error("failed to get anmly count")
+		return totalCount, anmlyCount, err
+	}
+
+	return totalCount, anmlyCount, err
 }
 
 // ListResults return the list of results
@@ -168,6 +196,24 @@ func CreateOrUpdateURL(sess sqlbuilder.Database, url string, categoryCode string
 		}
 		urlID = lastID
 	}
+	log.Debugf("returning url %d", urlID)
 
 	return urlID, nil
+}
+
+// AddTestKeys writes the summary to the measurement
+func AddTestKeys(sess sqlbuilder.Database, msmt *Measurement, tk interface{}) error {
+	tkBytes, err := json.Marshal(tk)
+	if err != nil {
+		log.WithError(err).Error("failed to serialize summary")
+	}
+	isAnomaly := tk.(struct{ IsAnomaly bool }).IsAnomaly
+	msmt.TestKeys = string(tkBytes)
+	msmt.IsAnomaly = sql.NullBool{Bool: isAnomaly, Valid: true}
+
+	err = sess.Collection("measurements").Find("id", msmt.ID).Update(msmt)
+	if err != nil {
+		return errors.Wrap(err, "updating measurement")
+	}
+	return nil
 }

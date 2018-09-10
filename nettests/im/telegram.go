@@ -16,16 +16,16 @@ func (h Telegram) Run(ctl *nettests.Controller) error {
 	return mknt.Run()
 }
 
-// TelegramSummary for the test
-type TelegramSummary struct {
-	HTTPBlocking bool
-	TCPBlocking  bool
-	WebBlocking  bool
-	Blocked      bool
+// TelegramTestKeys for the test
+type TelegramTestKeys struct {
+	HTTPBlocking bool `json:"telegram_http_blocking"`
+	TCPBlocking  bool `json:"telegram_tcp_blocking"`
+	WebBlocking  bool `json:"telegram_web_blocking"`
+	IsAnomaly    bool `json:"-"`
 }
 
-// Summary generates a summary for a test run
-func (h Telegram) Summary(tk map[string]interface{}) interface{} {
+// GetTestKeys generates a summary for a test run
+func (h Telegram) GetTestKeys(tk map[string]interface{}) interface{} {
 	var (
 		tcpBlocking  bool
 		httpBlocking bool
@@ -48,11 +48,11 @@ func (h Telegram) Summary(tk map[string]interface{}) interface{} {
 		webBlocking = tk["telegram_web_status"].(string) == "blocked"
 	}
 
-	return TelegramSummary{
+	return TelegramTestKeys{
 		TCPBlocking:  tcpBlocking,
 		HTTPBlocking: httpBlocking,
 		WebBlocking:  webBlocking,
-		Blocked:      webBlocking || httpBlocking || tcpBlocking,
+		IsAnomaly:    webBlocking || httpBlocking || tcpBlocking,
 	}
 }
 

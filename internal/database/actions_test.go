@@ -83,18 +83,48 @@ func TestMeasurementWorkflow(t *testing.T) {
 	}
 }
 
-func TestURLCreation(t *testing.T) {
+func TestNetworkCreate(t *testing.T) {
 	tmpfile, err := ioutil.TempFile("", "dbtest")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Remove(tmpfile.Name())
 
-	tmpdir, err := ioutil.TempDir("", "oonitest")
+	sess, err := Connect(tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpdir)
+
+	l1 := utils.LocationInfo{
+		ASN:         2,
+		CountryCode: "IT",
+		NetworkName: "Antaninet",
+	}
+
+	l2 := utils.LocationInfo{
+		ASN:         3,
+		CountryCode: "IT",
+		NetworkName: "Fufnet",
+	}
+
+	_, err = CreateNetwork(sess, &l1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = CreateNetwork(sess, &l2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
+
+func TestURLCreation(t *testing.T) {
+	tmpfile, err := ioutil.TempFile("", "dbtest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpfile.Name())
 
 	sess, err := Connect(tmpfile.Name())
 	if err != nil {

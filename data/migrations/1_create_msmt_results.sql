@@ -41,7 +41,7 @@ CREATE TABLE `networks` (
                                -- this with more data in the future.
   `network_type` VARCHAR(16) NOT NULL, -- One of wifi, mobile
 
-   `ip` VARCHAR(40) NOT NULL,  -- Stores a string representation of an ipv4 or ipv6 address.
+  `ip` VARCHAR(40) NOT NULL,  -- Stores a string representation of an ipv4 or ipv6 address.
                                -- The longest ip is an ipv6 address like:
                                -- 0000:0000:0000:0000:0000:0000:0000:0000,
                                -- which is 39 chars.
