@@ -129,6 +129,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 		DisableReportFile: false,
 		DisableCollector:  false,
+		RandomizeInput:    false, // It's important to disable input randomization to ensure the URLs are written in sync to the DB
 		SoftwareName:      "ooniprobe",
 		SoftwareVersion:   ooni.Version,
 
