@@ -13,8 +13,10 @@ import (
 // ResultNetwork is used to represent the structure made from the JOIN
 // between the results and networks tables.
 type ResultNetwork struct {
-	Result  `db:",inline"`
-	Network `db:",inline"`
+	Result    `db:",inline"`
+	ResultID  int64 `db:"result_id"`
+	Network   `db:",inline"`
+	NetworkID int64 `db:"network_id"`
 }
 
 // MeasurementURLNetwork is used for the JOIN between Measurement and URL

@@ -80,6 +80,7 @@ func GetMeasurementCounts(sess sqlbuilder.Database, resultID int64) (uint64, uin
 		return totalCount, anmlyCount, err
 	}
 
+	log.Debugf("counts: %d, %d, %d", resultID, totalCount, anmlyCount)
 	return totalCount, anmlyCount, err
 }
 
@@ -90,8 +91,9 @@ func ListResults(sess sqlbuilder.Database) ([]ResultNetwork, []ResultNetwork, er
 
 	req := sess.Select(
 		"networks.id AS network_id",
-		db.Raw("results.*"),
+		"results.id AS result_id",
 		db.Raw("networks.*"),
+		db.Raw("results.*"),
 	).From("results").
 		Join("networks").On("results.network_id = networks.id").
 		OrderBy("results.start_time")

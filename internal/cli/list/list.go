@@ -42,7 +42,7 @@ func init() {
 			}
 			for idx, result := range incompleteResults {
 				output.ResultItem(output.ResultItemData{
-					ID:                      result.Result.ID,
+					ID:                      result.ResultID,
 					Index:                   idx,
 					TotalCount:              len(incompleteResults),
 					Name:                    result.TestGroupName,
@@ -63,16 +63,16 @@ func init() {
 			netCount := make(map[uint]int)
 			output.SectionTitle("Results")
 			for idx, result := range doneResults {
-				totalCount, anmlyCount, err := database.GetMeasurementCounts(ctx.DB, result.Result.ID)
+				totalCount, anmlyCount, err := database.GetMeasurementCounts(ctx.DB, result.ResultID)
 				if err != nil {
 					log.WithError(err).Error("failed to list measurement counts")
 				}
-				testKeys, err := database.GetResultTestKeys(ctx.DB, result.Result.ID)
+				testKeys, err := database.GetResultTestKeys(ctx.DB, result.ResultID)
 				if err != nil {
 					log.WithError(err).Error("failed to get testKeys")
 				}
 				output.ResultItem(output.ResultItemData{
-					ID:                      result.Result.ID,
+					ID:                      result.ResultID,
 					Index:                   idx,
 					TotalCount:              len(doneResults),
 					Name:                    result.TestGroupName,

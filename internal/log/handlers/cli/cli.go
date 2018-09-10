@@ -105,11 +105,13 @@ func logTable(w io.Writer, f log.Fields) error {
 func (h *Handler) TypedLog(t string, e *log.Entry) error {
 	switch t {
 	case "progress":
-		var err error
-		s := fmt.Sprintf("%.2f%%: %-25s", e.Fields.Get("percentage").(float64)*100, e.Message)
-		fmt.Fprintf(h.Writer, s)
+		perc := e.Fields.Get("percentage").(float64) * 100
+		s := fmt.Sprintf("   %s\n   %-25s",
+			bold.Sprintf("%.2f%%", perc),
+			bold.Sprint(e.Message))
+		fmt.Fprint(h.Writer, s)
 		fmt.Fprintln(h.Writer)
-		return err
+		return nil
 	case "table":
 		return logTable(h.Writer, e.Fields)
 	case "result_item":
