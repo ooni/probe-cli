@@ -25,6 +25,8 @@ type MeasurementURLNetwork struct {
 	MsmtTblID   int64 `db:"msmt_tbl_id"`
 	Network     `db:",inline"`
 	NetworkID   int64 `db:"network_id"`
+	Result      `db:",inline"`
+	ResultID    int64 `db:"result_id"`
 	URL         `db:",inline"`
 }
 
@@ -54,7 +56,7 @@ type Measurement struct {
 	Runtime          float64        `db:"runtime"` // Fractional number of seconds
 	IsDone           bool           `db:"is_done"`
 	IsUploaded       bool           `db:"is_uploaded"`
-	IsFailed         string         `db:"is_failed"`
+	IsFailed         bool           `db:"is_failed"`
 	FailureMsg       sql.NullString `db:"failure_msg,omitempty"`
 	IsUploadFailed   bool           `db:"is_upload_failed"`
 	UploadFailureMsg sql.NullString `db:"upload_failure_msg,omitempty"`
@@ -101,6 +103,7 @@ func (r *Result) Finished(sess sqlbuilder.Database) error {
 // Failed writes the error string to the measurement
 func (m *Measurement) Failed(sess sqlbuilder.Database, failure string) error {
 	m.FailureMsg = sql.NullString{String: failure, Valid: true}
+	m.IsFailed = true
 	err := sess.Collection("measurements").Find("id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")

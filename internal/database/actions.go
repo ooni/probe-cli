@@ -118,6 +118,8 @@ func CreateMeasurement(sess sqlbuilder.Database, reportID sql.NullString, testNa
 		ResultID:       resultID,
 		ReportFilePath: reportFilePath,
 		URLID:          urlID,
+		IsFailed:       false,
+		IsDone:         false,
 		// XXX Do we want to have this be part of something else?
 		StartTime: time.Now().UTC(),
 		TestKeys:  "",
