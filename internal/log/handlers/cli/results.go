@@ -77,7 +77,7 @@ func logResultItem(w io.Writer, f log.Fields) error {
 	name := f.Get("name").(string)
 	startTime := f.Get("start_time").(time.Time)
 	networkName := f.Get("network_name").(string)
-	asn := fmt.Sprintf("AS%d (%s)", f.Get("asn").(uint), f.Get("country").(string))
+	asn := fmt.Sprintf("AS%d (%s)", f.Get("asn").(uint), f.Get("network_country_code").(string))
 	//runtime := f.Get("runtime").(float64)
 	//dataUsageUp := f.Get("dataUsageUp").(int64)
 	//dataUsageDown := f.Get("dataUsageDown").(int64)
