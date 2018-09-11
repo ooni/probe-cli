@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -143,5 +144,24 @@ func TestURLCreation(t *testing.T) {
 
 	if newID2 != newID1 {
 		t.Error("inserting the same URL with different category code should produce the same result")
+	}
+}
+
+func TestPerformanceTestKeys(t *testing.T) {
+	var tk PerformanceTestKeys
+
+	ndtS := "{\"download\":100.0,\"upload\":20.0,\"ping\":2.2}"
+	dashS := "{\"median_bitrate\":102.0}"
+	if err := json.Unmarshal([]byte(ndtS), &tk); err != nil {
+		t.Fatal("failed to parse ndtS")
+	}
+	if err := json.Unmarshal([]byte(dashS), &tk); err != nil {
+		t.Fatal("failed to parse dashS")
+	}
+	if tk.Bitrate != 102.0 {
+		t.Fatalf("error Bitrate %f", tk.Bitrate)
+	}
+	if tk.Download != 100.0 {
+		t.Fatalf("error Download %f", tk.Download)
 	}
 }

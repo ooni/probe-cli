@@ -96,6 +96,14 @@ type Result struct {
 	MeasurementDir string    `db:"measurement_dir"`
 }
 
+// PerformanceTestKeys is the result summary for a performance test
+type PerformanceTestKeys struct {
+	Upload   float64 `json:"upload"`
+	Download float64 `json:"download"`
+	Ping     float64 `json:"ping"`
+	Bitrate  float64 `json:"median_bitrate"`
+}
+
 // Finished marks the result as done and sets the runtime
 func (r *Result) Finished(sess sqlbuilder.Database) error {
 	if r.IsDone == true || r.Runtime != 0 {

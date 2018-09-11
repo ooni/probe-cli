@@ -8,12 +8,13 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/util"
 )
 
-func formatSpeed(speed int64) string {
+func formatSpeed(speed float64) string {
 	if speed < 1000 {
-		return fmt.Sprintf("%d Kbit/s", speed)
+		return fmt.Sprintf("%.2f Kbit/s", speed)
 	} else if speed < 1000*1000 {
 		return fmt.Sprintf("%.2f Mbit/s", float32(speed)/1000)
 	} else if speed < 1000*1000*1000 {
@@ -21,14 +22,6 @@ func formatSpeed(speed int64) string {
 	}
 	// WTF, you crazy?
 	return fmt.Sprintf("%.2f Tbit/s", float32(speed)/(1000*1000*1000))
-}
-
-// PerformanceTestKeys is the result summary for a performance test
-type PerformanceTestKeys struct {
-	Upload   int64   `json:"upload"`
-	Download int64   `json:"download"`
-	Ping     float64 `json:"ping"`
-	Bitrate  int64   `json:"median_bitrate"`
 }
 
 var summarizers = map[string]func(uint64, uint64, string) []string{
@@ -40,7 +33,7 @@ var summarizers = map[string]func(uint64, uint64, string) []string{
 		}
 	},
 	"performance": func(totalCount uint64, anomalyCount uint64, ss string) []string {
-		var tk PerformanceTestKeys
+		var tk database.PerformanceTestKeys
 		if err := json.Unmarshal([]byte(ss), &tk); err != nil {
 			return nil
 		}

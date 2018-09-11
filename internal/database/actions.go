@@ -53,17 +53,28 @@ func GetResultTestKeys(sess sqlbuilder.Database, resultID int64) (string, error)
 	res := sess.Collection("measurements").Find("result_id", resultID)
 	defer res.Close()
 
-	var msmt Measurement
+	var (
+		msmt Measurement
+		tk   PerformanceTestKeys
+	)
 	for res.Next(&msmt) {
 		if msmt.TestName == "web_connectivity" {
 			break
 		}
-		// We only really care about the NDT TestKeys
-		if msmt.TestName == "ndt" {
-			return msmt.TestKeys, nil
+		// We only really care about performance keys
+		if msmt.TestName == "ndt" || msmt.TestName == "dash" {
+			if err := json.Unmarshal([]byte(msmt.TestKeys), &tk); err != nil {
+				log.WithError(err).Error("failed to parse testKeys")
+				return "{}", err
+			}
 		}
 	}
-	return "{}", nil
+	b, err := json.Marshal(tk)
+	if err != nil {
+		log.WithError(err).Error("failed to serialize testKeys")
+		return "{}", err
+	}
+	return string(b), nil
 }
 
 // GetMeasurementCounts returns the number of anomalous and total measurement for a given result
