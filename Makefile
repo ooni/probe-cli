@@ -14,10 +14,13 @@ build-windows:
 	@echo "Building dist/ooni.exe"
 	CC=x86_64-w64-mingw32-gcc GOOS=windows GOARCH=amd64 CGO_ENABLED=1 go build -o dist/ooni.exe -x cmd/ooni/main.go
 
-update-mk-libs:
+download-mk-libs:
 	@echo "updating mk-libs"
-	@cd vendor/github.com/measurement-kit/go-measurement-kit && curl -L -o master.zip https://github.com/measurement-kit/golang-prebuilt/archive/master.zip && unzip master.zip && mv golang-prebuilt-master libs && rm master.zip # This is a hack to workaround: https://github.com/golang/dep/issues/1240
-.PHONY: update-mk-libs
+	@cd vendor/github.com/measurement-kit/go-measurement-kit && ./download-libs.sh
+download-mk-libs-macos:
+	@echo "updating mk-libs"
+	@cd vendor/github.com/measurement-kit/go-measurement-kit && ./download-libs.sh macos
+.PHONY: update-mk-libs-macos
 
 bindata:
 	@$(GO) run vendor/github.com/shuLhan/go-bindata/go-bindata/*.go \

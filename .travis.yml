@@ -7,7 +7,7 @@ go:
 install:
 - make install-dev-deps
 - dep ensure
-- make update-mk-libs
+- make download-mk-libs-macos
 script:
 - make test-internal
 - make build
