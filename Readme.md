@@ -32,7 +32,7 @@ On macOS you can build a windows and macOS ooni binary.
 This can be done by running:
 
 ```
-make update-mk-libs
+make download-mk-libs
 ```
 
 This will download the prebuilt measurement-kit binaries.
