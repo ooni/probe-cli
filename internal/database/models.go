@@ -26,14 +26,19 @@ type MeasurementURLNetwork struct {
 	MeasurementIsDone    bool      `db:"measurement_is_done"`
 	MeasurementRuntime   float64   `db:"measurement_runtime"`
 	MsmtTblID            int64     `db:"msmt_tbl_id"`
-	Network              `db:",inline"`
-	NetworkID            int64 `db:"network_id"`
-	Result               `db:",inline"`
-	ResultID             int64     `db:"result_id"`
-	ResultRuntime        float64   `db:"result_runtime"`
-	ResultStartTime      time.Time `db:"result_start_time"`
-	ResultIsDone         bool      `db:"result_is_done"`
-	URL                  `db:",inline"`
+
+	Network            `db:",inline"`
+	NetworkID          int64  `db:"network_id"`
+	NetworkCountryCode string `db:"network_country_code"`
+
+	Result          `db:",inline"`
+	ResultID        int64     `db:"result_id"`
+	ResultRuntime   float64   `db:"result_runtime"`
+	ResultStartTime time.Time `db:"result_start_time"`
+	ResultIsDone    bool      `db:"result_is_done"`
+
+	URL            `db:",inline"`
+	URLCountryCode sql.NullString `db:"url_country_code"`
 }
 
 // Network represents a network tested by the user

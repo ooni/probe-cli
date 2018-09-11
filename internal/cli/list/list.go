@@ -1,8 +1,6 @@
 package list
 
 import (
-	"fmt"
-
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/cli/root"
@@ -71,7 +69,7 @@ func init() {
 					StartTime:               result.StartTime,
 					NetworkName:             result.Network.NetworkName,
 					Country:                 result.Network.CountryCode,
-					ASN:                     fmt.Sprintf("AS%d", result.Network.ASN),
+					ASN:                     result.Network.ASN,
 					MeasurementCount:        0,
 					MeasurementAnomalyCount: 0,
 					TestKeys:                "{}", // FIXME this used to be Summary we probably need to use a list now
@@ -101,7 +99,7 @@ func init() {
 					StartTime:               result.StartTime,
 					NetworkName:             result.Network.NetworkName,
 					Country:                 result.Network.CountryCode,
-					ASN:                     fmt.Sprintf("AS%d", result.Network.ASN),
+					ASN:                     result.Network.ASN,
 					TestKeys:                testKeys,
 					MeasurementCount:        totalCount,
 					MeasurementAnomalyCount: anmlyCount,

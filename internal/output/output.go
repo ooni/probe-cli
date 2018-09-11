@@ -42,27 +42,27 @@ func MeasurementSummary(msmt MeasurementSummaryData) {
 // MeasurementItem logs a progress type event
 func MeasurementItem(msmt database.MeasurementURLNetwork) {
 	log.WithFields(log.Fields{
-		"type":               "measurement_item",
-		"id":                 msmt.MsmtTblID,
-		"test_name":          msmt.TestName,
-		"test_group_name":    msmt.Result.TestGroupName,
-		"start_time":         msmt.MeasurementStartTime,
-		"test_keys":          msmt.TestKeys,
-		"probe_cc":           msmt.Network.CountryCode,
-		"network_name":       msmt.Network.NetworkName,
-		"asn":                msmt.Network.ASN,
-		"runtime":            msmt.MeasurementRuntime,
-		"url":                msmt.URL.URL.String,
-		"url_category_code":  msmt.URL.CategoryCode.String,
-		"url_country_code":   msmt.URL.CountryCode.String,
-		"is_anomaly":         msmt.IsAnomaly.Bool,
-		"is_uploaded":        msmt.IsUploaded,
-		"is_upload_failed":   msmt.IsUploadFailed,
-		"upload_failure_msg": msmt.UploadFailureMsg.String,
-		"is_failed":          msmt.IsFailed,
-		"failure_msg":        msmt.FailureMsg.String,
-		"is_done":            msmt.MeasurementIsDone,
-		"report_file_path":   msmt.ReportFilePath,
+		"type":                 "measurement_item",
+		"id":                   msmt.MsmtTblID,
+		"test_name":            msmt.TestName,
+		"test_group_name":      msmt.Result.TestGroupName,
+		"start_time":           msmt.MeasurementStartTime,
+		"test_keys":            msmt.TestKeys,
+		"network_country_code": msmt.NetworkCountryCode,
+		"network_name":         msmt.Network.NetworkName,
+		"asn":                  msmt.Network.ASN,
+		"runtime":              msmt.MeasurementRuntime,
+		"url":                  msmt.URL.URL.String,
+		"url_category_code":    msmt.URL.CategoryCode.String,
+		"url_country_code":     msmt.URLCountryCode.String,
+		"is_anomaly":           msmt.IsAnomaly.Bool,
+		"is_uploaded":          msmt.IsUploaded,
+		"is_upload_failed":     msmt.IsUploadFailed,
+		"upload_failure_msg":   msmt.UploadFailureMsg.String,
+		"is_failed":            msmt.IsFailed,
+		"failure_msg":          msmt.FailureMsg.String,
+		"is_done":              msmt.MeasurementIsDone,
+		"report_file_path":     msmt.ReportFilePath,
 	}).Info("measurement")
 }
 
@@ -77,7 +77,7 @@ type ResultItemData struct {
 	Runtime                 float64
 	Country                 string
 	NetworkName             string
-	ASN                     string
+	ASN                     uint
 	Done                    bool
 	DataUsageDown           int64
 	DataUsageUp             int64
@@ -95,7 +95,7 @@ func ResultItem(result ResultItemData) {
 		"test_keys":                 result.TestKeys,
 		"measurement_count":         result.MeasurementCount,
 		"measurement_anomaly_count": result.MeasurementAnomalyCount,
-		"country":                   result.Country,
+		"network_country_code":      result.Country,
 		"network_name":              result.NetworkName,
 		"asn":                       result.ASN,
 		"runtime":                   result.Runtime,
