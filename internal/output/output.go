@@ -21,6 +21,7 @@ func Progress(key string, perc float64, msg string) {
 }
 
 type MeasurementSummaryData struct {
+	TotalRuntime  float64
 	TotalCount    int64
 	AnomalyCount  int64
 	DataUsageUp   int64
@@ -30,6 +31,7 @@ type MeasurementSummaryData struct {
 func MeasurementSummary(msmt MeasurementSummaryData) {
 	log.WithFields(log.Fields{
 		"type":            "measurement_summary",
+		"total_runtime":   msmt.TotalRuntime,
 		"total_count":     msmt.TotalCount,
 		"anomaly_count":   msmt.AnomalyCount,
 		"data_usage_down": msmt.DataUsageDown,

@@ -33,8 +33,12 @@ func init() {
 				AnomalyCount:  0,
 				DataUsageUp:   0,
 				DataUsageDown: 0,
+				TotalRuntime:  0,
 			}
 			for _, msmt := range measurements {
+				if msmtSummary.TotalRuntime == 0 {
+					msmtSummary.TotalRuntime = msmt.ResultRuntime
+				}
 				// FIXME this logic should be adjusted for test groups that have many
 				// measurements in them
 				if msmtSummary.DataUsageUp == 0 {

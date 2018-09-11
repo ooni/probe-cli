@@ -27,6 +27,7 @@ func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementUR
 		"results.start_time as result_start_time",
 		"results.is_done as result_is_done",
 		"results.runtime as result_runtime",
+		"results.test_group_name as test_group_name",
 		"urls.id as url_id",
 		db.Raw("networks.*"),
 		db.Raw("urls.*"),
