@@ -19,8 +19,14 @@ func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementUR
 
 	req := sess.Select(
 		"measurements.id as msmt_tbl_id",
+		"measurements.is_done as measurement_is_done",
+		"measurements.start_time as measurement_start_time",
+		"measurements.runtime as measurement_runtime",
 		"networks.id as network_id",
 		"results.id as result_id",
+		"results.start_time as result_start_time",
+		"results.is_done as result_is_done",
+		"results.runtime as result_runtime",
 		"urls.id as url_id",
 		db.Raw("networks.*"),
 		db.Raw("urls.*"),

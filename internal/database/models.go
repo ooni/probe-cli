@@ -21,13 +21,19 @@ type ResultNetwork struct {
 
 // MeasurementURLNetwork is used for the JOIN between Measurement and URL
 type MeasurementURLNetwork struct {
-	Measurement `db:",inline"`
-	MsmtTblID   int64 `db:"msmt_tbl_id"`
-	Network     `db:",inline"`
-	NetworkID   int64 `db:"network_id"`
-	Result      `db:",inline"`
-	ResultID    int64 `db:"result_id"`
-	URL         `db:",inline"`
+	Measurement          `db:",inline"`
+	MeasurementStartTime time.Time `db:"measurement_start_time"`
+	MeasurementIsDone    bool      `db:"measurement_is_done"`
+	MeasurementRuntime   float64   `db:"measurement_runtime"`
+	MsmtTblID            int64     `db:"msmt_tbl_id"`
+	Network              `db:",inline"`
+	NetworkID            int64 `db:"network_id"`
+	Result               `db:",inline"`
+	ResultID             int64     `db:"result_id"`
+	ResultRuntime        float64   `db:"result_runtime"`
+	ResultStartTime      time.Time `db:"result_start_time"`
+	ResultIsDone         bool      `db:"result_is_done"`
+	URL                  `db:",inline"`
 }
 
 // Network represents a network tested by the user

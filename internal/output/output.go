@@ -20,6 +20,23 @@ func Progress(key string, perc float64, msg string) {
 	}).Info(msg)
 }
 
+type MeasurementSummaryData struct {
+	TotalCount    int64
+	AnomalyCount  int64
+	DataUsageUp   int64
+	DataUsageDown int64
+}
+
+func MeasurementSummary(msmt MeasurementSummaryData) {
+	log.WithFields(log.Fields{
+		"type":            "measurement_summary",
+		"total_count":     msmt.TotalCount,
+		"anomaly_count":   msmt.AnomalyCount,
+		"data_usage_down": msmt.DataUsageDown,
+		"data_usage_up":   msmt.DataUsageUp,
+	}).Info("measurement summary")
+}
+
 // MeasurementItem logs a progress type event
 func MeasurementItem(msmt database.MeasurementURLNetwork) {
 	log.WithFields(log.Fields{
@@ -27,12 +44,12 @@ func MeasurementItem(msmt database.MeasurementURLNetwork) {
 		"id":                 msmt.MsmtTblID,
 		"test_name":          msmt.TestName,
 		"test_group_name":    msmt.Result.TestGroupName,
-		"start_time":         msmt.Measurement.StartTime,
+		"start_time":         msmt.MeasurementStartTime,
 		"test_keys":          msmt.TestKeys,
 		"probe_cc":           msmt.Network.CountryCode,
 		"network_name":       msmt.Network.NetworkName,
 		"asn":                msmt.Network.ASN,
-		"runtime":            msmt.Measurement.Runtime,
+		"runtime":            msmt.MeasurementRuntime,
 		"url":                msmt.URL.URL.String,
 		"url_category_code":  msmt.URL.CategoryCode.String,
 		"url_country_code":   msmt.URL.CountryCode.String,
@@ -42,7 +59,7 @@ func MeasurementItem(msmt database.MeasurementURLNetwork) {
 		"upload_failure_msg": msmt.UploadFailureMsg.String,
 		"is_failed":          msmt.IsFailed,
 		"failure_msg":        msmt.FailureMsg.String,
-		"is_done":            msmt.Measurement.IsDone,
+		"is_done":            msmt.MeasurementIsDone,
 		"report_file_path":   msmt.ReportFilePath,
 	}).Info("measurement")
 }
