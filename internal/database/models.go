@@ -91,8 +91,8 @@ type Result struct {
 	Runtime        float64   `db:"runtime"`    // Runtime is expressed in fractional seconds
 	IsViewed       bool      `db:"is_viewed"`
 	IsDone         bool      `db:"is_done"`
-	DataUsageUp    int64     `db:"data_usage_up"`
-	DataUsageDown  int64     `db:"data_usage_down"`
+	DataUsageUp    float64   `db:"data_usage_up"`
+	DataUsageDown  float64   `db:"data_usage_down"`
 	MeasurementDir string    `db:"measurement_dir"`
 }
 

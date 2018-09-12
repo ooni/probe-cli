@@ -24,8 +24,8 @@ type MeasurementSummaryData struct {
 	TotalRuntime  float64
 	TotalCount    int64
 	AnomalyCount  int64
-	DataUsageUp   int64
-	DataUsageDown int64
+	DataUsageUp   float64
+	DataUsageDown float64
 }
 
 func MeasurementSummary(msmt MeasurementSummaryData) {
@@ -79,8 +79,8 @@ type ResultItemData struct {
 	NetworkName             string
 	ASN                     uint
 	Done                    bool
-	DataUsageDown           int64
-	DataUsageUp             int64
+	DataUsageDown           float64
+	DataUsageUp             float64
 	Index                   int
 	TotalCount              int
 }
@@ -109,8 +109,8 @@ func ResultItem(result ResultItemData) {
 
 type ResultSummaryData struct {
 	TotalTests         int64
-	TotalDataUsageUp   int64
-	TotalDataUsageDown int64
+	TotalDataUsageUp   float64
+	TotalDataUsageDown float64
 	TotalNetworks      int64
 }
 

@@ -66,8 +66,8 @@ CREATE TABLE `results` (
 
     -- This is a flag used to indicate if the result is done or is currently running.
     `is_done` TINYINT(1) NOT NULL,
-    `data_usage_up` INTEGER NOT NULL,
-    `data_usage_down` INTEGER NOT NULL,
+    `data_usage_up` REAL NOT NULL,
+    `data_usage_down` REAL NOT NULL,
     -- It's probably reasonable to set the maximum length to 260 as this is the
     -- maximum length of file paths on windows.
     `measurement_dir` VARCHAR(260) NOT NULL,

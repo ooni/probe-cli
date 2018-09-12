@@ -29,8 +29,8 @@ func init() {
 			msmtSummary := output.MeasurementSummaryData{
 				TotalCount:    0,
 				AnomalyCount:  0,
-				DataUsageUp:   0,
-				DataUsageDown: 0,
+				DataUsageUp:   0.0,
+				DataUsageDown: 0.0,
 				TotalRuntime:  0,
 			}
 			for _, msmt := range measurements {

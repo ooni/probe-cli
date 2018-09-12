@@ -63,6 +63,12 @@ func (c *Controller) SetInputIdxMap(inputIdxMap map[int64]int64) error {
 	return nil
 }
 
+type StatusEnd struct {
+	DownloadedKB float64 `json:"download_kb"`
+	UploadedKB   float64 `json:"uploaded_kb"`
+	Failure      string  `json:"failure"`
+}
+
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
@@ -273,12 +279,27 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 	nt.On("status.end", func(e mk.Event) {
 		log.Debugf("status.end")
+
 		for idx, msmt := range c.msmts {
 			log.Debugf("adding msmt#%d to result", idx)
 			if err := msmt.AddToResult(c.Ctx.DB, c.res); err != nil {
 				log.WithError(err).Error("failed to add to result")
 			}
 		}
+
+		var endMsg StatusEnd
+		err := json.Unmarshal([]byte(e.Value.JSONStr), &endMsg)
+		if err != nil {
+			log.WithError(err).Errorf("failed to extract status.end message %s", e.Value.JSONStr)
+			return
+		}
+
+		if endMsg.Failure != "" {
+			log.Errorf("Failure in status.end: %s", endMsg.Failure)
+		}
+
+		c.res.DataUsageDown += endMsg.DownloadedKB
+		c.res.DataUsageDown += endMsg.UploadedKB
 	})
 
 	log.Debugf("Registered all the handlers")
@@ -303,7 +324,10 @@ func (c *Controller) OnEntry(idx int64, jsonStr string) {
 	log.Debugf("OnEntry")
 
 	var entry Entry
-	json.Unmarshal([]byte(jsonStr), &entry)
+	if err := json.Unmarshal([]byte(jsonStr), &entry); err != nil {
+		log.WithError(err).Error("failed to parse onEntry")
+		return
+	}
 	tk := c.nt.GetTestKeys(entry.TestKeys)
 
 	log.Debugf("Fetching: %s %v", idx, c.msmts[idx])

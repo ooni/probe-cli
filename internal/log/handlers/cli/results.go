@@ -113,8 +113,8 @@ func logResultSummary(w io.Writer, f log.Fields) error {
 
 	networks := f.Get("total_networks").(int64)
 	tests := f.Get("total_tests").(int64)
-	dataUp := f.Get("total_data_usage_up").(int64)
-	dataDown := f.Get("total_data_usage_down").(int64)
+	dataUp := f.Get("total_data_usage_up").(float64)
+	dataDown := f.Get("total_data_usage_down").(float64)
 	if tests == 0 {
 		fmt.Fprintf(w, "No results\n")
 		fmt.Fprintf(w, "Try running:\n")
@@ -125,7 +125,7 @@ func logResultSummary(w io.Writer, f log.Fields) error {
 	fmt.Fprintf(w, " │ %s │ %s │ %s │\n",
 		util.RightPad(fmt.Sprintf("%d tests", tests), 12),
 		util.RightPad(fmt.Sprintf("%d nets", networks), 12),
-		util.RightPad(fmt.Sprintf("%d ⬆ %d ⬇", dataUp, dataDown), 12))
+		util.RightPad(fmt.Sprintf("%.0f ⬆ %.0f ⬇", dataUp, dataDown), 12))
 	fmt.Fprintf(w, " └──────────────┴──────────────┴──────────────┘\n")
 
 	return nil
