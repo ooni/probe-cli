@@ -24,6 +24,18 @@ func formatSpeed(speed float64) string {
 	return fmt.Sprintf("%.2f Tbit/s", float32(speed)/(1000*1000*1000))
 }
 
+func formatSize(size float64) string {
+	if size < 1024 {
+		return fmt.Sprintf("%.1fK", size)
+	} else if size < 1024*1024 {
+		return fmt.Sprintf("%.1fM", size/1024.0)
+	} else if size < 1024*1024*1024 {
+		return fmt.Sprintf("%.1fG", size/(1024.0*1024.0))
+	}
+	// WTF, you crazy?
+	return fmt.Sprintf("%.1fT", size/(1024*1024*1024))
+}
+
 var summarizers = map[string]func(uint64, uint64, string) []string{
 	"websites": func(totalCount uint64, anomalyCount uint64, ss string) []string {
 		return []string{
@@ -102,9 +114,7 @@ func logResultItem(w io.Writer, f log.Fields) error {
 		util.RightPad(summary[2], colWidth)))
 
 	if index == totalCount-1 {
-		fmt.Fprintf(w, "└┬──────────────┬──────────────┬──────────────┬")
-		fmt.Fprintf(w, strings.Repeat("─", colWidth*2-44))
-		fmt.Fprintf(w, "┘\n")
+		fmt.Fprintf(w, "└┬──────────────┬──────────────┬──────────────────┬┘\n")
 	}
 	return nil
 }
@@ -125,8 +135,8 @@ func logResultSummary(w io.Writer, f log.Fields) error {
 	fmt.Fprintf(w, " │ %s │ %s │ %s │\n",
 		util.RightPad(fmt.Sprintf("%d tests", tests), 12),
 		util.RightPad(fmt.Sprintf("%d nets", networks), 12),
-		util.RightPad(fmt.Sprintf("%.0f ⬆ %.0f ⬇", dataUp, dataDown), 12))
-	fmt.Fprintf(w, " └──────────────┴──────────────┴──────────────┘\n")
+		util.RightPad(fmt.Sprintf("⬆ %s  ⬇ %s", formatSize(dataUp), formatSize(dataDown)), 16))
+	fmt.Fprintf(w, " └──────────────┴──────────────┴──────────────────┘\n")
 
 	return nil
 }

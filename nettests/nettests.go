@@ -286,7 +286,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		}
 
 		c.res.DataUsageDown += e.Value.DownloadedKB
-		c.res.DataUsageDown += e.Value.UploadedKB
+		c.res.DataUsageUp += e.Value.UploadedKB
 	})
 
 	log.Debugf("Registered all the handlers")
