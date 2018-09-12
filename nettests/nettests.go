@@ -63,12 +63,6 @@ func (c *Controller) SetInputIdxMap(inputIdxMap map[int64]int64) error {
 	return nil
 }
 
-type StatusEnd struct {
-	DownloadedKB float64 `json:"download_kb"`
-	UploadedKB   float64 `json:"uploaded_kb"`
-	Failure      string  `json:"failure"`
-}
-
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
@@ -287,19 +281,12 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 			}
 		}
 
-		var endMsg StatusEnd
-		err := json.Unmarshal([]byte(e.Value.JSONStr), &endMsg)
-		if err != nil {
-			log.WithError(err).Errorf("failed to extract status.end message %s", e.Value.JSONStr)
-			return
+		if e.Value.Failure != "" {
+			log.Errorf("Failure in status.end: %s", e.Value.Failure)
 		}
 
-		if endMsg.Failure != "" {
-			log.Errorf("Failure in status.end: %s", endMsg.Failure)
-		}
-
-		c.res.DataUsageDown += endMsg.DownloadedKB
-		c.res.DataUsageDown += endMsg.UploadedKB
+		c.res.DataUsageDown += e.Value.DownloadedKB
+		c.res.DataUsageDown += e.Value.UploadedKB
 	})
 
 	log.Debugf("Registered all the handlers")
