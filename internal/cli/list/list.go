@@ -34,11 +34,11 @@ func init() {
 				TotalRuntime:  0,
 			}
 			for _, msmt := range measurements {
+				// We assume that since these are summary level information the first
+				// item will contain the information necessary.
 				if msmtSummary.TotalRuntime == 0 {
 					msmtSummary.TotalRuntime = msmt.ResultRuntime
 				}
-				// FIXME this logic should be adjusted for test groups that have many
-				// measurements in them
 				if msmtSummary.DataUsageUp == 0 {
 					msmtSummary.DataUsageUp = msmt.DataUsageUp
 					msmtSummary.DataUsageDown = msmt.DataUsageDown

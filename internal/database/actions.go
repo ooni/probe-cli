@@ -34,6 +34,7 @@ func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementUR
 		db.Raw("networks.*"),
 		db.Raw("urls.*"),
 		db.Raw("measurements.*"),
+		db.Raw("results.*"),
 	).From("results").
 		Join("measurements").On("results.id = measurements.result_id").
 		Join("networks").On("results.network_id = networks.id").
