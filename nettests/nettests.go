@@ -176,12 +176,12 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 	nt.On("status.measurement_start", func(e mk.Event) {
 		log.Debugf(color.RedString(e.Key))
-
 		idx := e.Value.Idx
 		urlID := sql.NullInt64{Int64: 0, Valid: false}
 		if c.inputIdxMap != nil {
 			urlID = sql.NullInt64{Int64: c.inputIdxMap[idx], Valid: true}
 		}
+		log.Debugf("👁 %d %s %d", idx, e.Value.Input, urlID.Int64)
 		msmt, err := database.CreateMeasurement(c.Ctx.DB, reportID, testName, resultID, reportFilePath, urlID)
 		if err != nil {
 			log.WithError(err).Error("Failed to create measurement")

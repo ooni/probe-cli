@@ -132,18 +132,45 @@ func TestURLCreation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	newID1, err := CreateOrUpdateURL(sess, "https://google.com", "SRCH", "XX")
+	newID1, err := CreateOrUpdateURL(sess, "https://google.com", "GMB", "XX")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newID2, err := CreateOrUpdateURL(sess, "https://google.com", "GMB", "XX")
+	newID2, err := CreateOrUpdateURL(sess, "https://google.com", "SRCH", "XX")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newID3, err := CreateOrUpdateURL(sess, "https://facebook.com", "GRP", "XX")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newID4, err := CreateOrUpdateURL(sess, "https://facebook.com", "GMP", "XX")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newID5, err := CreateOrUpdateURL(sess, "https://google.com", "SRCH", "XX")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if newID2 != newID1 {
 		t.Error("inserting the same URL with different category code should produce the same result")
+	}
+
+	if newID3 == newID1 {
+		t.Error("inserting different URL should produce different ids")
+	}
+
+	if newID4 != newID3 {
+		t.Error("inserting the same URL with different category code should produce the same result")
+	}
+
+	if newID5 != newID1 {
+		t.Error("the ID of google should still be the same")
 	}
 }
 

@@ -202,48 +202,48 @@ func CreateNetwork(sess sqlbuilder.Database, location *utils.LocationInfo) (*Net
 // CreateOrUpdateURL will create a new URL entry to the urls table if it doesn't
 // exists, otherwise it will update the category code of the one already in
 // there.
-func CreateOrUpdateURL(sess sqlbuilder.Database, url string, categoryCode string, countryCode string) (int64, error) {
-	var urlID int64
+func CreateOrUpdateURL(sess sqlbuilder.Database, urlStr string, categoryCode string, countryCode string) (int64, error) {
+	var url URL
 
-	res, err := sess.Update("urls").Set(
-		"url", url,
-		"category_code", categoryCode,
-		"country_code", countryCode,
-	).Where("url = ? AND country_code = ?", url, countryCode).Exec()
-
+	tx, err := sess.NewTx(nil)
 	if err != nil {
-		log.Error("Failed to write to the URL table")
+		log.WithError(err).Error("failed to create transaction")
 		return 0, err
 	}
-	affected, err := res.RowsAffected()
+	res := tx.Collection("urls").Find(
+		db.Cond{"url": urlStr, "country_code": countryCode},
+	)
+	err = res.One(&url)
 
-	if err != nil {
-		log.Error("Failed to get affected row count")
-		return 0, err
-	}
-	if affected == 0 {
-		newID, err := sess.Collection("urls").Insert(
-			URL{
-				URL:          sql.NullString{String: url, Valid: true},
-				CategoryCode: sql.NullString{String: categoryCode, Valid: true},
-				CountryCode:  sql.NullString{String: countryCode, Valid: true},
-			})
-		if err != nil {
+	if err == db.ErrNoMoreRows {
+		url = URL{
+			URL:          sql.NullString{String: urlStr, Valid: true},
+			CategoryCode: sql.NullString{String: categoryCode, Valid: true},
+			CountryCode:  sql.NullString{String: countryCode, Valid: true},
+		}
+		newID, insErr := tx.Collection("urls").Insert(url)
+		if insErr != nil {
 			log.Error("Failed to insert into the URLs table")
-			return 0, err
+			return 0, insErr
 		}
-		urlID = newID.(int64)
+		url.ID = sql.NullInt64{Int64: newID.(int64), Valid: true}
+	} else if err != nil {
+		log.WithError(err).Error("Failed to get single result")
+		return 0, err
 	} else {
-		lastID, err := res.LastInsertId()
-		if err != nil {
-			log.Error("failed to get URL ID")
-			return 0, err
-		}
-		urlID = lastID
+		url.CategoryCode = sql.NullString{String: categoryCode, Valid: true}
+		res.Update(url)
 	}
-	log.Debugf("returning url %d", urlID)
 
-	return urlID, nil
+	err = tx.Commit()
+	if err != nil {
+		log.WithError(err).Error("Failed to write to the URL table")
+		return 0, err
+	}
+
+	log.Debugf("returning url %d", url.ID.Int64)
+
+	return url.ID.Int64, nil
 }
 
 // AddTestKeys writes the summary to the measurement

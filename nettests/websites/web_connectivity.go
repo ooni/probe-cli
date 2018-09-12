@@ -59,6 +59,7 @@ func lookupURLs(ctl *nettests.Controller) ([]string, map[int64]int64, error) {
 		if err != nil {
 			log.Error("failed to add to the URL table")
 		}
+		log.Debugf("Mapped URL %s to idx %d and urlID %d", url.URL, idx, urlID)
 		urlIDMap[int64(idx)] = urlID
 		urls = append(urls, url.URL)
 	}
