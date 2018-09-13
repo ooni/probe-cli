@@ -7,6 +7,7 @@
   "sharing": {
     "include_ip": false,
     "include_asn": true,
+    "include_country": true,
     "include_gps": true,
     "upload_results": true
   },
@@ -57,7 +58,6 @@
     }
   },
   "advanced": {
-    "include_country": true,
     "use_domain_fronting": false,
     "send_crash_reports": true
   }
