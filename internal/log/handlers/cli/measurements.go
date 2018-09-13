@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -16,6 +18,28 @@ func statusIcon(ok bool) string {
 	}
 	return "❌"
 }
+
+func logTestKeys(w io.Writer, testKeys string) error {
+	colWidth := 24
+
+	var out bytes.Buffer
+	if err := json.Indent(&out, []byte(testKeys), "", " "); err != nil {
+		return err
+	}
+
+	testKeysLines := strings.Split(string(out.Bytes()), "\n")
+	if len(testKeysLines) > 1 {
+		testKeysLines = testKeysLines[1 : len(testKeysLines)-1]
+		testKeysLines[0] = "{" + testKeysLines[0][1:]
+		testKeysLines[len(testKeysLines)-1] = testKeysLines[len(testKeysLines)-1] + "}"
+	}
+	for _, line := range testKeysLines {
+		fmt.Fprintf(w, fmt.Sprintf("│ %s │\n",
+			util.RightPad(line, colWidth*2)))
+	}
+	return nil
+}
+
 func logMeasurementItem(w io.Writer, f log.Fields) error {
 	colWidth := 24
 
@@ -60,11 +84,15 @@ func logMeasurementItem(w io.Writer, f log.Fields) error {
 		util.RightPad(testName, colWidth),
 		util.RightPad(anomalyStr, colWidth)))
 
-	fmt.Fprintf(w, fmt.Sprintf("│ %s │\n",
-		util.RightPad(testKeys, colWidth*2)))
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
 		util.RightPad(failureStr, colWidth),
 		util.RightPad(uploadStr, colWidth)))
+
+	if testKeys != "" {
+		if err := logTestKeys(w, testKeys); err != nil {
+			return err
+		}
+	}
 
 	if isLast {
 		fmt.Fprintf(w, "└┬────────────────────────────────────────────────┬┘\n")
