@@ -1,0 +1,103 @@
+package cli
+
+import (
+	"fmt"
+	"io"
+	"strings"
+	"time"
+
+	"github.com/apex/log"
+	"github.com/ooni/probe-cli/internal/util"
+)
+
+func statusIcon(ok bool) string {
+	if ok {
+		return "✓"
+	}
+	return "❌"
+}
+func logMeasurementItem(w io.Writer, f log.Fields) error {
+	colWidth := 24
+
+	rID := f.Get("id").(int64)
+	testName := f.Get("test_name").(string)
+
+	// We currently don't use these fields in the view
+	//testGroupName := f.Get("test_group_name").(string)
+	//networkName := f.Get("network_name").(string)
+	//asn := fmt.Sprintf("AS%d (%s)", f.Get("asn").(uint), f.Get("network_country_code").(string))
+	testKeys := f.Get("test_keys").(string)
+
+	isAnomaly := f.Get("is_anomaly").(bool)
+	isFailed := f.Get("is_failed").(bool)
+	isUploaded := f.Get("is_uploaded").(bool)
+	url := f.Get("url").(string)
+	urlCategoryCode := f.Get("url_category_code").(string)
+
+	isFirst := f.Get("is_first").(bool)
+	isLast := f.Get("is_last").(bool)
+	if isFirst {
+		fmt.Fprintf(w, "┏"+strings.Repeat("━", colWidth*2+2)+"┓\n")
+	} else {
+		fmt.Fprintf(w, "┢"+strings.Repeat("━", colWidth*2+2)+"┪\n")
+	}
+
+	anomalyStr := fmt.Sprintf("ok: %s", statusIcon(!isAnomaly))
+	uploadStr := fmt.Sprintf("uploaded: %s", statusIcon(isUploaded))
+	failureStr := fmt.Sprintf("success: %s", statusIcon(!isFailed))
+
+	fmt.Fprintf(w, fmt.Sprintf("│ %s │\n",
+		util.RightPad(
+			fmt.Sprintf("#%d", rID), colWidth*2)))
+
+	if url != "" {
+		fmt.Fprintf(w, fmt.Sprintf("│ %s │\n",
+			util.RightPad(
+				fmt.Sprintf("%s (%s)", url, urlCategoryCode), colWidth*2)))
+	}
+
+	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
+		util.RightPad(testName, colWidth),
+		util.RightPad(anomalyStr, colWidth)))
+
+	fmt.Fprintf(w, fmt.Sprintf("│ %s │\n",
+		util.RightPad(testKeys, colWidth*2)))
+	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
+		util.RightPad(failureStr, colWidth),
+		util.RightPad(uploadStr, colWidth)))
+
+	if isLast {
+		fmt.Fprintf(w, "└┬────────────────────────────────────────────────┬┘\n")
+	}
+	return nil
+}
+
+func logMeasurementSummary(w io.Writer, f log.Fields) error {
+	colWidth := 12
+
+	totalCount := f.Get("total_count").(int64)
+	anomalyCount := f.Get("anomaly_count").(int64)
+	totalRuntime := f.Get("total_runtime").(float64)
+	dataUp := f.Get("data_usage_up").(float64)
+	dataDown := f.Get("data_usage_down").(float64)
+
+	startTime := f.Get("start_time").(time.Time)
+
+	asn := f.Get("asn").(uint)
+	countryCode := f.Get("network_country_code").(string)
+	networkName := f.Get("network_name").(string)
+
+	fmt.Fprintf(w, " │ %s  │\n",
+		util.RightPad(startTime.Format(time.RFC822), (colWidth+3)*3),
+	)
+	fmt.Fprintf(w, " │ %s  │\n",
+		util.RightPad(fmt.Sprintf("AS%d, %s (%s)", asn, networkName, countryCode), (colWidth+3)*3),
+	)
+	fmt.Fprintf(w, " │ %s   %s   %s │\n",
+		util.RightPad(fmt.Sprintf("%.2fs", totalRuntime), colWidth),
+		util.RightPad(fmt.Sprintf("%d/%d anmls", anomalyCount, totalCount), colWidth),
+		util.RightPad(fmt.Sprintf("⬆ %s  ⬇ %s", formatSize(dataUp), formatSize(dataDown)), colWidth+4))
+	fmt.Fprintf(w, " └────────────────────────────────────────────────┘\n")
+
+	return nil
+}

@@ -21,11 +21,15 @@ func Progress(key string, perc float64, msg string) {
 }
 
 type MeasurementSummaryData struct {
-	TotalRuntime  float64
-	TotalCount    int64
-	AnomalyCount  int64
-	DataUsageUp   float64
-	DataUsageDown float64
+	TotalRuntime       float64
+	TotalCount         int64
+	AnomalyCount       int64
+	DataUsageUp        float64
+	DataUsageDown      float64
+	ASN                uint
+	NetworkName        string
+	NetworkCountryCode string
+	StartTime          time.Time
 }
 
 func MeasurementSummary(msmt MeasurementSummaryData) {
@@ -36,13 +40,20 @@ func MeasurementSummary(msmt MeasurementSummaryData) {
 		"anomaly_count":   msmt.AnomalyCount,
 		"data_usage_down": msmt.DataUsageDown,
 		"data_usage_up":   msmt.DataUsageUp,
+		"asn":             msmt.ASN,
+		"network_country_code": msmt.NetworkCountryCode,
+		"network_name":         msmt.NetworkName,
+		"start_time":           msmt.StartTime,
 	}).Info("measurement summary")
 }
 
 // MeasurementItem logs a progress type event
-func MeasurementItem(msmt database.MeasurementURLNetwork) {
+func MeasurementItem(msmt database.MeasurementURLNetwork, isFirst bool, isLast bool) {
 	log.WithFields(log.Fields{
-		"type":                 "measurement_item",
+		"type":     "measurement_item",
+		"is_first": isFirst,
+		"is_last":  isLast,
+
 		"id":                   msmt.MsmtTblID,
 		"test_name":            msmt.TestName,
 		"test_group_name":      msmt.Result.TestGroupName,

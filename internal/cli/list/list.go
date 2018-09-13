@@ -27,27 +27,41 @@ func init() {
 			}
 
 			msmtSummary := output.MeasurementSummaryData{
-				TotalCount:    0,
-				AnomalyCount:  0,
-				DataUsageUp:   0.0,
-				DataUsageDown: 0.0,
-				TotalRuntime:  0,
+				TotalCount:         0,
+				AnomalyCount:       0,
+				DataUsageUp:        0.0,
+				DataUsageDown:      0.0,
+				TotalRuntime:       0,
+				ASN:                0,
+				NetworkName:        "",
+				NetworkCountryCode: "ZZ",
 			}
-			for _, msmt := range measurements {
+			isFirst := true
+			isLast := false
+			for idx, msmt := range measurements {
+				if idx > 0 {
+					isFirst = false
+				}
+				if idx == len(measurements)-1 {
+					isLast = true
+				}
+
 				// We assume that since these are summary level information the first
 				// item will contain the information necessary.
-				if msmtSummary.TotalRuntime == 0 {
+				if isFirst {
 					msmtSummary.TotalRuntime = msmt.ResultRuntime
-				}
-				if msmtSummary.DataUsageUp == 0 {
 					msmtSummary.DataUsageUp = msmt.DataUsageUp
 					msmtSummary.DataUsageDown = msmt.DataUsageDown
+					msmtSummary.NetworkName = msmt.NetworkName
+					msmtSummary.NetworkCountryCode = msmt.NetworkCountryCode
+					msmtSummary.ASN = msmt.ASN
+					msmtSummary.StartTime = msmt.MeasurementStartTime
 				}
 				if msmt.IsAnomaly.Bool == true {
 					msmtSummary.AnomalyCount++
 				}
 				msmtSummary.TotalCount++
-				output.MeasurementItem(msmt)
+				output.MeasurementItem(msmt, isFirst, isLast)
 			}
 			output.MeasurementSummary(msmtSummary)
 		} else {

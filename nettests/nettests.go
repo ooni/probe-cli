@@ -120,7 +120,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	nt.Options = mk.NettestOptions{
 		IncludeIP:      c.Ctx.Config.Sharing.IncludeIP,
 		IncludeASN:     c.Ctx.Config.Sharing.IncludeASN,
-		IncludeCountry: c.Ctx.Config.Advanced.IncludeCountry,
+		IncludeCountry: c.Ctx.Config.Sharing.IncludeCountry,
 		LogLevel:       "DEBUG",
 
 		ProbeCC:  c.Ctx.Location.CountryCode,

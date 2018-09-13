@@ -126,7 +126,7 @@ func Onboarding(config *config.Config) error {
 
 	config.Lock()
 	config.InformedConsent = true
-	config.Advanced.IncludeCountry = settings.IncludeCountry
+	config.Sharing.IncludeCountry = settings.IncludeCountry
 	config.Advanced.SendCrashReports = settings.SendCrashReports
 	config.Sharing.IncludeIP = settings.IncludeIP
 	config.Sharing.IncludeASN = settings.IncludeNetwork
