@@ -80,6 +80,7 @@ func logResultItem(w io.Writer, f log.Fields) error {
 
 	rID := f.Get("id").(int64)
 	name := f.Get("name").(string)
+	isDone := f.Get("is_done").(bool)
 	startTime := f.Get("start_time").(time.Time)
 	networkName := f.Get("network_name").(string)
 	asn := fmt.Sprintf("AS%d (%s)", f.Get("asn").(uint), f.Get("network_country_code").(string))
@@ -114,7 +115,12 @@ func logResultItem(w io.Writer, f log.Fields) error {
 		util.RightPad(summary[2], colWidth)))
 
 	if index == totalCount-1 {
-		fmt.Fprintf(w, "└┬──────────────┬──────────────┬──────────────────┬┘\n")
+		if isDone == true {
+			fmt.Fprintf(w, "└┬──────────────┬──────────────┬──────────────────┬┘\n")
+		} else {
+			// We want the incomplete section to not have a footer
+			fmt.Fprintf(w, "└──────────────────────────────────────────────────┘\n")
+		}
 	}
 	return nil
 }

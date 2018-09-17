@@ -110,7 +110,7 @@ func ResultItem(result ResultItemData) {
 		"network_name":              result.NetworkName,
 		"asn":                       result.ASN,
 		"runtime":                   result.Runtime,
-		"done":                      result.Done,
+		"is_done":                   result.Done,
 		"data_usage_down":           result.DataUsageDown,
 		"data_usage_up":             result.DataUsageUp,
 		"index":                     result.Index,
