@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -55,7 +56,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 	}
 
 	var m2 Measurement
-	err = sess.Collection("measurements").Find("id", m1.ID).One(&m2)
+	err = sess.Collection("measurements").Find("measurement_id", m1.ID).One(&m2)
 	if err != nil {
 		t.Fatal(err)
 	}

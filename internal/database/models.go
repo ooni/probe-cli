@@ -13,68 +13,52 @@ import (
 // ResultNetwork is used to represent the structure made from the JOIN
 // between the results and networks tables.
 type ResultNetwork struct {
-	Result    `db:",inline"`
-	ResultID  int64 `db:"result_id"`
-	Network   `db:",inline"`
-	NetworkID int64 `db:"network_id"`
+	Result  `db:",inline"`
+	Network `db:",inline"`
 }
 
 // MeasurementURLNetwork is used for the JOIN between Measurement and URL
 type MeasurementURLNetwork struct {
-	Measurement          `db:",inline"`
-	MeasurementStartTime time.Time `db:"measurement_start_time"`
-	MeasurementIsDone    bool      `db:"measurement_is_done"`
-	MeasurementRuntime   float64   `db:"measurement_runtime"`
-	MsmtTblID            int64     `db:"msmt_tbl_id"`
-
-	Network            `db:",inline"`
-	NetworkID          int64  `db:"network_id"`
-	NetworkCountryCode string `db:"network_country_code"`
-
-	Result          `db:",inline"`
-	ResultID        int64     `db:"result_id"`
-	ResultRuntime   float64   `db:"result_runtime"`
-	ResultStartTime time.Time `db:"result_start_time"`
-	ResultIsDone    bool      `db:"result_is_done"`
-
-	URL            `db:",inline"`
-	URLCountryCode sql.NullString `db:"url_country_code"`
+	Measurement `db:",inline"`
+	Network     `db:",inline"`
+	Result      `db:",inline"`
+	URL         `db:",inline"`
 }
 
 // Network represents a network tested by the user
 type Network struct {
-	ID          int64  `db:"id,omitempty"`
+	ID          int64  `db:"network_id,omitempty"`
 	NetworkName string `db:"network_name"`
 	NetworkType string `db:"network_type"`
 	IP          string `db:"ip"`
 	ASN         uint   `db:"asn"`
-	CountryCode string `db:"country_code"`
+	CountryCode string `db:"network_country_code"`
 }
 
 // URL represents URLs from the testing lists
 type URL struct {
-	ID           sql.NullInt64  `db:"id,omitempty"`
+	ID           sql.NullInt64  `db:"url_id,omitempty"`
 	URL          sql.NullString `db:"url"`
 	CategoryCode sql.NullString `db:"category_code"`
-	CountryCode  sql.NullString `db:"country_code"`
+	CountryCode  sql.NullString `db:"url_country_code"`
 }
 
 // Measurement model
 type Measurement struct {
-	ID               int64          `db:"id,omitempty"`
+	ID               int64          `db:"measurement_id,omitempty"`
 	TestName         string         `db:"test_name"`
-	StartTime        time.Time      `db:"start_time"`
-	Runtime          float64        `db:"runtime"` // Fractional number of seconds
-	IsDone           bool           `db:"is_done"`
-	IsUploaded       bool           `db:"is_uploaded"`
-	IsFailed         bool           `db:"is_failed"`
-	FailureMsg       sql.NullString `db:"failure_msg,omitempty"`
-	IsUploadFailed   bool           `db:"is_upload_failed"`
-	UploadFailureMsg sql.NullString `db:"upload_failure_msg,omitempty"`
-	IsRerun          bool           `db:"is_rerun"`
+	StartTime        time.Time      `db:"measurement_start_time"`
+	Runtime          float64        `db:"measurement_runtime"` // Fractional number of seconds
+	IsDone           bool           `db:"measurement_is_done"`
+	IsUploaded       bool           `db:"measurement_is_uploaded"`
+	IsFailed         bool           `db:"measurement_is_failed"`
+	FailureMsg       sql.NullString `db:"measurement_failure_msg,omitempty"`
+	IsUploadFailed   bool           `db:"measurement_is_upload_failed"`
+	UploadFailureMsg sql.NullString `db:"measurement_upload_failure_msg,omitempty"`
+	IsRerun          bool           `db:"measurement_is_rerun"`
 	ReportID         sql.NullString `db:"report_id,omitempty"`
 	URLID            sql.NullInt64  `db:"url_id,omitempty"` // Used to reference URL
-	MeasurementID    sql.NullInt64  `db:"measurement_id,omitempty"`
+	MeasurementID    sql.NullInt64  `db:"collector_measurement_id,omitempty"`
 	IsAnomaly        sql.NullBool   `db:"is_anomaly,omitempty"`
 	// FIXME we likely want to support JSON. See: https://github.com/upper/db/issues/462
 	TestKeys       string `db:"test_keys"`
@@ -84,15 +68,15 @@ type Measurement struct {
 
 // Result model
 type Result struct {
-	ID             int64     `db:"id,omitempty"`
+	ID             int64     `db:"result_id,omitempty"`
 	TestGroupName  string    `db:"test_group_name"`
-	StartTime      time.Time `db:"start_time"`
-	NetworkID      int64     `db:"network_id"` // Used to include a Network
-	Runtime        float64   `db:"runtime"`    // Runtime is expressed in fractional seconds
-	IsViewed       bool      `db:"is_viewed"`
-	IsDone         bool      `db:"is_done"`
-	DataUsageUp    float64   `db:"data_usage_up"`
-	DataUsageDown  float64   `db:"data_usage_down"`
+	StartTime      time.Time `db:"result_start_time"`
+	NetworkID      int64     `db:"network_id"`     // Used to include a Network
+	Runtime        float64   `db:"result_runtime"` // Runtime is expressed in fractional seconds
+	IsViewed       bool      `db:"result_is_viewed"`
+	IsDone         bool      `db:"result_is_done"`
+	DataUsageUp    float64   `db:"result_data_usage_up"`
+	DataUsageDown  float64   `db:"result_data_usage_down"`
 	MeasurementDir string    `db:"measurement_dir"`
 }
 
@@ -112,7 +96,7 @@ func (r *Result) Finished(sess sqlbuilder.Database) error {
 	r.Runtime = time.Now().UTC().Sub(r.StartTime).Seconds()
 	r.IsDone = true
 
-	err := sess.Collection("results").Find("id", r.ID).Update(r)
+	err := sess.Collection("results").Find("result_id", r.ID).Update(r)
 	if err != nil {
 		return errors.Wrap(err, "updating finished result")
 	}
@@ -123,7 +107,7 @@ func (r *Result) Finished(sess sqlbuilder.Database) error {
 func (m *Measurement) Failed(sess sqlbuilder.Database, failure string) error {
 	m.FailureMsg = sql.NullString{String: failure, Valid: true}
 	m.IsFailed = true
-	err := sess.Collection("measurements").Find("id", m.ID).Update(m)
+	err := sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
 	}
@@ -136,7 +120,7 @@ func (m *Measurement) Done(sess sqlbuilder.Database) error {
 	m.Runtime = runtime.Seconds()
 	m.IsDone = true
 
-	err := sess.Collection("measurements").Find("id", m.ID).Update(m)
+	err := sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
 	}
@@ -148,7 +132,7 @@ func (m *Measurement) UploadFailed(sess sqlbuilder.Database, failure string) err
 	m.UploadFailureMsg = sql.NullString{String: failure, Valid: true}
 	m.IsUploaded = false
 
-	err := sess.Collection("measurements").Find("id", m.ID).Update(m)
+	err := sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
 	}
@@ -159,7 +143,7 @@ func (m *Measurement) UploadFailed(sess sqlbuilder.Database, failure string) err
 func (m *Measurement) UploadSucceeded(sess sqlbuilder.Database) error {
 	m.IsUploaded = true
 
-	err := sess.Collection("measurements").Find("id", m.ID).Update(m)
+	err := sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
 	}
@@ -184,7 +168,7 @@ func (m *Measurement) AddToResult(sess sqlbuilder.Database, result *Result) erro
 	}
 	m.ReportFilePath = finalPath
 
-	err = sess.Collection("measurements").Find("id", m.ID).Update(m)
+	err = sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
 	}

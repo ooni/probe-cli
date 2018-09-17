@@ -19,29 +19,16 @@ func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementUR
 	measurements := []MeasurementURLNetwork{}
 
 	req := sess.Select(
-		"measurements.id as msmt_tbl_id",
-		"measurements.is_done as measurement_is_done",
-		"measurements.start_time as measurement_start_time",
-		"measurements.runtime as measurement_runtime",
-		"networks.id as network_id",
-		"networks.country_code as network_country_code",
-		"results.id as result_id",
-		"results.start_time as result_start_time",
-		"results.is_done as result_is_done",
-		"results.runtime as result_runtime",
-		"results.test_group_name as test_group_name",
-		"urls.id as url_id",
-		"urls.country_code as url_country_code",
 		db.Raw("networks.*"),
 		db.Raw("urls.*"),
 		db.Raw("measurements.*"),
 		db.Raw("results.*"),
 	).From("results").
-		Join("measurements").On("results.id = measurements.result_id").
-		Join("networks").On("results.network_id = networks.id").
-		LeftJoin("urls").On("urls.id = measurements.url_id").
-		OrderBy("measurements.start_time").
-		Where("results.id = ?", resultID)
+		Join("measurements").On("results.result_id = measurements.result_id").
+		Join("networks").On("results.network_id = networks.network_id").
+		LeftJoin("urls").On("urls.url_id = measurements.url_id").
+		OrderBy("measurements.measurement_start_time").
+		Where("results.result_id = ?", resultID)
 
 	if err := req.All(&measurements); err != nil {
 		log.Errorf("failed to run query %s: %v", req.String(), err)
@@ -228,7 +215,7 @@ func CreateOrUpdateURL(sess sqlbuilder.Database, urlStr string, categoryCode str
 		return 0, err
 	}
 	res := tx.Collection("urls").Find(
-		db.Cond{"url": urlStr, "country_code": countryCode},
+		db.Cond{"url": urlStr, "url_country_code": countryCode},
 	)
 	err = res.One(&url)
 
@@ -285,7 +272,7 @@ func AddTestKeys(sess sqlbuilder.Database, msmt *Measurement, tk interface{}) er
 	msmt.TestKeys = string(tkBytes)
 	msmt.IsAnomaly = sql.NullBool{Bool: isAnomaly, Valid: isAnomalyValid}
 
-	err = sess.Collection("measurements").Find("id", msmt.ID).Update(msmt)
+	err = sess.Collection("measurements").Find("measurement_id", msmt.ID).Update(msmt)
 	if err != nil {
 		log.WithError(err).Error("failed to update measurement")
 		return errors.Wrap(err, "updating measurement")

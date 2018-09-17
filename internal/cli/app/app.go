@@ -14,7 +14,7 @@ func Run() {
 	_, err := root.Cmd.Parse(os.Args[1:])
 	if err != nil {
 		log.WithError(err).Error("failure in main command")
-		os.Exit(1)
+		os.Exit(2)
 	}
 	return
 }

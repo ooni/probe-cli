@@ -49,13 +49,13 @@ func init() {
 				// We assume that since these are summary level information the first
 				// item will contain the information necessary.
 				if isFirst {
-					msmtSummary.TotalRuntime = msmt.ResultRuntime
+					msmtSummary.TotalRuntime = msmt.Result.Runtime
 					msmtSummary.DataUsageUp = msmt.DataUsageUp
 					msmtSummary.DataUsageDown = msmt.DataUsageDown
 					msmtSummary.NetworkName = msmt.NetworkName
-					msmtSummary.NetworkCountryCode = msmt.NetworkCountryCode
+					msmtSummary.NetworkCountryCode = msmt.Network.CountryCode
 					msmtSummary.ASN = msmt.ASN
-					msmtSummary.StartTime = msmt.MeasurementStartTime
+					msmtSummary.StartTime = msmt.Measurement.StartTime
 				}
 				if msmt.IsAnomaly.Bool == true {
 					msmtSummary.AnomalyCount++
@@ -76,7 +76,7 @@ func init() {
 			}
 			for idx, result := range incompleteResults {
 				output.ResultItem(output.ResultItemData{
-					ID:                      result.ResultID,
+					ID:                      result.Result.ID,
 					Index:                   idx,
 					TotalCount:              len(incompleteResults),
 					Name:                    result.TestGroupName,
@@ -97,16 +97,16 @@ func init() {
 			netCount := make(map[uint]int)
 			output.SectionTitle("Results")
 			for idx, result := range doneResults {
-				totalCount, anmlyCount, err := database.GetMeasurementCounts(ctx.DB, result.ResultID)
+				totalCount, anmlyCount, err := database.GetMeasurementCounts(ctx.DB, result.Result.ID)
 				if err != nil {
 					log.WithError(err).Error("failed to list measurement counts")
 				}
-				testKeys, err := database.GetResultTestKeys(ctx.DB, result.ResultID)
+				testKeys, err := database.GetResultTestKeys(ctx.DB, result.Result.ID)
 				if err != nil {
 					log.WithError(err).Error("failed to get testKeys")
 				}
 				output.ResultItem(output.ResultItemData{
-					ID:                      result.ResultID,
+					ID:                      result.Result.ID,
 					Index:                   idx,
 					TotalCount:              len(doneResults),
 					Name:                    result.TestGroupName,

@@ -12,13 +12,13 @@ DROP TABLE `networks`;
 -- +migrate StatementBegin
 
 CREATE TABLE `urls` (
-  `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+  `url_id` INTEGER PRIMARY KEY AUTOINCREMENT,
   `url` VARCHAR(255) NOT NULL, -- XXX is this long enough?
   `category_code` VARCHAR(5) NOT NULL, -- The citizenlab category code for the
                                        -- site. We use the string NONE to denote
                                        -- no known category code.
 
-  `country_code` VARCHAR(2) NOT NULL -- The two letter country code which this
+  `url_country_code` VARCHAR(2) NOT NULL -- The two letter country code which this
                                      -- URL belongs to
 );
 
@@ -33,7 +33,7 @@ CREATE TABLE `urls` (
 -- or add support for allowing the user to "correct" a misclassified measurement
 -- or distinguishing between wifi and mobile.
 CREATE TABLE `networks` (
-  `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+  `network_id` INTEGER PRIMARY KEY AUTOINCREMENT,
   `network_name` VARCHAR(255) NOT NULL, -- String name representing the network_name which by default is populated based
                                -- on the ASN.
                                -- We use a separate key to reference the rows in
@@ -46,11 +46,11 @@ CREATE TABLE `networks` (
                                -- 0000:0000:0000:0000:0000:0000:0000:0000,
                                -- which is 39 chars.
   `asn` INT(4) NOT NULL,
-  `country_code` VARCHAR(2) NOT NULL -- The two letter country code
+  `network_country_code` VARCHAR(2) NOT NULL -- The two letter country code
 );
 
 CREATE TABLE `results` (
-    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `result_id` INTEGER PRIMARY KEY AUTOINCREMENT,
     -- This can be one of "websites", "im", "performance", "middlebox".
     `test_group_name` VARCHAR(16) NOT NULL,
     -- We use a different start_time and runtime, because we want to also have
@@ -58,26 +58,28 @@ CREATE TABLE `results` (
     -- go into the test.
     -- That is to say: `SUM(runtime) FROM measurements` will always be <=
     -- `runtime FROM results` (most times <)
-    `start_time` DATETIME NOT NULL,
-    `runtime` REAL,
+    `result_start_time` DATETIME NOT NULL,
+    `result_runtime` REAL,
 
     -- Used to indicate if the user has seen this result
-    `is_viewed` TINYINT(1) NOT NULL,
+    `result_is_viewed` TINYINT(1) NOT NULL,
 
     -- This is a flag used to indicate if the result is done or is currently running.
-    `is_done` TINYINT(1) NOT NULL,
-    `data_usage_up` REAL NOT NULL,
-    `data_usage_down` REAL NOT NULL,
+    `result_is_done` TINYINT(1) NOT NULL,
+    `result_data_usage_up` REAL NOT NULL,
+    `result_data_usage_down` REAL NOT NULL,
     -- It's probably reasonable to set the maximum length to 260 as this is the
     -- maximum length of file paths on windows.
     `measurement_dir` VARCHAR(260) NOT NULL,
 
     `network_id` INTEGER NOT NULL,
-    FOREIGN KEY(`network_id`) REFERENCES `networks` (`id`)
+    CONSTRAINT `fk_network_id`
+      FOREIGN KEY(`network_id`)
+      REFERENCES `networks`(`network_id`)
 );
 
 CREATE TABLE `measurements` (
-    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `measurement_id` INTEGER PRIMARY KEY AUTOINCREMENT,
     -- This can be one of:
     -- facebook_messenger
     -- telegram
@@ -87,31 +89,31 @@ CREATE TABLE `measurements` (
     -- dash
     -- ndt
     `test_name` VARCHAR(64) NOT NULL,
-    `start_time` DATETIME NOT NULL,
-    `runtime` REAL NOT NULL,
+    `measurement_start_time` DATETIME NOT NULL,
+    `measurement_runtime` REAL NOT NULL,
 
     -- Note for golang: we used to have state be one of `done` and `active`, so
     -- this is equivalent to done being true or false.
     -- `state` TEXT,
-    `is_done` TINYINT(1) NOT NULL,
+    `measurement_is_done` TINYINT(1) NOT NULL,
     -- The reason to have a dedicated is_uploaded flag, instead of just using
     -- is_upload_failed, is that we may not have uploaded the measurement due
     -- to a setting.
-    `is_uploaded` TINYINT(1) NOT NULL,
+    `measurement_is_uploaded` TINYINT(1) NOT NULL,
 
     -- This is the measurement failed to run and the user should be offerred to
     -- re-run it.
-    `is_failed` TINYINT(1) NOT NULL,
-    `failure_msg` VARCHAR(255),
+    `measurement_is_failed` TINYINT(1) NOT NULL,
+    `measurement_failure_msg` VARCHAR(255),
 
-    `is_upload_failed` TINYINT(1) NOT NULL,
-    `upload_failure_msg` VARCHAR(255),
+    `measurement_is_upload_failed` TINYINT(1) NOT NULL,
+    `measurement_upload_failure_msg` VARCHAR(255),
 
     -- Is used to indicate that this particular measurement has been re-run and
     -- therefore the UI can take this into account to either hide it from the
     -- result view or at the very least disable the ability to re-run it.
     -- XXX do we also want to have a reference to the re-run measurement?
-    `is_rerun` TINYINT(1) NOT NULL,
+    `measurement_is_rerun` TINYINT(1) NOT NULL,
 
     -- This is the server-side report_id returned by the collector. By using
     -- report_id & input, you can query the api to fetch this measurement.
@@ -131,7 +133,7 @@ CREATE TABLE `measurements` (
     -- this at some point in the near future.
     -- See: https://github.com/ooni/pipeline/blob/master/docs/ooni-uuid.md &
     -- https://github.com/ooni/pipeline/issues/48
-    `measurement_id` INT(64),
+    `collector_measurement_id` INT(64),
 
     -- This indicates in the case of a websites test, that a site is likely
     -- blocked, or for an IM test if the IM tests says the app is likely
@@ -156,9 +158,11 @@ CREATE TABLE `measurements` (
     -- have many measurements per file.
     `report_file_path` VARCHAR(260) NOT NULL,
 
-    FOREIGN KEY (`result_id`) REFERENCES `results`(`id`)
-      ON DELETE CASCADE ON UPDATE CASCADE, -- If we delete a result we also want
-                                           -- all the measurements to be deleted as well.
-    FOREIGN KEY (`url_id`) REFERENCES `urls`(`id`)
+    CONSTRAINT `fk_result_id`
+      FOREIGN KEY (`result_id`)
+      REFERENCES `results`(`result_id`)
+      ON DELETE CASCADE, -- If we delete a result we also want
+                         -- all the measurements to be deleted as well.
+    FOREIGN KEY (`url_id`) REFERENCES `urls`(`url_id`)
 );
 -- +migrate StatementEnd
