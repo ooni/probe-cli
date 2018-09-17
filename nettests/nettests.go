@@ -181,7 +181,6 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		if c.inputIdxMap != nil {
 			urlID = sql.NullInt64{Int64: c.inputIdxMap[idx], Valid: true}
 		}
-		log.Debugf("👁 %d %s %d", idx, e.Value.Input, urlID.Int64)
 		msmt, err := database.CreateMeasurement(c.Ctx.DB, reportID, testName, resultID, reportFilePath, urlID)
 		if err != nil {
 			log.WithError(err).Error("Failed to create measurement")
@@ -250,8 +249,11 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	nt.On("status.measurement_submission", func(e mk.Event) {
 		log.Debugf(color.RedString(e.Key))
 
-		if err := c.msmts[e.Value.Idx].UploadSucceeded(c.Ctx.DB); err != nil {
-			log.WithError(err).Error("failed to mark msmt as uploaded")
+		// XXX maybe this should change once MK is aligned with the spec
+		if c.Ctx.Config.Sharing.UploadResults == true {
+			if err := c.msmts[e.Value.Idx].UploadSucceeded(c.Ctx.DB); err != nil {
+				log.WithError(err).Error("failed to mark msmt as uploaded")
+			}
 		}
 	})
 
