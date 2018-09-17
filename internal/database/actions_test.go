@@ -3,7 +3,6 @@ package database
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -90,8 +89,7 @@ func TestDeleteResult(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("%s", tmpfile.Name())
-	//defer os.Remove(tmpfile.Name())
+	defer os.Remove(tmpfile.Name())
 
 	tmpdir, err := ioutil.TempDir("", "oonitest")
 	if err != nil {
