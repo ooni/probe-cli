@@ -26,6 +26,8 @@ func init() {
 		fmt.Sprintf("the nettest group to run. Supported tests are: %s",
 			strings.Join(nettestGroupNames, ", "))).Required().String()
 
+	noCollector := cmd.Flag("no-collector", "Disable uploading measurements to a collector").Bool()
+
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		log.Infof("Starting %s", *nettestGroup)
 		ctx, err := root.Init()
@@ -37,6 +39,10 @@ func init() {
 		if err = ctx.MaybeOnboarding(); err != nil {
 			log.WithError(err).Error("failed to perform onboarding")
 			return err
+		}
+
+		if *noCollector == true {
+			ctx.Config.Sharing.UploadResults = false
 		}
 
 		group, ok := groups.NettestGroups[*nettestGroup]
