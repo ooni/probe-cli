@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"encoding/json"
+	"os"
 	"reflect"
 	"time"
 
@@ -112,22 +113,38 @@ func ListResults(sess sqlbuilder.Database) ([]ResultNetwork, []ResultNetwork, er
 	incompleteResults := []ResultNetwork{}
 
 	req := sess.Select(
-		"networks.id AS network_id",
-		"results.id AS result_id",
 		db.Raw("networks.*"),
 		db.Raw("results.*"),
 	).From("results").
-		Join("networks").On("results.network_id = networks.id").
-		OrderBy("results.start_time")
+		Join("networks").On("results.network_id = networks.network_id").
+		OrderBy("results.result_start_time")
 
-	if err := req.Where("is_done = true").All(&doneResults); err != nil {
+	if err := req.Where("result_is_done = true").All(&doneResults); err != nil {
 		return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
 	}
-	if err := req.Where("is_done = false").All(&incompleteResults); err != nil {
+	if err := req.Where("result_is_done = false").All(&incompleteResults); err != nil {
 		return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
 	}
 
 	return doneResults, incompleteResults, nil
+}
+
+// DeleteResult will delete a particular result and the relative measurement on
+// disk.
+func DeleteResult(sess sqlbuilder.Database, resultID int64) error {
+	var result Result
+	res := sess.Collection("results").Find("result_id", resultID)
+	if err := res.One(&result); err != nil {
+		log.WithError(err).Error("error in obtaining the result")
+		return err
+	}
+	if err := res.Delete(); err != nil {
+		log.WithError(err).Error("failed to delete the result directory")
+		return err
+	}
+
+	os.RemoveAll(result.MeasurementDir)
+	return nil
 }
 
 // CreateMeasurement writes the measurement to the database a returns a pointer

@@ -30,8 +30,13 @@ func RunMigrations(db *sql.DB) error {
 func Connect(path string) (db sqlbuilder.Database, err error) {
 	settings := sqlite.ConnectionURL{
 		Database: path,
+		Options:  map[string]string{"_foreign_keys": "1"},
 	}
 	sess, err := sqlite.Open(settings)
+	if err != nil {
+		log.WithError(err).Error("failed to open the DB")
+		return nil, err
+	}
 
 	err = RunMigrations(sess.Driver().(*sql.DB))
 	if err != nil {

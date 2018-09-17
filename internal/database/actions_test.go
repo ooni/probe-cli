@@ -84,6 +84,80 @@ func TestMeasurementWorkflow(t *testing.T) {
 	}
 }
 
+func TestDeleteResult(t *testing.T) {
+	tmpfile, err := ioutil.TempFile("", "dbtest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("%s", tmpfile.Name())
+	//defer os.Remove(tmpfile.Name())
+
+	tmpdir, err := ioutil.TempDir("", "oonitest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpdir)
+
+	sess, err := Connect(tmpfile.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	location := utils.LocationInfo{
+		ASN:         0,
+		CountryCode: "IT",
+		NetworkName: "Unknown",
+	}
+	network, err := CreateNetwork(sess, &location)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := CreateResult(sess, tmpdir, "websites", network.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reportID := sql.NullString{String: "", Valid: false}
+	testName := "antani"
+	resultID := result.ID
+	reportFilePath := tmpdir
+	urlID := sql.NullInt64{Int64: 0, Valid: false}
+
+	m1, err := CreateMeasurement(sess, reportID, testName, resultID, reportFilePath, urlID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var m2 Measurement
+	err = sess.Collection("measurements").Find("measurement_id", m1.ID).One(&m2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m2.ResultID != m1.ResultID {
+		t.Error("result_id mismatch")
+	}
+
+	err = DeleteResult(sess, resultID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	totalResults, err := sess.Collection("results").Find().Count()
+	if err != nil {
+		t.Fatal(err)
+	}
+	totalMeasurements, err := sess.Collection("measurements").Find().Count()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if totalResults != 0 {
+		t.Fatal("results should be zero")
+	}
+	if totalMeasurements != 0 {
+		t.Fatal("measurements should be zero")
+	}
+}
+
 func TestNetworkCreate(t *testing.T) {
 	tmpfile, err := ioutil.TempFile("", "dbtest")
 	if err != nil {
