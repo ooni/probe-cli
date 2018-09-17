@@ -68,7 +68,7 @@
   branch = "master"
   name = "github.com/measurement-kit/go-measurement-kit"
   packages = ["."]
-  revision = "4b5013c619f6f0293fd67b6892a7f90066d3c18d"
+  revision = "18bd1b84e534aacc7292c22da5c900b6d7bff41b"
 
 [[projects]]
   branch = "master"
