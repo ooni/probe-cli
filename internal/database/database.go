@@ -40,7 +40,8 @@ func Connect(path string) (db sqlbuilder.Database, err error) {
 
 	err = RunMigrations(sess.Driver().(*sql.DB))
 	if err != nil {
-		db = nil
+		log.WithError(err).Error("failed to run DB migration")
+		return nil, err
 	}
 	return sess, err
 }
