@@ -130,7 +130,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		DisableReportFile: false,
 		DisableCollector:  !c.Ctx.Config.Sharing.UploadResults,
 		RandomizeInput:    false, // It's important to disable input randomization to ensure the URLs are written in sync to the DB
-		SoftwareName:      "ooniprobe",
+		SoftwareName:      "ooniprobe-desktop",
 		SoftwareVersion:   ooni.Version,
 
 		OutputPath:       msmtPath,
