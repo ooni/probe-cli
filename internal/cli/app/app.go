@@ -13,7 +13,8 @@ func Run() {
 	root.Cmd.Version(ooni.Version)
 	_, err := root.Cmd.Parse(os.Args[1:])
 	if err != nil {
-		log.WithError(err).Error("failed to parse arguments")
+		log.WithError(err).Error("failure in main command")
+		os.Exit(1)
 	}
 	return
 }

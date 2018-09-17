@@ -48,6 +48,9 @@ func init() {
 			if err != nil {
 				return nil, err
 			}
+			if *isBatch {
+				ctx.IsBatch = true
+			}
 
 			return ctx, nil
 		}

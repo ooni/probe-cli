@@ -23,6 +23,7 @@ type Context struct {
 	Config   *config.Config
 	DB       sqlbuilder.Database
 	Location *utils.LocationInfo
+	IsBatch  bool
 
 	Home    string
 	TempDir string
@@ -60,6 +61,9 @@ func (c *Context) LocationLookup() error {
 // config option is set to false
 func (c *Context) MaybeOnboarding() error {
 	if c.Config.InformedConsent == false {
+		if c.IsBatch == true {
+			return errors.New("cannot run onboarding in batch mode")
+		}
 		if err := onboard.Onboarding(c.Config); err != nil {
 			return errors.Wrap(err, "onboarding")
 		}

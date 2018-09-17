@@ -1,6 +1,8 @@
 package onboard
 
 import (
+	"errors"
+
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/cli/root"
@@ -28,6 +30,9 @@ func init() {
 				return err
 			}
 			return nil
+		}
+		if ctx.IsBatch == true {
+			return errors.New("cannot do onboarding in batch mode")
 		}
 
 		return onboard.Onboarding(ctx.Config)
