@@ -1,4 +1,4 @@
-package clean
+package reset
 
 import (
 	"os"
