@@ -16,13 +16,13 @@ func (h HTTPHeaderFieldManipulation) Run(ctl *nettests.Controller) error {
 	return mknt.Run()
 }
 
-// HTTPHeaderFieldManipulationSummary for the test
-type HTTPHeaderFieldManipulationSummary struct {
-	Tampering bool
+// HTTPHeaderFieldManipulationTestKeys for the test
+type HTTPHeaderFieldManipulationTestKeys struct {
+	IsAnomaly bool `json:"-"`
 }
 
-// Summary generates a summary for a test run
-func (h HTTPHeaderFieldManipulation) Summary(tk map[string]interface{}) interface{} {
+// GetTestKeys returns a projection of the tests keys needed for the views
+func (h HTTPHeaderFieldManipulation) GetTestKeys(tk map[string]interface{}) interface{} {
 	tampering := false
 	for _, v := range tk["tampering"].(map[string]interface{}) {
 		t, ok := v.(bool)
@@ -32,8 +32,8 @@ func (h HTTPHeaderFieldManipulation) Summary(tk map[string]interface{}) interfac
 		}
 	}
 
-	return HTTPHeaderFieldManipulationSummary{
-		Tampering: tampering,
+	return HTTPHeaderFieldManipulationTestKeys{
+		IsAnomaly: tampering,
 	}
 }
 

@@ -110,15 +110,15 @@ type Notifications struct {
 
 // Sharing settings
 type Sharing struct {
-	IncludeIP     bool `json:"include_ip"`
-	IncludeASN    bool `json:"include_asn"`
-	IncludeGPS    bool `json:"include_gps"`
-	UploadResults bool `json:"upload_results"`
+	IncludeIP      bool `json:"include_ip"`
+	IncludeASN     bool `json:"include_asn"`
+	IncludeCountry bool `json:"include_country"`
+	IncludeGPS     bool `json:"include_gps"`
+	UploadResults  bool `json:"upload_results"`
 }
 
 // Advanced settings
 type Advanced struct {
-	IncludeCountry    bool `json:"include_country"`
 	UseDomainFronting bool `json:"use_domain_fronting"`
 	SendCrashReports  bool `json:"send_crash_reports"`
 }

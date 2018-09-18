@@ -1,8 +1,6 @@
 package list
 
 import (
-	"fmt"
-
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/cli/root"
@@ -27,9 +25,45 @@ func init() {
 				log.WithError(err).Error("failed to list measurements")
 				return err
 			}
-			for idx, msmt := range measurements {
-				fmt.Printf("%d: %v\n", idx, msmt)
+
+			msmtSummary := output.MeasurementSummaryData{
+				TotalCount:         0,
+				AnomalyCount:       0,
+				DataUsageUp:        0.0,
+				DataUsageDown:      0.0,
+				TotalRuntime:       0,
+				ASN:                0,
+				NetworkName:        "",
+				NetworkCountryCode: "ZZ",
 			}
+			isFirst := true
+			isLast := false
+			for idx, msmt := range measurements {
+				if idx > 0 {
+					isFirst = false
+				}
+				if idx == len(measurements)-1 {
+					isLast = true
+				}
+
+				// We assume that since these are summary level information the first
+				// item will contain the information necessary.
+				if isFirst {
+					msmtSummary.TotalRuntime = msmt.Result.Runtime
+					msmtSummary.DataUsageUp = msmt.DataUsageUp
+					msmtSummary.DataUsageDown = msmt.DataUsageDown
+					msmtSummary.NetworkName = msmt.NetworkName
+					msmtSummary.NetworkCountryCode = msmt.Network.CountryCode
+					msmtSummary.ASN = msmt.ASN
+					msmtSummary.StartTime = msmt.Measurement.StartTime
+				}
+				if msmt.IsAnomaly.Bool == true {
+					msmtSummary.AnomalyCount++
+				}
+				msmtSummary.TotalCount++
+				output.MeasurementItem(msmt, isFirst, isLast)
+			}
+			output.MeasurementSummary(msmtSummary)
 		} else {
 			doneResults, incompleteResults, err := database.ListResults(ctx.DB)
 			if err != nil {
@@ -42,41 +76,53 @@ func init() {
 			}
 			for idx, result := range incompleteResults {
 				output.ResultItem(output.ResultItemData{
-					ID:            result.ID,
-					Index:         idx,
-					TotalCount:    len(incompleteResults),
-					Name:          result.Name,
-					StartTime:     result.StartTime,
-					NetworkName:   result.NetworkName,
-					Country:       result.Country,
-					ASN:           result.ASN,
-					Summary:       result.Summary,
-					Done:          result.Done,
-					DataUsageUp:   result.DataUsageUp,
-					DataUsageDown: result.DataUsageDown,
+					ID:                      result.Result.ID,
+					Index:                   idx,
+					TotalCount:              len(incompleteResults),
+					Name:                    result.TestGroupName,
+					StartTime:               result.StartTime,
+					NetworkName:             result.Network.NetworkName,
+					Country:                 result.Network.CountryCode,
+					ASN:                     result.Network.ASN,
+					MeasurementCount:        0,
+					MeasurementAnomalyCount: 0,
+					TestKeys:                "{}", // FIXME this used to be Summary we probably need to use a list now
+					Done:                    result.IsDone,
+					DataUsageUp:             result.DataUsageUp,
+					DataUsageDown:           result.DataUsageDown,
 				})
 			}
 
 			resultSummary := output.ResultSummaryData{}
-			netCount := make(map[string]int)
+			netCount := make(map[uint]int)
 			output.SectionTitle("Results")
 			for idx, result := range doneResults {
+				totalCount, anmlyCount, err := database.GetMeasurementCounts(ctx.DB, result.Result.ID)
+				if err != nil {
+					log.WithError(err).Error("failed to list measurement counts")
+				}
+				testKeys, err := database.GetResultTestKeys(ctx.DB, result.Result.ID)
+				if err != nil {
+					log.WithError(err).Error("failed to get testKeys")
+				}
 				output.ResultItem(output.ResultItemData{
-					ID:            result.ID,
-					Index:         idx,
-					TotalCount:    len(doneResults),
-					Name:          result.Name,
-					StartTime:     result.StartTime,
-					NetworkName:   result.NetworkName,
-					Country:       result.Country,
-					ASN:           result.ASN,
-					Summary:       result.Summary,
-					Done:          result.Done,
+					ID:                      result.Result.ID,
+					Index:                   idx,
+					TotalCount:              len(doneResults),
+					Name:                    result.TestGroupName,
+					StartTime:               result.StartTime,
+					NetworkName:             result.Network.NetworkName,
+					Country:                 result.Network.CountryCode,
+					ASN:                     result.Network.ASN,
+					TestKeys:                testKeys,
+					MeasurementCount:        totalCount,
+					MeasurementAnomalyCount: anmlyCount,
+					Done:          result.IsDone,
 					DataUsageUp:   result.DataUsageUp,
 					DataUsageDown: result.DataUsageDown,
 				})
 				resultSummary.TotalTests++
-				netCount[result.ASN]++
+				netCount[result.Network.ASN]++
 				resultSummary.TotalDataUsageUp += result.DataUsageUp
 				resultSummary.TotalDataUsageDown += result.DataUsageDown
 			}

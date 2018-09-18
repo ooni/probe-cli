@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/util"
-	"github.com/ooni/probe-cli/nettests/summary"
 )
 
-func formatSpeed(speed int64) string {
+func formatSpeed(speed float64) string {
 	if speed < 1000 {
-		return fmt.Sprintf("%d Kbit/s", speed)
+		return fmt.Sprintf("%.2f Kbit/s", speed)
 	} else if speed < 1000*1000 {
 		return fmt.Sprintf("%.2f Mbit/s", float32(speed)/1000)
 	} else if speed < 1000*1000*1000 {
@@ -24,55 +24,55 @@ func formatSpeed(speed int64) string {
 	return fmt.Sprintf("%.2f Tbit/s", float32(speed)/(1000*1000*1000))
 }
 
-var summarizers = map[string]func(string) []string{
-	"websites": func(ss string) []string {
-		var summary summary.WebsitesSummary
-		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
-			return nil
-		}
+func formatSize(size float64) string {
+	if size < 1024 {
+		return fmt.Sprintf("%.1fK", size)
+	} else if size < 1024*1024 {
+		return fmt.Sprintf("%.1fM", size/1024.0)
+	} else if size < 1024*1024*1024 {
+		return fmt.Sprintf("%.1fG", size/(1024.0*1024.0))
+	}
+	// WTF, you crazy?
+	return fmt.Sprintf("%.1fT", size/(1024*1024*1024))
+}
+
+var summarizers = map[string]func(uint64, uint64, string) []string{
+	"websites": func(totalCount uint64, anomalyCount uint64, ss string) []string {
 		return []string{
-			fmt.Sprintf("%d tested", summary.Tested),
-			fmt.Sprintf("%d blocked", summary.Blocked),
+			fmt.Sprintf("%d tested", totalCount),
+			fmt.Sprintf("%d blocked", anomalyCount),
 			"",
 		}
 	},
-	"performance": func(ss string) []string {
-		var summary summary.PerformanceSummary
-		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
+	"performance": func(totalCount uint64, anomalyCount uint64, ss string) []string {
+		var tk database.PerformanceTestKeys
+		if err := json.Unmarshal([]byte(ss), &tk); err != nil {
 			return nil
 		}
 		return []string{
-			fmt.Sprintf("Download: %s", formatSpeed(summary.Download)),
-			fmt.Sprintf("Upload: %s", formatSpeed(summary.Upload)),
-			fmt.Sprintf("Ping: %.2fms", summary.Ping),
+			fmt.Sprintf("Download: %s", formatSpeed(tk.Download)),
+			fmt.Sprintf("Upload: %s", formatSpeed(tk.Upload)),
+			fmt.Sprintf("Ping: %.2fms", tk.Ping),
 		}
 	},
-	"im": func(ss string) []string {
-		var summary summary.IMSummary
-		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
-			return nil
-		}
+	"im": func(totalCount uint64, anomalyCount uint64, ss string) []string {
 		return []string{
-			fmt.Sprintf("%d tested", summary.Tested),
-			fmt.Sprintf("%d blocked", summary.Blocked),
+			fmt.Sprintf("%d tested", totalCount),
+			fmt.Sprintf("%d blocked", anomalyCount),
 			"",
 		}
 	},
-	"middlebox": func(ss string) []string {
-		var summary summary.MiddleboxSummary
-		if err := json.Unmarshal([]byte(ss), &summary); err != nil {
-			return nil
-		}
+	"middlebox": func(totalCount uint64, anomalyCount uint64, ss string) []string {
 		return []string{
-			fmt.Sprintf("Detected: %v", summary.Detected),
+			fmt.Sprintf("Detected: %v", anomalyCount > 0),
 			"",
 			"",
 		}
 	},
 }
 
-func makeSummary(name string, ss string) []string {
-	return summarizers[name](ss)
+func makeSummary(name string, totalCount uint64, anomalyCount uint64, ss string) []string {
+	return summarizers[name](totalCount, anomalyCount, ss)
 }
 
 func logResultItem(w io.Writer, f log.Fields) error {
@@ -80,9 +80,10 @@ func logResultItem(w io.Writer, f log.Fields) error {
 
 	rID := f.Get("id").(int64)
 	name := f.Get("name").(string)
+	isDone := f.Get("is_done").(bool)
 	startTime := f.Get("start_time").(time.Time)
 	networkName := f.Get("network_name").(string)
-	asn := fmt.Sprintf("AS %s", f.Get("asn").(string))
+	asn := fmt.Sprintf("AS%d (%s)", f.Get("asn").(uint), f.Get("network_country_code").(string))
 	//runtime := f.Get("runtime").(float64)
 	//dataUsageUp := f.Get("dataUsageUp").(int64)
 	//dataUsageDown := f.Get("dataUsageDown").(int64)
@@ -98,7 +99,10 @@ func logResultItem(w io.Writer, f log.Fields) error {
 	fmt.Fprintf(w, "┃ "+firstRow+" ┃\n")
 	fmt.Fprintf(w, "┡"+strings.Repeat("━", colWidth*2+2)+"┩\n")
 
-	summary := makeSummary(name, f.Get("summary").(string))
+	summary := makeSummary(name,
+		f.Get("measurement_count").(uint64),
+		f.Get("measurement_anomaly_count").(uint64),
+		f.Get("test_keys").(string))
 
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
 		util.RightPad(name, colWidth),
@@ -111,9 +115,12 @@ func logResultItem(w io.Writer, f log.Fields) error {
 		util.RightPad(summary[2], colWidth)))
 
 	if index == totalCount-1 {
-		fmt.Fprintf(w, "└┬──────────────┬──────────────┬──────────────┬")
-		fmt.Fprintf(w, strings.Repeat("─", colWidth*2-44))
-		fmt.Fprintf(w, "┘\n")
+		if isDone == true {
+			fmt.Fprintf(w, "└┬──────────────┬──────────────┬──────────────────┬┘\n")
+		} else {
+			// We want the incomplete section to not have a footer
+			fmt.Fprintf(w, "└──────────────────────────────────────────────────┘\n")
+		}
 	}
 	return nil
 }
@@ -122,8 +129,8 @@ func logResultSummary(w io.Writer, f log.Fields) error {
 
 	networks := f.Get("total_networks").(int64)
 	tests := f.Get("total_tests").(int64)
-	dataUp := f.Get("total_data_usage_up").(int64)
-	dataDown := f.Get("total_data_usage_down").(int64)
+	dataUp := f.Get("total_data_usage_up").(float64)
+	dataDown := f.Get("total_data_usage_down").(float64)
 	if tests == 0 {
 		fmt.Fprintf(w, "No results\n")
 		fmt.Fprintf(w, "Try running:\n")
@@ -134,8 +141,8 @@ func logResultSummary(w io.Writer, f log.Fields) error {
 	fmt.Fprintf(w, " │ %s │ %s │ %s │\n",
 		util.RightPad(fmt.Sprintf("%d tests", tests), 12),
 		util.RightPad(fmt.Sprintf("%d nets", networks), 12),
-		util.RightPad(fmt.Sprintf("%d ⬆ %d ⬇", dataUp, dataDown), 12))
-	fmt.Fprintf(w, " └──────────────┴──────────────┴──────────────┘\n")
+		util.RightPad(fmt.Sprintf("⬆ %s  ⬇ %s", formatSize(dataUp), formatSize(dataDown)), 16))
+	fmt.Fprintf(w, " └──────────────┴──────────────┴──────────────────┘\n")
 
 	return nil
 }

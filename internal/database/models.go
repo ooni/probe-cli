@@ -1,102 +1,113 @@
 package database
 
 import (
+	"database/sql"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/apex/log"
-	"github.com/jmoiron/sqlx"
-	"github.com/ooni/probe-cli/nettests/summary"
-	"github.com/ooni/probe-cli/utils"
 	"github.com/pkg/errors"
+	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-// UpdateOne will run the specified update query and check that it only affected one row
-func UpdateOne(db *sqlx.DB, query string, arg interface{}) error {
-	res, err := db.NamedExec(query, arg)
-
-	if err != nil {
-		return errors.Wrap(err, "updating table")
-	}
-	count, err := res.RowsAffected()
-	if err != nil {
-		return errors.Wrap(err, "updating table")
-	}
-	if count != 1 {
-		return errors.New("inconsistent update count")
-	}
-	return nil
+// ResultNetwork is used to represent the structure made from the JOIN
+// between the results and networks tables.
+type ResultNetwork struct {
+	Result  `db:",inline"`
+	Network `db:",inline"`
 }
 
-// ListMeasurements given a result ID
-func ListMeasurements(db *sqlx.DB, resultID int64) ([]*Measurement, error) {
-	measurements := []*Measurement{}
+// MeasurementURLNetwork is used for the JOIN between Measurement and URL
+type MeasurementURLNetwork struct {
+	Measurement `db:",inline"`
+	Network     `db:",inline"`
+	Result      `db:",inline"`
+	URL         `db:",inline"`
+}
 
-	rows, err := db.Query(`SELECT id, name,
-		start_time, runtime,
-		country,
-		asn,
-		summary,
-		input
-		FROM measurements
-		WHERE result_id = ?
-		ORDER BY start_time;`, resultID)
-	if err != nil {
-		return measurements, errors.Wrap(err, "failed to get measurement list")
-	}
+// Network represents a network tested by the user
+type Network struct {
+	ID          int64  `db:"network_id,omitempty"`
+	NetworkName string `db:"network_name"`
+	NetworkType string `db:"network_type"`
+	IP          string `db:"ip"`
+	ASN         uint   `db:"asn"`
+	CountryCode string `db:"network_country_code"`
+}
 
-	for rows.Next() {
-		msmt := Measurement{}
-		err = rows.Scan(&msmt.ID, &msmt.Name,
-			&msmt.StartTime, &msmt.Runtime,
-			&msmt.CountryCode,
-			&msmt.ASN,
-			&msmt.Summary, &msmt.Input,
-			//&result.DataUsageUp, &result.DataUsageDown)
-		)
-		if err != nil {
-			log.WithError(err).Error("failed to fetch a row")
-			continue
-		}
-		measurements = append(measurements, &msmt)
-	}
-
-	return measurements, nil
+// URL represents URLs from the testing lists
+type URL struct {
+	ID           sql.NullInt64  `db:"url_id,omitempty"`
+	URL          sql.NullString `db:"url"`
+	CategoryCode sql.NullString `db:"category_code"`
+	CountryCode  sql.NullString `db:"url_country_code"`
 }
 
 // Measurement model
 type Measurement struct {
-	ID             int64     `db:"id"`
-	Name           string    `db:"name"`
-	StartTime      time.Time `db:"start_time"`
-	Runtime        float64   `db:"runtime"` // Fractional number of seconds
-	Summary        string    `db:"summary"` // XXX this should be JSON
-	ASN            string    `db:"asn"`
-	IP             string    `db:"ip"`
-	CountryCode    string    `db:"country"`
-	State          string    `db:"state"`
-	Failure        string    `db:"failure"`
-	UploadFailure  string    `db:"upload_failure"`
-	Uploaded       bool      `db:"uploaded"`
-	ReportFilePath string    `db:"report_file"`
-	ReportID       string    `db:"report_id"`
-	Input          string    `db:"input"`
-	ResultID       int64     `db:"result_id"`
+	ID               int64          `db:"measurement_id,omitempty"`
+	TestName         string         `db:"test_name"`
+	StartTime        time.Time      `db:"measurement_start_time"`
+	Runtime          float64        `db:"measurement_runtime"` // Fractional number of seconds
+	IsDone           bool           `db:"measurement_is_done"`
+	IsUploaded       bool           `db:"measurement_is_uploaded"`
+	IsFailed         bool           `db:"measurement_is_failed"`
+	FailureMsg       sql.NullString `db:"measurement_failure_msg,omitempty"`
+	IsUploadFailed   bool           `db:"measurement_is_upload_failed"`
+	UploadFailureMsg sql.NullString `db:"measurement_upload_failure_msg,omitempty"`
+	IsRerun          bool           `db:"measurement_is_rerun"`
+	ReportID         sql.NullString `db:"report_id,omitempty"`
+	URLID            sql.NullInt64  `db:"url_id,omitempty"` // Used to reference URL
+	MeasurementID    sql.NullInt64  `db:"collector_measurement_id,omitempty"`
+	IsAnomaly        sql.NullBool   `db:"is_anomaly,omitempty"`
+	// FIXME we likely want to support JSON. See: https://github.com/upper/db/issues/462
+	TestKeys       string `db:"test_keys"`
+	ResultID       int64  `db:"result_id"`
+	ReportFilePath string `db:"report_file_path"`
 }
 
-// SetGeoIPInfo for the Measurement
-func (m *Measurement) SetGeoIPInfo() error {
+// Result model
+type Result struct {
+	ID             int64     `db:"result_id,omitempty"`
+	TestGroupName  string    `db:"test_group_name"`
+	StartTime      time.Time `db:"result_start_time"`
+	NetworkID      int64     `db:"network_id"`     // Used to include a Network
+	Runtime        float64   `db:"result_runtime"` // Runtime is expressed in fractional seconds
+	IsViewed       bool      `db:"result_is_viewed"`
+	IsDone         bool      `db:"result_is_done"`
+	DataUsageUp    float64   `db:"result_data_usage_up"`
+	DataUsageDown  float64   `db:"result_data_usage_down"`
+	MeasurementDir string    `db:"measurement_dir"`
+}
+
+// PerformanceTestKeys is the result summary for a performance test
+type PerformanceTestKeys struct {
+	Upload   float64 `json:"upload"`
+	Download float64 `json:"download"`
+	Ping     float64 `json:"ping"`
+	Bitrate  float64 `json:"median_bitrate"`
+}
+
+// Finished marks the result as done and sets the runtime
+func (r *Result) Finished(sess sqlbuilder.Database) error {
+	if r.IsDone == true || r.Runtime != 0 {
+		return errors.New("Result is already finished")
+	}
+	r.Runtime = time.Now().UTC().Sub(r.StartTime).Seconds()
+	r.IsDone = true
+
+	err := sess.Collection("results").Find("result_id", r.ID).Update(r)
+	if err != nil {
+		return errors.Wrap(err, "updating finished result")
+	}
 	return nil
 }
 
 // Failed writes the error string to the measurement
-func (m *Measurement) Failed(db *sqlx.DB, failure string) error {
-	m.Failure = failure
-
-	err := UpdateOne(db, `UPDATE measurements
-		SET failure = :failure, state = :state
-		WHERE id = :id`, m)
+func (m *Measurement) Failed(sess sqlbuilder.Database, failure string) error {
+	m.FailureMsg = sql.NullString{String: failure, Valid: true}
+	m.IsFailed = true
+	err := sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
 	}
@@ -104,14 +115,12 @@ func (m *Measurement) Failed(db *sqlx.DB, failure string) error {
 }
 
 // Done marks the measurement as completed
-func (m *Measurement) Done(db *sqlx.DB) error {
+func (m *Measurement) Done(sess sqlbuilder.Database) error {
 	runtime := time.Now().UTC().Sub(m.StartTime)
 	m.Runtime = runtime.Seconds()
-	m.State = "done"
+	m.IsDone = true
 
-	err := UpdateOne(db, `UPDATE measurements
-		SET state = :state, runtime = :runtime
-		WHERE id = :id`, m)
+	err := sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
 	}
@@ -119,13 +128,11 @@ func (m *Measurement) Done(db *sqlx.DB) error {
 }
 
 // UploadFailed writes the error string for the upload failure to the measurement
-func (m *Measurement) UploadFailed(db *sqlx.DB, failure string) error {
-	m.UploadFailure = failure
-	m.Uploaded = false
+func (m *Measurement) UploadFailed(sess sqlbuilder.Database, failure string) error {
+	m.UploadFailureMsg = sql.NullString{String: failure, Valid: true}
+	m.IsUploaded = false
 
-	err := UpdateOne(db, `UPDATE measurements
-		SET upload_failure = :upload_failure
-		WHERE id = :id`, m)
+	err := sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
 	}
@@ -133,25 +140,10 @@ func (m *Measurement) UploadFailed(db *sqlx.DB, failure string) error {
 }
 
 // UploadSucceeded writes the error string for the upload failure to the measurement
-func (m *Measurement) UploadSucceeded(db *sqlx.DB) error {
-	m.Uploaded = true
+func (m *Measurement) UploadSucceeded(sess sqlbuilder.Database) error {
+	m.IsUploaded = true
 
-	err := UpdateOne(db, `UPDATE measurements
-		SET uploaded = :uploaded
-		WHERE id = :id`, m)
-	if err != nil {
-		return errors.Wrap(err, "updating measurement")
-	}
-	return nil
-}
-
-// WriteSummary writes the summary to the measurement
-func (m *Measurement) WriteSummary(db *sqlx.DB, summary string) error {
-	m.Summary = summary
-
-	err := UpdateOne(db, `UPDATE measurements
-		SET summary = :summary
-		WHERE id = :id`, m)
+	err := sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
 	}
@@ -159,7 +151,7 @@ func (m *Measurement) WriteSummary(db *sqlx.DB, summary string) error {
 }
 
 // AddToResult adds a measurement to a result
-func (m *Measurement) AddToResult(db *sqlx.DB, result *Result) error {
+func (m *Measurement) AddToResult(sess sqlbuilder.Database, result *Result) error {
 	var err error
 
 	m.ResultID = result.ID
@@ -176,191 +168,9 @@ func (m *Measurement) AddToResult(db *sqlx.DB, result *Result) error {
 	}
 	m.ReportFilePath = finalPath
 
-	err = UpdateOne(db, `UPDATE measurements
-		SET result_id = :result_id, report_file = :report_file
-		WHERE id = :id`, m)
+	err = sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
 	}
 	return nil
-}
-
-// CreateMeasurement writes the measurement to the database a returns a pointer
-// to the Measurement
-func CreateMeasurement(db *sqlx.DB, m Measurement, i string) (*Measurement, error) {
-	// XXX Do we want to have this be part of something else?
-	m.StartTime = time.Now().UTC()
-	m.Input = i
-	m.State = "active"
-
-	res, err := db.NamedExec(`INSERT INTO measurements
-		(name, start_time,
-			asn, ip, country,
-			state, failure, report_file,
-			report_id, input,
-			result_id)
-		VALUES (:name,:start_time,
-			:asn,:ip,:country,
-			:state,:failure,:report_file,
-			:report_id,:input,
-			:result_id)`,
-		m)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating measurement")
-	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return nil, errors.Wrap(err, "creating measurement")
-	}
-	m.ID = id
-	return &m, nil
-}
-
-// Result model
-type Result struct {
-	ID             int64     `db:"id"`
-	Name           string    `db:"name"`
-	StartTime      time.Time `db:"start_time"`
-	Country        string    `db:"country"`
-	ASN            string    `db:"asn"`
-	NetworkName    string    `db:"network_name"`
-	Runtime        float64   `db:"runtime"` // Runtime is expressed in fractional seconds
-	Summary        string    `db:"summary"` // XXX this should be JSON
-	Done           bool      `db:"done"`
-	DataUsageUp    int64     `db:"data_usage_up"`
-	DataUsageDown  int64     `db:"data_usage_down"`
-	MeasurementDir string    `db:"measurement_dir"`
-}
-
-// ListResults return the list of results
-func ListResults(db *sqlx.DB) ([]*Result, []*Result, error) {
-	doneResults := []*Result{}
-	incompleteResults := []*Result{}
-
-	rows, err := db.Query(`SELECT id, name,
-		start_time, runtime,
-		network_name, country,
-		asn,
-		summary, done
-		FROM results
-		WHERE done = 1
-		ORDER BY start_time;`)
-	if err != nil {
-		return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
-	}
-
-	for rows.Next() {
-		result := Result{}
-		err = rows.Scan(&result.ID, &result.Name,
-			&result.StartTime, &result.Runtime,
-			&result.NetworkName, &result.Country,
-			&result.ASN,
-			&result.Summary, &result.Done,
-			//&result.DataUsageUp, &result.DataUsageDown)
-		)
-		if err != nil {
-			log.WithError(err).Error("failed to fetch a row")
-			continue
-		}
-		doneResults = append(doneResults, &result)
-	}
-
-	rows, err = db.Query(`SELECT
-		id, name,
-		start_time,
-		network_name, country,
-		asn
-		FROM results
-		WHERE done != 1
-		ORDER BY start_time;`)
-	if err != nil {
-		return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
-	}
-
-	for rows.Next() {
-		result := Result{Done: false}
-		err = rows.Scan(&result.ID, &result.Name, &result.StartTime,
-			&result.NetworkName, &result.Country,
-			&result.ASN)
-		if err != nil {
-			log.WithError(err).Error("failed to fetch a row")
-			continue
-		}
-		incompleteResults = append(incompleteResults, &result)
-	}
-	return doneResults, incompleteResults, nil
-}
-
-// MakeSummaryMap return a mapping of test names to summaries for the given
-// result
-func MakeSummaryMap(db *sqlx.DB, r *Result) (summary.SummaryMap, error) {
-	summaryMap := summary.SummaryMap{}
-
-	msmts := []Measurement{}
-	// XXX maybe we only want to select some of the columns
-	err := db.Select(&msmts, "SELECT name, summary FROM measurements WHERE result_id = $1", r.ID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get measurements")
-	}
-	for _, msmt := range msmts {
-		val, ok := summaryMap[msmt.Name]
-		if ok {
-			summaryMap[msmt.Name] = append(val, msmt.Summary)
-		} else {
-			summaryMap[msmt.Name] = []string{msmt.Summary}
-		}
-	}
-	return summaryMap, nil
-}
-
-// Finished marks the result as done and sets the runtime
-func (r *Result) Finished(db *sqlx.DB, makeSummary summary.ResultSummaryFunc) error {
-	if r.Done == true || r.Runtime != 0 {
-		return errors.New("Result is already finished")
-	}
-	r.Runtime = time.Now().UTC().Sub(r.StartTime).Seconds()
-	r.Done = true
-	// XXX add in here functionality to compute the summary
-	summaryMap, err := MakeSummaryMap(db, r)
-	if err != nil {
-		return err
-	}
-
-	r.Summary, err = makeSummary(summaryMap)
-	if err != nil {
-		return err
-	}
-
-	err = UpdateOne(db, `UPDATE results
-		SET done = :done, runtime = :runtime, summary = :summary
-		WHERE id = :id`, r)
-	if err != nil {
-		return errors.Wrap(err, "updating finished result")
-	}
-	return nil
-}
-
-// CreateResult writes the Result to the database a returns a pointer
-// to the Result
-func CreateResult(db *sqlx.DB, homePath string, r Result) (*Result, error) {
-	log.Debugf("Creating result %v", r)
-
-	p, err := utils.MakeResultsDir(homePath, r.Name, r.StartTime)
-	if err != nil {
-		return nil, err
-	}
-	r.MeasurementDir = p
-	res, err := db.NamedExec(`INSERT INTO results
-		(name, start_time, country, network_name, asn)
-		VALUES (:name,:start_time,:country,:network_name,:asn)`,
-		r)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating result")
-	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return nil, errors.Wrap(err, "creating result")
-	}
-	r.ID = id
-	return &r, nil
 }

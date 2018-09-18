@@ -38,7 +38,11 @@ func EscapeAwareRuneCountInString(s string) int {
 }
 
 func RightPad(str string, length int) string {
-	return str + strings.Repeat(" ", length-EscapeAwareRuneCountInString(str))
+	c := length - EscapeAwareRuneCountInString(str)
+	if c < 0 {
+		c = 0
+	}
+	return str + strings.Repeat(" ", c)
 }
 
 // WrapString wraps the given string within lim width in characters.

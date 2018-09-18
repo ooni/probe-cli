@@ -10,8 +10,18 @@ func init() {
 	cmd := root.Command("info", "Display information about OONI Probe")
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
-		log.Info("Info")
-		log.Error("this function is not implemented")
+		ctx, err := root.Init()
+		if err != nil {
+			log.Errorf("%s", err)
+			return err
+		}
+		log.WithFields(log.Fields{
+			"path": ctx.Home,
+		}).Info("Home")
+		log.WithFields(log.Fields{
+			"path": ctx.TempDir,
+		}).Info("TempDir")
+
 		return nil
 	})
 }

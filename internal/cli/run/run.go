@@ -3,9 +3,7 @@ package run
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
@@ -14,7 +12,6 @@ import (
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
 	"github.com/ooni/probe-cli/nettests/groups"
-	"github.com/ooni/probe-cli/utils"
 )
 
 func init() {
@@ -29,6 +26,8 @@ func init() {
 		fmt.Sprintf("the nettest group to run. Supported tests are: %s",
 			strings.Join(nettestGroupNames, ", "))).Required().String()
 
+	noCollector := cmd.Flag("no-collector", "Disable uploading measurements to a collector").Bool()
+
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		log.Infof("Starting %s", *nettestGroup)
 		ctx, err := root.Init()
@@ -40,6 +39,10 @@ func init() {
 		if err = ctx.MaybeOnboarding(); err != nil {
 			log.WithError(err).Error("failed to perform onboarding")
 			return err
+		}
+
+		if *noCollector == true {
+			ctx.Config.Sharing.UploadResults = false
 		}
 
 		group, ok := groups.NettestGroups[*nettestGroup]
@@ -55,13 +58,13 @@ func init() {
 			return err
 		}
 
-		result, err := database.CreateResult(ctx.DB, ctx.Home, database.Result{
-			Name:        *nettestGroup,
-			StartTime:   time.Now().UTC(),
-			Country:     ctx.Location.CountryCode,
-			NetworkName: ctx.Location.NetworkName,
-			ASN:         fmt.Sprintf("%d", ctx.Location.ASN),
-		})
+		network, err := database.CreateNetwork(ctx.DB, ctx.Location)
+		if err != nil {
+			log.WithError(err).Error("Failed to create the network row")
+			return nil
+		}
+
+		result, err := database.CreateResult(ctx.DB, ctx.Home, *nettestGroup, network.ID)
 		if err != nil {
 			log.Errorf("DB result error: %s", err)
 			return err
@@ -69,17 +72,14 @@ func init() {
 
 		for _, nt := range group.Nettests {
 			log.Debugf("Running test %T", nt)
-			msmtPath := filepath.Join(ctx.TempDir,
-				fmt.Sprintf("msmt-%T-%s.jsonl", nt,
-					time.Now().UTC().Format(utils.ResultTimestamp)))
-
-			ctl := nettests.NewController(nt, ctx, result, msmtPath)
+			ctl := nettests.NewController(nt, ctx, result)
 			if err = nt.Run(ctl); err != nil {
 				log.WithError(err).Errorf("Failed to run %s", group.Label)
 				return err
 			}
 		}
-		if err = result.Finished(ctx.DB, group.Summary); err != nil {
+
+		if err = result.Finished(ctx.DB); err != nil {
 			return err
 		}
 		return nil

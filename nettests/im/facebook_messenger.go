@@ -16,15 +16,15 @@ func (h FacebookMessenger) Run(ctl *nettests.Controller) error {
 	return mknt.Run()
 }
 
-// FacebookMessengerSummary for the test
-type FacebookMessengerSummary struct {
-	DNSBlocking bool
-	TCPBlocking bool
-	Blocked     bool
+// FacebookMessengerTestKeys for the test
+type FacebookMessengerTestKeys struct {
+	DNSBlocking bool `json:"facebook_dns_blocking"`
+	TCPBlocking bool `json:"facebook_tcp_blocking"`
+	IsAnomaly   bool `json:"-"`
 }
 
-// Summary generates a summary for a test run
-func (h FacebookMessenger) Summary(tk map[string]interface{}) interface{} {
+// GetTestKeys generates a summary for a test run
+func (h FacebookMessenger) GetTestKeys(tk map[string]interface{}) interface{} {
 	var (
 		dnsBlocking bool
 		tcpBlocking bool
@@ -41,10 +41,10 @@ func (h FacebookMessenger) Summary(tk map[string]interface{}) interface{} {
 		tcpBlocking = tk["facebook_tcp_blocking"].(bool)
 	}
 
-	return FacebookMessengerSummary{
+	return FacebookMessengerTestKeys{
 		DNSBlocking: dnsBlocking,
 		TCPBlocking: tcpBlocking,
-		Blocked:     dnsBlocking || tcpBlocking,
+		IsAnomaly:   dnsBlocking || tcpBlocking,
 	}
 }
 

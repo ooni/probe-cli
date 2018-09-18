@@ -15,7 +15,7 @@ import (
 )
 
 // Default handler outputting to stderr.
-var Default = New(os.Stderr)
+var Default = New(os.Stdout)
 
 // start time.
 var start = time.Now()
@@ -105,13 +105,19 @@ func logTable(w io.Writer, f log.Fields) error {
 func (h *Handler) TypedLog(t string, e *log.Entry) error {
 	switch t {
 	case "progress":
-		var err error
-		s := fmt.Sprintf("%.2f%%: %-25s", e.Fields.Get("percentage").(float64)*100, e.Message)
-		fmt.Fprintf(h.Writer, s)
+		perc := e.Fields.Get("percentage").(float64) * 100
+		s := fmt.Sprintf("   %s %-25s",
+			bold.Sprintf("%.2f%%", perc),
+			e.Message)
+		fmt.Fprint(h.Writer, s)
 		fmt.Fprintln(h.Writer)
-		return err
+		return nil
 	case "table":
 		return logTable(h.Writer, e.Fields)
+	case "measurement_item":
+		return logMeasurementItem(h.Writer, e.Fields)
+	case "measurement_summary":
+		return logMeasurementSummary(h.Writer, e.Fields)
 	case "result_item":
 		return logResultItem(h.Writer, e.Fields)
 	case "result_summary":
@@ -134,10 +140,10 @@ func (h *Handler) DefaultLog(e *log.Entry) error {
 		if name == "source" {
 			continue
 		}
-		s += fmt.Sprintf(" %s=%s", color.Sprint(name), e.Fields.Get(name))
+		s += fmt.Sprintf(" %s=%v", color.Sprint(name), e.Fields.Get(name))
 	}
 
-	fmt.Fprintf(h.Writer, s)
+	fmt.Fprint(h.Writer, s)
 	fmt.Fprintln(h.Writer)
 
 	return nil

@@ -47,15 +47,6 @@
   revision = "ed7bcb39ff10f39ab08e317ce16df282845852fa"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/jmoiron/sqlx"
-  packages = [
-    ".",
-    "reflectx"
-  ]
-  revision = "2aeb6a910c2b94f2d5eb53d9895d80e27264ec41"
-
-[[projects]]
   name = "github.com/mattn/go-colorable"
   packages = ["."]
   revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
@@ -77,7 +68,7 @@
   branch = "master"
   name = "github.com/measurement-kit/go-measurement-kit"
   packages = ["."]
-  revision = "4fe2e61c300930aedc10713557b6e05f29631fc0"
+  revision = "18bd1b84e534aacc7292c22da5c900b6d7bff41b"
 
 [[projects]]
   branch = "master"
@@ -146,9 +137,26 @@
   revision = "c87af80f3cc5036b55b83d77171e156791085e2e"
   version = "v1.7.1"
 
+[[projects]]
+  name = "upper.io/db.v3"
+  packages = [
+    ".",
+    "internal/cache",
+    "internal/cache/hashstructure",
+    "internal/immutable",
+    "internal/sqladapter",
+    "internal/sqladapter/compat",
+    "internal/sqladapter/exql",
+    "lib/reflectx",
+    "lib/sqlbuilder",
+    "sqlite"
+  ]
+  revision = "199d13d76c7cfba05ea0327375056fdabc8bea80"
+  version = "v3.5.4"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b2f5c39222a1fb405e3f48d2ae3b4758757fe708e12dbd23743c19135e225579"
+  inputs-digest = "45f2fee1cf7e2abceb2500715c0f158ad17d51b52f8200cb1bb51c369b15402f"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -1,29 +1,36 @@
 package nettests
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/fatih/color"
 	"github.com/measurement-kit/go-measurement-kit"
 	ooni "github.com/ooni/probe-cli"
+	"github.com/ooni/probe-cli/internal/crashreport"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/output"
 	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/utils/strcase"
 )
 
 // Nettest interface. Every Nettest should implement this.
 type Nettest interface {
 	Run(*Controller) error
-	Summary(map[string]interface{}) interface{}
+	GetTestKeys(map[string]interface{}) interface{}
 	LogSummary(string) error
 }
 
 // NewController creates a nettest controller
-func NewController(nt Nettest, ctx *ooni.Context, res *database.Result, msmtPath string) *Controller {
+func NewController(nt Nettest, ctx *ooni.Context, res *database.Result) *Controller {
+	msmtPath := filepath.Join(ctx.TempDir,
+		fmt.Sprintf("msmt-%T-%s.jsonl", nt,
+			time.Now().UTC().Format(utils.ResultTimestamp)))
 	return &Controller{
 		Ctx:      ctx,
 		nt:       nt,
@@ -35,11 +42,12 @@ func NewController(nt Nettest, ctx *ooni.Context, res *database.Result, msmtPath
 // Controller is passed to the run method of every Nettest
 // each nettest instance has one controller
 type Controller struct {
-	Ctx      *ooni.Context
-	res      *database.Result
-	nt       Nettest
-	msmts    map[int64]*database.Measurement
-	msmtPath string // XXX maybe we can drop this and just use a temporary file
+	Ctx         *ooni.Context
+	res         *database.Result
+	nt          Nettest
+	msmts       map[int64]*database.Measurement
+	msmtPath    string          // XXX maybe we can drop this and just use a temporary file
+	inputIdxMap map[int64]int64 // Used to map mk idx to database id
 }
 
 func getCaBundlePath() string {
@@ -50,6 +58,11 @@ func getCaBundlePath() string {
 	return "/etc/ssl/cert.pem"
 }
 
+func (c *Controller) SetInputIdxMap(inputIdxMap map[int64]int64) error {
+	c.inputIdxMap = inputIdxMap
+	return nil
+}
+
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
@@ -57,70 +70,31 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 	c.msmts = make(map[int64]*database.Measurement)
 
-	msmtTemplate := database.Measurement{
-		ASN:            "",
-		IP:             "",
-		CountryCode:    "",
-		ReportID:       "",
-		Name:           nt.Name,
-		ResultID:       c.res.ID,
-		ReportFilePath: c.msmtPath,
-	}
-
-	// This is to workaround homedirs having UTF-8 characters in them.
-	// See: https://github.com/measurement-kit/measurement-kit/issues/1635
+	// These values are shared by every measurement
+	reportID := sql.NullString{String: "", Valid: false}
+	testName := strcase.ToSnake(nt.Name)
+	resultID := c.res.ID
+	reportFilePath := c.msmtPath
 	geoIPCountryPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIP.dat")
 	geoIPASNPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIPASNum.dat")
 	caBundlePath := getCaBundlePath()
 	msmtPath := c.msmtPath
 
-	userHome, err := utils.GetOONIHome()
-	if err != nil {
-		log.WithError(err).Error("failed to figure out the homedir")
-		return err
-	}
-	// Get the parent of it
-	userHome = filepath.Dir(userHome)
-
-	relPath, err := filepath.Rel(userHome, caBundlePath)
-	if err != nil {
-		log.WithError(err).Error("caBundlePath is not relative to the users home")
-	} else {
-		caBundlePath = relPath
-	}
-	relPath, err = filepath.Rel(userHome, geoIPASNPath)
-	if err != nil {
-		log.WithError(err).Error("geoIPASNPath is not relative to the users home")
-	} else {
-		geoIPASNPath = relPath
-	}
-	relPath, err = filepath.Rel(userHome, geoIPCountryPath)
-	if err != nil {
-		log.WithError(err).Error("geoIPCountryPath is not relative to the users home")
-	} else {
-		geoIPCountryPath = relPath
-	}
-
-	log.Debugf("Chdir to: %s", userHome)
-	if err := os.Chdir(userHome); err != nil {
-		log.WithError(err).Errorf("failed to chdir to %s", userHome)
-		return err
-	}
-
 	log.Debugf("OutputPath: %s", msmtPath)
 	nt.Options = mk.NettestOptions{
 		IncludeIP:      c.Ctx.Config.Sharing.IncludeIP,
 		IncludeASN:     c.Ctx.Config.Sharing.IncludeASN,
-		IncludeCountry: c.Ctx.Config.Advanced.IncludeCountry,
-		LogLevel:       "INFO",
+		IncludeCountry: c.Ctx.Config.Sharing.IncludeCountry,
+		LogLevel:       "DEBUG",
 
 		ProbeCC:  c.Ctx.Location.CountryCode,
 		ProbeASN: fmt.Sprintf("AS%d", c.Ctx.Location.ASN),
 		ProbeIP:  c.Ctx.Location.IP,
 
 		DisableReportFile: false,
-		DisableCollector:  false,
-		SoftwareName:      "ooniprobe",
+		DisableCollector:  !c.Ctx.Config.Sharing.UploadResults,
+		RandomizeInput:    false, // It's important to disable input randomization to ensure the URLs are written in sync to the DB
+		SoftwareName:      "ooniprobe-desktop",
 		SoftwareVersion:   ooni.Version,
 
 		OutputPath:       msmtPath,
@@ -132,18 +106,16 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("GeoIPCountryPath: %s", nt.Options.GeoIPCountryPath)
 
 	nt.On("log", func(e mk.Event) {
-		log.Debugf(color.RedString(e.Key))
-
 		level := e.Value.LogLevel
 		msg := e.Value.Message
 
 		switch level {
 		case "ERROR":
-			log.Error(msg)
+			log.Errorf("%v: %s", color.RedString("mklog"), msg)
 		case "INFO":
-			log.Info(msg)
+			log.Infof("%v: %s", color.BlueString("mklog"), msg)
 		default:
-			log.Debug(msg)
+			log.Debugf("%v: %s", color.WhiteString("mklog"), msg)
 		}
 
 	})
@@ -159,22 +131,21 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	nt.On("status.report_created", func(e mk.Event) {
 		log.Debugf("%s", e.Key)
 
-		msmtTemplate.ReportID = e.Value.ReportID
+		reportID = sql.NullString{String: e.Value.ReportID, Valid: true}
 	})
 
 	nt.On("status.geoip_lookup", func(e mk.Event) {
 		log.Debugf(color.RedString(e.Key))
-
-		msmtTemplate.ASN = e.Value.ProbeASN
-		msmtTemplate.IP = e.Value.ProbeIP
-		msmtTemplate.CountryCode = e.Value.ProbeCC
 	})
 
 	nt.On("status.measurement_start", func(e mk.Event) {
 		log.Debugf(color.RedString(e.Key))
-
 		idx := e.Value.Idx
-		msmt, err := database.CreateMeasurement(c.Ctx.DB, msmtTemplate, e.Value.Input)
+		urlID := sql.NullInt64{Int64: 0, Valid: false}
+		if c.inputIdxMap != nil {
+			urlID = sql.NullInt64{Int64: c.inputIdxMap[idx], Valid: true}
+		}
+		msmt, err := database.CreateMeasurement(c.Ctx.DB, reportID, testName, resultID, reportFilePath, urlID)
 		if err != nil {
 			log.WithError(err).Error("Failed to create measurement")
 			return
@@ -242,8 +213,11 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	nt.On("status.measurement_submission", func(e mk.Event) {
 		log.Debugf(color.RedString(e.Key))
 
-		if err := c.msmts[e.Value.Idx].UploadSucceeded(c.Ctx.DB); err != nil {
-			log.WithError(err).Error("failed to mark msmt as uploaded")
+		// XXX maybe this should change once MK is aligned with the spec
+		if c.Ctx.Config.Sharing.UploadResults == true {
+			if err := c.msmts[e.Value.Idx].UploadSucceeded(c.Ctx.DB); err != nil {
+				log.WithError(err).Error("failed to mark msmt as uploaded")
+			}
 		}
 	})
 
@@ -258,19 +232,30 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	nt.On("measurement", func(e mk.Event) {
 		log.Debugf("status.end")
 
-		c.OnEntry(e.Value.Idx, e.Value.JSONStr)
+		crashreport.CapturePanicAndWait(func() {
+			c.OnEntry(e.Value.Idx, e.Value.JSONStr)
+		}, nil)
 	})
 
 	nt.On("status.end", func(e mk.Event) {
 		log.Debugf("status.end")
+
 		for idx, msmt := range c.msmts {
 			log.Debugf("adding msmt#%d to result", idx)
 			if err := msmt.AddToResult(c.Ctx.DB, c.res); err != nil {
 				log.WithError(err).Error("failed to add to result")
 			}
 		}
+
+		if e.Value.Failure != "" {
+			log.Errorf("Failure in status.end: %s", e.Value.Failure)
+		}
+
+		c.res.DataUsageDown += e.Value.DownloadedKB
+		c.res.DataUsageUp += e.Value.UploadedKB
 	})
 
+	log.Debugf("Registered all the handlers")
 	return nil
 }
 
@@ -292,14 +277,17 @@ func (c *Controller) OnEntry(idx int64, jsonStr string) {
 	log.Debugf("OnEntry")
 
 	var entry Entry
-	json.Unmarshal([]byte(jsonStr), &entry)
-	summary := c.nt.Summary(entry.TestKeys)
-	summaryBytes, err := json.Marshal(summary)
-	if err != nil {
-		log.WithError(err).Error("failed to serialize summary")
+	if err := json.Unmarshal([]byte(jsonStr), &entry); err != nil {
+		log.WithError(err).Error("failed to parse onEntry")
+		return
 	}
+	tk := c.nt.GetTestKeys(entry.TestKeys)
+
 	log.Debugf("Fetching: %s %v", idx, c.msmts[idx])
-	c.msmts[idx].WriteSummary(c.Ctx.DB, string(summaryBytes))
+	err := database.AddTestKeys(c.Ctx.DB, c.msmts[idx], tk)
+	if err != nil {
+		log.WithError(err).Error("failed to add test keys to summary")
+	}
 }
 
 // MKStart is the interface for the mk.Nettest Start() function

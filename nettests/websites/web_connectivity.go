@@ -6,7 +6,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/apex/log"
 	"github.com/measurement-kit/go-measurement-kit"
+	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
 	"github.com/pkg/errors"
 )
@@ -14,6 +16,7 @@ import (
 // URLInfo contains the URL and the citizenlab category code for that URL
 type URLInfo struct {
 	URL          string `json:"url"`
+	CountryCode  string `json:"country_code"`
 	CategoryCode string `json:"category_code"`
 }
 
@@ -24,11 +27,13 @@ type URLResponse struct {
 
 const orchestrateBaseURL = "https://events.proteus.test.ooni.io"
 
-func lookupURLs(ctl *nettests.Controller) ([]string, error) {
+func lookupURLs(ctl *nettests.Controller) ([]string, map[int64]int64, error) {
 	var (
 		parsed = new(URLResponse)
 		urls   []string
 	)
+	urlIDMap := make(map[int64]int64)
+	log.Debug("Looking up URLs")
 	// XXX pass in the configuration for category codes
 	reqURL := fmt.Sprintf("%s/api/v1/urls?probe_cc=%s",
 		orchestrateBaseURL,
@@ -36,22 +41,29 @@ func lookupURLs(ctl *nettests.Controller) ([]string, error) {
 
 	resp, err := http.Get(reqURL)
 	if err != nil {
-		return urls, errors.Wrap(err, "failed to perform request")
+		return urls, urlIDMap, errors.Wrap(err, "failed to perform request")
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return urls, errors.Wrap(err, "failed to read response body")
+		return urls, urlIDMap, errors.Wrap(err, "failed to read response body")
 	}
 	err = json.Unmarshal([]byte(body), &parsed)
 	if err != nil {
-		return urls, errors.Wrap(err, "failed to parse json")
+		return urls, urlIDMap, errors.Wrap(err, "failed to parse json")
 	}
 
-	for _, url := range parsed.Results {
+	for idx, url := range parsed.Results {
+		log.Debugf("Going over URL %d", idx)
+		urlID, err := database.CreateOrUpdateURL(ctl.Ctx.DB, url.URL, url.CategoryCode, url.CountryCode)
+		if err != nil {
+			log.Error("failed to add to the URL table")
+		}
+		log.Debugf("Mapped URL %s to idx %d and urlID %d", url.URL, idx, urlID)
+		urlIDMap[int64(idx)] = urlID
 		urls = append(urls, url.URL)
 	}
-	return urls, nil
+	return urls, urlIDMap, nil
 }
 
 // WebConnectivity test implementation
@@ -63,24 +75,25 @@ func (n WebConnectivity) Run(ctl *nettests.Controller) error {
 	nt := mk.NewNettest("WebConnectivity")
 	ctl.Init(nt)
 
-	urls, err := lookupURLs(ctl)
+	urls, urlIDMap, err := lookupURLs(ctl)
 	if err != nil {
 		return err
 	}
+	ctl.SetInputIdxMap(urlIDMap)
 	nt.Options.Inputs = urls
 
 	return nt.Run()
 }
 
-// WebConnectivitySummary for the test
-type WebConnectivitySummary struct {
-	Accessible bool
-	Blocking   string
-	Blocked    bool
+// WebConnectivityTestKeys for the test
+type WebConnectivityTestKeys struct {
+	Accessible bool   `json:"accessible"`
+	Blocking   string `json:"blocking"`
+	IsAnomaly  bool   `json:"-"`
 }
 
-// Summary generates a summary for a test run
-func (n WebConnectivity) Summary(tk map[string]interface{}) interface{} {
+// GetTestKeys generates a summary for a test run
+func (n WebConnectivity) GetTestKeys(tk map[string]interface{}) interface{} {
 	var (
 		blocked    bool
 		blocking   string
@@ -107,10 +120,10 @@ func (n WebConnectivity) Summary(tk map[string]interface{}) interface{} {
 		accessible = tk["accessible"].(bool)
 	}
 
-	return WebConnectivitySummary{
+	return WebConnectivityTestKeys{
 		Accessible: accessible,
 		Blocking:   blocking,
-		Blocked:    blocked,
+		IsAnomaly:  blocked,
 	}
 }
 
