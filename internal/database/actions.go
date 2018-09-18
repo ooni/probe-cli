@@ -122,6 +122,9 @@ func DeleteResult(sess sqlbuilder.Database, resultID int64) error {
 	var result Result
 	res := sess.Collection("results").Find("result_id", resultID)
 	if err := res.One(&result); err != nil {
+		if err == db.ErrNoMoreRows {
+			return err
+		}
 		log.WithError(err).Error("error in obtaining the result")
 		return err
 	}

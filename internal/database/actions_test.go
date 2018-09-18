@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/utils"
+	db "upper.io/db.v3"
 )
 
 func TestMeasurementWorkflow(t *testing.T) {
@@ -154,6 +155,11 @@ func TestDeleteResult(t *testing.T) {
 	}
 	if totalMeasurements != 0 {
 		t.Fatal("measurements should be zero")
+	}
+
+	err = DeleteResult(sess, 20)
+	if err != db.ErrNoMoreRows {
+		t.Fatal(err)
 	}
 }
 
