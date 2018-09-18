@@ -106,9 +106,9 @@ func (h *Handler) TypedLog(t string, e *log.Entry) error {
 	switch t {
 	case "progress":
 		perc := e.Fields.Get("percentage").(float64) * 100
-		s := fmt.Sprintf("   %s\n   %-25s",
+		s := fmt.Sprintf("   %s %-25s",
 			bold.Sprintf("%.2f%%", perc),
-			bold.Sprint(e.Message))
+			e.Message)
 		fmt.Fprint(h.Writer, s)
 		fmt.Fprintln(h.Writer)
 		return nil
