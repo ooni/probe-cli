@@ -15,7 +15,7 @@ import (
 )
 
 // Default handler outputting to stderr.
-var Default = New(os.Stderr)
+var Default = New(os.Stdout)
 
 // start time.
 var start = time.Now()
