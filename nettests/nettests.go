@@ -75,46 +75,10 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	testName := strcase.ToSnake(nt.Name)
 	resultID := c.res.ID
 	reportFilePath := c.msmtPath
-
-	// This is to workaround homedirs having UTF-8 characters in them.
-	// See: https://github.com/measurement-kit/measurement-kit/issues/1635
 	geoIPCountryPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIP.dat")
 	geoIPASNPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIPASNum.dat")
 	caBundlePath := getCaBundlePath()
 	msmtPath := c.msmtPath
-
-	userHome, err := utils.GetOONIHome()
-	if err != nil {
-		log.WithError(err).Error("failed to figure out the homedir")
-		return err
-	}
-	// Get the parent of it
-	userHome = filepath.Dir(userHome)
-
-	relPath, err := filepath.Rel(userHome, caBundlePath)
-	if err != nil {
-		log.WithError(err).Error("caBundlePath is not relative to the users home")
-	} else {
-		caBundlePath = relPath
-	}
-	relPath, err = filepath.Rel(userHome, geoIPASNPath)
-	if err != nil {
-		log.WithError(err).Error("geoIPASNPath is not relative to the users home")
-	} else {
-		geoIPASNPath = relPath
-	}
-	relPath, err = filepath.Rel(userHome, geoIPCountryPath)
-	if err != nil {
-		log.WithError(err).Error("geoIPCountryPath is not relative to the users home")
-	} else {
-		geoIPCountryPath = relPath
-	}
-
-	log.Debugf("Chdir to: %s", userHome)
-	if err := os.Chdir(userHome); err != nil {
-		log.WithError(err).Errorf("failed to chdir to %s", userHome)
-		return err
-	}
 
 	log.Debugf("OutputPath: %s", msmtPath)
 	nt.Options = mk.NettestOptions{
