@@ -96,6 +96,8 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		RandomizeInput:    false, // It's important to disable input randomization to ensure the URLs are written in sync to the DB
 		SoftwareName:      "ooniprobe-desktop",
 		SoftwareVersion:   ooni.Version,
+		CollectorBaseURL:  c.Ctx.Config.Advanced.CollectorURL,
+		BouncerBaseURL:    c.Ctx.Config.Advanced.BouncerURL,
 
 		OutputPath:       msmtPath,
 		GeoIPCountryPath: geoIPCountryPath,

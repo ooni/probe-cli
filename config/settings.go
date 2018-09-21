@@ -119,8 +119,10 @@ type Sharing struct {
 
 // Advanced settings
 type Advanced struct {
-	UseDomainFronting bool `json:"use_domain_fronting"`
-	SendCrashReports  bool `json:"send_crash_reports"`
+	UseDomainFronting bool   `json:"use_domain_fronting"`
+	SendCrashReports  bool   `json:"send_crash_reports"`
+	CollectorURL      string `json:"collector_url"`
+	BouncerURL        string `json:"bouncer_url"`
 }
 
 // AutomatedTesting settings

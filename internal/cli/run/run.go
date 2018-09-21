@@ -27,6 +27,8 @@ func init() {
 			strings.Join(nettestGroupNames, ", "))).Required().String()
 
 	noCollector := cmd.Flag("no-collector", "Disable uploading measurements to a collector").Bool()
+	collectorURL := cmd.Flag("collector-url", "Specify the address of a custom collector").String()
+	bouncerURL := cmd.Flag("bouncer-url", "Specify the address of a custom bouncer").String()
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		log.Infof("Starting %s", *nettestGroup)
@@ -44,6 +46,14 @@ func init() {
 		if *noCollector == true {
 			ctx.Config.Sharing.UploadResults = false
 		}
+		if *collectorURL != "" {
+			ctx.Config.Advanced.CollectorURL = *collectorURL
+		}
+		if *bouncerURL != "" {
+			ctx.Config.Advanced.BouncerURL = *bouncerURL
+		}
+		log.Debugf("Using collector %s", ctx.Config.Advanced.CollectorURL)
+		log.Debugf("Using bouncer %s", ctx.Config.Advanced.CollectorURL)
 
 		group, ok := groups.NettestGroups[*nettestGroup]
 		if !ok {

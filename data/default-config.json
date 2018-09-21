@@ -59,6 +59,8 @@
   },
   "advanced": {
     "use_domain_fronting": false,
-    "send_crash_reports": true
+    "send_crash_reports": true,
+    "collector_url": "",
+    "bouncer_url": "https://bouncer.ooni.io/"
   }
 }
