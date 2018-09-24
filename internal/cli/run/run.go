@@ -80,9 +80,10 @@ func init() {
 			return err
 		}
 
-		for _, nt := range group.Nettests {
+		for i, nt := range group.Nettests {
 			log.Debugf("Running test %T", nt)
 			ctl := nettests.NewController(nt, ctx, result)
+			ctl.SetNettestIndex(i, len(group.Nettests))
 			if err = nt.Run(ctl); err != nil {
 				log.WithError(err).Errorf("Failed to run %s", group.Label)
 				return err

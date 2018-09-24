@@ -45,6 +45,8 @@ type Controller struct {
 	Ctx         *ooni.Context
 	res         *database.Result
 	nt          Nettest
+	ntCount     int
+	ntIndex     int
 	msmts       map[int64]*database.Measurement
 	msmtPath    string          // XXX maybe we can drop this and just use a temporary file
 	inputIdxMap map[int64]int64 // Used to map mk idx to database id
@@ -58,9 +60,19 @@ func getCaBundlePath() string {
 	return "/etc/ssl/cert.pem"
 }
 
+// SetInputIdxMap is used to set the mapping of index into input. This mapping
+// is used to reference, for example, a particular URL based on the index inside
+// of the input list and the index of it in the database.
 func (c *Controller) SetInputIdxMap(inputIdxMap map[int64]int64) error {
 	c.inputIdxMap = inputIdxMap
 	return nil
+}
+
+// SetNettestIndex is used to set the current nettest index and total nettest
+// count to compute a different progress percentage.
+func (c *Controller) SetNettestIndex(i, n int) {
+	c.ntCount = n
+	c.ntIndex = i
 }
 
 // Init should be called once to initialise the nettest
@@ -157,7 +169,11 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 
 	nt.On("status.progress", func(e mk.Event) {
 		log.Debugf(color.RedString(e.Key))
-		c.OnProgress(e.Value.Percentage, e.Value.Message)
+		perc := e.Value.Percentage
+		if c.ntCount > 0 {
+			perc = float64(c.ntIndex)/float64(c.ntCount) + perc/float64(c.ntCount)
+		}
+		c.OnProgress(perc, e.Value.Message)
 	})
 
 	nt.On("status.update.*", func(e mk.Event) {
