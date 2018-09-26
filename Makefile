@@ -14,6 +14,9 @@ build-windows:
 	@echo "Building dist/ooni.exe"
 	CC=x86_64-w64-mingw32-gcc GOOS=windows GOARCH=amd64 CGO_ENABLED=1 go build -o dist/ooni.exe -x cmd/ooni/main.go
 
+build-all: build build-windows
+.PHONY: build-all
+
 download-mk-libs:
 	@echo "updating mk-libs"
 	@cd vendor/github.com/measurement-kit/go-measurement-kit && ./download-libs.sh
