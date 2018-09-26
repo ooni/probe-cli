@@ -59,7 +59,7 @@
   "advanced": {
     "use_domain_fronting": false,
     "send_crash_reports": true,
-    "bouncer_url": "https://bouncer.ooni.io/",
-    "collector_url": "https://c.collector.ooni.io/",
+    "bouncer_url": "https://bouncer.ooni.io",
+    "collector_url": "https://c.collector.ooni.io"
   }
 }
