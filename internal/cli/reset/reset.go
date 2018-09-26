@@ -15,7 +15,14 @@ func init() {
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		ctx, err := root.Init()
 		if err != nil {
-			log.Errorf("%s", err)
+			log.WithError(err).Error("failed to init root context")
+			return err
+		}
+		// We need to first the DB otherwise the DB will be rewritten on close when
+		// we delete the home directory.
+		err = ctx.DB.Close()
+		if err != nil {
+			log.WithError(err).Error("failed to close the DB")
 			return err
 		}
 		if *force == true {
