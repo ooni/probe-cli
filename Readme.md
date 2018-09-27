@@ -2,8 +2,6 @@
 
 The next generation OONI Probe Command Line Interface.
 
-:skull: **Attention** This is under heavy development and should only be run and used by OONI developers. Use at your own risk and if you do use it, you may have to do some cleanup when we release the first public release of OONI Probe.
-
 ## Development setup
 
 Be sure you have golang >= 1.8.
