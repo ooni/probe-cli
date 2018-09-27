@@ -50,7 +50,12 @@ func GetResultTestKeys(sess sqlbuilder.Database, resultID int64) (string, error)
 		if msmt.TestName == "web_connectivity" {
 			break
 		}
-		// We only really care about performance keys
+		// We only really care about performance keys.
+		// Note: since even in case of failure we still initialise an empty struct,
+		// it could be that these keys come out as initializes with the default
+		// values.
+		// XXX we may want to change this behaviour by adding `omitempty` to the
+		// struct definition.
 		if msmt.TestName == "ndt" || msmt.TestName == "dash" {
 			if err := json.Unmarshal([]byte(msmt.TestKeys), &tk); err != nil {
 				log.WithError(err).Error("failed to parse testKeys")
