@@ -142,10 +142,15 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		log.Debugf("%s", e.Key)
 	})
 
-	nt.On("status.report_created", func(e mk.Event) {
-		log.Debugf("%s", e.Key)
+	nt.On("status.report_create", func(e mk.Event) {
+		log.Debugf(color.RedString(e.Key))
 
 		reportID = sql.NullString{String: e.Value.ReportID, Valid: true}
+	})
+
+	nt.On("failure.report_create", func(e mk.Event) {
+		log.Debugf(color.RedString(e.Key))
+		log.Debugf("%v", e.Value)
 	})
 
 	nt.On("status.geoip_lookup", func(e mk.Event) {
@@ -195,11 +200,6 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	})
 
 	nt.On("failure.resolver_lookup", func(e mk.Event) {
-		log.Debugf(color.RedString(e.Key))
-		log.Debugf("%v", e.Value)
-	})
-
-	nt.On("failure.report_create", func(e mk.Event) {
 		log.Debugf(color.RedString(e.Key))
 		log.Debugf("%v", e.Value)
 	})
