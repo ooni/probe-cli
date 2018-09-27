@@ -25,7 +25,7 @@ type WhatsAppTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (h WhatsApp) GetTestKeys(tk map[string]interface{}) interface{} {
+func (h WhatsApp) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
 	var (
 		webBlocking          bool
 		registrationBlocking bool
@@ -51,7 +51,7 @@ func (h WhatsApp) GetTestKeys(tk map[string]interface{}) interface{} {
 		WebBlocking:                webBlocking,
 		EndpointsBlocking:          endpointsBlocking,
 		IsAnomaly:                  registrationBlocking || webBlocking || endpointsBlocking,
-	}
+	}, nil
 }
 
 // LogSummary writes the summary to the standard output

@@ -1,6 +1,8 @@
 package middlebox
 
 import (
+	"errors"
+
 	"github.com/measurement-kit/go-measurement-kit"
 	"github.com/ooni/probe-cli/nettests"
 )
@@ -22,12 +24,16 @@ type HTTPInvalidRequestLineTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (h HTTPInvalidRequestLine) GetTestKeys(tk map[string]interface{}) interface{} {
-	tampering := tk["tampering"].(bool)
+func (h HTTPInvalidRequestLine) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
+	testKeys := HTTPInvalidRequestLineTestKeys{IsAnomaly: false}
 
-	return HTTPInvalidRequestLineTestKeys{
-		IsAnomaly: tampering,
+	tampering, ok := tk["tampering"].(bool)
+	if !ok {
+		return testKeys, errors.New("tampering is not bool")
 	}
+	testKeys.IsAnomaly = tampering
+
+	return testKeys, nil
 }
 
 // LogSummary writes the summary to the standard output

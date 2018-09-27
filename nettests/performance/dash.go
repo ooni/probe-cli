@@ -1,6 +1,8 @@
 package performance
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/measurement-kit/go-measurement-kit"
 	"github.com/ooni/probe-cli/nettests"
 )
@@ -20,21 +22,40 @@ func (d Dash) Run(ctl *nettests.Controller) error {
 // TODO: process 'receiver_data' to provide an array of performance for a chart.
 type DashTestKeys struct {
 	Latency   float64 `json:"connect_latency"`
-	Bitrate   int64   `json:"median_bitrate"`
+	Bitrate   float64 `json:"median_bitrate"`
 	Delay     float64 `json:"min_playout_delay"`
 	IsAnomaly bool    `json:"-"`
 }
 
 // GetTestKeys generates a summary for a test run
-func (d Dash) GetTestKeys(tk map[string]interface{}) interface{} {
-	simple := tk["simple"].(map[string]interface{})
+func (d Dash) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
+	var err error
 
-	return DashTestKeys{
-		IsAnomaly: false,
-		Latency:   simple["connect_latency"].(float64),
-		Bitrate:   int64(simple["median_bitrate"].(float64)),
-		Delay:     simple["min_playout_delay"].(float64),
+	testKeys := DashTestKeys{IsAnomaly: false}
+
+	simple, ok := tk["simple"].(map[string]interface{})
+	if !ok {
+		return testKeys, errors.New("simple key is not of the expected type")
 	}
+
+	latency, ok := simple["connect_latency"].(float64)
+	if !ok {
+		err = errors.Wrap(err, "connect_latency is invalid")
+	}
+	testKeys.Latency = latency
+
+	bitrate, ok := simple["median_bitrate"].(float64)
+	if !ok {
+		err = errors.Wrap(err, "median_bitrate is invalid")
+	}
+	testKeys.Bitrate = bitrate
+
+	delay, ok := simple["min_playout_delay"].(float64)
+	if !ok {
+		err = errors.Wrap(err, "min_playout_delay is invalid")
+	}
+	testKeys.Delay = delay
+	return testKeys, err
 }
 
 // LogSummary writes the summary to the standard output

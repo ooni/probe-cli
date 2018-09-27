@@ -24,7 +24,7 @@ type FacebookMessengerTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (h FacebookMessenger) GetTestKeys(tk map[string]interface{}) interface{} {
+func (h FacebookMessenger) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
 	var (
 		dnsBlocking bool
 		tcpBlocking bool
@@ -45,7 +45,7 @@ func (h FacebookMessenger) GetTestKeys(tk map[string]interface{}) interface{} {
 		DNSBlocking: dnsBlocking,
 		TCPBlocking: tcpBlocking,
 		IsAnomaly:   dnsBlocking || tcpBlocking,
-	}
+	}, nil
 }
 
 // LogSummary writes the summary to the standard output

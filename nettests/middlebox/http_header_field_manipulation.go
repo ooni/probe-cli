@@ -1,6 +1,8 @@
 package middlebox
 
 import (
+	"errors"
+
 	"github.com/measurement-kit/go-measurement-kit"
 	"github.com/ooni/probe-cli/nettests"
 )
@@ -22,19 +24,21 @@ type HTTPHeaderFieldManipulationTestKeys struct {
 }
 
 // GetTestKeys returns a projection of the tests keys needed for the views
-func (h HTTPHeaderFieldManipulation) GetTestKeys(tk map[string]interface{}) interface{} {
-	tampering := false
-	for _, v := range tk["tampering"].(map[string]interface{}) {
+func (h HTTPHeaderFieldManipulation) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
+	testKeys := HTTPHeaderFieldManipulationTestKeys{IsAnomaly: false}
+	tampering, ok := tk["tampering"].(map[string]interface{})
+	if !ok {
+		return testKeys, errors.New("tampering testkey is invalid")
+	}
+	for _, v := range tampering {
 		t, ok := v.(bool)
 		// Ignore non booleans in the tampering map
 		if ok && t == true {
-			tampering = true
+			testKeys.IsAnomaly = true
 		}
 	}
 
-	return HTTPHeaderFieldManipulationTestKeys{
-		IsAnomaly: tampering,
-	}
+	return testKeys, nil
 }
 
 // LogSummary writes the summary to the standard output

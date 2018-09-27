@@ -22,7 +22,7 @@ import (
 // Nettest interface. Every Nettest should implement this.
 type Nettest interface {
 	Run(*Controller) error
-	GetTestKeys(map[string]interface{}) interface{}
+	GetTestKeys(map[string]interface{}) (interface{}, error)
 	LogSummary(string) error
 }
 
@@ -299,10 +299,15 @@ func (c *Controller) OnEntry(idx int64, jsonStr string) {
 		log.WithError(err).Error("failed to parse onEntry")
 		return
 	}
-	tk := c.nt.GetTestKeys(entry.TestKeys)
+	// XXX is it correct to just log the error instead of marking the whole
+	// measurement as failed?
+	tk, err := c.nt.GetTestKeys(entry.TestKeys)
+	if err != nil {
+		log.WithError(err).Error("failed to obtain testKeys")
+	}
 
 	log.Debugf("Fetching: %s %v", idx, c.msmts[idx])
-	err := database.AddTestKeys(c.Ctx.DB, c.msmts[idx], tk)
+	err = database.AddTestKeys(c.Ctx.DB, c.msmts[idx], tk)
 	if err != nil {
 		log.WithError(err).Error("failed to add test keys to summary")
 	}

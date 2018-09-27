@@ -25,7 +25,7 @@ type TelegramTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (h Telegram) GetTestKeys(tk map[string]interface{}) interface{} {
+func (h Telegram) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
 	var (
 		tcpBlocking  bool
 		httpBlocking bool
@@ -53,7 +53,7 @@ func (h Telegram) GetTestKeys(tk map[string]interface{}) interface{} {
 		HTTPBlocking: httpBlocking,
 		WebBlocking:  webBlocking,
 		IsAnomaly:    webBlocking || httpBlocking || tcpBlocking,
-	}
+	}, nil
 }
 
 // LogSummary writes the summary to the standard output

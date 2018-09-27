@@ -93,7 +93,7 @@ type WebConnectivityTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (n WebConnectivity) GetTestKeys(tk map[string]interface{}) interface{} {
+func (n WebConnectivity) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
 	var (
 		blocked    bool
 		blocking   string
@@ -124,7 +124,7 @@ func (n WebConnectivity) GetTestKeys(tk map[string]interface{}) interface{} {
 		Accessible: accessible,
 		Blocking:   blocking,
 		IsAnomaly:  blocked,
-	}
+	}, nil
 }
 
 // LogSummary writes the summary to the standard output
