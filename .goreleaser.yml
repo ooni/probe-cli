@@ -1,0 +1,38 @@
+project_name: ooniprobe
+release:
+  github:
+    owner: ooni
+    name: probe-cli
+brew:
+  install: bin.install "ooniprobe"
+builds:
+- goos:
+  - darwin
+  goarch:
+  - amd64
+  main: cmd/ooni/main.go
+  binary: ooni
+- goos:
+  - windows
+  goarch:
+  - amd64
+  env:
+  - CC=x86_64-w64-mingw32-gcc
+  - CGO_ENABLED=1
+  main: cmd/ooni/main.go
+  binary: ooni
+archive:
+  format: tar.gz
+  name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{
+    .Arm }}{{ end }}'
+  files:
+  - licence*
+  - LICENCE*
+  - license*
+  - LICENSE*
+  - readme*
+  - README*
+  - changelog*
+  - CHANGELOG*
+snapshot:
+  name_template: SNAPSHOT-{{ .Commit }}
