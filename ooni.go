@@ -16,7 +16,7 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-const Version = "3.0.0-alpha.2"
+const Version = "3.0.0-alpha.3"
 
 // Context for OONI Probe
 type Context struct {
