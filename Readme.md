@@ -49,44 +49,16 @@ make build-windows
 
 ### linux
 
-On linux you will have to make your own build of measurement-kit and the
-required dependencies.
+On linux you can only build a linux ooni binary for amd64.
 
-The following instructions have been tested on debian stretch, but should work
-on any other modern debian equivalent with minor tweaks.
-
-Install the required depedencies:
+This can be done by running:
 
 ```
-sudo apt-get install git build-essential cmake autoconf libtool golang libc++-dev
+make download-mk-libs
 ```
 
-Note: be sure you have golang at >= 1.8 (debian stretch means using backports).
-
-```
-git clone https://github.com/measurement-kit/script-build-unix.git
-cd script-build-unix
-```
-
-Then build measurement-kit as follows:
-
-```
-./build-linux geoip-api-c
-./build-linux libressl
-./build-linux libevent
-./build-linux measurement-kit
-```
-
-You should now have a set of compiled libraries inside of `MK_DIST`. Take this and copy it into `vendor/github.com/measurement-kit/go-measurement-kit/libs/linux`.
-
-It should now be possible to build ooni by running:
+Then you can build ooni by running:
 
 ```
 make build
-```
-
-To run internal tests do:
-
-```
-make test-internal
 ```
