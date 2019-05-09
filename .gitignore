@@ -1,4 +1,3 @@
-/vendor
 /dist
 *.njson
 .DS_Store
