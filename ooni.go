@@ -80,12 +80,6 @@ func (c *Context) MaybeDownloadDataFiles() error {
 			return err
 		}
 	}
-	if _, err := os.Stat(path.Join(geoipDir, "GeoIP.dat")); os.IsNotExist(err) {
-		log.Debugf("Downloading legacy GeoIP database Files")
-		if err := utils.DownloadLegacyGeoIPDatabaseFiles(geoipDir); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

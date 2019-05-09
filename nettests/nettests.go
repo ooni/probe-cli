@@ -87,8 +87,8 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	testName := strcase.ToSnake(nt.Name)
 	resultID := c.res.ID
 	reportFilePath := c.msmtPath
-	geoIPCountryPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIP.dat")
-	geoIPASNPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoIPASNum.dat")
+	geoIPCountryPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoLite2-Country.mmdb")
+	geoIPASNPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoLite2-ASN.mmdb")
 	caBundlePath := getCaBundlePath()
 	msmtPath := c.msmtPath
 

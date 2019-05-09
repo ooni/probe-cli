@@ -31,11 +31,6 @@ var geoipFiles = map[string]string{
 	"GeoLite2-Country.mmdb": "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz",
 }
 
-var legacyGeoipFiles = map[string]string{
-	"GeoIPASNum.dat": "http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz",
-	"GeoIP.dat":      "http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz",
-}
-
 // Download the file to a temporary location
 func downloadToTemp(url string) (string, error) {
 	out, err := ioutil.TempFile(os.TempDir(), "maxmind")
@@ -54,40 +49,6 @@ func downloadToTemp(url string) (string, error) {
 	out.Close()
 	resp.Body.Close()
 	return out.Name(), nil
-}
-
-// DownloadLegacyGeoIPDatabaseFiles into the target directory
-func DownloadLegacyGeoIPDatabaseFiles(dir string) error {
-	for filename, url := range legacyGeoipFiles {
-		dstPath := filepath.Join(dir, filename)
-
-		tmpPath, err := downloadToTemp(url)
-		if err != nil {
-			return err
-		}
-
-		// Extract the tar.gz file
-		f, err := os.Open(tmpPath)
-		defer f.Close()
-		if err != nil {
-			return errors.Wrap(err, "failed to read file")
-		}
-
-		gzf, err := gzip.NewReader(f)
-		if err != nil {
-			return errors.Wrap(err, "failed to create gzip reader")
-		}
-
-		outFile, err := os.Create(dstPath)
-		if err != nil {
-			return errors.Wrap(err, "error creating file")
-		}
-		if _, err := io.Copy(outFile, gzf); err != nil {
-			return errors.Wrap(err, "error reading file from gzip")
-		}
-		outFile.Close()
-	}
-	return nil
 }
 
 // DownloadGeoIPDatabaseFiles into the target directory
