@@ -25,7 +25,17 @@ elif [ "$1" = "macos" ]; then
 elif [ "$1" = "_travis-linux" ]; then
   set -x
   $0 linux
-  docker run -v `pwd`:/oonibuild -w /oonibuild -t oonibuild go test -v ./...
+  docker run -v `pwd`:/oonibuild -w /oonibuild -t oonibuild                    \
+    go test -v -coverprofile=ooni.cov ./...
+
+elif [ "$1" = "_travis-osx" ]; then
+  set -x
+  brew tap measurement-kit/measurement-kit
+  brew update
+  brew upgrade
+  brew install measurement-kit
+  $0 macos
+  go test -v -coverprofile=ooni.cov ./...
 
 elif [ "$1" = "help" ]; then
   echo "Usage: $0 linux | macos | windows"

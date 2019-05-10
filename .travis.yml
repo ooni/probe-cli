@@ -1,7 +1,12 @@
-os: linux
-dist: xenial
-language: minimal
-services:
-- docker
+matrix:
+  include:
+  - os: linux
+    dist: xenial
+    language: minimal
+    services:
+    - docker
+  - os: osx
+    language: minimal
+    os_version: xcode10.2
 script:
-- ./build.sh _travis-linux
+- ./build.sh _travis-${TRAVIS_OS_NAME}
