@@ -7,6 +7,6 @@ matrix:
     - docker
   - os: osx
     language: minimal
-    os_version: xcode10.2
+    osx_image: xcode10.2
 script:
 - ./build.sh _travis-${TRAVIS_OS_NAME}
