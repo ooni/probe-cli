@@ -2,8 +2,8 @@
 set -e
 
 if [ "$GOPATH" != "" ]; then
-  echo "FATAL: please unset your GOPATH" 1>&2
-  exit 1
+  echo "$0: WARNING: unsetting GOPATH as we don't need it" 1>&2
+  unset GOPATH
 fi
 
 if [ "$1" = "windows" ]; then
