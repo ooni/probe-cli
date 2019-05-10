@@ -1,13 +1,7 @@
-# Due to MK dependencies only macOS development is supported
-os: osx
-language: go
-go:
-- 1.9.x
-- 1.x
-install:
-- make install-dev-deps
-- dep ensure
-- make download-mk-libs-macos
+os: linux
+dist: xenial
+language: minimal
+services:
+- docker
 script:
-- make test-internal
-- make build
+- ./build.sh _travis-linux
