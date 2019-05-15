@@ -5,8 +5,12 @@ matrix:
     language: minimal
     services:
     - docker
+    env:
+    - OS_NAME: linux
   - os: osx
     language: minimal
+    env:
+    - OS_NAME: macos
     osx_image: xcode10.2
 script:
 - ./build.sh _travis-${TRAVIS_OS_NAME}
