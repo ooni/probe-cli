@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/ooni/probe-cli/internal/shutil"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -161,9 +162,13 @@ func (m *Measurement) AddToResult(sess sqlbuilder.Database, result *Result) erro
 	// If the finalPath already exists, it means it has already been moved there.
 	// This happens in multi input reports
 	if _, err = os.Stat(finalPath); os.IsNotExist(err) {
-		err = os.Rename(m.ReportFilePath, finalPath)
+		err := shutil.CopyFile(m.ReportFilePath, finalPath, false)
 		if err != nil {
-			return errors.Wrap(err, "moving report file")
+			return errors.Wrap(err, "copying report file")
+		}
+		err = os.Remove(m.ReportFilePath)
+		if err != nil {
+			return errors.Wrap(err, "deleting report file")
 		}
 	}
 	m.ReportFilePath = finalPath
