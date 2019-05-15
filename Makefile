@@ -31,7 +31,7 @@ bindata:
 	    data/...;
 
 release:
-	goreleaser release
+	goreleaser release --skip-publish
 
 test-internal:
 	@$(GO) test -v ./internal/...
