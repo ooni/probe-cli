@@ -81,7 +81,6 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	reportFilePath := c.msmtPath
 	geoIPCountryPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoLite2-Country.mmdb")
 	geoIPASNPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoLite2-ASN.mmdb")
-	caBundlePath := getCaBundlePath()
 	msmtPath := c.msmtPath
 
 	log.Debugf("OutputPath: %s", msmtPath)
