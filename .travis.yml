@@ -10,3 +10,4 @@ matrix:
     osx_image: xcode10.2
 script:
 - ./build.sh _travis-${TRAVIS_OS_NAME}
+- ./scripts/travis_test.sh
