@@ -1,4 +1,4 @@
-/vendor
 /dist
+/ooni.cov
 *.njson
 .DS_Store
