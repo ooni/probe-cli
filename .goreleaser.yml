@@ -27,7 +27,7 @@ archive:
   name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{
     .Arm }}{{ end }}'
   files:
-  - LICENCE.*
+  - LICENSE.*
   - Readme.*
 snapshot:
   name_template: SNAPSHOT-{{ .Commit }}

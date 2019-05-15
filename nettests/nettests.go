@@ -52,14 +52,6 @@ type Controller struct {
 	inputIdxMap map[int64]int64 // Used to map mk idx to database id
 }
 
-func getCaBundlePath() string {
-	path := os.Getenv("SSL_CERT_FILE")
-	if path != "" {
-		return path
-	}
-	return "/etc/ssl/cert.pem"
-}
-
 // SetInputIdxMap is used to set the mapping of index into input. This mapping
 // is used to reference, for example, a particular URL based on the index inside
 // of the input list and the index of it in the database.
@@ -114,8 +106,13 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		OutputPath:       msmtPath,
 		GeoIPCountryPath: geoIPCountryPath,
 		GeoIPASNPath:     geoIPASNPath,
-		CaBundlePath:     caBundlePath,
 	}
+
+	sslCertFile := os.Getenv("SSL_CERT_FILE")
+	if sslCertFile != "" {
+		nt.Options.CaBundlePath = sslCertFile
+	}
+
 	log.Debugf("GeoIPASNPath: %s", nt.Options.GeoIPASNPath)
 	log.Debugf("GeoIPCountryPath: %s", nt.Options.GeoIPCountryPath)
 
