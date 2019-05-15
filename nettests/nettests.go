@@ -97,7 +97,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		IncludeIP:      c.Ctx.Config.Sharing.IncludeIP,
 		IncludeASN:     c.Ctx.Config.Sharing.IncludeASN,
 		IncludeCountry: c.Ctx.Config.Sharing.IncludeCountry,
-		LogLevel:       "DEBUG",
+		LogLevel:       "INFO",
 
 		ProbeCC:  c.Ctx.Location.CountryCode,
 		ProbeASN: fmt.Sprintf("AS%d", c.Ctx.Location.ASN),
