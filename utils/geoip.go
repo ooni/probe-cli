@@ -163,7 +163,7 @@ func akamaiLookup() (string, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "https://a248.e.akamai.net/", nil)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to create NewRequest")
 	}
 	req.Host = "whatismyip.akamai.com"
 	resp, err := client.Do(req)
@@ -187,18 +187,23 @@ var lookupServices = []lookupFunc{
 
 // IPLookup gets the users IP address from a IP lookup service
 func IPLookup() (string, error) {
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().UnixNano())
+
+	var (
+		err   error
+		ipStr string
+	)
 
 	retries := 3
 	for retries > 0 {
 		lookup := lookupServices[rand.Intn(len(lookupServices))]
-		ipStr, err := lookup()
+		ipStr, err = lookup()
 		if err == nil {
 			return ipStr, nil
 		}
 		retries--
 	}
-	return "", errors.New("exceeded maximum retries")
+	return "", errors.Wrap(err, "exceeded maximum retries")
 }
 
 // GeoIPLookup does a geoip lookup and returns location information
