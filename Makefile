@@ -30,6 +30,9 @@ bindata:
 		-o internal/bindata/bindata.go -pkg bindata \
 	    data/...;
 
+release:
+	goreleaser release
+
 test-internal:
 	@$(GO) test -v ./internal/...
 
