@@ -31,7 +31,14 @@ bindata:
 	    data/...;
 
 release:
-	goreleaser release --skip-publish
+	GITHUB_TOKEN=`cat ~/.GORELEASE_GITHUB_TOKEN` goreleaser --rm-dist
+	./build.sh linux
+	mv dist/linux/amd64 dist/ooniprobe_$(git describe --tags | sed s/^v//)_linux_amd64
+	tar cvzf dist/ooniprobe_$(git describe --tags | sed s/^v//)_linux_amd64.tar.gz \
+		-C dist/ooniprobe_$(git describe --tags | sed s/^v//)_linux_amd64 \
+		ooni
+	cd dist && shasum -a 256 ooniprobe_$(git describe --tags | sed s/^v//)_linux_amd64.tar.gz >> ooniprobe_checksums.txt
+	gpg -a --detach-sign dist/ooniprobe_checksums.txt
 
 test-internal:
 	@$(GO) test -v ./internal/...
