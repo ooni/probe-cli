@@ -81,7 +81,6 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	reportFilePath := c.msmtPath
 	geoIPCountryPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoLite2-Country.mmdb")
 	geoIPASNPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoLite2-ASN.mmdb")
-	caBundlePath := getCaBundlePath()
 	msmtPath := c.msmtPath
 
 	log.Debugf("OutputPath: %s", msmtPath)
@@ -113,6 +112,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		nt.Options.CaBundlePath = sslCertFile
 	}
 
+	log.Debugf("CaBundlePath: %s", nt.Options.CaBundlePath)
 	log.Debugf("GeoIPASNPath: %s", nt.Options.GeoIPASNPath)
 	log.Debugf("GeoIPCountryPath: %s", nt.Options.GeoIPCountryPath)
 
