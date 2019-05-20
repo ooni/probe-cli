@@ -4,15 +4,15 @@ import (
 	"fmt"
 
 	"github.com/alecthomas/kingpin"
-	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/cli/root"
+	"github.com/ooni/probe-cli/version"
 )
 
 
 func init() {
 	cmd := root.Command("version", "Show version.")
 	cmd.Action(func(_ *kingpin.ParseContext) error {
-		fmt.Println(ooni.Version)
+		fmt.Println(version.Version)
 		return nil
 	})
 }

@@ -3,7 +3,6 @@ package ooni
 import (
 	"io/ioutil"
 	"os"
-	"path"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/config"
@@ -15,8 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
-
-const Version = "3.0.0-beta.3"
 
 // Context for OONI Probe
 type Context struct {
@@ -74,13 +71,7 @@ func (c *Context) MaybeOnboarding() error {
 // MaybeDownloadDataFiles will download geoip data files if they are not present
 func (c *Context) MaybeDownloadDataFiles() error {
 	geoipDir := utils.GeoIPDir(c.Home)
-	if _, err := os.Stat(path.Join(geoipDir, "GeoLite2-Country.mmdb")); os.IsNotExist(err) {
-		log.Debugf("Downloading GeoIP database files")
-		if err := utils.DownloadGeoIPDatabaseFiles(geoipDir); err != nil {
-			return err
-		}
-	}
-	return nil
+	return utils.MaybeDownloadGeoIPDatabaseFiles(geoipDir)
 }
 
 // Init the OONI manager

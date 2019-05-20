@@ -17,6 +17,7 @@ import (
 	"github.com/ooni/probe-cli/internal/output"
 	"github.com/ooni/probe-cli/utils"
 	"github.com/ooni/probe-cli/utils/strcase"
+	"github.com/ooni/probe-cli/version"
 )
 
 // Nettest interface. Every Nettest should implement this.
@@ -98,7 +99,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		DisableCollector:  !c.Ctx.Config.Sharing.UploadResults,
 		RandomizeInput:    false, // It's important to disable input randomization to ensure the URLs are written in sync to the DB
 		SoftwareName:      "ooniprobe-desktop",
-		SoftwareVersion:   ooni.Version,
+		SoftwareVersion:   version.Version,
 		CollectorBaseURL:  c.Ctx.Config.Advanced.CollectorURL,
 		BouncerBaseURL:    c.Ctx.Config.Advanced.BouncerURL,
 

@@ -28,7 +28,7 @@ func init() {
 
 		geoipPath := utils.GeoIPDir(ctx.Home)
 		if *shouldUpdate {
-			utils.DownloadGeoIPDatabaseFiles(geoipPath)
+			log.WithError(err).Fatal("updating geoip database files isn't supported")
 		}
 
 		loc, err := utils.GeoIPLookup(geoipPath)

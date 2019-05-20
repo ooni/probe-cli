@@ -4,13 +4,13 @@ import (
 	"os"
 
 	"github.com/apex/log"
-	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/cli/root"
+	"github.com/ooni/probe-cli/version"
 )
 
 // Run the app. This is the main app entry point
 func Run() {
-	root.Cmd.Version(ooni.Version)
+	root.Cmd.Version(version.Version)
 	_, err := root.Cmd.Parse(os.Args[1:])
 	if err != nil {
 		log.WithError(err).Error("failure in main command")
