@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -71,7 +70,10 @@ func (c *Controller) SetNettestIndex(i, n int) {
 // Init should be called once to initialise the nettest
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
-	c.Ctx.LocationLookup()
+	err := c.Ctx.MaybeLocationLookup()
+	if err != nil {
+		return err
+	}
 
 	c.msmts = make(map[int64]*database.Measurement)
 
@@ -80,8 +82,8 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	testName := strcase.ToSnake(nt.Name)
 	resultID := c.res.ID
 	reportFilePath := c.msmtPath
-	geoIPCountryPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoLite2-Country.mmdb")
-	geoIPASNPath := filepath.Join(utils.GeoIPDir(c.Ctx.Home), "GeoLite2-ASN.mmdb")
+	geoIPCountryPath := c.Ctx.Session.CountryDatabasePath()
+	geoIPASNPath := c.Ctx.Session.ASNDatabasePath()
 	msmtPath := c.msmtPath
 
 	log.Debugf("OutputPath: %s", msmtPath)
@@ -91,9 +93,9 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		IncludeCountry: c.Ctx.Config.Sharing.IncludeCountry,
 		LogLevel:       "INFO",
 
-		ProbeCC:  c.Ctx.Location.CountryCode,
-		ProbeASN: fmt.Sprintf("AS%d", c.Ctx.Location.ASN),
-		ProbeIP:  c.Ctx.Location.IP,
+		ProbeCC:  c.Ctx.Session.ProbeCC(),
+		ProbeASN: c.Ctx.Session.ProbeASNString(),
+		ProbeIP:  c.Ctx.Session.ProbeIP(),
 
 		DisableReportFile: false,
 		DisableCollector:  !c.Ctx.Config.Sharing.UploadResults,
@@ -106,11 +108,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 		OutputPath:       msmtPath,
 		GeoIPCountryPath: geoIPCountryPath,
 		GeoIPASNPath:     geoIPASNPath,
-	}
-
-	sslCertFile := os.Getenv("SSL_CERT_FILE")
-	if sslCertFile != "" {
-		nt.Options.CaBundlePath = sslCertFile
+		CaBundlePath:     c.Ctx.Session.CABundlePath(),
 	}
 
 	log.Debugf("CaBundlePath: %s", nt.Options.CaBundlePath)

@@ -82,15 +82,15 @@ func init() {
 		if *bouncerURL != "" {
 			ctx.Config.Advanced.BouncerURL = *bouncerURL
 		}
-		log.Debugf("Using collector %s", ctx.Config.Advanced.CollectorURL)
-		log.Debugf("Using bouncer %s", ctx.Config.Advanced.CollectorURL)
+		log.Debugf("Using collector: %s", ctx.Config.Advanced.CollectorURL)
+		log.Debugf("Using bouncer: %s", ctx.Config.Advanced.CollectorURL)
 
 		err = ctx.MaybeLocationLookup()
 		if err != nil {
 			log.WithError(err).Error("Failed to lookup the location of the probe")
 			return err
 		}
-		network, err := database.CreateNetwork(ctx.DB, ctx.Location)
+		network, err := database.CreateNetwork(ctx.DB, ctx.Session.Location)
 		if err != nil {
 			log.WithError(err).Error("Failed to create the network row")
 			return err
