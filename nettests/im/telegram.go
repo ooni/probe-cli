@@ -1,8 +1,10 @@
 package im
 
 import (
-	"github.com/measurement-kit/go-measurement-kit"
+	"errors"
+
 	"github.com/ooni/probe-cli/nettests"
+	"github.com/ooni/probe-engine/experiment/telegram"
 )
 
 // Telegram test implementation
@@ -11,9 +13,10 @@ type Telegram struct {
 
 // Run starts the test
 func (h Telegram) Run(ctl *nettests.Controller) error {
-	mknt := mk.NewNettest("Telegram")
-	ctl.Init(mknt)
-	return mknt.Run()
+	experiment := telegram.NewExperiment(
+		ctl.Ctx.Session, telegram.Config{},
+	)
+	return ctl.Run(experiment, []string{""})
 }
 
 // TelegramTestKeys for the test
@@ -25,7 +28,12 @@ type TelegramTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (h Telegram) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
+func (h Telegram) GetTestKeys(otk interface{}) (interface{}, error) {
+	tk, ok := otk.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("Unexpected test keys format")
+	}
+
 	var (
 		tcpBlocking  bool
 		httpBlocking bool

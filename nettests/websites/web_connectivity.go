@@ -93,7 +93,12 @@ type WebConnectivityTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (n WebConnectivity) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
+func (n WebConnectivity) GetTestKeys(otk interface{}) (interface{}, error) {
+	tk, ok := otk.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("Unexpected test keys format")
+	}
+
 	var (
 		blocked    bool
 		blocking   string

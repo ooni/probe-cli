@@ -28,7 +28,12 @@ type DashTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (d Dash) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
+func (d Dash) GetTestKeys(otk interface{}) (interface{}, error) {
+	tk, ok := otk.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("Unexpected test keys format")
+	}
+
 	var err error
 
 	testKeys := DashTestKeys{IsAnomaly: false}

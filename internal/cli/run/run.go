@@ -1,6 +1,7 @@
 package run
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -94,6 +95,24 @@ func init() {
 		if err != nil {
 			log.WithError(err).Error("Failed to create the network row")
 			return err
+		}
+		if ctx.Config.Advanced.BouncerURL != "" {
+			ctx.Session.SetAvailableHTTPSBouncer(ctx.Config.Advanced.BouncerURL)
+		}
+		if err := ctx.Session.LookupBackends(context.Background()); err != nil {
+			log.WithError(err).Error("Failed to discover available backends")
+			if ctx.Config.Advanced.CollectorURL == "" ||
+				ctx.Config.Sharing.UploadResults == false {
+				return err
+			}
+			// Fallthrough if we have a configured collector; we may miss test
+			// helpers and thus we'll possibly fail later, but in some cases we
+			// may as well continue and successufully run some nettests.
+			//
+			// Likewise if we are not uploading results as part of testing.
+		}
+		if ctx.Config.Advanced.CollectorURL != "" {
+			ctx.Session.SetAvailableHTTPSBouncer(ctx.Config.Advanced.CollectorURL)
 		}
 
 		if *nettestGroup == "" {

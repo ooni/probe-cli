@@ -9,6 +9,7 @@ import (
 	"github.com/ooni/probe-cli/config"
 	"github.com/ooni/probe-cli/internal/bindata"
 	"github.com/ooni/probe-cli/internal/database"
+	"github.com/ooni/probe-cli/internal/enginex"
 	"github.com/ooni/probe-cli/internal/legacy"
 	"github.com/ooni/probe-cli/internal/onboard"
 	"github.com/ooni/probe-cli/utils"
@@ -20,10 +21,10 @@ import (
 
 // Context for OONI Probe
 type Context struct {
-	Config   *config.Config
-	DB       sqlbuilder.Database
-	IsBatch  bool
-	Session  *session.Session
+	Config  *config.Config
+	DB      sqlbuilder.Database
+	IsBatch bool
+	Session *session.Session
 
 	Home    string
 	TempDir string
@@ -97,8 +98,8 @@ func NewContext(configPath string, homePath string) *Context {
 		Home:       homePath,
 		Config:     &config.Config{},
 		configPath: configPath,
-		Session:    session.New(
-			log.Log,
+		Session: session.New(
+			enginex.LoggerAdapter{Logger: log.Log},
 			"ooniprobe-desktop",
 			version.Version,
 			utils.AssetsDir(homePath),

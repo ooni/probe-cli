@@ -1,6 +1,7 @@
 package nettests
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -17,12 +18,15 @@ import (
 	"github.com/ooni/probe-cli/utils"
 	"github.com/ooni/probe-cli/utils/strcase"
 	"github.com/ooni/probe-cli/version"
+	"github.com/ooni/probe-engine/experiment"
+	"github.com/ooni/probe-engine/experiment/handler"
+	"github.com/pkg/errors"
 )
 
 // Nettest interface. Every Nettest should implement this.
 type Nettest interface {
 	Run(*Controller) error
-	GetTestKeys(map[string]interface{}) (interface{}, error)
+	GetTestKeys(interface{}) (interface{}, error)
 	LogSummary(string) error
 }
 
@@ -68,6 +72,8 @@ func (c *Controller) SetNettestIndex(i, n int) {
 }
 
 // Init should be called once to initialise the nettest
+//
+// This is the codepath for running MK nettests.
 func (c *Controller) Init(nt *mk.Nettest) error {
 	log.Debugf("Init: %v", nt)
 	err := c.Ctx.MaybeLocationLookup()
@@ -273,12 +279,124 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 	return nil
 }
 
+// Run runs the selected nettest using the related experiment
+// with the specified inputs.
+//
+// This function will continue to run in most cases but will
+// immediately halt if something's wrong with the DB.
+//
+// This is the codepath for running ooni/probe-engine nettests.
+func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
+	ctx := context.Background()
+
+	// This will configure the controller as handler for the callbacks
+	// called by ooni/probe-engine/experiment.Experiment.
+	exp.Callbacks = handler.Callbacks(c)
+
+	c.msmts = make(map[int64]*database.Measurement)
+
+	// These values are shared by every measurement
+	reportID := sql.NullString{String: "", Valid: false}
+	resultID := c.res.ID
+
+	log.Debug(color.RedString("status.queued"))
+	log.Debug(color.RedString("status.started"))
+	log.Debugf("OutputPath: %s", c.msmtPath)
+
+	// XXX: double check that we're passing the right options to MK?
+
+	if c.Ctx.Config.Sharing.UploadResults {
+		if err := exp.OpenReport(ctx); err != nil {
+			log.Debugf(
+				"%s: %s", color.RedString("failure.report_create"), err.Error(),
+			)
+		} else {
+			defer exp.CloseReport(ctx)
+			log.Debugf(color.RedString("status.report_create"))
+			reportID = sql.NullString{String: exp.ReportID(), Valid: true}
+		}
+	}
+
+	for idx, input := range inputs {
+		idx64 := int64(idx)
+		log.Debug(color.RedString("status.measurement_start"))
+		urlID := sql.NullInt64{Int64: 0, Valid: false}
+		if c.inputIdxMap != nil {
+			urlID = sql.NullInt64{Int64: c.inputIdxMap[idx64], Valid: true}
+		}
+		msmt, err := database.CreateMeasurement(
+			c.Ctx.DB, reportID, exp.TestName, resultID, c.msmtPath, urlID,
+		)
+		if err != nil {
+			return errors.Wrap(err, "failed to create measurement")
+		}
+		c.msmts[idx64] = msmt
+
+		measurement, err := exp.Measure(ctx, input)
+		if err != nil {
+			log.Debug(color.RedString("failure.measurement"))
+			if err := c.msmts[idx64].Failed(c.Ctx.DB, err.Error()); err != nil {
+				return errors.Wrap(err, "failed to mark measurement as failed")
+			}
+			continue
+		}
+
+		if c.Ctx.Config.Sharing.UploadResults {
+			if err := exp.SubmitMeasurement(ctx, &measurement); err != nil {
+				log.Debug(color.RedString("failure.measurement_submission"))
+				if err := c.msmts[idx64].UploadFailed(c.Ctx.DB, err.Error()); err != nil {
+					return errors.Wrap(err, "failed to mark upload as failed")
+				}
+			} else if err := c.msmts[idx64].UploadSucceeded(c.Ctx.DB); err != nil {
+				return errors.Wrap(err, "failed to mark upload as succeeded")
+			}
+		}
+
+		if err := exp.SaveMeasurement(measurement, c.msmtPath); err != nil {
+			return errors.Wrap(err, "failed to save measurement on disk")
+		}
+		if err := c.msmts[idx64].Done(c.Ctx.DB); err != nil {
+			return errors.Wrap(err, "failed to mark measurement as done")
+		}
+
+		// We're not sure whether it's enough to log the error or we should
+		// instead also mark the measurement as failed. Strictly speaking this
+		// is an inconsistency between the code that generate the measurement
+		// and the code that process the measurement. We do have some data
+		// but we're not gonna have a summary. To be reconsidered.
+		tk, err := c.nt.GetTestKeys(measurement.TestKeys)
+		if err != nil {
+			log.WithError(err).Error("failed to obtain testKeys")
+			continue
+		}
+		log.Debugf("Fetching: %s %v", idx, c.msmts[idx64])
+		if err := database.AddTestKeys(c.Ctx.DB, c.msmts[idx64], tk); err != nil {
+			return errors.Wrap(err, "failed to add test keys to summary")
+		}
+	}
+
+	log.Debugf("status.end")
+	for idx, msmt := range c.msmts {
+		log.Debugf("adding msmt#%d to result", idx)
+		if err := msmt.AddToResult(c.Ctx.DB, c.res); err != nil {
+			return errors.Wrap(err, "failed to add to result")
+		}
+	}
+	return nil
+}
+
 // OnProgress should be called when a new progress event is available.
 func (c *Controller) OnProgress(perc float64, msg string) {
 	log.Debugf("OnProgress: %f - %s", perc, msg)
 
 	key := fmt.Sprintf("%T", c.nt)
 	output.Progress(key, perc, msg)
+}
+
+// OnDataUsage should be called when we have a data usage update.
+func (c *Controller) OnDataUsage(dloadKiB, uploadKiB float64) {
+	c.res.DataUsageDown += dloadKiB
+	c.res.DataUsageUp += uploadKiB
 }
 
 // Entry is an opaque measurement entry

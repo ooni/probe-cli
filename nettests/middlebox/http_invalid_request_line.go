@@ -24,7 +24,12 @@ type HTTPInvalidRequestLineTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (h HTTPInvalidRequestLine) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
+func (h HTTPInvalidRequestLine) GetTestKeys(otk interface{}) (interface{}, error) {
+	tk, ok := otk.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("Unexpected test keys format")
+	}
+
 	testKeys := HTTPInvalidRequestLineTestKeys{IsAnomaly: false}
 
 	tampering, ok := tk["tampering"].(bool)

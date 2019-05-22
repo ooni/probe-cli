@@ -1,8 +1,10 @@
 package im
 
 import (
-	"github.com/measurement-kit/go-measurement-kit"
+	"errors"
+
 	"github.com/ooni/probe-cli/nettests"
+	"github.com/ooni/probe-engine/experiment/whatsapp"
 )
 
 // WhatsApp test implementation
@@ -11,9 +13,10 @@ type WhatsApp struct {
 
 // Run starts the test
 func (h WhatsApp) Run(ctl *nettests.Controller) error {
-	mknt := mk.NewNettest("Whatsapp")
-	ctl.Init(mknt)
-	return mknt.Run()
+	experiment := whatsapp.NewExperiment(
+		ctl.Ctx.Session, whatsapp.Config{},
+	)
+	return ctl.Run(experiment, []string{""})
 }
 
 // WhatsAppTestKeys for the test
@@ -25,7 +28,12 @@ type WhatsAppTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (h WhatsApp) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
+func (h WhatsApp) GetTestKeys(otk interface{}) (interface{}, error) {
+	tk, ok := otk.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("Unexpected test keys format")
+	}
+
 	var (
 		webBlocking          bool
 		registrationBlocking bool

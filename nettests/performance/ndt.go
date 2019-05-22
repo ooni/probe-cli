@@ -33,7 +33,12 @@ type NDTTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (n NDT) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
+func (n NDT) GetTestKeys(otk interface{}) (interface{}, error) {
+	tk, ok := otk.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("Unexpected test keys format")
+	}
+
 	var err error
 	testKeys := NDTTestKeys{IsAnomaly: false}
 

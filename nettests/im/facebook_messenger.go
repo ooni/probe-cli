@@ -1,8 +1,10 @@
 package im
 
 import (
-	"github.com/measurement-kit/go-measurement-kit"
+	"errors"
+
 	"github.com/ooni/probe-cli/nettests"
+	"github.com/ooni/probe-engine/experiment/fbmessenger"
 )
 
 // FacebookMessenger test implementation
@@ -11,9 +13,10 @@ type FacebookMessenger struct {
 
 // Run starts the test
 func (h FacebookMessenger) Run(ctl *nettests.Controller) error {
-	mknt := mk.NewNettest("FacebookMessenger")
-	ctl.Init(mknt)
-	return mknt.Run()
+	experiment := fbmessenger.NewExperiment(
+		ctl.Ctx.Session, fbmessenger.Config{},
+	)
+	return ctl.Run(experiment, []string{""})
 }
 
 // FacebookMessengerTestKeys for the test
@@ -24,7 +27,12 @@ type FacebookMessengerTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (h FacebookMessenger) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
+func (h FacebookMessenger) GetTestKeys(otk interface{}) (interface{}, error) {
+	tk, ok := otk.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("Unexpected test keys format")
+	}
+
 	var (
 		dnsBlocking bool
 		tcpBlocking bool
