@@ -101,15 +101,18 @@ func init() {
 		}
 		if err := ctx.Session.LookupBackends(context.Background()); err != nil {
 			log.WithError(err).Error("Failed to discover available backends")
-			if ctx.Config.Advanced.CollectorURL == "" ||
-				ctx.Config.Sharing.UploadResults == false {
-				return err
-			}
 			// Fallthrough if we have a configured collector; we may miss test
 			// helpers and thus we'll possibly fail later, but in some cases we
 			// may as well continue and successufully run some nettests.
-			//
-			// Likewise if we are not uploading results as part of testing.
+			if ctx.Config.Advanced.CollectorURL == "" {
+				return err
+			}
+			// Likewise fallthrough if we're not uploading results because in
+			// such case we don't need a collector and several tests will work
+			// even if we don't have test helpers.
+			if ctx.Config.Sharing.UploadResults == true {
+				return err
+			}
 		}
 		if ctx.Config.Advanced.CollectorURL != "" {
 			ctx.Session.SetAvailableHTTPSBouncer(ctx.Config.Advanced.CollectorURL)
