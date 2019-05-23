@@ -423,7 +423,7 @@ func (c *Controller) OnEntry(idx int64, jsonStr string) {
 		log.WithError(err).Error("failed to obtain testKeys")
 	}
 
-	log.Debugf("Fetching: %s %v", idx, c.msmts[idx])
+	log.Debugf("Fetching: %d %v", idx, c.msmts[idx])
 	err = database.AddTestKeys(c.Ctx.DB, c.msmts[idx], tk)
 	if err != nil {
 		log.WithError(err).Error("failed to add test keys to summary")
