@@ -342,6 +342,9 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 		}
 
 		if c.Ctx.Config.Sharing.UploadResults {
+			// Implementation note: SubmitMeasurement will fail here if we did fail
+			// to open the report but we still want to continue. There will be a
+			// bit of a spew in the logs, perhaps, but stopping seems less efficient.
 			if err := exp.SubmitMeasurement(ctx, &measurement); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))
 				if err := c.msmts[idx64].UploadFailed(c.Ctx.DB, err.Error()); err != nil {
@@ -369,7 +372,7 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 			log.WithError(err).Error("failed to obtain testKeys")
 			continue
 		}
-		log.Debugf("Fetching: %s %v", idx, c.msmts[idx64])
+		log.Debugf("Fetching: %d %v", idx, c.msmts[idx64])
 		if err := database.AddTestKeys(c.Ctx.DB, c.msmts[idx64], tk); err != nil {
 			return errors.Wrap(err, "failed to add test keys to summary")
 		}
