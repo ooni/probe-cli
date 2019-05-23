@@ -1,9 +1,9 @@
 package ooni
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
-	"path"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/config"
@@ -12,18 +12,18 @@ import (
 	"github.com/ooni/probe-cli/internal/legacy"
 	"github.com/ooni/probe-cli/internal/onboard"
 	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/version"
+	"github.com/ooni/probe-engine/session"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
-
-const Version = "3.0.0-beta.3"
 
 // Context for OONI Probe
 type Context struct {
 	Config   *config.Config
 	DB       sqlbuilder.Database
-	Location *utils.LocationInfo
 	IsBatch  bool
+	Session  *session.Session
 
 	Home    string
 	TempDir string
@@ -34,27 +34,7 @@ type Context struct {
 
 // MaybeLocationLookup will lookup the location of the user unless it's already cached
 func (c *Context) MaybeLocationLookup() error {
-	if c.Location == nil {
-		return c.LocationLookup()
-	}
-	return nil
-}
-
-// LocationLookup lookup the location of the user via geoip
-func (c *Context) LocationLookup() error {
-	var err error
-
-	if err = c.MaybeDownloadDataFiles(); err != nil {
-		log.WithError(err).Error("failed to download data files")
-	}
-
-	geoipDir := utils.GeoIPDir(c.Home)
-	c.Location, err = utils.GeoIPLookup(geoipDir)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.Session.LookupLocation(context.Background())
 }
 
 // MaybeOnboarding will run the onboarding process only if the informed consent
@@ -66,18 +46,6 @@ func (c *Context) MaybeOnboarding() error {
 		}
 		if err := onboard.Onboarding(c.Config); err != nil {
 			return errors.Wrap(err, "onboarding")
-		}
-	}
-	return nil
-}
-
-// MaybeDownloadDataFiles will download geoip data files if they are not present
-func (c *Context) MaybeDownloadDataFiles() error {
-	geoipDir := utils.GeoIPDir(c.Home)
-	if _, err := os.Stat(path.Join(geoipDir, "GeoLite2-Country.mmdb")); os.IsNotExist(err) {
-		log.Debugf("Downloading GeoIP database files")
-		if err := utils.DownloadGeoIPDatabaseFiles(geoipDir); err != nil {
-			return err
 		}
 	}
 	return nil
@@ -123,12 +91,18 @@ func (c *Context) Init() error {
 	return nil
 }
 
-// NewContext instance.
+// NewContext creates a new context instance.
 func NewContext(configPath string, homePath string) *Context {
 	return &Context{
 		Home:       homePath,
 		Config:     &config.Config{},
 		configPath: configPath,
+		Session:    session.New(
+			log.Log,
+			"ooniprobe-desktop",
+			version.Version,
+			utils.AssetsDir(homePath),
+		),
 	}
 }
 

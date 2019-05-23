@@ -16,13 +16,11 @@ require (
 	github.com/mattn/go-colorable v0.0.9
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
-	github.com/measurement-kit/go-measurement-kit v0.0.0-20190509222408-0d0cd3233336
-	github.com/oschwald/geoip2-golang v1.2.1
-	github.com/oschwald/maxminddb-golang v1.3.0 // indirect
+	github.com/measurement-kit/go-measurement-kit v0.0.0-20190521082856-635e836bbb9d
+	github.com/ooni/probe-engine v0.0.0-20190522105151-0c60545f09ea
 	github.com/pkg/errors v0.8.1
 	github.com/rubenv/sql-migrate v0.0.0-20190327083759-54bad0a9b051
 	github.com/ziutek/mymysql v1.5.4 // indirect
-	golang.org/x/sys v0.0.0-20190509141414-a5b02f93d862 // indirect
 	google.golang.org/appengine v1.5.0 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.4
 	gopkg.in/gorp.v1 v1.7.2 // indirect

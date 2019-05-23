@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-engine/model"
 	"github.com/ooni/probe-cli/utils"
 	"github.com/pkg/errors"
 	db "upper.io/db.v3"
@@ -193,14 +194,14 @@ func CreateResult(sess sqlbuilder.Database, homePath string, testGroupName strin
 }
 
 // CreateNetwork will create a new network in the network table
-func CreateNetwork(sess sqlbuilder.Database, location *utils.LocationInfo) (*Network, error) {
+func CreateNetwork(sess sqlbuilder.Database, location *model.LocationInfo) (*Network, error) {
 	network := Network{
 		ASN:         location.ASN,
 		CountryCode: location.CountryCode,
 		NetworkName: location.NetworkName,
 		// On desktop we consider it to always be wifi
 		NetworkType: "wifi",
-		IP:          location.IP,
+		IP:          location.ProbeIP,
 	}
 	newID, err := sess.Collection("networks").Insert(network)
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 // RequiredDirs returns the required ooni home directories
 func RequiredDirs(home string) []string {
 	requiredDirs := []string{}
-	requiredSubdirs := []string{"db", "msmts", "geoip"}
+	requiredSubdirs := []string{"assets", "db", "msmts"}
 	for _, d := range requiredSubdirs {
 		requiredDirs = append(requiredDirs, filepath.Join(home, d))
 	}
@@ -25,9 +25,9 @@ func ConfigPath(home string) string {
 	return filepath.Join(home, "config.json")
 }
 
-// GeoIPDir returns the geoip data dir for the given OONI Home
-func GeoIPDir(home string) string {
-	return filepath.Join(home, "geoip")
+// AssetsDir returns the assets data dir for the given OONI Home
+func AssetsDir(home string) string {
+	return filepath.Join(home, "assets")
 }
 
 // DBDir returns the database dir for the given name

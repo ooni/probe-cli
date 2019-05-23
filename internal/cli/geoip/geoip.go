@@ -1,19 +1,14 @@
 package geoip
 
 import (
-	"fmt"
-
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/cli/root"
 	"github.com/ooni/probe-cli/internal/output"
-	"github.com/ooni/probe-cli/utils"
 )
 
 func init() {
 	cmd := root.Command("geoip", "Perform a geoip lookup")
-
-	shouldUpdate := cmd.Flag("update", "Update the geoip database").Bool()
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		output.SectionTitle("GeoIP lookup")
@@ -22,26 +17,17 @@ func init() {
 			return err
 		}
 
-		if err = ctx.MaybeDownloadDataFiles(); err != nil {
-			log.WithError(err).Error("failed to download data files")
-		}
-
-		geoipPath := utils.GeoIPDir(ctx.Home)
-		if *shouldUpdate {
-			utils.DownloadGeoIPDatabaseFiles(geoipPath)
-		}
-
-		loc, err := utils.GeoIPLookup(geoipPath)
+		err = ctx.MaybeLocationLookup()
 		if err != nil {
 			return err
 		}
 
 		log.WithFields(log.Fields{
 			"type":         "table",
-			"asn":          fmt.Sprintf("AS%d", loc.ASN),
-			"network_name": loc.NetworkName,
-			"country_code": loc.CountryCode,
-			"ip":           loc.IP,
+			"asn":          ctx.Session.ProbeASNString(),
+			"network_name": ctx.Session.ProbeNetworkName(),
+			"country_code": ctx.Session.ProbeCC(),
+			"ip":           ctx.Session.ProbeIP(),
 		}).Info("Looked up your location")
 
 		return nil
