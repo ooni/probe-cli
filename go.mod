@@ -16,7 +16,6 @@ require (
 	github.com/mattn/go-colorable v0.0.9
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
-	github.com/measurement-kit/engine v0.0.0-20190516143312-a38282337fe6 // indirect
 	github.com/measurement-kit/go-measurement-kit v0.0.0-20190521082856-635e836bbb9d
 	github.com/ooni/probe-engine v0.0.0-20190522105151-0c60545f09ea
 	github.com/pkg/errors v0.8.1

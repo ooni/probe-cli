@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-engine/model"
 	db "upper.io/db.v3"
 )
 
@@ -29,7 +29,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	location := utils.LocationInfo{
+	location := model.LocationInfo{
 		ASN:         0,
 		CountryCode: "IT",
 		NetworkName: "Unknown",
@@ -103,7 +103,7 @@ func TestDeleteResult(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	location := utils.LocationInfo{
+	location := model.LocationInfo{
 		ASN:         0,
 		CountryCode: "IT",
 		NetworkName: "Unknown",
@@ -175,13 +175,13 @@ func TestNetworkCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	l1 := utils.LocationInfo{
+	l1 := model.LocationInfo{
 		ASN:         2,
 		CountryCode: "IT",
 		NetworkName: "Antaninet",
 	}
 
-	l2 := utils.LocationInfo{
+	l2 := model.LocationInfo{
 		ASN:         3,
 		CountryCode: "IT",
 		NetworkName: "Fufnet",
