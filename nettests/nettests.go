@@ -303,7 +303,9 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 	log.Debug(color.RedString("status.started"))
 	log.Debugf("OutputPath: %s", c.msmtPath)
 
-	// XXX: double check that we're passing the right options to MK?
+	// TODO(bassosimone): double check that we're passing the right options
+	// to MK? We may be passing less option than needed currently, even though
+	// the code works for the common configuration.
 
 	if c.Ctx.Config.Sharing.UploadResults {
 		if err := exp.OpenReport(ctx); err != nil {
