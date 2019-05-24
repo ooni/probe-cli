@@ -35,7 +35,7 @@ type Context struct {
 
 // MaybeLocationLookup will lookup the location of the user unless it's already cached
 func (c *Context) MaybeLocationLookup() error {
-	return c.Session.LookupLocation(context.Background())
+	return c.Session.MaybeLookupLocation(context.Background())
 }
 
 // MaybeOnboarding will run the onboarding process only if the informed consent
@@ -103,6 +103,8 @@ func NewContext(configPath string, homePath string) *Context {
 			"ooniprobe-desktop",
 			version.Version,
 			utils.AssetsDir(homePath),
+			nil, // explicit proxy url.URL
+			nil, // explicit tls.Config
 		),
 	}
 }
