@@ -101,7 +101,7 @@ func init() {
 		}
 		if ctx.Config.Sharing.UploadResults {
 			if ctx.Config.Advanced.CollectorURL != "" {
-				ctx.Session.SetAvailableHTTPSBouncer(ctx.Config.Advanced.CollectorURL)
+				ctx.Session.SetAvailableHTTPSCollector(ctx.Config.Advanced.CollectorURL)
 			} else if err := ctx.Session.MaybeLookupCollectors(context.Background()); err != nil {
 				log.WithError(err).Error("Failed to discover available collectors")
 				return err
