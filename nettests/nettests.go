@@ -283,7 +283,7 @@ func (c *Controller) Init(nt *mk.Nettest) error {
 // with the specified inputs.
 //
 // This function will continue to run in most cases but will
-// immediately halt if something's wrong with the DB.
+// immediately halt if something's wrong with the file system.
 //
 // This is the codepath for running ooni/probe-engine nettests.
 func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
