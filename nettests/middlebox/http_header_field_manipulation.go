@@ -24,12 +24,7 @@ type HTTPHeaderFieldManipulationTestKeys struct {
 }
 
 // GetTestKeys returns a projection of the tests keys needed for the views
-func (h HTTPHeaderFieldManipulation) GetTestKeys(otk interface{}) (interface{}, error) {
-	tk, ok := otk.(map[string]interface{})
-	if !ok {
-		return nil, errors.New("Unexpected test keys format")
-	}
-
+func (h HTTPHeaderFieldManipulation) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
 	testKeys := HTTPHeaderFieldManipulationTestKeys{IsAnomaly: false}
 	tampering, ok := tk["tampering"].(map[string]interface{})
 	if !ok {

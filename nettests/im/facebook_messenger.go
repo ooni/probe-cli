@@ -1,8 +1,6 @@
 package im
 
 import (
-	"errors"
-
 	"github.com/ooni/probe-cli/nettests"
 	"github.com/ooni/probe-engine/experiment/fbmessenger"
 )
@@ -27,12 +25,7 @@ type FacebookMessengerTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (h FacebookMessenger) GetTestKeys(otk interface{}) (interface{}, error) {
-	tk, ok := otk.(map[string]interface{})
-	if !ok {
-		return nil, errors.New("Unexpected test keys format")
-	}
-
+func (h FacebookMessenger) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
 	var (
 		dnsBlocking bool
 		tcpBlocking bool

@@ -1,8 +1,6 @@
 package im
 
 import (
-	"errors"
-
 	"github.com/ooni/probe-cli/nettests"
 	"github.com/ooni/probe-engine/experiment/whatsapp"
 )
@@ -28,12 +26,7 @@ type WhatsAppTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (h WhatsApp) GetTestKeys(otk interface{}) (interface{}, error) {
-	tk, ok := otk.(map[string]interface{})
-	if !ok {
-		return nil, errors.New("Unexpected test keys format")
-	}
-
+func (h WhatsApp) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
 	var (
 		webBlocking          bool
 		registrationBlocking bool

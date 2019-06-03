@@ -14,6 +14,7 @@ import (
 	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/crashreport"
 	"github.com/ooni/probe-cli/internal/database"
+	"github.com/ooni/probe-cli/internal/enginex"
 	"github.com/ooni/probe-cli/internal/output"
 	"github.com/ooni/probe-cli/utils"
 	"github.com/ooni/probe-cli/utils/strcase"
@@ -26,7 +27,7 @@ import (
 // Nettest interface. Every Nettest should implement this.
 type Nettest interface {
 	Run(*Controller) error
-	GetTestKeys(interface{}) (interface{}, error)
+	GetTestKeys(map[string]interface{}) (interface{}, error)
 	LogSummary(string) error
 }
 
@@ -369,7 +370,12 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 		// is an inconsistency between the code that generate the measurement
 		// and the code that process the measurement. We do have some data
 		// but we're not gonna have a summary. To be reconsidered.
-		tk, err := c.nt.GetTestKeys(measurement.TestKeys)
+		genericTk, err := enginex.MakeGenericTestKeys(measurement)
+		if err != nil {
+			log.WithError(err).Error("failed to cast the test keys")
+			continue
+		}
+		tk, err := c.nt.GetTestKeys(genericTk)
 		if err != nil {
 			log.WithError(err).Error("failed to obtain testKeys")
 			continue

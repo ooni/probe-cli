@@ -1,8 +1,6 @@
 package im
 
 import (
-	"errors"
-
 	"github.com/ooni/probe-cli/nettests"
 	"github.com/ooni/probe-engine/experiment/telegram"
 )
@@ -28,12 +26,7 @@ type TelegramTestKeys struct {
 }
 
 // GetTestKeys generates a summary for a test run
-func (h Telegram) GetTestKeys(otk interface{}) (interface{}, error) {
-	tk, ok := otk.(map[string]interface{})
-	if !ok {
-		return nil, errors.New("Unexpected test keys format")
-	}
-
+func (h Telegram) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
 	var (
 		tcpBlocking  bool
 		httpBlocking bool
