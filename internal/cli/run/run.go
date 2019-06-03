@@ -99,6 +99,11 @@ func init() {
 		if ctx.Config.Advanced.BouncerURL != "" {
 			ctx.Session.SetAvailableHTTPSBouncer(ctx.Config.Advanced.BouncerURL)
 		}
+		if err := ctx.Session.MaybeLookupBackends(context.Background()); err != nil {
+			log.WithError(err).Warn("Failed to discover available test helpers")
+			// Rationale for falling through: some tests may be able to complete
+			// with no test helpers, so stopping may be excessive here.
+		}
 		if ctx.Config.Sharing.UploadResults {
 			if ctx.Config.Advanced.CollectorURL != "" {
 				ctx.Session.SetAvailableHTTPSCollector(ctx.Config.Advanced.CollectorURL)

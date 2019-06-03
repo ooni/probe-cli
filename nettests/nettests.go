@@ -337,7 +337,7 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 
 		measurement, err := exp.Measure(ctx, input)
 		if err != nil {
-			log.Debug(color.RedString("failure.measurement"))
+			log.WithError(err).Debug(color.RedString("failure.measurement"))
 			if err := c.msmts[idx64].Failed(c.Ctx.DB, err.Error()); err != nil {
 				return errors.Wrap(err, "failed to mark measurement as failed")
 			}
