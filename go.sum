@@ -102,7 +102,7 @@ github.com/lucas-clemente/aes12 v0.0.0-20171027163421-cd47fb39b79f/go.mod h1:JpH
 github.com/lucas-clemente/quic-clients v0.1.0/go.mod h1:y5xVIEoObKqULIKivu+gD/LU90pL73bTdtQjPBvtCBk=
 github.com/lucas-clemente/quic-go v0.10.2/go.mod h1:hvaRS9IHjFLMq76puFJeWNfmn+H70QZ/CXoxqw9bzao=
 github.com/lucas-clemente/quic-go-certificates v0.0.0-20160823095156-d2f86524cced/go.mod h1:NCcRLrOTZbzhZvixZLlERbJtDtYsmMw8Jc4vS8Z0g58=
-github.com/m-lab/ndt7-client-go v0.0.0-20190516113520-f8aec6e1ef2e/go.mod h1:nD9WTkxP4/mV2ph5uUpVPD2ZOJdZ9QKPTKu3tJGkM9o=
+github.com/m-lab/ndt7-client-go v0.0.0-20190529150833-0f066cf3ab8a/go.mod h1:nD9WTkxP4/mV2ph5uUpVPD2ZOJdZ9QKPTKu3tJGkM9o=
 github.com/markbates/oncer v0.0.0-20181203154359-bf2de49a0be2/go.mod h1:Ld9puTsIW75CHf65OeIOkyKbteujpZVXDpWK6YGZbxE=
 github.com/markbates/safe v1.0.1/go.mod h1:nAqgmRi7cY2nqMc92/bSEeQA+R4OheNU2T1kNSCBdG0=
 github.com/marten-seemann/qtls v0.2.3/go.mod h1:xzjG7avBwGGbdZ8dTGxlBnLArsVKLvwmjgmPuiQEcYk=
@@ -122,8 +122,8 @@ github.com/miekg/dns v1.1.12/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3N
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.8.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
-github.com/ooni/probe-engine v0.0.0-20190524123849-cbb0a491705e h1:sbd2PAJbbmJhg7npgbOtStkKqtdsQ2WroNI7KoKnPMw=
-github.com/ooni/probe-engine v0.0.0-20190524123849-cbb0a491705e/go.mod h1:8DEbYcGXL+ALZcBxAQwXPzsK2UQ/IThJTi5/PReze5Y=
+github.com/ooni/probe-engine v0.0.0-20190603172057-b0fd3230849a h1:pJ/PXPkLMkn0UqBLQpitSrAwjxxPOAsNupa0vLBfbUs=
+github.com/ooni/probe-engine v0.0.0-20190603172057-b0fd3230849a/go.mod h1:A6rE7/l6Gm6M4uCoZmHvgS+JdSmwebgJvYYwlcEg5Eo=
 github.com/oschwald/geoip2-golang v1.3.0 h1:D+Hsdos1NARPbzZ2aInUHZL+dApIzo8E0ErJVsWcku8=
 github.com/oschwald/geoip2-golang v1.3.0/go.mod h1:0LTTzix/Ao1uMvOhAV4iLU0Lz7eCrP94qZWBTDKf0iE=
 github.com/oschwald/maxminddb-golang v1.3.0 h1:oTh8IBSj10S5JNlUDg5WjJ1QdBMdeaZIkPEVfESSWgE=

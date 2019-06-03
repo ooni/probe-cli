@@ -17,7 +17,7 @@ require (
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/measurement-kit/go-measurement-kit v0.0.0-20190521082856-635e836bbb9d
-	github.com/ooni/probe-engine v0.0.0-20190524123849-cbb0a491705e
+	github.com/ooni/probe-engine v0.0.0-20190603172057-b0fd3230849a
 	github.com/pkg/errors v0.8.1
 	github.com/rubenv/sql-migrate v0.0.0-20190327083759-54bad0a9b051
 	github.com/ziutek/mymysql v1.5.4 // indirect
