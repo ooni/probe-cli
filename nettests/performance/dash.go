@@ -3,8 +3,8 @@ package performance
 import (
 	"github.com/pkg/errors"
 
-	"github.com/measurement-kit/go-measurement-kit"
 	"github.com/ooni/probe-cli/nettests"
+	"github.com/ooni/probe-engine/experiment/dash"
 )
 
 // Dash test implementation
@@ -13,9 +13,10 @@ type Dash struct {
 
 // Run starts the test
 func (d Dash) Run(ctl *nettests.Controller) error {
-	dash := mk.NewNettest("Dash")
-	ctl.Init(dash)
-	return dash.Run()
+	experiment := dash.NewExperiment(
+		ctl.Ctx.Session, dash.Config{},
+	)
+	return ctl.Run(experiment, []string{""})
 }
 
 // DashTestKeys for the test
