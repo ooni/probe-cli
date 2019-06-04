@@ -297,7 +297,7 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 	c.msmts = make(map[int64]*database.Measurement)
 
 	// These values are shared by every measurement
-	reportID := sql.NullString{String: "", Valid: false}
+	var reportID sql.NullString
 	resultID := c.res.ID
 
 	log.Debug(color.RedString("status.queued"))
