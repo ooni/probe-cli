@@ -16,7 +16,7 @@ require (
 	github.com/mattn/go-colorable v0.0.9
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
-	github.com/ooni/probe-engine v0.0.0-20190604105503-5a9383784947
+	github.com/ooni/probe-engine v0.0.0-20190604110740-9bd31ae52f30
 	github.com/pkg/errors v0.8.1
 	github.com/rubenv/sql-migrate v0.0.0-20190327083759-54bad0a9b051
 	github.com/ziutek/mymysql v1.5.4 // indirect
