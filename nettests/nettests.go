@@ -16,6 +16,7 @@ import (
 	"github.com/ooni/probe-cli/utils"
 	"github.com/ooni/probe-engine/experiment"
 	"github.com/ooni/probe-engine/experiment/handler"
+	"github.com/ooni/probe-engine/model"
 	"github.com/pkg/errors"
 )
 
@@ -96,10 +97,6 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 	log.Debug(color.RedString("status.started"))
 	log.Debugf("OutputPath: %s", c.msmtPath)
 
-	// TODO(bassosimone): double check that we're passing the right options
-	// to MK? We may be passing less option than needed currently, even though
-	// the code works for the common configuration.
-
 	if c.Ctx.Config.Sharing.UploadResults {
 		if err := exp.OpenReport(ctx); err != nil {
 			log.Debugf(
@@ -116,7 +113,7 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 		c.curInputIdx = idx // allow for precise progress
 		idx64 := int64(idx)
 		log.Debug(color.RedString("status.measurement_start"))
-		urlID := sql.NullInt64{Int64: 0, Valid: false}
+		var urlID sql.NullInt64
 		if c.inputIdxMap != nil {
 			urlID = sql.NullInt64{Int64: c.inputIdxMap[idx64], Valid: true}
 		}
@@ -135,6 +132,17 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 				return errors.Wrap(err, "failed to mark measurement as failed")
 			}
 			continue
+		}
+
+		// Make sure we share what the user wants us to share.
+		if c.Ctx.Config.Sharing.IncludeIP == false {
+			measurement.ProbeIP = model.DefaultProbeIP
+		}
+		if c.Ctx.Config.Sharing.IncludeASN == false {
+			measurement.ProbeASN = fmt.Sprintf("AS%d", model.DefaultProbeASN)
+		}
+		if c.Ctx.Config.Sharing.IncludeCountry == false {
+			measurement.ProbeCC = model.DefaultProbeCC
 		}
 
 		if c.Ctx.Config.Sharing.UploadResults {
