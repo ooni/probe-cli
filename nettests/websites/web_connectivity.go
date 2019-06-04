@@ -1,63 +1,32 @@
 package websites
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
+	"context"
 
 	"github.com/apex/log"
-	"github.com/measurement-kit/go-measurement-kit"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
-	"github.com/pkg/errors"
+	"github.com/ooni/probe-engine/experiment/web_connectivity"
+	"github.com/ooni/probe-engine/orchestra/testlists"
 )
 
-// URLInfo contains the URL and the citizenlab category code for that URL
-type URLInfo struct {
-	URL          string `json:"url"`
-	CountryCode  string `json:"country_code"`
-	CategoryCode string `json:"category_code"`
-}
-
-// URLResponse is the orchestrate url response containing a list of URLs
-type URLResponse struct {
-	Results []URLInfo `json:"results"`
-}
-
-const orchestrateBaseURL = "https://events.proteus.test.ooni.io"
-
 func lookupURLs(ctl *nettests.Controller) ([]string, map[int64]int64, error) {
-	var (
-		parsed = new(URLResponse)
-		urls   []string
-	)
+	var urls []string
 	urlIDMap := make(map[int64]int64)
-	log.Debug("Looking up URLs")
-	// XXX pass in the configuration for category codes
-	reqURL := fmt.Sprintf("%s/api/v1/urls?probe_cc=%s",
-		orchestrateBaseURL,
-		ctl.Ctx.Session.ProbeCC())
-
-	resp, err := http.Get(reqURL)
+	testlist, err := testlists.NewClient(ctl.Ctx.Session).Do(
+		context.Background(), ctl.Ctx.Session.ProbeCC(),
+	)
 	if err != nil {
-		return urls, urlIDMap, errors.Wrap(err, "failed to perform request")
+		return nil, nil, err
 	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return urls, urlIDMap, errors.Wrap(err, "failed to read response body")
-	}
-	err = json.Unmarshal([]byte(body), &parsed)
-	if err != nil {
-		return urls, urlIDMap, errors.Wrap(err, "failed to parse json")
-	}
-
-	for idx, url := range parsed.Results {
+	for idx, url := range testlist {
 		log.Debugf("Going over URL %d", idx)
-		urlID, err := database.CreateOrUpdateURL(ctl.Ctx.DB, url.URL, url.CategoryCode, url.CountryCode)
+		urlID, err := database.CreateOrUpdateURL(
+			ctl.Ctx.DB, url.URL, url.CategoryCode, url.CountryCode,
+		)
 		if err != nil {
 			log.Error("failed to add to the URL table")
+			return nil, nil, err
 		}
 		log.Debugf("Mapped URL %s to idx %d and urlID %d", url.URL, idx, urlID)
 		urlIDMap[int64(idx)] = urlID
@@ -72,17 +41,16 @@ type WebConnectivity struct {
 
 // Run starts the test
 func (n WebConnectivity) Run(ctl *nettests.Controller) error {
-	nt := mk.NewNettest("WebConnectivity")
-	ctl.Init(nt)
-
 	urls, urlIDMap, err := lookupURLs(ctl)
 	if err != nil {
 		return err
 	}
 	ctl.SetInputIdxMap(urlIDMap)
-	nt.Options.Inputs = urls
-
-	return nt.Run()
+	experiment := web_connectivity.NewExperiment(
+		ctl.Ctx.Session,
+		web_connectivity.Config{},
+	)
+	return ctl.Run(experiment, urls)
 }
 
 // WebConnectivityTestKeys for the test
