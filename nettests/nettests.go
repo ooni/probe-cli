@@ -437,11 +437,3 @@ func (c *Controller) OnEntry(idx int64, jsonStr string) {
 		log.WithError(err).Error("failed to add test keys to summary")
 	}
 }
-
-// MKStart is the interface for the mk.Nettest Start() function
-type MKStart func(name string) (chan bool, error)
-
-// Start should be called to start the test
-func (c *Controller) Start(f MKStart) {
-	log.Debugf("MKStart: %s", f)
-}
