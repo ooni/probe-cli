@@ -50,6 +50,12 @@ type Controller struct {
 	msmts       map[int64]*database.Measurement
 	msmtPath    string          // XXX maybe we can drop this and just use a temporary file
 	inputIdxMap map[int64]int64 // Used to map mk idx to database id
+
+	// numInputs is the total number of inputs
+	numInputs int
+
+	// curInputIdx is the current input index
+	curInputIdx int
 }
 
 // SetInputIdxMap is used to set the mapping of index into input. This mapping
@@ -78,6 +84,7 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 	// This will configure the controller as handler for the callbacks
 	// called by ooni/probe-engine/experiment.Experiment.
 	exp.Callbacks = handler.Callbacks(c)
+	c.numInputs = len(inputs)
 
 	c.msmts = make(map[int64]*database.Measurement)
 
@@ -106,6 +113,7 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 	}
 
 	for idx, input := range inputs {
+		c.curInputIdx = idx // allow for precise progress
 		idx64 := int64(idx)
 		log.Debug(color.RedString("status.measurement_start"))
 		urlID := sql.NullInt64{Int64: 0, Valid: false}
@@ -184,7 +192,14 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 // OnProgress should be called when a new progress event is available.
 func (c *Controller) OnProgress(perc float64, msg string) {
 	log.Debugf("OnProgress: %f - %s", perc, msg)
+	if c.numInputs >= 1 {
+		// make the percentage relative to the current input over all inputs
+		floor := (float64(c.curInputIdx) / float64(c.numInputs))
+		step := 1.0 / float64(c.numInputs)
+		perc = floor + perc * step
+	}
 	if c.ntCount > 0 {
+		// make the percentage relative to the current nettest over all nettests
 		perc = float64(c.ntIndex)/float64(c.ntCount) + perc/float64(c.ntCount)
 	}
 	key := fmt.Sprintf("%T", c.nt)

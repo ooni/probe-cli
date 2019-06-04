@@ -48,7 +48,7 @@ func (n WebConnectivity) Run(ctl *nettests.Controller) error {
 	ctl.SetInputIdxMap(urlIDMap)
 	experiment := web_connectivity.NewExperiment(
 		ctl.Ctx.Session,
-		web_connectivity.Config{},
+		web_connectivity.Config{LogLevel: "INFO"},
 	)
 	return ctl.Run(experiment, urls)
 }
