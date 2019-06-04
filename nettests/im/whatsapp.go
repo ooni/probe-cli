@@ -11,9 +11,9 @@ type WhatsApp struct {
 
 // Run starts the test
 func (h WhatsApp) Run(ctl *nettests.Controller) error {
-	experiment := whatsapp.NewExperiment(
-		ctl.Ctx.Session, whatsapp.Config{},
-	)
+	experiment := whatsapp.NewExperiment(ctl.Ctx.Session, whatsapp.Config{
+		LogLevel: "INFO",
+	})
 	return ctl.Run(experiment, []string{""})
 }
 

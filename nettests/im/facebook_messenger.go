@@ -11,9 +11,9 @@ type FacebookMessenger struct {
 
 // Run starts the test
 func (h FacebookMessenger) Run(ctl *nettests.Controller) error {
-	experiment := fbmessenger.NewExperiment(
-		ctl.Ctx.Session, fbmessenger.Config{},
-	)
+	experiment := fbmessenger.NewExperiment(ctl.Ctx.Session, fbmessenger.Config{
+		LogLevel: "INFO",
+	})
 	return ctl.Run(experiment, []string{""})
 }
 

@@ -13,9 +13,9 @@ type HTTPInvalidRequestLine struct {
 
 // Run starts the test
 func (h HTTPInvalidRequestLine) Run(ctl *nettests.Controller) error {
-	experiment := hirl.NewExperiment(
-		ctl.Ctx.Session, hirl.Config{},
-	)
+	experiment := hirl.NewExperiment(ctl.Ctx.Session, hirl.Config{
+		LogLevel: "INFO",
+	})
 	return ctl.Run(experiment, []string{""})
 }
 

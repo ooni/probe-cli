@@ -11,9 +11,9 @@ type Telegram struct {
 
 // Run starts the test
 func (h Telegram) Run(ctl *nettests.Controller) error {
-	experiment := telegram.NewExperiment(
-		ctl.Ctx.Session, telegram.Config{},
-	)
+	experiment := telegram.NewExperiment(ctl.Ctx.Session, telegram.Config{
+		LogLevel: "INFO",
+	})
 	return ctl.Run(experiment, []string{""})
 }
 

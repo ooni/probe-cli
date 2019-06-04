@@ -13,11 +13,9 @@ type HTTPHeaderFieldManipulation struct {
 
 // Run starts the test
 func (h HTTPHeaderFieldManipulation) Run(ctl *nettests.Controller) error {
-	experiment := hhfm.NewExperiment(
-		ctl.Ctx.Session, hhfm.Config{
-			LogLevel: "DEBUG",
-		},
-	)
+	experiment := hhfm.NewExperiment(ctl.Ctx.Session, hhfm.Config{
+		LogLevel: "INFO",
+	})
 	return ctl.Run(experiment, []string{""})
 }
 
