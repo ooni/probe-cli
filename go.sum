@@ -122,8 +122,8 @@ github.com/miekg/dns v1.1.12/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3N
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.8.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
-github.com/ooni/probe-engine v0.0.0-20190603172057-b0fd3230849a h1:pJ/PXPkLMkn0UqBLQpitSrAwjxxPOAsNupa0vLBfbUs=
-github.com/ooni/probe-engine v0.0.0-20190603172057-b0fd3230849a/go.mod h1:A6rE7/l6Gm6M4uCoZmHvgS+JdSmwebgJvYYwlcEg5Eo=
+github.com/ooni/probe-engine v0.0.0-20190604085024-14e4cbaee937 h1:AroS0FY1QmtmtaOK+r+zzutnq4ZQ+bi8u+EzZllJBCE=
+github.com/ooni/probe-engine v0.0.0-20190604085024-14e4cbaee937/go.mod h1:A6rE7/l6Gm6M4uCoZmHvgS+JdSmwebgJvYYwlcEg5Eo=
 github.com/oschwald/geoip2-golang v1.3.0 h1:D+Hsdos1NARPbzZ2aInUHZL+dApIzo8E0ErJVsWcku8=
 github.com/oschwald/geoip2-golang v1.3.0/go.mod h1:0LTTzix/Ao1uMvOhAV4iLU0Lz7eCrP94qZWBTDKf0iE=
 github.com/oschwald/maxminddb-golang v1.3.0 h1:oTh8IBSj10S5JNlUDg5WjJ1QdBMdeaZIkPEVfESSWgE=
