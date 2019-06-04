@@ -399,7 +399,9 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 // OnProgress should be called when a new progress event is available.
 func (c *Controller) OnProgress(perc float64, msg string) {
 	log.Debugf("OnProgress: %f - %s", perc, msg)
-
+	if c.ntCount > 0 {
+		perc = float64(c.ntIndex)/float64(c.ntCount) + perc/float64(c.ntCount)
+	}
 	key := fmt.Sprintf("%T", c.nt)
 	output.Progress(key, perc, msg)
 }
