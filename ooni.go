@@ -99,7 +99,7 @@ func NewContext(configPath string, homePath string) *Context {
 		Config:     &config.Config{},
 		configPath: configPath,
 		Session: session.New(
-			enginex.LoggerAdapter{Logger: log.Log},
+			enginex.Logger,
 			"ooniprobe-desktop",
 			version.Version,
 			utils.AssetsDir(homePath),
