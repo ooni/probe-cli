@@ -12,15 +12,19 @@ require (
 	github.com/getsentry/raven-go v0.0.0-20190419175539-919484f041ea
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/gobuffalo/packr v1.25.0 // indirect
+	github.com/kr/pty v1.1.5 // indirect
 	github.com/lib/pq v1.1.1 // indirect
 	github.com/mattn/go-colorable v0.0.9
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
-	github.com/ooni/probe-engine v0.0.0-20190604110740-9bd31ae52f30
+	github.com/ooni/probe-engine v0.0.0-20190605080939-5a02948639d1
+	github.com/oschwald/maxminddb-golang v1.3.1 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/rubenv/sql-migrate v0.0.0-20190327083759-54bad0a9b051
 	github.com/ziutek/mymysql v1.5.4 // indirect
-	google.golang.org/appengine v1.5.0 // indirect
+	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8 // indirect
+	golang.org/x/sys v0.0.0-20190614160838-b47fdc937951 // indirect
+	google.golang.org/appengine v1.6.1 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.4
 	gopkg.in/gorp.v1 v1.7.2 // indirect
 	upper.io/db.v3 v3.5.7+incompatible
