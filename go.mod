@@ -17,7 +17,7 @@ require (
 	github.com/mattn/go-colorable v0.0.9
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
-	github.com/ooni/probe-engine v0.0.0-20190605080939-5a02948639d1
+	github.com/ooni/probe-engine v0.0.0-20190617094309-9072fc94fffa
 	github.com/oschwald/maxminddb-golang v1.3.1 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/rubenv/sql-migrate v0.0.0-20190327083759-54bad0a9b051
