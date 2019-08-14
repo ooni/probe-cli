@@ -97,7 +97,7 @@ func init() {
 			return err
 		}
 		if ctx.Config.Advanced.BouncerURL != "" {
-			ctx.Session.SetAvailableHTTPSBouncer(ctx.Config.Advanced.BouncerURL)
+			ctx.Session.AddAvailableHTTPSBouncer(ctx.Config.Advanced.BouncerURL)
 		}
 		if err := ctx.Session.MaybeLookupBackends(context.Background()); err != nil {
 			log.WithError(err).Warn("Failed to discover available test helpers")
@@ -106,7 +106,7 @@ func init() {
 		}
 		if ctx.Config.Sharing.UploadResults {
 			if ctx.Config.Advanced.CollectorURL != "" {
-				ctx.Session.SetAvailableHTTPSCollector(ctx.Config.Advanced.CollectorURL)
+				ctx.Session.AddAvailableHTTPSCollector(ctx.Config.Advanced.CollectorURL)
 			} else if err := ctx.Session.MaybeLookupCollectors(context.Background()); err != nil {
 				log.WithError(err).Error("Failed to discover available collectors")
 				return err
