@@ -1,4 +1,4 @@
-GO ?= go
+GO ?= GOPATH="" go
 
 install-dev-deps:
 	@$(GO) get golang.org/x/tools/cmd/cover

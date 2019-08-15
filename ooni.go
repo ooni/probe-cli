@@ -9,6 +9,7 @@ import (
 	"github.com/ooni/probe-cli/config"
 	"github.com/ooni/probe-cli/internal/bindata"
 	"github.com/ooni/probe-cli/internal/database"
+	"github.com/ooni/probe-cli/internal/enginex"
 	"github.com/ooni/probe-cli/internal/legacy"
 	"github.com/ooni/probe-cli/internal/onboard"
 	"github.com/ooni/probe-cli/utils"
@@ -20,10 +21,10 @@ import (
 
 // Context for OONI Probe
 type Context struct {
-	Config   *config.Config
-	DB       sqlbuilder.Database
-	IsBatch  bool
-	Session  *session.Session
+	Config  *config.Config
+	DB      sqlbuilder.Database
+	IsBatch bool
+	Session *session.Session
 
 	Home    string
 	TempDir string
@@ -34,7 +35,7 @@ type Context struct {
 
 // MaybeLocationLookup will lookup the location of the user unless it's already cached
 func (c *Context) MaybeLocationLookup() error {
-	return c.Session.LookupLocation(context.Background())
+	return c.Session.MaybeLookupLocation(context.Background())
 }
 
 // MaybeOnboarding will run the onboarding process only if the informed consent
@@ -97,11 +98,13 @@ func NewContext(configPath string, homePath string) *Context {
 		Home:       homePath,
 		Config:     &config.Config{},
 		configPath: configPath,
-		Session:    session.New(
-			log.Log,
+		Session: session.New(
+			enginex.Logger,
 			"ooniprobe-desktop",
 			version.Version,
 			utils.AssetsDir(homePath),
+			nil, // explicit proxy url.URL
+			nil, // explicit tls.Config
 		),
 	}
 }

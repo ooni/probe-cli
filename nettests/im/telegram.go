@@ -1,8 +1,8 @@
 package im
 
 import (
-	"github.com/measurement-kit/go-measurement-kit"
 	"github.com/ooni/probe-cli/nettests"
+	"github.com/ooni/probe-engine/experiment/telegram"
 )
 
 // Telegram test implementation
@@ -11,9 +11,10 @@ type Telegram struct {
 
 // Run starts the test
 func (h Telegram) Run(ctl *nettests.Controller) error {
-	mknt := mk.NewNettest("Telegram")
-	ctl.Init(mknt)
-	return mknt.Run()
+	experiment := telegram.NewExperiment(ctl.Ctx.Session, telegram.Config{
+		LogLevel: "INFO",
+	})
+	return ctl.Run(experiment, []string{""})
 }
 
 // TelegramTestKeys for the test
