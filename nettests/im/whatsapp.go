@@ -1,8 +1,8 @@
 package im
 
 import (
-	"github.com/measurement-kit/go-measurement-kit"
 	"github.com/ooni/probe-cli/nettests"
+	"github.com/ooni/probe-engine/experiment/whatsapp"
 )
 
 // WhatsApp test implementation
@@ -11,9 +11,10 @@ type WhatsApp struct {
 
 // Run starts the test
 func (h WhatsApp) Run(ctl *nettests.Controller) error {
-	mknt := mk.NewNettest("Whatsapp")
-	ctl.Init(mknt)
-	return mknt.Run()
+	experiment := whatsapp.NewExperiment(ctl.Ctx.Session, whatsapp.Config{
+		LogLevel: "INFO",
+	})
+	return ctl.Run(experiment, []string{""})
 }
 
 // WhatsAppTestKeys for the test

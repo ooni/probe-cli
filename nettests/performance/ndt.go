@@ -1,8 +1,8 @@
 package performance
 
 import (
-	"github.com/measurement-kit/go-measurement-kit"
 	"github.com/ooni/probe-cli/nettests"
+	"github.com/ooni/probe-engine/experiment/ndt"
 	"github.com/pkg/errors"
 )
 
@@ -12,9 +12,10 @@ type NDT struct {
 
 // Run starts the test
 func (n NDT) Run(ctl *nettests.Controller) error {
-	nt := mk.NewNettest("Ndt")
-	ctl.Init(nt)
-	return nt.Run()
+	experiment := ndt.NewExperiment(
+		ctl.Ctx.Session, ndt.Config{},
+	)
+	return ctl.Run(experiment, []string{""})
 }
 
 // NDTTestKeys for the test

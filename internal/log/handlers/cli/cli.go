@@ -104,6 +104,9 @@ func logTable(w io.Writer, f log.Fields) error {
 // TypedLog is used for handling special "typed" logs to the CLI
 func (h *Handler) TypedLog(t string, e *log.Entry) error {
 	switch t {
+	case "engine":
+		fmt.Fprintf(h.Writer, "[engine] %s\n", e.Message)
+		return nil
 	case "progress":
 		perc := e.Fields.Get("percentage").(float64) * 100
 		s := fmt.Sprintf("   %s %-25s",

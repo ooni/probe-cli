@@ -1,6 +1,7 @@
 package run
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -94,6 +95,22 @@ func init() {
 		if err != nil {
 			log.WithError(err).Error("Failed to create the network row")
 			return err
+		}
+		if ctx.Config.Advanced.BouncerURL != "" {
+			ctx.Session.AddAvailableHTTPSBouncer(ctx.Config.Advanced.BouncerURL)
+		}
+		if err := ctx.Session.MaybeLookupBackends(context.Background()); err != nil {
+			log.WithError(err).Warn("Failed to discover available test helpers")
+			// Rationale for falling through: some tests may be able to complete
+			// with no test helpers, so stopping may be excessive here.
+		}
+		if ctx.Config.Sharing.UploadResults {
+			if ctx.Config.Advanced.CollectorURL != "" {
+				ctx.Session.AddAvailableHTTPSCollector(ctx.Config.Advanced.CollectorURL)
+			} else if err := ctx.Session.MaybeLookupCollectors(context.Background()); err != nil {
+				log.WithError(err).Error("Failed to discover available collectors")
+				return err
+			}
 		}
 
 		if *nettestGroup == "" {

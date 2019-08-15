@@ -1,3 +1,3 @@
-FROM openobservatory/mk-alpine:20190509
+FROM openobservatory/mk-alpine:latest
 RUN apk add --no-progress git go
 ADD . /oonibuild

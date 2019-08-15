@@ -3,8 +3,8 @@ package middlebox
 import (
 	"errors"
 
-	"github.com/measurement-kit/go-measurement-kit"
 	"github.com/ooni/probe-cli/nettests"
+	"github.com/ooni/probe-engine/experiment/hirl"
 )
 
 // HTTPInvalidRequestLine test implementation
@@ -13,9 +13,10 @@ type HTTPInvalidRequestLine struct {
 
 // Run starts the test
 func (h HTTPInvalidRequestLine) Run(ctl *nettests.Controller) error {
-	mknt := mk.NewNettest("HttpInvalidRequestLine")
-	ctl.Init(mknt)
-	return mknt.Run()
+	experiment := hirl.NewExperiment(ctl.Ctx.Session, hirl.Config{
+		LogLevel: "INFO",
+	})
+	return ctl.Run(experiment, []string{""})
 }
 
 // HTTPInvalidRequestLineTestKeys for the test

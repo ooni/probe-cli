@@ -3,8 +3,8 @@ package middlebox
 import (
 	"errors"
 
-	"github.com/measurement-kit/go-measurement-kit"
 	"github.com/ooni/probe-cli/nettests"
+	"github.com/ooni/probe-engine/experiment/hhfm"
 )
 
 // HTTPHeaderFieldManipulation test implementation
@@ -13,9 +13,10 @@ type HTTPHeaderFieldManipulation struct {
 
 // Run starts the test
 func (h HTTPHeaderFieldManipulation) Run(ctl *nettests.Controller) error {
-	mknt := mk.NewNettest("HttpHeaderFieldManipulation")
-	ctl.Init(mknt)
-	return mknt.Run()
+	experiment := hhfm.NewExperiment(ctl.Ctx.Session, hhfm.Config{
+		LogLevel: "INFO",
+	})
+	return ctl.Run(experiment, []string{""})
 }
 
 // HTTPHeaderFieldManipulationTestKeys for the test
