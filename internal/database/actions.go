@@ -3,6 +3,9 @@ package database
 import (
 	"database/sql"
 	"encoding/json"
+	"bufio"
+	"io"
+	"io/ioutil"
 	"os"
 	"reflect"
 	"time"
@@ -10,6 +13,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-engine/model"
 	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/internal/util"
 	"github.com/pkg/errors"
 	db "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -36,6 +40,60 @@ func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementUR
 		return measurements, err
 	}
 	return measurements, nil
+}
+
+type MeasurementWithInput struct {
+	Input string `json:"input"`
+}
+
+func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[string]interface{}, error) {
+	var (
+		measurement MeasurementURLNetwork
+		msmtJSON map[string]interface{}
+	)
+
+	req := sess.Select(
+		db.Raw("urls.*"),
+		db.Raw("measurements.*"),
+	).From("measurements").
+		LeftJoin("urls").On("urls.url_id = measurements.url_id").
+		Where("measurements.measurement_id= ?", measurementID)
+
+	if err := req.One(&measurement); err != nil {
+		log.Errorf("failed to run query %s: %v", req.String(), err)
+		return nil, err
+	}
+	reportFilePath := measurement.Measurement.ReportFilePath
+	if (measurement.URL.URL.Valid == false) {
+		b, err := ioutil.ReadFile(reportFilePath)
+		if err != nil {
+			return nil, err
+		}
+		json.Unmarshal(b, &msmtJSON)
+		return msmtJSON, nil
+	}
+
+	url := measurement.URL.URL.String
+	file, err := os.Open(reportFilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	log.Infof("URL is %s", url)
+	reader := bufio.NewReader(file)
+
+	for {
+		line, err := util.ReadLine(reader)
+		if (err == io.EOF) {
+			break
+		}
+		json.Unmarshal([]byte(line), &msmtJSON)
+		if (msmtJSON["input"].(string) == url) {
+			return msmtJSON, nil
+		}
+	}
+	return nil, errors.New("Could not find measurement")
 }
 
 // GetResultTestKeys returns a list of TestKeys for a given measurements

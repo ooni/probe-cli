@@ -119,6 +119,8 @@ func (h *Handler) TypedLog(t string, e *log.Entry) error {
 		return logTable(h.Writer, e.Fields)
 	case "measurement_item":
 		return logMeasurementItem(h.Writer, e.Fields)
+	case "measurement_json":
+		return logMeasurementJSON(h.Writer, e.Fields)
 	case "measurement_summary":
 		return logMeasurementSummary(h.Writer, e.Fields)
 	case "result_item":
