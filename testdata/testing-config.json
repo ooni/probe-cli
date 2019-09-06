@@ -33,7 +33,7 @@
   "test_settings": {
     "websites": {
       "enabled_categories": [],
-      "limit": 100
+      "limit": 10
     },
     "instant_messaging": {
       "enabled_tests": [
