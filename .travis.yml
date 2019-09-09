@@ -13,9 +13,9 @@ matrix:
     - OS_NAME: macos
     osx_image: xcode10.2
     cache:
-    directories:
-      - $HOME/Library/Caches/Homebrew
-      - /usr/local/Homebrew
+      directories:
+        - $HOME/Library/Caches/Homebrew
+        - /usr/local/Homebrew
 script:
 - ./build.sh _travis-${TRAVIS_OS_NAME}
 - ./scripts/travis_test.sh
