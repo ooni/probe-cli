@@ -68,7 +68,9 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 		if err != nil {
 			return nil, err
 		}
-		json.Unmarshal(b, &msmtJSON)
+		if err := json.Unmarshal(b, &msmtJSON); err != nil {
+			return nil, err
+		}
 		return msmtJSON, nil
 	}
 
@@ -88,7 +90,9 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 		if (err == io.EOF) {
 			break
 		}
-		json.Unmarshal([]byte(line), &msmtJSON)
+		if err := json.Unmarshal([]byte(line), &msmtJSON); err != nil {
+			return nil, err
+		}
 		if (msmtJSON["input"].(string) == url) {
 			return msmtJSON, nil
 		}
