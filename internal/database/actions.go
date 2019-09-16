@@ -89,6 +89,8 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 		line, err := util.ReadLine(reader)
 		if (err == io.EOF) {
 			break
+		} else if err != nil {
+			return nil, err
 		}
 		if err := json.Unmarshal([]byte(line), &msmtJSON); err != nil {
 			return nil, err
