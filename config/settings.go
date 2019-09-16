@@ -42,7 +42,7 @@ type NettestConfig struct {
 // Websites test group
 type Websites struct {
 	EnabledCategories []string `json:"enabled_categories"`
-	Limit			  int      `json:"limit"`
+	Limit             int      `json:"limit"`
 }
 
 // NettestConfigs returns a list configured enabled tests for the group

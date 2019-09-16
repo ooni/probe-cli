@@ -42,10 +42,7 @@ func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementUR
 	return measurements, nil
 }
 
-type MeasurementWithInput struct {
-	Input string `json:"input"`
-}
-
+// GetMeasurementJSON will a map[string]interface{} given a database and a measurementID
 func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[string]interface{}, error) {
 	var (
 		measurement MeasurementURLNetwork
@@ -64,6 +61,8 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 		return nil, err
 	}
 	reportFilePath := measurement.Measurement.ReportFilePath
+	// If the url->url is NULL then we are dealing with a single entry
+	// measurement and all we have to do is read the file and return it.
 	if (measurement.URL.URL.Valid == false) {
 		b, err := ioutil.ReadFile(reportFilePath)
 		if err != nil {
@@ -73,6 +72,8 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 		return msmtJSON, nil
 	}
 
+	// When the URL is a string then we need to seek until we reach the
+	// measurement line in the file that matches the target input
 	url := measurement.URL.URL.String
 	file, err := os.Open(reportFilePath)
 	if err != nil {
@@ -80,7 +81,6 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 	}
 	defer file.Close()
 
-	log.Infof("URL is %s", url)
 	reader := bufio.NewReader(file)
 
 	for {
@@ -96,7 +96,7 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 	return nil, errors.New("Could not find measurement")
 }
 
-// GetResultTestKeys returns a list of TestKeys for a given measurements
+// GetResultTestKeys returns a list of TestKeys for a given result
 func GetResultTestKeys(sess sqlbuilder.Database, resultID int64) (string, error) {
 	res := sess.Collection("measurements").Find("result_id", resultID)
 	defer res.Close()
@@ -112,7 +112,7 @@ func GetResultTestKeys(sess sqlbuilder.Database, resultID int64) (string, error)
 		// values.
 		// XXX we may want to change this behaviour by adding `omitempty` to the
 		// struct definition.
-		if (msmt.TestName != "ndt" && msmt.TestName != "dash") {
+		if msmt.TestName != "ndt" && msmt.TestName != "dash" {
 			return "{}", nil
 		}
 		if err := json.Unmarshal([]byte(msmt.TestKeys), &tk); err != nil {

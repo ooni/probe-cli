@@ -139,16 +139,10 @@ github.com/miekg/dns v1.1.12/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3N
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.8.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
-github.com/ooni/probe-engine v0.0.0-20190814091928-473884e88632 h1:58EgLL9v2729NkY0U/lixOAGr9UsvRH67use+iJvz+c=
-github.com/ooni/probe-engine v0.0.0-20190814091928-473884e88632/go.mod h1:iq63Xvw89LLS+2Q9vdqNpmuGQLntyomd9K5w49hU+Ks=
 github.com/ooni/probe-engine v0.0.0-20190828175829-9e908f8e3a3a h1:e3SiEPrbtsB76tPm+sFLI5dtKBd7sa+vjtdfvSMKLqk=
 github.com/ooni/probe-engine v0.0.0-20190828175829-9e908f8e3a3a/go.mod h1:zovuewNdJp8exKnBlpCgZXNu/SN+Cs4acj2KgGZOP9s=
 github.com/oschwald/geoip2-golang v1.3.0 h1:D+Hsdos1NARPbzZ2aInUHZL+dApIzo8E0ErJVsWcku8=
 github.com/oschwald/geoip2-golang v1.3.0/go.mod h1:0LTTzix/Ao1uMvOhAV4iLU0Lz7eCrP94qZWBTDKf0iE=
-github.com/oschwald/maxminddb-golang v1.3.0 h1:oTh8IBSj10S5JNlUDg5WjJ1QdBMdeaZIkPEVfESSWgE=
-github.com/oschwald/maxminddb-golang v1.3.0/go.mod h1:3jhIUymTJ5VREKyIhWm66LJiQt04F0UCDdodShpjWsY=
-github.com/oschwald/maxminddb-golang v1.3.1 h1:kPc5+ieL5CC/Zn0IaXJPxDFlUxKTQEU8QBTtmfQDAIo=
-github.com/oschwald/maxminddb-golang v1.3.1/go.mod h1:3jhIUymTJ5VREKyIhWm66LJiQt04F0UCDdodShpjWsY=
 github.com/oschwald/maxminddb-golang v1.4.0 h1:5/rpmW41qrgSed4wK32rdznbkTSXHcraY2LOMJX4DMc=
 github.com/oschwald/maxminddb-golang v1.4.0/go.mod h1:3jhIUymTJ5VREKyIhWm66LJiQt04F0UCDdodShpjWsY=
 github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=

@@ -22,6 +22,7 @@ func init() {
 		msmt, err := database.GetMeasurementJSON(ctx.DB, *msmtID)
 		if err != nil {
 			log.Errorf("error: %v", err)
+			return err
 		}
 		output.MeasurementJSON(msmt)
 		return nil
