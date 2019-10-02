@@ -129,3 +129,14 @@ func logMeasurementSummary(w io.Writer, f log.Fields) error {
 
 	return nil
 }
+
+func logMeasurementJSON(w io.Writer, f log.Fields) error {
+	m := f.Get("measurement_json").(map[string]interface{})
+
+	json, err := json.MarshalIndent(m, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(w, string(json))
+	return nil
+}

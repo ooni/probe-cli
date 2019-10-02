@@ -11,6 +11,14 @@ import (
 	"github.com/ooni/probe-cli/internal/util"
 )
 
+// MeasurementJSON prints the JSON of a measurement
+func MeasurementJSON(j map[string]interface{}) {
+	log.WithFields(log.Fields{
+		"type":       "measurement_json",
+		"measurement_json": j,
+	}).Info("Measurement JSON")
+}
+
 // Progress logs a progress type event
 func Progress(key string, perc float64, msg string) {
 	log.WithFields(log.Fields{

@@ -4,19 +4,27 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/cli/root"
+	"github.com/ooni/probe-cli/internal/database"
+	"github.com/ooni/probe-cli/internal/output"
 )
 
 func init() {
 	cmd := root.Command("show", "Show a specific measurement")
 
+	msmtID := cmd.Arg("id", "the id of the measurement to show").Int64()
+
 	cmd.Action(func(_ *kingpin.ParseContext) error {
-		_, err := root.Init()
+		ctx, err := root.Init()
 		if err != nil {
 			log.WithError(err).Error("failed to initialize root context")
 			return err
 		}
-		log.Error("this function is not implemented")
-
+		msmt, err := database.GetMeasurementJSON(ctx.DB, *msmtID)
+		if err != nil {
+			log.Errorf("error: %v", err)
+			return err
+		}
+		output.MeasurementJSON(msmt)
 		return nil
 	})
 }

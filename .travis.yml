@@ -1,17 +1,10 @@
-matrix:
-  include:
-  - os: linux
-    dist: xenial
-    language: minimal
-    services:
-    - docker
-    env:
-    - OS_NAME: linux
-  - os: osx
-    language: minimal
-    env:
-    - OS_NAME: macos
-    osx_image: xcode10.2
+os: linux
+dist: xenial
+language: minimal
+services:
+- docker
+env:
+- OS_NAME: linux
 script:
 - ./build.sh _travis-${TRAVIS_OS_NAME}
 - ./scripts/travis_test.sh

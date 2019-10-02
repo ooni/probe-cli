@@ -3,8 +3,6 @@ package run
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
@@ -50,20 +48,20 @@ func init() {
 	cmd := root.Command("run", "Run a test group or OONI Run link")
 
 	var nettestGroupNamesBlue []string
+	var ctx *ooni.Context
+	var network *database.Network
+
 	for name := range groups.NettestGroups {
 		nettestGroupNamesBlue = append(nettestGroupNamesBlue, color.BlueString(name))
 	}
-
-	nettestGroup := cmd.Arg("name",
-		fmt.Sprintf("the nettest group to run. Supported tests are: %s, or nothing to run them all",
-			strings.Join(nettestGroupNamesBlue, ", "))).String()
 
 	noCollector := cmd.Flag("no-collector", "Disable uploading measurements to a collector").Bool()
 	collectorURL := cmd.Flag("collector-url", "Specify the address of a custom collector").String()
 	bouncerURL := cmd.Flag("bouncer-url", "Specify the address of a custom bouncer").String()
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
-		ctx, err := root.Init()
+		var err error
+		ctx, err = root.Init()
 		if err != nil {
 			log.Errorf("%s", err)
 			return err
@@ -91,7 +89,7 @@ func init() {
 			log.WithError(err).Error("Failed to lookup the location of the probe")
 			return err
 		}
-		network, err := database.CreateNetwork(ctx.DB, ctx.Session.Location)
+		network, err = database.CreateNetwork(ctx.DB, ctx.Session.Location)
 		if err != nil {
 			log.WithError(err).Error("Failed to create the network row")
 			return err
@@ -112,17 +110,33 @@ func init() {
 				return err
 			}
 		}
+		return nil
+	})
 
-		if *nettestGroup == "" {
-			log.Infof("Running %s tests", color.BlueString("all"))
-			for tg := range groups.NettestGroups {
-				if err := runNettestGroup(tg, ctx, network); err != nil {
-					log.WithError(err).Errorf("failed to run %s", tg)
-				}
+	websitesCmd := cmd.Command("websites", "")
+	websitesCmd.Action(func(_ *kingpin.ParseContext) error {
+		return runNettestGroup("websites", ctx, network)
+	})
+	imCmd := cmd.Command("im", "")
+	imCmd.Action(func(_ *kingpin.ParseContext) error {
+		return runNettestGroup("im", ctx, network)
+	})
+	performanceCmd := cmd.Command("performance", "")
+	performanceCmd.Action(func(_ *kingpin.ParseContext) error {
+		return runNettestGroup("performance", ctx, network)
+	})
+	middleboxCmd := cmd.Command("middlebox", "")
+	middleboxCmd.Action(func(_ *kingpin.ParseContext) error {
+		return runNettestGroup("middlebox", ctx, network)
+	})
+	allCmd := cmd.Command("all", "").Default()
+	allCmd.Action(func(_ *kingpin.ParseContext) error {
+		log.Infof("Running %s tests", color.BlueString("all"))
+		for tg := range groups.NettestGroups {
+			if err := runNettestGroup(tg, ctx, network); err != nil {
+				log.WithError(err).Errorf("failed to run %s", tg)
 			}
-			return nil
 		}
-		log.Infof("Running %s", color.BlueString(*nettestGroup))
-		return runNettestGroup(*nettestGroup, ctx, network)
+		return nil
 	})
 }
