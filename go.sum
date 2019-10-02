@@ -154,6 +154,8 @@ github.com/onsi/ginkgo v1.8.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+W
 github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/ooni/probe-engine v0.1.0 h1:1einLnYReOZ+f9WESwjWlmkxLVAiieTLPHwXmvs/uA8=
 github.com/ooni/probe-engine v0.1.0/go.mod h1:XYqS74GGxr3ux90CobGBA1cGjIGj3tgjuUAbOmmLV4w=
+github.com/ooni/probe-engine v0.1.1-0.20191002175802-704a709def68 h1:DKNjpZW6pCq6MYVECEV7x4tneFG8ZHhPZDeh1p80S1Q=
+github.com/ooni/probe-engine v0.1.1-0.20191002175802-704a709def68/go.mod h1:XYqS74GGxr3ux90CobGBA1cGjIGj3tgjuUAbOmmLV4w=
 github.com/oschwald/geoip2-golang v1.3.0 h1:D+Hsdos1NARPbzZ2aInUHZL+dApIzo8E0ErJVsWcku8=
 github.com/oschwald/geoip2-golang v1.3.0/go.mod h1:0LTTzix/Ao1uMvOhAV4iLU0Lz7eCrP94qZWBTDKf0iE=
 github.com/oschwald/maxminddb-golang v1.4.0 h1:5/rpmW41qrgSed4wK32rdznbkTSXHcraY2LOMJX4DMc=
