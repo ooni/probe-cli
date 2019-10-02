@@ -15,7 +15,9 @@ if [ "$1" = "windows" ]; then
 elif [ "$1" = "linux" ]; then
   set -x
   docker build -t oonibuild .
-  docker run -v `pwd`:/oonibuild -w /oonibuild -t oonibuild                    \
+  docker run -v `pwd`:/oonibuild -w /oonibuild -t --cap-drop=all               \
+    --user `id -u`:`id -g` -e 'GOCACHE=/tmp/go/cache' -e 'GOPATH=/tmp/go/path' \
+    oonibuild                                                                  \
     go build -o dist/linux/amd64/ooniprobe -v ./cmd/ooniprobe
 
 elif [ "$1" = "macos" ]; then
