@@ -10,17 +10,19 @@ if [ "$1" = "windows" ]; then
   set -x
   CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++                         \
     CGO_ENABLED=1 GOOS=windows GOARCH=amd64                                    \
-      go build -o dist/windows/amd64/ooni.exe -v ./cmd/ooni
+      go build -o dist/windows/amd64/ooniprobe.exe -v ./cmd/ooniprobe
 
 elif [ "$1" = "linux" ]; then
   set -x
   docker build -t oonibuild .
-  docker run -v `pwd`:/oonibuild -w /oonibuild -t oonibuild                    \
-    go build -o dist/linux/amd64/ooni -v ./cmd/ooni
+  docker run -v `pwd`:/oonibuild -w /oonibuild -t --cap-drop=all               \
+    --user `id -u`:`id -g` -e 'GOCACHE=/tmp/go/cache' -e 'GOPATH=/tmp/go/path' \
+    oonibuild                                                                  \
+    go build -o dist/linux/amd64/ooniprobe -v ./cmd/ooniprobe
 
 elif [ "$1" = "macos" ]; then
   set -x
-  go build -o dist/macos/amd64/ooni -v ./cmd/ooni
+  go build -o dist/macos/amd64/ooniprobe -v ./cmd/ooniprobe
 
 elif [ "$1" = "_travis-linux" ]; then
   set -x
@@ -41,7 +43,7 @@ elif [ "$1" = "help" ]; then
   echo "Usage: $0 linux | macos | windows"
   echo ""
   echo "Builds OONI on supported systems. The output binary will"
-  echo "be saved at './dist/<system>/<arch>/ooni[.exe]'."
+  echo "be saved at './dist/<system>/<arch>/ooniprobe[.exe]'."
   echo ""
   echo "# Linux"
   echo ""
