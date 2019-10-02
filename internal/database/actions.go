@@ -3,6 +3,9 @@ package database
 import (
 	"database/sql"
 	"encoding/json"
+	"bufio"
+	"io"
+	"io/ioutil"
 	"os"
 	"reflect"
 	"time"
@@ -10,6 +13,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-engine/model"
 	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/internal/util"
 	"github.com/pkg/errors"
 	db "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -38,7 +42,67 @@ func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementUR
 	return measurements, nil
 }
 
-// GetResultTestKeys returns a list of TestKeys for a given measurements
+// GetMeasurementJSON will a map[string]interface{} given a database and a measurementID
+func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[string]interface{}, error) {
+	var (
+		measurement MeasurementURLNetwork
+		msmtJSON map[string]interface{}
+	)
+
+	req := sess.Select(
+		db.Raw("urls.*"),
+		db.Raw("measurements.*"),
+	).From("measurements").
+		LeftJoin("urls").On("urls.url_id = measurements.url_id").
+		Where("measurements.measurement_id= ?", measurementID)
+
+	if err := req.One(&measurement); err != nil {
+		log.Errorf("failed to run query %s: %v", req.String(), err)
+		return nil, err
+	}
+	reportFilePath := measurement.Measurement.ReportFilePath
+	// If the url->url is NULL then we are dealing with a single entry
+	// measurement and all we have to do is read the file and return it.
+	if (measurement.URL.URL.Valid == false) {
+		b, err := ioutil.ReadFile(reportFilePath)
+		if err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(b, &msmtJSON); err != nil {
+			return nil, err
+		}
+		return msmtJSON, nil
+	}
+
+	// When the URL is a string then we need to seek until we reach the
+	// measurement line in the file that matches the target input
+	url := measurement.URL.URL.String
+	file, err := os.Open(reportFilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+
+	for {
+		line, err := util.ReadLine(reader)
+		if (err == io.EOF) {
+			break
+		} else if err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal([]byte(line), &msmtJSON); err != nil {
+			return nil, err
+		}
+		if (msmtJSON["input"].(string) == url) {
+			return msmtJSON, nil
+		}
+	}
+	return nil, errors.New("Could not find measurement")
+}
+
+// GetResultTestKeys returns a list of TestKeys for a given result
 func GetResultTestKeys(sess sqlbuilder.Database, resultID int64) (string, error) {
 	res := sess.Collection("measurements").Find("result_id", resultID)
 	defer res.Close()
@@ -54,7 +118,7 @@ func GetResultTestKeys(sess sqlbuilder.Database, resultID int64) (string, error)
 		// values.
 		// XXX we may want to change this behaviour by adding `omitempty` to the
 		// struct definition.
-		if (msmt.TestName != "ndt" && msmt.TestName != "dash") {
+		if msmt.TestName != "ndt" && msmt.TestName != "dash" {
 			return "{}", nil
 		}
 		if err := json.Unmarshal([]byte(msmt.TestKeys), &tk); err != nil {

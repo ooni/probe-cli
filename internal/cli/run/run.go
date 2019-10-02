@@ -59,7 +59,7 @@ func init() {
 	collectorURL := cmd.Flag("collector-url", "Specify the address of a custom collector").String()
 	bouncerURL := cmd.Flag("bouncer-url", "Specify the address of a custom bouncer").String()
 
-	cmd.Action(func(kp *kingpin.ParseContext) error {
+	cmd.Action(func(_ *kingpin.ParseContext) error {
 		var err error
 		ctx, err = root.Init()
 		if err != nil {
@@ -119,7 +119,6 @@ func init() {
 	})
 	imCmd := cmd.Command("im", "")
 	imCmd.Action(func(_ *kingpin.ParseContext) error {
-		log.Info("calling im code path")
 		return runNettestGroup("im", ctx, network)
 	})
 	performanceCmd := cmd.Command("performance", "")

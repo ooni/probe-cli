@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"bufio"
 	"fmt"
 	"os"
 	"regexp"
@@ -111,4 +112,19 @@ func WrapString(s string, lim uint) string {
 	}
 
 	return buf.String()
+}
+
+
+// ReadLine will read a single line from a bufio.Reader
+func ReadLine(r *bufio.Reader) (string, error) {
+	var (
+		isPrefix bool
+		err error
+		line, ln []byte
+	)
+	for isPrefix && err == nil {
+		line, isPrefix, err = r.ReadLine()
+		ln = append(ln, line...)
+	}
+	return string(ln), err
 }
