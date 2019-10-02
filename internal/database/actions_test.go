@@ -3,13 +3,45 @@ package database
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/ooni/probe-engine/model"
 	db "upper.io/db.v3"
 )
+
+type locationInfo struct {
+	asn         uint
+	countryCode string
+	ip          string
+	networkName string
+	resolverIP  string
+}
+
+func (lp *locationInfo) ProbeASN() uint {
+	return lp.asn
+}
+
+func (lp *locationInfo) ProbeASNString() string {
+	return fmt.Sprintf("AS%d", lp.asn)
+}
+
+func (lp *locationInfo) ProbeCC() string {
+	return lp.countryCode
+}
+
+func (lp *locationInfo) ProbeIP() string {
+	return lp.ip
+}
+
+func (lp *locationInfo) ProbeNetworkName() string {
+	return lp.networkName
+}
+
+func (lp *locationInfo) ResolverIP() string {
+	return lp.resolverIP
+}
 
 func TestMeasurementWorkflow(t *testing.T) {
 	tmpfile, err := ioutil.TempFile("", "dbtest")
@@ -29,10 +61,10 @@ func TestMeasurementWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	location := model.LocationInfo{
-		ASN:         0,
-		CountryCode: "IT",
-		NetworkName: "Unknown",
+	location := locationInfo{
+		asn:         0,
+		countryCode: "IT",
+		networkName: "Unknown",
 	}
 	network, err := CreateNetwork(sess, &location)
 	if err != nil {
@@ -103,10 +135,10 @@ func TestDeleteResult(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	location := model.LocationInfo{
-		ASN:         0,
-		CountryCode: "IT",
-		NetworkName: "Unknown",
+	location := locationInfo{
+		asn:         0,
+		countryCode: "IT",
+		networkName: "Unknown",
 	}
 	network, err := CreateNetwork(sess, &location)
 	if err != nil {
@@ -175,16 +207,16 @@ func TestNetworkCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	l1 := model.LocationInfo{
-		ASN:         2,
-		CountryCode: "IT",
-		NetworkName: "Antaninet",
+	l1 := locationInfo{
+		asn:         2,
+		countryCode: "IT",
+		networkName: "Antaninet",
 	}
 
-	l2 := model.LocationInfo{
-		ASN:         3,
-		CountryCode: "IT",
-		NetworkName: "Fufnet",
+	l2 := locationInfo{
+		asn:         3,
+		countryCode: "IT",
+		networkName: "Fufnet",
 	}
 
 	_, err = CreateNetwork(sess, &l1)

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-engine/session"
 	"github.com/ooni/probe-cli/utils"
 	"github.com/ooni/probe-cli/internal/util"
 	"github.com/pkg/errors"
@@ -256,14 +255,14 @@ func CreateResult(sess sqlbuilder.Database, homePath string, testGroupName strin
 }
 
 // CreateNetwork will create a new network in the network table
-func CreateNetwork(sess sqlbuilder.Database, s *session.Session) (*Network, error) {
+func CreateNetwork(sess sqlbuilder.Database, loc util.LocationProvider) (*Network, error) {
 	network := Network{
-		ASN:         s.ProbeASN(),
-		CountryCode: s.ProbeCC(),
-		NetworkName: s.ProbeNetworkName(),
+		ASN:         loc.ProbeASN(),
+		CountryCode: loc.ProbeCC(),
+		NetworkName: loc.ProbeNetworkName(),
 		// On desktop we consider it to always be wifi
 		NetworkType: "wifi",
-		IP:          s.ProbeIP(),
+		IP:          loc.ProbeIP(),
 	}
 	newID, err := sess.Collection("networks").Insert(network)
 	if err != nil {
