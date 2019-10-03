@@ -16,7 +16,7 @@ require (
 	github.com/lib/pq v1.1.1 // indirect
 	github.com/mattn/go-colorable v0.1.2
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
-	github.com/ooni/probe-engine v0.0.0-20190828175829-9e908f8e3a3a
+	github.com/ooni/probe-engine v0.1.1
 	github.com/pkg/errors v0.8.1
 	github.com/rubenv/sql-migrate v0.0.0-20190327083759-54bad0a9b051
 	github.com/ziutek/mymysql v1.5.4 // indirect

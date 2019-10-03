@@ -89,7 +89,7 @@ func init() {
 			log.WithError(err).Error("Failed to lookup the location of the probe")
 			return err
 		}
-		network, err = database.CreateNetwork(ctx.DB, ctx.Session.Location)
+		network, err = database.CreateNetwork(ctx.DB, ctx.Session)
 		if err != nil {
 			log.WithError(err).Error("Failed to create the network row")
 			return err

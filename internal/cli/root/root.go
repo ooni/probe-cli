@@ -11,7 +11,7 @@ import (
 )
 
 // Cmd is the root command
-var Cmd = kingpin.New("ooni", "")
+var Cmd = kingpin.New("ooniprobe", "")
 
 // Command is syntax sugar for defining sub-commands
 var Command = Cmd.Command
