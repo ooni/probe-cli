@@ -27,13 +27,19 @@ elif [ "$1" = "release" ]; then
   set -x
   v=`git describe --tags`
   $0 linux
-  tar -czf ooniprobe-linux-amd64-$v.tar.gz ./dist/linux/amd64
+  tar -czf ooniprobe_${v}_linux_amd64.tar.gz LICENSE.md Readme.md              \
+    -C ./dist/linux/amd64 ooniprobe
+  shasum -a 256 ooniprobe_${v}_linux_amd64.tar.gz > ooniprobe_checksums.txt
   $0 macos
-  tar -czf ooniprobe-macos-amd64-$v.tar.gz ./dist/macos/amd64
+  tar -czf ooniprobe_${v}_darwin_amd64.tar.gz LICENSE.md Readme.md             \
+    -C ./dist/macos/amd64 ooniprobe
+  shasum -a 256 ooniprobe_${v}_darwin_amd64.tar.gz >> ooniprobe_checksums.txt
   $0 windows
-  tar -czf ooniprobe-windows-amd64-$v.tar.gz ./dist/windows/amd64
+  tar -czf ooniprobe_${v}_windows_amd64.tar.gz ./dist/windows/amd64            \
+    -C dist/windows/amd64 ooniprobe.exe
+  shasum -a 256 ooniprobe_${v}_windows_amd64.tar.gz >> ooniprobe_checksums.txt
   echo ""
-  echo "Now sign the packages and upload them to GitHub"
+  echo "Now sign ooniprobe_checksums.txt packages and upload all to GitHub"
 
 elif [ "$1" = "_travis-linux" ]; then
   set -x
