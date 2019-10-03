@@ -39,7 +39,7 @@ elif [ "$1" = "release" ]; then
     -C dist/windows/amd64 ooniprobe.exe
   shasum -a 256 ooniprobe_${v}_windows_amd64.tar.gz >> ooniprobe_checksums.txt
   echo ""
-  echo "Now sign ooniprobe_checksums.txt packages and upload all to GitHub"
+  echo "Now sign ooniprobe_checksums.txt and upload it along with tarballs to GitHub"
 
 elif [ "$1" = "_travis-linux" ]; then
   set -x
