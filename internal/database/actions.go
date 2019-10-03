@@ -1,9 +1,9 @@
 package database
 
 import (
+	"bufio"
 	"database/sql"
 	"encoding/json"
-	"bufio"
 	"io"
 	"io/ioutil"
 	"os"
@@ -11,9 +11,8 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/utils"
 	"github.com/ooni/probe-cli/internal/enginex"
-	"github.com/ooni/probe-cli/internal/util"
+	"github.com/ooni/probe-cli/utils"
 	"github.com/pkg/errors"
 	db "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -22,7 +21,6 @@ import (
 // ListMeasurements given a result ID
 func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementURLNetwork, error) {
 	measurements := []MeasurementURLNetwork{}
-
 	req := sess.Select(
 		db.Raw("networks.*"),
 		db.Raw("urls.*"),
@@ -34,7 +32,6 @@ func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementUR
 		LeftJoin("urls").On("urls.url_id = measurements.url_id").
 		OrderBy("measurements.measurement_start_time").
 		Where("results.result_id = ?", resultID)
-
 	if err := req.All(&measurements); err != nil {
 		log.Errorf("failed to run query %s: %v", req.String(), err)
 		return measurements, err
@@ -42,20 +39,18 @@ func ListMeasurements(sess sqlbuilder.Database, resultID int64) ([]MeasurementUR
 	return measurements, nil
 }
 
-// GetMeasurementJSON will a map[string]interface{} given a database and a measurementID
+// GetMeasurementJSON returns a map[string]interface{} given a database and a measurementID
 func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[string]interface{}, error) {
 	var (
 		measurement MeasurementURLNetwork
-		msmtJSON map[string]interface{}
+		msmtJSON    map[string]interface{}
 	)
-
 	req := sess.Select(
 		db.Raw("urls.*"),
 		db.Raw("measurements.*"),
 	).From("measurements").
 		LeftJoin("urls").On("urls.url_id = measurements.url_id").
 		Where("measurements.measurement_id= ?", measurementID)
-
 	if err := req.One(&measurement); err != nil {
 		log.Errorf("failed to run query %s: %v", req.String(), err)
 		return nil, err
@@ -63,7 +58,7 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 	reportFilePath := measurement.Measurement.ReportFilePath
 	// If the url->url is NULL then we are dealing with a single entry
 	// measurement and all we have to do is read the file and return it.
-	if (measurement.URL.URL.Valid == false) {
+	if measurement.URL.URL.Valid == false {
 		b, err := ioutil.ReadFile(reportFilePath)
 		if err != nil {
 			return nil, err
@@ -73,7 +68,6 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 		}
 		return msmtJSON, nil
 	}
-
 	// When the URL is a string then we need to seek until we reach the
 	// measurement line in the file that matches the target input
 	url := measurement.URL.URL.String
@@ -82,20 +76,19 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 		return nil, err
 	}
 	defer file.Close()
-
 	reader := bufio.NewReader(file)
-
 	for {
-		line, err := util.ReadLine(reader)
-		if (err == io.EOF) {
+		line, err := reader.ReadString('\n')
+		if err == io.EOF {
 			break
-		} else if err != nil {
+		}
+		if err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal([]byte(line), &msmtJSON); err != nil {
 			return nil, err
 		}
-		if (msmtJSON["input"].(string) == url) {
+		if msmtJSON["input"].(string) == url {
 			return msmtJSON, nil
 		}
 	}
@@ -166,21 +159,18 @@ func GetMeasurementCounts(sess sqlbuilder.Database, resultID int64) (uint64, uin
 func ListResults(sess sqlbuilder.Database) ([]ResultNetwork, []ResultNetwork, error) {
 	doneResults := []ResultNetwork{}
 	incompleteResults := []ResultNetwork{}
-
 	req := sess.Select(
 		db.Raw("networks.*"),
 		db.Raw("results.*"),
 	).From("results").
 		Join("networks").On("results.network_id = networks.network_id").
 		OrderBy("results.result_start_time")
-
 	if err := req.Where("result_is_done = true").All(&doneResults); err != nil {
 		return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
 	}
 	if err := req.Where("result_is_done = false").All(&incompleteResults); err != nil {
 		return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
 	}
-
 	return doneResults, incompleteResults, nil
 }
 

@@ -1,7 +1,6 @@
 package util
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"os"
@@ -30,6 +29,8 @@ var ansiEscapes = regexp.MustCompile(`[\x1B\x9B][[\]()#;?]*` +
 	`(?:(?:(?:[a-zA-Z\d]*(?:;[a-zA-Z\\d]*)*)?\x07)` +
 	`|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PRZcf-ntqry=><~]))`)
 
+// EscapeAwareRuneCountInString counts the number of runes in a
+// string taking into account escape sequences.
 func EscapeAwareRuneCountInString(s string) int {
 	n := utf8.RuneCountInString(s)
 	for _, sm := range ansiEscapes.FindAllString(s, -1) {
@@ -38,6 +39,7 @@ func EscapeAwareRuneCountInString(s string) int {
 	return n
 }
 
+// RightPadd adds right padding in from of a string
 func RightPad(str string, length int) string {
 	c := length - EscapeAwareRuneCountInString(str)
 	if c < 0 {
@@ -112,18 +114,4 @@ func WrapString(s string, lim uint) string {
 	}
 
 	return buf.String()
-}
-
-// ReadLine will read a single line from a bufio.Reader
-func ReadLine(r *bufio.Reader) (string, error) {
-	var (
-		isPrefix bool
-		err      error
-		line, ln []byte
-	)
-	for isPrefix && err == nil {
-		line, isPrefix, err = r.ReadLine()
-		ln = append(ln, line...)
-	}
-	return string(ln), err
 }

@@ -10,9 +10,7 @@ import (
 
 func init() {
 	cmd := root.Command("show", "Show a specific measurement")
-
-	msmtID := cmd.Arg("id", "the id of the measurement to show").Int64()
-
+	msmtID := cmd.Arg("id", "the id of the measurement to show").Required().Int64()
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		ctx, err := root.Init()
 		if err != nil {

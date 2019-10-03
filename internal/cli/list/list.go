@@ -10,9 +10,7 @@ import (
 
 func init() {
 	cmd := root.Command("list", "List results")
-
 	resultID := cmd.Arg("id", "the id of the result to list measurements for").Int64()
-
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		ctx, err := root.Init()
 		if err != nil {
@@ -25,7 +23,6 @@ func init() {
 				log.WithError(err).Error("failed to list measurements")
 				return err
 			}
-
 			msmtSummary := output.MeasurementSummaryData{
 				TotalCount:         0,
 				AnomalyCount:       0,
@@ -45,7 +42,6 @@ func init() {
 				if idx == len(measurements)-1 {
 					isLast = true
 				}
-
 				// We assume that since these are summary level information the first
 				// item will contain the information necessary.
 				if isFirst {
@@ -70,7 +66,6 @@ func init() {
 				log.WithError(err).Error("failed to list results")
 				return err
 			}
-
 			if len(incompleteResults) > 0 {
 				output.SectionTitle("Incomplete results")
 			}
@@ -92,7 +87,6 @@ func init() {
 					DataUsageDown:           result.DataUsageDown,
 				})
 			}
-
 			resultSummary := output.ResultSummaryData{}
 			netCount := make(map[uint]int)
 			output.SectionTitle("Results")
@@ -117,9 +111,9 @@ func init() {
 					TestKeys:                testKeys,
 					MeasurementCount:        totalCount,
 					MeasurementAnomalyCount: anmlyCount,
-					Done:          result.IsDone,
-					DataUsageUp:   result.DataUsageUp,
-					DataUsageDown: result.DataUsageDown,
+					Done:                    result.IsDone,
+					DataUsageUp:             result.DataUsageUp,
+					DataUsageDown:           result.DataUsageDown,
 				})
 				resultSummary.TotalTests++
 				netCount[result.Network.ASN]++
@@ -127,10 +121,8 @@ func init() {
 				resultSummary.TotalDataUsageDown += result.DataUsageDown
 			}
 			resultSummary.TotalNetworks = int64(len(netCount))
-
 			output.ResultSummary(resultSummary)
 		}
-
 		return nil
 	})
 }
