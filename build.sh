@@ -2,7 +2,6 @@
 set -e
 
 if [ "$GOPATH" != "" ]; then
-  echo "$0: WARNING: unsetting GOPATH as we don't need it" 1>&2
   unset GOPATH
 fi
 
@@ -24,6 +23,18 @@ elif [ "$1" = "macos" ]; then
   set -x
   go build -o dist/macos/amd64/ooniprobe -v ./cmd/ooniprobe
 
+elif [ "$1" = "release" ]; then
+  set -x
+  v=`git describe --tags`
+  $0 linux
+  tar -czf ooniprobe-linux-amd64-$v.tar.gz ./dist/linux/amd64
+  $0 macos
+  tar -czf ooniprobe-macos-amd64-$v.tar.gz ./dist/macos/amd64
+  $0 windows
+  tar -czf ooniprobe-windows-amd64-$v.tar.gz ./dist/windows/amd64
+  echo ""
+  echo "Now sign the packages and upload them to GitHub"
+
 elif [ "$1" = "_travis-linux" ]; then
   set -x
   $0 linux
@@ -40,7 +51,7 @@ elif [ "$1" = "_travis-osx" ]; then
   go test -v -coverprofile=ooni.cov ./...
 
 elif [ "$1" = "help" ]; then
-  echo "Usage: $0 linux | macos | windows"
+  echo "Usage: $0 linux | macos | release | windows"
   echo ""
   echo "Builds OONI on supported systems. The output binary will"
   echo "be saved at './dist/<system>/<arch>/ooniprobe[.exe]'."
@@ -60,6 +71,10 @@ elif [ "$1" = "help" ]; then
   echo "You should keep Measurement Kit up-to-date using:"
   echo ""
   echo "- brew upgrade"
+  echo ""
+  echo "# Release"
+  echo ""
+  echo "Will build ooniprobe for all supported systems."
   echo ""
   echo "# Windows"
   echo ""
