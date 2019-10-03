@@ -12,6 +12,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/internal/enginex"
 	"github.com/ooni/probe-cli/internal/util"
 	"github.com/pkg/errors"
 	db "upper.io/db.v3"
@@ -255,7 +256,7 @@ func CreateResult(sess sqlbuilder.Database, homePath string, testGroupName strin
 }
 
 // CreateNetwork will create a new network in the network table
-func CreateNetwork(sess sqlbuilder.Database, loc util.LocationProvider) (*Network, error) {
+func CreateNetwork(sess sqlbuilder.Database, loc enginex.LocationProvider) (*Network, error) {
 	network := Network{
 		ASN:         loc.ProbeASN(),
 		CountryCode: loc.ProbeCC(),

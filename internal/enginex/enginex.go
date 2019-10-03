@@ -10,7 +10,7 @@ import (
 
 // Logger is the logger used by the engine.
 var Logger = log.WithFields(log.Fields{
-  "type": "engine",
+	"type": "engine",
 })
 
 // MakeGenericTestKeys casts the m.TestKeys to a map[string]interface{}.
@@ -35,4 +35,15 @@ func MakeGenericTestKeys(m model.Measurement) (map[string]interface{}, error) {
 	var result map[string]interface{}
 	err = json.Unmarshal(data, &result)
 	return result, err
+}
+
+// LocationProvider is an interface that returns the current location. The
+// github.com/ooni/probe-engine/session.Session implements it.
+type LocationProvider interface {
+	ProbeASN() uint
+	ProbeASNString() string
+	ProbeCC() string
+	ProbeIP() string
+	ProbeNetworkName() string
+	ResolverIP() string
 }
