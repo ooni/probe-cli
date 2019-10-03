@@ -1,8 +1,8 @@
 package util
 
 import (
-	"bytes"
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"regexp"
@@ -114,12 +114,11 @@ func WrapString(s string, lim uint) string {
 	return buf.String()
 }
 
-
 // ReadLine will read a single line from a bufio.Reader
 func ReadLine(r *bufio.Reader) (string, error) {
 	var (
 		isPrefix bool
-		err error
+		err      error
 		line, ln []byte
 	)
 	for isPrefix && err == nil {
@@ -127,15 +126,4 @@ func ReadLine(r *bufio.Reader) (string, error) {
 		ln = append(ln, line...)
 	}
 	return string(ln), err
-}
-
-// LocationProvider is an interface that returns the current location. The
-// github.com/ooni/probe-engine/session.Session implements it.
-type LocationProvider interface {
-	ProbeASN() uint
-	ProbeASNString() string
-	ProbeCC() string
-	ProbeIP() string
-	ProbeNetworkName() string
-	ResolverIP() string
 }
