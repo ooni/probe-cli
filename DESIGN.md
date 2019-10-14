@@ -218,7 +218,7 @@ feel free to change it without notice in a future release.
 This command:
 
 ```
-ooniprobe version
+ooniprobe --batch version
 ```
 
 prints the version on the standard output as JSON, followed by newline, e.g.:
@@ -513,7 +513,7 @@ The summary message instead is like:
     "total_count": 3,
     "anomaly_count": 0,
 
-    "type": "measurement_summary"
+    "type": "measurement_summary",
 
     "asn": 30722,
     "data_usage_down": 15.4765625,
@@ -521,7 +521,7 @@ The summary message instead is like:
     "network_country_code": "IT",
     "network_name": "Vodafone Italia S.p.A.",
     "start_time": "2019-10-03T07:59:10.325979Z",
-    "total_runtime": 3.141369,
+    "total_runtime": 3.141369
   },
   "level": "info",
   "timestamp": "2019-10-03T16:42:00.22201+02:00",
@@ -540,7 +540,7 @@ emitted and the number of these that were anomalies.
 course is applied to the set of measurements as a whole.
 
 The `id` field of a `<measurement-entry>` message is key to get the
-raw measurement JSON.
+raw measurement JSON, using `ooniprobe --batch show <id>`.
 
 #### Content of the test_keys field
 
@@ -734,7 +734,7 @@ emits this JSON:
 ```JSON
 {
   "fields": {
-    "path": "/Users/sbasso/.ooni"
+    "path": "/home/sbs/.ooni"
   },
   "level": "info",
   "timestamp": "2019-10-14T13:25:35.145144+02:00",
@@ -749,7 +749,8 @@ depending on the configured `OONI_HOME` environment variable value.
 ## State and configuration directory
 
 This is `$HOME/.ooni` in all systems. The `ooniprobe --batch info`
-command can tell you the precise path on your system.
+command can tell you the precise path on your system, subject to the
+override caused by the `OONI_HOME` environment variable.
 
 The state and configuration directory contains:
 
@@ -765,7 +766,8 @@ another file using `--config <file>`
 Running concurrent instances of the OONI CLI is unsupported. They
 may conflict attempting to download/update assets. This is the main
 reason why we recommend using another `OONI_HOME` when running the
-CLI from another program/app.
+CLI from another program/app. We do this when running the CLI from
+OONI Desktop, and you should do the same in your use case.
 
 ## Configuration file
 
