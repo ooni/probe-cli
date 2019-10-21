@@ -536,7 +536,7 @@ emitted and the number of these that were anomalies.
 
 - `type` identifies this as a measurement summary message.
 
-- all other fields have already-describes semantics, which in this case of
+- all other fields have already-described semantics, which in this case of
 course is applied to the set of measurements as a whole.
 
 The `id` field of a `<measurement-entry>` message is key to get the
