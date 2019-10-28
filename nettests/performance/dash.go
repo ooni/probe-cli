@@ -4,7 +4,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/ooni/probe-cli/nettests"
-	"github.com/ooni/probe-engine/experiment/dash"
 )
 
 // Dash test implementation
@@ -13,10 +12,11 @@ type Dash struct {
 
 // Run starts the test
 func (d Dash) Run(ctl *nettests.Controller) error {
-	experiment := dash.NewExperiment(
-		ctl.Ctx.Session, dash.Config{},
-	)
-	return ctl.Run(experiment, []string{""})
+	builder, err := ctl.Ctx.Session.NewExperimentBuilder("dash")
+	if err != nil {
+		return err
+	}
+	return ctl.Run(builder, []string{""})
 }
 
 // DashTestKeys for the test

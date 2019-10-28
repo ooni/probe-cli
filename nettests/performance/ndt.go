@@ -2,7 +2,6 @@ package performance
 
 import (
 	"github.com/ooni/probe-cli/nettests"
-	"github.com/ooni/probe-engine/experiment/ndt"
 	"github.com/pkg/errors"
 )
 
@@ -12,10 +11,11 @@ type NDT struct {
 
 // Run starts the test
 func (n NDT) Run(ctl *nettests.Controller) error {
-	experiment := ndt.NewExperiment(
-		ctl.Ctx.Session, ndt.Config{},
-	)
-	return ctl.Run(experiment, []string{""})
+	builder, err := ctl.Ctx.Session.NewExperimentBuilder("ndt")
+	if err != nil {
+		return err
+	}
+	return ctl.Run(builder, []string{""})
 }
 
 // NDTTestKeys for the test

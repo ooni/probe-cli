@@ -1,7 +1,6 @@
 package run
 
 import (
-	"context"
 	"errors"
 
 	"github.com/alecthomas/kingpin"
@@ -97,19 +96,17 @@ func init() {
 		if ctx.Config.Advanced.BouncerURL != "" {
 			ctx.Session.AddAvailableHTTPSBouncer(ctx.Config.Advanced.BouncerURL)
 		}
-		if err := ctx.Session.MaybeLookupBackends(context.Background()); err != nil {
-			log.WithError(err).Warn("Failed to discover available test helpers")
-			// Rationale for falling through: some tests may be able to complete
-			// with no test helpers, so stopping may be excessive here.
+		if ctx.Config.Sharing.UploadResults && ctx.Config.Advanced.CollectorURL != "" {
+			ctx.Session.AddAvailableHTTPSCollector(ctx.Config.Advanced.CollectorURL)
 		}
-		if ctx.Config.Sharing.UploadResults {
-			if ctx.Config.Advanced.CollectorURL != "" {
-				ctx.Session.AddAvailableHTTPSCollector(ctx.Config.Advanced.CollectorURL)
-			} else if err := ctx.Session.MaybeLookupCollectors(context.Background()); err != nil {
-				log.WithError(err).Error("Failed to discover available collectors")
-				return err
-			}
+		if err := ctx.Session.MaybeLookupBackends(); err != nil {
+			log.WithError(err).Warn("Failed to discover OONI backends")
+			return err
 		}
+		// Make sure we share what the user wants us to share.
+		ctx.Session.SetIncludeProbeIP(ctx.Config.Sharing.IncludeIP)
+		ctx.Session.SetIncludeProbeASN(ctx.Config.Sharing.IncludeASN)
+		ctx.Session.SetIncludeProbeCC(ctx.Config.Sharing.IncludeCountry)
 		return nil
 	})
 

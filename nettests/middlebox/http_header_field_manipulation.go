@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/ooni/probe-cli/nettests"
-	"github.com/ooni/probe-engine/experiment/hhfm"
 )
 
 // HTTPHeaderFieldManipulation test implementation
@@ -13,10 +12,16 @@ type HTTPHeaderFieldManipulation struct {
 
 // Run starts the test
 func (h HTTPHeaderFieldManipulation) Run(ctl *nettests.Controller) error {
-	experiment := hhfm.NewExperiment(ctl.Ctx.Session, hhfm.Config{
-		LogLevel: "INFO",
-	})
-	return ctl.Run(experiment, []string{""})
+	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
+		"http_header_field_manipulation",
+	)
+	if err != nil {
+		return err
+	}
+	if err := builder.SetOptionString("LogLevel", "INFO"); err != nil {
+		return err
+	}
+	return ctl.Run(builder, []string{""})
 }
 
 // HTTPHeaderFieldManipulationTestKeys for the test

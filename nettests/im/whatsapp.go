@@ -2,7 +2,6 @@ package im
 
 import (
 	"github.com/ooni/probe-cli/nettests"
-	"github.com/ooni/probe-engine/experiment/whatsapp"
 )
 
 // WhatsApp test implementation
@@ -11,10 +10,16 @@ type WhatsApp struct {
 
 // Run starts the test
 func (h WhatsApp) Run(ctl *nettests.Controller) error {
-	experiment := whatsapp.NewExperiment(ctl.Ctx.Session, whatsapp.Config{
-		LogLevel: "INFO",
-	})
-	return ctl.Run(experiment, []string{""})
+	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
+		"whatsapp",
+	)
+	if err != nil {
+		return err
+	}
+	if err := builder.SetOptionString("LogLevel", "INFO"); err != nil {
+		return err
+	}
+	return ctl.Run(builder, []string{""})
 }
 
 // WhatsAppTestKeys for the test

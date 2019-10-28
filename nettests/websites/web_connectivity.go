@@ -1,28 +1,25 @@
 package websites
 
 import (
-	"context"
-
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
-	"github.com/ooni/probe-engine/experiment/web_connectivity"
-	"github.com/ooni/probe-engine/orchestra/testlists"
 )
 
 func lookupURLs(ctl *nettests.Controller, limit int) ([]string, map[int64]int64, error) {
 	var urls []string
 	urlIDMap := make(map[int64]int64)
-	testlist, err := testlists.NewClient(ctl.Ctx.Session).Do(
-		context.Background(), ctl.Ctx.Session.ProbeCC(), limit,
-	)
+	config := ctl.Ctx.Session.NewTestListsConfig()
+	config.Limit = limit
+	client := ctl.Ctx.Session.NewTestListsClient()
+	testlist, err := client.Fetch(config)
 	if err != nil {
 		return nil, nil, err
 	}
 	for idx, url := range testlist {
 		log.Debugf("Going over URL %d", idx)
 		urlID, err := database.CreateOrUpdateURL(
-			ctl.Ctx.DB, url.URL, url.CategoryCode, url.CountryCode,
+			ctl.Ctx.DB, url.URL(), url.CategoryCode(), url.CountryCode(),
 		)
 		if err != nil {
 			log.Error("failed to add to the URL table")
@@ -30,7 +27,7 @@ func lookupURLs(ctl *nettests.Controller, limit int) ([]string, map[int64]int64,
 		}
 		log.Debugf("Mapped URL %s to idx %d and urlID %d", url.URL, idx, urlID)
 		urlIDMap[int64(idx)] = urlID
-		urls = append(urls, url.URL)
+		urls = append(urls, url.URL())
 	}
 	return urls, urlIDMap, nil
 }
@@ -46,11 +43,16 @@ func (n WebConnectivity) Run(ctl *nettests.Controller) error {
 		return err
 	}
 	ctl.SetInputIdxMap(urlIDMap)
-	experiment := web_connectivity.NewExperiment(
-		ctl.Ctx.Session,
-		web_connectivity.Config{LogLevel: "INFO"},
+	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
+		"web_connectivity",
 	)
-	return ctl.Run(experiment, urls)
+	if err != nil {
+		return err
+	}
+	if err := builder.SetOptionString("LogLevel", "INFO"); err != nil {
+		return err
+	}
+	return ctl.Run(builder, urls)
 }
 
 // WebConnectivityTestKeys for the test

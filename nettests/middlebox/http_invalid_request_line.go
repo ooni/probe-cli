@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/ooni/probe-cli/nettests"
-	"github.com/ooni/probe-engine/experiment/hirl"
 )
 
 // HTTPInvalidRequestLine test implementation
@@ -13,10 +12,16 @@ type HTTPInvalidRequestLine struct {
 
 // Run starts the test
 func (h HTTPInvalidRequestLine) Run(ctl *nettests.Controller) error {
-	experiment := hirl.NewExperiment(ctl.Ctx.Session, hirl.Config{
-		LogLevel: "INFO",
-	})
-	return ctl.Run(experiment, []string{""})
+	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
+		"http_invalid_request_line",
+	)
+	if err != nil {
+		return err
+	}
+	if err := builder.SetOptionString("LogLevel", "INFO"); err != nil {
+		return err
+	}
+	return ctl.Run(builder, []string{""})
 }
 
 // HTTPInvalidRequestLineTestKeys for the test

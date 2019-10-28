@@ -1,7 +1,6 @@
 package ooni
 
 import (
-	"context"
 	"io/ioutil"
 	"os"
 
@@ -14,7 +13,7 @@ import (
 	"github.com/ooni/probe-cli/internal/onboard"
 	"github.com/ooni/probe-cli/utils"
 	"github.com/ooni/probe-cli/version"
-	"github.com/ooni/probe-engine/session"
+	engine "github.com/ooni/probe-engine"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -24,7 +23,7 @@ type Context struct {
 	Config  *config.Config
 	DB      sqlbuilder.Database
 	IsBatch bool
-	Session *session.Session
+	Session *engine.Session
 
 	Home    string
 	TempDir string
@@ -35,7 +34,7 @@ type Context struct {
 
 // MaybeLocationLookup will lookup the location of the user unless it's already cached
 func (c *Context) MaybeLocationLookup() error {
-	return c.Session.MaybeLookupLocation(context.Background())
+	return c.Session.MaybeLookupLocation()
 }
 
 // MaybeOnboarding will run the onboarding process only if the informed consent
@@ -89,6 +88,18 @@ func (c *Context) Init() error {
 	}
 	c.TempDir = tempDir
 
+	sess, err := engine.NewSession(engine.SessionConfig{
+		Logger:          enginex.Logger,
+		SoftwareName:    "ooniprobe-desktop",
+		SoftwareVersion: version.Version,
+		AssetsDir:       utils.AssetsDir(c.Home),
+		TempDir:         c.TempDir,
+	})
+	if err != nil {
+		return err
+	}
+	c.Session = sess
+
 	return nil
 }
 
@@ -98,14 +109,6 @@ func NewContext(configPath string, homePath string) *Context {
 		Home:       homePath,
 		Config:     &config.Config{},
 		configPath: configPath,
-		Session: session.New(
-			enginex.Logger,
-			"ooniprobe-desktop",
-			version.Version,
-			utils.AssetsDir(homePath),
-			nil, // explicit proxy url.URL
-			nil, // explicit tls.Config
-		),
 	}
 }
 
