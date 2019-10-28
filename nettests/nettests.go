@@ -1,7 +1,6 @@
 package nettests
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"path/filepath"
@@ -11,12 +10,9 @@ import (
 	"github.com/fatih/color"
 	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/database"
-	"github.com/ooni/probe-cli/internal/enginex"
 	"github.com/ooni/probe-cli/internal/output"
 	"github.com/ooni/probe-cli/utils"
-	"github.com/ooni/probe-engine/experiment"
-	"github.com/ooni/probe-engine/experiment/handler"
-	"github.com/ooni/probe-engine/model"
+	engine "github.com/ooni/probe-engine"
 	"github.com/pkg/errors"
 )
 
@@ -79,13 +75,13 @@ func (c *Controller) SetNettestIndex(i, n int) {
 //
 // This function will continue to run in most cases but will
 // immediately halt if something's wrong with the file system.
-func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
-	ctx := context.Background()
+func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) error {
 
 	// This will configure the controller as handler for the callbacks
 	// called by ooni/probe-engine/experiment.Experiment.
-	exp.Callbacks = handler.Callbacks(c)
+	builder.SetCallbacks(engine.Callbacks(c))
 	c.numInputs = len(inputs)
+	exp := builder.Build()
 
 	c.msmts = make(map[int64]*database.Measurement)
 
@@ -98,12 +94,12 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 	log.Debugf("OutputPath: %s", c.msmtPath)
 
 	if c.Ctx.Config.Sharing.UploadResults {
-		if err := exp.OpenReport(ctx); err != nil {
+		if err := exp.OpenReport(); err != nil {
 			log.Debugf(
 				"%s: %s", color.RedString("failure.report_create"), err.Error(),
 			)
 		} else {
-			defer exp.CloseReport(ctx)
+			defer exp.CloseReport()
 			log.Debugf(color.RedString("status.report_create"))
 			reportID = sql.NullString{String: exp.ReportID(), Valid: true}
 		}
@@ -118,14 +114,14 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 			urlID = sql.NullInt64{Int64: c.inputIdxMap[idx64], Valid: true}
 		}
 		msmt, err := database.CreateMeasurement(
-			c.Ctx.DB, reportID, exp.TestName, resultID, c.msmtPath, urlID,
+			c.Ctx.DB, reportID, exp.Name(), resultID, c.msmtPath, urlID,
 		)
 		if err != nil {
 			return errors.Wrap(err, "failed to create measurement")
 		}
 		c.msmts[idx64] = msmt
 
-		measurement, err := exp.Measure(ctx, input)
+		measurement, err := exp.Measure(input)
 		if err != nil {
 			log.WithError(err).Debug(color.RedString("failure.measurement"))
 			if err := c.msmts[idx64].Failed(c.Ctx.DB, err.Error()); err != nil {
@@ -134,22 +130,11 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 			continue
 		}
 
-		// Make sure we share what the user wants us to share.
-		if c.Ctx.Config.Sharing.IncludeIP == false {
-			measurement.ProbeIP = model.DefaultProbeIP
-		}
-		if c.Ctx.Config.Sharing.IncludeASN == false {
-			measurement.ProbeASN = fmt.Sprintf("AS%d", model.DefaultProbeASN)
-		}
-		if c.Ctx.Config.Sharing.IncludeCountry == false {
-			measurement.ProbeCC = model.DefaultProbeCC
-		}
-
 		if c.Ctx.Config.Sharing.UploadResults {
 			// Implementation note: SubmitMeasurement will fail here if we did fail
 			// to open the report but we still want to continue. There will be a
 			// bit of a spew in the logs, perhaps, but stopping seems less efficient.
-			if err := exp.SubmitMeasurement(ctx, &measurement); err != nil {
+			if err := exp.SubmitAndUpdateMeasurement(measurement); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))
 				if err := c.msmts[idx64].UploadFailed(c.Ctx.DB, err.Error()); err != nil {
 					return errors.Wrap(err, "failed to mark upload as failed")
@@ -171,7 +156,7 @@ func (c *Controller) Run(exp *experiment.Experiment, inputs []string) error {
 		// is an inconsistency between the code that generate the measurement
 		// and the code that process the measurement. We do have some data
 		// but we're not gonna have a summary. To be reconsidered.
-		genericTk, err := enginex.MakeGenericTestKeys(measurement)
+		genericTk, err := measurement.MakeGenericTestKeys()
 		if err != nil {
 			log.WithError(err).Error("failed to cast the test keys")
 			continue
@@ -204,7 +189,7 @@ func (c *Controller) OnProgress(perc float64, msg string) {
 		// make the percentage relative to the current input over all inputs
 		floor := (float64(c.curInputIdx) / float64(c.numInputs))
 		step := 1.0 / float64(c.numInputs)
-		perc = floor + perc * step
+		perc = floor + perc*step
 	}
 	if c.ntCount > 0 {
 		// make the percentage relative to the current nettest over all nettests
