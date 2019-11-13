@@ -15,3 +15,11 @@ Run
 
 to get information on the supported systems as well as to get
 instructions on how to install dependencies.
+
+## Releasing
+
+```bash
+./build.sh release
+```
+
+and follow instructions.
