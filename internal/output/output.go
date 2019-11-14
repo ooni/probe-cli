@@ -14,17 +14,18 @@ import (
 // MeasurementJSON prints the JSON of a measurement
 func MeasurementJSON(j map[string]interface{}) {
 	log.WithFields(log.Fields{
-		"type":       "measurement_json",
+		"type":             "measurement_json",
 		"measurement_json": j,
 	}).Info("Measurement JSON")
 }
 
 // Progress logs a progress type event
-func Progress(key string, perc float64, msg string) {
+func Progress(key string, perc float64, eta float64, msg string) {
 	log.WithFields(log.Fields{
 		"type":       "progress",
 		"key":        key,
 		"percentage": perc,
+		"eta":        eta,
 	}).Info(msg)
 }
 
@@ -42,13 +43,13 @@ type MeasurementSummaryData struct {
 
 func MeasurementSummary(msmt MeasurementSummaryData) {
 	log.WithFields(log.Fields{
-		"type":            "measurement_summary",
-		"total_runtime":   msmt.TotalRuntime,
-		"total_count":     msmt.TotalCount,
-		"anomaly_count":   msmt.AnomalyCount,
-		"data_usage_down": msmt.DataUsageDown,
-		"data_usage_up":   msmt.DataUsageUp,
-		"asn":             msmt.ASN,
+		"type":                 "measurement_summary",
+		"total_runtime":        msmt.TotalRuntime,
+		"total_count":          msmt.TotalCount,
+		"anomaly_count":        msmt.AnomalyCount,
+		"data_usage_down":      msmt.DataUsageDown,
+		"data_usage_up":        msmt.DataUsageUp,
+		"asn":                  msmt.ASN,
 		"network_country_code": msmt.NetworkCountryCode,
 		"network_name":         msmt.NetworkName,
 		"start_time":           msmt.StartTime,
