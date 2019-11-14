@@ -6,11 +6,11 @@ import (
 	"github.com/ooni/probe-cli/nettests"
 )
 
-func lookupURLs(ctl *nettests.Controller, limit int) ([]string, map[int64]int64, error) {
+func lookupURLs(ctl *nettests.Controller, limit int64) ([]string, map[int64]int64, error) {
 	var urls []string
 	urlIDMap := make(map[int64]int64)
 	config := ctl.Ctx.Session.NewTestListsConfig()
-	config.Limit = limit
+	config.Limit = int(limit)
 	client := ctl.Ctx.Session.NewTestListsClient()
 	testlist, err := client.Fetch(config)
 	if err != nil {
@@ -38,7 +38,7 @@ type WebConnectivity struct {
 
 // Run starts the test
 func (n WebConnectivity) Run(ctl *nettests.Controller) error {
-	urls, urlIDMap, err := lookupURLs(ctl, ctl.Ctx.Config.NettestGroups.Websites.Limit)
+	urls, urlIDMap, err := lookupURLs(ctl, ctl.Ctx.Config.Nettests.WebsitesURLLimit)
 	if err != nil {
 		return err
 	}

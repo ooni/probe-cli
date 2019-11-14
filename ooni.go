@@ -73,6 +73,9 @@ func (c *Context) Init() error {
 	if err != nil {
 		return err
 	}
+	if err = c.Config.MaybeMigrate(); err != nil {
+		return errors.Wrap(err, "migrating config")
+	}
 
 	c.dbPath = utils.DBDir(c.Home, "main")
 	log.Debugf("Connecting to database sqlite3://%s", c.dbPath)

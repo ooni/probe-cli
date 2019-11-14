@@ -11,6 +11,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ConfigVersion is the current version of the config
+const ConfigVersion = 1
+
 // ReadConfig reads the configuration from the path
 func ReadConfig(path string) (*Config, error) {
 	b, err := ioutil.ReadFile(path)
@@ -34,13 +37,12 @@ func ParseConfig(b []byte) (*Config, error) {
 		return nil, errors.Wrap(err, "parsing json")
 	}
 
-	if err := c.Default(); err != nil {
-		return nil, errors.Wrap(err, "defaulting")
+	home, err := utils.GetOONIHome()
+	if err != nil {
+		return nil, err
 	}
+	c.path = utils.ConfigPath(home)
 
-	if err := c.Validate(); err != nil {
-		return nil, errors.Wrap(err, "validating")
-	}
 	if c.Advanced.SendCrashReports == false {
 		log.Info("Disabling crash reporting.")
 		crashreport.Disabled = true
@@ -55,14 +57,10 @@ type Config struct {
 	Comment         string `json:"_"`
 	Version         int64  `json:"_version"`
 	InformedConsent bool   `json:"_informed_consent"`
-	IsBeta          bool   `json:"_is_beta"` // This is a boolean flag used to indicate this installation of OONI Probe was a beta install. These installations will have their data deleted across releases.
 
-	AutoUpdate       bool             `json:"auto_update"`
-	Sharing          Sharing          `json:"sharing"`
-	Notifications    Notifications    `json:"notifications"`
-	AutomatedTesting AutomatedTesting `json:"automated_testing"`
-	NettestGroups    NettestGroups    `json:"test_settings"`
-	Advanced         Advanced         `json:"advanced"`
+	Sharing  Sharing  `json:"sharing"`
+	Nettests Nettests `json:"nettests"`
+	Advanced Advanced `json:"advanced"`
 
 	mutex sync.Mutex
 	path  string
@@ -92,18 +90,11 @@ func (c *Config) Unlock() {
 	c.mutex.Unlock()
 }
 
-// Default config settings
-func (c *Config) Default() error {
-	home, err := utils.GetOONIHome()
-	if err != nil {
-		return err
+// MaybeMigrate checks the current config version and the config file on disk
+// and if necessary performs and upgrade of the configuration file.
+func (c *Config) MaybeMigrate() error {
+	if c.Version < ConfigVersion {
+		return c.Write()
 	}
-
-	c.path = utils.ConfigPath(home)
-	return nil
-}
-
-// Validate the config file
-func (c *Config) Validate() error {
 	return nil
 }
