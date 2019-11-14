@@ -88,13 +88,13 @@ func TestUpdateConfig(t *testing.T) {
 		t.Error("includeASN differs")
 	}
 	if newConfig.Sharing.IncludeCountry != origIncludeCountry {
-		t.Error("includeIP differs")
+		t.Error("includeCountry differs")
 	}
 	if newConfig.Sharing.UploadResults != origUploadResults {
-		t.Error("includeIP differs")
+		t.Error("UploadResults differs")
 	}
 	if newConfig.InformedConsent != origInformedConsent {
-		t.Error("infomredConsnet differs")
+		t.Error("InformedConsent differs")
 	}
 
 	// Check that the config file stays the same if it's not changed
