@@ -5,11 +5,15 @@ if [ "$GOPATH" != "" ]; then
   unset GOPATH
 fi
 
+buildtags="-tags nopsiphon"
+ldflags="-s -w"
+
 if [ "$1" = "windows" ]; then
   set -x
   CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++                         \
     CGO_ENABLED=1 GOOS=windows GOARCH=amd64                                    \
-      go build -o dist/windows/amd64/ooniprobe.exe -v ./cmd/ooniprobe
+      go build $buildtags -ldflags="$ldflags"                                  \
+        -o dist/windows/amd64/ooniprobe.exe -v ./cmd/ooniprobe
 
 elif [ "$1" = "linux" ]; then
   set -x
@@ -17,11 +21,13 @@ elif [ "$1" = "linux" ]; then
   docker run -v `pwd`:/oonibuild -w /oonibuild -t --cap-drop=all               \
     --user `id -u`:`id -g` -e 'GOCACHE=/tmp/go/cache' -e 'GOPATH=/tmp/go/path' \
     oonibuild                                                                  \
-    go build -o dist/linux/amd64/ooniprobe -v ./cmd/ooniprobe
+    go build $buildtags -ldflags="$ldflags"                                    \
+      -o dist/linux/amd64/ooniprobe -v ./cmd/ooniprobe
 
 elif [ "$1" = "macos" ]; then
   set -x
-  go build -o dist/macos/amd64/ooniprobe -v ./cmd/ooniprobe
+  go build $buildtags -ldflags="$ldflags"                                      \
+    -o dist/macos/amd64/ooniprobe -v ./cmd/ooniprobe
 
 elif [ "$1" = "release" ]; then
   set -x
