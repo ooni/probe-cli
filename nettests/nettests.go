@@ -44,6 +44,7 @@ type Controller struct {
 	nt          Nettest
 	ntCount     int
 	ntIndex     int
+	ntStartTime time.Time // used to calculate the eta
 	msmts       map[int64]*database.Measurement
 	msmtPath    string          // XXX maybe we can drop this and just use a temporary file
 	inputIdxMap map[int64]int64 // Used to map mk idx to database id
@@ -105,6 +106,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 		}
 	}
 
+	c.ntStartTime = time.Now()
 	for idx, input := range inputs {
 		c.curInputIdx = idx // allow for precise progress
 		idx64 := int64(idx)
@@ -185,18 +187,21 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 // OnProgress should be called when a new progress event is available.
 func (c *Controller) OnProgress(perc float64, msg string) {
 	log.Debugf("OnProgress: %f - %s", perc, msg)
+	var eta float64
+	eta = -1.0
 	if c.numInputs >= 1 {
 		// make the percentage relative to the current input over all inputs
 		floor := (float64(c.curInputIdx) / float64(c.numInputs))
 		step := 1.0 / float64(c.numInputs)
 		perc = floor + perc*step
+		eta = (float64(time.Now().Sub(c.ntStartTime).Seconds()) / float64(c.curInputIdx)) * float64(c.numInputs-c.curInputIdx)
 	}
 	if c.ntCount > 0 {
 		// make the percentage relative to the current nettest over all nettests
 		perc = float64(c.ntIndex)/float64(c.ntCount) + perc/float64(c.ntCount)
 	}
 	key := fmt.Sprintf("%T", c.nt)
-	output.Progress(key, perc, msg)
+	output.Progress(key, perc, eta, msg)
 }
 
 // OnDataUsage should be called when we have a data usage update.
