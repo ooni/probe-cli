@@ -97,7 +97,8 @@ func TestUpdateConfig(t *testing.T) {
 		t.Error("InformedConsent differs")
 	}
 
-	// Check that the config file stays the same if it's not changed
+	// Check that the config file stays the same if it's already the most up to
+	// date version
 	config.MaybeMigrate()
 	finalShasum, err := getShasum(configPath)
 	if err != nil {
