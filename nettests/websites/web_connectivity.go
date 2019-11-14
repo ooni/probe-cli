@@ -38,7 +38,7 @@ type WebConnectivity struct {
 
 // Run starts the test
 func (n WebConnectivity) Run(ctl *nettests.Controller) error {
-	urls, urlIDMap, err := lookupURLs(ctl, ctl.Ctx.Config.NettestGroups.Websites.Limit)
+	urls, urlIDMap, err := lookupURLs(ctl, ctl.Ctx.Config.Nettests.WebsitesURLLimit)
 	if err != nil {
 		return err
 	}

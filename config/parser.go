@@ -57,12 +57,8 @@ type Config struct {
 	InformedConsent bool   `json:"_informed_consent"`
 	IsBeta          bool   `json:"_is_beta"` // This is a boolean flag used to indicate this installation of OONI Probe was a beta install. These installations will have their data deleted across releases.
 
-	AutoUpdate       bool             `json:"auto_update"`
-	Sharing          Sharing          `json:"sharing"`
-	Notifications    Notifications    `json:"notifications"`
-	AutomatedTesting AutomatedTesting `json:"automated_testing"`
-	NettestGroups    NettestGroups    `json:"test_settings"`
-	Advanced         Advanced         `json:"advanced"`
+	Sharing  Sharing  `json:"sharing"`
+	Advanced Advanced `json:"advanced"`
 
 	mutex sync.Mutex
 	path  string

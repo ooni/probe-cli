@@ -10,9 +10,6 @@ func TestParseConfig(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(config.NettestGroups.Middlebox.EnabledTests) < 0 {
-		t.Error("at least one middlebox test should be enabled")
-	}
 	if config.Sharing.IncludeCountry == false {
 		t.Error("country should be included")
 	}
