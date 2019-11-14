@@ -1,9 +1,9 @@
 {
   "_": "This is your OONI Probe config file. See https://ooni.io/help/probe-cli for help",
   "_version": 1,
-  "_informed_consent": false,
+  "_informed_consent": true,
   "sharing": {
-    "include_ip": false,
+    "include_ip": true,
     "include_asn": true,
     "include_country": true,
     "upload_results": true
