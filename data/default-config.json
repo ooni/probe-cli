@@ -2,7 +2,6 @@
   "_": "This is your OONI Probe config file. See https://ooni.io/help/probe-cli for help",
   "_version": 1,
   "_informed_consent": false,
-  "_is_beta": true,
   "sharing": {
     "include_ip": false,
     "include_asn": true,
@@ -10,7 +9,7 @@
     "upload_results": true
   },
   "nettests": {
-    "websites_url_limit": 0,
+    "websites_url_limit": 0
   },
   "advanced": {
     "use_domain_fronting": false,
