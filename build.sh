@@ -5,7 +5,7 @@ if [ "$GOPATH" != "" ]; then
   unset GOPATH
 fi
 
-buildtags="-tags nopsiphon"
+buildtags=""
 ldflags="-s -w"
 
 if [ "$1" = "windows" ]; then
