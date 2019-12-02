@@ -8,7 +8,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/database"
-	"github.com/ooni/probe-cli/internal/util"
+	"github.com/ooni/probe-cli/utils"
 )
 
 // MeasurementJSON prints the JSON of a measurement
@@ -154,12 +154,12 @@ func SectionTitle(text string) {
 
 func Paragraph(text string) {
 	const width = 80
-	fmt.Println(util.WrapString(text, width))
+	fmt.Println(utils.WrapString(text, width))
 }
 
 func Bullet(text string) {
 	const width = 80
-	fmt.Printf("• %s\n", util.WrapString(text, width))
+	fmt.Printf("• %s\n", utils.WrapString(text, width))
 }
 
 func PressEnterToContinue(text string) {

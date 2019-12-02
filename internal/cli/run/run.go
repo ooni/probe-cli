@@ -7,6 +7,7 @@ import (
 	"github.com/apex/log"
 	"github.com/fatih/color"
 	ooni "github.com/ooni/probe-cli"
+	"github.com/ooni/probe-cli/internal/cli/onboard"
 	"github.com/ooni/probe-cli/internal/cli/root"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
@@ -66,7 +67,7 @@ func init() {
 			return err
 		}
 
-		if err = ctx.MaybeOnboarding(); err != nil {
+		if err = onboard.MaybeOnboarding(ctx); err != nil {
 			log.WithError(err).Error("failed to perform onboarding")
 			return err
 		}
