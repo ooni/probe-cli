@@ -1,15 +1,11 @@
-package im
-
-import (
-	"github.com/ooni/probe-cli/nettests"
-)
+package nettests
 
 // FacebookMessenger test implementation
 type FacebookMessenger struct {
 }
 
 // Run starts the test
-func (h FacebookMessenger) Run(ctl *nettests.Controller) error {
+func (h FacebookMessenger) Run(ctl *Controller) error {
 	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
 		"facebook_messenger",
 	)

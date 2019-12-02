@@ -36,17 +36,11 @@ func TestRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := database.CreateResult(ctx.DB, ctx.Home, tg, network.ID)
+	res, err := database.CreateResult(ctx.DB, ctx.Home, "im", network.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
-		"telegram",
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	nt := Telegram{}
 	ctl := NewController(nt, ctx, res)
-	ctl.Run(builder, []string{""})
 	nt.Run(ctl)
 }
