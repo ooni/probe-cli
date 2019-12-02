@@ -101,6 +101,10 @@ Priority: medium
 Supported: ❌
 Priority: high
 
+* Test a custom URL list from a file with web_connectivity
+Supported: ❌
+Priority: high
+
 * Run tests automatically like `ooniprobe-agent`
 Supported: ❌
 Priority: high
