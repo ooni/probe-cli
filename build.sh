@@ -51,7 +51,7 @@ elif [ "$1" = "_travis-linux" ]; then
   set -x
   $0 linux
   docker run -v `pwd`:/oonibuild -w /oonibuild -t oonibuild                    \
-    go test -v -coverprofile=coverage.cov -covermode=atomic ./...
+    go test -v -race -coverprofile=coverage.cov -coverpkg=./... ./...
 
 elif [ "$1" = "_travis-osx" ]; then
   set -x
@@ -60,7 +60,7 @@ elif [ "$1" = "_travis-osx" ]; then
   brew upgrade
   brew install measurement-kit
   $0 macos
-  go test -v -coverprofile=coverage.cov -covermode=atomic ./...
+  go test -v -race -coverprofile=coverage.cov -coverpkg=./... ./...
 
 elif [ "$1" = "help" ]; then
   echo "Usage: $0 linux | macos | release | windows"
