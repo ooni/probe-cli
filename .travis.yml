@@ -8,3 +8,5 @@ env:
 script:
 - ./build.sh _travis-${TRAVIS_OS_NAME}
 - ./scripts/travis_test.sh
+after_success:
+- bash <(curl -s https://codecov.io/bash)
