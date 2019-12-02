@@ -36,11 +36,11 @@ func TestRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := database.CreateResult(ctx.DB, ctx.Home, "im", network.ID)
+	res, err := database.CreateResult(ctx.DB, ctx.Home, "middlebox", network.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	nt := Telegram{}
+	nt := HTTPInvalidRequestLine{}
 	ctl := NewController(nt, ctx, res)
 	nt.Run(ctl)
 }
