@@ -50,8 +50,9 @@ elif [ "$1" = "release" ]; then
 elif [ "$1" = "_travis-linux" ]; then
   set -x
   $0 linux
+  # TODO -race does not work on alpine. See: https://travis-ci.org/ooni/probe-cli/builds/619631256#L962
   docker run -v `pwd`:/oonibuild -w /oonibuild -t oonibuild                    \
-    go test -v -race -coverprofile=coverage.cov -coverpkg=./... ./...
+    go test -v -coverprofile=coverage.cov -coverpkg=./... ./...
 
 elif [ "$1" = "_travis-osx" ]; then
   set -x
