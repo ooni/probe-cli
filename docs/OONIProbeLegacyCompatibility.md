@@ -77,7 +77,7 @@ Supported: ✅
 probe-cli equivalent: we now call a test deck a test group and we have them
 coded into the logic of the client
 
-* Run an individual netttest
+* Run an individual nettest
 Supported: ❌
 Priority: medium
 
