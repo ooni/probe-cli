@@ -4,6 +4,14 @@
 Supported: ✅
 probe-cli equivalent: `-h, --help`
 
+`--version` Display the version exit
+Supported: ✅
+probe-cli equivalent: `ooniprobe version`
+
+`-v, --verbose` Enable verbose log output
+Supported: ✅
+probe-cli equivalent: `ooniprobe -v`
+
 `-n, --no-collector` Disable writing to collector
 Supported: ❌
 Priority: high
@@ -69,6 +77,10 @@ Supported: ❌
 Priority: wontfix, we don't support any other backend beyond https, yet we will
 and we would prefer to have the logic of reporting be managed by the probe
 itself and not expose this setting.
+
+`-Q, --queue`, AMQP Queue URL. amqp://user:pass@host:port/vhost/queue
+Supported: ❌
+Priority: wontfix
 
 # Features
 
