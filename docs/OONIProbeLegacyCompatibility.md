@@ -61,13 +61,13 @@ Supported: ✅
 probe-cli equivalent: set the `OONI_HOME` environment variable
 
 `-a, --annotations key:value[,key2:value2]` Annotate the report with a key:value[, key:value] format.
-Supported: ✅
+Supported: ❌
 Priority: high
 
 `-P, --preferred-backend onion|https|cloudfront` Set the preferred backend to use when submitting results and/or communicating with test helpers. Can be either onion, https or cloudfront
 Supported: ❌
 Priority: wontfix, we don't support any other backend beyond https, yet we will
-and yet we would prefer to have the logic of reporting be managed by the probe
+and we would prefer to have the logic of reporting be managed by the probe
 itself and not expose this setting.
 
 # Features
