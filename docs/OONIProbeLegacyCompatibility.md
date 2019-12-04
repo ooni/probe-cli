@@ -58,7 +58,7 @@ Priority: medium
 
 `-O, --pcapfile PATH_TO_PCAPFILE` Write a PCAP of the ooniprobe session to this filename.
 Supported: ❌
-Priority: wontfix, we don't have packet capture support in probe-cli
+Priority: low
 
 `-f, --configfile PATH_TO_CONFIG` Specify a path to the ooniprobe configuration file.
 Supported: ✅
@@ -109,7 +109,7 @@ Priority: high
 Supported: ❌
 Priority: high
 
-* Write custom tests like OONI test templates
+* Public API for writing OONI tests (see: https://github.com/ooni/probe-legacy/blob/master/docs/source/writing_tests.rst)
 Supported: ❌
 Priority: medium
 
