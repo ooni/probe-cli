@@ -9,7 +9,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/database"
-	"github.com/ooni/probe-cli/internal/util"
+	"github.com/ooni/probe-cli/utils"
 )
 
 func formatSpeed(speed float64) string {
@@ -95,7 +95,7 @@ func logResultItem(w io.Writer, f log.Fields) error {
 		fmt.Fprintf(w, "┢"+strings.Repeat("━", colWidth*2+2)+"┪\n")
 	}
 
-	firstRow := util.RightPad(fmt.Sprintf("#%d - %s", rID, startTime.Format(time.RFC822)), colWidth*2)
+	firstRow := utils.RightPad(fmt.Sprintf("#%d - %s", rID, startTime.Format(time.RFC822)), colWidth*2)
 	fmt.Fprintf(w, "┃ "+firstRow+" ┃\n")
 	fmt.Fprintf(w, "┡"+strings.Repeat("━", colWidth*2+2)+"┩\n")
 
@@ -105,14 +105,14 @@ func logResultItem(w io.Writer, f log.Fields) error {
 		f.Get("test_keys").(string))
 
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
-		util.RightPad(name, colWidth),
-		util.RightPad(summary[0], colWidth)))
+		utils.RightPad(name, colWidth),
+		utils.RightPad(summary[0], colWidth)))
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
-		util.RightPad(networkName, colWidth),
-		util.RightPad(summary[1], colWidth)))
+		utils.RightPad(networkName, colWidth),
+		utils.RightPad(summary[1], colWidth)))
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
-		util.RightPad(asn, colWidth),
-		util.RightPad(summary[2], colWidth)))
+		utils.RightPad(asn, colWidth),
+		utils.RightPad(summary[2], colWidth)))
 
 	if index == totalCount-1 {
 		if isDone == true {
@@ -139,9 +139,9 @@ func logResultSummary(w io.Writer, f log.Fields) error {
 	}
 	//              └┬──────────────┬──────────────┬──────────────┬
 	fmt.Fprintf(w, " │ %s │ %s │ %s │\n",
-		util.RightPad(fmt.Sprintf("%d tests", tests), 12),
-		util.RightPad(fmt.Sprintf("%d nets", networks), 12),
-		util.RightPad(fmt.Sprintf("⬆ %s  ⬇ %s", formatSize(dataUp), formatSize(dataDown)), 16))
+		utils.RightPad(fmt.Sprintf("%d tests", tests), 12),
+		utils.RightPad(fmt.Sprintf("%d nets", networks), 12),
+		utils.RightPad(fmt.Sprintf("⬆ %s  ⬇ %s", formatSize(dataUp), formatSize(dataDown)), 16))
 	fmt.Fprintf(w, " └──────────────┴──────────────┴──────────────────┘\n")
 
 	return nil

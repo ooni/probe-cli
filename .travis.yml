@@ -5,6 +5,10 @@ services:
 - docker
 env:
 - OS_NAME: linux
+before_script:
+- go get golang.org/x/tools/cmd/cover
+- go get github.com/mattn/goveralls
 script:
 - ./build.sh _travis-${TRAVIS_OS_NAME}
+- $GOPATH/bin/goveralls -coverprofile=coverage.cov -service=travis-ci
 - ./scripts/travis_test.sh

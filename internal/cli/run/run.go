@@ -7,14 +7,14 @@ import (
 	"github.com/apex/log"
 	"github.com/fatih/color"
 	ooni "github.com/ooni/probe-cli"
+	"github.com/ooni/probe-cli/internal/cli/onboard"
 	"github.com/ooni/probe-cli/internal/cli/root"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
-	"github.com/ooni/probe-cli/nettests/groups"
 )
 
 func runNettestGroup(tg string, ctx *ooni.Context, network *database.Network) error {
-	group, ok := groups.NettestGroups[tg]
+	group, ok := nettests.NettestGroups[tg]
 	if !ok {
 		log.Errorf("No test group named %s", tg)
 		return errors.New("invalid test group name")
@@ -50,7 +50,7 @@ func init() {
 	var ctx *ooni.Context
 	var network *database.Network
 
-	for name := range groups.NettestGroups {
+	for name := range nettests.NettestGroups {
 		nettestGroupNamesBlue = append(nettestGroupNamesBlue, color.BlueString(name))
 	}
 
@@ -66,7 +66,7 @@ func init() {
 			return err
 		}
 
-		if err = ctx.MaybeOnboarding(); err != nil {
+		if err = onboard.MaybeOnboarding(ctx); err != nil {
 			log.WithError(err).Error("failed to perform onboarding")
 			return err
 		}
@@ -129,7 +129,7 @@ func init() {
 	allCmd := cmd.Command("all", "").Default()
 	allCmd.Action(func(_ *kingpin.ParseContext) error {
 		log.Infof("Running %s tests", color.BlueString("all"))
-		for tg := range groups.NettestGroups {
+		for tg := range nettests.NettestGroups {
 			if err := runNettestGroup(tg, ctx, network); err != nil {
 				log.WithError(err).Errorf("failed to run %s", tg)
 			}

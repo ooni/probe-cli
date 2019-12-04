@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ooni/probe-cli/internal/shutil"
+	"github.com/ooni/probe-cli/utils/shutil"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )

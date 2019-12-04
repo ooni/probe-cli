@@ -1,4 +1,5 @@
 /dist
 /ooni.cov
+/coverage.txt
 *.njson
 .DS_Store

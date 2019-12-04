@@ -1,15 +1,11 @@
-package im
-
-import (
-	"github.com/ooni/probe-cli/nettests"
-)
+package nettests
 
 // WhatsApp test implementation
 type WhatsApp struct {
 }
 
 // Run starts the test
-func (h WhatsApp) Run(ctl *nettests.Controller) error {
+func (h WhatsApp) Run(ctl *Controller) error {
 	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
 		"whatsapp",
 	)

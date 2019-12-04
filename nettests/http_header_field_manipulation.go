@@ -1,9 +1,7 @@
-package middlebox
+package nettests
 
 import (
 	"errors"
-
-	"github.com/ooni/probe-cli/nettests"
 )
 
 // HTTPHeaderFieldManipulation test implementation
@@ -11,7 +9,7 @@ type HTTPHeaderFieldManipulation struct {
 }
 
 // Run starts the test
-func (h HTTPHeaderFieldManipulation) Run(ctl *nettests.Controller) error {
+func (h HTTPHeaderFieldManipulation) Run(ctl *Controller) error {
 	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
 		"http_header_field_manipulation",
 	)

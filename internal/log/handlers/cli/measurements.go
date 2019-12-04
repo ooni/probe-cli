@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/internal/util"
+	"github.com/ooni/probe-cli/utils"
 )
 
 func statusIcon(ok bool) string {
@@ -35,7 +35,7 @@ func logTestKeys(w io.Writer, testKeys string) error {
 	}
 	for _, line := range testKeysLines {
 		fmt.Fprintf(w, fmt.Sprintf("│ %s │\n",
-			util.RightPad(line, colWidth*2)))
+			utils.RightPad(line, colWidth*2)))
 	}
 	return nil
 }
@@ -71,22 +71,22 @@ func logMeasurementItem(w io.Writer, f log.Fields) error {
 	failureStr := fmt.Sprintf("success: %s", statusIcon(!isFailed))
 
 	fmt.Fprintf(w, fmt.Sprintf("│ %s │\n",
-		util.RightPad(
+		utils.RightPad(
 			fmt.Sprintf("#%d", rID), colWidth*2)))
 
 	if url != "" {
 		fmt.Fprintf(w, fmt.Sprintf("│ %s │\n",
-			util.RightPad(
+			utils.RightPad(
 				fmt.Sprintf("%s (%s)", url, urlCategoryCode), colWidth*2)))
 	}
 
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
-		util.RightPad(testName, colWidth),
-		util.RightPad(anomalyStr, colWidth)))
+		utils.RightPad(testName, colWidth),
+		utils.RightPad(anomalyStr, colWidth)))
 
 	fmt.Fprintf(w, fmt.Sprintf("│ %s %s│\n",
-		util.RightPad(failureStr, colWidth),
-		util.RightPad(uploadStr, colWidth)))
+		utils.RightPad(failureStr, colWidth),
+		utils.RightPad(uploadStr, colWidth)))
 
 	if testKeys != "" {
 		if err := logTestKeys(w, testKeys); err != nil {
@@ -116,15 +116,15 @@ func logMeasurementSummary(w io.Writer, f log.Fields) error {
 	networkName := f.Get("network_name").(string)
 
 	fmt.Fprintf(w, " │ %s  │\n",
-		util.RightPad(startTime.Format(time.RFC822), (colWidth+3)*3),
+		utils.RightPad(startTime.Format(time.RFC822), (colWidth+3)*3),
 	)
 	fmt.Fprintf(w, " │ %s  │\n",
-		util.RightPad(fmt.Sprintf("AS%d, %s (%s)", asn, networkName, countryCode), (colWidth+3)*3),
+		utils.RightPad(fmt.Sprintf("AS%d, %s (%s)", asn, networkName, countryCode), (colWidth+3)*3),
 	)
 	fmt.Fprintf(w, " │ %s   %s   %s │\n",
-		util.RightPad(fmt.Sprintf("%.2fs", totalRuntime), colWidth),
-		util.RightPad(fmt.Sprintf("%d/%d anmls", anomalyCount, totalCount), colWidth),
-		util.RightPad(fmt.Sprintf("⬆ %s  ⬇ %s", formatSize(dataUp), formatSize(dataDown)), colWidth+4))
+		utils.RightPad(fmt.Sprintf("%.2fs", totalRuntime), colWidth),
+		utils.RightPad(fmt.Sprintf("%d/%d anmls", anomalyCount, totalCount), colWidth),
+		utils.RightPad(fmt.Sprintf("⬆ %s  ⬇ %s", formatSize(dataUp), formatSize(dataDown)), colWidth+4))
 	fmt.Fprintf(w, " └────────────────────────────────────────────────┘\n")
 
 	return nil

@@ -10,7 +10,6 @@ import (
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/enginex"
 	"github.com/ooni/probe-cli/internal/legacy"
-	"github.com/ooni/probe-cli/internal/onboard"
 	"github.com/ooni/probe-cli/utils"
 	"github.com/ooni/probe-cli/version"
 	engine "github.com/ooni/probe-engine"
@@ -35,20 +34,6 @@ type Context struct {
 // MaybeLocationLookup will lookup the location of the user unless it's already cached
 func (c *Context) MaybeLocationLookup() error {
 	return c.Session.MaybeLookupLocation()
-}
-
-// MaybeOnboarding will run the onboarding process only if the informed consent
-// config option is set to false
-func (c *Context) MaybeOnboarding() error {
-	if c.Config.InformedConsent == false {
-		if c.IsBatch == true {
-			return errors.New("cannot run onboarding in batch mode")
-		}
-		if err := onboard.Onboarding(c.Config); err != nil {
-			return errors.Wrap(err, "onboarding")
-		}
-	}
-	return nil
 }
 
 // Init the OONI manager

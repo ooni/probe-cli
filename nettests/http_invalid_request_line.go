@@ -1,9 +1,7 @@
-package middlebox
+package nettests
 
 import (
 	"errors"
-
-	"github.com/ooni/probe-cli/nettests"
 )
 
 // HTTPInvalidRequestLine test implementation
@@ -11,7 +9,7 @@ type HTTPInvalidRequestLine struct {
 }
 
 // Run starts the test
-func (h HTTPInvalidRequestLine) Run(ctl *nettests.Controller) error {
+func (h HTTPInvalidRequestLine) Run(ctl *Controller) error {
 	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
 		"http_invalid_request_line",
 	)

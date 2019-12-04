@@ -1,12 +1,11 @@
-package websites
+package nettests
 
 import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/database"
-	"github.com/ooni/probe-cli/nettests"
 )
 
-func lookupURLs(ctl *nettests.Controller, limit int64) ([]string, map[int64]int64, error) {
+func lookupURLs(ctl *Controller, limit int64) ([]string, map[int64]int64, error) {
 	var urls []string
 	urlIDMap := make(map[int64]int64)
 	config := ctl.Ctx.Session.NewTestListsConfig()
@@ -37,7 +36,7 @@ type WebConnectivity struct {
 }
 
 // Run starts the test
-func (n WebConnectivity) Run(ctl *nettests.Controller) error {
+func (n WebConnectivity) Run(ctl *Controller) error {
 	urls, urlIDMap, err := lookupURLs(ctl, ctl.Ctx.Config.Nettests.WebsitesURLLimit)
 	if err != nil {
 		return err

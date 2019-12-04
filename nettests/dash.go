@@ -1,9 +1,7 @@
-package performance
+package nettests
 
 import (
 	"github.com/pkg/errors"
-
-	"github.com/ooni/probe-cli/nettests"
 )
 
 // Dash test implementation
@@ -11,7 +9,7 @@ type Dash struct {
 }
 
 // Run starts the test
-func (d Dash) Run(ctl *nettests.Controller) error {
+func (d Dash) Run(ctl *Controller) error {
 	builder, err := ctl.Ctx.Session.NewExperimentBuilder("dash")
 	if err != nil {
 		return err
