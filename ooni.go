@@ -19,10 +19,11 @@ import (
 
 // Context for OONI Probe
 type Context struct {
-	Config  *config.Config
-	DB      sqlbuilder.Database
-	IsBatch bool
-	Session *engine.Session
+	Config       *config.Config
+	DB           sqlbuilder.Database
+	IsBatch      bool
+	IsTerminated bool
+	Session      *engine.Session
 
 	Home    string
 	TempDir string
@@ -94,9 +95,10 @@ func (c *Context) Init() error {
 // NewContext creates a new context instance.
 func NewContext(configPath string, homePath string) *Context {
 	return &Context{
-		Home:       homePath,
-		Config:     &config.Config{},
-		configPath: configPath,
+		Home:         homePath,
+		Config:       &config.Config{},
+		configPath:   configPath,
+		IsTerminated: false,
 	}
 }
 

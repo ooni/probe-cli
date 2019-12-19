@@ -77,7 +77,6 @@ func (c *Controller) SetNettestIndex(i, n int) {
 // This function will continue to run in most cases but will
 // immediately halt if something's wrong with the file system.
 func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) error {
-
 	// This will configure the controller as handler for the callbacks
 	// called by ooni/probe-engine/experiment.Experiment.
 	builder.SetCallbacks(engine.Callbacks(c))
@@ -108,6 +107,10 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 
 	c.ntStartTime = time.Now()
 	for idx, input := range inputs {
+		if c.Ctx.IsTerminated == true {
+			log.Debug("isTerminated == true, breaking the input loop")
+			break
+		}
 		c.curInputIdx = idx // allow for precise progress
 		idx64 := int64(idx)
 		log.Debug(color.RedString("status.measurement_start"))
