@@ -107,7 +107,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 
 	c.ntStartTime = time.Now()
 	for idx, input := range inputs {
-		if c.Ctx.IsTerminated == true {
+		if c.Ctx.IsTerminated() == true {
 			log.Debug("isTerminated == true, breaking the input loop")
 			break
 		}

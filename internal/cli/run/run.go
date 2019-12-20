@@ -17,8 +17,8 @@ import (
 )
 
 // listenForSignals will listen for SIGINT and SIGTERM. When it receives those
-// signals it will set isTerminated to true, which will cleanly shutdown the
-// test logic.
+// signals it will set isTerminatedAtomicInt to non-zero, which will cleanly
+// shutdown the test logic.
 // TODO refactor this to use a cancellable context.Context instead of a bool
 // flag, probably as part of: https://github.com/ooni/probe-cli/issues/45
 func listenForSignals(ctx *ooni.Context) {
@@ -28,7 +28,7 @@ func listenForSignals(ctx *ooni.Context) {
 	go func() {
 		<-s
 		log.Debugf("caught a signal, shutting down cleanly")
-		ctx.IsTerminated = true
+		ctx.Terminate()
 	}()
 }
 
@@ -48,7 +48,7 @@ func runNettestGroup(tg string, ctx *ooni.Context, network *database.Network) er
 
 	listenForSignals(ctx)
 	for i, nt := range group.Nettests {
-		if ctx.IsTerminated == true {
+		if ctx.IsTerminated() == true {
 			log.Debugf("context is terminated, breaking")
 			break
 		}

@@ -3,6 +3,7 @@ package ooni
 import (
 	"io/ioutil"
 	"os"
+	"sync/atomic"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/config"
@@ -19,22 +20,36 @@ import (
 
 // Context for OONI Probe
 type Context struct {
-	Config       *config.Config
-	DB           sqlbuilder.Database
-	IsBatch      bool
-	IsTerminated bool
-	Session      *engine.Session
+	Config  *config.Config
+	DB      sqlbuilder.Database
+	IsBatch bool
+	Session *engine.Session
 
 	Home    string
 	TempDir string
 
 	dbPath     string
 	configPath string
+
+	// We need to use a int64 in order to use the atomic.AddInt64/LoadInt64
+	// operations to ensure consistent reads of the variables.
+	isTerminatedAtomicInt int64
 }
 
 // MaybeLocationLookup will lookup the location of the user unless it's already cached
 func (c *Context) MaybeLocationLookup() error {
 	return c.Session.MaybeLookupLocation()
+}
+
+// IsTerminated checks to see if the isTerminatedAtomicInt is set to a non zero
+// value and therefore we have received the signal to shutdown the running test
+func (c *Context) IsTerminated() bool {
+	i := atomic.LoadInt64(&c.isTerminatedAtomicInt)
+	return i != 0
+}
+
+func (c *Context) Terminate() {
+	atomic.AddInt64(&c.isTerminatedAtomicInt, 1)
 }
 
 // Init the OONI manager
@@ -95,10 +110,10 @@ func (c *Context) Init() error {
 // NewContext creates a new context instance.
 func NewContext(configPath string, homePath string) *Context {
 	return &Context{
-		Home:         homePath,
-		Config:       &config.Config{},
-		configPath:   configPath,
-		IsTerminated: false,
+		Home:                  homePath,
+		Config:                &config.Config{},
+		configPath:            configPath,
+		isTerminatedAtomicInt: 0,
 	}
 }
 
