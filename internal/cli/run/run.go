@@ -27,7 +27,7 @@ func listenForSignals(ctx *ooni.Context) {
 
 	go func() {
 		<-s
-		log.Debugf("caught a signal, shutting down cleanly")
+		log.Info("caught a stop signal, shutting down cleanly")
 		ctx.Terminate()
 	}()
 }
