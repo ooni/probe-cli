@@ -18,7 +18,9 @@ import (
 
 // listenForSignals will listen for SIGINT and SIGTERM. When it receives those
 // signals it will set isTerminated to true, which will cleanly shutdown the
-// test logic
+// test logic.
+// TODO refactor this to use a cancellable context.Context instead of a bool
+// flag, probably as part of: https://github.com/ooni/probe-cli/issues/45
 func listenForSignals(ctx *ooni.Context) {
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, os.Interrupt, syscall.SIGTERM)
