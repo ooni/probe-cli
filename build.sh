@@ -17,11 +17,7 @@ if [ "$1" = "windows" ]; then
 
 elif [ "$1" = "linux" ]; then
   set -x
-  docker build -t oonibuild .
-  docker run -v `pwd`:/oonibuild -w /oonibuild -t --cap-drop=all               \
-    --user `id -u`:`id -g` -e 'GOCACHE=/tmp/go/cache' -e 'GOPATH=/tmp/go/path' \
-    oonibuild                                                                  \
-    go build $buildtags -ldflags="$ldflags"                                    \
+  $0 __docker go build $buildtags -ldflags="$ldflags"                          \
       -o dist/linux/amd64/ooniprobe -v ./cmd/ooniprobe
 
 elif [ "$1" = "macos" ]; then
@@ -47,12 +43,31 @@ elif [ "$1" = "release" ]; then
   echo ""
   echo "Now sign ooniprobe_checksums.txt and upload it along with tarballs to GitHub"
 
+elif [ "$1" = "__docker" ]; then
+  set -x
+  shift
+  docker build -t oonibuild .
+  docker run -v `pwd`:/oonibuild                                               \
+             -w /oonibuild                                                     \
+             -t                                                                \
+             --cap-drop=all                                                    \
+             --user `id -u`:`id -g`                                            \
+             -e 'GOCACHE=/oonibuild/testdata/gotmp/cache'                      \
+             -e 'GOPATH=/oonibuild/testdata/gotmp/path'                        \
+             -e "TRAVIS_JOB_ID=$TRAVIS_JOB_ID"                                 \
+             -e "TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST"                     \
+             oonibuild "$@"
+
 elif [ "$1" = "_travis-linux" ]; then
   set -x
   $0 linux
-  # TODO -race does not work on alpine. See: https://travis-ci.org/ooni/probe-cli/builds/619631256#L962
-  docker run -v `pwd`:/oonibuild -w /oonibuild -t oonibuild                    \
-    go test -v -coverprofile=coverage.cov -coverpkg=./... ./...
+  # TODO -race does not work on alpine.
+  # See: https://travis-ci.org/ooni/probe-cli/builds/619631256#L962
+  $0 __docker go get -v golang.org/x/tools/cmd/cover
+  $0 __docker go get -v github.com/mattn/goveralls
+  $0 __docker go test -v -coverprofile=coverage.cov -coverpkg=./... ./...
+  $0 __docker /oonibuild/testdata/gotmp/path/bin/goveralls                     \
+          -coverprofile=coverage.cov -service=travis-ci
 
 elif [ "$1" = "_travis-osx" ]; then
   set -x
