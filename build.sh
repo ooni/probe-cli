@@ -1,10 +1,6 @@
 #!/bin/sh
 set -e
 
-if [ "$GOPATH" != "" ]; then
-  unset GOPATH
-fi
-
 buildtags=""
 ldflags="-s -w"
 

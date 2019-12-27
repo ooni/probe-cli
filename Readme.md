@@ -22,10 +22,7 @@ Add a crontab entry (on linux) to run `ooniprobe` daily at a random time:
 
 ## Development setup
 
-Be sure you have golang >= 1.13. We use Go modules. Make sure you
-don't have GOPATH set.
-
-Run
+Be sure you have golang >= 1.13. We use golang modules. Run
 
 ```
 ./build.sh help
