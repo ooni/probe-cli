@@ -3,22 +3,22 @@ package nettests
 import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/database"
+	engine "github.com/ooni/probe-engine"
 )
 
 func lookupURLs(ctl *Controller, limit int64) ([]string, map[int64]int64, error) {
 	var urls []string
 	urlIDMap := make(map[int64]int64)
-	config := ctl.Ctx.Session.NewTestListsConfig()
-	config.Limit = int(limit)
-	client := ctl.Ctx.Session.NewTestListsClient()
-	testlist, err := client.Fetch(config)
+	testlist, err := ctl.Ctx.Session.QueryTestListsURLs(&engine.TestListsURLsConfig{
+		Limit: int(limit),
+	})
 	if err != nil {
 		return nil, nil, err
 	}
-	for idx, url := range testlist {
+	for idx, url := range testlist.Result {
 		log.Debugf("Going over URL %d", idx)
 		urlID, err := database.CreateOrUpdateURL(
-			ctl.Ctx.DB, url.URL(), url.CategoryCode(), url.CountryCode(),
+			ctl.Ctx.DB, url.URL, url.CategoryCode, url.CountryCode,
 		)
 		if err != nil {
 			log.Error("failed to add to the URL table")
@@ -26,7 +26,7 @@ func lookupURLs(ctl *Controller, limit int64) ([]string, map[int64]int64, error)
 		}
 		log.Debugf("Mapped URL %s to idx %d and urlID %d", url.URL, idx, urlID)
 		urlIDMap[int64(idx)] = urlID
-		urls = append(urls, url.URL())
+		urls = append(urls, url.URL)
 	}
 	return urls, urlIDMap, nil
 }
