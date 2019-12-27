@@ -2,6 +2,9 @@ package run
 
 import (
 	"errors"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
@@ -12,6 +15,22 @@ import (
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/nettests"
 )
+
+// listenForSignals will listen for SIGINT and SIGTERM. When it receives those
+// signals it will set isTerminatedAtomicInt to non-zero, which will cleanly
+// shutdown the test logic.
+// TODO refactor this to use a cancellable context.Context instead of a bool
+// flag, probably as part of: https://github.com/ooni/probe-cli/issues/45
+func listenForSignals(ctx *ooni.Context) {
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-s
+		log.Info("caught a stop signal, shutting down cleanly")
+		ctx.Terminate()
+	}()
+}
 
 func runNettestGroup(tg string, ctx *ooni.Context, network *database.Network) error {
 	group, ok := nettests.NettestGroups[tg]
@@ -27,13 +46,17 @@ func runNettestGroup(tg string, ctx *ooni.Context, network *database.Network) er
 		return err
 	}
 
+	listenForSignals(ctx)
 	for i, nt := range group.Nettests {
+		if ctx.IsTerminated() == true {
+			log.Debugf("context is terminated, breaking")
+			break
+		}
 		log.Debugf("Running test %T", nt)
 		ctl := nettests.NewController(nt, ctx, result)
 		ctl.SetNettestIndex(i, len(group.Nettests))
 		if err = nt.Run(ctl); err != nil {
 			log.WithError(err).Errorf("Failed to run %s", group.Label)
-			return err
 		}
 	}
 
