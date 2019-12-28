@@ -69,6 +69,13 @@ var summarizers = map[string]func(uint64, uint64, string) []string{
 			"",
 		}
 	},
+	"circumvention": func(totalCount uint64, anomalyCount uint64, ss string) []string {
+		return []string{
+			fmt.Sprintf("Detected: %v", anomalyCount > 0),
+			"",
+			"",
+		}
+	},
 }
 
 func makeSummary(name string, totalCount uint64, anomalyCount uint64, ss string) []string {

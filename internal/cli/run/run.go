@@ -149,6 +149,10 @@ func init() {
 	middleboxCmd.Action(func(_ *kingpin.ParseContext) error {
 		return runNettestGroup("middlebox", ctx, network)
 	})
+	circumventionCmd := cmd.Command("circumvention", "")
+	circumventionCmd.Action(func(_ *kingpin.ParseContext) error {
+		return runNettestGroup("circumvention", ctx, network)
+	})
 	allCmd := cmd.Command("all", "").Default()
 	allCmd.Action(func(_ *kingpin.ParseContext) error {
 		log.Infof("Running %s tests", color.BlueString("all"))

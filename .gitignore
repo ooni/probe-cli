@@ -1,5 +1,5 @@
 /dist
-/ooni.cov
+/ooniprobe
 /coverage.cov
 /testdata/gotmp
 *.njson

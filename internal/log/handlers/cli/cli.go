@@ -110,10 +110,13 @@ func (h *Handler) TypedLog(t string, e *log.Entry) error {
 	case "progress":
 		perc := e.Fields.Get("percentage").(float64) * 100
 		eta := e.Fields.Get("eta").(float64)
-		s := fmt.Sprintf("   %s %-25s (%ss left)",
+		var etaMessage string
+		if eta >= 0 {
+			etaMessage = fmt.Sprintf("(%ss left)", bold.Sprintf("%.2f", eta))
+		}
+		s := fmt.Sprintf("   %s %-25s %s",
 			bold.Sprintf("%.2f%%", perc),
-			e.Message,
-			bold.Sprintf("%.2f", eta))
+			e.Message, etaMessage)
 		fmt.Fprint(h.Writer, s)
 		fmt.Fprintln(h.Writer)
 		return nil
