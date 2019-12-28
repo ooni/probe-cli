@@ -92,7 +92,15 @@ func (c *Context) Init() error {
 	}
 	c.TempDir = tempDir
 
+	kvstore, err := engine.NewFileSystemKVStore(
+		utils.EngineDir(c.Home),
+	)
+	if err != nil {
+		return errors.Wrap(err, "creating engine's kvstore")
+	}
+
 	sess, err := engine.NewSession(engine.SessionConfig{
+		KVStore:         kvstore,
 		Logger:          enginex.Logger,
 		SoftwareName:    "ooniprobe-desktop",
 		SoftwareVersion: version.Version,

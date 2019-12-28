@@ -13,7 +13,7 @@ require (
 	github.com/kr/pty v1.1.8 // indirect
 	github.com/mattn/go-colorable v0.1.4
 	github.com/mattn/go-isatty v0.0.11 // indirect
-	github.com/ooni/probe-engine v0.3.0
+	github.com/ooni/probe-engine v0.4.0
 	github.com/pkg/errors v0.8.1
 	github.com/rubenv/sql-migrate v0.0.0-20191213152630-06338513c237
 	golang.org/x/sys v0.0.0-20191224085550-c709ea063b76 // indirect

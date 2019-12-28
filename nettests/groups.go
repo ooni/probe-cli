@@ -36,4 +36,10 @@ var NettestGroups = map[string]NettestGroup{
 			WhatsApp{},
 		},
 	},
+	"circumvention": NettestGroup{
+		Label: "Circumvention Tools",
+		Nettests: []Nettest{
+			Psiphon{},
+		},
+	},
 }

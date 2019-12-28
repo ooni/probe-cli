@@ -30,6 +30,12 @@ func AssetsDir(home string) string {
 	return filepath.Join(home, "assets")
 }
 
+// EngineDir returns the directory where ooni/probe-engine should
+// store its private data given a specific OONI Home.
+func EngineDir(home string) string {
+	return filepath.Join(home, "engine")
+}
+
 // DBDir returns the database dir for the given name
 func DBDir(home string, name string) string {
 	return filepath.Join(home, "db", fmt.Sprintf("%s.sqlite3", name))
