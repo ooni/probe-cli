@@ -192,12 +192,14 @@ func (c *Controller) OnProgress(perc float64, msg string) {
 	log.Debugf("OnProgress: %f - %s", perc, msg)
 	var eta float64
 	eta = -1.0
-	if c.numInputs >= 1 {
+	if c.numInputs > 1 {
 		// make the percentage relative to the current input over all inputs
 		floor := (float64(c.curInputIdx) / float64(c.numInputs))
 		step := 1.0 / float64(c.numInputs)
 		perc = floor + perc*step
-		eta = (float64(time.Now().Sub(c.ntStartTime).Seconds()) / float64(c.curInputIdx)) * float64(c.numInputs-c.curInputIdx)
+		if c.curInputIdx > 0 {
+			eta = (time.Now().Sub(c.ntStartTime).Seconds() / float64(c.curInputIdx)) * float64(c.numInputs-c.curInputIdx)
+		}
 	}
 	if c.ntCount > 0 {
 		// make the percentage relative to the current nettest over all nettests
