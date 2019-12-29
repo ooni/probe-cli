@@ -25,6 +25,13 @@ func init() {
 	isVerbose := Cmd.Flag("verbose", "Enable verbose log output.").Short('v').Bool()
 	isBatch := Cmd.Flag("batch", "Enable batch command line usage.").Bool()
 
+	softwareName := Cmd.Flag(
+		"software-name", "Override application name",
+	).Default("ooniprobe-cli").String()
+	softwareVersion := Cmd.Flag(
+		"software-version", "Override the application version",
+	).Default(version.Version).String()
+
 	Cmd.PreAction(func(ctx *kingpin.ParseContext) error {
 		if *isBatch {
 			log.SetHandler(batch.Default)
@@ -45,7 +52,7 @@ func init() {
 			}
 
 			ctx := ooni.NewContext(*configPath, homePath)
-			err = ctx.Init()
+			err = ctx.Init(*softwareName, *softwareVersion)
 			if err != nil {
 				return nil, err
 			}

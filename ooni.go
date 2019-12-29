@@ -12,7 +12,6 @@ import (
 	"github.com/ooni/probe-cli/internal/enginex"
 	"github.com/ooni/probe-cli/internal/legacy"
 	"github.com/ooni/probe-cli/utils"
-	"github.com/ooni/probe-cli/version"
 	engine "github.com/ooni/probe-engine"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -48,12 +47,13 @@ func (c *Context) IsTerminated() bool {
 	return i != 0
 }
 
+// Terminate interrupts the running context
 func (c *Context) Terminate() {
 	atomic.AddInt64(&c.isTerminatedAtomicInt, 1)
 }
 
 // Init the OONI manager
-func (c *Context) Init() error {
+func (c *Context) Init(softwareName, softwareVersion string) error {
 	var err error
 
 	if err = legacy.MaybeMigrateHome(); err != nil {
@@ -102,8 +102,8 @@ func (c *Context) Init() error {
 	sess, err := engine.NewSession(engine.SessionConfig{
 		KVStore:         kvstore,
 		Logger:          enginex.Logger,
-		SoftwareName:    "ooniprobe-desktop",
-		SoftwareVersion: version.Version,
+		SoftwareName:    softwareName,
+		SoftwareVersion: softwareVersion,
 		AssetsDir:       utils.AssetsDir(c.Home),
 		TempDir:         c.TempDir,
 	})
