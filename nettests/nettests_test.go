@@ -19,7 +19,9 @@ func newTestingContext(t *testing.T) *ooni.Context {
 	testingConfig := path.Join("..", "testdata", "testing-config.json")
 	shutil.Copy(testingConfig, configPath, false)
 	ctx := ooni.NewContext(configPath, homePath)
-	err = ctx.Init()
+	swName := "ooniprobe-cli-tests"
+	swVersion := "3.0.0-alpha"
+	err = ctx.Init(swName, swVersion)
 	if err != nil {
 		t.Fatal(err)
 	}
