@@ -26,16 +26,19 @@ type PsiphonTestKeys struct {
 
 // GetTestKeys generates a summary for a test run
 func (h Psiphon) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
-	var err error
+	var (
+		err error
+		ok  bool
+	)
 	testKeys := PsiphonTestKeys{IsAnomaly: false, Failure: ""}
 	if tk["failure"] != nil {
 		testKeys.IsAnomaly = true
-		testKeys.Failure, ok := tk["failure"].(string)
+		testKeys.Failure, ok = tk["failure"].(string)
 		if !ok {
 			err = errors.Wrap(err, "failure key invalid")
 		}
 	}
-	testKeys.BootstrapTime, ok := tk["bootstrap_time"].(float64)
+	testKeys.BootstrapTime, ok = tk["bootstrap_time"].(float64)
 	if !ok {
 		err = errors.Wrap(err, "bootstrap_time key invalid")
 	}
