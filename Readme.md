@@ -31,6 +31,22 @@ Be sure you have golang >= 1.13. We use golang modules. Run
 to get information on the supported systems as well as to get
 instructions on how to install dependencies.
 
+## Updating dependencies
+
+1. update every direct dependency in `go.mod` except `probe-engine`
+using `go get -u -v $dependency`
+
+2. pin to the latest version of the `probe-engine` with
+`go get -v github.com/ooni/probe-engine@tag`
+
+3. remove all indirect dependencies from `go.mod` and merge the
+content of `probe-engine`'s `go.mod` into our `go.mod`
+
+4. `go mod tidy`
+
+The rationale of this procedure is that we want to pin exactly to
+a specific version of psiphon and of its dependencies.
+
 ## Releasing
 
 ```
