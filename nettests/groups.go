@@ -40,6 +40,7 @@ var NettestGroups = map[string]NettestGroup{
 		Label: "Circumvention Tools",
 		Nettests: []Nettest{
 			Psiphon{},
+			Tor{},
 		},
 	},
 }
