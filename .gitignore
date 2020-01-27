@@ -1,7 +1,6 @@
 /dist
 /ooniprobe
 /coverage.cov
-/ooni.cov
 /testdata/gotmp
 *.njson
 .DS_Store
