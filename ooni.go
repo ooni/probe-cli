@@ -10,7 +10,6 @@ import (
 	"github.com/ooni/probe-cli/internal/bindata"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/enginex"
-	"github.com/ooni/probe-cli/internal/legacy"
 	"github.com/ooni/probe-cli/utils"
 	engine "github.com/ooni/probe-engine"
 	"github.com/pkg/errors"
@@ -55,10 +54,6 @@ func (c *Context) Terminate() {
 // Init the OONI manager
 func (c *Context) Init(softwareName, softwareVersion string) error {
 	var err error
-
-	if err = legacy.MaybeMigrateHome(); err != nil {
-		return errors.Wrap(err, "migrating home")
-	}
 
 	if err = MaybeInitializeHome(c.Home); err != nil {
 		return err
