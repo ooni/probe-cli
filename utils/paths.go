@@ -72,6 +72,6 @@ func GetOONIHome() (string, error) {
 		return "", err
 	}
 
-	path := filepath.Join(home, ".ooni")
+	path := filepath.Join(home, ".ooniprobe")
 	return path, nil
 }
