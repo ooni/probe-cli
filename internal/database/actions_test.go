@@ -79,10 +79,10 @@ func TestMeasurementWorkflow(t *testing.T) {
 	reportID := sql.NullString{String: "", Valid: false}
 	testName := "antani"
 	resultID := result.ID
-	reportFilePath := tmpdir
+	msmtFilePath := tmpdir
 	urlID := sql.NullInt64{Int64: 0, Valid: false}
 
-	m1, err := CreateMeasurement(sess, reportID, testName, resultID, reportFilePath, urlID)
+	m1, err := CreateMeasurement(sess, reportID, testName, msmtFilePath, 0, resultID, urlID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,10 +153,10 @@ func TestDeleteResult(t *testing.T) {
 	reportID := sql.NullString{String: "", Valid: false}
 	testName := "antani"
 	resultID := result.ID
-	reportFilePath := tmpdir
+	msmtFilePath := tmpdir
 	urlID := sql.NullInt64{Int64: 0, Valid: false}
 
-	m1, err := CreateMeasurement(sess, reportID, testName, resultID, reportFilePath, urlID)
+	m1, err := CreateMeasurement(sess, reportID, testName, msmtFilePath, 0, resultID, urlID)
 	if err != nil {
 		t.Fatal(err)
 	}
