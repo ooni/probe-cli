@@ -1,12 +1,12 @@
 package database
 
 import (
-	"bufio"
 	"database/sql"
 	"encoding/json"
-	"io"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"time"
 
@@ -55,44 +55,17 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 		log.Errorf("failed to run query %s: %v", req.String(), err)
 		return nil, err
 	}
-	reportFilePath := measurement.Measurement.ReportFilePath
-	// If the url->url is NULL then we are dealing with a single entry
-	// measurement and all we have to do is read the file and return it.
-	if measurement.URL.URL.Valid == false {
-		b, err := ioutil.ReadFile(reportFilePath)
-		if err != nil {
-			return nil, err
-		}
-		if err := json.Unmarshal(b, &msmtJSON); err != nil {
-			return nil, err
-		}
-		return msmtJSON, nil
-	}
-	// When the URL is a string then we need to seek until we reach the
-	// measurement line in the file that matches the target input
-	url := measurement.URL.URL.String
-	file, err := os.Open(reportFilePath)
+	measurementFilePath := measurement.Measurement.MeasurementFilePath.String
+	// TODO handle the case in which we have MeasurementFilePath == NULL because
+	// it's a beta measurement
+	b, err := ioutil.ReadFile(measurementFilePath)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
-	reader := bufio.NewReader(file)
-	for {
-		line, err := reader.ReadString('\n')
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		if err := json.Unmarshal([]byte(line), &msmtJSON); err != nil {
-			return nil, err
-		}
-		if msmtJSON["input"].(string) == url {
-			return msmtJSON, nil
-		}
+	if err := json.Unmarshal(b, &msmtJSON); err != nil {
+		return nil, err
 	}
-	return nil, errors.New("Could not find measurement")
+	return msmtJSON, nil
 }
 
 // GetResultTestKeys returns a list of TestKeys for a given result
@@ -197,15 +170,16 @@ func DeleteResult(sess sqlbuilder.Database, resultID int64) error {
 
 // CreateMeasurement writes the measurement to the database a returns a pointer
 // to the Measurement
-func CreateMeasurement(sess sqlbuilder.Database, reportID sql.NullString, testName string, resultID int64, reportFilePath string, urlID sql.NullInt64) (*Measurement, error) {
+func CreateMeasurement(sess sqlbuilder.Database, reportID sql.NullString, testName string, measurementDir string, idx int, resultID int64, urlID sql.NullInt64) (*Measurement, error) {
+	msmtFilePath := filepath.Join(measurementDir, fmt.Sprintf("msmt-%d.json", idx))
 	msmt := Measurement{
-		ReportID:       reportID,
-		TestName:       testName,
-		ResultID:       resultID,
-		ReportFilePath: reportFilePath,
-		URLID:          urlID,
-		IsFailed:       false,
-		IsDone:         false,
+		ReportID:            reportID,
+		TestName:            testName,
+		ResultID:            resultID,
+		MeasurementFilePath: sql.NullString{String: msmtFilePath, Valid: true},
+		URLID:               urlID,
+		IsFailed:            false,
+		IsDone:              false,
 		// XXX Do we want to have this be part of something else?
 		StartTime: time.Now().UTC(),
 		TestKeys:  "",
