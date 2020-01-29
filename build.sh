@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 buildtags=""
 ldflags="-s -w"
 
-if [ "$1" = "bindata" ];then
+if [ "$1" = "bindata" ]; then
     GO_BINDATA_V=$(go-bindata -version | grep go-bin | cut -d ' ' -f2)
     [[ "$GO_BINDATA_V" == "3.2.0" ]] && echo "Updating bindata" || exit "Wrong go-bindata-version"
     go-bindata -nometadata -o internal/bindata/bindata.go -pkg bindata data/...
