@@ -55,6 +55,11 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 		log.Errorf("failed to run query %s: %v", req.String(), err)
 		return nil, err
 	}
+	if measurement.Measurement.MeasurementFilePath.Valid == false {
+		log.Error("invalid measurement_file_path")
+		log.Error("backup your OONI_HOME and run `ooniprobe reset`")
+		return nil, errors.New("cannot access measurement file")
+	}
 	measurementFilePath := measurement.Measurement.MeasurementFilePath.String
 	// TODO handle the case in which we have MeasurementFilePath == NULL because
 	// it's a beta measurement
