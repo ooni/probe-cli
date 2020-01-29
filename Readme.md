@@ -62,6 +62,8 @@ You may also want to adjust the locations of the logs.
 </plist>
 ```
 
+Once you have written the file, you can enable to run automatically by doing: `launchctl load org.ooni.probe.cli.plist`.
+
 ## Development setup
 
 Be sure you have golang >= 1.13. We use golang modules. Run
