@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 buildtags=""
@@ -6,10 +6,17 @@ ldflags="-s -w"
 
 if [ "$1" = "bindata" ]; then
     GO_BINDATA_V=$(go-bindata -version | grep go-bin | cut -d ' ' -f2)
-    [[ "$GO_BINDATA_V" == "3.2.0" ]] && echo "Updating bindata" || exit "Wrong go-bindata-version"
-    go-bindata -nometadata -o internal/bindata/bindata.go -pkg bindata data/...
-    echo "DONE"
-    exit 0
+    if [ "$GO_BINDATA_V" = "3.2.0" ]; then
+        echo "Updating bindata"
+        go-bindata -nometadata -o internal/bindata/bindata.go -pkg bindata data/...
+        echo "DONE"
+        exit 0
+    else
+        echo "Wrong go-bindata-version"
+        echo "Please install go-bindata with:"
+        echo "  go get -u github.com/shuLhan/go-bindata/..."
+        exit 1
+    fi
 fi
 
 if [ "$1" = "windows" ]; then
