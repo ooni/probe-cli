@@ -4,6 +4,21 @@ set -e
 buildtags=""
 ldflags="-s -w"
 
+if [ "$1" = "bindata" ]; then
+    GO_BINDATA_V=$(go-bindata -version | grep go-bin | cut -d ' ' -f2)
+    if [ "$GO_BINDATA_V" = "3.2.0" ]; then
+        echo "Updating bindata"
+        go-bindata -nometadata -o internal/bindata/bindata.go -pkg bindata data/...
+        echo "DONE"
+        exit 0
+    else
+        echo "Wrong go-bindata-version"
+        echo "Please install go-bindata with:"
+        echo "  go get -u github.com/shuLhan/go-bindata/..."
+        exit 1
+    fi
+fi
+
 if [ "$1" = "windows" ]; then
   set -x
   CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++                         \

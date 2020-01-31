@@ -2,11 +2,8 @@ package database
 
 import (
 	"database/sql"
-	"os"
-	"path/filepath"
 	"time"
 
-	"github.com/ooni/probe-cli/utils/shutil"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -62,9 +59,10 @@ type Measurement struct {
 	MeasurementID    sql.NullInt64  `db:"collector_measurement_id,omitempty"`
 	IsAnomaly        sql.NullBool   `db:"is_anomaly,omitempty"`
 	// FIXME we likely want to support JSON. See: https://github.com/upper/db/issues/462
-	TestKeys       string `db:"test_keys"`
-	ResultID       int64  `db:"result_id"`
-	ReportFilePath string `db:"report_file_path"`
+	TestKeys            string         `db:"test_keys"`
+	ResultID            int64          `db:"result_id"`
+	ReportFilePath      sql.NullString `db:"report_file_path,omitempty"`
+	MeasurementFilePath sql.NullString `db:"measurement_file_path,omitempty"`
 }
 
 // Result model
@@ -145,35 +143,6 @@ func (m *Measurement) UploadSucceeded(sess sqlbuilder.Database) error {
 	m.IsUploaded = true
 
 	err := sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
-	if err != nil {
-		return errors.Wrap(err, "updating measurement")
-	}
-	return nil
-}
-
-// AddToResult adds a measurement to a result
-func (m *Measurement) AddToResult(sess sqlbuilder.Database, result *Result) error {
-	var err error
-
-	m.ResultID = result.ID
-	finalPath := filepath.Join(result.MeasurementDir,
-		filepath.Base(m.ReportFilePath))
-
-	// If the finalPath already exists, it means it has already been moved there.
-	// This happens in multi input reports
-	if _, err = os.Stat(finalPath); os.IsNotExist(err) {
-		err := shutil.CopyFile(m.ReportFilePath, finalPath, false)
-		if err != nil {
-			return errors.Wrap(err, "copying report file")
-		}
-		err = os.Remove(m.ReportFilePath)
-		if err != nil {
-			return errors.Wrap(err, "deleting report file")
-		}
-	}
-	m.ReportFilePath = finalPath
-
-	err = sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
 	if err != nil {
 		return errors.Wrap(err, "updating measurement")
 	}

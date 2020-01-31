@@ -3,7 +3,6 @@ package nettests
 import (
 	"database/sql"
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/apex/log"
@@ -11,7 +10,6 @@ import (
 	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/output"
-	"github.com/ooni/probe-cli/utils"
 	engine "github.com/ooni/probe-engine"
 	"github.com/pkg/errors"
 )
@@ -25,14 +23,10 @@ type Nettest interface {
 
 // NewController creates a nettest controller
 func NewController(nt Nettest, ctx *ooni.Context, res *database.Result) *Controller {
-	msmtPath := filepath.Join(ctx.TempDir,
-		fmt.Sprintf("msmt-%T-%s.jsonl", nt,
-			time.Now().UTC().Format(utils.ResultTimestamp)))
 	return &Controller{
-		Ctx:      ctx,
-		nt:       nt,
-		res:      res,
-		msmtPath: msmtPath,
+		Ctx: ctx,
+		nt:  nt,
+		res: res,
 	}
 }
 
@@ -46,7 +40,6 @@ type Controller struct {
 	ntIndex     int
 	ntStartTime time.Time // used to calculate the eta
 	msmts       map[int64]*database.Measurement
-	msmtPath    string          // XXX maybe we can drop this and just use a temporary file
 	inputIdxMap map[int64]int64 // Used to map mk idx to database id
 
 	// numInputs is the total number of inputs
@@ -91,7 +84,6 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 
 	log.Debug(color.RedString("status.queued"))
 	log.Debug(color.RedString("status.started"))
-	log.Debugf("OutputPath: %s", c.msmtPath)
 
 	if c.Ctx.Config.Sharing.UploadResults {
 		if err := exp.OpenReport(); err != nil {
@@ -118,8 +110,9 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 		if c.inputIdxMap != nil {
 			urlID = sql.NullInt64{Int64: c.inputIdxMap[idx64], Valid: true}
 		}
+
 		msmt, err := database.CreateMeasurement(
-			c.Ctx.DB, reportID, exp.Name(), resultID, c.msmtPath, urlID,
+			c.Ctx.DB, reportID, exp.Name(), c.res.MeasurementDir, idx, resultID, urlID,
 		)
 		if err != nil {
 			return errors.Wrap(err, "failed to create measurement")
@@ -149,7 +142,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 			}
 		}
 
-		if err := exp.SaveMeasurement(measurement, c.msmtPath); err != nil {
+		if err := exp.SaveMeasurement(measurement, msmt.MeasurementFilePath.String); err != nil {
 			return errors.Wrap(err, "failed to save measurement on disk")
 		}
 		if err := c.msmts[idx64].Done(c.Ctx.DB); err != nil {
@@ -178,12 +171,6 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 	}
 
 	log.Debugf("status.end")
-	for idx, msmt := range c.msmts {
-		log.Debugf("adding msmt#%d to result", idx)
-		if err := msmt.AddToResult(c.Ctx.DB, c.res); err != nil {
-			return errors.Wrap(err, "failed to add to result")
-		}
-	}
 	return nil
 }
 
