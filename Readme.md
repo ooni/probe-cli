@@ -20,6 +20,50 @@ Add a crontab entry (on linux) to run `ooniprobe` daily at a random time:
 (crontab -l 2>/dev/null; echo "$(( ( RANDOM % 60 )  + 1 )) $(( ( RANDOM % 24 )  + 1 )) * * * ooniprobe run") | crontab -
 ```
 
+On macOS you can configure OONI Probe to run automatically using launchd.
+
+Below is a sample launchd script, that should be placed inside of `~/Library/LaunchAgents/org.ooni.probe.cli.plist`.
+
+Be sure to replace `/PATH/TO/BINARY/ooniprobe` with the actual install location of the `ooniprobe` binary and `/PATH/TO/CONFIG/config-100sites.json` with the location of a file which limits the testing to 100 URLs.
+
+You may also want to adjust the locations of the logs.
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>org.ooni.probe.daily-run</string>
+
+    <key>KeepAlive</key>
+    <false/>
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>Program</key>
+    <string>/PATH/TO/BINARY/ooniprobe</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>--config="/PATH/TO/CONFIG/config-100sites.json"</string>
+        <string>--batch</string>
+        <string>run</string>
+    </array>
+
+    <key>StartInterval</key>
+    <integer>3600</integer>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/ooniprobe-cli.err</string>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/ooniprobe-cli.out</string>
+</dict>
+</plist>
+```
+
+Once you have written the file, you can enable to run automatically by doing: `launchctl load org.ooni.probe.cli.plist`.
+
 ## Development setup
 
 Be sure you have golang >= 1.13. We use golang modules. Run
