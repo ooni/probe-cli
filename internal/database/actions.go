@@ -176,7 +176,10 @@ func DeleteResult(sess sqlbuilder.Database, resultID int64) error {
 // CreateMeasurement writes the measurement to the database a returns a pointer
 // to the Measurement
 func CreateMeasurement(sess sqlbuilder.Database, reportID sql.NullString, testName string, measurementDir string, idx int, resultID int64, urlID sql.NullInt64) (*Measurement, error) {
-	msmtFilePath := filepath.Join(measurementDir, fmt.Sprintf("msmt-%d.json", idx))
+	// TODO we should look into generating this file path in a more robust way.
+	// If there are two identical test_names in the same test group there is
+	// going to be a clash of test_name
+	msmtFilePath := filepath.Join(measurementDir, fmt.Sprintf("msmt-%s-%d.json", testName, idx))
 	msmt := Measurement{
 		ReportID:            reportID,
 		TestName:            testName,
