@@ -3,7 +3,7 @@ package version
 
 const (
 	// Version is the software version
-	Version = "3.0.0-rc.8"
+	Version = "3.0.0-rc.9"
 
 	// UserAgent is the OONI user-agent header
 	UserAgent = "ooniprobe-desktop/" + Version
