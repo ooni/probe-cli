@@ -68,6 +68,8 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 		return nil, err
 	}
 	if err := json.Unmarshal(b, &msmtJSON); err != nil {
+		log.Error("failed to unmarshal the measurement_json")
+		log.Error("backup your OONI_HOME and run `ooniprobe reset`")
 		return nil, err
 	}
 	return msmtJSON, nil
