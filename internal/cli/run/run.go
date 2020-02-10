@@ -23,7 +23,7 @@ import (
 // flag, probably as part of: https://github.com/ooni/probe-cli/issues/45
 func listenForSignals(ctx *ooni.Context) {
 	s := make(chan os.Signal, 1)
-	signal.Notify(s, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(s, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		<-s
