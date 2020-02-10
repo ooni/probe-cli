@@ -4,3 +4,8 @@
 /testdata/gotmp
 *.njson
 .DS_Store
+
+# Build artifacts
+*.tar.gz
+ooniprobe_checksums.txt
+ooniprobe_checksums.txt.asc
