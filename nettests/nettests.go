@@ -125,7 +125,10 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 			if err := c.msmts[idx64].Failed(c.Ctx.DB, err.Error()); err != nil {
 				return errors.Wrap(err, "failed to mark measurement as failed")
 			}
-			continue
+			// Even with a failed measurement, we want to continue. We want to
+			// record and submit the information we have. Saving the information
+			// is useful for local inspection. Submitting it is useful to us to
+			// undertsand what went wrong (censorship? bug? anomaly?).
 		}
 
 		if c.Ctx.Config.Sharing.UploadResults {
