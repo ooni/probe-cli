@@ -1,5 +1,4 @@
 {
-  "_": "This is your OONI Probe config file. See https://ooni.io/help/probe-cli for help",
   "_version": 1,
   "_informed_consent": true,
   "sharing": {
