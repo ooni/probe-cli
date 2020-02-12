@@ -51,4 +51,5 @@ type Advanced struct {
 // Nettests related settings
 type Nettests struct {
 	WebsitesURLLimit int64 `json:"websites_url_limit"`
+	WebsitesEnabledCategoryCodes []string `json:"websites_enabled_category_codes"`
 }
