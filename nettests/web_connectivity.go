@@ -38,7 +38,7 @@ type WebConnectivity struct {
 
 // Run starts the test
 func (n WebConnectivity) Run(ctl *Controller) error {
-	log.Infof("Enabled category codes are the following %v", ctl.Ctx.Config.Nettests.WebsitesEnabledCategoryCodes)
+	log.Debugf("Enabled category codes are the following %v", ctl.Ctx.Config.Nettests.WebsitesEnabledCategoryCodes)
 	urls, urlIDMap, err := lookupURLs(ctl, ctl.Ctx.Config.Nettests.WebsitesURLLimit, ctl.Ctx.Config.Nettests.WebsitesEnabledCategoryCodes)
 	if err != nil {
 		return err
