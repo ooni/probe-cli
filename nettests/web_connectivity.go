@@ -6,11 +6,12 @@ import (
 	engine "github.com/ooni/probe-engine"
 )
 
-func lookupURLs(ctl *Controller, limit int64) ([]string, map[int64]int64, error) {
+func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, map[int64]int64, error) {
 	var urls []string
 	urlIDMap := make(map[int64]int64)
 	testlist, err := ctl.Ctx.Session.QueryTestListsURLs(&engine.TestListsURLsConfig{
 		Limit: limit,
+		Categories: categories,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -37,7 +38,8 @@ type WebConnectivity struct {
 
 // Run starts the test
 func (n WebConnectivity) Run(ctl *Controller) error {
-	urls, urlIDMap, err := lookupURLs(ctl, ctl.Ctx.Config.Nettests.WebsitesURLLimit)
+	log.Debugf("Enabled category codes are the following %v", ctl.Ctx.Config.Nettests.WebsitesEnabledCategoryCodes)
+	urls, urlIDMap, err := lookupURLs(ctl, ctl.Ctx.Config.Nettests.WebsitesURLLimit, ctl.Ctx.Config.Nettests.WebsitesEnabledCategoryCodes)
 	if err != nil {
 		return err
 	}
