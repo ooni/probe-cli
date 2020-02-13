@@ -3,7 +3,9 @@ package ooni
 import (
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"sync/atomic"
+	"syscall"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/config"
@@ -49,6 +51,51 @@ func (c *Context) IsTerminated() bool {
 // Terminate interrupts the running context
 func (c *Context) Terminate() {
 	atomic.AddInt64(&c.isTerminatedAtomicInt, 1)
+}
+
+// ListenForSignals will listen for SIGINT and SIGTERM. When it receives those
+// signals it will set isTerminatedAtomicInt to non-zero, which will cleanly
+// shutdown the test logic.
+//
+// TODO refactor this to use a cancellable context.Context instead of a bool
+// flag, probably as part of: https://github.com/ooni/probe-cli/issues/45
+func (c *Context) ListenForSignals() {
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-s
+		log.Info("caught a stop signal, shutting down cleanly")
+		c.Terminate()
+	}()
+}
+
+// MaybeListenForStdinClosed will treat any error on stdin just
+// like SIGTERM if and only if
+//
+//     os.Getven("OONI_STDIN_EOF_IMPLIES_SIGTERM") == "true"
+//
+// When this feature is enabled, a collateral effect is that we swallow
+// whatever is passed to us on the standard input.
+//
+// See https://github.com/ooni/probe-cli/pull/111 for more info
+// regarding the design of this functionality.
+//
+// TODO refactor this to use a cancellable context.Context instead of a bool
+// flag, probably as part of: https://github.com/ooni/probe-cli/issues/45
+func (c *Context) MaybeListenForStdinClosed() {
+	if os.Getenv("OONI_STDIN_EOF_IMPLIES_SIGTERM") != "true" {
+		return
+	}
+	go func() {
+		defer c.Terminate()
+		defer log.Info("stdin closed, shutting down cleanly")
+		b := make([]byte, 1<<10)
+		for {
+			if _, err := os.Stdin.Read(b); err != nil {
+				return
+			}
+		}
+	}()
 }
 
 // Init the OONI manager
