@@ -72,7 +72,7 @@ func (c *Context) ListenForSignals() {
 // MaybeListenForStdinClosed will treat any error on stdin just
 // like SIGTERM if and only if
 //
-//     os.Getven("OONI_STDIN_EOF_IMPLIES_SIGTERM") == "true"
+//     os.Getenv("OONI_STDIN_EOF_IMPLIES_SIGTERM") == "true"
 //
 // When this feature is enabled, a collateral effect is that we swallow
 // whatever is passed to us on the standard input.
