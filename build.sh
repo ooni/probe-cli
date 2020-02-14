@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-buildtags=""
+buildtags="-tags ooni"
 ldflags="-s -w"
 
 if [ "$1" = "bindata" ]; then
