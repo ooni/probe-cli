@@ -93,6 +93,9 @@ a specific version of psiphon and of its dependencies.
 
 ## Releasing
 
+Make sure you have updated dependencies. Specifically, make sure
+you update homebrew to get the latest Measurement Kit. Then:
+
 ```
 ./build.sh release
 ```
