@@ -22,7 +22,7 @@ fi
 if [ "$1" = "windows" ]; then
   set -x
   CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++                         \
-    CGO_ENABLED=1 GOOS=windows GOARCH=amd64                                    \
+    CGO_LDFLAGS_ALLOW='-fstack-.*' CGO_ENABLED=1 GOOS=windows GOARCH=amd64     \
       go build $buildtags -ldflags="$ldflags"                                  \
         -o dist/windows/amd64/ooniprobe.exe -v ./cmd/ooniprobe
 
@@ -48,7 +48,7 @@ elif [ "$1" = "release" ]; then
     -C ./dist/macos/amd64 ooniprobe
   shasum -a 256 ooniprobe_${v}_darwin_amd64.tar.gz >> ooniprobe_checksums.txt
   $0 windows
-  tar -czf ooniprobe_${v}_windows_amd64.tar.gz ./dist/windows/amd64            \
+  tar -czf ooniprobe_${v}_windows_amd64.tar.gz LICENSE.md Readme.md            \
     -C dist/windows/amd64 ooniprobe.exe
   shasum -a 256 ooniprobe_${v}_windows_amd64.tar.gz >> ooniprobe_checksums.txt
   echo ""
