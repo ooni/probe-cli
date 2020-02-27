@@ -1,5 +1,7 @@
 # OONI Probe CLI
 
+![Build packages](https://github.com/ooni/probe-cli/workflows/Build%20packages/badge.svg)
+
 The next generation OONI Probe Command Line Interface.
 
 ## User setup

@@ -1,0 +1,18 @@
+name: linux-debian-packages
+on:
+  push:
+  schedule:
+    - cron: "14 17 * * 3"
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: "1.14"
+      - uses: actions/checkout@v2
+      - run: ./build.sh linux
+      - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
+      - run: sudo apt-get update -q
+      - run: sudo apt-get build-dep -y --no-install-recommends .
+      - run: dpkg-buildpackage -us -uc -b
