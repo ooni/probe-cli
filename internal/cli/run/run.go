@@ -14,6 +14,11 @@ import (
 )
 
 func runNettestGroup(tg string, ctx *ooni.Context, network *database.Network) error {
+	if ctx.IsTerminated() == true {
+		log.Debugf("context is terminated, stopping runNettestGroup early")
+		return nil
+	}
+
 	group, ok := nettests.NettestGroups[tg]
 	if !ok {
 		log.Errorf("No test group named %s", tg)
@@ -31,7 +36,7 @@ func runNettestGroup(tg string, ctx *ooni.Context, network *database.Network) er
 	ctx.MaybeListenForStdinClosed()
 	for i, nt := range group.Nettests {
 		if ctx.IsTerminated() == true {
-			log.Debugf("context is terminated, breaking")
+			log.Debugf("context is terminated, stopping group.Nettests early")
 			break
 		}
 		log.Debugf("Running test %T", nt)
