@@ -9,7 +9,7 @@ require (
 	github.com/fatih/color v1.9.0
 	github.com/getsentry/raven-go v0.0.0-20190419175539-919484f041ea
 	github.com/mattn/go-colorable v0.1.4
-	github.com/ooni/probe-engine v0.7.1-0.20200226205256-ae59c0578995
+	github.com/ooni/probe-engine v0.7.1-0.20200227133113-8ba2a70c5fe8
 	github.com/pkg/errors v0.9.1
 	github.com/rubenv/sql-migrate v0.0.0-20200212082348-64f95ea68aa3
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
