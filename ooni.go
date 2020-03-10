@@ -141,6 +141,8 @@ func (c *Context) Init(softwareName, softwareVersion string) error {
 		return errors.Wrap(err, "creating engine's kvstore")
 	}
 
+	// There is basically just a single engine.Session therefore we don't
+	// bother for now with adding support for closing the session.
 	sess, err := engine.NewSession(engine.SessionConfig{
 		KVStore:         kvstore,
 		Logger:          enginex.Logger,

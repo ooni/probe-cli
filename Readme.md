@@ -66,7 +66,7 @@ Once you have written the file, you can enable to run automatically by doing: `l
 
 ## Development setup
 
-Be sure you have golang >= 1.13. We use golang modules. Run
+Be sure you have golang >= 1.14. We use golang modules. Run
 
 ```
 ./build.sh help
