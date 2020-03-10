@@ -11,6 +11,7 @@ import (
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/output"
 	engine "github.com/ooni/probe-engine"
+	"github.com/ooni/probe-engine/model"
 	"github.com/pkg/errors"
 )
 
@@ -72,9 +73,9 @@ func (c *Controller) SetNettestIndex(i, n int) {
 func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) error {
 	// This will configure the controller as handler for the callbacks
 	// called by ooni/probe-engine/experiment.Experiment.
-	builder.SetCallbacks(engine.Callbacks(c))
+	builder.SetCallbacks(model.ExperimentCallbacks(c))
 	c.numInputs = len(inputs)
-	exp := builder.Build()
+	exp := builder.NewExperiment()
 
 	c.msmts = make(map[int64]*database.Measurement)
 
