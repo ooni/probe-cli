@@ -10,7 +10,7 @@ func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, ma
 	var urls []string
 	urlIDMap := make(map[int64]int64)
 	testlist, err := ctl.Ctx.Session.QueryTestListsURLs(&engine.TestListsURLsConfig{
-		Limit: limit,
+		Limit:      limit,
 		Categories: categories,
 	})
 	if err != nil {
