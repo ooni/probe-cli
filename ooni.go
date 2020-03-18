@@ -31,9 +31,11 @@ type Context struct {
 	dbPath     string
 	configPath string
 
-	// We need to use a int64 in order to use the atomic.AddInt64/LoadInt64
-	// operations to ensure consistent reads of the variables.
-	isTerminatedAtomicInt int64
+	// We need to use a int32 in order to use the atomic.AddInt32/LoadInt32
+	// operations to ensure consistent reads of the variables. We do not use
+	// a 64 bit integer here because that may lead to crashes with 32 bit
+	// OSes as documented in https://golang.org/pkg/sync/atomic/#pkg-note-BUG.
+	isTerminatedAtomicInt int32
 }
 
 // MaybeLocationLookup will lookup the location of the user unless it's already cached
@@ -44,13 +46,13 @@ func (c *Context) MaybeLocationLookup() error {
 // IsTerminated checks to see if the isTerminatedAtomicInt is set to a non zero
 // value and therefore we have received the signal to shutdown the running test
 func (c *Context) IsTerminated() bool {
-	i := atomic.LoadInt64(&c.isTerminatedAtomicInt)
+	i := atomic.LoadInt32(&c.isTerminatedAtomicInt)
 	return i != 0
 }
 
 // Terminate interrupts the running context
 func (c *Context) Terminate() {
-	atomic.AddInt64(&c.isTerminatedAtomicInt, 1)
+	atomic.AddInt32(&c.isTerminatedAtomicInt, 1)
 }
 
 // ListenForSignals will listen for SIGINT and SIGTERM. When it receives those
