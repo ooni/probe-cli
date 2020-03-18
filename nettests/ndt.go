@@ -10,7 +10,8 @@ type NDT struct {
 
 // Run starts the test
 func (n NDT) Run(ctl *Controller) error {
-	builder, err := ctl.Ctx.Session.NewExperimentBuilder("ndt7")
+	// Since 2020-03-18 probe-engine exports v7 as "ndt".
+	builder, err := ctl.Ctx.Session.NewExperimentBuilder("ndt")
 	if err != nil {
 		return err
 	}
