@@ -34,7 +34,11 @@ func TestCreateContext(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	ctx := newTestingContext(t)
-	network, err := database.CreateNetwork(ctx.DB, ctx.Session)
+	sess, err := ctx.NewSession()
+	if err != nil {
+		t.Fatal(err)
+	}
+	network, err := database.CreateNetwork(ctx.DB, sess)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,6 +47,6 @@ func TestRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	nt := HTTPInvalidRequestLine{}
-	ctl := NewController(nt, ctx, res)
+	ctl := NewController(nt, ctx, res, sess)
 	nt.Run(ctl)
 }

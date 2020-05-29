@@ -10,7 +10,7 @@ type Dash struct {
 
 // Run starts the test
 func (d Dash) Run(ctl *Controller) error {
-	builder, err := ctl.Ctx.Session.NewExperimentBuilder("dash")
+	builder, err := ctl.Session.NewExperimentBuilder("dash")
 	if err != nil {
 		return err
 	}

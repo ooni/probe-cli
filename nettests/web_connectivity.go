@@ -9,7 +9,7 @@ import (
 func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, map[int64]int64, error) {
 	var urls []string
 	urlIDMap := make(map[int64]int64)
-	testlist, err := ctl.Ctx.Session.QueryTestListsURLs(&engine.TestListsURLsConfig{
+	testlist, err := ctl.Session.QueryTestListsURLs(&engine.TestListsURLsConfig{
 		Limit:      limit,
 		Categories: categories,
 	})
@@ -44,7 +44,7 @@ func (n WebConnectivity) Run(ctl *Controller) error {
 		return err
 	}
 	ctl.SetInputIdxMap(urlIDMap)
-	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
+	builder, err := ctl.Session.NewExperimentBuilder(
 		"web_connectivity",
 	)
 	if err != nil {

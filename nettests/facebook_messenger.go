@@ -6,7 +6,7 @@ type FacebookMessenger struct {
 
 // Run starts the test
 func (h FacebookMessenger) Run(ctl *Controller) error {
-	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
+	builder, err := ctl.Session.NewExperimentBuilder(
 		"facebook_messenger",
 	)
 	if err != nil {

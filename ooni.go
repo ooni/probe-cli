@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/internal/enginex"
 	"github.com/ooni/probe-cli/utils"
 	engine "github.com/ooni/probe-engine"
+	"github.com/ooni/probe-engine/model"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -23,7 +24,6 @@ type Context struct {
 	Config  *config.Config
 	DB      sqlbuilder.Database
 	IsBatch bool
-	Session *engine.Session
 
 	Home    string
 	TempDir string
@@ -36,11 +36,9 @@ type Context struct {
 	// a 64 bit integer here because that may lead to crashes with 32 bit
 	// OSes as documented in https://golang.org/pkg/sync/atomic/#pkg-note-BUG.
 	isTerminatedAtomicInt int32
-}
 
-// MaybeLocationLookup will lookup the location of the user unless it's already cached
-func (c *Context) MaybeLocationLookup() error {
-	return c.Session.MaybeLookupLocation()
+	softwareName    string
+	softwareVersion string
 }
 
 // IsTerminated checks to see if the isTerminatedAtomicInt is set to a non zero
@@ -136,29 +134,34 @@ func (c *Context) Init(softwareName, softwareVersion string) error {
 	}
 	c.TempDir = tempDir
 
+	c.softwareName = softwareName
+	c.softwareVersion = softwareVersion
+	return nil
+}
+
+// NewSession creates a new ooni/probe-engine session using the
+// current configuration inside the context. The caller must close
+// the session when done using it, by calling sess.Close().
+func (c *Context) NewSession() (*engine.Session, error) {
 	kvstore, err := engine.NewFileSystemKVStore(
 		utils.EngineDir(c.Home),
 	)
 	if err != nil {
-		return errors.Wrap(err, "creating engine's kvstore")
+		return nil, errors.Wrap(err, "creating engine's kvstore")
 	}
-
-	// There is basically just a single engine.Session therefore we don't
-	// bother for now with adding support for closing the session.
-	sess, err := engine.NewSession(engine.SessionConfig{
-		KVStore:         kvstore,
-		Logger:          enginex.Logger,
-		SoftwareName:    softwareName,
-		SoftwareVersion: softwareVersion,
-		AssetsDir:       utils.AssetsDir(c.Home),
+	return engine.NewSession(engine.SessionConfig{
+		AssetsDir: utils.AssetsDir(c.Home),
+		KVStore:   kvstore,
+		Logger:    enginex.Logger,
+		PrivacySettings: model.PrivacySettings{
+			IncludeASN:     c.Config.Sharing.IncludeASN,
+			IncludeCountry: c.Config.Sharing.IncludeCountry,
+			IncludeIP:      c.Config.Sharing.IncludeIP,
+		},
+		SoftwareName:    c.softwareName,
+		SoftwareVersion: c.softwareVersion,
 		TempDir:         c.TempDir,
 	})
-	if err != nil {
-		return err
-	}
-	c.Session = sess
-
-	return nil
 }
 
 // NewContext creates a new context instance.

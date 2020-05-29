@@ -6,7 +6,7 @@ type Telegram struct {
 
 // Run starts the test
 func (h Telegram) Run(ctl *Controller) error {
-	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
+	builder, err := ctl.Session.NewExperimentBuilder(
 		"telegram",
 	)
 	if err != nil {

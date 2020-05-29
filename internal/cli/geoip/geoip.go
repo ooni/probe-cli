@@ -17,17 +17,23 @@ func init() {
 			return err
 		}
 
-		err = ctx.MaybeLocationLookup()
+		sess, err := ctx.NewSession()
+		if err != nil {
+			return err
+		}
+		defer sess.Close()
+
+		err = sess.MaybeLookupLocation()
 		if err != nil {
 			return err
 		}
 
 		log.WithFields(log.Fields{
 			"type":         "table",
-			"asn":          ctx.Session.ProbeASNString(),
-			"network_name": ctx.Session.ProbeNetworkName(),
-			"country_code": ctx.Session.ProbeCC(),
-			"ip":           ctx.Session.ProbeIP(),
+			"asn":          sess.ProbeASNString(),
+			"network_name": sess.ProbeNetworkName(),
+			"country_code": sess.ProbeCC(),
+			"ip":           sess.ProbeIP(),
 		}).Info("Looked up your location")
 
 		return nil
