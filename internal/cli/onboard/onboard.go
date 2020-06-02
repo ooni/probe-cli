@@ -76,13 +76,11 @@ func Onboarding(config *config.Config) error {
 	settings := struct {
 		IncludeIP        bool
 		IncludeNetwork   bool
-		IncludeCountry   bool
 		UploadResults    bool
 		SendCrashReports bool
 	}{}
 	settings.IncludeIP = false
 	settings.IncludeNetwork = true
-	settings.IncludeCountry = true
 	settings.UploadResults = true
 	settings.SendCrashReports = true
 
@@ -96,13 +94,6 @@ func Onboarding(config *config.Config) error {
 				Name: "IncludeNetwork",
 				Prompt: &survey.Confirm{
 					Message: "Can we include your network name?",
-					Default: true,
-				},
-			},
-			{
-				Name: "IncludeCountry",
-				Prompt: &survey.Confirm{
-					Message: "Can we include your country name?",
 					Default: true,
 				},
 			},
@@ -131,7 +122,6 @@ func Onboarding(config *config.Config) error {
 
 	config.Lock()
 	config.InformedConsent = true
-	config.Sharing.IncludeCountry = settings.IncludeCountry
 	config.Advanced.SendCrashReports = settings.SendCrashReports
 	config.Sharing.IncludeIP = settings.IncludeIP
 	config.Sharing.IncludeASN = settings.IncludeNetwork

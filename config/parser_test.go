@@ -28,10 +28,6 @@ func TestParseConfig(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
-	if config.Sharing.IncludeCountry == false {
-		t.Error("country should be included")
-	}
 }
 
 func TestUpdateConfig(t *testing.T) {
@@ -61,7 +57,6 @@ func TestUpdateConfig(t *testing.T) {
 	}
 	origIncludeIP := config.Sharing.IncludeIP
 	origIncludeASN := config.Sharing.IncludeASN
-	origIncludeCountry := config.Sharing.IncludeCountry
 	origUploadResults := config.Sharing.UploadResults
 	origInformedConsent := config.InformedConsent
 	if err != nil {
@@ -86,9 +81,6 @@ func TestUpdateConfig(t *testing.T) {
 	}
 	if newConfig.Sharing.IncludeASN != origIncludeASN {
 		t.Error("includeASN differs")
-	}
-	if newConfig.Sharing.IncludeCountry != origIncludeCountry {
-		t.Error("includeCountry differs")
 	}
 	if newConfig.Sharing.UploadResults != origUploadResults {
 		t.Error("UploadResults differs")
