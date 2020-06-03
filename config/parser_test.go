@@ -28,6 +28,9 @@ func TestParseConfig(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	if config.Sharing.IncludeASN == false {
+		t.Error("network should be included")
+	}
 }
 
 func TestUpdateConfig(t *testing.T) {
