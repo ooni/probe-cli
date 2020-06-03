@@ -37,7 +37,6 @@ var websiteCategories = []string{
 type Sharing struct {
 	IncludeIP      bool `json:"include_ip"`
 	IncludeASN     bool `json:"include_asn"`
-	IncludeCountry bool `json:"include_country"`
 	UploadResults  bool `json:"upload_results"`
 }
 

@@ -116,7 +116,8 @@ func init() {
 		// Make sure we share what the user wants us to share.
 		ctx.Session.SetIncludeProbeIP(ctx.Config.Sharing.IncludeIP)
 		ctx.Session.SetIncludeProbeASN(ctx.Config.Sharing.IncludeASN)
-		ctx.Session.SetIncludeProbeCC(ctx.Config.Sharing.IncludeCountry)
+		// Always include probe_cc
+		ctx.Session.SetIncludeProbeCC(true)
 		return nil
 	})
 
