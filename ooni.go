@@ -155,7 +155,7 @@ func (c *Context) NewSession() (*engine.Session, error) {
 		Logger:    enginex.Logger,
 		PrivacySettings: model.PrivacySettings{
 			IncludeASN:     c.Config.Sharing.IncludeASN,
-			IncludeCountry: c.Config.Sharing.IncludeCountry,
+			IncludeCountry: true,
 			IncludeIP:      c.Config.Sharing.IncludeIP,
 		},
 		SoftwareName:    c.softwareName,
