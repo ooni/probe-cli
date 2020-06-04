@@ -10,7 +10,7 @@ type HTTPHeaderFieldManipulation struct {
 
 // Run starts the test
 func (h HTTPHeaderFieldManipulation) Run(ctl *Controller) error {
-	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
+	builder, err := ctl.Session.NewExperimentBuilder(
 		"http_header_field_manipulation",
 	)
 	if err != nil {

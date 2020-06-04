@@ -8,7 +8,7 @@ type Psiphon struct {
 
 // Run starts the test
 func (h Psiphon) Run(ctl *Controller) error {
-	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
+	builder, err := ctl.Session.NewExperimentBuilder(
 		"psiphon",
 	)
 	if err != nil {

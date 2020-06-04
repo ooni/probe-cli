@@ -6,7 +6,7 @@ type WhatsApp struct {
 
 // Run starts the test
 func (h WhatsApp) Run(ctl *Controller) error {
-	builder, err := ctl.Ctx.Session.NewExperimentBuilder(
+	builder, err := ctl.Session.NewExperimentBuilder(
 		"whatsapp",
 	)
 	if err != nil {

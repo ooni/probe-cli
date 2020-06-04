@@ -8,27 +8,27 @@ type NettestGroup struct {
 
 // NettestGroups that can be run by the user
 var NettestGroups = map[string]NettestGroup{
-	"websites": NettestGroup{
+	"websites": {
 		Label: "Websites",
 		Nettests: []Nettest{
 			WebConnectivity{},
 		},
 	},
-	"performance": NettestGroup{
+	"performance": {
 		Label: "Performance",
 		Nettests: []Nettest{
 			Dash{},
 			NDT{},
 		},
 	},
-	"middlebox": NettestGroup{
+	"middlebox": {
 		Label: "Middleboxes",
 		Nettests: []Nettest{
 			HTTPInvalidRequestLine{},
 			HTTPHeaderFieldManipulation{},
 		},
 	},
-	"im": NettestGroup{
+	"im": {
 		Label: "Instant Messaging",
 		Nettests: []Nettest{
 			FacebookMessenger{},
@@ -36,7 +36,7 @@ var NettestGroups = map[string]NettestGroup{
 			WhatsApp{},
 		},
 	},
-	"circumvention": NettestGroup{
+	"circumvention": {
 		Label: "Circumvention Tools",
 		Nettests: []Nettest{
 			Psiphon{},

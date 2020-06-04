@@ -19,6 +19,28 @@ func runNettestGroup(tg string, ctx *ooni.Context, network *database.Network) er
 		return nil
 	}
 
+	sess, err := ctx.NewSession()
+	if err != nil {
+		log.WithError(err).Error("Failed to create a measurement session")
+		return err
+	}
+	defer sess.Close()
+
+	err = sess.MaybeLookupLocation()
+	if err != nil {
+		log.WithError(err).Error("Failed to lookup the location of the probe")
+		return err
+	}
+	network, err = database.CreateNetwork(ctx.DB, sess)
+	if err != nil {
+		log.WithError(err).Error("Failed to create the network row")
+		return err
+	}
+	if err := sess.MaybeLookupBackends(); err != nil {
+		log.WithError(err).Warn("Failed to discover OONI backends")
+		return err
+	}
+
 	group, ok := nettests.NettestGroups[tg]
 	if !ok {
 		log.Errorf("No test group named %s", tg)
@@ -40,7 +62,7 @@ func runNettestGroup(tg string, ctx *ooni.Context, network *database.Network) er
 			break
 		}
 		log.Debugf("Running test %T", nt)
-		ctl := nettests.NewController(nt, ctx, result)
+		ctl := nettests.NewController(nt, ctx, result, sess)
 		ctl.SetNettestIndex(i, len(group.Nettests))
 		if err = nt.Run(ctl); err != nil {
 			log.WithError(err).Errorf("Failed to run %s", group.Label)
@@ -65,8 +87,6 @@ func init() {
 	}
 
 	noCollector := cmd.Flag("no-collector", "Disable uploading measurements to a collector").Bool()
-	collectorURL := cmd.Flag("collector-url", "Specify the address of a custom collector").String()
-	bouncerURL := cmd.Flag("bouncer-url", "Specify the address of a custom bouncer").String()
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		var err error
@@ -84,40 +104,6 @@ func init() {
 		if *noCollector == true {
 			ctx.Config.Sharing.UploadResults = false
 		}
-		if *collectorURL != "" {
-			ctx.Config.Advanced.CollectorURL = *collectorURL
-		}
-		if *bouncerURL != "" {
-			ctx.Config.Advanced.BouncerURL = *bouncerURL
-		}
-		log.Debugf("Using collector: %s", ctx.Config.Advanced.CollectorURL)
-		log.Debugf("Using bouncer: %s", ctx.Config.Advanced.CollectorURL)
-
-		err = ctx.MaybeLocationLookup()
-		if err != nil {
-			log.WithError(err).Error("Failed to lookup the location of the probe")
-			return err
-		}
-		network, err = database.CreateNetwork(ctx.DB, ctx.Session)
-		if err != nil {
-			log.WithError(err).Error("Failed to create the network row")
-			return err
-		}
-		if ctx.Config.Advanced.BouncerURL != "" {
-			ctx.Session.AddAvailableHTTPSBouncer(ctx.Config.Advanced.BouncerURL)
-		}
-		if ctx.Config.Sharing.UploadResults && ctx.Config.Advanced.CollectorURL != "" {
-			ctx.Session.AddAvailableHTTPSCollector(ctx.Config.Advanced.CollectorURL)
-		}
-		if err := ctx.Session.MaybeLookupBackends(); err != nil {
-			log.WithError(err).Warn("Failed to discover OONI backends")
-			return err
-		}
-		// Make sure we share what the user wants us to share.
-		ctx.Session.SetIncludeProbeIP(ctx.Config.Sharing.IncludeIP)
-		ctx.Session.SetIncludeProbeASN(ctx.Config.Sharing.IncludeASN)
-		// Always include probe_cc
-		ctx.Session.SetIncludeProbeCC(true)
 		return nil
 	})
 

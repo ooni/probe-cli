@@ -23,11 +23,13 @@ type Nettest interface {
 }
 
 // NewController creates a nettest controller
-func NewController(nt Nettest, ctx *ooni.Context, res *database.Result) *Controller {
+func NewController(
+	nt Nettest, ctx *ooni.Context, res *database.Result, sess *engine.Session) *Controller {
 	return &Controller{
-		Ctx: ctx,
-		nt:  nt,
-		res: res,
+		Ctx:     ctx,
+		nt:      nt,
+		res:     res,
+		Session: sess,
 	}
 }
 
@@ -35,6 +37,7 @@ func NewController(nt Nettest, ctx *ooni.Context, res *database.Result) *Control
 // each nettest instance has one controller
 type Controller struct {
 	Ctx         *ooni.Context
+	Session     *engine.Session
 	res         *database.Result
 	nt          Nettest
 	ntCount     int

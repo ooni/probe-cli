@@ -42,13 +42,11 @@ type Sharing struct {
 
 // Advanced settings
 type Advanced struct {
-	SendCrashReports bool   `json:"send_crash_reports"`
-	CollectorURL     string `json:"collector_url"`
-	BouncerURL       string `json:"bouncer_url"`
+	SendCrashReports bool `json:"send_crash_reports"`
 }
 
 // Nettests related settings
 type Nettests struct {
-	WebsitesURLLimit int64 `json:"websites_url_limit"`
+	WebsitesURLLimit             int64    `json:"websites_url_limit"`
 	WebsitesEnabledCategoryCodes []string `json:"websites_enabled_category_codes"`
 }
