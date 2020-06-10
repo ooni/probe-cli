@@ -78,10 +78,16 @@ instructions on how to install dependencies.
 ## Updating dependencies
 
 1. update every direct dependency in `go.mod` except `probe-engine`
-using `go get -u -v $dependency`
+using `go get -u -v $dependency`:
+
+```
+for name in `grep -v indirect go.mod | grep -v probe-engine | awk '/^\t/{print $1}'`; do \
+  go get -u -v $name;                                                                    \
+done
+```
 
 2. pin to the latest version of the `probe-engine` with
-`go get -v github.com/ooni/probe-engine@tag`
+`go get -v github.com/ooni/probe-engine@TAG`
 
 3. remove all indirect dependencies from `go.mod` and merge the
 content of `probe-engine`'s `go.mod` into our `go.mod`
