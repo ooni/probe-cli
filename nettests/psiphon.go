@@ -27,22 +27,22 @@ type PsiphonTestKeys struct {
 // GetTestKeys generates a summary for a test run
 func (h Psiphon) GetTestKeys(tk map[string]interface{}) (interface{}, error) {
 	var (
-		err error
-		ok  bool
+		ok       bool
+		testKeys PsiphonTestKeys
 	)
-	testKeys := PsiphonTestKeys{IsAnomaly: false, Failure: ""}
 	if tk["failure"] != nil {
 		testKeys.IsAnomaly = true
-		testKeys.Failure, ok = tk["failure"].(string)
+		failure, ok := tk["failure"].(*string)
 		if !ok {
-			err = errors.Wrap(err, "failure key invalid")
+			return testKeys, errors.New("failure key invalid")
 		}
+		testKeys.Failure = *failure
 	}
 	testKeys.BootstrapTime, ok = tk["bootstrap_time"].(float64)
 	if !ok {
-		err = errors.Wrap(err, "bootstrap_time key invalid")
+		return testKeys, errors.New("bootstrap_time key invalid")
 	}
-	return testKeys, err
+	return testKeys, nil
 }
 
 // LogSummary writes the summary to the standard output
