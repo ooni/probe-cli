@@ -39,7 +39,7 @@ var NettestGroups = map[string]NettestGroup{
 	"circumvention": {
 		Label: "Circumvention Tools",
 		Nettests: []Nettest{
-			//STUNReachability{}, /* We're not ready to include this yet */
+			STUNReachability{},
 			Psiphon{},
 			Tor{},
 		},
