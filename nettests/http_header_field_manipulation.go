@@ -16,9 +16,6 @@ func (h HTTPHeaderFieldManipulation) Run(ctl *Controller) error {
 	if err != nil {
 		return err
 	}
-	if err := builder.SetOptionString("LogLevel", "INFO"); err != nil {
-		return err
-	}
 	return ctl.Run(builder, []string{""})
 }
 
