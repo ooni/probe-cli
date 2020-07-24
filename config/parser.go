@@ -69,6 +69,7 @@ type Config struct {
 // Write the config file in json to the path
 func (c *Config) Write() error {
 	c.Lock()
+	defer c.Unlock()
 	configJSON, _ := json.MarshalIndent(c, "", "  ")
 	if c.path == "" {
 		return errors.New("config file path is empty")
@@ -76,7 +77,6 @@ func (c *Config) Write() error {
 	if err := ioutil.WriteFile(c.path, configJSON, 0644); err != nil {
 		return errors.Wrap(err, "writing config JSON")
 	}
-	c.Unlock()
 	return nil
 }
 
