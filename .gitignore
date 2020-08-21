@@ -1,11 +1,9 @@
-/dist
 /ooniprobe
 /coverage.cov
 /testdata/gotmp
-*.njson
+*.jsonl
 .DS_Store
-
-# Build artifacts
 *.tar.gz
+*.zip
 ooniprobe_checksums.txt
 ooniprobe_checksums.txt.asc

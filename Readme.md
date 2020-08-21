@@ -79,8 +79,7 @@ need Mingw-w64 installed). The general build command is:
 go build -v ./cmd/ooniprobe
 ```
 
-For further information, please check [the automatic build rules with which we
-build packages using Github Actions](.github/workflows/cli.yml).
+For further information, please check [the build.sh script](build.sh).
 
 To update bundled binary data use:
 
