@@ -13,6 +13,7 @@ jobs:
       - uses: actions/checkout@v2
       - run: go build -ldflags='-s -w' ./cmd/ooniprobe
       - run: ./ooniprobe.exe onboard --yes
+      # Important! DO NOT run performance from CI b/c it will overload m-lab servers
       - run: ./ooniprobe.exe run websites --config testdata/testing-config.json -v --no-collector
       - uses: actions/upload-artifact@v1
         with:
