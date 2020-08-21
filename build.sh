@@ -42,5 +42,15 @@ case $1 in
 
   *)
     echo "Usage: $0 linux|macos|windows|release"
+    echo ""
+    echo "You need a C compiler and Go >= 1.14. The C compiler must be a"
+    echo "UNIX like compiler like GCC, Clang, Mingw-w64."
+    echo ""
+    echo "To build a static Linux binary, we use Docker and Alpine."
+    echo ""
+    echo "You can cross compile for Windows from macOS or Linux. You can"
+    echo "compile for Linux as long as you have Docker. Cross compiling for"
+    echo "macOS has never been tested."
+    echo ""
     ;;
 esac
