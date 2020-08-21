@@ -1,0 +1,19 @@
+name: linux
+on:
+  push:
+  schedule:
+    - cron: "14 17 * * 3"
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: "1.14"
+      - uses: actions/checkout@v2
+      - run: ./build.sh linux
+      - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
+      - uses: actions/upload-artifact@v1
+        with:
+          name: ooniprobe-linux-amd64
+          path: ./CLI/linux/amd64/ooniprobe

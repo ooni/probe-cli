@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-# We don't have a git repository when running in github
+# We don't have a git repository when running in github action
 v=`git describe --tags || echo $GITHUB_SHA`
 
 case $1 in
@@ -10,7 +10,7 @@ case $1 in
     GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc \
       go build -ldflags='-s -w' ./cmd/ooniprobe
     tar -cvzf ooniprobe_${v}_windows_amd64.tar.gz LICENSE.md Readme.md ooniprobe.exe
-    # We don't have zip inside the github windows runner
+    # We don't have zip inside the github actions runner
     zip ooniprobe_${v}_windows_amd64.zip LICENSE.md Readme.md ooniprobe.exe || true
     mv ooniprobe.exe ./CLI/windows/amd64/
     ;;
