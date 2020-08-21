@@ -1,2 +1,2 @@
-FROM openobservatory/mk-alpine:20200721
-RUN apk add --no-progress git go
+FROM golang:1.14-alpine
+RUN apk add --no-progress gcc git linux-headers musl-dev
