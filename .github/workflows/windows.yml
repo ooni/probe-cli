@@ -12,9 +12,9 @@ jobs:
           go-version: "1.14"
       - uses: actions/checkout@v2
       - run: go build -ldflags='-s -w' ./cmd/ooniprobe
-      - run: ./ooniprobe onboard --yes
-      - run: ./ooniprobe run websites --config testdata/testing-config.json -v --no-collector
+      - run: ./ooniprobe.exe onboard --yes
+      - run: ./ooniprobe.exe run websites --config testdata/testing-config.json -v --no-collector
       - uses: actions/upload-artifact@v1
         with:
           name: ooniprobe-windows-amd64
-          path: ooniprobe
+          path: ooniprobe.exe
