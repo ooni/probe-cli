@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-# We don't have a git repository when running in github action
+# We don't have a git repository when running in github actions
 v=`git describe --tags || echo $GITHUB_SHA`
 
 case $1 in

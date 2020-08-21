@@ -1,3 +1,4 @@
+# Build and test macOS binary
 name: macos
 on:
   push:

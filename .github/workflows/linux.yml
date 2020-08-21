@@ -1,3 +1,4 @@
+# Build and test Linux binary
 name: linux
 on:
   push:

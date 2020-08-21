@@ -1,3 +1,4 @@
+# Build and test Windows binary
 name: windows
 on:
   push:
