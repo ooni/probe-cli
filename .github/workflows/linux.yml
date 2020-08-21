@@ -12,9 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: apk add --no-progress gcc git linux-headers musl-dev
-      - run: ./build.sh linux
-      - run: ./smoketest.sh linux
+      - run: go build -tags netgo -ldflags='-s -w -extldflags "-static"' ./cmd/ooniprobe
+      - run: ./ooniprobe --onboard yes
+      - run: ./ooniprobe run --config testdata/testing-config.json -v --no-collector
       - uses: actions/upload-artifact@v1
         with:
           name: ooniprobe-linux-amd64
-          path: ./dist/linux/amd64/ooniprobe
+          path: ooniprobe
