@@ -72,13 +72,6 @@ elif [ "$1" = "__docker" ]; then
 elif [ "$1" = "_travis-linux" ]; then
   set -x
   $0 linux
-  # TODO -race does not work on alpine.
-  # See: https://travis-ci.org/ooni/probe-cli/builds/619631256#L962
-  $0 __docker go get -v golang.org/x/tools/cmd/cover
-  $0 __docker go get -v github.com/mattn/goveralls
-  $0 __docker go test $buildtags -v -coverprofile=coverage.cov -coverpkg=./... ./...
-  $0 __docker /oonibuild/testdata/gotmp/path/bin/goveralls                     \
-          -coverprofile=coverage.cov -service=travis-ci
 
 elif [ "$1" = "_travis-osx" ]; then
   set -x
