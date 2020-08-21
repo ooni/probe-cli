@@ -1,3 +1,4 @@
+# Compile a binary for macOS
 name: macos
 on:
   push:
@@ -11,6 +12,8 @@ jobs:
         with:
           go-version: "1.14"
       - uses: actions/checkout@v2
+      # Note! the following line _assumes_ you have a working C compiler. If you
+      # have Xcode command line tools installed, you are fine.
       - run: go build -ldflags='-s -w' ./cmd/ooniprobe
       - run: ./ooniprobe onboard --yes
       # Important! DO NOT run performance from CI b/c it will overload m-lab servers

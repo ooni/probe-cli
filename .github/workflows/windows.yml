@@ -1,3 +1,4 @@
+# Compile a binary for Windows
 name: windows
 on:
   push:
@@ -11,7 +12,9 @@ jobs:
         with:
           go-version: "1.14"
       - uses: actions/checkout@v2
-      - run: go build -ldflags='-s -w' ./cmd/ooniprobe
+      # Note! the following line _assumes_ you have a working C compiler. The
+      # runner used by GitHub Action uses Mingw-w64, installed by default.
+      - run: go build -x -ldflags='-s -w' ./cmd/ooniprobe
       - run: ./ooniprobe.exe onboard --yes
       # Important! DO NOT run performance from CI b/c it will overload m-lab servers
       - run: ./ooniprobe.exe run websites --config testdata/testing-config.json -v --no-collector

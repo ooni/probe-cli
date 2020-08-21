@@ -1,3 +1,4 @@
+# Run tests and measure coverage
 name: golang
 on:
   push:

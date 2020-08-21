@@ -1,3 +1,4 @@
+# Compile a statically linked binary for Linux
 name: linux
 on:
   push:
