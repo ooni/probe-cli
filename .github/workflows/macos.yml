@@ -1,20 +1,17 @@
-name: linux
+name: macos
 on:
   push:
   schedule:
     - cron: "14 17 * * 3"
 jobs:
   test:
-    runs-on: "ubuntu-latest"
-    container:
-      image: "golang:1.14-alpine"
+    runs-on: "macos-latest"
     steps:
       - uses: actions/checkout@v2
-      - run: apk add --no-progress gcc git linux-headers musl-dev
-      - run: go build -tags netgo -ldflags='-s -w -extldflags "-static"' ./cmd/ooniprobe
+      - run: go build -ldflags='-s -w' ./cmd/ooniprobe
       - run: ./ooniprobe onboard --yes
       - run: ./ooniprobe run websites --config testdata/testing-config.json -v --no-collector
       - uses: actions/upload-artifact@v1
         with:
-          name: ooniprobe-linux-amd64
+          name: ooniprobe-macos-amd64
           path: ooniprobe
