@@ -1,0 +1,24 @@
+name: linux
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "14 17 * * 3"
+jobs:
+  test:
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: docker://golang:1.14-alpine
+        run: |
+          apk add --no-progress gcc git linux-headers musl-dev
+          ./build.sh linux
+      - run: ./smoketest.sh linux
+      - uses: actions/upload-artifact@v1
+        with:
+          name: ooniprobe-linux-amd64
+          path: ./dist/linux/amd64/ooniprobe
