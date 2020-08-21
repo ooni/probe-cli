@@ -6,6 +6,7 @@
 
 package bindata
 
+
 import (
 	"bytes"
 	"compress/gzip"
@@ -37,6 +38,7 @@ func bindataRead(data []byte, name string) ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
+
 
 type asset struct {
 	bytes []byte
@@ -78,37 +80,45 @@ func (fi bindataFileInfo) Sys() interface{} {
 	return nil
 }
 
-var _dataDefaultConfigJson = []byte(
-	"\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x5c\x91\x41\x4f\xc3\x30\x0c\x85\xef\xfd\x15\x56\xce\xb0\xc2\xb5\xff\x80" +
-	"\x0b\x43\x82\x7b\x94\x25\xee\x6a\x29\xb3\x2b\x3b\x19\x9a\xd0\xfe\x3b\x4a\x57\x46\xe1\xfa\x3e\xdb\xef\x59\xef\xab" +
-	"\x03\x70\xde\x0d\xe0\x3e\x26\x32\x20\x83\x8b\x54\x85\xfd\xfe\xf5\x05\xde\x54\x0e\x08\x51\x78\xa4\x23\x8c\x94\x71" +
-	"\x07\xef\x88\x30\x95\x32\xdb\xd0\xf7\x22\x4c\x3b\x92\x7e\xc2\x3c\xf7\x73\x9b\x7d\x8c\x99\x60\x14\x85\x26\xb9\x87" +
-	"\xe5\xf4\x19\xd5\x48\xd8\x0d\xf0\x7c\x13\x88\x47\xd1\x13\x26\x1f\x85\x0d\xb9\xb8\x01\xc6\x90\x0d\x17\x6a\x53\x50" +
-	"\xe2\xa3\x1b\xa0\x05\x03\x70\xc4\x31\xd7\x84\x9e\xe6\xed\xdc\x06\x04\x6b\xb7\x8b\xd6\xff\x20\x4a\xe5\xa2\x97\xbf" +
-	"\xb0\xce\x59\x42\xf2\x8a\x56\x73\xb1\x95\x75\x00\xd7\xc5\x9d\xb1\x14\xb4\x45\x5f\xed\x3f\xf1\x60\x54\xd0\x7c\xd5" +
-	"\xec\x33\x9d\xa8\xc5\x7d\xba\x2f\x84\x74\x0e\x1c\x31\xfd\x2e\x54\x43\x9f\xe4\x14\x88\xfd\xa8\xc2\xe5\xf6\xcc\x36" +
-	"\xb8\x21\x27\x1f\x35\xd8\xe4\x15\x67\xd1\x7b\x8c\x95\x47\xc9\x19\x63\x11\x6d\x9e\xad\x18\xb7\x82\x83\x54\x8e\x78" +
-	"\x97\x7f\x6a\x58\xe5\xdd\x5a\x87\x6b\xe1\xba\x6b\xf7\x1d\x00\x00\xff\xff\x8e\xc0\xab\xe6\xd9\x01\x00\x00")
+var _bindataDataDefaultconfigjson = []byte(
+	"\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x5c\x8f\x41\x4e\xc4\x30\x0c\x45\xf7\x3d\x85\x95\x35\x9a\x81\x6d\x2f\x63" +
+	"\x65\x12\x0f\xb5\x94\xda\x95\xed\x0c\x42\x68\xee\x8e\x5a\xaa\x52\xd8\xfe\x97\x9f\xff\xfc\x35\x00\x24\x7c\x90\x39" +
+	"\xab\xa4\x11\xde\x5e\xb6\x80\xe5\xae\x36\x53\xc5\xa2\xe2\x24\x91\x46\xb8\xe7\xe6\xb4\x51\x9f\xb2\xb1\xbc\xa7\x11" +
+	"\xd6\x36\x40\x62\x29\xad\x57\x42\x5e\xce\xef\x4e\x20\xfb\xfa\x77\x58\xff\x0f\x8a\x76\x09\xfb\xfc\x0b\xfb\xd2\x34" +
+	"\x57\x34\xf2\xde\xc2\x77\x36\x00\x3c\xb7\x75\xa1\x08\xf2\x2d\xdf\xe7\x3f\xe8\xe6\x1c\xe4\xd8\xad\x61\xe3\x99\x57" +
+	"\xdd\xd7\xa3\x90\xeb\x23\x4b\xa1\xfa\x5b\xe8\x4e\x58\x75\xce\x2c\x78\x37\x95\xf8\x39\xe6\x2c\xee\x24\x15\x8b\x65" +
+	"\x9f\xd0\x68\x51\x3b\x34\x76\x5e\xb4\x35\x2a\xa1\xb6\x6e\xa6\x11\x52\xda\xc1\x4d\xbb\x14\x3a\xe2\x29\x62\xf1\xf1" +
+	"\x7a\xdd\xe3\x8b\xaa\xf0\x85\x35\xad\x72\xc3\x73\xf8\x0e\x00\x00\xff\xff\xfb\x1f\x97\x64\x7e\x01\x00\x00")
 
-func dataDefaultConfigJsonBytes() ([]byte, error) {
+func bindataDataDefaultconfigjsonBytes() ([]byte, error) {
 	return bindataRead(
-		_dataDefaultConfigJson,
+		_bindataDataDefaultconfigjson,
 		"data/default-config.json",
 	)
 }
 
-func dataDefaultConfigJson() (*asset, error) {
-	bytes, err := dataDefaultConfigJsonBytes()
+
+
+func bindataDataDefaultconfigjson() (*asset, error) {
+	bytes, err := bindataDataDefaultconfigjsonBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "data/default-config.json", size: 0, md5checksum: "", mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{
+		name: "data/default-config.json",
+		size: 0,
+		md5checksum: "",
+		mode: os.FileMode(0),
+		modTime: time.Unix(0, 0),
+	}
+
 	a := &asset{bytes: bytes, info: info}
+
 	return a, nil
 }
 
-var _dataMigrations1_create_msmt_resultsSql = []byte(
+var _bindataDataMigrations1createmsmtresultssql = []byte(
 	"\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xa4\x59\x6d\x73\xdb\x36\x12\xfe\xee\x5f\xb1\xe3\xe9\xf4\xec\x39\x49\x76" +
 	"\x72\x69\xe6\xce\xd7\x4e\xc7\xb5\x99\x9c\xda\x58\xca\xc8\xf2\x35\x99\x9b\x1b\x11\x22\x97\x12\x2a\x10\x60\xf0\x22" +
 	"\x46\xf7\xeb\x6f\x16\x00\x29\x52\x56\x1c\x67\xda\x0f\xa9\x48\x02\x8b\x7d\x7d\xf6\x59\x78\x38\x84\xbf\x96\x7c\xa5" +
@@ -206,25 +216,35 @@ var _dataMigrations1_create_msmt_resultsSql = []byte(
 	"\x7f\x10\x08\x32\x73\x9a\xdc\x6b\x14\x22\xf8\xa6\x6f\x4c\x6c\x24\xe7\x3d\x1b\xfc\xdf\xdb\xf6\xdf\x68\x00\xfe\xe2" +
 	"\x5f\xf5\xfe\x1f\x00\x00\xff\xff\x38\xc6\x64\x22\x78\x1c\x00\x00")
 
-func dataMigrations1_create_msmt_resultsSqlBytes() ([]byte, error) {
+func bindataDataMigrations1createmsmtresultssqlBytes() ([]byte, error) {
 	return bindataRead(
-		_dataMigrations1_create_msmt_resultsSql,
+		_bindataDataMigrations1createmsmtresultssql,
 		"data/migrations/1_create_msmt_results.sql",
 	)
 }
 
-func dataMigrations1_create_msmt_resultsSql() (*asset, error) {
-	bytes, err := dataMigrations1_create_msmt_resultsSqlBytes()
+
+
+func bindataDataMigrations1createmsmtresultssql() (*asset, error) {
+	bytes, err := bindataDataMigrations1createmsmtresultssqlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "data/migrations/1_create_msmt_results.sql", size: 0, md5checksum: "", mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{
+		name: "data/migrations/1_create_msmt_results.sql",
+		size: 0,
+		md5checksum: "",
+		mode: os.FileMode(0),
+		modTime: time.Unix(0, 0),
+	}
+
 	a := &asset{bytes: bytes, info: info}
+
 	return a, nil
 }
 
-var _dataMigrations2_single_msmt_fileSql = []byte(
+var _bindataDataMigrations2singlemsmtfilesql = []byte(
 	"\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xec\x56\x4d\x6f\xdb\x38\x10\xbd\xf3\x57\xcc\xd1\xc6\x2a\x8b\xdd\xb6\xc9" +
 	"\xc5\xe8\x81\x91\x99\x54\xad\x4c\xa5\x14\x53\x34\x27\x89\xb5\x68\x47\x88\x4c\x0a\x24\xd5\x20\xff\xbe\x90\x3f\x6a" +
 	"\xda\x96\x8d\x3a\x28\x8a\x1e\x74\x9d\x8f\xc7\x21\xe7\x0d\xe7\x5d\x5c\xc0\x3f\x8b\x72\x6e\x84\x93\x30\xd6\xcf\x0a" +
@@ -252,27 +272,40 @@ var _dataMigrations2_single_msmt_fileSql = []byte(
 	"\x57\xde\xef\x5e\x79\xfb\x77\xec\x45\xc9\xdf\xd7\xa1\xf6\x0b\xe9\x96\x26\xba\x2a\x4e\x49\x93\x95\xfb\x7c\x69\xf2" +
 	"\x23\x00\x00\xff\xff\xca\xeb\xb6\x24\x7c\x10\x00\x00")
 
-func dataMigrations2_single_msmt_fileSqlBytes() ([]byte, error) {
+func bindataDataMigrations2singlemsmtfilesqlBytes() ([]byte, error) {
 	return bindataRead(
-		_dataMigrations2_single_msmt_fileSql,
+		_bindataDataMigrations2singlemsmtfilesql,
 		"data/migrations/2_single_msmt_file.sql",
 	)
 }
 
-func dataMigrations2_single_msmt_fileSql() (*asset, error) {
-	bytes, err := dataMigrations2_single_msmt_fileSqlBytes()
+
+
+func bindataDataMigrations2singlemsmtfilesql() (*asset, error) {
+	bytes, err := bindataDataMigrations2singlemsmtfilesqlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "data/migrations/2_single_msmt_file.sql", size: 0, md5checksum: "", mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{
+		name: "data/migrations/2_single_msmt_file.sql",
+		size: 0,
+		md5checksum: "",
+		mode: os.FileMode(0),
+		modTime: time.Unix(0, 0),
+	}
+
 	a := &asset{bytes: bytes, info: info}
+
 	return a, nil
 }
 
+
+//
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
+//
 func Asset(name string) ([]byte, error) {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	if f, ok := _bindata[cannonicalName]; ok {
@@ -285,9 +318,11 @@ func Asset(name string) ([]byte, error) {
 	return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrNotExist}
 }
 
+//
 // MustAsset is like Asset but panics when Asset would return an error.
 // It simplifies safe initialization of global variables.
 // nolint: deadcode
+//
 func MustAsset(name string) []byte {
 	a, err := Asset(name)
 	if err != nil {
@@ -297,9 +332,10 @@ func MustAsset(name string) []byte {
 	return a
 }
 
+//
 // AssetInfo loads and returns the asset info for the given name.
-// It returns an error if the asset could not be found or
-// could not be loaded.
+// It returns an error if the asset could not be found or could not be loaded.
+//
 func AssetInfo(name string) (os.FileInfo, error) {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	if f, ok := _bindata[cannonicalName]; ok {
@@ -312,8 +348,10 @@ func AssetInfo(name string) (os.FileInfo, error) {
 	return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrNotExist}
 }
 
+//
 // AssetNames returns the names of the assets.
 // nolint: deadcode
+//
 func AssetNames() []string {
 	names := make([]string, 0, len(_bindata))
 	for name := range _bindata {
@@ -322,13 +360,16 @@ func AssetNames() []string {
 	return names
 }
 
+//
 // _bindata is a table, holding each asset generator, mapped to its name.
+//
 var _bindata = map[string]func() (*asset, error){
-	"data/default-config.json":                  dataDefaultConfigJson,
-	"data/migrations/1_create_msmt_results.sql": dataMigrations1_create_msmt_resultsSql,
-	"data/migrations/2_single_msmt_file.sql":    dataMigrations2_single_msmt_fileSql,
+	"data/default-config.json":                  bindataDataDefaultconfigjson,
+	"data/migrations/1_create_msmt_results.sql": bindataDataMigrations1createmsmtresultssql,
+	"data/migrations/2_single_msmt_file.sql":    bindataDataMigrations2singlemsmtfilesql,
 }
 
+//
 // AssetDir returns the file names below a certain
 // directory embedded in the file by go-bindata.
 // For example if you run go-bindata on data/... and data contains the
@@ -342,6 +383,7 @@ var _bindata = map[string]func() (*asset, error){
 // AssetDir("data/img") would return []string{"a.png", "b.png"}
 // AssetDir("foo.txt") and AssetDir("notexist") would return an error
 // AssetDir("") will return []string{"data"}.
+//
 func AssetDir(name string) ([]string, error) {
 	node := _bintree
 	if len(name) != 0 {
@@ -350,12 +392,20 @@ func AssetDir(name string) ([]string, error) {
 		for _, p := range pathList {
 			node = node.Children[p]
 			if node == nil {
-				return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrNotExist}
+				return nil, &os.PathError{
+					Op: "open",
+					Path: name,
+					Err: os.ErrNotExist,
+				}
 			}
 		}
 	}
 	if node.Func != nil {
-		return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrNotExist}
+		return nil, &os.PathError{
+			Op: "open",
+			Path: name,
+			Err: os.ErrNotExist,
+		}
 	}
 	rv := make([]string, 0, len(node.Children))
 	for childName := range node.Children {
@@ -364,17 +414,18 @@ func AssetDir(name string) ([]string, error) {
 	return rv, nil
 }
 
+
 type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
 
-var _bintree = &bintree{nil, map[string]*bintree{
-	"data": {nil, map[string]*bintree{
-		"default-config.json": {dataDefaultConfigJson, map[string]*bintree{}},
-		"migrations": {nil, map[string]*bintree{
-			"1_create_msmt_results.sql": {dataMigrations1_create_msmt_resultsSql, map[string]*bintree{}},
-			"2_single_msmt_file.sql": {dataMigrations2_single_msmt_fileSql, map[string]*bintree{}},
+var _bintree = &bintree{Func: nil, Children: map[string]*bintree{
+	"data": {Func: nil, Children: map[string]*bintree{
+		"default-config.json": {Func: bindataDataDefaultconfigjson, Children: map[string]*bintree{}},
+		"migrations": {Func: nil, Children: map[string]*bintree{
+			"1_create_msmt_results.sql": {Func: bindataDataMigrations1createmsmtresultssql, Children: map[string]*bintree{}},
+			"2_single_msmt_file.sql": {Func: bindataDataMigrations2singlemsmtfilesql, Children: map[string]*bintree{}},
 		}},
 	}},
 }}

@@ -14,6 +14,7 @@ require (
 	github.com/ooni/probe-engine v0.16.0
 	github.com/pkg/errors v0.9.1
 	github.com/rubenv/sql-migrate v0.0.0-20200616145509-8d140a17f351
+	github.com/shuLhan/go-bindata v3.4.0+incompatible // indirect
 	golang.org/x/sys v0.0.0-20200820212457-1fb795427249 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
