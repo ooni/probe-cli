@@ -1,133 +1,57 @@
 #!/bin/sh
-set -e
+set -ex
 
-buildtags="-tags ooni"
-ldflags="-s -w"
+# We don't have a git repository when running in github actions
+v=`git describe --tags || echo $GITHUB_SHA`
 
-if [ "$1" = "bindata" ]; then
-    GO_BINDATA_V=$(go-bindata -version | grep go-bin | cut -d ' ' -f2)
-    if [ "$GO_BINDATA_V" = "3.2.0" ]; then
-        echo "Updating bindata"
-        go-bindata -nometadata -o internal/bindata/bindata.go -pkg bindata data/...
-        echo "DONE"
-        exit 0
-    else
-        echo "Wrong go-bindata-version"
-        echo "Please install go-bindata with:"
-        echo "  go get -u github.com/shuLhan/go-bindata/..."
-        exit 1
-    fi
-fi
+case $1 in
+  windows)
+    # Note! This assumes we've installed the mingw-w64 compiler.
+    GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc \
+      go build -ldflags='-s -w' ./cmd/ooniprobe
+    tar -cvzf ooniprobe_${v}_windows_amd64.tar.gz LICENSE.md Readme.md ooniprobe.exe
+    # We don't have zip inside the github actions runner
+    zip ooniprobe_${v}_windows_amd64.zip LICENSE.md Readme.md ooniprobe.exe || true
+    mv ooniprobe.exe ./CLI/windows/amd64/
+    ;;
 
-if [ "$1" = "windows" ]; then
-  set -x
-  CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++                         \
-    CGO_LDFLAGS_ALLOW='-fstack-.*' CGO_ENABLED=1 GOOS=windows GOARCH=amd64     \
-      go build $buildtags -ldflags="$ldflags"                                  \
-        -o dist/windows/amd64/ooniprobe.exe -v ./cmd/ooniprobe
+  linux)
+    docker run -v`pwd`:/ooni -w/ooni golang:1.14-alpine ./build.sh _alpine
+    tar -cvzf ooniprobe_${v}_linux_amd64.tar.gz LICENSE.md Readme.md ooniprobe
+    mv ooniprobe ./CLI/linux/amd64/
+    ;;
 
-elif [ "$1" = "linux" ]; then
-  set -x
-  $0 __docker go build $buildtags -ldflags="$ldflags"                          \
-      -o dist/linux/amd64/ooniprobe -v ./cmd/ooniprobe
+  _alpine)
+    apk add --no-progress gcc git linux-headers musl-dev
+    go build -tags netgo -ldflags='-s -w -extldflags "-static"' ./cmd/ooniprobe
+    ;;
 
-elif [ "$1" = "macos" ]; then
-  set -x
-  go build $buildtags -ldflags="$ldflags"                                      \
-    -o dist/macos/amd64/ooniprobe -v ./cmd/ooniprobe
+  macos)
+    # Note! The following line _assumes_ you have a working C compiler. If you
+    # have Xcode command line tools installed, you are fine.
+    go build -ldflags='-s -w' ./cmd/ooniprobe
+    tar -cvzf ooniprobe_${v}_macos_amd64.tar.gz LICENSE.md Readme.md ooniprobe
+    mv ooniprobe ./CLI/macos/amd64/
+    ;;
 
-elif [ "$1" = "release" ]; then
-  set -x
-  v=`git describe --tags`
-  $0 linux
-  tar -czf ooniprobe_${v}_linux_amd64.tar.gz LICENSE.md Readme.md              \
-    -C ./dist/linux/amd64 ooniprobe
-  shasum -a 256 ooniprobe_${v}_linux_amd64.tar.gz > ooniprobe_checksums.txt
-  $0 macos
-  tar -czf ooniprobe_${v}_darwin_amd64.tar.gz LICENSE.md Readme.md             \
-    -C ./dist/macos/amd64 ooniprobe
-  shasum -a 256 ooniprobe_${v}_darwin_amd64.tar.gz >> ooniprobe_checksums.txt
-  $0 windows
-  tar -czf ooniprobe_${v}_windows_amd64.tar.gz LICENSE.md Readme.md            \
-    -C dist/windows/amd64 ooniprobe.exe
-  shasum -a 256 ooniprobe_${v}_windows_amd64.tar.gz >> ooniprobe_checksums.txt
-  echo ""
-  echo "Now sign ooniprobe_checksums.txt and upload it along with tarballs to GitHub"
+  release)
+    $0 linux
+    $0 windows
+    $0 macos
+    ;;
 
-elif [ "$1" = "__docker" ]; then
-  set -x
-  shift
-  docker build -t oonibuild .
-  docker run -v `pwd`:/oonibuild                                               \
-             -w /oonibuild                                                     \
-             -t                                                                \
-             --cap-drop=all                                                    \
-             --user `id -u`:`id -g`                                            \
-             -e 'GOCACHE=/oonibuild/testdata/gotmp/cache'                      \
-             -e 'GOPATH=/oonibuild/testdata/gotmp/path'                        \
-             -e "TRAVIS_JOB_ID=$TRAVIS_JOB_ID"                                 \
-             -e "TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST"                     \
-             oonibuild "$@"
-
-elif [ "$1" = "_travis-linux" ]; then
-  set -x
-  $0 linux
-  # TODO -race does not work on alpine.
-  # See: https://travis-ci.org/ooni/probe-cli/builds/619631256#L962
-  $0 __docker go get -v golang.org/x/tools/cmd/cover
-  $0 __docker go get -v github.com/mattn/goveralls
-  $0 __docker go test $buildtags -v -coverprofile=coverage.cov -coverpkg=./... ./...
-  $0 __docker /oonibuild/testdata/gotmp/path/bin/goveralls                     \
-          -coverprofile=coverage.cov -service=travis-ci
-
-elif [ "$1" = "_travis-osx" ]; then
-  set -x
-  brew tap measurement-kit/measurement-kit
-  brew update
-  brew upgrade
-  brew install measurement-kit
-  $0 macos
-  go test -v -race -coverprofile=coverage.cov -coverpkg=./... ./...
-
-elif [ "$1" = "help" ]; then
-  echo "Usage: $0 linux | macos | release | windows"
-  echo ""
-  echo "Builds OONI on supported systems. The output binary will"
-  echo "be saved at './dist/<system>/<arch>/ooniprobe[.exe]'."
-  echo ""
-  echo "# Linux"
-  echo ""
-  echo "To compile for Linux we use a docker container with the binary"
-  echo "Measurement Kit dependency installed. So you need docker installed."
-  echo ""
-  echo "# macOS"
-  echo ""
-  echo "You must be on macOS. You must install Measurement Kit once using:"
-  echo ""
-  echo "- brew tap measurement-kit/measurement-kit"
-  echo "- brew install measurement-kit"
-  echo ""
-  echo "You should keep Measurement Kit up-to-date using:"
-  echo ""
-  echo "- brew upgrade"
-  echo ""
-  echo "# Release"
-  echo ""
-  echo "Will build ooniprobe for all supported systems."
-  echo ""
-  echo "# Windows"
-  echo ""
-  echo "You must be on macOS. You must install Measurement Kit once using:"
-  echo ""
-  echo "- brew tap measurement-kit/measurement-kit"
-  echo "- brew install mingw-w64-measurement-kit"
-  echo ""
-  echo "You should keep Measurement Kit up-to-date using:"
-  echo ""
-  echo "- brew upgrade"
-  echo ""
-
-else
-  echo "Invalid usage; try '$0 help' for more help." 1>&2
-  exit 1
-fi
+  *)
+    echo "Usage: $0 linux|macos|windows|release"
+    echo ""
+    echo "You need a C compiler and Go >= 1.14. The C compiler must be a"
+    echo "UNIX like compiler like GCC, Clang, Mingw-w64."
+    echo ""
+    echo "To build a static Linux binary, we use Docker and Alpine."
+    echo ""
+    echo "You can cross compile for Windows from macOS or Linux. You can"
+    echo "compile for Linux as long as you have Docker. Cross compiling for"
+    echo "macOS has never been tested. We have a bunch of cross compiling"
+    echo "checks inside the .github/workflows/cross.yml file."
+    echo ""
+    ;;
+esac

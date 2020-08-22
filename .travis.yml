@@ -1,8 +1,0 @@
-os: linux
-dist: xenial
-language: minimal
-services:
-- docker
-script:
-- ./build.sh _travis-${TRAVIS_OS_NAME}
-- ./scripts/travis_test.sh
