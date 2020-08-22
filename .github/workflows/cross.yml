@@ -29,7 +29,6 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-windows-amd64-compiled-from-linux
-          path: ./CLI/windows/amd64/ooniprobe.exe
       - run: bash.exe ./smoketest.sh ./CLI/windows/amd64/ooniprobe.exe
 
   windows_from_macos_build:
@@ -55,5 +54,4 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe-windows-amd64-compiled-from-macos
-          path: ./CLI/windows/amd64/ooniprobe.exe
       - run: bash.exe ./smoketest.sh ./CLI/windows/amd64/ooniprobe.exe
