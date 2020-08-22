@@ -1,0 +1,59 @@
+# Shows how to cross compile ooniprobe
+name: cross
+on:
+  push:
+  schedule:
+    - cron: "14 17 * * 3"
+jobs:
+
+  windows_from_linux_build:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: "1.14"
+      - uses: actions/checkout@v2
+      - run: apt update
+      - run: apt install --yes mingw-w64
+      - run: ./build.sh windows
+      - uses: actions/upload-artifact@v1
+        with:
+          name: ooniprobe-windows-amd64-compiled-from-linux
+          path: ./CLI/windows/amd64/ooniprobe.exe
+
+  test_build_from_linux:
+    needs: windows_from_linux_build
+    runs-on: "windows-latest"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: ooniprobe-windows-amd64-compiled-from-linux
+          path: ./CLI/windows/amd64/ooniprobe.exe
+      - run: bash.exe ./smoketest.sh ./CLI/windows/amd64/ooniprobe.exe
+
+  windows_from_macos_build:
+    runs-on: "macos-latest"
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: "1.14"
+      - uses: actions/checkout@v2
+      - run: brew update
+      - run: brew install mingw-w64
+      - run: ./build.sh windows
+      - uses: actions/upload-artifact@v1
+        with:
+          name: ooniprobe-windows-amd64-compiled-from-macos
+          path: ./CLI/windows/amd64/ooniprobe.exe
+
+  test_build_from_macos:
+    needs: windows_from_macos_build
+    runs-on: "windows-latest"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: ooniprobe-windows-amd64-compiled-from-macos
+          path: ./CLI/windows/amd64/ooniprobe.exe
+      - run: bash.exe ./smoketest.sh ./CLI/windows/amd64/ooniprobe.exe

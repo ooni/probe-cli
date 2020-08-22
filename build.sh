@@ -50,7 +50,8 @@ case $1 in
     echo ""
     echo "You can cross compile for Windows from macOS or Linux. You can"
     echo "compile for Linux as long as you have Docker. Cross compiling for"
-    echo "macOS has never been tested."
+    echo "macOS has never been tested. We have a bunch of cross compiling"
+    echo "checks inside the .github/workflows/cross.yml file."
     echo ""
     ;;
 esac
