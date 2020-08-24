@@ -26,23 +26,23 @@ case $1 in
     go build -tags netgo -ldflags='-s -w -extldflags "-static"' ./cmd/ooniprobe
     ;;
 
-  macos)
+  macos|darwin)
     # Note! The following line _assumes_ you have a working C compiler. If you
     # have Xcode command line tools installed, you are fine.
     go build -ldflags='-s -w' ./cmd/ooniprobe
-    tar -cvzf ooniprobe_${v}_macos_amd64.tar.gz LICENSE.md Readme.md ooniprobe
-    mv ooniprobe ./CLI/macos/amd64/
+    tar -cvzf ooniprobe_${v}_darwin_amd64.tar.gz LICENSE.md Readme.md ooniprobe
+    mv ooniprobe ./CLI/darwin/amd64/
     ;;
 
   release)
     $0 linux
     $0 windows
-    $0 macos
+    $0 darwin
     shasum -a 256 ooniprobe_${v}_*_amd64.* > ooniprobe_checksums.txt
     ;;
 
   *)
-    echo "Usage: $0 linux|macos|windows|release"
+    echo "Usage: $0 darwin|linux|macos|windows|release"
     echo ""
     echo "You need a C compiler and Go >= 1.14. The C compiler must be a"
     echo "UNIX like compiler like GCC, Clang, Mingw-w64."
@@ -53,6 +53,10 @@ case $1 in
     echo "compile for Linux as long as you have Docker. Cross compiling for"
     echo "macOS has never been tested. We have a bunch of cross compiling"
     echo "checks inside the .github/workflows/cross.yml file."
+    echo ""
+    echo "The macos rule is an alias for the darwin rule. The generated"
+    echo "binary file is named ooniprobe_${version}_darwin_${arch}.tar.gz"
+    echo "because the platform name is darwin."
     echo ""
     ;;
 esac
