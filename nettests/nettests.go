@@ -127,6 +127,9 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 		}
 		c.msmts[idx64] = msmt
 
+		if input != "" {
+			c.OnProgress(0, fmt.Sprintf("processing input: %s", input))
+		}
 		measurement, err := exp.Measure(input)
 		if err != nil {
 			log.WithError(err).Debug(color.RedString("failure.measurement"))
