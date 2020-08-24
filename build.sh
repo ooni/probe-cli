@@ -38,6 +38,7 @@ case $1 in
     $0 linux
     $0 windows
     $0 macos
+    shasum -a 256 ooniprobe_${v}_*_amd64.* > ooniprobe_checksums.txt
     ;;
 
   *)
