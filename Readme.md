@@ -119,10 +119,10 @@ a specific version of psiphon and of its dependencies.
 
 ## Releasing
 
-Make sure you have updated dependencies. Then run
+1. update binary data as described above;
 
-```bash
-./build.sh release
-```
+2. update `version/version.go`;
 
-and follow instructions.
+3. make sure you have updated dependencies;
+
+4. run `./build.sh release` and follow instructions.
