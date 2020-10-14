@@ -42,6 +42,8 @@ case $1 in
     ;;
 
   *)
+
+    set +x
     echo "Usage: $0 darwin|linux|macos|windows|release"
     echo ""
     echo "You need a C compiler and Go >= 1.14. The C compiler must be a"
