@@ -38,7 +38,6 @@ jobs:
         with:
           go-version: "1.14"
       - uses: actions/checkout@v2
-      - run: brew update
       - run: brew install mingw-w64
       - run: ./build.sh windows
       - uses: actions/upload-artifact@v1
