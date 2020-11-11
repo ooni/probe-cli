@@ -1,1 +1,1 @@
-dist/linux/amd64/ooniprobe usr/sbin
+ooniprobe usr/bin
