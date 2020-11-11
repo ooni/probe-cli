@@ -2,7 +2,7 @@ Source: ooniprobe-cli
 Maintainer: Federico Ceratto <federico@openobservatory.org>
 Section: devel
 Priority: optional
-Build-Depends: dpkg-dev, debhelper-compat (= 12)
+Build-Depends: dpkg-dev, debhelper-compat (= 13)
 Standards-Version: 4.5.0
 Vcs-Browser: https://github.com/ooni/probe-cli
 Vcs-Git: https://github.com/ooni/probe-cli.git
