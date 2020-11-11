@@ -13,6 +13,7 @@ jobs:
       - uses: actions/checkout@v2
       - run: ./build.sh linux
       # - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
+      - run: find . -name ooniprobe -type f -executable
       - run: sudo apt-get update -q
       - run: sudo apt-get build-dep -y --no-install-recommends .
       - run: dpkg-buildpackage -us -uc -b
