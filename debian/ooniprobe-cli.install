@@ -1,1 +1,1 @@
-ooniprobe usr/bin
+./CLI/linux/amd64/ooniprobe usr/bin
