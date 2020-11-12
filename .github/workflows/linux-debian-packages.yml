@@ -17,3 +17,17 @@ jobs:
       - run: sudo apt-get update -q
       - run: sudo apt-get build-dep -y --no-install-recommends .
       - run: dpkg-buildpackage -us -uc -b
+      - run: find ../ -name "*.deb" -type f
+      - run: |
+          curl --upload-file "${DEB}" -u "${BT_APIUSER}:${BT_APIKEY}" \
+          "https://api.bintray.com/content/${BT_ORG}/${BT_REPO}/${BT_PKGNAME}/${BT_PKGVER}/${BT_FNAME};deb_distribution=${DEBDIST};deb_component=main;deb_architecture=amd64;publish=1"
+        env:
+          DEB: "../ooniprobe-cli_3.0.0-rc.9-1_amd64.deb"
+          DEBDIST: unstable
+          BT_APIKEY: ${{ secrets.BT_APIKEY }}
+          BT_APIUSER: federicoceratto
+          BT_FNAME: ooniprobe-cli_3.0.0-rc.9-1_amd64.deb
+          BT_PKGVER: 3.0.0-rc.9-1
+          BT_ORG: ooni
+          BT_PKGNAME: ooniprobe
+          BT_REPO: ooniprobe-debian
