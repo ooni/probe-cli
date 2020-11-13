@@ -99,25 +99,7 @@ To update bundled binary data use:
 
 ## Updating dependencies
 
-1. update every direct dependency in `go.mod` except `probe-engine`
-using `go get -u -v $dependency`:
-
-```bash
-for name in `grep -v indirect go.mod | grep -v probe-engine | awk '/^\t/{print $1}'`; do \
-  go get -u -v $name;                                                                    \
-done
-```
-
-2. pin to the latest version of the `probe-engine` with
-`go get -v github.com/ooni/probe-engine@TAG`
-
-3. remove all indirect dependencies from `go.mod` and merge the
-content of `probe-engine`'s `go.mod` into our `go.mod`
-
-4. `go mod tidy`
-
-The rationale of this procedure is that we want to pin exactly to
-a specific version of psiphon and of its dependencies.
+`go get -u -v ./... && go mod tidy`
 
 ## Releasing
 
