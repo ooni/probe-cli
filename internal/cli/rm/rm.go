@@ -10,6 +10,7 @@ import (
 	"github.com/ooni/probe-cli/internal/database"
 	survey "gopkg.in/AlecAivazis/survey.v1"
 	db "upper.io/db.v3"
+	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 func deleteAll(sess sqlbuilder.Database, skipInteractive bool) error {
@@ -32,20 +33,21 @@ func deleteAll(sess sqlbuilder.Database, skipInteractive bool) error {
 	}
 	cnt := 0
 	for _, result := range incompleteResults {
-		err = database.DeleteResult(ctx.DB, result.Result.ID)
+		err = database.DeleteResult(sess, result.Result.ID)
 		if err == db.ErrNoMoreRows {
 			log.WithError(err).Errorf("failed to delete result #%d", result.Result.ID)
 		}
-		cnt += 1
+		cnt++
 	}
 	for _, result := range doneResults {
-		err = database.DeleteResult(ctx.DB, result.Result.ID)
+		err = database.DeleteResult(sess, result.Result.ID)
 		if err == db.ErrNoMoreRows {
 			log.WithError(err).Errorf("failed to delete result #%d", result.Result.ID)
 		}
-		cnt += 1
+		cnt++
 	}
 	log.Infof("Deleted #%d measurements", cnt)
+	return nil
 }
 
 func init() {
