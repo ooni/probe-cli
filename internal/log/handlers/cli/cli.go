@@ -11,7 +11,7 @@ import (
 	"github.com/apex/log"
 	"github.com/fatih/color"
 	colorable "github.com/mattn/go-colorable"
-	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/internal/utils"
 )
 
 // Default handler outputting to stderr.

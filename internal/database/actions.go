@@ -12,7 +12,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/enginex"
-	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/internal/utils"
 	"github.com/pkg/errors"
 	db "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
