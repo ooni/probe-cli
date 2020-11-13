@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "configure" ]; then
+    if ! getent passwd ooniprobe >/dev/null; then
+        adduser --quiet --system --group --no-create-home --home /var/lib/ooniprobe ooniprobe
+    fi
+fi
+
+mkdir -p /var/log/ooniprobe
+chown ooniprobe:adm /var/log/ooniprobe
+
+mkdir -p /var/lib/ooniprobe
+chown ooniprobe /var/lib/ooniprobe
+
+# rwxr-s---
+chmod 02750 /var/log/ooniprobe
+
+#DEBHELPER#
+
+exit 0
