@@ -10,7 +10,7 @@ import (
 	"github.com/ooni/probe-cli/internal/cli/onboard"
 	"github.com/ooni/probe-cli/internal/cli/root"
 	"github.com/ooni/probe-cli/internal/database"
-	"github.com/ooni/probe-cli/nettests"
+	"github.com/ooni/probe-cli/internal/nettests"
 )
 
 func runNettestGroup(tg string, ctx *ooni.Context, network *database.Network) error {

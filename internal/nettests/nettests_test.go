@@ -16,7 +16,7 @@ func newTestingContext(t *testing.T) *ooni.Context {
 		t.Fatal(err)
 	}
 	configPath := path.Join(homePath, "config.json")
-	testingConfig := path.Join("..", "testdata", "testing-config.json")
+	testingConfig := path.Join("..", "..", "testdata", "testing-config.json")
 	shutil.Copy(testingConfig, configPath, false)
 	ctx := ooni.NewContext(configPath, homePath)
 	swName := "ooniprobe-cli-tests"
