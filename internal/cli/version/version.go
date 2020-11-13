@@ -5,7 +5,7 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/ooni/probe-cli/internal/cli/root"
-	"github.com/ooni/probe-cli/version"
+	"github.com/ooni/probe-cli/internal/version"
 )
 
 
