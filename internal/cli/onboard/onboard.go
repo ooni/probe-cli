@@ -6,7 +6,7 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/fatih/color"
-	ooni "github.com/ooni/probe-cli"
+	"github.com/ooni/probe-cli/internal/ooni"
 	"github.com/ooni/probe-cli/internal/cli/root"
 	"github.com/ooni/probe-cli/internal/config"
 	"github.com/ooni/probe-cli/internal/output"

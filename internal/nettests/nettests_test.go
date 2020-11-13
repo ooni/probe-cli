@@ -5,7 +5,7 @@ import (
 	"path"
 	"testing"
 
-	ooni "github.com/ooni/probe-cli"
+	"github.com/ooni/probe-cli/internal/ooni"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/utils/shutil"
 )
