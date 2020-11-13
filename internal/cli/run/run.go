@@ -6,11 +6,11 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/fatih/color"
-	"github.com/ooni/probe-cli/internal/ooni"
 	"github.com/ooni/probe-cli/internal/cli/onboard"
 	"github.com/ooni/probe-cli/internal/cli/root"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/nettests"
+	"github.com/ooni/probe-cli/internal/ooni"
 )
 
 func runNettestGroup(tg string, ctx *ooni.Context, network *database.Network) error {
