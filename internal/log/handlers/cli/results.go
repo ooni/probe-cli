@@ -84,7 +84,6 @@ func makeSummary(name string, totalCount uint64, anomalyCount uint64, ss string)
 
 func logResultItem(w io.Writer, f log.Fields) error {
 	colWidth := 24
-Try running
 	rID := f.Get("id").(int64)
 	name := f.Get("name").(string)
 	isDone := f.Get("is_done").(bool)
