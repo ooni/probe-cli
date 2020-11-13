@@ -12,6 +12,7 @@ XS-Go-Import-Path: github.com/ooni/probe-cli
 
 Package: ooniprobe-cli
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
+ adduser
 Built-Using: ${misc:Built-Using}
 Description: OONI Probe CLI
