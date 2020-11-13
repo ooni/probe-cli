@@ -12,7 +12,7 @@ import (
 	"github.com/ooni/probe-cli/internal/config"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/enginex"
-	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/internal/utils"
 	engine "github.com/ooni/probe-engine"
 	"github.com/ooni/probe-engine/model"
 	"github.com/pkg/errors"

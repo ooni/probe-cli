@@ -6,7 +6,7 @@ import (
 	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/log/handlers/batch"
 	"github.com/ooni/probe-cli/internal/log/handlers/cli"
-	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/internal/utils"
 	"github.com/ooni/probe-cli/version"
 )
 

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ooni/probe-cli/utils/homedir"
+	"github.com/ooni/probe-cli/internal/utils/homedir"
 )
 
 // RequiredDirs returns the required ooni home directories

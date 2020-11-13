@@ -7,7 +7,7 @@ import (
 
 	ooni "github.com/ooni/probe-cli"
 	"github.com/ooni/probe-cli/internal/database"
-	"github.com/ooni/probe-cli/utils/shutil"
+	"github.com/ooni/probe-cli/internal/utils/shutil"
 )
 
 func newTestingContext(t *testing.T) *ooni.Context {

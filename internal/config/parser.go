@@ -7,7 +7,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/crashreport"
-	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/internal/utils"
 	"github.com/pkg/errors"
 )
 

@@ -9,7 +9,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/database"
-	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/internal/utils"
 )
 
 func formatSpeed(speed float64) string {

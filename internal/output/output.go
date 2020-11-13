@@ -8,7 +8,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/database"
-	"github.com/ooni/probe-cli/utils"
+	"github.com/ooni/probe-cli/internal/utils"
 )
 
 // MeasurementJSON prints the JSON of a measurement
