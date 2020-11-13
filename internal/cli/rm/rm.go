@@ -34,14 +34,14 @@ func deleteAll(sess sqlbuilder.Database, skipInteractive bool) error {
 	for _, result := range incompleteResults {
 		err = database.DeleteResult(ctx.DB, result.Result.ID)
 		if err == db.ErrNoMoreRows {
-			log.WithError(err).Errorf("failed to delete resul #%d", result.Result.ID)
+			log.WithError(err).Errorf("failed to delete result #%d", result.Result.ID)
 		}
 		cnt += 1
 	}
 	for _, result := range doneResults {
 		err = database.DeleteResult(ctx.DB, result.Result.ID)
 		if err == db.ErrNoMoreRows {
-			log.WithError(err).Errorf("failed to delete resul #%d", result.Result.ID)
+			log.WithError(err).Errorf("failed to delete result #%d", result.Result.ID)
 		}
 		cnt += 1
 	}
@@ -51,7 +51,7 @@ func deleteAll(sess sqlbuilder.Database, skipInteractive bool) error {
 func init() {
 	cmd := root.Command("rm", "Delete a result")
 	yes := cmd.Flag("yes", "Skip interactive prompt").Bool()
-	yes := cmd.Flag("all", "Delete all measurements").Bool()
+	all := cmd.Flag("all", "Delete all measurements").Bool()
 
 	resultID := cmd.Arg("id", "the id of the result to delete").Int64()
 
