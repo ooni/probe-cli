@@ -13,7 +13,7 @@ import (
 	"github.com/ooni/probe-cli/internal/ooni"
 )
 
-func runNettestGroup(tg string, ctx *ooni.Context, network *database.Network) error {
+func runNettestGroup(tg string, ctx *ooni.Probe, network *database.Network) error {
 	if ctx.IsTerminated() == true {
 		log.Debugf("context is terminated, stopping runNettestGroup early")
 		return nil
@@ -79,7 +79,7 @@ func init() {
 	cmd := root.Command("run", "Run a test group or OONI Run link")
 
 	var nettestGroupNamesBlue []string
-	var ctx *ooni.Context
+	var probe *ooni.Probe
 	var network *database.Network
 
 	for name := range nettests.NettestGroups {
@@ -90,48 +90,48 @@ func init() {
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		var err error
-		ctx, err = root.Init()
+		probe, err = root.Init()
 		if err != nil {
 			log.Errorf("%s", err)
 			return err
 		}
 
-		if err = onboard.MaybeOnboarding(ctx); err != nil {
+		if err = onboard.MaybeOnboarding(probe); err != nil {
 			log.WithError(err).Error("failed to perform onboarding")
 			return err
 		}
 
 		if *noCollector == true {
-			ctx.Config.Sharing.UploadResults = false
+			probe.Config.Sharing.UploadResults = false
 		}
 		return nil
 	})
 
 	websitesCmd := cmd.Command("websites", "")
 	websitesCmd.Action(func(_ *kingpin.ParseContext) error {
-		return runNettestGroup("websites", ctx, network)
+		return runNettestGroup("websites", probe, network)
 	})
 	imCmd := cmd.Command("im", "")
 	imCmd.Action(func(_ *kingpin.ParseContext) error {
-		return runNettestGroup("im", ctx, network)
+		return runNettestGroup("im", probe, network)
 	})
 	performanceCmd := cmd.Command("performance", "")
 	performanceCmd.Action(func(_ *kingpin.ParseContext) error {
-		return runNettestGroup("performance", ctx, network)
+		return runNettestGroup("performance", probe, network)
 	})
 	middleboxCmd := cmd.Command("middlebox", "")
 	middleboxCmd.Action(func(_ *kingpin.ParseContext) error {
-		return runNettestGroup("middlebox", ctx, network)
+		return runNettestGroup("middlebox", probe, network)
 	})
 	circumventionCmd := cmd.Command("circumvention", "")
 	circumventionCmd.Action(func(_ *kingpin.ParseContext) error {
-		return runNettestGroup("circumvention", ctx, network)
+		return runNettestGroup("circumvention", probe, network)
 	})
 	allCmd := cmd.Command("all", "").Default()
 	allCmd.Action(func(_ *kingpin.ParseContext) error {
 		log.Infof("Running %s tests", color.BlueString("all"))
 		for tg := range nettests.NettestGroups {
-			if err := runNettestGroup(tg, ctx, network); err != nil {
+			if err := runNettestGroup(tg, probe, network); err != nil {
 				log.WithError(err).Errorf("failed to run %s", tg)
 			}
 		}

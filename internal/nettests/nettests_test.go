@@ -10,7 +10,7 @@ import (
 	"github.com/ooni/probe-cli/internal/utils/shutil"
 )
 
-func newTestingContext(t *testing.T) *ooni.Context {
+func newOONIProbe(t *testing.T) *ooni.Probe {
 	homePath, err := ioutil.TempDir("", "ooniprobetests")
 	if err != nil {
 		t.Fatal(err)
@@ -18,35 +18,35 @@ func newTestingContext(t *testing.T) *ooni.Context {
 	configPath := path.Join(homePath, "config.json")
 	testingConfig := path.Join("..", "..", "testdata", "testing-config.json")
 	shutil.Copy(testingConfig, configPath, false)
-	ctx := ooni.NewContext(configPath, homePath)
+	probe := ooni.NewProbe(configPath, homePath)
 	swName := "ooniprobe-cli-tests"
 	swVersion := "3.0.0-alpha"
-	err = ctx.Init(swName, swVersion)
+	err = probe.Init(swName, swVersion)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return ctx
+	return probe
 }
 
 func TestCreateContext(t *testing.T) {
-	newTestingContext(t)
+	newOONIProbe(t)
 }
 
 func TestRun(t *testing.T) {
-	ctx := newTestingContext(t)
-	sess, err := ctx.NewSession()
+	probe := newOONIProbe(t)
+	sess, err := probe.NewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
-	network, err := database.CreateNetwork(ctx.DB, sess)
+	network, err := database.CreateNetwork(probe.DB, sess)
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := database.CreateResult(ctx.DB, ctx.Home, "middlebox", network.ID)
+	res, err := database.CreateResult(probe.DB, probe.Home, "middlebox", network.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	nt := HTTPInvalidRequestLine{}
-	ctl := NewController(nt, ctx, res, sess)
+	ctl := NewController(nt, probe, res, sess)
 	nt.Run(ctl)
 }

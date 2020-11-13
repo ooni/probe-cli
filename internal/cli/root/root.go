@@ -17,7 +17,7 @@ var Cmd = kingpin.New("ooniprobe", "")
 var Command = Cmd.Command
 
 // Init should be called by all subcommand that care to have a ooni.Context instance
-var Init func() (*ooni.Context, error)
+var Init func() (*ooni.Probe, error)
 
 func init() {
 	configPath := Cmd.Flag("config", "Set a custom config file path").Short('c').String()
@@ -43,7 +43,7 @@ func init() {
 			log.Debugf("ooni version %s", version.Version)
 		}
 
-		Init = func() (*ooni.Context, error) {
+		Init = func() (*ooni.Probe, error) {
 			var err error
 
 			homePath, err := utils.GetOONIHome()
@@ -51,16 +51,16 @@ func init() {
 				return nil, err
 			}
 
-			ctx := ooni.NewContext(*configPath, homePath)
-			err = ctx.Init(*softwareName, *softwareVersion)
+			probe := ooni.NewProbe(*configPath, homePath)
+			err = probe.Init(*softwareName, *softwareVersion)
 			if err != nil {
 				return nil, err
 			}
 			if *isBatch {
-				ctx.IsBatch = true
+				probe.IsBatch = true
 			}
 
-			return ctx, nil
+			return probe, nil
 		}
 
 		return nil

@@ -14,10 +14,10 @@ func TestInit(t *testing.T) {
 	}
 	defer os.RemoveAll(ooniHome)
 
-	ctx := NewContext("", ooniHome)
+	probe := NewProbe("", ooniHome)
 	swName := "ooniprobe-cli-tests"
 	swVersion := "3.0.0-alpha"
-	if err := ctx.Init(swName, swVersion); err != nil {
+	if err := probe.Init(swName, swVersion); err != nil {
 		t.Error(err)
 		t.Fatal("failed to init the context")
 	}

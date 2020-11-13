@@ -24,9 +24,9 @@ type Nettest interface {
 
 // NewController creates a nettest controller
 func NewController(
-	nt Nettest, ctx *ooni.Context, res *database.Result, sess *engine.Session) *Controller {
+	nt Nettest, probe *ooni.Probe, res *database.Result, sess *engine.Session) *Controller {
 	return &Controller{
-		Ctx:     ctx,
+		Probe:   probe,
 		nt:      nt,
 		res:     res,
 		Session: sess,
@@ -36,7 +36,7 @@ func NewController(
 // Controller is passed to the run method of every Nettest
 // each nettest instance has one controller
 type Controller struct {
-	Ctx         *ooni.Context
+	Probe       *ooni.Probe
 	Session     *engine.Session
 	res         *database.Result
 	nt          Nettest
@@ -93,7 +93,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 	log.Debug(color.RedString("status.queued"))
 	log.Debug(color.RedString("status.started"))
 
-	if c.Ctx.Config.Sharing.UploadResults {
+	if c.Probe.Config.Sharing.UploadResults {
 		if err := exp.OpenReport(); err != nil {
 			log.Debugf(
 				"%s: %s", color.RedString("failure.report_create"), err.Error(),
@@ -107,7 +107,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 
 	c.ntStartTime = time.Now()
 	for idx, input := range inputs {
-		if c.Ctx.IsTerminated() == true {
+		if c.Probe.IsTerminated() == true {
 			log.Debug("isTerminated == true, breaking the input loop")
 			break
 		}
@@ -120,7 +120,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 		}
 
 		msmt, err := database.CreateMeasurement(
-			c.Ctx.DB, reportID, exp.Name(), c.res.MeasurementDir, idx, resultID, urlID,
+			c.Probe.DB, reportID, exp.Name(), c.res.MeasurementDir, idx, resultID, urlID,
 		)
 		if err != nil {
 			return errors.Wrap(err, "failed to create measurement")
@@ -133,7 +133,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 		measurement, err := exp.Measure(input)
 		if err != nil {
 			log.WithError(err).Debug(color.RedString("failure.measurement"))
-			if err := c.msmts[idx64].Failed(c.Ctx.DB, err.Error()); err != nil {
+			if err := c.msmts[idx64].Failed(c.Probe.DB, err.Error()); err != nil {
 				return errors.Wrap(err, "failed to mark measurement as failed")
 			}
 			// Even with a failed measurement, we want to continue. We want to
@@ -142,16 +142,16 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 			// undertsand what went wrong (censorship? bug? anomaly?).
 		}
 
-		if c.Ctx.Config.Sharing.UploadResults {
+		if c.Probe.Config.Sharing.UploadResults {
 			// Implementation note: SubmitMeasurement will fail here if we did fail
 			// to open the report but we still want to continue. There will be a
 			// bit of a spew in the logs, perhaps, but stopping seems less efficient.
 			if err := exp.SubmitAndUpdateMeasurement(measurement); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))
-				if err := c.msmts[idx64].UploadFailed(c.Ctx.DB, err.Error()); err != nil {
+				if err := c.msmts[idx64].UploadFailed(c.Probe.DB, err.Error()); err != nil {
 					return errors.Wrap(err, "failed to mark upload as failed")
 				}
-			} else if err := c.msmts[idx64].UploadSucceeded(c.Ctx.DB); err != nil {
+			} else if err := c.msmts[idx64].UploadSucceeded(c.Probe.DB); err != nil {
 				return errors.Wrap(err, "failed to mark upload as succeeded")
 			}
 		}
@@ -159,7 +159,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 		if err := exp.SaveMeasurement(measurement, msmt.MeasurementFilePath.String); err != nil {
 			return errors.Wrap(err, "failed to save measurement on disk")
 		}
-		if err := c.msmts[idx64].Done(c.Ctx.DB); err != nil {
+		if err := c.msmts[idx64].Done(c.Probe.DB); err != nil {
 			return errors.Wrap(err, "failed to mark measurement as done")
 		}
 
@@ -179,7 +179,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 			continue
 		}
 		log.Debugf("Fetching: %d %v", idx, c.msmts[idx64])
-		if err := database.AddTestKeys(c.Ctx.DB, c.msmts[idx64], tk); err != nil {
+		if err := database.AddTestKeys(c.Probe.DB, c.msmts[idx64], tk); err != nil {
 			return errors.Wrap(err, "failed to add test keys to summary")
 		}
 	}
