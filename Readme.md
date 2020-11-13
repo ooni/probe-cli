@@ -1,5 +1,7 @@
 # OONI Probe CLI
 
+[![linux-debian-packages](https://github.com/ooni/probe-cli/workflows/linux-debian-packages/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Alinux-debian-packages)
+
 The next generation OONI Probe Command Line Interface.
 
 ## User setup

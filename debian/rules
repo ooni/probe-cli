@@ -1,0 +1,13 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	true
+
+override_dh_dwz:
+	true
+
+override_dh_auto_install:
+	dh_auto_install -- --no-source
