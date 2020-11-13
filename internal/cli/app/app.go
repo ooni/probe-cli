@@ -5,7 +5,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/cli/root"
-	"github.com/ooni/probe-cli/version"
+	"github.com/ooni/probe-cli/internal/version"
 )
 
 // Run the app. This is the main app entry point
