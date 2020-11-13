@@ -19,7 +19,7 @@ func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, ma
 	for idx, url := range testlist.Result {
 		log.Debugf("Going over URL %d", idx)
 		urlID, err := database.CreateOrUpdateURL(
-			ctl.Ctx.DB, url.URL, url.CategoryCode, url.CountryCode,
+			ctl.Probe.DB, url.URL, url.CategoryCode, url.CountryCode,
 		)
 		if err != nil {
 			log.Error("failed to add to the URL table")
@@ -38,8 +38,8 @@ type WebConnectivity struct {
 
 // Run starts the test
 func (n WebConnectivity) Run(ctl *Controller) error {
-	log.Debugf("Enabled category codes are the following %v", ctl.Ctx.Config.Nettests.WebsitesEnabledCategoryCodes)
-	urls, urlIDMap, err := lookupURLs(ctl, ctl.Ctx.Config.Nettests.WebsitesURLLimit, ctl.Ctx.Config.Nettests.WebsitesEnabledCategoryCodes)
+	log.Debugf("Enabled category codes are the following %v", ctl.Probe.Config.Nettests.WebsitesEnabledCategoryCodes)
+	urls, urlIDMap, err := lookupURLs(ctl, ctl.Probe.Config.Nettests.WebsitesURLLimit, ctl.Probe.Config.Nettests.WebsitesEnabledCategoryCodes)
 	if err != nil {
 		return err
 	}

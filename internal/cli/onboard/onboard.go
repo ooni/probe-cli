@@ -137,12 +137,12 @@ func Onboarding(config *config.Config) error {
 
 // MaybeOnboarding will run the onboarding process only if the informed consent
 // config option is set to false
-func MaybeOnboarding(c *ooni.Context) error {
-	if c.Config.InformedConsent == false {
-		if c.IsBatch == true {
+func MaybeOnboarding(probe *ooni.Probe) error {
+	if probe.Config.InformedConsent == false {
+		if probe.IsBatch == true {
 			return errors.New("cannot run onboarding in batch mode")
 		}
-		if err := Onboarding(c.Config); err != nil {
+		if err := Onboarding(probe.Config); err != nil {
 			return errors.Wrap(err, "onboarding")
 		}
 	}
@@ -155,26 +155,26 @@ func init() {
 	yes := cmd.Flag("yes", "Answer yes to all the onboarding questions.").Bool()
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
-		ctx, err := root.Init()
+		probe, err := root.Init()
 		if err != nil {
 			return err
 		}
 
 		if *yes == true {
-			ctx.Config.Lock()
-			ctx.Config.InformedConsent = true
-			ctx.Config.Unlock()
+			probe.Config.Lock()
+			probe.Config.InformedConsent = true
+			probe.Config.Unlock()
 
-			if err := ctx.Config.Write(); err != nil {
+			if err := probe.Config.Write(); err != nil {
 				log.WithError(err).Error("failed to write config file")
 				return err
 			}
 			return nil
 		}
-		if ctx.IsBatch == true {
+		if probe.IsBatch == true {
 			return errors.New("cannot do onboarding in batch mode")
 		}
 
-		return Onboarding(ctx.Config)
+		return Onboarding(probe.Config)
 	})
 }

@@ -19,8 +19,8 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
-// Context for OONI Probe
-type Context struct {
+// Probe contains the ooniprobe CLI context.
+type Probe struct {
 	Config  *config.Config
 	DB      sqlbuilder.Database
 	IsBatch bool
@@ -43,14 +43,14 @@ type Context struct {
 
 // IsTerminated checks to see if the isTerminatedAtomicInt is set to a non zero
 // value and therefore we have received the signal to shutdown the running test
-func (c *Context) IsTerminated() bool {
-	i := atomic.LoadInt32(&c.isTerminatedAtomicInt)
+func (p *Probe) IsTerminated() bool {
+	i := atomic.LoadInt32(&p.isTerminatedAtomicInt)
 	return i != 0
 }
 
 // Terminate interrupts the running context
-func (c *Context) Terminate() {
-	atomic.AddInt32(&c.isTerminatedAtomicInt, 1)
+func (p *Probe) Terminate() {
+	atomic.AddInt32(&p.isTerminatedAtomicInt, 1)
 }
 
 // ListenForSignals will listen for SIGINT and SIGTERM. When it receives those
@@ -59,13 +59,13 @@ func (c *Context) Terminate() {
 //
 // TODO refactor this to use a cancellable context.Context instead of a bool
 // flag, probably as part of: https://github.com/ooni/probe-cli/issues/45
-func (c *Context) ListenForSignals() {
+func (p *Probe) ListenForSignals() {
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-s
 		log.Info("caught a stop signal, shutting down cleanly")
-		c.Terminate()
+		p.Terminate()
 	}()
 }
 
@@ -82,12 +82,12 @@ func (c *Context) ListenForSignals() {
 //
 // TODO refactor this to use a cancellable context.Context instead of a bool
 // flag, probably as part of: https://github.com/ooni/probe-cli/issues/45
-func (c *Context) MaybeListenForStdinClosed() {
+func (p *Probe) MaybeListenForStdinClosed() {
 	if os.Getenv("OONI_STDIN_EOF_IMPLIES_SIGTERM") != "true" {
 		return
 	}
 	go func() {
-		defer c.Terminate()
+		defer p.Terminate()
 		defer log.Info("stdin closed, shutting down cleanly")
 		b := make([]byte, 1<<10)
 		for {
@@ -99,74 +99,74 @@ func (c *Context) MaybeListenForStdinClosed() {
 }
 
 // Init the OONI manager
-func (c *Context) Init(softwareName, softwareVersion string) error {
+func (p *Probe) Init(softwareName, softwareVersion string) error {
 	var err error
 
-	if err = MaybeInitializeHome(c.Home); err != nil {
+	if err = MaybeInitializeHome(p.Home); err != nil {
 		return err
 	}
 
-	if c.configPath != "" {
-		log.Debugf("Reading config file from %s", c.configPath)
-		c.Config, err = config.ReadConfig(c.configPath)
+	if p.configPath != "" {
+		log.Debugf("Reading config file from %s", p.configPath)
+		p.Config, err = config.ReadConfig(p.configPath)
 	} else {
 		log.Debug("Reading default config file")
-		c.Config, err = InitDefaultConfig(c.Home)
+		p.Config, err = InitDefaultConfig(p.Home)
 	}
 	if err != nil {
 		return err
 	}
-	if err = c.Config.MaybeMigrate(); err != nil {
+	if err = p.Config.MaybeMigrate(); err != nil {
 		return errors.Wrap(err, "migrating config")
 	}
 
-	c.dbPath = utils.DBDir(c.Home, "main")
-	log.Debugf("Connecting to database sqlite3://%s", c.dbPath)
-	db, err := database.Connect(c.dbPath)
+	p.dbPath = utils.DBDir(p.Home, "main")
+	log.Debugf("Connecting to database sqlite3://%s", p.dbPath)
+	db, err := database.Connect(p.dbPath)
 	if err != nil {
 		return err
 	}
-	c.DB = db
+	p.DB = db
 
 	tempDir, err := ioutil.TempDir("", "ooni")
 	if err != nil {
 		return errors.Wrap(err, "creating TempDir")
 	}
-	c.TempDir = tempDir
+	p.TempDir = tempDir
 
-	c.softwareName = softwareName
-	c.softwareVersion = softwareVersion
+	p.softwareName = softwareName
+	p.softwareVersion = softwareVersion
 	return nil
 }
 
 // NewSession creates a new ooni/probe-engine session using the
 // current configuration inside the context. The caller must close
 // the session when done using it, by calling sess.Close().
-func (c *Context) NewSession() (*engine.Session, error) {
+func (p *Probe) NewSession() (*engine.Session, error) {
 	kvstore, err := engine.NewFileSystemKVStore(
-		utils.EngineDir(c.Home),
+		utils.EngineDir(p.Home),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating engine's kvstore")
 	}
 	return engine.NewSession(engine.SessionConfig{
-		AssetsDir: utils.AssetsDir(c.Home),
+		AssetsDir: utils.AssetsDir(p.Home),
 		KVStore:   kvstore,
 		Logger:    enginex.Logger,
 		PrivacySettings: model.PrivacySettings{
-			IncludeASN:     c.Config.Sharing.IncludeASN,
+			IncludeASN:     p.Config.Sharing.IncludeASN,
 			IncludeCountry: true,
-			IncludeIP:      c.Config.Sharing.IncludeIP,
+			IncludeIP:      p.Config.Sharing.IncludeIP,
 		},
-		SoftwareName:    c.softwareName,
-		SoftwareVersion: c.softwareVersion,
-		TempDir:         c.TempDir,
+		SoftwareName:    p.softwareName,
+		SoftwareVersion: p.softwareVersion,
+		TempDir:         p.TempDir,
 	})
 }
 
-// NewContext creates a new context instance.
-func NewContext(configPath string, homePath string) *Context {
-	return &Context{
+// NewProbe creates a new probe instance.
+func NewProbe(configPath string, homePath string) *Probe {
+	return &Probe{
 		Home:                  homePath,
 		Config:                &config.Config{},
 		configPath:            configPath,
