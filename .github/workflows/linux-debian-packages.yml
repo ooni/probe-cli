@@ -23,7 +23,7 @@ jobs:
           DEB="../ooniprobe-cli_${DVER}_amd64.deb"
           BT_FNAME="ooniprobe-cli_${DVER}_amd64.deb"
           curl --upload-file "${DEB}" -u "${BT_APIUSER}:${BT_APIKEY}" \
-          "https://api.bintray.com/content/${BT_ORG}/${BT_REPO}/${BT_PKGNAME}/${DVER}/${BT_FNAME};deb_distribution=${DEBDIST};deb_component=main;deb_architecture=amd64;publish=1"
+            "https://api.bintray.com/content/${BT_ORG}/${BT_REPO}/${BT_PKGNAME}/${DVER}/${BT_FNAME};deb_distribution=${DEBDIST};deb_component=main;deb_architecture=amd64;publish=1"
         env:
           DEBDIST: unstable
           BT_APIKEY: ${{ secrets.BT_APIKEY }}
