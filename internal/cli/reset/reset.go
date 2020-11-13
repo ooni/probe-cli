@@ -20,16 +20,16 @@ func init() {
 		}
 		// We need to first the DB otherwise the DB will be rewritten on close when
 		// we delete the home directory.
-		err = ctx.DB.Close()
+		err = ctx.DB().Close()
 		if err != nil {
 			log.WithError(err).Error("failed to close the DB")
 			return err
 		}
 		if *force == true {
-			os.RemoveAll(ctx.Home)
-			log.Infof("Deleted %s", ctx.Home)
+			os.RemoveAll(ctx.Home())
+			log.Infof("Deleted %s", ctx.Home())
 		} else {
-			log.Infof("Run with --force to delete %s", ctx.Home)
+			log.Infof("Run with --force to delete %s", ctx.Home())
 		}
 
 		return nil

@@ -12,28 +12,28 @@ func init() {
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
 		output.SectionTitle("GeoIP lookup")
-		ctx, err := root.Init()
+		probeCLI, err := root.Init()
 		if err != nil {
 			return err
 		}
 
-		sess, err := ctx.NewSession()
+		engine, err := probeCLI.NewProbeEngine()
 		if err != nil {
 			return err
 		}
-		defer sess.Close()
+		defer engine.Close()
 
-		err = sess.MaybeLookupLocation()
+		err = engine.MaybeLookupLocation()
 		if err != nil {
 			return err
 		}
 
 		log.WithFields(log.Fields{
 			"type":         "table",
-			"asn":          sess.ProbeASNString(),
-			"network_name": sess.ProbeNetworkName(),
-			"country_code": sess.ProbeCC(),
-			"ip":           sess.ProbeIP(),
+			"asn":          engine.ProbeASNString(),
+			"network_name": engine.ProbeNetworkName(),
+			"country_code": engine.ProbeCC(),
+			"ip":           engine.ProbeIP(),
 		}).Info("Looked up your location")
 
 		return nil

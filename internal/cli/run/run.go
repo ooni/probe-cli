@@ -31,7 +31,7 @@ func runNettestGroup(tg string, ctx *ooni.Probe, network *database.Network) erro
 		log.WithError(err).Error("Failed to lookup the location of the probe")
 		return err
 	}
-	network, err = database.CreateNetwork(ctx.DB, sess)
+	network, err = database.CreateNetwork(ctx.DB(), sess)
 	if err != nil {
 		log.WithError(err).Error("Failed to create the network row")
 		return err
@@ -48,7 +48,7 @@ func runNettestGroup(tg string, ctx *ooni.Probe, network *database.Network) erro
 	}
 	log.Debugf("Running test group %s", group.Label)
 
-	result, err := database.CreateResult(ctx.DB, ctx.Home, tg, network.ID)
+	result, err := database.CreateResult(ctx.DB(), ctx.Home(), tg, network.ID)
 	if err != nil {
 		log.Errorf("DB result error: %s", err)
 		return err
@@ -69,7 +69,7 @@ func runNettestGroup(tg string, ctx *ooni.Probe, network *database.Network) erro
 		}
 	}
 
-	if err = result.Finished(ctx.DB); err != nil {
+	if err = result.Finished(ctx.DB()); err != nil {
 		return err
 	}
 	return nil
@@ -102,7 +102,7 @@ func init() {
 		}
 
 		if *noCollector == true {
-			probe.Config.Sharing.UploadResults = false
+			probe.Config().Sharing.UploadResults = false
 		}
 		return nil
 	})

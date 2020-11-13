@@ -10,16 +10,16 @@ func init() {
 	cmd := root.Command("info", "Display information about OONI Probe")
 
 	cmd.Action(func(_ *kingpin.ParseContext) error {
-		ctx, err := root.Init()
+		probeCLI, err := root.Init()
 		if err != nil {
 			log.Errorf("%s", err)
 			return err
 		}
 		log.WithFields(log.Fields{
-			"path": ctx.Home,
+			"path": probeCLI.Home(),
 		}).Info("Home")
 		log.WithFields(log.Fields{
-			"path": ctx.TempDir,
+			"path": probeCLI.TempDir(),
 		}).Info("TempDir")
 
 		return nil

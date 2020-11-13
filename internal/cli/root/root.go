@@ -57,7 +57,7 @@ func init() {
 				return nil, err
 			}
 			if *isBatch {
-				probe.IsBatch = true
+				probe.SetIsBatch(true)
 			}
 
 			return probe, nil

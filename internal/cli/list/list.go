@@ -12,13 +12,13 @@ func init() {
 	cmd := root.Command("list", "List results")
 	resultID := cmd.Arg("id", "the id of the result to list measurements for").Int64()
 	cmd.Action(func(_ *kingpin.ParseContext) error {
-		ctx, err := root.Init()
+		probeCLI, err := root.Init()
 		if err != nil {
 			log.WithError(err).Error("failed to initialize root context")
 			return err
 		}
 		if *resultID > 0 {
-			measurements, err := database.ListMeasurements(ctx.DB, *resultID)
+			measurements, err := database.ListMeasurements(probeCLI.DB(), *resultID)
 			if err != nil {
 				log.WithError(err).Error("failed to list measurements")
 				return err
@@ -61,7 +61,7 @@ func init() {
 			}
 			output.MeasurementSummary(msmtSummary)
 		} else {
-			doneResults, incompleteResults, err := database.ListResults(ctx.DB)
+			doneResults, incompleteResults, err := database.ListResults(probeCLI.DB())
 			if err != nil {
 				log.WithError(err).Error("failed to list results")
 				return err
@@ -91,11 +91,11 @@ func init() {
 			netCount := make(map[uint]int)
 			output.SectionTitle("Results")
 			for idx, result := range doneResults {
-				totalCount, anmlyCount, err := database.GetMeasurementCounts(ctx.DB, result.Result.ID)
+				totalCount, anmlyCount, err := database.GetMeasurementCounts(probeCLI.DB(), result.Result.ID)
 				if err != nil {
 					log.WithError(err).Error("failed to list measurement counts")
 				}
-				testKeys, err := database.GetResultTestKeys(ctx.DB, result.Result.ID)
+				testKeys, err := database.GetResultTestKeys(probeCLI.DB(), result.Result.ID)
 				if err != nil {
 					log.WithError(err).Error("failed to get testKeys")
 				}

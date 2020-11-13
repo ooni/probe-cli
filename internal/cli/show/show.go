@@ -17,7 +17,7 @@ func init() {
 			log.WithError(err).Error("failed to initialize root context")
 			return err
 		}
-		msmt, err := database.GetMeasurementJSON(ctx.DB, *msmtID)
+		msmt, err := database.GetMeasurementJSON(ctx.DB(), *msmtID)
 		if err != nil {
 			log.Errorf("error: %v", err)
 			return err
