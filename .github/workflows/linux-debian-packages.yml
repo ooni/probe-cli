@@ -1,7 +1,9 @@
-# Build a Debian package on every push or pull request
-# and publish on a test/internal archive
+# Build a Debian package and publish on a test/internal archive
 name: linux-debian-packages
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
 jobs:
   build:
     runs-on: "ubuntu-20.04"
