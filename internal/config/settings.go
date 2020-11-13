@@ -35,9 +35,9 @@ var websiteCategories = []string{
 
 // Sharing settings
 type Sharing struct {
-	IncludeIP      bool `json:"include_ip"`
-	IncludeASN     bool `json:"include_asn"`
-	UploadResults  bool `json:"upload_results"`
+	IncludeIP     bool `json:"include_ip"`
+	IncludeASN    bool `json:"include_asn"`
+	UploadResults bool `json:"upload_results"`
 }
 
 // Advanced settings

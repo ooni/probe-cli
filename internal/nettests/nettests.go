@@ -7,8 +7,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/fatih/color"
-	"github.com/ooni/probe-cli/internal/ooni"
 	"github.com/ooni/probe-cli/internal/database"
+	"github.com/ooni/probe-cli/internal/ooni"
 	"github.com/ooni/probe-cli/internal/output"
 	engine "github.com/ooni/probe-engine"
 	"github.com/ooni/probe-engine/model"
