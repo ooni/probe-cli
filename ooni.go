@@ -8,8 +8,8 @@ import (
 	"syscall"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/config"
 	"github.com/ooni/probe-cli/internal/bindata"
+	"github.com/ooni/probe-cli/internal/config"
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/enginex"
 	"github.com/ooni/probe-cli/utils"
