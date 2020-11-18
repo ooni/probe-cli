@@ -7,10 +7,11 @@ Documentation=man:ooniprobe-cli
 Documentation=https://ooni.org/
 After=network.target tor.target
 Wants=network-online.target
+ConditionPathExists=/etc/ooniprobe/ooniprobe.conf
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/ooniprobe run all
+ExecStart=/usr/bin/ooniprobe --config=/etc/ooniprobe/ooniprobe.conf run all
 TimeoutStopSec=5
 KillMode=mixed
 
