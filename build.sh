@@ -1,8 +1,77 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # We don't have a git repository when running in github actions
-v=`git describe --tags || echo $GITHUB_SHA`
+if command -v git &> /dev/null; then
+  v=$(git describe --tags || echo $GITHUB_SHA)
+else
+  v=GITHUB_SHA
+fi
+
+ci_build_on_debian() {
+  # Install build dependencies, go, and build the probe
+  set -eux
+  case $ARCH in
+    armv6) HDR=armmp;;
+    armv7) HDR=armmp;;
+    aarch64) HDR=arm64;;
+    *) HDR=$ARCH;;
+  esac
+  uname -a
+  apt-get -qq update
+  apt-get install -qq -y --no-install-recommends gcc git linux-headers-$HDR wget musl-dev ca-certificates libc6-dev
+
+  case $ARCH in
+    armv6) GOARCH=armv6l;; #ARMv6
+    armv7) GOARCH=armv6l;; #ARMv7: not available, use v6
+    aarch64) GOARCH=arm64;; #ARMv8
+    *) GOARCH=$ARCH;;
+  esac
+  tarfn=go1.16.linux-$GOARCH.tar.gz
+  echo Downloading $tarfn
+  wget --no-verbose https://golang.org/dl/$tarfn
+  tar xfz $tarfn
+  export PATH=$PATH:$(pwd)/go/bin
+  go version
+  go env
+
+  go build -tags netgo -ldflags='-s -w -extldflags "-static"' ./cmd/ooniprobe
+}
+
+ci_build_upload_deb() {
+  # Build and upload .deb package
+  set -eu
+  for e in ARCH BT_APIKEY GITHUB_REF GITHUB_RUN_NUMBER; do
+    [[ -z "${!e}" ]] && echo "Please set env var $e" && exit 1
+  done
+  case $ARCH in
+    armv6) DARCH=armel;;
+    armv7) DARCH=armhf;;
+    *) DARCH=$ARCH;;
+  esac
+  DEBDIST=unstable
+  BT_APIUSER=federicoceratto
+  BT_ORG=ooni
+  BT_PKGNAME=ooniprobe
+  apt-get -qq update
+  # apt-get build-dep -y --no-install-recommends .
+  apt-get install -q  -y --no-install-recommends dpkg-dev build-essential devscripts debhelper
+  VER=$(./ooniprobe version)
+  if [[ ! $GITHUB_REF =~ ^refs/tags/* ]]; then
+    VER="${VER}~${GITHUB_RUN_NUMBER}"
+    dch -v $VER "New test version"
+    BT_REPO=ooniprobe-debian-test
+  else
+    dch -v $VER "New release"
+    BT_REPO=ooniprobe-debian
+  fi
+  dpkg-buildpackage -us -uc -b
+  find ../ -name "*.deb" -type f
+  DEB="../ooniprobe-cli_${VER}_${DARCH}.deb"
+  BT_FNAME="ooniprobe-cli_${VER}_${DARCH}.deb"
+  curl --upload-file "${DEB}" -u "${BT_APIUSER}:${BT_APIKEY}" \
+            "https://api.bintray.com/content/${BT_ORG}/${BT_REPO}/${BT_PKGNAME}/${VER}/${BT_FNAME};deb_distribution=${DEBDIST};deb_component=main;deb_architecture=${DARCH};publish=1"
+}
 
 case $1 in
   windows)
@@ -77,6 +146,14 @@ case $1 in
     $0 windows
     $0 darwin
     shasum -a 256 ooniprobe_${v}_*_*.* > ooniprobe_checksums.txt
+    ;;
+
+  _ci_build_on_debian)
+    ci_build_on_debian
+    ;;
+
+  _ci_build_upload_deb)
+    ci_build_upload_deb
     ;;
 
   *)

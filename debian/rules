@@ -11,7 +11,7 @@ override_dh_auto_clean:
 
 override_dh_auto_build:
 	# The ooniprobe binary is provided
-	./CLI/linux/amd64/ooniprobe --help-man > debian/ooniprobe.1
+	./ooniprobe --help-man > debian/ooniprobe.1
 
 override_dh_dwz:
 	true

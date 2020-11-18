@@ -1,6 +1,19 @@
 # Build and publish Debian packages
+# for various architectures:
+# - amd64
+# - i386
+# - armhf
+# - arm64 / aarch64
+# - armel
+#
+# The native (amd64)
+# linux/386
+#linux/amd64
+#linux/arm
+#linux/arm64
 name: debian
 on:
+  pull_request:
   push:
     branches:
       - "master"
@@ -8,40 +21,96 @@ on:
     tags:
       - "v*"
 jobs:
-  build:
-    runs-on: "ubuntu-20.04"
+  # Cross-build is currently blocked by sqlite3
+  #build_cross:
+  #  name: Cross-build using Go 1.16 on alpine
+  #  runs-on: "ubuntu-20.04"
+  #  strategy:
+  #    matrix:
+  #      arch: ["amd64", "i386", "aarch64", "armhf"]
+  #  steps:
+  #    - name: Docker
+  #      run: |
+  #        echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
+  #        sudo service docker restart
+  #    - uses: actions/setup-go@v2
+  #      with:
+  #        go-version: "1.16"
+  #    - uses: actions/checkout@v2
+  #    - run: docker pull --platform linux/${arch} golang:1.16-alpine
+  #    - run: docker run --platform linux/${arch} -v`pwd`:/ooni -w/ooni golang:1.16-alpine ./build.sh _alpine
+  #      #tar -cvzf ooniprobe_${v}_linux_amd64.tar.gz LICENSE.md Readme.md ooniprobe
+  #      #mv ooniprobe ./CLI/linux/amd64/
+  #    #- run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
+  #    - uses: actions/upload-artifact@v1
+  #      with:
+  #        name: ooniprobe-linux-amd64
+  #        path: ./CLI/linux/amd64/ooniprobe
+
+  #build_amd64:
+  #  runs-on: "ubuntu-20.04"
+  #  name: Build on native amd64 Buster
+  #  steps:
+  #    - name: Docker
+  #      run: |
+  #        echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
+  #        sudo service docker restart
+  #    - uses: actions/setup-go@v1
+  #      with:
+  #        go-version: "1.14"
+  #    - uses: actions/checkout@v2
+  #    - run: DOCKER_CLI_EXPERIMENTAL=enabled ./build.sh linux_amd64
+  #    - run: sudo apt-get update -q
+  #    - run: sudo apt-get build-dep -y --no-install-recommends .
+  #    - run: |
+  #        VER=$(./CLI/linux/amd64/ooniprobe version)
+  #        if [[ ! $GITHUB_REF =~ ^refs/tags/* ]]; then
+  #          VER="${VER}~${GITHUB_RUN_NUMBER}"
+  #          dch -v $VER "New test version"
+  #          BT_REPO="${BT_REPO}-test"
+  #        else
+  #          dch -v $VER "New release"
+  #        fi
+  #        dpkg-buildpackage -us -uc -b
+  #        find ../ -name "*.deb" -type f
+  #        DEB="../ooniprobe-cli_${VER}_amd64.deb"
+  #        echo no | sudo dpkg -i $DEB
+  #        BT_FNAME="ooniprobe-cli_${VER}_amd64.deb"
+  #        curl --upload-file "${DEB}" -u "${BT_APIUSER}:${BT_APIKEY}" \
+  #          "https://api.bintray.com/content/${BT_ORG}/${BT_REPO}/${BT_PKGNAME}/${VER}/${BT_FNAME};deb_distribution=${DEBDIST};deb_component=main;deb_architecture=amd64;publish=1"
+  #      env:
+  #        DEBDIST: unstable
+  #        BT_APIKEY: ${{ secrets.BT_APIKEY }}
+  #        BT_APIUSER: federicoceratto
+  #        BT_ORG: ooni
+  #        BT_PKGNAME: ooniprobe
+  #        BT_REPO: ooniprobe-debian
+
+  build_archs:
+    runs-on: "ubuntu-latest"
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ["armv7", "aarch64"]
+    name: Build on ${{ matrix.arch }} Buster
     steps:
-      - name: Docker
-        run: |
-          echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
-          sudo service docker restart
-      - uses: actions/setup-go@v1
+      - uses: actions/checkout@v2.1.0
+      - uses: uraimo/run-on-arch-action@v2.0.5
+        name: Build ooniprobe
+        id: runcmd
         with:
-          go-version: "1.16"
-      - uses: actions/checkout@v2
-      - run: DOCKER_CLI_EXPERIMENTAL=enabled ./build.sh linux_amd64
-      - run: sudo apt-get update -q
-      - run: sudo apt-get build-dep -y --no-install-recommends .
-      - run: |
-          VER=$(./CLI/linux/amd64/ooniprobe version)
-          if [[ ! $GITHUB_REF =~ ^refs/tags/* ]]; then
-            VER="${VER}~${GITHUB_RUN_NUMBER}"
-            dch -v $VER "New test version"
-            BT_REPO="${BT_REPO}-test"
-          else
-            dch -v $VER "New release"
-          fi
-          dpkg-buildpackage -us -uc -b
-          find ../ -name "*.deb" -type f
-          DEB="../ooniprobe-cli_${VER}_amd64.deb"
-          echo no | sudo dpkg -i $DEB
-          BT_FNAME="ooniprobe-cli_${VER}_amd64.deb"
-          curl --upload-file "${DEB}" -u "${BT_APIUSER}:${BT_APIKEY}" \
-            "https://api.bintray.com/content/${BT_ORG}/${BT_REPO}/${BT_PKGNAME}/${VER}/${BT_FNAME};deb_distribution=${DEBDIST};deb_component=main;deb_architecture=amd64;publish=1"
-        env:
-          DEBDIST: unstable
-          BT_APIKEY: ${{ secrets.BT_APIKEY }}
-          BT_APIUSER: federicoceratto
-          BT_ORG: ooni
-          BT_PKGNAME: ooniprobe
-          BT_REPO: ooniprobe-debian
+          arch: ${{ matrix.arch }}
+          distro: buster
+          githubToken: ${{ github.token }}
+
+          run: |
+            export ARCH=${{ matrix.arch }}
+            export BT_APIKEY=${{ secrets.BT_APIKEY }}
+            ./build.sh _ci_build_on_debian
+            ./build.sh _ci_build_upload_deb
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v1
+        with:
+          name: ooniprobe-linux-${{ matrix.arch }}
+          path: ooniprobe

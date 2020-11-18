@@ -1,2 +1,2 @@
-./CLI/linux/amd64/ooniprobe usr/bin
+ooniprobe usr/bin
 debian/ooniprobe.conf.disabled /etc/ooniprobe
