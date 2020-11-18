@@ -22,3 +22,36 @@ jobs:
         with:
           name: ooniprobe-linux-amd64
           path: ./CLI/linux/amd64/ooniprobe
+
+  aarch64_build:
+    runs-on: "ubuntu-latest"
+    name: Build on aarch64 Buster
+    steps:
+      - uses: actions/checkout@v2.1.0
+      - uses: uraimo/run-on-arch-action@v2.0.5
+        name: Run commands
+        id: runcmd
+        with:
+          arch: aarch64
+          distro: buster
+          # distro: ubuntu20.04 # no linux-headers-arm64
+
+          # Not required, but speeds up builds by storing container images in
+          # a GitHub package registry.
+          githubToken: ${{ github.token }}
+
+          run: |
+            uname -a
+            apt-get update
+            apt-get install -q -y --no-install-recommends gcc git linux-headers-arm64 musl-dev golang ca-certificates
+            go version
+            go env
+            go build -tags netgo -ldflags='-s -w -extldflags "-static"' ./cmd/ooniprobe
+
+      - name: Get the output
+        run: |
+          echo "The output was ${{ steps.runcmd.outputs.uname }}"
+
+      - name: Show the artifact
+        run: |
+          ls -al "${PWD}/artifacts"
