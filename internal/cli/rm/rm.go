@@ -65,11 +65,11 @@ func init() {
 		}
 
 		if *all == true {
-			return deleteAll(ctx.DB, *yes)
+			return deleteAll(ctx.DB(), *yes)
 		}
 
 		if *yes == true {
-			err = database.DeleteResult(ctx.DB, *resultID)
+			err = database.DeleteResult(ctx.DB(), *resultID)
 			if err == db.ErrNoMoreRows {
 				return errors.New("result not found")
 			}
@@ -85,7 +85,7 @@ func init() {
 		if answer == "false" {
 			return errors.New("canceled by user")
 		}
-		err = database.DeleteResult(ctx.DB, *resultID)
+		err = database.DeleteResult(ctx.DB(), *resultID)
 		if err == db.ErrNoMoreRows {
 			return errors.New("result not found")
 		}

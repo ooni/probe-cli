@@ -138,11 +138,11 @@ func Onboarding(config *config.Config) error {
 // MaybeOnboarding will run the onboarding process only if the informed consent
 // config option is set to false
 func MaybeOnboarding(probe *ooni.Probe) error {
-	if probe.Config.InformedConsent == false {
-		if probe.IsBatch == true {
+	if probe.Config().InformedConsent == false {
+		if probe.IsBatch() == true {
 			return errors.New("cannot run onboarding in batch mode")
 		}
-		if err := Onboarding(probe.Config); err != nil {
+		if err := Onboarding(probe.Config()); err != nil {
 			return errors.Wrap(err, "onboarding")
 		}
 	}
@@ -161,20 +161,20 @@ func init() {
 		}
 
 		if *yes == true {
-			probe.Config.Lock()
-			probe.Config.InformedConsent = true
-			probe.Config.Unlock()
+			probe.Config().Lock()
+			probe.Config().InformedConsent = true
+			probe.Config().Unlock()
 
-			if err := probe.Config.Write(); err != nil {
+			if err := probe.Config().Write(); err != nil {
 				log.WithError(err).Error("failed to write config file")
 				return err
 			}
 			return nil
 		}
-		if probe.IsBatch == true {
+		if probe.IsBatch() == true {
 			return errors.New("cannot do onboarding in batch mode")
 		}
 
-		return Onboarding(probe.Config)
+		return Onboarding(probe.Config())
 	})
 }

@@ -19,6 +19,15 @@ var Command = Cmd.Command
 // Init should be called by all subcommand that care to have a ooni.Context instance
 var Init func() (*ooni.Probe, error)
 
+// NewProbeCLI is like Init but returns a ooni.ProbeCLI instead.
+func NewProbeCLI() (ooni.ProbeCLI, error) {
+	probeCLI, err := Init()
+	if err != nil {
+		return nil, err
+	}
+	return probeCLI, nil
+}
+
 func init() {
 	configPath := Cmd.Flag("config", "Set a custom config file path").Short('c').String()
 
@@ -57,7 +66,7 @@ func init() {
 				return nil, err
 			}
 			if *isBatch {
-				probe.IsBatch = true
+				probe.SetIsBatch(true)
 			}
 
 			return probe, nil

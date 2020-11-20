@@ -19,14 +19,34 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 )
 
+// ProbeCLI is the OONI Probe CLI context.
+type ProbeCLI interface {
+	Config() *config.Config
+	DB() sqlbuilder.Database
+	IsBatch() bool
+	Home() string
+	TempDir() string
+	NewProbeEngine() (ProbeEngine, error)
+}
+
+// ProbeEngine is an instance of the OONI Probe engine.
+type ProbeEngine interface {
+	Close() error
+	MaybeLookupLocation() error
+	ProbeASNString() string
+	ProbeCC() string
+	ProbeIP() string
+	ProbeNetworkName() string
+}
+
 // Probe contains the ooniprobe CLI context.
 type Probe struct {
-	Config  *config.Config
-	DB      sqlbuilder.Database
-	IsBatch bool
+	config  *config.Config
+	db      sqlbuilder.Database
+	isBatch bool
 
-	Home    string
-	TempDir string
+	home    string
+	tempDir string
 
 	dbPath     string
 	configPath string
@@ -39,6 +59,36 @@ type Probe struct {
 
 	softwareName    string
 	softwareVersion string
+}
+
+// SetIsBatch sets the value of isBatch.
+func (p *Probe) SetIsBatch(v bool) {
+	p.isBatch = v
+}
+
+// IsBatch returns whether we're running in batch mode.
+func (p *Probe) IsBatch() bool {
+	return p.isBatch
+}
+
+// Config returns the configuration
+func (p *Probe) Config() *config.Config {
+	return p.config
+}
+
+// DB returns the database we're using
+func (p *Probe) DB() sqlbuilder.Database {
+	return p.db
+}
+
+// Home returns the home directory.
+func (p *Probe) Home() string {
+	return p.home
+}
+
+// TempDir returns the temporary directory.
+func (p *Probe) TempDir() string {
+	return p.tempDir
 }
 
 // IsTerminated checks to see if the isTerminatedAtomicInt is set to a non zero
@@ -102,37 +152,37 @@ func (p *Probe) MaybeListenForStdinClosed() {
 func (p *Probe) Init(softwareName, softwareVersion string) error {
 	var err error
 
-	if err = MaybeInitializeHome(p.Home); err != nil {
+	if err = MaybeInitializeHome(p.home); err != nil {
 		return err
 	}
 
 	if p.configPath != "" {
 		log.Debugf("Reading config file from %s", p.configPath)
-		p.Config, err = config.ReadConfig(p.configPath)
+		p.config, err = config.ReadConfig(p.configPath)
 	} else {
 		log.Debug("Reading default config file")
-		p.Config, err = InitDefaultConfig(p.Home)
+		p.config, err = InitDefaultConfig(p.home)
 	}
 	if err != nil {
 		return err
 	}
-	if err = p.Config.MaybeMigrate(); err != nil {
+	if err = p.config.MaybeMigrate(); err != nil {
 		return errors.Wrap(err, "migrating config")
 	}
 
-	p.dbPath = utils.DBDir(p.Home, "main")
+	p.dbPath = utils.DBDir(p.home, "main")
 	log.Debugf("Connecting to database sqlite3://%s", p.dbPath)
 	db, err := database.Connect(p.dbPath)
 	if err != nil {
 		return err
 	}
-	p.DB = db
+	p.db = db
 
 	tempDir, err := ioutil.TempDir("", "ooni")
 	if err != nil {
 		return errors.Wrap(err, "creating TempDir")
 	}
-	p.TempDir = tempDir
+	p.tempDir = tempDir
 
 	p.softwareName = softwareName
 	p.softwareVersion = softwareVersion
@@ -144,31 +194,40 @@ func (p *Probe) Init(softwareName, softwareVersion string) error {
 // the session when done using it, by calling sess.Close().
 func (p *Probe) NewSession() (*engine.Session, error) {
 	kvstore, err := engine.NewFileSystemKVStore(
-		utils.EngineDir(p.Home),
+		utils.EngineDir(p.home),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating engine's kvstore")
 	}
 	return engine.NewSession(engine.SessionConfig{
-		AssetsDir: utils.AssetsDir(p.Home),
+		AssetsDir: utils.AssetsDir(p.home),
 		KVStore:   kvstore,
 		Logger:    enginex.Logger,
 		PrivacySettings: model.PrivacySettings{
-			IncludeASN:     p.Config.Sharing.IncludeASN,
+			IncludeASN:     p.config.Sharing.IncludeASN,
 			IncludeCountry: true,
-			IncludeIP:      p.Config.Sharing.IncludeIP,
+			IncludeIP:      p.config.Sharing.IncludeIP,
 		},
 		SoftwareName:    p.softwareName,
 		SoftwareVersion: p.softwareVersion,
-		TempDir:         p.TempDir,
+		TempDir:         p.tempDir,
 	})
+}
+
+// NewProbeEngine creates a new ProbeEngine instance.
+func (p *Probe) NewProbeEngine() (ProbeEngine, error) {
+	sess, err := p.NewSession()
+	if err != nil {
+		return nil, err
+	}
+	return sess, nil
 }
 
 // NewProbe creates a new probe instance.
 func NewProbe(configPath string, homePath string) *Probe {
 	return &Probe{
-		Home:                  homePath,
-		Config:                &config.Config{},
+		home:                  homePath,
+		config:                &config.Config{},
 		configPath:            configPath,
 		isTerminatedAtomicInt: 0,
 	}

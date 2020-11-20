@@ -38,11 +38,11 @@ func TestRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	network, err := database.CreateNetwork(probe.DB, sess)
+	network, err := database.CreateNetwork(probe.DB(), sess)
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := database.CreateResult(probe.DB, probe.Home, "middlebox", network.ID)
+	res, err := database.CreateResult(probe.DB(), probe.Home(), "middlebox", network.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
