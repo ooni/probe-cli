@@ -163,7 +163,8 @@ func Bullet(text string) {
 	fmt.Printf("• %s\n", utils.WrapString(text, width))
 }
 
-func PressEnterToContinue(text string) {
+func PressEnterToContinue(text string) error {
 	fmt.Print(text)
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	_, err := bufio.NewReader(os.Stdin).ReadBytes('\n')
+	return err
 }
