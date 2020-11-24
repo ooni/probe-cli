@@ -23,7 +23,10 @@ func Onboarding(config *config.Config) error {
 	fmt.Println()
 	output.Paragraph("OONI Probe checks whether your provider blocks access to sites and services. Run OONI Probe to collect evidence of internet censorship and to measure your network performance.")
 	fmt.Println()
-	output.PressEnterToContinue("Press 'Enter' to continue...")
+	err := output.PressEnterToContinue("Press 'Enter' to continue...")
+	if err != nil {
+		return err
+	}
 
 	output.SectionTitle("Heads Up")
 	fmt.Println()
@@ -35,7 +38,10 @@ func Onboarding(config *config.Config) error {
 	fmt.Println()
 	output.Bullet("Read the documentation to learn more.")
 	fmt.Println()
-	output.PressEnterToContinue("Press 'Enter' to continue...")
+	err = output.PressEnterToContinue("Press 'Enter' to continue...")
+	if err != nil {
+		return err
+	}
 
 	output.SectionTitle("Pop Quiz!")
 	output.Paragraph("")
@@ -45,7 +51,9 @@ func Onboarding(config *config.Config) error {
 		Options: []string{"true", "false"},
 		Default: "true",
 	}
-	survey.AskOne(quiz1, &answer, nil)
+	if err := survey.AskOne(quiz1, &answer, nil); err != nil {
+		return err
+	}
 	if answer != "true" {
 		output.Paragraph(color.RedString("Actually..."))
 		output.Paragraph("OONI Probe is not a privacy tool. Therefore, anyone monitoring your internet activity may be able to see which software you are running.")
@@ -58,7 +66,9 @@ func Onboarding(config *config.Config) error {
 		Options: []string{"true", "false"},
 		Default: "true",
 	}
-	survey.AskOne(quiz2, &answer, nil)
+	if err := survey.AskOne(quiz2, &answer, nil); err != nil {
+		return err
+	}
 	if answer != "true" {
 		output.Paragraph(color.RedString("Actually..."))
 		output.Paragraph("The network data you will collect will automatically be published to increase transparency of internet censorship (unless you opt-out in the settings).")
@@ -71,7 +81,9 @@ func Onboarding(config *config.Config) error {
 		Message: "Do you want to change the default settings?",
 		Default: false,
 	}
-	survey.AskOne(prompt, &changeDefaults, nil)
+	if err := survey.AskOne(prompt, &changeDefaults, nil); err != nil {
+		return err
+	}
 
 	settings := struct {
 		IncludeIP        bool
@@ -113,8 +125,7 @@ func Onboarding(config *config.Config) error {
 			},
 		}
 
-		err := survey.Ask(qs, &settings)
-		if err != nil {
+		if err := survey.Ask(qs, &settings); err != nil {
 			log.WithError(err).Error("there was an error in parsing your responses")
 			return err
 		}
