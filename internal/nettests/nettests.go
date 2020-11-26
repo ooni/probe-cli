@@ -202,12 +202,3 @@ func (c *Controller) OnProgress(perc float64, msg string) {
 	key := fmt.Sprintf("%T", c.nt)
 	output.Progress(key, perc, eta, msg)
 }
-
-// OnDataUsage should be called when we have a data usage update.
-func (c *Controller) OnDataUsage(dloadKiB, uploadKiB float64) {
-	// Unused as 2020-04-05: we're now using directly the accessors
-	// provided by the experiment. This callback is going to be removed
-	// from probe-engine in May or June.
-	//
-	// TODO(bassosimone): create an issue for this?
-}
