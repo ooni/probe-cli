@@ -2,18 +2,12 @@
   "_version": 1,
   "_informed_consent": false,
   "sharing": {
-    "include_ip": false,
-    "include_asn": true,
-    "include_country": true,
     "upload_results": true
   },
   "nettests": {
     "websites_url_limit": 0
   },
   "advanced": {
-    "use_domain_fronting": false,
-    "send_crash_reports": true,
-    "collector_url": "",
-    "bouncer_url": "https://bouncer.ooni.io"
+    "send_crash_reports": true
   }
 }

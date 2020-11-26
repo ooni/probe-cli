@@ -13,7 +13,7 @@ require (
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mattn/go-sqlite3 v1.14.5 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
-	github.com/ooni/probe-engine v0.20.2
+	github.com/ooni/probe-engine v0.20.1-0.20201126115133-286613b74e6c
 	github.com/pkg/errors v0.9.1
 	github.com/rubenv/sql-migrate v0.0.0-20200616145509-8d140a17f351
 	github.com/sirupsen/logrus v1.7.0 // indirect
