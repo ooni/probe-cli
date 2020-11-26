@@ -14,7 +14,6 @@ import (
 	"github.com/ooni/probe-cli/internal/enginex"
 	"github.com/ooni/probe-cli/internal/utils"
 	engine "github.com/ooni/probe-engine"
-	"github.com/ooni/probe-engine/model"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -200,14 +199,9 @@ func (p *Probe) NewSession() (*engine.Session, error) {
 		return nil, errors.Wrap(err, "creating engine's kvstore")
 	}
 	return engine.NewSession(engine.SessionConfig{
-		AssetsDir: utils.AssetsDir(p.home),
-		KVStore:   kvstore,
-		Logger:    enginex.Logger,
-		PrivacySettings: model.PrivacySettings{
-			IncludeASN:     p.config.Sharing.IncludeASN,
-			IncludeCountry: true,
-			IncludeIP:      p.config.Sharing.IncludeIP,
-		},
+		AssetsDir:       utils.AssetsDir(p.home),
+		KVStore:         kvstore,
+		Logger:          enginex.Logger,
 		SoftwareName:    p.softwareName,
 		SoftwareVersion: p.softwareVersion,
 		TempDir:         p.tempDir,

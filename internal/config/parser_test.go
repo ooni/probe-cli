@@ -28,8 +28,8 @@ func TestParseConfig(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if config.Sharing.IncludeASN == false {
-		t.Error("network should be included")
+	if config.Sharing.UploadResults != true {
+		t.Fatal("not the expected value for UploadResults")
 	}
 }
 
@@ -58,8 +58,6 @@ func TestUpdateConfig(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	origIncludeIP := config.Sharing.IncludeIP
-	origIncludeASN := config.Sharing.IncludeASN
 	origUploadResults := config.Sharing.UploadResults
 	origInformedConsent := config.InformedConsent
 	if err != nil {
@@ -78,12 +76,6 @@ func TestUpdateConfig(t *testing.T) {
 	newConfig, err := ReadConfig(configPath)
 	if err != nil {
 		t.Error(err)
-	}
-	if newConfig.Sharing.IncludeIP != origIncludeIP {
-		t.Error("includeIP differs")
-	}
-	if newConfig.Sharing.IncludeASN != origIncludeASN {
-		t.Error("includeASN differs")
 	}
 	if newConfig.Sharing.UploadResults != origUploadResults {
 		t.Error("UploadResults differs")

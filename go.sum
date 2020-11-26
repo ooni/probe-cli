@@ -350,8 +350,8 @@ github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1Cpa
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/onsi/gomega v1.10.1 h1:o0+MgICZLuZ7xjH7Vx6zS/zcu93/BEp1VwkIW1mEXCE=
 github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
-github.com/ooni/probe-engine v0.20.2 h1:QO4HsHw5lG8vshtV0MQwINuYlVnVPPqaVCq8Zx+9guQ=
-github.com/ooni/probe-engine v0.20.2/go.mod h1:58nNKsvU/jPjsQ8OZJFNu06l6yRJYYWfNE1JwGmbRwc=
+github.com/ooni/probe-engine v0.20.1-0.20201126115133-286613b74e6c h1:+4uKh4ljd5Lui16QAKSKLw4Ld2NACDnuW7lxnUDZ8n8=
+github.com/ooni/probe-engine v0.20.1-0.20201126115133-286613b74e6c/go.mod h1:58nNKsvU/jPjsQ8OZJFNu06l6yRJYYWfNE1JwGmbRwc=
 github.com/ooni/psiphon v0.1.0 h1:fUcDpzZSd2McI5GomHtwusQllYPQoq3ETM3GMfQxCQQ=
 github.com/ooni/psiphon v0.1.0/go.mod h1:p+l7SBAGTH3bw9ALcLvlrz6ry+isIM2f51Y5yOhgmTQ=
 github.com/op/go-logging v0.0.0-20160315200505-970db520ece7/go.mod h1:HzydrMdWErDVzsI23lYNej1Htcns9BCg93Dk0bBINWk=

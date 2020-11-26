@@ -18,8 +18,6 @@ import (
 // Nettest interface. Every Nettest should implement this.
 type Nettest interface {
 	Run(*Controller) error
-	GetTestKeys(map[string]interface{}) (interface{}, error)
-	LogSummary(string) error
 }
 
 // NewController creates a nettest controller
@@ -168,12 +166,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 		// is an inconsistency between the code that generate the measurement
 		// and the code that process the measurement. We do have some data
 		// but we're not gonna have a summary. To be reconsidered.
-		genericTk, err := measurement.MakeGenericTestKeys()
-		if err != nil {
-			log.WithError(err).Error("failed to cast the test keys")
-			continue
-		}
-		tk, err := c.nt.GetTestKeys(genericTk)
+		tk, err := exp.GetSummaryKeys(measurement)
 		if err != nil {
 			log.WithError(err).Error("failed to obtain testKeys")
 			continue
