@@ -12,6 +12,8 @@ func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, ma
 	inputloader := engine.NewInputLoader(engine.InputLoaderConfig{
 		InputPolicy:   engine.InputRequired,
 		Session:       ctl.Session,
+		SourceFiles:   ctl.InputFiles,
+		StaticInputs:  ctl.Inputs,
 		URLCategories: categories,
 		URLLimit:      limit,
 	})
