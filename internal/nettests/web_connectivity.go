@@ -1,22 +1,27 @@
 package nettests
 
 import (
+	"context"
+
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/database"
 	engine "github.com/ooni/probe-engine"
 )
 
 func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, map[int64]int64, error) {
+	inputloader := engine.NewInputLoader(engine.InputLoaderConfig{
+		InputPolicy:   engine.InputRequired,
+		Session:       ctl.Session,
+		URLCategories: categories,
+		URLLimit:      limit,
+	})
+	testlist, err := inputloader.Load(context.Background())
 	var urls []string
 	urlIDMap := make(map[int64]int64)
-	testlist, err := ctl.Session.QueryTestListsURLs(&engine.TestListsURLsConfig{
-		Limit:      limit,
-		Categories: categories,
-	})
 	if err != nil {
 		return nil, nil, err
 	}
-	for idx, url := range testlist.Result {
+	for idx, url := range testlist {
 		log.Debugf("Going over URL %d", idx)
 		urlID, err := database.CreateOrUpdateURL(
 			ctl.Probe.DB(), url.URL, url.CategoryCode, url.CountryCode,
