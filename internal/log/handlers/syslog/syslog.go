@@ -10,7 +10,6 @@ import (
 
 /*
 #include<stdlib.h>
-#include<syslog.h>
 
 void ooniprobe_openlog(void);
 void ooniprobe_syslog(int level, const char *message);
