@@ -1,18 +1,20 @@
 package nettests
 
-// NettestGroup base structure
-type NettestGroup struct {
-	Label    string
-	Nettests []Nettest
+// Group is a group of nettests
+type Group struct {
+	Label        string
+	Nettests     []Nettest
+	UnattendedOK bool
 }
 
-// NettestGroups that can be run by the user
-var NettestGroups = map[string]NettestGroup{
+// All contains all the nettests that can be run by the user
+var All = map[string]Group{
 	"websites": {
 		Label: "Websites",
 		Nettests: []Nettest{
 			WebConnectivity{},
 		},
+		UnattendedOK: true,
 	},
 	"performance": {
 		Label: "Performance",
@@ -27,6 +29,7 @@ var NettestGroups = map[string]NettestGroup{
 			HTTPInvalidRequestLine{},
 			HTTPHeaderFieldManipulation{},
 		},
+		UnattendedOK: true,
 	},
 	"im": {
 		Label: "Instant Messaging",
@@ -35,6 +38,7 @@ var NettestGroups = map[string]NettestGroup{
 			Telegram{},
 			WhatsApp{},
 		},
+		UnattendedOK: true,
 	},
 	"circumvention": {
 		Label: "Circumvention Tools",
@@ -42,5 +46,6 @@ var NettestGroups = map[string]NettestGroup{
 			Psiphon{},
 			Tor{},
 		},
+		UnattendedOK: true,
 	},
 }
