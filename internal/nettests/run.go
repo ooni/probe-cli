@@ -44,7 +44,7 @@ func RunGroup(config RunGroupConfig) error {
 		return err
 	}
 
-	group, ok := NettestGroups[config.GroupName]
+	group, ok := All[config.GroupName]
 	if !ok {
 		log.Errorf("No test group named %s", config.GroupName)
 		return errors.New("invalid test group name")
