@@ -44,6 +44,15 @@ type Controller struct {
 	msmts       map[int64]*database.Measurement
 	inputIdxMap map[int64]int64 // Used to map mk idx to database id
 
+	// InputFiles optionally contains the names of the input
+	// files to read inputs from (only for nettests that take
+	// inputs, of course)
+	InputFiles []string
+
+	// Inputs contains inputs to be tested. These are specified
+	// using the command line using the --input flag.
+	Inputs []string
+
 	// numInputs is the total number of inputs
 	numInputs int
 
