@@ -1,4 +1,7 @@
 // Package syslog contains a syslog handler.
+//
+// We use this handler on macOS systems to log messages
+// when ooniprobe is running in the background.
 package syslog
 
 import (
@@ -12,7 +15,11 @@ import (
 #include<stdlib.h>
 
 void ooniprobe_openlog(void);
-void ooniprobe_syslog(int level, const char *message);
+void ooniprobe_log_debug(const char *message);
+void ooniprobe_log_info(const char *message);
+void ooniprobe_log_warning(const char *message);
+void ooniprobe_log_err(const char *message);
+void ooniprobe_log_crit(const char *message);
 */
 import "C"
 
@@ -26,25 +33,21 @@ func newhandler() handler {
 	return handler{}
 }
 
-var levelmap = map[log.Level]C.int{
-	log.DebugLevel: C.LOG_DEBUG,
-	log.InfoLevel:  C.LOG_INFO,
-	log.WarnLevel:  C.LOG_WARNING,
-	log.ErrorLevel: C.LOG_ERR,
-	log.FatalLevel: C.LOG_CRIT,
-}
-
-func getlevel(level log.Level) C.int {
-	if value, found := levelmap[level]; found {
-		return value
-	}
-	return C.LOG_CRIT
-}
-
 func (h handler) HandleLog(e *log.Entry) error {
 	message := fmt.Sprintf("%s %+v", e.Message, e.Fields)
 	cstr := C.CString(message)
 	defer C.free(unsafe.Pointer(cstr))
-	C.ooniprobe_syslog(getlevel(e.Level), cstr)
+	switch e.Level {
+	case log.DebugLevel:
+		C.ooniprobe_log_debug(cstr)
+	case log.InfoLevel:
+		C.ooniprobe_log_info(cstr)
+	case log.WarnLevel:
+		C.ooniprobe_log_warning(cstr)
+	case log.ErrorLevel:
+		C.ooniprobe_log_err(cstr)
+	default:
+		C.ooniprobe_log_crit(cstr)
+	}
 	return nil
 }
