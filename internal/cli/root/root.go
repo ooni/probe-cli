@@ -5,6 +5,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/log/handlers/batch"
 	"github.com/ooni/probe-cli/internal/log/handlers/cli"
+	"github.com/ooni/probe-cli/internal/log/handlers/syslog"
 	"github.com/ooni/probe-cli/internal/ooni"
 	"github.com/ooni/probe-cli/internal/utils"
 	"github.com/ooni/probe-cli/internal/version"
@@ -33,6 +34,9 @@ func init() {
 
 	isVerbose := Cmd.Flag("verbose", "Enable verbose log output.").Short('v').Bool()
 	isBatch := Cmd.Flag("batch", "Enable batch command line usage.").Bool()
+	logHandler := Cmd.Flag(
+		"log-handler", "Set the desired log handler (one of: batch, cli, syslog)",
+	).String()
 
 	softwareName := Cmd.Flag(
 		"software-name", "Override application name",
@@ -42,10 +46,23 @@ func init() {
 	).Default(version.Version).String()
 
 	Cmd.PreAction(func(ctx *kingpin.ParseContext) error {
+		// TODO(bassosimone): we need to properly deprecate --batch
+		// in favour of more granular command line flags.
+		if *isBatch && *logHandler != "" {
+			log.Fatal("cannot specify --batch and --log-handler together")
+		}
 		if *isBatch {
+			*logHandler = "batch"
+		}
+		switch *logHandler {
+		case "batch":
 			log.SetHandler(batch.Default)
-		} else {
+		case "cli", "":
 			log.SetHandler(cli.Default)
+		case "syslog":
+			log.SetHandler(syslog.Default)
+		default:
+			log.Fatalf("unknown --log-handler: %s", *logHandler)
 		}
 		if *isVerbose {
 			log.SetLevel(log.DebugLevel)
