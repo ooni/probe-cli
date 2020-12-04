@@ -1,5 +1,3 @@
-# OnionBalance systemd target
-
 [Unit]
 Description=OONI CLI Probe
 Documentation=man:ooniprobe-cli
@@ -15,7 +13,7 @@ ExecStart=/usr/bin/ooniprobe --config=/etc/ooniprobe/ooniprobe.conf run all
 TimeoutStopSec=5
 KillMode=mixed
 
-#EnvironmentFile=-/etc/default/%p
+Environment="OONI_HOME=/var/lib/ooniprobe"
 User=ooniprobe
 PermissionsStartOnly=true
 Restart=on-abnormal
