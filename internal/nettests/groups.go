@@ -44,6 +44,7 @@ var All = map[string]Group{
 		Label: "Circumvention Tools",
 		Nettests: []Nettest{
 			Psiphon{},
+			RiseupVPN{},
 			Tor{},
 		},
 		UnattendedOK: true,
