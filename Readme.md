@@ -72,6 +72,10 @@ You may also want to adjust the locations of the logs.
 Once you have written the file, you can enable `ooniprobe` to run automatically by
 doing: `launchctl load org.ooni.probe.cli.plist`.
 
+## Reporting issues
+
+Please, report issues with this codebase at https://github.com/ooni/probe.
+
 ## Development setup
 
 Be sure you have golang >= 1.14 and a C compiler (when developing for Windows, you
