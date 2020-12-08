@@ -1,6 +1,6 @@
 # OONI Probe CLI
 
-[![linux-debian-packages](https://github.com/ooni/probe-cli/workflows/linux-debian-packages/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Alinux-debian-packages)
+[![linux-debian-packages](https://github.com/ooni/probe-cli/workflows/linux-debian-packages/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Alinux-debian-packages) ![GitHub issues by-label](https://img.shields.io/github/issues/ooni/probe/ooni/probe-cli?style=plastic)
 
 The next generation OONI Probe Command Line Interface.
 
@@ -74,7 +74,8 @@ doing: `launchctl load org.ooni.probe.cli.plist`.
 
 ## Reporting issues
 
-Please, report issues with this codebase at https://github.com/ooni/probe.
+Please, report issues with this codebase at https://github.com/ooni/probe. Please, make
+sure you tag such issues using the `ooni/probe-cli` label.
 
 ## Development setup
 
