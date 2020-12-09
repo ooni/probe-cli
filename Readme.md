@@ -30,10 +30,7 @@ Below is a sample launchd script, that should be placed inside of
 `~/Library/LaunchAgents/org.ooni.probe.cli.plist`.
 
 Be sure to replace `/PATH/TO/BINARY/ooniprobe` with the actual install location of the
-`ooniprobe` binary and `/PATH/TO/CONFIG/config-100sites.json` with the location of a file
-which limits the testing to 100 URLs.
-
-You may also want to adjust the locations of the logs.
+`ooniprobe` binary.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
