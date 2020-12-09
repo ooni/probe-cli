@@ -41,7 +41,7 @@ You may also want to adjust the locations of the logs.
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>#{plist_name}</string>
+  <string>org.ooni.probe.daily-run</string>
 
   <key>KeepAlive</key>
   <false/>
