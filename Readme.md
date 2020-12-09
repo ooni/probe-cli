@@ -40,31 +40,25 @@ You may also want to adjust the locations of the logs.
 <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>Label</key>
-    <string>org.ooni.probe.daily-run</string>
+  <key>Label</key>
+  <string>#{plist_name}</string>
 
-    <key>KeepAlive</key>
-    <false/>
-    <key>RunAtLoad</key>
-    <true/>
+  <key>KeepAlive</key>
+  <false/>
+  <key>RunAtLoad</key>
+  <true/>
 
-    <key>Program</key>
-    <string>/PATH/TO/BINARY/ooniprobe</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>--config="/PATH/TO/CONFIG/config-100sites.json"</string>
-        <string>--batch</string>
-        <string>run</string>
-    </array>
+  <key>ProgramArguments</key>
+  <array>
+      <string>/PATH/TO/BINARY/ooniprobe</string>
+      <string>--log-handler=syslog</string>
+      <string>run</string>
+      <string>unattended</string>
+  </array>
 
-    <key>StartInterval</key>
-    <integer>3600</integer>
+  <key>StartInterval</key>
+  <integer>86400</integer>
 
-    <key>StandardErrorPath</key>
-    <string>/tmp/ooniprobe-cli.err</string>
-
-    <key>StandardOutPath</key>
-    <string>/tmp/ooniprobe-cli.out</string>
 </dict>
 </plist>
 ```
