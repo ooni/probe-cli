@@ -1,6 +1,8 @@
 #!/bin/sh
-
 set -e
+
+. /usr/share/debconf/confmodule
+db_version 2.0
 
 if [ "$1" = "configure" ]; then
     if ! getent passwd ooniprobe >/dev/null; then
@@ -8,26 +10,13 @@ if [ "$1" = "configure" ]; then
     fi
 fi
 
-if [ "$1" = "configure" -o "$1" = "reconfigure" ] ; then
-    # Load debconf module and ask informed consent
-    if [ -f /usr/share/debconf/confmodule ] ; then
-      . /usr/share/debconf/confmodule
-      db_version 2.0
-      db_get ooniprobe-cli/ask-consent
-      CF=/etc/ooniprobe/ooniprobe.conf
-      if [ "$RET" = 'true' ]; then
-        echo "User consented to OONI Probe data collection"
-        [ -f ${CF}.disabled ] && mv ${CF}.disabled ${CF}
+# Extract the answer
+db_get ooniprobe-cli/ask-consent || true
+consent="$RET"
+CF=/etc/ooniprobe/ooniprobe.conf
 
-      else
-        echo "User DID NOT consent to OONI Probe data collection"
-        [ -f ${CF} ] && mv ${CF} ${CF}.disabled
-
-      fi
-    fi
-
-fi
-
+[ "$consent" = true ]  && [ -f ${CF}.disabled ] && mv ${CF}.disabled ${CF}
+[ "$consent" = false ] && [ -f ${CF} ]          && mv ${CF} ${CF}.disabled
 
 #DEBHELPER#
 

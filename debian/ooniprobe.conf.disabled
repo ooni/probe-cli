@@ -1,0 +1,17 @@
+{
+  "_": "",
+  "_version": 1,
+  "_informed_consent": true,
+  "sharing": {
+    "include_ip": false,
+    "include_asn": true,
+    "upload_results": true
+  },
+  "nettests": {
+    "websites_url_limit": 0,
+    "websites_enabled_category_codes": null
+  },
+  "advanced": {
+    "send_crash_reports": true
+  }
+}

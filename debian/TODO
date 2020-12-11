@@ -1,7 +1,4 @@
-
 create bintray repo
-detect tags
+detect tags in github CI
  /etc conf file
- timer
- sandbox
  shared unix group
