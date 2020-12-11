@@ -1,9 +1,10 @@
-# Build a Debian package and publish on a test/internal archive
+# Build a Debian package only when a relase tag is applied
+# and publish it on the public/release archive
 name: linux-debian-packages
 on:
   push:
-    branches:
-      - master
+    tags:
+      - '*'
 jobs:
   build:
     runs-on: "ubuntu-20.04"
@@ -17,11 +18,10 @@ jobs:
       - run: find . -name ooniprobe -type f -executable
       - run: sudo apt-get update -q
       - run: sudo apt-get build-dep -y --no-install-recommends .
-      # Use <probe version>~<github build number> as package version
+      # Use probe version as package version
       - run: |
-          VER=$(./CLI/linux/amd64/ooniprobe version)
-          DVER="${VER}~${GITHUB_RUN_NUMBER}"
-          dch -v $DVER "test version"
+          DVER=$(./CLI/linux/amd64/ooniprobe version)
+          dch -v $DVER "New release"
           dpkg-buildpackage -us -uc -b
           find ../ -name "*.deb" -type f
           DEB="../ooniprobe-cli_${DVER}_amd64.deb"
@@ -34,4 +34,4 @@ jobs:
           BT_APIUSER: federicoceratto
           BT_ORG: ooni
           BT_PKGNAME: ooniprobe
-          BT_REPO: ooniprobe-debian-test
+          BT_REPO: ooniprobe-debian
