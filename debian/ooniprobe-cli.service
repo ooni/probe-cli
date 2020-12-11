@@ -1,5 +1,5 @@
 [Unit]
-Description=OONI CLI Probe
+Description=OONI Probe CLI
 Documentation=man:ooniprobe-cli
 #Documentation=file:///usr/share/doc/ooniprobe-cli/html/index.html
 Documentation=https://ooni.org/
