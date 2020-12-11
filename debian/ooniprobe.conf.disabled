@@ -3,8 +3,6 @@
   "_version": 1,
   "_informed_consent": true,
   "sharing": {
-    "include_ip": false,
-    "include_asn": true,
     "upload_results": true
   },
   "nettests": {
