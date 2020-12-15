@@ -1,6 +1,7 @@
 # Build a Debian package and publish on a test/internal archive
 name: linux-debian-packages
 on:
+  pull_request:
   push:
     branches:
       - master
