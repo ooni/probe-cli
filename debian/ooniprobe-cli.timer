@@ -1,5 +1,5 @@
 [Unit]
-Description=OONI CLI Probe
+Description=OONI Probe CLI
 Requires=ooniprobe-cli.service
 
 [Timer]
