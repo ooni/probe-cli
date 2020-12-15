@@ -3,7 +3,7 @@ Maintainer: Federico Ceratto <federico@openobservatory.org>
 Section: devel
 Priority: optional
 Build-Depends:
- debhelper-compat (= 13),
+ debhelper-compat (>= 12),
  devscripts,
  dpkg-dev,
 Standards-Version: 4.5.0
