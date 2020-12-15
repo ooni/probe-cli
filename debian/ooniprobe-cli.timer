@@ -1,0 +1,11 @@
+[Unit]
+Description=OONI Probe CLI
+Requires=ooniprobe-cli.service
+
+[Timer]
+Unit=ooniprobe-cli.service
+OnCalendar=daily
+RandomizedDelaySec=24h
+
+[Install]
+WantedBy=timers.target

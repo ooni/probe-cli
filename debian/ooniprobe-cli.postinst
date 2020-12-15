@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+
+. /usr/share/debconf/confmodule
+db_version 2.0
+
+if [ "$1" = "configure" ]; then
+    if ! getent passwd ooniprobe >/dev/null; then
+        adduser --quiet --system --group --home /var/lib/ooniprobe ooniprobe
+    fi
+fi
+
+# Extract the answer
+db_get ooniprobe-cli/ask-consent || true
+consent="$RET"
+CF=/etc/ooniprobe/ooniprobe.conf
+
+[ "$consent" = true ]  && [ -f ${CF}.disabled ] && mv ${CF}.disabled ${CF}
+[ "$consent" = false ] && [ -f ${CF} ]          && mv ${CF} ${CF}.disabled
+
+#DEBHELPER#
+
+exit 0
