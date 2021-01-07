@@ -25,6 +25,11 @@ func ConfigPath(home string) string {
 	return filepath.Join(home, "config.json")
 }
 
+// InformedConsentPath returns the default path to the informed consent file
+func InformedConsentPath(home string) string {
+	return filepath.Join(home, "_informed_consent")
+}
+
 // AssetsDir returns the assets data dir for the given OONI Home
 func AssetsDir(home string) string {
 	return filepath.Join(home, "assets")
@@ -39,6 +44,13 @@ func EngineDir(home string) string {
 // DBDir returns the database dir for the given name
 func DBDir(home string, name string) string {
 	return filepath.Join(home, "db", fmt.Sprintf("%s.sqlite3", name))
+}
+
+func FileExists(path string) bool {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 // ResultTimestamp is a windows friendly timestamp
@@ -74,4 +86,15 @@ func GetOONIHome() (string, error) {
 
 	path := filepath.Join(home, ".ooniprobe")
 	return path, nil
+}
+
+func AcceptInformedConsent() error {
+	ooniHome, err := GetOONIHome()
+	if err != nil {
+		return err
+	}
+	if _, err := os.Create(InformedConsentPath(ooniHome)); err != nil {
+		return err
+	}
+	return nil
 }

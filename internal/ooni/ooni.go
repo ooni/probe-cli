@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync/atomic"
 	"syscall"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/internal/database"
 	"github.com/ooni/probe-cli/internal/enginex"
 	"github.com/ooni/probe-cli/internal/utils"
+	"github.com/ooni/probe-cli/internal/utils/homedir"
 	engine "github.com/ooni/probe-engine"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -73,6 +75,17 @@ func (p *Probe) IsBatch() bool {
 // Config returns the configuration
 func (p *Probe) Config() *config.Config {
 	return p.config
+}
+
+// DidInformedConsent returns if the user did or didn't do the informed consent
+func (p *Probe) DidInformedConsent() bool {
+	if (utils.FileExists(utils.InformedConsentPath(p.home)) == true) {
+		return true
+	}
+	if p.config.InformedConsent == true {
+		return true
+	}
+	return false
 }
 
 // DB returns the database we're using
@@ -239,6 +252,23 @@ func MaybeInitializeHome(home string) error {
 	return nil
 }
 
+// MaybeMigrateLegacyConsent takes the informed consent from a legacy version of
+// OONI Probe and migrates it to the new version
+func MaybeMigrateLegacyConsent(ooniHome string) error {
+	userHome, err := homedir.Dir()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(filepath.Join(userHome, ".ooni"), "initialized")
+	if utils.FileExists(path) {
+		_, err := os.Create(utils.InformedConsentPath(ooniHome))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // InitDefaultConfig reads the config from common locations or creates it if
 // missing.
 func InitDefaultConfig(home string) (*config.Config, error) {
@@ -252,6 +282,12 @@ func InitDefaultConfig(home string) (*config.Config, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Debugf("writing default config to %s", configPath)
+
+			err := MaybeMigrateLegacyConsent(home)
+			if err != nil {
+				return nil, err
+			}
+
 			var data []byte
 			data, err = bindata.Asset("data/default-config.json")
 			if err != nil {

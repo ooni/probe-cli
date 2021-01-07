@@ -10,6 +10,7 @@ import (
 	"github.com/ooni/probe-cli/internal/config"
 	"github.com/ooni/probe-cli/internal/ooni"
 	"github.com/ooni/probe-cli/internal/output"
+	"github.com/ooni/probe-cli/internal/utils"
 	"github.com/pkg/errors"
 	"gopkg.in/AlecAivazis/survey.v1"
 )
@@ -131,8 +132,11 @@ func Onboarding(config *config.Config) error {
 		}
 	}
 
+	if err := utils.AcceptInformedConsent(); err != nil {
+		return err
+	}
+
 	config.Lock()
-	config.InformedConsent = true
 	config.Advanced.SendCrashReports = settings.SendCrashReports
 	config.Sharing.UploadResults = settings.UploadResults
 	config.Unlock()
@@ -147,7 +151,7 @@ func Onboarding(config *config.Config) error {
 // MaybeOnboarding will run the onboarding process only if the informed consent
 // config option is set to false
 func MaybeOnboarding(probe *ooni.Probe) error {
-	if probe.Config().InformedConsent == false {
+	if probe.DidInformedConsent() == false {
 		if probe.IsBatch() == true {
 			return errors.New("cannot run onboarding in batch mode")
 		}
@@ -170,12 +174,7 @@ func init() {
 		}
 
 		if *yes == true {
-			probe.Config().Lock()
-			probe.Config().InformedConsent = true
-			probe.Config().Unlock()
-
-			if err := probe.Config().Write(); err != nil {
-				log.WithError(err).Error("failed to write config file")
+			if err := utils.AcceptInformedConsent(); err != nil {
 				return err
 			}
 			return nil
