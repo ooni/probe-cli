@@ -47,10 +47,8 @@ func DBDir(home string, name string) string {
 }
 
 func FileExists(path string) bool {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return false
-	}
-	return true
+	stat, err := os.Stat(path)
+	return err == nil && stat.Mode().IsRegular()
 }
 
 // ResultTimestamp is a windows friendly timestamp
