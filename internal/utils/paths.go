@@ -41,6 +41,13 @@ func DBDir(home string, name string) string {
 	return filepath.Join(home, "db", fmt.Sprintf("%s.sqlite3", name))
 }
 
+// FileExists returns true if the specified path exists and is a
+// regular file.
+func FileExists(path string) bool {
+	stat, err := os.Stat(path)
+	return err == nil && stat.Mode().IsRegular()
+}
+
 // ResultTimestamp is a windows friendly timestamp
 const ResultTimestamp = "2006-01-02T150405.999999999Z0700"
 
@@ -74,4 +81,18 @@ func GetOONIHome() (string, error) {
 
 	path := filepath.Join(home, ".ooniprobe")
 	return path, nil
+}
+
+// DidLegacyInformedConsent checks if the user did the informed consent procedure in probe-legacy
+func DidLegacyInformedConsent() bool {
+	home, err := homedir.Dir()
+	if err != nil {
+		return false
+	}
+
+	path := filepath.Join(filepath.Join(home, ".ooni"), "initialized")
+	if FileExists(path) {
+		return true
+	}
+	return false
 }
