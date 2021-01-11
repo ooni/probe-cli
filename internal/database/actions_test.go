@@ -303,3 +303,61 @@ func TestPerformanceTestKeys(t *testing.T) {
 		t.Fatalf("error Download %f", tk.Download)
 	}
 }
+
+func TestGetMeasurementJSON(t *testing.T) {
+	tmpfile, err := ioutil.TempFile("", "dbtest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	tmpdir, err := ioutil.TempDir("", "oonitest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpdir)
+
+	sess, err := Connect(tmpfile.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	location := locationInfo{
+		asn:         0,
+		countryCode: "IT",
+		networkName: "Unknown",
+	}
+	network, err := CreateNetwork(sess, &location)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := CreateResult(sess, tmpdir, "websites", network.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reportID := sql.NullString{String: "20210111T085144Z_ndt_RU_3216_n1_qMVnP0PTX7ObUSmD", Valid: true}
+	testName := "antani"
+	resultID := result.ID
+	msmtFilePath := tmpdir
+	urlID := sql.NullInt64{Int64: 0, Valid: false}
+
+	msmt, err := CreateMeasurement(sess, reportID, testName, msmtFilePath, 0, resultID, urlID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	msmt.IsUploaded = true
+	err = sess.Collection("measurements").Find("measurement_id", msmt.ID).Update(msmt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tk, err := GetMeasurementJSON(sess, msmt.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tk["probe_asn"] != "AS3216" {
+		t.Error("inconsistent measurement downloaded")
+	}
+}

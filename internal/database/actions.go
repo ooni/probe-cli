@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -54,6 +55,25 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 	if err := req.One(&measurement); err != nil {
 		log.Errorf("failed to run query %s: %v", req.String(), err)
 		return nil, err
+	}
+	if measurement.IsUploaded {
+		// TODO(bassosimone): this should be a function exposed by probe-engine
+		reportID := measurement.Measurement.ReportID.String
+		measurementURL := fmt.Sprintf("https://api.ooni.io/api/v1/raw_measurement?report_id=%s", reportID)
+		if measurement.URL.URL.Valid == true {
+			measurementURL += "&input=" + measurement.URL.URL.String
+		}
+		resp, err := http.Get(measurementURL)
+		if err != nil {
+			log.Errorf("failed to fetch the measurement %s %s", reportID, measurement.URL.URL.String)
+			return nil, err
+		}
+		defer resp.Body.Close()
+		if err := json.NewDecoder(resp.Body).Decode(&msmtJSON); err != nil {
+			log.Error("failed to unmarshal the measurement_json")
+			return nil, err
+		}
+		return msmtJSON, nil
 	}
 	// MeasurementFilePath might be NULL because the measurement from a
 	// 3.0.0-beta install
