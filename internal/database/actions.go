@@ -59,14 +59,13 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 	if measurement.IsUploaded {
 		// TODO this should be a function exposed by probe-engine
 		reportID := measurement.Measurement.ReportID.String
-		url := measurement.URL.URL.String
 		measurementURL := fmt.Sprintf("https://api.ooni.io/api/v1/raw_measurement?report_id=%s", reportID)
-		if url != "" {
-			measurementURL += "&input=" + url
+		if measurement.URL.URL.Valid == true {
+			measurementURL += "&input=" + measurement.URL.URL.String
 		}
 		resp, err := http.Get(measurementURL)
 		if err != nil {
-			log.Errorf("failed to fetch the measurement %s %s", reportID, url)
+			log.Errorf("failed to fetch the measurement %s %s", reportID, measurement.URL.URL.String)
 			return nil, err
 		}
 		defer resp.Body.Close()
