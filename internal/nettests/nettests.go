@@ -149,6 +149,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 			// undertsand what went wrong (censorship? bug? anomaly?).
 		}
 
+		saveToDisk := true
 		if c.Probe.Config().Sharing.UploadResults {
 			// Implementation note: SubmitMeasurement will fail here if we did fail
 			// to open the report but we still want to continue. There will be a
@@ -160,12 +161,18 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 				}
 			} else if err := c.msmts[idx64].UploadSucceeded(c.Probe.DB()); err != nil {
 				return errors.Wrap(err, "failed to mark upload as succeeded")
+			} else {
+				// Everything went OK, don't save to disk
+				saveToDisk = false
+			}
+		}
+		// We only save the measurement to disk if we failed to upload the measurement
+		if saveToDisk == true {
+			if err := exp.SaveMeasurement(measurement, msmt.MeasurementFilePath.String); err != nil {
+				return errors.Wrap(err, "failed to save measurement on disk")
 			}
 		}
 
-		if err := exp.SaveMeasurement(measurement, msmt.MeasurementFilePath.String); err != nil {
-			return errors.Wrap(err, "failed to save measurement on disk")
-		}
 		if err := c.msmts[idx64].Done(c.Probe.DB()); err != nil {
 			return errors.Wrap(err, "failed to mark measurement as done")
 		}
