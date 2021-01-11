@@ -257,14 +257,24 @@ func InitDefaultConfig(home string) (*config.Config, error) {
 			if err != nil {
 				return nil, err
 			}
-			err = ioutil.WriteFile(
-				configPath,
-				data,
-				0644,
-			)
-			if err != nil {
+			if err = ioutil.WriteFile(configPath, data, 0644); err != nil {
 				return nil, err
 			}
+			// If the user did the informed consent procedure in
+			// probe-legacy, migrate it over.
+			if utils.DidLegacyInformedConsent() {
+				c, err := config.ReadConfig(configPath)
+				if err != nil {
+					return nil, err
+				}
+				c.Lock()
+				c.InformedConsent = true
+				c.Unlock()
+				if err := c.Write(); err != nil {
+					return nil, err
+				}
+			}
+
 			return InitDefaultConfig(home)
 		}
 		return nil, err
