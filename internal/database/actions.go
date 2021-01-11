@@ -59,7 +59,10 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 	if measurement.IsUploaded {
 		reportID := measurement.Measurement.ReportID.String
 		url := measurement.URL.URL.String
-		measurementURL := fmt.Sprintf("https://api.ooni.io/api/v1/raw_measurement?report_id=%s&input=%s", reportID, url)
+		measurementURL := fmt.Sprintf("https://api.ooni.io/api/v1/raw_measurement?report_id=%s", reportID)
+		if url != "" {
+			measurementURL += "&input=" + url
+		}
 		resp, err := http.Get(measurementURL)
 		if err != nil {
 			log.Errorf("failed to fetch the measurement %s %s", reportID, url)
