@@ -106,7 +106,6 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 				"%s: %s", color.RedString("failure.report_create"), err.Error(),
 			)
 		} else {
-			defer exp.CloseReport()
 			log.Debugf(color.RedString("status.report_create"))
 			reportID = sql.NullString{String: exp.ReportID(), Valid: true}
 		}
