@@ -51,12 +51,22 @@ var plistTemplate = `
 `
 
 func run(name string, arg ...string) error {
-	log.Infof("%s %s", name, strings.Join(arg, " "))
+	log.Infof("exec: %s %s", name, strings.Join(arg, " "))
 	return shellx.RunQuiet(name, arg...)
 }
 
+func (managerDarwin) LogShow() error {
+	return shellx.Run("log", "show", "--info", "--debug",
+		"--process", "ooniprobe", "--style", "compact")
+}
+
+func (managerDarwin) LogStream() error {
+	return shellx.Run("log", "stream", "--style", "compact", "--level",
+		"debug", "--process", "ooniprobe")
+}
+
 func (managerDarwin) mustNotHavePlist() error {
-	log.Infof("test -f %s && already_registered()", plistPath)
+	log.Infof("exec: test -f %s && already_registered()", plistPath)
 	if utils.FileExists(plistPath) {
 		// This is not atomic. Do we need atomicity here?
 		return errors.New("periodic: service already registered")
@@ -75,7 +85,7 @@ func (managerDarwin) writePlist() error {
 	if err := t.Execute(&out, in); err != nil {
 		return err
 	}
-	log.Infof("writePlist(%s)", plistPath)
+	log.Infof("exec: writePlist(%s)", plistPath)
 	return ioutil.WriteFile(plistPath, out.Bytes(), 0644)
 }
 
@@ -107,7 +117,7 @@ func (managerDarwin) stop() error {
 }
 
 func (managerDarwin) removeFile() error {
-	log.Infof("rm %s", plistPath)
+	log.Infof("exec: rm %s", plistPath)
 	err := os.Remove(plistPath)
 	if errors.Is(err, unix.ENOENT) {
 		err = nil

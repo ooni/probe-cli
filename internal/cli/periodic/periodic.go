@@ -29,4 +29,21 @@ func init() {
 		}
 		return svc.Stop()
 	})
+	log := cmd.Command("log", "Access background runs logs")
+	stream := log.Command("stream", "Stream background runs logs")
+	stream.Action(func(_ *kingpin.ParseContext) error {
+		svc := periodic.Get(runtime.GOOS)
+		if svc == nil {
+			return errNotImplemented
+		}
+		return svc.LogStream()
+	})
+	show := log.Command("show", "Show background runs logs")
+	show.Action(func(_ *kingpin.ParseContext) error {
+		svc := periodic.Get(runtime.GOOS)
+		if svc == nil {
+			return errNotImplemented
+		}
+		return svc.LogShow()
+	})
 }

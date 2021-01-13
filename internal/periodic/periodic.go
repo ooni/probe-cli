@@ -5,6 +5,8 @@ import "sync"
 
 // Manager manages periodic runs
 type Manager interface {
+	LogShow() error
+	LogStream() error
 	Start() error
 	Stop() error
 }
