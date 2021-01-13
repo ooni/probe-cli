@@ -50,7 +50,7 @@ var plistTemplate = `
 </plist>
 `
 
-func run(name string, arg ...string) error {
+func runQuiteQuietly(name string, arg ...string) error {
 	log.Infof("exec: %s %s", name, strings.Join(arg, " "))
 	return shellx.RunQuiet(name, arg...)
 }
@@ -90,10 +90,10 @@ func (managerDarwin) writePlist() error {
 }
 
 func (managerDarwin) start() error {
-	if err := run("launchctl", "enable", serviceTarget); err != nil {
+	if err := runQuiteQuietly("launchctl", "enable", serviceTarget); err != nil {
 		return err
 	}
-	return run("launchctl", "bootstrap", domainTarget, plistPath)
+	return runQuiteQuietly("launchctl", "bootstrap", domainTarget, plistPath)
 }
 
 // Start starts running periodically.
@@ -109,7 +109,7 @@ func (m managerDarwin) Start() error {
 
 func (managerDarwin) stop() error {
 	var failure *exec.ExitError
-	err := run("launchctl", "bootout", serviceTarget)
+	err := runQuiteQuietly("launchctl", "bootout", serviceTarget)
 	if errors.As(err, &failure) && failure.ExitCode() == int(unix.ESRCH) {
 		err = nil
 	}
@@ -137,7 +137,7 @@ func (m managerDarwin) Stop() error {
 }
 
 func (m managerDarwin) Status() (string, error) {
-	err := run("launchctl", "kill", "SIGINFO", serviceTarget)
+	err := runQuiteQuietly("launchctl", "kill", "SIGINFO", serviceTarget)
 	var failure *exec.ExitError
 	if errors.As(err, &failure) {
 		switch failure.ExitCode() {
