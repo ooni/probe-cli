@@ -6,41 +6,26 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/ooni/probe-cli/internal/cli/root"
-	"github.com/ooni/probe-cli/internal/periodic/darwin"
+	"github.com/ooni/probe-cli/internal/periodic"
 )
 
-type service interface {
-	Start() error
-	Stop() error
-}
-
-var implementations = map[string]service{
-	"darwin": darwin.Manager{},
-}
-
-func getsvc() (service, error) {
-	svc, ok := implementations[runtime.GOOS]
-	if ok == false {
-		return nil, errors.New("periodic: not implemented on this system")
-	}
-	return svc, nil
-}
+var errNotImplemented = errors.New("periodic: not implemented on this platform")
 
 func init() {
 	cmd := root.Command("periodic", "Run automatic tests in the background")
 	start := cmd.Command("start", "Start running automatic tests in the background")
 	stop := cmd.Command("stop", "Stop running automatic tests in the background")
 	start.Action(func(_ *kingpin.ParseContext) error {
-		svc, err := getsvc()
-		if err != nil {
-			return err
+		svc := periodic.Get(runtime.GOOS)
+		if svc == nil {
+			return errNotImplemented
 		}
 		return svc.Start()
 	})
 	stop.Action(func(_ *kingpin.ParseContext) error {
-		svc, err := getsvc()
-		if err != nil {
-			return err
+		svc := periodic.Get(runtime.GOOS)
+		if svc == nil {
+			return errNotImplemented
 		}
 		return svc.Stop()
 	})

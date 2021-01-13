@@ -1,4 +1,6 @@
-package darwin
+// +build darwin
+
+package periodic
 
 import (
 	"bytes"
@@ -6,14 +8,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"strings"
 	"text/template"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/utils"
 	"github.com/ooni/probe-engine/cmd/jafar/shellx"
+	"golang.org/x/sys/unix"
 )
 
-// Manager allows to start/stop running periodically.
-type Manager struct{}
+type managerDarwin struct{}
 
 var (
 	plistPath     = os.ExpandEnv("$HOME/Library/LaunchAgents/org.ooni.cli.plist")
@@ -45,7 +50,13 @@ var plistTemplate = `
 </plist>
 `
 
-func (Manager) mustNotHavePlist() error {
+func run(name string, arg ...string) error {
+	log.Infof("%s %s", name, strings.Join(arg, " "))
+	return shellx.RunQuiet(name, arg...)
+}
+
+func (managerDarwin) mustNotHavePlist() error {
+	log.Infof("test -f %s && already_registered()", plistPath)
 	if utils.FileExists(plistPath) {
 		// This is not atomic. Do we need atomicity here?
 		return errors.New("periodic: service already registered")
@@ -53,7 +64,7 @@ func (Manager) mustNotHavePlist() error {
 	return nil
 }
 
-func (Manager) writePlist() error {
+func (managerDarwin) writePlist() error {
 	executable, err := os.Executable()
 	if err != nil {
 		return err
@@ -64,18 +75,19 @@ func (Manager) writePlist() error {
 	if err := t.Execute(&out, in); err != nil {
 		return err
 	}
+	log.Infof("writePlist(%s)", plistPath)
 	return ioutil.WriteFile(plistPath, out.Bytes(), 0644)
 }
 
-func (Manager) start() error {
-	if err := shellx.Run("launchctl", "enable", serviceTarget); err != nil {
+func (managerDarwin) start() error {
+	if err := run("launchctl", "enable", serviceTarget); err != nil {
 		return err
 	}
-	return shellx.Run("launchctl", "bootstrap", domainTarget, plistPath)
+	return run("launchctl", "bootstrap", domainTarget, plistPath)
 }
 
 // Start starts running periodically.
-func (m Manager) Start() error {
+func (m managerDarwin) Start() error {
 	operations := []func() error{m.mustNotHavePlist, m.writePlist, m.start}
 	for _, op := range operations {
 		if err := op(); err != nil {
@@ -85,25 +97,35 @@ func (m Manager) Start() error {
 	return nil
 }
 
-func (Manager) stop() error {
-	return shellx.Run("launchctl", "bootout", serviceTarget)
+func (managerDarwin) stop() error {
+	var failure *exec.ExitError
+	err := run("launchctl", "bootout", serviceTarget)
+	if errors.As(err, &failure) && failure.ExitCode() == int(unix.ESRCH) {
+		err = nil
+	}
+	return err
 }
 
-func (Manager) removeFile() error {
-	// TODO(bassosimone): maybe we should ignore ENOENT.
-	return os.Remove(plistPath)
+func (managerDarwin) removeFile() error {
+	log.Infof("rm %s", plistPath)
+	err := os.Remove(plistPath)
+	if errors.Is(err, unix.ENOENT) {
+		err = nil
+	}
+	return err
 }
 
 // Stop stops running periodically.
-func (m Manager) Stop() error {
+func (m managerDarwin) Stop() error {
 	operations := []func() error{m.stop, m.removeFile}
 	for _, op := range operations {
 		if err := op(); err != nil {
-			// nothing: we want this command to be idempotent
-			// and maybe we can achieve this by filtering more
-			// carefully the errors that are returned?
-			// TODO(bassosimone): improve
+			return err
 		}
 	}
 	return nil
+}
+
+func init() {
+	register("darwin", managerDarwin{})
 }
