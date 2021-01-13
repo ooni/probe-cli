@@ -14,19 +14,19 @@ var (
 	mtx      sync.Mutex
 )
 
-func register(name string, manager Manager) {
+func register(platform string, manager Manager) {
 	defer mtx.Unlock()
 	mtx.Lock()
 	if registry == nil {
 		registry = make(map[string]Manager)
 	}
-	registry[name] = manager
+	registry[platform] = manager
 }
 
 // Get gets the specified periodic manager. This function
 // returns nil if no periodic manager exists.
-func Get(name string) Manager {
+func Get(platform string) Manager {
 	defer mtx.Unlock()
 	mtx.Lock()
-	return registry[name]
+	return registry[platform]
 }
