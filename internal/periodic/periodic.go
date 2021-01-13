@@ -3,11 +3,26 @@ package periodic
 
 import "sync"
 
+const (
+	// StatusScheduled indicates that OONI is scheduled to run
+	// periodically in the background.
+	StatusScheduled = "scheduled"
+
+	// StatusStopped indicates that OONI is not scheduled to
+	// run periodically in the background.
+	StatusStopped = "stopped"
+
+	// StatusRunning indicates that OONI is currently
+	// running in the background.
+	StatusRunning = "running"
+)
+
 // Manager manages periodic runs
 type Manager interface {
 	LogShow() error
 	LogStream() error
 	Start() error
+	Status() (string, error)
 	Stop() error
 }
 

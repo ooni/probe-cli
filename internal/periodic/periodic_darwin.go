@@ -136,6 +136,23 @@ func (m managerDarwin) Stop() error {
 	return nil
 }
 
+func (m managerDarwin) Status() (string, error) {
+	err := run("launchctl", "kill", "SIGINFO", serviceTarget)
+	var failure *exec.ExitError
+	if errors.As(err, &failure) {
+		switch failure.ExitCode() {
+		case int(unix.ESRCH):
+			return StatusScheduled, nil
+		case 113: // exit code when there's no plist
+			return StatusStopped, nil
+		}
+	}
+	if err != nil {
+		return "", fmt.Errorf("periodic: unexpected error: %w", err)
+	}
+	return StatusRunning, nil
+}
+
 func init() {
 	register("darwin", managerDarwin{})
 }
