@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -53,7 +54,30 @@ func runQuiteQuietly(name string, arg ...string) error {
 	return shellx.RunQuiet(name, arg...)
 }
 
+func darwinVersionMajor() (int, error) {
+	out, err := exec.Command("uname", "-r").Output()
+	if err != nil {
+		return 0, err
+	}
+	v := bytes.Split(out, []byte("."))
+	if len(v) != 3 {
+		return 0, errors.New("cannot split version")
+	}
+	major, err := strconv.Atoi(string(v[0]))
+	if err != nil {
+		return 0, err
+	}
+	return major, nil
+}
+
+var errNotImplemented = errors.New(
+	"autorun: command not implemented in this version of macOS")
+
 func (managerDarwin) LogShow() error {
+	major, _ := darwinVersionMajor()
+	if major < 20 /* macOS 11.0 Big Sur */ {
+		return errNotImplemented
+	}
 	return shellx.Run("log", "show", "--info", "--debug",
 		"--process", "ooniprobe", "--style", "compact")
 }
