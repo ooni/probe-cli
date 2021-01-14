@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/cli/app"
+	_ "github.com/ooni/probe-cli/internal/cli/autorun"
 	_ "github.com/ooni/probe-cli/internal/cli/geoip"
 	_ "github.com/ooni/probe-cli/internal/cli/info"
 	_ "github.com/ooni/probe-cli/internal/cli/list"
