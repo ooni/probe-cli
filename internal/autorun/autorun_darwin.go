@@ -1,6 +1,4 @@
-// +build darwin
-
-package periodic
+package autorun
 
 import (
 	"bytes"
@@ -69,7 +67,7 @@ func (managerDarwin) mustNotHavePlist() error {
 	log.Infof("exec: test -f %s && already_registered()", plistPath)
 	if utils.FileExists(plistPath) {
 		// This is not atomic. Do we need atomicity here?
-		return errors.New("periodic: service already registered")
+		return errors.New("autorun: service already registered")
 	}
 	return nil
 }
@@ -96,7 +94,6 @@ func (managerDarwin) start() error {
 	return runQuiteQuietly("launchctl", "bootstrap", domainTarget, plistPath)
 }
 
-// Start starts running periodically.
 func (m managerDarwin) Start() error {
 	operations := []func() error{m.mustNotHavePlist, m.writePlist, m.start}
 	for _, op := range operations {
@@ -117,7 +114,7 @@ func (managerDarwin) stop() error {
 }
 
 func (managerDarwin) removeFile() error {
-	log.Infof("exec: rm %s", plistPath)
+	log.Infof("exec: rm -f %s", plistPath)
 	err := os.Remove(plistPath)
 	if errors.Is(err, unix.ENOENT) {
 		err = nil
@@ -125,7 +122,6 @@ func (managerDarwin) removeFile() error {
 	return err
 }
 
-// Stop stops running periodically.
 func (m managerDarwin) Stop() error {
 	operations := []func() error{m.stop, m.removeFile}
 	for _, op := range operations {
@@ -148,7 +144,7 @@ func (m managerDarwin) Status() (string, error) {
 		}
 	}
 	if err != nil {
-		return "", fmt.Errorf("periodic: unexpected error: %w", err)
+		return "", fmt.Errorf("autorun: unexpected error: %w", err)
 	}
 	return StatusRunning, nil
 }

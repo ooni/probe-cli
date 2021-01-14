@@ -1,5 +1,5 @@
-// Package periodic contains code to manage periodic runs
-package periodic
+// Package autorun contains code to manage automatic runs
+package autorun
 
 import "sync"
 
@@ -17,7 +17,7 @@ const (
 	StatusRunning = "running"
 )
 
-// Manager manages periodic runs
+// Manager manages automatic runs
 type Manager interface {
 	LogShow() error
 	LogStream() error
@@ -40,8 +40,8 @@ func register(platform string, manager Manager) {
 	registry[platform] = manager
 }
 
-// Get gets the specified periodic manager. This function
-// returns nil if no periodic manager exists.
+// Get gets the specified autorun manager. This function
+// returns nil if no autorun manager exists.
 func Get(platform string) Manager {
 	defer mtx.Unlock()
 	mtx.Lock()

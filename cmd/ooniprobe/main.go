@@ -3,11 +3,11 @@ package main
 import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/internal/cli/app"
+	_ "github.com/ooni/probe-cli/internal/cli/autorun"
 	_ "github.com/ooni/probe-cli/internal/cli/geoip"
 	_ "github.com/ooni/probe-cli/internal/cli/info"
 	_ "github.com/ooni/probe-cli/internal/cli/list"
 	_ "github.com/ooni/probe-cli/internal/cli/onboard"
-	_ "github.com/ooni/probe-cli/internal/cli/periodic"
 	_ "github.com/ooni/probe-cli/internal/cli/reset"
 	_ "github.com/ooni/probe-cli/internal/cli/rm"
 	_ "github.com/ooni/probe-cli/internal/cli/run"
