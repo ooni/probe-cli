@@ -38,6 +38,8 @@ case $1 in
     ;;
 
   _alpine)
+    apk update
+    apk upgrade
     apk add --no-progress gcc git linux-headers musl-dev
     go build -tags netgo -ldflags='-s -w -extldflags "-static"' ./cmd/ooniprobe
     ;;
