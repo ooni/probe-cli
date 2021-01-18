@@ -6,6 +6,11 @@ v=`git describe --tags || echo $GITHUB_SHA`
 
 case $1 in
   windows)
+    $0 windows_amd64
+    $0 windows_386
+    ;;
+
+  windows_amd64)
     # Note! This assumes we've installed the mingw-w64 compiler.
     GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc \
       go build -ldflags='-s -w' ./cmd/ooniprobe
@@ -13,6 +18,16 @@ case $1 in
     # We don't have zip inside the github actions runner
     zip ooniprobe_${v}_windows_amd64.zip LICENSE.md Readme.md ooniprobe.exe || true
     mv ooniprobe.exe ./CLI/windows/amd64/
+    ;;
+
+  windows_386)
+    # Note! This assumes we've installed the mingw-w64 compiler.
+    GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc \
+      go build -ldflags='-s -w' ./cmd/ooniprobe
+    tar -cvzf ooniprobe_${v}_windows_386.tar.gz LICENSE.md Readme.md ooniprobe.exe
+    # We don't have zip inside the github actions runner
+    zip ooniprobe_${v}_windows_amd64.zip LICENSE.md Readme.md ooniprobe.exe || true
+    mv ooniprobe.exe ./CLI/windows/386/
     ;;
 
   linux)
@@ -38,7 +53,7 @@ case $1 in
     $0 linux
     $0 windows
     $0 darwin
-    shasum -a 256 ooniprobe_${v}_*_amd64.* > ooniprobe_checksums.txt
+    shasum -a 256 ooniprobe_${v}_*_*.* > ooniprobe_checksums.txt
     ;;
 
   *)
