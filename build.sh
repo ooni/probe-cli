@@ -31,6 +31,7 @@ case $1 in
     ;;
 
   linux)
+    docker pull golang:1.14-alpine
     docker run -v`pwd`:/ooni -w/ooni golang:1.14-alpine ./build.sh _alpine
     tar -cvzf ooniprobe_${v}_linux_amd64.tar.gz LICENSE.md Readme.md ooniprobe
     mv ooniprobe ./CLI/linux/amd64/
