@@ -31,10 +31,22 @@ case $1 in
     ;;
 
   linux)
-    docker pull golang:1.14-alpine
-    docker run -v`pwd`:/ooni -w/ooni golang:1.14-alpine ./build.sh _alpine
+    $0 linux_amd64
+    $0 linux_386
+    ;;
+
+  linux_amd64)
+    docker pull --platform linux/amd64 golang:1.14-alpine
+    docker run --platform linux/amd64 -v`pwd`:/ooni -w/ooni golang:1.14-alpine ./build.sh _alpine
     tar -cvzf ooniprobe_${v}_linux_amd64.tar.gz LICENSE.md Readme.md ooniprobe
     mv ooniprobe ./CLI/linux/amd64/
+    ;;
+
+  linux_386)
+    docker pull --platform linux/386 golang:1.14-alpine
+    docker run --platform linux/386 -v`pwd`:/ooni -w/ooni golang:1.14-alpine ./build.sh _alpine
+    tar -cvzf ooniprobe_${v}_linux_386.tar.gz LICENSE.md Readme.md ooniprobe
+    mv ooniprobe ./CLI/linux/386/
     ;;
 
   _alpine)
