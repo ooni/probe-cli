@@ -8,11 +8,15 @@ jobs:
   build:
     runs-on: "ubuntu-latest"
     steps:
+      - name: Docker
+        run: |
+          echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
+          sudo service docker restart
       - uses: actions/setup-go@v1
         with:
           go-version: "1.14"
       - uses: actions/checkout@v2
-      - run: ./build.sh linux
+      - run: DOCKER_CLI_EXPERIMENTAL=enabled ./build.sh linux
       - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
       - uses: actions/upload-artifact@v1
         with:

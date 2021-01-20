@@ -12,7 +12,7 @@ jobs:
         with:
           go-version: "1.14"
       - uses: actions/checkout@v2
-      - run: bash.exe ./build.sh windows
+      - run: bash.exe ./build.sh windows_amd64  # TODO(bassosimone): make windows_386 work
       - run: bash.exe ./smoketest.sh ./CLI/windows/amd64/ooniprobe.exe
       - uses: actions/upload-artifact@v1
         with:
