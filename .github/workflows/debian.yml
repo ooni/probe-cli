@@ -3,7 +3,6 @@ name: debian
 on:
   push:
     branches:
-      - master
     tags:
       - "*"
 jobs:
