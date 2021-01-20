@@ -1,11 +1,8 @@
 # Build and publish Debian packages
 name: debian
 on:
+  pull_request:
   push:
-    branches:
-      - "*"
-    tags:
-      - "*"
 jobs:
   build:
     runs-on: "ubuntu-20.04"
