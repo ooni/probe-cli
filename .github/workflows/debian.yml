@@ -21,9 +21,9 @@ jobs:
       - run: sudo apt-get build-dep -y --no-install-recommends .
       - run: |
           VER=$(./CLI/linux/amd64/ooniprobe version)
-          if [[ "$GITHUB_REF" != "refs/head/master" ]]; then
-            DVER="${VER}~${GITHUB_RUN_NUMBER}"
-            dch -v $DVER "test version"
+          if [[ ! $GITHUB_REF =~ ^refs/tags/* ]]; then
+            VER="${VER}~${GITHUB_RUN_NUMBER}"
+            dch -v $VER "New test version"
             BT_REPO="${BT_REPO}-test"
           else
             dch -v $VER "New release"
@@ -32,7 +32,7 @@ jobs:
           find ../ -name "*.deb" -type f
           DEB="../ooniprobe-cli_${DVER}_amd64.deb"
           BT_FNAME="ooniprobe-cli_${DVER}_amd64.deb"
-          echo curl --upload-file "${DEB}" -u "${BT_APIUSER}:${BT_APIKEY}" \
+          curl --upload-file "${DEB}" -u "${BT_APIUSER}:${BT_APIKEY}" \
             "https://api.bintray.com/content/${BT_ORG}/${BT_REPO}/${BT_PKGNAME}/${DVER}/${BT_FNAME};deb_distribution=${DEBDIST};deb_component=main;deb_architecture=amd64;publish=1"
         env:
           DEBDIST: unstable
