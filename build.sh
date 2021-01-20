@@ -26,7 +26,7 @@ case $1 in
       go build -ldflags='-s -w' ./cmd/ooniprobe
     tar -cvzf ooniprobe_${v}_windows_386.tar.gz LICENSE.md Readme.md ooniprobe.exe
     # We don't have zip inside the github actions runner
-    zip ooniprobe_${v}_windows_amd64.zip LICENSE.md Readme.md ooniprobe.exe || true
+    zip ooniprobe_${v}_windows_386.zip LICENSE.md Readme.md ooniprobe.exe || true
     mv ooniprobe.exe ./CLI/windows/386/
     ;;
 
