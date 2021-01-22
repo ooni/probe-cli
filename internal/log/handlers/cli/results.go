@@ -147,7 +147,7 @@ func logResultSummary(w io.Writer, f log.Fields) error {
 	fmt.Fprintf(w, " │ %s │ %s │ %s │\n",
 		utils.RightPad(fmt.Sprintf("%d tests", tests), 12),
 		utils.RightPad(fmt.Sprintf("%d nets", networks), 11),
-		utils.RightPad(fmt.Sprintf("⬆ %s  ⬇ %s", formatSize(dataUp), formatSize(dataDown)), 16))
+		utils.RightPad(fmt.Sprintf("⬆ %s  ⬇ %s", formatSize(dataUp), formatSize(dataDown)), 17))
 	fmt.Fprintf(w, " └──────────────┴─────────────┴───────────────────┘\n")
 
 	return nil
