@@ -1,11 +1,12 @@
 #!/bin/sh
-set -ex
+set -e
 
 # We don't have a git repository when running in github actions
 v=`git describe --tags || echo $GITHUB_SHA`
 
 case $1 in
   windows)
+    set -x
     $0 windows_amd64
     $0 windows_386
     ;;
@@ -31,6 +32,7 @@ case $1 in
     ;;
 
   linux)
+    set -x
     $0 linux_amd64
     $0 linux_386
     ;;
@@ -57,6 +59,7 @@ case $1 in
     ;;
 
   macos|darwin)
+    set -x
     # Note! The following line _assumes_ you have a working C compiler. If you
     # have Xcode command line tools installed, you are fine.
     go build -ldflags='-s -w' ./cmd/ooniprobe
@@ -79,7 +82,8 @@ case $1 in
     echo "You need a C compiler and Go >= 1.14. The C compiler must be a"
     echo "UNIX like compiler like GCC, Clang, Mingw-w64."
     echo ""
-    echo "To build a static Linux binary, we use Docker and Alpine."
+    echo "To build a static Linux binary, we use Docker and Alpine. We currently"
+    echo "build for linux/386 and linux/amd64."
     echo ""
     echo "You can cross compile for Windows from macOS or Linux. You can"
     echo "compile for Linux as long as you have Docker. Cross compiling for"
@@ -87,7 +91,7 @@ case $1 in
     echo "checks inside the .github/workflows/cross.yml file."
     echo ""
     echo "The macos rule is an alias for the darwin rule. The generated"
-    echo "binary file is named ooniprobe_${version}_darwin_${arch}.tar.gz"
+    echo 'binary file is named ooniprobe_${version}_darwin_${arch}.tar.gz'
     echo "because the platform name is darwin."
     echo ""
     ;;
