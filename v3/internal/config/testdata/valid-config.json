@@ -1,0 +1,13 @@
+{
+  "_version": 1,
+  "_informed_consent": false,
+  "sharing": {
+    "upload_results": true
+  },
+  "nettests": {
+    "websites_url_limit": 0
+  },
+  "advanced": {
+    "send_crash_reports": true
+  }
+}
