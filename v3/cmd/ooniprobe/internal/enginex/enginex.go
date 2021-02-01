@@ -11,7 +11,7 @@ var Logger = log.WithFields(log.Fields{
 })
 
 // LocationProvider is an interface that returns the current location. The
-// github.com/ooni/probe-engine/session.Session implements it.
+// github.com/ooni/probe-cli/v3/internal/engine/session.Session implements it.
 type LocationProvider interface {
 	ProbeASN() uint
 	ProbeASNString() string
