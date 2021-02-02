@@ -1,0 +1,29 @@
+name: coverage
+on:
+  pull_request:
+  push:
+    branches:
+      - "master"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ "1.14" ]
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: "${{ matrix.go }}"
+      - uses: actions/checkout@v2
+      - run: go test -short -race -tags shaping -coverprofile=probe-engine.cov ./...
+      - uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: probe-engine.cov
+          parallel: true
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: shogo82148/actions-goveralls@v1
+        with:
+          parallel-finished: true

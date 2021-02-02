@@ -1,0 +1,16 @@
+name: alltests
+on:
+  push:
+    branches:
+      - 'release/**'
+  schedule:
+    - cron: "0 7 * * */1"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: "1.14"
+      - uses: actions/checkout@v2
+      - run: go test -race -tags integration,shaping -coverprofile=probe-engine.cov ./...
