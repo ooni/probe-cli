@@ -18,7 +18,7 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
       - uses: actions/checkout@v2
-      - run: go test -race -tags shaping -v -coverprofile=probe-cli.cov -coverpkg=./... ./...
+      - run: go test -race -tags shaping -coverprofile=probe-cli.cov -coverpkg=./... ./...
       - uses: shogo82148/actions-goveralls@v1
         with:
           path-to-profile: probe-cli.cov
