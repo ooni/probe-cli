@@ -25,6 +25,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/miekg/dns v1.1.35
 	github.com/montanaflynn/stats v0.6.4
+	github.com/ooni/probe-engine v0.22.0 // indirect
 	github.com/ooni/psiphon v0.4.0
 	github.com/oschwald/geoip2-golang v1.4.0
 	github.com/oschwald/maxminddb-golang v1.8.0 // indirect

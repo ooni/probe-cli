@@ -5,7 +5,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	engine "github.com/ooni/probe-engine"
 )
 
 func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, map[int64]int64, error) {
