@@ -107,7 +107,7 @@ func (p *Probe) Terminate() {
 // shutdown the test logic.
 //
 // TODO refactor this to use a cancellable context.Context instead of a bool
-// flag, probably as part of: https://github.com/ooni/probe-cli/v3/issues/45
+// flag, probably as part of: https://github.com/ooni/probe-cli/issues/45
 func (p *Probe) ListenForSignals() {
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
@@ -126,11 +126,11 @@ func (p *Probe) ListenForSignals() {
 // When this feature is enabled, a collateral effect is that we swallow
 // whatever is passed to us on the standard input.
 //
-// See https://github.com/ooni/probe-cli/v3/pull/111 for more info
+// See https://github.com/ooni/probe-cli/pull/111 for more info
 // regarding the design of this functionality.
 //
 // TODO refactor this to use a cancellable context.Context instead of a bool
-// flag, probably as part of: https://github.com/ooni/probe-cli/v3/issues/45
+// flag, probably as part of: https://github.com/ooni/probe-cli/issues/45
 func (p *Probe) MaybeListenForStdinClosed() {
 	if os.Getenv("OONI_STDIN_EOF_IMPLIES_SIGTERM") != "true" {
 		return

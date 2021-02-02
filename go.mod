@@ -9,20 +9,15 @@ require (
 	github.com/certifi/gocertifi v0.0.0-20200922220541-2c3bb06c6054 // indirect
 	github.com/fatih/color v1.10.0
 	github.com/getsentry/raven-go v0.0.0-20190419175539-919484f041ea
-	github.com/iancoleman/strcase v0.1.3 // indirect
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mattn/go-sqlite3 v1.14.6 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
-	github.com/montanaflynn/stats v0.6.4 // indirect
 	github.com/ooni/probe-engine v0.22.0
-	github.com/ooni/psiphon v0.4.0 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/rogpeppe/go-internal v1.7.0 // indirect
 	github.com/rubenv/sql-migrate v0.0.0-20200616145509-8d140a17f351
 	github.com/sirupsen/logrus v1.7.0 // indirect
-	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9 // indirect
-	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c
+	golang.org/x/sys v0.0.0-20210112091331-59c308dcf3cc
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
