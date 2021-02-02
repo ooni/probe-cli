@@ -1,4 +1,4 @@
-module github.com/ooni/probe-cli
+module github.com/ooni/probe-cli/v3
 
 go 1.14
 
