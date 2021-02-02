@@ -36,7 +36,6 @@ require (
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	gitlab.com/yawning/obfs4.git v0.0.0-20201217005658-f638c33f6c6f
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
-	golang.org/x/mobile v0.0.0-20201217150744-e6ae53a27f4f // indirect
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9 // indirect
 	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c
