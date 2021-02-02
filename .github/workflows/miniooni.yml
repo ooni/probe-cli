@@ -27,8 +27,8 @@ jobs:
           path: ./CLI/linux/amd64/miniooni
       - uses: actions/upload-artifact@v1
         with:
-          name: miniooni-linux-armv7
-          path: ./CLI/linux/armv7/miniooni
+          name: miniooni-linux-arm
+          path: ./CLI/linux/arm/miniooni
       - uses: actions/upload-artifact@v1
         with:
           name: miniooni-linux-arm64
