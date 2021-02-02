@@ -10,8 +10,8 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/output"
-	engine "github.com/ooni/probe-engine"
-	"github.com/ooni/probe-engine/model"
+	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/pkg/errors"
 )
 

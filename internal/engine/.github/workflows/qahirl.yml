@@ -1,0 +1,13 @@
+name: "qahirl"
+on:
+  schedule:
+    - cron: "10 3 * * */1"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: "1.14"
+      - uses: actions/checkout@v2
+      - run: ./QA/rundocker.bash "hirl"
