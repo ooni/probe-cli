@@ -17,7 +17,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/ooni/probe-cli/v3/internal/oonimkall"
+	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
 )
 
 var (
