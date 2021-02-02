@@ -6,4 +6,4 @@ if [ "$#" != 1 ]; then
 fi
 $1 onboard --yes
 # Important! DO NOT run performance from CI b/c it will overload m-lab servers
-$1 run websites --config v3/cmd/ooniprobe/testdata/testing-config.json -v --no-collector
+$1 run websites --config cmd/ooniprobe/testdata/testing-config.json -v --no-collector

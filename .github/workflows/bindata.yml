@@ -18,4 +18,5 @@ jobs:
           go-version: ${{ matrix.go }}
       - uses: actions/checkout@v2
       - run: ./updatebindata.sh
+      - run: go mod tidy  # revert changes caused by installing bindata
       - run: git diff --exit-code  # if this fails, run ./updatebindata.sh locally and push
