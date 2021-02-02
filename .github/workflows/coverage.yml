@@ -1,24 +1,21 @@
-# Run tests and measure coverage
-name: golang
+name: coverage
 on:
-  push:
   pull_request:
-  schedule:
-    - cron: "14 17 * * 3"
+  push:
+    branches:
+      - "master"
 jobs:
   test:
-    runs-on: "${{ matrix.os }}"
+    runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
-        go: ["1.14"]
+        go: [ "1.14" ]
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: ${{ matrix.go }}
+          go-version: "${{ matrix.go }}"
       - uses: actions/checkout@v2
-      - run: go test -race -tags shaping -coverprofile=probe-cli.cov -coverpkg=./... ./...
+      - run: go test -short -race -tags shaping -coverprofile=probe-cli.cov ./...
       - uses: shogo82148/actions-goveralls@v1
         with:
           path-to-profile: probe-cli.cov
