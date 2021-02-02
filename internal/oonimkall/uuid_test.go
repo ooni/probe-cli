@@ -3,7 +3,7 @@ package oonimkall_test
 import (
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/oonimkall"
+	"github.com/ooni/probe-cli/v3/internal/oonimkall"
 )
 
 func TestNewUUID4(t *testing.T) {

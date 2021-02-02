@@ -14,7 +14,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netxlogger"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonidatamodel"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"

@@ -44,8 +44,8 @@ import (
 	"encoding/json"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/engine/oonimkall/tasks"
+	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/oonimkall/tasks"
 )
 
 // Task is an asynchronous task running an experiment. It mimics the

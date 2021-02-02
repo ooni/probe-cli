@@ -26,7 +26,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/cmd/jafar/shellx"
 	"github.com/ooni/probe-cli/v3/internal/engine/cmd/jafar/tlsproxy"
 	"github.com/ooni/probe-cli/v3/internal/engine/cmd/jafar/uncensored"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
 var (

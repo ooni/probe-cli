@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/oonimkall/tasks"
+	"github.com/ooni/probe-cli/v3/internal/oonimkall/tasks"
 )
 
 func TestRunnerMaybeLookupBackendsFailure(t *testing.T) {

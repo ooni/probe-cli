@@ -3,7 +3,7 @@ package tasks_test
 import (
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/oonimkall/tasks"
+	"github.com/ooni/probe-cli/v3/internal/oonimkall/tasks"
 )
 
 func TestDisabledEvents(t *testing.T) {
