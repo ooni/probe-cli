@@ -14,7 +14,7 @@ jobs:
           go-version: "1.14"
       - uses: actions/checkout@v2
 
-      - run: ./build-cli.sh linux
+      - run: ./build-miniooni.sh linux
       - run: ./CLI/linux/amd64/miniooni --yes -nNi https://example.com web_connectivity
       - uses: actions/upload-artifact@v1
         with:
@@ -33,14 +33,14 @@ jobs:
           name: miniooni-linux-arm64
           path: ./CLI/linux/arm64/miniooni
 
-      - run: ./build-cli.sh darwin
+      - run: ./build-miniooni.sh darwin
       - uses: actions/upload-artifact@v1
         with:
           name: miniooni-darwin-amd64
           path: ./CLI/darwin/amd64/miniooni
 
       - run: sudo apt install --yes mingw-w64
-      - run: ./build-cli.sh windows
+      - run: ./build-miniooni.sh windows
       - uses: actions/upload-artifact@v1
         with:
           name: miniooni-windows-amd64.exe
