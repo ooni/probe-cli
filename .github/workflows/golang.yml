@@ -18,8 +18,10 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
       - uses: actions/checkout@v2
-      - run: cd v3 && go test -race -tags shaping -v -coverprofile=../probe-cli.cov -coverpkg=./... ./...
+      - run: go test -race -tags shaping -v -coverprofile=probe-cli.cov -coverpkg=./... ./...
+        working-directory: v3
       - uses: shogo82148/actions-goveralls@v1
+        working-directory: v3
         with:
           path-to-profile: probe-cli.cov
           parallel: true
@@ -28,5 +30,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: shogo82148/actions-goveralls@v1
+        working-directory: v3
         with:
           parallel-finished: true
