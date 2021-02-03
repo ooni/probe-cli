@@ -2,6 +2,8 @@
 name: cross
 on:
   push:
+    branches:
+      - 'release/**'
   schedule:
     - cron: "14 17 * * 3"
 jobs:
