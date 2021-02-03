@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity/internal"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 )

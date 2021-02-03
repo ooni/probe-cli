@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 )
 
 func TestFetchResourceIntegration(t *testing.T) {

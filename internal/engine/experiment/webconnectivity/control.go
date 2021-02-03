@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )

@@ -2,9 +2,14 @@
 /*.jsonl
 /*.tar.gz
 /*.zip
+/apitool
 /coverage.cov
 /miniooni
 /miniooni.exe
+/oohelper
+/oohelper.exe
+/oohelperd
+/oohelperd.exe
 /ooniprobe
 /ooniprobe.exe
 /ooniprobe_checksums.txt

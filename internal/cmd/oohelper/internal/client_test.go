@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/cmd/oohelper/internal"
+	"github.com/ooni/probe-cli/v3/internal/cmd/oohelper/internal"
 )
 
 func TestMakeTCPEndpoints(t *testing.T) {

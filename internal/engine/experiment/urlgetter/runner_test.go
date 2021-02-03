@@ -11,7 +11,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 )
 
 func TestRunnerWithInvalidURLScheme(t *testing.T) {

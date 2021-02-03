@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/cmd/oohelperd/internal"
+	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal"
 )
 
 func TestHTTPDoWithInvalidURL(t *testing.T) {

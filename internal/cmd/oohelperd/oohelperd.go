@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/cmd/oohelperd/internal"
+	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 )
 

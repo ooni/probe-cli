@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 )
 
 func ipConfigIPLookup(
