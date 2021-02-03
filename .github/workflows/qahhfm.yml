@@ -1,7 +1,10 @@
-name: jafar
+name: "qahhfm"
 on:
   schedule:
-    - cron: "0 5 * * 3"
+    - cron: "5 3 * * */1"
+  push:
+    branches:
+      - 'release/**'
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -10,5 +13,4 @@ jobs:
         with:
           go-version: "1.14"
       - uses: actions/checkout@v2
-      - run: go build -v ./cmd/jafar
-      - run: sudo ./testjafar.bash
+      - run: ./QA/rundocker.bash "hhfm"

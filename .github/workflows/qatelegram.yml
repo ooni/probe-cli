@@ -1,7 +1,10 @@
-name: "qahirl"
+name: "qatelegram"
 on:
   schedule:
-    - cron: "10 3 * * */1"
+    - cron: "15 3 * * */1"
+  push:
+    branches:
+      - 'release/**'
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -10,4 +13,4 @@ jobs:
         with:
           go-version: "1.14"
       - uses: actions/checkout@v2
-      - run: ./QA/rundocker.bash "hirl"
+      - run: ./QA/rundocker.bash "telegram"
