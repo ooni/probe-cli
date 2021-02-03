@@ -34,6 +34,7 @@ jobs:
           dpkg-buildpackage -us -uc -b
           find ../ -name "*.deb" -type f
           DEB="../ooniprobe-cli_${VER}_amd64.deb"
+          echo no | sudo dpkg -i $DEB
           BT_FNAME="ooniprobe-cli_${VER}_amd64.deb"
           curl --upload-file "${DEB}" -u "${BT_APIUSER}:${BT_APIKEY}" \
             "https://api.bintray.com/content/${BT_ORG}/${BT_REPO}/${BT_PKGNAME}/${VER}/${BT_FNAME};deb_distribution=${DEBDIST};deb_component=main;deb_architecture=amd64;publish=1"
