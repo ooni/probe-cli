@@ -23,10 +23,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/httpproxy"
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/iptables"
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/resolver"
-	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/shellx"
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/tlsproxy"
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/uncensored"
 	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/engine/shellx"
 )
 
 var (

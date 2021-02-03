@@ -15,8 +15,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/resolver"
-	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/shellx"
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/uncensored"
+	"github.com/ooni/probe-cli/v3/internal/engine/shellx"
 )
 
 func init() {
