@@ -1,17 +1,16 @@
 Template: ooniprobe-cli/ask-consent
 Type: boolean
-Default: false
-Description: Do you consent to OONI Probe data collection?
- OONI Probe collects evidence of internet censorship and measures
- network performance.
+Default: true
+Description: Can we automatically publish your OONI Probe test results?
+ 
+OONI Probe measures internet censorship and network performance.
  .
- WARNING:
+ Heads-up!
  .
- - OONI Probe will likely test objectionable sites and services
+ - The network data you will collect will automatically be published (unless you opt-out in the settings).
  .
- - Anyone monitoring your internet activity (such as a government
- or Internet provider) may be able to tell that you are using OONI Probe
+ - Anyone monitoring your internet activity (eg. government or ISP) may be able to tell that you are using OONI Probe.
  .
- - The network data you collect will be published automatically
+ - OONI Probe will likely test objectionable websites.
  .
  To learn more, see https://ooni.org/about/risks/
