@@ -10,7 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
-	"github.com/ooni/probe-cli/v3/pkg/oonimkall/tasks"
+	"github.com/ooni/probe-cli/v3/pkg/oonimkall/internal/tasks"
 )
 
 type eventlike struct {
