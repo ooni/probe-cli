@@ -10,9 +10,11 @@ reviewer is satisfied, they will merge the pull request.
 Please, before opening a new issue, check whether the issue or feature request
 you want us to consider has not already been reported by someone else.
 
-For new issues, please use: https://github.com/ooni/probe.
+For new issues, please use: [github.com/ooni/probe](
+https://github.com/ooni/probe/issues/new?labels=ooni/probe-cli&assignee=bassosimone).
 
-Please, also check https://github.com/ooni/probe-engine for legacy issues. This is
+Please, also check [github.com/ooni/probe-engine](
+https://github.com/ooni/probe-engine) for legacy issues. This is
 the repository where the measurement engine previously was located.
 
 ## PR requirements
