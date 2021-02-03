@@ -99,20 +99,9 @@ func Onboarding(config *config.Config) error {
 	if changeDefaults == true {
 		var qs = []*survey.Question{
 			{
-				Name:   "IncludeIP",
-				Prompt: &survey.Confirm{Message: "Should we include your IP?"},
-			},
-			{
-				Name: "IncludeNetwork",
-				Prompt: &survey.Confirm{
-					Message: "Can we include your network name?",
-					Default: true,
-				},
-			},
-			{
 				Name: "UploadResults",
 				Prompt: &survey.Confirm{
-					Message: "Can we upload your results?",
+					Message: "Can we automatically publish your OONI Probe test results?",
 					Default: true,
 				},
 			},
