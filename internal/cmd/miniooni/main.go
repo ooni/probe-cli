@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/libminiooni"
+	"github.com/ooni/probe-cli/v3/internal/libminiooni"
 )
 
 func main() {

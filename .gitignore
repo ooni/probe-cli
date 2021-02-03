@@ -3,6 +3,8 @@
 /*.tar.gz
 /*.zip
 /coverage.cov
+/miniooni
+/miniooni.exe
 /ooniprobe
 /ooniprobe.exe
 /ooniprobe_checksums.txt

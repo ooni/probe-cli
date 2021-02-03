@@ -28,8 +28,8 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/humanizex"
+	"github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/engine/humanizex"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
 	"github.com/ooni/probe-cli/v3/internal/engine/version"
