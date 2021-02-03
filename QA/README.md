@@ -11,7 +11,7 @@ Tools with this shallow-compatible CLI are:
 
 1. `github.com/ooni/probe-legacy`
 2. `github.com/measurement-kit/measurement-kit/src/measurement_kit`
-3. `github.com/ooni/probe-engine/cmd/miniooni`
+3. `github.com/ooni/probe-engine/internal/cmd/miniooni`
 
 ## Run QA on a Linux system
 

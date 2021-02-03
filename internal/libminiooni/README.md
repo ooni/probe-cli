@@ -1,4 +1,4 @@
-# Package github.com/ooni/probe-engine/libminiooni
+# Package github.com/ooni/probe-cli/internal/libminiooni
 
 Package libminiooni implements the cmd/miniooni CLI. Miniooni is our
 experimental client used for research and QA testing.
@@ -9,6 +9,5 @@ OONI Probe CLI options. Perfect backwards compatibility is not a
 design goal for miniooni. Rather, we aim to have as little conflict
 as possible such that we can run side by side QA checks.
 
-We extracted this package from cmd/miniooni to allow us to further
-integrate the miniooni CLI into other binaries (see for example the
-code at github.com/bassosimone/aladdin).
+This package was split off from cmd/miniooni in ooni/probe-engine. For
+now we are keeping this split, but we will merge them in the future.
