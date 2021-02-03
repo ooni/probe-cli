@@ -1,5 +1,8 @@
 name: jafar
 on:
+  push:
+    branches:
+      - 'release/**'
   schedule:
     - cron: "0 5 * * 3"
 jobs:
