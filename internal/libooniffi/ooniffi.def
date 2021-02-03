@@ -1,7 +1,0 @@
-EXPORTS
-ooniffi_task_start
-ooniffi_task_is_done
-ooniffi_task_wait_for_next_event
-ooniffi_event_serialization
-ooniffi_event_destroy
-ooniffi_task_destroy
