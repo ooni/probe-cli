@@ -13,16 +13,16 @@ pomfile=./MOBILE/android/$pkgname-$version.pom
 pomtemplate=./MOBILE/template.pom
 user=bassosimone
 cat $pomtemplate|sed "s/@VERSION@/$version/g" > $pomfile
-if [ -z $BINTRAY_API_KEY ]; then
-    echo "FATAL: missing BINTRAY_API_KEY variable" 1>&2
+if [ -z $MOBILE_BINTRAY_API_KEY ]; then
+    echo "FATAL: missing MOBILE_BINTRAY_API_KEY variable" 1>&2
     exit 1
 fi
 # We currently publish the mobile-staging branch. To cleanup we can fetch all the versions using
-# the <curl -s $user:$BINTRAY_API_KEY https://api.bintray.com/packages/ooni/android/oonimkall>
+# the <curl -s $user:$MOBILE_BINTRAY_API_KEY https://api.bintray.com/packages/ooni/android/oonimkall>
 # query, which returns a list of versions. From such list, we can delete the versions we
 # don't need using <DELETE /packages/:subject/:repo/:package/versions/:version>.
 for filename in $aarfile_version $sourcesfile_version $pomfile; do
   basefilename=$(basename $filename)
-  curl -sT $filename -u $user:$BINTRAY_API_KEY $baseurl/$basefilename?publish=1 >/dev/null
+  curl -sT $filename -u $user:$MOBILE_BINTRAY_API_KEY $baseurl/$basefilename?publish=1 >/dev/null
 done
 echo "implementation 'org.ooni:oonimkall:$version'"

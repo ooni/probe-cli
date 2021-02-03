@@ -1,4 +1,4 @@
-# Package github.com/ooni/probe-engine/oonimkall
+# Package github.com/ooni/probe-cli/pkg/oonimkall
 
 Package oonimkall implements APIs used by OONI mobile apps. We
 expose these APIs to mobile apps using gomobile.

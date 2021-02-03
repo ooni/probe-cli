@@ -8,7 +8,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/psiphonx"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/torx"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"

@@ -4,7 +4,7 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
 // EndpointInfo describes a TCP/TLS endpoint.

@@ -20,4 +20,4 @@ jobs:
           ANDROID_HOME: /usr/local/Caskroom/android-sdk/4333796
       - run: ./publish-android.bash
         env:
-          BINTRAY_API_KEY: ${{ secrets.BINTRAY_API_KEY }}
+          MOBILE_BINTRAY_API_KEY: ${{ secrets.MOBILE_BINTRAY_API_KEY }}

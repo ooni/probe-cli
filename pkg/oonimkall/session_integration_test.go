@@ -15,7 +15,7 @@ import (
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/oonimkall"
+	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
 )
 
 func NewSessionWithAssetsDir(assetsDir string) (*oonimkall.Session, error) {
