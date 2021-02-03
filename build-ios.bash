@@ -8,4 +8,4 @@ go get -u golang.org/x/mobile/cmd/gomobile
 gomobile init
 export GO111MODULE=on
 output=MOBILE/ios/oonimkall.framework
-gomobile bind -target=ios -o $output -ldflags="-s -w" ./oonimkall
+gomobile bind -target=ios -o $output -ldflags="-s -w" ./pkg/oonimkall
