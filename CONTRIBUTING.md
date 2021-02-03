@@ -1,4 +1,4 @@
-# Contributing to ooni/probe-engine
+# Contributing to ooni/probe-cli
 
 This is an open source project, and contributions are welcome! You are welcome
 to open pull requests. An open pull request will be reviewed by a core
@@ -9,6 +9,11 @@ reviewer is satisfied, they will merge the pull request.
 
 Please, before opening a new issue, check whether the issue or feature request
 you want us to consider has not already been reported by someone else.
+
+For new issues, please use: https://github.com/ooni/probe.
+
+Please, also check https://github.com/ooni/probe-engine for legacy issues. This is
+the repository where the measurement engine previously was located.
 
 ## PR requirements
 
@@ -67,8 +72,8 @@ to write better unit tests for our code.
 
 To get a sense of what we expect from an experiment, see:
 
-- the experiment/example experiment
+- the internal/engine/experiment/example experiment
 
-- the experiment/webconnectivity experiment
+- the internal/engine/experiment/webconnectivity experiment
 
 Thank you!
