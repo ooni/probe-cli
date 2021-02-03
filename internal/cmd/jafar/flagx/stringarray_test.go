@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/cmd/jafar/flagx"
+	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/flagx"
 )
 
 func TestStringArray(t *testing.T) {

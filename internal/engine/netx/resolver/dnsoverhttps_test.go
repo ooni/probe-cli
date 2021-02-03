@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 )
 

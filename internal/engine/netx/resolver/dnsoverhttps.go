@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 )
 
 // DNSOverHTTPS is a DNS over HTTPS RoundTripper. Requests are submitted over

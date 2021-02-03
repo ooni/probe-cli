@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/pion/stun"
 )
 

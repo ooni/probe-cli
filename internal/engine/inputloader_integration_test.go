@@ -9,7 +9,7 @@ import (
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 

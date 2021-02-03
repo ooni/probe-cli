@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 )
 
 // MeasurementMetaConfig contains configuration for GetMeasurementMeta.

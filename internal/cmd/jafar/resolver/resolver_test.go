@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/engine/cmd/jafar/uncensored"
+	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/uncensored"
 )
 
 func TestPass(t *testing.T) {

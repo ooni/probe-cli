@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpx"
+	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 )
 
 type avastResponse struct {
