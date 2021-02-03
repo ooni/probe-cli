@@ -3,7 +3,7 @@ package libminiooni_test
 import (
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/libminiooni"
+	"github.com/ooni/probe-cli/v3/internal/libminiooni"
 )
 
 func TestSimple(t *testing.T) {

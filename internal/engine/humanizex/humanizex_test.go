@@ -3,7 +3,7 @@ package humanizex_test
 import (
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/humanizex"
+	"github.com/ooni/probe-cli/v3/internal/engine/humanizex"
 )
 
 func TestGood(t *testing.T) {

@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/montanaflynn/stats"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/humanizex"
+	"github.com/ooni/probe-cli/v3/internal/engine/humanizex"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
