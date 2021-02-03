@@ -2,7 +2,6 @@ Template: ooniprobe-cli/ask-consent
 Type: boolean
 Default: true
 Description: Can we automatically publish your OONI Probe test results?
- 
 OONI Probe measures internet censorship and network performance.
  .
  Heads-up!
