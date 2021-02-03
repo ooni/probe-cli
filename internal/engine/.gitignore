@@ -2,9 +2,7 @@
 /.vscode
 /apitool
 /asn.mmdb
-/badproxy.pem
 /ca-bundle.pem
-/cmd/jafar/badproxy.pem
 /country.mmdb
 /example.org
 /jafar
