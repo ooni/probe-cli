@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"runtime"
+	"strings"
 	"sync"
 
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
@@ -373,5 +375,81 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 	}
 	return &CheckInInfo{
 		WebConnectivity: newCheckInInfoWebConnectivity(result.WebConnectivity),
+	}, nil
+}
+
+// URLListConfig contains configuration for fetching the URL list.
+type URLListConfig struct {
+	Categories []string // Categories to query for (empty means all)
+	Limit      int64    // Max number of URLs (<= 0 means no limit)
+}
+
+// AddCategory adds category code to the array in URLListConfig
+func (ckw *URLListConfig) AddCategory(cat string) {
+	ckw.Categories = append(ckw.Categories, cat)
+}
+
+// At gets the URLInfo at position idx from CheckInInfoWebConnectivity.URLs
+func (ckw *URLListResult) At(idx int64) *URLInfo {
+	if idx < 0 || int(idx) >= len(ckw.Results) {
+		return nil
+	}
+	w := ckw.Results[idx]
+	return &URLInfo{
+		CategoryCode: w.CategoryCode,
+		CountryCode:  w.CountryCode,
+		URL:          w.URL,
+	}
+}
+
+// Size returns the number of URLs.
+func (ckw *URLListResult) Size() int64 {
+	return int64(len(ckw.Results))
+}
+
+// URLListResult contains the URLs returnet from the FetchURL API
+type URLListResult struct {
+	Results []model.URLInfo
+}
+
+// FetchURLList function is called to fetch the urls list to test
+// In the config argument a probe can specify the Categories to test, limit urls and send the Probe's CC
+func (sess *Session) FetchURLList(ctx *Context, config *URLListConfig) (*URLListResult, error) {
+	sess.mtx.Lock()
+	defer sess.mtx.Unlock()
+	psc, err := sess.sessp.NewProbeServicesClient(ctx.ctx)
+	if err != nil {
+		return nil, err
+	}
+	//TODO maybe the cc can be sent as optional param
+	cc := "XX"
+	info, err := sess.sessp.LookupLocationContext(ctx.ctx)
+	if info != nil {
+		cc = info.CountryCode
+	}
+
+	cfg := model.URLListConfig{
+		Categories:  config.Categories,
+		CountryCode: cc,
+		Limit:       config.Limit,
+	}
+
+	query := url.Values{}
+	if cfg.CountryCode != "" {
+		query.Set("country_code", cfg.CountryCode)
+	}
+	if cfg.Limit > 0 {
+		query.Set("limit", fmt.Sprintf("%d", cfg.Limit))
+	}
+	if len(cfg.Categories) > 0 {
+		query.Set("category_codes", strings.Join(cfg.Categories, ","))
+	}
+	var response URLListResult
+	err = psc.GetJSONWithQuery(ctx.ctx, "/api/v1/test-list/urls", query, &response)
+	if err != nil {
+		return nil, err
+	}
+	return &URLListResult{
+		Results: response.Results,
 	}, nil
 }
