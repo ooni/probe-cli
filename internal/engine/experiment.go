@@ -18,7 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/engine/resources"
-	"github.com/ooni/probe-cli/v3/internal/engine/version"
+	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 const dateFormat = "2006-01-02 15:04:05"

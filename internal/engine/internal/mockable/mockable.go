@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/psiphonx"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/torx"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/tunnel"
+	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices/testorchestra"
+	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
 // Session allows to mock sessions.

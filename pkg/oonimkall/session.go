@@ -10,9 +10,9 @@ import (
 
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
 // AtomicInt64 allows us to export atomicx.Int64 variables to

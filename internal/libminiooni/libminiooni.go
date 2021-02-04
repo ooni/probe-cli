@@ -32,7 +32,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/humanizex"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
-	"github.com/ooni/probe-cli/v3/internal/engine/version"
+	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/pborman/getopt/v2"
 )
 

@@ -6,11 +6,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ooni/psiphon/oopsi/github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
 	"github.com/apex/log"
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/psiphonx"
+	"github.com/ooni/psiphon/oopsi/github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
 )
 
 func TestStartWithCancelledContext(t *testing.T) {

@@ -14,12 +14,12 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netxlogger"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonidatamodel"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
 const (

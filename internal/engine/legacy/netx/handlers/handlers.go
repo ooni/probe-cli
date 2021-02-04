@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
+	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
 type stdoutHandler struct{}

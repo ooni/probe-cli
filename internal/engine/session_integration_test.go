@@ -18,7 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/version"
+	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 func TestNewSessionBuilderChecks(t *testing.T) {

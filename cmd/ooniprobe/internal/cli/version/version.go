@@ -5,7 +5,7 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/version"
+	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 func init() {

@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/version"
+	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 // Handler implements the Web Connectivity test helper HTTP API.
