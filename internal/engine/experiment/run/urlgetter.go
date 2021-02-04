@@ -7,7 +7,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
-type urlGetterMain struct {}
+type urlGetterMain struct{}
 
 func (m *urlGetterMain) do(ctx context.Context, input StructuredInput,
 	sess model.ExperimentSession, measurement *model.Measurement,

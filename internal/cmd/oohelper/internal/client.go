@@ -14,9 +14,9 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/version"
+	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 type (

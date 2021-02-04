@@ -8,7 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/log/handlers/syslog"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/version"
+	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 // Cmd is the root command

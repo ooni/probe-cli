@@ -21,10 +21,10 @@ import (
 
 	goptlib "git.torproject.org/pluggable-transports/goptlib.git"
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
+	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 	"gitlab.com/yawning/obfs4.git/transports"
 	obfs4base "gitlab.com/yawning/obfs4.git/transports/base"
 )

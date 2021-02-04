@@ -13,16 +13,16 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/sessionresolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/tunnel"
+	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/engine/resources"
-	"github.com/ooni/probe-cli/v3/internal/engine/version"
+	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 // SessionConfig contains the Session config

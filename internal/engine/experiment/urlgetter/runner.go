@@ -11,9 +11,9 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
 const httpRequestFailed = "http_request_failed"
