@@ -1,0 +1,18 @@
+# Run end-to-end testing using miniooni
+name: "e2eminiooni"
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "25 */8 * * *"
+jobs:
+  test:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: "1.14"
+      - uses: actions/checkout@v2
+      - run: ./E2E/miniooni.bash
