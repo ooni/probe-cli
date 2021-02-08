@@ -430,7 +430,7 @@ func TestFetchURLListSucc(t *testing.T) {
 	}
 	config.AddCategory("NEWS")
 	config.AddCategory("CULTR")
-	result, err := sess.FetchURLList(ctx, &config)
+	result, err := sess.FetchURLListResolve(ctx, &config)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %+v", err)
@@ -448,9 +448,37 @@ func TestFetchURLListSucc(t *testing.T) {
 	}
 }
 
-//TODO test to check urls of my cc are included
-//Requires passing manual CC
-
+func TestFetchURLListWithCC(t *testing.T) {
+	sess, err := NewSession()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := sess.NewContext()
+	config := oonimkall.URLListConfig{
+		Limit: 10,
+	}
+	config.AddCategory("NEWS")
+	config.AddCategory("CULTR")
+	result, err := sess.FetchURLList(ctx, &config, "IT")
+	if err != nil {
+		t.Fatalf("unexpected error: %+v", err)
+	}
+	if result == nil || result.Results == nil {
+		t.Fatal("got nil result")
+	}
+	if len(result.Results) < 1 {
+		t.Fatal("unexpected number of results")
+	}
+	found := false
+	for _, entry := range result.Results {
+		if entry.CountryCode == "IT" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("not found url for country code: IT")
+	}
+}
 func TestMain(m *testing.M) {
 	// Here we're basically testing whether eventually the finalizers
 	// will run and the number of active sessions and cancels will become

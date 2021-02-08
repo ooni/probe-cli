@@ -412,20 +412,25 @@ type URLListResult struct {
 	Results []model.URLInfo
 }
 
+// FetchURLListResolve function is called to fetch the urls list to test
+// In the config argument a probe can specify the Categories to test, limit urls, probe CC will be tried to automatically resolved
+func (sess *Session) FetchURLListResolve(ctx *Context, config *URLListConfig) (*URLListResult, error) {
+	cc := "XX"
+	info, err := sess.sessp.LookupLocationContext(ctx.ctx)
+	if info != nil && err != nil {
+		cc = info.CountryCode
+	}
+	return sess.FetchURLList(ctx, config, cc)
+}
+
 // FetchURLList function is called to fetch the urls list to test
 // In the config argument a probe can specify the Categories to test, limit urls and send the Probe's CC
-func (sess *Session) FetchURLList(ctx *Context, config *URLListConfig) (*URLListResult, error) {
+func (sess *Session) FetchURLList(ctx *Context, config *URLListConfig, cc string) (*URLListResult, error) {
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
 	psc, err := sess.sessp.NewProbeServicesClient(ctx.ctx)
 	if err != nil {
 		return nil, err
-	}
-	//TODO maybe the cc can be sent as optional param
-	cc := "XX"
-	info, err := sess.sessp.LookupLocationContext(ctx.ctx)
-	if info != nil {
-		cc = info.CountryCode
 	}
 
 	cfg := model.URLListConfig{
