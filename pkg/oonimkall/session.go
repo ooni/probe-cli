@@ -380,8 +380,9 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 
 // URLListConfig contains configuration for fetching the URL list.
 type URLListConfig struct {
-	Categories []string // Categories to query for (empty means all)
-	Limit      int64    // Max number of URLs (<= 0 means no limit)
+	Categories  []string // Categories to query for (empty means all)
+	CountryCode string   // CountryCode is the optional country code
+	Limit       int64    // Max number of URLs (<= 0 means no limit)
 }
 
 // AddCategory adds category code to the array in URLListConfig
@@ -421,16 +422,17 @@ func (sess *Session) FetchURLList(ctx *Context, config *URLListConfig) (*URLList
 	if err != nil {
 		return nil, err
 	}
-	//TODO maybe the cc can be sent as optional param
-	cc := "XX"
-	info, err := sess.sessp.LookupLocationContext(ctx.ctx)
-	if info != nil {
-		cc = info.CountryCode
+	if config.CountryCode == "" {
+		config.CountryCode = "XX"
+		info, err := sess.sessp.LookupLocationContext(ctx.ctx)
+		if err == nil && info != nil {
+			config.CountryCode = info.CountryCode
+		}
 	}
 
 	cfg := model.URLListConfig{
 		Categories:  config.Categories,
-		CountryCode: cc,
+		CountryCode: config.CountryCode,
 		Limit:       config.Limit,
 	}
 
