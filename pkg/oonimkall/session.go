@@ -413,7 +413,7 @@ func (ckw *URLListResult) Size() int64 {
 	return int64(len(ckw.Results))
 }
 
-// FetchURLList function is called to fetch the urls list to test
+// FetchURLList fetches the list of URLs to test
 func (sess *Session) FetchURLList(ctx *Context, config *URLListConfig) (*URLListResult, error) {
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
