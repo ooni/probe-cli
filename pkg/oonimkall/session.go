@@ -385,6 +385,11 @@ type URLListConfig struct {
 	Limit       int64    // Max number of URLs (<= 0 means no limit)
 }
 
+// URLListResult contains the URLs returnet from the FetchURL API
+type URLListResult struct {
+	Results []model.URLInfo
+}
+
 // AddCategory adds category code to the array in URLListConfig
 func (ckw *URLListConfig) AddCategory(cat string) {
 	ckw.Categories = append(ckw.Categories, cat)
@@ -408,13 +413,7 @@ func (ckw *URLListResult) Size() int64 {
 	return int64(len(ckw.Results))
 }
 
-// URLListResult contains the URLs returnet from the FetchURL API
-type URLListResult struct {
-	Results []model.URLInfo
-}
-
 // FetchURLList function is called to fetch the urls list to test
-// In the config argument a probe can specify the Categories to test, limit urls and send the Probe's CC
 func (sess *Session) FetchURLList(ctx *Context, config *URLListConfig) (*URLListResult, error) {
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
