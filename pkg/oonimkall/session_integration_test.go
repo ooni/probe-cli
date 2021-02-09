@@ -438,9 +438,6 @@ func TestFetchURLListSucc(t *testing.T) {
 	if result == nil || result.Results == nil {
 		t.Fatal("got nil result")
 	}
-	if len(result.Results) < 1 {
-		t.Fatal("unexpected number of results")
-	}
 	for _, entry := range result.Results {
 		if entry.CategoryCode != "NEWS" && entry.CategoryCode != "CULTR" {
 			t.Fatalf("unexpected category code: %+v", entry)
@@ -466,9 +463,6 @@ func TestFetchURLListWithCC(t *testing.T) {
 	}
 	if result == nil || result.Results == nil {
 		t.Fatal("got nil result")
-	}
-	if len(result.Results) < 1 {
-		t.Fatal("unexpected number of results")
 	}
 	found := false
 	for _, entry := range result.Results {
