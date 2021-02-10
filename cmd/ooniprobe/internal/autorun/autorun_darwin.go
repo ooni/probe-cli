@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"text/template"
@@ -14,6 +13,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
 	"github.com/ooni/probe-cli/v3/internal/engine/shellx"
+	"golang.org/x/sys/execabs"
 	"golang.org/x/sys/unix"
 )
 
@@ -55,7 +55,7 @@ func runQuiteQuietly(name string, arg ...string) error {
 }
 
 func darwinVersionMajor() (int, error) {
-	out, err := exec.Command("uname", "-r").Output()
+	out, err := execabs.Command("uname", "-r").Output()
 	if err != nil {
 		return 0, err
 	}
@@ -129,7 +129,7 @@ func (m managerDarwin) Start() error {
 }
 
 func (managerDarwin) stop() error {
-	var failure *exec.ExitError
+	var failure *execabs.ExitError
 	err := runQuiteQuietly("launchctl", "bootout", serviceTarget)
 	if errors.As(err, &failure) && failure.ExitCode() == int(unix.ESRCH) {
 		err = nil
@@ -158,7 +158,7 @@ func (m managerDarwin) Stop() error {
 
 func (m managerDarwin) Status() (string, error) {
 	err := runQuiteQuietly("launchctl", "kill", "SIGINFO", serviceTarget)
-	var failure *exec.ExitError
+	var failure *execabs.ExitError
 	if errors.As(err, &failure) {
 		switch failure.ExitCode() {
 		case int(unix.ESRCH):
