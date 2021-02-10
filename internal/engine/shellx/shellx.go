@@ -4,8 +4,9 @@ package shellx
 import (
 	"errors"
 	"os"
-	"os/exec"
 	"strings"
+
+	"golang.org/x/sys/execabs"
 
 	"github.com/apex/log"
 	"github.com/google/shlex"
@@ -22,7 +23,7 @@ type runconfig struct {
 
 func run(config runconfig) error {
 	config.loginfof("exec: %s %s", config.name, strings.Join(config.args, " "))
-	cmd := exec.Command(config.name, config.args...)
+	cmd := execabs.Command(config.name, config.args...)
 	cmd.Stdout = config.stdout
 	cmd.Stderr = config.stderr
 	err := cmd.Run()

@@ -7,9 +7,10 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/sys/execabs"
 )
 
 func fatalOnError(err error) {
@@ -70,7 +71,7 @@ func main() {
 				options = append(options, *entry.Input)
 			}
 			log.Printf("run: go %s", strings.Join(options, " "))
-			cmd := exec.Command("go", options...)
+			cmd := execabs.Command("go", options...)
 			cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 			err = cmd.Run()
 			fatalOnError(err)
