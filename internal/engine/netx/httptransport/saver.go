@@ -2,6 +2,7 @@ package httptransport
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -125,6 +126,7 @@ func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, 
 		return nil, err
 	}
 	data, err := saverSnapRead(resp.Body, snapsize)
+	err = ignoreExpectedEOF(err, resp)
 	if err != nil {
 		resp.Body.Close()
 		return nil, err
@@ -137,6 +139,22 @@ func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, 
 		Time:            time.Now(),
 	})
 	return resp, nil
+}
+
+// ignoreExpectedEOF converts an error signalling the end of the body
+// into a success. We know that we are in such condition when the
+// resp.Close hint flag is set to true. (Thanks, stdlib!)
+//
+// See https://github.com/ooni/probe-engine/issues/1191 for an analysis
+// of how this error was impacting measurements and data quality.
+func ignoreExpectedEOF(err error, resp *http.Response) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, io.EOF) && resp.Close {
+		return nil
+	}
+	return err
 }
 
 func saverSnapRead(r io.ReadCloser, snapsize int) ([]byte, error) {
