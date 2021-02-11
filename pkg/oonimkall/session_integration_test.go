@@ -431,7 +431,6 @@ func TestFetchURLListSuccess(t *testing.T) {
 	config.AddCategory("NEWS")
 	config.AddCategory("CULTR")
 	result, err := sess.FetchURLList(ctx, &config)
-
 	if err != nil {
 		t.Fatalf("unexpected error: %+v", err)
 	}
