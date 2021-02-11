@@ -419,7 +419,7 @@ func TestCheckInNoParams(t *testing.T) {
 	}
 }
 
-func TestFetchURLListSucc(t *testing.T) {
+func TestFetchURLListSuccess(t *testing.T) {
 	sess, err := NewSession()
 	if err != nil {
 		t.Fatal(err)
