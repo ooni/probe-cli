@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"sync"
 
-	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/crashreport"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
 	"github.com/pkg/errors"
 )
@@ -42,11 +40,6 @@ func ParseConfig(b []byte) (*Config, error) {
 		return nil, err
 	}
 	c.path = utils.ConfigPath(home)
-
-	if c.Advanced.SendCrashReports == false {
-		log.Info("Disabling crash reporting.")
-		crashreport.Disabled = true
-	}
 
 	return &c, nil
 }

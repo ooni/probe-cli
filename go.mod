@@ -7,11 +7,9 @@ require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/alecthomas/units v0.0.0-20201120081800-1786d5ef83d4 // indirect
 	github.com/apex/log v1.9.0
-	github.com/certifi/gocertifi v0.0.0-20200922220541-2c3bb06c6054 // indirect
 	github.com/cretz/bine v0.1.0
 	github.com/dchest/siphash v1.2.2 // indirect
 	github.com/fatih/color v1.10.0
-	github.com/getsentry/raven-go v0.0.0-20190419175539-919484f041ea
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/go-cmp v0.5.2
 	github.com/google/martian/v3 v3.1.0
