@@ -84,7 +84,7 @@ go get -u -v ./... && go mod tidy
 
 1. update binary data as described above;
 
-2. update `version/version.go`;
+2. update `internal/version/version.go`;
 
 3. make sure you have updated dependencies;
 
