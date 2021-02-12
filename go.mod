@@ -5,7 +5,7 @@ go 1.14
 require (
 	git.torproject.org/pluggable-transports/goptlib.git v1.1.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/alecthomas/units v0.0.0-20201120081800-1786d5ef83d4 // indirect
+	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
 	github.com/apex/log v1.9.0
 	github.com/cretz/bine v0.1.0
 	github.com/dchest/siphash v1.2.2 // indirect
@@ -21,7 +21,7 @@ require (
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mattn/go-sqlite3 v1.14.6 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
-	github.com/miekg/dns v1.1.35
+	github.com/miekg/dns v1.1.38
 	github.com/montanaflynn/stats v0.6.4
 	github.com/ooni/psiphon v0.4.0
 	github.com/oschwald/geoip2-golang v1.4.0
