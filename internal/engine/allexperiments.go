@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/psiphon"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/run"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/signal"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/sniblocking"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/stunreachability"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/telegram"
@@ -213,6 +214,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 			},
 			config:      &run.Config{},
 			inputPolicy: InputStrictlyRequired,
+		}
+	},
+
+	"signal": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, signal.NewExperimentMeasurer(
+					*config.(*signal.Config),
+				))
+			},
+			config:      &signal.Config{},
+			inputPolicy: InputNone,
 		}
 	},
 
