@@ -9,6 +9,7 @@ ConditionPathExists=/etc/ooniprobe/ooniprobe.conf
 
 [Service]
 Type=simple
+ExecStartPre=-/bin/rm -rf /var/lib/ooniprobe/msmts/*
 ExecStart=/usr/bin/ooniprobe --config=/etc/ooniprobe/ooniprobe.conf run unattended
 TimeoutStopSec=5
 KillMode=mixed
