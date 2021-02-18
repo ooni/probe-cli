@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2.1.0
       - uses: uraimo/run-on-arch-action@v2.0.5
-        name: Run commands
+        name: Build ooniprobe
         id: runcmd
         with:
           arch: aarch64
@@ -42,16 +42,52 @@ jobs:
 
           run: |
             uname -a
-            apt-get update
-            apt-get install -q -y --no-install-recommends gcc git linux-headers-arm64 musl-dev golang ca-certificates
+            apt-get -qq update
+            apt-get install -qq -y --no-install-recommends gcc git linux-headers-armmp wget musl-dev ca-certificates libc6-dev
+            wget --no-verbose https://golang.org/dl/go1.16rc1.linux-armv6l.tar.gz
+            tar xfz go1.16rc1.linux-armv6l.tar.gz
+            export PATH=$PATH:$(pwd)/go/bin
             go version
             go env
-            go build -tags netgo -ldflags='-s -w -extldflags "-static"' ./cmd/ooniprobe
+            go build -tags netgo -ldflags='-s -w -extldflags -static' ./cmd/ooniprobe
 
-      - name: Get the output
-        run: |
-          echo "The output was ${{ steps.runcmd.outputs.uname }}"
+      - name: Locate executable
+        run: find . -name ooniprobe -type f -executable
 
-      - name: Show the artifact
-        run: |
-          ls -al "${PWD}/artifacts"
+      - name: Upload executable
+        uses: actions/upload-artifact@v1
+        with:
+          name: ooniprobe-linux-aarch64
+          path: ooniprobe
+
+      - uses: uraimo/run-on-arch-action@v2.0.5
+        name: Build Debian package
+        with:
+          arch: armv7
+          distro: buster
+          githubToken: ${{ github.token }}
+          run: |
+            apt-get -qq update
+            #apt-get build-dep -y --no-install-recommends .
+            apt-get install -q  -y --no-install-recommends dpkg-dev build-essential devscripts debhelper
+            VER=$(./ooniprobe version)
+            if [[ ! $GITHUB_REF =~ ^refs/tags/* ]]; then
+              VER="${VER}~${GITHUB_RUN_NUMBER}"
+              dch -v $VER "New test version"
+              BT_REPO="${BT_REPO}-test"
+            else
+              dch -v $VER "New release"
+            fi
+            dpkg-buildpackage -us -uc -b
+            find ../ -name "*.deb" -type f
+            DEB="../ooniprobe-cli_${VER}_aarch64.deb"
+            BT_FNAME="ooniprobe-cli_${VER}_aarch64.deb"
+            curl --upload-file "${DEB}" -u "${BT_APIUSER}:${BT_APIKEY}" \
+              "https://api.bintray.com/content/${BT_ORG}/${BT_REPO}/${BT_PKGNAME}/${VER}/${BT_FNAME};deb_distribution=${DEBDIST};deb_component=main;deb_architecture=armhf;publish=1"
+          env:
+            DEBDIST: unstable
+            BT_APIKEY: ${{ secrets.BT_APIKEY }}
+            BT_APIUSER: federicoceratto
+            BT_ORG: ooni
+            BT_PKGNAME: ooniprobe
+            BT_REPO: ooniprobe-debian
