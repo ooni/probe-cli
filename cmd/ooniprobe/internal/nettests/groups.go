@@ -35,6 +35,7 @@ var All = map[string]Group{
 		Label: "Instant Messaging",
 		Nettests: []Nettest{
 			FacebookMessenger{},
+			Signal{},
 			Telegram{},
 			WhatsApp{},
 		},
