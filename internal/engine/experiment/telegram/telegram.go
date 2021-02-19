@@ -112,12 +112,14 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 		{Target: "http://149.154.175.100/", Config: urlgetter.Config{Method: "POST"}},
 		{Target: "http://149.154.167.91/", Config: urlgetter.Config{Method: "POST"}},
 		{Target: "http://149.154.171.5/", Config: urlgetter.Config{Method: "POST"}},
+		{Target: "http://95.161.76.100/", Config: urlgetter.Config{Method: "POST"}},
 
 		{Target: "http://149.154.175.50:443/", Config: urlgetter.Config{Method: "POST"}},
 		{Target: "http://149.154.167.51:443/", Config: urlgetter.Config{Method: "POST"}},
 		{Target: "http://149.154.175.100:443/", Config: urlgetter.Config{Method: "POST"}},
 		{Target: "http://149.154.167.91:443/", Config: urlgetter.Config{Method: "POST"}},
 		{Target: "http://149.154.171.5:443/", Config: urlgetter.Config{Method: "POST"}},
+		{Target: "http://95.161.76.100:443/", Config: urlgetter.Config{Method: "POST"}},
 
 		// Here we need to provide the method explicitly. See
 		// https://github.com/ooni/probe-cli/v3/internal/engine/issues/827.
