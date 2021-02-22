@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"runtime"
-	"strings"
 	"sync"
 
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
@@ -435,22 +433,11 @@ func (sess *Session) FetchURLList(ctx *Context, config *URLListConfig) (*URLList
 		Limit:       config.Limit,
 	}
 
-	query := url.Values{}
-	if cfg.CountryCode != "" {
-		query.Set("country_code", cfg.CountryCode)
-	}
-	if cfg.Limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", cfg.Limit))
-	}
-	if len(cfg.Categories) > 0 {
-		query.Set("category_codes", strings.Join(cfg.Categories, ","))
-	}
-	var response URLListResult
-	err = psc.GetJSONWithQuery(ctx.ctx, "/api/v1/test-list/urls", query, &response)
+	result, err := psc.FetchURLList(ctx.ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &URLListResult{
-		Results: response.Results,
+		Results: result,
 	}, nil
 }

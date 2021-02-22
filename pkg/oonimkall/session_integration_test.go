@@ -452,7 +452,6 @@ func TestFetchURLListWithCC(t *testing.T) {
 	ctx := sess.NewContext()
 	config := oonimkall.URLListConfig{
 		CountryCode: "IT",
-		Limit:       10,
 	}
 	config.AddCategory("NEWS")
 	config.AddCategory("CULTR")
