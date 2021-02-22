@@ -137,6 +137,11 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 			FailOnHTTPError: false,
 			CertPool:        certPool,
 		}},
+		{Target: "https://sfu.voip.signal.org/", Config: urlgetter.Config{
+			Method:          "GET",
+			FailOnHTTPError: false,
+			CertPool:        certPool,
+		}},
 	}
 	multi := urlgetter.Multi{Begin: time.Now(), Getter: m.Getter, Session: sess}
 	testkeys := NewTestKeys()
