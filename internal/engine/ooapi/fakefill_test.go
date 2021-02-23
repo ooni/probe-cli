@@ -4,7 +4,10 @@ import (
 	"math/rand"
 	"reflect"
 	"sync"
+	"testing"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/engine/ooapi/apimodel"
 )
 
 // fakeFill fills specific data structures with random data. The only
@@ -67,7 +70,7 @@ func (ff *fakeFill) getRandomSmallPositiveInt() int {
 }
 
 func (ff *fakeFill) doFill(v reflect.Value) {
-	if v.Type().Kind() == reflect.Ptr {
+	for v.Type().Kind() == reflect.Ptr {
 		if v.IsNil() {
 			// if the pointer is nil, allocate an element
 			v.Set(reflect.New(v.Type().Elem()))
@@ -119,4 +122,13 @@ func (ff *fakeFill) doFill(v reflect.Value) {
 // fill fills in with random data.
 func (ff *fakeFill) fill(in interface{}) {
 	ff.doFill(reflect.ValueOf(in))
+}
+
+func TestFakeFillAllocatesIntoAPointerToPointer(t *testing.T) {
+	var req *apimodel.URLsRequest
+	ff := &fakeFill{}
+	ff.fill(&req)
+	if req == nil {
+		t.Fatal("we expected non nil here")
+	}
 }

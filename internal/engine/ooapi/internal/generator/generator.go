@@ -10,4 +10,6 @@ func main() {
 	GenCachingGo()
 	GenLoginGo()
 	GenClonersGo()
+	GenFakeAPITestGo()
+	GenCachingTestGo()
 }

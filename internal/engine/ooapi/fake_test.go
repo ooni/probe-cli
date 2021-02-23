@@ -80,3 +80,17 @@ type FakeTemplateExecutor struct {
 func (fte *FakeTemplateExecutor) Execute(tmpl string, v interface{}) (string, error) {
 	return fte.Out, fte.Err
 }
+
+type FakeKVStore struct {
+	SetError error
+	GetData  []byte
+	GetError error
+}
+
+func (fs *FakeKVStore) Get(key string) ([]byte, error) {
+	return fs.GetData, fs.GetError
+}
+
+func (fs *FakeKVStore) Set(key string, value []byte) error {
+	return fs.SetError
+}
