@@ -12,4 +12,5 @@ func main() {
 	GenClonersGo()
 	GenFakeAPITestGo()
 	GenCachingTestGo()
+	GenLoginTestGo()
 }

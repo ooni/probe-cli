@@ -216,6 +216,7 @@ func (d *Descriptor) genTestRoundTrip(sb *strings.Builder) {
 	if d.RequiresLogin == true {
 		fmt.Fprint(sb, "\t\tToken:      \"fakeToken\",\n")
 	}
+	fmt.Fprint(sb, "\t\tUserAgent: \"miniooni/0.1.0-dev\",\n")
 	fmt.Fprint(sb, "\t}\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 	d.genTestNewRequest(sb)

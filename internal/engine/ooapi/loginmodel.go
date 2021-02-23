@@ -23,7 +23,7 @@ func (ls *loginState) credentialsValid() bool {
 }
 
 func (ls *loginState) tokenValid() bool {
-	return ls.Token != "" && time.Now().Add(30*time.Second).After(ls.Expire)
+	return ls.Token != "" && time.Now().Add(60*time.Second).Before(ls.Expire)
 }
 
 // loginKey is the key with which loginState is saved

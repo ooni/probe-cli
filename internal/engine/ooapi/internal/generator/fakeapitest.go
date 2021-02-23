@@ -13,10 +13,12 @@ func (d *Descriptor) genNewFakeAPI(sb *strings.Builder) {
 	}
 	fmt.Fprint(sb, "\tErr error\n")
 	fmt.Fprintf(sb, "\tResponse %s\n", d.ResponseTypeName())
+	fmt.Fprint(sb, "\tCountCall int32\n")
 	fmt.Fprint(sb, "}\n\n")
 
 	fmt.Fprintf(sb, "func (fapi *Fake%s) Call(ctx context.Context, req %s) (%s, error) {\n",
 		d.APIStructName(), d.RequestTypeName(), d.ResponseTypeName())
+	fmt.Fprint(sb, "\tatomic.AddInt32(&fapi.CountCall, 1)\n")
 	fmt.Fprint(sb, "\treturn fapi.Response, fapi.Err\n")
 	fmt.Fprint(sb, "}\n\n")
 
@@ -46,6 +48,7 @@ func GenFakeAPITestGo() {
 	fmt.Fprint(&sb, "//go:generate go run ./internal/generator\n\n")
 	fmt.Fprint(&sb, "import (\n")
 	fmt.Fprint(&sb, "\t\"context\"\n")
+	fmt.Fprint(&sb, "\t\"sync/atomic\"\n")
 	fmt.Fprint(&sb, "\n")
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/engine/ooapi/apimodel\"\n")
 	fmt.Fprint(&sb, ")\n")

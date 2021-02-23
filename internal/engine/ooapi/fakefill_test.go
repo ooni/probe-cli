@@ -132,3 +132,15 @@ func TestFakeFillAllocatesIntoAPointerToPointer(t *testing.T) {
 		t.Fatal("we expected non nil here")
 	}
 }
+
+func TestFakeFillAllocatesIntoAMapLike(t *testing.T) {
+	var resp apimodel.TorTargetsResponse
+	ff := &fakeFill{}
+	ff.fill(&resp)
+	if resp == nil {
+		t.Fatal("we expected non nil here")
+	}
+	if len(resp) < 1 {
+		t.Fatal("we expected some data here")
+	}
+}
