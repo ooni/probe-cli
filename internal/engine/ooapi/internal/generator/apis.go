@@ -6,21 +6,79 @@ import (
 	"time"
 )
 
+type apiField struct {
+	name       string
+	kind       string
+	comment    string
+	ifLogin    bool
+	ifTemplate bool
+	noClone    bool
+}
+
+var apiFields = []apiField{{
+	name:    "BaseURL",
+	kind:    "string",
+	comment: "optional",
+}, {
+	name:    "HTTPClient",
+	kind:    "HTTPClient",
+	comment: "optional",
+}, {
+	name:    "JSONCodec",
+	kind:    "JSONCodec",
+	comment: "optional",
+}, {
+	name:    "Token",
+	kind:    "string",
+	comment: "mandatory",
+	ifLogin: true,
+	noClone: true,
+}, {
+	name:    "RequestMaker",
+	kind:    "RequestMaker",
+	comment: "optional",
+}, {
+	name:       "TemplateExecutor",
+	kind:       "TemplateExecutor",
+	comment:    "optional",
+	ifTemplate: true,
+}, {
+	name:    "UserAgent",
+	kind:    "string",
+	comment: "optional",
+}}
+
 func (d *Descriptor) genNewAPI(sb *strings.Builder) {
 	fmt.Fprintf(sb, "// %s is the %s API.\n", d.APIStructName(), d.Name)
 	fmt.Fprintf(sb, "type %s struct {\n", d.APIStructName())
-	fmt.Fprint(sb, "\tBaseURL string // optional\n")
-	fmt.Fprint(sb, "\tHTTPClient HTTPClient // optional\n")
-	fmt.Fprint(sb, "\tJSONCodec JSONCodec // optional\n")
-	if d.RequiresLogin {
-		fmt.Fprint(sb, "\tToken string // mandatory\n")
+	for _, f := range apiFields {
+		if !d.RequiresLogin && f.ifLogin {
+			continue
+		}
+		if !d.URLPath.IsTemplate && f.ifTemplate {
+			continue
+		}
+		fmt.Fprintf(sb, "\t%s %s // %s\n", f.name, f.kind, f.comment)
 	}
-	fmt.Fprint(sb, "\tRequestMaker RequestMaker // optional\n")
-	if d.URLPath.IsTemplate {
-		fmt.Fprint(sb, "\tTemplateExecutor TemplateExecutor // optional\n")
-	}
-	fmt.Fprint(sb, "\tUserAgent string // optional\n")
 	fmt.Fprint(sb, "}\n\n")
+
+	if d.RequiresLogin {
+		fmt.Fprintf(sb, "func (api *%s) cloneWithToken(token string) *%s {\n",
+			d.APIStructName(), d.APIStructName())
+		fmt.Fprintf(sb, "out := &%s{}\n", d.APIStructName())
+		for _, f := range apiFields {
+			if !d.URLPath.IsTemplate && f.ifTemplate {
+				continue
+			}
+			if f.noClone == true {
+				continue
+			}
+			fmt.Fprintf(sb, "out.%s = api.%s\n", f.name, f.name)
+		}
+		fmt.Fprint(sb, "out.Token = token\n")
+		fmt.Fprint(sb, "return out\n")
+		fmt.Fprint(sb, "}\n\n")
+	}
 
 	fmt.Fprintf(sb, "func (api *%s) baseURL() string {\n", d.APIStructName())
 	fmt.Fprint(sb, "\tif api.BaseURL != \"\" {\n")
