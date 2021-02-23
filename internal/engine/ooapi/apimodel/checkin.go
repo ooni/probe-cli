@@ -8,15 +8,15 @@ type CheckInRequestWebConnectivity struct {
 
 // CheckInRequest is the check-in API request
 type CheckInRequest struct {
-	Charging        bool                           `json:"charging"`
-	OnWiFi          bool                           `json:"on_wifi"`
-	Platform        string                         `json:"platform"`
-	ProbeASN        string                         `json:"probe_asn"`
-	ProbeCC         string                         `json:"probe_cc"`
-	RunType         string                         `json:"run_type"`
-	SoftwareName    string                         `json:"software_name"`
-	SoftwareVersion string                         `json:"software_version"`
-	WebConnectivity *CheckInRequestWebConnectivity `json:"web_connectivity"`
+	Charging        bool                          `json:"charging"`
+	OnWiFi          bool                          `json:"on_wifi"`
+	Platform        string                        `json:"platform"`
+	ProbeASN        string                        `json:"probe_asn"`
+	ProbeCC         string                        `json:"probe_cc"`
+	RunType         string                        `json:"run_type"`
+	SoftwareName    string                        `json:"software_name"`
+	SoftwareVersion string                        `json:"software_version"`
+	WebConnectivity CheckInRequestWebConnectivity `json:"web_connectivity"`
 }
 
 // CheckInResponseURLInfo contains information about an URL.
@@ -35,5 +35,10 @@ type CheckInResponseWebConnectivity struct {
 
 // CheckInResponse is the check-in API response
 type CheckInResponse struct {
-	WebConnectivity *CheckInResponseWebConnectivity `json:"web_connectivity"`
+	Tests CheckInResponseTests `json:"tests"`
+}
+
+// CheckInResponseTests contains configuration for tests
+type CheckInResponseTests struct {
+	WebConnectivity CheckInResponseWebConnectivity `json:"web_connectivity"`
 }

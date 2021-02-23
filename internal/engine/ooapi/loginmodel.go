@@ -41,21 +41,19 @@ func newRandomPassword() string {
 // newRegisterRequest creates a new RegisterRequest.
 func newRegisterRequest() *apimodel.RegisterRequest {
 	return &apimodel.RegisterRequest{
-		Metadata: apimodel.RegisterRequestMetadata{
-			// The original implementation has as its only use case that we
-			// were registering and logging in for sending an update regarding
-			// the probe whereabouts. Yet here in probe-engine, the orchestra
-			// is currently only used to fetch inputs. For this purpose, we don't
-			// need to communicate any specific information. The code that will
-			// perform an update used to be responsible of doing that. Now, we
-			// are not using orchestra for this purpose anymore.
-			Platform:        "miniooni",
-			ProbeASN:        "AS0",
-			ProbeCC:         "ZZ",
-			SoftwareName:    "miniooni",
-			SoftwareVersion: "0.1.0-dev",
-			SupportedTests:  []string{"web_connectivity"},
-		},
-		Password: newRandomPassword(),
+		// The original implementation has as its only use case that we
+		// were registering and logging in for sending an update regarding
+		// the probe whereabouts. Yet here in probe-engine, the orchestra
+		// is currently only used to fetch inputs. For this purpose, we don't
+		// need to communicate any specific information. The code that will
+		// perform an update used to be responsible of doing that. Now, we
+		// are not using orchestra for this purpose anymore.
+		Platform:        "miniooni",
+		ProbeASN:        "AS0",
+		ProbeCC:         "ZZ",
+		SoftwareName:    "miniooni",
+		SoftwareVersion: "0.1.0-dev",
+		SupportedTests:  []string{"web_connectivity"},
+		Password:        newRandomPassword(),
 	}
 }
