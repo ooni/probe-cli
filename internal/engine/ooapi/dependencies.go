@@ -31,7 +31,8 @@
 //
 //     go test ./...
 //
-// will, among other things, ensure that the specs match.
+// will, among other things, ensure that the our API spec
+// is consistent with the server's one.
 //
 // Running
 //
