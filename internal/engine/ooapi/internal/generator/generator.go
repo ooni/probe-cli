@@ -5,7 +5,7 @@ func main() {
 	GenResponsesGo()
 	GenRequestsGo()
 	GenSwaggerGo()
-	GenTestsTestGo()
+	GenAPIsTestGo()
 	GenCallersGo()
 	GenCachingGo()
 	GenLoginGo()
