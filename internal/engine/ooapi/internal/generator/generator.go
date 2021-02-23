@@ -6,4 +6,5 @@ func main() {
 	GenRequestsGo()
 	GenSwaggerGo()
 	GenTestsTestGo()
+	GenCallersGo()
 }

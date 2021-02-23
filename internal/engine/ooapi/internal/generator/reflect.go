@@ -26,6 +26,12 @@ func (d *Descriptor) APIStructName() string {
 	return fmt.Sprintf("%sAPI", d.Name)
 }
 
+// CallerInterfaceName returns the correct caller interface name
+// for the API we're currently processing.
+func (d *Descriptor) CallerInterfaceName() string {
+	return fmt.Sprintf("%sCaller", d.Name)
+}
+
 // StructFields returns all the struct fields of in. This function
 // assumes that in is a pointer to struct, and will otherwise panic.
 func (d *Descriptor) StructFields(in interface{}) []*reflect.StructField {
