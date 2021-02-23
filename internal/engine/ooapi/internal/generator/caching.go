@@ -22,11 +22,18 @@ func (d *Descriptor) genNewCache(sb *strings.Builder) {
 
 	fmt.Fprintf(sb, "func (c *%s) Call(ctx context.Context, req %s) (%s, error) {\n",
 		d.CacheStructName(), d.RequestTypeName(), d.ResponseTypeName())
+	if d.CachePolicy == CacheAlways {
+		fmt.Fprint(sb, "\tif resp, _ := c.readcache(req); resp != nil {\n")
+		fmt.Fprint(sb, "\t\treturn resp, nil\n")
+		fmt.Fprint(sb, "\t}\n")
+	}
 	fmt.Fprint(sb, "\tresp, err := c.API.Call(ctx, req)\n")
 	fmt.Fprint(sb, "\tif err != nil {\n")
-	fmt.Fprint(sb, "\t\tif resp, _ := c.readcache(req); resp != nil {\n")
-	fmt.Fprint(sb, "\t\t\treturn resp, nil\n")
-	fmt.Fprint(sb, "\t\t}\n")
+	if d.CachePolicy == CacheFallback {
+		fmt.Fprint(sb, "\t\tif resp, _ := c.readcache(req); resp != nil {\n")
+		fmt.Fprint(sb, "\t\t\treturn resp, nil\n")
+		fmt.Fprint(sb, "\t\t}\n")
+	}
 	fmt.Fprint(sb, "\t\treturn nil, err\n")
 	fmt.Fprint(sb, "\t}\n")
 	fmt.Fprint(sb, "\tif err := c.writecache(req, resp); err != nil {\n")
@@ -113,7 +120,7 @@ func GenCachingGo() {
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/engine/ooapi/apimodel\"\n")
 	fmt.Fprint(&sb, ")\n")
 	for _, desc := range Descriptors {
-		if !desc.RequiresCache {
+		if desc.CachePolicy == CacheNone {
 			continue
 		}
 		desc.genNewCache(&sb)

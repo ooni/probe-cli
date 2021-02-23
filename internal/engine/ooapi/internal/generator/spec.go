@@ -12,13 +12,27 @@ type URLPath struct {
 // Descriptor is an API descriptor.
 type Descriptor struct {
 	Name          string
-	RequiresCache bool
+	CachePolicy   int
 	RequiresLogin bool
 	Method        string
 	URLPath       URLPath
 	Request       interface{}
 	Response      interface{}
 }
+
+// These are the caching policies.
+const (
+	// CacheNone indicates we don't use a cache.
+	CacheNone = iota
+
+	// CacheFallback indicates we fallback to the cache
+	// when there is a failure.
+	CacheFallback
+
+	// CacheAlways indicates that we always check the
+	// cache before sending a request.
+	CacheAlways
+)
 
 // Descriptors contains all descriptors.
 var Descriptors = []Descriptor{{
@@ -28,12 +42,12 @@ var Descriptors = []Descriptor{{
 	Request:  &apimodel.CheckReportIDRequest{},
 	Response: &apimodel.CheckReportIDResponse{},
 }, {
-	Name:          "CheckIn",
-	Method:        "POST",
-	URLPath:       URLPath{Value: "/api/v1/check-in"},
-	Request:       &apimodel.CheckInRequest{},
-	Response:      &apimodel.CheckInResponse{},
-	RequiresCache: true,
+	Name:        "CheckIn",
+	Method:      "POST",
+	URLPath:     URLPath{Value: "/api/v1/check-in"},
+	Request:     &apimodel.CheckInRequest{},
+	Response:    &apimodel.CheckInResponse{},
+	CachePolicy: CacheFallback,
 }, {
 	Name:     "Login",
 	Method:   "POST",
@@ -41,12 +55,12 @@ var Descriptors = []Descriptor{{
 	Request:  &apimodel.LoginRequest{},
 	Response: &apimodel.LoginResponse{},
 }, {
-	Name:          "MeasurementMeta",
-	Method:        "GET",
-	URLPath:       URLPath{Value: "/api/v1/measurement_meta"},
-	Request:       &apimodel.MeasurementMetaRequest{},
-	Response:      &apimodel.MeasurementMetaResponse{},
-	RequiresCache: true,
+	Name:        "MeasurementMeta",
+	Method:      "GET",
+	URLPath:     URLPath{Value: "/api/v1/measurement_meta"},
+	Request:     &apimodel.MeasurementMetaRequest{},
+	Response:    &apimodel.MeasurementMetaResponse{},
+	CachePolicy: CacheAlways,
 }, {
 	Name:     "Register",
 	Method:   "POST",
@@ -54,12 +68,12 @@ var Descriptors = []Descriptor{{
 	Request:  &apimodel.RegisterRequest{},
 	Response: &apimodel.RegisterResponse{},
 }, {
-	Name:          "TestHelpers",
-	Method:        "GET",
-	URLPath:       URLPath{Value: "/api/v1/test-helpers"},
-	Request:       &apimodel.TestHelpersRequest{},
-	Response:      apimodel.TestHelpersResponse{},
-	RequiresCache: true,
+	Name:        "TestHelpers",
+	Method:      "GET",
+	URLPath:     URLPath{Value: "/api/v1/test-helpers"},
+	Request:     &apimodel.TestHelpersRequest{},
+	Response:    apimodel.TestHelpersResponse{},
+	CachePolicy: CacheFallback,
 }, {
 	Name:          "PsiphonConfig",
 	RequiresLogin: true,
@@ -74,14 +88,14 @@ var Descriptors = []Descriptor{{
 	URLPath:       URLPath{Value: "/api/v1/test-list/tor-targets"},
 	Request:       &apimodel.TorTargetsRequest{},
 	Response:      apimodel.TorTargetsResponse{},
-	RequiresCache: true,
+	CachePolicy:   CacheFallback,
 }, {
-	Name:          "URLs",
-	Method:        "GET",
-	URLPath:       URLPath{Value: "/api/v1/test-list/urls"},
-	Request:       &apimodel.URLsRequest{},
-	Response:      &apimodel.URLsResponse{},
-	RequiresCache: true,
+	Name:        "URLs",
+	Method:      "GET",
+	URLPath:     URLPath{Value: "/api/v1/test-list/urls"},
+	Request:     &apimodel.URLsRequest{},
+	Response:    &apimodel.URLsResponse{},
+	CachePolicy: CacheFallback,
 }, {
 	Name:     "OpenReport",
 	Method:   "POST",
