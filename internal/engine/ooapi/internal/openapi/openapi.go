@@ -1,4 +1,7 @@
 // Package openapi contains data structures for Swagger v2.0.
+//
+// We use these data structures to compare the API specification we
+// have here with the one of the server.
 package openapi
 
 // Schema is the schema of a specific parameter or
