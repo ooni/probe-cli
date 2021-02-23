@@ -8,4 +8,6 @@ func main() {
 	GenTestsTestGo()
 	GenCallersGo()
 	GenCachingGo()
+	GenLoginGo()
+	GenClonersGo()
 }

@@ -63,8 +63,8 @@ func (d *Descriptor) genNewAPI(sb *strings.Builder) {
 	fmt.Fprint(sb, "}\n\n")
 
 	if d.RequiresLogin {
-		fmt.Fprintf(sb, "func (api *%s) cloneWithToken(token string) *%s {\n",
-			d.APIStructName(), d.APIStructName())
+		fmt.Fprintf(sb, "func (api *%s) WithToken(token string) %s {\n",
+			d.APIStructName(), d.CallerInterfaceName())
 		fmt.Fprintf(sb, "out := &%s{}\n", d.APIStructName())
 		for _, f := range apiFields {
 			if !d.URLPath.IsTemplate && f.ifTemplate {

@@ -7,7 +7,7 @@ import (
 )
 
 func (d *Descriptor) genNewCaller(sb *strings.Builder) {
-	fmt.Fprintf(sb, "// %s abstracts %s behavior.\n",
+	fmt.Fprintf(sb, "// %s abstracts %s caller behavior.\n",
 		d.CallerInterfaceName(), d.APIStructName())
 	fmt.Fprintf(sb, "type %s interface {\n", d.CallerInterfaceName())
 	fmt.Fprintf(sb, "\tCall(ctx context.Context, req %s) (%s, error)\n",

@@ -26,10 +26,22 @@ func (d *Descriptor) APIStructName() string {
 	return fmt.Sprintf("%sAPI", d.Name)
 }
 
+// WithLoginAPIStructName returns the correct struct type name
+// for the WithLoginAPI we're currently processing.
+func (d *Descriptor) WithLoginAPIStructName() string {
+	return fmt.Sprintf("%sAPIWithLogin", d.Name)
+}
+
 // CallerInterfaceName returns the correct caller interface name
 // for the API we're currently processing.
 func (d *Descriptor) CallerInterfaceName() string {
 	return fmt.Sprintf("%sCaller", d.Name)
+}
+
+// ClonerInterfaceName returns the correct cloner interface name
+// for the API we're currently processing.
+func (d *Descriptor) ClonerInterfaceName() string {
+	return fmt.Sprintf("%sCloner", d.Name)
 }
 
 // CacheStructName returns the correct struct type name for
