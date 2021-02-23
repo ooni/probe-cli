@@ -82,7 +82,7 @@ func (d *Descriptor) genNewCache(sb *strings.Builder) {
 		d.CacheStructName(), d.RequestTypeName(), d.ResponseTypeName())
 	fmt.Fprint(sb, "\tcache, _ := c.getcache()\n")
 	fmt.Fprintf(sb, "\tout := []%s{{Req: req, Resp: resp}}\n", d.CacheEntryName())
-	fmt.Fprint(sb, "\tconst toomany = 32\n")
+	fmt.Fprint(sb, "\tconst toomany = 64\n")
 	fmt.Fprint(sb, "\tfor idx, cur := range cache {\n")
 	fmt.Fprint(sb, "\t\tif reflect.DeepEqual(req, cur.Req) {\n")
 	fmt.Fprint(sb, "\t\t\tcontinue // we already updated the cache\n")
@@ -113,6 +113,9 @@ func GenCachingGo() {
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/engine/ooapi/apimodel\"\n")
 	fmt.Fprint(&sb, ")\n")
 	for _, desc := range Descriptors {
+		if !desc.RequiresCache {
+			continue
+		}
 		desc.genNewCache(&sb)
 	}
 	writefile("caching.go", &sb)

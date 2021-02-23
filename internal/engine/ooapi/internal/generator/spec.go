@@ -12,6 +12,7 @@ type URLPath struct {
 // Descriptor is an API descriptor.
 type Descriptor struct {
 	Name          string
+	RequiresCache bool
 	RequiresLogin bool
 	Method        string
 	URLPath       URLPath
@@ -27,11 +28,12 @@ var Descriptors = []Descriptor{{
 	Request:  &apimodel.CheckReportIDRequest{},
 	Response: &apimodel.CheckReportIDResponse{},
 }, {
-	Name:     "CheckIn",
-	Method:   "POST",
-	URLPath:  URLPath{Value: "/api/v1/check-in"},
-	Request:  &apimodel.CheckInRequest{},
-	Response: &apimodel.CheckInResponse{},
+	Name:          "CheckIn",
+	Method:        "POST",
+	URLPath:       URLPath{Value: "/api/v1/check-in"},
+	Request:       &apimodel.CheckInRequest{},
+	Response:      &apimodel.CheckInResponse{},
+	RequiresCache: true,
 }, {
 	Name:     "Login",
 	Method:   "POST",
@@ -39,11 +41,12 @@ var Descriptors = []Descriptor{{
 	Request:  &apimodel.LoginRequest{},
 	Response: &apimodel.LoginResponse{},
 }, {
-	Name:     "MeasurementMeta",
-	Method:   "GET",
-	URLPath:  URLPath{Value: "/api/v1/measurement_meta"},
-	Request:  &apimodel.MeasurementMetaRequest{},
-	Response: &apimodel.MeasurementMetaResponse{},
+	Name:          "MeasurementMeta",
+	Method:        "GET",
+	URLPath:       URLPath{Value: "/api/v1/measurement_meta"},
+	Request:       &apimodel.MeasurementMetaRequest{},
+	Response:      &apimodel.MeasurementMetaResponse{},
+	RequiresCache: true,
 }, {
 	Name:     "Register",
 	Method:   "POST",
@@ -51,11 +54,12 @@ var Descriptors = []Descriptor{{
 	Request:  &apimodel.RegisterRequest{},
 	Response: &apimodel.RegisterResponse{},
 }, {
-	Name:     "TestHelpers",
-	Method:   "GET",
-	URLPath:  URLPath{Value: "/api/v1/test-helpers"},
-	Request:  &apimodel.TestHelpersRequest{},
-	Response: apimodel.TestHelpersResponse{},
+	Name:          "TestHelpers",
+	Method:        "GET",
+	URLPath:       URLPath{Value: "/api/v1/test-helpers"},
+	Request:       &apimodel.TestHelpersRequest{},
+	Response:      apimodel.TestHelpersResponse{},
+	RequiresCache: true,
 }, {
 	Name:          "PsiphonConfig",
 	RequiresLogin: true,
@@ -70,12 +74,14 @@ var Descriptors = []Descriptor{{
 	URLPath:       URLPath{Value: "/api/v1/test-list/tor-targets"},
 	Request:       &apimodel.TorTargetsRequest{},
 	Response:      apimodel.TorTargetsResponse{},
+	RequiresCache: true,
 }, {
-	Name:     "URLs",
-	Method:   "GET",
-	URLPath:  URLPath{Value: "/api/v1/test-list/urls"},
-	Request:  &apimodel.URLsRequest{},
-	Response: &apimodel.URLsResponse{},
+	Name:          "URLs",
+	Method:        "GET",
+	URLPath:       URLPath{Value: "/api/v1/test-list/urls"},
+	Request:       &apimodel.URLsRequest{},
+	Response:      &apimodel.URLsResponse{},
+	RequiresCache: true,
 }, {
 	Name:     "OpenReport",
 	Method:   "POST",
