@@ -7,4 +7,5 @@ func main() {
 	GenSwaggerGo()
 	GenTestsTestGo()
 	GenCallersGo()
+	GenCachingGo()
 }

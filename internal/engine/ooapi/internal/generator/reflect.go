@@ -32,6 +32,24 @@ func (d *Descriptor) CallerInterfaceName() string {
 	return fmt.Sprintf("%sCaller", d.Name)
 }
 
+// CacheStructName returns the correct struct type name for
+// the cache for the API we're currently processing.
+func (d *Descriptor) CacheStructName() string {
+	return fmt.Sprintf("%sCache", d.Name)
+}
+
+// CacheEntryName returns the correct struct type name for the
+// cache entry for the API we're currently processing.
+func (d *Descriptor) CacheEntryName() string {
+	return fmt.Sprintf("cacheEntryFor%s", d.Name)
+}
+
+// CacheKey returns the correct cache key for the API
+// we're currently processing.
+func (d *Descriptor) CacheKey() string {
+	return fmt.Sprintf("%s.cache", d.Name)
+}
+
 // StructFields returns all the struct fields of in. This function
 // assumes that in is a pointer to struct, and will otherwise panic.
 func (d *Descriptor) StructFields(in interface{}) []*reflect.StructField {

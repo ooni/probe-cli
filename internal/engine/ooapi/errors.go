@@ -10,4 +10,5 @@ var (
 	ErrJSONLiteralNull = errors.New("apiclient: server returned us a literal null")
 	ErrMissingToken    = errors.New("apiclient: missing auth token")
 	ErrUnauthorized    = errors.New("apiclient: not authorized")
+	errCacheNotFound   = errors.New("apiclient: not found in cache")
 )

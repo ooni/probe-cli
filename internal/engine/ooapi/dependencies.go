@@ -35,3 +35,21 @@ type HTTPClient interface {
 	// Do should work like http.Client.Do.
 	Do(req *http.Request) (*http.Response, error)
 }
+
+// GobCodec is a Gob encoder and decoder.
+type GobCodec interface {
+	// Encode encodes v as a serialized JSON byte slice.
+	Encode(v interface{}) ([]byte, error)
+
+	// Decode decodes the serialized JSON byte slice into v.
+	Decode(b []byte, v interface{}) error
+}
+
+// KVStore is a key-value store.
+type KVStore interface {
+	// Get gets a value from the key-value store.
+	Get(key string) ([]byte, error)
+
+	// Set stores a value into the key-value store.
+	Set(key string, value []byte) error
+}

@@ -9,17 +9,17 @@ import (
 func (d *Descriptor) genNewAPI(sb *strings.Builder) {
 	fmt.Fprintf(sb, "// %s is the %s API.\n", d.APIStructName(), d.Name)
 	fmt.Fprintf(sb, "type %s struct {\n", d.APIStructName())
-	fmt.Fprint(sb, "\tBaseURL string\n")
-	fmt.Fprint(sb, "\tHTTPClient HTTPClient\n")
-	fmt.Fprint(sb, "\tJSONCodec JSONCodec\n")
+	fmt.Fprint(sb, "\tBaseURL string // optional\n")
+	fmt.Fprint(sb, "\tHTTPClient HTTPClient // optional\n")
+	fmt.Fprint(sb, "\tJSONCodec JSONCodec // optional\n")
 	if d.RequiresLogin {
-		fmt.Fprint(sb, "\tToken string\n")
+		fmt.Fprint(sb, "\tToken string // mandatory\n")
 	}
-	fmt.Fprint(sb, "\tRequestMaker RequestMaker\n")
+	fmt.Fprint(sb, "\tRequestMaker RequestMaker // optional\n")
 	if d.URLPath.IsTemplate {
-		fmt.Fprint(sb, "\tTemplateExecutor TemplateExecutor\n")
+		fmt.Fprint(sb, "\tTemplateExecutor TemplateExecutor // optional\n")
 	}
-	fmt.Fprint(sb, "\tUserAgent string\n")
+	fmt.Fprint(sb, "\tUserAgent string // optional\n")
 	fmt.Fprint(sb, "}\n\n")
 
 	fmt.Fprintf(sb, "func (api *%s) baseURL() string {\n", d.APIStructName())

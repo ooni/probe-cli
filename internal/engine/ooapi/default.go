@@ -1,7 +1,9 @@
 package ooapi
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -38,4 +40,18 @@ func (*defaultTemplateExecutor) Execute(tmpl string, v interface{}) (string, err
 		return "", err
 	}
 	return sb.String(), nil
+}
+
+type defaultGobCodec struct{}
+
+func (*defaultGobCodec) Encode(v interface{}) ([]byte, error) {
+	var bb bytes.Buffer
+	if err := gob.NewEncoder(&bb).Encode(v); err != nil {
+		return nil, err
+	}
+	return bb.Bytes(), nil
+}
+
+func (*defaultGobCodec) Decode(b []byte, v interface{}) error {
+	return gob.NewDecoder(bytes.NewReader(b)).Decode(v)
 }
