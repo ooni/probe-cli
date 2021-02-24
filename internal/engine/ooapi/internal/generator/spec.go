@@ -4,20 +4,41 @@ import "github.com/ooni/probe-cli/v3/internal/engine/ooapi/apimodel"
 
 // URLPath describes a URLPath.
 type URLPath struct {
+	// IsTemplate indicates whether Value contains a template. A future
+	// version of this implementation will automatically deduce that.
 	IsTemplate bool
-	Value      string
-	InSwagger  string
+
+	// Value is the value of the URL path.
+	Value string
+
+	// InSwagger indicates the corresponding name to be used in
+	// the Swagger specification.
+	InSwagger string
 }
 
-// Descriptor is an API descriptor.
+// Descriptor is an API descriptor. It tells the generator
+// what code it should emit for a given API.
 type Descriptor struct {
-	Name          string
-	CachePolicy   int
+	// Name is the name of the API.
+	Name string
+
+	// CachePolicy indicates the caching policy to use.
+	CachePolicy int
+
+	// RequiresLogin indicates whether the API requires login.
 	RequiresLogin bool
-	Method        string
-	URLPath       URLPath
-	Request       interface{}
-	Response      interface{}
+
+	// Method is the method to use ("GET" or "POST").
+	Method string
+
+	// URLPath is the URL path.
+	URLPath URLPath
+
+	// Request is an instance of the request type.
+	Request interface{}
+
+	// Response is an instance of the response type.
+	Response interface{}
 }
 
 // These are the caching policies.
@@ -34,7 +55,11 @@ const (
 	CacheAlways
 )
 
-// Descriptors contains all descriptors.
+// Descriptors describes all the APIs.
+//
+// Note that it matters whether the requests and responses
+// are pointers. Generally speaking, if the message is a
+// struct, use a pointer. If it's a map, don't.
 var Descriptors = []Descriptor{{
 	Name:     "CheckReportID",
 	Method:   "GET",
