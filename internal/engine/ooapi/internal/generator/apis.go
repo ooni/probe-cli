@@ -6,13 +6,28 @@ import (
 	"time"
 )
 
+// apiField contains the fields of an API data structure
 type apiField struct {
-	name       string
-	kind       string
-	comment    string
-	ifLogin    bool
+	// name is the field name
+	name string
+
+	// kind is the filed type
+	kind string
+
+	// comment is a brief comment to document the field
+	comment string
+
+	// ifLogin indicates whether this field should only be
+	// emitted when the API requires login
+	ifLogin bool
+
+	// ifTemplate indicates whether this field should only be
+	// emitted when the URL path is a template
 	ifTemplate bool
-	noClone    bool
+
+	// noClone is true when this field should not be copied
+	// from the parent data structure when cloning
+	noClone bool
 }
 
 var apiFields = []apiField{{
@@ -49,7 +64,7 @@ var apiFields = []apiField{{
 }}
 
 func (d *Descriptor) genNewAPI(sb *strings.Builder) {
-	fmt.Fprintf(sb, "// %s is the %s API.\n", d.APIStructName(), d.Name)
+	fmt.Fprintf(sb, "// %s implements the %s API.\n", d.APIStructName(), d.Name)
 	fmt.Fprintf(sb, "type %s struct {\n", d.APIStructName())
 	for _, f := range apiFields {
 		if !d.RequiresLogin && f.ifLogin {
@@ -63,6 +78,8 @@ func (d *Descriptor) genNewAPI(sb *strings.Builder) {
 	fmt.Fprint(sb, "}\n\n")
 
 	if d.RequiresLogin {
+		fmt.Fprintf(sb, "// WithToken returns a copy of the API where the\n")
+		fmt.Fprintf(sb, "// value of the Token field is replaced with token.\n")
 		fmt.Fprintf(sb, "func (api *%s) WithToken(token string) %s {\n",
 			d.APIStructName(), d.CallerInterfaceName())
 		fmt.Fprintf(sb, "out := &%s{}\n", d.APIStructName())

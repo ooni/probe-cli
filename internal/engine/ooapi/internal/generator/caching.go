@@ -20,6 +20,7 @@ func (d *Descriptor) genNewCache(sb *strings.Builder) {
 	fmt.Fprintf(sb, "\tResp %s\n", d.ResponseTypeName())
 	fmt.Fprint(sb, "}\n\n")
 
+	fmt.Fprintf(sb, "// Call calls the API and implements caching.\n")
 	fmt.Fprintf(sb, "func (c *%s) Call(ctx context.Context, req %s) (%s, error) {\n",
 		d.CacheStructName(), d.RequestTypeName(), d.ResponseTypeName())
 	if d.CachePolicy == CacheAlways {

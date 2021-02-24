@@ -17,6 +17,7 @@ func (d *Descriptor) genNewLogin(sb *strings.Builder) {
 	fmt.Fprint(sb, "\tLoginAPI LoginCaller // mandatory\n")
 	fmt.Fprint(sb, "}\n\n")
 
+	fmt.Fprintf(sb, "// Call logins, if needed, then calls the API.\n")
 	fmt.Fprintf(sb, "func (api *%s) Call(ctx context.Context, req %s) (%s, error) {\n",
 		d.WithLoginAPIStructName(), d.RequestTypeName(), d.ResponseTypeName())
 	fmt.Fprint(sb, "\ttoken, err := api.maybeLogin(ctx)\n")
