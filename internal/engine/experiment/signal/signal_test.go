@@ -21,6 +21,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 		t.Fatal("unexpected version")
 	}
 }
+
 func TestGood(t *testing.T) {
 	measurer := signal.NewExperimentMeasurer(signal.Config{})
 	measurement := new(model.Measurement)
