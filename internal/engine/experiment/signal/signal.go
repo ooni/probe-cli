@@ -69,6 +69,10 @@ func (tk *TestKeys) Update(v urlgetter.MultiOutput) {
 	tk.Requests = append(tk.Requests, v.TestKeys.Requests...)
 	tk.TCPConnect = append(tk.TCPConnect, v.TestKeys.TCPConnect...)
 	tk.TLSHandshakes = append(tk.TLSHandshakes, v.TestKeys.TLSHandshakes...)
+	// Ignore the result of the uptime DNS lookup
+	if v.Input.Target == "dnslookup://uptime.signal.org" {
+		return
+	}
 	if v.TestKeys.Failure != nil {
 		tk.SignalBackendStatus = "blocked"
 		tk.SignalBackendFailure = v.TestKeys.Failure
@@ -142,6 +146,7 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 			FailOnHTTPError: false,
 			CertPool:        certPool,
 		}},
+		{Target: "dnslookup://uptime.signal.org"},
 	}
 	multi := urlgetter.Multi{Begin: time.Now(), Getter: m.Getter, Session: sess}
 	testkeys := NewTestKeys()
