@@ -39,7 +39,7 @@ func newRandomPassword() string {
 }
 
 // newRegisterRequest creates a new RegisterRequest.
-func newRegisterRequest() *apimodel.RegisterRequest {
+func newRegisterRequest(password string) *apimodel.RegisterRequest {
 	return &apimodel.RegisterRequest{
 		// The original implementation has as its only use case that we
 		// were registering and logging in for sending an update regarding
@@ -54,6 +54,6 @@ func newRegisterRequest() *apimodel.RegisterRequest {
 		SoftwareName:    "miniooni",
 		SoftwareVersion: "0.1.0-dev",
 		SupportedTests:  []string{"web_connectivity"},
-		Password:        newRandomPassword(),
+		Password:        password,
 	}
 }
