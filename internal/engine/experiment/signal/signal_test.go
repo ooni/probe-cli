@@ -6,8 +6,10 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/signal"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -70,5 +72,45 @@ func TestGood(t *testing.T) {
 	}
 	if _, ok := sk.(signal.SummaryKeys); !ok {
 		t.Fatal("invalid type for summary keys")
+	}
+}
+
+func TestUpdate(t *testing.T) {
+	tk := signal.NewTestKeys()
+	tk.Update(urlgetter.MultiOutput{
+		Input: urlgetter.MultiInput{
+			Config: urlgetter.Config{Method: "GET"},
+			Target: "https://textsecure-service.whispersystems.org/",
+		},
+		TestKeys: urlgetter.TestKeys{
+			Failure: (func() *string {
+				s := errorx.FailureEOFError
+				return &s
+			})(),
+		},
+	})
+	if tk.SignalBackendStatus != "blocked" {
+		t.Fatal("SignalBackendStatus should be blocked")
+	}
+	if *tk.SignalBackendFailure != errorx.FailureEOFError {
+		t.Fatal("invalid SignalBackendError")
+	}
+}
+
+func TestBadSignalCA(t *testing.T) {
+	measurer := signal.NewExperimentMeasurer(signal.Config{
+		SignalCA: "INVALIDCA",
+	})
+	measurement := new(model.Measurement)
+	err := measurer.Run(
+		context.Background(),
+		&mockable.Session{
+			MockableLogger: log.Log,
+		},
+		measurement,
+		model.NewPrinterCallbacks(log.Log),
+	)
+	if err.Error() != "AppendCertsFromPEM failed" {
+		t.Fatal("not the error we expected")
 	}
 }

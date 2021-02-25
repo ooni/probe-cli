@@ -44,7 +44,10 @@ rwLV
 )
 
 // Config contains the signal experiment config.
-type Config struct{}
+type Config struct {
+	// SignalCA is used to pass in a custom CA in testing
+	SignalCA string
+}
 
 // TestKeys contains signal test keys.
 type TestKeys struct {
@@ -109,7 +112,11 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	urlgetter.RegisterExtensions(measurement)
 
 	certPool := netx.NewDefaultCertPool()
-	if certPool.AppendCertsFromPEM([]byte(signalCA)) == false {
+	signalCABytes := []byte(signalCA)
+	if m.Config.SignalCA != "" {
+		signalCABytes = []byte(m.Config.SignalCA)
+	}
+	if certPool.AppendCertsFromPEM(signalCABytes) == false {
 		return errors.New("AppendCertsFromPEM failed")
 	}
 
