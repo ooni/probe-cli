@@ -114,6 +114,8 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 		{Target: "http://149.154.171.5/", Config: urlgetter.Config{Method: "POST"}},
 		{Target: "http://95.161.76.100/", Config: urlgetter.Config{Method: "POST"}},
 
+		// Note: the following list contains the same endpoints as above with HTTP (not a typo using
+		// https would not work here) _and_ port 443.
 		{Target: "http://149.154.175.50:443/", Config: urlgetter.Config{Method: "POST"}},
 		{Target: "http://149.154.167.51:443/", Config: urlgetter.Config{Method: "POST"}},
 		{Target: "http://149.154.175.100:443/", Config: urlgetter.Config{Method: "POST"}},
