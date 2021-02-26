@@ -584,12 +584,12 @@ func (d *Descriptor) genTestReadStateDecodeFailure(sb *strings.Builder) {
 	fmt.Fprintf(sb, "\t\tt.Fatal(err)\n")
 	fmt.Fprintf(sb, "\t}\n")
 
-	fmt.Fprintf(sb, "\tout, err := login.readstate()\n")
+	fmt.Fprintf(sb, "\tout, err := login.forceLogin(context.Background())\n")
 	fmt.Fprintf(sb, "if !errors.Is(err, errMocked) {\n")
 	fmt.Fprintf(sb, "\t\tt.Fatal(\"not the error we expected\", err)\n")
 	fmt.Fprintf(sb, "\t}\n")
-	fmt.Fprintf(sb, "if out != nil {\n")
-	fmt.Fprintf(sb, "\t\tt.Fatal(\"expected nil here\")\n")
+	fmt.Fprintf(sb, "if out != \"\" {\n")
+	fmt.Fprintf(sb, "\t\tt.Fatal(\"expected empty string here\")\n")
 	fmt.Fprintf(sb, "\t}\n")
 
 	fmt.Fprint(sb, "}\n\n")
