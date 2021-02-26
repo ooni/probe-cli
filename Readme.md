@@ -23,8 +23,16 @@ Every top-level directory contains an explanatory README file.
 
 ## Development setup
 
-Be sure you have golang >= 1.14 and a C compiler (when developing for Windows, you
-need Mingw-w64 installed). The most basic build command is:
+Be sure you have golang >= 1.16 and a C compiler (when developing for Windows, you
+need Mingw-w64 installed).
+
+You need to download assets first using:
+
+```bash
+go run ./internal/cmd/getresources
+```
+
+Then you can build using:
 
 ```bash
 go build -v ./cmd/ooniprobe
@@ -44,6 +52,14 @@ Then commit the changes.
 
 ## Android bindings
 
+You need to download assets first using:
+
+```bash
+go run ./internal/cmd/getresources
+```
+
+Then you can build using:
+
 ```bash
 ./build-android.bash
 ```
@@ -59,6 +75,14 @@ Where VERSION is like `2020.03.30-231914` corresponding to the
 time when the build occurred.
 
 ## iOS bindings
+
+You need to download assets first using:
+
+```bash
+go run ./internal/cmd/getresources
+```
+
+Then you can build using:
 
 ```bash
 ./build-ios.bash
