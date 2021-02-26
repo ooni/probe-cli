@@ -40,16 +40,6 @@ go build -v ./cmd/ooniprobe
 
 This will generate a binary called `ooniprobe` in the current directory.
 
-## Update bundled assets
-
-To update bundled assets use:
-
-```bash
-./updatebindata.sh
-```
-
-Then commit the changes.
-
 ## Android bindings
 
 You need to download assets first using:

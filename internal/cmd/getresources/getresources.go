@@ -23,7 +23,7 @@ func main() {
 }
 
 func getit(name string, ri *resources.ResourceInfo) error {
-	workDir := filepath.Join("internal", "engine", "resources", "private")
+	workDir := filepath.Join("internal", "engine", "resourcesmanager")
 	URL, err := url.Parse(resources.BaseURL)
 	if err != nil {
 		return err
