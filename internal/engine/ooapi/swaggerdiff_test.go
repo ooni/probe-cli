@@ -48,12 +48,6 @@ func getClientModel() *openapi.Swagger {
 }
 
 func simplifyRoundTrip(rt *openapi.RoundTrip) {
-	// This is a quirk that needs to be fixed upstream. We are not
-	// going to focus on it for now so that we reduce noise.
-	//
-	// TODO(bassosimone): fix the problem upstream.
-	rt.Consumes, rt.Produces = nil, nil
-
 	// Normalize the used name when a parameter is in body. This
 	// should only have a cosmetic impact on the spec.
 	for _, param := range rt.Parameters {
@@ -126,14 +120,19 @@ func compare(serverURL string) bool {
 	serverModel, clientModel := getServerModel(serverURL), getClientModel()
 	// Implementation note: the server model is richer than the client
 	// model, so we ignore everything not defined by the client.
+	var count int
 	for key := range serverModel.Paths {
 		if _, found := clientModel.Paths[key]; !found {
 			delete(serverModel.Paths, key)
 			continue
 		}
+		count++
 		if maybediff(key, serverModel.Paths[key], clientModel.Paths[key]) > 0 {
 			good = false
 		}
+	}
+	if count <= 0 {
+		panic("no element found")
 	}
 	return good
 }

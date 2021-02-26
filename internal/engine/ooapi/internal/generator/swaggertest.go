@@ -189,6 +189,6 @@ func GenSwaggerGo() {
 	fmt.Fprintf(&sb, "// %s\n\n", time.Now())
 	fmt.Fprint(&sb, "package ooapi\n\n")
 	fmt.Fprint(&sb, "//go:generate go run ./internal/generator\n\n")
-	fmt.Fprintf(&sb, "var swagger = `%s`\n", string(data))
+	fmt.Fprintf(&sb, "const swagger = `%s`\n", string(data))
 	writefile("swagger_test.go", &sb)
 }

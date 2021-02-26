@@ -15,6 +15,7 @@ type OpenReportRequest struct {
 
 // OpenReportResponse is the OpenReport response.
 type OpenReportResponse struct {
+	BackendVersion   string   `json:"backend_version"`
 	ReportID         string   `json:"report_id"`
 	SupportedFormats []string `json:"supported_formats"`
 }

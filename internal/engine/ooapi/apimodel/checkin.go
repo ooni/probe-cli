@@ -35,7 +35,10 @@ type CheckInResponseWebConnectivity struct {
 
 // CheckInResponse is the check-in API response
 type CheckInResponse struct {
-	Tests CheckInResponseTests `json:"tests"`
+	ProbeASN string               `json:"probe_asn"`
+	ProbeCC  string               `json:"probe_cc"`
+	Tests    CheckInResponseTests `json:"tests"`
+	V        int64                `json:"v"`
 }
 
 // CheckInResponseTests contains configuration for tests
