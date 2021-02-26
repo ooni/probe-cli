@@ -383,7 +383,7 @@ type URLListConfig struct {
 	Limit       int64    // Max number of URLs (<= 0 means no limit)
 }
 
-// URLListResult contains the URLs returnet from the FetchURL API
+// URLListResult contains the URLs returned from the FetchURL API
 type URLListResult struct {
 	Results []model.URLInfo
 }
@@ -393,7 +393,8 @@ func (ckw *URLListConfig) AddCategory(cat string) {
 	ckw.Categories = append(ckw.Categories, cat)
 }
 
-// At gets the URLInfo at position idx from CheckInInfoWebConnectivity.URLs
+// At gets the URLInfo at position idx from CheckInInfoWebConnectivity.URLs. It returns
+// nil if you are using an outs of bound index.
 func (ckw *URLListResult) At(idx int64) *URLInfo {
 	if idx < 0 || int(idx) >= len(ckw.Results) {
 		return nil

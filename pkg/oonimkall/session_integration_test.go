@@ -472,6 +472,7 @@ func TestFetchURLListWithCC(t *testing.T) {
 		t.Fatalf("not found url for country code: IT")
 	}
 }
+
 func TestMain(m *testing.M) {
 	// Here we're basically testing whether eventually the finalizers
 	// will run and the number of active sessions and cancels will become
