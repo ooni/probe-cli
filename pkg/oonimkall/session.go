@@ -375,3 +375,70 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 		WebConnectivity: newCheckInInfoWebConnectivity(result.WebConnectivity),
 	}, nil
 }
+
+// URLListConfig contains configuration for fetching the URL list.
+type URLListConfig struct {
+	Categories  []string // Categories to query for (empty means all)
+	CountryCode string   // CountryCode is the optional country code
+	Limit       int64    // Max number of URLs (<= 0 means no limit)
+}
+
+// URLListResult contains the URLs returned from the FetchURL API
+type URLListResult struct {
+	Results []model.URLInfo
+}
+
+// AddCategory adds category code to the array in URLListConfig
+func (ckw *URLListConfig) AddCategory(cat string) {
+	ckw.Categories = append(ckw.Categories, cat)
+}
+
+// At gets the URLInfo at position idx from CheckInInfoWebConnectivity.URLs. It returns
+// nil if you are using an outs of bound index.
+func (ckw *URLListResult) At(idx int64) *URLInfo {
+	if idx < 0 || int(idx) >= len(ckw.Results) {
+		return nil
+	}
+	w := ckw.Results[idx]
+	return &URLInfo{
+		CategoryCode: w.CategoryCode,
+		CountryCode:  w.CountryCode,
+		URL:          w.URL,
+	}
+}
+
+// Size returns the number of URLs.
+func (ckw *URLListResult) Size() int64 {
+	return int64(len(ckw.Results))
+}
+
+// FetchURLList fetches the list of URLs to test
+func (sess *Session) FetchURLList(ctx *Context, config *URLListConfig) (*URLListResult, error) {
+	sess.mtx.Lock()
+	defer sess.mtx.Unlock()
+	psc, err := sess.sessp.NewProbeServicesClient(ctx.ctx)
+	if err != nil {
+		return nil, err
+	}
+	if config.CountryCode == "" {
+		config.CountryCode = "XX"
+		info, err := sess.sessp.LookupLocationContext(ctx.ctx)
+		if err == nil && info != nil {
+			config.CountryCode = info.CountryCode
+		}
+	}
+
+	cfg := model.URLListConfig{
+		Categories:  config.Categories,
+		CountryCode: config.CountryCode,
+		Limit:       config.Limit,
+	}
+
+	result, err := psc.FetchURLList(ctx.ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &URLListResult{
+		Results: result,
+	}, nil
+}
