@@ -185,7 +185,7 @@ func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, e
 	sk := SummaryKeys{IsAnomaly: false}
 	tk, ok := measurement.TestKeys.(*TestKeys)
 	if !ok {
-		return sk, errors.New("invalid test keys type")
+		return nil, errors.New("invalid test keys type")
 	}
 	sk.SignalBackendStatus = tk.SignalBackendStatus
 	sk.SignalBackendFailure = tk.SignalBackendFailure

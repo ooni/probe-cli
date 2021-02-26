@@ -115,3 +115,15 @@ func TestBadSignalCA(t *testing.T) {
 		t.Fatal("not the error we expected")
 	}
 }
+
+func TestGetSummaryInvalidType(t *testing.T) {
+	measurer := signal.Measurer{}
+	in := make(chan int)
+	out, err := measurer.GetSummaryKeys(&model.Measurement{TestKeys: in})
+	if err == nil || err.Error() != "invalid test keys type" {
+		t.Fatal("not the error we expected", err)
+	}
+	if out != nil {
+		t.Fatal("expected nil output here")
+	}
+}
