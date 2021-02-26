@@ -260,7 +260,7 @@ func (m *Measurer) Run(
 	// probably want to perform the name resolution before the measurements
 	// or to make sure that the classify logic is robust to that.
 	//
-	// See https://github.com/ooni/probe-cli/v3/internal/engine/issues/392.
+	// See https://github.com/ooni/probe-engine/issues/392.
 	maybeParsed, err := maybeURLToSNI(measurement.Input)
 	if err != nil {
 		return err

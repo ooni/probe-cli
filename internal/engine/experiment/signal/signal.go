@@ -1,6 +1,6 @@
 // Package signal contains the Signal network experiment.
 //
-// See https://github.com/ooni/spec/blob/master/nettests/ts-XXX-signal.md.
+// See https://github.com/ooni/spec/blob/master/nettests/ts-029-signal.md.
 package signal
 
 import (
@@ -122,7 +122,7 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 
 	inputs := []urlgetter.MultiInput{
 		// Here we need to provide the method explicitly. See
-		// https://github.com/ooni/probe-cli/v3/internal/engine/issues/827.
+		// https://github.com/ooni/probe-engine/issues/827.
 		{Target: "https://textsecure-service.whispersystems.org/", Config: urlgetter.Config{
 			Method:          "GET",
 			FailOnHTTPError: false,
