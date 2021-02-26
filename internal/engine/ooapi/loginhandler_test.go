@@ -15,11 +15,12 @@ import (
 
 // LoginHandler is an http.Handler to test login
 type LoginHandler struct {
-	mu        sync.Mutex
-	state     []*loginState
-	t         *testing.T
-	logins    int32
-	registers int32
+	mu         sync.Mutex
+	noRegister bool
+	state      []*loginState
+	t          *testing.T
+	logins     int32
+	registers  int32
 }
 
 func (lh *LoginHandler) forgetLogins() {
@@ -68,6 +69,12 @@ func (lh *LoginHandler) register(w http.ResponseWriter, r *http.Request) {
 	}
 	defer lh.mu.Unlock()
 	lh.mu.Lock()
+	if lh.noRegister {
+		// We have been asked to stop registering clients so
+		// we're going to make a boo boo.
+		w.WriteHeader(500)
+		return
+	}
 	var resp apimodel.RegisterResponse
 	ff := &fakeFill{}
 	ff.fill(&resp)
