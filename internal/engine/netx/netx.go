@@ -17,7 +17,7 @@
 // TLS handshake for DoT and DoH).
 //
 // We described the design and implementation of the most recent version of
-// this package at <https://github.com/ooni/probe-cli/v3/internal/engine/issues/359>. Such
+// this package at <https://github.com/ooni/probe-engine/issues/359>. Such
 // issue also links to a previous design document.
 package netx
 

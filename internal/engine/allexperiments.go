@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/psiphon"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/run"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/signal"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/sniblocking"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/stunreachability"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/telegram"
@@ -85,7 +86,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 	// TODO(bassosimone): when we can set experiment options using the JSON
 	// we need to get rid of all these multiple experiments.
 	//
-	// See https://github.com/ooni/probe-cli/v3/internal/engine/issues/413
+	// See https://github.com/ooni/probe-engine/issues/413
 	"example_with_input_non_interruptible": func(session *Session) *ExperimentBuilder {
 		return &ExperimentBuilder{
 			build: func(config interface{}) *Experiment {
@@ -213,6 +214,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 			},
 			config:      &run.Config{},
 			inputPolicy: InputStrictlyRequired,
+		}
+	},
+
+	"signal": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, signal.NewExperimentMeasurer(
+					*config.(*signal.Config),
+				))
+			},
+			config:      &signal.Config{},
+			inputPolicy: InputNone,
 		}
 	},
 

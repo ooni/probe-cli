@@ -156,7 +156,7 @@ func (il inputLoader) loadLocal() ([]model.URLInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		// See https://github.com/ooni/probe-cli/v3/internal/engine/issues/1123.
+		// See https://github.com/ooni/probe-engine/issues/1123.
 		if len(extra) <= 0 {
 			return nil, fmt.Errorf("%w: %s", ErrDetectedEmptyFile, filepath)
 		}
