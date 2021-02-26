@@ -504,6 +504,7 @@ func (d *Descriptor) genTestTheDatabaseIsReplacedThenFailure(sb *strings.Builder
 
 	fmt.Fprint(sb, "}\n\n")
 }
+
 func (d *Descriptor) genTestRegisterAndLoginCannotWriteState(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func TestRegisterAndLogin%sCannotWriteState(t *testing.T) {\n", d.APIStructName())
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
@@ -594,6 +595,236 @@ func (d *Descriptor) genTestReadStateDecodeFailure(sb *strings.Builder) {
 	fmt.Fprint(sb, "}\n\n")
 }
 
+func (d *Descriptor) genTestClockIsOffThenSuccess(sb *strings.Builder) {
+	fmt.Fprintf(sb, "func Test%sClockIsOffThenSuccess(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
+	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
+	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
+	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
+
+	fmt.Fprint(sb, "\tregisterAPI := &RegisterAPI{\n")
+	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
+	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
+	fmt.Fprint(sb, "\t}\n")
+	fmt.Fprint(sb, "\t\tloginAPI := &LoginAPI{\n")
+	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
+	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
+	fmt.Fprint(sb, "\t\t}\n")
+	fmt.Fprintf(sb, "\tbaseAPI := &%s{\n", d.APIStructName())
+	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
+	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
+	fmt.Fprintf(sb, "\tAPI : baseAPI,\n")
+	fmt.Fprint(sb, "\tRegisterAPI: registerAPI,\n")
+	fmt.Fprint(sb, "\tLoginAPI: loginAPI,\n")
+	fmt.Fprint(sb, "\tKVStore: &memkvstore{},\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
+	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tctx := context.Background()\n")
+
+	fmt.Fprint(sb, "\t// step 1: we register and login and use the token\n")
+	fmt.Fprint(sb, "\t// inside a scope just to avoid mistakes\n")
+
+	fmt.Fprint(sb, "\t{\n")
+	fmt.Fprint(sb, "\t\tresp, err := login.Call(ctx, req)\n")
+	fmt.Fprint(sb, "\t\tif err != nil {\n")
+	fmt.Fprint(sb, "\t\t\tt.Fatal(err)\n")
+	fmt.Fprint(sb, "\t\t}\n")
+	fmt.Fprint(sb, "\t\tif resp == nil {\n")
+	fmt.Fprint(sb, "\t\t\tt.Fatal(\"expected non-nil response\")\n")
+	fmt.Fprint(sb, "\t\t}\n")
+
+	fmt.Fprint(sb, "\t\tif handler.logins != 1 {\n")
+	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.logins\")\n")
+	fmt.Fprint(sb, "\t\t}\n")
+
+	fmt.Fprint(sb, "\t\tif handler.registers != 1 {\n")
+	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.registers\")\n")
+	fmt.Fprint(sb, "\t\t}\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprint(sb, "\t// step 2: we forget tokens and try again.\n")
+	fmt.Fprint(sb, "\t// this should simulate the client clock\n")
+	fmt.Fprint(sb, "\t// being off and considering a token still valid\n")
+	fmt.Fprint(sb, "\thandler.forgetTokens()\n")
+
+	fmt.Fprint(sb, "\tresp, err := login.Call(ctx, req)\n")
+	fmt.Fprint(sb, "\tif err != nil {\n")
+	fmt.Fprint(sb, "\t\tt.Fatal(err)\n")
+	fmt.Fprint(sb, "\t}\n")
+	fmt.Fprint(sb, "\tif resp == nil {\n")
+	fmt.Fprint(sb, "\t\tt.Fatal(\"expected non-nil response\")\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprint(sb, "\tif handler.logins != 2 {\n")
+	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.logins\")\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprint(sb, "\tif handler.registers != 1 {\n")
+	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.registers\")\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprint(sb, "}\n\n")
+}
+
+func (d *Descriptor) genTestClockIsOffThen401(sb *strings.Builder) {
+	fmt.Fprintf(sb, "func Test%sClockIsOffThen401(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
+	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
+	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
+	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
+
+	fmt.Fprint(sb, "\tregisterAPI := &RegisterAPI{\n")
+	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
+	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
+	fmt.Fprint(sb, "\t}\n")
+	fmt.Fprint(sb, "\t\tloginAPI := &LoginAPI{\n")
+	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
+	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
+	fmt.Fprint(sb, "\t\t}\n")
+	fmt.Fprintf(sb, "\tbaseAPI := &%s{\n", d.APIStructName())
+	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
+	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
+	fmt.Fprintf(sb, "\tAPI : baseAPI,\n")
+	fmt.Fprint(sb, "\tRegisterAPI: registerAPI,\n")
+	fmt.Fprint(sb, "\tLoginAPI: loginAPI,\n")
+	fmt.Fprint(sb, "\tKVStore: &memkvstore{},\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
+	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tctx := context.Background()\n")
+
+	fmt.Fprint(sb, "\t// step 1: we register and login and use the token\n")
+	fmt.Fprint(sb, "\t// inside a scope just to avoid mistakes\n")
+
+	fmt.Fprint(sb, "\t{\n")
+	fmt.Fprint(sb, "\t\tresp, err := login.Call(ctx, req)\n")
+	fmt.Fprint(sb, "\t\tif err != nil {\n")
+	fmt.Fprint(sb, "\t\t\tt.Fatal(err)\n")
+	fmt.Fprint(sb, "\t\t}\n")
+	fmt.Fprint(sb, "\t\tif resp == nil {\n")
+	fmt.Fprint(sb, "\t\t\tt.Fatal(\"expected non-nil response\")\n")
+	fmt.Fprint(sb, "\t\t}\n")
+
+	fmt.Fprint(sb, "\t\tif handler.logins != 1 {\n")
+	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.logins\")\n")
+	fmt.Fprint(sb, "\t\t}\n")
+
+	fmt.Fprint(sb, "\t\tif handler.registers != 1 {\n")
+	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.registers\")\n")
+	fmt.Fprint(sb, "\t\t}\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprint(sb, "\t// step 2: we forget tokens and try again.\n")
+	fmt.Fprint(sb, "\t// this should simulate the client clock\n")
+	fmt.Fprint(sb, "\t// being off and considering a token still valid\n")
+	fmt.Fprint(sb, "\thandler.forgetTokens()\n")
+	fmt.Fprint(sb, "\thandler.failCallWith = []int{401, 401}\n")
+
+	fmt.Fprint(sb, "\tresp, err := login.Call(ctx, req)\n")
+	fmt.Fprint(sb, "\tif err != nil {\n")
+	fmt.Fprint(sb, "\t\tt.Fatal(\"not the error we expected\", err)\n")
+	fmt.Fprint(sb, "\t}\n")
+	fmt.Fprint(sb, "\tif resp == nil {\n")
+	fmt.Fprint(sb, "\t\tt.Fatal(\"expected non-nil response\")\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprint(sb, "\tif handler.logins != 3 {\n")
+	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.logins\")\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprint(sb, "\tif handler.registers != 2 {\n")
+	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.registers\")\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprint(sb, "}\n\n")
+}
+
+func (d *Descriptor) genTestClockIsOffThen500(sb *strings.Builder) {
+	fmt.Fprintf(sb, "func Test%sClockIsOffThen500(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
+	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
+	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
+	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
+
+	fmt.Fprint(sb, "\tregisterAPI := &RegisterAPI{\n")
+	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
+	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
+	fmt.Fprint(sb, "\t}\n")
+	fmt.Fprint(sb, "\t\tloginAPI := &LoginAPI{\n")
+	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
+	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
+	fmt.Fprint(sb, "\t\t}\n")
+	fmt.Fprintf(sb, "\tbaseAPI := &%s{\n", d.APIStructName())
+	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
+	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
+	fmt.Fprintf(sb, "\tAPI : baseAPI,\n")
+	fmt.Fprint(sb, "\tRegisterAPI: registerAPI,\n")
+	fmt.Fprint(sb, "\tLoginAPI: loginAPI,\n")
+	fmt.Fprint(sb, "\tKVStore: &memkvstore{},\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
+	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tctx := context.Background()\n")
+
+	fmt.Fprint(sb, "\t// step 1: we register and login and use the token\n")
+	fmt.Fprint(sb, "\t// inside a scope just to avoid mistakes\n")
+
+	fmt.Fprint(sb, "\t{\n")
+	fmt.Fprint(sb, "\t\tresp, err := login.Call(ctx, req)\n")
+	fmt.Fprint(sb, "\t\tif err != nil {\n")
+	fmt.Fprint(sb, "\t\t\tt.Fatal(err)\n")
+	fmt.Fprint(sb, "\t\t}\n")
+	fmt.Fprint(sb, "\t\tif resp == nil {\n")
+	fmt.Fprint(sb, "\t\t\tt.Fatal(\"expected non-nil response\")\n")
+	fmt.Fprint(sb, "\t\t}\n")
+
+	fmt.Fprint(sb, "\t\tif handler.logins != 1 {\n")
+	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.logins\")\n")
+	fmt.Fprint(sb, "\t\t}\n")
+
+	fmt.Fprint(sb, "\t\tif handler.registers != 1 {\n")
+	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.registers\")\n")
+	fmt.Fprint(sb, "\t\t}\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprint(sb, "\t// step 2: we forget tokens and try again.\n")
+	fmt.Fprint(sb, "\t// this should simulate the client clock\n")
+	fmt.Fprint(sb, "\t// being off and considering a token still valid\n")
+	fmt.Fprint(sb, "\thandler.forgetTokens()\n")
+	fmt.Fprint(sb, "\thandler.failCallWith = []int{401, 500}\n")
+
+	fmt.Fprint(sb, "\tresp, err := login.Call(ctx, req)\n")
+	fmt.Fprint(sb, "\tif !errors.Is(err, ErrHTTPFailure) {\n")
+	fmt.Fprint(sb, "\t\tt.Fatal(\"not the error we expected\", err)\n")
+	fmt.Fprint(sb, "\t}\n")
+	fmt.Fprint(sb, "\tif resp != nil {\n")
+	fmt.Fprint(sb, "\t\tt.Fatal(\"expected nil response\")\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprint(sb, "\tif handler.logins != 2 {\n")
+	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.logins\")\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprint(sb, "\tif handler.registers != 1 {\n")
+	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.registers\")\n")
+	fmt.Fprint(sb, "\t}\n")
+
+	fmt.Fprint(sb, "}\n\n")
+}
+
 // GenLoginTestGo generates login_test.go.
 func GenLoginTestGo() {
 	var sb strings.Builder
@@ -625,6 +856,9 @@ func GenLoginTestGo() {
 		desc.genTestRegisterAndLoginCannotWriteState(&sb)
 		desc.genTestReadStateDecodeFailure(&sb)
 		desc.genTestTheDatabaseIsReplacedThenFailure(&sb)
+		desc.genTestClockIsOffThenSuccess(&sb)
+		desc.genTestClockIsOffThen401(&sb)
+		desc.genTestClockIsOffThen500(&sb)
 	}
 	writefile("login_test.go", &sb)
 }

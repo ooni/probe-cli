@@ -15,18 +15,33 @@ import (
 
 // LoginHandler is an http.Handler to test login
 type LoginHandler struct {
-	mu         sync.Mutex
-	noRegister bool
-	state      []*loginState
-	t          *testing.T
-	logins     int32
-	registers  int32
+	failCallWith []int // ignored by login and register
+	mu           sync.Mutex
+	noRegister   bool
+	state        []*loginState
+	t            *testing.T
+	logins       int32
+	registers    int32
 }
 
 func (lh *LoginHandler) forgetLogins() {
 	defer lh.mu.Unlock()
 	lh.mu.Lock()
 	lh.state = nil
+}
+
+func (lh *LoginHandler) forgetTokens() {
+	defer lh.mu.Unlock()
+	lh.mu.Lock()
+	for _, entry := range lh.state {
+		// This should be enough to cause all tokens to
+		// be expired and force clients to relogin.
+		//
+		// (It does not matter much whether the client
+		// clock is off, or the server clock is off,
+		// thanks Galileo for explaining this to us <3.)
+		entry.Expire = time.Now().Add(-3600 * time.Second)
+	}
 }
 
 func (lh *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -133,6 +148,12 @@ func (lh *LoginHandler) login(w http.ResponseWriter, r *http.Request) {
 func (lh *LoginHandler) psiphon(w http.ResponseWriter, r *http.Request) {
 	defer lh.mu.Unlock()
 	lh.mu.Lock()
+	if len(lh.failCallWith) > 0 {
+		code := lh.failCallWith[0]
+		lh.failCallWith = lh.failCallWith[1:]
+		w.WriteHeader(code)
+		return
+	}
 	token := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
 	for _, s := range lh.state {
 		if token == s.Token && time.Now().Before(s.Expire) {
@@ -156,6 +177,12 @@ func (lh *LoginHandler) psiphon(w http.ResponseWriter, r *http.Request) {
 func (lh *LoginHandler) tor(w http.ResponseWriter, r *http.Request) {
 	defer lh.mu.Unlock()
 	lh.mu.Lock()
+	if len(lh.failCallWith) > 0 {
+		code := lh.failCallWith[0]
+		lh.failCallWith = lh.failCallWith[1:]
+		w.WriteHeader(code)
+		return
+	}
 	token := strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1)
 	for _, s := range lh.state {
 		if token == s.Token && time.Now().Before(s.Expire) {
