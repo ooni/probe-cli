@@ -419,6 +419,60 @@ func TestCheckInNoParams(t *testing.T) {
 	}
 }
 
+func TestFetchURLListSuccess(t *testing.T) {
+	sess, err := NewSession()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := sess.NewContext()
+	config := oonimkall.URLListConfig{
+		Limit: 10,
+	}
+	config.AddCategory("NEWS")
+	config.AddCategory("CULTR")
+	result, err := sess.FetchURLList(ctx, &config)
+	if err != nil {
+		t.Fatalf("unexpected error: %+v", err)
+	}
+	if result == nil || result.Results == nil {
+		t.Fatal("got nil result")
+	}
+	for _, entry := range result.Results {
+		if entry.CategoryCode != "NEWS" && entry.CategoryCode != "CULTR" {
+			t.Fatalf("unexpected category code: %+v", entry)
+		}
+	}
+}
+
+func TestFetchURLListWithCC(t *testing.T) {
+	sess, err := NewSession()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := sess.NewContext()
+	config := oonimkall.URLListConfig{
+		CountryCode: "IT",
+	}
+	config.AddCategory("NEWS")
+	config.AddCategory("CULTR")
+	result, err := sess.FetchURLList(ctx, &config)
+	if err != nil {
+		t.Fatalf("unexpected error: %+v", err)
+	}
+	if result == nil || result.Results == nil {
+		t.Fatal("got nil result")
+	}
+	found := false
+	for _, entry := range result.Results {
+		if entry.CountryCode == "IT" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("not found url for country code: IT")
+	}
+}
+
 func TestMain(m *testing.M) {
 	// Here we're basically testing whether eventually the finalizers
 	// will run and the number of active sessions and cancels will become

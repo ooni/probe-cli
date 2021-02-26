@@ -132,7 +132,7 @@ func Summarize(tk *TestKeys) (out Summary) {
 		// TODO(bassosimone): MK flags this as accessible. This result is debateable. We
 		// are doing what MK does. But we most likely want to make it better later.
 		//
-		// See <https://github.com/ooni/probe-cli/v3/internal/engine/issues/579>.
+		// See <https://github.com/ooni/probe-engine/issues/579>.
 		out.Accessible = &accessible
 		out.Status |= StatusSuccessNXDOMAIN | StatusExperimentDNS
 		return
