@@ -110,11 +110,9 @@ func NewSession(config SessionConfig) (*Session, error) {
 		Logger:       sess.logger,
 	}
 	sess.resolver = &sessionresolver.Resolver{
-		KVStore: config.KVStore,
-		Config: &sessionresolver.Config{
-			ByteCounter: sess.byteCounter,
-			Logger:      sess.logger,
-		},
+		ByteCounter: sess.byteCounter,
+		KVStore:     config.KVStore,
+		Logger:      sess.logger,
 	}
 	httpConfig.FullResolver = sess.resolver
 	httpConfig.ProxyURL = config.ProxyURL // no need to proxy the resolver
