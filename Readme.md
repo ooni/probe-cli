@@ -58,8 +58,6 @@ time when the build occurred.
 
 ## iOS bindings
 
-Then you can build using:
-
 ```bash
 ./build-ios.bash
 ```

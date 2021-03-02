@@ -17,7 +17,7 @@ jobs:
           sudo service docker restart
       - uses: actions/setup-go@v1
         with:
-          go-version: "1.14"
+          go-version: "1.16"
       - uses: actions/checkout@v2
       - run: DOCKER_CLI_EXPERIMENTAL=enabled ./build.sh linux_amd64
       - run: sudo apt-get update -q

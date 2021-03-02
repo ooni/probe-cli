@@ -7,6 +7,7 @@ v=`git describe --tags || echo $GITHUB_SHA`
 case $1 in
   windows)
     set -x
+    go run ./internal/cmd/getresources
     $0 windows_amd64
     $0 windows_386
     ;;
@@ -33,20 +34,21 @@ case $1 in
 
   linux)
     set -x
+    go run ./internal/cmd/getresources
     $0 linux_amd64
     $0 linux_386
     ;;
 
   linux_amd64)
-    docker pull --platform linux/amd64 golang:1.14-alpine
-    docker run --platform linux/amd64 -v`pwd`:/ooni -w/ooni golang:1.14-alpine ./build.sh _alpine
+    docker pull --platform linux/amd64 golang:1.16-alpine
+    docker run --platform linux/amd64 -v`pwd`:/ooni -w/ooni golang:1.16-alpine ./build.sh _alpine
     tar -cvzf ooniprobe_${v}_linux_amd64.tar.gz LICENSE.md Readme.md ooniprobe
     mv ooniprobe ./CLI/linux/amd64/
     ;;
 
   linux_386)
-    docker pull --platform linux/386 golang:1.14-alpine
-    docker run --platform linux/386 -v`pwd`:/ooni -w/ooni golang:1.14-alpine ./build.sh _alpine
+    docker pull --platform linux/386 golang:1.16-alpine
+    docker run --platform linux/386 -v`pwd`:/ooni -w/ooni golang:1.16-alpine ./build.sh _alpine
     tar -cvzf ooniprobe_${v}_linux_386.tar.gz LICENSE.md Readme.md ooniprobe
     mv ooniprobe ./CLI/linux/386/
     ;;
@@ -62,6 +64,7 @@ case $1 in
     set -x
     # Note! The following line _assumes_ you have a working C compiler. If you
     # have Xcode command line tools installed, you are fine.
+    go run ./internal/cmd/getresources
     go build -ldflags='-s -w' ./cmd/ooniprobe
     tar -cvzf ooniprobe_${v}_darwin_amd64.tar.gz LICENSE.md Readme.md ooniprobe
     mv ooniprobe ./CLI/darwin/amd64/
@@ -79,7 +82,7 @@ case $1 in
     set +x
     echo "Usage: $0 darwin|linux|macos|windows|release"
     echo ""
-    echo "You need a C compiler and Go >= 1.14. The C compiler must be a"
+    echo "You need a C compiler and Go >= 1.16. The C compiler must be a"
     echo "UNIX like compiler like GCC, Clang, Mingw-w64."
     echo ""
     echo "To build a static Linux binary, we use Docker and Alpine. We currently"
