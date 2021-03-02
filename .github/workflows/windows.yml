@@ -12,6 +12,7 @@ jobs:
         with:
           go-version: "1.16"
       - uses: actions/checkout@v2
+      - run: go.exe run ./internal/cmd/getresources # only build.sh windows gets the resources
       - run: bash.exe ./build.sh windows_amd64  # TODO(bassosimone): make windows_386 work
       - run: bash.exe ./smoketest.sh ./CLI/windows/amd64/ooniprobe.exe
       - uses: actions/upload-artifact@v1
