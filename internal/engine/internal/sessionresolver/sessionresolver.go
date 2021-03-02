@@ -21,7 +21,7 @@ import (
 // this structure and use it in session.go.
 type Resolver struct {
 	ByteCounter *bytecounter.Counter // optional
-	KVStore     KVStore              // mandatory
+	KVStore     KVStore              // optional
 	Logger      Logger               // optional
 	codec       codec
 	mu          sync.Mutex

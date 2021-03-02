@@ -20,7 +20,7 @@ type resolverinfo struct {
 
 // readstate reads the resolver state from disk
 func (r *Resolver) readstate() ([]*resolverinfo, error) {
-	data, err := r.KVStore.Get(storekey)
+	data, err := r.kvstore().Get(storekey)
 	if err != nil {
 		return nil, err
 	}
@@ -89,5 +89,5 @@ func (r *Resolver) writestate(ri []*resolverinfo) error {
 	if err != nil {
 		return err
 	}
-	return r.KVStore.Set(storekey, data)
+	return r.kvstore().Set(storekey, data)
 }
