@@ -20,13 +20,14 @@ import (
 // Resolver is the session resolver. You should create an instance of
 // this structure and use it in session.go.
 type Resolver struct {
-	ByteCounter *bytecounter.Counter // optional
-	KVStore     KVStore              // optional
-	Logger      Logger               // optional
-	codec       codec
-	mu          sync.Mutex
-	once        sync.Once
-	res         map[string]resolver
+	ByteCounter    *bytecounter.Counter // optional
+	KVStore        KVStore              // optional
+	Logger         Logger               // optional
+	codec          codec
+	dnsClientMaker dnsclientmaker
+	mu             sync.Mutex
+	once           sync.Once
+	res            map[string]resolver
 }
 
 // CloseIdleConnections closes the idle connections, if any. This

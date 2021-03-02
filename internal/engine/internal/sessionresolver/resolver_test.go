@@ -11,9 +11,10 @@ import (
 )
 
 type FakeResolver struct {
-	Data  []string
-	Err   error
-	Sleep time.Duration
+	Closed bool
+	Data   []string
+	Err    error
+	Sleep  time.Duration
 }
 
 func (r *FakeResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
@@ -25,7 +26,9 @@ func (r *FakeResolver) LookupHost(ctx context.Context, hostname string) ([]strin
 	}
 }
 
-func (r *FakeResolver) CloseIdleConnections() {}
+func (r *FakeResolver) CloseIdleConnections() {
+	r.Closed = true
+}
 
 func TestTimeLimitedLookupSuccess(t *testing.T) {
 	reso := &Resolver{}

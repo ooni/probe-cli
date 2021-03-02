@@ -80,12 +80,12 @@ func (r *Resolver) newresolver(URL string) (resolver, error) {
 	if h3 {
 		URL = strings.Replace(URL, "http3://", "https://", 1)
 	}
-	return netx.NewDNSClientWithOverrides(netx.Config{
+	return r.clientmaker().Make(netx.Config{
 		BogonIsError: true,
 		ByteCounter:  r.byteCounter(),
 		HTTP3Enabled: h3,
 		Logger:       r.logger(),
-	}, URL, "", "", "")
+	}, URL)
 }
 
 // getresolver returns a resolver with the given URL. This function caches
