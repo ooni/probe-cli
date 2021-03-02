@@ -1,85 +1,119 @@
 // Package sessionresolver contains the resolver used by the session. This
-// resolver uses Powerdns DoH by default and falls back on the system
-// provided resolver if Powerdns DoH is not working.
+// resolver will try to figure out which is the best service for running
+// domain name resolutions and will consistently use it.
 package sessionresolver
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"math/rand"
+	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/engine/internal/multierror"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
-// Resolver is the session resolver.
+// Config contains configuration for the session resolver. The
+// zero instance is a valid instance.
+type Config struct {
+	// ByteCounter is the byte counter to use. If not specified, we
+	// will use a default, internal byte counter.
+	ByteCounter *bytecounter.Counter
+
+	// Logger is the logger to use. If not specified, we will
+	// use a default instace of the logger.
+	Logger Logger
+}
+
+// Resolver is the session resolver. You should create an instance of
+// this structure and use it in session.go.
 type Resolver struct {
-	Primary         netx.DNSClient
-	PrimaryFailure  *atomicx.Int64
-	PrimaryQuery    *atomicx.Int64
-	Fallback        netx.DNSClient
-	FallbackFailure *atomicx.Int64
-	FallbackQuery   *atomicx.Int64
+	KVStore KVStore // mandatory
+	Config  *Config // optional
+	codec   codec
+	mu      sync.Mutex
+	once    sync.Once
+	res     map[string]resolver
 }
 
-// New creates a new session resolver.
-func New(config netx.Config) *Resolver {
-	primary, err := netx.NewDNSClientWithOverrides(config,
-		"https://cloudflare.com/dns-query", "dns.cloudflare.com", "", "")
-	runtimex.PanicOnError(err, "cannot create dns over https resolver")
-	fallback, err := netx.NewDNSClient(config, "system:///")
-	runtimex.PanicOnError(err, "cannot create system resolver")
-	return &Resolver{
-		Primary:         primary,
-		PrimaryFailure:  atomicx.NewInt64(),
-		PrimaryQuery:    atomicx.NewInt64(),
-		Fallback:        fallback,
-		FallbackFailure: atomicx.NewInt64(),
-		FallbackQuery:   atomicx.NewInt64(),
-	}
-}
-
-// CloseIdleConnections closes the idle connections, if any
+// CloseIdleConnections closes the idle connections, if any. This
+// function is guaranteed to be idempotent.
 func (r *Resolver) CloseIdleConnections() {
-	r.Primary.CloseIdleConnections()
-	r.Fallback.CloseIdleConnections()
+	r.once.Do(r.closeall)
 }
 
 // Stats returns stats about the session resolver.
 func (r *Resolver) Stats() string {
-	return fmt.Sprintf("sessionresolver: failure rate: primary: %d/%d; fallback: %d/%d",
-		r.PrimaryFailure.Load(), r.PrimaryQuery.Load(),
-		r.FallbackFailure.Load(), r.FallbackQuery.Load())
+	data, err := json.Marshal(r.readstatedefault())
+	runtimex.PanicOnError(err, "json.Marshal should not fail here")
+	return fmt.Sprintf("sessionresolver: %s", string(data))
 }
 
-// LookupHost implements Resolver.LookupHost
-func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
-	// Algorithm similar to Firefox TRR2 mode. See:
-	// https://wiki.mozilla.org/Trusted_Recursive_Resolver#DNS-over-HTTPS_Prefs_in_Firefox
-	// We use a higher timeout than Firefox's timeout (1.5s) to be on the safe side
-	// and therefore see to use DoH more often.
-	r.PrimaryQuery.Add(1)
-	trr2, cancel := context.WithTimeout(ctx, 4*time.Second)
-	defer cancel()
-	addrs, err := r.Primary.LookupHost(trr2, hostname)
-	if err != nil {
-		r.PrimaryFailure.Add(1)
-		r.FallbackQuery.Add(1)
-		addrs, err = r.Fallback.LookupHost(ctx, hostname)
-		if err != nil {
-			r.FallbackFailure.Add(1)
-		}
+// ErrLookupHost indicates that LookupHost failed.
+var ErrLookupHost = errors.New("sessionresolver: LookupHost failed")
+
+// config ensures we have a valid config struct.
+func (r *Resolver) config() *Config {
+	if r.Config != nil {
+		return r.Config
 	}
-	return addrs, err
+	return new(Config) // should be enough
 }
 
-// Network implements Resolver.Network
+// LookupHost implements Resolver.LookupHost.
+func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+	state := r.readstatedefault()
+	r.maybeConfusion(state)
+	defer r.writestate(state)
+	const ewma = 0.9 // the last sample is very important
+	me := multierror.New(ErrLookupHost)
+	for _, e := range state {
+		re, err := r.getresolver(r.config(), e.URL)
+		if err != nil {
+			continue // could this happen in practice?
+		}
+		addrs, err := r.timeLimitedLookup(ctx, re, hostname)
+		if err == nil {
+			r.config().logger().Infof("sessionresolver: %s... %v", e.URL, nil)
+			e.Score = ewma*1.0 + (1-ewma)*e.Score // increase score
+			return addrs, nil
+		}
+		r.config().logger().Warnf("sessionresolver: %s... %s", e.URL, err.Error())
+		e.Score = ewma*0.0 + (1-ewma)*e.Score // decrease score
+		me.Add(&errwrapper{error: err, URL: e.URL})
+	}
+	return nil, me
+}
+
+// maybeConfusion will rearrange the  first elements of the vector
+// with low probability, so giving other resolvers a chance
+// to run and show that they are also viable. We do not fully
+// reorder the vector because that could lead to long runtimes.
+func (r *Resolver) maybeConfusion(state []*resolverinfo) {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	const confusion = 0.3
+	if rng.Float64() >= confusion {
+		return
+	}
+	switch len(state) {
+	case 0, 1: // nothing to do
+	case 2:
+		state[0], state[1] = state[1], state[0]
+	default:
+		state[0], state[2] = state[2], state[0]
+	}
+}
+
+// Network implements Resolver.Network.
 func (r *Resolver) Network() string {
 	return "sessionresolver"
 }
 
-// Address implements Resolver.Address
+// Address implements Resolver.Address.
 func (r *Resolver) Address() string {
 	return ""
 }
