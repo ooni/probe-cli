@@ -30,7 +30,7 @@ func getit(name string, ri *resources.ResourceInfo) error {
 	}
 	URL.Path = ri.URLPath
 	log.Println("fetching", URL.String())
-	resp, err := http.DefaultClient.Get(URL.String())
+	resp, err := http.Get(URL.String())
 	if err != nil {
 		return err
 	}
