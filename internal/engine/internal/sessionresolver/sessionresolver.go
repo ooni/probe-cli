@@ -17,27 +17,16 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
-// Config contains configuration for the session resolver. The
-// zero instance is a valid instance.
-type Config struct {
-	// ByteCounter is the byte counter to use. If not specified, we
-	// will use a default, internal byte counter.
-	ByteCounter *bytecounter.Counter
-
-	// Logger is the logger to use. If not specified, we will
-	// use a default instace of the logger.
-	Logger Logger
-}
-
 // Resolver is the session resolver. You should create an instance of
 // this structure and use it in session.go.
 type Resolver struct {
-	KVStore KVStore // mandatory
-	Config  *Config // optional
-	codec   codec
-	mu      sync.Mutex
-	once    sync.Once
-	res     map[string]resolver
+	ByteCounter *bytecounter.Counter // optional
+	KVStore     KVStore              // mandatory
+	Logger      Logger               // optional
+	codec       codec
+	mu          sync.Mutex
+	once        sync.Once
+	res         map[string]resolver
 }
 
 // CloseIdleConnections closes the idle connections, if any. This
@@ -56,14 +45,6 @@ func (r *Resolver) Stats() string {
 // ErrLookupHost indicates that LookupHost failed.
 var ErrLookupHost = errors.New("sessionresolver: LookupHost failed")
 
-// config ensures we have a valid config struct.
-func (r *Resolver) config() *Config {
-	if r.Config != nil {
-		return r.Config
-	}
-	return new(Config) // should be enough
-}
-
 // LookupHost implements Resolver.LookupHost.
 func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	state := r.readstatedefault()
@@ -72,18 +53,18 @@ func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, e
 	const ewma = 0.9 // the last sample is very important
 	me := multierror.New(ErrLookupHost)
 	for _, e := range state {
-		re, err := r.getresolver(r.config(), e.URL)
+		re, err := r.getresolver(e.URL)
 		if err != nil {
-			r.config().logger().Warnf("sessionresolver: getresolver: %s", err.Error())
+			r.logger().Warnf("sessionresolver: getresolver: %s", err.Error())
 			continue
 		}
 		addrs, err := r.timeLimitedLookup(ctx, re, hostname)
 		if err == nil {
-			r.config().logger().Infof("sessionresolver: %s... %v", e.URL, nil)
+			r.logger().Infof("sessionresolver: %s... %v", e.URL, nil)
 			e.Score = ewma*1.0 + (1-ewma)*e.Score // increase score
 			return addrs, nil
 		}
-		r.config().logger().Warnf("sessionresolver: %s... %s", e.URL, err.Error())
+		r.logger().Warnf("sessionresolver: %s... %s", e.URL, err.Error())
 		e.Score = ewma*0.0 + (1-ewma)*e.Score // decrease score
 		me.Add(&errwrapper{error: err, URL: e.URL})
 	}

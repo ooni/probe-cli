@@ -34,6 +34,10 @@ var allmakers = []*resolvermaker{{
 	url: "https://doh.powerdns.org/",
 }, {
 	url: systemResolverURL,
+}, {
+	url: "https://mozilla.cloudflare-dns.com/dns-query",
+}, {
+	url: "http3://mozilla.cloudflare-dns.com/dns-query",
 }}
 
 // allbyurl contains all the resolvermakers by URL
@@ -55,44 +59,44 @@ func init() {
 }
 
 // byteCounter returns the configured byteCounter or a default
-func (c *Config) byteCounter() *bytecounter.Counter {
-	if c.ByteCounter != nil {
-		return c.ByteCounter
+func (r *Resolver) byteCounter() *bytecounter.Counter {
+	if r.ByteCounter != nil {
+		return r.ByteCounter
 	}
 	return bytecounter.New()
 }
 
 // logger returns the configured logger or a default
-func (c *Config) logger() Logger {
-	if c.Logger != nil {
-		return c.Logger
+func (r *Resolver) logger() Logger {
+	if r.Logger != nil {
+		return r.Logger
 	}
 	return log.Log
 }
 
 // newresolver creates a new resolver with the given config and URL
-func (r *Resolver) newresolver(config *Config, URL string) (resolver, error) {
+func (r *Resolver) newresolver(URL string) (resolver, error) {
 	h3 := strings.HasPrefix(URL, "http3://")
 	if h3 {
 		URL = strings.Replace(URL, "http3://", "https://", 1)
 	}
 	return netx.NewDNSClientWithOverrides(netx.Config{
 		BogonIsError: true,
-		ByteCounter:  config.byteCounter(),
+		ByteCounter:  r.byteCounter(),
 		HTTP3Enabled: h3,
-		Logger:       config.logger(),
+		Logger:       r.logger(),
 	}, URL, "", "", "")
 }
 
 // getresolver returns a resolver with the given URL. This function caches
 // already allocated resolvers so we only allocate them once.
-func (r *Resolver) getresolver(config *Config, URL string) (resolver, error) {
+func (r *Resolver) getresolver(URL string) (resolver, error) {
 	defer r.mu.Unlock()
 	r.mu.Lock()
 	if re, found := r.res[URL]; found == true {
 		return re, nil
 	}
-	re, err := r.newresolver(config, URL)
+	re, err := r.newresolver(URL)
 	if err != nil {
 		return nil, err
 	}
