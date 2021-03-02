@@ -7,10 +7,12 @@ import (
 )
 
 func (r *Resolver) kvstore() KVStore {
-	if r.KVStore != nil {
-		return r.KVStore
+	defer r.mu.Unlock()
+	r.mu.Lock()
+	if r.KVStore == nil {
+		r.KVStore = &memkvstore{}
 	}
-	return &memkvstore{}
+	return r.KVStore
 }
 
 var errMemkvstoreNotFound = errors.New("apiclient: memkvstore: not found")
