@@ -52,4 +52,5 @@ go get -u golang.org/x/mobile/cmd/gomobile
 gomobile init
 export GO111MODULE=on
 output=MOBILE/android/oonimkall.aar
+go run ./internal/cmd/getresources
 gomobile bind -target=android -o $output -ldflags="-s -w" ./pkg/oonimkall

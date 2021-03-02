@@ -42,14 +42,6 @@ This will generate a binary called `ooniprobe` in the current directory.
 
 ## Android bindings
 
-You need to download assets first using:
-
-```bash
-go run ./internal/cmd/getresources
-```
-
-Then you can build using:
-
 ```bash
 ./build-android.bash
 ```
@@ -65,12 +57,6 @@ Where VERSION is like `2020.03.30-231914` corresponding to the
 time when the build occurred.
 
 ## iOS bindings
-
-You need to download assets first using:
-
-```bash
-go run ./internal/cmd/getresources
-```
 
 Then you can build using:
 
