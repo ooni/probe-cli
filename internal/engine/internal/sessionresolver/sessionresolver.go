@@ -74,7 +74,8 @@ func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, e
 	for _, e := range state {
 		re, err := r.getresolver(r.config(), e.URL)
 		if err != nil {
-			continue // could this happen in practice?
+			r.config().logger().Warnf("sessionresolver: getresolver: %s", err.Error())
+			continue
 		}
 		addrs, err := r.timeLimitedLookup(ctx, re, hostname)
 		if err == nil {

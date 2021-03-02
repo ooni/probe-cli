@@ -1,8 +1,6 @@
 package sessionresolver
 
 import (
-	"errors"
-	"fmt"
 	"math/rand"
 	"strings"
 	"time"
@@ -32,8 +30,6 @@ var allmakers = []*resolvermaker{{
 	url: "http3://dns.google/dns-query",
 }, {
 	url: "https://dns.quad9.net/dns-query",
-}, {
-	url: "http3://dns.quad9.net/dns-query",
 }, {
 	url: "https://doh.powerdns.org/",
 }, {
@@ -74,25 +70,18 @@ func (c *Config) logger() Logger {
 	return log.Log
 }
 
-// errNoResolver indicates that a resolver does not exist
-var errNoResolver = errors.New("no such resolver")
-
 // newresolver creates a new resolver with the given config and URL
 func (r *Resolver) newresolver(config *Config, URL string) (resolver, error) {
-	e, found := allbyurl[URL]
-	if !found {
-		return nil, fmt.Errorf("%w: %s", errNoResolver, URL)
-	}
-	h3 := strings.HasSuffix(URL, "http3")
+	h3 := strings.HasPrefix(URL, "http3://")
 	if h3 {
-		strings.Replace(URL, "http3://", "https://", 1)
+		URL = strings.Replace(URL, "http3://", "https://", 1)
 	}
 	return netx.NewDNSClientWithOverrides(netx.Config{
 		BogonIsError: true,
 		ByteCounter:  config.byteCounter(),
 		HTTP3Enabled: h3,
 		Logger:       config.logger(),
-	}, e.url, "", "", "")
+	}, URL, "", "", "")
 }
 
 // getresolver returns a resolver with the given URL. This function caches
