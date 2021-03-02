@@ -22,6 +22,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/engine/resources"
+	"github.com/ooni/probe-cli/v3/internal/engine/resourcesmanager"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -414,12 +415,7 @@ func (s *Session) UserAgent() (useragent string) {
 
 // MaybeUpdateResources updates the resources if needed.
 func (s *Session) MaybeUpdateResources(ctx context.Context) error {
-	return (&resources.Client{
-		HTTPClient: s.DefaultHTTPClient(),
-		Logger:     s.logger,
-		UserAgent:  s.UserAgent(),
-		WorkDir:    s.assetsDir,
-	}).Ensure(ctx)
+	return (&resourcesmanager.CopyWorker{DestDir: s.assetsDir}).Ensure()
 }
 
 func (s *Session) getAvailableProbeServices() []model.Service {

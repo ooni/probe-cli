@@ -1,12 +1,9 @@
 package geolocate
 
 import (
-	"context"
-	"net/http"
 	"testing"
 
-	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/resources"
+	"github.com/ooni/probe-cli/v3/internal/engine/resourcesmanager"
 )
 
 const (
@@ -16,13 +13,8 @@ const (
 )
 
 func maybeFetchResources(t *testing.T) {
-	c := &resources.Client{
-		HTTPClient: http.DefaultClient,
-		Logger:     log.Log,
-		UserAgent:  "ooniprobe-engine/0.1.0",
-		WorkDir:    "../testdata/",
-	}
-	if err := c.Ensure(context.Background()); err != nil {
+	c := &resourcesmanager.CopyWorker{DestDir: "../testdata/"}
+	if err := c.Ensure(); err != nil {
 		t.Fatal(err)
 	}
 }

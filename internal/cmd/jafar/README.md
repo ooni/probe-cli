@@ -8,7 +8,7 @@ any system but it really on works on Linux.
 
 ## Building
 
-We use Go >= 1.14. Jafar also needs the C library headers,
+We use Go >= 1.16. Jafar also needs the C library headers,
 iptables installed, and root permissions.
 
 With Linux Alpine edge, you can compile Jafar with:

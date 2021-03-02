@@ -1,6 +1,7 @@
 package ooni
 
 import (
+	_ "embed" // because we embed a file
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -8,7 +9,6 @@ import (
 	"syscall"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/bindata"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/config"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/enginex"
@@ -239,6 +239,9 @@ func MaybeInitializeHome(home string) error {
 	return nil
 }
 
+//go:embed default-config.json
+var defaultConfig []byte
+
 // InitDefaultConfig reads the config from common locations or creates it if
 // missing.
 func InitDefaultConfig(home string) (*config.Config, error) {
@@ -252,12 +255,7 @@ func InitDefaultConfig(home string) (*config.Config, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Debugf("writing default config to %s", configPath)
-			var data []byte
-			data, err = bindata.Asset("data/default-config.json")
-			if err != nil {
-				return nil, err
-			}
-			if err = ioutil.WriteFile(configPath, data, 0644); err != nil {
+			if err = ioutil.WriteFile(configPath, defaultConfig, 0644); err != nil {
 				return nil, err
 			}
 			// If the user did the informed consent procedure in

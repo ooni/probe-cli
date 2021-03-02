@@ -1,6 +1,6 @@
 module github.com/ooni/probe-cli/v3
 
-go 1.14
+go 1.16
 
 require (
 	git.torproject.org/pluggable-transports/goptlib.git v1.1.0
