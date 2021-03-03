@@ -1,6 +1,7 @@
 package sessionresolver
 
 import (
+	"errors"
 	"io"
 	"testing"
 
@@ -16,5 +17,8 @@ func TestErrWrapper(t *testing.T) {
 	expect := "<https://dns.quad9.net/dns-query> EOF"
 	if diff := cmp.Diff(expect, o); diff != "" {
 		t.Fatal(diff)
+	}
+	if !errors.Is(ew, io.EOF) {
+		t.Fatal("not the sub-error we expected")
 	}
 }
