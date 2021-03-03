@@ -19,7 +19,7 @@ func (d ErrorWrapperDialer) DialContext(ctx context.Context, network, address st
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	err = errorx.SafeErrWrapperBuilder{
 		// ConnID does not make any sense if we've failed and the error
-		// does not make any sense (and is nil) if we succeded.
+		// does not make any sense (and is nil) if we succeeded.
 		DialID:    dialID,
 		Error:     err,
 		Operation: errorx.ConnectOperation,

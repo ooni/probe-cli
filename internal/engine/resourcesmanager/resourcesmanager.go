@@ -36,6 +36,14 @@ type CopyWorker struct {
 	WriteFile func(filename string, data []byte, perm fs.FileMode) error // optional
 }
 
+// If you arrive here because of this error:
+//
+// internal/engine/resourcesmanager/resourcesmanager.go:39:12: pattern *.mmdb.gz: no matching files found
+// internal/engine/resourcesmanager/resourcesmanager.go:39:12: pattern *.mmdb.gz: no matching files found
+//
+// then your problem is that you need to fetch resources _before_ compiling
+// ooniprobe. See Readme.md for instructions on how to do that.
+
 //go:embed *.mmdb.gz
 var efs embed.FS
 

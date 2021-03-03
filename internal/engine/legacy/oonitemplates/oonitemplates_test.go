@@ -274,10 +274,10 @@ func obfs4config() OBFS4ConnectConfig {
 		Address:      "109.105.109.165:10527",
 		StateBaseDir: "../../testdata/",
 		Params: map[string][]string{
-			"cert": []string{
+			"cert": {
 				"Bvg/itxeL4TWKLP6N1MaQzSOC6tcRIBv6q57DYAZc3b2AzuM+/TfB7mqTFEfXILCjEwzVA",
 			},
-			"iat-mode": []string{"1"},
+			"iat-mode": {"1"},
 		},
 	}
 }

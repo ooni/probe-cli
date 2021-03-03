@@ -145,7 +145,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 			// Even with a failed measurement, we want to continue. We want to
 			// record and submit the information we have. Saving the information
 			// is useful for local inspection. Submitting it is useful to us to
-			// undertsand what went wrong (censorship? bug? anomaly?).
+			// understand what went wrong (censorship? bug? anomaly?).
 		}
 
 		saveToDisk := true
