@@ -109,7 +109,7 @@ func Summarize(tk *TestKeys) (out Summary) {
 		tcpIP        = "tcp_ip"
 	)
 	// If the measurement was for an HTTPS website and the HTTP experiment
-	// succeded, then either there is a compromised CA in our pool (which is
+	// succeeded, then either there is a compromised CA in our pool (which is
 	// certifi-go), or there is transparent proxying, or we are actually
 	// speaking with the legit server. We assume the latter. This applies
 	// also to cases in which we are redirected to HTTPS.
@@ -129,7 +129,7 @@ func Summarize(tk *TestKeys) (out Summary) {
 	if tk.DNSExperimentFailure != nil &&
 		*tk.DNSExperimentFailure == errorx.FailureDNSNXDOMAINError &&
 		tk.DNSConsistency != nil && *tk.DNSConsistency == DNSConsistent {
-		// TODO(bassosimone): MK flags this as accessible. This result is debateable. We
+		// TODO(bassosimone): MK flags this as accessible. This result is debatable. We
 		// are doing what MK does. But we most likely want to make it better later.
 		//
 		// See <https://github.com/ooni/probe-engine/issues/579>.
@@ -146,7 +146,7 @@ func Summarize(tk *TestKeys) (out Summary) {
 		out.Status |= StatusAnomalyDNS | StatusExperimentDNS
 		return
 	}
-	// If we tried to connect more than once and never succeded and we were
+	// If we tried to connect more than once and never succedeed and we were
 	// able to measure DNS consistency, then we can conclude something.
 	if tk.TCPConnectAttempts > 0 && tk.TCPConnectSuccesses <= 0 && tk.DNSConsistency != nil {
 		out.Status |= StatusAnomalyConnect | StatusExperimentConnect

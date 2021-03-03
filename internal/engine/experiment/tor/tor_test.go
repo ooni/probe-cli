@@ -100,7 +100,7 @@ func TestMeasurerMeasureFetchTorTargetsEmptyList(t *testing.T) {
 
 func TestMeasurerMeasureGoodWithMockedOrchestra(t *testing.T) {
 	// This test mocks orchestra to return a nil list of targets, so the code runs
-	// but we don't perform any actualy network actions.
+	// but we don't perform any actual network actions.
 	measurer := NewMeasurer(Config{})
 	measurer.newOrchestraClient = func(ctx context.Context, sess model.ExperimentSession) (model.ExperimentOrchestraClient, error) {
 		return new(probeservices.Client), nil

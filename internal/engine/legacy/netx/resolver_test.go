@@ -34,7 +34,7 @@ func testresolverquick(t *testing.T, network, address string) {
 		}
 	}
 	if !foundquad8 {
-		t.Fatalf("did not find 8.8.8.8 in ouput; output=%+v", addrs)
+		t.Fatalf("did not find 8.8.8.8 in output; output=%+v", addrs)
 	}
 }
 

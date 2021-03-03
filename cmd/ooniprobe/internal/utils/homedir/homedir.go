@@ -86,12 +86,12 @@ func Expand(path string) (string, error) {
 	return filepath.Join(dir, path[1:]), nil
 }
 
+// MustExpand expands path and panics on failure.
 func MustExpand(path string) string {
 	str, err := Expand(path)
 	if err != nil {
 		panic(err)
 	}
-
 	return str
 }
 
