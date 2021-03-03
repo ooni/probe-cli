@@ -13,7 +13,7 @@ type codec interface {
 	Decode(b []byte, v interface{}) error
 }
 
-// getCode always returns a valid codec.
+// getCodec always returns a valid codec.
 func (r *Resolver) getCodec() codec {
 	if r.codec != nil {
 		return r.codec

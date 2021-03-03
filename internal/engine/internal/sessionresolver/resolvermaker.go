@@ -19,7 +19,9 @@ type resolvermaker struct {
 // systemResolverURL is the URL of the system resolver.
 const systemResolverURL = "system:///"
 
-// allmakers contains all the makers in a list.
+// allmakers contains all the makers in a list. We use the http3
+// prefix to indicate we wanna use http3. The code will translate
+// this to https and set the proper next options.
 var allmakers = []*resolvermaker{{
 	url: "https://cloudflare-dns.com/dns-query",
 }, {
@@ -74,8 +76,9 @@ func (r *Resolver) logger() Logger {
 	return log.Log
 }
 
-// newresolver creates a new resolver with the given config and URL
-func (r *Resolver) newresolver(URL string) (resolver, error) {
+// newresolver creates a new resolver with the given config and URL. This is
+// where we expand http3 to https and set the h3 options.
+func (r *Resolver) newresolver(URL string) (childResolver, error) {
 	h3 := strings.HasPrefix(URL, "http3://")
 	if h3 {
 		URL = strings.Replace(URL, "http3://", "https://", 1)
@@ -90,18 +93,18 @@ func (r *Resolver) newresolver(URL string) (resolver, error) {
 
 // getresolver returns a resolver with the given URL. This function caches
 // already allocated resolvers so we only allocate them once.
-func (r *Resolver) getresolver(URL string) (resolver, error) {
+func (r *Resolver) getresolver(URL string) (childResolver, error) {
 	defer r.mu.Unlock()
 	r.mu.Lock()
 	if re, found := r.res[URL]; found == true {
-		return re, nil
+		return re, nil // already created
 	}
 	re, err := r.newresolver(URL)
 	if err != nil {
-		return nil, err
+		return nil, err // config err?
 	}
 	if r.res == nil {
-		r.res = make(map[string]resolver)
+		r.res = make(map[string]childResolver)
 	}
 	r.res[URL] = re
 	return re, nil

@@ -15,7 +15,7 @@ func (r *Resolver) kvstore() KVStore {
 	return r.KVStore
 }
 
-var errMemkvstoreNotFound = errors.New("apiclient: memkvstore: not found")
+var errMemkvstoreNotFound = errors.New("memkvstore: not found")
 
 type memkvstore struct {
 	m  map[string][]byte

@@ -1,7 +1,7 @@
 package sessionresolver
 
 // KVStore is a generic key-value store. We use it to store
-// on disk persistent state bound with this package.
+// on disk persistent state used by this package.
 type KVStore interface {
 	// Get gets the value for the given key.
 	Get(key string) ([]byte, error)

@@ -1,6 +1,22 @@
 // Package sessionresolver contains the resolver used by the session. This
 // resolver will try to figure out which is the best service for running
 // domain name resolutions and will consistently use it.
+//
+// Occasionally this code will also swap the best resolver with other
+// ~good resolvers to give them a chance to perform.
+//
+// The penalty/reward mechanism is strongly derivative, so the code should
+// adapt ~quickly to changing network conditions. Occasionally, we will
+// have longer resolutions when trying out other resolvers.
+//
+// At the beginning we randomize the known resolvers so that we do not
+// have any preferential ordering. The initial resolutions may be slower
+// if there are many issues with resolvers.
+//
+// The system resolver is given the lowest priority at the beginning
+// but it will of course be the most popular resolver if anything else
+// is failing us. (We will still occasionally probe for other working
+// resolvers and increase their score on success.)
 package sessionresolver
 
 import (
@@ -27,7 +43,7 @@ type Resolver struct {
 	dnsClientMaker dnsclientmaker
 	mu             sync.Mutex
 	once           sync.Once
-	res            map[string]resolver
+	res            map[string]childResolver
 }
 
 // CloseIdleConnections closes the idle connections, if any. This
@@ -46,7 +62,9 @@ func (r *Resolver) Stats() string {
 // ErrLookupHost indicates that LookupHost failed.
 var ErrLookupHost = errors.New("sessionresolver: LookupHost failed")
 
-// LookupHost implements Resolver.LookupHost.
+// LookupHost implements Resolver.LookupHost. This function returns a
+// multierror.Union error on failure, so you can see individual errors
+// and get a better picture of what's been going wrong.
 func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	state := r.readstatedefault()
 	r.maybeConfusion(state, time.Now().UnixNano())

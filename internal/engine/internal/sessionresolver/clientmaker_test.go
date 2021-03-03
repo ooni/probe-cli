@@ -10,13 +10,13 @@ import (
 )
 
 type fakeDNSClientMaker struct {
-	reso        resolver
+	reso        childResolver
 	err         error
 	savedConfig netx.Config
 	savedURL    string
 }
 
-func (c *fakeDNSClientMaker) Make(config netx.Config, URL string) (resolver, error) {
+func (c *fakeDNSClientMaker) Make(config netx.Config, URL string) (childResolver, error) {
 	c.savedConfig = config
 	c.savedURL = URL
 	return c.reso, c.err
