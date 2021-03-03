@@ -305,12 +305,6 @@ func TestSessionLocationLookup(t *testing.T) {
 	if sess.ResolverNetworkName() == geolocate.DefaultResolverNetworkName {
 		t.Fatal("unexpected ResolverNetworkName")
 	}
-	if sess.KibiBytesSent() <= 0 {
-		t.Fatal("unexpected KibiBytesSent")
-	}
-	if sess.KibiBytesReceived() <= 0 {
-		t.Fatal("unexpected KibiBytesReceived")
-	}
 }
 
 func TestSessionCloseCancelsTempDir(t *testing.T) {

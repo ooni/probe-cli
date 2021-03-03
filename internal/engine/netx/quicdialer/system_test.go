@@ -69,7 +69,7 @@ func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
 			t.Fatal("unexpected Name")
 		}
 		if ev[idx].Time.Before(ev[idx-1].Time) {
-			t.Fatal("unexpected Time")
+			t.Fatal("unexpected Time", ev[idx].Time, ev[idx-1].Time)
 		}
 	}
 }
