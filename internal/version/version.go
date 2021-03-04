@@ -3,5 +3,5 @@ package version
 
 const (
 	// Version is the software version
-	Version = "3.6.0"
+	Version = "3.7.0-alpha"
 )
