@@ -173,27 +173,27 @@ func configureDNS(seed int64, network, address string) (modelx.DNSResolver, erro
 		return nil, err
 	}
 	fallbacks := []dnsFallback{
-		dnsFallback{
+		{
 			network: "doh",
 			address: "https://cloudflare-dns.com/dns-query",
 		},
-		dnsFallback{
+		{
 			network: "doh",
 			address: "https://dns.google/dns-query",
 		},
-		dnsFallback{
+		{
 			network: "dot",
 			address: "8.8.8.8:853",
 		},
-		dnsFallback{
+		{
 			network: "dot",
 			address: "8.8.4.4:853",
 		},
-		dnsFallback{
+		{
 			network: "dot",
 			address: "1.1.1.1:853",
 		},
-		dnsFallback{
+		{
 			network: "dot",
 			address: "9.9.9.9:853",
 		},

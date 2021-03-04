@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
@@ -20,7 +21,8 @@ import (
 type managerDarwin struct{}
 
 var (
-	plistPath     = os.ExpandEnv("$HOME/Library/LaunchAgents/org.ooni.cli.plist")
+	plistDir      = os.ExpandEnv("$HOME/Library/LaunchAgents/")
+	plistPath     = filepath.Join(plistDir, "org.ooni.cli.plist")
 	domainTarget  = fmt.Sprintf("gui/%d", os.Getuid())
 	serviceTarget = fmt.Sprintf("%s/org.ooni.cli", domainTarget)
 )
@@ -105,6 +107,10 @@ func (managerDarwin) writePlist() error {
 	t := template.Must(template.New("plist").Parse(plistTemplate))
 	in := struct{ Executable string }{Executable: executable}
 	if err := t.Execute(&out, in); err != nil {
+		return err
+	}
+	log.Infof("exec: mkdir -p %s", plistDir)
+	if err := os.MkdirAll(plistDir, 0755); err != nil {
 		return err
 	}
 	log.Infof("exec: writePlist(%s)", plistPath)

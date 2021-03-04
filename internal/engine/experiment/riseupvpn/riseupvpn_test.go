@@ -278,6 +278,9 @@ func TestFailureGeoIpServiceBlocked(t *testing.T) {
 }
 
 func TestFailureGateway(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	var testCases = [...]string{"openvpn", "obfs4"}
 	eipService, err := fetchEipService()
 	if err != nil {
@@ -421,7 +424,7 @@ func runGatewayTest(t *testing.T, censoredGateway *SelfCensoredGateway) {
 	}
 
 	if tk.APIStatus == "blocked" {
-		t.Fatal("invalid ApiStatus")
+		t.Fatal("invalid ApiStatus", tk.APIStatus)
 	}
 
 	if tk.APIFailure != nil {

@@ -2,21 +2,45 @@ package database
 
 import (
 	"database/sql"
+	"embed"
+	"io/ioutil"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/bindata"
 	migrate "github.com/rubenv/sql-migrate"
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/sqlite"
 )
 
+//go:embed migrations/*.sql
+var efs embed.FS
+
+func readAsset(path string) ([]byte, error) {
+	filep, err := efs.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return ioutil.ReadAll(filep)
+}
+
+func readAssetDir(path string) ([]string, error) {
+	var out []string
+	lst, err := efs.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range lst {
+		out = append(out, e.Name())
+	}
+	return out, nil
+}
+
 // RunMigrations runs the database migrations
 func RunMigrations(db *sql.DB) error {
 	log.Debugf("running migrations")
 	migrations := &migrate.AssetMigrationSource{
-		Asset:    bindata.Asset,
-		AssetDir: bindata.AssetDir,
-		Dir:      "data/migrations",
+		Asset:    readAsset,
+		AssetDir: readAssetDir,
+		Dir:      "migrations",
 	}
 	n, err := migrate.Exec(db, "sqlite3", migrations, migrate.Up)
 	if err != nil {

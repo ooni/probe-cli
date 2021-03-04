@@ -10,14 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/gorilla/websocket"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/engine/resources"
+	"github.com/ooni/probe-cli/v3/internal/engine/resourcesmanager"
 )
 
 func TestNewTCPConnectList(t *testing.T) {
@@ -286,12 +285,7 @@ func TestNewRequestList(t *testing.T) {
 }
 
 func TestNewDNSQueriesList(t *testing.T) {
-	err := (&resources.Client{
-		HTTPClient: http.DefaultClient,
-		Logger:     log.Log,
-		UserAgent:  "miniooni/0.1.0-dev",
-		WorkDir:    "../../testdata",
-	}).Ensure(context.Background())
+	err := (&resourcesmanager.CopyWorker{DestDir: "../../testdata"}).Ensure()
 	if err != nil {
 		t.Fatal(err)
 	}
