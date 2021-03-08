@@ -30,7 +30,7 @@ func init() {
 	//
 	// 2. we should modify dnscheck to accept http3://... as a
 	// shortcut for https://... with h3. If we don't do that, we
-	// are stuck with the h3 results hidin h2 results in OONI
+	// are stuck with the h3 results hiding h2 results in OONI
 	// Explorer because they use the same URL.
 	dnsCheckDefaultInput = append(dnsCheckDefaultInput, dnsCheckMustMakeInput(
 		&run.StructuredInput{
