@@ -4,7 +4,7 @@ on:
     branches:
       - mobile-staging
       - "release/**"
-      - "*android*"
+      - "**android**"
 jobs:
   test:
     runs-on: macos-latest
