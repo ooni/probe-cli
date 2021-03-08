@@ -30,23 +30,22 @@ type WebConnectivityResults struct {
 	Measurement string
 }
 
-// WebConnectivity runs the WebConnectivity experiment. Both ctx and config
-// MUST NOT be nil. Returns either an error or the experiment results.
-//
-// This function locks the session until it's done. That is, no other operation
-// can be performed as long as this function is pending.
-func (sess *Session) WebConnectivity(ctx *Context, config *WebConnectivityConfig) (*WebConnectivityResults, error) {
+type webConnectivityRunner struct {
+	sess experimentSession
+}
+
+func (r *webConnectivityRunner) run(ctx *Context, config *WebConnectivityConfig) (*WebConnectivityResults, error) {
 	// TODO(bassosimone): I suspect most of the code for running
 	// experiments is going to be quite redundant. Autogen?
-	sess.mtx.Lock()
-	defer sess.mtx.Unlock()
-	if err := sess.sessp.MaybeLookupBackendsContext(ctx.ctx); err != nil {
+	defer r.sess.unlock()
+	r.sess.lock()
+	if err := r.sess.maybeLookupBackendsContext(ctx.ctx); err != nil {
 		return nil, err
 	}
-	if err := sess.sessp.MaybeLookupLocationContext(ctx.ctx); err != nil {
+	if err := r.sess.maybeLookupLocationContext(ctx.ctx); err != nil {
 		return nil, err
 	}
-	builder, err := sess.sessp.NewExperimentBuilder("web_connectivity")
+	builder, err := r.sess.newExperimentBuilder("web_connectivity")
 	if err != nil {
 		return nil, err
 	}
@@ -63,4 +62,16 @@ func (sess *Session) WebConnectivity(ctx *Context, config *WebConnectivityConfig
 		KibiBytesSent:     exp.KibiBytesSent(),
 		Measurement:       string(data),
 	}, nil
+}
+
+// WebConnectivity runs the WebConnectivity experiment. Both ctx and config
+// MUST NOT be nil. Returns either an error or the experiment results.
+//
+// This function locks the session until it's done. That is, no other operation
+// can be performed as long as this function is pending.
+//
+// This API is currently experimental. We do not promise that we will bump
+// the major version number when changing it.
+func (sess *Session) WebConnectivity(ctx *Context, config *WebConnectivityConfig) (*WebConnectivityResults, error) {
+	return (&webConnectivityRunner{sess: sess}).run(ctx, config)
 }
