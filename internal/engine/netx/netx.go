@@ -126,6 +126,7 @@ func NewResolver(config Config) Resolver {
 		config.BaseResolver = resolver.SystemResolver{}
 	}
 	var r Resolver = config.BaseResolver
+	r = resolver.AddressResolver{Resolver: r}
 	if config.CacheResolutions {
 		r = &resolver.CacheResolver{Resolver: r}
 	}
@@ -146,7 +147,6 @@ func NewResolver(config Config) Resolver {
 	if config.ResolveSaver != nil {
 		r = resolver.SaverResolver{Resolver: r, Saver: config.ResolveSaver}
 	}
-	r = resolver.AddressResolver{Resolver: r}
 	return resolver.IDNAResolver{Resolver: r}
 }
 
