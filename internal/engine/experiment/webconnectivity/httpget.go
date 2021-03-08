@@ -30,13 +30,13 @@ type HTTPGetResult struct {
 // and we should actually expose much less to the outside by using
 // internal testing and by making _many_ functions private.
 
-// HTTPGetNewDNSCache constructs the DNSCache option for HTTPGet
+// HTTPGetMakeDNSCache constructs the DNSCache option for HTTPGet
 // by combining domain and addresses into a single string. As a
-// corner case, if the domain equals the addresses _and_ the domain
-// is an IP address, we return an empty string. This corner case
-// corresponds to Web Connectivity inputs like https://1.1.1.1.
-func HTTPGetNewDNSCache(domain, addresses string) string {
-	if domain == addresses && net.ParseIP(addresses) != nil {
+// corner case, if the domain is an IP address, we return an empty
+// string. This corner case corresponds to Web Connectivity
+// inputs like https://1.1.1.1.
+func HTTPGetMakeDNSCache(domain, addresses string) string {
+	if net.ParseIP(domain) != nil {
 		return ""
 	}
 	return fmt.Sprintf("%s %s", domain, addresses)
@@ -55,7 +55,7 @@ func HTTPGet(ctx context.Context, config HTTPGetConfig) (out HTTPGetResult) {
 	domain := config.TargetURL.Hostname()
 	result, err := urlgetter.Getter{
 		Config: urlgetter.Config{
-			DNSCache: HTTPGetNewDNSCache(domain, addresses),
+			DNSCache: HTTPGetMakeDNSCache(domain, addresses),
 		},
 		Session: config.Session,
 		Target:  target,
