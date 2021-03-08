@@ -6,12 +6,13 @@ import (
 	"bytes"
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
+
+	"golang.org/x/sys/execabs"
 )
 
 // DisableCache will disable caching of the home directory. Caching is enabled
@@ -85,12 +86,12 @@ func Expand(path string) (string, error) {
 	return filepath.Join(dir, path[1:]), nil
 }
 
+// MustExpand expands path and panics on failure.
 func MustExpand(path string) string {
 	str, err := Expand(path)
 	if err != nil {
 		panic(err)
 	}
-
 	return str
 }
 
@@ -103,7 +104,7 @@ func dirDarwin() (string, error) {
 	var stdout bytes.Buffer
 
 	// If that fails, try OS specific commands
-	cmd := exec.Command("sh", "-c", `dscl -q . -read /Users/"$(whoami)" NFSHomeDirectory | sed 's/^[^ ]*: //'`)
+	cmd := execabs.Command("sh", "-c", `dscl -q . -read /Users/"$(whoami)" NFSHomeDirectory | sed 's/^[^ ]*: //'`)
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err == nil {
 		result := strings.TrimSpace(stdout.String())
@@ -114,7 +115,7 @@ func dirDarwin() (string, error) {
 
 	// try the shell
 	stdout.Reset()
-	cmd = exec.Command("sh", "-c", "cd && pwd")
+	cmd = execabs.Command("sh", "-c", "cd && pwd")
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err == nil {
 		result := strings.TrimSpace(stdout.String())
@@ -125,7 +126,7 @@ func dirDarwin() (string, error) {
 
 	// try to figure out the user and check the default location
 	stdout.Reset()
-	cmd = exec.Command("whoami")
+	cmd = execabs.Command("whoami")
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err == nil {
 		user := strings.TrimSpace(stdout.String())
@@ -150,7 +151,7 @@ func dirUnix() (string, error) {
 	var stdout bytes.Buffer
 
 	// If that fails, try OS specific commands
-	cmd := exec.Command("getent", "passwd", strconv.Itoa(os.Getuid()))
+	cmd := execabs.Command("getent", "passwd", strconv.Itoa(os.Getuid()))
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err == nil {
 		if passwd := strings.TrimSpace(stdout.String()); passwd != "" {
@@ -164,7 +165,7 @@ func dirUnix() (string, error) {
 
 	// If all else fails, try the shell
 	stdout.Reset()
-	cmd = exec.Command("sh", "-c", "cd && pwd")
+	cmd = execabs.Command("sh", "-c", "cd && pwd")
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err == nil {
 		result := strings.TrimSpace(stdout.String())
@@ -175,7 +176,7 @@ func dirUnix() (string, error) {
 
 	// try to figure out the user and check the default location
 	stdout.Reset()
-	cmd = exec.Command("whoami")
+	cmd = execabs.Command("whoami")
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err == nil {
 		user := strings.TrimSpace(stdout.String())

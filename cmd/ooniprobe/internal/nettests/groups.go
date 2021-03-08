@@ -49,4 +49,12 @@ var All = map[string]Group{
 		},
 		UnattendedOK: true,
 	},
+	"experimental": {
+		Label: "Experimental Nettests",
+		Nettests: []Nettest{
+			DNSCheck{},
+			STUNReachability{},
+			Signal{},
+		},
+	},
 }

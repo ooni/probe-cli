@@ -284,6 +284,9 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	}
 	log.Log = logger
 
+	//Mon Jan 2 15:04:05 -0700 MST 2006
+	log.Infof("Current time: %s", time.Now().Format("2006-01-02 15:04:05 MST"))
+
 	homeDir := gethomedir(currentOptions.HomeDir)
 	fatalIfFalse(homeDir != "", "home directory is empty")
 	miniooniDir := path.Join(homeDir, ".miniooni")

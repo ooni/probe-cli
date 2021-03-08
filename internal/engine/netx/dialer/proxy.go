@@ -38,7 +38,7 @@ func WithProxyURL(ctx context.Context, url *url.URL) context.Context {
 
 // DialContext implements Dialer.DialContext
 func (d ProxyDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	url := ContextProxyURL(ctx) // context URL takes precendence
+	url := ContextProxyURL(ctx) // context URL takes precedence
 	if url == nil {
 		url = d.ProxyURL
 	}

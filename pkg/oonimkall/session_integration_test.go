@@ -79,8 +79,11 @@ func TestMaybeUpdateResourcesWithCancelledContext(t *testing.T) {
 	ctx := sess.NewContext()
 	ctx.Cancel() // cause immediate failure
 	err = sess.MaybeUpdateResources(ctx)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("not the error we expected: %+v", err)
+	// Explaination: we embed resources. We should change the API
+	// and remove the context. Until we do that, let us just assert
+	// that we have embedding and the context does not matter.
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -416,6 +419,60 @@ func TestCheckInNoParams(t *testing.T) {
 	}
 	if result != nil {
 		t.Fatal("unexpected not nil result here")
+	}
+}
+
+func TestFetchURLListSuccess(t *testing.T) {
+	sess, err := NewSession()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := sess.NewContext()
+	config := oonimkall.URLListConfig{
+		Limit: 10,
+	}
+	config.AddCategory("NEWS")
+	config.AddCategory("CULTR")
+	result, err := sess.FetchURLList(ctx, &config)
+	if err != nil {
+		t.Fatalf("unexpected error: %+v", err)
+	}
+	if result == nil || result.Results == nil {
+		t.Fatal("got nil result")
+	}
+	for _, entry := range result.Results {
+		if entry.CategoryCode != "NEWS" && entry.CategoryCode != "CULTR" {
+			t.Fatalf("unexpected category code: %+v", entry)
+		}
+	}
+}
+
+func TestFetchURLListWithCC(t *testing.T) {
+	sess, err := NewSession()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := sess.NewContext()
+	config := oonimkall.URLListConfig{
+		CountryCode: "IT",
+	}
+	config.AddCategory("NEWS")
+	config.AddCategory("CULTR")
+	result, err := sess.FetchURLList(ctx, &config)
+	if err != nil {
+		t.Fatalf("unexpected error: %+v", err)
+	}
+	if result == nil || result.Results == nil {
+		t.Fatal("got nil result")
+	}
+	found := false
+	for _, entry := range result.Results {
+		if entry.CountryCode == "IT" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("not found url for country code: IT")
 	}
 }
 

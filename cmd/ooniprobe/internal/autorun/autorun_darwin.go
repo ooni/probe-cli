@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
@@ -14,13 +14,15 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
 	"github.com/ooni/probe-cli/v3/internal/engine/shellx"
+	"golang.org/x/sys/execabs"
 	"golang.org/x/sys/unix"
 )
 
 type managerDarwin struct{}
 
 var (
-	plistPath     = os.ExpandEnv("$HOME/Library/LaunchAgents/org.ooni.cli.plist")
+	plistDir      = os.ExpandEnv("$HOME/Library/LaunchAgents/")
+	plistPath     = filepath.Join(plistDir, "org.ooni.cli.plist")
 	domainTarget  = fmt.Sprintf("gui/%d", os.Getuid())
 	serviceTarget = fmt.Sprintf("%s/org.ooni.cli", domainTarget)
 )
@@ -55,7 +57,7 @@ func runQuiteQuietly(name string, arg ...string) error {
 }
 
 func darwinVersionMajor() (int, error) {
-	out, err := exec.Command("uname", "-r").Output()
+	out, err := execabs.Command("uname", "-r").Output()
 	if err != nil {
 		return 0, err
 	}
@@ -107,6 +109,10 @@ func (managerDarwin) writePlist() error {
 	if err := t.Execute(&out, in); err != nil {
 		return err
 	}
+	log.Infof("exec: mkdir -p %s", plistDir)
+	if err := os.MkdirAll(plistDir, 0755); err != nil {
+		return err
+	}
 	log.Infof("exec: writePlist(%s)", plistPath)
 	return ioutil.WriteFile(plistPath, out.Bytes(), 0644)
 }
@@ -129,7 +135,7 @@ func (m managerDarwin) Start() error {
 }
 
 func (managerDarwin) stop() error {
-	var failure *exec.ExitError
+	var failure *execabs.ExitError
 	err := runQuiteQuietly("launchctl", "bootout", serviceTarget)
 	if errors.As(err, &failure) && failure.ExitCode() == int(unix.ESRCH) {
 		err = nil
@@ -158,7 +164,7 @@ func (m managerDarwin) Stop() error {
 
 func (m managerDarwin) Status() (string, error) {
 	err := runQuiteQuietly("launchctl", "kill", "SIGINFO", serviceTarget)
-	var failure *exec.ExitError
+	var failure *execabs.ExitError
 	if errors.As(err, &failure) {
 		switch failure.ExitCode() {
 		case int(unix.ESRCH):

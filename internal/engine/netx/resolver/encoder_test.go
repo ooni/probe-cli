@@ -51,7 +51,7 @@ func validate(t *testing.T, data []byte, qtype byte) {
 		t.Fatal("The name does not contain 1:x")
 	}
 	if data[14] != 3 || data[15] != byte('o') || data[16] != byte('r') || data[17] != byte('g') {
-		t.Fatal("The name does not containg 3:org")
+		t.Fatal("The name does not contain 3:org")
 	}
 	if data[18] != 0 {
 		t.Fatal("The name does not terminate where expected")

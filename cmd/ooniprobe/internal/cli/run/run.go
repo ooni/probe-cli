@@ -69,17 +69,19 @@ func init() {
 		})
 	})
 
-	easyRuns := []string{"im", "performance", "circumvention", "middlebox"}
+	easyRuns := []string{
+		"im", "performance", "circumvention", "middlebox", "experimental"}
 	for _, name := range easyRuns {
 		cmd.Command(name, "").Action(genRunWithGroupName(name))
 	}
 
 	unattendedCmd := cmd.Command("unattended", "")
 	unattendedCmd.Action(func(_ *kingpin.ParseContext) error {
-		if runtime.GOOS == "darwin" {
-			// Until we have enabled the check-in API we're called every
-			// hour on darwin and we need to self throttle.
-			// TODO(bassosimone): switch to check-in and remove this hack.
+		// Until we have enabled the check-in API we're called every
+		// hour on darwin and we need to self throttle.
+		// TODO(bassosimone): switch to check-in and remove this hack.
+		switch runtime.GOOS {
+		case "darwin", "windows":
 			const veryFew = 10
 			probe.Config().Nettests.WebsitesURLLimit = veryFew
 		}

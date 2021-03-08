@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+go run ./internal/cmd/getresources
 go build -v ./internal/cmd/miniooni
 probeservices=()
 probeservices+=( "https://ps1.ooni.io" )

@@ -37,6 +37,7 @@ func DNSLookup(ctx context.Context, config DNSLookupConfig) (out DNSLookupResult
 			}
 			if answer.IPv6 != "" {
 				out.Addrs[answer.IPv6] = answer.ASN
+				continue
 			}
 		}
 	}

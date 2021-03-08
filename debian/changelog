@@ -1,5 +1,5 @@
-ooniprobe-cli (3.0.9) UNRELEASED; urgency=medium
+ooniprobe-cli (3.0.9) unstable; urgency=medium
 
   * Test release
 
- -- Federico Ceratto <federico@openobservatory.org>  Fri, 04 Dec 2020 19:43:15 +0000
+ -- Federico Ceratto <federico@openobservatory.org>  Tue, 16 Feb 2021 12:39:41 +0000

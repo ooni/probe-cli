@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os/exec"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
+
+	"golang.org/x/sys/execabs"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/resolver"
@@ -295,7 +296,7 @@ func TestHijackHTTP(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
-	var exitErr *exec.ExitError
+	var exitErr *execabs.ExitError
 	if !errors.As(err, &exitErr) {
 		t.Fatal("not the error type we expected")
 	}
@@ -335,7 +336,7 @@ func TestHijackHTTPS(t *testing.T) {
 		t.Fatal("expected an error here")
 	}
 	t.Log(err)
-	var exitErr *exec.ExitError
+	var exitErr *execabs.ExitError
 	if !errors.As(err, &exitErr) {
 		t.Fatal("not the error type we expected")
 	}

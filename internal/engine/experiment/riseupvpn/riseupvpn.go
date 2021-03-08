@@ -186,7 +186,7 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	inputs := []urlgetter.MultiInput{
 
 		// Here we need to provide the method explicitly. See
-		// https://github.com/ooni/probe-cli/v3/internal/engine/issues/827.
+		// https://github.com/ooni/probe-engine/issues/827.
 		{Target: providerURL, Config: urlgetter.Config{
 			CertPool:        certPool,
 			Method:          "GET",

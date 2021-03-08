@@ -17,7 +17,7 @@
 // TLS handshake for DoT and DoH).
 //
 // We described the design and implementation of the most recent version of
-// this package at <https://github.com/ooni/probe-cli/v3/internal/engine/issues/359>. Such
+// this package at <https://github.com/ooni/probe-engine/issues/359>. Such
 // issue also links to a previous design document.
 package netx
 
@@ -126,6 +126,7 @@ func NewResolver(config Config) Resolver {
 		config.BaseResolver = resolver.SystemResolver{}
 	}
 	var r Resolver = config.BaseResolver
+	r = resolver.AddressResolver{Resolver: r}
 	if config.CacheResolutions {
 		r = &resolver.CacheResolver{Resolver: r}
 	}
@@ -146,7 +147,6 @@ func NewResolver(config Config) Resolver {
 	if config.ResolveSaver != nil {
 		r = resolver.SaverResolver{Resolver: r, Saver: config.ResolveSaver}
 	}
-	r = resolver.AddressResolver{Resolver: r}
 	return resolver.IDNAResolver{Resolver: r}
 }
 

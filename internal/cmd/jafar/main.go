@@ -10,10 +10,11 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"golang.org/x/sys/execabs"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/cli"
@@ -243,7 +244,7 @@ func mustx(err error, message string, osExit func(int)) {
 	if err != nil {
 		var (
 			exitcode = 1
-			exiterr  *exec.ExitError
+			exiterr  *execabs.ExitError
 		)
 		if errors.As(err, &exiterr) {
 			exitcode = exiterr.ExitCode()

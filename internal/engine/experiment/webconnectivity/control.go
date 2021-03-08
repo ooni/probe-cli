@@ -57,13 +57,13 @@ func Control(
 		HTTPClient: sess.DefaultHTTPClient(),
 		Logger:     sess.Logger(),
 	}
-	sess.Logger().Infof("control %s...", creq.HTTPRequest)
+	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
 	// make sure error is wrapped
 	err = errorx.SafeErrWrapperBuilder{
 		Error:     clnt.PostJSON(ctx, "/", creq, &out),
 		Operation: errorx.TopLevelOperation,
 	}.MaybeBuild()
-	sess.Logger().Infof("control %s... %+v", creq.HTTPRequest, err)
+	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, err)
 	(&out.DNS).FillASNs(sess)
 	return
 }

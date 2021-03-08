@@ -20,6 +20,11 @@ Restart=on-abnormal
 RestartSec=2s
 LimitNOFILE=65536
 WorkingDirectory=/var/lib/ooniprobe
+RuntimeDirectory=ooniprobe
+StateDirectory=ooniprobe
+#CacheDirectory=ooniprobe
+LogsDirectory=ooniprobe
+ConfigurationDirectory=ooniprobe
 
 # Sandboxing
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
