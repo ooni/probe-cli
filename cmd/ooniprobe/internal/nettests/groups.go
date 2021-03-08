@@ -35,7 +35,6 @@ var All = map[string]Group{
 		Label: "Instant Messaging",
 		Nettests: []Nettest{
 			FacebookMessenger{},
-			Signal{},
 			Telegram{},
 			WhatsApp{},
 		},
@@ -49,5 +48,13 @@ var All = map[string]Group{
 			Tor{},
 		},
 		UnattendedOK: true,
+	},
+	"experimental": {
+		Label: "Experimental Nettests",
+		Nettests: []Nettest{
+			DNSCheck{},
+			STUNReachability{},
+			Signal{},
+		},
 	},
 }
