@@ -43,6 +43,7 @@ type Options struct {
 	HomeDir          string
 	Inputs           []string
 	InputFilePaths   []string
+	Limit            int64
 	NoJSON           bool
 	NoCollector      bool
 	ProbeServicesURL string
@@ -54,6 +55,7 @@ type Options struct {
 	TorBinary        string
 	Tunnel           string
 	Verbose          bool
+	Version          bool
 	Yes              bool
 }
 
@@ -86,6 +88,10 @@ func init() {
 	getopt.FlagLong(
 		&globalOptions.Inputs, "input", 'i',
 		"Add test-dependent input to the test input", "INPUT",
+	)
+	getopt.FlagLong(
+		&globalOptions.Limit, "limit", 0,
+		"Limit the number of URLs tested by Web Connectivity", "N",
 	)
 	getopt.FlagLong(
 		&globalOptions.NoJSON, "no-json", 'N', "Disable writing to disk",
@@ -127,6 +133,9 @@ func init() {
 		&globalOptions.Verbose, "verbose", 'v', "Increase verbosity",
 	)
 	getopt.FlagLong(
+		&globalOptions.Version, "version", 0, "Print version and exit",
+	)
+	getopt.FlagLong(
 		&globalOptions.Yes, "yes", 0, "I accept the risk of running OONI",
 	)
 }
@@ -149,6 +158,10 @@ func fatalIfFalse(cond bool, msg string) {
 // integrate this function to either handle the panic of ignore it.
 func Main() {
 	getopt.Parse()
+	if globalOptions.Version {
+		fmt.Printf("%s\n", version.Version)
+		os.Exit(0)
+	}
 	fatalIfFalse(len(getopt.Args()) == 1, "Missing experiment name")
 	MainWithConfiguration(getopt.Arg(0), globalOptions)
 }
@@ -362,7 +375,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		SourceFiles:  currentOptions.InputFilePaths,
 		InputPolicy:  builder.InputPolicy(),
 		Session:      sess,
-		URLLimit:     17,
+		URLLimit:     currentOptions.Limit,
 	})
 	inputs, err := inputLoader.Load(context.Background())
 	fatalOnError(err, "cannot load inputs")
