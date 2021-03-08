@@ -3,6 +3,7 @@ package webconnectivity
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/url"
 	"strings"
 
@@ -25,6 +26,22 @@ type HTTPGetResult struct {
 	Failure  *string
 }
 
+// TODO(bassosimone): Web Connectivity uses too much external testing
+// and we should actually expose much less to the outside by using
+// internal testing and by making _many_ functions private.
+
+// HTTPGetMakeDNSCache constructs the DNSCache option for HTTPGet
+// by combining domain and addresses into a single string. As a
+// corner case, if the domain is an IP address, we return an empty
+// string. This corner case corresponds to Web Connectivity
+// inputs like https://1.1.1.1.
+func HTTPGetMakeDNSCache(domain, addresses string) string {
+	if net.ParseIP(domain) != nil {
+		return ""
+	}
+	return fmt.Sprintf("%s %s", domain, addresses)
+}
+
 // HTTPGet performs the HTTP/HTTPS part of Web Connectivity.
 func HTTPGet(ctx context.Context, config HTTPGetConfig) (out HTTPGetResult) {
 	addresses := strings.Join(config.Addresses, " ")
@@ -38,7 +55,7 @@ func HTTPGet(ctx context.Context, config HTTPGetConfig) (out HTTPGetResult) {
 	domain := config.TargetURL.Hostname()
 	result, err := urlgetter.Getter{
 		Config: urlgetter.Config{
-			DNSCache: fmt.Sprintf("%s %s", domain, addresses),
+			DNSCache: HTTPGetMakeDNSCache(domain, addresses),
 		},
 		Session: config.Session,
 		Target:  target,

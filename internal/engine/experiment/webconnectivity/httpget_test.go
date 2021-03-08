@@ -25,3 +25,20 @@ func TestHTTPGet(t *testing.T) {
 		t.Fatal(*r.Failure)
 	}
 }
+
+func TestHTTPGetMakeDNSCache(t *testing.T) {
+	// test for input being an IP
+	out := webconnectivity.HTTPGetMakeDNSCache(
+		"1.1.1.1", "1.1.1.1",
+	)
+	if out != "" {
+		t.Fatal("expected empty output here")
+	}
+	// test for input being a domain
+	out = webconnectivity.HTTPGetMakeDNSCache(
+		"dns.google", "8.8.8.8 8.8.4.4",
+	)
+	if out != "dns.google 8.8.8.8 8.8.4.4" {
+		t.Fatal("expected ordinary output here")
+	}
+}
