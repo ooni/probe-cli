@@ -11,7 +11,7 @@ if [ -z "$ANDROID_HOME" -o "$1" = "--help" ]; then
     echo ""
     echo "Then make sure you install the required packages:"
     echo ""
-    echo "sdkmanager --install 'build-tools;29.0.3' 'ndk;21.3.6528147'"
+    echo "sdkmanager --install 'build-tools;29.0.3' 'ndk-bundle'"
     echo ""
     echo "or, if you already installed, that you're up to date:"
     echo ""
@@ -22,28 +22,6 @@ if [ -z "$ANDROID_HOME" -o "$1" = "--help" ]; then
     echo ""
     exit 1
 fi
-if [ -d $ANDROID_HOME/ndk-bundle ]; then
-    echo ""
-    echo "FATAL: currently we need 'ndk;21.3.6528147' instead of ndk-bundle"
-    echo ""
-    echo "See https://github.com/ooni/probe-engine/issues/1179."
-    echo ""
-    echo "To fix: sdkmanager --uninstall ndk-bundle"
-    echo ""
-    exit 1
-fi
-export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/21.3.6528147
-if [ ! -d $ANDROID_NDK_HOME ]; then
-    echo ""
-    echo "FATAL: currently we need 'ndk;21.3.6528147'"
-    echo ""
-    echo "See https://github.com/ooni/probe-engine/issues/1179."
-    echo ""
-    echo "To fix: sdkmanager --install 'ndk;21.3.6528147'"
-    echo ""
-    exit 1
-fi
-
 topdir=$(cd $(dirname $0) && pwd -P)
 set -x
 export PATH=$(go env GOPATH)/bin:$PATH
