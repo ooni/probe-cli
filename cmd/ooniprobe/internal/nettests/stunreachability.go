@@ -1,6 +1,6 @@
 package nettests
 
-// STUNReachability test implementation.
+// STUNReachability nettest implementation.
 type STUNReachability struct{}
 
 // Run starts the nettest.

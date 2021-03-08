@@ -8,7 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
-// DNSCheck test implementation.
+// DNSCheck nettest implementation.
 type DNSCheck struct{}
 
 var dnsCheckDefaultInput []string
@@ -32,6 +32,10 @@ func init() {
 	// shortcut for https://... with h3. If we don't do that, we
 	// are stuck with the h3 results hiding h2 results in OONI
 	// Explorer because they use the same URL.
+	//
+	// 3. it seems we have the problem that dnscheck results
+	// appear as the `run` nettest in `ooniprobe list <ID>` because
+	// dnscheck is run using the `run` functionality.
 	dnsCheckDefaultInput = append(dnsCheckDefaultInput, dnsCheckMustMakeInput(
 		&run.StructuredInput{
 			DNSCheck: dnscheck.Config{},
