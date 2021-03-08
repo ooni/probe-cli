@@ -69,7 +69,8 @@ func init() {
 		})
 	})
 
-	easyRuns := []string{"im", "performance", "circumvention", "middlebox"}
+	easyRuns := []string{
+		"im", "performance", "circumvention", "middlebox", "experimental"}
 	for _, name := range easyRuns {
 		cmd.Command(name, "").Action(genRunWithGroupName(name))
 	}

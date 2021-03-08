@@ -1,10 +1,9 @@
 package nettests
 
-// Signal test implementation
-type Signal struct {
-}
+// Signal nettest implementation.
+type Signal struct{}
 
-// Run starts the test
+// Run starts the nettest.
 func (h Signal) Run(ctl *Controller) error {
 	builder, err := ctl.Session.NewExperimentBuilder(
 		"signal",
@@ -12,6 +11,5 @@ func (h Signal) Run(ctl *Controller) error {
 	if err != nil {
 		return err
 	}
-
 	return ctl.Run(builder, []string{""})
 }
