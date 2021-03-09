@@ -71,10 +71,15 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	sgs := c.readstrategies(time.Now().UnixNano())
+	state := c.readstatemaybedefault(time.Now().UnixNano())
 	me := multierror.New(ErrBackend)
-	defer c.writestrategies(sgs) // update the datastore
-	for _, sg := range sgs {
+	defer c.writestate(state) // update the datastore
+	for _, si := range state.Strategies {
+		sg, err := c.makestrategy(si)
+		if err != nil {
+			me.Add(err)
+			continue
+		}
 		// Note: we pass to sg.Do a copy of the request so it's free
 		// to apply any required transformations. Because sending a
 		// request consumes the request body, we need to recreate the

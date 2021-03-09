@@ -1,6 +1,8 @@
 package oobackend
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -15,38 +17,22 @@ type strategy interface {
 	StrategyInfo() *strategyInfo
 }
 
-// readstrategies returns all the available strategies
-// sorted from the best one to the worst one, in most
-// cases. With low probability, this function will instead
-// reset the strategies score to their default.
-func (c *Client) readstrategies(seed int64) []strategy {
-	in := c.readstatemaybedefault(seed)
-	var out []strategy
-	for _, sg := range in {
-		URL, err := url.Parse(sg.URL)
-		if err != nil {
-			// TODO(bassosimone): should we log this error?
-			continue
-		}
-		switch URL.Scheme {
-		case "https":
-			out = append(out, &httpStrategy{
-				HTTPClient: c.HTTPClientDefault, Info: sg})
-		case "tunnel":
-			out = append(out, &tunnelStrategy{
-				Broker: c.HTTPTunnelBroker, Name: URL.Host, Info: sg,
-			})
-		}
-	}
-	return out
-}
+// ErrNoStrategy indicates that we don't support this strategy.
+var ErrNoStrategy = errors.New("oobackend: unsupported strategy")
 
-// writestrategies writes the available strategies on
-// disk using the client's kvstore.
-func (c *Client) writestrategies(sg []strategy) error {
-	var out []*strategyInfo
-	for _, e := range sg {
-		out = append(out, e.StrategyInfo())
+// makestrategy creates a strategy from a strategyInfo.
+func (c *Client) makestrategy(si *strategyInfo) (strategy, error) {
+	URL, err := url.Parse(si.URL)
+	if err != nil {
+		return nil, err
 	}
-	return c.writestate(out)
+	switch URL.Scheme {
+	case "https":
+		return &httpStrategy{HTTPClient: c.HTTPClientDefault, Info: si}, nil
+	case "tunnel":
+		return &tunnelStrategy{
+			Broker: c.HTTPTunnelBroker, Name: URL.Host, Info: si}, nil
+	default:
+		return nil, fmt.Errorf("%w: %s", ErrNoStrategy, URL.Scheme)
+	}
 }

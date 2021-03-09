@@ -5,13 +5,12 @@ import (
 	"math/rand"
 	"sort"
 	"sync"
+	"time"
 )
 
 // storekey is the key used by the key value store to store
 // the state required by this package.
 const storekey = "oobackend.state"
-
-// TODO(bassosimone): exponential delay between resets?
 
 // strategyInfo contains info about a strategy.
 type strategyInfo struct {
@@ -41,17 +40,23 @@ func (si *strategyInfo) updatescore(err error) {
 	si.Score = v*param + si.Score*(1-param)
 }
 
+// strategyState contains the strategy state.
+type strategyState struct {
+	NextReset  time.Time
+	Strategies []*strategyInfo
+}
+
 // readstate reads the strategies state from disk
-func (c *Client) readstate() ([]*strategyInfo, error) {
+func (c *Client) readstate() (*strategyState, error) {
 	data, err := c.KVStore.Get(storekey)
 	if err != nil {
 		return nil, err
 	}
-	var si []*strategyInfo
-	if err := c.jsonCodec().Decode(data, &si); err != nil {
+	var ss strategyState
+	if err := c.jsonCodec().Decode(data, &ss); err != nil {
 		return nil, err
 	}
-	return si, nil
+	return &ss, nil
 }
 
 // errNoEntries indicates that no entry remained after we pruned
@@ -69,73 +74,89 @@ var allStrategies = map[string]float64{
 
 // readstateandprune reads the state from disk and removes all the
 // entries that we don't actually support.
-func (c *Client) readstateandprune() ([]*strategyInfo, error) {
-	si, err := c.readstate()
+func (c *Client) readstateandprune() (*strategyState, error) {
+	ss, err := c.readstate()
 	if err != nil {
 		return nil, err
 	}
-	var out []*strategyInfo
-	for _, e := range si {
+	out := strategyState{NextReset: ss.NextReset}
+	for _, e := range ss.Strategies {
 		if _, found := allStrategies[e.URL]; !found {
 			continue // we don't support this specific entry
 		}
-		out = append(out, e)
+		out.Strategies = append(out.Strategies, e)
 	}
-	if len(out) <= 0 {
+	if len(out.Strategies) <= 0 {
 		return nil, errNoEntries
 	}
-	return out, nil
+	return &out, nil
 }
 
 // sortstate sorts state by descending score.
-func (c *Client) sortstate(si []*strategyInfo) {
-	sort.SliceStable(si, func(i, j int) bool {
-		return si[i].Score >= si[j].Score
+func (c *Client) sortstate(ss *strategyState) {
+	sort.SliceStable(ss.Strategies, func(i, j int) bool {
+		return ss.Strategies[i].Score >= ss.Strategies[j].Score
 	})
 }
 
 // readstatedefault reads the state from disk and merges the state
 // so that all supported entries are represented.
-func (c *Client) readstatedefault() []*strategyInfo {
-	si, _ := c.readstateandprune()
+func (c *Client) readstatedefault() *strategyState {
+	ss, _ := c.readstateandprune()
 	here := make(map[string]bool)
-	for _, e := range si {
+	for _, e := range ss.Strategies {
 		here[e.URL] = true // record what we already have
 	}
 	for url, score := range allStrategies {
 		if _, found := here[url]; found {
 			continue // already here so no need to add
 		}
-		si = append(si, &strategyInfo{
+		ss.Strategies = append(ss.Strategies, &strategyInfo{
 			URL:   url,
 			Score: score,
 		})
 	}
-	c.sortstate(si)
-	return si
+	c.sortstate(ss)
+	return ss
 }
 
 // readstatemaybedefault is the top-level function for reading strategies
 // where we reset to default values with low probability.
-func (c *Client) readstatemaybedefault(seed int64) []*strategyInfo {
-	rng := rand.New(rand.NewSource(seed))
-	const lowProbability = 0.1
-	if rng.Float64() <= lowProbability {
-		var out []*strategyInfo
+func (c *Client) readstatemaybedefault(seed int64) *strategyState {
+	ss := c.readstatedefault()
+	now := time.Now()
+	if ss.NextReset.IsZero() || now.After(ss.NextReset) {
+		out := &strategyState{NextReset: now.Add(c.nextwait(seed))}
 		for url, score := range allStrategies {
-			out = append(out, &strategyInfo{
+			out.Strategies = append(out.Strategies, &strategyInfo{
 				URL:   url,
 				Score: score,
 			})
 		}
 		return out
 	}
-	return c.readstatedefault()
+	return ss
+}
+
+// nextwait computes the next wait time.
+func (c *Client) nextwait(seed int64) time.Duration {
+	rng := rand.New(rand.NewSource(seed))
+	const mean = 10 * time.Second
+	const low = mean / 10  // 10% of mean
+	const high = mean * 25 // 250% of mean
+	delta := time.Duration(rng.ExpFloat64() * float64(mean))
+	if delta <= low {
+		return low
+	}
+	if delta >= high {
+		return high
+	}
+	return delta
 }
 
 // writestate writes the state on the kvstore.
-func (c *Client) writestate(ri []*strategyInfo) error {
-	data, err := c.jsonCodec().Encode(ri)
+func (c *Client) writestate(ss *strategyState) error {
+	data, err := c.jsonCodec().Encode(ss)
 	if err != nil {
 		return err
 	}
