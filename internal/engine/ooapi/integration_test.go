@@ -41,7 +41,7 @@ func TestWithRealServerDoCheckIn(t *testing.T) {
 		},
 	}
 	httpClnt := &VerboseHTTPClient{t: t}
-	api := &CheckInAPI{
+	api := &simpleCheckInAPI{
 		HTTPClient: httpClnt,
 	}
 	ctx := context.Background()
@@ -67,7 +67,7 @@ func TestWithRealServerDoCheckReportID(t *testing.T) {
 	req := &apimodel.CheckReportIDRequest{
 		ReportID: "20210223T093606Z_ndt_JO_8376_n1_kDYToqrugDY54Soy",
 	}
-	api := &CheckReportIDAPI{}
+	api := &simpleCheckReportIDAPI{}
 	ctx := context.Background()
 	resp, err := api.Call(ctx, req)
 	if err != nil {
@@ -86,7 +86,7 @@ func TestWithRealServerDoMeasurementMeta(t *testing.T) {
 	req := &apimodel.MeasurementMetaRequest{
 		ReportID: "20210223T093606Z_ndt_JO_8376_n1_kDYToqrugDY54Soy",
 	}
-	api := &MeasurementMetaAPI{}
+	api := &simpleMeasurementMetaAPI{}
 	ctx := context.Background()
 	resp, err := api.Call(ctx, req)
 	if err != nil {
@@ -113,7 +113,7 @@ func TestWithRealServerDoOpenReport(t *testing.T) {
 		TestStartTime:     "2018-11-01 15:33:20",
 		TestVersion:       "0.1.0",
 	}
-	api := &OpenReportAPI{}
+	api := &simpleOpenReportAPI{}
 	ctx := context.Background()
 	resp, err := api.Call(ctx, req)
 	if err != nil {
@@ -131,15 +131,15 @@ func TestWithRealServerDoPsiphonConfig(t *testing.T) {
 	}
 	req := &apimodel.PsiphonConfigRequest{}
 	httpClnt := &VerboseHTTPClient{t: t}
-	api := &PsiphonConfigAPIWithLogin{
-		API: &PsiphonConfigAPI{
+	api := &withLoginPsiphonConfigAPI{
+		API: &simplePsiphonConfigAPI{
 			HTTPClient: httpClnt,
 		},
 		KVStore: &memkvstore{},
-		RegisterAPI: &RegisterAPI{
+		RegisterAPI: &simpleRegisterAPI{
 			HTTPClient: httpClnt,
 		},
-		LoginAPI: &LoginAPI{
+		LoginAPI: &simpleLoginAPI{
 			HTTPClient: httpClnt,
 		},
 	}
@@ -160,15 +160,15 @@ func TestWithRealServerDoTorTargets(t *testing.T) {
 	}
 	req := &apimodel.TorTargetsRequest{}
 	httpClnt := &VerboseHTTPClient{t: t}
-	api := &TorTargetsAPIWithLogin{
-		API: &TorTargetsAPI{
+	api := &withLoginTorTargetsAPI{
+		API: &simpleTorTargetsAPI{
 			HTTPClient: httpClnt,
 		},
 		KVStore: &memkvstore{},
-		RegisterAPI: &RegisterAPI{
+		RegisterAPI: &simpleRegisterAPI{
 			HTTPClient: httpClnt,
 		},
-		LoginAPI: &LoginAPI{
+		LoginAPI: &simpleLoginAPI{
 			HTTPClient: httpClnt,
 		},
 	}
@@ -191,7 +191,7 @@ func TestWithRealServerDoURLs(t *testing.T) {
 		CountryCode: "IT",
 		Limit:       3,
 	}
-	api := &URLsAPI{}
+	api := &simpleURLsAPI{}
 	ctx := context.Background()
 	resp, err := api.Call(ctx, req)
 	if err != nil {

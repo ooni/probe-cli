@@ -23,37 +23,43 @@ func (d *Descriptor) ResponseTypeName() string {
 // APIStructName returns the correct struct type name
 // for the API we're currently processing.
 func (d *Descriptor) APIStructName() string {
-	return fmt.Sprintf("%sAPI", d.Name)
+	return fmt.Sprintf("simple%sAPI", d.Name)
+}
+
+// FakeAPIStructName returns the correct struct type name
+// for the fake for the API we're currently processing.
+func (d *Descriptor) FakeAPIStructName() string {
+	return fmt.Sprintf("Fake%sAPI", d.Name)
 }
 
 // WithLoginAPIStructName returns the correct struct type name
 // for the WithLoginAPI we're currently processing.
 func (d *Descriptor) WithLoginAPIStructName() string {
-	return fmt.Sprintf("%sAPIWithLogin", d.Name)
+	return fmt.Sprintf("withLogin%sAPI", d.Name)
 }
 
 // CallerInterfaceName returns the correct caller interface name
 // for the API we're currently processing.
 func (d *Descriptor) CallerInterfaceName() string {
-	return fmt.Sprintf("%sCaller", d.Name)
+	return fmt.Sprintf("callerFor%sAPI", d.Name)
 }
 
 // ClonerInterfaceName returns the correct cloner interface name
 // for the API we're currently processing.
 func (d *Descriptor) ClonerInterfaceName() string {
-	return fmt.Sprintf("%sCloner", d.Name)
+	return fmt.Sprintf("clonerFor%sAPI", d.Name)
 }
 
-// CacheStructName returns the correct struct type name for
+// WithCacheAPIStructName returns the correct struct type name for
 // the cache for the API we're currently processing.
-func (d *Descriptor) CacheStructName() string {
-	return fmt.Sprintf("%sCache", d.Name)
+func (d *Descriptor) WithCacheAPIStructName() string {
+	return fmt.Sprintf("withCache%sAPI", d.Name)
 }
 
 // CacheEntryName returns the correct struct type name for the
 // cache entry for the API we're currently processing.
 func (d *Descriptor) CacheEntryName() string {
-	return fmt.Sprintf("cacheEntryFor%s", d.Name)
+	return fmt.Sprintf("cacheEntryFor%sAPI", d.Name)
 }
 
 // CacheKey returns the correct cache key for the API

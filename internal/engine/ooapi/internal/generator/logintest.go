@@ -7,7 +7,7 @@ import (
 )
 
 func (d *Descriptor) genTestRegisterAndLoginSuccess(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func TestRegisterAndLogin%sSuccess(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func TestRegisterAndLogin%sSuccess(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
 	fmt.Fprint(sb, "\tff.fill(&expect)\n")
@@ -26,8 +26,8 @@ func (d *Descriptor) genTestRegisterAndLoginSuccess(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t}\n")
 
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
-	fmt.Fprintf(sb, "\t\tAPI: &Fake%s{\n", d.APIStructName())
-	fmt.Fprintf(sb, "\t\t\tWithResult: &Fake%s{\n", d.APIStructName())
+	fmt.Fprintf(sb, "\t\tAPI: &%s{\n", d.FakeAPIStructName())
+	fmt.Fprintf(sb, "\t\t\tWithResult: &%s{\n", d.FakeAPIStructName())
 	fmt.Fprint(sb, "\t\t\t\tResponse: expect,\n")
 	fmt.Fprint(sb, "\t\t\t},\n")
 	fmt.Fprint(sb, "\t\t},\n")
@@ -62,7 +62,7 @@ func (d *Descriptor) genTestRegisterAndLoginSuccess(sb *strings.Builder) {
 }
 
 func (d *Descriptor) genTestContinueUsingToken(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func Test%sContinueUsingToken(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func Test%sContinueUsingToken(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
 	fmt.Fprint(sb, "\tff.fill(&expect)\n")
@@ -81,8 +81,8 @@ func (d *Descriptor) genTestContinueUsingToken(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t}\n")
 
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
-	fmt.Fprintf(sb, "\t\tAPI: &Fake%s{\n", d.APIStructName())
-	fmt.Fprintf(sb, "\t\t\tWithResult: &Fake%s{\n", d.APIStructName())
+	fmt.Fprintf(sb, "\t\tAPI: &%s{\n", d.FakeAPIStructName())
+	fmt.Fprintf(sb, "\t\t\tWithResult: &%s{\n", d.FakeAPIStructName())
 	fmt.Fprint(sb, "\t\t\t\tResponse: expect,\n")
 	fmt.Fprint(sb, "\t\t\t},\n")
 	fmt.Fprint(sb, "\t\t},\n")
@@ -150,7 +150,7 @@ func (d *Descriptor) genTestContinueUsingToken(sb *strings.Builder) {
 }
 
 func (d *Descriptor) genTestWithValidButExpiredToken(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func Test%sWithValidButExpiredToken(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func Test%sWithValidButExpiredToken(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
 	fmt.Fprint(sb, "\tff.fill(&expect)\n")
@@ -168,8 +168,8 @@ func (d *Descriptor) genTestWithValidButExpiredToken(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t}\n")
 
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
-	fmt.Fprintf(sb, "\t\tAPI: &Fake%s{\n", d.APIStructName())
-	fmt.Fprintf(sb, "\t\t\tWithResult: &Fake%s{\n", d.APIStructName())
+	fmt.Fprintf(sb, "\t\tAPI: &%s{\n", d.FakeAPIStructName())
+	fmt.Fprintf(sb, "\t\t\tWithResult: &%s{\n", d.FakeAPIStructName())
 	fmt.Fprint(sb, "\t\t\t\tResponse: expect,\n")
 	fmt.Fprint(sb, "\t\t\t},\n")
 	fmt.Fprint(sb, "\t\t},\n")
@@ -214,7 +214,7 @@ func (d *Descriptor) genTestWithValidButExpiredToken(sb *strings.Builder) {
 }
 
 func (d *Descriptor) genTestWithRegisterAPIError(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func Test%sWithRegisterAPIError(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func Test%sWithRegisterAPIError(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
 	fmt.Fprint(sb, "\tff.fill(&expect)\n")
@@ -225,8 +225,8 @@ func (d *Descriptor) genTestWithRegisterAPIError(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
-	fmt.Fprintf(sb, "\t\tAPI: &Fake%s{\n", d.APIStructName())
-	fmt.Fprintf(sb, "\t\t\tWithResult: &Fake%s{\n", d.APIStructName())
+	fmt.Fprintf(sb, "\t\tAPI: &%s{\n", d.FakeAPIStructName())
+	fmt.Fprintf(sb, "\t\t\tWithResult: &%s{\n", d.FakeAPIStructName())
 	fmt.Fprint(sb, "\t\t\t\tResponse: expect,\n")
 	fmt.Fprint(sb, "\t\t\t},\n")
 	fmt.Fprint(sb, "\t\t},\n")
@@ -253,7 +253,7 @@ func (d *Descriptor) genTestWithRegisterAPIError(sb *strings.Builder) {
 }
 
 func (d *Descriptor) genTestWithLoginFailure(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func Test%sWithLoginFailure(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func Test%sWithLoginFailure(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
 	fmt.Fprint(sb, "\tff.fill(&expect)\n")
@@ -270,8 +270,8 @@ func (d *Descriptor) genTestWithLoginFailure(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t}\n")
 
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
-	fmt.Fprintf(sb, "\t\tAPI: &Fake%s{\n", d.APIStructName())
-	fmt.Fprintf(sb, "\t\t\tWithResult: &Fake%s{\n", d.APIStructName())
+	fmt.Fprintf(sb, "\t\tAPI: &%s{\n", d.FakeAPIStructName())
+	fmt.Fprintf(sb, "\t\t\tWithResult: &%s{\n", d.FakeAPIStructName())
 	fmt.Fprint(sb, "\t\t\t\tResponse: expect,\n")
 	fmt.Fprint(sb, "\t\t\t},\n")
 	fmt.Fprint(sb, "\t\t},\n")
@@ -303,7 +303,7 @@ func (d *Descriptor) genTestWithLoginFailure(sb *strings.Builder) {
 }
 
 func (d *Descriptor) genTestRegisterAndLoginThenFail(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func TestRegisterAndLogin%sThenFail(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func TestRegisterAndLogin%sThenFail(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
 	fmt.Fprint(sb, "\tff.fill(&expect)\n")
@@ -323,8 +323,8 @@ func (d *Descriptor) genTestRegisterAndLoginThenFail(sb *strings.Builder) {
 
 	fmt.Fprint(sb, "\terrMocked := errors.New(\"mocked error\")\n")
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
-	fmt.Fprintf(sb, "\t\tAPI: &Fake%s{\n", d.APIStructName())
-	fmt.Fprintf(sb, "\t\t\tWithResult: &Fake%s{\n", d.APIStructName())
+	fmt.Fprintf(sb, "\t\tAPI: &%s{\n", d.FakeAPIStructName())
+	fmt.Fprintf(sb, "\t\t\tWithResult: &%s{\n", d.FakeAPIStructName())
 	fmt.Fprint(sb, "\t\t\t\tErr: errMocked,\n")
 	fmt.Fprint(sb, "\t\t\t},\n")
 	fmt.Fprint(sb, "\t\t},\n")
@@ -356,17 +356,17 @@ func (d *Descriptor) genTestRegisterAndLoginThenFail(sb *strings.Builder) {
 }
 
 func (d *Descriptor) genTestTheDatabaseIsReplaced(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func Test%sTheDatabaseIsReplaced(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func Test%sTheDatabaseIsReplaced(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
 	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
 	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
 
-	fmt.Fprint(sb, "\tregisterAPI := &RegisterAPI{\n")
+	fmt.Fprint(sb, "\tregisterAPI := &simpleRegisterAPI{\n")
 	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
 	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
 	fmt.Fprint(sb, "\t}\n")
-	fmt.Fprint(sb, "\t\tloginAPI := &LoginAPI{\n")
+	fmt.Fprint(sb, "\t\tloginAPI := &simpleLoginAPI{\n")
 	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
 	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
 	fmt.Fprint(sb, "\t\t}\n")
@@ -430,17 +430,17 @@ func (d *Descriptor) genTestTheDatabaseIsReplaced(sb *strings.Builder) {
 }
 
 func (d *Descriptor) genTestTheDatabaseIsReplacedThenFailure(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func Test%sTheDatabaseIsReplacedThenFailure(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func Test%sTheDatabaseIsReplacedThenFailure(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
 	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
 	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
 
-	fmt.Fprint(sb, "\tregisterAPI := &RegisterAPI{\n")
+	fmt.Fprint(sb, "\tregisterAPI := &simpleRegisterAPI{\n")
 	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
 	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
 	fmt.Fprint(sb, "\t}\n")
-	fmt.Fprint(sb, "\t\tloginAPI := &LoginAPI{\n")
+	fmt.Fprint(sb, "\t\tloginAPI := &simpleLoginAPI{\n")
 	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
 	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
 	fmt.Fprint(sb, "\t\t}\n")
@@ -506,7 +506,7 @@ func (d *Descriptor) genTestTheDatabaseIsReplacedThenFailure(sb *strings.Builder
 }
 
 func (d *Descriptor) genTestRegisterAndLoginCannotWriteState(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func TestRegisterAndLogin%sCannotWriteState(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func TestRegisterAndLogin%sCannotWriteState(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
 	fmt.Fprint(sb, "\tff.fill(&expect)\n")
@@ -526,8 +526,8 @@ func (d *Descriptor) genTestRegisterAndLoginCannotWriteState(sb *strings.Builder
 
 	fmt.Fprint(sb, "\terrMocked := errors.New(\"mocked error\")\n")
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
-	fmt.Fprintf(sb, "\t\tAPI: &Fake%s{\n", d.APIStructName())
-	fmt.Fprintf(sb, "\t\t\tWithResult: &Fake%s{\n", d.APIStructName())
+	fmt.Fprintf(sb, "\t\tAPI: &%s{\n", d.FakeAPIStructName())
+	fmt.Fprintf(sb, "\t\t\tWithResult: &%s{\n", d.FakeAPIStructName())
 	fmt.Fprint(sb, "\t\t\t\tResponse: expect,\n")
 	fmt.Fprint(sb, "\t\t\t},\n")
 	fmt.Fprint(sb, "\t\t},\n")
@@ -562,7 +562,7 @@ func (d *Descriptor) genTestRegisterAndLoginCannotWriteState(sb *strings.Builder
 }
 
 func (d *Descriptor) genTestReadStateDecodeFailure(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func Test%sReadStateDecodeFailure(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func Test%sReadStateDecodeFailure(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
 	fmt.Fprint(sb, "\tff.fill(&expect)\n")
@@ -596,17 +596,17 @@ func (d *Descriptor) genTestReadStateDecodeFailure(sb *strings.Builder) {
 }
 
 func (d *Descriptor) genTestClockIsOffThenSuccess(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func Test%sClockIsOffThenSuccess(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func Test%sClockIsOffThenSuccess(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
 	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
 	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
 
-	fmt.Fprint(sb, "\tregisterAPI := &RegisterAPI{\n")
+	fmt.Fprint(sb, "\tregisterAPI := &simpleRegisterAPI{\n")
 	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
 	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
 	fmt.Fprint(sb, "\t}\n")
-	fmt.Fprint(sb, "\t\tloginAPI := &LoginAPI{\n")
+	fmt.Fprint(sb, "\t\tloginAPI := &simpleLoginAPI{\n")
 	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
 	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
 	fmt.Fprint(sb, "\t\t}\n")
@@ -672,17 +672,17 @@ func (d *Descriptor) genTestClockIsOffThenSuccess(sb *strings.Builder) {
 }
 
 func (d *Descriptor) genTestClockIsOffThen401(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func Test%sClockIsOffThen401(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func Test%sClockIsOffThen401(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
 	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
 	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
 
-	fmt.Fprint(sb, "\tregisterAPI := &RegisterAPI{\n")
+	fmt.Fprint(sb, "\tregisterAPI := &simpleRegisterAPI{\n")
 	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
 	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
 	fmt.Fprint(sb, "\t}\n")
-	fmt.Fprint(sb, "\t\tloginAPI := &LoginAPI{\n")
+	fmt.Fprint(sb, "\t\tloginAPI := &simpleLoginAPI{\n")
 	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
 	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
 	fmt.Fprint(sb, "\t\t}\n")
@@ -749,17 +749,17 @@ func (d *Descriptor) genTestClockIsOffThen401(sb *strings.Builder) {
 }
 
 func (d *Descriptor) genTestClockIsOffThen500(sb *strings.Builder) {
-	fmt.Fprintf(sb, "func Test%sClockIsOffThen500(t *testing.T) {\n", d.APIStructName())
+	fmt.Fprintf(sb, "func Test%sClockIsOffThen500(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
 	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
 	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
 
-	fmt.Fprint(sb, "\tregisterAPI := &RegisterAPI{\n")
+	fmt.Fprint(sb, "\tregisterAPI := &simpleRegisterAPI{\n")
 	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
 	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
 	fmt.Fprint(sb, "\t}\n")
-	fmt.Fprint(sb, "\t\tloginAPI := &LoginAPI{\n")
+	fmt.Fprint(sb, "\t\tloginAPI := &simpleLoginAPI{\n")
 	fmt.Fprint(sb, "\t\tHTTPClient: &VerboseHTTPClient{t: t},\n")
 	fmt.Fprint(sb, "\t\tBaseURL: srvr.URL,\n")
 	fmt.Fprint(sb, "\t\t}\n")
