@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/url"
 	"sync"
 	"time"
 
@@ -39,6 +40,7 @@ type Resolver struct {
 	ByteCounter    *bytecounter.Counter // optional
 	KVStore        KVStore              // optional
 	Logger         Logger               // optional
+	ProxyURL       *url.URL             // optional
 	codec          codec
 	dnsClientMaker dnsclientmaker
 	mu             sync.Mutex
@@ -71,6 +73,9 @@ func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, e
 	defer r.writestate(state)
 	me := multierror.New(ErrLookupHost)
 	for _, e := range state {
+		if r.shouldSkipWithProxy(e) {
+			continue // we cannot proxy this URL so ignore it
+		}
 		addrs, err := r.lookupHost(ctx, e, hostname)
 		if err == nil {
 			return addrs, nil
@@ -78,6 +83,19 @@ func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, e
 		me.Add(&errwrapper{error: err, URL: e.URL})
 	}
 	return nil, me
+}
+
+func (r *Resolver) shouldSkipWithProxy(e *resolverinfo) bool {
+	URL, err := url.Parse(e.URL)
+	if err != nil {
+		return true // please skip
+	}
+	switch URL.Scheme {
+	case "https", "dot", "tcp":
+		return false // we can handle this
+	default:
+		return true // please skip
+	}
 }
 
 func (r *Resolver) lookupHost(ctx context.Context, ri *resolverinfo, hostname string) ([]string, error) {
