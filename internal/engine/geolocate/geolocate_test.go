@@ -393,3 +393,10 @@ func TestNewTaskWithNoResourcesManager(t *testing.T) {
 		t.Fatal("expected nil task here")
 	}
 }
+
+func TestASNStringWorks(t *testing.T) {
+	r := Results{ASN: 1234}
+	if r.ASNString() != "AS1234" {
+		t.Fatal("unexpected result")
+	}
+}
