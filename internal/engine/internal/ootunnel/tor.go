@@ -93,7 +93,7 @@ func (b *Broker) getTorLibrary() torLibrary {
 	return &cretzBineTorLibrary{}
 }
 
-// startTor starts a tor tunnel.
+// newTor starts a tor tunnel.
 func (b *Broker) newTor(ctx context.Context, config *Config) (Tunnel, error) {
 	extraArgs := append([]string{}, config.TorArgs...)
 	extraArgs = append(extraArgs, "Log")
@@ -133,7 +133,7 @@ func (b *Broker) newTor(ctx context.Context, config *Config) (Tunnel, error) {
 	return &tunnelish{
 		bootstrapTime:         stop.Sub(start),
 		deleteStateDirOnClose: config.DeleteStateDirOnClose,
-		name:                  "tor",
+		name:                  Tor,
 		proxyURL:              &url.URL{Scheme: "socks5", Host: proxyAddress},
 		stateDir:              config.StateDir,
 		t:                     instance,

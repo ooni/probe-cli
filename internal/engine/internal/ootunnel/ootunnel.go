@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"sync"
 )
 
@@ -46,6 +47,9 @@ type Broker struct {
 	// mu protects this data structure.
 	mu sync.Mutex
 
+	// mkdirAll allows mocking os.MkdirAll
+	mkdirAll func(path string, perm fs.FileMode) error
+
 	// torLibrary is the optional torLibrary to use.
 	torLibrary torLibrary
 
@@ -68,6 +72,8 @@ func (b *Broker) NewTunnel(ctx context.Context, config *Config) (Tunnel, error) 
 	switch config.Name {
 	case Tor:
 		return b.newTor(ctx, config)
+	case Psiphon:
+		return b.newPsiphon(ctx, config)
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrNoSuchTunnel, config.Name)
 	}
