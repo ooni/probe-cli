@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"net"
+	"net/url"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -245,5 +247,94 @@ func TestMaybeConfusionManyEntries(t *testing.T) {
 	}
 	if state[3].URL != "dot://dns.google" {
 		t.Fatal("unexpected state[3].URL")
+	}
+}
+
+func TestResolverWorksWithProxy(t *testing.T) {
+	var (
+		works      int32
+		startuperr = make(chan error)
+		listench   = make(chan net.Listener)
+		done       = make(chan interface{})
+	)
+	// proxy implementation
+	go func() {
+		defer close(done)
+		lconn, err := net.Listen("tcp", "127.0.0.1:0")
+		startuperr <- err
+		if err != nil {
+			return
+		}
+		listench <- lconn
+		for {
+			conn, err := lconn.Accept()
+			if err != nil {
+				// We assume this is when we were told to
+				// shutdown by the main goroutine.
+				return
+			}
+			atomic.AddInt32(&works, 1)
+			conn.Close()
+		}
+	}()
+	// make sure we could start the proxy
+	if err := <-startuperr; err != nil {
+		t.Fatal(err)
+	}
+	listener := <-listench
+	// use the proxy
+	reso := &Resolver{ProxyURL: &url.URL{
+		Scheme: "socks5",
+		Host:   listener.Addr().String(),
+	}}
+	ctx := context.Background()
+	addrs, err := reso.LookupHost(ctx, "ooni.org")
+	// cleanly shutdown the listener
+	listener.Close()
+	<-done
+	// check results
+	if !errors.Is(err, ErrLookupHost) {
+		t.Fatal("not the error we expected")
+	}
+	if addrs != nil {
+		t.Fatal("expected nil addrs")
+	}
+	if works < 1 {
+		t.Fatal("expected to see a positive number of entries here")
+	}
+}
+
+func TestShouldSkipWithProxyWorks(t *testing.T) {
+	expect := []struct {
+		url    string
+		result bool
+	}{{
+		url:    "\t",
+		result: true,
+	}, {
+		url:    "https://dns.google/dns-query",
+		result: false,
+	}, {
+		url:    "dot://dns.google/",
+		result: false,
+	}, {
+		url:    "http3://dns.google/dns-query",
+		result: true,
+	}, {
+		url:    "tcp://dns.google/",
+		result: false,
+	}, {
+		url:    "udp://dns.google/",
+		result: true,
+	}, {
+		url:    "system:///",
+		result: true,
+	}}
+	reso := &Resolver{}
+	for _, e := range expect {
+		out := reso.shouldSkipWithProxy(&resolverinfo{URL: e.url})
+		if out != e.result {
+			t.Fatal("unexpected result for", e)
+		}
 	}
 }
