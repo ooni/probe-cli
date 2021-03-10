@@ -108,14 +108,15 @@ func NewSession(config SessionConfig) (*Session, error) {
 		ByteCounter:  sess.byteCounter,
 		BogonIsError: true,
 		Logger:       sess.logger,
+		ProxyURL:     config.ProxyURL,
 	}
 	sess.resolver = &sessionresolver.Resolver{
 		ByteCounter: sess.byteCounter,
 		KVStore:     config.KVStore,
 		Logger:      sess.logger,
+		ProxyURL:    config.ProxyURL,
 	}
 	httpConfig.FullResolver = sess.resolver
-	httpConfig.ProxyURL = config.ProxyURL // no need to proxy the resolver
 	sess.httpDefaultTransport = netx.NewHTTPTransport(httpConfig)
 	return sess, nil
 }
