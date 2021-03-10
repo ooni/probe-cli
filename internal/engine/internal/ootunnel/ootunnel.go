@@ -25,8 +25,6 @@ import (
 	"sync"
 )
 
-// TODO(bassosimone): implement Psiphon
-
 // Available tunnels.
 const (
 	Psiphon = "psiphon"
