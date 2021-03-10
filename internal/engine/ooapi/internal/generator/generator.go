@@ -49,6 +49,8 @@ func main() {
 		GenLoginTestGo(file)
 	case "clientcall.go":
 		GenClientCallGo(file)
+	case "clientcall_test.go":
+		GenClientCallTestGo(file)
 	default:
 		panic(fmt.Sprintf("don't know how to create this file: %s", file))
 	}
