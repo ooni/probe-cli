@@ -491,8 +491,8 @@ func (s *Session) LookupLocationContext(ctx context.Context) (*geolocate.Results
 	// when we are using a proxy because that might leak information.
 	task := geolocate.Must(geolocate.NewTask(geolocate.Config{
 		EnableResolverLookup: s.proxyURL == nil,
-		HTTPClient:           s.DefaultHTTPClient(),
 		Logger:               s.Logger(),
+		Resolver:             s.resolver,
 		ResourcesManager:     s,
 		UserAgent:            s.UserAgent(),
 	}))
