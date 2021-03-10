@@ -492,6 +492,7 @@ func (s *Session) LookupLocationContext(ctx context.Context) (*geolocate.Results
 	task := geolocate.Must(geolocate.NewTask(geolocate.Config{
 		EnableResolverLookup: s.proxyURL == nil,
 		Logger:               s.Logger(),
+		Resolver:             s.resolver,
 		ResourcesManager:     s,
 		UserAgent:            s.UserAgent(),
 	}))
