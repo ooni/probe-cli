@@ -1,27 +1,12 @@
-package ooapi
+package ooapi_test
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/engine/ooapi"
 	"github.com/ooni/probe-cli/v3/internal/engine/ooapi/apimodel"
 )
-
-type VerboseHTTPClient struct {
-	t *testing.T
-}
-
-func (c *VerboseHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	c.t.Logf("> %s %s", req.Method, req.URL.String())
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		c.t.Logf("< %s", err.Error())
-		return nil, err
-	}
-	c.t.Logf("< %d", resp.StatusCode)
-	return resp, nil
-}
 
 func TestWithRealServerDoCheckIn(t *testing.T) {
 	if testing.Short() {
@@ -40,12 +25,10 @@ func TestWithRealServerDoCheckIn(t *testing.T) {
 			CategoryCodes: []string{"NEWS", "CULTR"},
 		},
 	}
-	httpClnt := &VerboseHTTPClient{t: t}
-	api := &simpleCheckInAPI{
-		HTTPClient: httpClnt,
-	}
+	httpClnt := &ooapi.VerboseHTTPClient{T: t}
+	clnt := &ooapi.Client{HTTPClient: httpClnt, KVStore: &ooapi.MemKVStore{}}
 	ctx := context.Background()
-	resp, err := api.Call(ctx, req)
+	resp, err := clnt.CheckIn(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,9 +50,9 @@ func TestWithRealServerDoCheckReportID(t *testing.T) {
 	req := &apimodel.CheckReportIDRequest{
 		ReportID: "20210223T093606Z_ndt_JO_8376_n1_kDYToqrugDY54Soy",
 	}
-	api := &simpleCheckReportIDAPI{}
+	clnt := &ooapi.Client{KVStore: &ooapi.MemKVStore{}}
 	ctx := context.Background()
-	resp, err := api.Call(ctx, req)
+	resp, err := clnt.CheckReportID(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,9 +69,9 @@ func TestWithRealServerDoMeasurementMeta(t *testing.T) {
 	req := &apimodel.MeasurementMetaRequest{
 		ReportID: "20210223T093606Z_ndt_JO_8376_n1_kDYToqrugDY54Soy",
 	}
-	api := &simpleMeasurementMetaAPI{}
+	clnt := &ooapi.Client{KVStore: &ooapi.MemKVStore{}}
 	ctx := context.Background()
-	resp, err := api.Call(ctx, req)
+	resp, err := clnt.MeasurementMeta(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,9 +96,9 @@ func TestWithRealServerDoOpenReport(t *testing.T) {
 		TestStartTime:     "2018-11-01 15:33:20",
 		TestVersion:       "0.1.0",
 	}
-	api := &simpleOpenReportAPI{}
+	clnt := &ooapi.Client{KVStore: &ooapi.MemKVStore{}}
 	ctx := context.Background()
-	resp, err := api.Call(ctx, req)
+	resp, err := clnt.OpenReport(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,21 +113,10 @@ func TestWithRealServerDoPsiphonConfig(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	req := &apimodel.PsiphonConfigRequest{}
-	httpClnt := &VerboseHTTPClient{t: t}
-	api := &withLoginPsiphonConfigAPI{
-		API: &simplePsiphonConfigAPI{
-			HTTPClient: httpClnt,
-		},
-		KVStore: &memkvstore{},
-		RegisterAPI: &simpleRegisterAPI{
-			HTTPClient: httpClnt,
-		},
-		LoginAPI: &simpleLoginAPI{
-			HTTPClient: httpClnt,
-		},
-	}
+	httpClnt := &ooapi.VerboseHTTPClient{T: t}
+	clnt := &ooapi.Client{HTTPClient: httpClnt, KVStore: &ooapi.MemKVStore{}}
 	ctx := context.Background()
-	resp, err := api.Call(ctx, req)
+	resp, err := clnt.PsiphonConfig(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,21 +131,10 @@ func TestWithRealServerDoTorTargets(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	req := &apimodel.TorTargetsRequest{}
-	httpClnt := &VerboseHTTPClient{t: t}
-	api := &withLoginTorTargetsAPI{
-		API: &simpleTorTargetsAPI{
-			HTTPClient: httpClnt,
-		},
-		KVStore: &memkvstore{},
-		RegisterAPI: &simpleRegisterAPI{
-			HTTPClient: httpClnt,
-		},
-		LoginAPI: &simpleLoginAPI{
-			HTTPClient: httpClnt,
-		},
-	}
+	httpClnt := &ooapi.VerboseHTTPClient{T: t}
+	clnt := &ooapi.Client{HTTPClient: httpClnt, KVStore: &ooapi.MemKVStore{}}
 	ctx := context.Background()
-	resp, err := api.Call(ctx, req)
+	resp, err := clnt.TorTargets(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,9 +152,9 @@ func TestWithRealServerDoURLs(t *testing.T) {
 		CountryCode: "IT",
 		Limit:       3,
 	}
-	api := &simpleURLsAPI{}
+	clnt := &ooapi.Client{KVStore: &ooapi.MemKVStore{}}
 	ctx := context.Background()
-	resp, err := api.Call(ctx, req)
+	resp, err := clnt.URLs(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
