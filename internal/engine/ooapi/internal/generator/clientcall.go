@@ -7,13 +7,13 @@ import (
 )
 
 func (d *Descriptor) clientMakeAPIBase(sb *strings.Builder) {
-	// TODO(bassosimone): this can probably be automated
 	fmt.Fprintf(sb, "&%s{\n", d.APIStructName())
-	fmt.Fprint(sb, "\tBaseURL: c.BaseURL,\n")
-	fmt.Fprint(sb, "\tHTTPClient: c.HTTPClient,\n")
-	fmt.Fprint(sb, "\tJSONCodec: c.JSONCodec,\n")
-	fmt.Fprint(sb, "\tRequestMaker: c.RequestMaker,\n")
-	fmt.Fprint(sb, "\tUserAgent: c.UserAgent,\n")
+	for _, field := range apiFields {
+		if field.ifLogin || field.ifTemplate {
+			continue
+		}
+		fmt.Fprintf(sb, "\t%s: c.%s,\n", field.name, field.name)
+	}
 	fmt.Fprint(sb, "}")
 }
 
@@ -29,18 +29,20 @@ func (d *Descriptor) clientMakeAPI(sb *strings.Builder) {
 		fmt.Fprint(sb, "\tJSONCodec: c.JSONCodec,\n")
 		fmt.Fprint(sb, "\tKVStore: c.KVStore,\n")
 		fmt.Fprint(sb, "\tRegisterAPI: &simpleRegisterAPI{\n")
-		fmt.Fprint(sb, "\t\tBaseURL: c.BaseURL,\n")
-		fmt.Fprint(sb, "\t\tHTTPClient: c.HTTPClient,\n")
-		fmt.Fprint(sb, "\t\tJSONCodec: c.JSONCodec,\n")
-		fmt.Fprint(sb, "\t\tRequestMaker: c.RequestMaker,\n")
-		fmt.Fprint(sb, "\t\tUserAgent: c.UserAgent,\n")
+		for _, field := range apiFields {
+			if field.ifLogin || field.ifTemplate {
+				continue
+			}
+			fmt.Fprintf(sb, "\t%s: c.%s,\n", field.name, field.name)
+		}
 		fmt.Fprint(sb, "\t},\n")
 		fmt.Fprint(sb, "\tLoginAPI: &simpleLoginAPI{\n")
-		fmt.Fprint(sb, "\t\tBaseURL: c.BaseURL,\n")
-		fmt.Fprint(sb, "\t\tHTTPClient: c.HTTPClient,\n")
-		fmt.Fprint(sb, "\t\tJSONCodec: c.JSONCodec,\n")
-		fmt.Fprint(sb, "\t\tRequestMaker: c.RequestMaker,\n")
-		fmt.Fprint(sb, "\t\tUserAgent: c.UserAgent,\n")
+		for _, field := range apiFields {
+			if field.ifLogin || field.ifTemplate {
+				continue
+			}
+			fmt.Fprintf(sb, "\t%s: c.%s,\n", field.name, field.name)
+		}
 		fmt.Fprint(sb, "\t},\n")
 		fmt.Fprint(sb, "}\n")
 		return
