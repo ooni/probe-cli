@@ -1,7 +1,7 @@
 package ooapi
 
 // Client is a client for speaking with the OONI API. Make sure you
-// fill in the mandatory fields when you create a Client.
+// fill in the mandatory fields.
 type Client struct {
 	BaseURL      string       // optional
 	GobCodec     GobCodec     // optional

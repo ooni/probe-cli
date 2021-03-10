@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-// TODO(bassosimone): update package docs
-
 func (d *Descriptor) clientMakeAPIBase(sb *strings.Builder) {
 	// TODO(bassosimone): this can probably be automated
 	fmt.Fprintf(sb, "&%s{\n", d.APIStructName())

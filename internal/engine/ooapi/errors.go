@@ -2,8 +2,7 @@ package ooapi
 
 import "errors"
 
-// Errors defined by this package. In addition to these errors, this
-// package may of course return any other stdlib specific error.
+// Errors defined by this package.
 var (
 	ErrAPICallFailed   = errors.New("ooapi: API call failed")
 	ErrEmptyField      = errors.New("ooapi: empty field")
