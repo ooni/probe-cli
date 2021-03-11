@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	testName    = "stun_reachability"
-	testVersion = "0.1.0"
+	testName    = "stunreachability"
+	testVersion = "0.2.0"
 )
 
 // Config contains the experiment config.

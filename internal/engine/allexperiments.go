@@ -241,7 +241,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"stun_reachability": func(session *Session) *ExperimentBuilder {
+	"stunreachability": func(session *Session) *ExperimentBuilder {
 		return &ExperimentBuilder{
 			build: func(config interface{}) *Experiment {
 				return NewExperiment(session, stunreachability.NewExperimentMeasurer(

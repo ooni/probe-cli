@@ -18,10 +18,10 @@ import (
 
 func TestMeasurerExperimentNameVersion(t *testing.T) {
 	measurer := stunreachability.NewExperimentMeasurer(stunreachability.Config{})
-	if measurer.ExperimentName() != "stun_reachability" {
+	if measurer.ExperimentName() != "stunreachability" {
 		t.Fatal("unexpected ExperimentName")
 	}
-	if measurer.ExperimentVersion() != "0.1.0" {
+	if measurer.ExperimentVersion() != "0.2.0" {
 		t.Fatal("unexpected ExperimentVersion")
 	}
 }
