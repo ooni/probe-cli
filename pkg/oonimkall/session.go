@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"runtime"
 	"sync"
 
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
@@ -21,7 +20,7 @@ type AtomicInt64 struct {
 	*atomicx.Int64
 }
 
-// The following two variables contain metrics pertaining to the number
+// These two variables contain metrics pertaining to the number
 // of Sessions and Contexts that are currently being used.
 var (
 	ActiveSessions = &AtomicInt64{atomicx.NewInt64()}
@@ -33,9 +32,20 @@ var (
 // to this instance in the SessionConfig object. All log messages that
 // the Session will generate will be routed to this Logger.
 type Logger interface {
+	// Debug handles debug messages.
 	Debug(msg string)
+
+	// Info handles informational messages.
 	Info(msg string)
+
+	// Warn handles warning messages.
 	Warn(msg string)
+}
+
+// ExperimentCallbacks contains experiment callbacks.
+type ExperimentCallbacks interface {
+	// OnProgress provides information about an experiment progress.
+	OnProgress(percentage float64, message string)
 }
 
 // SessionConfig contains configuration for a Session. You should
@@ -83,24 +93,18 @@ type SessionConfig struct {
 // OONI related task (e.g. geolocation). Note that the Session isn't
 // mean to be a long living object. The workflow is to create a Session,
 // do the operations you need to do with it now, then make sure it is
-// not referenced by other variables, so the Go GC can finalize it.
-//
-// Future directions
-//
-// We will eventually rewrite the code for running new experiments such
-// that a Task will be created from a Session, such that experiments
-// could share the same Session and save geolookups, etc. For now, we
-// are in the suboptimal situations where Tasks create, use, and close
-// their own session, thus running more lookups than needed.
+// not referenced by other variables, so the Go GC can finalize it. This
+// is what you would normally done with Java/ObjC.
 type Session struct {
+	// Hooks for testing (should not appear in Java/ObjC, because they
+	// cannot be automatically transformed to Java/ObjC code.)
+	TestingCheckInBeforeNewProbeServicesClient func(ctx *Context)
+	TestingCheckInBeforeCheckIn                func(ctx *Context)
+
 	cl        []context.CancelFunc
 	mtx       sync.Mutex
 	submitter *probeservices.Submitter
 	sessp     *engine.Session
-
-	// Hooks for testing (should not appear in Java/ObjC)
-	TestingCheckInBeforeNewProbeServicesClient func(ctx *Context)
-	TestingCheckInBeforeCheckIn                func(ctx *Context)
 }
 
 // NewSession creates a new session. You should use a session for running
@@ -133,6 +137,8 @@ func NewSession(config *SessionConfig) (*Session, error) {
 		return nil, err
 	}
 	sess := &Session{sessp: sessp}
+	// We use finalizers to reduce the burden of managing the
+	// session from languages with a garbage collector.
 	runtime.SetFinalizer(sess, sessionFinalizer)
 	ActiveSessions.Add(1)
 	return sess, nil
@@ -159,7 +165,9 @@ type Context struct {
 	ctx    context.Context
 }
 
-// Cancel cancels pending operations using this context.
+// Cancel cancels pending operations using this context. This method
+// is idempotent. Calling it more than once is fine. The first invocation
+// cancels the context. Subsequent invocations are no-operations.
 func (ctx *Context) Cancel() {
 	ctx.cancel()
 }
@@ -171,7 +179,8 @@ func (sess *Session) NewContext() *Context {
 
 // NewContextWithTimeout creates an new interruptible Context that will automatically
 // cancel itself after the given timeout. Setting a zero or negative timeout implies
-// there is no actual timeout configured for the Context.
+// there is no actual timeout configured for the Context, making this invocation
+// equivalent to calling NewContext().
 func (sess *Session) NewContextWithTimeout(timeout int64) *Context {
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
@@ -188,7 +197,7 @@ func (sess *Session) NewContextWithTimeout(timeout int64) *Context {
 	return &Context{cancel: cancel, ctx: ctx}
 }
 
-// GeolocateResults contains the GeolocateTask results.
+// GeolocateResults contains the results of session.Geolocate.
 type GeolocateResults struct {
 	// ASN is the autonomous system number.
 	ASN string
@@ -203,15 +212,21 @@ type GeolocateResults struct {
 	Org string
 }
 
-// MaybeUpdateResources ensures that resources are up to date.
+// MaybeUpdateResources ensures that resources are up to date. This function
+// could perform network activity when we need to update resources.
+//
+// This function locks the session until it's done. That is, no other operation
+// can be performed as long as this function is pending.
 func (sess *Session) MaybeUpdateResources(ctx *Context) error {
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
 	return sess.sessp.MaybeUpdateResources(ctx.ctx)
 }
 
-// Geolocate performs a geolocate operation and returns the results. This method
-// is (in Java terminology) synchronized with the session instance.
+// Geolocate performs a geolocate operation and returns the results.
+//
+// This function locks the session until it's done. That is, no other operation
+// can be performed as long as this function is pending.
 func (sess *Session) Geolocate(ctx *Context) (*GeolocateResults, error) {
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
@@ -220,7 +235,7 @@ func (sess *Session) Geolocate(ctx *Context) (*GeolocateResults, error) {
 		return nil, err
 	}
 	return &GeolocateResults{
-		ASN:     fmt.Sprintf("AS%d", info.ASN),
+		ASN:     info.ASNString(),
 		Country: info.CountryCode,
 		IP:      info.ProbeIP,
 		Org:     info.NetworkName,
@@ -230,12 +245,17 @@ func (sess *Session) Geolocate(ctx *Context) (*GeolocateResults, error) {
 // SubmitMeasurementResults contains the results of a single measurement submission
 // to the OONI backends using the OONI collector API.
 type SubmitMeasurementResults struct {
+	// UpdateMeasurement is the measurement with updated report ID.
 	UpdatedMeasurement string
-	UpdatedReportID    string
+
+	// UpdatedReportID is the report ID used for the measurement.
+	UpdatedReportID string
 }
 
-// Submit submits the given measurement and returns the results. This method is (in
-// Java terminology) synchronized with the Session instance.
+// Submit submits the given measurement and returns the results.
+//
+// This function locks the session until it's done. That is, no other operation
+// can be performed as long as this function is pending.
 func (sess *Session) Submit(ctx *Context, measurement string) (*SubmitMeasurementResults, error) {
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
@@ -261,12 +281,15 @@ func (sess *Session) Submit(ctx *Context, measurement string) (*SubmitMeasuremen
 	}, nil
 }
 
-// CheckInConfigWebConnectivity is the configuration for the WebConnectivity test
+// CheckInConfigWebConnectivity contains WebConnectivity
+// configuration for the check-in API.
 type CheckInConfigWebConnectivity struct {
-	CategoryCodes []string // CategoryCodes is an array of category codes
+	// CategoryCodes contains zero or more category codes (e.g. "HUMR").
+	CategoryCodes []string
 }
 
-// Add a category code to the array in CheckInConfigWebConnectivity
+// Add adds a category code to ckw.CategoryCode. This method allows you to
+// edit ckw.CategoryCodes, which is inaccessible from Java/ObjC.
 func (ckw *CheckInConfigWebConnectivity) Add(cat string) {
 	ckw.CategoryCodes = append(ckw.CategoryCodes, cat)
 }
@@ -277,36 +300,62 @@ func (ckw *CheckInConfigWebConnectivity) toModel() model.CheckInConfigWebConnect
 	}
 }
 
-// CheckInConfig contains configuration for calling the checkin API.
+// CheckInConfig contains configuration for the check-in API.
 type CheckInConfig struct {
-	Charging        bool                          // Charging indicate if the phone is actually charging
-	OnWiFi          bool                          // OnWiFi indicate if the phone is actually connected to a WiFi network
-	Platform        string                        // Platform of the probe
-	RunType         string                        // RunType
-	SoftwareName    string                        // SoftwareName of the probe
-	SoftwareVersion string                        // SoftwareVersion of the probe
-	WebConnectivity *CheckInConfigWebConnectivity // WebConnectivity class contain an array of categories
+	// Charging indicates whether the phone is charging.
+	Charging bool
+
+	// OnWiFi indicates whether the phone is using the Wi-Fi.
+	OnWiFi bool
+
+	// Platform is the mobile platform (e.g. "android")
+	Platform string
+
+	// RunType indicates whether this is an automated ("timed") run
+	// or otherwise a manual run initiated by the user.
+	RunType string
+
+	// SoftwareName is the name of the application.
+	SoftwareName string
+
+	// SoftwareVersion is the version of the application.
+	SoftwareVersion string
+
+	// WebConnectivity contains configuration items specific of
+	// the WebConnectivity experiment.
+	WebConnectivity *CheckInConfigWebConnectivity
 }
 
-// CheckInInfoWebConnectivity contains the array of URLs returned by the checkin API
+// CheckInInfoWebConnectivity contains the WebConnectivity
+// specific results of the check-in API call.
 type CheckInInfoWebConnectivity struct {
+	// ReportID is the report ID we should be using.
 	ReportID string
-	URLs     []model.URLInfo
+
+	// URLs contains the list of URLs to measure.
+	URLs []model.URLInfo
 }
 
-// URLInfo contains info on a test lists URL
+// URLInfo contains info on a specific URL to measure.
 type URLInfo struct {
+	// CategoryCode is the URL's category code (e.g. "HUMR").
 	CategoryCode string
-	CountryCode  string
-	URL          string
+
+	// CountryCode is the test list from which this URL
+	// comes from (e.g. "IT", "FR").
+	CountryCode string
+
+	// URL is the URL itself.
+	URL string
 }
 
-// Size returns the number of URLs.
+// Size returns the number of URLs included into the result.
 func (ckw *CheckInInfoWebConnectivity) Size() int64 {
 	return int64(len(ckw.URLs))
 }
 
-// At gets the URLInfo at position idx from CheckInInfoWebConnectivity.URLs
+// At returns the URLInfo at index idx. Note that this function will
+// return nil/null if the index is out of bounds.
 func (ckw *CheckInInfoWebConnectivity) At(idx int64) *URLInfo {
 	if idx < 0 || int(idx) >= len(ckw.URLs) {
 		return nil
@@ -323,20 +372,27 @@ func newCheckInInfoWebConnectivity(ckw *model.CheckInInfoWebConnectivity) *Check
 	if ckw == nil {
 		return nil
 	}
-	out := new(CheckInInfoWebConnectivity)
-	out.ReportID = ckw.ReportID
-	out.URLs = ckw.URLs
-	return out
+	return &CheckInInfoWebConnectivity{
+		ReportID: ckw.ReportID,
+		URLs:     ckw.URLs,
+	}
 }
 
-// CheckInInfo contains the return test objects from the checkin API
+// CheckInInfo contains the result of the check-in API.
 type CheckInInfo struct {
+	// WebConnectivity contains results that are specific to
+	// the WebConnectivity experiment. This field MAY be null
+	// if the server's response did not contain any info.
 	WebConnectivity *CheckInInfoWebConnectivity
 }
 
-// CheckIn function is called by probes asking if there are tests to be run
-// The config argument contains the mandatory settings.
-// Returns the list of tests to run and the URLs, on success, or an explanatory error, in case of failure.
+// CheckIn calls the check-in API. Both ctx and config MUST NOT be nil. This
+// function will fail if config is missing required settings. The return value
+// is either an error or a valid CheckInInfo instance. Beware that the returned
+// object MAY still contain nil fields depending on the server's response.
+//
+// This function locks the session until it's done. That is, no other operation
+// can be performed as long as this function is pending.
 func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo, error) {
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
@@ -348,14 +404,14 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 		return nil, err
 	}
 	if sess.TestingCheckInBeforeNewProbeServicesClient != nil {
-		sess.TestingCheckInBeforeNewProbeServicesClient(ctx)
+		sess.TestingCheckInBeforeNewProbeServicesClient(ctx) // for testing
 	}
 	psc, err := sess.sessp.NewProbeServicesClient(ctx.ctx)
 	if err != nil {
 		return nil, err
 	}
 	if sess.TestingCheckInBeforeCheckIn != nil {
-		sess.TestingCheckInBeforeCheckIn(ctx)
+		sess.TestingCheckInBeforeCheckIn(ctx) // for testing
 	}
 	cfg := model.CheckInConfig{
 		Charging:        config.Charging,
