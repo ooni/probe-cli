@@ -108,14 +108,15 @@ func NewSession(config SessionConfig) (*Session, error) {
 		ByteCounter:  sess.byteCounter,
 		BogonIsError: true,
 		Logger:       sess.logger,
+		ProxyURL:     config.ProxyURL,
 	}
 	sess.resolver = &sessionresolver.Resolver{
 		ByteCounter: sess.byteCounter,
 		KVStore:     config.KVStore,
 		Logger:      sess.logger,
+		ProxyURL:    config.ProxyURL,
 	}
 	httpConfig.FullResolver = sess.resolver
-	httpConfig.ProxyURL = config.ProxyURL // no need to proxy the resolver
 	sess.httpDefaultTransport = netx.NewHTTPTransport(httpConfig)
 	return sess, nil
 }
@@ -490,8 +491,8 @@ func (s *Session) LookupLocationContext(ctx context.Context) (*geolocate.Results
 	// when we are using a proxy because that might leak information.
 	task := geolocate.Must(geolocate.NewTask(geolocate.Config{
 		EnableResolverLookup: s.proxyURL == nil,
-		HTTPClient:           s.DefaultHTTPClient(),
 		Logger:               s.Logger(),
+		Resolver:             s.resolver,
 		ResourcesManager:     s,
 		UserAgent:            s.UserAgent(),
 	}))

@@ -7,6 +7,11 @@ import (
 	"github.com/pion/stun"
 )
 
+// TODO(bassosimone): we should modify the stun code to use
+// the session resolver rather than using its own.
+//
+// See https://github.com/ooni/probe/issues/1383.
+
 type stunClient interface {
 	Close() error
 	Start(m *stun.Message, h stun.Handler) error
