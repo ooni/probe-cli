@@ -18,7 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
 )
 
-func NewSessionWithAssetsDir(assetsDir string) (*oonimkall.Session, error) {
+func FakeNewSessionWithAssetsDir(assetsDir string) (*oonimkall.Session, error) {
 	return oonimkall.NewSession(&oonimkall.SessionConfig{
 		AssetsDir:        assetsDir,
 		ProbeServicesURL: "https://ams-pg-test.ooni.org/",
@@ -29,8 +29,8 @@ func NewSessionWithAssetsDir(assetsDir string) (*oonimkall.Session, error) {
 	})
 }
 
-func NewSession() (*oonimkall.Session, error) {
-	return NewSessionWithAssetsDir("../testdata/oonimkall/assets")
+func FakeNewSession() (*oonimkall.Session, error) {
+	return FakeNewSessionWithAssetsDir("../testdata/oonimkall/assets")
 }
 
 func TestNewSessionWithInvalidStateDir(t *testing.T) {
@@ -72,7 +72,7 @@ func TestMaybeUpdateResourcesWithCancelledContext(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(dir)
-	sess, err := NewSessionWithAssetsDir(dir)
+	sess, err := FakeNewSessionWithAssetsDir(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +104,7 @@ func TestGeolocateWithCancelledContext(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestGeolocateGood(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +163,7 @@ func TestSubmitWithCancelledContext(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +182,7 @@ func TestSubmitWithInvalidJSON(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +234,7 @@ func TestSubmitMeasurementGood(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ func TestSubmitCancelContextAfterFirstSubmission(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,7 +267,7 @@ func TestSubmitCancelContextAfterFirstSubmission(t *testing.T) {
 }
 
 func TestCheckInSuccess(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,7 +315,7 @@ func TestCheckInSuccess(t *testing.T) {
 }
 
 func TestCheckInLookupLocationFailure(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -342,7 +342,7 @@ func TestCheckInLookupLocationFailure(t *testing.T) {
 }
 
 func TestCheckInNewProbeServicesFailure(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -371,7 +371,7 @@ func TestCheckInNewProbeServicesFailure(t *testing.T) {
 }
 
 func TestCheckInCheckInFailure(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -400,7 +400,7 @@ func TestCheckInCheckInFailure(t *testing.T) {
 }
 
 func TestCheckInNoParams(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -423,7 +423,7 @@ func TestCheckInNoParams(t *testing.T) {
 }
 
 func TestFetchURLListSuccess(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -448,7 +448,7 @@ func TestFetchURLListSuccess(t *testing.T) {
 }
 
 func TestFetchURLListWithCC(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}

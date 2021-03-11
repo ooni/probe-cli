@@ -1,6 +1,7 @@
 package oonimkall
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
@@ -30,28 +31,41 @@ type WebConnectivityResults struct {
 	Measurement string
 }
 
+// webConnectivityRunner is the type that runs
+// the WebConnectivity experiment.
 type webConnectivityRunner struct {
 	sess experimentSession
 }
 
-func (r *webConnectivityRunner) run(ctx *Context, config *WebConnectivityConfig) (*WebConnectivityResults, error) {
+// run runs the WebConnectivity experiment to completion. Both arguments
+// must be correctly initialized. The return value is either a valid
+// results with a nil error, or nil results with an error.
+func (r *webConnectivityRunner) run(ctx context.Context, config *WebConnectivityConfig) (*WebConnectivityResults, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err() // helps with testing
+	default:
+		// fallthrough
+	}
 	// TODO(bassosimone): I suspect most of the code for running
 	// experiments is going to be quite redundant. Autogen?
 	defer r.sess.unlock()
 	r.sess.lock()
-	if err := r.sess.maybeLookupBackendsContext(ctx.ctx); err != nil {
+	if err := r.sess.maybeLookupBackends(ctx); err != nil {
 		return nil, err
 	}
-	if err := r.sess.maybeLookupLocationContext(ctx.ctx); err != nil {
+	if err := r.sess.maybeLookupLocation(ctx); err != nil {
 		return nil, err
 	}
 	builder, err := r.sess.newExperimentBuilder("web_connectivity")
 	if err != nil {
 		return nil, err
 	}
-	builder.SetCallbacks(config.Callbacks)
-	exp := builder.NewExperiment()
-	measurement, err := exp.MeasureWithContext(ctx.ctx, config.Input)
+	if config.Callbacks != nil {
+		builder.setCallbacks(config.Callbacks)
+	}
+	exp := builder.newExperiment()
+	measurement, err := exp.MeasureWithContext(ctx, config.Input)
 	if err != nil {
 		return nil, err
 	}
@@ -73,5 +87,5 @@ func (r *webConnectivityRunner) run(ctx *Context, config *WebConnectivityConfig)
 // This API is currently experimental. We do not promise that we will bump
 // the major version number when changing it.
 func (sess *Session) WebConnectivity(ctx *Context, config *WebConnectivityConfig) (*WebConnectivityResults, error) {
-	return (&webConnectivityRunner{sess: sess}).run(ctx, config)
+	return (&webConnectivityRunner{sess: sess}).run(ctx.ctx, config)
 }

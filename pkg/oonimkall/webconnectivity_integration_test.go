@@ -7,7 +7,10 @@ import (
 )
 
 func TestSessionWebConnectivity(t *testing.T) {
-	sess, err := NewSession()
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	sess, err := FakeNewSession()
 	if err != nil {
 		t.Fatal(err)
 	}
