@@ -88,6 +88,7 @@ func (r *Resolver) newresolver(URL string) (childResolver, error) {
 		ByteCounter:  r.byteCounter(),
 		HTTP3Enabled: h3,
 		Logger:       r.logger(),
+		ProxyURL:     r.ProxyURL,
 	}, URL)
 }
 
