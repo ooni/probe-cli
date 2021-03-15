@@ -122,15 +122,15 @@ func (tk *TestKeys) do(
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 	newClient := stun.NewClient
 	if config.newClient != nil {
 		newClient = config.newClient
 	}
-	client, err := newClient(conn, stun.WithNoConnClose)
+	client, err := newClient(conn)
 	if err != nil {
 		return err
 	}
+	defer client.Close()
 	message := stun.MustBuild(stun.TransactionID, stun.BindingRequest)
 	ch := make(chan error)
 	err = client.Start(message, func(ev stun.Event) {
