@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/multierror"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 )
 
 var (
@@ -65,8 +66,8 @@ var (
 )
 
 type ipLookupClient struct {
-	// HTTPClient is the HTTP client to use
-	HTTPClient *http.Client
+	// Resolver is the resolver to use for HTTP.
+	Resolver Resolver
 
 	// Logger is the logger to use
 	Logger Logger
@@ -88,7 +89,15 @@ func makeSlice() []method {
 func (c ipLookupClient) doWithCustomFunc(
 	ctx context.Context, fn lookupFunc,
 ) (string, error) {
-	ip, err := fn(ctx, c.HTTPClient, c.Logger, c.UserAgent)
+	// Implementation note: we MUST use an HTTP client that we're
+	// sure IS NOT using any proxy. To this end, we construct a
+	// client ourself that we know is not proxied.
+	clnt := &http.Client{Transport: netx.NewHTTPTransport(netx.Config{
+		Logger:       c.Logger,
+		FullResolver: c.Resolver,
+	})}
+	defer clnt.CloseIdleConnections()
+	ip, err := fn(ctx, clnt, c.Logger, c.UserAgent)
 	if err != nil {
 		return DefaultProbeIP, err
 	}
@@ -102,7 +111,7 @@ func (c ipLookupClient) doWithCustomFunc(
 func (c ipLookupClient) LookupProbeIP(ctx context.Context) (string, error) {
 	union := multierror.New(ErrAllIPLookuppersFailed)
 	for _, method := range makeSlice() {
-		c.Logger.Debugf("iplookup: using %s", method.name)
+		c.Logger.Infof("iplookup: using %s", method.name)
 		ip, err := c.doWithCustomFunc(ctx, method.fn)
 		if err == nil {
 			return ip, nil

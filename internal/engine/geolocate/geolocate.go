@@ -5,9 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -51,7 +51,12 @@ var (
 
 // Logger is the definition of Logger used by this package.
 type Logger interface {
+	Debug(msg string)
 	Debugf(format string, v ...interface{})
+	Info(msg string)
+	Infof(format string, v ...interface{})
+	Warn(msg string)
+	Warnf(format string, v ...interface{})
 }
 
 // Results contains geolocate results
@@ -115,15 +120,23 @@ type ResourcesManager interface {
 	MaybeUpdateResources(ctx context.Context) error
 }
 
+// Resolver is a DNS resolver.
+type Resolver interface {
+	LookupHost(ctx context.Context, domain string) ([]string, error)
+	Network() string
+	Address() string
+}
+
 // Config contains configuration for a geolocate Task.
 type Config struct {
 	// EnableResolverLookup indicates whether we want to
 	// perform the optional resolver lookup.
 	EnableResolverLookup bool
 
-	// HTTPClient is the HTTP client to use. If not set, then
-	// we will use the http.DefaultClient.
-	HTTPClient *http.Client
+	// Resolver is the resolver we should use when
+	// making requests for discovering the IP. When
+	// this field is not set, we use the stdlib.
+	Resolver Resolver
 
 	// Logger is the logger to use. If not set, then we will
 	// use a logger that discards all messages.
@@ -146,9 +159,6 @@ func Must(task *Task, err error) *Task {
 
 // NewTask creates a new instance of Task from config.
 func NewTask(config Config) (*Task, error) {
-	if config.HTTPClient == nil {
-		config.HTTPClient = http.DefaultClient
-	}
 	if config.Logger == nil {
 		config.Logger = model.DiscardLogger
 	}
@@ -158,13 +168,17 @@ func NewTask(config Config) (*Task, error) {
 	if config.UserAgent == "" {
 		config.UserAgent = fmt.Sprintf("ooniprobe-engine/%s", version.Version)
 	}
+	if config.Resolver == nil {
+		config.Resolver = netx.NewResolver(
+			netx.Config{Logger: config.Logger})
+	}
 	return &Task{
 		countryLookupper:     mmdbLookupper{},
 		enableResolverLookup: config.EnableResolverLookup,
 		probeIPLookupper: ipLookupClient{
-			HTTPClient: config.HTTPClient,
-			Logger:     config.Logger,
-			UserAgent:  config.UserAgent,
+			Resolver:  config.Resolver,
+			Logger:    config.Logger,
+			UserAgent: config.UserAgent,
 		},
 		probeASNLookupper:    mmdbLookupper{},
 		resolverASNLookupper: mmdbLookupper{},

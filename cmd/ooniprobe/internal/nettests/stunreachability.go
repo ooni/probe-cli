@@ -5,7 +5,7 @@ type STUNReachability struct{}
 
 // Run starts the nettest.
 func (n STUNReachability) Run(ctl *Controller) error {
-	builder, err := ctl.Session.NewExperimentBuilder("stun_reachability")
+	builder, err := ctl.Session.NewExperimentBuilder("stunreachability")
 	if err != nil {
 		return err
 	}
