@@ -160,30 +160,32 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	urlgetter.RegisterExtensions(measurement)
 
 	caTarget := "https://black.riseup.net/ca.crt"
-	caGetter := urlgetter.Getter{
-		Config:  m.Config.Config,
-		Session: sess,
-		Target:  caTarget,
-	}
-	log.Info("Getting CA certificate; please be patient...")
-	tk, err := caGetter.Get(ctx)
-	testkeys.AddCACertFetchTestKeys(tk)
-
-	if err != nil {
-		log.Error("Getting CA certificate failed. Aborting test.")
-		return nil
-	}
-
 	certPool := netx.NewDefaultCertPool()
-	if ok := certPool.AppendCertsFromPEM([]byte(tk.HTTPResponseBody)); !ok {
-		testkeys.CACertStatus = false
-		testkeys.APIStatus = "blocked"
-		errorValue := "invalid_ca"
-		testkeys.APIFailure = &errorValue
-		return nil
+
+	multi := urlgetter.Multi{Begin: measurement.MeasurementStartTimeSaved, Getter: m.Getter, Session: sess}
+	inputs := []urlgetter.MultiInput{
+		{Target: caTarget, Config: urlgetter.Config{
+			Method:          "GET",
+			FailOnHTTPError: true,
+		}},
+	}
+	for entry := range multi.CollectOverall(ctx, inputs, 0, 50, "riseupvpn", callbacks) {
+		tk := entry.TestKeys
+		testkeys.AddCACertFetchTestKeys(tk)
+		if tk.Failure != nil {
+			return nil
+		}
+
+		if ok := certPool.AppendCertsFromPEM([]byte(tk.HTTPResponseBody)); !ok {
+			testkeys.CACertStatus = false
+			testkeys.APIStatus = "blocked"
+			errorValue := "invalid_ca"
+			testkeys.APIFailure = &errorValue
+			return nil
+		}
 	}
 
-	inputs := []urlgetter.MultiInput{
+	inputs = []urlgetter.MultiInput{
 
 		// Here we need to provide the method explicitly. See
 		// https://github.com/ooni/probe-engine/issues/827.
@@ -203,9 +205,9 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 			FailOnHTTPError: true,
 		}},
 	}
-	multi := urlgetter.Multi{Begin: measurement.MeasurementStartTimeSaved, Getter: m.Getter, Session: sess}
+	multi = urlgetter.Multi{Begin: measurement.MeasurementStartTimeSaved, Getter: m.Getter, Session: sess}
 
-	for entry := range multi.CollectOverall(ctx, inputs, 0, 50, "riseupvpn", callbacks) {
+	for entry := range multi.CollectOverall(ctx, inputs, 1, 50, "riseupvpn", callbacks) {
 		testkeys.UpdateProviderAPITestKeys(entry)
 	}
 
@@ -213,17 +215,17 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	gateways := parseGateways(testkeys)
 	openvpnEndpoints := generateMultiInputs(gateways, "openvpn")
 	obfs4Endpoints := generateMultiInputs(gateways, "obfs4")
-	overallCount := len(inputs) + len(openvpnEndpoints) + len(obfs4Endpoints)
+	overallCount := 1 + len(inputs) + len(openvpnEndpoints) + len(obfs4Endpoints)
 
 	// measure openvpn in parallel
 	multi = urlgetter.Multi{Begin: measurement.MeasurementStartTimeSaved, Getter: m.Getter, Session: sess}
-	for entry := range multi.CollectOverall(ctx, openvpnEndpoints, len(inputs), overallCount, "riseupvpn", callbacks) {
+	for entry := range multi.CollectOverall(ctx, openvpnEndpoints, 1+len(inputs), overallCount, "riseupvpn", callbacks) {
 		testkeys.AddGatewayConnectTestKeys(entry, "openvpn")
 	}
 
 	// measure obfs4 in parallel
 	multi = urlgetter.Multi{Begin: measurement.MeasurementStartTimeSaved, Getter: m.Getter, Session: sess}
-	for entry := range multi.CollectOverall(ctx, obfs4Endpoints, len(inputs)+len(openvpnEndpoints), overallCount, "riseupvpn", callbacks) {
+	for entry := range multi.CollectOverall(ctx, obfs4Endpoints, 1+len(inputs)+len(openvpnEndpoints), overallCount, "riseupvpn", callbacks) {
 		testkeys.AddGatewayConnectTestKeys(entry, "obfs4")
 	}
 
