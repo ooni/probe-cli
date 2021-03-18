@@ -19,7 +19,7 @@ import (
 
 const (
 	testName    = "web_connectivity"
-	testVersion = "0.3.0"
+	testVersion = "0.4.0"
 )
 
 // Config contains the experiment config.
@@ -31,6 +31,9 @@ type TestKeys struct {
 	ClientResolver string  `json:"client_resolver"`
 	Retries        *int64  `json:"retries"`    // unused
 	SOCKSProxy     *string `json:"socksproxy"` // unused
+
+	// All experiments
+	NetworkEvents []archival.NetworkEvent `json:"network_events"`
 
 	// DNS experiment
 	Queries              []archival.DNSQueryEntry `json:"queries"`
@@ -90,6 +93,49 @@ var (
 	ErrUnsupportedInput = errors.New("unsupported input scheme")
 )
 
+// TODO(bassosimone): we are now duplicating the result of the
+// handshake (and, in particular, certificates). This makes the
+// whole measurement larger and messier :-(.
+//
+// To fully evaluate how bad this is, we need to answer these
+// main questions:
+//
+// 1. what is the increase in the measurement size caused by
+// duplicating the TLS handshake information?
+//
+// 2. what is the increase in the measurement size caused by
+// adding in all the events during the HTTP experiment?
+//
+// 3. can we implement measurement compression to save us
+// here and reduce the time to submit a measurement?
+//
+// 4. can we reduce the size of the body when using HTTPS
+// and would this be enough to offset the increase in the
+// measurement size caused by extra events?
+//
+// 5. can we remove the TLSHandshake field from measurements
+// (or deprecate it?) and just use the network events?
+
+// TODO(bassosimone): additional tasks
+//
+// 1. we probably need to update the QA scripts.
+//
+// 2. we need to update the specifications.
+//
+// 3. we need to update unit/integration tests and make
+// sure we're not reducing coverage.
+
+const (
+	// DNSExperimentTag is a tag indicating the DNS experiment.
+	DNSExperimentTag = "dns_experiment"
+
+	// TCPTLSExperimentTag is a tag indicating the connect experiment.
+	TCPTLSExperimentTag = "tcptls_experiment"
+
+	// HTTPExperimentTag is a tag indicating the HTTP experiment.
+	HTTPExperimentTag = "http_experiment"
+)
+
 // Run implements ExperimentMeasurer.Run.
 func (m Measurer) Run(
 	ctx context.Context,
@@ -130,6 +176,10 @@ func (m Measurer) Run(
 	}
 	// 2. perform the DNS lookup step
 	dnsResult := DNSLookup(ctx, DNSLookupConfig{Session: sess, URL: URL})
+	for _, ev := range dnsResult.TestKeys.NetworkEvents {
+		ev.Tags = []string{DNSExperimentTag}
+		tk.NetworkEvents = append(tk.NetworkEvents, ev)
+	}
 	tk.Queries = append(tk.Queries, dnsResult.TestKeys.Queries...)
 	tk.DNSExperimentFailure = dnsResult.Failure
 	epnts := NewEndpoints(URL, dnsResult.Addresses())
@@ -152,6 +202,8 @@ func (m Measurer) Run(
 	sess.Logger().Infof("DNS analysis result: %+v", internal.StringPointerToString(
 		tk.DNSAnalysisResult.DNSConsistency))
 	// 5. perform TCP/TLS connects
+	// TODO(bassosimone): here we should also follow the IP addresses
+	// returned by the control experiment.
 	connectsResult := Connects(ctx, ConnectsConfig{
 		Session:       sess,
 		TargetURL:     URL,
@@ -164,6 +216,10 @@ func (m Measurer) Run(
 		// sad that we're storing analysis result inside the measurement
 		tk.TCPConnect = append(tk.TCPConnect, ComputeTCPBlocking(
 			tcpkeys.TCPConnect, tk.Control.TCPConnect)...)
+		for _, ev := range tcpkeys.NetworkEvents {
+			ev.Tags = []string{TCPTLSExperimentTag}
+			tk.NetworkEvents = append(tk.NetworkEvents, ev)
+		}
 	}
 	tk.TCPConnectAttempts = connectsResult.Total
 	tk.TCPConnectSuccesses = connectsResult.Successes
@@ -174,6 +230,10 @@ func (m Measurer) Run(
 		TargetURL: URL,
 	})
 	tk.HTTPExperimentFailure = httpResult.Failure
+	for _, ev := range httpResult.TestKeys.NetworkEvents {
+		ev.Tags = []string{HTTPExperimentTag}
+		tk.NetworkEvents = append(tk.NetworkEvents, ev)
+	}
 	tk.Requests = append(tk.Requests, httpResult.TestKeys.Requests...)
 	// 7. compare HTTP measurement to control
 	tk.HTTPAnalysisResult = HTTPAnalysis(httpResult.TestKeys, tk.Control)

@@ -41,7 +41,7 @@ var (
 	ExtDNS = ExtSpec{Name: "dnst", V: 0}
 
 	// ExtNetevents is the version of df-008-netevents.md
-	ExtNetevents = ExtSpec{Name: "netevents", V: 0}
+	ExtNetevents = ExtSpec{Name: "netevents", V: 1}
 
 	// ExtHTTP is the version of df-001-httpt.md
 	ExtHTTP = ExtSpec{Name: "httpt", V: 0}
@@ -463,17 +463,30 @@ func (qtype dnsQueryType) makequeryentry(begin time.Time, ev trace.Event) DNSQue
 	}
 }
 
-// NetworkEvent is a network event.
+// NetworkEvent is a network event. It contains all the possible fields
+// and most fields are optional. They are only added when it makes sense
+// for them to be there _and_ we have data to show.
 type NetworkEvent struct {
-	Address       string  `json:"address,omitempty"`
-	ConnID        int64   `json:"conn_id,omitempty"`
-	DialID        int64   `json:"dial_id,omitempty"`
-	Failure       *string `json:"failure"`
-	NumBytes      int64   `json:"num_bytes,omitempty"`
-	Operation     string  `json:"operation"`
-	Proto         string  `json:"proto,omitempty"`
-	T             float64 `json:"t"`
-	TransactionID int64   `json:"transaction_id,omitempty"`
+	Addresses           []string           `json:"addresses,omitempty"`
+	Address             string             `json:"address,omitempty"`
+	ConnID              int64              `json:"conn_id,omitempty"`
+	DialID              int64              `json:"dial_id,omitempty"`
+	Duration            float64            `json:"duration,omitempty"`
+	Failure             *string            `json:"failure"`
+	Hostname            string             `json:"hostname,omitempty"`
+	NoTLSVerify         bool               `json:"no_tls_verify,omitempty"`
+	NumBytes            int64              `json:"num_bytes,omitempty"`
+	Operation           string             `json:"operation"`
+	Proto               string             `json:"proto,omitempty"`
+	T                   float64            `json:"t"`
+	TLSCipherSuite      string             `json:"tls_cipher_suite,omitempty"`
+	TLSNegotiatedProto  string             `json:"tls_negotiated_proto,omitempty"`
+	TLSNextProtos       []string           `json:"tls_next_protos,omitempty"`
+	TLSPeerCertificates []MaybeBinaryValue `json:"tls_peer_certificates,omitempty"`
+	TLSServerName       string             `json:"tls_server_name,omitempty"`
+	TLSVersion          string             `json:"tls_version,omitempty"`
+	Tags                []string           `json:"tags,omitempty"`
+	TransactionID       int64              `json:"transaction_id,omitempty"`
 }
 
 // NewNetworkEventsList returns a list of DNS queries.
@@ -483,6 +496,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 		if ev.Name == errorx.ConnectOperation {
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
+				Duration:  ev.Duration.Seconds(),
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
 				Proto:     ev.Proto,
@@ -492,6 +506,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 		}
 		if ev.Name == errorx.ReadOperation {
 			out = append(out, NetworkEvent{
+				Duration:  ev.Duration.Seconds(),
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
 				NumBytes:  int64(ev.NumBytes),
@@ -501,6 +516,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 		}
 		if ev.Name == errorx.WriteOperation {
 			out = append(out, NetworkEvent{
+				Duration:  ev.Duration.Seconds(),
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
 				NumBytes:  int64(ev.NumBytes),
@@ -511,6 +527,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 		if ev.Name == errorx.ReadFromOperation {
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
+				Duration:  ev.Duration.Seconds(),
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
 				NumBytes:  int64(ev.NumBytes),
@@ -521,10 +538,56 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 		if ev.Name == errorx.WriteToOperation {
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
+				Duration:  ev.Duration.Seconds(),
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
 				NumBytes:  int64(ev.NumBytes),
 				T:         ev.Time.Sub(begin).Seconds(),
+			})
+			continue
+		}
+		if ev.Name == "resolve_start" {
+			out = append(out, NetworkEvent{
+				Hostname:  ev.Hostname,
+				Failure:   NewFailure(ev.Err),
+				Operation: ev.Name,
+				T:         ev.Time.Sub(begin).Seconds(),
+			})
+			continue
+		}
+		if ev.Name == "resolve_done" {
+			out = append(out, NetworkEvent{
+				Addresses: ev.Addresses,
+				Failure:   NewFailure(ev.Err),
+				Hostname:  ev.Hostname,
+				Operation: ev.Name,
+				T:         ev.Time.Sub(begin).Seconds(),
+			})
+			continue
+		}
+		if ev.Name == "tls_handshake_start" {
+			out = append(out, NetworkEvent{
+				Failure:       NewFailure(ev.Err),
+				NoTLSVerify:   ev.NoTLSVerify,
+				Operation:     ev.Name,
+				T:             ev.Time.Sub(begin).Seconds(),
+				TLSNextProtos: ev.TLSNextProtos,
+				TLSServerName: ev.TLSServerName,
+			})
+			continue
+		}
+		if ev.Name == "tls_handshake_done" {
+			out = append(out, NetworkEvent{
+				Failure:             NewFailure(ev.Err),
+				NoTLSVerify:         ev.NoTLSVerify,
+				Operation:           ev.Name,
+				T:                   ev.Time.Sub(begin).Seconds(),
+				TLSCipherSuite:      ev.TLSCipherSuite,
+				TLSNegotiatedProto:  ev.TLSNegotiatedProto,
+				TLSNextProtos:       ev.TLSNextProtos,
+				TLSPeerCertificates: makePeerCerts(ev.TLSPeerCerts),
+				TLSServerName:       ev.TLSServerName,
+				TLSVersion:          ev.TLSVersion,
 			})
 			continue
 		}
