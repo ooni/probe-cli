@@ -92,6 +92,9 @@ func TestWebConnectivityRunnerWithMeasureFailure(t *testing.T) {
 }
 
 func TestWebConnectivityRunnerWithNoError(t *testing.T) {
+	// We create a measurement with non default fields. One of them is
+	// enough to check that we are getting in output the non default
+	// data structure that was preconfigured in the mocks.
 	m := &model.Measurement{Input: "https://ooni.org"}
 	cbs := &FakeExperimentCallbacks{}
 	e := &FakeExperiment{Measurement: m, Sent: 10, Received: 128}
