@@ -15,9 +15,7 @@ func TestWebConnectivityRunnerWithMaybeLookupBackendsFailure(t *testing.T) {
 	sess := &FakeExperimentSession{LookupBackendsErr: errMocked}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()
-	config := &WebConnectivityConfig{
-		Input: "https://ooni.org",
-	}
+	config := &WebConnectivityConfig{Input: "https://ooni.org"}
 	out, err := runner.run(ctx, config)
 	if !errors.Is(err, errMocked) {
 		t.Fatal("not the error we expected", err)
@@ -35,9 +33,7 @@ func TestWebConnectivityRunnerWithMaybeLookupLocationFailure(t *testing.T) {
 	sess := &FakeExperimentSession{LookupLocationErr: errMocked}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()
-	config := &WebConnectivityConfig{
-		Input: "https://ooni.org",
-	}
+	config := &WebConnectivityConfig{Input: "https://ooni.org"}
 	out, err := runner.run(ctx, config)
 	if !errors.Is(err, errMocked) {
 		t.Fatal("not the error we expected", err)
@@ -55,9 +51,7 @@ func TestWebConnectivityRunnerWithNewExperimentBuilderFailure(t *testing.T) {
 	sess := &FakeExperimentSession{NewExperimentBuilderErr: errMocked}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()
-	config := &WebConnectivityConfig{
-		Input: "https://ooni.org",
-	}
+	config := &WebConnectivityConfig{Input: "https://ooni.org"}
 	out, err := runner.run(ctx, config)
 	if !errors.Is(err, errMocked) {
 		t.Fatal("not the error we expected", err)
