@@ -32,8 +32,12 @@ type TestKeys struct {
 	Retries        *int64  `json:"retries"`    // unused
 	SOCKSProxy     *string `json:"socksproxy"` // unused
 
-	// All experiments
+	// For now mainly TCP/TLS "connect" experiment but we are
+	// considering adding more events. An open question is
+	// currently how to properly tag these events so that it
+	// is rather obvious where they come from.
 	NetworkEvents []archival.NetworkEvent `json:"network_events"`
+	TLSHandshakes []archival.TLSHandshake `json:"tls_handshakes"`
 
 	// DNS experiment
 	Queries              []archival.DNSQueryEntry `json:"queries"`
@@ -45,7 +49,7 @@ type TestKeys struct {
 	ControlRequest ControlRequest  `json:"-"`
 	Control        ControlResponse `json:"control"`
 
-	// TCP connect experiment
+	// TCP/TLS "connect" experiment
 	TCPConnect          []archival.TCPConnectEntry `json:"tcp_connect"`
 	TCPConnectSuccesses int                        `json:"-"`
 	TCPConnectAttempts  int                        `json:"-"`
@@ -125,6 +129,8 @@ var (
 // 3. we need to update unit/integration tests and make
 // sure we're not reducing coverage.
 
+// Tags describe the section of this experiment in which
+// the data has been collected.
 const (
 	// DNSExperimentTag is a tag indicating the DNS experiment.
 	DNSExperimentTag = "dns_experiment"
@@ -175,11 +181,9 @@ func (m Measurer) Run(
 		"backend": testhelper,
 	}
 	// 2. perform the DNS lookup step
-	dnsResult := DNSLookup(ctx, DNSLookupConfig{Session: sess, URL: URL})
-	for _, ev := range dnsResult.TestKeys.NetworkEvents {
-		ev.Tags = []string{DNSExperimentTag}
-		tk.NetworkEvents = append(tk.NetworkEvents, ev)
-	}
+	dnsResult := DNSLookup(ctx, DNSLookupConfig{
+		Begin:   measurement.MeasurementStartTimeSaved,
+		Session: sess, URL: URL})
 	tk.Queries = append(tk.Queries, dnsResult.TestKeys.Queries...)
 	tk.DNSExperimentFailure = dnsResult.Failure
 	epnts := NewEndpoints(URL, dnsResult.Addresses())
@@ -205,6 +209,7 @@ func (m Measurer) Run(
 	// TODO(bassosimone): here we should also follow the IP addresses
 	// returned by the control experiment.
 	connectsResult := Connects(ctx, ConnectsConfig{
+		Begin:         measurement.MeasurementStartTimeSaved,
 		Session:       sess,
 		TargetURL:     URL,
 		URLGetterURLs: epnts.URLs(),
@@ -220,20 +225,21 @@ func (m Measurer) Run(
 			ev.Tags = []string{TCPTLSExperimentTag}
 			tk.NetworkEvents = append(tk.NetworkEvents, ev)
 		}
+		for _, ev := range tcpkeys.TLSHandshakes {
+			ev.Tags = []string{TCPTLSExperimentTag}
+			tk.TLSHandshakes = append(tk.TLSHandshakes, ev)
+		}
 	}
 	tk.TCPConnectAttempts = connectsResult.Total
 	tk.TCPConnectSuccesses = connectsResult.Successes
 	// 6. perform HTTP/HTTPS measurement
 	httpResult := HTTPGet(ctx, HTTPGetConfig{
 		Addresses: dnsResult.Addresses(),
+		Begin:     measurement.MeasurementStartTimeSaved,
 		Session:   sess,
 		TargetURL: URL,
 	})
 	tk.HTTPExperimentFailure = httpResult.Failure
-	for _, ev := range httpResult.TestKeys.NetworkEvents {
-		ev.Tags = []string{HTTPExperimentTag}
-		tk.NetworkEvents = append(tk.NetworkEvents, ev)
-	}
 	tk.Requests = append(tk.Requests, httpResult.TestKeys.Requests...)
 	// 7. compare HTTP measurement to control
 	tk.HTTPAnalysisResult = HTTPAnalysis(httpResult.TestKeys, tk.Control)
