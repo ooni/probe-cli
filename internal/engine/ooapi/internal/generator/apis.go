@@ -54,7 +54,7 @@ var apiFields = []apiField{{
 	comment: "optional",
 }, {
 	name:       "TemplateExecutor",
-	kind:       "TemplateExecutor",
+	kind:       "templateExecutor",
 	comment:    "optional",
 	ifTemplate: true,
 }, {
@@ -120,7 +120,7 @@ func (d *Descriptor) genNewAPI(sb *strings.Builder) {
 
 	if d.URLPath.IsTemplate {
 		fmt.Fprintf(
-			sb, "func (api *%s) templateExecutor() TemplateExecutor {\n",
+			sb, "func (api *%s) templateExecutor() templateExecutor {\n",
 			d.APIStructName())
 		fmt.Fprint(sb, "\tif api.TemplateExecutor != nil {\n")
 		fmt.Fprint(sb, "\t\treturn api.TemplateExecutor\n")

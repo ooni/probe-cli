@@ -8,7 +8,7 @@ import (
 
 func (d *Descriptor) genNewCloner(sb *strings.Builder) {
 	fmt.Fprintf(sb, "// %s represents any type exposing a method\n",
-		d.CallerInterfaceName())
+		d.ClonerInterfaceName())
 	fmt.Fprintf(sb, "// like %s.WithToken.\n", d.APIStructName())
 	fmt.Fprintf(sb, "type %s interface {\n", d.ClonerInterfaceName())
 	fmt.Fprintf(sb, "\tWithToken(token string) %s\n", d.CallerInterfaceName())

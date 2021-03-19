@@ -7,7 +7,7 @@ import (
 )
 
 func (d *Descriptor) genNewFakeAPI(sb *strings.Builder) {
-	fmt.Fprintf(sb, "type Fake%s struct {\n", d.APIStructName())
+	fmt.Fprintf(sb, "type %s struct {\n", d.FakeAPIStructName())
 	if d.RequiresLogin {
 		fmt.Fprintf(sb, "\tWithResult %s\n", d.CallerInterfaceName())
 	}
@@ -16,25 +16,25 @@ func (d *Descriptor) genNewFakeAPI(sb *strings.Builder) {
 	fmt.Fprint(sb, "\tCountCall int32\n")
 	fmt.Fprint(sb, "}\n\n")
 
-	fmt.Fprintf(sb, "func (fapi *Fake%s) Call(ctx context.Context, req %s) (%s, error) {\n",
-		d.APIStructName(), d.RequestTypeName(), d.ResponseTypeName())
+	fmt.Fprintf(sb, "func (fapi *%s) Call(ctx context.Context, req %s) (%s, error) {\n",
+		d.FakeAPIStructName(), d.RequestTypeName(), d.ResponseTypeName())
 	fmt.Fprint(sb, "\tatomic.AddInt32(&fapi.CountCall, 1)\n")
 	fmt.Fprint(sb, "\treturn fapi.Response, fapi.Err\n")
 	fmt.Fprint(sb, "}\n\n")
 
 	if d.RequiresLogin {
-		fmt.Fprintf(sb, "func (fapi *Fake%s) WithToken(token string) %s {\n",
-			d.APIStructName(), d.CallerInterfaceName())
+		fmt.Fprintf(sb, "func (fapi *%s) WithToken(token string) %s {\n",
+			d.FakeAPIStructName(), d.CallerInterfaceName())
 		fmt.Fprint(sb, "\treturn fapi.WithResult\n")
 		fmt.Fprint(sb, "}\n\n")
 	}
 
 	fmt.Fprint(sb, "var (\n")
-	fmt.Fprintf(sb, "\t_ %s = &Fake%s{}\n", d.CallerInterfaceName(),
-		d.APIStructName())
+	fmt.Fprintf(sb, "\t_ %s = &%s{}\n", d.CallerInterfaceName(),
+		d.FakeAPIStructName())
 	if d.RequiresLogin {
-		fmt.Fprintf(sb, "\t_ %s = &Fake%s{}\n", d.ClonerInterfaceName(),
-			d.APIStructName())
+		fmt.Fprintf(sb, "\t_ %s = &%s{}\n", d.ClonerInterfaceName(),
+			d.FakeAPIStructName())
 	}
 	fmt.Fprint(sb, ")\n\n")
 }
