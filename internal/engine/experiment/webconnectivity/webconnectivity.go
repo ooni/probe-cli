@@ -32,10 +32,12 @@ type TestKeys struct {
 	Retries        *int64  `json:"retries"`    // unused
 	SOCKSProxy     *string `json:"socksproxy"` // unused
 
-	// For now mainly TCP/TLS "connect" experiment but we are
+	// For now mostly TCP/TLS "connect" experiment but we are
 	// considering adding more events. An open question is
 	// currently how to properly tag these events so that it
 	// is rather obvious where they come from.
+	//
+	// See https://github.com/ooni/probe/issues/1413.
 	NetworkEvents []archival.NetworkEvent `json:"network_events"`
 	TLSHandshakes []archival.TLSHandshake `json:"tls_handshakes"`
 
@@ -97,37 +99,9 @@ var (
 	ErrUnsupportedInput = errors.New("unsupported input scheme")
 )
 
-// TODO(bassosimone): we are now duplicating the result of the
-// handshake (and, in particular, certificates). This makes the
-// whole measurement larger and messier :-(.
-//
-// To fully evaluate how bad this is, we need to answer these
-// main questions:
-//
-// 1. what is the increase in the measurement size caused by
-// duplicating the TLS handshake information?
-//
-// 2. what is the increase in the measurement size caused by
-// adding in all the events during the HTTP experiment?
-//
-// 3. can we implement measurement compression to save us
-// here and reduce the time to submit a measurement?
-//
-// 4. can we reduce the size of the body when using HTTPS
-// and would this be enough to offset the increase in the
-// measurement size caused by extra events?
-//
-// 5. can we remove the TLSHandshake field from measurements
-// (or deprecate it?) and just use the network events?
-
 // TODO(bassosimone): additional tasks
 //
-// 1. we probably need to update the QA scripts.
-//
-// 2. we need to update the specifications.
-//
-// 3. we need to update unit/integration tests and make
-// sure we're not reducing coverage.
+// 1. we need to update the specifications.
 
 // Tags describe the section of this experiment in which
 // the data has been collected.
@@ -206,8 +180,11 @@ func (m Measurer) Run(
 	sess.Logger().Infof("DNS analysis result: %+v", internal.StringPointerToString(
 		tk.DNSAnalysisResult.DNSConsistency))
 	// 5. perform TCP/TLS connects
+	//
 	// TODO(bassosimone): here we should also follow the IP addresses
 	// returned by the control experiment.
+	//
+	// See https://github.com/ooni/probe/issues/1414
 	connectsResult := Connects(ctx, ConnectsConfig{
 		Begin:         measurement.MeasurementStartTimeSaved,
 		Session:       sess,

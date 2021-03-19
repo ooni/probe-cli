@@ -467,13 +467,10 @@ func (qtype dnsQueryType) makequeryentry(begin time.Time, ev trace.Event) DNSQue
 // and most fields are optional. They are only added when it makes sense
 // for them to be there _and_ we have data to show.
 type NetworkEvent struct {
-	Addresses     []string `json:"addresses,omitempty"`
 	Address       string   `json:"address,omitempty"`
 	ConnID        int64    `json:"conn_id,omitempty"`
 	DialID        int64    `json:"dial_id,omitempty"`
-	Duration      float64  `json:"duration,omitempty"`
 	Failure       *string  `json:"failure"`
-	Hostname      string   `json:"hostname,omitempty"`
 	NumBytes      int64    `json:"num_bytes,omitempty"`
 	Operation     string   `json:"operation"`
 	Proto         string   `json:"proto,omitempty"`
@@ -489,7 +486,6 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 		if ev.Name == errorx.ConnectOperation {
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
-				Duration:  ev.Duration.Seconds(),
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
 				Proto:     ev.Proto,
@@ -499,7 +495,6 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 		}
 		if ev.Name == errorx.ReadOperation {
 			out = append(out, NetworkEvent{
-				Duration:  ev.Duration.Seconds(),
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
 				NumBytes:  int64(ev.NumBytes),
@@ -509,7 +504,6 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 		}
 		if ev.Name == errorx.WriteOperation {
 			out = append(out, NetworkEvent{
-				Duration:  ev.Duration.Seconds(),
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
 				NumBytes:  int64(ev.NumBytes),
@@ -520,7 +514,6 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 		if ev.Name == errorx.ReadFromOperation {
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
-				Duration:  ev.Duration.Seconds(),
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
 				NumBytes:  int64(ev.NumBytes),
@@ -531,7 +524,6 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 		if ev.Name == errorx.WriteToOperation {
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
-				Duration:  ev.Duration.Seconds(),
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
 				NumBytes:  int64(ev.NumBytes),
