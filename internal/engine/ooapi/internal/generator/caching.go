@@ -8,8 +8,8 @@ import (
 
 func (d *Descriptor) genNewCache(sb *strings.Builder) {
 	fmt.Fprintf(sb, "// %s implements caching for %s.\n",
-		d.CacheStructName(), d.APIStructName())
-	fmt.Fprintf(sb, "type %s struct {\n", d.CacheStructName())
+		d.WithCacheAPIStructName(), d.APIStructName())
+	fmt.Fprintf(sb, "type %s struct {\n", d.WithCacheAPIStructName())
 	fmt.Fprintf(sb, "\tAPI %s // mandatory\n", d.CallerInterfaceName())
 	fmt.Fprint(sb, "\tGobCodec GobCodec // optional\n")
 	fmt.Fprint(sb, "\tKVStore KVStore // mandatory\n")
@@ -22,7 +22,7 @@ func (d *Descriptor) genNewCache(sb *strings.Builder) {
 
 	fmt.Fprintf(sb, "// Call calls the API and implements caching.\n")
 	fmt.Fprintf(sb, "func (c *%s) Call(ctx context.Context, req %s) (%s, error) {\n",
-		d.CacheStructName(), d.RequestTypeName(), d.ResponseTypeName())
+		d.WithCacheAPIStructName(), d.RequestTypeName(), d.ResponseTypeName())
 	if d.CachePolicy == CacheAlways {
 		fmt.Fprint(sb, "\tif resp, _ := c.readcache(req); resp != nil {\n")
 		fmt.Fprint(sb, "\t\treturn resp, nil\n")
@@ -43,7 +43,7 @@ func (d *Descriptor) genNewCache(sb *strings.Builder) {
 	fmt.Fprint(sb, "\treturn resp, nil\n")
 	fmt.Fprint(sb, "}\n\n")
 
-	fmt.Fprintf(sb, "func (c *%s) gobCodec() GobCodec {\n", d.CacheStructName())
+	fmt.Fprintf(sb, "func (c *%s) gobCodec() GobCodec {\n", d.WithCacheAPIStructName())
 	fmt.Fprint(sb, "\tif c.GobCodec != nil {\n")
 	fmt.Fprint(sb, "\t\treturn c.GobCodec\n")
 	fmt.Fprint(sb, "\t}\n")
@@ -51,7 +51,7 @@ func (d *Descriptor) genNewCache(sb *strings.Builder) {
 	fmt.Fprint(sb, "}\n\n")
 
 	fmt.Fprintf(sb, "func (c *%s) getcache() ([]%s, error) {\n",
-		d.CacheStructName(), d.CacheEntryName())
+		d.WithCacheAPIStructName(), d.CacheEntryName())
 	fmt.Fprintf(sb, "\tdata, err := c.KVStore.Get(\"%s\")\n", d.CacheKey())
 	fmt.Fprint(sb, "\tif err != nil {\n")
 	fmt.Fprint(sb, "\t\treturn nil, err\n")
@@ -64,7 +64,7 @@ func (d *Descriptor) genNewCache(sb *strings.Builder) {
 	fmt.Fprint(sb, "}\n\n")
 
 	fmt.Fprintf(sb, "func (c *%s) setcache(in []%s) error {\n",
-		d.CacheStructName(), d.CacheEntryName())
+		d.WithCacheAPIStructName(), d.CacheEntryName())
 	fmt.Fprint(sb, "\tdata, err := c.gobCodec().Encode(in)\n")
 	fmt.Fprint(sb, "\tif err != nil {\n")
 	fmt.Fprint(sb, "\t\treturn err\n")
@@ -73,7 +73,7 @@ func (d *Descriptor) genNewCache(sb *strings.Builder) {
 	fmt.Fprint(sb, "}\n\n")
 
 	fmt.Fprintf(sb, "func (c *%s) readcache(req %s) (%s, error) {\n",
-		d.CacheStructName(), d.RequestTypeName(), d.ResponseTypeName())
+		d.WithCacheAPIStructName(), d.RequestTypeName(), d.ResponseTypeName())
 	fmt.Fprint(sb, "\tcache, err := c.getcache()\n")
 	fmt.Fprint(sb, "\tif err != nil {\n")
 	fmt.Fprint(sb, "\t\treturn nil, err\n")
@@ -87,7 +87,7 @@ func (d *Descriptor) genNewCache(sb *strings.Builder) {
 	fmt.Fprint(sb, "}\n\n")
 
 	fmt.Fprintf(sb, "func (c *%s) writecache(req %s, resp %s) error {\n",
-		d.CacheStructName(), d.RequestTypeName(), d.ResponseTypeName())
+		d.WithCacheAPIStructName(), d.RequestTypeName(), d.ResponseTypeName())
 	fmt.Fprint(sb, "\tcache, _ := c.getcache()\n")
 	fmt.Fprintf(sb, "\tout := []%s{{Req: req, Resp: resp}}\n", d.CacheEntryName())
 	fmt.Fprint(sb, "\tconst toomany = 64\n")
@@ -104,7 +104,7 @@ func (d *Descriptor) genNewCache(sb *strings.Builder) {
 	fmt.Fprint(sb, "}\n\n")
 
 	fmt.Fprintf(sb, "var _ %s = &%s{}\n\n", d.CallerInterfaceName(),
-		d.CacheStructName())
+		d.WithCacheAPIStructName())
 }
 
 // GenCachingGo generates caching.go.

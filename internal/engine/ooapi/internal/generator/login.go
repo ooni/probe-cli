@@ -13,8 +13,8 @@ func (d *Descriptor) genNewLogin(sb *strings.Builder) {
 	fmt.Fprintf(sb, "\tAPI %s // mandatory\n", d.ClonerInterfaceName())
 	fmt.Fprint(sb, "\tJSONCodec JSONCodec // optional\n")
 	fmt.Fprint(sb, "\tKVStore KVStore // mandatory\n")
-	fmt.Fprint(sb, "\tRegisterAPI RegisterCaller // mandatory\n")
-	fmt.Fprint(sb, "\tLoginAPI LoginCaller // mandatory\n")
+	fmt.Fprint(sb, "\tRegisterAPI callerForRegisterAPI // mandatory\n")
+	fmt.Fprint(sb, "\tLoginAPI callerForLoginAPI // mandatory\n")
 	fmt.Fprint(sb, "}\n\n")
 
 	fmt.Fprintf(sb, "// Call logins, if needed, then calls the API.\n")
