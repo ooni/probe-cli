@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/multierror"
@@ -61,8 +60,6 @@ var (
 			fn:   ubuntuIPLookup,
 		},
 	}
-
-	once sync.Once
 )
 
 type ipLookupClient struct {
