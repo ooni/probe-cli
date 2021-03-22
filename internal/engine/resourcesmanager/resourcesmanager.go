@@ -4,7 +4,6 @@ package resourcesmanager
 import (
 	"compress/gzip"
 	"crypto/sha256"
-	"embed"
 	"errors"
 	"fmt"
 	"io"
@@ -13,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ooni/probe-assets/assets"
 	"github.com/ooni/probe-cli/v3/internal/engine/resources"
 )
 
@@ -36,6 +36,8 @@ type CopyWorker struct {
 	WriteFile func(filename string, data []byte, perm fs.FileMode) error // optional
 }
 
+// TODO(bassosimone): further cleanup it around here.
+
 // If you arrive here because of this error:
 //
 // internal/engine/resourcesmanager/resourcesmanager.go:39:12: pattern *.mmdb.gz: no matching files found
@@ -43,9 +45,6 @@ type CopyWorker struct {
 //
 // then your problem is that you need to fetch resources _before_ compiling
 // ooniprobe. See Readme.md for instructions on how to do that.
-
-//go:embed *.mmdb.gz
-var efs embed.FS
 
 func (cw *CopyWorker) mkdirAll(path string, perm os.FileMode) error {
 	if cw.MkdirAll != nil {
@@ -95,7 +94,7 @@ func (cw *CopyWorker) open(path string) (fs.File, error) {
 	if cw.Open != nil {
 		return cw.Open(path)
 	}
-	return efs.Open(path)
+	return assets.Assets().Open(path)
 }
 
 func (cw *CopyWorker) newReader(r io.Reader) (io.ReadCloser, error) {
