@@ -99,11 +99,7 @@ var (
 	ErrUnsupportedInput = errors.New("unsupported input scheme")
 )
 
-// TODO(bassosimone): additional tasks
-//
-// 1. we need to update the specifications.
-
-// Tags describe the section of this experiment in which
+// Tags describing the section of this experiment in which
 // the data has been collected.
 const (
 	// DNSExperimentTag is a tag indicating the DNS experiment.
