@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
@@ -14,6 +15,7 @@ import (
 // HTTPGetConfig contains the config for HTTPGet
 type HTTPGetConfig struct {
 	Addresses []string
+	Begin     time.Time
 	Session   model.ExperimentSession
 	TargetURL *url.URL
 }
@@ -54,6 +56,7 @@ func HTTPGet(ctx context.Context, config HTTPGetConfig) (out HTTPGetResult) {
 	config.Session.Logger().Infof("GET %s...", target)
 	domain := config.TargetURL.Hostname()
 	result, err := urlgetter.Getter{
+		Begin: config.Begin,
 		Config: urlgetter.Config{
 			DNSCache: HTTPGetMakeDNSCache(domain, addresses),
 		},

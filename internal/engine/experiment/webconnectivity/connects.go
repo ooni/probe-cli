@@ -3,6 +3,7 @@ package webconnectivity
 import (
 	"context"
 	"net/url"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
@@ -10,6 +11,7 @@ import (
 
 // ConnectsConfig contains the config for Connects
 type ConnectsConfig struct {
+	Begin         time.Time
 	Session       model.ExperimentSession
 	TargetURL     *url.URL
 	URLGetterURLs []string
@@ -28,7 +30,7 @@ type ConnectsResult struct {
 // check whether the resolved endpoints are reachable.
 func Connects(ctx context.Context, config ConnectsConfig) (out ConnectsResult) {
 	out.AllKeys = []urlgetter.TestKeys{}
-	multi := urlgetter.Multi{Session: config.Session}
+	multi := urlgetter.Multi{Begin: config.Begin, Session: config.Session}
 	inputs := []urlgetter.MultiInput{}
 	for _, url := range config.URLGetterURLs {
 		inputs = append(inputs, urlgetter.MultiInput{
