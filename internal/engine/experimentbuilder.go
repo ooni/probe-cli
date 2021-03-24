@@ -193,7 +193,7 @@ func canonicalizeExperimentName(name string) string {
 }
 
 func newExperimentBuilder(session *Session, name string) (*ExperimentBuilder, error) {
-	factory, _ := experimentsByName[canonicalizeExperimentName(name)]
+	factory := experimentsByName[canonicalizeExperimentName(name)]
 	if factory == nil {
 		return nil, fmt.Errorf("no such experiment: %s", name)
 	}
