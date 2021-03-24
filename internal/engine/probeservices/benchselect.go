@@ -85,7 +85,7 @@ func (c *Candidate) try(ctx context.Context, sess Session) {
 	}
 	start := time.Now()
 	testhelpers, err := client.GetTestHelpers(ctx)
-	c.Duration = time.Now().Sub(start)
+	c.Duration = time.Since(start)
 	c.Err = err
 	c.TestHelpers = testhelpers
 	sess.Logger().Debugf("probe services: %+v: %+v %s", c.Endpoint, err, c.Duration)
