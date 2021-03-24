@@ -14,7 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
 )
 
-// Default handler outputting to stderr.
+// Default handler outputting to stdout.
 var Default = New(os.Stdout)
 
 // start time.
