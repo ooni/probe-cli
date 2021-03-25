@@ -211,7 +211,7 @@ func TestInputLoaderInputOrQueryTestListsWithInput(t *testing.T) {
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
 		},
-		InputPolicy: engine.InputOrQueryTestLists,
+		InputPolicy: engine.InputOrQueryBackend,
 	})
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -247,8 +247,9 @@ func TestInputLoaderInputOrQueryTestListsWithNoInputAndCancelledContext(t *testi
 	}
 	defer sess.Close()
 	il := engine.NewInputLoader(engine.InputLoaderConfig{
-		InputPolicy: engine.InputOrQueryTestLists,
-		Session:     sess,
+		InputPolicy:    engine.InputOrQueryBackend,
+		Session:        sess,
+		CheckInRunType: "manual",
 	})
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
@@ -282,9 +283,9 @@ func TestInputLoaderInputOrQueryTestListsWithNoInput(t *testing.T) {
 	}
 	defer sess.Close()
 	il := engine.NewInputLoader(engine.InputLoaderConfig{
-		InputPolicy: engine.InputOrQueryTestLists,
-		Session:     sess,
-		URLLimit:    30,
+		InputPolicy:    engine.InputOrQueryBackend,
+		Session:        sess,
+		CheckInRunType: "manual",
 	})
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -298,7 +299,7 @@ func TestInputLoaderInputOrQueryTestListsWithNoInput(t *testing.T) {
 
 func TestInputLoaderInputOrQueryTestListsWithEmptyFile(t *testing.T) {
 	il := engine.NewInputLoader(engine.InputLoaderConfig{
-		InputPolicy: engine.InputOrQueryTestLists,
+		InputPolicy: engine.InputOrQueryBackend,
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
 			"testdata/inputloader3.txt", // we want it before inputloader2.txt

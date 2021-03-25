@@ -142,7 +142,7 @@ func TestNeedsInput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if builder.InputPolicy() != InputOrQueryTestLists {
+	if builder.InputPolicy() != InputOrQueryBackend {
 		t.Fatal("web_connectivity certainly needs input")
 	}
 }

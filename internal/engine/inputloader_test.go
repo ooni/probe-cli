@@ -59,13 +59,25 @@ func (ilbs InputLoaderBrokenSession) NewOrchestraClient(ctx context.Context) (mo
 	return nil, io.EOF
 }
 
+func (InputLoaderBrokenSession) ProbeASNString() string {
+	return "AS137"
+}
+
 func (InputLoaderBrokenSession) ProbeCC() string {
 	return "IT"
 }
 
+func (InputLoaderBrokenSession) SoftwareName() string {
+	return "miniooni"
+}
+
+func (InputLoaderBrokenSession) SoftwareVersion() string {
+	return "0.1.0-dev"
+}
+
 func TestInputLoaderNewOrchestraClientFailure(t *testing.T) {
 	il := inputLoader{}
-	lrc := loadRemoteConfig{
+	lrc := inputLoaderLoadRemoteConfig{
 		ctx:     context.Background(),
 		session: InputLoaderBrokenSession{},
 	}
@@ -98,7 +110,7 @@ func (InputLoaderBrokenOrchestraClient) FetchURLList(ctx context.Context, config
 
 func TestInputLoaderFetchURLListFailure(t *testing.T) {
 	il := inputLoader{}
-	lrc := loadRemoteConfig{
+	lrc := inputLoaderLoadRemoteConfig{
 		ctx: context.Background(),
 		session: InputLoaderBrokenSession{
 			OrchestraClient: InputLoaderBrokenOrchestraClient{},

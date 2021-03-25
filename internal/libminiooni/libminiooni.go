@@ -371,11 +371,13 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	fatalOnError(err, "cannot create experiment builder")
 
 	inputLoader := engine.NewInputLoader(engine.InputLoaderConfig{
-		StaticInputs: currentOptions.Inputs,
-		SourceFiles:  currentOptions.InputFilePaths,
-		InputPolicy:  builder.InputPolicy(),
-		Session:      sess,
-		URLLimit:     currentOptions.Limit,
+		StaticInputs:    currentOptions.Inputs,
+		SourceFiles:     currentOptions.InputFilePaths,
+		InputPolicy:     builder.InputPolicy(),
+		CheckInRunType:  "manual",
+		CheckInOnWiFi:   true, // meaning: not on 4G
+		CheckInCharging: true,
+		Session:         sess,
 	})
 	inputs, err := inputLoader.Load(context.Background())
 	fatalOnError(err, "cannot load inputs")

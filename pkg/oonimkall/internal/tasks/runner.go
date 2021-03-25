@@ -176,7 +176,7 @@ func (r *Runner) Run(ctx context.Context) {
 	builder.SetCallbacks(&runnerCallbacks{emitter: r.emitter})
 	if len(r.settings.Inputs) <= 0 {
 		switch builder.InputPolicy() {
-		case engine.InputOrQueryTestLists, engine.InputStrictlyRequired:
+		case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
 			r.emitter.EmitFailureStartup("no input provided")
 			return
 		}
@@ -209,7 +209,7 @@ func (r *Runner) Run(ctx context.Context) {
 		// this policy in the future, but for now this covers in a
 		// reasonable way web connectivity, so we should be ok.
 		switch builder.InputPolicy() {
-		case engine.InputOrQueryTestLists, engine.InputStrictlyRequired:
+		case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
 			var cancel context.CancelFunc
 			ctx, cancel = context.WithTimeout(
 				ctx, time.Duration(r.settings.Options.MaxRuntime)*time.Second,
