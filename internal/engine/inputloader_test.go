@@ -80,6 +80,10 @@ func TestInputLoaderNewOrchestraClientFailure(t *testing.T) {
 
 type InputLoaderBrokenOrchestraClient struct{}
 
+func (InputLoaderBrokenOrchestraClient) CheckIn(ctx context.Context, config model.CheckInConfig) (*model.CheckInInfo, error) {
+	return nil, io.EOF
+}
+
 func (InputLoaderBrokenOrchestraClient) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 	return nil, io.EOF
 }
