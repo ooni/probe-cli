@@ -97,7 +97,7 @@ func (r *Resolver) newresolver(URL string) (childResolver, error) {
 func (r *Resolver) getresolver(URL string) (childResolver, error) {
 	defer r.mu.Unlock()
 	r.mu.Lock()
-	if re, found := r.res[URL]; found == true {
+	if re, found := r.res[URL]; found {
 		return re, nil // already created
 	}
 	re, err := r.newresolver(URL)
