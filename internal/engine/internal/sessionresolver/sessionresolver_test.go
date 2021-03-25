@@ -294,7 +294,7 @@ func TestResolverWorksWithProxy(t *testing.T) {
 	<-done
 	// check results
 	if !errors.Is(err, ErrLookupHost) {
-		t.Fatal("not the error we expected")
+		t.Fatal("not the error we expected", err)
 	}
 	if addrs != nil {
 		t.Fatal("expected nil addrs")
