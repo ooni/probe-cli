@@ -162,12 +162,20 @@ var _ torx.Session = &Session{}
 // ExperimentOrchestraClient is the experiment's view of
 // a client for querying the OONI orchestra.
 type ExperimentOrchestraClient struct {
+	MockableCheckInInfo              *model.CheckInInfo
+	MockableCheckInErr               error
 	MockableFetchPsiphonConfigResult []byte
 	MockableFetchPsiphonConfigErr    error
 	MockableFetchTorTargetsResult    map[string]model.TorTarget
 	MockableFetchTorTargetsErr       error
 	MockableFetchURLListResult       []model.URLInfo
 	MockableFetchURLListErr          error
+}
+
+// CheckIn implements ExperimentOrchestraClient.CheckIn.
+func (c ExperimentOrchestraClient) CheckIn(
+	ctx context.Context, config model.CheckInConfig) (*model.CheckInInfo, error) {
+	return c.MockableCheckInInfo, c.MockableCheckInErr
 }
 
 // FetchPsiphonConfig implements ExperimentOrchestraClient.FetchPsiphonConfig

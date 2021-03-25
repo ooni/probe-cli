@@ -315,7 +315,7 @@ func TestMaxRuntime(t *testing.T) {
 	// In case there are further timeouts, e.g. in the sessionresolver, the
 	// time used by the experiment will be much more. This is for example the
 	// case in https://github.com/ooni/probe-engine/issues/1005.
-	if time.Now().Sub(begin) > 10*time.Second {
+	if time.Since(begin) > 10*time.Second {
 		t.Fatal("expected shorter runtime")
 	}
 }
