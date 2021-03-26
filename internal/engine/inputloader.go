@@ -143,7 +143,7 @@ func (il inputLoader) Load(ctx context.Context) ([]model.URLInfo, error) {
 	case InputOptional:
 		return il.loadOptional()
 	case InputOrQueryBackend:
-		return il.loadOrCallCheckIn(ctx)
+		return il.loadOrQueryBackend(ctx)
 	case InputStrictlyRequired:
 		return il.loadStrictlyRequired(ctx)
 	default:
@@ -179,8 +179,8 @@ func (il inputLoader) loadStrictlyRequired(ctx context.Context) ([]model.URLInfo
 	return nil, ErrInputRequired
 }
 
-// loadOrCallCheckIn implements the InputOrQueryBackend policy.
-func (il inputLoader) loadOrCallCheckIn(ctx context.Context) ([]model.URLInfo, error) {
+// loadOrQueryBackend implements the InputOrQueryBackend policy.
+func (il inputLoader) loadOrQueryBackend(ctx context.Context) ([]model.URLInfo, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
