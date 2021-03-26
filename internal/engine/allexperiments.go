@@ -152,7 +152,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &httphostheader.Config{},
-			inputPolicy: InputOrQueryTestLists,
+			inputPolicy: InputOrQueryBackend,
 		}
 	},
 
@@ -237,7 +237,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &sniblocking.Config{},
-			inputPolicy: InputOrQueryTestLists,
+			inputPolicy: InputOrQueryBackend,
 		}
 	},
 
@@ -273,7 +273,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &tlstool.Config{},
-			inputPolicy: InputOrQueryTestLists,
+			inputPolicy: InputOrQueryBackend,
 		}
 	},
 
@@ -309,7 +309,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &webconnectivity.Config{},
-			inputPolicy: InputOrQueryTestLists,
+			inputPolicy: InputOrQueryBackend,
 		}
 	},
 

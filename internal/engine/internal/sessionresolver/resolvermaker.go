@@ -21,7 +21,7 @@ const systemResolverURL = "system:///"
 
 // allmakers contains all the makers in a list. We use the http3
 // prefix to indicate we wanna use http3. The code will translate
-// this to https and set the proper next options.
+// this to https and set the proper netx options.
 var allmakers = []*resolvermaker{{
 	url: "https://cloudflare-dns.com/dns-query",
 }, {

@@ -10,7 +10,7 @@ import (
 
 func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, map[int64]int64, error) {
 	inputloader := engine.NewInputLoader(engine.InputLoaderConfig{
-		InputPolicy:   engine.InputOrQueryTestLists,
+		InputPolicy:   engine.InputOrQueryBackend,
 		Session:       ctl.Session,
 		SourceFiles:   ctl.InputFiles,
 		StaticInputs:  ctl.Inputs,
