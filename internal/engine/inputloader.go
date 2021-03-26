@@ -210,7 +210,7 @@ func (il inputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]model
 }
 
 // inputLoaderLoadRemoteConfig contains configuration for loading the input from
-// a remote source (which currrently is _only_ the OONI backend).
+// a remote source (which currently is _only_ the OONI backend).
 type inputLoaderLoadRemoteConfig struct {
 	ctx     context.Context
 	session InputLoaderSession
