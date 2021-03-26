@@ -247,9 +247,8 @@ func TestInputLoaderInputOrQueryTestListsWithNoInputAndCancelledContext(t *testi
 	}
 	defer sess.Close()
 	il := engine.NewInputLoader(engine.InputLoaderConfig{
-		InputPolicy:    engine.InputOrQueryBackend,
-		Session:        sess,
-		CheckInRunType: "manual",
+		InputPolicy: engine.InputOrQueryBackend,
+		Session:     sess,
 	})
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
@@ -283,9 +282,9 @@ func TestInputLoaderInputOrQueryTestListsWithNoInput(t *testing.T) {
 	}
 	defer sess.Close()
 	il := engine.NewInputLoader(engine.InputLoaderConfig{
-		InputPolicy:    engine.InputOrQueryBackend,
-		Session:        sess,
-		CheckInRunType: "manual",
+		InputPolicy: engine.InputOrQueryBackend,
+		Session:     sess,
+		URLLimit:    30,
 	})
 	ctx := context.Background()
 	out, err := il.Load(ctx)

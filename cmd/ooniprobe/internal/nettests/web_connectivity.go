@@ -10,12 +10,12 @@ import (
 
 func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, map[int64]int64, error) {
 	inputloader := engine.NewInputLoader(engine.InputLoaderConfig{
-		CheckInRunType: "manual",
-		InputPolicy:    engine.InputOrQueryBackend,
-		Session:        ctl.Session,
-		SourceFiles:    ctl.InputFiles,
-		StaticInputs:   ctl.Inputs,
-		URLCategories:  categories,
+		InputPolicy:   engine.InputOrQueryBackend,
+		Session:       ctl.Session,
+		SourceFiles:   ctl.InputFiles,
+		StaticInputs:  ctl.Inputs,
+		URLCategories: categories,
+		URLLimit:      limit,
 	})
 	testlist, err := inputloader.Load(context.Background())
 	var urls []string

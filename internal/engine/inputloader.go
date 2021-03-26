@@ -13,11 +13,9 @@ import (
 
 // These errors are returned by the InputLoader.
 var (
-	ErrCheckInInvalidRunType = errors.New("check-in: invalid run type")
-	ErrCheckInReturnedNoURLs = errors.New("check-in returned no URLs")
-	ErrDetectedEmptyFile     = errors.New("file did not contain any input")
-	ErrInputRequired         = errors.New("no input provided")
-	ErrNoInputExpected       = errors.New("we did not expect any input")
+	ErrDetectedEmptyFile = errors.New("file did not contain any input")
+	ErrInputRequired     = errors.New("no input provided")
+	ErrNoInputExpected   = errors.New("we did not expect any input")
 )
 
 // InputLoaderSession is the session according to an InputLoader. We
@@ -133,7 +131,7 @@ type inputLoader struct {
 	InputLoaderConfig
 }
 
-// _ verifies that inputLoader is an InputLoader.
+// verifies that inputLoader is an InputLoader.
 var _ InputLoader = inputLoader{}
 
 // Load attempts to load input using the specified input loader. We will
@@ -237,7 +235,7 @@ func (il inputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]model
 }
 
 // inputLoaderLoadRemoteConfig contains configuration for loading the input from
-// a remote source (which currrently is _only_ the OONI backend).
+// a remote source (which currently is _only_ the OONI backend).
 type inputLoaderLoadRemoteConfig struct {
 	ctx     context.Context
 	session InputLoaderSession
@@ -245,12 +243,6 @@ type inputLoaderLoadRemoteConfig struct {
 
 // loadRemote loads inputs from a remote source.
 func (il inputLoader) loadRemote(conf inputLoaderLoadRemoteConfig) ([]model.URLInfo, error) {
-	switch il.CheckInRunType {
-	case "timed", "manual":
-		// nothing
-	default:
-		return nil, fmt.Errorf("%w: '%s'", ErrCheckInInvalidRunType, il.CheckInRunType)
-	}
 	if err := conf.session.MaybeLookupLocationContext(conf.ctx); err != nil {
 		return nil, err
 	}
