@@ -65,7 +65,7 @@ func (InputLoaderBrokenSession) ProbeCC() string {
 
 func TestInputLoaderNewOrchestraClientFailure(t *testing.T) {
 	il := inputLoader{}
-	lrc := loadRemoteConfig{
+	lrc := inputLoaderLoadRemoteConfig{
 		ctx:     context.Background(),
 		session: InputLoaderBrokenSession{},
 	}
@@ -98,7 +98,7 @@ func (InputLoaderBrokenOrchestraClient) FetchURLList(ctx context.Context, config
 
 func TestInputLoaderFetchURLListFailure(t *testing.T) {
 	il := inputLoader{}
-	lrc := loadRemoteConfig{
+	lrc := inputLoaderLoadRemoteConfig{
 		ctx: context.Background(),
 		session: InputLoaderBrokenSession{
 			OrchestraClient: InputLoaderBrokenOrchestraClient{},
