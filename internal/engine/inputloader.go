@@ -220,6 +220,10 @@ type inputLoaderLoadRemoteConfig struct {
 func (il inputLoader) loadRemote(conf inputLoaderLoadRemoteConfig) ([]model.URLInfo, error) {
 	config := il.CheckInConfig
 	if config == nil {
+		// Note: Session.CheckIn documentation says it will fill in
+		// any field with a required value with a reasonable default
+		// if such value is missing. So, here we just need to be
+		// concerned about NOT passing it a NULL pointer.
 		config = &model.CheckInConfig{}
 	}
 	reply, err := conf.session.CheckIn(conf.ctx, config)

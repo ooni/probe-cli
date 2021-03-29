@@ -204,7 +204,7 @@ func TestInputLoaderInputStrictlyRequiredWithEmptyFile(t *testing.T) {
 	}
 }
 
-func TestInputLoaderInputOrQueryTestListsWithInput(t *testing.T) {
+func TestInputLoaderInputOrQueryBackendWithInput(t *testing.T) {
 	il := engine.NewInputLoader(engine.InputLoaderConfig{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
@@ -233,7 +233,7 @@ func TestInputLoaderInputOrQueryTestListsWithInput(t *testing.T) {
 	}
 }
 
-func TestInputLoaderInputOrQueryTestListsWithNoInputAndCancelledContext(t *testing.T) {
+func TestInputLoaderInputOrQueryBackendWithNoInputAndCancelledContext(t *testing.T) {
 	sess, err := engine.NewSession(engine.SessionConfig{
 		AssetsDir:       "testdata",
 		KVStore:         kvstore.NewMemoryKeyValueStore(),
@@ -261,7 +261,7 @@ func TestInputLoaderInputOrQueryTestListsWithNoInputAndCancelledContext(t *testi
 	}
 }
 
-func TestInputLoaderInputOrQueryTestListsWithNoInput(t *testing.T) {
+func TestInputLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
@@ -296,7 +296,7 @@ func TestInputLoaderInputOrQueryTestListsWithNoInput(t *testing.T) {
 	}
 }
 
-func TestInputLoaderInputOrQueryTestListsWithEmptyFile(t *testing.T) {
+func TestInputLoaderInputOrQueryBackendWithEmptyFile(t *testing.T) {
 	il := engine.NewInputLoader(engine.InputLoaderConfig{
 		InputPolicy: engine.InputOrQueryBackend,
 		SourceFiles: []string{
