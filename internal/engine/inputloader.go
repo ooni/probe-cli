@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
@@ -182,7 +183,7 @@ func (il inputLoader) loadLocal() ([]model.URLInfo, error) {
 }
 
 // inputLoaderOpenFn is the type of the function to open a file.
-type inputLoaderOpenFn func(filepath string) (fsx.File, error)
+type inputLoaderOpenFn func(filepath string) (fs.File, error)
 
 // readfile reads inputs from the specified file. The open argument should be
 // compatibile with stdlib's fs.Open and helps us with unit testing.

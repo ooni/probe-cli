@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"syscall"
 	"testing"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
@@ -284,7 +284,7 @@ func TestInputLoaderInputOrQueryBackendWithEmptyFile(t *testing.T) {
 
 type InputLoaderBrokenFS struct{}
 
-func (InputLoaderBrokenFS) Open(filepath string) (fsx.File, error) {
+func (InputLoaderBrokenFS) Open(filepath string) (fs.File, error) {
 	return InputLoaderBrokenFile{}, nil
 }
 
