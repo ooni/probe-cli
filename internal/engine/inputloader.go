@@ -12,10 +12,10 @@ import (
 
 // These errors are returned by the InputLoader.
 var (
-	ErrCheckInReturnedNoURLs = errors.New("no URLs returned")
-	ErrDetectedEmptyFile     = errors.New("file did not contain any input")
-	ErrInputRequired         = errors.New("no input provided")
-	ErrNoInputExpected       = errors.New("we did not expect any input")
+	ErrNoURLsReturned    = errors.New("no URLs returned")
+	ErrDetectedEmptyFile = errors.New("file did not contain any input")
+	ErrInputRequired     = errors.New("no input provided")
+	ErrNoInputExpected   = errors.New("we did not expect any input")
 )
 
 // InputLoaderSession is the session according to an InputLoader. We
@@ -227,7 +227,7 @@ func (il inputLoader) loadRemote(conf inputLoaderLoadRemoteConfig) ([]model.URLI
 		return nil, err
 	}
 	if reply.WebConnectivity == nil || len(reply.WebConnectivity.URLs) <= 0 {
-		return nil, ErrCheckInReturnedNoURLs
+		return nil, ErrNoURLsReturned
 	}
 	return reply.WebConnectivity.URLs, nil
 }
