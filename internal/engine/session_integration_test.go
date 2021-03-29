@@ -666,7 +666,7 @@ func TestNewOrchestraClientProbeServicesNewClientFailure(t *testing.T) {
 	}
 }
 
-func TestSessionNewSubmitterWorks(t *testing.T) {
+func TestSessionNewSubmitterReturnsNonNilSubmitter(t *testing.T) {
 	sess := newSessionForTesting(t)
 	subm, err := sess.NewSubmitter(context.Background())
 	if err != nil {
