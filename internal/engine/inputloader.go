@@ -30,6 +30,9 @@ type InputLoaderSession interface {
 // either from command line and input files or from OONI services. The
 // behaviour depends on the input policy as described below.
 //
+// You MUST NOT change any public field of this structure when
+// in use, because that MAY lead to data races.
+//
 // InputNone
 //
 // We fail if there is any StaticInput or any SourceFiles. If
@@ -52,14 +55,7 @@ type InputLoaderSession interface {
 //
 // We gather input from StaticInput and SourceFiles. If there is
 // input, we return it. Otherwise, we return an error.
-type InputLoader interface {
-	// Load attempts to load input using the specified input loader. We will
-	// return a list of URLs because this is the only input we support.
-	Load(ctx context.Context) ([]model.URLInfo, error)
-}
-
-// InputLoaderConfig contains config for InputLoader.
-type InputLoaderConfig struct {
+type InputLoader struct {
 	// CheckInConfig contains options for the CheckIn API. If
 	// not set, then we'll create a default config. If set but
 	// there are fields inside it that are not set, then we
@@ -87,32 +83,9 @@ type InputLoaderConfig struct {
 	SourceFiles []string
 }
 
-// NewInputLoader creates a new InputLoader.
-func NewInputLoader(config InputLoaderConfig) InputLoader {
-	// TODO(bassosimone): the current implementation stems from a
-	// simple refactoring from a previous implementation where
-	// we weren't using interfaces. Because now we're using interfaces,
-	// there is the opportunity to select behaviour here depending
-	// on the specified policy rather than later inside Load.
-	return inputLoader{InputLoaderConfig: config}
-}
-
-// TODO(bassosimone): it seems there's no reason to return an
-// interface from the constructor. Generally, "Effective Go"
-// recommends that an interface is used by the receiver rather
-// than by the sender. We should follow that rule of thumb.
-
-// inputLoader is the concrete implementation of InputLoader.
-type inputLoader struct {
-	InputLoaderConfig
-}
-
-// verifies that inputLoader is an InputLoader.
-var _ InputLoader = inputLoader{}
-
 // Load attempts to load input using the specified input loader. We will
 // return a list of URLs because this is the only input we support.
-func (il inputLoader) Load(ctx context.Context) ([]model.URLInfo, error) {
+func (il *InputLoader) Load(ctx context.Context) ([]model.URLInfo, error) {
 	switch il.InputPolicy {
 	case InputOptional:
 		return il.loadOptional()
@@ -126,7 +99,7 @@ func (il inputLoader) Load(ctx context.Context) ([]model.URLInfo, error) {
 }
 
 // loadNone implements the InputNone policy.
-func (il inputLoader) loadNone() ([]model.URLInfo, error) {
+func (il *InputLoader) loadNone() ([]model.URLInfo, error) {
 	if len(il.StaticInputs) > 0 || len(il.SourceFiles) > 0 {
 		return nil, ErrNoInputExpected
 	}
@@ -135,7 +108,7 @@ func (il inputLoader) loadNone() ([]model.URLInfo, error) {
 }
 
 // loadOptional implements the InputOptional policy.
-func (il inputLoader) loadOptional() ([]model.URLInfo, error) {
+func (il *InputLoader) loadOptional() ([]model.URLInfo, error) {
 	inputs, err := il.loadLocal()
 	if err == nil && len(inputs) <= 0 {
 		// Note that we need to return a single empty entry.
@@ -145,7 +118,7 @@ func (il inputLoader) loadOptional() ([]model.URLInfo, error) {
 }
 
 // loadStrictlyRequired implements the InputStrictlyRequired policy.
-func (il inputLoader) loadStrictlyRequired(ctx context.Context) ([]model.URLInfo, error) {
+func (il *InputLoader) loadStrictlyRequired(ctx context.Context) ([]model.URLInfo, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
@@ -154,16 +127,16 @@ func (il inputLoader) loadStrictlyRequired(ctx context.Context) ([]model.URLInfo
 }
 
 // loadOrQueryBackend implements the InputOrQueryBackend policy.
-func (il inputLoader) loadOrQueryBackend(ctx context.Context) ([]model.URLInfo, error) {
+func (il *InputLoader) loadOrQueryBackend(ctx context.Context) ([]model.URLInfo, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
 	}
-	return il.loadRemote(inputLoaderLoadRemoteConfig{ctx: ctx, session: il.Session})
+	return il.loadRemote(ctx)
 }
 
 // loadLocal loads inputs from StaticInputs and SourceFiles.
-func (il inputLoader) loadLocal() ([]model.URLInfo, error) {
+func (il *InputLoader) loadLocal() ([]model.URLInfo, error) {
 	inputs := []model.URLInfo{}
 	for _, input := range il.StaticInputs {
 		inputs = append(inputs, model.URLInfo{URL: input})
@@ -187,7 +160,7 @@ type inputLoaderOpenFn func(filepath string) (fs.File, error)
 
 // readfile reads inputs from the specified file. The open argument should be
 // compatibile with stdlib's fs.Open and helps us with unit testing.
-func (il inputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]model.URLInfo, error) {
+func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]model.URLInfo, error) {
 	inputs := []model.URLInfo{}
 	filep, err := open(filepath)
 	if err != nil {
@@ -210,15 +183,8 @@ func (il inputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]model
 	return inputs, nil
 }
 
-// inputLoaderLoadRemoteConfig contains configuration for loading the input from
-// a remote source (which currently is _only_ the OONI backend).
-type inputLoaderLoadRemoteConfig struct {
-	ctx     context.Context
-	session InputLoaderSession
-}
-
 // loadRemote loads inputs from a remote source.
-func (il inputLoader) loadRemote(conf inputLoaderLoadRemoteConfig) ([]model.URLInfo, error) {
+func (il *InputLoader) loadRemote(ctx context.Context) ([]model.URLInfo, error) {
 	config := il.CheckInConfig
 	if config == nil {
 		// Note: Session.CheckIn documentation says it will fill in
@@ -227,7 +193,7 @@ func (il inputLoader) loadRemote(conf inputLoaderLoadRemoteConfig) ([]model.URLI
 		// concerned about NOT passing it a NULL pointer.
 		config = &model.CheckInConfig{}
 	}
-	reply, err := conf.session.CheckIn(conf.ctx, config)
+	reply, err := il.Session.CheckIn(ctx, config)
 	if err != nil {
 		return nil, err
 	}

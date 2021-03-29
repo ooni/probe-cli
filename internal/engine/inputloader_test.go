@@ -16,10 +16,10 @@ import (
 )
 
 func TestInputLoaderInputNoneWithStaticInputs(t *testing.T) {
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		StaticInputs: []string{"https://www.google.com/"},
 		InputPolicy:  InputNone,
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if !errors.Is(err, ErrNoInputExpected) {
@@ -31,13 +31,13 @@ func TestInputLoaderInputNoneWithStaticInputs(t *testing.T) {
 }
 
 func TestInputLoaderInputNoneWithFilesInputs(t *testing.T) {
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
 		},
 		InputPolicy: InputNone,
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if !errors.Is(err, ErrNoInputExpected) {
@@ -49,14 +49,14 @@ func TestInputLoaderInputNoneWithFilesInputs(t *testing.T) {
 }
 
 func TestInputLoaderInputNoneWithBothInputs(t *testing.T) {
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
 		},
 		InputPolicy: InputNone,
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if !errors.Is(err, ErrNoInputExpected) {
@@ -68,9 +68,9 @@ func TestInputLoaderInputNoneWithBothInputs(t *testing.T) {
 }
 
 func TestInputLoaderInputNoneWithNoInput(t *testing.T) {
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		InputPolicy: InputNone,
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if err != nil {
@@ -82,9 +82,9 @@ func TestInputLoaderInputNoneWithNoInput(t *testing.T) {
 }
 
 func TestInputLoaderInputOptionalWithNoInput(t *testing.T) {
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		InputPolicy: InputOptional,
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if err != nil {
@@ -96,14 +96,14 @@ func TestInputLoaderInputOptionalWithNoInput(t *testing.T) {
 }
 
 func TestInputLoaderInputOptionalWithInput(t *testing.T) {
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
 		},
 		InputPolicy: InputOptional,
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if err != nil {
@@ -125,7 +125,7 @@ func TestInputLoaderInputOptionalWithInput(t *testing.T) {
 }
 
 func TestInputLoaderInputOptionalNonexistentFile(t *testing.T) {
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
@@ -133,7 +133,7 @@ func TestInputLoaderInputOptionalNonexistentFile(t *testing.T) {
 			"testdata/inputloader2.txt",
 		},
 		InputPolicy: InputOptional,
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if !errors.Is(err, syscall.ENOENT) {
@@ -145,14 +145,14 @@ func TestInputLoaderInputOptionalNonexistentFile(t *testing.T) {
 }
 
 func TestInputLoaderInputStrictlyRequiredWithInput(t *testing.T) {
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
 		},
 		InputPolicy: InputStrictlyRequired,
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if err != nil {
@@ -174,9 +174,9 @@ func TestInputLoaderInputStrictlyRequiredWithInput(t *testing.T) {
 }
 
 func TestInputLoaderInputStrictlyRequiredWithoutInput(t *testing.T) {
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		InputPolicy: InputStrictlyRequired,
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if !errors.Is(err, ErrInputRequired) {
@@ -188,14 +188,14 @@ func TestInputLoaderInputStrictlyRequiredWithoutInput(t *testing.T) {
 }
 
 func TestInputLoaderInputStrictlyRequiredWithEmptyFile(t *testing.T) {
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		InputPolicy: InputStrictlyRequired,
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
 			"testdata/inputloader3.txt", // we want it before inputloader2.txt
 			"testdata/inputloader2.txt",
 		},
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if !errors.Is(err, ErrDetectedEmptyFile) {
@@ -207,14 +207,14 @@ func TestInputLoaderInputStrictlyRequiredWithEmptyFile(t *testing.T) {
 }
 
 func TestInputLoaderInputOrQueryBackendWithInput(t *testing.T) {
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
 		},
 		InputPolicy: InputOrQueryBackend,
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if err != nil {
@@ -248,10 +248,10 @@ func TestInputLoaderInputOrQueryBackendWithNoInputAndCancelledContext(t *testing
 		t.Fatal(err)
 	}
 	defer sess.Close()
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		InputPolicy: InputOrQueryBackend,
 		Session:     sess,
-	})
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
 	out, err := il.Load(ctx)
@@ -264,14 +264,14 @@ func TestInputLoaderInputOrQueryBackendWithNoInputAndCancelledContext(t *testing
 }
 
 func TestInputLoaderInputOrQueryBackendWithEmptyFile(t *testing.T) {
-	il := NewInputLoader(InputLoaderConfig{
+	il := &InputLoader{
 		InputPolicy: InputOrQueryBackend,
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
 			"testdata/inputloader3.txt", // we want it before inputloader2.txt
 			"testdata/inputloader2.txt",
 		},
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if !errors.Is(err, ErrDetectedEmptyFile) {
@@ -303,7 +303,7 @@ func (InputLoaderBrokenFile) Close() error {
 }
 
 func TestInputLoaderReadfileScannerFailure(t *testing.T) {
-	il := inputLoader{}
+	il := &InputLoader{}
 	out, err := il.readfile("", InputLoaderBrokenFS{}.Open)
 	if !errors.Is(err, syscall.EFAULT) {
 		t.Fatal("not the error we expected")
@@ -335,14 +335,12 @@ func (sess *InputLoaderMockableSession) CheckIn(
 }
 
 func TestInputLoaderCheckInFailure(t *testing.T) {
-	il := inputLoader{}
-	lrc := inputLoaderLoadRemoteConfig{
-		ctx: context.Background(),
-		session: &InputLoaderMockableSession{
+	il := &InputLoader{
+		Session: &InputLoaderMockableSession{
 			Error: io.EOF,
 		},
 	}
-	out, err := il.loadRemote(lrc)
+	out, err := il.loadRemote(context.Background())
 	if !errors.Is(err, io.EOF) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
@@ -352,14 +350,12 @@ func TestInputLoaderCheckInFailure(t *testing.T) {
 }
 
 func TestInputLoaderCheckInSuccessWithNilWebConnectivity(t *testing.T) {
-	il := inputLoader{}
-	lrc := inputLoaderLoadRemoteConfig{
-		ctx: context.Background(),
-		session: &InputLoaderMockableSession{
+	il := &InputLoader{
+		Session: &InputLoaderMockableSession{
 			Output: &model.CheckInInfo{},
 		},
 	}
-	out, err := il.loadRemote(lrc)
+	out, err := il.loadRemote(context.Background())
 	if !errors.Is(err, ErrNoURLsReturned) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
@@ -369,16 +365,14 @@ func TestInputLoaderCheckInSuccessWithNilWebConnectivity(t *testing.T) {
 }
 
 func TestInputLoaderCheckInSuccessWithNoURLs(t *testing.T) {
-	il := inputLoader{}
-	lrc := inputLoaderLoadRemoteConfig{
-		ctx: context.Background(),
-		session: &InputLoaderMockableSession{
+	il := &InputLoader{
+		Session: &InputLoaderMockableSession{
 			Output: &model.CheckInInfo{
 				WebConnectivity: &model.CheckInInfoWebConnectivity{},
 			},
 		},
 	}
-	out, err := il.loadRemote(lrc)
+	out, err := il.loadRemote(context.Background())
 	if !errors.Is(err, ErrNoURLsReturned) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
@@ -397,10 +391,8 @@ func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
 		CountryCode:  "IT",
 		URL:          "https://corriere.it",
 	}}
-	il := inputLoader{}
-	lrc := inputLoaderLoadRemoteConfig{
-		ctx: context.Background(),
-		session: &InputLoaderMockableSession{
+	il := &InputLoader{
+		Session: &InputLoaderMockableSession{
 			Output: &model.CheckInInfo{
 				WebConnectivity: &model.CheckInInfoWebConnectivity{
 					URLs: expect,
@@ -408,7 +400,7 @@ func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
 			},
 		},
 	}
-	out, err := il.loadRemote(lrc)
+	out, err := il.loadRemote(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

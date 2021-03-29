@@ -19,7 +19,7 @@ import (
 // someone choose the number of URLs explicitly via the config.
 
 func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, map[int64]int64, error) {
-	inputloader := engine.NewInputLoader(engine.InputLoaderConfig{
+	inputloader := &engine.InputLoader{
 		CheckInConfig: &model.CheckInConfig{
 			WebConnectivity: model.CheckInConfigWebConnectivity{
 				CategoryCodes: categories,
@@ -29,7 +29,7 @@ func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, ma
 		Session:      ctl.Session,
 		SourceFiles:  ctl.InputFiles,
 		StaticInputs: ctl.Inputs,
-	})
+	}
 	testlist, err := inputloader.Load(context.Background())
 	var urls []string
 	urlIDMap := make(map[int64]int64)
