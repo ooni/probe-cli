@@ -204,7 +204,7 @@ func TestInputLoaderInputStrictlyRequiredWithEmptyFile(t *testing.T) {
 	}
 }
 
-func TestInputLoaderInputOrQueryTestListsWithInput(t *testing.T) {
+func TestInputLoaderInputOrQueryBackendWithInput(t *testing.T) {
 	il := engine.NewInputLoader(engine.InputLoaderConfig{
 		StaticInputs: []string{"https://www.google.com/"},
 		SourceFiles: []string{
@@ -233,7 +233,7 @@ func TestInputLoaderInputOrQueryTestListsWithInput(t *testing.T) {
 	}
 }
 
-func TestInputLoaderInputOrQueryTestListsWithNoInputAndCancelledContext(t *testing.T) {
+func TestInputLoaderInputOrQueryBackendWithNoInputAndCancelledContext(t *testing.T) {
 	sess, err := engine.NewSession(engine.SessionConfig{
 		AssetsDir:       "testdata",
 		KVStore:         kvstore.NewMemoryKeyValueStore(),
@@ -261,7 +261,7 @@ func TestInputLoaderInputOrQueryTestListsWithNoInputAndCancelledContext(t *testi
 	}
 }
 
-func TestInputLoaderInputOrQueryTestListsWithNoInput(t *testing.T) {
+func TestInputLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
@@ -284,7 +284,6 @@ func TestInputLoaderInputOrQueryTestListsWithNoInput(t *testing.T) {
 	il := engine.NewInputLoader(engine.InputLoaderConfig{
 		InputPolicy: engine.InputOrQueryBackend,
 		Session:     sess,
-		URLLimit:    30,
 	})
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -292,11 +291,12 @@ func TestInputLoaderInputOrQueryTestListsWithNoInput(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(out) < 10 {
+		// check-in SHOULD return AT LEAST 20 URLs at a time.
 		t.Fatal("not the output length we expected")
 	}
 }
 
-func TestInputLoaderInputOrQueryTestListsWithEmptyFile(t *testing.T) {
+func TestInputLoaderInputOrQueryBackendWithEmptyFile(t *testing.T) {
 	il := engine.NewInputLoader(engine.InputLoaderConfig{
 		InputPolicy: engine.InputOrQueryBackend,
 		SourceFiles: []string{

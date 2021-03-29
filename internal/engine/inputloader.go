@@ -12,6 +12,7 @@ import (
 
 // These errors are returned by the InputLoader.
 var (
+	ErrNoURLsReturned    = errors.New("no URLs returned")
 	ErrDetectedEmptyFile = errors.New("file did not contain any input")
 	ErrInputRequired     = errors.New("no input provided")
 	ErrNoInputExpected   = errors.New("we did not expect any input")
@@ -20,9 +21,8 @@ var (
 // InputLoaderSession is the session according to an InputLoader. We
 // introduce this abstraction because it helps us with testing.
 type InputLoaderSession interface {
-	MaybeLookupLocationContext(ctx context.Context) error
-	NewOrchestraClient(ctx context.Context) (model.ExperimentOrchestraClient, error)
-	ProbeCC() string
+	CheckIn(ctx context.Context,
+		config *model.CheckInConfig) (*model.CheckInInfo, error)
 }
 
 // InputLoader loads input according to the specified policy
@@ -59,6 +59,22 @@ type InputLoader interface {
 
 // InputLoaderConfig contains config for InputLoader.
 type InputLoaderConfig struct {
+	// CheckInConfig contains options for the CheckIn API. If
+	// not set, then we'll create a default config. If set but
+	// there are fields inside it that are not set, then we
+	// will set them to a default value.
+	CheckInConfig *model.CheckInConfig
+
+	// InputPolicy specifies the input policy for the
+	// current experiment. We will not load any input if
+	// the policy says we should not. You MUST fill in
+	// this field.
+	InputPolicy InputPolicy
+
+	// Session is the current measurement session. You
+	// MUST fill in this field.
+	Session InputLoaderSession
+
 	// StaticInputs contains optional input to be added
 	// to the resulting input list if possible.
 	StaticInputs []string
@@ -68,22 +84,6 @@ type InputLoaderConfig struct {
 	// per line. We will fail if any file is unreadable
 	// as well as if any file is empty.
 	SourceFiles []string
-
-	// InputPolicy specifies the input policy for the
-	// current experiment. We will not load any input if
-	// the policy says we should not.
-	InputPolicy InputPolicy
-
-	// Session is the current measurement session.
-	Session InputLoaderSession
-
-	// URLLimit is the optional limit on the number of URLs
-	// that probe services should return to us.
-	URLLimit int64
-
-	// URLCategories limits the categories of URLs that
-	// probe services should return to us.
-	URLCategories []string
 }
 
 // NewInputLoader creates a new InputLoader.
@@ -218,16 +218,20 @@ type inputLoaderLoadRemoteConfig struct {
 
 // loadRemote loads inputs from a remote source.
 func (il inputLoader) loadRemote(conf inputLoaderLoadRemoteConfig) ([]model.URLInfo, error) {
-	if err := conf.session.MaybeLookupLocationContext(conf.ctx); err != nil {
-		return nil, err
+	config := il.CheckInConfig
+	if config == nil {
+		// Note: Session.CheckIn documentation says it will fill in
+		// any field with a required value with a reasonable default
+		// if such value is missing. So, here we just need to be
+		// concerned about NOT passing it a NULL pointer.
+		config = &model.CheckInConfig{}
 	}
-	client, err := conf.session.NewOrchestraClient(conf.ctx)
+	reply, err := conf.session.CheckIn(conf.ctx, config)
 	if err != nil {
 		return nil, err
 	}
-	return client.FetchURLList(conf.ctx, model.URLListConfig{
-		CountryCode: conf.session.ProbeCC(),
-		Limit:       il.URLLimit,
-		Categories:  il.URLCategories,
-	})
+	if reply.WebConnectivity == nil || len(reply.WebConnectivity.URLs) <= 0 {
+		return nil, ErrNoURLsReturned
+	}
+	return reply.WebConnectivity.URLs, nil
 }

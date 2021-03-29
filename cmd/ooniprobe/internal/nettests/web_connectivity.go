@@ -6,16 +6,29 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
+
+// TODO(bassosimone): we should remove the limit argument and
+// we should also remove it from the config.
+
+// TODO(bassosimone): we should propagate the kind of run
+// to here such that we get the right runType.
+
+// TODO(bassosimone): we are breaking the use case in which
+// someone choose the number of URLs explicitly via the config.
 
 func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, map[int64]int64, error) {
 	inputloader := engine.NewInputLoader(engine.InputLoaderConfig{
-		InputPolicy:   engine.InputOrQueryBackend,
-		Session:       ctl.Session,
-		SourceFiles:   ctl.InputFiles,
-		StaticInputs:  ctl.Inputs,
-		URLCategories: categories,
-		URLLimit:      limit,
+		CheckInConfig: &model.CheckInConfig{
+			WebConnectivity: model.CheckInConfigWebConnectivity{
+				CategoryCodes: categories,
+			},
+		},
+		InputPolicy:  engine.InputOrQueryBackend,
+		Session:      ctl.Session,
+		SourceFiles:  ctl.InputFiles,
+		StaticInputs: ctl.Inputs,
 	})
 	testlist, err := inputloader.Load(context.Background())
 	var urls []string

@@ -12,6 +12,13 @@
 // code at github.com/bassosimone/aladdin).
 package libminiooni
 
+// TODO(bassosimone): now that this code cannot be imported from
+// external sources anymore, we should move it back into the
+// internal/cmd/miniooni folder and reduce the number of packages
+// that are unnecessarily exposed inside ./internal/engine.
+
+// TODO(bassosimone): we need to deprecate or remove --limit.
+
 import (
 	"context"
 	"errors"
@@ -138,10 +145,6 @@ func init() {
 	getopt.FlagLong(
 		&globalOptions.Yes, "yes", 0, "I accept the risk of running OONI",
 	)
-}
-
-func fatalWithString(msg string) {
-	panic(msg)
 }
 
 func fatalIfFalse(cond bool, msg string) {
@@ -371,11 +374,15 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	fatalOnError(err, "cannot create experiment builder")
 
 	inputLoader := engine.NewInputLoader(engine.InputLoaderConfig{
+		CheckInConfig: &model.CheckInConfig{
+			RunType:  "manual",
+			OnWiFi:   true, // meaning: not on 4G
+			Charging: true,
+		},
+		InputPolicy:  builder.InputPolicy(),
 		StaticInputs: currentOptions.Inputs,
 		SourceFiles:  currentOptions.InputFilePaths,
-		InputPolicy:  builder.InputPolicy(),
 		Session:      sess,
-		URLLimit:     currentOptions.Limit,
 	})
 	inputs, err := inputLoader.Load(context.Background())
 	fatalOnError(err, "cannot load inputs")
@@ -399,14 +406,14 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	}()
 
 	submitter, err := engine.NewSubmitter(ctx, engine.SubmitterConfig{
-		Enabled: currentOptions.NoCollector == false,
+		Enabled: !currentOptions.NoCollector,
 		Session: sess,
 		Logger:  log.Log,
 	})
 	fatalOnError(err, "cannot create submitter")
 
 	saver, err := engine.NewSaver(engine.SaverConfig{
-		Enabled:    currentOptions.NoJSON == false,
+		Enabled:    !currentOptions.NoJSON,
 		Experiment: experiment,
 		FilePath:   currentOptions.ReportFile,
 		Logger:     log.Log,

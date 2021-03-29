@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
@@ -43,65 +44,33 @@ func TestInputLoaderReadfileScannerFailure(t *testing.T) {
 	}
 }
 
-type InputLoaderBrokenSession struct {
-	OrchestraClient model.ExperimentOrchestraClient
-	Error           error
+// InputLoaderMockableSession is a mockable session
+// used by InputLoader tests.
+type InputLoaderMockableSession struct {
+	// Output contains the output of CheckIn. It should
+	// be nil when Error is not-nil.
+	Output *model.CheckInInfo
+
+	// Error is the error to be returned by CheckIn. It
+	// should be nil when Output is not-nil.
+	Error error
 }
 
-func (InputLoaderBrokenSession) MaybeLookupLocationContext(ctx context.Context) error {
-	return nil
-}
-
-func (ilbs InputLoaderBrokenSession) NewOrchestraClient(ctx context.Context) (model.ExperimentOrchestraClient, error) {
-	if ilbs.OrchestraClient != nil {
-		return ilbs.OrchestraClient, nil
+// CheckIn implements InputLoaderSession.CheckIn.
+func (sess *InputLoaderMockableSession) CheckIn(
+	ctx context.Context, config *model.CheckInConfig) (*model.CheckInInfo, error) {
+	if sess.Output == nil && sess.Error == nil {
+		return nil, errors.New("both Output and Error are nil")
 	}
-	return nil, io.EOF
+	return sess.Output, sess.Error
 }
 
-func (InputLoaderBrokenSession) ProbeCC() string {
-	return "IT"
-}
-
-func TestInputLoaderNewOrchestraClientFailure(t *testing.T) {
-	il := inputLoader{}
-	lrc := inputLoaderLoadRemoteConfig{
-		ctx:     context.Background(),
-		session: InputLoaderBrokenSession{},
-	}
-	out, err := il.loadRemote(lrc)
-	if !errors.Is(err, io.EOF) {
-		t.Fatalf("not the error we expected: %+v", err)
-	}
-	if out != nil {
-		t.Fatal("expected nil output here")
-	}
-}
-
-type InputLoaderBrokenOrchestraClient struct{}
-
-func (InputLoaderBrokenOrchestraClient) CheckIn(ctx context.Context, config model.CheckInConfig) (*model.CheckInInfo, error) {
-	return nil, io.EOF
-}
-
-func (InputLoaderBrokenOrchestraClient) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
-	return nil, io.EOF
-}
-
-func (InputLoaderBrokenOrchestraClient) FetchTorTargets(ctx context.Context, cc string) (map[string]model.TorTarget, error) {
-	return nil, io.EOF
-}
-
-func (InputLoaderBrokenOrchestraClient) FetchURLList(ctx context.Context, config model.URLListConfig) ([]model.URLInfo, error) {
-	return nil, io.EOF
-}
-
-func TestInputLoaderFetchURLListFailure(t *testing.T) {
+func TestInputLoaderCheckInFailure(t *testing.T) {
 	il := inputLoader{}
 	lrc := inputLoaderLoadRemoteConfig{
 		ctx: context.Background(),
-		session: InputLoaderBrokenSession{
-			OrchestraClient: InputLoaderBrokenOrchestraClient{},
+		session: &InputLoaderMockableSession{
+			Error: io.EOF,
 		},
 	}
 	out, err := il.loadRemote(lrc)
@@ -110,5 +79,71 @@ func TestInputLoaderFetchURLListFailure(t *testing.T) {
 	}
 	if out != nil {
 		t.Fatal("expected nil output here")
+	}
+}
+
+func TestInputLoaderCheckInSuccessWithNilWebConnectivity(t *testing.T) {
+	il := inputLoader{}
+	lrc := inputLoaderLoadRemoteConfig{
+		ctx: context.Background(),
+		session: &InputLoaderMockableSession{
+			Output: &model.CheckInInfo{},
+		},
+	}
+	out, err := il.loadRemote(lrc)
+	if !errors.Is(err, ErrNoURLsReturned) {
+		t.Fatalf("not the error we expected: %+v", err)
+	}
+	if out != nil {
+		t.Fatal("expected nil output here")
+	}
+}
+
+func TestInputLoaderCheckInSuccessWithNoURLs(t *testing.T) {
+	il := inputLoader{}
+	lrc := inputLoaderLoadRemoteConfig{
+		ctx: context.Background(),
+		session: &InputLoaderMockableSession{
+			Output: &model.CheckInInfo{
+				WebConnectivity: &model.CheckInInfoWebConnectivity{},
+			},
+		},
+	}
+	out, err := il.loadRemote(lrc)
+	if !errors.Is(err, ErrNoURLsReturned) {
+		t.Fatalf("not the error we expected: %+v", err)
+	}
+	if out != nil {
+		t.Fatal("expected nil output here")
+	}
+}
+
+func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
+	expect := []model.URLInfo{{
+		CategoryCode: "NEWS",
+		CountryCode:  "IT",
+		URL:          "https://repubblica.it",
+	}, {
+		CategoryCode: "NEWS",
+		CountryCode:  "IT",
+		URL:          "https://corriere.it",
+	}}
+	il := inputLoader{}
+	lrc := inputLoaderLoadRemoteConfig{
+		ctx: context.Background(),
+		session: &InputLoaderMockableSession{
+			Output: &model.CheckInInfo{
+				WebConnectivity: &model.CheckInInfoWebConnectivity{
+					URLs: expect,
+				},
+			},
+		},
+	}
+	out, err := il.loadRemote(lrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(expect, out); diff != "" {
+		t.Fatal(diff)
 	}
 }

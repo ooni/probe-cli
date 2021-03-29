@@ -1,8 +1,6 @@
 package run
 
 import (
-	"runtime"
-
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/fatih/color"
@@ -77,14 +75,6 @@ func init() {
 
 	unattendedCmd := cmd.Command("unattended", "")
 	unattendedCmd.Action(func(_ *kingpin.ParseContext) error {
-		// Until we have enabled the check-in API we're called every
-		// hour on darwin and we need to self throttle.
-		// TODO(bassosimone): switch to check-in and remove this hack.
-		switch runtime.GOOS {
-		case "darwin", "windows":
-			const veryFew = 10
-			probe.Config().Nettests.WebsitesURLLimit = veryFew
-		}
 		return functionalRun(func(name string, gr nettests.Group) bool {
 			return gr.UnattendedOK == true
 		})
