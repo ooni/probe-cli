@@ -40,9 +40,7 @@ type SessionConfig struct {
 	TorBinary              string
 }
 
-// Session is a measurement session. You MUST NOT modify any
-// field of this data structure once it has been created since
-// doing that while it's being used MAY cause data races.
+// Session is a measurement session.
 type Session struct {
 	assetsDir                string
 	availableProbeServices   []model.Service
