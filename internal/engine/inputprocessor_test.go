@@ -4,19 +4,24 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
 type FakeInputProcessorExperiment struct {
-	Err error
-	M   []*model.Measurement
+	SleepTime time.Duration
+	Err       error
+	M         []*model.Measurement
 }
 
 func (fipe *FakeInputProcessorExperiment) MeasureWithContext(
 	ctx context.Context, input string) (*model.Measurement, error) {
 	if fipe.Err != nil {
 		return nil, fipe.Err
+	}
+	if fipe.SleepTime > 0 {
+		time.Sleep(fipe.SleepTime)
 	}
 	m := new(model.Measurement)
 	// Here we add annotations to ensure that the input processor
@@ -30,7 +35,7 @@ func (fipe *FakeInputProcessorExperiment) MeasureWithContext(
 
 func TestInputProcessorMeasurementFailed(t *testing.T) {
 	expected := errors.New("mocked error")
-	ip := InputProcessor{
+	ip := &InputProcessor{
 		Experiment: NewInputProcessorExperimentWrapper(
 			&FakeInputProcessorExperiment{Err: expected},
 		),
@@ -58,7 +63,7 @@ func (fips *FakeInputProcessorSubmitter) Submit(
 func TestInputProcessorSubmissionFailed(t *testing.T) {
 	fipe := &FakeInputProcessorExperiment{}
 	expected := errors.New("mocked error")
-	ip := InputProcessor{
+	ip := &InputProcessor{
 		Annotations: map[string]string{
 			"foo": "bar",
 		},
@@ -108,7 +113,7 @@ func (fips *FakeInputProcessorSaver) SaveMeasurement(m *model.Measurement) error
 
 func TestInputProcessorSaveOnDiskFailed(t *testing.T) {
 	expected := errors.New("mocked error")
-	ip := InputProcessor{
+	ip := &InputProcessor{
 		Experiment: NewInputProcessorExperimentWrapper(
 			&FakeInputProcessorExperiment{},
 		),
@@ -133,7 +138,7 @@ func TestInputProcessorGood(t *testing.T) {
 	fipe := &FakeInputProcessorExperiment{}
 	saver := &FakeInputProcessorSaver{Err: nil}
 	submitter := &FakeInputProcessorSubmitter{Err: nil}
-	ip := InputProcessor{
+	ip := &InputProcessor{
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
 		Inputs: []model.URLInfo{{
 			URL: "https://www.kernel.org/",
@@ -147,6 +152,9 @@ func TestInputProcessorGood(t *testing.T) {
 	ctx := context.Background()
 	if err := ip.Run(ctx); err != nil {
 		t.Fatal(err)
+	}
+	if ip.terminatedByMaxRuntime > 0 {
+		t.Fatal("terminated by max runtime!?")
 	}
 	if len(fipe.M) != 2 || len(saver.M) != 2 || len(submitter.M) != 2 {
 		t.Fatal("not all measurements saved")
@@ -162,5 +170,32 @@ func TestInputProcessorGood(t *testing.T) {
 	}
 	if saver.M[1].Input != "https://www.slashdot.org/" {
 		t.Fatal("invalid saver.M[1].Input")
+	}
+}
+
+func TestInputProcessorMaxRuntime(t *testing.T) {
+	fipe := &FakeInputProcessorExperiment{
+		SleepTime: 50 * time.Millisecond,
+	}
+	saver := &FakeInputProcessorSaver{Err: nil}
+	submitter := &FakeInputProcessorSubmitter{Err: nil}
+	ip := &InputProcessor{
+		Experiment: NewInputProcessorExperimentWrapper(fipe),
+		Inputs: []model.URLInfo{{
+			URL: "https://www.kernel.org/",
+		}, {
+			URL: "https://www.slashdot.org/",
+		}},
+		MaxRuntime: 1 * time.Nanosecond,
+		Options:    []string{"fake=true"},
+		Saver:      NewInputProcessorSaverWrapper(saver),
+		Submitter:  NewInputProcessorSubmitterWrapper(submitter),
+	}
+	ctx := context.Background()
+	if err := ip.Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if ip.terminatedByMaxRuntime <= 0 {
+		t.Fatal("not terminated by max runtime")
 	}
 }

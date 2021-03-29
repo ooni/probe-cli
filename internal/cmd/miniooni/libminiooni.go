@@ -1,7 +1,5 @@
 package main
 
-// TODO(bassosimone): we need to deprecate or remove --limit.
-
 import (
 	"context"
 	"errors"
@@ -34,6 +32,7 @@ type Options struct {
 	Inputs           []string
 	InputFilePaths   []string
 	Limit            int64
+	MaxRuntime       int64
 	NoJSON           bool
 	NoCollector      bool
 	ProbeServicesURL string
@@ -82,6 +81,10 @@ func init() {
 	getopt.FlagLong(
 		&globalOptions.Limit, "limit", 0,
 		"Limit the number of URLs tested by Web Connectivity", "N",
+	)
+	getopt.FlagLong(
+		&globalOptions.MaxRuntime, "max-runtime", 0,
+		"Maximum runtime in seconds when looping over a list of inputs (zero means infinite)", "N",
 	)
 	getopt.FlagLong(
 		&globalOptions.NoJSON, "no-json", 'N', "Disable writing to disk",
@@ -260,12 +263,23 @@ func maybeWriteConsentFile(yes bool, filepath string) (err error) {
 	return
 }
 
+// limitRemoved is the text printed when the user uses --limit
+const limitRemoved = `USAGE CHANGE: The --limit option has been removed in favor of
+the --max-runtime option. Please, update your script to use --max-runtime
+instead of --limit. The argument to --max-runtime is the maximum number
+of seconds after which to stop running Web Connectivity.
+
+This error message will be removed after 2021-11-01.
+`
+
 // MainWithConfiguration is the miniooni main with a specific configuration
 // represented by the experiment name and the current options.
 //
 // This function will panic in case of a fatal error. It is up to you that
 // integrate this function to either handle the panic of ignore it.
 func MainWithConfiguration(experimentName string, currentOptions Options) {
+	fatalIfFalse(currentOptions.Limit == 0, limitRemoved)
+
 	ctx := context.Background()
 
 	extraOptions := mustMakeMap(currentOptions.ExtraOptions)
@@ -403,15 +417,16 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	})
 	fatalOnError(err, "cannot create saver")
 
-	inputProcessor := engine.InputProcessor{
+	inputProcessor := &engine.InputProcessor{
 		Annotations: annotations,
 		Experiment: &experimentWrapper{
 			child: engine.NewInputProcessorExperimentWrapper(experiment),
 			total: len(inputs),
 		},
-		Inputs:  inputs,
-		Options: currentOptions.ExtraOptions,
-		Saver:   engine.NewInputProcessorSaverWrapper(saver),
+		Inputs:     inputs,
+		MaxRuntime: time.Duration(currentOptions.MaxRuntime) * time.Second,
+		Options:    currentOptions.ExtraOptions,
+		Saver:      engine.NewInputProcessorSaverWrapper(saver),
 		Submitter: submitterWrapper{
 			child: engine.NewInputProcessorSubmitterWrapper(submitter),
 		},
