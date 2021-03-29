@@ -165,7 +165,7 @@ func TestSessionCheckInCannotCreateProbeServicesClient(t *testing.T) {
 	}
 }
 
-func TestLowercaseMaybeLookupLocationContextReal(t *testing.T) {
+func TestLowercaseMaybeLookupLocationContextWithCancelledContext(t *testing.T) {
 	s := &Session{}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately kill the context
