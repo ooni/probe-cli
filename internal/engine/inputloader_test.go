@@ -8,10 +8,279 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/fsx"
+	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
+
+func TestInputLoaderInputNoneWithStaticInputs(t *testing.T) {
+	il := NewInputLoader(InputLoaderConfig{
+		StaticInputs: []string{"https://www.google.com/"},
+		InputPolicy:  InputNone,
+	})
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if !errors.Is(err, ErrNoInputExpected) {
+		t.Fatalf("not the error we expected: %+v", err)
+	}
+	if out != nil {
+		t.Fatal("not the output we expected")
+	}
+}
+
+func TestInputLoaderInputNoneWithFilesInputs(t *testing.T) {
+	il := NewInputLoader(InputLoaderConfig{
+		SourceFiles: []string{
+			"testdata/inputloader1.txt",
+			"testdata/inputloader2.txt",
+		},
+		InputPolicy: InputNone,
+	})
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if !errors.Is(err, ErrNoInputExpected) {
+		t.Fatalf("not the error we expected: %+v", err)
+	}
+	if out != nil {
+		t.Fatal("not the output we expected")
+	}
+}
+
+func TestInputLoaderInputNoneWithBothInputs(t *testing.T) {
+	il := NewInputLoader(InputLoaderConfig{
+		StaticInputs: []string{"https://www.google.com/"},
+		SourceFiles: []string{
+			"testdata/inputloader1.txt",
+			"testdata/inputloader2.txt",
+		},
+		InputPolicy: InputNone,
+	})
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if !errors.Is(err, ErrNoInputExpected) {
+		t.Fatalf("not the error we expected: %+v", err)
+	}
+	if out != nil {
+		t.Fatal("not the output we expected")
+	}
+}
+
+func TestInputLoaderInputNoneWithNoInput(t *testing.T) {
+	il := NewInputLoader(InputLoaderConfig{
+		InputPolicy: InputNone,
+	})
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 1 || out[0].URL != "" {
+		t.Fatal("not the output we expected")
+	}
+}
+
+func TestInputLoaderInputOptionalWithNoInput(t *testing.T) {
+	il := NewInputLoader(InputLoaderConfig{
+		InputPolicy: InputOptional,
+	})
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 1 || out[0].URL != "" {
+		t.Fatal("not the output we expected")
+	}
+}
+
+func TestInputLoaderInputOptionalWithInput(t *testing.T) {
+	il := NewInputLoader(InputLoaderConfig{
+		StaticInputs: []string{"https://www.google.com/"},
+		SourceFiles: []string{
+			"testdata/inputloader1.txt",
+			"testdata/inputloader2.txt",
+		},
+		InputPolicy: InputOptional,
+	})
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 5 {
+		t.Fatal("not the output length we expected")
+	}
+	expect := []model.URLInfo{
+		{URL: "https://www.google.com/"},
+		{URL: "https://www.x.org/"},
+		{URL: "https://www.slashdot.org/"},
+		{URL: "https://abc.xyz/"},
+		{URL: "https://run.ooni.io/"},
+	}
+	if diff := cmp.Diff(out, expect); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestInputLoaderInputOptionalNonexistentFile(t *testing.T) {
+	il := NewInputLoader(InputLoaderConfig{
+		StaticInputs: []string{"https://www.google.com/"},
+		SourceFiles: []string{
+			"testdata/inputloader1.txt",
+			"/nonexistent",
+			"testdata/inputloader2.txt",
+		},
+		InputPolicy: InputOptional,
+	})
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if !errors.Is(err, syscall.ENOENT) {
+		t.Fatalf("not the error we expected: %+v", err)
+	}
+	if out != nil {
+		t.Fatal("not the output we expected")
+	}
+}
+
+func TestInputLoaderInputStrictlyRequiredWithInput(t *testing.T) {
+	il := NewInputLoader(InputLoaderConfig{
+		StaticInputs: []string{"https://www.google.com/"},
+		SourceFiles: []string{
+			"testdata/inputloader1.txt",
+			"testdata/inputloader2.txt",
+		},
+		InputPolicy: InputStrictlyRequired,
+	})
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 5 {
+		t.Fatal("not the output length we expected")
+	}
+	expect := []model.URLInfo{
+		{URL: "https://www.google.com/"},
+		{URL: "https://www.x.org/"},
+		{URL: "https://www.slashdot.org/"},
+		{URL: "https://abc.xyz/"},
+		{URL: "https://run.ooni.io/"},
+	}
+	if diff := cmp.Diff(out, expect); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestInputLoaderInputStrictlyRequiredWithoutInput(t *testing.T) {
+	il := NewInputLoader(InputLoaderConfig{
+		InputPolicy: InputStrictlyRequired,
+	})
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if !errors.Is(err, ErrInputRequired) {
+		t.Fatalf("not the error we expected: %+v", err)
+	}
+	if out != nil {
+		t.Fatal("not the output we expected")
+	}
+}
+
+func TestInputLoaderInputStrictlyRequiredWithEmptyFile(t *testing.T) {
+	il := NewInputLoader(InputLoaderConfig{
+		InputPolicy: InputStrictlyRequired,
+		SourceFiles: []string{
+			"testdata/inputloader1.txt",
+			"testdata/inputloader3.txt", // we want it before inputloader2.txt
+			"testdata/inputloader2.txt",
+		},
+	})
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if !errors.Is(err, ErrDetectedEmptyFile) {
+		t.Fatalf("not the error we expected: %+v", err)
+	}
+	if out != nil {
+		t.Fatal("not the output we expected")
+	}
+}
+
+func TestInputLoaderInputOrQueryBackendWithInput(t *testing.T) {
+	il := NewInputLoader(InputLoaderConfig{
+		StaticInputs: []string{"https://www.google.com/"},
+		SourceFiles: []string{
+			"testdata/inputloader1.txt",
+			"testdata/inputloader2.txt",
+		},
+		InputPolicy: InputOrQueryBackend,
+	})
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 5 {
+		t.Fatal("not the output length we expected")
+	}
+	expect := []model.URLInfo{
+		{URL: "https://www.google.com/"},
+		{URL: "https://www.x.org/"},
+		{URL: "https://www.slashdot.org/"},
+		{URL: "https://abc.xyz/"},
+		{URL: "https://run.ooni.io/"},
+	}
+	if diff := cmp.Diff(out, expect); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestInputLoaderInputOrQueryBackendWithNoInputAndCancelledContext(t *testing.T) {
+	sess, err := NewSession(SessionConfig{
+		AssetsDir:       "testdata",
+		KVStore:         kvstore.NewMemoryKeyValueStore(),
+		Logger:          log.Log,
+		SoftwareName:    "miniooni",
+		SoftwareVersion: "0.1.0-dev",
+		TempDir:         "testdata",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sess.Close()
+	il := NewInputLoader(InputLoaderConfig{
+		InputPolicy: InputOrQueryBackend,
+		Session:     sess,
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // fail immediately
+	out, err := il.Load(ctx)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("not the error we expected: %+v", err)
+	}
+	if out != nil {
+		t.Fatal("not the output we expected")
+	}
+}
+
+func TestInputLoaderInputOrQueryBackendWithEmptyFile(t *testing.T) {
+	il := NewInputLoader(InputLoaderConfig{
+		InputPolicy: InputOrQueryBackend,
+		SourceFiles: []string{
+			"testdata/inputloader1.txt",
+			"testdata/inputloader3.txt", // we want it before inputloader2.txt
+			"testdata/inputloader2.txt",
+		},
+	})
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if !errors.Is(err, ErrDetectedEmptyFile) {
+		t.Fatalf("not the error we expected: %+v", err)
+	}
+	if out != nil {
+		t.Fatal("not the output we expected")
+	}
+}
 
 type InputLoaderBrokenFS struct{}
 
