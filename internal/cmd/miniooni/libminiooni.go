@@ -356,7 +356,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	builder, err := sess.NewExperimentBuilder(experimentName)
 	fatalOnError(err, "cannot create experiment builder")
 
-	inputLoader := engine.NewInputLoader(engine.InputLoaderConfig{
+	inputLoader := &engine.InputLoader{
 		CheckInConfig: &model.CheckInConfig{
 			RunType:  "manual",
 			OnWiFi:   true, // meaning: not on 4G
@@ -366,7 +366,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		StaticInputs: currentOptions.Inputs,
 		SourceFiles:  currentOptions.InputFilePaths,
 		Session:      sess,
-	})
+	}
 	inputs, err := inputLoader.Load(context.Background())
 	fatalOnError(err, "cannot load inputs")
 

@@ -30,10 +30,10 @@ func TestInputLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer sess.Close()
-	il := engine.NewInputLoader(engine.InputLoaderConfig{
+	il := &engine.InputLoader{
 		InputPolicy: engine.InputOrQueryBackend,
 		Session:     sess,
-	})
+	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
 	if err != nil {
