@@ -2,6 +2,7 @@ package fsx_test
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"sync/atomic"
 	"syscall"
@@ -26,8 +27,8 @@ func (FailingStatFile) Stat() (os.FileInfo, error) {
 	return nil, errStatFailed
 }
 
-func (fs FailingStatFS) Open(pathname string) (fsx.File, error) {
-	return FailingStatFile{CloseCount: fs.CloseCount}, nil
+func (f FailingStatFS) Open(pathname string) (fs.File, error) {
+	return FailingStatFile(f), nil
 }
 
 func (fs FailingStatFile) Close() error {
