@@ -58,10 +58,10 @@ func TestGood(t *testing.T) {
 		if err := json.Unmarshal([]byte(eventstr), &event); err != nil {
 			t.Fatal(err)
 		}
-		if event.Key != "task_terminated" {
-			t.Fatalf("unexpected event.Key: %s", event.Key)
+		if event.Key == "task_terminated" {
+			break
 		}
-		break
+		t.Fatalf("unexpected event.Key: %s", event.Key)
 	}
 }
 

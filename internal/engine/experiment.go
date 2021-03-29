@@ -1,4 +1,4 @@
-// Package engine contains the engine API
+// Package engine contains the engine API.
 package engine
 
 import (
@@ -188,10 +188,7 @@ func (e *Experiment) OpenReportContext(ctx context.Context) error {
 			Counter:      e.byteCounter,
 		},
 	}
-	if e.session.selectedProbeService == nil {
-		return errors.New("no probe services selected")
-	}
-	client, err := probeservices.NewClient(e.session, *e.session.selectedProbeService)
+	client, err := e.session.NewProbeServicesClient(ctx)
 	if err != nil {
 		e.session.logger.Debugf("%+v", err)
 		return err

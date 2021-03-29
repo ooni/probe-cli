@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
@@ -362,7 +361,7 @@ func TestCheckInNewProbeServicesFailure(t *testing.T) {
 	config.WebConnectivity.Add("NEWS")
 	config.WebConnectivity.Add("CULTR")
 	result, err := sess.CheckIn(ctx, &config)
-	if !errors.Is(err, engine.ErrAllProbeServicesFailed) {
+	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 	if result != nil {
@@ -440,10 +439,17 @@ func TestFetchURLListSuccess(t *testing.T) {
 	if result == nil || result.Results == nil {
 		t.Fatal("got nil result")
 	}
-	for _, entry := range result.Results {
+	for idx := int64(0); idx < result.Size(); idx++ {
+		entry := result.At(idx)
 		if entry.CategoryCode != "NEWS" && entry.CategoryCode != "CULTR" {
 			t.Fatalf("unexpected category code: %+v", entry)
 		}
+	}
+	if result.At(-1) != nil {
+		t.Fatal("expected nil here")
+	}
+	if result.At(result.Size()) != nil {
+		t.Fatal("expected nil here")
 	}
 }
 
