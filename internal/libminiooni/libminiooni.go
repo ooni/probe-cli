@@ -17,6 +17,8 @@ package libminiooni
 // internal/cmd/miniooni folder and reduce the number of packages
 // that are unnecessarily exposed inside ./internal/engine.
 
+// TODO(bassosimone): we need to deprecate or remove --limit.
+
 import (
 	"context"
 	"errors"
