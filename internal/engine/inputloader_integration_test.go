@@ -284,7 +284,6 @@ func TestInputLoaderInputOrQueryTestListsWithNoInput(t *testing.T) {
 	il := engine.NewInputLoader(engine.InputLoaderConfig{
 		InputPolicy: engine.InputOrQueryBackend,
 		Session:     sess,
-		URLLimit:    30,
 	})
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -292,6 +291,7 @@ func TestInputLoaderInputOrQueryTestListsWithNoInput(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(out) < 10 {
+		// check-in SHOULD return AT LEAST 20 URLs at a time.
 		t.Fatal("not the output length we expected")
 	}
 }

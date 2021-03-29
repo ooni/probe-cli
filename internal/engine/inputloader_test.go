@@ -43,36 +43,11 @@ func TestInputLoaderReadfileScannerFailure(t *testing.T) {
 	}
 }
 
-type InputLoaderBrokenSession struct {
-	OrchestraClient model.ExperimentOrchestraClient
-	Error           error
-}
+type InputLoaderBrokenSession struct{}
 
-func (InputLoaderBrokenSession) MaybeLookupLocationContext(ctx context.Context) error {
-	return nil
-}
-
-func (ilbs InputLoaderBrokenSession) NewOrchestraClient(ctx context.Context) (model.ExperimentOrchestraClient, error) {
-	if ilbs.OrchestraClient != nil {
-		return ilbs.OrchestraClient, nil
-	}
+func (InputLoaderBrokenSession) CheckIn(
+	ctx context.Context, config *model.CheckInConfig) (*model.CheckInInfo, error) {
 	return nil, io.EOF
-}
-
-func (InputLoaderBrokenSession) ProbeASNString() string {
-	return "AS137"
-}
-
-func (InputLoaderBrokenSession) ProbeCC() string {
-	return "IT"
-}
-
-func (InputLoaderBrokenSession) SoftwareName() string {
-	return "miniooni"
-}
-
-func (InputLoaderBrokenSession) SoftwareVersion() string {
-	return "0.1.0-dev"
 }
 
 func TestInputLoaderNewOrchestraClientFailure(t *testing.T) {
@@ -111,10 +86,8 @@ func (InputLoaderBrokenOrchestraClient) FetchURLList(ctx context.Context, config
 func TestInputLoaderFetchURLListFailure(t *testing.T) {
 	il := inputLoader{}
 	lrc := inputLoaderLoadRemoteConfig{
-		ctx: context.Background(),
-		session: InputLoaderBrokenSession{
-			OrchestraClient: InputLoaderBrokenOrchestraClient{},
-		},
+		ctx:     context.Background(),
+		session: InputLoaderBrokenSession{},
 	}
 	out, err := il.loadRemote(lrc)
 	if !errors.Is(err, io.EOF) {
