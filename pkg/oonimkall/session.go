@@ -479,17 +479,17 @@ func (sess *Session) FetchURLList(ctx *Context, config *URLListConfig) (*URLList
 	if config.CountryCode == "" {
 		config.CountryCode = "XX"
 		info, err := sess.sessp.LookupLocationContext(ctx.ctx)
+		// TODO(bassosimone): this piece of code feels wrong to me. We don't
+		// want to continue if we cannot discover the country.
 		if err == nil && info != nil {
 			config.CountryCode = info.CountryCode
 		}
 	}
-
 	cfg := model.URLListConfig{
 		Categories:  config.Categories,
 		CountryCode: config.CountryCode,
 		Limit:       config.Limit,
 	}
-
 	result, err := psc.FetchURLList(ctx.ctx, cfg)
 	if err != nil {
 		return nil, err
