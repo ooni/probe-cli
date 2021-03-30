@@ -97,7 +97,7 @@ func (tk *TestKeys) UpdateProviderAPITestKeys(v urlgetter.MultiOutput) {
 }
 
 // AddGatewayConnectTestKeys updates the TestKeys using the given MultiOutput result of gateway connectivity testing.
-// sets TransportStatus to "ok" if any successful TCP connection could be made
+// Sets TransportStatus to "ok" if any successful TCP connection could be made
 func (tk *TestKeys) AddGatewayConnectTestKeys(v urlgetter.MultiOutput, transportType string) {
 	tk.NetworkEvents = append(tk.NetworkEvents, v.TestKeys.NetworkEvents...)
 	tk.TCPConnect = append(tk.TCPConnect, v.TestKeys.TCPConnect...)
