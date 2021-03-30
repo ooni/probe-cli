@@ -5,7 +5,7 @@
     "upload_results": true
   },
   "nettests": {
-    "websites_url_limit": 0
+    "websites_max_runtime": 0
   },
   "advanced": {
     "send_crash_reports": true
