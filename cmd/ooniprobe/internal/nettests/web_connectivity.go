@@ -9,16 +9,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
-// TODO(bassosimone): we should remove the limit argument and
-// we should also remove it from the config.
-
 // TODO(bassosimone): we should propagate the kind of run
 // to here such that we get the right runType.
 
-// TODO(bassosimone): we are breaking the use case in which
-// someone choose the number of URLs explicitly via the config.
-
-func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, map[int64]int64, error) {
+func lookupURLs(ctl *Controller, categories []string) ([]string, map[int64]int64, error) {
 	inputloader := &engine.InputLoader{
 		CheckInConfig: &model.CheckInConfig{
 			WebConnectivity: model.CheckInConfigWebConnectivity{
@@ -53,13 +47,12 @@ func lookupURLs(ctl *Controller, limit int64, categories []string) ([]string, ma
 }
 
 // WebConnectivity test implementation
-type WebConnectivity struct {
-}
+type WebConnectivity struct{}
 
 // Run starts the test
 func (n WebConnectivity) Run(ctl *Controller) error {
 	log.Debugf("Enabled category codes are the following %v", ctl.Probe.Config().Nettests.WebsitesEnabledCategoryCodes)
-	urls, urlIDMap, err := lookupURLs(ctl, ctl.Probe.Config().Nettests.WebsitesURLLimit, ctl.Probe.Config().Nettests.WebsitesEnabledCategoryCodes)
+	urls, urlIDMap, err := lookupURLs(ctl, ctl.Probe.Config().Nettests.WebsitesEnabledCategoryCodes)
 	if err != nil {
 		return err
 	}

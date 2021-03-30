@@ -111,10 +111,16 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 		}
 	}
 
-	c.ntStartTime = time.Now()
+	maxRuntime := time.Duration(c.Probe.Config().Nettests.WebsitesMaxRuntime) * time.Second
+	start := time.Now()
+	c.ntStartTime = start
 	for idx, input := range inputs {
-		if c.Probe.IsTerminated() == true {
-			log.Debug("isTerminated == true, breaking the input loop")
+		if c.Probe.IsTerminated() {
+			log.Info("user requested us to terminate using Ctrl-C")
+			break
+		}
+		if maxRuntime > 0 && time.Since(start) > maxRuntime {
+			log.Info("exceeded maximum runtime")
 			break
 		}
 		c.curInputIdx = idx // allow for precise progress

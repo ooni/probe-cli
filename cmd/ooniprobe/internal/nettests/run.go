@@ -1,6 +1,8 @@
 package nettests
 
 import (
+	"time"
+
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
@@ -15,9 +17,36 @@ type RunGroupConfig struct {
 	Inputs     []string
 }
 
+const websitesURLLimitRemoved = `WARNING: CONFIGURATION CHANGE REQUIRED:
+
+* Since ooniprobe 3.9.0, websites_url_limit has been replaced
+  by websites_max_runtime in the configuration
+
+* To silence this warning either set websites_url_limit to zero or
+  replace it with websites_max_runtime
+
+* For the rest of 2021, we will automatically convert websites_url_limit
+  to websites_max_runtime (if the latter is not already set)
+
+* We will consider that each URL in websites_url_limit takes five
+  seconds to run and thus calculate websites_max_runtime
+
+* Since 2022, we will start silently ignoring websites_url_limit
+`
+
 // RunGroup runs a group of nettests according to the specified config.
 func RunGroup(config RunGroupConfig) error {
-	if config.Probe.IsTerminated() == true {
+	if config.Probe.Config().Nettests.WebsitesURLLimit > 0 {
+		log.Warn(websitesURLLimitRemoved)
+		if config.Probe.Config().Nettests.WebsitesMaxRuntime <= 0 {
+			limit := config.Probe.Config().Nettests.WebsitesURLLimit
+			maxRuntime := 5 * limit
+			config.Probe.Config().Nettests.WebsitesMaxRuntime = maxRuntime
+		}
+		time.Sleep(30 * time.Second)
+	}
+
+	if config.Probe.IsTerminated() {
 		log.Debugf("context is terminated, stopping runNettestGroup early")
 		return nil
 	}
