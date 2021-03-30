@@ -9,12 +9,15 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
-// TODO(bassosimone): we should propagate the kind of run
-// to here such that we get the right runType.
-
 func lookupURLs(ctl *Controller, categories []string) ([]string, map[int64]int64, error) {
 	inputloader := &engine.InputLoader{
 		CheckInConfig: &model.CheckInConfig{
+			// Setting Charging and OnWiFi to true causes the CheckIn
+			// API to return to us as much URL as possible with the
+			// given RunType hint.
+			Charging: true,
+			OnWiFi:   true,
+			RunType:  ctl.RunType,
 			WebConnectivity: model.CheckInConfigWebConnectivity{
 				CategoryCodes: categories,
 			},
@@ -24,6 +27,7 @@ func lookupURLs(ctl *Controller, categories []string) ([]string, map[int64]int64
 		SourceFiles:  ctl.InputFiles,
 		StaticInputs: ctl.Inputs,
 	}
+	log.Infof("Calling CheckIn API with %s runType", ctl.RunType)
 	testlist, err := inputloader.Load(context.Background())
 	var urls []string
 	urlIDMap := make(map[int64]int64)

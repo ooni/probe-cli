@@ -1,6 +1,7 @@
 package nettests
 
 import (
+	"sync"
 	"time"
 
 	"github.com/apex/log"
@@ -12,9 +13,10 @@ import (
 // RunGroupConfig contains the settings for running a nettest group.
 type RunGroupConfig struct {
 	GroupName  string
-	Probe      *ooni.Probe
 	InputFiles []string
 	Inputs     []string
+	Probe      *ooni.Probe
+	RunType    string // hint for check-in API
 }
 
 const websitesURLLimitRemoved = `WARNING: CONFIGURATION CHANGE REQUIRED:
@@ -34,16 +36,20 @@ const websitesURLLimitRemoved = `WARNING: CONFIGURATION CHANGE REQUIRED:
 * Since 2022, we will start silently ignoring websites_url_limit
 `
 
+var deprecationWarningOnce sync.Once
+
 // RunGroup runs a group of nettests according to the specified config.
 func RunGroup(config RunGroupConfig) error {
 	if config.Probe.Config().Nettests.WebsitesURLLimit > 0 {
-		log.Warn(websitesURLLimitRemoved)
 		if config.Probe.Config().Nettests.WebsitesMaxRuntime <= 0 {
 			limit := config.Probe.Config().Nettests.WebsitesURLLimit
 			maxRuntime := 5 * limit
 			config.Probe.Config().Nettests.WebsitesMaxRuntime = maxRuntime
 		}
-		time.Sleep(30 * time.Second)
+		deprecationWarningOnce.Do(func() {
+			log.Warn(websitesURLLimitRemoved)
+			time.Sleep(30 * time.Second)
+		})
 	}
 
 	if config.Probe.IsTerminated() {
@@ -90,7 +96,7 @@ func RunGroup(config RunGroupConfig) error {
 	config.Probe.ListenForSignals()
 	config.Probe.MaybeListenForStdinClosed()
 	for i, nt := range group.Nettests {
-		if config.Probe.IsTerminated() == true {
+		if config.Probe.IsTerminated() {
 			log.Debugf("context is terminated, stopping group.Nettests early")
 			break
 		}
@@ -98,6 +104,7 @@ func RunGroup(config RunGroupConfig) error {
 		ctl := NewController(nt, config.Probe, result, sess)
 		ctl.InputFiles = config.InputFiles
 		ctl.Inputs = config.Inputs
+		ctl.RunType = config.RunType
 		ctl.SetNettestIndex(i, len(group.Nettests))
 		if err = nt.Run(ctl); err != nil {
 			log.WithError(err).Errorf("Failed to run %s", group.Label)

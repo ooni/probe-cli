@@ -26,19 +26,23 @@ func init() {
 			log.WithError(err).Error("failed to perform onboarding")
 			return err
 		}
-		if *noCollector == true {
+		if *noCollector {
 			probe.Config().Sharing.UploadResults = false
 		}
 		return nil
 	})
 
-	functionalRun := func(pred func(name string, gr nettests.Group) bool) error {
+	functionalRun := func(runType string, pred func(name string, gr nettests.Group) bool) error {
 		for name, group := range nettests.All {
-			if pred(name, group) != true {
+			if !pred(name, group) {
 				continue
 			}
 			log.Infof("Running %s tests", color.BlueString(name))
-			conf := nettests.RunGroupConfig{GroupName: name, Probe: probe}
+			conf := nettests.RunGroupConfig{
+				GroupName: name,
+				Probe:     probe,
+				RunType:   runType,
+			}
 			if err := nettests.RunGroup(conf); err != nil {
 				log.WithError(err).Errorf("failed to run %s", name)
 			}
@@ -48,7 +52,7 @@ func init() {
 
 	genRunWithGroupName := func(targetName string) func(*kingpin.ParseContext) error {
 		return func(*kingpin.ParseContext) error {
-			return functionalRun(func(groupName string, gr nettests.Group) bool {
+			return functionalRun("manual", func(groupName string, gr nettests.Group) bool {
 				return groupName == targetName
 			})
 		}
@@ -75,14 +79,14 @@ func init() {
 
 	unattendedCmd := cmd.Command("unattended", "")
 	unattendedCmd.Action(func(_ *kingpin.ParseContext) error {
-		return functionalRun(func(name string, gr nettests.Group) bool {
-			return gr.UnattendedOK == true
+		return functionalRun("timed", func(name string, gr nettests.Group) bool {
+			return gr.UnattendedOK
 		})
 	})
 
 	allCmd := cmd.Command("all", "").Default()
 	allCmd.Action(func(_ *kingpin.ParseContext) error {
-		return functionalRun(func(name string, gr nettests.Group) bool {
+		return functionalRun("manual", func(name string, gr nettests.Group) bool {
 			return true
 		})
 	})
