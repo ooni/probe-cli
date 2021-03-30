@@ -24,12 +24,12 @@ const (
 	tcpConnect    = "tcpconnect://"
 )
 
-// EipService main json object of eip-service.json.
+// EipService is the main JSON object of eip-service.json.
 type EipService struct {
 	Gateways []GatewayV3
 }
 
-// GatewayV3 json obj Version 3.
+// GatewayV3 describes a gateway.
 type GatewayV3 struct {
 	Capabilities struct {
 		Transport []TransportV3
@@ -38,7 +38,7 @@ type GatewayV3 struct {
 	IPAddress string `json:"ip_address"`
 }
 
-// TransportV3 json object Version 3.
+// TransportV3 describes a transport.
 type TransportV3 struct {
 	Type      string
 	Protocols []string
@@ -68,6 +68,9 @@ type TestKeys struct {
 	TransportStatus map[string]string   `json:"transport_status"`
 }
 
+// TODO(bassosimone,cyberta): make sure the spec mentions
+// the transport_status result key.
+
 // NewTestKeys creates new riseupvpn TestKeys.
 func NewTestKeys() *TestKeys {
 	return &TestKeys{
@@ -96,8 +99,9 @@ func (tk *TestKeys) UpdateProviderAPITestKeys(v urlgetter.MultiOutput) {
 	}
 }
 
-// AddGatewayConnectTestKeys updates the TestKeys using the given MultiOutput result of gateway connectivity testing.
-// Sets TransportStatus to "ok" if any successful TCP connection could be made
+// AddGatewayConnectTestKeys updates the TestKeys using the given MultiOutput
+// result of gateway connectivity testing. Sets TransportStatus to "ok" if
+// any successful TCP connection could be made
 func (tk *TestKeys) AddGatewayConnectTestKeys(v urlgetter.MultiOutput, transportType string) {
 	tk.NetworkEvents = append(tk.NetworkEvents, v.TestKeys.NetworkEvents...)
 	tk.TCPConnect = append(tk.TCPConnect, v.TestKeys.TCPConnect...)
@@ -130,7 +134,8 @@ func (tk *TestKeys) updateTransportStatus(openvpnGatewayCount, obfs4GatewayCount
 	}
 }
 
-func newGatewayConnection(tcpConnect archival.TCPConnectEntry, transportType string) *GatewayConnection {
+func newGatewayConnection(
+	tcpConnect archival.TCPConnectEntry, transportType string) *GatewayConnection {
 	return &GatewayConnection{
 		IP:            tcpConnect.IP,
 		Port:          tcpConnect.Port,
@@ -183,6 +188,7 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 
 	certPool := netx.NewDefaultCertPool()
 
+	// used multiple times below
 	multi := urlgetter.Multi{
 		Begin:   measurement.MeasurementStartTimeSaved,
 		Getter:  m.Getter,
@@ -203,7 +209,7 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 		testkeys.AddCACertFetchTestKeys(tk)
 		if tk.Failure != nil {
 			// TODO(bassosimone,cyberta): should we update the testkeys
-			// in this case and the APIFailure?
+			// in this case (e.g., APIFailure?)
 			return nil
 		}
 		if ok := certPool.AppendCertsFromPEM([]byte(tk.HTTPResponseBody)); !ok {
@@ -215,7 +221,7 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 		}
 	}
 
-	// Now test the endpoints using the above-fetched CA
+	// Now test the service endpoints using the above-fetched CA
 	inputs = []urlgetter.MultiInput{
 		// Here we need to provide the method explicitly. See
 		// https://github.com/ooni/probe-engine/issues/827.
@@ -247,16 +253,14 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	overallCount := 1 + len(inputs) + len(openvpnEndpoints) + len(obfs4Endpoints)
 
 	// measure openvpn in parallel
-	multi = urlgetter.Multi{
-		Begin: measurement.MeasurementStartTimeSaved, Getter: m.Getter, Session: sess}
 	for entry := range multi.CollectOverall(
 		ctx, openvpnEndpoints, 1+len(inputs), overallCount, "riseupvpn", callbacks) {
 		testkeys.AddGatewayConnectTestKeys(entry, "openvpn")
 	}
 
 	// measure obfs4 in parallel
-	multi = urlgetter.Multi{
-		Begin: measurement.MeasurementStartTimeSaved, Getter: m.Getter, Session: sess}
+	// TODO(bassosimone): when urlgetter is able to do obfs4 handshakes, here
+	// can possibly also test for the obfs4 handshake.
 	for entry := range multi.CollectOverall(
 		ctx, obfs4Endpoints, 1+len(inputs)+len(openvpnEndpoints), overallCount, "riseupvpn", callbacks) {
 		testkeys.AddGatewayConnectTestKeys(entry, "obfs4")
@@ -295,6 +299,8 @@ func generateMultiInputs(gateways []GatewayV3, transportType string) []urlgetter
 func parseGateways(testKeys *TestKeys) []GatewayV3 {
 	for _, requestEntry := range testKeys.Requests {
 		if requestEntry.Request.URL == eipServiceURL && requestEntry.Failure == nil {
+			// TODO(bassosimone,cyberta): is it reasonable that we discard
+			// the error when the JSON we fetched cannot be parsed?
 			eipService, err := DecodeEIP3(requestEntry.Response.Body.Value)
 			if err == nil {
 				return eipService.Gateways
@@ -342,7 +348,10 @@ func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, e
 	sk.ValidCACert = tk.CACertStatus
 	sk.FailingGateways = len(tk.FailingGateways)
 	sk.TransportStatus = tk.TransportStatus
-	sk.IsAnomaly = (sk.APIBlocked == true || tk.CACertStatus == false ||
-		tk.TransportStatus["openvpn"] == "blocked" || tk.TransportStatus["obfs4"] == "blocked")
+	// Note: the order in the following OR chains matter: TransportStatus
+	// is nil if APIBlocked or !CACertStatus
+	sk.IsAnomaly = (sk.APIBlocked || !tk.CACertStatus ||
+		tk.TransportStatus["openvpn"] == "blocked" ||
+		tk.TransportStatus["obfs4"] == "blocked")
 	return sk, nil
 }
