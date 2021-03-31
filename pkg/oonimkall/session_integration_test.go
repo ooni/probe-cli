@@ -78,7 +78,7 @@ func TestMaybeUpdateResourcesWithCancelledContext(t *testing.T) {
 	ctx := sess.NewContext()
 	ctx.Cancel() // cause immediate failure
 	err = sess.MaybeUpdateResources(ctx)
-	// Explaination: we embed resources. We should change the API
+	// Explanation: we embed resources. We should change the API
 	// and remove the context. Until we do that, let us just assert
 	// that we have embedding and the context does not matter.
 	if err != nil {
