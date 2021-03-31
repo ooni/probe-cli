@@ -4,8 +4,6 @@ package assetsx
 import (
 	"bytes"
 	"compress/gzip"
-	"io"
-	"io/fs"
 	"io/ioutil"
 
 	"github.com/ooni/probe-assets/assets"
@@ -13,13 +11,7 @@ import (
 )
 
 // manager is the assets manager.
-type manager struct {
-	// testNewGzipReader allows to override creating a gzip reader.
-	testNewGzipReader func(r io.Reader) (io.ReadCloser, error)
-
-	// testOpen allows to override opening a file.
-	testOpen func(name string) (fs.File, error)
-}
+type manager struct{}
 
 // Must calls panic if we cannot read an asset.
 func Must(data []byte, err error) []byte {
@@ -39,18 +31,10 @@ func CountryDatabaseData() ([]byte, error) {
 
 // read opens and reads the specified asset
 func (m *manager) read(gzdata []byte) ([]byte, error) {
-	gzfilep, err := m.newGzipReader(bytes.NewReader(gzdata))
+	gzfilep, err := gzip.NewReader(bytes.NewReader(gzdata))
 	if err != nil {
 		return nil, err
 	}
 	defer gzfilep.Close()
 	return ioutil.ReadAll(gzfilep)
-}
-
-// newGzipReader creates a new gzip.Reader.
-func (m *manager) newGzipReader(r io.Reader) (io.ReadCloser, error) {
-	if m.testNewGzipReader != nil {
-		return m.testNewGzipReader(r)
-	}
-	return gzip.NewReader(r)
 }
