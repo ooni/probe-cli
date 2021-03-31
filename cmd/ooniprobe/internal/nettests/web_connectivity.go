@@ -13,7 +13,7 @@ import (
 // integration issue where the backend returns to us URLs that don't
 // belong to the category codes we requested.
 func preventMistakes(input []model.URLInfo, categories []string) (output []model.URLInfo) {
-	if categories == nil {
+	if len(categories) <= 0 {
 		return input
 	}
 	for _, entry := range input {

@@ -36,7 +36,7 @@ func TestPreventMistakesWithCategories(t *testing.T) {
 	}
 }
 
-func TestPreventMistakesWithoutCategories(t *testing.T) {
+func TestPreventMistakesWithoutCategoriesAndNil(t *testing.T) {
 	input := []model.URLInfo{{
 		CategoryCode: "NEWS",
 		URL:          "https://repubblica.it/",
@@ -51,6 +51,26 @@ func TestPreventMistakesWithoutCategories(t *testing.T) {
 		CountryCode:  "XX",
 	}}
 	output := preventMistakes(input, nil)
+	if diff := cmp.Diff(input, output); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestPreventMistakesWithoutCategoriesAndEmpty(t *testing.T) {
+	input := []model.URLInfo{{
+		CategoryCode: "NEWS",
+		URL:          "https://repubblica.it/",
+		CountryCode:  "IT",
+	}, {
+		CategoryCode: "HACK",
+		URL:          "https://2600.com",
+		CountryCode:  "XX",
+	}, {
+		CategoryCode: "FILE",
+		URL:          "https://addons.mozilla.org/",
+		CountryCode:  "XX",
+	}}
+	output := preventMistakes(input, []string{})
 	if diff := cmp.Diff(input, output); diff != "" {
 		t.Fatal(diff)
 	}
