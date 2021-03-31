@@ -212,8 +212,18 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 
 // OnProgress should be called when a new progress event is available.
 func (c *Controller) OnProgress(perc float64, msg string) {
-	// TODO(bassosimone): should we adjust this algorithm when we have a
-	// maximum runtime that we would like to honor?
+	// when we have maxRuntime, honor it
+	maxRuntime := time.Duration(c.Probe.Config().Nettests.WebsitesMaxRuntime) * time.Second
+	if c.RunType == "manual" && maxRuntime > 0 {
+		elapsed := time.Since(c.ntStartTime)
+		perc = float64(elapsed) / float64(maxRuntime)
+		eta := maxRuntime.Seconds() - elapsed.Seconds()
+		log.Debugf("OnProgress: %f - %s", perc, msg)
+		key := fmt.Sprintf("%T", c.nt)
+		output.Progress(key, perc, eta, msg)
+		return
+	}
+	// otherwise estimate the ETA
 	log.Debugf("OnProgress: %f - %s", perc, msg)
 	var eta float64
 	eta = -1.0
