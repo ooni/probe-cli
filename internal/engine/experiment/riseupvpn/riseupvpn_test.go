@@ -555,6 +555,9 @@ func TestMissingTransport(t *testing.T) {
 	transports = transports[:len(transports)-1]
 	eipService.Gateways[1].Capabilities.Transport = transports
 	eipservicejson, err := json.Marshal(eipservice)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	requestResponseMap := map[string]string{
 		eipserviceurl: string(eipservicejson),

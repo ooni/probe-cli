@@ -101,6 +101,9 @@ func TestDialerSetCABundleWAI(t *testing.T) {
 func TestDialerForceSpecificSNI(t *testing.T) {
 	dialer := netx.NewDialer()
 	err := dialer.ForceSpecificSNI("www.facebook.com")
+	if err != nil {
+		t.Fatal(err)
+	}
 	conn, err := dialer.DialTLS("tcp", "www.google.com:443")
 	if err == nil {
 		t.Fatal("expected an error here")
