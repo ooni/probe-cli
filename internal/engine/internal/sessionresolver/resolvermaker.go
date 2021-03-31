@@ -21,7 +21,7 @@ const systemResolverURL = "system:///"
 
 // allmakers contains all the makers in a list. We use the http3
 // prefix to indicate we wanna use http3. The code will translate
-// this to https and set the proper next options.
+// this to https and set the proper netx options.
 var allmakers = []*resolvermaker{{
 	url: "https://cloudflare-dns.com/dns-query",
 }, {
@@ -97,7 +97,7 @@ func (r *Resolver) newresolver(URL string) (childResolver, error) {
 func (r *Resolver) getresolver(URL string) (childResolver, error) {
 	defer r.mu.Unlock()
 	r.mu.Lock()
-	if re, found := r.res[URL]; found == true {
+	if re, found := r.res[URL]; found {
 		return re, nil // already created
 	}
 	re, err := r.newresolver(URL)

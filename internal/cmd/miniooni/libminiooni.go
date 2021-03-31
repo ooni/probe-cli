@@ -1,16 +1,4 @@
-// Package libminiooni implements the cmd/miniooni CLI. Miniooni is our
-// experimental client used for research and QA testing.
-//
-// This CLI has CLI options that do not conflict with Measurement Kit
-// v0.10.x CLI options. There are some options conflict with the legacy
-// OONI Probe CLI options. Perfect backwards compatibility is not a
-// design goal for miniooni. Rather, we aim to have as little conflict
-// as possible such that we can run side by side QA checks.
-//
-// We extracted this package from cmd/miniooni to allow us to further
-// integrate the miniooni CLI into other binaries (see for example the
-// code at github.com/bassosimone/aladdin).
-package libminiooni
+package main
 
 import (
 	"context"
@@ -44,6 +32,7 @@ type Options struct {
 	Inputs           []string
 	InputFilePaths   []string
 	Limit            int64
+	MaxRuntime       int64
 	NoJSON           bool
 	NoCollector      bool
 	ProbeServicesURL string
@@ -94,6 +83,10 @@ func init() {
 		"Limit the number of URLs tested by Web Connectivity", "N",
 	)
 	getopt.FlagLong(
+		&globalOptions.MaxRuntime, "max-runtime", 0,
+		"Maximum runtime in seconds when looping over a list of inputs (zero means infinite)", "N",
+	)
+	getopt.FlagLong(
 		&globalOptions.NoJSON, "no-json", 'N', "Disable writing to disk",
 	)
 	getopt.FlagLong(
@@ -138,10 +131,6 @@ func init() {
 	getopt.FlagLong(
 		&globalOptions.Yes, "yes", 0, "I accept the risk of running OONI",
 	)
-}
-
-func fatalWithString(msg string) {
-	panic(msg)
 }
 
 func fatalIfFalse(cond bool, msg string) {
@@ -274,12 +263,23 @@ func maybeWriteConsentFile(yes bool, filepath string) (err error) {
 	return
 }
 
+// limitRemoved is the text printed when the user uses --limit
+const limitRemoved = `USAGE CHANGE: The --limit option has been removed in favor of
+the --max-runtime option. Please, update your script to use --max-runtime
+instead of --limit. The argument to --max-runtime is the maximum number
+of seconds after which to stop running Web Connectivity.
+
+This error message will be removed after 2021-11-01.
+`
+
 // MainWithConfiguration is the miniooni main with a specific configuration
 // represented by the experiment name and the current options.
 //
 // This function will panic in case of a fatal error. It is up to you that
 // integrate this function to either handle the panic of ignore it.
 func MainWithConfiguration(experimentName string, currentOptions Options) {
+	fatalIfFalse(currentOptions.Limit == 0, limitRemoved)
+
 	ctx := context.Background()
 
 	extraOptions := mustMakeMap(currentOptions.ExtraOptions)
@@ -370,13 +370,17 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	builder, err := sess.NewExperimentBuilder(experimentName)
 	fatalOnError(err, "cannot create experiment builder")
 
-	inputLoader := engine.NewInputLoader(engine.InputLoaderConfig{
+	inputLoader := &engine.InputLoader{
+		CheckInConfig: &model.CheckInConfig{
+			RunType:  "manual",
+			OnWiFi:   true, // meaning: not on 4G
+			Charging: true,
+		},
+		InputPolicy:  builder.InputPolicy(),
 		StaticInputs: currentOptions.Inputs,
 		SourceFiles:  currentOptions.InputFilePaths,
-		InputPolicy:  builder.InputPolicy(),
 		Session:      sess,
-		URLLimit:     currentOptions.Limit,
-	})
+	}
 	inputs, err := inputLoader.Load(context.Background())
 	fatalOnError(err, "cannot load inputs")
 
@@ -399,29 +403,30 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	}()
 
 	submitter, err := engine.NewSubmitter(ctx, engine.SubmitterConfig{
-		Enabled: currentOptions.NoCollector == false,
+		Enabled: !currentOptions.NoCollector,
 		Session: sess,
 		Logger:  log.Log,
 	})
 	fatalOnError(err, "cannot create submitter")
 
 	saver, err := engine.NewSaver(engine.SaverConfig{
-		Enabled:    currentOptions.NoJSON == false,
+		Enabled:    !currentOptions.NoJSON,
 		Experiment: experiment,
 		FilePath:   currentOptions.ReportFile,
 		Logger:     log.Log,
 	})
 	fatalOnError(err, "cannot create saver")
 
-	inputProcessor := engine.InputProcessor{
+	inputProcessor := &engine.InputProcessor{
 		Annotations: annotations,
 		Experiment: &experimentWrapper{
 			child: engine.NewInputProcessorExperimentWrapper(experiment),
 			total: len(inputs),
 		},
-		Inputs:  inputs,
-		Options: currentOptions.ExtraOptions,
-		Saver:   engine.NewInputProcessorSaverWrapper(saver),
+		Inputs:     inputs,
+		MaxRuntime: time.Duration(currentOptions.MaxRuntime) * time.Second,
+		Options:    currentOptions.ExtraOptions,
+		Saver:      engine.NewInputProcessorSaverWrapper(saver),
 		Submitter: submitterWrapper{
 			child: engine.NewInputProcessorSubmitterWrapper(submitter),
 		},

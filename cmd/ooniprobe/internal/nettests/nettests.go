@@ -53,6 +53,10 @@ type Controller struct {
 	// using the command line using the --input flag.
 	Inputs []string
 
+	// RunType contains the run_type hint for the CheckIn API. If
+	// not set, the underlying code defaults to "timed".
+	RunType string
+
 	// numInputs is the total number of inputs
 	numInputs int
 
@@ -111,10 +115,20 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 		}
 	}
 
-	c.ntStartTime = time.Now()
+	maxRuntime := time.Duration(c.Probe.Config().Nettests.WebsitesMaxRuntime) * time.Second
+	if c.RunType == "timed" && maxRuntime > 0 {
+		log.Debug("disabling maxRuntime when running in the background")
+		maxRuntime = 0
+	}
+	start := time.Now()
+	c.ntStartTime = start
 	for idx, input := range inputs {
-		if c.Probe.IsTerminated() == true {
-			log.Debug("isTerminated == true, breaking the input loop")
+		if c.Probe.IsTerminated() {
+			log.Info("user requested us to terminate using Ctrl-C")
+			break
+		}
+		if maxRuntime > 0 && time.Since(start) > maxRuntime {
+			log.Info("exceeded maximum runtime")
 			break
 		}
 		c.curInputIdx = idx // allow for precise progress
@@ -166,7 +180,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 			}
 		}
 		// We only save the measurement to disk if we failed to upload the measurement
-		if saveToDisk == true {
+		if saveToDisk {
 			if err := exp.SaveMeasurement(measurement, msmt.MeasurementFilePath.String); err != nil {
 				return errors.Wrap(err, "failed to save measurement on disk")
 			}
@@ -198,6 +212,18 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 
 // OnProgress should be called when a new progress event is available.
 func (c *Controller) OnProgress(perc float64, msg string) {
+	// when we have maxRuntime, honor it
+	maxRuntime := time.Duration(c.Probe.Config().Nettests.WebsitesMaxRuntime) * time.Second
+	if c.RunType == "manual" && maxRuntime > 0 {
+		elapsed := time.Since(c.ntStartTime)
+		perc = float64(elapsed) / float64(maxRuntime)
+		eta := maxRuntime.Seconds() - elapsed.Seconds()
+		log.Debugf("OnProgress: %f - %s", perc, msg)
+		key := fmt.Sprintf("%T", c.nt)
+		output.Progress(key, perc, eta, msg)
+		return
+	}
+	// otherwise estimate the ETA
 	log.Debugf("OnProgress: %f - %s", perc, msg)
 	var eta float64
 	eta = -1.0
@@ -207,7 +233,7 @@ func (c *Controller) OnProgress(perc float64, msg string) {
 		step := 1.0 / float64(c.numInputs)
 		perc = floor + perc*step
 		if c.curInputIdx > 0 {
-			eta = (time.Now().Sub(c.ntStartTime).Seconds() / float64(c.curInputIdx)) * float64(c.numInputs-c.curInputIdx)
+			eta = (time.Since(c.ntStartTime).Seconds() / float64(c.curInputIdx)) * float64(c.numInputs-c.curInputIdx)
 		}
 	}
 	if c.ntCount > 0 {

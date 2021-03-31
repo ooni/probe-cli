@@ -463,17 +463,20 @@ func (qtype dnsQueryType) makequeryentry(begin time.Time, ev trace.Event) DNSQue
 	}
 }
 
-// NetworkEvent is a network event.
+// NetworkEvent is a network event. It contains all the possible fields
+// and most fields are optional. They are only added when it makes sense
+// for them to be there _and_ we have data to show.
 type NetworkEvent struct {
-	Address       string  `json:"address,omitempty"`
-	ConnID        int64   `json:"conn_id,omitempty"`
-	DialID        int64   `json:"dial_id,omitempty"`
-	Failure       *string `json:"failure"`
-	NumBytes      int64   `json:"num_bytes,omitempty"`
-	Operation     string  `json:"operation"`
-	Proto         string  `json:"proto,omitempty"`
-	T             float64 `json:"t"`
-	TransactionID int64   `json:"transaction_id,omitempty"`
+	Address       string   `json:"address,omitempty"`
+	ConnID        int64    `json:"conn_id,omitempty"`
+	DialID        int64    `json:"dial_id,omitempty"`
+	Failure       *string  `json:"failure"`
+	NumBytes      int64    `json:"num_bytes,omitempty"`
+	Operation     string   `json:"operation"`
+	Proto         string   `json:"proto,omitempty"`
+	T             float64  `json:"t"`
+	Tags          []string `json:"tags,omitempty"`
+	TransactionID int64    `json:"transaction_id,omitempty"`
 }
 
 // NewNetworkEventsList returns a list of DNS queries.
@@ -547,6 +550,7 @@ type TLSHandshake struct {
 	PeerCertificates   []MaybeBinaryValue `json:"peer_certificates"`
 	ServerName         string             `json:"server_name"`
 	T                  float64            `json:"t"`
+	Tags               []string           `json:"tags"`
 	TLSVersion         string             `json:"tls_version"`
 	TransactionID      int64              `json:"transaction_id,omitempty"`
 }

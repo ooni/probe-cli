@@ -2,6 +2,8 @@ package engine
 
 import (
 	"context"
+	"sync/atomic"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
@@ -50,6 +52,12 @@ type InputProcessor struct {
 	// Inputs is the list of inputs to measure.
 	Inputs []model.URLInfo
 
+	// MaxRuntime is the optional maximum runtime
+	// when looping over a list of inputs (e.g. when
+	// running Web Connectivity). Zero means that
+	// there will be no MaxRuntime limit.
+	MaxRuntime time.Duration
+
 	// Options contains command line options for this experiment.
 	Options []string
 
@@ -60,6 +68,11 @@ type InputProcessor struct {
 	// Submitter is the code that will submit measurements
 	// to the OONI collector.
 	Submitter InputProcessorSubmitterWrapper
+
+	// terminatedByMaxRuntime is an internal atomic variabile
+	// incremented when we're terminated by MaxRuntime. We
+	// only use this variable when testing.
+	terminatedByMaxRuntime int32
 }
 
 // InputProcessorSaverWrapper is InputProcessor's
@@ -115,8 +128,13 @@ func (ipsw inputProcessorSubmitterWrapper) Submit(
 // is always causing us to break out of the loop. The user
 // though is free to choose different policies by configuring
 // the Experiment, Submitter, and Saver fields properly.
-func (ip InputProcessor) Run(ctx context.Context) error {
+func (ip *InputProcessor) Run(ctx context.Context) error {
+	start := time.Now()
 	for idx, url := range ip.Inputs {
+		if ip.MaxRuntime > 0 && time.Since(start) > ip.MaxRuntime {
+			atomic.AddInt32(&ip.terminatedByMaxRuntime, 1)
+			return nil
+		}
 		input := url.URL
 		meas, err := ip.Experiment.MeasureWithContext(ctx, idx, input)
 		if err != nil {
