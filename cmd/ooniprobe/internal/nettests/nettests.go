@@ -116,11 +116,13 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 	}
 
 	maxRuntime := time.Duration(c.Probe.Config().Nettests.WebsitesMaxRuntime) * time.Second
+	if c.RunType == "timed" && maxRuntime > 0 {
+		log.Debug("disabling maxRuntime when running in the background")
+		maxRuntime = 0
+	}
 	start := time.Now()
 	c.ntStartTime = start
 	for idx, input := range inputs {
-		// TODO(bassosimone): should we allow for interruption when running
-		// in unattended mode? Likewise, should we honor MaxRuntime?
 		if c.Probe.IsTerminated() {
 			log.Info("user requested us to terminate using Ctrl-C")
 			break
