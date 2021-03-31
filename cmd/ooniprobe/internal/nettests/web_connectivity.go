@@ -13,6 +13,9 @@ import (
 // integration issue where the backend returns to us URLs that don't
 // belong to the category codes we requested.
 func preventMistakes(input []model.URLInfo, categories []string) (output []model.URLInfo) {
+	if categories == nil {
+		return input
+	}
 	for _, entry := range input {
 		var found bool
 		for _, cat := range categories {
@@ -21,8 +24,9 @@ func preventMistakes(input []model.URLInfo, categories []string) (output []model
 				break
 			}
 		}
-		if len(categories) > 0 && !found {
+		if !found {
 			log.Warnf("URL %+v not in %+v; skipping", entry, categories)
+			continue
 		}
 		output = append(output, entry)
 	}
