@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
@@ -21,14 +20,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/resources"
-	"github.com/ooni/probe-cli/v3/internal/engine/resourcesmanager"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 // SessionConfig contains the Session config
 type SessionConfig struct {
-	AssetsDir              string
 	AvailableProbeServices []model.Service
 	KVStore                KVStore
 	Logger                 model.Logger
@@ -42,7 +38,6 @@ type SessionConfig struct {
 
 // Session is a measurement session.
 type Session struct {
-	assetsDir                string
 	availableProbeServices   []model.Service
 	availableTestHelpers     map[string][]model.Service
 	byteCounter              *bytecounter.Counter
@@ -93,9 +88,6 @@ type sessionProbeServicesClientForCheckIn interface {
 
 // NewSession creates a new session or returns an error
 func NewSession(config SessionConfig) (*Session, error) {
-	if config.AssetsDir == "" {
-		return nil, errors.New("AssetsDir is empty")
-	}
 	if config.Logger == nil {
 		return nil, errors.New("Logger is empty")
 	}
@@ -117,7 +109,6 @@ func NewSession(config SessionConfig) (*Session, error) {
 		return nil, err
 	}
 	sess := &Session{
-		assetsDir:               config.AssetsDir,
 		availableProbeServices:  config.AvailableProbeServices,
 		byteCounter:             bytecounter.New(),
 		kvStore:                 config.KVStore,
@@ -145,12 +136,6 @@ func NewSession(config SessionConfig) (*Session, error) {
 	httpConfig.FullResolver = sess.resolver
 	sess.httpDefaultTransport = netx.NewHTTPTransport(httpConfig)
 	return sess, nil
-}
-
-// ASNDatabasePath returns the path where the ASN database path should
-// be if you have called s.FetchResourcesIdempotent.
-func (s *Session) ASNDatabasePath() string {
-	return filepath.Join(s.assetsDir, resources.ASNDatabaseName)
 }
 
 // KibiBytesReceived accounts for the KibiBytes received by the HTTP clients
@@ -263,11 +248,6 @@ func (s *Session) Close() error {
 		s.tunnel.Stop()
 	}
 	return os.RemoveAll(s.tempDir)
-}
-
-// CountryDatabasePath is like ASNDatabasePath but for the country DB path.
-func (s *Session) CountryDatabasePath() string {
-	return filepath.Join(s.assetsDir, resources.CountryDatabaseName)
 }
 
 // GetTestHelpersByName returns the available test helpers that
@@ -546,11 +526,6 @@ func (s *Session) UserAgent() (useragent string) {
 	return
 }
 
-// MaybeUpdateResources updates the resources if needed.
-func (s *Session) MaybeUpdateResources(ctx context.Context) error {
-	return (&resourcesmanager.CopyWorker{DestDir: s.assetsDir}).Ensure()
-}
-
 // getAvailableProbeServicesUnlocked returns the available probe
 // services. This function WILL NOT acquire the mu mutex, therefore,
 // you MUST ensure you are using it from a locked context.
@@ -629,7 +604,6 @@ func (s *Session) LookupLocationContext(ctx context.Context) (*geolocate.Results
 		EnableResolverLookup: s.proxyURL == nil,
 		Logger:               s.Logger(),
 		Resolver:             s.resolver,
-		ResourcesManager:     s,
 		UserAgent:            s.UserAgent(),
 	}))
 	return task.Run(ctx)

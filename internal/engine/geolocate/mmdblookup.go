@@ -3,14 +3,16 @@ package geolocate
 import (
 	"net"
 
+	"github.com/ooni/probe-cli/v3/internal/engine/assetsx"
 	"github.com/oschwald/geoip2-golang"
 )
 
 type mmdbLookupper struct{}
 
-func (mmdbLookupper) LookupASN(path, ip string) (asn uint, org string, err error) {
+func (mmdbLookupper) LookupASN(ip string) (asn uint, org string, err error) {
 	asn, org = DefaultProbeASN, DefaultProbeNetworkName
-	db, err := geoip2.Open(path)
+	dbdata := assetsx.Must(assetsx.ASNDatabaseData())
+	db, err := geoip2.FromBytes(dbdata)
 	if err != nil {
 		return
 	}
@@ -28,13 +30,14 @@ func (mmdbLookupper) LookupASN(path, ip string) (asn uint, org string, err error
 
 // LookupASN returns the ASN and the organization associated with the
 // given ip using the ASN database at path.
-func LookupASN(path, ip string) (asn uint, org string, err error) {
-	return (mmdbLookupper{}).LookupASN(path, ip)
+func LookupASN(ip string) (asn uint, org string, err error) {
+	return (mmdbLookupper{}).LookupASN(ip)
 }
 
-func (mmdbLookupper) LookupCC(path, ip string) (cc string, err error) {
+func (mmdbLookupper) LookupCC(ip string) (cc string, err error) {
 	cc = DefaultProbeCC
-	db, err := geoip2.Open(path)
+	dbdata := assetsx.Must(assetsx.CountryDatabaseData())
+	db, err := geoip2.FromBytes(dbdata)
 	if err != nil {
 		return
 	}

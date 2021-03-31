@@ -54,6 +54,9 @@ type ExperimentCallbacks interface {
 type SessionConfig struct {
 	// AssetsDir is the mandatory directory where to store assets
 	// required by a Session, e.g. MaxMind DB files.
+	//
+	// This field is currently deprecated and unused. We will
+	// remove it when we'll bump the major number.
 	AssetsDir string
 
 	// Logger is the optional logger that will receive all the
@@ -124,7 +127,6 @@ func NewSession(config *SessionConfig) (*Session, error) {
 		})
 	}
 	engineConfig := engine.SessionConfig{
-		AssetsDir:              config.AssetsDir,
 		AvailableProbeServices: availableps,
 		KVStore:                kvstore,
 		Logger:                 newLogger(config.Logger, config.Verbose),
@@ -212,15 +214,10 @@ type GeolocateResults struct {
 	Org string
 }
 
-// MaybeUpdateResources ensures that resources are up to date. This function
-// could perform network activity when we need to update resources.
-//
-// This function locks the session until it's done. That is, no other operation
-// can be performed as long as this function is pending.
+// MaybeUpdateResources is a legacy stub. It does nothing. We will
+// remove it when we're ready to bump the major number.
 func (sess *Session) MaybeUpdateResources(ctx *Context) error {
-	sess.mtx.Lock()
-	defer sess.mtx.Unlock()
-	return sess.sessp.MaybeUpdateResources(ctx.ctx)
+	return nil
 }
 
 // Geolocate performs a geolocate operation and returns the results.

@@ -188,6 +188,8 @@ func (p *Probe) Init(softwareName, softwareVersion string) error {
 	return nil
 }
 
+// TODO(bassosimone): should we cleanup the assets dir?
+
 // NewSession creates a new ooni/probe-engine session using the
 // current configuration inside the context. The caller must close
 // the session when done using it, by calling sess.Close().
@@ -199,7 +201,6 @@ func (p *Probe) NewSession() (*engine.Session, error) {
 		return nil, errors.Wrap(err, "creating engine's kvstore")
 	}
 	return engine.NewSession(engine.SessionConfig{
-		AssetsDir:       utils.AssetsDir(p.home),
 		KVStore:         kvstore,
 		Logger:          enginex.Logger,
 		SoftwareName:    p.softwareName,

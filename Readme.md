@@ -24,15 +24,7 @@ Every top-level directory contains an explanatory README file.
 ## Development setup
 
 Be sure you have golang >= 1.16 and a C compiler (when developing for Windows, you
-need Mingw-w64 installed).
-
-You need to download assets first using:
-
-```bash
-go run ./internal/cmd/getresources
-```
-
-Then you can build using:
+need Mingw-w64 installed). You can build using:
 
 ```bash
 go build -v ./cmd/ooniprobe

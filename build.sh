@@ -12,7 +12,6 @@ case $1 in
     ;;
 
   windows_amd64)
-    go run ./internal/cmd/getresources
     # Note! This assumes we've installed the mingw-w64 compiler.
     GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc \
       go build -ldflags='-s -w' ./cmd/ooniprobe
@@ -23,7 +22,6 @@ case $1 in
     ;;
 
   windows_386)
-    go run ./internal/cmd/getresources
     # Note! This assumes we've installed the mingw-w64 compiler.
     GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc \
       go build -ldflags='-s -w' ./cmd/ooniprobe
@@ -40,7 +38,6 @@ case $1 in
     ;;
 
   linux_amd64)
-    go run ./internal/cmd/getresources
     docker pull --platform linux/amd64 golang:1.16-alpine
     docker run --platform linux/amd64 -v`pwd`:/ooni -w/ooni golang:1.16-alpine ./build.sh _alpine
     tar -cvzf ooniprobe_${v}_linux_amd64.tar.gz LICENSE.md Readme.md ooniprobe
@@ -48,7 +45,6 @@ case $1 in
     ;;
 
   linux_386)
-    go run ./internal/cmd/getresources
     docker pull --platform linux/386 golang:1.16-alpine
     docker run --platform linux/386 -v`pwd`:/ooni -w/ooni golang:1.16-alpine ./build.sh _alpine
     tar -cvzf ooniprobe_${v}_linux_386.tar.gz LICENSE.md Readme.md ooniprobe
@@ -64,7 +60,6 @@ case $1 in
 
   macos|darwin)
     set -x
-    go run ./internal/cmd/getresources
     # Note! The following line _assumes_ you have a working C compiler. If you
     # have Xcode command line tools installed, you are fine.
     go build -ldflags='-s -w' ./cmd/ooniprobe

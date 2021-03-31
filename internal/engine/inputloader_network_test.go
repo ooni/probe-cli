@@ -19,7 +19,6 @@ func TestInputLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 			Address: "https://ams-pg-test.ooni.org/",
 			Type:    "https",
 		}},
-		AssetsDir:       "testdata",
 		KVStore:         kvstore.NewMemoryKeyValueStore(),
 		Logger:          log.Log,
 		SoftwareName:    "miniooni",

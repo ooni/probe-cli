@@ -323,8 +323,9 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	kvstore, err := engine.NewFileSystemKVStore(kvstore2dir)
 	fatalOnError(err, "cannot create kvstore2 directory")
 
+	// TODO(bassosimone): should we cleanup the assets dir?
+
 	config := engine.SessionConfig{
-		AssetsDir:       assetsDir,
 		KVStore:         kvstore,
 		Logger:          logger,
 		ProxyURL:        proxyURL,

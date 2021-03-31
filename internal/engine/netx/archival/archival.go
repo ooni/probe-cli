@@ -397,7 +397,7 @@ type DNSQueryEntry struct {
 type dnsQueryType string
 
 // NewDNSQueriesList returns a list of DNS queries.
-func NewDNSQueriesList(begin time.Time, events []trace.Event, dbpath string) []DNSQueryEntry {
+func NewDNSQueriesList(begin time.Time, events []trace.Event) []DNSQueryEntry {
 	// TODO(bassosimone): add support for CNAME lookups.
 	var out []DNSQueryEntry
 	for _, ev := range events {
@@ -409,7 +409,7 @@ func NewDNSQueriesList(begin time.Time, events []trace.Event, dbpath string) []D
 			for _, addr := range ev.Addresses {
 				if qtype.ipoftype(addr) {
 					entry.Answers = append(
-						entry.Answers, qtype.makeanswerentry(addr, dbpath))
+						entry.Answers, qtype.makeanswerentry(addr))
 				}
 			}
 			if len(entry.Answers) <= 0 && ev.Err == nil {
@@ -438,9 +438,9 @@ func (qtype dnsQueryType) ipoftype(addr string) bool {
 	return false
 }
 
-func (qtype dnsQueryType) makeanswerentry(addr string, dbpath string) DNSAnswerEntry {
+func (qtype dnsQueryType) makeanswerentry(addr string) DNSAnswerEntry {
 	answer := DNSAnswerEntry{AnswerType: string(qtype)}
-	asn, org, _ := geolocate.LookupASN(dbpath, addr)
+	asn, org, _ := geolocate.LookupASN(addr)
 	answer.ASN = int64(asn)
 	answer.ASOrgName = org
 	switch qtype {

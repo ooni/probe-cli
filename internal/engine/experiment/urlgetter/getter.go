@@ -58,10 +58,7 @@ func (g Getter) Get(ctx context.Context) (TestKeys, error) {
 	tk.FailedOperation = archival.NewFailedOperation(err)
 	tk.Failure = archival.NewFailure(err)
 	events := saver.Read()
-	tk.Queries = append(
-		tk.Queries, archival.NewDNSQueriesList(
-			g.Begin, events, g.Session.ASNDatabasePath())...,
-	)
+	tk.Queries = append(tk.Queries, archival.NewDNSQueriesList(g.Begin, events)...)
 	tk.NetworkEvents = append(
 		tk.NetworkEvents, archival.NewNetworkEventsList(g.Begin, events)...,
 	)

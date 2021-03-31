@@ -16,7 +16,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/engine/resourcesmanager"
 )
 
 func TestNewTCPConnectList(t *testing.T) {
@@ -285,15 +284,10 @@ func TestNewRequestList(t *testing.T) {
 }
 
 func TestNewDNSQueriesList(t *testing.T) {
-	err := (&resourcesmanager.CopyWorker{DestDir: "../../testdata"}).Ensure()
-	if err != nil {
-		t.Fatal(err)
-	}
 	begin := time.Now()
 	type args struct {
 		begin  time.Time
 		events []trace.Event
-		dbpath string
 	}
 	tests := []struct {
 		name string
@@ -376,7 +370,6 @@ func TestNewDNSQueriesList(t *testing.T) {
 				Name:      "resolve_done",
 				Time:      begin.Add(200 * time.Millisecond),
 			}},
-			dbpath: "../../testdata/asn.mmdb",
 		},
 		want: []archival.DNSQueryEntry{{
 			Answers: []archival.DNSAnswerEntry{{
@@ -399,7 +392,6 @@ func TestNewDNSQueriesList(t *testing.T) {
 				Name:     "resolve_done",
 				Time:     begin.Add(200 * time.Millisecond),
 			}},
-			dbpath: "../../testdata/asn.mmdb",
 		},
 		want: []archival.DNSQueryEntry{{
 			Answers: nil,
@@ -420,7 +412,7 @@ func TestNewDNSQueriesList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := archival.NewDNSQueriesList(
-				tt.args.begin, tt.args.events, tt.args.dbpath); !reflect.DeepEqual(got, tt.want) {
+				tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
 				t.Error(cmp.Diff(got, tt.want))
 			}
 		})
