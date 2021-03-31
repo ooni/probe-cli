@@ -555,6 +555,9 @@ func TestMissingTransport(t *testing.T) {
 	transports = transports[:len(transports)-1]
 	eipService.Gateways[1].Capabilities.Transport = transports
 	eipservicejson, err := json.Marshal(eipservice)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	requestResponseMap := map[string]string{
 		eipserviceurl: string(eipservicejson),
@@ -746,7 +749,7 @@ func generateMockGetter(requestResponse map[string]string, responseStatus map[st
 			FailedOperation:    failedOperation,
 			HTTPResponseStatus: responseStatus,
 			HTTPResponseBody:   responseBody,
-			Requests: []archival.RequestEntry{archival.RequestEntry{
+			Requests: []archival.RequestEntry{{
 				Failure: failure,
 				Request: archival.HTTPRequest{
 					URL:             url,

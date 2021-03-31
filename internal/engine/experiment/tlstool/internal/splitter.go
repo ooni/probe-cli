@@ -29,7 +29,6 @@ func SNISplitter(input []byte, sni []byte) (output [][]byte) {
 	}
 	if len(buf) > 0 {
 		output = append(output, buf)
-		buf = nil
 	}
 	output = append(output, input[idx+len(sni):])
 	return

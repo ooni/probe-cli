@@ -159,7 +159,7 @@ func (il *InputLoader) loadLocal() ([]model.URLInfo, error) {
 type inputLoaderOpenFn func(filepath string) (fs.File, error)
 
 // readfile reads inputs from the specified file. The open argument should be
-// compatibile with stdlib's fs.Open and helps us with unit testing.
+// compatible with stdlib's fs.Open and helps us with unit testing.
 func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]model.URLInfo, error) {
 	inputs := []model.URLInfo{}
 	filep, err := open(filepath)

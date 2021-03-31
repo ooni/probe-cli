@@ -56,7 +56,7 @@ func TestMeasurementRootWithMeasurementRootPanic(t *testing.T) {
 		}
 	}()
 	ctx := context.Background()
-	ctx = WithMeasurementRoot(ctx, nil)
+	_ = WithMeasurementRoot(ctx, nil)
 }
 
 func TestErrWrapperPublicAPI(t *testing.T) {
