@@ -746,7 +746,7 @@ func generateMockGetter(requestResponse map[string]string, responseStatus map[st
 			FailedOperation:    failedOperation,
 			HTTPResponseStatus: responseStatus,
 			HTTPResponseBody:   responseBody,
-			Requests: []archival.RequestEntry{archival.RequestEntry{
+			Requests: []archival.RequestEntry{{
 				Failure: failure,
 				Request: archival.HTTPRequest{
 					URL:             url,
