@@ -68,6 +68,7 @@ func init() {
 			Probe:      probe,
 			InputFiles: *inputFile,
 			Inputs:     *input,
+			RunType:    "manual",
 		})
 	})
 
