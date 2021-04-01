@@ -28,5 +28,4 @@ export PATH=$(go env GOPATH)/bin:$PATH
 go get -u golang.org/x/mobile/cmd/gomobile
 gomobile init
 output=MOBILE/android/oonimkall.aar
-go run ./internal/cmd/getresources
 gomobile bind -target=android -o $output -ldflags="-s -w" ./pkg/oonimkall

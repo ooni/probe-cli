@@ -46,27 +46,19 @@ func TestNewSessionBuilderChecks(t *testing.T) {
 	t.Run("with no settings", func(t *testing.T) {
 		newSessionMustFail(t, SessionConfig{})
 	})
-	t.Run("with only assets dir", func(t *testing.T) {
-		newSessionMustFail(t, SessionConfig{
-			AssetsDir: "testdata",
-		})
-	})
 	t.Run("with also logger", func(t *testing.T) {
 		newSessionMustFail(t, SessionConfig{
-			AssetsDir: "testdata",
-			Logger:    model.DiscardLogger,
+			Logger: model.DiscardLogger,
 		})
 	})
 	t.Run("with also software name", func(t *testing.T) {
 		newSessionMustFail(t, SessionConfig{
-			AssetsDir:    "testdata",
 			Logger:       model.DiscardLogger,
 			SoftwareName: "ooniprobe-engine",
 		})
 	})
 	t.Run("with software version and wrong tempdir", func(t *testing.T) {
 		newSessionMustFail(t, SessionConfig{
-			AssetsDir:       "testdata",
 			Logger:          model.DiscardLogger,
 			SoftwareName:    "ooniprobe-engine",
 			SoftwareVersion: "0.0.1",
@@ -97,7 +89,6 @@ func TestSessionTorArgsTorBinary(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	sess, err := NewSession(SessionConfig{
-		AssetsDir: "testdata",
 		AvailableProbeServices: []model.Service{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",
@@ -130,7 +121,6 @@ func TestSessionTorArgsTorBinary(t *testing.T) {
 
 func newSessionForTestingNoLookupsWithProxyURL(t *testing.T, URL *url.URL) *Session {
 	sess, err := NewSession(SessionConfig{
-		AssetsDir: "testdata",
 		AvailableProbeServices: []model.Service{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",
@@ -357,40 +347,11 @@ func TestSessionCloseCancelsTempDir(t *testing.T) {
 	}
 }
 
-func TestSessionDownloadResources(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	tmpdir, err := ioutil.TempDir("", "test-download-resources-idempotent")
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx := context.Background()
-	sess := newSessionForTestingNoLookups(t)
-	defer sess.Close()
-	sess.SetAssetsDir(tmpdir)
-	err = sess.MaybeUpdateResources(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	readfile := func(path string) (err error) {
-		_, err = ioutil.ReadFile(path)
-		return
-	}
-	if err := readfile(sess.ASNDatabasePath()); err != nil {
-		t.Fatal(err)
-	}
-	if err := readfile(sess.CountryDatabasePath()); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestGetAvailableProbeServices(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
 	sess, err := NewSession(SessionConfig{
-		AssetsDir:       "testdata",
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -411,7 +372,6 @@ func TestMaybeLookupBackendsFailure(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	sess, err := NewSession(SessionConfig{
-		AssetsDir:       "testdata",
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -433,7 +393,6 @@ func TestMaybeLookupTestHelpersIdempotent(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	sess, err := NewSession(SessionConfig{
-		AssetsDir:       "testdata",
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -459,7 +418,6 @@ func TestAllProbeServicesUnsupported(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	sess, err := NewSession(SessionConfig{
-		AssetsDir:       "testdata",
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",

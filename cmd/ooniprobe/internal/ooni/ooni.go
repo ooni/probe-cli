@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/enginex"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -177,6 +178,14 @@ func (p *Probe) Init(softwareName, softwareVersion string) error {
 	}
 	p.db = db
 
+	// We cleanup the assets files used by versions of ooniprobe
+	// older than v3.9.0, where we started embedding the assets
+	// into the binary and use that directly. This cleanup doesn't
+	// remove the whole directory but only known files inside it
+	// and then the directory itself, if empty. We explicitly discard
+	// the return value as it does not matter to us here.
+	_, _ = assetsdir.Cleanup(utils.AssetsDir(p.home))
+
 	tempDir, err := ioutil.TempDir("", "ooni")
 	if err != nil {
 		return errors.Wrap(err, "creating TempDir")
@@ -199,7 +208,6 @@ func (p *Probe) NewSession() (*engine.Session, error) {
 		return nil, errors.Wrap(err, "creating engine's kvstore")
 	}
 	return engine.NewSession(engine.SessionConfig{
-		AssetsDir:       utils.AssetsDir(p.home),
 		KVStore:         kvstore,
 		Logger:          enginex.Logger,
 		SoftwareName:    p.softwareName,

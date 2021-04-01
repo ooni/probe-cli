@@ -11,10 +11,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
-func (s *Session) SetAssetsDir(assetsDir string) {
-	s.assetsDir = assetsDir
-}
-
 func (s *Session) GetAvailableProbeServices() []model.Service {
 	return s.getAvailableProbeServicesUnlocked()
 }
