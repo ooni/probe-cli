@@ -48,9 +48,8 @@ func TestNewSessionWithInvalidStateDir(t *testing.T) {
 }
 
 func TestMaybeUpdateResourcesWithCancelledContext(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
+	// Note that MaybeUpdateResources is now a deprecated stub that
+	// does nothing. We will remove it when we bump major.
 	dir, err := ioutil.TempDir("", "xx")
 	if err != nil {
 		t.Fatal(err)
