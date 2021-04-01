@@ -25,11 +25,11 @@ var (
 )
 
 func newhttpclient() *http.Client {
-	// Use a nonstandard resolver, which hopefully is enough to work
-	// around https://github.com/ooni/probe/issues/1409.
-	childResolver, _ := netx.NewDNSClient(netx.Config{
-		Logger: log.Log,
-	}, "dot://8.8.8.8:853")
+	// Use a nonstandard resolver, which is enough to work around the
+	// puzzling https://github.com/ooni/probe/issues/1409 issue.
+	childResolver, err := netx.NewDNSClient(
+		netx.Config{Logger: log.Log}, "dot://8.8.8.8:853")
+	runtimex.PanicOnError(err, "netx.NewDNSClient should not fail here")
 	txp := netx.NewHTTPTransport(netx.Config{
 		BaseResolver: childResolver,
 		Logger:       log.Log,
@@ -39,9 +39,7 @@ func newhttpclient() *http.Client {
 
 func init() {
 	httpClient = newhttpclient()
-	resolver = netx.NewResolver(netx.Config{
-		Logger: log.Log,
-	})
+	resolver = netx.NewResolver(netx.Config{Logger: log.Log})
 }
 
 func main() {
