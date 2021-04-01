@@ -304,6 +304,8 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	homeDir := gethomedir(currentOptions.HomeDir)
 	fatalIfFalse(homeDir != "", "home directory is empty")
 	miniooniDir := path.Join(homeDir, ".miniooni")
+	err = os.MkdirAll(miniooniDir, 0700)
+	fatalOnError(err, "cannot create $HOME/.miniooni directory")
 
 	// We cleanup the assets files used by versions of ooniprobe
 	// older than v3.9.0, where we started embedding the assets
