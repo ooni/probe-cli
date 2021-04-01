@@ -8,12 +8,12 @@ import (
 
 var errMemkvstoreNotFound = errors.New("memkvstore: not found")
 
-type memkvstore struct {
+type MemKVStore struct {
 	m  map[string][]byte
 	mu sync.Mutex
 }
 
-func (kvs *memkvstore) Get(key string) ([]byte, error) {
+func (kvs *MemKVStore) Get(key string) ([]byte, error) {
 	defer kvs.mu.Unlock()
 	kvs.mu.Lock()
 	out, good := kvs.m[key]
@@ -23,7 +23,7 @@ func (kvs *memkvstore) Get(key string) ([]byte, error) {
 	return out, nil
 }
 
-func (kvs *memkvstore) Set(key string, value []byte) error {
+func (kvs *MemKVStore) Set(key string, value []byte) error {
 	defer kvs.mu.Unlock()
 	kvs.mu.Lock()
 	if kvs.m == nil {

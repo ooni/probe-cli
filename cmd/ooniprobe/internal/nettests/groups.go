@@ -37,6 +37,7 @@ var All = map[string]Group{
 			FacebookMessenger{},
 			Telegram{},
 			WhatsApp{},
+			Signal{},
 		},
 		UnattendedOK: true,
 	},
@@ -54,7 +55,6 @@ var All = map[string]Group{
 		Nettests: []Nettest{
 			DNSCheck{},
 			STUNReachability{},
-			Signal{},
 		},
 	},
 }

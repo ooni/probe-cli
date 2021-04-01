@@ -8,14 +8,22 @@ import (
 // ExperimentOrchestraClient is the experiment's view of
 // a client for querying the OONI orchestra API.
 type ExperimentOrchestraClient interface {
+	// CheckIn calls the check-in API.
+	CheckIn(ctx context.Context, config CheckInConfig) (*CheckInInfo, error)
+
+	// FetchPsiphonConfig returns psiphon config from the API.
 	FetchPsiphonConfig(ctx context.Context) ([]byte, error)
+
+	// FetchTorTargets returns tor targets from the API.
 	FetchTorTargets(ctx context.Context, cc string) (map[string]TorTarget, error)
+
+	// FetchURLList returns URLs from the API.
+	// This method is deprecated and will be removed soon.
 	FetchURLList(ctx context.Context, config URLListConfig) ([]URLInfo, error)
 }
 
 // ExperimentSession is the experiment's view of a session.
 type ExperimentSession interface {
-	ASNDatabasePath() string
 	GetTestHelpersByName(name string) ([]Service, bool)
 	DefaultHTTPClient() *http.Client
 	Logger() Logger

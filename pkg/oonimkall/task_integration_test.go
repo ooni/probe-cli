@@ -58,10 +58,10 @@ func TestGood(t *testing.T) {
 		if err := json.Unmarshal([]byte(eventstr), &event); err != nil {
 			t.Fatal(err)
 		}
-		if event.Key != "task_terminated" {
-			t.Fatalf("unexpected event.Key: %s", event.Key)
+		if event.Key == "task_terminated" {
+			break
 		}
-		break
+		t.Fatalf("unexpected event.Key: %s", event.Key)
 	}
 }
 
@@ -169,38 +169,6 @@ func TestEmptyStateDir(t *testing.T) {
 	}
 	if !seen {
 		t.Fatal("did not see failure.startup with info that state dir is empty")
-	}
-}
-
-func TestEmptyAssetsDir(t *testing.T) {
-	task, err := oonimkall.StartTask(`{
-		"log_level": "DEBUG",
-		"name": "Example",
-		"options": {
-			"software_name": "oonimkall-test",
-			"software_version": "0.1.0"
-		},
-		"state_dir": "../testdata/oonimkall/state",
-		"version": 1
-	}`)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var seen bool
-	for !task.IsDone() {
-		eventstr := task.WaitForNextEvent()
-		var event eventlike
-		if err := json.Unmarshal([]byte(eventstr), &event); err != nil {
-			t.Fatal(err)
-		}
-		if event.Key == "failure.startup" {
-			if strings.Contains(eventstr, "AssetsDir is empty") {
-				seen = true
-			}
-		}
-	}
-	if !seen {
-		t.Fatal("did not see failure.startup")
 	}
 }
 
@@ -315,7 +283,7 @@ func TestMaxRuntime(t *testing.T) {
 	// In case there are further timeouts, e.g. in the sessionresolver, the
 	// time used by the experiment will be much more. This is for example the
 	// case in https://github.com/ooni/probe-engine/issues/1005.
-	if time.Now().Sub(begin) > 10*time.Second {
+	if time.Since(begin) > 10*time.Second {
 		t.Fatal("expected shorter runtime")
 	}
 }

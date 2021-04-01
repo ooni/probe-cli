@@ -17,6 +17,10 @@
 // but it will of course be the most popular resolver if anything else
 // is failing us. (We will still occasionally probe for other working
 // resolvers and increase their score on success.)
+//
+// We also support a socks5 proxy. When such a proxy is configured,
+// the code WILL skip http3 resolvers AS WELL AS the system
+// resolver, in an attempt to avoid leaking your queries.
 package sessionresolver
 
 import (
@@ -34,18 +38,60 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
-// Resolver is the session resolver. You should create an instance of
-// this structure and use it in session.go.
+// Resolver is the session resolver. Resolver will try to use
+// a bunch of DoT/DoH resolvers before falling back to the
+// system resolver. The relative priorities of the resolver
+// are stored onto the KVStore such that we can remember them
+// and therefore we can generally give preference to underlying
+// DoT/DoH resolvers that work better.
+//
+// You MUST NOT modify public fields of this structure once it
+// has been created, because that MAY lead to data races.
+//
+// You should create an instance of this structure and use
+// it in internal/engine/session.go.
 type Resolver struct {
-	ByteCounter    *bytecounter.Counter // optional
-	KVStore        KVStore              // optional
-	Logger         Logger               // optional
-	ProxyURL       *url.URL             // optional
-	codec          codec
+	// ByteCounter is the optional byte counter. It will count
+	// the bytes used by any child resolver except for the
+	// system resolver, whose bytes ARE NOT counted. If this
+	// field is not set, then we won't count the bytes.
+	ByteCounter *bytecounter.Counter
+
+	// KVStore is the optional key-value store where you
+	// want us to write statistics about which resolver is
+	// working better in your network. If this field is
+	// not set, then we'll use a in-memory store.
+	KVStore KVStore
+
+	// Logger is the optional logger you want us to use
+	// to emit log messages.
+	Logger Logger
+
+	// ProxyURL is the optional URL of the socks5 proxy
+	// we should be using. If not set, then we WON'T use
+	// any proxy. If set, then we WON'T use any http3
+	// based resolvers and we WON'T use the system resolver.
+	ProxyURL *url.URL
+
+	// codec is the optional codec to use. If not set, we
+	// will construct a default codec.
+	codec codec
+
+	// dnsClientMaker is the optional dnsclientmaker to
+	// use. If not set, we will use the default.
 	dnsClientMaker dnsclientmaker
-	mu             sync.Mutex
-	once           sync.Once
-	res            map[string]childResolver
+
+	// mu provides synchronisation of internal fields.
+	mu sync.Mutex
+
+	// once ensures that CloseIdleConnection is
+	// run just once.
+	once sync.Once
+
+	// res maps a URL to a child resolver. We will
+	// construct child resolvers just once and we
+	// will track them into this field.
+	res map[string]childResolver
 }
 
 // CloseIdleConnections closes the idle connections, if any. This
@@ -73,7 +119,8 @@ func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, e
 	defer r.writestate(state)
 	me := multierror.New(ErrLookupHost)
 	for _, e := range state {
-		if r.shouldSkipWithProxy(e) {
+		if r.ProxyURL != nil && r.shouldSkipWithProxy(e) {
+			r.logger().Infof("sessionresolver: skipping with proxy: %+v", e)
 			continue // we cannot proxy this URL so ignore it
 		}
 		addrs, err := r.lookupHost(ctx, e, hostname)

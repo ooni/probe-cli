@@ -12,13 +12,12 @@ import (
 	"testing"
 	"time"
 
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
 )
 
-func NewSessionWithAssetsDir(assetsDir string) (*oonimkall.Session, error) {
+func NewSessionForTestingWithAssetsDir(assetsDir string) (*oonimkall.Session, error) {
 	return oonimkall.NewSession(&oonimkall.SessionConfig{
 		AssetsDir:        assetsDir,
 		ProbeServicesURL: "https://ams-pg-test.ooni.org/",
@@ -29,8 +28,8 @@ func NewSessionWithAssetsDir(assetsDir string) (*oonimkall.Session, error) {
 	})
 }
 
-func NewSession() (*oonimkall.Session, error) {
-	return NewSessionWithAssetsDir("../testdata/oonimkall/assets")
+func NewSessionForTesting() (*oonimkall.Session, error) {
+	return NewSessionForTestingWithAssetsDir("../testdata/oonimkall/assets")
 }
 
 func TestNewSessionWithInvalidStateDir(t *testing.T) {
@@ -48,38 +47,22 @@ func TestNewSessionWithInvalidStateDir(t *testing.T) {
 	}
 }
 
-func TestNewSessionWithMissingSoftwareName(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess, err := oonimkall.NewSession(&oonimkall.SessionConfig{
-		StateDir: "../testdata/oonimkall/state",
-	})
-	if err == nil || err.Error() != "AssetsDir is empty" {
-		t.Fatal("not the error we expected")
-	}
-	if sess != nil {
-		t.Fatal("expected a nil Session here")
-	}
-}
-
 func TestMaybeUpdateResourcesWithCancelledContext(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
+	// Note that MaybeUpdateResources is now a deprecated stub that
+	// does nothing. We will remove it when we bump major.
 	dir, err := ioutil.TempDir("", "xx")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(dir)
-	sess, err := NewSessionWithAssetsDir(dir)
+	sess, err := NewSessionForTestingWithAssetsDir(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx := sess.NewContext()
 	ctx.Cancel() // cause immediate failure
 	err = sess.MaybeUpdateResources(ctx)
-	// Explaination: we embed resources. We should change the API
+	// Explanation: we embed resources. We should change the API
 	// and remove the context. Until we do that, let us just assert
 	// that we have embedding and the context does not matter.
 	if err != nil {
@@ -104,7 +87,7 @@ func TestGeolocateWithCancelledContext(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +106,7 @@ func TestGeolocateGood(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +146,7 @@ func TestSubmitWithCancelledContext(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +165,7 @@ func TestSubmitWithInvalidJSON(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +217,7 @@ func TestSubmitMeasurementGood(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +231,7 @@ func TestSubmitCancelContextAfterFirstSubmission(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,7 +250,7 @@ func TestSubmitCancelContextAfterFirstSubmission(t *testing.T) {
 }
 
 func TestCheckInSuccess(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,7 +298,7 @@ func TestCheckInSuccess(t *testing.T) {
 }
 
 func TestCheckInLookupLocationFailure(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -342,7 +325,7 @@ func TestCheckInLookupLocationFailure(t *testing.T) {
 }
 
 func TestCheckInNewProbeServicesFailure(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +345,7 @@ func TestCheckInNewProbeServicesFailure(t *testing.T) {
 	config.WebConnectivity.Add("NEWS")
 	config.WebConnectivity.Add("CULTR")
 	result, err := sess.CheckIn(ctx, &config)
-	if !errors.Is(err, engine.ErrAllProbeServicesFailed) {
+	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 	if result != nil {
@@ -371,7 +354,7 @@ func TestCheckInNewProbeServicesFailure(t *testing.T) {
 }
 
 func TestCheckInCheckInFailure(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -400,7 +383,7 @@ func TestCheckInCheckInFailure(t *testing.T) {
 }
 
 func TestCheckInNoParams(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -423,7 +406,7 @@ func TestCheckInNoParams(t *testing.T) {
 }
 
 func TestFetchURLListSuccess(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -440,15 +423,22 @@ func TestFetchURLListSuccess(t *testing.T) {
 	if result == nil || result.Results == nil {
 		t.Fatal("got nil result")
 	}
-	for _, entry := range result.Results {
+	for idx := int64(0); idx < result.Size(); idx++ {
+		entry := result.At(idx)
 		if entry.CategoryCode != "NEWS" && entry.CategoryCode != "CULTR" {
 			t.Fatalf("unexpected category code: %+v", entry)
 		}
 	}
+	if result.At(-1) != nil {
+		t.Fatal("expected nil here")
+	}
+	if result.At(result.Size()) != nil {
+		t.Fatal("expected nil here")
+	}
 }
 
 func TestFetchURLListWithCC(t *testing.T) {
-	sess, err := NewSession()
+	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
 	}

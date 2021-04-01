@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"sort"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
@@ -12,6 +13,7 @@ import (
 
 // DNSLookupConfig contains settings for the DNS lookup.
 type DNSLookupConfig struct {
+	Begin   time.Time
 	Session model.ExperimentSession
 	URL     *url.URL
 }
@@ -27,7 +29,8 @@ type DNSLookupResult struct {
 func DNSLookup(ctx context.Context, config DNSLookupConfig) (out DNSLookupResult) {
 	target := fmt.Sprintf("dnslookup://%s", config.URL.Hostname())
 	config.Session.Logger().Infof("%s...", target)
-	result, err := urlgetter.Getter{Session: config.Session, Target: target}.Get(ctx)
+	result, err := urlgetter.Getter{
+		Begin: config.Begin, Session: config.Session, Target: target}.Get(ctx)
 	out.Addrs = make(map[string]int64)
 	for _, query := range result.Queries {
 		for _, answer := range query.Answers {

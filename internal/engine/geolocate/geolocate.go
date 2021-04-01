@@ -3,7 +3,6 @@ package geolocate
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
@@ -41,12 +40,6 @@ var (
 
 	// DefaultResolverASNString is the default resolver ASN as a string.
 	DefaultResolverASNString = fmt.Sprintf("AS%d", DefaultResolverASN)
-)
-
-var (
-	// ErrMissingResourcesManager indicates that no resources
-	// manager has been configured inside of Config.
-	ErrMissingResourcesManager = errors.New("geolocate: ResourcesManager is nil")
 )
 
 // Logger is the definition of Logger used by this package.
@@ -96,28 +89,15 @@ type probeIPLookupper interface {
 }
 
 type asnLookupper interface {
-	LookupASN(path string, ip string) (asn uint, network string, err error)
+	LookupASN(ip string) (asn uint, network string, err error)
 }
 
 type countryLookupper interface {
-	LookupCC(path string, ip string) (cc string, err error)
+	LookupCC(ip string) (cc string, err error)
 }
 
 type resolverIPLookupper interface {
 	LookupResolverIP(ctx context.Context) (addr string, err error)
-}
-
-// ResourcesManager manages the required resources.
-type ResourcesManager interface {
-	// ASNDatabasePath returns the path of the ASN database.
-	ASNDatabasePath() string
-
-	// CountryDatabasePath returns the path of the country database.
-	CountryDatabasePath() string
-
-	// MaybeUpdateResources ensures that the required resources
-	// have been downloaded and are current.
-	MaybeUpdateResources(ctx context.Context) error
 }
 
 // Resolver is a DNS resolver.
@@ -142,10 +122,6 @@ type Config struct {
 	// use a logger that discards all messages.
 	Logger Logger
 
-	// ResourcesManager is the mandatory resources manager. If not
-	// set, we will not be able to perform any lookup.
-	ResourcesManager ResourcesManager
-
 	// UserAgent is the user agent to use. If not set, then
 	// we will use a default user agent.
 	UserAgent string
@@ -161,9 +137,6 @@ func Must(task *Task, err error) *Task {
 func NewTask(config Config) (*Task, error) {
 	if config.Logger == nil {
 		config.Logger = model.DiscardLogger
-	}
-	if config.ResourcesManager == nil {
-		return nil, ErrMissingResourcesManager
 	}
 	if config.UserAgent == "" {
 		config.UserAgent = fmt.Sprintf("ooniprobe-engine/%s", version.Version)
@@ -183,7 +156,6 @@ func NewTask(config Config) (*Task, error) {
 		probeASNLookupper:    mmdbLookupper{},
 		resolverASNLookupper: mmdbLookupper{},
 		resolverIPLookupper:  resolverLookupClient{},
-		resourcesManager:     config.ResourcesManager,
 	}, nil
 }
 
@@ -196,7 +168,6 @@ type Task struct {
 	probeASNLookupper    asnLookupper
 	resolverASNLookupper asnLookupper
 	resolverIPLookupper  resolverIPLookupper
-	resourcesManager     ResourcesManager
 }
 
 // Run runs the task.
@@ -211,23 +182,18 @@ func (op Task) Run(ctx context.Context) (*Results, error) {
 		ResolverIP:          DefaultResolverIP,
 		ResolverNetworkName: DefaultResolverNetworkName,
 	}
-	if err := op.resourcesManager.MaybeUpdateResources(ctx); err != nil {
-		return out, fmt.Errorf("MaybeUpdateResource failed: %w", err)
-	}
 	ip, err := op.probeIPLookupper.LookupProbeIP(ctx)
 	if err != nil {
 		return out, fmt.Errorf("lookupProbeIP failed: %w", err)
 	}
 	out.ProbeIP = ip
-	asn, networkName, err := op.probeASNLookupper.LookupASN(
-		op.resourcesManager.ASNDatabasePath(), out.ProbeIP)
+	asn, networkName, err := op.probeASNLookupper.LookupASN(out.ProbeIP)
 	if err != nil {
 		return out, fmt.Errorf("lookupASN failed: %w", err)
 	}
 	out.ASN = asn
 	out.NetworkName = networkName
-	cc, err := op.countryLookupper.LookupCC(
-		op.resourcesManager.CountryDatabasePath(), out.ProbeIP)
+	cc, err := op.countryLookupper.LookupCC(out.ProbeIP)
 	if err != nil {
 		return out, fmt.Errorf("lookupProbeCC failed: %w", err)
 	}
@@ -244,7 +210,7 @@ func (op Task) Run(ctx context.Context) (*Results, error) {
 		}
 		out.ResolverIP = resolverIP
 		resolverASN, resolverNetworkName, err := op.resolverASNLookupper.LookupASN(
-			op.resourcesManager.ASNDatabasePath(), out.ResolverIP,
+			out.ResolverIP,
 		)
 		if err != nil {
 			return out, nil

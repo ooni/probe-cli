@@ -9,6 +9,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
@@ -54,6 +55,9 @@ type ExperimentCallbacks interface {
 type SessionConfig struct {
 	// AssetsDir is the mandatory directory where to store assets
 	// required by a Session, e.g. MaxMind DB files.
+	//
+	// This field is currently deprecated and unused. We will
+	// remove it when we'll bump the major number.
 	AssetsDir string
 
 	// Logger is the optional logger that will receive all the
@@ -116,6 +120,15 @@ func NewSession(config *SessionConfig) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// We cleanup the assets files used by versions of ooniprobe
+	// older than v3.9.0, where we started embedding the assets
+	// into the binary and use that directly. This cleanup doesn't
+	// remove the whole directory but only known files inside it
+	// and then the directory itself, if empty. We explicitly discard
+	// the return value as it does not matter to us here.
+	_, _ = assetsdir.Cleanup(config.AssetsDir)
+
 	var availableps []model.Service
 	if config.ProbeServicesURL != "" {
 		availableps = append(availableps, model.Service{
@@ -124,7 +137,6 @@ func NewSession(config *SessionConfig) (*Session, error) {
 		})
 	}
 	engineConfig := engine.SessionConfig{
-		AssetsDir:              config.AssetsDir,
 		AvailableProbeServices: availableps,
 		KVStore:                kvstore,
 		Logger:                 newLogger(config.Logger, config.Verbose),
@@ -212,15 +224,10 @@ type GeolocateResults struct {
 	Org string
 }
 
-// MaybeUpdateResources ensures that resources are up to date. This function
-// could perform network activity when we need to update resources.
-//
-// This function locks the session until it's done. That is, no other operation
-// can be performed as long as this function is pending.
+// MaybeUpdateResources is a legacy stub. It does nothing. We will
+// remove it when we're ready to bump the major number.
 func (sess *Session) MaybeUpdateResources(ctx *Context) error {
-	sess.mtx.Lock()
-	defer sess.mtx.Unlock()
-	return sess.sessp.MaybeUpdateResources(ctx.ctx)
+	return nil
 }
 
 // Geolocate performs a geolocate operation and returns the results.
@@ -479,17 +486,17 @@ func (sess *Session) FetchURLList(ctx *Context, config *URLListConfig) (*URLList
 	if config.CountryCode == "" {
 		config.CountryCode = "XX"
 		info, err := sess.sessp.LookupLocationContext(ctx.ctx)
+		// TODO(bassosimone): this piece of code feels wrong to me. We don't
+		// want to continue if we cannot discover the country.
 		if err == nil && info != nil {
 			config.CountryCode = info.CountryCode
 		}
 	}
-
 	cfg := model.URLListConfig{
 		Categories:  config.Categories,
 		CountryCode: config.CountryCode,
 		Limit:       config.Limit,
 	}
-
 	result, err := psc.FetchURLList(ctx.ctx, cfg)
 	if err != nil {
 		return nil, err

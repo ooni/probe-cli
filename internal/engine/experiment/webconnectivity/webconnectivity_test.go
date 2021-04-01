@@ -21,7 +21,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "web_connectivity" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.3.0" {
+	if measurer.ExperimentVersion() != "0.4.0" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -202,7 +202,6 @@ func TestMeasureWithNoAvailableTestHelpers(t *testing.T) {
 
 func newsession(t *testing.T, lookupBackends bool) model.ExperimentSession {
 	sess, err := engine.NewSession(engine.SessionConfig{
-		AssetsDir: "../../testdata",
 		AvailableProbeServices: []model.Service{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",

@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,16 +11,33 @@ import (
 	"os"
 	"syscall"
 	"testing"
-	"time"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
+
+func TestSessionByteCounter(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	s := newSessionForTesting(t)
+	client := s.DefaultHTTPClient()
+	resp, err := client.Get("https://www.google.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
+		t.Fatal(err)
+	}
+	if s.KibiBytesSent() <= 0 || s.KibiBytesReceived() <= 0 {
+		t.Fatal("byte counter is not working")
+	}
+}
 
 func TestNewSessionBuilderChecks(t *testing.T) {
 	if testing.Short() {
@@ -28,27 +46,19 @@ func TestNewSessionBuilderChecks(t *testing.T) {
 	t.Run("with no settings", func(t *testing.T) {
 		newSessionMustFail(t, SessionConfig{})
 	})
-	t.Run("with only assets dir", func(t *testing.T) {
-		newSessionMustFail(t, SessionConfig{
-			AssetsDir: "testdata",
-		})
-	})
 	t.Run("with also logger", func(t *testing.T) {
 		newSessionMustFail(t, SessionConfig{
-			AssetsDir: "testdata",
-			Logger:    model.DiscardLogger,
+			Logger: model.DiscardLogger,
 		})
 	})
 	t.Run("with also software name", func(t *testing.T) {
 		newSessionMustFail(t, SessionConfig{
-			AssetsDir:    "testdata",
 			Logger:       model.DiscardLogger,
 			SoftwareName: "ooniprobe-engine",
 		})
 	})
 	t.Run("with software version and wrong tempdir", func(t *testing.T) {
 		newSessionMustFail(t, SessionConfig{
-			AssetsDir:       "testdata",
 			Logger:          model.DiscardLogger,
 			SoftwareName:    "ooniprobe-engine",
 			SoftwareVersion: "0.0.1",
@@ -79,7 +89,6 @@ func TestSessionTorArgsTorBinary(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	sess, err := NewSession(SessionConfig{
-		AssetsDir: "testdata",
 		AvailableProbeServices: []model.Service{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",
@@ -112,7 +121,6 @@ func TestSessionTorArgsTorBinary(t *testing.T) {
 
 func newSessionForTestingNoLookupsWithProxyURL(t *testing.T, URL *url.URL) *Session {
 	sess, err := NewSession(SessionConfig{
-		AssetsDir: "testdata",
 		AvailableProbeServices: []model.Service{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",
@@ -307,6 +315,21 @@ func TestSessionLocationLookup(t *testing.T) {
 	}
 }
 
+func TestSessionCheckInWithRealAPI(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	sess := newSessionForTesting(t)
+	defer sess.Close()
+	results, err := sess.CheckIn(context.Background(), &model.CheckInConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if results == nil {
+		t.Fatal("expected non nil results here")
+	}
+}
+
 func TestSessionCloseCancelsTempDir(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
@@ -324,40 +347,11 @@ func TestSessionCloseCancelsTempDir(t *testing.T) {
 	}
 }
 
-func TestSessionDownloadResources(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	tmpdir, err := ioutil.TempDir("", "test-download-resources-idempotent")
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx := context.Background()
-	sess := newSessionForTestingNoLookups(t)
-	defer sess.Close()
-	sess.SetAssetsDir(tmpdir)
-	err = sess.MaybeUpdateResources(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	readfile := func(path string) (err error) {
-		_, err = ioutil.ReadFile(path)
-		return
-	}
-	if err := readfile(sess.ASNDatabasePath()); err != nil {
-		t.Fatal(err)
-	}
-	if err := readfile(sess.CountryDatabasePath()); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestGetAvailableProbeServices(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
 	sess, err := NewSession(SessionConfig{
-		AssetsDir:       "testdata",
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -378,7 +372,6 @@ func TestMaybeLookupBackendsFailure(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	sess, err := NewSession(SessionConfig{
-		AssetsDir:       "testdata",
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -400,7 +393,6 @@ func TestMaybeLookupTestHelpersIdempotent(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	sess, err := NewSession(SessionConfig{
-		AssetsDir:       "testdata",
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -426,7 +418,6 @@ func TestAllProbeServicesUnsupported(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	sess, err := NewSession(SessionConfig{
-		AssetsDir:       "testdata",
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -584,50 +575,31 @@ func TestNewOrchestraClientMaybeLookupBackendsFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
+	errMocked := errors.New("mocked error")
 	sess := newSessionForTestingNoLookups(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // fail immediately
-	client, err := sess.NewOrchestraClient(ctx)
-	if !errors.Is(err, ErrAllProbeServicesFailed) {
-		t.Fatal("not the error we expected")
+	sess.testMaybeLookupBackendsContext = func(ctx context.Context) error {
+		return errMocked
+	}
+	client, err := sess.NewOrchestraClient(context.Background())
+	if !errors.Is(err, errMocked) {
+		t.Fatal("not the error we expected", err)
 	}
 	if client != nil {
 		t.Fatal("expected nil client here")
 	}
 }
 
-type httpTransportThatSleeps struct {
-	txp netx.HTTPRoundTripper
-	st  time.Duration
-}
-
-func (txp httpTransportThatSleeps) RoundTrip(req *http.Request) (*http.Response, error) {
-	resp, err := txp.txp.RoundTrip(req)
-	time.Sleep(txp.st)
-	return resp, err
-}
-
-func (txp httpTransportThatSleeps) CloseIdleConnections() {
-	txp.txp.CloseIdleConnections()
-}
-
 func TestNewOrchestraClientMaybeLookupLocationFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
+	errMocked := errors.New("mocked error")
 	sess := newSessionForTestingNoLookups(t)
-	sess.httpDefaultTransport = httpTransportThatSleeps{
-		txp: sess.httpDefaultTransport,
-		st:  5 * time.Second,
+	sess.testMaybeLookupLocationContext = func(ctx context.Context) error {
+		return errMocked
 	}
-	// The transport sleeps for five seconds, so the context should be expired by
-	// the time in which we attempt at looking up the location. Because the
-	// implementation performs the round-trip and _then_ sleeps, it means we'll
-	// see the context expired error when performing the location lookup.
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
-	defer cancel()
-	client, err := sess.NewOrchestraClient(ctx)
-	if !errors.Is(err, geolocate.ErrAllIPLookuppersFailed) {
+	client, err := sess.NewOrchestraClient(context.Background())
+	if !errors.Is(err, errMocked) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 	if client != nil {
@@ -649,5 +621,16 @@ func TestNewOrchestraClientProbeServicesNewClientFailure(t *testing.T) {
 	}
 	if client != nil {
 		t.Fatal("expected nil client here")
+	}
+}
+
+func TestSessionNewSubmitterReturnsNonNilSubmitter(t *testing.T) {
+	sess := newSessionForTesting(t)
+	subm, err := sess.NewSubmitter(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if subm == nil {
+		t.Fatal("expected non nil submitter here")
 	}
 }

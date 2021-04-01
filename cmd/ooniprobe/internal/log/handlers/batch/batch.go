@@ -9,8 +9,17 @@ import (
 	"github.com/apex/log"
 )
 
-// Default handler outputting to stderr.
-var Default = New(os.Stderr)
+// Default handler outputting to stdout. We want to emit the batch
+// output on the standard output, for two reasons:
+//
+// 1. because third party libraries MAY log on the stderr and
+// their logs are most likely not JSON;
+//
+// 2. because this enables piping to `jq` or other tools in
+// a much more natural way than when emitting on stderr.
+//
+// See https://github.com/ooni/probe/issues/1384.
+var Default = New(os.Stdout)
 
 // Handler implementation.
 type Handler struct {

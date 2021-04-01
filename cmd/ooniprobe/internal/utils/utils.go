@@ -39,7 +39,7 @@ func EscapeAwareRuneCountInString(s string) int {
 	return n
 }
 
-// RightPadd adds right padding in from of a string
+// RightPad adds right padding in from of a string
 func RightPad(str string, length int) string {
 	c := length - EscapeAwareRuneCountInString(str)
 	if c < 0 {

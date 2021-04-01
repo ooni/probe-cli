@@ -397,7 +397,7 @@ type DNSQueryEntry struct {
 type dnsQueryType string
 
 // NewDNSQueriesList returns a list of DNS queries.
-func NewDNSQueriesList(begin time.Time, events []trace.Event, dbpath string) []DNSQueryEntry {
+func NewDNSQueriesList(begin time.Time, events []trace.Event) []DNSQueryEntry {
 	// TODO(bassosimone): add support for CNAME lookups.
 	var out []DNSQueryEntry
 	for _, ev := range events {
@@ -409,7 +409,7 @@ func NewDNSQueriesList(begin time.Time, events []trace.Event, dbpath string) []D
 			for _, addr := range ev.Addresses {
 				if qtype.ipoftype(addr) {
 					entry.Answers = append(
-						entry.Answers, qtype.makeanswerentry(addr, dbpath))
+						entry.Answers, qtype.makeanswerentry(addr))
 				}
 			}
 			if len(entry.Answers) <= 0 && ev.Err == nil {
@@ -431,16 +431,16 @@ func NewDNSQueriesList(begin time.Time, events []trace.Event, dbpath string) []D
 func (qtype dnsQueryType) ipoftype(addr string) bool {
 	switch qtype {
 	case "A":
-		return strings.Contains(addr, ":") == false
+		return !strings.Contains(addr, ":")
 	case "AAAA":
-		return strings.Contains(addr, ":") == true
+		return strings.Contains(addr, ":")
 	}
 	return false
 }
 
-func (qtype dnsQueryType) makeanswerentry(addr string, dbpath string) DNSAnswerEntry {
+func (qtype dnsQueryType) makeanswerentry(addr string) DNSAnswerEntry {
 	answer := DNSAnswerEntry{AnswerType: string(qtype)}
-	asn, org, _ := geolocate.LookupASN(dbpath, addr)
+	asn, org, _ := geolocate.LookupASN(addr)
 	answer.ASN = int64(asn)
 	answer.ASOrgName = org
 	switch qtype {
@@ -463,17 +463,20 @@ func (qtype dnsQueryType) makequeryentry(begin time.Time, ev trace.Event) DNSQue
 	}
 }
 
-// NetworkEvent is a network event.
+// NetworkEvent is a network event. It contains all the possible fields
+// and most fields are optional. They are only added when it makes sense
+// for them to be there _and_ we have data to show.
 type NetworkEvent struct {
-	Address       string  `json:"address,omitempty"`
-	ConnID        int64   `json:"conn_id,omitempty"`
-	DialID        int64   `json:"dial_id,omitempty"`
-	Failure       *string `json:"failure"`
-	NumBytes      int64   `json:"num_bytes,omitempty"`
-	Operation     string  `json:"operation"`
-	Proto         string  `json:"proto,omitempty"`
-	T             float64 `json:"t"`
-	TransactionID int64   `json:"transaction_id,omitempty"`
+	Address       string   `json:"address,omitempty"`
+	ConnID        int64    `json:"conn_id,omitempty"`
+	DialID        int64    `json:"dial_id,omitempty"`
+	Failure       *string  `json:"failure"`
+	NumBytes      int64    `json:"num_bytes,omitempty"`
+	Operation     string   `json:"operation"`
+	Proto         string   `json:"proto,omitempty"`
+	T             float64  `json:"t"`
+	Tags          []string `json:"tags,omitempty"`
+	TransactionID int64    `json:"transaction_id,omitempty"`
 }
 
 // NewNetworkEventsList returns a list of DNS queries.
@@ -547,6 +550,7 @@ type TLSHandshake struct {
 	PeerCertificates   []MaybeBinaryValue `json:"peer_certificates"`
 	ServerName         string             `json:"server_name"`
 	T                  float64            `json:"t"`
+	Tags               []string           `json:"tags"`
 	TLSVersion         string             `json:"tls_version"`
 	TransactionID      int64              `json:"transaction_id,omitempty"`
 }

@@ -1,4 +1,4 @@
-// Package engine contains the engine API
+// Package engine contains the engine API.
 package engine
 
 import (
@@ -7,7 +7,6 @@ import (
 	"errors"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
@@ -17,7 +16,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/resources"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -168,7 +166,6 @@ func (e *Experiment) newMeasurement(input string) *model.Measurement {
 		TestStartTime:             e.testStartTime,
 		TestVersion:               e.testVersion,
 	}
-	m.AddAnnotation("assets_version", strconv.FormatInt(resources.Version, 10))
 	m.AddAnnotation("engine_name", "ooniprobe-engine")
 	m.AddAnnotation("engine_version", version.Version)
 	m.AddAnnotation("platform", platform.Name())
@@ -188,10 +185,7 @@ func (e *Experiment) OpenReportContext(ctx context.Context) error {
 			Counter:      e.byteCounter,
 		},
 	}
-	if e.session.selectedProbeService == nil {
-		return errors.New("no probe services selected")
-	}
-	client, err := probeservices.NewClient(e.session, *e.session.selectedProbeService)
+	client, err := e.session.NewProbeServicesClient(ctx)
 	if err != nil {
 		e.session.logger.Debugf("%+v", err)
 		return err

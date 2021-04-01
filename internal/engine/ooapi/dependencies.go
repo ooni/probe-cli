@@ -21,8 +21,8 @@ type RequestMaker interface {
 	NewRequest(ctx context.Context, method, URL string, body io.Reader) (*http.Request, error)
 }
 
-// TemplateExecutor parses and executes a text template.
-type TemplateExecutor interface {
+// templateExecutor parses and executes a text template.
+type templateExecutor interface {
 	// Execute takes in input a template string and some piece of data. It
 	// returns either a string where template parameters have been replaced,
 	// on success, or an error, on failure.
