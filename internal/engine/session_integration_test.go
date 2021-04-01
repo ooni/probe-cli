@@ -166,21 +166,6 @@ func newSessionForTesting(t *testing.T) *Session {
 	return sess
 }
 
-func TestNewOrchestraClient(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess := newSessionForTestingNoLookups(t)
-	defer sess.Close()
-	clnt, err := sess.NewOrchestraClient(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if clnt == nil {
-		t.Fatal("expected non nil client here")
-	}
-}
-
 func TestInitOrchestraClientMaybeRegisterError(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
@@ -571,6 +556,7 @@ func TestUserAgentNoProxy(t *testing.T) {
 	}
 }
 
+/*
 func TestNewOrchestraClientMaybeLookupBackendsFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
@@ -623,6 +609,7 @@ func TestNewOrchestraClientProbeServicesNewClientFailure(t *testing.T) {
 		t.Fatal("expected nil client here")
 	}
 }
+*/
 
 func TestSessionNewSubmitterReturnsNonNilSubmitter(t *testing.T) {
 	sess := newSessionForTesting(t)

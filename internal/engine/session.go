@@ -275,6 +275,35 @@ func (s *Session) DefaultHTTPClient() *http.Client {
 	return &http.Client{Transport: s.httpDefaultTransport}
 }
 
+// FetchPsiphonConfig fetches psiphon config from the API.
+func (s *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
+	clnt, err := s.newOrchestraClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return clnt.FetchPsiphonConfig(ctx)
+}
+
+// FetchTorTargets fetches tor targets from the API.
+func (s *Session) FetchTorTargets(
+	ctx context.Context, cc string) (map[string]model.TorTarget, error) {
+	clnt, err := s.newOrchestraClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return clnt.FetchTorTargets(ctx, cc)
+}
+
+// FetchURLList fetches the URL list from the API.
+func (s *Session) FetchURLList(
+	ctx context.Context, config model.URLListConfig) ([]model.URLInfo, error) {
+	clnt, err := s.newOrchestraClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return clnt.FetchURLList(ctx, config)
+}
+
 // KeyValueStore returns the configured key-value store.
 func (s *Session) KeyValueStore() model.KeyValueStore {
 	return s.kvStore
@@ -385,9 +414,9 @@ func (s *Session) NewSubmitter(ctx context.Context) (Submitter, error) {
 	return probeservices.NewSubmitter(psc, s.Logger()), nil
 }
 
-// NewOrchestraClient creates a new orchestra client. This client is registered
+// newOrchestraClient creates a new orchestra client. This client is registered
 // and logged in with the OONI orchestra. An error is returned on failure.
-func (s *Session) NewOrchestraClient(ctx context.Context) (model.ExperimentOrchestraClient, error) {
+func (s *Session) newOrchestraClient(ctx context.Context) (*probeservices.Client, error) {
 	clnt, err := s.NewProbeServicesClient(ctx)
 	if err != nil {
 		return nil, err

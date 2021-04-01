@@ -136,20 +136,16 @@ func (tk *TestKeys) fillToplevelKeys() {
 
 // Measurer performs the measurement.
 type Measurer struct {
-	config             Config
-	fetchTorTargets    func(ctx context.Context, clnt model.ExperimentOrchestraClient, cc string) (map[string]model.TorTarget, error)
-	newOrchestraClient func(ctx context.Context, sess model.ExperimentSession) (model.ExperimentOrchestraClient, error)
+	config          Config
+	fetchTorTargets func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.TorTarget, error)
 }
 
 // NewMeasurer creates a new Measurer
 func NewMeasurer(config Config) *Measurer {
 	return &Measurer{
 		config: config,
-		fetchTorTargets: func(ctx context.Context, clnt model.ExperimentOrchestraClient, cc string) (map[string]model.TorTarget, error) {
-			return clnt.FetchTorTargets(ctx, cc)
-		},
-		newOrchestraClient: func(ctx context.Context, sess model.ExperimentSession) (model.ExperimentOrchestraClient, error) {
-			return sess.NewOrchestraClient(ctx)
+		fetchTorTargets: func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.TorTarget, error) {
+			return sess.FetchTorTargets(ctx, cc)
 		},
 	}
 }
@@ -189,11 +185,7 @@ func (m *Measurer) gimmeTargets(
 ) (map[string]model.TorTarget, error) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	clnt, err := m.newOrchestraClient(ctx, sess)
-	if err != nil {
-		return nil, err
-	}
-	return m.fetchTorTargets(ctx, clnt, sess.ProbeCC())
+	return m.fetchTorTargets(ctx, sess, sess.ProbeCC())
 }
 
 // keytarget contains a key and the related target
