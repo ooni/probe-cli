@@ -431,9 +431,9 @@ func NewDNSQueriesList(begin time.Time, events []trace.Event) []DNSQueryEntry {
 func (qtype dnsQueryType) ipoftype(addr string) bool {
 	switch qtype {
 	case "A":
-		return strings.Contains(addr, ":") == false
+		return !strings.Contains(addr, ":")
 	case "AAAA":
-		return strings.Contains(addr, ":") == true
+		return strings.Contains(addr, ":")
 	}
 	return false
 }

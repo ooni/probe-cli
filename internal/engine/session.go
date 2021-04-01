@@ -36,7 +36,10 @@ type SessionConfig struct {
 	TorBinary              string
 }
 
-// Session is a measurement session.
+// Session is a measurement session. It contains shared information
+// required to run a measurement session, and it controls the lifecycle
+// of such resources. It is not possible to reuse a Session. You MUST
+// NOT attempt to use a Session again after Session.Close.
 type Session struct {
 	availableProbeServices   []model.Service
 	availableTestHelpers     map[string][]model.Service
@@ -58,6 +61,9 @@ type Session struct {
 	tunnelMu                 sync.Mutex
 	tunnelName               string
 	tunnel                   tunnel.Tunnel
+
+	// closeOnce allows us to call Close just once.
+	closeOnce sync.Once
 
 	// mu provides mutual exclusion.
 	mu sync.Mutex
@@ -240,14 +246,19 @@ func (s *Session) newProbeServicesClientForCheckIn(
 // cause memory leaks in your application because of open idle connections,
 // as well as excessive usage of disk space.
 func (s *Session) Close() error {
-	// TODO(bassosimone): introduce a sync.Once to make this method idempotent.
+	s.closeOnce.Do(s.doClose)
+	return nil
+}
+
+// doClose implements Close. This function is called just once.
+func (s *Session) doClose() {
 	s.httpDefaultTransport.CloseIdleConnections()
 	s.resolver.CloseIdleConnections()
 	s.logger.Infof("%s", s.resolver.Stats())
 	if s.tunnel != nil {
 		s.tunnel.Stop()
 	}
-	return os.RemoveAll(s.tempDir)
+	_ = os.RemoveAll(s.tempDir)
 }
 
 // GetTestHelpersByName returns the available test helpers that

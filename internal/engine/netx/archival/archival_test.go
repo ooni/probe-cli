@@ -328,9 +328,13 @@ func TestNewDNSQueriesList(t *testing.T) {
 		},
 		want: []archival.DNSQueryEntry{{
 			Answers: []archival.DNSAnswerEntry{{
+				ASN:        15169,
+				ASOrgName:  "Google LLC",
 				AnswerType: "A",
 				IPv4:       "8.8.8.8",
 			}, {
+				ASN:        15169,
+				ASOrgName:  "Google LLC",
 				AnswerType: "A",
 				IPv4:       "8.8.4.4",
 			}},
@@ -342,26 +346,6 @@ func TestNewDNSQueriesList(t *testing.T) {
 		}},
 	}, {
 		name: "run with IPv6 results",
-		args: args{
-			begin: begin,
-			events: []trace.Event{{
-				Addresses: []string{"2001:4860:4860::8888"},
-				Hostname:  "dns.google.com",
-				Name:      "resolve_done",
-				Time:      begin.Add(200 * time.Millisecond),
-			}},
-		},
-		want: []archival.DNSQueryEntry{{
-			Answers: []archival.DNSAnswerEntry{{
-				AnswerType: "AAAA",
-				IPv6:       "2001:4860:4860::8888",
-			}},
-			Hostname:  "dns.google.com",
-			QueryType: "AAAA",
-			T:         0.2,
-		}},
-	}, {
-		name: "run with ASN DB",
 		args: args{
 			begin: begin,
 			events: []trace.Event{{
@@ -411,9 +395,9 @@ func TestNewDNSQueriesList(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := archival.NewDNSQueriesList(
-				tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
-				t.Error(cmp.Diff(got, tt.want))
+			got := archival.NewDNSQueriesList(tt.args.begin, tt.args.events)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	}

@@ -3,7 +3,7 @@ package geolocate
 import (
 	"net"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/assetsx"
+	"github.com/ooni/probe-assets/assets"
 	"github.com/oschwald/geoip2-golang"
 )
 
@@ -11,8 +11,7 @@ type mmdbLookupper struct{}
 
 func (mmdbLookupper) LookupASN(ip string) (asn uint, org string, err error) {
 	asn, org = DefaultProbeASN, DefaultProbeNetworkName
-	dbdata := assetsx.Must(assetsx.ASNDatabaseData())
-	db, err := geoip2.FromBytes(dbdata)
+	db, err := geoip2.FromBytes(assets.ASNDatabaseData())
 	if err != nil {
 		return
 	}
@@ -36,8 +35,7 @@ func LookupASN(ip string) (asn uint, org string, err error) {
 
 func (mmdbLookupper) LookupCC(ip string) (cc string, err error) {
 	cc = DefaultProbeCC
-	dbdata := assetsx.Must(assetsx.CountryDatabaseData())
-	db, err := geoip2.FromBytes(dbdata)
+	db, err := geoip2.FromBytes(assets.CountryDatabaseData())
 	if err != nil {
 		return
 	}
