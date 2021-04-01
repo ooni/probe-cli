@@ -9,6 +9,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
@@ -119,6 +120,15 @@ func NewSession(config *SessionConfig) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// We cleanup the assets files used by versions of ooniprobe
+	// older than v3.9.0, where we started embedding the assets
+	// into the binary and use that directly. This cleanup doesn't
+	// remove the whole directory but only known files inside it
+	// and then the directory itself, if empty. We explicitly discard
+	// the return value as it does not matter to us here.
+	_, _ = assetsdir.Cleanup(config.AssetsDir)
+
 	var availableps []model.Service
 	if config.ProbeServicesURL != "" {
 		availableps = append(availableps, model.Service{
