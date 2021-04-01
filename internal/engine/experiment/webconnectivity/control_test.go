@@ -16,15 +16,6 @@ func TestFillASNsEmpty(t *testing.T) {
 	}
 }
 
-func TestFillASNsNoDatabase(t *testing.T) {
-	dns := new(webconnectivity.ControlDNSResult)
-	dns.Addrs = []string{"8.8.8.8", "1.1.1.1"}
-	dns.FillASNs(new(mockable.Session))
-	if diff := cmp.Diff(dns.ASNs, []int64{0, 0}); diff != "" {
-		t.Fatal(diff)
-	}
-}
-
 func TestFillASNsSuccess(t *testing.T) {
 	sess := newsession(t, false)
 	dns := new(webconnectivity.ControlDNSResult)

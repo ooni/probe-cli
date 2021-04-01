@@ -47,21 +47,6 @@ func TestNewSessionWithInvalidStateDir(t *testing.T) {
 	}
 }
 
-func TestNewSessionWithMissingSoftwareName(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess, err := oonimkall.NewSession(&oonimkall.SessionConfig{
-		StateDir: "../testdata/oonimkall/state",
-	})
-	if err == nil || err.Error() != "AssetsDir is empty" {
-		t.Fatal("not the error we expected")
-	}
-	if sess != nil {
-		t.Fatal("expected a nil Session here")
-	}
-}
-
 func TestMaybeUpdateResourcesWithCancelledContext(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
