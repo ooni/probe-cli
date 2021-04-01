@@ -27,7 +27,15 @@ var (
 func init() {
 	txp := netx.NewHTTPTransport(netx.Config{Logger: log.Log})
 	httpClient = &http.Client{Transport: txp}
-	resolver = netx.NewResolver(netx.Config{Logger: log.Log})
+	// Use a nonstandard resolver, which hopefully is enough to work
+	// around https://github.com/ooni/probe/issues/1409.
+	childResolver, _ := netx.NewDNSClient(netx.Config{
+		Logger: log.Log,
+	}, "dot://8.8.8.8:853")
+	resolver = netx.NewResolver(netx.Config{
+		BaseResolver: childResolver,
+		Logger:       log.Log,
+	})
 }
 
 func main() {
