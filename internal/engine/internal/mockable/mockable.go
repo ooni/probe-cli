@@ -18,7 +18,6 @@ import (
 
 // Session allows to mock sessions.
 type Session struct {
-	MockableASNDatabasePath      string
 	MockableTestHelpers          map[string][]model.Service
 	MockableHTTPClient           *http.Client
 	MockableLogger               model.Logger
@@ -37,11 +36,6 @@ type Session struct {
 	MockableTorArgs              []string
 	MockableTorBinary            string
 	MockableUserAgent            string
-}
-
-// ASNDatabasePath implements ExperimentSession.ASNDatabasePath
-func (sess *Session) ASNDatabasePath() string {
-	return sess.MockableASNDatabasePath
 }
 
 // GetTestHelpersByName implements ExperimentSession.GetTestHelpersByName

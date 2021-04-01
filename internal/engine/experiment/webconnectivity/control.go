@@ -78,7 +78,7 @@ func (dns *ControlDNSResult) FillASNs(sess model.ExperimentSession) {
 	for _, ip := range dns.Addrs {
 		// TODO(bassosimone): this would be more efficient if we'd open just
 		// once the database and then reuse it for every address.
-		asn, _, _ := geolocate.LookupASN(sess.ASNDatabasePath(), ip)
+		asn, _, _ := geolocate.LookupASN(ip)
 		dns.ASNs = append(dns.ASNs, int64(asn))
 	}
 }

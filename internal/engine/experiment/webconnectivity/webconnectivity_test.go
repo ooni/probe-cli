@@ -202,7 +202,6 @@ func TestMeasureWithNoAvailableTestHelpers(t *testing.T) {
 
 func newsession(t *testing.T, lookupBackends bool) model.ExperimentSession {
 	sess, err := engine.NewSession(engine.SessionConfig{
-		AssetsDir: "../../testdata",
 		AvailableProbeServices: []model.Service{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",

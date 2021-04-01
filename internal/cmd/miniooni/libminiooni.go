@@ -18,6 +18,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/humanizex"
+	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -303,9 +304,18 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	homeDir := gethomedir(currentOptions.HomeDir)
 	fatalIfFalse(homeDir != "", "home directory is empty")
 	miniooniDir := path.Join(homeDir, ".miniooni")
+	err = os.MkdirAll(miniooniDir, 0700)
+	fatalOnError(err, "cannot create $HOME/.miniooni directory")
+
+	// We cleanup the assets files used by versions of ooniprobe
+	// older than v3.9.0, where we started embedding the assets
+	// into the binary and use that directly. This cleanup doesn't
+	// remove the whole directory but only known files inside it
+	// and then the directory itself, if empty. We explicitly discard
+	// the return value as it does not matter to us here.
 	assetsDir := path.Join(miniooniDir, "assets")
-	err = os.MkdirAll(assetsDir, 0700)
-	fatalOnError(err, "cannot create assets directory")
+	_, _ = assetsdir.Cleanup(assetsDir)
+
 	log.Debugf("miniooni state directory: %s", miniooniDir)
 
 	consentFile := path.Join(miniooniDir, "informed")
@@ -324,7 +334,6 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	fatalOnError(err, "cannot create kvstore2 directory")
 
 	config := engine.SessionConfig{
-		AssetsDir:       assetsDir,
 		KVStore:         kvstore,
 		Logger:          logger,
 		ProxyURL:        proxyURL,

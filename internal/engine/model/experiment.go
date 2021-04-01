@@ -24,7 +24,6 @@ type ExperimentOrchestraClient interface {
 
 // ExperimentSession is the experiment's view of a session.
 type ExperimentSession interface {
-	ASNDatabasePath() string
 	GetTestHelpersByName(name string) ([]Service, bool)
 	DefaultHTTPClient() *http.Client
 	Logger() Logger

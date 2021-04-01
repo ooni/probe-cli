@@ -15,5 +15,4 @@ jobs:
         with:
           go-version: "${{ matrix.go }}"
       - uses: actions/checkout@v2
-      - run: go run ./internal/cmd/getresources
       - run: go test -short -race -tags shaping ./...
