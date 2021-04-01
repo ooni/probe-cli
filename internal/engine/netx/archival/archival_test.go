@@ -985,13 +985,6 @@ func TestNewFailure(t *testing.T) {
 	}
 }
 
-func TestDNSQueryTypeInvalidIPOfType(t *testing.T) {
-	qtype := archival.DNSQueryType("ANTANI")
-	if qtype.IPOfType("8.8.8.8") != false {
-		t.Fatal("unexpected return value")
-	}
-}
-
 func TestNewFailedOperation(t *testing.T) {
 	type args struct {
 		err error
