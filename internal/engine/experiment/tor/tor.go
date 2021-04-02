@@ -55,6 +55,11 @@ type TargetResults struct {
 	TargetSource   string                          `json:"target_source,omitempty"`
 	TCPConnect     oonidatamodel.TCPConnectList    `json:"tcp_connect"`
 	TLSHandshakes  oonidatamodel.TLSHandshakesList `json:"tls_handshakes"`
+
+	// Only for testing. We don't care about this field otherwise. We
+	// cannot make this private because otherwise the IP address sanitized
+	// is going to panic over a private field.
+	DirPortCount int `json:"-"`
 }
 
 func registerExtensions(m *model.Measurement) {
@@ -78,6 +83,7 @@ func (tr *TargetResults) fillSummary() {
 	case "dir_port":
 		// The UI currently doesn't care about this protocol
 		// as long as drawing a table is concerned.
+		tr.DirPortCount++
 	case "obfs4":
 		// We currently only perform an OBFS4 handshake, hence
 		// the final Failure is the handshake result

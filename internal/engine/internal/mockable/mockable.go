@@ -51,18 +51,18 @@ func (sess *Session) DefaultHTTPClient() *http.Client {
 	return sess.MockableHTTPClient
 }
 
-// FetchPsiphonConfig implements ExperimentOrchestraClient.FetchPsiphonConfig
+// FetchPsiphonConfig implements ExperimentSession.FetchPsiphonConfig
 func (sess *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 	return sess.MockableFetchPsiphonConfigResult, sess.MockableFetchPsiphonConfigErr
 }
 
-// FetchTorTargets implements ExperimentOrchestraClient.TorTargets
+// FetchTorTargets implements ExperimentSession.TorTargets
 func (sess *Session) FetchTorTargets(
 	ctx context.Context, cc string) (map[string]model.TorTarget, error) {
 	return sess.MockableFetchTorTargetsResult, sess.MockableFetchTorTargetsErr
 }
 
-// FetchURLList implements ExperimentOrchestraClient.FetchURLList.
+// FetchURLList implements ExperimentSession.FetchURLList.
 func (sess *Session) FetchURLList(
 	ctx context.Context, config model.URLListConfig) ([]model.URLInfo, error) {
 	return sess.MockableFetchURLListResult, sess.MockableFetchURLListErr
