@@ -68,9 +68,6 @@ type TestKeys struct {
 	TransportStatus map[string]string   `json:"transport_status"`
 }
 
-// TODO(bassosimone,cyberta): make sure the spec mentions
-// the transport_status result key.
-
 // NewTestKeys creates new riseupvpn TestKeys.
 func NewTestKeys() *TestKeys {
 	return &TestKeys{
@@ -210,6 +207,7 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 		if tk.Failure != nil {
 			// TODO(bassosimone,cyberta): should we update the testkeys
 			// in this case (e.g., APIFailure?)
+			// See https://github.com/ooni/probe/issues/1432.
 			return nil
 		}
 		if ok := certPool.AppendCertsFromPEM([]byte(tk.HTTPResponseBody)); !ok {
@@ -301,6 +299,7 @@ func parseGateways(testKeys *TestKeys) []GatewayV3 {
 		if requestEntry.Request.URL == eipServiceURL && requestEntry.Failure == nil {
 			// TODO(bassosimone,cyberta): is it reasonable that we discard
 			// the error when the JSON we fetched cannot be parsed?
+			// See https://github.com/ooni/probe/issues/1432
 			eipService, err := DecodeEIP3(requestEntry.Response.Body.Value)
 			if err == nil {
 				return eipService.Gateways
