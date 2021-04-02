@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
@@ -21,14 +20,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/resources"
-	"github.com/ooni/probe-cli/v3/internal/engine/resourcesmanager"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 // SessionConfig contains the Session config
 type SessionConfig struct {
-	AssetsDir              string
 	AvailableProbeServices []model.Service
 	KVStore                KVStore
 	Logger                 model.Logger
@@ -40,9 +36,11 @@ type SessionConfig struct {
 	TorBinary              string
 }
 
-// Session is a measurement session.
+// Session is a measurement session. It contains shared information
+// required to run a measurement session, and it controls the lifecycle
+// of such resources. It is not possible to reuse a Session. You MUST
+// NOT attempt to use a Session again after Session.Close.
 type Session struct {
-	assetsDir                string
 	availableProbeServices   []model.Service
 	availableTestHelpers     map[string][]model.Service
 	byteCounter              *bytecounter.Counter
@@ -63,6 +61,9 @@ type Session struct {
 	tunnelMu                 sync.Mutex
 	tunnelName               string
 	tunnel                   tunnel.Tunnel
+
+	// closeOnce allows us to call Close just once.
+	closeOnce sync.Once
 
 	// mu provides mutual exclusion.
 	mu sync.Mutex
@@ -93,9 +94,6 @@ type sessionProbeServicesClientForCheckIn interface {
 
 // NewSession creates a new session or returns an error
 func NewSession(config SessionConfig) (*Session, error) {
-	if config.AssetsDir == "" {
-		return nil, errors.New("AssetsDir is empty")
-	}
 	if config.Logger == nil {
 		return nil, errors.New("Logger is empty")
 	}
@@ -117,7 +115,6 @@ func NewSession(config SessionConfig) (*Session, error) {
 		return nil, err
 	}
 	sess := &Session{
-		assetsDir:               config.AssetsDir,
 		availableProbeServices:  config.AvailableProbeServices,
 		byteCounter:             bytecounter.New(),
 		kvStore:                 config.KVStore,
@@ -145,12 +142,6 @@ func NewSession(config SessionConfig) (*Session, error) {
 	httpConfig.FullResolver = sess.resolver
 	sess.httpDefaultTransport = netx.NewHTTPTransport(httpConfig)
 	return sess, nil
-}
-
-// ASNDatabasePath returns the path where the ASN database path should
-// be if you have called s.FetchResourcesIdempotent.
-func (s *Session) ASNDatabasePath() string {
-	return filepath.Join(s.assetsDir, resources.ASNDatabaseName)
 }
 
 // KibiBytesReceived accounts for the KibiBytes received by the HTTP clients
@@ -255,19 +246,19 @@ func (s *Session) newProbeServicesClientForCheckIn(
 // cause memory leaks in your application because of open idle connections,
 // as well as excessive usage of disk space.
 func (s *Session) Close() error {
-	// TODO(bassosimone): introduce a sync.Once to make this method idempotent.
+	s.closeOnce.Do(s.doClose)
+	return nil
+}
+
+// doClose implements Close. This function is called just once.
+func (s *Session) doClose() {
 	s.httpDefaultTransport.CloseIdleConnections()
 	s.resolver.CloseIdleConnections()
 	s.logger.Infof("%s", s.resolver.Stats())
 	if s.tunnel != nil {
 		s.tunnel.Stop()
 	}
-	return os.RemoveAll(s.tempDir)
-}
-
-// CountryDatabasePath is like ASNDatabasePath but for the country DB path.
-func (s *Session) CountryDatabasePath() string {
-	return filepath.Join(s.assetsDir, resources.CountryDatabaseName)
+	_ = os.RemoveAll(s.tempDir)
 }
 
 // GetTestHelpersByName returns the available test helpers that
@@ -282,6 +273,26 @@ func (s *Session) GetTestHelpersByName(name string) ([]model.Service, bool) {
 // DefaultHTTPClient returns the session's default HTTP client.
 func (s *Session) DefaultHTTPClient() *http.Client {
 	return &http.Client{Transport: s.httpDefaultTransport}
+}
+
+// FetchTorTargets fetches tor targets from the API.
+func (s *Session) FetchTorTargets(
+	ctx context.Context, cc string) (map[string]model.TorTarget, error) {
+	clnt, err := s.NewOrchestraClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return clnt.FetchTorTargets(ctx, cc)
+}
+
+// FetchURLList fetches the URL list from the API.
+func (s *Session) FetchURLList(
+	ctx context.Context, config model.URLListConfig) ([]model.URLInfo, error) {
+	clnt, err := s.NewOrchestraClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return clnt.FetchURLList(ctx, config)
 }
 
 // KeyValueStore returns the configured key-value store.
@@ -396,7 +407,10 @@ func (s *Session) NewSubmitter(ctx context.Context) (Submitter, error) {
 
 // NewOrchestraClient creates a new orchestra client. This client is registered
 // and logged in with the OONI orchestra. An error is returned on failure.
-func (s *Session) NewOrchestraClient(ctx context.Context) (model.ExperimentOrchestraClient, error) {
+//
+// This function is DEPRECATED. New code SHOULD NOT use it. It will eventually
+// be made private or entirely removed from the codebase.
+func (s *Session) NewOrchestraClient(ctx context.Context) (*probeservices.Client, error) {
 	clnt, err := s.NewProbeServicesClient(ctx)
 	if err != nil {
 		return nil, err
@@ -546,11 +560,6 @@ func (s *Session) UserAgent() (useragent string) {
 	return
 }
 
-// MaybeUpdateResources updates the resources if needed.
-func (s *Session) MaybeUpdateResources(ctx context.Context) error {
-	return (&resourcesmanager.CopyWorker{DestDir: s.assetsDir}).Ensure()
-}
-
 // getAvailableProbeServicesUnlocked returns the available probe
 // services. This function WILL NOT acquire the mu mutex, therefore,
 // you MUST ensure you are using it from a locked context.
@@ -629,7 +638,6 @@ func (s *Session) LookupLocationContext(ctx context.Context) (*geolocate.Results
 		EnableResolverLookup: s.proxyURL == nil,
 		Logger:               s.Logger(),
 		Resolver:             s.resolver,
-		ResourcesManager:     s,
 		UserAgent:            s.UserAgent(),
 	}))
 	return task.Run(ctx)

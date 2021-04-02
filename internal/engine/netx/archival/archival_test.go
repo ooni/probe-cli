@@ -16,7 +16,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/engine/resourcesmanager"
 )
 
 func TestNewTCPConnectList(t *testing.T) {
@@ -130,7 +129,7 @@ func TestNewRequestList(t *testing.T) {
 			}, {
 				Name: "http_response_metadata",
 				HTTPHeaders: http.Header{
-					"Server": []string{"orchestra/0.1.0-dev"},
+					"Server": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPStatusCode: 200,
 			}, {
@@ -195,11 +194,11 @@ func TestNewRequestList(t *testing.T) {
 				HeadersList: []archival.HTTPHeader{{
 					Key: "Server",
 					Value: archival.MaybeBinaryValue{
-						Value: "orchestra/0.1.0-dev",
+						Value: "miniooni/0.1.0-dev",
 					},
 				}},
 				Headers: map[string]archival.MaybeBinaryValue{
-					"Server": {Value: "orchestra/0.1.0-dev"},
+					"Server": {Value: "miniooni/0.1.0-dev"},
 				},
 				Locations: nil,
 			},
@@ -224,7 +223,7 @@ func TestNewRequestList(t *testing.T) {
 			}, {
 				Name: "http_response_metadata",
 				HTTPHeaders: http.Header{
-					"Server":   []string{"orchestra/0.1.0-dev"},
+					"Server":   []string{"miniooni/0.1.0-dev"},
 					"Location": []string{"https://x.example.com", "https://y.example.com"},
 				},
 				HTTPStatusCode: 302,
@@ -261,11 +260,11 @@ func TestNewRequestList(t *testing.T) {
 				}, {
 					Key: "Server",
 					Value: archival.MaybeBinaryValue{
-						Value: "orchestra/0.1.0-dev",
+						Value: "miniooni/0.1.0-dev",
 					},
 				}},
 				Headers: map[string]archival.MaybeBinaryValue{
-					"Server":   {Value: "orchestra/0.1.0-dev"},
+					"Server":   {Value: "miniooni/0.1.0-dev"},
 					"Location": {Value: "https://x.example.com"},
 				},
 				Locations: []string{
@@ -285,15 +284,10 @@ func TestNewRequestList(t *testing.T) {
 }
 
 func TestNewDNSQueriesList(t *testing.T) {
-	err := (&resourcesmanager.CopyWorker{DestDir: "../../testdata"}).Ensure()
-	if err != nil {
-		t.Fatal(err)
-	}
 	begin := time.Now()
 	type args struct {
 		begin  time.Time
 		events []trace.Event
-		dbpath string
 	}
 	tests := []struct {
 		name string
@@ -334,9 +328,13 @@ func TestNewDNSQueriesList(t *testing.T) {
 		},
 		want: []archival.DNSQueryEntry{{
 			Answers: []archival.DNSAnswerEntry{{
+				ASN:        15169,
+				ASOrgName:  "Google LLC",
 				AnswerType: "A",
 				IPv4:       "8.8.8.8",
 			}, {
+				ASN:        15169,
+				ASOrgName:  "Google LLC",
 				AnswerType: "A",
 				IPv4:       "8.8.4.4",
 			}},
@@ -359,27 +357,6 @@ func TestNewDNSQueriesList(t *testing.T) {
 		},
 		want: []archival.DNSQueryEntry{{
 			Answers: []archival.DNSAnswerEntry{{
-				AnswerType: "AAAA",
-				IPv6:       "2001:4860:4860::8888",
-			}},
-			Hostname:  "dns.google.com",
-			QueryType: "AAAA",
-			T:         0.2,
-		}},
-	}, {
-		name: "run with ASN DB",
-		args: args{
-			begin: begin,
-			events: []trace.Event{{
-				Addresses: []string{"2001:4860:4860::8888"},
-				Hostname:  "dns.google.com",
-				Name:      "resolve_done",
-				Time:      begin.Add(200 * time.Millisecond),
-			}},
-			dbpath: "../../testdata/asn.mmdb",
-		},
-		want: []archival.DNSQueryEntry{{
-			Answers: []archival.DNSAnswerEntry{{
 				ASN:        15169,
 				ASOrgName:  "Google LLC",
 				AnswerType: "AAAA",
@@ -399,7 +376,6 @@ func TestNewDNSQueriesList(t *testing.T) {
 				Name:     "resolve_done",
 				Time:     begin.Add(200 * time.Millisecond),
 			}},
-			dbpath: "../../testdata/asn.mmdb",
 		},
 		want: []archival.DNSQueryEntry{{
 			Answers: nil,
@@ -419,9 +395,9 @@ func TestNewDNSQueriesList(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := archival.NewDNSQueriesList(
-				tt.args.begin, tt.args.events, tt.args.dbpath); !reflect.DeepEqual(got, tt.want) {
-				t.Error(cmp.Diff(got, tt.want))
+			got := archival.NewDNSQueriesList(tt.args.begin, tt.args.events)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	}
@@ -1006,13 +982,6 @@ func TestNewFailure(t *testing.T) {
 				return
 			}
 		})
-	}
-}
-
-func TestDNSQueryTypeInvalidIPOfType(t *testing.T) {
-	qtype := archival.DNSQueryType("ANTANI")
-	if qtype.IPOfType("8.8.8.8") != false {
-		t.Fatal("unexpected return value")
 	}
 }
 

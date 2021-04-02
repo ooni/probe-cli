@@ -12,4 +12,6 @@
 /oohelper
 /oohelperd
 /oonipsiphon/
+/psiphon-config.json.age
+/psiphon-config.key
 .DS_Store

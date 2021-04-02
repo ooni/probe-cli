@@ -75,7 +75,6 @@ func (r *Runner) newsession(logger *ChanLogger) (*engine.Session, error) {
 		return nil, err
 	}
 	config := engine.SessionConfig{
-		AssetsDir:       r.settings.AssetsDir,
 		KVStore:         kvstore,
 		Logger:          logger,
 		SoftwareName:    r.settings.Options.SoftwareName,

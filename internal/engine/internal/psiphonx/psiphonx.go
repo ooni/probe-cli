@@ -10,13 +10,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/psiphon/oopsi/github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
 )
 
 // Session is the way in which this package sees a Session.
 type Session interface {
-	NewOrchestraClient(ctx context.Context) (model.ExperimentOrchestraClient, error)
+	FetchPsiphonConfig(ctx context.Context) ([]byte, error)
 	TempDir() string
 }
 
@@ -87,11 +86,7 @@ func Start(
 	if config.WorkDir == "" {
 		config.WorkDir = sess.TempDir()
 	}
-	clnt, err := sess.NewOrchestraClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	configJSON, err := clnt.FetchPsiphonConfig(ctx)
+	configJSON, err := sess.FetchPsiphonConfig(ctx)
 	if err != nil {
 		return nil, err
 	}

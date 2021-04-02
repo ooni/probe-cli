@@ -1,5 +1,3 @@
-// +build !go1.15
-
 package quicdialer
 
 import (
@@ -10,5 +8,5 @@ import (
 
 // ConnectionState returns the ConnectionState of a QUIC Session.
 func ConnectionState(sess quic.EarlySession) tls.ConnectionState {
-	return tls.ConnectionState{}
+	return sess.ConnectionState().TLS.ConnectionState
 }

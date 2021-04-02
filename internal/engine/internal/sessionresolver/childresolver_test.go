@@ -62,7 +62,7 @@ func TestTimeLimitedLookupFailure(t *testing.T) {
 
 func TestTimeLimitedLookupWillTimeout(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping test in short mode")
+		t.Skip("skip test in short mode")
 	}
 	reso := &Resolver{}
 	re := &FakeResolver{

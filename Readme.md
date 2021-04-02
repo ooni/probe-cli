@@ -24,15 +24,7 @@ Every top-level directory contains an explanatory README file.
 ## Development setup
 
 Be sure you have golang >= 1.16 and a C compiler (when developing for Windows, you
-need Mingw-w64 installed).
-
-You need to download assets first using:
-
-```bash
-go run ./internal/cmd/getresources
-```
-
-Then you can build using:
+need Mingw-w64 installed). You can build using:
 
 ```bash
 go build -v ./cmd/ooniprobe
@@ -80,10 +72,6 @@ go get -u -v ./... && go mod tidy
 
 ## Releasing
 
-1. update binary data as described above;
-
-2. update `internal/version/version.go`;
-
-3. make sure you have updated dependencies;
-
-4. run `./build.sh release` and follow instructions.
+Create an issue according to [the routine release template](
+https://github.com/ooni/probe/blob/master/.github/ISSUE_TEMPLATE/routine-sprint-releases.md)
+and perform any item inside the check-list.

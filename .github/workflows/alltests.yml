@@ -13,5 +13,4 @@ jobs:
         with:
           go-version: "1.16"
       - uses: actions/checkout@v2
-      - run: go run ./internal/cmd/getresources
       - run: go test -race -tags shaping ./...

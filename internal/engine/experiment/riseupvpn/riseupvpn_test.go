@@ -569,7 +569,7 @@ func TestMissingTransport(t *testing.T) {
 	eipService.Gateways[1].Capabilities.Transport = transports
 	eipservicejson, err := json.Marshal(eipservice)
 	if err != nil {
-		t.Fatal(err) // we don't expect this to happen
+		t.Fatal(err)
 	}
 
 	requestResponseMap := map[string]string{

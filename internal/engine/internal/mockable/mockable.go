@@ -12,36 +12,32 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices/testorchestra"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
 // Session allows to mock sessions.
 type Session struct {
-	MockableASNDatabasePath      string
-	MockableTestHelpers          map[string][]model.Service
-	MockableHTTPClient           *http.Client
-	MockableLogger               model.Logger
-	MockableMaybeResolverIP      string
-	MockableOrchestraClient      model.ExperimentOrchestraClient
-	MockableOrchestraClientError error
-	MockableProbeASNString       string
-	MockableProbeCC              string
-	MockableProbeIP              string
-	MockableProbeNetworkName     string
-	MockableProxyURL             *url.URL
-	MockableResolverIP           string
-	MockableSoftwareName         string
-	MockableSoftwareVersion      string
-	MockableTempDir              string
-	MockableTorArgs              []string
-	MockableTorBinary            string
-	MockableUserAgent            string
-}
-
-// ASNDatabasePath implements ExperimentSession.ASNDatabasePath
-func (sess *Session) ASNDatabasePath() string {
-	return sess.MockableASNDatabasePath
+	MockableTestHelpers              map[string][]model.Service
+	MockableHTTPClient               *http.Client
+	MockableLogger                   model.Logger
+	MockableMaybeResolverIP          string
+	MockableProbeASNString           string
+	MockableProbeCC                  string
+	MockableProbeIP                  string
+	MockableProbeNetworkName         string
+	MockableProxyURL                 *url.URL
+	MockableFetchPsiphonConfigResult []byte
+	MockableFetchPsiphonConfigErr    error
+	MockableFetchTorTargetsResult    map[string]model.TorTarget
+	MockableFetchTorTargetsErr       error
+	MockableFetchURLListResult       []model.URLInfo
+	MockableFetchURLListErr          error
+	MockableResolverIP               string
+	MockableSoftwareName             string
+	MockableSoftwareVersion          string
+	MockableTempDir                  string
+	MockableTorArgs                  []string
+	MockableTorBinary                string
+	MockableUserAgent                string
 }
 
 // GetTestHelpersByName implements ExperimentSession.GetTestHelpersByName
@@ -53,6 +49,23 @@ func (sess *Session) GetTestHelpersByName(name string) ([]model.Service, bool) {
 // DefaultHTTPClient implements ExperimentSession.DefaultHTTPClient
 func (sess *Session) DefaultHTTPClient() *http.Client {
 	return sess.MockableHTTPClient
+}
+
+// FetchPsiphonConfig implements ExperimentSession.FetchPsiphonConfig
+func (sess *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
+	return sess.MockableFetchPsiphonConfigResult, sess.MockableFetchPsiphonConfigErr
+}
+
+// FetchTorTargets implements ExperimentSession.TorTargets
+func (sess *Session) FetchTorTargets(
+	ctx context.Context, cc string) (map[string]model.TorTarget, error) {
+	return sess.MockableFetchTorTargetsResult, sess.MockableFetchTorTargetsErr
+}
+
+// FetchURLList implements ExperimentSession.FetchURLList.
+func (sess *Session) FetchURLList(
+	ctx context.Context, config model.URLListConfig) ([]model.URLInfo, error) {
+	return sess.MockableFetchURLListResult, sess.MockableFetchURLListErr
 }
 
 // KeyValueStore returns the configured key-value store.
@@ -68,29 +81,6 @@ func (sess *Session) Logger() model.Logger {
 // MaybeResolverIP implements ExperimentSession.MaybeResolverIP.
 func (sess *Session) MaybeResolverIP() string {
 	return sess.MockableMaybeResolverIP
-}
-
-// NewOrchestraClient implements ExperimentSession.NewOrchestraClient
-func (sess *Session) NewOrchestraClient(ctx context.Context) (model.ExperimentOrchestraClient, error) {
-	if sess.MockableOrchestraClient != nil {
-		return sess.MockableOrchestraClient, nil
-	}
-	if sess.MockableOrchestraClientError != nil {
-		return nil, sess.MockableOrchestraClientError
-	}
-	clnt, err := probeservices.NewClient(sess, model.Service{
-		Address: "https://ams-pg-test.ooni.org/",
-		Type:    "https",
-	})
-	runtimex.PanicOnError(err, "orchestra.NewClient should not fail here")
-	meta := testorchestra.MetadataFixture()
-	if err := clnt.MaybeRegister(ctx, meta); err != nil {
-		return nil, err
-	}
-	if err := clnt.MaybeLogin(ctx); err != nil {
-		return nil, err
-	}
-	return clnt, nil
 }
 
 // ProbeASNString implements ExperimentSession.ProbeASNString
@@ -158,42 +148,3 @@ var _ probeservices.Session = &Session{}
 var _ psiphonx.Session = &Session{}
 var _ tunnel.Session = &Session{}
 var _ torx.Session = &Session{}
-
-// ExperimentOrchestraClient is the experiment's view of
-// a client for querying the OONI orchestra.
-type ExperimentOrchestraClient struct {
-	MockableCheckInInfo              *model.CheckInInfo
-	MockableCheckInErr               error
-	MockableFetchPsiphonConfigResult []byte
-	MockableFetchPsiphonConfigErr    error
-	MockableFetchTorTargetsResult    map[string]model.TorTarget
-	MockableFetchTorTargetsErr       error
-	MockableFetchURLListResult       []model.URLInfo
-	MockableFetchURLListErr          error
-}
-
-// CheckIn implements ExperimentOrchestraClient.CheckIn.
-func (c ExperimentOrchestraClient) CheckIn(
-	ctx context.Context, config model.CheckInConfig) (*model.CheckInInfo, error) {
-	return c.MockableCheckInInfo, c.MockableCheckInErr
-}
-
-// FetchPsiphonConfig implements ExperimentOrchestraClient.FetchPsiphonConfig
-func (c ExperimentOrchestraClient) FetchPsiphonConfig(
-	ctx context.Context) ([]byte, error) {
-	return c.MockableFetchPsiphonConfigResult, c.MockableFetchPsiphonConfigErr
-}
-
-// FetchTorTargets implements ExperimentOrchestraClient.TorTargets
-func (c ExperimentOrchestraClient) FetchTorTargets(
-	ctx context.Context, cc string) (map[string]model.TorTarget, error) {
-	return c.MockableFetchTorTargetsResult, c.MockableFetchTorTargetsErr
-}
-
-// FetchURLList implements ExperimentOrchestraClient.FetchURLList.
-func (c ExperimentOrchestraClient) FetchURLList(
-	ctx context.Context, config model.URLListConfig) ([]model.URLInfo, error) {
-	return c.MockableFetchURLListResult, c.MockableFetchURLListErr
-}
-
-var _ model.ExperimentOrchestraClient = ExperimentOrchestraClient{}

@@ -169,7 +169,7 @@ func (m *Measurer) Run(
 		ResolveSaver: evsaver,
 	})
 	addrs, err := m.lookupHost(ctx, URL.Hostname(), resolver)
-	queries := archival.NewDNSQueriesList(begin, evsaver.Read(), sess.ASNDatabasePath())
+	queries := archival.NewDNSQueriesList(begin, evsaver.Read())
 	tk.BootstrapFailure = archival.NewFailure(err)
 	if len(queries) > 0 {
 		// We get no queries in case we are resolving an IP address, since

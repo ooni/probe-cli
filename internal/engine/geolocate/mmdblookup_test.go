@@ -1,27 +1,11 @@
 package geolocate
 
-import (
-	"testing"
+import "testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/resourcesmanager"
-)
-
-const (
-	asnDBPath     = "../testdata/asn.mmdb"
-	countryDBPath = "../testdata/country.mmdb"
-	ipAddr        = "35.204.49.125"
-)
-
-func maybeFetchResources(t *testing.T) {
-	c := &resourcesmanager.CopyWorker{DestDir: "../testdata/"}
-	if err := c.Ensure(); err != nil {
-		t.Fatal(err)
-	}
-}
+const ipAddr = "35.204.49.125"
 
 func TestLookupASN(t *testing.T) {
-	maybeFetchResources(t)
-	asn, org, err := LookupASN(asnDBPath, ipAddr)
+	asn, org, err := LookupASN(ipAddr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,23 +17,8 @@ func TestLookupASN(t *testing.T) {
 	}
 }
 
-func TestLookupASNInvalidFile(t *testing.T) {
-	maybeFetchResources(t)
-	asn, org, err := LookupASN("/nonexistent", ipAddr)
-	if err == nil {
-		t.Fatal("expected an error here")
-	}
-	if asn != DefaultProbeASN {
-		t.Fatal("expected a zero ASN")
-	}
-	if org != DefaultProbeNetworkName {
-		t.Fatal("expected an empty org")
-	}
-}
-
 func TestLookupASNInvalidIP(t *testing.T) {
-	maybeFetchResources(t)
-	asn, org, err := LookupASN(asnDBPath, "xxx")
+	asn, org, err := LookupASN("xxx")
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -62,8 +31,7 @@ func TestLookupASNInvalidIP(t *testing.T) {
 }
 
 func TestLookupCC(t *testing.T) {
-	maybeFetchResources(t)
-	cc, err := (mmdbLookupper{}).LookupCC(countryDBPath, ipAddr)
+	cc, err := (mmdbLookupper{}).LookupCC(ipAddr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,20 +40,8 @@ func TestLookupCC(t *testing.T) {
 	}
 }
 
-func TestLookupCCInvalidFile(t *testing.T) {
-	maybeFetchResources(t)
-	cc, err := (mmdbLookupper{}).LookupCC("/nonexistent", ipAddr)
-	if err == nil {
-		t.Fatal("expected an error here")
-	}
-	if cc != DefaultProbeCC {
-		t.Fatal("expected an empty cc")
-	}
-}
-
 func TestLookupCCInvalidIP(t *testing.T) {
-	maybeFetchResources(t)
-	cc, err := (mmdbLookupper{}).LookupCC(asnDBPath, "xxx")
+	cc, err := (mmdbLookupper{}).LookupCC("xxx")
 	if err == nil {
 		t.Fatal("expected an error here")
 	}

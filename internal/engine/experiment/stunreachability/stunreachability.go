@@ -107,7 +107,7 @@ func (tk *TestKeys) run(
 		tk.NetworkEvents, archival.NewNetworkEventsList(begin, events)...,
 	)
 	tk.Queries = append(
-		tk.Queries, archival.NewDNSQueriesList(begin, events, sess.ASNDatabasePath())...,
+		tk.Queries, archival.NewDNSQueriesList(begin, events)...,
 	)
 	return err
 }

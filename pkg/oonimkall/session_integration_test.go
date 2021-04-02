@@ -47,25 +47,9 @@ func TestNewSessionWithInvalidStateDir(t *testing.T) {
 	}
 }
 
-func TestNewSessionWithMissingSoftwareName(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess, err := oonimkall.NewSession(&oonimkall.SessionConfig{
-		StateDir: "../testdata/oonimkall/state",
-	})
-	if err == nil || err.Error() != "AssetsDir is empty" {
-		t.Fatal("not the error we expected")
-	}
-	if sess != nil {
-		t.Fatal("expected a nil Session here")
-	}
-}
-
 func TestMaybeUpdateResourcesWithCancelledContext(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
+	// Note that MaybeUpdateResources is now a deprecated stub that
+	// does nothing. We will remove it when we bump major.
 	dir, err := ioutil.TempDir("", "xx")
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +62,7 @@ func TestMaybeUpdateResourcesWithCancelledContext(t *testing.T) {
 	ctx := sess.NewContext()
 	ctx.Cancel() // cause immediate failure
 	err = sess.MaybeUpdateResources(ctx)
-	// Explaination: we embed resources. We should change the API
+	// Explanation: we embed resources. We should change the API
 	// and remove the context. Until we do that, let us just assert
 	// that we have embedding and the context does not matter.
 	if err != nil {
