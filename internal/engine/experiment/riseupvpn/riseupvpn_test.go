@@ -3,13 +3,12 @@ package riseupvpn_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
@@ -17,6 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
@@ -176,6 +176,10 @@ UN9SaWRlWKSdP4haujnzCoJbM7dU9bjvlGZNyXEekgeT0W2qFeGGp+yyUWw8tNsp
 0BuC1b7uW/bBn/xKm319wXVDvBgZgcktMolak39V7DVO
 -----END CERTIFICATE-----`
 
+	// TODO(bassosimone): maybe we can switch this test to internal
+	// testing (since now it's all unit tested!) and just use the
+	// same constants that are used in riseupvpn.go.
+
 	eipserviceurl = "https://api.black.riseup.net:443/3/config/eip-service.json"
 	providerurl   = "https://riseup.net/provider.json"
 	geoserviceurl = "https://api.black.riseup.net:9001/json"
@@ -320,10 +324,7 @@ func TestInvalidCaCert(t *testing.T) {
 			obfs4url1:     true,
 		}),
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+	ctx := context.Background()
 	sess := &mockable.Session{MockableLogger: log.Log}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
@@ -337,6 +338,12 @@ func TestInvalidCaCert(t *testing.T) {
 	}
 	if tk.APIStatus != "blocked" {
 		t.Fatal("ApiStatus should be blocked")
+	}
+	if tk.FailingGateways != nil {
+		t.Fatal("invalid FailingGateways")
+	}
+	if tk.TransportStatus != nil {
+		t.Fatal("invalid TransportStatus")
 	}
 }
 
@@ -365,6 +372,12 @@ func TestFailureCaCertFetch(t *testing.T) {
 	if len(tk.Requests) > 1 {
 		t.Fatal("Unexpected requests")
 	}
+	if tk.FailingGateways != nil {
+		t.Fatal("invalid FailingGateways")
+	}
+	if tk.TransportStatus != nil {
+		t.Fatal("invalid TransportStatus")
+	}
 }
 
 func TestFailureEipServiceBlocked(t *testing.T) {
@@ -379,7 +392,7 @@ func TestFailureEipServiceBlocked(t *testing.T) {
 	}))
 	tk := measurement.TestKeys.(*riseupvpn.TestKeys)
 	if tk.CACertStatus != true {
-		t.Fatal("invalid CACertStatus ")
+		t.Fatal("invalid CACertStatus")
 	}
 
 	for _, entry := range tk.Requests {
@@ -582,9 +595,7 @@ func TestMissingTransport(t *testing.T) {
 		}),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+	ctx := context.Background()
 	sess := &mockable.Session{MockableLogger: log.Log}
 	measurement := new(model.Measurement)
 	callbacks := model.NewPrinterCallbacks(log.Log)
@@ -600,7 +611,6 @@ func TestMissingTransport(t *testing.T) {
 	if _, found := tk.TransportStatus["obfs"]; found {
 		t.Fatal("invalid TransportStatus: " + fmt.Sprint(tk.TransportStatus))
 	}
-
 }
 
 func TestSummaryKeysInvalidType(t *testing.T) {
@@ -708,7 +718,7 @@ func generateMockGetter(requestResponse map[string]string, responseStatus map[st
 		responseBody, foundRequest := requestResponse[url]
 		isSuccessStatus, foundStatus := responseStatus[url]
 		if !foundRequest || !foundStatus {
-			return urlgetter.DefaultMultiGetter(ctx, g)
+			return urlgetter.TestKeys{}, errors.New("request or status not found")
 		}
 
 		var failure *string
@@ -768,6 +778,7 @@ func generateMockGetter(requestResponse map[string]string, responseStatus map[st
 		return tk, nil
 	}
 }
+
 func generateDefaultMockGetter(responseStatuses map[string]bool) urlgetter.MultiGetter {
 	return generateMockGetter(RequestResponse, responseStatuses)
 }
