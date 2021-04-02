@@ -556,7 +556,6 @@ func TestUserAgentNoProxy(t *testing.T) {
 	}
 }
 
-/*
 func TestNewOrchestraClientMaybeLookupBackendsFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
@@ -609,7 +608,6 @@ func TestNewOrchestraClientProbeServicesNewClientFailure(t *testing.T) {
 		t.Fatal("expected nil client here")
 	}
 }
-*/
 
 func TestSessionNewSubmitterReturnsNonNilSubmitter(t *testing.T) {
 	sess := newSessionForTesting(t)
@@ -619,5 +617,19 @@ func TestSessionNewSubmitterReturnsNonNilSubmitter(t *testing.T) {
 	}
 	if subm == nil {
 		t.Fatal("expected non nil submitter here")
+	}
+}
+
+func TestSessionFetchURLList(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	sess := newSessionForTesting(t)
+	resp, err := sess.FetchURLList(context.Background(), model.URLListConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp == nil {
+		t.Fatal("expected non-nil response here")
 	}
 }
