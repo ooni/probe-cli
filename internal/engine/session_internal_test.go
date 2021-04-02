@@ -208,3 +208,42 @@ func TestSessionMaybeLookupLocationContextLookupLocationContextFailure(t *testin
 		t.Fatal("not the error we expected", err)
 	}
 }
+
+func TestSessionFetchURLListWithCancelledContext(t *testing.T) {
+	sess := &Session{}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cause failure
+	resp, err := sess.FetchURLList(ctx, model.URLListConfig{})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("not the error we expected", err)
+	}
+	if resp != nil {
+		t.Fatal("expected nil response here")
+	}
+}
+
+func TestSessionFetchTorTargetsWithCancelledContext(t *testing.T) {
+	sess := &Session{}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cause failure
+	resp, err := sess.FetchTorTargets(ctx, "IT")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("not the error we expected", err)
+	}
+	if resp != nil {
+		t.Fatal("expected nil response here")
+	}
+}
+
+func TestSessionFetchPsiphonConfigWithCancelledContext(t *testing.T) {
+	sess := &Session{}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cause failure
+	resp, err := sess.FetchPsiphonConfig(ctx)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("not the error we expected", err)
+	}
+	if resp != nil {
+		t.Fatal("expected nil response here")
+	}
+}

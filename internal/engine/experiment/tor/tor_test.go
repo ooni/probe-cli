@@ -18,7 +18,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -31,32 +30,10 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	}
 }
 
-func TestMeasurerMeasureNewOrchestraClientError(t *testing.T) {
-	measurer := NewMeasurer(Config{})
-	expected := errors.New("mocked error")
-	measurer.newOrchestraClient = func(ctx context.Context, sess model.ExperimentSession) (model.ExperimentOrchestraClient, error) {
-		return nil, expected
-	}
-	err := measurer.Run(
-		context.Background(),
-		&mockable.Session{
-			MockableLogger: log.Log,
-		},
-		new(model.Measurement),
-		model.NewPrinterCallbacks(log.Log),
-	)
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
-	}
-}
-
 func TestMeasurerMeasureFetchTorTargetsError(t *testing.T) {
 	measurer := NewMeasurer(Config{})
 	expected := errors.New("mocked error")
-	measurer.newOrchestraClient = func(ctx context.Context, sess model.ExperimentSession) (model.ExperimentOrchestraClient, error) {
-		return new(probeservices.Client), nil
-	}
-	measurer.fetchTorTargets = func(ctx context.Context, clnt model.ExperimentOrchestraClient, cc string) (map[string]model.TorTarget, error) {
+	measurer.fetchTorTargets = func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.TorTarget, error) {
 		return nil, expected
 	}
 	err := measurer.Run(
@@ -74,10 +51,7 @@ func TestMeasurerMeasureFetchTorTargetsError(t *testing.T) {
 
 func TestMeasurerMeasureFetchTorTargetsEmptyList(t *testing.T) {
 	measurer := NewMeasurer(Config{})
-	measurer.newOrchestraClient = func(ctx context.Context, sess model.ExperimentSession) (model.ExperimentOrchestraClient, error) {
-		return new(probeservices.Client), nil
-	}
-	measurer.fetchTorTargets = func(ctx context.Context, clnt model.ExperimentOrchestraClient, cc string) (map[string]model.TorTarget, error) {
+	measurer.fetchTorTargets = func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.TorTarget, error) {
 		return nil, nil
 	}
 	measurement := new(model.Measurement)
@@ -102,10 +76,7 @@ func TestMeasurerMeasureGoodWithMockedOrchestra(t *testing.T) {
 	// This test mocks orchestra to return a nil list of targets, so the code runs
 	// but we don't perform any actual network actions.
 	measurer := NewMeasurer(Config{})
-	measurer.newOrchestraClient = func(ctx context.Context, sess model.ExperimentSession) (model.ExperimentOrchestraClient, error) {
-		return new(probeservices.Client), nil
-	}
-	measurer.fetchTorTargets = func(ctx context.Context, clnt model.ExperimentOrchestraClient, cc string) (map[string]model.TorTarget, error) {
+	measurer.fetchTorTargets = func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.TorTarget, error) {
 		return nil, nil
 	}
 	err := measurer.Run(
@@ -167,10 +138,8 @@ func TestMeasurerMeasureSanitiseOutput(t *testing.T) {
 	measurer := NewMeasurer(Config{})
 	sess := newsession()
 	key := "xyz-xyz-xyz-theCh2ju-ahG4chei-Ai2eka0a"
-	sess.MockableOrchestraClient = &mockable.ExperimentOrchestraClient{
-		MockableFetchTorTargetsResult: map[string]model.TorTarget{
-			key: staticPrivateTestingTarget,
-		},
+	sess.MockableFetchTorTargetsResult = map[string]model.TorTarget{
+		key: staticPrivateTestingTarget,
 	}
 	measurement := new(model.Measurement)
 	err := measurer.Run(
@@ -927,5 +896,47 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 				t.Fatal("unexpected isAnomaly value")
 			}
 		})
+	}
+}
+
+func TestTargetResultsFillSummaryDirPort(t *testing.T) {
+	tr := &TargetResults{
+		TargetProtocol: "dir_port",
+		TCPConnect: oonidatamodel.TCPConnectList{{
+			IP:   "1.2.3.4",
+			Port: 443,
+			Status: oonidatamodel.TCPConnectStatus{
+				Failure: nil,
+			},
+		}},
+	}
+	tr.fillSummary()
+	if tr.DirPortCount != 1 {
+		t.Fatal("unexpected dirPortCount")
+	}
+}
+
+func TestTestKeysFillToplevelKeysCoverMissingFields(t *testing.T) {
+	failureString := "eof_error"
+	tk := &TestKeys{
+		Targets: map[string]TargetResults{
+			"foobar":  {Failure: &failureString, TargetProtocol: "dir_port"},
+			"baz":     {TargetProtocol: "dir_port"},
+			"jafar":   {Failure: &failureString, TargetProtocol: "or_port_dirauth"},
+			"jasmine": {TargetProtocol: "or_port_dirauth"},
+		},
+	}
+	tk.fillToplevelKeys()
+	if tk.DirPortTotal != 2 {
+		t.Fatal("unexpected DirPortTotal")
+	}
+	if tk.DirPortAccessible != 1 {
+		t.Fatal("unexpected DirPortAccessible")
+	}
+	if tk.ORPortDirauthTotal != 2 {
+		t.Fatal("unexpected ORPortDirauthTotal")
+	}
+	if tk.ORPortDirauthAccessible != 1 {
+		t.Fatal("unexpected ORPortDirauthAccessible")
 	}
 }

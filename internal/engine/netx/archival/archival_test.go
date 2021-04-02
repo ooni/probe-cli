@@ -129,7 +129,7 @@ func TestNewRequestList(t *testing.T) {
 			}, {
 				Name: "http_response_metadata",
 				HTTPHeaders: http.Header{
-					"Server": []string{"orchestra/0.1.0-dev"},
+					"Server": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPStatusCode: 200,
 			}, {
@@ -194,11 +194,11 @@ func TestNewRequestList(t *testing.T) {
 				HeadersList: []archival.HTTPHeader{{
 					Key: "Server",
 					Value: archival.MaybeBinaryValue{
-						Value: "orchestra/0.1.0-dev",
+						Value: "miniooni/0.1.0-dev",
 					},
 				}},
 				Headers: map[string]archival.MaybeBinaryValue{
-					"Server": {Value: "orchestra/0.1.0-dev"},
+					"Server": {Value: "miniooni/0.1.0-dev"},
 				},
 				Locations: nil,
 			},
@@ -223,7 +223,7 @@ func TestNewRequestList(t *testing.T) {
 			}, {
 				Name: "http_response_metadata",
 				HTTPHeaders: http.Header{
-					"Server":   []string{"orchestra/0.1.0-dev"},
+					"Server":   []string{"miniooni/0.1.0-dev"},
 					"Location": []string{"https://x.example.com", "https://y.example.com"},
 				},
 				HTTPStatusCode: 302,
@@ -260,11 +260,11 @@ func TestNewRequestList(t *testing.T) {
 				}, {
 					Key: "Server",
 					Value: archival.MaybeBinaryValue{
-						Value: "orchestra/0.1.0-dev",
+						Value: "miniooni/0.1.0-dev",
 					},
 				}},
 				Headers: map[string]archival.MaybeBinaryValue{
-					"Server":   {Value: "orchestra/0.1.0-dev"},
+					"Server":   {Value: "miniooni/0.1.0-dev"},
 					"Location": {Value: "https://x.example.com"},
 				},
 				Locations: []string{

@@ -58,27 +58,10 @@ func TestStartStop(t *testing.T) {
 	tunnel.Stop()
 }
 
-func TestNewOrchestraClientFailure(t *testing.T) {
-	expected := errors.New("mocked error")
-	sess := &mockable.Session{
-		MockableOrchestraClientError: expected,
-	}
-	tunnel, err := psiphonx.Start(context.Background(), sess, psiphonx.Config{})
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
-	}
-	if tunnel != nil {
-		t.Fatal("expected nil tunnel here")
-	}
-}
-
 func TestFetchPsiphonConfigFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	clnt := mockable.ExperimentOrchestraClient{
-		MockableFetchPsiphonConfigErr: expected,
-	}
 	sess := &mockable.Session{
-		MockableOrchestraClient: clnt,
+		MockableFetchPsiphonConfigErr: expected,
 	}
 	tunnel, err := psiphonx.Start(context.Background(), sess, psiphonx.Config{})
 	if !errors.Is(err, expected) {
@@ -94,11 +77,8 @@ func TestMakeMkdirAllFailure(t *testing.T) {
 	dependencies := FakeDependencies{
 		MkdirAllErr: expected,
 	}
-	clnt := mockable.ExperimentOrchestraClient{
-		MockableFetchPsiphonConfigResult: []byte(`{}`),
-	}
 	sess := &mockable.Session{
-		MockableOrchestraClient: clnt,
+		MockableFetchPsiphonConfigResult: []byte(`{}`),
 	}
 	tunnel, err := psiphonx.Start(context.Background(), sess, psiphonx.Config{
 		Dependencies: dependencies,
@@ -116,11 +96,8 @@ func TestMakeRemoveAllFailure(t *testing.T) {
 	dependencies := FakeDependencies{
 		RemoveAllErr: expected,
 	}
-	clnt := mockable.ExperimentOrchestraClient{
-		MockableFetchPsiphonConfigResult: []byte(`{}`),
-	}
 	sess := &mockable.Session{
-		MockableOrchestraClient: clnt,
+		MockableFetchPsiphonConfigResult: []byte(`{}`),
 	}
 	tunnel, err := psiphonx.Start(context.Background(), sess, psiphonx.Config{
 		Dependencies: dependencies,
@@ -138,11 +115,8 @@ func TestMakeStartFailure(t *testing.T) {
 	dependencies := FakeDependencies{
 		StartErr: expected,
 	}
-	clnt := mockable.ExperimentOrchestraClient{
-		MockableFetchPsiphonConfigResult: []byte(`{}`),
-	}
 	sess := &mockable.Session{
-		MockableOrchestraClient: clnt,
+		MockableFetchPsiphonConfigResult: []byte(`{}`),
 	}
 	tunnel, err := psiphonx.Start(context.Background(), sess, psiphonx.Config{
 		Dependencies: dependencies,

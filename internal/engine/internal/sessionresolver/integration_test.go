@@ -9,7 +9,7 @@ import (
 
 func TestSessionResolverGood(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping test in short mode")
+		t.Skip("skip test in short mode")
 	}
 	reso := &sessionresolver.Resolver{}
 	defer reso.CloseIdleConnections()

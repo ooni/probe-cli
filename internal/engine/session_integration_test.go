@@ -166,21 +166,6 @@ func newSessionForTesting(t *testing.T) *Session {
 	return sess
 }
 
-func TestNewOrchestraClient(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess := newSessionForTestingNoLookups(t)
-	defer sess.Close()
-	clnt, err := sess.NewOrchestraClient(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if clnt == nil {
-		t.Fatal("expected non nil client here")
-	}
-}
-
 func TestInitOrchestraClientMaybeRegisterError(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
@@ -632,5 +617,19 @@ func TestSessionNewSubmitterReturnsNonNilSubmitter(t *testing.T) {
 	}
 	if subm == nil {
 		t.Fatal("expected non nil submitter here")
+	}
+}
+
+func TestSessionFetchURLList(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	sess := newSessionForTesting(t)
+	resp, err := sess.FetchURLList(context.Background(), model.URLListConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp == nil {
+		t.Fatal("expected non-nil response here")
 	}
 }
