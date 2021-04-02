@@ -57,7 +57,7 @@ type TargetResults struct {
 	TLSHandshakes  oonidatamodel.TLSHandshakesList `json:"tls_handshakes"`
 
 	// Only for testing. We don't care about this field otherwise. We
-	// cannot make this private because otherwise the IP address sanitized
+	// cannot make this private because otherwise the IP address sanitizer
 	// is going to panic over a private field.
 	DirPortCount int `json:"-"`
 }

@@ -30,48 +30,6 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	}
 }
 
-func TestTargetResultsFillSummaryDirPort(t *testing.T) {
-	tr := &TargetResults{
-		TargetProtocol: "dir_port",
-		TCPConnect: oonidatamodel.TCPConnectList{{
-			IP:   "1.2.3.4",
-			Port: 443,
-			Status: oonidatamodel.TCPConnectStatus{
-				Failure: nil,
-			},
-		}},
-	}
-	tr.fillSummary()
-	if tr.DirPortCount != 1 {
-		t.Fatal("unexpected dirPortCount")
-	}
-}
-
-func TestTestKeysFillToplevelKeysCoverMissingFields(t *testing.T) {
-	failureString := "eof_error"
-	tk := &TestKeys{
-		Targets: map[string]TargetResults{
-			"foobar":  {Failure: &failureString, TargetProtocol: "dir_port"},
-			"baz":     {TargetProtocol: "dir_port"},
-			"jafar":   {Failure: &failureString, TargetProtocol: "or_port_dirauth"},
-			"jasmine": {TargetProtocol: "or_port_dirauth"},
-		},
-	}
-	tk.fillToplevelKeys()
-	if tk.DirPortTotal != 2 {
-		t.Fatal("unexpected DirPortTotal")
-	}
-	if tk.DirPortAccessible != 1 {
-		t.Fatal("unexpected DirPortAccessible")
-	}
-	if tk.ORPortDirauthTotal != 2 {
-		t.Fatal("unexpected ORPortDirauthTotal")
-	}
-	if tk.ORPortDirauthAccessible != 1 {
-		t.Fatal("unexpected ORPortDirauthAccessible")
-	}
-}
-
 func TestMeasurerMeasureFetchTorTargetsError(t *testing.T) {
 	measurer := NewMeasurer(Config{})
 	expected := errors.New("mocked error")
@@ -938,5 +896,47 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 				t.Fatal("unexpected isAnomaly value")
 			}
 		})
+	}
+}
+
+func TestTargetResultsFillSummaryDirPort(t *testing.T) {
+	tr := &TargetResults{
+		TargetProtocol: "dir_port",
+		TCPConnect: oonidatamodel.TCPConnectList{{
+			IP:   "1.2.3.4",
+			Port: 443,
+			Status: oonidatamodel.TCPConnectStatus{
+				Failure: nil,
+			},
+		}},
+	}
+	tr.fillSummary()
+	if tr.DirPortCount != 1 {
+		t.Fatal("unexpected dirPortCount")
+	}
+}
+
+func TestTestKeysFillToplevelKeysCoverMissingFields(t *testing.T) {
+	failureString := "eof_error"
+	tk := &TestKeys{
+		Targets: map[string]TargetResults{
+			"foobar":  {Failure: &failureString, TargetProtocol: "dir_port"},
+			"baz":     {TargetProtocol: "dir_port"},
+			"jafar":   {Failure: &failureString, TargetProtocol: "or_port_dirauth"},
+			"jasmine": {TargetProtocol: "or_port_dirauth"},
+		},
+	}
+	tk.fillToplevelKeys()
+	if tk.DirPortTotal != 2 {
+		t.Fatal("unexpected DirPortTotal")
+	}
+	if tk.DirPortAccessible != 1 {
+		t.Fatal("unexpected DirPortAccessible")
+	}
+	if tk.ORPortDirauthTotal != 2 {
+		t.Fatal("unexpected ORPortDirauthTotal")
+	}
+	if tk.ORPortDirauthAccessible != 1 {
+		t.Fatal("unexpected ORPortDirauthAccessible")
 	}
 }
