@@ -14,6 +14,6 @@ func TestSessionEmbeddedPsiphonConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	if data == nil {
-		t.Fatal("expected nil data here")
+		t.Fatal("expected non-nil data here")
 	}
 }
