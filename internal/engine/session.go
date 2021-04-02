@@ -275,15 +275,6 @@ func (s *Session) DefaultHTTPClient() *http.Client {
 	return &http.Client{Transport: s.httpDefaultTransport}
 }
 
-// FetchPsiphonConfig fetches psiphon config from the API.
-func (s *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
-	clnt, err := s.NewOrchestraClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return clnt.FetchPsiphonConfig(ctx)
-}
-
 // FetchTorTargets fetches tor targets from the API.
 func (s *Session) FetchTorTargets(
 	ctx context.Context, cc string) (map[string]model.TorTarget, error) {

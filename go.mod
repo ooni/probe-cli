@@ -3,6 +3,7 @@ module github.com/ooni/probe-cli/v3
 go 1.16
 
 require (
+	filippo.io/age v1.0.0-rc.1
 	git.torproject.org/pluggable-transports/goptlib.git v1.1.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
