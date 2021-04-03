@@ -8,17 +8,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
-
-// Logger allows for logging messages.
-type Logger interface {
-	Debug(message string)
-	Debugf(format string, v ...interface{})
-	Info(message string)
-	Infof(format string, v ...interface{})
-}
 
 // Session is the way in which this package sees a Session.
 type Session interface {
@@ -28,9 +19,6 @@ type Session interface {
 	TorBinary() string
 	Logger() model.Logger
 }
-
-// _ ensures that mockable.Session is a Session.
-var _ Session = &mockable.Session{}
 
 // Tunnel is a tunnel used by the session
 type Tunnel interface {
