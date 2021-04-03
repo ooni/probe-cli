@@ -1,6 +1,7 @@
 package nettests
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -57,7 +58,7 @@ func RunGroup(config RunGroupConfig) error {
 		return nil
 	}
 
-	sess, err := config.Probe.NewSession()
+	sess, err := config.Probe.NewSession(context.Background())
 	if err != nil {
 		log.WithError(err).Error("Failed to create a measurement session")
 		return err

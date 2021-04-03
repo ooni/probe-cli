@@ -75,7 +75,7 @@ func TestNewSessionBuilderGood(t *testing.T) {
 }
 
 func newSessionMustFail(t *testing.T, config SessionConfig) {
-	sess, err := NewSession(config)
+	sess, err := NewSession(context.Background(), config)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -88,7 +88,7 @@ func TestSessionTorArgsTorBinary(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		AvailableProbeServices: []model.Service{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",
@@ -120,7 +120,7 @@ func TestSessionTorArgsTorBinary(t *testing.T) {
 }
 
 func newSessionForTestingNoLookupsWithProxyURL(t *testing.T, URL *url.URL) *Session {
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		AvailableProbeServices: []model.Service{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",
@@ -336,7 +336,7 @@ func TestGetAvailableProbeServices(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -356,7 +356,7 @@ func TestMaybeLookupBackendsFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -377,7 +377,7 @@ func TestMaybeLookupTestHelpersIdempotent(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -402,7 +402,7 @@ func TestAllProbeServicesUnsupported(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",

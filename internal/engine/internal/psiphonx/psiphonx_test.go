@@ -16,7 +16,7 @@ import (
 func TestStartWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	sess, err := engine.NewSession(engine.SessionConfig{
+	sess, err := engine.NewSession(context.Background(), engine.SessionConfig{
 		Logger:          log.Log,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -37,7 +37,7 @@ func TestStartStop(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := engine.NewSession(engine.SessionConfig{
+	sess, err := engine.NewSession(context.Background(), engine.SessionConfig{
 		Logger:          log.Log,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",

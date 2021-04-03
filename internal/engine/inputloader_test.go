@@ -236,7 +236,7 @@ func TestInputLoaderInputOrQueryBackendWithInput(t *testing.T) {
 }
 
 func TestInputLoaderInputOrQueryBackendWithNoInputAndCancelledContext(t *testing.T) {
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		KVStore:         kvstore.NewMemoryKeyValueStore(),
 		Logger:          log.Log,
 		SoftwareName:    "miniooni",

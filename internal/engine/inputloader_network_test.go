@@ -14,7 +14,7 @@ func TestInputLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := engine.NewSession(engine.SessionConfig{
+	sess, err := engine.NewSession(context.Background(), engine.SessionConfig{
 		AvailableProbeServices: []model.Service{{
 			Address: "https://ams-pg-test.ooni.org/",
 			Type:    "https",
