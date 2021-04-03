@@ -23,7 +23,11 @@ func (c *Closer) Close() error {
 func TestTorTunnelNonNil(t *testing.T) {
 	closer := new(Closer)
 	proxy := &url.URL{Scheme: "x", Host: "10.0.0.1:443"}
-	tun := newTorTunnel(128, closer, proxy)
+	tun := &torTunnel{
+		bootstrapTime: 128,
+		instance:      closer,
+		proxy:         proxy,
+	}
 	if tun.BootstrapTime() != 128 {
 		t.Fatal("not the bootstrap time we expected")
 	}
@@ -50,7 +54,7 @@ func TestTorTunnelNil(t *testing.T) {
 func TestTorStartWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	tun, err := torStart(ctx, &mockable.Session{})
+	tun, err := torStart(ctx, &Config{Session: &mockable.Session{}})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
 	}
@@ -59,12 +63,12 @@ func TestTorStartWithCancelledContext(t *testing.T) {
 	}
 }
 
-func TestTorStartWithConfigStartFailure(t *testing.T) {
+func TestTorStartStartFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
-	tun, err := torStartWithConfig(ctx, torStartConfig{
-		Sess: &mockable.Session{},
-		Start: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
+	tun, err := torStart(ctx, &Config{
+		Session: &mockable.Session{},
+		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return nil, expected
 		},
 	})
@@ -76,15 +80,15 @@ func TestTorStartWithConfigStartFailure(t *testing.T) {
 	}
 }
 
-func TestTorStartWithConfigEnableNetworkFailure(t *testing.T) {
+func TestTorStartEnableNetworkFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
-	tun, err := torStartWithConfig(ctx, torStartConfig{
-		Sess: &mockable.Session{},
-		Start: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
+	tun, err := torStart(ctx, &Config{
+		Session: &mockable.Session{},
+		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
-		EnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
+		testTorEnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
 			return expected
 		},
 	})
@@ -96,18 +100,18 @@ func TestTorStartWithConfigEnableNetworkFailure(t *testing.T) {
 	}
 }
 
-func TestTorStartWithConfigGetInfoFailure(t *testing.T) {
+func TestTorStartGetInfoFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
-	tun, err := torStartWithConfig(ctx, torStartConfig{
-		Sess: &mockable.Session{},
-		Start: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
+	tun, err := torStart(ctx, &Config{
+		Session: &mockable.Session{},
+		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
-		EnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
+		testTorEnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
 			return nil
 		},
-		GetInfo: func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error) {
+		testTorGetInfo: func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error) {
 			return nil, expected
 		},
 	})
@@ -119,17 +123,17 @@ func TestTorStartWithConfigGetInfoFailure(t *testing.T) {
 	}
 }
 
-func TestTorStartWithConfigGetInfoInvalidNumberOfKeys(t *testing.T) {
+func TestTorStartGetInfoInvalidNumberOfKeys(t *testing.T) {
 	ctx := context.Background()
-	tun, err := torStartWithConfig(ctx, torStartConfig{
-		Sess: &mockable.Session{},
-		Start: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
+	tun, err := torStart(ctx, &Config{
+		Session: &mockable.Session{},
+		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
-		EnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
+		testTorEnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
 			return nil
 		},
-		GetInfo: func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error) {
+		testTorGetInfo: func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error) {
 			return nil, nil
 		},
 	})
@@ -141,17 +145,17 @@ func TestTorStartWithConfigGetInfoInvalidNumberOfKeys(t *testing.T) {
 	}
 }
 
-func TestTorStartWithConfigGetInfoInvalidKey(t *testing.T) {
+func TestTorStartGetInfoInvalidKey(t *testing.T) {
 	ctx := context.Background()
-	tun, err := torStartWithConfig(ctx, torStartConfig{
-		Sess: &mockable.Session{},
-		Start: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
+	tun, err := torStart(ctx, &Config{
+		Session: &mockable.Session{},
+		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
-		EnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
+		testTorEnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
 			return nil
 		},
-		GetInfo: func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error) {
+		testTorGetInfo: func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error) {
 			return []*control.KeyVal{{}}, nil
 		},
 	})
@@ -163,17 +167,17 @@ func TestTorStartWithConfigGetInfoInvalidKey(t *testing.T) {
 	}
 }
 
-func TestTorStartWithConfigGetInfoInvalidProxyType(t *testing.T) {
+func TestTorStartGetInfoInvalidProxyType(t *testing.T) {
 	ctx := context.Background()
-	tun, err := torStartWithConfig(ctx, torStartConfig{
-		Sess: &mockable.Session{},
-		Start: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
+	tun, err := torStart(ctx, &Config{
+		Session: &mockable.Session{},
+		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
-		EnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
+		testTorEnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
 			return nil
 		},
-		GetInfo: func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error) {
+		testTorGetInfo: func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error) {
 			return []*control.KeyVal{{Key: "net/listeners/socks", Val: "127.0.0.1:9050"}}, nil
 		},
 	})
@@ -185,17 +189,17 @@ func TestTorStartWithConfigGetInfoInvalidProxyType(t *testing.T) {
 	}
 }
 
-func TestTorStartWithConfigSuccess(t *testing.T) {
+func TestTorStartUnsupportedProxy(t *testing.T) {
 	ctx := context.Background()
-	tun, err := torStartWithConfig(ctx, torStartConfig{
-		Sess: &mockable.Session{},
-		Start: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
+	tun, err := torStart(ctx, &Config{
+		Session: &mockable.Session{},
+		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
-		EnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
+		testTorEnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
 			return nil
 		},
-		GetInfo: func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error) {
+		testTorGetInfo: func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error) {
 			return []*control.KeyVal{{Key: "net/listeners/socks", Val: "unix:/foo/bar"}}, nil
 		},
 	})

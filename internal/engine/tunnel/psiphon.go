@@ -13,10 +13,14 @@ import (
 
 // psiphonTunnel is a psiphon tunnel
 type psiphonTunnel struct {
-	tunnel   *clientlib.PsiphonTunnel
+	// tunnel is the underlying psiphon tunnel
+	tunnel *clientlib.PsiphonTunnel
+
+	// duration is the duration of the bootstrap
 	duration time.Duration
 }
 
+// makeworkingdir creates the working directory
 func makeworkingdir(config *Config) (string, error) {
 	const testdirname = "oonipsiphon"
 	workdir := filepath.Join(config.WorkDir, testdirname)

@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/cretz/bine/control"
+	"github.com/cretz/bine/tor"
 	"github.com/ooni/psiphon/oopsi/github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
 )
 
@@ -29,6 +31,17 @@ type Config struct {
 	// testStartPsiphon allows us to mock psiphon's clientlib.StartTunnel.
 	testStartPsiphon func(ctx context.Context, config []byte,
 		workdir string) (*clientlib.PsiphonTunnel, error)
+
+	// testTorStart allows us to mock tor.Start.
+	testTorStart func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error)
+
+	// testTorEnableNetwork allows us to fake a failure when
+	// telling to the tor daemon to enable the network.
+	testTorEnableNetwork func(ctx context.Context, tor *tor.Tor, wait bool) error
+
+	// testTorGetInfo allows us to fake a failure when
+	// getting info from the tor control port.
+	testTorGetInfo func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error)
 }
 
 // mkdirAll calls either testMkdirAll or os.MkdirAll.
@@ -55,4 +68,28 @@ func (c *Config) startPsiphon(ctx context.Context, config []byte,
 	}
 	return clientlib.StartTunnel(ctx, config, "", clientlib.Parameters{
 		DataRootDirectory: &workdir}, nil, nil)
+}
+
+// torStart calls either testTorStart or tor.Start.
+func (c *Config) torStart(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
+	if c.testTorStart != nil {
+		return c.testTorStart(ctx, conf)
+	}
+	return tor.Start(ctx, conf)
+}
+
+// torEnableNetwork calls either testTorEnableNetwork or tor.EnableNetwork.
+func (c *Config) torEnableNetwork(ctx context.Context, tor *tor.Tor, wait bool) error {
+	if c.testTorEnableNetwork != nil {
+		return c.testTorEnableNetwork(ctx, tor, wait)
+	}
+	return tor.EnableNetwork(ctx, wait)
+}
+
+// torGetInfo calls either testTorGetInfo or ctrl.GetInfo.
+func (c *Config) torGetInfo(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error) {
+	if c.testTorGetInfo != nil {
+		return c.testTorGetInfo(ctrl, keys...)
+	}
+	return ctrl.GetInfo(keys...)
 }

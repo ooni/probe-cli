@@ -41,7 +41,7 @@ func Start(ctx context.Context, config *Config) (Tunnel, error) {
 		return enforceNilContract(tun, err)
 	case "tor":
 		logger.Infof("starting %s tunnel; please be patient...", config.Name)
-		tun, err := torStart(ctx, config.Session)
+		tun, err := torStart(ctx, config)
 		return enforceNilContract(tun, err)
 	default:
 		return nil, errors.New("unsupported tunnel")
