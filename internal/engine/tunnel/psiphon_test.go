@@ -15,7 +15,9 @@ func TestPsiphonFetchPsiphonConfigFailure(t *testing.T) {
 	sess := &mockable.Session{
 		MockableFetchPsiphonConfigErr: expected,
 	}
-	tunnel, err := psiphonStart(context.Background(), sess, psiphonConfig{})
+	tunnel, err := psiphonStart(context.Background(), &Config{
+		Session: sess,
+	})
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
@@ -26,14 +28,14 @@ func TestPsiphonFetchPsiphonConfigFailure(t *testing.T) {
 
 func TestPsiphonMakeMkdirAllFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	dependencies := psiphonFakeDependencies{
-		MkdirAllErr: expected,
-	}
 	sess := &mockable.Session{
 		MockableFetchPsiphonConfigResult: []byte(`{}`),
 	}
-	tunnel, err := psiphonStart(context.Background(), sess, psiphonConfig{
-		Dependencies: dependencies,
+	tunnel, err := psiphonStart(context.Background(), &Config{
+		Session: sess,
+		testMkdirAll: func(path string, perm os.FileMode) error {
+			return expected
+		},
 	})
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
@@ -45,14 +47,14 @@ func TestPsiphonMakeMkdirAllFailure(t *testing.T) {
 
 func TestPsiphonMakeRemoveAllFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	dependencies := psiphonFakeDependencies{
-		RemoveAllErr: expected,
-	}
 	sess := &mockable.Session{
 		MockableFetchPsiphonConfigResult: []byte(`{}`),
 	}
-	tunnel, err := psiphonStart(context.Background(), sess, psiphonConfig{
-		Dependencies: dependencies,
+	tunnel, err := psiphonStart(context.Background(), &Config{
+		Session: sess,
+		testRemoveAll: func(path string) error {
+			return expected
+		},
 	})
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
@@ -64,14 +66,15 @@ func TestPsiphonMakeRemoveAllFailure(t *testing.T) {
 
 func TestPsiphonMakeStartFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	dependencies := psiphonFakeDependencies{
-		StartErr: expected,
-	}
 	sess := &mockable.Session{
 		MockableFetchPsiphonConfigResult: []byte(`{}`),
 	}
-	tunnel, err := psiphonStart(context.Background(), sess, psiphonConfig{
-		Dependencies: dependencies,
+	tunnel, err := psiphonStart(context.Background(), &Config{
+		Session: sess,
+		testStartPsiphon: func(ctx context.Context, config []byte,
+			workdir string) (*clientlib.PsiphonTunnel, error) {
+			return nil, expected
+		},
 	})
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
@@ -90,23 +93,4 @@ func TestPsiphonNilTunnel(t *testing.T) {
 		t.Fatal("expected nil SOCKS Proxy URL")
 	}
 	tunnel.Stop() // must not crash
-}
-
-type psiphonFakeDependencies struct {
-	MkdirAllErr  error
-	RemoveAllErr error
-	StartErr     error
-}
-
-func (fd psiphonFakeDependencies) MkdirAll(path string, perm os.FileMode) error {
-	return fd.MkdirAllErr
-}
-
-func (fd psiphonFakeDependencies) RemoveAll(path string) error {
-	return fd.RemoveAllErr
-}
-
-func (fd psiphonFakeDependencies) Start(
-	ctx context.Context, config []byte, workdir string) (*clientlib.PsiphonTunnel, error) {
-	return nil, fd.StartErr
 }
