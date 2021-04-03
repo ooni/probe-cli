@@ -1,5 +1,4 @@
-// Package psiphonx is a wrapper around the psiphon-tunnel-core.
-package psiphonx
+package tunnel
 
 import (
 	"context"
@@ -13,14 +12,8 @@ import (
 	"github.com/ooni/psiphon/oopsi/github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
 )
 
-// Session is the way in which this package sees a Session.
-type Session interface {
-	FetchPsiphonConfig(ctx context.Context) ([]byte, error)
-	TempDir() string
-}
-
-// Dependencies contains dependencies for Start
-type Dependencies interface {
+// psiphonDependencies contains dependencies for psiphonStart
+type psiphonDependencies interface {
 	MkdirAll(path string, perm os.FileMode) error
 	RemoveAll(path string) error
 	Start(ctx context.Context, config []byte,
@@ -43,24 +36,24 @@ func (defaultDependencies) Start(
 		DataRootDirectory: &workdir}, nil, nil)
 }
 
-// Config contains the settings for Start. The empty config object implies
+// psiphonConfig contains the settings for psiphonStart. The empty config object implies
 // that we will be using default settings for starting the tunnel.
-type Config struct {
+type psiphonConfig struct {
 	// Dependencies contains dependencies for Start.
-	Dependencies Dependencies
+	Dependencies psiphonDependencies
 
 	// WorkDir is the directory where Psiphon should store
 	// its configuration database.
 	WorkDir string
 }
 
-// Tunnel is a psiphon tunnel
-type Tunnel struct {
+// psiphonTunnel is a psiphon tunnel
+type psiphonTunnel struct {
 	tunnel   *clientlib.PsiphonTunnel
 	duration time.Duration
 }
 
-func makeworkingdir(config Config) (string, error) {
+func makeworkingdir(config psiphonConfig) (string, error) {
 	const testdirname = "oonipsiphon"
 	workdir := filepath.Join(config.WorkDir, testdirname)
 	if err := config.Dependencies.RemoveAll(workdir); err != nil {
@@ -72,9 +65,9 @@ func makeworkingdir(config Config) (string, error) {
 	return workdir, nil
 }
 
-// Start starts the psiphon tunnel.
-func Start(
-	ctx context.Context, sess Session, config Config) (*Tunnel, error) {
+// psiphonStart starts the psiphon tunnel.
+func psiphonStart(
+	ctx context.Context, sess Session, config psiphonConfig) (Tunnel, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err() // simplifies unit testing this code
@@ -100,18 +93,18 @@ func Start(
 		return nil, err
 	}
 	stop := time.Now()
-	return &Tunnel{tunnel: tunnel, duration: stop.Sub(start)}, nil
+	return &psiphonTunnel{tunnel: tunnel, duration: stop.Sub(start)}, nil
 }
 
 // Stop is an idempotent method that shuts down the tunnel
-func (t *Tunnel) Stop() {
+func (t *psiphonTunnel) Stop() {
 	if t != nil {
 		t.tunnel.Stop()
 	}
 }
 
 // SOCKS5ProxyURL returns the SOCKS5 proxy URL.
-func (t *Tunnel) SOCKS5ProxyURL() (proxyURL *url.URL) {
+func (t *psiphonTunnel) SOCKS5ProxyURL() (proxyURL *url.URL) {
 	if t != nil {
 		proxyURL = &url.URL{
 			Scheme: "socks5",
@@ -123,7 +116,7 @@ func (t *Tunnel) SOCKS5ProxyURL() (proxyURL *url.URL) {
 }
 
 // BootstrapTime returns the bootstrap time
-func (t *Tunnel) BootstrapTime() (duration time.Duration) {
+func (t *psiphonTunnel) BootstrapTime() (duration time.Duration) {
 	if t != nil {
 		duration = t.duration
 	}

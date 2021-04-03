@@ -1,4 +1,5 @@
-// Package tunnel contains code to create a psiphon or tor tunnel.
+// Package tunnel allows to create tunnels to speak
+// with OONI backends and other services.
 package tunnel
 
 import (
@@ -7,17 +8,29 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/psiphonx"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/torx"
+	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
+// Logger allows for logging messages.
+type Logger interface {
+	Debug(message string)
+	Debugf(format string, v ...interface{})
+	Info(message string)
+	Infof(format string, v ...interface{})
+}
+
 // Session is the way in which this package sees a Session.
 type Session interface {
-	psiphonx.Session
-	torx.Session
+	FetchPsiphonConfig(ctx context.Context) ([]byte, error)
+	TempDir() string
+	TorArgs() []string
+	TorBinary() string
 	Logger() model.Logger
 }
+
+// _ ensures that mockable.Session is a Session.
+var _ Session = &mockable.Session{}
 
 // Tunnel is a tunnel used by the session
 type Tunnel interface {
@@ -43,13 +56,13 @@ func Start(ctx context.Context, config Config) (Tunnel, error) {
 		return enforceNilContract(nil, nil)
 	case "psiphon":
 		logger.Infof("starting %s tunnel; please be patient...", config.Name)
-		tun, err := psiphonx.Start(ctx, config.Session, psiphonx.Config{
+		tun, err := psiphonStart(ctx, config.Session, psiphonConfig{
 			WorkDir: config.WorkDir,
 		})
 		return enforceNilContract(tun, err)
 	case "tor":
 		logger.Infof("starting %s tunnel; please be patient...", config.Name)
-		tun, err := torx.Start(ctx, config.Session)
+		tun, err := torStart(ctx, config.Session)
 		return enforceNilContract(tun, err)
 	default:
 		return nil, errors.New("unsupported tunnel")
