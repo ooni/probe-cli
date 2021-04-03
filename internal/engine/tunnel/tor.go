@@ -8,23 +8,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cretz/bine/control"
 	"github.com/cretz/bine/tor"
 )
 
 // torProcess is a running tor process
 type torProcess interface {
+	// Close kills the running tor process
 	Close() error
 }
 
 // torTunnel is the Tor tunnel
 type torTunnel struct {
+	// bootstrapTime is the duration of the bootstrap
 	bootstrapTime time.Duration
-	instance      torProcess
-	proxy         *url.URL
+
+	// instance is the running tor instance
+	instance torProcess
+
+	// proxy is the SOCKS5 proxy URL
+	proxy *url.URL
 }
 
-// BootstrapTime is the bootstrsap time
+// BootstrapTime returns the bootstrap time
 func (tt *torTunnel) BootstrapTime() (duration time.Duration) {
 	if tt != nil {
 		duration = tt.bootstrapTime
@@ -47,47 +52,23 @@ func (tt *torTunnel) Stop() {
 	}
 }
 
-// torStartConfig contains the configuration for StartWithConfig
-type torStartConfig struct {
-	Sess          Session
-	Start         func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error)
-	EnableNetwork func(ctx context.Context, tor *tor.Tor, wait bool) error
-	GetInfo       func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error)
-}
-
-// torStart starts the tor tunnel
-func torStart(ctx context.Context, sess Session) (Tunnel, error) {
-	return torStartWithConfig(ctx, torStartConfig{
-		Sess: sess,
-		Start: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
-			return tor.Start(ctx, conf)
-		},
-		EnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
-			return tor.EnableNetwork(ctx, wait)
-		},
-		GetInfo: func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error) {
-			return ctrl.GetInfo(keys...)
-		},
-	})
-}
-
-// torStartWithConfig is a configurable torStart for testing
-func torStartWithConfig(ctx context.Context, config torStartConfig) (Tunnel, error) {
+// torStart starts the tor tunnel.
+func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err() // allows to write unit tests using this code
 	default:
 	}
-	logfile := LogFile(config.Sess)
-	extraArgs := append([]string{}, config.Sess.TorArgs()...)
+	logfile := LogFile(config.Session)
+	extraArgs := append([]string{}, config.Session.TorArgs()...)
 	extraArgs = append(extraArgs, "Log")
 	extraArgs = append(extraArgs, "notice stderr")
 	extraArgs = append(extraArgs, "Log")
 	extraArgs = append(extraArgs, fmt.Sprintf(`notice file %s`, logfile))
-	instance, err := config.Start(ctx, &tor.StartConf{
-		DataDir:   path.Join(config.Sess.TempDir(), "tor"),
+	instance, err := config.torStart(ctx, &tor.StartConf{
+		DataDir:   path.Join(config.Session.TempDir(), "tor"),
 		ExtraArgs: extraArgs,
-		ExePath:   config.Sess.TorBinary(),
+		ExePath:   config.Session.TorBinary(),
 		NoHush:    true,
 	})
 	if err != nil {
@@ -95,13 +76,13 @@ func torStartWithConfig(ctx context.Context, config torStartConfig) (Tunnel, err
 	}
 	instance.StopProcessOnClose = true
 	start := time.Now()
-	if err := config.EnableNetwork(ctx, instance, true); err != nil {
+	if err := config.torEnableNetwork(ctx, instance, true); err != nil {
 		instance.Close()
 		return nil, err
 	}
 	stop := time.Now()
 	// Adapted from <https://git.io/Jfc7N>
-	info, err := config.GetInfo(instance.Control, "net/listeners/socks")
+	info, err := config.torGetInfo(instance.Control, "net/listeners/socks")
 	if err != nil {
 		instance.Close()
 		return nil, err
@@ -126,13 +107,4 @@ func torStartWithConfig(ctx context.Context, config torStartConfig) (Tunnel, err
 // is always located somewhere inside the sess.TempDir() directory.
 func LogFile(sess Session) string {
 	return path.Join(sess.TempDir(), "tor.log")
-}
-
-// newTorTunnel creates a new torTunnel
-func newTorTunnel(bootstrapTime time.Duration, instance torProcess, proxy *url.URL) *torTunnel {
-	return &torTunnel{
-		bootstrapTime: bootstrapTime,
-		instance:      instance,
-		proxy:         proxy,
-	}
 }

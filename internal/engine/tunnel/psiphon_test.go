@@ -26,7 +26,7 @@ func TestPsiphonFetchPsiphonConfigFailure(t *testing.T) {
 	}
 }
 
-func TestPsiphonMakeMkdirAllFailure(t *testing.T) {
+func TestPsiphonMkdirAllFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	sess := &mockable.Session{
 		MockableFetchPsiphonConfigResult: []byte(`{}`),
@@ -45,7 +45,7 @@ func TestPsiphonMakeMkdirAllFailure(t *testing.T) {
 	}
 }
 
-func TestPsiphonMakeRemoveAllFailure(t *testing.T) {
+func TestPsiphonRemoveAllFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	sess := &mockable.Session{
 		MockableFetchPsiphonConfigResult: []byte(`{}`),
@@ -64,7 +64,7 @@ func TestPsiphonMakeRemoveAllFailure(t *testing.T) {
 	}
 }
 
-func TestPsiphonMakeStartFailure(t *testing.T) {
+func TestPsiphonStartFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	sess := &mockable.Session{
 		MockableFetchPsiphonConfigResult: []byte(`{}`),
