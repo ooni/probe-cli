@@ -27,16 +27,23 @@ type Tunnel interface {
 	Stop()
 }
 
-// Config contains config for the session tunnel.
+// Config contains the configuration for creating a Tunnel instance.
 type Config struct {
-	Name    string
+	// Name is the mandatory name of the tunnel. We support
+	// "tor" and "psiphon" tunnels.
+	Name string
+
+	// Session is the current measurement session.
 	Session Session
+
+	// WorkDir is the directory in which the tunnel SHOULD
+	// store its state, if any.
 	WorkDir string
 }
 
 // Start starts a new tunnel by name or returns an error. Note that if you
 // pass to this function the "" tunnel, you get back nil, nil.
-func Start(ctx context.Context, config Config) (Tunnel, error) {
+func Start(ctx context.Context, config *Config) (Tunnel, error) {
 	logger := config.Session.Logger()
 	switch config.Name {
 	case "":

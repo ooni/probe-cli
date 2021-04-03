@@ -350,7 +350,7 @@ func (s *Session) MaybeStartTunnel(ctx context.Context, name string) error {
 		// sets a proxy, the second check for s.tunnel is for robustness.
 		return ErrAlreadyUsingProxy
 	}
-	tunnel, err := tunnel.Start(ctx, tunnel.Config{
+	tunnel, err := tunnel.Start(ctx, &tunnel.Config{
 		Name:    name,
 		Session: s,
 	})
