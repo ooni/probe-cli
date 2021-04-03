@@ -1,5 +1,4 @@
-// Package torx contains code to control tor.
-package torx
+package tunnel
 
 import (
 	"context"
@@ -13,27 +12,20 @@ import (
 	"github.com/cretz/bine/tor"
 )
 
-// Session is the way in which this package sees a Session.
-type Session interface {
-	TempDir() string
-	TorArgs() []string
-	TorBinary() string
-}
-
-// TorProcess is a running tor process
-type TorProcess interface {
+// torProcess is a running tor process
+type torProcess interface {
 	Close() error
 }
 
-// Tunnel is the Tor tunnel
-type Tunnel struct {
+// torTunnel is the Tor tunnel
+type torTunnel struct {
 	bootstrapTime time.Duration
-	instance      TorProcess
+	instance      torProcess
 	proxy         *url.URL
 }
 
 // BootstrapTime is the bootstrsap time
-func (tt *Tunnel) BootstrapTime() (duration time.Duration) {
+func (tt *torTunnel) BootstrapTime() (duration time.Duration) {
 	if tt != nil {
 		duration = tt.bootstrapTime
 	}
@@ -41,7 +33,7 @@ func (tt *Tunnel) BootstrapTime() (duration time.Duration) {
 }
 
 // SOCKS5ProxyURL returns the URL of the SOCKS5 proxy
-func (tt *Tunnel) SOCKS5ProxyURL() (url *url.URL) {
+func (tt *torTunnel) SOCKS5ProxyURL() (url *url.URL) {
 	if tt != nil {
 		url = tt.proxy
 	}
@@ -49,23 +41,23 @@ func (tt *Tunnel) SOCKS5ProxyURL() (url *url.URL) {
 }
 
 // Stop stops the Tor tunnel
-func (tt *Tunnel) Stop() {
+func (tt *torTunnel) Stop() {
 	if tt != nil {
 		tt.instance.Close()
 	}
 }
 
-// StartConfig contains the configuration for StartWithConfig
-type StartConfig struct {
+// torStartConfig contains the configuration for StartWithConfig
+type torStartConfig struct {
 	Sess          Session
 	Start         func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error)
 	EnableNetwork func(ctx context.Context, tor *tor.Tor, wait bool) error
 	GetInfo       func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error)
 }
 
-// Start starts the tor tunnel
-func Start(ctx context.Context, sess Session) (*Tunnel, error) {
-	return StartWithConfig(ctx, StartConfig{
+// torStart starts the tor tunnel
+func torStart(ctx context.Context, sess Session) (Tunnel, error) {
+	return torStartWithConfig(ctx, torStartConfig{
 		Sess: sess,
 		Start: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return tor.Start(ctx, conf)
@@ -79,8 +71,8 @@ func Start(ctx context.Context, sess Session) (*Tunnel, error) {
 	})
 }
 
-// StartWithConfig is a configurable Start for testing
-func StartWithConfig(ctx context.Context, config StartConfig) (*Tunnel, error) {
+// torStartWithConfig is a configurable torStart for testing
+func torStartWithConfig(ctx context.Context, config torStartConfig) (Tunnel, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err() // allows to write unit tests using this code
@@ -123,7 +115,7 @@ func StartWithConfig(ctx context.Context, config StartConfig) (*Tunnel, error) {
 		instance.Close()
 		return nil, fmt.Errorf("tor returned unsupported proxy")
 	}
-	return &Tunnel{
+	return &torTunnel{
 		bootstrapTime: stop.Sub(start),
 		instance:      instance,
 		proxy:         &url.URL{Scheme: "socks5", Host: proxyAddress},
@@ -134,4 +126,13 @@ func StartWithConfig(ctx context.Context, config StartConfig) (*Tunnel, error) {
 // is always located somewhere inside the sess.TempDir() directory.
 func LogFile(sess Session) string {
 	return path.Join(sess.TempDir(), "tor.log")
+}
+
+// newTorTunnel creates a new torTunnel
+func newTorTunnel(bootstrapTime time.Duration, instance torProcess, proxy *url.URL) *torTunnel {
+	return &torTunnel{
+		bootstrapTime: bootstrapTime,
+		instance:      instance,
+		proxy:         proxy,
+	}
 }
