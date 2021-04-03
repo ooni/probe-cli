@@ -12,7 +12,7 @@ import (
 func TestStartNoTunnel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	tunnel, err := Start(ctx, Config{
+	tunnel, err := Start(ctx, &Config{
 		Name: "",
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
@@ -29,7 +29,7 @@ func TestStartNoTunnel(t *testing.T) {
 func TestStartPsiphonTunnel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	tunnel, err := Start(ctx, Config{
+	tunnel, err := Start(ctx, &Config{
 		Name: "psiphon",
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
@@ -46,7 +46,7 @@ func TestStartPsiphonTunnel(t *testing.T) {
 func TestStartTorTunnel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	tunnel, err := Start(ctx, Config{
+	tunnel, err := Start(ctx, &Config{
 		Name: "tor",
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
@@ -63,7 +63,7 @@ func TestStartTorTunnel(t *testing.T) {
 func TestStartInvalidTunnel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	tunnel, err := Start(ctx, Config{
+	tunnel, err := Start(ctx, &Config{
 		Name: "antani",
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
