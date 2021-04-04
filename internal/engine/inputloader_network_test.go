@@ -2,7 +2,6 @@ package engine_test
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
 	"github.com/apex/log"
@@ -25,7 +24,6 @@ func TestInputLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 		SoftwareName:    "miniooni",
 		SoftwareVersion: "0.1.0-dev",
 		TempDir:         "testdata",
-		TunnelDir:       filepath.Join(".", "testdata", "tunnel"),
 	})
 	if err != nil {
 		t.Fatal(err)

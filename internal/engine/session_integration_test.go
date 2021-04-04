@@ -9,7 +9,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"path/filepath"
 	"syscall"
 	"testing"
 
@@ -66,14 +65,6 @@ func TestNewSessionBuilderChecks(t *testing.T) {
 			TempDir:         "./nonexistent",
 		})
 	})
-	t.Run("with a missing tunneldir", func(t *testing.T) {
-		newSessionMustFail(t, SessionConfig{
-			Logger:          model.DiscardLogger,
-			SoftwareName:    "ooniprobe-engine",
-			SoftwareVersion: "0.0.1",
-			TempDir:         "", // means: pick a suitable default
-		})
-	})
 }
 
 func TestNewSessionBuilderGood(t *testing.T) {
@@ -107,7 +98,6 @@ func TestSessionTorArgsTorBinary(t *testing.T) {
 		SoftwareVersion: "0.0.1",
 		TorArgs:         []string{"antani1", "antani2", "antani3"},
 		TorBinary:       "mascetti",
-		TunnelDir:       filepath.Join(".", "testdata", "tunnel"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -139,7 +129,6 @@ func newSessionForTestingNoLookupsWithProxyURL(t *testing.T, URL *url.URL) *Sess
 		ProxyURL:        URL,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
-		TunnelDir:       filepath.Join(".", "testdata", "tunnel"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -351,7 +340,6 @@ func TestGetAvailableProbeServices(t *testing.T) {
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
-		TunnelDir:       filepath.Join(".", "testdata", "tunnel"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -393,7 +381,6 @@ func TestMaybeLookupTestHelpersIdempotent(t *testing.T) {
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
-		TunnelDir:       filepath.Join(".", "testdata", "tunnel"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -419,7 +406,6 @@ func TestAllProbeServicesUnsupported(t *testing.T) {
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
-		TunnelDir:       filepath.Join(".", "testdata", "tunnel"),
 	})
 	if err != nil {
 		t.Fatal(err)

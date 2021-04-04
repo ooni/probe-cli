@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"syscall"
 	"testing"
 
@@ -243,7 +242,6 @@ func TestInputLoaderInputOrQueryBackendWithNoInputAndCancelledContext(t *testing
 		SoftwareName:    "miniooni",
 		SoftwareVersion: "0.1.0-dev",
 		TempDir:         "testdata",
-		TunnelDir:       filepath.Join(".", "testdata", "tunnel"),
 	})
 	if err != nil {
 		t.Fatal(err)

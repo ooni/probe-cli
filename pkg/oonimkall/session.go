@@ -88,7 +88,8 @@ type SessionConfig struct {
 	TempDir string
 
 	// TunnelDir is the directory where the Session shall store
-	// persistent data regarding circumvention tunnels.
+	// persistent data regarding circumvention tunnels. This directory
+	// is mandatory if you want to use tunnels.
 	TunnelDir string
 
 	// Verbose is optional. If there is a non-null Logger and this

@@ -36,7 +36,10 @@ type SessionConfig struct {
 	TorBinary              string
 
 	// TunnelDir is the directory where we should store
-	// the state of persistent tunnels.
+	// the state of persistent tunnels. This field is
+	// optional _unless_ you want to use tunnels. In such
+	// case, starting a tunnel will fail because there
+	// is no directory where to store state.
 	TunnelDir string
 }
 
@@ -118,9 +121,6 @@ func NewSession(config SessionConfig) (*Session, error) {
 	tempDir, err := ioutil.TempDir(config.TempDir, "ooniengine")
 	if err != nil {
 		return nil, err
-	}
-	if config.TunnelDir == "" {
-		return nil, errors.New("TunnelDir is empty")
 	}
 	sess := &Session{
 		availableProbeServices:  config.AvailableProbeServices,

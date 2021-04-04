@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -567,7 +566,6 @@ func newsession(t *testing.T) model.ExperimentSession {
 		Logger:          log.Log,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
-		TunnelDir:       filepath.Join(".", "testdata", "tunnel"),
 	})
 	if err != nil {
 		t.Fatal(err)
