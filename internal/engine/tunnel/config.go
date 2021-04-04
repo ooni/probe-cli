@@ -18,6 +18,16 @@ type Config struct {
 	// Session is the current measurement session.
 	Session Session
 
+	// TorArgs contains the arguments that you want us to pass
+	// to the tor binary when invoking it. By default we do not
+	// pass any extra argument. This flag might be useful to
+	// configure pluggable transports.
+	TorArgs []string
+
+	// TorBinary is the path of the TorBinary we SHOULD be
+	// executing. When not set, we execute `tor`.
+	TorBinary string
+
 	// WorkDir is the directory in which the tunnel SHOULD
 	// store its state, if any.
 	WorkDir string

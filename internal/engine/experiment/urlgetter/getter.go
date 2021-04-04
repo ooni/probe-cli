@@ -95,9 +95,11 @@ func (g Getter) get(ctx context.Context, saver *trace.Saver) (TestKeys, error) {
 	var proxyURL *url.URL
 	if g.Config.Tunnel != "" {
 		tun, err := tunnel.Start(ctx, &tunnel.Config{
-			Name:    g.Config.Tunnel,
-			Session: g.Session,
-			WorkDir: filepath.Join(g.Session.TempDir(), "urlgetter-tunnel"),
+			Name:      g.Config.Tunnel,
+			Session:   g.Session,
+			TorArgs:   g.Session.TorArgs(),
+			TorBinary: g.Session.TorBinary(),
+			WorkDir:   filepath.Join(g.Session.TempDir(), "urlgetter-tunnel"),
 		})
 		if err != nil {
 			return tk, err

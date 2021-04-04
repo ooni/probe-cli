@@ -13,8 +13,6 @@ import (
 type Session interface {
 	FetchPsiphonConfig(ctx context.Context) ([]byte, error)
 	TempDir() string
-	TorArgs() []string
-	TorBinary() string
 }
 
 // Tunnel is a tunnel used by the session
