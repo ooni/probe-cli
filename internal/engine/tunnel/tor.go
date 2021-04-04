@@ -60,7 +60,7 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	default:
 	}
 	logfile := LogFile(config.Session)
-	extraArgs := append([]string{}, config.Session.TorArgs()...)
+	extraArgs := append([]string{}, config.TorArgs...)
 	extraArgs = append(extraArgs, "Log")
 	extraArgs = append(extraArgs, "notice stderr")
 	extraArgs = append(extraArgs, "Log")
@@ -68,7 +68,7 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	instance, err := config.torStart(ctx, &tor.StartConf{
 		DataDir:   path.Join(config.Session.TempDir(), "tor"),
 		ExtraArgs: extraArgs,
-		ExePath:   config.Session.TorBinary(),
+		ExePath:   config.TorBinary,
 		NoHush:    true,
 	})
 	if err != nil {
