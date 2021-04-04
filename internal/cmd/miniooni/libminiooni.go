@@ -333,6 +333,10 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	kvstore, err := engine.NewFileSystemKVStore(kvstore2dir)
 	fatalOnError(err, "cannot create kvstore2 directory")
 
+	tunnelDir := filepath.Join(miniooniDir, "tunnel")
+	err = os.MkdirAll(tunnelDir, 0700)
+	fatalOnError(err, "cannot create tunnelDir")
+
 	config := engine.SessionConfig{
 		KVStore:         kvstore,
 		Logger:          logger,
@@ -341,6 +345,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		SoftwareVersion: softwareVersion,
 		TorArgs:         currentOptions.TorArgs,
 		TorBinary:       currentOptions.TorBinary,
+		TunnelDir:       tunnelDir,
 	}
 	if currentOptions.ProbeServicesURL != "" {
 		config.AvailableProbeServices = []model.Service{{

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -52,6 +52,9 @@ func (tt *torTunnel) Stop() {
 	}
 }
 
+// TODO(bassosimone): the current design is such that we have a bunch of
+// torrc-$number and a growing tor.log file inside of stateDir.
+
 // torStart starts the tor tunnel.
 func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	select {
@@ -59,14 +62,15 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 		return nil, ctx.Err() // allows to write unit tests using this code
 	default:
 	}
-	logfile := LogFile(config.Session)
+	stateDir := filepath.Join(config.TunnelDir, "tor")
+	logfile := filepath.Join(stateDir, "tor.log")
 	extraArgs := append([]string{}, config.TorArgs...)
 	extraArgs = append(extraArgs, "Log")
 	extraArgs = append(extraArgs, "notice stderr")
 	extraArgs = append(extraArgs, "Log")
 	extraArgs = append(extraArgs, fmt.Sprintf(`notice file %s`, logfile))
 	instance, err := config.torStart(ctx, &tor.StartConf{
-		DataDir:   path.Join(config.Session.TempDir(), "tor"),
+		DataDir:   stateDir,
 		ExtraArgs: extraArgs,
 		ExePath:   config.TorBinary,
 		NoHush:    true,
@@ -101,10 +105,4 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 		instance:      instance,
 		proxy:         &url.URL{Scheme: "socks5", Host: proxyAddress},
 	}, nil
-}
-
-// LogFile returns the name of tor logs given a specific session. The file
-// is always located somewhere inside the sess.TempDir() directory.
-func LogFile(sess Session) string {
-	return path.Join(sess.TempDir(), "tor.log")
 }

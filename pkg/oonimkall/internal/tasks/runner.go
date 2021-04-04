@@ -80,6 +80,7 @@ func (r *Runner) newsession(logger *ChanLogger) (*engine.Session, error) {
 		SoftwareName:    r.settings.Options.SoftwareName,
 		SoftwareVersion: r.settings.Options.SoftwareVersion,
 		TempDir:         r.settings.TempDir,
+		TunnelDir:       r.settings.TunnelDir,
 	}
 	if r.settings.Options.ProbeServicesBaseURL != "" {
 		config.AvailableProbeServices = []model.Service{{

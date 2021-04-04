@@ -28,15 +28,13 @@ type Config struct {
 	// executing. When not set, we execute `tor`.
 	TorBinary string
 
-	// WorkDir is the directory in which the tunnel SHOULD
-	// store its state, if any.
-	WorkDir string
+	// TunnelDir is the directory in which the tunnel SHOULD
+	// store its state, if any. If this field is empty, the
+	// Start function fails with ErrEmptyTunnelDir.
+	TunnelDir string
 
 	// testMkdirAll allows us to mock os.MkdirAll in testing code.
 	testMkdirAll func(path string, perm os.FileMode) error
-
-	// testRemoveAll allows us to mock os.RemoveAll in testing code.
-	testRemoveAll func(path string) error
 
 	// testStartPsiphon allows us to mock psiphon's clientlib.StartTunnel.
 	testStartPsiphon func(ctx context.Context, config []byte,
@@ -60,14 +58,6 @@ func (c *Config) mkdirAll(path string, perm os.FileMode) error {
 		return c.testMkdirAll(path, perm)
 	}
 	return os.MkdirAll(path, perm)
-}
-
-// removeAll calls either testRemoveAll or os.RemoveAll.
-func (c *Config) removeAll(path string) error {
-	if c.testRemoveAll != nil {
-		return c.testRemoveAll(path)
-	}
-	return os.RemoveAll(path)
 }
 
 // startPsiphon calls either testStartPsiphon or psiphon's clientlib.StartTunnel.

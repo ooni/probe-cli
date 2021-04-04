@@ -45,25 +45,6 @@ func TestPsiphonMkdirAllFailure(t *testing.T) {
 	}
 }
 
-func TestPsiphonRemoveAllFailure(t *testing.T) {
-	expected := errors.New("mocked error")
-	sess := &mockable.Session{
-		MockableFetchPsiphonConfigResult: []byte(`{}`),
-	}
-	tunnel, err := psiphonStart(context.Background(), &Config{
-		Session: sess,
-		testRemoveAll: func(path string) error {
-			return expected
-		},
-	})
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
-	}
-	if tunnel != nil {
-		t.Fatal("expected nil tunnel here")
-	}
-}
-
 func TestPsiphonStartFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	sess := &mockable.Session{

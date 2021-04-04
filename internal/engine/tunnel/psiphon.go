@@ -20,22 +20,9 @@ type psiphonTunnel struct {
 	duration time.Duration
 }
 
-// TODO(bassosimone): _always_ wiping the state directory
-// here is absolutely wrong. This prevents us from reusing
-// an existing psiphon cache existing on disk. We want to
-// delete the directory _only_ in the psiphon nettest.
-
 // psiphonMakeWorkingDir creates the working directory
 func psiphonMakeWorkingDir(config *Config) (string, error) {
-	const testdirname = "oonipsiphon"
-	baseWorkDir := config.WorkDir
-	if baseWorkDir == "" {
-		baseWorkDir = config.Session.TempDir()
-	}
-	workdir := filepath.Join(baseWorkDir, testdirname)
-	if err := config.removeAll(workdir); err != nil {
-		return "", err
-	}
+	workdir := filepath.Join(config.TunnelDir, config.Name)
 	if err := config.mkdirAll(workdir, 0700); err != nil {
 		return "", err
 	}

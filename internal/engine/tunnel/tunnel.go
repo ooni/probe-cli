@@ -12,7 +12,6 @@ import (
 // Session is the way in which this package sees a Session.
 type Session interface {
 	FetchPsiphonConfig(ctx context.Context) ([]byte, error)
-	TempDir() string
 }
 
 // Tunnel is a tunnel used by the session
@@ -22,9 +21,15 @@ type Tunnel interface {
 	Stop()
 }
 
+// ErrEmptyTunnelDir indicates that config.TunnelDir is empty.
+var ErrEmptyTunnelDir = errors.New("TunnelDir is empty")
+
 // Start starts a new tunnel by name or returns an error. Note that if you
 // pass to this function the "" tunnel, you get back nil, nil.
 func Start(ctx context.Context, config *Config) (Tunnel, error) {
+	if config.TunnelDir == "" {
+		return nil, ErrEmptyTunnelDir
+	}
 	switch config.Name {
 	case "":
 		return enforceNilContract(nil, nil)
