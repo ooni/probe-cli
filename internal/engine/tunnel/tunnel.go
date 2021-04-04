@@ -7,8 +7,6 @@ import (
 	"errors"
 	"net/url"
 	"time"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
 // Session is the way in which this package sees a Session.
@@ -17,7 +15,6 @@ type Session interface {
 	TempDir() string
 	TorArgs() []string
 	TorBinary() string
-	Logger() model.Logger
 }
 
 // Tunnel is a tunnel used by the session
@@ -30,17 +27,13 @@ type Tunnel interface {
 // Start starts a new tunnel by name or returns an error. Note that if you
 // pass to this function the "" tunnel, you get back nil, nil.
 func Start(ctx context.Context, config *Config) (Tunnel, error) {
-	logger := config.Session.Logger()
 	switch config.Name {
 	case "":
-		logger.Debugf("no tunnel has been requested")
 		return enforceNilContract(nil, nil)
 	case "psiphon":
-		logger.Infof("starting %s tunnel; please be patient...", config.Name)
 		tun, err := psiphonStart(ctx, config)
 		return enforceNilContract(tun, err)
 	case "tor":
-		logger.Infof("starting %s tunnel; please be patient...", config.Name)
 		tun, err := torStart(ctx, config)
 		return enforceNilContract(tun, err)
 	default:

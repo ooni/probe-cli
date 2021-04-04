@@ -336,6 +336,11 @@ func (s *Session) MaybeStartTunnel(ctx context.Context, name string) error {
 	// TODO(bassosimone): see if we can unify tunnelMu and mu.
 	s.tunnelMu.Lock()
 	defer s.tunnelMu.Unlock()
+	if name == "" {
+		// There is no point in continuing if we know
+		// we don't need to do anything.
+		return nil
+	}
 	if s.tunnel != nil && s.tunnelName == name {
 		// We've been asked more than once to start the same tunnel.
 		return nil
@@ -343,6 +348,8 @@ func (s *Session) MaybeStartTunnel(ctx context.Context, name string) error {
 	if s.proxyURL != nil && name == "" {
 		// The user configured a proxy and here we're not actually trying
 		// to start any tunnel since `name` is empty.
+		// TODO(bassosimone): this if branch is probably useless now
+		// because we stop above when name is "".
 		return nil
 	}
 	if s.proxyURL != nil || s.tunnel != nil {
@@ -350,6 +357,7 @@ func (s *Session) MaybeStartTunnel(ctx context.Context, name string) error {
 		// sets a proxy, the second check for s.tunnel is for robustness.
 		return ErrAlreadyUsingProxy
 	}
+	s.logger.Infof("starting '%s' tunnel; please be patient...", name)
 	tunnel, err := tunnel.Start(ctx, &tunnel.Config{
 		Name:    name,
 		Session: s,
