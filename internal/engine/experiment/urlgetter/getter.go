@@ -83,8 +83,12 @@ func (g Getter) Get(ctx context.Context) (TestKeys, error) {
 }
 
 var (
+	// tunnelDirCount counts the number of tunnels started by
+	// the urlgetter package so far.
 	tunnelDirCount int64
-	tunnelDirMu    sync.Mutex
+
+	// tunnelDirMu protects tunnelDirCount
+	tunnelDirMu sync.Mutex
 )
 
 func (g Getter) get(ctx context.Context, saver *trace.Saver) (TestKeys, error) {
@@ -101,6 +105,9 @@ func (g Getter) get(ctx context.Context, saver *trace.Saver) (TestKeys, error) {
 	// start tunnel
 	var proxyURL *url.URL
 	if g.Config.Tunnel != "" {
+		// Every new instance of the tunnel goes into a separate
+		// directory within the temporary directory. Calling
+		// Session.Close will delete such a directory.
 		tunnelDirMu.Lock()
 		count := tunnelDirCount
 		tunnelDirCount++

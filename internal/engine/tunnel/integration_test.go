@@ -3,7 +3,6 @@ package tunnel_test
 import (
 	"context"
 	"errors"
-	"path/filepath"
 	"testing"
 
 	"github.com/apex/log"
@@ -20,7 +19,7 @@ func TestPsiphonStartWithCancelledContext(t *testing.T) {
 		Logger:          log.Log,
 		SoftwareName:    "miniooni",
 		SoftwareVersion: "0.1.0-dev",
-		TunnelDir:       filepath.Join("testdata"),
+		TunnelDir:       "testdata",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -28,7 +27,7 @@ func TestPsiphonStartWithCancelledContext(t *testing.T) {
 	tunnel, err := tunnel.Start(ctx, &tunnel.Config{
 		Name:      "psiphon",
 		Session:   sess,
-		TunnelDir: filepath.Join("testdata"),
+		TunnelDir: "testdata",
 	})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
@@ -46,7 +45,7 @@ func TestPsiphonStartStop(t *testing.T) {
 		Logger:          log.Log,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
-		TunnelDir:       filepath.Join("testdata"),
+		TunnelDir:       "testdata",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -54,7 +53,7 @@ func TestPsiphonStartStop(t *testing.T) {
 	tunnel, err := tunnel.Start(context.Background(), &tunnel.Config{
 		Name:      "psiphon",
 		Session:   sess,
-		TunnelDir: filepath.Join("testdata"),
+		TunnelDir: "testdata",
 	})
 	if err != nil {
 		t.Fatal(err)
