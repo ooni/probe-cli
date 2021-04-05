@@ -63,12 +63,6 @@ type Session struct {
 	softwareName             string
 	softwareVersion          string
 	tempDir                  string
-	torArgs                  []string
-	torBinary                string
-	tunnelDir                string
-	tunnelMu                 sync.Mutex
-	tunnelName               string
-	tunnel                   tunnel.Tunnel
 
 	// closeOnce allows us to call Close just once.
 	closeOnce sync.Once
@@ -92,6 +86,18 @@ type Session struct {
 	// allowing us to mock NewProbeServicesClient when calling CheckIn.
 	testNewProbeServicesClientForCheckIn func(ctx context.Context) (
 		sessionProbeServicesClientForCheckIn, error)
+
+	// torArgs contains the optional arguments for tor that we may need
+	// to pass to urlgetter when it uses a tor tunnel.
+	torArgs []string
+
+	// torBinary contains the optional path to the tor binary that we
+	// may need to pass to urlgetter when it uses a tor tunnel.
+	torBinary string
+
+	// tunnel is the optional tunnel that we may be using. It is created
+	// by NewSession and it is cleaned up by Close.
+	tunnel tunnel.Tunnel
 }
 
 // sessionProbeServicesClientForCheckIn returns the probe services
@@ -157,21 +163,22 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		tempDir:                 tempDir,
 		torArgs:                 config.TorArgs,
 		torBinary:               config.TorBinary,
-		tunnelDir:               config.TunnelDir,
 	}
 	proxyURL := config.ProxyURL
 	if proxyURL != nil {
 		switch proxyURL.Scheme {
 		case "psiphon", "tor":
-			tunnel, err := tunnel.Start(ctx, tunnel.Config{
-				Name:    proxyURL.Scheme,
-				Session: sess,
+			tunnel, err := tunnel.Start(ctx, &tunnel.Config{
+				Name:      proxyURL.Scheme,
+				Session:   &sessionTunnelEarlySession{},
+				TorArgs:   config.TorArgs,
+				TorBinary: config.TorBinary,
+				TunnelDir: config.TunnelDir,
 			})
 			if err != nil {
 				sess.logger.Warnf("cannot start tunnel: %+v", err)
 				return nil, err
 			}
-			sess.tunnelName = proxyURL.Scheme
 			sess.tunnel = tunnel
 			proxyURL = tunnel.SOCKS5ProxyURL()
 		}
@@ -370,63 +377,6 @@ func (s *Session) MaybeLookupBackends() error {
 var ErrAlreadyUsingProxy = errors.New(
 	"session: cannot create a new tunnel of this kind: we are already using a proxy",
 )
-
-// MaybeStartTunnel starts the requested tunnel.
-//
-// This function silently succeeds if we're already using a tunnel with
-// the same name or if the requested tunnel name is the empty string. This
-// function fails, tho, when we already have a proxy or a tunnel with
-// another name and we try to open a tunnel. This function of course also
-// fails if we cannot start the requested tunnel. All in all, if you request
-// for a tunnel name that is not the empty string and you get a nil error,
-// you can be confident that session.ProxyURL() gives you the tunnel URL.
-//
-// The tunnel will be closed by session.Close().
-func (s *Session) MaybeStartTunnel(ctx context.Context, name string) error {
-	// TODO(bassosimone): see if we can unify tunnelMu and mu.
-	s.tunnelMu.Lock()
-	defer s.tunnelMu.Unlock()
-	if name == "" {
-		// There is no point in continuing if we know
-		// we don't need to do anything.
-		return nil
-	}
-	if s.tunnel != nil && s.tunnelName == name {
-		// We've been asked more than once to start the same tunnel.
-		return nil
-	}
-	if s.proxyURL != nil && name == "" {
-		// The user configured a proxy and here we're not actually trying
-		// to start any tunnel since `name` is empty.
-		// TODO(bassosimone): this if branch is probably useless now
-		// because we stop above when name is "".
-		return nil
-	}
-	if s.proxyURL != nil || s.tunnel != nil {
-		// We already have a proxy or we have a different tunnel. Because a tunnel
-		// sets a proxy, the second check for s.tunnel is for robustness.
-		return ErrAlreadyUsingProxy
-	}
-	s.logger.Infof("starting '%s' tunnel; please be patient...", name)
-	tunnel, err := tunnel.Start(ctx, &tunnel.Config{
-		Name:      name,
-		Session:   &sessionTunnelEarlySession{},
-		TorArgs:   s.TorArgs(),
-		TorBinary: s.TorBinary(),
-		TunnelDir: s.tunnelDir,
-	})
-	if err != nil {
-		return err
-	}
-	// Implementation note: tunnel _may_ be NIL here if name is ""
-	if tunnel == nil {
-		return nil
-	}
-	s.tunnelName = name
-	s.tunnel = tunnel
-	s.proxyURL = tunnel.SOCKS5ProxyURL()
-	return nil
-}
 
 // NewExperimentBuilder returns a new experiment builder
 // for the experiment with the given name, or an error if
