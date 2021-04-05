@@ -40,6 +40,16 @@ func (t *fakeTunnel) SOCKS5ProxyURL() *url.URL {
 
 // fakeStart starts the fake tunnel.
 func fakeStart(ctx context.Context, config *Config) (Tunnel, error) {
+	// do the same things other tunnels do:
+	//
+	// 1. abort if context is cancelled
+	//
+	// 2. check for tunnelDir being not empty
+	//
+	// 3. attempt to create tunnelDir
+	//
+	// after that, it's all fake and we just create a simple
+	// socks5 server that we can use
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err() // simplifies unit testing this code
@@ -47,6 +57,9 @@ func fakeStart(ctx context.Context, config *Config) (Tunnel, error) {
 	}
 	if config.TunnelDir == "" {
 		return nil, ErrEmptyTunnelDir
+	}
+	if err := config.mkdirAll(config.TunnelDir, 0700); err != nil {
+		return nil, err
 	}
 	server, err := config.socks5New(&socks5.Config{})
 	if err != nil {

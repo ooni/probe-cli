@@ -2,10 +2,8 @@ package urlgetter
 
 import (
 	"context"
-	"fmt"
+	"io/ioutil"
 	"net/url"
-	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
@@ -36,6 +34,9 @@ type Getter struct {
 	// Target is the thing to measure in this run. This field must
 	// be set otherwise the code won't know what to do.
 	Target string
+
+	// testIOUtilTempDir allows us to mock ioutil.TempDir
+	testIOUtilTempDir func(dir, pattern string) (string, error)
 }
 
 // Get performs the action described by g using the given context
@@ -82,18 +83,13 @@ func (g Getter) Get(ctx context.Context) (TestKeys, error) {
 	return tk, err
 }
 
-// TODO(bassosimone): this mechanism where we count breaks tests
-// because now tests are not idempotent anymore. Therefore, we
-// SHOULD be creating a temporary directory instead.
-
-var (
-	// tunnelDirCount counts the number of tunnels started by
-	// the urlgetter package so far.
-	tunnelDirCount int64
-
-	// tunnelDirMu protects tunnelDirCount
-	tunnelDirMu sync.Mutex
-)
+// ioutilTempDir calls either g.testIOUtilTempDir or ioutil.TempDir
+func (g Getter) ioutilTempDir(dir, pattern string) (string, error) {
+	if g.testIOUtilTempDir != nil {
+		return g.testIOUtilTempDir(dir, pattern)
+	}
+	return ioutil.TempDir(dir, pattern)
+}
 
 func (g Getter) get(ctx context.Context, saver *trace.Saver) (TestKeys, error) {
 	tk := TestKeys{
@@ -112,17 +108,16 @@ func (g Getter) get(ctx context.Context, saver *trace.Saver) (TestKeys, error) {
 		// Every new instance of the tunnel goes into a separate
 		// directory within the temporary directory. Calling
 		// Session.Close will delete such a directory.
-		tunnelDirMu.Lock()
-		count := tunnelDirCount
-		tunnelDirCount++
-		tunnelDirMu.Unlock()
+		tundir, err := g.ioutilTempDir(g.Session.TempDir(), "urlgetter-tunnel-")
+		if err != nil {
+			return tk, err
+		}
 		tun, err := tunnel.Start(ctx, &tunnel.Config{
 			Name:      g.Config.Tunnel,
 			Session:   g.Session,
 			TorArgs:   g.Session.TorArgs(),
 			TorBinary: g.Session.TorBinary(),
-			TunnelDir: filepath.Join(
-				g.Session.TempDir(), fmt.Sprintf("urlgetter-tunnel-%d", count)),
+			TunnelDir: tundir,
 		})
 		if err != nil {
 			return tk, err
