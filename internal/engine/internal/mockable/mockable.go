@@ -6,9 +6,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/psiphonx"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/torx"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
@@ -145,6 +142,3 @@ func (sess *Session) UserAgent() string {
 
 var _ model.ExperimentSession = &Session{}
 var _ probeservices.Session = &Session{}
-var _ psiphonx.Session = &Session{}
-var _ tunnel.Session = &Session{}
-var _ torx.Session = &Session{}

@@ -14,12 +14,12 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/sessionresolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/engine/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -34,6 +34,13 @@ type SessionConfig struct {
 	TempDir                string
 	TorArgs                []string
 	TorBinary              string
+
+	// TunnelDir is the directory where we should store
+	// the state of persistent tunnels. This field is
+	// optional _unless_ you want to use tunnels. In such
+	// case, starting a tunnel will fail because there
+	// is no directory where to store state.
+	TunnelDir string
 }
 
 // Session is a measurement session. It contains shared information
@@ -58,6 +65,8 @@ type Session struct {
 	tempDir                  string
 	torArgs                  []string
 	torBinary                string
+	tunnelDir                string
+	tunnelMu                 sync.Mutex
 	tunnelName               string
 	tunnel                   tunnel.Tunnel
 
@@ -148,6 +157,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		tempDir:                 tempDir,
 		torArgs:                 config.TorArgs,
 		torBinary:               config.TorBinary,
+		tunnelDir:               config.TunnelDir,
 	}
 	proxyURL := config.ProxyURL
 	if proxyURL != nil {
@@ -353,6 +363,69 @@ func (s *Session) MaybeLookupLocation() error {
 // MaybeLookupBackends is a caching OONI backends lookup call.
 func (s *Session) MaybeLookupBackends() error {
 	return s.MaybeLookupBackendsContext(context.Background())
+}
+
+// ErrAlreadyUsingProxy indicates that we cannot create a tunnel with
+// a specific name because we already configured a proxy.
+var ErrAlreadyUsingProxy = errors.New(
+	"session: cannot create a new tunnel of this kind: we are already using a proxy",
+)
+
+// MaybeStartTunnel starts the requested tunnel.
+//
+// This function silently succeeds if we're already using a tunnel with
+// the same name or if the requested tunnel name is the empty string. This
+// function fails, tho, when we already have a proxy or a tunnel with
+// another name and we try to open a tunnel. This function of course also
+// fails if we cannot start the requested tunnel. All in all, if you request
+// for a tunnel name that is not the empty string and you get a nil error,
+// you can be confident that session.ProxyURL() gives you the tunnel URL.
+//
+// The tunnel will be closed by session.Close().
+func (s *Session) MaybeStartTunnel(ctx context.Context, name string) error {
+	// TODO(bassosimone): see if we can unify tunnelMu and mu.
+	s.tunnelMu.Lock()
+	defer s.tunnelMu.Unlock()
+	if name == "" {
+		// There is no point in continuing if we know
+		// we don't need to do anything.
+		return nil
+	}
+	if s.tunnel != nil && s.tunnelName == name {
+		// We've been asked more than once to start the same tunnel.
+		return nil
+	}
+	if s.proxyURL != nil && name == "" {
+		// The user configured a proxy and here we're not actually trying
+		// to start any tunnel since `name` is empty.
+		// TODO(bassosimone): this if branch is probably useless now
+		// because we stop above when name is "".
+		return nil
+	}
+	if s.proxyURL != nil || s.tunnel != nil {
+		// We already have a proxy or we have a different tunnel. Because a tunnel
+		// sets a proxy, the second check for s.tunnel is for robustness.
+		return ErrAlreadyUsingProxy
+	}
+	s.logger.Infof("starting '%s' tunnel; please be patient...", name)
+	tunnel, err := tunnel.Start(ctx, &tunnel.Config{
+		Name:      name,
+		Session:   &sessionTunnelEarlySession{},
+		TorArgs:   s.TorArgs(),
+		TorBinary: s.TorBinary(),
+		TunnelDir: s.tunnelDir,
+	})
+	if err != nil {
+		return err
+	}
+	// Implementation note: tunnel _may_ be NIL here if name is ""
+	if tunnel == nil {
+		return nil
+	}
+	s.tunnelName = name
+	s.tunnel = tunnel
+	s.proxyURL = tunnel.SOCKS5ProxyURL()
+	return nil
 }
 
 // NewExperimentBuilder returns a new experiment builder

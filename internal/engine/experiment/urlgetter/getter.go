@@ -2,15 +2,17 @@ package urlgetter
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"path/filepath"
+	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/engine/tunnel"
 )
 
 // The Getter gets the specified target in the context of the
@@ -80,6 +82,15 @@ func (g Getter) Get(ctx context.Context) (TestKeys, error) {
 	return tk, err
 }
 
+var (
+	// tunnelDirCount counts the number of tunnels started by
+	// the urlgetter package so far.
+	tunnelDirCount int64
+
+	// tunnelDirMu protects tunnelDirCount
+	tunnelDirMu sync.Mutex
+)
+
 func (g Getter) get(ctx context.Context, saver *trace.Saver) (TestKeys, error) {
 	tk := TestKeys{
 		Agent:  "redirect",
@@ -94,10 +105,20 @@ func (g Getter) get(ctx context.Context, saver *trace.Saver) (TestKeys, error) {
 	// start tunnel
 	var proxyURL *url.URL
 	if g.Config.Tunnel != "" {
-		tun, err := tunnel.Start(ctx, tunnel.Config{
-			Name:    g.Config.Tunnel,
-			Session: g.Session,
-			WorkDir: filepath.Join(g.Session.TempDir(), "urlgetter-tunnel"),
+		// Every new instance of the tunnel goes into a separate
+		// directory within the temporary directory. Calling
+		// Session.Close will delete such a directory.
+		tunnelDirMu.Lock()
+		count := tunnelDirCount
+		tunnelDirCount++
+		tunnelDirMu.Unlock()
+		tun, err := tunnel.Start(ctx, &tunnel.Config{
+			Name:      g.Config.Tunnel,
+			Session:   g.Session,
+			TorArgs:   g.Session.TorArgs(),
+			TorBinary: g.Session.TorBinary(),
+			TunnelDir: filepath.Join(
+				g.Session.TempDir(), fmt.Sprintf("urlgetter-tunnel-%d", count)),
 		})
 		if err != nil {
 			return tk, err
