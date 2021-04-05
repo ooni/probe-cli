@@ -45,8 +45,9 @@ type Probe struct {
 	db      sqlbuilder.Database
 	isBatch bool
 
-	home    string
-	tempDir string
+	home      string
+	tempDir   string
+	tunnelDir string
 
 	dbPath     string
 	configPath string
@@ -207,12 +208,16 @@ func (p *Probe) NewSession() (*engine.Session, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "creating engine's kvstore")
 	}
+	if err := os.MkdirAll(utils.TunnelDir(p.home), 0700); err != nil {
+		return nil, errors.Wrap(err, "creating tunnel dir")
+	}
 	return engine.NewSession(engine.SessionConfig{
 		KVStore:         kvstore,
 		Logger:          enginex.Logger,
 		SoftwareName:    p.softwareName,
 		SoftwareVersion: p.softwareVersion,
 		TempDir:         p.tempDir,
+		TunnelDir:       p.tunnelDir,
 	})
 }
 

@@ -10,8 +10,7 @@ import (
 )
 
 func TestStartNoTunnel(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
+	ctx := context.Background()
 	tunnel, err := Start(ctx, &Config{
 		Name: "",
 		Session: &mockable.Session{
@@ -26,14 +25,15 @@ func TestStartNoTunnel(t *testing.T) {
 	}
 }
 
-func TestStartPsiphonTunnel(t *testing.T) {
+func TestStartPsiphonWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
+	cancel() // fail immediately
 	tunnel, err := Start(ctx, &Config{
 		Name: "psiphon",
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
+		TunnelDir: "testdata",
 	})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
@@ -43,14 +43,15 @@ func TestStartPsiphonTunnel(t *testing.T) {
 	}
 }
 
-func TestStartTorTunnel(t *testing.T) {
+func TestStartTorWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
+	cancel() // fail immediately
 	tunnel, err := Start(ctx, &Config{
 		Name: "tor",
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
+		TunnelDir: "testdata",
 	})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
@@ -61,18 +62,17 @@ func TestStartTorTunnel(t *testing.T) {
 }
 
 func TestStartInvalidTunnel(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
+	ctx := context.Background()
 	tunnel, err := Start(ctx, &Config{
 		Name: "antani",
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
+		TunnelDir: "testdata",
 	})
-	if err == nil || err.Error() != "unsupported tunnel" {
+	if !errors.Is(err, ErrUnsupportedTunnelName) {
 		t.Fatal("not the error we expected")
 	}
-	t.Log(tunnel)
 	if tunnel != nil {
 		t.Fatal("expected nil tunnel here")
 	}

@@ -30,6 +30,11 @@ func AssetsDir(home string) string {
 	return filepath.Join(home, "assets")
 }
 
+// TunnelDir returns the directory where to store tunnels state
+func TunnelDir(home string) string {
+	return filepath.Join(home, "tunnel")
+}
+
 // EngineDir returns the directory where ooni/probe-engine should
 // store its private data given a specific OONI Home.
 func EngineDir(home string) string {

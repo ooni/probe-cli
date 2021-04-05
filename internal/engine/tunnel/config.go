@@ -9,34 +9,35 @@ import (
 	"github.com/ooni/psiphon/oopsi/github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
 )
 
-// Config contains the configuration for creating a Tunnel instance.
+// Config contains the configuration for creating a Tunnel instance. You need
+// to fill the mandatory fields. You SHOULD NOT modify the content of this
+// structure while in use, because that may lead to data races.
 type Config struct {
 	// Name is the mandatory name of the tunnel. We support
 	// "tor" and "psiphon" tunnels.
 	Name string
 
-	// Session is the current measurement session.
+	// Session is the current measurement session. This
+	// field is mandatory.
 	Session Session
 
-	// TorArgs contains the arguments that you want us to pass
+	// TorArgs contains the optional arguments that you want us to pass
 	// to the tor binary when invoking it. By default we do not
 	// pass any extra argument. This flag might be useful to
 	// configure pluggable transports.
 	TorArgs []string
 
-	// TorBinary is the path of the TorBinary we SHOULD be
+	// TorBinary is the optional path of the TorBinary we SHOULD be
 	// executing. When not set, we execute `tor`.
 	TorBinary string
 
-	// WorkDir is the directory in which the tunnel SHOULD
-	// store its state, if any.
-	WorkDir string
+	// TunnelDir is the mandatory directory in which the tunnel SHOULD
+	// store its state, if any. If this field is empty, the
+	// Start function fails with ErrEmptyTunnelDir.
+	TunnelDir string
 
 	// testMkdirAll allows us to mock os.MkdirAll in testing code.
 	testMkdirAll func(path string, perm os.FileMode) error
-
-	// testRemoveAll allows us to mock os.RemoveAll in testing code.
-	testRemoveAll func(path string) error
 
 	// testStartPsiphon allows us to mock psiphon's clientlib.StartTunnel.
 	testStartPsiphon func(ctx context.Context, config []byte,
@@ -60,14 +61,6 @@ func (c *Config) mkdirAll(path string, perm os.FileMode) error {
 		return c.testMkdirAll(path, perm)
 	}
 	return os.MkdirAll(path, perm)
-}
-
-// removeAll calls either testRemoveAll or os.RemoveAll.
-func (c *Config) removeAll(path string) error {
-	if c.testRemoveAll != nil {
-		return c.testRemoveAll(path)
-	}
-	return os.RemoveAll(path)
 }
 
 // startPsiphon calls either testStartPsiphon or psiphon's clientlib.StartTunnel.

@@ -87,6 +87,11 @@ type SessionConfig struct {
 	// remove any temporary file created within this Session.
 	TempDir string
 
+	// TunnelDir is the directory where the Session shall store
+	// persistent data regarding circumvention tunnels. This directory
+	// is mandatory if you want to use tunnels.
+	TunnelDir string
+
 	// Verbose is optional. If there is a non-null Logger and this
 	// field is true, then the Logger will also receive Debug messages,
 	// otherwise it will not receive such messages.
@@ -143,6 +148,7 @@ func NewSession(config *SessionConfig) (*Session, error) {
 		SoftwareName:           config.SoftwareName,
 		SoftwareVersion:        config.SoftwareVersion,
 		TempDir:                config.TempDir,
+		TunnelDir:              config.TunnelDir,
 	}
 	sessp, err := engine.NewSession(engineConfig)
 	if err != nil {

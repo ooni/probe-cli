@@ -44,6 +44,11 @@ type Settings struct {
 	// for iOS and does not work for Android.
 	TempDir string `json:"temp_dir"`
 
+	// TunnelDir is the directory where to store persistent state
+	// related to circumvention tunnels. This directory is required
+	// only if you want to use the tunnels. Added since 3.10.0.
+	TunnelDir string `json:"tunnel_dir"`
+
 	// Version indicates the version of this structure.
 	Version int64 `json:"version"`
 }

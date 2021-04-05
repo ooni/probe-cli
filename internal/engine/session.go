@@ -34,6 +34,13 @@ type SessionConfig struct {
 	TempDir                string
 	TorArgs                []string
 	TorBinary              string
+
+	// TunnelDir is the directory where we should store
+	// the state of persistent tunnels. This field is
+	// optional _unless_ you want to use tunnels. In such
+	// case, starting a tunnel will fail because there
+	// is no directory where to store state.
+	TunnelDir string
 }
 
 // Session is a measurement session. It contains shared information
@@ -58,6 +65,7 @@ type Session struct {
 	tempDir                  string
 	torArgs                  []string
 	torBinary                string
+	tunnelDir                string
 	tunnelMu                 sync.Mutex
 	tunnelName               string
 	tunnel                   tunnel.Tunnel
@@ -126,6 +134,7 @@ func NewSession(config SessionConfig) (*Session, error) {
 		tempDir:                 tempDir,
 		torArgs:                 config.TorArgs,
 		torBinary:               config.TorBinary,
+		tunnelDir:               config.TunnelDir,
 	}
 	httpConfig := netx.Config{
 		ByteCounter:  sess.byteCounter,
@@ -363,6 +372,7 @@ func (s *Session) MaybeStartTunnel(ctx context.Context, name string) error {
 		Session:   s,
 		TorArgs:   s.TorArgs(),
 		TorBinary: s.TorBinary(),
+		TunnelDir: s.tunnelDir,
 	})
 	if err != nil {
 		s.logger.Warnf("cannot start tunnel: %+v", err)
