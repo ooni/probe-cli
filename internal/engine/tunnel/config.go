@@ -2,8 +2,10 @@ package tunnel
 
 import (
 	"context"
+	"net"
 	"os"
 
+	"github.com/armon/go-socks5"
 	"github.com/cretz/bine/control"
 	"github.com/cretz/bine/tor"
 	"github.com/ooni/psiphon/oopsi/github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
@@ -14,7 +16,9 @@ import (
 // structure while in use, because that may lead to data races.
 type Config struct {
 	// Name is the mandatory name of the tunnel. We support
-	// "tor" and "psiphon" tunnels.
+	// "tor", "psiphon", and "fake" tunnels. You SHOULD
+	// use "fake" tunnels only for testing: they don't provide
+	// any real tunneling, just a socks5 proxy.
 	Name string
 
 	// Session is the mandatory measurement session, or a suitable
@@ -40,6 +44,12 @@ type Config struct {
 	// testMkdirAll allows us to mock os.MkdirAll in testing code.
 	testMkdirAll func(path string, perm os.FileMode) error
 
+	// testNetListen allows us to mock net.Listen in testing code.
+	testNetListen func(network string, address string) (net.Listener, error)
+
+	// testSocks5New allows us to mock socks5.New in testing code.
+	testSocks5New func(conf *socks5.Config) (*socks5.Server, error)
+
 	// testStartPsiphon allows us to mock psiphon's clientlib.StartTunnel.
 	testStartPsiphon func(ctx context.Context, config []byte,
 		workdir string) (*clientlib.PsiphonTunnel, error)
@@ -62,6 +72,22 @@ func (c *Config) mkdirAll(path string, perm os.FileMode) error {
 		return c.testMkdirAll(path, perm)
 	}
 	return os.MkdirAll(path, perm)
+}
+
+// netListen calls either testNetListen or net.Listen.
+func (c *Config) netListen(network string, address string) (net.Listener, error) {
+	if c.testNetListen != nil {
+		return c.testNetListen(network, address)
+	}
+	return net.Listen(network, address)
+}
+
+// socks5New calls either testSocks5New or socks5.New
+func (c *Config) socks5New(conf *socks5.Config) (*socks5.Server, error) {
+	if c.testSocks5New != nil {
+		return c.testSocks5New(conf)
+	}
+	return socks5.New(conf)
 }
 
 // startPsiphon calls either testStartPsiphon or psiphon's clientlib.StartTunnel.
