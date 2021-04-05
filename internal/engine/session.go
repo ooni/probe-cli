@@ -168,6 +168,8 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	if proxyURL != nil {
 		switch proxyURL.Scheme {
 		case "psiphon", "tor", "fake":
+			config.Logger.Infof(
+				"starting '%s' tunnel; please be patient...", proxyURL.Scheme)
 			tunnel, err := tunnel.Start(ctx, &tunnel.Config{
 				Name:      proxyURL.Scheme,
 				Session:   &sessionTunnelEarlySession{},
@@ -178,6 +180,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 			if err != nil {
 				return nil, err
 			}
+			config.Logger.Infof("tunnel '%s' running...", proxyURL.Scheme)
 			sess.tunnel = tunnel
 			proxyURL = tunnel.SOCKS5ProxyURL()
 		}
