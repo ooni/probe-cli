@@ -10,14 +10,16 @@ import (
 )
 
 // Config contains the configuration for creating a Tunnel instance. You need
-// to fill the mandatory fields. You SHOULD NOT modify the content of this
+// to fill all the mandatory fields. You SHOULD NOT modify the content of this
 // structure while in use, because that may lead to data races.
 type Config struct {
 	// Name is the mandatory name of the tunnel. We support
 	// "tor" and "psiphon" tunnels.
 	Name string
 
-	// Session is the mandatory measurement session.
+	// Session is the mandatory measurement session, or a suitable
+	// mock of the required functionality. That is, the possibility
+	// of obtaining a valid psiphon configuration.
 	Session Session
 
 	// TorArgs contains the optional arguments that you want us to pass

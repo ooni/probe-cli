@@ -43,17 +43,6 @@ func TestTorTunnelNonNil(t *testing.T) {
 	}
 }
 
-func TestTorTunnelNil(t *testing.T) {
-	var tun *torTunnel
-	if tun.BootstrapTime() != 0 {
-		t.Fatal("not the bootstrap time we expected")
-	}
-	if tun.SOCKS5ProxyURL() != nil {
-		t.Fatal("not the url we expected")
-	}
-	tun.Stop() // ensure we don't crash
-}
-
 func TestTorStartWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately

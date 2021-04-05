@@ -67,14 +67,3 @@ func TestPsiphonStartFailure(t *testing.T) {
 		t.Fatal("expected nil tunnel here")
 	}
 }
-
-func TestPsiphonNilTunnel(t *testing.T) {
-	var tunnel *psiphonTunnel
-	if tunnel.BootstrapTime() != 0 {
-		t.Fatal("expected zero bootstrap time")
-	}
-	if tunnel.SOCKS5ProxyURL() != nil {
-		t.Fatal("expected nil SOCKS Proxy URL")
-	}
-	tunnel.Stop() // must not crash
-}

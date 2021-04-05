@@ -30,26 +30,18 @@ type torTunnel struct {
 }
 
 // BootstrapTime returns the bootstrap time
-func (tt *torTunnel) BootstrapTime() (duration time.Duration) {
-	if tt != nil {
-		duration = tt.bootstrapTime
-	}
-	return
+func (tt *torTunnel) BootstrapTime() time.Duration {
+	return tt.bootstrapTime
 }
 
 // SOCKS5ProxyURL returns the URL of the SOCKS5 proxy
-func (tt *torTunnel) SOCKS5ProxyURL() (url *url.URL) {
-	if tt != nil {
-		url = tt.proxy
-	}
-	return
+func (tt *torTunnel) SOCKS5ProxyURL() *url.URL {
+	return tt.proxy
 }
 
 // Stop stops the Tor tunnel
 func (tt *torTunnel) Stop() {
-	if tt != nil {
-		tt.instance.Close()
-	}
+	tt.instance.Close()
 }
 
 // TODO(bassosimone): the current design is such that we have a bunch of
