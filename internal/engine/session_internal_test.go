@@ -3,9 +3,11 @@ package engine
 import (
 	"context"
 	"errors"
+	"net/url"
 	"sync"
 	"testing"
 
+	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
@@ -245,5 +247,46 @@ func TestSessionFetchPsiphonConfigWithCancelledContext(t *testing.T) {
 	}
 	if resp != nil {
 		t.Fatal("expected nil response here")
+	}
+}
+
+func TestNewSessionWithFakeTunnel(t *testing.T) {
+	ctx := context.Background()
+	sess, err := NewSession(ctx, SessionConfig{
+		Logger:          log.Log,
+		ProxyURL:        &url.URL{Scheme: "fake"},
+		SoftwareName:    "miniooni",
+		SoftwareVersion: "0.1.0-dev",
+		TunnelDir:       "testdata",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sess == nil {
+		t.Fatal("expected non-nil session here")
+	}
+	if sess.ProxyURL() == nil {
+		t.Fatal("expected non-nil proxyURL here")
+	}
+	if sess.tunnel == nil {
+		t.Fatal("expected non-nil tunnel here")
+	}
+	sess.Close() // ensure we don't crash
+}
+
+func TestNewSessionWithFakeTunnelAndCancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // fail immediately
+	sess, err := NewSession(ctx, SessionConfig{
+		Logger:          log.Log,
+		ProxyURL:        &url.URL{Scheme: "fake"},
+		SoftwareName:    "miniooni",
+		SoftwareVersion: "0.1.0-dev",
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("not the error we expected", err)
+	}
+	if sess != nil {
+		t.Fatal("expected nil session here")
 	}
 }
