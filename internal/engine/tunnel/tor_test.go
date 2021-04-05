@@ -3,7 +3,12 @@ package tunnel
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/cretz/bine/control"
@@ -224,5 +229,55 @@ func TestTorUnsupportedProxy(t *testing.T) {
 	}
 	if tun != nil {
 		t.Fatal("expected nil tunnel here")
+	}
+}
+
+func TestMaybeCleanupTunnelDir(t *testing.T) {
+	fakeTunDir := filepath.Join("testdata", "fake-tun-dir")
+	if err := os.RemoveAll(fakeTunDir); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(fakeTunDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	fakeData := []byte("deadbeef\n")
+	logfile := filepath.Join(fakeTunDir, "tor.log")
+	if err := ioutil.WriteFile(logfile, fakeData, 0600); err != nil {
+		t.Fatal(err)
+	}
+	for idx := 0; idx < 3; idx++ {
+		filename := filepath.Join(fakeTunDir, fmt.Sprintf("torrc-%d", idx))
+		if err := ioutil.WriteFile(filename, fakeData, 0600); err != nil {
+			t.Fatal(err)
+		}
+		filename = filepath.Join(fakeTunDir, fmt.Sprintf("control-port-%d", idx))
+		if err := ioutil.WriteFile(filename, fakeData, 0600); err != nil {
+			t.Fatal(err)
+		}
+		filename = filepath.Join(fakeTunDir, fmt.Sprintf("antani-%d", idx))
+		if err := ioutil.WriteFile(filename, fakeData, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	files, err := filepath.Glob(filepath.Join(fakeTunDir, "*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 10 {
+		t.Fatal("unexpected number of files")
+	}
+	maybeCleanupTunnelDir(fakeTunDir, logfile)
+	files, err = filepath.Glob(filepath.Join(fakeTunDir, "*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 3 {
+		t.Fatal("unexpected number of files")
+	}
+	expectPrefix := filepath.Join(fakeTunDir, "antani-")
+	for _, file := range files {
+		if !strings.HasPrefix(file, expectPrefix) {
+			t.Fatal("unexpected file name: ", file)
+		}
 	}
 }
