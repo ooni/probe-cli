@@ -167,7 +167,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	proxyURL := config.ProxyURL
 	if proxyURL != nil {
 		switch proxyURL.Scheme {
-		case "psiphon", "tor":
+		case "psiphon", "tor", "fake":
 			tunnel, err := tunnel.Start(ctx, &tunnel.Config{
 				Name:      proxyURL.Scheme,
 				Session:   &sessionTunnelEarlySession{},
