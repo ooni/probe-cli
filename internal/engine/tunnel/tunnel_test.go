@@ -3,7 +3,6 @@ package tunnel
 import (
 	"context"
 	"errors"
-	"path/filepath"
 	"testing"
 
 	"github.com/apex/log"
@@ -34,7 +33,7 @@ func TestStartPsiphonWithCancelledContext(t *testing.T) {
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
-		TunnelDir: filepath.Join("testdata"),
+		TunnelDir: "testdata",
 	})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
@@ -52,7 +51,7 @@ func TestStartTorWithCancelledContext(t *testing.T) {
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
-		TunnelDir: filepath.Join("testdata"),
+		TunnelDir: "testdata",
 	})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
@@ -69,7 +68,7 @@ func TestStartInvalidTunnel(t *testing.T) {
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
-		TunnelDir: filepath.Join("testdata"),
+		TunnelDir: "testdata",
 	})
 	if !errors.Is(err, ErrUnsupportedTunnelName) {
 		t.Fatal("not the error we expected")

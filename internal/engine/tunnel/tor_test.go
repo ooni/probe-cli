@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/url"
-	"path/filepath"
 	"testing"
 
 	"github.com/cretz/bine/control"
@@ -75,7 +74,7 @@ func TestTorStartStartFailure(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
-		TunnelDir: filepath.Join("testdata"),
+		TunnelDir: "testdata",
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return nil, expected
 		},
@@ -93,7 +92,7 @@ func TestTorStartEnableNetworkFailure(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
-		TunnelDir: filepath.Join("testdata"),
+		TunnelDir: "testdata",
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -114,7 +113,7 @@ func TestTorStartGetInfoFailure(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
-		TunnelDir: filepath.Join("testdata"),
+		TunnelDir: "testdata",
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -137,7 +136,7 @@ func TestTorStartGetInfoInvalidNumberOfKeys(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
-		TunnelDir: filepath.Join("testdata"),
+		TunnelDir: "testdata",
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -160,7 +159,7 @@ func TestTorStartGetInfoInvalidKey(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
-		TunnelDir: filepath.Join("testdata"),
+		TunnelDir: "testdata",
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -183,7 +182,7 @@ func TestTorStartGetInfoInvalidProxyType(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
-		TunnelDir: filepath.Join("testdata"),
+		TunnelDir: "testdata",
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -206,7 +205,7 @@ func TestTorStartUnsupportedProxy(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
-		TunnelDir: filepath.Join("testdata"),
+		TunnelDir: "testdata",
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
