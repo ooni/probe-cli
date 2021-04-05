@@ -13,11 +13,11 @@ import (
 
 // psiphonTunnel is a psiphon tunnel
 type psiphonTunnel struct {
+	// bootstrapTime is the bootstrapTime of the bootstrap
+	bootstrapTime time.Duration
+
 	// tunnel is the underlying psiphon tunnel
 	tunnel *clientlib.PsiphonTunnel
-
-	// duration is the duration of the bootstrap
-	duration time.Duration
 }
 
 // psiphonMakeWorkingDir creates the working directory
@@ -36,6 +36,9 @@ func psiphonStart(ctx context.Context, config *Config) (Tunnel, error) {
 		return nil, ctx.Err() // simplifies unit testing this code
 	default:
 	}
+	if config.TunnelDir == "" {
+		return nil, ErrEmptyTunnelDir
+	}
 	configJSON, err := config.Session.FetchPsiphonConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -50,7 +53,7 @@ func psiphonStart(ctx context.Context, config *Config) (Tunnel, error) {
 		return nil, err
 	}
 	stop := time.Now()
-	return &psiphonTunnel{tunnel: tunnel, duration: stop.Sub(start)}, nil
+	return &psiphonTunnel{tunnel: tunnel, bootstrapTime: stop.Sub(start)}, nil
 }
 
 // TODO(bassosimone): define the NullTunnel rather than relying on
@@ -78,7 +81,7 @@ func (t *psiphonTunnel) SOCKS5ProxyURL() (proxyURL *url.URL) {
 // BootstrapTime returns the bootstrap time
 func (t *psiphonTunnel) BootstrapTime() (duration time.Duration) {
 	if t != nil {
-		duration = t.duration
+		duration = t.bootstrapTime
 	}
 	return
 }

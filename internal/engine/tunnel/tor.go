@@ -3,6 +3,7 @@ package tunnel
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -11,10 +12,9 @@ import (
 	"github.com/cretz/bine/tor"
 )
 
-// torProcess is a running tor process
+// torProcess is a running tor process.
 type torProcess interface {
-	// Close kills the running tor process
-	Close() error
+	io.Closer
 }
 
 // torTunnel is the Tor tunnel
@@ -61,6 +61,9 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	case <-ctx.Done():
 		return nil, ctx.Err() // allows to write unit tests using this code
 	default:
+	}
+	if config.TunnelDir == "" {
+		return nil, ErrEmptyTunnelDir
 	}
 	stateDir := filepath.Join(config.TunnelDir, "tor")
 	logfile := filepath.Join(stateDir, "tor.log")

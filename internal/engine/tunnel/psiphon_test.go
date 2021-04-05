@@ -16,7 +16,8 @@ func TestPsiphonFetchPsiphonConfigFailure(t *testing.T) {
 		MockableFetchPsiphonConfigErr: expected,
 	}
 	tunnel, err := psiphonStart(context.Background(), &Config{
-		Session: sess,
+		Session:   sess,
+		TunnelDir: "testdata",
 	})
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
@@ -32,7 +33,8 @@ func TestPsiphonMkdirAllFailure(t *testing.T) {
 		MockableFetchPsiphonConfigResult: []byte(`{}`),
 	}
 	tunnel, err := psiphonStart(context.Background(), &Config{
-		Session: sess,
+		Session:   sess,
+		TunnelDir: "testdata",
 		testMkdirAll: func(path string, perm os.FileMode) error {
 			return expected
 		},
@@ -51,7 +53,8 @@ func TestPsiphonStartFailure(t *testing.T) {
 		MockableFetchPsiphonConfigResult: []byte(`{}`),
 	}
 	tunnel, err := psiphonStart(context.Background(), &Config{
-		Session: sess,
+		Session:   sess,
+		TunnelDir: "testdata",
 		testStartPsiphon: func(ctx context.Context, config []byte,
 			workdir string) (*clientlib.PsiphonTunnel, error) {
 			return nil, expected

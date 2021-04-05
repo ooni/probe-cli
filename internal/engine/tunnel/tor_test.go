@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"path/filepath"
 	"testing"
 
 	"github.com/cretz/bine/control"
@@ -11,17 +12,20 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
 )
 
-type Closer struct {
+// torCloser is used to mock a running tor process, which
+// we abstract as a io.Closer in tor.go.
+type torCloser struct {
 	counter int
 }
 
-func (c *Closer) Close() error {
+// Close implements io.Closer.Close.
+func (c *torCloser) Close() error {
 	c.counter++
 	return errors.New("mocked mocked mocked")
 }
 
 func TestTorTunnelNonNil(t *testing.T) {
-	closer := new(Closer)
+	closer := new(torCloser)
 	proxy := &url.URL{Scheme: "x", Host: "10.0.0.1:443"}
 	tun := &torTunnel{
 		bootstrapTime: 128,
@@ -53,8 +57,11 @@ func TestTorTunnelNil(t *testing.T) {
 
 func TestTorStartWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	tun, err := torStart(ctx, &Config{Session: &mockable.Session{}})
+	cancel() // fail immediately
+	tun, err := torStart(ctx, &Config{
+		Session:   &mockable.Session{},
+		TunnelDir: "testdata",
+	})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
 	}
@@ -67,7 +74,8 @@ func TestTorStartStartFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
-		Session: &mockable.Session{},
+		Session:   &mockable.Session{},
+		TunnelDir: filepath.Join("testdata"),
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return nil, expected
 		},
@@ -84,7 +92,8 @@ func TestTorStartEnableNetworkFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
-		Session: &mockable.Session{},
+		Session:   &mockable.Session{},
+		TunnelDir: filepath.Join("testdata"),
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -104,7 +113,8 @@ func TestTorStartGetInfoFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
-		Session: &mockable.Session{},
+		Session:   &mockable.Session{},
+		TunnelDir: filepath.Join("testdata"),
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -126,7 +136,8 @@ func TestTorStartGetInfoFailure(t *testing.T) {
 func TestTorStartGetInfoInvalidNumberOfKeys(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
-		Session: &mockable.Session{},
+		Session:   &mockable.Session{},
+		TunnelDir: filepath.Join("testdata"),
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -148,7 +159,8 @@ func TestTorStartGetInfoInvalidNumberOfKeys(t *testing.T) {
 func TestTorStartGetInfoInvalidKey(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
-		Session: &mockable.Session{},
+		Session:   &mockable.Session{},
+		TunnelDir: filepath.Join("testdata"),
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -170,7 +182,8 @@ func TestTorStartGetInfoInvalidKey(t *testing.T) {
 func TestTorStartGetInfoInvalidProxyType(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
-		Session: &mockable.Session{},
+		Session:   &mockable.Session{},
+		TunnelDir: filepath.Join("testdata"),
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -192,7 +205,8 @@ func TestTorStartGetInfoInvalidProxyType(t *testing.T) {
 func TestTorStartUnsupportedProxy(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
-		Session: &mockable.Session{},
+		Session:   &mockable.Session{},
+		TunnelDir: filepath.Join("testdata"),
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},

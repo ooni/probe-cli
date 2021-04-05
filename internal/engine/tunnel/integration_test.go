@@ -12,20 +12,23 @@ import (
 )
 
 func TestPsiphonStartWithCancelledContext(t *testing.T) {
+	// TODO(bassosimone): this test can use a mockable session so we
+	// can move it inside of the internal tests.
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
+	cancel() // fail immediately
 	sess, err := engine.NewSession(engine.SessionConfig{
 		Logger:          log.Log,
-		SoftwareName:    "ooniprobe-engine",
-		SoftwareVersion: "0.0.1",
-		TunnelDir:       filepath.Join(".", "testdata", "tunnel"),
+		SoftwareName:    "miniooni",
+		SoftwareVersion: "0.1.0-dev",
+		TunnelDir:       filepath.Join("testdata"),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	tunnel, err := tunnel.Start(ctx, &tunnel.Config{
-		Name:    "psiphon",
-		Session: sess,
+		Name:      "psiphon",
+		Session:   sess,
+		TunnelDir: filepath.Join("testdata"),
 	})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
@@ -43,14 +46,15 @@ func TestPsiphonStartStop(t *testing.T) {
 		Logger:          log.Log,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
-		TunnelDir:       filepath.Join(".", "testdata", "tunnel"),
+		TunnelDir:       filepath.Join("testdata"),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	tunnel, err := tunnel.Start(context.Background(), &tunnel.Config{
-		Name:    "psiphon",
-		Session: sess,
+		Name:      "psiphon",
+		Session:   sess,
+		TunnelDir: filepath.Join("testdata"),
 	})
 	if err != nil {
 		t.Fatal(err)
