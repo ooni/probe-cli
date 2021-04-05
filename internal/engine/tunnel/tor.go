@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -45,9 +46,6 @@ func (tt *torTunnel) Stop() {
 	tt.instance.Close()
 }
 
-// TODO(bassosimone): the current design is such that we have a bunch of
-// torrc-$number and a growing tor.log file inside of stateDir.
-
 // ErrTorUnableToGetSOCKSProxyAddress indicates that we could not
 // get the SOCKS proxy address via the control port.
 var ErrTorUnableToGetSOCKSProxyAddress = errors.New(
@@ -70,6 +68,7 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	}
 	stateDir := filepath.Join(config.TunnelDir, "tor")
 	logfile := filepath.Join(stateDir, "tor.log")
+	maybeCleanupTunnelDir(stateDir, logfile)
 	extraArgs := append([]string{}, config.TorArgs...)
 	extraArgs = append(extraArgs, "Log")
 	extraArgs = append(extraArgs, "notice stderr")
@@ -111,4 +110,20 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 		instance:      instance,
 		proxy:         &url.URL{Scheme: "socks5", Host: proxyAddress},
 	}, nil
+}
+
+// maybeCleanupTunnelDir removes stale files inside
+// of the tunnel directory.
+func maybeCleanupTunnelDir(dir, logfile string) {
+	os.Remove(logfile)
+	removeWithGlob(filepath.Join(dir, "torrc-*"))
+	removeWithGlob(filepath.Join(dir, "control-port-*"))
+}
+
+// removeWithGlob globs and removes files.
+func removeWithGlob(pattern string) {
+	files, _ := filepath.Glob(pattern)
+	for _, file := range files {
+		os.Remove(file)
+	}
 }
