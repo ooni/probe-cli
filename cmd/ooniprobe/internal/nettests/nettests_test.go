@@ -1,6 +1,7 @@
 package nettests
 
 import (
+	"context"
 	"io/ioutil"
 	"path"
 	"testing"
@@ -34,7 +35,7 @@ func TestCreateContext(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	probe := newOONIProbe(t)
-	sess, err := probe.NewSession()
+	sess, err := probe.NewSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

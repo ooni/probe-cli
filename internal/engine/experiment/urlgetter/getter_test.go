@@ -654,6 +654,9 @@ func TestGetterIntegrationHTTPSWithTunnel(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
+	// TODO(bassosimone): this test is broken. It now requires a
+	// real Session to work as intended. We didn't notice until now
+	// because integration tests do not run for every PR.
 	ctx := context.Background()
 	g := urlgetter.Getter{
 		Config: urlgetter.Config{

@@ -69,7 +69,7 @@ func (r *Runner) hasUnsupportedSettings(logger *ChanLogger) bool {
 	return false
 }
 
-func (r *Runner) newsession(logger *ChanLogger) (*engine.Session, error) {
+func (r *Runner) newsession(ctx context.Context, logger *ChanLogger) (*engine.Session, error) {
 	kvstore, err := engine.NewFileSystemKVStore(r.settings.StateDir)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (r *Runner) newsession(logger *ChanLogger) (*engine.Session, error) {
 			Address: r.settings.Options.ProbeServicesBaseURL,
 		}}
 	}
-	return engine.NewSession(config)
+	return engine.NewSession(ctx, config)
 }
 
 func (r *Runner) contextForExperiment(
@@ -121,7 +121,7 @@ func (r *Runner) Run(ctx context.Context) {
 		return
 	}
 	r.emitter.Emit(statusStarted, eventEmpty{})
-	sess, err := r.newsession(logger)
+	sess, err := r.newsession(ctx, logger)
 	if err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
 		return

@@ -1,6 +1,8 @@
 package geoip
 
 import (
+	"context"
+
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
@@ -34,7 +36,7 @@ func dogeoip(config dogeoipconfig) error {
 		return err
 	}
 
-	engine, err := probeCLI.NewProbeEngine()
+	engine, err := probeCLI.NewProbeEngine(context.Background())
 	if err != nil {
 		return err
 	}

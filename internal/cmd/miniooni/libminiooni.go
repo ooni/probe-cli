@@ -140,6 +140,10 @@ func fatalIfFalse(cond bool, msg string) {
 	}
 }
 
+func fatalIfTrue(cond bool, msg string) {
+	fatalIfFalse(!cond, msg)
+}
+
 // Main is the main function of miniooni. This function parses the command line
 // options and uses a global state. Use MainWithConfiguration if you want to avoid
 // using any global state and relying on command line options.
@@ -273,6 +277,15 @@ of seconds after which to stop running Web Connectivity.
 This error message will be removed after 2021-11-01.
 `
 
+// tunnelAndProxy is the text printed when the user specifies
+// both the --tunnel and the --proxy options
+const tunnelAndProxy = `USAGE ERROR: The --tunnel option and the --proxy
+option cannot be specified at the same time. The --tunnel option is actually
+just syntactic sugar for --proxy. Setting --tunnel=psiphon is currently the
+equivalent of setting --proxy=psiphon:///. This MAY change in a future version
+of miniooni, when we will allow a tunnel to use a proxy.
+`
+
 // MainWithConfiguration is the miniooni main with a specific configuration
 // represented by the experiment name and the current options.
 //
@@ -280,6 +293,11 @@ This error message will be removed after 2021-11-01.
 // integrate this function to either handle the panic of ignore it.
 func MainWithConfiguration(experimentName string, currentOptions Options) {
 	fatalIfFalse(currentOptions.Limit == 0, limitRemoved)
+	fatalIfTrue(currentOptions.Proxy != "" && currentOptions.Tunnel != "",
+		tunnelAndProxy)
+	if currentOptions.Tunnel != "" {
+		currentOptions.Proxy = fmt.Sprintf("%s:///", currentOptions.Tunnel)
+	}
 
 	ctx := context.Background()
 
@@ -354,7 +372,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		}}
 	}
 
-	sess, err := engine.NewSession(config)
+	sess, err := engine.NewSession(ctx, config)
 	fatalOnError(err, "cannot create measurement session")
 	defer func() {
 		sess.Close()
@@ -364,9 +382,6 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		)
 	}()
 	log.Debugf("miniooni temporary directory: %s", sess.TempDir())
-
-	err = sess.MaybeStartTunnel(context.Background(), currentOptions.Tunnel)
-	fatalOnError(err, "cannot start session tunnel")
 
 	log.Info("Looking up OONI backends; please be patient...")
 	err = sess.MaybeLookupBackends()

@@ -82,6 +82,10 @@ func (g Getter) Get(ctx context.Context) (TestKeys, error) {
 	return tk, err
 }
 
+// TODO(bassosimone): this mechanism where we count breaks tests
+// because now tests are not idempotent anymore. Therefore, we
+// SHOULD be creating a temporary directory instead.
+
 var (
 	// tunnelDirCount counts the number of tunnels started by
 	// the urlgetter package so far.

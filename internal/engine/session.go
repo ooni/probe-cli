@@ -63,12 +63,6 @@ type Session struct {
 	softwareName             string
 	softwareVersion          string
 	tempDir                  string
-	torArgs                  []string
-	torBinary                string
-	tunnelDir                string
-	tunnelMu                 sync.Mutex
-	tunnelName               string
-	tunnel                   tunnel.Tunnel
 
 	// closeOnce allows us to call Close just once.
 	closeOnce sync.Once
@@ -92,6 +86,18 @@ type Session struct {
 	// allowing us to mock NewProbeServicesClient when calling CheckIn.
 	testNewProbeServicesClientForCheckIn func(ctx context.Context) (
 		sessionProbeServicesClientForCheckIn, error)
+
+	// torArgs contains the optional arguments for tor that we may need
+	// to pass to urlgetter when it uses a tor tunnel.
+	torArgs []string
+
+	// torBinary contains the optional path to the tor binary that we
+	// may need to pass to urlgetter when it uses a tor tunnel.
+	torBinary string
+
+	// tunnel is the optional tunnel that we may be using. It is created
+	// by NewSession and it is cleaned up by Close.
+	tunnel tunnel.Tunnel
 }
 
 // sessionProbeServicesClientForCheckIn returns the probe services
@@ -100,8 +106,32 @@ type sessionProbeServicesClientForCheckIn interface {
 	CheckIn(ctx context.Context, config model.CheckInConfig) (*model.CheckInInfo, error)
 }
 
-// NewSession creates a new session or returns an error
-func NewSession(config SessionConfig) (*Session, error) {
+// NewSession creates a new session. This factory function will
+// execute the following steps:
+//
+// 1. Make sure the config is sane, apply reasonable defaults
+// where possible, otherwise return an error.
+//
+// 2. Create a temporary directory.
+//
+// 3. Create an instance of the session.
+//
+// 4. If the user requested for a proxy that entails a tunnel (at the
+// moment of writing this note, either psiphon or tor), then start the
+// requested tunnel and configure it as our proxy.
+//
+// 5. Create a compound resolver for the session that will attempt
+// to use a bunch of DoT/DoH servers before falling back to the system
+// resolver if nothing else works (see the sessionresolver pkg). This
+// sessionresolver will be using the configured proxy, if any.
+//
+// 6. Create the default HTTP transport that we should be using when
+// we communicate with the OONI backends. This transport will be
+// using the configured proxy, if any.
+//
+// If any of these steps fails, then we cannot create a measurement
+// session and we return an error.
+func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	if config.Logger == nil {
 		return nil, errors.New("Logger is empty")
 	}
@@ -127,26 +157,43 @@ func NewSession(config SessionConfig) (*Session, error) {
 		byteCounter:             bytecounter.New(),
 		kvStore:                 config.KVStore,
 		logger:                  config.Logger,
-		proxyURL:                config.ProxyURL,
 		queryProbeServicesCount: atomicx.NewInt64(),
 		softwareName:            config.SoftwareName,
 		softwareVersion:         config.SoftwareVersion,
 		tempDir:                 tempDir,
 		torArgs:                 config.TorArgs,
 		torBinary:               config.TorBinary,
-		tunnelDir:               config.TunnelDir,
 	}
+	proxyURL := config.ProxyURL
+	if proxyURL != nil {
+		switch proxyURL.Scheme {
+		case "psiphon", "tor":
+			tunnel, err := tunnel.Start(ctx, &tunnel.Config{
+				Name:      proxyURL.Scheme,
+				Session:   &sessionTunnelEarlySession{},
+				TorArgs:   config.TorArgs,
+				TorBinary: config.TorBinary,
+				TunnelDir: config.TunnelDir,
+			})
+			if err != nil {
+				return nil, err
+			}
+			sess.tunnel = tunnel
+			proxyURL = tunnel.SOCKS5ProxyURL()
+		}
+	}
+	sess.proxyURL = proxyURL
 	httpConfig := netx.Config{
 		ByteCounter:  sess.byteCounter,
 		BogonIsError: true,
 		Logger:       sess.logger,
-		ProxyURL:     config.ProxyURL,
+		ProxyURL:     proxyURL,
 	}
 	sess.resolver = &sessionresolver.Resolver{
 		ByteCounter: sess.byteCounter,
 		KVStore:     config.KVStore,
 		Logger:      sess.logger,
-		ProxyURL:    config.ProxyURL,
+		ProxyURL:    proxyURL,
 	}
 	httpConfig.FullResolver = sess.resolver
 	sess.httpDefaultTransport = netx.NewHTTPTransport(httpConfig)
@@ -329,63 +376,6 @@ func (s *Session) MaybeLookupBackends() error {
 var ErrAlreadyUsingProxy = errors.New(
 	"session: cannot create a new tunnel of this kind: we are already using a proxy",
 )
-
-// MaybeStartTunnel starts the requested tunnel.
-//
-// This function silently succeeds if we're already using a tunnel with
-// the same name or if the requested tunnel name is the empty string. This
-// function fails, tho, when we already have a proxy or a tunnel with
-// another name and we try to open a tunnel. This function of course also
-// fails if we cannot start the requested tunnel. All in all, if you request
-// for a tunnel name that is not the empty string and you get a nil error,
-// you can be confident that session.ProxyURL() gives you the tunnel URL.
-//
-// The tunnel will be closed by session.Close().
-func (s *Session) MaybeStartTunnel(ctx context.Context, name string) error {
-	// TODO(bassosimone): see if we can unify tunnelMu and mu.
-	s.tunnelMu.Lock()
-	defer s.tunnelMu.Unlock()
-	if name == "" {
-		// There is no point in continuing if we know
-		// we don't need to do anything.
-		return nil
-	}
-	if s.tunnel != nil && s.tunnelName == name {
-		// We've been asked more than once to start the same tunnel.
-		return nil
-	}
-	if s.proxyURL != nil && name == "" {
-		// The user configured a proxy and here we're not actually trying
-		// to start any tunnel since `name` is empty.
-		// TODO(bassosimone): this if branch is probably useless now
-		// because we stop above when name is "".
-		return nil
-	}
-	if s.proxyURL != nil || s.tunnel != nil {
-		// We already have a proxy or we have a different tunnel. Because a tunnel
-		// sets a proxy, the second check for s.tunnel is for robustness.
-		return ErrAlreadyUsingProxy
-	}
-	s.logger.Infof("starting '%s' tunnel; please be patient...", name)
-	tunnel, err := tunnel.Start(ctx, &tunnel.Config{
-		Name:      name,
-		Session:   &sessionTunnelEarlySession{},
-		TorArgs:   s.TorArgs(),
-		TorBinary: s.TorBinary(),
-		TunnelDir: s.tunnelDir,
-	})
-	if err != nil {
-		return err
-	}
-	// Implementation note: tunnel _may_ be NIL here if name is ""
-	if tunnel == nil {
-		return nil
-	}
-	s.tunnelName = name
-	s.tunnel = tunnel
-	s.proxyURL = tunnel.SOCKS5ProxyURL()
-	return nil
-}
 
 // NewExperimentBuilder returns a new experiment builder
 // for the experiment with the given name, or an error if

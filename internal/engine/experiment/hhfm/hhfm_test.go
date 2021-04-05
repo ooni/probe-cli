@@ -558,7 +558,7 @@ func TestTransactCannotReadBody(t *testing.T) {
 }
 
 func newsession(t *testing.T) model.ExperimentSession {
-	sess, err := engine.NewSession(engine.SessionConfig{
+	sess, err := engine.NewSession(context.Background(), engine.SessionConfig{
 		AvailableProbeServices: []model.Service{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",

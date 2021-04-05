@@ -1,6 +1,7 @@
 package ooni
 
 import (
+	"context"
 	_ "embed" // because we embed a file
 	"io/ioutil"
 	"os"
@@ -26,7 +27,7 @@ type ProbeCLI interface {
 	IsBatch() bool
 	Home() string
 	TempDir() string
-	NewProbeEngine() (ProbeEngine, error)
+	NewProbeEngine(ctx context.Context) (ProbeEngine, error)
 }
 
 // ProbeEngine is an instance of the OONI Probe engine.
@@ -201,7 +202,7 @@ func (p *Probe) Init(softwareName, softwareVersion string) error {
 // NewSession creates a new ooni/probe-engine session using the
 // current configuration inside the context. The caller must close
 // the session when done using it, by calling sess.Close().
-func (p *Probe) NewSession() (*engine.Session, error) {
+func (p *Probe) NewSession(ctx context.Context) (*engine.Session, error) {
 	kvstore, err := engine.NewFileSystemKVStore(
 		utils.EngineDir(p.home),
 	)
@@ -211,7 +212,7 @@ func (p *Probe) NewSession() (*engine.Session, error) {
 	if err := os.MkdirAll(utils.TunnelDir(p.home), 0700); err != nil {
 		return nil, errors.Wrap(err, "creating tunnel dir")
 	}
-	return engine.NewSession(engine.SessionConfig{
+	return engine.NewSession(ctx, engine.SessionConfig{
 		KVStore:         kvstore,
 		Logger:          enginex.Logger,
 		SoftwareName:    p.softwareName,
@@ -222,8 +223,8 @@ func (p *Probe) NewSession() (*engine.Session, error) {
 }
 
 // NewProbeEngine creates a new ProbeEngine instance.
-func (p *Probe) NewProbeEngine() (ProbeEngine, error) {
-	sess, err := p.NewSession()
+func (p *Probe) NewProbeEngine(ctx context.Context) (ProbeEngine, error) {
+	sess, err := p.NewSession(ctx)
 	if err != nil {
 		return nil, err
 	}

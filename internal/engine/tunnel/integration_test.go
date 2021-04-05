@@ -15,7 +15,7 @@ func TestPsiphonStartWithCancelledContext(t *testing.T) {
 	// can move it inside of the internal tests.
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
-	sess, err := engine.NewSession(engine.SessionConfig{
+	sess, err := engine.NewSession(ctx, engine.SessionConfig{
 		Logger:          log.Log,
 		SoftwareName:    "miniooni",
 		SoftwareVersion: "0.1.0-dev",
@@ -41,7 +41,8 @@ func TestPsiphonStartStop(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := engine.NewSession(engine.SessionConfig{
+	ctx := context.Background()
+	sess, err := engine.NewSession(ctx, engine.SessionConfig{
 		Logger:          log.Log,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",

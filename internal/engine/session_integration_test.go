@@ -75,7 +75,7 @@ func TestNewSessionBuilderGood(t *testing.T) {
 }
 
 func newSessionMustFail(t *testing.T, config SessionConfig) {
-	sess, err := NewSession(config)
+	sess, err := NewSession(context.Background(), config)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -88,7 +88,7 @@ func TestSessionTorArgsTorBinary(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		AvailableProbeServices: []model.Service{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",
@@ -120,7 +120,7 @@ func TestSessionTorArgsTorBinary(t *testing.T) {
 }
 
 func newSessionForTestingNoLookupsWithProxyURL(t *testing.T, URL *url.URL) *Session {
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		AvailableProbeServices: []model.Service{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",
@@ -336,7 +336,7 @@ func TestGetAvailableProbeServices(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -356,7 +356,7 @@ func TestMaybeLookupBackendsFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -377,7 +377,7 @@ func TestMaybeLookupTestHelpersIdempotent(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -402,7 +402,7 @@ func TestAllProbeServicesUnsupported(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sess, err := NewSession(SessionConfig{
+	sess, err := NewSession(context.Background(), SessionConfig{
 		Logger:          model.DiscardLogger,
 		SoftwareName:    "ooniprobe-engine",
 		SoftwareVersion: "0.0.1",
@@ -421,127 +421,8 @@ func TestAllProbeServicesUnsupported(t *testing.T) {
 	}
 }
 
-func TestStartTunnelGood(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess := newSessionForTestingNoLookups(t)
-	defer sess.Close()
-	ctx := context.Background()
-	if err := sess.MaybeStartTunnel(ctx, "psiphon"); err != nil {
-		t.Fatal(err)
-	}
-	if err := sess.MaybeStartTunnel(ctx, "psiphon"); err != nil {
-		t.Fatal(err) // check twice, must be idempotent
-	}
-	if sess.ProxyURL() == nil {
-		t.Fatal("expected non-nil ProxyURL")
-	}
-}
-
-func TestStartTunnelNonexistent(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess := newSessionForTestingNoLookups(t)
-	defer sess.Close()
-	ctx := context.Background()
-	if err := sess.MaybeStartTunnel(ctx, "antani"); err.Error() != "unsupported tunnel" {
-		t.Fatal("not the error we expected")
-	}
-	if sess.ProxyURL() != nil {
-		t.Fatal("expected nil ProxyURL")
-	}
-}
-
-func TestStartTunnelEmptyString(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess := newSessionForTestingNoLookups(t)
-	defer sess.Close()
-	ctx := context.Background()
-	if sess.MaybeStartTunnel(ctx, "") != nil {
-		t.Fatal("expected no error here")
-	}
-	if sess.ProxyURL() != nil {
-		t.Fatal("expected nil ProxyURL")
-	}
-}
-
-func TestStartTunnelEmptyStringWithProxy(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	proxyURL := &url.URL{Scheme: "socks5", Host: "127.0.0.1:9050"}
-	sess := newSessionForTestingNoLookups(t)
-	sess.proxyURL = proxyURL
-	defer sess.Close()
-	ctx := context.Background()
-	if sess.MaybeStartTunnel(ctx, "") != nil {
-		t.Fatal("expected no error here")
-	}
-	diff := cmp.Diff(proxyURL, sess.ProxyURL())
-	if diff != "" {
-		t.Fatal(diff)
-	}
-}
-
-func TestStartTunnelWithAlreadyExistingTunnel(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess := newSessionForTestingNoLookups(t)
-	defer sess.Close()
-	ctx := context.Background()
-	if sess.MaybeStartTunnel(ctx, "psiphon") != nil {
-		t.Fatal("expected no error here")
-	}
-	prev := sess.ProxyURL()
-	err := sess.MaybeStartTunnel(ctx, "tor")
-	if !errors.Is(err, ErrAlreadyUsingProxy) {
-		t.Fatal("expected another error here")
-	}
-	cur := sess.ProxyURL()
-	diff := cmp.Diff(prev, cur)
-	if diff != "" {
-		t.Fatal(diff)
-	}
-}
-
-func TestStartTunnelWithAlreadyExistingProxy(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess := newSessionForTestingNoLookups(t)
-	defer sess.Close()
-	ctx := context.Background()
-	orig := &url.URL{Scheme: "socks5", Host: "[::1]:9050"}
-	sess.proxyURL = orig
-	err := sess.MaybeStartTunnel(ctx, "psiphon")
-	if !errors.Is(err, ErrAlreadyUsingProxy) {
-		t.Fatal("expected another error here")
-	}
-	cur := sess.ProxyURL()
-	diff := cmp.Diff(orig, cur)
-	if diff != "" {
-		t.Fatal(diff)
-	}
-}
-
-func TestStartTunnelCanceledContext(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess := newSessionForTestingNoLookups(t)
-	defer sess.Close()
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // immediately cancel
-	err := sess.MaybeStartTunnel(ctx, "psiphon")
-	if !errors.Is(err, context.Canceled) {
-		t.Fatal("not the error we expected")
-	}
-}
+// TODO(bassosimone): we should write unit/integration tests
+// for the new way in which tunnels work.
 
 func TestUserAgentNoProxy(t *testing.T) {
 	if testing.Short() {

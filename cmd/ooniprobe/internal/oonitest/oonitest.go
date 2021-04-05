@@ -2,6 +2,7 @@
 package oonitest
 
 import (
+	"context"
 	"sync"
 
 	"github.com/apex/log"
@@ -60,7 +61,7 @@ func (cli *FakeProbeCLI) TempDir() string {
 }
 
 // NewProbeEngine implements ProbeCLI.NewProbeEngine
-func (cli *FakeProbeCLI) NewProbeEngine() (ooni.ProbeEngine, error) {
+func (cli *FakeProbeCLI) NewProbeEngine(ctx context.Context) (ooni.ProbeEngine, error) {
 	return cli.FakeProbeEnginePtr, cli.FakeProbeEngineErr
 }
 

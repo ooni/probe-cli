@@ -116,11 +116,23 @@ type Session struct {
 	sessp     *engine.Session
 }
 
-// NewSession creates a new session. You should use a session for running
+// NewSession is like NewSessionWithContext but without context. This
+// factory is deprecated and will be removed when we bump the major
+// version number of ooni/probe-cli.
+func NewSession(config *SessionConfig) (*Session, error) {
+	return newSessionWithContext(context.Background(), config)
+}
+
+// NewSessionWithContext creates a new session. You should use a session for running
 // a set of operations in a relatively short time frame. You SHOULD NOT create
 // a single session and keep it all alive for the whole app lifecyle, since
 // the Session code is not specifically designed for this use case.
-func NewSession(config *SessionConfig) (*Session, error) {
+func NewSessionWithContext(ctx *Context, config *SessionConfig) (*Session, error) {
+	return newSessionWithContext(ctx.ctx, config)
+}
+
+// newSessionWithContext implements NewSessionWithContext.
+func newSessionWithContext(ctx context.Context, config *SessionConfig) (*Session, error) {
 	kvstore, err := engine.NewFileSystemKVStore(config.StateDir)
 	if err != nil {
 		return nil, err
@@ -150,7 +162,7 @@ func NewSession(config *SessionConfig) (*Session, error) {
 		TempDir:                config.TempDir,
 		TunnelDir:              config.TunnelDir,
 	}
-	sessp, err := engine.NewSession(engineConfig)
+	sessp, err := engine.NewSession(ctx, engineConfig)
 	if err != nil {
 		return nil, err
 	}
