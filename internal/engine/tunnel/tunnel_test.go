@@ -17,8 +17,8 @@ func TestStartNoTunnel(t *testing.T) {
 			MockableLogger: log.Log,
 		},
 	})
-	if err != nil {
-		t.Fatal(err)
+	if !errors.Is(err, ErrUnsupportedTunnelName) {
+		t.Fatal("not the error we expected", err)
 	}
 	if tunnel != nil {
 		t.Fatal("expected nil tunnel here")

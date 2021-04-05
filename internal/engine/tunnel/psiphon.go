@@ -56,32 +56,21 @@ func psiphonStart(ctx context.Context, config *Config) (Tunnel, error) {
 	return &psiphonTunnel{tunnel: tunnel, bootstrapTime: stop.Sub(start)}, nil
 }
 
-// TODO(bassosimone): define the NullTunnel rather than relying on
-// this magic that a nil psiphonTunnel works.
-
 // Stop is an idempotent method that shuts down the tunnel
 func (t *psiphonTunnel) Stop() {
-	if t != nil {
-		t.tunnel.Stop()
-	}
+	t.tunnel.Stop()
 }
 
 // SOCKS5ProxyURL returns the SOCKS5 proxy URL.
-func (t *psiphonTunnel) SOCKS5ProxyURL() (proxyURL *url.URL) {
-	if t != nil {
-		proxyURL = &url.URL{
-			Scheme: "socks5",
-			Host: net.JoinHostPort(
-				"127.0.0.1", fmt.Sprintf("%d", t.tunnel.SOCKSProxyPort)),
-		}
+func (t *psiphonTunnel) SOCKS5ProxyURL() *url.URL {
+	return &url.URL{
+		Scheme: "socks5",
+		Host: net.JoinHostPort(
+			"127.0.0.1", fmt.Sprintf("%d", t.tunnel.SOCKSProxyPort)),
 	}
-	return
 }
 
 // BootstrapTime returns the bootstrap time
-func (t *psiphonTunnel) BootstrapTime() (duration time.Duration) {
-	if t != nil {
-		duration = t.bootstrapTime
-	}
-	return
+func (t *psiphonTunnel) BootstrapTime() time.Duration {
+	return t.bootstrapTime
 }
