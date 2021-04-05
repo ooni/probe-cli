@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"os"
 	"testing"
 
 	"github.com/armon/go-socks5"
@@ -34,6 +35,25 @@ func TestFakeWithEmptyTunnelDir(t *testing.T) {
 		TunnelDir: "",
 	})
 	if !errors.Is(err, ErrEmptyTunnelDir) {
+		t.Fatal("not the error we expected")
+	}
+	if tunnel != nil {
+		t.Fatal("expected nil tunnel here")
+	}
+}
+
+func TestFakeWithFailingMkdirAll(t *testing.T) {
+	expected := errors.New("mocked error")
+	ctx := context.Background()
+	sess := &mockable.Session{}
+	tunnel, err := fakeStart(ctx, &Config{
+		Session:   sess,
+		TunnelDir: "testdata",
+		testMkdirAll: func(dir string, mode os.FileMode) error {
+			return expected
+		},
+	})
+	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
 	if tunnel != nil {

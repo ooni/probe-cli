@@ -48,6 +48,9 @@ func fakeStart(ctx context.Context, config *Config) (Tunnel, error) {
 	if config.TunnelDir == "" {
 		return nil, ErrEmptyTunnelDir
 	}
+	if err := config.mkdirAll(config.TunnelDir, 0700); err != nil {
+		return nil, err
+	}
 	server, err := config.socks5New(&socks5.Config{})
 	if err != nil {
 		return nil, err
