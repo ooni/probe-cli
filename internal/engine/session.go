@@ -369,13 +369,12 @@ func (s *Session) MaybeStartTunnel(ctx context.Context, name string) error {
 	s.logger.Infof("starting '%s' tunnel; please be patient...", name)
 	tunnel, err := tunnel.Start(ctx, &tunnel.Config{
 		Name:      name,
-		Session:   s,
+		Session:   &sessionTunnelEarlySession{},
 		TorArgs:   s.TorArgs(),
 		TorBinary: s.TorBinary(),
 		TunnelDir: s.tunnelDir,
 	})
 	if err != nil {
-		s.logger.Warnf("cannot start tunnel: %+v", err)
 		return err
 	}
 	// Implementation note: tunnel _may_ be NIL here if name is ""
