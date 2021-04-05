@@ -421,9 +421,6 @@ func TestAllProbeServicesUnsupported(t *testing.T) {
 	}
 }
 
-// TODO(bassosimone): we should write unit/integration tests
-// for the new way in which tunnels work.
-
 func TestUserAgentNoProxy(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
