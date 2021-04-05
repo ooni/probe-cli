@@ -105,6 +105,9 @@ func (g Getter) get(ctx context.Context, saver *trace.Saver) (TestKeys, error) {
 	// start tunnel
 	var proxyURL *url.URL
 	if g.Config.Tunnel != "" {
+		// Every new instance of the tunnel goes into a separate
+		// directory within the temporary directory. Calling
+		// Session.Close will delete such a directory.
 		tundir, err := g.ioutilTempDir(g.Session.TempDir(), "urlgetter-tunnel-")
 		if err != nil {
 			return tk, err
