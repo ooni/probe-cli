@@ -6,6 +6,21 @@
 // a SOCKS5 proxy. You need to configure your HTTP
 // code to use such a proxy. Remember to call the Stop
 // method of a tunnel when you are done.
+//
+// There are two use cases for this package. The first
+// use case is to enable urlgetter to perform measurements
+// over tunnels (mainly psiphon).
+//
+// The second use case is to use tunnels to reach to the
+// OONI backend when it's blocked. For the latter case
+// we currently mainly use psiphon. In such a case, we'll
+// use a psiphon configuration embedded into the OONI
+// binary itself. When you are running a version of OONI
+// that does not embed such a configuration, it won't
+// be possible to address this use case.
+//
+// See session.go in the engine package for more details
+// concerning this second use case.
 package tunnel
 
 import (
@@ -55,10 +70,14 @@ var ErrUnsupportedTunnelName = errors.New("unsupported tunnel name")
 // select what binary to execute and with which arguments.
 //
 // The "psiphon" tunnel requires a configuration. Some builds of
-// ooniprobe embed a configuration into the binary. If there is no
-// embedded configuration, we will try to use config.Session to
-// fetch such a configuration. This step will fail if the OONI
-// backend is not reachable for any reason.
+// ooniprobe embed a configuration into the binary. When this
+// is the case, the config.Session is a mocked object that just
+// retuns such configuration.
+//
+// Otherwise, If there is no embedded psiphon configuration, the
+// config.Session will must be an ordinary session. In such a
+// case, fetching the Psiphon configuration from the backend may
+// fail when the backend is not reachable.
 func Start(ctx context.Context, config *Config) (Tunnel, error) {
 	switch config.Name {
 	case "psiphon":
