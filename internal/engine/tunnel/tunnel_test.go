@@ -1,4 +1,4 @@
-package tunnel
+package tunnel_test
 
 import (
 	"context"
@@ -7,20 +7,21 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"github.com/ooni/probe-cli/v3/internal/engine/tunnel"
 )
 
 func TestStartNoTunnel(t *testing.T) {
 	ctx := context.Background()
-	tunnel, err := Start(ctx, &Config{
+	tun, err := tunnel.Start(ctx, &tunnel.Config{
 		Name: "",
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
 	})
-	if !errors.Is(err, ErrUnsupportedTunnelName) {
+	if !errors.Is(err, tunnel.ErrUnsupportedTunnelName) {
 		t.Fatal("not the error we expected", err)
 	}
-	if tunnel != nil {
+	if tun != nil {
 		t.Fatal("expected nil tunnel here")
 	}
 }
@@ -28,7 +29,7 @@ func TestStartNoTunnel(t *testing.T) {
 func TestStartPsiphonWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
-	tunnel, err := Start(ctx, &Config{
+	tun, err := tunnel.Start(ctx, &tunnel.Config{
 		Name: "psiphon",
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
@@ -38,7 +39,7 @@ func TestStartPsiphonWithCancelledContext(t *testing.T) {
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
 	}
-	if tunnel != nil {
+	if tun != nil {
 		t.Fatal("expected nil tunnel here")
 	}
 }
@@ -46,7 +47,7 @@ func TestStartPsiphonWithCancelledContext(t *testing.T) {
 func TestStartTorWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
-	tunnel, err := Start(ctx, &Config{
+	tun, err := tunnel.Start(ctx, &tunnel.Config{
 		Name: "tor",
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
@@ -56,24 +57,24 @@ func TestStartTorWithCancelledContext(t *testing.T) {
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected")
 	}
-	if tunnel != nil {
+	if tun != nil {
 		t.Fatal("expected nil tunnel here")
 	}
 }
 
 func TestStartInvalidTunnel(t *testing.T) {
 	ctx := context.Background()
-	tunnel, err := Start(ctx, &Config{
+	tun, err := tunnel.Start(ctx, &tunnel.Config{
 		Name: "antani",
 		Session: &mockable.Session{
 			MockableLogger: log.Log,
 		},
 		TunnelDir: "testdata",
 	})
-	if !errors.Is(err, ErrUnsupportedTunnelName) {
+	if !errors.Is(err, tunnel.ErrUnsupportedTunnelName) {
 		t.Fatal("not the error we expected")
 	}
-	if tunnel != nil {
+	if tun != nil {
 		t.Fatal("expected nil tunnel here")
 	}
 }

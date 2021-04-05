@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -47,6 +48,16 @@ func (tt *torTunnel) Stop() {
 // TODO(bassosimone): the current design is such that we have a bunch of
 // torrc-$number and a growing tor.log file inside of stateDir.
 
+// ErrTorUnableToGetSOCKSProxyAddress indicates that we could not
+// get the SOCKS proxy address via the control port.
+var ErrTorUnableToGetSOCKSProxyAddress = errors.New(
+	"unable to get socks proxy address")
+
+// ErrTorReturnedUnsupportedProxy indicates that tor returned to
+// us the address of a proxy that we don't support.
+var ErrTorReturnedUnsupportedProxy = errors.New(
+	"tor returned unsupported proxy")
+
 // torStart starts the tor tunnel.
 func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	select {
@@ -88,12 +99,12 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	}
 	if len(info) != 1 || info[0].Key != "net/listeners/socks" {
 		instance.Close()
-		return nil, fmt.Errorf("unable to get socks proxy address")
+		return nil, ErrTorUnableToGetSOCKSProxyAddress
 	}
 	proxyAddress := info[0].Val
 	if strings.HasPrefix(proxyAddress, "unix:") {
 		instance.Close()
-		return nil, fmt.Errorf("tor returned unsupported proxy")
+		return nil, ErrTorReturnedUnsupportedProxy
 	}
 	return &torTunnel{
 		bootstrapTime: stop.Sub(start),

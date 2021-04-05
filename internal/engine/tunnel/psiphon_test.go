@@ -10,6 +10,37 @@ import (
 	"github.com/ooni/psiphon/oopsi/github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
 )
 
+func TestPsiphonWithCancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // immediately fail
+	sess := &mockable.Session{}
+	tunnel, err := psiphonStart(ctx, &Config{
+		Session:   sess,
+		TunnelDir: "testdata",
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("not the error we expected")
+	}
+	if tunnel != nil {
+		t.Fatal("expected nil tunnel here")
+	}
+}
+
+func TestPsiphonWithEmptyTunnelDir(t *testing.T) {
+	ctx := context.Background()
+	sess := &mockable.Session{}
+	tunnel, err := psiphonStart(ctx, &Config{
+		Session:   sess,
+		TunnelDir: "",
+	})
+	if !errors.Is(err, ErrEmptyTunnelDir) {
+		t.Fatal("not the error we expected")
+	}
+	if tunnel != nil {
+		t.Fatal("expected nil tunnel here")
+	}
+}
+
 func TestPsiphonFetchPsiphonConfigFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	sess := &mockable.Session{

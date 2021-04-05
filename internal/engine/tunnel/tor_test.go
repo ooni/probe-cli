@@ -43,7 +43,7 @@ func TestTorTunnelNonNil(t *testing.T) {
 	}
 }
 
-func TestTorStartWithCancelledContext(t *testing.T) {
+func TestTorWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
 	tun, err := torStart(ctx, &Config{
@@ -58,7 +58,21 @@ func TestTorStartWithCancelledContext(t *testing.T) {
 	}
 }
 
-func TestTorStartStartFailure(t *testing.T) {
+func TestTorWithEmptyTunnelDir(t *testing.T) {
+	ctx := context.Background()
+	tun, err := torStart(ctx, &Config{
+		Session:   &mockable.Session{},
+		TunnelDir: "",
+	})
+	if !errors.Is(err, ErrEmptyTunnelDir) {
+		t.Fatal("not the error we expected")
+	}
+	if tun != nil {
+		t.Fatal("expected nil tunnel here")
+	}
+}
+
+func TestTorStartFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
@@ -76,7 +90,7 @@ func TestTorStartStartFailure(t *testing.T) {
 	}
 }
 
-func TestTorStartEnableNetworkFailure(t *testing.T) {
+func TestTorEnableNetworkFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
@@ -97,7 +111,7 @@ func TestTorStartEnableNetworkFailure(t *testing.T) {
 	}
 }
 
-func TestTorStartGetInfoFailure(t *testing.T) {
+func TestTorGetInfoFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
@@ -121,7 +135,7 @@ func TestTorStartGetInfoFailure(t *testing.T) {
 	}
 }
 
-func TestTorStartGetInfoInvalidNumberOfKeys(t *testing.T) {
+func TestTorGetInfoInvalidNumberOfKeys(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
@@ -136,15 +150,15 @@ func TestTorStartGetInfoInvalidNumberOfKeys(t *testing.T) {
 			return nil, nil
 		},
 	})
-	if err.Error() != "unable to get socks proxy address" {
-		t.Fatal("not the error we expected")
+	if !errors.Is(err, ErrTorUnableToGetSOCKSProxyAddress) {
+		t.Fatal("not the error we expected", err)
 	}
 	if tun != nil {
 		t.Fatal("expected nil tunnel here")
 	}
 }
 
-func TestTorStartGetInfoInvalidKey(t *testing.T) {
+func TestTorGetInfoInvalidKey(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
@@ -159,7 +173,7 @@ func TestTorStartGetInfoInvalidKey(t *testing.T) {
 			return []*control.KeyVal{{}}, nil
 		},
 	})
-	if err.Error() != "unable to get socks proxy address" {
+	if !errors.Is(err, ErrTorUnableToGetSOCKSProxyAddress) {
 		t.Fatal("not the error we expected")
 	}
 	if tun != nil {
@@ -167,7 +181,7 @@ func TestTorStartGetInfoInvalidKey(t *testing.T) {
 	}
 }
 
-func TestTorStartGetInfoInvalidProxyType(t *testing.T) {
+func TestTorGetInfoInvalidProxyType(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
@@ -190,7 +204,7 @@ func TestTorStartGetInfoInvalidProxyType(t *testing.T) {
 	}
 }
 
-func TestTorStartUnsupportedProxy(t *testing.T) {
+func TestTorUnsupportedProxy(t *testing.T) {
 	ctx := context.Background()
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
@@ -205,7 +219,7 @@ func TestTorStartUnsupportedProxy(t *testing.T) {
 			return []*control.KeyVal{{Key: "net/listeners/socks", Val: "unix:/foo/bar"}}, nil
 		},
 	})
-	if err.Error() != "tor returned unsupported proxy" {
+	if !errors.Is(err, ErrTorReturnedUnsupportedProxy) {
 		t.Fatal("not the error we expected")
 	}
 	if tun != nil {
