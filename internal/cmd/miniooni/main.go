@@ -10,7 +10,7 @@ import (
 func main() {
 	defer func() {
 		if s := recover(); s != nil {
-			fmt.Fprintf(os.Stderr, "%s", s)
+			fmt.Fprintf(os.Stderr, "FATAL: %s\n", s)
 		}
 	}()
 	Main()

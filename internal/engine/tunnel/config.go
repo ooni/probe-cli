@@ -17,8 +17,7 @@ type Config struct {
 	// "tor" and "psiphon" tunnels.
 	Name string
 
-	// Session is the current measurement session. This
-	// field is mandatory.
+	// Session is the mandatory measurement session.
 	Session Session
 
 	// TorArgs contains the optional arguments that you want us to pass
