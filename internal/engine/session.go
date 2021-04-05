@@ -176,7 +176,6 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 				TunnelDir: config.TunnelDir,
 			})
 			if err != nil {
-				sess.logger.Warnf("cannot start tunnel: %+v", err)
 				return nil, err
 			}
 			sess.tunnel = tunnel
