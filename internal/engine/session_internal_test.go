@@ -282,6 +282,7 @@ func TestNewSessionWithFakeTunnelAndCancelledContext(t *testing.T) {
 		ProxyURL:        &url.URL{Scheme: "fake"},
 		SoftwareName:    "miniooni",
 		SoftwareVersion: "0.1.0-dev",
+		TunnelDir:       "testdata",
 	})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected", err)
