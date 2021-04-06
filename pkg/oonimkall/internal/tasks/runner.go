@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"time"
 
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
@@ -74,9 +75,21 @@ func (r *Runner) newsession(ctx context.Context, logger *ChanLogger) (*engine.Se
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO(bassosimone): write tests for this functionality
+	var proxyURL *url.URL
+	if r.settings.Proxy != "" {
+		var err error
+		proxyURL, err = url.Parse(r.settings.Proxy)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	config := engine.SessionConfig{
 		KVStore:         kvstore,
 		Logger:          logger,
+		ProxyURL:        proxyURL,
 		SoftwareName:    r.settings.Options.SoftwareName,
 		SoftwareVersion: r.settings.Options.SoftwareVersion,
 		TempDir:         r.settings.TempDir,
