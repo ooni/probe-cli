@@ -32,6 +32,19 @@ type Settings struct {
 	// Options contains the task options.
 	Options SettingsOptions `json:"options"`
 
+	// Proxy allows you to optionally force a specific proxy
+	// rather than using no proxy (the default).
+	//
+	// Use `psiphon:///` to force using Psiphon with the
+	// embedded configuration file. Not all builds have
+	// an embedded configuration file, but OONI builds have
+	// such a file, so they can use this functionality.
+	//
+	// Use `socks5://10.0.0.1:9050/` to connect to a SOCKS5
+	// proxy running on 10.0.0.1:9050. This could be, for
+	// example, a suitably configured `tor` instance.
+	Proxy string
+
 	// StateDir is the directory where to store persistent data. This
 	// field is an extension of MK's specification. If
 	// this field is empty, the task won't start.
