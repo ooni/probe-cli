@@ -60,8 +60,8 @@ type Results struct {
 	// CountryCode is the country code
 	CountryCode string
 
-	// DidResolverLookup indicates whether we did a resolver lookup.
-	DidResolverLookup bool
+	// didResolverLookup indicates whether we did a resolver lookup.
+	didResolverLookup bool
 
 	// NetworkName is the network name
 	NetworkName string
@@ -109,10 +109,6 @@ type Resolver interface {
 
 // Config contains configuration for a geolocate Task.
 type Config struct {
-	// EnableResolverLookup indicates whether we want to
-	// perform the optional resolver lookup.
-	EnableResolverLookup bool
-
 	// Resolver is the resolver we should use when
 	// making requests for discovering the IP. When
 	// this field is not set, we use the stdlib.
@@ -147,12 +143,7 @@ func NewTask(config Config) (*Task, error) {
 	}
 	return &Task{
 		countryLookupper:     mmdbLookupper{},
-		enableResolverLookup: config.EnableResolverLookup,
-		probeIPLookupper: ipLookupClient{
-			Resolver:  config.Resolver,
-			Logger:    config.Logger,
-			UserAgent: config.UserAgent,
-		},
+		probeIPLookupper:     ipLookupClient(config),
 		probeASNLookupper:    mmdbLookupper{},
 		resolverASNLookupper: mmdbLookupper{},
 		resolverIPLookupper:  resolverLookupClient{},
@@ -163,7 +154,6 @@ func NewTask(config Config) (*Task, error) {
 // instance of Task using the NewTask factory.
 type Task struct {
 	countryLookupper     countryLookupper
-	enableResolverLookup bool
 	probeIPLookupper     probeIPLookupper
 	probeASNLookupper    asnLookupper
 	resolverASNLookupper asnLookupper
@@ -198,25 +188,23 @@ func (op Task) Run(ctx context.Context) (*Results, error) {
 		return out, fmt.Errorf("lookupProbeCC failed: %w", err)
 	}
 	out.CountryCode = cc
-	if op.enableResolverLookup {
-		out.DidResolverLookup = true
-		// Note: ignoring the result of lookupResolverIP and lookupASN
-		// here is intentional. We don't want this (~minor) failure
-		// to influence the result of the overall lookup. Another design
-		// here could be that of retrying the operation N times?
-		resolverIP, err := op.resolverIPLookupper.LookupResolverIP(ctx)
-		if err != nil {
-			return out, nil
-		}
-		out.ResolverIP = resolverIP
-		resolverASN, resolverNetworkName, err := op.resolverASNLookupper.LookupASN(
-			out.ResolverIP,
-		)
-		if err != nil {
-			return out, nil
-		}
-		out.ResolverASN = resolverASN
-		out.ResolverNetworkName = resolverNetworkName
+	out.didResolverLookup = true
+	// Note: ignoring the result of lookupResolverIP and lookupASN
+	// here is intentional. We don't want this (~minor) failure
+	// to influence the result of the overall lookup. Another design
+	// here could be that of retrying the operation N times?
+	resolverIP, err := op.resolverIPLookupper.LookupResolverIP(ctx)
+	if err != nil {
+		return out, nil // intentional
 	}
+	out.ResolverIP = resolverIP
+	resolverASN, resolverNetworkName, err := op.resolverASNLookupper.LookupASN(
+		out.ResolverIP,
+	)
+	if err != nil {
+		return out, nil // intentional
+	}
+	out.ResolverASN = resolverASN
+	out.ResolverNetworkName = resolverNetworkName
 	return out, nil
 }

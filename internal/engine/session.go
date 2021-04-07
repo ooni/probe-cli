@@ -644,13 +644,10 @@ func (s *Session) MaybeLookupBackendsContext(ctx context.Context) error {
 // LookupLocationContext performs a location lookup. If you want memoisation
 // of the results, you should use MaybeLookupLocationContext.
 func (s *Session) LookupLocationContext(ctx context.Context) (*geolocate.Results, error) {
-	// Implementation note: we don't perform the lookup of the resolver IP
-	// when we are using a proxy because that might leak information.
 	task := geolocate.Must(geolocate.NewTask(geolocate.Config{
-		EnableResolverLookup: s.proxyURL == nil,
-		Logger:               s.Logger(),
-		Resolver:             s.resolver,
-		UserAgent:            s.UserAgent(),
+		Logger:    s.Logger(),
+		Resolver:  s.resolver,
+		UserAgent: s.UserAgent(),
 	}))
 	return task.Run(ctx)
 }
