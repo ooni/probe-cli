@@ -2,7 +2,7 @@
 set -e
 if [ -z "$ANDROID_HOME" -o "$1" = "--help" ]; then
     echo ""
-    echo "usage: $0"
+    echo "usage: $0 [--sign]"
     echo ""
     echo "Please set ANDROID_HOME. We assume you have installed"
     echo "the Android SDK. You can do that on macOS using:"
@@ -27,5 +27,16 @@ set -x
 export PATH=$(go env GOPATH)/bin:$PATH
 go get -u golang.org/x/mobile/cmd/gomobile
 gomobile init
-output=MOBILE/android/oonimkall.aar
-gomobile bind -target=android -o $output -ldflags="-s -w" ./pkg/oonimkall
+version=$(date -u +%Y.%m.%d-%H%M%S)
+aarfile=MOBILE/android/oonimkall-$version.aar
+gomobile bind -target=android -o $aarfile -ldflags="-s -w" ./pkg/oonimkall
+pomfile=./MOBILE/android/oonimkall-$version.pom
+pomtemplate=./MOBILE/template.pom
+cat $pomtemplate|sed "s/@VERSION@/$version/g" > $pomfile
+if [ "$1" == "--sign" ]; then
+  cd ./MOBILE/android
+  for file in `ls *`; do
+    gpg -ab -u simone@openobservatory.org $file
+  done
+  jar -cvf bundle.jar oonimkall-$version*
+fi
