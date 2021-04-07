@@ -2,13 +2,16 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
+
   <groupId>org.ooni</groupId>
   <artifactId>oonimkall</artifactId>
   <version>@VERSION@</version>
   <packaging>aar</packaging>
+
   <name>oonimkall</name>
-  <description>OONI Probe Engine for Android</description>
-  <url>https://github.com/ooni/probe-engine</url>
+  <description>OONI Probe for Android</description>
+  <url>https://github.com/ooni/probe-cli</url>
+
   <licenses>
     <license>
       <name>The 3-Clause BSD License</name>
@@ -16,18 +19,21 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
+
   <scm>
     <url>https://github.com/ooni/probe-engine</url>
     <connection>https://github.com/ooni/probe-engine.git</connection>
   </scm>
+
   <developers>
     <developer>
       <name>Simone Basso</name>
       <email>simone@openobservatory.org</email>
       <roles>
-        <role>developer</role>
+        <role>Core developer</role>
       </roles>
       <timezone>Europe/Rome</timezone>
     </developer>
   </developers>
+
 </project>
