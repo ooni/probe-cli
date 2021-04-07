@@ -148,11 +148,10 @@ func (c taskResolverIPLookupper) LookupResolverIP(ctx context.Context) (string, 
 func TestLocationLookupCannotLookupResolverIP(t *testing.T) {
 	expected := errors.New("mocked error")
 	op := Task{
-		probeIPLookupper:     taskProbeIPLookupper{ip: "1.2.3.4"},
-		probeASNLookupper:    taskASNLookupper{asn: 1234, name: "1234.com"},
-		countryLookupper:     taskCCLookupper{cc: "IT"},
-		resolverIPLookupper:  taskResolverIPLookupper{err: expected},
-		enableResolverLookup: true,
+		probeIPLookupper:    taskProbeIPLookupper{ip: "1.2.3.4"},
+		probeASNLookupper:   taskASNLookupper{asn: 1234, name: "1234.com"},
+		countryLookupper:    taskCCLookupper{cc: "IT"},
+		resolverIPLookupper: taskResolverIPLookupper{err: expected},
 	}
 	ctx := context.Background()
 	out, err := op.Run(ctx)
@@ -171,7 +170,7 @@ func TestLocationLookupCannotLookupResolverIP(t *testing.T) {
 	if out.ProbeIP != "1.2.3.4" {
 		t.Fatal("invalid ProbeIP value")
 	}
-	if out.DidResolverLookup != true {
+	if out.didResolverLookup != true {
 		t.Fatal("invalid DidResolverLookup value")
 	}
 	if out.ResolverASN != DefaultResolverASN {
@@ -193,7 +192,6 @@ func TestLocationLookupCannotLookupResolverNetworkName(t *testing.T) {
 		countryLookupper:     taskCCLookupper{cc: "IT"},
 		resolverIPLookupper:  taskResolverIPLookupper{ip: "4.3.2.1"},
 		resolverASNLookupper: taskASNLookupper{err: expected},
-		enableResolverLookup: true,
 	}
 	ctx := context.Background()
 	out, err := op.Run(ctx)
@@ -212,7 +210,7 @@ func TestLocationLookupCannotLookupResolverNetworkName(t *testing.T) {
 	if out.ProbeIP != "1.2.3.4" {
 		t.Fatal("invalid ProbeIP value")
 	}
-	if out.DidResolverLookup != true {
+	if out.didResolverLookup != true {
 		t.Fatal("invalid DidResolverLookup value")
 	}
 	if out.ResolverASN != DefaultResolverASN {
@@ -233,7 +231,6 @@ func TestLocationLookupSuccessWithResolverLookup(t *testing.T) {
 		countryLookupper:     taskCCLookupper{cc: "IT"},
 		resolverIPLookupper:  taskResolverIPLookupper{ip: "4.3.2.1"},
 		resolverASNLookupper: taskASNLookupper{asn: 4321, name: "4321.com"},
-		enableResolverLookup: true,
 	}
 	ctx := context.Background()
 	out, err := op.Run(ctx)
@@ -252,7 +249,7 @@ func TestLocationLookupSuccessWithResolverLookup(t *testing.T) {
 	if out.ProbeIP != "1.2.3.4" {
 		t.Fatal("invalid ProbeIP value")
 	}
-	if out.DidResolverLookup != true {
+	if out.didResolverLookup != true {
 		t.Fatal("invalid DidResolverLookup value")
 	}
 	if out.ResolverASN != 4321 {
@@ -266,49 +263,8 @@ func TestLocationLookupSuccessWithResolverLookup(t *testing.T) {
 	}
 }
 
-func TestLocationLookupSuccessWithoutResolverLookup(t *testing.T) {
-	op := Task{
-		probeIPLookupper:     taskProbeIPLookupper{ip: "1.2.3.4"},
-		probeASNLookupper:    taskASNLookupper{asn: 1234, name: "1234.com"},
-		countryLookupper:     taskCCLookupper{cc: "IT"},
-		resolverIPLookupper:  taskResolverIPLookupper{ip: "4.3.2.1"},
-		resolverASNLookupper: taskASNLookupper{asn: 4321, name: "4321.com"},
-	}
-	ctx := context.Background()
-	out, err := op.Run(ctx)
-	if err != nil {
-		t.Fatalf("not the error we expected: %+v", err)
-	}
-	if out.ASN != 1234 {
-		t.Fatal("invalid ASN value")
-	}
-	if out.CountryCode != "IT" {
-		t.Fatal("invalid CountryCode value")
-	}
-	if out.NetworkName != "1234.com" {
-		t.Fatal("invalid NetworkName value")
-	}
-	if out.ProbeIP != "1.2.3.4" {
-		t.Fatal("invalid ProbeIP value")
-	}
-	if out.DidResolverLookup != false {
-		t.Fatal("invalid DidResolverLookup value")
-	}
-	if out.ResolverASN != DefaultResolverASN {
-		t.Fatalf("invalid ResolverASN value: %+v", out.ResolverASN)
-	}
-	if out.ResolverIP != DefaultResolverIP {
-		t.Fatalf("invalid ResolverIP value: %+v", out.ResolverIP)
-	}
-	if out.ResolverNetworkName != DefaultResolverNetworkName {
-		t.Fatal("invalid ResolverNetworkName value")
-	}
-}
-
 func TestSmoke(t *testing.T) {
-	config := Config{
-		EnableResolverLookup: true,
-	}
+	config := Config{}
 	task := Must(NewTask(config))
 	result, err := task.Run(context.Background())
 	if err != nil {
