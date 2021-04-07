@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
@@ -24,6 +25,12 @@ var (
 type InputLoaderSession interface {
 	CheckIn(ctx context.Context,
 		config *model.CheckInConfig) (*model.CheckInInfo, error)
+}
+
+// InputLoaderLogger is the logger according to an InputLoader.
+type InputLoaderLogger interface {
+	// Warnf formats and emits a warning message.
+	Warnf(format string, v ...interface{})
 }
 
 // InputLoader loads input according to the specified policy
@@ -67,6 +74,11 @@ type InputLoader struct {
 	// the policy says we should not. You MUST fill in
 	// this field.
 	InputPolicy InputPolicy
+
+	// Logger is the optional logger that the InputLoader
+	// should be using. If not set, we will use the default
+	// logger of github.com/apex/log.
+	Logger InputLoaderLogger
 
 	// Session is the current measurement session. You
 	// MUST fill in this field.
@@ -193,7 +205,7 @@ func (il *InputLoader) loadRemote(ctx context.Context) ([]model.URLInfo, error) 
 		// concerned about NOT passing it a NULL pointer.
 		config = &model.CheckInConfig{}
 	}
-	reply, err := il.Session.CheckIn(ctx, config)
+	reply, err := il.checkIn(ctx, config)
 	if err != nil {
 		return nil, err
 	}
@@ -201,4 +213,54 @@ func (il *InputLoader) loadRemote(ctx context.Context) ([]model.URLInfo, error) 
 		return nil, ErrNoURLsReturned
 	}
 	return reply.WebConnectivity.URLs, nil
+}
+
+// checkIn executes the check-in and filters the returned URLs to exclude
+// the URLs that are not part of the requested categories. This is done for
+// robustness, just in case we or the API do something wrong.
+func (il *InputLoader) checkIn(
+	ctx context.Context, config *model.CheckInConfig) (*model.CheckInInfo, error) {
+	reply, err := il.Session.CheckIn(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	// Note: safe to assume that reply is not nil if err is nil
+	if reply.WebConnectivity != nil && len(reply.WebConnectivity.URLs) > 0 {
+		reply.WebConnectivity.URLs = il.preventMistakes(
+			reply.WebConnectivity.URLs, config.WebConnectivity.CategoryCodes,
+		)
+	}
+	return reply, nil
+}
+
+// preventMistakes makes the code more robust with respect to any possible
+// integration issue where the backend returns to us URLs that don't
+// belong to the category codes we requested.
+func (il *InputLoader) preventMistakes(input []model.URLInfo, categories []string) (output []model.URLInfo) {
+	if len(categories) <= 0 {
+		return input
+	}
+	for _, entry := range input {
+		var found bool
+		for _, cat := range categories {
+			if entry.CategoryCode == cat {
+				found = true
+				break
+			}
+		}
+		if !found {
+			il.logger().Warnf("URL %+v not in %+v; skipping", entry, categories)
+			continue
+		}
+		output = append(output, entry)
+	}
+	return
+}
+
+// logger returns the configured logger or apex/log's default.
+func (il *InputLoader) logger() InputLoaderLogger {
+	if il.Logger != nil {
+		return il.Logger
+	}
+	return log.Log
 }

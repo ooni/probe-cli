@@ -407,3 +407,90 @@ func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
 		t.Fatal(diff)
 	}
 }
+
+func TestPreventMistakesWithCategories(t *testing.T) {
+	input := []model.URLInfo{{
+		CategoryCode: "NEWS",
+		URL:          "https://repubblica.it/",
+		CountryCode:  "IT",
+	}, {
+		CategoryCode: "HACK",
+		URL:          "https://2600.com",
+		CountryCode:  "XX",
+	}, {
+		CategoryCode: "FILE",
+		URL:          "https://addons.mozilla.org/",
+		CountryCode:  "XX",
+	}}
+	desired := []model.URLInfo{{
+		CategoryCode: "NEWS",
+		URL:          "https://repubblica.it/",
+		CountryCode:  "IT",
+	}, {
+		CategoryCode: "FILE",
+		URL:          "https://addons.mozilla.org/",
+		CountryCode:  "XX",
+	}}
+	il := &InputLoader{}
+	output := il.preventMistakes(input, []string{"NEWS", "FILE"})
+	if diff := cmp.Diff(desired, output); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestPreventMistakesWithoutCategoriesAndNil(t *testing.T) {
+	input := []model.URLInfo{{
+		CategoryCode: "NEWS",
+		URL:          "https://repubblica.it/",
+		CountryCode:  "IT",
+	}, {
+		CategoryCode: "HACK",
+		URL:          "https://2600.com",
+		CountryCode:  "XX",
+	}, {
+		CategoryCode: "FILE",
+		URL:          "https://addons.mozilla.org/",
+		CountryCode:  "XX",
+	}}
+	il := &InputLoader{}
+	output := il.preventMistakes(input, nil)
+	if diff := cmp.Diff(input, output); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestPreventMistakesWithoutCategoriesAndEmpty(t *testing.T) {
+	input := []model.URLInfo{{
+		CategoryCode: "NEWS",
+		URL:          "https://repubblica.it/",
+		CountryCode:  "IT",
+	}, {
+		CategoryCode: "HACK",
+		URL:          "https://2600.com",
+		CountryCode:  "XX",
+	}, {
+		CategoryCode: "FILE",
+		URL:          "https://addons.mozilla.org/",
+		CountryCode:  "XX",
+	}}
+	il := &InputLoader{}
+	output := il.preventMistakes(input, []string{})
+	if diff := cmp.Diff(input, output); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+// InputLoaderFakeLogger is a fake InputLoaderLogger.
+type InputLoaderFakeLogger struct{}
+
+// Warnf implements InputLoaderLogger.Warnf
+func (ilfl *InputLoaderFakeLogger) Warnf(format string, v ...interface{}) {}
+
+func TestInputLoaderLoggerWorksAsIntended(t *testing.T) {
+	logger := &InputLoaderFakeLogger{}
+	inputLoader := &InputLoader{Logger: logger}
+	out := inputLoader.logger()
+	if out != logger {
+		t.Fatal("logger not working as intended")
+	}
+}
