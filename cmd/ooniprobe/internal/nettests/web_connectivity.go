@@ -27,7 +27,6 @@ func lookupURLs(ctl *Controller, categories []string) ([]string, map[int64]int64
 		SourceFiles:  ctl.InputFiles,
 		StaticInputs: ctl.Inputs,
 	}
-	log.Infof("Calling CheckIn API with %s runType", ctl.RunType)
 	testlist, err := inputloader.Load(context.Background())
 	if err != nil {
 		return nil, nil, err
