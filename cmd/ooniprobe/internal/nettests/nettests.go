@@ -125,6 +125,10 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 		log.Debug("disabling maxRuntime without Web Connectivity")
 		maxRuntime = 0
 	}
+	if len(c.Inputs) > 0 || len(c.InputFiles) > 0 {
+		log.Debug("disabling maxRuntime with user-provided input")
+		maxRuntime = 0
+	}
 	start := time.Now()
 	c.ntStartTime = start
 	for idx, input := range inputs {
@@ -220,7 +224,8 @@ func (c *Controller) OnProgress(perc float64, msg string) {
 	// when we have maxRuntime, honor it
 	maxRuntime := time.Duration(c.Probe.Config().Nettests.WebsitesMaxRuntime) * time.Second
 	_, isWebConnectivity := c.nt.(WebConnectivity)
-	if c.RunType == "manual" && maxRuntime > 0 && isWebConnectivity {
+	userProvidedInput := len(c.Inputs) > 0 || len(c.InputFiles) > 0
+	if c.RunType == "manual" && maxRuntime > 0 && isWebConnectivity && !userProvidedInput {
 		elapsed := time.Since(c.ntStartTime)
 		perc = float64(elapsed) / float64(maxRuntime)
 		eta := maxRuntime.Seconds() - elapsed.Seconds()
