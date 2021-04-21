@@ -1,81 +1,185 @@
 #!/usr/bin/env python3
 
-""" The build script allows to build ooniprobe. """
+""" Build script for ooniprobe. You can get documentation regarding
+its usage by running `./build help`. """
 
 import argparse
 import datetime
+import glob
+import hashlib
 import os
 import shlex
 import shutil
 import subprocess
 import sys
+import tarfile
+import urllib.request
 
-# BUILDROOT is the root directory where we store useful state
-BUILDROOT = os.path.join(os.path.expandvars("${HOME}"), ".ooni-build")
+# STATEDIR is the root directory where we store useful state
+STATEDIR = os.path.join(os.path.expandvars("${HOME}"), ".ooni-build")
 
-# GO_GIT_SOURCE_DIR is the directory where we clone github.com/ooni/go
-GO_GIT_SOURCE_DIR = os.path.join(BUILDROOT, "src", "github.com", "ooni", "go")
+# GO_OONIGO_SOURCE_DIR is the directory inside which we clone our Go fork
+GO_OONIGO_SOURCE_DIR = os.path.join(STATEDIR, "oonigo")
 
-# GO_GIT_REPO_URL is the repository containing our Go fork
-GO_GIT_REPO_URL = "https://github.com/ooni/go"
+# GO_OONIGO_REPO_URL is the repository containing our Go fork
+GO_OONIGO_REPO_URL = "https://github.com/ooni/go"
 
-# GO_GIT_BRANCH is the branch to checkout
-GO_GIT_BRANCH = "ooni"
+# GO_OONIGO_BRANCH is the branch of our Go fork to checkout
+GO_OONIGO_BRANCH = "ooni"
 
-# GO_BIN_DIR is the directory containing the "go" executable
-GO_BIN_DIR = os.path.join(GO_GIT_SOURCE_DIR, "bin")
+# GO_OONIGO_BIN_DIR is the directory where the "go" binary compiled from
+# our Go fork will be available after `./build init`.
+GO_OONIGO_BIN_DIR = os.path.join(GO_OONIGO_SOURCE_DIR, "bin")
 
-# GOPATH contains the GOPATH we want to use
-GOPATH = os.path.join(BUILDROOT, "GOPATH")
+# GO_BOOTSTRAP_ROOT_DIR is the directory in which we copy
+# the binary distribution of golang we use to boostrap our
+# own Go fork. The design choice to bootstrap our fork using
+# a binary distribution of Go means that there is no need
+# to have a working Go binary on the system. The most tangible
+# advantage of this design is that we can be sure that no
+# default system configuration causes the default "system" go
+# to be used instead of our fork, for some reason.
+GO_BOOTSTRAP_ROOT_DIR = os.path.join(STATEDIR, "bootstrap")
+
+# GOPATH is the directory that we will use as a GOPATH when
+# using our own fork of Go. This choice ensures that the
+# binaries we will be using are separate from the default
+# ones, which typically live in $HOME/go. Even though we're
+# prepared for a system where "go" is not in PATH, a tool
+# like VSCode is capable to downloading and using a specific
+# version of Go, which will put its data in $HOME/go.
+GOPATH = os.path.join(STATEDIR, "local", "go")
+
+# POM_TEMPLATE is the template of the .pom file that we
+# include inside the bundle.jar for Maven Central.
+POM_TEMPLATE = r"""<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.ooni</groupId>
+  <artifactId>oonimkall</artifactId>
+  <version>@VERSION@</version>
+  <packaging>aar</packaging>
+
+  <name>oonimkall</name>
+  <description>OONI Probe Library for Android</description>
+  <url>https://github.com/ooni/probe-cli</url>
+
+  <licenses>
+    <license>
+      <name>The 3-Clause BSD License</name>
+      <url>https://opensource.org/licenses/BSD-3-Clause</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <url>https://github.com/ooni/probe-engine</url>
+    <connection>https://github.com/ooni/probe-engine.git</connection>
+  </scm>
+
+  <developers>
+    <developer>
+      <name>Simone Basso</name>
+      <email>simone@openobservatory.org</email>
+      <roles>
+        <role>Core developer</role>
+      </roles>
+      <timezone>Europe/Rome</timezone>
+    </developer>
+  </developers>
+
+</project>
+"""
+
+#
+# Utilities
+#
+# This section of the script contains utility functions.
+#
 
 
-def log(*stuff, **kwargs):
-    """log prints a log message on standard error"""
+def log(*stuff, **kwargs) -> None:
+    """log prints a log message on standard error. The arguments
+    contains the stuff that you wanna log."""
     print(*stuff, file=sys.stderr, **kwargs)
 
 
-def execute(cmdline):
-    """execute runs the specified command"""
+def execute(cmdline: list[str]) -> None:
+    """execute runs the specified command line, which must be
+    a list of strings, where the first string is the command."""
     log("run:", shlex.join(cmdline))
-    subprocess.run(cmdline)
+    subprocess.run(cmdline, check=True)
 
 
-def rmtree(dir):
-    """rmtree deletes a specified directory tree"""
+def rmtree(dir: str) -> None:
+    """rmtree deletes a specified directory tree. The behavior
+    of this function is just like rm -rf."""
     log("run: rm -rf", dir)
     shutil.rmtree(dir, ignore_errors=True)
 
 
-def chdir(dir):
+def chdir(dir: str) -> None:
     """chdir changes the current directory and returns the
-    previous working directory to the caller"""
+    previous working directory to the caller."""
     cwd = os.getcwd()
     log("run: cd", dir)
     os.chdir(dir)
     return cwd
 
 
-def makedirs(dir):
-    """makedirs is like mkdir -p"""
+def makedirs(dir: str) -> None:
+    """ makedirs is just like mkdir -p. """
     log("run: mkdir -p", dir)
     os.makedirs(dir)
 
 
-def setenv(key, value):
-    """setenv sets an environment variable"""
+def setenv(key: str, value: str) -> None:
+    """ setenv sets an environment variable. """
     log("run:", shlex.join(["export", "{}={}".format(key, value)]))
     os.environ[key] = value
 
 
-def prepend_to_path(value):
-    """prepend_to_path prepends a value to path"""
+def prepend_to_path(value: str) -> None:
+    """prepend_to_path prepends value to PATH using the
+    proper separator for the platform."""
+    # TODO(bassosimone): add support for Windows?
     cur = os.environ["PATH"]
     setenv("PATH", value + ":" + cur)
 
 
-def doandroid(args):
+def setup_go_environment() -> None:
+    """setup_go_environment setups environment variables to use
+    our custom version of go as the "go" executable."""
+    prepend_to_path(GO_OONIGO_BIN_DIR)
+    prepend_to_path(os.path.join(GOPATH, "bin"))
+    setenv("GOPATH", GOPATH)
+
+
+def which(executable: str) -> str:
+    """which returns the path of the executable named executable, if
+    existing. Otherwise it returns None."""
+    fullpath = shutil.which(executable)
+    if not fullpath:
+        log("checking for {}... not found".format(executable))
+        return None
+    log("checking for {}... {}".format(executable, fullpath))
+    return fullpath
+
+
+#
+# Android
+#
+# This section of the script contains the implementation
+# of the "android" subcommand.
+#
+
+
+def doandroid(args: argparse.Namespace) -> None:
     """doandroid implements the android subcommand. The args
     argument contains arguments parsed from the command line."""
+
     if args.bundle and not args.sign:
         sys.exit("build: android: --bundle requires --sign=EMAIL")
     android_home = os.getenv("ANDROID_HOME")
@@ -84,19 +188,51 @@ def doandroid(args):
     android_ndk_home = os.getenv("ANDROID_NDK_HOME")
     if not android_ndk_home:
         sys.exit("build: android: you need to set ANDROID_NDK_HOME")
+
     destdir = os.path.join("MOBILE", "android")
     v = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
+
     rmtree(destdir)
     makedirs(destdir)
-    prepend_to_path(GO_BIN_DIR)
-    prepend_to_path(os.path.join(GOPATH, "bin"))
-    setenv("GOPATH", GOPATH)
+    setup_go_environment()
     gomobileinit(args)
+    writepom(destdir, v)
     gomobilebind(args, destdir, v)
+    signandroid(args, destdir)
+    makebundlejar(destdir)
 
 
-def gomobileinit(args):
-    """gomobileinit initializes gomobile"""
+def makebundlejar(destdir: str) -> None:
+    """makebundlejar creates the bundle.jar file that is required
+    to submit a new release to Maven Central."""
+    cwd = chdir(destdir)
+    pattern = "oonimkall-*"
+    execute(["jar", "-cf", "bundle.jar", *glob.glob(pattern)])
+    chdir(cwd)
+
+
+def signandroid(args: argparse.Namespace, destdir: str) -> None:
+    """signandroid signs android binaries. The args argument
+    contains arguments parsed from the command line."""
+    if args.sign:
+        pattern = "oonimkall*"
+        for filename in glob.glob(os.path.join(destdir, pattern)):
+            execute(["gpg", "-abu", args.sign, filename])
+
+
+def writepom(destdir: str, v: str) -> None:
+    """ writepom writes the .pom file. """
+    data = POM_TEMPLATE.replace("@VERSION@", v)
+    outfile = os.path.join(destdir, "oonimkall-{}.pom".format(v))
+    with open(outfile, "w") as filep:
+        filep.write(data)
+
+
+def gomobileinit(args: argparse.Namespace) -> None:
+    """gomobileinit initializes gomobile. The args argument
+    contains the arguments parsed from the cmdline."""
+    # TODO(bassosimone): is there a way to get the latest version
+    # of gomobile w/o clobbering our go.mod and go.sum?
     cmdline = ["go", "get", "-u"]
     if args.verbose:
         cmdline.append("-v")
@@ -104,11 +240,12 @@ def gomobileinit(args):
         cmdline.append("-x")
     cmdline.append("golang.org/x/mobile/cmd/gomobile@latest")
     execute(cmdline)
-    execute(["gomobile", "init"])
+    execute(["gomobile", "init"])  # this compiles OpenAL
 
 
-def gomobilebind(args, destdir, v):
-    """gomobilebind runs gomobile bind"""
+def gomobilebind(args: argparse.Namespace, destdir: str, v: str) -> None:
+    """gomobilebind runs gomobile bind. The args argument
+    contains the arguments parsed from the cmdline."""
     cmdline = [
         "gomobile",
         "bind",
@@ -130,32 +267,44 @@ def gomobilebind(args, destdir, v):
     execute(cmdline)
 
 
-def clonego(args):
-    """clonego clones our go fork"""
+#
+# Init
+#
+# This section of the script contains the implementation
+# of the "init" subcommand.
+#
+
+
+def clonego() -> None:
+    """ clonego clones our go fork. """
     execute(
         [
             "git",
             "clone",
             "-b",
-            GO_GIT_BRANCH,
+            GO_OONIGO_BRANCH,
             "--single-branch",
             "--depth",
             "8",
-            GO_GIT_REPO_URL,
-            GO_GIT_SOURCE_DIR,
+            GO_OONIGO_REPO_URL,
+            GO_OONIGO_SOURCE_DIR,
         ]
     )
 
 
-def makego(args):
-    """makego builds our go fork"""
-    cwd = chdir(os.path.join(GO_GIT_SOURCE_DIR, "src"))
+def makego() -> None:
+    """makego builds our go fork using as bootstrap the binary
+    distribution of Go that we've already downloaded."""
+    setenv("GOROOT_BOOTSTRAP", os.path.join(GO_BOOTSTRAP_ROOT_DIR, "go"))
+    cwd = chdir(os.path.join(GO_OONIGO_SOURCE_DIR, "src"))
     execute(["./make.bash"])
     chdir(cwd)
 
 
-def fixtreeperms(dir):
-    """fixtreeperms makes sure we can delete all files in a tree"""
+def fixtreeperms(dir: str) -> None:
+    """fixtreeperms makes sure we can delete all files in a tree. This
+    is a precondition for being able to delete files in the gocache, which
+    are non writable by default."""
     for dirpath, _, filenames in os.walk(dir):
         log("run: chmod 700", dirpath)
         os.chmod(dirpath, 0o700)
@@ -165,28 +314,142 @@ def fixtreeperms(dir):
             os.chmod(fpath, 0o600)
 
 
-def doinit(args):
+def getbootstrapgo() -> None:
+    """getbootstrapgo downloads the binary Go distribution for the
+    current system. We will use such a distribution to bootstrap
+    the build of our modified fork of Go."""
+    # TODO(bassosimone): add support for macOS. Can we also add
+    # support for Windows or is this too complicated?
+    expected = "951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2"
+    filename = "go1.16.3.linux-amd64.tar.gz"
+    makedirs(GO_BOOTSTRAP_ROOT_DIR)
+    cwd = chdir(GO_BOOTSTRAP_ROOT_DIR)
+    url = "https://golang.org/dl/{}".format(filename)
+    log("run: wget", url)
+    resp = urllib.request.urlopen(url)
+    data = resp.read()
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != expected:
+        raise RuntimeError(
+            "digest mismatch: want {} and got {}".format(expected, digest)
+        )
+    with open(filename, "wb") as filep:
+        filep.write(data)
+    log("run: tar -xf", filename)
+    with tarfile.open(filename) as filep:
+        filep.extractall()
+    chdir(cwd)
+
+
+def writesimplereadme(dir: str) -> None:
+    """writesimplereadme adds a simple readme to the STATEDIR
+    directory so that a user understands what they see."""
+    readme = os.path.join(dir, "README.txt")
+    with open(readme, "w") as filep:
+        filep.write("This directory contains state used to build the\n")
+        filep.write("github.com/ooni/probe-cli repository and generated\n")
+        filep.write("by the `./build` script of such repository.\n")
+        filep.write("\n")
+        filep.write("The `bootstrap` directory contains a binary distribution\n")
+        filep.write("of Go that we use to bootstrap our fork of Go. We download\n")
+        filep.write("this distribution from https://golang.org/dl and verify\n")
+        filep.write("its sha256sum before unpacking it.\n")
+        filep.write("\n")
+        filep.write("The `local` directory is the directory configured as GOROOT\n")
+        filep.write("when we're using our fork of Go.\n")
+        filep.write("\n")
+        filep.write("The `oonigo` directory contains the sources and the binaries\n")
+        filep.write("of our fork of Go (github.com/ooni/go).\n")
+
+
+def checkdependencies():
+    """checkdependencies checks whether the most commonly required
+    dependencies are available on the current system."""
+    # TODO(bassosimone): some of these dependencies are actually
+    # optional and we probably don't want to fail if there are
+    # missing (or we can just choose to fail if they are missing
+    # because this tool is mainly for OONI devs?)
+    if not which("bash"):
+        sys.exit("build: init: you need to install bash")
+    if not which("git"):
+        sys.exit("build: init: you need to install git")
+    if not which("jar"):
+        sys.exit("build: init: you need to install java's jdk")
+    if not which("gpg"):
+        sys.exit("build: init: you need to install gpg")
+
+
+def doinit() -> None:
     """doinit implements the init subcommand. The args
     argument contains arguments parsed from the command line."""
-    fixtreeperms(BUILDROOT)
-    rmtree(BUILDROOT)
-    clonego(args)
-    makego(args)
+    checkdependencies()
+    fixtreeperms(STATEDIR)
+    rmtree(STATEDIR)
+    makedirs(STATEDIR)
+    writesimplereadme(STATEDIR)
+    getbootstrapgo()
+    clonego()
+    makego()
 
 
-def newcliparser():
-    """newcliparser returns a new CLI parser."""
-    root = argparse.ArgumentParser()
-    root.add_argument("-v", "--verbose", action="store_true", help="verbose mode")
-    root.add_argument("-x", action="store_true", help="print invoked commands")
-    cmds = root.add_subparsers(dest="command")
-    init = cmds.add_parser("init")
-    init.add_argument(
-        "-f",
-        "--force",
-        action="store_true",
-        help="force reinitialization",
+#
+# Shell
+#
+# This section implements the "shell" subcommand.
+#
+
+
+def doshell() -> None:
+    """doshell executes a shell with the correct environment
+    variables to use our custom version of Go. The args argument
+    contains the results of parsing command line arguments."""
+    setup_go_environment()
+    setenv("PS1", "(goroot: {}) \W\$ ".format(GO_OONIGO_SOURCE_DIR))
+    execute([os.path.expandvars("${SHELL}")])
+
+
+#
+# Main
+#
+# This section contains the main function.
+#
+
+CLI_DESCRIPTION = """\
+The `android` subcommand allows you to build OONI Probe as an Android
+library. The output is `./MOBILE/android.bundle.jar` that you should
+then upload to the Maven Central repository. To use the `android`
+command you need to run the `init` command first.
+
+The `help` command prints this screen.
+
+The `init` subcommand initializes the state directory. This directory will
+contain (1) a binary distribution of Go used for bootstrapping, (2) our
+fork of Go used for compiling code, (3) a private GOPATH. Every time
+you run the `init` command we wipe the state directory and start afresh.
+
+The `shell` subcommand executes your $SHELL with a sligthly different $PS1
+and environment variables such that you use our fork of Go and the
+private GOPATH. Both are inside the state directory as described above.
+
+The state directory is: {}
+
+You can get more information on the flag supported by a subcommand running
+`./build subcommand --help` (e.g., `./build android --help`).
+"""
+
+
+def newcliparser() -> None:
+    """ newcliparser returns a new CLI parser. """
+    root = argparse.ArgumentParser(
+        epilog=CLI_DESCRIPTION.format(STATEDIR),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    root.add_argument("-v", "--verbose", action="store_true", help="verbose mode")
+    root.add_argument(
+        "-x", action="store_true", help="tells Go to print invoked commands"
+    )
+    cmds = root.add_subparsers(dest="command")
+
     android = cmds.add_parser("android")
     android.add_argument(
         "--bundle",
@@ -204,17 +467,34 @@ def newcliparser():
         help="sign generated data with the specified PGP identity",
         metavar="EMAIL",
     )
+
+    cmds.add_parser("help")
+
+    init = cmds.add_parser("init")
+    init.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="force reinitialization",
+    )
+
+    cmds.add_parser("shell")
+
     return root
 
 
-def main():
-    """Main function."""
+def main() -> None:
+    """ Main function. """
     parser = newcliparser()
     args = parser.parse_args()
     if args.command == "android":
         doandroid(args)
+    elif args.command == "help":
+        parser.print_help()
     elif args.command == "init":
-        doinit(args)
+        doinit()
+    elif args.command == "shell":
+        doshell()
     else:
         parser.print_help()
         sys.exit(1)
