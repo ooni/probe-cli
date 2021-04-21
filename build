@@ -1,0 +1,224 @@
+#!/usr/bin/env python3
+
+""" The build script allows to build ooniprobe. """
+
+import argparse
+import datetime
+import os
+import shlex
+import shutil
+import subprocess
+import sys
+
+# BUILDROOT is the root directory where we store useful state
+BUILDROOT = os.path.join(os.path.expandvars("${HOME}"), ".ooni-build")
+
+# GO_GIT_SOURCE_DIR is the directory where we clone github.com/ooni/go
+GO_GIT_SOURCE_DIR = os.path.join(BUILDROOT, "src", "github.com", "ooni", "go")
+
+# GO_GIT_REPO_URL is the repository containing our Go fork
+GO_GIT_REPO_URL = "https://github.com/ooni/go"
+
+# GO_GIT_BRANCH is the branch to checkout
+GO_GIT_BRANCH = "ooni"
+
+# GO_BIN_DIR is the directory containing the "go" executable
+GO_BIN_DIR = os.path.join(GO_GIT_SOURCE_DIR, "bin")
+
+# GOPATH contains the GOPATH we want to use
+GOPATH = os.path.join(BUILDROOT, "GOPATH")
+
+
+def log(*stuff, **kwargs):
+    """log prints a log message on standard error"""
+    print(*stuff, file=sys.stderr, **kwargs)
+
+
+def execute(cmdline):
+    """execute runs the specified command"""
+    log("run:", shlex.join(cmdline))
+    subprocess.run(cmdline)
+
+
+def rmtree(dir):
+    """rmtree deletes a specified directory tree"""
+    log("run: rm -rf", dir)
+    shutil.rmtree(dir, ignore_errors=True)
+
+
+def chdir(dir):
+    """chdir changes the current directory and returns the
+    previous working directory to the caller"""
+    cwd = os.getcwd()
+    log("run: cd", dir)
+    os.chdir(dir)
+    return cwd
+
+
+def makedirs(dir):
+    """makedirs is like mkdir -p"""
+    log("run: mkdir -p", dir)
+    os.makedirs(dir)
+
+
+def setenv(key, value):
+    """setenv sets an environment variable"""
+    log("setenv:", key, "=>", value)
+    os.environ[key] = value
+
+
+def prepend_to_path(value):
+    """prepend_to_path prepends a value to path"""
+    cur = os.environ["PATH"]
+    setenv("PATH", value + ":" + cur)
+
+
+def doandroid(args):
+    """doandroid implements the android subcommand. The args
+    argument contains arguments parsed from the command line."""
+    if args.bundle and not args.sign:
+        sys.exit("build: android: --bundle requires --sign=EMAIL")
+    android_home = os.getenv("ANDROID_HOME")
+    if not android_home:
+        sys.exit("build: android: you need to set ANDROID_HOME")
+    android_ndk_home = os.getenv("ANDROID_NDK_HOME")
+    if not android_ndk_home:
+        sys.exit("build: android: you need to set ANDROID_NDK_HOME")
+    destdir = os.path.join("MOBILE", "android")
+    v = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
+    rmtree(destdir)
+    makedirs(destdir)
+    prepend_to_path(GO_BIN_DIR)
+    prepend_to_path(os.path.join(GOPATH, "bin"))
+    setenv("GOPATH", GOPATH)
+    gomobileinit(args)
+    gomobilebind(args, destdir, v)
+
+
+def gomobileinit(args):
+    """gomobileinit initializes gomobile"""
+    cmdline = ["go", "get", "-u"]
+    if args.verbose:
+        cmdline.append("-v")
+    if args.x:
+        cmdline.append("-x")
+    cmdline.append("golang.org/x/mobile/cmd/gomobile@latest")
+    execute(cmdline)
+    execute(["gomobile", "init"])
+
+
+def gomobilebind(args, destdir, v):
+    """gomobilebind runs gomobile bind"""
+    cmdline = [
+        "gomobile",
+        "bind",
+        "-target",
+        "android",
+        "-o",
+        os.path.join(destdir, "oonimkall-{}.aar".format(v)),
+        "-ldflags",
+        "-s -w",
+    ]
+    if args.embed_psiphon:
+        cmdline.append("-tags")
+        cmdline.append("ooni_psiphon_config")
+    if args.verbose:
+        cmdline.append("-v")
+    if args.x:
+        cmdline.append("-x")
+    cmdline.append("./pkg/oonimkall")
+    execute(cmdline)
+
+
+def clonego(args):
+    """clonego clones our go fork"""
+    execute(
+        [
+            "git",
+            "clone",
+            "-b",
+            GO_GIT_BRANCH,
+            "--single-branch",
+            "--depth",
+            "8",
+            GO_GIT_REPO_URL,
+            GO_GIT_SOURCE_DIR,
+        ]
+    )
+
+
+def makego(args):
+    """makego builds our go fork"""
+    cwd = chdir(os.path.join(GO_GIT_SOURCE_DIR, "src"))
+    execute(["./make.bash"])
+    chdir(cwd)
+
+
+def fixtreeperms(dir):
+    """fixtreeperms makes sure we can delete all files in a tree"""
+    for dirpath, _, filenames in os.walk(dir):
+        log("run: chmod 700", dirpath)
+        os.chmod(dirpath, 0o700)
+        for filename in filenames:
+            fpath = os.path.join(dirpath, filename)
+            log("run: chmod 600", fpath)
+            os.chmod(fpath, 0o600)
+
+
+def doinit(args):
+    """doinit implements the init subcommand. The args
+    argument contains arguments parsed from the command line."""
+    fixtreeperms(BUILDROOT)
+    rmtree(BUILDROOT)
+    clonego(args)
+    makego(args)
+
+
+def newcliparser():
+    """newcliparser returns a new CLI parser."""
+    root = argparse.ArgumentParser()
+    root.add_argument("-v", "--verbose", action="store_true", help="verbose mode")
+    root.add_argument("-x", action="store_true", help="print invoked commands")
+    cmds = root.add_subparsers(dest="command")
+    init = cmds.add_parser("init")
+    init.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="force reinitialization",
+    )
+    android = cmds.add_parser("android")
+    android.add_argument(
+        "--bundle",
+        action="store_true",
+        help="create bundle.jar for maven central (requires --sign)",
+    )
+    android.add_argument(
+        "--embed-psiphon",
+        action="store_true",
+        help="embed a suitable psiphon configuration file",
+    )
+    android.add_argument(
+        "--sign",
+        action="store",
+        help="sign generated data with the specified PGP identity",
+        metavar="EMAIL",
+    )
+    return root
+
+
+def main():
+    """Main function."""
+    parser = newcliparser()
+    args = parser.parse_args()
+    if args.command == "android":
+        doandroid(args)
+    elif args.command == "init":
+        doinit(args)
+    else:
+        parser.print_help()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
