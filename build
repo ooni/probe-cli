@@ -63,7 +63,7 @@ def makedirs(dir):
 
 def setenv(key, value):
     """setenv sets an environment variable"""
-    log("setenv:", key, "=>", value)
+    log("run:", shlex.join(["export", "{}={}".format(key, value)]))
     os.environ[key] = value
 
 
