@@ -192,8 +192,8 @@ def prepend_to_path(value: str) -> None:
     setenv("PATH", value + ":" + cur)
 
 
-def setup_environment() -> None:
-    """setup_environment setups environment variables to use
+def setupenv() -> None:
+    """setupenv setups environment variables to use
     the SDKs that we have downloaded with "init"."""
     prepend_to_path(GO_OONIGO_BIN_DIR)
     prepend_to_path(os.path.join(GOPATH, "bin"))
@@ -250,9 +250,8 @@ def doandroid(args: argparse.Namespace) -> None:
         require(["gpg"])
     if args.bundle:
         require(["jar"])
-    if args.embed_psiphon:
-        copypsiphonconfig()
-    setup_environment()
+    copypsiphonconfig()
+    setupenv()
     which("go")
     destdir = os.path.join("MOBILE", "android")
     v = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
@@ -321,9 +320,8 @@ def gomobilebind(args: argparse.Namespace, destdir: str, v: str) -> None:
         "-ldflags",
         "-s -w",
     ]
-    if args.embed_psiphon:
-        cmdline.append("-tags")
-        cmdline.append("ooni_psiphon_config")
+    cmdline.append("-tags")
+    cmdline.append("ooni_psiphon_config")
     if args.verbose:
         cmdline.append("-v")
     if args.x:
@@ -527,7 +525,7 @@ def doshell() -> None:
     """doshell executes a shell with the correct environment
     variables to use our custom version of Go. The args argument
     contains the results of parsing command line arguments."""
-    setup_environment()
+    setupenv()
     setenv("PS1", "(goroot: {}) \W\$ ".format(GO_OONIGO_SOURCE_DIR))
     execute([os.path.expandvars("${SHELL}")])
 
@@ -579,11 +577,6 @@ def newcliparser() -> None:
         "--bundle",
         action="store_true",
         help="create bundle.jar for maven central (requires --sign)",
-    )
-    android.add_argument(
-        "--embed-psiphon",
-        action="store_true",
-        help="embed a suitable psiphon configuration file",
     )
     android.add_argument(
         "--sign",
