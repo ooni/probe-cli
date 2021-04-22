@@ -8,6 +8,7 @@ import datetime
 import glob
 import hashlib
 import os
+import platform
 import shlex
 import shutil
 import subprocess
@@ -16,14 +17,17 @@ import tarfile
 import urllib.request
 import zipfile
 
+from typing import List
+
 # STATEDIR is the root directory where we store useful state
 STATEDIR = os.path.join(os.path.expandvars("${HOME}"), ".ooniprobe-build")
 
 # ANDROID_CMDLINE_TOOLS_SHA256 contains the SHA256 of the version
 # of the Android cmdline tools that we will download.
-ANDROID_CMDLINE_TOOLS_SHA256 = (
-    "87f6dcf41d4e642e37ba03cb2e387a542aa0bd73cb689a9e7152aad40a6e7a08"
-)
+ANDROID_CMDLINE_TOOLS_SHA256 = {
+    "darwin": "58a55d9c5bcacd7c42170d2cf2c9ae2889c6797a6128307aaf69100636f54a13",
+    "linux": "87f6dcf41d4e642e37ba03cb2e387a542aa0bd73cb689a9e7152aad40a6e7a08",
+}
 
 # ANDROID_CMDLINE_TOOLS_VERSION contains the version of the
 # command line tools that we will download.
@@ -131,13 +135,48 @@ PRIVATE_SOURCE_DIR = os.path.join(
 #
 
 
+def androidclios() -> str:
+    """androidclios returns the name with which the current system
+    is identified in Android CLI tools file name."""
+    system = platform.system()
+    if system == "Linux":
+        return "linux"
+    if system == "Darwin":
+        return "mac"
+    raise RuntimeError
+
+
+def goos() -> str:
+    """goos returns the GOOS equivalent of the current system."""
+    system = platform.system()
+    if system == "Linux":
+        return "linux"
+    if system == "Darwin":
+        return "darwin"
+    raise RuntimeError
+
+
+def goarch() -> str:
+    """goarch returns the GOARCH equivalent of the current system."""
+    machine = platform.machine()
+    if machine in ("arm64", "arm", "386", "amd64"):
+        return machine
+    if machine == "x86":
+        return "386"
+    if machine == "x86_64":
+        return "amd64"
+    if machine == "i386":
+        return "386"
+    raise RuntimeError
+
+
 def log(*stuff, **kwargs) -> None:
     """log prints a log message on standard error. The arguments
     contains the stuff that you wanna log."""
     print(*stuff, file=sys.stderr, **kwargs)
 
 
-def execute(cmdline: list[str], input: str = None) -> None:
+def execute(cmdline: List[str], input: str = None) -> None:
     """execute runs the specified command line, which must be
     a list of strings, where the first string is the command."""
     log("build:", shlex.join(cmdline))
@@ -223,7 +262,7 @@ def which(executable: str) -> str:
     return fullpath
 
 
-def require(commands: list[str]) -> None:
+def require(commands: List[str]) -> None:
     """require checks whether every provided command is available
     and fails if any of them is not available"""
     for cmd in commands:
@@ -403,10 +442,18 @@ def getbootstrapgo() -> None:
     """getbootstrapgo downloads the binary Go distribution for the
     current system. We will use such a distribution to bootstrap
     the build of our modified fork of Go."""
-    # TODO(bassosimone): add support for macOS. Can we also add
-    # support for Windows or is this too complicated?
-    expected = "951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2"
-    filename = "go1.16.3.linux-amd64.tar.gz"
+    # TODO(bassosimone): add support for Windows?
+    os, arch = goos(), goarch()
+    specs = {
+        "linux": {
+            "amd64": "951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2",
+        },
+        "darwin": {
+            "arm64": "f4e96bbcd5d2d1942f5b55d9e4ab19564da4fad192012f6d7b0b9b055ba4208f",
+        },
+    }
+    expected = specs[os][arch]
+    filename = "go1.16.3.{}-{}.tar.gz".format(os, arch)
     makedirs(GO_BOOTSTRAP_ROOT_DIR)
     cwd = chdir(GO_BOOTSTRAP_ROOT_DIR)
     url = "https://golang.org/dl/{}".format(filename)
@@ -438,11 +485,10 @@ def writesimplereadme(dir: str) -> None:
 
 def getandroidclitools() -> None:
     """ getandroidcli downloads android CLI tools."""
-    # TODO(bassosimone): add support for macOS. Can we also add
-    # support for Windows or is this too complicated?
-    expected = ANDROID_CMDLINE_TOOLS_SHA256
-    filename = "commandlinetools-linux-{}_latest.zip".format(
-        ANDROID_CMDLINE_TOOLS_VERSION
+    # TODO(bassosimone): add support for Windows?
+    expected = ANDROID_CMDLINE_TOOLS_SHA256[goos()]
+    filename = "commandlinetools-{}-{}_latest.zip".format(
+        androidclios(), ANDROID_CMDLINE_TOOLS_VERSION
     )
     makedirs(ANDROID_SDK_ROOT_DIR)
     cwd = chdir(ANDROID_SDK_ROOT_DIR)
@@ -487,7 +533,7 @@ def installsdkndk() -> None:
     execute(args, input=b"Y\n")
 
 
-def cloneprivaterepo(dir: str) -> None:
+def cloneprivaterepo() -> None:
     """cloneprivaterepo clones the private repository
     containing private information required by some
     specific build configurations."""
@@ -504,16 +550,22 @@ def cloneprivaterepo(dir: str) -> None:
 def doinit() -> None:
     """doinit implements the init subcommand."""
     require(["bash", "git", "java"])
-    fixtreeperms(STATEDIR)
-    rmtree(STATEDIR)
-    makedirs(STATEDIR)
-    writesimplereadme(STATEDIR)
-    cloneprivaterepo(STATEDIR)
-    getandroidclitools()
-    installsdkndk()
-    getbootstrapgo()
-    clonego()
-    makego()
+    # TODO(bassosimone): implement --force
+    #fixtreeperms(STATEDIR)
+    #rmtree(STATEDIR)
+    if not os.path.isdir(STATEDIR):
+        makedirs(STATEDIR)
+        writesimplereadme(STATEDIR)
+    if not os.path.isdir(PRIVATE_SOURCE_DIR):
+        cloneprivaterepo()
+    if not os.path.isdir(ANDROID_SDK_ROOT_DIR):
+        getandroidclitools()
+        installsdkndk()
+    if not os.path.isdir(GO_BOOTSTRAP_ROOT_DIR):
+        getbootstrapgo()
+    if not os.path.isdir(GO_OONIGO_SOURCE_DIR):
+        clonego()
+        makego()
 
 
 #
