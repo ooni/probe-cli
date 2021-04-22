@@ -251,6 +251,12 @@ def setupenv() -> None:
     )
 
 
+def printenv(name: str) -> None:
+    """printenv prints an environment variable."""
+    log("build: echo ${}".format(name))
+    log(os.environ.get(name, ""))
+
+
 def which(executable: str) -> str:
     """which returns the path of the executable named executable, if
     existing. Otherwise it returns None."""
@@ -295,8 +301,12 @@ def doandroid(args: argparse.Namespace) -> None:
         require(["gpg"])
     if args.bundle:
         require(["jar"])
-    copypsiphonconfig()
-    setupenv()
+    if not args.no_embed_psiphon:
+        copypsiphonconfig()
+    if not args.no_private_sdks:
+        setupenv()
+    printenv("ANDROID_HOME")
+    printenv("ANDROID_NDK_HOME")
     which("go")
     destdir = os.path.join("MOBILE", "android")
     v = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
@@ -306,26 +316,26 @@ def doandroid(args: argparse.Namespace) -> None:
     which("gomobile")
     writepom(destdir, v)
     gomobilebind(args, destdir, v)
-    signandroid(args, destdir)
-    makebundlejar(args, destdir)
+    if args.sign:
+        signandroid(args, destdir)
+    if args.bundle:
+        makebundlejar(args, destdir)
 
 
 def makebundlejar(args: argparse.Namespace, destdir: str) -> None:
     """makebundlejar creates the bundle.jar file that is required
     to submit a new release to Maven Central."""
-    if args.bundle:
-        cwd = chdir(destdir)
-        pattern = "oonimkall-*"
-        execute(["jar", "-cf", "bundle.jar", *glob.glob(pattern)])
-        chdir(cwd)
+    cwd = chdir(destdir)
+    pattern = "oonimkall-*"
+    execute(["jar", "-cf", "bundle.jar", *glob.glob(pattern)])
+    chdir(cwd)
 
 
 def signandroid(args: argparse.Namespace, destdir: str) -> None:
     """signandroid signs android binaries."""
-    if args.sign:
-        pattern = "oonimkall*"
-        for filename in glob.glob(os.path.join(destdir, pattern)):
-            execute(["gpg", "-abu", args.sign, filename])
+    pattern = "oonimkall*"
+    for filename in glob.glob(os.path.join(destdir, pattern)):
+        execute(["gpg", "-abu", args.sign, filename])
 
 
 def writepom(destdir: str, v: str) -> None:
@@ -362,8 +372,8 @@ def gomobilebind(args: argparse.Namespace, destdir: str, v: str) -> None:
         "-ldflags",
         "-s -w",
     ]
-    cmdline.append("-tags")
-    cmdline.append("ooni_psiphon_config")
+    if not args.no_embed_psiphon:
+        cmdline.append("-tags=ooni_psiphon_config")
     if args.verbose:
         cmdline.append("-v")
     if args.x:
@@ -743,6 +753,16 @@ def newcliparser() -> None:
         action="store",
         help="sign generated data with the specified PGP identity",
         metavar="EMAIL",
+    )
+    android.add_argument(
+        "--no-embed-psiphon",
+        action="store_true",
+        help="do not embed private psiphon config file",
+    )
+    android.add_argument(
+        "--no-private-sdks",
+        action="store_true",
+        help="do not use our private Android and Go SDKs",
     )
 
     root_cmds.add_parser("help")
