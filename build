@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """ Build script for ooniprobe. You can get documentation regarding
-its usage by running `./build help`. """
+its usage by running `./build --help`. """
 
 import argparse
 import datetime
@@ -19,7 +19,7 @@ import zipfile
 
 from typing import List
 
-# STATEDIR is the root directory where we store useful state
+# STATEDIR is the root directory where we store useful state.
 STATEDIR = os.path.join(os.path.expandvars("${HOME}"), ".ooniprobe-build")
 
 # ANDROID_CMDLINE_TOOLS_SHA256 contains the SHA256 of the version
@@ -39,24 +39,38 @@ ANDROID_NDK_VERSION = "22.1.7171670"
 # ANDROID_PLATFORM_VERSION is the platform version to install.
 ANDROID_PLATFORM_VERSION = "android-30"
 
-# ANDROID_SDK_ROOT_DIR is the directory where we install
-# the latest Android SDK
+# ANDROID_SDK_ROOT_DIR is the dir where we install the SDK.
 ANDROID_SDK_ROOT_DIR = os.path.join(STATEDIR, "sdk", "android.com")
 
-# GO_OONIGO_SOURCE_DIR is the directory inside which we clone our Go fork
-GO_OONIGO_SOURCE_DIR = os.path.join(STATEDIR, "sdk", "github.com", "ooni", "go")
+# OONIGO_SOURCE_DIR is the directory inside which we clone our Go fork,
+# which is called oonigo inside of this script.
+OONIGO_SOURCE_DIR = os.path.join(STATEDIR, "sdk", "github.com", "ooni", "go")
 
-# GO_OONIGO_REPO_URL is the repository containing our Go fork
-GO_OONIGO_REPO_URL = "https://github.com/ooni/go"
+# OONIGO_REPO_URL is the repository containing our Go fork.
+OONIGO_REPO_URL = "https://github.com/ooni/go"
 
-# GO_OONIGO_BRANCH is the branch of our Go fork to checkout
-GO_OONIGO_BRANCH = "ooni"
+# OONIGO_BRANCH is the branch of our Go fork to checkout.
+OONIGO_BRANCH = "ooni"
 
-# GO_OONIGO_BIN_DIR is the directory where the "go" binary compiled from
+# OONIGO_BIN_DIR is the directory where the "go" binary compiled from
 # our Go fork will be available after `./build init`.
-GO_OONIGO_BIN_DIR = os.path.join(GO_OONIGO_SOURCE_DIR, "bin")
+OONIGO_BIN_DIR = os.path.join(OONIGO_SOURCE_DIR, "bin")
 
-# GO_BOOTSTRAP_ROOT_DIR is the directory in which we copy
+# ANDROID_CMDLINE_TOOLS_SHA256 contains the SHA256 of the versions
+# of github.com/golang/go that we will download.
+GOLANG_GO_SHA256 = {
+    "linux": {
+        "amd64": "951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2",
+    },
+    "darwin": {
+        "arm64": "f4e96bbcd5d2d1942f5b55d9e4ab19564da4fad192012f6d7b0b9b055ba4208f",
+    },
+}
+
+# GOLANG_GO_VERSION is the version of github.com/golang/go we'll download.
+GOLANG_GO_VERSION = "1.16.3"
+
+# GOLANG_GO_ROOT_DIR is the directory in which we copy
 # the binary distribution of golang we use to boostrap our
 # own Go fork. The design choice to bootstrap our fork using
 # a binary distribution of Go means that there is no need
@@ -64,7 +78,9 @@ GO_OONIGO_BIN_DIR = os.path.join(GO_OONIGO_SOURCE_DIR, "bin")
 # advantage of this design is that we can be sure that no
 # default system configuration causes the default "system" go
 # to be used instead of our fork, for some reason.
-GO_BOOTSTRAP_ROOT_DIR = os.path.join(STATEDIR, "sdk", "golang.org")
+GOLANG_GO_ROOT_DIR = os.path.join(
+    STATEDIR, "sdk", "golang.org", "go{}".format(GOLANG_GO_VERSION)
+)
 
 # GOPATH is the directory that we will use as a GOPATH when
 # using our own fork of Go. This choice ensures that the
@@ -118,13 +134,13 @@ POM_TEMPLATE = r"""<?xml version="1.0" encoding="UTF-8"?>
 </project>
 """
 
-# PRIVATE_REPO_URL is the URL of the repo containing private
-# information required by some build configurations
-PRIVATE_REPO_URL = "git@github.com:ooni/probe-private"
+# PROBE_PRIVATE_REPO_URL is the URL of the repo containing private
+# info required by some build configurations.
+PROBE_PRIVATE_REPO_URL = "git@github.com:ooni/probe-private"
 
-# PRIVATE_SOURCE_DIR is the directory where we clone the
-# repository containing private configurations
-PRIVATE_SOURCE_DIR = os.path.join(
+# PROBE_PRIVATE_SOURCE_DIR is the directory where we clone the
+# repository containing private configurations.
+PROBE_PRIVATE_SOURCE_DIR = os.path.join(
     STATEDIR, "sdk", "github.com", "ooni", "probe-private"
 )
 
@@ -135,8 +151,8 @@ PRIVATE_SOURCE_DIR = os.path.join(
 #
 
 
-def androidclios() -> str:
-    """androidclios returns the name with which the current system
+def android_tools_os() -> str:
+    """android_tools_os returns the name with which the current system
     is identified in Android CLI tools file name."""
     system = platform.system()
     if system == "Linux":
@@ -147,7 +163,7 @@ def androidclios() -> str:
 
 
 def goos() -> str:
-    """goos returns the GOOS equivalent of the current system."""
+    """goos returns the GOOS of the current system."""
     system = platform.system()
     if system == "Linux":
         return "linux"
@@ -157,7 +173,7 @@ def goos() -> str:
 
 
 def goarch() -> str:
-    """goarch returns the GOARCH equivalent of the current system."""
+    """goarch returns the GOARCH of the current system."""
     machine = platform.machine()
     if machine in ("arm64", "arm", "386", "amd64"):
         return machine
@@ -233,15 +249,14 @@ def unsetenv(key: str) -> None:
 def prepend_to_path(value: str) -> None:
     """prepend_to_path prepends value to PATH using the
     proper separator for the platform."""
-    # TODO(bassosimone): add support for Windows?
     cur = os.environ["PATH"]
-    setenv("PATH", value + ":" + cur)
+    setenv("PATH", value + os.pathsep + cur)
 
 
 def setupenv() -> None:
-    """setupenv setups environment variables to use
-    the SDKs that we have downloaded with "init"."""
-    prepend_to_path(GO_OONIGO_BIN_DIR)
+    """setupenv setups environment variables to use the SDKs
+    that we have downloaded with "./build init"."""
+    prepend_to_path(OONIGO_BIN_DIR)
     prepend_to_path(os.path.join(GOPATH, "bin"))
     setenv("GOPATH", GOPATH)
     setenv("ANDROID_HOME", ANDROID_SDK_ROOT_DIR)
@@ -249,6 +264,12 @@ def setupenv() -> None:
         "ANDROID_NDK_HOME",
         os.path.join(ANDROID_SDK_ROOT_DIR, "ndk", ANDROID_NDK_VERSION),
     )
+
+
+def use_golang_go_sdk() -> None:
+    """use_golang_go_sdk configures the code to use the
+    golang/go SDK as our go version."""
+    prepend_to_path(os.path.join(GOLANG_GO_ROOT_DIR, "go", "bin"))
 
 
 def printenv(name: str) -> None:
@@ -259,7 +280,7 @@ def printenv(name: str) -> None:
 
 def which(executable: str) -> str:
     """which returns the path of the executable named executable, if
-    existing. Otherwise it returns None."""
+    existing, and otherwise it returns None."""
     fullpath = shutil.which(executable)
     if not fullpath:
         log("checking for {}... not found".format(executable))
@@ -268,19 +289,19 @@ def which(executable: str) -> str:
     return fullpath
 
 
-def require(commands: List[str]) -> None:
-    """require checks whether every provided command is available
-    and fails if any of them is not available"""
+def require_commands_exist(commands: List[str]) -> None:
+    """require_commands_exist checks whether every provided command is available
+    and fails if any of them is not available on the system."""
     for cmd in commands:
         if not which(cmd):
             sys.exit("fatal: cannot find {} command".format(cmd))
 
 
-def copypsiphonconfig() -> None:
-    """copypsiphonconfig copies the psiphon config from the
+def copy_psiphon_config() -> None:
+    """copy_psiphon_config copies the psiphon config from the
     private repository to this repository."""
     for name in ("psiphon-config.json.age", "psiphon-config.key"):
-        source = os.path.join(PRIVATE_SOURCE_DIR, name)
+        source = os.path.join(PROBE_PRIVATE_SOURCE_DIR, name)
         dst = os.path.join("internal", "engine", name)
         cp(source, dst)
 
@@ -293,16 +314,18 @@ def copypsiphonconfig() -> None:
 #
 
 
-def doandroid(args: argparse.Namespace) -> None:
-    """doandroid implements the android subcommand."""
+def cmd_android(args: argparse.Namespace) -> None:
+    """cmd_android implements the android subcommand."""
     if args.bundle and not args.sign:
         sys.exit("build: android: --bundle requires --sign=EMAIL")
+    if not os.path.isdir(STATEDIR):
+        sys.exit('build: missing "{}": did you run `./build init`?'.format(STATEDIR))
     if args.sign:
-        require(["gpg"])
+        require_commands_exist(["gpg"])
     if args.bundle:
-        require(["jar"])
+        require_commands_exist(["jar"])
     if not args.no_embed_psiphon:
-        copypsiphonconfig()
+        copy_psiphon_config()
     if not args.no_private_sdks:
         setupenv()
     printenv("ANDROID_HOME")
@@ -312,18 +335,18 @@ def doandroid(args: argparse.Namespace) -> None:
     v = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
     rmtree(destdir)
     makedirs(destdir)
-    gomobileinit(args)
+    go_mobile_init(args)
     which("gomobile")
-    writepom(destdir, v)
-    gomobilebind(args, destdir, v)
+    write_oonimkall_pom(destdir, v)
+    go_mobile_bind(args, destdir, v)
     if args.sign:
-        signandroid(args, destdir)
+        sign_android_artefacts(args, destdir)
     if args.bundle:
-        makebundlejar(args, destdir)
+        make_bundle_jar(args, destdir)
 
 
-def makebundlejar(args: argparse.Namespace, destdir: str) -> None:
-    """makebundlejar creates the bundle.jar file that is required
+def make_bundle_jar(args: argparse.Namespace, destdir: str) -> None:
+    """make_bundle_jar creates the bundle.jar file that is required
     to submit a new release to Maven Central."""
     cwd = chdir(destdir)
     pattern = "oonimkall-*"
@@ -331,23 +354,23 @@ def makebundlejar(args: argparse.Namespace, destdir: str) -> None:
     chdir(cwd)
 
 
-def signandroid(args: argparse.Namespace, destdir: str) -> None:
-    """signandroid signs android binaries."""
+def sign_android_artefacts(args: argparse.Namespace, destdir: str) -> None:
+    """sign_android_artefacts signs android binaries."""
     pattern = "oonimkall*"
     for filename in glob.glob(os.path.join(destdir, pattern)):
         execute(["gpg", "-abu", args.sign, filename])
 
 
-def writepom(destdir: str, v: str) -> None:
-    """ writepom writes the .pom file. """
+def write_oonimkall_pom(destdir: str, v: str) -> None:
+    """ write_oonimkall_pom writes the .pom file. """
     data = POM_TEMPLATE.replace("@VERSION@", v)
     outfile = os.path.join(destdir, "oonimkall-{}.pom".format(v))
     with open(outfile, "w") as filep:
         filep.write(data)
 
 
-def gomobileinit(args: argparse.Namespace) -> None:
-    """gomobileinit initializes gomobile. """
+def go_mobile_init(args: argparse.Namespace) -> None:
+    """go_mobile_init initializes gomobile. """
     # TODO(bassosimone): is there a way to get the latest version
     # of gomobile w/o clobbering our go.mod and go.sum?
     cmdline = ["go", "get", "-u"]
@@ -360,8 +383,8 @@ def gomobileinit(args: argparse.Namespace) -> None:
     execute(["gomobile", "init"])  # this compiles OpenAL
 
 
-def gomobilebind(args: argparse.Namespace, destdir: str, v: str) -> None:
-    """gomobilebind runs gomobile bind. """
+def go_mobile_bind(args: argparse.Namespace, destdir: str, v: str) -> None:
+    """go_mobile_bind runs gomobile bind. """
     cmdline = [
         "gomobile",
         "bind",
@@ -390,34 +413,34 @@ def gomobilebind(args: argparse.Namespace, destdir: str, v: str) -> None:
 #
 
 
-def clonego() -> None:
-    """ clonego clones our go fork. """
+def oonigo_clone() -> None:
+    """ oonigo_clone clones our golang/go fork. """
     execute(
         [
             "git",
             "clone",
             "-b",
-            GO_OONIGO_BRANCH,
+            OONIGO_BRANCH,
             "--single-branch",
             "--depth",
             "8",
-            GO_OONIGO_REPO_URL,
-            GO_OONIGO_SOURCE_DIR,
+            OONIGO_REPO_URL,
+            OONIGO_SOURCE_DIR,
         ]
     )
 
 
-def makego() -> None:
-    """makego builds our go fork using as bootstrap the binary
+def oonigo_make() -> None:
+    """oonigo_make builds our go fork using as bootstrap the binary
     distribution of Go that we've already downloaded."""
-    setenv("GOROOT_BOOTSTRAP", os.path.join(GO_BOOTSTRAP_ROOT_DIR, "go"))
-    cwd = chdir(os.path.join(GO_OONIGO_SOURCE_DIR, "src"))
+    setenv("GOROOT_BOOTSTRAP", os.path.join(GOLANG_GO_ROOT_DIR, "go"))
+    cwd = chdir(os.path.join(OONIGO_SOURCE_DIR, "src"))
     execute(["./make.bash"])
     chdir(cwd)
 
 
-def fixandroidcliperms():
-    """fixandroidcliperms fixes the Android CLI perms so
+def fix_android_cli_tools_perms():
+    """fix_android_cli_tools_perms fixes the Android CLI perms so
     that we can actually execute sdkmanager. There is a
     bug in the way in which Python's zipfile extracts the
     binaries that causes the executable bit to be lost
@@ -435,8 +458,8 @@ def fixandroidcliperms():
             os.chmod(fpath, 0o700)
 
 
-def fixtreeperms(dir: str) -> None:
-    """fixtreeperms makes sure we can delete all files in a tree. This
+def fix_gocache_perms(dir: str) -> None:
+    """fix_gocache_perms makes sure we can delete all files in a tree. This
     is a precondition for being able to delete files in the gocache, which
     are non writable by default."""
     for dirpath, _, filenames in os.walk(dir):
@@ -448,24 +471,16 @@ def fixtreeperms(dir: str) -> None:
             os.chmod(fpath, 0o600)
 
 
-def getbootstrapgo() -> None:
-    """getbootstrapgo downloads the binary Go distribution for the
+def download_golang_go_sdk() -> None:
+    """download_golang_go_sdk downloads the binary Go distribution for the
     current system. We will use such a distribution to bootstrap
     the build of our modified fork of Go."""
     # TODO(bassosimone): add support for Windows?
     os, arch = goos(), goarch()
-    specs = {
-        "linux": {
-            "amd64": "951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2",
-        },
-        "darwin": {
-            "arm64": "f4e96bbcd5d2d1942f5b55d9e4ab19564da4fad192012f6d7b0b9b055ba4208f",
-        },
-    }
-    expected = specs[os][arch]
-    filename = "go1.16.3.{}-{}.tar.gz".format(os, arch)
-    makedirs(GO_BOOTSTRAP_ROOT_DIR)
-    cwd = chdir(GO_BOOTSTRAP_ROOT_DIR)
+    expected = GOLANG_GO_SHA256[os][arch]
+    filename = "go{}.{}-{}.tar.gz".format(GOLANG_GO_VERSION, os, arch)
+    makedirs(GOLANG_GO_ROOT_DIR)
+    cwd = chdir(GOLANG_GO_ROOT_DIR)
     url = "https://golang.org/dl/{}".format(filename)
     log("build: wget", url)
     resp = urllib.request.urlopen(url)
@@ -483,22 +498,22 @@ def getbootstrapgo() -> None:
     chdir(cwd)
 
 
-def writesimplereadme(dir: str) -> None:
-    """writesimplereadme adds a simple readme to the STATEDIR
+def write_simple_readme() -> None:
+    """write_simple_readme adds a simple readme to the STATEDIR
     directory so that a user understands what they see."""
-    readme = os.path.join(dir, "README.txt")
+    readme = os.path.join(STATEDIR, "README.txt")
     with open(readme, "w") as filep:
         filep.write("This directory contains state used to build the\n")
         filep.write("github.com/ooni/probe-cli repository and generated\n")
         filep.write("by the `./build` script of such repository.\n")
 
 
-def getandroidclitools() -> None:
-    """ getandroidcli downloads android CLI tools."""
+def get_android_cli_tools() -> None:
+    """ get_android_cli_tools downloads android CLI tools."""
     # TODO(bassosimone): add support for Windows?
     expected = ANDROID_CMDLINE_TOOLS_SHA256[goos()]
     filename = "commandlinetools-{}-{}_latest.zip".format(
-        androidclios(), ANDROID_CMDLINE_TOOLS_VERSION
+        android_tools_os(), ANDROID_CMDLINE_TOOLS_VERSION
     )
     makedirs(ANDROID_SDK_ROOT_DIR)
     cwd = chdir(ANDROID_SDK_ROOT_DIR)
@@ -521,11 +536,12 @@ def getandroidclitools() -> None:
     makedirs("cmdline-tools")
     mv(ANDROID_CMDLINE_TOOLS_VERSION, "cmdline-tools")
     chdir(cwd)
-    fixandroidcliperms()
+    fix_android_cli_tools_perms()
 
 
-def installsdkndk() -> None:
-    """installsdkndk installs Android's SDK and NDK."""
+def install_android_sdk_and_ndk() -> None:
+    """install_android_sdk_and_ndk installs Android's SDK and NDK."""
+    printenv("JAVA_HOME")
     sdkmanager = os.path.join(
         ANDROID_SDK_ROOT_DIR,
         "cmdline-tools",
@@ -543,39 +559,55 @@ def installsdkndk() -> None:
     execute(args, input=b"Y\n")
 
 
-def cloneprivaterepo() -> None:
-    """cloneprivaterepo clones the private repository
+def clone_github_ooni_probe_private() -> None:
+    """clone_github_ooni_probe_private clones the private repository
     containing private information required by some
     specific build configurations."""
     execute(
         [
             "git",
             "clone",
-            PRIVATE_REPO_URL,
-            PRIVATE_SOURCE_DIR,
+            PROBE_PRIVATE_REPO_URL,
+            PROBE_PRIVATE_SOURCE_DIR,
         ]
     )
 
 
-def doinit() -> None:
-    """doinit implements the init subcommand."""
-    require(["bash", "git", "java"])
-    # TODO(bassosimone): implement --force
-    #fixtreeperms(STATEDIR)
-    #rmtree(STATEDIR)
+def cmd_init(args: argparse.Namespace) -> None:
+    """cmd_init implements the init subcommand."""
+    require_commands_exist(["bash", "git", "java"])
+    if args.force:
+        fix_gocache_perms(STATEDIR)
+        rmtree(STATEDIR)
+    maybe_init_statedir()
+    maybe_init_github_ooni_probe_private()
+    if not os.path.isdir(ANDROID_SDK_ROOT_DIR):
+        get_android_cli_tools()
+        install_android_sdk_and_ndk()
+    maybe_download_golang_go_sdk()
+    if not os.path.isdir(OONIGO_SOURCE_DIR):
+        oonigo_clone()
+        oonigo_make()
+
+
+def maybe_init_statedir() -> None:
+    """maybe_init_statedir initializes STATEDIR if needed."""
     if not os.path.isdir(STATEDIR):
         makedirs(STATEDIR)
-        writesimplereadme(STATEDIR)
-    if not os.path.isdir(PRIVATE_SOURCE_DIR):
-        cloneprivaterepo()
-    if not os.path.isdir(ANDROID_SDK_ROOT_DIR):
-        getandroidclitools()
-        installsdkndk()
-    if not os.path.isdir(GO_BOOTSTRAP_ROOT_DIR):
-        getbootstrapgo()
-    if not os.path.isdir(GO_OONIGO_SOURCE_DIR):
-        clonego()
-        makego()
+        write_simple_readme()
+
+
+def maybe_init_github_ooni_probe_private() -> None:
+    """maybe_init_github_ooni_probe_private initializes the
+    github.com/ooni/probe-private repository in STATEDIR."""
+    if not os.path.isdir(PROBE_PRIVATE_SOURCE_DIR):
+        clone_github_ooni_probe_private()
+
+
+def maybe_download_golang_go_sdk() -> None:
+    """maybe_download_golang_go_sdk downloads the golang/go SDK if needed."""
+    if not os.path.isdir(GOLANG_GO_ROOT_DIR):
+        download_golang_go_sdk()
 
 
 #
@@ -585,12 +617,40 @@ def doinit() -> None:
 #
 
 
-def dominiooni(args: argparse.Namespace) -> None:
-    """dominiooni implements the "miniooni" subcommand."""
-    if not args.no_ooni_go:
-        setupenv()
+def add_miniooni_subcommand(root: argparse._SubParsersAction) -> None:
+    """add_miniooni_subcommand configures clip to parse all
+    the arguments recognized by the miniooni subcommand."""
+    clip = root.add_parser("miniooni")
+    clip.add_argument(
+        "--no-embed-psiphon",
+        action="store_true",
+        help="do not embed private psiphon config file",
+    )
+    clip.add_argument(
+        "--no-download-go",
+        action="store_true",
+        help="do not download and use a specific Go version",
+    )
+    cmds = clip.add_subparsers(dest="miniooni_goos")
+    cmds.add_parser("darwin")
+    cmds.add_parser("linux")
+    cmds.add_parser("macos")
+    cmds.add_parser("windows")
+
+
+def cmd_miniooni(args: argparse.Namespace) -> None:
+    """cmd_miniooni implements the "miniooni" subcommand."""
+    goos = args.miniooni_goos
+    if not goos:
+        log("build: miniooni: no target arch specified")
+        sys.exit("See `./build miniooni --help` for more help.")
+    maybe_init_statedir()
     if not args.no_embed_psiphon:
-        copypsiphonconfig()
+        maybe_init_github_ooni_probe_private()
+        copy_psiphon_config()
+    if not args.no_download_go:
+        maybe_download_golang_go_sdk()
+        use_golang_go_sdk()
     which("go")
     if args.miniooni_goos in ("darwin", "macos"):
         build_miniooni_darwin(args, "amd64")
@@ -603,9 +663,6 @@ def dominiooni(args: argparse.Namespace) -> None:
     elif args.miniooni_goos == "windows":
         build_miniooni_windows(args, "386")
         build_miniooni_windows(args, "amd64")
-    else:
-        log("build: miniooni: no target arch specified")
-        sys.exit("See `./build miniooni --help` for more help.")
 
 
 def build_miniooni_darwin(args, arch):
@@ -690,8 +747,8 @@ def build_miniooni_windows(args, arch):
 #
 
 
-def doshell() -> None:
-    """doshell executes a shell with the correct environment
+def cmd_shell() -> None:
+    """cmd_shell executes a shell with the correct environment
     variables to use our custom version of Go."""
     setupenv()
     execute([os.path.expandvars("${SHELL}")])
@@ -713,15 +770,15 @@ The `help` command is syntactic sugar for `./build --help`.
 
 The `init` subcommand initializes the state directory. This directory will
 contain (1) a binary distribution of Go used for bootstrapping, (2) our
-fork of Go used for compiling code, (3) a private GOPATH. Every time
-you run the `init` command we wipe the state directory and start afresh.
+fork of Go used for compiling code, (3) a private GOPATH, (4) other
+private data used when building.
 
 The `miniooni` subcommand builds miniooni for every supported
 architecture putting the results below `./CLI`.
 
-The `shell` subcommand executes your $SHELL with a sligthly different $PS1
-and environment variables such that you use our fork of Go and the
-private GOPATH. Both are inside the state directory as described above.
+The `shell` subcommand executes your $SHELL with environment variables such
+that you use our fork of Go, the private GOPATH, the Android SDK, etc. You
+need to call `./build init` before running this command.
 
 The state directory is: {}
 
@@ -730,8 +787,8 @@ You can get more information on the flag supported by a subcommand running
 """
 
 
-def newcliparser() -> None:
-    """ newcliparser returns a new CLI parser. """
+def new_cli_parser() -> None:
+    """ new_cli_parser returns a new CLI parser. """
     root = argparse.ArgumentParser(
         epilog=CLI_DESCRIPTION.format(STATEDIR),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -775,22 +832,7 @@ def newcliparser() -> None:
         help="force reinitialization",
     )
 
-    miniooni = root_cmds.add_parser("miniooni")
-    miniooni.add_argument(
-        "--no-embed-psiphon",
-        action="store_true",
-        help="do not embed private psiphon config file",
-    )
-    miniooni.add_argument(
-        "--no-ooni-go",
-        action="store_true",
-        help="do not use github.com/ooni/go",
-    )
-    miniooni_cmds = miniooni.add_subparsers(dest="miniooni_goos")
-    miniooni_cmds.add_parser("darwin")
-    miniooni_cmds.add_parser("linux")
-    miniooni_cmds.add_parser("macos")
-    miniooni_cmds.add_parser("windows")
+    add_miniooni_subcommand(root_cmds)
 
     root_cmds.add_parser("shell")
 
@@ -799,18 +841,18 @@ def newcliparser() -> None:
 
 def main() -> None:
     """ Main function. """
-    parser = newcliparser()
+    parser = new_cli_parser()
     args = parser.parse_args()
     if args.command == "android":
-        doandroid(args)
+        cmd_android(args)
     elif args.command == "help":
         parser.print_help()
     elif args.command == "init":
-        doinit()
+        cmd_init(args)
     elif args.command == "miniooni":
-        dominiooni(args)
+        cmd_miniooni(args)
     elif args.command == "shell":
-        doshell()
+        cmd_shell()
     else:
         parser.print_help()
         sys.exit(1)
