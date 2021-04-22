@@ -1,6 +1,5 @@
 #!/bin/sh
 set -e
-# XXX: handle macos as darwin
 case $1 in
   macos|darwin|linux|windows)
     set -x
