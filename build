@@ -14,12 +14,33 @@ import subprocess
 import sys
 import tarfile
 import urllib.request
+import zipfile
 
 # STATEDIR is the root directory where we store useful state
-STATEDIR = os.path.join(os.path.expandvars("${HOME}"), ".ooni-build")
+STATEDIR = os.path.join(os.path.expandvars("${HOME}"), ".ooniprobe-build")
+
+# ANDROID_CMDLINE_TOOLS_SHA256 contains the SHA256 of the version
+# of the Android cmdline tools that we will download.
+ANDROID_CMDLINE_TOOLS_SHA256 = (
+    "87f6dcf41d4e642e37ba03cb2e387a542aa0bd73cb689a9e7152aad40a6e7a08"
+)
+
+# ANDROID_CMDLINE_TOOLS_VERSION contains the version of the
+# command line tools that we will download.
+ANDROID_CMDLINE_TOOLS_VERSION = "6858069"
+
+# ANDROID_NDK_VERSION contains the Android NDK version.
+ANDROID_NDK_VERSION = "22.1.7171670"
+
+# ANDROID_PLATFORM_VERSION is the platform version to install.
+ANDROID_PLATFORM_VERSION = "android-30"
+
+# ANDROID_SDK_ROOT_DIR is the directory where we install
+# the latest Android SDK
+ANDROID_SDK_ROOT_DIR = os.path.join(STATEDIR, "sdk", "android.com")
 
 # GO_OONIGO_SOURCE_DIR is the directory inside which we clone our Go fork
-GO_OONIGO_SOURCE_DIR = os.path.join(STATEDIR, "oonigo")
+GO_OONIGO_SOURCE_DIR = os.path.join(STATEDIR, "sdk", "github.com", "ooni", "go")
 
 # GO_OONIGO_REPO_URL is the repository containing our Go fork
 GO_OONIGO_REPO_URL = "https://github.com/ooni/go"
@@ -39,7 +60,7 @@ GO_OONIGO_BIN_DIR = os.path.join(GO_OONIGO_SOURCE_DIR, "bin")
 # advantage of this design is that we can be sure that no
 # default system configuration causes the default "system" go
 # to be used instead of our fork, for some reason.
-GO_BOOTSTRAP_ROOT_DIR = os.path.join(STATEDIR, "bootstrap")
+GO_BOOTSTRAP_ROOT_DIR = os.path.join(STATEDIR, "sdk", "golang.org")
 
 # GOPATH is the directory that we will use as a GOPATH when
 # using our own fork of Go. This choice ensures that the
@@ -48,7 +69,7 @@ GO_BOOTSTRAP_ROOT_DIR = os.path.join(STATEDIR, "bootstrap")
 # prepared for a system where "go" is not in PATH, a tool
 # like VSCode is capable to downloading and using a specific
 # version of Go, which will put its data in $HOME/go.
-GOPATH = os.path.join(STATEDIR, "local", "go")
+GOPATH = os.path.join(STATEDIR, "gopath")
 
 # POM_TEMPLATE is the template of the .pom file that we
 # include inside the bundle.jar for Maven Central.
@@ -93,6 +114,16 @@ POM_TEMPLATE = r"""<?xml version="1.0" encoding="UTF-8"?>
 </project>
 """
 
+# PRIVATE_REPO_URL is the URL of the repo containing private
+# information required by some build configurations
+PRIVATE_REPO_URL = "git@github.com:ooni/probe-private"
+
+# PRIVATE_SOURCE_DIR is the directory where we clone the
+# repository containing private configurations
+PRIVATE_SOURCE_DIR = os.path.join(
+    STATEDIR, "sdk", "github.com", "ooni", "probe-private"
+)
+
 #
 # Utilities
 #
@@ -106,38 +137,50 @@ def log(*stuff, **kwargs) -> None:
     print(*stuff, file=sys.stderr, **kwargs)
 
 
-def execute(cmdline: list[str]) -> None:
+def execute(cmdline: list[str], input: str = None) -> None:
     """execute runs the specified command line, which must be
     a list of strings, where the first string is the command."""
-    log("run:", shlex.join(cmdline))
-    subprocess.run(cmdline, check=True)
+    log("build:", shlex.join(cmdline))
+    subprocess.run(cmdline, check=True, input=input)
 
 
 def rmtree(dir: str) -> None:
     """rmtree deletes a specified directory tree. The behavior
     of this function is just like rm -rf."""
-    log("run: rm -rf", dir)
+    log("build: rm -rf", dir)
     shutil.rmtree(dir, ignore_errors=True)
+
+
+def mv(src: str, dest: str) -> None:
+    """mv renames a file or directory."""
+    log("build: mv", src, dest)
+    shutil.move(src, dest)
+
+
+def cp(src: str, dest: str) -> None:
+    """cp copies a file."""
+    log("build: cp", src, dest)
+    shutil.copy(src, dest)
 
 
 def chdir(dir: str) -> None:
     """chdir changes the current directory and returns the
     previous working directory to the caller."""
     cwd = os.getcwd()
-    log("run: cd", dir)
+    log("build: cd", dir)
     os.chdir(dir)
     return cwd
 
 
 def makedirs(dir: str) -> None:
     """ makedirs is just like mkdir -p. """
-    log("run: mkdir -p", dir)
+    log("build: mkdir -p", dir)
     os.makedirs(dir)
 
 
 def setenv(key: str, value: str) -> None:
     """ setenv sets an environment variable. """
-    log("run:", shlex.join(["export", "{}={}".format(key, value)]))
+    log("build:", shlex.join(["export", "{}={}".format(key, value)]))
     os.environ[key] = value
 
 
@@ -149,12 +192,17 @@ def prepend_to_path(value: str) -> None:
     setenv("PATH", value + ":" + cur)
 
 
-def setup_go_environment() -> None:
-    """setup_go_environment setups environment variables to use
-    our custom version of go as the "go" executable."""
+def setup_environment() -> None:
+    """setup_environment setups environment variables to use
+    the SDKs that we have downloaded with "init"."""
     prepend_to_path(GO_OONIGO_BIN_DIR)
     prepend_to_path(os.path.join(GOPATH, "bin"))
     setenv("GOPATH", GOPATH)
+    setenv("ANDROID_HOME", ANDROID_SDK_ROOT_DIR)
+    setenv(
+        "ANDROID_NDK_HOME",
+        os.path.join(ANDROID_SDK_ROOT_DIR, "ndk", ANDROID_NDK_VERSION),
+    )
 
 
 def which(executable: str) -> str:
@@ -168,6 +216,23 @@ def which(executable: str) -> str:
     return fullpath
 
 
+def require(commands: list[str]) -> None:
+    """require checks whether every provided command is available
+    and fails if any of them is not available"""
+    for cmd in commands:
+        if not which(cmd):
+            sys.exit("fatal: cannot find {} command".format(cmd))
+
+
+def copypsiphonconfig() -> None:
+    """copypsiphonconfig copies the psiphon config from the
+    private repository to this repository."""
+    for name in ("psiphon-config.json.age", "psiphon-config.key"):
+        source = os.path.join(PRIVATE_SOURCE_DIR, name)
+        dst = os.path.join("internal", "engine", name)
+        cp(source, dst)
+
+
 #
 # Android
 #
@@ -179,36 +244,36 @@ def which(executable: str) -> str:
 def doandroid(args: argparse.Namespace) -> None:
     """doandroid implements the android subcommand. The args
     argument contains arguments parsed from the command line."""
-
     if args.bundle and not args.sign:
         sys.exit("build: android: --bundle requires --sign=EMAIL")
-    android_home = os.getenv("ANDROID_HOME")
-    if not android_home:
-        sys.exit("build: android: you need to set ANDROID_HOME")
-    android_ndk_home = os.getenv("ANDROID_NDK_HOME")
-    if not android_ndk_home:
-        sys.exit("build: android: you need to set ANDROID_NDK_HOME")
-
+    if args.sign:
+        require(["gpg"])
+    if args.bundle:
+        require(["jar"])
+    if args.embed_psiphon:
+        copypsiphonconfig()
+    setup_environment()
+    which("go")
     destdir = os.path.join("MOBILE", "android")
     v = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
-
     rmtree(destdir)
     makedirs(destdir)
-    setup_go_environment()
     gomobileinit(args)
+    which("gomobile")
     writepom(destdir, v)
     gomobilebind(args, destdir, v)
     signandroid(args, destdir)
-    makebundlejar(destdir)
+    makebundlejar(args, destdir)
 
 
-def makebundlejar(destdir: str) -> None:
+def makebundlejar(args: argparse.Namespace, destdir: str) -> None:
     """makebundlejar creates the bundle.jar file that is required
     to submit a new release to Maven Central."""
-    cwd = chdir(destdir)
-    pattern = "oonimkall-*"
-    execute(["jar", "-cf", "bundle.jar", *glob.glob(pattern)])
-    chdir(cwd)
+    if args.bundle:
+        cwd = chdir(destdir)
+        pattern = "oonimkall-*"
+        execute(["jar", "-cf", "bundle.jar", *glob.glob(pattern)])
+        chdir(cwd)
 
 
 def signandroid(args: argparse.Namespace, destdir: str) -> None:
@@ -301,16 +366,35 @@ def makego() -> None:
     chdir(cwd)
 
 
+def fixandroidcliperms():
+    """fixandroidcliperms fixes the Android CLI perms so
+    that we can actually execute sdkmanager. There is a
+    bug in the way in which Python's zipfile extracts the
+    binaries that causes the executable bit to be lost
+    as documented in https://bugs.python.org/issue15795."""
+    dir = os.path.join(
+        ANDROID_SDK_ROOT_DIR,
+        "cmdline-tools",
+        ANDROID_CMDLINE_TOOLS_VERSION,
+        "bin",
+    )
+    for dirpath, _, filenames in os.walk(dir):
+        for filename in filenames:
+            fpath = os.path.join(dirpath, filename)
+            log("build: chmod 700", fpath)
+            os.chmod(fpath, 0o700)
+
+
 def fixtreeperms(dir: str) -> None:
     """fixtreeperms makes sure we can delete all files in a tree. This
     is a precondition for being able to delete files in the gocache, which
     are non writable by default."""
     for dirpath, _, filenames in os.walk(dir):
-        log("run: chmod 700", dirpath)
+        log("build: chmod 700", dirpath)
         os.chmod(dirpath, 0o700)
         for filename in filenames:
             fpath = os.path.join(dirpath, filename)
-            log("run: chmod 600", fpath)
+            log("build: chmod 600", fpath)
             os.chmod(fpath, 0o600)
 
 
@@ -325,7 +409,7 @@ def getbootstrapgo() -> None:
     makedirs(GO_BOOTSTRAP_ROOT_DIR)
     cwd = chdir(GO_BOOTSTRAP_ROOT_DIR)
     url = "https://golang.org/dl/{}".format(filename)
-    log("run: wget", url)
+    log("build: wget", url)
     resp = urllib.request.urlopen(url)
     data = resp.read()
     digest = hashlib.sha256(data).hexdigest()
@@ -335,7 +419,7 @@ def getbootstrapgo() -> None:
         )
     with open(filename, "wb") as filep:
         filep.write(data)
-    log("run: tar -xf", filename)
+    log("build: tar -xf", filename)
     with tarfile.open(filename) as filep:
         filep.extractall()
     chdir(cwd)
@@ -349,44 +433,84 @@ def writesimplereadme(dir: str) -> None:
         filep.write("This directory contains state used to build the\n")
         filep.write("github.com/ooni/probe-cli repository and generated\n")
         filep.write("by the `./build` script of such repository.\n")
-        filep.write("\n")
-        filep.write("The `bootstrap` directory contains a binary distribution\n")
-        filep.write("of Go that we use to bootstrap our fork of Go. We download\n")
-        filep.write("this distribution from https://golang.org/dl and verify\n")
-        filep.write("its sha256sum before unpacking it.\n")
-        filep.write("\n")
-        filep.write("The `local` directory is the directory configured as GOROOT\n")
-        filep.write("when we're using our fork of Go.\n")
-        filep.write("\n")
-        filep.write("The `oonigo` directory contains the sources and the binaries\n")
-        filep.write("of our fork of Go (github.com/ooni/go).\n")
 
 
-def checkdependencies():
-    """checkdependencies checks whether the most commonly required
-    dependencies are available on the current system."""
-    # TODO(bassosimone): some of these dependencies are actually
-    # optional and we probably don't want to fail if there are
-    # missing (or we can just choose to fail if they are missing
-    # because this tool is mainly for OONI devs?)
-    if not which("bash"):
-        sys.exit("build: init: you need to install bash")
-    if not which("git"):
-        sys.exit("build: init: you need to install git")
-    if not which("jar"):
-        sys.exit("build: init: you need to install java's jdk")
-    if not which("gpg"):
-        sys.exit("build: init: you need to install gpg")
+def getandroidclitools() -> None:
+    """ getandroidcli downloads android CLI tools."""
+    # TODO(bassosimone): add support for macOS. Can we also add
+    # support for Windows or is this too complicated?
+    expected = ANDROID_CMDLINE_TOOLS_SHA256
+    filename = "commandlinetools-linux-{}_latest.zip".format(
+        ANDROID_CMDLINE_TOOLS_VERSION
+    )
+    makedirs(ANDROID_SDK_ROOT_DIR)
+    cwd = chdir(ANDROID_SDK_ROOT_DIR)
+    url = "https://dl.google.com/android/repository/{}".format(filename)
+    log("build: wget", url)
+    resp = urllib.request.urlopen(url)
+    data = resp.read()
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != expected:
+        raise RuntimeError(
+            "digest mismatch: want {} and got {}".format(expected, digest)
+        )
+    with open(filename, "wb") as filep:
+        filep.write(data)
+    log("build: unzip", filename)
+    with zipfile.ZipFile(filename, "r") as filep:
+        filep.extractall()
+    # See https://stackoverflow.com/a/61176718
+    mv("cmdline-tools", ANDROID_CMDLINE_TOOLS_VERSION)
+    makedirs("cmdline-tools")
+    mv(ANDROID_CMDLINE_TOOLS_VERSION, "cmdline-tools")
+    chdir(cwd)
+    fixandroidcliperms()
+
+
+def installsdkndk() -> None:
+    """installsdkndk installs Android's SDK and NDK."""
+    sdkmanager = os.path.join(
+        ANDROID_SDK_ROOT_DIR,
+        "cmdline-tools",
+        ANDROID_CMDLINE_TOOLS_VERSION,
+        "bin",
+        "sdkmanager",
+    )
+    args = [
+        sdkmanager,
+        "--install",
+        "build-tools;29.0.3",
+        "platforms;{}".format(ANDROID_PLATFORM_VERSION),
+        "ndk;{}".format(ANDROID_NDK_VERSION),
+    ]
+    execute(args, input=b"Y\n")
+
+
+def cloneprivaterepo(dir: str) -> None:
+    """cloneprivaterepo clones the private repository
+    containing private information required by some
+    specific build configurations."""
+    execute(
+        [
+            "git",
+            "clone",
+            PRIVATE_REPO_URL,
+            PRIVATE_SOURCE_DIR,
+        ]
+    )
 
 
 def doinit() -> None:
     """doinit implements the init subcommand. The args
     argument contains arguments parsed from the command line."""
-    checkdependencies()
+    require(["bash", "git", "java"])
     fixtreeperms(STATEDIR)
     rmtree(STATEDIR)
     makedirs(STATEDIR)
     writesimplereadme(STATEDIR)
+    cloneprivaterepo(STATEDIR)
+    getandroidclitools()
+    installsdkndk()
     getbootstrapgo()
     clonego()
     makego()
@@ -403,7 +527,7 @@ def doshell() -> None:
     """doshell executes a shell with the correct environment
     variables to use our custom version of Go. The args argument
     contains the results of parsing command line arguments."""
-    setup_go_environment()
+    setup_environment()
     setenv("PS1", "(goroot: {}) \W\$ ".format(GO_OONIGO_SOURCE_DIR))
     execute([os.path.expandvars("${SHELL}")])
 
