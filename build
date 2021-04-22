@@ -61,6 +61,7 @@ OONIGO_BIN_DIR = os.path.join(OONIGO_SOURCE_DIR, "bin")
 GOLANG_GO_SHA256 = {
     "linux": {
         "amd64": "951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2",
+        "arm64": "566b1d6f17d2bc4ad5f81486f0df44f3088c3ed47a3bec4099d8ed9939e90d5d",
     },
     "darwin": {
         "arm64": "f4e96bbcd5d2d1942f5b55d9e4ab19564da4fad192012f6d7b0b9b055ba4208f",
@@ -169,7 +170,7 @@ def goos() -> str:
         return "linux"
     if system == "Darwin":
         return "darwin"
-    raise RuntimeError
+    raise RuntimeError(system)
 
 
 def goarch() -> str:
@@ -183,7 +184,9 @@ def goarch() -> str:
         return "amd64"
     if machine == "i386":
         return "386"
-    raise RuntimeError
+    if machine == "aarch64":
+        return "arm64"
+    raise RuntimeError(machine)
 
 
 def log(*stuff, **kwargs) -> None:
@@ -192,10 +195,17 @@ def log(*stuff, **kwargs) -> None:
     print(*stuff, file=sys.stderr, **kwargs)
 
 
+def shlex_join(cmdline: List[str]) -> str:
+    """shlex_join allows running this code with python3.7."""
+    if not hasattr(shlex, "join"):
+        return " ".join(cmdline)
+    return shlex.join(cmdline)
+
+
 def execute(cmdline: List[str], input: str = None) -> None:
     """execute runs the specified command line, which must be
     a list of strings, where the first string is the command."""
-    log("build:", shlex.join(cmdline))
+    log("build:", shlex_join(cmdline))
     subprocess.run(cmdline, check=True, input=input)
     log('build: command "{}" terminated successfully'.format(cmdline[0]))
 
@@ -236,13 +246,13 @@ def makedirs(dir: str) -> None:
 
 def setenv(key: str, value: str) -> None:
     """ setenv sets an environment variable. """
-    log("build:", shlex.join(["export", "{}={}".format(key, value)]))
+    log("build:", shlex_join(["export", "{}={}".format(key, value)]))
     os.environ[key] = value
 
 
 def unsetenv(key: str) -> None:
     """ unsetenv clears an environment variable. """
-    log("build:", shlex.join(["unset", key]))
+    log("build:", shlex_join(["unset", key]))
     os.environ.pop(key)
 
 
@@ -251,19 +261,6 @@ def prepend_to_path(value: str) -> None:
     proper separator for the platform."""
     cur = os.environ["PATH"]
     setenv("PATH", value + os.pathsep + cur)
-
-
-def setupenv() -> None:
-    """setupenv setups environment variables to use the SDKs
-    that we have downloaded with "./build init"."""
-    prepend_to_path(OONIGO_BIN_DIR)
-    prepend_to_path(os.path.join(GOPATH, "bin"))
-    setenv("GOPATH", GOPATH)
-    setenv("ANDROID_HOME", ANDROID_SDK_ROOT_DIR)
-    setenv(
-        "ANDROID_NDK_HOME",
-        os.path.join(ANDROID_SDK_ROOT_DIR, "ndk", ANDROID_NDK_VERSION),
-    )
 
 
 def use_golang_go_sdk() -> None:
@@ -314,6 +311,19 @@ def copy_psiphon_config() -> None:
 #
 
 
+def android_setupenv() -> None:
+    """android_setupenv setups environment variables for
+    building for Android."""
+    prepend_to_path(OONIGO_BIN_DIR)
+    prepend_to_path(os.path.join(GOPATH, "bin"))
+    setenv("GOPATH", GOPATH)
+    setenv("ANDROID_HOME", ANDROID_SDK_ROOT_DIR)
+    setenv(
+        "ANDROID_NDK_HOME",
+        os.path.join(ANDROID_SDK_ROOT_DIR, "ndk", ANDROID_NDK_VERSION),
+    )
+
+
 def cmd_android(args: argparse.Namespace) -> None:
     """cmd_android implements the android subcommand."""
     if args.bundle and not args.sign:
@@ -327,7 +337,7 @@ def cmd_android(args: argparse.Namespace) -> None:
     if not args.no_embed_psiphon:
         copy_psiphon_config()
     if not args.no_private_sdks:
-        setupenv()
+        android_setupenv()
     printenv("ANDROID_HOME")
     printenv("ANDROID_NDK_HOME")
     which("go")
@@ -411,6 +421,22 @@ def go_mobile_bind(args: argparse.Namespace, destdir: str, v: str) -> None:
 # This section of the script contains the implementation
 # of the "init" subcommand.
 #
+
+
+def add_init_subcommand(root: argparse._SubParsersAction) -> None:
+    """add_init_subcommand adds the init subcommand. """
+    clip = root.add_parser("init")
+    clip.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="force reinitialization",
+    )
+    clip.add_argument(
+        "--no-private-repository",
+        action="store_true",
+        help="do not clone github.com/ooni/probe-private",
+    )
 
 
 def oonigo_clone() -> None:
@@ -508,8 +534,8 @@ def write_simple_readme() -> None:
         filep.write("by the `./build` script of such repository.\n")
 
 
-def get_android_cli_tools() -> None:
-    """ get_android_cli_tools downloads android CLI tools."""
+def download_android_cli_tools() -> None:
+    """ download_android_cli_tools downloads android CLI tools."""
     # TODO(bassosimone): add support for Windows?
     expected = ANDROID_CMDLINE_TOOLS_SHA256[goos()]
     filename = "commandlinetools-{}-{}_latest.zip".format(
@@ -563,6 +589,7 @@ def clone_github_ooni_probe_private() -> None:
     """clone_github_ooni_probe_private clones the private repository
     containing private information required by some
     specific build configurations."""
+    require_commands_exist(["git"])
     execute(
         [
             "git",
@@ -575,14 +602,15 @@ def clone_github_ooni_probe_private() -> None:
 
 def cmd_init(args: argparse.Namespace) -> None:
     """cmd_init implements the init subcommand."""
-    require_commands_exist(["bash", "git", "java"])
+    require_commands_exist(["bash", "git", "java", "javac", "gcc"])
     if args.force:
         fix_gocache_perms(STATEDIR)
         rmtree(STATEDIR)
     maybe_init_statedir()
-    maybe_init_github_ooni_probe_private()
+    if not args.no_private_repository:
+        maybe_init_github_ooni_probe_private()
     if not os.path.isdir(ANDROID_SDK_ROOT_DIR):
-        get_android_cli_tools()
+        download_android_cli_tools()
         install_android_sdk_and_ndk()
     maybe_download_golang_go_sdk()
     if not os.path.isdir(OONIGO_SOURCE_DIR):
@@ -613,7 +641,7 @@ def maybe_download_golang_go_sdk() -> None:
 #
 # Miniooni
 #
-# This section implements the "miniooni" subcommand
+# This section implements the "miniooni" subcommand.
 #
 
 
@@ -666,6 +694,7 @@ def cmd_miniooni(args: argparse.Namespace) -> None:
 
 def build_miniooni_darwin(args, arch):
     """build_miniooni_darwin builds miniooni for darwin."""
+    setenv("CGO_ENABLED", "0")
     setenv("GOOS", "darwin")
     setenv("GOARCH", arch)
     cmdline = [
@@ -683,12 +712,14 @@ def build_miniooni_darwin(args, arch):
         cmdline.append("-tags=ooni_psiphon_config")
     cmdline.append("./internal/cmd/miniooni")
     execute(cmdline)
+    unsetenv("CGO_ENABLED")
     unsetenv("GOARCH")
     unsetenv("GOOS")
 
 
 def build_miniooni_linux(args, arch):
     """build_miniooni_windows builds miniooni for linux."""
+    setenv("CGO_ENABLED", "0")
     setenv("GOOS", "linux")
     setenv("GOARCH", arch)
     if arch == "arm":
@@ -710,6 +741,7 @@ def build_miniooni_linux(args, arch):
     cmdline.append(tags)
     cmdline.append("./internal/cmd/miniooni")
     execute(cmdline)
+    unsetenv("CGO_ENABLED")
     unsetenv("GOARCH")
     unsetenv("GOOS")
     if arch == "arm":
@@ -718,6 +750,7 @@ def build_miniooni_linux(args, arch):
 
 def build_miniooni_windows(args, arch):
     """build_miniooni_windows builds miniooni for windows."""
+    setenv("CGO_ENABLED", "0")
     setenv("GOOS", "windows")
     setenv("GOARCH", arch)
     cmdline = [
@@ -735,6 +768,7 @@ def build_miniooni_windows(args, arch):
         cmdline.append("-tags=ooni_psiphon_config")
     cmdline.append("./internal/cmd/miniooni")
     execute(cmdline)
+    unsetenv("CGO_ENABLED")
     unsetenv("GOARCH")
     unsetenv("GOOS")
 
@@ -881,7 +915,7 @@ def build_ooniprobe_windows(args, arch, gcc):
 def cmd_shell() -> None:
     """cmd_shell executes a shell with the correct environment
     variables to use our custom version of Go."""
-    setupenv()
+    android_setupenv()
     execute([os.path.expandvars("${SHELL}")])
 
 
@@ -956,14 +990,7 @@ def new_cli_parser() -> None:
 
     root_cmds.add_parser("help")
 
-    init = root_cmds.add_parser("init")
-    init.add_argument(
-        "-f",
-        "--force",
-        action="store_true",
-        help="force reinitialization",
-    )
-
+    add_init_subcommand(root_cmds)
     add_miniooni_subcommand(root_cmds)
     add_ooniprobe_subcommand(root_cmds)
 
