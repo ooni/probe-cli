@@ -850,6 +850,7 @@ def build_ooniprobe_windows(args, arch, gcc):
     setenv("CGO_ENABLED", "1")
     setenv("GOOS", "windows")
     setenv("GOARCH", arch)
+    setenv("CC", gcc)
     cmdline = [
         "go",
         "build",
