@@ -142,6 +142,7 @@ def execute(cmdline: list[str], input: str = None) -> None:
     a list of strings, where the first string is the command."""
     log("build:", shlex.join(cmdline))
     subprocess.run(cmdline, check=True, input=input)
+    log('build: command "{}" terminated successfully'.format(cmdline[0]))
 
 
 def rmtree(dir: str) -> None:
@@ -182,6 +183,12 @@ def setenv(key: str, value: str) -> None:
     """ setenv sets an environment variable. """
     log("build:", shlex.join(["export", "{}={}".format(key, value)]))
     os.environ[key] = value
+
+
+def unsetenv(key: str) -> None:
+    """ unsetenv clears an environment variable. """
+    log("build:", shlex.join(["unset", key]))
+    os.environ.pop(key)
 
 
 def prepend_to_path(value: str) -> None:
@@ -242,8 +249,7 @@ def copypsiphonconfig() -> None:
 
 
 def doandroid(args: argparse.Namespace) -> None:
-    """doandroid implements the android subcommand. The args
-    argument contains arguments parsed from the command line."""
+    """doandroid implements the android subcommand."""
     if args.bundle and not args.sign:
         sys.exit("build: android: --bundle requires --sign=EMAIL")
     if args.sign:
@@ -276,8 +282,7 @@ def makebundlejar(args: argparse.Namespace, destdir: str) -> None:
 
 
 def signandroid(args: argparse.Namespace, destdir: str) -> None:
-    """signandroid signs android binaries. The args argument
-    contains arguments parsed from the command line."""
+    """signandroid signs android binaries."""
     if args.sign:
         pattern = "oonimkall*"
         for filename in glob.glob(os.path.join(destdir, pattern)):
@@ -293,8 +298,7 @@ def writepom(destdir: str, v: str) -> None:
 
 
 def gomobileinit(args: argparse.Namespace) -> None:
-    """gomobileinit initializes gomobile. The args argument
-    contains the arguments parsed from the cmdline."""
+    """gomobileinit initializes gomobile. """
     # TODO(bassosimone): is there a way to get the latest version
     # of gomobile w/o clobbering our go.mod and go.sum?
     cmdline = ["go", "get", "-u"]
@@ -308,8 +312,7 @@ def gomobileinit(args: argparse.Namespace) -> None:
 
 
 def gomobilebind(args: argparse.Namespace, destdir: str, v: str) -> None:
-    """gomobilebind runs gomobile bind. The args argument
-    contains the arguments parsed from the cmdline."""
+    """gomobilebind runs gomobile bind. """
     cmdline = [
         "gomobile",
         "bind",
@@ -499,8 +502,7 @@ def cloneprivaterepo(dir: str) -> None:
 
 
 def doinit() -> None:
-    """doinit implements the init subcommand. The args
-    argument contains arguments parsed from the command line."""
+    """doinit implements the init subcommand."""
     require(["bash", "git", "java"])
     fixtreeperms(STATEDIR)
     rmtree(STATEDIR)
@@ -515,6 +517,85 @@ def doinit() -> None:
 
 
 #
+# Miniooni
+#
+# This section implements the "miniooni" subcommand
+#
+
+
+def dominiooni(args: argparse.Namespace) -> None:
+    """dominiooni implements the "miniooni" subcommand."""
+    setupenv()
+    copypsiphonconfig()
+    which("go")
+    for goos, goarch, ext, ldflags, tags in (
+        ("windows", "amd64", ".exe", "-ldflags=-s -w", "-tags=ooni_psiphon_config"),
+        ("windows", "386", ".exe", "-ldflags=-s -w", "-tags=ooni_psiphon_config"),
+        (
+            "linux",
+            "amd64",
+            "",
+            "-ldflags=-s -w -extldflags -static",
+            "-tags=ooni_psiphon_config,netgo",
+        ),
+        (
+            "linux",
+            "386",
+            "",
+            "-ldflags=-s -w -extldflags -static",
+            "-tags=ooni_psiphon_config,netgo",
+        ),
+        (
+            "linux",
+            "arm",
+            "",
+            "-ldflags=-s -w -extldflags -static",
+            "-tags=ooni_psiphon_config,netgo",
+        ),
+        (
+            "linux",
+            "arm64",
+            "",
+            "-ldflags=-s -w -extldflags -static",
+            "-tags=ooni_psiphon_config,netgo",
+        ),
+        (
+            "darwin",
+            "amd64",
+            "",
+            "-ldflags=-s -w",
+            "-tags=ooni_psiphon_config",
+        ),
+        (
+            "darwin",
+            "arm64",
+            "",
+            "-ldflags=-s -w",
+            "-tags=ooni_psiphon_config",
+        ),
+    ):
+        setenv("GOOS", goos)
+        setenv("GOARCH", goarch)
+        cmdline = ["go", "build"]
+        if args.x:
+            cmdline.append("-x")
+        if args.verbose:
+            cmdline.append("-v")
+        cmdline.extend(
+            [
+                "-o",
+                os.path.join("CLI", goos, goarch, "miniooni" + ext),
+                ldflags,
+                tags,
+                "./internal/cmd/miniooni",
+            ]
+        )
+        execute(cmdline)
+        unsetenv("GOARCH")
+        unsetenv("GOOS")
+
+
+#
 # Shell
 #
 # This section implements the "shell" subcommand.
@@ -523,10 +604,8 @@ def doinit() -> None:
 
 def doshell() -> None:
     """doshell executes a shell with the correct environment
-    variables to use our custom version of Go. The args argument
-    contains the results of parsing command line arguments."""
+    variables to use our custom version of Go."""
     setupenv()
-    setenv("PS1", "(goroot: {}) \W\$ ".format(GO_OONIGO_SOURCE_DIR))
     execute([os.path.expandvars("${SHELL}")])
 
 
@@ -548,6 +627,9 @@ The `init` subcommand initializes the state directory. This directory will
 contain (1) a binary distribution of Go used for bootstrapping, (2) our
 fork of Go used for compiling code, (3) a private GOPATH. Every time
 you run the `init` command we wipe the state directory and start afresh.
+
+The `miniooni` subcommand builds miniooni for every supported
+architecture putting the results below `./CLI`.
 
 The `shell` subcommand executes your $SHELL with a sligthly different $PS1
 and environment variables such that you use our fork of Go and the
@@ -595,6 +677,8 @@ def newcliparser() -> None:
         help="force reinitialization",
     )
 
+    cmds.add_parser("miniooni")
+
     cmds.add_parser("shell")
 
     return root
@@ -610,6 +694,8 @@ def main() -> None:
         parser.print_help()
     elif args.command == "init":
         doinit()
+    elif args.command == "miniooni":
+        dominiooni(args)
     elif args.command == "shell":
         doshell()
     else:
