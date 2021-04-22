@@ -83,6 +83,7 @@ func init() {
 					MeasurementAnomalyCount: 0,
 					TestKeys:                "{}", // FIXME this used to be Summary we probably need to use a list now
 					Done:                    result.IsDone,
+					IsUploaded:              result.IsUploaded,
 					DataUsageUp:             result.DataUsageUp,
 					DataUsageDown:           result.DataUsageDown,
 				})

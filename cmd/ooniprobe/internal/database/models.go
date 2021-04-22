@@ -15,6 +15,12 @@ type ResultNetwork struct {
 	Network `db:",inline"`
 }
 
+// UploadedTotalCount is the count of the measurements which have been uploaded vs the total measurements in a given result set
+type UploadedTotalCount struct {
+	UploadedCount int64 `db:",inline"`
+	TotalCount    int64 `db:",inline"`
+}
+
 // MeasurementURLNetwork is used for the JOIN between Measurement and URL
 type MeasurementURLNetwork struct {
 	Measurement `db:",inline"`
@@ -74,6 +80,7 @@ type Result struct {
 	Runtime        float64   `db:"result_runtime"` // Runtime is expressed in fractional seconds
 	IsViewed       bool      `db:"result_is_viewed"`
 	IsDone         bool      `db:"result_is_done"`
+	IsUploaded     bool      `db:"result_is_uploaded"`
 	DataUsageUp    float64   `db:"result_data_usage_up"`
 	DataUsageDown  float64   `db:"result_data_usage_down"`
 	MeasurementDir string    `db:"measurement_dir"`
