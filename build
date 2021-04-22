@@ -525,74 +525,100 @@ def doinit() -> None:
 
 def dominiooni(args: argparse.Namespace) -> None:
     """dominiooni implements the "miniooni" subcommand."""
-    setupenv()
-    copypsiphonconfig()
+    if not args.no_ooni_go:
+        setupenv()
+    if not args.no_embed_psiphon:
+        copypsiphonconfig()
     which("go")
-    for goos, goarch, ext, ldflags, tags in (
-        ("windows", "amd64", ".exe", "-ldflags=-s -w", "-tags=ooni_psiphon_config"),
-        ("windows", "386", ".exe", "-ldflags=-s -w", "-tags=ooni_psiphon_config"),
-        (
-            "linux",
-            "amd64",
-            "",
-            "-ldflags=-s -w -extldflags -static",
-            "-tags=ooni_psiphon_config,netgo",
-        ),
-        (
-            "linux",
-            "386",
-            "",
-            "-ldflags=-s -w -extldflags -static",
-            "-tags=ooni_psiphon_config,netgo",
-        ),
-        (
-            "linux",
-            "arm",
-            "",
-            "-ldflags=-s -w -extldflags -static",
-            "-tags=ooni_psiphon_config,netgo",
-        ),
-        (
-            "linux",
-            "arm64",
-            "",
-            "-ldflags=-s -w -extldflags -static",
-            "-tags=ooni_psiphon_config,netgo",
-        ),
-        (
-            "darwin",
-            "amd64",
-            "",
-            "-ldflags=-s -w",
-            "-tags=ooni_psiphon_config",
-        ),
-        (
-            "darwin",
-            "arm64",
-            "",
-            "-ldflags=-s -w",
-            "-tags=ooni_psiphon_config",
-        ),
-    ):
-        setenv("GOOS", goos)
-        setenv("GOARCH", goarch)
-        cmdline = ["go", "build"]
-        if args.x:
-            cmdline.append("-x")
-        if args.verbose:
-            cmdline.append("-v")
-        cmdline.extend(
-            [
-                "-o",
-                os.path.join("CLI", goos, goarch, "miniooni" + ext),
-                ldflags,
-                tags,
-                "./internal/cmd/miniooni",
-            ]
-        )
-        execute(cmdline)
-        unsetenv("GOARCH")
-        unsetenv("GOOS")
+    if args.miniooni_goos in ("darwin", "macos"):
+        build_miniooni_darwin(args, "amd64")
+        build_miniooni_darwin(args, "arm64")
+    elif args.miniooni_goos == "linux":
+        build_miniooni_linux(args, "386")
+        build_miniooni_linux(args, "amd64")
+        build_miniooni_linux(args, "arm")
+        build_miniooni_linux(args, "arm64")
+    elif args.miniooni_goos == "windows":
+        build_miniooni_windows(args, "386")
+        build_miniooni_windows(args, "amd64")
+    else:
+        log("build: miniooni: no target arch specified")
+        sys.exit("See `./build miniooni --help` for more help.")
+
+
+def build_miniooni_darwin(args, arch):
+    """build_miniooni_darwin builds miniooni for darwin."""
+    setenv("GOOS", "darwin")
+    setenv("GOARCH", arch)
+    cmdline = [
+        "go",
+        "build",
+        "-o",
+        os.path.join("CLI", "darwin", arch, "miniooni"),
+        "-ldflags=-s -w",
+    ]
+    if args.x:
+        cmdline.append("-x")
+    if args.verbose:
+        cmdline.append("-v")
+    if not args.no_embed_psiphon:
+        cmdline.append("-tags=ooni_psiphon_config")
+    cmdline.append("./internal/cmd/miniooni")
+    execute(cmdline)
+    unsetenv("GOARCH")
+    unsetenv("GOOS")
+
+
+def build_miniooni_linux(args, arch):
+    """build_miniooni_windows builds miniooni for linux."""
+    setenv("GOOS", "linux")
+    setenv("GOARCH", arch)
+    if arch == "arm":
+        setenv("GOARM", "7")
+    cmdline = [
+        "go",
+        "build",
+        "-o",
+        os.path.join("CLI", "linux", arch, "miniooni"),
+        "-ldflags=-s -w -extldflags -static",
+    ]
+    if args.x:
+        cmdline.append("-x")
+    if args.verbose:
+        cmdline.append("-v")
+    tags = "-tags=netgo"
+    if not args.no_embed_psiphon:
+        tags += ",ooni_psiphon_config"
+    cmdline.append(tags)
+    cmdline.append("./internal/cmd/miniooni")
+    execute(cmdline)
+    unsetenv("GOARCH")
+    unsetenv("GOOS")
+    if arch == "arm":
+        unsetenv("GOARM")
+
+
+def build_miniooni_windows(args, arch):
+    """build_miniooni_windows builds miniooni for windows."""
+    setenv("GOOS", "windows")
+    setenv("GOARCH", arch)
+    cmdline = [
+        "go",
+        "build",
+        "-o",
+        os.path.join("CLI", "windows", arch, "miniooni.exe"),
+        "-ldflags=-s -w",
+    ]
+    if args.x:
+        cmdline.append("-x")
+    if args.verbose:
+        cmdline.append("-v")
+    if not args.no_embed_psiphon:
+        cmdline.append("-tags=ooni_psiphon_config")
+    cmdline.append("./internal/cmd/miniooni")
+    execute(cmdline)
+    unsetenv("GOARCH")
+    unsetenv("GOOS")
 
 
 #
@@ -621,7 +647,7 @@ library. The output is `./MOBILE/android.bundle.jar` that you should
 then upload to the Maven Central repository. To use the `android`
 command you need to run the `init` command first.
 
-The `help` command prints this screen.
+The `help` command is syntactic sugar for `./build --help`.
 
 The `init` subcommand initializes the state directory. This directory will
 contain (1) a binary distribution of Go used for bootstrapping, (2) our
@@ -652,9 +678,9 @@ def newcliparser() -> None:
     root.add_argument(
         "-x", action="store_true", help="tells Go to print invoked commands"
     )
-    cmds = root.add_subparsers(dest="command")
+    root_cmds = root.add_subparsers(dest="command")
 
-    android = cmds.add_parser("android")
+    android = root_cmds.add_parser("android")
     android.add_argument(
         "--bundle",
         action="store_true",
@@ -667,9 +693,9 @@ def newcliparser() -> None:
         metavar="EMAIL",
     )
 
-    cmds.add_parser("help")
+    root_cmds.add_parser("help")
 
-    init = cmds.add_parser("init")
+    init = root_cmds.add_parser("init")
     init.add_argument(
         "-f",
         "--force",
@@ -677,9 +703,24 @@ def newcliparser() -> None:
         help="force reinitialization",
     )
 
-    cmds.add_parser("miniooni")
+    miniooni = root_cmds.add_parser("miniooni")
+    miniooni.add_argument(
+        "--no-embed-psiphon",
+        action="store_true",
+        help="do not embed private psiphon config file",
+    )
+    miniooni.add_argument(
+        "--no-ooni-go",
+        action="store_true",
+        help="do not use github.com/ooni/go",
+    )
+    miniooni_cmds = miniooni.add_subparsers(dest="miniooni_goos")
+    miniooni_cmds.add_parser("darwin")
+    miniooni_cmds.add_parser("linux")
+    miniooni_cmds.add_parser("macos")
+    miniooni_cmds.add_parser("windows")
 
-    cmds.add_parser("shell")
+    root_cmds.add_parser("shell")
 
     return root
 
