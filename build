@@ -618,7 +618,7 @@ def maybe_download_golang_go_sdk() -> None:
 
 
 def add_miniooni_subcommand(root: argparse._SubParsersAction) -> None:
-    """add_miniooni_subcommand configures clip to parse all
+    """add_miniooni_subcommand configures root to parse all
     the arguments recognized by the miniooni subcommand."""
     clip = root.add_parser("miniooni")
     clip.add_argument(
@@ -634,7 +634,6 @@ def add_miniooni_subcommand(root: argparse._SubParsersAction) -> None:
     cmds = clip.add_subparsers(dest="miniooni_goos")
     cmds.add_parser("darwin")
     cmds.add_parser("linux")
-    cmds.add_parser("macos")
     cmds.add_parser("windows")
 
 
@@ -642,7 +641,7 @@ def cmd_miniooni(args: argparse.Namespace) -> None:
     """cmd_miniooni implements the "miniooni" subcommand."""
     goos = args.miniooni_goos
     if not goos:
-        log("build: miniooni: no target arch specified")
+        log("build: miniooni: no target os specified")
         sys.exit("See `./build miniooni --help` for more help.")
     maybe_init_statedir()
     if not args.no_embed_psiphon:
@@ -652,7 +651,7 @@ def cmd_miniooni(args: argparse.Namespace) -> None:
         maybe_download_golang_go_sdk()
         use_golang_go_sdk()
     which("go")
-    if args.miniooni_goos in ("darwin", "macos"):
+    if args.miniooni_goos == "darwin":
         build_miniooni_darwin(args, "amd64")
         build_miniooni_darwin(args, "arm64")
     elif args.miniooni_goos == "linux":
@@ -741,6 +740,137 @@ def build_miniooni_windows(args, arch):
 
 
 #
+# OONIProbe
+#
+# This section implements the "ooniprobe" subcommand.
+#
+
+
+def add_ooniprobe_subcommand(root: argparse._SubParsersAction) -> None:
+    """add_ooniprobe_subcommand configures root to parse all
+    the arguments recognized by the ooniprobe subcommand."""
+    clip = root.add_parser("ooniprobe")
+    clip.add_argument(
+        "--no-embed-psiphon",
+        action="store_true",
+        help="do not embed private psiphon config file",
+    )
+    clip.add_argument(
+        "--no-download-go",
+        action="store_true",
+        help="do not download and use a specific Go version",
+    )
+    cmds = clip.add_subparsers(dest="ooniprobe_goos")
+    cmds.add_parser("darwin")
+    cmds.add_parser("linux")
+    cmds.add_parser("windows")
+
+
+def cmd_ooniprobe(args: argparse.Namespace) -> None:
+    """cmd_ooniprobe implements the "ooniprobe" subcommand."""
+    goos = args.ooniprobe_goos
+    if not goos:
+        log("build: ooniprobe: no target os specified")
+        sys.exit("See `./build ooniprobe --help` for more help.")
+    if args.ooniprobe_goos in ("darwin", "macos"):
+        build_ooniprobe_darwin(args, "amd64")
+        build_ooniprobe_darwin(args, "arm64")
+    elif args.ooniprobe_goos == "windows":
+        build_ooniprobe_windows(args, "386", "i686-w64-mingw32-gcc")
+        build_ooniprobe_windows(args, "amd64", "x86_64-w64-mingw32-gcc")
+
+    """
+    maybe_init_statedir()
+    if not args.no_embed_psiphon:
+        maybe_init_github_ooni_probe_private()
+        copy_psiphon_config()
+    if not args.no_download_go:
+        maybe_download_golang_go_sdk()
+        use_golang_go_sdk()
+    which("go")
+    if args.ooniprobe_goos in ("darwin", "macos"):
+        build_ooniprobe_darwin(args, "amd64")
+        build_ooniprobe_darwin(args, "arm64")
+    elif args.ooniprobe_goos == "linux":
+        build_ooniprobe_linux(args, "386")
+        build_ooniprobe_linux(args, "amd64")
+        build_ooniprobe_linux(args, "arm")
+        build_ooniprobe_linux(args, "arm64")
+    elif args.ooniprobe_goos == "windows":
+        build_ooniprobe_windows(args, "386")
+        build_ooniprobe_windows(args, "amd64")
+    """
+
+
+def build_ooniprobe_darwin(args, arch):
+    """build_ooniprobe_darwin builds ooniprobe for darwin."""
+    maybe_init_statedir()
+    if not args.no_embed_psiphon:
+        maybe_init_github_ooni_probe_private()
+        copy_psiphon_config()
+    if not args.no_download_go:
+        maybe_download_golang_go_sdk()
+        use_golang_go_sdk()
+    which("go")
+    require_commands_exist(["gcc"])
+    setenv("CGO_ENABLED", "1")
+    setenv("GOOS", "darwin")
+    setenv("GOARCH", arch)
+    cmdline = [
+        "go",
+        "build",
+        "-o",
+        os.path.join("CLI", "darwin", arch, "ooniprobe"),
+        "-ldflags=-s -w",
+    ]
+    if args.x:
+        cmdline.append("-x")
+    if args.verbose:
+        cmdline.append("-v")
+    if not args.no_embed_psiphon:
+        cmdline.append("-tags=ooni_psiphon_config")
+    cmdline.append("./cmd/ooniprobe")
+    execute(cmdline)
+    unsetenv("GOARCH")
+    unsetenv("GOOS")
+    unsetenv("CGO_ENABLED")
+
+
+def build_ooniprobe_windows(args, arch, gcc):
+    """build_ooniprobe_windows builds ooniprobe for windows."""
+    maybe_init_statedir()
+    if not args.no_embed_psiphon:
+        maybe_init_github_ooni_probe_private()
+        copy_psiphon_config()
+    if not args.no_download_go:
+        maybe_download_golang_go_sdk()
+        use_golang_go_sdk()
+    which("go")
+    require_commands_exist([gcc])
+    setenv("CGO_ENABLED", "1")
+    setenv("GOOS", "windows")
+    setenv("GOARCH", arch)
+    cmdline = [
+        "go",
+        "build",
+        "-o",
+        os.path.join("CLI", "windows", arch, "ooniprobe.exe"),
+        "-ldflags=-s -w",
+    ]
+    if args.x:
+        cmdline.append("-x")
+    if args.verbose:
+        cmdline.append("-v")
+    if not args.no_embed_psiphon:
+        cmdline.append("-tags=ooni_psiphon_config")
+    cmdline.append("./cmd/ooniprobe")
+    execute(cmdline)
+    unsetenv("GOARCH")
+    unsetenv("GOOS")
+    unsetenv("CGO_ENABLED")
+
+
+#
 # Shell
 #
 # This section implements the "shell" subcommand.
@@ -773,8 +903,9 @@ contain (1) a binary distribution of Go used for bootstrapping, (2) our
 fork of Go used for compiling code, (3) a private GOPATH, (4) other
 private data used when building.
 
-The `miniooni` subcommand builds miniooni for every supported
-architecture putting the results below `./CLI`.
+The `miniooni` subcommand builds ./internal/cmd/miniooni.
+
+The `ooniprobe` subcommand builds ./cmd/ooniprobe.
 
 The `shell` subcommand executes your $SHELL with environment variables such
 that you use our fork of Go, the private GOPATH, the Android SDK, etc. You
@@ -833,6 +964,7 @@ def new_cli_parser() -> None:
     )
 
     add_miniooni_subcommand(root_cmds)
+    add_ooniprobe_subcommand(root_cmds)
 
     root_cmds.add_parser("shell")
 
@@ -851,6 +983,8 @@ def main() -> None:
         cmd_init(args)
     elif args.command == "miniooni":
         cmd_miniooni(args)
+    elif args.command == "ooniprobe":
+        cmd_ooniprobe(args)
     elif args.command == "shell":
         cmd_shell()
     else:
