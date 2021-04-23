@@ -3,6 +3,8 @@
 """ Build script for ooniprobe. You can get documentation regarding
 its usage by running `./build --help`. """
 
+from __future__ import annotations
+
 import datetime
 import getopt
 import glob
@@ -17,74 +19,118 @@ import tarfile
 import urllib.request
 import zipfile
 
+from collections.abc import Callable
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import NoReturn
 from typing import Optional
 from typing import Protocol
-from typing import Tuple
 
-# STATEDIR is the directory where we store state.
-STATEDIR = os.path.join(os.path.expandvars("${HOME}"), ".ooniprobe-build")
 
-# ANDROID_CMDLINE_TOOLS_SHA256 contains command line tools SHA256s.
-ANDROID_CMDLINE_TOOLS_SHA256 = {
-    "darwin": "58a55d9c5bcacd7c42170d2cf2c9ae2889c6797a6128307aaf69100636f54a13",
-    "linux": "87f6dcf41d4e642e37ba03cb2e387a542aa0bd73cb689a9e7152aad40a6e7a08",
-}
+class StaticConfig:
+    """StaticConfig contains static configuration. This includes the version
+    numbers and sha256s of what we download and the directories where we store
+    what we download. We want to change these settings ~frequently, i.e.,
+    every time there is an update of the tools we use."""
 
-# ANDROID_CMDLINE_TOOLS_VERSION is the command line tools version.
-ANDROID_CMDLINE_TOOLS_VERSION = "6858069"
+    # Versions and signatures
 
-# ANDROID_NDK_VERSION is the Android NDK version.
-ANDROID_NDK_VERSION = "22.1.7171670"
+    def golang_go_version(self) -> str:
+        """golang_go_version is the version of github.com/golang/go we use."""
+        return "1.16.3"
 
-# ANDROID_PLATFORM_VERSION is the platform version.
-ANDROID_PLATFORM_VERSION = "android-30"
+    def android_ndk_version(self) -> str:
+        """android_ndk_version is the Android NDK version."""
+        return "22.1.7171670"
 
-# ANDROID_SDK_ROOT_DIR is the dir where we install the SDK.
-ANDROID_SDK_ROOT_DIR = os.path.join(STATEDIR, "sdk", "android.com")
+    def android_cmdline_tools_version(self) -> str:
+        """android_cmdline_tools_version is the command line tools version."""
+        return "6858069"
 
-# OONIGO_SOURCE_DIR is where we clone our Go fork (aka "oonigo").
-OONIGO_SOURCE_DIR = os.path.join(STATEDIR, "sdk", "github.com", "ooni", "go")
+    def android_platform_version(self) -> str:
+        """android_platform_version is the platform version."""
+        return "android-30"
 
-# OONIGO_REPO_URL is the repository containing our Go fork.
-OONIGO_REPO_URL = "https://github.com/ooni/go"
+    def android_cmdline_tools_sha256(self) -> Dict[str, str]:
+        """android_cmdline_tools_sha256 contains command line tools SHA256s."""
+        return {
+            "darwin": "58a55d9c5bcacd7c42170d2cf2c9ae2889c6797a6128307aaf69100636f54a13",
+            "linux": "87f6dcf41d4e642e37ba03cb2e387a542aa0bd73cb689a9e7152aad40a6e7a08",
+        }
 
-# OONIGO_BRANCH is the oonigo branch to checkout.
-OONIGO_BRANCH = "ooni"
+    def golang_go_sha256(self) -> Dict[str, Dict[str, str]]:
+        """golang_go_sha256 contains the SHA256s of golang/go binary distributions."""
+        return {
+            "linux": {
+                "amd64": "951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2",
+                "arm64": "566b1d6f17d2bc4ad5f81486f0df44f3088c3ed47a3bec4099d8ed9939e90d5d",
+            },
+            "darwin": {
+                "arm64": "f4e96bbcd5d2d1942f5b55d9e4ab19564da4fad192012f6d7b0b9b055ba4208f",
+            },
+        }
 
-# OONIGO_BIN_DIR is the directory where oonigo's "go" is installed.
-OONIGO_BIN_DIR = os.path.join(OONIGO_SOURCE_DIR, "bin")
+    # Paths
 
-# GOLANG_GO_SHA256 contains the SHA256s of golang/go binary distributions.
-GOLANG_GO_SHA256 = {
-    "linux": {
-        "amd64": "951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2",
-        "arm64": "566b1d6f17d2bc4ad5f81486f0df44f3088c3ed47a3bec4099d8ed9939e90d5d",
-    },
-    "darwin": {
-        "arm64": "f4e96bbcd5d2d1942f5b55d9e4ab19564da4fad192012f6d7b0b9b055ba4208f",
-    },
-}
+    def golang_go_root_dir(self) -> str:
+        """golang_go_root_dir is the directory in which we install
+        github.com/golang/go binary distribution."""
+        return os.path.join(
+            self.cachedir(),
+            "sdk",
+            "golang.org",
+            "go{}".format(
+                self.golang_go_version(),
+            ),
+        )
 
-# GOLANG_GO_VERSION is the version of github.com/golang/go we use.
-GOLANG_GO_VERSION = "1.16.3"
+    def oonigo_repo_url(self) -> str:
+        """oonigo_repo_url is the repository containing our Go fork."""
+        return "https://github.com/ooni/go"
 
-# GOLANG_GO_ROOT_DIR is the directory in which we install
-# github.com/golang/go binary distribution.
-GOLANG_GO_ROOT_DIR = os.path.join(
-    STATEDIR, "sdk", "golang.org", "go{}".format(GOLANG_GO_VERSION)
-)
+    def oonigo_source_dir(self) -> str:
+        """oonigo_source_dir is where we clone our Go fork (aka "oonigo")."""
+        return os.path.join(self.cachedir(), "sdk", "github.com", "ooni", "go")
 
-# GOPATH is the directory that we will use as a GOPATH when
-# using our own fork of Go. This choice ensures that the
-# binaries we will be using are separate from the default
-# ones, which typically live in $HOME/go. Even though we're
-# prepared for a system where "go" is not in PATH, a tool
-# like VSCode is capable to downloading and using a specific
-# version of Go, which will put its data in $HOME/go.
-GOPATH = os.path.join(STATEDIR, "gopath")
+    def oonigo_bin_dir(self) -> str:
+        """oonigo_bin_dir is the directory where oonigo's "go" is installed."""
+        return os.path.join(self.oonigo_source_dir(), "bin")
+
+    def probe_private_repo_url(self) -> str:
+        """probe_private_repo_url is the URL of the optional repo containing
+        private data required by some build configurations."""
+        return "git@github.com:ooni/probe-private"
+
+    def oonigo_branch(self) -> str:
+        """oonigo_branch is the oonigo branch to checkout."""
+        return "ooni"
+
+    def probe_private_source_dir(self) -> str:
+        """probe_private_source_dir is the directory where we clone the
+        repository containing private configurations."""
+        return os.path.join(
+            self.cachedir(), "sdk", "github.com", "ooni", "probe-private"
+        )
+
+    def gopath(self) -> str:
+        """gopath is the directory that we will use as a GOPATH when
+        using our own fork of Go. This choice ensures that the
+        binaries we will be using are separate from the default
+        ones, which typically live in $HOME/go. Even though we're
+        prepared for a system where "go" is not in PATH, a tool
+        like VSCode is capable to downloading and using a specific
+        version of Go, which will put its data in $HOME/go."""
+        return os.path.join(self.cachedir(), "gopath")
+
+    def android_sdk_root_dir(self) -> str:
+        """android_sdk_root_dir is the dir where we install the SDK."""
+        return os.path.join(self.cachedir(), "sdk", "android.com")
+
+    def cachedir(self) -> str:
+        """cachedir is the directory where we store state."""
+        return os.path.join(os.path.expandvars("${HOME}"), ".ooniprobe-build")
+
 
 # POM_TEMPLATE is the template of the .pom file that we
 # include inside the bundle.jar for Maven Central.
@@ -129,112 +175,9 @@ POM_TEMPLATE = r"""<?xml version="1.0" encoding="UTF-8"?>
 </project>
 """
 
-# PROBE_PRIVATE_REPO_URL is the URL of the optional repo containing
-# private data required by some build configurations.
-PROBE_PRIVATE_REPO_URL = "git@github.com:ooni/probe-private"
 
-# PROBE_PRIVATE_SOURCE_DIR is the directory where we clone the
-# repository containing private configurations.
-PROBE_PRIVATE_SOURCE_DIR = os.path.join(
-    STATEDIR, "sdk", "github.com", "ooni", "probe-private"
-)
-
-
-class Engine(Protocol):
-    """Engine describes the core functionality of this script."""
-
-    def android_tools_os(self) -> str:
-        """android_tools_os converts the OS name to the
-        equivalent name used by Android CLI tools."""
-
-    def goos(self) -> str:
-        """goos converts the OS name to the GOOS equivalent."""
-
-    def goarch(self) -> str:
-        """goarch converts the ARCH name to the ARCH equivalent."""
-
-    def log(self, *stuff: Any, **kwargs: Any) -> None:
-        """log prints a log message on standard error."""
-
-    def execute(self, cmdline: List[str], inputbytes: Optional[bytes] = None) -> None:
-        """execute runs the specified command line."""
-
-    def rmtree(self, dirname: str) -> None:
-        """rmtree behaves like rm -rf."""
-
-    def movefile(self, src: str, dest: str) -> None:
-        """movefile renames a file or directory."""
-
-    def copyfile(self, src: str, dest: str) -> None:
-        """copyfile copies a file."""
-
-    def chdir(self, dirname: str) -> str:
-        """chdir changes the current directory and returns the
-        previous working directory to the caller."""
-
-    def makedirs(self, dirname: str) -> None:
-        """ makedirs is just like mkdir -p. """
-
-    def setenv(self, key: str, value: str) -> None:
-        """ setenv sets an environment variable. """
-
-    def unsetenv(self, key: str) -> None:
-        """ unsetenv clears an environment variable. """
-
-    def prepend_to_path(self, value: str) -> None:
-        """prepend_to_path prepends value to PATH using the
-        proper separator for the platform."""
-
-    def use_golang_go_sdk(self) -> None:
-        """use_golang_go_sdk configures the code to use the
-        golang/go SDK as our go version."""
-
-    def printenv(self, name: str) -> None:
-        """printenv prints an environment variable."""
-
-    def check_for_command(self, executable: str) -> Optional[str]:
-        """check_for_command returns the path of the executable named executable, if
-        existing, and otherwise it returns None."""
-
-    def require_commands(self, commands: List[str]) -> None:
-        """require_commands checks whether every provided command is available
-        and fails if any of them is not available on the system."""
-
-    def copy_psiphon_config(self) -> None:
-        """copy_psiphon_config copies the psiphon config from the
-        private repository to this repository."""
-
-    def fix_gocache_perms(self) -> None:
-        """fix_gocache_perms makes sure we can delete all files in a tree. This
-        is a precondition for being able to delete files in the gocache, which
-        are non writable by default."""
-
-    def maybe_init_statedir(self) -> None:
-        """maybe_init_statedir initializes STATEDIR if needed."""
-
-    def maybe_init_github_ooni_probe_private(self) -> None:
-        """maybe_init_github_ooni_probe_private initializes the
-        github.com/ooni/probe-private repository in STATEDIR."""
-
-    def download_android_cli_tools(self) -> None:
-        """ download_android_cli_tools downloads android CLI tools."""
-
-    def install_android_sdk_and_ndk(self) -> None:
-        """install_android_sdk_and_ndk installs Android's SDK and NDK."""
-
-    def maybe_download_golang_go_sdk(self) -> None:
-        """maybe_download_golang_go_sdk downloads the golang/go SDK if needed."""
-
-    def oonigo_clone(self) -> None:
-        """ oonigo_clone clones our golang/go fork. """
-
-    def oonigo_make(self) -> None:
-        """oonigo_make builds our go fork using as bootstrap the binary
-        distribution of Go that we've already downloaded."""
-
-
-class Config(Protocol):
-    """Config contains the configuration."""
+class AndroidConfig(Protocol):
+    """AndroidConfig contains config for AndroidTask."""
 
     def bundle(self) -> bool:
         """bundle returns true if the user wants us to
@@ -246,10 +189,6 @@ class Config(Protocol):
 
     def dry_run(self) -> bool:
         """dry_run returns whether this is a dry run."""
-
-    def force(self) -> bool:
-        """force returns true when the user has determined
-        that we need to force re-initialize the state directory."""
 
     def goos(self) -> str:
         """goos returns the GOOS for which to build."""
@@ -269,115 +208,102 @@ class Config(Protocol):
         """sign returns the email with which we need to PGP
         sign artefacts, if any, otherwise ""."""
 
-    def target(self) -> str:
-        """target is the target we want to build."""
-
     def verbose(self) -> bool:
         """verbose returns true when the user has requested
         us to be more verbose than usual."""
 
 
-class Builder(Protocol):
-    """Builder builds a specific target."""
+class AndroidEngine(Protocol):
+    """AndroidEngine is the engine for AndroidTask."""
 
-    def build(self) -> None:
-        """build builds the target."""
+    def copy_psiphon_config(self) -> None:
+        """copy_psiphon_config copies the psiphon config from the
+        private repository to this repository."""
+
+    def chdir(self, dirname: str) -> str:
+        """chdir changes the current directory and returns the
+        previous working directory to the caller."""
+
+    def execute(self, cmdline: List[str], inputbytes: Optional[bytes] = None) -> None:
+        """execute runs the specified command line."""
+
+    def mkdir_p(self, dirname: str) -> None:
+        """ mkdir_p is just like mkdir -p. """
+
+    def prepend_to_path(self, value: str) -> None:
+        """prepend_to_path prepends value to PATH using the
+        proper separator for the platform."""
+
+    def printenv(self, name: str) -> None:
+        """printenv prints an environment variable."""
+
+    def require_commands(self, commands: List[str]) -> None:
+        """require_commands checks whether every provided command is available
+        and fails if any of them is not available on the system."""
+
+    def rm_f(self, dirname: str) -> None:
+        """rm_f behaves like rm -rf."""
+
+    def setenv(self, key: str, value: str) -> None:
+        """ setenv sets an environment variable. """
+
+    def use_android_sdk(self) -> None:
+        """use_android_sdk configures the environment for the Android sdk."""
+
+    def use_oonigo_sdk(self) -> None:
+        """use_oonigo_sdk setups env to use the ooni/go SDK."""
 
 
-class Target(Protocol):
-    """Target is a target to build."""
+class AndroidTask:
+    """AndroidTask is the "android" builder."""
 
-    @classmethod
-    def name(cls) -> str:
-        """name returns the target name."""
+    def __init__(self, config: AndroidConfig, engine: AndroidEngine) -> None:
+        self._config, self._engine = config, engine
 
-    @classmethod
-    def new_builder(cls, opts: Config, engine: Engine) -> Builder:
-        """new_builder creates a Builder for the target."""
-
-
-class Android:
-    """Android is the "android" target."""
-
-    __name = "android"
-
-    @classmethod
-    def name(cls) -> str:
-        return cls.__name
-
-    @classmethod
-    def new_builder(cls, opts: Config, engine: Engine) -> Builder:
-        return cls(opts, engine)
-
-    def __init__(self, opts: Config, engine: Engine) -> None:
-        self._opts = opts
-        self._engine = engine
-
-    def build(self) -> None:
-        """build runs the "android" target."""
-        if self._opts.goos():
+    def run(self) -> None:
+        """run runs the "android" target."""
+        if self._config.goos():
             sys.exit("build: android: --goos is not supported")
-        if self._opts.bundle() and not self._opts.sign():
-            sys.exit("build: android: --bundle requires --sign=EMAIL")
-        if self._opts.sign():
+        if self._config.bundle() and not self._config.sign():
+            sys.exit("build: android: `-b` requires `-u EMAIL`")
+        if self._config.sign():
             self._engine.require_commands(["gpg"])
-        if self._opts.bundle():
+        if self._config.bundle():
             self._engine.require_commands(["jar"])
-        self._setup()
-        if not self._opts.no_embed_psiphon():
+        if not self._config.no_embed_psiphon():
             self._engine.copy_psiphon_config()
-        if not self._opts.no_private_sdks():
+        if not self._config.no_private_sdks():
             self._android_setupenv()
-        self._engine.printenv("ANDROID_HOME")
-        self._engine.printenv("ANDROID_NDK_HOME")
-        self._engine.check_for_command("go")
         destdir = os.path.join("MOBILE", "android")
         version = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
-        self._engine.rmtree(destdir)
-        self._engine.makedirs(destdir)
-        self._go_mobile_init()
-        self._engine.check_for_command("gomobile")
+        self._engine.rm_f(destdir)
+        self._engine.mkdir_p(destdir)
         self._write_oonimkall_pom(destdir, version)
+        self._engine.printenv("ANDROID_HOME")
+        self._engine.printenv("ANDROID_NDK_HOME")
+        self._engine.require_commands(["go"])
+        self._go_mobile_init()
+        self._engine.require_commands(["gomobile"])
         self._go_mobile_bind(destdir, version)
-        if self._opts.sign():
+        if self._config.sign():
             self._sign_android_artefacts(destdir)
-        if self._opts.bundle():
+        if self._config.bundle():
             self._make_bundle_jar(destdir)
-
-    def _setup(self) -> None:
-        """_setup initializes the state directory."""
-        self._engine.require_commands(["bash", "git", "java", "javac", "gcc"])
-        self._engine.maybe_init_statedir()
-        if not self._opts.no_embed_psiphon():
-            self._engine.maybe_init_github_ooni_probe_private()
-        if not os.path.isdir(ANDROID_SDK_ROOT_DIR):
-            self._engine.download_android_cli_tools()
-            self._engine.install_android_sdk_and_ndk()
-        self._engine.maybe_download_golang_go_sdk()
-        if not os.path.isdir(OONIGO_SOURCE_DIR):
-            self._engine.oonigo_clone()
-            self._engine.oonigo_make()
 
     def _android_setupenv(self) -> None:
         """_android_setupenv setups environment variables for
         building for Android."""
-        self._engine.prepend_to_path(OONIGO_BIN_DIR)
-        self._engine.prepend_to_path(os.path.join(GOPATH, "bin"))
-        self._engine.setenv("GOPATH", GOPATH)
-        self._engine.setenv("ANDROID_HOME", ANDROID_SDK_ROOT_DIR)
-        self._engine.setenv(
-            "ANDROID_NDK_HOME",
-            os.path.join(ANDROID_SDK_ROOT_DIR, "ndk", ANDROID_NDK_VERSION),
-        )
+        self._engine.use_oonigo_sdk()
+        self._engine.use_android_sdk()
 
     def _go_mobile_init(self) -> None:
         """_go_mobile_init initializes gomobile. """
         # TODO(bassosimone): is there a way to get the latest version
         # of gomobile w/o clobbering our go.mod and go.sum?
         cmdline = ["go", "get", "-u"]
-        if self._opts.verbose():
+        if self._config.verbose():
             cmdline.append("-v")
-        if self._opts.debugging():
+        if self._config.debugging():
             cmdline.append("-x")
         cmdline.append("golang.org/x/mobile/cmd/gomobile@latest")
         self._engine.execute(cmdline)
@@ -387,7 +313,7 @@ class Android:
         """_write_oonimkall_pom writes the .pom file."""
         data = POM_TEMPLATE.replace("@VERSION@", version)
         outfile = os.path.join(destdir, "oonimkall-{}.pom".format(version))
-        if not self._opts.dry_run:
+        if not self._config.dry_run():
             with open(outfile, "w") as filep:
                 filep.write(data)
 
@@ -403,11 +329,11 @@ class Android:
             "-ldflags",
             "-s -w",
         ]
-        if not self._opts.no_embed_psiphon():
+        if not self._config.no_embed_psiphon():
             cmdline.append("-tags=ooni_psiphon_config")
-        if self._opts.verbose():
+        if self._config.verbose():
             cmdline.append("-v")
-        if self._opts.debugging():
+        if self._config.debugging():
             cmdline.append("-x")
         cmdline.append("./pkg/oonimkall")
         self._engine.execute(cmdline)
@@ -416,7 +342,7 @@ class Android:
         """_sign_android_artefacts signs android binaries."""
         pattern = "oonimkall*"
         for filename in glob.glob(os.path.join(destdir, pattern)):
-            self._engine.execute(["gpg", "-abu", self._opts.sign(), filename])
+            self._engine.execute(["gpg", "-abu", self._config.sign(), filename])
 
     def _make_bundle_jar(self, destdir: str) -> None:
         """_make_bundle_jar creates the bundle.jar file that is required
@@ -427,45 +353,85 @@ class Android:
         self._engine.chdir(cwd)
 
 
-class MiniOONI:
-    """MiniOONI is the "miniooni" target."""
+class MiniOONIConfig(Protocol):
+    """MiniOONIConfig contains config for MiniOONITask."""
 
-    __name = "miniooni"
+    def debugging(self) -> bool:
+        """debugging returns true when the user has requested
+        us to enable debugging."""
 
-    @classmethod
-    def name(cls) -> str:
-        return cls.__name
+    def goos(self) -> str:
+        """goos returns the GOOS for which to build."""
 
-    @classmethod
-    def new_builder(cls, opts: Config, engine: Engine) -> Builder:
-        return cls(opts, engine)
+    def no_embed_psiphon(self) -> bool:
+        """no_embed_psiphon returns true when the user has
+        requested us to avoid embedding a psiphon config."""
 
-    def __init__(self, opts: Config, engine: Engine) -> None:
-        self._opts = opts
-        self._engine = engine
+    def no_private_sdks(self) -> bool:
+        """no_private_sdks returns true when the user has
+        requested us to avoid using our private SKDs, under
+        the assumption that the system already contains
+        suitable SDKs for building and there are environment
+        variables in place pointing to them."""
 
-    def build(self) -> None:
-        """build builds the "miniooni" target."""
-        if not self._opts.goos():
-            self._engine.log("build: miniooni: no target os specified")
+    def verbose(self) -> bool:
+        """verbose returns true when the user has requested
+        us to be more verbose than usual."""
+
+
+class MiniOONIEngine(Protocol):
+    """MiniOONIEngine is the engine for MiniOONITask."""
+
+    def copy_psiphon_config(self) -> None:
+        """copy_psiphon_config copies the psiphon config from the
+        private repository to this repository."""
+
+    def execute(self, cmdline: List[str], inputbytes: Optional[bytes] = None) -> None:
+        """execute runs the specified command line."""
+
+    def log(self, *stuff: Any, **kwargs: Any) -> None:
+        """log prints a log message on standard error."""
+
+    def require_commands(self, commands: List[str]) -> None:
+        """require_commands checks whether every provided command is available
+        and fails if any of them is not available on the system."""
+
+    def setenv(self, key: str, value: str) -> None:
+        """ setenv sets an environment variable. """
+
+    def unsetenv(self, key: str) -> None:
+        """ unsetenv clears an environment variable. """
+
+    def use_golang_go_sdk(self) -> None:
+        """use_golang_go_sdk configures the code to use the
+        golang/go SDK as our go version."""
+
+
+class MiniOONITask:
+    """MiniOONITask builds the "miniooni" target."""
+
+    def __init__(self, config: MiniOONIConfig, engine: MiniOONIEngine) -> None:
+        self._config, self._engine = config, engine
+
+    def run(self) -> None:
+        """run builds the "miniooni" target."""
+        if not self._config.goos():
+            self._engine.log("build: miniooni: no GOOS specified")
             sys.exit("See `./build miniooni --help` for more help.")
-        self._engine.maybe_init_statedir()
-        if not self._opts.no_embed_psiphon():
-            self._engine.maybe_init_github_ooni_probe_private()
-            self._engine.copy_psiphon_config()
-        if not self._opts.no_private_sdks():
-            self._engine.maybe_download_golang_go_sdk()
+        if not self._config.no_private_sdks():
             self._engine.use_golang_go_sdk()
-        self._engine.check_for_command("go")
-        if self._opts.goos() in ("darwin", "macos"):
+        if not self._config.no_embed_psiphon():
+            self._engine.copy_psiphon_config()
+        self._engine.require_commands(["go"])
+        if self._config.goos() in ("darwin", "macos"):
             self._build_miniooni_darwin("amd64")
             self._build_miniooni_darwin("arm64")
-        elif self._opts.goos() == "linux":
+        elif self._config.goos() == "linux":
             self._build_miniooni_linux("386")
             self._build_miniooni_linux("amd64")
             self._build_miniooni_linux("arm")
             self._build_miniooni_linux("arm64")
-        elif self._opts.goos() == "windows":
+        elif self._config.goos() == "windows":
             self._build_miniooni_windows("386")
             self._build_miniooni_windows("amd64")
 
@@ -481,11 +447,11 @@ class MiniOONI:
             os.path.join("CLI", "darwin", arch, "miniooni"),
             "-ldflags=-s -w",
         ]
-        if self._opts.debugging():
+        if self._config.debugging():
             cmdline.append("-x")
-        if self._opts.verbose():
+        if self._config.verbose():
             cmdline.append("-v")
-        if not self._opts.no_embed_psiphon():
+        if not self._config.no_embed_psiphon():
             cmdline.append("-tags=ooni_psiphon_config")
         cmdline.append("./internal/cmd/miniooni")
         self._engine.execute(cmdline)
@@ -507,12 +473,12 @@ class MiniOONI:
             os.path.join("CLI", "linux", arch, "miniooni"),
             "-ldflags=-s -w -extldflags -static",
         ]
-        if self._opts.debugging():
+        if self._config.debugging():
             cmdline.append("-x")
-        if self._opts.verbose():
+        if self._config.verbose():
             cmdline.append("-v")
         tags = "-tags=netgo"
-        if not self._opts.no_embed_psiphon():
+        if not self._config.no_embed_psiphon():
             tags += ",ooni_psiphon_config"
         cmdline.append(tags)
         cmdline.append("./internal/cmd/miniooni")
@@ -535,11 +501,11 @@ class MiniOONI:
             os.path.join("CLI", "windows", arch, "miniooni.exe"),
             "-ldflags=-s -w",
         ]
-        if self._opts.debugging():
+        if self._config.debugging():
             cmdline.append("-x")
-        if self._opts.verbose():
+        if self._config.verbose():
             cmdline.append("-v")
-        if not self._opts.no_embed_psiphon():
+        if not self._config.no_embed_psiphon():
             cmdline.append("-tags=ooni_psiphon_config")
         cmdline.append("./internal/cmd/miniooni")
         self._engine.execute(cmdline)
@@ -548,53 +514,87 @@ class MiniOONI:
         self._engine.unsetenv("GOOS")
 
 
-class OONIProbe:
-    """OONIProbe is the "ooniprobe" target."""
+class OONIProbeConfig(Protocol):
+    """OONIProbeConfig contains config for OONIProbeTask."""
 
-    __name = "ooniprobe"
+    def debugging(self) -> bool:
+        """debugging returns true when the user has requested
+        us to enable debugging."""
 
-    @classmethod
-    def name(cls) -> str:
-        return cls.__name
+    def goos(self) -> str:
+        """goos returns the GOOS for which to build."""
 
-    @classmethod
-    def new_builder(cls, opts: Config, engine: Engine) -> Builder:
-        return cls(opts, engine)
+    def no_embed_psiphon(self) -> bool:
+        """no_embed_psiphon returns true when the user has
+        requested us to avoid embedding a psiphon config."""
 
-    def __init__(self, opts: Config, engine: Engine) -> None:
-        self._opts = opts
-        self._engine = engine
+    def no_private_sdks(self) -> bool:
+        """no_private_sdks returns true when the user has
+        requested us to avoid using our private SKDs, under
+        the assumption that the system already contains
+        suitable SDKs for building and there are environment
+        variables in place pointing to them."""
 
-    def build(self) -> None:
-        """build builds the "ooniprobe" target."""
-        if not self._opts.goos():
-            self._engine.log("build: ooniprobe: no target os specified")
+    def verbose(self) -> bool:
+        """verbose returns true when the user has requested
+        us to be more verbose than usual."""
+
+
+class OONIProbeEngine(Protocol):
+    """OONIProbeEngine is the engine for OONIProbeTask."""
+
+    def copy_psiphon_config(self) -> None:
+        """copy_psiphon_config copies the psiphon config from the
+        private repository to this repository."""
+
+    def execute(self, cmdline: List[str], inputbytes: Optional[bytes] = None) -> None:
+        """execute runs the specified command line."""
+
+    def log(self, *stuff: Any, **kwargs: Any) -> None:
+        """log prints a log message on standard error."""
+
+    def require_commands(self, commands: List[str]) -> None:
+        """require_commands checks whether every provided command is available
+        and fails if any of them is not available on the system."""
+
+    def setenv(self, key: str, value: str) -> None:
+        """ setenv sets an environment variable. """
+
+    def unsetenv(self, key: str) -> None:
+        """ unsetenv clears an environment variable. """
+
+    def use_golang_go_sdk(self) -> None:
+        """use_golang_go_sdk configures the code to use the
+        golang/go SDK as our go version."""
+
+
+class OONIProbeTask:
+    """OONIProbeTask builds the "ooniprobe" target."""
+
+    def __init__(self, config: OONIProbeConfig, engine: OONIProbeEngine) -> None:
+        self._config, self._engine = config, engine
+
+    def run(self) -> None:
+        """run builds the "ooniprobe" target."""
+        if not self._config.goos():
+            self._engine.log("build: ooniprobe: no GOOS specified")
             sys.exit("See `./build ooniprobe --help` for more help.")
-        if self._opts.goos() in ("darwin", "macos"):
-            self._local_build_setup()
+        if not self._config.no_private_sdks():
+            self._engine.use_golang_go_sdk()
+        if not self._config.no_embed_psiphon():
+            self._engine.copy_psiphon_config()
+        if self._config.goos() in ("darwin", "macos"):
             self._build_ooniprobe_darwin("amd64")
             self._build_ooniprobe_darwin("arm64")
-        elif self._opts.goos() == "windows":
-            self._local_build_setup()
+        elif self._config.goos() == "windows":
             self._build_ooniprobe_windows("386", "i686-w64-mingw32-gcc")
             self._build_ooniprobe_windows("amd64", "x86_64-w64-mingw32-gcc")
         else:
-            raise NotImplementedError()
-
-    def _local_build_setup(self) -> None:
-        """_local_build_setup setups a local build."""
-        self._engine.maybe_init_statedir()
-        if not self._opts.no_embed_psiphon():
-            self._engine.maybe_init_github_ooni_probe_private()
-            self._engine.copy_psiphon_config()
-        if not self._opts.no_private_sdks():
-            self._engine.maybe_download_golang_go_sdk()
-            self._engine.use_golang_go_sdk()
+            raise NotImplementedError("linux")
 
     def _build_ooniprobe_darwin(self, arch: str) -> None:
         """_build_ooniprobe_darwin builds ooniprobe for darwin."""
-        self._engine.check_for_command("go")
-        self._engine.require_commands(["gcc"])
+        self._engine.require_commands(["go", "gcc"])
         self._engine.setenv("CGO_ENABLED", "1")
         self._engine.setenv("GOOS", "darwin")
         self._engine.setenv("GOARCH", arch)
@@ -605,11 +605,11 @@ class OONIProbe:
             os.path.join("CLI", "darwin", arch, "ooniprobe"),
             "-ldflags=-s -w",
         ]
-        if self._opts.debugging():
+        if self._config.debugging():
             cmdline.append("-x")
-        if self._opts.verbose():
+        if self._config.verbose():
             cmdline.append("-v")
-        if not self._opts.no_embed_psiphon():
+        if not self._config.no_embed_psiphon():
             cmdline.append("-tags=ooni_psiphon_config")
         cmdline.append("./cmd/ooniprobe")
         self._engine.execute(cmdline)
@@ -619,8 +619,7 @@ class OONIProbe:
 
     def _build_ooniprobe_windows(self, arch: str, gcc: str) -> None:
         """_build_ooniprobe_windows builds ooniprobe for windows."""
-        self._engine.check_for_command("go")
-        self._engine.require_commands([gcc])
+        self._engine.require_commands([gcc, "go"])
         self._engine.setenv("CGO_ENABLED", "1")
         self._engine.setenv("GOOS", "windows")
         self._engine.setenv("GOARCH", arch)
@@ -632,11 +631,11 @@ class OONIProbe:
             os.path.join("CLI", "windows", arch, "ooniprobe.exe"),
             "-ldflags=-s -w",
         ]
-        if self._opts.debugging():
+        if self._config.debugging():
             cmdline.append("-x")
-        if self._opts.verbose():
+        if self._config.verbose():
             cmdline.append("-v")
-        if not self._opts.no_embed_psiphon():
+        if not self._config.no_embed_psiphon():
             cmdline.append("-tags=ooni_psiphon_config")
         cmdline.append("./cmd/ooniprobe")
         self._engine.execute(cmdline)
@@ -645,13 +644,80 @@ class OONIProbe:
         self._engine.unsetenv("CGO_ENABLED")
 
 
-class CoreEngine:
-    "CoreEngine implements Engine. " ""
+class SetupTaskConfig(Protocol):
+    """SetupTaskConfig is the config required by SetupTask."""
 
-    def __init__(self, config: Config) -> None:
-        self._dry_run = config.dry_run()
+    def force(self) -> bool:
+        """force returns true when the user has determined
+        that we need to force re-initialize the state directory."""
 
-    def android_tools_os(self) -> str:
+    def no_embed_psiphon(self) -> bool:
+        """no_embed_psiphon returns true when the user has
+        requested us to avoid embedding a psiphon config."""
+
+    def no_private_sdks(self) -> bool:
+        """no_private_sdks returns true when the user has
+        requested us to avoid using our private SKDs, under
+        the assumption that the system already contains
+        suitable SDKs for building and there are environment
+        variables in place pointing to them."""
+
+    def target(self) -> str:
+        """target is the target we want to build."""
+
+
+class SetupTaskEngine(Protocol):
+    """SetupTaskEngine is the engine required by SetupTask."""
+
+    def rm_f_cachedir(self) -> None:
+        """rm_f_cachedir wipes the cache directory."""
+
+    def maybe_init_cachedir(self) -> None:
+        """maybe_init_cachedir initializes STATEDIR if needed."""
+
+    def maybe_init_github_ooni_probe_private(self) -> None:
+        """maybe_init_github_ooni_probe_private initializes the
+        github.com/ooni/probe-private repository in STATEDIR."""
+
+    def maybe_init_android_sdk(self) -> None:
+        """maybe_init_android_sdk initializes the Android SDK
+        if that has not been done already."""
+
+    def maybe_init_oonigo(self) -> None:
+        """maybe_init_oonigo initializes the forked ooni/go SDK."""
+
+    def maybe_download_golang_go_sdk(self) -> None:
+        """maybe_download_golang_go_sdk downloads the golang/go SDK if needed."""
+
+
+class SetupTask:
+    """SetupTask sets the cache directory up."""
+
+    def __init__(self, config: SetupTaskConfig, engine: SetupTaskEngine) -> None:
+        self._config, self._engine = config, engine
+
+    def run(self) -> None:
+        """run initializes the cache directory, if needed."""
+        if self._config.force():
+            self._engine.rm_f_cachedir()
+        if not self._config.no_private_sdks():
+            self._engine.maybe_init_cachedir()
+            if not self._config.no_embed_psiphon():
+                self._engine.maybe_init_github_ooni_probe_private()
+            self._engine.maybe_download_golang_go_sdk()
+            if self._config.target() == "android":
+                self._engine.maybe_init_android_sdk()
+                self._engine.maybe_init_oonigo()
+
+
+class Engine:
+    """Engine is the core engine of this program."""
+
+    def __init__(self, dry_run: bool) -> None:
+        self._dry_run = dry_run
+        self._sconf = StaticConfig()  # above to simplify updating
+
+    def _android_tools_os(self) -> str:
         system = platform.system()
         if system == "Linux":
             return "linux"
@@ -659,7 +725,7 @@ class CoreEngine:
             return "mac"
         raise RuntimeError(system)
 
-    def goos(self) -> str:
+    def _goos(self) -> str:
         system = platform.system()
         if system == "Linux":
             return "linux"
@@ -667,7 +733,7 @@ class CoreEngine:
             return "darwin"
         raise RuntimeError(system)
 
-    def goarch(self) -> str:
+    def _goarch(self) -> str:
         machine = platform.machine()
         if machine in ("arm64", "arm", "386", "amd64"):
             return machine
@@ -687,17 +753,17 @@ class CoreEngine:
         if not self._dry_run:
             subprocess.run(cmdline, check=True, input=inputbytes)
 
-    def rmtree(self, dirname: str) -> None:
+    def rm_f(self, dirname: str) -> None:
         self.log("build: rm -rf", dirname)
         if not self._dry_run:
             shutil.rmtree(dirname, ignore_errors=True)
 
-    def movefile(self, src: str, dest: str) -> None:
+    def _movefile(self, src: str, dest: str) -> None:
         self.log("build: mv", src, dest)
         if not self._dry_run:
             shutil.move(src, dest)
 
-    def copyfile(self, src: str, dest: str) -> None:
+    def _copyfile(self, src: str, dest: str) -> None:
         self.log("build: cp", src, dest)
         if not self._dry_run:
             shutil.copy(src, dest)
@@ -709,7 +775,7 @@ class CoreEngine:
             os.chdir(dirname)
         return cwd
 
-    def makedirs(self, dirname: str) -> None:
+    def mkdir_p(self, dirname: str) -> None:
         self.log("build: mkdir -p", dirname)
         if not self._dry_run:
             os.makedirs(dirname)
@@ -720,21 +786,22 @@ class CoreEngine:
 
     def unsetenv(self, key: str) -> None:
         self.log("build:", shlex.join(["unset", key]))
-        if not self._dry_run:
-            os.environ.pop(key)
+        os.environ.pop(key)
 
     def prepend_to_path(self, value: str) -> None:
         cur = os.environ["PATH"]
         self.setenv("PATH", value + os.pathsep + cur)
 
     def use_golang_go_sdk(self) -> None:
-        self.prepend_to_path(os.path.join(GOLANG_GO_ROOT_DIR, "go", "bin"))
+        self.prepend_to_path(
+            os.path.join(self._sconf.golang_go_root_dir(), "go", "bin")
+        )
 
     def printenv(self, name: str) -> None:
         self.log("build: echo ${}".format(name))
         self.log(os.environ.get(name, ""))
 
-    def check_for_command(self, executable: str) -> Optional[str]:
+    def _check_for_command(self, executable: str) -> Optional[str]:
         fullpath = shutil.which(executable)
         if not fullpath:
             self.log("checking for {}... not found".format(executable))
@@ -744,20 +811,20 @@ class CoreEngine:
 
     def require_commands(self, commands: List[str]) -> None:
         for cmd in commands:
-            if not self.check_for_command(cmd):
-                sys.exit('fatal: cannot find "{}" command'.format(cmd))
+            if not self._check_for_command(cmd):
+                sys.exit(1)
 
     def copy_psiphon_config(self) -> None:
         for name in ("psiphon-config.json.age", "psiphon-config.key"):
-            source = os.path.join(PROBE_PRIVATE_SOURCE_DIR, name)
+            source = os.path.join(self._sconf.probe_private_source_dir(), name)
             dst = os.path.join("internal", "engine", name)
-            self.copyfile(source, dst)
+            self._copyfile(source, dst)
 
-    def fix_gocache_perms(self) -> None:
-        """fix_gocache_perms makes sure we can delete all files in a tree. This
-        is a precondition for being able to delete files in the gocache, which
-        are non writable by default."""
-        for dirpath, _, filenames in os.walk(STATEDIR):
+    def _fix_gocache_perms(self) -> None:
+        # _fix_gocache_perms makes sure we can delete all files in a tree. This
+        # is a precondition for being able to delete files in the gocache, which
+        # are non writable by default.
+        for dirpath, _, filenames in os.walk(self._sconf.cachedir()):
             self.log("build: chmod 700", dirpath)
             if not self._dry_run:
                 os.chmod(dirpath, 0o700)
@@ -767,18 +834,21 @@ class CoreEngine:
                 if not self._dry_run:
                     os.chmod(fpath, 0o600)
 
-    def maybe_init_statedir(self) -> None:
-        """maybe_init_statedir initializes STATEDIR if needed."""
-        if not os.path.isdir(STATEDIR):
-            self.makedirs(STATEDIR)
+    def maybe_init_cachedir(self) -> None:
+        if not os.path.isdir(self._sconf.cachedir()):
+            self.mkdir_p(self._sconf.cachedir())
             self._write_simple_readme()
 
+    def rm_f_cachedir(self) -> None:
+        self._fix_gocache_perms()
+        self.rm_f(self._sconf.cachedir())
+
     def _write_simple_readme(self) -> None:
-        """write_simple_readme adds a simple readme to the STATEDIR
-        directory so that a user understands what they see."""
+        # write_simple_readme adds a simple readme to the STATEDIR
+        # directory so that a user understands what they see.
         if self._dry_run:
             return
-        readme = os.path.join(STATEDIR, "README.txt")
+        readme = os.path.join(self._sconf.cachedir(), "README.txt")
         with open(readme, "w") as filep:
             filep.write("This directory contains state used to build the\n")
             filep.write("github.com/ooni/probe-cli repository and generated\n")
@@ -786,33 +856,30 @@ class CoreEngine:
 
     def maybe_init_github_ooni_probe_private(self) -> None:
         """maybe_init_github_ooni_probe_private initializes the
-        github.com/ooni/probe-private repository in STATEDIR."""
-        if not os.path.isdir(PROBE_PRIVATE_SOURCE_DIR):
+        github.com/ooni/probe-private repository in the cache dir."""
+        if not os.path.isdir(self._sconf.probe_private_source_dir()):
             self._clone_github_ooni_probe_private()
 
     def _clone_github_ooni_probe_private(self) -> None:
-        """clone_github_ooni_probe_private clones the private repository
-        containing private information required by some
-        specific build configurations."""
         self.require_commands(["git"])
         self.execute(
             [
                 "git",
                 "clone",
-                PROBE_PRIVATE_REPO_URL,
-                PROBE_PRIVATE_SOURCE_DIR,
+                self._sconf.probe_private_repo_url(),
+                self._sconf.probe_private_source_dir(),
             ]
         )
 
-    def download_android_cli_tools(self) -> None:
-        """ download_android_cli_tools downloads android CLI tools."""
+    def _download_android_cli_tools(self) -> None:
         # TODO(bassosimone): add support for Windows?
-        expected = ANDROID_CMDLINE_TOOLS_SHA256[self.goos()]
+        expected = self._sconf.android_cmdline_tools_sha256()[self._goos()]
         filename = "commandlinetools-{}-{}_latest.zip".format(
-            self.android_tools_os(), ANDROID_CMDLINE_TOOLS_VERSION
+            self._android_tools_os(),
+            self._sconf.android_cmdline_tools_version(),
         )
-        self.makedirs(ANDROID_SDK_ROOT_DIR)
-        cwd = self.chdir(ANDROID_SDK_ROOT_DIR)
+        self.mkdir_p(self._sconf.android_sdk_root_dir())
+        cwd = self.chdir(self._sconf.android_sdk_root_dir())
         url = "https://dl.google.com/android/repository/{}".format(filename)
         self._download_and_verify(url, expected, filename)
         self.log("build: unzip", filename)
@@ -821,16 +888,13 @@ class CoreEngine:
                 filep.extractall()
         # See https://stackoverflow.com/a/61176718 to understand why
         # we're doing this directory dance :^)
-        self.movefile("cmdline-tools", ANDROID_CMDLINE_TOOLS_VERSION)
-        self.makedirs("cmdline-tools")
-        self.movefile(ANDROID_CMDLINE_TOOLS_VERSION, "cmdline-tools")
+        self._movefile("cmdline-tools", self._sconf.android_cmdline_tools_version())
+        self.mkdir_p("cmdline-tools")
+        self._movefile(self._sconf.android_cmdline_tools_version(), "cmdline-tools")
         self.chdir(cwd)
         self._fix_android_cli_tools_perms()
 
     def _download_and_verify(self, url: str, checksum: str, outfile: str) -> None:
-        """_download_and_verify downloads a url and verifies its checksum
-        writing the data on outfile on success. In case of failure this
-        function will instead raise a RuntimeError."""
         self.log("build: wget", url)
         if self._dry_run:
             return
@@ -845,15 +909,15 @@ class CoreEngine:
             filep.write(data)
 
     def _fix_android_cli_tools_perms(self):
-        """fix_android_cli_tools_perms fixes the Android CLI perms so
-        that we can actually execute sdkmanager. There is a
-        bug in the way in which Python's zipfile extracts the
-        binaries that causes the executable bit to be lost
-        as documented in https://bugs.python.org/issue15795."""
+        # fix_android_cli_tools_perms fixes the Android CLI perms so
+        # that we can actually execute sdkmanager. There is a
+        # bug in the way in which Python's zipfile extracts the
+        # binaries that causes the executable bit to be lost
+        # as documented in https://bugs.python.org/issue15795.
         toolsdir = os.path.join(
-            ANDROID_SDK_ROOT_DIR,
+            self._sconf.android_sdk_root_dir(),
             "cmdline-tools",
-            ANDROID_CMDLINE_TOOLS_VERSION,
+            self._sconf.android_cmdline_tools_version(),
             "bin",
         )
         for dirpath, _, filenames in os.walk(toolsdir):
@@ -863,13 +927,13 @@ class CoreEngine:
                 if not self._dry_run:
                     os.chmod(fpath, 0o700)
 
-    def install_android_sdk_and_ndk(self) -> None:
-        """install_android_sdk_and_ndk installs Android's SDK and NDK."""
+    def _install_android_sdk_and_ndk(self) -> None:
+        self.require_commands(["java"])
         self.printenv("JAVA_HOME")
         sdkmanager = os.path.join(
-            ANDROID_SDK_ROOT_DIR,
+            self._sconf.android_sdk_root_dir(),
             "cmdline-tools",
-            ANDROID_CMDLINE_TOOLS_VERSION,
+            self._sconf.android_cmdline_tools_version(),
             "bin",
             "sdkmanager",
         )
@@ -877,26 +941,31 @@ class CoreEngine:
             sdkmanager,
             "--install",
             "build-tools;29.0.3",
-            "platforms;{}".format(ANDROID_PLATFORM_VERSION),
-            "ndk;{}".format(ANDROID_NDK_VERSION),
+            "platforms;{}".format(self._sconf.android_platform_version()),
+            "ndk;{}".format(self._sconf.android_ndk_version()),
         ]
         self.execute(args, inputbytes=b"Y\n")
 
+    def maybe_init_android_sdk(self) -> None:
+        """maybe_init_android_sdk initializes the Android SDK."""
+        if not os.path.isdir(self._sconf.android_sdk_root_dir()):
+            self._download_android_cli_tools()
+            self._install_android_sdk_and_ndk()
+
     def maybe_download_golang_go_sdk(self) -> None:
         """maybe_download_golang_go_sdk downloads the golang/go SDK if needed."""
-        if not os.path.isdir(GOLANG_GO_ROOT_DIR):
+        if not os.path.isdir(self._sconf.golang_go_root_dir()):
             self._download_golang_go_sdk()
 
     def _download_golang_go_sdk(self) -> None:
-        """download_golang_go_sdk downloads the binary Go distribution for the
-        current system. We will use such a distribution to bootstrap
-        the build of our modified fork of Go."""
         # TODO(bassosimone): add support for Windows?
-        osname, archname = self.goos(), self.goarch()
-        expected = GOLANG_GO_SHA256[osname][archname]
-        filename = "go{}.{}-{}.tar.gz".format(GOLANG_GO_VERSION, osname, archname)
-        self.makedirs(GOLANG_GO_ROOT_DIR)
-        cwd = self.chdir(GOLANG_GO_ROOT_DIR)
+        osname, archname = self._goos(), self._goarch()
+        expected = self._sconf.golang_go_sha256()[osname][archname]
+        filename = "go{}.{}-{}.tar.gz".format(
+            self._sconf.golang_go_version(), osname, archname
+        )
+        self.mkdir_p(self._sconf.golang_go_root_dir())
+        cwd = self.chdir(self._sconf.golang_go_root_dir())
         url = "https://golang.org/dl/{}".format(filename)
         self._download_and_verify(url, expected, filename)
         self.log("build: tar -xf", filename)
@@ -905,48 +974,66 @@ class CoreEngine:
                 filep.extractall()
         self.chdir(cwd)
 
-    def oonigo_clone(self) -> None:
-        """ oonigo_clone clones our golang/go fork. """
+    def _oonigo_clone(self) -> None:
+        self.require_commands(["git"])
         self.execute(
             [
                 "git",
                 "clone",
                 "-b",
-                OONIGO_BRANCH,
+                self._sconf.oonigo_branch(),
                 "--single-branch",
                 "--depth",
                 "8",
-                OONIGO_REPO_URL,
-                OONIGO_SOURCE_DIR,
+                self._sconf.oonigo_repo_url(),
+                self._sconf.oonigo_source_dir(),
             ]
         )
 
-    def oonigo_make(self) -> None:
-        """oonigo_make builds our go fork using as bootstrap the binary
-        distribution of Go that we've already downloaded."""
-        self.setenv("GOROOT_BOOTSTRAP", os.path.join(GOLANG_GO_ROOT_DIR, "go"))
-        cwd = self.chdir(os.path.join(OONIGO_SOURCE_DIR, "src"))
+    def _oonigo_make(self) -> None:
+        self.require_commands(["bash"])
+        self.setenv(
+            "GOROOT_BOOTSTRAP", os.path.join(self._sconf.golang_go_root_dir(), "go")
+        )
+        cwd = self.chdir(os.path.join(self._sconf.oonigo_source_dir(), "src"))
         self.execute(["./make.bash"])
         self.chdir(cwd)
 
+    def maybe_init_oonigo(self) -> None:
+        """maybe_init_oonigo initializes our Go fork."""
+        if not os.path.isdir(self._sconf.oonigo_source_dir()):
+            self._oonigo_clone()
+            self._oonigo_make()
 
-TARGETS: List[Target] = [
-    Android,
-    MiniOONI,
-    OONIProbe,
-]
+    def use_android_sdk(self) -> None:
+        """use_android_sdk configures the environment for the Android sdk."""
+        self.setenv("ANDROID_HOME", self._sconf.android_sdk_root_dir())
+        self.setenv(
+            "ANDROID_NDK_HOME",
+            os.path.join(
+                self._sconf.android_sdk_root_dir(),
+                "ndk",
+                self._sconf.android_ndk_version(),
+            ),
+        )
+
+    def use_oonigo_sdk(self) -> None:
+        """use_oonigo_sdk setups env to use the ooni/go SDK."""
+        self.prepend_to_path(self._sconf.oonigo_bin_dir())
+        self.prepend_to_path(os.path.join(self._sconf.gopath(), "bin"))
+        self.setenv("GOPATH", self._sconf.gopath())
 
 
-class ConfigFromCLI:
-    """ ConfigFromCLI provides Config from CLI options."""
+class Config:
+    """ Config provides config from CLI options."""
 
     @classmethod
-    def parse(cls) -> Tuple[Config, Target]:
-        """parse parses command line options and retunrns a
+    def parse(cls, targets: List[str]) -> Config:
+        """parse parses command line options and returns a
         suitable configuration object."""
         conf = cls()
-        target = conf._parse()
-        return conf, target
+        conf._parse(targets)
+        return conf
 
     def __init__(self) -> None:
         self._bundle: bool = False
@@ -959,6 +1046,8 @@ class ConfigFromCLI:
         self._sign: str = ""
         self._target: str = ""
         self._verbose: bool = False
+
+    # Implement the various FooConfig protocols
 
     def bundle(self) -> bool:
         return self._bundle
@@ -989,6 +1078,8 @@ class ConfigFromCLI:
 
     def verbose(self) -> bool:
         return self._verbose
+
+    # Parse command line options
 
     __usage_string = """\
 usage: ./build [-nf] -t ooniprobe -S GOOS [-N {psiphon|sdks}] [-vx]
@@ -1046,20 +1137,18 @@ to upload a new release at Maven Central. It is an error to specify the
 
     @classmethod
     def _wrong_usage(cls, err: str) -> NoReturn:
-        """_wrong_usage is called when there is an usage error."""
         sys.stderr.write("error: {}\n".format(err))
         sys.stderr.write(cls.__usage_string)
         sys.exit(1)
 
-    def _parse(self) -> Target:
-        """_parse parses the command line options and fills the
-        variables contained inside of self."""
+    def _parse(self, targets: List[str]):
         try:
             opts, args = getopt.getopt(sys.argv[1:], "bfhN:nS:t:u:vx", ["help"])
         except getopt.GetoptError as err:
             self._wrong_usage(err.msg)
         if args:
             self._wrong_usage("unexpected number of positional arguments")
+
         for key, value in opts:
             if key == "-b":
                 self._bundle = True
@@ -1093,26 +1182,42 @@ to upload a new release at Maven Central. It is an error to specify the
                 self._debugging = True
             else:
                 raise RuntimeError(key)
-        if self._target == "":
+
+        if self._target == "":  # ./build prints terse help
             sys.stdout.write(self.__usage_string)
             sys.exit(0)
-        for target in TARGETS:
-            if target.name() == self._target:
-                return target
-        self._wrong_usage("unknown target: {}".format(self._target))
+
+        for target in targets:
+            if target == self._target:
+                break
+        else:
+            self._wrong_usage("unknown target: {}".format(self._target))
+
+
+class Task(Protocol):
+    """Task is a generic task."""
+
+    def run(self) -> None:
+        """run runs the task."""
+
+
+# TARGETS maps every target task name to a task constructor
+TARGETS: Dict[str, Callable[[Config, Engine], Task]] = {
+    "ooniprobe": OONIProbeTask,
+    "android": AndroidTask,
+    "miniooni": MiniOONITask,
+}
 
 
 def main() -> None:
     """ Main function. """
-    config, target = ConfigFromCLI.parse()
-    engine = CoreEngine(config)
-    if config.force():
-        engine.fix_gocache_perms()
-        engine.rmtree(STATEDIR)
-    # TODO(bassosimone): we should probably prepare the cachedir
-    # before entering into the builder code?
-    builder = target.new_builder(config, engine)
-    builder.build()
+    config = Config.parse(list(TARGETS.keys()))
+    engine = Engine(config.dry_run())
+    setup_task = SetupTask(config, engine)
+    setup_task.run()
+    # We already checked that we have a valid target in Config.parse
+    build_task = TARGETS[config.target()](config, engine)
+    build_task.run()
 
 
 if __name__ == "__main__":
