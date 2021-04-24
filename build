@@ -198,8 +198,8 @@ class AndroidEngine(Protocol):
         """prepend_to_path prepends value to PATH using the
         proper separator for the platform."""
 
-    def printenv(self, name: str) -> None:
-        """printenv prints an environment variable."""
+    def require_env(self, name: str) -> None:
+        """require_env fails if this environment variable is missing."""
 
     def require_commands(self, commands: List[str]) -> None:
         """require_commands checks whether every provided command is available
@@ -246,9 +246,8 @@ class AndroidTask:
         self._engine.rm_rf(destdir)
         self._engine.mkdir_p(destdir)
         self._write_oonimkall_pom(destdir, version)
-        # TODO(bassosimone): these should _require_ the environment
-        self._engine.printenv("ANDROID_HOME")
-        self._engine.printenv("ANDROID_NDK_HOME")
+        self._engine.require_env("ANDROID_HOME")
+        self._engine.require_env("ANDROID_NDK_HOME")
         self._engine.require_commands(["go"])
         self._go_mobile_init()
         self._engine.require_commands(["gomobile"])
@@ -778,6 +777,11 @@ class Engine:
     def printenv(self, name: str) -> None:
         self.log("build: echo ${}".format(name))
         self.log(os.environ.get(name, ""))
+
+    def require_env(self, name: str) -> None:
+        self.log("build: test -z ${} && exit 1".format(name))
+        if os.environ.get(name, "") == "":
+            sys.exit("{} environment variable not set".format(name))
 
     def _check_for_command(self, executable: str) -> Optional[str]:
         # command -v is in POSIX 2008: https://stackoverflow.com/a/34572831
