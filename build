@@ -565,6 +565,7 @@ class OONIProbeTask:
             self._build_ooniprobe_windows("386", "i686-w64-mingw32-gcc")
             self._build_ooniprobe_windows("amd64", "x86_64-w64-mingw32-gcc")
         else:
+            # TODO(bassosimone): add support for linux
             raise NotImplementedError("linux")
 
     def _build_ooniprobe_darwin(self, arch: str) -> None:
