@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - "master"
+      - "deb-s3"
       - "release/**"
     tags:
       - "v*"
