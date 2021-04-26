@@ -22,6 +22,8 @@ jobs:
       - run: DOCKER_CLI_EXPERIMENTAL=enabled ./build.sh linux_amd64
       - run: sudo apt-get update -q
       - run: sudo apt-get build-dep -y --no-install-recommends .
+      - name: Install deps
+        run: apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
       - run: |
           VER=$(./CLI/linux/amd64/ooniprobe version)
           if [[ ! $GITHUB_REF =~ ^refs/tags/* ]]; then
@@ -35,13 +37,12 @@ jobs:
           find ../ -name "*.deb" -type f
           DEB="../ooniprobe-cli_${VER}_amd64.deb"
           echo no | sudo dpkg -i $DEB
-          BT_FNAME="ooniprobe-cli_${VER}_amd64.deb"
-          curl --upload-file "${DEB}" -u "${BT_APIUSER}:${BT_APIKEY}" \
-            "https://api.bintray.com/content/${BT_ORG}/${BT_REPO}/${BT_PKGNAME}/${VER}/${BT_FNAME};deb_distribution=${DEBDIST};deb_component=main;deb_architecture=amd64;publish=1"
+          export DEBFNAME="ooniprobe-cli_${VER}_amd64.deb"
+          cd $GITHUB_WORKSPACE
+          # AWS user debci-s3
+          ./.github/workflows/debops-ci --show-commands upload --bucket-name ooni-debpkg-test $DEB
         env:
-          DEBDIST: unstable
-          BT_APIKEY: ${{ secrets.BT_APIKEY }}
-          BT_APIUSER: federicoceratto
-          BT_ORG: ooni
-          BT_PKGNAME: ooniprobe
+          DEB_GPG_KEY: ${{ secrets.DEB_GPG_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           BT_REPO: ooniprobe-debian
