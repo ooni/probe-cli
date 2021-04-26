@@ -525,6 +525,9 @@ class OONIProbeEngine(Protocol):
     def execute(self, cmdline: List[str], inputbytes: Optional[bytes] = None) -> None:
         """execute runs the specified command line."""
 
+    def golang_go_version(self) -> str:
+        """golang_go_version is the version of github.com/golang/go we use."""
+
     def log(self, *stuff: Any, **kwargs: Any) -> None:
         """log prints a log message on standard error."""
 
@@ -554,19 +557,27 @@ class OONIProbeTask:
         if not self._config.goos():
             self._engine.log("build: ooniprobe: no `-S GOOS` specified")
             sys.exit("See `./build ooniprobe --help` for more help.")
-        if not self._config.no_private_sdks():
-            self._engine.use_golang_go_sdk()
-        if not self._config.no_embed_psiphon():
-            self._engine.copy_psiphon_config_files()
-        if self._config.goos() in ("darwin", "macos"):
-            self._build_ooniprobe_darwin("amd64")
-            self._build_ooniprobe_darwin("arm64")
-        elif self._config.goos() == "windows":
-            self._build_ooniprobe_windows("386", "i686-w64-mingw32-gcc")
-            self._build_ooniprobe_windows("amd64", "x86_64-w64-mingw32-gcc")
+        if self._config.goos() == "linux":
+            # Implementation note: the linux build happens inside
+            # a suitable golang:${version}-alpine docker container
+            # so to generate statically linked binaries
+            self._build_ooniprobe_linux("386")
+            self._build_ooniprobe_linux("amd64")
+            self._build_ooniprobe_linux("arm")
+            self._build_ooniprobe_linux("arm64")
         else:
-            # TODO(bassosimone): add support for linux
-            raise NotImplementedError("linux")
+            if not self._config.no_private_sdks():
+                self._engine.use_golang_go_sdk()
+            if not self._config.no_embed_psiphon():
+                self._engine.copy_psiphon_config_files()
+            if self._config.goos() in ("darwin", "macos"):
+                self._build_ooniprobe_darwin("amd64")
+                self._build_ooniprobe_darwin("arm64")
+            elif self._config.goos() == "windows":
+                self._build_ooniprobe_windows("386", "i686-w64-mingw32-gcc")
+                self._build_ooniprobe_windows("amd64", "x86_64-w64-mingw32-gcc")
+            else:
+                raise NotImplementedError(self._config.goos())
 
     def _build_ooniprobe_darwin(self, arch: str) -> None:
         """_build_ooniprobe_darwin builds ooniprobe for darwin."""
@@ -592,6 +603,26 @@ class OONIProbeTask:
         self._engine.unsetenv("GOARCH")
         self._engine.unsetenv("GOOS")
         self._engine.unsetenv("CGO_ENABLED")
+
+    def _build_ooniprobe_linux(self, arch: str) -> None:
+        """_build_ooniprobe_linux builds ooniprobe for linux."""
+        self._engine.require_commands(["docker"])
+        cmdline = [
+            "docker",
+            "run",
+            "--platform",
+            "linux/{}".format(arch),
+            "-e"
+            "GOARCH={}".format(arch),
+            "-it",
+            "-v",
+            "{}:/ooni".format(os.getcwd()),
+            "-w",
+            "/ooni",
+            "golang:{}-alpine".format(self._engine.golang_go_version()),
+            os.path.join("CLI", "linux", "build")
+        ]
+        self._engine.execute(cmdline)
 
     def _build_ooniprobe_windows(self, arch: str, gcc: str) -> None:
         """_build_ooniprobe_windows builds ooniprobe for windows."""
@@ -722,6 +753,9 @@ class Engine:
         if machine == "aarch64":
             return "arm64"
         raise RuntimeError(machine)
+
+    def golang_go_version(self) -> str:
+        return self._sconf.golang_go_version()
 
     def log(self, *stuff: Any, **kwargs: Any) -> None:
         print(*stuff, file=sys.stderr, **kwargs)

@@ -1,0 +1,11 @@
+#!/bin/sh
+if [ "$GOARCH" = "" ]; then
+    echo 'fatal: $GOARCH is not set' 1>&2
+    exit 1
+fi
+export CGO_ENABLED=1 GOOS=linux
+apk update
+apk upgrade
+apk add --no-progress gcc git linux-headers musl-dev
+go build -o ./CLI/linux/$GOARCH/ -tags netgo \
+  -ldflags='-s -w -extldflags "-static"' ./cmd/ooniprobe
