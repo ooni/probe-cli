@@ -557,6 +557,8 @@ class OONIProbeTask:
         if not self._config.goos():
             self._engine.log("build: ooniprobe: no `-S GOOS` specified")
             sys.exit("See `./build ooniprobe --help` for more help.")
+        if not self._config.no_embed_psiphon():
+            self._engine.copy_psiphon_config_files()
         if self._config.goos() == "linux":
             # Implementation note: the linux build happens inside
             # a suitable golang:${version}-alpine docker container
@@ -568,8 +570,6 @@ class OONIProbeTask:
         else:
             if not self._config.no_private_sdks():
                 self._engine.use_golang_go_sdk()
-            if not self._config.no_embed_psiphon():
-                self._engine.copy_psiphon_config_files()
             if self._config.goos() in ("darwin", "macos"):
                 self._build_ooniprobe_darwin("amd64")
                 self._build_ooniprobe_darwin("arm64")
@@ -616,7 +616,7 @@ class OONIProbeTask:
             "golang:{}-alpine".format(self._engine.golang_go_version()),
         ])
         # then run the build inside the container
-        self._engine.execute([
+        cmdline = [
             "docker",
             "run",
             "--platform",
@@ -630,7 +630,16 @@ class OONIProbeTask:
             "/ooni",
             "golang:{}-alpine".format(self._engine.golang_go_version()),
             os.path.join(".", "CLI", "linux", "build")
-        ])
+        ]
+        if self._config.debugging():
+            cmdline.append("-x")
+        if self._config.verbose():
+            cmdline.append("-v")
+        if not self._config.no_embed_psiphon():
+            cmdline.append("-tags=ooni_psiphon_config,netgo")
+        else:
+            cmdline.append("-tags=netgo")
+        self._engine.execute(cmdline)
 
     def _build_ooniprobe_windows(self, arch: str, gcc: str) -> None:
         """_build_ooniprobe_windows builds ooniprobe for windows."""
