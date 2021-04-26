@@ -1,3 +1,4 @@
+---
 # Build and publish Debian packages
 name: debian
 on:
