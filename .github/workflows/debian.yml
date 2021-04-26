@@ -24,7 +24,8 @@ jobs:
       - run: sudo apt-get build-dep -y --no-install-recommends .
       - name: Install deps
         run: apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
-      - run: |
+      - name: Sign and upload
+        run: |
           VER=$(./CLI/linux/amd64/ooniprobe version)
           if [[ ! $GITHUB_REF =~ ^refs/tags/* ]]; then
             VER="${VER}~${GITHUB_RUN_NUMBER}"
