@@ -607,12 +607,21 @@ class OONIProbeTask:
     def _build_ooniprobe_linux(self, arch: str) -> None:
         """_build_ooniprobe_linux builds ooniprobe for linux."""
         self._engine.require_commands(["docker"])
-        cmdline = [
+        # make sure we have the latest version of the container image
+        self._engine.execute([
+            "docker",
+            "pull",
+            "--platform",
+            "linux/{}".format(arch),
+            "golang:{}-alpine".format(self._engine.golang_go_version()),
+        ])
+        # then run the build inside the container
+        self._engine.execute([
             "docker",
             "run",
             "--platform",
             "linux/{}".format(arch),
-            "-e"
+            "-e",
             "GOARCH={}".format(arch),
             "-it",
             "-v",
@@ -620,9 +629,8 @@ class OONIProbeTask:
             "-w",
             "/ooni",
             "golang:{}-alpine".format(self._engine.golang_go_version()),
-            os.path.join("CLI", "linux", "build")
-        ]
-        self._engine.execute(cmdline)
+            os.path.join(".", "CLI", "linux", "build")
+        ])
 
     def _build_ooniprobe_windows(self, arch: str, gcc: str) -> None:
         """_build_ooniprobe_windows builds ooniprobe for windows."""
@@ -711,6 +719,7 @@ class SetupTask:
             self._engine.maybe_init_cachedir()
             if not self._config.no_embed_psiphon():
                 self._engine.maybe_init_github_ooni_probe_private()
+            # TODO(bassosimone): targets should declare what they need
             self._engine.maybe_download_golang_go_sdk()
             if self._config.target() == "android":
                 # On Android we use our ooni/go fork of golang/go to
