@@ -7,7 +7,7 @@ go get -u golang.org/x/mobile/cmd/gomobile
 gomobile init
 output=MOBILE/ios/oonimkall.framework
 gomobile bind -target=ios -o $output -ldflags="-s -w" ./pkg/oonimkall
-release=$(git describe --tags)
+release=$(git describe --tags || echo $GITHUB_SHA)
 version=$(date -u +%Y.%m.%d-%H%M%S)
 podspecfile=./MOBILE/ios/oonimkall.podspec
 (cd ./MOBILE/ios && rm -f oonimkall.framework.zip && zip -yr oonimkall.framework.zip oonimkall.framework)
