@@ -22,8 +22,8 @@ from typing import Optional
 from typing import Protocol
 
 
-def ANDROID_CMDLINETOOLS_OS() -> str:
-    """ANDROID_CMDLINETOOLS_OS maps the name of the current OS to the
+def android_cmdlinetools_os() -> str:
+    """android_cmdlinetools_os maps the name of the current OS to the
     name used by the android command-line tools file."""
     system = platform.system()
     if system == "Linux":
@@ -33,38 +33,38 @@ def ANDROID_CMDLINETOOLS_OS() -> str:
     raise RuntimeError(system)
 
 
-def ANDROID_CMDLINETOOLS_VERSION() -> str:
-    """ANDROID_CMDLINETOOLS_VERSION returns the version of the Android
+def android_cmdlinetools_version() -> str:
+    """android_cmdlinetools_version returns the version of the Android
     command-line tools that we'd like to download."""
     return "6858069"
 
 
-def ANDROID_CMDLINETOOLS_SHA256SUM() -> str:
-    """ANDROID_CMDLINETOOLS_SHA256SUM returns the SHA256 sum of the
+def android_cmdlinetools_sha256sum() -> str:
+    """android_cmdlinetools_sha256sum returns the SHA256 sum of the
     Android command-line tools zip file."""
     return {
         "linux": "87f6dcf41d4e642e37ba03cb2e387a542aa0bd73cb689a9e7152aad40a6e7a08",
         "mac": "58a55d9c5bcacd7c42170d2cf2c9ae2889c6797a6128307aaf69100636f54a13",
-    }[ANDROID_CMDLINETOOLS_OS()]
+    }[android_cmdlinetools_os()]
 
 
-def CACHEDIR() -> str:
-    """CACHEDIR returns the directory where we cache the SDKs."""
+def cachedir() -> str:
+    """cachedir returns the directory where we cache the SDKs."""
     return os.path.join(os.path.expandvars("${HOME}"), ".ooniprobe-build")
 
 
-def GOVERSION() -> str:
-    """GOVERSION is the Go version we use."""
+def goversion() -> str:
+    """goversion is the Go version we use."""
     return "1.16.3"
 
 
-def GOPATH() -> str:
-    """GOPATH is the GOPATH we use."""
+def gopath() -> str:
+    """gopath is the GOPATH we use."""
     return os.path.expandvars("${HOME}/go")
 
 
-def GOSHA256SUM() -> str:
-    """GOSHA256SUM returns the SHA256 sum of the Go tarball."""
+def gosha256sum() -> str:
+    """gosha256sum returns the SHA256 sum of the Go tarball."""
     return {
         "linux": {
             "amd64": "951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2",
@@ -74,11 +74,11 @@ def GOSHA256SUM() -> str:
             "amd64": "6bb1cf421f8abc2a9a4e39140b7397cdae6aca3e8d36dcff39a1a77f4f1170ac",
             "arm64": "f4e96bbcd5d2d1942f5b55d9e4ab19564da4fad192012f6d7b0b9b055ba4208f",
         },
-    }[GOOS()][GOARCH()]
+    }[goos()][goarch()]
 
 
-def GOOS() -> str:
-    """GOOS returns the GOOS value for the current system."""
+def goos() -> str:
+    """goos returns the GOOS value for the current system."""
     system = platform.system()
     if system == "Linux":
         return "linux"
@@ -87,8 +87,8 @@ def GOOS() -> str:
     raise RuntimeError(system)
 
 
-def GOARCH() -> str:
-    """GOARCH returns the GOARCH value for the current system."""
+def goarch() -> str:
+    """goarch returns the GOARCH value for the current system."""
     machine = platform.machine()
     if machine in ("arm64", "arm", "386", "amd64"):
         return machine
@@ -101,20 +101,20 @@ def GOARCH() -> str:
     raise RuntimeError(machine)
 
 
-def ANDROID_NDK_VERSION() -> str:
-    """ANDROID_NDK_VERSION returns the Android NDK version."""
+def android_ndk_version() -> str:
+    """android_ndk_version returns the Android NDK version."""
     return "22.1.7171670"
 
 
-def SDKMANAGER_INSTALL_CMD(binpath: str) -> List[str]:
-    """SDKMANAGER_INSTALL_CMD returns the command line for installing
+def sdkmanager_install_cmd(binpath: str) -> List[str]:
+    """sdkmanager_install_cmd returns the command line for installing
     all the required dependencies using the sdkmanager."""
     return [
         os.path.join(binpath, "sdkmanager"),
         "--install",
         "build-tools;29.0.3",
         "platforms;android-30",
-        "ndk;{}".format(ANDROID_NDK_VERSION()),
+        "ndk;{}".format(android_ndk_version()),
     ]
 
 
@@ -139,11 +139,11 @@ class Options(Protocol):
         """verbose indicates whether to pass -v to `go build...`."""
 
 
-class ConfigParser:
-    """ConfigParser parses options from CLI flags."""
+class ConfigFromCLI:
+    """ConfigFromCLI parses options from CLI flags."""
 
     @classmethod
-    def parse(cls, targets: List[str]) -> ConfigParser:
+    def parse(cls, targets: List[str]) -> ConfigFromCLI:
         """parse parses command line options and returns a
         suitable configuration object."""
         conf = cls()
@@ -276,6 +276,7 @@ class CommandRealExecutor:
 
     def require(self, *executable: str) -> None:
         """require implements Engine.require."""
+        # Implemented in CommandDryRunner
 
     def run(
         self,
@@ -395,12 +396,12 @@ class Target(Protocol):
 
 
 class SDKGolangGo:
-    """SDKGolangGo creates ${CACHEDIR}/SDK/golang."""
+    """SDKGolangGo creates ${cachedir}/SDK/golang."""
 
     # We download a golang SDK from upstream to make sure we
     # are always using a specific version of golang/go.
 
-    __name = os.path.join(CACHEDIR(), "SDK", "golang")
+    __name = os.path.join(cachedir(), "SDK", "golang")
 
     def name(self) -> str:
         return self.__name
@@ -411,13 +412,13 @@ class SDKGolangGo:
             return
         log("./make: building {}...".format(self.__name))
         engine.require("mkdir", "curl", "shasum", "rm", "tar", "echo")
-        filename = "go{}.{}-{}.tar.gz".format(GOVERSION(), GOOS(), GOARCH())
+        filename = "go{}.{}-{}.tar.gz".format(goversion(), goos(), goarch())
         url = "https://golang.org/dl/{}".format(filename)
         engine.run(["mkdir", "-p", self.__name])
         filepath = os.path.join(self.__name, filename)
         engine.run(["curl", "-fsSLo", filepath, url])
-        sha256file = os.path.join(CACHEDIR(), "SDK", "SHA256")
-        engine.echo_to_file("{}  {}".format(GOSHA256SUM(), filepath), sha256file)
+        sha256file = os.path.join(cachedir(), "SDK", "SHA256")
+        engine.echo_to_file("{}  {}".format(gosha256sum(), filepath), sha256file)
         engine.run(["shasum", "--check", sha256file])
         engine.run(["rm", sha256file])
         engine.run(["tar", "-xf", filename], cwd=self.__name)
@@ -429,12 +430,12 @@ class SDKGolangGo:
 
 
 class SDKOONIGo:
-    """SDKOONIGo creates ${CACHEDIR}/SDK/oonigo."""
+    """SDKOONIGo creates ${cachedir}/SDK/oonigo."""
 
     # We use a private fork of golang/go on Android as a
     # workaround for https://github.com/ooni/probe/issues/1444
 
-    __name = os.path.join(CACHEDIR(), "SDK", "oonigo")
+    __name = os.path.join(cachedir(), "SDK", "oonigo")
 
     def name(self) -> str:
         return self.__name
@@ -471,9 +472,9 @@ class SDKOONIGo:
 
 
 class SDKAndroid:
-    """SDKAndroid creates ${CACHEDIR}/SDK/android."""
+    """SDKAndroid creates ${cachedir}/SDK/android."""
 
-    __name = os.path.join(CACHEDIR(), "SDK", "android")
+    __name = os.path.join(cachedir(), "SDK", "android")
 
     def name(self) -> str:
         return self.__name
@@ -482,7 +483,7 @@ class SDKAndroid:
         return self.__name
 
     def ndk_home(self) -> str:
-        return os.path.join(self.home(), "ndk", ANDROID_NDK_VERSION())
+        return os.path.join(self.home(), "ndk", android_ndk_version())
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isdir(self.__name) and not options.dry_run():
@@ -491,33 +492,35 @@ class SDKAndroid:
         log("./make: building {}...".format(self.__name))
         engine.require("mkdir", "curl", "echo", "shasum", "rm", "unzip", "mv", "java")
         filename = "commandlinetools-{}-{}_latest.zip".format(
-            ANDROID_CMDLINETOOLS_OS(), ANDROID_CMDLINETOOLS_VERSION()
+            android_cmdlinetools_os(), android_cmdlinetools_version()
         )
         url = "https://dl.google.com/android/repository/{}".format(filename)
         engine.run(["mkdir", "-p", self.__name])
         filepath = os.path.join(self.__name, filename)
         engine.run(["curl", "-fsSLo", filepath, url])
-        sha256file = os.path.join(CACHEDIR(), "SDK", "SHA256")
+        sha256file = os.path.join(cachedir(), "SDK", "SHA256")
         engine.echo_to_file(
-            "{}  {}".format(ANDROID_CMDLINETOOLS_SHA256SUM(), filepath), sha256file
+            "{}  {}".format(android_cmdlinetools_sha256sum(), filepath), sha256file
         )
         engine.run(["shasum", "--check", sha256file])
         engine.run(["rm", sha256file])
         engine.run(["unzip", filename], cwd=self.__name)
         engine.run(["rm", filepath])
+        # See https://stackoverflow.com/a/61176718 to understand why
+        # we need to reorganize the directories like this:
         engine.run(
-            ["mv", "cmdline-tools", ANDROID_CMDLINETOOLS_VERSION()], cwd=self.__name
+            ["mv", "cmdline-tools", android_cmdlinetools_version()], cwd=self.__name
         )
         engine.run(["mkdir", "cmdline-tools"], cwd=self.__name)
         engine.run(
-            ["mv", ANDROID_CMDLINETOOLS_VERSION(), "cmdline-tools"], cwd=self.__name
+            ["mv", android_cmdlinetools_version(), "cmdline-tools"], cwd=self.__name
         )
         engine.run(
-            SDKMANAGER_INSTALL_CMD(
+            sdkmanager_install_cmd(
                 os.path.join(
                     self.__name,
                     "cmdline-tools",
-                    ANDROID_CMDLINETOOLS_VERSION(),
+                    android_cmdlinetools_version(),
                     "bin",
                 ),
             ),
@@ -526,12 +529,12 @@ class SDKAndroid:
 
 
 class OONIProbePrivate:
-    """OONIProbePrivate creates ${CACHEDIR}/github.com/ooni/probe-private."""
+    """OONIProbePrivate creates ${cachedir}/github.com/ooni/probe-private."""
 
     # We use this private repository to copy the psiphon configuration
     # file to embed into the ooniprobe binaries
 
-    __name = os.path.join(CACHEDIR(), "github.com", "ooni", "probe-private")
+    __name = os.path.join(cachedir(), "github.com", "ooni", "probe-private")
 
     def name(self) -> str:
         return self.__name
@@ -628,7 +631,7 @@ class OONIMKAllAAR:
                         os.environ["PATH"],  # original path
                     ]
                 ),
-                "GOPATH": GOPATH(),  # where to install gomobile
+                "GOPATH": gopath(),  # where to install gomobile
             },
         )
 
@@ -646,7 +649,7 @@ class OONIMKAllAAR:
             extra_env={
                 "PATH": os.pathsep.join(
                     [
-                        os.path.join(GOPATH(), "bin"),  # for gomobile
+                        os.path.join(gopath(), "bin"),  # for gomobile
                         oonigo.binpath(),  # for our go fork
                         os.environ["PATH"],  # original environment
                     ]
@@ -684,7 +687,7 @@ class OONIMKAllAAR:
             extra_env={
                 "PATH": os.pathsep.join(
                     [
-                        os.path.join(GOPATH(), "bin"),  # for gomobile
+                        os.path.join(gopath(), "bin"),  # for gomobile
                         oonigo.binpath(),  # for our go fork
                         os.environ["PATH"],  # original environment
                     ]
@@ -790,8 +793,9 @@ TARGETS: List[Target] = [
 def main() -> None:
     """main function"""
     alltargets: Dict[str, Target] = dict((t.name(), t) for t in TARGETS)
-    options = ConfigParser.parse(list(alltargets.keys()))
+    options = ConfigFromCLI.parse(list(alltargets.keys()))
     engine = new_engine(options)
+    # note that we check whether the target is known in parse()
     selected = alltargets[options.target()]
     selected.build(engine, options)
 
