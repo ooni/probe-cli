@@ -169,7 +169,8 @@ class ConfigParser:
         return self._verbose
 
     # The main reason why I am using getopt here is such that I am able
-    # to print a very clear and detailed usage string.
+    # to print a very clear and detailed usage string. (But the same
+    # could be obtained quite likely w/ argparse.)
 
     __usage_string = """\
 usage: ./make [-nvx] -t target
