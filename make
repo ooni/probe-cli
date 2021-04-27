@@ -143,7 +143,7 @@ class ConfigParser:
     """ConfigParser parses options from CLI flags."""
 
     @classmethod
-    def parse(cls, targets: List[str]) -> Options:
+    def parse(cls, targets: List[str]) -> ConfigParser:
         """parse parses command line options and returns a
         suitable configuration object."""
         conf = cls()
