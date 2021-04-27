@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """ Build script for ooniprobe. You can get documentation regarding
-its usage by running `./build --help`. """
+its usage by running `./make --help`. """
 
 from __future__ import annotations
 import datetime
