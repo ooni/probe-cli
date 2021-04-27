@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - 'release/**'
-      - 'issue/1440'
   schedule:
     - cron: "0 0 * * */1"
 jobs:
@@ -13,9 +12,6 @@ jobs:
       - uses: actions/setup-go@v1
         with:
           go-version: "1.16"
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "3.9"
       - uses: actions/checkout@v2
 
       - run: ./build-miniooni.sh linux
