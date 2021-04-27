@@ -1,0 +1,12 @@
+#!/bin/sh
+
+echo -n "$0: checking for go... "
+go=`command -v go`
+if [ -z $go ]; then
+    echo "not found"
+    exit 1
+fi
+echo "$go"
+
+set -x
+$go "$@"
