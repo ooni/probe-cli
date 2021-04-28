@@ -5,4 +5,5 @@ jobs:
   test:
     runs-on: macos-11.0
     steps:
+      - uses: actions/checkout@v2
       - run: ./make -t ios
