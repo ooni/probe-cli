@@ -12,7 +12,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 )
 
@@ -124,10 +123,9 @@ type Session struct {
 	TestingCheckInBeforeNewProbeServicesClient func(ctx *Context)
 	TestingCheckInBeforeCheckIn                func(ctx *Context)
 
-	cl        []context.CancelFunc
-	mtx       sync.Mutex
-	submitter *probeservices.Submitter
-	sessp     *engine.Session
+	cl    []context.CancelFunc
+	mtx   sync.Mutex
+	sessp *engine.Session
 }
 
 // NewSession is like NewSessionWithContext but without context. This
@@ -304,24 +302,12 @@ type SubmitMeasurementResults struct {
 }
 
 // Submit submits the given measurement and returns the results.
-//
-// This function locks the session until it's done. That is, no other operation
-// can be performed as long as this function is pending.
 func (sess *Session) Submit(ctx *Context, measurement string) (*SubmitMeasurementResults, error) {
-	sess.mtx.Lock()
-	defer sess.mtx.Unlock()
-	if sess.submitter == nil {
-		psc, err := sess.sessp.NewProbeServicesClient(ctx.ctx)
-		if err != nil {
-			return nil, err
-		}
-		sess.submitter = probeservices.NewSubmitter(psc, sess.sessp.Logger())
-	}
 	var mm model.Measurement
 	if err := json.Unmarshal([]byte(measurement), &mm); err != nil {
 		return nil, err
 	}
-	if err := sess.submitter.Submit(ctx.ctx, &mm); err != nil {
+	if err := sess.sessp.Submit(ctx.ctx, &mm); err != nil {
 		return nil, err
 	}
 	data, err := json.Marshal(mm)

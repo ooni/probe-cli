@@ -431,12 +431,11 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		)
 	}()
 
-	submitter, err := engine.NewSubmitter(ctx, engine.SubmitterConfig{
+	submitter := engine.NewSubmitter(ctx, engine.SubmitterConfig{
 		Enabled: !currentOptions.NoCollector,
 		Session: sess,
 		Logger:  log.Log,
 	})
-	fatalOnError(err, "cannot create submitter")
 
 	saver, err := engine.NewSaver(engine.SaverConfig{
 		Enabled:    !currentOptions.NoJSON,
@@ -456,9 +455,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		MaxRuntime: time.Duration(currentOptions.MaxRuntime) * time.Second,
 		Options:    currentOptions.ExtraOptions,
 		Saver:      engine.NewInputProcessorSaverWrapper(saver),
-		Submitter: submitterWrapper{
-			child: engine.NewInputProcessorSubmitterWrapper(submitter),
-		},
+		Submitter:  submitterWrapper{submitter},
 	}
 	err = inputProcessor.Run(ctx)
 	fatalOnError(err, "inputProcessor.Run failed")
@@ -481,11 +478,11 @@ func (ew *experimentWrapper) MeasureWithContext(
 }
 
 type submitterWrapper struct {
-	child engine.InputProcessorSubmitterWrapper
+	child engine.Submitter
 }
 
-func (sw submitterWrapper) Submit(ctx context.Context, idx int, m *model.Measurement) error {
-	err := sw.child.Submit(ctx, idx, m)
+func (sw submitterWrapper) Submit(ctx context.Context, m *model.Measurement) error {
+	err := sw.child.Submit(ctx, m)
 	warnOnError(err, "submitting measurement failed")
 	// policy: we do not stop the loop if measurement submission fails
 	return nil

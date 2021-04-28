@@ -71,10 +71,8 @@ func TestInputProcessorSubmissionFailed(t *testing.T) {
 		Inputs: []model.URLInfo{{
 			URL: "https://www.kernel.org/",
 		}},
-		Options: []string{"fake=true"},
-		Submitter: NewInputProcessorSubmitterWrapper(
-			&FakeInputProcessorSubmitter{Err: expected},
-		),
+		Options:   []string{"fake=true"},
+		Submitter: &FakeInputProcessorSubmitter{Err: expected},
 	}
 	ctx := context.Background()
 	if err := ip.Run(ctx); !errors.Is(err, expected) {
@@ -124,9 +122,7 @@ func TestInputProcessorSaveOnDiskFailed(t *testing.T) {
 		Saver: NewInputProcessorSaverWrapper(
 			&FakeInputProcessorSaver{Err: expected},
 		),
-		Submitter: NewInputProcessorSubmitterWrapper(
-			&FakeInputProcessorSubmitter{Err: nil},
-		),
+		Submitter: &FakeInputProcessorSubmitter{Err: nil},
 	}
 	ctx := context.Background()
 	if err := ip.Run(ctx); !errors.Is(err, expected) {
@@ -147,7 +143,7 @@ func TestInputProcessorGood(t *testing.T) {
 		}},
 		Options:   []string{"fake=true"},
 		Saver:     NewInputProcessorSaverWrapper(saver),
-		Submitter: NewInputProcessorSubmitterWrapper(submitter),
+		Submitter: submitter,
 	}
 	ctx := context.Background()
 	if err := ip.Run(ctx); err != nil {
@@ -189,7 +185,7 @@ func TestInputProcessorMaxRuntime(t *testing.T) {
 		MaxRuntime: 1 * time.Nanosecond,
 		Options:    []string{"fake=true"},
 		Saver:      NewInputProcessorSaverWrapper(saver),
-		Submitter:  NewInputProcessorSubmitterWrapper(submitter),
+		Submitter:  submitter,
 	}
 	ctx := context.Background()
 	if err := ip.Run(ctx); err != nil {
