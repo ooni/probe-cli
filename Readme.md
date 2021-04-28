@@ -35,34 +35,27 @@ This will generate a binary called `ooniprobe` in the current directory.
 ## Android bindings
 
 ```bash
-./build-android.bash
+./make -t android
 ```
 
-We automatically build Android bindings whenever commits are pushed to the
-`mobile-staging` branch. Such builds could be integrated by using:
+Builds bindings for Android. (Add `----disable-embedding-psiphon-config` if you
+cannot clone private repositories in the https://github.com/ooni namespace.)
 
-```Groovy
-implementation "org.ooni:oonimkall:VERSION"
-```
-
-Where VERSION is like `2020.03.30-231914` corresponding to the
-time when the build occurred.
+The generated bindings are (manually) pushed to the Maven Central package
+repository. The instructions explaining how to integrate these bindings
+are published along with the release notes.
 
 ## iOS bindings
 
 ```bash
-./build-ios.bash
+./make -t ios
 ```
 
-We automatically build iOS bindings whenever commits are pushed to the
-`mobile-staging` branch. Such builds could be integrated by using:
+Builds bindings for iOS. (Add `----disable-embedding-psiphon-config` if you
+cannot clone private repositories in the https://github.com/ooni namespace.)
 
-```ruby
-pod 'oonimkall', :podspec => 'https://dl.bintray.com/ooni/ios/oonimkall-VERSION.podspec'
-```
-
-Where VERSION is like `2020.03.30-231914` corresponding to the
-time when the build occurred.
+The generated bindings are (manually) added to GitHub releases. The instructions
+explaining how to integrate these bindings are published along with the release notes.
 
 ## Updating dependencies
 
