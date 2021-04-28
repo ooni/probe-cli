@@ -406,6 +406,9 @@ class SDKGolangGo:
     def name(self) -> str:
         return self.__name
 
+    def binpath(self) -> str:
+        return os.path.join(self.__name, "go", "bin")
+
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isdir(self.__name) and not options.dry_run():
             log("./make: {}: already built".format(self.__name))
@@ -614,7 +617,7 @@ class OONIMKAllAAR:
         # TODO(bassosimone): find a way to run this command without
         # adding extra dependencies to go.mod and go.sum.
         cmdline: List[str] = []
-        cmdline.append(os.path.join(".", "MOBILE", "android", "go"))
+        cmdline.append(os.path.join(".", "MOBILE", "go"))
         cmdline.append("get")
         cmdline.append("-u")
         if options.verbose():
@@ -642,7 +645,7 @@ class OONIMKAllAAR:
         android: SDKAndroid,
     ) -> None:
         cmdline: List[str] = []
-        cmdline.append(os.path.join(".", "MOBILE", "android", "gomobile"))
+        cmdline.append(os.path.join(".", "MOBILE", "gomobile"))
         cmdline.append("init")
         engine.run(
             cmdline,
@@ -667,7 +670,7 @@ class OONIMKAllAAR:
         android: SDKAndroid,
     ) -> None:
         cmdline: List[str] = []
-        cmdline.append(os.path.join(".", "MOBILE", "android", "gomobile"))
+        cmdline.append(os.path.join(".", "MOBILE", "gomobile"))
         cmdline.append("bind")
         if options.verbose():
             cmdline.append("-v")
@@ -779,8 +782,128 @@ class Android:
         bundlejar.build(engine, options)
 
 
+class OONIMKAllFramework:
+    """OONIMKAllFramework creates ./MOBILE/ios/oonimkall.framework."""
+
+    __name = os.path.join(".", "MOBILE", "ios", "oonimkall.framework")
+
+    def name(self) -> str:
+        return self.__name
+
+    def build(self, engine: Engine, options: Options) -> None:
+        if os.path.isfile(self.__name) and not options.dry_run():
+            log("./make: {}: already built".format(self.__name))
+            return
+        ooprivate = OONIProbePrivate()
+        ooprivate.build(engine, options)
+        gogo = SDKGolangGo()
+        gogo.build(engine, options)
+        log("./make: building {}...".format(self.__name))
+        ooprivate.copyfiles(engine)
+        self._go_get_gomobile(engine, options, gogo)
+        self._gomobile_init(engine, gogo)
+        self._gomobile_bind(engine, options, gogo)
+
+    def _go_get_gomobile(
+        self, engine: Engine,
+        options: Options,
+        gogo: SDKGolangGo,
+    ) -> None:
+        # TODO(bassosimone): find a way to run this command without
+        # adding extra dependencies to go.mod and go.sum.
+        cmdline: List[str] = []
+        cmdline.append(os.path.join(".", "MOBILE", "go"))
+        cmdline.append("get")
+        cmdline.append("-u")
+        if options.verbose():
+            cmdline.append("-v")
+        if options.debugging():
+            cmdline.append("-x")
+        cmdline.append("golang.org/x/mobile/cmd/gomobile@latest")
+        engine.run(
+            cmdline,
+            extra_env={
+                "PATH": os.pathsep.join(
+                    [
+                        gogo.binpath(),  # so we use this binary
+                        os.environ["PATH"],  # original path
+                    ]
+                ),
+                "GOPATH": gopath(),  # where to install gomobile
+            },
+        )
+
+    def _gomobile_init(
+        self,
+        engine: Engine,
+        gogo: SDKGolangGo,
+    ) -> None:
+        cmdline: List[str] = []
+        cmdline.append(os.path.join(".", "MOBILE", "gomobile"))
+        cmdline.append("init")
+        engine.run(
+            cmdline,
+            extra_env={
+                "PATH": os.pathsep.join(
+                    [
+                        os.path.join(gopath(), "bin"),  # for gomobile
+                        gogo.binpath(),  # for our go fork
+                        os.environ["PATH"],  # original environment
+                    ]
+                ),
+            },
+        )
+
+    def _gomobile_bind(
+        self,
+        engine: Engine,
+        options: Options,
+        gogo: SDKGolangGo,
+    ) -> None:
+        cmdline: List[str] = []
+        cmdline.append(os.path.join(".", "MOBILE", "gomobile"))
+        cmdline.append("bind")
+        if options.verbose():
+            cmdline.append("-v")
+        if options.debugging():
+            cmdline.append("-x")
+        cmdline.append("-target")
+        cmdline.append("ios")
+        cmdline.append("-o")
+        cmdline.append(self.__name)
+        cmdline.append("-tags")
+        cmdline.append("ooni_psiphon_config")
+        cmdline.append("-ldflags")
+        cmdline.append("-s -w")
+        cmdline.append("./pkg/oonimkall")
+        engine.run(
+            cmdline,
+            extra_env={
+                "PATH": os.pathsep.join(
+                    [
+                        os.path.join(gopath(), "bin"),  # for gomobile
+                        gogo.binpath(),  # for our go fork
+                        os.environ["PATH"],  # original environment
+                    ]
+                ),
+            },
+        )
+
+
+class iOS:
+    """iOS is the toplevel ios target."""
+
+    def name(self) -> str:
+        return "ios"
+
+    def build(self, engine: Engine, options: Options) -> None:
+        ooframework = OONIMKAllFramework()
+        ooframework.build(engine, options)
+
+
 TARGETS: List[Target] = [
     Android(),
+    iOS(),
     BundleJAR(),
     OONIMKAllAAR(),
     OONIProbePrivate(),
