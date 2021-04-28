@@ -13,6 +13,3 @@ jobs:
           go-version: "1.16"
       - uses: actions/checkout@v2
       - run: ./build-ios.bash
-      - run: ./publish-ios.bash
-        env:
-          MOBILE_BINTRAY_API_KEY: ${{ secrets.MOBILE_BINTRAY_API_KEY }}
