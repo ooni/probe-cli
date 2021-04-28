@@ -6,4 +6,4 @@ jobs:
     runs-on: macos-10.15
     steps:
       - uses: actions/checkout@v2
-      - run: ./make -t ios
+      - run: ./make --disable-embedding-psiphon-config -t ios

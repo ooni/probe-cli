@@ -129,6 +129,11 @@ class Options(Protocol):
     def debugging(self) -> bool:
         """debugging indicates whether to pass -x to `go build...`."""
 
+    def disable_embedding_psiphon_config(self) -> bool:
+        """disable_embedding_psiphon_config indicates that the user
+        does not want us to embed an encrypted psiphon config file into
+        the binary."""
+
     def dry_run(self) -> bool:
         """dry_run indicates whether to execute commands."""
 
@@ -152,12 +157,16 @@ class ConfigFromCLI:
 
     def __init__(self) -> None:
         self._debugging = False
+        self._disable_embedding_psiphon_config = False
         self._dry_run = False
         self._target = ""
         self._verbose = False
 
     def debugging(self) -> bool:
         return self._debugging
+
+    def disable_embedding_psiphon_config(self) -> bool:
+        return self._disable_embedding_psiphon_config
 
     def dry_run(self) -> bool:
         return self._dry_run
@@ -173,7 +182,7 @@ class ConfigFromCLI:
     # could be obtained quite likely w/ argparse.)
 
     __usage_string = """\
-usage: ./make [-nvx] -t target
+usage: ./make [--disable-embedding-psiphon-config] [-nvx] -t target
        ./make -l
        ./make [--help|-h]
 
@@ -181,7 +190,11 @@ The first form of the command builds the `target` specified using the
 `-t` command line flag. If the target has dependencies, this command will
 build the dependent targets first. The `-n` flag enables a dry run where
 the command only prints the commands it would run. The `-v` and `-x` flags
-are passed directly to `go build ...` and `gomobile bind ...`.
+are passed directly to `go build ...` and `gomobile bind ...`. The
+`--disable-embedding-psiphon-config` flag causes this command to disable
+embedding a psiphon config file into the generated binary; you should
+use this option when you cannot clone the private repository containing
+the psiphon configuration file.
 
 The second form of the command lists all the available targets as
 a pretty-printed JSON list.
@@ -198,12 +211,17 @@ The third form of the command prints this help screen.
 
     def _parse(self, targets: List[str]):
         try:
-            opts, args = getopt.getopt(sys.argv[1:], "hlnt:vx", ["help"])
+            opts, args = getopt.getopt(
+                sys.argv[1:], "hlnt:vx", ["disable-embedding-psiphon-config", "help"]
+            )
         except getopt.GetoptError as err:
             self._usage(err=err.msg, exitcode=1)
         if args:
             self._usage(err="unexpected number of positional arguments", exitcode=1)
         for key, value in opts:
+            if key == "--disable-embedding-psiphon-config":
+                self._disable_embedding_psiphon_config = True
+                continue
             if key in ("-h", "--help"):
                 self._usage()
             if key == "-l":
@@ -542,8 +560,11 @@ class OONIProbePrivate:
     def name(self) -> str:
         return self.__name
 
-    def copyfiles(self, engine: Engine) -> None:
+    def copyfiles(self, engine: Engine, options: Options) -> None:
         """copyfiles copies psiphon config to the repository."""
+        if options.disable_embedding_psiphon_config():
+            log("./make: copy psiphon config: disabled by command line flags")
+            return
         engine.run(
             [
                 "cp",
@@ -562,6 +583,9 @@ class OONIProbePrivate:
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isdir(self.__name) and not options.dry_run():
             log("./make: {}: already built".format(self.__name))
+            return
+        if options.disable_embedding_psiphon_config():
+            log("./make: {}: disabled by command line flags".format(self.__name))
             return
         log("./make: building {}...".format(self.__name))
         engine.require("git", "cp")
@@ -600,7 +624,7 @@ class OONIMKAllAAR:
         android = SDKAndroid()
         android.build(engine, options)
         log("./make: building {}...".format(self.__name))
-        ooprivate.copyfiles(engine)
+        ooprivate.copyfiles(engine, options)
         engine.require("sh", "javac")
         self._go_get_gomobile(engine, options, oonigo)
         self._gomobile_init(engine, oonigo, android)
@@ -680,8 +704,9 @@ class OONIMKAllAAR:
         cmdline.append("android")
         cmdline.append("-o")
         cmdline.append(self.__name)
-        cmdline.append("-tags")
-        cmdline.append("ooni_psiphon_config")
+        if not options.disable_embedding_psiphon_config():
+            cmdline.append("-tags")
+            cmdline.append("ooni_psiphon_config")
         cmdline.append("-ldflags")
         cmdline.append("-s -w")
         cmdline.append("./pkg/oonimkall")
@@ -799,13 +824,14 @@ class OONIMKAllFramework:
         gogo = SDKGolangGo()
         gogo.build(engine, options)
         log("./make: building {}...".format(self.__name))
-        ooprivate.copyfiles(engine)
+        ooprivate.copyfiles(engine, options)
         self._go_get_gomobile(engine, options, gogo)
         self._gomobile_init(engine, gogo)
         self._gomobile_bind(engine, options, gogo)
 
     def _go_get_gomobile(
-        self, engine: Engine,
+        self,
+        engine: Engine,
         options: Options,
         gogo: SDKGolangGo,
     ) -> None:
@@ -871,8 +897,9 @@ class OONIMKAllFramework:
         cmdline.append("ios")
         cmdline.append("-o")
         cmdline.append(self.__name)
-        cmdline.append("-tags")
-        cmdline.append("ooni_psiphon_config")
+        if not options.disable_embedding_psiphon_config():
+            cmdline.append("-tags")
+            cmdline.append("ooni_psiphon_config")
         cmdline.append("-ldflags")
         cmdline.append("-s -w")
         cmdline.append("./pkg/oonimkall")
