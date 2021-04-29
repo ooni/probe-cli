@@ -169,6 +169,7 @@ func newSessionWithContext(ctx context.Context, config *SessionConfig) (*Session
 	}
 
 	// TODO(bassosimone): write tests for this functionality.
+	// See https://github.com/ooni/probe/issues/1465.
 	var proxyURL *url.URL
 	if config.Proxy != "" {
 		var err error
