@@ -20,6 +20,7 @@ from typing import List
 from typing import NoReturn
 from typing import Optional
 from typing import Protocol
+from typing import Tuple
 
 
 def android_cmdlinetools_os() -> str:
@@ -253,10 +254,19 @@ The third form of the command prints this help screen.
 class Engine(Protocol):
     """Engine is an engine for building targets."""
 
+    def backticks(
+        self,
+        output_variable: str,
+        cmdline: List[str],
+        output: List[bytes],
+        )->None:
+        """backticks executes output_variable=`*cmdline`."""
+
     def cat_sed_redirect(
-        self, pattern: str, value: str, source: str, dest: str
+        self, patterns: List[Tuple[str, str]], source: str, dest: str
     ) -> None:
-        """cat_sed_redirect does `cat $source|sed "s/$pattern/$value/g" > $dest`."""
+        """cat_sed_redirect does
+        `cat $source|sed -e "s/$patterns[0][0]/$patterns[0][1]/g" ... > $dest`."""
 
     def echo_to_file(self, content: str, filepath: str) -> None:
         """echo_to_file writes the content string to the given file."""
@@ -277,12 +287,23 @@ class Engine(Protocol):
 class CommandRealExecutor:
     """CommandRealExecutor executes commands."""
 
+    def backticks(
+        self,
+        output_variable: str,
+        cmdline: List[str],
+        output: List[bytes],
+        )->None:
+        """backticks implements Engine.backticks"""
+        # Implemented in CommandDryRunner
+
     def cat_sed_redirect(
-        self, pattern: str, value: str, source: str, dest: str
+        self, patterns: List[Tuple[str, str]], source: str, dest: str
     ) -> None:
         """cat_sed_redirect implements Engine.cat_sed_redirect."""
         with open(source, "r") as sourcefp:
-            data = sourcefp.read().replace(pattern, value)
+            data = sourcefp.read()
+            for p, v in patterns:
+                data = data.replace(p, v)
             with open(dest, "w") as destfp:
                 destfp.write(data)
 
@@ -320,11 +341,31 @@ class CommandDryRunner:
     def __init__(self):
         self.__cmdcache: Dict[str, str] = {}
 
+    def backticks(
+        self,
+        output_variable: str,
+        cmdline: List[str],
+        output: List[bytes],
+        )->None:
+        """backticks implements Engine.backticks"""
+        log('./make: {}=`{}`'.format(output_variable, shlex.join(cmdline)))
+        # implemented here because we want to see the result of backticks
+        # command invocations when we're doing a dry run
+        popen = subprocess.Popen(cmdline, stdout=subprocess.PIPE)
+        stdout = popen.communicate()[0]
+        if popen.returncode != 0:
+            raise RuntimeError(popen.returncode)
+        output.append(stdout)
+
     def cat_sed_redirect(
-        self, pattern: str, value: str, source: str, dest: str
+        self, patterns: List[Tuple[str, str]], source: str, dest: str
     ) -> None:
         """cat_sed_redirect implements Engine.cat_sed_redirect."""
-        log('./make: cat {}|sed "s/{}/{}/g" > {}'.format(source, pattern, value, dest))
+        out = "./make: cat {}|sed".format(source)
+        for p, v in patterns:
+            out += " -e 's/{}/{}/g'".format(p, v)
+        out += " > {}".format(dest)
+        log(out)
 
     def echo_to_file(self, content: str, filepath: str) -> None:
         """echo_to_file implements Engine.echo_to_file"""
@@ -332,6 +373,8 @@ class CommandDryRunner:
 
     def require(self, *executable: str) -> None:
         """require implements Engine.require."""
+        # implemented here because we want to see the results
+        # of checks when we're doing a dry run
         for exc in executable:
             if exc in self.__cmdcache:
                 continue  # do not print checks more than once
@@ -367,12 +410,22 @@ class EngineComposer:
         self._first = first
         self._second = second
 
+    def backticks(
+        self,
+        output_variable: str,
+        cmdline: List[str],
+        output: List[bytes],
+        )->None:
+        """backticks implements Engine.backticks"""
+        self._first.backticks(output_variable, cmdline, output)
+        self._second.backticks(output_variable, cmdline, output)
+
     def cat_sed_redirect(
-        self, pattern: str, value: str, source: str, dest: str
+        self, patterns: List[Tuple[str, str]], source: str, dest: str
     ) -> None:
         """cat_sed_redirect implements Engine.cat_sed_redirect."""
-        self._first.cat_sed_redirect(pattern, value, source, dest)
-        self._second.cat_sed_redirect(pattern, value, source, dest)
+        self._first.cat_sed_redirect(patterns, source, dest)
+        self._second.cat_sed_redirect(patterns, source, dest)
 
     def echo_to_file(self, content: str, filepath: str) -> None:
         """echo_to_file implements Engine.echo_to_file"""
@@ -763,8 +816,7 @@ class BundleJAR:
             ]
         )
         engine.cat_sed_redirect(
-            "@VERSION@",
-            version,
+            [("@VERSION@", version),],
             os.path.join("MOBILE", "template.pom"),
             os.path.join("MOBILE", "android", "oonimkall-{}.pom".format(version)),
         )
@@ -964,10 +1016,12 @@ class OONIMKAllPodspec:
         if os.path.isfile(self.__name) and not options.dry_run():
             log("./make: {}: already built".format(self.__name))
             return
+        output: List[bytes] = []
+        engine.backticks("RELEASE", ["git", "describe", "--tags"], output)
+        release = output[0].decode("utf-8").strip()
         version = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
         engine.cat_sed_redirect(
-            "@VERSION@",
-            version,
+            [("@VERSION@", version), ("@RELEASE@", release)],
             os.path.join(".", "MOBILE", "template.podspec"),
             self.__name,
         )
@@ -989,12 +1043,8 @@ class iOS:
 TARGETS: List[Target] = [
     Android(),
     iOS(),
-    BundleJAR(),
     OONIMKAllAAR(),
-    OONIProbePrivate(),
-    SDKAndroid(),
-    SDKGolangGo(),
-    SDKOONIGo(),
+    OONIMKAllFrameworkZip(),
 ]
 
 
