@@ -4,18 +4,9 @@ on:
     branches:
       - mobile-staging
       - "release/**"
-      - "**android**"
 jobs:
   test:
-    runs-on: macos-latest
+    runs-on: ubuntu-20.04
     steps:
-      - uses: actions/setup-go@v1
-        with:
-          go-version: "1.16"
       - uses: actions/checkout@v2
-      - run: brew install --cask android-sdk
-      - run: echo y | sdkmanager --install "platforms;android-29"
-      - run: echo y | sdkmanager --install "ndk-bundle"
-      - run: ./build-android.bash
-        env:
-          ANDROID_HOME: /usr/local/Caskroom/android-sdk/4333796
+      - run: ./make --disable-embedding-psiphon-config -t ./MOBILE/android/oonimkall.aar
