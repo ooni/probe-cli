@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/mitchellh/go-wordwrap"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
 )
@@ -155,12 +156,12 @@ func SectionTitle(text string) {
 
 func Paragraph(text string) {
 	const width = 80
-	fmt.Println(utils.WrapString(text, width))
+	fmt.Println(wordwrap.WrapString(text, width))
 }
 
 func Bullet(text string) {
 	const width = 80
-	fmt.Printf("• %s\n", utils.WrapString(text, width))
+	fmt.Printf("• %s\n", wordwrap.WrapString(text, width))
 }
 
 func PressEnterToContinue(text string) error {
