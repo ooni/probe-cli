@@ -1,8 +1,10 @@
+# android verifies we can still build for Android
 name: android
 on:
   push:
     branches:
       - "release/**"
+      - "master"
 jobs:
   test:
     runs-on: ubuntu-20.04
