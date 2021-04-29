@@ -995,7 +995,7 @@ class OONIMKAllFramework:
                 "PATH": os.pathsep.join(
                     [
                         os.path.join(gopath(), "bin"),  # for gomobile
-                        gogo.binpath(),  # for our go fork
+                        gogo.binpath(),  # for golang/go
                         os.environ["PATH"],  # original environment
                     ]
                 ),
@@ -1111,7 +1111,17 @@ class MiniOONIDarwinOrWindows:
         if not options.disable_embedding_psiphon_config():
             cmdline.append("-tags=ooni_psiphon_config")
         cmdline.append("./internal/cmd/miniooni")
-        engine.run(cmdline)
+        engine.run(
+            cmdline,
+            extra_env={
+                "PATH": os.pathsep.join(
+                    [
+                        gogo.binpath(),  # for golang/go
+                        os.environ["PATH"],  # original path
+                    ]
+                ),
+            },
+        )
         engine.unsetenv("CGO_ENABLED")
         engine.unsetenv("GOARCH")
         engine.unsetenv("GOOS")
@@ -1156,7 +1166,17 @@ class MiniOONILinux:
             tags += ",ooni_psiphon_config"
         cmdline.append(tags)
         cmdline.append("./internal/cmd/miniooni")
-        engine.run(cmdline)
+        engine.run(
+            cmdline,
+            extra_env={
+                "PATH": os.pathsep.join(
+                    [
+                        gogo.binpath(),  # for golang/go
+                        os.environ["PATH"],  # original path
+                    ]
+                ),
+            },
+        )
         engine.unsetenv("CGO_ENABLED")
         engine.unsetenv("GOARCH")
         engine.unsetenv("GOOS")
