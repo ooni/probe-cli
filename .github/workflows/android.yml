@@ -1,6 +1,9 @@
 name: android
 on:
   push:
+    branches:
+      - mobile-staging
+      - "release/**"
 jobs:
   test:
     runs-on: ubuntu-20.04

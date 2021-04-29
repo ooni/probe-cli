@@ -1,6 +1,9 @@
 name: ios
 on:
   push:
+    branches:
+      - mobile-staging
+      - 'release/**'
 jobs:
   test:
     runs-on: macos-10.15
