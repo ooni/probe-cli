@@ -29,6 +29,7 @@ func Progress(key string, perc float64, eta float64, msg string) {
 	}).Info(msg)
 }
 
+// MeasurementSummaryData contains summary information on the measurement
 type MeasurementSummaryData struct {
 	TotalRuntime       float64
 	TotalCount         int64
@@ -41,6 +42,7 @@ type MeasurementSummaryData struct {
 	StartTime          time.Time
 }
 
+// MeasurementSummary emits the measurement summary
 func MeasurementSummary(msmt MeasurementSummaryData) {
 	log.WithFields(log.Fields{
 		"type":                 "measurement_summary",
@@ -128,6 +130,7 @@ func ResultItem(result ResultItemData) {
 	}).Info("result item")
 }
 
+// ResultSummaryData contains the summary data of a result
 type ResultSummaryData struct {
 	TotalTests         int64
 	TotalDataUsageUp   float64
@@ -135,6 +138,7 @@ type ResultSummaryData struct {
 	TotalNetworks      int64
 }
 
+// ResultSummary emits the result summary
 func ResultSummary(result ResultSummaryData) {
 	log.WithFields(log.Fields{
 		"type":                  "result_summary",
@@ -153,16 +157,19 @@ func SectionTitle(text string) {
 	}).Info(text)
 }
 
+// Paragraph makes a word-wrapped paragraph out of text
 func Paragraph(text string) {
 	const width = 80
 	fmt.Println(wordwrap.WrapString(text, width))
 }
 
+// Bullet is like paragraph but with a bullet point in front
 func Bullet(text string) {
 	const width = 80
 	fmt.Printf("• %s\n", wordwrap.WrapString(text, width))
 }
 
+// PressEnterToContinue blocks until the user presses any key
 func PressEnterToContinue(text string) error {
 	fmt.Print(text)
 	_, err := bufio.NewReader(os.Stdin).ReadBytes('\n')
