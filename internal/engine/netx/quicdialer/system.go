@@ -26,6 +26,9 @@ type SystemDialer struct {
 func (d SystemDialer) DialContext(ctx context.Context, network string,
 	host string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
 	onlyhost, onlyport, err := net.SplitHostPort(host)
+	if err != nil {
+		return nil, err
+	}
 	port, err := strconv.Atoi(onlyport)
 	if err != nil {
 		return nil, err
@@ -36,6 +39,9 @@ func (d SystemDialer) DialContext(ctx context.Context, network string,
 		return nil, errors.New("quicdialer: invalid IP representation")
 	}
 	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
+	if err != nil {
+		return nil, err
+	}
 	var pconn net.PacketConn = udpConn
 	if d.Saver != nil {
 		pconn = saverUDPConn{UDPConn: udpConn, saver: d.Saver}
