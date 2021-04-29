@@ -10,6 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: ./make --disable-embedding-psiphon-config -t miniooni
+      - run: ./CLI/linux/amd64/miniooni --yes -nNi https://example.com web_connectivity
 
       - uses: actions/upload-artifact@v1
         with:
