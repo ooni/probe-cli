@@ -1,12 +1,10 @@
 package utils
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
-	"unicode"
 	"unicode/utf8"
 
 	"github.com/fatih/color"
