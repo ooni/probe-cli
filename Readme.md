@@ -21,7 +21,7 @@ Please, make sure you tag such issues using the `ooni/probe-cli` label.
 
 Every top-level directory contains an explanatory README file.
 
-## Development setup
+## OONIProbe
 
 Be sure you have golang >= 1.16 and a C compiler (when developing for Windows, you
 need Mingw-w64 installed). You can build using:
@@ -33,6 +33,8 @@ go build -v ./cmd/ooniprobe
 This will generate a binary called `ooniprobe` in the current directory.
 
 ## Android bindings
+
+Make sure you have Python 3.8+ installed, then run:
 
 ```bash
 ./make -t android
@@ -47,6 +49,8 @@ are published along with the release notes.
 
 ## iOS bindings
 
+Make sure you have Python 3.8+ installed, then run:
+
 ```bash
 ./make -t ios
 ```
@@ -56,6 +60,16 @@ cannot clone private repositories in the https://github.com/ooni namespace.)
 
 The generated bindings are (manually) added to GitHub releases. The instructions
 explaining how to integrate these bindings are published along with the release notes.
+
+## miniooni
+
+Miniooni is the experimental OONI client used for research. Compile using:
+
+```bash
+go build -v ./internal/cmd/miniooni
+```
+
+This will generate a binary called `miniooni` in the current directory.
 
 ## Updating dependencies
 
@@ -68,3 +82,5 @@ go get -u -v ./... && go mod tidy
 Create an issue according to [the routine release template](
 https://github.com/ooni/probe/blob/master/.github/ISSUE_TEMPLATE/routine-sprint-releases.md)
 and perform any item inside the check-list.
+
+We build releases using `./make`, which requires Python3.8+.

@@ -259,7 +259,7 @@ class Engine(Protocol):
         output_variable: str,
         cmdline: List[str],
         output: List[bytes],
-        )->None:
+    ) -> None:
         """backticks executes output_variable=`*cmdline`."""
 
     def cat_sed_redirect(
@@ -283,6 +283,12 @@ class Engine(Protocol):
     ) -> None:
         """run runs the specified command line."""
 
+    def setenv(self, key: str, value: str) -> None:
+        """setenv sets an environment variable."""
+
+    def unsetenv(self, key: str) -> None:
+        """unsetenv clears an environment variable."""
+
 
 class CommandRealExecutor:
     """CommandRealExecutor executes commands."""
@@ -292,7 +298,7 @@ class CommandRealExecutor:
         output_variable: str,
         cmdline: List[str],
         output: List[bytes],
-        )->None:
+    ) -> None:
         """backticks implements Engine.backticks"""
         # Implemented in CommandDryRunner
 
@@ -331,6 +337,14 @@ class CommandRealExecutor:
                 env[key] = value
         subprocess.run(cmdline, check=True, cwd=cwd, env=env, input=inputbytes)
 
+    def setenv(self, key: str, value: str) -> None:
+        """setenv implements Engine.setenv."""
+        os.environ[key] = value
+
+    def unsetenv(self, key: str) -> None:
+        """unsetenv implements Engine.unsetenv."""
+        del os.environ[key]
+
 
 class CommandDryRunner:
     """CommandDryRunner is the dry runner."""
@@ -346,9 +360,9 @@ class CommandDryRunner:
         output_variable: str,
         cmdline: List[str],
         output: List[bytes],
-        )->None:
+    ) -> None:
         """backticks implements Engine.backticks"""
-        log('./make: {}=`{}`'.format(output_variable, shlex.join(cmdline)))
+        log("./make: {}=`{}`".format(output_variable, shlex.join(cmdline)))
         # implemented here because we want to see the result of backticks
         # command invocations when we're doing a dry run
         popen = subprocess.Popen(cmdline, stdout=subprocess.PIPE)
@@ -402,6 +416,14 @@ class CommandDryRunner:
                 envpart += shlex.join(["{}={}".format(key, value)]) + " "
         log("./make: {}{}{}".format(cdpart, envpart, shlex.join(cmdline)))
 
+    def setenv(self, key: str, value: str) -> None:
+        """setenv implements Engine.setenv."""
+        log("./make: export {}={}".format(key, shlex.join([value])))
+
+    def unsetenv(self, key: str) -> None:
+        """unsetenv implements Engine.unsetenv."""
+        log("./make: unset {}".format(key))
+
 
 class EngineComposer:
     """EngineComposer composes two engines."""
@@ -415,7 +437,7 @@ class EngineComposer:
         output_variable: str,
         cmdline: List[str],
         output: List[bytes],
-        )->None:
+    ) -> None:
         """backticks implements Engine.backticks"""
         self._first.backticks(output_variable, cmdline, output)
         self._second.backticks(output_variable, cmdline, output)
@@ -447,6 +469,16 @@ class EngineComposer:
         """run implements Engine.run."""
         self._first.run(cmdline, cwd=cwd, extra_env=extra_env, inputbytes=inputbytes)
         self._second.run(cmdline, cwd=cwd, extra_env=extra_env, inputbytes=inputbytes)
+
+    def setenv(self, key: str, value: str) -> None:
+        """setenv implements Engine.setenv."""
+        self._first.setenv(key, value)
+        self._second.setenv(key, value)
+
+    def unsetenv(self, key: str) -> None:
+        """unsetenv implements Engine.unsetenv."""
+        self._first.unsetenv(key)
+        self._second.unsetenv(key)
 
 
 def new_engine(options: Options) -> Engine:
@@ -816,7 +848,9 @@ class BundleJAR:
             ]
         )
         engine.cat_sed_redirect(
-            [("@VERSION@", version),],
+            [
+                ("@VERSION@", version),
+            ],
             os.path.join("MOBILE", "template.pom"),
             os.path.join("MOBILE", "android", "oonimkall-{}.pom".format(version)),
         )
@@ -1040,9 +1074,122 @@ class iOS:
         oopodspec.build(engine, options)
 
 
+class MiniOONIDarwinOrWindows:
+    def __init__(self, goos: str, goarch: str):
+        self.__name = os.path.join(".", "CLI", goos, goarch, "miniooni")
+        self.__os = goos
+        self.__arch = goarch
+        self.__ext = ".exe" if goos == "windows" else ""
+
+    def name(self) -> str:
+        return self.__name
+
+    def build(self, engine: Engine, options: Options) -> None:
+        if os.path.isfile(self.__name) and not options.dry_run():
+            log("./make: {}: already built".format(self.__name))
+            return
+        ooprivate = OONIProbePrivate()
+        ooprivate.build(engine, options)
+        gogo = SDKGolangGo()
+        gogo.build(engine, options)
+        log("./make: building {}...".format(self.__name))
+        ooprivate.copyfiles(engine, options)
+        engine.setenv("CGO_ENABLED", "0")
+        engine.setenv("GOOS", self.__os)
+        engine.setenv("GOARCH", self.__arch)
+        cmdline = [
+            "go",
+            "build",
+            "-o",
+            os.path.join("CLI", self.__os, self.__arch, "miniooni" + self.__ext),
+            "-ldflags=-s -w",
+        ]
+        if options.debugging():
+            cmdline.append("-x")
+        if options.verbose():
+            cmdline.append("-v")
+        if not options.disable_embedding_psiphon_config():
+            cmdline.append("-tags=ooni_psiphon_config")
+        cmdline.append("./internal/cmd/miniooni")
+        engine.run(cmdline)
+        engine.unsetenv("CGO_ENABLED")
+        engine.unsetenv("GOARCH")
+        engine.unsetenv("GOOS")
+
+
+class MiniOONILinux:
+    def __init__(self, goarch: str):
+        self.__name = os.path.join(".", "CLI", "linux", goarch, "miniooni")
+        self.__arch = goarch
+
+    def name(self) -> str:
+        return self.__name
+
+    def build(self, engine: Engine, options: Options) -> None:
+        if os.path.isfile(self.__name) and not options.dry_run():
+            log("./make: {}: already built".format(self.__name))
+            return
+        ooprivate = OONIProbePrivate()
+        ooprivate.build(engine, options)
+        gogo = SDKGolangGo()
+        gogo.build(engine, options)
+        log("./make: building {}...".format(self.__name))
+        ooprivate.copyfiles(engine, options)
+        engine.setenv("CGO_ENABLED", "0")
+        engine.setenv("GOOS", "linux")
+        engine.setenv("GOARCH", self.__arch)
+        if self.__arch == "arm":
+            engine.setenv("GOARM", "7")
+        cmdline = [
+            "go",
+            "build",
+            "-o",
+            os.path.join("CLI", "linux", self.__arch, "miniooni"),
+            "-ldflags=-s -w -extldflags -static",
+        ]
+        if options.debugging():
+            cmdline.append("-x")
+        if options.verbose():
+            cmdline.append("-v")
+        tags = "-tags=netgo"
+        if not options.disable_embedding_psiphon_config():
+            tags += ",ooni_psiphon_config"
+        cmdline.append(tags)
+        cmdline.append("./internal/cmd/miniooni")
+        engine.run(cmdline)
+        engine.unsetenv("CGO_ENABLED")
+        engine.unsetenv("GOARCH")
+        engine.unsetenv("GOOS")
+        if self.__arch == "arm":
+            engine.unsetenv("GOARM")
+
+
+class MiniOONI:
+    """MiniOONI is the top-level 'miniooni' target."""
+
+    __name = "miniooni"
+
+    def name(self) -> str:
+        return self.__name
+
+    def build(self, engine: Engine, options: Options) -> None:
+        for builder in (
+            MiniOONIDarwinOrWindows("darwin", "amd64"),
+            MiniOONIDarwinOrWindows("darwin", "arm64"),
+            MiniOONILinux("386"),
+            MiniOONILinux("amd64"),
+            MiniOONILinux("arm"),
+            MiniOONILinux("arm64"),
+            MiniOONIDarwinOrWindows("windows", "386"),
+            MiniOONIDarwinOrWindows("windows", "amd64"),
+        ):
+            builder.build(engine, options)
+
+
 TARGETS: List[Target] = [
     Android(),
     iOS(),
+    MiniOONI(),
     OONIMKAllAAR(),
     OONIMKAllFrameworkZip(),
 ]
@@ -1050,11 +1197,11 @@ TARGETS: List[Target] = [
 
 def main() -> None:
     """main function"""
-    alltargets: Dict[str, Target] = dict((t.name(), t) for t in TARGETS)
-    options = ConfigFromCLI.parse(list(alltargets.keys()))
+    toptargets: Dict[str, Target] = dict((t.name(), t) for t in TARGETS)
+    options = ConfigFromCLI.parse(list(toptargets.keys()))
     engine = new_engine(options)
     # note that we check whether the target is known in parse()
-    selected = alltargets[options.target()]
+    selected = toptargets[options.target()]
     selected.build(engine, options)
 
 

@@ -1,8 +1,10 @@
+# ios verifies we can still build for iOS
 name: ios
 on:
   push:
     branches:
       - 'release/**'
+      - 'master'
 jobs:
   test:
     runs-on: macos-10.15
