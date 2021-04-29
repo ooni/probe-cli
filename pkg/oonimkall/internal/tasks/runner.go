@@ -77,6 +77,7 @@ func (r *Runner) newsession(ctx context.Context, logger *ChanLogger) (*engine.Se
 	}
 
 	// TODO(bassosimone): write tests for this functionality
+	// See https://github.com/ooni/probe/issues/1465.
 	var proxyURL *url.URL
 	if r.settings.Proxy != "" {
 		var err error

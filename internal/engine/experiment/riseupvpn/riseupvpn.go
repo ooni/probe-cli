@@ -259,6 +259,7 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	// measure obfs4 in parallel
 	// TODO(bassosimone): when urlgetter is able to do obfs4 handshakes, here
 	// can possibly also test for the obfs4 handshake.
+	// See https://github.com/ooni/probe/issues/1463.
 	for entry := range multi.CollectOverall(
 		ctx, obfs4Endpoints, 1+len(inputs)+len(openvpnEndpoints), overallCount, "riseupvpn", callbacks) {
 		testkeys.AddGatewayConnectTestKeys(entry, "obfs4")
