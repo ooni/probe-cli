@@ -1043,12 +1043,8 @@ class iOS:
 TARGETS: List[Target] = [
     Android(),
     iOS(),
-    BundleJAR(),
     OONIMKAllAAR(),
-    OONIProbePrivate(),
-    SDKAndroid(),
-    SDKGolangGo(),
-    SDKOONIGo(),
+    OONIMKAllFrameworkZip(),
 ]
 
 
