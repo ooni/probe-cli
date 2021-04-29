@@ -917,6 +917,62 @@ class OONIMKAllFramework:
         )
 
 
+class OONIMKAllFrameworkZip:
+    """OONIMKAllFrameworkZip creates ./MOBILE/ios/oonimkall.framework.zip."""
+
+    __name = os.path.join(".", "MOBILE", "ios", "oonimkall.framework.zip")
+
+    def name(self) -> str:
+        return self.__name
+
+    def build(self, engine: Engine, options: Options) -> None:
+        if os.path.isfile(self.__name) and not options.dry_run():
+            log("./make: {}: already built".format(self.__name))
+            return
+        engine.require("zip", "rm")
+        ooframework = OONIMKAllFramework()
+        ooframework.build(engine, options)
+        log("./make: building {}...".format(self.__name))
+        engine.run(
+            [
+                "rm",
+                "-rf",
+                "oonimkall.framework.zip",
+            ],
+            cwd=os.path.join(".", "MOBILE", "ios"),
+        )
+        engine.run(
+            [
+                "zip",
+                "-yr",
+                "oonimkall.framework.zip",
+                "oonimkall.framework",
+            ],
+            cwd=os.path.join(".", "MOBILE", "ios"),
+        )
+
+
+class OONIMKAllPodspec:
+    """OONIMKAllPodspec creates ./MOBILE/ios/oonimkall.podspec."""
+
+    __name = os.path.join(".", "MOBILE", "ios", "oonimkall.podspec")
+
+    def name(self) -> str:
+        return self.__name
+
+    def build(self, engine: Engine, options: Options) -> None:
+        if os.path.isfile(self.__name) and not options.dry_run():
+            log("./make: {}: already built".format(self.__name))
+            return
+        version = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
+        engine.cat_sed_redirect(
+            "@VERSION@",
+            version,
+            os.path.join(".", "MOBILE", "template.podspec"),
+            self.__name,
+        )
+
+
 class iOS:
     """iOS is the toplevel ios target."""
 
@@ -924,8 +980,10 @@ class iOS:
         return "ios"
 
     def build(self, engine: Engine, options: Options) -> None:
-        ooframework = OONIMKAllFramework()
-        ooframework.build(engine, options)
+        ooframeworkzip = OONIMKAllFrameworkZip()
+        ooframeworkzip.build(engine, options)
+        oopodspec = OONIMKAllPodspec()
+        oopodspec.build(engine, options)
 
 
 TARGETS: List[Target] = [
