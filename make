@@ -1076,10 +1076,10 @@ class iOS:
 
 class MiniOONIDarwinOrWindows:
     def __init__(self, goos: str, goarch: str):
-        self.__name = os.path.join(".", "CLI", goos, goarch, "miniooni")
+        self.__ext = ".exe" if goos == "windows" else ""
+        self.__name = os.path.join(".", "CLI", goos, goarch, "miniooni" + self.__ext)
         self.__os = goos
         self.__arch = goarch
-        self.__ext = ".exe" if goos == "windows" else ""
 
     def name(self) -> str:
         return self.__name
@@ -1101,7 +1101,7 @@ class MiniOONIDarwinOrWindows:
             "go",
             "build",
             "-o",
-            os.path.join("CLI", self.__os, self.__arch, "miniooni" + self.__ext),
+            self.__name,
             "-ldflags=-s -w",
         ]
         if options.debugging():
