@@ -23,7 +23,7 @@ func Onboarding(config *config.Config) error {
 	fmt.Println()
 	output.Paragraph("OONI Probe checks whether your provider blocks access to sites and services. Run OONI Probe to collect evidence of internet censorship and to measure your network performance.")
 	fmt.Println()
-	err := output.PressEnterToContinue("Press 'Enter' to continue...")
+	err := output.PressAnyKeyToContinue("Press any key to continue...")
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func Onboarding(config *config.Config) error {
 	fmt.Println()
 	output.Bullet("Read the documentation to learn more.")
 	fmt.Println()
-	err = output.PressEnterToContinue("Press 'Enter' to continue...")
+	err = output.PressAnyKeyToContinue("Press any key to continue...")
 	if err != nil {
 		return err
 	}

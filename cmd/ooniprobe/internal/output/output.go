@@ -169,8 +169,8 @@ func Bullet(text string) {
 	fmt.Printf("• %s\n", wordwrap.WrapString(text, width))
 }
 
-// PressEnterToContinue blocks until the user presses any key
-func PressEnterToContinue(text string) error {
+// PressAnyKeyToContinue blocks until the user presses any key
+func PressAnyKeyToContinue(text string) error {
 	fmt.Print(text)
 	_, err := bufio.NewReader(os.Stdin).ReadBytes('\n')
 	return err
