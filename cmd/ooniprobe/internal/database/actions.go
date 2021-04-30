@@ -223,6 +223,7 @@ func UpdateUploadedStatus(sess sqlbuilder.Database, result *Result) error {
 	err = req.One(&uploadedTotal)
 	if err != nil {
 		log.WithError(err).Error("failed to retrieve total vs uploaded counts")
+		return err
 	}
 	if uploadedTotal.UploadedCount == uploadedTotal.TotalCount {
 		result.IsUploaded = true
