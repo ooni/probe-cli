@@ -21,7 +21,7 @@ Please, make sure you tag such issues using the `ooni/probe-cli` label.
 
 Every top-level directory contains an explanatory README file.
 
-## Development setup
+## OONIProbe
 
 Be sure you have golang >= 1.16 and a C compiler (when developing for Windows, you
 need Mingw-w64 installed). You can build using:
@@ -34,35 +34,42 @@ This will generate a binary called `ooniprobe` in the current directory.
 
 ## Android bindings
 
+Make sure you have Python 3.8+ installed, then run:
+
 ```bash
-./build-android.bash
+./make -t android
 ```
 
-We automatically build Android bindings whenever commits are pushed to the
-`mobile-staging` branch. Such builds could be integrated by using:
+Builds bindings for Android. (Add `----disable-embedding-psiphon-config` if you
+cannot clone private repositories in the https://github.com/ooni namespace.)
 
-```Groovy
-implementation "org.ooni:oonimkall:VERSION"
-```
-
-Where VERSION is like `2020.03.30-231914` corresponding to the
-time when the build occurred.
+The generated bindings are (manually) pushed to the Maven Central package
+repository. The instructions explaining how to integrate these bindings
+are published along with the release notes.
 
 ## iOS bindings
 
+Make sure you have Python 3.8+ installed, then run:
+
 ```bash
-./build-ios.bash
+./make -t ios
 ```
 
-We automatically build iOS bindings whenever commits are pushed to the
-`mobile-staging` branch. Such builds could be integrated by using:
+Builds bindings for iOS. (Add `----disable-embedding-psiphon-config` if you
+cannot clone private repositories in the https://github.com/ooni namespace.)
 
-```ruby
-pod 'oonimkall', :podspec => 'https://dl.bintray.com/ooni/ios/oonimkall-VERSION.podspec'
+The generated bindings are (manually) added to GitHub releases. The instructions
+explaining how to integrate these bindings are published along with the release notes.
+
+## miniooni
+
+Miniooni is the experimental OONI client used for research. Compile using:
+
+```bash
+go build -v ./internal/cmd/miniooni
 ```
 
-Where VERSION is like `2020.03.30-231914` corresponding to the
-time when the build occurred.
+This will generate a binary called `miniooni` in the current directory.
 
 ## Updating dependencies
 
@@ -75,3 +82,5 @@ go get -u -v ./... && go mod tidy
 Create an issue according to [the routine release template](
 https://github.com/ooni/probe/blob/master/.github/ISSUE_TEMPLATE/routine-sprint-releases.md)
 and perform any item inside the check-list.
+
+We build releases using `./make`, which requires Python3.8+.

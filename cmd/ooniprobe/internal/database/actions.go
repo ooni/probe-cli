@@ -57,7 +57,7 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 		log.Errorf("failed to run query %s: %v", req.String(), err)
 		return nil, err
 	}
-	if measurement.IsUploaded {
+	if measurement.Measurement.IsUploaded {
 		// TODO(bassosimone): this should be a function exposed by probe-engine
 		reportID := measurement.Measurement.ReportID.String
 		measurementURL := &url.URL{
@@ -201,6 +201,46 @@ func DeleteResult(sess sqlbuilder.Database, resultID int64) error {
 	}
 
 	os.RemoveAll(result.MeasurementDir)
+	return nil
+}
+
+// UpdateUploadedStatus will check if all the measurements inside of a given result set have been uploaded and if so will set the is_uploaded flag to true
+func UpdateUploadedStatus(sess sqlbuilder.Database, result *Result) error {
+	tx, err := sess.NewTx(nil)
+	if err != nil {
+		log.WithError(err).Error("failed to create transaction")
+		return err
+	}
+
+	uploadedTotal := UploadedTotalCount{}
+	req := tx.Select(
+		db.Raw("SUM(measurements.measurement_is_uploaded)"),
+		db.Raw("COUNT(*)"),
+	).From("results").
+		Join("measurements").On("measurements.result_id = results.result_id").
+		Where("results.result_id = ?", result.ID)
+
+	err = req.One(&uploadedTotal)
+	if err != nil {
+		log.WithError(err).Error("failed to retrieve total vs uploaded counts")
+		return err
+	}
+	if uploadedTotal.UploadedCount == uploadedTotal.TotalCount {
+		result.IsUploaded = true
+	} else {
+		result.IsUploaded = false
+	}
+	err = tx.Collection("results").Find("result_id", result.ID).Update(result)
+	if err != nil {
+		log.WithError(err).Error("failed to update result")
+		return errors.Wrap(err, "updating result")
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.WithError(err).Error("Failed to write to the results table")
+		return err
+	}
+
 	return nil
 }
 

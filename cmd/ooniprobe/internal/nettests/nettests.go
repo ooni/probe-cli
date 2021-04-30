@@ -214,7 +214,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 			return errors.Wrap(err, "failed to add test keys to summary")
 		}
 	}
-
+	database.UpdateUploadedStatus(c.Probe.DB(), c.res)
 	log.Debugf("status.end")
 	return nil
 }

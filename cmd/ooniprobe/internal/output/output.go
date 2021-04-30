@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/mitchellh/go-wordwrap"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
 )
 
 // MeasurementJSON prints the JSON of a measurement
@@ -29,6 +29,7 @@ func Progress(key string, perc float64, eta float64, msg string) {
 	}).Info(msg)
 }
 
+// MeasurementSummaryData contains summary information on the measurement
 type MeasurementSummaryData struct {
 	TotalRuntime       float64
 	TotalCount         int64
@@ -41,6 +42,7 @@ type MeasurementSummaryData struct {
 	StartTime          time.Time
 }
 
+// MeasurementSummary emits the measurement summary
 func MeasurementSummary(msmt MeasurementSummaryData) {
 	log.WithFields(log.Fields{
 		"type":                 "measurement_summary",
@@ -76,7 +78,7 @@ func MeasurementItem(msmt database.MeasurementURLNetwork, isFirst bool, isLast b
 		"url_category_code":     msmt.URL.CategoryCode.String,
 		"url_country_code":      msmt.URL.CountryCode.String,
 		"is_anomaly":            msmt.IsAnomaly.Bool,
-		"is_uploaded":           msmt.IsUploaded,
+		"is_uploaded":           msmt.Measurement.IsUploaded,
 		"is_upload_failed":      msmt.IsUploadFailed,
 		"upload_failure_msg":    msmt.UploadFailureMsg.String,
 		"is_failed":             msmt.IsFailed,
@@ -100,6 +102,7 @@ type ResultItemData struct {
 	NetworkName             string
 	ASN                     uint
 	Done                    bool
+	IsUploaded              bool
 	DataUsageDown           float64
 	DataUsageUp             float64
 	Index                   int
@@ -121,6 +124,7 @@ func ResultItem(result ResultItemData) {
 		"asn":                       result.ASN,
 		"runtime":                   result.Runtime,
 		"is_done":                   result.Done,
+		"is_uploaded":               result.IsUploaded,
 		"data_usage_down":           result.DataUsageDown,
 		"data_usage_up":             result.DataUsageUp,
 		"index":                     result.Index,
@@ -128,6 +132,7 @@ func ResultItem(result ResultItemData) {
 	}).Info("result item")
 }
 
+// ResultSummaryData contains the summary data of a result
 type ResultSummaryData struct {
 	TotalTests         int64
 	TotalDataUsageUp   float64
@@ -135,6 +140,7 @@ type ResultSummaryData struct {
 	TotalNetworks      int64
 }
 
+// ResultSummary emits the result summary
 func ResultSummary(result ResultSummaryData) {
 	log.WithFields(log.Fields{
 		"type":                  "result_summary",
@@ -153,17 +159,20 @@ func SectionTitle(text string) {
 	}).Info(text)
 }
 
+// Paragraph makes a word-wrapped paragraph out of text
 func Paragraph(text string) {
 	const width = 80
-	fmt.Println(utils.WrapString(text, width))
+	fmt.Println(wordwrap.WrapString(text, width))
 }
 
+// Bullet is like paragraph but with a bullet point in front
 func Bullet(text string) {
 	const width = 80
-	fmt.Printf("• %s\n", utils.WrapString(text, width))
+	fmt.Printf("• %s\n", wordwrap.WrapString(text, width))
 }
 
-func PressEnterToContinue(text string) error {
+// PressAnyKeyToContinue blocks until the user presses any key
+func PressAnyKeyToContinue(text string) error {
 	fmt.Print(text)
 	_, err := bufio.NewReader(os.Stdin).ReadBytes('\n')
 	return err
