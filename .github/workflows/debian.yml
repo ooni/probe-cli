@@ -43,7 +43,7 @@ jobs:
           export DEBFNAME="ooniprobe-cli_${VER}_amd64.deb"
           cd $GITHUB_WORKSPACE
           # AWS user debci-s3
-          ./.github/workflows/debops-ci --show-commands upload --bucket-name ooni-debpkg-test $DEB
+          ./.github/workflows/debops-ci --show-commands upload --bucket-name ooni-deb $DEB
         env:
           DEB_GPG_KEY: ${{ secrets.DEB_GPG_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
