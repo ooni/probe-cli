@@ -8,8 +8,15 @@ import (
 
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
-	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils/shutil"
 )
+
+func copyfile(source, dest string) error {
+	data, err := ioutil.ReadFile(source)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(dest, data, 0600)
+}
 
 func newOONIProbe(t *testing.T) *ooni.Probe {
 	homePath, err := ioutil.TempDir("", "ooniprobetests")
@@ -18,7 +25,9 @@ func newOONIProbe(t *testing.T) *ooni.Probe {
 	}
 	configPath := path.Join(homePath, "config.json")
 	testingConfig := path.Join("..", "..", "testdata", "testing-config.json")
-	shutil.Copy(testingConfig, configPath, false)
+	if err := copyfile(testingConfig, configPath); err != nil {
+		t.Fatal(err)
+	}
 	probe := ooni.NewProbe(configPath, homePath)
 	swName := "ooniprobe-cli-tests"
 	swVersion := "3.0.0-alpha"
