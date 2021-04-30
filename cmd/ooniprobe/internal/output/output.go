@@ -78,7 +78,7 @@ func MeasurementItem(msmt database.MeasurementURLNetwork, isFirst bool, isLast b
 		"url_category_code":     msmt.URL.CategoryCode.String,
 		"url_country_code":      msmt.URL.CountryCode.String,
 		"is_anomaly":            msmt.IsAnomaly.Bool,
-		"is_uploaded":           msmt.IsUploaded,
+		"is_uploaded":           msmt.Measurement.IsUploaded,
 		"is_upload_failed":      msmt.IsUploadFailed,
 		"upload_failure_msg":    msmt.UploadFailureMsg.String,
 		"is_failed":             msmt.IsFailed,
@@ -102,6 +102,7 @@ type ResultItemData struct {
 	NetworkName             string
 	ASN                     uint
 	Done                    bool
+	IsUploaded              bool
 	DataUsageDown           float64
 	DataUsageUp             float64
 	Index                   int
@@ -123,6 +124,7 @@ func ResultItem(result ResultItemData) {
 		"asn":                       result.ASN,
 		"runtime":                   result.Runtime,
 		"is_done":                   result.Done,
+		"is_uploaded":               result.IsUploaded,
 		"data_usage_down":           result.DataUsageDown,
 		"data_usage_up":             result.DataUsageUp,
 		"index":                     result.Index,

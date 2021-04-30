@@ -86,14 +86,35 @@ func TestMeasurementWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	m1.IsUploaded = true
+	err = sess.Collection("measurements").Find("measurement_id", m1.ID).Update(m1)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var m2 Measurement
 	err = sess.Collection("measurements").Find("measurement_id", m1.ID).One(&m2)
 	if err != nil {
 		t.Fatal(err)
 	}
+	m2.IsUploaded = false
+	err = sess.Collection("measurements").Find("measurement_id", m2.ID).Update(m2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if m2.ResultID != m1.ResultID {
 		t.Error("result_id mismatch")
+	}
+	err = UpdateUploadedStatus(sess, result)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var r Result
+	err = sess.Collection("measurements").Find("result_id", result.ID).One(&r)
+	if r.IsUploaded == true {
+		t.Error("result should be marked as not uploaded")
 	}
 
 	done, incomplete, err := ListResults(sess)
@@ -166,6 +187,7 @@ func TestDeleteResult(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if m2.ResultID != m1.ResultID {
 		t.Error("result_id mismatch")
 	}
