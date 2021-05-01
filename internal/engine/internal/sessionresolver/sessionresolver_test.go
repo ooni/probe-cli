@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
 )
 
@@ -30,7 +31,7 @@ func TestAddressWorks(t *testing.T) {
 func TestTypicalUsageWithFailure(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
-	reso := &Resolver{}
+	reso := &Resolver{KVStore: &kvstore.Memory{}}
 	addrs, err := reso.LookupHost(ctx, "ooni.org")
 	if !errors.Is(err, ErrLookupHost) {
 		t.Fatal("not the error we expected", err)
@@ -82,6 +83,7 @@ func TestTypicalUsageWithSuccess(t *testing.T) {
 	expected := []string{"8.8.8.8", "8.8.4.4"}
 	ctx := context.Background()
 	reso := &Resolver{
+		KVStore: &kvstore.Memory{},
 		dnsClientMaker: &fakeDNSClientMaker{
 			reso: &FakeResolver{Data: expected},
 		},
@@ -283,10 +285,13 @@ func TestResolverWorksWithProxy(t *testing.T) {
 	}
 	listener := <-listench
 	// use the proxy
-	reso := &Resolver{ProxyURL: &url.URL{
-		Scheme: "socks5",
-		Host:   listener.Addr().String(),
-	}}
+	reso := &Resolver{
+		ProxyURL: &url.URL{
+			Scheme: "socks5",
+			Host:   listener.Addr().String(),
+		},
+		KVStore: &kvstore.Memory{},
+	}
 	ctx := context.Background()
 	addrs, err := reso.LookupHost(ctx, "ooni.org")
 	// cleanly shutdown the listener

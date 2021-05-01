@@ -33,8 +33,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/multierror"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/multierror"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -44,6 +44,9 @@ import (
 // are stored onto the KVStore such that we can remember them
 // and therefore we can generally give preference to underlying
 // DoT/DoH resolvers that work better.
+//
+// Make sure you fill the mandatory fields (indicated below)
+// before using this data structure.
 //
 // You MUST NOT modify public fields of this structure once it
 // has been created, because that MAY lead to data races.
@@ -57,10 +60,9 @@ type Resolver struct {
 	// field is not set, then we won't count the bytes.
 	ByteCounter *bytecounter.Counter
 
-	// KVStore is the optional key-value store where you
+	// KVStore is the MANDATORY key-value store where you
 	// want us to write statistics about which resolver is
-	// working better in your network. If this field is
-	// not set, then we'll use a in-memory store.
+	// working better in your network.
 	KVStore KVStore
 
 	// Logger is the optional logger you want us to use
