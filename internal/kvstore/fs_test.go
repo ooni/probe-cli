@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"errors"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"testing"
 )
 
 func TestFileSystemGood(t *testing.T) {
-	kvstore, err := NewFS(
-		filepath.Join("testdata", "kvstore2"),
-	)
+	dirpath := filepath.Join("testdata", "kvstore2")
+	if err := os.RemoveAll(dirpath); err != nil {
+		t.Fatal(err)
+	}
+	kvstore, err := NewFS(dirpath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,6 +28,24 @@ func TestFileSystemGood(t *testing.T) {
 	}
 	if !bytes.Equal(ovalue, value) {
 		t.Fatal("invalid value")
+	}
+}
+
+func TestFileSystemNoSuchKey(t *testing.T) {
+	dirpath := filepath.Join("testdata", "kvstore2")
+	if err := os.RemoveAll(dirpath); err != nil {
+		t.Fatal(err)
+	}
+	kvstore, err := NewFS(dirpath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	value, err := kvstore.Get("antani")
+	if !errors.Is(err, ErrNoSuchKey) {
+		t.Fatal("not the error we expected", err)
+	}
+	if value != nil {
+		t.Fatal("expected nil value")
 	}
 }
 

@@ -18,7 +18,8 @@ type Memory struct {
 	mu sync.Mutex
 }
 
-// Get returns a key from the key-value store.
+// Get returns the specified key's value. In case of error, the
+// error type is such that errors.Is(err, ErrNoSuchKey).
 func (kvs *Memory) Get(key string) ([]byte, error) {
 	kvs.mu.Lock()
 	defer kvs.mu.Unlock()

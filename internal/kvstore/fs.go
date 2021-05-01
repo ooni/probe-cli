@@ -2,6 +2,7 @@ package kvstore
 
 import (
 	"bytes"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -36,9 +37,14 @@ func (kvs *FS) filename(key string) string {
 	return filepath.Join(kvs.basedir, key)
 }
 
-// Get returns the specified key's value.
+// Get returns the specified key's value. In case of error, the
+// error type is such that errors.Is(err, ErrNoSuchKey).
 func (kvs *FS) Get(key string) ([]byte, error) {
-	return lockedfile.Read(kvs.filename(key))
+	data, err := lockedfile.Read(kvs.filename(key))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", ErrNoSuchKey, err.Error())
+	}
+	return data, nil
 }
 
 // Set sets the value of a specific key.
