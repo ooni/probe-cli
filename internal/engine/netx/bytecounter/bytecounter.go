@@ -1,6 +1,6 @@
 package bytecounter
 
-import "github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+import "github.com/ooni/probe-cli/v3/internal/atomicx"
 
 // Counter counts bytes sent and received.
 type Counter struct {

@@ -28,7 +28,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )

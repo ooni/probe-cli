@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"

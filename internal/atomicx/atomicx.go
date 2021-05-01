@@ -1,15 +1,24 @@
-// Package atomicx contains atomic int64/float64 that work also on 32 bit
-// platforms. The main reason for rolling out this package is to avoid potential
-// crashes when using 32 bit devices where we are atomically accessing a 64 bit
-// variable that is not aligned. The solution to this issue is rather crude: use
-// a normal variable and protect it using a normal mutex. While this could be
-// disappointing in general, it seems fine to be done in our context where
-// we mainly use atomic semantics for counting.
+// Package atomicx extends sync/atomic.
+//
+// Sync/atomic fails when using int64 atomic operations on 32 bit platforms
+// when the access is not aligned. As specified in the documentation, in
+// fact, "it is the caller's responsibility to arrange for 64-bit alignment
+// of 64-bit words accessed atomically". For more information on this
+// issue, see https://golang.org/pkg/sync/atomic/#pkg-note-BUG.
+//
+// As explained in CONTRIBUTING.md, probe-cli SHOULD use this package rather
+// than sync/atomic to avoid these alignment issues on 32 bit.
+//
+// It is of course possible to write atomic code using 64 bit variables on a
+// 32 bit platform, but that's difficult to do correctly. This package
+// provides an easier-to-use interface. We use allocated
+// structures protected by a mutex that encapsulate a int64 value.
+//
+// While there we also added support for atomic float64 operations, again
+// by using structures protected by a mutex variable.
 package atomicx
 
-import (
-	"sync"
-)
+import "sync"
 
 // Int64 is an int64 with atomic semantics.
 type Int64 struct {

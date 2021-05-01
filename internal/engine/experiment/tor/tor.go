@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netxlogger"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonidatamodel"
