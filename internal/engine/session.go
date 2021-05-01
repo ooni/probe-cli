@@ -12,7 +12,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/sessionresolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
@@ -20,6 +19,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/engine/tunnel"
+	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
