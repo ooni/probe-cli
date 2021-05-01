@@ -22,23 +22,22 @@ import "sync"
 
 // Int64 is an int64 with atomic semantics.
 type Int64 struct {
+	// mu provides mutual exclusion.
 	mu sync.Mutex
-	v  int64
+
+	// v is the underlying value.
+	v int64
 }
 
-// Add behaves like atomic.AddInt64
-func (i64 *Int64) Add(delta int64) (newvalue int64) {
+// Add behaves like atomic.AddInt64.
+func (i64 *Int64) Add(delta int64) int64 {
 	i64.mu.Lock()
+	defer i64.mu.Unlock()
 	i64.v += delta
-	newvalue = i64.v
-	i64.mu.Unlock()
-	return
+	return i64.v
 }
 
-// Load behaves like atomic.LoadInt64
+// Load behaves like atomic.LoadInt64.
 func (i64 *Int64) Load() (v int64) {
-	i64.mu.Lock()
-	v = i64.v
-	i64.mu.Unlock()
-	return
+	return i64.Add(0)
 }
