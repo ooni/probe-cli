@@ -61,8 +61,8 @@ type Spec struct {
 }
 
 var (
-	attempts *atomicx.Int64 = atomicx.NewInt64()
-	enabled  *atomicx.Int64 = atomicx.NewInt64()
+	attempts *atomicx.Int64 = &atomicx.Int64{}
+	enabled  *atomicx.Int64 = &atomicx.Int64{}
 	mu       sync.Mutex
 	spec     *Spec
 )

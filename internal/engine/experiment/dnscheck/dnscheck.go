@@ -49,7 +49,7 @@ func (e *Endpoints) maybeSleep(resolverURL string, logger model.Logger) {
 	}
 	sleepTime := nextTime.Sub(now)
 	if e.count == nil {
-		e.count = atomicx.NewInt64()
+		e.count = &atomicx.Int64{}
 	}
 	e.count.Add(1)
 	logger.Infof("waiting %v before testing %s again", sleepTime, resolverURL)

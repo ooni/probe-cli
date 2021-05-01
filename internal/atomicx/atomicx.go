@@ -26,11 +26,6 @@ type Int64 struct {
 	v  int64
 }
 
-// NewInt64 creates a new int64 with atomic semantics.
-func NewInt64() *Int64 {
-	return new(Int64)
-}
-
 // Add behaves like atomic.AddInt64
 func (i64 *Int64) Add(delta int64) (newvalue int64) {
 	i64.mu.Lock()
@@ -52,11 +47,6 @@ func (i64 *Int64) Load() (v int64) {
 type Float64 struct {
 	mu sync.Mutex
 	v  float64
-}
-
-// NewFloat64 creates a new float64 with atomic semantics.
-func NewFloat64() *Float64 {
-	return new(Float64)
 }
 
 // Add behaves like AtomicInt64.Add but for float64

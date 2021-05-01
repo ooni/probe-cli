@@ -157,7 +157,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		byteCounter:             bytecounter.New(),
 		kvStore:                 config.KVStore,
 		logger:                  config.Logger,
-		queryProbeServicesCount: atomicx.NewInt64(),
+		queryProbeServicesCount: &atomicx.Int64{},
 		softwareName:            config.SoftwareName,
 		softwareVersion:         config.SoftwareVersion,
 		tempDir:                 tempDir,

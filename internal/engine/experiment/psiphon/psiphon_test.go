@@ -83,7 +83,7 @@ func TestRunWillPrintSomethingWithCancelledContext(t *testing.T) {
 		time.Sleep(2 * time.Second)
 		cancel() // fail after we've given the printer a chance to run
 	}
-	observer := observerCallbacks{progress: atomicx.NewInt64()}
+	observer := observerCallbacks{progress: &atomicx.Int64{}}
 	err := measurer.Run(ctx, newfakesession(), measurement, observer)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("expected another error here")

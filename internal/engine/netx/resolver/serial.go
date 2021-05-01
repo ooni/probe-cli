@@ -38,7 +38,7 @@ func NewSerialResolver(t RoundTripper) SerialResolver {
 	return SerialResolver{
 		Encoder:     MiekgEncoder{},
 		Decoder:     MiekgDecoder{},
-		NumTimeouts: atomicx.NewInt64(),
+		NumTimeouts: &atomicx.Int64{},
 		Txp:         t,
 	}
 }

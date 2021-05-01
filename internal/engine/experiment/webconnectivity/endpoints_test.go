@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewEndpointPortPanicsWithInvalidScheme(t *testing.T) {
-	counter := atomicx.NewInt64()
+	counter := &atomicx.Int64{}
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -30,7 +30,7 @@ func TestNewEndpointPortPanicsWithInvalidScheme(t *testing.T) {
 }
 
 func TestNewEndpointPortPanicsWithInvalidHost(t *testing.T) {
-	counter := atomicx.NewInt64()
+	counter := &atomicx.Int64{}
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {

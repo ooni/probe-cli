@@ -25,8 +25,8 @@ type AtomicInt64 struct {
 // These two variables contain metrics pertaining to the number
 // of Sessions and Contexts that are currently being used.
 var (
-	ActiveSessions = &AtomicInt64{atomicx.NewInt64()}
-	ActiveContexts = &AtomicInt64{atomicx.NewInt64()}
+	ActiveSessions = &AtomicInt64{&atomicx.Int64{}}
+	ActiveContexts = &AtomicInt64{&atomicx.Int64{}}
 )
 
 // Logger is the logger used by a Session. You should implement a class

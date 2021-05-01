@@ -71,7 +71,7 @@ func TestNewSubmitterWithFailedSubmission(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	fakeSubmitter := &FakeSubmitter{
-		Calls: atomicx.NewInt64(),
+		Calls: &atomicx.Int64{},
 		Error: expected,
 	}
 	submitter, err := NewSubmitter(ctx, SubmitterConfig{

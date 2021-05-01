@@ -26,7 +26,7 @@ func TestClampTimeout(t *testing.T) {
 }
 
 func TestNewContextWithZeroTimeout(t *testing.T) {
-	here := atomicx.NewInt64()
+	here := &atomicx.Int64{}
 	ctx, cancel := newContext(0)
 	defer cancel()
 	go func() {
@@ -41,7 +41,7 @@ func TestNewContextWithZeroTimeout(t *testing.T) {
 }
 
 func TestNewContextWithNegativeTimeout(t *testing.T) {
-	here := atomicx.NewInt64()
+	here := &atomicx.Int64{}
 	ctx, cancel := newContext(-1)
 	defer cancel()
 	go func() {
@@ -56,7 +56,7 @@ func TestNewContextWithNegativeTimeout(t *testing.T) {
 }
 
 func TestNewContextWithHugeTimeout(t *testing.T) {
-	here := atomicx.NewInt64()
+	here := &atomicx.Int64{}
 	ctx, cancel := newContext(maxTimeout + 1)
 	defer cancel()
 	go func() {
@@ -71,7 +71,7 @@ func TestNewContextWithHugeTimeout(t *testing.T) {
 }
 
 func TestNewContextWithReasonableTimeout(t *testing.T) {
-	here := atomicx.NewInt64()
+	here := &atomicx.Int64{}
 	ctx, cancel := newContext(1)
 	defer cancel()
 	go func() {
@@ -86,7 +86,7 @@ func TestNewContextWithReasonableTimeout(t *testing.T) {
 }
 
 func TestNewContextWithArtificiallyLowMaxTimeout(t *testing.T) {
-	here := atomicx.NewInt64()
+	here := &atomicx.Int64{}
 	const maxTimeout = 2
 	ctx, cancel := newContextEx(maxTimeout+1, maxTimeout)
 	defer cancel()

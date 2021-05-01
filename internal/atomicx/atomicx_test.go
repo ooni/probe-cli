@@ -12,7 +12,7 @@ func TestInt64(t *testing.T) {
 	// and be confident that they're WAI? Here I hope this test is
 	// run with `-race` and I'm doing something that AFAICT will
 	// be flagged as race if we were not be using mutexes.
-	v := atomicx.NewInt64()
+	v := &atomicx.Int64{}
 	go func() {
 		v.Add(17)
 	}()
@@ -33,7 +33,7 @@ func TestFloat64(t *testing.T) {
 	// and be confident that they're WAI? Here I hope this test is
 	// run with `-race` and I'm doing something that AFAICT will
 	// be flagged as race if we were not be using mutexes.
-	v := atomicx.NewFloat64()
+	v := &atomicx.Float64{}
 	go func() {
 		v.Add(17.0)
 	}()

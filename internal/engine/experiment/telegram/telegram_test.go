@@ -271,9 +271,9 @@ func TestUpdateWebWithMixedResults(t *testing.T) {
 }
 
 func TestWeConfigureWebChecksToFailOnHTTPError(t *testing.T) {
-	called := atomicx.NewInt64()
-	failOnErrorHTTPS := atomicx.NewInt64()
-	failOnErrorHTTP := atomicx.NewInt64()
+	called := &atomicx.Int64{}
+	failOnErrorHTTPS := &atomicx.Int64{}
+	failOnErrorHTTP := &atomicx.Int64{}
 	measurer := telegram.Measurer{
 		Config: telegram.Config{},
 		Getter: func(ctx context.Context, g urlgetter.Getter) (urlgetter.TestKeys, error) {

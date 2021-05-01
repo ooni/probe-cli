@@ -235,7 +235,7 @@ func TestRunnerHTTPCannotReadBodyWinsOver400(t *testing.T) {
 
 func TestRunnerWeCanForceUserAgent(t *testing.T) {
 	expected := "antani/1.23.4-dev"
-	found := atomicx.NewInt64()
+	found := &atomicx.Int64{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("User-Agent") == expected {
 			found.Add(1)
@@ -262,7 +262,7 @@ func TestRunnerWeCanForceUserAgent(t *testing.T) {
 
 func TestRunnerDefaultUserAgent(t *testing.T) {
 	expected := httpheader.UserAgent()
-	found := atomicx.NewInt64()
+	found := &atomicx.Int64{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("User-Agent") == expected {
 			found.Add(1)

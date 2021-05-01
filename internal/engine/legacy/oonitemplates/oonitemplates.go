@@ -37,7 +37,7 @@ type channelHandler struct {
 func newChannelHandler(ch chan<- modelx.Measurement) *channelHandler {
 	return &channelHandler{
 		ch:         ch,
-		lateWrites: atomicx.NewInt64(),
+		lateWrites: &atomicx.Int64{},
 	}
 }
 

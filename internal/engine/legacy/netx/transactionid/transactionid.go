@@ -9,7 +9,7 @@ import (
 
 type contextkey struct{}
 
-var id = atomicx.NewInt64()
+var id = &atomicx.Int64{}
 
 // WithTransactionID returns a copy of ctx with TransactionID
 func WithTransactionID(ctx context.Context) context.Context {

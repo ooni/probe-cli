@@ -77,8 +77,8 @@ func StartTask(input string) (*Task, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	task := &Task{
 		cancel:    cancel,
-		isdone:    atomicx.NewInt64(),
-		isstopped: atomicx.NewInt64(),
+		isdone:    &atomicx.Int64{},
+		isstopped: &atomicx.Int64{},
 		out:       make(chan *tasks.Event, bufsiz),
 	}
 	go func() {

@@ -25,14 +25,14 @@ func TestRegisterAndLoginPsiphonConfigSuccess(t *testing.T) {
 		Response: &apimodel.RegisterResponse{
 			ClientID: "antani-antani",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	loginAPI := &FakeLoginAPI{
 		Response: &apimodel.LoginResponse{
 			Expire: time.Now().Add(3600 * time.Second),
 			Token:  "antani-antani-token",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	login := &withLoginPsiphonConfigAPI{
 		API: &FakePsiphonConfigAPI{
@@ -73,14 +73,14 @@ func TestPsiphonConfigContinueUsingToken(t *testing.T) {
 		Response: &apimodel.RegisterResponse{
 			ClientID: "antani-antani",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	loginAPI := &FakeLoginAPI{
 		Response: &apimodel.LoginResponse{
 			Expire: time.Now().Add(3600 * time.Second),
 			Token:  "antani-antani-token",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	login := &withLoginPsiphonConfigAPI{
 		API: &FakePsiphonConfigAPI{
@@ -147,14 +147,14 @@ func TestPsiphonConfigWithValidButExpiredToken(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	registerAPI := &FakeRegisterAPI{
 		Err:       errMocked,
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	loginAPI := &FakeLoginAPI{
 		Response: &apimodel.LoginResponse{
 			Expire: time.Now().Add(3600 * time.Second),
 			Token:  "antani-antani-token",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	login := &withLoginPsiphonConfigAPI{
 		API: &FakePsiphonConfigAPI{
@@ -203,7 +203,7 @@ func TestPsiphonConfigWithRegisterAPIError(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	registerAPI := &FakeRegisterAPI{
 		Err:       errMocked,
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	login := &withLoginPsiphonConfigAPI{
 		API: &FakePsiphonConfigAPI{
@@ -237,12 +237,12 @@ func TestPsiphonConfigWithLoginFailure(t *testing.T) {
 		Response: &apimodel.RegisterResponse{
 			ClientID: "antani-antani",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	errMocked := errors.New("mocked error")
 	loginAPI := &FakeLoginAPI{
 		Err:       errMocked,
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	login := &withLoginPsiphonConfigAPI{
 		API: &FakePsiphonConfigAPI{
@@ -280,14 +280,14 @@ func TestRegisterAndLoginPsiphonConfigThenFail(t *testing.T) {
 		Response: &apimodel.RegisterResponse{
 			ClientID: "antani-antani",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	loginAPI := &FakeLoginAPI{
 		Response: &apimodel.LoginResponse{
 			Expire: time.Now().Add(3600 * time.Second),
 			Token:  "antani-antani-token",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	errMocked := errors.New("mocked error")
 	login := &withLoginPsiphonConfigAPI{
@@ -321,8 +321,8 @@ func TestRegisterAndLoginPsiphonConfigThenFail(t *testing.T) {
 func TestPsiphonConfigTheDatabaseIsReplaced(t *testing.T) {
 	ff := &fakeFill{}
 	handler := &LoginHandler{
-		logins:    atomicx.NewInt64(),
-		registers: atomicx.NewInt64(),
+		logins:    &atomicx.Int64{},
+		registers: &atomicx.Int64{},
 		t:         t,
 	}
 	srvr := httptest.NewServer(handler)
@@ -390,14 +390,14 @@ func TestRegisterAndLoginPsiphonConfigCannotWriteState(t *testing.T) {
 		Response: &apimodel.RegisterResponse{
 			ClientID: "antani-antani",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	loginAPI := &FakeLoginAPI{
 		Response: &apimodel.LoginResponse{
 			Expire: time.Now().Add(3600 * time.Second),
 			Token:  "antani-antani-token",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	errMocked := errors.New("mocked error")
 	login := &withLoginPsiphonConfigAPI{
@@ -461,8 +461,8 @@ func TestPsiphonConfigReadStateDecodeFailure(t *testing.T) {
 func TestPsiphonConfigTheDatabaseIsReplacedThenFailure(t *testing.T) {
 	ff := &fakeFill{}
 	handler := &LoginHandler{
-		logins:    atomicx.NewInt64(),
-		registers: atomicx.NewInt64(),
+		logins:    &atomicx.Int64{},
+		registers: &atomicx.Int64{},
 		t:         t,
 	}
 	srvr := httptest.NewServer(handler)
@@ -527,8 +527,8 @@ func TestPsiphonConfigTheDatabaseIsReplacedThenFailure(t *testing.T) {
 func TestPsiphonConfigClockIsOffThenSuccess(t *testing.T) {
 	ff := &fakeFill{}
 	handler := &LoginHandler{
-		logins:    atomicx.NewInt64(),
-		registers: atomicx.NewInt64(),
+		logins:    &atomicx.Int64{},
+		registers: &atomicx.Int64{},
 		t:         t,
 	}
 	srvr := httptest.NewServer(handler)
@@ -593,8 +593,8 @@ func TestPsiphonConfigClockIsOffThenSuccess(t *testing.T) {
 func TestPsiphonConfigClockIsOffThen401(t *testing.T) {
 	ff := &fakeFill{}
 	handler := &LoginHandler{
-		logins:    atomicx.NewInt64(),
-		registers: atomicx.NewInt64(),
+		logins:    &atomicx.Int64{},
+		registers: &atomicx.Int64{},
 		t:         t,
 	}
 	srvr := httptest.NewServer(handler)
@@ -660,8 +660,8 @@ func TestPsiphonConfigClockIsOffThen401(t *testing.T) {
 func TestPsiphonConfigClockIsOffThen500(t *testing.T) {
 	ff := &fakeFill{}
 	handler := &LoginHandler{
-		logins:    atomicx.NewInt64(),
-		registers: atomicx.NewInt64(),
+		logins:    &atomicx.Int64{},
+		registers: &atomicx.Int64{},
 		t:         t,
 	}
 	srvr := httptest.NewServer(handler)
@@ -732,14 +732,14 @@ func TestRegisterAndLoginTorTargetsSuccess(t *testing.T) {
 		Response: &apimodel.RegisterResponse{
 			ClientID: "antani-antani",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	loginAPI := &FakeLoginAPI{
 		Response: &apimodel.LoginResponse{
 			Expire: time.Now().Add(3600 * time.Second),
 			Token:  "antani-antani-token",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	login := &withLoginTorTargetsAPI{
 		API: &FakeTorTargetsAPI{
@@ -780,14 +780,14 @@ func TestTorTargetsContinueUsingToken(t *testing.T) {
 		Response: &apimodel.RegisterResponse{
 			ClientID: "antani-antani",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	loginAPI := &FakeLoginAPI{
 		Response: &apimodel.LoginResponse{
 			Expire: time.Now().Add(3600 * time.Second),
 			Token:  "antani-antani-token",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	login := &withLoginTorTargetsAPI{
 		API: &FakeTorTargetsAPI{
@@ -854,14 +854,14 @@ func TestTorTargetsWithValidButExpiredToken(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	registerAPI := &FakeRegisterAPI{
 		Err:       errMocked,
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	loginAPI := &FakeLoginAPI{
 		Response: &apimodel.LoginResponse{
 			Expire: time.Now().Add(3600 * time.Second),
 			Token:  "antani-antani-token",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	login := &withLoginTorTargetsAPI{
 		API: &FakeTorTargetsAPI{
@@ -910,7 +910,7 @@ func TestTorTargetsWithRegisterAPIError(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	registerAPI := &FakeRegisterAPI{
 		Err:       errMocked,
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	login := &withLoginTorTargetsAPI{
 		API: &FakeTorTargetsAPI{
@@ -944,12 +944,12 @@ func TestTorTargetsWithLoginFailure(t *testing.T) {
 		Response: &apimodel.RegisterResponse{
 			ClientID: "antani-antani",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	errMocked := errors.New("mocked error")
 	loginAPI := &FakeLoginAPI{
 		Err:       errMocked,
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	login := &withLoginTorTargetsAPI{
 		API: &FakeTorTargetsAPI{
@@ -987,14 +987,14 @@ func TestRegisterAndLoginTorTargetsThenFail(t *testing.T) {
 		Response: &apimodel.RegisterResponse{
 			ClientID: "antani-antani",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	loginAPI := &FakeLoginAPI{
 		Response: &apimodel.LoginResponse{
 			Expire: time.Now().Add(3600 * time.Second),
 			Token:  "antani-antani-token",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	errMocked := errors.New("mocked error")
 	login := &withLoginTorTargetsAPI{
@@ -1028,8 +1028,8 @@ func TestRegisterAndLoginTorTargetsThenFail(t *testing.T) {
 func TestTorTargetsTheDatabaseIsReplaced(t *testing.T) {
 	ff := &fakeFill{}
 	handler := &LoginHandler{
-		logins:    atomicx.NewInt64(),
-		registers: atomicx.NewInt64(),
+		logins:    &atomicx.Int64{},
+		registers: &atomicx.Int64{},
 		t:         t,
 	}
 	srvr := httptest.NewServer(handler)
@@ -1097,14 +1097,14 @@ func TestRegisterAndLoginTorTargetsCannotWriteState(t *testing.T) {
 		Response: &apimodel.RegisterResponse{
 			ClientID: "antani-antani",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	loginAPI := &FakeLoginAPI{
 		Response: &apimodel.LoginResponse{
 			Expire: time.Now().Add(3600 * time.Second),
 			Token:  "antani-antani-token",
 		},
-		CountCall: atomicx.NewInt64(),
+		CountCall: &atomicx.Int64{},
 	}
 	errMocked := errors.New("mocked error")
 	login := &withLoginTorTargetsAPI{
@@ -1168,8 +1168,8 @@ func TestTorTargetsReadStateDecodeFailure(t *testing.T) {
 func TestTorTargetsTheDatabaseIsReplacedThenFailure(t *testing.T) {
 	ff := &fakeFill{}
 	handler := &LoginHandler{
-		logins:    atomicx.NewInt64(),
-		registers: atomicx.NewInt64(),
+		logins:    &atomicx.Int64{},
+		registers: &atomicx.Int64{},
 		t:         t,
 	}
 	srvr := httptest.NewServer(handler)
@@ -1234,8 +1234,8 @@ func TestTorTargetsTheDatabaseIsReplacedThenFailure(t *testing.T) {
 func TestTorTargetsClockIsOffThenSuccess(t *testing.T) {
 	ff := &fakeFill{}
 	handler := &LoginHandler{
-		logins:    atomicx.NewInt64(),
-		registers: atomicx.NewInt64(),
+		logins:    &atomicx.Int64{},
+		registers: &atomicx.Int64{},
 		t:         t,
 	}
 	srvr := httptest.NewServer(handler)
@@ -1300,8 +1300,8 @@ func TestTorTargetsClockIsOffThenSuccess(t *testing.T) {
 func TestTorTargetsClockIsOffThen401(t *testing.T) {
 	ff := &fakeFill{}
 	handler := &LoginHandler{
-		logins:    atomicx.NewInt64(),
-		registers: atomicx.NewInt64(),
+		logins:    &atomicx.Int64{},
+		registers: &atomicx.Int64{},
 		t:         t,
 	}
 	srvr := httptest.NewServer(handler)
@@ -1367,8 +1367,8 @@ func TestTorTargetsClockIsOffThen401(t *testing.T) {
 func TestTorTargetsClockIsOffThen500(t *testing.T) {
 	ff := &fakeFill{}
 	handler := &LoginHandler{
-		logins:    atomicx.NewInt64(),
-		registers: atomicx.NewInt64(),
+		logins:    &atomicx.Int64{},
+		registers: &atomicx.Int64{},
 		t:         t,
 	}
 	srvr := httptest.NewServer(handler)

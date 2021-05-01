@@ -555,7 +555,7 @@ func TestTestKeysOnlyWebHTTPFailureTooManyURLs(t *testing.T) {
 }
 
 func TestWeConfigureWebChecksCorrectly(t *testing.T) {
-	called := atomicx.NewInt64()
+	called := &atomicx.Int64{}
 	emptyConfig := urlgetter.Config{}
 	configWithFailOnHTTPError := urlgetter.Config{FailOnHTTPError: true}
 	configWithNoFollowRedirects := urlgetter.Config{NoFollowRedirects: true}

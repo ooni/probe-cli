@@ -22,8 +22,8 @@ func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
 			Logger:     log.Log,
 			UserAgent:  "miniooni/0.1.0-dev",
 		},
-		LoginCalls:    atomicx.NewInt64(),
-		RegisterCalls: atomicx.NewInt64(),
+		LoginCalls:    &atomicx.Int64{},
+		RegisterCalls: &atomicx.Int64{},
 		StateFile:     probeservices.NewStateFile(kvstore.NewMemoryKeyValueStore()),
 	}
 	config := probeservices.MeasurementMetaConfig{
@@ -90,8 +90,8 @@ func TestGetMeasurementMetaWorkingWithCancelledContext(t *testing.T) {
 			Logger:     log.Log,
 			UserAgent:  "miniooni/0.1.0-dev",
 		},
-		LoginCalls:    atomicx.NewInt64(),
-		RegisterCalls: atomicx.NewInt64(),
+		LoginCalls:    &atomicx.Int64{},
+		RegisterCalls: &atomicx.Int64{},
 		StateFile:     probeservices.NewStateFile(kvstore.NewMemoryKeyValueStore()),
 	}
 	config := probeservices.MeasurementMetaConfig{

@@ -98,8 +98,8 @@ func NewClient(sess Session, endpoint model.Service) (*Client, error) {
 			ProxyURL:   sess.ProxyURL(),
 			UserAgent:  sess.UserAgent(),
 		},
-		LoginCalls:    atomicx.NewInt64(),
-		RegisterCalls: atomicx.NewInt64(),
+		LoginCalls:    &atomicx.Int64{},
+		RegisterCalls: &atomicx.Int64{},
 		StateFile:     NewStateFile(sess.KeyValueStore()),
 	}
 	switch endpoint.Type {

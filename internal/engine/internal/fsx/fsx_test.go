@@ -43,7 +43,7 @@ func (FailingStatFile) Read([]byte) (int, error) {
 }
 
 func TestOpenWithFailingStat(t *testing.T) {
-	count := atomicx.NewInt64()
+	count := &atomicx.Int64{}
 	_, err := fsx.OpenWithFS(FailingStatFS{CloseCount: count}, StateBaseDir+"testfile.txt")
 	if !errors.Is(err, errStatFailed) {
 		t.Errorf("expected error with invalid FS: %+v", err)

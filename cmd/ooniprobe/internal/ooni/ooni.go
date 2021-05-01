@@ -232,7 +232,7 @@ func NewProbe(configPath string, homePath string) *Probe {
 		home:         homePath,
 		config:       &config.Config{},
 		configPath:   configPath,
-		isTerminated: atomicx.NewInt64(),
+		isTerminated: &atomicx.Int64{},
 	}
 }
 

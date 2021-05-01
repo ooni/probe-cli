@@ -28,7 +28,7 @@ type TraceTripper struct {
 // NewTraceTripper creates a new Transport.
 func NewTraceTripper(roundTripper http.RoundTripper) *TraceTripper {
 	return &TraceTripper{
-		readAllErrs:  atomicx.NewInt64(),
+		readAllErrs:  &atomicx.Int64{},
 		readAll:      ioutil.ReadAll,
 		roundTripper: roundTripper,
 	}

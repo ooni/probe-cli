@@ -21,8 +21,8 @@ func TestCheckReportIDWorkingAsIntended(t *testing.T) {
 			Logger:     log.Log,
 			UserAgent:  "miniooni/0.1.0-dev",
 		},
-		LoginCalls:    atomicx.NewInt64(),
-		RegisterCalls: atomicx.NewInt64(),
+		LoginCalls:    &atomicx.Int64{},
+		RegisterCalls: &atomicx.Int64{},
 		StateFile:     probeservices.NewStateFile(kvstore.NewMemoryKeyValueStore()),
 	}
 	reportID := `20201209T052225Z_urlgetter_IT_30722_n1_E1VUhMz08SEkgYFU`
@@ -44,8 +44,8 @@ func TestCheckReportIDWorkingWithCancelledContext(t *testing.T) {
 			Logger:     log.Log,
 			UserAgent:  "miniooni/0.1.0-dev",
 		},
-		LoginCalls:    atomicx.NewInt64(),
-		RegisterCalls: atomicx.NewInt64(),
+		LoginCalls:    &atomicx.Int64{},
+		RegisterCalls: &atomicx.Int64{},
 		StateFile:     probeservices.NewStateFile(kvstore.NewMemoryKeyValueStore()),
 	}
 	reportID := `20201209T052225Z_urlgetter_IT_30722_n1_E1VUhMz08SEkgYFU`

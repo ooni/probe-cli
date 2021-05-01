@@ -252,7 +252,7 @@ func TestMaybeConfusionManyEntries(t *testing.T) {
 
 func TestResolverWorksWithProxy(t *testing.T) {
 	var (
-		works      = atomicx.NewInt64()
+		works      = &atomicx.Int64{}
 		startuperr = make(chan error)
 		listench   = make(chan net.Listener)
 		done       = make(chan interface{})

@@ -264,7 +264,7 @@ func newResultsCollector(
 ) *resultsCollector {
 	rc := &resultsCollector{
 		callbacks:     callbacks,
-		completed:     atomicx.NewInt64(),
+		completed:     &atomicx.Int64{},
 		measurement:   measurement,
 		sess:          sess,
 		targetresults: make(map[string]TargetResults),

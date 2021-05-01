@@ -19,11 +19,11 @@ type FakeResolver struct {
 }
 
 func NewFakeResolverThatFails() FakeResolver {
-	return FakeResolver{NumFailures: atomicx.NewInt64(), Err: ErrNotFound}
+	return FakeResolver{NumFailures: &atomicx.Int64{}, Err: ErrNotFound}
 }
 
 func NewFakeResolverWithResult(r []string) FakeResolver {
-	return FakeResolver{NumFailures: atomicx.NewInt64(), Result: r}
+	return FakeResolver{NumFailures: &atomicx.Int64{}, Result: r}
 }
 
 var ErrNotFound = &net.DNSError{

@@ -8,7 +8,7 @@ import (
 
 type contextkey struct{}
 
-var id = atomicx.NewInt64()
+var id = &atomicx.Int64{}
 
 // WithDialID returns a copy of ctx with DialID
 func WithDialID(ctx context.Context) context.Context {
