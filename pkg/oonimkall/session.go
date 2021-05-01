@@ -8,11 +8,12 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -147,7 +148,7 @@ func NewSessionWithContext(ctx *Context, config *SessionConfig) (*Session, error
 
 // newSessionWithContext implements NewSessionWithContext.
 func newSessionWithContext(ctx context.Context, config *SessionConfig) (*Session, error) {
-	kvstore, err := engine.NewFileSystemKVStore(config.StateDir)
+	kvstore, err := kvstore.NewFS(config.StateDir)
 	if err != nil {
 		return nil, err
 	}

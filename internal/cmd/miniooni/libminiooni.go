@@ -21,6 +21,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/pborman/getopt/v2"
 )
@@ -348,7 +349,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	}
 
 	kvstore2dir := filepath.Join(miniooniDir, "kvstore2")
-	kvstore, err := engine.NewFileSystemKVStore(kvstore2dir)
+	kvstore, err := kvstore.NewFS(kvstore2dir)
 	fatalOnError(err, "cannot create kvstore2 directory")
 
 	tunnelDir := filepath.Join(miniooniDir, "tunnel")

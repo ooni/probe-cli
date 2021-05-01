@@ -9,8 +9,8 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
-	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 )
 
 func TestCheckReportIDWorkingAsIntended(t *testing.T) {
@@ -23,7 +23,7 @@ func TestCheckReportIDWorkingAsIntended(t *testing.T) {
 		},
 		LoginCalls:    &atomicx.Int64{},
 		RegisterCalls: &atomicx.Int64{},
-		StateFile:     probeservices.NewStateFile(kvstore.NewMemoryKeyValueStore()),
+		StateFile:     probeservices.NewStateFile(&kvstore.Memory{}),
 	}
 	reportID := `20201209T052225Z_urlgetter_IT_30722_n1_E1VUhMz08SEkgYFU`
 	ctx := context.Background()
@@ -46,7 +46,7 @@ func TestCheckReportIDWorkingWithCancelledContext(t *testing.T) {
 		},
 		LoginCalls:    &atomicx.Int64{},
 		RegisterCalls: &atomicx.Int64{},
-		StateFile:     probeservices.NewStateFile(kvstore.NewMemoryKeyValueStore()),
+		StateFile:     probeservices.NewStateFile(&kvstore.Memory{}),
 	}
 	reportID := `20201209T052225Z_urlgetter_IT_30722_n1_E1VUhMz08SEkgYFU`
 	ctx, cancel := context.WithCancel(context.Background())

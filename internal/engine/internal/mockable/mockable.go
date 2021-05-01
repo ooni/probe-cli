@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 )
 
 // Session allows to mock sessions.
@@ -67,7 +67,7 @@ func (sess *Session) FetchURLList(
 
 // KeyValueStore returns the configured key-value store.
 func (sess *Session) KeyValueStore() model.KeyValueStore {
-	return kvstore.NewMemoryKeyValueStore()
+	return &kvstore.Memory{}
 }
 
 // Logger implements ExperimentSession.Logger

@@ -16,6 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -198,7 +199,7 @@ func (p *Probe) Init(softwareName, softwareVersion string) error {
 // current configuration inside the context. The caller must close
 // the session when done using it, by calling sess.Close().
 func (p *Probe) NewSession(ctx context.Context) (*engine.Session, error) {
-	kvstore, err := engine.NewFileSystemKVStore(
+	kvstore, err := kvstore.NewFS(
 		utils.EngineDir(p.home),
 	)
 	if err != nil {
