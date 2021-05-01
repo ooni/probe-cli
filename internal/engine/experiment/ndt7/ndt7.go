@@ -11,10 +11,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/humanizex"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mlablocatev2"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/humanize"
 )
 
 const (
@@ -127,7 +127,7 @@ func (m *Measurer) doDownload(
 			// 50% of the whole experiment, hence the `/2.0`.
 			percentage := elapsed / paramMaxRuntimeUpperBound / 2.0
 			speed := float64(count) * 8.0 / elapsed
-			message := fmt.Sprintf(" download: speed %s", humanizex.SI(
+			message := fmt.Sprintf(" download: speed %s", humanize.SI(
 				float64(speed), "bit/s"))
 			tk.Summary.Download = speed / 1e03 /* bit/s => kbit/s */
 			callbacks.OnProgress(percentage, message)
@@ -197,7 +197,7 @@ func (m *Measurer) doUpload(
 			// the whole experiment, hence `0.5 +` and `/2.0`.
 			percentage := 0.5 + elapsed/paramMaxRuntimeUpperBound/2.0
 			speed := float64(count) * 8.0 / elapsed
-			message := fmt.Sprintf("   upload: speed %s", humanizex.SI(
+			message := fmt.Sprintf("   upload: speed %s", humanize.SI(
 				float64(speed), "bit/s"))
 			tk.Summary.Upload = speed / 1e03 /* bit/s => kbit/s */
 			callbacks.OnProgress(percentage, message)
