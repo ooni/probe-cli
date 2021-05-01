@@ -35,7 +35,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/multierror"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // Resolver is the session resolver. Resolver will try to use

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/ooapi/apimodel"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // loginState is the struct saved in the kvstore

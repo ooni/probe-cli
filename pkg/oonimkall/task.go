@@ -44,7 +44,7 @@ import (
 	"encoding/json"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/pkg/oonimkall/internal/tasks"
 )
 
