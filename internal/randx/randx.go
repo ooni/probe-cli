@@ -1,4 +1,4 @@
-// Package randx contains math/rand extensions
+// Package randx contains math/rand extensions.
 package randx
 
 import (
@@ -7,14 +7,16 @@ import (
 	"unicode"
 )
 
+// These constants are used by lettersWithString.
 const (
 	uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	lowercase = "abcdefghijklmnopqrstuvwxyz"
 	letters   = uppercase + lowercase
 )
 
+// lettersWithString is a method for generating a random string
+// described at https://stackoverflow.com/questions/22892120.
 func lettersWithString(n int, letterBytes string) string {
-	// See https://stackoverflow.com/questions/22892120
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	b := make([]byte, n)
 	for i := range b {
@@ -23,12 +25,12 @@ func lettersWithString(n int, letterBytes string) string {
 	return string(b)
 }
 
-// Letters return a string composed of random letters
+// Letters return a string composed of random letters.
 func Letters(n int) string {
 	return lettersWithString(n, letters)
 }
 
-// LettersUppercase return a string composed of random uppercase letters
+// LettersUppercase return a string composed of random uppercase letters.
 func LettersUppercase(n int) string {
 	return lettersWithString(n, uppercase)
 }

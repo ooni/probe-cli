@@ -1,13 +1,9 @@
-package randx_test
+package randx
 
-import (
-	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/randx"
-)
+import "testing"
 
 func TestLetters(t *testing.T) {
-	str := randx.Letters(1024)
+	str := Letters(1024)
 	for _, chr := range str {
 		if (chr >= 'A' && chr <= 'Z') || (chr >= 'a' && chr <= 'z') {
 			continue
@@ -17,7 +13,7 @@ func TestLetters(t *testing.T) {
 }
 
 func TestLettersUppercase(t *testing.T) {
-	str := randx.LettersUppercase(1024)
+	str := LettersUppercase(1024)
 	for _, chr := range str {
 		if chr >= 'A' && chr <= 'Z' {
 			continue
@@ -27,8 +23,8 @@ func TestLettersUppercase(t *testing.T) {
 }
 
 func TestChangeCapitalization(t *testing.T) {
-	str := randx.Letters(2048)
-	if randx.ChangeCapitalization(str) == str {
+	str := Letters(2048)
+	if ChangeCapitalization(str) == str {
 		t.Fatal("capitalization not changed")
 	}
 }

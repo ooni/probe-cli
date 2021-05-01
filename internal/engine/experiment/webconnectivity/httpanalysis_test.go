@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/randx"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 )
 
