@@ -35,7 +35,7 @@ func (d *Descriptor) genTestRegisterAndLoginSuccess(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t},\n")
 	fmt.Fprint(sb, "\t\tRegisterAPI: registerAPI,\n")
 	fmt.Fprint(sb, "\t\tLoginAPI: loginAPI,\n")
-	fmt.Fprint(sb, "\t\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\t\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
@@ -92,7 +92,7 @@ func (d *Descriptor) genTestContinueUsingToken(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t},\n")
 	fmt.Fprint(sb, "\t\tRegisterAPI: registerAPI,\n")
 	fmt.Fprint(sb, "\t\tLoginAPI: loginAPI,\n")
-	fmt.Fprint(sb, "\t\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\t\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
@@ -181,7 +181,7 @@ func (d *Descriptor) genTestWithValidButExpiredToken(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t},\n")
 	fmt.Fprint(sb, "\t\tRegisterAPI: registerAPI,\n")
 	fmt.Fprint(sb, "\t\tLoginAPI: loginAPI,\n")
-	fmt.Fprint(sb, "\t\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\t\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tls := &loginState{\n")
@@ -238,7 +238,7 @@ func (d *Descriptor) genTestWithRegisterAPIError(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t\t},\n")
 	fmt.Fprint(sb, "\t\t},\n")
 	fmt.Fprint(sb, "\t\tRegisterAPI: registerAPI,\n")
-	fmt.Fprint(sb, "\t\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\t\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
@@ -286,7 +286,7 @@ func (d *Descriptor) genTestWithLoginFailure(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t},\n")
 	fmt.Fprint(sb, "\t\tRegisterAPI: registerAPI,\n")
 	fmt.Fprint(sb, "\t\tLoginAPI: loginAPI,\n")
-	fmt.Fprint(sb, "\t\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\t\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
@@ -341,7 +341,7 @@ func (d *Descriptor) genTestRegisterAndLoginThenFail(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t},\n")
 	fmt.Fprint(sb, "\t\tRegisterAPI: registerAPI,\n")
 	fmt.Fprint(sb, "\t\tLoginAPI: loginAPI,\n")
-	fmt.Fprint(sb, "\t\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\t\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
@@ -394,7 +394,7 @@ func (d *Descriptor) genTestTheDatabaseIsReplaced(sb *strings.Builder) {
 	fmt.Fprintf(sb, "\tAPI : baseAPI,\n")
 	fmt.Fprint(sb, "\tRegisterAPI: registerAPI,\n")
 	fmt.Fprint(sb, "\tLoginAPI: loginAPI,\n")
-	fmt.Fprint(sb, "\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
@@ -472,7 +472,7 @@ func (d *Descriptor) genTestTheDatabaseIsReplacedThenFailure(sb *strings.Builder
 	fmt.Fprintf(sb, "\tAPI : baseAPI,\n")
 	fmt.Fprint(sb, "\tRegisterAPI: registerAPI,\n")
 	fmt.Fprint(sb, "\tLoginAPI: loginAPI,\n")
-	fmt.Fprint(sb, "\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
@@ -554,7 +554,7 @@ func (d *Descriptor) genTestRegisterAndLoginCannotWriteState(sb *strings.Builder
 	fmt.Fprint(sb, "\t\t},\n")
 	fmt.Fprint(sb, "\t\tRegisterAPI: registerAPI,\n")
 	fmt.Fprint(sb, "\t\tLoginAPI: loginAPI,\n")
-	fmt.Fprint(sb, "\t\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\t\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t\tJSONCodec: &FakeCodec{\n")
 	fmt.Fprint(sb, "\t\t\tEncodeErr: errMocked,\n")
 	fmt.Fprint(sb, "\t\t},\n")
@@ -591,7 +591,7 @@ func (d *Descriptor) genTestReadStateDecodeFailure(sb *strings.Builder) {
 	fmt.Fprint(sb, "\terrMocked := errors.New(\"mocked error\")\n")
 
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
-	fmt.Fprint(sb, "\t\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\t\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t\tJSONCodec: &FakeCodec{DecodeErr: errMocked},\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -644,7 +644,7 @@ func (d *Descriptor) genTestClockIsOffThenSuccess(sb *strings.Builder) {
 	fmt.Fprintf(sb, "\tAPI : baseAPI,\n")
 	fmt.Fprint(sb, "\tRegisterAPI: registerAPI,\n")
 	fmt.Fprint(sb, "\tLoginAPI: loginAPI,\n")
-	fmt.Fprint(sb, "\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
@@ -724,7 +724,7 @@ func (d *Descriptor) genTestClockIsOffThen401(sb *strings.Builder) {
 	fmt.Fprintf(sb, "\tAPI : baseAPI,\n")
 	fmt.Fprint(sb, "\tRegisterAPI: registerAPI,\n")
 	fmt.Fprint(sb, "\tLoginAPI: loginAPI,\n")
-	fmt.Fprint(sb, "\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
@@ -805,7 +805,7 @@ func (d *Descriptor) genTestClockIsOffThen500(sb *strings.Builder) {
 	fmt.Fprintf(sb, "\tAPI : baseAPI,\n")
 	fmt.Fprint(sb, "\tRegisterAPI: registerAPI,\n")
 	fmt.Fprint(sb, "\tLoginAPI: loginAPI,\n")
-	fmt.Fprint(sb, "\tKVStore: &MemKVStore{},\n")
+	fmt.Fprint(sb, "\tKVStore: &kvstore.Memory{},\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
@@ -874,6 +874,7 @@ func GenLoginTestGo(file string) {
 	fmt.Fprint(&sb, "\n")
 	fmt.Fprint(&sb, "\t\"github.com/google/go-cmp/cmp\"\n")
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/atomicx\"\n")
+	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/kvstore\"\n")
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel\"\n")
 	fmt.Fprint(&sb, ")\n")
 	for _, desc := range Descriptors {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/ooapi"
 	"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel"
 )
@@ -26,7 +27,7 @@ func TestWithRealServerDoCheckIn(t *testing.T) {
 		},
 	}
 	httpClnt := &ooapi.VerboseHTTPClient{T: t}
-	clnt := &ooapi.Client{HTTPClient: httpClnt, KVStore: &ooapi.MemKVStore{}}
+	clnt := &ooapi.Client{HTTPClient: httpClnt, KVStore: &kvstore.Memory{}}
 	ctx := context.Background()
 	resp, err := clnt.CheckIn(ctx, req)
 	if err != nil {
@@ -50,7 +51,7 @@ func TestWithRealServerDoCheckReportID(t *testing.T) {
 	req := &apimodel.CheckReportIDRequest{
 		ReportID: "20210223T093606Z_ndt_JO_8376_n1_kDYToqrugDY54Soy",
 	}
-	clnt := &ooapi.Client{KVStore: &ooapi.MemKVStore{}}
+	clnt := &ooapi.Client{KVStore: &kvstore.Memory{}}
 	ctx := context.Background()
 	resp, err := clnt.CheckReportID(ctx, req)
 	if err != nil {
@@ -69,7 +70,7 @@ func TestWithRealServerDoMeasurementMeta(t *testing.T) {
 	req := &apimodel.MeasurementMetaRequest{
 		ReportID: "20210223T093606Z_ndt_JO_8376_n1_kDYToqrugDY54Soy",
 	}
-	clnt := &ooapi.Client{KVStore: &ooapi.MemKVStore{}}
+	clnt := &ooapi.Client{KVStore: &kvstore.Memory{}}
 	ctx := context.Background()
 	resp, err := clnt.MeasurementMeta(ctx, req)
 	if err != nil {
@@ -96,7 +97,7 @@ func TestWithRealServerDoOpenReport(t *testing.T) {
 		TestStartTime:     "2018-11-01 15:33:20",
 		TestVersion:       "0.1.0",
 	}
-	clnt := &ooapi.Client{KVStore: &ooapi.MemKVStore{}}
+	clnt := &ooapi.Client{KVStore: &kvstore.Memory{}}
 	ctx := context.Background()
 	resp, err := clnt.OpenReport(ctx, req)
 	if err != nil {
@@ -114,7 +115,7 @@ func TestWithRealServerDoPsiphonConfig(t *testing.T) {
 	}
 	req := &apimodel.PsiphonConfigRequest{}
 	httpClnt := &ooapi.VerboseHTTPClient{T: t}
-	clnt := &ooapi.Client{HTTPClient: httpClnt, KVStore: &ooapi.MemKVStore{}}
+	clnt := &ooapi.Client{HTTPClient: httpClnt, KVStore: &kvstore.Memory{}}
 	ctx := context.Background()
 	resp, err := clnt.PsiphonConfig(ctx, req)
 	if err != nil {
@@ -132,7 +133,7 @@ func TestWithRealServerDoTorTargets(t *testing.T) {
 	}
 	req := &apimodel.TorTargetsRequest{}
 	httpClnt := &ooapi.VerboseHTTPClient{T: t}
-	clnt := &ooapi.Client{HTTPClient: httpClnt, KVStore: &ooapi.MemKVStore{}}
+	clnt := &ooapi.Client{HTTPClient: httpClnt, KVStore: &kvstore.Memory{}}
 	ctx := context.Background()
 	resp, err := clnt.TorTargets(ctx, req)
 	if err != nil {
@@ -152,7 +153,7 @@ func TestWithRealServerDoURLs(t *testing.T) {
 		CountryCode: "IT",
 		Limit:       3,
 	}
-	clnt := &ooapi.Client{KVStore: &ooapi.MemKVStore{}}
+	clnt := &ooapi.Client{KVStore: &kvstore.Memory{}}
 	ctx := context.Background()
 	resp, err := clnt.URLs(ctx, req)
 	if err != nil {

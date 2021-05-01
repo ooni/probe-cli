@@ -90,7 +90,7 @@ func (d *Descriptor) genTestClientCallRoundTrip(sb *strings.Builder) {
 	fmt.Fprintf(sb, "\treq := &%s{}\n", d.RequestTypeNameAsStruct())
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprint(sb, "\tff.fill(&req)\n")
-	fmt.Fprint(sb, "\tclnt := &Client{KVStore: &MemKVStore{}, BaseURL: srvr.URL}\n")
+	fmt.Fprint(sb, "\tclnt := &Client{KVStore: &kvstore.Memory{}, BaseURL: srvr.URL}\n")
 	fmt.Fprint(sb, "\tff.fill(&clnt.UserAgent)\n")
 
 	fmt.Fprint(sb, "\t// issue request\n")
@@ -169,6 +169,7 @@ func GenClientCallTestGo(file string) {
 	fmt.Fprint(&sb, "\t\"sync\"\n")
 	fmt.Fprint(&sb, "\n")
 	fmt.Fprint(&sb, "\t\"github.com/google/go-cmp/cmp\"\n")
+	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/kvstore\"\n")
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel\"\n")
 	fmt.Fprint(&sb, ")\n")
 	for _, desc := range Descriptors {
