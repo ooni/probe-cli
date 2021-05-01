@@ -13,7 +13,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
-	"github.com/ooni/probe-cli/v3/internal/engine/shellx"
+	"github.com/ooni/probe-cli/v3/internal/shellx"
 	"golang.org/x/sys/execabs"
 	"golang.org/x/sys/unix"
 )

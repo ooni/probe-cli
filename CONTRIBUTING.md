@@ -59,6 +59,8 @@ run `go mod tidy` to minimize such changes.
 
 Please, use `./internal/atomicx` rather than `atomic/sync`.
 
+Do now use `os/exec`, use `x/sys/execabs`.
+
 ## Code testing requirements
 
 Make sure all tests pass with `go test -race ./...` run from the

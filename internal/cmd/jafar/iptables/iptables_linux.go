@@ -4,7 +4,7 @@ package iptables
 
 import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/engine/shellx"
+	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
 type linuxShell struct{}
