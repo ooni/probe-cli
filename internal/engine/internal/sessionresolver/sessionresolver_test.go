@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/multierror"
+	"github.com/ooni/probe-cli/v3/internal/multierror"
 )
 
 func TestNetworkWorks(t *testing.T) {

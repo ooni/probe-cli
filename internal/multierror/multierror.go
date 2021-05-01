@@ -9,11 +9,14 @@ import (
 
 // Union is the logical union of several errors. The Union will
 // appear to be the Root error, except that it will actually
-// be possible to look deeper and see specific sub errors that
+// be possible to look deeper and see specific child errors that
 // occurred using errors.As and errors.Is.
 type Union struct {
+	// Children contains the underlying errors.
 	Children []error
-	Root     error
+
+	// Root is the root error.
+	Root error
 }
 
 // New creates a new Union error instance.
@@ -37,8 +40,8 @@ func (err *Union) AddWithPrefix(prefix string, child error) {
 	err.Add(fmt.Errorf("%s: %w", prefix, child))
 }
 
-// Is returns whether the Union error contains at least one child
-// error that is exactly the specified target error.
+// Is returns true (1) if the err.Root error is target or (2) if
+// any err.Children error is target.
 func (err Union) Is(target error) bool {
 	if errors.Is(err.Root, target) {
 		return true
