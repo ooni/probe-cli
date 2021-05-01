@@ -3,10 +3,10 @@ package engine
 import (
 	"context"
 	"errors"
-	"sync/atomic"
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
@@ -28,12 +28,14 @@ func TestSubmitterNotEnabled(t *testing.T) {
 }
 
 type FakeSubmitter struct {
-	Calls uint32
+	Calls *atomicx.Int64
 	Error error
 }
 
 func (fs *FakeSubmitter) Submit(ctx context.Context, m *model.Measurement) error {
-	atomic.AddUint32(&fs.Calls, 1)
+	if fs.Calls != nil {
+		fs.Calls.Add(1)
+	}
 	return fs.Error
 }
 
@@ -68,7 +70,10 @@ func TestNewSubmitterFails(t *testing.T) {
 func TestNewSubmitterWithFailedSubmission(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
-	fakeSubmitter := &FakeSubmitter{Error: expected}
+	fakeSubmitter := &FakeSubmitter{
+		Calls: atomicx.NewInt64(),
+		Error: expected,
+	}
 	submitter, err := NewSubmitter(ctx, SubmitterConfig{
 		Enabled: true,
 		Logger:  log.Log,
@@ -82,7 +87,7 @@ func TestNewSubmitterWithFailedSubmission(t *testing.T) {
 	if !errors.Is(err, expected) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
-	if fakeSubmitter.Calls != 1 {
+	if fakeSubmitter.Calls.Load() != 1 {
 		t.Fatal("unexpected number of calls")
 	}
 }

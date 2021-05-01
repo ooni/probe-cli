@@ -13,12 +13,14 @@ func (d *Descriptor) genNewFakeAPI(sb *strings.Builder) {
 	}
 	fmt.Fprint(sb, "\tErr error\n")
 	fmt.Fprintf(sb, "\tResponse %s\n", d.ResponseTypeName())
-	fmt.Fprint(sb, "\tCountCall int32\n")
+	fmt.Fprint(sb, "\tCountCall *atomicx.Int64\n")
 	fmt.Fprint(sb, "}\n\n")
 
 	fmt.Fprintf(sb, "func (fapi *%s) Call(ctx context.Context, req %s) (%s, error) {\n",
 		d.FakeAPIStructName(), d.RequestTypeName(), d.ResponseTypeName())
-	fmt.Fprint(sb, "\tatomic.AddInt32(&fapi.CountCall, 1)\n")
+	fmt.Fprint(sb, "\tif fapi.CountCall != nil {\n")
+	fmt.Fprint(sb, "\t\tfapi.CountCall.Add(1)\n")
+	fmt.Fprint(sb, "\t}\n")
 	fmt.Fprint(sb, "\treturn fapi.Response, fapi.Err\n")
 	fmt.Fprint(sb, "}\n\n")
 
@@ -48,8 +50,8 @@ func GenFakeAPITestGo(file string) {
 	fmt.Fprintf(&sb, "//go:generate go run ./internal/generator -file %s\n\n", file)
 	fmt.Fprint(&sb, "import (\n")
 	fmt.Fprint(&sb, "\t\"context\"\n")
-	fmt.Fprint(&sb, "\t\"sync/atomic\"\n")
 	fmt.Fprint(&sb, "\n")
+	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/atomicx\"\n")
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/engine/ooapi/apimodel\"\n")
 	fmt.Fprint(&sb, ")\n")
 	for _, desc := range Descriptors {

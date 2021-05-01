@@ -4,21 +4,21 @@ import (
 	"errors"
 	"io/fs"
 	"os"
-	"sync/atomic"
 	"syscall"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/fsx"
 )
 
 var StateBaseDir = "./testdata/"
 
 type FailingStatFS struct {
-	CloseCount *int32
+	CloseCount *atomicx.Int64
 }
 
 type FailingStatFile struct {
-	CloseCount *int32
+	CloseCount *atomicx.Int64
 }
 
 var errStatFailed = errors.New("stat failed")
@@ -33,7 +33,7 @@ func (f FailingStatFS) Open(pathname string) (fs.File, error) {
 
 func (fs FailingStatFile) Close() error {
 	if fs.CloseCount != nil {
-		atomic.AddInt32(fs.CloseCount, 1)
+		fs.CloseCount.Add(1)
 	}
 	return nil
 }
@@ -43,12 +43,12 @@ func (FailingStatFile) Read([]byte) (int, error) {
 }
 
 func TestOpenWithFailingStat(t *testing.T) {
-	var count int32
-	_, err := fsx.OpenWithFS(FailingStatFS{CloseCount: &count}, StateBaseDir+"testfile.txt")
+	count := atomicx.NewInt64()
+	_, err := fsx.OpenWithFS(FailingStatFS{CloseCount: count}, StateBaseDir+"testfile.txt")
 	if !errors.Is(err, errStatFailed) {
 		t.Errorf("expected error with invalid FS: %+v", err)
 	}
-	if count != 1 {
+	if count.Load() != 1 {
 		t.Error("expected counter to be equal to 1")
 	}
 }

@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/ooapi/apimodel"
 )
 
@@ -20,8 +20,8 @@ type LoginHandler struct {
 	noRegister   bool
 	state        []*loginState
 	t            *testing.T
-	logins       int32
-	registers    int32
+	logins       *atomicx.Int64
+	registers    *atomicx.Int64
 }
 
 func (lh *LoginHandler) forgetLogins() {
@@ -49,10 +49,14 @@ func (lh *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// for simplicity since it's already tested.
 	switch r.URL.Path {
 	case "/api/v1/register":
-		atomic.AddInt32(&lh.registers, 1)
+		if lh.registers != nil {
+			lh.registers.Add(1)
+		}
 		lh.register(w, r)
 	case "/api/v1/login":
-		atomic.AddInt32(&lh.logins, 1)
+		if lh.logins != nil {
+			lh.logins.Add(1)
+		}
 		lh.login(w, r)
 	case "/api/v1/test-list/psiphon-config":
 		lh.psiphon(w, r)

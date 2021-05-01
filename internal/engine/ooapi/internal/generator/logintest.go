@@ -16,6 +16,7 @@ func (d *Descriptor) genTestRegisterAndLoginSuccess(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tResponse: &apimodel.RegisterResponse{\n")
 	fmt.Fprint(sb, "\t\t\tClientID: \"antani-antani\",\n")
 	fmt.Fprint(sb, "\t\t},\n")
+	fmt.Fprint(sb, "\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprint(sb, "\t\tloginAPI := &FakeLoginAPI{\n")
@@ -23,6 +24,7 @@ func (d *Descriptor) genTestRegisterAndLoginSuccess(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t\t\tExpire: time.Now().Add(3600*time.Second),\n")
 	fmt.Fprint(sb, "\t\t\t\tToken: \"antani-antani-token\",\n")
 	fmt.Fprint(sb, "\t\t\t},\n")
+	fmt.Fprint(sb, "\t\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
@@ -50,11 +52,11 @@ func (d *Descriptor) genTestRegisterAndLoginSuccess(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tt.Fatal(diff)\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif loginAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\tif loginAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid loginAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif registerAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\tif registerAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid registerAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -71,6 +73,7 @@ func (d *Descriptor) genTestContinueUsingToken(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tResponse: &apimodel.RegisterResponse{\n")
 	fmt.Fprint(sb, "\t\t\tClientID: \"antani-antani\",\n")
 	fmt.Fprint(sb, "\t\t},\n")
+	fmt.Fprint(sb, "\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprint(sb, "\t\tloginAPI := &FakeLoginAPI{\n")
@@ -78,6 +81,7 @@ func (d *Descriptor) genTestContinueUsingToken(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t\t\tExpire: time.Now().Add(3600*time.Second),\n")
 	fmt.Fprint(sb, "\t\t\t\tToken: \"antani-antani-token\",\n")
 	fmt.Fprint(sb, "\t\t\t},\n")
+	fmt.Fprint(sb, "\t\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
@@ -110,11 +114,11 @@ func (d *Descriptor) genTestContinueUsingToken(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t\tt.Fatal(diff)\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
-	fmt.Fprint(sb, "\t\tif loginAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\t\tif loginAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid loginAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
-	fmt.Fprint(sb, "\t\tif registerAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\t\tif registerAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid registerAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 	fmt.Fprint(sb, "\t}\n")
@@ -138,11 +142,11 @@ func (d *Descriptor) genTestContinueUsingToken(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tt.Fatal(diff)\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif loginAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\tif loginAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid loginAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif registerAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\tif registerAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid registerAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -158,6 +162,7 @@ func (d *Descriptor) genTestWithValidButExpiredToken(sb *strings.Builder) {
 	fmt.Fprint(sb, "\terrMocked := errors.New(\"mocked error\")\n")
 	fmt.Fprint(sb, "\tregisterAPI := &FakeRegisterAPI{\n")
 	fmt.Fprint(sb, "\t\tErr: errMocked,\n")
+	fmt.Fprint(sb, "\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprint(sb, "\t\tloginAPI := &FakeLoginAPI{\n")
@@ -165,6 +170,7 @@ func (d *Descriptor) genTestWithValidButExpiredToken(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t\t\tExpire: time.Now().Add(3600*time.Second),\n")
 	fmt.Fprint(sb, "\t\t\t\tToken: \"antani-antani-token\",\n")
 	fmt.Fprint(sb, "\t\t\t},\n")
+	fmt.Fprint(sb, "\t\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
@@ -202,11 +208,11 @@ func (d *Descriptor) genTestWithValidButExpiredToken(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tt.Fatal(diff)\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif loginAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\tif loginAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid loginAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif registerAPI.CountCall != 0 {\n")
+	fmt.Fprint(sb, "\tif registerAPI.CountCall.Load() != 0 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid registerAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -222,6 +228,7 @@ func (d *Descriptor) genTestWithRegisterAPIError(sb *strings.Builder) {
 	fmt.Fprint(sb, "\terrMocked := errors.New(\"mocked error\")\n")
 	fmt.Fprint(sb, "\tregisterAPI := &FakeRegisterAPI{\n")
 	fmt.Fprint(sb, "\t\tErr: errMocked,\n")
+	fmt.Fprint(sb, "\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
@@ -245,7 +252,7 @@ func (d *Descriptor) genTestWithRegisterAPIError(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tt.Fatal(\"expected nil response\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif registerAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\tif registerAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid registerAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -262,11 +269,13 @@ func (d *Descriptor) genTestWithLoginFailure(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tResponse: &apimodel.RegisterResponse{\n")
 	fmt.Fprint(sb, "\t\t\tClientID: \"antani-antani\",\n")
 	fmt.Fprint(sb, "\t\t},\n")
+	fmt.Fprint(sb, "\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprint(sb, "\terrMocked := errors.New(\"mocked error\")\n")
 	fmt.Fprint(sb, "\t\tloginAPI := &FakeLoginAPI{\n")
 	fmt.Fprint(sb, "\t\t\tErr: errMocked,\n")
+	fmt.Fprint(sb, "\t\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
 	fmt.Fprintf(sb, "\tlogin := &%s{\n", d.WithLoginAPIStructName())
@@ -291,11 +300,11 @@ func (d *Descriptor) genTestWithLoginFailure(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tt.Fatal(\"expected nil response\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif loginAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\tif loginAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid loginAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif registerAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\tif registerAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid registerAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -312,6 +321,7 @@ func (d *Descriptor) genTestRegisterAndLoginThenFail(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tResponse: &apimodel.RegisterResponse{\n")
 	fmt.Fprint(sb, "\t\t\tClientID: \"antani-antani\",\n")
 	fmt.Fprint(sb, "\t\t},\n")
+	fmt.Fprint(sb, "\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprint(sb, "\t\tloginAPI := &FakeLoginAPI{\n")
@@ -319,6 +329,7 @@ func (d *Descriptor) genTestRegisterAndLoginThenFail(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t\t\tExpire: time.Now().Add(3600*time.Second),\n")
 	fmt.Fprint(sb, "\t\t\t\tToken: \"antani-antani-token\",\n")
 	fmt.Fprint(sb, "\t\t\t},\n")
+	fmt.Fprint(sb, "\t\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
 	fmt.Fprint(sb, "\terrMocked := errors.New(\"mocked error\")\n")
@@ -344,11 +355,11 @@ func (d *Descriptor) genTestRegisterAndLoginThenFail(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tt.Fatal(\"expected nil response\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif loginAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\tif loginAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid loginAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif registerAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\tif registerAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid registerAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -358,7 +369,11 @@ func (d *Descriptor) genTestRegisterAndLoginThenFail(sb *strings.Builder) {
 func (d *Descriptor) genTestTheDatabaseIsReplaced(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func Test%sTheDatabaseIsReplaced(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
-	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
+	fmt.Fprint(sb, "\thandler := &LoginHandler{\n")
+	fmt.Fprint(sb, "\t\tlogins: atomicx.NewInt64(),\n")
+	fmt.Fprint(sb, "\t\tregisters: atomicx.NewInt64(),\n")
+	fmt.Fprint(sb, "\t\tt: t,\n")
+	fmt.Fprint(sb, "\t}\n")
 	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
 	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
 
@@ -398,11 +413,11 @@ func (d *Descriptor) genTestTheDatabaseIsReplaced(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"expected non-nil response\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
-	fmt.Fprint(sb, "\t\tif handler.logins != 1 {\n")
+	fmt.Fprint(sb, "\t\tif handler.logins.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.logins\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
-	fmt.Fprint(sb, "\t\tif handler.registers != 1 {\n")
+	fmt.Fprint(sb, "\t\tif handler.registers.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.registers\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 	fmt.Fprint(sb, "\t}\n")
@@ -418,11 +433,11 @@ func (d *Descriptor) genTestTheDatabaseIsReplaced(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tt.Fatal(\"expected non-nil response\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif handler.logins != 3 {\n")
+	fmt.Fprint(sb, "\tif handler.logins.Load() != 3 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.logins\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif handler.registers != 2 {\n")
+	fmt.Fprint(sb, "\tif handler.registers.Load() != 2 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.registers\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -432,7 +447,11 @@ func (d *Descriptor) genTestTheDatabaseIsReplaced(sb *strings.Builder) {
 func (d *Descriptor) genTestTheDatabaseIsReplacedThenFailure(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func Test%sTheDatabaseIsReplacedThenFailure(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
-	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
+	fmt.Fprint(sb, "\thandler := &LoginHandler{\n")
+	fmt.Fprint(sb, "\t\tlogins: atomicx.NewInt64(),\n")
+	fmt.Fprint(sb, "\t\tregisters: atomicx.NewInt64(),\n")
+	fmt.Fprint(sb, "\t\tt: t,\n")
+	fmt.Fprint(sb, "\t}\n")
 	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
 	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
 
@@ -472,11 +491,11 @@ func (d *Descriptor) genTestTheDatabaseIsReplacedThenFailure(sb *strings.Builder
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"expected non-nil response\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
-	fmt.Fprint(sb, "\t\tif handler.logins != 1 {\n")
+	fmt.Fprint(sb, "\t\tif handler.logins.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.logins\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
-	fmt.Fprint(sb, "\t\tif handler.registers != 1 {\n")
+	fmt.Fprint(sb, "\t\tif handler.registers.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.registers\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 	fmt.Fprint(sb, "\t}\n")
@@ -494,11 +513,11 @@ func (d *Descriptor) genTestTheDatabaseIsReplacedThenFailure(sb *strings.Builder
 	fmt.Fprint(sb, "\t\tt.Fatal(\"expected nil response\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif handler.logins != 2 {\n")
+	fmt.Fprint(sb, "\tif handler.logins.Load() != 2 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.logins\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif handler.registers != 2 {\n")
+	fmt.Fprint(sb, "\tif handler.registers.Load() != 2 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.registers\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -515,6 +534,7 @@ func (d *Descriptor) genTestRegisterAndLoginCannotWriteState(sb *strings.Builder
 	fmt.Fprint(sb, "\t\tResponse: &apimodel.RegisterResponse{\n")
 	fmt.Fprint(sb, "\t\t\tClientID: \"antani-antani\",\n")
 	fmt.Fprint(sb, "\t\t},\n")
+	fmt.Fprint(sb, "\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprint(sb, "\t\tloginAPI := &FakeLoginAPI{\n")
@@ -522,6 +542,7 @@ func (d *Descriptor) genTestRegisterAndLoginCannotWriteState(sb *strings.Builder
 	fmt.Fprint(sb, "\t\t\t\tExpire: time.Now().Add(3600*time.Second),\n")
 	fmt.Fprint(sb, "\t\t\t\tToken: \"antani-antani-token\",\n")
 	fmt.Fprint(sb, "\t\t\t},\n")
+	fmt.Fprint(sb, "\t\t\tCountCall: atomicx.NewInt64(),\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
 	fmt.Fprint(sb, "\terrMocked := errors.New(\"mocked error\")\n")
@@ -550,11 +571,11 @@ func (d *Descriptor) genTestRegisterAndLoginCannotWriteState(sb *strings.Builder
 	fmt.Fprint(sb, "\t\tt.Fatal(\"expected nil response\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif loginAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\tif loginAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid loginAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif registerAPI.CountCall != 1 {\n")
+	fmt.Fprint(sb, "\tif registerAPI.CountCall.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid registerAPI.CountCall\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -598,7 +619,11 @@ func (d *Descriptor) genTestReadStateDecodeFailure(sb *strings.Builder) {
 func (d *Descriptor) genTestClockIsOffThenSuccess(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func Test%sClockIsOffThenSuccess(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
-	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
+	fmt.Fprint(sb, "\thandler := &LoginHandler{\n")
+	fmt.Fprint(sb, "\t\tlogins: atomicx.NewInt64(),\n")
+	fmt.Fprint(sb, "\t\tregisters: atomicx.NewInt64(),\n")
+	fmt.Fprint(sb, "\t\tt: t,\n")
+	fmt.Fprint(sb, "\t}\n")
 	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
 	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
 
@@ -638,11 +663,11 @@ func (d *Descriptor) genTestClockIsOffThenSuccess(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"expected non-nil response\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
-	fmt.Fprint(sb, "\t\tif handler.logins != 1 {\n")
+	fmt.Fprint(sb, "\t\tif handler.logins.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.logins\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
-	fmt.Fprint(sb, "\t\tif handler.registers != 1 {\n")
+	fmt.Fprint(sb, "\t\tif handler.registers.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.registers\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 	fmt.Fprint(sb, "\t}\n")
@@ -660,11 +685,11 @@ func (d *Descriptor) genTestClockIsOffThenSuccess(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tt.Fatal(\"expected non-nil response\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif handler.logins != 2 {\n")
+	fmt.Fprint(sb, "\tif handler.logins.Load() != 2 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.logins\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif handler.registers != 1 {\n")
+	fmt.Fprint(sb, "\tif handler.registers.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.registers\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -674,7 +699,11 @@ func (d *Descriptor) genTestClockIsOffThenSuccess(sb *strings.Builder) {
 func (d *Descriptor) genTestClockIsOffThen401(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func Test%sClockIsOffThen401(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
-	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
+	fmt.Fprint(sb, "\thandler := &LoginHandler{\n")
+	fmt.Fprint(sb, "\t\tlogins: atomicx.NewInt64(),\n")
+	fmt.Fprint(sb, "\t\tregisters: atomicx.NewInt64(),\n")
+	fmt.Fprint(sb, "\t\tt: t,\n")
+	fmt.Fprint(sb, "\t}\n")
 	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
 	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
 
@@ -714,11 +743,11 @@ func (d *Descriptor) genTestClockIsOffThen401(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"expected non-nil response\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
-	fmt.Fprint(sb, "\t\tif handler.logins != 1 {\n")
+	fmt.Fprint(sb, "\t\tif handler.logins.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.logins\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
-	fmt.Fprint(sb, "\t\tif handler.registers != 1 {\n")
+	fmt.Fprint(sb, "\t\tif handler.registers.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.registers\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 	fmt.Fprint(sb, "\t}\n")
@@ -737,11 +766,11 @@ func (d *Descriptor) genTestClockIsOffThen401(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tt.Fatal(\"expected non-nil response\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif handler.logins != 3 {\n")
+	fmt.Fprint(sb, "\tif handler.logins.Load() != 3 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.logins\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif handler.registers != 2 {\n")
+	fmt.Fprint(sb, "\tif handler.registers.Load() != 2 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.registers\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -751,7 +780,11 @@ func (d *Descriptor) genTestClockIsOffThen401(sb *strings.Builder) {
 func (d *Descriptor) genTestClockIsOffThen500(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func Test%sClockIsOffThen500(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
-	fmt.Fprint(sb, "\thandler := &LoginHandler{t: t}\n")
+	fmt.Fprint(sb, "\thandler := &LoginHandler{\n")
+	fmt.Fprint(sb, "\t\tlogins: atomicx.NewInt64(),\n")
+	fmt.Fprint(sb, "\t\tregisters: atomicx.NewInt64(),\n")
+	fmt.Fprint(sb, "\t\tt: t,\n")
+	fmt.Fprint(sb, "\t}\n")
 	fmt.Fprint(sb, "\tsrvr := httptest.NewServer(handler)\n")
 	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
 
@@ -791,11 +824,11 @@ func (d *Descriptor) genTestClockIsOffThen500(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"expected non-nil response\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
-	fmt.Fprint(sb, "\t\tif handler.logins != 1 {\n")
+	fmt.Fprint(sb, "\t\tif handler.logins.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.logins\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 
-	fmt.Fprint(sb, "\t\tif handler.registers != 1 {\n")
+	fmt.Fprint(sb, "\t\tif handler.registers.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\t\tt.Fatal(\"invalid handler.registers\")\n")
 	fmt.Fprint(sb, "\t\t}\n")
 	fmt.Fprint(sb, "\t}\n")
@@ -814,11 +847,11 @@ func (d *Descriptor) genTestClockIsOffThen500(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t\tt.Fatal(\"expected nil response\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif handler.logins != 2 {\n")
+	fmt.Fprint(sb, "\tif handler.logins.Load() != 2 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.logins\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
-	fmt.Fprint(sb, "\tif handler.registers != 1 {\n")
+	fmt.Fprint(sb, "\tif handler.registers.Load() != 1 {\n")
 	fmt.Fprint(sb, "\t\tt.Fatal(\"invalid handler.registers\")\n")
 	fmt.Fprint(sb, "\t}\n")
 
@@ -840,6 +873,7 @@ func GenLoginTestGo(file string) {
 	fmt.Fprint(&sb, "\t\"time\"\n")
 	fmt.Fprint(&sb, "\n")
 	fmt.Fprint(&sb, "\t\"github.com/google/go-cmp/cmp\"\n")
+	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/atomicx\"\n")
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/engine/ooapi/apimodel\"\n")
 	fmt.Fprint(&sb, ")\n")
 	for _, desc := range Descriptors {

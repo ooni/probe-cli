@@ -6,10 +6,10 @@ import (
 	"net"
 	"net/url"
 	"strings"
-	"sync/atomic"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/multierror"
 )
 
@@ -252,7 +252,7 @@ func TestMaybeConfusionManyEntries(t *testing.T) {
 
 func TestResolverWorksWithProxy(t *testing.T) {
 	var (
-		works      int32
+		works      = atomicx.NewInt64()
 		startuperr = make(chan error)
 		listench   = make(chan net.Listener)
 		done       = make(chan interface{})
@@ -273,7 +273,7 @@ func TestResolverWorksWithProxy(t *testing.T) {
 				// shutdown by the main goroutine.
 				return
 			}
-			atomic.AddInt32(&works, 1)
+			works.Add(1)
 			conn.Close()
 		}
 	}()
@@ -299,7 +299,7 @@ func TestResolverWorksWithProxy(t *testing.T) {
 	if addrs != nil {
 		t.Fatal("expected nil addrs")
 	}
-	if works < 1 {
+	if works.Load() < 1 {
 		t.Fatal("expected to see a positive number of entries here")
 	}
 }
