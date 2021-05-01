@@ -42,26 +42,3 @@ func (i64 *Int64) Load() (v int64) {
 	i64.mu.Unlock()
 	return
 }
-
-// Float64 is an float64 with atomic semantics.
-type Float64 struct {
-	mu sync.Mutex
-	v  float64
-}
-
-// Add behaves like AtomicInt64.Add but for float64
-func (f64 *Float64) Add(delta float64) (newvalue float64) {
-	f64.mu.Lock()
-	f64.v += delta
-	newvalue = f64.v
-	f64.mu.Unlock()
-	return
-}
-
-// Load behaves like LoadInt64.Load buf for float64
-func (f64 *Float64) Load() (v float64) {
-	f64.mu.Lock()
-	v = f64.v
-	f64.mu.Unlock()
-	return
-}
