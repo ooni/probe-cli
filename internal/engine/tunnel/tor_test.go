@@ -15,7 +15,6 @@ import (
 	"github.com/cretz/bine/control"
 	"github.com/cretz/bine/tor"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
-	"golang.org/x/sys/execabs"
 )
 
 // torCloser is used to mock a running tor process, which
@@ -100,6 +99,9 @@ func TestTorStartFailure(t *testing.T) {
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
 		TunnelDir: "testdata",
+		testExecabsLookPath: func(name string) (string, error) {
+			return "/usr/local/bin/tor", nil
+		},
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return nil, expected
 		},
@@ -118,6 +120,9 @@ func TestTorEnableNetworkFailure(t *testing.T) {
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
 		TunnelDir: "testdata",
+		testExecabsLookPath: func(name string) (string, error) {
+			return "/usr/local/bin/tor", nil
+		},
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -139,6 +144,9 @@ func TestTorGetInfoFailure(t *testing.T) {
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
 		TunnelDir: "testdata",
+		testExecabsLookPath: func(name string) (string, error) {
+			return "/usr/local/bin/tor", nil
+		},
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -162,6 +170,9 @@ func TestTorGetInfoInvalidNumberOfKeys(t *testing.T) {
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
 		TunnelDir: "testdata",
+		testExecabsLookPath: func(name string) (string, error) {
+			return "/usr/local/bin/tor", nil
+		},
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -185,6 +196,9 @@ func TestTorGetInfoInvalidKey(t *testing.T) {
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
 		TunnelDir: "testdata",
+		testExecabsLookPath: func(name string) (string, error) {
+			return "/usr/local/bin/tor", nil
+		},
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -208,6 +222,9 @@ func TestTorGetInfoInvalidProxyType(t *testing.T) {
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
 		TunnelDir: "testdata",
+		testExecabsLookPath: func(name string) (string, error) {
+			return "/usr/local/bin/tor", nil
+		},
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -231,6 +248,9 @@ func TestTorUnsupportedProxy(t *testing.T) {
 	tun, err := torStart(ctx, &Config{
 		Session:   &mockable.Session{},
 		TunnelDir: "testdata",
+		testExecabsLookPath: func(name string) (string, error) {
+			return "/usr/local/bin/tor", nil
+		},
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
@@ -297,55 +317,4 @@ func TestMaybeCleanupTunnelDir(t *testing.T) {
 			t.Fatal("unexpected file name: ", file)
 		}
 	}
-}
-
-// TestTorExePathWorks gives us confidence that torExePath is not
-// going to return us an absolute path.
-func TestTorExePathWorks(t *testing.T) {
-	binpath, err := execabs.LookPath("tor")
-	if err != nil {
-		t.Skip("missing precondition for test: tor in PATH")
-	}
-	if !filepath.IsAbs(binpath) {
-		t.Fatal("expected path to be absolute here")
-	}
-
-	t.Run("with empty string", func(t *testing.T) {
-		// now that we have the binary in path let us lookup
-		// without any binary name and make sure we end up getting
-		// the same binary path as above.
-		out, err := torExePath("")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if out != binpath {
-			t.Fatal("not the result we expected")
-		}
-	})
-
-	t.Run("with just the binary name", func(t *testing.T) {
-		// now that we have the binary in path let us lookup
-		// without any binary name and make sure we end up getting
-		// the same binary path as above.
-		out, err := torExePath("tor")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if out != binpath {
-			t.Fatal("not the result we expected")
-		}
-	})
-
-	t.Run("with the absolute path", func(t *testing.T) {
-		// now that we have the binary in path let us lookup
-		// without any binary name and make sure we end up getting
-		// the same binary path as above.
-		out, err := torExePath(binpath)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if out != binpath {
-			t.Fatal("not the result we expected")
-		}
-	})
 }

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/cretz/bine/tor"
-	"golang.org/x/sys/execabs"
 )
 
 // torProcess is a running tor process.
@@ -57,14 +56,6 @@ var ErrTorUnableToGetSOCKSProxyAddress = errors.New(
 var ErrTorReturnedUnsupportedProxy = errors.New(
 	"tor returned unsupported proxy")
 
-// torExePath resolves the path to the tor executable.
-func torExePath(exePath string) (string, error) {
-	if exePath == "" {
-		exePath = "tor"
-	}
-	return execabs.LookPath(exePath)
-}
-
 // torStart starts the tor tunnel.
 func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	select {
@@ -86,7 +77,7 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	// Implementation note: here we make sure that we're not going to
 	// execute a binary called "tor" in the current directory on Windows
 	// as documented in https://blog.golang.org/path-security.
-	exePath, err := torExePath(config.TorBinary)
+	exePath, err := config.execabsLookPath(config.torBinary())
 	if err != nil {
 		return nil, err
 	}
