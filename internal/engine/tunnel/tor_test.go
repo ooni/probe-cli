@@ -9,11 +9,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/cretz/bine/control"
 	"github.com/cretz/bine/tor"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"golang.org/x/sys/execabs"
 )
 
 // torCloser is used to mock a running tor process, which
@@ -71,6 +73,21 @@ func TestTorWithEmptyTunnelDir(t *testing.T) {
 	})
 	if !errors.Is(err, ErrEmptyTunnelDir) {
 		t.Fatal("not the error we expected")
+	}
+	if tun != nil {
+		t.Fatal("expected nil tunnel here")
+	}
+}
+
+func TestTorBinaryNotFoundFailure(t *testing.T) {
+	ctx := context.Background()
+	tun, err := torStart(ctx, &Config{
+		Session:   &mockable.Session{},
+		TorBinary: "/nonexistent/directory/tor",
+		TunnelDir: "testdata",
+	})
+	if !errors.Is(err, syscall.ENOENT) {
+		t.Fatal("not the error we expected", err)
 	}
 	if tun != nil {
 		t.Fatal("expected nil tunnel here")
@@ -280,4 +297,55 @@ func TestMaybeCleanupTunnelDir(t *testing.T) {
 			t.Fatal("unexpected file name: ", file)
 		}
 	}
+}
+
+// TestTorExePathWorks gives us confidence that torExePath is not
+// going to return us an absolute path.
+func TestTorExePathWorks(t *testing.T) {
+	binpath, err := execabs.LookPath("tor")
+	if err != nil {
+		t.Skip("missing precondition for test: tor in PATH")
+	}
+	if !filepath.IsAbs(binpath) {
+		t.Fatal("expected path to be absolute here")
+	}
+
+	t.Run("with empty string", func(t *testing.T) {
+		// now that we have the binary in path let us lookup
+		// without any binary name and make sure we end up getting
+		// the same binary path as above.
+		out, err := torExePath("")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if out != binpath {
+			t.Fatal("not the result we expected")
+		}
+	})
+
+	t.Run("with just the binary name", func(t *testing.T) {
+		// now that we have the binary in path let us lookup
+		// without any binary name and make sure we end up getting
+		// the same binary path as above.
+		out, err := torExePath("tor")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if out != binpath {
+			t.Fatal("not the result we expected")
+		}
+	})
+
+	t.Run("with the absolute path", func(t *testing.T) {
+		// now that we have the binary in path let us lookup
+		// without any binary name and make sure we end up getting
+		// the same binary path as above.
+		out, err := torExePath(binpath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if out != binpath {
+			t.Fatal("not the result we expected")
+		}
+	})
 }
