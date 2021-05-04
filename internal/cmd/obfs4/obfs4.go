@@ -21,6 +21,6 @@ func main() {
 		IATMode: *iatmode,
 		Logger:  log.Log,
 	}
-	obfs4.Start(context.Background())
+	obfs4.Start()
 	<-context.Background().Done()
 }
