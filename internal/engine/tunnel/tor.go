@@ -19,15 +19,10 @@ type torProcess interface {
 	io.Closer
 }
 
-// XXX: this is difficult and needs refactoring.
-
 // torTunnel is the Tor tunnel
 type torTunnel struct {
 	// bootstrapTime is the duration of the bootstrap
 	bootstrapTime time.Duration
-
-	// bridges contains the optional bridges.
-	bridges []stoppableBridge
 
 	// instance is the running tor instance
 	instance torProcess
@@ -61,36 +56,20 @@ var ErrTorUnableToGetSOCKSProxyAddress = errors.New(
 var ErrTorReturnedUnsupportedProxy = errors.New(
 	"tor returned unsupported proxy")
 
-// execTor executes the tor binary.
-func execTor(ctx context.Context, config *Config) (*torTunnel, error) {
+// torStart starts the tor tunnel.
+func torStart(ctx context.Context, config *Config) (Tunnel, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err() // allows to write unit tests using this code
+	default:
+	}
+	if config.TunnelDir == "" {
+		return nil, ErrEmptyTunnelDir
+	}
 	stateDir := filepath.Join(config.TunnelDir, "tor")
 	logfile := filepath.Join(stateDir, "tor.log")
 	maybeCleanupTunnelDir(stateDir, logfile)
-	parsedArgs, err := splitTorCmdlineArgs(config)
-	if err != nil {
-		return nil, err
-	}
-	if len(parsedArgs.normalArgs) > 0 && len(parsedArgs.ooniBridges) > 0 {
-		return nil, errors.New("cannot mix OONIBridge with other cmdline arguments")
-	}
-	extraArgs := append([]string{}, parsedArgs.normalArgs...)
-	var bridges []stoppableBridge
-	for _, bridgeline := range parsedArgs.ooniBridges {
-		bs := &bridgeStarter{
-			bridgeline: bridgeline,
-			logger:     config.logger(),
-			statedir:   stateDir,
-		}
-		mbr, err := bs.start(ctx)
-		if err != nil {
-			for _, b := range bridges {
-				b.Stop()
-			}
-			return nil, err
-		}
-		extraArgs = append(extraArgs, mbr.extraArgs...)
-		bridges = append(bridges, mbr.stoppableBridge)
-	}
+	extraArgs := append([]string{}, config.TorArgs...)
 	extraArgs = append(extraArgs, "Log")
 	extraArgs = append(extraArgs, "notice stderr")
 	extraArgs = append(extraArgs, "Log")
@@ -100,9 +79,6 @@ func execTor(ctx context.Context, config *Config) (*torTunnel, error) {
 	// as documented in https://blog.golang.org/path-security.
 	exePath, err := config.execabsLookPath(config.torBinary())
 	if err != nil {
-		for _, b := range bridges {
-			b.Stop()
-		}
 		return nil, err
 	}
 	config.logger().Infof("tunnel: exec: %s %+v", exePath, extraArgs)
@@ -115,21 +91,11 @@ func execTor(ctx context.Context, config *Config) (*torTunnel, error) {
 	if err != nil {
 		return nil, err
 	}
-	// not fully initialized yet.
-	return &torTunnel{
-		bootstrapTime: 0,
-		bridges:       bridges,
-		instance:      instance,
-	}, nil
-}
-
-// setupTor configures a running tor process.
-func setupTor(ctx context.Context, config *Config, tun *torTunnel) error {
-	tun.instance.StopProcessOnClose = true
+	instance.StopProcessOnClose = true
 	start := time.Now()
-	if err := config.torEnableNetwork(ctx, tun.instance, true); err != nil {
-		tun.Stop()
-		return err
+	if err := config.torEnableNetwork(ctx, instance, true); err != nil {
+		instance.Close()
+		return nil, err
 	}
 	stop := time.Now()
 	// Adapted from <https://git.io/Jfc7N>
@@ -152,23 +118,6 @@ func setupTor(ctx context.Context, config *Config, tun *torTunnel) error {
 		instance:      instance,
 		proxy:         &url.URL{Scheme: "socks5", Host: proxyAddress},
 	}, nil
-}
-
-// torStart starts the tor tunnel.
-func torStart(ctx context.Context, config *Config) (Tunnel, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err() // allows to write unit tests using this code
-	default:
-	}
-	if config.TunnelDir == "" {
-		return nil, ErrEmptyTunnelDir
-	}
-	instance, err := execTor(ctx, config)
-	if err != nil {
-		return nil, err
-	}
-	return setupTor(ctx, config, instance)
 }
 
 // maybeCleanupTunnelDir removes stale files inside
