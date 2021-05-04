@@ -21,6 +21,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
+	"github.com/ooni/probe-cli/v3/internal/engine/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/pborman/getopt/v2"
 )
@@ -43,6 +44,7 @@ type Options struct {
 	SelfCensorSpec   string
 	TorArgs          []string
 	TorBinary        string
+	TorBridges       []string
 	Tunnel           string
 	Verbose          bool
 	Version          bool
@@ -118,6 +120,10 @@ func init() {
 	getopt.FlagLong(
 		&globalOptions.TorBinary, "tor-binary", 0,
 		"Specify path to a specific tor binary",
+	)
+	getopt.FlagLong(
+		&globalOptions.TorBridges, "tor-bridge", 0,
+		"Bridge line for a bridge you want to use with --tunnel=tor",
 	)
 	getopt.FlagLong(
 		&globalOptions.Tunnel, "tunnel", 0,
@@ -355,6 +361,18 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	err = os.MkdirAll(tunnelDir, 0700)
 	fatalOnError(err, "cannot create tunnelDir")
 
+	var torBridges []tunnel.Bridge
+	if len(currentOptions.TorBridges) > 0 {
+		var err error
+		torBridges, err = tunnel.NewBridges(currentOptions.TorBridges, tunnelDir)
+		fatalOnError(err, "cannot parse --bridge values")
+		defer func() {
+			for _, b := range torBridges {
+				b.Stop()
+			}
+		}()
+	}
+
 	config := engine.SessionConfig{
 		KVStore:         kvstore,
 		Logger:          logger,
@@ -363,7 +381,13 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		SoftwareVersion: softwareVersion,
 		TorArgs:         currentOptions.TorArgs,
 		TorBinary:       currentOptions.TorBinary,
-		TunnelDir:       tunnelDir,
+		TorBridges: func() (out []tunnel.BridgeInfo) {
+			for _, b := range torBridges {
+				out = append(out, b)
+			}
+			return
+		}(),
+		TunnelDir: tunnelDir,
 	}
 	if currentOptions.ProbeServicesURL != "" {
 		config.AvailableProbeServices = []model.Service{{

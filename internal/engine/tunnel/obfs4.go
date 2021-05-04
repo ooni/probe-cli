@@ -43,8 +43,8 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/url"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -72,6 +72,9 @@ type OBFS4 struct {
 
 	// DataDir is the mandatory directory where to store data.
 	DataDir string
+
+	// Fingerprint is the mandatory bridge fingerprint.
+	Fingerprint string
 
 	// IATMode contains the mandatory iat-mode parameter.
 	IATMode string
@@ -225,6 +228,9 @@ func (txp *OBFS4) validateConfig() error {
 	if txp.DataDir == "" {
 		return fmt.Errorf("%w: txp.DataDir is empty", ErrOBFS4Config)
 	}
+	if txp.Fingerprint == "" {
+		return fmt.Errorf("%w: txp.Fingerprint is empty", ErrOBFS4Config)
+	}
 	if txp.IATMode == "" {
 		return fmt.Errorf("%w: txp.IATMode empty", ErrOBFS4Config)
 	}
@@ -329,6 +335,13 @@ func (txp *OBFS4) AsClientTransportPluginArgument() string {
 	return fmt.Sprintf("obfs4 socks5 %s", txp.laddr.String())
 }
 
+// AsBridgeArgument returns the argument to be passed to
+// the tor command line to declare this bridge.
+func (txp *OBFS4) AsBridgeArgument() string {
+	return fmt.Sprintf("obfs4 %s %s cert=%s iat-mode=%s",
+		txp.Address, txp.Fingerprint, txp.Cert, txp.IATMode)
+}
+
 // ErrWrongBridgeType indicates that the parser we're currently
 // using does not recognize the specified bridge type.
 var ErrWrongBridgeType = errors.New("tunnel: wrong bridge type")
@@ -362,11 +375,12 @@ type OBFS4BridgeLineParser struct {
 
 // Parse parses the OBFS4BridgeLine into an OBFS4 structure or an error.
 func (p *OBFS4BridgeLineParser) Parse() (*OBFS4, error) {
-	vals := strings.Split(p.BridgeLine, " \t")
+	vals := strings.Split(p.BridgeLine, " ")
 	blp := &obfs4BridgeLineParserCtx{
 		bridgeKeyword: make(chan *obfs4BridgeLineParserState),
 		bridgeType:    make(chan *obfs4BridgeLineParserState),
 		endpoint:      make(chan *obfs4BridgeLineParserState),
+		fingerprint:   make(chan *obfs4BridgeLineParserState),
 		options:       make(chan *obfs4BridgeLineParserState),
 		nextOptions:   make(chan *obfs4BridgeLineParserState),
 		err:           make(chan error),
@@ -380,6 +394,7 @@ func (p *OBFS4BridgeLineParser) Parse() (*OBFS4, error) {
 	launch(blp.parseBridgeKeyword)
 	launch(blp.parseBridgeType)
 	launch(blp.parseEndpoint)
+	launch(blp.parseFingerprint)
 	launch(blp.parseOptions)
 	launch(blp.parseNextOptions)
 	blp.bridgeKeyword <- &obfs4BridgeLineParserState{ // kick off
@@ -398,6 +413,7 @@ func (p *OBFS4BridgeLineParser) Parse() (*OBFS4, error) {
 	close(blp.bridgeKeyword)
 	close(blp.bridgeType)
 	close(blp.endpoint)
+	close(blp.fingerprint)
 	close(blp.options)
 	close(blp.nextOptions)
 	blp.wg.Wait() // join the goros
@@ -425,6 +441,9 @@ type obfs4BridgeLineParserCtx struct {
 
 	// endpoint is the input of the parseEndpoint parser.
 	endpoint chan *obfs4BridgeLineParserState
+
+	// fingerprint is the input for the parseFingerprint state.
+	fingerprint chan *obfs4BridgeLineParserState
 
 	// options is the input of the parseOptions parser.
 	options chan *obfs4BridgeLineParserState
@@ -480,19 +499,31 @@ func (p *obfs4BridgeLineParserCtx) parseEndpoint() {
 			p.err <- fmt.Errorf("%w: missing bridge endpoint", ErrParseBridgeLine)
 			continue
 		}
-		// the URL parser accepts the desired format for the URL host, so we
-		// construct a fake URL with the input string as host and see whether
-		// we can parse a URL where everything is empty but the host
-		URL, err := url.Parse("//" + s.vals[0])
-		if err != nil {
+		if _, _, err := net.SplitHostPort(s.vals[0]); err != nil {
 			p.err <- fmt.Errorf("%w: %s", ErrParseBridgeLine, err.Error())
 			continue
 		}
-		if URL.Scheme != "" || URL.Path != "" || URL.User != nil || URL.Fragment != "" {
-			p.err <- fmt.Errorf(
-				"%w: parsed more than expected: %+v", ErrParseBridgeLine, URL)
+		s.o4.Address = s.vals[0]
+		s.vals = s.vals[1:]
+		p.fingerprint <- s
+	}
+}
+
+// parseFingerprint parses the fingerprint.
+func (p *obfs4BridgeLineParserCtx) parseFingerprint() {
+	defer p.wg.Done()
+	for s := range p.fingerprint {
+		if len(s.vals) < 1 {
+			p.err <- fmt.Errorf("%w: missing bridge fingerprint", ErrParseBridgeLine)
 			continue
 		}
+		re := regexp.MustCompile("^[A-Fa-f0-9]{40}$")
+		if !re.MatchString(s.vals[0]) {
+			p.err <- fmt.Errorf("%w: invalid bridge fingerprint", ErrParseBridgeLine)
+			continue
+		}
+		s.o4.Fingerprint = s.vals[0]
+		s.vals = s.vals[1:]
 		p.options <- s
 	}
 }
@@ -517,7 +548,8 @@ func (p *obfs4BridgeLineParserCtx) parseOptions() {
 		s.vals = s.vals[1:]
 		if strings.HasPrefix(v, "cert=") {
 			v = v[len("cert="):]
-			if _, err := base64.URLEncoding.DecodeString(v); err != nil {
+			cert := v + "=="
+			if _, err := base64.StdEncoding.DecodeString(cert); err != nil {
 				p.err <- fmt.Errorf(
 					"%w: cannot parse cert: %s", ErrParseBridgeLine, err.Error())
 				continue

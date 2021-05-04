@@ -53,6 +53,11 @@ type Config struct {
 	// executing. When not set, we execute `tor`.
 	TorBinary string
 
+	// TorBridges contains a list of active tor bridges managed directly
+	// by OONI that we want to tor instance to use. This package WILL
+	// NOT take ownership of the bridges, they are managed by the caller.
+	TorBridges []BridgeInfo
+
 	// TunnelDir is the mandatory directory in which the tunnel SHOULD
 	// store its state, if any. If this field is empty, the
 	// Start function fails with ErrEmptyTunnelDir.

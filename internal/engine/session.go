@@ -35,6 +35,10 @@ type SessionConfig struct {
 	TorArgs                []string
 	TorBinary              string
 
+	// TorBridges contains a list of bridges managed by
+	// OONIProbe that we want to use along with tor.
+	TorBridges []tunnel.BridgeInfo
+
 	// TunnelDir is the directory where we should store
 	// the state of persistent tunnels. This field is
 	// optional _unless_ you want to use tunnels. In such
@@ -171,12 +175,13 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 			config.Logger.Infof(
 				"starting '%s' tunnel; please be patient...", proxyURL.Scheme)
 			tunnel, err := tunnel.Start(ctx, &tunnel.Config{
-				Logger:    config.Logger,
-				Name:      proxyURL.Scheme,
-				Session:   &sessionTunnelEarlySession{},
-				TorArgs:   config.TorArgs,
-				TorBinary: config.TorBinary,
-				TunnelDir: config.TunnelDir,
+				Logger:     config.Logger,
+				Name:       proxyURL.Scheme,
+				Session:    &sessionTunnelEarlySession{},
+				TorArgs:    config.TorArgs,
+				TorBinary:  config.TorBinary,
+				TorBridges: config.TorBridges,
+				TunnelDir:  config.TunnelDir,
 			})
 			if err != nil {
 				return nil, err
