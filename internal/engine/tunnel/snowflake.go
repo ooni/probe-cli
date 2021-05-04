@@ -37,6 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 import (
+	"context"
 	"errors"
 	"math/rand"
 	"net"
@@ -193,7 +194,8 @@ func (sfk *Snowflake) alreadyRunning() bool {
 }
 
 // Start starts the snowflake pluggable transport.
-func (sfk *Snowflake) Start() error {
+func (sfk *Snowflake) Start(_ context.Context) error {
+	// TODO(bassosimone): we should use the context!
 	if sfk.alreadyRunning() {
 		return errors.New("snowflake: already running")
 	}

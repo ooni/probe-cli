@@ -45,9 +45,8 @@ type Config struct {
 	Session Session
 
 	// TorArgs contains the optional arguments that you want us to pass
-	// to the tor binary when invoking it. By default we do not
-	// pass any extra argument. This flag might be useful to
-	// configure pluggable transports.
+	// to the tor binary when invoking it. This field is ideal for passing
+	// specific (obfuscated) bridges to the tor instance.
 	TorArgs []string
 
 	// TorBinary is the optional path of the TorBinary we SHOULD be
