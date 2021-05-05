@@ -329,9 +329,13 @@ class CommandExecutor:
 
     def require(self, *executable: str) -> None:
         """require implements Engine.require."""
-        self._dry_runner.require(*executable)
-        # Nothing else to do, because executable is fully
-        # implemented by CommandDryRunner.
+        for exc in executable:
+            self._dry_runner.require(exc)
+            fullpath = shutil.which(exc)
+            if not fullpath:
+                log("checking for {}... not found".format(exc))
+                sys.exit(1)
+            log("checking for {}... {}".format(exc, fullpath))
 
     def run(
         self,
@@ -345,13 +349,13 @@ class CommandExecutor:
 
     def setenv(self, key: str, value: str) -> Optional[str]:
         """setenv implements Engine.setenv."""
-        # Nothing else to do, because executable is fully
+        # Nothing else to do, because setenv is fully
         # implemented by CommandDryRunner.
         return self._dry_runner.setenv(key, value)
 
     def unsetenv(self, key: str) -> None:
         """unsetenv implements Engine.unsetenv."""
-        # Nothing else to do, because executable is fully
+        # Nothing else to do, because unsetenv is fully
         # implemented by CommandDryRunner.
         self._dry_runner.unsetenv(key)
 
@@ -361,9 +365,6 @@ class CommandDryRunner:
 
     # Implementation note: here we try to log valid bash snippets
     # such that is really obvious what we are doing.
-
-    def __init__(self):
-        self.__cmdcache: Dict[str, str] = {}
 
     def backticks(
         self,
@@ -396,17 +397,9 @@ class CommandDryRunner:
 
     def require(self, *executable: str) -> None:
         """require implements Engine.require."""
-        # implemented here because we want to see the results
-        # of checks when we're doing a dry run
         for exc in executable:
-            if exc in self.__cmdcache:
-                continue  # do not print checks more than once
-            fullpath = shutil.which(exc)
-            if not fullpath:
-                log("./make: checking for {}... not found".format(exc))
-                sys.exit(1)
-            log("./make: checking for {}... {}".format(exc, fullpath))
-            self.__cmdcache[exc] = fullpath
+            log(f"./make: echo -n 'checking for {exc}... '")
+            log("./make: command -v %s || { echo 'not found'; exit 1 }" % exc)
 
     def run(
         self,
@@ -710,7 +703,7 @@ class OONIMKAllAAR:
         # TODO(bassosimone): find a way to run this command without
         # adding extra dependencies to go.mod and go.sum.
         cmdline: List[str] = []
-        cmdline.append(os.path.join(".", "MOBILE", "go"))
+        cmdline.append("go")
         cmdline.append("get")
         cmdline.append("-u")
         if options.verbose():
@@ -720,6 +713,7 @@ class OONIMKAllAAR:
         cmdline.append("golang.org/x/mobile/cmd/gomobile@latest")
         with Environ(engine, "GOPATH", gopath()):
             with AugmentedPath(engine, oonigo.binpath()):
+                engine.require("go")
                 engine.run(cmdline)
 
     def _gomobile_init(
@@ -729,12 +723,13 @@ class OONIMKAllAAR:
         android: SDKAndroid,
     ) -> None:
         cmdline: List[str] = []
-        cmdline.append(os.path.join(".", "MOBILE", "gomobile"))
+        cmdline.append("gomobile")
         cmdline.append("init")
         with Environ(engine, "ANDROID_HOME", android.home()):
             with Environ(engine, "ANDROID_NDK_HOME", android.ndk_home()):
                 with AugmentedPath(engine, oonigo.binpath()):
                     with AugmentedPath(engine, os.path.join(gopath(), "bin")):
+                        engine.require("gomobile", "go")
                         engine.run(cmdline)
 
     def _gomobile_bind(
@@ -745,7 +740,7 @@ class OONIMKAllAAR:
         android: SDKAndroid,
     ) -> None:
         cmdline: List[str] = []
-        cmdline.append(os.path.join(".", "MOBILE", "gomobile"))
+        cmdline.append("gomobile")
         cmdline.append("bind")
         if options.verbose():
             cmdline.append("-v")
@@ -765,6 +760,7 @@ class OONIMKAllAAR:
             with Environ(engine, "ANDROID_NDK_HOME", android.ndk_home()):
                 with AugmentedPath(engine, oonigo.binpath()):
                     with AugmentedPath(engine, os.path.join(gopath(), "bin")):
+                        engine.require("gomobile", "go")
                         engine.run(cmdline)
 
 
@@ -881,7 +877,7 @@ class OONIMKAllFramework:
         # TODO(bassosimone): find a way to run this command without
         # adding extra dependencies to go.mod and go.sum.
         cmdline: List[str] = []
-        cmdline.append(os.path.join(".", "MOBILE", "go"))
+        cmdline.append("go")
         cmdline.append("get")
         cmdline.append("-u")
         if options.verbose():
@@ -891,6 +887,7 @@ class OONIMKAllFramework:
         cmdline.append("golang.org/x/mobile/cmd/gomobile@latest")
         with AugmentedPath(engine, gogo.binpath()):
             with Environ(engine, "GOPATH", gopath()):
+                engine.require("go")
                 engine.run(cmdline)
 
     def _gomobile_init(
@@ -899,10 +896,11 @@ class OONIMKAllFramework:
         gogo: SDKGolangGo,
     ) -> None:
         cmdline: List[str] = []
-        cmdline.append(os.path.join(".", "MOBILE", "gomobile"))
+        cmdline.append("gomobile")
         cmdline.append("init")
         with AugmentedPath(engine, os.path.join(gopath(), "bin")):
             with AugmentedPath(engine, gogo.binpath()):
+                engine.require("gomobile", "go")
                 engine.run(cmdline)
 
     def _gomobile_bind(
@@ -912,7 +910,7 @@ class OONIMKAllFramework:
         gogo: SDKGolangGo,
     ) -> None:
         cmdline: List[str] = []
-        cmdline.append(os.path.join(".", "MOBILE", "gomobile"))
+        cmdline.append("gomobile")
         cmdline.append("bind")
         if options.verbose():
             cmdline.append("-v")
@@ -930,6 +928,7 @@ class OONIMKAllFramework:
         cmdline.append("./pkg/oonimkall")
         with AugmentedPath(engine, os.path.join(gopath(), "bin")):
             with AugmentedPath(engine, gogo.binpath()):
+                engine.require("gomobile", "go")
                 engine.run(cmdline)
 
 
@@ -980,6 +979,7 @@ class OONIMKAllPodspec:
         if os.path.isfile(self.__name) and not options.dry_run():
             log("./make: {}: already built".format(self.__name))
             return
+        engine.require("cat", "sed")
         output = engine.backticks("RELEASE", ["git", "describe", "--tags"])
         release = output.decode("utf-8").strip()
         version = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
@@ -1041,6 +1041,7 @@ class MiniOONIDarwinOrWindows:
             with Environ(engine, "GOARCH", self.__arch):
                 with Environ(engine, "CGO_ENABLED", "0"):
                     with AugmentedPath(engine, gogo.binpath()):
+                        engine.require("go")
                         engine.run(cmdline)
 
 
@@ -1089,6 +1090,7 @@ class MiniOONILinux:
             with Environ(engine, "GOARCH", self.__arch):
                 with Environ(engine, "CGO_ENABLED", "0"):
                     with AugmentedPath(engine, gogo.binpath()):
+                        engine.require("go")
                         engine.run(cmdline)
 
 
