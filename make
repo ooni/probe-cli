@@ -1132,12 +1132,12 @@ class OONIProbeLinux:
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isfile(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+            log("\n./make: {}: already built".format(self.__name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
         ooprivate.copyfiles(engine, options)
-        log("./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self.__name))
         engine.require("docker")
         # make sure we have the latest version of the container image
         engine.run(
@@ -1195,22 +1195,14 @@ class OONIProbeWindows:
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isfile(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+            log("\n./make: {}: already built".format(self.__name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
-        ooprivate.copyfiles(engine, options)
         gogo = SDKGolangGo()
         gogo.build(engine, options)
-        log("./make: building {}...".format(self.__name))
-        engine.setenv("CGO_ENABLED", "1")
-        engine.setenv("GOOS", "windows")
-        engine.setenv("GOARCH", self.__arch)
-        engine.setenv("CC", self._gcc())
-        # TODO(bassosimone): here we have the problem that we would
-        # actually like to set the path before and see which is
-        # the golang executable that we're using.
-        engine.require(self._gcc(), "go")
+        log("\n./make: building {}...".format(self.__name))
+        ooprivate.copyfiles(engine, options)
         cmdline = [
             "go",
             "build",
@@ -1225,20 +1217,13 @@ class OONIProbeWindows:
         if not options.disable_embedding_psiphon_config():
             cmdline.append("-tags=ooni_psiphon_config")
         cmdline.append("./cmd/ooniprobe")
-        engine.run(
-            cmdline,
-            extra_env={
-                "PATH": os.pathsep.join(
-                    [
-                        gogo.binpath(),  # for golang/go
-                        os.environ["PATH"],  # original path
-                    ]
-                ),
-            },
-        )
-        engine.unsetenv("GOARCH")
-        engine.unsetenv("GOOS")
-        engine.unsetenv("CGO_ENABLED")
+        with Environ(engine, "GOOS", "windows"):
+            with Environ(engine, "GOARCH", self.__arch):
+                with Environ(engine, "CGO_ENABLED", "1"):
+                    with Environ(engine, "CC", self._gcc()):
+                        with AugmentedPath(engine, gogo.binpath()):
+                            engine.require(self._gcc(), "go")
+                            engine.run(cmdline)
 
 
 # OONIPROBE_TARGETS contains all the ooniprobe targets
