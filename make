@@ -290,8 +290,11 @@ class Engine(Protocol):
         """unsetenv clears an environment variable."""
 
 
-class CommandRealExecutor:
-    """CommandRealExecutor executes commands."""
+class CommandExecutor:
+    """CommandExecutor executes commands."""
+
+    def __init__(self, dry_runner: Engine):
+        self._dry_runner = dry_runner
 
     def backticks(
         self,
@@ -300,12 +303,15 @@ class CommandRealExecutor:
         output: List[bytes],
     ) -> None:
         """backticks implements Engine.backticks"""
-        # Implemented in CommandDryRunner
+        self._dry_runner.backticks(output_variable, cmdline, output)
+        # Nothing else to do, because backticks is fully
+        # implemented by CommandDryRunner.
 
     def cat_sed_redirect(
         self, patterns: List[Tuple[str, str]], source: str, dest: str
     ) -> None:
         """cat_sed_redirect implements Engine.cat_sed_redirect."""
+        self._dry_runner.cat_sed_redirect(patterns, source, dest)
         with open(source, "r") as sourcefp:
             data = sourcefp.read()
             for p, v in patterns:
@@ -315,13 +321,16 @@ class CommandRealExecutor:
 
     def echo_to_file(self, content: str, filepath: str) -> None:
         """echo_to_file implements Engine.echo_to_file"""
+        self._dry_runner.echo_to_file(content, filepath)
         with open(filepath, "w") as filep:
             filep.write(content)
             filep.write("\n")
 
     def require(self, *executable: str) -> None:
         """require implements Engine.require."""
-        # Implemented in CommandDryRunner
+        self._dry_runner.require(*executable)
+        # Nothing else to do, because executable is fully
+        # implemented by CommandDryRunner.
 
     def run(
         self,
@@ -331,6 +340,7 @@ class CommandRealExecutor:
         inputbytes: Optional[bytes] = None,
     ) -> None:
         """run implements Engine.run."""
+        self._dry_runner.run(cmdline, cwd, extra_env, inputbytes)
         env = os.environ.copy()
         if extra_env:
             for key, value in extra_env.items():
@@ -339,10 +349,12 @@ class CommandRealExecutor:
 
     def setenv(self, key: str, value: str) -> None:
         """setenv implements Engine.setenv."""
+        self._dry_runner.setenv(key, value)
         os.environ[key] = value
 
     def unsetenv(self, key: str) -> None:
         """unsetenv implements Engine.unsetenv."""
+        self._dry_runner.unsetenv(key)
         del os.environ[key]
 
 
@@ -425,67 +437,13 @@ class CommandDryRunner:
         log("./make: unset {}".format(key))
 
 
-class EngineComposer:
-    """EngineComposer composes two engines."""
-
-    def __init__(self, first: Engine, second: Engine):
-        self._first = first
-        self._second = second
-
-    def backticks(
-        self,
-        output_variable: str,
-        cmdline: List[str],
-        output: List[bytes],
-    ) -> None:
-        """backticks implements Engine.backticks"""
-        self._first.backticks(output_variable, cmdline, output)
-        self._second.backticks(output_variable, cmdline, output)
-
-    def cat_sed_redirect(
-        self, patterns: List[Tuple[str, str]], source: str, dest: str
-    ) -> None:
-        """cat_sed_redirect implements Engine.cat_sed_redirect."""
-        self._first.cat_sed_redirect(patterns, source, dest)
-        self._second.cat_sed_redirect(patterns, source, dest)
-
-    def echo_to_file(self, content: str, filepath: str) -> None:
-        """echo_to_file implements Engine.echo_to_file"""
-        self._first.echo_to_file(content, filepath)
-        self._second.echo_to_file(content, filepath)
-
-    def require(self, *executable: str) -> None:
-        """require implements Engine.require."""
-        self._first.require(*executable)
-        self._second.require(*executable)
-
-    def run(
-        self,
-        cmdline: List[str],
-        cwd: Optional[str] = None,
-        extra_env: Optional[Dict[str, str]] = None,
-        inputbytes: Optional[bytes] = None,
-    ) -> None:
-        """run implements Engine.run."""
-        self._first.run(cmdline, cwd=cwd, extra_env=extra_env, inputbytes=inputbytes)
-        self._second.run(cmdline, cwd=cwd, extra_env=extra_env, inputbytes=inputbytes)
-
-    def setenv(self, key: str, value: str) -> None:
-        """setenv implements Engine.setenv."""
-        self._first.setenv(key, value)
-        self._second.setenv(key, value)
-
-    def unsetenv(self, key: str) -> None:
-        """unsetenv implements Engine.unsetenv."""
-        self._first.unsetenv(key)
-        self._second.unsetenv(key)
-
 
 def new_engine(options: Options) -> Engine:
     """new_engine creates a new engine instance"""
-    if options.dry_run():
-        return CommandDryRunner()
-    return EngineComposer(CommandDryRunner(), CommandRealExecutor())
+    out: Engine = CommandDryRunner()
+    if not options.dry_run():
+        out = CommandExecutor(out)
+    return out
 
 
 class Target(Protocol):
