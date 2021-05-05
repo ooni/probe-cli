@@ -1136,8 +1136,8 @@ class OONIProbeLinux:
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
-        ooprivate.copyfiles(engine, options)
         log("\n./make: building {}...".format(self.__name))
+        ooprivate.copyfiles(engine, options)
         engine.require("docker")
         # make sure we have the latest version of the container image
         engine.run(
@@ -1207,7 +1207,7 @@ class OONIProbeWindows:
             "go",
             "build",
             "-o",
-            os.path.join("CLI", "windows", self.__arch, "ooniprobe.exe"),
+            self.__name,
             "-ldflags=-s -w",
         ]
         if options.debugging():
@@ -1226,8 +1226,52 @@ class OONIProbeWindows:
                             engine.run(cmdline)
 
 
+class OONIProbeDarwin:
+    """OONIProbeDarwin builds ooniprobe for macOS."""
+
+    def __init__(self, goarch: str):
+        self.__name = os.path.join(".", "CLI", "darwin", goarch, "ooniprobe")
+        self.__arch = goarch
+
+    def name(self) -> str:
+        return self.__name
+
+    def build(self, engine: Engine, options: Options) -> None:
+        if os.path.isfile(self.__name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.__name))
+            return
+        ooprivate = OONIProbePrivate()
+        ooprivate.build(engine, options)
+        gogo = SDKGolangGo()
+        gogo.build(engine, options)
+        log("\n./make: building {}...".format(self.__name))
+        ooprivate.copyfiles(engine, options)
+        cmdline = [
+            "go",
+            "build",
+            "-o",
+            self.__name,
+            "-ldflags=-s -w",
+        ]
+        if options.debugging():
+            cmdline.append("-x")
+        if options.verbose():
+            cmdline.append("-v")
+        if not options.disable_embedding_psiphon_config():
+            cmdline.append("-tags=ooni_psiphon_config")
+        cmdline.append("./cmd/ooniprobe")
+        with Environ(engine, "GOOS", "darwin"):
+            with Environ(engine, "GOARCH", self.__arch):
+                with Environ(engine, "CGO_ENABLED", "1"):
+                    with AugmentedPath(engine, gogo.binpath()):
+                        engine.require("gcc", "go")
+                        engine.run(cmdline)
+
+
 # OONIPROBE_TARGETS contains all the ooniprobe targets
 OONIPROBE_TARGETS: List[Target] = [
+    OONIProbeDarwin("amd64"),
+    OONIProbeDarwin("arm64"),
     OONIProbeLinux("amd64"),
     OONIProbeLinux("arm64"),
     OONIProbeWindows("amd64"),

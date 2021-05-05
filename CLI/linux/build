@@ -8,5 +8,5 @@ set -x
 apk update
 apk upgrade
 apk add --no-progress gcc git linux-headers musl-dev
-CGO_ENABLED=1 GOOS=linux go build -o ./CLI/linux/$GOARCH/ \
+CGO_ENABLED=1 GOOS=linux GOARCH=$GOARCH go build -o ./CLI/linux/$GOARCH/ \
     -ldflags='-s -w -extldflags "-static"' "$@" ./cmd/ooniprobe
