@@ -227,7 +227,7 @@ The third form of the command prints this help screen.
             if key in ("-h", "--help"):
                 self._usage()
             if key == "-l":
-                sys.stdout.write("{}\n".format(json.dumps(targets, indent=4)))
+                sys.stdout.write("{}\n".format(json.dumps(sorted(targets), indent=4)))
                 sys.exit(0)
             if key == "-n":
                 self._dry_run = True
@@ -451,9 +451,9 @@ class Environ:
     def __exit__(self, type: Any, value: Any, traceback: Any) -> bool:
         if self._prev is None:
             self._engine.unsetenv(self._key)
-            return True
+            return False # progagate exc
         self._engine.setenv(self._key, self._prev)
-        return True
+        return False # progagate exc
 
 
 class AugmentedPath(Environ):
@@ -764,6 +764,15 @@ class OONIMKAllAAR:
                         engine.run(cmdline)
 
 
+def sign(engine: Engine, filepath: str) -> str:
+    """sign signs the given filepath using pgp and returns
+    the filepath of the signature file."""
+    engine.require("gpg")
+    user = "simone@openobservatory.org"
+    engine.run(["gpg", "-abu", user, filepath])
+    return filepath + ".asc"
+
+
 class BundleJAR:
     """BundleJAR creates ./MOBILE/android/bundle.jar."""
 
@@ -812,18 +821,10 @@ class BundleJAR:
             "oonimkall-{}-sources.jar".format(version),
             "oonimkall-{}.pom".format(version),
         )
+        allnames: List[str] = []
         for name in names:
-            engine.run(
-                [
-                    "gpg",
-                    "-abu",
-                    "simone@openobservatory.org",
-                    name,
-                ],
-                cwd=os.path.join(".", "MOBILE", "android"),
-            )
-        allnames = [name + ".asc" for name in names]
-        allnames.extend(names)
+            allnames.append(name)
+            allnames.append(sign(engine, name))
         engine.run(
             [
                 "jar",
@@ -835,15 +836,23 @@ class BundleJAR:
         )
 
 
-class Android:
-    """Android is the toplevel android target."""
+class Phony:
+    """Phony is a phony target that executes one or more other targets."""
+
+    def __init__(self, name: str, depends: List[Target]):
+        self._name = name
+        self._depends = depends
 
     def name(self) -> str:
-        return "android"
+        return self._name
 
     def build(self, engine: Engine, options: Options) -> None:
-        bundlejar = BundleJAR()
-        bundlejar.build(engine, options)
+        for dep in self._depends:
+            dep.build(engine, options)
+
+
+# Android is the top-level "android" target
+ANDROID = Phony("android", [BundleJAR()])
 
 
 class OONIMKAllFramework:
@@ -990,17 +999,8 @@ class OONIMKAllPodspec:
         )
 
 
-class iOS:
-    """iOS is the toplevel ios target."""
-
-    def name(self) -> str:
-        return "ios"
-
-    def build(self, engine: Engine, options: Options) -> None:
-        ooframeworkzip = OONIMKAllFrameworkZip()
-        ooframeworkzip.build(engine, options)
-        oopodspec = OONIMKAllPodspec()
-        oopodspec.build(engine, options)
+# IOS is the top-level "ios" target.
+IOS = Phony("ios", [OONIMKAllFrameworkZip(), OONIMKAllPodspec()])
 
 
 class MiniOONIDarwinOrWindows:
@@ -1106,18 +1106,8 @@ MINIOONI_TARGETS: List[Target] = [
     MiniOONIDarwinOrWindows("windows", "amd64"),
 ]
 
-
-class MiniOONI:
-    """MiniOONI is the top-level 'miniooni' target."""
-
-    _name = "miniooni"
-
-    def name(self) -> str:
-        return self._name
-
-    def build(self, engine: Engine, options: Options) -> None:
-        for target in MINIOONI_TARGETS:
-            target.build(engine, options)
+# MINIOONI is the top-level "miniooni" target.
+MINIOONI = Phony("miniooni", MINIOONI_TARGETS)
 
 
 class OONIProbeLinux:
@@ -1272,6 +1262,24 @@ class OONIProbeDarwin:
                         engine.run(cmdline)
 
 
+class Sign:
+    """Sign signs a specific target artefact."""
+
+    def __init__(self, target: Target):
+        self._target = target
+
+    def name(self) -> str:
+        return self._target.name() + ".asc"
+
+    def build(self, engine: Engine, options: Options) -> None:
+        if os.path.isfile(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
+            return
+        self._target.build(engine, options)
+        log("\n./make: building {}...".format(self.name()))
+        sign(engine, self._target.name())
+
+
 # OONIPROBE_TARGETS contains all the ooniprobe targets
 OONIPROBE_TARGETS: List[Target] = [
     OONIProbeDarwin("amd64"),
@@ -1282,22 +1290,50 @@ OONIPROBE_TARGETS: List[Target] = [
     OONIProbeWindows("386"),
 ]
 
+# OONIPROBE_SIGNED_TARGETS contains all the signed ooniprobe targets
+OONIPROBE_SIGNED_TARGETS: List[Target] = [Sign(x) for x in OONIPROBE_TARGETS]
+
+# OONIPROBE_RELEASE_DARWIN contains the release darwin targets
+OONIPROBE_RELEASE_DARWIN = Phony("ooniprobe_release_darwin", [
+    Sign(OONIProbeDarwin("amd64")),
+    Sign(OONIProbeDarwin("arm64")),
+])
+
+# OONIPROBE_RELEASE_LINUX contains the release linux targets
+OONIPROBE_RELEASE_LINUX = Phony("ooniprobe_release_linux", [
+    Sign(OONIProbeLinux("amd64")),
+    Sign(OONIProbeLinux("arm64")),
+])
+
+# OONIPROBE_RELEASE_WINDOWS contains the release windows targets
+OONIPROBE_RELEASE_WINDOWS = Phony("ooniprobe_release_windows", [
+    Sign(OONIProbeWindows("amd64")),
+    Sign(OONIProbeWindows("386")),
+])
+
 # MOBILE_TARGETS contains the top-level mobile targets.
 MOBILE_TARGETS: List[Target] = [
-    Android(),
-    iOS(),
+    ANDROID,
+    IOS,
 ]
 
 # EXTRA_TARGETS contains extra top-level targets.
 EXTRA_TARGETS: List[Target] = [
-    MiniOONI(),
+    MINIOONI,
     OONIMKAllAAR(),
     OONIMKAllFrameworkZip(),
 ]
 
 # VISIBLE_TARGETS contains all the visible-from-CLI targets
 VISIBLE_TARGETS: List[Target] = (
-    OONIPROBE_TARGETS + MOBILE_TARGETS + EXTRA_TARGETS + MINIOONI_TARGETS
+    OONIPROBE_TARGETS
+    + OONIPROBE_SIGNED_TARGETS
+    + MOBILE_TARGETS
+    + EXTRA_TARGETS
+    + MINIOONI_TARGETS
+    + [OONIPROBE_RELEASE_DARWIN]
+    + [OONIPROBE_RELEASE_LINUX]
+    + [OONIPROBE_RELEASE_WINDOWS]
 )
 
 

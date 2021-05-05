@@ -2,7 +2,6 @@
 /*.jsonl
 /*.tar.gz
 /*.zip
-/.vscode
 /apitool
 /apitool.exe
 /coverage.cov
