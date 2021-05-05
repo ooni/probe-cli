@@ -1123,6 +1123,10 @@ class MiniOONI:
 class OONIProbeLinux:
     """OONIProbeLinux builds ooniprobe for Linux."""
 
+    # TODO(bassosimone): this works out of the box on macOS and
+    # requires qemu-user-static on Fedora/Debian. I'm not sure what
+    # is the right (set of) command(s) I should be checking for.
+
     def __init__(self, goarch: str):
         self._name = os.path.join(".", "CLI", "linux", goarch, "ooniprobe")
         self._arch = goarch
