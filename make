@@ -183,7 +183,7 @@ class ConfigFromCLI:
     # to print a very clear and detailed usage string. (But the same
     # could be obtained quite likely w/ argparse.)
 
-    __usage_string = """\
+    _usage_string = """\
 usage: ./make [--disable-embedding-psiphon-config] [-nvx] -t target
        ./make -l
        ./make [--help|-h]
@@ -208,7 +208,7 @@ The third form of the command prints this help screen.
     def _usage(cls, err: str = "", exitcode: int = 0) -> NoReturn:
         if err:
             sys.stderr.write("error: {}\n".format(err))
-        sys.stderr.write(cls.__usage_string)
+        sys.stderr.write(cls._usage_string)
         sys.exit(exitcode)
 
     def _parse(self, targets: List[str]):
@@ -481,35 +481,35 @@ class SDKGolangGo:
     # We download a golang SDK from upstream to make sure we
     # are always using a specific version of golang/go.
 
-    __name = os.path.join(cachedir(), "SDK", "golang")
+    _name = os.path.join(cachedir(), "SDK", "golang")
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def binpath(self) -> str:
-        return os.path.join(self.__name, "go", "bin")
+        return os.path.join(self._name, "go", "bin")
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isdir(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isdir(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         engine.require("mkdir", "curl", "shasum", "rm", "tar", "echo")
         filename = "go{}.{}-{}.tar.gz".format(goversion(), goos(), goarch())
         url = "https://golang.org/dl/{}".format(filename)
-        engine.run(["mkdir", "-p", self.__name])
-        filepath = os.path.join(self.__name, filename)
+        engine.run(["mkdir", "-p", self._name])
+        filepath = os.path.join(self._name, filename)
         engine.run(["curl", "-fsSLo", filepath, url])
         sha256file = os.path.join(cachedir(), "SDK", "SHA256")
         engine.echo_to_file("{}  {}".format(gosha256sum(), filepath), sha256file)
         engine.run(["shasum", "--check", sha256file])
         engine.run(["rm", sha256file])
-        engine.run(["tar", "-xf", filename], cwd=self.__name)
+        engine.run(["tar", "-xf", filename], cwd=self._name)
         engine.run(["rm", filepath])
 
     def goroot(self):
         """goroot returns the goroot."""
-        return os.path.join(self.__name, "go")
+        return os.path.join(self._name, "go")
 
 
 class SDKOONIGo:
@@ -518,21 +518,21 @@ class SDKOONIGo:
     # We use a private fork of golang/go on Android as a
     # workaround for https://github.com/ooni/probe/issues/1444
 
-    __name = os.path.join(cachedir(), "SDK", "oonigo")
+    _name = os.path.join(cachedir(), "SDK", "oonigo")
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def binpath(self) -> str:
-        return os.path.join(self.__name, "bin")
+        return os.path.join(self._name, "bin")
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isdir(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isdir(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
         golang_go = SDKGolangGo()
         golang_go.build(engine, options)
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         engine.require("git", "bash")
         engine.run(
             [
@@ -544,42 +544,42 @@ class SDKOONIGo:
                 "--depth",
                 "8",
                 "https://github.com/ooni/go",
-                self.__name,
+                self._name,
             ]
         )
         with Environ(engine, "GOROOT_BOOTSTRAP", golang_go.goroot()):
             engine.run(
                 ["./make.bash"],
-                cwd=os.path.join(self.__name, "src"),
+                cwd=os.path.join(self._name, "src"),
             )
 
 
 class SDKAndroid:
     """SDKAndroid creates ${cachedir}/SDK/android."""
 
-    __name = os.path.join(cachedir(), "SDK", "android")
+    _name = os.path.join(cachedir(), "SDK", "android")
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def home(self) -> str:
-        return self.__name
+        return self._name
 
     def ndk_home(self) -> str:
         return os.path.join(self.home(), "ndk", android_ndk_version())
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isdir(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isdir(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         engine.require("mkdir", "curl", "echo", "shasum", "rm", "unzip", "mv", "java")
         filename = "commandlinetools-{}-{}_latest.zip".format(
             android_cmdlinetools_os(), android_cmdlinetools_version()
         )
         url = "https://dl.google.com/android/repository/{}".format(filename)
-        engine.run(["mkdir", "-p", self.__name])
-        filepath = os.path.join(self.__name, filename)
+        engine.run(["mkdir", "-p", self._name])
+        filepath = os.path.join(self._name, filename)
         engine.run(["curl", "-fsSLo", filepath, url])
         sha256file = os.path.join(cachedir(), "SDK", "SHA256")
         engine.echo_to_file(
@@ -587,21 +587,21 @@ class SDKAndroid:
         )
         engine.run(["shasum", "--check", sha256file])
         engine.run(["rm", sha256file])
-        engine.run(["unzip", filename], cwd=self.__name)
+        engine.run(["unzip", filename], cwd=self._name)
         engine.run(["rm", filepath])
         # See https://stackoverflow.com/a/61176718 to understand why
         # we need to reorganize the directories like this:
         engine.run(
-            ["mv", "cmdline-tools", android_cmdlinetools_version()], cwd=self.__name
+            ["mv", "cmdline-tools", android_cmdlinetools_version()], cwd=self._name
         )
-        engine.run(["mkdir", "cmdline-tools"], cwd=self.__name)
+        engine.run(["mkdir", "cmdline-tools"], cwd=self._name)
         engine.run(
-            ["mv", android_cmdlinetools_version(), "cmdline-tools"], cwd=self.__name
+            ["mv", android_cmdlinetools_version(), "cmdline-tools"], cwd=self._name
         )
         engine.run(
             sdkmanager_install_cmd(
                 os.path.join(
-                    self.__name,
+                    self._name,
                     "cmdline-tools",
                     android_cmdlinetools_version(),
                     "bin",
@@ -617,10 +617,10 @@ class OONIProbePrivate:
     # We use this private repository to copy the psiphon configuration
     # file to embed into the ooniprobe binaries
 
-    __name = os.path.join(cachedir(), "github.com", "ooni", "probe-private")
+    _name = os.path.join(cachedir(), "github.com", "ooni", "probe-private")
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def copyfiles(self, engine: Engine, options: Options) -> None:
         """copyfiles copies psiphon config to the repository."""
@@ -630,33 +630,33 @@ class OONIProbePrivate:
         engine.run(
             [
                 "cp",
-                os.path.join(self.__name, "psiphon-config.json.age"),
+                os.path.join(self._name, "psiphon-config.json.age"),
                 os.path.join("internal", "engine"),
             ]
         )
         engine.run(
             [
                 "cp",
-                os.path.join(self.__name, "psiphon-config.key"),
+                os.path.join(self._name, "psiphon-config.key"),
                 os.path.join("internal", "engine"),
             ]
         )
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isdir(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isdir(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
         if options.disable_embedding_psiphon_config():
-            log("\n./make: {}: disabled by command line flags".format(self.__name))
+            log("\n./make: {}: disabled by command line flags".format(self._name))
             return
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         engine.require("git", "cp")
         engine.run(
             [
                 "git",
                 "clone",
                 "git@github.com:ooni/probe-private",
-                self.__name,
+                self._name,
             ]
         )
 
@@ -664,20 +664,20 @@ class OONIProbePrivate:
 class OONIMKAllAAR:
     """OONIMKAllAAR creates ./MOBILE/android/oonimkall.aar."""
 
-    __name = os.path.join(".", "MOBILE", "android", "oonimkall.aar")
+    _name = os.path.join(".", "MOBILE", "android", "oonimkall.aar")
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def aarfile(self) -> str:
-        return self.__name
+        return self._name
 
     def srcfile(self) -> str:
         return os.path.join(".", "MOBILE", "android", "oonimkall-sources.jar")
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isfile(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
@@ -685,7 +685,7 @@ class OONIMKAllAAR:
         oonigo.build(engine, options)
         android = SDKAndroid()
         android.build(engine, options)
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         ooprivate.copyfiles(engine, options)
         engine.require("sh", "javac")
         self._go_get_gomobile(engine, options, oonigo)
@@ -749,7 +749,7 @@ class OONIMKAllAAR:
         cmdline.append("-target")
         cmdline.append("android")
         cmdline.append("-o")
-        cmdline.append(self.__name)
+        cmdline.append(self._name)
         if not options.disable_embedding_psiphon_config():
             cmdline.append("-tags")
             cmdline.append("ooni_psiphon_config")
@@ -770,18 +770,18 @@ class BundleJAR:
     # We upload the bundle.jar file to maven central to bless
     # a new release of the OONI libraries for Android.
 
-    __name = os.path.join(".", "MOBILE", "android", "bundle.jar")
+    _name = os.path.join(".", "MOBILE", "android", "bundle.jar")
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isfile(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
         oonimkall = OONIMKAllAAR()
         oonimkall.build(engine, options)
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         engine.require("cp", "gpg", "jar")
         version = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
         engine.run(
@@ -849,20 +849,20 @@ class Android:
 class OONIMKAllFramework:
     """OONIMKAllFramework creates ./MOBILE/ios/oonimkall.framework."""
 
-    __name = os.path.join(".", "MOBILE", "ios", "oonimkall.framework")
+    _name = os.path.join(".", "MOBILE", "ios", "oonimkall.framework")
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isfile(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
         gogo = SDKGolangGo()
         gogo.build(engine, options)
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         ooprivate.copyfiles(engine, options)
         self._go_get_gomobile(engine, options, gogo)
         self._gomobile_init(engine, gogo)
@@ -919,7 +919,7 @@ class OONIMKAllFramework:
         cmdline.append("-target")
         cmdline.append("ios")
         cmdline.append("-o")
-        cmdline.append(self.__name)
+        cmdline.append(self._name)
         if not options.disable_embedding_psiphon_config():
             cmdline.append("-tags")
             cmdline.append("ooni_psiphon_config")
@@ -935,19 +935,19 @@ class OONIMKAllFramework:
 class OONIMKAllFrameworkZip:
     """OONIMKAllFrameworkZip creates ./MOBILE/ios/oonimkall.framework.zip."""
 
-    __name = os.path.join(".", "MOBILE", "ios", "oonimkall.framework.zip")
+    _name = os.path.join(".", "MOBILE", "ios", "oonimkall.framework.zip")
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isfile(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
         engine.require("zip", "rm")
         ooframework = OONIMKAllFramework()
         ooframework.build(engine, options)
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         engine.run(
             [
                 "rm",
@@ -970,14 +970,14 @@ class OONIMKAllFrameworkZip:
 class OONIMKAllPodspec:
     """OONIMKAllPodspec creates ./MOBILE/ios/oonimkall.podspec."""
 
-    __name = os.path.join(".", "MOBILE", "ios", "oonimkall.podspec")
+    _name = os.path.join(".", "MOBILE", "ios", "oonimkall.podspec")
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+        if os.path.isfile(self._name) and not options.dry_run():
+            log("./make: {}: already built".format(self._name))
             return
         engine.require("cat", "sed")
         output = engine.backticks("RELEASE", ["git", "describe", "--tags"])
@@ -986,7 +986,7 @@ class OONIMKAllPodspec:
         engine.cat_sed_redirect(
             [("@VERSION@", version), ("@RELEASE@", release)],
             os.path.join(".", "MOBILE", "template.podspec"),
-            self.__name,
+            self._name,
         )
 
 
@@ -1005,29 +1005,29 @@ class iOS:
 
 class MiniOONIDarwinOrWindows:
     def __init__(self, goos: str, goarch: str):
-        self.__ext = ".exe" if goos == "windows" else ""
-        self.__name = os.path.join(".", "CLI", goos, goarch, "miniooni" + self.__ext)
-        self.__os = goos
-        self.__arch = goarch
+        self._ext = ".exe" if goos == "windows" else ""
+        self._name = os.path.join(".", "CLI", goos, goarch, "miniooni" + self._ext)
+        self._os = goos
+        self._arch = goarch
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isfile(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
         gogo = SDKGolangGo()
         gogo.build(engine, options)
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         ooprivate.copyfiles(engine, options)
         cmdline = [
             "go",
             "build",
             "-o",
-            self.__name,
+            self._name,
             "-ldflags=-s -w",
         ]
         if options.debugging():
@@ -1037,8 +1037,8 @@ class MiniOONIDarwinOrWindows:
         if not options.disable_embedding_psiphon_config():
             cmdline.append("-tags=ooni_psiphon_config")
         cmdline.append("./internal/cmd/miniooni")
-        with Environ(engine, "GOOS", self.__os):
-            with Environ(engine, "GOARCH", self.__arch):
+        with Environ(engine, "GOOS", self._os):
+            with Environ(engine, "GOARCH", self._arch):
                 with Environ(engine, "CGO_ENABLED", "0"):
                     with AugmentedPath(engine, gogo.binpath()):
                         engine.require("go")
@@ -1047,23 +1047,23 @@ class MiniOONIDarwinOrWindows:
 
 class MiniOONILinux:
     def __init__(self, goarch: str):
-        self.__name = os.path.join(".", "CLI", "linux", goarch, "miniooni")
-        self.__arch = goarch
+        self._name = os.path.join(".", "CLI", "linux", goarch, "miniooni")
+        self._arch = goarch
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isfile(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
         gogo = SDKGolangGo()
         gogo.build(engine, options)
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         ooprivate.copyfiles(engine, options)
-        if self.__arch == "arm":
+        if self._arch == "arm":
             with Environ(engine, "GOARM", "7"):
                 self._build(engine, options, gogo)
         else:
@@ -1074,7 +1074,7 @@ class MiniOONILinux:
             "go",
             "build",
             "-o",
-            os.path.join("CLI", "linux", self.__arch, "miniooni"),
+            os.path.join("CLI", "linux", self._arch, "miniooni"),
             "-ldflags=-s -w -extldflags -static",
         ]
         if options.debugging():
@@ -1087,7 +1087,7 @@ class MiniOONILinux:
         cmdline.append(tags)
         cmdline.append("./internal/cmd/miniooni")
         with Environ(engine, "GOOS", "linux"):
-            with Environ(engine, "GOARCH", self.__arch):
+            with Environ(engine, "GOARCH", self._arch):
                 with Environ(engine, "CGO_ENABLED", "0"):
                     with AugmentedPath(engine, gogo.binpath()):
                         engine.require("go")
@@ -1110,10 +1110,10 @@ MINIOONI_TARGETS: List[Target] = [
 class MiniOONI:
     """MiniOONI is the top-level 'miniooni' target."""
 
-    __name = "miniooni"
+    _name = "miniooni"
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def build(self, engine: Engine, options: Options) -> None:
         for target in MINIOONI_TARGETS:
@@ -1124,19 +1124,19 @@ class OONIProbeLinux:
     """OONIProbeLinux builds ooniprobe for Linux."""
 
     def __init__(self, goarch: str):
-        self.__name = os.path.join(".", "CLI", "linux", goarch, "ooniprobe")
-        self.__arch = goarch
+        self._name = os.path.join(".", "CLI", "linux", goarch, "ooniprobe")
+        self._arch = goarch
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isfile(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         ooprivate.copyfiles(engine, options)
         engine.require("docker")
         # make sure we have the latest version of the container image
@@ -1145,7 +1145,7 @@ class OONIProbeLinux:
                 "docker",
                 "pull",
                 "--platform",
-                "linux/{}".format(self.__arch),
+                "linux/{}".format(self._arch),
                 "golang:{}-alpine".format(goversion()),
             ]
         )
@@ -1154,9 +1154,9 @@ class OONIProbeLinux:
             "docker",
             "run",
             "--platform",
-            "linux/{}".format(self.__arch),
+            "linux/{}".format(self._arch),
             "-e",
-            "GOARCH={}".format(self.__arch),
+            "GOARCH={}".format(self._arch),
             "-it",
             "-v",
             "{}:/ooni".format(os.getcwd()),
@@ -1180,34 +1180,34 @@ class OONIProbeWindows:
     """OONIProbeWindows builds ooniprobe for Windows."""
 
     def __init__(self, goarch: str):
-        self.__name = os.path.join(".", "CLI", "windows", goarch, "ooniprobe.exe")
-        self.__arch = goarch
+        self._name = os.path.join(".", "CLI", "windows", goarch, "ooniprobe.exe")
+        self._arch = goarch
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def _gcc(self) -> str:
-        if self.__arch == "amd64":
+        if self._arch == "amd64":
             return "x86_64-w64-mingw32-gcc"
-        if self.__arch == "386":
+        if self._arch == "386":
             return "i686-w64-mingw32-gcc"
         raise NotImplementedError
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isfile(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
         gogo = SDKGolangGo()
         gogo.build(engine, options)
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         ooprivate.copyfiles(engine, options)
         cmdline = [
             "go",
             "build",
             "-o",
-            self.__name,
+            self._name,
             "-ldflags=-s -w",
         ]
         if options.debugging():
@@ -1218,7 +1218,7 @@ class OONIProbeWindows:
             cmdline.append("-tags=ooni_psiphon_config")
         cmdline.append("./cmd/ooniprobe")
         with Environ(engine, "GOOS", "windows"):
-            with Environ(engine, "GOARCH", self.__arch):
+            with Environ(engine, "GOARCH", self._arch):
                 with Environ(engine, "CGO_ENABLED", "1"):
                     with Environ(engine, "CC", self._gcc()):
                         with AugmentedPath(engine, gogo.binpath()):
@@ -1230,27 +1230,27 @@ class OONIProbeDarwin:
     """OONIProbeDarwin builds ooniprobe for macOS."""
 
     def __init__(self, goarch: str):
-        self.__name = os.path.join(".", "CLI", "darwin", goarch, "ooniprobe")
-        self.__arch = goarch
+        self._name = os.path.join(".", "CLI", "darwin", goarch, "ooniprobe")
+        self._arch = goarch
 
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self.__name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.__name))
+        if os.path.isfile(self._name) and not options.dry_run():
+            log("\n./make: {}: already built".format(self._name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
         gogo = SDKGolangGo()
         gogo.build(engine, options)
-        log("\n./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self._name))
         ooprivate.copyfiles(engine, options)
         cmdline = [
             "go",
             "build",
             "-o",
-            self.__name,
+            self._name,
             "-ldflags=-s -w",
         ]
         if options.debugging():
@@ -1261,7 +1261,7 @@ class OONIProbeDarwin:
             cmdline.append("-tags=ooni_psiphon_config")
         cmdline.append("./cmd/ooniprobe")
         with Environ(engine, "GOOS", "darwin"):
-            with Environ(engine, "GOARCH", self.__arch):
+            with Environ(engine, "GOARCH", self._arch):
                 with Environ(engine, "CGO_ENABLED", "1"):
                     with AugmentedPath(engine, gogo.binpath()):
                         engine.require("gcc", "go")
