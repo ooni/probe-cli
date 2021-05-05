@@ -1184,6 +1184,19 @@ class MiniOONILinux:
             engine.unsetenv("GOARM")
 
 
+# MINIOONI_TARGETS contains all miniooni targets
+MINIOONI_TARGETS: List[Target] = [
+    MiniOONIDarwinOrWindows("darwin", "amd64"),
+    MiniOONIDarwinOrWindows("darwin", "arm64"),
+    MiniOONILinux("386"),
+    MiniOONILinux("amd64"),
+    MiniOONILinux("arm"),
+    MiniOONILinux("arm64"),
+    MiniOONIDarwinOrWindows("windows", "386"),
+    MiniOONIDarwinOrWindows("windows", "amd64"),
+]
+
+
 class MiniOONI:
     """MiniOONI is the top-level 'miniooni' target."""
 
@@ -1193,31 +1206,161 @@ class MiniOONI:
         return self.__name
 
     def build(self, engine: Engine, options: Options) -> None:
-        for builder in (
-            MiniOONIDarwinOrWindows("darwin", "amd64"),
-            MiniOONIDarwinOrWindows("darwin", "arm64"),
-            MiniOONILinux("386"),
-            MiniOONILinux("amd64"),
-            MiniOONILinux("arm"),
-            MiniOONILinux("arm64"),
-            MiniOONIDarwinOrWindows("windows", "386"),
-            MiniOONIDarwinOrWindows("windows", "amd64"),
-        ):
-            builder.build(engine, options)
+        for target in MINIOONI_TARGETS:
+            target.build(engine, options)
 
 
-TARGETS: List[Target] = [
+class OONIProbeLinux:
+    """OONIProbeLinux builds ooniprobe for Linux."""
+
+    def __init__(self, goarch: str):
+        self.__name = os.path.join(".", "CLI", "linux", goarch, "ooniprobe")
+        self.__arch = goarch
+
+    def name(self) -> str:
+        return self.__name
+
+    def build(self, engine: Engine, options: Options) -> None:
+        if os.path.isfile(self.__name) and not options.dry_run():
+            log("./make: {}: already built".format(self.__name))
+            return
+        ooprivate = OONIProbePrivate()
+        ooprivate.build(engine, options)
+        ooprivate.copyfiles(engine, options)
+        log("./make: building {}...".format(self.__name))
+        engine.require("docker")
+        # make sure we have the latest version of the container image
+        engine.run(
+            [
+                "docker",
+                "pull",
+                "--platform",
+                "linux/{}".format(self.__arch),
+                "golang:{}-alpine".format(goversion()),
+            ]
+        )
+        # then run the build inside the container
+        cmdline = [
+            "docker",
+            "run",
+            "--platform",
+            "linux/{}".format(self.__arch),
+            "-e",
+            "GOARCH={}".format(self.__arch),
+            "-it",
+            "-v",
+            "{}:/ooni".format(os.getcwd()),
+            "-w",
+            "/ooni",
+            "golang:{}-alpine".format(goversion()),
+            os.path.join(".", "CLI", "linux", "build"),
+        ]
+        if options.debugging():
+            cmdline.append("-x")
+        if options.verbose():
+            cmdline.append("-v")
+        if not options.disable_embedding_psiphon_config():
+            cmdline.append("-tags=ooni_psiphon_config,netgo")
+        else:
+            cmdline.append("-tags=netgo")
+        engine.run(cmdline)
+
+
+class OONIProbeWindows:
+    """OONIProbeWindows builds ooniprobe for Windows."""
+
+    def __init__(self, goarch: str):
+        self.__name = os.path.join(".", "CLI", "windows", goarch, "ooniprobe.exe")
+        self.__arch = goarch
+
+    def name(self) -> str:
+        return self.__name
+
+    def _gcc(self) -> str:
+        if self.__arch == "amd64":
+            return "x86_64-w64-mingw32-gcc"
+        if self.__arch == "386":
+            return "i686-w64-mingw32-gcc"
+        raise NotImplementedError
+
+    def build(self, engine: Engine, options: Options) -> None:
+        if os.path.isfile(self.__name) and not options.dry_run():
+            log("./make: {}: already built".format(self.__name))
+            return
+        ooprivate = OONIProbePrivate()
+        ooprivate.build(engine, options)
+        ooprivate.copyfiles(engine, options)
+        gogo = SDKGolangGo()
+        gogo.build(engine, options)
+        log("./make: building {}...".format(self.__name))
+        engine.setenv("CGO_ENABLED", "1")
+        engine.setenv("GOOS", "windows")
+        engine.setenv("GOARCH", self.__arch)
+        engine.setenv("CC", self._gcc())
+        # TODO(bassosimone): here we have the problem that we would
+        # actually like to set the path before and see which is
+        # the golang executable that we're using.
+        engine.require(self._gcc(), "go")
+        cmdline = [
+            "go",
+            "build",
+            "-o",
+            os.path.join("CLI", "windows", self.__arch, "ooniprobe.exe"),
+            "-ldflags=-s -w",
+        ]
+        if options.debugging():
+            cmdline.append("-x")
+        if options.verbose():
+            cmdline.append("-v")
+        if not options.disable_embedding_psiphon_config():
+            cmdline.append("-tags=ooni_psiphon_config")
+        cmdline.append("./cmd/ooniprobe")
+        engine.run(
+            cmdline,
+            extra_env={
+                "PATH": os.pathsep.join(
+                    [
+                        gogo.binpath(),  # for golang/go
+                        os.environ["PATH"],  # original path
+                    ]
+                ),
+            },
+        )
+        engine.unsetenv("GOARCH")
+        engine.unsetenv("GOOS")
+        engine.unsetenv("CGO_ENABLED")
+
+
+# OONIPROBE_TARGETS contains all the ooniprobe targets
+OONIPROBE_TARGETS: List[Target] = [
+    OONIProbeLinux("amd64"),
+    OONIProbeLinux("arm64"),
+    OONIProbeWindows("amd64"),
+    OONIProbeWindows("386"),
+]
+
+# MOBILE_TARGETS contains the top-level mobile targets.
+MOBILE_TARGETS: List[Target] = [
     Android(),
     iOS(),
+]
+
+# EXTRA_TARGETS contains extra top-level targets.
+EXTRA_TARGETS: List[Target] = [
     MiniOONI(),
     OONIMKAllAAR(),
     OONIMKAllFrameworkZip(),
 ]
 
+# VISIBLE_TARGETS contains all the visible-from-CLI targets
+VISIBLE_TARGETS: List[Target] = (
+    OONIPROBE_TARGETS + MOBILE_TARGETS + EXTRA_TARGETS + MINIOONI_TARGETS
+)
+
 
 def main() -> None:
     """main function"""
-    toptargets: Dict[str, Target] = dict((t.name(), t) for t in TARGETS)
+    toptargets: Dict[str, Target] = dict((t.name(), t) for t in VISIBLE_TARGETS)
     options = ConfigFromCLI.parse(list(toptargets.keys()))
     engine = new_engine(options)
     # note that we check whether the target is known in parse()
