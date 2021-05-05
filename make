@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import NoReturn
@@ -278,13 +279,13 @@ class Engine(Protocol):
         self,
         cmdline: List[str],
         cwd: Optional[str] = None,
-        extra_env: Optional[Dict[str, str]] = None,
         inputbytes: Optional[bytes] = None,
     ) -> None:
         """run runs the specified command line."""
 
-    def setenv(self, key: str, value: str) -> None:
-        """setenv sets an environment variable."""
+    def setenv(self, key: str, value: str) -> Optional[str]:
+        """setenv sets an environment variable and returns the
+        previous value of such variable (or None)."""
 
     def unsetenv(self, key: str) -> None:
         """unsetenv clears an environment variable."""
@@ -336,26 +337,23 @@ class CommandExecutor:
         self,
         cmdline: List[str],
         cwd: Optional[str] = None,
-        extra_env: Optional[Dict[str, str]] = None,
         inputbytes: Optional[bytes] = None,
     ) -> None:
         """run implements Engine.run."""
-        self._dry_runner.run(cmdline, cwd, extra_env, inputbytes)
-        env = os.environ.copy()
-        if extra_env:
-            for key, value in extra_env.items():
-                env[key] = value
-        subprocess.run(cmdline, check=True, cwd=cwd, env=env, input=inputbytes)
+        self._dry_runner.run(cmdline, cwd, inputbytes)
+        subprocess.run(cmdline, check=True, cwd=cwd, input=inputbytes)
 
-    def setenv(self, key: str, value: str) -> None:
+    def setenv(self, key: str, value: str) -> Optional[str]:
         """setenv implements Engine.setenv."""
-        self._dry_runner.setenv(key, value)
-        os.environ[key] = value
+        # Nothing else to do, because executable is fully
+        # implemented by CommandDryRunner.
+        return self._dry_runner.setenv(key, value)
 
     def unsetenv(self, key: str) -> None:
         """unsetenv implements Engine.unsetenv."""
+        # Nothing else to do, because executable is fully
+        # implemented by CommandDryRunner.
         self._dry_runner.unsetenv(key)
-        del os.environ[key]
 
 
 class CommandDryRunner:
@@ -414,26 +412,25 @@ class CommandDryRunner:
         self,
         cmdline: List[str],
         cwd: Optional[str] = None,
-        extra_env: Optional[Dict[str, str]] = None,
         inputbytes: Optional[bytes] = None,
     ) -> None:
         """run implements Engine.run."""
         cdpart = ""
         if cwd:
             cdpart = "cd {} && ".format(cwd)
-        envpart = ""
-        if extra_env:
-            for key, value in extra_env.items():
-                envpart += shlex.join(["{}={}".format(key, value)]) + " "
-        log("./make: {}{}{}".format(cdpart, envpart, shlex.join(cmdline)))
+        log("./make: {}{}".format(cdpart, shlex.join(cmdline)))
 
-    def setenv(self, key: str, value: str) -> None:
+    def setenv(self, key: str, value: str) -> Optional[str]:
         """setenv implements Engine.setenv."""
         log("./make: export {}={}".format(key, shlex.join([value])))
+        prev = os.environ.get(key)
+        os.environ[key] = value
+        return prev
 
     def unsetenv(self, key: str) -> None:
         """unsetenv implements Engine.unsetenv."""
         log("./make: unset {}".format(key))
+        del os.environ[key]
 
 
 def new_engine(options: Options) -> Engine:
@@ -442,6 +439,37 @@ def new_engine(options: Options) -> Engine:
     if not options.dry_run():
         out = CommandExecutor(out)
     return out
+
+
+class Environ:
+    """Environ creates a context where specific environment
+    variables are set. They will be restored to their previous
+    value when we are leaving the context."""
+
+    def __init__(self, engine: Engine, key: str, value: str):
+        self._engine = engine
+        self._key = key
+        self._value = value
+        self._prev: Optional[str] = None
+
+    def __enter__(self) -> None:
+        self._prev = self._engine.setenv(self._key, self._value)
+
+    def __exit__(self, type: Any, value: Any, traceback: Any) -> bool:
+        if self._prev is None:
+            self._engine.unsetenv(self._key)
+            return True
+        self._engine.setenv(self._key, self._prev)
+        return True
+
+
+class AugmentedPath(Environ):
+    """AugementedPath is an Environ that prepends the required
+    directory to the currently existing search path."""
+
+    def __init__(self, engine: Engine, directory: str):
+        value = os.pathsep.join([directory, os.environ["PATH"]])
+        super().__init__(engine, "PATH", value)
 
 
 class Target(Protocol):
@@ -470,9 +498,9 @@ class SDKGolangGo:
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isdir(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+            log("\n./make: {}: already built".format(self.__name))
             return
-        log("./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self.__name))
         engine.require("mkdir", "curl", "shasum", "rm", "tar", "echo")
         filename = "go{}.{}-{}.tar.gz".format(goversion(), goos(), goarch())
         url = "https://golang.org/dl/{}".format(filename)
@@ -507,11 +535,11 @@ class SDKOONIGo:
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isdir(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+            log("\n./make: {}: already built".format(self.__name))
             return
         golang_go = SDKGolangGo()
         golang_go.build(engine, options)
-        log("./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self.__name))
         engine.require("git", "bash")
         engine.run(
             [
@@ -526,11 +554,11 @@ class SDKOONIGo:
                 self.__name,
             ]
         )
-        engine.run(
-            ["./make.bash"],
-            cwd=os.path.join(self.__name, "src"),
-            extra_env={"GOROOT_BOOTSTRAP": golang_go.goroot()},
-        )
+        with Environ(engine, "GOROOT_BOOTSTRAP", golang_go.goroot()):
+            engine.run(
+                ["./make.bash"],
+                cwd=os.path.join(self.__name, "src"),
+            )
 
 
 class SDKAndroid:
@@ -549,9 +577,9 @@ class SDKAndroid:
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isdir(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+            log("\n./make: {}: already built".format(self.__name))
             return
-        log("./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self.__name))
         engine.require("mkdir", "curl", "echo", "shasum", "rm", "unzip", "mv", "java")
         filename = "commandlinetools-{}-{}_latest.zip".format(
             android_cmdlinetools_os(), android_cmdlinetools_version()
@@ -623,12 +651,12 @@ class OONIProbePrivate:
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isdir(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+            log("\n./make: {}: already built".format(self.__name))
             return
         if options.disable_embedding_psiphon_config():
-            log("./make: {}: disabled by command line flags".format(self.__name))
+            log("\n./make: {}: disabled by command line flags".format(self.__name))
             return
-        log("./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self.__name))
         engine.require("git", "cp")
         engine.run(
             [
@@ -656,7 +684,7 @@ class OONIMKAllAAR:
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isfile(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+            log("\n./make: {}: already built".format(self.__name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
@@ -664,7 +692,7 @@ class OONIMKAllAAR:
         oonigo.build(engine, options)
         android = SDKAndroid()
         android.build(engine, options)
-        log("./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self.__name))
         ooprivate.copyfiles(engine, options)
         engine.require("sh", "javac")
         self._go_get_gomobile(engine, options, oonigo)
@@ -690,18 +718,9 @@ class OONIMKAllAAR:
         if options.debugging():
             cmdline.append("-x")
         cmdline.append("golang.org/x/mobile/cmd/gomobile@latest")
-        engine.run(
-            cmdline,
-            extra_env={
-                "PATH": os.pathsep.join(
-                    [
-                        oonigo.binpath(),  # so we use our go fork
-                        os.environ["PATH"],  # original path
-                    ]
-                ),
-                "GOPATH": gopath(),  # where to install gomobile
-            },
-        )
+        with Environ(engine, "GOPATH", gopath()):
+            with AugmentedPath(engine, oonigo.binpath()):
+                engine.run(cmdline)
 
     def _gomobile_init(
         self,
@@ -712,20 +731,11 @@ class OONIMKAllAAR:
         cmdline: List[str] = []
         cmdline.append(os.path.join(".", "MOBILE", "gomobile"))
         cmdline.append("init")
-        engine.run(
-            cmdline,
-            extra_env={
-                "PATH": os.pathsep.join(
-                    [
-                        os.path.join(gopath(), "bin"),  # for gomobile
-                        oonigo.binpath(),  # for our go fork
-                        os.environ["PATH"],  # original environment
-                    ]
-                ),
-                "ANDROID_HOME": android.home(),
-                "ANDROID_NDK_HOME": android.ndk_home(),
-            },
-        )
+        with Environ(engine, "ANDROID_HOME", android.home()):
+            with Environ(engine, "ANDROID_NDK_HOME", android.ndk_home()):
+                with AugmentedPath(engine, oonigo.binpath()):
+                    with AugmentedPath(engine, os.path.join(gopath(), "bin")):
+                        engine.run(cmdline)
 
     def _gomobile_bind(
         self,
@@ -751,20 +761,11 @@ class OONIMKAllAAR:
         cmdline.append("-ldflags")
         cmdline.append("-s -w")
         cmdline.append("./pkg/oonimkall")
-        engine.run(
-            cmdline,
-            extra_env={
-                "PATH": os.pathsep.join(
-                    [
-                        os.path.join(gopath(), "bin"),  # for gomobile
-                        oonigo.binpath(),  # for our go fork
-                        os.environ["PATH"],  # original environment
-                    ]
-                ),
-                "ANDROID_HOME": android.home(),
-                "ANDROID_NDK_HOME": android.ndk_home(),
-            },
-        )
+        with Environ(engine, "ANDROID_HOME", android.home()):
+            with Environ(engine, "ANDROID_NDK_HOME", android.ndk_home()):
+                with AugmentedPath(engine, oonigo.binpath()):
+                    with AugmentedPath(engine, os.path.join(gopath(), "bin")):
+                        engine.run(cmdline)
 
 
 class BundleJAR:
@@ -780,11 +781,11 @@ class BundleJAR:
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isfile(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+            log("\n./make: {}: already built".format(self.__name))
             return
         oonimkall = OONIMKAllAAR()
         oonimkall.build(engine, options)
-        log("./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self.__name))
         engine.require("cp", "gpg", "jar")
         version = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
         engine.run(
@@ -859,13 +860,13 @@ class OONIMKAllFramework:
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isfile(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+            log("\n./make: {}: already built".format(self.__name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
         gogo = SDKGolangGo()
         gogo.build(engine, options)
-        log("./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self.__name))
         ooprivate.copyfiles(engine, options)
         self._go_get_gomobile(engine, options, gogo)
         self._gomobile_init(engine, gogo)
@@ -888,18 +889,9 @@ class OONIMKAllFramework:
         if options.debugging():
             cmdline.append("-x")
         cmdline.append("golang.org/x/mobile/cmd/gomobile@latest")
-        engine.run(
-            cmdline,
-            extra_env={
-                "PATH": os.pathsep.join(
-                    [
-                        gogo.binpath(),  # so we use this binary
-                        os.environ["PATH"],  # original path
-                    ]
-                ),
-                "GOPATH": gopath(),  # where to install gomobile
-            },
-        )
+        with AugmentedPath(engine, gogo.binpath()):
+            with Environ(engine, "GOPATH", gopath()):
+                engine.run(cmdline)
 
     def _gomobile_init(
         self,
@@ -909,18 +901,9 @@ class OONIMKAllFramework:
         cmdline: List[str] = []
         cmdline.append(os.path.join(".", "MOBILE", "gomobile"))
         cmdline.append("init")
-        engine.run(
-            cmdline,
-            extra_env={
-                "PATH": os.pathsep.join(
-                    [
-                        os.path.join(gopath(), "bin"),  # for gomobile
-                        gogo.binpath(),  # for our go fork
-                        os.environ["PATH"],  # original environment
-                    ]
-                ),
-            },
-        )
+        with AugmentedPath(engine, os.path.join(gopath(), "bin")):
+            with AugmentedPath(engine, gogo.binpath()):
+                engine.run(cmdline)
 
     def _gomobile_bind(
         self,
@@ -945,18 +928,9 @@ class OONIMKAllFramework:
         cmdline.append("-ldflags")
         cmdline.append("-s -w")
         cmdline.append("./pkg/oonimkall")
-        engine.run(
-            cmdline,
-            extra_env={
-                "PATH": os.pathsep.join(
-                    [
-                        os.path.join(gopath(), "bin"),  # for gomobile
-                        gogo.binpath(),  # for golang/go
-                        os.environ["PATH"],  # original environment
-                    ]
-                ),
-            },
-        )
+        with AugmentedPath(engine, os.path.join(gopath(), "bin")):
+            with AugmentedPath(engine, gogo.binpath()):
+                engine.run(cmdline)
 
 
 class OONIMKAllFrameworkZip:
@@ -969,12 +943,12 @@ class OONIMKAllFrameworkZip:
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isfile(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+            log("\n./make: {}: already built".format(self.__name))
             return
         engine.require("zip", "rm")
         ooframework = OONIMKAllFramework()
         ooframework.build(engine, options)
-        log("./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self.__name))
         engine.run(
             [
                 "rm",
@@ -1041,17 +1015,14 @@ class MiniOONIDarwinOrWindows:
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isfile(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+            log("\n./make: {}: already built".format(self.__name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
         gogo = SDKGolangGo()
         gogo.build(engine, options)
-        log("./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self.__name))
         ooprivate.copyfiles(engine, options)
-        engine.setenv("CGO_ENABLED", "0")
-        engine.setenv("GOOS", self.__os)
-        engine.setenv("GOARCH", self.__arch)
         cmdline = [
             "go",
             "build",
@@ -1066,20 +1037,11 @@ class MiniOONIDarwinOrWindows:
         if not options.disable_embedding_psiphon_config():
             cmdline.append("-tags=ooni_psiphon_config")
         cmdline.append("./internal/cmd/miniooni")
-        engine.run(
-            cmdline,
-            extra_env={
-                "PATH": os.pathsep.join(
-                    [
-                        gogo.binpath(),  # for golang/go
-                        os.environ["PATH"],  # original path
-                    ]
-                ),
-            },
-        )
-        engine.unsetenv("CGO_ENABLED")
-        engine.unsetenv("GOARCH")
-        engine.unsetenv("GOOS")
+        with Environ(engine, "GOOS", self.__os):
+            with Environ(engine, "GOARCH", self.__arch):
+                with Environ(engine, "CGO_ENABLED", "0"):
+                    with AugmentedPath(engine, gogo.binpath()):
+                        engine.run(cmdline)
 
 
 class MiniOONILinux:
@@ -1092,19 +1054,21 @@ class MiniOONILinux:
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isfile(self.__name) and not options.dry_run():
-            log("./make: {}: already built".format(self.__name))
+            log("\n./make: {}: already built".format(self.__name))
             return
         ooprivate = OONIProbePrivate()
         ooprivate.build(engine, options)
         gogo = SDKGolangGo()
         gogo.build(engine, options)
-        log("./make: building {}...".format(self.__name))
+        log("\n./make: building {}...".format(self.__name))
         ooprivate.copyfiles(engine, options)
-        engine.setenv("CGO_ENABLED", "0")
-        engine.setenv("GOOS", "linux")
-        engine.setenv("GOARCH", self.__arch)
         if self.__arch == "arm":
-            engine.setenv("GOARM", "7")
+            with Environ(engine, "GOARM", "7"):
+                self._build(engine, options, gogo)
+        else:
+            self._build(engine, options, gogo)
+
+    def _build(self, engine: Engine, options: Options, gogo: SDKGolangGo) -> None:
         cmdline = [
             "go",
             "build",
@@ -1121,22 +1085,11 @@ class MiniOONILinux:
             tags += ",ooni_psiphon_config"
         cmdline.append(tags)
         cmdline.append("./internal/cmd/miniooni")
-        engine.run(
-            cmdline,
-            extra_env={
-                "PATH": os.pathsep.join(
-                    [
-                        gogo.binpath(),  # for golang/go
-                        os.environ["PATH"],  # original path
-                    ]
-                ),
-            },
-        )
-        engine.unsetenv("CGO_ENABLED")
-        engine.unsetenv("GOARCH")
-        engine.unsetenv("GOOS")
-        if self.__arch == "arm":
-            engine.unsetenv("GOARM")
+        with Environ(engine, "GOOS", "linux"):
+            with Environ(engine, "GOARCH", self.__arch):
+                with Environ(engine, "CGO_ENABLED", "0"):
+                    with AugmentedPath(engine, gogo.binpath()):
+                        engine.run(cmdline)
 
 
 class MiniOONI:
