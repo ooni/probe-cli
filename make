@@ -258,9 +258,9 @@ class Engine(Protocol):
         self,
         output_variable: str,
         cmdline: List[str],
-        output: List[bytes],
-    ) -> None:
-        """backticks executes output_variable=`*cmdline`."""
+    ) -> bytes:
+        """backticks executes output_variable=`*cmdline` and returns
+        the output emitted by the command to the caller."""
 
     def cat_sed_redirect(
         self, patterns: List[Tuple[str, str]], source: str, dest: str
@@ -300,12 +300,12 @@ class CommandExecutor:
         self,
         output_variable: str,
         cmdline: List[str],
-        output: List[bytes],
-    ) -> None:
+    ) -> bytes:
         """backticks implements Engine.backticks"""
-        self._dry_runner.backticks(output_variable, cmdline, output)
+        out = self._dry_runner.backticks(output_variable, cmdline)
         # Nothing else to do, because backticks is fully
         # implemented by CommandDryRunner.
+        return out
 
     def cat_sed_redirect(
         self, patterns: List[Tuple[str, str]], source: str, dest: str
@@ -371,8 +371,7 @@ class CommandDryRunner:
         self,
         output_variable: str,
         cmdline: List[str],
-        output: List[bytes],
-    ) -> None:
+    ) -> bytes:
         """backticks implements Engine.backticks"""
         log("./make: {}=`{}`".format(output_variable, shlex.join(cmdline)))
         # implemented here because we want to see the result of backticks
@@ -381,7 +380,7 @@ class CommandDryRunner:
         stdout = popen.communicate()[0]
         if popen.returncode != 0:
             raise RuntimeError(popen.returncode)
-        output.append(stdout)
+        return stdout
 
     def cat_sed_redirect(
         self, patterns: List[Tuple[str, str]], source: str, dest: str
@@ -435,7 +434,6 @@ class CommandDryRunner:
     def unsetenv(self, key: str) -> None:
         """unsetenv implements Engine.unsetenv."""
         log("./make: unset {}".format(key))
-
 
 
 def new_engine(options: Options) -> Engine:
@@ -1008,9 +1006,8 @@ class OONIMKAllPodspec:
         if os.path.isfile(self.__name) and not options.dry_run():
             log("./make: {}: already built".format(self.__name))
             return
-        output: List[bytes] = []
-        engine.backticks("RELEASE", ["git", "describe", "--tags"], output)
-        release = output[0].decode("utf-8").strip()
+        output = engine.backticks("RELEASE", ["git", "describe", "--tags"])
+        release = output.decode("utf-8").strip()
         version = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
         engine.cat_sed_redirect(
             [("@VERSION@", version), ("@RELEASE@", release)],
