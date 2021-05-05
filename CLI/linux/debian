@@ -1,0 +1,7 @@
+#!/bin/sh
+apt update -q
+apt build-dep -y --no-install-recommends .
+apt install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
+ver="3.10.0-beta.1"
+dch -v $ver "New test version"
+dpkg-buildpackage -us -uc -b

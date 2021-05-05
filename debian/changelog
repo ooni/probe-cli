@@ -1,3 +1,9 @@
+ooniprobe-cli (3.10.0-beta.1) UNRELEASED; urgency=medium
+
+  * New test version
+
+ -- root <root@d66afd9a9514>  Wed, 05 May 2021 12:54:16 +0000
+
 ooniprobe-cli (3.0.9) unstable; urgency=medium
 
   * Test release

@@ -451,9 +451,9 @@ class Environ:
     def __exit__(self, type: Any, value: Any, traceback: Any) -> bool:
         if self._prev is None:
             self._engine.unsetenv(self._key)
-            return False # progagate exc
+            return False  # progagate exc
         self._engine.setenv(self._key, self._prev)
-        return False # progagate exc
+        return False  # progagate exc
 
 
 class AugmentedPath(Environ):
@@ -1262,6 +1262,48 @@ class OONIProbeDarwin:
                         engine.run(cmdline)
 
 
+class Debian:
+    """Debian makes a debian package of a target artifact. It
+    currently only works with ooniprobe targets."""
+
+    def __init__(self, arch: str, target: Target):
+        self._arch = arch
+        self._target = target
+
+    def name(self) -> str:
+        return "debian_{}".format(self._arch)
+
+    def build(self, engine: Engine, options: Options) -> None:
+        self._target.build(engine, options)
+        log("\n./make: building {}...".format(self.name()))
+        engine.require("docker")
+        # make sure we have the latest version of the container image
+        engine.run(
+            [
+                "docker",
+                "pull",
+                "--platform",
+                "linux/{}".format(self._arch),
+                "debian:stable",
+            ]
+        )
+        # then run the build inside the container
+        cmdline = [
+            "docker",
+            "run",
+            "--platform",
+            "linux/{}".format(self._arch),
+            "-it",
+            "-v",
+            "{}:/ooni".format(os.getcwd()),
+            "-w",
+            "/ooni",
+            "debian:stable",
+            os.path.join(".", "CLI", "linux", "debian"),
+        ]
+        engine.run(cmdline)
+
+
 class Sign:
     """Sign signs a specific target artefact."""
 
@@ -1294,22 +1336,31 @@ OONIPROBE_TARGETS: List[Target] = [
 OONIPROBE_SIGNED_TARGETS: List[Target] = [Sign(x) for x in OONIPROBE_TARGETS]
 
 # OONIPROBE_RELEASE_DARWIN contains the release darwin targets
-OONIPROBE_RELEASE_DARWIN = Phony("ooniprobe_release_darwin", [
-    Sign(OONIProbeDarwin("amd64")),
-    Sign(OONIProbeDarwin("arm64")),
-])
+OONIPROBE_RELEASE_DARWIN = Phony(
+    "ooniprobe_release_darwin",
+    [
+        Sign(OONIProbeDarwin("amd64")),
+        Sign(OONIProbeDarwin("arm64")),
+    ],
+)
 
 # OONIPROBE_RELEASE_LINUX contains the release linux targets
-OONIPROBE_RELEASE_LINUX = Phony("ooniprobe_release_linux", [
-    Sign(OONIProbeLinux("amd64")),
-    Sign(OONIProbeLinux("arm64")),
-])
+OONIPROBE_RELEASE_LINUX = Phony(
+    "ooniprobe_release_linux",
+    [
+        Sign(OONIProbeLinux("amd64")),
+        Sign(OONIProbeLinux("arm64")),
+    ],
+)
 
 # OONIPROBE_RELEASE_WINDOWS contains the release windows targets
-OONIPROBE_RELEASE_WINDOWS = Phony("ooniprobe_release_windows", [
-    Sign(OONIProbeWindows("amd64")),
-    Sign(OONIProbeWindows("386")),
-])
+OONIPROBE_RELEASE_WINDOWS = Phony(
+    "ooniprobe_release_windows",
+    [
+        Sign(OONIProbeWindows("amd64")),
+        Sign(OONIProbeWindows("386")),
+    ],
+)
 
 # MOBILE_TARGETS contains the top-level mobile targets.
 MOBILE_TARGETS: List[Target] = [
@@ -1334,6 +1385,7 @@ VISIBLE_TARGETS: List[Target] = (
     + [OONIPROBE_RELEASE_DARWIN]
     + [OONIPROBE_RELEASE_LINUX]
     + [OONIPROBE_RELEASE_WINDOWS]
+    + [Debian("arm64", OONIProbeLinux("arm64"))]
 )
 
 
