@@ -19,7 +19,7 @@ jobs:
           sudo service docker restart
       - uses: actions/checkout@v2
       - name: create the debian packages
-        run: ./make --disable-embedding-psiphon-config debian
+        run: ./make --disable-embedding-psiphon-config -t debian
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
       - name: update debian packages
