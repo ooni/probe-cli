@@ -11,12 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: sudo apt install mingw-w64
-      - run: python3.exe ./make --disable-embedding-psiphon-config -t ./CLI/windows/amd64/ooniprobe.exe
+      - run: python3 ./make --disable-embedding-psiphon-config -t ./CLI/windows/amd64/ooniprobe.exe
       - uses: actions/upload-artifact@v2
         with:
           name: ooniprobe.exe
           path: ./CLI/windows/amd64/ooniprobe.exe
   test:
+    needs: build
     runs-on: "windows-2019"
     steps:
       - uses: actions/download-artifact@v2
