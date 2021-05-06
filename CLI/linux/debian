@@ -1,0 +1,73 @@
+#!/bin/sh
+# This script creates a Debian package. When run by `./make`, it
+# is run inside a debian:stable container. It's fine to also
+# run this script from any debian-like system, as long as the
+# following ASSUMPTIONS are met:
+#
+# 1. the `ooniprobe` we are packaging is available at
+# this path `./CLI/linux/$GOARCH/ooniprobe`;
+#
+# 2. we are running on a debian system that has the same
+# architecture of the `ooniprobe` we are packaging.
+
+if [ $# -gt 1 ]; then
+    echo "usage: $0 [run_number]" 1>&2
+    exit 1
+fi
+run_number=$1
+
+# Copy the target binary in the correct location expected
+# by the debian/ooniprobe-cli.install file.
+rm -rf ./debian/bin
+mkdir -p ./debian/bin
+machine=`uname -m`
+goarch=""
+case $machine in
+    x86_64)
+        cp ./CLI/linux/amd64/ooniprobe ./debian/bin
+        goarch=amd64
+    ;;
+    aarch64)
+        cp ./CLI/linux/arm64/ooniprobe ./debian/bin
+        goarch=arm64
+    ;;
+    *)
+        # TODO(bassosimone): here we probably want to further extend
+        # this script to support at least armv7.
+        echo "FATAL: unsupported machine: $machine" 1>&2
+        exit 1
+    ;;
+esac
+
+set -ex
+
+# figure out the version number from the binary itself (which rests
+# on the assumption that `uname -m` can run such a binary)
+version=`./debian/bin/ooniprobe version`
+if [ ! -z $run_number ]; then
+    version="${version}~${run_number}"
+fi
+
+# The OONI_DEB_DRY_RUN is a semi-undocumented feature allowing
+# us to see the commands that would be run by this script.
+
+# install the dependencies required by the build process
+$OONI_DEB_DRY_RUN apt-get update -q
+$OONI_DEB_DRY_RUN apt-get build-dep -y --no-install-recommends .
+
+# keep the original changelog file safe
+$OONI_DEB_DRY_RUN cp ./debian/changelog ./debian/changelog.oocopy
+
+$OONI_DEB_DRY_RUN dch -v $version "New version ${version}"
+$OONI_DEB_DRY_RUN dpkg-buildpackage -us -uc -b
+
+# restore the original changelog file
+$OONI_DEB_DRY_RUN mv ./debian/changelog.oocopy ./debian/changelog
+
+# move the package so that we don't loose track
+# of it when using a build container
+$OONI_DEB_DRY_RUN mv ../*.deb .
+
+# install the package on the container as a smoke test to
+# ensure that it is installable.
+DEBIAN_FRONTEND=noninteractive dpkg -i ooniprobe-cli_${version}_${goarch}.deb

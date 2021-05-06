@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - "master"
-      - "deb-s3"
       - "release/**"
     tags:
       - "v*"
@@ -22,6 +21,8 @@ jobs:
           go-version: "1.16"
       - uses: actions/checkout@v2
       - run: DOCKER_CLI_EXPERIMENTAL=enabled ./build.sh linux_amd64
+      - run: mkdir -p debian/bin
+      - run: cp ./CLI/linux/amd64/ooniprobe debian/bin/ooniprobe
       - run: sudo apt-get update -q
       - run: sudo apt-get build-dep -y --no-install-recommends .
       - name: Install deps

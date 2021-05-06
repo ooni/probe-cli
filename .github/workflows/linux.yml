@@ -17,6 +17,7 @@ jobs:
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
       - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
+      - run: ./make --disable-embedding-psiphon-config -t debian_amd64
 
   build_arm64:
     runs-on: "ubuntu-20.04"
@@ -30,3 +31,4 @@ jobs:
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
       - run: ./smoketest.sh ./CLI/linux/arm64/ooniprobe
+      - run: ./make --disable-embedding-psiphon-config -t debian_arm64

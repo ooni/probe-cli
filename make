@@ -1249,6 +1249,58 @@ class OONIProbeDarwin:
                         engine.run(cmdline)
 
 
+class Debian:
+    """Debian makes a debian package of a target artifact. It
+    currently only works with ooniprobe targets."""
+
+    def __init__(self, arch: str, target: Target):
+        self._arch = arch
+        self._target = target
+
+    def name(self) -> str:
+        return "debian_{}".format(self._arch)
+
+    def build(self, engine: Engine, options: Options) -> None:
+        self._target.build(engine, options)
+        log("\n./make: building {}...".format(self.name()))
+        engine.require("docker")
+        # make sure we have the latest version of the container image
+        engine.run(
+            [
+                "docker",
+                "pull",
+                "--platform",
+                "linux/{}".format(self._arch),
+                "debian:stable",
+            ]
+        )
+        # then run the build inside the container
+        cmdline: List[str] = []
+        cmdline.append("docker")
+        cmdline.append("run")
+        cmdline.append("--platform")
+        cmdline.append("linux/{}".format(self._arch))
+        cmdline.append("-v")
+        cmdline.append("{}:/ooni".format(os.getcwd()))
+        cmdline.append("-w")
+        cmdline.append("/ooni")
+        cmdline.append("debian:stable")
+        cmdline.append(os.path.join(".", "CLI", "linux", "debian"))
+        if os.environ.get("GITHUB_ACTIONS", "") == "true":
+            # When we're running inside a github action, figure out whether
+            # we are building a tag or a commit. In the latter case, we will
+            # append the run number to the version number.
+            github_ref = os.environ.get("GITHUB_REF")
+            if not github_ref:
+                raise RuntimeError("missing GITHUB_REF")
+            github_run_number = os.environ.get("GITHUB_RUN_NUMBER")
+            if not github_run_number:
+                raise RuntimeError("missing GITHUB_RUN_NUMBER")
+            if not github_ref.startswith("/refs/tags/"):
+                cmdline.append(github_run_number)
+        engine.run(cmdline)
+
+
 class Sign:
     """Sign signs a specific target artefact."""
 
@@ -1320,6 +1372,15 @@ EXTRA_TARGETS: List[Target] = [
     OONIMKAllFrameworkZip(),
 ]
 
+# DEBIAN_TARGETS contains individual debian targets.
+DEBIAN_TARGETS: List[Target] = [
+    Debian("arm64", OONIProbeLinux("arm64")),
+    Debian("amd64", OONIProbeLinux("amd64")),
+]
+
+# DEBIAN is the top-level "debian" target.
+DEBIAN = Phony("debian", DEBIAN_TARGETS)
+
 # VISIBLE_TARGETS contains all the visible-from-CLI targets
 VISIBLE_TARGETS: List[Target] = (
     OONIPROBE_TARGETS
@@ -1330,6 +1391,8 @@ VISIBLE_TARGETS: List[Target] = (
     + [OONIPROBE_RELEASE_DARWIN]
     + [OONIPROBE_RELEASE_LINUX]
     + [OONIPROBE_RELEASE_WINDOWS]
+    + DEBIAN_TARGETS
+    + [DEBIAN]
 )
 
 
