@@ -12,6 +12,9 @@ jobs:
       - uses: actions/setup-go@v1
         with:
           go-version: "1.16"
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
       - uses: actions/checkout@v2
       - run: python3.exe ./make --disable-embedding-psiphon-config -t ./CLI/windows/amd64/ooniprobe.exe
       - run: bash.exe ./smoketest.sh ./CLI/windows/amd64/ooniprobe.exe
