@@ -1,12 +1,13 @@
-# Build and test Windows binary
+# windows builds ooniprobe for Windows
 name: windows
 on:
+  pull_request:
   push:
-  schedule:
-    - cron: "14 17 * * 3"
+    branches:
+      - "release/**"
 jobs:
   build:
-    runs-on: "windows-latest"
+    runs-on: "windows-2019"
     steps:
       - uses: actions/setup-go@v1
         with:
@@ -14,7 +15,3 @@ jobs:
       - uses: actions/checkout@v2
       - run: bash.exe ./build.sh windows_amd64  # TODO(bassosimone): make windows_386 work
       - run: bash.exe ./smoketest.sh ./CLI/windows/amd64/ooniprobe.exe
-      - uses: actions/upload-artifact@v1
-        with:
-          name: ooniprobe-windows-amd64
-          path: ./CLI/windows/amd64/ooniprobe.exe
