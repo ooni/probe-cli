@@ -18,7 +18,7 @@ jobs:
           echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
           sudo service docker restart
       - uses: actions/checkout@v2
-      - run: ./make --disable-embedding-psiphon-config debian_amd64
+      - run: ./make --disable-embedding-psiphon-config debian
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
       - run: sudo apt-get update -q
