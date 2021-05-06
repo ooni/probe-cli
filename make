@@ -121,8 +121,8 @@ def sdkmanager_install_cmd(binpath: str) -> List[str]:
 
 
 def log(msg: str) -> None:
-    """log prints a message on the standard error."""
-    print(msg, file=sys.stderr)
+    """log prints a message on the standard output."""
+    print(msg, flush=True)
 
 
 class Options(Protocol):
@@ -1151,7 +1151,6 @@ class OONIProbeLinux:
             "linux/{}".format(self._arch),
             "-e",
             "GOARCH={}".format(self._arch),
-            "-it",
             "-v",
             "{}:/ooni".format(os.getcwd()),
             "-w",
