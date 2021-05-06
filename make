@@ -1139,7 +1139,6 @@ class OONIProbeLinux:
             "linux/{}".format(self._arch),
             "-e",
             "GOARCH={}".format(self._arch),
-            "-it",
             "-v",
             "{}:/ooni".format(os.getcwd()),
             "-w",
@@ -1281,7 +1280,6 @@ class Debian:
         cmdline.append("run")
         cmdline.append("--platform")
         cmdline.append("linux/{}".format(self._arch))
-        cmdline.append("-it")
         cmdline.append("-v")
         cmdline.append("{}:/ooni".format(os.getcwd()))
         cmdline.append("-w")
