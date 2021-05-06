@@ -13,20 +13,22 @@ jobs:
   build:
     runs-on: "ubuntu-20.04"
     steps:
-      - name: restart the docker service
+      - name: enable experimental docker features
         run: |
           echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
           sudo service docker restart
       - uses: actions/checkout@v2
-      - name: create the debian packages
+      - name: update debian packages
+        run: sudo apt-get update -q
+      - name: install qemu-user-static
+        run: sudo apt-get install qemu-user-static
+      - name: package ooniprobe for debian
         run: ./make --disable-embedding-psiphon-config -t debian
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
-      - name: update debian packages
-        run: sudo apt-get update -q
-      - name: install required dependencies
+      - name: install debops-ci dependencies
         run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
-      - name: sign packages and upload
+      - name: sign packages and upload with debops-ci
         run: |
           for deb in *.deb; do
             # AWS user debci-s3
