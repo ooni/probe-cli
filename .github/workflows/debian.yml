@@ -12,23 +12,26 @@ on:
 jobs:
   build:
     runs-on: "ubuntu-20.04"
+    strategy:
+      matrix:
+        goarch: [ "amd64", "arm64" ]
     steps:
-      - name: enable experimental docker features
+      - name: Enable experimental docker features
         run: |
           echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
           sudo service docker restart
       - uses: actions/checkout@v2
-      - name: update debian packages
+      - name: Update debian packages
         run: sudo apt-get update -q
-      - name: install qemu-user-static
+      - name: Install qemu-user-static
         run: sudo apt-get install qemu-user-static
-      - name: package ooniprobe for debian
-        run: ./make --disable-embedding-psiphon-config -t debian
+      - name: Package ooniprobe for debian
+        run: ./make --disable-embedding-psiphon-config -v -t debian_${{ matrix.goarch }}
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
-      - name: install debops-ci dependencies
+      - name: Install debops-ci dependencies
         run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
-      - name: sign packages and upload with debops-ci
+      - name: Sign and upload with debops-ci
         run: |
           for deb in *.deb; do
             # AWS user debci-s3
