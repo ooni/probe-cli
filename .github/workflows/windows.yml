@@ -20,9 +20,9 @@ jobs:
     needs: build
     runs-on: "windows-2019"
     steps:
+      - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe.exe
-      - uses: actions/checkout@v2
       - run: dir
       - run: bash.exe ./smoketest.sh ./ooniprobe.exe
