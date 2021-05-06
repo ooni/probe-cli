@@ -122,7 +122,7 @@ def sdkmanager_install_cmd(binpath: str) -> List[str]:
 
 def log(msg: str) -> None:
     """log prints a message on the standard error."""
-    print(msg, file=sys.stderr)
+    print(msg)
 
 
 class Options(Protocol):
