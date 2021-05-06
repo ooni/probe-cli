@@ -1,3 +1,4 @@
+# shorttests only runs the short tests
 name: shorttests
 on:
   pull_request:
@@ -6,7 +7,7 @@ on:
       - "master"
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         go: [ "1.16" ]
