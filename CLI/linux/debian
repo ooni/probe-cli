@@ -1,7 +1,43 @@
 #!/bin/sh
-apt update -q
-apt build-dep -y --no-install-recommends .
-apt install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
-ver="3.10.0-beta.1"
-dch -v $ver "New test version"
+# This script is executed by `./make` when building debian packages
+# and usually runs inside a debian:stable container.
+
+# Copy the target binary in the correct location expected
+# by the debian/ooniprobe-cli.install file.
+#
+# ASSUMPTION: we are running on a debian machine/container with the
+# same architecture of the ooniprobe binary we're packaging.
+rm -rf ./debian/bin
+mkdir -p ./debian/bin
+machine=`uname -m`
+case $machine in
+    x86_64)
+        cp ./CLI/linux/amd64/ooniprobe ./debian/bin
+    ;;
+    aarch64)
+        cp ./CLI/linux/arm64/ooniprobe ./debian/bin
+    ;;
+    *)
+        # TODO(bassosimone): here we probably want to further extend
+        # this script to support at least armv7.
+        echo "FATAL: unsupported machine: $machine" 1>&2
+        exit 1
+    ;;
+esac
+
+set -ex
+
+# figure out the version number from the binary itself (which rests
+# on the assumption that `uname -m` can run such a binary)
+version=`./debian/bin/ooniprobe version`
+
+# install the dependencies required by the build process
+apt-get update -q
+apt-get build-dep -y --no-install-recommends .
+
+dch -v $version "New version ${version}"
 dpkg-buildpackage -us -uc -b
+
+# move the package so that we don't loose track
+# of it when using a build container
+mv ../*.deb .

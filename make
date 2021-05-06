@@ -255,12 +255,8 @@ The third form of the command prints this help screen.
 class Engine(Protocol):
     """Engine is an engine for building targets."""
 
-    def backticks(
-        self,
-        output_variable: str,
-        cmdline: List[str],
-    ) -> bytes:
-        """backticks executes output_variable=`*cmdline` and returns
+    def backticks(self, cmdline: List[str]) -> str:
+        """backticks executes the given command line and returns
         the output emitted by the command to the caller."""
 
     def cat_sed_redirect(
@@ -297,16 +293,11 @@ class CommandExecutor:
     def __init__(self, dry_runner: Engine):
         self._dry_runner = dry_runner
 
-    def backticks(
-        self,
-        output_variable: str,
-        cmdline: List[str],
-    ) -> bytes:
+    def backticks(self, cmdline: List[str]) -> str:
         """backticks implements Engine.backticks"""
-        out = self._dry_runner.backticks(output_variable, cmdline)
         # Nothing else to do, because backticks is fully
         # implemented by CommandDryRunner.
-        return out
+        return self._dry_runner.backticks(cmdline)
 
     def cat_sed_redirect(
         self, patterns: List[Tuple[str, str]], source: str, dest: str
@@ -366,20 +357,18 @@ class CommandDryRunner:
     # Implementation note: here we try to log valid bash snippets
     # such that is really obvious what we are doing.
 
-    def backticks(
-        self,
-        output_variable: str,
-        cmdline: List[str],
-    ) -> bytes:
+    def backticks(self, cmdline: List[str]) -> str:
         """backticks implements Engine.backticks"""
-        log("./make: {}=`{}`".format(output_variable, shlex.join(cmdline)))
-        # implemented here because we want to see the result of backticks
-        # command invocations when we're doing a dry run
+        # The backticks command is used to gather information used by
+        # other commands. As such, it needs to always run. If it was not
+        # running, we could not correctly implement the `-n` flag. It's
+        # also a silent command, because it's not really part of the
+        # sequence of bash commands that are executed. ¯\_(ツ)_/¯
         popen = subprocess.Popen(cmdline, stdout=subprocess.PIPE)
         stdout = popen.communicate()[0]
         if popen.returncode != 0:
             raise RuntimeError(popen.returncode)
-        return stdout
+        return stdout.decode("utf-8").strip()
 
     def cat_sed_redirect(
         self, patterns: List[Tuple[str, str]], source: str, dest: str
@@ -989,8 +978,7 @@ class OONIMKAllPodspec:
             log("./make: {}: already built".format(self._name))
             return
         engine.require("cat", "sed")
-        output = engine.backticks("RELEASE", ["git", "describe", "--tags"])
-        release = output.decode("utf-8").strip()
+        release = engine.backticks(["git", "describe", "--tags"])
         version = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
         engine.cat_sed_redirect(
             [("@VERSION@", version), ("@RELEASE@", release)],
@@ -1386,6 +1374,7 @@ VISIBLE_TARGETS: List[Target] = (
     + [OONIPROBE_RELEASE_LINUX]
     + [OONIPROBE_RELEASE_WINDOWS]
     + [Debian("arm64", OONIProbeLinux("arm64"))]
+    + [Debian("amd64", OONIProbeLinux("amd64"))]
 )
 
 

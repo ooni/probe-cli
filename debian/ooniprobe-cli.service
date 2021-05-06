@@ -1,7 +1,6 @@
 [Unit]
 Description=OONI Probe CLI
 Documentation=man:ooniprobe-cli
-#Documentation=file:///usr/share/doc/ooniprobe-cli/html/index.html
 Documentation=https://ooni.org/
 After=network.target tor.target
 Wants=network-online.target
@@ -22,7 +21,6 @@ LimitNOFILE=65536
 WorkingDirectory=/var/lib/ooniprobe
 RuntimeDirectory=ooniprobe
 StateDirectory=ooniprobe
-#CacheDirectory=ooniprobe
 LogsDirectory=ooniprobe
 ConfigurationDirectory=ooniprobe
 
