@@ -1,0 +1,17 @@
+name: jafar
+on:
+  push:
+    branches:
+      - 'release/**'
+  schedule:
+    - cron: "0 5 * * 3"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: "1.16"
+      - uses: actions/checkout@v2
+      - run: go build -v ./internal/cmd/jafar
+      - run: sudo ./testjafar.bash

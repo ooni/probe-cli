@@ -1,0 +1,33 @@
+# miniooni checks whether we can build the research client miniooni
+# and publishes all linux binaries as artefacts. There is no point in
+# publishing windows or darwin binaries b/c they are not signed.
+name: miniooni
+on:
+  push:
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: ./make --disable-embedding-psiphon-config -t miniooni
+      - run: ./CLI/linux/amd64/miniooni --yes -nNi https://example.com web_connectivity
+
+      - uses: actions/upload-artifact@v1
+        with:
+          name: miniooni-linux-386
+          path: ./CLI/linux/386/miniooni
+
+      - uses: actions/upload-artifact@v1
+        with:
+          name: miniooni-linux-amd64
+          path: ./CLI/linux/amd64/miniooni
+
+      - uses: actions/upload-artifact@v1
+        with:
+          name: miniooni-linux-arm
+          path: ./CLI/linux/arm/miniooni
+
+      - uses: actions/upload-artifact@v1
+        with:
+          name: miniooni-linux-arm64
+          path: ./CLI/linux/arm64/miniooni
