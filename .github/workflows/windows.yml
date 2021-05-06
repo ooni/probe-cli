@@ -24,4 +24,5 @@ jobs:
         with:
           name: ooniprobe.exe
       - uses: actions/checkout@v2
+      - run: bash.exe ls -lha
       - run: bash.exe ./smoketest.sh ./ooniprobe.exe
