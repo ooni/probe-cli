@@ -13,24 +13,27 @@ jobs:
   build:
     runs-on: "ubuntu-20.04"
     steps:
-      - name: Docker
+      - name: restart the docker service
         run: |
           echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
           sudo service docker restart
       - uses: actions/checkout@v2
-      - run: ./make --disable-embedding-psiphon-config debian
+      - name: create the debian packages
+        run: ./make --disable-embedding-psiphon-config debian
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
-      - run: sudo apt-get update -q
-      - name: Install deps
+      - name: update debian packages
+        run: sudo apt-get update -q
+      - name: install required dependencies
         run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
-      - name: Sign and upload
+      - name: sign packages and upload
         run: |
           for deb in *.deb; do
             # AWS user debci-s3
-            ./.github/workflows/debops-ci --show-commands upload --bucket-name ooni-deb $deb
+            ./.github/workflows/debops-ci --show-commands upload        \
+                                          --bucket-name ooni-deb $deb
           done
         env:
-          DEB_GPG_KEY: ${{ secrets.DEB_GPG_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          DEB_GPG_KEY: ${{ secrets.DEB_GPG_KEY }}
