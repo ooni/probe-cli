@@ -1,4 +1,4 @@
-# Build and test macOS binary
+# macos builds ooniprobe for macos
 name: macos
 on:
   push:
