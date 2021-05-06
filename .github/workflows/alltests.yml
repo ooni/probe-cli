@@ -1,13 +1,12 @@
+# alltests runs the whole test suite
 name: alltests
 on:
   push:
     branches:
-      - 'release/**'
-  schedule:
-    - cron: "0 7 * * */1"
+      - "release/**"
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/setup-go@v1
         with:
