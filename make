@@ -440,9 +440,9 @@ class Environ:
     def __exit__(self, type: Any, value: Any, traceback: Any) -> bool:
         if self._prev is None:
             self._engine.unsetenv(self._key)
-            return False  # progagate exc
+            return False  # propagate exc
         self._engine.setenv(self._key, self._prev)
-        return False  # progagate exc
+        return False  # propagate exc
 
 
 class AugmentedPath(Environ):
