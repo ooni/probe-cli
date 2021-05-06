@@ -1,13 +1,12 @@
+# qahirl runs QA checks for the hirl experiment
 name: "qahirl"
 on:
-  schedule:
-    - cron: "10 3 * * */1"
   push:
     branches:
-      - 'release/**'
+      - "release/**"
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/setup-go@v1
         with:

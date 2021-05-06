@@ -1,3 +1,4 @@
+# coverage computes the code coverage
 name: coverage
 on:
   pull_request:
@@ -6,7 +7,7 @@ on:
       - "master"
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         go: [ "1.16" ]
