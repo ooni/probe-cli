@@ -21,6 +21,7 @@ jobs:
           DOCKER_CLI_EXPERIMENTAL: enabled
       - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
       - run: ./make --disable-embedding-psiphon-config -t debian_amd64
+      - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
       - run: |
           for deb in *.deb; do
             ./.github/workflows/debops-ci --show-commands upload --bucket-name ooni-deb $deb
@@ -43,6 +44,7 @@ jobs:
           DOCKER_CLI_EXPERIMENTAL: enabled
       - run: ./smoketest.sh ./CLI/linux/arm64/ooniprobe
       - run: ./make --disable-embedding-psiphon-config -t debian_arm64
+      - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
       - run: |
           for deb in *.deb; do
             ./.github/workflows/debops-ci --show-commands upload --bucket-name ooni-deb $deb
