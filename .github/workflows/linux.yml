@@ -1,11 +1,13 @@
 # linux builds ooniprobe for Linux
 name: linux
 on:
+  pull_request:
   push:
     branches:
       - "release/**"
 jobs:
-  build:
+
+  build_amd64:
     runs-on: "ubuntu-20.04"
     steps:
       - run: |
@@ -15,4 +17,44 @@ jobs:
       - run: ./make --disable-embedding-psiphon-config -t ./CLI/linux/amd64/ooniprobe
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
+      - uses: actions/upload-artifact@v2
+        with:
+          name: linux-amd64-ooniprobe
+          path: ./CLI/linux/amd64/ooniprobe
+
+  build_arm64:
+    runs-on: "ubuntu-20.04"
+    steps:
+      - run: |
+          echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
+          sudo service docker restart
+      - uses: actions/checkout@v2
+      - run: ./make --disable-embedding-psiphon-config -t ./CLI/linux/arm64/ooniprobe
+        env:
+          DOCKER_CLI_EXPERIMENTAL: enabled
+      - uses: actions/upload-artifact@v2
+        with:
+          name: linux-arm64-ooniprobe
+          path: ./CLI/linux/arm64/ooniprobe
+
+  smoke_test_amd64:
+    runs-on: "ubuntu-20.04"
+    needs: build_amd64
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: linux-amd64-ooniprobe
+          path: ./CLI/linux/amd64/ooniprobe
       - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
+
+  smoke_test_arm64:
+    runs-on: "ubuntu-20.04"
+    needs: build_arm64
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: linux-arm64-ooniprobe
+          path: ./CLI/linux/arm64/ooniprobe
+      - run: ./smoketest.sh ./CLI/linux/arm64/ooniprobe
