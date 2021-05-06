@@ -1,7 +1,6 @@
 # windows builds ooniprobe for Windows
 name: windows
 on:
-  pull_request:
   push:
     branches:
       - "release/**"
