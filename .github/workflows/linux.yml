@@ -29,6 +29,7 @@ jobs:
           echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
           sudo service docker restart
       - uses: actions/checkout@v2
+      - run: sudo apt-get install qemu-user-static
       - run: ./make --disable-embedding-psiphon-config -t ./CLI/linux/arm64/ooniprobe
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
@@ -57,4 +58,5 @@ jobs:
         with:
           name: linux-arm64-ooniprobe
           path: ./CLI/linux/arm64/ooniprobe
+      - run: sudo apt-get install qemu-user-static
       - run: ./smoketest.sh ./CLI/linux/arm64/ooniprobe
