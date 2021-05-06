@@ -47,6 +47,7 @@ jobs:
         with:
           name: linux-amd64-ooniprobe
           path: ./CLI/linux/amd64/ooniprobe
+      - run: chmod +x ./CLI/linux/amd64/ooniprobe
       - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
 
   smoke_test_arm64:
@@ -59,4 +60,5 @@ jobs:
           name: linux-arm64-ooniprobe
           path: ./CLI/linux/arm64/ooniprobe
       - run: sudo apt-get install qemu-user-static
+      - run: chmod +x ./CLI/linux/arm64/ooniprobe
       - run: ./smoketest.sh ./CLI/linux/arm64/ooniprobe
