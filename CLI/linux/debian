@@ -21,12 +21,15 @@ run_number=$1
 rm -rf ./debian/bin
 mkdir -p ./debian/bin
 machine=`uname -m`
+goarch=""
 case $machine in
     x86_64)
         cp ./CLI/linux/amd64/ooniprobe ./debian/bin
+        goarch=amd64
     ;;
     aarch64)
         cp ./CLI/linux/arm64/ooniprobe ./debian/bin
+        goarch=arm64
     ;;
     *)
         # TODO(bassosimone): here we probably want to further extend
@@ -64,3 +67,7 @@ $OONI_DEB_DRY_RUN mv ./debian/changelog.oocopy ./debian/changelog
 # move the package so that we don't loose track
 # of it when using a build container
 $OONI_DEB_DRY_RUN mv ../*.deb .
+
+# install the package on the container as a smoke test to
+# ensure that it is installable.
+DEBIAN_FRONTEND=noninteractive dpkg -i ooniprobe-cli_${version}_${goarch}.deb

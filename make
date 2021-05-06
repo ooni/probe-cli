@@ -1374,6 +1374,15 @@ EXTRA_TARGETS: List[Target] = [
     OONIMKAllFrameworkZip(),
 ]
 
+# DEBIAN_TARGETS contains individual debian targets.
+DEBIAN_TARGETS: List[Target] = [
+    Debian("arm64", OONIProbeLinux("arm64")),
+    Debian("amd64", OONIProbeLinux("amd64")),
+]
+
+# DEBIAN is the top-level "debian" target.
+DEBIAN = Phony("debian", DEBIAN_TARGETS)
+
 # VISIBLE_TARGETS contains all the visible-from-CLI targets
 VISIBLE_TARGETS: List[Target] = (
     OONIPROBE_TARGETS
@@ -1384,8 +1393,8 @@ VISIBLE_TARGETS: List[Target] = (
     + [OONIPROBE_RELEASE_DARWIN]
     + [OONIPROBE_RELEASE_LINUX]
     + [OONIPROBE_RELEASE_WINDOWS]
-    + [Debian("arm64", OONIProbeLinux("arm64"))]
-    + [Debian("amd64", OONIProbeLinux("amd64"))]
+    + DEBIAN_TARGETS
+    + [DEBIAN]
 )
 
 
