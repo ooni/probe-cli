@@ -1,10 +1,8 @@
 # linux builds ooniprobe for Linux
 name: linux
 on:
-  pull_request:
   push:
     branches:
-      - "issue/1466b"
       - "release/**"
 jobs:
 
