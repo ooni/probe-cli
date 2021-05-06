@@ -1276,19 +1276,30 @@ class Debian:
             ]
         )
         # then run the build inside the container
-        cmdline = [
-            "docker",
-            "run",
-            "--platform",
-            "linux/{}".format(self._arch),
-            "-it",
-            "-v",
-            "{}:/ooni".format(os.getcwd()),
-            "-w",
-            "/ooni",
-            "debian:stable",
-            os.path.join(".", "CLI", "linux", "debian"),
-        ]
+        cmdline: List[str] = []
+        cmdline.append("docker")
+        cmdline.append("run")
+        cmdline.append("--platform")
+        cmdline.append("linux/{}".format(self._arch))
+        cmdline.append("-it")
+        cmdline.append("-v")
+        cmdline.append("{}:/ooni".format(os.getcwd()))
+        cmdline.append("-w")
+        cmdline.append("/ooni")
+        cmdline.append("debian:stable")
+        cmdline.append(os.path.join(".", "CLI", "linux", "debian"))
+        if os.environ.get("GITHUB_ACTIONS", "") == "true":
+            # When we're running inside a github action, figure out whether
+            # we are building a tag or a commit. In the latter case, we will
+            # append the run number to the version number.
+            github_ref = os.environ.get("GITHUB_REF")
+            if not github_ref:
+                raise RuntimeError("missing GITHUB_REF")
+            github_run_number = os.environ.get("GITHUB_RUN_NUMBER")
+            if not github_run_number:
+                raise RuntimeError("missing GITHUB_RUN_NUMBER")
+            if not github_ref.startswith("/refs/tags/"):
+                cmdline.append(github_run_number)
         engine.run(cmdline)
 
 
