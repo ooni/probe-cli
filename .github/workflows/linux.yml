@@ -13,7 +13,7 @@ jobs:
           echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
           sudo service docker restart
       - uses: actions/checkout@v2
-      - run: ./make --disable-embedding-psiphon-config ./CLI/linux/amd64/ooniprobe
+      - run: ./make --disable-embedding-psiphon-config -t ./CLI/linux/amd64/ooniprobe
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
       - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
