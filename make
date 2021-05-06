@@ -440,9 +440,9 @@ class Environ:
     def __exit__(self, type: Any, value: Any, traceback: Any) -> bool:
         if self._prev is None:
             self._engine.unsetenv(self._key)
-            return False # progagate exc
+            return False  # propagate exc
         self._engine.setenv(self._key, self._prev)
-        return False # progagate exc
+        return False  # propagate exc
 
 
 class AugmentedPath(Environ):
@@ -1281,22 +1281,31 @@ OONIPROBE_TARGETS: List[Target] = [
 OONIPROBE_SIGNED_TARGETS: List[Target] = [Sign(x) for x in OONIPROBE_TARGETS]
 
 # OONIPROBE_RELEASE_DARWIN contains the release darwin targets
-OONIPROBE_RELEASE_DARWIN = Phony("ooniprobe_release_darwin", [
-    Sign(OONIProbeDarwin("amd64")),
-    Sign(OONIProbeDarwin("arm64")),
-])
+OONIPROBE_RELEASE_DARWIN = Phony(
+    "ooniprobe_release_darwin",
+    [
+        Sign(OONIProbeDarwin("amd64")),
+        Sign(OONIProbeDarwin("arm64")),
+    ],
+)
 
 # OONIPROBE_RELEASE_LINUX contains the release linux targets
-OONIPROBE_RELEASE_LINUX = Phony("ooniprobe_release_linux", [
-    Sign(OONIProbeLinux("amd64")),
-    Sign(OONIProbeLinux("arm64")),
-])
+OONIPROBE_RELEASE_LINUX = Phony(
+    "ooniprobe_release_linux",
+    [
+        Sign(OONIProbeLinux("amd64")),
+        Sign(OONIProbeLinux("arm64")),
+    ],
+)
 
 # OONIPROBE_RELEASE_WINDOWS contains the release windows targets
-OONIPROBE_RELEASE_WINDOWS = Phony("ooniprobe_release_windows", [
-    Sign(OONIProbeWindows("amd64")),
-    Sign(OONIProbeWindows("386")),
-])
+OONIPROBE_RELEASE_WINDOWS = Phony(
+    "ooniprobe_release_windows",
+    [
+        Sign(OONIProbeWindows("amd64")),
+        Sign(OONIProbeWindows("386")),
+    ],
+)
 
 # MOBILE_TARGETS contains the top-level mobile targets.
 MOBILE_TARGETS: List[Target] = [

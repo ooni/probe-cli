@@ -1,4 +1,7 @@
 #!/bin/sh
+# This script is executed by `./make` when building inside
+# an Alpine Linux docker container. Using Alpine Linux, which
+# uses musl libc, allows us to emit static binaries.
 set -e
 if [ "$GOARCH" = "" ]; then
     echo 'fatal: $GOARCH is not set' 1>&2
