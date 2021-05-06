@@ -1,7 +1,6 @@
 # linux builds ooniprobe for Linux
 name: linux
 on:
-  pull_request:
   push:
     branches:
       - "release/**"

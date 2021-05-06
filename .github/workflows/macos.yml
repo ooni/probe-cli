@@ -1,7 +1,6 @@
 # Build and test macOS binary
 name: macos
 on:
-  pull_request:
   push:
     branches:
       - "release/**"
