@@ -7,7 +7,6 @@ from __future__ import annotations
 import datetime
 
 import getopt
-import json
 import os
 import platform
 import shlex
@@ -150,11 +149,11 @@ class ConfigFromCLI:
     """ConfigFromCLI parses options from CLI flags."""
 
     @classmethod
-    def parse(cls, targets: List[str]) -> ConfigFromCLI:
+    def parse(cls, targets: List[str], top_targets: List[Target]) -> ConfigFromCLI:
         """parse parses command line options and returns a
         suitable configuration object."""
         conf = cls()
-        conf._parse(targets)
+        conf._parse(targets, top_targets)
         return conf
 
     def __init__(self) -> None:
@@ -198,8 +197,8 @@ embedding a psiphon config file into the generated binary; you should
 use this option when you cannot clone the private repository containing
 the psiphon configuration file.
 
-The second form of the command lists all the available targets as
-a pretty-printed JSON list.
+The second form of the command lists all the available targets, showing
+top-level targets and their recursive dependencies.
 
 The third form of the command prints this help screen.
 """
@@ -211,7 +210,7 @@ The third form of the command prints this help screen.
         sys.stderr.write(cls._usage_string)
         sys.exit(exitcode)
 
-    def _parse(self, targets: List[str]):
+    def _parse(self, targets: List[str], top_targets: List[Target]):
         try:
             opts, args = getopt.getopt(
                 sys.argv[1:], "hlnt:vx", ["disable-embedding-psiphon-config", "help"]
@@ -227,8 +226,7 @@ The third form of the command prints this help screen.
             if key in ("-h", "--help"):
                 self._usage()
             if key == "-l":
-                sys.stdout.write("{}\n".format(json.dumps(sorted(targets), indent=4)))
-                sys.exit(0)
+                self._list_targets(top_targets)
             if key == "-n":
                 self._dry_run = True
                 continue
@@ -250,6 +248,22 @@ The third form of the command prints this help screen.
             sys.stderr.write("unknown target: {}\n".format(self._target))
             sys.stderr.write("try `./make -l` to see the available targets.\n")
             sys.exit(1)
+
+    def _list_targets(self, top_targets: List[Target]) -> NoReturn:
+        for tgt in top_targets:
+            self._print_target(tgt, 0)
+        sys.exit(0)
+
+    def _print_target(self, target: Target, indent: int) -> None:
+        sys.stdout.write(
+            '{}{}{}\n'.format(
+                "  " * indent, target.name(), ":" if target.deps() else ""
+            )
+        )
+        for dep in target.deps():
+            self._print_target(dep, indent + 1)
+        if indent <= 0:
+            sys.stdout.write("\n")
 
 
 class Engine(Protocol):
@@ -428,7 +442,7 @@ class Environ:
     variables are set. They will be restored to their previous
     value when we are leaving the context."""
 
-    def __init__(self, engine: Engine, key: str, value: str):
+    def __init__(self, engine: Engine, key: str, value: str) -> None:
         self._engine = engine
         self._key = key
         self._value = value
@@ -463,65 +477,93 @@ class Target(Protocol):
     def build(self, engine: Engine, options: Options) -> None:
         """build builds the specified target."""
 
+    def deps(self) -> List[Target]:
+        """deps returns the target dependencies."""
 
-class SDKGolangGo:
+
+class BaseTarget:
+    """BaseTarget is the base class of all targets."""
+
+    def __init__(self, name: str, deps: List[Target]) -> None:
+        # prevent child classes from easily using these variables
+        self.__name = name
+        self.__deps = deps
+
+    def name(self) -> str:
+        """name implements Target.name"""
+        return self.__name
+
+    def build_child_targets(self, engine: Engine, options: Options) -> None:
+        """build_child_targets builds all the child targets"""
+        for dep in self.__deps:
+            dep.build(engine, options)
+
+    def deps(self) -> List[Target]:
+        """deps implements Target.deps."""
+        return self.__deps
+
+
+class SDKGolangGo(BaseTarget):
     """SDKGolangGo creates ${cachedir}/SDK/golang."""
 
     # We download a golang SDK from upstream to make sure we
     # are always using a specific version of golang/go.
 
-    _name = os.path.join(cachedir(), "SDK", "golang")
-
-    def name(self) -> str:
-        return self._name
+    def __init__(self) -> None:
+        name = os.path.join(cachedir(), "SDK", "golang")
+        super().__init__(name, [])
 
     def binpath(self) -> str:
-        return os.path.join(self._name, "go", "bin")
+        """binpath returns the path where the go binary is installed."""
+        return os.path.join(self.name(), "go", "bin")
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isdir(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        """build implements Target.build"""
+        if os.path.isdir(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
-        log("\n./make: building {}...".format(self._name))
+        self.build_child_targets(engine, options)
+        log("\n./make: building {}...".format(self.name()))
         engine.require("mkdir", "curl", "shasum", "rm", "tar", "echo")
         filename = "go{}.{}-{}.tar.gz".format(goversion(), goos(), goarch())
         url = "https://golang.org/dl/{}".format(filename)
-        engine.run(["mkdir", "-p", self._name])
-        filepath = os.path.join(self._name, filename)
+        engine.run(["mkdir", "-p", self.name()])
+        filepath = os.path.join(self.name(), filename)
         engine.run(["curl", "-fsSLo", filepath, url])
         sha256file = os.path.join(cachedir(), "SDK", "SHA256")
         engine.echo_to_file("{}  {}".format(gosha256sum(), filepath), sha256file)
         engine.run(["shasum", "--check", sha256file])
         engine.run(["rm", sha256file])
-        engine.run(["tar", "-xf", filename], cwd=self._name)
+        engine.run(["tar", "-xf", filename], cwd=self.name())
         engine.run(["rm", filepath])
 
     def goroot(self):
         """goroot returns the goroot."""
-        return os.path.join(self._name, "go")
+        return os.path.join(self.name(), "go")
 
 
-class SDKOONIGo:
+class SDKOONIGo(BaseTarget):
     """SDKOONIGo creates ${cachedir}/SDK/oonigo."""
 
     # We use a private fork of golang/go on Android as a
     # workaround for https://github.com/ooni/probe/issues/1444
 
-    _name = os.path.join(cachedir(), "SDK", "oonigo")
-
-    def name(self) -> str:
-        return self._name
+    def __init__(self) -> None:
+        name = os.path.join(cachedir(), "SDK", "oonigo")
+        self._gogo = SDKGolangGo()
+        super().__init__(name, [self._gogo])
 
     def binpath(self) -> str:
-        return os.path.join(self._name, "bin")
+        """binpath returns the path where the go binary is installed."""
+        return os.path.join(self.name(), "bin")
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isdir(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        """build implements Target.build"""
+        if os.path.isdir(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
-        golang_go = SDKGolangGo()
-        golang_go.build(engine, options)
-        log("\n./make: building {}...".format(self._name))
+        self.build_child_targets(engine, options)
+        log("\n./make: building {}...".format(self.name()))
         engine.require("git", "bash")
         engine.run(
             [
@@ -533,42 +575,44 @@ class SDKOONIGo:
                 "--depth",
                 "8",
                 "https://github.com/ooni/go",
-                self._name,
+                self.name(),
             ]
         )
-        with Environ(engine, "GOROOT_BOOTSTRAP", golang_go.goroot()):
+        with Environ(engine, "GOROOT_BOOTSTRAP", self._gogo.goroot()):
             engine.run(
                 ["./make.bash"],
-                cwd=os.path.join(self._name, "src"),
+                cwd=os.path.join(self.name(), "src"),
             )
 
 
-class SDKAndroid:
+class SDKAndroid(BaseTarget):
     """SDKAndroid creates ${cachedir}/SDK/android."""
 
-    _name = os.path.join(cachedir(), "SDK", "android")
-
-    def name(self) -> str:
-        return self._name
+    def __init__(self) -> None:
+        name = os.path.join(cachedir(), "SDK", "android")
+        super().__init__(name, [])
 
     def home(self) -> str:
-        return self._name
+        """home returns the ANDROID_HOME"""
+        return self.name()
 
     def ndk_home(self) -> str:
+        """ndk_home returns the ANDROID_NDK_HOME"""
         return os.path.join(self.home(), "ndk", android_ndk_version())
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isdir(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        """build implements Target.build"""
+        if os.path.isdir(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
-        log("\n./make: building {}...".format(self._name))
+        log("\n./make: building {}...".format(self.name()))
         engine.require("mkdir", "curl", "echo", "shasum", "rm", "unzip", "mv", "java")
         filename = "commandlinetools-{}-{}_latest.zip".format(
             android_cmdlinetools_os(), android_cmdlinetools_version()
         )
         url = "https://dl.google.com/android/repository/{}".format(filename)
-        engine.run(["mkdir", "-p", self._name])
-        filepath = os.path.join(self._name, filename)
+        engine.run(["mkdir", "-p", self.name()])
+        filepath = os.path.join(self.name(), filename)
         engine.run(["curl", "-fsSLo", filepath, url])
         sha256file = os.path.join(cachedir(), "SDK", "SHA256")
         engine.echo_to_file(
@@ -576,21 +620,21 @@ class SDKAndroid:
         )
         engine.run(["shasum", "--check", sha256file])
         engine.run(["rm", sha256file])
-        engine.run(["unzip", filename], cwd=self._name)
+        engine.run(["unzip", filename], cwd=self.name())
         engine.run(["rm", filepath])
         # See https://stackoverflow.com/a/61176718 to understand why
         # we need to reorganize the directories like this:
         engine.run(
-            ["mv", "cmdline-tools", android_cmdlinetools_version()], cwd=self._name
+            ["mv", "cmdline-tools", android_cmdlinetools_version()], cwd=self.name()
         )
-        engine.run(["mkdir", "cmdline-tools"], cwd=self._name)
+        engine.run(["mkdir", "cmdline-tools"], cwd=self.name())
         engine.run(
-            ["mv", android_cmdlinetools_version(), "cmdline-tools"], cwd=self._name
+            ["mv", android_cmdlinetools_version(), "cmdline-tools"], cwd=self.name()
         )
         engine.run(
             sdkmanager_install_cmd(
                 os.path.join(
-                    self._name,
+                    self.name(),
                     "cmdline-tools",
                     android_cmdlinetools_version(),
                     "bin",
@@ -600,16 +644,15 @@ class SDKAndroid:
         )
 
 
-class OONIProbePrivate:
+class OONIProbePrivate(BaseTarget):
     """OONIProbePrivate creates ${cachedir}/github.com/ooni/probe-private."""
 
     # We use this private repository to copy the psiphon configuration
     # file to embed into the ooniprobe binaries
 
-    _name = os.path.join(cachedir(), "github.com", "ooni", "probe-private")
-
-    def name(self) -> str:
-        return self._name
+    def __init__(self) -> None:
+        name = os.path.join(cachedir(), "github.com", "ooni", "probe-private")
+        super().__init__(name, [])
 
     def copyfiles(self, engine: Engine, options: Options) -> None:
         """copyfiles copies psiphon config to the repository."""
@@ -619,67 +662,66 @@ class OONIProbePrivate:
         engine.run(
             [
                 "cp",
-                os.path.join(self._name, "psiphon-config.json.age"),
+                os.path.join(self.name(), "psiphon-config.json.age"),
                 os.path.join("internal", "engine"),
             ]
         )
         engine.run(
             [
                 "cp",
-                os.path.join(self._name, "psiphon-config.key"),
+                os.path.join(self.name(), "psiphon-config.key"),
                 os.path.join("internal", "engine"),
             ]
         )
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isdir(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        if os.path.isdir(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
         if options.disable_embedding_psiphon_config():
-            log("\n./make: {}: disabled by command line flags".format(self._name))
+            log("\n./make: {}: disabled by command line flags".format(self.name()))
             return
-        log("\n./make: building {}...".format(self._name))
+        log("\n./make: building {}...".format(self.name()))
         engine.require("git", "cp")
         engine.run(
             [
                 "git",
                 "clone",
                 "git@github.com:ooni/probe-private",
-                self._name,
+                self.name(),
             ]
         )
 
 
-class OONIMKAllAAR:
+class OONIMKAllAAR(BaseTarget):
     """OONIMKAllAAR creates ./MOBILE/android/oonimkall.aar."""
 
-    _name = os.path.join(".", "MOBILE", "android", "oonimkall.aar")
-
-    def name(self) -> str:
-        return self._name
+    def __init__(self) -> None:
+        name = os.path.join(".", "MOBILE", "android", "oonimkall.aar")
+        self._ooprivate = OONIProbePrivate()
+        self._oonigo = SDKOONIGo()
+        self._android = SDKAndroid()
+        super().__init__(name, [self._ooprivate, self._oonigo, self._android])
 
     def aarfile(self) -> str:
-        return self._name
+        """aarfile returns the aar file path"""
+        return self.name()
 
     def srcfile(self) -> str:
+        """srcfile returns the path to the jar file containing sources."""
         return os.path.join(".", "MOBILE", "android", "oonimkall-sources.jar")
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        if os.path.isfile(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
-        ooprivate = OONIProbePrivate()
-        ooprivate.build(engine, options)
-        oonigo = SDKOONIGo()
-        oonigo.build(engine, options)
-        android = SDKAndroid()
-        android.build(engine, options)
-        log("\n./make: building {}...".format(self._name))
-        ooprivate.copyfiles(engine, options)
+        self.build_child_targets(engine, options)
+        log("\n./make: building {}...".format(self.name()))
+        self._ooprivate.copyfiles(engine, options)
         engine.require("sh", "javac")
-        self._go_get_gomobile(engine, options, oonigo)
-        self._gomobile_init(engine, oonigo, android)
-        self._gomobile_bind(engine, options, oonigo, android)
+        self._go_get_gomobile(engine, options, self._oonigo)
+        self._gomobile_init(engine, self._oonigo, self._android)
+        self._gomobile_bind(engine, options, self._oonigo, self._android)
 
     # Implementation note: we use proxy scripts for go and gomobile
     # that explicitly print what they resolve go and gomobile to using
@@ -738,7 +780,7 @@ class OONIMKAllAAR:
         cmdline.append("-target")
         cmdline.append("android")
         cmdline.append("-o")
-        cmdline.append(self._name)
+        cmdline.append(self.name())
         if not options.disable_embedding_psiphon_config():
             cmdline.append("-tags")
             cmdline.append("ooni_psiphon_config")
@@ -762,37 +804,37 @@ def sign(engine: Engine, filepath: str) -> str:
     return filepath + ".asc"
 
 
-class BundleJAR:
+class BundleJAR(BaseTarget):
     """BundleJAR creates ./MOBILE/android/bundle.jar."""
 
     # We upload the bundle.jar file to maven central to bless
     # a new release of the OONI libraries for Android.
 
-    _name = os.path.join(".", "MOBILE", "android", "bundle.jar")
-
-    def name(self) -> str:
-        return self._name
+    def __init__(self) -> None:
+        name = os.path.join(".", "MOBILE", "android", "bundle.jar")
+        self._oonimkall = OONIMKAllAAR()
+        super().__init__(name, [self._oonimkall])
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        """build implements Target.build"""
+        if os.path.isfile(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
-        oonimkall = OONIMKAllAAR()
-        oonimkall.build(engine, options)
-        log("\n./make: building {}...".format(self._name))
+        self.build_child_targets(engine, options)
+        log("\n./make: building {}...".format(self.name()))
         engine.require("cp", "gpg", "jar")
         version = datetime.datetime.now().strftime("%Y.%m.%d-%H%M%S")
         engine.run(
             [
                 "cp",
-                oonimkall.aarfile(),
+                self._oonimkall.aarfile(),
                 os.path.join("MOBILE", "android", "oonimkall-{}.aar".format(version)),
             ]
         )
         engine.run(
             [
                 "cp",
-                oonimkall.srcfile(),
+                self._oonimkall.srcfile(),
                 os.path.join(
                     "MOBILE", "android", "oonimkall-{}-sources.jar".format(version)
                 ),
@@ -825,46 +867,41 @@ class BundleJAR:
         )
 
 
-class Phony:
+class Phony(BaseTarget):
     """Phony is a phony target that executes one or more other targets."""
 
     def __init__(self, name: str, depends: List[Target]):
-        self._name = name
-        self._depends = depends
-
-    def name(self) -> str:
-        return self._name
+        super().__init__(name, depends)
 
     def build(self, engine: Engine, options: Options) -> None:
-        for dep in self._depends:
-            dep.build(engine, options)
+        """build implements Target.build"""
+        self.build_child_targets(engine, options)
 
 
 # Android is the top-level "android" target
 ANDROID = Phony("android", [BundleJAR()])
 
 
-class OONIMKAllFramework:
+class OONIMKAllFramework(BaseTarget):
     """OONIMKAllFramework creates ./MOBILE/ios/oonimkall.framework."""
 
-    _name = os.path.join(".", "MOBILE", "ios", "oonimkall.framework")
-
-    def name(self) -> str:
-        return self._name
+    def __init__(self) -> None:
+        name = os.path.join(".", "MOBILE", "ios", "oonimkall.framework")
+        self._ooprivate = OONIProbePrivate()
+        self._gogo = SDKGolangGo()
+        super().__init__(name, [self._ooprivate, self._gogo])
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        """build implements Target.build."""
+        if os.path.isfile(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
-        ooprivate = OONIProbePrivate()
-        ooprivate.build(engine, options)
-        gogo = SDKGolangGo()
-        gogo.build(engine, options)
-        log("\n./make: building {}...".format(self._name))
-        ooprivate.copyfiles(engine, options)
-        self._go_get_gomobile(engine, options, gogo)
-        self._gomobile_init(engine, gogo)
-        self._gomobile_bind(engine, options, gogo)
+        self.build_child_targets(engine, options)
+        log("\n./make: building {}...".format(self.name()))
+        self._ooprivate.copyfiles(engine, options)
+        self._go_get_gomobile(engine, options, self._gogo)
+        self._gomobile_init(engine, self._gogo)
+        self._gomobile_bind(engine, options, self._gogo)
 
     def _go_get_gomobile(
         self,
@@ -917,7 +954,7 @@ class OONIMKAllFramework:
         cmdline.append("-target")
         cmdline.append("ios")
         cmdline.append("-o")
-        cmdline.append(self._name)
+        cmdline.append(self.name())
         if not options.disable_embedding_psiphon_config():
             cmdline.append("-tags")
             cmdline.append("ooni_psiphon_config")
@@ -930,22 +967,22 @@ class OONIMKAllFramework:
                 engine.run(cmdline)
 
 
-class OONIMKAllFrameworkZip:
+class OONIMKAllFrameworkZip(BaseTarget):
     """OONIMKAllFrameworkZip creates ./MOBILE/ios/oonimkall.framework.zip."""
 
-    _name = os.path.join(".", "MOBILE", "ios", "oonimkall.framework.zip")
-
-    def name(self) -> str:
-        return self._name
+    def __init__(self) -> None:
+        name = os.path.join(".", "MOBILE", "ios", "oonimkall.framework.zip")
+        ooframework = OONIMKAllFramework()
+        super().__init__(name, [ooframework])
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        """build implements Target.build"""
+        if os.path.isfile(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
         engine.require("zip", "rm")
-        ooframework = OONIMKAllFramework()
-        ooframework.build(engine, options)
-        log("\n./make: building {}...".format(self._name))
+        self.build_child_targets(engine, options)
+        log("\n./make: building {}...".format(self.name()))
         engine.run(
             [
                 "rm",
@@ -965,17 +1002,17 @@ class OONIMKAllFrameworkZip:
         )
 
 
-class OONIMKAllPodspec:
+class OONIMKAllPodspec(BaseTarget):
     """OONIMKAllPodspec creates ./MOBILE/ios/oonimkall.podspec."""
 
-    _name = os.path.join(".", "MOBILE", "ios", "oonimkall.podspec")
-
-    def name(self) -> str:
-        return self._name
+    def __init__(self) -> None:
+        name = os.path.join(".", "MOBILE", "ios", "oonimkall.podspec")
+        super().__init__(name, [])
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self._name) and not options.dry_run():
-            log("./make: {}: already built".format(self._name))
+        """build implements Target.build"""
+        if os.path.isfile(self.name()) and not options.dry_run():
+            log("./make: {}: already built".format(self.name()))
             return
         engine.require("cat", "sed")
         release = engine.backticks(["git", "describe", "--tags"])
@@ -983,7 +1020,7 @@ class OONIMKAllPodspec:
         engine.cat_sed_redirect(
             [("@VERSION@", version), ("@RELEASE@", release)],
             os.path.join(".", "MOBILE", "template.podspec"),
-            self._name,
+            self.name(),
         )
 
 
@@ -991,31 +1028,29 @@ class OONIMKAllPodspec:
 IOS = Phony("ios", [OONIMKAllFrameworkZip(), OONIMKAllPodspec()])
 
 
-class MiniOONIDarwinOrWindows:
+class MiniOONIDarwinOrWindows(BaseTarget):
     def __init__(self, goos: str, goarch: str):
         self._ext = ".exe" if goos == "windows" else ""
-        self._name = os.path.join(".", "CLI", goos, goarch, "miniooni" + self._ext)
         self._os = goos
         self._arch = goarch
-
-    def name(self) -> str:
-        return self._name
+        name = os.path.join(".", "CLI", goos, goarch, "miniooni" + self._ext)
+        self._ooprivate = OONIProbePrivate()
+        self._gogo = SDKGolangGo()
+        super().__init__(name, [self._ooprivate, self._gogo])
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        """build implements Target.build"""
+        if os.path.isfile(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
-        ooprivate = OONIProbePrivate()
-        ooprivate.build(engine, options)
-        gogo = SDKGolangGo()
-        gogo.build(engine, options)
-        log("\n./make: building {}...".format(self._name))
-        ooprivate.copyfiles(engine, options)
+        self.build_child_targets(engine, options)
+        log("\n./make: building {}...".format(self.name()))
+        self._ooprivate.copyfiles(engine, options)
         cmdline = [
             "go",
             "build",
             "-o",
-            self._name,
+            self.name(),
             "-ldflags=-s -w",
         ]
         if options.debugging():
@@ -1028,34 +1063,32 @@ class MiniOONIDarwinOrWindows:
         with Environ(engine, "GOOS", self._os):
             with Environ(engine, "GOARCH", self._arch):
                 with Environ(engine, "CGO_ENABLED", "0"):
-                    with AugmentedPath(engine, gogo.binpath()):
+                    with AugmentedPath(engine, self._gogo.binpath()):
                         engine.require("go")
                         engine.run(cmdline)
 
 
-class MiniOONILinux:
+class MiniOONILinux(BaseTarget):
     def __init__(self, goarch: str):
-        self._name = os.path.join(".", "CLI", "linux", goarch, "miniooni")
         self._arch = goarch
-
-    def name(self) -> str:
-        return self._name
+        name = os.path.join(".", "CLI", "linux", goarch, "miniooni")
+        self._ooprivate = OONIProbePrivate()
+        self._gogo = SDKGolangGo()
+        super().__init__(name, [self._ooprivate, self._gogo])
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        """build implements Target.build"""
+        if os.path.isfile(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
-        ooprivate = OONIProbePrivate()
-        ooprivate.build(engine, options)
-        gogo = SDKGolangGo()
-        gogo.build(engine, options)
-        log("\n./make: building {}...".format(self._name))
-        ooprivate.copyfiles(engine, options)
+        self.build_child_targets(engine, options)
+        log("\n./make: building {}...".format(self.name()))
+        self._ooprivate.copyfiles(engine, options)
         if self._arch == "arm":
             with Environ(engine, "GOARM", "7"):
-                self._build(engine, options, gogo)
+                self._build(engine, options, self._gogo)
         else:
-            self._build(engine, options, gogo)
+            self._build(engine, options, self._gogo)
 
     def _build(self, engine: Engine, options: Options, gogo: SDKGolangGo) -> None:
         cmdline = [
@@ -1082,23 +1115,23 @@ class MiniOONILinux:
                         engine.run(cmdline)
 
 
-# MINIOONI_TARGETS contains all miniooni targets
-MINIOONI_TARGETS: List[Target] = [
-    MiniOONIDarwinOrWindows("darwin", "amd64"),
-    MiniOONIDarwinOrWindows("darwin", "arm64"),
-    MiniOONILinux("386"),
-    MiniOONILinux("amd64"),
-    MiniOONILinux("arm"),
-    MiniOONILinux("arm64"),
-    MiniOONIDarwinOrWindows("windows", "386"),
-    MiniOONIDarwinOrWindows("windows", "amd64"),
-]
-
 # MINIOONI is the top-level "miniooni" target.
-MINIOONI = Phony("miniooni", MINIOONI_TARGETS)
+MINIOONI = Phony(
+    "miniooni",
+    [
+        MiniOONIDarwinOrWindows("darwin", "amd64"),
+        MiniOONIDarwinOrWindows("darwin", "arm64"),
+        MiniOONILinux("386"),
+        MiniOONILinux("amd64"),
+        MiniOONILinux("arm"),
+        MiniOONILinux("arm64"),
+        MiniOONIDarwinOrWindows("windows", "386"),
+        MiniOONIDarwinOrWindows("windows", "amd64"),
+    ],
+)
 
 
-class OONIProbeLinux:
+class OONIProbeLinux(BaseTarget):
     """OONIProbeLinux builds ooniprobe for Linux."""
 
     # TODO(bassosimone): this works out of the box on macOS and
@@ -1106,20 +1139,19 @@ class OONIProbeLinux:
     # is the right (set of) command(s) I should be checking for.
 
     def __init__(self, goarch: str):
-        self._name = os.path.join(".", "CLI", "linux", goarch, "ooniprobe")
         self._arch = goarch
-
-    def name(self) -> str:
-        return self._name
+        name = os.path.join(".", "CLI", "linux", goarch, "ooniprobe")
+        self._ooprivate = OONIProbePrivate()
+        super().__init__(name, [self._ooprivate])
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        """build implements Target.build."""
+        if os.path.isfile(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
-        ooprivate = OONIProbePrivate()
-        ooprivate.build(engine, options)
-        log("\n./make: building {}...".format(self._name))
-        ooprivate.copyfiles(engine, options)
+        self.build_child_targets(engine, options)
+        log("\n./make: building {}...".format(self.name()))
+        self._ooprivate.copyfiles(engine, options)
         engine.require("docker")
         # make sure we have the latest version of the container image
         engine.run(
@@ -1157,15 +1189,15 @@ class OONIProbeLinux:
         engine.run(cmdline)
 
 
-class OONIProbeWindows:
+class OONIProbeWindows(BaseTarget):
     """OONIProbeWindows builds ooniprobe for Windows."""
 
     def __init__(self, goarch: str):
-        self._name = os.path.join(".", "CLI", "windows", goarch, "ooniprobe.exe")
         self._arch = goarch
-
-    def name(self) -> str:
-        return self._name
+        name = os.path.join(".", "CLI", "windows", goarch, "ooniprobe.exe")
+        self._ooprivate = OONIProbePrivate()
+        self._gogo = SDKGolangGo()
+        super().__init__(name, [self._ooprivate, self._gogo])
 
     def _gcc(self) -> str:
         if self._arch == "amd64":
@@ -1175,20 +1207,18 @@ class OONIProbeWindows:
         raise NotImplementedError
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        """build implements Target.build"""
+        if os.path.isfile(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
-        ooprivate = OONIProbePrivate()
-        ooprivate.build(engine, options)
-        gogo = SDKGolangGo()
-        gogo.build(engine, options)
-        log("\n./make: building {}...".format(self._name))
-        ooprivate.copyfiles(engine, options)
+        self.build_child_targets(engine, options)
+        log("\n./make: building {}...".format(self.name()))
+        self._ooprivate.copyfiles(engine, options)
         cmdline = [
             "go",
             "build",
             "-o",
-            self._name,
+            self.name(),
             "-ldflags=-s -w",
         ]
         if options.debugging():
@@ -1202,36 +1232,34 @@ class OONIProbeWindows:
             with Environ(engine, "GOARCH", self._arch):
                 with Environ(engine, "CGO_ENABLED", "1"):
                     with Environ(engine, "CC", self._gcc()):
-                        with AugmentedPath(engine, gogo.binpath()):
+                        with AugmentedPath(engine, self._gogo.binpath()):
                             engine.require(self._gcc(), "go")
                             engine.run(cmdline)
 
 
-class OONIProbeDarwin:
+class OONIProbeDarwin(BaseTarget):
     """OONIProbeDarwin builds ooniprobe for macOS."""
 
     def __init__(self, goarch: str):
-        self._name = os.path.join(".", "CLI", "darwin", goarch, "ooniprobe")
         self._arch = goarch
-
-    def name(self) -> str:
-        return self._name
+        name = os.path.join(".", "CLI", "darwin", goarch, "ooniprobe")
+        self._ooprivate = OONIProbePrivate()
+        self._gogo = SDKGolangGo()
+        super().__init__(name, [self._ooprivate, self._gogo])
 
     def build(self, engine: Engine, options: Options) -> None:
-        if os.path.isfile(self._name) and not options.dry_run():
-            log("\n./make: {}: already built".format(self._name))
+        """build implements Target.build"""
+        if os.path.isfile(self.name()) and not options.dry_run():
+            log("\n./make: {}: already built".format(self.name()))
             return
-        ooprivate = OONIProbePrivate()
-        ooprivate.build(engine, options)
-        gogo = SDKGolangGo()
-        gogo.build(engine, options)
-        log("\n./make: building {}...".format(self._name))
-        ooprivate.copyfiles(engine, options)
+        self.build_child_targets(engine, options)
+        log("\n./make: building {}...".format(self.name()))
+        self._ooprivate.copyfiles(engine, options)
         cmdline = [
             "go",
             "build",
             "-o",
-            self._name,
+            self.name(),
             "-ldflags=-s -w",
         ]
         if options.debugging():
@@ -1244,24 +1272,22 @@ class OONIProbeDarwin:
         with Environ(engine, "GOOS", "darwin"):
             with Environ(engine, "GOARCH", self._arch):
                 with Environ(engine, "CGO_ENABLED", "1"):
-                    with AugmentedPath(engine, gogo.binpath()):
+                    with AugmentedPath(engine, self._gogo.binpath()):
                         engine.require("gcc", "go")
                         engine.run(cmdline)
 
 
-class Debian:
-    """Debian makes a debian package of a target artifact. It
-    currently only works with ooniprobe targets."""
+class Debian(BaseTarget):
+    """Debian makes a debian package for a given architecture."""
 
-    def __init__(self, arch: str, target: Target):
+    def __init__(self, arch: str):
+        name = "debian_{}".format(arch)
+        self._target = OONIProbeLinux(arch)
         self._arch = arch
-        self._target = target
-
-    def name(self) -> str:
-        return "debian_{}".format(self._arch)
+        super().__init__(name, [self._target])
 
     def build(self, engine: Engine, options: Options) -> None:
-        self._target.build(engine, options)
+        self.build_child_targets(engine, options)
         log("\n./make: building {}...".format(self.name()))
         engine.require("docker")
         # make sure we have the latest version of the container image
@@ -1301,36 +1327,22 @@ class Debian:
         engine.run(cmdline)
 
 
-class Sign:
+class Sign(BaseTarget):
     """Sign signs a specific target artefact."""
 
     def __init__(self, target: Target):
         self._target = target
-
-    def name(self) -> str:
-        return self._target.name() + ".asc"
+        name = self._target.name() + ".asc"
+        super().__init__(name, [self._target])
 
     def build(self, engine: Engine, options: Options) -> None:
         if os.path.isfile(self.name()) and not options.dry_run():
             log("\n./make: {}: already built".format(self.name()))
             return
-        self._target.build(engine, options)
+        self.build_child_targets(engine, options)
         log("\n./make: building {}...".format(self.name()))
         sign(engine, self._target.name())
 
-
-# OONIPROBE_TARGETS contains all the ooniprobe targets
-OONIPROBE_TARGETS: List[Target] = [
-    OONIProbeDarwin("amd64"),
-    OONIProbeDarwin("arm64"),
-    OONIProbeLinux("amd64"),
-    OONIProbeLinux("arm64"),
-    OONIProbeWindows("amd64"),
-    OONIProbeWindows("386"),
-]
-
-# OONIPROBE_SIGNED_TARGETS contains all the signed ooniprobe targets
-OONIPROBE_SIGNED_TARGETS: List[Target] = [Sign(x) for x in OONIPROBE_TARGETS]
 
 # OONIPROBE_RELEASE_DARWIN contains the release darwin targets
 OONIPROBE_RELEASE_DARWIN = Phony(
@@ -1359,50 +1371,44 @@ OONIPROBE_RELEASE_WINDOWS = Phony(
     ],
 )
 
-# MOBILE_TARGETS contains the top-level mobile targets.
-MOBILE_TARGETS: List[Target] = [
+# DEBIAN is the top-level "debian" target.
+DEBIAN = Phony(
+    "debian",
+    [
+        Debian("arm64"),
+        Debian("amd64"),
+    ],
+)
+
+# TOP_TARGETS contains the top-level targets
+TOP_TARGETS: List[Target] = [
     ANDROID,
     IOS,
-]
-
-# EXTRA_TARGETS contains extra top-level targets.
-EXTRA_TARGETS: List[Target] = [
     MINIOONI,
-    OONIMKAllAAR(),
-    OONIMKAllFrameworkZip(),
+    OONIPROBE_RELEASE_DARWIN,
+    OONIPROBE_RELEASE_LINUX,
+    OONIPROBE_RELEASE_WINDOWS,
+    DEBIAN,
 ]
 
-# DEBIAN_TARGETS contains individual debian targets.
-DEBIAN_TARGETS: List[Target] = [
-    Debian("arm64", OONIProbeLinux("arm64")),
-    Debian("amd64", OONIProbeLinux("amd64")),
-]
 
-# DEBIAN is the top-level "debian" target.
-DEBIAN = Phony("debian", DEBIAN_TARGETS)
-
-# VISIBLE_TARGETS contains all the visible-from-CLI targets
-VISIBLE_TARGETS: List[Target] = (
-    OONIPROBE_TARGETS
-    + OONIPROBE_SIGNED_TARGETS
-    + MOBILE_TARGETS
-    + EXTRA_TARGETS
-    + MINIOONI_TARGETS
-    + [OONIPROBE_RELEASE_DARWIN]
-    + [OONIPROBE_RELEASE_LINUX]
-    + [OONIPROBE_RELEASE_WINDOWS]
-    + DEBIAN_TARGETS
-    + [DEBIAN]
-)
+def expand_targets(targets: List[Target]) -> Dict[str, Target]:
+    """expand_targets creates a dictionary mapping every existing
+    target name to its implementation."""
+    out: Dict[str, Target] = {}
+    for tgt in targets:
+        out.update(expand_targets(tgt.deps()))
+        out[tgt.name()] = tgt
+    return out
 
 
 def main() -> None:
     """main function"""
-    toptargets: Dict[str, Target] = dict((t.name(), t) for t in VISIBLE_TARGETS)
-    options = ConfigFromCLI.parse(list(toptargets.keys()))
+    alltargets = expand_targets(TOP_TARGETS)
+    options = ConfigFromCLI.parse(list(alltargets.keys()), TOP_TARGETS)
     engine = new_engine(options)
     # note that we check whether the target is known in parse()
-    selected = toptargets[options.target()]
+    selected = alltargets[options.target()]
     selected.build(engine, options)
 
 
