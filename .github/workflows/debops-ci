@@ -304,8 +304,10 @@ def check_duplicate_package(pkgblock, packages_text):
     pname = li[0].split(" ", 1)[1]
     assert li[1].startswith("Version: "), li
     pver = li[1].split(" ", 1)[1]
+    assert li[2].startswith("Architecture: "), li
+    parch = li[2].split(" ", 1)[1]
 
-    m = f"Package: {pname}\nVersion: {pver}"
+    m = f"Package: {pname}\nVersion: {pver}\nArchitecture: {parch}"
     if m in packages_text:
         raise DuplicatePkgError()
 
