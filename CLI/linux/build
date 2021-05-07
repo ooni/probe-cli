@@ -8,6 +8,10 @@ if [ "$GOARCH" = "" ]; then
     exit 1
 fi
 set -x
+if [ "$GOARCH" = "armv7" ]; then
+    export GOARCH="arm"
+    export GOARM="7"
+fi
 apk update
 apk upgrade
 apk add --no-progress gcc git linux-headers musl-dev

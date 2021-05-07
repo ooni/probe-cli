@@ -1158,9 +1158,9 @@ class OONIProbeLinux(BaseTarget):
     # requires qemu-user-static on Fedora/Debian. I'm not sure what
     # is the right (set of) command(s) I should be checking for.
 
-    def __init__(self, goarch: str):
-        self._arch = goarch
-        name = os.path.join(".", "CLI", "linux", goarch, "ooniprobe")
+    def __init__(self, arch: str):
+        self._arch = arch
+        name = os.path.join(".", "CLI", "linux", arch, "ooniprobe")
         self._ooprivate = OONIProbePrivate()
         super().__init__(name, [self._ooprivate])
 
@@ -1174,12 +1174,13 @@ class OONIProbeLinux(BaseTarget):
         self._ooprivate.copyfiles(engine, options)
         engine.require("docker")
         # make sure we have the latest version of the container image
+        docker_arch = "arm/v7" if self._arch == "armv7" else self._arch
         engine.run(
             [
                 "docker",
                 "pull",
                 "--platform",
-                "linux/{}".format(self._arch),
+                "linux/{}".format(docker_arch),
                 "golang:{}-alpine".format(goversion()),
             ]
         )
@@ -1188,9 +1189,9 @@ class OONIProbeLinux(BaseTarget):
             "docker",
             "run",
             "--platform",
-            "linux/{}".format(self._arch),
+            "linux/{}".format(docker_arch),
             "-e",
-            "GOARCH={}".format(self._arch),
+            "GOARCH={}".format(self._arch),  # ./CLI/linux/build knows how to convert
             "-v",
             "{}:/ooni".format(os.getcwd()),
             "-w",
@@ -1379,6 +1380,7 @@ OONIPROBE_RELEASE_LINUX = Phony(
     [
         Sign(OONIProbeLinux("amd64")),
         Sign(OONIProbeLinux("arm64")),
+        Sign(OONIProbeLinux("armv7")),
     ],
 )
 
