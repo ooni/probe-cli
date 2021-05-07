@@ -1087,9 +1087,9 @@ class MiniOONIDarwinOrWindows(BaseTarget):
 
 
 class MiniOONILinux(BaseTarget):
-    def __init__(self, goarch: str):
-        self._arch = goarch
-        name = os.path.join(".", "CLI", "linux", goarch, "miniooni")
+    def __init__(self, arch: str):
+        self._arch = arch
+        name = os.path.join(".", "CLI", "linux", arch, "miniooni")
         self._ooprivate = OONIProbePrivate()
         self._gogo = SDKGolangGo()
         super().__init__(name, [self._ooprivate, self._gogo])
@@ -1102,7 +1102,7 @@ class MiniOONILinux(BaseTarget):
         self.build_child_targets(engine, options)
         log("\n./make: building {}...".format(self.name()))
         self._ooprivate.copyfiles(engine, options)
-        if self._arch == "arm":
+        if self._arch == "armv7":
             with Environ(engine, "GOARM", "7"):
                 self._build(engine, options, self._gogo)
         else:
@@ -1126,7 +1126,9 @@ class MiniOONILinux(BaseTarget):
         cmdline.append(tags)
         cmdline.append("./internal/cmd/miniooni")
         with Environ(engine, "GOOS", "linux"):
-            with Environ(engine, "GOARCH", self._arch):
+            with Environ(
+                engine, "GOARCH", "arm" if self._arch == "armv7" else self._arch
+            ):
                 with Environ(engine, "CGO_ENABLED", "0"):
                     with AugmentedPath(engine, gogo.binpath()):
                         engine.require("go")
@@ -1141,7 +1143,7 @@ MINIOONI = Phony(
         MiniOONIDarwinOrWindows("darwin", "arm64"),
         MiniOONILinux("386"),
         MiniOONILinux("amd64"),
-        MiniOONILinux("arm"),
+        MiniOONILinux("armv7"),
         MiniOONILinux("arm64"),
         MiniOONIDarwinOrWindows("windows", "386"),
         MiniOONIDarwinOrWindows("windows", "amd64"),
