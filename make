@@ -256,7 +256,7 @@ The third form of the command prints this help screen.
 
     def _print_target(self, target: Target, indent: int) -> None:
         sys.stdout.write(
-            '{}{}{}\n'.format(
+            "{}{}{}\n".format(
                 "  " * indent, target.name(), ":" if target.deps() else ""
             )
         )
@@ -466,6 +466,23 @@ class AugmentedPath(Environ):
     def __init__(self, engine: Engine, directory: str):
         value = os.pathsep.join([directory, os.environ["PATH"]])
         super().__init__(engine, "PATH", value)
+
+
+class WorkingDir:
+    """WorkingDir is a context manager that enters into a given working
+    directory and returns to the previous directory when done."""
+
+    def __init__(self, dirpath: str) -> None:
+        self._dirpath = dirpath
+        self._prev: str = ""
+
+    def __enter__(self) -> None:
+        self._prev = os.getcwd()
+        os.chdir(self._dirpath)
+
+    def __exit__(self, type: Any, value: Any, traceback: Any) -> bool:
+        os.chdir(self._prev)
+        return False  # propagate exc
 
 
 class Target(Protocol):
@@ -853,9 +870,10 @@ class BundleJAR(BaseTarget):
             "oonimkall-{}.pom".format(version),
         )
         allnames: List[str] = []
-        for name in names:
-            allnames.append(name)
-            allnames.append(sign(engine, name))
+        with WorkingDir(os.path.join(".", "MOBILE", "android")):
+            for name in names:
+                allnames.append(name)
+                allnames.append(sign(engine, name))
         engine.run(
             [
                 "jar",
