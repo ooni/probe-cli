@@ -15,6 +15,7 @@ import subprocess
 import sys
 
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import NoReturn
@@ -1392,10 +1393,31 @@ def expand_targets(targets: List[Target]) -> Dict[str, Target]:
     return out
 
 
+def cleanup_cachedir_sdk_golang() -> None:
+    """cleanup_cachedir_sdk_golang deletes a previous download of
+    the golang sdk that occurred in the cachedir. Since 2021-05-09,
+    we download the official golang sdk at $HOME/sdk like VSCode
+    does, to avoid duplicating the download and to simplify the
+    code that manages downloading the Go SDK."""
+    prevdir = os.path.join(cachedir(), "SDK", "golang")
+    if os.path.isdir(prevdir):
+        log("./make: # cleaning up legacy directory {}...".format(prevdir))
+        log("./make: rm -rf '{}'".format(prevdir))
+        shutil.rmtree(prevdir)
+
+
+# CLEANUPS contains all the cleanups
+CLEANUPS: List[Callable[[], None]] = [
+    cleanup_cachedir_sdk_golang,
+]
+
+
 def main() -> None:
     """main function"""
     alltargets = expand_targets(TOP_TARGETS)
     options = ConfigFromCLI.parse(list(alltargets.keys()), TOP_TARGETS)
+    for cleanup in CLEANUPS:
+        cleanup()
     engine = new_engine(options)
     # note that we check whether the target is known in parse()
     selected = alltargets[options.target()]
