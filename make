@@ -56,50 +56,12 @@ def cachedir() -> str:
 
 def goversion() -> str:
     """goversion is the Go version we use."""
-    return "1.16.3"
+    return "1.16.4"
 
 
 def gopath() -> str:
     """gopath is the GOPATH we use."""
     return os.path.expandvars("${HOME}/go")
-
-
-def gosha256sum() -> str:
-    """gosha256sum returns the SHA256 sum of the Go tarball."""
-    return {
-        "linux": {
-            "amd64": "951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2",
-            "arm64": "566b1d6f17d2bc4ad5f81486f0df44f3088c3ed47a3bec4099d8ed9939e90d5d",
-        },
-        "darwin": {
-            "amd64": "6bb1cf421f8abc2a9a4e39140b7397cdae6aca3e8d36dcff39a1a77f4f1170ac",
-            "arm64": "f4e96bbcd5d2d1942f5b55d9e4ab19564da4fad192012f6d7b0b9b055ba4208f",
-        },
-    }[goos()][goarch()]
-
-
-def goos() -> str:
-    """goos returns the GOOS value for the current system."""
-    system = platform.system()
-    if system == "Linux":
-        return "linux"
-    if system == "Darwin":
-        return "darwin"
-    raise RuntimeError(system)
-
-
-def goarch() -> str:
-    """goarch returns the GOARCH value for the current system."""
-    machine = platform.machine()
-    if machine in ("arm64", "arm", "386", "amd64"):
-        return machine
-    if machine in ("x86", "i386"):
-        return "386"
-    if machine == "x86_64":
-        return "amd64"
-    if machine == "aarch64":
-        return "arm64"
-    raise RuntimeError(machine)
 
 
 def android_ndk_version() -> str:
@@ -525,14 +487,19 @@ class SDKGolangGo(BaseTarget):
 
     # We download a golang SDK from upstream to make sure we
     # are always using a specific version of golang/go.
+    #
+    # TODO(bassosimone): find a way to avoid polluting the
+    # go.mod and go.sum when running this command.
 
     def __init__(self) -> None:
-        name = os.path.join(cachedir(), "SDK", "golang")
+        name = os.path.join(
+            os.path.expandvars("$HOME"), "sdk", "go{}".format(goversion())
+        )
         super().__init__(name, [])
 
     def binpath(self) -> str:
         """binpath returns the path where the go binary is installed."""
-        return os.path.join(self.name(), "go", "bin")
+        return os.path.join(self.name(), "bin")
 
     def build(self, engine: Engine, options: Options) -> None:
         """build implements Target.build"""
@@ -541,18 +508,23 @@ class SDKGolangGo(BaseTarget):
             return
         self.build_child_targets(engine, options)
         log("\n./make: building {}...".format(self.name()))
-        engine.require("mkdir", "curl", "shasum", "rm", "tar", "echo")
-        filename = "go{}.{}-{}.tar.gz".format(goversion(), goos(), goarch())
-        url = "https://golang.org/dl/{}".format(filename)
-        engine.run(["mkdir", "-p", self.name()])
-        filepath = os.path.join(self.name(), filename)
-        engine.run(["curl", "-fsSLo", filepath, url])
-        sha256file = os.path.join(cachedir(), "SDK", "SHA256")
-        engine.echo_to_file("{}  {}".format(gosha256sum(), filepath), sha256file)
-        engine.run(["shasum", "--check", sha256file])
-        engine.run(["rm", sha256file])
-        engine.run(["tar", "-xf", filename], cwd=self.name())
-        engine.run(["rm", filepath])
+        engine.require("go")
+        cmdline: List[str] = []
+        cmdline.append("go")
+        cmdline.append("get")
+        if options.debugging():
+            cmdline.append("-x")
+        if options.verbose():
+            cmdline.append("-v")
+        cmdline.append("golang.org/dl/go{}".format(goversion()))
+        engine.run(cmdline)
+        with AugmentedPath(engine, os.path.join(gopath(), "bin")):
+            engine.run(["go{}".format(goversion()), "download"])
+        gobin = os.path.join(self.binpath(), "go")
+        if not os.path.isfile(gobin):
+            sys.exit("fatal: cannot find {} file".format(gobin))
+        if not os.access(gobin, os.X_OK):
+            sys.exit("fatal: {} file is not executable".format(gobin))
 
     def goroot(self):
         """goroot returns the goroot."""
