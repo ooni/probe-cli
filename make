@@ -529,7 +529,7 @@ class SDKGolangGo(BaseTarget):
 
     def goroot(self):
         """goroot returns the goroot."""
-        return os.path.join(self.name(), "go")
+        return os.path.join(self.name())
 
 
 class SDKOONIGo(BaseTarget):
@@ -549,25 +549,29 @@ class SDKOONIGo(BaseTarget):
 
     def build(self, engine: Engine, options: Options) -> None:
         """build implements Target.build"""
-        if os.path.isdir(self.name()) and not options.dry_run():
-            log("\n./make: {}: already built".format(self.name()))
-            return
         self.build_child_targets(engine, options)
-        log("\n./make: building {}...".format(self.name()))
         engine.require("git", "bash")
-        engine.run(
-            [
-                "git",
-                "clone",
-                "-b",
-                "ooni",
-                "--single-branch",
-                "--depth",
-                "8",
-                "https://github.com/ooni/go",
-                self.name(),
-            ]
-        )
+        if not os.path.isdir(self.name()):
+            log("\n./make: building {}...".format(self.name()))
+            engine.run(
+                [
+                    "git",
+                    "clone",
+                    "-b",
+                    "ooni",
+                    "--single-branch",
+                    "--depth",
+                    "8",
+                    "https://github.com/ooni/go",
+                    self.name(),
+                ]
+            )
+        else:
+            log("\n./make: rebuilding {}...".format(self.name()))
+            engine.run(
+                ["git", "pull"],
+                cwd=self.name(),
+            )
         with Environ(engine, "GOROOT_BOOTSTRAP", self._gogo.goroot()):
             engine.run(
                 ["./make.bash"],
