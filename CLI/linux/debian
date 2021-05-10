@@ -1,5 +1,5 @@
 #!/bin/sh
-# This script creates a Debian package. When run by `./make`, it
+# This script creates a Debian package. When run by `./mk`, it
 # is run inside a debian:stable container. It's fine to also
 # run this script from any debian-like system, as long as the
 # following ASSUMPTIONS are met:
@@ -42,7 +42,7 @@ esac
 set -ex
 
 # figure out the version number from the binary itself (which rests
-# on the assumption that `uname -m` can run such a binary)
+# on the assumption that we can run such a binary)
 version=`./debian/bin/ooniprobe version`
 if [ ! -z $run_number ]; then
     version="${version}~${run_number}"

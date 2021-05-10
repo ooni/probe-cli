@@ -1,5 +1,5 @@
 #!/bin/sh
-# This script is executed by `./make` when building inside
+# This script is executed by `./mk` when building inside
 # an Alpine Linux docker container. Using Alpine Linux, which
 # uses musl libc, allows us to emit static binaries.
 set -e

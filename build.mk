@@ -5,7 +5,9 @@
 # ANDROID_CLITOOLS_VERSION is the version of the Android CLI tools version.
 ANDROID_CLITOOLS_VERSION = 7302050
 
-# ANDROID_CLITOOLS_SHA256 is the SHA256 of the CLI tools file.
+# ANDROID_CLITOOLS_SHA256 is the SHA256 of the CLI tools file. We always
+# download the Linux version, which seems to work also on macOS (thank you
+# for this portability Java! :pray:).
 ANDROID_CLITOOLS_SHA256 = 7a00faadc0864f78edd8f4908a629a46d622375cbe2e5814e82934aebecdb622
 
 # ANDROID_NDK_VERSION is the Android NDK version.
@@ -14,15 +16,15 @@ ANDROID_NDK_VERSION = 22.1.7171670
 # ANDROID_INSTALL_EXTRA is the extra stuff we need to install.
 ANDROID_INSTALL_EXTRA = 'build-tools;29.0.3' 'platforms;android-30'
 
-# __GOVERSION, GOVERSION, and GODOCKER identify the Go version we expect.
+# __GOVERSION, GOVERSION, and GODOCKER identify the Go version we wanna use.
 __GOVERSION = 1.16.4
 GOVERSION = go$(__GOVERSION)
 GODOCKER = golang:$(__GOVERSION)-alpine
 
-# MINGW64_VERSION contains the mingw-w64 version
+# MINGW64_VERSION contains the expected mingw-w64 version.
 MINGW64_VERSION = 10.3.1
 
-# XCODEVERSION is the version of Xcode we expect
+# XCODEVERSION is the version of Xcode we expect.
 XCODEVERSION = 12.5
 
 # The rest of this makefile defines the available targets. Most of
@@ -34,6 +36,8 @@ XCODEVERSION = 12.5
 quickhelp:
 	@cat build.mk | grep '^#quickhelp:' | sed -e 's/^#quickhelp://' -e 's/^\ *//'
 
+# Most targets are .PHONY because whether to rebuild is controlled
+# by golang. We expose to the user all the .PHONY targets.
 #quickhelp:
 #quickhelp: The `./mk printtargets` command prints all available targets.
 .PHONY: printtargets
@@ -42,14 +46,14 @@ printtargets:
 
 #quickhelp:
 #quickhelp: The `./mk help` command provides detailed usage instructions. We
-#quickhelp: recommend running `./mk help|less` to page the output.
+#quickhelp: recommend running `./mk help|less` to page its output.
 .PHONY: help
 help:
 	@cat build.mk | grep -E '^#(quick)?help:' | sed -E -e 's/^#(quick)?help://' -e s'/^\ //'
 
 #help:
 #help: The following variables control the build. You can specify them
-#help: before the targets as indicated above in the usage line.
+#help: on the command line as a key-value pairs (see usage above).
 
 #help:
 #help: * GIT_CLONE_DIR       : directory where to clone repositories, by default
@@ -79,7 +83,7 @@ GPG_USER = simone@openobservatory.org
 #help:                         into the generated binaries. This build tag
 #help:                         implies cloning the git@github.com:ooni/probe-private
 #help:                         repository. If you do not have the permission to
-#help:                         clone ooni-private just clear this variable, e.g.:
+#help:                         clone it, just clear this variable, e.g.:
 #help:
 #help:                             ./mk OONI_PSIPHON_TAGS="" miniooni
 OONI_PSIPHON_TAGS = ooni_psiphon_config
@@ -99,13 +103,15 @@ OONI_ANDROID_HOME = $(HOME)/.ooniprobe-build/sdk/android
 printvars:
 	@echo "GIT_CLONE_DIR=$(GIT_CLONE_DIR)"
 	@echo "GO_EXTRA_FLAGS=$(GO_EXTRA_FLAGS)"
+	@echo "GPG_USER=$(GPG_USER)"
 	@echo "OONI_PSIPHON_TAGS=$(OONI_PSIPHON_TAGS)"
+	@echo "OONI_ANDROID_HOME=$(OONI_ANDROID_HOME)"
 
 #help:
 #help: The `./mk miniooni` command builds the miniooni experimental
 #help: command line client for all the supported GOOS/GOARCH.
 #help:
-#help: We also support the following commands:
+#help: You can also build the following subtargets:
 .PHONY: miniooni
 miniooni:                             \
 	./CLI/darwin/amd64/miniooni       \
@@ -117,6 +123,10 @@ miniooni:                             \
 	./CLI/windows/386/miniooni.exe    \
 	./CLI/windows/amd64/miniooni.exe
 
+# All the miniooni targets build with CGO_ENABLED=0 such that the build
+# succeeds when the GOOS/GOARCH is such that we aren't crosscompiling
+# (e.g., targeting darwin/amd64 on darwin/amd64) _and_ there's no C compiler
+# installed on the system. We can afford that since miniooni is pure Go.
 #help:
 #help: * `./mk ./CLI/darwin/amd64/miniooni`: darwin/amd64
 .PHONY: ./CLI/darwin/amd64/miniooni
@@ -129,6 +139,8 @@ miniooni:                             \
 ./CLI/darwin/arm64/miniooni: command/go maybe/copypsiphon
 	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GO_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
+# When building for Linux we use `-tags netgo` and `-extldflags -static` to produce
+# a statically linked binary that completely bypasses libc.
 #help:
 #help: * `./mk ./CLI/linux/386/miniooni`: linux/386
 .PHONY: ./CLI/linux/386/miniooni
@@ -141,6 +153,7 @@ miniooni:                             \
 ./CLI/linux/amd64/miniooni: command/go maybe/copypsiphon
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GO_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
+# When building for GOARCH=arm, we always force GOARM=7 (i.e., armhf/armv7).
 #help:
 #help: * `./mk ./CLI/linux/arm/miniooni`: linux/arm
 .PHONY: ./CLI/linux/arm/miniooni
@@ -167,9 +180,10 @@ miniooni:                             \
 
 #help:
 #help: The `./mk ooniprobe/darwin` command builds the ooniprobe official
-#help: command line client for darwin/amd64 and darwin/arm64.
+#help: command line client for darwin/amd64 and darwin/arm64. This process
+#help: entails building ooniprobe and then GPG-signing the binaries.
 #help:
-#help: We also support the following commands:
+#help: You can also build the following subtargets:
 .PHONY: ooniprobe/darwin
 ooniprobe/darwin:                    \
 	./CLI/darwin/amd64/ooniprobe.asc \
@@ -179,6 +193,8 @@ ooniprobe/darwin:                    \
 ./CLI/darwin/amd64/ooniprobe.asc: ./CLI/darwin/amd64/ooniprobe
 	rm -f $@ && gpg -abu $(GPG_USER) $<
 
+# We force CGO_ENABLED=1 because in principle we may be cross compiling. In
+# reality it's hard to see a macOS/darwin build not made on macOS.
 #help:
 #help: * `./mk ./CLI/darwin/amd64/ooniprobe`: darwin/amd64
 .PHONY: ./CLI/darwin/amd64/ooniprobe
@@ -223,7 +239,7 @@ ooniprobe/debian/arm64: command/docker ./CLI/linux/arm64/ooniprobe
 #help: The `./mk ooniprobe/linux` command builds the ooniprobe official command
 #help: line client for amd64 and arm64.
 #help:
-#help: We also support the following commands:
+#help: You can also build the following subtargets:
 .PHONY: ooniprobe/linux
 ooniprobe/linux:                     \
 	./CLI/linux/amd64/ooniprobe.asc  \
@@ -233,6 +249,8 @@ ooniprobe/linux:                     \
 ./CLI/linux/amd64/ooniprobe.asc: ./CLI/linux/amd64/ooniprobe
 	rm -f $@ && gpg -abu $(GPG_USER) $<
 
+# Linux builds use Alpine and Docker so we are sure that we are statically
+# linking to musl libc, thus making our binaries extremely portable.
 #help:
 #help: * `./mk ./CLI/linux/amd64/ooniprobe`: linux/amd64
 .PHONY: ./CLI/linux/amd64/ooniprobe
@@ -255,7 +273,7 @@ ooniprobe/linux:                     \
 #help: The `./mk ooniprobe/windows` command builds the ooniprobe official
 #help: command line client for windows/386 and windows/amd64.
 #help:
-#help: We also support the following commands:
+#help: You can also build the following subtargets:
 .PHONY: ooniprobe/windows
 ooniprobe/windows:                         \
 	./CLI/windows/386/ooniprobe.exe.asc    \
@@ -284,12 +302,14 @@ ooniprobe/windows:                         \
 #help:
 #help: The `./mk android` command builds the oonimkall library for Android.
 #help:
-#help: We also support the following commands:
+#help: You can also build the following subtargets:
 .PHONY: android
 android: command/gpg command/jar ./MOBILE/android/oonimkall.aar
+	echo "TODO(bassosimone): not yet implemented"
 
+# Here we use ooni/go to work around https://github.com/ooni/probe/issues/1444
 #help:
-#help: * `./mk ./MOBILE/android/oonimkall.aar`: just the AAR
+#help: * `./mk ./MOBILE/android/oonimkall.aar`: the AAR
 .PHONY: ./MOBILE/android/oonimkall.aar
 ./MOBILE/android/oonimkall.aar: android/sdk ooni/go
 	PATH=$(OONIGODIR)/bin:$$PATH $(MAKE) -f build.mk __android_build_with_ooni_go
@@ -297,12 +317,12 @@ android: command/gpg command/jar ./MOBILE/android/oonimkall.aar
 __android_build_with_ooni_go: command/go
 	go get -u golang.org/x/mobile/cmd/gomobile@latest
 	$(GOMOBILE) init
-	ANDROID_HOME=$(OONI_ANDROID_HOME) ANDROID_NDK_HOME=$(OONI_ANDROID_HOME)/ndk/$(ANDROID_NDK_VERSION) $(GOMOBILE) bind -target android -o ./MOBILE/android/oonimkall.aar -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' ./pkg/oonimkall
+	ANDROID_HOME=$(OONI_ANDROID_HOME) ANDROID_NDK_HOME=$(OONI_ANDROID_HOME)/ndk/$(ANDROID_NDK_VERSION) $(GOMOBILE) bind -target android -o ./MOBILE/android/oonimkall.aar -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GO_EXTRA_FLAGS) ./pkg/oonimkall
 
 #help:
 #help: The `./mk ios` command builds the oonimkall library for iOS.
 #help:
-#help: We also support the following commands:
+#help: You can also build the following subtargets:
 .PHONY: ios
 ios:                                      \
 	./MOBILE/ios/oonimkall.framework.zip  \
@@ -321,7 +341,7 @@ ios:                                      \
 ./MOBILE/ios/oonimkall.framework: command/go command/xcode
 	go get -u golang.org/x/mobile/cmd/gomobile@latest
 	$(GOMOBILE) init
-	$(GOMOBILE) bind -target ios -o $@ -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' ./pkg/oonimkall
+	$(GOMOBILE) bind -target ios -o $@ -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GO_EXTRA_FLAGS) ./pkg/oonimkall
 
 GOMOBILE = `go env GOPATH`/bin/gomobile
 
@@ -335,6 +355,7 @@ OONIMKALL_R = `git describe --tags`
 
 #help:
 #help: The following commands check for the availability of dependencies:
+# TODO(bassosimone): make checks more robust
 
 #help:
 #help: * `./mk command/bash`: checks for bash
@@ -355,7 +376,7 @@ command/curl:
 .PHONY: command/docker
 command/docker:
 	@printf "checking for docker... "
-	@command -v git || { echo "not found"; exit 1; }
+	@command -v docker || { echo "not found"; exit 1; }
 
 #help:
 #help: * `./mk command/git`: checks for git
@@ -388,7 +409,6 @@ command/go:
 	@echo $(__GOVERSION_REAL)
 	@[ "$(GOVERSION)" = "$(__GOVERSION_REAL)" ] || { echo "fatal: go version must be $(GOVERSION) instead of $(__GOVERSION_REAL)"; exit 1; }
 
-# $(__GOVERSION_REAL) is the Go version according to the `go` executable.
 __GOVERSION_REAL=$$(go version | awk '{print $$3}')
 
 #help:
@@ -459,6 +479,9 @@ OONIPRIVATE_REPO = git@github.com:ooni/probe-private
 
 # $(OONIPRIVATE) clones the private repository in $(GIT_CLONE_DIR)
 $(OONIPRIVATE): command/git $(GIT_CLONE_DIR)
+	test -d $(OONIPRIVATE) || $(MAKE) -f build.mk __really_clone_private_repo
+
+__really_clone_private_repo:
 	git clone $(OONIPRIVATE_REPO) $(OONIPRIVATE)
 
 #help:
@@ -466,7 +489,7 @@ $(OONIPRIVATE): command/git $(GIT_CLONE_DIR)
 .PHONY: ooni/go
 ooni/go: command/bash command/git command/go $(OONIGODIR)
 	test -d $(OONIGODIR) || git clone -b ooni --single-branch --depth 8 $(OONIGO_REPO) $(OONIGODIR)
-	cd $(OONIGODIR) && git pull
+	cd $(OONIGODIR) && git pull --ff-only
 	cd $(OONIGODIR)/src && ./make.bash
 
 # OONIGODIR is the directory in which we clone ooni/go
