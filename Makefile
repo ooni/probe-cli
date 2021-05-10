@@ -1,117 +1,348 @@
-#help:
-#help: # OONI Probe CLI Makefile
-#help:
-#help: ```
-#help: Usage: make [VARIABLE=VALUE ...] <target> ...
-#help: ```
-#help:
-#help: This Makefile helps you to build the following pieces of software:
-#help:
-#help: * ooniprobe           : the official CLI client
-#help: * oonimkall           : the mobile library
-#help: * miniooni            : the research CLI client
-#help:
-#help: In the following, we describe all the top-level targets.
-#help:
+__GOVERSION = 1.16.3
+XCODEVERSION = 12.5
 
-#help: # Quick help (target: `quickhelp`)
-#help:
-#help: By running `make` or `make quickhelp` you get a list of all
-#help: the toplevel target supported by this Makefile.
-#help:
+GOVERSION = go$(__GOVERSION)
+GODOCKER = golang:$(__GOVERSION)-alpine
+
+#quickhelp: Usage: make [VARIABLE=VALUE ...] TARGET ...
 .PHONY: quickhelp
 quickhelp:
-	@echo "Usage: make [VARIABLE=VALUE ...] target ..."
-	@echo ""
-	@echo "Available targets:"
-	@echo ""
-	@cat Makefile|grep '^\.PHONY'|sed -e 's/^\.PHONY:/*/g'
-	@echo ""
-	@echo "Try 'make help' for more help."
+	@cat Makefile | grep '^#quickhelp:' | sed -e 's/^#quickhelp://' -e 's/^\ *//'
 
+#quickhelp:
+#quickhelp: The `make printtargets` command prints all available targets.
+.PHONY: printtargets
+printtargets:
+	@cat Makefile | grep '^\.PHONY:' | sed -e 's/^\.PHONY://' -e 's/^/*/'
+
+#quickhelp:
+#quickhelp: The `make help' command provides detailed usage instructions. We
+#quickhelp: recommend running `make help|less' to page the output.
 .PHONY: help
 help:
-	@cat Makefile|grep '^#help:'|sed -e 's/^#help://g' -e 's/^ //g'
+	@cat Makefile | grep -E '^#(quick)?help:' | sed -E -e 's/^#(quick)?help://' -e s'/^\ //'
 
-#help: ## User-overridable variables (target: `printenv`)
 #help:
-#help: * GITCLONEDIR         : directory where we clone private repositories.
+#help: The following variables control the build. You can specify them
+#help: before the targets as indicated above in the usage line.
 #help:
+#help: * GITCLONEDIR         : directory where to clone repositories, by default
+#help:                         set to `$HOME/.ooniprobe-build/src'.
 GITCLONEDIR = $(HOME)/.ooniprobe-build/src
 
-# $(GITCLONEDIR) creates the directory
 $(GITCLONEDIR):
 	mkdir -p $(GITCLONEDIR)
 
-#help: * GOEXTRAFLAGS        : extra flags passed to `go build ...`, empty by
-#help:                         default. Use to pass `-v` or `-x` to `go`.
 #help:
+#help: * GOEXTRAFLAGS        : extra flags passed to `go build ...`, empty by
+#help:                         default. Useful to pass flags to `go`, e.g.:
+#help:
+#help:                             make GOEXTRAFLAGS="-x -v" miniooni
 GOEXTRAFLAGS =
 
-#help: * GOSDKHOME           : directory where to install the Go SDK. We download
-#help:                         the Go SDK from golang.org/dl using `get get` to make
-#help:                         sure we always use the SDK version we want.
 #help:
-GOSDKHOME = $(HOME)/sdk
+#help: * GPGUSER             : allows overriding the default GPG user used
+#help:                         to sign binary releases, e.g.:
+#help:
+#help:                             make GPGPUSER=john@doe.com ooniprobe/windows
+GPGUSER = simone@openobservatory.org
 
-# $(GOSDKHOME) creates the SDK directory
-$(GOSDKHOME):
-	mkdir -p $(GOSDKHOME)
-
+#help:
 #help: * OONIPSIPHONTAGS     : build tags for `go build -tags ...` that cause
 #help:                         the build to embed a psiphon configuration file
 #help:                         into the generated binaries. This build tag
 #help:                         implies cloning the git@github.com:ooni/probe-private
 #help:                         repository. If you do not have the permission to
-#help:                         clone this repository, just clear this variable, e.g.:
+#help:                         clone ooni-private just clear this variable, e.g.:
 #help:
 #help:                             make OONIPSIPHONTAGS="" miniooni
-#help:
-OONIPSIPHONTAGS = ooni_psiphon_config,
+OONIPSIPHONTAGS = ooni_psiphon_config
 
-#help: Use `make printenv` to print user-overridable variables.
 #help:
-.PHONY: printenv
-printenv:
+#help: The `make printvars` command prints the current value of the above
+#help: listed build-controlling variables.
+.PHONY: printvars
+printvars:
 	@echo "GITCLONEDIR=$(GITCLONEDIR)"
 	@echo "GOEXTRAFLAGS=$(GOEXTRAFLAGS)"
-	@echo "GOSDKHOME=$(GOSDKHOME)"
 	@echo "OONIPSIPHONTAGS=$(OONIPSIPHONTAGS)"
 
-#help: ## Go SDK (target: `gosdk`)
 #help:
-#help: We download a specific version of the Go SDK. The `make gosdk`
-#help: command ensures we download the SDK and prints information about
-#help: what SDK we downloaded and where it is installed.
+#help: The `make miniooni' command builds the miniooni experimental
+#help: command line client for all the supported GOOS/GOARCH.
 #help:
-.PHONY: gosdk
-gosdk: $(GOSDK)
-	@echo "GOPATH=$(GOPATH)"
-	@echo "GOSDK=$(GOSDK)"
+#help: We also support the following commands:
+.PHONY: miniooni
+miniooni:                             \
+	./CLI/darwin/amd64/miniooni       \
+	./CLI/darwin/arm64/miniooni       \
+	./CLI/linux/386/miniooni          \
+	./CLI/linux/amd64/miniooni        \
+	./CLI/linux/arm/miniooni          \
+	./CLI/linux/arm64/miniooni        \
+	./CLI/windows/386/miniooni.exe    \
+	./CLI/windows/amd64/miniooni.exe
 
-# GOVERSION is the version of Go we use.
-GOVERSION = 1.16.4
-
-# GOPATH is the path where Go installs binaries.
-GOPATH = $(HOME)/go
-
-# GOSDK is the Go SDK we use.
-GOSDK = $(GOSDKHOME)/go$(GOVERSION)
-
-# $(GOSDK) ensures we have a Go SDK.
-$(GOSDK): $(GOSDKHOME)
-	go get $(GOEXTRAFLAGS) golang.org/dl/go$(GOVERSION)
-	$(GOPATH)/bin/go$(GOVERSION) download
-
-#help: ## Embedded psiphon config (taget: `maybe/copypsiphon`)
 #help:
-#help: When $(OONIPSIPHONTAGS) is not empty, we clone git@github.com:ooni/probe-private
-#help: in $(GITCLONEDIR) and we copy private psiphon configuration into the current
-#help: tree. In turn, we pass $(OONIPSIPHONTAGS) to `go build...` so that these config
-#help: files are embedded directly into the builds.
+#help: * `make ./CLI/darwin/amd64/miniooni': darwin/amd64
+.PHONY: ./CLI/darwin/amd64/miniooni
+./CLI/darwin/amd64/miniooni: configure/go maybe/copypsiphon
+	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -tags="$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
+
 #help:
+#help: * `make ./CLI/darwin/arm64/miniooni': darwin/arm64
+.PHONY: ./CLI/darwin/arm64/miniooni
+./CLI/darwin/arm64/miniooni: configure/go maybe/copypsiphon
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -tags="$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
+
+#help:
+#help: * `make ./CLI/linux/386/miniooni': linux/386
+.PHONY: ./CLI/linux/386/miniooni
+./CLI/linux/386/miniooni: configure/go maybe/copypsiphon
+	GOOS=linux GOARCH=386 CGO_ENABLED=0 go build -tags="netgo,$(OONIPSIPHONTAGS)" -ldflags="-s -w -extldflags -static" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
+
+#help:
+#help: * `make ./CLI/linux/amd64/miniooni': linux/amd64
+.PHONY: ./CLI/linux/amd64/miniooni
+./CLI/linux/amd64/miniooni: configure/go maybe/copypsiphon
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags="netgo,$(OONIPSIPHONTAGS)" -ldflags="-s -w -extldflags -static" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
+
+#help:
+#help: * `make ./CLI/linux/arm/miniooni': linux/arm
+.PHONY: ./CLI/linux/arm/miniooni
+./CLI/linux/arm/miniooni: configure/go maybe/copypsiphon
+	GOOS=linux GOARCH=arm CGO_ENABLED=0 GOARM=7 go build -tags="netgo,$(OONIPSIPHONTAGS)" -ldflags="-s -w -extldflags -static" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
+
+#help:
+#help: * make `./CLI/linux/arm64/miniooni': linux/arm64
+.PHONY: ./CLI/linux/arm64/miniooni
+./CLI/linux/arm64/miniooni: configure/go maybe/copypsiphon
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -tags="netgo,$(OONIPSIPHONTAGS)" -ldflags="-s -w -extldflags -static" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
+
+#help:
+#help: * make `./CLI/windows/386/miniooni.exe': windows/386
+.PHONY: ./CLI/windows/386/miniooni.exe
+./CLI/windows/386/miniooni.exe: configure/go maybe/copypsiphon
+	GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -tags="$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
+
+#help:
+#help: * make `./CLI/windows/amd64/miniooni.exe': windows/amd64
+.PHONY: ./CLI/windows/amd64/miniooni.exe
+./CLI/windows/amd64/miniooni.exe: configure/go maybe/copypsiphon
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags="$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
+
+#help:
+#help: The `make ooniprobe/darwin' command builds the ooniprobe official
+#help: command line client for darwin/amd64 and darwin/arm64.
+#help:
+#help: We also support the following commands:
+.PHONY: ooniprobe/darwin
+ooniprobe/darwin:                    \
+	./CLI/darwin/amd64/ooniprobe.asc \
+	./CLI/darwin/arm64/ooniprobe.asc
+
+.PHONY: ./CLI/darwin/amd64/ooniprobe.asc
+./CLI/darwin/amd64/ooniprobe.asc: ./CLI/darwin/amd64/ooniprobe
+	rm -f $@ && gpg -abu $(GPGUSER) $<
+
+#help:
+#help: * `make ./CLI/darwin/amd64/ooniprobe': darwin/amd64
+.PHONY: ./CLI/darwin/amd64/ooniprobe
+./CLI/darwin/amd64/ooniprobe: configure/go maybe/copypsiphon
+	GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -tags="$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./cmd/ooniprobe
+
+.PHONY: ./CLI/darwin/arm64/ooniprobe.asc
+./CLI/darwin/arm64/ooniprobe.asc: ./CLI/darwin/arm64/ooniprobe
+	rm -f $@ && gpg -abu $(GPGUSER) $<
+
+#help:
+#help: * `make ./CLI/darwin/arm64/ooniprobe': darwin/arm64
+.PHONY: ./CLI/darwin/arm64/ooniprobe
+./CLI/darwin/arm64/ooniprobe: configure/go maybe/copypsiphon
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -tags="$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./cmd/ooniprobe
+
+#help:
+#help: The `make ooniprobe/debian' command builds the ooniprobe CLI
+#help: debian package for amd64 and arm64.
+#help:
+#help: We also support the following commands:
+.PHONY: ooniprobe/debian
+ooniprobe/debian:           \
+	ooniprobe/debian/amd64  \
+	ooniprobe/debian/arm64
+
+#help:
+#help: * `make ooniprobe/debian/amd64': debian/amd64
+.PHONY: ooniprobe/debian/amd64
+ooniprobe/debian/amd64: configure/docker ./CLI/linux/amd64/ooniprobe
+	docker pull --platform linux/amd64 debian:stable
+	docker run --platform linux/amd64 -v `pwd`:/ooni -w /ooni debian:stable ./CLI/linux/debian
+
+#help:
+#help: * `make ooniprobe/debian/arm64': debian/arm64
+.PHONY: ooniprobe/debian/arm64
+ooniprobe/debian/arm64: configure/docker ./CLI/linux/arm64/ooniprobe
+	docker pull --platform linux/arm64 debian:stable
+	docker run --platform linux/arm64 -v `pwd`:/ooni -w /ooni debian:stable ./CLI/linux/debian
+
+#help:
+#help: The `make ooniprobe/linux' command builds the ooniprobe official command
+#help: line client for amd64 and arm64.
+#help:
+#help: We also support the following commands:
+.PHONY: ooniprobe/linux
+ooniprobe/linux:                     \
+	./CLI/linux/amd64/ooniprobe.asc  \
+	./CLI/linux/arm64/ooniprobe.asc
+
+.PHONY: ./CLI/linux/amd64/ooniprobe.asc
+./CLI/linux/amd64/ooniprobe.asc: ./CLI/linux/amd64/ooniprobe
+	rm -f $@ && gpg -abu $(GPGUSER) $<
+
+#help:
+#help: * `make ./CLI/linux/amd64/ooniprobe': linux/amd64
+.PHONY: ./CLI/linux/amd64/ooniprobe
+./CLI/linux/amd64/ooniprobe: configure/docker maybe/copypsiphon
+	docker pull --platform linux/amd64 $(GODOCKER)
+	docker run --platform linux/amd64 -e GOARCH=amd64 -v `pwd`:/ooni -w /ooni $(GODOCKER) ./CLI/linux/build -tags=netgo,$(OONIPSIPHONTAGS)
+
+.PHONY: ./CLI/linux/arm64/ooniprobe.asc
+./CLI/linux/arm64/ooniprobe.asc: ./CLI/linux/arm64/ooniprobe
+	rm -f $@ && gpg -abu $(GPGUSER) $<
+
+#help:
+#help: * `make ./CLI/linux/arm64/ooniprobe': linux/arm64
+.PHONY: ./CLI/linux/arm64/ooniprobe
+./CLI/linux/arm64/ooniprobe: configure/docker maybe/copypsiphon
+	docker pull --platform linux/arm64 $(GODOCKER)
+	docker run --platform linux/arm64 -e GOARCH=arm64 -v `pwd`:/ooni -w /ooni $(GODOCKER) ./CLI/linux/build -tags=netgo,$(OONIPSIPHONTAGS)
+
+#help:
+#help: The `make ooniprobe/windows' command builds the ooniprobe official
+#help: command line client for windows/386 and windows/amd64.
+#help:
+#help: We also support the following commands:
+.PHONY: ooniprobe/windows
+ooniprobe/windows:                         \
+	./CLI/windows/386/ooniprobe.exe.asc    \
+	./CLI/windows/amd64/ooniprobe.exe.asc
+
+.PHONY: ./CLI/windows/386/ooniprobe.exe.asc
+./CLI/windows/386/ooniprobe.exe.asc: ./CLI/windows/386/ooniprobe.exe
+	rm -f $@ && gpg -abu $(GPGUSER) $<
+
+#help:
+#help: * `make ./CLI/windows/386/ooniprobe.exe': windows/386
+.PHONY: ./CLI/windows/386/ooniprobe.exe
+./CLI/windows/386/ooniprobe.exe: configure/go configure/mingw-w64 maybe/copypsiphon
+	GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc go build -tags="$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./cmd/ooniprobe
+
+.PHONY: ./CLI/windows/amd64/ooniprobe.exe.asc
+./CLI/windows/amd64/ooniprobe.exe.asc: ./CLI/windows/amd64/ooniprobe.exe
+	rm -f $@ && gpg -abu $(GPGUSER) $<
+
+#help:
+#help: * `make ./CLI/windows/amd64/ooniprobe.exe': windows/amd64
+.PHONY: ./CLI/windows/amd64/ooniprobe.exe
+./CLI/windows/amd64/ooniprobe.exe: configure/go configure/mingw-w64 maybe/copypsiphon
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc go build -tags="$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./cmd/ooniprobe
+
+#help:
+#help: The `make ios` command builds the oonimkall library for iOS.
+#help:
+#help: We also support the following commands:
+.PHONY: ios
+ios:                                      \
+	./MOBILE/ios/oonimkall.framework.zip  \
+	./MOBILE/ios/oonimkall.podspec
+
+#help:
+#help: * `make ./MOBILE/ios/oonimkall.framework.zip': zip the framework
+.PHONY: ./MOBILE/ios/oonimkall.framework.zip
+./MOBILE/ios/oonimkall.framework.zip: configure/zip ./MOBILE/ios/oonimkall.framework
+	cd ./MOBILE/ios && rm -rf oonimkall.framework.zip
+	cd ./MOBILE/ios && zip -yr oonimkall.framework.zip oonimkall.framework
+
+
+#help:
+#help: * `make ./MOBILE/ios/framework': the framework
+.PHONY: ./MOBILE/ios/oonimkall.framework
+./MOBILE/ios/oonimkall.framework: configure/go configure/xcode
+	go get -u golang.org/x/mobile/cmd/gomobile@latest
+	$(GOMOBILE) init
+	$(GOMOBILE) bind -target ios -o $@ -tags="$(OONIPSIPHONTAGS)" -ldflags '-s -w' ./pkg/oonimkall
+
+GOMOBILE = `go env GOPATH`/bin/gomobile
+
+#help:
+#help: * `make ./MOBILE/ios/oonimkall.podspec': the podspec
+./MOBILE/ios/oonimkall.podspec: ./MOBILE/template.podspec
+	cat $< | sed -e 's/@VERSION@/$(OONIMKALL_V)/g' -e 's/@RELEASE@/$(OONIMKALL_R)/g' > $@
+
+OONIMKALL_V = `date -u +%Y.%m.%d-%H%M%S`
+OONIMKALL_R = `git describe --tags`
+
+#help:
+#help: The `make configure/go` command ensures the `go` executable is
+#help: in your `PATH` and we are using the expected version.
+.PHONY: configure/go
+configure/go:
+	@printf "checking for go... "
+	@command -v go || { echo "not found"; exit 1; }
+	@printf "checking for go version... "
+	@echo $(__GOVERSION_REAL)
+	@[ "$(GOVERSION)" = "$(__GOVERSION_REAL)" ] || { echo "fatal: go version must be $(GOVERSION) instead of $(__GOVERSION_REAL)"; exit 1; }
+
+# $(__GOVERSION_REAL) is the Go version according to the `go` executable.
+__GOVERSION_REAL=$$(go version | awk '{print $$3}')
+
+#help:
+#help: The `make configure/docker` command ensures `docker` is available.
+.PHONY: configure/docker
+configure/docker:
+	@printf "checking for docker... "
+	@command -v git || { echo "not found"; exit 1; }
+
+#help:
+#help: The `make configure/git` command ensures `git` is available.
+.PHONY: configure/git
+configure/git:
+	@printf "checking for git... "
+	@command -v git || { echo "not found"; exit 1; }
+
+#help:
+#help: The `make configure/mingw-w64` command ensures `mingw-w64` is installed.
+.PHONY: configure/mingw-w64
+configure/mingw-w64:
+	@printf "checking for x86_64-w64-mingw32-gcc... "
+	@command -v x86_64-w64-mingw32-gcc || { echo "not found"; exit 1; }
+	@printf "checking for i686-w64-mingw32-gcc... "
+	@command -v i686-w64-mingw32-gcc || { echo "not found"; exit 1; }
+
+#help:
+#help: The `make configure/xcode` command ensures `Xcode` is available.
+.PHONY: configure/xcode
+configure/xcode:
+	@printf "checking for xcodebuild... "
+	@command -v xcodebuild || { echo "not found"; exit 1; }
+	@printf "checking for Xcode version... "
+	@echo $(__XCODEVERSION_REAL)
+	@[ "$(XCODEVERSION)" = "$(__XCODEVERSION_REAL)" ] || { echo "fatal: Xcode version must be $(XCODEVERSION) instead of $(__XCODEVERSION_REAL)"; exit 1; }
+
+__XCODEVERSION_REAL = `xcodebuild -version | grep ^Xcode | awk '{print $$2}'`
+
+#help:
+#help: The `make configure/zip` command ensures `zip` is available.
+.PHONY: configure/zip
+configure/zip:
+	@printf "checking for zip... "
+	@command -v zip || { echo "not found"; exit 1; }
+
+#help:
+#help: The `make maybe/copypsiphon' command copies private psiphon configuration file
+#help: into the current tree unless `$(OONIPSIPHONTAGS)' is empty.
 .PHONY: maybe/copypsiphon
-maybe/copypsiphon:
+maybe/copypsiphon: configure/git
 	test -z "$(OONIPSIPHONTAGS)" || $(MAKE) -f Makefile $(OONIPRIVATE)
 	test -z "$(OONIPSIPHONTAGS)" || cp $(OONIPRIVATE)/psiphon-config.key ./internal/engine
 	test -z "$(OONIPSIPHONTAGS)" || cp $(OONIPRIVATE)/psiphon-config.json.age ./internal/engine
@@ -125,102 +356,3 @@ OONIPRIVATE_REPO = git@github.com:ooni/probe-private
 # $(OONIPRIVATE) clones the private repository in $(GITCLONEDIR)
 $(OONIPRIVATE): $(GITCLONEDIR)
 	git clone $(OONIPRIVATE_REPO) $(OONIPRIVATE)
-
-#help: ## Miniooni (target: `miniooni`)
-#help:
-#help: By running `make miniooni` you will build the miniooni research
-#help: client for all available platforms and operating systems.
-#help:
-#help: We also define an individual target for every available platform
-#help: and system (e.g., `make CLI/linux/amd64/miniooni`).
-#help:
-
-.PHONY: CLI/linux/amd64/miniooni
-CLI/linux/amd64/miniooni: $(GOSDK) maybe/copypsiphon
-	PATH=$(GOSDK)/bin:$(PATH) GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags "$(OONIPSIPHONTAGS)netgo" -ldflags="-s -w -extldflags -static" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
-
-.PHONY: CLI/linux/386/miniooni
-CLI/linux/386/miniooni: $(GOSDK) maybe/copypsiphon
-	PATH=$(GOSDK)/bin:$(PATH) GOOS=linux GOARCH=386 CGO_ENABLED=0 go build -tags "$(OONIPSIPHONTAGS)netgo" -ldflags="-s -w -extldflags -static" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
-
-.PHONY: CLI/linux/amd64/miniooni
-CLI/linux/arm64/miniooni: $(GOSDK) maybe/copypsiphon
-	PATH=$(GOSDK)/bin:$(PATH) GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -tags "$(OONIPSIPHONTAGS)netgo" -ldflags="-s -w -extldflags -static" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
-
-.PHONY: CLI/linux/arm/miniooni
-CLI/linux/arm/miniooni: $(GOSDK) maybe/copypsiphon
-	PATH=$(GOSDK)/bin:$(PATH) GOOS=linux GOARCH=arm CGO_ENABLED=0 GOARM=7 go build -tags "$(OONIPSIPHONTAGS)netgo" -ldflags="-s -w -extldflags -static" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
-
-.PHONY: CLI/darwin/amd64/miniooni
-CLI/darwin/amd64/miniooni: $(GOSDK) maybe/copypsiphon
-	PATH=$(GOSDK)/bin:$(PATH) GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -tags "$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
-
-.PHONY: CLI/darwin/arm64/miniooni
-CLI/darwin/arm64/miniooni: $(GOSDK) maybe/copypsiphon
-	PATH=$(GOSDK)/bin:$(PATH) GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -tags "$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
-
-.PHONY: CLI/windows/386/miniooni.exe
-CLI/windows/386/miniooni.exe: $(GOSDK) maybe/copypsiphon
-	PATH=$(GOSDK)/bin:$(PATH) GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -tags "$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
-
-.PHONY: CLI/windows/amd64/miniooni.exe
-CLI/windows/amd64/miniooni.exe: $(GOSDK) maybe/copypsiphon
-	PATH=$(GOSDK)/bin:$(PATH) GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags "$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./internal/cmd/miniooni
-
-MINIOONI_TARGETS =                     \
-		CLI/linux/amd64/miniooni       \
-		CLI/linux/386/miniooni         \
-		CLI/linux/arm64/miniooni       \
-		CLI/linux/arm/miniooni         \
-		CLI/darwin/amd64/miniooni      \
-		CLI/darwin/arm64/miniooni      \
-		CLI/windows/386/miniooni.exe   \
-		CLI/windows/amd64/miniooni.exe
-
-.PHONY: miniooni
-miniooni: $(MINIOONI_TARGETS)
-
-#help: ## ooniprobe (targets: `ooniprobe/windows`, `ooniprobe/linux`, `ooniprobe/darwin`)
-#help:
-#help: We define targets for building ooniprobe for windows, linux, and darwin (i.e.,
-#help: macOS). Building for linux requires docker. Building for windows requires a
-#help: working mingw-w64 installation. Building for macOS/darwin requires the Xcode
-#help: command line tools (i.e., you must be on macOS).
-#help:
-#help: We also define individual targets (e.g., `CLI/linux/arm64/ooniprobe`).
-#help:
-
-.PHONY: CLI/windows/amd64/ooniprobe.exe
-CLI/windows/amd64/ooniprobe.exe: $(GOSDK) maybe/copypsiphon
-	command -v x86_64-w64-mingw32-gcc
-	PATH=$(GOSDK)/bin:$(PATH) GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc go build -tags "$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./cmd/ooniprobe
-
-.PHONY: CLI/windows/386/ooniprobe.exe
-CLI/windows/386/ooniprobe.exe: $(GOSDK) maybe/copypsiphon
-	command -v i686-w64-mingw32-gcc
-	PATH=$(GOSDK)/bin:$(PATH) GOOS=windows GOARCH=386 CC=i686-w64-mingw32-gcc go build -tags "$(OONIPSIPHONTAGS)" -ldflags="-s -w" $(GOEXTRAFLAGS) -o $@ ./cmd/ooniprobe
-
-.PHONY: ooniprobe/windows
-ooniprobe/windows: CLI/windows/amd64/ooniprobe.exe CLI/windows/386/ooniprobe.exe
-
-.PHONY: ooniprobe/linux
-ooniprobe/linux:
-
-.PHONY: ooniprobe/darwin
-ooniprobe/darwin:
-
-#help: ## OONI Probe Android Library (target: `oonimkall/android`)
-#help:
-#help: This target builds oonimkall (i.e., OONI Probe's mobile library) for Android.
-#help:
-
-.PHONY: oonimkall/android
-oonimkall/android:
-
-#help: ## OONI Probe iOS Library (target: `oonimkall/ios`)
-#help:
-#help: This target builds oonimkall (i.e., OONI Probe's mobile library) for iOS.
-#help:
-
-.PHONY: oonimkall/ios
-oonimkall/ios:
