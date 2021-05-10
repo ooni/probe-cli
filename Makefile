@@ -1,13 +1,28 @@
-__GOVERSION = 1.16.3
-XCODEVERSION = 12.5
-
-GOVERSION = go$(__GOVERSION)
-GODOCKER = golang:$(__GOVERSION)-alpine
-
 #quickhelp: Usage: make [VARIABLE=VALUE ...] TARGET ...
 .PHONY: quickhelp
 quickhelp:
 	@cat Makefile | grep '^#quickhelp:' | sed -e 's/^#quickhelp://' -e 's/^\ *//'
+
+#quickhelp:
+#quickhelp: The `make printdeps` shows the required dependencies.
+.PHONY: printdeps
+printdeps:
+	@echo "Xcode==$(XCODEVERSION)         # for ios"
+	@echo "docker                         # for ooniprobe/linux"
+	@echo "go==$(__GOVERSION)             # for all targets"
+	@echo "git                            # for all targets"
+	@echo "mingw-w64==$(MINGW64_VERSION)  # for ooniprobe/windows"
+
+# XCODEVERSION is the version of Xcode we expect
+XCODEVERSION = 12.5
+
+# __GOVERSION, GOVERSION, and GODOCKER identify the Go version we expect.
+__GOVERSION = 1.16.4
+GOVERSION = go$(__GOVERSION)
+GODOCKER = golang:$(__GOVERSION)-alpine
+
+# MINGW64_VERSION contains the mingw-w64 version
+MINGW64_VERSION = 10.3.1
 
 #quickhelp:
 #quickhelp: The `make printtargets` command prints all available targets.
@@ -316,8 +331,17 @@ configure/git:
 configure/mingw-w64:
 	@printf "checking for x86_64-w64-mingw32-gcc... "
 	@command -v x86_64-w64-mingw32-gcc || { echo "not found"; exit 1; }
+	@printf "checking for x86_64-w64-mingw32-gcc version... "
+	@echo $(__MINGW32_AMD64_VERSION)
+	@[ "$(MINGW64_VERSION)" = "$(__MINGW32_AMD64_VERSION)" ] || { echo "fatal: x86_64-w64-mingw32-gcc version must be $(MINGW64_VERSION) instead of $(__MINGW32_AMD64_VERSION)"; exit 1; }
 	@printf "checking for i686-w64-mingw32-gcc... "
 	@command -v i686-w64-mingw32-gcc || { echo "not found"; exit 1; }
+	@printf "checking for i686-w64-mingw32-gcc version... "
+	@echo $(__MINGW32_386_VERSION)
+	@[ "$(MINGW64_VERSION)" = "$(__MINGW32_386_VERSION)" ] || { echo "fatal: i686-w64-mingw32-gcc version must be $(MINGW64_VERSION) instead of $(__MINGW32_386_VERSION)"; exit 1; }
+
+__MINGW32_AMD64_VERSION = `x86_64-w64-mingw32-gcc --version | sed -n 1p | awk '{print $$3}'`
+__MINGW32_386_VERSION = `i686-w64-mingw32-gcc --version | sed -n 1p | awk '{print $$3}'`
 
 #help:
 #help: The `make configure/xcode` command ensures `Xcode` is available.
