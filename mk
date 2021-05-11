@@ -1,5 +1,8 @@
 #!/usr/bin/make -f
 
+# Many rules in here break if run in parallel.
+.NOTPARALLEL:
+
 #quickhelp: Usage: ./mk [VARIABLE=VALUE ...] TARGET ...
 .PHONY: usage
 usage:
@@ -260,8 +263,19 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help: You can also build the following subtargets:
 .PHONY: ./debian
 ./debian:           \
+	./debian/386    \
 	./debian/amd64  \
+	./debian/arm    \
 	./debian/arm64
+
+#help:
+#help: * `./mk ./debian/386`: debian/386
+.PHONY:   ./debian/386
+# This extra .PHONY for linux/386 is to help printing targets 🤷.
+.PHONY:     ./CLI/linux/386/ooniprobe
+./debian/386: search/for/docker ./CLI/linux/386/ooniprobe
+	docker pull --platform linux/386 debian:stable
+	docker run --platform linux/386 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian 386 "$(DEBIAN_TILDE_VERSION)"
 
 #help:
 #help: * `./mk ./debian/amd64`: debian/amd64
@@ -270,7 +284,17 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 .PHONY:     ./CLI/linux/amd64/ooniprobe
 ./debian/amd64: search/for/docker ./CLI/linux/amd64/ooniprobe
 	docker pull --platform linux/amd64 debian:stable
-	docker run --platform linux/amd64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian "$(DEBIAN_TILDE_VERSION)"
+	docker run --platform linux/amd64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian amd64 "$(DEBIAN_TILDE_VERSION)"
+
+# Note that we're building for armv7 here
+#help:
+#help: * `./mk ./debian/arm`: debian/arm
+.PHONY:   ./debian/arm
+# This extra .PHONY for linux/arm is to help printing targets 🤷.
+.PHONY:     ./CLI/linux/arm/ooniprobe
+./debian/arm: search/for/docker ./CLI/linux/arm/ooniprobe
+	docker pull --platform linux/arm/v7 debian:stable
+	docker run --platform linux/arm/v7 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian arm "$(DEBIAN_TILDE_VERSION)"
 
 #help:
 #help: * `./mk ./debian/arm64`: debian/arm64
@@ -279,7 +303,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 .PHONY:     ./CLI/linux/arm64/ooniprobe
 ./debian/arm64: search/for/docker ./CLI/linux/arm64/ooniprobe
 	docker pull --platform linux/arm64 debian:stable
-	docker run --platform linux/arm64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian "$(DEBIAN_TILDE_VERSION)"
+	docker run --platform linux/arm64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian arm64 "$(DEBIAN_TILDE_VERSION)"
 
 #help:
 #help: The `./mk ./CLI/ooniprobe/linux` command builds the ooniprobe official command
@@ -288,22 +312,49 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help: You can also build the following subtargets:
 .PHONY: ./CLI/ooniprobe/linux
 ./CLI/ooniprobe/linux:               \
+	./CLI/linux/386/ooniprobe.asc    \
 	./CLI/linux/amd64/ooniprobe.asc  \
+	./CLI/linux/arm/ooniprobe.asc    \
 	./CLI/linux/arm64/ooniprobe.asc
+
+# ./CLI/linux/386/ooniprobe.asc is an internal task for signing.
+.PHONY:   ./CLI/linux/386/ooniprobe.asc
+./CLI/linux/386/ooniprobe.asc: ./CLI/linux/386/ooniprobe
+	rm -f $@ && gpg -abu $(GPG_USER) $<
+
+# Linux builds use Alpine and Docker so we are sure that we are statically
+# linking to musl libc, thus making our binaries extremely portable.
+#help:
+#help: * `./mk ./CLI/linux/386/ooniprobe`: linux/386
+.PHONY:     ./CLI/linux/386/ooniprobe
+./CLI/linux/386/ooniprobe: search/for/docker maybe/copypsiphon
+	docker pull --platform linux/386 $(GOLANG_DOCKER_IMAGE)
+	docker run --platform linux/386 -e GOPATH=/gopath -e GOARCH=386 -v $(GOLANG_DOCKER_GOCACHE)/386:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
 # ./CLI/linux/amd64/ooniprobe.asc is an internal task for signing.
 .PHONY:   ./CLI/linux/amd64/ooniprobe.asc
 ./CLI/linux/amd64/ooniprobe.asc: ./CLI/linux/amd64/ooniprobe
 	rm -f $@ && gpg -abu $(GPG_USER) $<
 
-# Linux builds use Alpine and Docker so we are sure that we are statically
-# linking to musl libc, thus making our binaries extremely portable.
 #help:
 #help: * `./mk ./CLI/linux/amd64/ooniprobe`: linux/amd64
 .PHONY:     ./CLI/linux/amd64/ooniprobe
 ./CLI/linux/amd64/ooniprobe: search/for/docker maybe/copypsiphon
 	docker pull --platform linux/amd64 $(GOLANG_DOCKER_IMAGE)
 	docker run --platform linux/amd64 -e GOPATH=/gopath -e GOARCH=amd64 -v $(GOLANG_DOCKER_GOCACHE)/amd64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+
+# ./CLI/linux/arm/ooniprobe.asc is an internal task for signing.
+.PHONY:   ./CLI/linux/arm/ooniprobe.asc
+./CLI/linux/arm/ooniprobe.asc: ./CLI/linux/arm/ooniprobe
+	rm -f $@ && gpg -abu $(GPG_USER) $<
+
+# Note that we're building for armv7 here
+#help:
+#help: * `./mk ./CLI/linux/arm/ooniprobe`: linux/arm
+.PHONY:     ./CLI/linux/arm/ooniprobe
+./CLI/linux/arm/ooniprobe: search/for/docker maybe/copypsiphon
+	docker pull --platform linux/arm/v7 $(GOLANG_DOCKER_IMAGE)
+	docker run --platform linux/arm/v7 -e GOPATH=/gopath -e GOARCH=arm -e GOARM=7 -v $(GOLANG_DOCKER_GOCACHE)/arm:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
 # ./CLI/linux/arm64/ooniprobe.asc is an internal task for signing.
 .PHONY:   ./CLI/linux/arm64/ooniprobe.asc

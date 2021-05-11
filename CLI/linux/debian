@@ -10,36 +10,19 @@
 # 2. we are running on a debian system that has the same
 # architecture of the `ooniprobe` we are packaging.
 
-if [ $# -gt 1 ]; then
-	echo "usage: $0 [run_number]" 1>&2
+if [ $# -ne 1 ] && [ $# -ne 2 ]; then
+	echo "usage: $0 {arch} [run_number]" 1>&2
 	exit 1
 fi
-run_number=$1
+goarch=$1
+run_number=$2
+set -ex
 
 # Copy the target binary in the correct location expected
 # by the debian/ooniprobe-cli.install file.
 rm -rf ./debian/bin
 mkdir -p ./debian/bin
-machine=$(uname -m)
-goarch=""
-case $machine in
-x86_64)
-	cp ./CLI/linux/amd64/ooniprobe ./debian/bin
-	goarch=amd64
-	;;
-aarch64)
-	cp ./CLI/linux/arm64/ooniprobe ./debian/bin
-	goarch=arm64
-	;;
-*)
-	# TODO(bassosimone): here we probably want to further extend
-	# this script to support at least armv7.
-	echo "FATAL: unsupported machine: $machine" 1>&2
-	exit 1
-	;;
-esac
-
-set -ex
+cp "./CLI/linux/$goarch/ooniprobe" ./debian/bin
 
 # figure out the version number from the binary itself (which rests
 # on the assumption that we can run such a binary)
@@ -68,6 +51,22 @@ $OONI_DEB_DRY_RUN mv ./debian/changelog.oocopy ./debian/changelog
 # of it when using a build container
 $OONI_DEB_DRY_RUN mv ../*.deb .
 
+darch=""
+case $goarch in
+386)
+	darch="i386"
+	;;
+amd64)
+	darch="amd64"
+	;;
+arm)
+	darch="armhf"
+	;;
+arm64)
+	darch="arm64"
+	;;
+esac
+
 # install the package on the container as a smoke test to
 # ensure that it is installable.
-DEBIAN_FRONTEND=noninteractive dpkg -i "ooniprobe-cli_${version}_${goarch}.deb"
+DEBIAN_FRONTEND=noninteractive dpkg -i "ooniprobe-cli_${version}_${darch}.deb"
