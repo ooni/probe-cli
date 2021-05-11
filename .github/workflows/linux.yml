@@ -36,7 +36,8 @@ jobs:
           echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
           sudo service docker restart
       - uses: actions/checkout@v2
-      - run: sudo apt-get install qemu-user-static
+      - run: sudo apt-get update -q
+      - run: sudo apt-get install -y qemu-user-static
       - run: ./mk OONI_PSIPHON_TAGS="" ./CLI/linux/arm64/ooniprobe
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
