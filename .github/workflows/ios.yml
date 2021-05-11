@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - "release/**"
-      - "fix/mkupdates"
 jobs:
   test:
     runs-on: macos-10.15

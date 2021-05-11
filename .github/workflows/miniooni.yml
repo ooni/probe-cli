@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - "release/**"
-      - "fix/mkupdates"
 jobs:
   test:
     runs-on: ubuntu-20.04

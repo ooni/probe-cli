@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - "release/**"
-      - "fix/mkupdates"
 
 jobs:
   build_amd64:
