@@ -369,10 +369,9 @@ GOMOBILE = $(shell go env GOPATH)/bin/gomobile
 
 # Here we use ooni/go to work around https://github.com/ooni/probe/issues/1444
 __android_build_with_ooni_go: search/for/go
-	go env -w GO111MODULE=auto
 	go get -u golang.org/x/mobile/cmd/gomobile
 	$(GOMOBILE) init
-	ANDROID_HOME=$(OONI_ANDROID_HOME) ANDROID_NDK_HOME=$(OONI_ANDROID_HOME)/ndk/$(ANDROID_NDK_VERSION) $(GOMOBILE) bind -target android -o ./MOBILE/android/oonimkall.aar -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
+	PATH=$(shell go env GOPATH)/bin:$$PATH ANDROID_HOME=$(OONI_ANDROID_HOME) ANDROID_NDK_HOME=$(OONI_ANDROID_HOME)/ndk/$(ANDROID_NDK_VERSION) $(GOMOBILE) bind -target android -o ./MOBILE/android/oonimkall.aar -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
 
 #help:
 #help: The `./mk ./MOBILE/ios` command builds the oonimkall library for iOS.
@@ -394,10 +393,9 @@ __android_build_with_ooni_go: search/for/go
 #help: * `./mk ./MOBILE/ios/framework`: the framework
 .PHONY:     ./MOBILE/ios/oonimkall.framework
 ./MOBILE/ios/oonimkall.framework: search/for/go search/for/xcode
-	go env -w GO111MODULE=auto
 	go get -u golang.org/x/mobile/cmd/gomobile
 	$(GOMOBILE) init
-	$(GOMOBILE) bind -target ios -o $@ -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
+	PATH=$(shell go env GOPATH)/bin:$$PATH $(GOMOBILE) bind -target ios -o $@ -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
 
 #help:
 #help: * `./mk ./MOBILE/ios/oonimkall.podspec`: the podspec
