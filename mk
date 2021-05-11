@@ -39,6 +39,11 @@ ANDROID_INSTALL_EXTRA = 'build-tools;29.0.3' 'platforms;android-30'
 #help: * ANDROID_NDK_VERSION   : Android NDK version.
 ANDROID_NDK_VERSION = 22.1.7171670
 
+#help: * DEBIAN_TILDE_VERSION  : if non-empty, this should be "[0-9]+" and
+#help:                           will be appended to the package version using
+#help:                           a tilde, thus producing, e.g., "1.0~1234".
+DEBIAN_TILDE_VERSION =
+
 #help:
 #help: * GIT_CLONE_DIR         : directory where to clone repositories, by default
 #help:                           set to `$HOME/.ooniprobe-build/src`.
@@ -110,6 +115,7 @@ show-config:
 	@echo "ANDROID_CLI_SHA256=$(ANDROID_CLI_SHA256)"
 	@echo "ANDROID_INSTALL_EXTRA=$(ANDROID_INSTALL_EXTRA)"
 	@echo "ANDROID_NDK_VERSION=$(ANDROID_NDK_VERSION)"
+	@echo "DEBIAN_TILDE_VERSION=$(DEBIAN_TILDE_VERSION)"
 	@echo "GIT_CLONE_DIR=$(GIT_CLONE_DIR)"
 	@echo "GOLANG_DOCKER_GOCACHE=$(GOLANG_DOCKER_GOCACHE)"
 	@echo "GOLANG_DOCKER_GOPATH=$(GOLANG_DOCKER_GOPATH)"
@@ -256,7 +262,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 .PHONY:     ./CLI/linux/amd64/ooniprobe
 ./debian/amd64: search/for/docker ./CLI/linux/amd64/ooniprobe
 	docker pull --platform linux/amd64 debian:stable
-	docker run --platform linux/amd64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian
+	docker run --platform linux/amd64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian "$(DEBIAN_TILDE_VERSION)"
 
 #help:
 #help: * `./mk ./debian/arm64`: debian/arm64
@@ -265,7 +271,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 .PHONY:     ./CLI/linux/arm64/ooniprobe
 ./debian/arm64: search/for/docker ./CLI/linux/arm64/ooniprobe
 	docker pull --platform linux/arm64 debian:stable
-	docker run --platform linux/arm64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian
+	docker run --platform linux/arm64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian "$(DEBIAN_TILDE_VERSION)"
 
 #help:
 #help: The `./mk ./CLI/ooniprobe/linux` command builds the ooniprobe official command
@@ -399,7 +405,7 @@ __android_build_with_ooni_go: search/for/go
 
 # important: OONIMKALL_V and OONIMKALL_R are expanded just once so we use `:=`
 OONIMKALL_V := $(shell date -u +%Y.%m.%d-%H%M%S)
-OONIMKALL_R := $(shell git describe --tags)
+OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
 
 #help:
 #help: The following commands check for the availability of dependencies:

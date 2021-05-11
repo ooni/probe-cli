@@ -18,7 +18,7 @@ jobs:
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
       - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
-      - run: ./mk OONI_PSIPHON_TAGS="" ./debian/amd64
+      - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/amd64
       - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
       - run: |
           for deb in *.deb; do
@@ -42,7 +42,7 @@ jobs:
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
       - run: ./smoketest.sh ./CLI/linux/arm64/ooniprobe
-      - run: ./mk OONI_PSIPHON_TAGS="" ./debian/arm64
+      - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm64
       - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
       - run: |
           for deb in *.deb; do
