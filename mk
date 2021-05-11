@@ -69,8 +69,8 @@ help:
 #help: on the command line as a key-value pairs (see usage above).
 
 #help:
-#help: * GIT_CLONE_DIR       : directory where to clone repositories, by default
-#help:                         set to `$HOME/.ooniprobe-build/src`.
+#help: * GIT_CLONE_DIR         : directory where to clone repositories, by default
+#help:                           set to `$HOME/.ooniprobe-build/src`.
 GIT_CLONE_DIR = $(HOME)/.ooniprobe-build/src
 
 # $(GIT_CLONE_DIR) is an internal target that creates $(GIT_CLONE_DIR).
@@ -78,36 +78,47 @@ $(GIT_CLONE_DIR):
 	mkdir -p $(GIT_CLONE_DIR)
 
 #help:
-#help: * GO_EXTRA_FLAGS      : extra flags passed to `go build ...`, empty by
-#help:                         default. Useful to pass flags to `go`, e.g.:
-#help:
-#help:                             ./mk GO_EXTRA_FLAGS="-x -v" ./CLI/miniooni
-GO_EXTRA_FLAGS =
+#help: * GOLANG_DOCKER_GOCACHE : where to store golang's build cache to
+#help:                           speed up subsequent Docker builds.
+GOLANG_DOCKER_GOCACHE = $(HOME)/.ooniprobe-build/docker/gocache
 
 #help:
-#help: * GPG_USER            : allows overriding the default GPG user used
-#help:                         to sign binary releases, e.g.:
+#help: * GOLANG_DOCKER_GOPATH  : GOPATH directory used by builds running
+#help:                           inside docker to significantly speed
+#help:                           up subsequent Docker based builds.
+GOLANG_DOCKER_GOPATH := $(HOME)/.ooniprobe-build/docker/gopath
+
 #help:
-#help:                             ./mk GPG_USER=john@doe.com ooniprobe/windows
+#help: * GOLANG_EXTRA_FLAGS    : extra flags passed to `go build ...`, empty by
+#help:                           default. Useful to pass flags to `go`, e.g.:
+#help:
+#help:                               ./mk GOLANG_EXTRA_FLAGS="-x -v" ./CLI/miniooni
+GOLANG_EXTRA_FLAGS =
+
+#help:
+#help: * GPG_USER              : allows overriding the default GPG user used
+#help:                           to sign binary releases, e.g.:
+#help:
+#help:                               ./mk GPG_USER=john@doe.com ooniprobe/windows
 GPG_USER = simone@openobservatory.org
 
 #help:
-#help: * OONI_PSIPHON_TAGS   : build tags for `go build -tags ...` that cause
-#help:                         the build to embed a psiphon configuration file
-#help:                         into the generated binaries. This build tag
-#help:                         implies cloning the git@github.com:ooni/probe-private
-#help:                         repository. If you do not have the permission to
-#help:                         clone it, just clear this variable, e.g.:
+#help: * OONI_PSIPHON_TAGS     : build tags for `go build -tags ...` that cause
+#help:                           the build to embed a psiphon configuration file
+#help:                           into the generated binaries. This build tag
+#help:                           implies cloning the git@github.com:ooni/probe-private
+#help:                           repository. If you do not have the permission to
+#help:                           clone it, just clear this variable, e.g.:
 #help:
-#help:                             ./mk OONI_PSIPHON_TAGS="" ./CLI/miniooni
+#help:                               ./mk OONI_PSIPHON_TAGS="" ./CLI/miniooni
 OONI_PSIPHON_TAGS = ooni_psiphon_config
 
 #help:
-#help: * OONI_ANDROID_HOME   : directory where the Android SDK is downloaded
-#help:                         and installed. You can point this to an existing
-#help:                         copy of the SDK as long as (1) you have the
-#help:                         right version of the command line tools, and
-#help:                         (2) it's okay for us to install packages.
+#help: * OONI_ANDROID_HOME     : directory where the Android SDK is downloaded
+#help:                           and installed. You can point this to an existing
+#help:                           copy of the SDK as long as (1) you have the
+#help:                           right version of the command line tools, and
+#help:                           (2) it's okay for us to install packages.
 OONI_ANDROID_HOME = $(HOME)/.ooniprobe-build/sdk/android
 
 #quickhelp:
@@ -116,7 +127,9 @@ OONI_ANDROID_HOME = $(HOME)/.ooniprobe-build/sdk/android
 .PHONY: show-config
 show-config:
 	@echo "GIT_CLONE_DIR=$(GIT_CLONE_DIR)"
-	@echo "GO_EXTRA_FLAGS=$(GO_EXTRA_FLAGS)"
+	@echo "GOLANG_DOCKER_GOCACHE=$(GOLANG_DOCKER_GOCACHE)"
+	@echo "GOLANG_DOCKER_GOPATH=$(GOLANG_DOCKER_GOPATH)"
+	@echo "GOLANG_EXTRA_FLAGS=$(GOLANG_EXTRA_FLAGS)"
 	@echo "GPG_USER=$(GPG_USER)"
 	@echo "OONI_PSIPHON_TAGS=$(OONI_PSIPHON_TAGS)"
 	@echo "OONI_ANDROID_HOME=$(OONI_ANDROID_HOME)"
@@ -147,13 +160,13 @@ show-config:
 #help: * `./mk ./CLI/darwin/amd64/miniooni`: darwin/amd64
 .PHONY:   ./CLI/darwin/amd64/miniooni
 ./CLI/darwin/amd64/miniooni: search/for/go maybe/copypsiphon
-	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GO_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 #help:
 #help: * `./mk ./CLI/darwin/arm64/miniooni`: darwin/arm64
 .PHONY:   ./CLI/darwin/arm64/miniooni
 ./CLI/darwin/arm64/miniooni: search/for/go maybe/copypsiphon
-	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GO_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 # When building for Linux we use `-tags netgo` and `-extldflags -static` to produce
 # a statically linked binary that completely bypasses libc.
@@ -161,38 +174,38 @@ show-config:
 #help: * `./mk ./CLI/linux/386/miniooni`: linux/386
 .PHONY:   ./CLI/linux/386/miniooni
 ./CLI/linux/386/miniooni: search/for/go maybe/copypsiphon
-	GOOS=linux GOARCH=386 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GO_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	GOOS=linux GOARCH=386 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 #help:
 #help: * `./mk ./CLI/linux/amd64/miniooni`: linux/amd64
 .PHONY:   ./CLI/linux/amd64/miniooni
 ./CLI/linux/amd64/miniooni: search/for/go maybe/copypsiphon
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GO_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 # When building for GOARCH=arm, we always force GOARM=7 (i.e., armhf/armv7).
 #help:
 #help: * `./mk ./CLI/linux/arm/miniooni`: linux/arm
 .PHONY:   ./CLI/linux/arm/miniooni
 ./CLI/linux/arm/miniooni: search/for/go maybe/copypsiphon
-	GOOS=linux GOARCH=arm CGO_ENABLED=0 GOARM=7 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GO_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	GOOS=linux GOARCH=arm CGO_ENABLED=0 GOARM=7 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 #help:
 #help: * `./mk ./CLI/linux/arm64/miniooni`: linux/arm64
 .PHONY:   ./CLI/linux/arm64/miniooni
 ./CLI/linux/arm64/miniooni: search/for/go maybe/copypsiphon
-	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GO_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 #help:
 #help: * `./mk ./CLI/windows/386/miniooni.exe`: windows/386
 .PHONY:   ./CLI/windows/386/miniooni.exe
 ./CLI/windows/386/miniooni.exe: search/for/go maybe/copypsiphon
-	GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GO_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 #help:
 #help: * `./mk ./CLI/windows/amd64/miniooni.exe`: windows/amd64
 .PHONY:   ./CLI/windows/amd64/miniooni.exe
 ./CLI/windows/amd64/miniooni.exe: search/for/go maybe/copypsiphon
-	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GO_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 #help:
 #help: The `./mk ./CLI/ooniprobe/darwin` command builds the ooniprobe official
@@ -216,7 +229,7 @@ show-config:
 #help: * `./mk ./CLI/darwin/amd64/ooniprobe`: darwin/amd64
 .PHONY:     ./CLI/darwin/amd64/ooniprobe
 ./CLI/darwin/amd64/ooniprobe: search/for/go maybe/copypsiphon
-	GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GO_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
+	GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
 
 # ./CLI/darwin/arm64/ooniprobe.asc is an internal target for signing
 .PHONY:   ./CLI/darwin/arm64/ooniprobe.asc
@@ -227,43 +240,48 @@ show-config:
 #help: * `./mk ./CLI/darwin/arm64/ooniprobe`: darwin/arm64
 .PHONY:     ./CLI/darwin/arm64/ooniprobe
 ./CLI/darwin/arm64/ooniprobe: search/for/go maybe/copypsiphon
-	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GO_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
 
 #help:
-#help: The `./mk ooniprobe/debian` command builds the ooniprobe CLI
+#help: The `./mk ./debian` command builds the ooniprobe CLI
 #help: debian package for amd64 and arm64.
 #help:
-#help: We also support the following commands:
-.PHONY: ooniprobe/debian
-ooniprobe/debian:           \
-	ooniprobe/debian/amd64  \
-	ooniprobe/debian/arm64
+#help: You can also build the following subtargets:
+.PHONY: ./debian
+./debian:           \
+	./debian/amd64  \
+	./debian/arm64
 
 #help:
-#help: * `./mk ooniprobe/debian/amd64`: debian/amd64
-.PHONY: ooniprobe/debian/amd64
-ooniprobe/debian/amd64: search/for/docker ./CLI/linux/amd64/ooniprobe
+#help: * `./mk ./debian/amd64`: debian/amd64
+.PHONY:   ./debian/amd64
+# This extra .PHONY for linux/amd64 is to help printing targets 🤷.
+.PHONY:     ./CLI/linux/amd64/ooniprobe
+./debian/amd64: search/for/docker ./CLI/linux/amd64/ooniprobe
 	docker pull --platform linux/amd64 debian:stable
 	docker run --platform linux/amd64 -v `pwd`:/ooni -w /ooni debian:stable ./CLI/linux/debian
 
 #help:
-#help: * `./mk ooniprobe/debian/arm64`: debian/arm64
-.PHONY: ooniprobe/debian/arm64
-ooniprobe/debian/arm64: search/for/docker ./CLI/linux/arm64/ooniprobe
+#help: * `./mk ./debian/arm64`: debian/arm64
+.PHONY:   ./debian/arm64
+# This extra .PHONY for linux/arm64 is to help printing targets 🤷.
+.PHONY:     ./CLI/linux/arm64/ooniprobe
+./debian/arm64: search/for/docker ./CLI/linux/arm64/ooniprobe
 	docker pull --platform linux/arm64 debian:stable
 	docker run --platform linux/arm64 -v `pwd`:/ooni -w /ooni debian:stable ./CLI/linux/debian
 
 #help:
-#help: The `./mk ooniprobe/linux` command builds the ooniprobe official command
+#help: The `./mk ./CLI/ooniprobe/linux` command builds the ooniprobe official command
 #help: line client for amd64 and arm64.
 #help:
 #help: You can also build the following subtargets:
-.PHONY: ooniprobe/linux
-ooniprobe/linux:                     \
+.PHONY: ./CLI/ooniprobe/linux
+./CLI/ooniprobe/linux:               \
 	./CLI/linux/amd64/ooniprobe.asc  \
 	./CLI/linux/arm64/ooniprobe.asc
 
-.PHONY: ./CLI/linux/amd64/ooniprobe.asc
+# ./CLI/linux/amd64/ooniprobe.asc is an internal task for signing.
+.PHONY:   ./CLI/linux/amd64/ooniprobe.asc
 ./CLI/linux/amd64/ooniprobe.asc: ./CLI/linux/amd64/ooniprobe
 	rm -f $@ && gpg -abu $(GPG_USER) $<
 
@@ -271,71 +289,80 @@ ooniprobe/linux:                     \
 # linking to musl libc, thus making our binaries extremely portable.
 #help:
 #help: * `./mk ./CLI/linux/amd64/ooniprobe`: linux/amd64
-.PHONY: ./CLI/linux/amd64/ooniprobe
+.PHONY:     ./CLI/linux/amd64/ooniprobe
 ./CLI/linux/amd64/ooniprobe: search/for/docker maybe/copypsiphon
 	docker pull --platform linux/amd64 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/amd64 -e GOARCH=amd64 -v `pwd`:/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS)
+	docker run --platform linux/amd64 -e GOPATH=/gopath -e GOARCH=amd64 -v $(GOLANG_DOCKER_GOCACHE)/amd64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v `pwd`:/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
-.PHONY: ./CLI/linux/arm64/ooniprobe.asc
+# ./CLI/linux/arm64/ooniprobe.asc is an internal task for signing.
+.PHONY:   ./CLI/linux/arm64/ooniprobe.asc
 ./CLI/linux/arm64/ooniprobe.asc: ./CLI/linux/arm64/ooniprobe
 	rm -f $@ && gpg -abu $(GPG_USER) $<
 
 #help:
 #help: * `./mk ./CLI/linux/arm64/ooniprobe`: linux/arm64
-.PHONY: ./CLI/linux/arm64/ooniprobe
+.PHONY:     ./CLI/linux/arm64/ooniprobe
 ./CLI/linux/arm64/ooniprobe: search/for/docker maybe/copypsiphon
 	docker pull --platform linux/arm64 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/arm64 -e GOARCH=arm64 -v `pwd`:/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS)
+	docker run --platform linux/arm64 -e GOPATH=/gopath -e GOARCH=arm64 -v $(GOLANG_DOCKER_GOCACHE)/arm64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v `pwd`:/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
 #help:
-#help: The `./mk ooniprobe/windows` command builds the ooniprobe official
+#help: The `./mk ./CLI/ooniprobe/windows` command builds the ooniprobe official
 #help: command line client for windows/386 and windows/amd64.
 #help:
 #help: You can also build the following subtargets:
-.PHONY: ooniprobe/windows
-ooniprobe/windows:                         \
+.PHONY: ./CLI/ooniprobe/windows
+./CLI/ooniprobe/windows:                   \
 	./CLI/windows/386/ooniprobe.exe.asc    \
 	./CLI/windows/amd64/ooniprobe.exe.asc
 
-.PHONY: ./CLI/windows/386/ooniprobe.exe.asc
+# ./CLI/windows/386/ooniprobe.exe.asc is an internal signing target
+.PHONY:   ./CLI/windows/386/ooniprobe.exe.asc
 ./CLI/windows/386/ooniprobe.exe.asc: ./CLI/windows/386/ooniprobe.exe
 	rm -f $@ && gpg -abu $(GPG_USER) $<
 
 #help:
 #help: * `./mk ./CLI/windows/386/ooniprobe.exe`: windows/386
-.PHONY: ./CLI/windows/386/ooniprobe.exe
+.PHONY:     ./CLI/windows/386/ooniprobe.exe
 ./CLI/windows/386/ooniprobe.exe: search/for/go search/for/mingw-w64 maybe/copypsiphon
-	GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GO_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
+	GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
 
-.PHONY: ./CLI/windows/amd64/ooniprobe.exe.asc
+# ./CLI/windows/amd64/ooniprobe.exe.asc is an internal signing target
+.PHONY:   ./CLI/windows/amd64/ooniprobe.exe.asc
 ./CLI/windows/amd64/ooniprobe.exe.asc: ./CLI/windows/amd64/ooniprobe.exe
 	rm -f $@ && gpg -abu $(GPG_USER) $<
 
 #help:
 #help: * `./mk ./CLI/windows/amd64/ooniprobe.exe`: windows/amd64
-.PHONY: ./CLI/windows/amd64/ooniprobe.exe
+.PHONY:     ./CLI/windows/amd64/ooniprobe.exe
 ./CLI/windows/amd64/ooniprobe.exe: search/for/go search/for/mingw-w64 maybe/copypsiphon
-	GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GO_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
 
 #help:
-#help: The `./mk android` command builds the oonimkall library for Android.
+#help: The `./mk ./MOBILE/android` command builds the oonimkall library for Android.
 #help:
 #help: You can also build the following subtargets:
-.PHONY: android
-android: search/for/gpg search/for/jar ./MOBILE/android/oonimkall.aar
-	echo "TODO(bassosimone): not yet implemented"
+.PHONY: ./MOBILE/android
+./MOBILE/android: search/for/gpg search/for/jar ./MOBILE/android/oonimkall.aar
+	cp ./MOBILE/android/oonimkall.aar ./MOBILE/android/oonimkall-$(OONIMKALL_V).aar
+	cp ./MOBILE/android/oonimkall-sources.jar ./MOBILE/android/oonimkall-$(OONIMKALL_V)-sources.jar
+	cat ./MOBILE/template.pom | sed -e "s/@VERSION@/$(OONIMKALL_V)/g" > ./MOBILE/android/oonimkall-$(OONIMKALL_V).pom
+	gpg -abu $(GPG_USER) ./MOBILE/android/oonimkall-$(OONIMKALL_V).aar
+	gpg -abu $(GPG_USER) ./MOBILE/android/oonimkall-$(OONIMKALL_V)-sources.jar
+	gpg -abu $(GPG_USER) ./MOBILE/android/oonimkall-$(OONIMKALL_V).pom
+	cd ./MOBILE/android && jar -cf bundle.jar oonimkall-$(OONIMKALL_V).aar oonimkall-$(OONIMKALL_V).aar.asc oonimkall-$(OONIMKALL_V)-sources.jar oonimkall-$(OONIMKALL_V)-sources.jar.asc oonimkall-$(OONIMKALL_V).pom oonimkall-$(OONIMKALL_V).pom.asc
 
 # Here we use ooni/go to work around https://github.com/ooni/probe/issues/1444
 #help:
 #help: * `./mk ./MOBILE/android/oonimkall.aar`: the AAR
-.PHONY: ./MOBILE/android/oonimkall.aar
-./MOBILE/android/oonimkall.aar: android/sdk ooni/go
+.PHONY:   ./MOBILE/android/oonimkall.aar
+./MOBILE/android/oonimkall.aar: android/sdk ooni/go maybe/copypsiphon
 	PATH=$(OONIGODIR)/bin:$$PATH $(MAKE) -f mk __android_build_with_ooni_go
 
 __android_build_with_ooni_go: search/for/go
 	go get -u golang.org/x/mobile/cmd/gomobile@latest
 	$(GOMOBILE) init
-	ANDROID_HOME=$(OONI_ANDROID_HOME) ANDROID_NDK_HOME=$(OONI_ANDROID_HOME)/ndk/$(ANDROID_NDK_VERSION) $(GOMOBILE) bind -target android -o ./MOBILE/android/oonimkall.aar -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GO_EXTRA_FLAGS) ./pkg/oonimkall
+	ANDROID_HOME=$(OONI_ANDROID_HOME) ANDROID_NDK_HOME=$(OONI_ANDROID_HOME)/ndk/$(ANDROID_NDK_VERSION) $(GOMOBILE) bind -target android -o ./MOBILE/android/oonimkall.aar -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
 
 #help:
 #help: The `./mk ./MOBILE/ios` command builds the oonimkall library for iOS.
@@ -359,7 +386,7 @@ __android_build_with_ooni_go: search/for/go
 ./MOBILE/ios/oonimkall.framework: search/for/go search/for/xcode
 	go get -u golang.org/x/mobile/cmd/gomobile@latest
 	$(GOMOBILE) init
-	$(GOMOBILE) bind -target ios -o $@ -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GO_EXTRA_FLAGS) ./pkg/oonimkall
+	$(GOMOBILE) bind -target ios -o $@ -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
 
 GOMOBILE = `go env GOPATH`/bin/gomobile
 
@@ -369,8 +396,9 @@ GOMOBILE = `go env GOPATH`/bin/gomobile
 ./MOBILE/ios/oonimkall.podspec: ./MOBILE/template.podspec
 	cat $< | sed -e "s/@VERSION@/$(OONIMKALL_V)/g" -e "s/@RELEASE@/$(OONIMKALL_R)/g" > $@
 
-OONIMKALL_V = `date -u +%Y.%m.%d-%H%M%S`
-OONIMKALL_R = `git describe --tags`
+# important: OONIMKALL_V and OONIMKALL_R are expanded just once
+OONIMKALL_V := $(shell date -u +%Y.%m.%d-%H%M%S)
+OONIMKALL_R := $(git describe --tags)
 
 #help:
 #help: The following commands check for the availability of dependencies:
@@ -403,6 +431,13 @@ search/for/docker:
 search/for/git:
 	@printf "checking for git... "
 	@command -v git || { echo "not found"; exit 1; }
+
+#help:
+#help: * `./mk search/for/gpg`: checks for gpg
+.PHONY: search/for/gpg
+search/for/gpg:
+	@printf "checking for gpg... "
+	@command -v gpg || { echo "not found"; exit 1; }
 
 #help:
 #help: * `./mk search/for/jar`: checks for jar

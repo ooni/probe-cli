@@ -11,8 +11,8 @@
 # architecture of the `ooniprobe` we are packaging.
 
 if [ $# -gt 1 ]; then
-    echo "usage: $0 [run_number]" 1>&2
-    exit 1
+	echo "usage: $0 [run_number]" 1>&2
+	exit 1
 fi
 run_number=$1
 
@@ -20,32 +20,32 @@ run_number=$1
 # by the debian/ooniprobe-cli.install file.
 rm -rf ./debian/bin
 mkdir -p ./debian/bin
-machine=`uname -m`
+machine=$(uname -m)
 goarch=""
 case $machine in
-    x86_64)
-        cp ./CLI/linux/amd64/ooniprobe ./debian/bin
-        goarch=amd64
-    ;;
-    aarch64)
-        cp ./CLI/linux/arm64/ooniprobe ./debian/bin
-        goarch=arm64
-    ;;
-    *)
-        # TODO(bassosimone): here we probably want to further extend
-        # this script to support at least armv7.
-        echo "FATAL: unsupported machine: $machine" 1>&2
-        exit 1
-    ;;
+x86_64)
+	cp ./CLI/linux/amd64/ooniprobe ./debian/bin
+	goarch=amd64
+	;;
+aarch64)
+	cp ./CLI/linux/arm64/ooniprobe ./debian/bin
+	goarch=arm64
+	;;
+*)
+	# TODO(bassosimone): here we probably want to further extend
+	# this script to support at least armv7.
+	echo "FATAL: unsupported machine: $machine" 1>&2
+	exit 1
+	;;
 esac
 
 set -ex
 
 # figure out the version number from the binary itself (which rests
 # on the assumption that we can run such a binary)
-version=`./debian/bin/ooniprobe version`
-if [ ! -z $run_number ]; then
-    version="${version}~${run_number}"
+version=$(./debian/bin/ooniprobe version)
+if [ -n "$run_number" ]; then
+	version="${version}~${run_number}"
 fi
 
 # The OONI_DEB_DRY_RUN is a semi-undocumented feature allowing
@@ -58,7 +58,7 @@ $OONI_DEB_DRY_RUN apt-get build-dep -y --no-install-recommends .
 # keep the original changelog file safe
 $OONI_DEB_DRY_RUN cp ./debian/changelog ./debian/changelog.oocopy
 
-$OONI_DEB_DRY_RUN dch -v $version "New version ${version}"
+$OONI_DEB_DRY_RUN dch -v "$version" "New version ${version}"
 $OONI_DEB_DRY_RUN dpkg-buildpackage -us -uc -b
 
 # restore the original changelog file
@@ -70,4 +70,4 @@ $OONI_DEB_DRY_RUN mv ../*.deb .
 
 # install the package on the container as a smoke test to
 # ensure that it is installable.
-DEBIAN_FRONTEND=noninteractive dpkg -i ooniprobe-cli_${version}_${goarch}.deb
+DEBIAN_FRONTEND=noninteractive dpkg -i "ooniprobe-cli_${version}_${goarch}.deb"

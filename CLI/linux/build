@@ -4,12 +4,15 @@
 # uses musl libc, allows us to emit static binaries.
 set -e
 if [ "$GOARCH" = "" ]; then
-    echo 'fatal: $GOARCH is not set' 1>&2
-    exit 1
+	echo 'fatal: GOARCH is not set' 1>&2
+	exit 1
 fi
 set -x
 apk update
 apk upgrade
 apk add --no-progress gcc git linux-headers musl-dev
-CGO_ENABLED=1 GOOS=linux GOARCH=$GOARCH go build -o ./CLI/linux/$GOARCH/ \
-    -ldflags='-s -w -extldflags "-static"' "$@" ./cmd/ooniprobe
+export GOPATH=$GOPATH
+export CGO_ENABLED=1
+export GOOS=linux
+export GOARCH=$GOARCH
+go build -o "./CLI/linux/$GOARCH/" -ldflags='-s -w -extldflags "-static"' "$@" ./cmd/ooniprobe
