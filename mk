@@ -24,21 +24,26 @@ help:
 #help: The following variables control the build. You can specify them
 #help: on the command line as a key-value pairs (see usage above).
 
+#help:
 #help: * ANDROID_CLI_SHA256    : the SHA256 of the Android CLI tools file. We always
 #help:                           download the Linux version, which seems to work
 #help:                           also on macOS (thank you, Java! :pray:).
 ANDROID_CLI_SHA256 = 7a00faadc0864f78edd8f4908a629a46d622375cbe2e5814e82934aebecdb622
 
+#help:
 #help: * ANDROID_CLI_VERSION   : the version of the Android CLI tools.
 ANDROID_CLI_VERSION = 7302050
 
+#help:
 #help: * ANDROID_INSTALL_EXTRA : contains the android tools we install in addition
 #help:                           to the NDK in order to build oonimkall.aar.
 ANDROID_INSTALL_EXTRA = 'build-tools;29.0.3' 'platforms;android-30'
 
+#help:
 #help: * ANDROID_NDK_VERSION   : Android NDK version.
 ANDROID_NDK_VERSION = 22.1.7171670
 
+#help:
 #help: * DEBIAN_TILDE_VERSION  : if non-empty, this should be "[0-9]+" and
 #help:                           will be appended to the package version using
 #help:                           a tilde, thus producing, e.g., "1.0~1234".
@@ -71,6 +76,7 @@ GOLANG_DOCKER_GOPATH := $(HOME)/.ooniprobe-build/docker/gopath
 #help:                               ./mk GOLANG_EXTRA_FLAGS="-x -v" ./CLI/miniooni
 GOLANG_EXTRA_FLAGS =
 
+#help:
 #help: * GOLANG_VERSION_NUMBER : the expected version number for golang.
 GOLANG_VERSION_NUMBER = 1.16.4
 
@@ -81,6 +87,7 @@ GOLANG_VERSION_NUMBER = 1.16.4
 #help:                               ./mk GPG_USER=john@doe.com ooniprobe/windows
 GPG_USER = simone@openobservatory.org
 
+#help:
 #help: * MINGW_W64_VERSION     : the expected mingw-w64 version.
 MINGW_W64_VERSION = 10.3.1
 
@@ -103,6 +110,7 @@ OONI_PSIPHON_TAGS = ooni_psiphon_config
 #help:                           (2) it's okay for us to install packages.
 OONI_ANDROID_HOME = $(HOME)/.ooniprobe-build/sdk/android
 
+#help:
 #help: * XCODE_VERSION         : the version of Xcode we expect.
 XCODE_VERSION = 12.5
 
@@ -403,7 +411,7 @@ __android_build_with_ooni_go: search/for/go
 ./MOBILE/ios/oonimkall.podspec: ./MOBILE/template.podspec
 	cat $< | sed -e "s/@VERSION@/$(OONIMKALL_V)/g" -e "s/@RELEASE@/$(OONIMKALL_R)/g" > $@
 
-# important: OONIMKALL_V and OONIMKALL_R are expanded just once so we use `:=`
+# important: OONIMKALL_V and OONIMKALL_R MUST be expanded just once so we use `:=`
 OONIMKALL_V := $(shell date -u +%Y.%m.%d-%H%M%S)
 OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
 
@@ -470,7 +478,8 @@ search/for/go:
 	@echo $(__GOVERSION_REAL)
 	@[ "$(GOLANG_VERSION_STRING)" = "$(__GOVERSION_REAL)" ] || { echo "fatal: go version must be $(GOLANG_VERSION_STRING) instead of $(__GOVERSION_REAL)"; exit 1; }
 
-# __GOVERSION_REAL is the go version reported by the go binary
+# __GOVERSION_REAL is the go version reported by the go binary (we
+# SHOULD NOT cache this value so we ARE NOT using `:=`)
 __GOVERSION_REAL = $(shell go version | awk '{print $$3}')
 
 #help:
