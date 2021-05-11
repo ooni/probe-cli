@@ -1,49 +1,5 @@
 #!/usr/bin/make -f
 
-# The following variables control the versions of the tools that
-# we use thoughout this (GNU) makefile. We need to ensure these
-# tools are up-to-date as part of the release process.
-
-# ANDROID_CLITOOLS_VERSION is the version of the Android CLI tools version.
-ANDROID_CLITOOLS_VERSION = 7302050
-
-# ANDROID_CLITOOLS_SHA256 is the SHA256 of the CLI tools file. We always
-# download the Linux version, which seems to work also on macOS (thank you
-# for this portability Java! :pray:).
-ANDROID_CLITOOLS_SHA256 = 7a00faadc0864f78edd8f4908a629a46d622375cbe2e5814e82934aebecdb622
-
-# ANDROID_NDK_VERSION is the Android NDK version.
-ANDROID_NDK_VERSION = 22.1.7171670
-
-# ANDROID_INSTALL_EXTRA contains the android tools we install
-# in addition to the NDK in order to build oonimkall.aar.
-ANDROID_INSTALL_EXTRA = 'build-tools;29.0.3' 'platforms;android-30'
-
-# GOLANG_VERSION_NUMBER is the expected version number
-# for golang builds. This variable is used to initialize
-# GOLANG_VERSION_STRING and GOLANG_DOCKER_IMAGE.
-GOLANG_VERSION_NUMBER = 1.16.4
-
-# GOLANG_VERSION_STRING is the expected version string. If we
-# run a golang binary that does not emit this version string
-# when running `go version`, we stop the build.
-GOLANG_VERSION_STRING = go$(GOLANG_VERSION_NUMBER)
-
-# GOLANG_DOCKER_IMAGE is the golang docker image we use for
-# building for Linux systems. It is an Alpine based container
-# so that we can easily build static binaries.
-GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
-
-# MINGW_W64_VERSION contains the expected mingw-w64 version.
-MINGW_W64_VERSION = 10.3.1
-
-# XCODE_VERSION is the version of Xcode we expect.
-XCODE_VERSION = 12.5
-
-# The rest of this makefile defines the available targets. Most of
-# them are documented using `#quickhelp:` or `#help:` descriptors that
-# cause the comments to appear when running `./mk help`.
-
 #quickhelp: Usage: ./mk [VARIABLE=VALUE ...] TARGET ...
 .PHONY: usage
 usage:
@@ -67,6 +23,21 @@ help:
 #help:
 #help: The following variables control the build. You can specify them
 #help: on the command line as a key-value pairs (see usage above).
+
+#help: * ANDROID_CLI_SHA256    : the SHA256 of the Android CLI tools file. We always
+#help:                           download the Linux version, which seems to work
+#help:                           also on macOS (thank you, Java! :pray:).
+ANDROID_CLI_SHA256 = 7a00faadc0864f78edd8f4908a629a46d622375cbe2e5814e82934aebecdb622
+
+#help: * ANDROID_CLI_VERSION   : the version of the Android CLI tools.
+ANDROID_CLI_VERSION = 7302050
+
+#help: * ANDROID_INSTALL_EXTRA : contains the android tools we install in addition
+#help:                           to the NDK in order to build oonimkall.aar.
+ANDROID_INSTALL_EXTRA = 'build-tools;29.0.3' 'platforms;android-30'
+
+#help: * ANDROID_NDK_VERSION   : Android NDK version.
+ANDROID_NDK_VERSION = 22.1.7171670
 
 #help:
 #help: * GIT_CLONE_DIR         : directory where to clone repositories, by default
@@ -95,12 +66,18 @@ GOLANG_DOCKER_GOPATH := $(HOME)/.ooniprobe-build/docker/gopath
 #help:                               ./mk GOLANG_EXTRA_FLAGS="-x -v" ./CLI/miniooni
 GOLANG_EXTRA_FLAGS =
 
+#help: * GOLANG_VERSION_NUMBER : the expected version number for golang.
+GOLANG_VERSION_NUMBER = 1.16.4
+
 #help:
 #help: * GPG_USER              : allows overriding the default GPG user used
 #help:                           to sign binary releases, e.g.:
 #help:
 #help:                               ./mk GPG_USER=john@doe.com ooniprobe/windows
 GPG_USER = simone@openobservatory.org
+
+#help: * MINGW_W64_VERSION     : the expected mingw-w64 version.
+MINGW_W64_VERSION = 10.3.1
 
 #help:
 #help: * OONI_PSIPHON_TAGS     : build tags for `go build -tags ...` that cause
@@ -121,18 +98,38 @@ OONI_PSIPHON_TAGS = ooni_psiphon_config
 #help:                           (2) it's okay for us to install packages.
 OONI_ANDROID_HOME = $(HOME)/.ooniprobe-build/sdk/android
 
+#help: * XCODE_VERSION         : the version of Xcode we expect.
+XCODE_VERSION = 12.5
+
 #quickhelp:
 #quickhelp: The `./mk show-config` command shows the current value of the
 #quickhelp: variables controlling the build.
 .PHONY: show-config
 show-config:
+	@echo "ANDROID_CLI_VERSION=$(ANDROID_CLI_VERSION)"
+	@echo "ANDROID_CLI_SHA256=$(ANDROID_CLI_SHA256)"
+	@echo "ANDROID_INSTALL_EXTRA=$(ANDROID_INSTALL_EXTRA)"
+	@echo "ANDROID_NDK_VERSION=$(ANDROID_NDK_VERSION)"
 	@echo "GIT_CLONE_DIR=$(GIT_CLONE_DIR)"
 	@echo "GOLANG_DOCKER_GOCACHE=$(GOLANG_DOCKER_GOCACHE)"
 	@echo "GOLANG_DOCKER_GOPATH=$(GOLANG_DOCKER_GOPATH)"
 	@echo "GOLANG_EXTRA_FLAGS=$(GOLANG_EXTRA_FLAGS)"
+	@echo "GOLANG_VERSION_NUMBER=$(GOLANG_VERSION_NUMBER)"
 	@echo "GPG_USER=$(GPG_USER)"
+	@echo "MINGW_W64_VERSION=$(MINGW_W64_VERSION)"
 	@echo "OONI_PSIPHON_TAGS=$(OONI_PSIPHON_TAGS)"
 	@echo "OONI_ANDROID_HOME=$(OONI_ANDROID_HOME)"
+	@echo "XCODE_VERSION=$(XCODE_VERSION)"
+
+# GOLANG_VERSION_STRING is the expected version string. If we
+# run a golang binary that does not emit this version string
+# when running `go version`, we stop the build.
+GOLANG_VERSION_STRING = go$(GOLANG_VERSION_NUMBER)
+
+# GOLANG_DOCKER_IMAGE is the golang docker image we use for
+# building for Linux systems. It is an Alpine based container
+# so that we can easily build static binaries.
+GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 
 # Cross-compiling miniooni from any system with Go installed is
 # very easy, because it does not use any C code.
@@ -569,7 +566,7 @@ android/sdk: search/for/java
 	echo "Yes" | $(__ANDROID_SDKMANAGER) --install $(ANDROID_INSTALL_EXTRA) 'ndk;$(ANDROID_NDK_VERSION)'
 
 # __ANDROID_SKDMANAGER is the path to android's sdkmanager tool
-__ANDROID_SDKMANAGER = $(OONI_ANDROID_HOME)/cmdline-tools/$(ANDROID_CLITOOLS_VERSION)/bin/sdkmanager
+__ANDROID_SDKMANAGER = $(OONI_ANDROID_HOME)/cmdline-tools/$(ANDROID_CLI_VERSION)/bin/sdkmanager
 
 # See https://stackoverflow.com/a/61176718 to understand why
 # we need to reorganize the directories like this:
@@ -578,13 +575,13 @@ __ANDROID_SDKMANAGER = $(OONI_ANDROID_HOME)/cmdline-tools/$(ANDROID_CLITOOLS_VER
 #help: Android SDK at `$(OONI_ANDROID_HOME)`.
 android/sdk/download: search/for/curl search/for/java search/for/shasum search/for/unzip
 	curl -fsSLO https://dl.google.com/android/repository/$(__ANDROID_CLITOOLS_FILE)
-	echo "$(ANDROID_CLITOOLS_SHA256)  $(__ANDROID_CLITOOLS_FILE)" > __SHA256
+	echo "$(ANDROID_CLI_SHA256)  $(__ANDROID_CLITOOLS_FILE)" > __SHA256
 	shasum --check __SHA256
 	rm -f __SHA256
 	unzip $(__ANDROID_CLITOOLS_FILE)
 	rm $(__ANDROID_CLITOOLS_FILE)
 	mkdir -p $(OONI_ANDROID_HOME)/cmdline-tools
-	mv cmdline-tools $(OONI_ANDROID_HOME)/cmdline-tools/$(ANDROID_CLITOOLS_VERSION)
+	mv cmdline-tools $(OONI_ANDROID_HOME)/cmdline-tools/$(ANDROID_CLI_VERSION)
 
 # __ANDROID_CLITOOLS_FILE is the file name of the android cli tools zip
-__ANDROID_CLITOOLS_FILE = commandlinetools-linux-$(ANDROID_CLITOOLS_VERSION)_latest.zip
+__ANDROID_CLITOOLS_FILE = commandlinetools-linux-$(ANDROID_CLI_VERSION)_latest.zip
