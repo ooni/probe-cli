@@ -369,7 +369,8 @@ GOMOBILE = $(shell go env GOPATH)/bin/gomobile
 
 # Here we use ooni/go to work around https://github.com/ooni/probe/issues/1444
 __android_build_with_ooni_go: search/for/go
-	go get -u golang.org/x/mobile/cmd/gomobile@latest
+	go env -w GO111MODULE=auto
+	go get -u golang.org/x/mobile/cmd/gomobile
 	$(GOMOBILE) init
 	ANDROID_HOME=$(OONI_ANDROID_HOME) ANDROID_NDK_HOME=$(OONI_ANDROID_HOME)/ndk/$(ANDROID_NDK_VERSION) $(GOMOBILE) bind -target android -o ./MOBILE/android/oonimkall.aar -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
 
@@ -393,7 +394,8 @@ __android_build_with_ooni_go: search/for/go
 #help: * `./mk ./MOBILE/ios/framework`: the framework
 .PHONY:     ./MOBILE/ios/oonimkall.framework
 ./MOBILE/ios/oonimkall.framework: search/for/go search/for/xcode
-	go get -u golang.org/x/mobile/cmd/gomobile@latest
+	go env -w GO111MODULE=auto
+	go get -u golang.org/x/mobile/cmd/gomobile
 	$(GOMOBILE) init
 	$(GOMOBILE) bind -target ios -o $@ -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
 
