@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - "release/**"
+      - "fix/mkupdates"
 jobs:
   build:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
       - run: sudo apt install mingw-w64
-      - run: ./make --disable-embedding-psiphon-config -t ./CLI/windows/amd64/ooniprobe.exe
+      - run: ./mk OONI_PSIPHON_TAGS="" ./CLI/windows/amd64/ooniprobe.exe
       - uses: actions/upload-artifact@v2
         with:
           name: ooniprobe.exe

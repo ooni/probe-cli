@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "release/**"
+      - "fix/mkupdates"
 
 jobs:
   build_amd64:
@@ -13,11 +14,11 @@ jobs:
           echo $'{\n    "experimental": true\n}' | sudo tee /etc/docker/daemon.json
           sudo service docker restart
       - uses: actions/checkout@v2
-      - run: ./make --disable-embedding-psiphon-config -t ./CLI/linux/amd64/ooniprobe
+      - run: ./mk OONI_PSIPHON_TAGS="" ./CLI/linux/amd64/ooniprobe
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
       - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
-      - run: ./make --disable-embedding-psiphon-config -t debian_amd64
+      - run: ./mk OONI_PSIPHON_TAGS="" ./debian/amd64
       - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
       - run: |
           for deb in *.deb; do
@@ -36,11 +37,11 @@ jobs:
           sudo service docker restart
       - uses: actions/checkout@v2
       - run: sudo apt-get install qemu-user-static
-      - run: ./make --disable-embedding-psiphon-config -t ./CLI/linux/arm64/ooniprobe
+      - run: ./mk OONI_PSIPHON_TAGS="" ./CLI/linux/arm64/ooniprobe
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
       - run: ./smoketest.sh ./CLI/linux/arm64/ooniprobe
-      - run: ./make --disable-embedding-psiphon-config -t debian_arm64
+      - run: ./mk OONI_PSIPHON_TAGS="" ./debian/arm64
       - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
       - run: |
           for deb in *.deb; do

@@ -6,12 +6,13 @@ on:
   push:
     branches:
       - "release/**"
+      - "fix/mkupdates"
 jobs:
   test:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
-      - run: ./make --disable-embedding-psiphon-config -t miniooni
+      - run: ./mk OONI_PSIPHON_TAGS="" miniooni
 
       - run: ./CLI/linux/amd64/miniooni --yes -nNi https://example.com web_connectivity
 
