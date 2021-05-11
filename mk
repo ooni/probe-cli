@@ -259,7 +259,7 @@ show-config:
 .PHONY:     ./CLI/linux/amd64/ooniprobe
 ./debian/amd64: search/for/docker ./CLI/linux/amd64/ooniprobe
 	docker pull --platform linux/amd64 debian:stable
-	docker run --platform linux/amd64 -v `pwd`:/ooni -w /ooni debian:stable ./CLI/linux/debian
+	docker run --platform linux/amd64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian
 
 #help:
 #help: * `./mk ./debian/arm64`: debian/arm64
@@ -268,11 +268,11 @@ show-config:
 .PHONY:     ./CLI/linux/arm64/ooniprobe
 ./debian/arm64: search/for/docker ./CLI/linux/arm64/ooniprobe
 	docker pull --platform linux/arm64 debian:stable
-	docker run --platform linux/arm64 -v `pwd`:/ooni -w /ooni debian:stable ./CLI/linux/debian
+	docker run --platform linux/arm64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian
 
 #help:
 #help: The `./mk ./CLI/ooniprobe/linux` command builds the ooniprobe official command
-#help: line client for amd64 and arm64.
+#help: line client for amd64 and arm64. This entails building and GPG signing.
 #help:
 #help: You can also build the following subtargets:
 .PHONY: ./CLI/ooniprobe/linux
@@ -292,7 +292,7 @@ show-config:
 .PHONY:     ./CLI/linux/amd64/ooniprobe
 ./CLI/linux/amd64/ooniprobe: search/for/docker maybe/copypsiphon
 	docker pull --platform linux/amd64 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/amd64 -e GOPATH=/gopath -e GOARCH=amd64 -v $(GOLANG_DOCKER_GOCACHE)/amd64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v `pwd`:/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	docker run --platform linux/amd64 -e GOPATH=/gopath -e GOARCH=amd64 -v $(GOLANG_DOCKER_GOCACHE)/amd64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
 # ./CLI/linux/arm64/ooniprobe.asc is an internal task for signing.
 .PHONY:   ./CLI/linux/arm64/ooniprobe.asc
@@ -304,11 +304,12 @@ show-config:
 .PHONY:     ./CLI/linux/arm64/ooniprobe
 ./CLI/linux/arm64/ooniprobe: search/for/docker maybe/copypsiphon
 	docker pull --platform linux/arm64 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/arm64 -e GOPATH=/gopath -e GOARCH=arm64 -v $(GOLANG_DOCKER_GOCACHE)/arm64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v `pwd`:/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	docker run --platform linux/arm64 -e GOPATH=/gopath -e GOARCH=arm64 -v $(GOLANG_DOCKER_GOCACHE)/arm64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
 #help:
 #help: The `./mk ./CLI/ooniprobe/windows` command builds the ooniprobe official
-#help: command line client for windows/386 and windows/amd64.
+#help: command line client for windows/386 and windows/amd64. This entails
+#help: building and PGP signing the executables.
 #help:
 #help: You can also build the following subtargets:
 .PHONY: ./CLI/ooniprobe/windows
@@ -352,13 +353,18 @@ show-config:
 	gpg -abu $(GPG_USER) ./MOBILE/android/oonimkall-$(OONIMKALL_V).pom
 	cd ./MOBILE/android && jar -cf bundle.jar oonimkall-$(OONIMKALL_V).aar oonimkall-$(OONIMKALL_V).aar.asc oonimkall-$(OONIMKALL_V)-sources.jar oonimkall-$(OONIMKALL_V)-sources.jar.asc oonimkall-$(OONIMKALL_V).pom oonimkall-$(OONIMKALL_V).pom.asc
 
-# Here we use ooni/go to work around https://github.com/ooni/probe/issues/1444
 #help:
 #help: * `./mk ./MOBILE/android/oonimkall.aar`: the AAR
 .PHONY:   ./MOBILE/android/oonimkall.aar
 ./MOBILE/android/oonimkall.aar: android/sdk ooni/go maybe/copypsiphon
 	PATH=$(OONIGODIR)/bin:$$PATH $(MAKE) -f mk __android_build_with_ooni_go
 
+# GOMOBILE is the full path location to the gomobile binary. We want to
+# execute this command every time, because its output may depend on context,
+# for this reason WE ARE NOT using `:=`.
+GOMOBILE = $(shell go env GOPATH)/bin/gomobile
+
+# Here we use ooni/go to work around https://github.com/ooni/probe/issues/1444
 __android_build_with_ooni_go: search/for/go
 	go get -u golang.org/x/mobile/cmd/gomobile@latest
 	$(GOMOBILE) init
@@ -388,21 +394,19 @@ __android_build_with_ooni_go: search/for/go
 	$(GOMOBILE) init
 	$(GOMOBILE) bind -target ios -o $@ -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
 
-GOMOBILE = `go env GOPATH`/bin/gomobile
-
 #help:
 #help: * `./mk ./MOBILE/ios/oonimkall.podspec`: the podspec
 .PHONY:   ./MOBILE/ios/oonimkall.podspec
 ./MOBILE/ios/oonimkall.podspec: ./MOBILE/template.podspec
 	cat $< | sed -e "s/@VERSION@/$(OONIMKALL_V)/g" -e "s/@RELEASE@/$(OONIMKALL_R)/g" > $@
 
-# important: OONIMKALL_V and OONIMKALL_R are expanded just once
+# important: OONIMKALL_V and OONIMKALL_R are expanded just once so we use `:=`
 OONIMKALL_V := $(shell date -u +%Y.%m.%d-%H%M%S)
-OONIMKALL_R := $(git describe --tags)
+OONIMKALL_R := $(shell git describe --tags)
 
 #help:
 #help: The following commands check for the availability of dependencies:
-# TODO(bassosimone): make checks more robust
+# TODO(bassosimone): make checks more robust?
 
 #help:
 #help: * `./mk search/for/bash`: checks for bash
@@ -463,7 +467,8 @@ search/for/go:
 	@echo $(__GOVERSION_REAL)
 	@[ "$(GOLANG_VERSION_STRING)" = "$(__GOVERSION_REAL)" ] || { echo "fatal: go version must be $(GOLANG_VERSION_STRING) instead of $(__GOVERSION_REAL)"; exit 1; }
 
-__GOVERSION_REAL=$$(go version | awk '{print $$3}')
+# __GOVERSION_REAL is the go version reported by the go binary
+__GOVERSION_REAL = $(shell go version | awk '{print $$3}')
 
 #help:
 #help: * `./mk search/for/mingw-w64`: checks for mingw-w64
@@ -480,8 +485,10 @@ search/for/mingw-w64:
 	@echo $(__MINGW32_386_VERSION)
 	@[ "$(MINGW_W64_VERSION)" = "$(__MINGW32_386_VERSION)" ] || { echo "fatal: i686-w64-mingw32-gcc version must be $(MINGW_W64_VERSION) instead of $(__MINGW32_386_VERSION)"; exit 1; }
 
-__MINGW32_AMD64_VERSION = `x86_64-w64-mingw32-gcc --version | sed -n 1p | awk '{print $$3}'`
-__MINGW32_386_VERSION = `i686-w64-mingw32-gcc --version | sed -n 1p | awk '{print $$3}'`
+# __MINGW32_AMD64_VERSION and __MINGW32_386_VERSION are the versions
+# reported by the amd64 and 386 mingw binaries.
+__MINGW32_AMD64_VERSION = $(shell x86_64-w64-mingw32-gcc --version | sed -n 1p | awk '{print $$3}')
+__MINGW32_386_VERSION = $(shell i686-w64-mingw32-gcc --version | sed -n 1p | awk '{print $$3}')
 
 #help:
 #help: * `./mk search/for/shasum`: checks for shasum
@@ -500,6 +507,7 @@ search/for/xcode:
 	@echo $(__XCODEVERSION_REAL)
 	@[ "$(XCODE_VERSION)" = "$(__XCODEVERSION_REAL)" ] || { echo "fatal: Xcode version must be $(XCODE_VERSION) instead of $(__XCODEVERSION_REAL)"; exit 1; }
 
+# __XCODEVERSION_REAL is the version of Xcode obtained using xcodebuild
 __XCODEVERSION_REAL = `xcodebuild -version | grep ^Xcode | awk '{print $$2}'`
 
 #help:
@@ -560,6 +568,7 @@ android/sdk: search/for/java
 	test -d $(OONI_ANDROID_HOME) || $(MAKE) -f mk android/sdk/download
 	echo "Yes" | $(__ANDROID_SDKMANAGER) --install $(ANDROID_INSTALL_EXTRA) 'ndk;$(ANDROID_NDK_VERSION)'
 
+# __ANDROID_SKDMANAGER is the path to android's sdkmanager tool
 __ANDROID_SDKMANAGER = $(OONI_ANDROID_HOME)/cmdline-tools/$(ANDROID_CLITOOLS_VERSION)/bin/sdkmanager
 
 # See https://stackoverflow.com/a/61176718 to understand why
@@ -577,4 +586,5 @@ android/sdk/download: search/for/curl search/for/java search/for/shasum search/f
 	mkdir -p $(OONI_ANDROID_HOME)/cmdline-tools
 	mv cmdline-tools $(OONI_ANDROID_HOME)/cmdline-tools/$(ANDROID_CLITOOLS_VERSION)
 
+# __ANDROID_CLITOOLS_FILE is the file name of the android cli tools zip
 __ANDROID_CLITOOLS_FILE = commandlinetools-linux-$(ANDROID_CLITOOLS_VERSION)_latest.zip
