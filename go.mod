@@ -14,7 +14,7 @@ require (
 	github.com/cretz/bine v0.1.0
 	github.com/dchest/siphash v1.2.2 // indirect
 	github.com/fatih/color v1.10.0
-	github.com/google/go-cmp v0.5.2
+	github.com/google/go-cmp v0.5.5
 	github.com/google/martian/v3 v3.1.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.2.0
@@ -25,11 +25,11 @@ require (
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
-	github.com/miekg/dns v1.1.41
+	github.com/miekg/dns v1.1.42
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.6.6
 	github.com/ooni/probe-assets v0.2.0
-	github.com/ooni/psiphon v0.7.0
+	github.com/ooni/psiphon v0.8.0
 	github.com/oschwald/geoip2-golang v1.5.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.3.5
@@ -38,10 +38,10 @@ require (
 	github.com/rubenv/sql-migrate v0.0.0-20210408115534-a32ed26c37ea
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/ziutek/mymysql v1.5.4 // indirect
-	gitlab.com/yawning/obfs4.git v0.0.0-20201217005658-f638c33f6c6f
-	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
-	golang.org/x/net v0.0.0-20210423184538-5f58ad60dda6
-	golang.org/x/sys v0.0.0-20210426080607-c94f62235c83
+	gitlab.com/yawning/obfs4.git v0.0.0-20210511220700-e330d1b7024b
+	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf // indirect
+	golang.org/x/net v0.0.0-20210510120150-4163338589ed
+	golang.org/x/sys v0.0.0-20210511113859-b0526f3d8744
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
