@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - "release/**"
-      - "issue/1468"
 jobs:
   test:
     runs-on: ubuntu-20.04
