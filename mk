@@ -228,14 +228,16 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help:
 #help: You can also build the following subtargets:
 .PHONY: ./CLI/ooniprobe/darwin
-./CLI/ooniprobe/darwin:                    \
-	./CLI/darwin/amd64/ooniprobe.asc \
-	./CLI/darwin/arm64/ooniprobe.asc
+./CLI/ooniprobe/darwin:                 \
+	./ooniprobe_darwin_amd64.tar.gz.asc \
+	./ooniprobe_darwin_arm64.tar.gz.asc
 
-# ./CLI/darwin/amd64/ooniprobe.asc is an internal target for signing
-.PHONY:   ./CLI/darwin/amd64/ooniprobe.asc
-./CLI/darwin/amd64/ooniprobe.asc: ./CLI/darwin/amd64/ooniprobe
-	rm -f $@ && gpg -abu $(GPG_USER) $<
+# ./ooniprobe_darwin_amd64.tar.gz.asc creates and signs the release tarball
+.PHONY:   ./ooniprobe_darwin_amd64.tar.gz.asc
+./ooniprobe_darwin_amd64.tar.gz.asc: ./CLI/darwin/amd64/ooniprobe
+	rm -f ooniprobe_darwin_amd64.tar.gz ooniprobe_darwin_amd64.tar.gz.asc
+	tar -cvzf ooniprobe_darwin_amd64.tar.gz -C ./CLI/darwin/amd64 ooniprobe
+	gpg -abu $(GPG_USER) ooniprobe_darwin_amd64.tar.gz
 
 # We force CGO_ENABLED=1 because in principle we may be cross compiling. In
 # reality it's hard to see a macOS/darwin build not made on macOS.
@@ -245,10 +247,12 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 ./CLI/darwin/amd64/ooniprobe: search/for/go maybe/copypsiphon
 	GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
 
-# ./CLI/darwin/arm64/ooniprobe.asc is an internal target for signing
-.PHONY:   ./CLI/darwin/arm64/ooniprobe.asc
-./CLI/darwin/arm64/ooniprobe.asc: ./CLI/darwin/arm64/ooniprobe
-	rm -f $@ && gpg -abu $(GPG_USER) $<
+# ./ooniprobe_darwin_arm64.tar.gz.asc creates and signs the release tarball
+.PHONY:   ./ooniprobe_darwin_arm64.tar.gz.asc
+./ooniprobe_darwin_arm64.tar.gz.asc: ./CLI/darwin/arm64/ooniprobe
+	rm -f ooniprobe_darwin_arm64.tar.gz ooniprobe_darwin_arm64.tar.gz.asc
+	tar -cvzf ooniprobe_darwin_arm64.tar.gz -C ./CLI/darwin/arm64 ooniprobe
+	gpg -abu $(GPG_USER) ooniprobe_darwin_arm64.tar.gz
 
 #help:
 #help: * `./mk ./CLI/darwin/arm64/ooniprobe`: darwin/arm64
@@ -311,16 +315,18 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help:
 #help: You can also build the following subtargets:
 .PHONY: ./CLI/ooniprobe/linux
-./CLI/ooniprobe/linux:               \
-	./CLI/linux/386/ooniprobe.asc    \
-	./CLI/linux/amd64/ooniprobe.asc  \
-	./CLI/linux/arm/ooniprobe.asc    \
-	./CLI/linux/arm64/ooniprobe.asc
+./CLI/ooniprobe/linux:                 \
+	./ooniprobe_linux_386.tar.gz.asc   \
+	./ooniprobe_linux_amd64.tar.gz.asc \
+	./ooniprobe_linux_armv7.tar.gz.asc \
+	./ooniprobe_linux_arm64.tar.gz.asc
 
-# ./CLI/linux/386/ooniprobe.asc is an internal task for signing.
-.PHONY:   ./CLI/linux/386/ooniprobe.asc
-./CLI/linux/386/ooniprobe.asc: ./CLI/linux/386/ooniprobe
-	rm -f $@ && gpg -abu $(GPG_USER) $<
+# ./ooniprobe_linux_386.tar.gz.asc creates and signs the release tarball
+.PHONY:   ./ooniprobe_linux_386.tar.gz.asc
+./ooniprobe_linux_386.tar.gz.asc: ./CLI/linux/386/ooniprobe
+	rm -f ooniprobe_linux_386.tar.gz ooniprobe_linux_386.tar.gz.asc
+	tar -cvzf ooniprobe_linux_386.tar.gz -C ./CLI/linux/386 ooniprobe
+	gpg -abu $(GPG_USER) ooniprobe_linux_386.tar.gz
 
 # Linux builds use Alpine and Docker so we are sure that we are statically
 # linking to musl libc, thus making our binaries extremely portable.
@@ -331,10 +337,12 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 	docker pull --platform linux/386 $(GOLANG_DOCKER_IMAGE)
 	docker run --platform linux/386 -e GOPATH=/gopath -e GOARCH=386 -v $(GOLANG_DOCKER_GOCACHE)/386:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
-# ./CLI/linux/amd64/ooniprobe.asc is an internal task for signing.
-.PHONY:   ./CLI/linux/amd64/ooniprobe.asc
-./CLI/linux/amd64/ooniprobe.asc: ./CLI/linux/amd64/ooniprobe
-	rm -f $@ && gpg -abu $(GPG_USER) $<
+# ./ooniprobe_linux_amd64.tar.gz.asc creates and signs the release tarball
+.PHONY:   ./ooniprobe_linux_amd64.tar.gz.asc
+./ooniprobe_linux_amd64.tar.gz.asc: ./CLI/linux/amd64/ooniprobe
+	rm -f ooniprobe_linux_amd64.tar.gz ooniprobe_linux_amd64.tar.gz.asc
+	tar -cvzf ooniprobe_linux_amd64.tar.gz -C ./CLI/linux/amd64 ooniprobe
+	gpg -abu $(GPG_USER) ooniprobe_linux_amd64.tar.gz
 
 #help:
 #help: * `./mk ./CLI/linux/amd64/ooniprobe`: linux/amd64
@@ -343,10 +351,12 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 	docker pull --platform linux/amd64 $(GOLANG_DOCKER_IMAGE)
 	docker run --platform linux/amd64 -e GOPATH=/gopath -e GOARCH=amd64 -v $(GOLANG_DOCKER_GOCACHE)/amd64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
-# ./CLI/linux/arm/ooniprobe.asc is an internal task for signing.
-.PHONY:   ./CLI/linux/arm/ooniprobe.asc
-./CLI/linux/arm/ooniprobe.asc: ./CLI/linux/arm/ooniprobe
-	rm -f $@ && gpg -abu $(GPG_USER) $<
+# ./ooniprobe_linux_armv7.tar.gz.asc creates and signs the release tarball
+.PHONY:   ./ooniprobe_linux_armv7.tar.gz.asc
+./ooniprobe_linux_armv7.tar.gz.asc: ./CLI/linux/arm/ooniprobe
+	rm -f ooniprobe_linux_armv7.tar.gz ooniprobe_linux_armv7.tar.gz.asc
+	tar -cvzf ooniprobe_linux_armv7.tar.gz -C ./CLI/linux/arm ooniprobe
+	gpg -abu $(GPG_USER) ooniprobe_linux_armv7.tar.gz
 
 # Note that we're building for armv7 here
 #help:
@@ -356,10 +366,12 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 	docker pull --platform linux/arm/v7 $(GOLANG_DOCKER_IMAGE)
 	docker run --platform linux/arm/v7 -e GOPATH=/gopath -e GOARCH=arm -e GOARM=7 -v $(GOLANG_DOCKER_GOCACHE)/arm:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
-# ./CLI/linux/arm64/ooniprobe.asc is an internal task for signing.
-.PHONY:   ./CLI/linux/arm64/ooniprobe.asc
-./CLI/linux/arm64/ooniprobe.asc: ./CLI/linux/arm64/ooniprobe
-	rm -f $@ && gpg -abu $(GPG_USER) $<
+# ./ooniprobe_linux_arm64.tar.gz.asc creates and signs the release tarball
+.PHONY:   ./ooniprobe_linux_arm64.tar.gz.asc
+./ooniprobe_linux_arm64.tar.gz.asc: ./CLI/linux/arm64/ooniprobe
+	rm -f ooniprobe_linux_arm64.tar.gz ooniprobe_linux_arm64.tar.gz.asc
+	tar -cvzf ooniprobe_linux_arm64.tar.gz -C ./CLI/linux/arm64 ooniprobe
+	gpg -abu $(GPG_USER) ooniprobe_linux_arm64.tar.gz
 
 #help:
 #help: * `./mk ./CLI/linux/arm64/ooniprobe`: linux/arm64
@@ -376,13 +388,24 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help: You can also build the following subtargets:
 .PHONY: ./CLI/ooniprobe/windows
 ./CLI/ooniprobe/windows:                   \
-	./CLI/windows/386/ooniprobe.exe.asc    \
-	./CLI/windows/amd64/ooniprobe.exe.asc
+	./ooniprobe_windows_386.tar.gz.asc     \
+	./ooniprobe_windows_386.zip.asc        \
+	./ooniprobe_windows_amd64.tar.gz.asc   \
+	./ooniprobe_windows_amd64.zip.asc
 
-# ./CLI/windows/386/ooniprobe.exe.asc is an internal signing target
-.PHONY:   ./CLI/windows/386/ooniprobe.exe.asc
-./CLI/windows/386/ooniprobe.exe.asc: ./CLI/windows/386/ooniprobe.exe
-	rm -f $@ && gpg -abu $(GPG_USER) $<
+# ./ooniprobe_windows_386.tar.gz.asc creates and signs the release tarball
+.PHONY:   ./ooniprobe_windows_386.tar.gz.asc
+./ooniprobe_windows_386.tar.gz.asc: ./CLI/windows/386/ooniprobe.exe
+	rm -f ooniprobe_windows_386.tar.gz ooniprobe_windows_386.tar.gz.asc
+	tar -cvzf ooniprobe_windows_386.tar.gz -C ./CLI/windows/386 ooniprobe.exe
+	gpg -abu $(GPG_USER) ooniprobe_windows_386.tar.gz
+
+# ./ooniprobe_windows_386.zip.asc creates and signs the release zipball
+.PHONY:   ./ooniprobe_windows_386.zip.asc
+./ooniprobe_windows_386.zip.asc: ./CLI/windows/386/ooniprobe.exe
+	rm -f ooniprobe_windows_386.zip ooniprobe_windows_386.zip.asc
+	cd ./CLI/windows/386 && zip ../../../ooniprobe_windows_386.zip ooniprobe.exe
+	gpg -abu $(GPG_USER) ooniprobe_windows_386.zip
 
 #help:
 #help: * `./mk ./CLI/windows/386/ooniprobe.exe`: windows/386
@@ -390,10 +413,19 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 ./CLI/windows/386/ooniprobe.exe: search/for/go search/for/mingw-w64 maybe/copypsiphon
 	GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
 
-# ./CLI/windows/amd64/ooniprobe.exe.asc is an internal signing target
-.PHONY:   ./CLI/windows/amd64/ooniprobe.exe.asc
-./CLI/windows/amd64/ooniprobe.exe.asc: ./CLI/windows/amd64/ooniprobe.exe
-	rm -f $@ && gpg -abu $(GPG_USER) $<
+# ./ooniprobe_windows_amd64.tar.gz.asc creates and signs the release tarball
+.PHONY:   ./ooniprobe_windows_amd64.tar.gz.asc
+./ooniprobe_windows_amd64.tar.gz.asc: ./CLI/windows/amd64/ooniprobe.exe
+	rm -f ooniprobe_windows_amd64.tar.gz ooniprobe_windows_amd64.tar.gz.asc
+	tar -cvzf ooniprobe_windows_amd64.tar.gz -C ./CLI/windows/amd64 ooniprobe.exe
+	gpg -abu $(GPG_USER) ooniprobe_windows_amd64.tar.gz
+
+# ./ooniprobe_windows_amd64.zip.asc creates and signs the release zipball
+.PHONY:   ./ooniprobe_windows_amd64.zip.asc
+./ooniprobe_windows_amd64.zip.asc: ./CLI/windows/amd64/ooniprobe.exe
+	rm -f ooniprobe_windows_amd64.zip ooniprobe_windows_amd64.zip.asc
+	cd ./CLI/windows/amd64 && zip ../../../ooniprobe_windows_amd64.zip ooniprobe.exe
+	gpg -abu $(GPG_USER) ooniprobe_windows_amd64.zip
 
 #help:
 #help: * `./mk ./CLI/windows/amd64/ooniprobe.exe`: windows/amd64
