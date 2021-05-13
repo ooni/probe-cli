@@ -28,7 +28,7 @@ require (
 	github.com/miekg/dns v1.1.42
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.6.6
-	github.com/ooni/probe-assets v0.2.0
+	github.com/ooni/probe-assets v0.3.1
 	github.com/ooni/psiphon v0.8.0
 	github.com/oschwald/geoip2-golang v1.5.0
 	github.com/pborman/getopt/v2 v2.1.0

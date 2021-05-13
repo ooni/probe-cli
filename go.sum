@@ -260,8 +260,8 @@ github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1Cpa
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/onsi/gomega v1.10.1 h1:o0+MgICZLuZ7xjH7Vx6zS/zcu93/BEp1VwkIW1mEXCE=
 github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
-github.com/ooni/probe-assets v0.2.0 h1:x4zWJVVJCWlFD6TUvFpN7cqanCCpiYGZxqmZ1Vb0KmA=
-github.com/ooni/probe-assets v0.2.0/go.mod h1:N0PyNM3aadlYDDCFXAPzs54HC54+MZA/4/xnCtd9EAo=
+github.com/ooni/probe-assets v0.3.1 h1:6PDcoJTICJxL8PdeM0+a3ZfkTWrFfCn90fUqTWR0LDA=
+github.com/ooni/probe-assets v0.3.1/go.mod h1:N0PyNM3aadlYDDCFXAPzs54HC54+MZA/4/xnCtd9EAo=
 github.com/ooni/psiphon v0.8.0 h1:digldztBlINi3HWuxdK4gFhkiaheAoDVjZN/ApZHWBM=
 github.com/ooni/psiphon v0.8.0/go.mod h1:i1v6JweJtxDKaI0i1aEw2/Fr/CUi5BoQ75GYz5KmKwU=
 github.com/openzipkin/zipkin-go v0.1.1/go.mod h1:NtoC/o8u3JlF1lSlyPNswIbeQH9bJTmOf0Erfk+hxe8=
