@@ -1,4 +1,5 @@
 .DS_Store
+/*.asc
 /*.deb
 /*.jsonl
 /*.tar.gz

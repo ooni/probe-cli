@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "release/**"
+      - "issue/1468"
 
 jobs:
   build_386:
@@ -11,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/386
-      - run: ./smoketest.sh ./CLI/linux/386/ooniprobe
+      - run: ./E2E/ooniprobe.sh ./CLI/linux/386/ooniprobe
       - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
       - run: |
           for deb in *.deb; do
@@ -27,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/amd64
-      - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
+      - run: ./E2E/ooniprobe.sh ./CLI/linux/amd64/ooniprobe
       - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
       - run: |
           for deb in *.deb; do
@@ -45,7 +46,7 @@ jobs:
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y qemu-user-static
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm
-      - run: ./smoketest.sh ./CLI/linux/arm/ooniprobe
+      - run: ./E2E/ooniprobe.sh ./CLI/linux/arm/ooniprobe
       - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
       - run: |
           for deb in *.deb; do
@@ -64,7 +65,7 @@ jobs:
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y qemu-user-static
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm64
-      - run: ./smoketest.sh ./CLI/linux/arm64/ooniprobe
+      - run: ./E2E/ooniprobe.sh ./CLI/linux/arm64/ooniprobe
       - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
       - run: |
           for deb in *.deb; do

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "release/**"
+      - "issue/1468"
 jobs:
   build:
     runs-on: "ubuntu-20.04"
@@ -26,4 +27,4 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: ooniprobe.exe
-      - run: bash.exe ./smoketest.sh ./ooniprobe.exe
+      - run: bash.exe ./E2E/ooniprobe.sh ./ooniprobe.exe
