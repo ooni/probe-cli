@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - "release/**"
-      - "issue/1468"
 
 jobs:
   build_386:
