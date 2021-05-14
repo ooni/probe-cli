@@ -358,7 +358,7 @@ class S3:
         r = dedent(
             f"""
             Acquire-By-Hash: no
-            Architectures: {conf.arch}
+            Architectures: i386 amd64 armhf arm64
             Codename: {conf.distro}
             Components: main
             Date: Thu, 07 Nov 2019 14:23:37 UTC
