@@ -90,6 +90,11 @@ type Overrides struct {
 	// RoundTrip overrides Transport.DefaultRoundTrip.
 	RoundTrip func(req *http.Request) (*http.Response, error)
 
+	// TLSClientConfig contains the default tls.Config. If nil, we will create
+	// a new tls.Config and fill it. Note that, in particular, by default we
+	// will set the ALPN to {"h2", "http/1.1"} if the port is "443".
+	TLSClientConfig *tls.Config
+
 	// TLSHandshake overrides Transport.DefaultTLSHandshake.
 	TLSHandshake func(ctx context.Context, conn net.Conn, config *tls.Config) (
 		*TLSHandshakeResult, error)
@@ -122,11 +127,6 @@ type Transport struct {
 	// that does not emit any logging message.
 	Logger Logger
 
-	// TLSClientConfig contains the default tls.Config. If nil, we will create
-	// a new tls.Config and fill it. Note that, in particular, by default we
-	// will set the ALPN to {"h2", "http/1.1"} if the port is "443".
-	TLSClientConfig *tls.Config
-
 	// mu provides mutual exclusion.
 	mu sync.Mutex
 
@@ -144,9 +144,9 @@ func (txp *Transport) logger() Logger {
 }
 
 // tlsClientConfig returns the configured TLS client config or the default.
-func (txp *Transport) tlsClientConfig() *tls.Config {
-	if txp.TLSClientConfig != nil {
-		return txp.TLSClientConfig.Clone()
+func (txp *Transport) tlsClientConfig(ctx context.Context) *tls.Config {
+	if overrides := ContextOverrides(ctx); overrides != nil && overrides.TLSClientConfig != nil {
+		return overrides.TLSClientConfig.Clone()
 	}
 	return &tls.Config{}
 }
@@ -176,7 +176,6 @@ func (txp *Transport) getOrCreateTransport() http.RoundTripper {
 			Proxy:                 txp.httpProxy,
 			DialContext:           txp.httpDialContext,
 			DialTLSContext:        txp.httpDialTLSContext,
-			TLSClientConfig:       txp.TLSClientConfig,
 			TLSHandshakeTimeout:   txp.tlsHandshakeTimeout(),
 			DisableCompression:    true,
 			MaxIdleConns:          100,

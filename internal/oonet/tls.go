@@ -62,7 +62,7 @@ func (txp *Transport) DefaultDialTLSContext(ctx context.Context, network string,
 	if err != nil {
 		return nil, err
 	}
-	tlsConfig := txp.tlsClientConfig()
+	tlsConfig := txp.tlsClientConfig(ctx)
 	if tlsConfig.ServerName == "" {
 		tlsConfig.ServerName = sni
 	}
@@ -120,13 +120,6 @@ func (txp *Transport) TLSHandshake(ctx context.Context, conn net.Conn, config *t
 	if err != nil {
 		log.Debugf("%s %s", prefix, err)
 		return nil, &ErrTLSHandshake{err}
-	}
-	state := result.State
-	// TODO(bassosimone): remove the following now-redundant check
-	if len(config.NextProtos) > 0 && !state.NegotiatedProtocolIsMutual {
-		err := &ErrTLSNoMutualProtocol{Config: config, State: state}
-		log.Debugf("%s %s", prefix, err)
-		return nil, err
 	}
 	log.Debugf("%s proto=%s", prefix, result.State.NegotiatedProtocol)
 	return result, nil

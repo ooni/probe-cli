@@ -28,7 +28,10 @@ func (err *ErrDial) Unwrap() error {
 	return err.error
 }
 
-// ConnWrapper is a wrapper for net.ConnWrapper.
+// TODO(bassosimone): if ConnWrapper knows its transport, it can
+// then tell the transport the bytes consumed.
+
+// ConnWrapper is a wrapper for net.Conn.
 type ConnWrapper struct {
 	net.Conn
 }
