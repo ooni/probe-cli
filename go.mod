@@ -13,6 +13,8 @@ require (
 	github.com/creack/goselect v0.1.2 // indirect
 	github.com/cretz/bine v0.1.0
 	github.com/dchest/siphash v1.2.2 // indirect
+	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
+	github.com/elazarl/goproxy/ext v0.0.0-20210110162100-a92cc753f88e
 	github.com/fatih/color v1.10.0
 	github.com/google/go-cmp v0.5.2
 	github.com/google/martian/v3 v3.1.0

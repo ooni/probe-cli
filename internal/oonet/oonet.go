@@ -86,7 +86,8 @@ type Overrides struct {
 	RoundTrip func(req *http.Request) (*http.Response, error)
 
 	// TLSHandshake overrides Transport.DefaultTLSHandshake.
-	TLSHandshake func(ctx context.Context, conn net.Conn, config *tls.Config) (*TLSHandshakeResult, error)
+	TLSHandshake func(ctx context.Context, conn net.Conn, config *tls.Config) (
+		*TLSHandshakeResult, error)
 }
 
 // overridesKey is the key used by context.WithValue/ctx.Value.
@@ -160,6 +161,11 @@ func (txp *Transport) tlsClientConfig() *tls.Config {
 func (txp *Transport) tlsHandshakeTimeout() time.Duration {
 	return 10 * time.Second
 }
+
+// TODO(bassosimone): I suppose we want httpx here as
+// methods of an http client so we don't need to force
+// people to remember to read bodies in the right way
+// where we honour the context?
 
 // getOrCreateTransport creates (if needed) and then returns the
 // internal httpTransport used by the Transport. This function will

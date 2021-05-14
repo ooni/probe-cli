@@ -86,7 +86,8 @@ var ErrProxyNotImplemented = errors.New("oonet: proxy not implemented")
 // generic network connection using any kind of proxy. (We do support proxies
 // when internally dialing connections for HTTP's sake though.) On success,
 // the returned net.Conn will be wrapped using ConnWrapper.
-func (txp *Transport) DialContext(ctx context.Context, network string, addr string) (net.Conn, error) {
+func (txp *Transport) DialContext(
+	ctx context.Context, network string, addr string) (net.Conn, error) {
 	if txp.Proxy != nil {
 		return nil, &ErrDial{ErrProxyNotImplemented}
 	}
@@ -95,7 +96,8 @@ func (txp *Transport) DialContext(ctx context.Context, network string, addr stri
 
 // httpDialContext is the DialContext called by HTTP code to bypass the check on the
 // presence of the Transport.Proxy field implemented by Transport.DialContext.
-func (txp *Transport) httpDialContext(ctx context.Context, network string, addr string) (net.Conn, error) {
+func (txp *Transport) httpDialContext(
+	ctx context.Context, network string, addr string) (net.Conn, error) {
 	log := txp.logger()
 	log.Debugf("dial: %s/%s...", addr, network)
 	conn, err := txp.routeDialContext(ctx, network, addr)
@@ -108,7 +110,8 @@ func (txp *Transport) httpDialContext(ctx context.Context, network string, addr 
 }
 
 // routeDialContext routes the DialContext call.
-func (txp *Transport) routeDialContext(ctx context.Context, network string, addr string) (net.Conn, error) {
+func (txp *Transport) routeDialContext(
+	ctx context.Context, network string, addr string) (net.Conn, error) {
 	if overrides := ContextOverrides(ctx); overrides != nil && overrides.DialContext != nil {
 		return overrides.DialContext(ctx, network, addr)
 	}
@@ -128,7 +131,8 @@ func (err *ErrConnect) Error() string {
 
 // DefaultDialContext is the default DialContext implementation. When there is an error
 // when connecting, this function will return an ErrConnect instance.
-func (txp *Transport) DefaultDialContext(ctx context.Context, network string, addr string) (net.Conn, error) {
+func (txp *Transport) DefaultDialContext(
+	ctx context.Context, network string, addr string) (net.Conn, error) {
 	hostname, port, err := net.SplitHostPort(addr)
 	if err != nil {
 		return nil, err

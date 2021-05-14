@@ -122,6 +122,7 @@ func (txp *Transport) TLSHandshake(ctx context.Context, conn net.Conn, config *t
 		return nil, &ErrTLSHandshake{err}
 	}
 	state := result.State
+	// TODO(bassosimone): remove the following now-redundant check
 	if len(config.NextProtos) > 0 && !state.NegotiatedProtocolIsMutual {
 		err := &ErrTLSNoMutualProtocol{Config: config, State: state}
 		log.Debugf("%s %s", prefix, err)
