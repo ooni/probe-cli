@@ -24,7 +24,7 @@ func (err *ErrDialTLS) Unwrap() error {
 // default, or ContextOverrides.DialTLSContext, if configured. This function will call
 // txp.DialContext to dial a cleartext connection and txp.TLSHandshake to handshake.
 func (txp *Transport) DialTLSContext(ctx context.Context, network string, addr string) (net.Conn, error) {
-	if txp.Proxy != nil {
+	if overrides := ContextOverrides(ctx); overrides != nil && overrides.Proxy != nil {
 		return nil, &ErrDialTLS{ErrProxyNotImplemented}
 	}
 	return txp.httpDialTLSContext(ctx, network, addr)

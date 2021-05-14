@@ -82,6 +82,11 @@ type Overrides struct {
 	// LookupHost overrides Transport.DefaultLookupHost.
 	LookupHost func(ctx context.Context, domain string) ([]string, error)
 
+	// Proxy is the optional proxy to use. We support http and
+	// socks5 proxies with HTTP. We currently do not support using
+	// a proxy when connecting TCP/TLS directly.
+	Proxy *url.URL
+
 	// RoundTrip overrides Transport.DefaultRoundTrip.
 	RoundTrip func(req *http.Request) (*http.Response, error)
 
@@ -116,17 +121,6 @@ type Transport struct {
 	// Logger is the logger to use. If nil, we will instead use a logger
 	// that does not emit any logging message.
 	Logger Logger
-
-	// Proxy specifies which proxy to use, if any. This setting WILL NOT have
-	// any effect in the two following cases:
-	//
-	// 1. there is a custom override.RoundTrip override;
-	//
-	// 2. you call DialContext or DialTLSContext.
-	//
-	// A future version of this implementation may fix these limitations. We will
-	// return ErrProxyNotImplemented in the latter case.
-	Proxy func(*http.Request) (*url.URL, error)
 
 	// TLSClientConfig contains the default tls.Config. If nil, we will create
 	// a new tls.Config and fill it. Note that, in particular, by default we
@@ -166,6 +160,10 @@ func (txp *Transport) tlsHandshakeTimeout() time.Duration {
 // methods of an http client so we don't need to force
 // people to remember to read bodies in the right way
 // where we honour the context?
+//
+// If so, what we need is at least a subset of httpx
+// that reads the body in the correct way. Then we need
+// proper interfaces in the consumer packages.
 
 // getOrCreateTransport creates (if needed) and then returns the
 // internal httpTransport used by the Transport. This function will
@@ -175,7 +173,7 @@ func (txp *Transport) getOrCreateTransport() http.RoundTripper {
 	txp.mu.Lock()
 	if txp.httpTransport == nil {
 		txp.httpTransport = &http.Transport{
-			Proxy:                 txp.Proxy,
+			Proxy:                 txp.httpProxy,
 			DialContext:           txp.httpDialContext,
 			DialTLSContext:        txp.httpDialTLSContext,
 			TLSClientConfig:       txp.TLSClientConfig,
@@ -188,6 +186,17 @@ func (txp *Transport) getOrCreateTransport() http.RoundTripper {
 		}
 	}
 	return txp.httpTransport
+}
+
+// httpProxy checks whether we need to use a proxy.
+func (txp *Transport) httpProxy(req *http.Request) (*url.URL, error) {
+	ctx := req.Context()
+	if overrides := ContextOverrides(ctx); overrides != nil && overrides.Proxy != nil {
+		log := txp.logger()
+		log.Debugf("http: using proxy: %s", overrides.Proxy)
+		return overrides.Proxy, nil
+	}
+	return nil, nil
 }
 
 // CloseIdleConnections closes idle connections (if any).

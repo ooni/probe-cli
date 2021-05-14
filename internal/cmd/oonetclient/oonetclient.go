@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -16,25 +17,21 @@ import (
 
 func main() {
 	log.SetLevel(log.DebugLevel)
-	txp := &oonet.Transport{
-		Logger: log.Log,
-		Proxy: func(*http.Request) (*url.URL, error) {
-			/*
-				return &url.URL{
-					Scheme: "socks5",
-					User:   url.UserPassword("antani", "melandri"),
-					Host:   "127.0.0.1:8118",
-				}, nil
-			*/
-			return &url.URL{
-				Scheme: "http",
-				User:   url.UserPassword("antani", "melandri"),
-				Host:   "127.0.0.1:8002",
-			}, nil
-		},
-	}
+	txp := &oonet.Transport{Logger: log.Log}
 	clnt := &http.Client{Transport: txp}
-	resp, err := clnt.Get("https://www.google.com")
+	ctx := context.Background()
+	ctx = oonet.WithOverrides(ctx, &oonet.Overrides{
+		Proxy: &url.URL{
+			Scheme: "http",
+			User:   url.UserPassword("antani", "melandri"),
+			Host:   "127.0.0.1:8002",
+		},
+	})
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://www.google.com", nil)
+	if err != nil {
+		log.WithError(err).Fatal("http.NewRequest failed")
+	}
+	resp, err := clnt.Do(req)
 	if err != nil {
 		log.WithError(err).Fatal("clnt.Get failed")
 	}
