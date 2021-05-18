@@ -7,7 +7,19 @@ import (
 	"net/url"
 )
 
+// ByteCounter counts bytes received and sent.
+type ByteCounter interface {
+	// CountyBytesReceived increments the bytes-received count.
+	CountBytesReceived(count int)
+
+	// CountBytesSent increments the bytes-sent count.
+	CountBytesSent(count int)
+}
+
 type Settings struct {
+	// ByteCounter is the optional byte counter to use.
+	ByteCounter ByteCounter
+
 	// Connector is the optional connector to use.
 	Connector Connector
 

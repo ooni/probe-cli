@@ -42,5 +42,25 @@ func (txp *Transport) connect(ctx context.Context, network, address string) (net
 	if err != nil {
 		return nil, &ErrConnect{err}
 	}
-	return &connWrapper{conn}, nil
+	return &connWrapper{byteCounter: txp.byteCounter(ctx), Conn: conn}, nil
+}
+
+// noopByteCounter is a no-op ByteCounter.
+type noopByteCounter struct{}
+
+// CountyBytesReceived increments the bytes received count.
+func (*noopByteCounter) CountBytesReceived(count int) {}
+
+// CountBytesSent increments the bytes sent count.
+func (*noopByteCounter) CountBytesSent(count int) {}
+
+// defaultByteCounter is the default byte counter.
+var defaultByteCounter = &noopByteCounter{}
+
+// byteCounter returns the ByteCounter to use.
+func (txp *Transport) byteCounter(ctx context.Context) ByteCounter {
+	if settings := ContextSettings(ctx); settings != nil && settings.ByteCounter != nil {
+		return settings.ByteCounter
+	}
+	return defaultByteCounter
 }

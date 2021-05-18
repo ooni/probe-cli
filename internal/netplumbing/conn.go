@@ -4,6 +4,7 @@ import "net"
 
 // connWrapper is a wrapper for net.Conn.
 type connWrapper struct {
+	byteCounter ByteCounter
 	net.Conn
 }
 
@@ -24,6 +25,7 @@ func (conn *connWrapper) Read(b []byte) (int, error) {
 	if err != nil {
 		return 0, &ErrRead{err}
 	}
+	conn.byteCounter.CountBytesReceived(count)
 	return count, nil
 }
 
@@ -44,5 +46,6 @@ func (conn *connWrapper) Write(b []byte) (int, error) {
 	if err != nil {
 		return 0, &ErrWrite{err}
 	}
+	conn.byteCounter.CountBytesSent(count)
 	return count, nil
 }
