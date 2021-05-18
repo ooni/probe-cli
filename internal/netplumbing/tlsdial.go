@@ -33,8 +33,8 @@ func (txp *Transport) DialTLSContext(
 
 // tlsClientConfig returns the configured TLS client config or the default.
 func (txp *Transport) tlsClientConfig(ctx context.Context) *tls.Config {
-	if settings := ContextSettings(ctx); settings != nil && settings.TLSClientConfig != nil {
-		return settings.TLSClientConfig.Clone()
+	if config := ContextConfig(ctx); config != nil && config.TLSClientConfig != nil {
+		return config.TLSClientConfig.Clone()
 	}
 	return &tls.Config{}
 }

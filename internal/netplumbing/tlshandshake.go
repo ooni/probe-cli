@@ -68,10 +68,10 @@ var DefaultTLSHandshaker = &StdlibTLSHandshaker{}
 
 // routeTLSHandshake routes the TLS handshake call.
 func (txp *Transport) routeTLSHandshake(
-	ctx context.Context, tcpConn net.Conn, config *tls.Config) (
+	ctx context.Context, tcpConn net.Conn, tlsConfig *tls.Config) (
 	net.Conn, *tls.ConnectionState, error) {
-	if settings := ContextSettings(ctx); settings != nil && settings.TLSHandshaker != nil {
-		return settings.TLSHandshaker.TLSHandshake(ctx, tcpConn, config)
+	if config := ContextConfig(ctx); config != nil && config.TLSHandshaker != nil {
+		return config.TLSHandshaker.TLSHandshake(ctx, tcpConn, tlsConfig)
 	}
-	return DefaultTLSHandshaker.TLSHandshake(ctx, tcpConn, config)
+	return DefaultTLSHandshaker.TLSHandshake(ctx, tcpConn, tlsConfig)
 }

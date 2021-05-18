@@ -13,10 +13,10 @@ import (
 // proxy checks whether we need to use a proxy.
 func (txp *Transport) proxy(req *http.Request) (*url.URL, error) {
 	ctx := req.Context()
-	if settings := ContextSettings(ctx); settings != nil && settings.Proxy != nil {
+	if config := ContextConfig(ctx); config != nil && config.Proxy != nil {
 		log := txp.logger(ctx)
-		log.Debugf("http: using proxy: %s", settings.Proxy)
-		return settings.Proxy, nil
+		log.Debugf("http: using proxy: %s", config.Proxy)
+		return config.Proxy, nil
 	}
 	return nil, nil
 }

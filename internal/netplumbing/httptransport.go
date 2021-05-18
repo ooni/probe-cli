@@ -40,8 +40,8 @@ func (txp *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 // routeRoundTrip routes the RoundTrip call.
 func (txp *Transport) routeRoundTrip(req *http.Request) (*http.Response, error) {
 	ctx := req.Context()
-	if settings := ContextSettings(ctx); settings != nil && settings.HTTPTransport != nil {
-		return settings.HTTPTransport.RoundTrip(req)
+	if config := ContextConfig(ctx); config != nil && config.HTTPTransport != nil {
+		return config.HTTPTransport.RoundTrip(req)
 	}
 	return txp.RoundTripper.RoundTrip(req)
 }

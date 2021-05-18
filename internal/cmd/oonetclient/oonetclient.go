@@ -18,7 +18,7 @@ import (
 func main() {
 	log.SetLevel(log.DebugLevel)
 	clnt := &http.Client{Transport: netplumbing.DefaultTransport}
-	ctx := netplumbing.WithSettings(context.Background(), &netplumbing.Settings{
+	ctx := netplumbing.WithConfig(context.Background(), &netplumbing.Config{
 		Logger: log.Log,
 		Proxy: &url.URL{
 			Scheme: "socks5",

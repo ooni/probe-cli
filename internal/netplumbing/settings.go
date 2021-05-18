@@ -16,7 +16,8 @@ type ByteCounter interface {
 	CountBytesSent(count int)
 }
 
-type Settings struct {
+// Config contains settings you can configured using WithConfig.
+type Config struct {
 	// ByteCounter is the optional byte counter to use.
 	ByteCounter ByteCounter
 
@@ -42,21 +43,21 @@ type Settings struct {
 	TLSHandshaker TLSHandshaker
 }
 
-// settingsKey is the key used by context.WithValue/ctx.Value.
-type settingsKey struct{}
+// configKey is the key used by context.WithValue/ctx.Value.
+type configKey struct{}
 
-// WithSettings returns a copy of the context using the provided Settings. This
-// function will panic if passed a nil settings.
-func WithSettings(ctx context.Context, settings *Settings) context.Context {
-	if settings == nil {
-		panic("oonet: WithSettings passed a nil pointer")
+// WithConfig returns a copy of the context using the provided config. This
+// function will panic if passed a nil config.
+func WithConfig(ctx context.Context, config *Config) context.Context {
+	if config == nil {
+		panic("oonet: WithConfig passed a nil pointer")
 	}
-	return context.WithValue(ctx, settingsKey{}, settings)
+	return context.WithValue(ctx, configKey{}, config)
 }
 
-// ContextSettings returns the settings associated to the context. This function
-// may return a nil Settings, if no Settings is saved into the context.
-func ContextSettings(ctx context.Context) *Settings {
-	settings, _ := ctx.Value(settingsKey{}).(*Settings)
-	return settings
+// ContextConfig returns the config associated to the context. This function
+// may return a nil config, if no config is saved into the context.
+func ContextConfig(ctx context.Context) *Config {
+	config, _ := ctx.Value(configKey{}).(*Config)
+	return config
 }

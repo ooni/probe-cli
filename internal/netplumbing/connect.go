@@ -35,8 +35,8 @@ func (e *ErrConnect) Unwrap() error {
 // connect establishes a new network connection.
 func (txp *Transport) connect(ctx context.Context, network, address string) (net.Conn, error) {
 	fn := DefaultConnector.DialContext
-	if settings := ContextSettings(ctx); settings != nil && settings.Connector != nil {
-		fn = settings.Connector.DialContext
+	if config := ContextConfig(ctx); config != nil && config.Connector != nil {
+		fn = config.Connector.DialContext
 	}
 	conn, err := fn(ctx, network, address)
 	if err != nil {
@@ -59,8 +59,8 @@ var defaultByteCounter = &noopByteCounter{}
 
 // byteCounter returns the ByteCounter to use.
 func (txp *Transport) byteCounter(ctx context.Context) ByteCounter {
-	if settings := ContextSettings(ctx); settings != nil && settings.ByteCounter != nil {
-		return settings.ByteCounter
+	if config := ContextConfig(ctx); config != nil && config.ByteCounter != nil {
+		return config.ByteCounter
 	}
 	return defaultByteCounter
 }

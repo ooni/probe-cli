@@ -19,8 +19,8 @@ func (err *ErrDial) Unwrap() error {
 // DialContext dials a cleartext connection.
 func (txp *Transport) DialContext(
 	ctx context.Context, network string, address string) (net.Conn, error) {
-	if settings := ContextSettings(ctx); settings != nil && settings.Proxy != nil {
-		conn, err := txp.proxyDialContext(ctx, settings.Proxy, network, address)
+	if config := ContextConfig(ctx); config != nil && config.Proxy != nil {
+		conn, err := txp.proxyDialContext(ctx, config.Proxy, network, address)
 		if err != nil {
 			return nil, &ErrDial{err}
 		}

@@ -44,8 +44,8 @@ var DefaultResolver = &net.Resolver{}
 
 // routeLookupHost routes LookupHost calls.
 func (txp *Transport) routeLookupHost(ctx context.Context, domain string) ([]string, error) {
-	if settings := ContextSettings(ctx); settings != nil && settings.Resolver != nil {
-		return settings.Resolver.LookupHost(ctx, domain)
+	if config := ContextConfig(ctx); config != nil && config.Resolver != nil {
+		return config.Resolver.LookupHost(ctx, domain)
 	}
 	return DefaultResolver.LookupHost(ctx, domain)
 }
