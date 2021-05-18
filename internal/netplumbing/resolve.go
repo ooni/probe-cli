@@ -39,13 +39,15 @@ func (txp *Transport) LookupHost(ctx context.Context, domain string) ([]string, 
 	return addresses, nil
 }
 
-// DefaultResolver is the resolver used by Transport.DefaultLookupHost.
-var DefaultResolver = &net.Resolver{}
+// DefaultResolver returns the default Resolver used by this Transport.
+func (txp *Transport) DefaultResolver() Resolver {
+	return &net.Resolver{}
+}
 
 // routeLookupHost routes LookupHost calls.
 func (txp *Transport) routeLookupHost(ctx context.Context, domain string) ([]string, error) {
 	if config := ContextConfig(ctx); config != nil && config.Resolver != nil {
 		return config.Resolver.LookupHost(ctx, domain)
 	}
-	return DefaultResolver.LookupHost(ctx, domain)
+	return txp.DefaultResolver().LookupHost(ctx, domain)
 }

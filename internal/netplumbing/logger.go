@@ -20,13 +20,10 @@ func (*quietLogger) Debugf(format string, v ...interface{}) {}
 // Debug implements Logger.Debug.
 func (*quietLogger) Debug(message string) {}
 
-// defaultLogger is the default logger.
-var defaultLogger = &quietLogger{}
-
 // logger returns the configured logger or the DefaultLogger.
 func (txp *Transport) logger(ctx context.Context) Logger {
 	if config := ContextConfig(ctx); config != nil && config.Logger != nil {
 		return config.Logger
 	}
-	return defaultLogger
+	return &quietLogger{}
 }

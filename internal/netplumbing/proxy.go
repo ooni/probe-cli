@@ -13,7 +13,8 @@ import (
 // proxy checks whether we need to use a proxy.
 func (txp *Transport) proxy(req *http.Request) (*url.URL, error) {
 	ctx := req.Context()
-	if config := ContextConfig(ctx); config != nil && config.Proxy != nil {
+	if config := ContextConfig(ctx); config != nil && config.Proxy != nil &&
+		config.Proxy.Scheme != "socks5" {
 		log := txp.logger(ctx)
 		log.Debugf("http: using proxy: %s", config.Proxy)
 		return config.Proxy, nil
@@ -47,6 +48,8 @@ func (txp *Transport) proxyDialContext(
 	if proxyURL.Scheme != "socks5" {
 		return nil, ErrProxyNotImplemented
 	}
+	log := txp.logger(ctx)
+	log.Debugf("dialContext: using proxy: %s", proxyURL)
 	var auth *proxy.Auth
 	if user := proxyURL.User; user != nil {
 		password, _ := user.Password()
