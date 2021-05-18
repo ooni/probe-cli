@@ -7,7 +7,7 @@ import (
 	"net/url"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/oonet"
+	"github.com/ooni/probe-cli/v3/internal/netplumbing"
 )
 
 /*
@@ -17,14 +17,12 @@ import (
 
 func main() {
 	log.SetLevel(log.DebugLevel)
-	txp := &oonet.Transport{Logger: log.Log}
-	clnt := &http.Client{Transport: txp}
-	ctx := context.Background()
-	ctx = oonet.WithOverrides(ctx, &oonet.Overrides{
+	clnt := &http.Client{Transport: netplumbing.DefaultTransport}
+	ctx := netplumbing.WithSettings(context.Background(), &netplumbing.Settings{
+		Logger: log.Log,
 		Proxy: &url.URL{
-			Scheme: "http",
-			User:   url.UserPassword("antani", "melandri"),
-			Host:   "127.0.0.1:8002",
+			Scheme: "socks5",
+			Host:   "127.0.0.1:9050",
 		},
 	})
 	req, err := http.NewRequestWithContext(ctx, "GET", "https://www.google.com", nil)
