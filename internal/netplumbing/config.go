@@ -16,7 +16,7 @@ type ByteCounter interface {
 	CountBytesSent(count int)
 }
 
-// Config contains settings you can configured using WithConfig.
+// Config contains settings you can configure using WithConfig.
 type Config struct {
 	// ByteCounter is the optional byte counter to use.
 	ByteCounter ByteCounter
