@@ -2,13 +2,9 @@ package netplumbing
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 )
-
-// ErrProxyNotImplemented indicates that we don't support connecting via proxy.
-var ErrProxyNotImplemented = errors.New("netplumbing: proxy not implemented")
 
 // ErrDial is an error occurred when dialing.
 type ErrDial struct {
@@ -24,7 +20,11 @@ func (err *ErrDial) Unwrap() error {
 func (txp *Transport) DialContext(
 	ctx context.Context, network string, address string) (net.Conn, error) {
 	if settings := ContextSettings(ctx); settings != nil && settings.Proxy != nil {
-		return nil, &ErrDial{ErrProxyNotImplemented}
+		conn, err := txp.proxyDialContext(ctx, settings.Proxy, network, address)
+		if err != nil {
+			return nil, &ErrDial{err}
+		}
+		return conn, nil
 	}
 	conn, err := txp.directDialContext(ctx, network, address)
 	if err != nil {

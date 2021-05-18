@@ -20,25 +20,12 @@ func (err *ErrDialTLS) Unwrap() error {
 // DialTLSContext dials a TLS connection.
 func (txp *Transport) DialTLSContext(
 	ctx context.Context, network string, addr string) (net.Conn, error) {
-	if settings := ContextSettings(ctx); settings != nil && settings.Proxy != nil {
-		return nil, &ErrDialTLS{ErrProxyNotImplemented}
-	}
-	conn, err := txp.directDialTLSContext(ctx, network, addr)
-	if err != nil {
-		return nil, &ErrDialTLS{err}
-	}
-	return conn, nil
-}
-
-// directDialTLSContext is a dialTLSContext that does not use a proxy.
-func (txp *Transport) directDialTLSContext(
-	ctx context.Context, network string, addr string) (net.Conn, error) {
 	log := txp.logger(ctx)
 	log.Debugf("dialTLS: %s/%s...", addr, network)
 	conn, err := txp.doDialTLSContext(ctx, network, addr)
 	if err != nil {
 		log.Debugf("dialTLS: %s/%s... %s", addr, network, err)
-		return nil, err
+		return nil, &ErrDialTLS{err}
 	}
 	log.Debugf("dialTLS: %s/%s... ok", addr, network)
 	return conn, nil

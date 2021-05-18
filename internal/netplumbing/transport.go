@@ -18,9 +18,9 @@ type Transport struct {
 func NewTransport() *Transport {
 	txp := &Transport{}
 	txp.RoundTripper = &http.Transport{
-		Proxy:                 txp.httpProxy,
+		Proxy:                 txp.proxy,
 		DialContext:           txp.directDialContext,
-		DialTLSContext:        txp.directDialTLSContext,
+		DialTLSContext:        txp.DialTLSContext,
 		TLSHandshakeTimeout:   txp.tlsHandshakeTimeout(),
 		DisableCompression:    true,
 		MaxIdleConns:          100,
