@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/bassosimone/quic-go/http3"
@@ -34,9 +33,8 @@ type Transport struct {
 func NewTransport() *Transport {
 	txp := &Transport{}
 	txp.RoundTripper = &http.Transport{
-		Proxy:                 txp.proxy,
-		DialContext:           txp.dialContextForHTTP,
-		DialTLSContext:        txp.dialTLSContextForHTTP,
+		DialContext:           txp.DialContext,
+		DialTLSContext:        txp.DialTLSContext,
 		TLSHandshakeTimeout:   txp.tlsHandshakeTimeout(),
 		DisableCompression:    true,
 		MaxIdleConns:          100,
@@ -53,19 +51,6 @@ func NewTransport() *Transport {
 
 // DefaultTransport is the default Transport.
 var DefaultTransport = NewTransport()
-
-// proxy checks whether we need to use a proxy.
-func (txp *Transport) proxy(req *http.Request) (*url.URL, error) {
-	ctx := req.Context()
-	// note that the dialing code disables its proxy capabilities when
-	// it knows we're called by HTTP code.
-	if config := ContextConfig(ctx); config != nil && config.Proxy != nil {
-		log := txp.logger(ctx)
-		log.Debugf("http: using proxy: %s", config.Proxy)
-		return config.Proxy, nil
-	}
-	return nil, nil
-}
 
 // byteCounter returns the ByteCounter to use.
 func (txp *Transport) byteCounter(ctx context.Context) ByteCounter {

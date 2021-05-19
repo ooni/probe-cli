@@ -11,27 +11,13 @@ import (
 // DialTLSContext dials a TLS connection.
 func (txp *Transport) DialTLSContext(
 	ctx context.Context, network string, address string) (net.Conn, error) {
-	return txp.dialTLSContextEntry(ctx, network, address, false)
-}
-
-// dialTLSContextForHTTP is the dialTLSContext entry for HTTP.
-func (txp *Transport) dialTLSContextForHTTP(
-	ctx context.Context, network string, address string) (net.Conn, error) {
-	return txp.dialTLSContextEntry(ctx, network, address, true)
-}
-
-// dialTLSContextEntry is the top-level entry for dialTLSContext.
-func (txp *Transport) dialTLSContextEntry(
-	ctx context.Context, network string, address string,
-	calledbyHTTP bool) (net.Conn, error) {
-	return txp.dialTLSContextWrapError(ctx, network, address, calledbyHTTP)
+	return txp.dialTLSContextWrapError(ctx, network, address)
 }
 
 // dialTLSContextWrapError wraps errors with ErrDialTLS.
 func (txp *Transport) dialTLSContextWrapError(
-	ctx context.Context, network string, address string,
-	calledByHTTP bool) (net.Conn, error) {
-	conn, err := txp.dialTLSContextEmitLogs(ctx, network, address, calledByHTTP)
+	ctx context.Context, network string, address string) (net.Conn, error) {
+	conn, err := txp.dialTLSContextEmitLogs(ctx, network, address)
 	if err != nil {
 		return nil, &ErrDialTLS{err}
 	}
@@ -50,12 +36,10 @@ func (err *ErrDialTLS) Unwrap() error {
 
 // dialTLSContextEmitLogs emits dialTLS-related logs.
 func (txp *Transport) dialTLSContextEmitLogs(
-	ctx context.Context, network string, address string,
-	calledByHTTP bool) (net.Conn, error) {
+	ctx context.Context, network string, address string) (net.Conn, error) {
 	log := txp.logger(ctx)
 	log.Debugf("dialTLS: %s/%s...", address, network)
-	conn, err := txp.dialTLSContextDialAndHandshake(
-		ctx, network, address, calledByHTTP)
+	conn, err := txp.dialTLSContextDialAndHandshake(ctx, network, address)
 	if err != nil {
 		log.Debugf("dialTLS: %s/%s... %s", address, network, err)
 		return nil, err
@@ -66,13 +50,12 @@ func (txp *Transport) dialTLSContextEmitLogs(
 
 // dialTLSContextDialAndHandshake dials and handshakes.
 func (txp *Transport) dialTLSContextDialAndHandshake(
-	ctx context.Context, network string, address string,
-	calledByHTTP bool) (net.Conn, error) {
+	ctx context.Context, network string, address string) (net.Conn, error) {
 	sni, port, err := net.SplitHostPort(address)
 	if err != nil {
 		return nil, err
 	}
-	tcpConn, err := txp.dialContextEntry(ctx, network, address, calledByHTTP)
+	tcpConn, err := txp.DialContext(ctx, network, address)
 	if err != nil {
 		return nil, err
 	}

@@ -2,39 +2,21 @@ package netplumbing
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
-	"net/url"
 	"time"
-
-	"golang.org/x/net/proxy"
 )
 
 // DialContext dials a cleartext connection.
 func (txp *Transport) DialContext(
 	ctx context.Context, network string, address string) (net.Conn, error) {
-	return txp.dialContextEntry(ctx, network, address, false)
-}
-
-// dialContextForHTTP is the dialContext entry used by HTTP.
-func (txp *Transport) dialContextForHTTP(
-	ctx context.Context, network string, address string) (net.Conn, error) {
-	return txp.dialContextEntry(ctx, network, address, true)
-}
-
-// dialContextEntry is the top-level entry for doing a dialContext.
-func (txp *Transport) dialContextEntry(
-	ctx context.Context, network string, address string,
-	calledByHTTP bool) (net.Conn, error) {
-	return txp.dialContextWrapError(ctx, network, address, calledByHTTP)
+	return txp.dialContextWrapError(ctx, network, address)
 }
 
 // dialContextWrapError wraps any error using ErrDial.
 func (txp *Transport) dialContextWrapError(
-	ctx context.Context, network string, address string,
-	calledByHTTP bool) (net.Conn, error) {
-	conn, err := txp.dialContextMaybeProxy(ctx, network, address, calledByHTTP)
+	ctx context.Context, network string, address string) (net.Conn, error) {
+	conn, err := txp.dialContextMaybeProxy(ctx, network, address)
 	if err != nil {
 		return nil, &ErrDial{err}
 	}
@@ -54,54 +36,11 @@ func (err *ErrDial) Unwrap() error {
 // dialContextMaybeProxy chooses whether to use a proxy. We do not use
 // any proxy when called by HTTP, because HTTP manages the proxy for itself.
 func (txp *Transport) dialContextMaybeProxy(
-	ctx context.Context, network string, address string,
-	calledByHTTP bool) (net.Conn, error) {
-	if !calledByHTTP {
-		if config := ContextConfig(ctx); config != nil && config.Proxy != nil {
-			return txp.dialContextWithProxy(ctx, network, address, config.Proxy)
-		}
+	ctx context.Context, network string, address string) (net.Conn, error) {
+	if config := ContextConfig(ctx); config != nil && config.Proxy != nil {
+		return txp.dialProxy(ctx, network, address, config.Proxy)
 	}
 	return txp.dialContextEmitLogs(ctx, network, address)
-}
-
-// dialContextWithProxy dials using a downstream proxy.
-func (txp *Transport) dialContextWithProxy(
-	ctx context.Context, network string, address string,
-	proxyURL *url.URL) (net.Conn, error) {
-	if proxyURL.Scheme != "socks5" {
-		return nil, ErrProxyNotImplemented
-	}
-	var auth *proxy.Auth
-	if user := proxyURL.User; user != nil {
-		password, _ := user.Password()
-		auth = &proxy.Auth{
-			User:     user.Username(),
-			Password: password,
-		}
-	}
-	// the code at proxy/socks5.go never fails; see https://git.io/JfJ4g
-	socks5, _ := proxy.SOCKS5(network, proxyURL.Host, auth, &proxyAdapter{txp})
-	contextDialer := socks5.(proxy.ContextDialer)
-	return contextDialer.DialContext(ctx, network, address)
-}
-
-// ErrProxyNotImplemented indicates that we don't support connecting via proxy.
-var ErrProxyNotImplemented = errors.New("netplumbing: proxy not implemented")
-
-// proxyAdapter uses txp.connect as a child dial function
-type proxyAdapter struct {
-	txp *Transport
-}
-
-// DialContext implements proxy.ContextDialer.DialContext.
-func (pc *proxyAdapter) DialContext(
-	ctx context.Context, network, address string) (net.Conn, error) {
-	return pc.txp.dialContextEmitLogs(ctx, network, address)
-}
-
-// Dial implements proxy.Dialer.Dial.
-func (pc *proxyAdapter) Dial(network, address string) (net.Conn, error) {
-	panic("netplumbing: this function should not be called")
 }
 
 // dialContextEmitLogs emits dial-related logs.
