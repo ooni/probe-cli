@@ -7,23 +7,13 @@ import (
 	"net/url"
 
 	"github.com/apex/log"
-	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/netplumbing"
 )
 
 func main() {
 	log.SetLevel(log.DebugLevel)
 
-	question := dns.Question{
-		Name:   dns.Fqdn("www.youtube.com"),
-		Qtype:  dns.TypeA,
-		Qclass: dns.ClassINET,
-	}
-	query := &dns.Msg{}
-	query.Id = dns.Id()
-	query.RecursionDesired = true
-	query.Question = make([]dns.Question, 1)
-	query.Question[0] = question
+	query := netplumbing.DefaultTransport.DNSEncodeA("www.youtube.com", true)
 
 	resolverURL := &url.URL{
 		Scheme: "https",
@@ -45,6 +35,14 @@ func main() {
 	}
 
 	log.Infof("reply: %s", reply)
+
+	addrs, err := netplumbing.DefaultTransport.DNSDecodeA(reply)
+	if err != nil {
+		log.WithError(err).Fatal("cannot decode reply")
+	}
+	for _, addr := range addrs {
+		log.Infof("- addr: %s", addr)
+	}
 
 	for _, ev := range theader.MoveOut() {
 		data, _ := json.Marshal(map[string]interface{}{ev.Kind(): ev})
