@@ -1,12 +1,10 @@
 #!/bin/sh
-# This script publishes Debian packages. When rung by `mk`, it
-# is run inside a `ubuntu:20.04` container. It's fine also to
-# run this script from a live Debian system as long as all the
+# This script publishes Debian packages. When run by `mk`, it's
+# run inside of an `ubuntu:20.04` container. It's fine also to run
+# this script from a live Debian-like system as long as all the
 # following assumptions are met:
 #
-# 1. Debian packages we want to publish are in the toplevel dir;
-#
-# 2. This script is running as root (or is run via sudo).
+# 1. Debian packages we want to publish are in the toplevel dir.
 
 # ensure that we have all the required environment variables.
 fail=0
@@ -28,20 +26,27 @@ fi
 
 set -ex
 
-# The OONI_DEB_DRY_RUN is a semi-undocumented feature allowing
-# us to see the commands that would be run by this script.
-
 export DEBIAN_FRONTEND=noninteractive
 
+maybe_with_sudo() {
+	if command -v sudo 1>/dev/null; then
+		sudo "$@"
+	else
+		"$@"
+	fi
+}
+
 # install the dependencies required by the uploader.
-$OONI_DEB_DRY_RUN apt-get update -q
-$OONI_DEB_DRY_RUN apt-get install --yes --no-install-recommends curl git make python3 python3-requests python3-gnupg s3cmd
+maybe_with_sudo apt-get update -q
+maybe_with_sudo apt-get install --yes --no-install-recommends curl git make python3 python3-requests python3-gnupg s3cmd
 
 # pull the latest version of the debops-ci script from ooni/sysadmin.
-$OONI_DEB_DRY_RUN curl -fsSLO https://raw.githubusercontent.com/ooni/sysadmin/master/tools/debops-ci
-$OONI_DEB_DRY_RUN chmod +x debops-ci
+curl -fsSLO https://raw.githubusercontent.com/ooni/sysadmin/master/tools/debops-ci
+chmod +x debops-ci
 
 # loop over the available packages and upload.
 for debpkg in *.deb; do
-	$OONI_DEB_DRY_RUN ./debops-ci --show-commands upload --bucket-name ooni-deb "$debpkg"
+	# for example: ooniprobe-cli_3.10.0_i386.deb
+	arch=$(echo "$debpkg" | awk -F_ '{print $3}' | sed 's/\.deb$//g')
+	./debops-ci --show-commands upload --bucket-name ooni-deb --arch "$arch" "$debpkg"
 done
