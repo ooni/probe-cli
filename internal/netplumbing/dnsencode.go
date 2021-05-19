@@ -14,6 +14,12 @@ func (txp *Transport) DNSEncodeAAAA(domain string, padding bool) *dns.Msg {
 	return txp.dnsEncode(domain, padding, dns.TypeAAAA)
 }
 
+// DNSEncodeCNAME encodes an CNAME query. The padding argument indicates
+// whether you want to generate a query using padding.
+func (txp *Transport) DNSEncodeCNAME(domain string, padding bool) *dns.Msg {
+	return txp.dnsEncode(domain, padding, dns.TypeCNAME)
+}
+
 // dnsEncode encodes a DNS query.
 func (txp *Transport) dnsEncode(
 	domain string, padding bool, qtype uint16) *dns.Msg {

@@ -13,7 +13,7 @@ import (
 func main() {
 	log.SetLevel(log.DebugLevel)
 
-	query := netplumbing.DefaultTransport.DNSEncodeA("www.youtube.com", true)
+	query := netplumbing.DefaultTransport.DNSEncodeCNAME("www.youtube.com", true)
 
 	resolverURL := &url.URL{
 		Scheme: "https",
@@ -36,13 +36,21 @@ func main() {
 
 	log.Infof("reply: %s", reply)
 
-	addrs, err := netplumbing.DefaultTransport.DNSDecodeA(reply)
+	/*
+		addrs, err := netplumbing.DefaultTransport.DNSDecodeA(reply)
+		if err != nil {
+			log.WithError(err).Fatal("cannot decode reply")
+		}
+		for _, addr := range addrs {
+			log.Infof("- addr: %s", addr)
+		}
+	*/
+
+	cname, err := netplumbing.DefaultTransport.DNSDecodeCNAME(reply)
 	if err != nil {
 		log.WithError(err).Fatal("cannot decode reply")
 	}
-	for _, addr := range addrs {
-		log.Infof("- addr: %s", addr)
-	}
+	log.Infof("- cname: %s", cname)
 
 	for _, ev := range theader.MoveOut() {
 		data, _ := json.Marshal(map[string]interface{}{ev.Kind(): ev})

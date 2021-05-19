@@ -18,13 +18,8 @@ func (txp *Transport) DNSDecodeAAAA(reply *dns.Msg) ([]string, error) {
 
 // dnsDecodeSomeA decodes an A or AAAA reply returning the IP addresses.
 func (txp *Transport) dnsDecodeSomeA(reply *dns.Msg, qtype uint16) ([]string, error) {
-	// TODO(bassosimone): map more errors to net.DNSError names
-	switch reply.Rcode {
-	case dns.RcodeSuccess:
-	case dns.RcodeNameError:
-		return nil, errors.New("netplumbing: no such host")
-	default:
-		return nil, errors.New("netplumbing: server misbehaving")
+	if err := txp.dnsDecodeRcode(reply); err != nil {
+		return nil, err
 	}
 	var addrs []string
 	for _, answer := range reply.Answer {
@@ -42,7 +37,36 @@ func (txp *Transport) dnsDecodeSomeA(reply *dns.Msg, qtype uint16) ([]string, er
 		}
 	}
 	if len(addrs) <= 0 {
-		return nil, errors.New("netplumbing: no response returned")
+		return nil, errors.New("netplumbing: no IP address returned")
 	}
 	return addrs, nil
+}
+
+func (txp *Transport) dnsDecodeRcode(reply *dns.Msg) error {
+	// TODO(bassosimone): map more errors to net.DNSError names
+	switch reply.Rcode {
+	case dns.RcodeSuccess:
+		return nil
+	case dns.RcodeNameError:
+		return errors.New("netplumbing: no such host")
+	default:
+		return errors.New("netplumbing: server misbehaving")
+	}
+}
+
+// DNSDecodeCNAME decodes an CNAME reply returning the CNAME.
+func (txp *Transport) DNSDecodeCNAME(reply *dns.Msg) (string, error) {
+	if err := txp.dnsDecodeRcode(reply); err != nil {
+		return "", err
+	}
+	var cname string
+	for _, answer := range reply.Answer {
+		if rrcname, ok := answer.(*dns.CNAME); ok {
+			cname = rrcname.Target
+		}
+	}
+	if cname == "" {
+		return "", errors.New("netplumbing: no CNAME returned")
+	}
+	return cname, nil
 }
