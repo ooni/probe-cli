@@ -10,6 +10,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
+	github.com/bassosimone/quic-go v0.19.4-0.20210128135158-0cdd55f73cfd // indirect
 	github.com/creack/goselect v0.1.2 // indirect
 	github.com/cretz/bine v0.1.0
 	github.com/dchest/siphash v1.2.2 // indirect

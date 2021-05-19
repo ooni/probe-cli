@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/netplumbing"
@@ -19,20 +18,22 @@ import (
 
 func main() {
 	log.SetLevel(log.DebugLevel)
-	clnt := &http.Client{Transport: netplumbing.DefaultTransport}
+	//clnt := &http.Client{Transport: netplumbing.DefaultTransport}
 	tracer := netplumbing.DefaultTransport.NewTracer()
 	config := tracer.NewConfig()
 	config.Logger = log.Log
-	config.Proxy = &url.URL{
-		Scheme: "socks5",
-		Host:   "127.0.0.1:9050",
-	}
+	/*
+		config.Proxy = &url.URL{
+			Scheme: "socks5",
+			Host:   "127.0.0.1:9050",
+		}
+	*/
 	ctx := netplumbing.WithConfig(context.Background(), config)
 	req, err := http.NewRequestWithContext(ctx, "GET", "https://www.google.com", nil)
 	if err != nil {
 		log.WithError(err).Fatal("http.NewRequest failed")
 	}
-	resp, err := clnt.Do(req)
+	resp, err := netplumbing.DefaultTransport.RoundTrip(req)
 	if err != nil {
 		log.WithError(err).Fatal("clnt.Get failed")
 	}

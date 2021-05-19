@@ -33,6 +33,12 @@ type Config struct {
 	// Proxy is the proxy URL.
 	Proxy *url.URL
 
+	// QUICHandshaker is the optional QUIC handshaker to use.
+	QUICHandshaker QUICHandshaker
+
+	// QUICListener is the optional listener for QUIC to use.
+	QUICListener QUICListener
+
 	// Resolver is the optional resolver to use.
 	Resolver Resolver
 
