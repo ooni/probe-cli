@@ -164,9 +164,14 @@ func (txp *Transport) maxBodySize() int {
 // roundTripMaybeOverride uses either the default or the overriden round tripper.
 func (txp *Transport) roundTripMaybeOverride(req *http.Request) (*http.Response, error) {
 	ctx := req.Context()
-	var t http.RoundTripper = txp.RoundTripper
+	ht := txp.DefaultHTTPTransport()
 	if config := ContextConfig(ctx); config != nil && config.HTTPTransport != nil {
-		t = config.HTTPTransport
+		ht = config.HTTPTransport
 	}
-	return t.RoundTrip(req)
+	return ht.RoundTrip(req)
+}
+
+// DefaultHTTPTransport returns the default http.Transport.
+func (txp *Transport) DefaultHTTPTransport() http.RoundTripper {
+	return txp.RoundTripper
 }

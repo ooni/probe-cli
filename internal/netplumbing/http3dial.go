@@ -252,7 +252,7 @@ func (txp *Transport) quicHandshakeWithTraceHeader(
 func (txp *Transport) quicHandshakeMaybeOverride(
 	ctx context.Context, conn net.PacketConn, udpAddr *net.UDPAddr,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
-	var qh QUICHandshaker = &quicGoHandshaker{}
+	qh := txp.DefaultQUICHandshaker()
 	if config := ContextConfig(ctx); config != nil && config.QUICHandshaker != nil {
 		qh = config.QUICHandshaker
 	}
@@ -267,6 +267,11 @@ func (*quicGoHandshaker) QUICHandshake(ctx context.Context, pconn net.PacketConn
 	remoteAddr net.Addr, tlsConf *tls.Config, config *quic.Config) (
 	quic.EarlySession, error) {
 	return quic.DialEarlyContext(ctx, pconn, remoteAddr, "", tlsConf, config)
+}
+
+// DefaultQUICHandshaker returns the QUIC handshaker used by default.
+func (txp *Transport) DefaultQUICHandshaker() QUICHandshaker {
+	return &quicGoHandshaker{}
 }
 
 // quicListen is the top-level entry for creating a listening connection.
