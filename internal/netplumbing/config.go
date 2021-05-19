@@ -86,7 +86,16 @@ type QUICHandshaker interface {
 // QUICListener is a listener for QUIC.
 type QUICListener interface {
 	// QUICListen starts a listening UDP connection for QUIC.
-	QUICListen(ctx context.Context) (*net.UDPConn, error)
+	QUICListen(ctx context.Context) (QUICUDPConn, error)
+}
+
+// QUICUDPConn is the type of UDP connection that matters to QUIC.
+type QUICUDPConn interface {
+	// Conn is the embedded conn.
+	net.PacketConn
+
+	// ReadMsgUDP is also available for overriding.
+	ReadMsgUDP(b, oob []byte) (n, oobn, flags int, addr *net.UDPAddr, err error)
 }
 
 // Resolver performs domain name resolutions.

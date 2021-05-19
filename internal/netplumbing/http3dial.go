@@ -205,22 +205,28 @@ func (txp *Transport) quicHandshakeDoHandshake(
 	return qh.QUICHandshake(ctx, conn, udpAddr, tlsConfig, quicConfig)
 }
 
-// quicListen creates a new listening UDP connection for QUIC.
-func (txp *Transport) quicListen(ctx context.Context) (net.PacketConn, error) {
-	ql := txp.DefaultQUICListener()
-	if config := ContextConfig(ctx); config != nil && config.QUICListener != nil {
-		ql = config.QUICListener
-	}
-	log := txp.logger(ctx)
-	log.Debug("quic: start listening...")
-	conn, err := ql.QUICListen(ctx)
+// quicGoHandshaker implements QUICHandshaker using quic-go
+type quicGoHandshaker struct{}
+
+// QUICHandshake implements QUICHandshaker.QUICHandshake.
+func (*quicGoHandshaker) QUICHandshake(ctx context.Context, pconn net.PacketConn,
+	remoteAddr net.Addr, tlsConf *tls.Config, config *quic.Config) (
+	quic.EarlySession, error) {
+	return quic.DialEarlyContext(ctx, pconn, remoteAddr, "", tlsConf, config)
+}
+
+// quicListen is the top-level entry for creating a listening connection.
+func (txp *Transport) quicListen(ctx context.Context) (QUICUDPConn, error) {
+	return txp.quicListenWrapError(ctx)
+}
+
+// quicListenWrapError wraps the returned error as a QUICListenError.
+func (txp *Transport) quicListenWrapError(ctx context.Context) (QUICUDPConn, error) {
+	conn, err := txp.quicListenEmitLogs(ctx)
 	if err != nil {
-		log.Debugf("quic: start listening... %s", err)
 		return nil, &ErrQUICListen{err}
 	}
-	log.Debugf("quic: start listening... %s", conn.LocalAddr().String())
-	return &quicUDPConnWrapper{
-		byteCounter: txp.byteCounter(ctx), UDPConn: conn}, nil
+	return conn, nil
 }
 
 // ErrQUICListen is a listen error.
@@ -233,38 +239,40 @@ func (err *ErrQUICListen) Unwrap() error {
 	return err.error
 }
 
-// quicGoHandshaker implements QUICHandshaker using quic-go
-type quicGoHandshaker struct{}
-
-// QUICHandshake implements QUICHandshaker.QUICHandshake.
-func (*quicGoHandshaker) QUICHandshake(ctx context.Context, pconn net.PacketConn,
-	remoteAddr net.Addr, tlsConf *tls.Config, config *quic.Config) (
-	quic.EarlySession, error) {
-	return quic.DialEarlyContext(ctx, pconn, remoteAddr, "", tlsConf, config)
+// quicListenEmitLogs emits QUIC listen logs.
+func (txp *Transport) quicListenEmitLogs(ctx context.Context) (QUICUDPConn, error) {
+	log := txp.logger(ctx)
+	log.Debug("quic: start listening...")
+	conn, err := txp.quicListenWrapConn(ctx)
+	if err != nil {
+		log.Debugf("quic: start listening... %s", err)
+		return nil, err
+	}
+	log.Debugf("quic: start listening... %s", conn.LocalAddr().String())
+	return conn, nil
 }
 
-// DefaultQUICListener returns the default QUICListener.
-func (txp *Transport) DefaultQUICListener() QUICListener {
-	return &quicStdlibListener{}
-}
-
-// quicStdlibListener is a QUICListener using the Go stdlib.
-type quicStdlibListener struct{}
-
-// QUICListen implements QUICListener.QUICListen.
-func (ql *quicStdlibListener) QUICListen(ctx context.Context) (*net.UDPConn, error) {
-	return net.ListenUDP("udp", &net.UDPAddr{})
+// quicListenWrapConn wraps the listening conn.
+func (txp *Transport) quicListenWrapConn(ctx context.Context) (QUICUDPConn, error) {
+	conn, err := txp.quicListenMaybeOverride(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &quicUDPConnWrapper{
+		byteCounter: txp.byteCounter(ctx),
+		QUICUDPConn: conn,
+	}, nil
 }
 
 // quicUDPConnWrapper wraps an udpConn connection used by QUIC.
 type quicUDPConnWrapper struct {
 	byteCounter ByteCounter
-	*net.UDPConn
+	QUICUDPConn
 }
 
 // ReadMsgUDP reads a message from an UDP socket.
 func (conn *quicUDPConnWrapper) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
-	n, oobn, flags, addr, err := conn.UDPConn.ReadMsgUDP(b, oob)
+	n, oobn, flags, addr, err := conn.QUICUDPConn.ReadMsgUDP(b, oob)
 	if err != nil {
 		return 0, 0, 0, nil, &ErrReadFrom{err}
 	}
@@ -284,7 +292,7 @@ func (err *ErrReadFrom) Unwrap() error {
 
 // WriteTo writes a message to the UDP socket.
 func (conn *quicUDPConnWrapper) WriteTo(p []byte, addr net.Addr) (int, error) {
-	count, err := conn.UDPConn.WriteTo(p, addr)
+	count, err := conn.QUICUDPConn.WriteTo(p, addr)
 	if err != nil {
 		return 0, &ErrWriteTo{err}
 	}
@@ -300,4 +308,26 @@ type ErrWriteTo struct {
 // Unwrap returns the underlying error.
 func (err *ErrWriteTo) Unwrap() error {
 	return err.error
+}
+
+// quicListenMaybeOverride uses the default or the overriden QUIC listener.
+func (txp *Transport) quicListenMaybeOverride(ctx context.Context) (QUICUDPConn, error) {
+	ql := txp.DefaultQUICListener()
+	if config := ContextConfig(ctx); config != nil && config.QUICListener != nil {
+		ql = config.QUICListener
+	}
+	return ql.QUICListen(ctx)
+}
+
+// DefaultQUICListener returns the default QUICListener.
+func (txp *Transport) DefaultQUICListener() QUICListener {
+	return &quicStdlibListener{}
+}
+
+// quicStdlibListener is a QUICListener using the Go stdlib.
+type quicStdlibListener struct{}
+
+// QUICListen implements QUICListener.QUICListen.
+func (ql *quicStdlibListener) QUICListen(ctx context.Context) (QUICUDPConn, error) {
+	return net.ListenUDP("udp", &net.UDPAddr{})
 }
