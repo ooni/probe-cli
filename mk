@@ -498,6 +498,18 @@ __android_build_with_ooni_go: search/for/go
 OONIMKALL_V := $(shell date -u +%Y.%m.%d-%H%M%S)
 OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
 
+#help: You can also upload previously build debian packages. The
+#help: following targets help you in doing that:
+
+#help:
+#help: * `./debops-ci`: downloads the debops-ci tool from ooni/sysadmin
+# Implementation note: this target is phony because we want to always
+# download and use the latest version of this script.
+.PHONY: ./debops-ci
+./debops-ci: search/for/curl search/for/python3
+	curl -fsSLO https://raw.githubusercontent.com/ooni/sysadmin/master/tools/debops-ci
+	chmod +x debops-ci
+
 #help:
 #help: The following commands check for the availability of dependencies:
 # TODO(bassosimone): make checks more robust?
@@ -538,20 +550,6 @@ search/for/gpg:
 	@command -v gpg || { echo "not found"; exit 1; }
 
 #help:
-#help: * `./mk search/for/jar`: checks for jar
-.PHONY: search/for/jar
-search/for/jar:
-	@printf "checking for jar... "
-	@command -v jar || { echo "not found"; exit 1; }
-
-#help:
-#help: * `./mk search/for/java`: checks for java
-.PHONY: search/for/java
-search/for/java:
-	@printf "checking for java... "
-	@command -v java || { echo "not found"; exit 1; }
-
-#help:
 #help: * `./mk search/for/go`: checks for go
 .PHONY: search/for/go
 search/for/go:
@@ -564,6 +562,20 @@ search/for/go:
 # __GOVERSION_REAL is the go version reported by the go binary (we
 # SHOULD NOT cache this value so we ARE NOT using `:=`)
 __GOVERSION_REAL = $(shell go version | awk '{print $$3}')
+
+#help:
+#help: * `./mk search/for/jar`: checks for jar
+.PHONY: search/for/jar
+search/for/jar:
+	@printf "checking for jar... "
+	@command -v jar || { echo "not found"; exit 1; }
+
+#help:
+#help: * `./mk search/for/java`: checks for java
+.PHONY: search/for/java
+search/for/java:
+	@printf "checking for java... "
+	@command -v java || { echo "not found"; exit 1; }
 
 #help:
 #help: * `./mk search/for/mingw-w64`: checks for mingw-w64
@@ -584,6 +596,15 @@ search/for/mingw-w64:
 # reported by the amd64 and 386 mingw binaries.
 __MINGW32_AMD64_VERSION = $(shell x86_64-w64-mingw32-gcc --version | sed -n 1p | awk '{print $$3}')
 __MINGW32_386_VERSION = $(shell i686-w64-mingw32-gcc --version | sed -n 1p | awk '{print $$3}')
+
+#help:
+#help: * `./mk search/for/python3`: checks for python3
+.PHONY: search/for/python3
+search/for/python3:
+	@printf "checking for python3... "
+	@command -v python3 || { echo "not found"; exit 1; }
+	@printf "checking whether python3 is at least 3.7.0... "
+	@python3 -c 'import sys; print("yes") if sys.version_info >= (3, 7, 0) else sys.exit("no")'
 
 #help:
 #help: * `./mk search/for/shasum`: checks for shasum
