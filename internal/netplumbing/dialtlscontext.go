@@ -143,6 +143,7 @@ func (txp *Transport) tlsHandshakeWithTraceHeader(
 	ctx context.Context, tcpConn net.Conn, tlsConfig *tls.Config,
 	th *TraceHeader) (net.Conn, *tls.ConnectionState, error) {
 	ev := &TLSHandshakeTrace{
+		kind:          TraceKindTLSHandshake,
 		SourceAddr:    tcpConn.LocalAddr().String(),
 		DestAddr:      tcpConn.RemoteAddr().String(),
 		SkipTLSVerify: tlsConfig.InsecureSkipVerify,
@@ -171,6 +172,9 @@ func (txp *Transport) tlsHandshakeWithTraceHeader(
 
 // TLSHandshakeTrace is a measurement performed during a TLS handshake.
 type TLSHandshakeTrace struct {
+	// kind is the structure kind.
+	kind string
+
 	// SourceAddr is the source address.
 	SourceAddr string
 
@@ -210,7 +214,7 @@ type TLSHandshakeTrace struct {
 
 // Kind implements TraceEvent.Kind.
 func (te *TLSHandshakeTrace) Kind() string {
-	return TraceKindTLSHandshake
+	return te.kind
 }
 
 // tlsHandshakeMaybeOverride calls the overriden or the default TLSHandshaker

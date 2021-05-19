@@ -171,7 +171,7 @@ func (txp *Transport) quicHandshakeEmitLogs(
 	prefix := fmt.Sprintf("quicHandshake: %s/%s sni=%s alpn=%s v=%+v...",
 		epnt, network, sni, tlsConfig.NextProtos, quicConfig.Versions)
 	log.Debug(prefix)
-	sess, err := txp.quicHandshakeDoHandshake(
+	sess, err := txp.quicHandshakeListenAndHanshake(
 		ctx, network, ipaddr, port, tlsConfig, quicConfig)
 	if err != nil {
 		log.Debugf("%s %s", prefix, err.Error())
@@ -181,8 +181,8 @@ func (txp *Transport) quicHandshakeEmitLogs(
 	return sess, nil
 }
 
-// quicHandshakeDoHandshake implements the QUIC handshake.
-func (txp *Transport) quicHandshakeDoHandshake(
+// quicHandshakeListenAndHanshake listens and starts the handshake.
+func (txp *Transport) quicHandshakeListenAndHanshake(
 	ctx context.Context, network, ipaddr, sport string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 	port, err := strconv.Atoi(sport)
@@ -199,6 +199,61 @@ func (txp *Transport) quicHandshakeDoHandshake(
 		return nil, err
 	}
 	udpAddr := &net.UDPAddr{IP: ip, Port: port, Zone: ""}
+	return txp.quicHandshakeMaybeTrace(ctx, conn, udpAddr, tlsConfig, quicConfig)
+}
+
+// quicHandshakeMaybeTrace enables tracing if needed.
+func (txp *Transport) quicHandshakeMaybeTrace(
+	ctx context.Context, conn net.PacketConn, udpAddr *net.UDPAddr,
+	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+	if th := ContextTraceHeader(ctx); th != nil {
+		return txp.quicHandshakeWithTraceHeader(
+			ctx, conn, udpAddr, tlsConfig, quicConfig, th)
+	}
+	return txp.quicHandshakeMaybeOverride(ctx, conn, udpAddr, tlsConfig, quicConfig)
+}
+
+// TODO(bassosimone): replace SourceAddr and DestAddr with LocalAddr and RemoteAddr!!!
+
+// quicHandshakeWithTraceHeader traces the QUIC handshake
+func (txp *Transport) quicHandshakeWithTraceHeader(
+	ctx context.Context, conn net.PacketConn, udpAddr *net.UDPAddr,
+	tlsConfig *tls.Config, quicConfig *quic.Config, th *TraceHeader) (
+	quic.EarlySession, error) {
+	ev := &TLSHandshakeTrace{
+		kind:          TraceKindQUICHandshake,
+		SourceAddr:    conn.LocalAddr().String(),
+		DestAddr:      udpAddr.String(),
+		SkipTLSVerify: tlsConfig.InsecureSkipVerify,
+		NextProtos:    tlsConfig.NextProtos,
+		StartTime:     time.Now(),
+		Error:         nil,
+	}
+	if net.ParseIP(tlsConfig.ServerName) == nil {
+		ev.ServerName = tlsConfig.ServerName
+	}
+	defer th.add(ev)
+	sess, err := txp.quicHandshakeMaybeOverride(
+		ctx, conn, udpAddr, tlsConfig, quicConfig)
+	ev.EndTime = time.Now()
+	ev.Error = err
+	if err != nil {
+		return nil, err
+	}
+	state := sess.ConnectionState()
+	ev.Version = state.Version
+	ev.CipherSuite = state.CipherSuite
+	ev.NegotiatedProto = state.NegotiatedProtocol
+	for _, c := range state.PeerCertificates {
+		ev.PeerCerts = append(ev.PeerCerts, c.Raw)
+	}
+	return sess, nil
+}
+
+// quicHandshakeMaybeOverride calls the default or the override handshaker.
+func (txp *Transport) quicHandshakeMaybeOverride(
+	ctx context.Context, conn net.PacketConn, udpAddr *net.UDPAddr,
+	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 	var qh QUICHandshaker = &quicGoHandshaker{}
 	if config := ContextConfig(ctx); config != nil && config.QUICHandshaker != nil {
 		qh = config.QUICHandshaker

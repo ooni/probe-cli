@@ -21,6 +21,9 @@ const (
 	// TraceKindResolve identifies a trace collected during resolve.
 	TraceKindResolve = "resolve"
 
+	// TraceKindQUICHandshake identifies a trace collected during a QUIC handshake.
+	TraceKindQUICHandshake = "quic_handshake"
+
 	// TraceKindTLSHandshake identifies a trace collected during a TLS handshake.
 	TraceKindTLSHandshake = "tls_handshake"
 
