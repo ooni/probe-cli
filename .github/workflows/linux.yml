@@ -12,8 +12,8 @@ jobs:
       - uses: actions/checkout@v2
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/386
       - run: ./E2E/ooniprobe.sh ./CLI/linux/386/ooniprobe
-      - run: ./mk ./debops-ci
       - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
+      - run: ./mk ./debops-ci
       - run: |
           for deb in *.deb; do
             ./debops-ci --arch i386 --show-commands upload --bucket-name ooni-deb $deb
@@ -29,8 +29,8 @@ jobs:
       - uses: actions/checkout@v2
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/amd64
       - run: ./E2E/ooniprobe.sh ./CLI/linux/amd64/ooniprobe
-      - run: ./mk ./debops-ci
       - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
+      - run: ./mk ./debops-ci
       - run: |
           for deb in *.deb; do
             ./debops-ci --arch amd64 --show-commands upload --bucket-name ooni-deb $deb
@@ -48,8 +48,8 @@ jobs:
       - run: sudo apt-get install -y qemu-user-static
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm
       - run: ./E2E/ooniprobe.sh ./CLI/linux/arm/ooniprobe
-      - run: ./mk ./debops-ci
       - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
+      - run: ./mk ./debops-ci
       - run: |
           for deb in *.deb; do
             ./debops-ci --arch armhf --show-commands upload --bucket-name ooni-deb $deb
@@ -68,8 +68,8 @@ jobs:
       - run: sudo apt-get install -y qemu-user-static
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm64
       - run: ./E2E/ooniprobe.sh ./CLI/linux/arm64/ooniprobe
-      - run: ./mk ./debops-ci
       - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
+      - run: ./mk ./debops-ci
       - run: |
           for deb in *.deb; do
             ./debops-ci --arch arm64 --show-commands upload --bucket-name ooni-deb $deb
