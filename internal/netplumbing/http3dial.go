@@ -213,8 +213,6 @@ func (txp *Transport) quicHandshakeMaybeTrace(
 	return txp.quicHandshakeMaybeOverride(ctx, conn, udpAddr, tlsConfig, quicConfig)
 }
 
-// TODO(bassosimone): replace SourceAddr and DestAddr with LocalAddr and RemoteAddr!!!
-
 // quicHandshakeWithTraceHeader traces the QUIC handshake
 func (txp *Transport) quicHandshakeWithTraceHeader(
 	ctx context.Context, conn net.PacketConn, udpAddr *net.UDPAddr,
@@ -222,8 +220,8 @@ func (txp *Transport) quicHandshakeWithTraceHeader(
 	quic.EarlySession, error) {
 	ev := &TLSHandshakeTrace{
 		kind:          TraceKindQUICHandshake,
-		SourceAddr:    conn.LocalAddr().String(),
-		DestAddr:      udpAddr.String(),
+		LocalAddr:     conn.LocalAddr().String(),
+		RemoteAddr:    udpAddr.String(),
 		SkipTLSVerify: tlsConfig.InsecureSkipVerify,
 		NextProtos:    tlsConfig.NextProtos,
 		StartTime:     time.Now(),
@@ -396,14 +394,14 @@ type tracingQUICUDPConn struct {
 func (conn *tracingQUICUDPConn) ReadFrom(p []byte) (int, net.Addr, error) {
 	ev := &ReadWriteTrace{
 		kind:       TraceKindReadFrom,
-		DestAddr:   conn.PacketConn.LocalAddr().String(),
+		LocalAddr:  conn.PacketConn.LocalAddr().String(),
 		BufferSize: len(p),
 		StartTime:  time.Now(),
 	}
 	defer conn.th.add(ev)
 	n, addr, err := conn.PacketConn.ReadFrom(p)
 	if addr != nil {
-		ev.SourceAddr = addr.String()
+		ev.RemoteAddr = addr.String()
 	}
 	ev.EndTime = time.Now()
 	ev.Count = n
@@ -415,8 +413,8 @@ func (conn *tracingQUICUDPConn) ReadFrom(p []byte) (int, net.Addr, error) {
 func (conn *tracingQUICUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	ev := &ReadWriteTrace{
 		kind:       TraceKindWriteTo,
-		SourceAddr: conn.PacketConn.LocalAddr().String(),
-		DestAddr:   addr.String(),
+		LocalAddr:  conn.PacketConn.LocalAddr().String(),
+		RemoteAddr: addr.String(),
 		BufferSize: len(p),
 		StartTime:  time.Now(),
 	}

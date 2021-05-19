@@ -205,9 +205,9 @@ func (txp *Transport) connectWithTraceHeader(
 	ctx context.Context, network, address string,
 	th *TraceHeader) (net.Conn, error) {
 	ev := &ConnectTrace{
-		Network:   network,
-		DestAddr:  address,
-		StartTime: time.Now(),
+		Network:    network,
+		RemoteAddr: address,
+		StartTime:  time.Now(),
 	}
 	defer th.add(ev)
 	conn, err := txp.connectMaybeOverride(ctx, network, address)
@@ -216,7 +216,7 @@ func (txp *Transport) connectWithTraceHeader(
 		ev.Error = err
 		return nil, err
 	}
-	ev.SourceAddr = conn.LocalAddr().String()
+	ev.LocalAddr = conn.LocalAddr().String()
 	return &tracerConn{Conn: conn, th: th}, nil
 }
 
@@ -225,8 +225,8 @@ type ConnectTrace struct {
 	// Network is the network we're using (e.g., "tcp")
 	Network string
 
-	// DestAddr is the address we're connecting to.
-	DestAddr string
+	// RemoteAddr is the address we're connecting to.
+	RemoteAddr string
 
 	// StartTime is when we started connecting.
 	StartTime time.Time
@@ -234,8 +234,8 @@ type ConnectTrace struct {
 	// EndTime is when we're done.
 	EndTime time.Time
 
-	// SourceAddr is the source address when we're connected.
-	SourceAddr string
+	// LocalAddr is the local address in case of success.
+	LocalAddr string
 
 	// Error is the error that occurred.
 	Error error
@@ -257,11 +257,11 @@ type ReadWriteTrace struct {
 	// kind is the structure kind.
 	kind string
 
-	// SourceAddr is the source address.
-	SourceAddr string
+	// LocalAddr is the local address.
+	LocalAddr string
 
-	// DestAddr is the destination address.
-	DestAddr string
+	// RemoteAddr is the remote address.
+	RemoteAddr string
 
 	// BufferSize is the size of the buffer to send or recv.
 	BufferSize int
@@ -289,8 +289,8 @@ func (te *ReadWriteTrace) Kind() string {
 func (c *tracerConn) Read(b []byte) (int, error) {
 	ev := &ReadWriteTrace{
 		kind:       TraceKindRead,
-		SourceAddr: c.Conn.RemoteAddr().String(),
-		DestAddr:   c.Conn.LocalAddr().String(),
+		RemoteAddr: c.Conn.RemoteAddr().String(),
+		LocalAddr:  c.Conn.LocalAddr().String(),
 		BufferSize: len(b),
 		StartTime:  time.Now(),
 	}
@@ -306,8 +306,8 @@ func (c *tracerConn) Read(b []byte) (int, error) {
 func (c *tracerConn) Write(b []byte) (int, error) {
 	ev := &ReadWriteTrace{
 		kind:       TraceKindWrite,
-		SourceAddr: c.Conn.LocalAddr().String(),
-		DestAddr:   c.Conn.RemoteAddr().String(),
+		RemoteAddr: c.Conn.RemoteAddr().String(),
+		LocalAddr:  c.Conn.LocalAddr().String(),
 		BufferSize: len(b),
 		StartTime:  time.Now(),
 	}

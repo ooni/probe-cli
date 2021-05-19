@@ -144,8 +144,8 @@ func (txp *Transport) tlsHandshakeWithTraceHeader(
 	th *TraceHeader) (net.Conn, *tls.ConnectionState, error) {
 	ev := &TLSHandshakeTrace{
 		kind:          TraceKindTLSHandshake,
-		SourceAddr:    tcpConn.LocalAddr().String(),
-		DestAddr:      tcpConn.RemoteAddr().String(),
+		LocalAddr:     tcpConn.LocalAddr().String(),
+		RemoteAddr:    tcpConn.RemoteAddr().String(),
 		SkipTLSVerify: tlsConfig.InsecureSkipVerify,
 		NextProtos:    tlsConfig.NextProtos,
 		StartTime:     time.Now(),
@@ -175,11 +175,11 @@ type TLSHandshakeTrace struct {
 	// kind is the structure kind.
 	kind string
 
-	// SourceAddr is the source address.
-	SourceAddr string
+	// LocalAddr is the local address.
+	LocalAddr string
 
-	// DestAddr is the destination address.
-	DestAddr string
+	// RemoteAddr is the remote address.
+	RemoteAddr string
 
 	// SkipTLSVerify indicates whether we disabled TLS verification.
 	SkipTLSVerify bool
