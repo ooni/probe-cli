@@ -498,17 +498,18 @@ __android_build_with_ooni_go: search/for/go
 OONIMKALL_V := $(shell date -u +%Y.%m.%d-%H%M%S)
 OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
 
-#help: You can also upload previously build debian packages. The
-#help: following targets help you in doing that:
-
-#help:
-#help: * `./debops-ci`: downloads the debops-ci tool from ooni/sysadmin
-# Implementation note: this target is phony because we want to always
-# download and use the latest version of this script.
-.PHONY: ./debops-ci
-./debops-ci: search/for/curl search/for/python3
-	curl -fsSLO https://raw.githubusercontent.com/ooni/sysadmin/master/tools/debops-ci
-	chmod +x debops-ci
+#help: The `debian/publish` target publishes all the debian packages
+#help: present in the toplevel directory using debopos-ci.
+# TODO(bassosimone): do not hardcode using linux/amd64 here?
+.PHONY: debian/publish
+debian/publish: search/for/docker
+	test -z "$(CI)" || { echo "fatal: refusing to run in a CI environment" 1>&2; exit 1; }
+	ls *.deb 2>/dev/null || { echo "fatal: no debian packages in the toplevel dir" 1>&2; exit 1; }
+	test -n "$(AWS_ACCESS_KEY_ID)" || { echo "fatal: AWS_ACCESS_KEY_ID not set" 1>&2; exit 1; }
+	test -n "$(AWS_SECRET_ACCESS_KEY)" || { echo "fatal: AWS_SECRET_ACCESS_KEY not set" 1>&2; exit 1; }
+	test -n "$(DEB_GPG_KEY)" || { echo "fatal: DEB_GPG_KEY not set" 1>&2; exit 1; }
+	docker pull --platform linux/amd64 ubuntu:20.04
+	docker run --platform linux/amd64 -e AWS_ACCESS_KEY_ID="$(AWS_ACCESS_KEY_ID)" -e AWS_SECRET_ACCESS_KEY="$(AWS_SECRET_ACCESS_KEY)" -e DEB_GPG_KEY="$(DEB_GPG_KEY)" -v $(shell pwd):/ooni -w /ooni ubuntu:20.04 ./CLI/linux/pubdebian
 
 #help:
 #help: The following commands check for the availability of dependencies:
@@ -596,15 +597,6 @@ search/for/mingw-w64:
 # reported by the amd64 and 386 mingw binaries.
 __MINGW32_AMD64_VERSION = $(shell x86_64-w64-mingw32-gcc --version | sed -n 1p | awk '{print $$3}')
 __MINGW32_386_VERSION = $(shell i686-w64-mingw32-gcc --version | sed -n 1p | awk '{print $$3}')
-
-#help:
-#help: * `./mk search/for/python3`: checks for python3
-.PHONY: search/for/python3
-search/for/python3:
-	@printf "checking for python3... "
-	@command -v python3 || { echo "not found"; exit 1; }
-	@printf "checking whether python3 is at least 3.7.0... "
-	@python3 -c 'import sys; print("yes") if sys.version_info >= (3, 7, 0) else sys.exit("no")'
 
 #help:
 #help: * `./mk search/for/shasum`: checks for shasum

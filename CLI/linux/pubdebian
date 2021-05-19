@@ -1,0 +1,47 @@
+#!/bin/sh
+# This script publishes Debian packages. When rung by `mk`, it
+# is run inside a `ubuntu:20.04` container. It's fine also to
+# run this script from a live Debian system as long as all the
+# following assumptions are met:
+#
+# 1. Debian packages we want to publish are in the toplevel dir;
+#
+# 2. This script is running as root (or is run via sudo).
+
+# ensure that we have all the required environment variables.
+fail=0
+if [ -z "$AWS_ACCESS_KEY_ID" ]; then
+	echo "warning: missing AWS_ACCESS_KEY_ID environment variable" 1>&2
+	fail=1
+fi
+if [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+	echo "warning: missing AWS_SECRET_ACCESS_KEY environment variable" 1>&2
+	fail=1
+fi
+if [ -z "$DEB_GPG_KEY" ]; then
+	echo "warning: missing DEB_GPG_KEY environment variable" 1>&2
+	fail=1
+fi
+if [ $fail -ne 0 ]; then
+	exit 1
+fi
+
+set -ex
+
+# The OONI_DEB_DRY_RUN is a semi-undocumented feature allowing
+# us to see the commands that would be run by this script.
+
+export DEBIAN_FRONTEND=noninteractive
+
+# install the dependencies required by the uploader.
+$OONI_DEB_DRY_RUN apt-get update -q
+$OONI_DEB_DRY_RUN apt-get install --yes --no-install-recommends curl git make python3 python3-requests python3-gnupg s3cmd
+
+# pull the latest version of the debops-ci script from ooni/sysadmin.
+$OONI_DEB_DRY_RUN curl -fsSLO https://raw.githubusercontent.com/ooni/sysadmin/master/tools/debops-ci
+$OONI_DEB_DRY_RUN chmod +x debops-ci
+
+# loop over the available packages and upload.
+for debpkg in *.deb; do
+	$OONI_DEB_DRY_RUN ./debops-ci --show-commands upload --bucket-name ooni-deb "$debpkg"
+done
