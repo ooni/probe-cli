@@ -11,6 +11,19 @@ import (
 
 // RoundTrip send an HTTP request and returns the response.
 func (txp *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return txp.roundTripOverrideHeaders(req)
+}
+
+// roundTripOverrideHeaders is where we override some request headers.
+func (txp *Transport) roundTripOverrideHeaders(req *http.Request) (*http.Response, error) {
+	if config := ContextConfig(req.Context()); config != nil {
+		if config.HTTPHost != "" {
+			req.Header.Set("Host", config.HTTPHost)
+		}
+		if config.HTTPUserAgent != "" {
+			req.Header.Set("User-Agent", config.HTTPUserAgent)
+		}
+	}
 	return txp.roundTripWrapError(req)
 }
 

@@ -21,10 +21,16 @@ type Config struct {
 	// Connector is the optional connector to use.
 	Connector Connector
 
+	// HTTPHost allows to override the HTTP host header.
+	HTTPHost string
+
 	// HTTPTransport is the optional HTTP transport to use. The documented
 	// way to force using HTTP3 is to override this field to point to the
 	// HTTP3RoundTripper exported by the netplumbing.Transport.
 	HTTPTransport http.RoundTripper
+
+	// HTTPUserAgent allows to override the HTTP user agent.
+	HTTPUserAgent string
 
 	// Logger is the optional logger to use.
 	Logger Logger

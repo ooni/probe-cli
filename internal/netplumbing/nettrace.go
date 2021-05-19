@@ -9,6 +9,9 @@ const (
 	// TraceKindConnect identifies a trace collected during connect.
 	TraceKindConnect = "connect"
 
+	// TraceKindDNSRoundTrip is a trace collected during the DNS round trip.
+	TraceKindDNSRoundTrip = "dns_round_trip"
+
 	// TraceKindHTTPRoundTrip is a trace collected during the HTTP round trip.
 	TraceKindHTTPRoundTrip = "http_round_trip"
 

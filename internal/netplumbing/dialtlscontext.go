@@ -69,6 +69,9 @@ func (txp *Transport) dialTLSContextDialAndHandshake(
 	if tlsConfig.NextProtos == nil && port == "443" {
 		tlsConfig.NextProtos = []string{"h2", "http/1.1"}
 	}
+	if tlsConfig.NextProtos == nil && port == "853" {
+		tlsConfig.NextProtos = []string{"dot"}
+	}
 	// Set the deadline so the handshake fails naturally for I/O timeout
 	// rather than for a context timeout. The context may still fail, when
 	// the user wants that. So, we can distinguish the case where there
