@@ -21,7 +21,9 @@ type Config struct {
 	// Connector is the optional connector to use.
 	Connector Connector
 
-	// HTTPTransport is the optional HTTP transport to use.
+	// HTTPTransport is the optional HTTP transport to use. The documented
+	// way to force using HTTP3 is to override this field to point to the
+	// HTTP3RoundTripper exported by the netplumbing.Transport.
 	HTTPTransport http.RoundTripper
 
 	// Logger is the optional logger to use.
@@ -29,6 +31,9 @@ type Config struct {
 
 	// Proxy is the optional proxy URL.
 	Proxy *url.URL
+
+	// QUICConfig is the optional QUIC config.
+	QUICConfig *quic.Config
 
 	// QUICHandshaker is the optional QUIC handshaker to use.
 	QUICHandshaker QUICHandshaker

@@ -12,13 +12,13 @@ func (txp *Transport) LookupHost(ctx context.Context, domain string) ([]string, 
 		return []string{domain}, nil // behave like getaddrinfo
 	}
 	log := txp.logger(ctx)
-	log.Debugf("lookupHost %s...", domain)
+	log.Debugf("lookupHost: %s...", domain)
 	addresses, err := txp.lookupHostMaybeTrace(ctx, domain)
 	if err != nil {
-		log.Debugf("lookupHost %s... %s", domain, err)
+		log.Debugf("lookupHost: %s... %s", domain, err)
 		return nil, &ErrResolve{err}
 	}
-	log.Debugf("lookupHost %s... %v", domain, addresses)
+	log.Debugf("lookupHost: %s... %v", domain, addresses)
 	return addresses, nil
 }
 

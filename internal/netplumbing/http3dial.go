@@ -45,7 +45,7 @@ func (txp *Transport) http3dialRejectProxy(
 	ctx context.Context, network, address string, tlsConfig *tls.Config,
 	quicConfig *quic.Config) (quic.EarlySession, error) {
 	if config := ContextConfig(ctx); config != nil && config.Proxy != nil {
-		return nil, &ErrQUICDial{ErrProxyNotImplemented}
+		return nil, fmt.Errorf("%w when using QUIC", ErrProxyNotImplemented)
 	}
 	return txp.http3dialEmitLogs(ctx, network, address, tlsConfig, quicConfig)
 }
@@ -138,14 +138,25 @@ func (err *ErrQUICHandshake) Unwrap() error {
 func (txp *Transport) quicHandshakePatchConfig(
 	ctx context.Context, network, ipaddr, port, sni string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
-	// TODO(bassosimone): allow to override the SNI
-	// TODO(bassosimone): implement this part
-	//if tlsConfig.RootCAs == nil {
-	//}
+	if config := ContextConfig(ctx); config != nil && config.TLSClientConfig != nil {
+		if config.TLSClientConfig.ServerName != "" {
+			tlsConfig.ServerName = config.TLSClientConfig.ServerName
+		}
+		if len(config.TLSClientConfig.NextProtos) > 0 {
+			tlsConfig.NextProtos = config.TLSClientConfig.NextProtos
+		}
+	}
 	if tlsConfig.ServerName == "" {
 		tlsConfig.ServerName = sni
 	}
-	// TODO(bassosimone): ovverride fields of quic config?
+	// TODO(bassosimone): implement this part
+	//if tlsConfig.RootCAs == nil {
+	//}
+	if config := ContextConfig(ctx); config != nil && config.QUICConfig != nil {
+		if len(config.QUICConfig.Versions) > 0 {
+			quicConfig.Versions = config.QUICConfig.Versions
+		}
+	}
 	return txp.quicHandshakeEmitLogs(
 		ctx, network, ipaddr, port, sni, tlsConfig, quicConfig)
 }
@@ -156,8 +167,8 @@ func (txp *Transport) quicHandshakeEmitLogs(
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 	log := txp.logger(ctx)
 	epnt := net.JoinHostPort(ipaddr, port)
-	prefix := fmt.Sprintf("quicHandshake: %s/%s sni=%s alpn=%s...",
-		epnt, network, sni, tlsConfig.NextProtos)
+	prefix := fmt.Sprintf("quicHandshake: %s/%s sni=%s alpn=%s v=%+v...",
+		epnt, network, sni, tlsConfig.NextProtos, quicConfig.Versions)
 	log.Debug(prefix)
 	sess, err := txp.quicHandshakeDoHandshake(
 		ctx, network, ipaddr, port, tlsConfig, quicConfig)
