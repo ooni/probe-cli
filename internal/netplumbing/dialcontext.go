@@ -289,8 +289,8 @@ func (te *ReadWriteTrace) Kind() string {
 func (c *tracerConn) Read(b []byte) (int, error) {
 	ev := &ReadWriteTrace{
 		kind:       TraceKindRead,
-		SourceAddr: c.Conn.LocalAddr().String(),
-		DestAddr:   c.Conn.RemoteAddr().String(),
+		SourceAddr: c.Conn.RemoteAddr().String(),
+		DestAddr:   c.Conn.LocalAddr().String(),
 		BufferSize: len(b),
 		StartTime:  time.Now(),
 	}

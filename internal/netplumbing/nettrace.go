@@ -12,6 +12,9 @@ const (
 	// TraceKindHTTPRoundTrip is a trace collected during the HTTP round trip.
 	TraceKindHTTPRoundTrip = "http_round_trip"
 
+	// TraceKindReadFrom identifies a trace collected during read_from.
+	TraceKindReadFrom = "read_from"
+
 	// TraceKindRead identifies a trace collected during read.
 	TraceKindRead = "read"
 
@@ -20,6 +23,9 @@ const (
 
 	// TraceKindTLSHandshake identifies a trace collected during a TLS handshake.
 	TraceKindTLSHandshake = "tls_handshake"
+
+	// TraceKindWriteTo identifies a trace collected during writeTo.
+	TraceKindWriteTo = "write_to"
 
 	// TraceKindWrite identifies a trace collected during write.
 	TraceKindWrite = "write"

@@ -50,7 +50,7 @@ func main() {
 	}
 	log.Infof("got %d bytes", len(data))
 	for _, ev := range theader.MoveOut() {
-		data, _ := json.Marshal(ev)
+		data, _ := json.Marshal(map[string]interface{}{ev.Kind(): ev})
 		fmt.Printf("%s\n", string(data))
 	}
 }

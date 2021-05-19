@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/bassosimone/quic-go"
 )
@@ -216,12 +217,12 @@ func (*quicGoHandshaker) QUICHandshake(ctx context.Context, pconn net.PacketConn
 }
 
 // quicListen is the top-level entry for creating a listening connection.
-func (txp *Transport) quicListen(ctx context.Context) (QUICUDPConn, error) {
+func (txp *Transport) quicListen(ctx context.Context) (net.PacketConn, error) {
 	return txp.quicListenWrapError(ctx)
 }
 
 // quicListenWrapError wraps the returned error as a QUICListenError.
-func (txp *Transport) quicListenWrapError(ctx context.Context) (QUICUDPConn, error) {
+func (txp *Transport) quicListenWrapError(ctx context.Context) (net.PacketConn, error) {
 	conn, err := txp.quicListenEmitLogs(ctx)
 	if err != nil {
 		return nil, &ErrQUICListen{err}
@@ -240,7 +241,7 @@ func (err *ErrQUICListen) Unwrap() error {
 }
 
 // quicListenEmitLogs emits QUIC listen logs.
-func (txp *Transport) quicListenEmitLogs(ctx context.Context) (QUICUDPConn, error) {
+func (txp *Transport) quicListenEmitLogs(ctx context.Context) (net.PacketConn, error) {
 	log := txp.logger(ctx)
 	log.Debug("quic: start listening...")
 	conn, err := txp.quicListenWrapConn(ctx)
@@ -253,31 +254,39 @@ func (txp *Transport) quicListenEmitLogs(ctx context.Context) (QUICUDPConn, erro
 }
 
 // quicListenWrapConn wraps the listening conn.
-func (txp *Transport) quicListenWrapConn(ctx context.Context) (QUICUDPConn, error) {
-	conn, err := txp.quicListenMaybeOverride(ctx)
+func (txp *Transport) quicListenWrapConn(ctx context.Context) (net.PacketConn, error) {
+	conn, err := txp.quicListenMaybeTrace(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &quicUDPConnWrapper{
 		byteCounter: txp.byteCounter(ctx),
-		QUICUDPConn: conn,
+		PacketConn:  conn,
 	}, nil
 }
 
 // quicUDPConnWrapper wraps an udpConn connection used by QUIC.
 type quicUDPConnWrapper struct {
 	byteCounter ByteCounter
-	QUICUDPConn
+	net.PacketConn
 }
 
-// ReadMsgUDP reads a message from an UDP socket.
-func (conn *quicUDPConnWrapper) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
-	n, oobn, flags, addr, err := conn.QUICUDPConn.ReadMsgUDP(b, oob)
+// TODO(bassosimone): figure out why ReadMsgUDP is not called. Consider
+// whether we care about that. It seems the code is WAI both using Linux
+// and macOS. Therefore, it may be that we are not picking up the right
+// interface implementing ReadMsgUDP because of wrapping.
+//
+// See https://pkg.go.dev/github.com/lucas-clemente/quic-go#OOBCapablePacketConn
+// for the official documentation regarding ReadMsgUDP vs ReadFrom.
+
+// ReadFrom reads a message from an UDP socket.
+func (conn *quicUDPConnWrapper) ReadFrom(p []byte) (int, net.Addr, error) {
+	n, addr, err := conn.PacketConn.ReadFrom(p)
 	if err != nil {
-		return 0, 0, 0, nil, &ErrReadFrom{err}
+		return 0, nil, &ErrReadFrom{err}
 	}
-	conn.byteCounter.CountBytesReceived(n + oobn)
-	return n, oobn, flags, addr, nil
+	conn.byteCounter.CountBytesReceived(n)
+	return n, addr, nil
 }
 
 // ErrReadFrom is a readFrom error.
@@ -292,7 +301,7 @@ func (err *ErrReadFrom) Unwrap() error {
 
 // WriteTo writes a message to the UDP socket.
 func (conn *quicUDPConnWrapper) WriteTo(p []byte, addr net.Addr) (int, error) {
-	count, err := conn.QUICUDPConn.WriteTo(p, addr)
+	count, err := conn.PacketConn.WriteTo(p, addr)
 	if err != nil {
 		return 0, &ErrWriteTo{err}
 	}
@@ -310,8 +319,62 @@ func (err *ErrWriteTo) Unwrap() error {
 	return err.error
 }
 
+// quicListenMaybeTrace activates traces if needed
+func (txp *Transport) quicListenMaybeTrace(ctx context.Context) (net.PacketConn, error) {
+	conn, err := txp.quicListenMaybeOverride(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if th := ContextTraceHeader(ctx); th != nil {
+		conn = &tracingQUICUDPConn{PacketConn: conn, th: th}
+	}
+	return conn, nil
+}
+
+// tracingQUICUDPConn adds tracing to a QUICUDPConn
+type tracingQUICUDPConn struct {
+	th *TraceHeader
+	net.PacketConn
+}
+
+// ReadMsgUDP reads a message from an UDP socket.
+func (conn *tracingQUICUDPConn) ReadFrom(p []byte) (int, net.Addr, error) {
+	ev := &ReadWriteTrace{
+		kind:       TraceKindReadFrom,
+		DestAddr:   conn.PacketConn.LocalAddr().String(),
+		BufferSize: len(p),
+		StartTime:  time.Now(),
+	}
+	defer conn.th.add(ev)
+	n, addr, err := conn.PacketConn.ReadFrom(p)
+	if addr != nil {
+		ev.SourceAddr = addr.String()
+	}
+	ev.EndTime = time.Now()
+	ev.Count = n
+	ev.Error = err
+	return n, addr, err
+}
+
+// WriteTo writes a message to the UDP socket.
+func (conn *tracingQUICUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
+	ev := &ReadWriteTrace{
+		kind:       TraceKindWriteTo,
+		SourceAddr: conn.PacketConn.LocalAddr().String(),
+		DestAddr:   addr.String(),
+		BufferSize: len(p),
+		StartTime:  time.Now(),
+	}
+	defer conn.th.add(ev)
+	count, err := conn.PacketConn.WriteTo(p, addr)
+	ev.EndTime = time.Now()
+	ev.Count = count
+	ev.Error = err
+	return count, err
+}
+
 // quicListenMaybeOverride uses the default or the overriden QUIC listener.
-func (txp *Transport) quicListenMaybeOverride(ctx context.Context) (QUICUDPConn, error) {
+func (txp *Transport) quicListenMaybeOverride(ctx context.Context) (net.PacketConn, error) {
 	ql := txp.DefaultQUICListener()
 	if config := ContextConfig(ctx); config != nil && config.QUICListener != nil {
 		ql = config.QUICListener
@@ -328,6 +391,6 @@ func (txp *Transport) DefaultQUICListener() QUICListener {
 type quicStdlibListener struct{}
 
 // QUICListen implements QUICListener.QUICListen.
-func (ql *quicStdlibListener) QUICListen(ctx context.Context) (QUICUDPConn, error) {
+func (ql *quicStdlibListener) QUICListen(ctx context.Context) (net.PacketConn, error) {
 	return net.ListenUDP("udp", &net.UDPAddr{})
 }
