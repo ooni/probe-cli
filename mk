@@ -279,7 +279,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 .PHONY:     ./CLI/linux/386/ooniprobe
 ./debian/386: search/for/docker ./CLI/linux/386/ooniprobe
 	docker pull --platform linux/386 debian:stable
-	docker run --platform linux/386 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian 386 "$(DEBIAN_TILDE_VERSION)"
+	docker run --platform linux/386 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/pkgdebian 386 "$(DEBIAN_TILDE_VERSION)"
 
 #help:
 #help: * `./mk ./debian/amd64`: debian/amd64
@@ -288,7 +288,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 .PHONY:     ./CLI/linux/amd64/ooniprobe
 ./debian/amd64: search/for/docker ./CLI/linux/amd64/ooniprobe
 	docker pull --platform linux/amd64 debian:stable
-	docker run --platform linux/amd64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian amd64 "$(DEBIAN_TILDE_VERSION)"
+	docker run --platform linux/amd64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/pkgdebian amd64 "$(DEBIAN_TILDE_VERSION)"
 
 # Note that we're building for armv7 here
 #help:
@@ -298,7 +298,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 .PHONY:     ./CLI/linux/arm/ooniprobe
 ./debian/arm: search/for/docker ./CLI/linux/arm/ooniprobe
 	docker pull --platform linux/arm/v7 debian:stable
-	docker run --platform linux/arm/v7 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian arm "$(DEBIAN_TILDE_VERSION)"
+	docker run --platform linux/arm/v7 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/pkgdebian arm "$(DEBIAN_TILDE_VERSION)"
 
 #help:
 #help: * `./mk ./debian/arm64`: debian/arm64
@@ -307,7 +307,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 .PHONY:     ./CLI/linux/arm64/ooniprobe
 ./debian/arm64: search/for/docker ./CLI/linux/arm64/ooniprobe
 	docker pull --platform linux/arm64 debian:stable
-	docker run --platform linux/arm64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/debian arm64 "$(DEBIAN_TILDE_VERSION)"
+	docker run --platform linux/arm64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/pkgdebian arm64 "$(DEBIAN_TILDE_VERSION)"
 
 #help:
 #help: The `./mk ./CLI/ooniprobe/linux` command builds the ooniprobe official command
@@ -498,6 +498,19 @@ __android_build_with_ooni_go: search/for/go
 OONIMKALL_V := $(shell date -u +%Y.%m.%d-%H%M%S)
 OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
 
+#help: The `debian/publish` target publishes all the debian packages
+#help: present in the toplevel directory using debopos-ci.
+# TODO(bassosimone): do not hardcode using linux/amd64 here?
+.PHONY: debian/publish
+debian/publish: search/for/docker
+	test -z "$(CI)" || { echo "fatal: refusing to run in a CI environment" 1>&2; exit 1; }
+	ls *.deb 2>/dev/null || { echo "fatal: no debian packages in the toplevel dir" 1>&2; exit 1; }
+	test -n "$(AWS_ACCESS_KEY_ID)" || { echo "fatal: AWS_ACCESS_KEY_ID not set" 1>&2; exit 1; }
+	test -n "$(AWS_SECRET_ACCESS_KEY)" || { echo "fatal: AWS_SECRET_ACCESS_KEY not set" 1>&2; exit 1; }
+	test -n "$(DEB_GPG_KEY)" || { echo "fatal: DEB_GPG_KEY not set" 1>&2; exit 1; }
+	docker pull --platform linux/amd64 ubuntu:20.04
+	docker run --platform linux/amd64 -e AWS_ACCESS_KEY_ID="$(AWS_ACCESS_KEY_ID)" -e AWS_SECRET_ACCESS_KEY="$(AWS_SECRET_ACCESS_KEY)" -e DEB_GPG_KEY="$(DEB_GPG_KEY)" -v $(shell pwd):/ooni -w /ooni ubuntu:20.04 ./CLI/linux/pubdebian
+
 #help:
 #help: The following commands check for the availability of dependencies:
 # TODO(bassosimone): make checks more robust?
@@ -538,20 +551,6 @@ search/for/gpg:
 	@command -v gpg || { echo "not found"; exit 1; }
 
 #help:
-#help: * `./mk search/for/jar`: checks for jar
-.PHONY: search/for/jar
-search/for/jar:
-	@printf "checking for jar... "
-	@command -v jar || { echo "not found"; exit 1; }
-
-#help:
-#help: * `./mk search/for/java`: checks for java
-.PHONY: search/for/java
-search/for/java:
-	@printf "checking for java... "
-	@command -v java || { echo "not found"; exit 1; }
-
-#help:
 #help: * `./mk search/for/go`: checks for go
 .PHONY: search/for/go
 search/for/go:
@@ -564,6 +563,20 @@ search/for/go:
 # __GOVERSION_REAL is the go version reported by the go binary (we
 # SHOULD NOT cache this value so we ARE NOT using `:=`)
 __GOVERSION_REAL = $(shell go version | awk '{print $$3}')
+
+#help:
+#help: * `./mk search/for/jar`: checks for jar
+.PHONY: search/for/jar
+search/for/jar:
+	@printf "checking for jar... "
+	@command -v jar || { echo "not found"; exit 1; }
+
+#help:
+#help: * `./mk search/for/java`: checks for java
+.PHONY: search/for/java
+search/for/java:
+	@printf "checking for java... "
+	@command -v java || { echo "not found"; exit 1; }
 
 #help:
 #help: * `./mk search/for/mingw-w64`: checks for mingw-w64
