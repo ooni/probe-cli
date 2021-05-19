@@ -14,13 +14,27 @@ import (
 // DialContext dials a cleartext connection.
 func (txp *Transport) DialContext(
 	ctx context.Context, network string, address string) (net.Conn, error) {
-	return txp.dialContextWrapError(ctx, network, address)
+	return txp.dialContextEntry(ctx, network, address, false)
+}
+
+// dialContextForHTTP is the dialContext entry used by HTTP.
+func (txp *Transport) dialContextForHTTP(
+	ctx context.Context, network string, address string) (net.Conn, error) {
+	return txp.dialContextEntry(ctx, network, address, true)
+}
+
+// dialContextEntry is the top-level entry for doing a dialContext.
+func (txp *Transport) dialContextEntry(
+	ctx context.Context, network string, address string,
+	calledByHTTP bool) (net.Conn, error) {
+	return txp.dialContextWrapError(ctx, network, address, calledByHTTP)
 }
 
 // dialContextWrapError wraps any error using ErrDial.
 func (txp *Transport) dialContextWrapError(
-	ctx context.Context, network string, address string) (net.Conn, error) {
-	conn, err := txp.dialContextMaybeProxy(ctx, network, address)
+	ctx context.Context, network string, address string,
+	calledByHTTP bool) (net.Conn, error) {
+	conn, err := txp.dialContextMaybeProxy(ctx, network, address, calledByHTTP)
 	if err != nil {
 		return nil, &ErrDial{err}
 	}
@@ -37,11 +51,15 @@ func (err *ErrDial) Unwrap() error {
 	return err.error
 }
 
-// dialContextMaybeProxy chooses whether to use a proxy.
+// dialContextMaybeProxy chooses whether to use a proxy. We do not use
+// any proxy when called by HTTP, because HTTP manages the proxy for itself.
 func (txp *Transport) dialContextMaybeProxy(
-	ctx context.Context, network string, address string) (net.Conn, error) {
-	if config := ContextConfig(ctx); config != nil && config.Proxy != nil {
-		return txp.dialContextWithProxy(ctx, network, address, config.Proxy)
+	ctx context.Context, network string, address string,
+	calledByHTTP bool) (net.Conn, error) {
+	if !calledByHTTP {
+		if config := ContextConfig(ctx); config != nil && config.Proxy != nil {
+			return txp.dialContextWithProxy(ctx, network, address, config.Proxy)
+		}
 	}
 	return txp.dialContextEmitLogs(ctx, network, address)
 }
@@ -50,8 +68,6 @@ func (txp *Transport) dialContextMaybeProxy(
 func (txp *Transport) dialContextWithProxy(
 	ctx context.Context, network string, address string,
 	proxyURL *url.URL) (net.Conn, error) {
-	// TODO(bassosimone): what happens if the user has chosen
-	// to use an HTTP proxy here? Can we use it?
 	if proxyURL.Scheme != "socks5" {
 		return nil, ErrProxyNotImplemented
 	}

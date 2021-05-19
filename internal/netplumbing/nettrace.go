@@ -31,7 +31,18 @@ type TraceEvent interface {
 	Kind() string
 }
 
-// TraceHeader is the header of a trace.
+// TraceHeader is the header for a list of related traces. To
+// collect traces, create a TraceHeader and bind it to a context
+// using the netplumbing.WithTrace function.
+//
+// To obtain the current TraceHeader from a context, use the
+// netplumbing.ContextTraceHeader function.
+//
+// Calling WithTrace multiple times creates a stack of headers
+// such that ContextTraceHeader only returns the top most header
+// to the caller. Using this pattern, you can collect traces
+// in concurrent code. Then you can join/merge the traces using
+// the TraceHeader.MoveOut to extract the traces.
 type TraceHeader struct {
 	// events contains the events collected so far.
 	events []TraceEvent

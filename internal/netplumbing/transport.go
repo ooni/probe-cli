@@ -10,7 +10,13 @@ import (
 	"github.com/bassosimone/quic-go/http3"
 )
 
-// Transport implements Transport.
+// Transport allows you to perform network measurements and
+// collect traces during the measurements.
+//
+// You configure a Transport using Config, which allows you
+// to modify the way in which a Transport behaves.
+//
+// You can collect traces using a TraceHeader.
 type Transport struct {
 	// RoundTripper is the underlying http.Transport. You need to
 	// configure this field. Otherwise, use NewTransport to obtain
@@ -23,14 +29,14 @@ type Transport struct {
 	HTTP3RoundTripper *http3.RoundTripper
 }
 
-// NewTransport creates a new instance of Transport using a
-// default underlying http.Transport.
+// NewTransport creates a new instance of Transport and
+// filling all the fields with reasonable defaults.
 func NewTransport() *Transport {
 	txp := &Transport{}
 	txp.RoundTripper = &http.Transport{
 		Proxy:                 txp.proxy,
-		DialContext:           txp.DialContext,
-		DialTLSContext:        txp.DialTLSContext,
+		DialContext:           txp.dialContextForHTTP,
+		DialTLSContext:        txp.dialTLSContextForHTTP,
 		TLSHandshakeTimeout:   txp.tlsHandshakeTimeout(),
 		DisableCompression:    true,
 		MaxIdleConns:          100,
@@ -45,16 +51,15 @@ func NewTransport() *Transport {
 	return txp
 }
 
-// DefaultTransport is the default implementation of Transport.
+// DefaultTransport is the default Transport.
 var DefaultTransport = NewTransport()
 
 // proxy checks whether we need to use a proxy.
 func (txp *Transport) proxy(req *http.Request) (*url.URL, error) {
 	ctx := req.Context()
-	// we know how to manage a socks5 proxy ourself, so in case the proxy
-	// type is socks5, we use our own technique, which leads to better measurements
-	if config := ContextConfig(ctx); config != nil && config.Proxy != nil &&
-		config.Proxy.Scheme != "socks5" {
+	// note that the dialing code disables its proxy capabilities when
+	// it knows we're called by HTTP code.
+	if config := ContextConfig(ctx); config != nil && config.Proxy != nil {
 		log := txp.logger(ctx)
 		log.Debugf("http: using proxy: %s", config.Proxy)
 		return config.Proxy, nil

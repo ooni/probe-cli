@@ -72,9 +72,6 @@ type ResolveTrace struct {
 
 	// Error contains the error.
 	Error error
-
-	// Children contains the Children events.
-	Children []TraceEvent
 }
 
 // Kind implements TraceEvent.Kind.
