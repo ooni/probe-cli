@@ -19,16 +19,18 @@ import (
 func main() {
 	log.SetLevel(log.DebugLevel)
 	//clnt := &http.Client{Transport: netplumbing.DefaultTransport}
-	tracer := netplumbing.DefaultTransport.NewTracer()
-	config := tracer.NewConfig()
-	config.Logger = log.Log
-	/*
-		config.Proxy = &url.URL{
-			Scheme: "socks5",
-			Host:   "127.0.0.1:9050",
-		}
-	*/
+	config := &netplumbing.Config{
+		Logger: log.Log,
+		/*
+			Proxy: &url.URL{
+				Scheme: "socks5",
+				Host:   "127.0.0.1:9050",
+			},
+		*/
+	}
 	ctx := netplumbing.WithConfig(context.Background(), config)
+	theader := &netplumbing.TraceHeader{}
+	ctx = netplumbing.WithTraceHeader(ctx, theader)
 	req, err := http.NewRequestWithContext(ctx, "GET", "https://www.google.com", nil)
 	if err != nil {
 		log.WithError(err).Fatal("http.NewRequest failed")
@@ -43,8 +45,8 @@ func main() {
 		log.WithError(err).Fatal("ioutil.ReadAll failed")
 	}
 	log.Infof("got %d bytes", len(data))
-	for _, ev := range tracer.MoveOut() {
-		data, _ := json.Marshal(map[string]interface{}{ev.Kind(): ev})
+	for _, ev := range theader.MoveOut() {
+		data, _ := json.Marshal(ev)
 		fmt.Printf("%s\n", string(data))
 	}
 }
