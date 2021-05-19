@@ -37,10 +37,12 @@ func main() {
 	config := &netplumbing.Config{
 		Logger: log.Log,
 		Proxy: &url.URL{
-			Scheme: "socks5",
-			//Scheme: "http",
-			Host: "127.0.0.1:9050",
+			//Scheme: "socks5",
+			Scheme: "http",
+			//Host: "127.0.0.1:9050",
 			//Host: "127.0.0.1:8118",
+			Host: "127.0.0.1:8002",
+			User: url.UserPassword("antani", "mascetti"),
 		},
 	}
 	ctx := netplumbing.WithConfig(context.Background(), config)

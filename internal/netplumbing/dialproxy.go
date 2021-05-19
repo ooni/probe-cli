@@ -3,6 +3,7 @@ package netplumbing
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net"
@@ -75,7 +76,9 @@ func (txp *Transport) dialProxyHTTP(
 	}
 	req.URL = &url.URL{Host: address} // fixup the real URL
 	req.Header.Set("Host", address)
-	// TODO(bassosimone): implement proxy authentication
+	if auth := proxyAuth(proxyURL); auth != "" {
+		req.Header.Set("Proxy-Authorization", auth)
+	}
 	// TODO(bassosimone): allow a TLS proxy
 	txp.dialProxyHTTPLogRequest(ctx, req)
 	conn, err := txp.dialContextEmitLogs(ctx, "tcp", proxyURL.Host)
@@ -177,4 +180,30 @@ func (c *proxyConnHTTP) readResponse(
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
+}
+
+// From src/net/http/client.go in the standard library.
+//
+// License: 3-clause BSD + patent grant.
+func proxyAuth(proxyURL *url.URL) string {
+	if u := proxyURL.User; u != nil {
+		username := u.Username()
+		password, _ := u.Password()
+		return "Basic " + proxyBasicAuth(username, password)
+	}
+	return ""
+}
+
+// From src/net/http/client.go in the standard library.
+//
+// License: 3-clause BSD + patent grant.
+//
+// See 2 (end of page 4) https://www.ietf.org/rfc/rfc2617.txt
+// "To receive authorization, the client sends the userid and password,
+// separated by a single colon (":") character, within a base64
+// encoded string in the credentials."
+// It is not meant to be urlencoded.
+func proxyBasicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
