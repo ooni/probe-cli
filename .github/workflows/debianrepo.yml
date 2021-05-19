@@ -11,22 +11,22 @@ jobs:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: ./E2E/debian.sh i386
+      - run: ./E2E/debian.sh docker i386
 
   test_amd64:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: ./E2E/debian.sh amd64
+      - run: ./E2E/debian.sh docker amd64
 
   test_arm:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: ./E2E/debian.sh armhf
+      - run: ./E2E/debian.sh docker armhf
 
   build_arm64:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: ./E2E/debian.sh arm64
+      - run: ./E2E/debian.sh docker arm64

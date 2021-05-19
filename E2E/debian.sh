@@ -38,6 +38,7 @@ elif [ "$1" = "install" ]; then
 	install_flow
 
 else
-	echo "usage: $0 docker {i386,amd64,armhf,arm64}"
-	echo "       $0 install"
+	echo "usage: $0 docker {i386,amd64,armhf,arm64}" 1>&2
+	echo "       $0 install" 1>&2
+	exit 1
 fi
