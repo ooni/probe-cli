@@ -70,6 +70,9 @@ type Session struct {
 	// mu provides mutual exclusion.
 	mu sync.Mutex
 
+	// submitter is the Submitter used by this session.
+	submitter *probeservices.Submitter
+
 	// testLookupLocationContext is a an optional hook for testing
 	// allowing us to mock LookupLocationContext.
 	testLookupLocationContext func(ctx context.Context) (*geolocate.Results, error)
@@ -409,15 +412,6 @@ func (s *Session) NewProbeServicesClient(ctx context.Context) (*probeservices.Cl
 	return probeservices.NewClient(s, *s.selectedProbeService)
 }
 
-// NewSubmitter creates a new submitter instance.
-func (s *Session) NewSubmitter(ctx context.Context) (Submitter, error) {
-	psc, err := s.NewProbeServicesClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return probeservices.NewSubmitter(psc, s.Logger()), nil
-}
-
 // NewOrchestraClient creates a new orchestra client. This client is registered
 // and logged in with the OONI orchestra. An error is returned on failure.
 //
@@ -547,6 +541,36 @@ func (s *Session) SoftwareName() string {
 // SoftwareVersion returns the application version.
 func (s *Session) SoftwareVersion() string {
 	return s.softwareVersion
+}
+
+// Submit submits the given measurement. On success, it changes the
+// ReportID field of the measurement to match the one assigned by the
+// underlying submitter as part of the submission. This method is a
+// locked method: it locks the Session's mutex while running.
+func (s *Session) Submit(ctx context.Context, m *model.Measurement) error {
+	s.mu.Lock()
+	if s.submitter == nil {
+		s.mu.Unlock()
+		// Here we release the mutex because s.NewProbeServicesClient
+		// locks the mutex when selecting the probe services client to
+		// use as well as when storing the probe location.
+		psc, err := s.NewProbeServicesClient(ctx)
+		if err != nil {
+			return err
+		}
+		submitter := probeservices.NewSubmitter(psc, s.Logger())
+		s.mu.Lock()
+		// Here we enter again in locked state. In theory it's possible
+		// for another goroutine to be faster than us, and the submitter
+		// could be already set (mutexes do not preserve order). In such a
+		// case, it's fine to ignore the submitter variable, since the
+		// Submitter struct does not have any Close method.
+		if s.submitter == nil {
+			s.submitter = submitter
+		}
+	}
+	defer s.mu.Unlock()
+	return s.submitter.Submit(ctx, m)
 }
 
 // TempDir returns the temporary directory.

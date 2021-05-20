@@ -67,7 +67,7 @@ type InputProcessor struct {
 
 	// Submitter is the code that will submit measurements
 	// to the OONI collector.
-	Submitter InputProcessorSubmitterWrapper
+	Submitter Submitter
 
 	// terminatedByMaxRuntime is an internal atomic variabile
 	// incremented when we're terminated by MaxRuntime. We
@@ -93,27 +93,6 @@ func NewInputProcessorSaverWrapper(saver Saver) InputProcessorSaverWrapper {
 func (ipsw inputProcessorSaverWrapper) SaveMeasurement(
 	idx int, m *model.Measurement) error {
 	return ipsw.saver.SaveMeasurement(m)
-}
-
-// InputProcessorSubmitterWrapper is InputProcessor's
-// wrapper for a Submitter implementation.
-type InputProcessorSubmitterWrapper interface {
-	Submit(ctx context.Context, idx int, m *model.Measurement) error
-}
-
-type inputProcessorSubmitterWrapper struct {
-	submitter Submitter
-}
-
-// NewInputProcessorSubmitterWrapper wraps a Submitter
-// for the InputProcessor.
-func NewInputProcessorSubmitterWrapper(submitter Submitter) InputProcessorSubmitterWrapper {
-	return inputProcessorSubmitterWrapper{submitter: submitter}
-}
-
-func (ipsw inputProcessorSubmitterWrapper) Submit(
-	ctx context.Context, idx int, m *model.Measurement) error {
-	return ipsw.submitter.Submit(ctx, m)
 }
 
 // Run processes all the input subject to the duration of the
@@ -142,7 +121,7 @@ func (ip *InputProcessor) Run(ctx context.Context) error {
 		}
 		meas.AddAnnotations(ip.Annotations)
 		meas.Options = ip.Options
-		err = ip.Submitter.Submit(ctx, idx, meas)
+		err = ip.Submitter.Submit(ctx, meas)
 		if err != nil {
 			return err
 		}

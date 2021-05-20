@@ -18,8 +18,9 @@ type Submitter interface {
 
 // SubmitterSession is the Submitter's view of the Session.
 type SubmitterSession interface {
-	// NewSubmitter creates a new probeservices Submitter.
-	NewSubmitter(ctx context.Context) (Submitter, error)
+	// Submit submits the measurement and updates its
+	// report ID field in case of success.
+	Submit(ctx context.Context, m *model.Measurement) error
 }
 
 // SubmitterConfig contains settings for NewSubmitter.
@@ -36,16 +37,13 @@ type SubmitterConfig struct {
 
 // NewSubmitter creates a new submitter instance. Depending on
 // whether submission is enabled or not, the returned submitter
-// instance migh just be a stub implementation.
-func NewSubmitter(ctx context.Context, config SubmitterConfig) (Submitter, error) {
+// instance is either the session itself or just a stub instance
+// that does nothing instead of submitting.
+func NewSubmitter(ctx context.Context, config SubmitterConfig) Submitter {
 	if !config.Enabled {
-		return stubSubmitter{}, nil
+		return stubSubmitter{}
 	}
-	subm, err := config.Session.NewSubmitter(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return realSubmitter{subm: subm, logger: config.Logger}, nil
+	return realSubmitter{subm: config.Session, logger: config.Logger}
 }
 
 type stubSubmitter struct{}

@@ -186,19 +186,6 @@ func TestNewProbeServicesClientForCheckIn(t *testing.T) {
 	}
 }
 
-func TestSessionNewSubmitterWithCancelledContext(t *testing.T) {
-	sess := newSessionForTesting(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // fail immediately
-	subm, err := sess.NewSubmitter(ctx)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatal("not the error we expected", err)
-	}
-	if subm != nil {
-		t.Fatal("expected nil submitter here")
-	}
-}
-
 func TestSessionMaybeLookupLocationContextLookupLocationContextFailure(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	sess := newSessionForTestingNoLookups(t)
