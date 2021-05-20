@@ -48,11 +48,13 @@ func (txp *Transport) lookupHostWithTraceHeader(
 		Domain:    domain,
 		StartTime: time.Now(),
 	}
-	defer th.add(ev)
-	addrs, err := txp.lookupHostMaybeOverride(ctx, domain)
+	child := &TraceHeader{}
+	addrs, err := txp.lookupHostMaybeOverride(WithTraceHeader(ctx, child), domain)
 	ev.EndTime = time.Now()
 	ev.Addresses = addrs
 	ev.Error = err
+	ev.Children = child.MoveOut()
+	th.add(ev)
 	return addrs, err
 }
 
@@ -72,6 +74,9 @@ type ResolveTrace struct {
 
 	// Error contains the error.
 	Error error
+
+	// Children contains the children events.
+	Children []TraceEvent
 }
 
 // Kind implements TraceEvent.Kind.

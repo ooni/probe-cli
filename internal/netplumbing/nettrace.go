@@ -12,6 +12,9 @@ const (
 	// TraceKindDNSRoundTrip is a trace collected during the DNS round trip.
 	TraceKindDNSRoundTrip = "dns_round_trip"
 
+	// TraceKindGroup groups a set of related traces.
+	TraceKindGroup = "group"
+
 	// TraceKindHTTPRoundTrip is a trace collected during the HTTP round trip.
 	TraceKindHTTPRoundTrip = "http_round_trip"
 
@@ -95,4 +98,18 @@ func WithTraceHeader(ctx context.Context, th *TraceHeader) context.Context {
 func ContextTraceHeader(ctx context.Context) *TraceHeader {
 	th, _ := ctx.Value(traceHeaderKey{}).(*TraceHeader)
 	return th
+}
+
+// GroupTrace is a group within the trace.
+type GroupTrace struct {
+	// Name is the group name.
+	Name string
+
+	// Children contains the children.
+	Children []TraceEvent
+}
+
+// Kind implements TraceEvent.Kind.
+func (te *GroupTrace) Kind() string {
+	return TraceKindGroup
 }
