@@ -44,7 +44,7 @@ func (txp *Transport) lookupHostMaybeTrace(
 // lookupHostWithTraceHeader traces a lookupHost.
 func (txp *Transport) lookupHostWithTraceHeader(
 	ctx context.Context, domain string, th *TraceHeader) ([]string, error) {
-	ev := &ResolveTrace{
+	ev := &LookupHostTrace{
 		Domain:    domain,
 		StartTime: time.Now(),
 	}
@@ -58,8 +58,8 @@ func (txp *Transport) lookupHostWithTraceHeader(
 	return addrs, err
 }
 
-// ResolveTrace is a measurement performed during a DNS resolution.
-type ResolveTrace struct {
+// LookupHostTrace is a measurement performed during a lookup host.
+type LookupHostTrace struct {
 	// Domain is the domain to resolve.
 	Domain string
 
@@ -80,8 +80,8 @@ type ResolveTrace struct {
 }
 
 // Kind implements TraceEvent.Kind.
-func (te *ResolveTrace) Kind() string {
-	return TraceKindResolve
+func (te *LookupHostTrace) Kind() string {
+	return TraceKindLookupHost
 }
 
 // lookupHostMaybeOverride uses the overriden or the custom resolver.
