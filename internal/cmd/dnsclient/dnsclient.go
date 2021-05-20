@@ -63,7 +63,7 @@ func main() {
 
 	resolverURL := &url.URL{
 		Scheme: "https",
-		Host:   "8.8.8.8",
+		Host:   "dns.google",
 		Path:   "/dns-query",
 	}
 

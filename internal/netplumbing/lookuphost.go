@@ -88,10 +88,32 @@ func (te *LookupHostTrace) Kind() string {
 func (txp *Transport) lookupHostMaybeOverride(
 	ctx context.Context, domain string) ([]string, error) {
 	reso := txp.DefaultResolver()
-	if config := ContextConfig(ctx); config != nil && config.Resolver != nil {
-		reso = config.Resolver
+	// avoid looping when a lookupHost needs another to bootstrap
+	if !contextLookupHostLoopFlag(ctx) {
+		if config := ContextConfig(ctx); config != nil && config.Resolver != nil {
+			reso = config.Resolver
+		}
+		ctx = withLookupHostLoopFlag(ctx)
 	}
 	return reso.LookupHost(ctx, domain)
+}
+
+// lookupHostLoopFlagKey is a key indicating that we are inside
+// a lookupHost operation that has called lookupHost. This
+// happens, for example, when using `dot://dns.google`. When
+// this happens, we fallback to the default resolver, thus
+// we do not loop forever calling ourselves.
+type lookupHostLoopFlagKey struct{}
+
+// withLookupHostLoopFlag sets the lookupHost loop flag.
+func withLookupHostLoopFlag(ctx context.Context) context.Context {
+	return context.WithValue(ctx, lookupHostLoopFlagKey{}, true)
+}
+
+// contextLookupHostLoopFlag returns the lookupHost loop flag.
+func contextLookupHostLoopFlag(ctx context.Context) bool {
+	v, _ := ctx.Value(lookupHostLoopFlagKey{}).(bool)
+	return v
 }
 
 // DefaultResolver returns the default Resolver used by this Transport.
