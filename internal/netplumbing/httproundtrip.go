@@ -1,12 +1,17 @@
 package netplumbing
 
+// This file contains the implementation of Transport.RoundTrip.
+
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 // RoundTrip send an HTTP request and returns the response.
@@ -20,12 +25,17 @@ func (txp *Transport) roundTripOverrideHeaders(req *http.Request) (*http.Respons
 		if config.HTTPHost != "" {
 			req.Header.Set("Host", config.HTTPHost)
 		}
+		ua := DefaultUserAgent
 		if config.HTTPUserAgent != "" {
-			req.Header.Set("User-Agent", config.HTTPUserAgent)
+			ua = config.HTTPUserAgent
 		}
+		req.Header.Set("User-Agent", ua)
 	}
 	return txp.roundTripWrapError(req)
 }
+
+// DefaultUserAgent is the default user agent.
+var DefaultUserAgent = fmt.Sprintf("ooniprobe-cli/%s", version.Version)
 
 // roundTripWrapError wraps the returned error using ErrHTTPRoundTrip
 func (txp *Transport) roundTripWrapError(req *http.Request) (*http.Response, error) {

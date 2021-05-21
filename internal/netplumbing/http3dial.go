@@ -1,5 +1,7 @@
 package netplumbing
 
+// This file contains the implementation of Transport.http3dial.
+
 import (
 	"context"
 	"crypto/tls"

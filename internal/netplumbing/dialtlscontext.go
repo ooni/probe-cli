@@ -1,5 +1,7 @@
 package netplumbing
 
+// This file contains the implementation of Transport.DialTLSContext.
+
 import (
 	"context"
 	"crypto/tls"
@@ -11,17 +13,26 @@ import (
 // DialTLSContext dials a TLS connection.
 func (txp *Transport) DialTLSContext(
 	ctx context.Context, network string, address string) (net.Conn, error) {
+	conn, _, err := txp.dialTLSContext(ctx, network, address)
+	return conn, err
+}
+
+// dialTLSContext is the internal entry point for dialing TLS
+func (txp *Transport) dialTLSContext(
+	ctx context.Context, network string, address string) (
+	net.Conn, *tls.ConnectionState, error) {
 	return txp.dialTLSContextWrapError(ctx, network, address)
 }
 
 // dialTLSContextWrapError wraps errors with ErrDialTLS.
 func (txp *Transport) dialTLSContextWrapError(
-	ctx context.Context, network string, address string) (net.Conn, error) {
-	conn, err := txp.dialTLSContextEmitLogs(ctx, network, address)
+	ctx context.Context, network string, address string) (
+	net.Conn, *tls.ConnectionState, error) {
+	conn, state, err := txp.dialTLSContextEmitLogs(ctx, network, address)
 	if err != nil {
-		return nil, &ErrDialTLS{err}
+		return nil, nil, &ErrDialTLS{err}
 	}
-	return conn, nil
+	return conn, state, nil
 }
 
 // ErrDialTLS is an error when dialing a TLS connection.
@@ -36,28 +47,30 @@ func (err *ErrDialTLS) Unwrap() error {
 
 // dialTLSContextEmitLogs emits dialTLS-related logs.
 func (txp *Transport) dialTLSContextEmitLogs(
-	ctx context.Context, network string, address string) (net.Conn, error) {
+	ctx context.Context, network string, address string) (
+	net.Conn, *tls.ConnectionState, error) {
 	log := txp.logger(ctx)
 	log.Debugf("dialTLS: %s/%s...", address, network)
-	conn, err := txp.dialTLSContextDialAndHandshake(ctx, network, address)
+	conn, state, err := txp.dialTLSContextDialAndHandshake(ctx, network, address)
 	if err != nil {
 		log.Debugf("dialTLS: %s/%s... %s", address, network, err)
-		return nil, err
+		return nil, nil, err
 	}
 	log.Debugf("dialTLS: %s/%s... ok", address, network)
-	return conn, nil
+	return conn, state, nil
 }
 
 // dialTLSContextDialAndHandshake dials and handshakes.
 func (txp *Transport) dialTLSContextDialAndHandshake(
-	ctx context.Context, network string, address string) (net.Conn, error) {
+	ctx context.Context, network string, address string) (
+	net.Conn, *tls.ConnectionState, error) {
 	sni, port, err := net.SplitHostPort(address)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	tcpConn, err := txp.DialContext(ctx, network, address)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	tlsConfig := txp.tlsClientConfig(ctx)
 	// TODO(bassosimone): implement this part
@@ -77,13 +90,13 @@ func (txp *Transport) dialTLSContextDialAndHandshake(
 	// the user wants that. So, we can distinguish the case where there
 	// is a timeout from the impatient-user case.
 	tcpConn.SetDeadline(time.Now().Add(txp.tlsHandshakeTimeout()))
-	tlsConn, _, err := txp.tlsHandshake(ctx, tcpConn, tlsConfig)
+	tlsConn, state, err := txp.tlsHandshake(ctx, tcpConn, tlsConfig)
 	if err != nil {
 		tcpConn.Close() // we own the connection
-		return nil, err
+		return nil, nil, err
 	}
 	tcpConn.SetDeadline(time.Time{})
-	return tlsConn, nil
+	return tlsConn, state, nil
 }
 
 // tlsHandshake its the top-level interface for performing a TLS handshake.
@@ -127,7 +140,7 @@ func (txp *Transport) tlsHandshakeEmitLogs(
 		log.Debugf("%s %s", prefix, err)
 		return nil, nil, err
 	}
-	log.Debugf("%s proto=%s", prefix, state.NegotiatedProtocol)
+	log.Debugf("%s %s", prefix, state.NegotiatedProtocol)
 	return tlsConn, state, nil
 }
 

@@ -1,5 +1,7 @@
 package netplumbing
 
+// This file contains the implementation of Transport's DNS encoding functions.
+
 import "github.com/miekg/dns"
 
 // DNSEncodeA encodes an A query. The padding argument indicates

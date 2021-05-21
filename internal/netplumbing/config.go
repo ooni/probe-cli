@@ -1,5 +1,7 @@
 package netplumbing
 
+// This file contains everything related to the Config struct.
+
 import (
 	"context"
 	"crypto/tls"
@@ -15,45 +17,78 @@ import (
 // using the netplumbing.WithConfig function. The Transport will use
 // the netplumbing.ContextConfig function to retrieve the Config.
 type Config struct {
-	// ByteCounter is the optional byte counter to use.
+	// ByteCounter is the optional byte counter to use. If you
+	// configure this field, then we will call its methods every
+	// time a read/read_from or write/write_to completes. This
+	// is the documented way to track the bytes sent or received
+	// and/or to keep track of bandwidth usage.
 	ByteCounter ByteCounter
 
-	// Connector is the optional connector to use.
+	// Connector is the optional connector to use. Setting this
+	// field means that every piece of code connecting a TCP/UDP
+	// socket will call its DialContext method to do that. The
+	// address argument to the method will always be an IP address.
 	Connector Connector
 
-	// HTTPHost allows to override the HTTP host header.
+	// HTTPHost allows to override the HTTP host header. If you
+	// do that, we will connect() to the IP/domain in the URL.Host
+	// but we'll send this field as part of the HTTP headers.
+	//
+	// This is mostly useful to detect censorship based on the
+	// host header with unencrypted HTTP/1.1 flows.
 	HTTPHost string
 
-	// HTTPTransport is the optional HTTP transport to use. The documented
-	// way to force using HTTP3 is to override this field to point to the
-	// HTTP3RoundTripper exported by the netplumbing.Transport.
+	// HTTPTransport is the optional HTTP transport to use.
+	//
+	// The documented way to force using HTTP3 is to override this
+	// field to point to Transport.HTTP3RoundTripper.
+	//
+	// The documented way of using the OONI replacement for the
+	// stdlib transport (which is compatible with UTLS) is to
+	// overide this field to point to Transport.OORoundTripper.
 	HTTPTransport http.RoundTripper
 
-	// HTTPUserAgent allows to override the HTTP user agent.
+	// HTTPUserAgent allows to override the HTTP user agent. If not
+	// set then we will use DefaultUserAgent.
 	HTTPUserAgent string
 
-	// Logger is the optional logger to use.
+	// Logger is the optional logger to use. This interface
+	// is compatible with github.com/apex/log's logger.
 	Logger Logger
 
-	// Proxy is the optional proxy URL.
+	// Proxy is the optional proxy URL. We support "http" and
+	// "socks5" proxies with optional username and password.
 	Proxy *url.URL
 
-	// QUICConfig is the optional QUIC config.
+	// QUICConfig is the optional QUIC config. If not set, then
+	// we use an empty QUIC config.
 	QUICConfig *quic.Config
 
-	// QUICHandshaker is the optional QUIC handshaker to use.
+	// QUICHandshaker is the optional QUIC handshaker to use. If
+	// set, then we'll use it for QUIC handshakes.
 	QUICHandshaker QUICHandshaker
 
-	// QUICListener is the optional listener for QUIC to use.
+	// QUICListener is the optional listener for QUIC to use. If set,
+	// we'll use it to create QUIC UDP listening sockets.
 	QUICListener QUICListener
 
-	// Resolver is the optional resolver to use.
+	// Resolver is the optional resolver to use. If not set, then
+	// we'll use the standard library's resolver.
+	//
+	// The documented way to force a custom resolver is to create
+	// an instance of DNSResolver using NewDNSResolver and overriding
+	// this Config field to point to such an instance.
 	Resolver Resolver
 
-	// TLSClientConfig is the optional TLS config to use.
+	// TLSClientConfig is the optional TLS config to use. If not
+	// set, then we'll use an empty config for TLS and QUIC.
 	TLSClientConfig *tls.Config
 
-	// TLSHandshaker is the optional TLS handshaker to use.
+	// TLSHandshaker is the optional TLS handshaker to use. If
+	// set, we'll use it instead of the stdlib.
+	//
+	// The documented way to use UTLS is to create an instance
+	// of the UTLSHandshaker and point it to this field.
 	TLSHandshaker TLSHandshaker
 }
 

@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/netplumbing"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 /*
@@ -18,8 +18,13 @@ import (
 
 func main() {
 	log.SetLevel(log.DebugLevel)
+	txp := netplumbing.DefaultTransport
+	utlsHandshaker := &netplumbing.UTLSHandshaker{
+		ClientHelloID: &utls.HelloChrome_Auto,
+	}
 	config := &netplumbing.Config{
-		Logger: log.Log,
+		Logger:        log.Log,
+		TLSHandshaker: utlsHandshaker,
 		/*
 			Proxy: &url.URL{
 				//Scheme: "socks5",
@@ -30,21 +35,24 @@ func main() {
 				User: url.UserPassword("antani", "mascetti"),
 			},
 		*/
-		HTTPTransport: netplumbing.DefaultTransport.HTTP3RoundTripper,
+		//HTTPTransport: txp.HTTP3RoundTripper,
+		HTTPTransport: txp.OORoundTripper,
 	}
 	ctx := netplumbing.WithConfig(context.Background(), config)
 	theader := &netplumbing.TraceHeader{}
 	ctx = netplumbing.WithTraceHeader(ctx, theader)
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://www.google.com", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", "http://nexa.polito.it", nil)
+	//req, err := http.NewRequestWithContext(ctx, "GET", "https://facebook.com", nil)
 	if err != nil {
 		log.WithError(err).Fatal("http.NewRequest failed")
 	}
-	resp, err := netplumbing.DefaultTransport.RoundTrip(req)
+	clnt := &http.Client{Transport: txp}
+	resp, err := clnt.Do(req)
 	if err != nil {
 		log.WithError(err).Fatal("clnt.Get failed")
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := netplumbing.ReadAllContext(ctx, resp.Body)
 	if err != nil {
 		log.WithError(err).Fatal("ioutil.ReadAll failed")
 	}

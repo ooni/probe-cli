@@ -1,5 +1,8 @@
 package netplumbing
 
+// This file contains the implementation of DNSResolver
+// and of the Transport.NewDNSResolver factory.
+
 import (
 	"context"
 	"errors"
@@ -11,6 +14,9 @@ import (
 // specified URL and this transport to perform domain name resolutions. You
 // typically want to use the object returned by this call to override the
 // underlying resolver using the Config.Resolver field.
+//
+// See the documentation of Transport.DNSQuery for a description of
+// which URLs are supported by this implementation.
 func (txp *Transport) NewDNSResolver(URL *url.URL) *DNSResolver {
 	return &DNSResolver{Transport: txp, URL: URL}
 }

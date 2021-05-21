@@ -1,5 +1,7 @@
 package netplumbing
 
+// This file contains the implementation of Transport.dialProxy.
+
 import (
 	"bufio"
 	"context"

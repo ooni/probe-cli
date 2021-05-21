@@ -1,5 +1,7 @@
 package netplumbing
 
+// This file contains generic net tracing code.
+
 import (
 	"context"
 	"sync"

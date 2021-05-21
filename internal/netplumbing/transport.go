@@ -1,5 +1,7 @@
 package netplumbing
 
+// This file contains the top-level implementation of Transport.
+
 import (
 	"context"
 	"crypto/tls"
@@ -19,13 +21,32 @@ import (
 type Transport struct {
 	// RoundTripper is the underlying http.Transport. You need to
 	// configure this field. Otherwise, use NewTransport to obtain
-	// a default configured Transport.
+	// a default configured Transport. Calling CloseIdleConnections
+	// will close the idle connections on this transport.
+	//
+	// This is the round tripper used by default.
 	RoundTripper *http.Transport
 
 	// HTTP3RoundTripper is the underlying http3.Transport. You need
 	// to configure this field. Otherwise, use NewTransport to obtain
-	// a default configured Transport.
+	// a default configured Transport. Calling CloseIdleConnections
+	// will close the idle connections on this transport.
+	//
+	// To use this round tripper, you need to configure it explicitly
+	// inside the Config struct that you bind to a Context.
 	HTTP3RoundTripper *http3.RoundTripper
+
+	// OORoundTripper is the underlying OOHTTPTransport. You need
+	// to configure this field. Otherwise, use NewTransport to obtain
+	// a default configured Transport. Calling CloseIdleConnections
+	// will close the idle connections on this transport.
+	//
+	// To use this round tripper, you need to configure it explicitly
+	// inside the Config struct that you bind to a Context.
+	//
+	// Unlike RoundTripper, this round tripper is out-of-the-box
+	// compatible with the UTLSHandshaker handshaker.
+	OORoundTripper *OOHTTPTransport
 }
 
 // NewTransport creates a new instance of Transport and
@@ -45,6 +66,9 @@ func NewTransport() *Transport {
 	txp.HTTP3RoundTripper = &http3.RoundTripper{
 		DisableCompression: true,
 		Dial:               txp.http3dial,
+	}
+	txp.OORoundTripper = &OOHTTPTransport{
+		Transport: txp,
 	}
 	return txp
 }
@@ -103,4 +127,5 @@ func (txp *Transport) tlsHandshakeTimeout() time.Duration {
 func (txp *Transport) CloseIdleConnections() {
 	txp.RoundTripper.CloseIdleConnections()
 	txp.HTTP3RoundTripper.Close()
+	txp.OORoundTripper.CloseIdleConnections()
 }
