@@ -39,14 +39,18 @@ func main() {
 		HTTPTransport: txp.OORoundTripper,
 	}
 	ctx := netplumbing.WithConfig(context.Background(), config)
+	clnt := &http.Client{Transport: txp}
+	get(ctx, clnt, "http://nexa.polito.it")
+	get(ctx, clnt, "http://nexa.polito.it/robots.txt")
+}
+
+func get(ctx context.Context, clnt *http.Client, url string) {
 	theader := &netplumbing.TraceHeader{}
 	ctx = netplumbing.WithTraceHeader(ctx, theader)
-	req, err := http.NewRequestWithContext(ctx, "GET", "http://nexa.polito.it", nil)
-	//req, err := http.NewRequestWithContext(ctx, "GET", "https://facebook.com", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		log.WithError(err).Fatal("http.NewRequest failed")
 	}
-	clnt := &http.Client{Transport: txp}
 	resp, err := clnt.Do(req)
 	if err != nil {
 		log.WithError(err).Fatal("clnt.Get failed")
@@ -61,4 +65,5 @@ func main() {
 		data, _ := json.Marshal(map[string]interface{}{ev.Kind(): ev})
 		fmt.Printf("%s\n", string(data))
 	}
+	fmt.Printf("\"separator\"\n")
 }

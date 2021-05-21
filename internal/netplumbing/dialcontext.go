@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -250,7 +251,15 @@ func (te *ConnectTrace) Kind() string {
 
 // tracerConn wraps a net.Conn when we need tracing.
 type tracerConn struct {
+	// Conn is the underlying conn
 	net.Conn
+
+	// mu protects access to the trace header
+	mu sync.Mutex
+
+	// th is the tracer header, which may change over the
+	// lifetime of a connection and potentially become nil
+	// if we're not interested in tracing anymore
 	th *TraceHeader
 }
 
@@ -296,7 +305,14 @@ func (c *tracerConn) Read(b []byte) (int, error) {
 		BufferSize: len(b),
 		StartTime:  time.Now(),
 	}
-	defer c.th.add(ev)
+	defer func() {
+		// protect accessing c.th, which may change over time
+		defer c.mu.Unlock()
+		c.mu.Lock()
+		if c.th != nil {
+			c.th.add(ev)
+		}
+	}()
 	count, err := c.Conn.Read(b)
 	ev.EndTime = time.Now()
 	ev.Count = count
@@ -313,12 +329,39 @@ func (c *tracerConn) Write(b []byte) (int, error) {
 		BufferSize: len(b),
 		StartTime:  time.Now(),
 	}
-	defer c.th.add(ev)
+	defer func() {
+		// protect accessing c.th, which may change over time
+		defer c.mu.Unlock()
+		c.mu.Lock()
+		if c.th != nil {
+			c.th.add(ev)
+		}
+	}()
 	count, err := c.Conn.Write(b)
 	ev.EndTime = time.Now()
 	ev.Count = count
 	ev.Error = err
 	return count, err
+}
+
+// LocalAddr overrides the original LocalAddr to return a
+// wrapper for addr allowing us to override the underlying
+// trace header in a safe way between calls.
+func (c *tracerConn) LocalAddr() net.Addr {
+	if addr := c.Conn.LocalAddr(); addr != nil {
+		return &tracerAddr{Addr: addr, c: c}
+	}
+	return nil
+}
+
+// tracerAddr is a wrapper for Addr that allows us to
+// access the tracerConn for replacing the trace header
+type tracerAddr struct {
+	// net.Addr is the underlying net.Addr
+	net.Addr
+
+	// c is the tracerConn
+	c *tracerConn
 }
 
 // connectMaybeOverride uses the default or the overriden connector.

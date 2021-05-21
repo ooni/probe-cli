@@ -37,6 +37,9 @@ type httpxconn interface {
 
 	// Close closes the connection.
 	Close() error
+
+	// UnderlyingConn returns the original underlying conn.
+	UnderlyingConn() net.Conn
 }
 
 // RoundTrip performs the HTTP round trip.
@@ -47,7 +50,7 @@ func (txp *OOHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error)
 		return nil, errors.New("netplumbing: unsupported scheme")
 	}
 	endpoint := txp.endpoint(req.URL.Host, txp.defaultPort(req.URL.Scheme))
-	if conn := txp.popconn(endpoint); conn != nil {
+	if conn := txp.popconn(req.Context(), endpoint); conn != nil {
 		resp, err := conn.RoundTrip(req)
 		if err == nil {
 			txp.putconn(endpoint, conn)
@@ -135,11 +138,25 @@ func (txp *OOHTTPTransport) endpoint(address, defaultPort string) string {
 
 // popconn extracts the persistent conn from the cache and returns
 // it, if available, otherwise it just returns nil.
-func (txp *OOHTTPTransport) popconn(host string) httpxconn {
+func (txp *OOHTTPTransport) popconn(ctx context.Context, host string) httpxconn {
 	defer txp.mu.Unlock()
 	txp.mu.Lock()
 	if conn, good := txp.activeConns[host]; good {
 		delete(txp.activeConns, host)
+		// if we can access the underlying conn's trace header, add
+		// new trace because now we resume tracing.
+		if th := ContextTraceHeader(ctx); th != nil {
+			if underlying := conn.UnderlyingConn(); underlying != nil {
+				if addr := underlying.LocalAddr(); addr != nil {
+					if traddr, ok := addr.(*tracerAddr); ok {
+						c := traddr.c
+						c.mu.Lock()
+						c.th = th
+						c.mu.Unlock()
+					}
+				}
+			}
+		}
 		return conn
 	}
 	return nil
@@ -149,6 +166,18 @@ func (txp *OOHTTPTransport) popconn(host string) httpxconn {
 func (txp *OOHTTPTransport) putconn(host string, conn httpxconn) {
 	defer txp.mu.Unlock()
 	txp.mu.Lock()
+	// if we can access the underlying conn's trace header, remove it
+	// because we're not interested to trace now.
+	if underlying := conn.UnderlyingConn(); underlying != nil {
+		if addr := underlying.LocalAddr(); addr != nil {
+			if traddr, ok := addr.(*tracerAddr); ok {
+				c := traddr.c
+				c.mu.Lock()
+				c.th = nil
+				c.mu.Unlock()
+			}
+		}
+	}
 	if txp.activeConns == nil {
 		txp.activeConns = make(map[string]httpxconn)
 	}
@@ -175,13 +204,17 @@ func newhttp2conn(conn net.Conn, idleConnTimeout time.Duration) (*http2conn, err
 	if err != nil {
 		return nil, err
 	}
-	return &http2conn{cc: cc}, nil
+	return &http2conn{cc: cc, orig: conn}, nil
 }
 
 // http2conn is a connection using http2. You should create a new
 // instance of this struct using the nehttp2conn factory.
 type http2conn struct {
+	// cc is the http2 connection
 	cc *http2.ClientConn
+
+	// orig is the original underlying conn
+	orig net.Conn
 }
 
 // RoundTrip performs the http round trip.
@@ -199,6 +232,11 @@ var errConnIsClosed = errors.New("netplumbing: this connection has been closed")
 func (c *http2conn) Close() error {
 	// the underlying connection should have once semantics.
 	return c.cc.Close()
+}
+
+// UnderlyingConn returns the original underlying conn.
+func (c *http2conn) UnderlyingConn() net.Conn {
+	return c.orig
 }
 
 // newhttp1conn creates a new http/1.1 connection.
@@ -354,4 +392,9 @@ func (c *http1conn) readloop() {
 func (c *http1conn) Close() error {
 	// the underlying connection should have close semantics.
 	return c.conn.Close()
+}
+
+// UnderlyingConn returns the underlying connection.
+func (c *http1conn) UnderlyingConn() net.Conn {
+	return c.conn
 }
