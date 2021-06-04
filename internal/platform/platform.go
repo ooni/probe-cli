@@ -1,5 +1,5 @@
-// Package platform returns the platform name. The name returned here
-// is compatible with the names returned by Measurement Kit.
+// Package platform allows you to obtain the platform name. We use this
+// information to annotate measurements.
 package platform
 
 import "runtime"
@@ -18,11 +18,7 @@ import "runtime"
 //
 // 5. "unknown"
 //
-// The android, ios, linux, macos, windows, and unknown strings are
-// also returned by Measurement Kit. As a known bug, the detection of
-// darwin-based systems relies on the architecture, when CGO support
-// has been disabled. In such case, the code will return "ios" when
-// using arm{,64} and "macos" when using x86{,_64}.
+// You should use this name to annotate measurements.
 func Name() string {
 	return name(runtime.GOOS)
 }

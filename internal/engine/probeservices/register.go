@@ -25,6 +25,8 @@ func (c Client) MaybeRegister(ctx context.Context, metadata Metadata) error {
 		return nil // we're already good
 	}
 	c.RegisterCalls.Add(1)
+	// TODO(bassosimone): here we should use a CSRNG
+	// (https://github.com/ooni/probe/issues/1502)
 	pwd := randx.Letters(64)
 	req := &registerRequest{
 		Metadata: metadata,
