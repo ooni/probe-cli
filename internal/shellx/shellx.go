@@ -3,13 +3,17 @@ package shellx
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
 	"github.com/google/shlex"
 	"golang.org/x/sys/execabs"
 )
+
+// Logger is the logger expected by this package.
+type Logger interface {
+	Infof(format string, v ...interface{})
+}
 
 // runconfig is the configuration for run.
 type runconfig struct {
@@ -43,17 +47,12 @@ func run(config runconfig) error {
 	return err
 }
 
-// noisyInfof is an infof function printing on the stderr.
-func noisyInfof(format string, v ...interface{}) {
-	fmt.Fprintf(os.Stderr, format, v...)
-}
-
 // Run executes the specified command with the specified args.
-func Run(name string, arg ...string) error {
+func Run(logger Logger, name string, arg ...string) error {
 	return run(runconfig{
 		args:     arg,
 		command:  name,
-		loginfof: noisyInfof,
+		loginfof: logger.Infof,
 		stdout:   os.Stdout,
 		stderr:   os.Stderr,
 	})
@@ -77,7 +76,7 @@ func RunQuiet(name string, arg ...string) error {
 var ErrNoCommandToExecute = errors.New("shellx: no command to execute")
 
 // RunCommandline executes the given command line.
-func RunCommandline(cmdline string) error {
+func RunCommandline(logger Logger, cmdline string) error {
 	args, err := shlex.Split(cmdline)
 	if err != nil {
 		return err
@@ -85,5 +84,5 @@ func RunCommandline(cmdline string) error {
 	if len(args) < 1 {
 		return ErrNoCommandToExecute
 	}
-	return Run(args[0], args[1:]...)
+	return Run(logger, args[0], args[1:]...)
 }

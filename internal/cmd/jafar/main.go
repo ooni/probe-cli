@@ -276,7 +276,7 @@ func main() {
 	policy := iptablesStart()
 	var err error
 	if *mainCommand != "" {
-		err = shellx.RunCommandline(fmt.Sprintf(
+		err = shellx.RunCommandline(log.Log, fmt.Sprintf(
 			"sudo -u '%s' -- %s", *mainUser, *mainCommand,
 		))
 	} else {

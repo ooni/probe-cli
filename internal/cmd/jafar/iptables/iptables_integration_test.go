@@ -291,7 +291,7 @@ func TestHijackHTTP(t *testing.T) {
 	if err := policy.Apply(); err != nil {
 		t.Fatal(err)
 	}
-	err = shellx.Run("sudo", "-u", "nobody", "--",
+	err = shellx.Run(log.Log, "sudo", "-u", "nobody", "--",
 		"curl", "-sf", "http://example.com")
 	if err == nil {
 		t.Fatal("expected an error here")
@@ -330,7 +330,7 @@ func TestHijackHTTPS(t *testing.T) {
 	if err := policy.Apply(); err != nil {
 		t.Fatal(err)
 	}
-	err = shellx.Run("sudo", "-u", "nobody", "--",
+	err = shellx.Run(log.Log, "sudo", "-u", "nobody", "--",
 		"curl", "-sf", "https://example.com")
 	if err == nil {
 		t.Fatal("expected an error here")
