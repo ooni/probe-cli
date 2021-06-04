@@ -59,9 +59,9 @@ run `go mod tidy` to minimize such changes.
 
 - use `./internal/atomicx` rather than `atomic/sync`
 
-- use `./internal/fsx.OpenFile` when you need to open a file
+- do not use `os/exec`, use `x/sys/execabs` or `./internal/shellx`
 
-Do now use `os/exec`, use `x/sys/execabs`.
+- use `./internal/fsx.OpenFile` when you need to open a file
 
 ## Code testing requirements
 

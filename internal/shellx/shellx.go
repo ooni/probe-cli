@@ -3,10 +3,10 @@ package shellx
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 
-	"github.com/apex/log"
 	"github.com/google/shlex"
 	"golang.org/x/sys/execabs"
 )
@@ -32,23 +32,28 @@ type runconfig struct {
 // run is the internal function for running commands.
 func run(config runconfig) error {
 	config.loginfof(
-		"exec: %s %s", config.command, strings.Join(config.args, " "))
+		"exec: %s %s\n", config.command, strings.Join(config.args, " "))
 	// implementation note: here we're using execabs because
 	// of https://blog.golang.org/path-security.
 	cmd := execabs.Command(config.command, config.args...)
 	cmd.Stdout = config.stdout
 	cmd.Stderr = config.stderr
 	err := cmd.Run()
-	config.loginfof("exec result: %+v", err)
+	config.loginfof("exec result: %+v\n", err)
 	return err
 }
 
-// Run executes the specified command with the specified args
+// noisyInfof is an infof function printing on the stderr.
+func noisyInfof(format string, v ...interface{}) {
+	fmt.Fprintf(os.Stderr, format, v...)
+}
+
+// Run executes the specified command with the specified args.
 func Run(name string, arg ...string) error {
 	return run(runconfig{
 		args:     arg,
 		command:  name,
-		loginfof: log.Log.Infof,
+		loginfof: noisyInfof,
 		stdout:   os.Stdout,
 		stderr:   os.Stderr,
 	})
@@ -68,15 +73,17 @@ func RunQuiet(name string, arg ...string) error {
 	})
 }
 
-// RunCommandline is like Run but its only argument is a command
-// line that will be splitted using the google/shlex package.
+// ErrNoCommandToExecute means that the command line is empty.
+var ErrNoCommandToExecute = errors.New("shellx: no command to execute")
+
+// RunCommandline executes the given command line.
 func RunCommandline(cmdline string) error {
 	args, err := shlex.Split(cmdline)
 	if err != nil {
 		return err
 	}
 	if len(args) < 1 {
-		return errors.New("shellx: no command to execute")
+		return ErrNoCommandToExecute
 	}
 	return Run(args[0], args[1:]...)
 }
