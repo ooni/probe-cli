@@ -15,9 +15,6 @@
 // perform the login. If an API uses caching, we will
 // automatically use the cache.
 //
-// See the example describing auto-login for more information
-// on how to use auto-login.
-//
 // Design
 //
 // Most of the code in this package is auto-generated from the
@@ -46,11 +43,11 @@
 //
 // Architecture
 //
-// The ./apimodel package contains the definition of request
+// The ./apimodel sub-package contains the definition of request
 // and response messages. We rely on tagging to specify how
 // we should encode and decode messages.
 //
-// The ./internal/generator contains code to generate most
+// The ./internal/generator sub-package contains code to generate most
 // code in this package. In particular, the spec.go file is
 // the specification of the APIs.
 package ooapi
