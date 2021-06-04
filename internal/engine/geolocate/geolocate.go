@@ -7,12 +7,11 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 const (
-	// DefaultProbeASN is the default probe ASN as number.
+	// DefaultProbeASN is the default probe ASN as a number.
 	DefaultProbeASN uint = 0
 
 	// DefaultProbeCC is the default probe CC.
@@ -46,40 +45,37 @@ var (
 type Logger interface {
 	Debug(msg string)
 	Debugf(format string, v ...interface{})
-	Info(msg string)
 	Infof(format string, v ...interface{})
-	Warn(msg string)
-	Warnf(format string, v ...interface{})
 }
 
-// Results contains geolocate results
+// Results contains geolocate results.
 type Results struct {
-	// ASN is the autonomous system number
+	// ASN is the autonomous system number.
 	ASN uint
 
-	// CountryCode is the country code
+	// CountryCode is the country code.
 	CountryCode string
 
 	// didResolverLookup indicates whether we did a resolver lookup.
 	didResolverLookup bool
 
-	// NetworkName is the network name
+	// NetworkName is the network name.
 	NetworkName string
 
-	// IP is the probe IP
+	// IP is the probe IP.
 	ProbeIP string
 
-	// ResolverASN is the resolver ASN
+	// ResolverASN is the resolver ASN.
 	ResolverASN uint
 
-	// ResolverIP is the resolver IP
+	// ResolverIP is the resolver IP.
 	ResolverIP string
 
-	// ResolverNetworkName is the resolver network name
+	// ResolverNetworkName is the resolver network name.
 	ResolverNetworkName string
 }
 
-// ASNString returns the ASN as a string
+// ASNString returns the ASN as a string.
 func (r *Results) ASNString() string {
 	return fmt.Sprintf("AS%d", r.ASN)
 }
@@ -121,12 +117,6 @@ type Config struct {
 	// UserAgent is the user agent to use. If not set, then
 	// we will use a default user agent.
 	UserAgent string
-}
-
-// Must ensures that NewTask is successful.
-func Must(task *Task, err error) *Task {
-	runtimex.PanicOnError(err, "NewTask failed")
-	return task
 }
 
 // NewTask creates a new instance of Task from config.

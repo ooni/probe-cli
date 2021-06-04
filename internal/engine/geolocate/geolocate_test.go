@@ -265,7 +265,10 @@ func TestLocationLookupSuccessWithResolverLookup(t *testing.T) {
 
 func TestSmoke(t *testing.T) {
 	config := Config{}
-	task := Must(NewTask(config))
+	task, err := NewTask(config)
+	if err != nil {
+		t.Fatal(err)
+	}
 	result, err := task.Run(context.Background())
 	if err != nil {
 		t.Fatal(err)
