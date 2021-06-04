@@ -27,7 +27,7 @@ func Name() string {
 	return name(runtime.GOOS)
 }
 
-// name is a utility function for imlementing Name.
+// name is a utility function for implementing Name.
 func name(goos string) string {
 	// Note: since go1.16 we have the ios port, so the ambiguity
 	// between ios and darwin is now gone.
