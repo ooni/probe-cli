@@ -6,10 +6,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/apex/log"
 	"github.com/google/shlex"
 	"golang.org/x/sys/execabs"
 )
+
+// Logger is the logger expected by this package.
+type Logger interface {
+	Infof(format string, v ...interface{})
+}
 
 // runconfig is the configuration for run.
 type runconfig struct {
@@ -43,12 +47,12 @@ func run(config runconfig) error {
 	return err
 }
 
-// Run executes the specified command with the specified args
-func Run(name string, arg ...string) error {
+// Run executes the specified command with the specified args.
+func Run(logger Logger, name string, arg ...string) error {
 	return run(runconfig{
 		args:     arg,
 		command:  name,
-		loginfof: log.Log.Infof,
+		loginfof: logger.Infof,
 		stdout:   os.Stdout,
 		stderr:   os.Stderr,
 	})
@@ -68,15 +72,17 @@ func RunQuiet(name string, arg ...string) error {
 	})
 }
 
-// RunCommandline is like Run but its only argument is a command
-// line that will be splitted using the google/shlex package.
-func RunCommandline(cmdline string) error {
+// ErrNoCommandToExecute means that the command line is empty.
+var ErrNoCommandToExecute = errors.New("shellx: no command to execute")
+
+// RunCommandline executes the given command line.
+func RunCommandline(logger Logger, cmdline string) error {
 	args, err := shlex.Split(cmdline)
 	if err != nil {
 		return err
 	}
 	if len(args) < 1 {
-		return errors.New("shellx: no command to execute")
+		return ErrNoCommandToExecute
 	}
-	return Run(args[0], args[1:]...)
+	return Run(logger, args[0], args[1:]...)
 }
