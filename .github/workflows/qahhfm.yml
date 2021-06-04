@@ -1,13 +1,12 @@
+# qahhfm runs QA checks for the hhfm experiment
 name: "qahhfm"
 on:
-  schedule:
-    - cron: "5 3 * * */1"
   push:
     branches:
-      - 'release/**'
+      - "release/**"
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/setup-go@v1
         with:

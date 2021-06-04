@@ -34,13 +34,13 @@ This will generate a binary called `ooniprobe` in the current directory.
 
 ## Android bindings
 
-Make sure you have Python 3.8+ installed, then run:
+Make sure you have GNU make installed, then run:
 
 ```bash
-./make -t android
+./mk android
 ```
 
-Builds bindings for Android. (Add `----disable-embedding-psiphon-config` if you
+Builds bindings for Android. (Add `OONI_PSIPHON_TAGS=""` if you
 cannot clone private repositories in the https://github.com/ooni namespace.)
 
 The generated bindings are (manually) pushed to the Maven Central package
@@ -49,13 +49,13 @@ are published along with the release notes.
 
 ## iOS bindings
 
-Make sure you have Python 3.8+ installed, then run:
+Make sure you have GNU make installed, then run:
 
 ```bash
-./make -t ios
+./mk ios
 ```
 
-Builds bindings for iOS. (Add `----disable-embedding-psiphon-config` if you
+Builds bindings for iOS. (Add `OONI_PSIPHON_TAGS=""` if you
 cannot clone private repositories in the https://github.com/ooni namespace.)
 
 The generated bindings are (manually) added to GitHub releases. The instructions
@@ -83,4 +83,5 @@ Create an issue according to [the routine release template](
 https://github.com/ooni/probe/blob/master/.github/ISSUE_TEMPLATE/routine-sprint-releases.md)
 and perform any item inside the check-list.
 
-We build releases using `./make`, which requires Python3.8+.
+We build releases using `./mk`, which requires GNU make. Try
+the `./mk help|less` command for detailed usage.

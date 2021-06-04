@@ -1,13 +1,12 @@
+# generate verifies that `go generate ./...` is not broken
 name: generate
 on:
   push:
     branches:
-      - 'release/**'
-  schedule:
-    - cron: "0 0 * * */1"
+      - "release/**"
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/setup-go@v1
         with:

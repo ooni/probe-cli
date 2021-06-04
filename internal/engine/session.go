@@ -171,6 +171,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 			config.Logger.Infof(
 				"starting '%s' tunnel; please be patient...", proxyURL.Scheme)
 			tunnel, err := tunnel.Start(ctx, &tunnel.Config{
+				Logger:    config.Logger,
 				Name:      proxyURL.Scheme,
 				Session:   &sessionTunnelEarlySession{},
 				TorArgs:   config.TorArgs,

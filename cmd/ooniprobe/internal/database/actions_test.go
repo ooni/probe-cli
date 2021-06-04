@@ -113,6 +113,9 @@ func TestMeasurementWorkflow(t *testing.T) {
 
 	var r Result
 	err = sess.Collection("measurements").Find("result_id", result.ID).One(&r)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if r.IsUploaded == true {
 		t.Error("result should be marked as not uploaded")
 	}

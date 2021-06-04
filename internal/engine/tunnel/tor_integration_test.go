@@ -3,21 +3,21 @@ package tunnel_test
 import (
 	"context"
 	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/tunnel"
+	"golang.org/x/sys/execabs"
 )
 
 func TestTorStartStop(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	torBinaryPath := "/usr/bin/tor"
-	if m, err := os.Stat(torBinaryPath); err != nil || !m.Mode().IsRegular() {
-		t.Skip("missing precondition for the test")
+	torBinaryPath, err := execabs.LookPath("tor")
+	if err != nil {
+		t.Skip("missing precondition for the test: tor not in PATH")
 	}
 	tunnelDir, err := ioutil.TempDir("testdata", "tor")
 	if err != nil {

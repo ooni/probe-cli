@@ -9,12 +9,24 @@ import (
 	"github.com/cretz/bine/control"
 	"github.com/cretz/bine/tor"
 	"github.com/ooni/psiphon/oopsi/github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
+	"golang.org/x/sys/execabs"
 )
+
+// Logger is the logger to use. Its signature is compatibile
+// with the apex/log logger signature.
+type Logger interface {
+	// Infof formats and emits an informative message
+	Infof(format string, v ...interface{})
+}
 
 // Config contains the configuration for creating a Tunnel instance. You need
 // to fill all the mandatory fields. You SHOULD NOT modify the content of this
 // structure while in use, because that may lead to data races.
 type Config struct {
+	// Logger is the logger to use. If empty we use a default
+	// implementation that does not emit any output.
+	Logger Logger
+
 	// Name is the mandatory name of the tunnel. We support
 	// "tor", "psiphon", and "fake" tunnels. You SHOULD
 	// use "fake" tunnels only for testing: they don't provide
@@ -41,6 +53,9 @@ type Config struct {
 	// Start function fails with ErrEmptyTunnelDir.
 	TunnelDir string
 
+	// testExecabsLookPath allows us to mock exeabs.LookPath
+	testExecabsLookPath func(name string) (string, error)
+
 	// testMkdirAll allows us to mock os.MkdirAll in testing code.
 	testMkdirAll func(path string, perm os.FileMode) error
 
@@ -64,6 +79,31 @@ type Config struct {
 	// testTorGetInfo allows us to fake a failure when
 	// getting info from the tor control port.
 	testTorGetInfo func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error)
+}
+
+// silentLogger is a logger that does not emit output.
+type silentLogger struct{}
+
+// Infof implements Logger.Infof.
+func (sl *silentLogger) Infof(format string, v ...interface{}) {}
+
+// defaultLogger is the default logger.
+var defaultLogger = &silentLogger{}
+
+// logger returns the logger to use.
+func (c *Config) logger() Logger {
+	if c.Logger != nil {
+		return c.Logger
+	}
+	return defaultLogger
+}
+
+// execabsLookPath calls either testExeabsLookPath or execabs.LookPath
+func (c *Config) execabsLookPath(name string) (string, error) {
+	if c.testExecabsLookPath != nil {
+		return c.testExecabsLookPath(name)
+	}
+	return execabs.LookPath(name)
 }
 
 // mkdirAll calls either testMkdirAll or os.MkdirAll.
@@ -98,6 +138,15 @@ func (c *Config) startPsiphon(ctx context.Context, config []byte,
 	}
 	return clientlib.StartTunnel(ctx, config, "", clientlib.Parameters{
 		DataRootDirectory: &workdir}, nil, nil)
+}
+
+// torBinary returns the tor binary path, if configured, or
+// the default path, otherwise.
+func (c *Config) torBinary() string {
+	if c.TorBinary != "" {
+		return c.TorBinary
+	}
+	return "tor"
 }
 
 // torStart calls either testTorStart or tor.Start.
