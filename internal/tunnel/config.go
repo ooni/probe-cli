@@ -23,20 +23,25 @@ type Logger interface {
 // to fill all the mandatory fields. You SHOULD NOT modify the content of this
 // structure while in use, because that may lead to data races.
 type Config struct {
-	// Logger is the logger to use. If empty we use a default
-	// implementation that does not emit any output.
-	Logger Logger
-
-	// Name is the mandatory name of the tunnel. We support
+	// Name is the MANDATORY name of the tunnel. We support
 	// "tor", "psiphon", and "fake" tunnels. You SHOULD
 	// use "fake" tunnels only for testing: they don't provide
 	// any real tunneling, just a socks5 proxy.
 	Name string
 
-	// Session is the mandatory measurement session, or a suitable
+	// Session is the MANDATORY measurement session, or a suitable
 	// mock of the required functionality. That is, the possibility
 	// of obtaining a valid psiphon configuration.
 	Session Session
+
+	// TunnelDir is the MANDATORY directory in which the tunnel SHOULD
+	// store its state, if any. If this field is empty, the
+	// Start function fails with ErrEmptyTunnelDir.
+	TunnelDir string
+
+	// Logger is the optional logger to use. If empty we use a default
+	// implementation that does not emit any output.
+	Logger Logger
 
 	// TorArgs contains the optional arguments that you want us to pass
 	// to the tor binary when invoking it. By default we do not
@@ -47,11 +52,6 @@ type Config struct {
 	// TorBinary is the optional path of the TorBinary we SHOULD be
 	// executing. When not set, we execute `tor`.
 	TorBinary string
-
-	// TunnelDir is the mandatory directory in which the tunnel SHOULD
-	// store its state, if any. If this field is empty, the
-	// Start function fails with ErrEmptyTunnelDir.
-	TunnelDir string
 
 	// testExecabsLookPath allows us to mock exeabs.LookPath
 	testExecabsLookPath func(name string) (string, error)

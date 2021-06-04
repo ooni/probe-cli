@@ -7,19 +7,12 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/tunnel"
-	"golang.org/x/sys/execabs"
+	"github.com/ooni/probe-cli/v3/internal/tunnel"
 )
 
-func TestTorStartStop(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	torBinaryPath, err := execabs.LookPath("tor")
-	if err != nil {
-		t.Skip("missing precondition for the test: tor not in PATH")
-	}
-	tunnelDir, err := ioutil.TempDir("testdata", "tor")
+func TestFakeStartStop(t *testing.T) {
+	// no need to skip because the bootstrap is obviously fast
+	tunnelDir, err := ioutil.TempDir("testdata", "fake")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,9 +27,8 @@ func TestTorStartStop(t *testing.T) {
 		t.Fatal(err)
 	}
 	tunnel, err := tunnel.Start(context.Background(), &tunnel.Config{
-		Name:      "tor",
+		Name:      "fake",
 		Session:   sess,
-		TorBinary: torBinaryPath,
 		TunnelDir: tunnelDir,
 	})
 	if err != nil {

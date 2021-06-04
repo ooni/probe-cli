@@ -8,13 +8,12 @@ import (
 	"testing"
 
 	"github.com/armon/go-socks5"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
 )
 
 func TestFakeWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately fail
-	sess := &mockable.Session{}
+	sess := &MockableSession{}
 	tunnel, err := fakeStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
@@ -29,7 +28,7 @@ func TestFakeWithCancelledContext(t *testing.T) {
 
 func TestFakeWithEmptyTunnelDir(t *testing.T) {
 	ctx := context.Background()
-	sess := &mockable.Session{}
+	sess := &MockableSession{}
 	tunnel, err := fakeStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "",
@@ -45,7 +44,7 @@ func TestFakeWithEmptyTunnelDir(t *testing.T) {
 func TestFakeWithFailingMkdirAll(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
-	sess := &mockable.Session{}
+	sess := &MockableSession{}
 	tunnel, err := fakeStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
@@ -64,7 +63,7 @@ func TestFakeWithFailingMkdirAll(t *testing.T) {
 func TestFakeSocks5NewFails(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
-	sess := &mockable.Session{}
+	sess := &MockableSession{}
 	tunnel, err := fakeStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
@@ -83,7 +82,7 @@ func TestFakeSocks5NewFails(t *testing.T) {
 func TestFakeNetListenFails(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
-	sess := &mockable.Session{}
+	sess := &MockableSession{}
 	tunnel, err := fakeStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "testdata",

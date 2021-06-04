@@ -6,14 +6,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
 	"github.com/ooni/psiphon/oopsi/github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
 )
 
 func TestPsiphonWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately fail
-	sess := &mockable.Session{}
+	sess := &MockableSession{}
 	tunnel, err := psiphonStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
@@ -28,7 +27,7 @@ func TestPsiphonWithCancelledContext(t *testing.T) {
 
 func TestPsiphonWithEmptyTunnelDir(t *testing.T) {
 	ctx := context.Background()
-	sess := &mockable.Session{}
+	sess := &MockableSession{}
 	tunnel, err := psiphonStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "",
@@ -43,8 +42,8 @@ func TestPsiphonWithEmptyTunnelDir(t *testing.T) {
 
 func TestPsiphonFetchPsiphonConfigFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	sess := &mockable.Session{
-		MockableFetchPsiphonConfigErr: expected,
+	sess := &MockableSession{
+		Err: expected,
 	}
 	tunnel, err := psiphonStart(context.Background(), &Config{
 		Session:   sess,
@@ -60,8 +59,8 @@ func TestPsiphonFetchPsiphonConfigFailure(t *testing.T) {
 
 func TestPsiphonMkdirAllFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	sess := &mockable.Session{
-		MockableFetchPsiphonConfigResult: []byte(`{}`),
+	sess := &MockableSession{
+		Result: []byte(`{}`),
 	}
 	tunnel, err := psiphonStart(context.Background(), &Config{
 		Session:   sess,
@@ -80,8 +79,8 @@ func TestPsiphonMkdirAllFailure(t *testing.T) {
 
 func TestPsiphonStartFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	sess := &mockable.Session{
-		MockableFetchPsiphonConfigResult: []byte(`{}`),
+	sess := &MockableSession{
+		Result: []byte(`{}`),
 	}
 	tunnel, err := psiphonStart(context.Background(), &Config{
 		Session:   sess,
