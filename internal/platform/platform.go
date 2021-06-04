@@ -24,28 +24,20 @@ import "runtime"
 // has been disabled. In such case, the code will return "ios" when
 // using arm{,64} and "macos" when using x86{,_64}.
 func Name() string {
-	if name := cgoname(); name != "unknown" {
-		return name
-	}
-	return puregoname(runtime.GOOS, runtime.GOARCH)
+	return name(runtime.GOOS)
 }
 
-func puregoname(goos, goarch string) string {
+// name is a utility function for implementing Name.
+func name(goos string) string {
+	// Note: since go1.16 we have the ios port, so the ambiguity
+	// between ios and darwin is now gone.
+	//
+	// See https://golang.org/doc/go1.16#darwin
 	switch goos {
-	case "android", "linux", "windows":
+	case "android", "linux", "windows", "ios":
 		return goos
 	case "darwin":
-		return detectDarwin(goarch)
-	}
-	return "unknown"
-}
-
-func detectDarwin(goarch string) string {
-	switch goarch {
-	case "386", "amd64":
 		return "macos"
-	case "arm", "arm64":
-		return "ios"
 	}
 	return "unknown"
 }
