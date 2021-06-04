@@ -30,7 +30,7 @@ func (kvs *Memory) Get(key string) ([]byte, error) {
 	return value, nil
 }
 
-// Set sets a key into the key-value store
+// Set sets a key into the key-value store.
 func (kvs *Memory) Set(key string, value []byte) error {
 	kvs.mu.Lock()
 	defer kvs.mu.Unlock()

@@ -2,7 +2,6 @@
 package fsx
 
 import (
-	"fmt"
 	"io/fs"
 	"os"
 	"syscall"
@@ -10,7 +9,11 @@ import (
 
 // OpenFile is a wrapper for os.OpenFile that ensures that
 // we're opening a file rather than a directory. If you are
-// opening a directory, this func will return an error.
+// opening a directory, this func returns an *os.PathError
+// error with Err set to syscall.EISDIR.
+//
+// As mentioned in CONTRIBUTING.md, this is the function
+// you SHOULD be using when opening files.
 func OpenFile(pathname string) (fs.File, error) {
 	return openWithFS(filesystem{}, pathname)
 }
@@ -28,8 +31,11 @@ func openWithFS(fs fs.FS, pathname string) (fs.File, error) {
 	}
 	if info.IsDir() {
 		file.Close()
-		return nil, fmt.Errorf(
-			"input path points to a directory: %w", syscall.EISDIR)
+		return nil, &os.PathError{
+			Op:   "openFile",
+			Path: pathname,
+			Err:  syscall.EISDIR,
+		}
 	}
 	return file, nil
 }
