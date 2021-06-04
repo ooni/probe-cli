@@ -13,9 +13,6 @@
 // 32 bit platform, but that's difficult to do correctly. This package
 // provides an easier-to-use interface. We use allocated
 // structures protected by a mutex that encapsulate a int64 value.
-//
-// While there we also added support for atomic float64 operations, again
-// by using structures protected by a mutex variable.
 package atomicx
 
 import "sync"
