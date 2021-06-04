@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -18,7 +17,7 @@ const (
 	DefaultProbeCC = "ZZ"
 
 	// DefaultProbeIP is the default probe IP.
-	DefaultProbeIP = model.DefaultProbeIP
+	DefaultProbeIP = "127.0.0.1"
 
 	// DefaultProbeNetworkName is the default probe network name.
 	DefaultProbeNetworkName = ""
@@ -119,10 +118,19 @@ type Config struct {
 	UserAgent string
 }
 
+// discardLogger just ignores log messages thrown at it.
+type discardLogger struct{}
+
+func (*discardLogger) Debug(msg string) {}
+
+func (*discardLogger) Debugf(format string, v ...interface{}) {}
+
+func (*discardLogger) Infof(format string, v ...interface{}) {}
+
 // NewTask creates a new instance of Task from config.
-func NewTask(config Config) (*Task, error) {
+func NewTask(config Config) *Task {
 	if config.Logger == nil {
-		config.Logger = model.DiscardLogger
+		config.Logger = &discardLogger{}
 	}
 	if config.UserAgent == "" {
 		config.UserAgent = fmt.Sprintf("ooniprobe-engine/%s", version.Version)
@@ -137,7 +145,7 @@ func NewTask(config Config) (*Task, error) {
 		probeASNLookupper:    mmdbLookupper{},
 		resolverASNLookupper: mmdbLookupper{},
 		resolverIPLookupper:  resolverLookupClient{},
-	}, nil
+	}
 }
 
 // Task performs a geolocation. You must create a new

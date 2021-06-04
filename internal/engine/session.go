@@ -645,11 +645,11 @@ func (s *Session) MaybeLookupBackendsContext(ctx context.Context) error {
 // LookupLocationContext performs a location lookup. If you want memoisation
 // of the results, you should use MaybeLookupLocationContext.
 func (s *Session) LookupLocationContext(ctx context.Context) (*geolocate.Results, error) {
-	task := geolocate.Must(geolocate.NewTask(geolocate.Config{
+	task := geolocate.NewTask(geolocate.Config{
 		Logger:    s.Logger(),
 		Resolver:  s.resolver,
 		UserAgent: s.UserAgent(),
-	}))
+	})
 	return task.Run(ctx)
 }
 
