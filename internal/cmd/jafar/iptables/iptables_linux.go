@@ -3,6 +3,7 @@
 package iptables
 
 import (
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
@@ -31,7 +32,8 @@ func (s *linuxShell) createChains() (err error) {
 }
 
 func (s *linuxShell) dropIfDestinationEquals(ip string) error {
-	return shellx.Run("sudo", "iptables", "-A", "JAFAR_OUTPUT", "-d", ip, "-j", "DROP")
+	return shellx.Run(log.Log,
+		"sudo", "iptables", "-A", "JAFAR_OUTPUT", "-d", ip, "-j", "DROP")
 }
 
 func (s *linuxShell) rstIfDestinationEqualsAndIsTCP(ip string) error {
@@ -100,15 +102,15 @@ func (s *linuxShell) hijackHTTP(address string) error {
 }
 
 func (s *linuxShell) waive() error {
-	shellx.RunQuiet(log.Log, "sudo", "iptables", "-D", "OUTPUT", "-j", "JAFAR_OUTPUT")
-	shellx.RunQuiet(log.Log, "sudo", "iptables", "-D", "INPUT", "-j", "JAFAR_INPUT")
-	shellx.RunQuiet(log.Log, "sudo", "iptables", "-t", "nat", "-D", "OUTPUT", "-j", "JAFAR_NAT_OUTPUT")
-	shellx.RunQuiet(log.Log, "sudo", "iptables", "-F", "JAFAR_INPUT")
-	shellx.RunQuiet(log.Log, "sudo", "iptables", "-X", "JAFAR_INPUT")
-	shellx.RunQuiet(log.Log, "sudo", "iptables", "-F", "JAFAR_OUTPUT")
-	shellx.RunQuiet(log.Log, "sudo", "iptables", "-X", "JAFAR_OUTPUT")
-	shellx.RunQuiet(log.Log, "sudo", "iptables", "-t", "nat", "-F", "JAFAR_NAT_OUTPUT")
-	shellx.RunQuiet(log.Log, "sudo", "iptables", "-t", "nat", "-X", "JAFAR_NAT_OUTPUT")
+	shellx.RunQuiet("sudo", "iptables", "-D", "OUTPUT", "-j", "JAFAR_OUTPUT")
+	shellx.RunQuiet("sudo", "iptables", "-D", "INPUT", "-j", "JAFAR_INPUT")
+	shellx.RunQuiet("sudo", "iptables", "-t", "nat", "-D", "OUTPUT", "-j", "JAFAR_NAT_OUTPUT")
+	shellx.RunQuiet("sudo", "iptables", "-F", "JAFAR_INPUT")
+	shellx.RunQuiet("sudo", "iptables", "-X", "JAFAR_INPUT")
+	shellx.RunQuiet("sudo", "iptables", "-F", "JAFAR_OUTPUT")
+	shellx.RunQuiet("sudo", "iptables", "-X", "JAFAR_OUTPUT")
+	shellx.RunQuiet("sudo", "iptables", "-t", "nat", "-F", "JAFAR_NAT_OUTPUT")
+	shellx.RunQuiet("sudo", "iptables", "-t", "nat", "-X", "JAFAR_NAT_OUTPUT")
 	return nil
 }
 
