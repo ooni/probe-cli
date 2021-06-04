@@ -36,14 +36,14 @@ type runconfig struct {
 // run is the internal function for running commands.
 func run(config runconfig) error {
 	config.loginfof(
-		"exec: %s %s\n", config.command, strings.Join(config.args, " "))
+		"exec: %s %s", config.command, strings.Join(config.args, " "))
 	// implementation note: here we're using execabs because
 	// of https://blog.golang.org/path-security.
 	cmd := execabs.Command(config.command, config.args...)
 	cmd.Stdout = config.stdout
 	cmd.Stderr = config.stderr
 	err := cmd.Run()
-	config.loginfof("exec result: %+v\n", err)
+	config.loginfof("exec result: %+v", err)
 	return err
 }
 
