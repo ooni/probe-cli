@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/iptables"
-	"github.com/ooni/probe-cli/v3/internal/engine/shellx"
+	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
 func ensureWeStartOverWithIPTables() {

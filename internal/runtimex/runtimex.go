@@ -1,0 +1,12 @@
+// Package runtimex contains runtime extensions. This package is inspired to
+// https://pkg.go.dev/github.com/m-lab/go/rtx, except that it's simpler.
+package runtimex
+
+import "fmt"
+
+// PanicOnError calls panic() if err is not nil.
+func PanicOnError(err error, message string) {
+	if err != nil {
+		panic(fmt.Errorf("%s: %w", message, err))
+	}
+}

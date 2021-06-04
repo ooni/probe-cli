@@ -6,8 +6,8 @@ import (
 
 	"github.com/apex/log"
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 )
 
 func TestInputLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
@@ -19,7 +19,7 @@ func TestInputLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 			Address: "https://ams-pg-test.ooni.org/",
 			Type:    "https",
 		}},
-		KVStore:         kvstore.NewMemoryKeyValueStore(),
+		KVStore:         &kvstore.Memory{},
 		Logger:          log.Log,
 		SoftwareName:    "miniooni",
 		SoftwareVersion: "0.1.0-dev",

@@ -16,11 +16,11 @@ import (
 	"os"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
-	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -34,9 +34,9 @@ func newclient() probeservices.Client {
 			Logger:     log.Log,
 			UserAgent:  ua,
 		},
-		LoginCalls:    atomicx.NewInt64(),
-		RegisterCalls: atomicx.NewInt64(),
-		StateFile:     probeservices.NewStateFile(kvstore.NewMemoryKeyValueStore()),
+		LoginCalls:    &atomicx.Int64{},
+		RegisterCalls: &atomicx.Int64{},
+		StateFile:     probeservices.NewStateFile(&kvstore.Memory{}),
 	}
 }
 

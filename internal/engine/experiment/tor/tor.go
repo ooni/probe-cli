@@ -12,14 +12,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netxlogger"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonidatamodel"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 const (
@@ -264,7 +264,7 @@ func newResultsCollector(
 ) *resultsCollector {
 	rc := &resultsCollector{
 		callbacks:     callbacks,
-		completed:     atomicx.NewInt64(),
+		completed:     &atomicx.Int64{},
 		measurement:   measurement,
 		sess:          sess,
 		targetresults: make(map[string]TargetResults),

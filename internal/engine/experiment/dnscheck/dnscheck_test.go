@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/url"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -221,7 +220,7 @@ func TestDNSCheckWait(t *testing.T) {
 	}
 	run("dot://one.one.one.one")
 	run("dot://1dot1dot1dot1.cloudflare-dns.com")
-	if atomic.LoadUint32(&endpoints.count) < 1 {
+	if endpoints.count.Load() < 1 {
 		t.Fatal("did not sleep")
 	}
 }

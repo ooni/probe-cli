@@ -31,7 +31,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 )
 
 // Spec indicates what self censorship techniques to implement.
@@ -61,8 +61,8 @@ type Spec struct {
 }
 
 var (
-	attempts *atomicx.Int64 = atomicx.NewInt64()
-	enabled  *atomicx.Int64 = atomicx.NewInt64()
+	attempts *atomicx.Int64 = &atomicx.Int64{}
+	enabled  *atomicx.Int64 = &atomicx.Int64{}
 	mu       sync.Mutex
 	spec     *Spec
 )

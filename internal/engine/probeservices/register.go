@@ -3,7 +3,7 @@ package probeservices
 import (
 	"context"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/randx"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
 type registerRequest struct {

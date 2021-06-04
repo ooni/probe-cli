@@ -1,6 +1,6 @@
 package bytecounter
 
-import "github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+import "github.com/ooni/probe-cli/v3/internal/atomicx"
 
 // Counter counts bytes sent and received.
 type Counter struct {
@@ -10,7 +10,7 @@ type Counter struct {
 
 // New creates a new Counter.
 func New() *Counter {
-	return &Counter{Received: atomicx.NewInt64(), Sent: atomicx.NewInt64()}
+	return &Counter{Received: &atomicx.Int64{}, Sent: &atomicx.Int64{}}
 }
 
 // CountBytesSent adds count to the bytes sent counter.

@@ -9,7 +9,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/whatsapp"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpfailure"
@@ -555,7 +555,7 @@ func TestTestKeysOnlyWebHTTPFailureTooManyURLs(t *testing.T) {
 }
 
 func TestWeConfigureWebChecksCorrectly(t *testing.T) {
-	called := atomicx.NewInt64()
+	called := &atomicx.Int64{}
 	emptyConfig := urlgetter.Config{}
 	configWithFailOnHTTPError := urlgetter.Config{FailOnHTTPError: true}
 	configWithNoFollowRedirects := urlgetter.Config{NoFollowRedirects: true}

@@ -2,7 +2,6 @@ package engine
 
 import (
 	"context"
-	"sync/atomic"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
@@ -68,11 +67,6 @@ type InputProcessor struct {
 	// Submitter is the code that will submit measurements
 	// to the OONI collector.
 	Submitter InputProcessorSubmitterWrapper
-
-	// terminatedByMaxRuntime is an internal atomic variabile
-	// incremented when we're terminated by MaxRuntime. We
-	// only use this variable when testing.
-	terminatedByMaxRuntime int32
 }
 
 // InputProcessorSaverWrapper is InputProcessor's
@@ -129,29 +123,41 @@ func (ipsw inputProcessorSubmitterWrapper) Submit(
 // though is free to choose different policies by configuring
 // the Experiment, Submitter, and Saver fields properly.
 func (ip *InputProcessor) Run(ctx context.Context) error {
+	_, err := ip.run(ctx)
+	return err
+}
+
+// These are the reasons why run could stop.
+const (
+	stopNormal = (1 << iota)
+	stopMaxRuntime
+)
+
+// run is like Run but, in addition to returning an error, it
+// also returns the reason why we stopped.
+func (ip *InputProcessor) run(ctx context.Context) (int, error) {
 	start := time.Now()
 	for idx, url := range ip.Inputs {
 		if ip.MaxRuntime > 0 && time.Since(start) > ip.MaxRuntime {
-			atomic.AddInt32(&ip.terminatedByMaxRuntime, 1)
-			return nil
+			return stopMaxRuntime, nil
 		}
 		input := url.URL
 		meas, err := ip.Experiment.MeasureWithContext(ctx, idx, input)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		meas.AddAnnotations(ip.Annotations)
 		meas.Options = ip.Options
 		err = ip.Submitter.Submit(ctx, idx, meas)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		// Note: must be after submission because submission modifies
 		// the measurement to include the report ID.
 		err = ip.Saver.SaveMeasurement(idx, meas)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
-	return nil
+	return stopNormal, nil
 }

@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"sync/atomic"
 	"syscall"
 
 	"github.com/apex/log"
@@ -14,8 +13,10 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/enginex"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -53,11 +54,7 @@ type Probe struct {
 	dbPath     string
 	configPath string
 
-	// We need to use a int32 in order to use the atomic.AddInt32/LoadInt32
-	// operations to ensure consistent reads of the variables. We do not use
-	// a 64 bit integer here because that may lead to crashes with 32 bit
-	// OSes as documented in https://golang.org/pkg/sync/atomic/#pkg-note-BUG.
-	isTerminatedAtomicInt int32
+	isTerminated *atomicx.Int64
 
 	softwareName    string
 	softwareVersion string
@@ -96,13 +93,12 @@ func (p *Probe) TempDir() string {
 // IsTerminated checks to see if the isTerminatedAtomicInt is set to a non zero
 // value and therefore we have received the signal to shutdown the running test
 func (p *Probe) IsTerminated() bool {
-	i := atomic.LoadInt32(&p.isTerminatedAtomicInt)
-	return i != 0
+	return p.isTerminated.Load() != 0
 }
 
 // Terminate interrupts the running context
 func (p *Probe) Terminate() {
-	atomic.AddInt32(&p.isTerminatedAtomicInt, 1)
+	p.isTerminated.Add(1)
 }
 
 // ListenForSignals will listen for SIGINT and SIGTERM. When it receives those
@@ -203,7 +199,7 @@ func (p *Probe) Init(softwareName, softwareVersion string) error {
 // current configuration inside the context. The caller must close
 // the session when done using it, by calling sess.Close().
 func (p *Probe) NewSession(ctx context.Context) (*engine.Session, error) {
-	kvstore, err := engine.NewFileSystemKVStore(
+	kvstore, err := kvstore.NewFS(
 		utils.EngineDir(p.home),
 	)
 	if err != nil {
@@ -234,10 +230,10 @@ func (p *Probe) NewProbeEngine(ctx context.Context) (ProbeEngine, error) {
 // NewProbe creates a new probe instance.
 func NewProbe(configPath string, homePath string) *Probe {
 	return &Probe{
-		home:                  homePath,
-		config:                &config.Config{},
-		configPath:            configPath,
-		isTerminatedAtomicInt: 0,
+		home:         homePath,
+		config:       &config.Config{},
+		configPath:   configPath,
+		isTerminated: &atomicx.Int64{},
 	}
 }
 

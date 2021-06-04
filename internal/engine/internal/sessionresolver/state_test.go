@@ -3,12 +3,25 @@ package sessionresolver
 import (
 	"errors"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 )
 
-func TestReadStateNothingInKVStore(t *testing.T) {
-	reso := &Resolver{KVStore: &memkvstore{}}
+func TestReadStateNoKVStore(t *testing.T) {
+	reso := &Resolver{}
 	out, err := reso.readstate()
-	if !errors.Is(err, errMemkvstoreNotFound) {
+	if !errors.Is(err, ErrNilKVStore) {
+		t.Fatal("not the error we expected", err)
+	}
+	if out != nil {
+		t.Fatal("expected nil here")
+	}
+}
+
+func TestReadStateNothingInKVStore(t *testing.T) {
+	reso := &Resolver{KVStore: &kvstore.Memory{}}
+	out, err := reso.readstate()
+	if !errors.Is(err, kvstore.ErrNoSuchKey) {
 		t.Fatal("not the error we expected", err)
 	}
 	if out != nil {
@@ -19,7 +32,7 @@ func TestReadStateNothingInKVStore(t *testing.T) {
 func TestReadStateDecodeError(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	reso := &Resolver{
-		KVStore: &memkvstore{},
+		KVStore: &kvstore.Memory{},
 		codec:   &FakeCodec{DecodeErr: errMocked},
 	}
 	if err := reso.KVStore.Set(storekey, []byte(`[]`)); err != nil {
@@ -35,9 +48,9 @@ func TestReadStateDecodeError(t *testing.T) {
 }
 
 func TestReadStateAndPruneReadStateError(t *testing.T) {
-	reso := &Resolver{KVStore: &memkvstore{}}
+	reso := &Resolver{KVStore: &kvstore.Memory{}}
 	out, err := reso.readstateandprune()
-	if !errors.Is(err, errMemkvstoreNotFound) {
+	if !errors.Is(err, kvstore.ErrNoSuchKey) {
 		t.Fatal("not the error we expected", err)
 	}
 	if out != nil {
@@ -46,7 +59,7 @@ func TestReadStateAndPruneReadStateError(t *testing.T) {
 }
 
 func TestReadStateAndPruneWithUnsupportedEntries(t *testing.T) {
-	reso := &Resolver{KVStore: &memkvstore{}}
+	reso := &Resolver{KVStore: &kvstore.Memory{}}
 	var in []*resolverinfo
 	in = append(in, &resolverinfo{})
 	if err := reso.writestate(in); err != nil {
@@ -62,7 +75,7 @@ func TestReadStateAndPruneWithUnsupportedEntries(t *testing.T) {
 }
 
 func TestReadStateDefaultWithMissingEntries(t *testing.T) {
-	reso := &Resolver{KVStore: &memkvstore{}}
+	reso := &Resolver{KVStore: &kvstore.Memory{}}
 	// let us simulate that we have just one entry here
 	existingURL := "https://dns.google/dns-query"
 	existingScore := 0.88
@@ -100,12 +113,27 @@ func TestReadStateDefaultWithMissingEntries(t *testing.T) {
 	}
 }
 
+func TestWriteStateNoKVStore(t *testing.T) {
+	reso := &Resolver{}
+	existingURL := "https://dns.google/dns-query"
+	existingScore := 0.88
+	var in []*resolverinfo
+	in = append(in, &resolverinfo{
+		URL:   existingURL,
+		Score: existingScore,
+	})
+	if err := reso.writestate(in); !errors.Is(err, ErrNilKVStore) {
+		t.Fatal("not the error we expected", err)
+	}
+}
+
 func TestWriteStateCannotSerialize(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	reso := &Resolver{
 		codec: &FakeCodec{
 			EncodeErr: errMocked,
 		},
+		KVStore: &kvstore.Memory{},
 	}
 	existingURL := "https://dns.google/dns-query"
 	existingScore := 0.88
