@@ -7,7 +7,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/tunnel"
+	"github.com/ooni/probe-cli/v3/internal/tunnel"
 )
 
 func TestPsiphonStartStop(t *testing.T) {

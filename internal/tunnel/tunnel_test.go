@@ -5,18 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
-	"github.com/ooni/probe-cli/v3/internal/engine/tunnel"
+	"github.com/ooni/probe-cli/v3/internal/tunnel"
 )
 
 func TestStartNoTunnel(t *testing.T) {
 	ctx := context.Background()
 	tun, err := tunnel.Start(ctx, &tunnel.Config{
-		Name: "",
-		Session: &mockable.Session{
-			MockableLogger: log.Log,
-		},
+		Name:    "",
+		Session: &tunnel.MockableSession{},
 	})
 	if !errors.Is(err, tunnel.ErrUnsupportedTunnelName) {
 		t.Fatal("not the error we expected", err)
@@ -30,10 +26,8 @@ func TestStartPsiphonWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
 	tun, err := tunnel.Start(ctx, &tunnel.Config{
-		Name: "psiphon",
-		Session: &mockable.Session{
-			MockableLogger: log.Log,
-		},
+		Name:      "psiphon",
+		Session:   &tunnel.MockableSession{},
 		TunnelDir: "testdata",
 	})
 	if !errors.Is(err, context.Canceled) {
@@ -48,10 +42,8 @@ func TestStartTorWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
 	tun, err := tunnel.Start(ctx, &tunnel.Config{
-		Name: "tor",
-		Session: &mockable.Session{
-			MockableLogger: log.Log,
-		},
+		Name:      "tor",
+		Session:   &tunnel.MockableSession{},
 		TunnelDir: "testdata",
 	})
 	if !errors.Is(err, context.Canceled) {
@@ -65,10 +57,8 @@ func TestStartTorWithCancelledContext(t *testing.T) {
 func TestStartInvalidTunnel(t *testing.T) {
 	ctx := context.Background()
 	tun, err := tunnel.Start(ctx, &tunnel.Config{
-		Name: "antani",
-		Session: &mockable.Session{
-			MockableLogger: log.Log,
-		},
+		Name:      "antani",
+		Session:   &tunnel.MockableSession{},
 		TunnelDir: "testdata",
 	})
 	if !errors.Is(err, tunnel.ErrUnsupportedTunnelName) {
