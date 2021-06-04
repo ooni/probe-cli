@@ -7,10 +7,15 @@ import "runtime"
 // Name returns the platform name. The returned value is one of:
 //
 // 1. "android"
+//
 // 2. "ios"
+//
 // 3. "linux"
+//
 // 5. "macos"
+//
 // 4. "windows"
+//
 // 5. "unknown"
 //
 // The android, ios, linux, macos, windows, and unknown strings are
