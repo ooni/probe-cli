@@ -109,7 +109,7 @@ func (m *Measurer) doDownload(
 	callbacks model.ExperimentCallbacks, tk *TestKeys,
 	URL string,
 ) error {
-	if m.config.noDownload == true {
+	if m.config.noDownload {
 		return nil // useful to make tests faster
 	}
 	conn, err := newDialManager(URL,
@@ -179,7 +179,7 @@ func (m *Measurer) doUpload(
 	callbacks model.ExperimentCallbacks, tk *TestKeys,
 	URL string,
 ) error {
-	if m.config.noUpload == true {
+	if m.config.noUpload {
 		return nil // useful to make tests faster
 	}
 	conn, err := newDialManager(URL,
