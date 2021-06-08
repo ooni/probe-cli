@@ -1,4 +1,4 @@
-package dialer_test
+package netx
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 )
 
@@ -24,7 +23,7 @@ func TestEmitterFailure(t *testing.T) {
 		Handler:   saver,
 	})
 	ctx = transactionid.WithTransactionID(ctx)
-	d := dialer.EmitterDialer{Dialer: mockablex.Dialer{
+	d := EmitterDialer{Dialer: mockablex.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
@@ -83,7 +82,7 @@ func TestEmitterSuccess(t *testing.T) {
 		Handler:   saver,
 	})
 	ctx = transactionid.WithTransactionID(ctx)
-	d := dialer.EmitterDialer{Dialer: mockablex.Dialer{
+	d := EmitterDialer{Dialer: mockablex.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return &mockablex.Conn{
 				MockRead: func(b []byte) (int, error) {
