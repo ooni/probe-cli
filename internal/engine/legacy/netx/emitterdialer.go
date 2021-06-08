@@ -1,18 +1,20 @@
-package dialer
+package netx
 
 import (
 	"context"
 	"net"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/connid"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 )
 
 // EmitterDialer is a Dialer that emits events
 type EmitterDialer struct {
-	Dialer
+	dialer.Dialer
 }
 
 // DialContext implements Dialer.DialContext
@@ -100,4 +102,15 @@ func (c EmitterConn) Close() (err error) {
 		},
 	})
 	return
+}
+
+func safeLocalAddress(conn net.Conn) (s string) {
+	if conn != nil && conn.LocalAddr() != nil {
+		s = conn.LocalAddr().String()
+	}
+	return
+}
+
+func safeConnID(network string, conn net.Conn) int64 {
+	return connid.Compute(network, safeLocalAddress(conn))
 }

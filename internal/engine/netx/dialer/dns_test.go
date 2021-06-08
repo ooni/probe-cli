@@ -6,10 +6,7 @@ import (
 	"io"
 	"net"
 	"testing"
-	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
@@ -117,46 +114,8 @@ func TestDNSDialerDialForManyIPSuccess(t *testing.T) {
 	conn.Close()
 }
 
-func TestDNSDialerDialSetsDialID(t *testing.T) {
-	saver := &handlers.SavingHandler{}
-	ctx := modelx.WithMeasurementRoot(context.Background(), &modelx.MeasurementRoot{
-		Beginning: time.Now(),
-		Handler:   saver,
-	})
-	dialer := dialer.DNSDialer{Dialer: dialer.EmitterDialer{
-		Dialer: mockablex.Dialer{
-			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-				return &mockablex.Conn{
-					MockClose: func() error {
-						return nil
-					},
-					MockLocalAddr: func() net.Addr {
-						return &net.TCPAddr{}
-					},
-				}, nil
-			},
-		},
-	}, Resolver: MockableResolver{
-		Addresses: []string{"1.1.1.1", "8.8.8.8"},
-	}}
-	conn, err := dialer.DialContext(ctx, "tcp", "dot.dns:853")
-	if err != nil {
-		t.Fatal("expected nil error here")
-	}
-	if conn == nil {
-		t.Fatal("expected non-nil conn")
-	}
-	conn.Close()
-	events := saver.Read()
-	if len(events) != 2 {
-		t.Fatal("unexpected number of events")
-	}
-	for _, ev := range events {
-		if ev.Connect != nil && ev.Connect.DialID == 0 {
-			t.Fatal("unexpected DialID")
-		}
-	}
-}
+// TODO(bassosimone): remove the dialID etc since the only
+// test still using legacy/netx does not care.
 
 func TestReduceErrors(t *testing.T) {
 	t.Run("no errors", func(t *testing.T) {

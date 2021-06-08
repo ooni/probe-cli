@@ -66,7 +66,7 @@ func maybeWithMeasurementRoot(
 // If you have others needs, manually build the chain you need.
 func newDNSDialer(resolver dialer.Resolver) dialer.DNSDialer {
 	return dialer.DNSDialer{
-		Dialer: dialer.EmitterDialer{
+		Dialer: EmitterDialer{
 			Dialer: dialer.ErrorWrapperDialer{
 				Dialer: dialer.ByteCounterDialer{
 					Dialer: dialer.Default,
