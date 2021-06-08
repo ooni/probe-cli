@@ -60,19 +60,16 @@ func maybeWithMeasurementRoot(
 // - DNSDialer (topmost)
 // - EmitterDialer
 // - ErrorWrapperDialer
-// - TimeoutDialer
 // - ByteCountingDialer
-// - net.Dialer
+// - dialer.Default
 //
 // If you have others needs, manually build the chain you need.
 func newDNSDialer(resolver dialer.Resolver) dialer.DNSDialer {
 	return dialer.DNSDialer{
 		Dialer: dialer.EmitterDialer{
 			Dialer: dialer.ErrorWrapperDialer{
-				Dialer: dialer.TimeoutDialer{
-					Dialer: dialer.ByteCounterDialer{
-						Dialer: new(net.Dialer),
-					},
+				Dialer: dialer.ByteCounterDialer{
+					Dialer: dialer.Default,
 				},
 			},
 		},

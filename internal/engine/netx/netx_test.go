@@ -241,11 +241,7 @@ func TestNewDialerVanilla(t *testing.T) {
 	if !ok {
 		t.Fatal("not the dialer we expected")
 	}
-	td, ok := ewd.Dialer.(dialer.TimeoutDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := td.Dialer.(dialer.SystemDialer); !ok {
+	if _, ok := ewd.Dialer.(dialer.SystemDialer); !ok {
 		t.Fatal("not the dialer we expected")
 	}
 }
@@ -281,11 +277,7 @@ func TestNewDialerWithResolver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the dialer we expected")
 	}
-	td, ok := ewd.Dialer.(dialer.TimeoutDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := td.Dialer.(dialer.SystemDialer); !ok {
+	if _, ok := ewd.Dialer.(dialer.SystemDialer); !ok {
 		t.Fatal("not the dialer we expected")
 	}
 }
@@ -330,11 +322,7 @@ func TestNewDialerWithLogger(t *testing.T) {
 	if !ok {
 		t.Fatal("not the dialer we expected")
 	}
-	td, ok := ewd.Dialer.(dialer.TimeoutDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := td.Dialer.(dialer.SystemDialer); !ok {
+	if _, ok := ewd.Dialer.(dialer.SystemDialer); !ok {
 		t.Fatal("not the dialer we expected")
 	}
 }
@@ -380,11 +368,7 @@ func TestNewDialerWithDialSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the dialer we expected")
 	}
-	td, ok := ewd.Dialer.(dialer.TimeoutDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := td.Dialer.(dialer.SystemDialer); !ok {
+	if _, ok := ewd.Dialer.(dialer.SystemDialer); !ok {
 		t.Fatal("not the dialer we expected")
 	}
 }
@@ -430,11 +414,7 @@ func TestNewDialerWithReadWriteSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the dialer we expected")
 	}
-	td, ok := ewd.Dialer.(dialer.TimeoutDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := td.Dialer.(dialer.SystemDialer); !ok {
+	if _, ok := ewd.Dialer.(dialer.SystemDialer); !ok {
 		t.Fatal("not the dialer we expected")
 	}
 }
@@ -476,11 +456,7 @@ func TestNewDialerWithContextByteCounting(t *testing.T) {
 	if !ok {
 		t.Fatal("not the dialer we expected")
 	}
-	td, ok := ewd.Dialer.(dialer.TimeoutDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := td.Dialer.(dialer.SystemDialer); !ok {
+	if _, ok := ewd.Dialer.(dialer.SystemDialer); !ok {
 		t.Fatal("not the dialer we expected")
 	}
 }
