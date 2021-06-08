@@ -98,6 +98,11 @@ func TestToFailureString(t *testing.T) {
 			t.Fatal("unexpected results")
 		}
 	})
+	t.Run("for connection_reset wrapped", func(t *testing.T) {
+		if toFailureString(&net.OpError{Err: syscall.ECONNRESET}) != FailureConnectionReset {
+			t.Fatal("unexpected results", toFailureString(&net.DNSConfigError{Err: syscall.ECONNRESET}))
+		}
+	})
 	t.Run("for context deadline exceeded", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1)
 		defer cancel()

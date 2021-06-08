@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"syscall"
 )
 
 const (
@@ -195,7 +196,18 @@ func toFailureString(err error) string {
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
 	}
-
+	// filter out system errors
+	var errno syscall.Errno
+	if errors.As(err, &errno) {
+		switch errno {
+		case syscall.ECONNRESET:
+			return FailureConnectionReset
+		case syscall.ECONNREFUSED:
+			return FailureConnectionRefused
+		// ...
+		default:
+		}
+	}
 	if errors.Is(err, ErrDNSBogon) {
 		return FailureDNSBogonError // not in MK
 	}
@@ -225,12 +237,6 @@ func toFailureString(err error) string {
 	}
 	if strings.HasSuffix(s, "EOF") {
 		return FailureEOFError
-	}
-	if strings.HasSuffix(s, "connection refused") {
-		return FailureConnectionRefused
-	}
-	if strings.HasSuffix(s, "connection reset by peer") {
-		return FailureConnectionReset
 	}
 	if strings.HasSuffix(s, "context deadline exceeded") {
 		return FailureGenericTimeoutError
