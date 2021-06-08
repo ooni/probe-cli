@@ -17,6 +17,9 @@ type ProxyDialer struct {
 	ProxyURL *url.URL
 }
 
+// ErrProxyUnsupportedScheme indicates we don't support a protocol scheme.
+var ErrProxyUnsupportedScheme = errors.New("proxy: unsupported scheme")
+
 // DialContext implements Dialer.DialContext
 func (d ProxyDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	url := d.ProxyURL
@@ -24,38 +27,18 @@ func (d ProxyDialer) DialContext(ctx context.Context, network, address string) (
 		return d.Dialer.DialContext(ctx, network, address)
 	}
 	if url.Scheme != "socks5" {
-		return nil, errors.New("Scheme is not socks5")
+		return nil, ErrProxyUnsupportedScheme
 	}
 	// the code at proxy/socks5.go never fails; see https://git.io/JfJ4g
 	child, _ := proxy.SOCKS5(
-		network, url.Host, nil, proxyDialerWrapper{Dialer: d.Dialer})
+		network, url.Host, nil, proxyDialerWrapper{d.Dialer})
 	return d.dial(ctx, child, network, address)
 }
 
 func (d ProxyDialer) dial(
 	ctx context.Context, child proxy.Dialer, network, address string) (net.Conn, error) {
-	connch := make(chan net.Conn)
-	errch := make(chan error, 1)
-	go func() {
-		conn, err := child.Dial(network, address)
-		if err != nil {
-			errch <- err
-			return
-		}
-		select {
-		case connch <- conn:
-		default:
-			conn.Close()
-		}
-	}()
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case err := <-errch:
-		return nil, err
-	case conn := <-connch:
-		return conn, nil
-	}
+	cd := child.(proxy.ContextDialer) // will work
+	return cd.DialContext(ctx, network, address)
 }
 
 // proxyDialerWrapper is required because SOCKS5 expects a Dialer.Dial type but internally
@@ -68,5 +51,5 @@ type proxyDialerWrapper struct {
 }
 
 func (d proxyDialerWrapper) Dial(network, address string) (net.Conn, error) {
-	return d.DialContext(context.Background(), network, address)
+	panic(errors.New("proxyDialerWrapper.Dial should not be called directly"))
 }
