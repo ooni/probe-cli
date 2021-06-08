@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// defaultNetDialer is the net.Dialer we use by default.
-var defaultNetDialer = &net.Dialer{
+// underlyingDialer is the underlying net.Dialer.
+var underlyingDialer = &net.Dialer{
 	Timeout:   15 * time.Second,
 	KeepAlive: 15 * time.Second,
 }
@@ -17,7 +17,7 @@ type SystemDialer struct{}
 
 // DialContext implements Dialer.DialContext
 func (d SystemDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return defaultNetDialer.DialContext(ctx, network, address)
+	return underlyingDialer.DialContext(ctx, network, address)
 }
 
 // Default is the dialer we use by default.

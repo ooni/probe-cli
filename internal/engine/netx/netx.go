@@ -147,7 +147,6 @@ func NewDialer(config Config) Dialer {
 		config.FullResolver = NewResolver(config)
 	}
 	var d Dialer = dialer.Default
-	d = dialer.TimeoutDialer{Dialer: d}
 	d = dialer.ErrorWrapperDialer{Dialer: d}
 	if config.Logger != nil {
 		d = dialer.LoggingDialer{Dialer: d, Logger: config.Logger}

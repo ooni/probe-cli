@@ -36,7 +36,6 @@ func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*
 	var reso resolver.Resolver = resolver.SystemResolver{}
 	reso = resolver.LoggingResolver{Resolver: reso, Logger: mgr.logger}
 	var dlr dialer.Dialer = dialer.Default
-	dlr = dialer.TimeoutDialer{Dialer: dlr}
 	dlr = dialer.ErrorWrapperDialer{Dialer: dlr}
 	dlr = dialer.LoggingDialer{Dialer: dlr, Logger: mgr.logger}
 	dlr = dialer.DNSDialer{Dialer: dlr, Resolver: reso}
