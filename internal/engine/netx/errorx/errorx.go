@@ -199,13 +199,13 @@ func toFailureString(err error) string {
 	// filter out system errors
 	var errno syscall.Errno
 	if errors.As(err, &errno) {
-		switch errno {
-		case syscall.ECONNRESET:
+		// checkout https://pkg.go.dev/golang.org/x/sys/windows and https://pkg.go.dev/golang.org/x/sys/unix
+		switch {
+		case errno == 0x68 || errno == 0x2746:
 			return FailureConnectionReset
-		case syscall.ECONNREFUSED:
+		case errno == 0x6f || errno == 0x274D:
 			return FailureConnectionRefused
-		// ...
-		default:
+			// ...
 		}
 	}
 	if errors.Is(err, ErrDNSBogon) {
