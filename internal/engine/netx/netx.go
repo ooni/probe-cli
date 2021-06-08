@@ -38,6 +38,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -196,14 +197,14 @@ func NewTLSDialer(config Config) TLSDialer {
 	if config.Dialer == nil {
 		config.Dialer = NewDialer(config)
 	}
-	var h tlsHandshaker = dialer.SystemTLSHandshaker{}
-	h = dialer.TimeoutTLSHandshaker{TLSHandshaker: h}
-	h = dialer.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
+	var h tlsHandshaker = tlsdialer.SystemTLSHandshaker{}
+	h = tlsdialer.TimeoutTLSHandshaker{TLSHandshaker: h}
+	h = tlsdialer.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
 	if config.Logger != nil {
-		h = dialer.LoggingTLSHandshaker{Logger: config.Logger, TLSHandshaker: h}
+		h = tlsdialer.LoggingTLSHandshaker{Logger: config.Logger, TLSHandshaker: h}
 	}
 	if config.TLSSaver != nil {
-		h = dialer.SaverTLSHandshaker{TLSHandshaker: h, Saver: config.TLSSaver}
+		h = tlsdialer.SaverTLSHandshaker{TLSHandshaker: h, Saver: config.TLSSaver}
 	}
 	if config.TLSConfig == nil {
 		config.TLSConfig = &tls.Config{NextProtos: []string{"h2", "http/1.1"}}
@@ -213,7 +214,7 @@ func NewTLSDialer(config Config) TLSDialer {
 	}
 	config.TLSConfig.RootCAs = config.CertPool
 	config.TLSConfig.InsecureSkipVerify = config.NoTLSVerify
-	return dialer.TLSDialer{
+	return tlsdialer.TLSDialer{
 		Config:        config.TLSConfig,
 		Dialer:        config.Dialer,
 		TLSHandshaker: h,
