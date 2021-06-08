@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 )
 
 func TestDNSDialerNoPort(t *testing.T) {
@@ -62,7 +63,11 @@ func (r MockableResolver) LookupHost(ctx context.Context, host string) ([]string
 }
 
 func TestDNSDialerDialForSingleIPFails(t *testing.T) {
-	dialer := dialer.DNSDialer{Dialer: dialer.EOFDialer{}, Resolver: new(net.Resolver)}
+	dialer := dialer.DNSDialer{Dialer: mockablex.Dialer{
+		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+			return nil, io.EOF
+		},
+	}, Resolver: new(net.Resolver)}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "1.1.1.1:853")
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("not the error we expected")
@@ -73,9 +78,14 @@ func TestDNSDialerDialForSingleIPFails(t *testing.T) {
 }
 
 func TestDNSDialerDialForManyIPFails(t *testing.T) {
-	dialer := dialer.DNSDialer{Dialer: dialer.EOFDialer{}, Resolver: MockableResolver{
-		Addresses: []string{"1.1.1.1", "8.8.8.8"},
-	}}
+	dialer := dialer.DNSDialer{
+		Dialer: mockablex.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return nil, io.EOF
+			},
+		}, Resolver: MockableResolver{
+			Addresses: []string{"1.1.1.1", "8.8.8.8"},
+		}}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "dot.dns:853")
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("not the error we expected")
@@ -86,7 +96,15 @@ func TestDNSDialerDialForManyIPFails(t *testing.T) {
 }
 
 func TestDNSDialerDialForManyIPSuccess(t *testing.T) {
-	dialer := dialer.DNSDialer{Dialer: dialer.EOFConnDialer{}, Resolver: MockableResolver{
+	dialer := dialer.DNSDialer{Dialer: mockablex.Dialer{
+		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+			return &mockablex.Conn{
+				MockClose: func() error {
+					return nil
+				},
+			}, nil
+		},
+	}, Resolver: MockableResolver{
 		Addresses: []string{"1.1.1.1", "8.8.8.8"},
 	}}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "dot.dns:853")
@@ -106,7 +124,18 @@ func TestDNSDialerDialSetsDialID(t *testing.T) {
 		Handler:   saver,
 	})
 	dialer := dialer.DNSDialer{Dialer: dialer.EmitterDialer{
-		Dialer: dialer.EOFConnDialer{},
+		Dialer: mockablex.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return &mockablex.Conn{
+					MockClose: func() error {
+						return nil
+					},
+					MockLocalAddr: func() net.Addr {
+						return &net.TCPAddr{}
+					},
+				}, nil
+			},
+		},
 	}, Resolver: MockableResolver{
 		Addresses: []string{"1.1.1.1", "8.8.8.8"},
 	}}
