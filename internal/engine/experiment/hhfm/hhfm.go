@@ -20,8 +20,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
@@ -319,11 +319,11 @@ type Dialer struct {
 // DialContext dials a specific connection and arranges such that
 // headers in the outgoing request are transformed.
 func (d Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	dialer := d.Dialer
-	if dialer == nil {
-		dialer = selfcensor.DefaultDialer
+	child := d.Dialer
+	if child == nil {
+		child = dialer.Default
 	}
-	conn, err := dialer.DialContext(ctx, network, address)
+	conn, err := child.DialContext(ctx, network, address)
 	if err != nil {
 		return nil, err
 	}

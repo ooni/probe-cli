@@ -10,7 +10,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
 )
 
 type dialManager struct {
@@ -36,7 +35,7 @@ func newDialManager(ndt7URL string, logger model.Logger, userAgent string) dialM
 func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*websocket.Conn, error) {
 	var reso resolver.Resolver = resolver.SystemResolver{}
 	reso = resolver.LoggingResolver{Resolver: reso, Logger: mgr.logger}
-	var dlr dialer.Dialer = selfcensor.SystemDialer{}
+	var dlr dialer.Dialer = dialer.Default
 	dlr = dialer.TimeoutDialer{Dialer: dlr}
 	dlr = dialer.ErrorWrapperDialer{Dialer: dlr}
 	dlr = dialer.LoggingDialer{Dialer: dlr, Logger: mgr.logger}

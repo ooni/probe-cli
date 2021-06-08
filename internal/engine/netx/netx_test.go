@@ -13,7 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 )
@@ -245,7 +244,7 @@ func TestNewDialerVanilla(t *testing.T) {
 	if !ok {
 		t.Fatal("not the dialer we expected")
 	}
-	if _, ok := td.Dialer.(selfcensor.SystemDialer); !ok {
+	if _, ok := td.Dialer.(dialer.SystemDialer); !ok {
 		t.Fatal("not the dialer we expected")
 	}
 }
@@ -285,7 +284,7 @@ func TestNewDialerWithResolver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the dialer we expected")
 	}
-	if _, ok := td.Dialer.(selfcensor.SystemDialer); !ok {
+	if _, ok := td.Dialer.(dialer.SystemDialer); !ok {
 		t.Fatal("not the dialer we expected")
 	}
 }
@@ -334,7 +333,7 @@ func TestNewDialerWithLogger(t *testing.T) {
 	if !ok {
 		t.Fatal("not the dialer we expected")
 	}
-	if _, ok := td.Dialer.(selfcensor.SystemDialer); !ok {
+	if _, ok := td.Dialer.(dialer.SystemDialer); !ok {
 		t.Fatal("not the dialer we expected")
 	}
 }
@@ -384,7 +383,7 @@ func TestNewDialerWithDialSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the dialer we expected")
 	}
-	if _, ok := td.Dialer.(selfcensor.SystemDialer); !ok {
+	if _, ok := td.Dialer.(dialer.SystemDialer); !ok {
 		t.Fatal("not the dialer we expected")
 	}
 }
@@ -434,7 +433,7 @@ func TestNewDialerWithReadWriteSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the dialer we expected")
 	}
-	if _, ok := td.Dialer.(selfcensor.SystemDialer); !ok {
+	if _, ok := td.Dialer.(dialer.SystemDialer); !ok {
 		t.Fatal("not the dialer we expected")
 	}
 }
@@ -480,7 +479,7 @@ func TestNewDialerWithContextByteCounting(t *testing.T) {
 	if !ok {
 		t.Fatal("not the dialer we expected")
 	}
-	if _, ok := td.Dialer.(selfcensor.SystemDialer); !ok {
+	if _, ok := td.Dialer.(dialer.SystemDialer); !ok {
 		t.Fatal("not the dialer we expected")
 	}
 }

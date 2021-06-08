@@ -19,7 +19,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -41,7 +40,6 @@ type Options struct {
 	Proxy            string
 	Random           bool
 	ReportFile       string
-	SelfCensorSpec   string
 	TorArgs          []string
 	TorBinary        string
 	Tunnel           string
@@ -107,10 +105,6 @@ func init() {
 	getopt.FlagLong(
 		&globalOptions.ReportFile, "reportfile", 'o',
 		"Set the report file path", "PATH",
-	)
-	getopt.FlagLong(
-		&globalOptions.SelfCensorSpec, "self-censor-spec", 0,
-		"Enable and configure self censorship", "JSON",
 	)
 	getopt.FlagLong(
 		&globalOptions.TorArgs, "tor-args", 0,
@@ -305,9 +299,6 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	extraOptions := mustMakeMap(currentOptions.ExtraOptions)
 	annotations := mustMakeMap(currentOptions.Annotations)
 
-	err := selfcensor.MaybeEnable(currentOptions.SelfCensorSpec)
-	fatalOnError(err, "cannot parse --self-censor-spec argument")
-
 	logger := &log.Logger{Level: log.InfoLevel, Handler: &logHandler{Writer: os.Stderr}}
 	if currentOptions.Verbose {
 		logger.Level = log.DebugLevel
@@ -323,7 +314,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	homeDir := gethomedir(currentOptions.HomeDir)
 	fatalIfFalse(homeDir != "", "home directory is empty")
 	miniooniDir := path.Join(homeDir, ".miniooni")
-	err = os.MkdirAll(miniooniDir, 0700)
+	err := os.MkdirAll(miniooniDir, 0700)
 	fatalOnError(err, "cannot create $HOME/.miniooni directory")
 
 	// We cleanup the assets files used by versions of ooniprobe
