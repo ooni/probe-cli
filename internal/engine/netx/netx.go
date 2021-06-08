@@ -109,11 +109,7 @@ type tlsHandshaker interface {
 		net.Conn, tls.ConnectionState, error)
 }
 
-// NewDefaultCertPool returns a copy of the default x509
-// certificate pool that we bundle from Mozilla.
-var NewDefaultCertPool = tlsx.NewDefaultCertPool
-
-var defaultCertPool *x509.CertPool = NewDefaultCertPool()
+var defaultCertPool *x509.CertPool = tlsx.NewDefaultCertPool()
 
 // NewResolver creates a new resolver from the specified config
 func NewResolver(config Config) Resolver {
@@ -308,14 +304,6 @@ func NewDNSClient(config Config, URL string) (DNSClient, error) {
 	return NewDNSClientWithOverrides(config, URL, "", "", "")
 }
 
-// ErrInvalidTLSVersion indicates that you passed us a string
-// that does not represent a valid TLS version.
-var ErrInvalidTLSVersion = tlsx.ErrInvalidTLSVersion
-
-// ConfigureTLSVersion configures the correct TLS version into
-// the specified *tls.Config or returns an error.
-var ConfigureTLSVersion = tlsx.ConfigureTLSVersion
-
 // NewDNSClientWithOverrides creates a new DNS client, similar to NewDNSClient,
 // with the option to override the default Hostname and SNI.
 func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
@@ -336,7 +324,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		return c, err
 	}
 	config.TLSConfig = &tls.Config{ServerName: SNIOverride}
-	if err := ConfigureTLSVersion(config.TLSConfig, TLSVersion); err != nil {
+	if err := tlsx.ConfigureTLSVersion(config.TLSConfig, TLSVersion); err != nil {
 		return c, err
 	}
 	switch resolverURL.Scheme {
