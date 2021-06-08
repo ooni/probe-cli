@@ -36,7 +36,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
@@ -151,7 +150,7 @@ func NewDialer(config Config) Dialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	var d Dialer = selfcensor.SystemDialer{}
+	var d Dialer = dialer.Default
 	d = dialer.TimeoutDialer{Dialer: d}
 	d = dialer.ErrorWrapperDialer{Dialer: d}
 	if config.Logger != nil {
