@@ -22,7 +22,7 @@ func TestErrorWrapperFailure(t *testing.T) {
 }
 
 func errorWrapperCheckErr(t *testing.T, err error, op string) {
-	if !errors.Is(err, io.EOF) {
+	if !errors.As(err, &io.EOF) {
 		t.Fatal("expected another error here")
 	}
 	var errWrapper *errorx.ErrWrapper

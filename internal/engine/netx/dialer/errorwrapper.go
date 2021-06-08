@@ -44,7 +44,7 @@ func (c ErrorWrapperConn) Read(b []byte) (n int, err error) {
 	err = errorx.SafeErrWrapperBuilder{
 		ConnID:    c.ConnID,
 		DialID:    c.DialID,
-		Error:     err,
+		Error:     errorx.NewErrRead(err),
 		Operation: errorx.ReadOperation,
 	}.MaybeBuild()
 	return
@@ -56,7 +56,7 @@ func (c ErrorWrapperConn) Write(b []byte) (n int, err error) {
 	err = errorx.SafeErrWrapperBuilder{
 		ConnID:    c.ConnID,
 		DialID:    c.DialID,
-		Error:     err,
+		Error:     errorx.NewErrWrite(err),
 		Operation: errorx.WriteOperation,
 	}.MaybeBuild()
 	return
