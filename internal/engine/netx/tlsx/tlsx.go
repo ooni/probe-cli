@@ -4,6 +4,7 @@ package tlsx
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 )
 
@@ -71,4 +72,32 @@ func NewDefaultCertPool() *x509.CertPool {
 	// run this function already in the generate.go file
 	pool.AppendCertsFromPEM([]byte(pemcerts))
 	return pool
+}
+
+// ErrInvalidTLSVersion indicates that you passed us a string
+// that does not represent a valid TLS version.
+var ErrInvalidTLSVersion = errors.New("invalid TLS version")
+
+// ConfigureTLSVersion configures the correct TLS version into
+// the specified *tls.Config or returns an error.
+func ConfigureTLSVersion(config *tls.Config, version string) error {
+	switch version {
+	case "TLSv1.3":
+		config.MinVersion = tls.VersionTLS13
+		config.MaxVersion = tls.VersionTLS13
+	case "TLSv1.2":
+		config.MinVersion = tls.VersionTLS12
+		config.MaxVersion = tls.VersionTLS12
+	case "TLSv1.1":
+		config.MinVersion = tls.VersionTLS11
+		config.MaxVersion = tls.VersionTLS11
+	case "TLSv1.0", "TLSv1":
+		config.MinVersion = tls.VersionTLS10
+		config.MaxVersion = tls.VersionTLS10
+	case "":
+		// nothing
+	default:
+		return ErrInvalidTLSVersion
+	}
+	return nil
 }
