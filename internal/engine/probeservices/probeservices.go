@@ -95,7 +95,6 @@ func NewClient(sess Session, endpoint model.Service) (*Client, error) {
 			BaseURL:    endpoint.Address,
 			HTTPClient: sess.DefaultHTTPClient(),
 			Logger:     sess.Logger(),
-			ProxyURL:   sess.ProxyURL(),
 			UserAgent:  sess.UserAgent(),
 		},
 		LoginCalls:    &atomicx.Int64{},

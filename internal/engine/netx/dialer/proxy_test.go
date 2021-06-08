@@ -24,23 +24,6 @@ func TestProxyDialerDialContextNoProxyURL(t *testing.T) {
 	}
 }
 
-func TestProxyDialerContextTakesPrecedence(t *testing.T) {
-	expected := errors.New("mocked error")
-	d := dialer.ProxyDialer{
-		Dialer:   dialer.FakeDialer{Err: expected},
-		ProxyURL: &url.URL{Scheme: "antani"},
-	}
-	ctx := context.Background()
-	ctx = dialer.WithProxyURL(ctx, &url.URL{Scheme: "socks5", Host: "[::1]:443"})
-	conn, err := d.DialContext(ctx, "tcp", "www.google.com:443")
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
-	}
-	if conn != nil {
-		t.Fatal("conn is not nil")
-	}
-}
-
 func TestProxyDialerDialContextInvalidScheme(t *testing.T) {
 	d := dialer.ProxyDialer{
 		Dialer:   dialer.FakeDialer{},
