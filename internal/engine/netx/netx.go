@@ -33,12 +33,12 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/gocertifi"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -114,8 +114,8 @@ type tlsHandshaker interface {
 // NewDefaultCertPool returns a copy of the default x509
 // certificate pool. This function panics on failure.
 func NewDefaultCertPool() *x509.CertPool {
-	pool, err := gocertifi.CACerts()
-	runtimex.PanicOnError(err, "gocertifi.CACerts() failed")
+	pool, err := tlsx.CACerts()
+	runtimex.PanicOnError(err, "tlsx.CACerts() failed")
 	return pool
 }
 

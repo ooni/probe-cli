@@ -2,7 +2,7 @@
 // 2021-05-12 09:14:54.779668278 +0200 CEST m=+6.872930413
 // https://curl.haxx.se/ca/cacert.pem
 
-package gocertifi
+package tlsx
 
 //go:generate go run generate.go "https://curl.haxx.se/ca/cacert.pem"
 
