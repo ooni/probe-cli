@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 )
 
@@ -486,7 +487,7 @@ func TestNewDialerWithContextByteCounting(t *testing.T) {
 
 func TestNewTLSDialerVanilla(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{})
-	rtd, ok := td.(dialer.TLSDialer)
+	rtd, ok := td.(tlsdialer.TLSDialer)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -512,15 +513,15 @@ func TestNewTLSDialerVanilla(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	ewth, ok := rtd.TLSHandshaker.(dialer.ErrorWrapperTLSHandshaker)
+	ewth, ok := rtd.TLSHandshaker.(tlsdialer.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(dialer.TimeoutTLSHandshaker)
+	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if _, ok := tth.TLSHandshaker.(dialer.SystemTLSHandshaker); !ok {
+	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -529,7 +530,7 @@ func TestNewTLSDialerWithConfig(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		TLSConfig: new(tls.Config),
 	})
-	rtd, ok := td.(dialer.TLSDialer)
+	rtd, ok := td.(tlsdialer.TLSDialer)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -552,15 +553,15 @@ func TestNewTLSDialerWithConfig(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	ewth, ok := rtd.TLSHandshaker.(dialer.ErrorWrapperTLSHandshaker)
+	ewth, ok := rtd.TLSHandshaker.(tlsdialer.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(dialer.TimeoutTLSHandshaker)
+	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if _, ok := tth.TLSHandshaker.(dialer.SystemTLSHandshaker); !ok {
+	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -569,7 +570,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		Logger: log.Log,
 	})
-	rtd, ok := td.(dialer.TLSDialer)
+	rtd, ok := td.(tlsdialer.TLSDialer)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -595,22 +596,22 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	lth, ok := rtd.TLSHandshaker.(dialer.LoggingTLSHandshaker)
+	lth, ok := rtd.TLSHandshaker.(tlsdialer.LoggingTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 	if lth.Logger != log.Log {
 		t.Fatal("not the Logger we expected")
 	}
-	ewth, ok := lth.TLSHandshaker.(dialer.ErrorWrapperTLSHandshaker)
+	ewth, ok := lth.TLSHandshaker.(tlsdialer.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(dialer.TimeoutTLSHandshaker)
+	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if _, ok := tth.TLSHandshaker.(dialer.SystemTLSHandshaker); !ok {
+	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -620,7 +621,7 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		TLSSaver: saver,
 	})
-	rtd, ok := td.(dialer.TLSDialer)
+	rtd, ok := td.(tlsdialer.TLSDialer)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -646,22 +647,22 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	sth, ok := rtd.TLSHandshaker.(dialer.SaverTLSHandshaker)
+	sth, ok := rtd.TLSHandshaker.(tlsdialer.SaverTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 	if sth.Saver != saver {
 		t.Fatal("not the Logger we expected")
 	}
-	ewth, ok := sth.TLSHandshaker.(dialer.ErrorWrapperTLSHandshaker)
+	ewth, ok := sth.TLSHandshaker.(tlsdialer.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(dialer.TimeoutTLSHandshaker)
+	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if _, ok := tth.TLSHandshaker.(dialer.SystemTLSHandshaker); !ok {
+	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -671,7 +672,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
 		TLSConfig:   new(tls.Config),
 		NoTLSVerify: true,
 	})
-	rtd, ok := td.(dialer.TLSDialer)
+	rtd, ok := td.(tlsdialer.TLSDialer)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -697,15 +698,15 @@ func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	ewth, ok := rtd.TLSHandshaker.(dialer.ErrorWrapperTLSHandshaker)
+	ewth, ok := rtd.TLSHandshaker.(tlsdialer.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(dialer.TimeoutTLSHandshaker)
+	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if _, ok := tth.TLSHandshaker.(dialer.SystemTLSHandshaker); !ok {
+	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -714,7 +715,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		NoTLSVerify: true,
 	})
-	rtd, ok := td.(dialer.TLSDialer)
+	rtd, ok := td.(tlsdialer.TLSDialer)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -743,15 +744,15 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	ewth, ok := rtd.TLSHandshaker.(dialer.ErrorWrapperTLSHandshaker)
+	ewth, ok := rtd.TLSHandshaker.(tlsdialer.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(dialer.TimeoutTLSHandshaker)
+	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if _, ok := tth.TLSHandshaker.(dialer.SystemTLSHandshaker); !ok {
+	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -785,10 +786,10 @@ func TestNewWithDialer(t *testing.T) {
 
 func TestNewWithTLSDialer(t *testing.T) {
 	expected := errors.New("mocked error")
-	tlsDialer := dialer.TLSDialer{
+	tlsDialer := tlsdialer.TLSDialer{
 		Config:        new(tls.Config),
 		Dialer:        netx.FakeDialer{Err: expected},
-		TLSHandshaker: dialer.SystemTLSHandshaker{},
+		TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
 	}
 	txp := netx.NewHTTPTransport(netx.Config{
 		TLSDialer: tlsDialer,

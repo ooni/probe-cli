@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 )
 
 // Logger is the interface we expect from a logger

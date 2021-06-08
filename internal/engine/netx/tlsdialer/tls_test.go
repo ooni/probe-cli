@@ -1,4 +1,4 @@
-package dialer_test
+package tlsdialer_test
 
 import (
 	"context"
@@ -11,13 +11,13 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 )
 
 func TestSystemTLSHandshakerEOFError(t *testing.T) {
-	h := dialer.SystemTLSHandshaker{}
-	conn, _, err := h.Handshake(context.Background(), dialer.EOFConn{}, &tls.Config{
+	h := tlsdialer.SystemTLSHandshaker{}
+	conn, _, err := h.Handshake(context.Background(), tlsdialer.EOFConn{}, &tls.Config{
 		ServerName: "x.org",
 	})
 	if err != io.EOF {
@@ -29,13 +29,13 @@ func TestSystemTLSHandshakerEOFError(t *testing.T) {
 }
 
 func TestTimeoutTLSHandshakerSetDeadlineError(t *testing.T) {
-	h := dialer.TimeoutTLSHandshaker{
-		TLSHandshaker:    dialer.SystemTLSHandshaker{},
+	h := tlsdialer.TimeoutTLSHandshaker{
+		TLSHandshaker:    tlsdialer.SystemTLSHandshaker{},
 		HandshakeTimeout: 200 * time.Millisecond,
 	}
 	expected := errors.New("mocked error")
 	conn, _, err := h.Handshake(
-		context.Background(), &dialer.FakeConn{SetDeadlineError: expected},
+		context.Background(), &tlsdialer.FakeConn{SetDeadlineError: expected},
 		new(tls.Config))
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error that we expected")
@@ -46,12 +46,12 @@ func TestTimeoutTLSHandshakerSetDeadlineError(t *testing.T) {
 }
 
 func TestTimeoutTLSHandshakerEOFError(t *testing.T) {
-	h := dialer.TimeoutTLSHandshaker{
-		TLSHandshaker:    dialer.SystemTLSHandshaker{},
+	h := tlsdialer.TimeoutTLSHandshaker{
+		TLSHandshaker:    tlsdialer.SystemTLSHandshaker{},
 		HandshakeTimeout: 200 * time.Millisecond,
 	}
 	conn, _, err := h.Handshake(
-		context.Background(), dialer.EOFConn{}, &tls.Config{ServerName: "x.org"})
+		context.Background(), tlsdialer.EOFConn{}, &tls.Config{ServerName: "x.org"})
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("not the error that we expected")
 	}
@@ -61,8 +61,8 @@ func TestTimeoutTLSHandshakerEOFError(t *testing.T) {
 }
 
 func TestTimeoutTLSHandshakerCallsSetDeadline(t *testing.T) {
-	h := dialer.TimeoutTLSHandshaker{
-		TLSHandshaker:    dialer.SystemTLSHandshaker{},
+	h := tlsdialer.TimeoutTLSHandshaker{
+		TLSHandshaker:    tlsdialer.SystemTLSHandshaker{},
 		HandshakeTimeout: 200 * time.Millisecond,
 	}
 	underlying := &SetDeadlineConn{}
@@ -86,7 +86,7 @@ func TestTimeoutTLSHandshakerCallsSetDeadline(t *testing.T) {
 }
 
 type SetDeadlineConn struct {
-	dialer.EOFConn
+	tlsdialer.EOFConn
 	deadlines []time.Time
 }
 
@@ -96,9 +96,9 @@ func (c *SetDeadlineConn) SetDeadline(t time.Time) error {
 }
 
 func TestErrorWrapperTLSHandshakerFailure(t *testing.T) {
-	h := dialer.ErrorWrapperTLSHandshaker{TLSHandshaker: dialer.EOFTLSHandshaker{}}
+	h := tlsdialer.ErrorWrapperTLSHandshaker{TLSHandshaker: tlsdialer.EOFTLSHandshaker{}}
 	conn, _, err := h.Handshake(
-		context.Background(), dialer.EOFConn{}, new(tls.Config))
+		context.Background(), tlsdialer.EOFConn{}, new(tls.Config))
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("not the error that we expected")
 	}
@@ -126,8 +126,8 @@ func TestEmitterTLSHandshakerFailure(t *testing.T) {
 		Beginning: time.Now(),
 		Handler:   saver,
 	})
-	h := dialer.EmitterTLSHandshaker{TLSHandshaker: dialer.EOFTLSHandshaker{}}
-	conn, _, err := h.Handshake(ctx, dialer.EOFConn{}, &tls.Config{
+	h := tlsdialer.EmitterTLSHandshaker{TLSHandshaker: tlsdialer.EOFTLSHandshaker{}}
+	conn, _, err := h.Handshake(ctx, tlsdialer.EOFConn{}, &tls.Config{
 		ServerName: "www.kernel.org",
 	})
 	if !errors.Is(err, io.EOF) {
@@ -164,7 +164,7 @@ func TestEmitterTLSHandshakerFailure(t *testing.T) {
 }
 
 func TestTLSDialerFailureSplitHostPort(t *testing.T) {
-	dialer := dialer.TLSDialer{}
+	dialer := tlsdialer.TLSDialer{}
 	conn, err := dialer.DialTLSContext(
 		context.Background(), "tcp", "www.google.com") // missing port
 	if err == nil {
@@ -176,7 +176,7 @@ func TestTLSDialerFailureSplitHostPort(t *testing.T) {
 }
 
 func TestTLSDialerFailureDialing(t *testing.T) {
-	dialer := dialer.TLSDialer{Dialer: dialer.EOFDialer{}}
+	dialer := tlsdialer.TLSDialer{Dialer: tlsdialer.EOFDialer{}}
 	conn, err := dialer.DialTLSContext(
 		context.Background(), "tcp", "www.google.com:443")
 	if !errors.Is(err, io.EOF) {
@@ -188,9 +188,9 @@ func TestTLSDialerFailureDialing(t *testing.T) {
 }
 
 func TestTLSDialerFailureHandshaking(t *testing.T) {
-	rec := &RecorderTLSHandshaker{TLSHandshaker: dialer.SystemTLSHandshaker{}}
-	dialer := dialer.TLSDialer{
-		Dialer:        dialer.EOFConnDialer{},
+	rec := &RecorderTLSHandshaker{TLSHandshaker: tlsdialer.SystemTLSHandshaker{}}
+	dialer := tlsdialer.TLSDialer{
+		Dialer:        tlsdialer.EOFConnDialer{},
 		TLSHandshaker: rec,
 	}
 	conn, err := dialer.DialTLSContext(
@@ -207,12 +207,12 @@ func TestTLSDialerFailureHandshaking(t *testing.T) {
 }
 
 func TestTLSDialerFailureHandshakingOverrideSNI(t *testing.T) {
-	rec := &RecorderTLSHandshaker{TLSHandshaker: dialer.SystemTLSHandshaker{}}
-	dialer := dialer.TLSDialer{
+	rec := &RecorderTLSHandshaker{TLSHandshaker: tlsdialer.SystemTLSHandshaker{}}
+	dialer := tlsdialer.TLSDialer{
 		Config: &tls.Config{
 			ServerName: "x.org",
 		},
-		Dialer:        dialer.EOFConnDialer{},
+		Dialer:        tlsdialer.EOFConnDialer{},
 		TLSHandshaker: rec,
 	}
 	conn, err := dialer.DialTLSContext(
@@ -229,7 +229,7 @@ func TestTLSDialerFailureHandshakingOverrideSNI(t *testing.T) {
 }
 
 type RecorderTLSHandshaker struct {
-	dialer.TLSHandshaker
+	tlsdialer.TLSHandshaker
 	SNI string
 }
 
@@ -241,10 +241,10 @@ func (h *RecorderTLSHandshaker) Handshake(
 }
 
 func TestDialTLSContextGood(t *testing.T) {
-	dialer := dialer.TLSDialer{
+	dialer := tlsdialer.TLSDialer{
 		Config:        &tls.Config{ServerName: "google.com"},
 		Dialer:        new(net.Dialer),
-		TLSHandshaker: dialer.SystemTLSHandshaker{},
+		TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
 	}
 	conn, err := dialer.DialTLSContext(context.Background(), "tcp", "google.com:443")
 	if err != nil {
@@ -257,12 +257,12 @@ func TestDialTLSContextGood(t *testing.T) {
 }
 
 func TestDialTLSContextTimeout(t *testing.T) {
-	dialer := dialer.TLSDialer{
+	dialer := tlsdialer.TLSDialer{
 		Config: &tls.Config{ServerName: "google.com"},
 		Dialer: new(net.Dialer),
-		TLSHandshaker: dialer.ErrorWrapperTLSHandshaker{
-			TLSHandshaker: dialer.TimeoutTLSHandshaker{
-				TLSHandshaker:    dialer.SystemTLSHandshaker{},
+		TLSHandshaker: tlsdialer.ErrorWrapperTLSHandshaker{
+			TLSHandshaker: tlsdialer.TimeoutTLSHandshaker{
+				TLSHandshaker:    tlsdialer.SystemTLSHandshaker{},
 				HandshakeTimeout: 10 * time.Microsecond,
 			},
 		},

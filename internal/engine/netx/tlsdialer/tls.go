@@ -1,4 +1,5 @@
-package dialer
+// Package tlsdialer contains code to establish TLS connections.
+package tlsdialer
 
 import (
 	"context"
@@ -10,6 +11,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
+
+// UnderlyingDialer is the underlying dialer type.
+type UnderlyingDialer interface {
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+}
 
 // TLSHandshaker is the generic TLS handshaker
 type TLSHandshaker interface {
@@ -105,7 +111,7 @@ func (h EmitterTLSHandshaker) Handshake(
 // TLSDialer is the TLS dialer
 type TLSDialer struct {
 	Config        *tls.Config
-	Dialer        Dialer
+	Dialer        UnderlyingDialer
 	TLSHandshaker TLSHandshaker
 }
 

@@ -16,11 +16,11 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 )
 
 // ExtSpec describes a data format extension

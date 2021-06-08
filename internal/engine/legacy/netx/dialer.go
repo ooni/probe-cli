@@ -13,6 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 )
 
 // Dialer performs measurements while dialing.
@@ -101,14 +102,14 @@ func (d *Dialer) DialTLS(network, address string) (net.Conn, error) {
 // - SystemTLSHandshaker
 //
 // If you have others needs, manually build the chain you need.
-func newTLSDialer(d dialer.Dialer, config *tls.Config) dialer.TLSDialer {
-	return dialer.TLSDialer{
+func newTLSDialer(d dialer.Dialer, config *tls.Config) tlsdialer.TLSDialer {
+	return tlsdialer.TLSDialer{
 		Config: config,
 		Dialer: d,
-		TLSHandshaker: dialer.EmitterTLSHandshaker{
-			TLSHandshaker: dialer.ErrorWrapperTLSHandshaker{
-				TLSHandshaker: dialer.TimeoutTLSHandshaker{
-					TLSHandshaker: dialer.SystemTLSHandshaker{},
+		TLSHandshaker: tlsdialer.EmitterTLSHandshaker{
+			TLSHandshaker: tlsdialer.ErrorWrapperTLSHandshaker{
+				TLSHandshaker: tlsdialer.TimeoutTLSHandshaker{
+					TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
 				},
 			},
 		},
