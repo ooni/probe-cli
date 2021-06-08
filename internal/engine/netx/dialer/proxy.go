@@ -12,36 +12,14 @@ import (
 // ProxyDialer is a dialer that uses a proxy. If the ProxyURL is not configured, this
 // dialer is a passthrough for the next Dialer in chain. Otherwise, it will internally
 // create a SOCKS5 dialer that will connect to the proxy using the underlying Dialer.
-//
-// As a special case, you can force a proxy to be used only extemporarily. To this end,
-// you can use the WithProxyURL function, to store the proxy URL in the context. This
-// will take precedence over any otherwise configured proxy. The use case for this
-// functionality is when you need a tunnel to contact OONI probe services.
 type ProxyDialer struct {
 	Dialer
 	ProxyURL *url.URL
 }
 
-type proxyKey struct{}
-
-// ContextProxyURL retrieves the proxy URL from the context. This is mainly used
-// to force a tunnel when we fail contacting OONI probe services otherwise.
-func ContextProxyURL(ctx context.Context) *url.URL {
-	url, _ := ctx.Value(proxyKey{}).(*url.URL)
-	return url
-}
-
-// WithProxyURL assigns the proxy URL to the context
-func WithProxyURL(ctx context.Context, url *url.URL) context.Context {
-	return context.WithValue(ctx, proxyKey{}, url)
-}
-
 // DialContext implements Dialer.DialContext
 func (d ProxyDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	url := ContextProxyURL(ctx) // context URL takes precedence
-	if url == nil {
-		url = d.ProxyURL
-	}
+	url := d.ProxyURL
 	if url == nil {
 		return d.Dialer.DialContext(ctx, network, address)
 	}
