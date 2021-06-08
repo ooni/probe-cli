@@ -4,16 +4,23 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 )
 
 func TestProxyDialerDialContextNoProxyURL(t *testing.T) {
 	expected := errors.New("mocked error")
 	d := dialer.ProxyDialer{
-		Dialer: dialer.FakeDialer{Err: expected},
+		Dialer: mockablex.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return nil, expected
+			},
+		},
 	}
 	conn, err := d.DialContext(context.Background(), "tcp", "www.google.com:443")
 	if !errors.Is(err, expected) {
@@ -26,7 +33,6 @@ func TestProxyDialerDialContextNoProxyURL(t *testing.T) {
 
 func TestProxyDialerDialContextInvalidScheme(t *testing.T) {
 	d := dialer.ProxyDialer{
-		Dialer:   dialer.FakeDialer{},
 		ProxyURL: &url.URL{Scheme: "antani"},
 	}
 	conn, err := d.DialContext(context.Background(), "tcp", "www.google.com:443")
@@ -40,8 +46,10 @@ func TestProxyDialerDialContextInvalidScheme(t *testing.T) {
 
 func TestProxyDialerDialContextWithEOF(t *testing.T) {
 	d := dialer.ProxyDialer{
-		Dialer: dialer.FakeDialer{
-			Err: io.EOF,
+		Dialer: mockablex.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return nil, io.EOF
+			},
 		},
 		ProxyURL: &url.URL{Scheme: "socks5"},
 	}
@@ -58,8 +66,10 @@ func TestProxyDialerDialContextWithContextCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately fail
 	d := dialer.ProxyDialer{
-		Dialer: dialer.FakeDialer{
-			Err: io.EOF,
+		Dialer: mockablex.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return nil, io.EOF
+			},
 		},
 		ProxyURL: &url.URL{Scheme: "socks5"},
 	}
@@ -74,10 +84,19 @@ func TestProxyDialerDialContextWithContextCanceled(t *testing.T) {
 
 func TestProxyDialerDialContextWithDialerSuccess(t *testing.T) {
 	d := dialer.ProxyDialer{
-		Dialer: dialer.FakeDialer{
-			Conn: &dialer.FakeConn{
-				ReadError:  io.EOF,
-				WriteError: io.EOF,
+		Dialer: mockablex.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return &mockablex.Conn{
+					MockRead: func(b []byte) (int, error) {
+						return 0, io.EOF
+					},
+					MockWrite: func(b []byte) (int, error) {
+						return 0, io.EOF
+					},
+					MockClose: func() error {
+						return io.EOF
+					},
+				}, nil
 			},
 		},
 		ProxyURL: &url.URL{Scheme: "socks5"},
@@ -99,10 +118,20 @@ func TestProxyDialerDialContextWithDialerCanceledContext(t *testing.T) {
 	// arm where we receive the conn is much less likely.
 	cancel()
 	d := dialer.ProxyDialer{
-		Dialer: dialer.FakeDialer{
-			Conn: &dialer.FakeConn{
-				ReadError:  io.EOF,
-				WriteError: io.EOF,
+		Dialer: mockablex.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				time.Sleep(10 * time.Microsecond)
+				return &mockablex.Conn{
+					MockRead: func(b []byte) (int, error) {
+						return 0, io.EOF
+					},
+					MockWrite: func(b []byte) (int, error) {
+						return 0, io.EOF
+					},
+					MockClose: func() error {
+						return io.EOF
+					},
+				}, nil
 			},
 		},
 		ProxyURL: &url.URL{Scheme: "socks5"},
@@ -121,8 +150,10 @@ func TestProxyDialerDialContextWithDialerCanceledContext(t *testing.T) {
 
 func TestProxyDialerWrapper(t *testing.T) {
 	d := dialer.ProxyDialerWrapper{
-		Dialer: dialer.FakeDialer{
-			Err: io.EOF,
+		Dialer: mockablex.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return nil, io.EOF
+			},
 		},
 	}
 	conn, err := d.Dial("tcp", "www.google.com:443")

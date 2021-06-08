@@ -11,6 +11,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 )
 
 func dorequest(ctx context.Context, url string) error {
@@ -70,7 +71,11 @@ func TestByteCounterNoHandlers(t *testing.T) {
 }
 
 func TestByteCounterConnectFailure(t *testing.T) {
-	dialer := dialer.ByteCounterDialer{Dialer: dialer.EOFDialer{}}
+	dialer := dialer.ByteCounterDialer{Dialer: mockablex.Dialer{
+		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+			return nil, io.EOF
+		},
+	}}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "www.google.com:80")
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("not the error we expected")
