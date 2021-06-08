@@ -28,3 +28,10 @@ func TestCipherSuite(t *testing.T) {
 		t.Fatal("not working for zero cipher suite")
 	}
 }
+
+func TestNewDefaultCertPoolWorks(t *testing.T) {
+	pool := NewDefaultCertPool()
+	if pool == nil {
+		t.Fatal("expected non-nil value here")
+	}
+}

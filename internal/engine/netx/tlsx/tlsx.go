@@ -3,6 +3,7 @@ package tlsx
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 )
 
@@ -60,4 +61,14 @@ func CipherSuiteString(value uint16) string {
 		return str
 	}
 	return fmt.Sprintf("TLS_CIPHER_SUITE_UNKNOWN_%d", value)
+}
+
+// NewDefaultCertPool returns a copy of the default x509
+// certificate pool that we bundle from Mozilla.
+func NewDefaultCertPool() *x509.CertPool {
+	pool := x509.NewCertPool()
+	// Assumption: AppendCertsFromPEM cannot fail because we
+	// run this function already in the generate.go file
+	pool.AppendCertsFromPEM([]byte(pemcerts))
+	return pool
 }

@@ -40,7 +40,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // Logger is the logger assumed by this package
@@ -112,12 +111,8 @@ type tlsHandshaker interface {
 }
 
 // NewDefaultCertPool returns a copy of the default x509
-// certificate pool. This function panics on failure.
-func NewDefaultCertPool() *x509.CertPool {
-	pool, err := tlsx.CACerts()
-	runtimex.PanicOnError(err, "tlsx.CACerts() failed")
-	return pool
-}
+// certificate pool that we bundle from Mozilla.
+var NewDefaultCertPool = tlsx.NewDefaultCertPool
 
 var defaultCertPool *x509.CertPool = NewDefaultCertPool()
 
