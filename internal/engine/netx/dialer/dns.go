@@ -6,9 +6,13 @@ import (
 	"net"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
+
+// Resolver is the interface we expect from a resolver
+type Resolver interface {
+	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
+}
 
 // DNSDialer is a dialer that uses the configured Resolver to resolver a
 // domain name to IP addresses, and the configured Dialer to connect.
@@ -23,7 +27,6 @@ func (d DNSDialer) DialContext(ctx context.Context, network, address string) (ne
 	if err != nil {
 		return nil, err
 	}
-	ctx = dialid.WithDialID(ctx) // important to create before lookupHost
 	var addrs []string
 	addrs, err = d.LookupHost(ctx, onlyhost)
 	if err != nil {
