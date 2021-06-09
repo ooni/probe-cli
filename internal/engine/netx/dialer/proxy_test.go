@@ -1,4 +1,4 @@
-package dialer_test
+package dialer
 
 import (
 	"context"
@@ -7,15 +7,13 @@ import (
 	"net"
 	"net/url"
 	"testing"
-	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 )
 
 func TestProxyDialerDialContextNoProxyURL(t *testing.T) {
 	expected := errors.New("mocked error")
-	d := dialer.ProxyDialer{
+	d := ProxyDialer{
 		Dialer: mockablex.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, expected
@@ -32,11 +30,11 @@ func TestProxyDialerDialContextNoProxyURL(t *testing.T) {
 }
 
 func TestProxyDialerDialContextInvalidScheme(t *testing.T) {
-	d := dialer.ProxyDialer{
+	d := ProxyDialer{
 		ProxyURL: &url.URL{Scheme: "antani"},
 	}
 	conn, err := d.DialContext(context.Background(), "tcp", "www.google.com:443")
-	if err.Error() != "Scheme is not socks5" {
+	if !errors.Is(err, ErrProxyUnsupportedScheme) {
 		t.Fatal("not the error we expected")
 	}
 	if conn != nil {
@@ -45,13 +43,17 @@ func TestProxyDialerDialContextInvalidScheme(t *testing.T) {
 }
 
 func TestProxyDialerDialContextWithEOF(t *testing.T) {
-	d := dialer.ProxyDialer{
+	const expect = "10.0.0.1:9050"
+	d := ProxyDialer{
 		Dialer: mockablex.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				if address != expect {
+					return nil, errors.New("unexpected address")
+				}
 				return nil, io.EOF
 			},
 		},
-		ProxyURL: &url.URL{Scheme: "socks5"},
+		ProxyURL: &url.URL{Scheme: "socks5", Host: expect},
 	}
 	conn, err := d.DialContext(context.Background(), "tcp", "www.google.com:443")
 	if !errors.Is(err, io.EOF) {
@@ -62,105 +64,18 @@ func TestProxyDialerDialContextWithEOF(t *testing.T) {
 	}
 }
 
-func TestProxyDialerDialContextWithContextCanceled(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // immediately fail
-	d := dialer.ProxyDialer{
-		Dialer: mockablex.Dialer{
-			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-				return nil, io.EOF
-			},
-		},
-		ProxyURL: &url.URL{Scheme: "socks5"},
-	}
-	conn, err := d.DialContext(ctx, "tcp", "www.google.com:443")
-	if !errors.Is(err, context.Canceled) {
-		t.Fatal("not the error we expected")
-	}
-	if conn != nil {
-		t.Fatal("conn is not nil")
-	}
-}
-
-func TestProxyDialerDialContextWithDialerSuccess(t *testing.T) {
-	d := dialer.ProxyDialer{
-		Dialer: mockablex.Dialer{
-			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-				return &mockablex.Conn{
-					MockRead: func(b []byte) (int, error) {
-						return 0, io.EOF
-					},
-					MockWrite: func(b []byte) (int, error) {
-						return 0, io.EOF
-					},
-					MockClose: func() error {
-						return io.EOF
-					},
-				}, nil
-			},
-		},
-		ProxyURL: &url.URL{Scheme: "socks5"},
-	}
-	conn, err := d.DialContextWithDialer(
-		context.Background(), dialer.ProxyDialerWrapper{
-			Dialer: d.Dialer,
-		}, "tcp", "www.google.com:443")
-	if err != nil {
-		t.Fatal(err)
-	}
-	conn.Close()
-}
-
-func TestProxyDialerDialContextWithDialerCanceledContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	// Stop immediately. The FakeDialer sleeps for some microseconds so
-	// it is much more likely we immediately exit with done context. The
-	// arm where we receive the conn is much less likely.
-	cancel()
-	d := dialer.ProxyDialer{
-		Dialer: mockablex.Dialer{
-			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-				time.Sleep(10 * time.Microsecond)
-				return &mockablex.Conn{
-					MockRead: func(b []byte) (int, error) {
-						return 0, io.EOF
-					},
-					MockWrite: func(b []byte) (int, error) {
-						return 0, io.EOF
-					},
-					MockClose: func() error {
-						return io.EOF
-					},
-				}, nil
-			},
-		},
-		ProxyURL: &url.URL{Scheme: "socks5"},
-	}
-	conn, err := d.DialContextWithDialer(
-		ctx, dialer.ProxyDialerWrapper{
-			Dialer: d.Dialer,
-		}, "tcp", "www.google.com:443")
-	if !errors.Is(err, context.Canceled) {
-		t.Fatal("not the error we expected")
-	}
-	if conn != nil {
-		t.Fatal("expected nil conn here")
-	}
-}
-
-func TestProxyDialerWrapper(t *testing.T) {
-	d := dialer.ProxyDialerWrapper{
-		Dialer: mockablex.Dialer{
-			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-				return nil, io.EOF
-			},
-		},
-	}
-	conn, err := d.Dial("tcp", "www.google.com:443")
-	if !errors.Is(err, io.EOF) {
-		t.Fatal("not the error we expected")
-	}
-	if conn != nil {
-		t.Fatal("conn is not nil")
+func TestProxyDialWrapperPanics(t *testing.T) {
+	d := &proxyDialerWrapper{}
+	err := func() (rv error) {
+		defer func() {
+			if r := recover(); r != nil {
+				rv = r.(error)
+			}
+		}()
+		d.Dial("tcp", "10.0.0.1:1234")
+		return
+	}()
+	if err.Error() != "proxyDialerWrapper.Dial should not be called directly" {
+		t.Fatal("unexpected result", err)
 	}
 }
