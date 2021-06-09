@@ -2,10 +2,10 @@ package dialer
 
 import (
 	"context"
+	"errors"
 	"net"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
 // ErrorWrapperDialer is a dialer that performs err wrapping
@@ -17,15 +17,8 @@ type ErrorWrapperDialer struct {
 func (d ErrorWrapperDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	dialID := dialid.ContextDialID(ctx)
 	conn, err := d.Dialer.DialContext(ctx, network, address)
-	err = errorx.SafeErrWrapperBuilder{
-		// ConnID does not make any sense if we've failed and the error
-		// does not make any sense (and is nil) if we succeeded.
-		DialID:    dialID,
-		Error:     err,
-		Operation: errorx.ConnectOperation,
-	}.MaybeBuild()
 	if err != nil {
-		return nil, err
+		return nil, &ErrDial{err}
 	}
 	return &ErrorWrapperConn{
 		Conn: conn, ConnID: safeConnID(network, conn), DialID: dialID}, nil
@@ -41,35 +34,74 @@ type ErrorWrapperConn struct {
 // Read implements net.Conn.Read
 func (c ErrorWrapperConn) Read(b []byte) (n int, err error) {
 	n, err = c.Conn.Read(b)
-	err = errorx.SafeErrWrapperBuilder{
-		ConnID:    c.ConnID,
-		DialID:    c.DialID,
-		Error:     errorx.NewErrRead(err),
-		Operation: errorx.ReadOperation,
-	}.MaybeBuild()
+	if err != nil {
+		return n, &ErrRead{err}
+	}
 	return
 }
 
 // Write implements net.Conn.Write
 func (c ErrorWrapperConn) Write(b []byte) (n int, err error) {
 	n, err = c.Conn.Write(b)
-	err = errorx.SafeErrWrapperBuilder{
-		ConnID:    c.ConnID,
-		DialID:    c.DialID,
-		Error:     errorx.NewErrWrite(err),
-		Operation: errorx.WriteOperation,
-	}.MaybeBuild()
+	if err != nil {
+		return n, &ErrWrite{err}
+	}
 	return
 }
 
 // Close implements net.Conn.Close
 func (c ErrorWrapperConn) Close() (err error) {
 	err = c.Conn.Close()
-	err = errorx.SafeErrWrapperBuilder{
-		ConnID:    c.ConnID,
-		DialID:    c.DialID,
-		Error:     err,
-		Operation: errorx.CloseOperation,
-	}.MaybeBuild()
+	if err != nil {
+		return &ErrClose{err}
+	}
 	return
 }
+
+// TODO(kelmenhorst): why do we use different types here? maybe just one struct with a field indicating the operation? this would avoid using errors.As..
+type ErrDial struct {
+	error
+}
+
+func (e *ErrDial) Unwrap() error {
+	return e.error
+}
+
+type ErrWrite struct {
+	error
+}
+
+func (e *ErrWrite) Unwrap() error {
+	return e.error
+}
+
+type ErrRead struct {
+	error
+}
+
+func (e *ErrRead) Unwrap() error {
+	return e.error
+}
+
+type ErrClose struct {
+	error
+}
+
+func (e *ErrClose) Unwrap() error {
+	return e.error
+}
+
+type ErrTLSHandshake struct {
+	error
+}
+
+func (e *ErrTLSHandshake) Unwrap() error {
+	return e.error
+}
+
+// export for for testing purposes
+var MockErrDial *ErrDial = &ErrDial{errors.New("mock error")}
+var MockErrRead *ErrRead = &ErrRead{errors.New("mock error")}
+var MockErrWrite *ErrWrite = &ErrWrite{errors.New("mock error")}
+var MockErrClose *ErrClose = &ErrClose{errors.New("mock error")}
+var MockErrHandshake *ErrTLSHandshake = &ErrTLSHandshake{errors.New("mock error")}

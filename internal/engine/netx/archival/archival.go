@@ -18,7 +18,9 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 )
 
@@ -105,6 +107,7 @@ func NewTCPConnectList(begin time.Time, events []trace.Event) []TCPConnectEntry 
 	return out
 }
 
+// TODO(kelmenhorst): Replace this with operation specific classifiers.
 // NewFailure creates a failure nullable string from the given error
 func NewFailure(err error) *string {
 	if err == nil {
@@ -131,11 +134,38 @@ func NewFailedOperation(err error) *string {
 		return nil
 	}
 	var (
-		errWrapper *errorx.ErrWrapper
-		s          = errorx.UnknownOperation
+		dialErr      *dialer.ErrDial
+		readErr      *dialer.ErrRead
+		writeErr     *dialer.ErrWrite
+		closeErr     *dialer.ErrClose
+		handshakeErr *dialer.ErrTLSHandshake
+		qDialErr     *quicdialer.ErrDial
+		readfromErr  *quicdialer.ErrReadFrom
+		writetoErr   *quicdialer.ErrWriteTo
 	)
-	if errors.As(err, &errWrapper) && errWrapper.Operation != "" {
+	var (
+		s          string
+		errWrapper *errorx.ErrWrapper
+	)
+	switch {
+	case errors.As(err, &dialErr) || errors.As(err, &qDialErr):
+		s = "connect"
+	case errors.As(err, &readErr):
+		s = "read"
+	case errors.As(err, &readfromErr):
+		s = "read_from"
+	case errors.As(err, &writeErr):
+		s = "write"
+	case errors.As(err, &writetoErr):
+		s = "write_to"
+	case errors.As(err, &handshakeErr):
+		s = "tls_handshake"
+	case errors.As(err, &closeErr):
+		s = "close"
+	case errors.As(err, &errWrapper):
 		s = errWrapper.Operation
+	default:
+		s = "top_level"
 	}
 	return &s
 }

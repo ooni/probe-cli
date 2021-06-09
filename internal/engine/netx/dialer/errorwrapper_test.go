@@ -25,18 +25,34 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 	if !errors.As(err, &io.EOF) {
 		t.Fatal("expected another error here")
 	}
-	var errWrapper *errorx.ErrWrapper
-	if !errors.As(err, &errWrapper) {
-		t.Fatal("cannot cast to ErrWrapper")
-	}
-	if errWrapper.DialID == 0 {
-		t.Fatal("unexpected DialID")
-	}
-	if errWrapper.Operation != op {
-		t.Fatal("unexpected Operation")
-	}
-	if errWrapper.Failure != errorx.FailureEOFError {
-		t.Fatal("unexpected failure")
+	var (
+		dialErr      *dialer.ErrDial
+		readErr      *dialer.ErrRead
+		writeErr     *dialer.ErrWrite
+		closeErr     *dialer.ErrClose
+		handshakeErr *dialer.ErrTLSHandshake
+	)
+	switch op {
+	case "dial":
+		if !errors.As(err, &dialErr) {
+			t.Fatal("unexpected wrapper")
+		}
+	case "read":
+		if !errors.As(err, &readErr) {
+			t.Fatal("unexpected wrapper")
+		}
+	case "write":
+		if !errors.As(err, &writeErr) {
+			t.Fatal("unexpected wrapper")
+		}
+	case "close":
+		if !errors.As(err, &closeErr) {
+			t.Fatal("unexpected wrapper")
+		}
+	case "tls_handshake":
+		if !errors.As(err, &handshakeErr) {
+			t.Fatal("unexpected wrapper")
+		}
 	}
 }
 

@@ -59,6 +59,11 @@ type saverUDPConn struct {
 func (c saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	start := time.Now()
 	count, err := c.UDPConn.WriteTo(p, addr)
+	// TODO(kelmenhorst): 	This is basically the functionality of ErrorWrapperConn.
+	// 						Should this be it's own conn wrapper? (we can only access the UDP conn in the system dialer)
+	if err != nil {
+		err = &ErrWriteTo{err}
+	}
 	stop := time.Now()
 	c.saver.Write(trace.Event{
 		Address:  addr.String(),
@@ -75,6 +80,11 @@ func (c saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 func (c saverUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
 	start := time.Now()
 	n, oobn, flags, addr, err := c.UDPConn.ReadMsgUDP(b, oob)
+	// TODO(kelmenhorst): 	This is basically the functionality of ErrorWrapperConn.
+	// 						Should this be it's own conn wrapper? (we can only access the UDP conn in the system dialer)
+	if err != nil {
+		err = &ErrReadFrom{err}
+	}
 	stop := time.Now()
 	var data []byte
 	if n > 0 {

@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io"
 	"regexp"
 	"strings"
 	"syscall"
@@ -177,13 +176,7 @@ type SafeErrWrapperBuilder struct {
 // a nil error value, instead, if b.Error is nil.
 func (b SafeErrWrapperBuilder) MaybeBuild() (err error) {
 	if b.Error != nil {
-		// safety default classification
 		failureString := toFailureString(b.Error)
-
-		var errClassify ErrWithClassify
-		if errors.As(b.Error, &errClassify) {
-			failureString = errClassify.Classify()
-		}
 		err = &ErrWrapper{
 			ConnID:        b.ConnID,
 			DialID:        b.DialID,
@@ -333,112 +326,4 @@ func toOperationString(err error, operation string) string {
 		// FALLTHROUGH
 	}
 	return operation
-}
-
-type ErrWithClassify interface {
-	error
-	Classify() string
-}
-
-type ErrDial struct {
-	error
-}
-
-func NewErrDial(e error) *ErrDial {
-	return &ErrDial{e}
-}
-
-func (e *ErrDial) Classify() string {
-	// TODO(kelmenhorst): find out what error types are relevant here
-	return toFailureString(e)
-}
-
-func (e *ErrDial) Error() string {
-	return e.Classify()
-}
-
-type ErrWrite struct {
-	error
-}
-
-func NewErrWrite(e error) *ErrWrite {
-	return &ErrWrite{e}
-}
-
-func (e *ErrWrite) Classify() string {
-	// TODO(kelmenhorst): find out what more error types are relevant here
-	var errwrapper *ErrWrapper
-	if errors.As(e, &errwrapper) {
-		return errwrapper.Error()
-	}
-	sysErr := sysCallErrors(e)
-	if sysErr != "" {
-		return sysErr
-	}
-	if errors.As(e, &io.EOF) {
-		return FailureEOFError
-	}
-	formatted := fmt.Sprintf("unknown_failure: %s", e.error.Error())
-	return Scrub(formatted) // scrub IP addresses in the error
-}
-
-func (e *ErrWrite) Error() string {
-	return e.Classify()
-}
-
-type ErrRead struct {
-	error
-}
-
-func NewErrRead(e error) *ErrRead {
-	return &ErrRead{e}
-}
-
-func (e *ErrRead) Classify() string {
-	// TODO(kelmenhorst): find out what more error types are relevant here
-	var errwrapper *ErrWrapper
-	if errors.As(e, &errwrapper) {
-		return errwrapper.Error()
-	}
-	sysErr := sysCallErrors(e)
-	if sysErr != "" {
-		return sysErr
-	}
-	if errors.As(e, &io.EOF) {
-		return FailureEOFError
-	}
-	formatted := fmt.Sprintf("unknown_failure: %s", e.error.Error())
-	return Scrub(formatted) // scrub IP addresses in the error
-}
-
-func (e *ErrRead) Error() string {
-	return e.Classify()
-}
-
-type ErrTLSHandshake struct {
-	err error
-}
-
-func (e *ErrTLSHandshake) Classify() string {
-	// TODO(kelmenhorst): find out what error types are relevant here
-	return ""
-}
-
-func (e *ErrTLSHandshake) Error() string {
-	return e.Classify()
-}
-
-func sysCallErrors(err ErrWithClassify) string {
-	// filter out system errors
-	var errno syscall.Errno
-	if errors.As(err, &errno) {
-		// checkout https://pkg.go.dev/golang.org/x/sys/windows and https://pkg.go.dev/golang.org/x/sys/unix
-		switch {
-		case errno == 0x68 || errno == 0x2746:
-			return FailureConnectionReset
-		case errno == 0x6f || errno == 0x274D:
-			return FailureConnectionRefused
-		}
-	}
-	return ""
 }

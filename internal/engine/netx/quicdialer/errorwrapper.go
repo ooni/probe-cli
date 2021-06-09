@@ -3,10 +3,9 @@ package quicdialer
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
 // ErrorWrapperDialer is a dialer that performs quic err wrapping
@@ -18,17 +17,38 @@ type ErrorWrapperDialer struct {
 func (d ErrorWrapperDialer) DialContext(
 	ctx context.Context, network string, host string,
 	tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
-	dialID := dialid.ContextDialID(ctx)
 	sess, err := d.Dialer.DialContext(ctx, network, host, tlsCfg, cfg)
-	err = errorx.SafeErrWrapperBuilder{
-		// ConnID does not make any sense if we've failed and the error
-		// does not make any sense (and is nil) if we succeeded.
-		DialID:    dialID,
-		Error:     err,
-		Operation: errorx.QUICHandshakeOperation,
-	}.MaybeBuild()
 	if err != nil {
-		return nil, err
+		return nil, &ErrDial{err}
 	}
 	return sess, nil
 }
+
+type ErrDial struct {
+	error
+}
+
+func (e *ErrDial) Unwrap() error {
+	return e.error
+}
+
+type ErrWriteTo struct {
+	error
+}
+
+func (e *ErrWriteTo) Unwrap() error {
+	return e.error
+}
+
+type ErrReadFrom struct {
+	error
+}
+
+func (e *ErrReadFrom) Unwrap() error {
+	return e.error
+}
+
+// export for for testing purposes
+var MockErrDial *ErrDial = &ErrDial{errors.New("mock error")}
+var MockErrReadFrom *ErrReadFrom = &ErrReadFrom{errors.New("mock error")}
+var MockErrWriteTo *ErrWriteTo = &ErrWriteTo{errors.New("mock error")}

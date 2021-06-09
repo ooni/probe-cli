@@ -14,7 +14,9 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 )
 
@@ -1000,35 +1002,66 @@ func TestNewFailedOperation(t *testing.T) {
 		},
 		want: nil, // explicit
 	}, {
-		name: "With wrapped error and non-empty operation",
+		name: "With ErrDial",
 		args: args{
-			err: &errorx.ErrWrapper{
-				Failure:   errorx.FailureConnectionRefused,
-				Operation: errorx.ConnectOperation,
-			},
+			err: dialer.MockErrDial,
 		},
 		want: (func() *string {
 			s := errorx.ConnectOperation
 			return &s
 		})(),
 	}, {
-		name: "With wrapped error and empty operation",
+		name: "With ErrWrite",
 		args: args{
-			err: &errorx.ErrWrapper{
-				Failure: errorx.FailureConnectionRefused,
-			},
+			err: dialer.MockErrWrite,
 		},
 		want: (func() *string {
-			s := errorx.UnknownOperation
+			s := errorx.WriteOperation
 			return &s
 		})(),
 	}, {
-		name: "With non wrapped error",
+		name: "With ErrRead",
 		args: args{
-			err: io.EOF,
+			err: dialer.MockErrRead,
 		},
 		want: (func() *string {
-			s := errorx.UnknownOperation
+			s := errorx.ReadOperation
+			return &s
+		})(),
+	}, {
+		name: "With ErrTLSHandshake",
+		args: args{
+			err: dialer.MockErrHandshake,
+		},
+		want: (func() *string {
+			s := errorx.TLSHandshakeOperation
+			return &s
+		})(),
+	}, {
+		name: "With ErrClose",
+		args: args{
+			err: dialer.MockErrClose,
+		},
+		want: (func() *string {
+			s := errorx.CloseOperation
+			return &s
+		})(),
+	}, {
+		name: "With ErrReadFrom",
+		args: args{
+			err: quicdialer.MockErrReadFrom,
+		},
+		want: (func() *string {
+			s := errorx.ReadFromOperation
+			return &s
+		})(),
+	}, {
+		name: "With ErrWriteTo",
+		args: args{
+			err: quicdialer.MockErrWriteTo,
+		},
+		want: (func() *string {
+			s := errorx.WriteToOperation
 			return &s
 		})(),
 	}}

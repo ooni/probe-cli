@@ -26,21 +26,27 @@ func TestErrorWrapperFailure(t *testing.T) {
 }
 
 func errorWrapperCheckErr(t *testing.T, err error, op string) {
-	if !errors.Is(err, io.EOF) {
+	if !errors.As(err, &io.EOF) {
 		t.Fatal("expected another error here")
 	}
-	var errWrapper *errorx.ErrWrapper
-	if !errors.As(err, &errWrapper) {
-		t.Fatal("cannot cast to ErrWrapper")
-	}
-	if errWrapper.DialID == 0 {
-		t.Fatal("unexpected DialID")
-	}
-	if errWrapper.Operation != op {
-		t.Fatal("unexpected Operation")
-	}
-	if errWrapper.Failure != errorx.FailureEOFError {
-		t.Fatal("unexpected failure")
+	var (
+		dialErr     *quicdialer.ErrDial
+		readfromErr *quicdialer.ErrReadFrom
+		writetoErr  *quicdialer.ErrWriteTo
+	)
+	switch op {
+	case "dial":
+		if !errors.As(err, &dialErr) {
+			t.Fatal("unexpected wrapper")
+		}
+	case "read_from":
+		if !errors.As(err, &readfromErr) {
+			t.Fatal("unexpected wrapper")
+		}
+	case "write_to":
+		if !errors.As(err, &writetoErr) {
+			t.Fatal("unexpected wrapper")
+		}
 	}
 }
 
