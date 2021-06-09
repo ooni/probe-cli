@@ -28,7 +28,7 @@ type Logger interface {
 
 // Config contains the settings for New.
 type Config struct {
-	// ContextByteCounting optional configures context-based
+	// ContextByteCounting optionally configures context-based
 	// byte counting. By default we don't do that.
 	//
 	// Use WithExperimentByteCounter and WithSessionByteCounter
@@ -42,7 +42,7 @@ type Config struct {
 	// persistent connections, because they strick to the counters set when the
 	// connection was established. This typically means we miss the bytes sent and
 	// received when submitting a measurement. Such bytes are specifically not
-	// see by the experiment specific byte counter.
+	// seen by the experiment specific byte counter.
 	//
 	// For this reason, this implementation may be heavily changed/removed.
 	ContextByteCounting bool
