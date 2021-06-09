@@ -3,7 +3,6 @@ package ndt7
 import (
 	"context"
 	"crypto/tls"
-	"net"
 	"net/http"
 	"net/url"
 
@@ -40,7 +39,7 @@ func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*
 		ContextByteCounting: true,
 		Logger:              mgr.logger,
 		ProxyURL:            mgr.proxyURL,
-	}, &net.Resolver{})
+	}, reso)
 	dialer := websocket.Dialer{
 		NetDialContext:  dlr.DialContext,
 		ReadBufferSize:  mgr.readBufferSize,
