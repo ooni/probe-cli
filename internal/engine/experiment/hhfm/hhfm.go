@@ -320,7 +320,9 @@ type Dialer struct {
 func (d Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	child := d.Dialer
 	if child == nil {
-		child = dialer.New(&dialer.Config{}, &net.Resolver{})
+		// TODO(bassosimone): figure out why using dialer.New here
+		// causes the experiment to fail with eof_error
+		child = &net.Dialer{Timeout: 15 * time.Second}
 	}
 	conn, err := child.DialContext(ctx, network, address)
 	if err != nil {
