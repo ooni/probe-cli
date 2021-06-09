@@ -9,10 +9,10 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-// ProxyDialer is a dialer that uses a proxy. If the ProxyURL is not configured, this
+// proxyDialer is a dialer that uses a proxy. If the ProxyURL is not configured, this
 // dialer is a passthrough for the next Dialer in chain. Otherwise, it will internally
 // create a SOCKS5 dialer that will connect to the proxy using the underlying Dialer.
-type ProxyDialer struct {
+type proxyDialer struct {
 	Dialer
 	ProxyURL *url.URL
 }
@@ -21,7 +21,7 @@ type ProxyDialer struct {
 var ErrProxyUnsupportedScheme = errors.New("proxy: unsupported scheme")
 
 // DialContext implements Dialer.DialContext
-func (d ProxyDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *proxyDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	url := d.ProxyURL
 	if url == nil {
 		return d.Dialer.DialContext(ctx, network, address)
@@ -31,11 +31,11 @@ func (d ProxyDialer) DialContext(ctx context.Context, network, address string) (
 	}
 	// the code at proxy/socks5.go never fails; see https://git.io/JfJ4g
 	child, _ := proxy.SOCKS5(
-		network, url.Host, nil, proxyDialerWrapper{d.Dialer})
+		network, url.Host, nil, &proxyDialerWrapper{d.Dialer})
 	return d.dial(ctx, child, network, address)
 }
 
-func (d ProxyDialer) dial(
+func (d *proxyDialer) dial(
 	ctx context.Context, child proxy.Dialer, network, address string) (net.Conn, error) {
 	cd := child.(proxy.ContextDialer) // will work
 	return cd.DialContext(ctx, network, address)
@@ -50,6 +50,6 @@ type proxyDialerWrapper struct {
 	Dialer
 }
 
-func (d proxyDialerWrapper) Dial(network, address string) (net.Conn, error) {
+func (d *proxyDialerWrapper) Dial(network, address string) (net.Conn, error) {
 	panic(errors.New("proxyDialerWrapper.Dial should not be called directly"))
 }

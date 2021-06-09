@@ -6,20 +6,14 @@ import (
 	"time"
 )
 
-// Logger is the logger assumed by this package
-type Logger interface {
-	Debugf(format string, v ...interface{})
-	Debug(message string)
-}
-
-// LoggingDialer is a Dialer with logging
-type LoggingDialer struct {
+// loggingDialer is a Dialer with logging
+type loggingDialer struct {
 	Dialer
 	Logger Logger
 }
 
 // DialContext implements Dialer.DialContext
-func (d LoggingDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *loggingDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	d.Logger.Debugf("dial %s/%s...", address, network)
 	start := time.Now()
 	conn, err := d.Dialer.DialContext(ctx, network, address)

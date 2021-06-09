@@ -11,7 +11,7 @@ import (
 func TestSystemDialerWorks(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
-	conn, err := Default.DialContext(ctx, "tcp", "8.8.8.8:853")
+	conn, err := systemDialer.DialContext(ctx, "tcp", "8.8.8.8:853")
 	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
 		t.Fatal("not the error we expected", err)
 	}
@@ -20,9 +20,9 @@ func TestSystemDialerWorks(t *testing.T) {
 	}
 }
 
-func TestUnderlyingDialerHasTimeout(t *testing.T) {
+func TestSystemDialerHasTimeout(t *testing.T) {
 	expected := 15 * time.Second
-	if underlyingDialer.Timeout != expected {
+	if systemDialer.Timeout != expected {
 		t.Fatal("unexpected timeout value")
 	}
 }

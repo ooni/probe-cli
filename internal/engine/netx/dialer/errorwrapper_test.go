@@ -1,4 +1,4 @@
-package dialer_test
+package dialer
 
 import (
 	"context"
@@ -7,14 +7,13 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 )
 
 func TestErrorWrapperFailure(t *testing.T) {
 	ctx := context.Background()
-	d := dialer.ErrorWrapperDialer{Dialer: mockablex.Dialer{
+	d := &errorWrapperDialer{Dialer: mockablex.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
@@ -44,7 +43,7 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 
 func TestErrorWrapperSuccess(t *testing.T) {
 	ctx := context.Background()
-	d := dialer.ErrorWrapperDialer{Dialer: mockablex.Dialer{
+	d := &errorWrapperDialer{Dialer: mockablex.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return &mockablex.Conn{
 				MockRead: func(b []byte) (int, error) {

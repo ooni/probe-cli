@@ -23,10 +23,7 @@ func TestSaverTLSHandshakerSuccessWithReadWrite(t *testing.T) {
 	saver := &trace.Saver{}
 	tlsdlr := tlsdialer.TLSDialer{
 		Config: &tls.Config{NextProtos: nextprotos},
-		Dialer: dialer.SaverConnDialer{
-			Dialer: new(net.Dialer),
-			Saver:  saver,
-		},
+		Dialer: dialer.New(&dialer.Config{ReadWriteSaver: saver}, &net.Resolver{}),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
 			TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
 			Saver:         saver,

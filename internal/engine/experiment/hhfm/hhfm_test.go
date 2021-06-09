@@ -13,7 +13,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/hhfm"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
@@ -55,7 +54,7 @@ func TestSuccess(t *testing.T) {
 		t.Fatal("invalid Agent")
 	}
 	if tk.Failure != nil {
-		t.Fatal("invalid Failure")
+		t.Fatal("invalid Failure", *tk.Failure)
 	}
 	if len(tk.Requests) != 1 {
 		t.Fatal("invalid Requests")
@@ -555,25 +554,6 @@ func TestTransactCannotReadBody(t *testing.T) {
 	if body != nil {
 		t.Fatal("body is not nil")
 	}
-}
-
-func newsession(t *testing.T) model.ExperimentSession {
-	sess, err := engine.NewSession(context.Background(), engine.SessionConfig{
-		AvailableProbeServices: []model.Service{{
-			Address: "https://ams-pg-test.ooni.org",
-			Type:    "https",
-		}},
-		Logger:          log.Log,
-		SoftwareName:    "ooniprobe-engine",
-		SoftwareVersion: "0.0.1",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := sess.MaybeLookupBackends(); err != nil {
-		t.Fatal(err)
-	}
-	return sess
 }
 
 func TestTestKeys_FillTampering(t *testing.T) {

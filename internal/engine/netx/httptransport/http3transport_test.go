@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -42,7 +43,9 @@ func TestHTTP3TransportSNI(t *testing.T) {
 	namech := make(chan string, 1)
 	sni := "sni.org"
 	txp := httptransport.NewHTTP3Transport(httptransport.Config{
-		Dialer: dialer.Default, QUICDialer: MockSNIQUICDialer{namech: namech}, TLSConfig: &tls.Config{ServerName: sni}})
+		Dialer:     dialer.New(&dialer.Config{}, &net.Resolver{}),
+		QUICDialer: MockSNIQUICDialer{namech: namech},
+		TLSConfig:  &tls.Config{ServerName: sni}})
 	req, err := http.NewRequest("GET", "https://www.google.com", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -67,7 +70,9 @@ func TestHTTP3TransportSNINoVerify(t *testing.T) {
 	namech := make(chan string, 1)
 	sni := "sni.org"
 	txp := httptransport.NewHTTP3Transport(httptransport.Config{
-		Dialer: dialer.Default, QUICDialer: MockSNIQUICDialer{namech: namech}, TLSConfig: &tls.Config{ServerName: sni, InsecureSkipVerify: true}})
+		Dialer:     dialer.New(&dialer.Config{}, &net.Resolver{}),
+		QUICDialer: MockSNIQUICDialer{namech: namech},
+		TLSConfig:  &tls.Config{ServerName: sni, InsecureSkipVerify: true}})
 	req, err := http.NewRequest("GET", "https://www.google.com", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -89,7 +94,9 @@ func TestHTTP3TransportCABundle(t *testing.T) {
 	certch := make(chan *x509.CertPool, 1)
 	certpool := x509.NewCertPool()
 	txp := httptransport.NewHTTP3Transport(httptransport.Config{
-		Dialer: dialer.Default, QUICDialer: MockCertQUICDialer{certch: certch}, TLSConfig: &tls.Config{RootCAs: certpool}})
+		Dialer:     dialer.New(&dialer.Config{}, &net.Resolver{}),
+		QUICDialer: MockCertQUICDialer{certch: certch},
+		TLSConfig:  &tls.Config{RootCAs: certpool}})
 	req, err := http.NewRequest("GET", "https://www.google.com", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -114,7 +121,8 @@ func TestHTTP3TransportCABundle(t *testing.T) {
 
 func TestUnitHTTP3TransportSuccess(t *testing.T) {
 	txp := httptransport.NewHTTP3Transport(httptransport.Config{
-		Dialer: dialer.Default, QUICDialer: MockQUICDialer{}})
+		Dialer:     dialer.New(&dialer.Config{}, &net.Resolver{}),
+		QUICDialer: MockQUICDialer{}})
 
 	req, err := http.NewRequest("GET", "https://www.google.com", nil)
 	if err != nil {
@@ -134,7 +142,8 @@ func TestUnitHTTP3TransportSuccess(t *testing.T) {
 
 func TestUnitHTTP3TransportFailure(t *testing.T) {
 	txp := httptransport.NewHTTP3Transport(httptransport.Config{
-		Dialer: dialer.Default, QUICDialer: MockQUICDialer{}})
+		Dialer:     dialer.New(&dialer.Config{}, &net.Resolver{}),
+		QUICDialer: MockQUICDialer{}})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // so that the request immediately fails
