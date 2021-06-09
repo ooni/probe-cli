@@ -146,24 +146,13 @@ func NewDialer(config Config) Dialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	var d Dialer = dialer.Default
-	d = dialer.ErrorWrapperDialer{Dialer: d}
-	if config.Logger != nil {
-		d = dialer.LoggingDialer{Dialer: d, Logger: config.Logger}
-	}
-	if config.DialSaver != nil {
-		d = dialer.SaverDialer{Dialer: d, Saver: config.DialSaver}
-	}
-	if config.ReadWriteSaver != nil {
-		d = dialer.SaverConnDialer{Dialer: d, Saver: config.ReadWriteSaver}
-	}
-	d = dialer.DNSDialer{Resolver: config.FullResolver, Dialer: d}
-	d = dialer.ProxyDialer{ProxyURL: config.ProxyURL, Dialer: d}
-	if config.ContextByteCounting {
-		d = dialer.ByteCounterDialer{Dialer: d}
-	}
-	d = dialer.ShapingDialer{Dialer: d}
-	return d
+	return dialer.New(&dialer.Config{
+		ContextByteCounting: config.ContextByteCounting,
+		DialSaver:           config.DialSaver,
+		Logger:              config.Logger,
+		ProxyURL:            config.ProxyURL,
+		ReadWriteSaver:      config.ReadWriteSaver,
+	}, config.FullResolver)
 }
 
 // NewQUICDialer creates a new DNS Dialer for QUIC, with the resolver from the specified config

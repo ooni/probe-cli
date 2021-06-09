@@ -1,4 +1,4 @@
-package dialer_test
+package dialer
 
 import (
 	"context"
@@ -7,13 +7,12 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 )
 
 func TestDNSDialerNoPort(t *testing.T) {
-	dialer := dialer.DNSDialer{Dialer: new(net.Dialer), Resolver: new(net.Resolver)}
+	dialer := &dnsDialer{Dialer: new(net.Dialer), Resolver: new(net.Resolver)}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "antani.ooni.nu")
 	if err == nil {
 		t.Fatal("expected an error here")
@@ -24,10 +23,10 @@ func TestDNSDialerNoPort(t *testing.T) {
 }
 
 func TestDNSDialerLookupHostAddress(t *testing.T) {
-	dialer := dialer.DNSDialer{Dialer: new(net.Dialer), Resolver: MockableResolver{
+	dialer := &dnsDialer{Dialer: new(net.Dialer), Resolver: MockableResolver{
 		Err: errors.New("mocked error"),
 	}}
-	addrs, err := dialer.LookupHost(context.Background(), "1.1.1.1")
+	addrs, err := dialer.lookupHost(context.Background(), "1.1.1.1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +37,7 @@ func TestDNSDialerLookupHostAddress(t *testing.T) {
 
 func TestDNSDialerLookupHostFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	dialer := dialer.DNSDialer{Dialer: new(net.Dialer), Resolver: MockableResolver{
+	dialer := &dnsDialer{Dialer: new(net.Dialer), Resolver: MockableResolver{
 		Err: expected,
 	}}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "dns.google.com:853")
@@ -60,7 +59,7 @@ func (r MockableResolver) LookupHost(ctx context.Context, host string) ([]string
 }
 
 func TestDNSDialerDialForSingleIPFails(t *testing.T) {
-	dialer := dialer.DNSDialer{Dialer: mockablex.Dialer{
+	dialer := &dnsDialer{Dialer: mockablex.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
@@ -75,7 +74,7 @@ func TestDNSDialerDialForSingleIPFails(t *testing.T) {
 }
 
 func TestDNSDialerDialForManyIPFails(t *testing.T) {
-	dialer := dialer.DNSDialer{
+	dialer := &dnsDialer{
 		Dialer: mockablex.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, io.EOF
@@ -93,7 +92,7 @@ func TestDNSDialerDialForManyIPFails(t *testing.T) {
 }
 
 func TestDNSDialerDialForManyIPSuccess(t *testing.T) {
-	dialer := dialer.DNSDialer{Dialer: mockablex.Dialer{
+	dialer := &dnsDialer{Dialer: mockablex.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return &mockablex.Conn{
 				MockClose: func() error {
@@ -114,12 +113,9 @@ func TestDNSDialerDialForManyIPSuccess(t *testing.T) {
 	conn.Close()
 }
 
-// TODO(bassosimone): remove the dialID etc since the only
-// test still using legacy/netx does not care.
-
 func TestReduceErrors(t *testing.T) {
 	t.Run("no errors", func(t *testing.T) {
-		result := dialer.ReduceErrors(nil)
+		result := ReduceErrors(nil)
 		if result != nil {
 			t.Fatal("wrong result")
 		}
@@ -127,7 +123,7 @@ func TestReduceErrors(t *testing.T) {
 
 	t.Run("single error", func(t *testing.T) {
 		err := errors.New("mocked error")
-		result := dialer.ReduceErrors([]error{err})
+		result := ReduceErrors([]error{err})
 		if result != err {
 			t.Fatal("wrong result")
 		}
@@ -136,7 +132,7 @@ func TestReduceErrors(t *testing.T) {
 	t.Run("multiple errors", func(t *testing.T) {
 		err1 := errors.New("mocked error #1")
 		err2 := errors.New("mocked error #2")
-		result := dialer.ReduceErrors([]error{err1, err2})
+		result := ReduceErrors([]error{err1, err2})
 		if result.Error() != "mocked error #1" {
 			t.Fatal("wrong result")
 		}
@@ -151,7 +147,7 @@ func TestReduceErrors(t *testing.T) {
 			Failure: errorx.FailureConnectionRefused,
 		}
 		err4 := errors.New("mocked error #3")
-		result := dialer.ReduceErrors([]error{err1, err2, err3, err4})
+		result := ReduceErrors([]error{err1, err2, err3, err4})
 		if result.Error() != errorx.FailureConnectionRefused {
 			t.Fatal("wrong result")
 		}

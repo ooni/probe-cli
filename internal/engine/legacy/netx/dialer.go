@@ -64,17 +64,11 @@ func maybeWithMeasurementRoot(
 // - dialer.Default
 //
 // If you have others needs, manually build the chain you need.
-func newDNSDialer(resolver dialer.Resolver) dialer.DNSDialer {
-	return dialer.DNSDialer{
-		Dialer: EmitterDialer{
-			Dialer: dialer.ErrorWrapperDialer{
-				Dialer: dialer.ByteCounterDialer{
-					Dialer: dialer.Default,
-				},
-			},
-		},
-		Resolver: resolver,
-	}
+func newDNSDialer(resolver dialer.Resolver) dialer.Dialer {
+	return &EmitterDialer{dialer.New(&dialer.Config{
+		ContextByteCounting: true,
+		Logger:              nil,
+	}, resolver)}
 }
 
 // DialContext is like Dial but the context allows to interrupt a

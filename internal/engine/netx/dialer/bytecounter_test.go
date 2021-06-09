@@ -1,4 +1,4 @@
-package dialer_test
+package dialer
 
 import (
 	"context"
@@ -10,14 +10,13 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 )
 
 func dorequest(ctx context.Context, url string) error {
 	txp := http.DefaultTransport.(*http.Transport).Clone()
 	defer txp.CloseIdleConnections()
-	dialer := dialer.ByteCounterDialer{Dialer: new(net.Dialer)}
+	dialer := &byteCounterDialer{Dialer: new(net.Dialer)}
 	txp.DialContext = dialer.DialContext
 	client := &http.Client{Transport: txp}
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://www.google.com", nil)
@@ -40,12 +39,12 @@ func TestByteCounterNormalUsage(t *testing.T) {
 	}
 	sess := bytecounter.New()
 	ctx := context.Background()
-	ctx = dialer.WithSessionByteCounter(ctx, sess)
+	ctx = WithSessionByteCounter(ctx, sess)
 	if err := dorequest(ctx, "http://www.google.com"); err != nil {
 		t.Fatal(err)
 	}
 	exp := bytecounter.New()
-	ctx = dialer.WithExperimentByteCounter(ctx, exp)
+	ctx = WithExperimentByteCounter(ctx, exp)
 	if err := dorequest(ctx, "http://facebook.com"); err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +70,7 @@ func TestByteCounterNoHandlers(t *testing.T) {
 }
 
 func TestByteCounterConnectFailure(t *testing.T) {
-	dialer := dialer.ByteCounterDialer{Dialer: mockablex.Dialer{
+	dialer := &byteCounterDialer{Dialer: mockablex.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},

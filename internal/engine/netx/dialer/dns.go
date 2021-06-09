@@ -9,26 +9,21 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
-// Resolver is the interface we expect from a resolver
-type Resolver interface {
-	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
-}
-
-// DNSDialer is a dialer that uses the configured Resolver to resolver a
+// dnsDialer is a dialer that uses the configured Resolver to resolver a
 // domain name to IP addresses, and the configured Dialer to connect.
-type DNSDialer struct {
+type dnsDialer struct {
 	Dialer
 	Resolver Resolver
 }
 
 // DialContext implements Dialer.DialContext.
-func (d DNSDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *dnsDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	onlyhost, onlyport, err := net.SplitHostPort(address)
 	if err != nil {
 		return nil, err
 	}
 	var addrs []string
-	addrs, err = d.LookupHost(ctx, onlyhost)
+	addrs, err = d.lookupHost(ctx, onlyhost)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +39,7 @@ func (d DNSDialer) DialContext(ctx context.Context, network, address string) (ne
 	return nil, ReduceErrors(errorslist)
 }
 
-// ReduceErrors finds a known error in a list of errors since it's probably most relevant
+// ReduceErrors finds a known error in a list of errors since it's probably most relevant.
 func ReduceErrors(errorslist []error) error {
 	if len(errorslist) == 0 {
 		return nil
@@ -67,8 +62,8 @@ func ReduceErrors(errorslist []error) error {
 	return errorslist[0]
 }
 
-// LookupHost implements Resolver.LookupHost
-func (d DNSDialer) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+// lookupHost performs a domain name resolution.
+func (d *dnsDialer) lookupHost(ctx context.Context, hostname string) ([]string, error) {
 	if net.ParseIP(hostname) != nil {
 		return []string{hostname}, nil
 	}

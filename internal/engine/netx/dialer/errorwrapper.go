@@ -7,13 +7,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
-// ErrorWrapperDialer is a dialer that performs err wrapping
-type ErrorWrapperDialer struct {
+// errorWrapperDialer is a dialer that performs err wrapping
+type errorWrapperDialer struct {
 	Dialer
 }
 
 // DialContext implements Dialer.DialContext
-func (d ErrorWrapperDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *errorWrapperDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	err = errorx.SafeErrWrapperBuilder{
 		Error:     err,
@@ -22,16 +22,16 @@ func (d ErrorWrapperDialer) DialContext(ctx context.Context, network, address st
 	if err != nil {
 		return nil, err
 	}
-	return &ErrorWrapperConn{Conn: conn}, nil
+	return &errorWrapperConn{Conn: conn}, nil
 }
 
-// ErrorWrapperConn is a net.Conn that performs error wrapping.
-type ErrorWrapperConn struct {
+// errorWrapperConn is a net.Conn that performs error wrapping.
+type errorWrapperConn struct {
 	net.Conn
 }
 
 // Read implements net.Conn.Read
-func (c ErrorWrapperConn) Read(b []byte) (n int, err error) {
+func (c *errorWrapperConn) Read(b []byte) (n int, err error) {
 	n, err = c.Conn.Read(b)
 	err = errorx.SafeErrWrapperBuilder{
 		Error:     err,
@@ -41,7 +41,7 @@ func (c ErrorWrapperConn) Read(b []byte) (n int, err error) {
 }
 
 // Write implements net.Conn.Write
-func (c ErrorWrapperConn) Write(b []byte) (n int, err error) {
+func (c *errorWrapperConn) Write(b []byte) (n int, err error) {
 	n, err = c.Conn.Write(b)
 	err = errorx.SafeErrWrapperBuilder{
 		Error:     err,
@@ -51,7 +51,7 @@ func (c ErrorWrapperConn) Write(b []byte) (n int, err error) {
 }
 
 // Close implements net.Conn.Close
-func (c ErrorWrapperConn) Close() (err error) {
+func (c *errorWrapperConn) Close() (err error) {
 	err = c.Conn.Close()
 	err = errorx.SafeErrWrapperBuilder{
 		Error:     err,
