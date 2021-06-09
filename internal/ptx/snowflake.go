@@ -1,0 +1,118 @@
+package ptx
+
+import (
+	"context"
+	"net"
+
+	"git.torproject.org/pluggable-transports/snowflake.git/client/lib"
+)
+
+// SnowflakeDialer is a dialer for snowflake. When optional fields are
+// not specified, we use defaults from the snowflake repository.
+type SnowflakeDialer struct {
+	// BrokerURL is the optional broker URL. If not specified,
+	// we will be using a sensible default value.
+	BrokerURL string
+
+	// FrontDomain is the domain to use for fronting. If not
+	// specified, we will be using a sensible default.
+	FrontDomain string
+
+	// ICEAddresses contains the addresses to use for ICE. If not
+	// specified, we will be using a sensible default.
+	ICEAddresses []string
+
+	// MaxSnowflakes is the maximum number of snowflakes we
+	// should create per dialer. If negative or zero, we will
+	// be using a sensible default.
+	MaxSnowflakes int
+}
+
+// DialContext establishes a connection with the given obfs4 proxy. The context
+// argument allows to interrupt this operation midway.
+func (d *SnowflakeDialer) DialContext(ctx context.Context) (net.Conn, error) {
+	txp, err := lib.NewSnowflakeClient(
+		d.brokerURL(), d.frontDomain(), d.iceAddresses(),
+		false, d.maxSnowflakes(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	connch, errch := make(chan net.Conn), make(chan error, 1)
+	go func() {
+		conn, err := txp.Dial()
+		if err != nil {
+			errch <- err // buffered channel
+			return
+		}
+		select {
+		case connch <- conn:
+		default:
+			conn.Close() // context won the race
+		}
+	}()
+	select {
+	case conn := <-connch:
+		return conn, nil
+	case err := <-errch:
+		return nil, err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+// brokerURL returns a suitable broker URL.
+func (d *SnowflakeDialer) brokerURL() string {
+	if d.BrokerURL != "" {
+		return d.BrokerURL
+	}
+	return "https://snowflake-broker.torproject.net.global.prod.fastly.net/"
+}
+
+// frontDomain returns a suitable front domain.
+func (d *SnowflakeDialer) frontDomain() string {
+	if d.FrontDomain != "" {
+		return d.FrontDomain
+	}
+	return "cdn.sstatic.net"
+}
+
+// iceAddresses returns suitable ICE addresses.
+func (d *SnowflakeDialer) iceAddresses() []string {
+	if len(d.ICEAddresses) > 0 {
+		return d.ICEAddresses
+	}
+	return []string{
+		"stun:stun.voip.blackberry.com:3478",
+		"stun:stun.altar.com.pl:3478",
+		"stun:stun.antisip.com:3478",
+		"stun:stun.bluesip.net:3478",
+		"stun:stun.dus.net:3478",
+		"stun:stun.epygi.com:3478",
+		"stun:stun.sonetel.com:3478",
+		"stun:stun.sonetel.net:3478",
+		"stun:stun.stunprotocol.org:3478",
+		"stun:stun.uls.co.za:3478",
+		"stun:stun.voipgate.com:3478",
+		"stun:stun.voys.nl:3478",
+	}
+}
+
+// maxSnowflakes returns the number of snowflakes to collect.
+func (d *SnowflakeDialer) maxSnowflakes() int {
+	if d.MaxSnowflakes > 0 {
+		return d.MaxSnowflakes
+	}
+	return 3
+}
+
+// AsBridgeArgument returns the argument to be passed to
+// the tor command line to declare this bridge.
+func (d *SnowflakeDialer) AsBridgeArgument() string {
+	return "snowflake 192.0.2.3:1 2B280B23E1107BB62ABFC40DDCC8824814F80A72"
+}
+
+// Name returns the pluggable transport name.
+func (d *SnowflakeDialer) Name() string {
+	return "snowflake"
+}
