@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
+	"time"
 
 	pt "git.torproject.org/pluggable-transports/goptlib.git"
 	"gitlab.com/yawning/obfs4.git/transports/base"
@@ -83,12 +84,14 @@ func (d *OBFS4Dialer) parseargs(factory base.ClientFactory) (interface{}, error)
 	return factory.ParseArgs(args)
 }
 
-// underlyingDialer returns a suitable underlying underlying dialer.
+// underlyingDialer returns a suitable underlying dialer.
 func (d *OBFS4Dialer) underlyingDialer() UnderlyingDialer {
 	if d.UnderlyingDialer != nil {
 		return d.UnderlyingDialer
 	}
-	return &net.Dialer{}
+	return &net.Dialer{
+		Timeout: 15 * time.Second, // eventually interrupt connect
+	}
 }
 
 // obfs4dialer implements OBFS4Dialer.

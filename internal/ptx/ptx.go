@@ -80,7 +80,7 @@ type Listener struct {
 	// mu provides mutual exclusion for accessing internals.
 	mu sync.Mutex
 
-	// cancel allows to stop the obfs4 listener.
+	// cancel allows to stop the listener.
 	cancel context.CancelFunc
 
 	// laddr is the listen address.
@@ -129,7 +129,7 @@ func (lst *Listener) forwardWithContext(ctx context.Context, left, right net.Con
 }
 
 // handleSocksConn handles a new SocksConn connection by establishing
-// the corresponding OBFS4 connection and forwarding traffic. This
+// the corresponding PT connection and forwarding traffic. This
 // function TAKES OWNERSHIP of the socksConn argument.
 func (lst *Listener) handleSocksConn(ctx context.Context, socksConn *pt.SocksConn) {
 	err := socksConn.Grant(&net.TCPAddr{IP: net.IPv4zero, Port: 0})
@@ -140,7 +140,7 @@ func (lst *Listener) handleSocksConn(ctx context.Context, socksConn *pt.SocksCon
 	ptConn, err := lst.ContextDialer.DialContext(ctx)
 	if err != nil {
 		socksConn.Close() // we own it
-		lst.logger().Warnf("ptx: factory.Dial error: %s", err)
+		lst.logger().Warnf("ptx: ContextDialer.DialContext error: %s", err)
 		return
 	}
 	lst.forwardWithContext(ctx, socksConn, ptConn)

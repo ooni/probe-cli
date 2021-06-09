@@ -28,7 +28,7 @@ type SnowflakeDialer struct {
 	MaxSnowflakes int
 }
 
-// DialContext establishes a connection with the given obfs4 proxy. The context
+// DialContext establishes a connection with the given SF proxy. The context
 // argument allows to interrupt this operation midway.
 func (d *SnowflakeDialer) DialContext(ctx context.Context) (net.Conn, error) {
 	txp, err := lib.NewSnowflakeClient(
@@ -82,6 +82,7 @@ func (d *SnowflakeDialer) iceAddresses() []string {
 	if len(d.ICEAddresses) > 0 {
 		return d.ICEAddresses
 	}
+	// TODO(bassosimone): add them to the stunreachability
 	return []string{
 		"stun:stun.voip.blackberry.com:3478",
 		"stun:stun.altar.com.pl:3478",

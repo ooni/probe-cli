@@ -9,8 +9,8 @@ func TestSnowflakeDialerWorks(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	o4d := &SnowflakeDialer{}
-	conn, err := o4d.DialContext(context.Background())
+	sfd := &SnowflakeDialer{}
+	conn, err := sfd.DialContext(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

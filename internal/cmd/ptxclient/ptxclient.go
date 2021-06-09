@@ -1,4 +1,4 @@
-// Package ptxclient is a pluggable transports client. This package
+// Command ptxclient implements a pluggable transports CLI client. This command
 // is only meant for testing and is not production ready.
 package main
 
@@ -26,7 +26,7 @@ func main() {
 	case "obfs4":
 		dialer = ptx.DefaultTestingOBFS4Bridge()
 	default:
-		fmt.Fprintf(os.Stderr, "unknown -mode: %s\n", *mode)
+		fmt.Fprintf(os.Stderr, "unknown pluggable transport: %s\n", *mode)
 		os.Exit(1)
 	}
 	listener := &ptx.Listener{
