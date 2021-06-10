@@ -4,12 +4,12 @@ package tlsdialer
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"net"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/connid"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
 // UnderlyingDialer is the underlying dialer type.
@@ -68,15 +68,22 @@ type ErrorWrapperTLSHandshaker struct {
 func (h ErrorWrapperTLSHandshaker) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {
-	connID := connid.Compute(conn.RemoteAddr().Network(), conn.RemoteAddr().String())
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
-	err = errorx.SafeErrWrapperBuilder{
-		ConnID:    connID,
-		Error:     err,
-		Operation: errorx.TLSHandshakeOperation,
-	}.MaybeBuild()
+	if err != nil {
+		err = ErrTLSHandshake{err}
+	}
 	return tlsconn, state, err
 }
+
+type ErrTLSHandshake struct {
+	error
+}
+
+func (e *ErrTLSHandshake) Unwrap() error {
+	return e.error
+}
+
+var MockErrTLSHandshake *ErrTLSHandshake = &ErrTLSHandshake{errors.New("mock error")}
 
 // EmitterTLSHandshaker emits events using the MeasurementRoot
 type EmitterTLSHandshaker struct {
