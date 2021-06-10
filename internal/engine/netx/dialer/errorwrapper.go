@@ -58,7 +58,6 @@ func (c ErrorWrapperConn) Close() (err error) {
 	return
 }
 
-// TODO(kelmenhorst): why do we use different types here? maybe just one struct with a field indicating the operation? this would avoid using errors.As..
 type ErrDial struct {
 	error
 }
