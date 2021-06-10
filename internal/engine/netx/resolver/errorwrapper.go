@@ -27,6 +27,6 @@ func (e *ErrResolve) Unwrap() error {
 	return e.error
 }
 
-var MockErrResolve *ErrResolve = &ErrResolve{errors.New("mock error")}
+var MockErrResolve ErrResolve = ErrResolve{errors.New("mock error")}
 
 var _ Resolver = ErrorWrapperResolver{}

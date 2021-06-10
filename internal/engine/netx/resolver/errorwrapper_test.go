@@ -7,6 +7,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 )
@@ -36,23 +37,14 @@ func TestErrorWrapperFailure(t *testing.T) {
 	if addrs != nil {
 		t.Fatal("expected nil addr here")
 	}
-	var errWrapper *errorx.ErrWrapper
-	if !errors.As(err, &errWrapper) {
+	var resolveErr resolver.ErrResolve
+	if !errors.As(err, &resolveErr) {
 		t.Fatal("cannot properly cast the returned error")
 	}
-	if errWrapper.Failure != errorx.FailureDNSNXDOMAINError {
+	if *archival.NewFailure(err) != errorx.FailureDNSNXDOMAINError {
 		t.Fatal("unexpected failure")
 	}
-	if errWrapper.ConnID != 0 {
-		t.Fatal("unexpected ConnID")
-	}
-	if errWrapper.DialID == 0 {
-		t.Fatal("unexpected DialID")
-	}
-	if errWrapper.TransactionID == 0 {
-		t.Fatal("unexpected TransactionID")
-	}
-	if errWrapper.Operation != errorx.ResolveOperation {
-		t.Fatal("unexpected Operation")
+	if *archival.NewFailedOperation(err) != errorx.ResolveOperation {
+		t.Fatal("unexpected Operation", *archival.NewFailedOperation(err))
 	}
 }

@@ -49,6 +49,6 @@ func (e *ErrReadFrom) Unwrap() error {
 }
 
 // export for for testing purposes
-var MockErrDial *ErrDial = &ErrDial{errors.New("mock error")}
-var MockErrReadFrom *ErrReadFrom = &ErrReadFrom{errors.New("mock error")}
-var MockErrWriteTo *ErrWriteTo = &ErrWriteTo{errors.New("mock error")}
+var MockErrDial ErrDial = ErrDial{errors.New("mock error")}
+var MockErrReadFrom ErrReadFrom = ErrReadFrom{errors.New("mock error")}
+var MockErrWriteTo ErrWriteTo = ErrWriteTo{errors.New("mock error")}

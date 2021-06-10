@@ -83,7 +83,7 @@ func (e *ErrTLSHandshake) Unwrap() error {
 	return e.error
 }
 
-var MockErrTLSHandshake *ErrTLSHandshake = &ErrTLSHandshake{errors.New("mock error")}
+var MockErrTLSHandshake ErrTLSHandshake = ErrTLSHandshake{errors.New("mock error")}
 
 // EmitterTLSHandshaker emits events using the MeasurementRoot
 type EmitterTLSHandshaker struct {

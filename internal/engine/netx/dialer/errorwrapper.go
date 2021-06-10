@@ -92,7 +92,7 @@ func (e *ErrClose) Unwrap() error {
 }
 
 // export for for testing purposes
-var MockErrDial *ErrDial = &ErrDial{errors.New("mock error")}
-var MockErrRead *ErrRead = &ErrRead{errors.New("mock error")}
-var MockErrWrite *ErrWrite = &ErrWrite{errors.New("mock error")}
-var MockErrClose *ErrClose = &ErrClose{errors.New("mock error")}
+var MockErrDial ErrDial = ErrDial{errors.New("mock error")}
+var MockErrRead ErrRead = ErrRead{errors.New("mock error")}
+var MockErrWrite ErrWrite = ErrWrite{errors.New("mock error")}
+var MockErrClose ErrClose = ErrClose{errors.New("mock error")}

@@ -223,15 +223,15 @@ func NewFailedOperation(err error) *string {
 		return nil
 	}
 	var (
-		dialErr      *dialer.ErrDial
-		readErr      *dialer.ErrRead
-		writeErr     *dialer.ErrWrite
-		closeErr     *dialer.ErrClose
-		handshakeErr *tlsdialer.ErrTLSHandshake
-		qDialErr     *quicdialer.ErrDial
-		readfromErr  *quicdialer.ErrReadFrom
-		writetoErr   *quicdialer.ErrWriteTo
-		resolveErr   *resolver.ErrResolve
+		dialErr      dialer.ErrDial
+		readErr      dialer.ErrRead
+		writeErr     dialer.ErrWrite
+		closeErr     dialer.ErrClose
+		handshakeErr tlsdialer.ErrTLSHandshake
+		qDialErr     quicdialer.ErrDial
+		readfromErr  quicdialer.ErrReadFrom
+		writetoErr   quicdialer.ErrWriteTo
+		resolveErr   resolver.ErrResolve
 	)
 	var s string
 	switch {
