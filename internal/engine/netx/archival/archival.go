@@ -236,23 +236,23 @@ func NewFailedOperation(err error) *string {
 	var s string
 	switch {
 	case errors.As(err, &dialErr) || errors.As(err, &qDialErr):
-		s = "connect"
+		s = errorx.ConnectOperation
 	case errors.As(err, &readErr):
-		s = "read"
+		s = errorx.ReadOperation
 	case errors.As(err, &readfromErr):
-		s = "read_from"
+		s = errorx.ReadFromOperation
 	case errors.As(err, &writeErr):
-		s = "write"
+		s = errorx.WriteOperation
 	case errors.As(err, &writetoErr):
-		s = "write_to"
+		s = errorx.WriteToOperation
 	case errors.As(err, &handshakeErr):
-		s = "tls_handshake"
+		s = errorx.TLSHandshakeOperation
 	case errors.As(err, &closeErr):
-		s = "close"
+		s = errorx.CloseOperation
 	case errors.As(err, &resolveErr):
-		s = "resolve"
+		s = errorx.ResolveOperation
 	default:
-		s = "top_level"
+		s = errorx.TopLevelOperation
 	}
 	return &s
 }
