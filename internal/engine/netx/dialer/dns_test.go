@@ -11,7 +11,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
 func TestDNSDialerNoPort(t *testing.T) {
@@ -127,45 +126,4 @@ func TestDNSDialerDialSetsDialID(t *testing.T) {
 			t.Fatal("unexpected DialID")
 		}
 	}
-}
-
-func TestReduceErrors(t *testing.T) {
-	t.Run("no errors", func(t *testing.T) {
-		result := dialer.ReduceErrors(nil)
-		if result != nil {
-			t.Fatal("wrong result")
-		}
-	})
-
-	t.Run("single error", func(t *testing.T) {
-		err := errors.New("mocked error")
-		result := dialer.ReduceErrors([]error{err})
-		if result != err {
-			t.Fatal("wrong result")
-		}
-	})
-
-	t.Run("multiple errors", func(t *testing.T) {
-		err1 := errors.New("mocked error #1")
-		err2 := errors.New("mocked error #2")
-		result := dialer.ReduceErrors([]error{err1, err2})
-		if result.Error() != "mocked error #1" {
-			t.Fatal("wrong result")
-		}
-	})
-
-	t.Run("multiple errors with meaningful ones", func(t *testing.T) {
-		err1 := errors.New("mocked error #1")
-		err2 := &errorx.ErrWrapper{
-			Failure: "unknown_failure: antani",
-		}
-		err3 := &errorx.ErrWrapper{
-			Failure: errorx.FailureConnectionRefused,
-		}
-		err4 := errors.New("mocked error #3")
-		result := dialer.ReduceErrors([]error{err1, err2, err3, err4})
-		if result.Error() != errorx.FailureConnectionRefused {
-			t.Fatal("wrong result")
-		}
-	})
 }

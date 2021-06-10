@@ -98,9 +98,9 @@ func TestDNSDialerInvalidPort(t *testing.T) {
 	if sess != nil {
 		t.Fatal("expected nil sess")
 	}
-	if !strings.HasSuffix(err.Error(), "sendto: invalid argument") &&
+	if !strings.Contains(err.Error(), "sendto: invalid argument") &&
 		!strings.HasSuffix(err.Error(), "sendto: can't assign requested address") {
-		t.Fatal("not the error we expected")
+		t.Fatal("not the error we expected", err.Error())
 	}
 }
 

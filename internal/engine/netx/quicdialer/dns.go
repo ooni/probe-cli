@@ -3,11 +3,12 @@ package quicdialer
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/multierror"
 )
 
 // DNSDialer is a dialer that uses the configured Resolver to resolve a
@@ -36,7 +37,8 @@ func (d DNSDialer) DialContext(
 	if err != nil {
 		return nil, err
 	}
-	var errorslist []error
+	root := errors.New("address retry")
+	errorunion := multierror.New(root)
 	for _, addr := range addrs {
 		target := net.JoinHostPort(addr, onlyport)
 		sess, err := d.Dialer.DialContext(
@@ -44,10 +46,9 @@ func (d DNSDialer) DialContext(
 		if err == nil {
 			return sess, nil
 		}
-		errorslist = append(errorslist, err)
+		errorunion.Add(err)
 	}
-	// TODO(bassosimone): maybe ReduceErrors could be in netx/internal.
-	return nil, dialer.ReduceErrors(errorslist)
+	return nil, errorunion
 }
 
 // LookupHost implements Resolver.LookupHost
