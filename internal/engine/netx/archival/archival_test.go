@@ -380,7 +380,7 @@ func TestNewDNSQueriesList(t *testing.T) {
 		args: args{
 			begin: begin,
 			events: []trace.Event{{
-				Err:      &errorx.ErrWrapper{Failure: errorx.FailureDNSNXDOMAINError},
+				Err:      dialer.NewErrDial(errorx.ErrDNSBogon),
 				Hostname: "dns.google.com",
 				Name:     "resolve_done",
 				Time:     begin.Add(200 * time.Millisecond),
@@ -389,14 +389,14 @@ func TestNewDNSQueriesList(t *testing.T) {
 		want: []archival.DNSQueryEntry{{
 			Answers: nil,
 			Failure: archival.NewFailure(
-				&errorx.ErrWrapper{Failure: errorx.FailureDNSNXDOMAINError}),
+				dialer.NewErrDial(errorx.ErrDNSBogon)),
 			Hostname:  "dns.google.com",
 			QueryType: "A",
 			T:         0.2,
 		}, {
 			Answers: nil,
 			Failure: archival.NewFailure(
-				&errorx.ErrWrapper{Failure: errorx.FailureDNSNXDOMAINError}),
+				dialer.NewErrDial(errorx.ErrDNSBogon)),
 			Hostname:  "dns.google.com",
 			QueryType: "AAAA",
 			T:         0.2,

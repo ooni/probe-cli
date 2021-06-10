@@ -67,6 +67,10 @@ func (e *ErrDial) Unwrap() error {
 	return e.error
 }
 
+func NewErrDial(e error) *ErrDial {
+	return &ErrDial{e}
+}
+
 type ErrWrite struct {
 	error
 }

@@ -3,12 +3,9 @@ package modelx
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"math"
 	"testing"
 	"time"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
 func TestNewTLSConnectionState(t *testing.T) {
@@ -57,20 +54,6 @@ func TestMeasurementRootWithMeasurementRootPanic(t *testing.T) {
 	}()
 	ctx := context.Background()
 	_ = WithMeasurementRoot(ctx, nil)
-}
-
-func TestErrWrapperPublicAPI(t *testing.T) {
-	child := errors.New("mocked error")
-	wrapper := &errorx.ErrWrapper{
-		Failure:    "moobar",
-		WrappedErr: child,
-	}
-	if wrapper.Error() != "moobar" {
-		t.Fatal("The Error() method is misbehaving")
-	}
-	if wrapper.Unwrap() != child {
-		t.Fatal("The Unwrap() method is misbehaving")
-	}
 }
 
 func TestComputeBodySnapSize(t *testing.T) {
