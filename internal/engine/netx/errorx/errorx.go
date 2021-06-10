@@ -2,14 +2,7 @@
 package errorx
 
 import (
-	"context"
-	"crypto/x509"
 	"errors"
-	"fmt"
-	"strings"
-	"syscall"
-
-	"github.com/lucas-clemente/quic-go"
 )
 
 const (
@@ -177,146 +170,12 @@ type SafeErrWrapperBuilder struct {
 // a nil error value, instead, if b.Error is nil.
 func (b SafeErrWrapperBuilder) MaybeBuild() (err error) {
 	if b.Error != nil {
-		failureString := toFailureString(b.Error)
 		err = &ErrWrapper{
 			ConnID:        b.ConnID,
 			DialID:        b.DialID,
-			Failure:       failureString,
-			Operation:     toOperationString(b.Error, b.Operation),
 			TransactionID: b.TransactionID,
 			WrappedErr:    b.Error,
 		}
 	}
 	return
-}
-
-func toFailureString(err error) string {
-	// The list returned here matches the values used by MK unless
-	// explicitly noted otherwise with a comment.
-
-	var errwrapper *ErrWrapper
-	if errors.As(err, &errwrapper) {
-		return errwrapper.Error() // we've already wrapped it
-	}
-	// filter out system errors
-	var errno syscall.Errno
-	if errors.As(err, &errno) {
-		// checkout https://pkg.go.dev/golang.org/x/sys/windows and https://pkg.go.dev/golang.org/x/sys/unix
-		switch {
-		case errno == 0x68 || errno == 0x2746:
-			return FailureConnectionReset
-		case errno == 0x6f || errno == 0x274D:
-			return FailureConnectionRefused
-			// ...
-		}
-	}
-	if errors.Is(err, ErrDNSBogon) {
-		return FailureDNSBogonError // not in MK
-	}
-	if errors.Is(err, context.Canceled) {
-		return FailureInterrupted
-	}
-	var x509HostnameError x509.HostnameError
-	if errors.As(err, &x509HostnameError) {
-		// Test case: https://wrong.host.badssl.com/
-		return FailureSSLInvalidHostname
-	}
-	var x509UnknownAuthorityError x509.UnknownAuthorityError
-	if errors.As(err, &x509UnknownAuthorityError) {
-		// Test case: https://self-signed.badssl.com/. This error has
-		// never been among the ones returned by MK.
-		return FailureSSLUnknownAuthority
-	}
-	var x509CertificateInvalidError x509.CertificateInvalidError
-	if errors.As(err, &x509CertificateInvalidError) {
-		// Test case: https://expired.badssl.com/
-		return FailureSSLInvalidCertificate
-	}
-
-	s := err.Error()
-	if strings.HasSuffix(s, "operation was canceled") {
-		return FailureInterrupted
-	}
-	if strings.HasSuffix(s, "EOF") {
-		return FailureEOFError
-	}
-	if strings.HasSuffix(s, "context deadline exceeded") {
-		return FailureGenericTimeoutError
-	}
-	if strings.HasSuffix(s, "transaction is timed out") {
-		return FailureGenericTimeoutError
-	}
-	if strings.HasSuffix(s, "i/o timeout") {
-		return FailureGenericTimeoutError
-	}
-	if strings.HasSuffix(s, "TLS handshake timeout") {
-		return FailureGenericTimeoutError
-	}
-	if strings.HasSuffix(s, "no such host") {
-		// This is dns_lookup_error in MK but such error is used as a
-		// generic "hey, the lookup failed" error. Instead, this error
-		// that we return here is significantly more specific.
-		return FailureDNSNXDOMAINError
-	}
-
-	// TODO(kelmenhorst): see whether it is possible to match errors
-	// from qtls rather than strings for TLS errors below.
-	//
-	// special QUIC errors
-	var versionNegotiation *quic.VersionNegotiationError
-	var statelessReset *quic.StatelessResetError
-	var handshakeTimeout *quic.HandshakeTimeoutError
-	var idleTimeout *quic.IdleTimeoutError
-	var transportError *quic.TransportError
-
-	if errors.As(err, &versionNegotiation) {
-		return FailureNoCompatibleQUICVersion
-	}
-	if errors.As(err, &statelessReset) {
-		return FailureConnectionReset
-	}
-	if errors.As(err, &handshakeTimeout) {
-		return FailureGenericTimeoutError
-	}
-	if errors.As(err, &idleTimeout) {
-		return FailureGenericTimeoutError
-	}
-	if errors.As(err, &transportError) {
-		if transportError.ErrorCode == quic.ConnectionRefused {
-			return FailureConnectionRefused
-		}
-	}
-	formatted := fmt.Sprintf("unknown_failure: %s", s)
-	return Scrub(formatted) // scrub IP addresses in the error
-}
-
-func toOperationString(err error, operation string) string {
-	var errwrapper *ErrWrapper
-	if errors.As(err, &errwrapper) {
-		// Basically, as explained in ErrWrapper docs, let's
-		// keep the child major operation, if any.
-		if errwrapper.Operation == ConnectOperation {
-			return errwrapper.Operation
-		}
-		if errwrapper.Operation == HTTPRoundTripOperation {
-			return errwrapper.Operation
-		}
-		if errwrapper.Operation == ResolveOperation {
-			return errwrapper.Operation
-		}
-		if errwrapper.Operation == TLSHandshakeOperation {
-			return errwrapper.Operation
-		}
-		if errwrapper.Operation == QUICHandshakeOperation {
-			return errwrapper.Operation
-		}
-		if errwrapper.Operation == "quic_handshake_start" {
-			return QUICHandshakeOperation
-		}
-		if errwrapper.Operation == "quic_handshake_done" {
-			return QUICHandshakeOperation
-		}
-		// FALLTHROUGH
-	}
-	return operation
 }

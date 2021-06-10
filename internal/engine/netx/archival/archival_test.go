@@ -2,22 +2,29 @@ package archival_test
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"reflect"
+	"syscall"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/gorilla/websocket"
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/pion/stun"
 )
 
 func TestNewTCPConnectList(t *testing.T) {
@@ -931,21 +938,10 @@ func TestNewFailure(t *testing.T) {
 	}, {
 		name: "when error is wrapped and failure meaningful",
 		args: args{
-			err: &errorx.ErrWrapper{
-				Failure: errorx.FailureConnectionRefused,
-			},
+			err: dialer.MockErrDial,
 		},
 		want: func() *string {
-			s := errorx.FailureConnectionRefused
-			return &s
-		}(),
-	}, {
-		name: "when error is wrapped and failure is not meaningful",
-		args: args{
-			err: &errorx.ErrWrapper{},
-		},
-		want: func() *string {
-			s := "unknown_failure: errWrapper.Failure is empty"
+			s := "unknown_failure: mock error"
 			return &s
 		}(),
 	}, {
@@ -1064,7 +1060,26 @@ func TestNewFailedOperation(t *testing.T) {
 			s := errorx.WriteToOperation
 			return &s
 		})(),
-	}}
+	},
+		{
+			name: "With ErrResolve",
+			args: args{
+				err: resolver.MockErrResolve,
+			},
+			want: (func() *string {
+				s := errorx.ResolveOperation
+				return &s
+			})(),
+		}, {
+			name: "With top level operation",
+			args: args{
+				err: io.EOF,
+			},
+			want: (func() *string {
+				s := errorx.TopLevelOperation
+				return &s
+			})(),
+		}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := archival.NewFailedOperation(tt.args.err)
@@ -1085,4 +1100,163 @@ func TestNewFailedOperation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestToFailureString(t *testing.T) {
+	t.Run("for ErrDNSBogon", func(t *testing.T) {
+		if archival.ToFailureString(errorx.ErrDNSBogon) != errorx.FailureDNSBogonError {
+			t.Fatal("unexpected result")
+		}
+	})
+	t.Run("for context.Canceled", func(t *testing.T) {
+		if archival.ToFailureString(context.Canceled) != errorx.FailureInterrupted {
+			t.Fatal("unexpected result")
+		}
+	})
+	t.Run("for x509.HostnameError", func(t *testing.T) {
+		var err x509.HostnameError
+		if archival.ToFailureString(err) != errorx.FailureSSLInvalidHostname {
+			t.Fatal("unexpected result")
+		}
+	})
+	t.Run("for x509.UnknownAuthorityError", func(t *testing.T) {
+		var err x509.UnknownAuthorityError
+		if archival.ToFailureString(err) != errorx.FailureSSLUnknownAuthority {
+			t.Fatal("unexpected result")
+		}
+	})
+	t.Run("for x509.CertificateInvalidError", func(t *testing.T) {
+		var err x509.CertificateInvalidError
+		if archival.ToFailureString(err) != errorx.FailureSSLInvalidCertificate {
+			t.Fatal("unexpected result")
+		}
+	})
+	t.Run("for operation was canceled error", func(t *testing.T) {
+		if archival.ToFailureString(errors.New("operation was canceled")) != errorx.FailureInterrupted {
+			t.Fatal("unexpected result")
+		}
+	})
+	t.Run("for EOF", func(t *testing.T) {
+		if archival.ToFailureString(io.EOF) != errorx.FailureEOFError {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for connection_refused", func(t *testing.T) {
+		if archival.ToFailureString(syscall.ECONNREFUSED) != errorx.FailureConnectionRefused {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for connection_reset", func(t *testing.T) {
+		if archival.ToFailureString(syscall.ECONNRESET) != errorx.FailureConnectionReset {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for connection_reset wrapped", func(t *testing.T) {
+		if archival.ToFailureString(&net.OpError{Err: syscall.ECONNRESET}) != errorx.FailureConnectionReset {
+			t.Fatal("unexpected results", archival.ToFailureString(&net.DNSConfigError{Err: syscall.ECONNRESET}))
+		}
+	})
+	t.Run("for context deadline exceeded", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 1)
+		defer cancel()
+		<-ctx.Done()
+		if archival.ToFailureString(ctx.Err()) != errorx.FailureGenericTimeoutError {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for stun's transaction is timed out", func(t *testing.T) {
+		if archival.ToFailureString(stun.ErrTransactionTimeOut) != errorx.FailureGenericTimeoutError {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for i/o error", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 1)
+		defer cancel() // fail immediately
+		conn, err := (&net.Dialer{}).DialContext(ctx, "tcp", "www.google.com:80")
+		if err == nil {
+			t.Fatal("expected an error here")
+		}
+		if conn != nil {
+			t.Fatal("expected nil connection here")
+		}
+		if archival.ToFailureString(err) != errorx.FailureGenericTimeoutError {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for TLS handshake timeout error", func(t *testing.T) {
+		err := errors.New("net/http: TLS handshake timeout")
+		if archival.ToFailureString(err) != errorx.FailureGenericTimeoutError {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for no such host", func(t *testing.T) {
+		if archival.ToFailureString(&net.DNSError{
+			Err: "no such host",
+		}) != errorx.FailureDNSNXDOMAINError {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for errors including IPv4 address", func(t *testing.T) {
+		input := errors.New("read tcp 10.0.2.15:56948->93.184.216.34:443: use of closed network connection")
+		expected := "unknown_failure: read tcp [scrubbed]->[scrubbed]: use of closed network connection"
+		out := archival.ToFailureString(input)
+		if out != expected {
+			t.Fatal(cmp.Diff(expected, out))
+		}
+	})
+	t.Run("for errors including IPv6 address", func(t *testing.T) {
+		input := errors.New("read tcp [::1]:56948->[::1]:443: use of closed network connection")
+		expected := "unknown_failure: read tcp [scrubbed]->[scrubbed]: use of closed network connection"
+		out := archival.ToFailureString(input)
+		if out != expected {
+			t.Fatal(cmp.Diff(expected, out))
+		}
+	})
+	// QUIC failures
+	t.Run("for connection_refused", func(t *testing.T) {
+		if archival.ToFailureString(&quic.TransportError{ErrorCode: quic.ConnectionRefused}) != errorx.FailureConnectionRefused {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for connection_reset", func(t *testing.T) {
+		if archival.ToFailureString(&quic.StatelessResetError{}) != errorx.FailureConnectionReset {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for incompatible quic version", func(t *testing.T) {
+		if archival.ToFailureString(&quic.VersionNegotiationError{}) != errorx.FailureNoCompatibleQUICVersion {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for i/o error", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 1)
+		defer cancel() // fail immediately
+		udpAddr := &net.UDPAddr{IP: net.ParseIP("216.58.212.164"), Port: 80, Zone: ""}
+		udpConn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sess, err := quic.DialEarlyContext(ctx, udpConn, udpAddr, "google.com:80", &tls.Config{}, &quic.Config{})
+		if err == nil {
+			t.Fatal("expected an error here")
+		}
+		if sess != nil {
+			t.Fatal("expected nil session here")
+		}
+		if archival.ToFailureString(err) != errorx.FailureGenericTimeoutError {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for QUIC handshake timeout error", func(t *testing.T) {
+		err := &quic.HandshakeTimeoutError{}
+		if archival.ToFailureString(err) != errorx.FailureGenericTimeoutError {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for QUIC connection timeout error", func(t *testing.T) {
+		err := &quic.IdleTimeoutError{}
+		if archival.ToFailureString(err) != errorx.FailureGenericTimeoutError {
+			t.Fatal("unexpected results")
+		}
+	})
 }

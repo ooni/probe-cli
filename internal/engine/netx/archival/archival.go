@@ -4,23 +4,29 @@
 package archival
 
 import (
+	"context"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 	"unicode/utf8"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 )
 
@@ -113,19 +119,102 @@ func NewFailure(err error) *string {
 	if err == nil {
 		return nil
 	}
-	// The following code guarantees that the error is always wrapped even
-	// when we could not actually hit our code that does the wrapping. A case
-	// in which this happen is with context deadline for HTTP.
-	err = errorx.SafeErrWrapperBuilder{
-		Error:     err,
-		Operation: errorx.TopLevelOperation,
-	}.MaybeBuild()
-	errWrapper := err.(*errorx.ErrWrapper)
-	s := errWrapper.Failure
-	if s == "" {
-		s = "unknown_failure: errWrapper.Failure is empty"
-	}
+	s := ToFailureString(err)
 	return &s
+}
+
+func ToFailureString(err error) string {
+	// The list returned here matches the values used by MK unless
+	// explicitly noted otherwise with a comment.
+
+	// filter out system errors
+	var errno syscall.Errno
+	if errors.As(err, &errno) {
+		// checkout https://pkg.go.dev/golang.org/x/sys/windows and https://pkg.go.dev/golang.org/x/sys/unix
+		switch {
+		case errno == 0x68 || errno == 0x2746:
+			return errorx.FailureConnectionReset
+		case errno == 0x6f || errno == 0x274D:
+			return errorx.FailureConnectionRefused
+			// ...
+		}
+	}
+	if errors.Is(err, errorx.ErrDNSBogon) {
+		return errorx.FailureDNSBogonError // not in MK
+	}
+	if errors.Is(err, context.Canceled) {
+		return errorx.FailureInterrupted
+	}
+	var x509HostnameError x509.HostnameError
+	if errors.As(err, &x509HostnameError) {
+		// Test case: https://wrong.host.badssl.com/
+		return errorx.FailureSSLInvalidHostname
+	}
+	var x509UnknownAuthorityError x509.UnknownAuthorityError
+	if errors.As(err, &x509UnknownAuthorityError) {
+		// Test case: https://self-signed.badssl.com/. This error has
+		// never been among the ones returned by MK.
+		return errorx.FailureSSLUnknownAuthority
+	}
+	var x509CertificateInvalidError x509.CertificateInvalidError
+	if errors.As(err, &x509CertificateInvalidError) {
+		// Test case: https://expired.badssl.com/
+		return errorx.FailureSSLInvalidCertificate
+	}
+	s := err.Error()
+	if s == "" {
+		return ""
+	}
+	if strings.HasSuffix(s, "operation was canceled") {
+		return errorx.FailureInterrupted
+	}
+	if strings.HasSuffix(s, "EOF") {
+		return errorx.FailureEOFError
+	}
+	if strings.HasSuffix(s, "context deadline exceeded") {
+		return errorx.FailureGenericTimeoutError
+	}
+	if strings.HasSuffix(s, "transaction is timed out") {
+		return errorx.FailureGenericTimeoutError
+	}
+	if strings.HasSuffix(s, "i/o timeout") {
+		return errorx.FailureGenericTimeoutError
+	}
+	if strings.HasSuffix(s, "TLS handshake timeout") {
+		return errorx.FailureGenericTimeoutError
+	}
+	if strings.HasSuffix(s, "no such host") {
+		// This is dns_lookup_error in MK but such error is used as a
+		// generic "hey, the lookup failed" error. Instead, this error
+		// that we return here is significantly more specific.
+		return errorx.FailureDNSNXDOMAINError
+	}
+	// special QUIC errors
+	var versionNegotiation *quic.VersionNegotiationError
+	var statelessReset *quic.StatelessResetError
+	var handshakeTimeout *quic.HandshakeTimeoutError
+	var idleTimeout *quic.IdleTimeoutError
+	var transportError *quic.TransportError
+
+	if errors.As(err, &versionNegotiation) {
+		return errorx.FailureNoCompatibleQUICVersion
+	}
+	if errors.As(err, &statelessReset) {
+		return errorx.FailureConnectionReset
+	}
+	if errors.As(err, &handshakeTimeout) {
+		return errorx.FailureGenericTimeoutError
+	}
+	if errors.As(err, &idleTimeout) {
+		return errorx.FailureGenericTimeoutError
+	}
+	if errors.As(err, &transportError) {
+		if transportError.ErrorCode == quic.ConnectionRefused {
+			return errorx.FailureConnectionRefused
+		}
+	}
+	formatted := fmt.Sprintf("unknown_failure: %s", s)
+	return errorx.Scrub(formatted) // scrub IP addresses in the error
 }
 
 // NewFailedOperation creates a failed operation string from the given error.
