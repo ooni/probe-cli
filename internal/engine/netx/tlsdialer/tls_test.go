@@ -11,6 +11,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 )
@@ -99,23 +100,20 @@ func TestErrorWrapperTLSHandshakerFailure(t *testing.T) {
 	h := tlsdialer.ErrorWrapperTLSHandshaker{TLSHandshaker: tlsdialer.EOFTLSHandshaker{}}
 	conn, _, err := h.Handshake(
 		context.Background(), tlsdialer.EOFConn{}, new(tls.Config))
-	if !errors.Is(err, io.EOF) {
+	if !errors.As(err, &io.EOF) {
 		t.Fatal("not the error that we expected")
 	}
 	if conn != nil {
 		t.Fatal("expected nil con here")
 	}
-	var errWrapper *errorx.ErrWrapper
-	if !errors.As(err, &errWrapper) {
-		t.Fatal("cannot cast to ErrWrapper")
+	var handshakeErr tlsdialer.ErrTLSHandshake
+	if !errors.As(err, &handshakeErr) {
+		t.Fatal("cannot cast to tlsdialer.ErrTLSHandshake")
 	}
-	if errWrapper.ConnID == 0 {
-		t.Fatal("unexpected ConnID")
-	}
-	if errWrapper.Failure != errorx.FailureEOFError {
+	if *archival.NewFailure(err) != errorx.FailureEOFError {
 		t.Fatal("unexpected Failure")
 	}
-	if errWrapper.Operation != errorx.TLSHandshakeOperation {
+	if *archival.NewFailedOperation(err) != errorx.TLSHandshakeOperation {
 		t.Fatal("unexpected Operation")
 	}
 }
@@ -268,7 +266,7 @@ func TestDialTLSContextTimeout(t *testing.T) {
 		},
 	}
 	conn, err := dialer.DialTLSContext(context.Background(), "tcp", "google.com:443")
-	if err.Error() != errorx.FailureGenericTimeoutError {
+	if *archival.NewFailure(err) != errorx.FailureGenericTimeoutError {
 		t.Fatal("not the error that we expected")
 	}
 	if conn != nil {
