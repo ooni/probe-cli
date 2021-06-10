@@ -103,7 +103,7 @@ type mockableSocksConn struct {
 	MockGrant func(addr *net.TCPAddr) error
 }
 
-// Grants access to a specific IP address.
+// Grant grants access to a specific IP address.
 func (c *mockableSocksConn) Grant(addr *net.TCPAddr) error {
 	return c.MockGrant(addr)
 }
@@ -180,7 +180,6 @@ func TestListenerForwardWithContextWithContextCancellation(t *testing.T) {
 	lst := &Listener{}
 	left, right := net.Pipe()
 	go lst.forwardWithContext(ctx, left, right)
-	time.Sleep(100 * time.Millisecond)
 	cancel()
 }
 
@@ -188,7 +187,6 @@ func TestListenerForwardWithNaturalTermination(t *testing.T) {
 	lst := &Listener{}
 	left, right := net.Pipe()
 	go lst.forwardWithContext(context.Background(), left, right)
-	time.Sleep(100 * time.Millisecond)
 	right.Close()
 }
 

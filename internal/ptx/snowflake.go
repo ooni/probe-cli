@@ -58,7 +58,7 @@ func (d *SnowflakeDialer) dialContext(
 	}
 	connch, errch := make(chan net.Conn), make(chan error, 1)
 	go func() {
-		defer close(done) // allow tests to synchronize with our end
+		defer close(done) // allow tests to synchronize with this goroutine's exit
 		conn, err := txp.Dial()
 		if err != nil {
 			errch <- err // buffered channel
@@ -90,8 +90,8 @@ func (d *SnowflakeDialer) newSnowflakeClient(brokerURL string, frontDomain strin
 			keepLocalAddresses, maxSnowflakes)
 	}
 	return sflib.NewSnowflakeClient(
-		d.brokerURL(), d.frontDomain(), d.iceAddresses(),
-		false, d.maxSnowflakes())
+		brokerURL, frontDomain, iceAddresses,
+		keepLocalAddresses, maxSnowflakes)
 }
 
 // brokerURL returns a suitable broker URL.

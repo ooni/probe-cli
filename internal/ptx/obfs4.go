@@ -84,7 +84,7 @@ func (d *OBFS4Dialer) newCancellableDialer() (*obfs4CancellableDialer, error) {
 func (d *OBFS4Dialer) newFactory() base.ClientFactory {
 	o4f := &obfs4.Transport{}
 	cf, err := o4f.ClientFactory(filepath.Join(d.DataDir, "obfs4"))
-	// the source code for this transport always returns nil
+	// the source code for this transport always returns a nil error
 	runtimex.PanicOnError(err, "unexpected o4f.ClientFactory failure")
 	return cf
 }
@@ -111,7 +111,7 @@ func (d *OBFS4Dialer) underlyingDialer() UnderlyingDialer {
 type obfs4CancellableDialer struct {
 	// done is a channel that will be closed when done. In normal
 	// usage you don't want to await for this signal. But it's useful
-	// for testing to know that the background goroutine joned.
+	// for testing to know that the background goroutine joined.
 	done chan interface{}
 
 	// factory is the factory for obfs4.

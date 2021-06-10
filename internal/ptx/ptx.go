@@ -64,7 +64,7 @@ type PTDialer interface {
 }
 
 // Listener is a generic pluggable transports listener. Make sure
-// you fill the mandatory fields before using. Do not modify public
+// you fill the mandatory fields before using it. Do not modify public
 // fields after you called Start, since this causes data races.
 type Listener struct {
 	// PTDialer is the MANDATORY pluggable transports dialer
@@ -80,7 +80,7 @@ type Listener struct {
 	// mu provides mutual exclusion for accessing internals.
 	mu sync.Mutex
 
-	// cancel allows to stop the forwarders.
+	// cancel allows stopping the forwarders.
 	cancel context.CancelFunc
 
 	// laddr is the listen address.
@@ -149,7 +149,7 @@ func (lst *Listener) handleSocksConn(ctx context.Context, socksConn ptxSocksConn
 		lst.logger().Warnf("ptx: ContextDialer.DialContext error: %s", err)
 		return err // used for testing
 	}
-	lst.forwardWithContext(ctx, socksConn, ptConn)
+	lst.forwardWithContext(ctx, socksConn, ptConn) // transfer ownership
 	return nil // used for testing
 }
 
@@ -170,7 +170,7 @@ type ptxSocksConn interface {
 	// net.Conn is the embedded interface.
 	net.Conn
 
-	// Grants access to a specific IP address.
+	// Grant grants access to a specific IP address.
 	Grant(addr *net.TCPAddr) error
 }
 
@@ -184,7 +184,7 @@ func (lst *Listener) acceptLoop(ctx context.Context, ln ptxSocksListener) {
 				continue
 			}
 			lst.logger().Warnf("ptx: socks accept error: %s", err)
-			break
+			return
 		}
 		go lst.handleSocksConn(ctx, conn)
 	}
@@ -193,7 +193,7 @@ func (lst *Listener) acceptLoop(ctx context.Context, ln ptxSocksListener) {
 // Addr returns the listening address. This function should not
 // be called after you have called the Stop method or before the
 // Start method has successfully returned. When invoked in such
-// conditions, this function will return nil. Otherwise, it will
+// conditions, this function may return nil. Otherwise, it will
 // return the valid net.Addr where we are listening.
 func (lst *Listener) Addr() net.Addr {
 	return lst.laddr
@@ -250,7 +250,9 @@ func (la *ptxSocksListenerAdapter) AcceptSocks() (ptxSocksConn, error) {
 	return la.SocksListener.AcceptSocks()
 }
 
-// torCmdLine prints the command line for testing this listener.
+// torCmdLine prints the command line for testing this listener. This method is here to
+// facilitate debugging with `ptxclient`, so there is no need to be too precise with arguments
+// quoting. Remember to improve upon this aspect if you plan on using it beyond testing.
 func (lst *Listener) torCmdLine() string {
 	return strings.Join([]string{
 		"tor",
