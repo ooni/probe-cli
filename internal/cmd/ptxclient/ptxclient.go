@@ -19,7 +19,7 @@ func main() {
 	if *verbose {
 		log.SetLevel(log.DebugLevel)
 	}
-	var dialer ptx.ContextDialer
+	var dialer ptx.PTDialer
 	switch *mode {
 	case "snowflake":
 		dialer = &ptx.SnowflakeDialer{}

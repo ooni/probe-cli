@@ -48,8 +48,8 @@ import (
 	pt "git.torproject.org/pluggable-transports/goptlib.git"
 )
 
-// ContextDialer is a generic pluggable transports dialer.
-type ContextDialer interface {
+// PTDialer is a generic pluggable transports dialer.
+type PTDialer interface {
 	// DialContext establishes a connection to the pluggable
 	// transport backend according to PT-specific configuration
 	// and returns you such a connection.
@@ -70,7 +70,7 @@ type Listener struct {
 	// ContextDialer is the MANDATORY pluggable transports dialer
 	// to use. Both SnowflakeDialer and OBFS4Dialer implement this
 	// interface and can be thus safely used here.
-	ContextDialer ContextDialer
+	ContextDialer PTDialer
 
 	// Logger is the optional logger. When not set, this library
 	// will not emit logs. (But the underlying pluggable transport
