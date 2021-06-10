@@ -35,18 +35,20 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 		writetoErr  *quicdialer.ErrWriteTo
 	)
 	switch op {
-	case "dial":
+	case errorx.QUICHandshakeOperation:
 		if !errors.As(err, &dialErr) {
 			t.Fatal("unexpected wrapper")
 		}
-	case "read_from":
+	case errorx.ReadFromOperation:
 		if !errors.As(err, &readfromErr) {
 			t.Fatal("unexpected wrapper")
 		}
-	case "write_to":
+	case errorx.WriteToOperation:
 		if !errors.As(err, &writetoErr) {
 			t.Fatal("unexpected wrapper")
 		}
+	default:
+		t.Fatal("unexpected wrapper")
 	}
 }
 

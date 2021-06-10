@@ -34,26 +34,28 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 		handshakeErr *tlsdialer.ErrTLSHandshake
 	)
 	switch op {
-	case "dial":
+	case errorx.ConnectOperation:
 		if !errors.As(err, &dialErr) {
 			t.Fatal("unexpected wrapper")
 		}
-	case "read":
+	case errorx.ReadOperation:
 		if !errors.As(err, &readErr) {
 			t.Fatal("unexpected wrapper")
 		}
-	case "write":
+	case errorx.WriteOperation:
 		if !errors.As(err, &writeErr) {
 			t.Fatal("unexpected wrapper")
 		}
-	case "close":
+	case errorx.CloseOperation:
 		if !errors.As(err, &closeErr) {
 			t.Fatal("unexpected wrapper")
 		}
-	case "tls_handshake":
+	case errorx.TLSHandshakeOperation:
 		if !errors.As(err, &handshakeErr) {
 			t.Fatal("unexpected wrapper")
 		}
+	default:
+		t.Fatal("unexpected wrapper")
 	}
 }
 

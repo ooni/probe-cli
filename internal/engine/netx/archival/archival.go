@@ -235,8 +235,10 @@ func NewFailedOperation(err error) *string {
 	)
 	var s string
 	switch {
-	case errors.As(err, &dialErr) || errors.As(err, &qDialErr):
+	case errors.As(err, &dialErr):
 		s = errorx.ConnectOperation
+	case errors.As(err, &qDialErr):
+		s = errorx.QUICHandshakeOperation
 	case errors.As(err, &readErr):
 		s = errorx.ReadOperation
 	case errors.As(err, &readfromErr):
