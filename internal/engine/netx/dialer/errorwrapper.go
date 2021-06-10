@@ -91,17 +91,8 @@ func (e *ErrClose) Unwrap() error {
 	return e.error
 }
 
-type ErrTLSHandshake struct {
-	error
-}
-
-func (e *ErrTLSHandshake) Unwrap() error {
-	return e.error
-}
-
 // export for for testing purposes
 var MockErrDial *ErrDial = &ErrDial{errors.New("mock error")}
 var MockErrRead *ErrRead = &ErrRead{errors.New("mock error")}
 var MockErrWrite *ErrWrite = &ErrWrite{errors.New("mock error")}
 var MockErrClose *ErrClose = &ErrClose{errors.New("mock error")}
-var MockErrHandshake *ErrTLSHandshake = &ErrTLSHandshake{errors.New("mock error")}
