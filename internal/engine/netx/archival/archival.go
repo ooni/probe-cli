@@ -138,15 +138,13 @@ func NewFailedOperation(err error) *string {
 		readErr      *dialer.ErrRead
 		writeErr     *dialer.ErrWrite
 		closeErr     *dialer.ErrClose
-		handshakeErr *dialer.ErrTLSHandshake
+		handshakeErr *tlsdialer.ErrTLSHandshake
 		qDialErr     *quicdialer.ErrDial
 		readfromErr  *quicdialer.ErrReadFrom
 		writetoErr   *quicdialer.ErrWriteTo
+		resolveErr   *resolver.ErrResolve
 	)
-	var (
-		s          string
-		errWrapper *errorx.ErrWrapper
-	)
+	var s string
 	switch {
 	case errors.As(err, &dialErr) || errors.As(err, &qDialErr):
 		s = "connect"
@@ -162,8 +160,8 @@ func NewFailedOperation(err error) *string {
 		s = "tls_handshake"
 	case errors.As(err, &closeErr):
 		s = "close"
-	case errors.As(err, &errWrapper):
-		s = errWrapper.Operation
+	case errors.As(err, &resolveErr):
+		s = "resolve"
 	default:
 		s = "top_level"
 	}

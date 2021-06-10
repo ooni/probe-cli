@@ -1031,7 +1031,7 @@ func TestNewFailedOperation(t *testing.T) {
 	}, {
 		name: "With ErrTLSHandshake",
 		args: args{
-			err: dialer.MockErrHandshake,
+			err: tlsdialer.MockErrTLSHandshake,
 		},
 		want: (func() *string {
 			s := errorx.TLSHandshakeOperation
