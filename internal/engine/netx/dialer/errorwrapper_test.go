@@ -9,6 +9,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 )
 
 func TestErrorWrapperFailure(t *testing.T) {
@@ -30,7 +31,7 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 		readErr      *dialer.ErrRead
 		writeErr     *dialer.ErrWrite
 		closeErr     *dialer.ErrClose
-		handshakeErr *dialer.ErrTLSHandshake
+		handshakeErr *tlsdialer.ErrTLSHandshake
 	)
 	switch op {
 	case "dial":
