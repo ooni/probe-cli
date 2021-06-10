@@ -30,8 +30,8 @@ func main() {
 		os.Exit(1)
 	}
 	listener := &ptx.Listener{
-		ContextDialer: dialer,
-		Logger:        log.Log,
+		PTDialer: dialer,
+		Logger:   log.Log,
 	}
 	if err := listener.Start(); err != nil {
 		log.WithError(err).Fatal("listener.Start failed")
