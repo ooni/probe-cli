@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"git.torproject.org/pluggable-transports/snowflake.git/client/lib"
+	sflib "git.torproject.org/pluggable-transports/snowflake.git/client/lib"
 )
 
 // SnowflakeDialer is a dialer for snowflake. When optional fields are
@@ -26,20 +26,39 @@ type SnowflakeDialer struct {
 	// should create per dialer. If negative or zero, we will
 	// be using a sensible default.
 	MaxSnowflakes int
+
+	// newClientTransport is an optional hook for creating
+	// an alternative snowflakeTransport in testing.
+	newClientTransport func(brokerURL string, frontDomain string,
+		iceAddresses []string, keepLocalAddresses bool,
+		maxSnowflakes int) (snowflakeTransport, error)
+}
+
+// snowflakeTransport is anything that allows us to dial a snowflake
+type snowflakeTransport interface {
+	Dial() (net.Conn, error)
 }
 
 // DialContext establishes a connection with the given SF proxy. The context
 // argument allows to interrupt this operation midway.
 func (d *SnowflakeDialer) DialContext(ctx context.Context) (net.Conn, error) {
-	txp, err := lib.NewSnowflakeClient(
+	conn, _, err := d.dialContext(ctx)
+	return conn, err
+}
+
+func (d *SnowflakeDialer) dialContext(
+	ctx context.Context) (net.Conn, chan interface{}, error) {
+	done := make(chan interface{})
+	txp, err := d.newSnowflakeClient(
 		d.brokerURL(), d.frontDomain(), d.iceAddresses(),
 		false, d.maxSnowflakes(),
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	connch, errch := make(chan net.Conn), make(chan error, 1)
 	go func() {
+		defer close(done) // allow tests to synchronize with our end
 		conn, err := txp.Dial()
 		if err != nil {
 			errch <- err // buffered channel
@@ -53,12 +72,26 @@ func (d *SnowflakeDialer) DialContext(ctx context.Context) (net.Conn, error) {
 	}()
 	select {
 	case conn := <-connch:
-		return conn, nil
+		return conn, done, nil
 	case err := <-errch:
-		return nil, err
+		return nil, done, err
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, done, ctx.Err()
 	}
+}
+
+// newSnowflakeClient allows us to call a mock rather than
+// the real sflib.NewSnowflakeClient.
+func (d *SnowflakeDialer) newSnowflakeClient(brokerURL string, frontDomain string,
+	iceAddresses []string, keepLocalAddresses bool,
+	maxSnowflakes int) (snowflakeTransport, error) {
+	if d.newClientTransport != nil {
+		return d.newClientTransport(brokerURL, frontDomain, iceAddresses,
+			keepLocalAddresses, maxSnowflakes)
+	}
+	return sflib.NewSnowflakeClient(
+		d.brokerURL(), d.frontDomain(), d.iceAddresses(),
+		false, d.maxSnowflakes())
 }
 
 // brokerURL returns a suitable broker URL.
