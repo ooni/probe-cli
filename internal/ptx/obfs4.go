@@ -8,6 +8,7 @@ import (
 	"time"
 
 	pt "git.torproject.org/pluggable-transports/goptlib.git"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"gitlab.com/yawning/obfs4.git/transports/base"
 	"gitlab.com/yawning/obfs4.git/transports/obfs4"
 )
@@ -56,26 +57,36 @@ type OBFS4Dialer struct {
 // DialContext establishes a connection with the given obfs4 proxy. The context
 // argument allows to interrupt this operation midway.
 func (d *OBFS4Dialer) DialContext(ctx context.Context) (net.Conn, error) {
-	factory, err := d.newFactory()
+	cd, err := d.newCancellableDialer()
 	if err != nil {
 		return nil, err
 	}
+	return cd.dial(ctx, "tcp", d.Address)
+}
+
+// newCancellableDialer constructs a new cancellable dialer. This function
+// is separate from DialContext for testing purposes.
+func (d *OBFS4Dialer) newCancellableDialer() (*obfs4CancellableDialer, error) {
+	factory := d.newFactory()
 	parsedargs, err := d.parseargs(factory)
 	if err != nil {
 		return nil, err
 	}
-	id := &obfs4dialer{
+	return &obfs4CancellableDialer{
+		done:       make(chan interface{}),
 		ud:         d.underlyingDialer(), // choose proper dialer
 		factory:    factory,
 		parsedargs: parsedargs,
-	}
-	return id.dial(ctx, "tcp", d.Address)
+	}, nil
 }
 
 // newFactory creates an obfs4 factory instance.
-func (d *OBFS4Dialer) newFactory() (base.ClientFactory, error) {
+func (d *OBFS4Dialer) newFactory() base.ClientFactory {
 	o4f := &obfs4.Transport{}
-	return o4f.ClientFactory(filepath.Join(d.DataDir, "obfs4"))
+	cf, err := o4f.ClientFactory(filepath.Join(d.DataDir, "obfs4"))
+	// the source code for this transport always returns nil
+	runtimex.PanicOnError(err, "unexpected o4f.ClientFactory failure")
+	return cf
 }
 
 // parseargs parses the obfs4 arguments.
@@ -84,7 +95,7 @@ func (d *OBFS4Dialer) parseargs(factory base.ClientFactory) (interface{}, error)
 	return factory.ParseArgs(args)
 }
 
-// underlyingDialer returns a suitable underlying dialer.
+// underlyingDialer returns a suitable UnderlyingDialer.
 func (d *OBFS4Dialer) underlyingDialer() UnderlyingDialer {
 	if d.UnderlyingDialer != nil {
 		return d.UnderlyingDialer
@@ -94,17 +105,30 @@ func (d *OBFS4Dialer) underlyingDialer() UnderlyingDialer {
 	}
 }
 
-// obfs4dialer implements OBFS4Dialer.
-type obfs4dialer struct {
-	factory    base.ClientFactory
+// obfs4CancellableDialer is a cancellable dialer for obfs4. It will run
+// the dial proper in a background goroutine, thus allowing for its early
+// cancellation.
+type obfs4CancellableDialer struct {
+	// done is a channel that will be closed when done. In normal
+	// usage you don't want to await for this signal. But it's useful
+	// for testing to know that the background goroutine joned.
+	done chan interface{}
+
+	// factory is the factory for obfs4.
+	factory base.ClientFactory
+
+	// parsedargs contains the parsed args for obfs4.
 	parsedargs interface{}
-	ud         UnderlyingDialer
+
+	// ud is the underlying Dialer to use.
+	ud UnderlyingDialer
 }
 
 // dial performs the dial.
-func (d *obfs4dialer) dial(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *obfs4CancellableDialer) dial(ctx context.Context, network, address string) (net.Conn, error) {
 	connch, errch := make(chan net.Conn), make(chan error, 1)
 	go func() {
+		defer close(d.done) // signal we're joining
 		conn, err := d.factory.Dial(network, address, d.innerDial, d.parsedargs)
 		if err != nil {
 			errch <- err // buffered channel
@@ -127,7 +151,7 @@ func (d *obfs4dialer) dial(ctx context.Context, network, address string) (net.Co
 }
 
 // innerDial performs the inner dial using the underlying dialer.
-func (d *obfs4dialer) innerDial(network, address string) (net.Conn, error) {
+func (d *obfs4CancellableDialer) innerDial(network, address string) (net.Conn, error) {
 	return d.ud.DialContext(context.Background(), network, address)
 }
 
