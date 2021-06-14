@@ -55,7 +55,7 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 func TestErrorWrapperSuccess(t *testing.T) {
 	ctx := dialid.WithDialID(context.Background())
 	tlsConf := &tls.Config{
-		NextProtos: []string{"h3-29"},
+		NextProtos: []string{"h3"},
 		ServerName: "www.google.com",
 	}
 	d := quicdialer.ErrorWrapperDialer{Dialer: quicdialer.SystemDialer{}}

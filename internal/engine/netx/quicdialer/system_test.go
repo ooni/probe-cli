@@ -13,7 +13,7 @@ import (
 
 func TestSystemDialerInvalidIPFailure(t *testing.T) {
 	tlsConf := &tls.Config{
-		NextProtos: []string{"h3-29"},
+		NextProtos: []string{"h3"},
 		ServerName: "www.google.com",
 	}
 	saver := &trace.Saver{}
@@ -35,7 +35,7 @@ func TestSystemDialerInvalidIPFailure(t *testing.T) {
 func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
 	// This is the most common use case for collecting reads, writes
 	tlsConf := &tls.Config{
-		NextProtos: []string{"h3-29"},
+		NextProtos: []string{"h3"},
 		ServerName: "www.google.com",
 	}
 	saver := &trace.Saver{}
