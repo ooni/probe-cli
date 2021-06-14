@@ -36,7 +36,7 @@ require (
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/rtp v1.6.5 // indirect
 	github.com/pion/stun v0.3.5
-	github.com/pion/webrtc/v3 v3.0.27
+	github.com/pion/webrtc/v3 v3.0.27 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/rogpeppe/go-internal v1.8.0
 	github.com/rubenv/sql-migrate v0.0.0-20210408115534-a32ed26c37ea
