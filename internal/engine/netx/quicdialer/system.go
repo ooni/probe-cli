@@ -35,7 +35,6 @@ func (d SystemDialer) DialContext(ctx context.Context, network string,
 	}
 	ip := net.ParseIP(onlyhost)
 	if ip == nil {
-		// TODO(kelmenhorst): write test for this error condition.
 		return nil, errors.New("quicdialer: invalid IP representation")
 	}
 	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 0})

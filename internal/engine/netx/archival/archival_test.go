@@ -1045,6 +1045,15 @@ func TestNewFailedOperation(t *testing.T) {
 			return &s
 		})(),
 	}, {
+		name: "With QUIC ErrDial",
+		args: args{
+			err: quicdialer.NewErrDial(&mockerr),
+		},
+		want: (func() *string {
+			s := errorx.QUICHandshakeOperation
+			return &s
+		})(),
+	}, {
 		name: "With ErrReadFrom",
 		args: args{
 			err: quicdialer.NewErrReadFrom(&mockerr),
@@ -1105,6 +1114,18 @@ func TestNewFailedOperation(t *testing.T) {
 }
 
 func TestToFailureString(t *testing.T) {
+	t.Run("for already OONI error string", func(t *testing.T) {
+		err := errors.New("connection_reset")
+		if archival.ToFailureString(err) != errorx.FailureConnectionReset {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for empty error string", func(t *testing.T) {
+		err := errors.New("")
+		if archival.ToFailureString(err) != "" {
+			t.Fatal("unexpected results")
+		}
+	})
 	t.Run("for ErrDNSBogon", func(t *testing.T) {
 		if archival.ToFailureString(errorx.ErrDNSBogon) != errorx.FailureDNSBogonError {
 			t.Fatal("unexpected result")

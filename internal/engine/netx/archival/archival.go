@@ -164,11 +164,9 @@ func ToFailureString(err error) string {
 	}
 	s := err.Error()
 	if s == "" {
-		// TODO(kelmenhorst): test
 		return ""
 	}
 	if errorx.IsOONIErr(s) {
-		// TODO(kelmenhorst): test
 		return s
 	}
 	if strings.Contains(s, "operation was canceled") {
@@ -244,7 +242,6 @@ func NewFailedOperation(err error) *string {
 	case errors.As(err, &dialErr):
 		s = errorx.ConnectOperation
 	case errors.As(err, &qDialErr):
-		// TODO(kelmenhorst): test
 		s = errorx.QUICHandshakeOperation
 	case errors.As(err, &readErr):
 		s = errorx.ReadOperation
