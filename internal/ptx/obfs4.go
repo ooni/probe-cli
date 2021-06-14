@@ -23,10 +23,10 @@ func DefaultTestingOBFS4Bridge() *OBFS4Dialer {
 	// with @hellais. We should ask @cohosh whether there's some obfs4 bridge
 	// dedicated to integration testing that we should use instead.
 	return &OBFS4Dialer{
-		Address:     "109.105.109.165:10527",
-		Cert:        "Bvg/itxeL4TWKLP6N1MaQzSOC6tcRIBv6q57DYAZc3b2AzuM+/TfB7mqTFEfXILCjEwzVA",
+		Address:     "192.95.36.142:443",
+		Cert:        "qUVQ0srL1JI/vO6V6m/24anYXiJD3QP2HgzUKQtQ7GRqqUvs7P+tG43RtAqdhLOALP7DJQ",
 		DataDir:     "testdata",
-		Fingerprint: "8DFCD8FB3285E855F5A55EDDA35696C743ABFC4E",
+		Fingerprint: "CDF2E852BF539B82BD10E27E9115A31734E378C2",
 		IATMode:     "1",
 	}
 }
