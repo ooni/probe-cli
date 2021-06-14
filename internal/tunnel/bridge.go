@@ -2,6 +2,8 @@ package tunnel
 
 import (
 	"errors"
+
+	"github.com/ooni/probe-cli/v3/internal/ptx"
 )
 
 // BridgeInfo provides information about a bridge.
@@ -44,7 +46,7 @@ func NewBridges(lines []string, datadir string) ([]Bridge, error) {
 	}()
 	for _, line := range lines {
 		// check whether this is an obfs4 bridge line
-		blp := &OBFS4BridgeLineParser{
+		blp := &ptx.OBFS4BridgeLineParser{
 			BridgeLine: line,
 			DataDir:    datadir,
 		}
