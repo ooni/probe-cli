@@ -15,7 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 )
 
 // TraceTripper performs single HTTP transactions.
@@ -88,7 +88,6 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	var (
 		err              error
-		majorOp          = errorx.HTTPRoundTripOperation
 		majorOpMu        sync.Mutex
 		requestBody      []byte
 		requestHeaders   = http.Header{}
@@ -108,7 +107,6 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	tracer := &httptrace.ClientTrace{
 		TLSHandshakeStart: func() {
 			majorOpMu.Lock()
-			majorOp = errorx.TLSHandshakeOperation
 			majorOpMu.Unlock()
 			// Event emitted by net/http when DialTLS is not
 			// configured in the http.Transport
@@ -122,11 +120,9 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		TLSHandshakeDone: func(state tls.ConnectionState, err error) {
 			// Wrapping the error even if we're not returning it because it may
 			// less confusing to users to see the wrapped name
-			err = errorx.SafeErrWrapperBuilder{
-				Error:         err,
-				Operation:     errorx.TLSHandshakeOperation,
-				TransactionID: tid,
-			}.MaybeBuild()
+			if err != nil {
+				err = tlsdialer.NewErrTLSHandshake(&err)
+			}
 			durationSinceBeginning := time.Now().Sub(root.Beginning)
 			// Event emitted by net/http when DialTLS is not
 			// configured in the http.Transport
@@ -141,7 +137,6 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		},
 		GotConn: func(info httptrace.GotConnInfo) {
 			majorOpMu.Lock()
-			majorOp = errorx.HTTPRoundTripOperation
 			majorOpMu.Unlock()
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPConnectionReady: &modelx.HTTPConnectionReadyEvent{
@@ -186,11 +181,8 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		WroteRequest: func(info httptrace.WroteRequestInfo) {
 			// Wrapping the error even if we're not returning it because it may
 			// less confusing to users to see the wrapped name
-			err := errorx.SafeErrWrapperBuilder{
-				Error:         info.Err,
-				Operation:     errorx.HTTPRoundTripOperation,
-				TransactionID: tid,
-			}.MaybeBuild()
+
+			// TODO(kelmenhorst) wrap in HTTPRoundtrip/TopLevel error wrapper
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPRequestDone: &modelx.HTTPRequestDoneEvent{
 					DurationSinceBeginning: time.Now().Sub(root.Beginning),
@@ -225,11 +217,8 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	resp, err := t.roundTripper.RoundTrip(req)
-	err = errorx.SafeErrWrapperBuilder{
-		Error:         err,
-		Operation:     majorOp,
-		TransactionID: tid,
-	}.MaybeBuild()
+
+	// TODO(kelmenhorst) wrap in HTTPRoundtrip/TopLevel error wrapper
 	// [*] Require less event joining work by providing info that
 	// makes this event alone actionable for OONI
 	event := &modelx.HTTPRoundTripDoneEvent{

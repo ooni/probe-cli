@@ -293,7 +293,7 @@ func RunMethod(ctx context.Context, config RunMethodConfig) {
 		count, err := conn.Read(data)
 		if err != nil {
 			// We expect this method to terminate w/ timeout
-			if err.Error() == errorx.FailureGenericTimeoutError {
+			if *archival.NewFailure(err) == errorx.FailureGenericTimeoutError {
 				err = nil
 			}
 			result.Err = err

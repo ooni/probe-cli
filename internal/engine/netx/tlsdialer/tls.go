@@ -4,7 +4,6 @@ package tlsdialer
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"net"
 	"time"
 
@@ -70,7 +69,7 @@ func (h ErrorWrapperTLSHandshaker) Handshake(
 ) (net.Conn, tls.ConnectionState, error) {
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	if err != nil {
-		err = ErrTLSHandshake{err}
+		err = NewErrTLSHandshake(&err)
 	}
 	return tlsconn, state, err
 }
@@ -79,11 +78,13 @@ type ErrTLSHandshake struct {
 	error
 }
 
+func NewErrTLSHandshake(e *error) *ErrTLSHandshake {
+	return &ErrTLSHandshake{*e}
+}
+
 func (e *ErrTLSHandshake) Unwrap() error {
 	return e.error
 }
-
-var MockErrTLSHandshake ErrTLSHandshake = ErrTLSHandshake{errors.New("mock error")}
 
 // EmitterTLSHandshaker emits events using the MeasurementRoot
 type EmitterTLSHandshaker struct {

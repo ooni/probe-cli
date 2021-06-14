@@ -8,7 +8,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 )
@@ -54,10 +53,8 @@ func (g Getter) Get(ctx context.Context) (TestKeys, error) {
 	tk, err := g.get(ctx, saver)
 	// Make sure we have an operation in cases where we fail before
 	// hitting our httptransport that does error wrapping.
-	err = errorx.SafeErrWrapperBuilder{
-		Error:     err,
-		Operation: errorx.TopLevelOperation,
-	}.MaybeBuild()
+
+	// TODO(kelmenhorst) wrap in HTTPRoundtrip/TopLevel error wrapper
 	tk.FailedOperation = archival.NewFailedOperation(err)
 	tk.Failure = archival.NewFailure(err)
 	events := saver.Read()

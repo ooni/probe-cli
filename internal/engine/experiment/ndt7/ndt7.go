@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mlablocatev2"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 )
 
@@ -260,8 +261,7 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 
 func failureFromError(err error) (failure *string) {
 	if err != nil {
-		s := err.Error()
-		failure = &s
+		failure = archival.NewFailure(err)
 	}
 	return
 }

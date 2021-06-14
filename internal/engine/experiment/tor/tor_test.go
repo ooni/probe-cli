@@ -17,6 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonidatamodel"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
@@ -309,7 +310,7 @@ func TestResultsCollectorMeasureSingleTargetWithFailure(t *testing.T) {
 	if rc.targetresults["xx"].Agent != "redirect" {
 		t.Fatal("agent is invalid")
 	}
-	if *rc.targetresults["xx"].Failure != "mocked error" {
+	if !strings.Contains(*rc.targetresults["xx"].Failure, "mocked error") {
 		t.Fatal("failure is invalid")
 	}
 	if rc.targetresults["xx"].TargetAddress != staticTestingTargets[0].Address {
@@ -334,7 +335,7 @@ func TestDefautFlexibleConnectDirPort(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
-	if !strings.HasSuffix(err.Error(), "interrupted") {
+	if *archival.NewFailure(err) != "interrupted" {
 		t.Fatal("not the error we expected")
 	}
 	if tk.HTTPRequests == nil {
@@ -356,7 +357,7 @@ func TestDefautFlexibleConnectOrPort(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
-	if err.Error() != "interrupted" {
+	if *archival.NewFailure(err) != "interrupted" {
 		t.Fatal("not the error we expected")
 	}
 	if tk.Connects == nil {
@@ -381,7 +382,7 @@ func TestDefautFlexibleConnectOBFS4(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
-	if err.Error() != "interrupted" {
+	if *archival.NewFailure(err) != "interrupted" {
 		t.Fatal("not the error we expected")
 	}
 	if tk.Connects == nil {
@@ -406,7 +407,7 @@ func TestDefautFlexibleConnectDefault(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
-	if err.Error() != "interrupted" {
+	if *archival.NewFailure(err) != "interrupted" {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 	if tk.Connects == nil {

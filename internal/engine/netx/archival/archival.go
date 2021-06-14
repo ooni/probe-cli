@@ -116,6 +116,7 @@ func NewTCPConnectList(begin time.Time, events []trace.Event) []TCPConnectEntry 
 // TODO(kelmenhorst): Replace this with operation specific classifiers.
 // NewFailure creates a failure nullable string from the given error
 func NewFailure(err error) *string {
+	// TODO(kelmenhorst) if already wrapped, don't wrap
 	if err == nil {
 		return nil
 	}
@@ -163,9 +164,14 @@ func ToFailureString(err error) string {
 	}
 	s := err.Error()
 	if s == "" {
+		// TODO(kelmenhorst): test
 		return ""
 	}
-	if strings.HasSuffix(s, "operation was canceled") {
+	if errorx.IsOONIErr(s) {
+		// TODO(kelmenhorst): test
+		return s
+	}
+	if strings.Contains(s, "operation was canceled") {
 		return errorx.FailureInterrupted
 	}
 	if strings.HasSuffix(s, "EOF") {
@@ -223,21 +229,22 @@ func NewFailedOperation(err error) *string {
 		return nil
 	}
 	var (
-		dialErr      dialer.ErrDial
-		readErr      dialer.ErrRead
-		writeErr     dialer.ErrWrite
-		closeErr     dialer.ErrClose
-		handshakeErr tlsdialer.ErrTLSHandshake
-		qDialErr     quicdialer.ErrDial
-		readfromErr  quicdialer.ErrReadFrom
-		writetoErr   quicdialer.ErrWriteTo
-		resolveErr   resolver.ErrResolve
+		dialErr      *dialer.ErrDial
+		readErr      *dialer.ErrRead
+		writeErr     *dialer.ErrWrite
+		closeErr     *dialer.ErrClose
+		handshakeErr *tlsdialer.ErrTLSHandshake
+		qDialErr     *quicdialer.ErrDial
+		readfromErr  *quicdialer.ErrReadFrom
+		writetoErr   *quicdialer.ErrWriteTo
+		resolveErr   *resolver.ErrResolve
 	)
 	var s string
 	switch {
 	case errors.As(err, &dialErr):
 		s = errorx.ConnectOperation
 	case errors.As(err, &qDialErr):
+		// TODO(kelmenhorst): test
 		s = errorx.QUICHandshakeOperation
 	case errors.As(err, &readErr):
 		s = errorx.ReadOperation

@@ -380,7 +380,7 @@ func TestNewDNSQueriesList(t *testing.T) {
 		args: args{
 			begin: begin,
 			events: []trace.Event{{
-				Err:      dialer.NewErrDial(errorx.ErrDNSBogon),
+				Err:      dialer.NewErrDial(&errorx.ErrDNSBogon),
 				Hostname: "dns.google.com",
 				Name:     "resolve_done",
 				Time:     begin.Add(200 * time.Millisecond),
@@ -389,14 +389,14 @@ func TestNewDNSQueriesList(t *testing.T) {
 		want: []archival.DNSQueryEntry{{
 			Answers: nil,
 			Failure: archival.NewFailure(
-				dialer.NewErrDial(errorx.ErrDNSBogon)),
+				dialer.NewErrDial(&errorx.ErrDNSBogon)),
 			Hostname:  "dns.google.com",
 			QueryType: "A",
 			T:         0.2,
 		}, {
 			Answers: nil,
 			Failure: archival.NewFailure(
-				dialer.NewErrDial(errorx.ErrDNSBogon)),
+				dialer.NewErrDial(&errorx.ErrDNSBogon)),
 			Hostname:  "dns.google.com",
 			QueryType: "AAAA",
 			T:         0.2,
@@ -925,6 +925,7 @@ func TestNewFailure(t *testing.T) {
 	type args struct {
 		err error
 	}
+	mockerr := errors.New("mock error")
 	tests := []struct {
 		name string
 		args args
@@ -938,7 +939,7 @@ func TestNewFailure(t *testing.T) {
 	}, {
 		name: "when error is wrapped and failure meaningful",
 		args: args{
-			err: dialer.MockErrDial,
+			err: dialer.NewErrDial(&mockerr),
 		},
 		want: func() *string {
 			s := "unknown_failure: mock error"
@@ -987,6 +988,7 @@ func TestNewFailedOperation(t *testing.T) {
 	type args struct {
 		err error
 	}
+	mockerr := errors.New("mock error")
 	tests := []struct {
 		name string
 		args args
@@ -1000,7 +1002,7 @@ func TestNewFailedOperation(t *testing.T) {
 	}, {
 		name: "With ErrDial",
 		args: args{
-			err: dialer.MockErrDial,
+			err: dialer.NewErrDial(&mockerr),
 		},
 		want: (func() *string {
 			s := errorx.ConnectOperation
@@ -1009,7 +1011,7 @@ func TestNewFailedOperation(t *testing.T) {
 	}, {
 		name: "With ErrWrite",
 		args: args{
-			err: dialer.MockErrWrite,
+			err: dialer.NewErrWrite(&mockerr),
 		},
 		want: (func() *string {
 			s := errorx.WriteOperation
@@ -1018,7 +1020,7 @@ func TestNewFailedOperation(t *testing.T) {
 	}, {
 		name: "With ErrRead",
 		args: args{
-			err: dialer.MockErrRead,
+			err: dialer.NewErrRead(&mockerr),
 		},
 		want: (func() *string {
 			s := errorx.ReadOperation
@@ -1027,7 +1029,7 @@ func TestNewFailedOperation(t *testing.T) {
 	}, {
 		name: "With ErrTLSHandshake",
 		args: args{
-			err: tlsdialer.MockErrTLSHandshake,
+			err: tlsdialer.NewErrTLSHandshake(&mockerr),
 		},
 		want: (func() *string {
 			s := errorx.TLSHandshakeOperation
@@ -1036,7 +1038,7 @@ func TestNewFailedOperation(t *testing.T) {
 	}, {
 		name: "With ErrClose",
 		args: args{
-			err: dialer.MockErrClose,
+			err: dialer.NewErrClose(&mockerr),
 		},
 		want: (func() *string {
 			s := errorx.CloseOperation
@@ -1045,7 +1047,7 @@ func TestNewFailedOperation(t *testing.T) {
 	}, {
 		name: "With ErrReadFrom",
 		args: args{
-			err: quicdialer.MockErrReadFrom,
+			err: quicdialer.NewErrReadFrom(&mockerr),
 		},
 		want: (func() *string {
 			s := errorx.ReadFromOperation
@@ -1054,7 +1056,7 @@ func TestNewFailedOperation(t *testing.T) {
 	}, {
 		name: "With ErrWriteTo",
 		args: args{
-			err: quicdialer.MockErrWriteTo,
+			err: quicdialer.NewErrWriteTo(&mockerr),
 		},
 		want: (func() *string {
 			s := errorx.WriteToOperation
@@ -1064,7 +1066,7 @@ func TestNewFailedOperation(t *testing.T) {
 		{
 			name: "With ErrResolve",
 			args: args{
-				err: resolver.MockErrResolve,
+				err: resolver.NewErrResolve(&mockerr),
 			},
 			want: (func() *string {
 				s := errorx.ResolveOperation

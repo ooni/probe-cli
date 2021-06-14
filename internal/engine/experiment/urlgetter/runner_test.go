@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 )
 
 func TestRunnerWithInvalidURLScheme(t *testing.T) {
@@ -37,7 +38,7 @@ func TestRunnerDNSLookupWithContextCanceled(t *testing.T) {
 	cancel()
 	r := urlgetter.Runner{Target: "dnslookup://www.google.com"}
 	err := r.Run(ctx)
-	if err == nil || err.Error() != "interrupted" {
+	if err == nil || *archival.NewFailure(err) != "interrupted" {
 		t.Fatal("not the error we expected")
 	}
 }
@@ -47,7 +48,7 @@ func TestRunnerTLSHandshakeWithContextCanceled(t *testing.T) {
 	cancel()
 	r := urlgetter.Runner{Target: "tlshandshake://www.google.com:443"}
 	err := r.Run(ctx)
-	if err == nil || err.Error() != "interrupted" {
+	if err == nil || *archival.NewFailure(err) != "interrupted" {
 		t.Fatal("not the error we expected")
 	}
 }
@@ -57,7 +58,7 @@ func TestRunnerTCPConnectWithContextCanceled(t *testing.T) {
 	cancel()
 	r := urlgetter.Runner{Target: "tcpconnect://www.google.com:443"}
 	err := r.Run(ctx)
-	if err == nil || err.Error() != "interrupted" {
+	if err == nil || *archival.NewFailure(err) != "interrupted" {
 		t.Fatal("not the error we expected")
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonidatamodel"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -429,8 +430,7 @@ func errString(err error) (s string) {
 
 func setFailure(err error) (s *string) {
 	if err != nil {
-		descr := err.Error()
-		s = &descr
+		s = archival.NewFailure(err)
 	}
 	return
 }

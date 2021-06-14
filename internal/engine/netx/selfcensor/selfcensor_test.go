@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
 )
 
@@ -219,8 +220,8 @@ func TestBlockedFingerprintsTimeout(t *testing.T) {
 	})
 	conn, err := tlsDialer.DialTLSContext(
 		context.Background(), "tcp", "dns.google:443")
-	if err == nil || err.Error() != "generic_timeout_error" {
-		t.Fatal("not the error expected")
+	if err == nil || *archival.NewFailure(err) != "generic_timeout_error" {
+		t.Fatal("not the error expected", err.Error())
 	}
 	if conn != nil {
 		t.Fatal("expected nil conn here")
@@ -262,8 +263,8 @@ func TestBlockedFingerprintsConnectionReset(t *testing.T) {
 	})
 	conn, err := tlsDialer.DialTLSContext(
 		context.Background(), "tcp", "dns.google:443")
-	if err == nil || err.Error() != "connection_reset" {
-		t.Fatal("not the error we expected")
+	if err == nil || *archival.NewFailure(err) != "connection_reset" {
+		t.Fatal("not the error we expected", *archival.NewFailure(err))
 	}
 	if conn != nil {
 		t.Fatal("expected nil conn here")

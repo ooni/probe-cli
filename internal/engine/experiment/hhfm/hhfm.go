@@ -181,8 +181,7 @@ func Transact(txp Transport, req *http.Request,
 	callbacks model.ExperimentCallbacks) (*http.Response, []byte, error) {
 	// make sure that we return a wrapped error here
 	resp, data, err := transact(txp, req, callbacks)
-	err = errorx.SafeErrWrapperBuilder{
-		Error: err, Operation: errorx.TopLevelOperation}.MaybeBuild()
+	// TODO(kelmenhorst) wrap in HTTPRoundtrip/TopLevel error wrapper
 	return resp, data, err
 }
 

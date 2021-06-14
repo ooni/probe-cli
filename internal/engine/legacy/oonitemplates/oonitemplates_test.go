@@ -11,6 +11,7 @@ import (
 
 	goptlib "git.torproject.org/pluggable-transports/goptlib.git"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"gitlab.com/yawning/obfs4.git/transports"
 	obfs4base "gitlab.com/yawning/obfs4.git/transports/base"
@@ -55,7 +56,7 @@ func TestDNSLookupCancellation(t *testing.T) {
 	if results.Error == nil {
 		t.Fatal("expected an error here")
 	}
-	if results.Error.Error() != errorx.FailureGenericTimeoutError {
+	if *archival.NewFailure(results.Error) != errorx.FailureGenericTimeoutError {
 		t.Fatal("not the error we expected")
 	}
 	if len(results.Addresses) > 0 {
@@ -170,7 +171,7 @@ func TestTLSConnectCancellation(t *testing.T) {
 	if results.Error == nil {
 		t.Fatal("expected an error here")
 	}
-	if results.Error.Error() != errorx.FailureGenericTimeoutError {
+	if *archival.NewFailure(results.Error) != errorx.FailureGenericTimeoutError {
 		t.Fatal("not the error we expected")
 	}
 }
@@ -355,7 +356,7 @@ func TestOBFS4DialContextError(t *testing.T) {
 	cancel() // should cause DialContex to fail
 	config := obfs4config()
 	results := OBFS4Connect(ctx, config)
-	if results.Error.Error() != "interrupted" {
+	if *archival.NewFailure(results.Error) != "interrupted" {
 		t.Fatal("not the error we expected")
 	}
 }

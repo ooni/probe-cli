@@ -10,6 +10,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
@@ -352,7 +353,7 @@ func TestGetterWithCancelledContextUnknownResolverURL(t *testing.T) {
 		Target:  "https://www.google.com",
 	}
 	tk, err := g.Get(ctx)
-	if err == nil || err.Error() != "unknown_failure: unsupported resolver scheme" {
+	if err == nil || *archival.NewFailure(err) != "unknown_failure: unsupported resolver scheme" {
 		t.Fatal("not the error we expected")
 	}
 	if tk.Agent != "redirect" {

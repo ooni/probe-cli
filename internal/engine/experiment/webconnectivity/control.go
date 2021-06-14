@@ -6,7 +6,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
 // ControlRequest is the request that we send to the control
@@ -59,10 +58,10 @@ func Control(
 	}
 	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
 	// make sure error is wrapped
-	err = errorx.SafeErrWrapperBuilder{
-		Error:     clnt.PostJSON(ctx, "/", creq, &out),
-		Operation: errorx.TopLevelOperation,
-	}.MaybeBuild()
+	err = clnt.PostJSON(ctx, "/", creq, &out)
+	if err != nil {
+		err = NewErrTopLevel(&err)
+	}
 	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, err)
 	(&out.DNS).FillASNs(sess)
 	return

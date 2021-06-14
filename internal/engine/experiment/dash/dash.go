@@ -17,6 +17,7 @@ import (
 	"github.com/montanaflynn/stats"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
@@ -227,8 +228,7 @@ func (r runner) do(ctx context.Context) error {
 	const numIterations = 15
 	err := r.loop(ctx, numIterations)
 	if err != nil {
-		s := err.Error()
-		r.tk.Failure = &s
+		r.tk.Failure = archival.NewFailure(err)
 		// fallthrough
 	}
 	return err

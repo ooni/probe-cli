@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
@@ -148,7 +148,7 @@ func TestHTTPTransportTimeout(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
-	if !strings.HasSuffix(err.Error(), errorx.FailureGenericTimeoutError) {
+	if *archival.NewFailure(err) != errorx.FailureGenericTimeoutError {
 		t.Fatal("not the error we expected")
 	}
 	if resp != nil {

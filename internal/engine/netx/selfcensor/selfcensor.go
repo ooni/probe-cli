@@ -215,7 +215,7 @@ func (c connWrapper) match(p []byte, n int) (int, error) {
 			if value == "TIMEOUT" {
 				return 0, errTimeout
 			}
-			return 0, errors.New("connection reset by peer")
+			return 0, errors.New("connection_reset")
 		}
 	}
 	return n, nil

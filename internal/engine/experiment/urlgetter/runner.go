@@ -12,18 +12,14 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 const httpRequestFailed = "http_request_failed"
 
 // ErrHTTPRequestFailed indicates that the HTTP request failed.
-var ErrHTTPRequestFailed = &errorx.ErrWrapper{
-	Failure:    httpRequestFailed,
-	Operation:  errorx.TopLevelOperation,
-	WrappedErr: errors.New(httpRequestFailed),
-}
+// TODO(kelmenhorst) wrap in HTTPRoundtrip/TopLevel error wrapper
+var ErrHTTPRequestFailed = errors.New(httpRequestFailed)
 
 // The Runner job is to run a single measurement
 type Runner struct {

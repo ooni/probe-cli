@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/stunreachability"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/pion/stun"
 )
@@ -97,7 +98,7 @@ func TestCancelledContext(t *testing.T) {
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if err.Error() != "interrupted" {
+	if *archival.NewFailure(err) != "interrupted" {
 		t.Fatal("not the error we expected")
 	}
 	tk := measurement.TestKeys.(*stunreachability.TestKeys)

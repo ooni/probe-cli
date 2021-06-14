@@ -9,6 +9,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
@@ -84,7 +85,7 @@ func TestBogonResolutionNotBroken(t *testing.T) {
 	if !errors.Is(err, errorx.ErrDNSBogon) {
 		t.Fatal("not the error we expected")
 	}
-	if err.Error() != errorx.FailureDNSBogonError {
+	if *archival.NewFailure(err) != errorx.FailureDNSBogonError {
 		t.Fatal("error not correctly wrapped")
 	}
 	if len(addrs) != 1 || addrs[0] != "127.0.0.1" {
