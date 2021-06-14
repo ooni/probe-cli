@@ -20,11 +20,11 @@ import (
 	"time"
 
 	goptlib "git.torproject.org/pluggable-transports/goptlib.git"
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"gitlab.com/yawning/obfs4.git/transports"
 	obfs4base "gitlab.com/yawning/obfs4.git/transports/base"
 )
@@ -37,7 +37,7 @@ type channelHandler struct {
 func newChannelHandler(ch chan<- modelx.Measurement) *channelHandler {
 	return &channelHandler{
 		ch:         ch,
-		lateWrites: atomicx.NewInt64(),
+		lateWrites: &atomicx.Int64{},
 	}
 }
 

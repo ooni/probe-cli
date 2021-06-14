@@ -13,7 +13,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
-	"github.com/ooni/probe-cli/v3/internal/engine/shellx"
+	"github.com/ooni/probe-cli/v3/internal/shellx"
 	"golang.org/x/sys/execabs"
 	"golang.org/x/sys/unix"
 )
@@ -80,12 +80,12 @@ func (managerDarwin) LogShow() error {
 	if major < 20 /* macOS 11.0 Big Sur */ {
 		return errNotImplemented
 	}
-	return shellx.Run("log", "show", "--info", "--debug",
+	return shellx.Run(log.Log, "log", "show", "--info", "--debug",
 		"--process", "ooniprobe", "--style", "compact")
 }
 
 func (managerDarwin) LogStream() error {
-	return shellx.Run("log", "stream", "--style", "compact", "--level",
+	return shellx.Run(log.Log, "log", "stream", "--style", "compact", "--level",
 		"debug", "--process", "ooniprobe")
 }
 

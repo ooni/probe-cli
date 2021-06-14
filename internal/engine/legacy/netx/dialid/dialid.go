@@ -3,12 +3,12 @@ package dialid
 import (
 	"context"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 )
 
 type contextkey struct{}
 
-var id = atomicx.NewInt64()
+var id = &atomicx.Int64{}
 
 // WithDialID returns a copy of ctx with DialID
 func WithDialID(ctx context.Context) context.Context {

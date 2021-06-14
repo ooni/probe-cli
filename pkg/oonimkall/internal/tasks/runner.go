@@ -8,9 +8,10 @@ import (
 	"net/url"
 	"time"
 
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 const (
@@ -71,7 +72,7 @@ func (r *Runner) hasUnsupportedSettings(logger *ChanLogger) bool {
 }
 
 func (r *Runner) newsession(ctx context.Context, logger *ChanLogger) (*engine.Session, error) {
-	kvstore, err := engine.NewFileSystemKVStore(r.settings.StateDir)
+	kvstore, err := kvstore.NewFS(r.settings.StateDir)
 	if err != nil {
 		return nil, err
 	}

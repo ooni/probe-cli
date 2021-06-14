@@ -1,0 +1,180 @@
+package main
+
+import (
+	"fmt"
+	"strings"
+	"time"
+)
+
+// apiField contains the fields of an API data structure
+type apiField struct {
+	// name is the field name
+	name string
+
+	// kind is the filed type
+	kind string
+
+	// comment is a brief comment to document the field
+	comment string
+
+	// ifLogin indicates whether this field should only be
+	// emitted when the API requires login
+	ifLogin bool
+
+	// ifTemplate indicates whether this field should only be
+	// emitted when the URL path is a template
+	ifTemplate bool
+
+	// noClone is true when this field should not be copied
+	// from the parent data structure when cloning
+	noClone bool
+}
+
+var apiFields = []apiField{{
+	name:    "BaseURL",
+	kind:    "string",
+	comment: "optional",
+}, {
+	name:    "HTTPClient",
+	kind:    "HTTPClient",
+	comment: "optional",
+}, {
+	name:    "JSONCodec",
+	kind:    "JSONCodec",
+	comment: "optional",
+}, {
+	name:    "Token",
+	kind:    "string",
+	comment: "mandatory",
+	ifLogin: true,
+	noClone: true,
+}, {
+	name:    "RequestMaker",
+	kind:    "RequestMaker",
+	comment: "optional",
+}, {
+	name:       "TemplateExecutor",
+	kind:       "templateExecutor",
+	comment:    "optional",
+	ifTemplate: true,
+}, {
+	name:    "UserAgent",
+	kind:    "string",
+	comment: "optional",
+}}
+
+func (d *Descriptor) genNewAPI(sb *strings.Builder) {
+	fmt.Fprintf(sb, "// %s implements the %s API.\n", d.APIStructName(), d.Name)
+	fmt.Fprintf(sb, "type %s struct {\n", d.APIStructName())
+	for _, f := range apiFields {
+		if !d.RequiresLogin && f.ifLogin {
+			continue
+		}
+		if !d.URLPath.IsTemplate && f.ifTemplate {
+			continue
+		}
+		fmt.Fprintf(sb, "\t%s %s // %s\n", f.name, f.kind, f.comment)
+	}
+	fmt.Fprint(sb, "}\n\n")
+
+	if d.RequiresLogin {
+		fmt.Fprintf(sb, "// WithToken returns a copy of the API where the\n")
+		fmt.Fprintf(sb, "// value of the Token field is replaced with token.\n")
+		fmt.Fprintf(sb, "func (api *%s) WithToken(token string) %s {\n",
+			d.APIStructName(), d.CallerInterfaceName())
+		fmt.Fprintf(sb, "out := &%s{}\n", d.APIStructName())
+		for _, f := range apiFields {
+			if !d.URLPath.IsTemplate && f.ifTemplate {
+				continue
+			}
+			if f.noClone == true {
+				continue
+			}
+			fmt.Fprintf(sb, "out.%s = api.%s\n", f.name, f.name)
+		}
+		fmt.Fprint(sb, "out.Token = token\n")
+		fmt.Fprint(sb, "return out\n")
+		fmt.Fprint(sb, "}\n\n")
+	}
+
+	fmt.Fprintf(sb, "func (api *%s) baseURL() string {\n", d.APIStructName())
+	fmt.Fprint(sb, "\tif api.BaseURL != \"\" {\n")
+	fmt.Fprint(sb, "\t\treturn api.BaseURL\n")
+	fmt.Fprint(sb, "\t}\n")
+	fmt.Fprint(sb, "\treturn \"https://ps1.ooni.io\"\n")
+	fmt.Fprint(sb, "}\n\n")
+
+	fmt.Fprintf(sb, "func (api *%s) requestMaker() RequestMaker {\n", d.APIStructName())
+	fmt.Fprint(sb, "\tif api.RequestMaker != nil {\n")
+	fmt.Fprint(sb, "\t\treturn api.RequestMaker\n")
+	fmt.Fprint(sb, "\t}\n")
+	fmt.Fprint(sb, "\treturn &defaultRequestMaker{}\n")
+	fmt.Fprint(sb, "}\n\n")
+
+	fmt.Fprintf(sb, "func (api *%s) jsonCodec() JSONCodec {\n", d.APIStructName())
+	fmt.Fprint(sb, "\tif api.JSONCodec != nil {\n")
+	fmt.Fprint(sb, "\t\treturn api.JSONCodec\n")
+	fmt.Fprint(sb, "\t}\n")
+	fmt.Fprint(sb, "\treturn &defaultJSONCodec{}\n")
+	fmt.Fprint(sb, "}\n\n")
+
+	if d.URLPath.IsTemplate {
+		fmt.Fprintf(
+			sb, "func (api *%s) templateExecutor() templateExecutor {\n",
+			d.APIStructName())
+		fmt.Fprint(sb, "\tif api.TemplateExecutor != nil {\n")
+		fmt.Fprint(sb, "\t\treturn api.TemplateExecutor\n")
+		fmt.Fprint(sb, "\t}\n")
+		fmt.Fprint(sb, "\treturn &defaultTemplateExecutor{}\n")
+		fmt.Fprint(sb, "}\n\n")
+	}
+
+	fmt.Fprintf(
+		sb, "func (api *%s) httpClient() HTTPClient {\n",
+		d.APIStructName())
+	fmt.Fprint(sb, "\tif api.HTTPClient != nil {\n")
+	fmt.Fprint(sb, "\t\treturn api.HTTPClient\n")
+	fmt.Fprint(sb, "\t}\n")
+	fmt.Fprint(sb, "\treturn http.DefaultClient\n")
+	fmt.Fprint(sb, "}\n\n")
+
+	fmt.Fprintf(sb, "// Call calls the %s API.\n", d.Name)
+	fmt.Fprintf(
+		sb, "func (api *%s) Call(ctx context.Context, req %s) (%s, error) {\n",
+		d.APIStructName(), d.RequestTypeName(), d.ResponseTypeName())
+	fmt.Fprint(sb, "\thttpReq, err := api.newRequest(ctx, req)\n")
+	fmt.Fprint(sb, "\tif err != nil {\n")
+	fmt.Fprint(sb, "\t\treturn nil, err\n")
+	fmt.Fprint(sb, "\t}\n")
+	fmt.Fprint(sb, "\thttpReq.Header.Add(\"Accept\", \"application/json\")\n")
+	if d.RequiresLogin {
+		fmt.Fprint(sb, "\tif api.Token == \"\" {\n")
+		fmt.Fprint(sb, "\t\treturn nil, ErrMissingToken\n")
+		fmt.Fprint(sb, "\t}\n")
+		fmt.Fprint(sb, "\thttpReq.Header.Add(\"Authorization\", newAuthorizationHeader(api.Token))\n")
+	}
+	fmt.Fprint(sb, "\tif api.UserAgent != \"\" {\n")
+	fmt.Fprint(sb, "\t\thttpReq.Header.Add(\"User-Agent\", api.UserAgent)\n")
+	fmt.Fprint(sb, "\t}\n")
+	fmt.Fprint(sb, "\treturn api.newResponse(api.httpClient().Do(httpReq))\n")
+	fmt.Fprint(sb, "}\n\n")
+}
+
+// GenAPIsGo generates apis.go.
+func GenAPIsGo(file string) {
+	var sb strings.Builder
+	fmt.Fprint(&sb, "// Code generated by go generate; DO NOT EDIT.\n")
+	fmt.Fprintf(&sb, "// %s\n\n", time.Now())
+	fmt.Fprint(&sb, "package ooapi\n\n")
+	fmt.Fprintf(&sb, "//go:generate go run ./internal/generator -file %s\n\n", file)
+	fmt.Fprint(&sb, "import (\n")
+	fmt.Fprint(&sb, "\t\"context\"\n")
+	fmt.Fprint(&sb, "\t\"net/http\"\n")
+	fmt.Fprint(&sb, "\n")
+	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel\"\n")
+	fmt.Fprint(&sb, ")\n")
+	for _, desc := range Descriptors {
+		desc.genNewAPI(&sb)
+	}
+	writefile(file, &sb)
+}

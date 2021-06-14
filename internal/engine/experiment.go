@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
@@ -168,7 +167,7 @@ func (e *Experiment) newMeasurement(input string) *model.Measurement {
 	}
 	m.AddAnnotation("engine_name", "ooniprobe-engine")
 	m.AddAnnotation("engine_version", version.Version)
-	m.AddAnnotation("platform", platform.Name())
+	m.AddAnnotation("platform", e.session.Platform())
 	return m
 }
 

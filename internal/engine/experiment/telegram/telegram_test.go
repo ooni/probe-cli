@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/telegram"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
@@ -271,9 +271,9 @@ func TestUpdateWebWithMixedResults(t *testing.T) {
 }
 
 func TestWeConfigureWebChecksToFailOnHTTPError(t *testing.T) {
-	called := atomicx.NewInt64()
-	failOnErrorHTTPS := atomicx.NewInt64()
-	failOnErrorHTTP := atomicx.NewInt64()
+	called := &atomicx.Int64{}
+	failOnErrorHTTPS := &atomicx.Int64{}
+	failOnErrorHTTP := &atomicx.Int64{}
 	measurer := telegram.Measurer{
 		Config: telegram.Config{},
 		Getter: func(ctx context.Context, g urlgetter.Getter) (urlgetter.TestKeys, error) {

@@ -55,6 +55,14 @@ is documented. At the minimum document all the exported symbols.
 Make sure you commit `go.mod` and `go.sum` changes. Make sure you
 run `go mod tidy` to minimize such changes.
 
+## Implementation requirements
+
+- use `./internal/atomicx` rather than `atomic/sync`
+
+- do not use `os/exec`, use `x/sys/execabs` or `./internal/shellx`
+
+- use `./internal/fsx.OpenFile` when you need to open a file
+
 ## Code testing requirements
 
 Make sure all tests pass with `go test -race ./...` run from the

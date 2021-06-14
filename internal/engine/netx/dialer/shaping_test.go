@@ -1,20 +1,14 @@
-package dialer_test
+package dialer
 
 import (
 	"net"
 	"net/http"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 )
 
-func TestGood(t *testing.T) {
-	txp := netx.NewHTTPTransport(netx.Config{
-		Dialer: dialer.ShapingDialer{
-			Dialer: new(net.Dialer),
-		},
-	})
+func TestShapingDialerGood(t *testing.T) {
+	d := &shapingDialer{Dialer: &net.Dialer{}}
+	txp := &http.Transport{DialContext: d.DialContext}
 	client := &http.Client{Transport: txp}
 	resp, err := client.Get("https://www.google.com/")
 	if err != nil {

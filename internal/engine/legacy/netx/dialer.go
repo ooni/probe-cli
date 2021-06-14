@@ -13,6 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 )
 
 // Dialer performs measurements while dialing.
@@ -59,24 +60,23 @@ func maybeWithMeasurementRoot(
 // - DNSDialer (topmost)
 // - EmitterDialer
 // - ErrorWrapperDialer
-// - TimeoutDialer
 // - ByteCountingDialer
-// - net.Dialer
+// - dialer.Default
 //
 // If you have others needs, manually build the chain you need.
-func newDNSDialer(resolver dialer.Resolver) dialer.DNSDialer {
-	return dialer.DNSDialer{
-		Dialer: dialer.EmitterDialer{
-			Dialer: dialer.ErrorWrapperDialer{
-				Dialer: dialer.TimeoutDialer{
-					Dialer: dialer.ByteCounterDialer{
-						Dialer: new(net.Dialer),
-					},
-				},
-			},
-		},
-		Resolver: resolver,
-	}
+func newDNSDialer(resolver dialer.Resolver) dialer.Dialer {
+	// Implementation note: we're wrapping the result of dialer.New
+	// on the outside, while previously we were puttting the
+	// EmitterDialer before the DNSDialer (see the above comment).
+	//
+	// Yet, this is fine because the only experiment which is
+	// using this code is tor, for which it doesn't matter.
+	//
+	// Also (and I am always scared to write this kind of
+	// comments), we should rewrite tor soon.
+	return &EmitterDialer{dialer.New(&dialer.Config{
+		ContextByteCounting: true,
+	}, resolver)}
 }
 
 // DialContext is like Dial but the context allows to interrupt a
@@ -101,14 +101,14 @@ func (d *Dialer) DialTLS(network, address string) (net.Conn, error) {
 // - SystemTLSHandshaker
 //
 // If you have others needs, manually build the chain you need.
-func newTLSDialer(d dialer.Dialer, config *tls.Config) dialer.TLSDialer {
-	return dialer.TLSDialer{
+func newTLSDialer(d dialer.Dialer, config *tls.Config) tlsdialer.TLSDialer {
+	return tlsdialer.TLSDialer{
 		Config: config,
 		Dialer: d,
-		TLSHandshaker: dialer.EmitterTLSHandshaker{
-			TLSHandshaker: dialer.ErrorWrapperTLSHandshaker{
-				TLSHandshaker: dialer.TimeoutTLSHandshaker{
-					TLSHandshaker: dialer.SystemTLSHandshaker{},
+		TLSHandshaker: tlsdialer.EmitterTLSHandshaker{
+			TLSHandshaker: tlsdialer.ErrorWrapperTLSHandshaker{
+				TLSHandshaker: tlsdialer.TimeoutTLSHandshaker{
+					TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
 				},
 			},
 		},

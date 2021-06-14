@@ -8,12 +8,13 @@ import (
 	"runtime"
 	"sync"
 
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // AtomicInt64 allows us to export atomicx.Int64 variables to
@@ -25,8 +26,8 @@ type AtomicInt64 struct {
 // These two variables contain metrics pertaining to the number
 // of Sessions and Contexts that are currently being used.
 var (
-	ActiveSessions = &AtomicInt64{atomicx.NewInt64()}
-	ActiveContexts = &AtomicInt64{atomicx.NewInt64()}
+	ActiveSessions = &AtomicInt64{&atomicx.Int64{}}
+	ActiveContexts = &AtomicInt64{&atomicx.Int64{}}
 )
 
 // Logger is the logger used by a Session. You should implement a class
@@ -147,7 +148,7 @@ func NewSessionWithContext(ctx *Context, config *SessionConfig) (*Session, error
 
 // newSessionWithContext implements NewSessionWithContext.
 func newSessionWithContext(ctx context.Context, config *SessionConfig) (*Session, error) {
-	kvstore, err := engine.NewFileSystemKVStore(config.StateDir)
+	kvstore, err := kvstore.NewFS(config.StateDir)
 	if err != nil {
 		return nil, err
 	}

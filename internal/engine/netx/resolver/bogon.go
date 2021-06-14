@@ -5,7 +5,7 @@ import (
 	"net"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 var privateIPBlocks []*net.IPNet

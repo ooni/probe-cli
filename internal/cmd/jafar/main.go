@@ -26,8 +26,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/resolver"
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/tlsproxy"
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/uncensored"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/engine/shellx"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
 var (
@@ -276,7 +276,7 @@ func main() {
 	policy := iptablesStart()
 	var err error
 	if *mainCommand != "" {
-		err = shellx.RunCommandline(fmt.Sprintf(
+		err = shellx.RunCommandline(log.Log, fmt.Sprintf(
 			"sudo -u '%s' -- %s", *mainUser, *mainCommand,
 		))
 	} else {

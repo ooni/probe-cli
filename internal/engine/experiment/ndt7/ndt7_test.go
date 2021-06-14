@@ -40,17 +40,6 @@ func TestDiscoverCancelledContext(t *testing.T) {
 	}
 }
 
-type verifyRequestTransport struct {
-	ExpectedError error
-}
-
-func (txp *verifyRequestTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.URL.RawQuery != "ip=1.2.3.4" {
-		return nil, errors.New("invalid req.URL.RawQuery")
-	}
-	return nil, txp.ExpectedError
-}
-
 func TestDoDownloadWithCancelledContext(t *testing.T) {
 	m := new(Measurer)
 	sess := &mockable.Session{

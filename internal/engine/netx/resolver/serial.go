@@ -6,7 +6,7 @@ import (
 	"net"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 )
 
 // RoundTripper represents an abstract DNS transport.
@@ -38,7 +38,7 @@ func NewSerialResolver(t RoundTripper) SerialResolver {
 	return SerialResolver{
 		Encoder:     MiekgEncoder{},
 		Decoder:     MiekgDecoder{},
-		NumTimeouts: atomicx.NewInt64(),
+		NumTimeouts: &atomicx.Int64{},
 		Txp:         t,
 	}
 }

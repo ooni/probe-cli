@@ -18,9 +18,15 @@ type resolverinfo struct {
 	Score float64
 }
 
+// ErrNilKVStore indicates that the KVStore is nil.
+var ErrNilKVStore = errors.New("sessionresolver: kvstore is nil")
+
 // readstate reads the resolver state from disk
 func (r *Resolver) readstate() ([]*resolverinfo, error) {
-	data, err := r.kvstore().Get(storekey)
+	if r.KVStore == nil {
+		return nil, ErrNilKVStore
+	}
+	data, err := r.KVStore.Get(storekey)
 	if err != nil {
 		return nil, err
 	}
@@ -85,9 +91,12 @@ func (r *Resolver) readstatedefault() []*resolverinfo {
 
 // writestate writes the state on the kvstore.
 func (r *Resolver) writestate(ri []*resolverinfo) error {
+	if r.KVStore == nil {
+		return ErrNilKVStore
+	}
 	data, err := r.getCodec().Encode(ri)
 	if err != nil {
 		return err
 	}
-	return r.kvstore().Set(storekey, data)
+	return r.KVStore.Set(storekey, data)
 }

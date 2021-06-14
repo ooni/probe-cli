@@ -15,11 +15,11 @@ import (
 	"time"
 
 	"github.com/montanaflynn/stats"
-	"github.com/ooni/probe-cli/v3/internal/engine/humanizex"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/humanize"
 )
 
 const (
@@ -181,7 +181,7 @@ func (r runner) measure(
 		total += current.Received
 		avgspeed := 8 * float64(total) / time.Now().Sub(begin).Seconds()
 		percentage := float64(current.Iteration) / float64(numIterations)
-		message := fmt.Sprintf("streaming: speed: %s", humanizex.SI(avgspeed, "bit/s"))
+		message := fmt.Sprintf("streaming: speed: %s", humanize.SI(avgspeed, "bit/s"))
 		r.callbacks.OnProgress(percentage, message)
 		current.Iteration++
 		speed := float64(current.Received) / float64(current.Elapsed)
