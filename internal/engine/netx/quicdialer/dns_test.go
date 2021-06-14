@@ -23,7 +23,7 @@ func (r MockableResolver) LookupHost(ctx context.Context, host string) ([]string
 }
 
 func TestDNSDialerSuccess(t *testing.T) {
-	tlsConf := &tls.Config{NextProtos: []string{"h3", "h3-34", "h3-32", "h3-29"}}
+	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	dialer := quicdialer.DNSDialer{
 		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{}}
 	sess, err := dialer.DialContext(
@@ -38,7 +38,7 @@ func TestDNSDialerSuccess(t *testing.T) {
 }
 
 func TestDNSDialerNoPort(t *testing.T) {
-	tlsConf := &tls.Config{NextProtos: []string{"h3", "h3-34", "h3-32", "h3-29"}}
+	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	dialer := quicdialer.DNSDialer{
 		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{}}
 	sess, err := dialer.DialContext(
@@ -69,7 +69,7 @@ func TestDNSDialerLookupHostAddress(t *testing.T) {
 }
 
 func TestDNSDialerLookupHostFailure(t *testing.T) {
-	tlsConf := &tls.Config{NextProtos: []string{"h3", "h3-34", "h3-32", "h3-29"}}
+	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	expected := errors.New("mocked error")
 	dialer := quicdialer.DNSDialer{Resolver: MockableResolver{
 		Err: expected,
@@ -86,7 +86,7 @@ func TestDNSDialerLookupHostFailure(t *testing.T) {
 }
 
 func TestDNSDialerInvalidPort(t *testing.T) {
-	tlsConf := &tls.Config{NextProtos: []string{"h3", "h3-34", "h3-32", "h3-29"}}
+	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	dialer := quicdialer.DNSDialer{
 		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{}}
 	sess, err := dialer.DialContext(
@@ -105,7 +105,7 @@ func TestDNSDialerInvalidPort(t *testing.T) {
 }
 
 func TestDNSDialerInvalidPortSyntax(t *testing.T) {
-	tlsConf := &tls.Config{NextProtos: []string{"h3", "h3-34", "h3-32", "h3-29"}}
+	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	dialer := quicdialer.DNSDialer{
 		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{}}
 	sess, err := dialer.DialContext(
@@ -123,7 +123,7 @@ func TestDNSDialerInvalidPortSyntax(t *testing.T) {
 }
 
 func TestDNSDialerDialEarlyFails(t *testing.T) {
-	tlsConf := &tls.Config{NextProtos: []string{"h3", "h3-34", "h3-32", "h3-29"}}
+	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	expected := errors.New("mocked DialEarly error")
 	dialer := quicdialer.DNSDialer{
 		Resolver: new(net.Resolver), Dialer: MockDialer{Err: expected}}

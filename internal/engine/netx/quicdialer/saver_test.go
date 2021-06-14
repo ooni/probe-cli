@@ -28,7 +28,7 @@ func (d MockDialer) DialContext(ctx context.Context, network, host string,
 }
 
 func TestHandshakeSaverSuccess(t *testing.T) {
-	nextprotos := []string{"h3", "h3-34", "h3-32", "h3-29"}
+	nextprotos := []string{"h3"}
 	servername := "www.google.com"
 	tlsConf := &tls.Config{
 		NextProtos: nextprotos,
@@ -84,7 +84,7 @@ func TestHandshakeSaverSuccess(t *testing.T) {
 }
 
 func TestHandshakeSaverHostNameError(t *testing.T) {
-	nextprotos := []string{"h3", "h3-34", "h3-32", "h3-29"}
+	nextprotos := []string{"h3"}
 	servername := "wrong.host.badssl.com"
 	tlsConf := &tls.Config{
 		NextProtos: nextprotos,
