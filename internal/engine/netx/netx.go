@@ -320,7 +320,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		c.Resolver = resolver.SystemResolver{}
 		return c, nil
 	case "https":
-		config.TLSConfig.NextProtos = []string{"h2", "http/1.1", "h3", "h3-34", "h3-32", "h3-29"}
+		config.TLSConfig.NextProtos = []string{"h2", "http/1.1"}
 		c.httpClient = &http.Client{Transport: NewHTTPTransport(config)}
 		var txp resolver.RoundTripper = resolver.NewDNSOverHTTPSWithHostOverride(
 			c.httpClient, URL, hostOverride)
