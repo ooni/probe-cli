@@ -2,7 +2,6 @@ package dialer
 
 import (
 	"context"
-	"errors"
 	"net"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
@@ -18,7 +17,7 @@ func (d ErrorWrapperDialer) DialContext(ctx context.Context, network, address st
 	dialID := dialid.ContextDialID(ctx)
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
-		return nil, &ErrDial{err}
+		return nil, NewErrDial(&err)
 	}
 	return &ErrorWrapperConn{
 		Conn: conn, ConnID: safeConnID(network, conn), DialID: dialID}, nil
@@ -35,7 +34,7 @@ type ErrorWrapperConn struct {
 func (c ErrorWrapperConn) Read(b []byte) (n int, err error) {
 	n, err = c.Conn.Read(b)
 	if err != nil {
-		return n, &ErrRead{err}
+		return n, NewErrRead(&err)
 	}
 	return
 }
@@ -44,7 +43,7 @@ func (c ErrorWrapperConn) Read(b []byte) (n int, err error) {
 func (c ErrorWrapperConn) Write(b []byte) (n int, err error) {
 	n, err = c.Conn.Write(b)
 	if err != nil {
-		return n, &ErrWrite{err}
+		return n, NewErrWrite(&err)
 	}
 	return
 }
@@ -53,7 +52,7 @@ func (c ErrorWrapperConn) Write(b []byte) (n int, err error) {
 func (c ErrorWrapperConn) Close() (err error) {
 	err = c.Conn.Close()
 	if err != nil {
-		return &ErrClose{err}
+		return NewErrClose(&err)
 	}
 	return
 }
@@ -62,16 +61,20 @@ type ErrDial struct {
 	error
 }
 
+func NewErrDial(e *error) *ErrDial {
+	return &ErrDial{*e}
+}
+
 func (e *ErrDial) Unwrap() error {
 	return e.error
 }
 
-func NewErrDial(e error) *ErrDial {
-	return &ErrDial{e}
-}
-
 type ErrWrite struct {
 	error
+}
+
+func NewErrWrite(e *error) *ErrWrite {
+	return &ErrWrite{*e}
 }
 
 func (e *ErrWrite) Unwrap() error {
@@ -82,6 +85,10 @@ type ErrRead struct {
 	error
 }
 
+func NewErrRead(e *error) *ErrRead {
+	return &ErrRead{*e}
+}
+
 func (e *ErrRead) Unwrap() error {
 	return e.error
 }
@@ -90,12 +97,10 @@ type ErrClose struct {
 	error
 }
 
+func NewErrClose(e *error) *ErrClose {
+	return &ErrClose{*e}
+}
+
 func (e *ErrClose) Unwrap() error {
 	return e.error
 }
-
-// export for for testing purposes
-var MockErrDial ErrDial = ErrDial{errors.New("mock error")}
-var MockErrRead ErrRead = ErrRead{errors.New("mock error")}
-var MockErrWrite ErrWrite = ErrWrite{errors.New("mock error")}
-var MockErrClose ErrClose = ErrClose{errors.New("mock error")}

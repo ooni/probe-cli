@@ -37,7 +37,7 @@ func TestErrorWrapperFailure(t *testing.T) {
 	if addrs != nil {
 		t.Fatal("expected nil addr here")
 	}
-	var resolveErr resolver.ErrResolve
+	var resolveErr *resolver.ErrResolve
 	if !errors.As(err, &resolveErr) {
 		t.Fatal("cannot properly cast the returned error")
 	}

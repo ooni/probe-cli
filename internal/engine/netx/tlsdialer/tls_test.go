@@ -106,7 +106,7 @@ func TestErrorWrapperTLSHandshakerFailure(t *testing.T) {
 	if conn != nil {
 		t.Fatal("expected nil con here")
 	}
-	var handshakeErr tlsdialer.ErrTLSHandshake
+	var handshakeErr *tlsdialer.ErrTLSHandshake
 	if !errors.As(err, &handshakeErr) {
 		t.Fatal("cannot cast to tlsdialer.ErrTLSHandshake")
 	}

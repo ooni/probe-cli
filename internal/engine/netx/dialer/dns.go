@@ -2,11 +2,9 @@ package dialer
 
 import (
 	"context"
-	"errors"
 	"net"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
-	"github.com/ooni/probe-cli/v3/internal/multierror"
 )
 
 // DNSDialer is a dialer that uses the configured Resolver to resolver a
@@ -28,17 +26,17 @@ func (d DNSDialer) DialContext(ctx context.Context, network, address string) (ne
 	if err != nil {
 		return nil, err
 	}
-	root := errors.New("address retry")
-	errorunion := multierror.New(root)
+	var errorslist []error
 	for _, addr := range addrs {
 		target := net.JoinHostPort(addr, onlyport)
 		conn, err := d.Dialer.DialContext(ctx, network, target)
 		if err == nil {
 			return conn, nil
 		}
-		errorunion.Add(err)
+		errorslist = append(errorslist, err)
 	}
-	return nil, errorunion
+	// TODO(kelmenhorst)
+	return nil, errorslist[0]
 }
 
 // LookupHost implements Resolver.LookupHost

@@ -3,7 +3,6 @@ package quicdialer
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 
 	"github.com/lucas-clemente/quic-go"
 )
@@ -19,13 +18,17 @@ func (d ErrorWrapperDialer) DialContext(
 	tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
 	sess, err := d.Dialer.DialContext(ctx, network, host, tlsCfg, cfg)
 	if err != nil {
-		return nil, &ErrDial{err}
+		return nil, NewErrDial(&err)
 	}
 	return sess, nil
 }
 
 type ErrDial struct {
 	error
+}
+
+func NewErrDial(e *error) *ErrDial {
+	return &ErrDial{*e}
 }
 
 func (e *ErrDial) Unwrap() error {
@@ -36,6 +39,10 @@ type ErrWriteTo struct {
 	error
 }
 
+func NewErrWriteTo(e *error) *ErrWriteTo {
+	return &ErrWriteTo{*e}
+}
+
 func (e *ErrWriteTo) Unwrap() error {
 	return e.error
 }
@@ -44,11 +51,10 @@ type ErrReadFrom struct {
 	error
 }
 
+func NewErrReadFrom(e *error) *ErrReadFrom {
+	return &ErrReadFrom{*e}
+}
+
 func (e *ErrReadFrom) Unwrap() error {
 	return e.error
 }
-
-// export for for testing purposes
-var MockErrDial ErrDial = ErrDial{errors.New("mock error")}
-var MockErrReadFrom ErrReadFrom = ErrReadFrom{errors.New("mock error")}
-var MockErrWriteTo ErrWriteTo = ErrWriteTo{errors.New("mock error")}

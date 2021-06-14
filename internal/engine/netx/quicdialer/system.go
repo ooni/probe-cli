@@ -62,7 +62,7 @@ func (c saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	// TODO(kelmenhorst): 	This is basically the functionality of ErrorWrapperConn.
 	// 						Should this be it's own conn wrapper? (we can only access the UDP conn in the system dialer)
 	if err != nil {
-		err = &ErrWriteTo{err}
+		err = NewErrWriteTo(&err)
 	}
 	stop := time.Now()
 	c.saver.Write(trace.Event{
@@ -83,7 +83,7 @@ func (c saverUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, er
 	// TODO(kelmenhorst): 	This is basically the functionality of ErrorWrapperConn.
 	// 						Should this be it's own conn wrapper? (we can only access the UDP conn in the system dialer)
 	if err != nil {
-		err = &ErrReadFrom{err}
+		err = NewErrReadFrom(&err)
 	}
 	stop := time.Now()
 	var data []byte
