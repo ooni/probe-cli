@@ -1,4 +1,4 @@
-package dialer_test
+package dialer
 
 import (
 	"context"
@@ -6,15 +6,12 @@ import (
 	"io"
 	"net"
 	"testing"
-	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 )
 
 func TestDNSDialerNoPort(t *testing.T) {
-	dialer := dialer.DNSDialer{Dialer: new(net.Dialer), Resolver: new(net.Resolver)}
+	dialer := &dnsDialer{Dialer: new(net.Dialer), Resolver: new(net.Resolver)}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "antani.ooni.nu")
 	if err == nil {
 		t.Fatal("expected an error here")
@@ -25,10 +22,10 @@ func TestDNSDialerNoPort(t *testing.T) {
 }
 
 func TestDNSDialerLookupHostAddress(t *testing.T) {
-	dialer := dialer.DNSDialer{Dialer: new(net.Dialer), Resolver: MockableResolver{
+	dialer := &dnsDialer{Dialer: new(net.Dialer), Resolver: MockableResolver{
 		Err: errors.New("mocked error"),
 	}}
-	addrs, err := dialer.LookupHost(context.Background(), "1.1.1.1")
+	addrs, err := dialer.lookupHost(context.Background(), "1.1.1.1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +36,7 @@ func TestDNSDialerLookupHostAddress(t *testing.T) {
 
 func TestDNSDialerLookupHostFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	dialer := dialer.DNSDialer{Dialer: new(net.Dialer), Resolver: MockableResolver{
+	dialer := &dnsDialer{Dialer: new(net.Dialer), Resolver: MockableResolver{
 		Err: expected,
 	}}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "dns.google.com:853")
@@ -61,7 +58,11 @@ func (r MockableResolver) LookupHost(ctx context.Context, host string) ([]string
 }
 
 func TestDNSDialerDialForSingleIPFails(t *testing.T) {
-	dialer := dialer.DNSDialer{Dialer: dialer.EOFDialer{}, Resolver: new(net.Resolver)}
+	dialer := &dnsDialer{Dialer: mockablex.Dialer{
+		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+			return nil, io.EOF
+		},
+	}, Resolver: new(net.Resolver)}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "1.1.1.1:853")
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("not the error we expected")
@@ -72,9 +73,14 @@ func TestDNSDialerDialForSingleIPFails(t *testing.T) {
 }
 
 func TestDNSDialerDialForManyIPFails(t *testing.T) {
-	dialer := dialer.DNSDialer{Dialer: dialer.EOFDialer{}, Resolver: MockableResolver{
-		Addresses: []string{"1.1.1.1", "8.8.8.8"},
-	}}
+	dialer := &dnsDialer{
+		Dialer: mockablex.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return nil, io.EOF
+			},
+		}, Resolver: MockableResolver{
+			Addresses: []string{"1.1.1.1", "8.8.8.8"},
+		}}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "dot.dns:853")
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("not the error we expected")
@@ -85,7 +91,15 @@ func TestDNSDialerDialForManyIPFails(t *testing.T) {
 }
 
 func TestDNSDialerDialForManyIPSuccess(t *testing.T) {
-	dialer := dialer.DNSDialer{Dialer: dialer.EOFConnDialer{}, Resolver: MockableResolver{
+	dialer := &dnsDialer{Dialer: mockablex.Dialer{
+		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+			return &mockablex.Conn{
+				MockClose: func() error {
+					return nil
+				},
+			}, nil
+		},
+	}, Resolver: MockableResolver{
 		Addresses: []string{"1.1.1.1", "8.8.8.8"},
 	}}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "dot.dns:853")
@@ -96,34 +110,4 @@ func TestDNSDialerDialForManyIPSuccess(t *testing.T) {
 		t.Fatal("expected non-nil conn")
 	}
 	conn.Close()
-}
-
-func TestDNSDialerDialSetsDialID(t *testing.T) {
-	saver := &handlers.SavingHandler{}
-	ctx := modelx.WithMeasurementRoot(context.Background(), &modelx.MeasurementRoot{
-		Beginning: time.Now(),
-		Handler:   saver,
-	})
-	dialer := dialer.DNSDialer{Dialer: dialer.EmitterDialer{
-		Dialer: dialer.EOFConnDialer{},
-	}, Resolver: MockableResolver{
-		Addresses: []string{"1.1.1.1", "8.8.8.8"},
-	}}
-	conn, err := dialer.DialContext(ctx, "tcp", "dot.dns:853")
-	if err != nil {
-		t.Fatal("expected nil error here")
-	}
-	if conn == nil {
-		t.Fatal("expected non-nil conn")
-	}
-	conn.Close()
-	events := saver.Read()
-	if len(events) != 2 {
-		t.Fatal("unexpected number of events")
-	}
-	for _, ev := range events {
-		if ev.Connect != nil && ev.Connect.DialID == 0 {
-			t.Fatal("unexpected DialID")
-		}
-	}
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 )
 
@@ -89,7 +90,7 @@ func (c Configurer) NewConfiguration() (Configuration, error) {
 	if c.Config.TLSServerName != "" {
 		configuration.HTTPConfig.TLSConfig.ServerName = c.Config.TLSServerName
 	}
-	err = netx.ConfigureTLSVersion(
+	err = tlsx.ConfigureTLSVersion(
 		configuration.HTTPConfig.TLSConfig, c.Config.TLSVersion,
 	)
 	if err != nil {

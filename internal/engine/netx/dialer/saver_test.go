@@ -1,22 +1,26 @@
-package dialer_test
+package dialer
 
 import (
 	"context"
 	"errors"
+	"io"
+	"net"
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 )
 
 func TestSaverDialerFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := &trace.Saver{}
-	dlr := dialer.SaverDialer{
-		Dialer: dialer.FakeDialer{
-			Err: expected,
+	dlr := &saverDialer{
+		Dialer: mockablex.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return nil, expected
+			},
 		},
 		Saver: saver,
 	}
@@ -54,9 +58,11 @@ func TestSaverDialerFailure(t *testing.T) {
 func TestSaverConnDialerFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := &trace.Saver{}
-	dlr := dialer.SaverConnDialer{
-		Dialer: dialer.FakeDialer{
-			Err: expected,
+	dlr := &saverConnDialer{
+		Dialer: mockablex.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return nil, expected
+			},
 		},
 		Saver: saver,
 	}
@@ -67,4 +73,67 @@ func TestSaverConnDialerFailure(t *testing.T) {
 	if conn != nil {
 		t.Fatal("expected nil conn here")
 	}
+}
+
+func TestSaverConnDialerSuccess(t *testing.T) {
+	saver := &trace.Saver{}
+	dlr := &saverConnDialer{
+		Dialer: &saverDialer{
+			Dialer: mockablex.Dialer{
+				MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+					return &mockablex.Conn{
+						MockRead: func(b []byte) (int, error) {
+							return 0, io.EOF
+						},
+						MockWrite: func(b []byte) (int, error) {
+							return 0, io.EOF
+						},
+						MockClose: func() error {
+							return io.EOF
+						},
+						MockLocalAddr: func() net.Addr {
+							return &net.TCPAddr{Port: 12345}
+						},
+					}, nil
+				},
+			},
+			Saver: saver,
+		},
+		Saver: saver,
+	}
+	conn, err := dlr.DialContext(context.Background(), "tcp", "www.google.com:443")
+	if err != nil {
+		t.Fatal("not the error we expected", err)
+	}
+	conn.Read(nil)
+	conn.Write(nil)
+	conn.Close()
+	events := saver.Read()
+	if len(events) != 3 {
+		t.Fatal("unexpected number of events saved", len(events))
+	}
+	if events[0].Name != "connect" {
+		t.Fatal("expected a connect event")
+	}
+	saverCheckConnectEvent(t, &events[0])
+	if events[1].Name != "read" {
+		t.Fatal("expected a read event")
+	}
+	saverCheckReadEvent(t, &events[1])
+	if events[2].Name != "write" {
+		t.Fatal("expected a write event")
+	}
+	saverCheckWriteEvent(t, &events[2])
+}
+
+func saverCheckConnectEvent(t *testing.T, ev *trace.Event) {
+	// TODO(bassosimone): implement
+}
+
+func saverCheckReadEvent(t *testing.T, ev *trace.Event) {
+	// TODO(bassosimone): implement
+}
+
+func saverCheckWriteEvent(t *testing.T, ev *trace.Event) {
+	// TODO(bassosimone): implement
 }

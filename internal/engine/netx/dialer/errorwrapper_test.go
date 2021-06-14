@@ -1,20 +1,24 @@
-package dialer_test
+package dialer
 
 import (
 	"context"
 	"errors"
 	"io"
+	"net"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 )
 
 func TestErrorWrapperFailure(t *testing.T) {
-	ctx := dialid.WithDialID(context.Background())
-	d := dialer.ErrorWrapperDialer{Dialer: dialer.EOFDialer{}}
+	ctx := context.Background()
+	d := &errorWrapperDialer{Dialer: mockablex.Dialer{
+		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+			return nil, io.EOF
+		},
+	}}
 	conn, err := d.DialContext(ctx, "tcp", "www.google.com:443")
 	if conn != nil {
 		t.Fatal("expected a nil conn here")
@@ -27,10 +31,10 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 		t.Fatal("expected another error here")
 	}
 	var (
-		dialErr      *dialer.ErrDial
-		readErr      *dialer.ErrRead
-		writeErr     *dialer.ErrWrite
-		closeErr     *dialer.ErrClose
+		dialErr      *ErrDial
+		readErr      *ErrRead
+		writeErr     *ErrWrite
+		closeErr     *ErrClose
 		handshakeErr *tlsdialer.ErrTLSHandshake
 	)
 	switch op {
@@ -60,8 +64,25 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 }
 
 func TestErrorWrapperSuccess(t *testing.T) {
-	ctx := dialid.WithDialID(context.Background())
-	d := dialer.ErrorWrapperDialer{Dialer: dialer.EOFConnDialer{}}
+	ctx := context.Background()
+	d := &errorWrapperDialer{Dialer: mockablex.Dialer{
+		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+			return &mockablex.Conn{
+				MockRead: func(b []byte) (int, error) {
+					return 0, io.EOF
+				},
+				MockWrite: func(b []byte) (int, error) {
+					return 0, io.EOF
+				},
+				MockClose: func() error {
+					return io.EOF
+				},
+				MockLocalAddr: func() net.Addr {
+					return &net.TCPAddr{Port: 12345}
+				},
+			}, nil
+		},
+	}}
 	conn, err := d.DialContext(ctx, "tcp", "www.google.com")
 	if err != nil {
 		t.Fatal(err)

@@ -59,9 +59,7 @@ func Control(
 	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
 	// make sure error is wrapped
 	err = clnt.PostJSON(ctx, "/", creq, &out)
-	if err != nil {
-		err = NewErrTopLevel(&err)
-	}
+	// TODO(kelmenhorst): wrap in TopLevel error wrapper
 	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, err)
 	(&out.DNS).FillASNs(sess)
 	return

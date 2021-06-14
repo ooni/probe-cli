@@ -60,24 +60,23 @@ func maybeWithMeasurementRoot(
 // - DNSDialer (topmost)
 // - EmitterDialer
 // - ErrorWrapperDialer
-// - TimeoutDialer
 // - ByteCountingDialer
-// - net.Dialer
+// - dialer.Default
 //
 // If you have others needs, manually build the chain you need.
-func newDNSDialer(resolver dialer.Resolver) dialer.DNSDialer {
-	return dialer.DNSDialer{
-		Dialer: dialer.EmitterDialer{
-			Dialer: dialer.ErrorWrapperDialer{
-				Dialer: dialer.TimeoutDialer{
-					Dialer: dialer.ByteCounterDialer{
-						Dialer: new(net.Dialer),
-					},
-				},
-			},
-		},
-		Resolver: resolver,
-	}
+func newDNSDialer(resolver dialer.Resolver) dialer.Dialer {
+	// Implementation note: we're wrapping the result of dialer.New
+	// on the outside, while previously we were puttting the
+	// EmitterDialer before the DNSDialer (see the above comment).
+	//
+	// Yet, this is fine because the only experiment which is
+	// using this code is tor, for which it doesn't matter.
+	//
+	// Also (and I am always scared to write this kind of
+	// comments), we should rewrite tor soon.
+	return &EmitterDialer{dialer.New(&dialer.Config{
+		ContextByteCounting: true,
+	}, resolver)}
 }
 
 // DialContext is like Dial but the context allows to interrupt a

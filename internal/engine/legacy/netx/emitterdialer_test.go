@@ -1,9 +1,10 @@
-package dialer_test
+package netx
 
 import (
 	"context"
 	"errors"
 	"io"
+	"net"
 	"testing"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 )
 
 func TestEmitterFailure(t *testing.T) {
@@ -22,7 +23,11 @@ func TestEmitterFailure(t *testing.T) {
 		Handler:   saver,
 	})
 	ctx = transactionid.WithTransactionID(ctx)
-	d := dialer.EmitterDialer{Dialer: dialer.EOFDialer{}}
+	d := EmitterDialer{Dialer: mockablex.Dialer{
+		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+			return nil, io.EOF
+		},
+	}}
 	conn, err := d.DialContext(ctx, "tcp", "www.google.com:443")
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("not the error we expected")
@@ -77,7 +82,24 @@ func TestEmitterSuccess(t *testing.T) {
 		Handler:   saver,
 	})
 	ctx = transactionid.WithTransactionID(ctx)
-	d := dialer.EmitterDialer{Dialer: dialer.EOFConnDialer{}}
+	d := EmitterDialer{Dialer: mockablex.Dialer{
+		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+			return &mockablex.Conn{
+				MockRead: func(b []byte) (int, error) {
+					return 0, io.EOF
+				},
+				MockWrite: func(b []byte) (int, error) {
+					return 0, io.EOF
+				},
+				MockClose: func() error {
+					return io.EOF
+				},
+				MockLocalAddr: func() net.Addr {
+					return &net.TCPAddr{Port: 12345}
+				},
+			}, nil
+		},
+	}}
 	conn, err := d.DialContext(ctx, "tcp", "www.google.com:443")
 	if err != nil {
 		t.Fatal("we expected no error")

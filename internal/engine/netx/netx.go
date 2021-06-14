@@ -36,11 +36,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // Logger is the logger assumed by this package
@@ -111,15 +109,7 @@ type tlsHandshaker interface {
 		net.Conn, tls.ConnectionState, error)
 }
 
-// NewDefaultCertPool returns a copy of the default x509
-// certificate pool. This function panics on failure.
-func NewDefaultCertPool() *x509.CertPool {
-	pool, err := tlsx.CACerts()
-	runtimex.PanicOnError(err, "tlsx.CACerts() failed")
-	return pool
-}
-
-var defaultCertPool *x509.CertPool = NewDefaultCertPool()
+var defaultCertPool *x509.CertPool = tlsx.NewDefaultCertPool()
 
 // NewResolver creates a new resolver from the specified config
 func NewResolver(config Config) Resolver {
@@ -156,25 +146,13 @@ func NewDialer(config Config) Dialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	var d Dialer = selfcensor.SystemDialer{}
-	d = dialer.TimeoutDialer{Dialer: d}
-	d = dialer.ErrorWrapperDialer{Dialer: d}
-	if config.Logger != nil {
-		d = dialer.LoggingDialer{Dialer: d, Logger: config.Logger}
-	}
-	if config.DialSaver != nil {
-		d = dialer.SaverDialer{Dialer: d, Saver: config.DialSaver}
-	}
-	if config.ReadWriteSaver != nil {
-		d = dialer.SaverConnDialer{Dialer: d, Saver: config.ReadWriteSaver}
-	}
-	d = dialer.DNSDialer{Resolver: config.FullResolver, Dialer: d}
-	d = dialer.ProxyDialer{ProxyURL: config.ProxyURL, Dialer: d}
-	if config.ContextByteCounting {
-		d = dialer.ByteCounterDialer{Dialer: d}
-	}
-	d = dialer.ShapingDialer{Dialer: d}
-	return d
+	return dialer.New(&dialer.Config{
+		ContextByteCounting: config.ContextByteCounting,
+		DialSaver:           config.DialSaver,
+		Logger:              config.Logger,
+		ProxyURL:            config.ProxyURL,
+		ReadWriteSaver:      config.ReadWriteSaver,
+	}, config.FullResolver)
 }
 
 // NewQUICDialer creates a new DNS Dialer for QUIC, with the resolver from the specified config
@@ -314,34 +292,6 @@ func NewDNSClient(config Config, URL string) (DNSClient, error) {
 	return NewDNSClientWithOverrides(config, URL, "", "", "")
 }
 
-// ErrInvalidTLSVersion indicates that you passed us a string
-// that does not represent a valid TLS version.
-var ErrInvalidTLSVersion = errors.New("invalid TLS version")
-
-// ConfigureTLSVersion configures the correct TLS version into
-// the specified *tls.Config or returns an error.
-func ConfigureTLSVersion(config *tls.Config, version string) error {
-	switch version {
-	case "TLSv1.3":
-		config.MinVersion = tls.VersionTLS13
-		config.MaxVersion = tls.VersionTLS13
-	case "TLSv1.2":
-		config.MinVersion = tls.VersionTLS12
-		config.MaxVersion = tls.VersionTLS12
-	case "TLSv1.1":
-		config.MinVersion = tls.VersionTLS11
-		config.MaxVersion = tls.VersionTLS11
-	case "TLSv1.0", "TLSv1":
-		config.MinVersion = tls.VersionTLS10
-		config.MaxVersion = tls.VersionTLS10
-	case "":
-		// nothing
-	default:
-		return ErrInvalidTLSVersion
-	}
-	return nil
-}
-
 // NewDNSClientWithOverrides creates a new DNS client, similar to NewDNSClient,
 // with the option to override the default Hostname and SNI.
 func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
@@ -362,7 +312,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		return c, err
 	}
 	config.TLSConfig = &tls.Config{ServerName: SNIOverride}
-	if err := ConfigureTLSVersion(config.TLSConfig, TLSVersion); err != nil {
+	if err := tlsx.ConfigureTLSVersion(config.TLSConfig, TLSVersion); err != nil {
 		return c, err
 	}
 	switch resolverURL.Scheme {

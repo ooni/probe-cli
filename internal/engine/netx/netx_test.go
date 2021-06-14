@@ -10,11 +10,10 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 )
 
@@ -210,281 +209,6 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 	}
 }
 
-func TestNewDialerVanilla(t *testing.T) {
-	d := netx.NewDialer(netx.Config{})
-	sd, ok := d.(dialer.ShapingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	pd, ok := sd.Dialer.(dialer.ProxyDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if pd.ProxyURL != nil {
-		t.Fatal("not the proxy URL we expected")
-	}
-	dnsd, ok := pd.Dialer.(dialer.DNSDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if dnsd.Resolver == nil {
-		t.Fatal("not the resolver we expected")
-	}
-	ir, ok := dnsd.Resolver.(resolver.IDNAResolver)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	if _, ok := ir.Resolver.(resolver.ErrorWrapperResolver); !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	ewd, ok := dnsd.Dialer.(dialer.ErrorWrapperDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	td, ok := ewd.Dialer.(dialer.TimeoutDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := td.Dialer.(selfcensor.SystemDialer); !ok {
-		t.Fatal("not the dialer we expected")
-	}
-}
-
-func TestNewDialerWithResolver(t *testing.T) {
-	d := netx.NewDialer(netx.Config{
-		FullResolver: resolver.BogonResolver{
-			// not initialized because it doesn't matter in this context
-		},
-	})
-	sd, ok := d.(dialer.ShapingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	pd, ok := sd.Dialer.(dialer.ProxyDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if pd.ProxyURL != nil {
-		t.Fatal("not the proxy URL we expected")
-	}
-	dnsd, ok := pd.Dialer.(dialer.DNSDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if dnsd.Resolver == nil {
-		t.Fatal("not the resolver we expected")
-	}
-	if _, ok := dnsd.Resolver.(resolver.BogonResolver); !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	ewd, ok := dnsd.Dialer.(dialer.ErrorWrapperDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	td, ok := ewd.Dialer.(dialer.TimeoutDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := td.Dialer.(selfcensor.SystemDialer); !ok {
-		t.Fatal("not the dialer we expected")
-	}
-}
-
-func TestNewDialerWithLogger(t *testing.T) {
-	d := netx.NewDialer(netx.Config{
-		Logger: log.Log,
-	})
-	sd, ok := d.(dialer.ShapingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	pd, ok := sd.Dialer.(dialer.ProxyDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if pd.ProxyURL != nil {
-		t.Fatal("not the proxy URL we expected")
-	}
-	dnsd, ok := pd.Dialer.(dialer.DNSDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if dnsd.Resolver == nil {
-		t.Fatal("not the resolver we expected")
-	}
-	ir, ok := dnsd.Resolver.(resolver.IDNAResolver)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	if _, ok := ir.Resolver.(resolver.LoggingResolver); !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	ld, ok := dnsd.Dialer.(dialer.LoggingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if ld.Logger != log.Log {
-		t.Fatal("not the logger we expected")
-	}
-	ewd, ok := ld.Dialer.(dialer.ErrorWrapperDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	td, ok := ewd.Dialer.(dialer.TimeoutDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := td.Dialer.(selfcensor.SystemDialer); !ok {
-		t.Fatal("not the dialer we expected")
-	}
-}
-
-func TestNewDialerWithDialSaver(t *testing.T) {
-	saver := new(trace.Saver)
-	d := netx.NewDialer(netx.Config{
-		DialSaver: saver,
-	})
-	sd, ok := d.(dialer.ShapingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	pd, ok := sd.Dialer.(dialer.ProxyDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if pd.ProxyURL != nil {
-		t.Fatal("not the proxy URL we expected")
-	}
-	dnsd, ok := pd.Dialer.(dialer.DNSDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if dnsd.Resolver == nil {
-		t.Fatal("not the resolver we expected")
-	}
-	ir, ok := dnsd.Resolver.(resolver.IDNAResolver)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	if _, ok := ir.Resolver.(resolver.ErrorWrapperResolver); !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	sad, ok := dnsd.Dialer.(dialer.SaverDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if sad.Saver != saver {
-		t.Fatal("not the logger we expected")
-	}
-	ewd, ok := sad.Dialer.(dialer.ErrorWrapperDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	td, ok := ewd.Dialer.(dialer.TimeoutDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := td.Dialer.(selfcensor.SystemDialer); !ok {
-		t.Fatal("not the dialer we expected")
-	}
-}
-
-func TestNewDialerWithReadWriteSaver(t *testing.T) {
-	saver := new(trace.Saver)
-	d := netx.NewDialer(netx.Config{
-		ReadWriteSaver: saver,
-	})
-	sd, ok := d.(dialer.ShapingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	pd, ok := sd.Dialer.(dialer.ProxyDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if pd.ProxyURL != nil {
-		t.Fatal("not the proxy URL we expected")
-	}
-	dnsd, ok := pd.Dialer.(dialer.DNSDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if dnsd.Resolver == nil {
-		t.Fatal("not the resolver we expected")
-	}
-	ir, ok := dnsd.Resolver.(resolver.IDNAResolver)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	if _, ok := ir.Resolver.(resolver.ErrorWrapperResolver); !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	scd, ok := dnsd.Dialer.(dialer.SaverConnDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if scd.Saver != saver {
-		t.Fatal("not the logger we expected")
-	}
-	ewd, ok := scd.Dialer.(dialer.ErrorWrapperDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	td, ok := ewd.Dialer.(dialer.TimeoutDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := td.Dialer.(selfcensor.SystemDialer); !ok {
-		t.Fatal("not the dialer we expected")
-	}
-}
-
-func TestNewDialerWithContextByteCounting(t *testing.T) {
-	d := netx.NewDialer(netx.Config{
-		ContextByteCounting: true,
-	})
-	sd, ok := d.(dialer.ShapingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	bcd, ok := sd.Dialer.(dialer.ByteCounterDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	pd, ok := bcd.Dialer.(dialer.ProxyDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if pd.ProxyURL != nil {
-		t.Fatal("not the proxy URL we expected")
-	}
-	dnsd, ok := pd.Dialer.(dialer.DNSDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if dnsd.Resolver == nil {
-		t.Fatal("not the resolver we expected")
-	}
-	ir, ok := dnsd.Resolver.(resolver.IDNAResolver)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	if _, ok := ir.Resolver.(resolver.ErrorWrapperResolver); !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	ewd, ok := dnsd.Dialer.(dialer.ErrorWrapperDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	td, ok := ewd.Dialer.(dialer.TimeoutDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := td.Dialer.(selfcensor.SystemDialer); !ok {
-		t.Fatal("not the dialer we expected")
-	}
-}
-
 func TestNewTLSDialerVanilla(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{})
 	rtd, ok := td.(tlsdialer.TLSDialer)
@@ -502,13 +226,6 @@ func TestNewTLSDialerVanilla(t *testing.T) {
 	}
 	if rtd.Dialer == nil {
 		t.Fatal("invalid Dialer")
-	}
-	sd, ok := rtd.Dialer.(dialer.ShapingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := sd.Dialer.(dialer.ProxyDialer); !ok {
-		t.Fatal("not the Dialer we expected")
 	}
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
@@ -542,13 +259,6 @@ func TestNewTLSDialerWithConfig(t *testing.T) {
 	}
 	if rtd.Dialer == nil {
 		t.Fatal("invalid Dialer")
-	}
-	sd, ok := rtd.Dialer.(dialer.ShapingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := sd.Dialer.(dialer.ProxyDialer); !ok {
-		t.Fatal("not the Dialer we expected")
 	}
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
@@ -585,13 +295,6 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	}
 	if rtd.Dialer == nil {
 		t.Fatal("invalid Dialer")
-	}
-	sd, ok := rtd.Dialer.(dialer.ShapingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := sd.Dialer.(dialer.ProxyDialer); !ok {
-		t.Fatal("not the Dialer we expected")
 	}
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
@@ -637,13 +340,6 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	if rtd.Dialer == nil {
 		t.Fatal("invalid Dialer")
 	}
-	sd, ok := rtd.Dialer.(dialer.ShapingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := sd.Dialer.(dialer.ProxyDialer); !ok {
-		t.Fatal("not the Dialer we expected")
-	}
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
@@ -688,13 +384,6 @@ func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
 	if rtd.Dialer == nil {
 		t.Fatal("invalid Dialer")
 	}
-	sd, ok := rtd.Dialer.(dialer.ShapingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := sd.Dialer.(dialer.ProxyDialer); !ok {
-		t.Fatal("not the Dialer we expected")
-	}
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
@@ -733,13 +422,6 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 	}
 	if rtd.Dialer == nil {
 		t.Fatal("invalid Dialer")
-	}
-	sd, ok := rtd.Dialer.(dialer.ShapingDialer)
-	if !ok {
-		t.Fatal("not the dialer we expected")
-	}
-	if _, ok := sd.Dialer.(dialer.ProxyDialer); !ok {
-		t.Fatal("not the Dialer we expected")
 	}
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
@@ -1189,74 +871,7 @@ func TestNewDNSClientBadUDPEndpoint(t *testing.T) {
 func TestNewDNSCLientWithInvalidTLSVersion(t *testing.T) {
 	_, err := netx.NewDNSClientWithOverrides(
 		netx.Config{}, "dot://8.8.8.8", "", "", "TLSv999")
-	if !errors.Is(err, netx.ErrInvalidTLSVersion) {
+	if !errors.Is(err, tlsx.ErrInvalidTLSVersion) {
 		t.Fatalf("not the error we expected: %+v", err)
-	}
-}
-
-func TestConfigureTLSVersion(t *testing.T) {
-	tests := []struct {
-		name       string
-		version    string
-		wantErr    error
-		versionMin int
-		versionMax int
-	}{{
-		name:       "with TLSv1.3",
-		version:    "TLSv1.3",
-		wantErr:    nil,
-		versionMin: tls.VersionTLS13,
-		versionMax: tls.VersionTLS13,
-	}, {
-		name:       "with TLSv1.2",
-		version:    "TLSv1.2",
-		wantErr:    nil,
-		versionMin: tls.VersionTLS12,
-		versionMax: tls.VersionTLS12,
-	}, {
-		name:       "with TLSv1.1",
-		version:    "TLSv1.1",
-		wantErr:    nil,
-		versionMin: tls.VersionTLS11,
-		versionMax: tls.VersionTLS11,
-	}, {
-		name:       "with TLSv1.0",
-		version:    "TLSv1.0",
-		wantErr:    nil,
-		versionMin: tls.VersionTLS10,
-		versionMax: tls.VersionTLS10,
-	}, {
-		name:       "with TLSv1",
-		version:    "TLSv1",
-		wantErr:    nil,
-		versionMin: tls.VersionTLS10,
-		versionMax: tls.VersionTLS10,
-	}, {
-		name:       "with default",
-		version:    "",
-		wantErr:    nil,
-		versionMin: 0,
-		versionMax: 0,
-	}, {
-		name:       "with invalid version",
-		version:    "TLSv999",
-		wantErr:    netx.ErrInvalidTLSVersion,
-		versionMin: 0,
-		versionMax: 0,
-	}}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			conf := new(tls.Config)
-			err := netx.ConfigureTLSVersion(conf, tt.version)
-			if !errors.Is(err, tt.wantErr) {
-				t.Fatalf("not the error we expected: %+v", err)
-			}
-			if conf.MinVersion != uint16(tt.versionMin) {
-				t.Fatalf("not the min version we expected: %+v", conf.MinVersion)
-			}
-			if conf.MaxVersion != uint16(tt.versionMax) {
-				t.Fatalf("not the max version we expected: %+v", conf.MaxVersion)
-			}
-		})
 	}
 }

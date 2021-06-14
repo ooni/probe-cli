@@ -10,7 +10,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 )
 
 const (
@@ -111,12 +111,12 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	defer cancel()
 	urlgetter.RegisterExtensions(measurement)
 
-	certPool := netx.NewDefaultCertPool()
+	certPool := tlsx.NewDefaultCertPool()
 	signalCABytes := []byte(signalCA)
 	if m.Config.SignalCA != "" {
 		signalCABytes = []byte(m.Config.SignalCA)
 	}
-	if certPool.AppendCertsFromPEM(signalCABytes) == false {
+	if !certPool.AppendCertsFromPEM(signalCABytes) {
 		return errors.New("AppendCertsFromPEM failed")
 	}
 
