@@ -2,6 +2,7 @@ package ndt7
 
 import (
 	"context"
+	"errors"
 	"io"
 	"time"
 
@@ -33,6 +34,30 @@ func newDownloadManager(
 }
 
 func (mgr downloadManager) run(ctx context.Context) error {
+	return mgr.reduceErr(mgr.doRun(ctx))
+}
+
+// reduceErr treates as non-errors the errors caused by the context
+// so that we can focus instead on network errors.
+//
+// This function was introduced by https://github.com/ooni/probe-cli/pull/379
+// since before such a PR we did not see context interrupting
+// errors when we were reading messages. Since before such a PR
+// we used to return `nil` on context errors, this function is
+// here to keep the previous behavior by filtering the error
+// returned when reading messages, given that now reading messages
+// can fail midway because we use iox.ReadAllContext.
+func (mgr downloadManager) reduceErr(err error) error {
+	if errors.Is(err, context.Canceled) {
+		return nil
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return nil
+	}
+	return err
+}
+
+func (mgr downloadManager) doRun(ctx context.Context) error {
 	var total int64
 	start := time.Now()
 	if err := mgr.conn.SetReadDeadline(start.Add(mgr.maxRuntime)); err != nil {
