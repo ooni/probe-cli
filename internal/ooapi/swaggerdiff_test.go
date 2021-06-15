@@ -1,9 +1,9 @@
 package ooapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"sort"
@@ -13,6 +13,7 @@ import (
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 	"github.com/ooni/probe-cli/v3/internal/ooapi/internal/openapi"
 )
 
@@ -36,7 +37,7 @@ func getServerModel(serverURL string) *openapi.Swagger {
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := iox.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		log.Fatal(err)
 	}

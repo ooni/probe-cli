@@ -1,6 +1,7 @@
 package dash
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"time"
@@ -36,7 +37,7 @@ func (d FakeDeps) NewHTTPRequest(
 	return d.newHTTPRequestResult, d.newHTTPRequestErr
 }
 
-func (d FakeDeps) ReadAll(r io.Reader) ([]byte, error) {
+func (d FakeDeps) ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error) {
 	return d.readAllResult, d.readAllErr
 }
 

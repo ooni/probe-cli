@@ -1,7 +1,7 @@
 package netxlogger
 
 import (
-	"io/ioutil"
+	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -10,6 +10,7 @@ import (
 	"github.com/apex/log/handlers/discard"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 func TestGood(t *testing.T) {
@@ -32,7 +33,7 @@ func TestGood(t *testing.T) {
 		t.Fatal("expected non-nil resp here")
 	}
 	defer resp.Body.Close()
-	_, err = ioutil.ReadAll(resp.Body)
+	_, err = iox.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

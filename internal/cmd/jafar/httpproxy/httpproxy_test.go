@@ -3,12 +3,12 @@ package httpproxy
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/uncensored"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 func TestPass(t *testing.T) {
@@ -89,7 +89,7 @@ func checkrequest(
 		t.Fatal("unexpected value of status code")
 	}
 	t.Log(resp)
-	values, _ := resp.Header["Via"]
+	values := resp.Header["Via"]
 	var foundProduct bool
 	for _, value := range values {
 		if value == product {
@@ -102,7 +102,7 @@ func checkrequest(
 	if !foundProduct && expectVia {
 		t.Fatal("Via header not found")
 	}
-	proxiedData, err := ioutil.ReadAll(resp.Body)
+	proxiedData, err := iox.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func checkbody(t *testing.T, proxiedData []byte, host string) {
 		t.Fatal("unexpected status code")
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := iox.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

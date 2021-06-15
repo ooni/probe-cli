@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 // DNSOverHTTPS is a DNS over HTTPS RoundTripper. Requests are submitted over
@@ -56,7 +56,7 @@ func (t DNSOverHTTPS) RoundTrip(ctx context.Context, query []byte) ([]byte, erro
 	if resp.Header.Get("content-type") != "application/dns-message" {
 		return nil, errors.New("doh: invalid content-type")
 	}
-	return ioutil.ReadAll(resp.Body)
+	return iox.ReadAllContext(ctx, resp.Body)
 }
 
 // RequiresPadding returns true for DoH according to RFC8467

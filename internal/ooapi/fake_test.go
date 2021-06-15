@@ -3,9 +3,10 @@ package ooapi
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 type FakeCodec struct {
@@ -30,7 +31,7 @@ type FakeHTTPClient struct {
 func (c *FakeHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	time.Sleep(10 * time.Microsecond)
 	if req.Body != nil {
-		_, _ = ioutil.ReadAll(req.Body)
+		_, _ = iox.ReadAllContext(req.Context(), req.Body)
 		req.Body.Close()
 	}
 	if c.Err != nil {

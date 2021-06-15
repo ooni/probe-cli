@@ -1,9 +1,10 @@
 package mlablocatev2
 
 import (
-	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 type FakeTransport struct {
@@ -18,7 +19,7 @@ func (txp FakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return txp.Func(req)
 	}
 	if req.Body != nil {
-		ioutil.ReadAll(req.Body)
+		iox.ReadAllContext(req.Context(), req.Body)
 		req.Body.Close()
 	}
 	if txp.Err != nil {

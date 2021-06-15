@@ -2,9 +2,9 @@ package oldhttptransport
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
 	"sync"
@@ -16,21 +16,22 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 // TraceTripper performs single HTTP transactions.
 type TraceTripper struct {
-	readAllErrs  *atomicx.Int64
-	readAll      func(r io.Reader) ([]byte, error)
-	roundTripper http.RoundTripper
+	readAllErrs    *atomicx.Int64
+	readAllContext func(ctx context.Context, r io.Reader) ([]byte, error)
+	roundTripper   http.RoundTripper
 }
 
 // NewTraceTripper creates a new Transport.
 func NewTraceTripper(roundTripper http.RoundTripper) *TraceTripper {
 	return &TraceTripper{
-		readAllErrs:  &atomicx.Int64{},
-		readAll:      ioutil.ReadAll,
-		roundTripper: roundTripper,
+		readAllErrs:    &atomicx.Int64{},
+		readAllContext: iox.ReadAllContext,
+		roundTripper:   roundTripper,
 	}
 }
 
@@ -57,10 +58,10 @@ func (c *readCloseWrapper) Close() error {
 }
 
 func readSnap(
-	source *io.ReadCloser, limit int64,
-	readAll func(r io.Reader) ([]byte, error),
+	ctx context.Context, source *io.ReadCloser, limit int64,
+	readAllContext func(ctx context.Context, r io.Reader) ([]byte, error),
 ) (data []byte, err error) {
-	data, err = readAll(io.LimitReader(*source, limit))
+	data, err = readAllContext(ctx, io.LimitReader(*source, limit))
 	if err == nil {
 		*source = newReadCloseWrapper(
 			io.MultiReader(bytes.NewReader(data), *source),
@@ -79,7 +80,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	root.Handler.OnMeasurement(modelx.Measurement{
 		HTTPRoundTripStart: &modelx.HTTPRoundTripStartEvent{
 			DialID:                 dialid.ContextDialID(req.Context()),
-			DurationSinceBeginning: time.Now().Sub(root.Beginning),
+			DurationSinceBeginning: time.Since(root.Beginning),
 			Method:                 req.Method,
 			TransactionID:          tid,
 			URL:                    req.URL.String(),
@@ -98,7 +99,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	// Save a snapshot of the request body
 	if req.Body != nil {
-		requestBody, err = readSnap(&req.Body, snapSize, t.readAll)
+		requestBody, err = readSnap(req.Context(), &req.Body, snapSize, t.readAllContext)
 		if err != nil {
 			return nil, err
 		}
@@ -114,7 +115,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			// configured in the http.Transport
 			root.Handler.OnMeasurement(modelx.Measurement{
 				TLSHandshakeStart: &modelx.TLSHandshakeStartEvent{
-					DurationSinceBeginning: time.Now().Sub(root.Beginning),
+					DurationSinceBeginning: time.Since(root.Beginning),
 					TransactionID:          tid,
 				},
 			})
@@ -127,7 +128,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 				Operation:     errorx.TLSHandshakeOperation,
 				TransactionID: tid,
 			}.MaybeBuild()
-			durationSinceBeginning := time.Now().Sub(root.Beginning)
+			durationSinceBeginning := time.Since(root.Beginning)
 			// Event emitted by net/http when DialTLS is not
 			// configured in the http.Transport
 			root.Handler.OnMeasurement(modelx.Measurement{
@@ -149,7 +150,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 						info.Conn.LocalAddr().Network(),
 						info.Conn.LocalAddr().String(),
 					),
-					DurationSinceBeginning: time.Now().Sub(root.Beginning),
+					DurationSinceBeginning: time.Since(root.Beginning),
 					TransactionID:          tid,
 				},
 			})
@@ -165,7 +166,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			requestHeadersMu.Unlock()
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPRequestHeader: &modelx.HTTPRequestHeaderEvent{
-					DurationSinceBeginning: time.Now().Sub(root.Beginning),
+					DurationSinceBeginning: time.Since(root.Beginning),
 					Key:                    key,
 					TransactionID:          tid,
 					Value:                  values,
@@ -175,7 +176,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		WroteHeaders: func() {
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPRequestHeadersDone: &modelx.HTTPRequestHeadersDoneEvent{
-					DurationSinceBeginning: time.Now().Sub(root.Beginning),
+					DurationSinceBeginning: time.Since(root.Beginning),
 					Headers:                requestHeaders, // [*]
 					Method:                 req.Method,     // [*]
 					TransactionID:          tid,
@@ -193,7 +194,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			}.MaybeBuild()
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPRequestDone: &modelx.HTTPRequestDoneEvent{
-					DurationSinceBeginning: time.Now().Sub(root.Beginning),
+					DurationSinceBeginning: time.Since(root.Beginning),
 					Error:                  err,
 					TransactionID:          tid,
 				},
@@ -202,7 +203,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		GotFirstResponseByte: func() {
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPResponseStart: &modelx.HTTPResponseStartEvent{
-					DurationSinceBeginning: time.Now().Sub(root.Beginning),
+					DurationSinceBeginning: time.Since(root.Beginning),
 					TransactionID:          tid,
 				},
 			})
@@ -233,7 +234,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// [*] Require less event joining work by providing info that
 	// makes this event alone actionable for OONI
 	event := &modelx.HTTPRoundTripDoneEvent{
-		DurationSinceBeginning: time.Now().Sub(root.Beginning),
+		DurationSinceBeginning: time.Since(root.Beginning),
 		Error:                  err,
 		RequestBodySnap:        requestBody,
 		RequestHeaders:         requestHeaders,   // [*]
@@ -248,7 +249,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		event.ResponseProto = resp.Proto
 		// Save a snapshot of the response body
 		var data []byte
-		data, err = readSnap(&resp.Body, snapSize, t.readAll)
+		data, err = readSnap(req.Context(), &resp.Body, snapSize, t.readAllContext)
 		if err != nil {
 			t.readAllErrs.Add(1)
 			resp = nil // this is how net/http likes it

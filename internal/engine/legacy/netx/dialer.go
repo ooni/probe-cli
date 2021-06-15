@@ -135,7 +135,7 @@ func (d *Dialer) SetCABundle(path string) error {
 		return err
 	}
 	pool := x509.NewCertPool()
-	if pool.AppendCertsFromPEM(cert) == false {
+	if !pool.AppendCertsFromPEM(cert) {
 		return errors.New("AppendCertsFromPEM failed")
 	}
 	d.TLSConfig.RootCAs = pool
