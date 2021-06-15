@@ -11,7 +11,7 @@ import (
 	"github.com/apex/log"
 )
 
-func TestWithoutProxy(t *testing.T) {
+func TestSuccess(t *testing.T) {
 	client := NewClient(
 		http.DefaultClient,
 		log.Log,
