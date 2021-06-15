@@ -24,7 +24,6 @@ func TestReadAllContextWithError(t *testing.T) {
 	expected := errors.New("mocked error")
 	r := &MockableReader{
 		MockRead: func(b []byte) (int, error) {
-			time.Sleep(time.Millisecond)
 			return 0, expected
 		},
 	}
