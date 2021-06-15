@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 )
 
 // testVersion is the tor experiment version.
@@ -53,11 +54,20 @@ func (m Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
+func (m *Measurer) registerExtensions(measurement *model.Measurement) {
+	archival.ExtHTTP.AddTo(measurement)
+	archival.ExtNetevents.AddTo(measurement)
+	archival.ExtDNS.AddTo(measurement)
+	archival.ExtTCPConnect.AddTo(measurement)
+	archival.ExtTLSHandshake.AddTo(measurement)
+}
+
 // Run implements model.ExperimentMeasurer.Run.
 func (m *Measurer) Run(
 	ctx context.Context, sess model.ExperimentSession,
 	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
 ) error {
+	m.registerExtensions(measurement)
 	testkeys := &TestKeys{}
 	measurement.TestKeys = testkeys
 	targets, err := m.fetchTargets(ctx, sess)
