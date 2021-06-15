@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mlablocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/mlablocate"
 )
 
 type locateDeps interface {
