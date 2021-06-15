@@ -37,7 +37,7 @@ func (mgr downloadManager) run(ctx context.Context) error {
 	return mgr.reduceErr(mgr.doRun(ctx))
 }
 
-// reduceErr treates as non-errors the errors caused by the context
+// reduceErr treats as non-errors the errors caused by the context
 // so that we can focus instead on network errors.
 //
 // This function was introduced by https://github.com/ooni/probe-cli/pull/379
