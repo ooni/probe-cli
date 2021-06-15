@@ -18,7 +18,25 @@ const testVersion = "0.4.0"
 type Config struct{}
 
 // TestKeys contains the experiment's result.
-type TestKeys struct{}
+type TestKeys struct {
+	// Targets maps each target name to its measurement results.
+	Targets map[string]TargetResults `json:"targets"`
+}
+
+// TargetResults contains the results of measuring a target.
+type TargetResults struct {
+	// TargetAddress is the target's address.
+	TargetAddress string `json:"target_address"`
+
+	// TargetName is the target's name.
+	TargetName string `json:"target_name,omitempty"`
+
+	// TargetProtocol is the target's protocol.
+	TargetProtocol string `json:"target_protocol"`
+
+	// TargetSource is the source from which we obtained the target.
+	TargetSource string `json:"target_source,omitempty"`
+}
 
 // Measurer performs the measurement.
 type Measurer struct {
@@ -42,6 +60,13 @@ func (m *Measurer) Run(
 ) error {
 	testkeys := &TestKeys{}
 	measurement.TestKeys = testkeys
+	targets, err := m.fetchTargets(ctx, sess)
+	if err != nil {
+		// TODO(bassosimone): should we set any specific error
+		// inside of the test keys in this case?
+		return err
+	}
+	testkeys.Targets = m.measure(ctx, targets)
 	return nil
 }
 
