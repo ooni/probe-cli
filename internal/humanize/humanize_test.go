@@ -3,28 +3,28 @@ package humanize
 import "testing"
 
 func TestGood(t *testing.T) {
-	if SI(128, "bit/s") != "128  bit/s" {
-		t.Fatal("unexpected result")
+	if v := SI(128, "bit/s"); v != "128.00  bit/s" {
+		t.Fatal("unexpected result", v)
 	}
-	if SI(1280, "bit/s") != "  1 kbit/s" {
-		t.Fatal("unexpected result")
+	if v := SI(1280, "bit/s"); v != "  1.28 kbit/s" {
+		t.Fatal("unexpected result", v)
 	}
-	if SI(12800, "bit/s") != " 13 kbit/s" {
-		t.Fatal("unexpected result")
+	if v := SI(12800, "bit/s"); v != " 12.80 kbit/s" {
+		t.Fatal("unexpected result", v)
 	}
-	if SI(128000, "bit/s") != "128 kbit/s" {
-		t.Fatal("unexpected result")
+	if v := SI(128000, "bit/s"); v != "128.00 kbit/s" {
+		t.Fatal("unexpected result", v)
 	}
-	if SI(1280000, "bit/s") != "  1 Mbit/s" {
-		t.Fatal("unexpected result")
+	if v := SI(1280000, "bit/s"); v != "  1.28 Mbit/s" {
+		t.Fatal("unexpected result", v)
 	}
-	if SI(12800000, "bit/s") != " 13 Mbit/s" {
-		t.Fatal("unexpected result")
+	if v := SI(12800000, "bit/s"); v != " 12.80 Mbit/s" {
+		t.Fatal("unexpected result", v)
 	}
-	if SI(128000000, "bit/s") != "128 Mbit/s" {
-		t.Fatal("unexpected result")
+	if v := SI(128000000, "bit/s"); v != "128.00 Mbit/s" {
+		t.Fatal("unexpected result", v)
 	}
-	if SI(1280000000, "bit/s") != "  1 Gbit/s" {
-		t.Fatal("unexpected result")
+	if v := SI(1280000000, "bit/s"); v != "  1.28 Gbit/s" {
+		t.Fatal("unexpected result", v)
 	}
 }
