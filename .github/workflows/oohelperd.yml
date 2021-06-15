@@ -1,7 +1,6 @@
 # oohelperd builds oohelperd for Linux
 name: oohelperd
 on:
-  pull_request:
   push:
     branches:
       - "release/**"
