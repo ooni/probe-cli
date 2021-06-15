@@ -7,7 +7,7 @@ import "fmt"
 // specially tailored for printing download speeds.
 func SI(value float64, unit string) string {
 	value, prefix := reduce(value)
-	return fmt.Sprintf("%3.0f %s%s", value, prefix, unit)
+	return fmt.Sprintf("%5.2f %s%s", value, prefix, unit)
 }
 
 // reduce reduces value to a base value and a unit prefix. For
