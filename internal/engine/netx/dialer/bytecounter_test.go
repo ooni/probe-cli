@@ -11,6 +11,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 func dorequest(ctx context.Context, url string) error {
@@ -27,7 +28,7 @@ func dorequest(ctx context.Context, url string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
+	if _, err := iox.CopyContext(ctx, ioutil.Discard, resp.Body); err != nil {
 		return err
 	}
 	return resp.Body.Close()

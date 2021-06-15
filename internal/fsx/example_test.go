@@ -1,14 +1,15 @@
 package fsx_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"path/filepath"
 	"syscall"
 
 	"github.com/ooni/probe-cli/v3/internal/fsx"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 func ExampleOpenFile_openingDir() {
@@ -26,7 +27,7 @@ func ExampleOpenFile_openingFile() {
 	if err != nil {
 		log.Fatal("unexpected error", err)
 	}
-	data, err := io.ReadAll(filep)
+	data, err := iox.ReadAllContext(context.Background(), filep)
 	if err != nil {
 		log.Fatal("unexpected error", err)
 	}

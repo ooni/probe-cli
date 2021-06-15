@@ -40,12 +40,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import (
 	"context"
 	"fmt"
-	"io"
 	"net"
 	"strings"
 	"sync"
 
 	pt "git.torproject.org/pluggable-transports/goptlib.git"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 // PTDialer is a generic pluggable transports dialer.
@@ -104,17 +104,17 @@ func (lst *Listener) logger() Logger {
 // forward forwards the traffic from left to right and from right to left
 // and closes the done channel when it is done. This function DOES NOT
 // take ownership of the left, right net.Conn arguments.
-func (lst *Listener) forward(left, right net.Conn, done chan struct{}) {
+func (lst *Listener) forward(ctx context.Context, left, right net.Conn, done chan struct{}) {
 	defer close(done) // signal termination
 	wg := new(sync.WaitGroup)
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		io.Copy(left, right)
+		iox.CopyContext(ctx, left, right)
 	}()
 	go func() {
 		defer wg.Done()
-		io.Copy(right, left)
+		iox.CopyContext(ctx, right, left)
 	}()
 	wg.Wait()
 }
@@ -127,7 +127,7 @@ func (lst *Listener) forwardWithContext(ctx context.Context, left, right net.Con
 	defer left.Close()
 	defer right.Close()
 	done := make(chan struct{})
-	go lst.forward(left, right, done)
+	go lst.forward(ctx, left, right, done)
 	select {
 	case <-ctx.Done():
 	case <-done:
@@ -150,7 +150,7 @@ func (lst *Listener) handleSocksConn(ctx context.Context, socksConn ptxSocksConn
 		return err // used for testing
 	}
 	lst.forwardWithContext(ctx, socksConn, ptConn) // transfer ownership
-	return nil // used for testing
+	return nil                                     // used for testing
 }
 
 // ptxSocksListener is a pt.SocksListener-like structure.

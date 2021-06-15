@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-// ReadAllContext reads the whole reader r in a
+// ReadAllContext is like io.ReadAll but reads r in a
 // background goroutine. This function will return
 // earlier if the context is cancelled. In which case
 // we will continue reading from r in the background
@@ -44,4 +44,28 @@ var _ io.Reader = &MockableReader{}
 // Read implements io.Reader.Read.
 func (r *MockableReader) Read(b []byte) (int, error) {
 	return r.MockRead(b)
+}
+
+// CopyContext is like io.Copy but may terminate earlier
+// when the context expires. This function has the same
+// caveats of ReadAllContext regarding the temporary leaking
+// of the background goroutine used to do I/O.
+func CopyContext(ctx context.Context, dst io.Writer, src io.Reader) (int64, error) {
+	countch, errch := make(chan int64, 1), make(chan error, 1) // buffers
+	go func() {
+		count, err := io.Copy(dst, src)
+		if err != nil {
+			errch <- err
+			return
+		}
+		countch <- count
+	}()
+	select {
+	case count := <-countch:
+		return count, nil
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	case err := <-errch:
+		return 0, err
+	}
 }
