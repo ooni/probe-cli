@@ -1,4 +1,4 @@
-// Package mlablocatev2 use m-lab locate services API v2.
+// Package mlablocatev2 implements m-lab locate services API v2.
 package mlablocatev2
 
 import (
