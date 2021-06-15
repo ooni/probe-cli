@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -47,7 +47,7 @@ func TestDNSOverHTTPSHTTPFailure(t *testing.T) {
 		Do: func(*http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: 500,
-				Body:       ioutil.NopCloser(strings.NewReader("")),
+				Body:       io.NopCloser(strings.NewReader("")),
 			}, nil
 		},
 		URL: "https://cloudflare-dns.com/dns-query",
@@ -66,7 +66,7 @@ func TestDNSOverHTTPSMissingContentType(t *testing.T) {
 		Do: func(*http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("")),
+				Body:       io.NopCloser(strings.NewReader("")),
 			}, nil
 		},
 		URL: "https://cloudflare-dns.com/dns-query",
@@ -86,7 +86,7 @@ func TestDNSOverHTTPSSuccess(t *testing.T) {
 		Do: func(*http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(bytes.NewReader(body)),
+				Body:       io.NopCloser(bytes.NewReader(body)),
 				Header: http.Header{
 					"Content-Type": []string{"application/dns-message"},
 				},

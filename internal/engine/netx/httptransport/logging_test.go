@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -61,7 +60,7 @@ func TestLoggingSuccess(t *testing.T) {
 		Logger: log.Log,
 		RoundTripper: httptransport.FakeTransport{
 			Resp: &http.Response{
-				Body: ioutil.NopCloser(strings.NewReader("")),
+				Body: io.NopCloser(strings.NewReader("")),
 				Header: http.Header{
 					"Server": []string{"antani/0.1.0"},
 				},

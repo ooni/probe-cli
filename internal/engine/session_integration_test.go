@@ -3,7 +3,7 @@ package engine
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -32,7 +32,7 @@ func TestSessionByteCounter(t *testing.T) {
 	}
 	defer resp.Body.Close()
 	ctx := context.Background()
-	if _, err := iox.CopyContext(ctx, ioutil.Discard, resp.Body); err != nil {
+	if _, err := iox.CopyContext(ctx, io.Discard, resp.Body); err != nil {
 		t.Fatal(err)
 	}
 	if s.KibiBytesSent() <= 0 || s.KibiBytesReceived() <= 0 {

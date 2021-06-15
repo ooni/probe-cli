@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -278,20 +277,20 @@ func TestMaybeCleanupTunnelDir(t *testing.T) {
 	}
 	fakeData := []byte("deadbeef\n")
 	logfile := filepath.Join(fakeTunDir, "tor.log")
-	if err := ioutil.WriteFile(logfile, fakeData, 0600); err != nil {
+	if err := os.WriteFile(logfile, fakeData, 0600); err != nil {
 		t.Fatal(err)
 	}
 	for idx := 0; idx < 3; idx++ {
 		filename := filepath.Join(fakeTunDir, fmt.Sprintf("torrc-%d", idx))
-		if err := ioutil.WriteFile(filename, fakeData, 0600); err != nil {
+		if err := os.WriteFile(filename, fakeData, 0600); err != nil {
 			t.Fatal(err)
 		}
 		filename = filepath.Join(fakeTunDir, fmt.Sprintf("control-port-%d", idx))
-		if err := ioutil.WriteFile(filename, fakeData, 0600); err != nil {
+		if err := os.WriteFile(filename, fakeData, 0600); err != nil {
 			t.Fatal(err)
 		}
 		filename = filepath.Join(fakeTunDir, fmt.Sprintf("antani-%d", idx))
-		if err := ioutil.WriteFile(filename, fakeData, 0600); err != nil {
+		if err := os.WriteFile(filename, fakeData, 0600); err != nil {
 			t.Fatal(err)
 		}
 	}

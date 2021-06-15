@@ -3,7 +3,7 @@ package httptransport_test
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -256,7 +256,7 @@ func TestSaverBodySuccess(t *testing.T) {
 				}
 				return &http.Response{
 					StatusCode: 501,
-					Body:       ioutil.NopCloser(strings.NewReader("abad1dea")),
+					Body:       io.NopCloser(strings.NewReader("abad1dea")),
 				}, nil
 			},
 		},

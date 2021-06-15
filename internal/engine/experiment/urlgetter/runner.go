@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -92,7 +92,7 @@ func (r Runner) httpGet(ctx context.Context, url string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	if _, err = iox.CopyContext(ctx, ioutil.Discard, resp.Body); err != nil {
+	if _, err = iox.CopyContext(ctx, io.Discard, resp.Body); err != nil {
 		return err
 	}
 	// Implementation note: we shall check for this error once we have read the

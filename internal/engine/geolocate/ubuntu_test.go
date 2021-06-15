@@ -2,7 +2,7 @@ package geolocate
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -18,7 +18,7 @@ func TestUbuntuParseError(t *testing.T) {
 		&http.Client{Transport: FakeTransport{
 			Resp: &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("<")),
+				Body:       io.NopCloser(strings.NewReader("<")),
 			},
 		}},
 		log.Log,

@@ -3,9 +3,9 @@ package probeservices_test
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -238,7 +238,7 @@ func TestEndToEnd(t *testing.T) {
 				if err != nil {
 					panic(err)
 				}
-				sdata, err := ioutil.ReadFile("../testdata/collector-expected.jsonl")
+				sdata, err := os.ReadFile("../testdata/collector-expected.jsonl")
 				if err != nil {
 					panic(err)
 				}

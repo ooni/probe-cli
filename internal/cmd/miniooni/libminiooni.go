@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/url"
 	"os"
@@ -258,7 +257,7 @@ func canOpen(filepath string) bool {
 
 func maybeWriteConsentFile(yes bool, filepath string) (err error) {
 	if yes {
-		err = ioutil.WriteFile(filepath, []byte("\n"), 0644)
+		err = os.WriteFile(filepath, []byte("\n"), 0644)
 	}
 	return
 }
