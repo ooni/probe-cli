@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
@@ -50,7 +49,7 @@ func TestByteCounterSuccess(t *testing.T) {
 		Counter: counter,
 		RoundTripper: httptransport.FakeTransport{
 			Resp: &http.Response{
-				Body: ioutil.NopCloser(strings.NewReader("1234567")),
+				Body: io.NopCloser(strings.NewReader("1234567")),
 				Header: http.Header{
 					"Server": []string{"antani/0.1.0"},
 				},

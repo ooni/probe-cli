@@ -43,11 +43,11 @@ func TestUpdateConfig(t *testing.T) {
 	configPath := tmpFile.Name()
 	defer os.Remove(configPath)
 
-	data, err := ioutil.ReadFile("testdata/config-v0.json")
+	data, err := os.ReadFile("testdata/config-v0.json")
 	if err != nil {
 		t.Error(err)
 	}
-	err = ioutil.WriteFile(configPath, data, 0644)
+	err = os.WriteFile(configPath, data, 0644)
 	if err != nil {
 		t.Error(err)
 	}

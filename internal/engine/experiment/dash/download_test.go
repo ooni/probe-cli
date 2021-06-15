@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"testing"
@@ -50,7 +50,7 @@ func TestDownloadInternalError(t *testing.T) {
 func TestDownloadReadAllFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		Body:       io.NopCloser(bytes.NewReader(nil)),
 		StatusCode: 200,
 	}}
 	_, err := download(context.Background(), downloadConfig{
@@ -70,7 +70,7 @@ func TestDownloadReadAllFailure(t *testing.T) {
 
 func TestDownloadSuccess(t *testing.T) {
 	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		Body:       io.NopCloser(bytes.NewReader(nil)),
 		StatusCode: 200,
 	}}
 	result, err := download(context.Background(), downloadConfig{

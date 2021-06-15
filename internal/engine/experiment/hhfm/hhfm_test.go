@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -521,7 +521,7 @@ func TestInvalidJSONBody(t *testing.T) {
 
 func TestTransactStatusCodeFailure(t *testing.T) {
 	txp := FakeTransport{Resp: &http.Response{
-		Body:       ioutil.NopCloser(strings.NewReader("")),
+		Body:       io.NopCloser(strings.NewReader("")),
 		StatusCode: 500,
 	}}
 	resp, body, err := hhfm.Transact(txp, &http.Request{},

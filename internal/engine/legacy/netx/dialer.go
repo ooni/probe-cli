@@ -6,8 +6,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"io/ioutil"
 	"net"
+	"os"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
@@ -130,7 +130,7 @@ func (d *Dialer) DialTLSContext(
 // function is not goroutine safe. Make sure you call it before starting
 // to use this specific dialer.
 func (d *Dialer) SetCABundle(path string) error {
-	cert, err := ioutil.ReadFile(path)
+	cert, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}

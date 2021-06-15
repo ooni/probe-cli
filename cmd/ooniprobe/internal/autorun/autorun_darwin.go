@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -114,7 +113,7 @@ func (managerDarwin) writePlist() error {
 		return err
 	}
 	log.Infof("exec: writePlist(%s)", plistPath)
-	return ioutil.WriteFile(plistPath, out.Bytes(), 0644)
+	return os.WriteFile(plistPath, out.Bytes(), 0644)
 }
 
 func (managerDarwin) start() error {
