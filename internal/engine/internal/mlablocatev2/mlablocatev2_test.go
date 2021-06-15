@@ -13,9 +13,7 @@ import (
 )
 
 func TestSuccess(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
+	// this test is ~0.5 s, so we can always run it
 	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
 	result, err := client.QueryNDT7(context.Background())
 	if err != nil {
@@ -26,7 +24,7 @@ func TestSuccess(t *testing.T) {
 	}
 	for _, entry := range result {
 		if entry.Hostname == "" {
-			t.Fatal("expected non empty Machine here")
+			t.Fatal("expected non empty Hostname here")
 		}
 		if entry.Site == "" {
 			t.Fatal("expected non=-empty Site here")
@@ -47,9 +45,7 @@ func TestSuccess(t *testing.T) {
 }
 
 func Test404Response(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
+	// this test is ~0.5 s, so we can always run it
 	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
 	result, err := client.query(context.Background(), "nonexistent")
 	if !errors.Is(err, ErrRequestFailed) {
@@ -68,7 +64,7 @@ func TestNewRequestFailure(t *testing.T) {
 		t.Fatal("not the error we expected")
 	}
 	if result.Results != nil {
-		t.Fatal("expected empty fqdn")
+		t.Fatal("expected nil results")
 	}
 }
 
@@ -83,7 +79,7 @@ func TestHTTPClientDoFailure(t *testing.T) {
 		t.Fatal("not the error we expected")
 	}
 	if result.Results != nil {
-		t.Fatal("expected empty fqdn")
+		t.Fatal("expected nil results")
 	}
 }
 
@@ -105,7 +101,7 @@ func TestCannotReadBody(t *testing.T) {
 		t.Fatal("not the error we expected")
 	}
 	if result.Results != nil {
-		t.Fatal("expected empty fqdn")
+		t.Fatal("expected nil results")
 	}
 }
 
@@ -127,7 +123,7 @@ func TestInvalidJSON(t *testing.T) {
 		t.Fatal("not the error we expected")
 	}
 	if result.Results != nil {
-		t.Fatal("expected empty fqdn")
+		t.Fatal("expected nil results")
 	}
 }
 
@@ -149,7 +145,7 @@ func TestEmptyResponse(t *testing.T) {
 		t.Fatal("not the error we expected")
 	}
 	if result != nil {
-		t.Fatal("expected empty fqdn")
+		t.Fatal("expected nil results")
 	}
 }
 
@@ -168,7 +164,7 @@ func TestNDT7QueryFails(t *testing.T) {
 		t.Fatal("not the error we expected")
 	}
 	if result != nil {
-		t.Fatal("expected empty fqdn")
+		t.Fatal("expected nil results")
 	}
 }
 
@@ -191,7 +187,30 @@ func TestNDT7InvalidURLs(t *testing.T) {
 		t.Fatal("not the error we expected")
 	}
 	if result != nil {
-		t.Fatal("expected empty fqdn")
+		t.Fatal("expected nil results")
+	}
+}
+
+func TestNDT7EmptyURLs(t *testing.T) {
+	client := NewClient(http.DefaultClient, log.Log, "miniooni/0.1.0-dev")
+	client.HTTPClient = &http.Client{
+		Transport: FakeTransport{
+			Resp: &http.Response{
+				StatusCode: 200,
+				Body: FakeBody{
+					Data: []byte(
+						`{"results":[{"machine":"mlab3-mil04.mlab-oti.measurement-lab.org","urls":{"wss:///ndt/v7/download":"","wss:///ndt/v7/upload":""}}]}`),
+					Err: io.EOF,
+				},
+			},
+		},
+	}
+	result, err := client.QueryNDT7(context.Background())
+	if !errors.Is(err, ErrEmptyResponse) {
+		t.Fatal("not the error we expected")
+	}
+	if result != nil {
+		t.Fatal("expected nil results")
 	}
 }
 
