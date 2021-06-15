@@ -17,7 +17,7 @@ func TestWithoutProxy(t *testing.T) {
 		log.Log,
 		"miniooni/0.1.0-dev",
 	)
-	result, err := client.Query(context.Background(), "ndt7")
+	result, err := client.Query(context.Background(), "neubot/dash")
 	if err != nil {
 		t.Fatal(err)
 	}
