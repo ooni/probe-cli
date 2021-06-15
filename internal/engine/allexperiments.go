@@ -11,6 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/hirl"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/httphostheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/ndt7"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/ntor"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/psiphon"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/run"
@@ -285,6 +286,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &tor.Config{},
+			inputPolicy: InputNone,
+		}
+	},
+
+	"ntor": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, ntor.NewExperimentMeasurer(
+					*config.(*ntor.Config),
+				))
+			},
+			config:      &ntor.Config{},
 			inputPolicy: InputNone,
 		}
 	},
