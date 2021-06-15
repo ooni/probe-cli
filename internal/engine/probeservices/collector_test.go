@@ -15,6 +15,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 type fakeTestKeys struct {
@@ -233,7 +234,7 @@ func TestEndToEnd(t *testing.T) {
 				return
 			}
 			if r.RequestURI == "/report/_id" {
-				data, err := ioutil.ReadAll(r.Body)
+				data, err := iox.ReadAllContext(r.Context(), r.Body)
 				if err != nil {
 					panic(err)
 				}

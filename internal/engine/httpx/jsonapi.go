@@ -7,9 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 // Logger is the definition of Logger used by this package.
@@ -100,7 +101,7 @@ func (c Client) Do(request *http.Request) ([]byte, error) {
 	if response.StatusCode >= 400 {
 		return nil, fmt.Errorf("httpx: request failed: %s", response.Status)
 	}
-	return ioutil.ReadAll(response.Body)
+	return iox.ReadAllContext(request.Context(), response.Body)
 }
 
 // DoJSON performs the provided request and unmarshals the JSON response body

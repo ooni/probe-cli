@@ -1,11 +1,12 @@
 package oldhttptransport
 
 import (
-	"io/ioutil"
+	"context"
 	"net/http"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 type transactionerCheckTransactionID struct {
@@ -33,7 +34,7 @@ func TestTransactionerSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp.Body.Close()
-	_, err = ioutil.ReadAll(resp.Body)
+	_, err = iox.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

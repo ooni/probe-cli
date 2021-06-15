@@ -156,7 +156,8 @@ func (d *Descriptor) genNewAPI(sb *strings.Builder) {
 	fmt.Fprint(sb, "\tif api.UserAgent != \"\" {\n")
 	fmt.Fprint(sb, "\t\thttpReq.Header.Add(\"User-Agent\", api.UserAgent)\n")
 	fmt.Fprint(sb, "\t}\n")
-	fmt.Fprint(sb, "\treturn api.newResponse(api.httpClient().Do(httpReq))\n")
+	fmt.Fprint(sb, "\thttpResp, err := api.httpClient().Do(httpReq)\n")
+	fmt.Fprint(sb, "\treturn api.newResponse(ctx, httpResp, err)\n")
 	fmt.Fprint(sb, "}\n\n")
 }
 

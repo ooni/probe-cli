@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 // Client is a locate.measurementlab.net client.
@@ -63,7 +63,7 @@ func (c *Client) Query(ctx context.Context, tool string) (Result, error) {
 	if resp.StatusCode != 200 {
 		return Result{}, fmt.Errorf("mlablocate: non-200 status code: %d", resp.StatusCode)
 	}
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := iox.ReadAllContext(ctx, resp.Body)
 	if err != nil {
 		return Result{}, err
 	}

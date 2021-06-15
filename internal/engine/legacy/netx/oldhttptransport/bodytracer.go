@@ -63,7 +63,7 @@ func (bw *bodyWrapper) Read(b []byte) (n int, err error) {
 			// bytes read (0 <= n <= len(p)) and any error encountered."
 			Data:                   b[:n],
 			Error:                  err,
-			DurationSinceBeginning: time.Now().Sub(bw.root.Beginning),
+			DurationSinceBeginning: time.Since(bw.root.Beginning),
 			TransactionID:          bw.tid,
 		},
 	})
@@ -74,7 +74,7 @@ func (bw *bodyWrapper) Close() (err error) {
 	err = bw.ReadCloser.Close()
 	bw.root.Handler.OnMeasurement(modelx.Measurement{
 		HTTPResponseDone: &modelx.HTTPResponseDoneEvent{
-			DurationSinceBeginning: time.Now().Sub(bw.root.Beginning),
+			DurationSinceBeginning: time.Since(bw.root.Beginning),
 			TransactionID:          bw.tid,
 		},
 	})

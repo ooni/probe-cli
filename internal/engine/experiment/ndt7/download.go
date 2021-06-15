@@ -3,10 +3,10 @@ package ndt7
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 type downloadManager struct {
@@ -47,7 +47,7 @@ func (mgr downloadManager) run(ctx context.Context) error {
 			return err
 		}
 		if kind == websocket.TextMessage {
-			data, err := ioutil.ReadAll(reader)
+			data, err := iox.ReadAllContext(ctx, reader)
 			if err != nil {
 				return err
 			}
@@ -57,7 +57,7 @@ func (mgr downloadManager) run(ctx context.Context) error {
 			}
 			continue
 		}
-		n, err := io.Copy(ioutil.Discard, reader)
+		n, err := io.Copy(io.Discard, reader)
 		if err != nil {
 			return err
 		}

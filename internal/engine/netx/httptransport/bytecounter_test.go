@@ -1,6 +1,7 @@
 package httptransport_test
 
 import (
+	"context"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 func TestByteCounterFailure(t *testing.T) {
@@ -68,7 +70,7 @@ func TestByteCounterSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := iox.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +106,7 @@ func TestByteCounterSuccessWithEOF(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := iox.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

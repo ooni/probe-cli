@@ -1,9 +1,9 @@
 package internal_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +12,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 const simplerequest = `{
@@ -126,7 +127,7 @@ func TestWorkingAsIntended(t *testing.T) {
 			if v := resp.Header.Get("content-type"); v != expect.respContentType {
 				t.Fatalf("unexpected content-type: %s", v)
 			}
-			data, err := ioutil.ReadAll(resp.Body)
+			data, err := iox.ReadAllContext(context.Background(), resp.Body)
 			if err != nil {
 				t.Fatal(err)
 			}

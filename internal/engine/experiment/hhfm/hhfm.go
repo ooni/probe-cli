@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"sort"
@@ -21,6 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
@@ -198,7 +198,7 @@ func transact(txp Transport, req *http.Request,
 		return nil, nil, urlgetter.ErrHTTPRequestFailed
 	}
 	callbacks.OnProgress(0.75, "reading response body...")
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := iox.ReadAllContext(req.Context(), resp.Body)
 	callbacks.OnProgress(1.00, fmt.Sprintf("got reseponse body... %+v", err))
 	if err != nil {
 		return nil, nil, err

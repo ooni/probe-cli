@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 const (
@@ -102,7 +102,7 @@ func (c Client) query(ctx context.Context, path string) (resultRecord, error) {
 	if resp.StatusCode != 200 {
 		return resultRecord{}, fmt.Errorf("%w: %d", ErrRequestFailed, resp.StatusCode)
 	}
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := iox.ReadAllContext(ctx, resp.Body)
 	if err != nil {
 		return resultRecord{}, err
 	}

@@ -1,6 +1,7 @@
 package httptransport_test
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 func TestSaverPerformanceNoMultipleEvents(t *testing.T) {
@@ -245,7 +247,7 @@ func TestSaverBodySuccess(t *testing.T) {
 	txp := httptransport.SaverBodyHTTPTransport{
 		RoundTripper: httptransport.FakeTransport{
 			Func: func(req *http.Request) (*http.Response, error) {
-				data, err := ioutil.ReadAll(req.Body)
+				data, err := iox.ReadAllContext(context.Background(), req.Body)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -274,7 +276,7 @@ func TestSaverBodySuccess(t *testing.T) {
 		t.Fatal("unexpected status code")
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := iox.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

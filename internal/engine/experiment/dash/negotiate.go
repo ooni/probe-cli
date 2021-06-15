@@ -16,7 +16,7 @@ type negotiateDeps interface {
 	JSONMarshal(v interface{}) ([]byte, error)
 	Logger() model.Logger
 	NewHTTPRequest(method string, url string, body io.Reader) (*http.Request, error)
-	ReadAll(r io.Reader) ([]byte, error)
+	ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error)
 	Scheme() string
 	UserAgent() string
 }
@@ -48,7 +48,7 @@ func negotiate(
 		return negotiateResp, errHTTPRequestFailed
 	}
 	defer resp.Body.Close()
-	data, err = deps.ReadAll(resp.Body)
+	data, err = deps.ReadAllContext(ctx, resp.Body)
 	if err != nil {
 		return negotiateResp, err
 	}

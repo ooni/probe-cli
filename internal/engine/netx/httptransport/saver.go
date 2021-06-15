@@ -2,14 +2,15 @@ package httptransport
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 // SaverPerformanceHTTPTransport is a RoundTripper that saves
@@ -109,7 +110,7 @@ func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, 
 		snapsize = txp.SnapshotSize
 	}
 	if req.Body != nil {
-		data, err := saverSnapRead(req.Body, snapsize)
+		data, err := saverSnapRead(req.Context(), req.Body, snapsize)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +126,7 @@ func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, 
 	if err != nil {
 		return nil, err
 	}
-	data, err := saverSnapRead(resp.Body, snapsize)
+	data, err := saverSnapRead(req.Context(), resp.Body, snapsize)
 	err = ignoreExpectedEOF(err, resp)
 	if err != nil {
 		resp.Body.Close()
@@ -157,8 +158,8 @@ func ignoreExpectedEOF(err error, resp *http.Response) error {
 	return err
 }
 
-func saverSnapRead(r io.ReadCloser, snapsize int) ([]byte, error) {
-	return ioutil.ReadAll(io.LimitReader(r, int64(snapsize)))
+func saverSnapRead(ctx context.Context, r io.ReadCloser, snapsize int) ([]byte, error) {
+	return iox.ReadAllContext(ctx, io.LimitReader(r, int64(snapsize)))
 }
 
 func saverCompose(data []byte, r io.ReadCloser) io.ReadCloser {
