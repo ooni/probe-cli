@@ -19,7 +19,7 @@ import (
 
 const (
 	testName    = "ndt"
-	testVersion = "0.8.0"
+	testVersion = "0.9.0"
 )
 
 // Config contains the experiment settings

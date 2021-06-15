@@ -82,7 +82,7 @@ func (mgr downloadManager) doRun(ctx context.Context) error {
 			}
 			continue
 		}
-		n, err := io.Copy(io.Discard, reader)
+		n, err := iox.CopyContext(ctx, io.Discard, reader)
 		if err != nil {
 			return err
 		}
