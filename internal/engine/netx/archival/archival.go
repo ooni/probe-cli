@@ -320,6 +320,38 @@ func addheaders(
 	})
 }
 
+// TODO(bassosimone): we need to think at a better way of doing this.
+
+// NewRequestListFromSingleRoundTrip ...
+func NewRequestListFromSingleRoundTrip(begin time.Time, events []trace.Event) []RequestEntry {
+	var (
+		out   []RequestEntry
+		entry RequestEntry
+	)
+	for _, ev := range events {
+		switch ev.Name {
+		case "http_request_metadata":
+			entry = RequestEntry{}
+			entry.T = ev.Time.Sub(begin).Seconds()
+			entry.Request.Headers = make(map[string]MaybeBinaryValue)
+			addheaders(
+				ev.HTTPHeaders, &entry.Request.HeadersList, &entry.Request.Headers)
+			entry.Request.Method = ev.HTTPMethod
+			entry.Request.URL = ev.HTTPURL
+			entry.Request.Transport = ev.Transport
+		case "http_response_metadata":
+			entry.Response.Headers = make(map[string]MaybeBinaryValue)
+			addheaders(
+				ev.HTTPHeaders, &entry.Response.HeadersList, &entry.Response.Headers)
+			entry.Response.Code = int64(ev.HTTPStatusCode)
+			entry.Response.Locations = ev.HTTPHeaders.Values("Location")
+			entry.Failure = NewFailure(ev.Err)
+			out = append(out, entry)
+		}
+	}
+	return out
+}
+
 // NewRequestList returns the list for "requests"
 func NewRequestList(begin time.Time, events []trace.Event) []RequestEntry {
 	// OONI wants the last request to appear first

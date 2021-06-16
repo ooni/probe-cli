@@ -32,6 +32,9 @@ type TargetResults struct {
 	// NetworkEvents contains the network events.
 	NetworkEvents []archival.NetworkEvent `json:"network_events"`
 
+	// Requests contains the HTTP requests.
+	Requests []archival.RequestEntry `json:"requests"`
+
 	// TargetAddress is the target's address.
 	TargetAddress string `json:"target_address"`
 

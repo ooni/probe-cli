@@ -20,5 +20,10 @@ func (svc *service) doConnect(ctx context.Context, out *serviceOutput) {
 		out.operation = "connect"
 		return
 	}
-	conn.Close() // we own the connection
+	switch out.results.TargetProtocol {
+	case "dir_port":
+		svc.doHTTPGet(ctx, out, conn)
+	default:
+		conn.Close() // we own the connection
+	}
 }

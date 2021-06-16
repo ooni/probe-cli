@@ -26,6 +26,9 @@ type serviceInput struct {
 
 // serviceOutput is the output of the measurement service.
 type serviceOutput struct {
+	// body is the response body.
+	body []byte
+
 	// err is the error that occurred.
 	err error
 
@@ -95,7 +98,7 @@ func newService(ctx context.Context, logger model.Logger) *service {
 	}
 	// note: we use less parallelism for heavier operations
 	svc.connector.StartN(10)
-	svc.httpTransport.StartN(2)
+	svc.httpTransport.StartN(1)
 	svc.resolver.StartN(10)
 	svc.tlsHandshaker.StartN(4)
 	return svc
@@ -139,6 +142,7 @@ func (svc *service) workerloop(ctx context.Context) {
 		events := out.saver.Read()
 		out.results.Failure = archival.NewFailure(out.err)
 		out.results.NetworkEvents = archival.NewNetworkEventsList(begin, events)
+		out.results.Requests = archival.NewRequestListFromSingleRoundTrip(begin, events)
 		out.results.TCPConnect = archival.NewTCPConnectList(begin, events)
 		svc.output <- out
 	}
