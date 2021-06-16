@@ -23,6 +23,8 @@ func (svc *service) doConnect(ctx context.Context, out *serviceOutput) {
 	switch out.results.TargetProtocol {
 	case "dir_port":
 		svc.doHTTPGet(ctx, out, conn)
+	case "or_port", "or_port_dirauth":
+		svc.doTLSHandshake(ctx, out, conn)
 	default:
 		conn.Close() // we own the connection
 	}

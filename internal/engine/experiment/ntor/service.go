@@ -144,6 +144,7 @@ func (svc *service) workerloop(ctx context.Context) {
 		out.results.NetworkEvents = archival.NewNetworkEventsList(begin, events)
 		out.results.Requests = archival.NewRequestListFromSingleRoundTrip(begin, events)
 		out.results.TCPConnect = archival.NewTCPConnectList(begin, events)
+		out.results.TLSHandshakes = archival.NewTLSHandshakesList(begin, events)
 		svc.output <- out
 	}
 }

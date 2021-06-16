@@ -49,6 +49,9 @@ type TargetResults struct {
 
 	// TCPConnect contains the TCP connect events.
 	TCPConnect []archival.TCPConnectEntry `json:"tcp_connect"`
+
+	// TLSHandshakes contains the TLS handshake events.
+	TLSHandshakes []archival.TLSHandshake `json:"tls_handshakes"`
 }
 
 // Measurer performs the measurement.
