@@ -249,6 +249,12 @@ func toFailureString(err error) string {
 	if strings.HasSuffix(s, "TLS handshake timeout") {
 		return FailureGenericTimeoutError
 	}
+	if strings.HasSuffix(err.Error(), "no such host") {
+		// This is dns_lookup_error in MK but such error is used as a
+		// generic "hey, the lookup failed" error. Instead, this error
+		// that we return here is significantly more specific.
+		return FailureDNSNXDOMAINError
+	}
 	formatted := fmt.Sprintf("unknown_failure: %s", s)
 	return Scrub(formatted) // scrub IP addresses in the error
 }

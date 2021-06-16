@@ -126,6 +126,13 @@ func TestToFailureString(t *testing.T) {
 			t.Fatal("unexpected results")
 		}
 	})
+	t.Run("for no such host", func(t *testing.T) {
+		if toFailureString(&net.DNSError{
+			Err: "no such host",
+		}) != FailureDNSNXDOMAINError {
+			t.Fatal("unexpected results")
+		}
+	})
 	t.Run("for errors including IPv4 address", func(t *testing.T) {
 		input := errors.New("read tcp 10.0.2.15:56948->93.184.216.34:443: use of closed network connection")
 		expected := "unknown_failure: read tcp [scrubbed]->[scrubbed]: use of closed network connection"
