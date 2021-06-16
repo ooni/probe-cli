@@ -6,8 +6,10 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
+	"syscall"
+
+	"github.com/lucas-clemente/quic-go"
 )
 
 const (
@@ -196,6 +198,18 @@ func toFailureString(err error) string {
 		return errwrapper.Error() // we've already wrapped it
 	}
 
+	// filter out system errors
+	var errno syscall.Errno
+	if errors.As(err, &errno) {
+		// checkout https://pkg.go.dev/golang.org/x/sys/windows and https://pkg.go.dev/golang.org/x/sys/unix
+		switch {
+		case errno == 0x68 || errno == 0x2746:
+			return FailureConnectionReset
+		case errno == 0x6f || errno == 0x274D:
+			return FailureConnectionRefused
+			// ...
+		}
+	}
 	if errors.Is(err, ErrDNSBogon) {
 		return FailureDNSBogonError // not in MK
 	}
@@ -220,17 +234,11 @@ func toFailureString(err error) string {
 	}
 
 	s := err.Error()
-	if strings.HasSuffix(s, "operation was canceled") {
+	if strings.Contains(s, "operation was canceled") {
 		return FailureInterrupted
 	}
 	if strings.HasSuffix(s, "EOF") {
 		return FailureEOFError
-	}
-	if strings.HasSuffix(s, "connection refused") {
-		return FailureConnectionRefused
-	}
-	if strings.HasSuffix(s, "connection reset by peer") {
-		return FailureConnectionReset
 	}
 	if strings.HasSuffix(s, "context deadline exceeded") {
 		return FailureGenericTimeoutError
@@ -251,40 +259,29 @@ func toFailureString(err error) string {
 		return FailureDNSNXDOMAINError
 	}
 
-	// TODO(kelmenhorst): see whether it is possible to match errors
-	// from qtls rather than strings for TLS errors below.
-	//
-	// TODO(kelmenhorst): make sure we have tests for all errors. Also,
-	// how to ensure we are robust to changes in other libs?
-	//
 	// special QUIC errors
-	matched, err := regexp.MatchString(`.*x509: certificate is valid for.*not.*`, s)
-	if matched {
-		return FailureSSLInvalidHostname
-	}
-	if strings.HasSuffix(s, "x509: certificate signed by unknown authority") {
-		return FailureSSLUnknownAuthority
-	}
-	certInvalidErrors := []string{"x509: certificate is not authorized to sign other certificates", "x509: certificate has expired or is not yet valid:", "x509: a root or intermediate certificate is not authorized to sign for this name:", "x509: a root or intermediate certificate is not authorized for an extended key usage:", "x509: too many intermediates for path length constraint", "x509: certificate specifies an incompatible key usage", "x509: issuer name does not match subject from issuing certificate", "x509: issuer has name constraints but leaf doesn't have a SAN extension", "x509: issuer has name constraints but leaf contains unknown or unconstrained name:"}
-	for _, errstr := range certInvalidErrors {
-		if strings.Contains(s, errstr) {
-			return FailureSSLInvalidCertificate
-		}
-	}
-	if strings.HasPrefix(s, "No compatible QUIC version found") {
+	var versionNegotiation *quic.VersionNegotiationError
+	var statelessReset *quic.StatelessResetError
+	var handshakeTimeout *quic.HandshakeTimeoutError
+	var idleTimeout *quic.IdleTimeoutError
+	var transportError *quic.TransportError
+
+	if errors.As(err, &versionNegotiation) {
 		return FailureNoCompatibleQUICVersion
 	}
-	if strings.HasSuffix(s, "Handshake did not complete in time") {
-		return FailureGenericTimeoutError
-	}
-	if strings.HasSuffix(s, "connection_refused") {
-		return FailureConnectionRefused
-	}
-	if strings.Contains(s, "stateless_reset") {
+	if errors.As(err, &statelessReset) {
 		return FailureConnectionReset
 	}
-	if strings.Contains(s, "deadline exceeded") {
+	if errors.As(err, &handshakeTimeout) {
 		return FailureGenericTimeoutError
+	}
+	if errors.As(err, &idleTimeout) {
+		return FailureGenericTimeoutError
+	}
+	if errors.As(err, &transportError) {
+		if transportError.ErrorCode == quic.ConnectionRefused {
+			return FailureConnectionRefused
+		}
 	}
 	formatted := fmt.Sprintf("unknown_failure: %s", s)
 	return Scrub(formatted) // scrub IP addresses in the error
