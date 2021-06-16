@@ -63,7 +63,7 @@ func (m *Measurer) Run(
 		return err
 	}
 	defer ptl.Stop()
-	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 	tun, err := tunnel.Start(ctx, &tunnel.Config{
 		Name:      "tor",
