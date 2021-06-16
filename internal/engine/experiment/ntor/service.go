@@ -32,6 +32,9 @@ type serviceOutput struct {
 	// err is the error that occurred.
 	err error
 
+	// in is the corresponding serviceInput.
+	in *serviceInput
+
 	// operation is the operation that failed.
 	operation string
 
@@ -129,6 +132,7 @@ func (svc *service) reader(targets map[string]model.TorTarget) {
 func (svc *service) workerloop(ctx context.Context) {
 	for input := range svc.input {
 		out := &serviceOutput{
+			in: input,
 			results: TargetResults{
 				TargetAddress:  input.target.Address,
 				TargetName:     input.name,

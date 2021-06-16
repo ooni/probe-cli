@@ -25,6 +25,8 @@ func (svc *service) doConnect(ctx context.Context, out *serviceOutput) {
 		svc.doHTTPGet(ctx, out, conn)
 	case "or_port", "or_port_dirauth":
 		svc.doTLSHandshake(ctx, out, conn)
+	case "obfs4":
+		svc.doOBFS4(ctx, out, conn)
 	default:
 		conn.Close() // we own the connection
 	}
