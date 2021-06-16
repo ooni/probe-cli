@@ -16,17 +16,16 @@ func (m *Measurer) measure(ctx context.Context,
 	return m.doMeasure(ctx, targets)
 }
 
-// doMeasure implements measure.
+// doMeasure performs the measurement using a measurement service.
 func (m *Measurer) doMeasure(ctx context.Context,
 	targets map[string]model.TorTarget) map[string]TargetResults {
+	mctx := newService(ctx)
+	defer mctx.stop()
+	go mctx.reader(targets)
 	out := make(map[string]TargetResults)
-	for name, info := range targets {
-		out[name] = TargetResults{
-			TargetAddress:  info.Address,
-			TargetName:     name,
-			TargetProtocol: info.Protocol,
-			TargetSource:   info.Source,
-		}
+	for len(out) < len(targets) {
+		mout := <-mctx.output
+		out[mout.results.TargetName] = mout.results
 	}
 	return out
 }
