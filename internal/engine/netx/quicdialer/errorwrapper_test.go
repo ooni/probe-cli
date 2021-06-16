@@ -43,6 +43,28 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 		t.Fatal("unexpected failure")
 	}
 }
+func TestErrorWrapperInvalidCertificate(t *testing.T) {
+	nextprotos := []string{"h3"}
+	servername := "example.com"
+	tlsConf := &tls.Config{
+		NextProtos: nextprotos,
+		ServerName: servername,
+	}
+
+	dlr := quicdialer.ErrorWrapperDialer{Dialer: &quicdialer.SystemDialer{}}
+	// use Google IP
+	sess, err := dlr.DialContext(context.Background(), "udp",
+		"216.58.212.164:443", tlsConf, &quic.Config{})
+	if err == nil {
+		t.Fatal("expected an error here")
+	}
+	if sess != nil {
+		t.Fatal("expected nil sess here")
+	}
+	if err.Error() != errorx.FailureSSLInvalidCertificate {
+		t.Fatal("unexpected failure")
+	}
+}
 
 func TestErrorWrapperSuccess(t *testing.T) {
 	ctx := dialid.WithDialID(context.Background())
@@ -86,4 +108,23 @@ func TestClassifyQUICFailure(t *testing.T) {
 			t.Fatal("unexpected results")
 		}
 	})
+	t.Run("for QUIC CRYPTO Invalid Certificate", func(t *testing.T) {
+		var err quic.TransportErrorCode = 42
+		if quicdialer.ClassifyQUICFailure(&quic.TransportError{ErrorCode: err}) != errorx.FailureSSLInvalidCertificate {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for QUIC CRYPTO Unknown CA", func(t *testing.T) {
+		var err quic.TransportErrorCode = 48
+		if quicdialer.ClassifyQUICFailure(&quic.TransportError{ErrorCode: err}) != errorx.FailureSSLUnknownAuthority {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for QUIC CRYPTO Bad Hostname", func(t *testing.T) {
+		var err quic.TransportErrorCode = 112
+		if quicdialer.ClassifyQUICFailure(&quic.TransportError{ErrorCode: err}) != errorx.FailureSSLInvalidHostname {
+			t.Fatal("unexpected results")
+		}
+	})
+
 }

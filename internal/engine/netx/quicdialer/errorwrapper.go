@@ -58,6 +58,22 @@ func ClassifyQUICFailure(err error) string {
 		if transportError.ErrorCode == quic.ConnectionRefused {
 			return errorx.FailureConnectionRefused
 		}
+		// checkout alert.go in the qtls library
+		// (the alert constants are not exported, so this is not robust to changes in qtls)
+		errCode := uint8(transportError.ErrorCode)
+		// alertBadCertificate, alertUnsupportedCertificate,
+		// alertCertificateRevoked, alertCertificateExpired, alertCertificateUnknown
+		if errCode >= 42 && errCode <= 46 {
+			return errorx.FailureSSLInvalidCertificate
+		}
+		// alertUnknownCA
+		if errCode == 48 {
+			return errorx.FailureSSLUnknownAuthority
+		}
+		// alertUnrecognizedName
+		if errCode == 112 {
+			return errorx.FailureSSLInvalidHostname
+		}
 	}
 	return ""
 }
