@@ -26,6 +26,12 @@ type TestKeys struct {
 
 // TargetResults contains the results of measuring a target.
 type TargetResults struct {
+	// Failure is the failure that occurred or nil.
+	Failure *string `json:"failure"`
+
+	// NetworkEvents contains the network events.
+	NetworkEvents []archival.NetworkEvent `json:"network_events"`
+
 	// TargetAddress is the target's address.
 	TargetAddress string `json:"target_address"`
 
@@ -37,6 +43,9 @@ type TargetResults struct {
 
 	// TargetSource is the source from which we obtained the target.
 	TargetSource string `json:"target_source,omitempty"`
+
+	// TCPConnect contains the TCP connect events.
+	TCPConnect []archival.TCPConnectEntry `json:"tcp_connect"`
 }
 
 // Measurer performs the measurement.
@@ -76,7 +85,7 @@ func (m *Measurer) Run(
 		// inside of the test keys in this case?
 		return err
 	}
-	testkeys.Targets = m.measure(ctx, targets)
+	testkeys.Targets = m.measure(ctx, sess.Logger(), targets)
 	return nil
 }
 

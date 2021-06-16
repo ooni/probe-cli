@@ -2,8 +2,11 @@ package ntor
 
 import (
 	"context"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/measuring/connector"
 	"github.com/ooni/probe-cli/v3/internal/measuring/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/measuring/resolver"
@@ -19,10 +22,21 @@ type serviceInput struct {
 	target model.TorTarget
 }
 
+// TODO(bassosimone): support failed operation.
+
 // serviceOutput is the output of the measurement service.
 type serviceOutput struct {
-	// results contains the target results
+	// err is the error that occurred.
+	err error
+
+	// operation is the operation that failed.
+	operation string
+
+	// results contains the target results.
 	results TargetResults
+
+	// saver is where we save the events.
+	saver trace.Saver
 }
 
 // service is the measurement service. The expected usage of
@@ -45,6 +59,9 @@ type service struct {
 	// input is the input channel.
 	input chan *serviceInput
 
+	// logger is the logger to use.
+	logger model.Logger
+
 	// output is the output channel.
 	output chan *serviceOutput
 
@@ -62,11 +79,12 @@ type service struct {
 // 2. start a bunch of goroutines for performing measurements;
 //
 // 3. start all the required child services.
-func newService(ctx context.Context) *service {
+func newService(ctx context.Context, logger model.Logger) *service {
 	svc := &service{
 		connector:     connector.New(),
 		httpTransport: httptransport.New(),
 		input:         make(chan *serviceInput),
+		logger:        logger,
 		output:        make(chan *serviceOutput),
 		resolver:      resolver.New(),
 		tlsHandshaker: tlshandshaker.New(),
@@ -107,8 +125,7 @@ func (svc *service) reader(targets map[string]model.TorTarget) {
 // workerloop runs the service-worker's loop.
 func (svc *service) workerloop(ctx context.Context) {
 	for input := range svc.input {
-		// TODO(bassosimone): replace this stub w/ real code
-		svc.output <- &serviceOutput{
+		out := &serviceOutput{
 			results: TargetResults{
 				TargetAddress:  input.target.Address,
 				TargetName:     input.name,
@@ -116,5 +133,13 @@ func (svc *service) workerloop(ctx context.Context) {
 				TargetSource:   input.target.Source,
 			},
 		}
+		begin := time.Now()
+		// TODO(bassosimone): support DNS resolutions?
+		svc.doConnect(ctx, out)
+		events := out.saver.Read()
+		out.results.Failure = archival.NewFailure(out.err)
+		out.results.NetworkEvents = archival.NewNetworkEventsList(begin, events)
+		out.results.TCPConnect = archival.NewTCPConnectList(begin, events)
+		svc.output <- out
 	}
 }
