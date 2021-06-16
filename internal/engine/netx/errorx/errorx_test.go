@@ -155,18 +155,28 @@ func TestToFailureString(t *testing.T) {
 		}
 	})
 	// QUIC failures
-	t.Run("for connection_refused", func(t *testing.T) {
-		if toFailureString(errors.New("connection_refused")) != FailureConnectionRefused {
-			t.Fatal("unexpected results")
-		}
-	})
 	t.Run("for connection_reset", func(t *testing.T) {
-		if toFailureString(errors.New("stateless_reset")) != FailureConnectionReset {
+		if toFailureString(&quic.StatelessResetError{}) != FailureConnectionReset {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for incompatible quic version", func(t *testing.T) {
-		if toFailureString(errors.New("No compatible QUIC version found")) != FailureNoCompatibleQUICVersion {
+		if toFailureString(&quic.VersionNegotiationError{}) != FailureNoCompatibleQUICVersion {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for quic connection refused", func(t *testing.T) {
+		if toFailureString(&quic.TransportError{ErrorCode: quic.ConnectionRefused}) != FailureConnectionRefused {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for quic handshake timeout", func(t *testing.T) {
+		if toFailureString(&quic.HandshakeTimeoutError{}) != FailureGenericTimeoutError {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for QUIC idle connection timeout", func(t *testing.T) {
+		if toFailureString(&quic.IdleTimeoutError{}) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
@@ -185,12 +195,6 @@ func TestToFailureString(t *testing.T) {
 		if sess != nil {
 			t.Fatal("expected nil session here")
 		}
-		if toFailureString(err) != FailureGenericTimeoutError {
-			t.Fatal("unexpected results")
-		}
-	})
-	t.Run("for QUIC handshake timeout error", func(t *testing.T) {
-		err := errors.New("Handshake did not complete in time")
 		if toFailureString(err) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
