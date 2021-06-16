@@ -3,7 +3,6 @@ package errorx
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"io"
 	"net"
@@ -52,24 +51,6 @@ func TestToFailureString(t *testing.T) {
 	})
 	t.Run("for context.Canceled", func(t *testing.T) {
 		if toFailureString(context.Canceled) != FailureInterrupted {
-			t.Fatal("unexpected result")
-		}
-	})
-	t.Run("for x509.HostnameError", func(t *testing.T) {
-		var err x509.HostnameError
-		if toFailureString(err) != FailureSSLInvalidHostname {
-			t.Fatal("unexpected result")
-		}
-	})
-	t.Run("for x509.UnknownAuthorityError", func(t *testing.T) {
-		var err x509.UnknownAuthorityError
-		if toFailureString(err) != FailureSSLUnknownAuthority {
-			t.Fatal("unexpected result")
-		}
-	})
-	t.Run("for x509.CertificateInvalidError", func(t *testing.T) {
-		var err x509.CertificateInvalidError
-		if toFailureString(err) != FailureSSLInvalidCertificate {
 			t.Fatal("unexpected result")
 		}
 	})

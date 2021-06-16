@@ -3,6 +3,7 @@ package tlsdialer_test
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"io"
 	"net"
@@ -118,6 +119,27 @@ func TestErrorWrapperTLSHandshakerFailure(t *testing.T) {
 	if errWrapper.Operation != errorx.TLSHandshakeOperation {
 		t.Fatal("unexpected Operation")
 	}
+}
+
+func TestClassifyTLSFailure(t *testing.T) {
+	t.Run("for x509.HostnameError", func(t *testing.T) {
+		var err x509.HostnameError
+		if tlsdialer.ClassifyTLSFailure(err) != errorx.FailureSSLInvalidHostname {
+			t.Fatal("unexpected result")
+		}
+	})
+	t.Run("for x509.UnknownAuthorityError", func(t *testing.T) {
+		var err x509.UnknownAuthorityError
+		if tlsdialer.ClassifyTLSFailure(err) != errorx.FailureSSLUnknownAuthority {
+			t.Fatal("unexpected result")
+		}
+	})
+	t.Run("for x509.CertificateInvalidError", func(t *testing.T) {
+		var err x509.CertificateInvalidError
+		if tlsdialer.ClassifyTLSFailure(err) != errorx.FailureSSLInvalidCertificate {
+			t.Fatal("unexpected result")
+		}
+	})
 }
 
 func TestEmitterTLSHandshakerFailure(t *testing.T) {

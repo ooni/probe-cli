@@ -3,7 +3,6 @@ package errorx
 
 import (
 	"context"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"strings"
@@ -212,22 +211,6 @@ func toFailureString(err error) string {
 	}
 	if errors.Is(err, context.Canceled) {
 		return FailureInterrupted
-	}
-	var x509HostnameError x509.HostnameError
-	if errors.As(err, &x509HostnameError) {
-		// Test case: https://wrong.host.badssl.com/
-		return FailureSSLInvalidHostname
-	}
-	var x509UnknownAuthorityError x509.UnknownAuthorityError
-	if errors.As(err, &x509UnknownAuthorityError) {
-		// Test case: https://self-signed.badssl.com/. This error has
-		// never been among the ones returned by MK.
-		return FailureSSLUnknownAuthority
-	}
-	var x509CertificateInvalidError x509.CertificateInvalidError
-	if errors.As(err, &x509CertificateInvalidError) {
-		// Test case: https://expired.badssl.com/
-		return FailureSSLInvalidCertificate
 	}
 
 	s := err.Error()
