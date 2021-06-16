@@ -154,32 +154,6 @@ func TestToFailureString(t *testing.T) {
 			t.Fatal(cmp.Diff(expected, out))
 		}
 	})
-	// QUIC failures
-	t.Run("for connection_reset", func(t *testing.T) {
-		if toFailureString(&quic.StatelessResetError{}) != FailureConnectionReset {
-			t.Fatal("unexpected results")
-		}
-	})
-	t.Run("for incompatible quic version", func(t *testing.T) {
-		if toFailureString(&quic.VersionNegotiationError{}) != FailureNoCompatibleQUICVersion {
-			t.Fatal("unexpected results")
-		}
-	})
-	t.Run("for quic connection refused", func(t *testing.T) {
-		if toFailureString(&quic.TransportError{ErrorCode: quic.ConnectionRefused}) != FailureConnectionRefused {
-			t.Fatal("unexpected results")
-		}
-	})
-	t.Run("for quic handshake timeout", func(t *testing.T) {
-		if toFailureString(&quic.HandshakeTimeoutError{}) != FailureGenericTimeoutError {
-			t.Fatal("unexpected results")
-		}
-	})
-	t.Run("for QUIC idle connection timeout", func(t *testing.T) {
-		if toFailureString(&quic.IdleTimeoutError{}) != FailureGenericTimeoutError {
-			t.Fatal("unexpected results")
-		}
-	})
 	t.Run("for i/o error", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1)
 		defer cancel() // fail immediately

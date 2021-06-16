@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"strings"
 	"syscall"
-
-	"github.com/lucas-clemente/quic-go"
 )
 
 const (
@@ -166,6 +164,9 @@ type SafeErrWrapperBuilder struct {
 	// Error is the error, if any
 	Error error
 
+	// Failure is the locally pre-classified OONI failure string, if any
+	Failure string
+
 	// Operation is the operation that failed
 	Operation string
 
@@ -177,10 +178,14 @@ type SafeErrWrapperBuilder struct {
 // a nil error value, instead, if b.Error is nil.
 func (b SafeErrWrapperBuilder) MaybeBuild() (err error) {
 	if b.Error != nil {
+		failureString := b.Failure
+		if failureString == "" {
+			failureString = toFailureString(b.Error)
+		}
 		err = &ErrWrapper{
 			ConnID:        b.ConnID,
 			DialID:        b.DialID,
-			Failure:       toFailureString(b.Error),
+			Failure:       failureString,
 			Operation:     toOperationString(b.Error, b.Operation),
 			TransactionID: b.TransactionID,
 			WrappedErr:    b.Error,
@@ -257,31 +262,6 @@ func toFailureString(err error) string {
 		// generic "hey, the lookup failed" error. Instead, this error
 		// that we return here is significantly more specific.
 		return FailureDNSNXDOMAINError
-	}
-
-	// special QUIC errors
-	var versionNegotiation *quic.VersionNegotiationError
-	var statelessReset *quic.StatelessResetError
-	var handshakeTimeout *quic.HandshakeTimeoutError
-	var idleTimeout *quic.IdleTimeoutError
-	var transportError *quic.TransportError
-
-	if errors.As(err, &versionNegotiation) {
-		return FailureNoCompatibleQUICVersion
-	}
-	if errors.As(err, &statelessReset) {
-		return FailureConnectionReset
-	}
-	if errors.As(err, &handshakeTimeout) {
-		return FailureGenericTimeoutError
-	}
-	if errors.As(err, &idleTimeout) {
-		return FailureGenericTimeoutError
-	}
-	if errors.As(err, &transportError) {
-		if transportError.ErrorCode == quic.ConnectionRefused {
-			return FailureConnectionRefused
-		}
 	}
 	formatted := fmt.Sprintf("unknown_failure: %s", s)
 	return Scrub(formatted) // scrub IP addresses in the error

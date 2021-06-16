@@ -59,3 +59,31 @@ func TestErrorWrapperSuccess(t *testing.T) {
 		t.Fatal("expected non-nil sess here")
 	}
 }
+
+func TestClassifyQUICFailure(t *testing.T) {
+	t.Run("for connection_reset", func(t *testing.T) {
+		if quicdialer.ClassifyQUICFailure(&quic.StatelessResetError{}) != errorx.FailureConnectionReset {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for incompatible quic version", func(t *testing.T) {
+		if quicdialer.ClassifyQUICFailure(&quic.VersionNegotiationError{}) != errorx.FailureNoCompatibleQUICVersion {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for quic connection refused", func(t *testing.T) {
+		if quicdialer.ClassifyQUICFailure(&quic.TransportError{ErrorCode: quic.ConnectionRefused}) != errorx.FailureConnectionRefused {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for quic handshake timeout", func(t *testing.T) {
+		if quicdialer.ClassifyQUICFailure(&quic.HandshakeTimeoutError{}) != errorx.FailureGenericTimeoutError {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for QUIC idle connection timeout", func(t *testing.T) {
+		if quicdialer.ClassifyQUICFailure(&quic.IdleTimeoutError{}) != errorx.FailureGenericTimeoutError {
+			t.Fatal("unexpected results")
+		}
+	})
+}
