@@ -3,6 +3,7 @@ package resolver_test
 import (
 	"context"
 	"errors"
+	"net"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
@@ -55,4 +56,24 @@ func TestErrorWrapperFailure(t *testing.T) {
 	if errWrapper.Operation != errorx.ResolveOperation {
 		t.Fatal("unexpected Operation")
 	}
+}
+
+func TestClassifyResolveFailure(t *testing.T) {
+	t.Run("for ErrDNSBogon", func(t *testing.T) {
+		if resolver.ClassifyResolveFailure(resolver.ErrDNSBogon) != errorx.FailureDNSBogonError {
+			t.Fatal("unexpected result")
+		}
+	})
+	t.Run("for no such host", func(t *testing.T) {
+		if resolver.ClassifyResolveFailure(&net.DNSError{
+			Err: "no such host",
+		}) != errorx.FailureDNSNXDOMAINError {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for not a local error", func(t *testing.T) {
+		if resolver.ClassifyResolveFailure(errors.New("global mock error")) != "" {
+			t.Fatal("unexpected result")
+		}
+	})
 }

@@ -50,11 +50,6 @@ func TestToFailureString(t *testing.T) {
 			t.Fatal("unexpected result")
 		}
 	})
-	t.Run("for ErrDNSBogon", func(t *testing.T) {
-		if toFailureString(ErrDNSBogon) != FailureDNSBogonError {
-			t.Fatal("unexpected result")
-		}
-	})
 	t.Run("for context.Canceled", func(t *testing.T) {
 		if toFailureString(context.Canceled) != FailureInterrupted {
 			t.Fatal("unexpected result")
@@ -128,13 +123,6 @@ func TestToFailureString(t *testing.T) {
 	t.Run("for TLS handshake timeout error", func(t *testing.T) {
 		err := errors.New("net/http: TLS handshake timeout")
 		if toFailureString(err) != FailureGenericTimeoutError {
-			t.Fatal("unexpected results")
-		}
-	})
-	t.Run("for no such host", func(t *testing.T) {
-		if toFailureString(&net.DNSError{
-			Err: "no such host",
-		}) != FailureDNSNXDOMAINError {
 			t.Fatal("unexpected results")
 		}
 	})

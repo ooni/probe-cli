@@ -88,11 +88,6 @@ const (
 	TopLevelOperation = "top_level"
 )
 
-// ErrDNSBogon indicates that we found a bogon address. This is the
-// correct value with which to initialize MeasurementRoot.ErrDNSBogon
-// to tell this library to return an error when a bogon is found.
-var ErrDNSBogon = errors.New("dns: detected bogon address")
-
 // ErrWrapper is our error wrapper for Go errors. The key objective of
 // this structure is to properly set Failure, which is also returned by
 // the Error() method, so be one of the OONI defined strings.
@@ -215,9 +210,6 @@ func toFailureString(err error) string {
 			// TODO(kelmenhorst): find out if we need more system errors here
 		}
 	}
-	if errors.Is(err, ErrDNSBogon) {
-		return FailureDNSBogonError // not in MK
-	}
 	if errors.Is(err, context.Canceled) {
 		return FailureInterrupted
 	}
@@ -256,12 +248,6 @@ func toFailureString(err error) string {
 	}
 	if strings.HasSuffix(s, "TLS handshake timeout") {
 		return FailureGenericTimeoutError
-	}
-	if strings.HasSuffix(s, "no such host") {
-		// This is dns_lookup_error in MK but such error is used as a
-		// generic "hey, the lookup failed" error. Instead, this error
-		// that we return here is significantly more specific.
-		return FailureDNSNXDOMAINError
 	}
 	formatted := fmt.Sprintf("unknown_failure: %s", s)
 	return Scrub(formatted) // scrub IP addresses in the error
