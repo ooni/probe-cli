@@ -207,7 +207,7 @@ func toFailureString(err error) string {
 			return FailureConnectionReset
 		case errno == 0x6f || errno == 0x274D:
 			return FailureConnectionRefused
-			// ...
+			// TODO(kelmenhorst): find out if we need more system errors here
 		}
 	}
 	if errors.Is(err, ErrDNSBogon) {
