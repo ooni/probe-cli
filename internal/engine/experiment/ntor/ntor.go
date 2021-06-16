@@ -91,7 +91,7 @@ func (m *Measurer) Run(
 		// inside of the test keys in this case?
 		return err
 	}
-	testkeys.Targets = m.measure(ctx, sess.Logger(), targets)
+	testkeys.Targets = m.measure(ctx, sess.Logger(), callbacks, targets)
 	return nil
 }
 

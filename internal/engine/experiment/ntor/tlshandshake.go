@@ -14,8 +14,6 @@ func (svc *service) doTLSHandshake(ctx context.Context, out *serviceOutput, conn
 	tlsConn, err := svc.tlsHandshaker.Handshake(ctx, &tlshandshaker.HandshakeRequest{
 		Conn: conn,
 		Config: &tls.Config{
-			NextProtos:         []string{}, // any specific ALPN here?
-			ServerName:         out.results.TargetAddress,
 			InsecureSkipVerify: true,
 		},
 		Logger: svc.logger,

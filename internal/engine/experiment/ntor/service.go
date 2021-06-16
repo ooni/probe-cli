@@ -101,7 +101,7 @@ func newService(ctx context.Context, logger model.Logger) *service {
 	}
 	// note: we use less parallelism for heavier operations
 	svc.connector.StartN(10)
-	svc.httpTransport.StartN(1)
+	svc.httpTransport.StartN(2)
 	svc.resolver.StartN(10)
 	svc.tlsHandshaker.StartN(4)
 	return svc
