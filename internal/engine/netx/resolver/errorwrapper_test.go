@@ -56,16 +56,3 @@ func TestErrorWrapperFailure(t *testing.T) {
 		t.Fatal("unexpected Operation")
 	}
 }
-
-func TestClassifyResolveFailure(t *testing.T) {
-	t.Run("for ErrDNSBogon", func(t *testing.T) {
-		if resolver.ClassifyResolveFailure(resolver.ErrDNSBogon) != errorx.FailureDNSBogonError {
-			t.Fatal("unexpected result")
-		}
-	})
-	t.Run("for not a local error", func(t *testing.T) {
-		if resolver.ClassifyResolveFailure(errors.New("global mock error")) != "" {
-			t.Fatal("unexpected result")
-		}
-	})
-}

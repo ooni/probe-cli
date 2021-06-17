@@ -3,10 +3,13 @@ package errorx
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"strings"
 	"syscall"
+
+	"github.com/lucas-clemente/quic-go"
 )
 
 const (
@@ -87,6 +90,11 @@ const (
 	TopLevelOperation = "top_level"
 )
 
+// ErrDNSBogon indicates that we found a bogon address. This is the
+// correct value with which to initialize MeasurementRoot.ErrDNSBogon
+// to tell this library to return an error when a bogon is found.
+var ErrDNSBogon = errors.New("dns: detected bogon address")
+
 // ErrWrapper is our error wrapper for Go errors. The key objective of
 // this structure is to properly set Failure, which is also returned by
 // the Error() method, so be one of the OONI defined strings.
@@ -158,8 +166,8 @@ type SafeErrWrapperBuilder struct {
 	// Error is the error, if any
 	Error error
 
-	// Failure is the locally pre-classified OONI failure string, if any
-	Failure string
+	// Classifier is the local error to string classifier, if any
+	Classifier func(err error) string
 
 	// Operation is the operation that failed
 	Operation string
@@ -172,14 +180,13 @@ type SafeErrWrapperBuilder struct {
 // a nil error value, instead, if b.Error is nil.
 func (b SafeErrWrapperBuilder) MaybeBuild() (err error) {
 	if b.Error != nil {
-		failureString := b.Failure
-		if failureString == "" {
-			failureString = toFailureString(b.Error)
+		if b.Classifier == nil {
+			b.Classifier = toFailureString
 		}
 		err = &ErrWrapper{
 			ConnID:        b.ConnID,
 			DialID:        b.DialID,
-			Failure:       failureString,
+			Failure:       b.Classifier(b.Error),
 			Operation:     toOperationString(b.Error, b.Operation),
 			TransactionID: b.TransactionID,
 			WrappedErr:    b.Error,
@@ -212,7 +219,6 @@ func toFailureString(err error) string {
 	if errors.Is(err, context.Canceled) {
 		return FailureInterrupted
 	}
-
 	s := err.Error()
 	if strings.Contains(s, "operation was canceled") {
 		return FailureInterrupted
@@ -240,6 +246,76 @@ func toFailureString(err error) string {
 	}
 	formatted := fmt.Sprintf("unknown_failure: %s", s)
 	return Scrub(formatted) // scrub IP addresses in the error
+}
+
+func ClassifyQUICFailure(err error) string {
+	var versionNegotiation *quic.VersionNegotiationError
+	var statelessReset *quic.StatelessResetError
+	var handshakeTimeout *quic.HandshakeTimeoutError
+	var idleTimeout *quic.IdleTimeoutError
+	var transportError *quic.TransportError
+
+	if errors.As(err, &versionNegotiation) {
+		return FailureNoCompatibleQUICVersion
+	}
+	if errors.As(err, &statelessReset) {
+		return FailureConnectionReset
+	}
+	if errors.As(err, &handshakeTimeout) {
+		return FailureGenericTimeoutError
+	}
+	if errors.As(err, &idleTimeout) {
+		return FailureGenericTimeoutError
+	}
+	if errors.As(err, &transportError) {
+		if transportError.ErrorCode == quic.ConnectionRefused {
+			return FailureConnectionRefused
+		}
+		// checkout alert.go in the qtls library
+		// (the alert constants are not exported, so this is not robust to changes in qtls)
+		errCode := uint8(transportError.ErrorCode)
+		// alertBadCertificate, alertUnsupportedCertificate,
+		// alertCertificateRevoked, alertCertificateExpired, alertCertificateUnknown
+		if errCode >= 42 && errCode <= 46 {
+			return FailureSSLInvalidCertificate
+		}
+		// alertUnknownCA
+		if errCode == 48 {
+			return FailureSSLUnknownAuthority
+		}
+		// alertUnrecognizedName
+		if errCode == 112 {
+			return FailureSSLInvalidHostname
+		}
+	}
+	return toFailureString(err)
+}
+
+func ClassifyResolveFailure(err error) string {
+	if errors.Is(err, ErrDNSBogon) {
+		return FailureDNSBogonError // not in MK
+	}
+	return toFailureString(err)
+}
+
+func ClassifyTLSFailure(err error) string {
+	var x509HostnameError x509.HostnameError
+	if errors.As(err, &x509HostnameError) {
+		// Test case: https://wrong.host.badssl.com/
+		return FailureSSLInvalidHostname
+	}
+	var x509UnknownAuthorityError x509.UnknownAuthorityError
+	if errors.As(err, &x509UnknownAuthorityError) {
+		// Test case: https://self-signed.badssl.com/. This error has
+		// never been among the ones returned by MK.
+		return FailureSSLUnknownAuthority
+	}
+	var x509CertificateInvalidError x509.CertificateInvalidError
+	if errors.As(err, &x509CertificateInvalidError) {
+		// Test case: https://expired.badssl.com/
+		return FailureSSLInvalidCertificate
+	}
+	return toFailureString(err)
 }
 
 func toOperationString(err error, operation string) string {

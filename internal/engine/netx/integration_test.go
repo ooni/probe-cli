@@ -10,7 +10,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/iox"
 )
@@ -82,7 +81,7 @@ func TestBogonResolutionNotBroken(t *testing.T) {
 		Logger:       log.Log,
 	})
 	addrs, err := r.LookupHost(context.Background(), "www.google.com")
-	if !errors.Is(err, resolver.ErrDNSBogon) {
+	if !errors.Is(err, errorx.ErrDNSBogon) {
 		t.Fatal("not the error we expected")
 	}
 	if err.Error() != errorx.FailureDNSBogonError {

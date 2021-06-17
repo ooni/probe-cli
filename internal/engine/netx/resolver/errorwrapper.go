@@ -2,7 +2,6 @@ package resolver
 
 import (
 	"context"
-	"errors"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
@@ -20,25 +19,13 @@ func (r ErrorWrapperResolver) LookupHost(ctx context.Context, hostname string) (
 	txID := transactionid.ContextTransactionID(ctx)
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	err = errorx.SafeErrWrapperBuilder{
+		Classifier:    errorx.ClassifyResolveFailure,
 		DialID:        dialID,
 		Error:         err,
-		Failure:       ClassifyResolveFailure(err),
 		Operation:     errorx.ResolveOperation,
 		TransactionID: txID,
 	}.MaybeBuild()
 	return addrs, err
-}
-
-// ErrDNSBogon indicates that we found a bogon address. This is the
-// correct value with which to initialize MeasurementRoot.ErrDNSBogon
-// to tell this library to return an error when a bogon is found.
-var ErrDNSBogon = errors.New("dns: detected bogon address")
-
-func ClassifyResolveFailure(err error) string {
-	if errors.Is(err, ErrDNSBogon) {
-		return errorx.FailureDNSBogonError // not in MK
-	}
-	return ""
 }
 
 var _ Resolver = ErrorWrapperResolver{}

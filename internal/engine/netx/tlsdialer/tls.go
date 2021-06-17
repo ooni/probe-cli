@@ -4,8 +4,6 @@ package tlsdialer
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
-	"errors"
 	"net"
 	"time"
 
@@ -73,32 +71,12 @@ func (h ErrorWrapperTLSHandshaker) Handshake(
 	connID := connid.Compute(conn.RemoteAddr().Network(), conn.RemoteAddr().String())
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	err = errorx.SafeErrWrapperBuilder{
-		ConnID:    connID,
-		Error:     err,
-		Operation: errorx.TLSHandshakeOperation,
-		Failure:   ClassifyTLSFailure(err),
+		Classifier: errorx.ClassifyTLSFailure,
+		ConnID:     connID,
+		Error:      err,
+		Operation:  errorx.TLSHandshakeOperation,
 	}.MaybeBuild()
 	return tlsconn, state, err
-}
-
-func ClassifyTLSFailure(err error) string {
-	var x509HostnameError x509.HostnameError
-	if errors.As(err, &x509HostnameError) {
-		// Test case: https://wrong.host.badssl.com/
-		return errorx.FailureSSLInvalidHostname
-	}
-	var x509UnknownAuthorityError x509.UnknownAuthorityError
-	if errors.As(err, &x509UnknownAuthorityError) {
-		// Test case: https://self-signed.badssl.com/. This error has
-		// never been among the ones returned by MK.
-		return errorx.FailureSSLUnknownAuthority
-	}
-	var x509CertificateInvalidError x509.CertificateInvalidError
-	if errors.As(err, &x509CertificateInvalidError) {
-		// Test case: https://expired.badssl.com/
-		return errorx.FailureSSLInvalidCertificate
-	}
-	return ""
 }
 
 // EmitterTLSHandshaker emits events using the MeasurementRoot
