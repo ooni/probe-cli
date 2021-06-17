@@ -31,6 +31,9 @@ const (
 	// FailureGenericTimeoutError means we got some timer has expired.
 	FailureGenericTimeoutError = "generic_timeout_error"
 
+	// FailureHostUnreachable means that there is "no route to host".
+	FailureHostUnreachable = "host_unreachable"
+
 	// FailureInterrupted means that the user interrupted us.
 	FailureInterrupted = "interrupted"
 
@@ -209,10 +212,14 @@ func toFailureString(err error) string {
 	if errors.As(err, &errno) {
 		// checkout https://pkg.go.dev/golang.org/x/sys/windows and https://pkg.go.dev/golang.org/x/sys/unix
 		switch {
-		case errno == 0x68 || errno == 0x2746:
+		case errno == ECANCELED:
+			return FailureInterrupted
+		case errno == ECONNRESET:
 			return FailureConnectionReset
-		case errno == 0x6f || errno == 0x274D:
+		case errno == ECONNREFUSED:
 			return FailureConnectionRefused
+		case errno == EHOSTUNREACH:
+			return FailureHostUnreachable
 			// TODO(kelmenhorst): find out if we need more system errors here
 		}
 	}
