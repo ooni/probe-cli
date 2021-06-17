@@ -244,16 +244,16 @@ func toFailureString(err error) string {
 	var errno syscall.Errno
 	if errors.As(err, &errno) {
 		// checkout https://pkg.go.dev/golang.org/x/sys/windows and https://pkg.go.dev/golang.org/x/sys/unix
-		switch {
-		case errno == ECANCELED:
+		switch errno {
+		case ECANCELED:
 			return FailureInterrupted
-		case errno == ECONNRESET:
+		case ECONNRESET:
 			return FailureConnectionReset
-		case errno == ECONNREFUSED:
+		case ECONNREFUSED:
 			return FailureConnectionRefused
-		case errno == EHOSTUNREACH:
+		case EHOSTUNREACH:
 			return FailureHostUnreachable
-		case errno == ETIMEDOUT:
+		case ETIMEDOUT:
 			return FailureGenericTimeoutError
 			// TODO(kelmenhorst): find out if we need more system errors here
 		}
