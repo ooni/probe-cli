@@ -65,6 +65,11 @@ func TestToFailureString(t *testing.T) {
 			t.Fatal("unexpected results")
 		}
 	})
+	t.Run("for canceled", func(t *testing.T) {
+		if toFailureString(syscall.ECANCELED) != FailureInterrupted {
+			t.Fatal("unexpected results")
+		}
+	})
 	t.Run("for connection_refused", func(t *testing.T) {
 		if toFailureString(syscall.ECONNREFUSED) != FailureConnectionRefused {
 			t.Fatal("unexpected results")
@@ -72,6 +77,16 @@ func TestToFailureString(t *testing.T) {
 	})
 	t.Run("for connection_reset", func(t *testing.T) {
 		if toFailureString(syscall.ECONNRESET) != FailureConnectionReset {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for host_unreachable", func(t *testing.T) {
+		if toFailureString(syscall.EHOSTUNREACH) != FailureHostUnreachable {
+			t.Fatal("unexpected results")
+		}
+	})
+	t.Run("for system timeout", func(t *testing.T) {
+		if toFailureString(syscall.ETIMEDOUT) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})

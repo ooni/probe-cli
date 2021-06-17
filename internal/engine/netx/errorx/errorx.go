@@ -220,6 +220,8 @@ func toFailureString(err error) string {
 			return FailureConnectionRefused
 		case errno == EHOSTUNREACH:
 			return FailureHostUnreachable
+		case errno == ETIMEDOUT:
+			return FailureGenericTimeoutError
 			// TODO(kelmenhorst): find out if we need more system errors here
 		}
 	}
