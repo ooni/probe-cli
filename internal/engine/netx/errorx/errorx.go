@@ -40,6 +40,9 @@ const (
 	// FailureNoCompatibleQUICVersion means that the server does not support the proposed QUIC version
 	FailureNoCompatibleQUICVersion = "quic_incompatible_version"
 
+	// FailureSSLHandshake means that the negotiation of cryptographic parameters failed
+	FailureSSLHandshake = "ssl_failed_handshake"
+
 	// FailureSSLInvalidHostname means we got certificate is not valid for SNI.
 	FailureSSLInvalidHostname = "ssl_invalid_hostname"
 
@@ -52,6 +55,36 @@ const (
 
 	// FailureJSONParseError indicates that we couldn't parse a JSON
 	FailureJSONParseError = "json_parse_error"
+)
+
+// TLS alert protocol as defined in RFC8446
+const (
+	// Sender was unable to negotiate an acceptable set of security parameters given the options available.
+	TLSHandshakeFailure = 40
+
+	// Certificate was corrupt, contained signatures that did not verify correctly, etc.
+	TLSBadCertificate = 42
+
+	// Certificate was of an unsupported type.
+	TLSUnsupportedCertificate = 43
+
+	// Certificate was revoked by its signer.
+	TLSCertificateRevoked = 44
+
+	// Certificate has expired or is not currently valid.
+	TLSCertificateExpired = 45
+
+	// Some unspecified issue arose inprocessing the certificate, rendering it unacceptable.
+	TLSCertificateUnknown = 46
+
+	// Certificate was not accepted because the CA certificate could not be located or could not be matched with a known trust anchor.
+	TLSUnknownCA = 48
+
+	// Handshake (not record layer) cryptographic operation failed.
+	TLSDecryptError = 50
+
+	// Sent by servers when no server exists identified by the name provided by the client via the "server_name" extension.
+	TLSUnrecognizedName = 112
 )
 
 const (
@@ -283,17 +316,16 @@ func ClassifyQUICFailure(err error) string {
 		// checkout alert.go in the qtls library
 		// (the alert constants are not exported, so this is not robust to changes in qtls)
 		errCode := uint8(transportError.ErrorCode)
-		// alertBadCertificate, alertUnsupportedCertificate,
-		// alertCertificateRevoked, alertCertificateExpired, alertCertificateUnknown
-		if errCode >= 42 && errCode <= 46 {
+		if isCertificateError(errCode) {
 			return FailureSSLInvalidCertificate
 		}
-		// alertUnknownCA
-		if errCode == 48 {
+		if errCode == TLSDecryptError || errCode == TLSHandshakeFailure {
+			return FailureSSLHandshake
+		}
+		if errCode == TLSUnknownCA {
 			return FailureSSLUnknownAuthority
 		}
-		// alertUnrecognizedName
-		if errCode == 112 {
+		if errCode == TLSUnrecognizedName {
 			return FailureSSLInvalidHostname
 		}
 	}
@@ -356,4 +388,12 @@ func toOperationString(err error, operation string) string {
 		// FALLTHROUGH
 	}
 	return operation
+}
+
+func isCertificateError(alert uint8) bool {
+	return (alert == TLSBadCertificate ||
+		alert == TLSUnsupportedCertificate ||
+		alert == TLSCertificateExpired ||
+		alert == TLSCertificateRevoked ||
+		alert == TLSCertificateUnknown)
 }
