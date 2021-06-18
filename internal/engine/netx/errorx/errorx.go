@@ -87,7 +87,7 @@ const (
 	TLSAlertUnknownCA = 48
 
 	// Handshake (not record layer) cryptographic operation failed.
-	TLSAlertDecryptError = 50
+	TLSAlertDecryptError = 51
 
 	// Sent by servers when no server exists identified by the name provided by the client via the "server_name" extension.
 	TLSUnrecognizedName = 112
