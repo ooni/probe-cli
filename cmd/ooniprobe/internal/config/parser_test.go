@@ -1,12 +1,14 @@
 package config
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"io"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 func getShasum(path string) (string, error) {
@@ -17,7 +19,7 @@ func getShasum(path string) (string, error) {
 		return "", err
 	}
 	defer f.Close()
-	if _, err := io.Copy(hasher, f); err != nil {
+	if _, err := iox.CopyContext(context.Background(), hasher, f); err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(hasher.Sum(nil)), nil
@@ -41,11 +43,11 @@ func TestUpdateConfig(t *testing.T) {
 	configPath := tmpFile.Name()
 	defer os.Remove(configPath)
 
-	data, err := ioutil.ReadFile("testdata/config-v0.json")
+	data, err := os.ReadFile("testdata/config-v0.json")
 	if err != nil {
 		t.Error(err)
 	}
-	err = ioutil.WriteFile(configPath, data, 0644)
+	err = os.WriteFile(configPath, data, 0644)
 	if err != nil {
 		t.Error(err)
 	}

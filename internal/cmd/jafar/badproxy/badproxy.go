@@ -6,16 +6,17 @@
 package badproxy
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"io"
-	"io/ioutil"
 	"net"
 	"strings"
 	"time"
 
 	"github.com/google/martian/v3/mitm"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 // CensoringProxy is a proxy that does not behave correctly.
@@ -56,7 +57,7 @@ func (p *CensoringProxy) serve(conn net.Conn) {
 	} else {
 		const maxread = 1 << 17
 		reader := io.LimitReader(conn, maxread)
-		ioutil.ReadAll(reader)
+		iox.ReadAllContext(context.Background(), reader)
 	}
 	conn.Close()
 }

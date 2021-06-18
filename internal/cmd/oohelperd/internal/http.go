@@ -3,12 +3,12 @@ package internal
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 // CtrlHTTPResponse is the result of the HTTP check performed by
@@ -56,7 +56,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) {
 		headers[k] = resp.Header.Get(k)
 	}
 	reader := &io.LimitedReader{R: resp.Body, N: config.MaxAcceptableBody}
-	data, err := ioutil.ReadAll(reader)
+	data, err := iox.ReadAllContext(ctx, reader)
 	config.Out <- CtrlHTTPResponse{
 		BodyLength: int64(len(data)),
 		Failure:    newfailure(err),

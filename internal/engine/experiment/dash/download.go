@@ -12,7 +12,7 @@ import (
 type downloadDeps interface {
 	HTTPClient() *http.Client
 	NewHTTPRequest(method string, url string, body io.Reader) (*http.Request, error)
-	ReadAll(r io.Reader) ([]byte, error)
+	ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error)
 	Scheme() string
 	UserAgent() string
 }
@@ -57,7 +57,7 @@ func download(ctx context.Context, config downloadConfig) (downloadResult, error
 		return result, errHTTPRequestFailed
 	}
 	defer resp.Body.Close()
-	data, err := config.deps.ReadAll(resp.Body)
+	data, err := config.deps.ReadAllContext(ctx, resp.Body)
 	if err != nil {
 		return result, err
 	}
@@ -66,7 +66,7 @@ func download(ctx context.Context, config downloadConfig) (downloadResult, error
 	// turns out that Neubot and MK do the same. So, we do what they do. At
 	// the same time, we are currently not able to include the overhead that
 	// is caused by HTTP headers etc. So, we're a bit less precise.
-	result.elapsed = time.Now().Sub(savedTicks).Seconds()
+	result.elapsed = time.Since(savedTicks).Seconds()
 	result.received = int64(len(data))
 	result.requestTicks = savedTicks.Sub(config.begin).Seconds()
 	result.timestamp = time.Now().Unix()

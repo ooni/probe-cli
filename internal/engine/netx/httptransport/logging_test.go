@@ -1,9 +1,9 @@
 package httptransport_test
 
 import (
+	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 func TestLoggingFailure(t *testing.T) {
@@ -59,7 +60,7 @@ func TestLoggingSuccess(t *testing.T) {
 		Logger: log.Log,
 		RoundTripper: httptransport.FakeTransport{
 			Resp: &http.Response{
-				Body: ioutil.NopCloser(strings.NewReader("")),
+				Body: io.NopCloser(strings.NewReader("")),
 				Header: http.Header{
 					"Server": []string{"antani/0.1.0"},
 				},
@@ -72,6 +73,6 @@ func TestLoggingSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ioutil.ReadAll(resp.Body)
+	iox.ReadAllContext(context.Background(), resp.Body)
 	resp.Body.Close()
 }

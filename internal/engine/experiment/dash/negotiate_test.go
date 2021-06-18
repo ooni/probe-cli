@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -69,7 +69,7 @@ func TestNegotiateInternalError(t *testing.T) {
 func TestNegotiateReadAllFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		Body:       io.NopCloser(bytes.NewReader(nil)),
 		StatusCode: 200,
 	}}
 	deps := FakeDeps{
@@ -91,7 +91,7 @@ func TestNegotiateReadAllFailure(t *testing.T) {
 
 func TestNegotiateInvalidJSON(t *testing.T) {
 	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		Body:       io.NopCloser(bytes.NewReader(nil)),
 		StatusCode: 200,
 	}}
 	deps := FakeDeps{
@@ -113,7 +113,7 @@ func TestNegotiateInvalidJSON(t *testing.T) {
 
 func TestNegotiateServerBusyFirstCase(t *testing.T) {
 	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		Body:       io.NopCloser(bytes.NewReader(nil)),
 		StatusCode: 200,
 	}}
 	deps := FakeDeps{
@@ -135,7 +135,7 @@ func TestNegotiateServerBusyFirstCase(t *testing.T) {
 
 func TestNegotiateServerBusyThirdCase(t *testing.T) {
 	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		Body:       io.NopCloser(bytes.NewReader(nil)),
 		StatusCode: 200,
 	}}
 	deps := FakeDeps{
@@ -157,7 +157,7 @@ func TestNegotiateServerBusyThirdCase(t *testing.T) {
 
 func TestNegotiateSuccess(t *testing.T) {
 	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		Body:       io.NopCloser(bytes.NewReader(nil)),
 		StatusCode: 200,
 	}}
 	deps := FakeDeps{

@@ -9,7 +9,7 @@ import (
 
 func (d *Descriptor) genNewResponse(sb *strings.Builder) {
 	fmt.Fprintf(sb,
-		"func (api *%s) newResponse(resp *http.Response, err error) (%s, error) {\n",
+		"func (api *%s) newResponse(ctx context.Context, resp *http.Response, err error) (%s, error) {\n",
 		d.APIStructName(), d.ResponseTypeName())
 
 	fmt.Fprint(sb, "\tif err != nil {\n")
@@ -23,7 +23,7 @@ func (d *Descriptor) genNewResponse(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 	fmt.Fprint(sb, "\tdefer resp.Body.Close()\n")
 	fmt.Fprint(sb, "\treader := io.LimitReader(resp.Body, 4<<20)\n")
-	fmt.Fprint(sb, "\tdata, err := ioutil.ReadAll(reader)\n")
+	fmt.Fprint(sb, "\tdata, err := iox.ReadAllContext(ctx, reader)\n")
 	fmt.Fprint(sb, "\tif err != nil {\n")
 	fmt.Fprint(sb, "\t\treturn nil, err\n")
 	fmt.Fprint(sb, "\t}\n")
@@ -67,10 +67,11 @@ func GenResponsesGo(file string) {
 	fmt.Fprint(&sb, "package ooapi\n\n")
 	fmt.Fprintf(&sb, "//go:generate go run ./internal/generator -file %s\n\n", file)
 	fmt.Fprint(&sb, "import (\n")
+	fmt.Fprint(&sb, "\t\"context\"\n")
 	fmt.Fprint(&sb, "\t\"io\"\n")
-	fmt.Fprint(&sb, "\t\"io/ioutil\"\n")
 	fmt.Fprint(&sb, "\t\"net/http\"\n")
 	fmt.Fprint(&sb, "\n")
+	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/iox\"\n")
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel\"\n")
 	fmt.Fprint(&sb, ")\n\n")
 	for _, desc := range Descriptors {

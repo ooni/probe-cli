@@ -1,4 +1,4 @@
-package mlablocate_test
+package mlablocate
 
 import (
 	"context"
@@ -9,16 +9,15 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mlablocate"
 )
 
-func TestWithoutProxy(t *testing.T) {
-	client := mlablocate.NewClient(
+func TestSuccess(t *testing.T) {
+	client := NewClient(
 		http.DefaultClient,
 		log.Log,
 		"miniooni/0.1.0-dev",
 	)
-	result, err := client.Query(context.Background(), "ndt7")
+	result, err := client.Query(context.Background(), "neubot/dash")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +27,7 @@ func TestWithoutProxy(t *testing.T) {
 }
 
 func Test404Response(t *testing.T) {
-	client := mlablocate.NewClient(
+	client := NewClient(
 		http.DefaultClient,
 		log.Log,
 		"miniooni/0.1.0-dev",
@@ -43,7 +42,7 @@ func Test404Response(t *testing.T) {
 }
 
 func TestNewRequestFailure(t *testing.T) {
-	client := mlablocate.NewClient(
+	client := NewClient(
 		http.DefaultClient,
 		log.Log,
 		"miniooni/0.1.0-dev",
@@ -59,7 +58,7 @@ func TestNewRequestFailure(t *testing.T) {
 }
 
 func TestHTTPClientDoFailure(t *testing.T) {
-	client := mlablocate.NewClient(
+	client := NewClient(
 		http.DefaultClient,
 		log.Log,
 		"miniooni/0.1.0-dev",
@@ -86,7 +85,7 @@ func (txp *roundTripFails) RoundTrip(*http.Request) (*http.Response, error) {
 }
 
 func TestCannotReadBody(t *testing.T) {
-	client := mlablocate.NewClient(
+	client := NewClient(
 		http.DefaultClient,
 		log.Log,
 		"miniooni/0.1.0-dev",
@@ -128,7 +127,7 @@ func (b *readingBodyFailsBody) Close() error {
 }
 
 func TestInvalidJSON(t *testing.T) {
-	client := mlablocate.NewClient(
+	client := NewClient(
 		http.DefaultClient,
 		log.Log,
 		"miniooni/0.1.0-dev",
@@ -169,7 +168,7 @@ func (b *invalidJSONBody) Close() error {
 }
 
 func TestEmptyFQDN(t *testing.T) {
-	client := mlablocate.NewClient(
+	client := NewClient(
 		http.DefaultClient,
 		log.Log,
 		"miniooni/0.1.0-dev",

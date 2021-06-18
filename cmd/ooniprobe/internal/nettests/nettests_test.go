@@ -3,6 +3,7 @@ package nettests
 import (
 	"context"
 	"io/ioutil"
+	"os"
 	"path"
 	"testing"
 
@@ -11,11 +12,11 @@ import (
 )
 
 func copyfile(source, dest string) error {
-	data, err := ioutil.ReadFile(source)
+	data, err := os.ReadFile(source)
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(dest, data, 0600)
+	return os.WriteFile(dest, data, 0600)
 }
 
 func newOONIProbe(t *testing.T) *ooni.Probe {

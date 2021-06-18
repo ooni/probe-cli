@@ -3,7 +3,7 @@ package dash
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -47,7 +47,7 @@ func TestRunnerLoopNegotiateFailure(t *testing.T) {
 				all: []FakeHTTPTransport{
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"fqdn": "ams01.measurementlab.net"}`)),
 							StatusCode: 200,
 						},
@@ -77,14 +77,14 @@ func TestRunnerLoopMeasureFailure(t *testing.T) {
 				all: []FakeHTTPTransport{
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"fqdn": "ams01.measurementlab.net"}`)),
 							StatusCode: 200,
 						},
 					},
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"authorization": "xx", "unchoked": 1}`)),
 							StatusCode: 200,
 						},
@@ -116,21 +116,21 @@ func TestRunnerLoopCollectFailure(t *testing.T) {
 				all: []FakeHTTPTransport{
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"fqdn": "ams01.measurementlab.net"}`)),
 							StatusCode: 200,
 						},
 					},
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"authorization": "xx", "unchoked": 1}`)),
 							StatusCode: 200,
 						},
 					},
 					{
 						resp: &http.Response{
-							Body:       ioutil.NopCloser(strings.NewReader(`1234567`)),
+							Body:       io.NopCloser(strings.NewReader(`1234567`)),
 							StatusCode: 200,
 						},
 					},
@@ -160,27 +160,27 @@ func TestRunnerLoopSuccess(t *testing.T) {
 				all: []FakeHTTPTransport{
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"fqdn": "ams01.measurementlab.net"}`)),
 							StatusCode: 200,
 						},
 					},
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"authorization": "xx", "unchoked": 1}`)),
 							StatusCode: 200,
 						},
 					},
 					{
 						resp: &http.Response{
-							Body:       ioutil.NopCloser(strings.NewReader(`1234567`)),
+							Body:       io.NopCloser(strings.NewReader(`1234567`)),
 							StatusCode: 200,
 						},
 					},
 					{
 						resp: &http.Response{
-							Body:       ioutil.NopCloser(strings.NewReader(`[]`)),
+							Body:       io.NopCloser(strings.NewReader(`[]`)),
 							StatusCode: 200,
 						},
 					},

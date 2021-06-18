@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"runtime"
 	"time"
@@ -20,6 +19,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 const (
@@ -86,8 +86,8 @@ func (r runner) NewHTTPRequest(meth, url string, body io.Reader) (*http.Request,
 	return http.NewRequest(meth, url, body)
 }
 
-func (r runner) ReadAll(reader io.Reader) ([]byte, error) {
-	return ioutil.ReadAll(reader)
+func (r runner) ReadAllContext(ctx context.Context, reader io.Reader) ([]byte, error) {
+	return iox.ReadAllContext(ctx, reader)
 }
 
 func (r runner) Scheme() string {
@@ -179,7 +179,7 @@ func (r runner) measure(
 		current.ConnectTime = connectTime
 		r.tk.ReceiverData = append(r.tk.ReceiverData, current)
 		total += current.Received
-		avgspeed := 8 * float64(total) / time.Now().Sub(begin).Seconds()
+		avgspeed := 8 * float64(total) / time.Since(begin).Seconds()
 		percentage := float64(current.Iteration) / float64(numIterations)
 		message := fmt.Sprintf("streaming: speed: %s", humanize.SI(avgspeed, "bit/s"))
 		r.callbacks.OnProgress(percentage, message)

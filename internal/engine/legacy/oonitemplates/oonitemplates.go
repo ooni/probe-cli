@@ -24,6 +24,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"gitlab.com/yawning/obfs4.git/transports"
 	obfs4base "gitlab.com/yawning/obfs4.git/transports/base"
@@ -90,7 +91,7 @@ func (m *connmapper) scramble(cid int64) int64 {
 	// See https://stackoverflow.com/a/38140573/4354461
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if value, found := m.table[cid]; found == true {
+	if value, found := m.table[cid]; found {
 		return value
 	}
 	var factor int64 = 1
@@ -366,7 +367,7 @@ func HTTPDo(
 				config.MaxResponseBodySnapSize,
 			),
 		)
-		data, err := ioutil.ReadAll(reader)
+		data, err := iox.ReadAllContext(ctx, reader)
 		mu.Lock()
 		results.BodySnap, results.Error = data, err
 		mu.Unlock()

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -32,7 +32,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	reader := &io.LimitedReader{R: req.Body, N: h.MaxAcceptableBody}
-	data, err := ioutil.ReadAll(reader)
+	data, err := iox.ReadAllContext(req.Context(), reader)
 	if err != nil {
 		w.WriteHeader(400)
 		return
@@ -42,12 +42,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
-	measureConfig := MeasureConfig{
-		Client:            h.Client,
-		Dialer:            h.Dialer,
-		MaxAcceptableBody: h.MaxAcceptableBody,
-		Resolver:          h.Resolver,
-	}
+	measureConfig := MeasureConfig(h)
 	cresp, err := Measure(req.Context(), measureConfig, &creq)
 	if err != nil {
 		w.WriteHeader(400)

@@ -3,13 +3,13 @@ package internal
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 type FakeResolver struct {
@@ -63,7 +63,7 @@ func (txp FakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return txp.Func(req)
 	}
 	if req.Body != nil {
-		ioutil.ReadAll(req.Body)
+		iox.ReadAllContext(req.Context(), req.Body)
 		req.Body.Close()
 	}
 	if txp.Err != nil {

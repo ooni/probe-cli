@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+. /usr/share/debconf/confmodule
+db_version 2.0
+
+if [ "$1" = "configure" ]; then
+    if ! getent passwd oohelperd >/dev/null; then
+        adduser --quiet --system --group --home /var/lib/oohelperd oohelperd
+    fi
+fi
+
+#DEBHELPER#
+
+exit 0

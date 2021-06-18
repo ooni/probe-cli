@@ -3,7 +3,6 @@ package netx_test
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 )
 
 func TestSuccess(t *testing.T) {
@@ -38,7 +38,7 @@ func TestSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = ioutil.ReadAll(resp.Body); err != nil {
+	if _, err = iox.ReadAllContext(context.Background(), resp.Body); err != nil {
 		t.Fatal(err)
 	}
 	if err = resp.Body.Close(); err != nil {

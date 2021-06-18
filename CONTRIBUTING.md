@@ -63,6 +63,9 @@ run `go mod tidy` to minimize such changes.
 
 - use `./internal/fsx.OpenFile` when you need to open a file
 
+- use `./internal/iox.ReadAllContext` instead of `io.ReadAll`
+and `./internal/iox.CopyContext` instead of `io.Copy`
+
 ## Code testing requirements
 
 Make sure all tests pass with `go test -race ./...` run from the

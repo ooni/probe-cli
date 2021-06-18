@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -13,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/iox"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -92,7 +92,7 @@ func (r Runner) httpGet(ctx context.Context, url string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	if _, err = io.Copy(ioutil.Discard, resp.Body); err != nil {
+	if _, err = iox.CopyContext(ctx, io.Discard, resp.Body); err != nil {
 		return err
 	}
 	// Implementation note: we shall check for this error once we have read the

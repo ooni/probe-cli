@@ -377,7 +377,7 @@ type faketransport struct {
 }
 
 func (txp *faketransport) Name() string {
-	return txp.Name()
+	return txp.txp.Name()
 }
 
 func (txp *faketransport) ClientFactory(stateDir string) (obfs4base.ClientFactory, error) {
@@ -385,7 +385,7 @@ func (txp *faketransport) ClientFactory(stateDir string) (obfs4base.ClientFactor
 }
 
 func (txp *faketransport) ServerFactory(stateDir string, args *goptlib.Args) (obfs4base.ServerFactory, error) {
-	return txp.ServerFactory(stateDir, args)
+	return txp.txp.ServerFactory(stateDir, args)
 }
 
 func TestConnmapper(t *testing.T) {

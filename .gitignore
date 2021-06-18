@@ -17,6 +17,8 @@
 /ooniprobe_checksums.txt.asc
 /ooniprobe.exe
 /probe-cli.cov
+/ptxclient
+/ptxclient.exe
 /*.tar.gz
 /testdata/gotmp
 /*.zip

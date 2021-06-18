@@ -136,7 +136,7 @@ func (d *SnowflakeDialer) maxSnowflakes() int {
 	if d.MaxSnowflakes > 0 {
 		return d.MaxSnowflakes
 	}
-	return 3
+	return 1
 }
 
 // AsBridgeArgument returns the argument to be passed to
