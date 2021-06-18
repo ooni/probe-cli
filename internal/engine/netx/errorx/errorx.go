@@ -217,13 +217,14 @@ type SafeErrWrapperBuilder struct {
 // a nil error value, instead, if b.Error is nil.
 func (b SafeErrWrapperBuilder) MaybeBuild() (err error) {
 	if b.Error != nil {
-		if b.Classifier == nil {
-			b.Classifier = toFailureString
+		classifier := b.Classifier
+		if classifier == nil {
+			classifier = toFailureString
 		}
 		err = &ErrWrapper{
 			ConnID:        b.ConnID,
 			DialID:        b.DialID,
-			Failure:       b.Classifier(b.Error),
+			Failure:       classifier(b.Error),
 			Operation:     toOperationString(b.Error, b.Operation),
 			TransactionID: b.TransactionID,
 			WrappedErr:    b.Error,
@@ -291,6 +292,8 @@ func toFailureString(err error) string {
 	return Scrub(formatted) // scrub IP addresses in the error
 }
 
+// ClassifyQUICFailure is a classifier to translate QUIC errors to OONI error strings.
+// TODO(kelmenhorst,bassosimone): Consider moving this into quicdialer.
 func ClassifyQUICFailure(err error) string {
 	var versionNegotiation *quic.VersionNegotiationError
 	var statelessReset *quic.StatelessResetError
@@ -333,6 +336,8 @@ func ClassifyQUICFailure(err error) string {
 	return toFailureString(err)
 }
 
+// ClassifyResolveFailure is a classifier to translate DNS resolving errors to OONI error strings.
+// TODO(kelmenhorst,bassosimone): Consider moving this into resolve.
 func ClassifyResolveFailure(err error) string {
 	if errors.Is(err, ErrDNSBogon) {
 		return FailureDNSBogonError // not in MK
@@ -340,6 +345,8 @@ func ClassifyResolveFailure(err error) string {
 	return toFailureString(err)
 }
 
+// ClassifyTLSFailure is a classifier to translate TLS errors to OONI error strings.
+// TODO(kelmenhorst,bassosimone): Consider moving this into tlsdialer.
 func ClassifyTLSFailure(err error) string {
 	var x509HostnameError x509.HostnameError
 	if errors.As(err, &x509HostnameError) {
