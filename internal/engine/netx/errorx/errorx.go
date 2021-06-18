@@ -333,6 +333,8 @@ func ClassifyQUICFailure(err error) string {
 		if isCertificateError(errCode) {
 			return FailureSSLInvalidCertificate
 		}
+		// TLSAlertDecryptError and TLSAlertHandshakeFailure are summarized to a FailureSSLHandshake error because both
+		// alerts are caused by a failed or corrupted parameter negotiation during the TLS handshake.
 		if errCode == TLSAlertDecryptError || errCode == TLSAlertHandshakeFailure {
 			return FailureSSLHandshake
 		}
