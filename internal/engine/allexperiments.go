@@ -291,18 +291,6 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"ntor": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, ntor.NewExperimentMeasurer(
-					*config.(*ntor.Config),
-				))
-			},
-			config:      &ntor.Config{},
-			inputPolicy: InputNone,
-		}
-	},
-
 	"torsf": func(session *Session) *ExperimentBuilder {
 		return &ExperimentBuilder{
 			build: func(config interface{}) *Experiment {
