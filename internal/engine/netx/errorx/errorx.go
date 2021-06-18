@@ -1,6 +1,12 @@
 // Package errorx contains error extensions
 package errorx
 
+// TODO: eventually we want to re-structure the error classification code by clearly separating the layers where the error occur:
+//			- errno.go and errno_test.go: contain only the errno classifier (for system errors)
+//          - qtls.go and qtls_test.go: contain qtls dialers, handshaker, classifier
+//          - tls.go and tls_test.go: contain tls dialers, handshaker, classifier
+//          - resolver.go and resolver_test.go: contain dialers and classifier for resolving
+
 import (
 	"context"
 	"crypto/x509"
