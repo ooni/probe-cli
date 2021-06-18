@@ -233,6 +233,10 @@ func (b SafeErrWrapperBuilder) MaybeBuild() (err error) {
 	return
 }
 
+// TODO (kelmenhorst, bassosimone):
+// Use errors.Is / errors.As more often, when possible, in this classifier.
+// These methods are more robust to library changes than strings.
+// errors.Is / errors.As can only be used when the error is exported.
 func toFailureString(err error) string {
 	// The list returned here matches the values used by MK unless
 	// explicitly noted otherwise with a comment.
@@ -242,10 +246,10 @@ func toFailureString(err error) string {
 		return errwrapper.Error() // we've already wrapped it
 	}
 
-	// filter out system errors
+	// filter out system errors: necessary to detect all windows errors
+	// https://github.com/ooni/probe/issues/1526 describes the problem of mapping localized windows errors
 	var errno syscall.Errno
 	if errors.As(err, &errno) {
-		// checkout https://pkg.go.dev/golang.org/x/sys/windows and https://pkg.go.dev/golang.org/x/sys/unix
 		switch errno {
 		case ECANCELED:
 			return FailureInterrupted
@@ -264,7 +268,7 @@ func toFailureString(err error) string {
 		return FailureInterrupted
 	}
 	s := err.Error()
-	if strings.Contains(s, "operation was canceled") {
+	if strings.HasSuffix(s, "operation was canceled") {
 		return FailureInterrupted
 	}
 	if strings.HasSuffix(s, "EOF") {
@@ -282,7 +286,7 @@ func toFailureString(err error) string {
 	if strings.HasSuffix(s, "TLS handshake timeout") {
 		return FailureGenericTimeoutError
 	}
-	if strings.HasSuffix(err.Error(), "no such host") {
+	if strings.HasSuffix(s, "no such host") {
 		// This is dns_lookup_error in MK but such error is used as a
 		// generic "hey, the lookup failed" error. Instead, this error
 		// that we return here is significantly more specific.
