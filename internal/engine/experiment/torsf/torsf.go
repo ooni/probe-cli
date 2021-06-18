@@ -15,16 +15,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 )
 
-// TODO(bassosimone):
-//
-// 1. how the measure then number of bytes consumed by the bootstrap?
-//
-// 2. can we obtain the snowflake logs?
-//
-// 3. make sure we set the IsAnomaly key in the summary.
-//
-// 4. what else?
-
 // testVersion is the tor experiment version.
 const testVersion = "0.1.0"
 
