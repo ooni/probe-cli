@@ -60,28 +60,28 @@ const (
 // TLS alert protocol as defined in RFC8446
 const (
 	// Sender was unable to negotiate an acceptable set of security parameters given the options available.
-	TLSHandshakeFailure = 40
+	TLSAlertHandshakeFailure = 40
 
 	// Certificate was corrupt, contained signatures that did not verify correctly, etc.
-	TLSBadCertificate = 42
+	TLSAlertBadCertificate = 42
 
 	// Certificate was of an unsupported type.
-	TLSUnsupportedCertificate = 43
+	TLSAlertUnsupportedCertificate = 43
 
 	// Certificate was revoked by its signer.
-	TLSCertificateRevoked = 44
+	TLSAlertCertificateRevoked = 44
 
 	// Certificate has expired or is not currently valid.
-	TLSCertificateExpired = 45
+	TLSAlertCertificateExpired = 45
 
-	// Some unspecified issue arose inprocessing the certificate, rendering it unacceptable.
-	TLSCertificateUnknown = 46
+	// Some unspecified issue arose in processing the certificate, rendering it unacceptable.
+	TLSAlertCertificateUnknown = 46
 
 	// Certificate was not accepted because the CA certificate could not be located or could not be matched with a known trust anchor.
-	TLSUnknownCA = 48
+	TLSAlertUnknownCA = 48
 
 	// Handshake (not record layer) cryptographic operation failed.
-	TLSDecryptError = 50
+	TLSAlertDecryptError = 50
 
 	// Sent by servers when no server exists identified by the name provided by the client via the "server_name" extension.
 	TLSUnrecognizedName = 112
@@ -202,7 +202,8 @@ type SafeErrWrapperBuilder struct {
 	// Error is the error, if any
 	Error error
 
-	// Classifier is the local error to string classifier, if any
+	// Classifier is the local error to string classifier. When there is no
+	// configured classifier we will use the generic classifier.
 	Classifier func(err error) string
 
 	// Operation is the operation that failed
@@ -319,10 +320,10 @@ func ClassifyQUICFailure(err error) string {
 		if isCertificateError(errCode) {
 			return FailureSSLInvalidCertificate
 		}
-		if errCode == TLSDecryptError || errCode == TLSHandshakeFailure {
+		if errCode == TLSAlertDecryptError || errCode == TLSAlertHandshakeFailure {
 			return FailureSSLHandshake
 		}
-		if errCode == TLSUnknownCA {
+		if errCode == TLSAlertUnknownCA {
 			return FailureSSLUnknownAuthority
 		}
 		if errCode == TLSUnrecognizedName {
@@ -391,9 +392,9 @@ func toOperationString(err error, operation string) string {
 }
 
 func isCertificateError(alert uint8) bool {
-	return (alert == TLSBadCertificate ||
-		alert == TLSUnsupportedCertificate ||
-		alert == TLSCertificateExpired ||
-		alert == TLSCertificateRevoked ||
-		alert == TLSCertificateUnknown)
+	return (alert == TLSAlertBadCertificate ||
+		alert == TLSAlertUnsupportedCertificate ||
+		alert == TLSAlertCertificateExpired ||
+		alert == TLSAlertCertificateRevoked ||
+		alert == TLSAlertCertificateUnknown)
 }

@@ -194,19 +194,19 @@ func TestClassifyQUICFailure(t *testing.T) {
 		}
 	})
 	t.Run("for QUIC CRYPTO Handshake", func(t *testing.T) {
-		var err quic.TransportErrorCode = TLSHandshakeFailure
+		var err quic.TransportErrorCode = TLSAlertHandshakeFailure
 		if ClassifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLHandshake {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for QUIC CRYPTO Invalid Certificate", func(t *testing.T) {
-		var err quic.TransportErrorCode = TLSBadCertificate
+		var err quic.TransportErrorCode = TLSAlertBadCertificate
 		if ClassifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for QUIC CRYPTO Unknown CA", func(t *testing.T) {
-		var err quic.TransportErrorCode = TLSUnknownCA
+		var err quic.TransportErrorCode = TLSAlertUnknownCA
 		if ClassifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLUnknownAuthority {
 			t.Fatal("unexpected results")
 		}
