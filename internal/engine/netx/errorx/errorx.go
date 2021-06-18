@@ -321,8 +321,7 @@ func ClassifyQUICFailure(err error) string {
 		if transportError.ErrorCode == quic.ConnectionRefused {
 			return FailureConnectionRefused
 		}
-		// checkout alert.go in the qtls library
-		// (the alert constants are not exported, so this is not robust to changes in qtls)
+		// the TLS Alert constants are taken from RFC8446
 		errCode := uint8(transportError.ErrorCode)
 		if isCertificateError(errCode) {
 			return FailureSSLInvalidCertificate

@@ -43,6 +43,7 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 		t.Fatal("unexpected failure")
 	}
 }
+
 func TestErrorWrapperInvalidCertificate(t *testing.T) {
 	nextprotos := []string{"h3"}
 	servername := "example.com"
