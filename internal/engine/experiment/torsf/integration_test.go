@@ -1,7 +1,40 @@
-package torsf
+package torsf_test
 
-import "testing"
+import (
+	"context"
+	"io/ioutil"
+	"testing"
+
+	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/torsf"
+	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"golang.org/x/sys/execabs"
+)
 
 func TestRunWithExistingTor(t *testing.T) {
-	// TODO(bassosimone): implement
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	path, err := execabs.LookPath("tor")
+	if err != nil {
+		t.Skip("there is no tor executable installed")
+	}
+	t.Log("found tor in path:", path)
+	tempdir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("using this tempdir", tempdir)
+	m := torsf.NewExperimentMeasurer(torsf.Config{})
+	ctx := context.Background()
+	measurement := &model.Measurement{}
+	callbacks := model.NewPrinterCallbacks(log.Log)
+	sess := &mockable.Session{
+		MockableLogger:  log.Log,
+		MockableTempDir: tempdir,
+	}
+	if err = m.Run(ctx, sess, measurement, callbacks); err != nil {
+		t.Fatal(err)
+	}
 }
