@@ -1,9 +1,10 @@
-package torsf_test
+package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"testing"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/torsf"
@@ -12,20 +13,14 @@ import (
 	"golang.org/x/sys/execabs"
 )
 
-func TestRunWithExistingTor(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
+func main() {
+	if _, err := execabs.LookPath("tor"); err != nil {
+		log.Fatal("cannot find the tor executable in path")
 	}
-	path, err := execabs.LookPath("tor")
-	if err != nil {
-		t.Skip("there is no tor executable installed")
-	}
-	t.Log("found tor in path:", path)
 	tempdir, err := ioutil.TempDir("", "")
 	if err != nil {
-		t.Fatal(err)
+		log.WithError(err).Fatal("cannot create temporary directory")
 	}
-	t.Log("using this tempdir", tempdir)
 	m := torsf.NewExperimentMeasurer(torsf.Config{})
 	ctx := context.Background()
 	measurement := &model.Measurement{}
@@ -35,6 +30,11 @@ func TestRunWithExistingTor(t *testing.T) {
 		MockableTempDir: tempdir,
 	}
 	if err = m.Run(ctx, sess, measurement, callbacks); err != nil {
-		t.Fatal(err)
+		log.WithError(err).Fatal("torsf experiment failed")
 	}
+	data, err := json.Marshal(measurement.TestKeys)
+	if err != nil {
+		log.WithError(err).Fatal("json.Marshal failed")
+	}
+	fmt.Printf("%s\n", data)
 }

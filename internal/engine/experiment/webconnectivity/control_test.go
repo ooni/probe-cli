@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 )
 
 func TestFillASNsEmpty(t *testing.T) {
