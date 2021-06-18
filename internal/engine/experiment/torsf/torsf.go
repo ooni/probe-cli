@@ -1,5 +1,7 @@
 // Package torsf contains the torsf experiment. This experiment
 // measures the bootstrapping of tor using snowflake.
+//
+// See https://github.com/ooni/spec/blob/master/nettests/ts-030-torsf.md
 package torsf
 
 import (
@@ -21,9 +23,7 @@ import (
 //
 // 3. make sure we set the IsAnomaly key in the summary.
 //
-// 4. implement integration test w/ real tor if it's installed.
-//
-// 5. what else?
+// 4. what else?
 
 // testVersion is the tor experiment version.
 const testVersion = "0.1.0"
