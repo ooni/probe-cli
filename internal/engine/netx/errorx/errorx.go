@@ -290,7 +290,7 @@ func toFailureString(err error) string {
 	if strings.HasSuffix(s, "i/o timeout") {
 		return FailureGenericTimeoutError
 	}
-	// TODO(kelmenhorst,bassosimone): this can probably be (re-)moved
+	// TODO(kelmenhorst,bassosimone): this can probably be moved since it's TLS specific
 	if strings.HasSuffix(s, "TLS handshake timeout") {
 		return FailureGenericTimeoutError
 	}
