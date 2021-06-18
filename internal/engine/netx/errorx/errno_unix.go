@@ -1,8 +1,6 @@
 package errorx
 
-import (
-	"golang.org/x/sys/unix"
-)
+import "golang.org/x/sys/unix"
 
 const (
 	ECANCELED       = unix.ECANCELED
