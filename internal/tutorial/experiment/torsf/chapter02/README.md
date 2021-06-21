@@ -112,7 +112,7 @@ func (m *Measurer) ExperimentVersion() string {
 Run implements ExperimentMeasurer.Run. This is the most interesting
 function, where we run the experiment proper. In the previous chapter
 we learned how to call this function from a `main.go` file. Here,
-instead, we're going to create a minumal stub. In the subsequent
+instead, we're going to create a minimal stub. In the subsequent
 chapters, finally, we will modify this function until it is a
 minimal implementation of the `torsf` experiment.
 
