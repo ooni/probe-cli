@@ -208,7 +208,7 @@ func main() {
 	// functions early, and our code (mostly) honours contexts.
 	//
 	// Since here we are just writing a simple example, we don't
-	// need any fancy context and we to `Run` pass a `context.Background`.
+	// need any fancy context and we pass a `context.Background` to `Run`.
 	//
 	// ```Go
 	ctx := context.Background()
