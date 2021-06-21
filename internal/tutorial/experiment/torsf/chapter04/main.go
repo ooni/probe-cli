@@ -31,7 +31,7 @@ func main() {
 	if err = m.Run(ctx, sess, measurement, callbacks); err != nil {
 		log.WithError(err).Fatal("torsf experiment failed")
 	}
-	data, err := json.Marshal(measurement.TestKeys)
+	data, err := json.Marshal(measurement)
 	if err != nil {
 		log.WithError(err).Fatal("json.Marshal failed")
 	}

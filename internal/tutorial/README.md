@@ -9,3 +9,10 @@ real OONI code, it should always be up to date.
 ## Index
 
 - [Rewriting the torsf experiment](experiment/torsf/README.md)
+
+
+## Regenerating the tutorials
+
+```
+(cd ./internal/tutorial && go run ./generator)
+```
