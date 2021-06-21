@@ -3,7 +3,7 @@
 // ## The torsf.go file
 //
 // This file will contain the implementation of the
-// `newExperimentMeasurer` function.
+// `NewExperimentMeasurer` function.
 //
 // As usual we start with the `package` declaration and
 // with the few imports we need to add.

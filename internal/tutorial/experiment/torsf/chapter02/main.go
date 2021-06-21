@@ -38,6 +38,9 @@ func main() {
 	// a `NewExperimentMeasurer` function that we are going
 	// to implement as part of this chapter.
 	//
+	// After you do this, you also need to remove the now-unneded
+	// import of the `torsf` package.
+	//
 	// There are no additional changes to `main.go`.
 	//
 	// ```Go

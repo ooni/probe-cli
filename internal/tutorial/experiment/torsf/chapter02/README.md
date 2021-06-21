@@ -15,6 +15,9 @@ In `main.go` we will simply replace the call to the
 a `NewExperimentMeasurer` function that we are going
 to implement as part of this chapter.
 
+After you do this, you also need to remove the now-unneded
+import of the `torsf` package.
+
 There are no additional changes to `main.go`.
 
 ```Go
@@ -24,7 +27,7 @@ There are no additional changes to `main.go`.
 ## The torsf.go file
 
 This file will contain the implementation of the
-`newExperimentMeasurer` function.
+`NewExperimentMeasurer` function.
 
 As usual we start with the `package` declaration and
 with the few imports we need to add.
