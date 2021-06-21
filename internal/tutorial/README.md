@@ -8,7 +8,7 @@ real OONI code, it should always be up to date.
 
 ## Index
 
-- [Rewriting the torsf experiment](experiment/torsf/README.md)
+- [Rewriting the torsf experiment](experiment/torsf/)
 
 
 ## Regenerating the tutorials
