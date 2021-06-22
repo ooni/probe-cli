@@ -716,7 +716,7 @@ func TestMaybeScrubbingLogger(t *testing.T) {
 		if out != input {
 			t.Fatal("not the output we expected")
 		}
-		if _, ok := out.(*scrubber.Logger); !ok {
+		if _, ok := out.(*scrubber.Logger); ok {
 			t.Fatal("not the output type we expected")
 		}
 	})
