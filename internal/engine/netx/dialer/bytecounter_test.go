@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 	"github.com/ooni/probe-cli/v3/internal/iox"
 )
@@ -48,8 +48,14 @@ func TestByteCounterNormalUsage(t *testing.T) {
 	if err := dorequest(ctx, "http://facebook.com"); err != nil {
 		t.Fatal(err)
 	}
+	if exp.Received.Load() <= 0 {
+		t.Fatal("experiment should have received some bytes")
+	}
 	if sess.Received.Load() <= exp.Received.Load() {
 		t.Fatal("session should have received more than experiment")
+	}
+	if exp.Sent.Load() <= 0 {
+		t.Fatal("experiment should have sent some bytes")
 	}
 	if sess.Sent.Load() <= exp.Sent.Load() {
 		t.Fatal("session should have sent more than experiment")

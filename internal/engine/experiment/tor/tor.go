@@ -20,6 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
 const (
@@ -282,7 +283,7 @@ func maybeSanitize(input TargetResults, kt keytarget) TargetResults {
 	// Implementation note: here we are using a strict scrubbing policy where
 	// we remove all IP _endpoints_, mainly for convenience, because we already
 	// have a well tested implementation that does that.
-	data = []byte(errorx.Scrub(string(data)))
+	data = []byte(scrubber.Scrub(string(data)))
 	var out TargetResults
 	err = json.Unmarshal(data, &out)
 	runtimex.PanicOnError(err, "json.Unmarshal should not fail here")
@@ -322,44 +323,11 @@ func (rc *resultsCollector) measureSingleTarget(
 	))
 }
 
-// scrubbingLogger is a logger that scrubs endpoints from its output. We are using
-// it only here, currently, since we pay some performance penalty in that we evaluate
-// the string to be logged regardless of the logging level.
-//
-// TODO(bassosimone): find a more efficient way of scrubbing logs.
-type scrubbingLogger struct {
-	model.Logger
-}
-
-func (sl scrubbingLogger) Debug(message string) {
-	sl.Logger.Debug(errorx.Scrub(message))
-}
-
-func (sl scrubbingLogger) Debugf(format string, v ...interface{}) {
-	sl.Debug(fmt.Sprintf(format, v...))
-}
-
-func (sl scrubbingLogger) Info(message string) {
-	sl.Logger.Info(errorx.Scrub(message))
-}
-
-func (sl scrubbingLogger) Infof(format string, v ...interface{}) {
-	sl.Info(fmt.Sprintf(format, v...))
-}
-
-func (sl scrubbingLogger) Warn(message string) {
-	sl.Logger.Warn(errorx.Scrub(message))
-}
-
-func (sl scrubbingLogger) Warnf(format string, v ...interface{}) {
-	sl.Warn(fmt.Sprintf(format, v...))
-}
-
 func maybeScrubbingLogger(input model.Logger, kt keytarget) model.Logger {
 	if !kt.private() {
 		return input
 	}
-	return scrubbingLogger{Logger: input}
+	return &scrubber.Logger{UnderlyingLogger: input}
 }
 
 func (rc *resultsCollector) defaultFlexibleConnect(

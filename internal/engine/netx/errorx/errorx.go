@@ -17,6 +17,7 @@ import (
 	"syscall"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
 const (
@@ -301,7 +302,7 @@ func toFailureString(err error) string {
 		return FailureDNSNXDOMAINError
 	}
 	formatted := fmt.Sprintf("unknown_failure: %s", s)
-	return Scrub(formatted) // scrub IP addresses in the error
+	return scrubber.Scrub(formatted) // scrub IP addresses in the error
 }
 
 // ClassifyQUICFailure is a classifier to translate QUIC errors to OONI error strings.
