@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
 const (
@@ -287,7 +289,7 @@ func toFailureString(err error) string {
 		return FailureGenericTimeoutError
 	}
 	formatted := fmt.Sprintf("unknown_failure: %s", s)
-	return Scrub(formatted) // scrub IP addresses in the error
+	return scrubber.Scrub(formatted) // scrub IP addresses in the error
 }
 
 func toOperationString(err error, operation string) string {
