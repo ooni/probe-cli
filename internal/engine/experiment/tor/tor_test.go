@@ -13,9 +13,9 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonidatamodel"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
+	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
