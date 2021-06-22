@@ -11,12 +11,14 @@ type Conn struct {
 	Counter *Counter
 }
 
+// Read implements net.Conn.Read.
 func (c *Conn) Read(p []byte) (int, error) {
 	count, err := c.Conn.Read(p)
 	c.Counter.CountBytesReceived(count)
 	return count, err
 }
 
+// Write implements net.Conn.Write.
 func (c *Conn) Write(p []byte) (int, error) {
 	count, err := c.Conn.Write(p)
 	c.Counter.CountBytesSent(count)
