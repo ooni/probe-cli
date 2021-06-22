@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 )
 
 // ByteCountingTransport is a RoundTripper that counts bytes.

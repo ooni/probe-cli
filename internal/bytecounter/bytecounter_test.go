@@ -1,13 +1,9 @@
-package bytecounter_test
+package bytecounter
 
-import (
-	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
-)
+import "testing"
 
 func TestGood(t *testing.T) {
-	counter := bytecounter.New()
+	counter := New()
 	counter.CountBytesReceived(16384)
 	counter.CountKibiBytesReceived(10)
 	counter.CountBytesSent(2048)

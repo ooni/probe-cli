@@ -1,11 +1,18 @@
+// Package bytecounter contains code to track the number of
+// bytes sent and received by a probe.
 package bytecounter
 
 import "github.com/ooni/probe-cli/v3/internal/atomicx"
 
 // Counter counts bytes sent and received.
 type Counter struct {
+	// Received contains the bytes received. You MUST initialize
+	// this field, or you can just use the New factory.
 	Received *atomicx.Int64
-	Sent     *atomicx.Int64
+
+	// Sent contains the bytes sent. You MUST initialize
+	// this field, or you can just use the New factory.
+	Sent *atomicx.Int64
 }
 
 // New creates a new Counter.
