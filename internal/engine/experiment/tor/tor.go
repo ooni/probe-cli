@@ -20,6 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
 const (
@@ -282,7 +283,7 @@ func maybeSanitize(input TargetResults, kt keytarget) TargetResults {
 	// Implementation note: here we are using a strict scrubbing policy where
 	// we remove all IP _endpoints_, mainly for convenience, because we already
 	// have a well tested implementation that does that.
-	data = []byte(errorx.Scrub(string(data)))
+	data = []byte(scrubber.Scrub(string(data)))
 	var out TargetResults
 	err = json.Unmarshal(data, &out)
 	runtimex.PanicOnError(err, "json.Unmarshal should not fail here")
@@ -332,7 +333,7 @@ type scrubbingLogger struct {
 }
 
 func (sl scrubbingLogger) Debug(message string) {
-	sl.Logger.Debug(errorx.Scrub(message))
+	sl.Logger.Debug(scrubber.Scrub(message))
 }
 
 func (sl scrubbingLogger) Debugf(format string, v ...interface{}) {
@@ -340,7 +341,7 @@ func (sl scrubbingLogger) Debugf(format string, v ...interface{}) {
 }
 
 func (sl scrubbingLogger) Info(message string) {
-	sl.Logger.Info(errorx.Scrub(message))
+	sl.Logger.Info(scrubber.Scrub(message))
 }
 
 func (sl scrubbingLogger) Infof(format string, v ...interface{}) {
@@ -348,7 +349,7 @@ func (sl scrubbingLogger) Infof(format string, v ...interface{}) {
 }
 
 func (sl scrubbingLogger) Warn(message string) {
-	sl.Logger.Warn(errorx.Scrub(message))
+	sl.Logger.Warn(scrubber.Scrub(message))
 }
 
 func (sl scrubbingLogger) Warnf(format string, v ...interface{}) {
