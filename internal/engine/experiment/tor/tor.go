@@ -323,44 +323,11 @@ func (rc *resultsCollector) measureSingleTarget(
 	))
 }
 
-// scrubbingLogger is a logger that scrubs endpoints from its output. We are using
-// it only here, currently, since we pay some performance penalty in that we evaluate
-// the string to be logged regardless of the logging level.
-//
-// TODO(bassosimone): find a more efficient way of scrubbing logs.
-type scrubbingLogger struct {
-	model.Logger
-}
-
-func (sl scrubbingLogger) Debug(message string) {
-	sl.Logger.Debug(scrubber.Scrub(message))
-}
-
-func (sl scrubbingLogger) Debugf(format string, v ...interface{}) {
-	sl.Debug(fmt.Sprintf(format, v...))
-}
-
-func (sl scrubbingLogger) Info(message string) {
-	sl.Logger.Info(scrubber.Scrub(message))
-}
-
-func (sl scrubbingLogger) Infof(format string, v ...interface{}) {
-	sl.Info(fmt.Sprintf(format, v...))
-}
-
-func (sl scrubbingLogger) Warn(message string) {
-	sl.Logger.Warn(scrubber.Scrub(message))
-}
-
-func (sl scrubbingLogger) Warnf(format string, v ...interface{}) {
-	sl.Warn(fmt.Sprintf(format, v...))
-}
-
 func maybeScrubbingLogger(input model.Logger, kt keytarget) model.Logger {
 	if !kt.private() {
 		return input
 	}
-	return scrubbingLogger{Logger: input}
+	return &scrubber.Logger{UnderlyingLogger: input}
 }
 
 func (rc *resultsCollector) defaultFlexibleConnect(
