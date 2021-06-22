@@ -176,6 +176,12 @@ func (svc *Service) newRoundTripper(req *RoundTripRequest) httptransport.RoundTr
 			Saver:        req.Saver,
 			Transport:    "tcp",
 		}
+		txp = httptransport.SaverBodyHTTPTransport{
+			RoundTripper: txp, Saver: req.Saver}
+		txp = httptransport.SaverPerformanceHTTPTransport{
+			RoundTripper: txp, Saver: req.Saver}
+		txp = httptransport.SaverTransactionHTTPTransport{
+			RoundTripper: txp, Saver: req.Saver}
 	}
 	return txp
 }
