@@ -14,10 +14,10 @@ import (
 )
 
 func TestDialerResolverNoPort(t *testing.T) {
-	dialer := &DialerResolver{Dialer: new(net.Dialer), Resolver: DefaultResolver}
-	conn, err := dialer.DialContext(context.Background(), "tcp", "antani.ooni.nu")
-	if err == nil {
-		t.Fatal("expected an error here")
+	dialer := &DialerResolver{Dialer: &net.Dialer{}, Resolver: DefaultResolver}
+	conn, err := dialer.DialContext(context.Background(), "tcp", "ooni.nu")
+	if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
+		t.Fatal("not the error we expected", err)
 	}
 	if conn != nil {
 		t.Fatal("expected a nil conn here")
@@ -25,8 +25,10 @@ func TestDialerResolverNoPort(t *testing.T) {
 }
 
 func TestDialerResolverLookupHostAddress(t *testing.T) {
-	dialer := &DialerResolver{Dialer: new(net.Dialer), Resolver: MockableResolver{
-		Err: errors.New("mocked error"),
+	dialer := &DialerResolver{Dialer: new(net.Dialer), Resolver: &netxmocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return nil, errors.New("we should not call this function")
+		},
 	}}
 	addrs, err := dialer.lookupHost(context.Background(), "1.1.1.1")
 	if err != nil {
@@ -39,33 +41,19 @@ func TestDialerResolverLookupHostAddress(t *testing.T) {
 
 func TestDialerResolverLookupHostFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	dialer := &DialerResolver{Dialer: new(net.Dialer), Resolver: MockableResolver{
-		Err: expected,
+	dialer := &DialerResolver{Dialer: new(net.Dialer), Resolver: &netxmocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return nil, expected
+		},
 	}}
-	conn, err := dialer.DialContext(context.Background(), "tcp", "dns.google.com:853")
+	ctx := context.Background()
+	conn, err := dialer.DialContext(ctx, "tcp", "dns.google.com:853")
 	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
+		t.Fatal("not the error we expected", err)
 	}
 	if conn != nil {
 		t.Fatal("expected nil conn")
 	}
-}
-
-type MockableResolver struct {
-	Addresses []string
-	Err       error
-}
-
-func (r MockableResolver) LookupHost(ctx context.Context, host string) ([]string, error) {
-	return r.Addresses, r.Err
-}
-
-func (r MockableResolver) Network() string {
-	return "mockable"
-}
-
-func (r MockableResolver) Address() string {
-	return ""
 }
 
 func TestDialerResolverDialForSingleIPFails(t *testing.T) {
@@ -89,8 +77,10 @@ func TestDialerResolverDialForManyIPFails(t *testing.T) {
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, io.EOF
 			},
-		}, Resolver: MockableResolver{
-			Addresses: []string{"1.1.1.1", "8.8.8.8"},
+		}, Resolver: &netxmocks.Resolver{
+			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				return []string{"1.1.1.1", "8.8.8.8"}, nil
+			},
 		}}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "dot.dns:853")
 	if !errors.Is(err, io.EOF) {
@@ -110,8 +100,10 @@ func TestDialerResolverDialForManyIPSuccess(t *testing.T) {
 				},
 			}, nil
 		},
-	}, Resolver: MockableResolver{
-		Addresses: []string{"1.1.1.1", "8.8.8.8"},
+	}, Resolver: &netxmocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return []string{"1.1.1.1", "8.8.8.8"}, nil
+		},
 	}}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "dot.dns:853")
 	if err != nil {
@@ -119,6 +111,29 @@ func TestDialerResolverDialForManyIPSuccess(t *testing.T) {
 	}
 	if conn == nil {
 		t.Fatal("expected non-nil conn")
+	}
+	conn.Close()
+}
+
+func TestDialerLoggerSuccess(t *testing.T) {
+	d := &DialerLogger{
+		Dialer: &netxmocks.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return &netxmocks.Conn{
+					MockClose: func() error {
+						return nil
+					},
+				}, nil
+			},
+		},
+		Logger: log.Log,
+	}
+	conn, err := d.DialContext(context.Background(), "tcp", "www.google.com:443")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conn == nil {
+		t.Fatal("expected non-nil conn here")
 	}
 	conn.Close()
 }
@@ -135,18 +150,6 @@ func TestDialerLoggerFailure(t *testing.T) {
 	conn, err := d.DialContext(context.Background(), "tcp", "www.google.com:443")
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("not the error we expected")
-	}
-	if conn != nil {
-		t.Fatal("expected nil conn here")
-	}
-}
-
-func TestDefaultDialerWorks(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // fail immediately
-	conn, err := DefaultDialer.DialContext(ctx, "tcp", "8.8.8.8:853")
-	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
-		t.Fatal("not the error we expected", err)
 	}
 	if conn != nil {
 		t.Fatal("expected nil conn here")

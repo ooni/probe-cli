@@ -48,9 +48,13 @@ func (r ResolverLogger) LookupHost(ctx context.Context, hostname string) ([]stri
 	r.Logger.Debugf("resolve %s...", hostname)
 	start := time.Now()
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
-	stop := time.Now()
-	r.Logger.Debugf("resolve %s... (%+v, %+v) in %s", hostname, addrs, err, stop.Sub(start))
-	return addrs, err
+	elapsed := time.Since(start)
+	if err != nil {
+		r.Logger.Debugf("resolve %s... %s in %s", hostname, err, elapsed)
+		return nil, err
+	}
+	r.Logger.Debugf("resolve %s... %+v in %s", hostname, addrs, elapsed)
+	return addrs, nil
 }
 
 type resolverNetworker interface {

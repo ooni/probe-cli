@@ -2,13 +2,16 @@ package netxlite
 
 import (
 	"context"
+	"errors"
 	"net"
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/netxmocks"
 )
 
-func TestResolverSystemLookupHost(t *testing.T) {
+func TestResolverSystemNetworkAddress(t *testing.T) {
 	r := ResolverSystem{}
 	if r.Network() != "system" {
 		t.Fatal("invalid Network")
@@ -16,6 +19,10 @@ func TestResolverSystemLookupHost(t *testing.T) {
 	if r.Address() != "" {
 		t.Fatal("invalid Address")
 	}
+}
+
+func TestResolverSystemWorksAsIntended(t *testing.T) {
+	r := ResolverSystem{}
 	addrs, err := r.LookupHost(context.Background(), "dns.google.com")
 	if err != nil {
 		t.Fatal(err)
@@ -25,27 +32,55 @@ func TestResolverSystemLookupHost(t *testing.T) {
 	}
 }
 
-func TestResolverLoggerWithFailure(t *testing.T) {
+func TestResolverLoggerWithSuccess(t *testing.T) {
+	expected := []string{"1.1.1.1"}
 	r := ResolverLogger{
-		Logger:   log.Log,
-		Resolver: DefaultResolver,
+		Logger: log.Log,
+		Resolver: &netxmocks.Resolver{
+			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				return expected, nil
+			},
+		},
 	}
-	if r.Network() != "system" {
-		t.Fatal("invalid Network")
+	addrs, err := r.LookupHost(context.Background(), "dns.google")
+	if err != nil {
+		t.Fatal(err)
 	}
-	if r.Address() != "" {
-		t.Fatal("invalid Address")
+	if diff := cmp.Diff(expected, addrs); diff != "" {
+		t.Fatal(diff)
 	}
-	addrs, err := r.LookupHost(context.Background(), "nonexistent.antani")
-	if err == nil {
-		t.Fatal("expected an error here")
+}
+
+func TestResolverLoggerWithFailure(t *testing.T) {
+	expected := errors.New("mocked error")
+	r := ResolverLogger{
+		Logger: log.Log,
+		Resolver: &netxmocks.Resolver{
+			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				return nil, expected
+			},
+		},
+	}
+	addrs, err := r.LookupHost(context.Background(), "dns.google")
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
 	}
 	if addrs != nil {
 		t.Fatal("expected nil addr here")
 	}
 }
 
-func TestResolverLoggerDefaultNetworkAddress(t *testing.T) {
+func TestResolverLoggerChildNetworkAddress(t *testing.T) {
+	r := &ResolverLogger{Logger: log.Log, Resolver: DefaultResolver}
+	if r.Network() != "system" {
+		t.Fatal("invalid Network")
+	}
+	if r.Address() != "" {
+		t.Fatal("invalid Address")
+	}
+}
+
+func TestResolverLoggerNoChildNetworkAddress(t *testing.T) {
 	r := &ResolverLogger{Logger: log.Log, Resolver: &net.Resolver{}}
 	if r.Network() != "logger" {
 		t.Fatal("invalid Network")

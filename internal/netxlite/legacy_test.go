@@ -14,7 +14,6 @@ func TestReduceErrors(t *testing.T) {
 			t.Fatal("wrong result")
 		}
 	})
-
 	t.Run("single error", func(t *testing.T) {
 		err := errors.New("mocked error")
 		result := ReduceErrors([]error{err})
@@ -22,7 +21,6 @@ func TestReduceErrors(t *testing.T) {
 			t.Fatal("wrong result")
 		}
 	})
-
 	t.Run("multiple errors", func(t *testing.T) {
 		err1 := errors.New("mocked error #1")
 		err2 := errors.New("mocked error #2")
@@ -31,7 +29,6 @@ func TestReduceErrors(t *testing.T) {
 			t.Fatal("wrong result")
 		}
 	})
-
 	t.Run("multiple errors with meaningful ones", func(t *testing.T) {
 		err1 := errors.New("mocked error #1")
 		err2 := &errorx.ErrWrapper{

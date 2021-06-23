@@ -38,8 +38,7 @@ func (d *DialerResolver) DialContext(ctx context.Context, network, address strin
 	if err != nil {
 		return nil, err
 	}
-	var addrs []string
-	addrs, err = d.lookupHost(ctx, onlyhost)
+	addrs, err := d.lookupHost(ctx, onlyhost)
 	if err != nil {
 		return nil, err
 	}
@@ -67,9 +66,12 @@ func (d *DialerResolver) lookupHost(ctx context.Context, hostname string) ([]str
 	return d.Resolver.LookupHost(ctx, hostname)
 }
 
-// DialerLogger is a Dialer with logging
+// DialerLogger is a Dialer with logging.
 type DialerLogger struct {
-	Dialer
+	// Dialer is the underlying dialer.
+	Dialer Dialer
+
+	// Logger is the underlying logger.
 	Logger Logger
 }
 
@@ -80,7 +82,11 @@ func (d *DialerLogger) DialContext(ctx context.Context, network, address string)
 	d.Logger.Debugf("dial %s/%s...", address, network)
 	start := time.Now()
 	conn, err := d.Dialer.DialContext(ctx, network, address)
-	stop := time.Now()
-	d.Logger.Debugf("dial %s/%s... %+v in %s", address, network, err, stop.Sub(start))
-	return conn, err
+	elapsed := time.Since(start)
+	if err != nil {
+		d.Logger.Debugf("dial %s/%s... %s in %s", address, network, err, elapsed)
+		return nil, err
+	}
+	d.Logger.Debugf("dial %s/%s... ok in %s", address, network, elapsed)
+	return conn, nil
 }

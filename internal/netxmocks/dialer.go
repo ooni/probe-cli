@@ -15,7 +15,7 @@ type Dialer struct {
 	MockDialContext func(ctx context.Context, network, address string) (net.Conn, error)
 }
 
-// DialContext implements Dialer.DialContext.
+// DialContext calls MockDialContext.
 func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return d.MockDialContext(ctx, network, address)
 }

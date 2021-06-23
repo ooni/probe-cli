@@ -16,17 +16,17 @@ type Resolver struct {
 	MockAddress    func() string
 }
 
-// LookupHost implements Resolver.LookupHost.
+// LookupHost calls MockLookupHost.
 func (r *Resolver) LookupHost(ctx context.Context, domain string) ([]string, error) {
 	return r.MockLookupHost(ctx, domain)
 }
 
-// Address implements Resolver.Address.
+// Address calls MockAddress.
 func (r *Resolver) Address() string {
 	return r.MockAddress()
 }
 
-// Network implements Resolver.Network.
+// Network calls MockNetwork.
 func (r *Resolver) Network() string {
 	return r.MockNetwork()
 }
