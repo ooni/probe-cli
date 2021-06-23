@@ -71,9 +71,10 @@ func (h ErrorWrapperTLSHandshaker) Handshake(
 	connID := connid.Compute(conn.RemoteAddr().Network(), conn.RemoteAddr().String())
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	err = errorx.SafeErrWrapperBuilder{
-		ConnID:    connID,
-		Error:     err,
-		Operation: errorx.TLSHandshakeOperation,
+		Classifier: errorx.ClassifyTLSFailure,
+		ConnID:     connID,
+		Error:      err,
+		Operation:  errorx.TLSHandshakeOperation,
 	}.MaybeBuild()
 	return tlsconn, state, err
 }

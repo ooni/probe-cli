@@ -19,6 +19,7 @@ func (r ErrorWrapperResolver) LookupHost(ctx context.Context, hostname string) (
 	txID := transactionid.ContextTransactionID(ctx)
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	err = errorx.SafeErrWrapperBuilder{
+		Classifier:    errorx.ClassifyResolveFailure,
 		DialID:        dialID,
 		Error:         err,
 		Operation:     errorx.ResolveOperation,

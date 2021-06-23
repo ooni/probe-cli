@@ -85,7 +85,7 @@ func TestHandshakeSaverSuccess(t *testing.T) {
 
 func TestHandshakeSaverHostNameError(t *testing.T) {
 	nextprotos := []string{"h3"}
-	servername := "wrong.host.badssl.com"
+	servername := "example.com"
 	tlsConf := &tls.Config{
 		NextProtos: nextprotos,
 		ServerName: servername,

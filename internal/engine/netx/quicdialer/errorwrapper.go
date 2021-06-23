@@ -23,9 +23,10 @@ func (d ErrorWrapperDialer) DialContext(
 	err = errorx.SafeErrWrapperBuilder{
 		// ConnID does not make any sense if we've failed and the error
 		// does not make any sense (and is nil) if we succeeded.
-		DialID:    dialID,
-		Error:     err,
-		Operation: errorx.QUICHandshakeOperation,
+		Classifier: errorx.ClassifyQUICFailure,
+		DialID:     dialID,
+		Error:      err,
+		Operation:  errorx.QUICHandshakeOperation,
 	}.MaybeBuild()
 	if err != nil {
 		return nil, err
