@@ -17,42 +17,42 @@ type Conn struct {
 	MockSetWriteDeadline func(t time.Time) error
 }
 
-// Read implements net.Conn.Read
+// Read calls MockRead.
 func (c *Conn) Read(b []byte) (int, error) {
 	return c.MockRead(b)
 }
 
-// Write implements net.Conn.Write
+// Write calls MockWrite.
 func (c *Conn) Write(b []byte) (int, error) {
 	return c.MockWrite(b)
 }
 
-// Close implements net.Conn.Close
+// Close calls MockClose.
 func (c *Conn) Close() error {
 	return c.MockClose()
 }
 
-// LocalAddr returns the local address
+// LocalAddr class MockLocalAddr.
 func (c *Conn) LocalAddr() net.Addr {
 	return c.MockLocalAddr()
 }
 
-// RemoteAddr returns the remote address
+// RemoteAddr calls MockRemoteAddr.
 func (c *Conn) RemoteAddr() net.Addr {
 	return c.MockRemoteAddr()
 }
 
-// SetDeadline sets the connection deadline.
+// SetDeadline calls MockSetDeadline.
 func (c *Conn) SetDeadline(t time.Time) error {
 	return c.MockSetDeadline(t)
 }
 
-// SetReadDeadline sets the read deadline.
+// SetReadDeadline calls MockSetReadDeadline.
 func (c *Conn) SetReadDeadline(t time.Time) error {
 	return c.MockSetReadDeadline(t)
 }
 
-// SetWriteDeadline sets the write deadline.
+// SetWriteDeadline calls MockSetWriteDeadline.
 func (c *Conn) SetWriteDeadline(t time.Time) error {
 	return c.MockSetWriteDeadline(t)
 }
