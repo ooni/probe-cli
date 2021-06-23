@@ -143,12 +143,6 @@ var ErrDNSBogon = errors.New("dns: detected bogon address")
 // this structure is to properly set Failure, which is also returned by
 // the Error() method, so be one of the OONI defined strings.
 type ErrWrapper struct {
-	// ConnID is the connection ID, or zero if not known.
-	ConnID int64
-
-	// DialID is the dial ID, or zero if not known.
-	DialID int64
-
 	// Failure is the OONI failure string. The failure strings are
 	// loosely backward compatible with Measurement Kit.
 	//
@@ -181,9 +175,6 @@ type ErrWrapper struct {
 	// supposed to refer to the major operation that failed.
 	Operation string
 
-	// TransactionID is the transaction ID, or zero if not known.
-	TransactionID int64
-
 	// WrappedErr is the error that we're wrapping.
 	WrappedErr error
 }
@@ -201,12 +192,6 @@ func (e *ErrWrapper) Unwrap() error {
 // SafeErrWrapperBuilder contains a builder for ErrWrapper that
 // is safe, i.e., behaves correctly when the error is nil.
 type SafeErrWrapperBuilder struct {
-	// ConnID is the connection ID, if any
-	ConnID int64
-
-	// DialID is the dial ID, if any
-	DialID int64
-
 	// Error is the error, if any
 	Error error
 
@@ -216,9 +201,6 @@ type SafeErrWrapperBuilder struct {
 
 	// Operation is the operation that failed
 	Operation string
-
-	// TransactionID is the transaction ID, if any
-	TransactionID int64
 }
 
 // MaybeBuild builds a new ErrWrapper, if b.Error is not nil, and returns
@@ -230,12 +212,9 @@ func (b SafeErrWrapperBuilder) MaybeBuild() (err error) {
 			classifier = toFailureString
 		}
 		err = &ErrWrapper{
-			ConnID:        b.ConnID,
-			DialID:        b.DialID,
-			Failure:       classifier(b.Error),
-			Operation:     toOperationString(b.Error, b.Operation),
-			TransactionID: b.TransactionID,
-			WrappedErr:    b.Error,
+			Failure:    classifier(b.Error),
+			Operation:  toOperationString(b.Error, b.Operation),
+			WrappedErr: b.Error,
 		}
 	}
 	return

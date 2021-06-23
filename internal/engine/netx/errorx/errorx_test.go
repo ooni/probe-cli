@@ -17,26 +17,14 @@ import (
 
 func TestMaybeBuildFactory(t *testing.T) {
 	err := SafeErrWrapperBuilder{
-		ConnID:        1,
-		DialID:        10,
-		Error:         errors.New("mocked error"),
-		TransactionID: 100,
+		Error: errors.New("mocked error"),
 	}.MaybeBuild()
 	var target *ErrWrapper
 	if errors.As(err, &target) == false {
 		t.Fatal("not the expected error type")
 	}
-	if target.ConnID != 1 {
-		t.Fatal("wrong ConnID")
-	}
-	if target.DialID != 10 {
-		t.Fatal("wrong DialID")
-	}
 	if target.Failure != "unknown_failure: mocked error" {
 		t.Fatal("the failure string is wrong")
-	}
-	if target.TransactionID != 100 {
-		t.Fatal("the transactionID is wrong")
 	}
 	if target.WrappedErr.Error() != "mocked error" {
 		t.Fatal("the wrapped error is wrong")

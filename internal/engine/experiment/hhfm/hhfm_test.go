@@ -112,9 +112,6 @@ func TestSuccess(t *testing.T) {
 	if request.T != 0 {
 		t.Fatal("invalid Requests[0].T")
 	}
-	if request.TransactionID != 0 {
-		t.Fatal("invalid Requests[0].TransactionID")
-	}
 	if tk.SOCKSProxy != nil {
 		t.Fatal("invalid SOCKSProxy")
 	}
@@ -222,9 +219,6 @@ func TestCancelledContext(t *testing.T) {
 	}
 	if request.T != 0 {
 		t.Fatal("invalid Requests[0].T")
-	}
-	if request.TransactionID != 0 {
-		t.Fatal("invalid Requests[0].TransactionID")
 	}
 	if tk.SOCKSProxy != nil {
 		t.Fatal("invalid SOCKSProxy")

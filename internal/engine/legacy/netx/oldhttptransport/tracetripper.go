@@ -11,10 +11,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/connid"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/iox"
 )
@@ -76,13 +73,10 @@ func readSnap(
 func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	root := modelx.ContextMeasurementRootOrDefault(req.Context())
 
-	tid := transactionid.ContextTransactionID(req.Context())
 	root.Handler.OnMeasurement(modelx.Measurement{
 		HTTPRoundTripStart: &modelx.HTTPRoundTripStartEvent{
-			DialID:                 dialid.ContextDialID(req.Context()),
 			DurationSinceBeginning: time.Since(root.Beginning),
 			Method:                 req.Method,
-			TransactionID:          tid,
 			URL:                    req.URL.String(),
 		},
 	})
@@ -116,7 +110,6 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			root.Handler.OnMeasurement(modelx.Measurement{
 				TLSHandshakeStart: &modelx.TLSHandshakeStartEvent{
 					DurationSinceBeginning: time.Since(root.Beginning),
-					TransactionID:          tid,
 				},
 			})
 		},
@@ -124,9 +117,8 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			// Wrapping the error even if we're not returning it because it may
 			// less confusing to users to see the wrapped name
 			err = errorx.SafeErrWrapperBuilder{
-				Error:         err,
-				Operation:     errorx.TLSHandshakeOperation,
-				TransactionID: tid,
+				Error:     err,
+				Operation: errorx.TLSHandshakeOperation,
 			}.MaybeBuild()
 			durationSinceBeginning := time.Since(root.Beginning)
 			// Event emitted by net/http when DialTLS is not
@@ -136,7 +128,6 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 					ConnectionState:        modelx.NewTLSConnectionState(state),
 					Error:                  err,
 					DurationSinceBeginning: durationSinceBeginning,
-					TransactionID:          tid,
 				},
 			})
 		},
@@ -146,12 +137,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			majorOpMu.Unlock()
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPConnectionReady: &modelx.HTTPConnectionReadyEvent{
-					ConnID: connid.Compute(
-						info.Conn.LocalAddr().Network(),
-						info.Conn.LocalAddr().String(),
-					),
 					DurationSinceBeginning: time.Since(root.Beginning),
-					TransactionID:          tid,
 				},
 			})
 		},
@@ -168,7 +154,6 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 				HTTPRequestHeader: &modelx.HTTPRequestHeaderEvent{
 					DurationSinceBeginning: time.Since(root.Beginning),
 					Key:                    key,
-					TransactionID:          tid,
 					Value:                  values,
 				},
 			})
@@ -179,8 +164,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 					DurationSinceBeginning: time.Since(root.Beginning),
 					Headers:                requestHeaders, // [*]
 					Method:                 req.Method,     // [*]
-					TransactionID:          tid,
-					URL:                    req.URL, // [*]
+					URL:                    req.URL,        // [*]
 				},
 			})
 		},
@@ -188,15 +172,13 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			// Wrapping the error even if we're not returning it because it may
 			// less confusing to users to see the wrapped name
 			err := errorx.SafeErrWrapperBuilder{
-				Error:         info.Err,
-				Operation:     errorx.HTTPRoundTripOperation,
-				TransactionID: tid,
+				Error:     info.Err,
+				Operation: errorx.HTTPRoundTripOperation,
 			}.MaybeBuild()
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPRequestDone: &modelx.HTTPRequestDoneEvent{
 					DurationSinceBeginning: time.Since(root.Beginning),
 					Error:                  err,
-					TransactionID:          tid,
 				},
 			})
 		},
@@ -204,7 +186,6 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPResponseStart: &modelx.HTTPResponseStartEvent{
 					DurationSinceBeginning: time.Since(root.Beginning),
-					TransactionID:          tid,
 				},
 			})
 		},
@@ -227,9 +208,8 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	resp, err := t.roundTripper.RoundTrip(req)
 	err = errorx.SafeErrWrapperBuilder{
-		Error:         err,
-		Operation:     majorOp,
-		TransactionID: tid,
+		Error:     err,
+		Operation: majorOp,
 	}.MaybeBuild()
 	// [*] Require less event joining work by providing info that
 	// makes this event alone actionable for OONI
@@ -241,7 +221,6 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		RequestMethod:          req.Method,       // [*]
 		RequestURL:             req.URL.String(), // [*]
 		MaxBodySnapSize:        snapSize,
-		TransactionID:          tid,
 	}
 	if resp != nil {
 		event.ResponseHeaders = resp.Header

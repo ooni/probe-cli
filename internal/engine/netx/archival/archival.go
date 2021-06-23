@@ -70,13 +70,10 @@ type TCPConnectStatus struct {
 // TCPConnectEntry contains one of the entries that are part
 // of the "tcp_connect" key of a OONI report.
 type TCPConnectEntry struct {
-	ConnID        int64            `json:"conn_id,omitempty"`
-	DialID        int64            `json:"dial_id,omitempty"`
-	IP            string           `json:"ip"`
-	Port          int              `json:"port"`
-	Status        TCPConnectStatus `json:"status"`
-	T             float64          `json:"t"`
-	TransactionID int64            `json:"transaction_id,omitempty"`
+	IP     string           `json:"ip"`
+	Port   int              `json:"port"`
+	Status TCPConnectStatus `json:"status"`
+	T      float64          `json:"t"`
 }
 
 // NewTCPConnectList creates a new TCPConnectList
@@ -289,11 +286,10 @@ type HTTPResponse struct {
 // RequestEntry is one of the entries that are part of
 // the "requests" key of a OONI report.
 type RequestEntry struct {
-	Failure       *string      `json:"failure"`
-	Request       HTTPRequest  `json:"request"`
-	Response      HTTPResponse `json:"response"`
-	T             float64      `json:"t"`
-	TransactionID int64        `json:"transaction_id,omitempty"`
+	Failure  *string      `json:"failure"`
+	Request  HTTPRequest  `json:"request"`
+	Response HTTPResponse `json:"response"`
+	T        float64      `json:"t"`
 }
 
 func addheaders(
@@ -382,7 +378,6 @@ type DNSAnswerEntry struct {
 // DNSQueryEntry is a DNS query with possibly an answer
 type DNSQueryEntry struct {
 	Answers          []DNSAnswerEntry `json:"answers"`
-	DialID           int64            `json:"dial_id,omitempty"`
 	Engine           string           `json:"engine"`
 	Failure          *string          `json:"failure"`
 	Hostname         string           `json:"hostname"`
@@ -391,7 +386,6 @@ type DNSQueryEntry struct {
 	ResolverPort     *string          `json:"resolver_port"`
 	ResolverAddress  string           `json:"resolver_address"`
 	T                float64          `json:"t"`
-	TransactionID    int64            `json:"transaction_id,omitempty"`
 }
 
 type dnsQueryType string
@@ -467,16 +461,13 @@ func (qtype dnsQueryType) makequeryentry(begin time.Time, ev trace.Event) DNSQue
 // and most fields are optional. They are only added when it makes sense
 // for them to be there _and_ we have data to show.
 type NetworkEvent struct {
-	Address       string   `json:"address,omitempty"`
-	ConnID        int64    `json:"conn_id,omitempty"`
-	DialID        int64    `json:"dial_id,omitempty"`
-	Failure       *string  `json:"failure"`
-	NumBytes      int64    `json:"num_bytes,omitempty"`
-	Operation     string   `json:"operation"`
-	Proto         string   `json:"proto,omitempty"`
-	T             float64  `json:"t"`
-	Tags          []string `json:"tags,omitempty"`
-	TransactionID int64    `json:"transaction_id,omitempty"`
+	Address   string   `json:"address,omitempty"`
+	Failure   *string  `json:"failure"`
+	NumBytes  int64    `json:"num_bytes,omitempty"`
+	Operation string   `json:"operation"`
+	Proto     string   `json:"proto,omitempty"`
+	T         float64  `json:"t"`
+	Tags      []string `json:"tags,omitempty"`
 }
 
 // NewNetworkEventsList returns a list of DNS queries.
@@ -543,7 +534,6 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 // TLSHandshake contains TLS handshake data
 type TLSHandshake struct {
 	CipherSuite        string             `json:"cipher_suite"`
-	ConnID             int64              `json:"conn_id,omitempty"`
 	Failure            *string            `json:"failure"`
 	NegotiatedProtocol string             `json:"negotiated_protocol"`
 	NoTLSVerify        bool               `json:"no_tls_verify"`
@@ -552,7 +542,6 @@ type TLSHandshake struct {
 	T                  float64            `json:"t"`
 	Tags               []string           `json:"tags"`
 	TLSVersion         string             `json:"tls_version"`
-	TransactionID      int64              `json:"transaction_id,omitempty"`
 }
 
 // NewTLSHandshakesList creates a new TLSHandshakesList
