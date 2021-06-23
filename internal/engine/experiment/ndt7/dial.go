@@ -10,6 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type dialManager struct {
@@ -33,8 +34,8 @@ func newDialManager(ndt7URL string, logger model.Logger, userAgent string) dialM
 }
 
 func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*websocket.Conn, error) {
-	var reso resolver.Resolver = resolver.SystemResolver{}
-	reso = resolver.LoggingResolver{Resolver: reso, Logger: mgr.logger}
+	var reso resolver.Resolver = netxlite.ResolverSystem{}
+	reso = netxlite.ResolverLogger{Resolver: reso, Logger: mgr.logger}
 	dlr := dialer.New(&dialer.Config{
 		ContextByteCounting: true,
 		Logger:              mgr.logger,

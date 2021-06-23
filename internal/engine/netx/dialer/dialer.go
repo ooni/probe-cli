@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Dialer establishes network connections.
@@ -64,10 +65,10 @@ type Config struct {
 
 // New creates a new Dialer from the specified config and resolver.
 func New(config *Config, resolver Resolver) Dialer {
-	var d Dialer = systemDialer
+	var d Dialer = netxlite.DefaultDialer
 	d = &errorWrapperDialer{Dialer: d}
 	if config.Logger != nil {
-		d = &loggingDialer{Dialer: d, Logger: config.Logger}
+		d = &netxlite.DialerLogger{Dialer: d, Logger: config.Logger}
 	}
 	if config.DialSaver != nil {
 		d = &saverDialer{Dialer: d, Saver: config.DialSaver}
@@ -75,7 +76,7 @@ func New(config *Config, resolver Resolver) Dialer {
 	if config.ReadWriteSaver != nil {
 		d = &saverConnDialer{Dialer: d, Saver: config.ReadWriteSaver}
 	}
-	d = &dnsDialer{Resolver: resolver, Dialer: d}
+	d = &netxlite.DialerResolver{Resolver: resolver, Dialer: d}
 	d = &proxyDialer{ProxyURL: config.ProxyURL, Dialer: d}
 	if config.ContextByteCounting {
 		d = &byteCounterDialer{Dialer: d}

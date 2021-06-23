@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const simplerequest = `{
@@ -56,7 +56,7 @@ func TestWorkingAsIntended(t *testing.T) {
 		Client:            http.DefaultClient,
 		Dialer:            new(net.Dialer),
 		MaxAcceptableBody: 1 << 24,
-		Resolver:          resolver.SystemResolver{},
+		Resolver:          netxlite.ResolverSystem{},
 	}
 	srv := httptest.NewServer(handler)
 	defer srv.Close()

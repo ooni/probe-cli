@@ -6,7 +6,7 @@ import (
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // DNSDialer is a dialer that uses the configured Resolver to resolve a
@@ -45,7 +45,7 @@ func (d DNSDialer) DialContext(
 		errorslist = append(errorslist, err)
 	}
 	// TODO(bassosimone): maybe ReduceErrors could be in netx/internal.
-	return nil, dialer.ReduceErrors(errorslist)
+	return nil, netxlite.ReduceErrors(errorslist)
 }
 
 // LookupHost implements Resolver.LookupHost

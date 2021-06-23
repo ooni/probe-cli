@@ -1,18 +1,20 @@
-package dialer
+package netxlite
 
 import (
 	"context"
 	"errors"
 	"io"
 	"net"
+	"strings"
 	"testing"
+	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 )
 
-func TestDNSDialerNoPort(t *testing.T) {
-	dialer := &dnsDialer{Dialer: new(net.Dialer), Resolver: new(net.Resolver)}
+func TestDialerResolverNoPort(t *testing.T) {
+	dialer := &DialerResolver{Dialer: new(net.Dialer), Resolver: DefaultResolver}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "antani.ooni.nu")
 	if err == nil {
 		t.Fatal("expected an error here")
@@ -22,8 +24,8 @@ func TestDNSDialerNoPort(t *testing.T) {
 	}
 }
 
-func TestDNSDialerLookupHostAddress(t *testing.T) {
-	dialer := &dnsDialer{Dialer: new(net.Dialer), Resolver: MockableResolver{
+func TestDialerResolverLookupHostAddress(t *testing.T) {
+	dialer := &DialerResolver{Dialer: new(net.Dialer), Resolver: MockableResolver{
 		Err: errors.New("mocked error"),
 	}}
 	addrs, err := dialer.lookupHost(context.Background(), "1.1.1.1")
@@ -35,9 +37,9 @@ func TestDNSDialerLookupHostAddress(t *testing.T) {
 	}
 }
 
-func TestDNSDialerLookupHostFailure(t *testing.T) {
+func TestDialerResolverLookupHostFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	dialer := &dnsDialer{Dialer: new(net.Dialer), Resolver: MockableResolver{
+	dialer := &DialerResolver{Dialer: new(net.Dialer), Resolver: MockableResolver{
 		Err: expected,
 	}}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "dns.google.com:853")
@@ -58,12 +60,20 @@ func (r MockableResolver) LookupHost(ctx context.Context, host string) ([]string
 	return r.Addresses, r.Err
 }
 
-func TestDNSDialerDialForSingleIPFails(t *testing.T) {
-	dialer := &dnsDialer{Dialer: mockablex.Dialer{
+func (r MockableResolver) Network() string {
+	return "mockable"
+}
+
+func (r MockableResolver) Address() string {
+	return ""
+}
+
+func TestDialerResolverDialForSingleIPFails(t *testing.T) {
+	dialer := &DialerResolver{Dialer: mockablex.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
-	}, Resolver: new(net.Resolver)}
+	}, Resolver: DefaultResolver}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "1.1.1.1:853")
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("not the error we expected")
@@ -73,8 +83,8 @@ func TestDNSDialerDialForSingleIPFails(t *testing.T) {
 	}
 }
 
-func TestDNSDialerDialForManyIPFails(t *testing.T) {
-	dialer := &dnsDialer{
+func TestDialerResolverDialForManyIPFails(t *testing.T) {
+	dialer := &DialerResolver{
 		Dialer: mockablex.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, io.EOF
@@ -91,8 +101,8 @@ func TestDNSDialerDialForManyIPFails(t *testing.T) {
 	}
 }
 
-func TestDNSDialerDialForManyIPSuccess(t *testing.T) {
-	dialer := &dnsDialer{Dialer: mockablex.Dialer{
+func TestDialerResolverDialForManyIPSuccess(t *testing.T) {
+	dialer := &DialerResolver{Dialer: mockablex.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return &mockablex.Conn{
 				MockClose: func() error {
@@ -113,43 +123,39 @@ func TestDNSDialerDialForManyIPSuccess(t *testing.T) {
 	conn.Close()
 }
 
-func TestReduceErrors(t *testing.T) {
-	t.Run("no errors", func(t *testing.T) {
-		result := ReduceErrors(nil)
-		if result != nil {
-			t.Fatal("wrong result")
-		}
-	})
+func TestDialerLoggerFailure(t *testing.T) {
+	d := &DialerLogger{
+		Dialer: mockablex.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return nil, io.EOF
+			},
+		},
+		Logger: log.Log,
+	}
+	conn, err := d.DialContext(context.Background(), "tcp", "www.google.com:443")
+	if !errors.Is(err, io.EOF) {
+		t.Fatal("not the error we expected")
+	}
+	if conn != nil {
+		t.Fatal("expected nil conn here")
+	}
+}
 
-	t.Run("single error", func(t *testing.T) {
-		err := errors.New("mocked error")
-		result := ReduceErrors([]error{err})
-		if result != err {
-			t.Fatal("wrong result")
-		}
-	})
+func TestDefaultDialerWorks(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // fail immediately
+	conn, err := DefaultDialer.DialContext(ctx, "tcp", "8.8.8.8:853")
+	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
+		t.Fatal("not the error we expected", err)
+	}
+	if conn != nil {
+		t.Fatal("expected nil conn here")
+	}
+}
 
-	t.Run("multiple errors", func(t *testing.T) {
-		err1 := errors.New("mocked error #1")
-		err2 := errors.New("mocked error #2")
-		result := ReduceErrors([]error{err1, err2})
-		if result.Error() != "mocked error #1" {
-			t.Fatal("wrong result")
-		}
-	})
-
-	t.Run("multiple errors with meaningful ones", func(t *testing.T) {
-		err1 := errors.New("mocked error #1")
-		err2 := &errorx.ErrWrapper{
-			Failure: "unknown_failure: antani",
-		}
-		err3 := &errorx.ErrWrapper{
-			Failure: errorx.FailureConnectionRefused,
-		}
-		err4 := errors.New("mocked error #3")
-		result := ReduceErrors([]error{err1, err2, err3, err4})
-		if result.Error() != errorx.FailureConnectionRefused {
-			t.Fatal("wrong result")
-		}
-	})
+func TestDefaultDialerHasTimeout(t *testing.T) {
+	expected := 15 * time.Second
+	if DefaultDialer.Timeout != expected {
+		t.Fatal("unexpected timeout value")
+	}
 }

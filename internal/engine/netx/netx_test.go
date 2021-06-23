@@ -15,6 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewResolverVanilla(t *testing.T) {
@@ -31,7 +32,7 @@ func TestNewResolverVanilla(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	_, ok = ar.Resolver.(netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -81,7 +82,7 @@ func TestNewResolverWithBogonFilter(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	_, ok = ar.Resolver.(netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -95,7 +96,7 @@ func TestNewResolverWithLogging(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	lr, ok := ir.Resolver.(resolver.LoggingResolver)
+	lr, ok := ir.Resolver.(netxlite.ResolverLogger)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -110,7 +111,7 @@ func TestNewResolverWithLogging(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	_, ok = ar.Resolver.(netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -140,7 +141,7 @@ func TestNewResolverWithSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	_, ok = ar.Resolver.(netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -169,7 +170,7 @@ func TestNewResolverWithReadWriteCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	_, ok = ar.Resolver.(netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -203,7 +204,7 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	_, ok = ar.Resolver.(netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -597,7 +598,7 @@ func TestNewDNSClientSystemResolver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := dnsclient.Resolver.(resolver.SystemResolver); !ok {
+	if _, ok := dnsclient.Resolver.(netxlite.ResolverSystem); !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -609,7 +610,7 @@ func TestNewDNSClientEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := dnsclient.Resolver.(resolver.SystemResolver); !ok {
+	if _, ok := dnsclient.Resolver.(netxlite.ResolverSystem); !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	dnsclient.CloseIdleConnections()
