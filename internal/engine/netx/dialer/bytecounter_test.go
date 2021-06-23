@@ -76,7 +76,7 @@ func TestByteCounterNoHandlers(t *testing.T) {
 }
 
 func TestByteCounterConnectFailure(t *testing.T) {
-	dialer := &byteCounterDialer{Dialer: netxmocks.Dialer{
+	dialer := &byteCounterDialer{Dialer: &netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
