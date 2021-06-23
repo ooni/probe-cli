@@ -17,7 +17,7 @@ func TestSaverDialerFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := &trace.Saver{}
 	dlr := &saverDialer{
-		Dialer: netxmocks.Dialer{
+		Dialer: &netxmocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, expected
 			},
@@ -59,7 +59,7 @@ func TestSaverConnDialerFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := &trace.Saver{}
 	dlr := &saverConnDialer{
-		Dialer: netxmocks.Dialer{
+		Dialer: &netxmocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, expected
 			},
@@ -79,7 +79,7 @@ func TestSaverConnDialerSuccess(t *testing.T) {
 	saver := &trace.Saver{}
 	dlr := &saverConnDialer{
 		Dialer: &saverDialer{
-			Dialer: netxmocks.Dialer{
+			Dialer: &netxmocks.Dialer{
 				MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 					return &netxmocks.Conn{
 						MockRead: func(b []byte) (int, error) {

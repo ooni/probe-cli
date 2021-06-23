@@ -20,7 +20,7 @@ func TestEmitterFailure(t *testing.T) {
 		Beginning: time.Now(),
 		Handler:   saver,
 	})
-	d := EmitterDialer{Dialer: netxmocks.Dialer{
+	d := EmitterDialer{Dialer: &netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
@@ -69,7 +69,7 @@ func TestEmitterSuccess(t *testing.T) {
 		Beginning: time.Now(),
 		Handler:   saver,
 	})
-	d := EmitterDialer{Dialer: netxmocks.Dialer{
+	d := EmitterDialer{Dialer: &netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return &netxmocks.Conn{
 				MockRead: func(b []byte) (int, error) {
