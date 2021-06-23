@@ -7,6 +7,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewCreatesTheExpectedChain(t *testing.T) {
@@ -30,7 +31,7 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 	if !ok {
 		t.Fatal("not a proxyDialer")
 	}
-	dnsd, ok := pd.Dialer.(*dnsDialer)
+	dnsd, ok := pd.Dialer.(*netxlite.DialerResolver)
 	if !ok {
 		t.Fatal("not a dnsDialer")
 	}
@@ -42,7 +43,7 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 	if !ok {
 		t.Fatal("not a saverDialer")
 	}
-	ld, ok := sd.Dialer.(*loggingDialer)
+	ld, ok := sd.Dialer.(*netxlite.DialerLogger)
 	if !ok {
 		t.Fatal("not a loggingDialer")
 	}

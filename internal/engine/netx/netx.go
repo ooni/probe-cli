@@ -39,6 +39,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Logger is the logger assumed by this package
@@ -114,7 +115,7 @@ var defaultCertPool *x509.CertPool = tlsx.NewDefaultCertPool()
 // NewResolver creates a new resolver from the specified config
 func NewResolver(config Config) Resolver {
 	if config.BaseResolver == nil {
-		config.BaseResolver = resolver.SystemResolver{}
+		config.BaseResolver = netxlite.ResolverSystem{}
 	}
 	var r Resolver = config.BaseResolver
 	r = resolver.AddressResolver{Resolver: r}
@@ -133,7 +134,7 @@ func NewResolver(config Config) Resolver {
 	}
 	r = resolver.ErrorWrapperResolver{Resolver: r}
 	if config.Logger != nil {
-		r = resolver.LoggingResolver{Logger: config.Logger, Resolver: r}
+		r = netxlite.ResolverLogger{Logger: config.Logger, Resolver: r}
 	}
 	if config.ResolveSaver != nil {
 		r = resolver.SaverResolver{Resolver: r, Saver: config.ResolveSaver}
@@ -317,7 +318,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 	}
 	switch resolverURL.Scheme {
 	case "system":
-		c.Resolver = resolver.SystemResolver{}
+		c.Resolver = netxlite.ResolverSystem{}
 		return c, nil
 	case "https":
 		config.TLSConfig.NextProtos = []string{"h2", "http/1.1"}
