@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/netxmocks"
 )
 
@@ -28,6 +29,25 @@ func TestResolverSystemWorksAsIntended(t *testing.T) {
 	}
 	if addrs == nil {
 		t.Fatal("expected non-nil result here")
+	}
+}
+
+func TestResolverLoggerWithSuccess(t *testing.T) {
+	expected := []string{"1.1.1.1"}
+	r := ResolverLogger{
+		Logger: log.Log,
+		Resolver: &netxmocks.Resolver{
+			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				return expected, nil
+			},
+		},
+	}
+	addrs, err := r.LookupHost(context.Background(), "dns.google")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(expected, addrs); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
