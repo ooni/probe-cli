@@ -13,8 +13,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxmocks"
 )
 
 func TestListenerLoggerWorks(t *testing.T) {
@@ -96,8 +96,8 @@ func TestListenerCastListenerWorksFineOnError(t *testing.T) {
 
 // mockableSocksConn is a mockable ptxSocksConn.
 type mockableSocksConn struct {
-	// mockablex.Conn allows to mock all net.Conn functionality.
-	*mockablex.Conn
+	// netxmocks.Conn allows to mock all net.Conn functionality.
+	*netxmocks.Conn
 
 	// MockGrant allows to mock the Grant function.
 	MockGrant func(addr *net.TCPAddr) error
@@ -160,7 +160,7 @@ func TestListenerHandleSocksConnWithDialContextFailure(t *testing.T) {
 	}
 	lst := &Listener{PTDialer: d}
 	c := &mockableSocksConn{
-		Conn: &mockablex.Conn{
+		Conn: &netxmocks.Conn{
 			MockClose: func() error {
 				return nil
 			},

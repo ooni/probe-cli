@@ -1,4 +1,4 @@
-package mockablex
+package netxmocks
 
 import (
 	"errors"

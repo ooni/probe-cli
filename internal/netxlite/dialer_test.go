@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
+	"github.com/ooni/probe-cli/v3/internal/netxmocks"
 )
 
 func TestDialerResolverNoPort(t *testing.T) {
@@ -69,7 +69,7 @@ func (r MockableResolver) Address() string {
 }
 
 func TestDialerResolverDialForSingleIPFails(t *testing.T) {
-	dialer := &DialerResolver{Dialer: mockablex.Dialer{
+	dialer := &DialerResolver{Dialer: netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
@@ -85,7 +85,7 @@ func TestDialerResolverDialForSingleIPFails(t *testing.T) {
 
 func TestDialerResolverDialForManyIPFails(t *testing.T) {
 	dialer := &DialerResolver{
-		Dialer: mockablex.Dialer{
+		Dialer: netxmocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, io.EOF
 			},
@@ -102,9 +102,9 @@ func TestDialerResolverDialForManyIPFails(t *testing.T) {
 }
 
 func TestDialerResolverDialForManyIPSuccess(t *testing.T) {
-	dialer := &DialerResolver{Dialer: mockablex.Dialer{
+	dialer := &DialerResolver{Dialer: netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-			return &mockablex.Conn{
+			return &netxmocks.Conn{
 				MockClose: func() error {
 					return nil
 				},
@@ -125,7 +125,7 @@ func TestDialerResolverDialForManyIPSuccess(t *testing.T) {
 
 func TestDialerLoggerFailure(t *testing.T) {
 	d := &DialerLogger{
-		Dialer: mockablex.Dialer{
+		Dialer: netxmocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, io.EOF
 			},
