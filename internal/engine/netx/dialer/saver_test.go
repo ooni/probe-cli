@@ -9,15 +9,15 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxmocks"
 )
 
 func TestSaverDialerFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := &trace.Saver{}
 	dlr := &saverDialer{
-		Dialer: mockablex.Dialer{
+		Dialer: netxmocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, expected
 			},
@@ -59,7 +59,7 @@ func TestSaverConnDialerFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := &trace.Saver{}
 	dlr := &saverConnDialer{
-		Dialer: mockablex.Dialer{
+		Dialer: netxmocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, expected
 			},
@@ -79,9 +79,9 @@ func TestSaverConnDialerSuccess(t *testing.T) {
 	saver := &trace.Saver{}
 	dlr := &saverConnDialer{
 		Dialer: &saverDialer{
-			Dialer: mockablex.Dialer{
+			Dialer: netxmocks.Dialer{
 				MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-					return &mockablex.Conn{
+					return &netxmocks.Conn{
 						MockRead: func(b []byte) (int, error) {
 							return 0, io.EOF
 						},
