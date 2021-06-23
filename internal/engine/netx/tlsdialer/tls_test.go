@@ -109,9 +109,6 @@ func TestErrorWrapperTLSHandshakerFailure(t *testing.T) {
 	if !errors.As(err, &errWrapper) {
 		t.Fatal("cannot cast to ErrWrapper")
 	}
-	if errWrapper.ConnID == 0 {
-		t.Fatal("unexpected ConnID")
-	}
 	if errWrapper.Failure != errorx.FailureEOFError {
 		t.Fatal("unexpected Failure")
 	}
@@ -143,9 +140,6 @@ func TestEmitterTLSHandshakerFailure(t *testing.T) {
 	if events[0].TLSHandshakeStart == nil {
 		t.Fatal("missing TLSHandshakeStart event")
 	}
-	if events[0].TLSHandshakeStart.ConnID == 0 {
-		t.Fatal("expected nonzero ConnID")
-	}
 	if events[0].TLSHandshakeStart.DurationSinceBeginning == 0 {
 		t.Fatal("expected nonzero DurationSinceBeginning")
 	}
@@ -154,9 +148,6 @@ func TestEmitterTLSHandshakerFailure(t *testing.T) {
 	}
 	if events[1].TLSHandshakeDone == nil {
 		t.Fatal("missing TLSHandshakeDone event")
-	}
-	if events[1].TLSHandshakeDone.ConnID == 0 {
-		t.Fatal("expected nonzero ConnID")
 	}
 	if events[1].TLSHandshakeDone.DurationSinceBeginning == 0 {
 		t.Fatal("expected nonzero DurationSinceBeginning")

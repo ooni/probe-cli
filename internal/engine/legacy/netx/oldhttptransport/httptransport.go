@@ -15,8 +15,7 @@ type Transport struct {
 // New creates a new Transport.
 func New(roundTripper http.RoundTripper) *Transport {
 	return &Transport{
-		roundTripper: NewTransactioner(NewBodyTracer(
-			NewTraceTripper(roundTripper))),
+		roundTripper: NewBodyTracer(NewTraceTripper(roundTripper)),
 	}
 }
 

@@ -8,13 +8,12 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 )
 
 func TestErrorWrapperFailure(t *testing.T) {
-	ctx := dialid.WithDialID(context.Background())
+	ctx := context.Background()
 	d := quicdialer.ErrorWrapperDialer{
 		Dialer: MockDialer{Sess: nil, Err: io.EOF}}
 	sess, err := d.DialContext(
@@ -32,9 +31,6 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 	var errWrapper *errorx.ErrWrapper
 	if !errors.As(err, &errWrapper) {
 		t.Fatal("cannot cast to ErrWrapper")
-	}
-	if errWrapper.DialID == 0 {
-		t.Fatal("unexpected DialID")
 	}
 	if errWrapper.Operation != op {
 		t.Fatal("unexpected Operation")
@@ -68,7 +64,7 @@ func TestErrorWrapperInvalidCertificate(t *testing.T) {
 }
 
 func TestErrorWrapperSuccess(t *testing.T) {
-	ctx := dialid.WithDialID(context.Background())
+	ctx := context.Background()
 	tlsConf := &tls.Config{
 		NextProtos: []string{"h3"},
 		ServerName: "www.google.com",

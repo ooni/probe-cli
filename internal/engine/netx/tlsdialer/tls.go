@@ -7,7 +7,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/connid"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
@@ -68,11 +67,9 @@ type ErrorWrapperTLSHandshaker struct {
 func (h ErrorWrapperTLSHandshaker) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {
-	connID := connid.Compute(conn.RemoteAddr().Network(), conn.RemoteAddr().String())
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	err = errorx.SafeErrWrapperBuilder{
 		Classifier: errorx.ClassifyTLSFailure,
-		ConnID:     connID,
 		Error:      err,
 		Operation:  errorx.TLSHandshakeOperation,
 	}.MaybeBuild()
@@ -88,22 +85,19 @@ type EmitterTLSHandshaker struct {
 func (h EmitterTLSHandshaker) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {
-	connID := connid.Compute(conn.RemoteAddr().Network(), conn.RemoteAddr().String())
 	root := modelx.ContextMeasurementRootOrDefault(ctx)
 	root.Handler.OnMeasurement(modelx.Measurement{
 		TLSHandshakeStart: &modelx.TLSHandshakeStartEvent{
-			ConnID:                 connID,
-			DurationSinceBeginning: time.Now().Sub(root.Beginning),
+			DurationSinceBeginning: time.Since(root.Beginning),
 			SNI:                    config.ServerName,
 		},
 	})
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	root.Handler.OnMeasurement(modelx.Measurement{
 		TLSHandshakeDone: &modelx.TLSHandshakeDoneEvent{
-			ConnID:                 connID,
 			ConnectionState:        modelx.NewTLSConnectionState(state),
 			Error:                  err,
-			DurationSinceBeginning: time.Now().Sub(root.Beginning),
+			DurationSinceBeginning: time.Since(root.Beginning),
 		},
 	})
 	return tlsconn, state, err

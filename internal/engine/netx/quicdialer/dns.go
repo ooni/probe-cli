@@ -6,7 +6,6 @@ import (
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 )
 
@@ -30,7 +29,6 @@ func (d DNSDialer) DialContext(
 	if tlsCfg.ServerName == "" {
 		tlsCfg.ServerName = onlyhost
 	}
-	ctx = dialid.WithDialID(ctx)
 	var addrs []string
 	addrs, err = d.LookupHost(ctx, onlyhost)
 	if err != nil {
