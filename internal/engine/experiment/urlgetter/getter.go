@@ -11,6 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 // The Getter gets the specified target in the context of the
@@ -129,10 +130,11 @@ func (g Getter) get(ctx context.Context, saver *trace.Saver) (TestKeys, error) {
 	}
 	// create configuration
 	configurer := Configurer{
-		Config:   g.Config,
-		Logger:   g.Session.Logger(),
-		ProxyURL: proxyURL,
-		Saver:    saver,
+		ClientHelloID: &utls.HelloChrome_Auto,
+		Config:        g.Config,
+		Logger:        g.Session.Logger(),
+		ProxyURL:      proxyURL,
+		Saver:         saver,
 	}
 	configuration, err := configurer.NewConfiguration()
 	if err != nil {

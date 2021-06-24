@@ -39,6 +39,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 // Logger is the logger assumed by this package
@@ -86,6 +87,7 @@ type Config struct {
 	ByteCounter         *bytecounter.Counter // default: no explicit byte counting
 	CacheResolutions    bool                 // default: no caching
 	CertPool            *x509.CertPool       // default: use vendored gocertifi
+	ClientHelloID       *utls.ClientHelloID  // default: no parrot
 	ContextByteCounting bool                 // default: no implicit byte counting
 	DNSCache            map[string][]string  // default: cache is empty
 	DialSaver           *trace.Saver         // default: not saving dials
@@ -176,6 +178,9 @@ func NewTLSDialer(config Config) TLSDialer {
 		config.Dialer = NewDialer(config)
 	}
 	var h tlsHandshaker = tlsdialer.SystemTLSHandshaker{}
+	if config.ClientHelloID != nil {
+		h = tlsdialer.UTLSHandshaker{TLSHandshaker: h, ClientHelloID: config.ClientHelloID}
+	}
 	h = tlsdialer.TimeoutTLSHandshaker{TLSHandshaker: h}
 	h = tlsdialer.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
 	if config.Logger != nil {

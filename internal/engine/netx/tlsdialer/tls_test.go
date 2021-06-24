@@ -13,6 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 func TestSystemTLSHandshakerEOFError(t *testing.T) {
@@ -273,5 +274,23 @@ func TestDialTLSContextTimeout(t *testing.T) {
 	}
 	if conn != nil {
 		t.Fatal("connection is not nil")
+	}
+}
+
+func TestUTLSHandshakerChrome(t *testing.T) {
+	dialer := tlsdialer.TLSDialer{
+		Config: &tls.Config{ServerName: "google.com"},
+		Dialer: new(net.Dialer),
+		TLSHandshaker: tlsdialer.UTLSHandshaker{
+			TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
+			ClientHelloID: &utls.HelloChrome_Auto,
+		},
+	}
+	conn, err := dialer.DialTLSContext(context.Background(), "tcp", "google.com:443")
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+	if conn == nil {
+		t.Fatal("nil connection")
 	}
 }

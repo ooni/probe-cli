@@ -12,15 +12,17 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 // The Configurer job is to construct a Configuration that can
 // later be used by the measurer to perform measurements.
 type Configurer struct {
-	Config   Config
-	Logger   model.Logger
-	ProxyURL *url.URL
-	Saver    *trace.Saver
+	ClientHelloID *utls.ClientHelloID
+	Config        Config
+	Logger        model.Logger
+	ProxyURL      *url.URL
+	Saver         *trace.Saver
 }
 
 // The Configuration is the configuration for running a measurement.
@@ -42,6 +44,7 @@ func (c Configurer) NewConfiguration() (Configuration, error) {
 			BogonIsError:        c.Config.RejectDNSBogons,
 			CacheResolutions:    true,
 			CertPool:            c.Config.CertPool,
+			ClientHelloID:       c.ClientHelloID,
 			ContextByteCounting: true,
 			DialSaver:           c.Saver,
 			HTTP3Enabled:        c.Config.HTTP3Enabled,

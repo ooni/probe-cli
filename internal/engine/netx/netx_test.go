@@ -445,7 +445,7 @@ func TestNewVanilla(t *testing.T) {
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
-	if _, ok := uatxp.RoundTripper.(*http.Transport); !ok {
+	if _, ok := uatxp.RoundTripper.(http.RoundTripper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -479,7 +479,7 @@ func TestNewWithTLSDialer(t *testing.T) {
 	client := &http.Client{Transport: txp}
 	resp, err := client.Get("https://www.google.com")
 	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
+		t.Fatal("not the error we expected", err)
 	}
 	if resp != nil {
 		t.Fatal("not the response we expected")
@@ -502,7 +502,7 @@ func TestNewWithByteCounter(t *testing.T) {
 	if bctxp.Counter != counter {
 		t.Fatal("not the byte counter we expected")
 	}
-	if _, ok := bctxp.RoundTripper.(*http.Transport); !ok {
+	if _, ok := bctxp.RoundTripper.(http.RoundTripper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -522,7 +522,7 @@ func TestNewWithLogger(t *testing.T) {
 	if ltxp.Logger != log.Log {
 		t.Fatal("not the logger we expected")
 	}
-	if _, ok := ltxp.RoundTripper.(*http.Transport); !ok {
+	if _, ok := ltxp.RoundTripper.(http.RoundTripper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -564,7 +564,7 @@ func TestNewWithSaver(t *testing.T) {
 	if smtxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	if _, ok := smtxp.RoundTripper.(*http.Transport); !ok {
+	if _, ok := smtxp.RoundTripper.(http.RoundTripper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
