@@ -22,44 +22,6 @@ type TLSHandshaker interface {
 		net.Conn, tls.ConnectionState, error)
 }
 
-/*
-// SystemTLSHandshaker is the system TLS handshaker.
-type SystemTLSHandshaker struct{}
-
-// Handshake implements Handshaker.Handshake
-func (h SystemTLSHandshaker) Handshake(
-	ctx context.Context, conn net.Conn, config *tls.Config,
-) (net.Conn, tls.ConnectionState, error) {
-	tlsconn := tls.Client(conn, config)
-	if err := tlsconn.Handshake(); err != nil {
-		return nil, tls.ConnectionState{}, err
-	}
-	return tlsconn, tlsconn.ConnectionState(), nil
-}
-
-// TimeoutTLSHandshaker is a TLSHandshaker with timeout
-type TimeoutTLSHandshaker struct {
-	TLSHandshaker
-	HandshakeTimeout time.Duration // default: 10 second
-}
-
-// Handshake implements Handshaker.Handshake
-func (h TimeoutTLSHandshaker) Handshake(
-	ctx context.Context, conn net.Conn, config *tls.Config,
-) (net.Conn, tls.ConnectionState, error) {
-	timeout := 10 * time.Second
-	if h.HandshakeTimeout != 0 {
-		timeout = h.HandshakeTimeout
-	}
-	if err := conn.SetDeadline(time.Now().Add(timeout)); err != nil {
-		return nil, tls.ConnectionState{}, err
-	}
-	tlsconn, connstate, err := h.TLSHandshaker.Handshake(ctx, conn, config)
-	conn.SetDeadline(time.Time{})
-	return tlsconn, connstate, err
-}
-*/
-
 // ErrorWrapperTLSHandshaker wraps the returned error to be an OONI error
 type ErrorWrapperTLSHandshaker struct {
 	TLSHandshaker

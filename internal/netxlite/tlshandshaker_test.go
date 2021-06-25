@@ -47,7 +47,7 @@ func TestTLSHandshakerStdlibWithError(t *testing.T) {
 	}
 }
 
-func TestTLSHandshakerSuccess(t *testing.T) {
+func TestTLSHandshakerStdlibSuccess(t *testing.T) {
 	handler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(200)
 	})
@@ -68,7 +68,6 @@ func TestTLSHandshakerSuccess(t *testing.T) {
 		InsecureSkipVerify: true,
 		MinVersion:         tls.VersionTLS13,
 		MaxVersion:         tls.VersionTLS13,
-		Rand:               nil,
 		ServerName:         URL.Hostname(),
 	}
 	tlsConn, connState, err := handshaker.Handshake(ctx, conn, config)

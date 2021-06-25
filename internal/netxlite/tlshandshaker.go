@@ -18,7 +18,7 @@ type TLSHandshaker interface {
 
 // TLSHandshakerStdlib is the stdlib's TLS handshaker.
 type TLSHandshakerStdlib struct {
-	// Timeout is the timeout imposed on the TLS handshake. If not zero
+	// Timeout is the timeout imposed on the TLS handshake. If zero
 	// or negative, we will use default timeout of 10 seconds.
 	Timeout time.Duration
 }
