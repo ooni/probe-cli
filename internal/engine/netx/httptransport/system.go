@@ -43,7 +43,7 @@ type roundTripper struct {
 	scheme              string
 	tlsconfig           *tls.Config
 	tlsdialer           TLSDialer
-	transport           RoundTripper // this will be either http.Transport or http2.Transport
+	transport           http.RoundTripper // this will be either http.Transport or http2.Transport
 	underlyingTransport *http.Transport
 }
 
@@ -52,14 +52,10 @@ func (rt *roundTripper) CloseIdleConnections() {
 }
 
 func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	if rt.scheme != strings.ToLower(req.URL.Scheme) {
-		rt.transport = nil
-	}
-	if rt.transport == nil {
-		// determine transport type to use for this Roundtrip
-		if err := rt.getTransport(req); err != nil {
-			return nil, err
-		}
+	// determine transport type to use for this Roundtrip
+	rt.transport = nil
+	if err := rt.getTransport(req); err != nil {
+		return nil, err
 	}
 	return rt.transport.RoundTrip(req)
 }
@@ -115,9 +111,9 @@ func (rt *roundTripper) dialTLSContext(ctx context.Context, network, addr string
 	if cfg == nil {
 		cfg = new(tls.Config)
 	}
-	if cfg.ServerName == "" {
-		cfg.ServerName = host
-	}
+	cfg.ServerName = host
+	cfg.NextProtos = []string{"h2", "http/1.1"}
+
 	// TLS handshake
 	tlsconn := tls.Client(conn, cfg)
 	err = tlsconn.Handshake()
@@ -127,16 +123,17 @@ func (rt *roundTripper) dialTLSContext(ctx context.Context, network, addr string
 	}
 	// use ALPN to decide which Transport to use
 	switch tlsconn.ConnectionState().NegotiatedProtocol {
-	case "http/1.1":
-		// HTTP 1.x + TLS.
-		rt.transport = rt.underlyingTransport
-	default:
-		// assume HTTP 2 + TLS.
+	case "h2":
+		// HTTP 2 + TLS.
 		rt.ctx = ctx // there is no DialTLSContext in http2.Transport so we have to remember it in roundTripper
 		rt.transport = &http2.Transport{
 			DialTLS:            rt.dialTLSHTTP2,
+			TLSClientConfig:    rt.underlyingTransport.TLSClientConfig,
 			DisableCompression: rt.underlyingTransport.DisableCompression,
 		}
+	default:
+		// assume HTTP 1.x + TLS.
+		rt.transport = rt.underlyingTransport
 	}
 	return nil, errTransportCreated
 }
