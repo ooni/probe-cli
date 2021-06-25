@@ -292,7 +292,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	lth, ok := rtd.TLSHandshaker.(tlsdialer.LoggingTLSHandshaker)
+	lth, ok := rtd.TLSHandshaker.(*netxlite.TLSHandshakerLogger)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}

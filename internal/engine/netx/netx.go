@@ -179,7 +179,7 @@ func NewTLSDialer(config Config) TLSDialer {
 	var h tlsHandshaker = &netxlite.TLSHandshakerStdlib{}
 	h = tlsdialer.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
 	if config.Logger != nil {
-		h = tlsdialer.LoggingTLSHandshaker{Logger: config.Logger, TLSHandshaker: h}
+		h = &netxlite.TLSHandshakerLogger{Logger: config.Logger, TLSHandshaker: h}
 	}
 	if config.TLSSaver != nil {
 		h = tlsdialer.SaverTLSHandshaker{TLSHandshaker: h, Saver: config.TLSSaver}
