@@ -94,6 +94,26 @@ func TestQUICDialerQUICGoCannotListen(t *testing.T) {
 	}
 }
 
+func TestQUICDialerCannotPerformHandshake(t *testing.T) {
+	tlsConfig := &tls.Config{
+		NextProtos: []string{"h3"},
+		ServerName: "dns.google",
+	}
+	systemdialer := QUICDialerQUICGo{
+		QUICListener: &QUICListenerStdlib{},
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // fail immediately
+	sess, err := systemdialer.DialContext(
+		ctx, "udp", "8.8.8.8:443", tlsConfig, &quic.Config{})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("not the error we expected", err)
+	}
+	if sess != nil {
+		log.Fatal("expected nil session here")
+	}
+}
+
 func TestQUICDialerWorksAsIntended(t *testing.T) {
 	tlsConfig := &tls.Config{
 		NextProtos: []string{"h3"},
@@ -108,6 +128,7 @@ func TestQUICDialerWorksAsIntended(t *testing.T) {
 	if err != nil {
 		t.Fatal("not the error we expected", err)
 	}
+	<-sess.HandshakeComplete().Done()
 	if err := sess.CloseWithError(0, ""); err != nil {
 		log.Fatal(err)
 	}

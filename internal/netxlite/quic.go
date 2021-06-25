@@ -30,7 +30,7 @@ type QUICDialer interface {
 
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
-	// Listen creates a new listening net.PacketConn.
+	// Listen creates a new listening PacketConn.
 	Listen(addr *net.UDPAddr) (net.PacketConn, error)
 }
 
@@ -76,6 +76,27 @@ func (d *QUICDialerQUICGo) DialContext(ctx context.Context, network string,
 		return nil, err
 	}
 	udpAddr := &net.UDPAddr{IP: ip, Port: port, Zone: ""}
-	return quic.DialEarlyContext(
+	sess, err := quic.DialEarlyContext(
 		ctx, pconn, udpAddr, address, tlsConfig, quicConfig)
+	if err != nil {
+		return nil, err
+	}
+	return &quicSessionOwnsConn{EarlySession: sess, conn: pconn}, nil
+}
+
+// quicSessionOwnsConn ensures that we close the PacketConn.
+type quicSessionOwnsConn struct {
+	// EarlySession is the embedded early session
+	quic.EarlySession
+
+	// conn is the connection we own
+	conn net.PacketConn
+}
+
+// CloseWithError implements quic.EarlySession.CloseWithError.
+func (sess *quicSessionOwnsConn) CloseWithError(
+	code quic.ApplicationErrorCode, reason string) error {
+	err := sess.EarlySession.CloseWithError(code, reason)
+	sess.conn.Close()
+	return err
 }

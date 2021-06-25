@@ -11,7 +11,7 @@ import (
 
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
-	// Listen creates a new listening net.PacketConn.
+	// Listen creates a new listening PacketConn.
 	Listen(addr *net.UDPAddr) (net.PacketConn, error)
 }
 
