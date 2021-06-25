@@ -5,8 +5,6 @@ import (
 	"crypto/tls"
 	"net"
 	"time"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 )
 
 // TLSHandshaker is the generic TLS handshaker.
@@ -74,8 +72,8 @@ func (h *TLSHandshakerLogger) Handshake(
 	h.Logger.Debugf(
 		"tls {sni=%s next=%+v}... ok in %s {next=%s cipher=%s v=%s}",
 		config.ServerName, config.NextProtos, elapsed, state.NegotiatedProtocol,
-		tlsx.CipherSuiteString(state.CipherSuite),
-		tlsx.VersionString(state.Version))
+		TLSCipherSuiteString(state.CipherSuite),
+		TLSVersionString(state.Version))
 	return tlsconn, state, nil
 }
 
