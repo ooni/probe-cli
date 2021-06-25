@@ -86,6 +86,7 @@ func (d *QUICDialerQUICGo) DialContext(ctx context.Context, network string,
 
 // quicSessionOwnsConn ensures that we close the PacketConn.
 type quicSessionOwnsConn struct {
+	// EarlySession is the embedded early session
 	quic.EarlySession
 
 	// conn is the connection we own
