@@ -25,7 +25,9 @@ func (r MockableResolver) LookupHost(ctx context.Context, host string) ([]string
 func TestDNSDialerSuccess(t *testing.T) {
 	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	dialer := quicdialer.DNSDialer{
-		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{}}
+		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{
+			QUICListener: &quicdialer.QUICListenerStdlib{},
+		}}
 	sess, err := dialer.DialContext(
 		context.Background(), "udp", "www.google.com:443",
 		tlsConf, &quic.Config{})
@@ -88,7 +90,9 @@ func TestDNSDialerLookupHostFailure(t *testing.T) {
 func TestDNSDialerInvalidPort(t *testing.T) {
 	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	dialer := quicdialer.DNSDialer{
-		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{}}
+		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{
+			QUICListener: &quicdialer.QUICListenerStdlib{},
+		}}
 	sess, err := dialer.DialContext(
 		context.Background(), "udp", "www.google.com:0",
 		tlsConf, &quic.Config{})
@@ -107,7 +111,9 @@ func TestDNSDialerInvalidPort(t *testing.T) {
 func TestDNSDialerInvalidPortSyntax(t *testing.T) {
 	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	dialer := quicdialer.DNSDialer{
-		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{}}
+		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{
+			QUICListener: &quicdialer.QUICListenerStdlib{},
+		}}
 	sess, err := dialer.DialContext(
 		context.Background(), "udp", "www.google.com:port",
 		tlsConf, &quic.Config{})

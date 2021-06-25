@@ -48,7 +48,9 @@ func TestErrorWrapperInvalidCertificate(t *testing.T) {
 		ServerName: servername,
 	}
 
-	dlr := quicdialer.ErrorWrapperDialer{Dialer: &quicdialer.SystemDialer{}}
+	dlr := quicdialer.ErrorWrapperDialer{Dialer: &quicdialer.SystemDialer{
+		QUICListener: &quicdialer.QUICListenerStdlib{},
+	}}
 	// use Google IP
 	sess, err := dlr.DialContext(context.Background(), "udp",
 		"216.58.212.164:443", tlsConf, &quic.Config{})
@@ -69,7 +71,9 @@ func TestErrorWrapperSuccess(t *testing.T) {
 		NextProtos: []string{"h3"},
 		ServerName: "www.google.com",
 	}
-	d := quicdialer.ErrorWrapperDialer{Dialer: quicdialer.SystemDialer{}}
+	d := quicdialer.ErrorWrapperDialer{Dialer: quicdialer.SystemDialer{
+		QUICListener: &quicdialer.QUICListenerStdlib{},
+	}}
 	sess, err := d.DialContext(ctx, "udp", "216.58.212.164:443", tlsConf, &quic.Config{})
 	if err != nil {
 		t.Fatal(err)

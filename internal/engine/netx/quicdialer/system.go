@@ -13,13 +13,47 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 )
 
+// QUICListener listens for QUIC connections.
+type QUICListener interface {
+	// Listen creates a new listening net.PacketConn.
+	Listen(addr *net.UDPAddr) (net.PacketConn, error)
+}
+
+// QUICListenerStdlib is a QUICListener using the standard library.
+type QUICListenerStdlib struct{}
+
+// Listen implements QUICListener.Listen.
+func (qls *QUICListenerStdlib) Listen(addr *net.UDPAddr) (net.PacketConn, error) {
+	return net.ListenUDP("udp", addr)
+}
+
+// QUICListenerSaver is a QUICListener that also implements saving events.
+type QUICListenerSaver struct {
+	// QUICListener is the underlying QUICListener.
+	QUICListener QUICListener
+
+	// Saver is the underlying Saver.
+	Saver *trace.Saver
+}
+
+// Listen implements QUICListener.Listen.
+func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (net.PacketConn, error) {
+	pconn, err := qls.QUICListener.Listen(addr)
+	if err != nil {
+		return nil, err
+	}
+	// TODO(bassosimone): refactor to remove this restriction.
+	udpConn, ok := pconn.(*net.UDPConn)
+	if !ok {
+		return nil, errors.New("quicdialer: cannot convert to udpConn")
+	}
+	return saverUDPConn{UDPConn: udpConn, saver: qls.Saver}, nil
+}
+
 // SystemDialer is the basic dialer for QUIC
 type SystemDialer struct {
-	// Saver saves read/write events on the underlying UDP
-	// connection. (Implementation note: we need it here since
-	// this is the only part in the codebase that is able to
-	// observe the underlying UDP connection.)
-	Saver *trace.Saver
+	// QUICListener is the underlying QUICListener to use.
+	QUICListener QUICListener
 }
 
 // DialContext implements ContextDialer.DialContext
@@ -35,20 +69,14 @@ func (d SystemDialer) DialContext(ctx context.Context, network string,
 	}
 	ip := net.ParseIP(onlyhost)
 	if ip == nil {
-		// TODO(kelmenhorst): write test for this error condition.
 		return nil, errors.New("quicdialer: invalid IP representation")
 	}
-	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4zero, Port: 0})
+	pconn, err := d.QUICListener.Listen(&net.UDPAddr{IP: net.IPv4zero, Port: 0})
 	if err != nil {
 		return nil, err
 	}
-	var pconn net.PacketConn = udpConn
-	if d.Saver != nil {
-		pconn = saverUDPConn{UDPConn: udpConn, saver: d.Saver}
-	}
 	udpAddr := &net.UDPAddr{IP: ip, Port: port, Zone: ""}
 	return quic.DialEarlyContext(ctx, pconn, udpAddr, host, tlsCfg, cfg)
-
 }
 
 type saverUDPConn struct {

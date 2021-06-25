@@ -18,7 +18,10 @@ func TestSystemDialerInvalidIPFailure(t *testing.T) {
 	}
 	saver := &trace.Saver{}
 	systemdialer := quicdialer.SystemDialer{
-		Saver: saver,
+		QUICListener: &quicdialer.QUICListenerSaver{
+			QUICListener: &quicdialer.QUICListenerStdlib{},
+			Saver:        saver,
+		},
 	}
 	sess, err := systemdialer.DialContext(context.Background(), "udp", "a.b.c.d:0", tlsConf, &quic.Config{})
 	if err == nil {
@@ -39,7 +42,12 @@ func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
 		ServerName: "www.google.com",
 	}
 	saver := &trace.Saver{}
-	systemdialer := quicdialer.SystemDialer{Saver: saver}
+	systemdialer := quicdialer.SystemDialer{
+		QUICListener: &quicdialer.QUICListenerSaver{
+			QUICListener: &quicdialer.QUICListenerStdlib{},
+			Saver:        saver,
+		},
+	}
 	_, err := systemdialer.DialContext(context.Background(), "udp",
 		"216.58.212.164:443", tlsConf, &quic.Config{})
 	if err != nil {

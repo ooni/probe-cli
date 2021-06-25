@@ -36,8 +36,10 @@ func TestHandshakeSaverSuccess(t *testing.T) {
 	}
 	saver := &trace.Saver{}
 	dlr := quicdialer.HandshakeSaver{
-		Dialer: quicdialer.SystemDialer{},
-		Saver:  saver,
+		Dialer: quicdialer.SystemDialer{
+			QUICListener: &quicdialer.QUICListenerStdlib{},
+		},
+		Saver: saver,
 	}
 	sess, err := dlr.DialContext(context.Background(), "udp",
 		"216.58.212.164:443", tlsConf, &quic.Config{})
@@ -92,8 +94,10 @@ func TestHandshakeSaverHostNameError(t *testing.T) {
 	}
 	saver := &trace.Saver{}
 	dlr := quicdialer.HandshakeSaver{
-		Dialer: quicdialer.SystemDialer{},
-		Saver:  saver,
+		Dialer: quicdialer.SystemDialer{
+			QUICListener: &quicdialer.QUICListenerStdlib{},
+		},
+		Saver: saver,
 	}
 	sess, err := dlr.DialContext(context.Background(), "udp",
 		"216.58.212.164:443", tlsConf, &quic.Config{})
