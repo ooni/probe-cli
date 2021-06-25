@@ -11,6 +11,7 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type MockableResolver struct {
@@ -25,8 +26,8 @@ func (r MockableResolver) LookupHost(ctx context.Context, host string) ([]string
 func TestDNSDialerSuccess(t *testing.T) {
 	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	dialer := quicdialer.DNSDialer{
-		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{
-			QUICListener: &quicdialer.QUICListenerStdlib{},
+		Resolver: new(net.Resolver), Dialer: &netxlite.QUICDialerQUICGo{
+			QUICListener: &netxlite.QUICListenerStdlib{},
 		}}
 	sess, err := dialer.DialContext(
 		context.Background(), "udp", "www.google.com:443",
@@ -42,7 +43,7 @@ func TestDNSDialerSuccess(t *testing.T) {
 func TestDNSDialerNoPort(t *testing.T) {
 	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	dialer := quicdialer.DNSDialer{
-		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{}}
+		Resolver: new(net.Resolver), Dialer: &netxlite.QUICDialerQUICGo{}}
 	sess, err := dialer.DialContext(
 		context.Background(), "udp", "www.google.com",
 		tlsConf, &quic.Config{})
@@ -90,8 +91,8 @@ func TestDNSDialerLookupHostFailure(t *testing.T) {
 func TestDNSDialerInvalidPort(t *testing.T) {
 	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	dialer := quicdialer.DNSDialer{
-		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{
-			QUICListener: &quicdialer.QUICListenerStdlib{},
+		Resolver: new(net.Resolver), Dialer: &netxlite.QUICDialerQUICGo{
+			QUICListener: &netxlite.QUICListenerStdlib{},
 		}}
 	sess, err := dialer.DialContext(
 		context.Background(), "udp", "www.google.com:0",
@@ -111,8 +112,8 @@ func TestDNSDialerInvalidPort(t *testing.T) {
 func TestDNSDialerInvalidPortSyntax(t *testing.T) {
 	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
 	dialer := quicdialer.DNSDialer{
-		Resolver: new(net.Resolver), Dialer: quicdialer.SystemDialer{
-			QUICListener: &quicdialer.QUICListenerStdlib{},
+		Resolver: new(net.Resolver), Dialer: &netxlite.QUICDialerQUICGo{
+			QUICListener: &netxlite.QUICListenerStdlib{},
 		}}
 	sess, err := dialer.DialContext(
 		context.Background(), "udp", "www.google.com:port",

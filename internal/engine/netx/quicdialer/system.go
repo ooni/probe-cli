@@ -1,14 +1,10 @@
 package quicdialer
 
 import (
-	"context"
-	"crypto/tls"
 	"errors"
 	"net"
-	"strconv"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 )
@@ -17,14 +13,6 @@ import (
 type QUICListener interface {
 	// Listen creates a new listening net.PacketConn.
 	Listen(addr *net.UDPAddr) (net.PacketConn, error)
-}
-
-// QUICListenerStdlib is a QUICListener using the standard library.
-type QUICListenerStdlib struct{}
-
-// Listen implements QUICListener.Listen.
-func (qls *QUICListenerStdlib) Listen(addr *net.UDPAddr) (net.PacketConn, error) {
-	return net.ListenUDP("udp", addr)
 }
 
 // QUICListenerSaver is a QUICListener that also implements saving events.
@@ -48,35 +36,6 @@ func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (net.PacketConn, error) 
 		return nil, errors.New("quicdialer: cannot convert to udpConn")
 	}
 	return saverUDPConn{UDPConn: udpConn, saver: qls.Saver}, nil
-}
-
-// SystemDialer is the basic dialer for QUIC
-type SystemDialer struct {
-	// QUICListener is the underlying QUICListener to use.
-	QUICListener QUICListener
-}
-
-// DialContext implements ContextDialer.DialContext
-func (d SystemDialer) DialContext(ctx context.Context, network string,
-	host string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
-	onlyhost, onlyport, err := net.SplitHostPort(host)
-	if err != nil {
-		return nil, err
-	}
-	port, err := strconv.Atoi(onlyport)
-	if err != nil {
-		return nil, err
-	}
-	ip := net.ParseIP(onlyhost)
-	if ip == nil {
-		return nil, errors.New("quicdialer: invalid IP representation")
-	}
-	pconn, err := d.QUICListener.Listen(&net.UDPAddr{IP: net.IPv4zero, Port: 0})
-	if err != nil {
-		return nil, err
-	}
-	udpAddr := &net.UDPAddr{IP: ip, Port: port, Zone: ""}
-	return quic.DialEarlyContext(ctx, pconn, udpAddr, host, tlsCfg, cfg)
 }
 
 type saverUDPConn struct {

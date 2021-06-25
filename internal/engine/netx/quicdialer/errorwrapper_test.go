@@ -10,6 +10,7 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestErrorWrapperFailure(t *testing.T) {
@@ -48,8 +49,8 @@ func TestErrorWrapperInvalidCertificate(t *testing.T) {
 		ServerName: servername,
 	}
 
-	dlr := quicdialer.ErrorWrapperDialer{Dialer: &quicdialer.SystemDialer{
-		QUICListener: &quicdialer.QUICListenerStdlib{},
+	dlr := quicdialer.ErrorWrapperDialer{Dialer: &netxlite.QUICDialerQUICGo{
+		QUICListener: &netxlite.QUICListenerStdlib{},
 	}}
 	// use Google IP
 	sess, err := dlr.DialContext(context.Background(), "udp",
@@ -71,8 +72,8 @@ func TestErrorWrapperSuccess(t *testing.T) {
 		NextProtos: []string{"h3"},
 		ServerName: "www.google.com",
 	}
-	d := quicdialer.ErrorWrapperDialer{Dialer: quicdialer.SystemDialer{
-		QUICListener: &quicdialer.QUICListenerStdlib{},
+	d := quicdialer.ErrorWrapperDialer{Dialer: &netxlite.QUICDialerQUICGo{
+		QUICListener: &netxlite.QUICListenerStdlib{},
 	}}
 	sess, err := d.DialContext(ctx, "udp", "216.58.212.164:443", tlsConf, &quic.Config{})
 	if err != nil {

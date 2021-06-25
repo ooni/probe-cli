@@ -11,6 +11,7 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type MockDialer struct {
@@ -36,8 +37,8 @@ func TestHandshakeSaverSuccess(t *testing.T) {
 	}
 	saver := &trace.Saver{}
 	dlr := quicdialer.HandshakeSaver{
-		Dialer: quicdialer.SystemDialer{
-			QUICListener: &quicdialer.QUICListenerStdlib{},
+		Dialer: &netxlite.QUICDialerQUICGo{
+			QUICListener: &netxlite.QUICListenerStdlib{},
 		},
 		Saver: saver,
 	}
@@ -94,8 +95,8 @@ func TestHandshakeSaverHostNameError(t *testing.T) {
 	}
 	saver := &trace.Saver{}
 	dlr := quicdialer.HandshakeSaver{
-		Dialer: quicdialer.SystemDialer{
-			QUICListener: &quicdialer.QUICListenerStdlib{},
+		Dialer: &netxlite.QUICDialerQUICGo{
+			QUICListener: &netxlite.QUICListenerStdlib{},
 		},
 		Saver: saver,
 	}
