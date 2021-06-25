@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"net"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 )
 
 // TLSHandshaker is the generic TLS handshaker.
@@ -44,3 +46,37 @@ func (h *TLSHandshakerStdlib) Handshake(
 
 // DefaultTLSHandshaker is the default TLS handshaker.
 var DefaultTLSHandshaker = &TLSHandshakerStdlib{}
+
+// TLSHandshakerLogger is a TLSHandshaker with logging.
+type TLSHandshakerLogger struct {
+	// TLSHandshaker is the underlying handshaker.
+	TLSHandshaker TLSHandshaker
+
+	// Logger is the underlying logger.
+	Logger Logger
+}
+
+// Handshake implements Handshaker.Handshake
+func (h *TLSHandshakerLogger) Handshake(
+	ctx context.Context, conn net.Conn, config *tls.Config,
+) (net.Conn, tls.ConnectionState, error) {
+	h.Logger.Debugf(
+		"tls {sni=%s next=%+v}...", config.ServerName, config.NextProtos)
+	start := time.Now()
+	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
+	elapsed := time.Since(start)
+	if err != nil {
+		h.Logger.Debugf(
+			"tls {sni=%s next=%+v}... %s in %s", config.ServerName,
+			config.NextProtos, err, elapsed)
+		return nil, tls.ConnectionState{}, err
+	}
+	h.Logger.Debugf(
+		"tls {sni=%s next=%+v}... ok in %s {next=%s cipher=%s v=%s}",
+		config.ServerName, config.NextProtos, elapsed, state.NegotiatedProtocol,
+		tlsx.CipherSuiteString(state.CipherSuite),
+		tlsx.VersionString(state.Version))
+	return tlsconn, state, nil
+}
+
+var _ TLSHandshaker = &TLSHandshakerLogger{}

@@ -2,13 +2,6 @@ package netxmocks
 
 import "context"
 
-// resolver is the interface we expect from a resolver
-type resolver interface {
-	LookupHost(ctx context.Context, domain string) ([]string, error)
-	Network() string
-	Address() string
-}
-
 // Resolver is a mockable Resolver.
 type Resolver struct {
 	MockLookupHost func(ctx context.Context, domain string) ([]string, error)
@@ -30,5 +23,3 @@ func (r *Resolver) Address() string {
 func (r *Resolver) Network() string {
 	return r.MockNetwork()
 }
-
-var _ resolver = &Resolver{}

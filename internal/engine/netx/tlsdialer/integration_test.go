@@ -17,7 +17,7 @@ func TestTLSDialerSuccess(t *testing.T) {
 	}
 	log.SetLevel(log.DebugLevel)
 	dialer := tlsdialer.TLSDialer{Dialer: new(net.Dialer),
-		TLSHandshaker: tlsdialer.LoggingTLSHandshaker{
+		TLSHandshaker: &netxlite.TLSHandshakerLogger{
 			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
 			Logger:        log.Log,
 		},
