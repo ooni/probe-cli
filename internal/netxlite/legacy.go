@@ -7,7 +7,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
-// ReduceErrors finds a known error in a list of errors since
+// reduceErrors finds a known error in a list of errors since
 // it's probably most relevant.
 //
 // Deprecation warning
@@ -16,7 +16,7 @@ import (
 //
 // In perspective, we would like to transition to a scenario where
 // full dialing is NOT used for measurements and we return a multierror here.
-func ReduceErrors(errorslist []error) error {
+func reduceErrors(errorslist []error) error {
 	if len(errorslist) == 0 {
 		return nil
 	}

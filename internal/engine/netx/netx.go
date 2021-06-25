@@ -174,7 +174,7 @@ func NewQUICDialer(config Config) QUICDialer {
 	if config.TLSSaver != nil {
 		d = quicdialer.HandshakeSaver{Saver: config.TLSSaver, Dialer: d}
 	}
-	d = &quicdialer.DNSDialer{Resolver: config.FullResolver, Dialer: d}
+	d = &netxlite.QUICDialerResolver{Resolver: config.FullResolver, Dialer: d}
 	var dialer QUICDialer = &httptransport.QUICWrapperDialer{Dialer: d}
 	return dialer
 }

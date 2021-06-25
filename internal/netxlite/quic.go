@@ -19,15 +19,6 @@ type QUICContextDialer interface {
 		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error)
 }
 
-// QUICDialer dials QUIC connections.
-type QUICDialer interface {
-	// DialContext establishes a new QUIC session using the given
-	// network and address. The tlsConfig and the quicConfig arguments
-	// MUST NOT be nil. Returns either the session or an error.
-	Dial(network, address string, tlsConfig *tls.Config,
-		quicConfig *quic.Config) (quic.EarlySession, error)
-}
-
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
 	// Listen creates a new listening PacketConn.
@@ -99,4 +90,56 @@ func (sess *quicSessionOwnsConn) CloseWithError(
 	err := sess.EarlySession.CloseWithError(code, reason)
 	sess.conn.Close()
 	return err
+}
+
+// QUICDialerResolver is a dialer that uses the configured Resolver
+// to resolve a domain name to IP addrs.
+type QUICDialerResolver struct {
+	// Dialer is the underlying QUIC dialer.
+	Dialer QUICContextDialer
+
+	// Resolver is the underlying resolver.
+	Resolver Resolver
+}
+
+// DialContext implements QUICContextDialer.DialContext
+func (d *QUICDialerResolver) DialContext(
+	ctx context.Context, network, address string,
+	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+	onlyhost, onlyport, err := net.SplitHostPort(address)
+	if err != nil {
+		return nil, err
+	}
+	// TODO(kelmenhorst): Should this be somewhere else?
+	// failure if tlsCfg is nil but that should not happen
+	if tlsConfig.ServerName == "" {
+		tlsConfig.ServerName = onlyhost
+	}
+	addrs, err := d.lookupHost(ctx, onlyhost)
+	if err != nil {
+		return nil, err
+	}
+	// TODO(bassosimone): here we should be using multierror rather
+	// than just calling ReduceErrors. We are not ready to do that
+	// yet, though. To do that, we need first to modify nettests so
+	// that we actually avoid dialing when measuring.
+	var errorslist []error
+	for _, addr := range addrs {
+		target := net.JoinHostPort(addr, onlyport)
+		sess, err := d.Dialer.DialContext(
+			ctx, network, target, tlsConfig, quicConfig)
+		if err == nil {
+			return sess, nil
+		}
+		errorslist = append(errorslist, err)
+	}
+	return nil, reduceErrors(errorslist)
+}
+
+// lookupHost performs a domain name resolution.
+func (d *QUICDialerResolver) lookupHost(ctx context.Context, hostname string) ([]string, error) {
+	if net.ParseIP(hostname) != nil {
+		return []string{hostname}, nil
+	}
+	return d.Resolver.LookupHost(ctx, hostname)
 }

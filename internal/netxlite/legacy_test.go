@@ -9,14 +9,14 @@ import (
 
 func TestReduceErrors(t *testing.T) {
 	t.Run("no errors", func(t *testing.T) {
-		result := ReduceErrors(nil)
+		result := reduceErrors(nil)
 		if result != nil {
 			t.Fatal("wrong result")
 		}
 	})
 	t.Run("single error", func(t *testing.T) {
 		err := errors.New("mocked error")
-		result := ReduceErrors([]error{err})
+		result := reduceErrors([]error{err})
 		if result != err {
 			t.Fatal("wrong result")
 		}
@@ -24,7 +24,7 @@ func TestReduceErrors(t *testing.T) {
 	t.Run("multiple errors", func(t *testing.T) {
 		err1 := errors.New("mocked error #1")
 		err2 := errors.New("mocked error #2")
-		result := ReduceErrors([]error{err1, err2})
+		result := reduceErrors([]error{err1, err2})
 		if result.Error() != "mocked error #1" {
 			t.Fatal("wrong result")
 		}
@@ -38,7 +38,7 @@ func TestReduceErrors(t *testing.T) {
 			Failure: errorx.FailureConnectionRefused,
 		}
 		err4 := errors.New("mocked error #3")
-		result := ReduceErrors([]error{err1, err2, err3, err4})
+		result := reduceErrors([]error{err1, err2, err3, err4})
 		if result.Error() != errorx.FailureConnectionRefused {
 			t.Fatal("wrong result")
 		}
