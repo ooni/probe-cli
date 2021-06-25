@@ -55,7 +55,7 @@ func (d *DialerResolver) DialContext(ctx context.Context, network, address strin
 		}
 		errorslist = append(errorslist, err)
 	}
-	return nil, ReduceErrors(errorslist)
+	return nil, reduceErrors(errorslist)
 }
 
 // lookupHost performs a domain name resolution.
