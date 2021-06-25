@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestSaverTLSHandshakerSuccessWithReadWrite(t *testing.T) {
@@ -25,7 +26,7 @@ func TestSaverTLSHandshakerSuccessWithReadWrite(t *testing.T) {
 		Config: &tls.Config{NextProtos: nextprotos},
 		Dialer: dialer.New(&dialer.Config{ReadWriteSaver: saver}, &net.Resolver{}),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
-			TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
+			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
 			Saver:         saver,
 		},
 	}
@@ -118,7 +119,7 @@ func TestSaverTLSHandshakerSuccess(t *testing.T) {
 		Config: &tls.Config{NextProtos: nextprotos},
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
-			TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
+			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
 			Saver:         saver,
 		},
 	}
@@ -183,7 +184,7 @@ func TestSaverTLSHandshakerHostnameError(t *testing.T) {
 	tlsdlr := tlsdialer.TLSDialer{
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
-			TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
+			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
 			Saver:         saver,
 		},
 	}
@@ -216,7 +217,7 @@ func TestSaverTLSHandshakerInvalidCertError(t *testing.T) {
 	tlsdlr := tlsdialer.TLSDialer{
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
-			TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
+			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
 			Saver:         saver,
 		},
 	}
@@ -249,7 +250,7 @@ func TestSaverTLSHandshakerAuthorityError(t *testing.T) {
 	tlsdlr := tlsdialer.TLSDialer{
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
-			TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
+			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
 			Saver:         saver,
 		},
 	}
@@ -283,7 +284,7 @@ func TestSaverTLSHandshakerNoTLSVerify(t *testing.T) {
 		Config: &tls.Config{InsecureSkipVerify: true},
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
-			TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
+			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
 			Saver:         saver,
 		},
 	}

@@ -56,7 +56,7 @@ func TestWorkingAsIntended(t *testing.T) {
 		Client:            http.DefaultClient,
 		Dialer:            new(net.Dialer),
 		MaxAcceptableBody: 1 << 24,
-		Resolver:          netxlite.ResolverSystem{},
+		Resolver:          &netxlite.ResolverSystem{},
 	}
 	srv := httptest.NewServer(handler)
 	defer srv.Close()

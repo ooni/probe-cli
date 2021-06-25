@@ -11,7 +11,7 @@ import (
 func TestChainLookupHost(t *testing.T) {
 	r := resolver.ChainResolver{
 		Primary:   resolver.NewFakeResolverThatFails(),
-		Secondary: netxlite.ResolverSystem{},
+		Secondary: &netxlite.ResolverSystem{},
 	}
 	if r.Address() != "" {
 		t.Fatal("invalid address")

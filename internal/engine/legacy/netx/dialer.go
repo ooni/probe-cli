@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Dialer performs measurements while dialing.
@@ -107,9 +108,7 @@ func newTLSDialer(d dialer.Dialer, config *tls.Config) tlsdialer.TLSDialer {
 		Dialer: d,
 		TLSHandshaker: tlsdialer.EmitterTLSHandshaker{
 			TLSHandshaker: tlsdialer.ErrorWrapperTLSHandshaker{
-				TLSHandshaker: tlsdialer.TimeoutTLSHandshaker{
-					TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
-				},
+				TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
 			},
 		},
 	}

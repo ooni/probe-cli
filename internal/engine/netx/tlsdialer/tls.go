@@ -22,6 +22,7 @@ type TLSHandshaker interface {
 		net.Conn, tls.ConnectionState, error)
 }
 
+/*
 // SystemTLSHandshaker is the system TLS handshaker.
 type SystemTLSHandshaker struct{}
 
@@ -57,6 +58,7 @@ func (h TimeoutTLSHandshaker) Handshake(
 	conn.SetDeadline(time.Time{})
 	return tlsconn, connstate, err
 }
+*/
 
 // ErrorWrapperTLSHandshaker wraps the returned error to be an OONI error
 type ErrorWrapperTLSHandshaker struct {

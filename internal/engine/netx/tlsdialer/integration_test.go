@@ -8,6 +8,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestTLSDialerSuccess(t *testing.T) {
@@ -17,7 +18,7 @@ func TestTLSDialerSuccess(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	dialer := tlsdialer.TLSDialer{Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.LoggingTLSHandshaker{
-			TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
+			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
 			Logger:        log.Log,
 		},
 	}

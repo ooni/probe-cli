@@ -159,7 +159,7 @@ func resolverWrapTransport(txp resolver.RoundTripper) resolver.EmitterResolver {
 }
 
 func newResolverSystem() resolver.EmitterResolver {
-	return resolverWrapResolver(netxlite.ResolverSystem{})
+	return resolverWrapResolver(&netxlite.ResolverSystem{})
 }
 
 func newResolverUDP(dialer resolver.Dialer, address string) resolver.EmitterResolver {

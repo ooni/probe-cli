@@ -115,7 +115,7 @@ var defaultCertPool *x509.CertPool = tlsx.NewDefaultCertPool()
 // NewResolver creates a new resolver from the specified config
 func NewResolver(config Config) Resolver {
 	if config.BaseResolver == nil {
-		config.BaseResolver = netxlite.ResolverSystem{}
+		config.BaseResolver = &netxlite.ResolverSystem{}
 	}
 	var r Resolver = config.BaseResolver
 	r = resolver.AddressResolver{Resolver: r}
@@ -134,7 +134,7 @@ func NewResolver(config Config) Resolver {
 	}
 	r = resolver.ErrorWrapperResolver{Resolver: r}
 	if config.Logger != nil {
-		r = netxlite.ResolverLogger{Logger: config.Logger, Resolver: r}
+		r = &netxlite.ResolverLogger{Logger: config.Logger, Resolver: r}
 	}
 	if config.ResolveSaver != nil {
 		r = resolver.SaverResolver{Resolver: r, Saver: config.ResolveSaver}
@@ -176,8 +176,7 @@ func NewTLSDialer(config Config) TLSDialer {
 	if config.Dialer == nil {
 		config.Dialer = NewDialer(config)
 	}
-	var h tlsHandshaker = tlsdialer.SystemTLSHandshaker{}
-	h = tlsdialer.TimeoutTLSHandshaker{TLSHandshaker: h}
+	var h tlsHandshaker = &netxlite.TLSHandshakerStdlib{}
 	h = tlsdialer.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
 	if config.Logger != nil {
 		h = tlsdialer.LoggingTLSHandshaker{Logger: config.Logger, TLSHandshaker: h}
@@ -318,7 +317,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 	}
 	switch resolverURL.Scheme {
 	case "system":
-		c.Resolver = netxlite.ResolverSystem{}
+		c.Resolver = &netxlite.ResolverSystem{}
 		return c, nil
 	case "https":
 		config.TLSConfig.NextProtos = []string{"h2", "http/1.1"}
