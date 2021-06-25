@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Logger is the interface we expect from a logger
@@ -66,7 +66,7 @@ func (h *Handler) OnMeasurement(m modelx.Measurement) {
 		h.logger.Debugf(
 			"TLS done: %s, %s (alpn='%s')",
 			fmtError(m.TLSHandshakeDone.Error),
-			tlsx.VersionString(m.TLSHandshakeDone.ConnectionState.Version),
+			netxlite.TLSVersionString(m.TLSHandshakeDone.ConnectionState.Version),
 			m.TLSHandshakeDone.ConnectionState.NegotiatedProtocol,
 		)
 	}

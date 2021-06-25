@@ -37,7 +37,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -110,7 +109,7 @@ type tlsHandshaker interface {
 		net.Conn, tls.ConnectionState, error)
 }
 
-var defaultCertPool *x509.CertPool = tlsx.NewDefaultCertPool()
+var defaultCertPool *x509.CertPool = netxlite.NewDefaultCertPool()
 
 // NewResolver creates a new resolver from the specified config
 func NewResolver(config Config) Resolver {
@@ -312,7 +311,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		return c, err
 	}
 	config.TLSConfig = &tls.Config{ServerName: SNIOverride}
-	if err := tlsx.ConfigureTLSVersion(config.TLSConfig, TLSVersion); err != nil {
+	if err := netxlite.ConfigureTLSVersion(config.TLSConfig, TLSVersion); err != nil {
 		return c, err
 	}
 	switch resolverURL.Scheme {

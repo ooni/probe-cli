@@ -13,7 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -848,7 +847,7 @@ func TestNewDNSClientBadUDPEndpoint(t *testing.T) {
 func TestNewDNSCLientWithInvalidTLSVersion(t *testing.T) {
 	_, err := netx.NewDNSClientWithOverrides(
 		netx.Config{}, "dot://8.8.8.8", "", "", "TLSv999")
-	if !errors.Is(err, tlsx.ErrInvalidTLSVersion) {
+	if !errors.Is(err, netxlite.ErrInvalidTLSVersion) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 }

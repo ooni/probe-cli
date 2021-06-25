@@ -6,8 +6,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // SaverTLSHandshaker saves events occurring during the handshake
@@ -35,12 +35,12 @@ func (h SaverTLSHandshaker) Handshake(
 		Err:                err,
 		Name:               "tls_handshake_done",
 		NoTLSVerify:        config.InsecureSkipVerify,
-		TLSCipherSuite:     tlsx.CipherSuiteString(state.CipherSuite),
+		TLSCipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		TLSNegotiatedProto: state.NegotiatedProtocol,
 		TLSNextProtos:      config.NextProtos,
 		TLSPeerCerts:       trace.PeerCerts(state, err),
 		TLSServerName:      config.ServerName,
-		TLSVersion:         tlsx.VersionString(state.Version),
+		TLSVersion:         netxlite.TLSVersionString(state.Version),
 		Time:               stop,
 	})
 	return tlsconn, state, err

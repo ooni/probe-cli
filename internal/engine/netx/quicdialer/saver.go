@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // HandshakeSaver saves events occurring during the handshake
@@ -50,12 +50,12 @@ func (h HandshakeSaver) DialContext(ctx context.Context, network string,
 		Duration:           stop.Sub(start),
 		Name:               "quic_handshake_done",
 		NoTLSVerify:        tlsCfg.InsecureSkipVerify,
-		TLSCipherSuite:     tlsx.CipherSuiteString(state.CipherSuite),
+		TLSCipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		TLSNegotiatedProto: state.NegotiatedProtocol,
 		TLSNextProtos:      tlsCfg.NextProtos,
 		TLSPeerCerts:       trace.PeerCerts(state, err),
 		TLSServerName:      tlsCfg.ServerName,
-		TLSVersion:         tlsx.VersionString(state.Version),
+		TLSVersion:         netxlite.TLSVersionString(state.Version),
 		Time:               stop,
 	})
 	return sess, nil

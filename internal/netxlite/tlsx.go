@@ -1,5 +1,4 @@
-// Package tlsx contains TLS extensions
-package tlsx
+package netxlite
 
 import (
 	"crypto/tls"
@@ -10,7 +9,6 @@ import (
 
 var (
 	tlsVersionString = map[uint16]string{
-		tls.VersionSSL30: "SSLv3",
 		tls.VersionTLS10: "TLSv1",
 		tls.VersionTLS11: "TLSv1.1",
 		tls.VersionTLS12: "TLSv1.2",
@@ -48,16 +46,16 @@ var (
 	}
 )
 
-// VersionString returns a TLS version string.
-func VersionString(value uint16) string {
+// TLSVersionString returns a TLS version string.
+func TLSVersionString(value uint16) string {
 	if str, found := tlsVersionString[value]; found {
 		return str
 	}
 	return fmt.Sprintf("TLS_VERSION_UNKNOWN_%d", value)
 }
 
-// CipherSuiteString returns the TLS cipher suite as a string.
-func CipherSuiteString(value uint16) string {
+// TLSCipherSuiteString returns the TLS cipher suite as a string.
+func TLSCipherSuiteString(value uint16) string {
 	if str, found := tlsCipherSuiteString[value]; found {
 		return str
 	}

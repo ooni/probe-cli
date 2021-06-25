@@ -20,7 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // ExtSpec describes a data format extension
@@ -463,12 +463,12 @@ func NewTLSHandshakesList(results oonitemplates.Results) TLSHandshakesList {
 	var out TLSHandshakesList
 	for _, in := range results.TLSHandshakes {
 		out = append(out, TLSHandshake{
-			CipherSuite:        tlsx.CipherSuiteString(in.ConnectionState.CipherSuite),
+			CipherSuite:        netxlite.TLSCipherSuiteString(in.ConnectionState.CipherSuite),
 			Failure:            makeFailure(in.Error),
 			NegotiatedProtocol: in.ConnectionState.NegotiatedProtocol,
 			PeerCertificates:   makePeerCerts(in.ConnectionState.PeerCertificates),
 			T:                  in.DurationSinceBeginning.Seconds(),
-			TLSVersion:         tlsx.VersionString(in.ConnectionState.Version),
+			TLSVersion:         netxlite.TLSVersionString(in.ConnectionState.Version),
 		})
 	}
 	return out
