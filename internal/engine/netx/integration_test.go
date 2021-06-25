@@ -68,9 +68,6 @@ func TestSuccess(t *testing.T) {
 }
 
 func TestBogonResolutionNotBroken(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
 	saver := new(trace.Saver)
 	r := netx.NewResolver(netx.Config{
 		BogonIsError: true,
@@ -87,7 +84,7 @@ func TestBogonResolutionNotBroken(t *testing.T) {
 	if err.Error() != errorx.FailureDNSBogonError {
 		t.Fatal("error not correctly wrapped")
 	}
-	if len(addrs) != 1 || addrs[0] != "127.0.0.1" {
-		t.Fatal("address was not returned")
+	if len(addrs) > 0 {
+		t.Fatal("expected no addresses here")
 	}
 }
