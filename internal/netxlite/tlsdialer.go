@@ -43,8 +43,6 @@ func (d *TLSDialer) DialTLSContext(ctx context.Context, network, address string)
 // We set the ServerName field if not already set.
 //
 // We set the ALPN if the port is 443 or 853, if not already set.
-//
-// We force using our root CA, unless it's already set.
 func (d *TLSDialer) config(host, port string) *tls.Config {
 	config := d.Config
 	if config == nil {
@@ -61,9 +59,6 @@ func (d *TLSDialer) config(host, port string) *tls.Config {
 		case "853":
 			config.NextProtos = []string{"dot"}
 		}
-	}
-	if config.RootCAs == nil {
-		config.RootCAs = NewDefaultCertPool()
 	}
 	return config
 }

@@ -234,7 +234,7 @@ func TestNewTLSDialerVanilla(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerStdlib); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -263,7 +263,7 @@ func TestNewTLSDialerWithConfig(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerStdlib); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -302,7 +302,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerStdlib); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -342,7 +342,7 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerStdlib); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -375,7 +375,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerStdlib); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -410,7 +410,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerStdlib); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -447,7 +447,7 @@ func TestNewWithTLSDialer(t *testing.T) {
 	tlsDialer := &netxlite.TLSDialer{
 		Config:        new(tls.Config),
 		Dialer:        netx.FakeDialer{Err: expected},
-		TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
+		TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 	}
 	txp := netx.NewHTTPTransport(netx.Config{
 		TLSDialer: tlsDialer,

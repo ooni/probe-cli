@@ -9,13 +9,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/netxmocks"
 )
 
 func TestQUICDialerQUICGoCannotSplitHostPort(t *testing.T) {
 	tlsConfig := &tls.Config{
-		NextProtos: []string{"h3"},
 		ServerName: "www.google.com",
 	}
 	systemdialer := QUICDialerQUICGo{
@@ -34,7 +34,6 @@ func TestQUICDialerQUICGoCannotSplitHostPort(t *testing.T) {
 
 func TestQUICDialerQUICGoInvalidPort(t *testing.T) {
 	tlsConfig := &tls.Config{
-		NextProtos: []string{"h3"},
 		ServerName: "www.google.com",
 	}
 	systemdialer := QUICDialerQUICGo{
@@ -53,7 +52,6 @@ func TestQUICDialerQUICGoInvalidPort(t *testing.T) {
 
 func TestQUICDialerQUICGoInvalidIP(t *testing.T) {
 	tlsConfig := &tls.Config{
-		NextProtos: []string{"h3"},
 		ServerName: "www.google.com",
 	}
 	systemdialer := QUICDialerQUICGo{
@@ -73,7 +71,6 @@ func TestQUICDialerQUICGoInvalidIP(t *testing.T) {
 func TestQUICDialerQUICGoCannotListen(t *testing.T) {
 	expected := errors.New("mocked error")
 	tlsConfig := &tls.Config{
-		NextProtos: []string{"h3"},
 		ServerName: "www.google.com",
 	}
 	systemdialer := QUICDialerQUICGo{
@@ -94,9 +91,8 @@ func TestQUICDialerQUICGoCannotListen(t *testing.T) {
 	}
 }
 
-func TestQUICDialerCannotPerformHandshake(t *testing.T) {
+func TestQUICDialerQUICGoCannotPerformHandshake(t *testing.T) {
 	tlsConfig := &tls.Config{
-		NextProtos: []string{"h3"},
 		ServerName: "dns.google",
 	}
 	systemdialer := QUICDialerQUICGo{
@@ -114,9 +110,8 @@ func TestQUICDialerCannotPerformHandshake(t *testing.T) {
 	}
 }
 
-func TestQUICDialerWorksAsIntended(t *testing.T) {
+func TestQUICDialerQUICGoWorksAsIntended(t *testing.T) {
 	tlsConfig := &tls.Config{
-		NextProtos: []string{"h3"},
 		ServerName: "dns.google",
 	}
 	systemdialer := QUICDialerQUICGo{
@@ -134,8 +129,90 @@ func TestQUICDialerWorksAsIntended(t *testing.T) {
 	}
 }
 
+func TestQUICDialerQUICGoTLSDefaultsForWeb(t *testing.T) {
+	expected := errors.New("mocked error")
+	var gotTLSConfig *tls.Config
+	tlsConfig := &tls.Config{
+		ServerName: "dns.google",
+	}
+	systemdialer := QUICDialerQUICGo{
+		QUICListener: &QUICListenerStdlib{},
+		mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
+			remoteAddr net.Addr, host string, tlsConfig *tls.Config,
+			quicConfig *quic.Config) (quic.EarlySession, error) {
+			gotTLSConfig = tlsConfig
+			return nil, expected
+		},
+	}
+	ctx := context.Background()
+	sess, err := systemdialer.DialContext(
+		ctx, "udp", "8.8.8.8:443", tlsConfig, &quic.Config{})
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if sess != nil {
+		t.Fatal("expected nil session here")
+	}
+	if tlsConfig.RootCAs != nil {
+		t.Fatal("tlsConfig.RootCAs should not have been changed")
+	}
+	if gotTLSConfig.RootCAs != defaultCertPool {
+		t.Fatal("invalid gotTLSConfig.RootCAs")
+	}
+	if tlsConfig.NextProtos != nil {
+		t.Fatal("tlsConfig.NextProtos should not have been changed")
+	}
+	if diff := cmp.Diff(gotTLSConfig.NextProtos, []string{"h3"}); diff != "" {
+		t.Fatal("invalid gotTLSConfig.NextProtos", diff)
+	}
+	if tlsConfig.ServerName != gotTLSConfig.ServerName {
+		t.Fatal("the ServerName field must match")
+	}
+}
+
+func TestQUICDialerQUICGoTLSDefaultsForDoQ(t *testing.T) {
+	expected := errors.New("mocked error")
+	var gotTLSConfig *tls.Config
+	tlsConfig := &tls.Config{
+		ServerName: "dns.google",
+	}
+	systemdialer := QUICDialerQUICGo{
+		QUICListener: &QUICListenerStdlib{},
+		mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
+			remoteAddr net.Addr, host string, tlsConfig *tls.Config,
+			quicConfig *quic.Config) (quic.EarlySession, error) {
+			gotTLSConfig = tlsConfig
+			return nil, expected
+		},
+	}
+	ctx := context.Background()
+	sess, err := systemdialer.DialContext(
+		ctx, "udp", "8.8.8.8:8853", tlsConfig, &quic.Config{})
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if sess != nil {
+		t.Fatal("expected nil session here")
+	}
+	if tlsConfig.RootCAs != nil {
+		t.Fatal("tlsConfig.RootCAs should not have been changed")
+	}
+	if gotTLSConfig.RootCAs != defaultCertPool {
+		t.Fatal("invalid gotTLSConfig.RootCAs")
+	}
+	if tlsConfig.NextProtos != nil {
+		t.Fatal("tlsConfig.NextProtos should not have been changed")
+	}
+	if diff := cmp.Diff(gotTLSConfig.NextProtos, []string{"dq"}); diff != "" {
+		t.Fatal("invalid gotTLSConfig.NextProtos", diff)
+	}
+	if tlsConfig.ServerName != gotTLSConfig.ServerName {
+		t.Fatal("the ServerName field must match")
+	}
+}
+
 func TestQUICDialerResolverSuccess(t *testing.T) {
-	tlsConfig := &tls.Config{NextProtos: []string{"h3"}}
+	tlsConfig := &tls.Config{}
 	dialer := &QUICDialerResolver{
 		Resolver: &net.Resolver{}, Dialer: &QUICDialerQUICGo{
 			QUICListener: &QUICListenerStdlib{},
@@ -153,7 +230,7 @@ func TestQUICDialerResolverSuccess(t *testing.T) {
 }
 
 func TestQUICDialerResolverNoPort(t *testing.T) {
-	tlsConfig := &tls.Config{NextProtos: []string{"h3"}}
+	tlsConfig := &tls.Config{}
 	dialer := &QUICDialerResolver{
 		Resolver: new(net.Resolver), Dialer: &QUICDialerQUICGo{}}
 	sess, err := dialer.DialContext(
@@ -185,7 +262,7 @@ func TestQUICDialerResolverLookupHostAddress(t *testing.T) {
 }
 
 func TestQUICDialerResolverLookupHostFailure(t *testing.T) {
-	tlsConfig := &tls.Config{NextProtos: []string{"h3"}}
+	tlsConfig := &tls.Config{}
 	expected := errors.New("mocked error")
 	dialer := &QUICDialerResolver{Resolver: &netxmocks.Resolver{
 		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
@@ -206,7 +283,7 @@ func TestQUICDialerResolverLookupHostFailure(t *testing.T) {
 func TestQUICDialerResolverInvalidPort(t *testing.T) {
 	// This test allows us to check for the case where every attempt
 	// to establish a connection leads to a failure
-	tlsConf := &tls.Config{NextProtos: []string{"h3"}}
+	tlsConf := &tls.Config{}
 	dialer := &QUICDialerResolver{
 		Resolver: new(net.Resolver), Dialer: &QUICDialerQUICGo{
 			QUICListener: &QUICListenerStdlib{},
@@ -223,5 +300,34 @@ func TestQUICDialerResolverInvalidPort(t *testing.T) {
 	}
 	if sess != nil {
 		t.Fatal("expected nil sess")
+	}
+}
+
+func TestQUICDialerResolverApplyTLSDefaults(t *testing.T) {
+	expected := errors.New("mocked error")
+	var gotTLSConfig *tls.Config
+	tlsConfig := &tls.Config{}
+	dialer := &QUICDialerResolver{
+		Resolver: new(net.Resolver), Dialer: &netxmocks.QUICContextDialer{
+			MockDialContext: func(ctx context.Context, network, address string,
+				tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+				gotTLSConfig = tlsConfig
+				return nil, expected
+			},
+		}}
+	sess, err := dialer.DialContext(
+		context.Background(), "udp", "www.google.com:443",
+		tlsConfig, &quic.Config{})
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if sess != nil {
+		t.Fatal("expected nil session here")
+	}
+	if tlsConfig.ServerName != "" {
+		t.Fatal("should not have changed tlsConfig.ServerName")
+	}
+	if gotTLSConfig.ServerName != "www.google.com" {
+		t.Fatal("gotTLSConfig.ServerName has not been set")
 	}
 }

@@ -16,17 +16,33 @@ type TLSHandshaker interface {
 		net.Conn, tls.ConnectionState, error)
 }
 
-// TLSHandshakerStdlib is the stdlib's TLS handshaker.
-type TLSHandshakerStdlib struct {
-	// Timeout is the timeout imposed on the TLS handshake. If zero
+// TLSHandshakerConfigurable is a configurable TLS handshaker that
+// uses by default the standard library's TLS implementation.
+type TLSHandshakerConfigurable struct {
+	// NewConn is the OPTIONAL factory for creating a new connection. If
+	// this factory is not set, we'll use the stdlib.
+	NewConn func(conn net.Conn, config *tls.Config) TLSConn
+
+	// Timeout is the OPTIONAL timeout imposed on the TLS handshake. If zero
 	// or negative, we will use default timeout of 10 seconds.
 	Timeout time.Duration
 }
 
-var _ TLSHandshaker = &TLSHandshakerStdlib{}
+var _ TLSHandshaker = &TLSHandshakerConfigurable{}
 
-// Handshake implements Handshaker.Handshake
-func (h *TLSHandshakerStdlib) Handshake(
+// defaultCertPool is the cert pool we use by default. We store this
+// value into a private variable to enable for unit testing.
+var defaultCertPool = NewDefaultCertPool()
+
+// Handshake implements Handshaker.Handshake. This function will
+// configure the code to use the built-in Mozilla CA if the config
+// field contains a nil RootCAs field.
+//
+// Bug
+//
+// Until Go 1.17 is released, this function will not honour
+// the context. We'll however always enforce an overall timeout.
+func (h *TLSHandshakerConfigurable) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {
 	timeout := h.Timeout
@@ -35,15 +51,27 @@ func (h *TLSHandshakerStdlib) Handshake(
 	}
 	defer conn.SetDeadline(time.Time{})
 	conn.SetDeadline(time.Now().Add(timeout))
-	tlsconn := tls.Client(conn, config)
+	if config.RootCAs == nil {
+		config = config.Clone()
+		config.RootCAs = defaultCertPool
+	}
+	tlsconn := h.newConn(conn, config)
 	if err := tlsconn.Handshake(); err != nil {
 		return nil, tls.ConnectionState{}, err
 	}
 	return tlsconn, tlsconn.ConnectionState(), nil
 }
 
+// newConn creates a new TLSConn.
+func (h *TLSHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) TLSConn {
+	if h.NewConn != nil {
+		return h.NewConn(conn, config)
+	}
+	return tls.Client(conn, config)
+}
+
 // DefaultTLSHandshaker is the default TLS handshaker.
-var DefaultTLSHandshaker = &TLSHandshakerStdlib{}
+var DefaultTLSHandshaker = &TLSHandshakerConfigurable{}
 
 // TLSHandshakerLogger is a TLSHandshaker with logging.
 type TLSHandshakerLogger struct {

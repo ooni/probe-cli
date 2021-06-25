@@ -10,7 +10,7 @@ import (
 	"github.com/lucas-clemente/quic-go"
 )
 
-// QUICDialerContext is a dialer for QUIC using Context.
+// QUICContextDialer is a dialer for QUIC using Context.
 type QUICContextDialer interface {
 	// DialContext establishes a new QUIC session using the given
 	// network and address. The tlsConfig and the quicConfig arguments
@@ -39,6 +39,11 @@ func (qls *QUICListenerStdlib) Listen(addr *net.UDPAddr) (net.PacketConn, error)
 type QUICDialerQUICGo struct {
 	// QUICListener is the underlying QUICListener to use.
 	QUICListener QUICListener
+
+	// mockDialEarlyContext allows to mock quic.DialEarlyContext.
+	mockDialEarlyContext func(ctx context.Context, pconn net.PacketConn,
+		remoteAddr net.Addr, host string, tlsConfig *tls.Config,
+		quicConfig *quic.Config) (quic.EarlySession, error)
 }
 
 var _ QUICContextDialer = &QUICDialerQUICGo{}
@@ -46,7 +51,14 @@ var _ QUICContextDialer = &QUICDialerQUICGo{}
 // errInvalidIP indicates that a string is not a valid IP.
 var errInvalidIP = errors.New("netxlite: invalid IP")
 
-// DialContext implements ContextDialer.DialContext
+// DialContext implements ContextDialer.DialContext. This function will
+// apply the following TLS defaults:
+//
+// 1. if tlsConfig.RootCAs is nil, we use the Mozilla CA that we
+// bundle with this measurement library;
+//
+// 2. if tlsConfig.NextProtos is empty _and_ the port is 443 or 8853,
+// then we configure, respectively, "h3" and "dq".
 func (d *QUICDialerQUICGo) DialContext(ctx context.Context, network string,
 	address string, tlsConfig *tls.Config, quicConfig *quic.Config) (
 	quic.EarlySession, error) {
@@ -67,12 +79,43 @@ func (d *QUICDialerQUICGo) DialContext(ctx context.Context, network string,
 		return nil, err
 	}
 	udpAddr := &net.UDPAddr{IP: ip, Port: port, Zone: ""}
-	sess, err := quic.DialEarlyContext(
+	tlsConfig = d.maybeApplyTLSDefaults(tlsConfig, port)
+	sess, err := d.dialEarlyContext(
 		ctx, pconn, udpAddr, address, tlsConfig, quicConfig)
 	if err != nil {
 		return nil, err
 	}
 	return &quicSessionOwnsConn{EarlySession: sess, conn: pconn}, nil
+}
+
+func (d *QUICDialerQUICGo) dialEarlyContext(ctx context.Context,
+	pconn net.PacketConn, remoteAddr net.Addr, address string,
+	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+	if d.mockDialEarlyContext != nil {
+		return d.mockDialEarlyContext(
+			ctx, pconn, remoteAddr, address, tlsConfig, quicConfig)
+	}
+	return quic.DialEarlyContext(
+		ctx, pconn, remoteAddr, address, tlsConfig, quicConfig)
+}
+
+// maybeApplyTLSDefaults ensures that we're using our certificate pool, if
+// needed, and that we use a suitable ALPN, if needed, for h3 and dq.
+func (d *QUICDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *tls.Config {
+	config = config.Clone()
+	if config.RootCAs == nil {
+		config.RootCAs = defaultCertPool
+	}
+	if len(config.NextProtos) <= 0 {
+		switch port {
+		case 443:
+			config.NextProtos = []string{"h3"}
+		case 8853:
+			// See https://datatracker.ietf.org/doc/html/draft-ietf-dprive-dnsoquic-02#section-10
+			config.NextProtos = []string{"dq"}
+		}
+	}
+	return config
 }
 
 // quicSessionOwnsConn ensures that we close the PacketConn.
@@ -102,7 +145,11 @@ type QUICDialerResolver struct {
 	Resolver Resolver
 }
 
-// DialContext implements QUICContextDialer.DialContext
+// DialContext implements QUICContextDialer.DialContext. This function
+// will apply the following TLS defaults:
+//
+// 1. if tlsConfig.ServerName is empty, we will use the hostname
+// contained inside of the `address` endpoint.
 func (d *QUICDialerResolver) DialContext(
 	ctx context.Context, network, address string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
@@ -110,15 +157,11 @@ func (d *QUICDialerResolver) DialContext(
 	if err != nil {
 		return nil, err
 	}
-	// TODO(kelmenhorst): Should this be somewhere else?
-	// failure if tlsCfg is nil but that should not happen
-	if tlsConfig.ServerName == "" {
-		tlsConfig.ServerName = onlyhost
-	}
 	addrs, err := d.lookupHost(ctx, onlyhost)
 	if err != nil {
 		return nil, err
 	}
+	tlsConfig = d.maybeApplyTLSDefaults(tlsConfig, onlyhost)
 	// TODO(bassosimone): here we should be using multierror rather
 	// than just calling ReduceErrors. We are not ready to do that
 	// yet, though. To do that, we need first to modify nettests so
@@ -134,6 +177,15 @@ func (d *QUICDialerResolver) DialContext(
 		errorslist = append(errorslist, err)
 	}
 	return nil, reduceErrors(errorslist)
+}
+
+// maybeApplyTLSDefaults sets the SNI if it's not already configured.
+func (d *QUICDialerResolver) maybeApplyTLSDefaults(config *tls.Config, host string) *tls.Config {
+	config = config.Clone()
+	if config.ServerName == "" {
+		config.ServerName = host
+	}
+	return config
 }
 
 // lookupHost performs a domain name resolution.
