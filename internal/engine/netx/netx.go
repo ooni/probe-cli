@@ -160,7 +160,16 @@ func NewQUICDialer(config Config) QUICDialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	var d quicdialer.ContextDialer = &quicdialer.SystemDialer{Saver: config.ReadWriteSaver}
+	var ql quicdialer.QUICListener = &quicdialer.QUICListenerStdlib{}
+	if config.ReadWriteSaver != nil {
+		ql = &quicdialer.QUICListenerSaver{
+			QUICListener: ql,
+			Saver:        config.ReadWriteSaver,
+		}
+	}
+	var d quicdialer.ContextDialer = &quicdialer.SystemDialer{
+		QUICListener: ql,
+	}
 	d = quicdialer.ErrorWrapperDialer{Dialer: d}
 	if config.TLSSaver != nil {
 		d = quicdialer.HandshakeSaver{Saver: config.TLSSaver, Dialer: d}
