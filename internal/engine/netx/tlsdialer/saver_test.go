@@ -22,7 +22,7 @@ func TestSaverTLSHandshakerSuccessWithReadWrite(t *testing.T) {
 	}
 	nextprotos := []string{"h2"}
 	saver := &trace.Saver{}
-	tlsdlr := tlsdialer.TLSDialer{
+	tlsdlr := &netxlite.TLSDialer{
 		Config: &tls.Config{NextProtos: nextprotos},
 		Dialer: dialer.New(&dialer.Config{ReadWriteSaver: saver}, &net.Resolver{}),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
@@ -115,7 +115,7 @@ func TestSaverTLSHandshakerSuccess(t *testing.T) {
 	}
 	nextprotos := []string{"h2"}
 	saver := &trace.Saver{}
-	tlsdlr := tlsdialer.TLSDialer{
+	tlsdlr := &netxlite.TLSDialer{
 		Config: &tls.Config{NextProtos: nextprotos},
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
@@ -181,7 +181,7 @@ func TestSaverTLSHandshakerHostnameError(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	saver := &trace.Saver{}
-	tlsdlr := tlsdialer.TLSDialer{
+	tlsdlr := &netxlite.TLSDialer{
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
@@ -214,7 +214,7 @@ func TestSaverTLSHandshakerInvalidCertError(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	saver := &trace.Saver{}
-	tlsdlr := tlsdialer.TLSDialer{
+	tlsdlr := &netxlite.TLSDialer{
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
@@ -247,7 +247,7 @@ func TestSaverTLSHandshakerAuthorityError(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	saver := &trace.Saver{}
-	tlsdlr := tlsdialer.TLSDialer{
+	tlsdlr := &netxlite.TLSDialer{
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
@@ -280,7 +280,7 @@ func TestSaverTLSHandshakerNoTLSVerify(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	saver := &trace.Saver{}
-	tlsdlr := tlsdialer.TLSDialer{
+	tlsdlr := &netxlite.TLSDialer{
 		Config: &tls.Config{InsecureSkipVerify: true},
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
