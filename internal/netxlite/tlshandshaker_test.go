@@ -17,9 +17,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxmocks"
 )
 
-func TestTLSHandshakerStdlibWithError(t *testing.T) {
+func TestTLSHandshakerConfigurableWithError(t *testing.T) {
 	var times []time.Time
-	h := &TLSHandshakerStdlib{}
+	h := &TLSHandshakerConfigurable{}
 	tcpConn := &netxmocks.Conn{
 		MockWrite: func(b []byte) (int, error) {
 			return 0, io.EOF
@@ -50,7 +50,7 @@ func TestTLSHandshakerStdlibWithError(t *testing.T) {
 	}
 }
 
-func TestTLSHandshakerStdlibSuccess(t *testing.T) {
+func TestTLSHandshakerConfigurableSuccess(t *testing.T) {
 	handler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(200)
 	})
@@ -65,7 +65,7 @@ func TestTLSHandshakerStdlibSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer conn.Close()
-	handshaker := &TLSHandshakerStdlib{}
+	handshaker := &TLSHandshakerConfigurable{}
 	ctx := context.Background()
 	config := &tls.Config{
 		InsecureSkipVerify: true,
@@ -80,6 +80,44 @@ func TestTLSHandshakerStdlibSuccess(t *testing.T) {
 	defer tlsConn.Close()
 	if connState.Version != tls.VersionTLS13 {
 		t.Fatal("unexpected TLS version")
+	}
+}
+
+func TestTLSHandshakerConfigurableSetsDefaultRootCAs(t *testing.T) {
+	expected := errors.New("mocked error")
+	var gotTLSConfig *tls.Config
+	handshaker := &TLSHandshakerConfigurable{
+		NewConn: func(conn net.Conn, config *tls.Config) TLSConn {
+			gotTLSConfig = config
+			return &netxmocks.TLSConn{
+				MockHandshake: func() error {
+					return expected
+				},
+			}
+		},
+	}
+	ctx := context.Background()
+	config := &tls.Config{}
+	conn := &netxmocks.Conn{
+		MockSetDeadline: func(t time.Time) error {
+			return nil
+		},
+	}
+	tlsConn, connState, err := handshaker.Handshake(ctx, conn, config)
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if !reflect.ValueOf(connState).IsZero() {
+		t.Fatal("expected zero connState here")
+	}
+	if tlsConn != nil {
+		t.Fatal("expected nil tlsConn here")
+	}
+	if config.RootCAs != nil {
+		t.Fatal("config.RootCAs should still be nil")
+	}
+	if gotTLSConfig.RootCAs != defaultCertPool {
+		t.Fatal("gotTLSConfig.RootCAs has not been correctly set")
 	}
 }
 

@@ -3,7 +3,6 @@ package netxlite
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"io"
 	"net"
@@ -54,7 +53,7 @@ func TestTLSDialerFailureHandshaking(t *testing.T) {
 				return nil
 			}}, nil
 		}},
-		TLSHandshaker: &TLSHandshakerStdlib{},
+		TLSHandshaker: &TLSHandshakerConfigurable{},
 	}
 	conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
 	if !errors.Is(err, io.EOF) {
@@ -99,9 +98,6 @@ func TestTLSDialerConfigFromEmptyConfigForWeb(t *testing.T) {
 	if config.ServerName != "www.google.com" {
 		t.Fatal("invalid server name")
 	}
-	if config.RootCAs == nil {
-		t.Fatal("expected non-nil root CAs")
-	}
 	if diff := cmp.Diff(config.NextProtos, []string{"h2", "http/1.1"}); diff != "" {
 		t.Fatal(diff)
 	}
@@ -112,9 +108,6 @@ func TestTLSDialerConfigFromEmptyConfigForDoT(t *testing.T) {
 	config := d.config("dns.google", "853")
 	if config.ServerName != "dns.google" {
 		t.Fatal("invalid server name")
-	}
-	if config.RootCAs == nil {
-		t.Fatal("expected non-nil root CAs")
 	}
 	if diff := cmp.Diff(config.NextProtos, []string{"dot"}); diff != "" {
 		t.Fatal(diff)
@@ -131,9 +124,6 @@ func TestTLSDialerConfigWithServerName(t *testing.T) {
 	if config.ServerName != "example.com" {
 		t.Fatal("invalid server name")
 	}
-	if config.RootCAs == nil {
-		t.Fatal("expected non-nil root CAs")
-	}
 	if diff := cmp.Diff(config.NextProtos, []string{"dot"}); diff != "" {
 		t.Fatal(diff)
 	}
@@ -149,29 +139,7 @@ func TestTLSDialerConfigWithALPN(t *testing.T) {
 	if config.ServerName != "dns.google" {
 		t.Fatal("invalid server name")
 	}
-	if config.RootCAs == nil {
-		t.Fatal("expected non-nil root CAs")
-	}
 	if diff := cmp.Diff(config.NextProtos, []string{"h2"}); diff != "" {
-		t.Fatal(diff)
-	}
-}
-
-func TestTLSDialerConfigWithRootCA(t *testing.T) {
-	pool := &x509.CertPool{}
-	d := &TLSDialer{
-		Config: &tls.Config{
-			RootCAs: pool,
-		},
-	}
-	config := d.config("dns.google", "853")
-	if config.ServerName != "dns.google" {
-		t.Fatal("invalid server name")
-	}
-	if config.RootCAs != pool {
-		t.Fatal("not the RootCAs we expected")
-	}
-	if diff := cmp.Diff(config.NextProtos, []string{"dot"}); diff != "" {
 		t.Fatal(diff)
 	}
 }

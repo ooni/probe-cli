@@ -26,7 +26,7 @@ func TestSaverTLSHandshakerSuccessWithReadWrite(t *testing.T) {
 		Config: &tls.Config{NextProtos: nextprotos},
 		Dialer: dialer.New(&dialer.Config{ReadWriteSaver: saver}, &net.Resolver{}),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
-			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
+			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,
 		},
 	}
@@ -119,7 +119,7 @@ func TestSaverTLSHandshakerSuccess(t *testing.T) {
 		Config: &tls.Config{NextProtos: nextprotos},
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
-			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
+			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,
 		},
 	}
@@ -184,7 +184,7 @@ func TestSaverTLSHandshakerHostnameError(t *testing.T) {
 	tlsdlr := &netxlite.TLSDialer{
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
-			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
+			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,
 		},
 	}
@@ -217,7 +217,7 @@ func TestSaverTLSHandshakerInvalidCertError(t *testing.T) {
 	tlsdlr := &netxlite.TLSDialer{
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
-			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
+			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,
 		},
 	}
@@ -250,7 +250,7 @@ func TestSaverTLSHandshakerAuthorityError(t *testing.T) {
 	tlsdlr := &netxlite.TLSDialer{
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
-			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
+			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,
 		},
 	}
@@ -284,7 +284,7 @@ func TestSaverTLSHandshakerNoTLSVerify(t *testing.T) {
 		Config: &tls.Config{InsecureSkipVerify: true},
 		Dialer: new(net.Dialer),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
-			TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
+			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,
 		},
 	}

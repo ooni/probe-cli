@@ -16,7 +16,7 @@ import (
 )
 
 func TestSystemTLSHandshakerEOFError(t *testing.T) {
-	h := &netxlite.TLSHandshakerStdlib{}
+	h := &netxlite.TLSHandshakerConfigurable{}
 	conn, _, err := h.Handshake(context.Background(), tlsdialer.EOFConn{}, &tls.Config{
 		ServerName: "x.org",
 	})

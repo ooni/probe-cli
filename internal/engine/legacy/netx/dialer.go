@@ -108,7 +108,7 @@ func newTLSDialer(d dialer.Dialer, config *tls.Config) *netxlite.TLSDialer {
 		Dialer: d,
 		TLSHandshaker: tlsdialer.EmitterTLSHandshaker{
 			TLSHandshaker: tlsdialer.ErrorWrapperTLSHandshaker{
-				TLSHandshaker: &netxlite.TLSHandshakerStdlib{},
+				TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			},
 		},
 	}
