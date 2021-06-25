@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"golang.org/x/net/http2"
 )
 
@@ -31,21 +30,21 @@ func NewSystemTransport(config Config) RoundTripper {
 	return newTransport(txp, config)
 }
 
-func newTransport(txp *http.Transport, config Config) RoundTripper {
-	return &roundTripper{underlyingTransport: txp, config: config}
-}
-
 var _ RoundTripper = &http.Transport{}
 
-// TODO(kelmenhorst): restructure and make this code modular
+func newTransport(txp *http.Transport, config Config) RoundTripper {
+	return &roundTripper{underlyingTransport: txp, tlsdialer: config.TLSDialer, tlsconfig: config.TLSConfig}
+}
+
+// roundTripper is a wrapper around the system transport
 type roundTripper struct {
 	sync.Mutex
-	underlyingTransport *http.Transport
-	transport           http.RoundTripper
-	config              Config
 	ctx                 context.Context
-	initConn            net.Conn
 	scheme              string
+	tlsconfig           *tls.Config
+	tlsdialer           TLSDialer
+	transport           RoundTripper // this will be either http.Transport or http2.Transport
+	underlyingTransport *http.Transport
 }
 
 func (rt *roundTripper) CloseIdleConnections() {
@@ -57,12 +56,15 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		rt.transport = nil
 	}
 	if rt.transport == nil {
+		// determine transport type to use for this Roundtrip
 		if err := rt.getTransport(req); err != nil {
 			return nil, err
 		}
 	}
 	return rt.transport.RoundTrip(req)
 }
+
+var errTransportCreated = errors.New("used ALPN to determine transport type")
 
 func (rt *roundTripper) getTransport(req *http.Request) error {
 	rt.scheme = strings.ToLower(req.URL.Scheme)
@@ -77,83 +79,71 @@ func (rt *roundTripper) getTransport(req *http.Request) error {
 	ctx := req.Context()
 	_, err := rt.dialTLSContext(ctx, "tcp", getDialTLSAddr(req.URL))
 	switch err {
-	case errAbort:
+	case errTransportCreated: // intended behavior
+		return nil
 	case nil:
 		return errors.New("dialTLS returned no error when determining transport")
 	default:
 		return err
 	}
-	return nil
 }
 
-var errAbort = errors.New("protocol negotiated")
-
 func (rt *roundTripper) dialTLSContext(ctx context.Context, network, addr string) (net.Conn, error) {
-	// Unlike rt.transport, this is protected by a critical section
-	// since past the initial manual call from getTransport, the HTTP
-	// client will be the caller.
-	rt.Lock()
+	rt.Lock() // we are updating state
 	defer rt.Unlock()
 
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		return nil, err
 	}
-	tlsdial := rt.config.TLSDialer.(tlsdialer.TLSDialer)
-	var conn net.Conn
 	if rt.transport != nil {
-		return tlsdial.DialTLSContext(ctx, network, addr)
+		// transport is already determined: use standard DialTLSContext
+		return rt.tlsdialer.DialTLSContext(ctx, network, addr)
 	}
-	conn, err = net.Dial(network, addr)
+	// connect
+	conn, err := net.Dial(network, addr)
+	if err != nil {
+		return nil, err
+	}
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	default:
 	}
-	if err != nil {
-		return nil, err
+	// set TLS config
+	cfg := rt.tlsconfig
+	if cfg == nil {
+		cfg = new(tls.Config)
 	}
-	tlsconfig := rt.config.TLSConfig
-	if tlsconfig == nil {
-		tlsconfig = new(tls.Config)
-	} else {
-		tlsconfig = tlsconfig.Clone()
+	if cfg.ServerName == "" {
+		cfg.ServerName = host
 	}
-	if tlsconfig.ServerName == "" {
-		tlsconfig.ServerName = host
-	}
-	tlsconn := tls.Client(conn, tlsconfig)
+	// TLS handshake
+	tlsconn := tls.Client(conn, cfg)
 	err = tlsconn.Handshake()
 	if err != nil {
 		conn.Close()
 		return nil, err
 	}
-	if rt.transport != nil {
-		return tlsconn, nil
-	}
-	state := tlsconn.ConnectionState()
-
-	// No http.Transport constructed yet, create one based on the results
-	// of ALPN.
-	switch state.NegotiatedProtocol {
+	// use ALPN to decide which Transport to use
+	switch tlsconn.ConnectionState().NegotiatedProtocol {
 	case "http/1.1":
-		rt.ctx = ctx
-		rt.transport = &http.Transport{DialTLSContext: rt.dialTLSContext}
-		// The remote peer is speaking HTTP 1.x + TLS.
+		// HTTP 1.x + TLS.
+		rt.transport = rt.underlyingTransport
 	default:
-		// Assume the remote peer is speaking HTTP 2 + TLS.
-		rt.ctx = ctx
-		rt.transport = &http2.Transport{DialTLS: rt.dialTLSHTTP2}
+		// assume HTTP 2 + TLS.
+		rt.ctx = ctx // there is no DialTLSContext in http2.Transport so we have to remember it in roundTripper
+		rt.transport = &http2.Transport{
+			DialTLS:            rt.dialTLSHTTP2,
+			DisableCompression: rt.underlyingTransport.DisableCompression,
+		}
 	}
-
-	// Stash the connection just established for use servicing the
-	// actual request (should be near-immediate).
-	rt.initConn = tlsconn
-
-	return nil, errAbort
+	return nil, errTransportCreated
 }
 
+// dialTLSHTTP2 fits the signature of http2.Transport.DialTLS
 func (rt *roundTripper) dialTLSHTTP2(network, addr string, cfg *tls.Config) (net.Conn, error) {
+	rt.tlsconfig = cfg
 	return rt.dialTLSContext(rt.ctx, network, addr)
 }
 
@@ -162,6 +152,5 @@ func getDialTLSAddr(u *url.URL) string {
 	if err == nil {
 		return net.JoinHostPort(host, port)
 	}
-
 	return net.JoinHostPort(u.Host, u.Scheme)
 }
