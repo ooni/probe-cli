@@ -191,7 +191,7 @@ func NewTLSDialer(config Config) TLSDialer {
 	}
 	config.TLSConfig.RootCAs = config.CertPool
 	config.TLSConfig.InsecureSkipVerify = config.NoTLSVerify
-	return tlsdialer.TLSDialer{
+	return &netxlite.TLSDialer{
 		Config:        config.TLSConfig,
 		Dialer:        config.Dialer,
 		TLSHandshaker: h,
