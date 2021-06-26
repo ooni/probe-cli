@@ -491,14 +491,14 @@ func TestNewWithLogger(t *testing.T) {
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
-	ltxp, ok := uatxp.RoundTripper.(httptransport.LoggingTransport)
+	ltxp, ok := uatxp.RoundTripper.(*netxlite.HTTPTransportLogger)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
 	if ltxp.Logger != log.Log {
 		t.Fatal("not the logger we expected")
 	}
-	if _, ok := ltxp.RoundTripper.(*http.Transport); !ok {
+	if _, ok := ltxp.HTTPTransport.(*http.Transport); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
