@@ -145,6 +145,8 @@ type QUICDialerResolver struct {
 	Resolver Resolver
 }
 
+var _ QUICContextDialer = &QUICDialerResolver{}
+
 // DialContext implements QUICContextDialer.DialContext. This function
 // will apply the following TLS defaults:
 //
@@ -194,4 +196,29 @@ func (d *QUICDialerResolver) lookupHost(ctx context.Context, hostname string) ([
 		return []string{hostname}, nil
 	}
 	return d.Resolver.LookupHost(ctx, hostname)
+}
+
+// QUICDialerLogger is a dialer with logging.
+type QUICDialerLogger struct {
+	// Dialer is the underlying QUIC dialer.
+	Dialer QUICContextDialer
+
+	// Logger is the underlying logger.
+	Logger Logger
+}
+
+var _ QUICContextDialer = &QUICDialerLogger{}
+
+// DialContext implements QUICContextDialer.DialContext.
+func (d *QUICDialerLogger) DialContext(
+	ctx context.Context, network, address string,
+	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+	d.Logger.Debugf("quic %s/%s...", address, network)
+	sess, err := d.Dialer.DialContext(ctx, network, address, tlsConfig, quicConfig)
+	if err != nil {
+		d.Logger.Debugf("quic %s/%s... %s", address, network, err)
+		return nil, err
+	}
+	d.Logger.Debugf("quic %s/%s... ok", address, network)
+	return sess, nil
 }
