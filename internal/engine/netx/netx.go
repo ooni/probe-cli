@@ -54,7 +54,7 @@ type Dialer interface {
 
 // QUICDialer is the definition of a dialer for QUIC assumed by this package.
 type QUICDialer interface {
-	Dial(network, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error)
+	DialContext(ctx context.Context, network, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error)
 }
 
 // TLSDialer is the definition of a TLS dialer assumed by this package.
@@ -175,8 +175,7 @@ func NewQUICDialer(config Config) QUICDialer {
 		d = quicdialer.HandshakeSaver{Saver: config.TLSSaver, Dialer: d}
 	}
 	d = &netxlite.QUICDialerResolver{Resolver: config.FullResolver, Dialer: d}
-	var dialer QUICDialer = &httptransport.QUICWrapperDialer{Dialer: d}
-	return dialer
+	return d
 }
 
 // NewTLSDialer creates a new TLSDialer from the specified config
