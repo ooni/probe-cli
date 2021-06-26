@@ -231,7 +231,7 @@ func NewHTTPTransport(config Config) HTTPRoundTripper {
 			Counter: config.ByteCounter, RoundTripper: txp}
 	}
 	if config.Logger != nil {
-		txp = httptransport.LoggingTransport{Logger: config.Logger, RoundTripper: txp}
+		txp = &netxlite.HTTPTransportLogger{Logger: config.Logger, HTTPTransport: txp}
 	}
 	if config.HTTPSaver != nil {
 		txp = httptransport.SaverMetadataHTTPTransport{
