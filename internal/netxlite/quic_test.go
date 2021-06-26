@@ -4,11 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"log"
 	"net"
 	"strings"
 	"testing"
 
+	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/netxmocks"
@@ -125,7 +125,7 @@ func TestQUICDialerQUICGoWorksAsIntended(t *testing.T) {
 	}
 	<-sess.HandshakeComplete().Done()
 	if err := sess.CloseWithError(0, ""); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 }
 
@@ -329,5 +329,57 @@ func TestQUICDialerResolverApplyTLSDefaults(t *testing.T) {
 	}
 	if gotTLSConfig.ServerName != "www.google.com" {
 		t.Fatal("gotTLSConfig.ServerName has not been set")
+	}
+}
+
+func TestQUICDialerLoggerSuccess(t *testing.T) {
+	d := &QUICDialerLogger{
+		Dialer: &netxmocks.QUICContextDialer{
+			MockDialContext: func(ctx context.Context, network string,
+				address string, tlsConfig *tls.Config,
+				quicConfig *quic.Config) (quic.EarlySession, error) {
+				return &netxmocks.QUICEarlySession{
+					MockCloseWithError: func(
+						code quic.ApplicationErrorCode, reason string) error {
+						return nil
+					},
+				}, nil
+			},
+		},
+		Logger: log.Log,
+	}
+	ctx := context.Background()
+	tlsConfig := &tls.Config{}
+	quicConfig := &quic.Config{}
+	sess, err := d.DialContext(ctx, "udp", "8.8.8.8:443", tlsConfig, quicConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := sess.CloseWithError(0, ""); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestQUICDialerLoggerFailure(t *testing.T) {
+	expected := errors.New("mocked error")
+	d := &QUICDialerLogger{
+		Dialer: &netxmocks.QUICContextDialer{
+			MockDialContext: func(ctx context.Context, network string,
+				address string, tlsConfig *tls.Config,
+				quicConfig *quic.Config) (quic.EarlySession, error) {
+				return nil, expected
+			},
+		},
+		Logger: log.Log,
+	}
+	ctx := context.Background()
+	tlsConfig := &tls.Config{}
+	quicConfig := &quic.Config{}
+	sess, err := d.DialContext(ctx, "udp", "8.8.8.8:443", tlsConfig, quicConfig)
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if sess != nil {
+		t.Fatal("expected nil session")
 	}
 }
