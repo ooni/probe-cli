@@ -8,13 +8,13 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestErrorWrapperFailure(t *testing.T) {
-	ctx := dialid.WithDialID(context.Background())
+	ctx := context.Background()
 	d := quicdialer.ErrorWrapperDialer{
 		Dialer: MockDialer{Sess: nil, Err: io.EOF}}
 	sess, err := d.DialContext(
@@ -33,9 +33,6 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 	if !errors.As(err, &errWrapper) {
 		t.Fatal("cannot cast to ErrWrapper")
 	}
-	if errWrapper.DialID == 0 {
-		t.Fatal("unexpected DialID")
-	}
 	if errWrapper.Operation != op {
 		t.Fatal("unexpected Operation")
 	}
@@ -44,13 +41,40 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 	}
 }
 
+func TestErrorWrapperInvalidCertificate(t *testing.T) {
+	nextprotos := []string{"h3"}
+	servername := "example.com"
+	tlsConf := &tls.Config{
+		NextProtos: nextprotos,
+		ServerName: servername,
+	}
+
+	dlr := quicdialer.ErrorWrapperDialer{Dialer: &netxlite.QUICDialerQUICGo{
+		QUICListener: &netxlite.QUICListenerStdlib{},
+	}}
+	// use Google IP
+	sess, err := dlr.DialContext(context.Background(), "udp",
+		"216.58.212.164:443", tlsConf, &quic.Config{})
+	if err == nil {
+		t.Fatal("expected an error here")
+	}
+	if sess != nil {
+		t.Fatal("expected nil sess here")
+	}
+	if err.Error() != errorx.FailureSSLInvalidCertificate {
+		t.Fatal("unexpected failure")
+	}
+}
+
 func TestErrorWrapperSuccess(t *testing.T) {
-	ctx := dialid.WithDialID(context.Background())
+	ctx := context.Background()
 	tlsConf := &tls.Config{
 		NextProtos: []string{"h3"},
 		ServerName: "www.google.com",
 	}
-	d := quicdialer.ErrorWrapperDialer{Dialer: quicdialer.SystemDialer{}}
+	d := quicdialer.ErrorWrapperDialer{Dialer: &netxlite.QUICDialerQUICGo{
+		QUICListener: &netxlite.QUICListenerStdlib{},
+	}}
 	sess, err := d.DialContext(ctx, "udp", "216.58.212.164:443", tlsConf, &quic.Config{})
 	if err != nil {
 		t.Fatal(err)

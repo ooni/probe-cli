@@ -8,13 +8,13 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
+	"github.com/ooni/probe-cli/v3/internal/netxmocks"
 )
 
 func TestProxyDialerDialContextNoProxyURL(t *testing.T) {
 	expected := errors.New("mocked error")
 	d := &proxyDialer{
-		Dialer: mockablex.Dialer{
+		Dialer: &netxmocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, expected
 			},
@@ -45,7 +45,7 @@ func TestProxyDialerDialContextInvalidScheme(t *testing.T) {
 func TestProxyDialerDialContextWithEOF(t *testing.T) {
 	const expect = "10.0.0.1:9050"
 	d := &proxyDialer{
-		Dialer: mockablex.Dialer{
+		Dialer: &netxmocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				if address != expect {
 					return nil, errors.New("unexpected address")

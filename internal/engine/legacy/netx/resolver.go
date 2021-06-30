@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 var (
@@ -158,7 +159,7 @@ func resolverWrapTransport(txp resolver.RoundTripper) resolver.EmitterResolver {
 }
 
 func newResolverSystem() resolver.EmitterResolver {
-	return resolverWrapResolver(resolver.SystemResolver{})
+	return resolverWrapResolver(&netxlite.ResolverSystem{})
 }
 
 func newResolverUDP(dialer resolver.Dialer, address string) resolver.EmitterResolver {

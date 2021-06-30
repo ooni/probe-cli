@@ -37,8 +37,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	utls "gitlab.com/yawning/utls.git"
 )
 
@@ -55,7 +55,7 @@ type Dialer interface {
 
 // QUICDialer is the definition of a dialer for QUIC assumed by this package.
 type QUICDialer interface {
-	Dial(network, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error)
+	DialContext(ctx context.Context, network, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error)
 }
 
 // TLSDialer is the definition of a TLS dialer assumed by this package.
@@ -111,12 +111,12 @@ type tlsHandshaker interface {
 		net.Conn, tls.ConnectionState, error)
 }
 
-var defaultCertPool *x509.CertPool = tlsx.NewDefaultCertPool()
+var defaultCertPool *x509.CertPool = netxlite.NewDefaultCertPool()
 
 // NewResolver creates a new resolver from the specified config
 func NewResolver(config Config) Resolver {
 	if config.BaseResolver == nil {
-		config.BaseResolver = resolver.SystemResolver{}
+		config.BaseResolver = &netxlite.ResolverSystem{}
 	}
 	var r Resolver = config.BaseResolver
 	r = resolver.AddressResolver{Resolver: r}
@@ -135,7 +135,7 @@ func NewResolver(config Config) Resolver {
 	}
 	r = resolver.ErrorWrapperResolver{Resolver: r}
 	if config.Logger != nil {
-		r = resolver.LoggingResolver{Logger: config.Logger, Resolver: r}
+		r = &netxlite.ResolverLogger{Logger: config.Logger, Resolver: r}
 	}
 	if config.ResolveSaver != nil {
 		r = resolver.SaverResolver{Resolver: r, Saver: config.ResolveSaver}
@@ -162,14 +162,22 @@ func NewQUICDialer(config Config) QUICDialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	var d quicdialer.ContextDialer = &quicdialer.SystemDialer{Saver: config.ReadWriteSaver}
+	var ql quicdialer.QUICListener = &netxlite.QUICListenerStdlib{}
+	if config.ReadWriteSaver != nil {
+		ql = &quicdialer.QUICListenerSaver{
+			QUICListener: ql,
+			Saver:        config.ReadWriteSaver,
+		}
+	}
+	var d quicdialer.ContextDialer = &netxlite.QUICDialerQUICGo{
+		QUICListener: ql,
+	}
 	d = quicdialer.ErrorWrapperDialer{Dialer: d}
 	if config.TLSSaver != nil {
 		d = quicdialer.HandshakeSaver{Saver: config.TLSSaver, Dialer: d}
 	}
-	d = &quicdialer.DNSDialer{Resolver: config.FullResolver, Dialer: d}
-	var dialer QUICDialer = &httptransport.QUICWrapperDialer{Dialer: d}
-	return dialer
+	d = &netxlite.QUICDialerResolver{Resolver: config.FullResolver, Dialer: d}
+	return d
 }
 
 // NewTLSDialer creates a new TLSDialer from the specified config
@@ -177,14 +185,13 @@ func NewTLSDialer(config Config) TLSDialer {
 	if config.Dialer == nil {
 		config.Dialer = NewDialer(config)
 	}
-	var h tlsHandshaker = tlsdialer.SystemTLSHandshaker{}
+	var h tlsHandshaker = &netxlite.TLSHandshakerConfigurable{}
 	if config.ClientHelloID != nil {
 		h = tlsdialer.UTLSHandshaker{TLSHandshaker: h, ClientHelloID: config.ClientHelloID}
 	}
-	h = tlsdialer.TimeoutTLSHandshaker{TLSHandshaker: h}
 	h = tlsdialer.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
 	if config.Logger != nil {
-		h = tlsdialer.LoggingTLSHandshaker{Logger: config.Logger, TLSHandshaker: h}
+		h = &netxlite.TLSHandshakerLogger{Logger: config.Logger, TLSHandshaker: h}
 	}
 	if config.TLSSaver != nil {
 		h = tlsdialer.SaverTLSHandshaker{TLSHandshaker: h, Saver: config.TLSSaver}
@@ -197,7 +204,7 @@ func NewTLSDialer(config Config) TLSDialer {
 	}
 	config.TLSConfig.RootCAs = config.CertPool
 	config.TLSConfig.InsecureSkipVerify = config.NoTLSVerify
-	return tlsdialer.TLSDialer{
+	return &netxlite.TLSDialer{
 		Config:        config.TLSConfig,
 		Dialer:        config.Dialer,
 		TLSHandshaker: h,
@@ -228,7 +235,7 @@ func NewHTTPTransport(config Config) HTTPRoundTripper {
 			Counter: config.ByteCounter, RoundTripper: txp}
 	}
 	if config.Logger != nil {
-		txp = httptransport.LoggingTransport{Logger: config.Logger, RoundTripper: txp}
+		txp = &netxlite.HTTPTransportLogger{Logger: config.Logger, HTTPTransport: txp}
 	}
 	if config.HTTPSaver != nil {
 		txp = httptransport.SaverMetadataHTTPTransport{
@@ -317,12 +324,12 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		return c, err
 	}
 	config.TLSConfig = &tls.Config{ServerName: SNIOverride}
-	if err := tlsx.ConfigureTLSVersion(config.TLSConfig, TLSVersion); err != nil {
+	if err := netxlite.ConfigureTLSVersion(config.TLSConfig, TLSVersion); err != nil {
 		return c, err
 	}
 	switch resolverURL.Scheme {
 	case "system":
-		c.Resolver = resolver.SystemResolver{}
+		c.Resolver = &netxlite.ResolverSystem{}
 		return c, nil
 	case "https":
 		config.TLSConfig.NextProtos = []string{"h2", "http/1.1"}

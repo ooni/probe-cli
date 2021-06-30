@@ -823,22 +823,18 @@ func TestNewNetworkEventsListGood(t *testing.T) {
 		NetworkEvents: []*modelx.Measurement{
 			{
 				Connect: &modelx.ConnectEvent{
-					ConnID:                 555,
 					DurationSinceBeginning: 10 * time.Millisecond,
-					DialID:                 17,
 					RemoteAddress:          "1.1.1.1:443",
 				},
 			},
 			{
 				Read: &modelx.ReadEvent{
-					ConnID:                 555,
 					DurationSinceBeginning: 20 * time.Millisecond,
 					NumBytes:               1789,
 				},
 			},
 			{
 				Write: &modelx.WriteEvent{
-					ConnID:                 555,
 					DurationSinceBeginning: 30 * time.Millisecond,
 					NumBytes:               17714,
 				},
@@ -852,12 +848,6 @@ func TestNewNetworkEventsListGood(t *testing.T) {
 	if out[0].Address != "1.1.1.1:443" {
 		t.Fatal("wrong out[0].Address")
 	}
-	if out[0].ConnID != 555 {
-		t.Fatal("wrong out[0].ConnID")
-	}
-	if out[0].DialID != 17 {
-		t.Fatal("wrong out[0].DialID")
-	}
 	if out[0].Failure != nil {
 		t.Fatal("wrong out[0].Failure")
 	}
@@ -867,21 +857,12 @@ func TestNewNetworkEventsListGood(t *testing.T) {
 	if out[0].Operation != errorx.ConnectOperation {
 		t.Fatal("wrong out[0].Operation")
 	}
-	if out[0].Proto != "tcp" {
-		t.Fatal("wrong out[0].Proto")
-	}
 	if !floatEquals(out[0].T, 0.010) {
 		t.Fatal("wrong out[0].T")
 	}
 
 	if out[1].Address != "" {
 		t.Fatal("wrong out[1].Address")
-	}
-	if out[1].ConnID != 555 {
-		t.Fatal("wrong out[1].ConnID")
-	}
-	if out[1].DialID != 0 {
-		t.Fatal("wrong out[1].DialID")
 	}
 	if out[1].Failure != nil {
 		t.Fatal("wrong out[1].Failure")
@@ -892,21 +873,12 @@ func TestNewNetworkEventsListGood(t *testing.T) {
 	if out[1].Operation != errorx.ReadOperation {
 		t.Fatal("wrong out[1].Operation")
 	}
-	if out[1].Proto != "tcp" {
-		t.Fatal("wrong out[1].Proto")
-	}
 	if !floatEquals(out[1].T, 0.020) {
 		t.Fatal("wrong out[1].T")
 	}
 
 	if out[2].Address != "" {
 		t.Fatal("wrong out[2].Address")
-	}
-	if out[2].ConnID != 555 {
-		t.Fatal("wrong out[2].ConnID")
-	}
-	if out[2].DialID != 0 {
-		t.Fatal("wrong out[2].DialID")
 	}
 	if out[2].Failure != nil {
 		t.Fatal("wrong out[2].Failure")
@@ -916,9 +888,6 @@ func TestNewNetworkEventsListGood(t *testing.T) {
 	}
 	if out[2].Operation != errorx.WriteOperation {
 		t.Fatal("wrong out[2].Operation")
-	}
-	if out[2].Proto != "tcp" {
-		t.Fatal("wrong out[2].Proto")
 	}
 	if !floatEquals(out[2].T, 0.030) {
 		t.Fatal("wrong out[2].T")
@@ -930,16 +899,13 @@ func TestNewNetworkEventsListGoodUDPAndErrors(t *testing.T) {
 		NetworkEvents: []*modelx.Measurement{
 			{
 				Connect: &modelx.ConnectEvent{
-					ConnID:                 -555,
 					DurationSinceBeginning: 10 * time.Millisecond,
-					DialID:                 17,
 					Error:                  errors.New("mocked error"),
 					RemoteAddress:          "1.1.1.1:443",
 				},
 			},
 			{
 				Read: &modelx.ReadEvent{
-					ConnID:                 -555,
 					DurationSinceBeginning: 20 * time.Millisecond,
 					Error:                  errors.New("mocked error"),
 					NumBytes:               1789,
@@ -947,7 +913,6 @@ func TestNewNetworkEventsListGoodUDPAndErrors(t *testing.T) {
 			},
 			{
 				Write: &modelx.WriteEvent{
-					ConnID:                 -555,
 					DurationSinceBeginning: 30 * time.Millisecond,
 					Error:                  errors.New("mocked error"),
 					NumBytes:               17714,
@@ -962,12 +927,6 @@ func TestNewNetworkEventsListGoodUDPAndErrors(t *testing.T) {
 	if out[0].Address != "1.1.1.1:443" {
 		t.Fatal("wrong out[0].Address")
 	}
-	if out[0].ConnID != -555 {
-		t.Fatal("wrong out[0].ConnID")
-	}
-	if out[0].DialID != 17 {
-		t.Fatal("wrong out[0].DialID")
-	}
 	if *out[0].Failure != "mocked error" {
 		t.Fatal("wrong out[0].Failure")
 	}
@@ -977,21 +936,12 @@ func TestNewNetworkEventsListGoodUDPAndErrors(t *testing.T) {
 	if out[0].Operation != errorx.ConnectOperation {
 		t.Fatal("wrong out[0].Operation")
 	}
-	if out[0].Proto != "udp" {
-		t.Fatal("wrong out[0].Proto")
-	}
 	if !floatEquals(out[0].T, 0.010) {
 		t.Fatal("wrong out[0].T")
 	}
 
 	if out[1].Address != "" {
 		t.Fatal("wrong out[1].Address")
-	}
-	if out[1].ConnID != -555 {
-		t.Fatal("wrong out[1].ConnID")
-	}
-	if out[1].DialID != 0 {
-		t.Fatal("wrong out[1].DialID")
 	}
 	if *out[1].Failure != "mocked error" {
 		t.Fatal("wrong out[1].Failure")
@@ -1002,21 +952,12 @@ func TestNewNetworkEventsListGoodUDPAndErrors(t *testing.T) {
 	if out[1].Operation != errorx.ReadOperation {
 		t.Fatal("wrong out[1].Operation")
 	}
-	if out[1].Proto != "udp" {
-		t.Fatal("wrong out[1].Proto")
-	}
 	if !floatEquals(out[1].T, 0.020) {
 		t.Fatal("wrong out[1].T")
 	}
 
 	if out[2].Address != "" {
 		t.Fatal("wrong out[2].Address")
-	}
-	if out[2].ConnID != -555 {
-		t.Fatal("wrong out[2].ConnID")
-	}
-	if out[2].DialID != 0 {
-		t.Fatal("wrong out[2].DialID")
 	}
 	if *out[2].Failure != "mocked error" {
 		t.Fatal("wrong out[2].Failure")
@@ -1026,9 +967,6 @@ func TestNewNetworkEventsListGoodUDPAndErrors(t *testing.T) {
 	}
 	if out[2].Operation != errorx.WriteOperation {
 		t.Fatal("wrong out[2].Operation")
-	}
-	if out[2].Proto != "udp" {
-		t.Fatal("wrong out[2].Proto")
 	}
 	if !floatEquals(out[2].T, 0.030) {
 		t.Fatal("wrong out[2].T")
@@ -1052,8 +990,7 @@ func TestNewTLSHandshakesListSuccess(t *testing.T) {
 		TLSHandshakes: []*modelx.TLSHandshakeDoneEvent{
 			{},
 			{
-				ConnID: 12345,
-				Error:  errors.New("mocked error"),
+				Error: errors.New("mocked error"),
 			},
 			{
 				ConnectionState: modelx.TLSConnectionState{
@@ -1080,9 +1017,6 @@ func TestNewTLSHandshakesListSuccess(t *testing.T) {
 	if out[0].CipherSuite != "" {
 		t.Fatal("invalid out[0].CipherSuite")
 	}
-	if out[0].ConnID != 0 {
-		t.Fatal("invalid out[0].ConnID")
-	}
 	if out[0].Failure != nil {
 		t.Fatal("invalid out[0].Failure")
 	}
@@ -1102,9 +1036,6 @@ func TestNewTLSHandshakesListSuccess(t *testing.T) {
 	if out[1].CipherSuite != "" {
 		t.Fatal("invalid out[1].CipherSuite")
 	}
-	if out[1].ConnID != 12345 {
-		t.Fatal("invalid out[1].ConnID")
-	}
 	if *out[1].Failure != "mocked error" {
 		t.Fatal("invalid out[1].Failure")
 	}
@@ -1123,9 +1054,6 @@ func TestNewTLSHandshakesListSuccess(t *testing.T) {
 
 	if out[2].CipherSuite != "TLS_AES_128_GCM_SHA256" {
 		t.Fatal("invalid out[2].CipherSuite")
-	}
-	if out[2].ConnID != 0 {
-		t.Fatal("invalid out[2].ConnID")
 	}
 	if out[2].Failure != nil {
 		t.Fatal("invalid out[2].Failure")

@@ -3,8 +3,6 @@ package resolver
 import (
 	"context"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 )
 
@@ -15,14 +13,11 @@ type ErrorWrapperResolver struct {
 
 // LookupHost implements Resolver.LookupHost
 func (r ErrorWrapperResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
-	dialID := dialid.ContextDialID(ctx)
-	txID := transactionid.ContextTransactionID(ctx)
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	err = errorx.SafeErrWrapperBuilder{
-		DialID:        dialID,
-		Error:         err,
-		Operation:     errorx.ResolveOperation,
-		TransactionID: txID,
+		Classifier: errorx.ClassifyResolveFailure,
+		Error:      err,
+		Operation:  errorx.ResolveOperation,
 	}.MaybeBuild()
 	return addrs, err
 }

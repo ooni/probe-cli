@@ -4,9 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
 )
 
 // EmitterTransport is a RoundTripper that emits events when they occur.
@@ -20,8 +18,7 @@ func (txp EmitterTransport) RoundTrip(ctx context.Context, querydata []byte) ([]
 	root.Handler.OnMeasurement(modelx.Measurement{
 		DNSQuery: &modelx.DNSQueryEvent{
 			Data:                   querydata,
-			DialID:                 dialid.ContextDialID(ctx),
-			DurationSinceBeginning: time.Now().Sub(root.Beginning),
+			DurationSinceBeginning: time.Since(root.Beginning),
 		},
 	})
 	replydata, err := txp.RoundTripper.RoundTrip(ctx, querydata)
@@ -31,8 +28,7 @@ func (txp EmitterTransport) RoundTrip(ctx context.Context, querydata []byte) ([]
 	root.Handler.OnMeasurement(modelx.Measurement{
 		DNSReply: &modelx.DNSReplyEvent{
 			Data:                   replydata,
-			DialID:                 dialid.ContextDialID(ctx),
-			DurationSinceBeginning: time.Now().Sub(root.Beginning),
+			DurationSinceBeginning: time.Since(root.Beginning),
 		},
 	})
 	return replydata, nil
@@ -56,15 +52,11 @@ func (r EmitterResolver) LookupHost(ctx context.Context, hostname string) ([]str
 		txp := qr.Transport()
 		network, address = txp.Network(), txp.Address()
 	}
-	dialID := dialid.ContextDialID(ctx)
-	txID := transactionid.ContextTransactionID(ctx)
 	root := modelx.ContextMeasurementRootOrDefault(ctx)
 	root.Handler.OnMeasurement(modelx.Measurement{
 		ResolveStart: &modelx.ResolveStartEvent{
-			DialID:                 dialID,
-			DurationSinceBeginning: time.Now().Sub(root.Beginning),
+			DurationSinceBeginning: time.Since(root.Beginning),
 			Hostname:               hostname,
-			TransactionID:          txID,
 			TransportAddress:       address,
 			TransportNetwork:       network,
 		},
@@ -73,11 +65,9 @@ func (r EmitterResolver) LookupHost(ctx context.Context, hostname string) ([]str
 	root.Handler.OnMeasurement(modelx.Measurement{
 		ResolveDone: &modelx.ResolveDoneEvent{
 			Addresses:              addrs,
-			DialID:                 dialID,
-			DurationSinceBeginning: time.Now().Sub(root.Beginning),
+			DurationSinceBeginning: time.Since(root.Beginning),
 			Error:                  err,
 			Hostname:               hostname,
-			TransactionID:          txID,
 			TransportAddress:       address,
 			TransportNetwork:       network,
 		},

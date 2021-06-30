@@ -13,8 +13,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewResolverVanilla(t *testing.T) {
@@ -31,7 +31,7 @@ func TestNewResolverVanilla(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -81,7 +81,7 @@ func TestNewResolverWithBogonFilter(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -95,7 +95,7 @@ func TestNewResolverWithLogging(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	lr, ok := ir.Resolver.(resolver.LoggingResolver)
+	lr, ok := ir.Resolver.(*netxlite.ResolverLogger)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -110,7 +110,7 @@ func TestNewResolverWithLogging(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -140,7 +140,7 @@ func TestNewResolverWithSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -169,7 +169,7 @@ func TestNewResolverWithReadWriteCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -203,7 +203,7 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -211,7 +211,7 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 
 func TestNewTLSDialerVanilla(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{})
-	rtd, ok := td.(tlsdialer.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialer)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -234,11 +234,7 @@ func TestNewTLSDialerVanilla(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -247,7 +243,7 @@ func TestNewTLSDialerWithConfig(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		TLSConfig: new(tls.Config),
 	})
-	rtd, ok := td.(tlsdialer.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialer)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -267,11 +263,7 @@ func TestNewTLSDialerWithConfig(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -280,7 +272,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		Logger: log.Log,
 	})
-	rtd, ok := td.(tlsdialer.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialer)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -299,7 +291,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	lth, ok := rtd.TLSHandshaker.(tlsdialer.LoggingTLSHandshaker)
+	lth, ok := rtd.TLSHandshaker.(*netxlite.TLSHandshakerLogger)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
@@ -310,11 +302,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -324,7 +312,7 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		TLSSaver: saver,
 	})
-	rtd, ok := td.(tlsdialer.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialer)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -354,11 +342,7 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -368,7 +352,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
 		TLSConfig:   new(tls.Config),
 		NoTLSVerify: true,
 	})
-	rtd, ok := td.(tlsdialer.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialer)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -391,11 +375,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -404,7 +384,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		NoTLSVerify: true,
 	})
-	rtd, ok := td.(tlsdialer.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialer)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -430,11 +410,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -468,10 +444,10 @@ func TestNewWithDialer(t *testing.T) {
 
 func TestNewWithTLSDialer(t *testing.T) {
 	expected := errors.New("mocked error")
-	tlsDialer := tlsdialer.TLSDialer{
+	tlsDialer := &netxlite.TLSDialer{
 		Config:        new(tls.Config),
 		Dialer:        netx.FakeDialer{Err: expected},
-		TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
+		TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 	}
 	txp := netx.NewHTTPTransport(netx.Config{
 		TLSDialer: tlsDialer,
@@ -515,14 +491,14 @@ func TestNewWithLogger(t *testing.T) {
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
-	ltxp, ok := uatxp.RoundTripper.(httptransport.LoggingTransport)
+	ltxp, ok := uatxp.RoundTripper.(*netxlite.HTTPTransportLogger)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
 	if ltxp.Logger != log.Log {
 		t.Fatal("not the logger we expected")
 	}
-	if _, ok := ltxp.RoundTripper.(http.RoundTripper); !ok {
+	if _, ok := ltxp.HTTPTransport.(http.RoundTripper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -597,7 +573,7 @@ func TestNewDNSClientSystemResolver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := dnsclient.Resolver.(resolver.SystemResolver); !ok {
+	if _, ok := dnsclient.Resolver.(*netxlite.ResolverSystem); !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -609,7 +585,7 @@ func TestNewDNSClientEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := dnsclient.Resolver.(resolver.SystemResolver); !ok {
+	if _, ok := dnsclient.Resolver.(*netxlite.ResolverSystem); !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -871,7 +847,7 @@ func TestNewDNSClientBadUDPEndpoint(t *testing.T) {
 func TestNewDNSCLientWithInvalidTLSVersion(t *testing.T) {
 	_, err := netx.NewDNSClientWithOverrides(
 		netx.Config{}, "dot://8.8.8.8", "", "", "TLSv999")
-	if !errors.Is(err, tlsx.ErrInvalidTLSVersion) {
+	if !errors.Is(err, netxlite.ErrInvalidTLSVersion) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 }

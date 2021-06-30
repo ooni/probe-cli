@@ -11,6 +11,7 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type MockDialer struct {
@@ -36,8 +37,10 @@ func TestHandshakeSaverSuccess(t *testing.T) {
 	}
 	saver := &trace.Saver{}
 	dlr := quicdialer.HandshakeSaver{
-		Dialer: quicdialer.SystemDialer{},
-		Saver:  saver,
+		Dialer: &netxlite.QUICDialerQUICGo{
+			QUICListener: &netxlite.QUICListenerStdlib{},
+		},
+		Saver: saver,
 	}
 	sess, err := dlr.DialContext(context.Background(), "udp",
 		"216.58.212.164:443", tlsConf, &quic.Config{})
@@ -85,15 +88,17 @@ func TestHandshakeSaverSuccess(t *testing.T) {
 
 func TestHandshakeSaverHostNameError(t *testing.T) {
 	nextprotos := []string{"h3"}
-	servername := "wrong.host.badssl.com"
+	servername := "example.com"
 	tlsConf := &tls.Config{
 		NextProtos: nextprotos,
 		ServerName: servername,
 	}
 	saver := &trace.Saver{}
 	dlr := quicdialer.HandshakeSaver{
-		Dialer: quicdialer.SystemDialer{},
-		Saver:  saver,
+		Dialer: &netxlite.QUICDialerQUICGo{
+			QUICListener: &netxlite.QUICListenerStdlib{},
+		},
+		Saver: saver,
 	}
 	sess, err := dlr.DialContext(context.Background(), "udp",
 		"216.58.212.164:443", tlsConf, &quic.Config{})

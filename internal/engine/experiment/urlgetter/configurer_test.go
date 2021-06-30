@@ -10,8 +10,8 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestConfigurerNewConfigurationVanilla(t *testing.T) {
@@ -711,7 +711,7 @@ func TestConfigurerNewConfigurationTLSvInvalid(t *testing.T) {
 		Saver:  saver,
 	}
 	_, err := configurer.NewConfiguration()
-	if !errors.Is(err, tlsx.ErrInvalidTLSVersion) {
+	if !errors.Is(err, netxlite.ErrInvalidTLSVersion) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 }

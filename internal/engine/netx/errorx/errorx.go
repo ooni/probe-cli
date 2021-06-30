@@ -1,14 +1,22 @@
 // Package errorx contains error extensions
 package errorx
 
+// TODO: eventually we want to re-structure the error classification code by clearly separating the layers where the error occur:
+//
+// - errno.go and errno_test.go: contain only the errno classifier (for system errors)
+// - qtls.go and qtls_test.go: contain qtls dialers, handshaker, classifier
+// - tls.go and tls_test.go: contain tls dialers, handshaker, classifier
+// - resolver.go and resolver_test.go: contain dialers and classifier for resolving
+
 import (
 	"context"
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
+	"syscall"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
@@ -31,11 +39,17 @@ const (
 	// FailureGenericTimeoutError means we got some timer has expired.
 	FailureGenericTimeoutError = "generic_timeout_error"
 
+	// FailureHostUnreachable means that there is "no route to host".
+	FailureHostUnreachable = "host_unreachable"
+
 	// FailureInterrupted means that the user interrupted us.
 	FailureInterrupted = "interrupted"
 
 	// FailureNoCompatibleQUICVersion means that the server does not support the proposed QUIC version
 	FailureNoCompatibleQUICVersion = "quic_incompatible_version"
+
+	// FailureSSLHandshake means that the negotiation of cryptographic parameters failed
+	FailureSSLHandshake = "ssl_failed_handshake"
 
 	// FailureSSLInvalidHostname means we got certificate is not valid for SNI.
 	FailureSSLInvalidHostname = "ssl_invalid_hostname"
@@ -49,6 +63,36 @@ const (
 
 	// FailureJSONParseError indicates that we couldn't parse a JSON
 	FailureJSONParseError = "json_parse_error"
+)
+
+// TLS alert protocol as defined in RFC8446
+const (
+	// Sender was unable to negotiate an acceptable set of security parameters given the options available.
+	TLSAlertHandshakeFailure = 40
+
+	// Certificate was corrupt, contained signatures that did not verify correctly, etc.
+	TLSAlertBadCertificate = 42
+
+	// Certificate was of an unsupported type.
+	TLSAlertUnsupportedCertificate = 43
+
+	// Certificate was revoked by its signer.
+	TLSAlertCertificateRevoked = 44
+
+	// Certificate has expired or is not currently valid.
+	TLSAlertCertificateExpired = 45
+
+	// Some unspecified issue arose in processing the certificate, rendering it unacceptable.
+	TLSAlertCertificateUnknown = 46
+
+	// Certificate was not accepted because the CA certificate could not be located or could not be matched with a known trust anchor.
+	TLSAlertUnknownCA = 48
+
+	// Handshake (not record layer) cryptographic operation failed.
+	TLSAlertDecryptError = 51
+
+	// Sent by servers when no server exists identified by the name provided by the client via the "server_name" extension.
+	TLSUnrecognizedName = 112
 )
 
 const (
@@ -99,12 +143,6 @@ var ErrDNSBogon = errors.New("dns: detected bogon address")
 // this structure is to properly set Failure, which is also returned by
 // the Error() method, so be one of the OONI defined strings.
 type ErrWrapper struct {
-	// ConnID is the connection ID, or zero if not known.
-	ConnID int64
-
-	// DialID is the dial ID, or zero if not known.
-	DialID int64
-
 	// Failure is the OONI failure string. The failure strings are
 	// loosely backward compatible with Measurement Kit.
 	//
@@ -137,9 +175,6 @@ type ErrWrapper struct {
 	// supposed to refer to the major operation that failed.
 	Operation string
 
-	// TransactionID is the transaction ID, or zero if not known.
-	TransactionID int64
-
 	// WrappedErr is the error that we're wrapping.
 	WrappedErr error
 }
@@ -157,38 +192,38 @@ func (e *ErrWrapper) Unwrap() error {
 // SafeErrWrapperBuilder contains a builder for ErrWrapper that
 // is safe, i.e., behaves correctly when the error is nil.
 type SafeErrWrapperBuilder struct {
-	// ConnID is the connection ID, if any
-	ConnID int64
-
-	// DialID is the dial ID, if any
-	DialID int64
-
 	// Error is the error, if any
 	Error error
 
+	// Classifier is the local error to string classifier. When there is no
+	// configured classifier we will use the generic classifier.
+	Classifier func(err error) string
+
 	// Operation is the operation that failed
 	Operation string
-
-	// TransactionID is the transaction ID, if any
-	TransactionID int64
 }
 
 // MaybeBuild builds a new ErrWrapper, if b.Error is not nil, and returns
 // a nil error value, instead, if b.Error is nil.
 func (b SafeErrWrapperBuilder) MaybeBuild() (err error) {
 	if b.Error != nil {
+		classifier := b.Classifier
+		if classifier == nil {
+			classifier = toFailureString
+		}
 		err = &ErrWrapper{
-			ConnID:        b.ConnID,
-			DialID:        b.DialID,
-			Failure:       toFailureString(b.Error),
-			Operation:     toOperationString(b.Error, b.Operation),
-			TransactionID: b.TransactionID,
-			WrappedErr:    b.Error,
+			Failure:    classifier(b.Error),
+			Operation:  toOperationString(b.Error, b.Operation),
+			WrappedErr: b.Error,
 		}
 	}
 	return
 }
 
+// TODO (kelmenhorst, bassosimone):
+// Use errors.Is / errors.As more often, when possible, in this classifier.
+// These methods are more robust to library changes than strings.
+// errors.Is / errors.As can only be used when the error is exported.
 func toFailureString(err error) string {
 	// The list returned here matches the values used by MK unless
 	// explicitly noted otherwise with a comment.
@@ -198,12 +233,114 @@ func toFailureString(err error) string {
 		return errwrapper.Error() // we've already wrapped it
 	}
 
-	if errors.Is(err, ErrDNSBogon) {
-		return FailureDNSBogonError // not in MK
+	// filter out system errors: necessary to detect all windows errors
+	// https://github.com/ooni/probe/issues/1526 describes the problem of mapping localized windows errors
+	var errno syscall.Errno
+	if errors.As(err, &errno) {
+		switch errno {
+		case ECANCELED:
+			return FailureInterrupted
+		case ECONNRESET:
+			return FailureConnectionReset
+		case ECONNREFUSED:
+			return FailureConnectionRefused
+		case EHOSTUNREACH:
+			return FailureHostUnreachable
+		case ETIMEDOUT:
+			return FailureGenericTimeoutError
+			// TODO(kelmenhorst): find out if we need more system errors here
+		}
 	}
 	if errors.Is(err, context.Canceled) {
 		return FailureInterrupted
 	}
+	s := err.Error()
+	if strings.HasSuffix(s, "operation was canceled") {
+		return FailureInterrupted
+	}
+	if strings.HasSuffix(s, "EOF") {
+		return FailureEOFError
+	}
+	if strings.HasSuffix(s, "context deadline exceeded") {
+		return FailureGenericTimeoutError
+	}
+	if strings.HasSuffix(s, "transaction is timed out") {
+		return FailureGenericTimeoutError
+	}
+	if strings.HasSuffix(s, "i/o timeout") {
+		return FailureGenericTimeoutError
+	}
+	// TODO(kelmenhorst,bassosimone): this can probably be moved since it's TLS specific
+	if strings.HasSuffix(s, "TLS handshake timeout") {
+		return FailureGenericTimeoutError
+	}
+	if strings.HasSuffix(s, "no such host") {
+		// This is dns_lookup_error in MK but such error is used as a
+		// generic "hey, the lookup failed" error. Instead, this error
+		// that we return here is significantly more specific.
+		return FailureDNSNXDOMAINError
+	}
+	formatted := fmt.Sprintf("unknown_failure: %s", s)
+	return scrubber.Scrub(formatted) // scrub IP addresses in the error
+}
+
+// ClassifyQUICFailure is a classifier to translate QUIC errors to OONI error strings.
+// TODO(kelmenhorst,bassosimone): Consider moving this into quicdialer.
+func ClassifyQUICFailure(err error) string {
+	var versionNegotiation *quic.VersionNegotiationError
+	var statelessReset *quic.StatelessResetError
+	var handshakeTimeout *quic.HandshakeTimeoutError
+	var idleTimeout *quic.IdleTimeoutError
+	var transportError *quic.TransportError
+
+	if errors.As(err, &versionNegotiation) {
+		return FailureNoCompatibleQUICVersion
+	}
+	if errors.As(err, &statelessReset) {
+		return FailureConnectionReset
+	}
+	if errors.As(err, &handshakeTimeout) {
+		return FailureGenericTimeoutError
+	}
+	if errors.As(err, &idleTimeout) {
+		return FailureGenericTimeoutError
+	}
+	if errors.As(err, &transportError) {
+		if transportError.ErrorCode == quic.ConnectionRefused {
+			return FailureConnectionRefused
+		}
+		// the TLS Alert constants are taken from RFC8446
+		errCode := uint8(transportError.ErrorCode)
+		if isCertificateError(errCode) {
+			return FailureSSLInvalidCertificate
+		}
+		// TLSAlertDecryptError and TLSAlertHandshakeFailure are summarized to a FailureSSLHandshake error because both
+		// alerts are caused by a failed or corrupted parameter negotiation during the TLS handshake.
+		if errCode == TLSAlertDecryptError || errCode == TLSAlertHandshakeFailure {
+			return FailureSSLHandshake
+		}
+		if errCode == TLSAlertUnknownCA {
+			return FailureSSLUnknownAuthority
+		}
+		if errCode == TLSUnrecognizedName {
+			return FailureSSLInvalidHostname
+		}
+	}
+	return toFailureString(err)
+}
+
+// ClassifyResolveFailure is a classifier to translate DNS resolving errors to OONI error strings.
+// TODO(kelmenhorst,bassosimone): Consider moving this into resolve.
+func ClassifyResolveFailure(err error) string {
+	if errors.Is(err, ErrDNSBogon) {
+		return FailureDNSBogonError // not in MK
+	}
+	return toFailureString(err)
+}
+
+// ClassifyTLSFailure is a classifier to translate TLS errors to OONI error strings.
+// TODO(kelmenhorst,bassosimone): Consider moving this into tlsdialer.
+func ClassifyTLSFailure(err error) string {
 	var x509HostnameError x509.HostnameError
 	if errors.As(err, &x509HostnameError) {
 		// Test case: https://wrong.host.badssl.com/
@@ -220,76 +357,7 @@ func toFailureString(err error) string {
 		// Test case: https://expired.badssl.com/
 		return FailureSSLInvalidCertificate
 	}
-
-	s := err.Error()
-	if strings.HasSuffix(s, "operation was canceled") {
-		return FailureInterrupted
-	}
-	if strings.HasSuffix(s, "EOF") {
-		return FailureEOFError
-	}
-	if strings.HasSuffix(s, "connection refused") {
-		return FailureConnectionRefused
-	}
-	if strings.HasSuffix(s, "connection reset by peer") {
-		return FailureConnectionReset
-	}
-	if strings.HasSuffix(s, "context deadline exceeded") {
-		return FailureGenericTimeoutError
-	}
-	if strings.HasSuffix(s, "transaction is timed out") {
-		return FailureGenericTimeoutError
-	}
-	if strings.HasSuffix(s, "i/o timeout") {
-		return FailureGenericTimeoutError
-	}
-	if strings.HasSuffix(s, "TLS handshake timeout") {
-		return FailureGenericTimeoutError
-	}
-	if strings.HasSuffix(s, "no such host") {
-		// This is dns_lookup_error in MK but such error is used as a
-		// generic "hey, the lookup failed" error. Instead, this error
-		// that we return here is significantly more specific.
-		return FailureDNSNXDOMAINError
-	}
-
-	// TODO(kelmenhorst): see whether it is possible to match errors
-	// from qtls rather than strings for TLS errors below.
-	//
-	// TODO(kelmenhorst): make sure we have tests for all errors. Also,
-	// how to ensure we are robust to changes in other libs?
-	//
-	// special QUIC errors
-	matched, err := regexp.MatchString(`.*x509: certificate is valid for.*not.*`, s)
-	if matched {
-		return FailureSSLInvalidHostname
-	}
-	if strings.HasSuffix(s, "x509: certificate signed by unknown authority") {
-		return FailureSSLUnknownAuthority
-	}
-	certInvalidErrors := []string{"x509: certificate is not authorized to sign other certificates", "x509: certificate has expired or is not yet valid:", "x509: a root or intermediate certificate is not authorized to sign for this name:", "x509: a root or intermediate certificate is not authorized for an extended key usage:", "x509: too many intermediates for path length constraint", "x509: certificate specifies an incompatible key usage", "x509: issuer name does not match subject from issuing certificate", "x509: issuer has name constraints but leaf doesn't have a SAN extension", "x509: issuer has name constraints but leaf contains unknown or unconstrained name:"}
-	for _, errstr := range certInvalidErrors {
-		if strings.Contains(s, errstr) {
-			return FailureSSLInvalidCertificate
-		}
-	}
-	if strings.HasPrefix(s, "No compatible QUIC version found") {
-		return FailureNoCompatibleQUICVersion
-	}
-	if strings.HasSuffix(s, "Handshake did not complete in time") {
-		return FailureGenericTimeoutError
-	}
-	if strings.HasSuffix(s, "connection_refused") {
-		return FailureConnectionRefused
-	}
-	if strings.Contains(s, "stateless_reset") {
-		return FailureConnectionReset
-	}
-	if strings.Contains(s, "deadline exceeded") {
-		return FailureGenericTimeoutError
-	}
-	formatted := fmt.Sprintf("unknown_failure: %s", s)
-	return scrubber.Scrub(formatted) // scrub IP addresses in the error
+	return toFailureString(err)
 }
 
 func toOperationString(err error, operation string) string {
@@ -321,4 +389,12 @@ func toOperationString(err error, operation string) string {
 		// FALLTHROUGH
 	}
 	return operation
+}
+
+func isCertificateError(alert uint8) bool {
+	return (alert == TLSAlertBadCertificate ||
+		alert == TLSAlertUnsupportedCertificate ||
+		alert == TLSAlertCertificateExpired ||
+		alert == TLSAlertCertificateRevoked ||
+		alert == TLSAlertCertificateUnknown)
 }

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
+	"github.com/ooni/probe-cli/v3/internal/netxmocks"
 )
 
 func TestOBFS4DialerWorks(t *testing.T) {
@@ -48,7 +48,7 @@ func TestOBFS4DialerFailsWithInvalidCert(t *testing.T) {
 func TestOBFS4DialerFailsWithConnectionErrorAndNoContextExpiration(t *testing.T) {
 	expected := errors.New("mocked error")
 	o4d := DefaultTestingOBFS4Bridge()
-	o4d.UnderlyingDialer = &mockablex.Dialer{
+	o4d.UnderlyingDialer = &netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, expected
 		},
@@ -67,7 +67,7 @@ func TestOBFS4DialerFailsWithConnectionErrorAndContextExpiration(t *testing.T) {
 	defer cancel()
 	expected := errors.New("mocked error")
 	o4d := DefaultTestingOBFS4Bridge()
-	o4d.UnderlyingDialer = &mockablex.Dialer{
+	o4d.UnderlyingDialer = &netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			// We cancel the context before returning the error, which makes
 			// the context cancellation happen before us returning.
@@ -101,7 +101,7 @@ func TestOBFS4DialerWorksWithContextExpiration(t *testing.T) {
 	defer cancel()
 	called := &atomicx.Int64{}
 	o4d := DefaultTestingOBFS4Bridge()
-	o4d.UnderlyingDialer = &mockablex.Dialer{
+	o4d.UnderlyingDialer = &netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			// We cancel the context before returning the error, which makes
 			// the context cancellation happen before us returning.
