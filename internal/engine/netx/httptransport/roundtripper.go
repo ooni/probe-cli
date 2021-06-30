@@ -13,15 +13,16 @@ import (
 	"golang.org/x/net/http2"
 )
 
-func newRoundtripper(txp *http.Transport, config Config) RoundTripper {
-	return &roundTripper{underlyingTransport: txp, config: config}
+func newRoundtripper(txp *http.Transport, tlsdialer TLSDialer, tlsconfig *tls.Config) RoundTripper {
+	return &roundTripper{underlyingTransport: txp, DialTLS: tlsdialer.DialTLSContext, tlsconfig: tlsconfig}
 }
 
 // roundTripper is a wrapper around the system transport
 type roundTripper struct {
 	sync.Mutex
-	config              Config
 	ctx                 context.Context
+	DialTLS             func(ctx context.Context, network string, address string) (net.Conn, error)
+	tlsconfig           *tls.Config
 	transport           http.RoundTripper // this will be either http.Transport or http2.Transport
 	underlyingTransport *http.Transport
 }
@@ -45,6 +46,7 @@ func (rt *roundTripper) getTransport(req *http.Request) error {
 	scheme := strings.ToLower(req.URL.Scheme)
 	switch scheme {
 	case "http":
+		// HTTP 1.x w/o TLS
 		rt.transport = rt.underlyingTransport
 		return nil
 	case "https":
@@ -73,7 +75,7 @@ func (rt *roundTripper) dialTLSContext(ctx context.Context, network, addr string
 	}
 	if rt.transport != nil {
 		// transport is already determined: use standard DialTLSContext
-		return rt.config.TLSDialer.DialTLSContext(ctx, network, addr)
+		return rt.DialTLS(ctx, network, addr)
 	}
 	// connect
 	conn, err := net.Dial(network, addr)
@@ -86,11 +88,13 @@ func (rt *roundTripper) dialTLSContext(ctx context.Context, network, addr string
 	default:
 	}
 	// set TLS config
-	cfg := rt.config.TLSConfig
+	cfg := rt.tlsconfig
 	if cfg == nil {
 		cfg = new(tls.Config)
 	}
-	cfg.ServerName = host
+	if cfg.ServerName == "" {
+		cfg.ServerName = host
+	}
 	cfg.NextProtos = []string{"h2", "http/1.1"}
 
 	// TLS handshake
@@ -119,7 +123,7 @@ func (rt *roundTripper) dialTLSContext(ctx context.Context, network, addr string
 
 // dialTLSHTTP2 fits the signature of http2.Transport.DialTLS
 func (rt *roundTripper) dialTLSHTTP2(network, addr string, cfg *tls.Config) (net.Conn, error) {
-	rt.config.TLSConfig = cfg
+	rt.tlsconfig = cfg
 	return rt.dialTLSContext(rt.ctx, network, addr)
 }
 
