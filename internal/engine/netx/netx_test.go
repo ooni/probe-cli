@@ -455,7 +455,7 @@ func TestNewWithTLSDialer(t *testing.T) {
 	client := &http.Client{Transport: txp}
 	resp, err := client.Get("https://www.google.com")
 	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected", err)
+		t.Fatal("not the error we expected")
 	}
 	if resp != nil {
 		t.Fatal("not the response we expected")
