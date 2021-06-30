@@ -123,7 +123,6 @@ func (rt *roundTripper) dialTLSContext(ctx context.Context, network, addr string
 
 // dialTLSHTTP2 fits the signature of http2.Transport.DialTLS
 func (rt *roundTripper) dialTLSHTTP2(network, addr string, cfg *tls.Config) (net.Conn, error) {
-	rt.tlsconfig = cfg
 	return rt.dialTLSContext(rt.ctx, network, addr)
 }
 
