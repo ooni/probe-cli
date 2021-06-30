@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"io"
-	"net"
 	"testing"
 	"time"
 
@@ -96,97 +95,4 @@ func TestEmitterTLSHandshakerFailure(t *testing.T) {
 	if events[1].TLSHandshakeDone.DurationSinceBeginning == 0 {
 		t.Fatal("expected nonzero DurationSinceBeginning")
 	}
-}
-
-func TestTLSDialerFailureSplitHostPort(t *testing.T) {
-	dialer := tlsdialer.TLSDialer{}
-	conn, err := dialer.DialTLSContext(
-		context.Background(), "tcp", "www.google.com") // missing port
-	if err == nil {
-		t.Fatal("expected an error here")
-	}
-	if conn != nil {
-		t.Fatal("connection is not nil")
-	}
-}
-
-func TestTLSDialerFailureDialing(t *testing.T) {
-	dialer := tlsdialer.TLSDialer{Dialer: tlsdialer.EOFDialer{}}
-	conn, err := dialer.DialTLSContext(
-		context.Background(), "tcp", "www.google.com:443")
-	if !errors.Is(err, io.EOF) {
-		t.Fatal("expected an error here")
-	}
-	if conn != nil {
-		t.Fatal("connection is not nil")
-	}
-}
-
-func TestTLSDialerFailureHandshaking(t *testing.T) {
-	rec := &RecorderTLSHandshaker{TLSHandshaker: &netxlite.TLSHandshakerConfigurable{}}
-	dialer := tlsdialer.TLSDialer{
-		Dialer:        tlsdialer.EOFConnDialer{},
-		TLSHandshaker: rec,
-	}
-	conn, err := dialer.DialTLSContext(
-		context.Background(), "tcp", "www.google.com:443")
-	if !errors.Is(err, io.EOF) {
-		t.Fatal("expected an error here")
-	}
-	if conn != nil {
-		t.Fatal("connection is not nil")
-	}
-	if rec.SNI != "www.google.com" {
-		t.Fatal("unexpected SNI value")
-	}
-}
-
-func TestTLSDialerFailureHandshakingOverrideSNI(t *testing.T) {
-	rec := &RecorderTLSHandshaker{TLSHandshaker: &netxlite.TLSHandshakerConfigurable{}}
-	dialer := tlsdialer.TLSDialer{
-		Config: &tls.Config{
-			ServerName: "x.org",
-		},
-		Dialer:        tlsdialer.EOFConnDialer{},
-		TLSHandshaker: rec,
-	}
-	conn, err := dialer.DialTLSContext(
-		context.Background(), "tcp", "www.google.com:443")
-	if !errors.Is(err, io.EOF) {
-		t.Fatal("expected an error here")
-	}
-	if conn != nil {
-		t.Fatal("connection is not nil")
-	}
-	if rec.SNI != "x.org" {
-		t.Fatal("unexpected SNI value")
-	}
-}
-
-type RecorderTLSHandshaker struct {
-	tlsdialer.TLSHandshaker
-	SNI string
-}
-
-func (h *RecorderTLSHandshaker) Handshake(
-	ctx context.Context, conn net.Conn, config *tls.Config,
-) (net.Conn, tls.ConnectionState, error) {
-	h.SNI = config.ServerName
-	return h.TLSHandshaker.Handshake(ctx, conn, config)
-}
-
-func TestDialTLSContextGood(t *testing.T) {
-	dialer := tlsdialer.TLSDialer{
-		Config:        &tls.Config{ServerName: "google.com"},
-		Dialer:        new(net.Dialer),
-		TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
-	}
-	conn, err := dialer.DialTLSContext(context.Background(), "tcp", "google.com:443")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if conn == nil {
-		t.Fatal("connection is nil")
-	}
-	conn.Close()
 }
