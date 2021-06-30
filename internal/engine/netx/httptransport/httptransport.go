@@ -30,7 +30,7 @@ type TLSDialer interface {
 
 // QUICDialer is the definition of dialer for QUIC assumed by this package.
 type QUICDialer interface {
-	Dial(network, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error)
+	DialContext(ctx context.Context, network, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error)
 }
 
 // RoundTripper is the definition of http.RoundTripper used by this package.
