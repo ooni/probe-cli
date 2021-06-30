@@ -9,7 +9,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
-	utls "gitlab.com/yawning/utls.git"
 )
 
 // UnderlyingDialer is the underlying dialer type.
@@ -66,57 +65,6 @@ func (h EmitterTLSHandshaker) Handshake(
 		},
 	})
 	return tlsconn, state, err
-}
-
-// TODO(kelmenhorst): empirically test different fingerprints from utls
-type UTLSHandshaker struct {
-	TLSHandshaker
-	ClientHelloID *utls.ClientHelloID
-}
-
-// TLSHandshake performs the TLS handshake using yawning/utls. We will
-// honour selected fields of the original config and copy all the fields
-// of the resulting state back to the *tls.ConnectionState.
-func (th UTLSHandshaker) Handshake(
-	ctx context.Context, conn net.Conn, config *tls.Config,
-) (net.Conn, tls.ConnectionState, error) {
-	// copy selected fields from the original config
-	uConfig := &utls.Config{
-		RootCAs:                     config.RootCAs,
-		NextProtos:                  config.NextProtos,
-		ServerName:                  config.ServerName,
-		InsecureSkipVerify:          config.InsecureSkipVerify,
-		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
-	}
-	tlsConn := utls.UClient(conn, uConfig, *th.clientHelloID())
-	err := tlsConn.Handshake()
-	if err != nil {
-		return nil, tls.ConnectionState{}, err
-	}
-	// fill the output from the original state
-	uState := tlsConn.ConnectionState()
-	state := tls.ConnectionState{
-		Version:                     uState.Version,
-		HandshakeComplete:           uState.HandshakeComplete,
-		DidResume:                   uState.DidResume,
-		CipherSuite:                 uState.CipherSuite,
-		NegotiatedProtocol:          uState.NegotiatedProtocol,
-		ServerName:                  uState.ServerName,
-		PeerCertificates:            uState.PeerCertificates,
-		VerifiedChains:              uState.VerifiedChains,
-		SignedCertificateTimestamps: uState.SignedCertificateTimestamps,
-		OCSPResponse:                uState.OCSPResponse,
-		TLSUnique:                   uState.TLSUnique,
-	}
-	return tlsConn, state, nil
-}
-
-// clientHelloID returns the ClientHelloID we should use.
-func (th *UTLSHandshaker) clientHelloID() *utls.ClientHelloID {
-	if th.ClientHelloID != nil {
-		return th.ClientHelloID
-	}
-	return &utls.HelloFirefox_Auto
 }
 
 // TLSDialer is the TLS dialer

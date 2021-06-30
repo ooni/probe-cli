@@ -15,6 +15,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 func TestTLSHandshakerConfigurableWithError(t *testing.T) {
@@ -175,5 +176,21 @@ func TestTLSHandshakerLoggerFailure(t *testing.T) {
 	}
 	if !reflect.ValueOf(connState).IsZero() {
 		t.Fatal("expected zero ConnectionState here")
+	}
+}
+
+func TestUTLSHandshakerChrome(t *testing.T) {
+	utlsHandshaker := &UTLSHandshaker{
+		ClientHelloID: &utls.HelloChrome_Auto,
+	}
+	h := &TLSHandshakerConfigurable{UTLSHandshaker: utlsHandshaker}
+	cfg := &tls.Config{ServerName: "google.com"}
+	conn, err := net.Dial("tcp", "google.com:443")
+	conn, _, err = h.Handshake(context.Background(), conn, cfg)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+	if conn == nil {
+		t.Fatal("nil connection")
 	}
 }

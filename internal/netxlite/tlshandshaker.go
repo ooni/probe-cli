@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"net"
 	"time"
+
+	utls "gitlab.com/yawning/utls.git"
 )
 
 // TLSHandshaker is the generic TLS handshaker.
@@ -26,6 +28,10 @@ type TLSHandshakerConfigurable struct {
 	// Timeout is the OPTIONAL timeout imposed on the TLS handshake. If zero
 	// or negative, we will use default timeout of 10 seconds.
 	Timeout time.Duration
+
+	// UTLSHandshaker is the OPTIONAL Handshaker that uses utls for TLS parroting
+	// if this Handshaker is not set, we'll use net
+	UTLSHandshaker *UTLSHandshaker
 }
 
 var _ TLSHandshaker = &TLSHandshakerConfigurable{}
@@ -54,6 +60,9 @@ func (h *TLSHandshakerConfigurable) Handshake(
 	if config.RootCAs == nil {
 		config = config.Clone()
 		config.RootCAs = defaultCertPool
+	}
+	if h.UTLSHandshaker != nil {
+		return h.UTLSHandshaker.Handshake(ctx, conn, config)
 	}
 	tlsconn := h.newConn(conn, config)
 	if err := tlsconn.Handshake(); err != nil {
@@ -103,6 +112,56 @@ func (h *TLSHandshakerLogger) Handshake(
 		TLSCipherSuiteString(state.CipherSuite),
 		TLSVersionString(state.Version))
 	return tlsconn, state, nil
+}
+
+// TODO(kelmenhorst): empirically test different fingerprints from utls
+type UTLSHandshaker struct {
+	ClientHelloID *utls.ClientHelloID
+}
+
+// TLSHandshake performs the TLS handshake using yawning/utls. We will
+// honour selected fields of the original config and copy all the fields
+// of the resulting state back to the *tls.ConnectionState.
+func (th UTLSHandshaker) Handshake(
+	ctx context.Context, conn net.Conn, config *tls.Config,
+) (net.Conn, tls.ConnectionState, error) {
+	// copy selected fields from the original config
+	uConfig := &utls.Config{
+		RootCAs:                     config.RootCAs,
+		NextProtos:                  config.NextProtos,
+		ServerName:                  config.ServerName,
+		InsecureSkipVerify:          config.InsecureSkipVerify,
+		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
+	}
+	tlsConn := utls.UClient(conn, uConfig, *th.clientHelloID())
+	err := tlsConn.Handshake()
+	if err != nil {
+		return nil, tls.ConnectionState{}, err
+	}
+	// fill the output from the original state
+	uState := tlsConn.ConnectionState()
+	state := tls.ConnectionState{
+		Version:                     uState.Version,
+		HandshakeComplete:           uState.HandshakeComplete,
+		DidResume:                   uState.DidResume,
+		CipherSuite:                 uState.CipherSuite,
+		NegotiatedProtocol:          uState.NegotiatedProtocol,
+		ServerName:                  uState.ServerName,
+		PeerCertificates:            uState.PeerCertificates,
+		VerifiedChains:              uState.VerifiedChains,
+		SignedCertificateTimestamps: uState.SignedCertificateTimestamps,
+		OCSPResponse:                uState.OCSPResponse,
+		TLSUnique:                   uState.TLSUnique,
+	}
+	return tlsConn, state, nil
+}
+
+// clientHelloID returns the ClientHelloID we should use.
+func (th *UTLSHandshaker) clientHelloID() *utls.ClientHelloID {
+	if th.ClientHelloID != nil {
+		return th.ClientHelloID
+	}
+	return &utls.HelloFirefox_Auto
 }
 
 var _ TLSHandshaker = &TLSHandshakerLogger{}
