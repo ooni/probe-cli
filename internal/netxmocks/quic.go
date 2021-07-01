@@ -6,15 +6,16 @@ import (
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 // QUICListener is a mockable netxlite.QUICListener.
 type QUICListener struct {
-	MockListen func(addr *net.UDPAddr) (net.PacketConn, error)
+	MockListen func(addr *net.UDPAddr) (quicx.UDPConn, error)
 }
 
 // Listen calls MockListen.
-func (ql *QUICListener) Listen(addr *net.UDPAddr) (net.PacketConn, error) {
+func (ql *QUICListener) Listen(addr *net.UDPAddr) (quicx.UDPConn, error) {
 	return ql.MockListen(addr)
 }
 
