@@ -171,7 +171,7 @@ func NewQUICDialer(config Config) QUICDialer {
 	var d quicdialer.ContextDialer = &netxlite.QUICDialerQUICGo{
 		QUICListener: ql,
 	}
-	d = quicdialer.ErrorWrapperDialer{Dialer: d}
+	d = &errorsx.ErrorWrapperQUICDialer{Dialer: d}
 	if config.TLSSaver != nil {
 		d = quicdialer.HandshakeSaver{Saver: config.TLSSaver, Dialer: d}
 	}
