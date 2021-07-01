@@ -19,15 +19,14 @@ import (
 // not wise to use this bridge in general. But, feel free to
 // use this bridge for integration testing of this code.
 func DefaultTestingOBFS4Bridge() *OBFS4Dialer {
-	// TODO(bassosimone): this is a public working bridge we have found
-	// with @hellais. We should ask @cohosh whether there's some obfs4 bridge
-	// dedicated to integration testing that we should use instead.
+	// See https://gitlab.torproject.org/tpo/applications/tor-browser-build/-/blob/master/projects/tor-browser/Bundle-Data/PTConfigs/bridge_prefs.js
+	// for publicly available bridges used by Tor Browser.
 	return &OBFS4Dialer{
-		Address:     "192.95.36.142:443",
-		Cert:        "qUVQ0srL1JI/vO6V6m/24anYXiJD3QP2HgzUKQtQ7GRqqUvs7P+tG43RtAqdhLOALP7DJQ",
+		Address:     "209.148.46.65:443",
+		Cert:        "ssH+9rP8dG2NLDN2XuFw63hIO/9MNNinLmxQDpVa+7kTOa9/m+tGWT1SmSYpQ9uTBGa6Hw",
 		DataDir:     "testdata",
-		Fingerprint: "CDF2E852BF539B82BD10E27E9115A31734E378C2",
-		IATMode:     "1",
+		Fingerprint: "74FAD13168806246602538555B5521A0383A1875",
+		IATMode:     "0",
 	}
 }
 

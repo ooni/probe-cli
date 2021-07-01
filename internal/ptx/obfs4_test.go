@@ -26,7 +26,7 @@ func TestOBFS4DialerWorks(t *testing.T) {
 		t.Fatal("unexpected value returned by Name")
 	}
 	bridgearg := o4d.AsBridgeArgument()
-	expectedbridge := "obfs4 192.95.36.142:443 CDF2E852BF539B82BD10E27E9115A31734E378C2 cert=qUVQ0srL1JI/vO6V6m/24anYXiJD3QP2HgzUKQtQ7GRqqUvs7P+tG43RtAqdhLOALP7DJQ iat-mode=1"
+	expectedbridge := "obfs4 209.148.46.65:443 74FAD13168806246602538555B5521A0383A1875 cert=ssH+9rP8dG2NLDN2XuFw63hIO/9MNNinLmxQDpVa+7kTOa9/m+tGWT1SmSYpQ9uTBGa6Hw iat-mode=0"
 	if bridgearg != expectedbridge {
 		t.Fatal("unexpected AsBridgeArgument value", bridgearg)
 	}
