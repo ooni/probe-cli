@@ -47,8 +47,13 @@ func NewHTTP3Transport(
 	dialer QUICContextDialer, tlsConfig *tls.Config) HTTPTransport {
 	return &http3Transport{
 		child: &http3.RoundTripper{
-			Dial:            (&http3Dialer{dialer}).dial,
-			TLSClientConfig: tlsConfig,
+			Dial: (&http3Dialer{dialer}).dial,
+			// The following (1) reduces the number of headers that Go will
+			// automatically send for us and (2) ensures that we always receive
+			// back the true headers, such as Content-Length. This change is
+			// functional to OONI's goal of observing the network.
+			DisableCompression: true,
+			TLSClientConfig:    tlsConfig,
 		},
 	}
 }
