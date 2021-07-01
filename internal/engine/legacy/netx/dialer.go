@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -107,7 +108,7 @@ func newTLSDialer(d dialer.Dialer, config *tls.Config) *netxlite.TLSDialer {
 		Config: config,
 		Dialer: d,
 		TLSHandshaker: tlsdialer.EmitterTLSHandshaker{
-			TLSHandshaker: tlsdialer.ErrorWrapperTLSHandshaker{
+			TLSHandshaker: &errorsx.ErrorWrapperTLSHandshaker{
 				TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			},
 		},

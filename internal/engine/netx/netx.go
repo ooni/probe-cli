@@ -38,6 +38,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -184,7 +185,7 @@ func NewTLSDialer(config Config) TLSDialer {
 		config.Dialer = NewDialer(config)
 	}
 	var h tlsHandshaker = &netxlite.TLSHandshakerConfigurable{}
-	h = tlsdialer.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
+	h = &errorsx.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
 	if config.Logger != nil {
 		h = &netxlite.TLSHandshakerLogger{Logger: config.Logger, TLSHandshaker: h}
 	}
