@@ -132,7 +132,7 @@ func NewResolver(config Config) Resolver {
 	if config.BogonIsError {
 		r = resolver.BogonResolver{Resolver: r}
 	}
-	r = resolver.ErrorWrapperResolver{Resolver: r}
+	r = &errorsx.ErrorWrapperResolver{Resolver: r}
 	if config.Logger != nil {
 		r = &netxlite.ResolverLogger{Logger: config.Logger, Resolver: r}
 	}
