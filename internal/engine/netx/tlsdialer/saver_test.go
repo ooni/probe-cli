@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -69,7 +69,7 @@ func TestSaverTLSHandshakerSuccessWithReadWrite(t *testing.T) {
 			t.Fatal("unexpected NumBytes")
 		}
 		switch ev[idx].Name {
-		case errorx.ReadOperation, errorx.WriteOperation:
+		case errorsx.ReadOperation, errorsx.WriteOperation:
 		default:
 			t.Fatal("unexpected Name")
 		}

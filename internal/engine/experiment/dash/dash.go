@@ -16,8 +16,8 @@ import (
 	"github.com/montanaflynn/stats"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/iox"
 )
@@ -172,7 +172,7 @@ func (r runner) measure(
 		// of the latest connect time. We should have one sample in most
 		// cases, because the connection should be persistent.
 		for _, ev := range r.saver.Read() {
-			if ev.Name == errorx.ConnectOperation {
+			if ev.Name == errorsx.ConnectOperation {
 				connectTime = ev.Duration.Seconds()
 			}
 		}

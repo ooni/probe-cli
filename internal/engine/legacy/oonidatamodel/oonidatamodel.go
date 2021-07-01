@@ -19,7 +19,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -418,7 +418,7 @@ func NewNetworkEventsList(results oonitemplates.Results) NetworkEventsList {
 			out = append(out, &NetworkEvent{
 				Address:   in.Connect.RemoteAddress,
 				Failure:   makeFailure(in.Connect.Error),
-				Operation: errorx.ConnectOperation,
+				Operation: errorsx.ConnectOperation,
 				T:         in.Connect.DurationSinceBeginning.Seconds(),
 			})
 			// fallthrough
@@ -426,7 +426,7 @@ func NewNetworkEventsList(results oonitemplates.Results) NetworkEventsList {
 		if in.Read != nil {
 			out = append(out, &NetworkEvent{
 				Failure:   makeFailure(in.Read.Error),
-				Operation: errorx.ReadOperation,
+				Operation: errorsx.ReadOperation,
 				NumBytes:  in.Read.NumBytes,
 				T:         in.Read.DurationSinceBeginning.Seconds(),
 			})
@@ -435,7 +435,7 @@ func NewNetworkEventsList(results oonitemplates.Results) NetworkEventsList {
 		if in.Write != nil {
 			out = append(out, &NetworkEvent{
 				Failure:   makeFailure(in.Write.Error),
-				Operation: errorx.WriteOperation,
+				Operation: errorsx.WriteOperation,
 				NumBytes:  in.Write.NumBytes,
 				T:         in.Write.DurationSinceBeginning.Seconds(),
 			})

@@ -12,7 +12,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 )
 
 func TestNewTCPConnectListEmpty(t *testing.T) {
@@ -67,7 +67,7 @@ func TestNewTCPConnectListFailure(t *testing.T) {
 		Connects: []*modelx.ConnectEvent{
 			{
 				RemoteAddress: "8.8.8.8:53",
-				Error:         errors.New(errorx.FailureConnectionReset),
+				Error:         errors.New(errorsx.FailureConnectionReset),
 			},
 		},
 	})
@@ -80,7 +80,7 @@ func TestNewTCPConnectListFailure(t *testing.T) {
 	if out[0].Port != 53 {
 		t.Fatal("unexpected out[0].Port")
 	}
-	if *out[0].Status.Failure != errorx.FailureConnectionReset {
+	if *out[0].Status.Failure != errorsx.FailureConnectionReset {
 		t.Fatal("unexpected out[0].Failure")
 	}
 	if out[0].Status.Success != false {
@@ -93,7 +93,7 @@ func TestNewTCPConnectListInvalidInput(t *testing.T) {
 		Connects: []*modelx.ConnectEvent{
 			{
 				RemoteAddress: "8.8.8.8",
-				Error:         errors.New(errorx.FailureConnectionReset),
+				Error:         errors.New(errorsx.FailureConnectionReset),
 			},
 		},
 	})
@@ -106,7 +106,7 @@ func TestNewTCPConnectListInvalidInput(t *testing.T) {
 	if out[0].Port != 0 {
 		t.Fatal("unexpected out[0].Port")
 	}
-	if *out[0].Status.Failure != errorx.FailureConnectionReset {
+	if *out[0].Status.Failure != errorsx.FailureConnectionReset {
 		t.Fatal("unexpected out[0].Failure")
 	}
 	if out[0].Status.Success != false {
@@ -649,7 +649,7 @@ func TestNewDNSQueriesListSuccess(t *testing.T) {
 				TransportNetwork: "system",
 			},
 			{
-				Error:            errors.New(errorx.FailureDNSNXDOMAINError),
+				Error:            errors.New(errorsx.FailureDNSNXDOMAINError),
 				Hostname:         "dns.googlex",
 				TransportNetwork: "system",
 			},
@@ -768,7 +768,7 @@ func dnscheckbad(e DNSQueryEntry) error {
 	if e.Engine != "system" {
 		return errors.New("invalid engine")
 	}
-	if *e.Failure != errorx.FailureDNSNXDOMAINError {
+	if *e.Failure != errorsx.FailureDNSNXDOMAINError {
 		return errors.New("invalid failure")
 	}
 	if e.Hostname != "dns.googlex" {
@@ -854,7 +854,7 @@ func TestNewNetworkEventsListGood(t *testing.T) {
 	if out[0].NumBytes != 0 {
 		t.Fatal("wrong out[0].NumBytes")
 	}
-	if out[0].Operation != errorx.ConnectOperation {
+	if out[0].Operation != errorsx.ConnectOperation {
 		t.Fatal("wrong out[0].Operation")
 	}
 	if !floatEquals(out[0].T, 0.010) {
@@ -870,7 +870,7 @@ func TestNewNetworkEventsListGood(t *testing.T) {
 	if out[1].NumBytes != 1789 {
 		t.Fatal("wrong out[1].NumBytes")
 	}
-	if out[1].Operation != errorx.ReadOperation {
+	if out[1].Operation != errorsx.ReadOperation {
 		t.Fatal("wrong out[1].Operation")
 	}
 	if !floatEquals(out[1].T, 0.020) {
@@ -886,7 +886,7 @@ func TestNewNetworkEventsListGood(t *testing.T) {
 	if out[2].NumBytes != 17714 {
 		t.Fatal("wrong out[2].NumBytes")
 	}
-	if out[2].Operation != errorx.WriteOperation {
+	if out[2].Operation != errorsx.WriteOperation {
 		t.Fatal("wrong out[2].Operation")
 	}
 	if !floatEquals(out[2].T, 0.030) {
@@ -933,7 +933,7 @@ func TestNewNetworkEventsListGoodUDPAndErrors(t *testing.T) {
 	if out[0].NumBytes != 0 {
 		t.Fatal("wrong out[0].NumBytes")
 	}
-	if out[0].Operation != errorx.ConnectOperation {
+	if out[0].Operation != errorsx.ConnectOperation {
 		t.Fatal("wrong out[0].Operation")
 	}
 	if !floatEquals(out[0].T, 0.010) {
@@ -949,7 +949,7 @@ func TestNewNetworkEventsListGoodUDPAndErrors(t *testing.T) {
 	if out[1].NumBytes != 1789 {
 		t.Fatal("wrong out[1].NumBytes")
 	}
-	if out[1].Operation != errorx.ReadOperation {
+	if out[1].Operation != errorsx.ReadOperation {
 		t.Fatal("wrong out[1].Operation")
 	}
 	if !floatEquals(out[1].T, 0.020) {
@@ -965,7 +965,7 @@ func TestNewNetworkEventsListGoodUDPAndErrors(t *testing.T) {
 	if out[2].NumBytes != 17714 {
 		t.Fatal("wrong out[2].NumBytes")
 	}
-	if out[2].Operation != errorx.WriteOperation {
+	if out[2].Operation != errorsx.WriteOperation {
 		t.Fatal("wrong out[2].Operation")
 	}
 	if !floatEquals(out[2].T, 0.030) {

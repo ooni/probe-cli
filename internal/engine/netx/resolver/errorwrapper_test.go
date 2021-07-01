@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 )
 
 func TestErrorWrapperSuccess(t *testing.T) {
@@ -32,14 +32,14 @@ func TestErrorWrapperFailure(t *testing.T) {
 	if addrs != nil {
 		t.Fatal("expected nil addr here")
 	}
-	var errWrapper *errorx.ErrWrapper
+	var errWrapper *errorsx.ErrWrapper
 	if !errors.As(err, &errWrapper) {
 		t.Fatal("cannot properly cast the returned error")
 	}
-	if errWrapper.Failure != errorx.FailureDNSNXDOMAINError {
+	if errWrapper.Failure != errorsx.FailureDNSNXDOMAINError {
 		t.Fatal("unexpected failure")
 	}
-	if errWrapper.Operation != errorx.ResolveOperation {
+	if errWrapper.Operation != errorsx.ResolveOperation {
 		t.Fatal("unexpected Operation")
 	}
 }

@@ -1,4 +1,4 @@
-package errorx
+package errorsx
 
 import "golang.org/x/sys/windows"
 
