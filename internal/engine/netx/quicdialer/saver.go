@@ -45,7 +45,7 @@ func (h HandshakeSaver) DialContext(ctx context.Context, network string,
 		})
 		return nil, err
 	}
-	state := ConnectionState(sess)
+	state := connectionState(sess)
 	h.Saver.Write(trace.Event{
 		Duration:           stop.Sub(start),
 		Name:               "quic_handshake_done",

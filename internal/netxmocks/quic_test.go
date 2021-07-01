@@ -9,12 +9,13 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 func TestQUICListenerListen(t *testing.T) {
 	expected := errors.New("mocked error")
 	ql := &QUICListener{
-		MockListen: func(addr *net.UDPAddr) (net.PacketConn, error) {
+		MockListen: func(addr *net.UDPAddr) (quicx.UDPConn, error) {
 			return nil, expected
 		},
 	}
