@@ -18,7 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonidatamodel"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
@@ -77,7 +77,7 @@ func (tr *TargetResults) fillSummary() {
 	if len(tr.TCPConnect) < 1 {
 		return
 	}
-	tr.Summary[errorx.ConnectOperation] = Summary{
+	tr.Summary[errorsx.ConnectOperation] = Summary{
 		Failure: tr.TCPConnect[0].Status.Failure,
 	}
 	switch tr.TargetProtocol {

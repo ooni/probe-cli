@@ -19,7 +19,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/iox"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 )
@@ -164,7 +164,7 @@ func (m Measurer) Run(
 	// parse response body
 	var jsonHeaders JSONHeaders
 	if err := json.Unmarshal(data, &jsonHeaders); err != nil {
-		failure := errorx.FailureJSONParseError
+		failure := errorsx.FailureJSONParseError
 		tk.Failure = &failure
 		tk.Tampering.Total = true
 		return nil // measurement did not fail, we measured tampering
@@ -180,8 +180,8 @@ func Transact(txp Transport, req *http.Request,
 	callbacks model.ExperimentCallbacks) (*http.Response, []byte, error) {
 	// make sure that we return a wrapped error here
 	resp, data, err := transact(txp, req, callbacks)
-	err = errorx.SafeErrWrapperBuilder{
-		Error: err, Operation: errorx.TopLevelOperation}.MaybeBuild()
+	err = errorsx.SafeErrWrapperBuilder{
+		Error: err, Operation: errorsx.TopLevelOperation}.MaybeBuild()
 	return resp, data, err
 }
 

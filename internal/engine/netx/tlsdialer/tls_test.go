@@ -10,8 +10,8 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -48,14 +48,14 @@ func TestErrorWrapperTLSHandshakerFailure(t *testing.T) {
 	if conn != nil {
 		t.Fatal("expected nil con here")
 	}
-	var errWrapper *errorx.ErrWrapper
+	var errWrapper *errorsx.ErrWrapper
 	if !errors.As(err, &errWrapper) {
 		t.Fatal("cannot cast to ErrWrapper")
 	}
-	if errWrapper.Failure != errorx.FailureEOFError {
+	if errWrapper.Failure != errorsx.FailureEOFError {
 		t.Fatal("unexpected Failure")
 	}
-	if errWrapper.Operation != errorx.TLSHandshakeOperation {
+	if errWrapper.Operation != errorsx.TLSHandshakeOperation {
 		t.Fatal("unexpected Operation")
 	}
 }

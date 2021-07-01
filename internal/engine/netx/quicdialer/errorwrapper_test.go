@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -22,21 +22,21 @@ func TestErrorWrapperFailure(t *testing.T) {
 	if sess != nil {
 		t.Fatal("expected a nil sess here")
 	}
-	errorWrapperCheckErr(t, err, errorx.QUICHandshakeOperation)
+	errorWrapperCheckErr(t, err, errorsx.QUICHandshakeOperation)
 }
 
 func errorWrapperCheckErr(t *testing.T, err error, op string) {
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("expected another error here")
 	}
-	var errWrapper *errorx.ErrWrapper
+	var errWrapper *errorsx.ErrWrapper
 	if !errors.As(err, &errWrapper) {
 		t.Fatal("cannot cast to ErrWrapper")
 	}
 	if errWrapper.Operation != op {
 		t.Fatal("unexpected Operation")
 	}
-	if errWrapper.Failure != errorx.FailureEOFError {
+	if errWrapper.Failure != errorsx.FailureEOFError {
 		t.Fatal("unexpected failure")
 	}
 }
@@ -61,7 +61,7 @@ func TestErrorWrapperInvalidCertificate(t *testing.T) {
 	if sess != nil {
 		t.Fatal("expected nil sess here")
 	}
-	if err.Error() != errorx.FailureSSLInvalidCertificate {
+	if err.Error() != errorsx.FailureSSLInvalidCertificate {
 		t.Fatal("unexpected failure")
 	}
 }

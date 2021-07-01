@@ -5,8 +5,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 )
 
 // QUICListener listens for QUIC connections.
@@ -53,7 +53,7 @@ func (c saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 		Duration: stop.Sub(start),
 		Err:      err,
 		NumBytes: count,
-		Name:     errorx.WriteToOperation,
+		Name:     errorsx.WriteToOperation,
 		Time:     stop,
 	})
 	return count, err
@@ -73,7 +73,7 @@ func (c saverUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, er
 		Duration: stop.Sub(start),
 		Err:      err,
 		NumBytes: n,
-		Name:     errorx.ReadFromOperation,
+		Name:     errorsx.ReadFromOperation,
 		Time:     stop,
 	})
 	return n, oobn, flags, addr, err

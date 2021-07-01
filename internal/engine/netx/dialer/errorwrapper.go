@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 )
 
 // errorWrapperDialer is a dialer that performs err wrapping
@@ -15,9 +15,9 @@ type errorWrapperDialer struct {
 // DialContext implements Dialer.DialContext
 func (d *errorWrapperDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
-	err = errorx.SafeErrWrapperBuilder{
+	err = errorsx.SafeErrWrapperBuilder{
 		Error:     err,
-		Operation: errorx.ConnectOperation,
+		Operation: errorsx.ConnectOperation,
 	}.MaybeBuild()
 	if err != nil {
 		return nil, err
@@ -33,9 +33,9 @@ type errorWrapperConn struct {
 // Read implements net.Conn.Read
 func (c *errorWrapperConn) Read(b []byte) (n int, err error) {
 	n, err = c.Conn.Read(b)
-	err = errorx.SafeErrWrapperBuilder{
+	err = errorsx.SafeErrWrapperBuilder{
 		Error:     err,
-		Operation: errorx.ReadOperation,
+		Operation: errorsx.ReadOperation,
 	}.MaybeBuild()
 	return
 }
@@ -43,9 +43,9 @@ func (c *errorWrapperConn) Read(b []byte) (n int, err error) {
 // Write implements net.Conn.Write
 func (c *errorWrapperConn) Write(b []byte) (n int, err error) {
 	n, err = c.Conn.Write(b)
-	err = errorx.SafeErrWrapperBuilder{
+	err = errorsx.SafeErrWrapperBuilder{
 		Error:     err,
-		Operation: errorx.WriteOperation,
+		Operation: errorsx.WriteOperation,
 	}.MaybeBuild()
 	return
 }
@@ -53,9 +53,9 @@ func (c *errorWrapperConn) Write(b []byte) (n int, err error) {
 // Close implements net.Conn.Close
 func (c *errorWrapperConn) Close() (err error) {
 	err = c.Conn.Close()
-	err = errorx.SafeErrWrapperBuilder{
+	err = errorsx.SafeErrWrapperBuilder{
 		Error:     err,
-		Operation: errorx.CloseOperation,
+		Operation: errorsx.CloseOperation,
 	}.MaybeBuild()
 	return
 }

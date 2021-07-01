@@ -17,7 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
@@ -446,7 +446,7 @@ func TestSummary(t *testing.T) {
 		if len(tr.Summary) != 1 {
 			t.Fatal("cannot find expected entry")
 		}
-		if *tr.Summary[errorx.ConnectOperation].Failure != failure {
+		if *tr.Summary[errorsx.ConnectOperation].Failure != failure {
 			t.Fatal("invalid failure")
 		}
 	})
@@ -465,7 +465,7 @@ func TestSummary(t *testing.T) {
 		if len(tr.Summary) != 2 {
 			t.Fatal("cannot find expected entry")
 		}
-		if tr.Summary[errorx.ConnectOperation].Failure != nil {
+		if tr.Summary[errorsx.ConnectOperation].Failure != nil {
 			t.Fatal("invalid failure")
 		}
 		if *tr.Summary["handshake"].Failure != failure {
@@ -489,7 +489,7 @@ func TestSummary(t *testing.T) {
 			if len(tr.Summary) < 1 {
 				t.Fatal("cannot find expected entry")
 			}
-			if tr.Summary[errorx.ConnectOperation].Failure != nil {
+			if tr.Summary[errorsx.ConnectOperation].Failure != nil {
 				t.Fatal("invalid failure")
 			}
 			if handshake == nil {
