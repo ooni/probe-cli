@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -150,7 +151,7 @@ func ChainResolvers(primary, secondary modelx.DNSResolver) modelx.DNSResolver {
 }
 
 func resolverWrapResolver(r resolver.Resolver) resolver.EmitterResolver {
-	return resolver.EmitterResolver{Resolver: resolver.ErrorWrapperResolver{Resolver: r}}
+	return resolver.EmitterResolver{Resolver: &errorsx.ErrorWrapperResolver{Resolver: r}}
 }
 
 func resolverWrapTransport(txp resolver.RoundTripper) resolver.EmitterResolver {

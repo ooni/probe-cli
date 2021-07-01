@@ -24,7 +24,7 @@ func TestNewResolverVanilla(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(resolver.ErrorWrapperResolver)
+	ewr, ok := ir.Resolver.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -48,7 +48,7 @@ func TestNewResolverSpecificResolver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(resolver.ErrorWrapperResolver)
+	ewr, ok := ir.Resolver.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -70,7 +70,7 @@ func TestNewResolverWithBogonFilter(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(resolver.ErrorWrapperResolver)
+	ewr, ok := ir.Resolver.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -103,7 +103,7 @@ func TestNewResolverWithLogging(t *testing.T) {
 	if lr.Logger != log.Log {
 		t.Fatal("not the logger we expected")
 	}
-	ewr, ok := lr.Resolver.(resolver.ErrorWrapperResolver)
+	ewr, ok := lr.Resolver.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -133,7 +133,7 @@ func TestNewResolverWithSaver(t *testing.T) {
 	if sr.Saver != saver {
 		t.Fatal("not the saver we expected")
 	}
-	ewr, ok := sr.Resolver.(resolver.ErrorWrapperResolver)
+	ewr, ok := sr.Resolver.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -155,7 +155,7 @@ func TestNewResolverWithReadWriteCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(resolver.ErrorWrapperResolver)
+	ewr, ok := ir.Resolver.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -186,7 +186,7 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(resolver.ErrorWrapperResolver)
+	ewr, ok := ir.Resolver.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}

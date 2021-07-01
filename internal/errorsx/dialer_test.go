@@ -10,7 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxmocks"
 )
 
-func TestErrorWrapperFailure(t *testing.T) {
+func TestErrorWrapperDialerFailure(t *testing.T) {
 	ctx := context.Background()
 	d := &ErrorWrapperDialer{Dialer: &netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
@@ -40,7 +40,7 @@ func errorWrapperCheckErr(t *testing.T, err error, op string) {
 	}
 }
 
-func TestErrorWrapperSuccess(t *testing.T) {
+func TestErrorWrapperDialerSuccess(t *testing.T) {
 	ctx := context.Background()
 	d := &ErrorWrapperDialer{Dialer: &netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
