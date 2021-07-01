@@ -1,23 +1,27 @@
-package dialer
+package errorsx
 
 import (
 	"context"
 	"net"
-
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
 )
 
-// errorWrapperDialer is a dialer that performs err wrapping
-type errorWrapperDialer struct {
+// Dialer establishes network connections.
+type Dialer interface {
+	// DialContext behaves like net.Dialer.DialContext.
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+}
+
+// ErrorWrapperDialer is a dialer that performs err wrapping.
+type ErrorWrapperDialer struct {
 	Dialer
 }
 
 // DialContext implements Dialer.DialContext
-func (d *errorWrapperDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *ErrorWrapperDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
-	err = errorsx.SafeErrWrapperBuilder{
+	err = SafeErrWrapperBuilder{
 		Error:     err,
-		Operation: errorsx.ConnectOperation,
+		Operation: ConnectOperation,
 	}.MaybeBuild()
 	if err != nil {
 		return nil, err
@@ -33,9 +37,9 @@ type errorWrapperConn struct {
 // Read implements net.Conn.Read
 func (c *errorWrapperConn) Read(b []byte) (n int, err error) {
 	n, err = c.Conn.Read(b)
-	err = errorsx.SafeErrWrapperBuilder{
+	err = SafeErrWrapperBuilder{
 		Error:     err,
-		Operation: errorsx.ReadOperation,
+		Operation: ReadOperation,
 	}.MaybeBuild()
 	return
 }
@@ -43,9 +47,9 @@ func (c *errorWrapperConn) Read(b []byte) (n int, err error) {
 // Write implements net.Conn.Write
 func (c *errorWrapperConn) Write(b []byte) (n int, err error) {
 	n, err = c.Conn.Write(b)
-	err = errorsx.SafeErrWrapperBuilder{
+	err = SafeErrWrapperBuilder{
 		Error:     err,
-		Operation: errorsx.WriteOperation,
+		Operation: WriteOperation,
 	}.MaybeBuild()
 	return
 }
@@ -53,9 +57,9 @@ func (c *errorWrapperConn) Write(b []byte) (n int, err error) {
 // Close implements net.Conn.Close
 func (c *errorWrapperConn) Close() (err error) {
 	err = c.Conn.Close()
-	err = errorsx.SafeErrWrapperBuilder{
+	err = SafeErrWrapperBuilder{
 		Error:     err,
-		Operation: errorsx.CloseOperation,
+		Operation: CloseOperation,
 	}.MaybeBuild()
 	return
 }
