@@ -29,9 +29,8 @@ type TLSHandshakerConfigurable struct {
 	// or negative, we will use default timeout of 10 seconds.
 	Timeout time.Duration
 
-	// UTLSHandshaker is the OPTIONAL Handshaker that uses utls for TLS parroting
-	// if this Handshaker is not set, we'll use net
-	UTLSHandshaker *UTLSHandshaker
+	// ClientHelloID is the OPTIONAL TLS fingerprint we want to mimick
+	ClientHelloID *utls.ClientHelloID
 }
 
 var _ TLSHandshaker = &TLSHandshakerConfigurable{}
@@ -61,9 +60,6 @@ func (h *TLSHandshakerConfigurable) Handshake(
 		config = config.Clone()
 		config.RootCAs = defaultCertPool
 	}
-	if h.UTLSHandshaker != nil {
-		return h.UTLSHandshaker.Handshake(ctx, conn, config)
-	}
 	tlsconn := h.newConn(conn, config)
 	if err := tlsconn.Handshake(); err != nil {
 		return nil, tls.ConnectionState{}, err
@@ -76,7 +72,22 @@ func (h *TLSHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) T
 	if h.NewConn != nil {
 		return h.NewConn(conn, config)
 	}
+	if h.ClientHelloID != nil {
+		return h.newUConn(conn, config)
+	}
 	return tls.Client(conn, config)
+}
+
+func (h *TLSHandshakerConfigurable) newUConn(conn net.Conn, config *tls.Config) TLSConn {
+	uConfig := &utls.Config{
+		RootCAs:                     config.RootCAs,
+		NextProtos:                  config.NextProtos,
+		ServerName:                  config.ServerName,
+		InsecureSkipVerify:          config.InsecureSkipVerify,
+		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
+	}
+	tlsConn := utls.UClient(conn, uConfig, *h.ClientHelloID)
+	return &UTLSConn{tlsConn}
 }
 
 // DefaultTLSHandshaker is the default TLS handshaker.
@@ -114,33 +125,14 @@ func (h *TLSHandshakerLogger) Handshake(
 	return tlsconn, state, nil
 }
 
-// TODO(kelmenhorst): empirically test different fingerprints from utls
-type UTLSHandshaker struct {
-	ClientHelloID *utls.ClientHelloID
+// UTLSConn implements TLSConn
+type UTLSConn struct {
+	*utls.UConn
 }
 
-// TLSHandshake performs the TLS handshake using yawning/utls. We will
-// honour selected fields of the original config and copy all the fields
-// of the resulting state back to the *tls.ConnectionState.
-func (th UTLSHandshaker) Handshake(
-	ctx context.Context, conn net.Conn, config *tls.Config,
-) (net.Conn, tls.ConnectionState, error) {
-	// copy selected fields from the original config
-	uConfig := &utls.Config{
-		RootCAs:                     config.RootCAs,
-		NextProtos:                  config.NextProtos,
-		ServerName:                  config.ServerName,
-		InsecureSkipVerify:          config.InsecureSkipVerify,
-		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
-	}
-	tlsConn := utls.UClient(conn, uConfig, *th.clientHelloID())
-	err := tlsConn.Handshake()
-	if err != nil {
-		return nil, tls.ConnectionState{}, err
-	}
-	// fill the output from the original state
-	uState := tlsConn.ConnectionState()
-	state := tls.ConnectionState{
+func (c *UTLSConn) ConnectionState() tls.ConnectionState {
+	uState := c.Conn.ConnectionState()
+	return tls.ConnectionState{
 		Version:                     uState.Version,
 		HandshakeComplete:           uState.HandshakeComplete,
 		DidResume:                   uState.DidResume,
@@ -153,15 +145,6 @@ func (th UTLSHandshaker) Handshake(
 		OCSPResponse:                uState.OCSPResponse,
 		TLSUnique:                   uState.TLSUnique,
 	}
-	return tlsConn, state, nil
-}
-
-// clientHelloID returns the ClientHelloID we should use.
-func (th *UTLSHandshaker) clientHelloID() *utls.ClientHelloID {
-	if th.ClientHelloID != nil {
-		return th.ClientHelloID
-	}
-	return &utls.HelloFirefox_Auto
 }
 
 var _ TLSHandshaker = &TLSHandshakerLogger{}

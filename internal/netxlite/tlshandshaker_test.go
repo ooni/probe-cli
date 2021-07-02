@@ -180,10 +180,9 @@ func TestTLSHandshakerLoggerFailure(t *testing.T) {
 }
 
 func TestUTLSHandshakerChrome(t *testing.T) {
-	utlsHandshaker := &UTLSHandshaker{
+	h := &TLSHandshakerConfigurable{
 		ClientHelloID: &utls.HelloChrome_Auto,
 	}
-	h := &TLSHandshakerConfigurable{UTLSHandshaker: utlsHandshaker}
 	cfg := &tls.Config{ServerName: "google.com"}
 	conn, err := net.Dial("tcp", "google.com:443")
 	conn, _, err = h.Handshake(context.Background(), conn, cfg)
