@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 // The Configurer job is to construct a Configuration that can
@@ -36,13 +37,28 @@ func (c Configuration) CloseIdleConnections() {
 
 // NewConfiguration builds a new measurement configuration.
 func (c Configurer) NewConfiguration() (Configuration, error) {
+	// select ClientHelloID
+	// TODO(kelmenhorst) this is used for testing different fingerprints
+	var clientHelloID *utls.ClientHelloID
+	switch strings.ToLower(c.Config.ClientHelloID) {
+	case "chrome":
+		clientHelloID = &utls.HelloChrome_Auto
+	case "firefox":
+		clientHelloID = &utls.HelloFirefox_Auto
+	case "ios":
+		clientHelloID = &utls.HelloIOS_Auto
+	case "golang":
+		clientHelloID = &utls.HelloGolang
+	default:
+		clientHelloID = &utls.HelloChrome_Auto
+	}
 	// set up defaults
 	configuration := Configuration{
 		HTTPConfig: netx.Config{
 			BogonIsError:        c.Config.RejectDNSBogons,
 			CacheResolutions:    true,
 			CertPool:            c.Config.CertPool,
-			ClientHelloID:       c.Config.ClientHelloID,
+			ClientHelloID:       clientHelloID,
 			ContextByteCounting: true,
 			DialSaver:           c.Saver,
 			HTTP3Enabled:        c.Config.HTTP3Enabled,

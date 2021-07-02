@@ -6,16 +6,18 @@ import (
 	"errors"
 	"net"
 	"reflect"
+	"syscall"
 	"testing"
+	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 func TestQUICListenerListen(t *testing.T) {
 	expected := errors.New("mocked error")
 	ql := &QUICListener{
-		MockListen: func(addr *net.UDPAddr) (quicx.UDPConn, error) {
+		MockListen: func(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error) {
 			return nil, expected
 		},
 	}
@@ -264,5 +266,192 @@ func TestQUICEarlySessionReceiveMessage(t *testing.T) {
 	}
 	if b != nil {
 		t.Fatal("expected nil buffer here")
+	}
+}
+
+func TestQUICUDPConnWriteTo(t *testing.T) {
+	expected := errors.New("mocked error")
+	quc := &QUICUDPConn{
+		MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+			return 0, expected
+		},
+	}
+	pkt := make([]byte, 128)
+	addr := &net.UDPAddr{}
+	cnt, err := quc.WriteTo(pkt, addr)
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if cnt != 0 {
+		t.Fatal("expected zero here")
+	}
+}
+
+func TestQUICUDPConnReadMsgUDP(t *testing.T) {
+	expected := errors.New("mocked error")
+	quc := &QUICUDPConn{
+		MockReadMsgUDP: func(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
+			return 0, 0, 0, nil, expected
+		},
+	}
+	b := make([]byte, 128)
+	oob := make([]byte, 128)
+	n, oobn, flags, addr, err := quc.ReadMsgUDP(b, oob)
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if n != 0 {
+		t.Fatal("expected zero here")
+	}
+	if oobn != 0 {
+		t.Fatal("expected zero here")
+	}
+	if flags != 0 {
+		t.Fatal("expected zero here")
+	}
+	if addr != nil {
+		t.Fatal("expected nil here")
+	}
+}
+
+func TestQUICUDPConnClose(t *testing.T) {
+	expected := errors.New("mocked error")
+	quc := &QUICUDPConn{
+		MockClose: func() error {
+			return expected
+		},
+	}
+	err := quc.Close()
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+}
+
+func TestQUICUDPConnLocalAddrWorks(t *testing.T) {
+	expected := &net.TCPAddr{
+		IP:   net.IPv6loopback,
+		Port: 1234,
+	}
+	c := &QUICUDPConn{
+		MockLocalAddr: func() net.Addr {
+			return expected
+		},
+	}
+	out := c.LocalAddr()
+	if diff := cmp.Diff(expected, out); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestQUICUDPConnRemoteAddrWorks(t *testing.T) {
+	expected := &net.TCPAddr{
+		IP:   net.IPv6loopback,
+		Port: 1234,
+	}
+	c := &QUICUDPConn{
+		MockRemoteAddr: func() net.Addr {
+			return expected
+		},
+	}
+	out := c.RemoteAddr()
+	if diff := cmp.Diff(expected, out); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestQUICUDPConnSetDeadline(t *testing.T) {
+	expected := errors.New("mocked error")
+	c := &QUICUDPConn{
+		MockSetDeadline: func(t time.Time) error {
+			return expected
+		},
+	}
+	err := c.SetDeadline(time.Time{})
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+}
+
+func TestQUICUDPConnSetReadDeadline(t *testing.T) {
+	expected := errors.New("mocked error")
+	c := &QUICUDPConn{
+		MockSetReadDeadline: func(t time.Time) error {
+			return expected
+		},
+	}
+	err := c.SetReadDeadline(time.Time{})
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+}
+
+func TestQUICUDPConnSetWriteDeadline(t *testing.T) {
+	expected := errors.New("mocked error")
+	c := &QUICUDPConn{
+		MockSetWriteDeadline: func(t time.Time) error {
+			return expected
+		},
+	}
+	err := c.SetWriteDeadline(time.Time{})
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+}
+
+func TestQUICUDPConnReadFrom(t *testing.T) {
+	expected := errors.New("mocked error")
+	quc := &QUICUDPConn{
+		MockReadFrom: func(b []byte) (int, net.Addr, error) {
+			return 0, nil, expected
+		},
+	}
+	b := make([]byte, 128)
+	n, addr, err := quc.ReadFrom(b)
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if n != 0 {
+		t.Fatal("expected zero here")
+	}
+	if addr != nil {
+		t.Fatal("expected nil here")
+	}
+}
+
+func TestQUICUDPConnSyscallConn(t *testing.T) {
+	expected := errors.New("mocked error")
+	quc := &QUICUDPConn{
+		MockSyscallConn: func() (syscall.RawConn, error) {
+			return nil, expected
+		},
+	}
+	conn, err := quc.SyscallConn()
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if conn != nil {
+		t.Fatal("expected nil here")
+	}
+}
+
+func TestQUICUDPConnWriteMsgUDP(t *testing.T) {
+	expected := errors.New("mocked error")
+	quc := &QUICUDPConn{
+		MockWriteMsgUDP: func(b, oob []byte, addr *net.UDPAddr) (n int, oobn int, err error) {
+			return 0, 0, expected
+		},
+	}
+	b := make([]byte, 128)
+	oob := make([]byte, 128)
+	addr := &net.UDPAddr{}
+	n, oobn, err := quc.WriteMsgUDP(b, oob, addr)
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if n != 0 {
+		t.Fatal("expected 0 here")
+	}
+	if oobn != 0 {
+		t.Fatal("expected 0 here")
 	}
 }

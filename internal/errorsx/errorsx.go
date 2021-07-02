@@ -1,137 +1,14 @@
 // Package errorsx contains error extensions.
 package errorsx
 
-// TODO: eventually we want to re-structure the error classification code by clearly separating the layers where the error occur:
-//
-// - errno.go and errno_test.go: contain only the errno classifier (for system errors)
-// - qtls.go and qtls_test.go: contain qtls dialers, handshaker, classifier
-// - tls.go and tls_test.go: contain tls dialers, handshaker, classifier
-// - resolver.go and resolver_test.go: contain dialers and classifier for resolving
-
 import (
 	"context"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"strings"
 	"syscall"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
-)
-
-const (
-	// FailureConnectionRefused means ECONNREFUSED.
-	FailureConnectionRefused = "connection_refused"
-
-	// FailureConnectionReset means ECONNRESET.
-	FailureConnectionReset = "connection_reset"
-
-	// FailureDNSBogonError means we detected bogon in DNS reply.
-	FailureDNSBogonError = "dns_bogon_error"
-
-	// FailureDNSNXDOMAINError means we got NXDOMAIN in DNS reply.
-	FailureDNSNXDOMAINError = "dns_nxdomain_error"
-
-	// FailureEOFError means we got unexpected EOF on connection.
-	FailureEOFError = "eof_error"
-
-	// FailureGenericTimeoutError means we got some timer has expired.
-	FailureGenericTimeoutError = "generic_timeout_error"
-
-	// FailureHostUnreachable means that there is "no route to host".
-	FailureHostUnreachable = "host_unreachable"
-
-	// FailureInterrupted means that the user interrupted us.
-	FailureInterrupted = "interrupted"
-
-	// FailureNoCompatibleQUICVersion means that the server does not support the proposed QUIC version
-	FailureNoCompatibleQUICVersion = "quic_incompatible_version"
-
-	// FailureSSLHandshake means that the negotiation of cryptographic parameters failed
-	FailureSSLHandshake = "ssl_failed_handshake"
-
-	// FailureSSLInvalidHostname means we got certificate is not valid for SNI.
-	FailureSSLInvalidHostname = "ssl_invalid_hostname"
-
-	// FailureSSLUnknownAuthority means we cannot find CA validating certificate.
-	FailureSSLUnknownAuthority = "ssl_unknown_authority"
-
-	// FailureSSLInvalidCertificate means certificate experired or other
-	// sort of errors causing it to be invalid.
-	FailureSSLInvalidCertificate = "ssl_invalid_certificate"
-
-	// FailureJSONParseError indicates that we couldn't parse a JSON
-	FailureJSONParseError = "json_parse_error"
-)
-
-// TLS alert protocol as defined in RFC8446
-const (
-	// Sender was unable to negotiate an acceptable set of security parameters given the options available.
-	TLSAlertHandshakeFailure = 40
-
-	// Certificate was corrupt, contained signatures that did not verify correctly, etc.
-	TLSAlertBadCertificate = 42
-
-	// Certificate was of an unsupported type.
-	TLSAlertUnsupportedCertificate = 43
-
-	// Certificate was revoked by its signer.
-	TLSAlertCertificateRevoked = 44
-
-	// Certificate has expired or is not currently valid.
-	TLSAlertCertificateExpired = 45
-
-	// Some unspecified issue arose in processing the certificate, rendering it unacceptable.
-	TLSAlertCertificateUnknown = 46
-
-	// Certificate was not accepted because the CA certificate could not be located or could not be matched with a known trust anchor.
-	TLSAlertUnknownCA = 48
-
-	// Handshake (not record layer) cryptographic operation failed.
-	TLSAlertDecryptError = 51
-
-	// Sent by servers when no server exists identified by the name provided by the client via the "server_name" extension.
-	TLSUnrecognizedName = 112
-)
-
-const (
-	// ResolveOperation is the operation where we resolve a domain name
-	ResolveOperation = "resolve"
-
-	// ConnectOperation is the operation where we do a TCP connect
-	ConnectOperation = "connect"
-
-	// TLSHandshakeOperation is the TLS handshake
-	TLSHandshakeOperation = "tls_handshake"
-
-	// QUICHandshakeOperation is the handshake to setup a QUIC connection
-	QUICHandshakeOperation = "quic_handshake"
-
-	// HTTPRoundTripOperation is the HTTP round trip
-	HTTPRoundTripOperation = "http_round_trip"
-
-	// CloseOperation is when we close a socket
-	CloseOperation = "close"
-
-	// ReadOperation is when we read from a socket
-	ReadOperation = "read"
-
-	// WriteOperation is when we write to a socket
-	WriteOperation = "write"
-
-	// ReadFromOperation is when we read from an UDP socket
-	ReadFromOperation = "read_from"
-
-	// WriteToOperation is when we write to an UDP socket
-	WriteToOperation = "write_to"
-
-	// UnknownOperation is when we cannot determine the operation
-	UnknownOperation = "unknown"
-
-	// TopLevelOperation is used when the failure happens at top level. This
-	// happens for example with urlgetter with a cancelled context.
-	TopLevelOperation = "top_level"
 )
 
 // ErrDNSBogon indicates that we found a bogon address. This is the
@@ -284,82 +161,6 @@ func toFailureString(err error) string {
 	return scrubber.Scrub(formatted) // scrub IP addresses in the error
 }
 
-// ClassifyQUICFailure is a classifier to translate QUIC errors to OONI error strings.
-// TODO(kelmenhorst,bassosimone): Consider moving this into quicdialer.
-func ClassifyQUICFailure(err error) string {
-	var versionNegotiation *quic.VersionNegotiationError
-	var statelessReset *quic.StatelessResetError
-	var handshakeTimeout *quic.HandshakeTimeoutError
-	var idleTimeout *quic.IdleTimeoutError
-	var transportError *quic.TransportError
-
-	if errors.As(err, &versionNegotiation) {
-		return FailureNoCompatibleQUICVersion
-	}
-	if errors.As(err, &statelessReset) {
-		return FailureConnectionReset
-	}
-	if errors.As(err, &handshakeTimeout) {
-		return FailureGenericTimeoutError
-	}
-	if errors.As(err, &idleTimeout) {
-		return FailureGenericTimeoutError
-	}
-	if errors.As(err, &transportError) {
-		if transportError.ErrorCode == quic.ConnectionRefused {
-			return FailureConnectionRefused
-		}
-		// the TLS Alert constants are taken from RFC8446
-		errCode := uint8(transportError.ErrorCode)
-		if isCertificateError(errCode) {
-			return FailureSSLInvalidCertificate
-		}
-		// TLSAlertDecryptError and TLSAlertHandshakeFailure are summarized to a FailureSSLHandshake error because both
-		// alerts are caused by a failed or corrupted parameter negotiation during the TLS handshake.
-		if errCode == TLSAlertDecryptError || errCode == TLSAlertHandshakeFailure {
-			return FailureSSLHandshake
-		}
-		if errCode == TLSAlertUnknownCA {
-			return FailureSSLUnknownAuthority
-		}
-		if errCode == TLSUnrecognizedName {
-			return FailureSSLInvalidHostname
-		}
-	}
-	return toFailureString(err)
-}
-
-// ClassifyResolveFailure is a classifier to translate DNS resolving errors to OONI error strings.
-// TODO(kelmenhorst,bassosimone): Consider moving this into resolve.
-func ClassifyResolveFailure(err error) string {
-	if errors.Is(err, ErrDNSBogon) {
-		return FailureDNSBogonError // not in MK
-	}
-	return toFailureString(err)
-}
-
-// ClassifyTLSFailure is a classifier to translate TLS errors to OONI error strings.
-// TODO(kelmenhorst,bassosimone): Consider moving this into tlsdialer.
-func ClassifyTLSFailure(err error) string {
-	var x509HostnameError x509.HostnameError
-	if errors.As(err, &x509HostnameError) {
-		// Test case: https://wrong.host.badssl.com/
-		return FailureSSLInvalidHostname
-	}
-	var x509UnknownAuthorityError x509.UnknownAuthorityError
-	if errors.As(err, &x509UnknownAuthorityError) {
-		// Test case: https://self-signed.badssl.com/. This error has
-		// never been among the ones returned by MK.
-		return FailureSSLUnknownAuthority
-	}
-	var x509CertificateInvalidError x509.CertificateInvalidError
-	if errors.As(err, &x509CertificateInvalidError) {
-		// Test case: https://expired.badssl.com/
-		return FailureSSLInvalidCertificate
-	}
-	return toFailureString(err)
-}
-
 func toOperationString(err error, operation string) string {
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
@@ -389,12 +190,4 @@ func toOperationString(err error, operation string) string {
 		// FALLTHROUGH
 	}
 	return operation
-}
-
-func isCertificateError(alert uint8) bool {
-	return (alert == TLSAlertBadCertificate ||
-		alert == TLSAlertUnsupportedCertificate ||
-		alert == TLSAlertCertificateExpired ||
-		alert == TLSAlertCertificateRevoked ||
-		alert == TLSAlertCertificateUnknown)
 }

@@ -4,15 +4,15 @@ import (
 	"net"
 	"time"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/errorsx"
-	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
 	// Listen creates a new listening UDPConn.
-	Listen(addr *net.UDPAddr) (quicx.UDPConn, error)
+	Listen(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error)
 }
 
 // QUICListenerSaver is a QUICListener that also implements saving events.
@@ -25,22 +25,22 @@ type QUICListenerSaver struct {
 }
 
 // Listen implements QUICListener.Listen.
-func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (quicx.UDPConn, error) {
+func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error) {
 	pconn, err := qls.QUICListener.Listen(addr)
 	if err != nil {
 		return nil, err
 	}
-	return saverUDPConn{UDPConn: pconn, saver: qls.Saver}, nil
+	return saverUDPConn{OOBCapablePacketConn: pconn, saver: qls.Saver}, nil
 }
 
 type saverUDPConn struct {
-	quicx.UDPConn
+	quic.OOBCapablePacketConn
 	saver *trace.Saver
 }
 
 func (c saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	start := time.Now()
-	count, err := c.UDPConn.WriteTo(p, addr)
+	count, err := c.OOBCapablePacketConn.WriteTo(p, addr)
 	stop := time.Now()
 	c.saver.Write(trace.Event{
 		Address:  addr.String(),
@@ -56,7 +56,7 @@ func (c saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 
 func (c saverUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
 	start := time.Now()
-	n, oobn, flags, addr, err := c.UDPConn.ReadMsgUDP(b, oob)
+	n, oobn, flags, addr, err := c.OOBCapablePacketConn.ReadMsgUDP(b, oob)
 	stop := time.Now()
 	var data []byte
 	if n > 0 {
