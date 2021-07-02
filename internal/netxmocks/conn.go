@@ -32,7 +32,7 @@ func (c *Conn) Close() error {
 	return c.MockClose()
 }
 
-// LocalAddr class MockLocalAddr.
+// LocalAddr calls MockLocalAddr.
 func (c *Conn) LocalAddr() net.Addr {
 	return c.MockLocalAddr()
 }

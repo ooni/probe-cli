@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"net"
+	"time"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/quicx"
@@ -126,4 +127,64 @@ func (s *QUICEarlySession) SendMessage(b []byte) error {
 // ReceiveMessage calls MockReceiveMessage.
 func (s *QUICEarlySession) ReceiveMessage() ([]byte, error) {
 	return s.MockReceiveMessage()
+}
+
+// QUICUDPConn is an UDP conn used by QUIC.
+type QUICUDPConn struct {
+	MockWriteTo          func(p []byte, addr net.Addr) (int, error)
+	MockReadMsgUDP       func(b, oob []byte) (int, int, int, *net.UDPAddr, error)
+	MockClose            func() error
+	MockLocalAddr        func() net.Addr
+	MockRemoteAddr       func() net.Addr
+	MockSetDeadline      func(t time.Time) error
+	MockSetReadDeadline  func(t time.Time) error
+	MockSetWriteDeadline func(t time.Time) error
+	MockReadFrom         func(p []byte) (n int, addr net.Addr, err error)
+}
+
+var _ net.PacketConn = &QUICUDPConn{}
+
+// WriteTo calls MockWriteTo.
+func (c *QUICUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
+	return c.MockWriteTo(p, addr)
+}
+
+// ReadMsgUDP calls MockReadMsgUDP.
+func (c *QUICUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
+	return c.MockReadMsgUDP(b, oob)
+}
+
+// Close calls MockClose.
+func (c *QUICUDPConn) Close() error {
+	return c.MockClose()
+}
+
+// LocalAddr calls MockLocalAddr.
+func (c *QUICUDPConn) LocalAddr() net.Addr {
+	return c.MockLocalAddr()
+}
+
+// RemoteAddr calls MockRemoteAddr.
+func (c *QUICUDPConn) RemoteAddr() net.Addr {
+	return c.MockRemoteAddr()
+}
+
+// SetDeadline calls MockSetDeadline.
+func (c *QUICUDPConn) SetDeadline(t time.Time) error {
+	return c.MockSetDeadline(t)
+}
+
+// SetReadDeadline calls MockSetReadDeadline.
+func (c *QUICUDPConn) SetReadDeadline(t time.Time) error {
+	return c.MockSetReadDeadline(t)
+}
+
+// SetWriteDeadline calls MockSetWriteDeadline.
+func (c *QUICUDPConn) SetWriteDeadline(t time.Time) error {
+	return c.MockSetWriteDeadline(t)
+}
+
+// ReadFrom calls MockReadFrom.
+func (c *QUICUDPConn) ReadFrom(b []byte) (int, net.Addr, error) {
+	return c.MockReadFrom(b)
 }
