@@ -6,6 +6,10 @@ import (
 
 // NewSystemTransport creates a new "system" HTTP transport. That is a transport
 // using the Go standard library with custom dialer and TLS dialer.
+//
+// Deprecation warning
+//
+// New code should use netxlite.NewHTTPTransport instead.
 func NewSystemTransport(config Config) RoundTripper {
 	txp := http.DefaultTransport.(*http.Transport).Clone()
 	txp.DialContext = config.Dialer.DialContext

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -65,7 +65,7 @@ func (r BogonResolver) LookupHost(ctx context.Context, hostname string) ([]strin
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	for _, addr := range addrs {
 		if IsBogon(addr) {
-			return nil, errorx.ErrDNSBogon
+			return nil, errorsx.ErrDNSBogon
 		}
 	}
 	return addrs, err

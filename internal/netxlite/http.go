@@ -1,6 +1,12 @@
 package netxlite
 
-import "net/http"
+import (
+	"context"
+	"crypto/tls"
+	"net"
+	"net/http"
+	"time"
+)
 
 // HTTPTransport is an http.Transport-like structure.
 type HTTPTransport interface {
@@ -59,4 +65,55 @@ func (txp *HTTPTransportLogger) logTrip(req *http.Request) (*http.Response, erro
 // CloseIdleConnections implement HTTPTransport.CloseIdleConnections.
 func (txp *HTTPTransportLogger) CloseIdleConnections() {
 	txp.HTTPTransport.CloseIdleConnections()
+}
+
+// NewHTTPTransport creates a new HTTP transport using Go stdlib.
+func NewHTTPTransport(dialer Dialer, tlsConfig *tls.Config,
+	handshaker TLSHandshaker) HTTPTransport {
+	txp := http.DefaultTransport.(*http.Transport).Clone()
+	dialer = &httpDialerWithReadTimeout{dialer}
+	txp.DialContext = dialer.DialContext
+	txp.DialTLSContext = (&TLSDialer{
+		Config:        tlsConfig,
+		Dialer:        dialer,
+		TLSHandshaker: handshaker,
+	}).DialTLSContext
+	// Better for Cloudflare DNS and also better because we have less
+	// noisy events and we can better understand what happened.
+	txp.MaxConnsPerHost = 1
+	// The following (1) reduces the number of headers that Go will
+	// automatically send for us and (2) ensures that we always receive
+	// back the true headers, such as Content-Length. This change is
+	// functional to OONI's goal of observing the network.
+	txp.DisableCompression = true
+	return txp
+}
+
+// httpDialerWithReadTimeout enforces a read timeout for all HTTP
+// connections. See https://github.com/ooni/probe/issues/1609.
+type httpDialerWithReadTimeout struct {
+	Dialer
+}
+
+// DialContext implements Dialer.DialContext.
+func (d *httpDialerWithReadTimeout) DialContext(
+	ctx context.Context, network, address string) (net.Conn, error) {
+	conn, err := d.Dialer.DialContext(ctx, network, address)
+	if err != nil {
+		return nil, err
+	}
+	return &httpConnWithReadTimeout{conn}, nil
+}
+
+// httpConnWithReadTimeout enforces a read timeout for all HTTP
+// connections. See https://github.com/ooni/probe/issues/1609.
+type httpConnWithReadTimeout struct {
+	net.Conn
+}
+
+// Read implements Conn.Read.
+func (c *httpConnWithReadTimeout) Read(b []byte) (int, error) {
+	c.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	defer c.Conn.SetReadDeadline(time.Time{})
+	return c.Conn.Read(b)
 }

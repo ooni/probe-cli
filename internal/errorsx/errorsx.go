@@ -1,5 +1,5 @@
-// Package errorx contains error extensions
-package errorx
+// Package errorsx contains error extensions.
+package errorsx
 
 // TODO: eventually we want to re-structure the error classification code by clearly separating the layers where the error occur:
 //

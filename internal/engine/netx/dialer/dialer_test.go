@@ -7,6 +7,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -47,7 +48,7 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 	if !ok {
 		t.Fatal("not a loggingDialer")
 	}
-	ewd, ok := ld.Dialer.(*errorWrapperDialer)
+	ewd, ok := ld.Dialer.(*errorsx.ErrorWrapperDialer)
 	if !ok {
 		t.Fatal("not an errorWrappingDialer")
 	}

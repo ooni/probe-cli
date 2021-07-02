@@ -1,18 +1,18 @@
 package quicdialer
 
 import (
-	"errors"
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
-	// Listen creates a new listening PacketConn.
-	Listen(addr *net.UDPAddr) (net.PacketConn, error)
+	// Listen creates a new listening UDPConn.
+	Listen(addr *net.UDPAddr) (quicx.UDPConn, error)
 }
 
 // QUICListenerSaver is a QUICListener that also implements saving events.
@@ -25,21 +25,16 @@ type QUICListenerSaver struct {
 }
 
 // Listen implements QUICListener.Listen.
-func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (net.PacketConn, error) {
+func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (quicx.UDPConn, error) {
 	pconn, err := qls.QUICListener.Listen(addr)
 	if err != nil {
 		return nil, err
 	}
-	// TODO(bassosimone): refactor to remove this restriction.
-	udpConn, ok := pconn.(*net.UDPConn)
-	if !ok {
-		return nil, errors.New("quicdialer: cannot convert to udpConn")
-	}
-	return saverUDPConn{UDPConn: udpConn, saver: qls.Saver}, nil
+	return saverUDPConn{UDPConn: pconn, saver: qls.Saver}, nil
 }
 
 type saverUDPConn struct {
-	*net.UDPConn
+	quicx.UDPConn
 	saver *trace.Saver
 }
 
@@ -53,7 +48,7 @@ func (c saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 		Duration: stop.Sub(start),
 		Err:      err,
 		NumBytes: count,
-		Name:     errorx.WriteToOperation,
+		Name:     errorsx.WriteToOperation,
 		Time:     stop,
 	})
 	return count, err
@@ -73,7 +68,7 @@ func (c saverUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, er
 		Duration: stop.Sub(start),
 		Err:      err,
 		NumBytes: n,
-		Name:     errorx.ReadFromOperation,
+		Name:     errorsx.ReadFromOperation,
 		Time:     stop,
 	})
 	return n, oobn, flags, addr, err

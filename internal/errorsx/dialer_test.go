@@ -1,4 +1,4 @@
-package dialer
+package errorsx
 
 import (
 	"context"
@@ -7,13 +7,12 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/netxmocks"
 )
 
-func TestErrorWrapperFailure(t *testing.T) {
+func TestErrorWrapperDialerFailure(t *testing.T) {
 	ctx := context.Background()
-	d := &errorWrapperDialer{Dialer: &netxmocks.Dialer{
+	d := &ErrorWrapperDialer{Dialer: &netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
@@ -22,28 +21,28 @@ func TestErrorWrapperFailure(t *testing.T) {
 	if conn != nil {
 		t.Fatal("expected a nil conn here")
 	}
-	errorWrapperCheckErr(t, err, errorx.ConnectOperation)
+	errorWrapperCheckErr(t, err, ConnectOperation)
 }
 
 func errorWrapperCheckErr(t *testing.T, err error, op string) {
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("expected another error here")
 	}
-	var errWrapper *errorx.ErrWrapper
+	var errWrapper *ErrWrapper
 	if !errors.As(err, &errWrapper) {
 		t.Fatal("cannot cast to ErrWrapper")
 	}
 	if errWrapper.Operation != op {
 		t.Fatal("unexpected Operation")
 	}
-	if errWrapper.Failure != errorx.FailureEOFError {
+	if errWrapper.Failure != FailureEOFError {
 		t.Fatal("unexpected failure")
 	}
 }
 
-func TestErrorWrapperSuccess(t *testing.T) {
+func TestErrorWrapperDialerSuccess(t *testing.T) {
 	ctx := context.Background()
-	d := &errorWrapperDialer{Dialer: &netxmocks.Dialer{
+	d := &ErrorWrapperDialer{Dialer: &netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return &netxmocks.Conn{
 				MockRead: func(b []byte) (int, error) {
@@ -69,11 +68,11 @@ func TestErrorWrapperSuccess(t *testing.T) {
 		t.Fatal("expected non-nil conn here")
 	}
 	count, err := conn.Read(nil)
-	errorWrapperCheckIOResult(t, count, err, errorx.ReadOperation)
+	errorWrapperCheckIOResult(t, count, err, ReadOperation)
 	count, err = conn.Write(nil)
-	errorWrapperCheckIOResult(t, count, err, errorx.WriteOperation)
+	errorWrapperCheckIOResult(t, count, err, WriteOperation)
 	err = conn.Close()
-	errorWrapperCheckErr(t, err, errorx.CloseOperation)
+	errorWrapperCheckErr(t, err, CloseOperation)
 }
 
 func errorWrapperCheckIOResult(t *testing.T, count int, err error, op string) {

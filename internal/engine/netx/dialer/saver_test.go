@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxmocks"
 )
 
@@ -44,7 +44,7 @@ func TestSaverDialerFailure(t *testing.T) {
 	if !errors.Is(ev[0].Err, expected) {
 		t.Fatal("unexpected Err")
 	}
-	if ev[0].Name != errorx.ConnectOperation {
+	if ev[0].Name != errorsx.ConnectOperation {
 		t.Fatal("unexpected Name")
 	}
 	if ev[0].Proto != "tcp" {

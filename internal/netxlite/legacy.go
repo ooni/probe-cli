@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 )
 
 // reduceErrors finds a known error in a list of errors since
@@ -27,7 +27,7 @@ func reduceErrors(errorslist []error) error {
 	// the user has no IPv6 connectivity, an IPv6 error is going to
 	// appear later in the list of errors.
 	for _, err := range errorslist {
-		var wrapper *errorx.ErrWrapper
+		var wrapper *errorsx.ErrWrapper
 		if errors.As(err, &wrapper) && !strings.HasPrefix(
 			err.Error(), "unknown_failure",
 		) {

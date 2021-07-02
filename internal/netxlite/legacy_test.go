@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 )
 
 func TestReduceErrors(t *testing.T) {
@@ -31,15 +31,15 @@ func TestReduceErrors(t *testing.T) {
 	})
 	t.Run("multiple errors with meaningful ones", func(t *testing.T) {
 		err1 := errors.New("mocked error #1")
-		err2 := &errorx.ErrWrapper{
+		err2 := &errorsx.ErrWrapper{
 			Failure: "unknown_failure: antani",
 		}
-		err3 := &errorx.ErrWrapper{
-			Failure: errorx.FailureConnectionRefused,
+		err3 := &errorsx.ErrWrapper{
+			Failure: errorsx.FailureConnectionRefused,
 		}
 		err4 := errors.New("mocked error #3")
 		result := reduceErrors([]error{err1, err2, err3, err4})
-		if result.Error() != errorx.FailureConnectionRefused {
+		if result.Error() != errorsx.FailureConnectionRefused {
 			t.Fatal("wrong result")
 		}
 	})

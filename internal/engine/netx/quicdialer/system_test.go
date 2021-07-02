@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -49,7 +49,7 @@ func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
 			t.Fatal("unexpected NumBytes")
 		}
 		switch ev[idx].Name {
-		case errorx.ReadFromOperation, errorx.WriteToOperation:
+		case errorsx.ReadFromOperation, errorsx.WriteToOperation:
 		default:
 			t.Fatal("unexpected Name")
 		}

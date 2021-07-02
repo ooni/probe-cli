@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 // QUICContextDialer is a dialer for QUIC using Context.
@@ -21,8 +22,8 @@ type QUICContextDialer interface {
 
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
-	// Listen creates a new listening PacketConn.
-	Listen(addr *net.UDPAddr) (net.PacketConn, error)
+	// Listen creates a new listening UDPConn.
+	Listen(addr *net.UDPAddr) (quicx.UDPConn, error)
 }
 
 // QUICListenerStdlib is a QUICListener using the standard library.
@@ -31,7 +32,7 @@ type QUICListenerStdlib struct{}
 var _ QUICListener = &QUICListenerStdlib{}
 
 // Listen implements QUICListener.Listen.
-func (qls *QUICListenerStdlib) Listen(addr *net.UDPAddr) (net.PacketConn, error) {
+func (qls *QUICListenerStdlib) Listen(addr *net.UDPAddr) (quicx.UDPConn, error) {
 	return net.ListenUDP("udp", addr)
 }
 

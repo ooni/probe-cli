@@ -10,7 +10,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -36,28 +35,6 @@ type SetDeadlineConn struct {
 func (c *SetDeadlineConn) SetDeadline(t time.Time) error {
 	c.deadlines = append(c.deadlines, t)
 	return nil
-}
-
-func TestErrorWrapperTLSHandshakerFailure(t *testing.T) {
-	h := tlsdialer.ErrorWrapperTLSHandshaker{TLSHandshaker: tlsdialer.EOFTLSHandshaker{}}
-	conn, _, err := h.Handshake(
-		context.Background(), tlsdialer.EOFConn{}, new(tls.Config))
-	if !errors.Is(err, io.EOF) {
-		t.Fatal("not the error that we expected")
-	}
-	if conn != nil {
-		t.Fatal("expected nil con here")
-	}
-	var errWrapper *errorx.ErrWrapper
-	if !errors.As(err, &errWrapper) {
-		t.Fatal("cannot cast to ErrWrapper")
-	}
-	if errWrapper.Failure != errorx.FailureEOFError {
-		t.Fatal("unexpected Failure")
-	}
-	if errWrapper.Operation != errorx.TLSHandshakeOperation {
-		t.Fatal("unexpected Operation")
-	}
 }
 
 func TestEmitterTLSHandshakerFailure(t *testing.T) {

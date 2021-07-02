@@ -2,8 +2,10 @@ package netxlite
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -105,4 +107,44 @@ func TestHTTPTransportLoggerCloseIdleConnections(t *testing.T) {
 	if calls.Load() != 1 {
 		t.Fatal("not called")
 	}
+}
+
+func TestHTTPTransportWorks(t *testing.T) {
+	d := &DialerResolver{
+		Dialer:   DefaultDialer,
+		Resolver: &net.Resolver{},
+	}
+	th := &TLSHandshakerConfigurable{}
+	txp := NewHTTPTransport(d, &tls.Config{}, th)
+	client := &http.Client{Transport: txp}
+	resp, err := client.Get("https://www.google.com/robots.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	txp.CloseIdleConnections()
+}
+
+func TestHTTPTransportWithFailingDialer(t *testing.T) {
+	expected := errors.New("mocked error")
+	d := &DialerResolver{
+		Dialer: &netxmocks.Dialer{
+			MockDialContext: func(ctx context.Context,
+				network, address string) (net.Conn, error) {
+				return nil, expected
+			},
+		},
+		Resolver: &net.Resolver{},
+	}
+	th := &TLSHandshakerConfigurable{}
+	txp := NewHTTPTransport(d, &tls.Config{}, th)
+	client := &http.Client{Transport: txp}
+	resp, err := client.Get("https://www.google.com/robots.txt")
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if resp != nil {
+		t.Fatal("expected non-nil response here")
+	}
+	txp.CloseIdleConnections()
 }

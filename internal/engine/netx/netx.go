@@ -38,6 +38,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	utls "gitlab.com/yawning/utls.git"
 )
@@ -133,7 +134,7 @@ func NewResolver(config Config) Resolver {
 	if config.BogonIsError {
 		r = resolver.BogonResolver{Resolver: r}
 	}
-	r = resolver.ErrorWrapperResolver{Resolver: r}
+	r = &errorsx.ErrorWrapperResolver{Resolver: r}
 	if config.Logger != nil {
 		r = &netxlite.ResolverLogger{Logger: config.Logger, Resolver: r}
 	}
@@ -172,7 +173,7 @@ func NewQUICDialer(config Config) QUICDialer {
 	var d quicdialer.ContextDialer = &netxlite.QUICDialerQUICGo{
 		QUICListener: ql,
 	}
-	d = quicdialer.ErrorWrapperDialer{Dialer: d}
+	d = &errorsx.ErrorWrapperQUICDialer{Dialer: d}
 	if config.TLSSaver != nil {
 		d = quicdialer.HandshakeSaver{Saver: config.TLSSaver, Dialer: d}
 	}
@@ -186,7 +187,7 @@ func NewTLSDialer(config Config) TLSDialer {
 		config.Dialer = NewDialer(config)
 	}
 	var h tlsHandshaker = &netxlite.TLSHandshakerConfigurable{ClientHelloID: config.ClientHelloID}
-	h = tlsdialer.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
+	h = &errorsx.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
 	if config.Logger != nil {
 		h = &netxlite.TLSHandshakerLogger{Logger: config.Logger, TLSHandshaker: h}
 	}
