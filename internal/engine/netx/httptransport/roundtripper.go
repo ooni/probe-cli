@@ -10,11 +10,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"golang.org/x/net/http2"
 )
 
 func newRoundtripper(txp *http.Transport, tlsdialer TLSDialer, tlsconfig *tls.Config) RoundTripper {
-	return &roundTripper{underlyingTransport: txp, DialTLS: tlsdialer.DialTLSContext, tlsconfig: tlsconfig}
+	// we have to assume that this is a netxlite.TLSDialer, because we need access to its TLSHandshaker
+	handshaker := tlsdialer.(*netxlite.TLSDialer).TLSHandshaker
+	return &roundTripper{underlyingTransport: txp, DialTLS: tlsdialer.DialTLSContext, Handshaker: handshaker, tlsconfig: tlsconfig}
 }
 
 // roundTripper is a wrapper around the system transport
@@ -22,6 +25,7 @@ type roundTripper struct {
 	sync.Mutex
 	ctx                 context.Context
 	DialTLS             func(ctx context.Context, network string, address string) (net.Conn, error)
+	Handshaker          netxlite.TLSHandshaker
 	tlsconfig           *tls.Config
 	transport           http.RoundTripper // this will be either http.Transport or http2.Transport
 	underlyingTransport *http.Transport
@@ -101,14 +105,13 @@ func (rt *roundTripper) dialTLSContext(ctx context.Context, network, addr string
 	cfg.NextProtos = []string{"h2", "http/1.1"}
 
 	// TLS handshake
-	tlsconn := tls.Client(conn, cfg)
-	err = tlsconn.Handshake()
+	_, state, err := rt.Handshaker.Handshake(ctx, conn, cfg)
 	if err != nil {
 		conn.Close()
 		return nil, err
 	}
 	// use ALPN to decide which Transport to use
-	switch tlsconn.ConnectionState().NegotiatedProtocol {
+	switch state.NegotiatedProtocol {
 	case "h2":
 		// HTTP 2 + TLS.
 		rt.ctx = ctx // there is no DialTLSContext in http2.Transport so we have to remember it in roundTripper

@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"golang.org/x/net/http2"
 )
 
@@ -25,7 +26,7 @@ var mocktlsdialer MockTLSDialer = MockTLSDialer{err: errors.New("mock error")}
 var txp *http.Transport = http.DefaultTransport.(*http.Transport).Clone()
 
 func TestGetTransportHTTPS(t *testing.T) {
-	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext, tlsconfig: &tls.Config{}}
+	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext, Handshaker: &netxlite.TLSHandshakerConfigurable{}, tlsconfig: &tls.Config{}}
 	req := &http.Request{
 		Method: "GET",
 		URL: &url.URL{
@@ -48,7 +49,7 @@ func TestGetTransportHTTPS(t *testing.T) {
 }
 
 func TestGetTransportHTTP(t *testing.T) {
-	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext, tlsconfig: &tls.Config{}}
+	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext, Handshaker: &netxlite.TLSHandshakerConfigurable{}, tlsconfig: &tls.Config{}}
 	req := &http.Request{
 		Method: "GET",
 		URL: &url.URL{
@@ -71,7 +72,7 @@ func TestGetTransportHTTP(t *testing.T) {
 }
 
 func TestGetTransportHTTP1TLS(t *testing.T) {
-	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext, tlsconfig: &tls.Config{}}
+	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext, Handshaker: &netxlite.TLSHandshakerConfigurable{}, tlsconfig: &tls.Config{}}
 	req := &http.Request{
 		Method: "GET",
 		URL: &url.URL{
@@ -95,7 +96,7 @@ func TestGetTransportHTTP1TLS(t *testing.T) {
 
 func TestGetTransportAlreadySet(t *testing.T) {
 	noerrorDialer := MockTLSDialer{err: nil}
-	rt := roundTripper{underlyingTransport: txp, DialTLS: noerrorDialer.DialTLSContext, tlsconfig: &tls.Config{}}
+	rt := roundTripper{underlyingTransport: txp, DialTLS: noerrorDialer.DialTLSContext, Handshaker: &netxlite.TLSHandshakerConfigurable{}, tlsconfig: &tls.Config{}}
 	req := &http.Request{
 		Method: "GET",
 		URL: &url.URL{
@@ -115,7 +116,7 @@ func TestGetTransportAlreadySet(t *testing.T) {
 }
 
 func TestGetTransportInvalidScheme(t *testing.T) {
-	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext, tlsconfig: &tls.Config{}}
+	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext, Handshaker: &netxlite.TLSHandshakerConfigurable{}, tlsconfig: &tls.Config{}}
 	req := &http.Request{
 		Method: "GET",
 		URL: &url.URL{
@@ -135,10 +136,13 @@ func TestGetTransportInvalidScheme(t *testing.T) {
 }
 
 func TestRoundTripSuccess(t *testing.T) {
-	expected := errors.New("expected error")
-	mocktlsdialer := MockTLSDialer{err: expected}
 	txp := http.DefaultTransport.(*http.Transport).Clone()
-	rt := newRoundtripper(txp, mocktlsdialer, nil)
+	tlsDialer := &netxlite.TLSDialer{
+		Dialer:        netxlite.DefaultDialer,
+		TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
+	}
+	rt := newRoundtripper(txp, tlsDialer, nil)
+
 	req := &http.Request{
 		Method: "GET",
 		URL: &url.URL{
@@ -148,17 +152,17 @@ func TestRoundTripSuccess(t *testing.T) {
 		Header: http.Header{},
 	}
 	resp, err := rt.RoundTrip(req)
-	if err != expected {
+	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
-	if resp != nil {
-		t.Fatal("unexpected non-nil response")
+	if resp == nil {
+		t.Fatal("unexpected nil response")
 	}
 
 }
 
 func TestConnectFail(t *testing.T) {
-	rt := newRoundtripper(txp, mocktlsdialer, nil)
+	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext, Handshaker: &netxlite.TLSHandshakerConfigurable{}}
 	req := &http.Request{
 		Method: "GET",
 		URL: &url.URL{
@@ -174,7 +178,7 @@ func TestConnectFail(t *testing.T) {
 }
 
 func TestHandshakeFail(t *testing.T) {
-	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext, tlsconfig: &tls.Config{ServerName: "mockname"}}
+	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext, Handshaker: &netxlite.TLSHandshakerConfigurable{}, tlsconfig: &tls.Config{ServerName: "mockname"}}
 	_, err := rt.dialTLSContext(context.Background(), "tcp", "google.com:443")
 	if err == nil {
 		t.Fatal("expected error an error here")
@@ -186,7 +190,7 @@ func TestHandshakeFail(t *testing.T) {
 }
 
 func TestCanceled(t *testing.T) {
-	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext}
+	rt := roundTripper{underlyingTransport: txp, DialTLS: mocktlsdialer.DialTLSContext, Handshaker: &netxlite.TLSHandshakerConfigurable{}}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	_, err := rt.dialTLSContext(ctx, "tcp", "www.google.com:443")
