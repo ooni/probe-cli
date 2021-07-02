@@ -39,7 +39,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	gitlab.com/yawning/obfs4.git v0.0.0-20210511220700-e330d1b7024b
-	gitlab.com/yawning/utls.git v0.0.12-1 // indirect
+	gitlab.com/yawning/utls.git v0.0.12-1
 	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf // indirect
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed
 	golang.org/x/sys v0.0.0-20210511113859-b0526f3d8744
