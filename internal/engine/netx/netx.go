@@ -186,7 +186,10 @@ func NewTLSDialer(config Config) TLSDialer {
 	if config.Dialer == nil {
 		config.Dialer = NewDialer(config)
 	}
-	var h tlsHandshaker = &netxlite.TLSHandshakerConfigurable{ClientHelloID: config.ClientHelloID}
+	var h tlsHandshaker = &netxlite.TLSHandshakerConfigurable{}
+	if config.ClientHelloID != nil {
+		h.(*netxlite.TLSHandshakerConfigurable).NewConn = netxlite.NewConnUTLS(*config.ClientHelloID)
+	}
 	h = &errorsx.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
 	if config.Logger != nil {
 		h = &netxlite.TLSHandshakerLogger{Logger: config.Logger, TLSHandshaker: h}

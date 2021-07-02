@@ -28,9 +28,6 @@ type TLSHandshakerConfigurable struct {
 	// Timeout is the OPTIONAL timeout imposed on the TLS handshake. If zero
 	// or negative, we will use default timeout of 10 seconds.
 	Timeout time.Duration
-
-	// ClientHelloID is the OPTIONAL TLS fingerprint we want to mimick
-	ClientHelloID *utls.ClientHelloID
 }
 
 var _ TLSHandshaker = &TLSHandshakerConfigurable{}
@@ -72,23 +69,7 @@ func (h *TLSHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) T
 	if h.NewConn != nil {
 		return h.NewConn(conn, config)
 	}
-	if h.ClientHelloID != nil {
-		return h.newUConn(conn, config)
-	}
 	return tls.Client(conn, config)
-}
-
-// newUConn creates a new UTLSConn
-func (h *TLSHandshakerConfigurable) newUConn(conn net.Conn, config *tls.Config) TLSConn {
-	uConfig := &utls.Config{
-		RootCAs:                     config.RootCAs,
-		NextProtos:                  config.NextProtos,
-		ServerName:                  config.ServerName,
-		InsecureSkipVerify:          config.InsecureSkipVerify,
-		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
-	}
-	tlsConn := utls.UClient(conn, uConfig, *h.ClientHelloID)
-	return &UTLSConn{tlsConn}
 }
 
 // DefaultTLSHandshaker is the default TLS handshaker.
@@ -129,6 +110,22 @@ func (h *TLSHandshakerLogger) Handshake(
 // UTLSConn implements TLSConn and uses a utls UConn as its underlying connection
 type UTLSConn struct {
 	*utls.UConn
+}
+
+// this factory creates a NewConn function creating a utls connection with a specified ClientHelloID
+// TODO(kelmenhorst) Should this be here or in netx?
+func NewConnUTLS(clientHello utls.ClientHelloID) func(conn net.Conn, config *tls.Config) TLSConn {
+	return func(conn net.Conn, config *tls.Config) TLSConn {
+		uConfig := &utls.Config{
+			RootCAs:                     config.RootCAs,
+			NextProtos:                  config.NextProtos,
+			ServerName:                  config.ServerName,
+			InsecureSkipVerify:          config.InsecureSkipVerify,
+			DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
+		}
+		tlsConn := utls.UClient(conn, uConfig, clientHello)
+		return &UTLSConn{tlsConn}
+	}
 }
 
 func (c *UTLSConn) ConnectionState() tls.ConnectionState {
