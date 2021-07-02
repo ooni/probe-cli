@@ -112,8 +112,7 @@ type UTLSConn struct {
 	*utls.UConn
 }
 
-// this factory creates a NewConn function creating a utls connection with a specified ClientHelloID
-// TODO(kelmenhorst) Should this be here or in netx?
+// NewConnUTLS creates a NewConn function creating a utls connection with a specified ClientHelloID
 func NewConnUTLS(clientHello utls.ClientHelloID) func(conn net.Conn, config *tls.Config) TLSConn {
 	return func(conn net.Conn, config *tls.Config) TLSConn {
 		uConfig := &utls.Config{
