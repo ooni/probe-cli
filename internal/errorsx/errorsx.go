@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"syscall"
 
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
@@ -112,24 +111,10 @@ func toFailureString(err error) string {
 		return errwrapper.Error() // we've already wrapped it
 	}
 
-	// filter out system errors: necessary to detect all windows errors
-	// https://github.com/ooni/probe/issues/1526 describes the problem of mapping localized windows errors
-	var errno syscall.Errno
-	if errors.As(err, &errno) {
-		switch errno {
-		case ECANCELED:
-			return FailureInterrupted
-		case ECONNRESET:
-			return FailureConnectionReset
-		case ECONNREFUSED:
-			return FailureConnectionRefused
-		case EHOSTUNREACH:
-			return FailureHostUnreachable
-		case ETIMEDOUT:
-			return FailureGenericTimeoutError
-			// TODO(kelmenhorst): find out if we need more system errors here
-		}
+	if failure := toSyscallErr(err); failure != "" {
+		return failure
 	}
+
 	if errors.Is(err, context.Canceled) {
 		return FailureInterrupted
 	}
