@@ -78,6 +78,7 @@ func (h *TLSHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) T
 	return tls.Client(conn, config)
 }
 
+// newUConn creates a new UTLSConn
 func (h *TLSHandshakerConfigurable) newUConn(conn net.Conn, config *tls.Config) TLSConn {
 	uConfig := &utls.Config{
 		RootCAs:                     config.RootCAs,
@@ -125,7 +126,7 @@ func (h *TLSHandshakerLogger) Handshake(
 	return tlsconn, state, nil
 }
 
-// UTLSConn implements TLSConn
+// UTLSConn implements TLSConn and uses a utls UConn as its underlying connection
 type UTLSConn struct {
 	*utls.UConn
 }
