@@ -33,7 +33,10 @@ func (rt *roundTripper) CloseIdleConnections() {
 
 func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// determine transport type to use for this Roundtrip
+	rt.Lock()
 	rt.transport = nil
+	rt.Unlock()
+
 	if err := rt.getTransport(req); err != nil {
 		return nil, err
 	}
