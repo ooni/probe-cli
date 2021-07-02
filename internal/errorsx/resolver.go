@@ -31,7 +31,6 @@ func (r *ErrorWrapperResolver) LookupHost(ctx context.Context, hostname string) 
 }
 
 // classifyResolveFailure is a classifier to translate DNS resolving errors to OONI error strings.
-// TODO(kelmenhorst,bassosimone): Consider moving this into resolve.
 func classifyResolveFailure(err error) string {
 	if errors.Is(err, ErrDNSBogon) {
 		return FailureDNSBogonError // not in MK

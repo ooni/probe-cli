@@ -33,7 +33,6 @@ func (h *ErrorWrapperTLSHandshaker) Handshake(
 }
 
 // classifyTLSFailure is a classifier to translate TLS errors to OONI error strings.
-// TODO(kelmenhorst,bassosimone): Consider moving this into tlsdialer.
 func classifyTLSFailure(err error) string {
 	var x509HostnameError x509.HostnameError
 	if errors.As(err, &x509HostnameError) {

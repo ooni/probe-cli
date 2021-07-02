@@ -98,7 +98,6 @@ func (d *ErrorWrapperQUICDialer) DialContext(
 }
 
 // classifyQUICFailure is a classifier to translate QUIC errors to OONI error strings.
-// TODO(kelmenhorst,bassosimone): Consider moving this into quicdialer.
 func classifyQUICFailure(err error) string {
 	var versionNegotiation *quic.VersionNegotiationError
 	var statelessReset *quic.StatelessResetError
