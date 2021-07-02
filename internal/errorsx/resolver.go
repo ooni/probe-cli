@@ -1,6 +1,9 @@
 package errorsx
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
 // Resolver is a DNS resolver. The *net.Resolver used by Go implements
 // this interface, but other implementations are possible.
@@ -20,11 +23,20 @@ var _ Resolver = &ErrorWrapperResolver{}
 func (r *ErrorWrapperResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	err = SafeErrWrapperBuilder{
-		Classifier: ClassifyResolveFailure,
+		Classifier: classifyResolveFailure,
 		Error:      err,
 		Operation:  ResolveOperation,
 	}.MaybeBuild()
 	return addrs, err
+}
+
+// classifyResolveFailure is a classifier to translate DNS resolving errors to OONI error strings.
+// TODO(kelmenhorst,bassosimone): Consider moving this into resolve.
+func classifyResolveFailure(err error) string {
+	if errors.Is(err, ErrDNSBogon) {
+		return FailureDNSBogonError // not in MK
+	}
+	return toFailureString(err)
 }
 
 type resolverNetworker interface {

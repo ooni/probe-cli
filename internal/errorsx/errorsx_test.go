@@ -157,51 +157,51 @@ func TestToFailureString(t *testing.T) {
 
 func TestClassifyQUICFailure(t *testing.T) {
 	t.Run("for connection_reset", func(t *testing.T) {
-		if ClassifyQUICFailure(&quic.StatelessResetError{}) != FailureConnectionReset {
+		if classifyQUICFailure(&quic.StatelessResetError{}) != FailureConnectionReset {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for incompatible quic version", func(t *testing.T) {
-		if ClassifyQUICFailure(&quic.VersionNegotiationError{}) != FailureNoCompatibleQUICVersion {
+		if classifyQUICFailure(&quic.VersionNegotiationError{}) != FailureNoCompatibleQUICVersion {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for quic connection refused", func(t *testing.T) {
-		if ClassifyQUICFailure(&quic.TransportError{ErrorCode: quic.ConnectionRefused}) != FailureConnectionRefused {
+		if classifyQUICFailure(&quic.TransportError{ErrorCode: quic.ConnectionRefused}) != FailureConnectionRefused {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for quic handshake timeout", func(t *testing.T) {
-		if ClassifyQUICFailure(&quic.HandshakeTimeoutError{}) != FailureGenericTimeoutError {
+		if classifyQUICFailure(&quic.HandshakeTimeoutError{}) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for QUIC idle connection timeout", func(t *testing.T) {
-		if ClassifyQUICFailure(&quic.IdleTimeoutError{}) != FailureGenericTimeoutError {
+		if classifyQUICFailure(&quic.IdleTimeoutError{}) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for QUIC CRYPTO Handshake", func(t *testing.T) {
-		var err quic.TransportErrorCode = TLSAlertHandshakeFailure
-		if ClassifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLHandshake {
+		var err quic.TransportErrorCode = quicTLSAlertHandshakeFailure
+		if classifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLHandshake {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for QUIC CRYPTO Invalid Certificate", func(t *testing.T) {
-		var err quic.TransportErrorCode = TLSAlertBadCertificate
-		if ClassifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
+		var err quic.TransportErrorCode = quicTLSAlertBadCertificate
+		if classifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for QUIC CRYPTO Unknown CA", func(t *testing.T) {
-		var err quic.TransportErrorCode = TLSAlertUnknownCA
-		if ClassifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLUnknownAuthority {
+		var err quic.TransportErrorCode = quicTLSAlertUnknownCA
+		if classifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLUnknownAuthority {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for QUIC CRYPTO Bad Hostname", func(t *testing.T) {
-		var err quic.TransportErrorCode = TLSUnrecognizedName
-		if ClassifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidHostname {
+		var err quic.TransportErrorCode = quicTLSUnrecognizedName
+		if classifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidHostname {
 			t.Fatal("unexpected results")
 		}
 	})
@@ -210,7 +210,7 @@ func TestClassifyQUICFailure(t *testing.T) {
 
 func TestClassifyResolveFailure(t *testing.T) {
 	t.Run("for ErrDNSBogon", func(t *testing.T) {
-		if ClassifyResolveFailure(ErrDNSBogon) != FailureDNSBogonError {
+		if classifyResolveFailure(ErrDNSBogon) != FailureDNSBogonError {
 			t.Fatal("unexpected result")
 		}
 	})
@@ -219,19 +219,19 @@ func TestClassifyResolveFailure(t *testing.T) {
 func TestClassifyTLSFailure(t *testing.T) {
 	t.Run("for x509.HostnameError", func(t *testing.T) {
 		var err x509.HostnameError
-		if ClassifyTLSFailure(err) != FailureSSLInvalidHostname {
+		if classifyTLSFailure(err) != FailureSSLInvalidHostname {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("for x509.UnknownAuthorityError", func(t *testing.T) {
 		var err x509.UnknownAuthorityError
-		if ClassifyTLSFailure(err) != FailureSSLUnknownAuthority {
+		if classifyTLSFailure(err) != FailureSSLUnknownAuthority {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("for x509.CertificateInvalidError", func(t *testing.T) {
 		var err x509.CertificateInvalidError
-		if ClassifyTLSFailure(err) != FailureSSLInvalidCertificate {
+		if classifyTLSFailure(err) != FailureSSLInvalidCertificate {
 			t.Fatal("unexpected result")
 		}
 	})
