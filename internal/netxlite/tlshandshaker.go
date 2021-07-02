@@ -113,7 +113,7 @@ type UTLSConn struct {
 }
 
 // NewConnUTLS creates a NewConn function creating a utls connection with a specified ClientHelloID
-func NewConnUTLS(clientHello utls.ClientHelloID) func(conn net.Conn, config *tls.Config) TLSConn {
+func NewConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tls.Config) TLSConn {
 	return func(conn net.Conn, config *tls.Config) TLSConn {
 		uConfig := &utls.Config{
 			RootCAs:                     config.RootCAs,
@@ -122,7 +122,7 @@ func NewConnUTLS(clientHello utls.ClientHelloID) func(conn net.Conn, config *tls
 			InsecureSkipVerify:          config.InsecureSkipVerify,
 			DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
 		}
-		tlsConn := utls.UClient(conn, uConfig, clientHello)
+		tlsConn := utls.UClient(conn, uConfig, *clientHello)
 		return &UTLSConn{tlsConn}
 	}
 }
