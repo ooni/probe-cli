@@ -162,6 +162,7 @@ func NewQUICDialer(config Config) QUICDialer {
 		config.FullResolver = NewResolver(config)
 	}
 	var ql quicdialer.QUICListener = &netxlite.QUICListenerStdlib{}
+	ql = &errorsx.ErrorWrapperQUICListener{QUICListener: ql}
 	if config.ReadWriteSaver != nil {
 		ql = &quicdialer.QUICListenerSaver{
 			QUICListener: ql,
