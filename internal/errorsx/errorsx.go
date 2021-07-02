@@ -105,6 +105,8 @@ func toFailureString(err error) string {
 	// The list returned here matches the values used by MK unless
 	// explicitly noted otherwise with a comment.
 
+	// TODO(bassosimone): we need to always apply this rule not only here
+	// when we're making the most generic conversion.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
