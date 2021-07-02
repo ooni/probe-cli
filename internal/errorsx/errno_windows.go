@@ -1,5 +1,7 @@
 package errorsx
 
+//go:generate go run ./generator/ -m windows
+
 import "golang.org/x/sys/windows"
 
 const (
