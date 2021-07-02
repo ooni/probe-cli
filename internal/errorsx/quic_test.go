@@ -10,13 +10,12 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/netxmocks"
-	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 func TestErrorWrapperQUICListenerSuccess(t *testing.T) {
 	ql := &ErrorWrapperQUICListener{
 		QUICListener: &netxmocks.QUICListener{
-			MockListen: func(addr *net.UDPAddr) (quicx.UDPConn, error) {
+			MockListen: func(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error) {
 				return &net.UDPConn{}, nil
 			},
 		},
@@ -31,7 +30,7 @@ func TestErrorWrapperQUICListenerSuccess(t *testing.T) {
 func TestErrorWrapperQUICListenerFailure(t *testing.T) {
 	ql := &ErrorWrapperQUICListener{
 		QUICListener: &netxmocks.QUICListener{
-			MockListen: func(addr *net.UDPAddr) (quicx.UDPConn, error) {
+			MockListen: func(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error) {
 				return nil, io.EOF
 			},
 		},
@@ -47,7 +46,7 @@ func TestErrorWrapperQUICListenerFailure(t *testing.T) {
 
 func TestErrorWrapperUDPConnWriteToSuccess(t *testing.T) {
 	quc := &errorWrapperUDPConn{
-		UDPConn: &netxmocks.QUICUDPConn{
+		OOBCapablePacketConn: &netxmocks.QUICUDPConn{
 			MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 				return 10, nil
 			},
@@ -67,7 +66,7 @@ func TestErrorWrapperUDPConnWriteToSuccess(t *testing.T) {
 func TestErrorWrapperUDPConnWriteToFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	quc := &errorWrapperUDPConn{
-		UDPConn: &netxmocks.QUICUDPConn{
+		OOBCapablePacketConn: &netxmocks.QUICUDPConn{
 			MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 				return 0, expected
 			},
@@ -87,7 +86,7 @@ func TestErrorWrapperUDPConnWriteToFailure(t *testing.T) {
 func TestErrorWrapperUDPConnReadMsgUDPSuccess(t *testing.T) {
 	expected := errors.New("mocked error")
 	quc := &errorWrapperUDPConn{
-		UDPConn: &netxmocks.QUICUDPConn{
+		OOBCapablePacketConn: &netxmocks.QUICUDPConn{
 			MockReadMsgUDP: func(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
 				return 0, 0, 0, nil, expected
 			},
@@ -115,7 +114,7 @@ func TestErrorWrapperUDPConnReadMsgUDPSuccess(t *testing.T) {
 
 func TestErrorWrapperUDPConnReadMsgUDPFailure(t *testing.T) {
 	quc := &errorWrapperUDPConn{
-		UDPConn: &netxmocks.QUICUDPConn{
+		OOBCapablePacketConn: &netxmocks.QUICUDPConn{
 			MockReadMsgUDP: func(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
 				return 10, 1, 0, nil, nil
 			},

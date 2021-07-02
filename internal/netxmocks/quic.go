@@ -4,19 +4,19 @@ import (
 	"context"
 	"crypto/tls"
 	"net"
+	"syscall"
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 // QUICListener is a mockable netxlite.QUICListener.
 type QUICListener struct {
-	MockListen func(addr *net.UDPAddr) (quicx.UDPConn, error)
+	MockListen func(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error)
 }
 
 // Listen calls MockListen.
-func (ql *QUICListener) Listen(addr *net.UDPAddr) (quicx.UDPConn, error) {
+func (ql *QUICListener) Listen(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error) {
 	return ql.MockListen(addr)
 }
 
@@ -140,9 +140,11 @@ type QUICUDPConn struct {
 	MockSetReadDeadline  func(t time.Time) error
 	MockSetWriteDeadline func(t time.Time) error
 	MockReadFrom         func(p []byte) (n int, addr net.Addr, err error)
+	MockSyscallConn      func() (syscall.RawConn, error)
+	MockWriteMsgUDP      func(b, oob []byte, addr *net.UDPAddr) (n, oobn int, err error)
 }
 
-var _ net.PacketConn = &QUICUDPConn{}
+var _ quic.OOBCapablePacketConn = &QUICUDPConn{}
 
 // WriteTo calls MockWriteTo.
 func (c *QUICUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
@@ -187,4 +189,14 @@ func (c *QUICUDPConn) SetWriteDeadline(t time.Time) error {
 // ReadFrom calls MockReadFrom.
 func (c *QUICUDPConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	return c.MockReadFrom(b)
+}
+
+// SyscallConn calls MockSyscallConn.
+func (c *QUICUDPConn) SyscallConn() (syscall.RawConn, error) {
+	return c.MockSyscallConn()
+}
+
+// WriteMsgUDP calls MockReadMsgUDP.
+func (c *QUICUDPConn) WriteMsgUDP(b, oob []byte, addr *net.UDPAddr) (n, oobn int, err error) {
+	return c.MockWriteMsgUDP(b, oob, addr)
 }

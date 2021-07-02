@@ -6,18 +6,18 @@ import (
 	"errors"
 	"net"
 	"reflect"
+	"syscall"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 func TestQUICListenerListen(t *testing.T) {
 	expected := errors.New("mocked error")
 	ql := &QUICListener{
-		MockListen: func(addr *net.UDPAddr) (quicx.UDPConn, error) {
+		MockListen: func(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error) {
 			return nil, expected
 		},
 	}
@@ -415,5 +415,43 @@ func TestQUICUDPConnReadFrom(t *testing.T) {
 	}
 	if addr != nil {
 		t.Fatal("expected nil here")
+	}
+}
+
+func TestQUICUDPConnSyscallConn(t *testing.T) {
+	expected := errors.New("mocked error")
+	quc := &QUICUDPConn{
+		MockSyscallConn: func() (syscall.RawConn, error) {
+			return nil, expected
+		},
+	}
+	conn, err := quc.SyscallConn()
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if conn != nil {
+		t.Fatal("expected nil here")
+	}
+}
+
+func TestQUICUDPConnWriteMsgUDP(t *testing.T) {
+	expected := errors.New("mocked error")
+	quc := &QUICUDPConn{
+		MockWriteMsgUDP: func(b, oob []byte, addr *net.UDPAddr) (n int, oobn int, err error) {
+			return 0, 0, expected
+		},
+	}
+	b := make([]byte, 128)
+	oob := make([]byte, 128)
+	addr := &net.UDPAddr{}
+	n, oobn, err := quc.WriteMsgUDP(b, oob, addr)
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+	if n != 0 {
+		t.Fatal("expected 0 here")
+	}
+	if oobn != 0 {
+		t.Fatal("expected 0 here")
 	}
 }
