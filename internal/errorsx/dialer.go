@@ -11,12 +11,12 @@ type Dialer interface {
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 
-// ErrorWrapperDialer is a dialer that performs err wrapping.
+// ErrorWrapperDialer is a dialer that performs error wrapping.
 type ErrorWrapperDialer struct {
 	Dialer
 }
 
-// DialContext implements Dialer.DialContext
+// DialContext implements Dialer.DialContext.
 func (d *ErrorWrapperDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	err = SafeErrWrapperBuilder{
@@ -34,7 +34,7 @@ type errorWrapperConn struct {
 	net.Conn
 }
 
-// Read implements net.Conn.Read
+// Read implements net.Conn.Read.
 func (c *errorWrapperConn) Read(b []byte) (n int, err error) {
 	n, err = c.Conn.Read(b)
 	err = SafeErrWrapperBuilder{
@@ -44,7 +44,7 @@ func (c *errorWrapperConn) Read(b []byte) (n int, err error) {
 	return
 }
 
-// Write implements net.Conn.Write
+// Write implements net.Conn.Write.
 func (c *errorWrapperConn) Write(b []byte) (n int, err error) {
 	n, err = c.Conn.Write(b)
 	err = SafeErrWrapperBuilder{
@@ -54,7 +54,7 @@ func (c *errorWrapperConn) Write(b []byte) (n int, err error) {
 	return
 }
 
-// Close implements net.Conn.Close
+// Close implements net.Conn.Close.
 func (c *errorWrapperConn) Close() (err error) {
 	err = c.Conn.Close()
 	err = SafeErrWrapperBuilder{
