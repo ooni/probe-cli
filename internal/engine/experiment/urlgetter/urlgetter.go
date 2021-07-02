@@ -24,6 +24,7 @@ type Config struct {
 	Timeout  time.Duration
 
 	// settable from command line
+	ClientHelloID     string `ooni:"Parrot specific TLS ClientHello fingerprint, as specified in utls"`
 	DNSCache          string `ooni:"Add 'DOMAIN IP...' to cache"`
 	DNSHTTPHost       string `ooni:"Force using specific HTTP Host header for DNS requests"`
 	DNSTLSServerName  string `ooni:"Force TLS to using a specific SNI for encrypted DNS requests"`

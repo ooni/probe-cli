@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"net"
+	"strings"
 	"time"
 
 	utls "gitlab.com/yawning/utls.git"
@@ -113,7 +114,20 @@ type UTLSConn struct {
 }
 
 // NewConnUTLS creates a NewConn function creating a utls connection with a specified ClientHelloID
-func NewConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tls.Config) TLSConn {
+func NewConnUTLS(clientHello string) func(conn net.Conn, config *tls.Config) TLSConn {
+	var clientHelloID *utls.ClientHelloID
+	switch strings.ToLower(clientHello) {
+	case "chrome":
+		clientHelloID = &utls.HelloChrome_Auto
+	case "firefox":
+		clientHelloID = &utls.HelloFirefox_Auto
+	case "ios":
+		clientHelloID = &utls.HelloIOS_Auto
+	case "golang":
+		clientHelloID = &utls.HelloGolang
+	default:
+		clientHelloID = &utls.HelloChrome_Auto
+	}
 	return func(conn net.Conn, config *tls.Config) TLSConn {
 		uConfig := &utls.Config{
 			RootCAs:                     config.RootCAs,
@@ -122,7 +136,7 @@ func NewConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tl
 			InsecureSkipVerify:          config.InsecureSkipVerify,
 			DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
 		}
-		tlsConn := utls.UClient(conn, uConfig, *clientHello)
+		tlsConn := utls.UClient(conn, uConfig, *clientHelloID)
 		return &UTLSConn{tlsConn}
 	}
 }
