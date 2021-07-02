@@ -6,7 +6,6 @@ import (
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 // QUICContextDialer is a dialer for QUIC using Context.
@@ -21,7 +20,7 @@ type QUICContextDialer interface {
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
 	// Listen creates a new listening UDPConn.
-	Listen(addr *net.UDPAddr) (quicx.UDPConn, error)
+	Listen(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error)
 }
 
 // ErrorWrapperQUICListener is a QUICListener that wraps errors.
@@ -33,7 +32,7 @@ type ErrorWrapperQUICListener struct {
 var _ QUICListener = &ErrorWrapperQUICListener{}
 
 // Listen implements QUICListener.Listen.
-func (qls *ErrorWrapperQUICListener) Listen(addr *net.UDPAddr) (quicx.UDPConn, error) {
+func (qls *ErrorWrapperQUICListener) Listen(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error) {
 	pconn, err := qls.QUICListener.Listen(addr)
 	if err != nil {
 		return nil, SafeErrWrapperBuilder{
@@ -44,17 +43,17 @@ func (qls *ErrorWrapperQUICListener) Listen(addr *net.UDPAddr) (quicx.UDPConn, e
 	return &errorWrapperUDPConn{pconn}, nil
 }
 
-// errorWrapperUDPConn is a quicx.UDPConn that wraps errors.
+// errorWrapperUDPConn is a quic.OOBCapablePacketConn that wraps errors.
 type errorWrapperUDPConn struct {
-	// UDPConn is the underlying conn.
-	quicx.UDPConn
+	// OOBCapablePacketConn is the underlying conn.
+	quic.OOBCapablePacketConn
 }
 
-var _ quicx.UDPConn = &errorWrapperUDPConn{}
+var _ quic.OOBCapablePacketConn = &errorWrapperUDPConn{}
 
-// WriteTo implements quicx.UDPConn.WriteTo.
+// WriteTo implements quic.OOBCapablePacketConn.WriteTo.
 func (c *errorWrapperUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
-	count, err := c.UDPConn.WriteTo(p, addr)
+	count, err := c.OOBCapablePacketConn.WriteTo(p, addr)
 	if err != nil {
 		return 0, SafeErrWrapperBuilder{
 			Error:     err,
@@ -64,9 +63,9 @@ func (c *errorWrapperUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	return count, nil
 }
 
-// ReadMsgUDP implements quicx.UDPConn.ReadMsgUDP.
+// ReadMsgUDP implements quic.OOBCapablePacketConn.ReadMsgUDP.
 func (c *errorWrapperUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
-	n, oobn, flags, addr, err := c.UDPConn.ReadMsgUDP(b, oob)
+	n, oobn, flags, addr, err := c.OOBCapablePacketConn.ReadMsgUDP(b, oob)
 	if err != nil {
 		return 0, 0, 0, nil, SafeErrWrapperBuilder{
 			Error:     err,
