@@ -50,7 +50,7 @@ func (c Configurer) NewConfiguration() (Configuration, error) {
 	case "golang":
 		clientHelloID = &utls.HelloGolang
 	default:
-		clientHelloID = &utls.HelloChrome_Auto
+		clientHelloID = nil
 	}
 	// set up defaults
 	configuration := Configuration{
