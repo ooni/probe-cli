@@ -13,7 +13,7 @@ import (
 
 func TestProxyDialerDialContextNoProxyURL(t *testing.T) {
 	expected := errors.New("mocked error")
-	d := &proxyDialer{
+	d := &ProxyDialer{
 		Dialer: &netxmocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, expected
@@ -30,7 +30,7 @@ func TestProxyDialerDialContextNoProxyURL(t *testing.T) {
 }
 
 func TestProxyDialerDialContextInvalidScheme(t *testing.T) {
-	d := &proxyDialer{
+	d := &ProxyDialer{
 		ProxyURL: &url.URL{Scheme: "antani"},
 	}
 	conn, err := d.DialContext(context.Background(), "tcp", "www.google.com:443")
@@ -44,7 +44,7 @@ func TestProxyDialerDialContextInvalidScheme(t *testing.T) {
 
 func TestProxyDialerDialContextWithEOF(t *testing.T) {
 	const expect = "10.0.0.1:9050"
-	d := &proxyDialer{
+	d := &ProxyDialer{
 		Dialer: &netxmocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				if address != expect {

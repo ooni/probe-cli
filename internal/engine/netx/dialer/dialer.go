@@ -81,7 +81,7 @@ func New(config *Config, resolver Resolver) Dialer {
 		d = &saverConnDialer{Dialer: d, Saver: config.ReadWriteSaver}
 	}
 	d = &netxlite.DialerResolver{Resolver: resolver, Dialer: d}
-	d = &proxyDialer{ProxyURL: config.ProxyURL, Dialer: d}
+	d = &ProxyDialer{ProxyURL: config.ProxyURL, Dialer: d}
 	if config.ContextByteCounting {
 		d = &byteCounterDialer{Dialer: d}
 	}

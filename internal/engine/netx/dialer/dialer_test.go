@@ -28,7 +28,7 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 	if !ok {
 		t.Fatal("not a byteCounterDialer")
 	}
-	pd, ok := bcd.Dialer.(*proxyDialer)
+	pd, ok := bcd.Dialer.(*ProxyDialer)
 	if !ok {
 		t.Fatal("not a proxyDialer")
 	}

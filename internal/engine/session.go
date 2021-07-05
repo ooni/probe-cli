@@ -16,8 +16,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/sessionresolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -200,7 +202,33 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		ProxyURL:    proxyURL,
 	}
 	httpConfig.FullResolver = sess.resolver
-	sess.httpDefaultTransport = netx.NewHTTPTransport(httpConfig)
+	var dlr netxlite.Dialer = netxlite.DefaultDialer
+	dlr = &netxlite.DialerLogger{
+		Dialer: dlr,
+		Logger: config.Logger,
+	}
+	dlr = &netxlite.DialerResolver{
+		Dialer:   dlr,
+		Resolver: sess.resolver,
+	}
+	dlr = &dialer.ProxyDialer{
+		Dialer:   dlr,
+		ProxyURL: proxyURL,
+	}
+	dlr = &netxlite.DialerLogger{
+		Dialer: dlr,
+		Logger: config.Logger,
+	}
+	var tlsh netxlite.TLSHandshaker = netxlite.DefaultTLSHandshaker
+	tlsh = &netxlite.TLSHandshakerLogger{
+		TLSHandshaker: tlsh,
+		Logger:        config.Logger,
+	}
+	sess.httpDefaultTransport = netxlite.NewHTTPTransport(dlr, nil, tlsh)
+	sess.httpDefaultTransport = &netxlite.HTTPTransportLogger{
+		HTTPTransport: sess.httpDefaultTransport,
+		Logger:        config.Logger,
+	}
 	return sess, nil
 }
 
