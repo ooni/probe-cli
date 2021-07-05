@@ -18,66 +18,171 @@ func TestErrorWrapperDialerFailure(t *testing.T) {
 		},
 	}}
 	conn, err := d.DialContext(ctx, "tcp", "www.google.com:443")
+	var ew *ErrWrapper
+	if !errors.As(err, &ew) {
+		t.Fatal("cannot convert to ErrWrapper")
+	}
+	if ew.Operation != ConnectOperation {
+		t.Fatal("unexpected operation", ew.Operation)
+	}
+	if ew.Failure != FailureEOFError {
+		t.Fatal("unexpected failure", ew.Failure)
+	}
+	if !errors.Is(ew.WrappedErr, io.EOF) {
+		t.Fatal("unexpected underlying error", ew.WrappedErr)
+	}
 	if conn != nil {
 		t.Fatal("expected a nil conn here")
-	}
-	errorWrapperCheckErr(t, err, ConnectOperation)
-}
-
-func errorWrapperCheckErr(t *testing.T, err error, op string) {
-	if !errors.Is(err, io.EOF) {
-		t.Fatal("expected another error here")
-	}
-	var errWrapper *ErrWrapper
-	if !errors.As(err, &errWrapper) {
-		t.Fatal("cannot cast to ErrWrapper")
-	}
-	if errWrapper.Operation != op {
-		t.Fatal("unexpected Operation")
-	}
-	if errWrapper.Failure != FailureEOFError {
-		t.Fatal("unexpected failure")
 	}
 }
 
 func TestErrorWrapperDialerSuccess(t *testing.T) {
+	origConn := &net.TCPConn{}
 	ctx := context.Background()
 	d := &ErrorWrapperDialer{Dialer: &netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-			return &netxmocks.Conn{
-				MockRead: func(b []byte) (int, error) {
-					return 0, io.EOF
-				},
-				MockWrite: func(b []byte) (int, error) {
-					return 0, io.EOF
-				},
-				MockClose: func() error {
-					return io.EOF
-				},
-				MockLocalAddr: func() net.Addr {
-					return &net.TCPAddr{Port: 12345}
-				},
-			}, nil
+			return origConn, nil
 		},
 	}}
-	conn, err := d.DialContext(ctx, "tcp", "www.google.com")
+	conn, err := d.DialContext(ctx, "tcp", "www.google.com:443")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if conn == nil {
-		t.Fatal("expected non-nil conn here")
+	ewConn, ok := conn.(*errorWrapperConn)
+	if !ok {
+		t.Fatal("cannot cast to errorWrapperConn")
 	}
-	count, err := conn.Read(nil)
-	errorWrapperCheckIOResult(t, count, err, ReadOperation)
-	count, err = conn.Write(nil)
-	errorWrapperCheckIOResult(t, count, err, WriteOperation)
-	err = conn.Close()
-	errorWrapperCheckErr(t, err, CloseOperation)
+	if ewConn.Conn != origConn {
+		t.Fatal("not the connection we expected")
+	}
 }
 
-func errorWrapperCheckIOResult(t *testing.T, count int, err error, op string) {
-	if count != 0 {
-		t.Fatal("expected nil count here")
+func TestErrorWrapperConnReadFailure(t *testing.T) {
+	c := &errorWrapperConn{
+		Conn: &netxmocks.Conn{
+			MockRead: func(b []byte) (int, error) {
+				return 0, io.EOF
+			},
+		},
 	}
-	errorWrapperCheckErr(t, err, op)
+	buf := make([]byte, 1024)
+	cnt, err := c.Read(buf)
+	var ew *ErrWrapper
+	if !errors.As(err, &ew) {
+		t.Fatal("cannot cast error to ErrWrapper")
+	}
+	if ew.Operation != ReadOperation {
+		t.Fatal("invalid operation", ew.Operation)
+	}
+	if ew.Failure != FailureEOFError {
+		t.Fatal("invalid failure", ew.Failure)
+	}
+	if !errors.Is(ew.WrappedErr, io.EOF) {
+		t.Fatal("invalid wrapped error", ew.WrappedErr)
+	}
+	if cnt != 0 {
+		t.Fatal("expected zero here", cnt)
+	}
+}
+
+func TestErrorWrapperConnReadSuccess(t *testing.T) {
+	c := &errorWrapperConn{
+		Conn: &netxmocks.Conn{
+			MockRead: func(b []byte) (int, error) {
+				return len(b), nil
+			},
+		},
+	}
+	buf := make([]byte, 1024)
+	cnt, err := c.Read(buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cnt != len(buf) {
+		t.Fatal("expected len(buf) here", cnt)
+	}
+}
+
+func TestErrorWrapperConnWriteFailure(t *testing.T) {
+	c := &errorWrapperConn{
+		Conn: &netxmocks.Conn{
+			MockWrite: func(b []byte) (int, error) {
+				return 0, io.EOF
+			},
+		},
+	}
+	buf := make([]byte, 1024)
+	cnt, err := c.Write(buf)
+	var ew *ErrWrapper
+	if !errors.As(err, &ew) {
+		t.Fatal("cannot cast error to ErrWrapper")
+	}
+	if ew.Operation != WriteOperation {
+		t.Fatal("invalid operation", ew.Operation)
+	}
+	if ew.Failure != FailureEOFError {
+		t.Fatal("invalid failure", ew.Failure)
+	}
+	if !errors.Is(ew.WrappedErr, io.EOF) {
+		t.Fatal("invalid wrapped error", ew.WrappedErr)
+	}
+	if cnt != 0 {
+		t.Fatal("expected zero here", cnt)
+	}
+}
+
+func TestErrorWrapperConnWriteSuccess(t *testing.T) {
+	c := &errorWrapperConn{
+		Conn: &netxmocks.Conn{
+			MockWrite: func(b []byte) (int, error) {
+				return len(b), nil
+			},
+		},
+	}
+	buf := make([]byte, 1024)
+	cnt, err := c.Write(buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cnt != len(buf) {
+		t.Fatal("expected len(buf) here", cnt)
+	}
+}
+
+func TestErrorWrapperConnCloseFailure(t *testing.T) {
+	c := &errorWrapperConn{
+		Conn: &netxmocks.Conn{
+			MockClose: func() error {
+				return io.EOF
+			},
+		},
+	}
+	err := c.Close()
+	var ew *ErrWrapper
+	if !errors.As(err, &ew) {
+		t.Fatal("cannot cast error to ErrWrapper")
+	}
+	if ew.Operation != CloseOperation {
+		t.Fatal("invalid operation", ew.Operation)
+	}
+	if ew.Failure != FailureEOFError {
+		t.Fatal("invalid failure", ew.Failure)
+	}
+	if !errors.Is(ew.WrappedErr, io.EOF) {
+		t.Fatal("invalid wrapped error", ew.WrappedErr)
+	}
+}
+
+func TestErrorWrapperConnCloseSuccess(t *testing.T) {
+	c := &errorWrapperConn{
+		Conn: &netxmocks.Conn{
+			MockClose: func() error {
+				return nil
+			},
+		},
+	}
+	err := c.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
 }
