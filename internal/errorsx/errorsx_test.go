@@ -54,7 +54,7 @@ func TestToFailureString(t *testing.T) {
 		}
 	})
 	t.Run("for canceled", func(t *testing.T) {
-		if toFailureString(syscall.ECANCELED) != FailureInterrupted {
+		if toFailureString(syscall.ECANCELED) != FailureOperationCanceled {
 			t.Fatal("unexpected results")
 		}
 	})
@@ -74,7 +74,7 @@ func TestToFailureString(t *testing.T) {
 		}
 	})
 	t.Run("for system timeout", func(t *testing.T) {
-		if toFailureString(syscall.ETIMEDOUT) != FailureGenericTimeoutError {
+		if toFailureString(syscall.ETIMEDOUT) != FailureTimedOut {
 			t.Fatal("unexpected results")
 		}
 	})

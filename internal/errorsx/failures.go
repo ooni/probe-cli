@@ -1,14 +1,11 @@
 package errorsx
 
-// This enumeration lists all the failures defined at
+// This enumeration lists the non-syscall-derived failures defined at
 // https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md
+//
+// See also the enumeration at errno.go for the failures that
+// derive directly from system call errors.
 const (
-	// FailureConnectionRefused means ECONNREFUSED.
-	FailureConnectionRefused = "connection_refused"
-
-	// FailureConnectionReset means ECONNRESET.
-	FailureConnectionReset = "connection_reset"
-
 	// FailureDNSBogonError means we detected bogon in DNS reply.
 	FailureDNSBogonError = "dns_bogon_error"
 
@@ -20,12 +17,6 @@ const (
 
 	// FailureGenericTimeoutError means we got some timer has expired.
 	FailureGenericTimeoutError = "generic_timeout_error"
-
-	// FailureHostUnreachable means that there is "no route to host".
-	FailureHostUnreachable = "host_unreachable"
-
-	// FailureInterrupted means that the user interrupted us.
-	FailureInterrupted = "interrupted"
 
 	// FailureNoCompatibleQUICVersion means that the server does not support the proposed QUIC version
 	FailureNoCompatibleQUICVersion = "quic_incompatible_version"
