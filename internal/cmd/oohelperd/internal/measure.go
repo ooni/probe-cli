@@ -2,9 +2,11 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
@@ -30,7 +32,11 @@ type MeasureConfig struct {
 // Measure performs the measurement described by the request and
 // returns the corresponding response or an error.
 func Measure(ctx context.Context, config MeasureConfig, creq *CtrlRequest) (*CtrlResponse, error) {
-	// parse input for correctness
+	// Regexp taken from: https://github.com/citizenlab/test-lists/blob/master/scripts/lint-lists.py#L18
+	urlRegexp := regexp.MustCompile(`^(?:http)s?://(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+(?:[a-zA-Z]{2,6}\.?|[a-zA-Z0-9-]{2,}\.?)|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(?::\d+)?(?:/?|[/?]\S+)$`)
+	if urlRegexp.Match([]byte(creq.HTTPRequest)) == false {
+		return nil, errors.New("invalid URL")
+	}
 	URL, err := url.Parse(creq.HTTPRequest)
 	if err != nil {
 		return nil, err
