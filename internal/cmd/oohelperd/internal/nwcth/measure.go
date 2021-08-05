@@ -52,10 +52,16 @@ type NextLocationInfo struct {
 	httpRedirectReq *http.Request
 }
 
+type MeasureURLResult struct {
+	CtrlURLMeasurement *CtrlURLMeasurement
+	redirectedReqs     []*CtrlRequest
+	h3Reqs             []*CtrlRequest
+}
+
 type MeasureEndpointResult struct {
 	CtrlEndpoint CtrlEndpointMeasurement
 	httpRedirect *NextLocationInfo
-	h3Location   *url.URL
+	h3Location   string
 }
 
 type MeasureEndpointConfig struct {
@@ -67,17 +73,36 @@ func Measure(ctx context.Context, config MeasureConfig, creq *CtrlRequest) (*Ctr
 	var cresp = &CtrlResponse{URLMeasurements: []*CtrlURLMeasurement{}}
 
 	redirected := make(map[string]bool, 100)
+
 	urlM, err := MeasureURL(ctx, config, creq, cresp, redirected)
 	if err != nil {
 		return nil, err
 	}
-	cresp.URLMeasurements = append(cresp.URLMeasurements, urlM)
+	cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.CtrlURLMeasurement)
+
+	n := 0
+	nextRequests := append(urlM.redirectedReqs, urlM.h3Reqs...)
+	for len(nextRequests) > n {
+		req := nextRequests[n]
+		n += 1
+		if _, ok := redirected[req.HTTPRequest]; ok {
+			continue
+		}
+		redirected[req.HTTPRequest] = true
+		urlM, err := MeasureURL(ctx, config, req, cresp, redirected)
+		if err != nil {
+			return nil, err
+		}
+		cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.CtrlURLMeasurement)
+		nextRequests = append(nextRequests, urlM.redirectedReqs...)
+	}
+
 	return cresp, nil
 }
 
 // Measure performs the measurement described by the request and
 // returns the corresponding response or an error.
-func MeasureURL(ctx context.Context, config MeasureConfig, creq *CtrlRequest, cresp *CtrlResponse, redirected map[string]bool) (*CtrlURLMeasurement, error) {
+func MeasureURL(ctx context.Context, config MeasureConfig, creq *CtrlRequest, cresp *CtrlResponse, redirected map[string]bool) (*MeasureURLResult, error) {
 	// parse input for correctness
 	URL, err := url.Parse(creq.HTTPRequest)
 	if err != nil {
@@ -115,38 +140,24 @@ func MeasureURL(ctx context.Context, config MeasureConfig, creq *CtrlRequest, cr
 	wg.Wait()
 	close(out)
 
+	h3Reqs := []*CtrlRequest{}
+	redirectedReqs := []*CtrlRequest{}
 	for m := range out {
 		urlMeasurement.Endpoints = append(urlMeasurement.Endpoints, m.CtrlEndpoint)
 		if m.httpRedirect != nil {
 			if len(redirected) == 20 {
 				// stop after 20 redirects
-				break
-			}
-			if _, ok := redirected[m.httpRedirect.location]; ok {
 				continue
 			}
-			redirected[m.httpRedirect.location] = true
 			req := &CtrlRequest{HTTPRequest: m.httpRedirect.location, HTTPRequestHeaders: m.httpRedirect.httpRedirectReq.Header}
-			urlM, err := MeasureURL(ctx, config, req, cresp, redirected)
-			if err != nil {
-				return nil, err
-			}
-			cresp.URLMeasurements = append(cresp.URLMeasurements, urlM)
+			redirectedReqs = append(redirectedReqs, req)
 		}
-		if m.h3Location != nil {
-			if _, ok := redirected[m.h3Location.String()]; ok {
-				continue
-			}
-			req := &CtrlRequest{HTTPRequest: m.h3Location.String()}
-			urlM, err := MeasureURL(ctx, config, req, cresp, redirected)
-			if err != nil {
-				return nil, err
-			}
-			cresp.URLMeasurements = append(cresp.URLMeasurements, urlM)
-
+		if m.h3Location != "" {
+			req := &CtrlRequest{HTTPRequest: m.h3Location}
+			h3Reqs = append(h3Reqs, req)
 		}
 	}
-	return urlMeasurement, nil
+	return &MeasureURLResult{CtrlURLMeasurement: urlMeasurement, h3Reqs: h3Reqs, redirectedReqs: redirectedReqs}, nil
 }
 
 func MeasureEndpoint(ctx context.Context, config MeasureConfig, creq *CtrlRequest, URL *url.URL, endpoint string, wg *sync.WaitGroup, out chan *MeasureEndpointResult) {
@@ -211,7 +222,7 @@ func measureHTTP(
 	if h3Support != "" {
 		quicURL, _ := url.Parse(URL.String())
 		quicURL.Scheme = h3Support
-		result.h3Location = quicURL
+		result.h3Location = quicURL.String()
 	}
 	result.CtrlEndpoint = &httpMeasurement
 }
