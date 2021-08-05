@@ -57,7 +57,6 @@ func main() {
 func testableMain() {
 	mux := http.NewServeMux()
 	mux.Handle("/api/unstable/nwcth", nwcth.NWCTHHandler{
-		Client:            &http.Client{},
 		Dialer:            dialer,
 		MaxAcceptableBody: maxAcceptableBody,
 		QuicDialer:        quicdialer,

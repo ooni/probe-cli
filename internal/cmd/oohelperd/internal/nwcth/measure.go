@@ -37,7 +37,6 @@ type (
 
 // MeasureConfig contains configuration for Measure.
 type MeasureConfig struct {
-	Client            *http.Client
 	Dialer            netx.Dialer
 	MaxAcceptableBody int64
 	QuicDialer        netx.QUICDialer
@@ -62,11 +61,6 @@ type MeasureEndpointResult struct {
 	CtrlEndpoint CtrlEndpointMeasurement
 	httpRedirect *NextLocationInfo
 	h3Location   string
-}
-
-type MeasureEndpointConfig struct {
-	Endpoint string
-	URL      *url.URL
 }
 
 func Measure(ctx context.Context, config MeasureConfig, creq *CtrlRequest) (*CtrlResponse, error) {
@@ -149,7 +143,7 @@ func MeasureURL(ctx context.Context, config MeasureConfig, creq *CtrlRequest, cr
 				// stop after 20 redirects
 				continue
 			}
-			req := &CtrlRequest{HTTPRequest: m.httpRedirect.location, HTTPRequestHeaders: m.httpRedirect.httpRedirectReq.Header}
+			req := &CtrlRequest{HTTPCookieJar: m.httpRedirect.jar, HTTPRequest: m.httpRedirect.location, HTTPRequestHeaders: m.httpRedirect.httpRedirectReq.Header}
 			redirectedReqs = append(redirectedReqs, req)
 		}
 		if m.h3Location != "" {
@@ -193,9 +187,10 @@ func measureHTTP(
 		return
 	}
 	defer conn.Close()
+	var transport http.RoundTripper
 	switch URL.Scheme {
 	case "http":
-		config.Client.Transport = nwebconnectivity.GetSingleTransport(nil, conn, nil)
+		transport = nwebconnectivity.GetSingleTransport(nil, conn, nil)
 	case "https":
 		var tlsconn *tls.Conn
 		cfg := &tls.Config{ServerName: URL.Hostname()}
@@ -208,13 +203,14 @@ func measureHTTP(
 			return
 		}
 		state := tlsconn.ConnectionState()
-		config.Client.Transport = nwebconnectivity.GetSingleTransport(&state, tlsconn, cfg)
+		transport = nwebconnectivity.GetSingleTransport(&state, tlsconn, cfg)
 	}
 	// perform the HTTP request: this provides us with the HTTP request result and info about HTTP redirection
 	httpMeasurement.HTTPRequest, result.httpRedirect = HTTPDo(ctx, &HTTPConfig{
-		Client:            config.Client,
+		Jar:               creq.HTTPCookieJar,
 		Headers:           creq.HTTPRequestHeaders,
 		MaxAcceptableBody: config.MaxAcceptableBody,
+		Transport:         transport,
 		URL:               creq.HTTPRequest,
 	})
 	// find out of the host also supports h3 support, which is announced in the Alt-Svc Header
@@ -250,11 +246,11 @@ func measureH3(
 		return
 	}
 	transport := nwebconnectivity.GetSingleH3Transport(sess, tlscfg, qcfg)
-	config.Client.Transport = transport
 	h3Measurement.HTTPRequest, result.httpRedirect = HTTPDo(ctx, &HTTPConfig{
-		Client:            config.Client,
+		Jar:               creq.HTTPCookieJar,
 		Headers:           creq.HTTPRequestHeaders,
 		MaxAcceptableBody: config.MaxAcceptableBody,
+		Transport:         transport,
 		URL:               "https://" + URL.Hostname(),
 	})
 	sess.CloseWithError(0, "")

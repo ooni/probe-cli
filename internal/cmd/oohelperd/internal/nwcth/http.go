@@ -4,17 +4,20 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // HTTPConfig configures the HTTP check.
 type HTTPConfig struct {
-	Client            *http.Client
+	Jar               *cookiejar.Jar
 	Headers           map[string][]string
 	MaxAcceptableBody int64
+	Transport         http.RoundTripper
 	URL               string
 }
 
@@ -36,19 +39,30 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*CtrlHTTPRequest, *NextLoc
 			}
 		}
 	}
+	// redirectReq is a clone of the initial request, with possibly modified headers
 	var redirectReq *http.Request
-	config.Client.CheckRedirect = func(r *http.Request, reqs []*http.Request) error {
-		redirectReq = r
-		return http.ErrUseLastResponse
+
+	jar := config.Jar
+	if jar == nil {
+		jar, err = cookiejar.New(nil)
+		runtimex.PanicOnError(err, "cookiejar.New failed")
 	}
-	resp, err := config.Client.Do(req)
+	client := http.Client{
+		CheckRedirect: func(r *http.Request, reqs []*http.Request) error {
+			redirectReq = r
+			return http.ErrUseLastResponse
+		},
+		Jar:       jar,
+		Transport: config.Transport,
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return &CtrlHTTPRequest{Failure: newfailure(err)}, nil
 	}
 	var httpRedirect *NextLocationInfo = nil
 	loc, _ := resp.Location()
 	if loc != nil && redirectReq != nil {
-		httpRedirect = &NextLocationInfo{location: loc.String(), httpRedirectReq: redirectReq}
+		httpRedirect = &NextLocationInfo{jar: jar, location: loc.String(), httpRedirectReq: redirectReq}
 	}
 	defer resp.Body.Close()
 	headers := make(map[string]string)

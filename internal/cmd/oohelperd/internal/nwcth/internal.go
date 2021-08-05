@@ -13,7 +13,6 @@ import (
 
 // Handler implements the Web Connectivity test helper HTTP API.
 type NWCTHHandler struct {
-	Client            *http.Client
 	Dialer            netx.Dialer
 	MaxAcceptableBody int64
 	QuicDialer        netx.QUICDialer
