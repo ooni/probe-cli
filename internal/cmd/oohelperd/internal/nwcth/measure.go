@@ -241,19 +241,18 @@ func measureH3(
 	result.CtrlEndpoint = &h3Measurement
 }
 
-func mergeEndpoints(addrs []string, clientAddrs []string) []string {
-	appendIfUnique := func(slice []string, item string) []string {
-		for _, i := range slice {
-			if i == item {
-				return slice
-			}
-		}
-		return append(slice, item)
+func mergeEndpoints(addrs []string, clientAddrs []string) (out []string) {
+	unique := make(map[string]bool, len(addrs)+len(clientAddrs))
+	for _, a := range addrs {
+		unique[a] = true
 	}
-	for _, c := range clientAddrs {
-		addrs = appendIfUnique(addrs, c)
+	for _, a := range clientAddrs {
+		unique[a] = true
 	}
-	return addrs
+	for key := range unique {
+		out = append(out, key)
+	}
+	return out
 }
 
 // getEndpoints connects IP addresses with the port associated with the URL scheme
