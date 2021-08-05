@@ -7,11 +7,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/nwebconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/iox"
 )
-
-type NextLocationInfo = nwebconnectivity.NextLocationInfo
 
 // HTTPConfig configures the HTTP check.
 type HTTPConfig struct {
@@ -22,10 +19,10 @@ type HTTPConfig struct {
 }
 
 // HTTPDo performs the HTTP check.
-func HTTPDo(ctx context.Context, config *HTTPConfig, nexturlch chan *NextLocationInfo) *CtrlHTTPRequest {
+func HTTPDo(ctx context.Context, config *HTTPConfig) (*CtrlHTTPRequest, *NextLocationInfo) {
 	req, err := http.NewRequestWithContext(ctx, "GET", config.URL, nil)
 	if err != nil {
-		return &CtrlHTTPRequest{Failure: newfailure(err)}
+		return &CtrlHTTPRequest{Failure: newfailure(err)}, nil
 	}
 	// The original test helper failed with extra headers while here
 	// we're implementing (for now?) a more liberal approach.
@@ -46,11 +43,12 @@ func HTTPDo(ctx context.Context, config *HTTPConfig, nexturlch chan *NextLocatio
 	}
 	resp, err := config.Client.Do(req)
 	if err != nil {
-		return &CtrlHTTPRequest{Failure: newfailure(err)}
+		return &CtrlHTTPRequest{Failure: newfailure(err)}, nil
 	}
+	var httpRedirect *NextLocationInfo = nil
 	loc, _ := resp.Location()
 	if loc != nil && redirectReq != nil {
-		nexturlch <- &NextLocationInfo{Location: loc, HTTPRedirectReq: redirectReq}
+		httpRedirect = &NextLocationInfo{location: loc.String(), httpRedirectReq: redirectReq}
 	}
 	defer resp.Body.Close()
 	headers := make(map[string]string)
@@ -64,16 +62,13 @@ func HTTPDo(ctx context.Context, config *HTTPConfig, nexturlch chan *NextLocatio
 		Failure:    newfailure(err),
 		StatusCode: int64(resp.StatusCode),
 		Headers:    headers,
-	}
+	}, httpRedirect
 }
 
 // discoverH3Server inspects the Alt-Svc Header of the HTTP (over TCP) response of the control measurement
 // to check whether the server announces to support h3
-func discoverH3Server(resp CtrlEndpointMeasurement, URL *url.URL) string {
-	if _, ok := resp.(*CtrlHTTPMeasurement); !ok {
-		return ""
-	}
-	r := resp.(*CtrlHTTPMeasurement).HTTPRequest
+func discoverH3Server(resp *CtrlHTTPMeasurement, URL *url.URL) string {
+	r := resp.HTTPRequest
 	if r == nil {
 		return ""
 	}
