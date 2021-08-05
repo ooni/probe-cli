@@ -70,6 +70,10 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 	for len(nextRequests) > n {
 		req := nextRequests[n]
 		n += 1
+		if len(redirected) == 20 {
+			// stop after 20 redirects
+			break
+		}
 		if _, ok := redirected[req.HTTPRequest]; ok {
 			continue
 		}
@@ -129,10 +133,6 @@ func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse, red
 	for m := range out {
 		urlMeasurement.Endpoints = append(urlMeasurement.Endpoints, m.CtrlEndpoint)
 		if m.httpRedirect != nil {
-			if len(redirected) == 20 {
-				// stop after 20 redirects
-				continue
-			}
 			req := &CtrlRequest{HTTPCookieJar: m.httpRedirect.jar, HTTPRequest: m.httpRedirect.location, HTTPRequestHeaders: m.httpRedirect.httpRedirectReq.Header}
 			redirectedReqs = append(redirectedReqs, req)
 		}
