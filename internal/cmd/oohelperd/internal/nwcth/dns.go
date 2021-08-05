@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/nwebconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
@@ -18,8 +19,7 @@ type CtrlDNSResult = nwebconnectivity.ControlDNS
 
 // DNSConfig configures the DNS check.
 type DNSConfig struct {
-	Domain   string
-	Resolver netx.Resolver
+	Domain string
 }
 
 // DNSDo performs the DNS check.
@@ -28,6 +28,7 @@ func DNSDo(ctx context.Context, config *DNSConfig) CtrlDNSResult {
 		// handle IP address format input
 		return CtrlDNSResult{Failure: nil, Addrs: []string{config.Domain}}
 	}
-	addrs, err := config.Resolver.LookupHost(ctx, config.Domain)
+	resolver := netx.NewResolver(netx.Config{Logger: log.Log})
+	addrs, err := resolver.LookupHost(ctx, config.Domain)
 	return CtrlDNSResult{Failure: newfailure(err), Addrs: addrs}
 }

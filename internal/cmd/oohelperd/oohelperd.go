@@ -33,7 +33,6 @@ func init() {
 	dialer = netx.NewDialer(netx.Config{Logger: log.Log})
 	txp := netx.NewHTTPTransport(netx.Config{Logger: log.Log})
 	httpx = &http.Client{Transport: txp}
-	quicdialer = netx.NewQUICDialer(netx.Config{Logger: log.Log})
 	resolver = netx.NewResolver(netx.Config{Logger: log.Log})
 }
 
@@ -56,12 +55,7 @@ func main() {
 
 func testableMain() {
 	mux := http.NewServeMux()
-	mux.Handle("/api/unstable/nwcth", nwcth.NWCTHHandler{
-		Dialer:            dialer,
-		MaxAcceptableBody: maxAcceptableBody,
-		QuicDialer:        quicdialer,
-		Resolver:          resolver,
-	})
+	mux.Handle("/api/unstable/nwcth", nwcth.NWCTHHandler{})
 	mux.Handle("/", internal.Handler{
 		Client:            httpx,
 		Dialer:            dialer,

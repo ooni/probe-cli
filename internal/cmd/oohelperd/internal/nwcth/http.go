@@ -14,11 +14,10 @@ import (
 
 // HTTPConfig configures the HTTP check.
 type HTTPConfig struct {
-	Jar               *cookiejar.Jar
-	Headers           map[string][]string
-	MaxAcceptableBody int64
-	Transport         http.RoundTripper
-	URL               string
+	Jar       *cookiejar.Jar
+	Headers   map[string][]string
+	Transport http.RoundTripper
+	URL       string
 }
 
 // HTTPDo performs the HTTP check.
@@ -69,7 +68,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*CtrlHTTPRequest, *NextLoc
 	for k := range resp.Header {
 		headers[k] = resp.Header.Get(k)
 	}
-	reader := &io.LimitedReader{R: resp.Body, N: config.MaxAcceptableBody}
+	reader := &io.LimitedReader{R: resp.Body, N: maxAcceptableBody}
 	data, err := iox.ReadAllContext(ctx, reader)
 	return &CtrlHTTPRequest{
 		BodyLength: int64(len(data)),
