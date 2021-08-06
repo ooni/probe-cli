@@ -17,12 +17,12 @@ type HTTPConfig struct {
 	Jar       *cookiejar.Jar
 	Headers   map[string][]string
 	Transport http.RoundTripper
-	URL       string
+	URL       *url.URL
 }
 
 // HTTPDo performs the HTTP check.
 func HTTPDo(ctx context.Context, config *HTTPConfig) (*CtrlHTTPRequest, *NextLocationInfo) {
-	req, err := http.NewRequestWithContext(ctx, "GET", config.URL, nil)
+	req, err := newRequest(ctx, config.URL)
 	if err != nil {
 		return &CtrlHTTPRequest{Failure: newfailure(err)}, nil
 	}
@@ -61,6 +61,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*CtrlHTTPRequest, *NextLoc
 	var httpRedirect *NextLocationInfo = nil
 	loc, _ := resp.Location()
 	if loc != nil && redirectReq != nil {
+		loc.Scheme = config.URL.Scheme
 		httpRedirect = &NextLocationInfo{jar: jar, location: loc.String(), httpRedirectReq: redirectReq}
 	}
 	defer resp.Body.Close()
@@ -76,6 +77,14 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*CtrlHTTPRequest, *NextLoc
 		StatusCode: int64(resp.StatusCode),
 		Headers:    headers,
 	}, httpRedirect
+}
+
+func newRequest(ctx context.Context, URL *url.URL) (*http.Request, error) {
+	scheme := URL.Scheme
+	if strings.Contains(scheme, "h3") {
+		scheme = "https"
+	}
+	return http.NewRequestWithContext(ctx, "GET", scheme+"://"+URL.Hostname(), nil)
 }
 
 // discoverH3Server inspects the Alt-Svc Header of the HTTP (over TCP) response of the control measurement

@@ -198,7 +198,7 @@ func measureHTTP(
 		Jar:       creq.HTTPCookieJar,
 		Headers:   creq.HTTPRequestHeaders,
 		Transport: transport,
-		URL:       creq.HTTPRequest,
+		URL:       URL,
 	})
 	// find out of the host also supports h3 support, which is announced in the Alt-Svc Header
 	h3Support := discoverH3Server(&httpMeasurement, URL)
@@ -235,7 +235,7 @@ func measureH3(
 		Jar:       creq.HTTPCookieJar,
 		Headers:   creq.HTTPRequestHeaders,
 		Transport: transport,
-		URL:       "https://" + URL.Hostname(),
+		URL:       URL,
 	})
 	sess.CloseWithError(0, "")
 	result.CtrlEndpoint = &h3Measurement
