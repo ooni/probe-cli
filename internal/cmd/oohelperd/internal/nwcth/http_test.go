@@ -36,8 +36,8 @@ func TestHTTPNoH3Transport(t *testing.T) {
 	if nextlocation != nil {
 		t.Fatal("unexpected next location")
 	}
-	h3Support := discoverH3Server(ctrl, url)
-	if h3Support != "" {
+	h3Support := parseAltSvc(ctrl, url)
+	if h3Support != nil {
 		t.Fatal("not the h3 support value we expected")
 	}
 }
@@ -56,8 +56,11 @@ func TestHTTPDoWithH3Transport(t *testing.T) {
 	if nextlocation != nil {
 		t.Fatal("unexpected next location")
 	}
-	h3Support := discoverH3Server(ctrl, url)
-	if h3Support != "h3" {
+	h3Support := parseAltSvc(ctrl, url)
+	if h3Support == nil {
+		t.Fatal("expected an h3 alt-svc entry here")
+	}
+	if h3Support.proto != "h3" {
 		t.Fatal("not the h3 support value we expected")
 	}
 
@@ -85,7 +88,7 @@ type H3ServerSupport struct {
 }
 
 func TestDiscoverH3Server(t *testing.T) {
-	tests := []H3ServerSupport{
+	h3tests := []H3ServerSupport{
 		{
 			url:        "https://www.google.com",
 			expectedh3: "h3",
@@ -94,13 +97,9 @@ func TestDiscoverH3Server(t *testing.T) {
 			url:        "https://www.facebook.com",
 			expectedh3: "h3-29",
 		},
-		{
-			url:        "https://ooni.org",
-			expectedh3: "",
-		},
 	}
 	transport := http.DefaultTransport
-	for _, testcase := range tests {
+	for _, testcase := range h3tests {
 		URL := safeURLParse(testcase.url)
 		ctrl, err := HTTPDo(context.Background(), &HTTPConfig{
 			Transport: transport,
@@ -109,12 +108,20 @@ func TestDiscoverH3Server(t *testing.T) {
 		if err != nil {
 			t.Fatal("unexpected error")
 		}
-		if discoverH3Server(ctrl, URL) != testcase.expectedh3 {
+		alt_svc := parseAltSvc(ctrl, URL)
+		if alt_svc == nil {
+			t.Fatal("expected an h3 alt-svc entry here")
+		}
+		if alt_svc.proto != testcase.expectedh3 {
 			t.Fatal("unexpected h3 support string")
 		}
 	}
-	URL := safeURLParse("https://www.google.com")
-	if discoverH3Server(nil, URL) != "" {
+	URL := safeURLParse("https://ooni.org")
+	if parseAltSvc(nil, URL) != nil {
+		t.Fatal("unexpected h3 support string")
+	}
+	URL = safeURLParse("https://www.google.com")
+	if parseAltSvc(nil, URL) != nil {
 		t.Fatal("unexpected h3 support string")
 	}
 }
