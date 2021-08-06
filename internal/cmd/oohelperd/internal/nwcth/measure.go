@@ -211,11 +211,14 @@ func measureHTTP(
 		URL:       URL,
 	})
 	// find out of the host also supports h3 support, which is announced in the Alt-Svc Header
-	h3Support := discoverH3Server(httpMeasurement.HTTPRequest, URL)
-	if h3Support != "" {
+	h3Svc := parseAltSvc(httpMeasurement.HTTPRequest, URL)
+	if h3Svc != nil {
 		quicURL, err := url.Parse(URL.String())
 		runtimex.PanicOnError(err, "url.Parse failed")
-		quicURL.Scheme = h3Support
+		quicURL.Scheme = h3Svc.proto
+		if h3Svc.authorityHost != "" {
+			quicURL.Host = h3Svc.authorityHost
+		}
 		result.h3Location = quicURL.String()
 	}
 	result.CtrlEndpoint = &httpMeasurement

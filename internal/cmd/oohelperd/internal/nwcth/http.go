@@ -3,6 +3,7 @@ package nwcth
 import (
 	"context"
 	"io"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -103,24 +104,34 @@ func newRequest(ctx context.Context, URL *url.URL) (*http.Request, error) {
 	return http.NewRequestWithContext(ctx, "GET", newURL.String(), nil)
 }
 
-// discoverH3Server inspects the Alt-Svc Header of the HTTP (over TCP) response of the control measurement
+type altSvcH3 struct {
+	proto         string
+	authorityHost string
+}
+
+// parseAltSvc inspects the Alt-Svc Header of the HTTP (over TCP) response of the control measurement
 // to check whether the server announces to support h3
-func discoverH3Server(r *HTTPRequestMeasurement, URL *url.URL) string {
+func parseAltSvc(r *HTTPRequestMeasurement, URL *url.URL) *altSvcH3 {
 	if r == nil {
-		return ""
+		return nil
 	}
 	if URL.Scheme != "https" {
-		return ""
+		return nil
 	}
 	alt_svc := r.Headers.Get("Alt-Svc")
-	entries := strings.Split(alt_svc, ";")
+	entries := strings.Split(alt_svc, ",")
 	for _, e := range entries {
-		if strings.Contains(e, "h3=") {
-			return "h3"
-		}
-		if strings.Contains(e, "h3-29=") {
-			return "h3-29"
+		keyvalpairs := strings.Split(e, ";")
+		for _, p := range keyvalpairs {
+			p = strings.Replace(p, "\"", "", -1)
+			kv := strings.Split(p, "=")
+			if kv[0] == "h3" || kv[0] == "h3-29" {
+				// we assume the port to be 443 which is the port HTTP/3 runs on
+				host, _, err := net.SplitHostPort(kv[1])
+				runtimex.PanicOnError(err, "net.SplitHostPort failed")
+				return &altSvcH3{proto: kv[0], authorityHost: host}
+			}
 		}
 	}
-	return ""
+	return nil
 }
