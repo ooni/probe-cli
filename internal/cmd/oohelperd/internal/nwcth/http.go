@@ -14,20 +14,24 @@ import (
 
 // HTTPConfig configures the HTTP check.
 type HTTPConfig struct {
-	Jar       *cookiejar.Jar
-	Headers   map[string][]string
+	// Jar contains the optional cookiejar from the previous hop in a redirect chain.
+	Jar http.CookieJar
+	// Headers contains the optional HTTP request headers.
+	Headers map[string][]string
+	// Transport contains the mandatory HTTP RoundTripper object.
 	Transport http.RoundTripper
-	URL       *url.URL
+	// URL contains the mandatory HTTP request URL.
+	URL *url.URL
 }
 
 // HTTPDo performs the HTTP check.
+// CtrlHTTPRequest is the data object containing the HTTP Get request measurement.
+// NextLocationInfo contains information needed in case of an HTTP redirect. Nil, if no redirect occured.
 func HTTPDo(ctx context.Context, config *HTTPConfig) (*CtrlHTTPRequest, *NextLocationInfo) {
 	req, err := newRequest(ctx, config.URL)
 	if err != nil {
 		return &CtrlHTTPRequest{Failure: newfailure(err)}, nil
 	}
-	// The original test helper failed with extra headers while here
-	// we're implementing (for now?) a more liberal approach.
 	for k, vs := range config.Headers {
 		switch strings.ToLower(k) {
 		case "user-agent":
@@ -79,12 +83,18 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*CtrlHTTPRequest, *NextLoc
 	}, httpRedirect
 }
 
+// newRequest creates a new *http.Request.
+// h3 URL schemes are replaced by "https", to avoid invalid-scheme-errors during HTTP GET.
 func newRequest(ctx context.Context, URL *url.URL) (*http.Request, error) {
-	scheme := URL.Scheme
-	if strings.Contains(scheme, "h3") {
-		scheme = "https"
+	realSchemes := map[string]string{
+		"http":  "http",
+		"https": "https",
+		"h3":    "https",
+		"h3-29": "https",
 	}
-	return http.NewRequestWithContext(ctx, "GET", scheme+"://"+URL.Hostname(), nil)
+	newURL, _ := url.Parse(URL.String())
+	newURL.Scheme = realSchemes[URL.Scheme]
+	return http.NewRequestWithContext(ctx, "GET", newURL.String(), nil)
 }
 
 // discoverH3Server inspects the Alt-Svc Header of the HTTP (over TCP) response of the control measurement
