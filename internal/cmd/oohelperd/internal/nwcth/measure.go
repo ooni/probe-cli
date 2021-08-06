@@ -178,7 +178,7 @@ func measureHTTP(
 	var transport http.RoundTripper
 	switch URL.Scheme {
 	case "http":
-		transport = nwebconnectivity.GetSingleTransport(nil, conn, nil)
+		transport = nwebconnectivity.GetSingleTransport(conn, nil)
 	case "https":
 		var tlsconn *tls.Conn
 		cfg := &tls.Config{ServerName: URL.Hostname()}
@@ -190,8 +190,7 @@ func measureHTTP(
 		if tlsconn == nil {
 			return
 		}
-		state := tlsconn.ConnectionState()
-		transport = nwebconnectivity.GetSingleTransport(&state, tlsconn, cfg)
+		transport = nwebconnectivity.GetSingleTransport(tlsconn, cfg)
 	}
 	// perform the HTTP request: this provides us with the HTTP request result and info about HTTP redirection
 	httpMeasurement.HTTPRequest, result.httpRedirect = HTTPDo(ctx, &HTTPConfig{
