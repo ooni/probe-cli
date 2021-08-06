@@ -22,13 +22,18 @@ type DNSConfig struct {
 	Domain string
 }
 
+// NewResolver creates a new DNS resolver instance
+func NewResolver() netx.Resolver {
+	return netx.NewResolver(netx.Config{Logger: log.Log})
+}
+
 // DNSDo performs the DNS check.
 func DNSDo(ctx context.Context, config *DNSConfig) CtrlDNSResult {
 	if net.ParseIP(config.Domain) != nil {
 		// handle IP address format input
 		return CtrlDNSResult{Failure: nil, Addrs: []string{config.Domain}}
 	}
-	resolver := netx.NewResolver(netx.Config{Logger: log.Log})
+	resolver := NewResolver()
 	addrs, err := resolver.LookupHost(ctx, config.Domain)
 	return CtrlDNSResult{Failure: newfailure(err), Addrs: addrs}
 }
