@@ -89,8 +89,7 @@ func newRequest(ctx context.Context, URL *url.URL) (*http.Request, error) {
 
 // discoverH3Server inspects the Alt-Svc Header of the HTTP (over TCP) response of the control measurement
 // to check whether the server announces to support h3
-func discoverH3Server(resp *CtrlHTTPMeasurement, URL *url.URL) string {
-	r := resp.HTTPRequest
+func discoverH3Server(r *CtrlHTTPRequest, URL *url.URL) string {
 	if r == nil {
 		return ""
 	}
