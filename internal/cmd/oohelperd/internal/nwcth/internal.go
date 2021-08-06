@@ -24,10 +24,6 @@ func (h NWCTHHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
-	if req.Header.Get("content-type") != "application/json" {
-		w.WriteHeader(400)
-		return
-	}
 	reader := &io.LimitedReader{R: req.Body, N: maxAcceptableBody}
 	data, err := iox.ReadAllContext(req.Context(), reader)
 	if err != nil {

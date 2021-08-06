@@ -28,10 +28,6 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
-	if req.Header.Get("content-type") != "application/json" {
-		w.WriteHeader(400)
-		return
-	}
 	reader := &io.LimitedReader{R: req.Body, N: h.MaxAcceptableBody}
 	data, err := iox.ReadAllContext(req.Context(), reader)
 	if err != nil {
