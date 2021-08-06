@@ -62,7 +62,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 	if err != nil {
 		return &HTTPRequestMeasurement{Failure: newfailure(err)}, nil
 	}
-	var httpRedirect *NextLocationInfo = nil
+	var httpRedirect *NextLocationInfo
 	loc, err := resp.Location()
 	if err == nil && redirectReq != nil {
 		loc.Scheme = config.URL.Scheme
