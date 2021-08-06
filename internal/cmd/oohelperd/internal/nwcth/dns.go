@@ -22,8 +22,8 @@ type DNSConfig struct {
 	Domain string
 }
 
-// NewResolver creates a new DNS resolver instance
-func NewResolver() netx.Resolver {
+// newResolver creates a new DNS resolver instance
+func newResolver() netx.Resolver {
 	return netx.NewResolver(netx.Config{Logger: log.Log})
 }
 
@@ -33,7 +33,7 @@ func DNSDo(ctx context.Context, config *DNSConfig) *DNSMeasurement {
 		// handle IP address format input
 		return &DNSMeasurement{Failure: nil, Addrs: []string{config.Domain}}
 	}
-	resolver := NewResolver()
+	resolver := newResolver()
 	addrs, err := resolver.LookupHost(ctx, config.Domain)
 	return &DNSMeasurement{Failure: newfailure(err), Addrs: addrs}
 }
