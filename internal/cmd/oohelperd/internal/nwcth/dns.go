@@ -28,12 +28,12 @@ func NewResolver() netx.Resolver {
 }
 
 // DNSDo performs the DNS check.
-func DNSDo(ctx context.Context, config *DNSConfig) DNSMeasurement {
+func DNSDo(ctx context.Context, config *DNSConfig) *DNSMeasurement {
 	if net.ParseIP(config.Domain) != nil {
 		// handle IP address format input
-		return DNSMeasurement{Failure: nil, Addrs: []string{config.Domain}}
+		return &DNSMeasurement{Failure: nil, Addrs: []string{config.Domain}}
 	}
 	resolver := NewResolver()
 	addrs, err := resolver.LookupHost(ctx, config.Domain)
-	return DNSMeasurement{Failure: newfailure(err), Addrs: addrs}
+	return &DNSMeasurement{Failure: newfailure(err), Addrs: addrs}
 }

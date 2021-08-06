@@ -110,7 +110,7 @@ func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse, red
 		Domain: URL.Hostname(),
 	})
 
-	urlMeasurement.DNS = &dns
+	urlMeasurement.DNS = dns
 
 	enpnts := getEndpoints(dns.Addrs, URL)
 	addrs := mergeEndpoints(enpnts, creq.TCPConnect)
