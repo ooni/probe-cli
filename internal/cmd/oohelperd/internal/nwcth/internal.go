@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -45,7 +46,8 @@ func (h NWCTHHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	// We assume that the following call cannot fail because it's a
 	// clearly serializable data structure.
-	data, _ = json.Marshal(cresp)
+	data, err = json.Marshal(cresp)
+	runtimex.PanicOnError(err, "json.Marshal failed")
 	w.Header().Add("Content-Type", "application/json")
 	w.Write(data)
 }

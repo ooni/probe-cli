@@ -11,6 +11,7 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/nwebconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 type (
@@ -175,7 +176,8 @@ func measureHTTP(
 	wg *sync.WaitGroup,
 	result *MeasureEndpointResult,
 ) {
-	URL, _ := url.Parse(creq.HTTPRequest)
+	URL, err := url.Parse(creq.HTTPRequest)
+	runtimex.PanicOnError(err, "url.Parse failed")
 	httpMeasurement := HTTPMeasurement{Endpoint: endpoint, Protocol: URL.Scheme}
 	var conn net.Conn
 	conn, httpMeasurement.TCPConnect = TCPDo(ctx, &TCPConfig{
@@ -212,7 +214,8 @@ func measureHTTP(
 	// find out of the host also supports h3 support, which is announced in the Alt-Svc Header
 	h3Support := discoverH3Server(httpMeasurement.HTTPRequest, URL)
 	if h3Support != "" {
-		quicURL, _ := url.Parse(URL.String())
+		quicURL, err := url.Parse(URL.String())
+		runtimex.PanicOnError(err, "url.Parse failed")
 		quicURL.Scheme = h3Support
 		result.h3Location = quicURL.String()
 	}
@@ -226,7 +229,8 @@ func measureH3(
 	wg *sync.WaitGroup,
 	result *MeasureEndpointResult,
 ) {
-	URL, _ := url.Parse(creq.HTTPRequest)
+	URL, err := url.Parse(creq.HTTPRequest)
+	runtimex.PanicOnError(err, "url.Parse failed")
 	h3Measurement := H3Measurement{Endpoint: endpoint, Protocol: URL.Scheme}
 	var sess quic.EarlySession
 	tlscfg := &tls.Config{ServerName: URL.Hostname(), NextProtos: []string{URL.Scheme}}

@@ -63,8 +63,8 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 		return &HTTPRequestMeasurement{Failure: newfailure(err)}, nil
 	}
 	var httpRedirect *NextLocationInfo = nil
-	loc, _ := resp.Location()
-	if loc != nil && redirectReq != nil {
+	loc, err := resp.Location()
+	if err == nil && redirectReq != nil {
 		loc.Scheme = config.URL.Scheme
 		httpRedirect = &NextLocationInfo{jar: jar, location: loc.String(), httpRedirectReq: redirectReq}
 	}
@@ -92,7 +92,8 @@ func newRequest(ctx context.Context, URL *url.URL) (*http.Request, error) {
 		"h3":    "https",
 		"h3-29": "https",
 	}
-	newURL, _ := url.Parse(URL.String())
+	newURL, err := url.Parse(URL.String())
+	runtimex.PanicOnError(err, "url.Parse failed")
 	newURL.Scheme = realSchemes[URL.Scheme]
 	return http.NewRequestWithContext(ctx, "GET", newURL.String(), nil)
 }

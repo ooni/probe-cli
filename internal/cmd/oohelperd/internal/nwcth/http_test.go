@@ -11,11 +11,18 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/lucas-clemente/quic-go/http3"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
+
+func safeURLParse(s string) *url.URL {
+	url, err := url.Parse(s)
+	runtimex.PanicOnError(err, "url.Parse failed")
+	return url
+}
 
 func TestHTTPNoH3Transport(t *testing.T) {
 	ctx := context.Background()
-	url, _ := url.Parse("https://ooni.org")
+	url := safeURLParse("https://ooni.org")
 	transport := http.DefaultTransport
 	ctrl, nextlocation := HTTPDo(ctx, &HTTPConfig{
 		Jar:       nil,
@@ -37,7 +44,7 @@ func TestHTTPNoH3Transport(t *testing.T) {
 
 func TestHTTPDoWithH3Transport(t *testing.T) {
 	ctx := context.Background()
-	url, _ := url.Parse("https://www.google.com")
+	url := safeURLParse("https://www.google.com")
 	transport := http.DefaultTransport
 	ctrl, nextlocation := HTTPDo(ctx, &HTTPConfig{
 		Transport: transport,
@@ -94,16 +101,19 @@ func TestDiscoverH3Server(t *testing.T) {
 	}
 	transport := http.DefaultTransport
 	for _, testcase := range tests {
-		URL, _ := url.Parse(testcase.url)
-		ctrl, _ := HTTPDo(context.Background(), &HTTPConfig{
+		URL := safeURLParse(testcase.url)
+		ctrl, err := HTTPDo(context.Background(), &HTTPConfig{
 			Transport: transport,
 			URL:       URL,
 		})
+		if err != nil {
+			t.Fatal("unexpected error")
+		}
 		if discoverH3Server(ctrl, URL) != testcase.expectedh3 {
 			t.Fatal("unexpected h3 support string")
 		}
 	}
-	URL, _ := url.Parse("https://www.google.com")
+	URL := safeURLParse("https://www.google.com")
 	if discoverH3Server(nil, URL) != "" {
 		t.Fatal("unexpected h3 support string")
 	}
@@ -112,7 +122,7 @@ func TestDiscoverH3Server(t *testing.T) {
 func TestHTTPDoWithHTTPTransportFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
-	URL, _ := url.Parse("http://www.x.org")
+	URL := safeURLParse("http://www.x.org")
 	ctrl, nextlocation := HTTPDo(ctx, &HTTPConfig{
 		Transport: FakeTransport{
 			Err: expected,
