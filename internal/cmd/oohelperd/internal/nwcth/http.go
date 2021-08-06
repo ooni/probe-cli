@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/iox"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -42,17 +43,21 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 			}
 		}
 	}
-	// redirectReq is a clone of the initial request, with possibly modified headers
-	var redirectReq *http.Request
 
 	jar := config.Jar
 	if jar == nil {
 		jar, err = cookiejar.New(nil)
 		runtimex.PanicOnError(err, "cookiejar.New failed")
 	}
+	// To know whether we need to redirect, we exploit the redirect check of the http.Client:
+	// http.(*Client).do calls redirectBehavior to find out if an HTTP redirect status
+	// (301, 302, 303, 307, 308) was returned. Only then it uses the CheckRedirect callback.
+	// I.e., the client lands in the CheckRedirect callback, if and only if we need to redirect.
+	// We use an atomic value to mark that CheckRedirect has been visited.
+	shouldRedirect := &atomicx.Int64{}
 	client := http.Client{
 		CheckRedirect: func(r *http.Request, reqs []*http.Request) error {
-			redirectReq = r
+			shouldRedirect.Add(1)
 			return http.ErrUseLastResponse
 		},
 		Jar:       jar,
@@ -64,9 +69,9 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 	}
 	var httpRedirect *NextLocationInfo
 	loc, err := resp.Location()
-	if err == nil && redirectReq != nil {
+	if shouldRedirect.Load() > 0 && err == nil {
 		loc.Scheme = config.URL.Scheme
-		httpRedirect = &NextLocationInfo{jar: jar, location: loc.String(), httpRedirectReq: redirectReq}
+		httpRedirect = &NextLocationInfo{jar: jar, location: loc.String()}
 	}
 	defer resp.Body.Close()
 	headers := http.Header{}
