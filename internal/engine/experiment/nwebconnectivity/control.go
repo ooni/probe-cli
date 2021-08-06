@@ -88,10 +88,10 @@ type ControlTLSHandshakeMeasurement struct {
 // ControlHTTPRequestMeasurement is the result of the HTTP request
 // performed by the control vantage point.
 type ControlHTTPRequestMeasurement struct {
-	BodyLength int64             `json:"body_length"`
-	Failure    *string           `json:"failure"`
-	Headers    map[string]string `json:"headers"`
-	StatusCode int64             `json:"status_code"`
+	BodyLength int64       `json:"body_length"`
+	Failure    *string     `json:"failure"`
+	Headers    http.Header `json:"headers"`
+	StatusCode int64       `json:"status_code"`
 }
 
 // Control performs the control request and returns the response.

@@ -69,9 +69,9 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 		httpRedirect = &NextLocationInfo{jar: jar, location: loc.String(), httpRedirectReq: redirectReq}
 	}
 	defer resp.Body.Close()
-	headers := make(map[string]string)
+	headers := http.Header{}
 	for k := range resp.Header {
-		headers[k] = resp.Header.Get(k)
+		headers[k] = resp.Header[k]
 	}
 	reader := &io.LimitedReader{R: resp.Body, N: maxAcceptableBody}
 	data, err := iox.ReadAllContext(ctx, reader)
@@ -107,7 +107,7 @@ func discoverH3Server(r *HTTPRequestMeasurement, URL *url.URL) string {
 	if URL.Scheme != "https" {
 		return ""
 	}
-	alt_svc := r.Headers["Alt-Svc"]
+	alt_svc := r.Headers.Get("Alt-Svc")
 	entries := strings.Split(alt_svc, ";")
 	for _, e := range entries {
 		if strings.Contains(e, "h3=") {
