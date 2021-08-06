@@ -34,14 +34,14 @@ type ControlResponse struct {
 
 // URLMeasurement is the result of resolving and requesting a URL
 type ControlURL struct {
-	URL       string            `json:"url"`
-	DNS       *ControlDNS       `json:"dns"`
-	Endpoints []ControlEndpoint `json:"endpoints"`
+	URL       string                 `json:"url"`
+	DNS       *ControlDNSMeasurement `json:"dns"`
+	Endpoints []ControlEndpoint      `json:"endpoints"`
 }
 
-// ControlDNS is the result of the DNS lookup
+// ControlDNSMeasurement is the result of the DNS lookup
 // performed by the control vantage point.
-type ControlDNS struct {
+type ControlDNSMeasurement struct {
 	Failure *string  `json:"failure"`
 	Addrs   []string `json:"addrs"`
 }

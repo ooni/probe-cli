@@ -13,9 +13,9 @@ import (
 // newfailure is a convenience shortcut to save typing
 var newfailure = archival.NewFailure
 
-// CtrlDNSResult is the result of the DNS check performed by
+// DNSMeasurement is the result of the DNS check performed by
 // the Web Connectivity test helper.
-type CtrlDNSResult = nwebconnectivity.ControlDNS
+type DNSMeasurement = nwebconnectivity.ControlDNSMeasurement
 
 // DNSConfig configures the DNS check.
 type DNSConfig struct {
@@ -28,12 +28,12 @@ func NewResolver() netx.Resolver {
 }
 
 // DNSDo performs the DNS check.
-func DNSDo(ctx context.Context, config *DNSConfig) CtrlDNSResult {
+func DNSDo(ctx context.Context, config *DNSConfig) DNSMeasurement {
 	if net.ParseIP(config.Domain) != nil {
 		// handle IP address format input
-		return CtrlDNSResult{Failure: nil, Addrs: []string{config.Domain}}
+		return DNSMeasurement{Failure: nil, Addrs: []string{config.Domain}}
 	}
 	resolver := NewResolver()
 	addrs, err := resolver.LookupHost(ctx, config.Domain)
-	return CtrlDNSResult{Failure: newfailure(err), Addrs: addrs}
+	return DNSMeasurement{Failure: newfailure(err), Addrs: addrs}
 }
