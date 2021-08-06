@@ -14,10 +14,10 @@ type TLSConfig struct {
 }
 
 // TLSDo performs the TLS check.
-func TLSDo(ctx context.Context, config *TLSConfig) (*tls.Conn, *CtrlTLSMeasurement) {
+func TLSDo(ctx context.Context, config *TLSConfig) (*tls.Conn, *TLSHandshakeMeasurement) {
 	c := tls.Client(config.Conn, config.Cfg)
 	err := c.Handshake()
-	return c, &CtrlTLSMeasurement{
+	return c, &TLSHandshakeMeasurement{
 		Failure: newfailure(err),
 	}
 }

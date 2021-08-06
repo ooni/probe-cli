@@ -18,10 +18,10 @@ type QUICConfig struct {
 }
 
 // QUICDo performs the QUIC check.
-func QUICDo(ctx context.Context, config *QUICConfig) (quic.EarlySession, *CtrlTLSMeasurement) {
+func QUICDo(ctx context.Context, config *QUICConfig) (quic.EarlySession, *TLSHandshakeMeasurement) {
 	quicdialer := netx.NewQUICDialer(netx.Config{Logger: log.Log})
 	sess, err := quicdialer.DialContext(ctx, "udp", config.Endpoint, config.TLSConfig, config.QConfig)
-	return sess, &CtrlTLSMeasurement{
+	return sess, &TLSHandshakeMeasurement{
 		Failure: newfailure(err),
 	}
 }

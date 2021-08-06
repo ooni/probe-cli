@@ -20,17 +20,28 @@ type (
 	// CtrlResponse is the response from the test helper
 	CtrlResponse = nwebconnectivity.ControlResponse
 
-	CtrlURLMeasurement = nwebconnectivity.ControlURL
+	// URLMeasurement contains the measurement for one URL
+	URLMeasurement = nwebconnectivity.ControlURLMeasurement
 
-	CtrlEndpointMeasurement = nwebconnectivity.ControlEndpoint
+	// EndpointMeasurement contains the measurement for one URL, and one IP endpoint.
+	// It is either an HTTPMeasurement or an H3Measurement.
+	EndpointMeasurement = nwebconnectivity.ControlEndpointMeasurement
 
-	CtrlHTTPMeasurement = nwebconnectivity.ControlHTTP
+	// HTTPMeasurement contains the measurement for one URL, and one IP endpoint,
+	// using HTTP over TCP.
+	HTTPMeasurement = nwebconnectivity.ControlHTTPMeasurement
 
-	CtrlH3Measurement = nwebconnectivity.ControlH3
+	// H3Measurement contains the measurement for one URL, and one IP endpoint,
+	// using HTTP over QUIC (HTTP/3).
+	H3Measurement = nwebconnectivity.ControlH3Measurement
 
-	CtrlTLSMeasurement = nwebconnectivity.ControlTLSHandshake
+	// TLSHandshakeMeasurement contains the measurement of a single TLS handshake operation.
+	// This can also be a QUIC handshake (which includes a TLS 1.3 handshake)
+	TLSHandshakeMeasurement = nwebconnectivity.ControlTLSHandshakeMeasurement
 
-	CtrlHTTPRequest = nwebconnectivity.ControlHTTPRequest
+	// HTTPRequestMeasurement contains the measurement of a single HTTP roundtrip operation.
+	// The underlying transport protocol could be TCP (HTTP(S)) or QUIC (HTTP/3).
+	HTTPRequestMeasurement = nwebconnectivity.ControlHTTPRequestMeasurement
 )
 
 // NextLocationInfo contains the redirected location as well as the request object which forwards most headers of the initial request.
@@ -42,19 +53,19 @@ type NextLocationInfo struct {
 }
 
 type MeasureURLResult struct {
-	CtrlURLMeasurement *CtrlURLMeasurement `json:"-"`
-	redirectedReqs     []*CtrlRequest      `json:"-"`
-	h3Reqs             []*CtrlRequest      `json:"-"`
+	URLMeasurement *URLMeasurement `json:"-"`
+	redirectedReqs []*CtrlRequest  `json:"-"`
+	h3Reqs         []*CtrlRequest  `json:"-"`
 }
 
 type MeasureEndpointResult struct {
-	CtrlEndpoint CtrlEndpointMeasurement
+	CtrlEndpoint EndpointMeasurement
 	httpRedirect *NextLocationInfo
 	h3Location   string
 }
 
 func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
-	var cresp = &CtrlResponse{URLMeasurements: []*CtrlURLMeasurement{}}
+	var cresp = &CtrlResponse{URLMeasurements: []*URLMeasurement{}}
 
 	redirected := make(map[string]bool, 100)
 
@@ -62,7 +73,7 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.CtrlURLMeasurement)
+	cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.URLMeasurement)
 
 	n := 0
 	nextRequests := append(urlM.redirectedReqs, urlM.h3Reqs...)
@@ -81,7 +92,7 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 		if err != nil {
 			return nil, err
 		}
-		cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.CtrlURLMeasurement)
+		cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.URLMeasurement)
 		nextRequests = append(nextRequests, urlM.redirectedReqs...)
 	}
 
@@ -98,10 +109,10 @@ func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse, red
 	}
 
 	// create URLMeasurement struct
-	urlMeasurement := &CtrlURLMeasurement{
+	urlMeasurement := &URLMeasurement{
 		URL:       URL.String(),
 		DNS:       nil,
-		Endpoints: []CtrlEndpointMeasurement{},
+		Endpoints: []EndpointMeasurement{},
 	}
 
 	// dns: start
@@ -140,7 +151,7 @@ func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse, red
 			h3Reqs = append(h3Reqs, req)
 		}
 	}
-	return &MeasureURLResult{CtrlURLMeasurement: urlMeasurement, h3Reqs: h3Reqs, redirectedReqs: redirectedReqs}, nil
+	return &MeasureURLResult{URLMeasurement: urlMeasurement, h3Reqs: h3Reqs, redirectedReqs: redirectedReqs}, nil
 }
 
 func MeasureEndpoint(ctx context.Context, creq *CtrlRequest, URL *url.URL, endpoint string, wg *sync.WaitGroup, out chan *MeasureEndpointResult) {
@@ -165,7 +176,7 @@ func measureHTTP(
 	result *MeasureEndpointResult,
 ) {
 	URL, _ := url.Parse(creq.HTTPRequest)
-	httpMeasurement := CtrlHTTPMeasurement{Endpoint: endpoint, Protocol: URL.Scheme}
+	httpMeasurement := HTTPMeasurement{Endpoint: endpoint, Protocol: URL.Scheme}
 	var conn net.Conn
 	conn, httpMeasurement.TCPConnect = TCPDo(ctx, &TCPConfig{
 		Endpoint: endpoint,
@@ -216,7 +227,7 @@ func measureH3(
 	result *MeasureEndpointResult,
 ) {
 	URL, _ := url.Parse(creq.HTTPRequest)
-	h3Measurement := CtrlH3Measurement{Endpoint: endpoint, Protocol: URL.Scheme}
+	h3Measurement := H3Measurement{Endpoint: endpoint, Protocol: URL.Scheme}
 	var sess quic.EarlySession
 	tlscfg := &tls.Config{ServerName: URL.Hostname(), NextProtos: []string{URL.Scheme}}
 	qcfg := &quic.Config{}

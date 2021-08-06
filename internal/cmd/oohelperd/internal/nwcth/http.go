@@ -25,12 +25,12 @@ type HTTPConfig struct {
 }
 
 // HTTPDo performs the HTTP check.
-// CtrlHTTPRequest is the data object containing the HTTP Get request measurement.
+// HTTPRequestMeasurement is the data object containing the HTTP Get request measurement.
 // NextLocationInfo contains information needed in case of an HTTP redirect. Nil, if no redirect occured.
-func HTTPDo(ctx context.Context, config *HTTPConfig) (*CtrlHTTPRequest, *NextLocationInfo) {
+func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *NextLocationInfo) {
 	req, err := newRequest(ctx, config.URL)
 	if err != nil {
-		return &CtrlHTTPRequest{Failure: newfailure(err)}, nil
+		return &HTTPRequestMeasurement{Failure: newfailure(err)}, nil
 	}
 	for k, vs := range config.Headers {
 		switch strings.ToLower(k) {
@@ -60,7 +60,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*CtrlHTTPRequest, *NextLoc
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return &CtrlHTTPRequest{Failure: newfailure(err)}, nil
+		return &HTTPRequestMeasurement{Failure: newfailure(err)}, nil
 	}
 	var httpRedirect *NextLocationInfo = nil
 	loc, _ := resp.Location()
@@ -75,7 +75,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*CtrlHTTPRequest, *NextLoc
 	}
 	reader := &io.LimitedReader{R: resp.Body, N: maxAcceptableBody}
 	data, err := iox.ReadAllContext(ctx, reader)
-	return &CtrlHTTPRequest{
+	return &HTTPRequestMeasurement{
 		BodyLength: int64(len(data)),
 		Failure:    newfailure(err),
 		StatusCode: int64(resp.StatusCode),
@@ -99,7 +99,7 @@ func newRequest(ctx context.Context, URL *url.URL) (*http.Request, error) {
 
 // discoverH3Server inspects the Alt-Svc Header of the HTTP (over TCP) response of the control measurement
 // to check whether the server announces to support h3
-func discoverH3Server(r *CtrlHTTPRequest, URL *url.URL) string {
+func discoverH3Server(r *HTTPRequestMeasurement, URL *url.URL) string {
 	if r == nil {
 		return ""
 	}
