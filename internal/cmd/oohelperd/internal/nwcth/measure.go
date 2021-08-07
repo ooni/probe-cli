@@ -256,7 +256,6 @@ func measureH3(
 		Transport: transport,
 		URL:       URL,
 	})
-	sess.CloseWithError(0, "")
 	result.CtrlEndpoint = &h3Measurement
 	return result
 }
