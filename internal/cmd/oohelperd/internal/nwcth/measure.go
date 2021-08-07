@@ -159,12 +159,12 @@ func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse) (*M
 
 func MeasureEndpoint(ctx context.Context, creq *CtrlRequest, URL *url.URL, endpoint string, wg *sync.WaitGroup, out chan *MeasureEndpointResult) {
 	defer wg.Done()
-	endpointResult := &MeasureEndpointResult{}
-	measureFactory[URL.Scheme](ctx, creq, endpoint, wg, endpointResult)
+	// endpointResult := &MeasureEndpointResult{}
+	endpointResult := measureFactory[URL.Scheme](ctx, creq, endpoint, wg)
 	out <- endpointResult
 }
 
-var measureFactory = map[string]func(ctx context.Context, creq *CtrlRequest, endpoint string, wg *sync.WaitGroup, result *MeasureEndpointResult){
+var measureFactory = map[string]func(ctx context.Context, creq *CtrlRequest, endpoint string, wg *sync.WaitGroup) *MeasureEndpointResult{
 	"http":  measureHTTP,
 	"https": measureHTTP,
 	"h3":    measureH3,
@@ -176,8 +176,8 @@ func measureHTTP(
 	creq *CtrlRequest,
 	endpoint string,
 	wg *sync.WaitGroup,
-	result *MeasureEndpointResult,
-) {
+) *MeasureEndpointResult {
+	result := &MeasureEndpointResult{}
 	URL, err := url.Parse(creq.HTTPRequest)
 	runtimex.PanicOnError(err, "url.Parse failed")
 	httpMeasurement := HTTPMeasurement{Endpoint: endpoint, Protocol: URL.Scheme}
@@ -186,7 +186,7 @@ func measureHTTP(
 		Endpoint: endpoint,
 	})
 	if conn == nil {
-		return
+		return nil
 	}
 	defer conn.Close()
 	var transport http.RoundTripper
@@ -202,7 +202,7 @@ func measureHTTP(
 			Cfg:      cfg,
 		})
 		if tlsconn == nil {
-			return
+			return nil
 		}
 		transport = nwebconnectivity.GetSingleTransport(tlsconn, cfg)
 	}
@@ -219,6 +219,7 @@ func measureHTTP(
 		result.h3Location = h3URL.String()
 	}
 	result.CtrlEndpoint = &httpMeasurement
+	return result
 }
 
 func measureH3(
@@ -226,8 +227,8 @@ func measureH3(
 	creq *CtrlRequest,
 	endpoint string,
 	wg *sync.WaitGroup,
-	result *MeasureEndpointResult,
-) {
+) *MeasureEndpointResult {
+	result := &MeasureEndpointResult{}
 	URL, err := url.Parse(creq.HTTPRequest)
 	runtimex.PanicOnError(err, "url.Parse failed")
 	h3Measurement := H3Measurement{Endpoint: endpoint, Protocol: URL.Scheme}
@@ -240,7 +241,7 @@ func measureH3(
 		TLSConfig: tlscfg,
 	})
 	if sess == nil {
-		return
+		return nil
 	}
 	transport := nwebconnectivity.GetSingleH3Transport(sess, tlscfg, qcfg)
 	h3Measurement.HTTPRequest, result.httpRedirect = HTTPDo(ctx, &HTTPConfig{
@@ -251,6 +252,7 @@ func measureH3(
 	})
 	sess.CloseWithError(0, "")
 	result.CtrlEndpoint = &h3Measurement
+	return result
 }
 
 func mergeEndpoints(addrs []string, clientAddrs []string) (out []string) {
