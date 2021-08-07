@@ -72,7 +72,7 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 
 	redirected := make(map[string]bool, 100)
 
-	urlM, err := MeasureURL(ctx, creq, cresp, redirected)
+	urlM, err := MeasureURL(ctx, creq, cresp)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 			continue
 		}
 		redirected[req.HTTPRequest] = true
-		urlM, err := MeasureURL(ctx, req, cresp, redirected)
+		urlM, err := MeasureURL(ctx, req, cresp)
 		if err != nil {
 			return nil, err
 		}
@@ -104,7 +104,7 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 
 // Measure performs the measurement described by the request and
 // returns the corresponding response or an error.
-func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse, redirected map[string]bool) (*MeasureURLResult, error) {
+func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse) (*MeasureURLResult, error) {
 	// parse input for correctness
 	URL, err := url.Parse(creq.HTTPRequest)
 	if err != nil {
