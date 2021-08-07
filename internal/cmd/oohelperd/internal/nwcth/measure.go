@@ -292,7 +292,7 @@ func getEndpoints(addrs []string, URL *url.URL) []string {
 	p := URL.Port()
 	for _, a := range addrs {
 		var port string
-		switch true {
+		switch {
 		case p != "":
 			// explicit port
 			port = p
