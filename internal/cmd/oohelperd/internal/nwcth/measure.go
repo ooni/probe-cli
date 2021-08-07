@@ -48,6 +48,12 @@ type (
 // ErrNoValidIP means that the DNS step failed and the client did not provide IP endpoints for testing.
 var ErrNoValidIP = errors.New("no valid IP address to measure")
 
+// supportedQUICVersion are the H3 over QUIC versions we currently support
+var supportedQUICVersions = map[string]bool{
+	"h3":    true,
+	"h3-29": true,
+}
+
 // NextLocationInfo contains the redirected location,
 // and the http cookiejar used for the redirect chain.
 type NextLocationInfo struct {
@@ -279,7 +285,8 @@ func mergeEndpoints(endpoints []string, clientEndpoints []string) (out []string)
 // getEndpoints connects IP addresses with the port associated with the URL scheme
 func getEndpoints(addrs []string, URL *url.URL) []string {
 	out := []string{}
-	if URL.Scheme != "http" && URL.Scheme != "https" && URL.Scheme != "h3" && URL.Scheme != "h3-29" {
+	_, h3ok := supportedQUICVersions[URL.Scheme]
+	if URL.Scheme != "http" && URL.Scheme != "https" && !h3ok {
 		panic("passed an unexpected scheme")
 	}
 	p := URL.Port()
@@ -293,7 +300,7 @@ func getEndpoints(addrs []string, URL *url.URL) []string {
 			port = "80"
 		case URL.Scheme == "https":
 			port = "443"
-		case URL.Scheme == "h3-29" || URL.Scheme == "h3":
+		case h3ok:
 			port = "443"
 		}
 		endpoint := net.JoinHostPort(a, port)

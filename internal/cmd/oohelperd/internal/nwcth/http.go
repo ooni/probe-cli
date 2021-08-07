@@ -150,7 +150,7 @@ func parseAltSvc(r *HTTPRequestMeasurement, URL *url.URL) *altSvcH3 {
 		for _, p := range keyvalpairs {
 			p = strings.Replace(p, "\"", "", -1)
 			kv := strings.Split(p, "=")
-			if kv[0] == "h3" || kv[0] == "h3-29" {
+			if _, ok := supportedQUICVersions[kv[0]]; ok {
 				// we assume the port to be 443 which is the port HTTP/3 runs on
 				host, _, err := net.SplitHostPort(kv[1])
 				runtimex.PanicOnError(err, "net.SplitHostPort failed")
