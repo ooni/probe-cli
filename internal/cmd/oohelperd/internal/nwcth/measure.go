@@ -45,6 +45,9 @@ type (
 	HTTPRequestMeasurement = nwebconnectivity.ControlHTTPRequestMeasurement
 )
 
+// ErrNoValidIP means that the DNS step failed and the client did not provide IP endpoints for testing.
+var ErrNoValidIP = errors.New("no valid IP address to measure")
+
 // NextLocationInfo contains the redirected location,
 // and the http cookiejar used for the redirect chain.
 type NextLocationInfo struct {
@@ -126,7 +129,7 @@ func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse, red
 	addrs := mergeEndpoints(enpnts, creq.TCPConnect)
 
 	if len(addrs) == 0 {
-		return nil, errors.New("no valid IP address to measure")
+		return nil, ErrNoValidIP
 	}
 
 	wg := new(sync.WaitGroup)
