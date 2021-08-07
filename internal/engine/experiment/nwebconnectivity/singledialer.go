@@ -16,8 +16,8 @@ import (
 
 var ErrNoConnReuse = errors.New("cannot reuse connection")
 
-// GetSingleH3Transport creates am http3.RoundTripper
-func GetSingleH3Transport(qsess quic.EarlySession, tlscfg *tls.Config, qcfg *quic.Config) *http3.RoundTripper {
+// NewSingleH3Transport creates am http3.RoundTripper
+func NewSingleH3Transport(qsess quic.EarlySession, tlscfg *tls.Config, qcfg *quic.Config) *http3.RoundTripper {
 	transport := &http3.RoundTripper{
 		DisableCompression: true,
 		TLSClientConfig:    tlscfg,
@@ -27,8 +27,8 @@ func GetSingleH3Transport(qsess quic.EarlySession, tlscfg *tls.Config, qcfg *qui
 	return transport
 }
 
-// GetSingleTransport determines the appropriate HTTP Transport from the ALPN
-func GetSingleTransport(conn net.Conn, config *tls.Config) (transport http.RoundTripper) {
+// NewSingleTransport determines the appropriate HTTP Transport from the ALPN
+func NewSingleTransport(conn net.Conn, config *tls.Config) (transport http.RoundTripper) {
 	transport = &http.Transport{
 		DialContext:        (&SingleDialer{conn: &conn}).DialContext,
 		DialTLSContext:     (&SingleDialer{conn: &conn}).DialContext,

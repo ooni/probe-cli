@@ -192,7 +192,7 @@ func measureHTTP(
 	var transport http.RoundTripper
 	switch URL.Scheme {
 	case "http":
-		transport = nwebconnectivity.GetSingleTransport(conn, nil)
+		transport = nwebconnectivity.NewSingleTransport(conn, nil)
 	case "https":
 		var tlsconn *tls.Conn
 		cfg := &tls.Config{ServerName: URL.Hostname()}
@@ -204,7 +204,7 @@ func measureHTTP(
 		if tlsconn == nil {
 			return nil
 		}
-		transport = nwebconnectivity.GetSingleTransport(tlsconn, cfg)
+		transport = nwebconnectivity.NewSingleTransport(tlsconn, cfg)
 	}
 	// perform the HTTP request: this provides us with the HTTP request result and info about HTTP redirection
 	httpMeasurement.HTTPRequest, result.httpRedirect = HTTPDo(ctx, &HTTPConfig{
@@ -243,7 +243,7 @@ func measureH3(
 	if sess == nil {
 		return nil
 	}
-	transport := nwebconnectivity.GetSingleH3Transport(sess, tlscfg, qcfg)
+	transport := nwebconnectivity.NewSingleH3Transport(sess, tlscfg, qcfg)
 	h3Measurement.HTTPRequest, result.httpRedirect = HTTPDo(ctx, &HTTPConfig{
 		Jar:       creq.HTTPCookieJar,
 		Headers:   creq.HTTPRequestHeaders,
