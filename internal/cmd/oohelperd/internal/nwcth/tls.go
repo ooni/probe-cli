@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-// QUICConfig configures the QUIC handshake check.
+// TLSConfig configures the TLS handshake check.
 type TLSConfig struct {
 	Conn     net.Conn
 	Endpoint string
