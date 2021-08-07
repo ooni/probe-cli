@@ -195,7 +195,10 @@ func measureHTTP(
 		transport = nwebconnectivity.NewSingleTransport(conn, nil)
 	case "https":
 		var tlsconn *tls.Conn
-		cfg := &tls.Config{ServerName: URL.Hostname()}
+		cfg := &tls.Config{
+			ServerName: URL.Hostname(),
+			NextProtos: []string{"h2", "http/1.1"},
+		}
 		tlsconn, httpMeasurement.TLSHandshake = TLSDo(ctx, &TLSConfig{
 			Conn:     conn,
 			Endpoint: endpoint,
@@ -233,7 +236,10 @@ func measureH3(
 	runtimex.PanicOnError(err, "url.Parse failed")
 	h3Measurement := H3Measurement{Endpoint: endpoint, Protocol: URL.Scheme}
 	var sess quic.EarlySession
-	tlscfg := &tls.Config{ServerName: URL.Hostname(), NextProtos: []string{URL.Scheme}}
+	tlscfg := &tls.Config{
+		ServerName: URL.Hostname(),
+		NextProtos: []string{URL.Scheme},
+	}
 	qcfg := &quic.Config{}
 	sess, h3Measurement.QUICHandshake = QUICDo(ctx, &QUICConfig{
 		Endpoint:  endpoint,
