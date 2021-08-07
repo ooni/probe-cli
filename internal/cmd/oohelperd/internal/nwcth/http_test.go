@@ -36,9 +36,12 @@ func TestHTTPNoH3Transport(t *testing.T) {
 	if nextlocation != nil {
 		t.Fatal("unexpected next location")
 	}
-	h3Support := parseAltSvc(ctrl, url)
-	if h3Support != nil {
-		t.Fatal("not the h3 support value we expected")
+	quicURL, err := getH3Location(ctrl, url)
+	if err == nil {
+		t.Fatal("exptected error an error here")
+	}
+	if quicURL != nil {
+		t.Fatal("unexpected quic URL")
 	}
 }
 
@@ -56,11 +59,14 @@ func TestHTTPDoWithH3Transport(t *testing.T) {
 	if nextlocation != nil {
 		t.Fatal("unexpected next location")
 	}
-	h3Support := parseAltSvc(ctrl, url)
-	if h3Support == nil {
+	quicURL, err := getH3Location(ctrl, url)
+	if err != nil {
+		t.Fatal("unexpected error")
+	}
+	if quicURL == nil {
 		t.Fatal("expected an h3 alt-svc entry here")
 	}
-	if h3Support.proto != "h3" {
+	if quicURL.Scheme != "h3" {
 		t.Fatal("not the h3 support value we expected")
 	}
 
@@ -108,20 +114,23 @@ func TestDiscoverH3Server(t *testing.T) {
 		if err != nil {
 			t.Fatal("unexpected error")
 		}
-		alt_svc := parseAltSvc(ctrl, URL)
-		if alt_svc == nil {
+		quicURL, qerr := getH3Location(ctrl, URL)
+		if qerr != nil {
+			t.Fatal("unexpected error")
+		}
+		if quicURL == nil {
 			t.Fatal("expected an h3 alt-svc entry here")
 		}
-		if alt_svc.proto != testcase.expectedh3 {
+		if quicURL.Scheme != testcase.expectedh3 {
 			t.Fatal("unexpected h3 support string")
 		}
 	}
 	URL := safeURLParse("https://ooni.org")
-	if parseAltSvc(nil, URL) != nil {
-		t.Fatal("unexpected h3 support string")
+	quicURL, err := getH3Location(nil, URL)
+	if err == nil {
+		t.Fatal("exptected an error here")
 	}
-	URL = safeURLParse("https://www.google.com")
-	if parseAltSvc(nil, URL) != nil {
+	if quicURL != nil {
 		t.Fatal("unexpected h3 support string")
 	}
 }

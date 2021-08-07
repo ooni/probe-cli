@@ -2,6 +2,7 @@ package nwcth
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -25,6 +26,9 @@ type HTTPConfig struct {
 	// URL contains the mandatory HTTP request URL.
 	URL *url.URL
 }
+
+// ErrNoH3Location means that a server's h3 support could not be derived from Alt-Svc
+var ErrNoH3Location = errors.New("no h3 server location")
 
 // HTTPDo performs the HTTP check.
 // HTTPRequestMeasurement is the data object containing the HTTP Get request measurement.
@@ -109,8 +113,29 @@ type altSvcH3 struct {
 	authorityHost string
 }
 
-// parseAltSvc inspects the Alt-Svc Header of the HTTP (over TCP) response of the control measurement
-// to check whether the server announces to support h3
+// getH3Location returns the URL of the HTTP/3 location of the server,
+// or ErrNoH3Location if H3 support is not advertised in the Alt-Svc Header
+func getH3Location(r *HTTPRequestMeasurement, URL *url.URL) (*url.URL, error) {
+	if r == nil {
+		return nil, ErrNoH3Location
+	}
+	if URL.Scheme != "https" {
+		return nil, ErrNoH3Location
+	}
+	h3Svc := parseAltSvc(r, URL)
+	if h3Svc == nil {
+		return nil, ErrNoH3Location
+	}
+	quicURL, err := url.Parse(URL.String())
+	runtimex.PanicOnError(err, "url.Parse failed")
+	quicURL.Scheme = h3Svc.proto
+	if h3Svc.authorityHost != "" {
+		quicURL.Host = h3Svc.authorityHost
+	}
+	return quicURL, nil
+}
+
+// parseAltSvc parses the Alt-Svc HTTP header for entries advertising the use of H3
 func parseAltSvc(r *HTTPRequestMeasurement, URL *url.URL) *altSvcH3 {
 	if r == nil {
 		return nil
