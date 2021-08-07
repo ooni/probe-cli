@@ -260,12 +260,14 @@ func measureH3(
 	return result
 }
 
-func mergeEndpoints(addrs []string, clientAddrs []string) (out []string) {
-	unique := make(map[string]bool, len(addrs)+len(clientAddrs))
-	for _, a := range addrs {
+// mergeEndpoints creates a (duplicate-free) union set of the IP endpoints provided by the client,
+// and the IP endpoints resulting from the testhelper's DNS step
+func mergeEndpoints(endpoints []string, clientEndpoints []string) (out []string) {
+	unique := make(map[string]bool, len(endpoints)+len(clientEndpoints))
+	for _, a := range endpoints {
 		unique[a] = true
 	}
-	for _, a := range clientAddrs {
+	for _, a := range clientEndpoints {
 		unique[a] = true
 	}
 	for key := range unique {
