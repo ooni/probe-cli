@@ -17,15 +17,13 @@ import (
 const maxAcceptableBody = 1 << 24
 
 var (
-	dialer     netx.Dialer
-	endpoint   = flag.String("endpoint", ":8080", "Endpoint where to listen")
-	httpx      *http.Client
-	httpnx     *http.Client
-	quicdialer netx.QUICDialer
-	resolver   netx.Resolver
-	srvcancel  context.CancelFunc
-	srvctx     context.Context
-	srvwg      = new(sync.WaitGroup)
+	dialer    netx.Dialer
+	endpoint  = flag.String("endpoint", ":8080", "Endpoint where to listen")
+	httpx     *http.Client
+	resolver  netx.Resolver
+	srvcancel context.CancelFunc
+	srvctx    context.Context
+	srvwg     = new(sync.WaitGroup)
 )
 
 func init() {
