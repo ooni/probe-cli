@@ -12,14 +12,14 @@ import (
 // newfailure is a convenience shortcut to save typing
 var newfailure = archival.NewFailure
 
-// DNSMeasurement is the result of the DNS check performed by
+// CtrlDNSResult is the result of the DNS check performed by
 // the Web Connectivity test helper.
-type DNSMeasurement = webconnectivity.ControlDNSResult
+type CtrlDNSResult = webconnectivity.ControlDNSResult
 
 // DNSConfig configures the DNS check.
 type DNSConfig struct {
 	Domain   string
-	Out      chan DNSMeasurement
+	Out      chan CtrlDNSResult
 	Resolver netx.Resolver
 	Wg       *sync.WaitGroup
 }
@@ -28,5 +28,5 @@ type DNSConfig struct {
 func DNSDo(ctx context.Context, config *DNSConfig) {
 	defer config.Wg.Done()
 	addrs, err := config.Resolver.LookupHost(ctx, config.Domain)
-	config.Out <- DNSMeasurement{Failure: newfailure(err), Addrs: addrs}
+	config.Out <- CtrlDNSResult{Failure: newfailure(err), Addrs: addrs}
 }

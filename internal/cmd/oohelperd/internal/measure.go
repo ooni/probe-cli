@@ -37,7 +37,7 @@ func Measure(ctx context.Context, config MeasureConfig, creq *CtrlRequest) (*Ctr
 	}
 	// dns: start
 	wg := new(sync.WaitGroup)
-	dnsch := make(chan DNSMeasurement, 1)
+	dnsch := make(chan CtrlDNSResult, 1)
 	if net.ParseIP(URL.Hostname()) == nil {
 		wg.Add(1)
 		go DNSDo(ctx, &DNSConfig{
