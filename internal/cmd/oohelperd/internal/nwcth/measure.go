@@ -99,7 +99,7 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 		redirected[req.HTTPRequest] = true
 		urlM, err := MeasureURL(ctx, req, cresp)
 		if err != nil {
-			return nil, err
+			continue
 		}
 		cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.URLMeasurement)
 		nextRequests = append(nextRequests, urlM.redirectedReqs...)
@@ -186,13 +186,15 @@ func measureHTTP(
 	result := &MeasureEndpointResult{}
 	URL, err := url.Parse(creq.HTTPRequest)
 	runtimex.PanicOnError(err, "url.Parse failed")
-	httpMeasurement := HTTPMeasurement{Endpoint: endpoint, Protocol: URL.Scheme}
+	httpMeasurement := &HTTPMeasurement{Endpoint: endpoint, Protocol: URL.Scheme}
+	result.CtrlEndpoint = httpMeasurement
+
 	var conn net.Conn
 	conn, httpMeasurement.TCPConnect = TCPDo(ctx, &TCPConfig{
 		Endpoint: endpoint,
 	})
 	if conn == nil {
-		return nil
+		return result
 	}
 	defer conn.Close()
 	var transport http.RoundTripper
@@ -211,7 +213,7 @@ func measureHTTP(
 			Cfg:      cfg,
 		})
 		if tlsconn == nil {
-			return nil
+			return result
 		}
 		transport = nwebconnectivity.NewSingleTransport(tlsconn, cfg)
 	}
@@ -227,7 +229,6 @@ func measureHTTP(
 	if err == nil {
 		result.h3Location = h3URL.String()
 	}
-	result.CtrlEndpoint = &httpMeasurement
 	return result
 }
 
@@ -240,7 +241,9 @@ func measureH3(
 	result := &MeasureEndpointResult{}
 	URL, err := url.Parse(creq.HTTPRequest)
 	runtimex.PanicOnError(err, "url.Parse failed")
-	h3Measurement := H3Measurement{Endpoint: endpoint, Protocol: URL.Scheme}
+	h3Measurement := &H3Measurement{Endpoint: endpoint, Protocol: URL.Scheme}
+	result.CtrlEndpoint = h3Measurement
+
 	var sess quic.EarlySession
 	tlscfg := &tls.Config{
 		ServerName: URL.Hostname(),
@@ -253,7 +256,7 @@ func measureH3(
 		TLSConfig: tlscfg,
 	})
 	if sess == nil {
-		return nil
+		return result
 	}
 	transport := nwebconnectivity.NewSingleH3Transport(sess, tlscfg, qcfg)
 	h3Measurement.HTTPRequest, result.httpRedirect = HTTPDo(ctx, &HTTPConfig{
@@ -262,7 +265,6 @@ func measureH3(
 		Transport: transport,
 		URL:       URL,
 	})
-	result.CtrlEndpoint = &h3Measurement
 	return result
 }
 
