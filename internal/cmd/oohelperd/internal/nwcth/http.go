@@ -78,6 +78,9 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 	var httpRedirect *NextLocationInfo
 	loc, err := resp.Location()
 	if shouldRedirect.Load() > 0 && err == nil {
+		// This line is here to fix the scheme when we're following h3 redirects. The original URL
+		// scheme holds the h3 protocol we're using (h3 or h3-29). As mentioned below, we should
+		// find a less tricky solution to this problem, so we can simplify the code.
 		loc.Scheme = config.URL.Scheme
 		httpRedirect = &NextLocationInfo{jar: jar, location: loc.String()}
 	}
