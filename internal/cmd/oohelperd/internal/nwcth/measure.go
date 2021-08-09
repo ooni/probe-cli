@@ -165,7 +165,6 @@ func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse) (*M
 
 func MeasureEndpoint(ctx context.Context, creq *CtrlRequest, URL *url.URL, endpoint string, wg *sync.WaitGroup, out chan *MeasureEndpointResult) {
 	defer wg.Done()
-	// endpointResult := &MeasureEndpointResult{}
 	endpointResult := measureFactory[URL.Scheme](ctx, creq, endpoint, wg)
 	out <- endpointResult
 }
@@ -224,7 +223,7 @@ func measureHTTP(
 		Transport: transport,
 		URL:       URL,
 	})
-	// find out of the host also supports h3 support, which is announced in the Alt-Svc Header
+	// find out if the host also supports h3 support, which is announced in the Alt-Svc Header
 	h3URL, err := getH3Location(httpMeasurement.HTTPRequest, URL)
 	if err == nil {
 		result.h3Location = h3URL.String()
