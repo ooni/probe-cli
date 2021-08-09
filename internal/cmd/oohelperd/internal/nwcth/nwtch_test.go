@@ -26,7 +26,7 @@ const requestnoredirect = `{
 	  ]
 	},
 	"tcp_connect": [
-	  "8.8.8.8:443"
+	  "104.198.14.52:443"
 	]
 }`
 
@@ -44,7 +44,7 @@ const requestsimpleredirect = `{
 	  ]
 	},
 	"tcp_connect": [
-	  "8.8.8.8:443"
+	  "18.192.76.182:443"
 	]
 }`
 
@@ -62,7 +62,7 @@ const requestmultipleredirect = `{
 	  ]
 	},
 	"tcp_connect": [
-	  "8.8.8.8:443"
+	  "77.88.55.70:443"
 	]
 }`
 
@@ -80,7 +80,7 @@ const requestwithquic = `{
 	  ]
 	},
 	"tcp_connect": [
-	  "8.8.8.8:443"
+	  "142.250.74.196:443"
 	]
 }`
 
@@ -120,10 +120,6 @@ func TestWorkingAsIntended(t *testing.T) {
 		reqMethod:      "GET",
 		respStatusCode: 400,
 	}, {
-		name:           "check for invalid content-type",
-		reqMethod:      "POST",
-		respStatusCode: 400,
-	}, {
 		name:           "check for invalid request body",
 		reqMethod:      "POST",
 		reqContentType: "application/json",
@@ -136,7 +132,7 @@ func TestWorkingAsIntended(t *testing.T) {
 		reqBody:        `{"http_request": "http://[::1]aaaa"}`,
 		respStatusCode: 400,
 	}, {
-		name:            "with reasonably good request",
+		name:            "request without redirect or H3 follow-up request",
 		reqMethod:       "POST",
 		reqContentType:  "application/json",
 		reqBody:         requestnoredirect,
@@ -144,7 +140,7 @@ func TestWorkingAsIntended(t *testing.T) {
 		respContentType: "application/json",
 		parseBody:       true,
 	}, {
-		name:            "with reasonably good request",
+		name:            "request triggering one redirect, without H3 follow-up request",
 		reqMethod:       "POST",
 		reqContentType:  "application/json",
 		reqBody:         requestsimpleredirect,
@@ -152,7 +148,7 @@ func TestWorkingAsIntended(t *testing.T) {
 		respContentType: "application/json",
 		parseBody:       true,
 	}, {
-		name:            "with reasonably good request",
+		name:            "request triggering multiple redirects",
 		reqMethod:       "POST",
 		reqContentType:  "application/json",
 		reqBody:         requestmultipleredirect,
@@ -160,7 +156,7 @@ func TestWorkingAsIntended(t *testing.T) {
 		respContentType: "application/json",
 		parseBody:       true,
 	}, {
-		name:            "with reasonably good request",
+		name:            "request triggering H3 follow-up request, without redirect",
 		reqMethod:       "POST",
 		reqContentType:  "application/json",
 		reqBody:         requestwithquic,
@@ -183,9 +179,6 @@ func TestWorkingAsIntended(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%s: %+v", expect.name, err)
 			}
-			if expect.reqContentType != "" {
-				req.Header.Add("content-type", expect.reqContentType)
-			}
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
 				t.Fatalf("%s: %+v", expect.name, err)
@@ -193,9 +186,6 @@ func TestWorkingAsIntended(t *testing.T) {
 			defer resp.Body.Close()
 			if resp.StatusCode != expect.respStatusCode {
 				t.Fatalf("unexpected status code: %+v", resp.StatusCode)
-			}
-			if v := resp.Header.Get("content-type"); v != expect.respContentType {
-				t.Fatalf("unexpected content-type: %s", v)
 			}
 			data, err := iox.ReadAllContext(context.Background(), resp.Body)
 			if err != nil {
