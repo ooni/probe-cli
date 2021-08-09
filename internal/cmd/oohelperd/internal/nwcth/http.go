@@ -96,6 +96,10 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 	}, httpRedirect
 }
 
+// TODO(bassosimone,kelmenhorst): stuffing the h3 protocol into the scheme, rather than using a
+// separate data structure holding the h3 protocol and the new URL, leads to more complex/tricky code,
+// so we should probably see whether we can avoid doing that.
+
 // newRequest creates a new *http.Request.
 // h3 URL schemes are replaced by "https", to avoid invalid-scheme-errors during HTTP GET.
 func newRequest(ctx context.Context, URL *url.URL) (*http.Request, error) {
