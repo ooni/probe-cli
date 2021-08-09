@@ -103,6 +103,7 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 		}
 		cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.URLMeasurement)
 		nextRequests = append(nextRequests, urlM.redirectedReqs...)
+		nextRequests = append(nextRequests, urlM.h3Reqs...)
 	}
 
 	return cresp, nil
