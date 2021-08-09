@@ -147,6 +147,7 @@ func getH3Location(r *HTTPRequestMeasurement, URL *url.URL) (*url.URL, error) {
 
 // parseAltSvc parses the Alt-Svc HTTP header for entries advertising the use of H3
 func parseAltSvc(r *HTTPRequestMeasurement, URL *url.URL) *altSvcH3 {
+	// TODO(bassosimone,kelmenhorst): see if we can make this algorithm more robust.
 	if r == nil {
 		return nil
 	}
