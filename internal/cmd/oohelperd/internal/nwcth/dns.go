@@ -10,6 +10,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 )
 
+// TODO(bassosimone,kelmenhorst): figure out if we can _avoid_ using netx here.
+
 // newfailure is a convenience shortcut to save typing
 var newfailure = archival.NewFailure
 
