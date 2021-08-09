@@ -54,6 +54,13 @@ var supportedQUICVersions = map[string]bool{
 	"h3-29": true,
 }
 
+// CtrlRequestWrapper contains the CtrlRequest which is the API for the probe client,
+// and HTTPCookieJar which is needed by the algorithm for redirected requests
+type CtrlRequestWrapper struct {
+	CtrlRequest   *CtrlRequest
+	HTTPCookieJar http.CookieJar
+}
+
 // NextLocationInfo contains the redirected location,
 // and the http cookiejar used for the redirect chain.
 type NextLocationInfo struct {
@@ -62,9 +69,9 @@ type NextLocationInfo struct {
 }
 
 type MeasureURLResult struct {
-	URLMeasurement *URLMeasurement `json:"-"`
-	redirectedReqs []*CtrlRequest  `json:"-"`
-	h3Reqs         []*CtrlRequest  `json:"-"`
+	URLMeasurement *URLMeasurement       `json:"-"`
+	redirectedReqs []*CtrlRequestWrapper `json:"-"`
+	h3Reqs         []*CtrlRequestWrapper `json:"-"`
 }
 
 type MeasureEndpointResult struct {
@@ -78,7 +85,7 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 
 	redirected := make(map[string]bool, 100)
 
-	urlM, err := MeasureURL(ctx, creq, cresp)
+	urlM, err := MeasureURL(ctx, &CtrlRequestWrapper{CtrlRequest: creq}, cresp)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +102,8 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 	// during the loop, the results of the follow-up measurements might add more follow-up requests to nextRequests
 	// we stop, when there are no more follow-ups to perform
 	for len(nextRequests) > n {
-		req := nextRequests[n]
+		reqw := nextRequests[n]
+		req := reqw.CtrlRequest
 		n += 1
 		// check if we have exceeded the maximum number of follow-up URLs
 		if len(redirected) == 20 {
@@ -108,7 +116,7 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 		}
 		redirected[req.HTTPRequest] = true
 		// perform follow-up URL measurement
-		urlM, err := MeasureURL(ctx, req, cresp)
+		urlM, err := MeasureURL(ctx, reqw, cresp)
 		if err != nil {
 			continue
 		}
@@ -123,7 +131,8 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 
 // Measure performs the measurement described by the request and
 // returns the corresponding response or an error.
-func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse) (*MeasureURLResult, error) {
+func MeasureURL(ctx context.Context, creqw *CtrlRequestWrapper, cresp *CtrlResponse) (*MeasureURLResult, error) {
+	creq := creqw.CtrlRequest
 	// parse input for correctness
 	URL, err := url.Parse(creq.HTTPRequest)
 	if err != nil {
@@ -155,34 +164,39 @@ func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse) (*M
 	out := make(chan *MeasureEndpointResult, len(enpnts))
 	for _, endpoint := range enpnts {
 		wg.Add(1)
-		go MeasureEndpoint(ctx, creq, URL, endpoint, wg, out)
+		go MeasureEndpoint(ctx, creqw, URL, endpoint, wg, out)
 	}
 	wg.Wait()
 	close(out) // so iterating over it terminates (see below)
 
-	h3Reqs := []*CtrlRequest{}
-	redirectedReqs := []*CtrlRequest{}
+	h3Reqs := []*CtrlRequestWrapper{}
+	redirectedReqs := []*CtrlRequestWrapper{}
 	for m := range out {
 		urlMeasurement.Endpoints = append(urlMeasurement.Endpoints, m.CtrlEndpoint)
 		if m.httpRedirect != nil {
-			req := &CtrlRequest{HTTPCookieJar: m.httpRedirect.jar, HTTPRequest: m.httpRedirect.location}
-			redirectedReqs = append(redirectedReqs, req)
+			reqw := &CtrlRequestWrapper{
+				CtrlRequest:   &CtrlRequest{HTTPRequest: m.httpRedirect.location},
+				HTTPCookieJar: m.httpRedirect.jar,
+			}
+			redirectedReqs = append(redirectedReqs, reqw)
 		}
 		if m.h3Location != "" {
-			req := &CtrlRequest{HTTPRequest: m.h3Location}
-			h3Reqs = append(h3Reqs, req)
+			reqw := &CtrlRequestWrapper{
+				CtrlRequest: &CtrlRequest{HTTPRequest: m.h3Location},
+			}
+			h3Reqs = append(h3Reqs, reqw)
 		}
 	}
 	return &MeasureURLResult{URLMeasurement: urlMeasurement, h3Reqs: h3Reqs, redirectedReqs: redirectedReqs}, nil
 }
 
-func MeasureEndpoint(ctx context.Context, creq *CtrlRequest, URL *url.URL, endpoint string, wg *sync.WaitGroup, out chan *MeasureEndpointResult) {
+func MeasureEndpoint(ctx context.Context, creqw *CtrlRequestWrapper, URL *url.URL, endpoint string, wg *sync.WaitGroup, out chan *MeasureEndpointResult) {
 	defer wg.Done()
-	endpointResult := measureFactory[URL.Scheme](ctx, creq, endpoint, wg)
+	endpointResult := measureFactory[URL.Scheme](ctx, creqw, endpoint, wg)
 	out <- endpointResult
 }
 
-var measureFactory = map[string]func(ctx context.Context, creq *CtrlRequest, endpoint string, wg *sync.WaitGroup) *MeasureEndpointResult{
+var measureFactory = map[string]func(ctx context.Context, creq *CtrlRequestWrapper, endpoint string, wg *sync.WaitGroup) *MeasureEndpointResult{
 	"http":  measureHTTP,
 	"https": measureHTTP,
 	"h3":    measureH3,
@@ -191,10 +205,11 @@ var measureFactory = map[string]func(ctx context.Context, creq *CtrlRequest, end
 
 func measureHTTP(
 	ctx context.Context,
-	creq *CtrlRequest,
+	creqw *CtrlRequestWrapper,
 	endpoint string,
 	wg *sync.WaitGroup,
 ) *MeasureEndpointResult {
+	creq := creqw.CtrlRequest
 	result := &MeasureEndpointResult{}
 	URL, err := url.Parse(creq.HTTPRequest)
 	runtimex.PanicOnError(err, "url.Parse failed")
@@ -231,7 +246,7 @@ func measureHTTP(
 	}
 	// perform the HTTP request: this provides us with the HTTP request result and info about HTTP redirection
 	httpMeasurement.HTTPRequest, result.httpRedirect = HTTPDo(ctx, &HTTPConfig{
-		Jar:       creq.HTTPCookieJar,
+		Jar:       creqw.HTTPCookieJar,
 		Headers:   creq.HTTPRequestHeaders,
 		Transport: transport,
 		URL:       URL,
@@ -246,10 +261,11 @@ func measureHTTP(
 
 func measureH3(
 	ctx context.Context,
-	creq *CtrlRequest,
+	creqw *CtrlRequestWrapper,
 	endpoint string,
 	wg *sync.WaitGroup,
 ) *MeasureEndpointResult {
+	creq := creqw.CtrlRequest
 	result := &MeasureEndpointResult{}
 	URL, err := url.Parse(creq.HTTPRequest)
 	runtimex.PanicOnError(err, "url.Parse failed")
@@ -272,7 +288,7 @@ func measureH3(
 	}
 	transport := nwebconnectivity.NewSingleH3Transport(sess, tlscfg, qcfg)
 	h3Measurement.HTTPRequest, result.httpRedirect = HTTPDo(ctx, &HTTPConfig{
-		Jar:       creq.HTTPCookieJar,
+		Jar:       creqw.HTTPCookieJar,
 		Headers:   creq.HTTPRequestHeaders,
 		Transport: transport,
 		URL:       URL,
