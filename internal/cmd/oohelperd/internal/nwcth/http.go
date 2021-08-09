@@ -19,10 +19,13 @@ import (
 type HTTPConfig struct {
 	// Jar contains the optional cookiejar from the previous hop in a redirect chain.
 	Jar http.CookieJar
+
 	// Headers contains the optional HTTP request headers.
 	Headers map[string][]string
+
 	// Transport contains the mandatory HTTP RoundTripper object.
 	Transport http.RoundTripper
+
 	// URL contains the mandatory HTTP request URL.
 	URL *url.URL
 }
