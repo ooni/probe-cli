@@ -145,7 +145,7 @@ func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse) (*M
 		go MeasureEndpoint(ctx, creq, URL, endpoint, wg, out)
 	}
 	wg.Wait()
-	close(out)
+	close(out) // so iterating over it terminates (see below)
 
 	h3Reqs := []*CtrlRequest{}
 	redirectedReqs := []*CtrlRequest{}
