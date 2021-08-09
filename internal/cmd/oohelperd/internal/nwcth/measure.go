@@ -134,9 +134,9 @@ func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse) (*M
 	urlMeasurement.DNS = dns
 
 	enpnts := getEndpoints(dns.Addrs, URL)
-	addrs := mergeEndpoints(enpnts, creq.TCPConnect)
+	enpnts = mergeEndpoints(enpnts, creq.TCPConnect)
 
-	if len(addrs) == 0 {
+	if len(enpnts) == 0 {
 		return nil, ErrNoValidIP
 	}
 
