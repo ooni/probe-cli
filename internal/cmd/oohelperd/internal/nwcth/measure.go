@@ -84,6 +84,7 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 	}
 	cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.URLMeasurement)
 
+	// TODO(bassosimone,kelmenhorst): document this algorithm and see if it can be further simplified
 	n := 0
 	nextRequests := append(urlM.redirectedReqs, urlM.h3Reqs...)
 	for len(nextRequests) > n {
