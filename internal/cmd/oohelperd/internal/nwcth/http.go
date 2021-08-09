@@ -51,7 +51,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 
 	jar := config.Jar
 	if jar == nil {
-		jar, err = cookiejar.New(nil)
+		jar, err = cookiejar.New(nil) // should not fail
 		runtimex.PanicOnError(err, "cookiejar.New failed")
 	}
 	// To know whether we need to redirect, we exploit the redirect check of the http.Client:
