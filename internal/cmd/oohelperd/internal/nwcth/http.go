@@ -119,8 +119,8 @@ func newRequest(ctx context.Context, URL *url.URL) (*http.Request, error) {
 }
 
 type altSvcH3 struct {
-	proto         string
-	authorityHost string
+	authority string
+	proto     string
 }
 
 // getH3Location returns the URL of the HTTP/3 location of the server,
@@ -139,9 +139,7 @@ func getH3Location(r *HTTPRequestMeasurement, URL *url.URL) (*url.URL, error) {
 	quicURL, err := url.Parse(URL.String())
 	runtimex.PanicOnError(err, "url.Parse failed")
 	quicURL.Scheme = h3Svc.proto
-	if h3Svc.authorityHost != "" {
-		quicURL.Host = h3Svc.authorityHost
-	}
+	quicURL.Host = h3Svc.authority
 	return quicURL, nil
 }
 
@@ -162,10 +160,13 @@ func parseAltSvc(r *HTTPRequestMeasurement, URL *url.URL) *altSvcH3 {
 			p = strings.Replace(p, "\"", "", -1)
 			kv := strings.Split(p, "=")
 			if _, ok := supportedQUICVersions[kv[0]]; ok {
-				// we assume the port to be 443 which is the port HTTP/3 runs on
-				host, _, err := net.SplitHostPort(kv[1])
+				host, port, err := net.SplitHostPort(kv[1])
 				runtimex.PanicOnError(err, "net.SplitHostPort failed")
-				return &altSvcH3{proto: kv[0], authorityHost: host}
+				if host == "" {
+					host = URL.Hostname()
+				}
+				authority := net.JoinHostPort(host, port)
+				return &altSvcH3{authority: authority, proto: kv[0]}
 			}
 		}
 	}
