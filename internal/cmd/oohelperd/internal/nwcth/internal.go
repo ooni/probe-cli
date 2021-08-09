@@ -1,3 +1,6 @@
+// Package nwcth implements the new web connectivity test helper.
+//
+// See https://github.com/ooni/spec/blob/master/backends/th-007-nwcth.md
 package nwcth
 
 import (
