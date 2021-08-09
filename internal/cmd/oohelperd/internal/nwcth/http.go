@@ -81,7 +81,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 		// This line is here to fix the scheme when we're following h3 redirects. The original URL
 		// scheme holds the h3 protocol we're using (h3 or h3-29). As mentioned below, we should
 		// find a less tricky solution to this problem, so we can simplify the code.
-		loc.Scheme = config.URL.Scheme
+		loc.Scheme = realSchemes[loc.Scheme]
 		httpRedirect = &NextLocationInfo{jar: jar, location: loc.String()}
 	}
 	defer resp.Body.Close()
@@ -106,16 +106,17 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 // newRequest creates a new *http.Request.
 // h3 URL schemes are replaced by "https", to avoid invalid-scheme-errors during HTTP GET.
 func newRequest(ctx context.Context, URL *url.URL) (*http.Request, error) {
-	realSchemes := map[string]string{
-		"http":  "http",
-		"https": "https",
-		"h3":    "https",
-		"h3-29": "https",
-	}
 	newURL, err := url.Parse(URL.String())
 	runtimex.PanicOnError(err, "url.Parse failed")
 	newURL.Scheme = realSchemes[URL.Scheme]
 	return http.NewRequestWithContext(ctx, "GET", newURL.String(), nil)
+}
+
+var realSchemes = map[string]string{
+	"http":  "http",
+	"https": "https",
+	"h3":    "https",
+	"h3-29": "https",
 }
 
 type altSvcH3 struct {
