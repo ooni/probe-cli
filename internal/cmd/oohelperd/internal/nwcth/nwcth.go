@@ -16,14 +16,15 @@ import (
 
 // maxAcceptableBody is _at the same time_ the maximum acceptable body for incoming
 // API requests and the maximum acceptable body when fetching arbitrary URLs. See
-// https://github.com/ooni/probe/issues/1727 for statistics regarding the test lists including
-// the empirical cumulative distribution of the body size for test lists URLs.
+// https://github.com/ooni/probe/issues/1727 for statistics regarding the test lists
+// including the empirical CDF of the body size for test lists URLs.
 const maxAcceptableBody = 1 << 24
 
 // Handler implements the Web Connectivity test helper HTTP API.
-type NWCTHHandler struct{}
+type Handler struct{}
 
-func (h NWCTHHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+// ServeHTTP implements http.Handler.ServeHTTP.
+func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Server", fmt.Sprintf(
 		"oohelperd/%s ooniprobe-engine/%s", version.Version, version.Version,
 	))

@@ -53,7 +53,7 @@ func main() {
 
 func testableMain() {
 	mux := http.NewServeMux()
-	mux.Handle("/api/unstable/nwcth", nwcth.NWCTHHandler{})
+	mux.Handle("/api/unstable/nwcth", nwcth.Handler{})
 	mux.Handle("/", internal.Handler{
 		Client:            httpx,
 		Dialer:            dialer,

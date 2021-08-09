@@ -103,7 +103,7 @@ const requestWithoutDomainName = `{
 }`
 
 func TestWorkingAsIntended(t *testing.T) {
-	handler := NWCTHHandler{}
+	handler := Handler{}
 	srv := httptest.NewServer(handler)
 	defer srv.Close()
 	type expectationSpec struct {
@@ -214,7 +214,7 @@ func TestWorkingAsIntended(t *testing.T) {
 
 func TestHandlerWithRequestBodyReadingError(t *testing.T) {
 	expected := errors.New("mocked error")
-	handler := NWCTHHandler{}
+	handler := Handler{}
 	rw := NewFakeResponseWriter()
 	req := &http.Request{
 		Method: "POST",
