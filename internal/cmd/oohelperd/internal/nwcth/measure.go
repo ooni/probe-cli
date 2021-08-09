@@ -84,25 +84,36 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 	}
 	cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.URLMeasurement)
 
-	// TODO(bassosimone,kelmenhorst): document this algorithm and see if it can be further simplified
+	// TODO(bassosimone,kelmenhorst): can this be further simplified?
 	n := 0
+	// nextRequests contains all the follow-up URL measurements, each of the type CtrlRequest.
+	// Follow-up measurements can be either HTTP Redirect requests (collected in MeasureURLResult.redirectedReqs),
+	// or HTTP/3 requests (collected in MeasureURLResult.h3Reqs) in case the host supports HTTP/3.
 	nextRequests := append(urlM.redirectedReqs, urlM.h3Reqs...)
+
+	// the loop goes through the list of follow-up URL measurements and executes them
+	// during the loop, the results of the follow-up measurements might add more follow-up requests to nextRequests
+	// we stop, when there are no more follow-ups to perform
 	for len(nextRequests) > n {
 		req := nextRequests[n]
 		n += 1
+		// check if we have exceeded the maximum number of follow-up URLs
 		if len(redirected) == 20 {
-			// stop after 20 redirects
+			// stop after 20 follow-ups TODO(bassosimone,kelmenhorst): is that number reasonable?
 			break
 		}
+		// check if we have already measured this particular URL
 		if _, ok := redirected[req.HTTPRequest]; ok {
 			continue
 		}
 		redirected[req.HTTPRequest] = true
+		// perform follow-up URL measurement
 		urlM, err := MeasureURL(ctx, req, cresp)
 		if err != nil {
 			continue
 		}
 		cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.URLMeasurement)
+		// potentially add more triggered follow-up requests to the list
 		nextRequests = append(nextRequests, urlM.redirectedReqs...)
 		nextRequests = append(nextRequests, urlM.h3Reqs...)
 	}
