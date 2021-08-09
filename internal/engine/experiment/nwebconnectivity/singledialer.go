@@ -16,7 +16,7 @@ import (
 
 var ErrNoConnReuse = errors.New("cannot reuse connection")
 
-// NewSingleH3Transport creates am http3.RoundTripper
+// NewSingleH3Transport creates an http3.RoundTripper
 func NewSingleH3Transport(qsess quic.EarlySession, tlscfg *tls.Config, qcfg *quic.Config) *http3.RoundTripper {
 	transport := &http3.RoundTripper{
 		DisableCompression: true,

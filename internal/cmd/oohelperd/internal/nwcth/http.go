@@ -19,10 +19,13 @@ import (
 type HTTPConfig struct {
 	// Jar contains the optional cookiejar from the previous hop in a redirect chain.
 	Jar http.CookieJar
+
 	// Headers contains the optional HTTP request headers.
 	Headers map[string][]string
+
 	// Transport contains the mandatory HTTP RoundTripper object.
 	Transport http.RoundTripper
+
 	// URL contains the mandatory HTTP request URL.
 	URL *url.URL
 }
@@ -51,7 +54,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 
 	jar := config.Jar
 	if jar == nil {
-		jar, err = cookiejar.New(nil)
+		jar, err = cookiejar.New(nil) // should not fail
 		runtimex.PanicOnError(err, "cookiejar.New failed")
 	}
 	// To know whether we need to redirect, we exploit the redirect check of the http.Client:
@@ -75,6 +78,9 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 	var httpRedirect *NextLocationInfo
 	loc, err := resp.Location()
 	if shouldRedirect.Load() > 0 && err == nil {
+		// This line is here to fix the scheme when we're following h3 redirects. The original URL
+		// scheme holds the h3 protocol we're using (h3 or h3-29). As mentioned below, we should
+		// find a less tricky solution to this problem, so we can simplify the code.
 		loc.Scheme = config.URL.Scheme
 		httpRedirect = &NextLocationInfo{jar: jar, location: loc.String()}
 	}
@@ -92,6 +98,10 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 		Headers:    headers,
 	}, httpRedirect
 }
+
+// TODO(bassosimone,kelmenhorst): stuffing the h3 protocol into the scheme, rather than using a
+// separate data structure holding the h3 protocol and the new URL, leads to more complex/tricky code,
+// so we should probably see whether we can avoid doing that.
 
 // newRequest creates a new *http.Request.
 // h3 URL schemes are replaced by "https", to avoid invalid-scheme-errors during HTTP GET.
@@ -137,6 +147,7 @@ func getH3Location(r *HTTPRequestMeasurement, URL *url.URL) (*url.URL, error) {
 
 // parseAltSvc parses the Alt-Svc HTTP header for entries advertising the use of H3
 func parseAltSvc(r *HTTPRequestMeasurement, URL *url.URL) *altSvcH3 {
+	// TODO(bassosimone,kelmenhorst): see if we can make this algorithm more robust.
 	if r == nil {
 		return nil
 	}

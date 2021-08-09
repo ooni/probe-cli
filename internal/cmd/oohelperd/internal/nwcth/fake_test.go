@@ -1,5 +1,7 @@
 package nwcth
 
+// TODO(bassosimone,kelmenhorst): can we use `internal/netxmocks` instead?
+
 import (
 	"context"
 	"io"

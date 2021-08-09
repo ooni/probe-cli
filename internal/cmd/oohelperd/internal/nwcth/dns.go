@@ -10,6 +10,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 )
 
+// TODO(bassosimone,kelmenhorst): figure out if we can _avoid_ using netx here.
+
 // newfailure is a convenience shortcut to save typing
 var newfailure = archival.NewFailure
 
@@ -29,6 +31,8 @@ func newResolver() netx.Resolver {
 
 // DNSDo performs the DNS check.
 func DNSDo(ctx context.Context, config *DNSConfig) *DNSMeasurement {
+	// TODO(bassosimone,kelmenhorst): the underlying resolver probably does that. Is there a
+	// way for us to be confident that this is the case and remove this `if` here?
 	if net.ParseIP(config.Domain) != nil {
 		// handle IP address format input
 		return &DNSMeasurement{Failure: nil, Addrs: []string{config.Domain}}

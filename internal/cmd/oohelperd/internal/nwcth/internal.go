@@ -1,3 +1,6 @@
+// Package nwcth implements the new web connectivity test helper.
+//
+// See https://github.com/ooni/spec/blob/master/backends/th-007-nwcth.md
 package nwcth
 
 import (
@@ -11,6 +14,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
+// maxAcceptableBody is _at the same time_ the maximum acceptable body for incoming
+// API requests and the maximum acceptable body when fetching arbitrary URLs. See
+// https://github.com/ooni/probe/issues/1727 for statistics regarding the test lists including
+// the empirical cumulative distribution of the body size for test lists URLs.
 const maxAcceptableBody = 1 << 24
 
 // Handler implements the Web Connectivity test helper HTTP API.
