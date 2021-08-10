@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"sync"
 
@@ -54,96 +55,117 @@ var supportedQUICVersions = map[string]bool{
 	"h3-29": true,
 }
 
-// CtrlRequestWrapper contains the CtrlRequest which is the API for the probe client,
-// and HTTPCookieJar which is needed by the algorithm for redirected requests
-type CtrlRequestWrapper struct {
-	CtrlRequest   *CtrlRequest
-	HTTPCookieJar http.CookieJar
-}
-
-// NextLocationInfo contains the redirected location,
-// and the http cookiejar used for the redirect chain.
-type NextLocationInfo struct {
-	jar      http.CookieJar `json:"-"`
-	location string         `json:"-"`
-}
-
-type MeasureURLResult struct {
-	URLMeasurement *URLMeasurement       `json:"-"`
-	redirectedReqs []*CtrlRequestWrapper `json:"-"`
-	h3Reqs         []*CtrlRequestWrapper `json:"-"`
-}
-
-type MeasureEndpointResult struct {
-	CtrlEndpoint EndpointMeasurement
-	httpRedirect *NextLocationInfo
-	h3Location   string
-}
-
 func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 	var cresp = &CtrlResponse{URLMeasurements: []*URLMeasurement{}}
+	cookiejar, err := cookiejar.New(nil)
+	runtimex.PanicOnError(err, "cookiejar.New failed")
 
-	redirected := make(map[string]bool, 100)
-
-	urlM, err := MeasureURL(ctx, &CtrlRequestWrapper{CtrlRequest: creq}, cresp)
+	urlM, err := MeasureURL(ctx, creq, cresp, cookiejar)
 	if err != nil {
 		return nil, err
 	}
-	cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.URLMeasurement)
+	cresp.URLMeasurements = append(cresp.URLMeasurements, urlM)
+
+	// this should not failed because otherwise we should have received an error in MeasureURL
+	URL, err := url.Parse(creq.HTTPRequest)
+	runtimex.PanicOnError(err, "url.Parse failed")
 
 	// TODO(bassosimone,kelmenhorst): can this be further simplified?
-	n := 0
-	// nextRequests contains all the follow-up URL measurements, each of the type CtrlRequest.
-	// Follow-up measurements can be either HTTP Redirect requests (collected in MeasureURLResult.redirectedReqs),
-	// or HTTP/3 requests (collected in MeasureURLResult.h3Reqs) in case the host supports HTTP/3.
-	nextRequests := append(urlM.redirectedReqs, urlM.h3Reqs...)
+	nextURLs := getNextURLs(urlM, URL)
 
 	// the loop goes through the list of follow-up URL measurements and executes them
 	// during the loop, the results of the follow-up measurements might add more follow-up requests to nextRequests
 	// we stop, when there are no more follow-ups to perform
-	for len(nextRequests) > n {
-		reqw := nextRequests[n]
-		req := reqw.CtrlRequest
+	visited := make(map[string]bool, 100)
+	n := 0
+	for len(nextURLs) > n {
+		nextURL := nextURLs[n]
 		n += 1
 		// check if we have exceeded the maximum number of follow-up URLs
-		if len(redirected) == 20 {
+		if len(visited) == 20 {
 			// stop after 20 follow-ups TODO(bassosimone,kelmenhorst): is that number reasonable?
 			break
 		}
 		// check if we have already measured this particular URL
-		if _, ok := redirected[req.HTTPRequest]; ok {
+		if _, ok := visited[nextURL.String()]; ok {
 			continue
 		}
-		redirected[req.HTTPRequest] = true
+		visited[nextURL.String()] = true
 		// perform follow-up URL measurement
-		urlM, err := MeasureURL(ctx, reqw, cresp)
+		req := &CtrlRequest{HTTPRequest: nextURL.String()}
+		urlM, err := MeasureURL(ctx, req, cresp, cookiejar)
 		if err != nil {
 			continue
 		}
-		cresp.URLMeasurements = append(cresp.URLMeasurements, urlM.URLMeasurement)
+		cresp.URLMeasurements = append(cresp.URLMeasurements, urlM)
 		// potentially add more triggered follow-up requests to the list
-		nextRequests = append(nextRequests, urlM.redirectedReqs...)
-		nextRequests = append(nextRequests, urlM.h3Reqs...)
+		nextURLs = append(nextURLs, getNextURLs(urlM, nextURL)...)
 	}
-
 	return cresp, nil
+}
+
+// getNextURLs inspects the HTTP response headers and returns a slice of URLs to be measured next
+// Follow-up measurements can be either HTTP Redirect requests,
+// or HTTP/3 requests in case the host supports HTTP/3.
+func getNextURLs(urlM *URLMeasurement, URL *url.URL) (locations []*url.URL) {
+	for _, u := range urlM.Endpoints {
+		httpMeasurement := u.GetHTTPRequestMeasurement()
+		if httpMeasurement == nil {
+			continue
+		}
+		redirection := getRedirectionURL(httpMeasurement)
+		if redirection != nil {
+			locations = append(locations, redirection)
+		}
+		h3location := getH3URL(httpMeasurement, URL)
+		if h3location != nil {
+			locations = append(locations, h3location)
+		}
+	}
+	return locations
+}
+
+func getRedirectionURL(httpMeasurement *HTTPRequestMeasurement) *url.URL {
+	switch httpMeasurement.StatusCode {
+	case 301, 302, 303, 307, 308:
+	default:
+		return nil
+	}
+	loc := httpMeasurement.Headers.Get("Location")
+	if loc == "" {
+		return nil
+	}
+	URL, err := url.Parse(loc)
+	runtimex.PanicOnError(err, "url.Parse failed")
+	URL.Scheme = realSchemes[URL.Scheme]
+	return URL
+}
+
+func getH3URL(httpMeasurement *HTTPRequestMeasurement, URL *url.URL) *url.URL {
+	h3Svc := parseAltSvc(httpMeasurement, URL)
+	if h3Svc == nil {
+		return nil
+	}
+	quicURL, err := url.Parse(URL.String())
+	runtimex.PanicOnError(err, "url.Parse failed")
+	quicURL.Scheme = h3Svc.proto
+	quicURL.Host = h3Svc.authority
+	return quicURL
 }
 
 // Measure performs the measurement described by the request and
 // returns the corresponding response or an error.
-func MeasureURL(ctx context.Context, creqw *CtrlRequestWrapper, cresp *CtrlResponse) (*MeasureURLResult, error) {
-	creq := creqw.CtrlRequest
+func MeasureURL(ctx context.Context, creq *CtrlRequest, cresp *CtrlResponse, cookiejar http.CookieJar) (*URLMeasurement, error) {
+	// create URLMeasurement struct
+	urlMeasurement := &URLMeasurement{
+		URL:       creq.HTTPRequest,
+		DNS:       nil,
+		Endpoints: []EndpointMeasurement{},
+	}
 	// parse input for correctness
 	URL, err := url.Parse(creq.HTTPRequest)
 	if err != nil {
-		return nil, err
-	}
-
-	// create URLMeasurement struct
-	urlMeasurement := &URLMeasurement{
-		URL:       URL.String(),
-		DNS:       nil,
-		Endpoints: []EndpointMeasurement{},
+		return urlMeasurement, err
 	}
 
 	// dns: start
@@ -161,42 +183,27 @@ func MeasureURL(ctx context.Context, creqw *CtrlRequestWrapper, cresp *CtrlRespo
 	}
 
 	wg := new(sync.WaitGroup)
-	out := make(chan *MeasureEndpointResult, len(enpnts))
+	out := make(chan EndpointMeasurement, len(enpnts))
 	for _, endpoint := range enpnts {
 		wg.Add(1)
-		go MeasureEndpoint(ctx, creqw, URL, endpoint, wg, out)
+		go MeasureEndpoint(ctx, creq, URL, endpoint, cookiejar, wg, out)
 	}
 	wg.Wait()
 	close(out) // so iterating over it terminates (see below)
-
-	h3Reqs := []*CtrlRequestWrapper{}
-	redirectedReqs := []*CtrlRequestWrapper{}
 	for m := range out {
-		urlMeasurement.Endpoints = append(urlMeasurement.Endpoints, m.CtrlEndpoint)
-		if m.httpRedirect != nil {
-			reqw := &CtrlRequestWrapper{
-				CtrlRequest:   &CtrlRequest{HTTPRequest: m.httpRedirect.location},
-				HTTPCookieJar: m.httpRedirect.jar,
-			}
-			redirectedReqs = append(redirectedReqs, reqw)
-		}
-		if m.h3Location != "" {
-			reqw := &CtrlRequestWrapper{
-				CtrlRequest: &CtrlRequest{HTTPRequest: m.h3Location},
-			}
-			h3Reqs = append(h3Reqs, reqw)
-		}
+		urlMeasurement.Endpoints = append(urlMeasurement.Endpoints, m)
 	}
-	return &MeasureURLResult{URLMeasurement: urlMeasurement, h3Reqs: h3Reqs, redirectedReqs: redirectedReqs}, nil
+
+	return urlMeasurement, nil
 }
 
-func MeasureEndpoint(ctx context.Context, creqw *CtrlRequestWrapper, URL *url.URL, endpoint string, wg *sync.WaitGroup, out chan *MeasureEndpointResult) {
+func MeasureEndpoint(ctx context.Context, creq *CtrlRequest, URL *url.URL, endpoint string, cookiejar http.CookieJar, wg *sync.WaitGroup, out chan EndpointMeasurement) {
 	defer wg.Done()
-	endpointResult := measureFactory[URL.Scheme](ctx, creqw, endpoint, wg)
+	endpointResult := measureFactory[URL.Scheme](ctx, creq, endpoint, cookiejar, wg)
 	out <- endpointResult
 }
 
-var measureFactory = map[string]func(ctx context.Context, creq *CtrlRequestWrapper, endpoint string, wg *sync.WaitGroup) *MeasureEndpointResult{
+var measureFactory = map[string]func(ctx context.Context, creq *CtrlRequest, endpoint string, cookiejar http.CookieJar, wg *sync.WaitGroup) EndpointMeasurement{
 	"http":  measureHTTP,
 	"https": measureHTTP,
 	"h3":    measureH3,
@@ -205,23 +212,21 @@ var measureFactory = map[string]func(ctx context.Context, creq *CtrlRequestWrapp
 
 func measureHTTP(
 	ctx context.Context,
-	creqw *CtrlRequestWrapper,
+	creq *CtrlRequest,
 	endpoint string,
+	cookiejar http.CookieJar,
 	wg *sync.WaitGroup,
-) *MeasureEndpointResult {
-	creq := creqw.CtrlRequest
-	result := &MeasureEndpointResult{}
+) EndpointMeasurement {
 	URL, err := url.Parse(creq.HTTPRequest)
 	runtimex.PanicOnError(err, "url.Parse failed")
 	httpMeasurement := &HTTPMeasurement{Endpoint: endpoint, Protocol: URL.Scheme}
-	result.CtrlEndpoint = httpMeasurement
 
 	var conn net.Conn
 	conn, httpMeasurement.TCPConnect = TCPDo(ctx, &TCPConfig{
 		Endpoint: endpoint,
 	})
 	if conn == nil {
-		return result
+		return httpMeasurement
 	}
 	defer conn.Close()
 	var transport http.RoundTripper
@@ -240,37 +245,30 @@ func measureHTTP(
 			Cfg:      cfg,
 		})
 		if tlsconn == nil {
-			return result
+			return httpMeasurement
 		}
 		transport = nwebconnectivity.NewSingleTransport(tlsconn, cfg)
 	}
 	// perform the HTTP request: this provides us with the HTTP request result and info about HTTP redirection
-	httpMeasurement.HTTPRequest, result.httpRedirect = HTTPDo(ctx, &HTTPConfig{
-		Jar:       creqw.HTTPCookieJar,
+	httpMeasurement.HTTPRequest = HTTPDo(ctx, &HTTPConfig{
+		Jar:       cookiejar,
 		Headers:   creq.HTTPRequestHeaders,
 		Transport: transport,
 		URL:       URL,
 	})
-	// find out if the host also supports h3 support, which is announced in the Alt-Svc Header
-	h3URL, err := getH3Location(httpMeasurement.HTTPRequest, URL)
-	if err == nil {
-		result.h3Location = h3URL.String()
-	}
-	return result
+	return httpMeasurement
 }
 
 func measureH3(
 	ctx context.Context,
-	creqw *CtrlRequestWrapper,
+	creq *CtrlRequest,
 	endpoint string,
+	cookiejar http.CookieJar,
 	wg *sync.WaitGroup,
-) *MeasureEndpointResult {
-	creq := creqw.CtrlRequest
-	result := &MeasureEndpointResult{}
+) EndpointMeasurement {
 	URL, err := url.Parse(creq.HTTPRequest)
 	runtimex.PanicOnError(err, "url.Parse failed")
 	h3Measurement := &H3Measurement{Endpoint: endpoint, Protocol: URL.Scheme}
-	result.CtrlEndpoint = h3Measurement
 
 	var sess quic.EarlySession
 	tlscfg := &tls.Config{
@@ -284,16 +282,16 @@ func measureH3(
 		TLSConfig: tlscfg,
 	})
 	if sess == nil {
-		return result
+		return h3Measurement
 	}
 	transport := nwebconnectivity.NewSingleH3Transport(sess, tlscfg, qcfg)
-	h3Measurement.HTTPRequest, result.httpRedirect = HTTPDo(ctx, &HTTPConfig{
-		Jar:       creqw.HTTPCookieJar,
+	h3Measurement.HTTPRequest = HTTPDo(ctx, &HTTPConfig{
+		Jar:       cookiejar,
 		Headers:   creq.HTTPRequestHeaders,
 		Transport: transport,
 		URL:       URL,
 	})
-	return result
+	return h3Measurement
 }
 
 // mergeEndpoints creates a (duplicate-free) union set of the IP endpoints provided by the client,

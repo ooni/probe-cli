@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/iox"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -35,11 +34,10 @@ var ErrNoH3Location = errors.New("no h3 server location")
 
 // HTTPDo performs the HTTP check.
 // HTTPRequestMeasurement is the data object containing the HTTP Get request measurement.
-// NextLocationInfo contains information needed in case of an HTTP redirect. Nil, if no redirect occured.
-func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *NextLocationInfo) {
+func HTTPDo(ctx context.Context, config *HTTPConfig) *HTTPRequestMeasurement {
 	req, err := newRequest(ctx, config.URL)
 	if err != nil {
-		return &HTTPRequestMeasurement{Failure: newfailure(err)}, nil
+		return &HTTPRequestMeasurement{Failure: newfailure(err)}
 	}
 	for k, vs := range config.Headers {
 		switch strings.ToLower(k) {
@@ -57,15 +55,8 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 		jar, err = cookiejar.New(nil) // should not fail
 		runtimex.PanicOnError(err, "cookiejar.New failed")
 	}
-	// To know whether we need to redirect, we exploit the redirect check of the http.Client:
-	// http.(*Client).do calls redirectBehavior to find out if an HTTP redirect status
-	// (301, 302, 303, 307, 308) was returned. Only then it uses the CheckRedirect callback.
-	// I.e., the client lands in the CheckRedirect callback, if and only if we need to redirect.
-	// We use an atomic value to mark that CheckRedirect has been visited.
-	shouldRedirect := &atomicx.Int64{}
 	client := http.Client{
 		CheckRedirect: func(r *http.Request, reqs []*http.Request) error {
-			shouldRedirect.Add(1)
 			return http.ErrUseLastResponse
 		},
 		Jar:       jar,
@@ -73,16 +64,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return &HTTPRequestMeasurement{Failure: newfailure(err)}, nil
-	}
-	var httpRedirect *NextLocationInfo
-	loc, err := resp.Location()
-	if shouldRedirect.Load() > 0 && err == nil {
-		// This line is here to fix the scheme when we're following h3 redirects. The original URL
-		// scheme holds the h3 protocol we're using (h3 or h3-29). As mentioned below, we should
-		// find a less tricky solution to this problem, so we can simplify the code.
-		loc.Scheme = realSchemes[loc.Scheme]
-		httpRedirect = &NextLocationInfo{jar: jar, location: loc.String()}
+		return &HTTPRequestMeasurement{Failure: newfailure(err)}
 	}
 	defer resp.Body.Close()
 	headers := http.Header{}
@@ -96,7 +78,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) (*HTTPRequestMeasurement, *
 		Failure:    newfailure(err),
 		StatusCode: int64(resp.StatusCode),
 		Headers:    headers,
-	}, httpRedirect
+	}
 }
 
 // TODO(bassosimone,kelmenhorst): stuffing the h3 protocol into the scheme, rather than using a
@@ -122,26 +104,6 @@ var realSchemes = map[string]string{
 type altSvcH3 struct {
 	authority string
 	proto     string
-}
-
-// getH3Location returns the URL of the HTTP/3 location of the server,
-// or ErrNoH3Location if H3 support is not advertised in the Alt-Svc Header
-func getH3Location(r *HTTPRequestMeasurement, URL *url.URL) (*url.URL, error) {
-	if r == nil {
-		return nil, ErrNoH3Location
-	}
-	if URL.Scheme != "https" {
-		return nil, ErrNoH3Location
-	}
-	h3Svc := parseAltSvc(r, URL)
-	if h3Svc == nil {
-		return nil, ErrNoH3Location
-	}
-	quicURL, err := url.Parse(URL.String())
-	runtimex.PanicOnError(err, "url.Parse failed")
-	quicURL.Scheme = h3Svc.proto
-	quicURL.Host = h3Svc.authority
-	return quicURL, nil
 }
 
 // parseAltSvc parses the Alt-Svc HTTP header for entries advertising the use of H3

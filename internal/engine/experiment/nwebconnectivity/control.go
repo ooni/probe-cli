@@ -37,7 +37,7 @@ type ControlDNSMeasurement struct {
 
 // ControlEndpointMeasurement is the sum of ControlHTTPMeasurement and ControlH3Measurement
 type ControlEndpointMeasurement interface {
-	IsEndpointMeasurement()
+	GetHTTPRequestMeasurement() *ControlHTTPRequestMeasurement
 }
 
 // ControlHTTPMeasurement is the TCP transport and application layer HTTP(S) result
@@ -50,7 +50,9 @@ type ControlHTTPMeasurement struct {
 	HTTPRequest  *ControlHTTPRequestMeasurement  `json:"http_request"`
 }
 
-func (h *ControlHTTPMeasurement) IsEndpointMeasurement() {}
+func (h *ControlHTTPMeasurement) GetHTTPRequestMeasurement() *ControlHTTPRequestMeasurement {
+	return h.HTTPRequest
+}
 
 // ControlH3Measurement is the QUIC transport and application layer HTTP/3 result
 // performed by the control vantage point.
@@ -61,7 +63,9 @@ type ControlH3Measurement struct {
 	HTTPRequest   *ControlHTTPRequestMeasurement  `json:"http_request"`
 }
 
-func (h *ControlH3Measurement) IsEndpointMeasurement() {}
+func (h *ControlH3Measurement) GetHTTPRequestMeasurement() *ControlHTTPRequestMeasurement {
+	return h.HTTPRequest
+}
 
 // ControlTCPConnect is the result of the TCP connect
 // attempt performed by the control vantage point.
