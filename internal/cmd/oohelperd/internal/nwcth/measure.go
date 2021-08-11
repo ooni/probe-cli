@@ -69,6 +69,8 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 	// this should not failed because otherwise we should have received an error in MeasureURL
 	URL, err := url.Parse(creq.HTTPRequest)
 	runtimex.PanicOnError(err, "url.Parse failed")
+	var initTCPConnect = creq.TCPConnect
+	var initHostname = URL.Hostname()
 
 	// TODO(bassosimone,kelmenhorst): can this be further simplified?
 	nextURLs := getNextURLs(urlM, URL)
@@ -93,6 +95,9 @@ func Measure(ctx context.Context, creq *CtrlRequest) (*CtrlResponse, error) {
 		visited[nextURL.String()] = true
 		// perform follow-up URL measurement
 		req := &CtrlRequest{HTTPRequest: nextURL.String()}
+		if nextURL.Hostname() == initHostname {
+			req.TCPConnect = initTCPConnect
+		}
 		urlM, err := MeasureURL(ctx, req, cresp, cookiejar)
 		if err != nil {
 			continue
