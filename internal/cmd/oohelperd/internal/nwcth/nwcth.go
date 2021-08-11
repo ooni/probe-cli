@@ -25,6 +25,7 @@ type Handler struct{}
 
 // ServeHTTP implements http.Handler.ServeHTTP.
 func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("serve htpp")
 	w.Header().Add("Server", fmt.Sprintf(
 		"oohelperd/%s ooniprobe-engine/%s", version.Version, version.Version,
 	))
@@ -38,7 +39,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
-	var creq CtrlRequest
+	var creq ControlRequest
 	if err := json.Unmarshal(data, &creq); err != nil {
 		w.WriteHeader(400)
 		return
@@ -50,6 +51,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	// We assume that the following call cannot fail because it's a
 	// clearly serializable data structure.
+	fmt.Println(cresp)
 	data, err = json.Marshal(cresp)
 	runtimex.PanicOnError(err, "json.Marshal failed")
 	w.Header().Add("Content-Type", "application/json")

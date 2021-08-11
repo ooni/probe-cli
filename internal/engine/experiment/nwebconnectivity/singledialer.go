@@ -28,7 +28,7 @@ func NewSingleH3Transport(qsess quic.EarlySession, tlscfg *tls.Config, qcfg *qui
 }
 
 // NewSingleTransport determines the appropriate HTTP Transport from the ALPN
-func NewSingleTransport(conn net.Conn, config *tls.Config) (transport http.RoundTripper) {
+func NewSingleTransport(conn net.Conn) (transport http.RoundTripper) {
 	singledialer := &SingleDialer{conn: &conn}
 	transport = http.DefaultTransport.(*http.Transport).Clone()
 	transport.(*http.Transport).DialContext = singledialer.DialContext

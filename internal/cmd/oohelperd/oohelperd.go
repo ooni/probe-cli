@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -52,6 +53,7 @@ func main() {
 }
 
 func testableMain() {
+	fmt.Println("hallooooo")
 	mux := http.NewServeMux()
 	mux.Handle("/api/unstable/nwcth", nwcth.Handler{})
 	mux.Handle("/", internal.Handler{
