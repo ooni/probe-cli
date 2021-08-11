@@ -1,9 +1,12 @@
 package nwcth
 
 import (
+	"context"
+	"crypto/tls"
 	"net"
 	"net/http"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/nwebconnectivity"
 )
 
@@ -111,7 +114,7 @@ type HTTPResponse struct {
 
 // Generate takes in input a list of round trips and outputs
 // a list of connectivity measurements for each of them.
-func Generate(rts []*RoundTrip) ([]*URLMeasurement, error) {
+func Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) {
 	var out []*URLMeasurement
 	for _, rt := range rts {
 		addrs, err := net.LookupHost(rt.Request.URL.Hostname())
@@ -142,10 +145,12 @@ func Generate(rts []*RoundTrip) ([]*URLMeasurement, error) {
 			_, ok := supportedQUICVersions[rt.proto]
 			switch {
 			case ok:
-				currentEndpoint = GenerateH3Endpoint(rt, endpoint)
+				currentEndpoint = GenerateH3Endpoint(ctx, rt, endpoint)
 			case rt.proto == "https", rt.proto == "http":
-				currentEndpoint = GenerateHTTPEndpoint(rt, endpoint)
+				currentEndpoint = GenerateHTTPEndpoint(ctx, rt, endpoint)
 			default:
+				// TODO(kelmenhorst): do we have to register this error somewhere in the result struct?
+				continue
 			}
 			currentURL.Endpoints = append(currentURL.Endpoints, currentEndpoint)
 
@@ -154,7 +159,7 @@ func Generate(rts []*RoundTrip) ([]*URLMeasurement, error) {
 	return out, nil
 }
 
-func GenerateHTTPEndpoint(rt *RoundTrip, endpoint string) EndpointMeasurement {
+func GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &HTTPEndpointMeasurement{
 		Endpoint: endpoint,
 	}
@@ -183,9 +188,21 @@ func GenerateHTTPEndpoint(rt *RoundTrip, endpoint string) EndpointMeasurement {
 	return currentEndpoint
 }
 
-func GenerateH3Endpoint(rr *RoundTrip, endpoint string) EndpointMeasurement {
+func GenerateH3Endpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &H3EndpointMeasurement{
 		Endpoint: endpoint,
 	}
+	var sess quic.EarlySession
+	tlsConf := &tls.Config{
+		ServerName: rt.Request.URL.Hostname(),
+		NextProtos: []string{rt.proto},
+	}
+	sess, currentEndpoint.QUICHandshakeMeasurement = QUICDo(ctx, endpoint, tlsConf)
+	if sess == nil {
+		return currentEndpoint
+	}
+	transport := nwebconnectivity.NewSingleH3Transport(sess, tlsConf, &quic.Config{})
+	currentEndpoint.HTTPRoundtripMeasurement = HTTPDo(rt.Request, transport)
+
 	return currentEndpoint
 }
