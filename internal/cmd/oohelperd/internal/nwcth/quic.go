@@ -11,6 +11,7 @@ import (
 
 // QUICDo performs the QUIC check.
 func QUICDo(ctx context.Context, endpoint string, tlsConf *tls.Config) (quic.EarlySession, *TLSHandshakeMeasurement) {
+	// TODO(bassosimone,kelmenhorst): do we need the complexity of a netx dialer here? is quic.DialEarly enough?
 	quicdialer := netx.NewQUICDialer(netx.Config{Logger: log.Log})
 	sess, err := quicdialer.DialContext(ctx, "udp", endpoint, tlsConf, &quic.Config{})
 	if err != nil {
