@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -53,8 +54,17 @@ func TestMeasureInitialChecksFail(t *testing.T) {
 	if err != ErrExpectedCheck {
 		t.Fatal("unexpected error type")
 	}
-	if resp != nil {
-		t.Fatal("resp should be nil")
+	if resp == nil {
+		t.Fatal("resp should not be nil")
+	}
+	if len(resp.URLMeasurements) != 1 {
+		t.Fatal("unexpected number of measurements")
+	}
+	if resp.URLMeasurements[0].DNS == nil {
+		t.Fatal("DNS entry should not be nil")
+	}
+	if !strings.HasSuffix(*resp.URLMeasurements[0].DNS.Failure, ErrExpectedCheck.Error()) {
+		t.Fatal("unexpected failure")
 	}
 }
 
@@ -69,8 +79,17 @@ func TestMeasureExploreFails(t *testing.T) {
 	if err != ErrExpectedExplore {
 		t.Fatal("unexpected error type")
 	}
-	if resp != nil {
-		t.Fatal("resp should be nil")
+	if resp == nil {
+		t.Fatal("resp should not be nil")
+	}
+	if len(resp.URLMeasurements) != 1 {
+		t.Fatal("unexpected number of measurements")
+	}
+	if resp.URLMeasurements[0].DNS == nil {
+		t.Fatal("DNS entry should not be nil")
+	}
+	if resp.URLMeasurements[0].DNS.Failure != nil {
+		t.Fatal("unexpected DNS failure")
 	}
 }
 

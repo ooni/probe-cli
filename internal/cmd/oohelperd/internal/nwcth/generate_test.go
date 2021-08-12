@@ -31,8 +31,8 @@ func TestGenerateDNSFailure(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
-	if urlMeasurements != nil {
-		t.Fatal("urlMeasurements should be nil")
+	if len(urlMeasurements) != 1 {
+		t.Fatal("unexpected urlMeasurements length")
 	}
 
 }
