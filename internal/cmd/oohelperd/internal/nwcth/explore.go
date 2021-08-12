@@ -21,6 +21,14 @@ import (
 // we land by following the given URL. This webpage is mainly useful to
 // search for block pages using the Web Connectivity algorithm.
 
+// Explorer is the interface responsible for running Explore.
+type Explorer interface {
+	Explore(URL *url.URL) ([]*RoundTrip, error)
+}
+
+// defaultExplorer is the default Explorer.
+type defaultExplorer struct{}
+
 // RoundTrip describes a specific round trip.
 type RoundTrip struct {
 	// proto is the protocol used, it can be "h2", "http/1.1", "h3", "h3-29"
@@ -40,18 +48,18 @@ type RoundTrip struct {
 
 // Explore returns a list of round trips sorted so that the first
 // round trip is the first element in the list, and so on.
-func Explore(URL *url.URL) ([]*RoundTrip, error) {
+func (e *defaultExplorer) Explore(URL *url.URL) ([]*RoundTrip, error) {
 	resp, err := get(URL)
 	if err != nil {
 		return nil, err
 	}
-	rts := rearrange(resp, nil)
+	rts := e.rearrange(resp, nil)
 	if h3URL := getH3URL(resp); h3URL != nil {
 		resp, err = getH3(h3URL)
 		if err != nil {
 			return rts, err
 		}
-		rts = append(rts, rearrange(resp, &h3URL.proto)...)
+		rts = append(rts, e.rearrange(resp, &h3URL.proto)...)
 	}
 	return rts, nil
 }
@@ -59,7 +67,7 @@ func Explore(URL *url.URL) ([]*RoundTrip, error) {
 // rearrange takes in input the final response of an HTTP transaction and a protocol string,
 // and produces in output a list of round trips sorted
 // such that the first round trip is the first element in the out array.
-func rearrange(resp *http.Response, p *string) (out []*RoundTrip) {
+func (e *defaultExplorer) rearrange(resp *http.Response, p *string) (out []*RoundTrip) {
 	index := 0
 	for resp != nil && resp.Request != nil {
 		proto := resp.Request.URL.Scheme

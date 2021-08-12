@@ -22,11 +22,19 @@ var (
 	ErrNoSuchHost = errors.New("no such host")
 )
 
+// InitChecker is the interface responsible for running InitialChecks.
+type InitChecker interface {
+	InitialChecks(URL string) (*url.URL, error)
+}
+
+// defaultInitChecker is the default InitChecker.
+type defaultInitChecker struct{}
+
 // InitialChecks checks whether the URL is valid and whether the
 // domain inside the URL is an existing one. If these preliminary
 // checks fail, there's no point in continuing.
 // If they succeed, InitialChecks returns the URL
-func InitialChecks(URL string) (*url.URL, error) {
+func (i *defaultInitChecker) InitialChecks(URL string) (*url.URL, error) {
 	parsed, err := url.Parse(URL)
 	if err != nil {
 		return nil, ErrInvalidURL

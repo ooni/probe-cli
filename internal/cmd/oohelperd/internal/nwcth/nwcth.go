@@ -47,7 +47,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
-	cresp, err := Measure(req.Context(), &creq)
+	cresp, err := Measure(req.Context(), &creq, &Config{})
 	if err != nil {
 		w.WriteHeader(400)
 		return

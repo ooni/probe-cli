@@ -25,20 +25,35 @@ var supportedQUICVersions = map[string]bool{
 	"h3-29": true,
 }
 
-func Measure(ctx context.Context, creq *ControlRequest) (*ControlResponse, error) {
+type Config struct {
+	checker   InitChecker
+	explorer  Explorer
+	generator Generator
+}
+
+func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*ControlResponse, error) {
 	var (
 		URL *url.URL
 		err error
 	)
-	URL, err = InitialChecks(creq.HTTPRequest)
+	if config.checker == nil {
+		config.checker = &defaultInitChecker{}
+	}
+	URL, err = config.checker.InitialChecks(creq.HTTPRequest)
 	if err != nil {
 		return nil, err
 	}
-	rts, err := Explore(URL)
+	if config.explorer == nil {
+		config.explorer = &defaultExplorer{}
+	}
+	rts, err := config.explorer.Explore(URL)
 	if err != nil {
 		return nil, err
 	}
-	meas, err := Generate(ctx, rts)
+	if config.generator == nil {
+		config.generator = &defaultGenerator{}
+	}
+	meas, err := config.generator.Generate(ctx, rts)
 	if err != nil {
 		return nil, err
 	}

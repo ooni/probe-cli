@@ -8,10 +8,12 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+var explorer = &defaultExplorer{}
+
 func TestExploreSuccess(t *testing.T) {
 	u, err := url.Parse("https://example.com")
 	runtimex.PanicOnError(err, "url.Parse failed")
-	rts, err := Explore(u)
+	rts, err := explorer.Explore(u)
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
@@ -23,7 +25,7 @@ func TestExploreSuccess(t *testing.T) {
 func TestExploreFailure(t *testing.T) {
 	u, err := url.Parse("https://example.example")
 	runtimex.PanicOnError(err, "url.Parse failed")
-	rts, err := Explore(u)
+	rts, err := explorer.Explore(u)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -35,7 +37,7 @@ func TestExploreFailure(t *testing.T) {
 func TestExploreSuccessWithH3(t *testing.T) {
 	u, err := url.Parse("https://www.google.com")
 	runtimex.PanicOnError(err, "url.Parse failed")
-	rts, err := Explore(u)
+	rts, err := explorer.Explore(u)
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
@@ -132,7 +134,7 @@ func TestRearrange(t *testing.T) {
 		},
 	}
 	proto := "expected"
-	rts := rearrange(resp, &proto)
+	rts := explorer.rearrange(resp, &proto)
 	expectedIndex := 0
 	for _, rt := range rts {
 		if rt.Request == nil || rt.Response == nil {

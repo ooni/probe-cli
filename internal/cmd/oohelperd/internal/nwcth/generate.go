@@ -13,9 +13,17 @@ import (
 // observed round trips, we generate measurement targets and
 // execute those measurements so the probe has a benchmark.
 
+// Generator is the interface responsible for running Generate.
+type Generator interface {
+	Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error)
+}
+
+// defaultGenerator is the default Generator.
+type defaultGenerator struct{}
+
 // Generate takes in input a list of round trips and outputs
 // a list of connectivity measurements for each of them.
-func Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) {
+func (g *defaultGenerator) Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) {
 	var out []*URLMeasurement
 	for _, rt := range rts {
 		addrs, err := DNSDo(ctx, rt.Request.URL.Hostname(), newResolver())
@@ -46,11 +54,11 @@ func Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) 
 			_, h3 := supportedQUICVersions[rt.proto]
 			switch {
 			case h3:
-				currentEndpoint = GenerateH3Endpoint(ctx, rt, endpoint)
+				currentEndpoint = g.GenerateH3Endpoint(ctx, rt, endpoint)
 			case rt.proto == "http":
-				currentEndpoint = GenerateHTTPEndpoint(ctx, rt, endpoint)
+				currentEndpoint = g.GenerateHTTPEndpoint(ctx, rt, endpoint)
 			case rt.proto == "https":
-				currentEndpoint = GenerateHTTPSEndpoint(ctx, rt, endpoint)
+				currentEndpoint = g.GenerateHTTPSEndpoint(ctx, rt, endpoint)
 			default:
 				// TODO(kelmenhorst): do we have to register this error somewhere in the result struct?
 				continue
@@ -61,7 +69,7 @@ func Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) 
 	return out, nil
 }
 
-func GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
+func (g *defaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &HTTPEndpointMeasurement{
 		Endpoint: endpoint,
 	}
@@ -79,7 +87,7 @@ func GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) E
 	return currentEndpoint
 }
 
-func GenerateHTTPSEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
+func (g *defaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &HTTPSEndpointMeasurement{
 		Endpoint: endpoint,
 	}
@@ -107,7 +115,7 @@ func GenerateHTTPSEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) 
 	return currentEndpoint
 }
 
-func GenerateH3Endpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
+func (g *defaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &H3EndpointMeasurement{
 		Endpoint: endpoint,
 	}

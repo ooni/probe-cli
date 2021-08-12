@@ -10,6 +10,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+var generator = &defaultGenerator{}
+
 func TestGenerateDNSFailure(t *testing.T) {
 	u, err := url.Parse("https://www.google.google")
 	runtimex.PanicOnError(err, "url.Parse failed")
@@ -25,7 +27,7 @@ func TestGenerateDNSFailure(t *testing.T) {
 			sortIndex: 0,
 		},
 	}
-	urlMeasurements, err := Generate(context.Background(), rts)
+	urlMeasurements, err := generator.Generate(context.Background(), rts)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -71,7 +73,7 @@ func TestGenerate(t *testing.T) {
 			sortIndex: 0,
 		},
 	}
-	urlMeasurements, err := Generate(context.Background(), rts)
+	urlMeasurements, err := generator.Generate(context.Background(), rts)
 	if err != nil {
 		t.Fatal("unexpected err")
 	}
@@ -98,7 +100,7 @@ func TestGenerateUnexpectedProtocol(t *testing.T) {
 			sortIndex: 0,
 		},
 	}
-	urlMeasurements, err := Generate(context.Background(), rts)
+	urlMeasurements, err := generator.Generate(context.Background(), rts)
 	if err != nil {
 		t.Fatal("unexpected err")
 	}
@@ -136,7 +138,7 @@ func TestGenerateHTTP(t *testing.T) {
 		},
 		sortIndex: 0,
 	}
-	endpointMeasurement := GenerateHTTPEndpoint(context.Background(), rt, "93.184.216.34:80")
+	endpointMeasurement := generator.GenerateHTTPEndpoint(context.Background(), rt, "93.184.216.34:80")
 	if err != nil {
 		t.Fatal("unexpected err")
 	}
@@ -167,7 +169,7 @@ func TestGenerateHTTPS(t *testing.T) {
 		},
 		sortIndex: 0,
 	}
-	endpointMeasurement := GenerateHTTPSEndpoint(context.Background(), rt, "93.184.216.34:443")
+	endpointMeasurement := generator.GenerateHTTPSEndpoint(context.Background(), rt, "93.184.216.34:443")
 	if err != nil {
 		t.Fatal("unexpected err")
 	}
@@ -201,7 +203,7 @@ func TestGenerateHTTPSTLSFailure(t *testing.T) {
 		},
 		sortIndex: 0,
 	}
-	endpointMeasurement := GenerateHTTPSEndpoint(context.Background(), rt, "104.154.89.105:443")
+	endpointMeasurement := generator.GenerateHTTPSEndpoint(context.Background(), rt, "104.154.89.105:443")
 	if err != nil {
 		t.Fatal("unexpected err")
 	}
@@ -235,7 +237,7 @@ func TestGenerateH3(t *testing.T) {
 		},
 		sortIndex: 0,
 	}
-	endpointMeasurement := GenerateH3Endpoint(context.Background(), rt, "173.194.76.103:443")
+	endpointMeasurement := generator.GenerateH3Endpoint(context.Background(), rt, "173.194.76.103:443")
 	if err != nil {
 		t.Fatal("unexpected err")
 	}
