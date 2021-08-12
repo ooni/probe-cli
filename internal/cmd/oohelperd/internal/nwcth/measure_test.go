@@ -7,10 +7,10 @@ import (
 
 func TestMeasureWithInvalidURL(t *testing.T) {
 	ctx := context.Background()
-	req := &ControlRequest{HTTPRequest: "https://google.com", HTTPRequestHeaders: nil}
+	req := &ControlRequest{HTTPRequest: "http://[::1]aaaa", HTTPRequestHeaders: nil}
 	_, err := Measure(ctx, req)
 
-	if err == nil {
-		t.Fatal("unexpected error")
+	if err == nil || err != ErrInvalidURL {
+		t.Fatal("expected an error here", err.Error())
 	}
 }
