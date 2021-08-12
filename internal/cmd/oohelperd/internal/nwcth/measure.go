@@ -13,18 +13,8 @@ type ControlResponse struct {
 	URLMeasurements []*URLMeasurement `json:"urls"`
 }
 
-type (
-	// ControlRequest is the request sent to the test helper
-	ControlRequest = nwebconnectivity.ControlRequest
-
-	// HTTPMeasurement contains the measurement for one URL, and one IP endpoint,
-	// using HTTP over TCP.
-	HTTPMeasurement = nwebconnectivity.ControlHTTPMeasurement
-
-	// H3Measurement contains the measurement for one URL, and one IP endpoint,
-	// using HTTP over QUIC (HTTP/3).
-	H3Measurement = nwebconnectivity.ControlH3Measurement
-)
+// ControlRequest is the request sent to the test helper
+type ControlRequest = nwebconnectivity.ControlRequest
 
 // ErrNoValidIP means that the DNS step failed and the client did not provide IP endpoints for testing.
 var ErrNoValidIP = errors.New("no valid IP address to measure")
