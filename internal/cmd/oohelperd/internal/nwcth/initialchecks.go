@@ -1,8 +1,8 @@
 package nwcth
 
 import (
+	"context"
 	"errors"
-	"net"
 	"net/url"
 )
 
@@ -42,7 +42,8 @@ func InitialChecks(URL string) (*url.URL, error) {
 	//
 	// 2. an IP address does not cause an error because we are using
 	// a resolve that behaves like getaddrinfo
-	if _, err := net.LookupHost(parsed.Hostname()); err != nil {
+	resolver := newResolver()
+	if _, err := resolver.LookupHost(context.Background(), parsed.Hostname()); err != nil {
 		return nil, ErrNoSuchHost
 	}
 	return parsed, nil

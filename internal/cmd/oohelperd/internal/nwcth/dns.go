@@ -9,7 +9,9 @@ import (
 // newResolver creates a new DNS resolver instance
 func newResolver() netxlite.Resolver {
 	// TODO(bassosimone,kelmenhorst): what complexity do we need here for the resolver? is this enough?
-	return &netxlite.ResolverSystem{}
+	var r netxlite.Resolver = &netxlite.ResolverSystem{}
+	r = &netxlite.IDNAResolver{Resolver: r}
+	return r
 }
 
 // DNSDo performs the DNS check.

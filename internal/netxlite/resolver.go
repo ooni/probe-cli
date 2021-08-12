@@ -4,6 +4,8 @@ import (
 	"context"
 	"net"
 	"time"
+
+	"golang.org/x/net/idna"
 )
 
 // Resolver performs domain name resolutions.
@@ -75,6 +77,37 @@ type resolverAddresser interface {
 
 // Address implements Resolver.Address.
 func (r *ResolverLogger) Address() string {
+	if ra, ok := r.Resolver.(resolverAddresser); ok {
+		return ra.Address()
+	}
+	return ""
+}
+
+// IDNAResolver is to support resolving Internationalized Domain Names.
+// See RFC3492 for more information.
+type IDNAResolver struct {
+	Resolver
+}
+
+// LookupHost implements Resolver.LookupHost
+func (r *IDNAResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+	host, err := idna.ToASCII(hostname)
+	if err != nil {
+		return nil, err
+	}
+	return r.Resolver.LookupHost(ctx, host)
+}
+
+// Network implements Resolver.Network.
+func (r *IDNAResolver) Network() string {
+	if rn, ok := r.Resolver.(resolverNetworker); ok {
+		return rn.Network()
+	}
+	return "idna"
+}
+
+// Address implements Resolver.Address.
+func (r *IDNAResolver) Address() string {
 	if ra, ok := r.Resolver.(resolverAddresser); ok {
 		return ra.Address()
 	}
