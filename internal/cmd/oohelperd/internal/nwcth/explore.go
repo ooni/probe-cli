@@ -2,7 +2,6 @@ package nwcth
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -46,13 +45,13 @@ func Explore(URL *url.URL) ([]*RoundTrip, error) {
 	if err != nil {
 		return nil, err
 	}
-	rts := rearrange(resp, URL.Scheme)
+	rts := rearrange(resp, nil)
 	if h3URL := getH3URL(resp); h3URL != nil {
 		resp, err = getH3(h3URL)
 		if err != nil {
 			return rts, err
 		}
-		rts = append(rts, rearrange(resp, h3URL.proto)...)
+		rts = append(rts, rearrange(resp, &h3URL.proto)...)
 	}
 	return rts, nil
 }
@@ -60,9 +59,13 @@ func Explore(URL *url.URL) ([]*RoundTrip, error) {
 // rearrange takes in input the final response of an HTTP transaction and a flag
 // indicating whether HTTP/3 was used, and produces in output a list of round trips sorted
 // such that the first round trip is the first element in the out array.
-func rearrange(resp *http.Response, proto string) (out []*RoundTrip) {
+func rearrange(resp *http.Response, p *string) (out []*RoundTrip) {
 	index := 0
 	for resp != nil && resp.Request != nil {
+		proto := resp.Request.URL.Scheme
+		if p != nil {
+			proto = *p
+		}
 		out = append(out, &RoundTrip{
 			proto:     proto,
 			sortIndex: index,
@@ -118,7 +121,6 @@ func get(URL *url.URL) (*http.Response, error) {
 // error is nil, the final response is valid.
 func getH3(URL *h3URL) (*http.Response, error) {
 	jarjar, _ := cookiejar.New(nil)
-	fmt.Println(URL.proto)
 	tlsconfig := &tls.Config{NextProtos: []string{URL.proto}, ServerName: URL.Hostname()}
 	clnt := &http.Client{
 		Transport: &http3.RoundTripper{
