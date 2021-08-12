@@ -4,20 +4,24 @@ import (
 	"context"
 	"crypto/tls"
 
-	"github.com/apex/log"
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// QUICDo performs the QUIC check.
-func QUICDo(ctx context.Context, endpoint string, tlsConf *tls.Config) (quic.EarlySession, *TLSHandshakeMeasurement) {
-	// TODO(bassosimone,kelmenhorst): do we need the complexity of a netx dialer here? is quic.DialEarly enough?
-	quicdialer := netx.NewQUICDialer(netx.Config{Logger: log.Log})
-	sess, err := quicdialer.DialContext(ctx, "udp", endpoint, tlsConf, &quic.Config{})
-	if err != nil {
-		return nil, &TLSHandshakeMeasurement{
-			Failure: newfailure(err),
-		}
+func newQUICDialer() netxlite.QUICContextDialer {
+	// TODO(bassosimone,kelmenhorst): what complexity do we need here for the dialer? is this enough?
+	var ql quicdialer.QUICListener = &netxlite.QUICListenerStdlib{}
+	ql = &errorsx.ErrorWrapperQUICListener{QUICListener: ql}
+	var d quicdialer.ContextDialer = &netxlite.QUICDialerQUICGo{
+		QUICListener: ql,
 	}
-	return sess, &TLSHandshakeMeasurement{}
+	d = &errorsx.ErrorWrapperQUICDialer{Dialer: d}
+	return d
+}
+
+// QUICDo performs the QUIC check.
+func QUICDo(ctx context.Context, endpoint string, tlsConf *tls.Config, quicdialer netxlite.QUICContextDialer) (quic.EarlySession, error) {
+	return quicdialer.DialContext(ctx, "udp", endpoint, tlsConf, &quic.Config{})
 }

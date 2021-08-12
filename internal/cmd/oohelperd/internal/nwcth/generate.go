@@ -52,6 +52,22 @@ type HTTPEndpointMeasurement struct {
 	// TCPConnectMeasurement is the related TCP connect measurement.
 	TCPConnectMeasurement *TCPConnectMeasurement
 
+	// HTTPRequestMeasurement is the related HTTP GET measurement.
+	HTTPRoundtripMeasurement *HTTPRoundtripMeasurement
+}
+
+func (h *HTTPEndpointMeasurement) GetHTTPRoundtripMeasurement() *HTTPRoundtripMeasurement {
+	return h.HTTPRoundtripMeasurement
+}
+
+// HTTPEndpointMeasurement is a measurement of a specific HTTP endpoint.
+type HTTPSEndpointMeasurement struct {
+	// Endpoint is the endpoint we're measuring.
+	Endpoint string
+
+	// TCPConnectMeasurement is the related TCP connect measurement.
+	TCPConnectMeasurement *TCPConnectMeasurement
+
 	// TLSHandshakeMeasurement is the related TLS handshake measurement.
 	TLSHandshakeMeasurement *TLSHandshakeMeasurement
 
@@ -59,7 +75,7 @@ type HTTPEndpointMeasurement struct {
 	HTTPRoundtripMeasurement *HTTPRoundtripMeasurement
 }
 
-func (h *HTTPEndpointMeasurement) GetHTTPRoundtripMeasurement() *HTTPRoundtripMeasurement {
+func (h *HTTPSEndpointMeasurement) GetHTTPRoundtripMeasurement() *HTTPRoundtripMeasurement {
 	return h.HTTPRoundtripMeasurement
 }
 
@@ -117,7 +133,7 @@ type HTTPResponse struct {
 func Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) {
 	var out []*URLMeasurement
 	for _, rt := range rts {
-		addrs, err := net.LookupHost(rt.Request.URL.Hostname())
+		addrs, err := DNSDo(ctx, rt.Request.URL.Hostname(), newResolver())
 		if err != nil {
 			return nil, err
 		}
@@ -164,9 +180,11 @@ func GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) E
 	currentEndpoint := &HTTPEndpointMeasurement{
 		Endpoint: endpoint,
 	}
-	var tcpConn net.Conn
-	tcpConn, currentEndpoint.TCPConnectMeasurement = TCPDo(ctx, endpoint)
-	if tcpConn == nil {
+	tcpConn, err := TCPDo(ctx, endpoint, newDialer())
+	currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{
+		Failure: newfailure(err),
+	}
+	if err != nil {
 		return currentEndpoint
 	}
 	defer tcpConn.Close() // suboptimal of course
@@ -177,18 +195,24 @@ func GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) E
 }
 
 func GenerateHTTPSEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
-	currentEndpoint := &HTTPEndpointMeasurement{
+	currentEndpoint := &HTTPSEndpointMeasurement{
 		Endpoint: endpoint,
 	}
 	var tcpConn, tlsConn net.Conn
-	tcpConn, currentEndpoint.TCPConnectMeasurement = TCPDo(ctx, endpoint)
-	if tcpConn == nil {
+	tcpConn, err := TCPDo(ctx, endpoint, newDialer())
+	currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{
+		Failure: newfailure(err),
+	}
+	if err != nil {
 		return currentEndpoint
 	}
 	defer tcpConn.Close() // suboptimal of course
 
-	tlsConn, currentEndpoint.TLSHandshakeMeasurement = TLSDo(tcpConn, rt.Request.URL.Hostname())
-	if tlsConn == nil {
+	tlsConn, err = TLSDo(tcpConn, rt.Request.URL.Hostname())
+	currentEndpoint.TLSHandshakeMeasurement = &TLSHandshakeMeasurement{
+		Failure: newfailure(err),
+	}
+	if err != nil {
 		return currentEndpoint
 	}
 	defer tlsConn.Close() // suboptimal of course
@@ -202,13 +226,15 @@ func GenerateH3Endpoint(ctx context.Context, rt *RoundTrip, endpoint string) End
 	currentEndpoint := &H3EndpointMeasurement{
 		Endpoint: endpoint,
 	}
-	var sess quic.EarlySession
 	tlsConf := &tls.Config{
 		ServerName: rt.Request.URL.Hostname(),
 		NextProtos: []string{rt.proto},
 	}
-	sess, currentEndpoint.QUICHandshakeMeasurement = QUICDo(ctx, endpoint, tlsConf)
-	if sess == nil {
+	sess, err := QUICDo(ctx, endpoint, tlsConf, newQUICDialer())
+	currentEndpoint.QUICHandshakeMeasurement = &TLSHandshakeMeasurement{
+		Failure: newfailure(err),
+	}
+	if err != nil {
 		return currentEndpoint
 	}
 	transport := nwebconnectivity.NewSingleH3Transport(sess, tlsConf, &quic.Config{})
