@@ -142,18 +142,19 @@ func Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) 
 				panic("should not happen")
 			}
 			var currentEndpoint EndpointMeasurement
-			_, ok := supportedQUICVersions[rt.proto]
+			_, h3 := supportedQUICVersions[rt.proto]
 			switch {
-			case ok:
+			case h3:
 				currentEndpoint = GenerateH3Endpoint(ctx, rt, endpoint)
-			case rt.proto == "https", rt.proto == "http":
+			case rt.proto == "http":
 				currentEndpoint = GenerateHTTPEndpoint(ctx, rt, endpoint)
+			case rt.proto == "https":
+				currentEndpoint = GenerateHTTPSEndpoint(ctx, rt, endpoint)
 			default:
 				// TODO(kelmenhorst): do we have to register this error somewhere in the result struct?
 				continue
 			}
 			currentURL.Endpoints = append(currentURL.Endpoints, currentEndpoint)
-
 		}
 	}
 	return out, nil
@@ -163,27 +164,36 @@ func GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) E
 	currentEndpoint := &HTTPEndpointMeasurement{
 		Endpoint: endpoint,
 	}
-	tcpConn, err := net.Dial("tcp", endpoint)
-	if err != nil {
-		s := err.Error()
-		currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{
-			Failure: &s,
-		}
+	var tcpConn net.Conn
+	tcpConn, currentEndpoint.TCPConnectMeasurement = TCPDo(ctx, endpoint)
+	if tcpConn == nil {
 		return currentEndpoint
 	}
 	defer tcpConn.Close() // suboptimal of course
-	currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{}
 
-	transportConn := tcpConn
-	if rt.Request.URL.Scheme == "https" {
-		transportConn, currentEndpoint.TLSHandshakeMeasurement = TLSDo(tcpConn, rt.Request.URL.Hostname())
-		if transportConn == nil {
-			return currentEndpoint
-		}
-		defer transportConn.Close()
+	transport := nwebconnectivity.NewSingleTransport(tcpConn)
+	currentEndpoint.HTTPRoundtripMeasurement = HTTPDo(rt.Request, transport)
+	return currentEndpoint
+}
+
+func GenerateHTTPSEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
+	currentEndpoint := &HTTPEndpointMeasurement{
+		Endpoint: endpoint,
 	}
+	var tcpConn, tlsConn net.Conn
+	tcpConn, currentEndpoint.TCPConnectMeasurement = TCPDo(ctx, endpoint)
+	if tcpConn == nil {
+		return currentEndpoint
+	}
+	defer tcpConn.Close() // suboptimal of course
 
-	transport := nwebconnectivity.NewSingleTransport(transportConn)
+	tlsConn, currentEndpoint.TLSHandshakeMeasurement = TLSDo(tcpConn, rt.Request.URL.Hostname())
+	if tlsConn == nil {
+		return currentEndpoint
+	}
+	defer tlsConn.Close() // suboptimal of course
+
+	transport := nwebconnectivity.NewSingleTransport(tlsConn)
 	currentEndpoint.HTTPRoundtripMeasurement = HTTPDo(rt.Request, transport)
 	return currentEndpoint
 }

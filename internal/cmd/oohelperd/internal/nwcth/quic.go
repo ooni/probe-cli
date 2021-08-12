@@ -14,9 +14,8 @@ func QUICDo(ctx context.Context, endpoint string, tlsConf *tls.Config) (quic.Ear
 	quicdialer := netx.NewQUICDialer(netx.Config{Logger: log.Log})
 	sess, err := quicdialer.DialContext(ctx, "udp", endpoint, tlsConf, &quic.Config{})
 	if err != nil {
-		s := err.Error()
 		return nil, &TLSHandshakeMeasurement{
-			Failure: &s,
+			Failure: newfailure(err),
 		}
 	}
 	return sess, &TLSHandshakeMeasurement{}

@@ -19,9 +19,8 @@ func HTTPDo(req *http.Request, transport http.RoundTripper) *HTTPRoundtripMeasur
 	}
 	resp, err := clnt.Do(req)
 	if err != nil {
-		s := err.Error()
 		httpRoundtrip.Response = &HTTPResponse{
-			Failure: &s,
+			Failure: newfailure(err),
 		}
 		return httpRoundtrip
 	}

@@ -11,11 +11,7 @@ func TLSDo(conn net.Conn, hostname string) (*tls.Conn, *TLSHandshakeMeasurement)
 		NextProtos: []string{"h2"},
 	})
 	err := tlsConn.Handshake()
-	if err != nil {
-		s := err.Error()
-		return nil, &TLSHandshakeMeasurement{
-			Failure: &s,
-		}
+	return nil, &TLSHandshakeMeasurement{
+		Failure: newfailure(err),
 	}
-	return tlsConn, &TLSHandshakeMeasurement{}
 }

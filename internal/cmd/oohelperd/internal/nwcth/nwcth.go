@@ -9,10 +9,14 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/iox"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
+
+// newfailure is a convenience shortcut to save typing
+var newfailure = archival.NewFailure
 
 // maxAcceptableBody is _at the same time_ the maximum acceptable body for incoming
 // API requests and the maximum acceptable body when fetching arbitrary URLs. See
@@ -51,7 +55,6 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	// We assume that the following call cannot fail because it's a
 	// clearly serializable data structure.
-	fmt.Println(cresp)
 	data, err = json.Marshal(cresp)
 	runtimex.PanicOnError(err, "json.Marshal failed")
 	w.Header().Add("Content-Type", "application/json")
