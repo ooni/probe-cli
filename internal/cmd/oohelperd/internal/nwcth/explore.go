@@ -56,8 +56,8 @@ func Explore(URL *url.URL) ([]*RoundTrip, error) {
 	return rts, nil
 }
 
-// rearrange takes in input the final response of an HTTP transaction and a flag
-// indicating whether HTTP/3 was used, and produces in output a list of round trips sorted
+// rearrange takes in input the final response of an HTTP transaction and a protocol string,
+// and produces in output a list of round trips sorted
 // such that the first round trip is the first element in the out array.
 func rearrange(resp *http.Response, p *string) (out []*RoundTrip) {
 	index := 0
@@ -72,6 +72,7 @@ func rearrange(resp *http.Response, p *string) (out []*RoundTrip) {
 			Request:   resp.Request,
 			Response:  resp,
 		})
+		index += 1
 		resp = resp.Request.Response
 	}
 	sh := &sortHelper{out}
