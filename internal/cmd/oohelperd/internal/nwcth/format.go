@@ -29,7 +29,7 @@ type DNSMeasurement struct {
 }
 
 type EndpointMeasurement interface {
-	GetHTTPRoundtripMeasurement() *HTTPRoundtripMeasurement
+	IsEndpointMeasurement()
 }
 
 // HTTPEndpointMeasurement is a measurement of a specific HTTP endpoint.
@@ -44,9 +44,7 @@ type HTTPEndpointMeasurement struct {
 	HTTPRoundtripMeasurement *HTTPRoundtripMeasurement
 }
 
-func (h *HTTPEndpointMeasurement) GetHTTPRoundtripMeasurement() *HTTPRoundtripMeasurement {
-	return h.HTTPRoundtripMeasurement
-}
+func (h *HTTPEndpointMeasurement) IsEndpointMeasurement() {}
 
 // HTTPEndpointMeasurement is a measurement of a specific HTTP endpoint.
 type HTTPSEndpointMeasurement struct {
@@ -63,9 +61,7 @@ type HTTPSEndpointMeasurement struct {
 	HTTPRoundtripMeasurement *HTTPRoundtripMeasurement
 }
 
-func (h *HTTPSEndpointMeasurement) GetHTTPRoundtripMeasurement() *HTTPRoundtripMeasurement {
-	return h.HTTPRoundtripMeasurement
-}
+func (h *HTTPSEndpointMeasurement) IsEndpointMeasurement() {}
 
 // HTTPEndpointMeasurement is a measurement of a specific HTTP endpoint.
 type H3EndpointMeasurement struct {
@@ -79,9 +75,7 @@ type H3EndpointMeasurement struct {
 	HTTPRoundtripMeasurement *HTTPRoundtripMeasurement
 }
 
-func (h *H3EndpointMeasurement) GetHTTPRoundtripMeasurement() *HTTPRoundtripMeasurement {
-	return h.HTTPRoundtripMeasurement
-}
+func (h *H3EndpointMeasurement) IsEndpointMeasurement() {}
 
 // Implementation note: OONI uses nil to indicate no error but here
 // it's more convenient to just use an empty string.
