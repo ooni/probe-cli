@@ -26,6 +26,9 @@ type DNSMeasurement struct {
 
 	// Addrs contains the resolved addresses.
 	Addrs []string
+
+	// Failure is the error that occurred.
+	Failure *string
 }
 
 type EndpointMeasurement interface {

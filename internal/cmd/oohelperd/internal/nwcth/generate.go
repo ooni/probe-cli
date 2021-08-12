@@ -27,18 +27,19 @@ func (g *defaultGenerator) Generate(ctx context.Context, rts []*RoundTrip) ([]*U
 	var out []*URLMeasurement
 	for _, rt := range rts {
 		addrs, err := DNSDo(ctx, rt.Request.URL.Hostname(), newResolver())
-		if err != nil {
-			return nil, err
-		}
 		currentURL := &URLMeasurement{
 			DNS: &DNSMeasurement{
-				Domain: rt.Request.URL.Hostname(),
-				Addrs:  addrs,
+				Domain:  rt.Request.URL.Hostname(),
+				Addrs:   addrs,
+				Failure: newfailure(err),
 			},
 			RoundTrip: rt,
 			URL:       rt.Request.URL.String(),
 		}
 		out = append(out, currentURL)
+		if err != nil {
+			return out, err
+		}
 		for _, addr := range addrs {
 			// simplified algorithm to choose the port.
 			var endpoint string
