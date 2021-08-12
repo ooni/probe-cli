@@ -3,8 +3,6 @@ package nwcth
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/nwebconnectivity"
@@ -42,23 +40,17 @@ func Measure(ctx context.Context, creq *ControlRequest) (*ControlResponse, error
 		URL *url.URL
 		err error
 	)
-	if URL, err = InitialChecks(creq.HTTPRequest); err != nil {
-		log.Fatalf("initial checks failed: %s", err.Error())
+	URL, err = InitialChecks(creq.HTTPRequest)
+	if err != nil {
+		return nil, err
 	}
 	rts, err := Explore(URL)
 	if err != nil {
-		log.Fatalf("explore failed: %s", err.Error())
+		return nil, err
 	}
 	meas, err := Generate(ctx, rts)
 	if err != nil {
-		log.Fatalf("generate failed: %s", err.Error())
-	}
-	for _, m := range meas {
-		fmt.Printf("# %s\n", m.URL)
-		fmt.Printf("method: %s\n", m.RoundTrip.Request.Method)
-		fmt.Printf("url: %s\n", m.RoundTrip.Request.URL.String())
-		fmt.Printf("headers: %+v\n", m.RoundTrip.Request.Header)
-		fmt.Printf("dns: %+v\n", m.DNS)
+		return nil, err
 	}
 	return &ControlResponse{URLMeasurements: meas}, nil
 }
