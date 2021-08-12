@@ -29,7 +29,6 @@ type Handler struct{}
 
 // ServeHTTP implements http.Handler.ServeHTTP.
 func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("serve htpp")
 	w.Header().Add("Server", fmt.Sprintf(
 		"oohelperd/%s ooniprobe-engine/%s", version.Version, version.Version,
 	))
