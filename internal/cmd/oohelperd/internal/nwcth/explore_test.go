@@ -13,7 +13,7 @@ var explorer = &DefaultExplorer{resolver: newResolver()}
 func TestExploreSuccess(t *testing.T) {
 	u, err := url.Parse("https://example.com")
 	runtimex.PanicOnError(err, "url.Parse failed")
-	rts, err := explorer.Explore(u)
+	rts, err := explorer.Explore(u, nil)
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
@@ -25,7 +25,7 @@ func TestExploreSuccess(t *testing.T) {
 func TestExploreFailure(t *testing.T) {
 	u, err := url.Parse("https://example.example")
 	runtimex.PanicOnError(err, "url.Parse failed")
-	rts, err := explorer.Explore(u)
+	rts, err := explorer.Explore(u, nil)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -37,7 +37,7 @@ func TestExploreFailure(t *testing.T) {
 func TestExploreSuccessWithH3(t *testing.T) {
 	u, err := url.Parse("https://www.google.com")
 	runtimex.PanicOnError(err, "url.Parse failed")
-	rts, err := explorer.Explore(u)
+	rts, err := explorer.Explore(u, nil)
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
@@ -54,7 +54,7 @@ func TestExploreSuccessWithH3(t *testing.T) {
 
 func TestGetSuccess(t *testing.T) {
 	u, err := url.Parse("https://example.com")
-	resp, err := explorer.get(u)
+	resp, err := explorer.get(u, nil)
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
@@ -70,7 +70,7 @@ func TestGetSuccess(t *testing.T) {
 
 func TestGetFailure(t *testing.T) {
 	u, err := url.Parse("https://example.example")
-	resp, err := explorer.get(u)
+	resp, err := explorer.get(u, nil)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -82,7 +82,7 @@ func TestGetFailure(t *testing.T) {
 func TestGetH3Success(t *testing.T) {
 	u, err := url.Parse("https://www.google.com")
 	h3u := &h3URL{URL: u, proto: "h3"}
-	resp, err := explorer.getH3(h3u)
+	resp, err := explorer.getH3(h3u, nil)
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
@@ -99,7 +99,7 @@ func TestGetH3Success(t *testing.T) {
 func TestGetH3Failure(t *testing.T) {
 	u, err := url.Parse("https://www.google.google")
 	h3u := &h3URL{URL: u, proto: "h3"}
-	resp, err := explorer.getH3(h3u)
+	resp, err := explorer.getH3(h3u, nil)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}

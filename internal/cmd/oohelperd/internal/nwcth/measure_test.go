@@ -32,7 +32,7 @@ func (c *MockChecker) InitialChecks(URL string) (*url.URL, error) {
 
 type MockExplorer struct{}
 
-func (c *MockExplorer) Explore(URL *url.URL) ([]*RoundTrip, error) {
+func (c *MockExplorer) Explore(URL *url.URL, headers map[string][]string) ([]*RoundTrip, error) {
 	return nil, ErrExpectedExplore
 }
 

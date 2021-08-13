@@ -6,8 +6,10 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"sort"
+	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // Explore is the second step of the test helper algorithm. Its objective
@@ -22,7 +24,7 @@ import (
 
 // Explorer is the interface responsible for running Explore.
 type Explorer interface {
-	Explore(URL *url.URL) ([]*RoundTrip, error)
+	Explore(URL *url.URL, headers map[string][]string) ([]*RoundTrip, error)
 }
 
 // DefaultExplorer is the default Explorer.
@@ -48,8 +50,9 @@ type RoundTrip struct {
 
 // Explore returns a list of round trips sorted so that the first
 // round trip is the first element in the list, and so on.
-func (e *DefaultExplorer) Explore(URL *url.URL) ([]*RoundTrip, error) {
-	resp, err := e.get(URL)
+// Explore uses the URL and the optional headers provided by the ControlRequest.
+func (e *DefaultExplorer) Explore(URL *url.URL, headers map[string][]string) ([]*RoundTrip, error) {
+	resp, err := e.get(URL, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +61,7 @@ func (e *DefaultExplorer) Explore(URL *url.URL) ([]*RoundTrip, error) {
 	if err != nil {
 		return rts, nil
 	}
-	resp, err = e.getH3(h3URL)
+	resp, err = e.getH3(h3URL, headers)
 	if err != nil {
 		return rts, nil
 	}
@@ -113,7 +116,7 @@ func (sh *sortHelper) Swap(i, j int) {
 
 // get gets the given URL and returns the final response after
 // redirection, and an error. If the error is nil, the final response is valid.
-func (e *DefaultExplorer) get(URL *url.URL) (*http.Response, error) {
+func (e *DefaultExplorer) get(URL *url.URL, headers map[string][]string) (*http.Response, error) {
 	tlsConf := &tls.Config{
 		NextProtos: []string{"h2", "http/1.1"},
 	}
@@ -123,7 +126,9 @@ func (e *DefaultExplorer) get(URL *url.URL) (*http.Response, error) {
 		Transport: transport,
 		Jar:       jarjar,
 	}
-	resp, err := clnt.Get(URL.String())
+	req, err := e.newRequest(URL, headers)
+	runtimex.PanicOnError(err, "newRequest failed")
+	resp, err := clnt.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +138,7 @@ func (e *DefaultExplorer) get(URL *url.URL) (*http.Response, error) {
 
 // getH3 uses HTTP/3 to get the given URL and returns the final
 // response after redirection, and an error. If the error is nil, the final response is valid.
-func (e *DefaultExplorer) getH3(h3URL *h3URL) (*http.Response, error) {
+func (e *DefaultExplorer) getH3(h3URL *h3URL, headers map[string][]string) (*http.Response, error) {
 	dialer := NewQUICDialerResolver(e.resolver)
 	tlsConf := &tls.Config{
 		NextProtos: []string{h3URL.proto},
@@ -144,10 +149,28 @@ func (e *DefaultExplorer) getH3(h3URL *h3URL) (*http.Response, error) {
 		Transport: transport,
 		Jar:       jarjar,
 	}
-	resp, err := clnt.Get(h3URL.URL.String())
+	req, err := e.newRequest(h3URL.URL, headers)
+	runtimex.PanicOnError(err, "newRequest failed")
+	resp, err := clnt.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 	return resp, nil
+}
+
+func (e *DefaultExplorer) newRequest(URL *url.URL, headers map[string][]string) (*http.Request, error) {
+	req, err := http.NewRequest("GET", URL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	for k, vs := range headers {
+		switch strings.ToLower(k) {
+		case "user-agent", "accept", "accept-language":
+			for _, v := range vs {
+				req.Header.Add(k, v)
+			}
+		}
+	}
+	return req, nil
 }

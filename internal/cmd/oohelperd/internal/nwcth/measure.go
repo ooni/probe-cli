@@ -66,7 +66,7 @@ func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*Contro
 	if config.explorer == nil {
 		config.explorer = &DefaultExplorer{resolver: config.resolver}
 	}
-	rts, err := config.explorer.Explore(URL)
+	rts, err := config.explorer.Explore(URL, creq.HTTPRequestHeaders)
 	if err != nil {
 		return nil, ErrInternalServer
 	}

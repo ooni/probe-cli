@@ -280,6 +280,13 @@ func (g *DefaultGenerator) QUICDo(ctx context.Context, endpoint string, tlsConf 
 }
 
 // HTTPDo performs the HTTP check.
+// Input:
+// req *http.Request
+//      The same request than the one used by the Explore step.
+//      This means that req contains the headers set by the original ControlRequest, as well as,
+//      in case of a redirect chain, additional headers that were added due to redirects
+// transport http.RoundTripper:
+//      The transport to use, either http.Transport, or http3.RoundTripper.
 func (g *DefaultGenerator) HTTPDo(req *http.Request, transport http.RoundTripper) (*http.Response, []byte, error) {
 	clnt := http.Client{
 		CheckRedirect: func(r *http.Request, reqs []*http.Request) error {
