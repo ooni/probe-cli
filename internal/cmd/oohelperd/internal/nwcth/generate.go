@@ -44,16 +44,21 @@ func (g *defaultGenerator) Generate(ctx context.Context, rts []*RoundTrip) ([]*U
 			return out, err
 		}
 		for _, addr := range addrs {
-			// simplified algorithm to choose the port.
-			var endpoint string
-			switch rt.Request.URL.Scheme {
-			case "http":
-				endpoint = net.JoinHostPort(addr, "80")
-			case "https":
-				endpoint = net.JoinHostPort(addr, "443")
+			var port string
+			explicitPort := rt.Request.URL.Port()
+			scheme := rt.Request.URL.Scheme
+			switch {
+			case explicitPort != "":
+				port = explicitPort
+			case scheme == "http":
+				port = "80"
+			case scheme == "https":
+				port = "443"
 			default:
 				panic("should not happen")
 			}
+			endpoint := net.JoinHostPort(addr, port)
+
 			var currentEndpoint EndpointMeasurement
 			_, h3 := supportedQUICVersions[rt.proto]
 			switch {
