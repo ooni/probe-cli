@@ -11,7 +11,6 @@ import (
 
 // newResolver creates a new DNS resolver instance
 func newResolver() netxlite.Resolver {
-	// TODO(bassosimone,kelmenhorst): what complexity do we need here for the resolver? is this enough?
 	childResolver, err := netx.NewDNSClient(netx.Config{Logger: log.Log}, "doh://google")
 	runtimex.PanicOnError(err, "NewDNSClient failed")
 	var r netxlite.Resolver = childResolver

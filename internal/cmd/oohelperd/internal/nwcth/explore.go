@@ -55,13 +55,15 @@ func (e *defaultExplorer) Explore(URL *url.URL) ([]*RoundTrip, error) {
 		return nil, err
 	}
 	rts := e.rearrange(resp, nil)
-	if h3URL := getH3URL(resp); h3URL != nil {
-		resp, err = e.getH3(h3URL)
-		if err != nil {
-			return rts, err
-		}
-		rts = append(rts, e.rearrange(resp, h3URL)...)
+	h3URL, err := getH3URL(resp)
+	if err != nil {
+		return rts, nil
 	}
+	resp, err = e.getH3(h3URL)
+	if err != nil {
+		return rts, nil
+	}
+	rts = append(rts, e.rearrange(resp, h3URL)...)
 	return rts, nil
 }
 
