@@ -35,7 +35,7 @@ type EndpointMeasurement interface {
 	IsEndpointMeasurement()
 }
 
-// HTTPEndpointMeasurement is a measurement of a specific HTTP endpoint.
+// HTTPEndpointMeasurement is the measurement of requesting a specific endpoint via HTTP.
 type HTTPEndpointMeasurement struct {
 	// Endpoint is the endpoint we're measuring.
 	Endpoint string
@@ -49,7 +49,7 @@ type HTTPEndpointMeasurement struct {
 
 func (h *HTTPEndpointMeasurement) IsEndpointMeasurement() {}
 
-// HTTPEndpointMeasurement is a measurement of a specific HTTP endpoint.
+// HTTPSEndpointMeasurement is the measurement of requesting a specific endpoint via HTTPS.
 type HTTPSEndpointMeasurement struct {
 	// Endpoint is the endpoint we're measuring.
 	Endpoint string
@@ -60,13 +60,13 @@ type HTTPSEndpointMeasurement struct {
 	// TLSHandshakeMeasurement is the related TLS handshake measurement.
 	TLSHandshakeMeasurement *TLSHandshakeMeasurement
 
-	// HTTPRequestMeasurement is the related HTTP GET measurement.
+	// HTTPRoundtripMeasurement is the related HTTP GET measurement.
 	HTTPRoundtripMeasurement *HTTPRoundtripMeasurement
 }
 
 func (h *HTTPSEndpointMeasurement) IsEndpointMeasurement() {}
 
-// HTTPEndpointMeasurement is a measurement of a specific HTTP endpoint.
+// H3EndpointMeasurement is the measurement of requesting a specific endpoint via HTTP/3.
 type H3EndpointMeasurement struct {
 	// Endpoint is the endpoint we're measuring.
 	Endpoint string
@@ -74,7 +74,7 @@ type H3EndpointMeasurement struct {
 	// QUICHandshakeMeasurement is the related QUIC(TLS 1.3) handshake measurement.
 	QUICHandshakeMeasurement *TLSHandshakeMeasurement
 
-	// HTTPRequestMeasurement is the related HTTP GET measurement.
+	// HTTPRoundtripMeasurement is the related HTTP GET measurement.
 	HTTPRoundtripMeasurement *HTTPRoundtripMeasurement
 }
 
@@ -95,17 +95,18 @@ type TLSHandshakeMeasurement struct {
 	Failure *string
 }
 
+// HTTPRoundtripMeasurement contains a measured HTTP request and the corresponding response.
 type HTTPRoundtripMeasurement struct {
 	Request  *HTTPRequest
 	Response *HTTPResponse
 }
 
-// HTTPRequestMeasurement is a HTTP request measurement.
+// HTTPRequest contains the headers of the measured HTTP Get request.
 type HTTPRequest struct {
 	Headers http.Header
 }
 
-// HTTPRequestMeasurement is a HTTP request measurement.
+// HTTPResponse contains the response of the measured HTTP Get request.
 type HTTPResponse struct {
 	BodyLength int64       `json:"body_length"`
 	Failure    *string     `json:"failure"`
