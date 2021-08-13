@@ -37,9 +37,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) {
 	// we're implementing (for now?) a more liberal approach.
 	for k, vs := range config.Headers {
 		switch strings.ToLower(k) {
-		case "user-agent":
-		case "accept":
-		case "accept-language":
+		case "user-agent", "accept", "accept-language":
 			for _, v := range vs {
 				req.Header.Add(k, v)
 			}
