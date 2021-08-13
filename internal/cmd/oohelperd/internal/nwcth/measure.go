@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/nwebconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // ControlResponse is the response from the control service.
@@ -28,6 +29,7 @@ type Config struct {
 	checker   InitChecker
 	explorer  Explorer
 	generator Generator
+	resolver  netxlite.Resolver
 }
 
 func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*ControlResponse, error) {
@@ -35,8 +37,12 @@ func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*Contro
 		URL *url.URL
 		err error
 	)
+	if config.resolver == nil {
+		// use a central resolver
+		config.resolver = newResolver()
+	}
 	if config.checker == nil {
-		config.checker = &defaultInitChecker{}
+		config.checker = &defaultInitChecker{resolver: config.resolver}
 	}
 	URL, err = config.checker.InitialChecks(creq.HTTPRequest)
 	if err != nil {
@@ -47,14 +53,14 @@ func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*Contro
 		return nil, err
 	}
 	if config.explorer == nil {
-		config.explorer = &defaultExplorer{}
+		config.explorer = &defaultExplorer{resolver: config.resolver}
 	}
 	rts, err := config.explorer.Explore(URL)
 	if err != nil {
 		return nil, ErrInternalServer
 	}
 	if config.generator == nil {
-		config.generator = &defaultGenerator{}
+		config.generator = &defaultGenerator{resolver: config.resolver}
 	}
 	meas, err := config.generator.Generate(ctx, rts)
 	if err != nil {

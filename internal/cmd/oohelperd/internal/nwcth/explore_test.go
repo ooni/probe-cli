@@ -8,7 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-var explorer = &defaultExplorer{}
+var explorer = &defaultExplorer{resolver: newResolver()}
 
 func TestExploreSuccess(t *testing.T) {
 	u, err := url.Parse("https://example.com")
@@ -54,7 +54,7 @@ func TestExploreSuccessWithH3(t *testing.T) {
 
 func TestGetSuccess(t *testing.T) {
 	u, err := url.Parse("https://example.com")
-	resp, err := get(u)
+	resp, err := explorer.get(u)
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
@@ -70,7 +70,7 @@ func TestGetSuccess(t *testing.T) {
 
 func TestGetFailure(t *testing.T) {
 	u, err := url.Parse("https://example.example")
-	resp, err := get(u)
+	resp, err := explorer.get(u)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -82,7 +82,7 @@ func TestGetFailure(t *testing.T) {
 func TestGetH3Success(t *testing.T) {
 	u, err := url.Parse("https://www.google.com")
 	h3u := &h3URL{URL: u, proto: "h3"}
-	resp, err := getH3(h3u)
+	resp, err := explorer.getH3(h3u)
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
@@ -99,7 +99,7 @@ func TestGetH3Success(t *testing.T) {
 func TestGetH3Failure(t *testing.T) {
 	u, err := url.Parse("https://www.google.google")
 	h3u := &h3URL{URL: u, proto: "h3"}
-	resp, err := getH3(h3u)
+	resp, err := explorer.getH3(h3u)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}

@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-var checker = &defaultInitChecker{}
+var checker = &defaultInitChecker{resolver: newResolver()}
 
 func TestMeasureWithInvalidURL(t *testing.T) {
 	_, err := checker.InitialChecks("http://[::1]aaaa")

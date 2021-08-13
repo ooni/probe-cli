@@ -7,6 +7,7 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/nwebconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Generate is the third step of the algorithm. Given the
@@ -19,14 +20,16 @@ type Generator interface {
 }
 
 // defaultGenerator is the default Generator.
-type defaultGenerator struct{}
+type defaultGenerator struct {
+	resolver netxlite.Resolver
+}
 
 // Generate takes in input a list of round trips and outputs
 // a list of connectivity measurements for each of them.
 func (g *defaultGenerator) Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) {
 	var out []*URLMeasurement
 	for _, rt := range rts {
-		addrs, err := DNSDo(ctx, rt.Request.URL.Hostname(), newResolver())
+		addrs, err := DNSDo(ctx, rt.Request.URL.Hostname(), g.resolver)
 		currentURL := &URLMeasurement{
 			DNS: &DNSMeasurement{
 				Domain:  rt.Request.URL.Hostname(),
@@ -74,7 +77,7 @@ func (g *defaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 	currentEndpoint := &HTTPEndpointMeasurement{
 		Endpoint: endpoint,
 	}
-	tcpConn, err := TCPDo(ctx, endpoint, newDialer())
+	tcpConn, err := TCPDo(ctx, endpoint, newDialerResolver(g.resolver))
 	currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{
 		Failure: newfailure(err),
 	}
@@ -93,7 +96,7 @@ func (g *defaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 		Endpoint: endpoint,
 	}
 	var tcpConn, tlsConn net.Conn
-	tcpConn, err := TCPDo(ctx, endpoint, newDialer())
+	tcpConn, err := TCPDo(ctx, endpoint, newDialerResolver(g.resolver))
 	currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{
 		Failure: newfailure(err),
 	}
@@ -124,7 +127,7 @@ func (g *defaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 		ServerName: rt.Request.URL.Hostname(),
 		NextProtos: []string{rt.proto},
 	}
-	sess, err := QUICDo(ctx, endpoint, tlsConf, newQUICDialer())
+	sess, err := QUICDo(ctx, endpoint, tlsConf, newQUICDialerResolver(g.resolver))
 	currentEndpoint.QUICHandshakeMeasurement = &TLSHandshakeMeasurement{
 		Failure: newfailure(err),
 	}

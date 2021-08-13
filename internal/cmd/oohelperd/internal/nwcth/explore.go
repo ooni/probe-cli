@@ -7,8 +7,7 @@ import (
 	"net/url"
 	"sort"
 
-	"github.com/lucas-clemente/quic-go"
-	"github.com/lucas-clemente/quic-go/http3"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Explore is the second step of the test helper algorithm. Its objective
@@ -27,7 +26,9 @@ type Explorer interface {
 }
 
 // defaultExplorer is the default Explorer.
-type defaultExplorer struct{}
+type defaultExplorer struct {
+	resolver netxlite.Resolver
+}
 
 // RoundTrip describes a specific round trip.
 type RoundTrip struct {
@@ -49,13 +50,13 @@ type RoundTrip struct {
 // Explore returns a list of round trips sorted so that the first
 // round trip is the first element in the list, and so on.
 func (e *defaultExplorer) Explore(URL *url.URL) ([]*RoundTrip, error) {
-	resp, err := get(URL)
+	resp, err := e.get(URL)
 	if err != nil {
 		return nil, err
 	}
 	rts := e.rearrange(resp, nil)
 	if h3URL := getH3URL(resp); h3URL != nil {
-		resp, err = getH3(h3URL)
+		resp, err = e.getH3(h3URL)
 		if err != nil {
 			return rts, err
 		}
@@ -111,10 +112,14 @@ func (sh *sortHelper) Swap(i, j int) {
 // get gets the given URL and returns the final response after
 // redirection, and an error. If the
 // error is nil, the final response is valid.
-func get(URL *url.URL) (*http.Response, error) {
+func (e *defaultExplorer) get(URL *url.URL) (*http.Response, error) {
+	tlsConf := &tls.Config{
+		NextProtos: []string{"h2", "http/1.1"},
+	}
+	transport := netxlite.NewHTTPTransport(newDialerResolver(e.resolver), tlsConf, &netxlite.TLSHandshakerConfigurable{})
 	jarjar, _ := cookiejar.New(nil)
 	clnt := &http.Client{
-		Transport: http.DefaultTransport,
+		Transport: transport,
 		Jar:       jarjar,
 	}
 	resp, err := clnt.Get(URL.String())
@@ -128,16 +133,16 @@ func get(URL *url.URL) (*http.Response, error) {
 // getH3 uses HTTP/3 and gets the given URL and returns the final
 // response after redirection, and an error. If the
 // error is nil, the final response is valid.
-func getH3(URL *h3URL) (*http.Response, error) {
+func (e *defaultExplorer) getH3(URL *h3URL) (*http.Response, error) {
+	dialer := newQUICDialerResolver(e.resolver)
+	tlsConf := &tls.Config{
+		NextProtos: []string{URL.proto},
+	}
+	transport := netxlite.NewHTTP3Transport(dialer, tlsConf)
 	jarjar, _ := cookiejar.New(nil)
-	tlsconfig := &tls.Config{NextProtos: []string{URL.proto}, ServerName: URL.Hostname()}
 	clnt := &http.Client{
-		Transport: &http3.RoundTripper{
-			Dial: func(network, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
-				return quic.DialAddrEarly(addr, tlsconfig, &quic.Config{})
-			},
-		},
-		Jar: jarjar,
+		Transport: transport,
+		Jar:       jarjar,
 	}
 	resp, err := clnt.Get(URL.String())
 	if err != nil {

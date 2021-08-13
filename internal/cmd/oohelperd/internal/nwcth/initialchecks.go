@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/url"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // InitialChecks is the first step of the test helper algorithm. We
@@ -28,7 +30,9 @@ type InitChecker interface {
 }
 
 // defaultInitChecker is the default InitChecker.
-type defaultInitChecker struct{}
+type defaultInitChecker struct {
+	resolver netxlite.Resolver
+}
 
 // InitialChecks checks whether the URL is valid and whether the
 // domain inside the URL is an existing one. If these preliminary
@@ -50,8 +54,7 @@ func (i *defaultInitChecker) InitialChecks(URL string) (*url.URL, error) {
 	//
 	// 2. an IP address does not cause an error because we are using
 	// a resolve that behaves like getaddrinfo
-	resolver := newResolver()
-	if _, err := resolver.LookupHost(context.Background(), parsed.Hostname()); err != nil {
+	if _, err := i.resolver.LookupHost(context.Background(), parsed.Hostname()); err != nil {
 		return nil, ErrNoSuchHost
 	}
 	return parsed, nil

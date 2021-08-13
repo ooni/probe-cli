@@ -8,15 +8,16 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-func newDialer() netxlite.Dialer {
-	// TODO(bassosimone,kelmenhorst): what complexity do we need here for the dialer? is this enough?
+// newDialer contructs a new dialer for TCP connections,
+// with default, errorwrapping and resolve functionalities
+func newDialerResolver(resolver netxlite.Resolver) netxlite.Dialer {
 	var d netxlite.Dialer = netxlite.DefaultDialer
 	d = &errorsx.ErrorWrapperDialer{Dialer: d}
+	d = &netxlite.DialerResolver{Resolver: resolver, Dialer: d}
 	return d
 }
 
 // TCPDo performs the TCP check.
 func TCPDo(ctx context.Context, endpoint string, dialer netxlite.Dialer) (net.Conn, error) {
-	// TODO(bassosimone,kelmenhorst): do we need the complexity of a netx dialer here? is net.Dial enough?
 	return dialer.DialContext(ctx, "tcp", endpoint)
 }
