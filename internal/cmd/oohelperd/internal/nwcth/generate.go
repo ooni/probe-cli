@@ -6,6 +6,8 @@ import (
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -20,6 +22,8 @@ type Generator interface {
 
 // DefaultGenerator is the default Generator.
 type DefaultGenerator struct {
+	quicDialer netxlite.QUICContextDialer
+	resolver   netxlite.Resolver
 }
 
 // Generate takes in input a list of round trips and outputs
@@ -27,7 +31,7 @@ type DefaultGenerator struct {
 func (g *DefaultGenerator) Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) {
 	var out []*URLMeasurement
 	for _, rt := range rts {
-		addrs, err := DNSDo(ctx, rt.Request.URL.Hostname(), g.resolver)
+		addrs, err := g.DNSDo(ctx, rt.Request.URL.Hostname())
 		currentURL := &URLMeasurement{
 			DNS: &DNSMeasurement{
 				Domain:  rt.Request.URL.Hostname(),
@@ -143,7 +147,7 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 		ServerName: rt.Request.URL.Hostname(),
 		NextProtos: []string{rt.proto},
 	}
-	sess, err := QUICDo(ctx, endpoint, tlsConf, newQUICDialerResolver(g.resolver))
+	sess, err := g.QUICDo(ctx, endpoint, tlsConf)
 	currentEndpoint.QUICHandshakeMeasurement = &TLSHandshakeMeasurement{
 		Failure: newfailure(err),
 	}
@@ -154,4 +158,30 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 	currentEndpoint.HTTPRoundtripMeasurement = HTTPDo(rt.Request, transport)
 
 	return currentEndpoint
+}
+
+// DNSDo performs the DNS check.
+func (g *DefaultGenerator) DNSDo(ctx context.Context, domain string) ([]string, error) {
+	return g.resolver.LookupHost(ctx, domain)
+}
+
+// QUICDo performs the QUIC check.
+func (g *DefaultGenerator) QUICDo(ctx context.Context, endpoint string, tlsConf *tls.Config) (quic.EarlySession, error) {
+	if g.quicDialer != nil {
+		return g.quicDialer.DialContext(ctx, "udp", endpoint, tlsConf, &quic.Config{})
+	}
+	dialer := newQUICDialerResolver(g.resolver)
+	return dialer.DialContext(ctx, "udp", endpoint, tlsConf, &quic.Config{})
+}
+
+// newQUICDialerResolver creates a new QUICDialerResolver
+func newQUICDialerResolver(resolver netxlite.Resolver) netxlite.QUICContextDialer {
+	var ql quicdialer.QUICListener = &netxlite.QUICListenerStdlib{}
+	ql = &errorsx.ErrorWrapperQUICListener{QUICListener: ql}
+	var dialer netxlite.QUICContextDialer = &netxlite.QUICDialerQUICGo{
+		QUICListener: ql,
+	}
+	dialer = &errorsx.ErrorWrapperQUICDialer{Dialer: dialer}
+	dialer = &netxlite.QUICDialerResolver{Resolver: resolver, Dialer: dialer}
+	return dialer
 }

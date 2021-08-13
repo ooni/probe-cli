@@ -5,7 +5,10 @@ import (
 	"errors"
 	"net/url"
 
+	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // ControlRequest is the request sent by the probe
@@ -85,4 +88,13 @@ func newDNSFailedResponse(err error, URL string) *ControlResponse {
 	}
 	resp.URLMeasurements = append(resp.URLMeasurements, m)
 	return resp
+}
+
+// newResolver creates a new DNS resolver instance
+func newResolver() netxlite.Resolver {
+	childResolver, err := netx.NewDNSClient(netx.Config{Logger: log.Log}, "doh://google")
+	runtimex.PanicOnError(err, "NewDNSClient failed")
+	var r netxlite.Resolver = childResolver
+	r = &netxlite.IDNAResolver{Resolver: r}
+	return r
 }
