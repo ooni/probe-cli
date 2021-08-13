@@ -119,6 +119,8 @@ type HTTPRoundtripMeasurement struct {
 // HTTPRequest contains the headers of the measured HTTP Get request.
 type HTTPRequest struct {
 	Headers http.Header
+	Method  string
+	URL     string
 }
 
 // HTTPResponse contains the response of the measured HTTP Get request.

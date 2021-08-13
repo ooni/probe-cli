@@ -111,6 +111,8 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 	currentEndpoint.HTTPRoundtripMeasurement = &HTTPRoundtripMeasurement{
 		Request: &HTTPRequest{
 			Headers: rt.Request.Header,
+			Method:  "GET",
+			URL:     rt.Request.URL.String(),
 		},
 	}
 	transport := NewSingleTransport(tcpConn)
@@ -168,6 +170,8 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	currentEndpoint.HTTPRoundtripMeasurement = &HTTPRoundtripMeasurement{
 		Request: &HTTPRequest{
 			Headers: rt.Request.Header,
+			Method:  "GET",
+			URL:     rt.Request.URL.String(),
 		},
 	}
 	transport := NewSingleTransport(tlsConn)
@@ -216,6 +220,8 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 	currentEndpoint.HTTPRoundtripMeasurement = &HTTPRoundtripMeasurement{
 		Request: &HTTPRequest{
 			Headers: rt.Request.Header,
+			Method:  "GET",
+			URL:     rt.Request.URL.String(),
 		},
 	}
 	var transport http.RoundTripper = NewSingleH3Transport(sess, tlsConf, &quic.Config{})
