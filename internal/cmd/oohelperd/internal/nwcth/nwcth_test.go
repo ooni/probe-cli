@@ -31,7 +31,7 @@ const requestnoredirect = `{
 	]
 }`
 
-const requestsimpleredirect = `{
+const requestredirect = `{
 	"http_request": "https://www.ooni.org",
 	"http_request_headers": {
 	  "Accept": [
@@ -49,8 +49,8 @@ const requestsimpleredirect = `{
 	]
 }`
 
-const requestmultipleredirect = `{
-	"http_request": "http://яндекс.рф",
+const requestIPaddressinput = `{
+	"http_request": "https://172.217.168.4",
 	"http_request_headers": {
 	  "Accept": [
 		"*/*"
@@ -63,7 +63,7 @@ const requestmultipleredirect = `{
 	  ]
 	},
 	"tcp_connect": [
-	  "77.88.55.70:443"
+	  "172.217.168.4:443"
 	]
 }`
 
@@ -144,15 +144,15 @@ func TestWorkingAsIntended(t *testing.T) {
 		name:            "request triggering one redirect, without H3 follow-up request",
 		reqMethod:       "POST",
 		reqContentType:  "application/json",
-		reqBody:         requestsimpleredirect,
+		reqBody:         requestredirect,
 		respStatusCode:  200,
 		respContentType: "application/json",
 		parseBody:       true,
 	}, {
-		name:            "request triggering multiple redirects",
+		name:            "request with an IP address as input",
 		reqMethod:       "POST",
 		reqContentType:  "application/json",
-		reqBody:         requestmultipleredirect,
+		reqBody:         requestIPaddressinput,
 		respStatusCode:  200,
 		respContentType: "application/json",
 		parseBody:       true,
