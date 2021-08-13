@@ -43,7 +43,7 @@ type HTTPEndpointMeasurement struct {
 	// TCPConnectMeasurement is the related TCP connect measurement.
 	TCPConnectMeasurement *TCPConnectMeasurement
 
-	// HTTPRequestMeasurement is the related HTTP GET measurement.
+	// HTTPRoundtripMeasurement is the related HTTP GET measurement.
 	HTTPRoundtripMeasurement *HTTPRoundtripMeasurement
 }
 
