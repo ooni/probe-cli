@@ -96,6 +96,7 @@ func (g *DefaultGenerator) GenerateURL(ctx context.Context, rt *RoundTrip, clien
 func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &HTTPEndpointMeasurement{
 		Endpoint: endpoint,
+		Protocol: "http",
 	}
 	tcpConn, err := g.TCPDo(ctx, endpoint)
 	currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{
@@ -142,6 +143,7 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &HTTPSEndpointMeasurement{
 		Endpoint: endpoint,
+		Protocol: "https",
 	}
 	var tcpConn, tlsConn net.Conn
 	tcpConn, err := g.TCPDo(ctx, endpoint)
@@ -197,6 +199,7 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &H3EndpointMeasurement{
 		Endpoint: endpoint,
+		Protocol: rt.proto,
 	}
 	tlsConf := &tls.Config{
 		ServerName: rt.Request.URL.Hostname(),

@@ -40,6 +40,9 @@ type HTTPEndpointMeasurement struct {
 	// Endpoint is the endpoint we're measuring.
 	Endpoint string
 
+	// Protocol is http
+	Protocol string
+
 	// TCPConnectMeasurement is the related TCP connect measurement.
 	TCPConnectMeasurement *TCPConnectMeasurement
 
@@ -55,6 +58,9 @@ func (h *HTTPEndpointMeasurement) GetHTTPRoundTrip() *HTTPRoundtripMeasurement {
 type HTTPSEndpointMeasurement struct {
 	// Endpoint is the endpoint we're measuring.
 	Endpoint string
+
+	// Protocol is https
+	Protocol string
 
 	// TCPConnectMeasurement is the related TCP connect measurement.
 	TCPConnectMeasurement *TCPConnectMeasurement
@@ -74,6 +80,9 @@ func (h *HTTPSEndpointMeasurement) GetHTTPRoundTrip() *HTTPRoundtripMeasurement 
 type H3EndpointMeasurement struct {
 	// Endpoint is the endpoint we're measuring.
 	Endpoint string
+
+	// Protocol is h3, or h3-29
+	Protocol string
 
 	// QUICHandshakeMeasurement is the related QUIC(TLS 1.3) handshake measurement.
 	QUICHandshakeMeasurement *TLSHandshakeMeasurement
