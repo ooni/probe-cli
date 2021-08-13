@@ -10,7 +10,7 @@ import (
 )
 
 type h3URL struct {
-	*url.URL
+	URL   *url.URL
 	proto string
 }
 

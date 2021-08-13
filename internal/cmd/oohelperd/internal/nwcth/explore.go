@@ -133,10 +133,10 @@ func (e *defaultExplorer) get(URL *url.URL) (*http.Response, error) {
 // getH3 uses HTTP/3 and gets the given URL and returns the final
 // response after redirection, and an error. If the
 // error is nil, the final response is valid.
-func (e *defaultExplorer) getH3(URL *h3URL) (*http.Response, error) {
+func (e *defaultExplorer) getH3(h3URL *h3URL) (*http.Response, error) {
 	dialer := newQUICDialerResolver(e.resolver)
 	tlsConf := &tls.Config{
-		NextProtos: []string{URL.proto},
+		NextProtos: []string{h3URL.proto},
 	}
 	transport := netxlite.NewHTTP3Transport(dialer, tlsConf)
 	jarjar, _ := cookiejar.New(nil)
@@ -144,7 +144,7 @@ func (e *defaultExplorer) getH3(URL *h3URL) (*http.Response, error) {
 		Transport: transport,
 		Jar:       jarjar,
 	}
-	resp, err := clnt.Get(URL.String())
+	resp, err := clnt.Get(h3URL.URL.String())
 	if err != nil {
 		return nil, err
 	}
