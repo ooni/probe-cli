@@ -37,7 +37,7 @@ type DefaultInitChecker struct {
 // InitialChecks checks whether the URL is valid and whether the
 // domain inside the URL is an existing one. If these preliminary
 // checks fail, there's no point in continuing.
-// If they succeed, InitialChecks returns the URL
+// If they succeed, InitialChecks returns the URL, if not an error.
 func (i *DefaultInitChecker) InitialChecks(URL string) (*url.URL, error) {
 	parsed, err := url.Parse(URL)
 	if err != nil {

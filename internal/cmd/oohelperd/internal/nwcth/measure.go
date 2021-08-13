@@ -25,12 +25,13 @@ type ControlResponse struct {
 
 var ErrInternalServer = errors.New("Internal server failure")
 
-// supportedQUICVersion are the H3 over QUIC versions we currently support
+// supportedQUICVersions are the H3 over QUIC versions we currently support
 var supportedQUICVersions = map[string]bool{
 	"h3":    true,
 	"h3-29": true,
 }
 
+// Config contains the building blocks of the testhelper algorithm
 type Config struct {
 	checker   InitChecker
 	explorer  Explorer
@@ -38,6 +39,10 @@ type Config struct {
 	resolver  netxlite.Resolver
 }
 
+// Measure performs the three consecutive steps of the testhelper algorithm:
+// 1. InitialChecks
+// 2. Explore
+// 3. Generate
 func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*ControlResponse, error) {
 	var (
 		URL *url.URL
@@ -72,7 +77,6 @@ func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*Contro
 	if err != nil {
 		return nil, err
 	}
-	// TODO(kelmenhorst,bassosimone): Is it ok to replace the URLMeasurement from InitialChecks here?
 	return &ControlResponse{URLMeasurements: meas}, nil
 }
 
