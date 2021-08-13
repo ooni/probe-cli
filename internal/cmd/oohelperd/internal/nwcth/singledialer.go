@@ -1,4 +1,4 @@
-package nwebconnectivity
+package nwcth
 
 import (
 	"context"

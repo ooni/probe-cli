@@ -6,7 +6,6 @@ import (
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/nwebconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -95,7 +94,7 @@ func (g *defaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 	}
 	defer tcpConn.Close() // suboptimal of course
 
-	transport := nwebconnectivity.NewSingleTransport(tcpConn)
+	transport := NewSingleTransport(tcpConn)
 	currentEndpoint.HTTPRoundtripMeasurement = HTTPDo(rt.Request, transport)
 	return currentEndpoint
 }
@@ -128,7 +127,7 @@ func (g *defaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	}
 	defer tlsConn.Close()
 
-	transport := nwebconnectivity.NewSingleTransport(tlsConn)
+	transport := NewSingleTransport(tlsConn)
 	currentEndpoint.HTTPRoundtripMeasurement = HTTPDo(rt.Request, transport)
 	return currentEndpoint
 }
@@ -152,7 +151,7 @@ func (g *defaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 	if err != nil {
 		return currentEndpoint
 	}
-	transport := nwebconnectivity.NewSingleH3Transport(sess, tlsConf, &quic.Config{})
+	transport := NewSingleH3Transport(sess, tlsConf, &quic.Config{})
 	currentEndpoint.HTTPRoundtripMeasurement = HTTPDo(rt.Request, transport)
 
 	return currentEndpoint

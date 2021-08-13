@@ -5,17 +5,20 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/nwebconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
+
+// ControlRequest is the request sent by the probe
+type ControlRequest struct {
+	HTTPRequest        string              `json:"http_request"`
+	HTTPRequestHeaders map[string][]string `json:"http_request_headers"`
+	TCPConnect         []string            `json:"tcp_connect"`
+}
 
 // ControlResponse is the response from the control service.
 type ControlResponse struct {
 	URLMeasurements []*URLMeasurement `json:"urls"`
 }
-
-// ControlRequest is the request sent to the test helper
-type ControlRequest = nwebconnectivity.ControlRequest
 
 var ErrInternalServer = errors.New("Internal server failure")
 
