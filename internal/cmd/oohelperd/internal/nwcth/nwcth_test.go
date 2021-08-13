@@ -14,8 +14,8 @@ import (
 )
 
 const requestnoredirect = `{
-	"http_request": "https://ooni.org",
-	"http_request_headers": {
+	"url": "https://ooni.org",
+	"headers": {
 	  "Accept": [
 		"*/*"
 	  ],
@@ -32,8 +32,8 @@ const requestnoredirect = `{
 }`
 
 const requestredirect = `{
-	"http_request": "https://www.ooni.org",
-	"http_request_headers": {
+	"url": "https://www.ooni.org",
+	"headers": {
 	  "Accept": [
 		"*/*"
 	  ],
@@ -50,8 +50,8 @@ const requestredirect = `{
 }`
 
 const requestIPaddressinput = `{
-	"http_request": "https://172.217.168.4",
-	"http_request_headers": {
+	"url": "https://172.217.168.4",
+	"headers": {
 	  "Accept": [
 		"*/*"
 	  ],
@@ -68,8 +68,8 @@ const requestIPaddressinput = `{
 }`
 
 const requestwithquic = `{
-	"http_request": "https://www.google.com",
-	"http_request_headers": {
+	"url": "https://www.google.com",
+	"headers": {
 	  "Accept": [
 		"*/*"
 	  ],
@@ -86,8 +86,8 @@ const requestwithquic = `{
 }`
 
 const requestWithoutDomainName = `{
-	"http_request": "https://8.8.8.8",
-	"http_request_headers": {
+	"url": "https://8.8.8.8",
+	"headers": {
 	  "Accept": [
 		"*/*"
 	  ],
@@ -130,7 +130,7 @@ func TestWorkingAsIntended(t *testing.T) {
 		name:           "with measurement failure",
 		reqMethod:      "POST",
 		reqContentType: "application/json",
-		reqBody:        `{"http_request": "http://[::1]aaaa"}`,
+		reqBody:        `{"url": "http://[::1]aaaa"}`,
 		respStatusCode: 400,
 	}, {
 		name:            "request without redirect or H3 follow-up request",
@@ -207,7 +207,7 @@ func TestHandlerWithInternalServerError(t *testing.T) {
 	handler := Handler{Config: &Config{explorer: &MockExplorer{}}}
 	srv := httptest.NewServer(handler)
 	defer srv.Close()
-	body := strings.NewReader(`{"http_request": "https://example.com"}`)
+	body := strings.NewReader(`{"url": "https://example.com"}`)
 	req, err := http.NewRequest("POST", srv.URL, body)
 	if err != nil {
 		t.Fatal(err)

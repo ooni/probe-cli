@@ -13,8 +13,8 @@ import (
 
 // ControlRequest is the request sent by the probe
 type ControlRequest struct {
-	HTTPRequest        string              `json:"http_request"`
-	HTTPRequestHeaders map[string][]string `json:"http_request_headers"`
+	HTTPRequest        string              `json:"url"`
+	HTTPRequestHeaders map[string][]string `json:"headers"`
 	Addrs              []string            `json:"addrs"`
 }
 
