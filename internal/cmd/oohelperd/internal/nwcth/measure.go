@@ -16,8 +16,7 @@ type ControlResponse struct {
 // ControlRequest is the request sent to the test helper
 type ControlRequest = nwebconnectivity.ControlRequest
 
-// ErrNoValidIP means that the DNS step failed and the client did not provide IP endpoints for testing.
-var ErrNoValidIP = errors.New("no valid IP address to measure")
+var ErrInternalServer = errors.New("Internal server failure")
 
 // supportedQUICVersion are the H3 over QUIC versions we currently support
 var supportedQUICVersions = map[string]bool{
@@ -32,7 +31,6 @@ type Config struct {
 }
 
 func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*ControlResponse, error) {
-	resp := &ControlResponse{}
 	var (
 		URL *url.URL
 		err error
@@ -41,24 +39,19 @@ func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*Contro
 		config.checker = &defaultInitChecker{}
 	}
 	URL, err = config.checker.InitialChecks(creq.HTTPRequest)
-	// return a valid response even in the error case so the probe can compare the failure
-	m := &URLMeasurement{
-		URL: creq.HTTPRequest,
-		DNS: &DNSMeasurement{
-			Failure: newfailure(err),
-		},
-	}
-	resp.URLMeasurements = append(resp.URLMeasurements, m)
 	if err != nil {
-		return resp, err
+		// return a valid response in case of NXDOMAIN so the probe can compare the failure
+		if err == ErrNoSuchHost {
+			return newDNSFailedResponse(err, creq.HTTPRequest), nil
+		}
+		return nil, err
 	}
 	if config.explorer == nil {
 		config.explorer = &defaultExplorer{}
 	}
 	rts, err := config.explorer.Explore(URL)
 	if err != nil {
-		// TODO(kelmenhorst,bassosimone): what happens here?
-		return resp, err
+		return nil, ErrInternalServer
 	}
 	if config.generator == nil {
 		config.generator = &defaultGenerator{}
@@ -69,4 +62,16 @@ func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*Contro
 	}
 	// TODO(kelmenhorst,bassosimone): Is it ok to replace the URLMeasurement from InitialChecks here?
 	return &ControlResponse{URLMeasurements: meas}, nil
+}
+
+func newDNSFailedResponse(err error, URL string) *ControlResponse {
+	resp := &ControlResponse{}
+	m := &URLMeasurement{
+		URL: URL,
+		DNS: &DNSMeasurement{
+			Failure: newfailure(err),
+		},
+	}
+	resp.URLMeasurements = append(resp.URLMeasurements, m)
+	return resp
 }

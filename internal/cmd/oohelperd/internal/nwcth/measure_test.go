@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"net/url"
-	"strings"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 )
 
 func TestMeasureSuccess(t *testing.T) {
@@ -21,10 +22,12 @@ func TestMeasureSuccess(t *testing.T) {
 	}
 }
 
-type MockChecker struct{}
+type MockChecker struct {
+	err error
+}
 
 func (c *MockChecker) InitialChecks(URL string) (*url.URL, error) {
-	return nil, ErrExpectedCheck
+	return nil, c.err
 }
 
 type MockExplorer struct{}
@@ -47,12 +50,25 @@ func TestMeasureInitialChecksFail(t *testing.T) {
 	req := &ControlRequest{
 		HTTPRequest: "https://example.com",
 	}
-	resp, err := Measure(context.Background(), req, &Config{checker: &MockChecker{}})
+	resp, err := Measure(context.Background(), req, &Config{checker: &MockChecker{err: ErrExpectedCheck}})
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
 	if err != ErrExpectedCheck {
 		t.Fatal("unexpected error type")
+	}
+	if resp != nil {
+		t.Fatal("resp should be nil")
+	}
+}
+
+func TestMeasureInitialChecksFailWithNXDOMAIN(t *testing.T) {
+	req := &ControlRequest{
+		HTTPRequest: "https://example.com",
+	}
+	resp, err := Measure(context.Background(), req, &Config{checker: &MockChecker{err: ErrNoSuchHost}})
+	if err != nil {
+		t.Fatal("unexpected error")
 	}
 	if resp == nil {
 		t.Fatal("resp should not be nil")
@@ -63,7 +79,7 @@ func TestMeasureInitialChecksFail(t *testing.T) {
 	if resp.URLMeasurements[0].DNS == nil {
 		t.Fatal("DNS entry should not be nil")
 	}
-	if !strings.HasSuffix(*resp.URLMeasurements[0].DNS.Failure, ErrExpectedCheck.Error()) {
+	if *resp.URLMeasurements[0].DNS.Failure != errorsx.FailureDNSNXDOMAINError {
 		t.Fatal("unexpected failure")
 	}
 }
@@ -76,20 +92,11 @@ func TestMeasureExploreFails(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
-	if err != ErrExpectedExplore {
+	if err != ErrInternalServer {
 		t.Fatal("unexpected error type")
 	}
-	if resp == nil {
-		t.Fatal("resp should not be nil")
-	}
-	if len(resp.URLMeasurements) != 1 {
-		t.Fatal("unexpected number of measurements")
-	}
-	if resp.URLMeasurements[0].DNS == nil {
-		t.Fatal("DNS entry should not be nil")
-	}
-	if resp.URLMeasurements[0].DNS.Failure != nil {
-		t.Fatal("unexpected DNS failure")
+	if resp != nil {
+		t.Fatal("resp should be nil")
 	}
 }
 
