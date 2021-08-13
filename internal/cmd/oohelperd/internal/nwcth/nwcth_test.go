@@ -104,7 +104,7 @@ const requestWithoutDomainName = `{
 }`
 
 func TestWorkingAsIntended(t *testing.T) {
-	handler := Handler{}
+	handler := Handler{Config: &Config{}}
 	srv := httptest.NewServer(handler)
 	defer srv.Close()
 	type expectationSpec struct {
@@ -203,9 +203,32 @@ func TestWorkingAsIntended(t *testing.T) {
 	}
 }
 
+func TestHandlerWithInternalServerError(t *testing.T) {
+	handler := Handler{Config: &Config{explorer: &MockExplorer{}}}
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+	body := strings.NewReader(`{"http_request": "https://example.com"}`)
+	req, err := http.NewRequest("POST", srv.URL, body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 500 {
+		t.Fatalf("unexpected status code: %+v", resp.StatusCode)
+	}
+	_, err = iox.ReadAllContext(context.Background(), resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestHandlerWithRequestBodyReadingError(t *testing.T) {
 	expected := errors.New("mocked error")
-	handler := Handler{}
+	handler := Handler{Config: &Config{}}
 	rw := NewFakeResponseWriter()
 	req := &http.Request{
 		Method: "POST",

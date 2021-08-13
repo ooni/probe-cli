@@ -25,7 +25,9 @@ var newfailure = archival.NewFailure
 const maxAcceptableBody = 1 << 24
 
 // Handler implements the Web Connectivity test helper HTTP API.
-type Handler struct{}
+type Handler struct {
+	Config *Config
+}
 
 // ServeHTTP implements http.Handler.ServeHTTP.
 func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -47,7 +49,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
-	cresp, err := Measure(req.Context(), &creq, &Config{})
+	cresp, err := Measure(req.Context(), &creq, h.Config)
 	if err != nil {
 		if err == ErrInternalServer {
 			w.WriteHeader(500)
