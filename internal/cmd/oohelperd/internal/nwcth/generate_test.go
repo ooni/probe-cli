@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -28,13 +29,18 @@ func TestGenerateDNSFailure(t *testing.T) {
 		},
 	}
 	urlMeasurements, err := generator.Generate(context.Background(), rts)
-	if err == nil {
-		t.Fatal("expected an error here")
+	if err != nil {
+		t.Fatal("unexpected error")
 	}
 	if len(urlMeasurements) != 1 {
 		t.Fatal("unexpected urlMeasurements length")
 	}
-
+	if urlMeasurements[0].DNS == nil {
+		t.Fatal("DNS should not be nil")
+	}
+	if urlMeasurements[0].DNS.Failure == nil || *urlMeasurements[0].DNS.Failure != errorsx.FailureDNSNXDOMAINError {
+		t.Fatal("unexpected DNS failure type")
+	}
 }
 
 func TestGenerate(t *testing.T) {

@@ -32,53 +32,59 @@ type DefaultGenerator struct {
 func (g *DefaultGenerator) Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) {
 	var out []*URLMeasurement
 	for _, rt := range rts {
-		addrs, err := g.DNSDo(ctx, rt.Request.URL.Hostname())
-		currentURL := &URLMeasurement{
-			DNS: &DNSMeasurement{
-				Domain:  rt.Request.URL.Hostname(),
-				Addrs:   addrs,
-				Failure: newfailure(err),
-			},
-			RoundTrip: rt,
-			URL:       rt.Request.URL.String(),
-		}
+		currentURL := g.GenerateURL(ctx, rt)
 		out = append(out, currentURL)
-		if err != nil {
-			return out, err
-		}
-		for _, addr := range addrs {
-			var port string
-			explicitPort := rt.Request.URL.Port()
-			scheme := rt.Request.URL.Scheme
-			switch {
-			case explicitPort != "":
-				port = explicitPort
-			case scheme == "http":
-				port = "80"
-			case scheme == "https":
-				port = "443"
-			default:
-				panic("should not happen")
-			}
-			endpoint := net.JoinHostPort(addr, port)
-
-			var currentEndpoint EndpointMeasurement
-			_, h3 := supportedQUICVersions[rt.proto]
-			switch {
-			case h3:
-				currentEndpoint = g.GenerateH3Endpoint(ctx, rt, endpoint)
-			case rt.proto == "http":
-				currentEndpoint = g.GenerateHTTPEndpoint(ctx, rt, endpoint)
-			case rt.proto == "https":
-				currentEndpoint = g.GenerateHTTPSEndpoint(ctx, rt, endpoint)
-			default:
-				// TODO(kelmenhorst): do we have to register this error somewhere in the result struct?
-				continue
-			}
-			currentURL.Endpoints = append(currentURL.Endpoints, currentEndpoint)
-		}
 	}
 	return out, nil
+}
+
+// GenerateURL returns a URLMeasurement.
+func (g *DefaultGenerator) GenerateURL(ctx context.Context, rt *RoundTrip) *URLMeasurement {
+	addrs, err := g.DNSDo(ctx, rt.Request.URL.Hostname())
+	currentURL := &URLMeasurement{
+		DNS: &DNSMeasurement{
+			Domain:  rt.Request.URL.Hostname(),
+			Addrs:   addrs,
+			Failure: newfailure(err),
+		},
+		RoundTrip: rt,
+		URL:       rt.Request.URL.String(),
+	}
+	if err != nil {
+		return currentURL
+	}
+	for _, addr := range addrs {
+		var port string
+		explicitPort := rt.Request.URL.Port()
+		scheme := rt.Request.URL.Scheme
+		switch {
+		case explicitPort != "":
+			port = explicitPort
+		case scheme == "http":
+			port = "80"
+		case scheme == "https":
+			port = "443"
+		default:
+			panic("should not happen")
+		}
+		endpoint := net.JoinHostPort(addr, port)
+
+		var currentEndpoint EndpointMeasurement
+		_, h3 := supportedQUICVersions[rt.proto]
+		switch {
+		case h3:
+			currentEndpoint = g.GenerateH3Endpoint(ctx, rt, endpoint)
+		case rt.proto == "http":
+			currentEndpoint = g.GenerateHTTPEndpoint(ctx, rt, endpoint)
+		case rt.proto == "https":
+			currentEndpoint = g.GenerateHTTPSEndpoint(ctx, rt, endpoint)
+		default:
+			// TODO(kelmenhorst): do we have to register this error somewhere in the result struct?
+			continue
+		}
+		currentURL.Endpoints = append(currentURL.Endpoints, currentEndpoint)
+	}
+	return currentURL
 }
 
 // GenerateHTTPEndpoint performs an HTTP Request by
