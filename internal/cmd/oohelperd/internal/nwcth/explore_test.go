@@ -133,8 +133,8 @@ func TestRearrange(t *testing.T) {
 			},
 		},
 	}
-	proto := "expected"
-	rts := explorer.rearrange(resp, &proto)
+	h3URL := &h3URL{URL: u, proto: "expected"}
+	rts := explorer.rearrange(resp, h3URL)
 	expectedIndex := 0
 	for _, rt := range rts {
 		if rt.Request == nil || rt.Response == nil {
@@ -146,7 +146,7 @@ func TestRearrange(t *testing.T) {
 		if rt.Response.ProtoMajor != expectedIndex {
 			t.Fatal("unexpected order")
 		}
-		if rt.proto != proto {
+		if rt.proto != h3URL.proto {
 			t.Fatal("unexpected protocol")
 		}
 		expectedIndex += 1

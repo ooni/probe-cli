@@ -60,20 +60,21 @@ func (e *defaultExplorer) Explore(URL *url.URL) ([]*RoundTrip, error) {
 		if err != nil {
 			return rts, err
 		}
-		rts = append(rts, e.rearrange(resp, &h3URL.proto)...)
+		rts = append(rts, e.rearrange(resp, h3URL)...)
 	}
 	return rts, nil
 }
 
-// rearrange takes in input the final response of an HTTP transaction and a protocol string,
+// rearrange takes in input the final response of an HTTP transaction and an optional h3URL
+// (which is needed to derive the type of h3 protocol, i.e. h3 or h3-29),
 // and produces in output a list of round trips sorted
 // such that the first round trip is the first element in the out array.
-func (e *defaultExplorer) rearrange(resp *http.Response, p *string) (out []*RoundTrip) {
+func (e *defaultExplorer) rearrange(resp *http.Response, h3URL *h3URL) (out []*RoundTrip) {
 	index := 0
 	for resp != nil && resp.Request != nil {
 		proto := resp.Request.URL.Scheme
-		if p != nil {
-			proto = *p
+		if h3URL != nil {
+			proto = h3URL.proto
 		}
 		out = append(out, &RoundTrip{
 			proto:     proto,
