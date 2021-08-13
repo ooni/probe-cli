@@ -38,7 +38,7 @@ func (c *MockExplorer) Explore(URL *url.URL) ([]*RoundTrip, error) {
 
 type MockGenerator struct{}
 
-func (c *MockGenerator) Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) {
+func (c *MockGenerator) Generate(ctx context.Context, rts []*RoundTrip, clientResolutions []string) ([]*URLMeasurement, error) {
 	return nil, ErrExpectedGenerate
 }
 

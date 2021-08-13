@@ -28,7 +28,7 @@ func TestGenerateDNSFailure(t *testing.T) {
 			sortIndex: 0,
 		},
 	}
-	urlMeasurements, err := generator.Generate(context.Background(), rts)
+	urlMeasurements, err := generator.Generate(context.Background(), rts, []string{})
 	if err != nil {
 		t.Fatal("unexpected error")
 	}
@@ -79,7 +79,7 @@ func TestGenerate(t *testing.T) {
 			sortIndex: 0,
 		},
 	}
-	urlMeasurements, err := generator.Generate(context.Background(), rts)
+	urlMeasurements, err := generator.Generate(context.Background(), rts, []string{})
 	if err != nil {
 		t.Fatal("unexpected err")
 	}
@@ -106,7 +106,7 @@ func TestGenerateUnexpectedProtocol(t *testing.T) {
 			sortIndex: 0,
 		},
 	}
-	urlMeasurements, err := generator.Generate(context.Background(), rts)
+	urlMeasurements, err := generator.Generate(context.Background(), rts, []string{})
 	if err != nil {
 		t.Fatal("unexpected err")
 	}

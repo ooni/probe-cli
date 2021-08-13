@@ -15,7 +15,7 @@ import (
 type ControlRequest struct {
 	HTTPRequest        string              `json:"http_request"`
 	HTTPRequestHeaders map[string][]string `json:"http_request_headers"`
-	TCPConnect         []string            `json:"tcp_connect"`
+	Addrs              []string            `json:"addrs"`
 }
 
 // ControlResponse is the response from the control service.
@@ -73,7 +73,7 @@ func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*Contro
 	if config.generator == nil {
 		config.generator = &DefaultGenerator{resolver: config.resolver}
 	}
-	meas, err := config.generator.Generate(ctx, rts)
+	meas, err := config.generator.Generate(ctx, rts, creq.Addrs)
 	if err != nil {
 		return nil, err
 	}

@@ -17,7 +17,7 @@ import (
 
 // Generator is the interface responsible for running Generate.
 type Generator interface {
-	Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error)
+	Generate(ctx context.Context, rts []*RoundTrip, clientResolutions []string) ([]*URLMeasurement, error)
 }
 
 // DefaultGenerator is the default Generator.
@@ -29,17 +29,17 @@ type DefaultGenerator struct {
 
 // Generate takes in input a list of round trips and outputs
 // a list of connectivity measurements for each of them.
-func (g *DefaultGenerator) Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) {
+func (g *DefaultGenerator) Generate(ctx context.Context, rts []*RoundTrip, clientResolutions []string) ([]*URLMeasurement, error) {
 	var out []*URLMeasurement
 	for _, rt := range rts {
-		currentURL := g.GenerateURL(ctx, rt)
+		currentURL := g.GenerateURL(ctx, rt, clientResolutions)
 		out = append(out, currentURL)
 	}
 	return out, nil
 }
 
 // GenerateURL returns a URLMeasurement.
-func (g *DefaultGenerator) GenerateURL(ctx context.Context, rt *RoundTrip) *URLMeasurement {
+func (g *DefaultGenerator) GenerateURL(ctx context.Context, rt *RoundTrip, clientResolutions []string) *URLMeasurement {
 	addrs, err := g.DNSDo(ctx, rt.Request.URL.Hostname())
 	currentURL := &URLMeasurement{
 		DNS: &DNSMeasurement{
@@ -50,7 +50,8 @@ func (g *DefaultGenerator) GenerateURL(ctx context.Context, rt *RoundTrip) *URLM
 		RoundTrip: rt,
 		URL:       rt.Request.URL.String(),
 	}
-	if err != nil {
+	addrs = g.mergeAddresses(addrs, clientResolutions)
+	if len(addrs) == 0 {
 		return currentURL
 	}
 	for _, addr := range addrs {
@@ -277,4 +278,20 @@ func (g *DefaultGenerator) HTTPDo(req *http.Request, transport http.RoundTripper
 		return resp, nil, nil
 	}
 	return resp, body, nil
+}
+
+// mergeAddresses creates a (duplicate-free) union set of the IP addresses provided by the client,
+// and the addresses resulting from the testhelper's DNS step
+func (g *DefaultGenerator) mergeAddresses(addrs []string, clientAddrs []string) (out []string) {
+	unique := make(map[string]bool, len(addrs)+len(clientAddrs))
+	for _, a := range addrs {
+		unique[a] = true
+	}
+	for _, a := range clientAddrs {
+		unique[a] = true
+	}
+	for key := range unique {
+		out = append(out, key)
+	}
+	return out
 }
