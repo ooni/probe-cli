@@ -15,8 +15,15 @@ type h3URL struct {
 	proto string
 }
 
+type altSvcH3 struct {
+	authority string
+	proto     string
+}
+
 var ErrNoH3Location = errors.New("no h3 location found")
 
+// getH3URL returns the URL for HTTP/3 requests, if the target supports HTTP/3.
+// Returns nil, if no HTTP/3 support is advertised.
 func getH3URL(resp *http.Response) (*h3URL, error) {
 	URL := resp.Request.URL
 	if URL == nil {
@@ -61,9 +68,4 @@ func parseAltSvc(resp *http.Response, URL *url.URL) (*altSvcH3, error) {
 		}
 	}
 	return nil, ErrNoH3Location
-}
-
-type altSvcH3 struct {
-	authority string
-	proto     string
 }

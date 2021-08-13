@@ -78,6 +78,10 @@ func (g *defaultGenerator) Generate(ctx context.Context, rts []*RoundTrip) ([]*U
 	return out, nil
 }
 
+// GenerateHTTPEndpoint performs an HTTP Request by
+// a) establishing a TCP connection to the target (TCPDo),
+// b) performing an HTTP GET request to the endpoint (HTTPDo).
+// It returns an EndpointMeasurement.
 func (g *defaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &HTTPEndpointMeasurement{
 		Endpoint: endpoint,
@@ -96,6 +100,11 @@ func (g *defaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 	return currentEndpoint
 }
 
+// GenerateHTTPSEndpoint performs an HTTPS Request by
+// a) establishing a TCP connection to the target (TCPDo),
+// b) establishing a TLS connection to the target (TLSDo),
+// c) performing an HTTP GET request to the endpoint (HTTPDo).
+// It returns an EndpointMeasurement.
 func (g *defaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &HTTPSEndpointMeasurement{
 		Endpoint: endpoint,
@@ -108,7 +117,7 @@ func (g *defaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	if err != nil {
 		return currentEndpoint
 	}
-	defer tcpConn.Close() // suboptimal of course
+	defer tcpConn.Close()
 
 	tlsConn, err = TLSDo(tcpConn, rt.Request.URL.Hostname())
 	currentEndpoint.TLSHandshakeMeasurement = &TLSHandshakeMeasurement{
@@ -117,13 +126,17 @@ func (g *defaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	if err != nil {
 		return currentEndpoint
 	}
-	defer tlsConn.Close() // suboptimal of course
+	defer tlsConn.Close()
 
 	transport := nwebconnectivity.NewSingleTransport(tlsConn)
 	currentEndpoint.HTTPRoundtripMeasurement = HTTPDo(rt.Request, transport)
 	return currentEndpoint
 }
 
+// GenerateH3Endpoint performs an HTTP/3 Request by
+// a) establishing a QUIC connection to the target (QUICDo),
+// b) performing an HTTP GET request to the endpoint (HTTPDo).
+// It returns an EndpointMeasurement.
 func (g *defaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &H3EndpointMeasurement{
 		Endpoint: endpoint,

@@ -34,13 +34,12 @@ type defaultExplorer struct {
 type RoundTrip struct {
 	// proto is the protocol used, it can be "h2", "http/1.1", "h3", "h3-29"
 	proto string
+
 	// Request is the original HTTP request. The headers
-	// also include cookies. The body has already been
-	// consumed but we should not be using bodies anyway.
+	// also include cookies.
 	Request *http.Request
 
-	// Response is the HTTP response. The body has already
-	// been consumed, so you should use Body instead.
+	// Response is the HTTP response.
 	Response *http.Response
 
 	// sortIndex is an internal field using for sorting.
@@ -113,8 +112,7 @@ func (sh *sortHelper) Swap(i, j int) {
 }
 
 // get gets the given URL and returns the final response after
-// redirection, and an error. If the
-// error is nil, the final response is valid.
+// redirection, and an error. If the error is nil, the final response is valid.
 func (e *defaultExplorer) get(URL *url.URL) (*http.Response, error) {
 	tlsConf := &tls.Config{
 		NextProtos: []string{"h2", "http/1.1"},
@@ -133,9 +131,8 @@ func (e *defaultExplorer) get(URL *url.URL) (*http.Response, error) {
 	return resp, nil
 }
 
-// getH3 uses HTTP/3 and gets the given URL and returns the final
-// response after redirection, and an error. If the
-// error is nil, the final response is valid.
+// getH3 uses HTTP/3 to get the given URL and returns the final
+// response after redirection, and an error. If the error is nil, the final response is valid.
 func (e *defaultExplorer) getH3(h3URL *h3URL) (*http.Response, error) {
 	dialer := newQUICDialerResolver(e.resolver)
 	tlsConf := &tls.Config{
