@@ -11,10 +11,34 @@ import (
 	"github.com/apex/log"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/lucas-clemente/quic-go/http3"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
+	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 var ErrNoConnReuse = errors.New("cannot reuse connection")
+
+// NewDialerResolver contructs a new dialer for TCP connections,
+// with default, errorwrapping and resolve functionalities
+func NewDialerResolver(resolver netxlite.Resolver) netxlite.Dialer {
+	var d netxlite.Dialer = netxlite.DefaultDialer
+	d = &errorsx.ErrorWrapperDialer{Dialer: d}
+	d = &netxlite.DialerResolver{Resolver: resolver, Dialer: d}
+	return d
+}
+
+// NewQUICDialerResolver creates a new QUICDialerResolver
+// with default, errorwrapping and resolve functionalities
+func NewQUICDialerResolver(resolver netxlite.Resolver) netxlite.QUICContextDialer {
+	var ql quicdialer.QUICListener = &netxlite.QUICListenerStdlib{}
+	ql = &errorsx.ErrorWrapperQUICListener{QUICListener: ql}
+	var dialer netxlite.QUICContextDialer = &netxlite.QUICDialerQUICGo{
+		QUICListener: ql,
+	}
+	dialer = &errorsx.ErrorWrapperQUICDialer{Dialer: dialer}
+	dialer = &netxlite.QUICDialerResolver{Resolver: resolver, Dialer: dialer}
+	return dialer
+}
 
 // NewSingleH3Transport creates an http3.RoundTripper
 func NewSingleH3Transport(qsess quic.EarlySession, tlscfg *tls.Config, qcfg *quic.Config) *http3.RoundTripper {

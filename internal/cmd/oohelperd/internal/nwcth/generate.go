@@ -3,11 +3,11 @@ package nwcth
 import (
 	"context"
 	"crypto/tls"
+	"io"
 	"net"
+	"net/http"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -22,6 +22,7 @@ type Generator interface {
 
 // DefaultGenerator is the default Generator.
 type DefaultGenerator struct {
+	dialer     netxlite.Dialer
 	quicDialer netxlite.QUICContextDialer
 	resolver   netxlite.Resolver
 }
@@ -88,17 +89,37 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 	currentEndpoint := &HTTPEndpointMeasurement{
 		Endpoint: endpoint,
 	}
-	tcpConn, err := TCPDo(ctx, endpoint, newDialerResolver(g.resolver))
+	tcpConn, err := g.TCPDo(ctx, endpoint)
 	currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{
 		Failure: newfailure(err),
 	}
 	if err != nil {
 		return currentEndpoint
 	}
-	defer tcpConn.Close() // suboptimal of course
+	defer tcpConn.Close()
 
+	// prepare HTTPRoundtripMeasurement of this endpoint
+	currentEndpoint.HTTPRoundtripMeasurement = &HTTPRoundtripMeasurement{
+		Request: &HTTPRequest{
+			Headers: rt.Request.Header,
+		},
+	}
 	transport := NewSingleTransport(tcpConn)
-	currentEndpoint.HTTPRoundtripMeasurement = HTTPDo(rt.Request, transport)
+	resp, body, err := g.HTTPDo(rt.Request, transport)
+	if err != nil {
+		// failed Response
+		currentEndpoint.HTTPRoundtripMeasurement.Response = &HTTPResponse{
+			Failure: newfailure(err),
+		}
+		return currentEndpoint
+	}
+	// successful Response
+	currentEndpoint.HTTPRoundtripMeasurement.Response = &HTTPResponse{
+		BodyLength: int64(len(body)),
+		Failure:    nil,
+		Headers:    resp.Header,
+		StatusCode: int64(resp.StatusCode),
+	}
 	return currentEndpoint
 }
 
@@ -112,7 +133,7 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 		Endpoint: endpoint,
 	}
 	var tcpConn, tlsConn net.Conn
-	tcpConn, err := TCPDo(ctx, endpoint, newDialerResolver(g.resolver))
+	tcpConn, err := g.TCPDo(ctx, endpoint)
 	currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{
 		Failure: newfailure(err),
 	}
@@ -121,7 +142,7 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	}
 	defer tcpConn.Close()
 
-	tlsConn, err = TLSDo(tcpConn, rt.Request.URL.Hostname())
+	tlsConn, err = g.TLSDo(tcpConn, rt.Request.URL.Hostname())
 	currentEndpoint.TLSHandshakeMeasurement = &TLSHandshakeMeasurement{
 		Failure: newfailure(err),
 	}
@@ -130,8 +151,28 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	}
 	defer tlsConn.Close()
 
+	// prepare HTTPRoundtripMeasurement of this endpoint
+	currentEndpoint.HTTPRoundtripMeasurement = &HTTPRoundtripMeasurement{
+		Request: &HTTPRequest{
+			Headers: rt.Request.Header,
+		},
+	}
 	transport := NewSingleTransport(tlsConn)
-	currentEndpoint.HTTPRoundtripMeasurement = HTTPDo(rt.Request, transport)
+	resp, body, err := g.HTTPDo(rt.Request, transport)
+	if err != nil {
+		// failed Response
+		currentEndpoint.HTTPRoundtripMeasurement.Response = &HTTPResponse{
+			Failure: newfailure(err),
+		}
+		return currentEndpoint
+	}
+	// successful Response
+	currentEndpoint.HTTPRoundtripMeasurement.Response = &HTTPResponse{
+		BodyLength: int64(len(body)),
+		Failure:    nil,
+		Headers:    resp.Header,
+		StatusCode: int64(resp.StatusCode),
+	}
 	return currentEndpoint
 }
 
@@ -154,9 +195,28 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 	if err != nil {
 		return currentEndpoint
 	}
+	// prepare HTTPRoundtripMeasurement of this endpoint
+	currentEndpoint.HTTPRoundtripMeasurement = &HTTPRoundtripMeasurement{
+		Request: &HTTPRequest{
+			Headers: rt.Request.Header,
+		},
+	}
 	transport := NewSingleH3Transport(sess, tlsConf, &quic.Config{})
-	currentEndpoint.HTTPRoundtripMeasurement = HTTPDo(rt.Request, transport)
-
+	resp, body, err := g.HTTPDo(rt.Request, transport)
+	if err != nil {
+		// failed Response
+		currentEndpoint.HTTPRoundtripMeasurement.Response = &HTTPResponse{
+			Failure: newfailure(err),
+		}
+		return currentEndpoint
+	}
+	// successful Response
+	currentEndpoint.HTTPRoundtripMeasurement.Response = &HTTPResponse{
+		BodyLength: int64(len(body)),
+		Failure:    nil,
+		Headers:    resp.Header,
+		StatusCode: int64(resp.StatusCode),
+	}
 	return currentEndpoint
 }
 
@@ -165,23 +225,50 @@ func (g *DefaultGenerator) DNSDo(ctx context.Context, domain string) ([]string, 
 	return g.resolver.LookupHost(ctx, domain)
 }
 
+// TCPDo performs the TCP check.
+func (g *DefaultGenerator) TCPDo(ctx context.Context, endpoint string) (net.Conn, error) {
+	if g.dialer != nil {
+		return g.dialer.DialContext(ctx, "tcp", endpoint)
+	}
+	dialer := NewDialerResolver(g.resolver)
+	return dialer.DialContext(ctx, "tcp", endpoint)
+}
+
+// TLSDo performs the TLS check.
+func (g *DefaultGenerator) TLSDo(conn net.Conn, hostname string) (*tls.Conn, error) {
+	tlsConn := tls.Client(conn, &tls.Config{
+		ServerName: hostname,
+		NextProtos: []string{"h2", "http/1.1"},
+	})
+	err := tlsConn.Handshake()
+	return tlsConn, err
+}
+
 // QUICDo performs the QUIC check.
 func (g *DefaultGenerator) QUICDo(ctx context.Context, endpoint string, tlsConf *tls.Config) (quic.EarlySession, error) {
 	if g.quicDialer != nil {
 		return g.quicDialer.DialContext(ctx, "udp", endpoint, tlsConf, &quic.Config{})
 	}
-	dialer := newQUICDialerResolver(g.resolver)
+	dialer := NewQUICDialerResolver(g.resolver)
 	return dialer.DialContext(ctx, "udp", endpoint, tlsConf, &quic.Config{})
 }
 
-// newQUICDialerResolver creates a new QUICDialerResolver
-func newQUICDialerResolver(resolver netxlite.Resolver) netxlite.QUICContextDialer {
-	var ql quicdialer.QUICListener = &netxlite.QUICListenerStdlib{}
-	ql = &errorsx.ErrorWrapperQUICListener{QUICListener: ql}
-	var dialer netxlite.QUICContextDialer = &netxlite.QUICDialerQUICGo{
-		QUICListener: ql,
+// HTTPDo performs the HTTP check.
+func (g *DefaultGenerator) HTTPDo(req *http.Request, transport http.RoundTripper) (*http.Response, []byte, error) {
+	clnt := http.Client{
+		CheckRedirect: func(r *http.Request, reqs []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+		Transport: transport,
 	}
-	dialer = &errorsx.ErrorWrapperQUICDialer{Dialer: dialer}
-	dialer = &netxlite.QUICDialerResolver{Resolver: resolver, Dialer: dialer}
-	return dialer
+	resp, err := clnt.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return resp, nil, nil
+	}
+	return resp, body, nil
 }
