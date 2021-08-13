@@ -25,6 +25,7 @@ type DefaultGenerator struct {
 	dialer     netxlite.Dialer
 	quicDialer netxlite.QUICContextDialer
 	resolver   netxlite.Resolver
+	transport  http.RoundTripper
 }
 
 // Generate takes in input a list of round trips and outputs
@@ -112,6 +113,9 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 		},
 	}
 	transport := NewSingleTransport(tcpConn)
+	if g.transport != nil {
+		transport = g.transport
+	}
 	resp, body, err := g.HTTPDo(rt.Request, transport)
 	if err != nil {
 		// failed Response
@@ -165,6 +169,9 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 		},
 	}
 	transport := NewSingleTransport(tlsConn)
+	if g.transport != nil {
+		transport = g.transport
+	}
 	resp, body, err := g.HTTPDo(rt.Request, transport)
 	if err != nil {
 		// failed Response
@@ -208,7 +215,10 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 			Headers: rt.Request.Header,
 		},
 	}
-	transport := NewSingleH3Transport(sess, tlsConf, &quic.Config{})
+	var transport http.RoundTripper = NewSingleH3Transport(sess, tlsConf, &quic.Config{})
+	if g.transport != nil {
+		transport = g.transport
+	}
 	resp, body, err := g.HTTPDo(rt.Request, transport)
 	if err != nil {
 		// failed Response
