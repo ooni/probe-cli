@@ -39,12 +39,16 @@ func parseAltSvc(resp *http.Response, URL *url.URL) (*altSvcH3, error) {
 		return nil, ErrUnsupportedScheme
 	}
 	alt_svc := resp.Header.Get("Alt-Svc")
+	// syntax: Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>; persist=1
 	entries := strings.Split(alt_svc, ",")
 	for _, e := range entries {
 		keyvalpairs := strings.Split(e, ";")
 		for _, p := range keyvalpairs {
 			p = strings.Replace(p, "\"", "", -1)
 			kv := strings.Split(p, "=")
+			if len(kv) != 2 {
+				continue
+			}
 			if _, ok := supportedQUICVersions[kv[0]]; ok {
 				host, port, err := net.SplitHostPort(kv[1])
 				runtimex.PanicOnError(err, "net.SplitHostPort failed")
