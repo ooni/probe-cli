@@ -29,8 +29,8 @@ type InitChecker interface {
 	InitialChecks(URL string) (*url.URL, error)
 }
 
-// defaultInitChecker is the default InitChecker.
-type defaultInitChecker struct {
+// DefaultInitChecker is the default InitChecker.
+type DefaultInitChecker struct {
 	resolver netxlite.Resolver
 }
 
@@ -38,7 +38,7 @@ type defaultInitChecker struct {
 // domain inside the URL is an existing one. If these preliminary
 // checks fail, there's no point in continuing.
 // If they succeed, InitialChecks returns the URL
-func (i *defaultInitChecker) InitialChecks(URL string) (*url.URL, error) {
+func (i *DefaultInitChecker) InitialChecks(URL string) (*url.URL, error) {
 	parsed, err := url.Parse(URL)
 	if err != nil {
 		return nil, ErrInvalidURL

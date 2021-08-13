@@ -18,14 +18,13 @@ type Generator interface {
 	Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error)
 }
 
-// defaultGenerator is the default Generator.
-type defaultGenerator struct {
-	resolver netxlite.Resolver
+// DefaultGenerator is the default Generator.
+type DefaultGenerator struct {
 }
 
 // Generate takes in input a list of round trips and outputs
 // a list of connectivity measurements for each of them.
-func (g *defaultGenerator) Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) {
+func (g *DefaultGenerator) Generate(ctx context.Context, rts []*RoundTrip) ([]*URLMeasurement, error) {
 	var out []*URLMeasurement
 	for _, rt := range rts {
 		addrs, err := DNSDo(ctx, rt.Request.URL.Hostname(), g.resolver)
@@ -81,7 +80,7 @@ func (g *defaultGenerator) Generate(ctx context.Context, rts []*RoundTrip) ([]*U
 // a) establishing a TCP connection to the target (TCPDo),
 // b) performing an HTTP GET request to the endpoint (HTTPDo).
 // It returns an EndpointMeasurement.
-func (g *defaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
+func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &HTTPEndpointMeasurement{
 		Endpoint: endpoint,
 	}
@@ -104,7 +103,7 @@ func (g *defaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 // b) establishing a TLS connection to the target (TLSDo),
 // c) performing an HTTP GET request to the endpoint (HTTPDo).
 // It returns an EndpointMeasurement.
-func (g *defaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
+func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &HTTPSEndpointMeasurement{
 		Endpoint: endpoint,
 	}
@@ -136,7 +135,7 @@ func (g *defaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 // a) establishing a QUIC connection to the target (QUICDo),
 // b) performing an HTTP GET request to the endpoint (HTTPDo).
 // It returns an EndpointMeasurement.
-func (g *defaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
+func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
 	currentEndpoint := &H3EndpointMeasurement{
 		Endpoint: endpoint,
 	}

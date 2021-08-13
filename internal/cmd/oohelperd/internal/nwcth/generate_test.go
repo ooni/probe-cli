@@ -10,7 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-var generator = &defaultGenerator{resolver: newResolver()}
+var generator = &DefaultGenerator{resolver: newResolver()}
 
 func TestGenerateDNSFailure(t *testing.T) {
 	u, err := url.Parse("https://www.google.google")

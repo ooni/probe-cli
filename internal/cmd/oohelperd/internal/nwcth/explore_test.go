@@ -8,7 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-var explorer = &defaultExplorer{resolver: newResolver()}
+var explorer = &DefaultExplorer{resolver: newResolver()}
 
 func TestExploreSuccess(t *testing.T) {
 	u, err := url.Parse("https://example.com")

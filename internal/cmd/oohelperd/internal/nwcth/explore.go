@@ -25,8 +25,8 @@ type Explorer interface {
 	Explore(URL *url.URL) ([]*RoundTrip, error)
 }
 
-// defaultExplorer is the default Explorer.
-type defaultExplorer struct {
+// DefaultExplorer is the default Explorer.
+type DefaultExplorer struct {
 	resolver netxlite.Resolver
 }
 
@@ -48,7 +48,7 @@ type RoundTrip struct {
 
 // Explore returns a list of round trips sorted so that the first
 // round trip is the first element in the list, and so on.
-func (e *defaultExplorer) Explore(URL *url.URL) ([]*RoundTrip, error) {
+func (e *DefaultExplorer) Explore(URL *url.URL) ([]*RoundTrip, error) {
 	resp, err := e.get(URL)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (e *defaultExplorer) Explore(URL *url.URL) ([]*RoundTrip, error) {
 // (which is needed to derive the type of h3 protocol, i.e. h3 or h3-29),
 // and produces in output a list of round trips sorted
 // such that the first round trip is the first element in the out array.
-func (e *defaultExplorer) rearrange(resp *http.Response, h3URL *h3URL) (out []*RoundTrip) {
+func (e *DefaultExplorer) rearrange(resp *http.Response, h3URL *h3URL) (out []*RoundTrip) {
 	index := 0
 	for resp != nil && resp.Request != nil {
 		proto := resp.Request.URL.Scheme
@@ -113,7 +113,7 @@ func (sh *sortHelper) Swap(i, j int) {
 
 // get gets the given URL and returns the final response after
 // redirection, and an error. If the error is nil, the final response is valid.
-func (e *defaultExplorer) get(URL *url.URL) (*http.Response, error) {
+func (e *DefaultExplorer) get(URL *url.URL) (*http.Response, error) {
 	tlsConf := &tls.Config{
 		NextProtos: []string{"h2", "http/1.1"},
 	}
@@ -133,7 +133,7 @@ func (e *defaultExplorer) get(URL *url.URL) (*http.Response, error) {
 
 // getH3 uses HTTP/3 to get the given URL and returns the final
 // response after redirection, and an error. If the error is nil, the final response is valid.
-func (e *defaultExplorer) getH3(h3URL *h3URL) (*http.Response, error) {
+func (e *DefaultExplorer) getH3(h3URL *h3URL) (*http.Response, error) {
 	dialer := newQUICDialerResolver(e.resolver)
 	tlsConf := &tls.Config{
 		NextProtos: []string{h3URL.proto},

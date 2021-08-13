@@ -45,7 +45,7 @@ func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*Contro
 		config.resolver = newResolver()
 	}
 	if config.checker == nil {
-		config.checker = &defaultInitChecker{resolver: config.resolver}
+		config.checker = &DefaultInitChecker{resolver: config.resolver}
 	}
 	URL, err = config.checker.InitialChecks(creq.HTTPRequest)
 	if err != nil {
@@ -56,14 +56,14 @@ func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*Contro
 		return nil, err
 	}
 	if config.explorer == nil {
-		config.explorer = &defaultExplorer{resolver: config.resolver}
+		config.explorer = &DefaultExplorer{resolver: config.resolver}
 	}
 	rts, err := config.explorer.Explore(URL)
 	if err != nil {
 		return nil, ErrInternalServer
 	}
 	if config.generator == nil {
-		config.generator = &defaultGenerator{resolver: config.resolver}
+		config.generator = &DefaultGenerator{resolver: config.resolver}
 	}
 	meas, err := config.generator.Generate(ctx, rts)
 	if err != nil {
@@ -73,6 +73,8 @@ func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*Contro
 	return &ControlResponse{URLMeasurements: meas}, nil
 }
 
+// newDNSFailedResponse creates a new response with one URLMeasurement entry
+// indicating that the DNS step failed
 func newDNSFailedResponse(err error, URL string) *ControlResponse {
 	resp := &ControlResponse{}
 	m := &URLMeasurement{
