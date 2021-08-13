@@ -11,11 +11,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// ControlRequest is the request sent by the probe
-type ControlRequest struct {
-	HTTPRequest        string              `json:"url"`
-	HTTPRequestHeaders map[string][]string `json:"headers"`
-	Addrs              []string            `json:"addrs"`
+// CtrlRequest is the request sent by the probe
+type CtrlRequest struct {
+	HTTPRequestMeasurement string              `json:"url"`
+	HTTPRequestHeaders     map[string][]string `json:"headers"`
+	Addrs                  []string            `json:"addrs"`
 }
 
 // ControlResponse is the response from the control service.
@@ -43,7 +43,7 @@ type Config struct {
 // 1. InitialChecks
 // 2. Explore
 // 3. Generate
-func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*ControlResponse, error) {
+func Measure(ctx context.Context, creq *CtrlRequest, config *Config) (*ControlResponse, error) {
 	var (
 		URL *url.URL
 		err error
@@ -55,11 +55,11 @@ func Measure(ctx context.Context, creq *ControlRequest, config *Config) (*Contro
 	if config.checker == nil {
 		config.checker = &DefaultInitChecker{resolver: config.resolver}
 	}
-	URL, err = config.checker.InitialChecks(creq.HTTPRequest)
+	URL, err = config.checker.InitialChecks(creq.HTTPRequestMeasurement)
 	if err != nil {
 		// return a valid response in case of NXDOMAIN so the probe can compare the failure
 		if err == ErrNoSuchHost {
-			return newDNSFailedResponse(err, creq.HTTPRequest), nil
+			return newDNSFailedResponse(err, creq.HTTPRequestMeasurement), nil
 		}
 		return nil, err
 	}

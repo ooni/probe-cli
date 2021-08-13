@@ -44,7 +44,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
-	var creq ControlRequest
+	var creq CtrlRequest
 	if err := json.Unmarshal(data, &creq); err != nil {
 		w.WriteHeader(400)
 		return

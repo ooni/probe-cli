@@ -226,8 +226,8 @@ func TestGenerateHTTP(t *testing.T) {
 	if endpointMeasurement.(*HTTPEndpointMeasurement).TCPConnectMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.(*HTTPEndpointMeasurement).HTTPRoundtripMeasurement == nil {
-		t.Fatal("HTTPRoundtripMeasurement should not be nil")
+	if endpointMeasurement.(*HTTPEndpointMeasurement).HTTPRoundTripMeasurement == nil {
+		t.Fatal("HTTPRoundTripMeasurement should not be nil")
 	}
 }
 
@@ -260,8 +260,8 @@ func TestGenerateHTTPS(t *testing.T) {
 	if endpointMeasurement.(*HTTPSEndpointMeasurement).TLSHandshakeMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.(*HTTPSEndpointMeasurement).HTTPRoundtripMeasurement == nil {
-		t.Fatal("HTTPRoundtripMeasurement should not be nil")
+	if endpointMeasurement.(*HTTPSEndpointMeasurement).HTTPRoundTripMeasurement == nil {
+		t.Fatal("HTTPRoundTripMeasurement should not be nil")
 	}
 }
 
@@ -294,8 +294,8 @@ func TestGenerateHTTPSTLSFailure(t *testing.T) {
 	if endpointMeasurement.(*HTTPSEndpointMeasurement).TLSHandshakeMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.(*HTTPSEndpointMeasurement).HTTPRoundtripMeasurement != nil {
-		t.Fatal("HTTPRoundtripMeasurement should be nil")
+	if endpointMeasurement.(*HTTPSEndpointMeasurement).HTTPRoundTripMeasurement != nil {
+		t.Fatal("HTTPRoundTripMeasurement should be nil")
 	}
 }
 
@@ -325,8 +325,8 @@ func TestGenerateH3(t *testing.T) {
 	if endpointMeasurement.(*H3EndpointMeasurement).QUICHandshakeMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.(*H3EndpointMeasurement).HTTPRoundtripMeasurement == nil {
-		t.Fatal("HTTPRoundtripMeasurement should not be nil")
+	if endpointMeasurement.(*H3EndpointMeasurement).HTTPRoundTripMeasurement == nil {
+		t.Fatal("HTTPRoundTripMeasurement should not be nil")
 	}
 }
 

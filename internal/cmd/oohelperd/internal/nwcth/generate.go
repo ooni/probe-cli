@@ -107,9 +107,9 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 	}
 	defer tcpConn.Close()
 
-	// prepare HTTPRoundtripMeasurement of this endpoint
-	currentEndpoint.HTTPRoundtripMeasurement = &HTTPRoundtripMeasurement{
-		Request: &HTTPRequest{
+	// prepare HTTPRoundTripMeasurement of this endpoint
+	currentEndpoint.HTTPRoundTripMeasurement = &HTTPRoundTripMeasurement{
+		Request: &HTTPRequestMeasurement{
 			Headers: rt.Request.Header,
 			Method:  "GET",
 			URL:     rt.Request.URL.String(),
@@ -122,13 +122,13 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 	resp, body, err := g.HTTPDo(rt.Request, transport)
 	if err != nil {
 		// failed Response
-		currentEndpoint.HTTPRoundtripMeasurement.Response = &HTTPResponse{
+		currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
 			Failure: newfailure(err),
 		}
 		return currentEndpoint
 	}
 	// successful Response
-	currentEndpoint.HTTPRoundtripMeasurement.Response = &HTTPResponse{
+	currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
 		BodyLength: int64(len(body)),
 		Failure:    nil,
 		Headers:    resp.Header,
@@ -166,9 +166,9 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	}
 	defer tlsConn.Close()
 
-	// prepare HTTPRoundtripMeasurement of this endpoint
-	currentEndpoint.HTTPRoundtripMeasurement = &HTTPRoundtripMeasurement{
-		Request: &HTTPRequest{
+	// prepare HTTPRoundTripMeasurement of this endpoint
+	currentEndpoint.HTTPRoundTripMeasurement = &HTTPRoundTripMeasurement{
+		Request: &HTTPRequestMeasurement{
 			Headers: rt.Request.Header,
 			Method:  "GET",
 			URL:     rt.Request.URL.String(),
@@ -181,13 +181,13 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	resp, body, err := g.HTTPDo(rt.Request, transport)
 	if err != nil {
 		// failed Response
-		currentEndpoint.HTTPRoundtripMeasurement.Response = &HTTPResponse{
+		currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
 			Failure: newfailure(err),
 		}
 		return currentEndpoint
 	}
 	// successful Response
-	currentEndpoint.HTTPRoundtripMeasurement.Response = &HTTPResponse{
+	currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
 		BodyLength: int64(len(body)),
 		Failure:    nil,
 		Headers:    resp.Header,
@@ -216,9 +216,9 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 	if err != nil {
 		return currentEndpoint
 	}
-	// prepare HTTPRoundtripMeasurement of this endpoint
-	currentEndpoint.HTTPRoundtripMeasurement = &HTTPRoundtripMeasurement{
-		Request: &HTTPRequest{
+	// prepare HTTPRoundTripMeasurement of this endpoint
+	currentEndpoint.HTTPRoundTripMeasurement = &HTTPRoundTripMeasurement{
+		Request: &HTTPRequestMeasurement{
 			Headers: rt.Request.Header,
 			Method:  "GET",
 			URL:     rt.Request.URL.String(),
@@ -231,13 +231,13 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 	resp, body, err := g.HTTPDo(rt.Request, transport)
 	if err != nil {
 		// failed Response
-		currentEndpoint.HTTPRoundtripMeasurement.Response = &HTTPResponse{
+		currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
 			Failure: newfailure(err),
 		}
 		return currentEndpoint
 	}
 	// successful Response
-	currentEndpoint.HTTPRoundtripMeasurement.Response = &HTTPResponse{
+	currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
 		BodyLength: int64(len(body)),
 		Failure:    nil,
 		Headers:    resp.Header,
@@ -283,7 +283,7 @@ func (g *DefaultGenerator) QUICDo(ctx context.Context, endpoint string, tlsConf 
 // Input:
 // req *http.Request
 //      The same request than the one used by the Explore step.
-//      This means that req contains the headers set by the original ControlRequest, as well as,
+//      This means that req contains the headers set by the original CtrlRequest, as well as,
 //      in case of a redirect chain, additional headers that were added due to redirects
 // transport http.RoundTripper:
 //      The transport to use, either http.Transport, or http3.RoundTripper.

@@ -50,7 +50,7 @@ type RoundTrip struct {
 
 // Explore returns a list of round trips sorted so that the first
 // round trip is the first element in the list, and so on.
-// Explore uses the URL and the optional headers provided by the ControlRequest.
+// Explore uses the URL and the optional headers provided by the CtrlRequest.
 func (e *DefaultExplorer) Explore(URL *url.URL, headers map[string][]string) ([]*RoundTrip, error) {
 	resp, err := e.get(URL, headers)
 	if err != nil {
