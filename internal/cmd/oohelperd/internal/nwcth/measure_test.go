@@ -11,7 +11,7 @@ import (
 
 func TestMeasureSuccess(t *testing.T) {
 	req := &CtrlRequest{
-		HTTPRequestMeasurement: "https://example.com",
+		HTTPRequest: "https://example.com",
 	}
 	resp, err := Measure(context.Background(), req, &Config{})
 	if err != nil {
@@ -48,7 +48,7 @@ var ErrExpectedGenerate error = errors.New("expected error generator")
 
 func TestMeasureInitialChecksFail(t *testing.T) {
 	req := &CtrlRequest{
-		HTTPRequestMeasurement: "https://example.com",
+		HTTPRequest: "https://example.com",
 	}
 	resp, err := Measure(context.Background(), req, &Config{checker: &MockChecker{err: ErrExpectedCheck}})
 	if err == nil {
@@ -64,7 +64,7 @@ func TestMeasureInitialChecksFail(t *testing.T) {
 
 func TestMeasureInitialChecksFailWithNXDOMAIN(t *testing.T) {
 	req := &CtrlRequest{
-		HTTPRequestMeasurement: "https://example.com",
+		HTTPRequest: "https://example.com",
 	}
 	resp, err := Measure(context.Background(), req, &Config{checker: &MockChecker{err: ErrNoSuchHost}})
 	if err != nil {
@@ -86,7 +86,7 @@ func TestMeasureInitialChecksFailWithNXDOMAIN(t *testing.T) {
 
 func TestMeasureExploreFails(t *testing.T) {
 	req := &CtrlRequest{
-		HTTPRequestMeasurement: "https://example.com",
+		HTTPRequest: "https://example.com",
 	}
 	resp, err := Measure(context.Background(), req, &Config{explorer: &MockExplorer{}})
 	if err == nil {
@@ -102,7 +102,7 @@ func TestMeasureExploreFails(t *testing.T) {
 
 func TestMeasureGenerateFails(t *testing.T) {
 	req := &CtrlRequest{
-		HTTPRequestMeasurement: "https://example.com",
+		HTTPRequest: "https://example.com",
 	}
 	resp, err := Measure(context.Background(), req, &Config{generator: &MockGenerator{}})
 	if err == nil {

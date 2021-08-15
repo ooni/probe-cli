@@ -13,9 +13,9 @@ import (
 
 // CtrlRequest is the request sent by the probe
 type CtrlRequest struct {
-	HTTPRequestMeasurement string              `json:"url"`
-	HTTPRequestHeaders     map[string][]string `json:"headers"`
-	Addrs                  []string            `json:"addrs"`
+	HTTPRequest        string              `json:"url"`
+	HTTPRequestHeaders map[string][]string `json:"headers"`
+	Addrs              []string            `json:"addrs"`
 }
 
 // ControlResponse is the response from the control service.
@@ -55,11 +55,11 @@ func Measure(ctx context.Context, creq *CtrlRequest, config *Config) (*ControlRe
 	if config.checker == nil {
 		config.checker = &DefaultInitChecker{resolver: config.resolver}
 	}
-	URL, err = config.checker.InitialChecks(creq.HTTPRequestMeasurement)
+	URL, err = config.checker.InitialChecks(creq.HTTPRequest)
 	if err != nil {
 		// return a valid response in case of NXDOMAIN so the probe can compare the failure
 		if err == ErrNoSuchHost {
-			return newDNSFailedResponse(err, creq.HTTPRequestMeasurement), nil
+			return newDNSFailedResponse(err, creq.HTTPRequest), nil
 		}
 		return nil, err
 	}

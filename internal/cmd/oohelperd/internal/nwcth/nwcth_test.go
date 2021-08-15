@@ -26,7 +26,7 @@ const requestnoredirect = `{
 		"Mozilla/5.0"
 	  ]
 	},
-	"tcp_connect": [
+	"addrs": [
 	  "104.198.14.52:443"
 	]
 }`
@@ -44,7 +44,7 @@ const requestredirect = `{
 		"Mozilla/5.0"
 	  ]
 	},
-	"tcp_connect": [
+	"addrs": [
 	  "18.192.76.182:443"
 	]
 }`
@@ -62,7 +62,7 @@ const requestIPaddressinput = `{
 		"Mozilla/5.0"
 	  ]
 	},
-	"tcp_connect": [
+	"addrs": [
 	  "172.217.168.4:443"
 	]
 }`
@@ -80,7 +80,7 @@ const requestwithquic = `{
 		"Mozilla/5.0"
 	  ]
 	},
-	"tcp_connect": [
+	"addrs": [
 	  "142.250.74.196:443"
 	]
 }`
@@ -98,7 +98,7 @@ const requestWithoutDomainName = `{
 		"Mozilla/5.0"
 	  ]
 	},
-	"tcp_connect": [
+	"addrs": [
 	  "8.8.8.8:443"
 	]
 }`
