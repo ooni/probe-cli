@@ -44,10 +44,10 @@ func TestExploreSuccessWithH3(t *testing.T) {
 	if len(rts) != 2 {
 		t.Fatal("unexpected number of roundtrips")
 	}
-	if rts[0].proto != "https" {
+	if rts[0].Proto != "https" {
 		t.Fatal("unexpected protocol")
 	}
-	if rts[1].proto != "h3" {
+	if rts[1].Proto != "h3" {
 		t.Fatal("unexpected protocol")
 	}
 }
@@ -146,7 +146,7 @@ func TestRearrange(t *testing.T) {
 		if rt.Response.ProtoMajor != expectedIndex {
 			t.Fatal("unexpected order")
 		}
-		if rt.proto != h3URL.proto {
+		if rt.Proto != h3URL.proto {
 			t.Fatal("unexpected protocol")
 		}
 		expectedIndex += 1

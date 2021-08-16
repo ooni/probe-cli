@@ -49,14 +49,14 @@ func TestGenerateDNSFailure(t *testing.T) {
 	runtimex.PanicOnError(err, "url.Parse failed")
 	rts := []*RoundTrip{
 		{
-			proto: "https",
+			Proto: "https",
 			Request: &http.Request{
 				URL: u,
 			},
 			Response: &http.Response{
 				StatusCode: 200,
 			},
-			sortIndex: 0,
+			SortIndex: 0,
 		},
 	}
 	urlMeasurements, err := generator.Generate(context.Background(), rts, []string{})
@@ -80,34 +80,34 @@ func TestGenerate(t *testing.T) {
 	runtimex.PanicOnError(err, "url.Parse failed")
 	rts := []*RoundTrip{
 		{
-			proto: "http",
+			Proto: "http",
 			Request: &http.Request{
 				URL: u,
 			},
 			Response: &http.Response{
 				StatusCode: 200,
 			},
-			sortIndex: 0,
+			SortIndex: 0,
 		},
 		{
-			proto: "https",
+			Proto: "https",
 			Request: &http.Request{
 				URL: u2,
 			},
 			Response: &http.Response{
 				StatusCode: 200,
 			},
-			sortIndex: 0,
+			SortIndex: 0,
 		},
 		{
-			proto: "h3",
+			Proto: "h3",
 			Request: &http.Request{
 				URL: u2,
 			},
 			Response: &http.Response{
 				StatusCode: 200,
 			},
-			sortIndex: 0,
+			SortIndex: 0,
 		},
 	}
 	urlMeasurements, err := generator.Generate(context.Background(), rts, []string{})
@@ -127,14 +127,14 @@ func TestGenerateUnexpectedProtocol(t *testing.T) {
 	runtimex.PanicOnError(err, "url.Parse failed")
 	rts := []*RoundTrip{
 		{
-			proto: "h3-27",
+			Proto: "h3-27",
 			Request: &http.Request{
 				URL: u,
 			},
 			Response: &http.Response{
 				StatusCode: 200,
 			},
-			sortIndex: 0,
+			SortIndex: 0,
 		},
 	}
 	urlMeasurements, err := generator.Generate(context.Background(), rts, []string{})
@@ -166,14 +166,14 @@ func TestGenerateURLWithClientResolutions(t *testing.T) {
 	u, err := url.Parse("https://www.google.com")
 	runtimex.PanicOnError(err, "url.Parse failed")
 	rt := &RoundTrip{
-		proto: "h3",
+		Proto: "h3",
 		Request: &http.Request{
 			URL: u,
 		},
 		Response: &http.Response{
 			StatusCode: 200,
 		},
-		sortIndex: 0,
+		SortIndex: 0,
 	}
 	clientResolution := "142.250.186.36"
 	urlMeasurement := generator.GenerateURL(context.Background(), rt, []string{clientResolution})
@@ -191,7 +191,7 @@ func TestGenerateURLWithClientResolutions(t *testing.T) {
 	}
 	clientAddrsFound := false
 	for _, e := range urlMeasurement.Endpoints {
-		if e.(*H3EndpointMeasurement).Endpoint == clientResolution+":443" {
+		if e.Endpoint == clientResolution+":443" {
 			clientAddrsFound = true
 		}
 	}
@@ -204,14 +204,14 @@ func TestGenerateHTTP(t *testing.T) {
 	u, err := url.Parse("http://example.com")
 	runtimex.PanicOnError(err, "url.Parse failed")
 	rt := &RoundTrip{
-		proto: "http",
+		Proto: "http",
 		Request: &http.Request{
 			URL: u,
 		},
 		Response: &http.Response{
 			StatusCode: 200,
 		},
-		sortIndex: 0,
+		SortIndex: 0,
 	}
 	endpointMeasurement := generator.GenerateHTTPEndpoint(context.Background(), rt, "93.184.216.34:80")
 	if err != nil {
@@ -223,10 +223,10 @@ func TestGenerateHTTP(t *testing.T) {
 	if reflect.TypeOf(endpointMeasurement).String() != "*nwcth.HTTPEndpointMeasurement" {
 		t.Fatal("unexpected type")
 	}
-	if endpointMeasurement.(*HTTPEndpointMeasurement).TCPConnectMeasurement == nil {
+	if endpointMeasurement.TCPConnectMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.(*HTTPEndpointMeasurement).HTTPRoundTripMeasurement == nil {
+	if endpointMeasurement.HTTPRoundTripMeasurement == nil {
 		t.Fatal("HTTPRoundTripMeasurement should not be nil")
 	}
 }
@@ -235,14 +235,14 @@ func TestGenerateHTTPS(t *testing.T) {
 	u, err := url.Parse("https://example.com")
 	runtimex.PanicOnError(err, "url.Parse failed")
 	rt := &RoundTrip{
-		proto: "https",
+		Proto: "https",
 		Request: &http.Request{
 			URL: u,
 		},
 		Response: &http.Response{
 			StatusCode: 200,
 		},
-		sortIndex: 0,
+		SortIndex: 0,
 	}
 	endpointMeasurement := generator.GenerateHTTPSEndpoint(context.Background(), rt, "93.184.216.34:443")
 	if err != nil {
@@ -254,13 +254,13 @@ func TestGenerateHTTPS(t *testing.T) {
 	if reflect.TypeOf(endpointMeasurement).String() != "*nwcth.HTTPSEndpointMeasurement" {
 		t.Fatal("unexpected type")
 	}
-	if endpointMeasurement.(*HTTPSEndpointMeasurement).TCPConnectMeasurement == nil {
+	if endpointMeasurement.TCPConnectMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.(*HTTPSEndpointMeasurement).TLSHandshakeMeasurement == nil {
+	if endpointMeasurement.TLSHandshakeMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.(*HTTPSEndpointMeasurement).HTTPRoundTripMeasurement == nil {
+	if endpointMeasurement.HTTPRoundTripMeasurement == nil {
 		t.Fatal("HTTPRoundTripMeasurement should not be nil")
 	}
 }
@@ -269,14 +269,14 @@ func TestGenerateHTTPSTLSFailure(t *testing.T) {
 	u, err := url.Parse("https://wrong.host.badssl.com/")
 	runtimex.PanicOnError(err, "url.Parse failed")
 	rt := &RoundTrip{
-		proto: "https",
+		Proto: "https",
 		Request: &http.Request{
 			URL: u,
 		},
 		Response: &http.Response{
 			StatusCode: 200,
 		},
-		sortIndex: 0,
+		SortIndex: 0,
 	}
 	endpointMeasurement := generator.GenerateHTTPSEndpoint(context.Background(), rt, "104.154.89.105:443")
 	if err != nil {
@@ -288,13 +288,13 @@ func TestGenerateHTTPSTLSFailure(t *testing.T) {
 	if reflect.TypeOf(endpointMeasurement).String() != "*nwcth.HTTPSEndpointMeasurement" {
 		t.Fatal("unexpected type")
 	}
-	if endpointMeasurement.(*HTTPSEndpointMeasurement).TCPConnectMeasurement == nil {
+	if endpointMeasurement.TCPConnectMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.(*HTTPSEndpointMeasurement).TLSHandshakeMeasurement == nil {
+	if endpointMeasurement.TLSHandshakeMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.(*HTTPSEndpointMeasurement).HTTPRoundTripMeasurement != nil {
+	if endpointMeasurement.HTTPRoundTripMeasurement != nil {
 		t.Fatal("HTTPRoundTripMeasurement should be nil")
 	}
 }
@@ -303,14 +303,14 @@ func TestGenerateH3(t *testing.T) {
 	u, err := url.Parse("https://www.google.com")
 	runtimex.PanicOnError(err, "url.Parse failed")
 	rt := &RoundTrip{
-		proto: "h3",
+		Proto: "h3",
 		Request: &http.Request{
 			URL: u,
 		},
 		Response: &http.Response{
 			StatusCode: 200,
 		},
-		sortIndex: 0,
+		SortIndex: 0,
 	}
 	endpointMeasurement := generator.GenerateH3Endpoint(context.Background(), rt, "173.194.76.103:443")
 	if err != nil {
@@ -322,10 +322,10 @@ func TestGenerateH3(t *testing.T) {
 	if reflect.TypeOf(endpointMeasurement).String() != "*nwcth.H3EndpointMeasurement" {
 		t.Fatal("unexpected type")
 	}
-	if endpointMeasurement.(*H3EndpointMeasurement).QUICHandshakeMeasurement == nil {
+	if endpointMeasurement.QUICHandshakeMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.(*H3EndpointMeasurement).HTTPRoundTripMeasurement == nil {
+	if endpointMeasurement.HTTPRoundTripMeasurement == nil {
 		t.Fatal("HTTPRoundTripMeasurement should not be nil")
 	}
 }
@@ -339,26 +339,26 @@ func TestGenerateTCPDoFails(t *testing.T) {
 	u, err := url.Parse("https://www.google.com")
 	runtimex.PanicOnError(err, "url.Parse failed")
 	rt := &RoundTrip{
-		proto: "https",
+		Proto: "https",
 		Request: &http.Request{
 			URL: u,
 		},
 		Response: &http.Response{
 			StatusCode: 200,
 		},
-		sortIndex: 0,
+		SortIndex: 0,
 	}
 	endpointMeasurement := generator.GenerateHTTPSEndpoint(context.Background(), rt, "173.194.76.103:443")
 	if err != nil {
 		t.Fatal("unexpected err")
 	}
-	if endpointMeasurement.(*HTTPSEndpointMeasurement).TCPConnectMeasurement == nil {
+	if endpointMeasurement.TCPConnectMeasurement == nil {
 		t.Fatal("QUIC handshake should not be nil")
 	}
-	if endpointMeasurement.(*HTTPSEndpointMeasurement).TCPConnectMeasurement.Failure == nil {
+	if endpointMeasurement.TCPConnectMeasurement.Failure == nil {
 		t.Fatal("expected an error here")
 	}
-	if *endpointMeasurement.(*HTTPSEndpointMeasurement).TCPConnectMeasurement.Failure != *newfailure(expected) {
+	if *endpointMeasurement.TCPConnectMeasurement.Failure != *newfailure(expected) {
 		t.Fatal("unexpected error type")
 	}
 }
@@ -372,26 +372,26 @@ func TestGenerateQUICDoFails(t *testing.T) {
 	u, err := url.Parse("https://www.google.com")
 	runtimex.PanicOnError(err, "url.Parse failed")
 	rt := &RoundTrip{
-		proto: "h3",
+		Proto: "h3",
 		Request: &http.Request{
 			URL: u,
 		},
 		Response: &http.Response{
 			StatusCode: 200,
 		},
-		sortIndex: 0,
+		SortIndex: 0,
 	}
 	endpointMeasurement := generator.GenerateH3Endpoint(context.Background(), rt, "173.194.76.103:443")
 	if err != nil {
 		t.Fatal("unexpected err")
 	}
-	if endpointMeasurement.(*H3EndpointMeasurement).QUICHandshakeMeasurement == nil {
+	if endpointMeasurement.QUICHandshakeMeasurement == nil {
 		t.Fatal("QUIC handshake should not be nil")
 	}
-	if endpointMeasurement.(*H3EndpointMeasurement).QUICHandshakeMeasurement.Failure == nil {
+	if endpointMeasurement.QUICHandshakeMeasurement.Failure == nil {
 		t.Fatal("expected an error here")
 	}
-	if *endpointMeasurement.(*H3EndpointMeasurement).QUICHandshakeMeasurement.Failure != *newfailure(expected) {
+	if *endpointMeasurement.QUICHandshakeMeasurement.Failure != *newfailure(expected) {
 		t.Fatal("unexpected error type")
 	}
 }
@@ -407,34 +407,34 @@ func TestGenerateHTTPDoFails(t *testing.T) {
 	runtimex.PanicOnError(err, "url.Parse failed")
 	rts := []*RoundTrip{
 		{
-			proto: "http",
+			Proto: "http",
 			Request: &http.Request{
 				URL: u,
 			},
 			Response: &http.Response{
 				StatusCode: 200,
 			},
-			sortIndex: 0,
+			SortIndex: 0,
 		},
 		{
-			proto: "https",
+			Proto: "https",
 			Request: &http.Request{
 				URL: u2,
 			},
 			Response: &http.Response{
 				StatusCode: 200,
 			},
-			sortIndex: 0,
+			SortIndex: 0,
 		},
 		{
-			proto: "h3",
+			Proto: "h3",
 			Request: &http.Request{
 				URL: u2,
 			},
 			Response: &http.Response{
 				StatusCode: 200,
 			},
-			sortIndex: 0,
+			SortIndex: 0,
 		},
 	}
 	urlMeasurements, err := generator.Generate(context.Background(), rts, []string{})

@@ -6,22 +6,16 @@ import (
 	"net/url"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/websteps"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// CtrlRequest is the request sent by the probe
-type CtrlRequest struct {
-	HTTPRequest        string              `json:"url"`
-	HTTPRequestHeaders map[string][]string `json:"headers"`
-	Addrs              []string            `json:"addrs"`
-}
-
-// ControlResponse is the response from the control service.
-type ControlResponse struct {
-	URLMeasurements []*URLMeasurement `json:"urls"`
-}
+type (
+	CtrlRequest     = websteps.CtrlRequest
+	ControlResponse = websteps.ControlResponse
+)
 
 var ErrInternalServer = errors.New("Internal server failure")
 

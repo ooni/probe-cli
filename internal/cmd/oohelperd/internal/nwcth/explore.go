@@ -32,22 +32,6 @@ type DefaultExplorer struct {
 	resolver netxlite.Resolver
 }
 
-// RoundTrip describes a specific round trip.
-type RoundTrip struct {
-	// proto is the protocol used, it can be "h2", "http/1.1", "h3", "h3-29"
-	proto string
-
-	// Request is the original HTTP request. The headers
-	// also include cookies.
-	Request *http.Request
-
-	// Response is the HTTP response.
-	Response *http.Response
-
-	// sortIndex is an internal field using for sorting.
-	sortIndex int
-}
-
 // Explore returns a list of round trips sorted so that the first
 // round trip is the first element in the list, and so on.
 // Explore uses the URL and the optional headers provided by the CtrlRequest.
@@ -81,8 +65,8 @@ func (e *DefaultExplorer) rearrange(resp *http.Response, h3URL *h3URL) (out []*R
 			proto = h3URL.proto
 		}
 		out = append(out, &RoundTrip{
-			proto:     proto,
-			sortIndex: index,
+			Proto:     proto,
+			SortIndex: index,
 			Request:   resp.Request,
 			Response:  resp,
 		})
@@ -106,7 +90,7 @@ func (sh *sortHelper) Len() int {
 
 // Less implements sort.Interface.Less.
 func (sh *sortHelper) Less(i, j int) bool {
-	return sh.v[i].sortIndex >= sh.v[j].sortIndex
+	return sh.v[i].SortIndex >= sh.v[j].SortIndex
 }
 
 // Swap implements sort.Interface.Swap.

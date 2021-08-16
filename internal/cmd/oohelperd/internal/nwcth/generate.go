@@ -71,14 +71,14 @@ func (g *DefaultGenerator) GenerateURL(ctx context.Context, rt *RoundTrip, clien
 		}
 		endpoint := net.JoinHostPort(addr, port)
 
-		var currentEndpoint EndpointMeasurement
-		_, h3 := supportedQUICVersions[rt.proto]
+		var currentEndpoint *EndpointMeasurement
+		_, h3 := supportedQUICVersions[rt.Proto]
 		switch {
 		case h3:
 			currentEndpoint = g.GenerateH3Endpoint(ctx, rt, endpoint)
-		case rt.proto == "http":
+		case rt.Proto == "http":
 			currentEndpoint = g.GenerateHTTPEndpoint(ctx, rt, endpoint)
-		case rt.proto == "https":
+		case rt.Proto == "https":
 			currentEndpoint = g.GenerateHTTPSEndpoint(ctx, rt, endpoint)
 		default:
 			// TODO(kelmenhorst): do we have to register this error somewhere in the result struct?
@@ -93,8 +93,8 @@ func (g *DefaultGenerator) GenerateURL(ctx context.Context, rt *RoundTrip, clien
 // a) establishing a TCP connection to the target (TCPDo),
 // b) performing an HTTP GET request to the endpoint (HTTPDo).
 // It returns an EndpointMeasurement.
-func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
-	currentEndpoint := &HTTPEndpointMeasurement{
+func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) *EndpointMeasurement {
+	currentEndpoint := &EndpointMeasurement{
 		Endpoint: endpoint,
 		Protocol: "http",
 	}
@@ -142,8 +142,8 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 // b) establishing a TLS connection to the target (TLSDo),
 // c) performing an HTTP GET request to the endpoint (HTTPDo).
 // It returns an EndpointMeasurement.
-func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
-	currentEndpoint := &HTTPSEndpointMeasurement{
+func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundTrip, endpoint string) *EndpointMeasurement {
+	currentEndpoint := &EndpointMeasurement{
 		Endpoint: endpoint,
 		Protocol: "https",
 	}
@@ -200,14 +200,14 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 // a) establishing a QUIC connection to the target (QUICDo),
 // b) performing an HTTP GET request to the endpoint (HTTPDo).
 // It returns an EndpointMeasurement.
-func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip, endpoint string) EndpointMeasurement {
-	currentEndpoint := &H3EndpointMeasurement{
+func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip, endpoint string) *EndpointMeasurement {
+	currentEndpoint := &EndpointMeasurement{
 		Endpoint: endpoint,
-		Protocol: rt.proto,
+		Protocol: rt.Proto,
 	}
 	tlsConf := &tls.Config{
 		ServerName: rt.Request.URL.Hostname(),
-		NextProtos: []string{rt.proto},
+		NextProtos: []string{rt.Proto},
 	}
 	sess, err := g.QUICDo(ctx, endpoint, tlsConf)
 	currentEndpoint.QUICHandshakeMeasurement = &TLSHandshakeMeasurement{
