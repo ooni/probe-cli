@@ -175,7 +175,7 @@ func (m *Measurer) measureEndpointHTTP(ctx context.Context, URL *url.URL, endpoi
 		Protocol: "http",
 	}
 	// TCP connect step
-	conn, err := TCPDo(ctx, TCPConfig{endpoint: endpoint})
+	conn, err := TCPDo(ctx, TCPConfig{Endpoint: endpoint})
 	endpointMeasurement.TCPConnectMeasurement = &TCPConnectMeasurement{
 		Failure: archival.NewFailure(err),
 	}
@@ -218,7 +218,7 @@ func (m *Measurer) measureEndpointHTTPS(ctx context.Context, URL *url.URL, endpo
 		Protocol: "https",
 	}
 	// TCP connect step
-	conn, err := TCPDo(ctx, TCPConfig{endpoint: endpoint})
+	conn, err := TCPDo(ctx, TCPConfig{Endpoint: endpoint})
 	endpointMeasurement.TCPConnectMeasurement = &TCPConnectMeasurement{
 		Failure: archival.NewFailure(err),
 	}
