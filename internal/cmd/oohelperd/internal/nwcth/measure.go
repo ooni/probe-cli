@@ -42,14 +42,16 @@ func Measure(ctx context.Context, creq *CtrlRequest, config *Config) (*ControlRe
 		URL *url.URL
 		err error
 	)
-	if config.resolver == nil {
+	resolver := config.resolver
+	if resolver == nil {
 		// use a central resolver
-		config.resolver = newResolver()
+		resolver = newResolver()
 	}
-	if config.checker == nil {
-		config.checker = &DefaultInitChecker{resolver: config.resolver}
+	checker := config.checker
+	if checker == nil {
+		checker = &DefaultInitChecker{resolver: resolver}
 	}
-	URL, err = config.checker.InitialChecks(creq.HTTPRequest)
+	URL, err = checker.InitialChecks(creq.HTTPRequest)
 	if err != nil {
 		// return a valid response in case of NXDOMAIN so the probe can compare the failure
 		if err == ErrNoSuchHost {
@@ -57,17 +59,19 @@ func Measure(ctx context.Context, creq *CtrlRequest, config *Config) (*ControlRe
 		}
 		return nil, err
 	}
-	if config.explorer == nil {
-		config.explorer = &DefaultExplorer{resolver: config.resolver}
+	explorer := config.explorer
+	if explorer == nil {
+		explorer = &DefaultExplorer{resolver: resolver}
 	}
-	rts, err := config.explorer.Explore(URL, creq.HTTPRequestHeaders)
+	rts, err := explorer.Explore(URL, creq.HTTPRequestHeaders)
 	if err != nil {
 		return nil, ErrInternalServer
 	}
-	if config.generator == nil {
-		config.generator = &DefaultGenerator{resolver: config.resolver}
+	generator := config.generator
+	if generator == nil {
+		generator = &DefaultGenerator{resolver: resolver}
 	}
-	meas, err := config.generator.Generate(ctx, rts, creq.Addrs)
+	meas, err := generator.Generate(ctx, rts, creq.Addrs)
 	if err != nil {
 		return nil, err
 	}

@@ -18,9 +18,10 @@ func TCPDo(ctx context.Context, config TCPConfig) (net.Conn, error) {
 	if config.dialer != nil {
 		return config.dialer.DialContext(ctx, "tcp", config.endpoint)
 	}
-	if config.resolver == nil {
-		config.resolver = &netxlite.ResolverSystem{}
+	resolver := config.resolver
+	if resolver == nil {
+		resolver = &netxlite.ResolverSystem{}
 	}
-	dialer := NewDialerResolver(config.resolver)
+	dialer := NewDialerResolver(resolver)
 	return dialer.DialContext(ctx, "tcp", config.endpoint)
 }
