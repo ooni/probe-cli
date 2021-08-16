@@ -29,6 +29,15 @@ type DefaultGenerator struct {
 	transport  http.RoundTripper
 }
 
+// the testhelper uses the same network operations as websteps
+var (
+	DNSDo  = websteps.DNSDo
+	TCPDo  = websteps.TCPDo
+	QUICDo = websteps.QUICDo
+	TLSDo  = websteps.TLSDo
+	HTTPDo = websteps.HTTPDo
+)
+
 // Generate takes in input a list of round trips and outputs
 // a list of connectivity measurements for each of them.
 func (g *DefaultGenerator) Generate(ctx context.Context, rts []*RoundTrip, clientResolutions []string) ([]*URLMeasurement, error) {
@@ -42,7 +51,10 @@ func (g *DefaultGenerator) Generate(ctx context.Context, rts []*RoundTrip, clien
 
 // GenerateURL returns a URLMeasurement.
 func (g *DefaultGenerator) GenerateURL(ctx context.Context, rt *RoundTrip, clientResolutions []string) *URLMeasurement {
-	addrs, err := g.DNSDo(ctx, rt.Request.URL.Hostname())
+	addrs, err := DNSDo(ctx, websteps.DNSConfig{
+		Domain:   rt.Request.URL.Hostname(),
+		Resolver: g.resolver,
+	})
 	currentURL := &URLMeasurement{
 		DNS: &DNSMeasurement{
 			Domain:  rt.Request.URL.Hostname(),
@@ -99,7 +111,11 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 		Endpoint: endpoint,
 		Protocol: "http",
 	}
-	tcpConn, err := g.TCPDo(ctx, endpoint)
+	tcpConn, err := TCPDo(ctx, websteps.TCPConfig{
+		Dialer:   g.dialer,
+		Endpoint: endpoint,
+		Resolver: g.resolver,
+	})
 	currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{
 		Failure: newfailure(err),
 	}
@@ -120,7 +136,7 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 	if g.transport != nil {
 		transport = g.transport
 	}
-	resp, body, err := g.HTTPDo(rt.Request, transport)
+	resp, body, err := HTTPDo(rt.Request, transport)
 	if err != nil {
 		// failed Response
 		currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
@@ -149,7 +165,11 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 		Protocol: "https",
 	}
 	var tcpConn, tlsConn net.Conn
-	tcpConn, err := g.TCPDo(ctx, endpoint)
+	tcpConn, err := TCPDo(ctx, websteps.TCPConfig{
+		Dialer:   g.dialer,
+		Endpoint: endpoint,
+		Resolver: g.resolver,
+	})
 	currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{
 		Failure: newfailure(err),
 	}
@@ -158,7 +178,7 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	}
 	defer tcpConn.Close()
 
-	tlsConn, err = g.TLSDo(tcpConn, rt.Request.URL.Hostname())
+	tlsConn, err = TLSDo(tcpConn, rt.Request.URL.Hostname())
 	currentEndpoint.TLSHandshakeMeasurement = &TLSHandshakeMeasurement{
 		Failure: newfailure(err),
 	}
@@ -179,7 +199,7 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	if g.transport != nil {
 		transport = g.transport
 	}
-	resp, body, err := g.HTTPDo(rt.Request, transport)
+	resp, body, err := HTTPDo(rt.Request, transport)
 	if err != nil {
 		// failed Response
 		currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
@@ -210,7 +230,12 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 		ServerName: rt.Request.URL.Hostname(),
 		NextProtos: []string{rt.Proto},
 	}
-	sess, err := g.QUICDo(ctx, endpoint, tlsConf)
+	sess, err := QUICDo(ctx, websteps.QUICConfig{
+		Endpoint:   endpoint,
+		QUICDialer: g.quicDialer,
+		TLSConf:    tlsConf,
+		Resolver:   g.resolver,
+	})
 	currentEndpoint.QUICHandshakeMeasurement = &TLSHandshakeMeasurement{
 		Failure: newfailure(err),
 	}
@@ -229,7 +254,7 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 	if g.transport != nil {
 		transport = g.transport
 	}
-	resp, body, err := g.HTTPDo(rt.Request, transport)
+	resp, body, err := HTTPDo(rt.Request, transport)
 	if err != nil {
 		// failed Response
 		currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
@@ -245,39 +270,6 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 		StatusCode: int64(resp.StatusCode),
 	}
 	return currentEndpoint
-}
-
-// DNSDo performs the DNS check.
-func (g *DefaultGenerator) DNSDo(ctx context.Context, domain string) ([]string, error) {
-	return g.resolver.LookupHost(ctx, domain)
-}
-
-// TCPDo performs the TCP check.
-func (g *DefaultGenerator) TCPDo(ctx context.Context, endpoint string) (net.Conn, error) {
-	if g.dialer != nil {
-		return g.dialer.DialContext(ctx, "tcp", endpoint)
-	}
-	dialer := NewDialerResolver(g.resolver)
-	return dialer.DialContext(ctx, "tcp", endpoint)
-}
-
-// TLSDo performs the TLS check.
-func (g *DefaultGenerator) TLSDo(conn net.Conn, hostname string) (*tls.Conn, error) {
-	tlsConn := tls.Client(conn, &tls.Config{
-		ServerName: hostname,
-		NextProtos: []string{"h2", "http/1.1"},
-	})
-	err := tlsConn.Handshake()
-	return tlsConn, err
-}
-
-// QUICDo performs the QUIC check.
-func (g *DefaultGenerator) QUICDo(ctx context.Context, endpoint string, tlsConf *tls.Config) (quic.EarlySession, error) {
-	if g.quicDialer != nil {
-		return g.quicDialer.DialContext(ctx, "udp", endpoint, tlsConf, &quic.Config{})
-	}
-	dialer := NewQUICDialerResolver(g.resolver)
-	return dialer.DialContext(ctx, "udp", endpoint, tlsConf, &quic.Config{})
 }
 
 // HTTPDo performs the HTTP check.

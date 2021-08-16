@@ -438,8 +438,15 @@ func TestGenerateHTTPDoFails(t *testing.T) {
 		if len(u.Endpoints) < 1 {
 			t.Fatal("unexpected number of endpoints", len(u.Endpoints))
 		}
+		// this can occur when the network is unreachable, but it is irrelevant for checking HTTP behavior
+		if u.Endpoints[0].TCPConnectMeasurement != nil && u.Endpoints[0].TCPConnectMeasurement.Failure != nil {
+			continue
+		}
+		if u.Endpoints[0].QUICHandshakeMeasurement != nil && u.Endpoints[0].QUICHandshakeMeasurement.Failure != nil {
+			continue
+		}
 		if u.Endpoints[0].HTTPRoundTripMeasurement == nil {
-			t.Fatal("roundtrip should not be nil")
+			t.Fatal("roundtrip should not be nil", u.Endpoints[0].TCPConnectMeasurement.Failure, "jaaaa")
 		}
 		if u.Endpoints[0].HTTPRoundTripMeasurement.Response == nil {
 			t.Fatal("roundtrip response should not be nil")
