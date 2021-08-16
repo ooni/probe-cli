@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/websteps"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -56,7 +57,7 @@ func parseAltSvc(resp *http.Response, URL *url.URL) (*altSvcH3, error) {
 			if len(kv) != 2 {
 				continue
 			}
-			if _, ok := supportedQUICVersions[kv[0]]; ok {
+			if _, ok := websteps.SupportedQUICVersions[kv[0]]; ok {
 				host, port, err := net.SplitHostPort(kv[1])
 				runtimex.PanicOnError(err, "net.SplitHostPort failed")
 				if host == "" {

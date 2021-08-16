@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/websteps"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -72,7 +73,7 @@ func (g *DefaultGenerator) GenerateURL(ctx context.Context, rt *RoundTrip, clien
 		endpoint := net.JoinHostPort(addr, port)
 
 		var currentEndpoint *EndpointMeasurement
-		_, h3 := supportedQUICVersions[rt.Proto]
+		_, h3 := websteps.SupportedQUICVersions[rt.Proto]
 		switch {
 		case h3:
 			currentEndpoint = g.GenerateH3Endpoint(ctx, rt, endpoint)

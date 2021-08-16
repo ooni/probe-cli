@@ -19,12 +19,6 @@ type (
 
 var ErrInternalServer = errors.New("Internal server failure")
 
-// supportedQUICVersions are the H3 over QUIC versions we currently support
-var supportedQUICVersions = map[string]bool{
-	"h3":    true,
-	"h3-29": true,
-}
-
 // Config contains the building blocks of the testhelper algorithm
 type Config struct {
 	checker   InitChecker
