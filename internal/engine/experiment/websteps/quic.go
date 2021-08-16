@@ -20,6 +20,10 @@ func QUICDo(ctx context.Context, config QUICConfig) (quic.EarlySession, error) {
 	if config.QUICDialer != nil {
 		return config.QUICDialer.DialContext(ctx, "udp", config.Endpoint, config.TLSConf, &quic.Config{})
 	}
-	dialer := NewQUICDialerResolver(config.Resolver)
+	resolver := config.Resolver
+	if resolver == nil {
+		resolver = &netxlite.ResolverSystem{}
+	}
+	dialer := NewQUICDialerResolver(resolver)
 	return dialer.DialContext(ctx, "udp", config.Endpoint, config.TLSConf, &quic.Config{})
 }
