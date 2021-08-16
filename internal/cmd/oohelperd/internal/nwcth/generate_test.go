@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -220,9 +219,6 @@ func TestGenerateHTTP(t *testing.T) {
 	if endpointMeasurement == nil {
 		t.Fatal("unexpected nil urlMeasurement")
 	}
-	if reflect.TypeOf(endpointMeasurement).String() != "*nwcth.HTTPEndpointMeasurement" {
-		t.Fatal("unexpected type")
-	}
 	if endpointMeasurement.TCPConnectMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
@@ -250,9 +246,6 @@ func TestGenerateHTTPS(t *testing.T) {
 	}
 	if endpointMeasurement == nil {
 		t.Fatal("unexpected nil urlMeasurement")
-	}
-	if reflect.TypeOf(endpointMeasurement).String() != "*nwcth.HTTPSEndpointMeasurement" {
-		t.Fatal("unexpected type")
 	}
 	if endpointMeasurement.TCPConnectMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
@@ -285,9 +278,6 @@ func TestGenerateHTTPSTLSFailure(t *testing.T) {
 	if endpointMeasurement == nil {
 		t.Fatal("unexpected nil urlMeasurement")
 	}
-	if reflect.TypeOf(endpointMeasurement).String() != "*nwcth.HTTPSEndpointMeasurement" {
-		t.Fatal("unexpected type")
-	}
 	if endpointMeasurement.TCPConnectMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
@@ -318,9 +308,6 @@ func TestGenerateH3(t *testing.T) {
 	}
 	if endpointMeasurement == nil {
 		t.Fatal("unexpected nil urlMeasurement")
-	}
-	if reflect.TypeOf(endpointMeasurement).String() != "*nwcth.H3EndpointMeasurement" {
-		t.Fatal("unexpected type")
 	}
 	if endpointMeasurement.QUICHandshakeMeasurement == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
@@ -451,16 +438,16 @@ func TestGenerateHTTPDoFails(t *testing.T) {
 		if len(u.Endpoints) < 1 {
 			t.Fatal("unexpected number of endpoints", len(u.Endpoints))
 		}
-		if u.Endpoints[0].GetHTTPRoundTrip() == nil {
+		if u.Endpoints[0].HTTPRoundTripMeasurement == nil {
 			t.Fatal("roundtrip should not be nil")
 		}
-		if u.Endpoints[0].GetHTTPRoundTrip().Response == nil {
+		if u.Endpoints[0].HTTPRoundTripMeasurement.Response == nil {
 			t.Fatal("roundtrip response should not be nil")
 		}
-		if u.Endpoints[0].GetHTTPRoundTrip().Response.Failure == nil {
+		if u.Endpoints[0].HTTPRoundTripMeasurement.Response.Failure == nil {
 			t.Fatal("expected an HTTP error")
 		}
-		if !strings.HasSuffix(*u.Endpoints[0].GetHTTPRoundTrip().Response.Failure, expected.Error()) {
+		if !strings.HasSuffix(*u.Endpoints[0].HTTPRoundTripMeasurement.Response.Failure, expected.Error()) {
 			t.Fatal("unexpected failure type")
 		}
 	}

@@ -145,13 +145,13 @@ func (m Measurer) Run(
 		}
 		// the testhelper tells us which endpoints to measure
 		for _, controlEndpoint := range controlURLMeasurement.Endpoints {
-			rt := controlEndpoint.GetHTTPRoundTrip()
+			rt := controlEndpoint.HTTPRoundTripMeasurement
 			if rt == nil || rt.Request == nil {
 				continue
 			}
 			var endpointMeasurement *EndpointMeasurement
-			proto := controlEndpoint.GetProtocol()
-			_, h3 := supportedQUICVersions[proto]
+			proto := controlEndpoint.Protocol
+			_, h3 := SupportedQUICVersions[proto]
 			switch {
 			case h3:
 				endpointMeasurement = m.measureEndpointH3(ctx, URL, controlEndpoint.Endpoint, rt.Request.Headers, proto)

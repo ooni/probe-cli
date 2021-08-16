@@ -47,81 +47,25 @@ type DNSMeasurement struct {
 	Failure *string `json:"failure"`
 }
 
-// type EndpointMeasurement interface {
-// 	GetHTTPRoundTrip() *HTTPRoundTripMeasurement
-// 	GetProtocol() string
-// }
-
-// HTTPEndpointMeasurement is the measurement of requesting a specific endpoint via HTTP.
-type HTTPEndpointMeasurement struct {
-	// Endpoint is the endpoint we're measuring.
-	Endpoint string `json:"endpoint"`
-
-	// Protocol is http
-	Protocol string `json:"protocol"`
-
-	// TCPConnectMeasurement is the related TCP connect measurement.
-	TCPConnectMeasurement *TCPConnectMeasurement `json:"tcp_connect"`
-
-	// HTTPRoundTripMeasurement is the related HTTP GET measurement.
-	HTTPRoundTripMeasurement *HTTPRoundTripMeasurement `json:"http_round_trip"`
-}
-
-func (h *HTTPEndpointMeasurement) GetHTTPRoundTrip() *HTTPRoundTripMeasurement {
-	return h.HTTPRoundTripMeasurement
-}
-func (h *HTTPEndpointMeasurement) GetProtocol() string {
-	return h.Protocol
-}
-
 // HTTPSEndpointMeasurement is the measurement of requesting a specific endpoint via HTTPS.
 type EndpointMeasurement struct {
 	// Endpoint is the endpoint we're measuring.
 	Endpoint string `json:"endpoint"`
 
-	// Protocol is https
+	// Protocol is the used protocol. It can be "http", "https", "h3", "h3-29" or other supported QUIC protocols
 	Protocol string `json:"protocol"`
 
-	// QUICHandshakeMeasurement is the related QUIC(TLS 1.3) handshake measurement.
-	QUICHandshakeMeasurement *TLSHandshakeMeasurement `json:"quic_handshake"`
-
-	// TCPConnectMeasurement is the related TCP connect measurement.
+	// TCPConnectMeasurement is the related TCP connect measurement, if applicable (nil for h3 requests)
 	TCPConnectMeasurement *TCPConnectMeasurement `json:"tcp_connect"`
 
-	// TLSHandshakeMeasurement is the related TLS handshake measurement.
+	// QUICHandshakeMeasurement is the related QUIC(TLS 1.3) handshake measurement, if applicable (nil for http, https requests)
+	QUICHandshakeMeasurement *TLSHandshakeMeasurement `json:"quic_handshake"`
+
+	// TLSHandshakeMeasurement is the related TLS handshake measurement, if applicable (nil for http, h3 requests)
 	TLSHandshakeMeasurement *TLSHandshakeMeasurement `json:"tls_handshake"`
 
 	// HTTPRoundTripMeasurement is the related HTTP GET measurement.
 	HTTPRoundTripMeasurement *HTTPRoundTripMeasurement `json:"http_round_trip"`
-}
-
-func (h *EndpointMeasurement) GetHTTPRoundTrip() *HTTPRoundTripMeasurement {
-	return h.HTTPRoundTripMeasurement
-}
-func (h *EndpointMeasurement) GetProtocol() string {
-	return h.Protocol
-}
-
-// H3EndpointMeasurement is the measurement of requesting a specific endpoint via HTTP/3.
-type H3EndpointMeasurement struct {
-	// Endpoint is the endpoint we're measuring.
-	Endpoint string `json:"endpoint"`
-
-	// Protocol is h3, or h3-29
-	Protocol string `json:"protocol"`
-
-	// QUICHandshakeMeasurement is the related QUIC(TLS 1.3) handshake measurement.
-	QUICHandshakeMeasurement *TLSHandshakeMeasurement `json:"quic_handshake"`
-
-	// HTTPRoundTripMeasurement is the related HTTP GET measurement.
-	HTTPRoundTripMeasurement *HTTPRoundTripMeasurement `json:"http_round_trip"`
-}
-
-func (h *H3EndpointMeasurement) GetHTTPRoundTrip() *HTTPRoundTripMeasurement {
-	return h.HTTPRoundTripMeasurement
-}
-func (h *H3EndpointMeasurement) GetProtocol() string {
-	return h.Protocol
 }
 
 // Implementation note: OONI uses nil to indicate no error but here
