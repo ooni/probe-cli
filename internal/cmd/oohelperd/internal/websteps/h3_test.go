@@ -1,4 +1,4 @@
-package nwcth
+package websteps
 
 import (
 	"net/http"
