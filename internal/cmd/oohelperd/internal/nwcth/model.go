@@ -13,5 +13,5 @@ type (
 	TLSHandshakeMeasurement  = websteps.TLSHandshakeMeasurement
 	HTTPRequestMeasurement   = websteps.HTTPRequestMeasurement
 	HTTPResponseMeasurement  = websteps.HTTPResponseMeasurement
-	RoundTrip                = websteps.RoundTrip
+	RoundTrip                = websteps.RoundTripInfo
 )
