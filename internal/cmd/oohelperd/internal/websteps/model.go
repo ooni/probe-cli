@@ -1,4 +1,4 @@
-package nwcth
+package websteps
 
 import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/websteps"

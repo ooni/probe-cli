@@ -1,7 +1,7 @@
-// Package nwcth implements the new web connectivity test helper.
+// Package websteps implements the websteps test helper.
 //
 // See https://github.com/ooni/spec/blob/master/backends/th-007-nwcth.md
-package nwcth
+package websteps
 
 import (
 	"encoding/json"
@@ -30,7 +30,7 @@ type Handler struct {
 }
 
 // ServeHTTP implements http.Handler.ServeHTTP.
-func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Server", fmt.Sprintf(
 		"oohelperd/%s ooniprobe-engine/%s", version.Version, version.Version,
 	))

@@ -1,4 +1,4 @@
-package nwcth
+package websteps
 
 import (
 	"context"
@@ -17,7 +17,7 @@ type (
 	ControlResponse = websteps.ControlResponse
 )
 
-var ErrInternalServer = errors.New("Internal server failure")
+var ErrInternalServer = errors.New("internal server error")
 
 // Config contains the building blocks of the testhelper algorithm
 type Config struct {

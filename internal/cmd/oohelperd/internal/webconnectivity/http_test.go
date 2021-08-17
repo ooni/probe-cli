@@ -1,4 +1,4 @@
-package internal_test
+package webconnectivity
 
 import (
 	"context"
@@ -7,16 +7,14 @@ import (
 	"strings"
 	"sync"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal"
 )
 
 func TestHTTPDoWithInvalidURL(t *testing.T) {
 	ctx := context.Background()
 	wg := new(sync.WaitGroup)
-	httpch := make(chan internal.CtrlHTTPResponse, 1)
+	httpch := make(chan CtrlHTTPResponse, 1)
 	wg.Add(1)
-	go internal.HTTPDo(ctx, &internal.HTTPConfig{
+	go HTTPDo(ctx, &HTTPConfig{
 		Client:            http.DefaultClient,
 		Headers:           nil,
 		MaxAcceptableBody: 1 << 24,
@@ -36,11 +34,11 @@ func TestHTTPDoWithHTTPTransportFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	wg := new(sync.WaitGroup)
-	httpch := make(chan internal.CtrlHTTPResponse, 1)
+	httpch := make(chan CtrlHTTPResponse, 1)
 	wg.Add(1)
-	go internal.HTTPDo(ctx, &internal.HTTPConfig{
+	go HTTPDo(ctx, &HTTPConfig{
 		Client: &http.Client{
-			Transport: internal.FakeTransport{
+			Transport: FakeTransport{
 				Err: expected,
 			},
 		},

@@ -1,4 +1,4 @@
-package nwcth
+package websteps
 
 import (
 	"context"
@@ -105,7 +105,7 @@ const requestWithoutDomainName = `{
 
 func TestWorkingAsIntended(t *testing.T) {
 	handler := Handler{Config: &Config{}}
-	srv := httptest.NewServer(handler)
+	srv := httptest.NewServer(&handler)
 	defer srv.Close()
 	type expectationSpec struct {
 		name            string
@@ -205,7 +205,7 @@ func TestWorkingAsIntended(t *testing.T) {
 
 func TestHandlerWithInternalServerError(t *testing.T) {
 	handler := Handler{Config: &Config{explorer: &MockExplorer{}}}
-	srv := httptest.NewServer(handler)
+	srv := httptest.NewServer(&handler)
 	defer srv.Close()
 	body := strings.NewReader(`{"url": "https://example.com"}`)
 	req, err := http.NewRequest("POST", srv.URL, body)

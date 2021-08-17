@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal"
-	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal/nwcth"
+	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal/websteps"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 )
 
@@ -53,8 +53,8 @@ func main() {
 
 func testableMain() {
 	mux := http.NewServeMux()
-	mux.Handle("/api/unstable/nwcth", nwcth.Handler{Config: &nwcth.Config{}})
-	mux.Handle("/", internal.Handler{
+	mux.Handle("/api/unstable/websteps", &websteps.Handler{Config: &websteps.Config{}})
+	mux.Handle("/", webconnectivity.Handler{
 		Client:            httpx,
 		Dialer:            dialer,
 		MaxAcceptableBody: maxAcceptableBody,

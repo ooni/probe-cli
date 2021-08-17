@@ -1,4 +1,4 @@
-package nwcth
+package websteps
 
 import (
 	"context"
@@ -75,8 +75,9 @@ func TestGenerateDNSFailure(t *testing.T) {
 
 func TestGenerate(t *testing.T) {
 	u, err := url.Parse("http://www.google.com")
+	runtimex.PanicOnError(err, "url.Parse failed for clearly good URL")
 	u2, err := url.Parse("https://www.google.com")
-	runtimex.PanicOnError(err, "url.Parse failed")
+	runtimex.PanicOnError(err, "url.Parse failed for clearly good URL")
 	rts := []*RoundTrip{
 		{
 			Proto: "http",
@@ -390,8 +391,9 @@ func TestGenerateHTTPDoFails(t *testing.T) {
 		resolver:  newResolver(),
 	}
 	u, err := url.Parse("http://www.google.com")
+	runtimex.PanicOnError(err, "url.Parse failed for clearly good URL")
 	u2, err := url.Parse("https://www.google.com")
-	runtimex.PanicOnError(err, "url.Parse failed")
+	runtimex.PanicOnError(err, "url.Parse failed for clearly good URL")
 	rts := []*RoundTrip{
 		{
 			Proto: "http",
