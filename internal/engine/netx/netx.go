@@ -139,7 +139,7 @@ func NewResolver(config Config) Resolver {
 	if config.ResolveSaver != nil {
 		r = resolver.SaverResolver{Resolver: r, Saver: config.ResolveSaver}
 	}
-	return resolver.IDNAResolver{Resolver: r}
+	return &resolver.IDNAResolver{Resolver: r}
 }
 
 // NewDialer creates a new Dialer from the specified config

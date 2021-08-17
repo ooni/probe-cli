@@ -20,7 +20,7 @@ import (
 
 func TestNewResolverVanilla(t *testing.T) {
 	r := netx.NewResolver(netx.Config{})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -44,7 +44,7 @@ func TestNewResolverSpecificResolver(t *testing.T) {
 			// not initialized because it doesn't matter in this context
 		},
 	})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -66,7 +66,7 @@ func TestNewResolverWithBogonFilter(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
 		BogonIsError: true,
 	})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -92,7 +92,7 @@ func TestNewResolverWithLogging(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
 		Logger: log.Log,
 	})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -122,7 +122,7 @@ func TestNewResolverWithSaver(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
 		ResolveSaver: saver,
 	})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -151,7 +151,7 @@ func TestNewResolverWithReadWriteCache(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
 		CacheResolutions: true,
 	})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -182,7 +182,7 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 			"dns.google.com": {"8.8.8.8"},
 		},
 	})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}

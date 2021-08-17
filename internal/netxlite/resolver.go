@@ -83,14 +83,15 @@ func (r *ResolverLogger) Address() string {
 	return ""
 }
 
-// IDNAResolver is to support resolving Internationalized Domain Names.
+// ResolverIDNA supports resolving Internationalized Domain Names.
+//
 // See RFC3492 for more information.
-type IDNAResolver struct {
+type ResolverIDNA struct {
 	Resolver
 }
 
-// LookupHost implements Resolver.LookupHost
-func (r *IDNAResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+// LookupHost implements Resolver.LookupHost.
+func (r *ResolverIDNA) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	host, err := idna.ToASCII(hostname)
 	if err != nil {
 		return nil, err
@@ -99,7 +100,7 @@ func (r *IDNAResolver) LookupHost(ctx context.Context, hostname string) ([]strin
 }
 
 // Network implements Resolver.Network.
-func (r *IDNAResolver) Network() string {
+func (r *ResolverIDNA) Network() string {
 	if rn, ok := r.Resolver.(resolverNetworker); ok {
 		return rn.Network()
 	}
@@ -107,7 +108,7 @@ func (r *IDNAResolver) Network() string {
 }
 
 // Address implements Resolver.Address.
-func (r *IDNAResolver) Address() string {
+func (r *ResolverIDNA) Address() string {
 	if ra, ok := r.Resolver.(resolverAddresser); ok {
 		return ra.Address()
 	}
