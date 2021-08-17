@@ -114,7 +114,7 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 		Endpoint: endpoint,
 		Resolver: g.resolver,
 	})
-	currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{
+	currentEndpoint.TCPConnect = &TCPConnectMeasurement{
 		Failure: newfailure(err),
 	}
 	if err != nil {
@@ -123,7 +123,7 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 	defer tcpConn.Close()
 
 	// prepare HTTPRoundTripMeasurement of this endpoint
-	currentEndpoint.HTTPRoundTripMeasurement = &HTTPRoundTripMeasurement{
+	currentEndpoint.HTTPRoundTrip = &HTTPRoundTripMeasurement{
 		Request: &HTTPRequestMeasurement{
 			Headers: rt.Request.Header,
 			Method:  "GET",
@@ -137,13 +137,13 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 	resp, body, err := HTTPDo(rt.Request, transport)
 	if err != nil {
 		// failed Response
-		currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
+		currentEndpoint.HTTPRoundTrip.Response = &HTTPResponseMeasurement{
 			Failure: newfailure(err),
 		}
 		return currentEndpoint
 	}
 	// successful Response
-	currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
+	currentEndpoint.HTTPRoundTrip.Response = &HTTPResponseMeasurement{
 		BodyLength: int64(len(body)),
 		Failure:    nil,
 		Headers:    resp.Header,
@@ -168,7 +168,7 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 		Endpoint: endpoint,
 		Resolver: g.resolver,
 	})
-	currentEndpoint.TCPConnectMeasurement = &TCPConnectMeasurement{
+	currentEndpoint.TCPConnect = &TCPConnectMeasurement{
 		Failure: newfailure(err),
 	}
 	if err != nil {
@@ -177,7 +177,7 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	defer tcpConn.Close()
 
 	tlsConn, err = TLSDo(tcpConn, rt.Request.URL.Hostname())
-	currentEndpoint.TLSHandshakeMeasurement = &TLSHandshakeMeasurement{
+	currentEndpoint.TLSHandshake = &TLSHandshakeMeasurement{
 		Failure: newfailure(err),
 	}
 	if err != nil {
@@ -186,7 +186,7 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	defer tlsConn.Close()
 
 	// prepare HTTPRoundTripMeasurement of this endpoint
-	currentEndpoint.HTTPRoundTripMeasurement = &HTTPRoundTripMeasurement{
+	currentEndpoint.HTTPRoundTrip = &HTTPRoundTripMeasurement{
 		Request: &HTTPRequestMeasurement{
 			Headers: rt.Request.Header,
 			Method:  "GET",
@@ -200,13 +200,13 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	resp, body, err := HTTPDo(rt.Request, transport)
 	if err != nil {
 		// failed Response
-		currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
+		currentEndpoint.HTTPRoundTrip.Response = &HTTPResponseMeasurement{
 			Failure: newfailure(err),
 		}
 		return currentEndpoint
 	}
 	// successful Response
-	currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
+	currentEndpoint.HTTPRoundTrip.Response = &HTTPResponseMeasurement{
 		BodyLength: int64(len(body)),
 		Failure:    nil,
 		Headers:    resp.Header,
@@ -234,14 +234,14 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 		TLSConf:    tlsConf,
 		Resolver:   g.resolver,
 	})
-	currentEndpoint.QUICHandshakeMeasurement = &TLSHandshakeMeasurement{
+	currentEndpoint.QUICHandshake = &TLSHandshakeMeasurement{
 		Failure: newfailure(err),
 	}
 	if err != nil {
 		return currentEndpoint
 	}
 	// prepare HTTPRoundTripMeasurement of this endpoint
-	currentEndpoint.HTTPRoundTripMeasurement = &HTTPRoundTripMeasurement{
+	currentEndpoint.HTTPRoundTrip = &HTTPRoundTripMeasurement{
 		Request: &HTTPRequestMeasurement{
 			Headers: rt.Request.Header,
 			Method:  "GET",
@@ -255,13 +255,13 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 	resp, body, err := HTTPDo(rt.Request, transport)
 	if err != nil {
 		// failed Response
-		currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
+		currentEndpoint.HTTPRoundTrip.Response = &HTTPResponseMeasurement{
 			Failure: newfailure(err),
 		}
 		return currentEndpoint
 	}
 	// successful Response
-	currentEndpoint.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
+	currentEndpoint.HTTPRoundTrip.Response = &HTTPResponseMeasurement{
 		BodyLength: int64(len(body)),
 		Failure:    nil,
 		Headers:    resp.Header,

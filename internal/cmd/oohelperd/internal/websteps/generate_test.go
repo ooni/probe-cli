@@ -220,10 +220,10 @@ func TestGenerateHTTP(t *testing.T) {
 	if endpointMeasurement == nil {
 		t.Fatal("unexpected nil urlMeasurement")
 	}
-	if endpointMeasurement.TCPConnectMeasurement == nil {
+	if endpointMeasurement.TCPConnect == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.HTTPRoundTripMeasurement == nil {
+	if endpointMeasurement.HTTPRoundTrip == nil {
 		t.Fatal("HTTPRoundTripMeasurement should not be nil")
 	}
 }
@@ -248,13 +248,13 @@ func TestGenerateHTTPS(t *testing.T) {
 	if endpointMeasurement == nil {
 		t.Fatal("unexpected nil urlMeasurement")
 	}
-	if endpointMeasurement.TCPConnectMeasurement == nil {
+	if endpointMeasurement.TCPConnect == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.TLSHandshakeMeasurement == nil {
+	if endpointMeasurement.TLSHandshake == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.HTTPRoundTripMeasurement == nil {
+	if endpointMeasurement.HTTPRoundTrip == nil {
 		t.Fatal("HTTPRoundTripMeasurement should not be nil")
 	}
 }
@@ -279,13 +279,13 @@ func TestGenerateHTTPSTLSFailure(t *testing.T) {
 	if endpointMeasurement == nil {
 		t.Fatal("unexpected nil urlMeasurement")
 	}
-	if endpointMeasurement.TCPConnectMeasurement == nil {
+	if endpointMeasurement.TCPConnect == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.TLSHandshakeMeasurement == nil {
+	if endpointMeasurement.TLSHandshake == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.HTTPRoundTripMeasurement != nil {
+	if endpointMeasurement.HTTPRoundTrip != nil {
 		t.Fatal("HTTPRoundTripMeasurement should be nil")
 	}
 }
@@ -310,10 +310,10 @@ func TestGenerateH3(t *testing.T) {
 	if endpointMeasurement == nil {
 		t.Fatal("unexpected nil urlMeasurement")
 	}
-	if endpointMeasurement.QUICHandshakeMeasurement == nil {
+	if endpointMeasurement.QUICHandshake == nil {
 		t.Fatal("TCPConnectMeasurement should not be nil")
 	}
-	if endpointMeasurement.HTTPRoundTripMeasurement == nil {
+	if endpointMeasurement.HTTPRoundTrip == nil {
 		t.Fatal("HTTPRoundTripMeasurement should not be nil")
 	}
 }
@@ -340,13 +340,13 @@ func TestGenerateTCPDoFails(t *testing.T) {
 	if err != nil {
 		t.Fatal("unexpected err")
 	}
-	if endpointMeasurement.TCPConnectMeasurement == nil {
+	if endpointMeasurement.TCPConnect == nil {
 		t.Fatal("QUIC handshake should not be nil")
 	}
-	if endpointMeasurement.TCPConnectMeasurement.Failure == nil {
+	if endpointMeasurement.TCPConnect.Failure == nil {
 		t.Fatal("expected an error here")
 	}
-	if *endpointMeasurement.TCPConnectMeasurement.Failure != *newfailure(expected) {
+	if *endpointMeasurement.TCPConnect.Failure != *newfailure(expected) {
 		t.Fatal("unexpected error type")
 	}
 }
@@ -373,13 +373,13 @@ func TestGenerateQUICDoFails(t *testing.T) {
 	if err != nil {
 		t.Fatal("unexpected err")
 	}
-	if endpointMeasurement.QUICHandshakeMeasurement == nil {
+	if endpointMeasurement.QUICHandshake == nil {
 		t.Fatal("QUIC handshake should not be nil")
 	}
-	if endpointMeasurement.QUICHandshakeMeasurement.Failure == nil {
+	if endpointMeasurement.QUICHandshake.Failure == nil {
 		t.Fatal("expected an error here")
 	}
-	if *endpointMeasurement.QUICHandshakeMeasurement.Failure != *newfailure(expected) {
+	if *endpointMeasurement.QUICHandshake.Failure != *newfailure(expected) {
 		t.Fatal("unexpected error type")
 	}
 }
@@ -441,22 +441,22 @@ func TestGenerateHTTPDoFails(t *testing.T) {
 			t.Fatal("unexpected number of endpoints", len(u.Endpoints))
 		}
 		// this can occur when the network is unreachable, but it is irrelevant for checking HTTP behavior
-		if u.Endpoints[0].TCPConnectMeasurement != nil && u.Endpoints[0].TCPConnectMeasurement.Failure != nil {
+		if u.Endpoints[0].TCPConnect != nil && u.Endpoints[0].TCPConnect.Failure != nil {
 			continue
 		}
-		if u.Endpoints[0].QUICHandshakeMeasurement != nil && u.Endpoints[0].QUICHandshakeMeasurement.Failure != nil {
+		if u.Endpoints[0].QUICHandshake != nil && u.Endpoints[0].QUICHandshake.Failure != nil {
 			continue
 		}
-		if u.Endpoints[0].HTTPRoundTripMeasurement == nil {
-			t.Fatal("roundtrip should not be nil", u.Endpoints[0].TCPConnectMeasurement.Failure, "jaaaa")
+		if u.Endpoints[0].HTTPRoundTrip == nil {
+			t.Fatal("roundtrip should not be nil", u.Endpoints[0].TCPConnect.Failure, "jaaaa")
 		}
-		if u.Endpoints[0].HTTPRoundTripMeasurement.Response == nil {
+		if u.Endpoints[0].HTTPRoundTrip.Response == nil {
 			t.Fatal("roundtrip response should not be nil")
 		}
-		if u.Endpoints[0].HTTPRoundTripMeasurement.Response.Failure == nil {
+		if u.Endpoints[0].HTTPRoundTrip.Response.Failure == nil {
 			t.Fatal("expected an HTTP error")
 		}
-		if !strings.HasSuffix(*u.Endpoints[0].HTTPRoundTripMeasurement.Response.Failure, expected.Error()) {
+		if !strings.HasSuffix(*u.Endpoints[0].HTTPRoundTrip.Response.Failure, expected.Error()) {
 			t.Fatal("unexpected failure type")
 		}
 	}
