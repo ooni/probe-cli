@@ -1,3 +1,16 @@
+// Package websteps implements the websteps experiment.
+//
+// Specifications:
+//
+// - test helper: https://github.com/ooni/spec/blob/master/backends/th-007-websteps.md
+//
+// - experiment: N/A.
+//
+// We are currently implementing:
+//
+// - version 202108.17.1114 of the test helper spec.
+//
+// - version N/A of the experiment spec.
 package websteps
 
 import (
@@ -17,8 +30,8 @@ import (
 )
 
 const (
-	testName    = "web_steps"
-	testVersion = "0.1.0"
+	testName    = "websteps"
+	testVersion = "0.0.1"
 )
 
 // Config contains the experiment config.
@@ -113,19 +126,19 @@ func (m Measurer) Run(
 	}
 	// 4. Query the testhelper
 	resp, err := Control(ctx, sess, testhelper.Address, CtrlRequest{
-		HTTPRequest: URL.String(),
-		HTTPRequestHeaders: map[string][]string{
+		URL: URL.String(),
+		Headers: map[string][]string{
 			"Accept":          {httpheader.Accept()},
 			"Accept-Language": {httpheader.AcceptLanguage()},
 			"User-Agent":      {httpheader.UserAgent()},
 		},
 		Addrs: endpoints,
 	})
-	if err != nil || resp.URLMeasurements == nil {
+	if err != nil || resp.URLs == nil {
 		return errors.New("no control response")
 	}
 	// 5. Go over the Control URL measurements and reproduce them without following redirects, one by one.
-	for _, controlURLMeasurement := range resp.URLMeasurements {
+	for _, controlURLMeasurement := range resp.URLs {
 		urlMeasurement := &URLMeasurement{
 			URL:       controlURLMeasurement.URL,
 			Endpoints: []*EndpointMeasurement{},
@@ -145,7 +158,7 @@ func (m Measurer) Run(
 		}
 		// the testhelper tells us which endpoints to measure
 		for _, controlEndpoint := range controlURLMeasurement.Endpoints {
-			rt := controlEndpoint.HTTPRoundTripMeasurement
+			rt := controlEndpoint.HTTPRoundTrip
 			if rt == nil || rt.Request == nil {
 				continue
 			}
@@ -176,7 +189,7 @@ func (m *Measurer) measureEndpointHTTP(ctx context.Context, URL *url.URL, endpoi
 	}
 	// TCP connect step
 	conn, err := TCPDo(ctx, TCPConfig{Endpoint: endpoint})
-	endpointMeasurement.TCPConnectMeasurement = &TCPConnectMeasurement{
+	endpointMeasurement.TCPConnect = &TCPConnectMeasurement{
 		Failure: archival.NewFailure(err),
 	}
 	if err != nil {
@@ -186,7 +199,7 @@ func (m *Measurer) measureEndpointHTTP(ctx context.Context, URL *url.URL, endpoi
 
 	// HTTP roundtrip step
 	request := NewRequest(ctx, URL, headers)
-	endpointMeasurement.HTTPRoundTripMeasurement = &HTTPRoundTripMeasurement{
+	endpointMeasurement.HTTPRoundTrip = &HTTPRoundTripMeasurement{
 		Request: &HTTPRequestMeasurement{
 			Headers: request.Header,
 			Method:  "GET",
@@ -197,13 +210,13 @@ func (m *Measurer) measureEndpointHTTP(ctx context.Context, URL *url.URL, endpoi
 	resp, body, err := HTTPDo(request, transport)
 	if err != nil {
 		// failed Response
-		endpointMeasurement.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
+		endpointMeasurement.HTTPRoundTrip.Response = &HTTPResponseMeasurement{
 			Failure: archival.NewFailure(err),
 		}
 		return endpointMeasurement
 	}
 	// successful Response
-	endpointMeasurement.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
+	endpointMeasurement.HTTPRoundTrip.Response = &HTTPResponseMeasurement{
 		BodyLength: int64(len(body)),
 		Failure:    nil,
 		Headers:    resp.Header,
@@ -219,7 +232,7 @@ func (m *Measurer) measureEndpointHTTPS(ctx context.Context, URL *url.URL, endpo
 	}
 	// TCP connect step
 	conn, err := TCPDo(ctx, TCPConfig{Endpoint: endpoint})
-	endpointMeasurement.TCPConnectMeasurement = &TCPConnectMeasurement{
+	endpointMeasurement.TCPConnect = &TCPConnectMeasurement{
 		Failure: archival.NewFailure(err),
 	}
 	if err != nil {
@@ -229,7 +242,7 @@ func (m *Measurer) measureEndpointHTTPS(ctx context.Context, URL *url.URL, endpo
 
 	// TLS handshake step
 	tlsconn, err := TLSDo(conn, URL.Hostname())
-	endpointMeasurement.TLSHandshakeMeasurement = &TLSHandshakeMeasurement{
+	endpointMeasurement.TLSHandshake = &TLSHandshakeMeasurement{
 		Failure: archival.NewFailure(err),
 	}
 	if err != nil {
@@ -239,7 +252,7 @@ func (m *Measurer) measureEndpointHTTPS(ctx context.Context, URL *url.URL, endpo
 
 	// HTTP roundtrip step
 	request := NewRequest(ctx, URL, headers)
-	endpointMeasurement.HTTPRoundTripMeasurement = &HTTPRoundTripMeasurement{
+	endpointMeasurement.HTTPRoundTrip = &HTTPRoundTripMeasurement{
 		Request: &HTTPRequestMeasurement{
 			Headers: request.Header,
 			Method:  "GET",
@@ -250,13 +263,13 @@ func (m *Measurer) measureEndpointHTTPS(ctx context.Context, URL *url.URL, endpo
 	resp, body, err := HTTPDo(request, transport)
 	if err != nil {
 		// failed Response
-		endpointMeasurement.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
+		endpointMeasurement.HTTPRoundTrip.Response = &HTTPResponseMeasurement{
 			Failure: archival.NewFailure(err),
 		}
 		return endpointMeasurement
 	}
 	// successful Response
-	endpointMeasurement.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
+	endpointMeasurement.HTTPRoundTrip.Response = &HTTPResponseMeasurement{
 		BodyLength: int64(len(body)),
 		Failure:    nil,
 		Headers:    resp.Header,
@@ -279,7 +292,7 @@ func (m *Measurer) measureEndpointH3(ctx context.Context, URL *url.URL, endpoint
 		Endpoint: endpoint,
 		TLSConf:  tlsConf,
 	})
-	endpointMeasurement.QUICHandshakeMeasurement = &TLSHandshakeMeasurement{
+	endpointMeasurement.QUICHandshake = &TLSHandshakeMeasurement{
 		Failure: archival.NewFailure(err),
 	}
 	if err != nil {
@@ -287,7 +300,7 @@ func (m *Measurer) measureEndpointH3(ctx context.Context, URL *url.URL, endpoint
 	}
 	// HTTP roundtrip step
 	request := NewRequest(ctx, URL, headers)
-	endpointMeasurement.HTTPRoundTripMeasurement = &HTTPRoundTripMeasurement{
+	endpointMeasurement.HTTPRoundTrip = &HTTPRoundTripMeasurement{
 		Request: &HTTPRequestMeasurement{
 			Headers: request.Header,
 			Method:  "GET",
@@ -298,13 +311,13 @@ func (m *Measurer) measureEndpointH3(ctx context.Context, URL *url.URL, endpoint
 	resp, body, err := HTTPDo(request, transport)
 	if err != nil {
 		// failed Response
-		endpointMeasurement.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
+		endpointMeasurement.HTTPRoundTrip.Response = &HTTPResponseMeasurement{
 			Failure: archival.NewFailure(err),
 		}
 		return endpointMeasurement
 	}
 	// successful Response
-	endpointMeasurement.HTTPRoundTripMeasurement.Response = &HTTPResponseMeasurement{
+	endpointMeasurement.HTTPRoundTrip.Response = &HTTPResponseMeasurement{
 		BodyLength: int64(len(body)),
 		Failure:    nil,
 		Headers:    resp.Header,

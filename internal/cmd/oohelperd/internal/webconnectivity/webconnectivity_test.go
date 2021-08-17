@@ -1,4 +1,4 @@
-package internal_test
+package webconnectivity
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal"
 	"github.com/ooni/probe-cli/v3/internal/iox"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -52,7 +51,7 @@ const requestWithoutDomainName = `{
 }`
 
 func TestWorkingAsIntended(t *testing.T) {
-	handler := internal.Handler{
+	handler := Handler{
 		Client:            http.DefaultClient,
 		Dialer:            new(net.Dialer),
 		MaxAcceptableBody: 1 << 24,
@@ -144,15 +143,15 @@ func TestWorkingAsIntended(t *testing.T) {
 
 func TestHandlerWithRequestBodyReadingError(t *testing.T) {
 	expected := errors.New("mocked error")
-	handler := internal.Handler{MaxAcceptableBody: 1 << 24}
-	rw := internal.NewFakeResponseWriter()
+	handler := Handler{MaxAcceptableBody: 1 << 24}
+	rw := NewFakeResponseWriter()
 	req := &http.Request{
 		Method: "POST",
 		Header: map[string][]string{
 			"Content-Type":   {"application/json"},
 			"Content-Length": {"2048"},
 		},
-		Body: &internal.FakeBody{Err: expected},
+		Body: &FakeBody{Err: expected},
 	}
 	handler.ServeHTTP(rw, req)
 	if rw.StatusCode != 400 {

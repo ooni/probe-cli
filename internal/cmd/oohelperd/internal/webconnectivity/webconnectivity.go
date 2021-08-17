@@ -1,4 +1,4 @@
-package internal
+package webconnectivity
 
 import (
 	"encoding/json"
