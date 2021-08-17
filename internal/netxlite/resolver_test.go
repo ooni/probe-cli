@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"strings"
 	"testing"
 
 	"github.com/apex/log"
@@ -87,5 +88,66 @@ func TestResolverLoggerNoChildNetworkAddress(t *testing.T) {
 	}
 	if r.Address() != "" {
 		t.Fatal("invalid Address")
+	}
+}
+
+func TestResolverIDNAWorksAsIntended(t *testing.T) {
+	expectedIPs := []string{"77.88.55.66"}
+	r := &ResolverIDNA{
+		Resolver: &netxmocks.Resolver{
+			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				if domain != "xn--d1acpjx3f.xn--p1ai" {
+					return nil, errors.New("passed invalid domain")
+				}
+				return expectedIPs, nil
+			},
+		},
+	}
+	ctx := context.Background()
+	addrs, err := r.LookupHost(ctx, "яндекс.рф")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(expectedIPs, addrs); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestIDNAResolverWithInvalidPunycode(t *testing.T) {
+	r := &ResolverIDNA{Resolver: &netxmocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return nil, errors.New("should not happen")
+		},
+	}}
+	// See https://www.farsightsecurity.com/blog/txt-record/punycode-20180711/
+	ctx := context.Background()
+	addrs, err := r.LookupHost(ctx, "xn--0000h")
+	if err == nil || !strings.HasPrefix(err.Error(), "idna: invalid label") {
+		t.Fatal("not the error we expected")
+	}
+	if addrs != nil {
+		t.Fatal("expected no response here")
+	}
+}
+
+func TestResolverIDNAChildNetworkAddress(t *testing.T) {
+	r := &ResolverIDNA{
+		Resolver: DefaultResolver,
+	}
+	if v := r.Network(); v != "system" {
+		t.Fatal("invalid network", v)
+	}
+	if v := r.Address(); v != "" {
+		t.Fatal("invalid address", v)
+	}
+}
+
+func TestResolverIDNANoChildNetworkAddress(t *testing.T) {
+	r := &ResolverIDNA{}
+	if v := r.Network(); v != "idna" {
+		t.Fatal("invalid network", v)
+	}
+	if v := r.Address(); v != "" {
+		t.Fatal("invalid address", v)
 	}
 }

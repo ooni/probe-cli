@@ -91,6 +91,6 @@ func newResolver() netxlite.Resolver {
 	childResolver, err := netx.NewDNSClient(netx.Config{Logger: log.Log}, "doh://google")
 	runtimex.PanicOnError(err, "NewDNSClient failed")
 	var r netxlite.Resolver = childResolver
-	r = &netxlite.IDNAResolver{Resolver: r}
+	r = &netxlite.ResolverIDNA{Resolver: r}
 	return r
 }

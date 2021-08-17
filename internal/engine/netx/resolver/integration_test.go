@@ -44,8 +44,8 @@ func testresolverquickidna(t *testing.T, reso resolver.Resolver) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	reso = resolver.IDNAResolver{
-		&netxlite.ResolverLogger{Logger: log.Log, Resolver: reso},
+	reso = &resolver.IDNAResolver{
+		Resolver: &netxlite.ResolverLogger{Logger: log.Log, Resolver: reso},
 	}
 	addrs, err := reso.LookupHost(context.Background(), "яндекс.рф")
 	if err != nil {
