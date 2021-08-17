@@ -1,3 +1,16 @@
+// Package websteps implements the websteps experiment.
+//
+// Specifications:
+//
+// - test helper: https://github.com/ooni/spec/blob/master/backends/th-007-websteps.md
+//
+// - experiment: N/A.
+//
+// We are currently implementing:
+//
+// - version 202108.17.1114 of the test helper spec.
+//
+// - version N/A of the experiment spec.
 package websteps
 
 import (
