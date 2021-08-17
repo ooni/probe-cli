@@ -17,10 +17,6 @@ import (
 // the original URL in the test list. Because the test list contains by
 // definition noisy data, we need this preprocessing step to learn all
 // the URLs that are actually implied by the original URL.
-//
-// Through the explore step, we also learn about the final page on which
-// we land by following the given URL. This webpage is mainly useful to
-// search for block pages using the Web Connectivity algorithm.
 
 // Explorer is the interface responsible for running Explore.
 type Explorer interface {
@@ -43,10 +39,14 @@ func (e *DefaultExplorer) Explore(URL *url.URL, headers map[string][]string) ([]
 	rts := e.rearrange(resp, nil)
 	h3URL, err := getH3URL(resp)
 	if err != nil {
+		// If we cannot find the HTTP/3 URL for subsequent measurements, we just continue
+		// the measurement using the URLs we have found so far.
 		return rts, nil
 	}
 	resp, err = e.getH3(h3URL, headers)
 	if err != nil {
+		// If we cannot follow the HTTP/3 chain, we just continue
+		// the measurement using the URLs we have found so far.
 		return rts, nil
 	}
 	rts = append(rts, e.rearrange(resp, h3URL)...)
@@ -105,11 +105,13 @@ func (e *DefaultExplorer) get(URL *url.URL, headers map[string][]string) (*http.
 		NextProtos: []string{"h2", "http/1.1"},
 	}
 	transport := netxlite.NewHTTPTransport(NewDialerResolver(e.resolver), tlsConf, &netxlite.TLSHandshakerConfigurable{})
+	// TODO(bassosimone): here we should use runtimex.PanicOnError
 	jarjar, _ := cookiejar.New(nil)
 	clnt := &http.Client{
 		Transport: transport,
 		Jar:       jarjar,
 	}
+	// TODO(bassosimone): document why e.newRequest cannot fail.
 	req, err := e.newRequest(URL, headers)
 	runtimex.PanicOnError(err, "newRequest failed")
 	resp, err := clnt.Do(req)
@@ -117,6 +119,7 @@ func (e *DefaultExplorer) get(URL *url.URL, headers map[string][]string) (*http.
 		return nil, err
 	}
 	defer resp.Body.Close()
+	// Note that we ignore the response body.
 	return resp, nil
 }
 
@@ -128,17 +131,20 @@ func (e *DefaultExplorer) getH3(h3URL *h3URL, headers map[string][]string) (*htt
 		NextProtos: []string{h3URL.proto},
 	}
 	transport := netxlite.NewHTTP3Transport(dialer, tlsConf)
+	// TODO(bassosimone): here we should use runtimex.PanicOnError
 	jarjar, _ := cookiejar.New(nil)
 	clnt := &http.Client{
 		Transport: transport,
 		Jar:       jarjar,
 	}
+	// TODO(bassosimone): document why e.newRequest cannot fail.
 	req, err := e.newRequest(h3URL.URL, headers)
 	runtimex.PanicOnError(err, "newRequest failed")
 	resp, err := clnt.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	// Note that we ignore the response body.
 	defer resp.Body.Close()
 	return resp, nil
 }

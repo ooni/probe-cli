@@ -59,7 +59,6 @@ func NewSingleTransport(conn net.Conn) (transport http.RoundTripper) {
 	transport.(*http.Transport).DialTLSContext = singledialer.DialContext
 	transport.(*http.Transport).DisableCompression = true
 	transport.(*http.Transport).MaxConnsPerHost = 1
-
 	transport = &netxlite.HTTPTransportLogger{Logger: log.Log, HTTPTransport: transport.(*http.Transport)}
 	return transport
 }

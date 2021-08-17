@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	testName    = "web_steps"
-	testVersion = "0.1.0"
+	testName    = "websteps"
+	testVersion = "0.0.1"
 )
 
 // Config contains the experiment config.

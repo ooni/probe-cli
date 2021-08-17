@@ -68,9 +68,6 @@ type EndpointMeasurement struct {
 	HTTPRoundTripMeasurement *HTTPRoundTripMeasurement `json:"http_round_trip"`
 }
 
-// Implementation note: OONI uses nil to indicate no error but here
-// it's more convenient to just use an empty string.
-
 // TCPConnectMeasurement is a TCP connect measurement.
 type TCPConnectMeasurement struct {
 	// Failure is the error that occurred.

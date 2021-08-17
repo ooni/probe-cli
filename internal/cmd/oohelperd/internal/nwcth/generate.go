@@ -82,7 +82,6 @@ func (g *DefaultGenerator) GenerateURL(ctx context.Context, rt *RoundTrip, clien
 			panic("should not happen")
 		}
 		endpoint := net.JoinHostPort(addr, port)
-
 		var currentEndpoint *EndpointMeasurement
 		_, h3 := websteps.SupportedQUICVersions[rt.Proto]
 		switch {
