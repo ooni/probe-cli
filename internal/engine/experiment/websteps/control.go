@@ -8,22 +8,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/errorsx"
 )
 
-// CtrlRequest is the request sent by the probe
-type CtrlRequest struct {
-	HTTPRequest        string              `json:"url"`
-	HTTPRequestHeaders map[string][]string `json:"headers"`
-	Addrs              []string            `json:"addrs"`
-}
-
-// ControlResponse is the response from the control service.
-type ControlResponse struct {
-	URLMeasurements []*URLMeasurement `json:"urls"`
-}
-
 // Control performs the control request and returns the response.
 func Control(
 	ctx context.Context, sess model.ExperimentSession,
-	thAddr string, creq CtrlRequest) (out ControlResponse, err error) {
+	thAddr string, creq CtrlRequest) (out CtrlResponse, err error) {
 	clnt := httpx.Client{
 		BaseURL:    thAddr,
 		HTTPClient: sess.DefaultHTTPClient(),

@@ -14,7 +14,7 @@ import (
 
 type (
 	CtrlRequest     = websteps.CtrlRequest
-	ControlResponse = websteps.ControlResponse
+	ControlResponse = websteps.CtrlResponse
 )
 
 var ErrInternalServer = errors.New("internal server error")
@@ -45,11 +45,11 @@ func Measure(ctx context.Context, creq *CtrlRequest, config *Config) (*ControlRe
 	if checker == nil {
 		checker = &DefaultInitChecker{resolver: resolver}
 	}
-	URL, err = checker.InitialChecks(creq.HTTPRequest)
+	URL, err = checker.InitialChecks(creq.URL)
 	if err != nil {
 		// return a valid response in case of NXDOMAIN so the probe can compare the failure
 		if err == ErrNoSuchHost {
-			return newDNSFailedResponse(err, creq.HTTPRequest), nil
+			return newDNSFailedResponse(err, creq.URL), nil
 		}
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func Measure(ctx context.Context, creq *CtrlRequest, config *Config) (*ControlRe
 	if explorer == nil {
 		explorer = &DefaultExplorer{resolver: resolver}
 	}
-	rts, err := explorer.Explore(URL, creq.HTTPRequestHeaders)
+	rts, err := explorer.Explore(URL, creq.Headers)
 	if err != nil {
 		return nil, ErrInternalServer
 	}
@@ -69,7 +69,7 @@ func Measure(ctx context.Context, creq *CtrlRequest, config *Config) (*ControlRe
 	if err != nil {
 		return nil, err
 	}
-	return &ControlResponse{URLMeasurements: meas}, nil
+	return &ControlResponse{URLs: meas}, nil
 }
 
 // newDNSFailedResponse creates a new response with one URLMeasurement entry
@@ -82,7 +82,7 @@ func newDNSFailedResponse(err error, URL string) *ControlResponse {
 			Failure: newfailure(err),
 		},
 	}
-	resp.URLMeasurements = append(resp.URLMeasurements, m)
+	resp.URLs = append(resp.URLs, m)
 	return resp
 }
 
