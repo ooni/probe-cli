@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/apex/log"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/lucas-clemente/quic-go/http3"
+	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -40,8 +40,8 @@ func NewQUICDialerResolver(resolver netxlite.Resolver) netxlite.QUICContextDiale
 	return dialer
 }
 
-// NewSingleH3Transport creates an http3.RoundTripper
-func NewSingleH3Transport(qsess quic.EarlySession, tlscfg *tls.Config, qcfg *quic.Config) *http3.RoundTripper {
+// NewSingleH3Transport creates an http3.RoundTripper.
+func NewSingleH3Transport(qsess quic.EarlySession, tlscfg *tls.Config, qcfg *quic.Config) http.RoundTripper {
 	transport := &http3.RoundTripper{
 		DisableCompression: true,
 		TLSClientConfig:    tlscfg,
@@ -51,15 +51,33 @@ func NewSingleH3Transport(qsess quic.EarlySession, tlscfg *tls.Config, qcfg *qui
 	return transport
 }
 
-// NewSingleTransport determines the appropriate HTTP Transport from the ALPN
-func NewSingleTransport(conn net.Conn) (transport http.RoundTripper) {
+// NewSingleTransport creates a new HTTP transport with a single-use dialer.
+func NewSingleTransport(conn net.Conn) http.RoundTripper {
 	singledialer := &SingleDialer{conn: &conn}
-	transport = http.DefaultTransport.(*http.Transport).Clone()
-	transport.(*http.Transport).DialContext = singledialer.DialContext
-	transport.(*http.Transport).DialTLSContext = singledialer.DialContext
-	transport.(*http.Transport).DisableCompression = true
-	transport.(*http.Transport).MaxConnsPerHost = 1
-	transport = &netxlite.HTTPTransportLogger{Logger: log.Log, HTTPTransport: transport.(*http.Transport)}
+	transport := NewBaseTransport()
+	transport.DialContext = singledialer.DialContext
+	transport.DialTLSContext = singledialer.DialContext
+	return transport
+}
+
+// NewSingleTransport creates a new HTTP transport with a custom dialer and handshaker.
+func NewTransportWithDialer(dialer netxlite.Dialer, tlsConfig *tls.Config, handshaker netxlite.TLSHandshaker) http.RoundTripper {
+	transport := NewBaseTransport()
+	transport.DialContext = dialer.DialContext
+	transport.DialTLSContext = (&netxlite.TLSDialer{
+		Config:        tlsConfig,
+		Dialer:        dialer,
+		TLSHandshaker: handshaker,
+	}).DialTLSContext
+	return transport
+}
+
+// NewBaseTransport creates a new HTTP transport with the default dialer.
+func NewBaseTransport() (transport *oohttp.StdlibTransport) {
+	base := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
+	base.DisableCompression = true
+	base.MaxConnsPerHost = 1
+	transport = &oohttp.StdlibTransport{Transport: base}
 	return transport
 }
 

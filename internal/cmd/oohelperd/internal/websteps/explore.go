@@ -10,6 +10,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 // Explore is the second step of the test helper algorithm. Its objective
@@ -104,7 +105,10 @@ func (e *DefaultExplorer) get(URL *url.URL, headers map[string][]string) (*http.
 	tlsConf := &tls.Config{
 		NextProtos: []string{"h2", "http/1.1"},
 	}
-	transport := netxlite.NewHTTPTransport(NewDialerResolver(e.resolver), tlsConf, &netxlite.TLSHandshakerConfigurable{})
+	handshaker := &netxlite.TLSHandshakerConfigurable{
+		NewConn: netxlite.NewConnUTLS(&utls.HelloChrome_Auto),
+	}
+	transport := NewTransportWithDialer(NewDialerResolver(e.resolver), tlsConf, handshaker)
 	// TODO(bassosimone): here we should use runtimex.PanicOnError
 	jarjar, _ := cookiejar.New(nil)
 	clnt := &http.Client{

@@ -241,7 +241,7 @@ func (m *Measurer) measureEndpointHTTPS(ctx context.Context, URL *url.URL, endpo
 	defer conn.Close()
 
 	// TLS handshake step
-	tlsconn, err := TLSDo(conn, URL.Hostname())
+	tlsconn, err := TLSDo(ctx, conn, URL.Hostname())
 	endpointMeasurement.TLSHandshake = &TLSHandshakeMeasurement{
 		Failure: archival.NewFailure(err),
 	}

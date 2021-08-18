@@ -176,7 +176,7 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 	}
 	defer tcpConn.Close()
 
-	tlsConn, err = TLSDo(tcpConn, rt.Request.URL.Hostname())
+	tlsConn, err = TLSDo(ctx, tcpConn, rt.Request.URL.Hostname())
 	currentEndpoint.TLSHandshake = &TLSHandshakeMeasurement{
 		Failure: newfailure(err),
 	}
