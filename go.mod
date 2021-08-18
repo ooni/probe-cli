@@ -41,8 +41,7 @@ require (
 	gitlab.com/yawning/obfs4.git v0.0.0-20210511220700-e330d1b7024b
 	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf // indirect
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed
-	golang.org/x/sys v0.0.0-20210511113859-b0526f3d8744
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	upper.io/db.v3 v3.8.0+incompatible
