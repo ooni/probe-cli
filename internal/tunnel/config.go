@@ -15,8 +15,14 @@ import (
 // Logger is the logger to use. Its signature is compatibile
 // with the apex/log logger signature.
 type Logger interface {
-	// Infof formats and emits an informative message
+	// Debugf formats and emits a debug message.
+	Debugf(format string, v ...interface{})
+
+	// Infof formats and emits an informative message.
 	Infof(format string, v ...interface{})
+
+	// Warnf formats and emits a warning message.
+	Warnf(format string, v ...interface{})
 }
 
 // Config contains the configuration for creating a Tunnel instance. You need
@@ -44,9 +50,8 @@ type Config struct {
 	Logger Logger
 
 	// TorArgs contains the optional arguments that you want us to pass
-	// to the tor binary when invoking it. By default we do not
-	// pass any extra argument. This flag might be useful to
-	// configure pluggable transports.
+	// to the tor binary when invoking it. This field is ideal for passing
+	// specific (obfuscated) bridges to the tor instance.
 	TorArgs []string
 
 	// TorBinary is the optional path of the TorBinary we SHOULD be
@@ -84,8 +89,14 @@ type Config struct {
 // silentLogger is a logger that does not emit output.
 type silentLogger struct{}
 
+// Debugf implements Logger.Debugf.
+func (sl *silentLogger) Debugf(format string, v ...interface{}) {}
+
 // Infof implements Logger.Infof.
 func (sl *silentLogger) Infof(format string, v ...interface{}) {}
+
+// Warnf implements Logger.Warnf.
+func (sl *silentLogger) Warnf(format string, v ...interface{}) {}
 
 // defaultLogger is the default logger.
 var defaultLogger = &silentLogger{}

@@ -74,6 +74,20 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	extraArgs = append(extraArgs, "notice stderr")
 	extraArgs = append(extraArgs, "Log")
 	extraArgs = append(extraArgs, fmt.Sprintf(`notice file %s`, logfile))
+	if len(config.TorBridges) > 0 {
+		extraArgs = append(extraArgs, "UseBridges")
+		extraArgs = append(extraArgs, "1")
+		for _, b := range config.TorBridges {
+			if bra := b.AsBridgeArgument(); bra != "" {
+				extraArgs = append(extraArgs, "Bridge")
+				extraArgs = append(extraArgs, bra)
+			}
+			if cta := b.AsClientTransportPluginArgument(); cta != "" {
+				extraArgs = append(extraArgs, "ClientTransportPlugin")
+				extraArgs = append(extraArgs, cta)
+			}
+		}
+	}
 	// Implementation note: here we make sure that we're not going to
 	// execute a binary called "tor" in the current directory on Windows
 	// as documented in https://blog.golang.org/path-security.
@@ -81,7 +95,7 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	if err != nil {
 		return nil, err
 	}
-	config.logger().Infof("tunnel: exec: %s %+v", exePath, extraArgs)
+	config.logger().Infof("tunnel: exec: %s %#v", exePath, extraArgs)
 	instance, err := config.torStart(ctx, &tor.StartConf{
 		DataDir:   stateDir,
 		ExtraArgs: extraArgs,

@@ -32,11 +32,16 @@ require (
 	github.com/ooni/psiphon v0.8.0
 	github.com/oschwald/geoip2-golang v1.5.0
 	github.com/pborman/getopt/v2 v2.1.0
+	github.com/pion/rtp v1.6.5 // indirect
 	github.com/pion/stun v0.3.5
+	github.com/pion/webrtc/v3 v3.0.27 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/rogpeppe/go-internal v1.8.0
 	github.com/rubenv/sql-migrate v0.0.0-20210408115534-a32ed26c37ea
 	github.com/sirupsen/logrus v1.7.0 // indirect
+	github.com/tjfoc/gmsm v1.4.0 // indirect
+	github.com/xtaci/kcp-go/v5 v5.6.1 // indirect
+	github.com/xtaci/smux v1.5.15 // indirect
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	gitlab.com/yawning/obfs4.git v0.0.0-20210511220700-e330d1b7024b
 	gitlab.com/yawning/utls.git v0.0.12-1
