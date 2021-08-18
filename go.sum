@@ -385,8 +385,8 @@ github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7J
 github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
 github.com/onsi/gomega v1.10.3 h1:gph6h/qe9GSUw1NhH1gp+qb+h8rXD8Cy60Z32Qw3ELA=
 github.com/onsi/gomega v1.10.3/go.mod h1:V9xEwhxec5O8UDM77eCW8vLymOMltsqPVYWrpDsH8xc=
-github.com/ooni/oohttp v0.0.0-20210817213129-35949dcf526f h1:WH5KxfF4128onN/6oWSpsY0wgQNuZwGY3n1M+bxiI28=
-github.com/ooni/oohttp v0.0.0-20210817213129-35949dcf526f/go.mod h1:kgtoj+Dn4bmx09hEUgbPI7YX0gkWlu+fz2I0S5auyX4=
+github.com/ooni/oohttp v0.0.0-20210818104219-f8ceac6f2622 h1:Wpu4o3J3fLD4BPqA3CmrnbXVAAWKEjramvfhDUFZp+E=
+github.com/ooni/oohttp v0.0.0-20210818104219-f8ceac6f2622/go.mod h1:kgtoj+Dn4bmx09hEUgbPI7YX0gkWlu+fz2I0S5auyX4=
 github.com/ooni/probe-assets v0.3.1 h1:6PDcoJTICJxL8PdeM0+a3ZfkTWrFfCn90fUqTWR0LDA=
 github.com/ooni/probe-assets v0.3.1/go.mod h1:N0PyNM3aadlYDDCFXAPzs54HC54+MZA/4/xnCtd9EAo=
 github.com/ooni/psiphon v0.8.0 h1:digldztBlINi3HWuxdK4gFhkiaheAoDVjZN/ApZHWBM=
