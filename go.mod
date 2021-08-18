@@ -21,7 +21,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/iancoleman/strcase v0.1.3
-	github.com/lucas-clemente/quic-go v0.21.0
+	github.com/lucas-clemente/quic-go v0.23.0
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
@@ -41,9 +41,11 @@ require (
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	gitlab.com/yawning/obfs4.git v0.0.0-20210511220700-e330d1b7024b
 	gitlab.com/yawning/utls.git v0.0.12-1
-	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf // indirect
-	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
+	golang.org/x/mod v0.5.0 // indirect
+	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d
 	golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2
+	golang.org/x/tools v0.1.5 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	upper.io/db.v3 v3.8.0+incompatible
