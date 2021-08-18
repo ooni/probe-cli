@@ -130,7 +130,7 @@ func (g *DefaultGenerator) GenerateHTTPEndpoint(ctx context.Context, rt *RoundTr
 			URL:     rt.Request.URL.String(),
 		},
 	}
-	transport := NewSingleTransport(tcpConn)
+	transport := websteps.NewSingleTransport(tcpConn)
 	if g.transport != nil {
 		transport = g.transport
 	}
@@ -193,7 +193,7 @@ func (g *DefaultGenerator) GenerateHTTPSEndpoint(ctx context.Context, rt *RoundT
 			URL:     rt.Request.URL.String(),
 		},
 	}
-	transport := NewSingleTransport(tlsConn)
+	transport := websteps.NewSingleTransport(tlsConn)
 	if g.transport != nil {
 		transport = g.transport
 	}
@@ -248,7 +248,7 @@ func (g *DefaultGenerator) GenerateH3Endpoint(ctx context.Context, rt *RoundTrip
 			URL:     rt.Request.URL.String(),
 		},
 	}
-	var transport http.RoundTripper = NewSingleH3Transport(sess, tlsConf, &quic.Config{})
+	var transport http.RoundTripper = websteps.NewSingleH3Transport(sess, tlsConf, &quic.Config{})
 	if g.transport != nil {
 		transport = g.transport
 	}
