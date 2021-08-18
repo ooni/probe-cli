@@ -8,8 +8,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/websteps"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 // Explore is the second step of the test helper algorithm. Its objective
@@ -104,7 +106,10 @@ func (e *DefaultExplorer) get(URL *url.URL, headers map[string][]string) (*http.
 	tlsConf := &tls.Config{
 		NextProtos: []string{"h2", "http/1.1"},
 	}
-	transport := netxlite.NewHTTPTransport(NewDialerResolver(e.resolver), tlsConf, &netxlite.TLSHandshakerConfigurable{})
+	handshaker := &netxlite.TLSHandshakerConfigurable{
+		NewConn: netxlite.NewConnUTLS(&utls.HelloChrome_Auto),
+	}
+	transport := websteps.NewTransportWithDialer(websteps.NewDialerResolver(e.resolver), tlsConf, handshaker)
 	// TODO(bassosimone): here we should use runtimex.PanicOnError
 	jarjar, _ := cookiejar.New(nil)
 	clnt := &http.Client{
@@ -126,7 +131,7 @@ func (e *DefaultExplorer) get(URL *url.URL, headers map[string][]string) (*http.
 // getH3 uses HTTP/3 to get the given URL and returns the final
 // response after redirection, and an error. If the error is nil, the final response is valid.
 func (e *DefaultExplorer) getH3(h3URL *h3URL, headers map[string][]string) (*http.Response, error) {
-	dialer := NewQUICDialerResolver(e.resolver)
+	dialer := websteps.NewQUICDialerResolver(e.resolver)
 	tlsConf := &tls.Config{
 		NextProtos: []string{h3URL.proto},
 	}
