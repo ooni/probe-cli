@@ -385,8 +385,6 @@ github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7J
 github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
 github.com/onsi/gomega v1.10.3 h1:gph6h/qe9GSUw1NhH1gp+qb+h8rXD8Cy60Z32Qw3ELA=
 github.com/onsi/gomega v1.10.3/go.mod h1:V9xEwhxec5O8UDM77eCW8vLymOMltsqPVYWrpDsH8xc=
-github.com/ooni/oohttp v0.0.0-20210812152925-3d5b13e21a2c h1:PVjQgwFxxbaGyw40UeFGyXM7tRfOgm/zzOYRCRT6hMA=
-github.com/ooni/oohttp v0.0.0-20210812152925-3d5b13e21a2c/go.mod h1:kgtoj+Dn4bmx09hEUgbPI7YX0gkWlu+fz2I0S5auyX4=
 github.com/ooni/oohttp v0.0.0-20210817213129-35949dcf526f h1:WH5KxfF4128onN/6oWSpsY0wgQNuZwGY3n1M+bxiI28=
 github.com/ooni/oohttp v0.0.0-20210817213129-35949dcf526f/go.mod h1:kgtoj+Dn4bmx09hEUgbPI7YX0gkWlu+fz2I0S5auyX4=
 github.com/ooni/probe-assets v0.3.1 h1:6PDcoJTICJxL8PdeM0+a3ZfkTWrFfCn90fUqTWR0LDA=
@@ -697,8 +695,6 @@ golang.org/x/net v0.0.0-20201201195509-5d6afe98e0b7/go.mod h1:sp8m0HH+o8qH0wwXwY
 golang.org/x/net v0.0.0-20210119194325-5f4716e94777/go.mod h1:m0MpNAwzfU5UDzcl9v0D8zg8gWTRqZa9RBIspLL5mdg=
 golang.org/x/net v0.0.0-20210226172049-e18ecbb05110/go.mod h1:m0MpNAwzfU5UDzcl9v0D8zg8gWTRqZa9RBIspLL5mdg=
 golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4/go.mod h1:RBQZq4jEuRlivfhVLdyRGr576XBO4/greRjx4P4O3yc=
-golang.org/x/net v0.0.0-20210510120150-4163338589ed h1:p9UgmWI9wKpfYmgaV/IZKGdXc5qEK45tDwwwDyjS26I=
-golang.org/x/net v0.0.0-20210510120150-4163338589ed/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d h1:20cMwl2fHAzkJMEA+8J4JgqBQcQGzbisXo31MIeenXI=
 golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=
