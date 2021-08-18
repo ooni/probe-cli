@@ -67,7 +67,7 @@ func NewSingleH3Transport(qsess quic.EarlySession, tlscfg *tls.Config, qcfg *qui
 // NewSingleTransport creates a new HTTP transport with a single-use dialer.
 func NewSingleTransport(conn net.Conn) http.RoundTripper {
 	singledialer := &SingleDialer{conn: &conn}
-	transport := NewBaseTransport()
+	transport := newBaseTransport()
 	transport.DialContext = singledialer.DialContext
 	transport.DialTLSContext = singledialer.DialContext
 	return transport
@@ -75,7 +75,7 @@ func NewSingleTransport(conn net.Conn) http.RoundTripper {
 
 // NewSingleTransport creates a new HTTP transport with a custom dialer and handshaker.
 func NewTransportWithDialer(dialer netxlite.Dialer, tlsConfig *tls.Config, handshaker netxlite.TLSHandshaker) http.RoundTripper {
-	transport := NewBaseTransport()
+	transport := newBaseTransport()
 	transport.DialContext = dialer.DialContext
 	transport.DialTLSContext = (&netxlite.TLSDialer{
 		Config:        tlsConfig,
@@ -85,8 +85,8 @@ func NewTransportWithDialer(dialer netxlite.Dialer, tlsConfig *tls.Config, hands
 	return transport
 }
 
-// NewBaseTransport creates a new HTTP transport with the default dialer.
-func NewBaseTransport() (transport *oohttp.StdlibTransport) {
+// newBaseTransport creates a new HTTP transport with the default dialer.
+func newBaseTransport() (transport *oohttp.StdlibTransport) {
 	base := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
 	base.DisableCompression = true
 	base.MaxConnsPerHost = 1
