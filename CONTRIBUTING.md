@@ -5,17 +5,19 @@ to open pull requests. An open pull request will be reviewed by a core
 developer. The review may request you to apply changes. Once the assigned
 reviewer is satisfied, they will merge the pull request.
 
+## OONI Software Development Guidelines
+
+Please, make sure you read [OONI Software Development Guidelines](
+https://ooni.org/post/ooni-software-development-guidelines/). We try in
+general to follow these guidelines when working on ooni/probe-cli. In
+the unlikely care where those guidelines conflict with this document, this
+document will take precedence.
+
 ## Opening issues
 
 Please, before opening a new issue, check whether the issue or feature request
-you want us to consider has not already been reported by someone else.
-
-For new issues, please use: [github.com/ooni/probe](
-https://github.com/ooni/probe/issues/new?labels=ooni/probe-cli&assignee=bassosimone).
-
-Please, also check [github.com/ooni/probe-engine](
-https://github.com/ooni/probe-engine) for legacy issues. This is
-the repository where the measurement engine previously was located.
+you want us to consider has not already been reported by someone else. The
+issue tracker is at [github.com/ooni/probe/issues](https://github.com/ooni/probe/issues).
 
 ## PR requirements
 
@@ -26,7 +28,7 @@ request that modifies existing functionality should not decrease the
 existing code coverage.
 
 Long-running tests should be skipped when running tests in short mode
-using `go test -short`. We prefer external testing to internal
+using `go test -short`. We prefer internal testing to external
 testing. We generally have a file called `foo_test.go` with tests
 for every `foo.go` file. Sometimes we separate long running
 integration tests in a `foo_integration_test.go` file.
@@ -88,5 +90,7 @@ To get a sense of what we expect from an experiment, see:
 - the internal/engine/experiment/example experiment
 
 - the internal/engine/experiment/webconnectivity experiment
+
+- the [internal/tutorial](https://github.com/ooni/probe-cli/tree/master/internal/tutorial) tutorial
 
 Thank you!
