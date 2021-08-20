@@ -20,8 +20,8 @@ func DNSDo(ctx context.Context, config DNSConfig) ([]string, error) {
 	if resolver == nil {
 		childResolver, err := netx.NewDNSClient(netx.Config{Logger: log.Log}, "doh://google")
 		runtimex.PanicOnError(err, "NewDNSClient failed")
-		var resolver netxlite.Resolver = childResolver
+		resolver = childResolver
 		resolver = &netxlite.ResolverIDNA{Resolver: resolver}
 	}
-	return config.Resolver.LookupHost(ctx, config.Domain)
+	return resolver.LookupHost(ctx, config.Domain)
 }
