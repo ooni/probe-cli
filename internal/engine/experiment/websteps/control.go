@@ -11,7 +11,7 @@ import (
 // Control performs the control request and returns the response.
 func Control(
 	ctx context.Context, sess model.ExperimentSession,
-	thAddr string, creq CtrlRequest) (out CtrlResponse, err error) {
+	thAddr string, resourcePath string, creq CtrlRequest) (out CtrlResponse, err error) {
 	clnt := httpx.Client{
 		BaseURL:    thAddr,
 		HTTPClient: sess.DefaultHTTPClient(),
@@ -19,7 +19,7 @@ func Control(
 	}
 	// make sure error is wrapped
 	err = errorsx.SafeErrWrapperBuilder{
-		Error:     clnt.PostJSON(ctx, "/", creq, &out),
+		Error:     clnt.PostJSON(ctx, resourcePath, creq, &out),
 		Operation: errorsx.TopLevelOperation,
 	}.MaybeBuild()
 	return

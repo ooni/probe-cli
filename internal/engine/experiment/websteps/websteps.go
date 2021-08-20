@@ -110,6 +110,7 @@ func (m Measurer) Run(
 	addrs, err := DNSDo(ctx, DNSConfig{Domain: URL.Hostname()})
 	endpoints := makeEndpoints(addrs, URL)
 	// 3. Find the testhelper
+	// TODO(kelmenhorst,bassosimone): this is not used at the moment, but the hardcoded local address
 	testhelpers, _ := sess.GetTestHelpersByName("web-connectivity")
 	var testhelper *model.Service
 	for _, th := range testhelpers {
@@ -125,7 +126,8 @@ func (m Measurer) Run(
 		"backend": testhelper,
 	}
 	// 4. Query the testhelper
-	resp, err := Control(ctx, sess, testhelper.Address, CtrlRequest{
+	// TODO(kelmenhorst,bassosimone): remove hardcoded version here, this is only for testing purposes
+	resp, err := Control(ctx, sess, "http://localhost:8080", "/api/unstable/websteps", CtrlRequest{
 		URL: URL.String(),
 		Headers: map[string][]string{
 			"Accept":          {httpheader.Accept()},
@@ -241,7 +243,7 @@ func (m *Measurer) measureEndpointHTTPS(ctx context.Context, URL *url.URL, endpo
 	defer conn.Close()
 
 	// TLS handshake step
-	tlsconn, err := TLSDo(conn, URL.Hostname())
+	tlsconn, err := TLSDo(ctx, conn, URL.Hostname())
 	endpointMeasurement.TLSHandshake = &TLSHandshakeMeasurement{
 		Failure: archival.NewFailure(err),
 	}
