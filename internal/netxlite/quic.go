@@ -119,7 +119,7 @@ func (d *QUICDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *
 	return config
 }
 
-// quicSessionOwnsConn ensures that we close the PacketConn.
+// quicSessionOwnsConn ensures that we close the UDPLikeConn.
 type quicSessionOwnsConn struct {
 	// EarlySession is the embedded early session
 	quic.EarlySession
