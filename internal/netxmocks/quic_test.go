@@ -407,3 +407,16 @@ func TestQUICUDPConnSyscallConn(t *testing.T) {
 		t.Fatal("expected nil here")
 	}
 }
+
+func TestQUICUDPConnSetReadBuffer(t *testing.T) {
+	expected := errors.New("mocked error")
+	quc := &QUICUDPConn{
+		MockSetReadBuffer: func(n int) error {
+			return expected
+		},
+	}
+	err := quc.SetReadBuffer(1 << 10)
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
+	}
+}

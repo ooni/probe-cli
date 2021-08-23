@@ -3,6 +3,8 @@ package quicdialer_test
 import (
 	"context"
 	"crypto/tls"
+	"errors"
+	"net"
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
@@ -10,7 +12,32 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
+
+func TestQUICListenerSaverCannotListen(t *testing.T) {
+	expected := errors.New("mocked error")
+	qls := &quicdialer.QUICListenerSaver{
+		QUICListener: &netxmocks.QUICListener{
+			MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+				return nil, expected
+			},
+		},
+		Saver: &trace.Saver{},
+	}
+	pconn, err := qls.Listen(&net.UDPAddr{
+		IP:   []byte{},
+		Port: 8080,
+		Zone: "",
+	})
+	if !errors.Is(err, expected) {
+		t.Fatal("unepxected error", err)
+	}
+	if pconn != nil {
+		t.Fatal("expected nil pconn here")
+	}
+}
 
 func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
 	// This is the most common use case for collecting reads, writes

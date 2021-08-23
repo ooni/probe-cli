@@ -3,7 +3,7 @@
 // This code introduces the UDPLikeConn, whose documentation explain
 // why we need to introduce this new type. We could not put this
 // code inside an existing package because it's used (as of 20 Aug 2021)
-// by the netxlite package as well as by the netx package.
+// by the netxlite package as well as by the netxmocks package.
 package quicx
 
 import (
@@ -15,25 +15,26 @@ import (
 // required to convince the QUIC library (lucas-clemente/quic-go)
 // to inflate the receive buffer of the connection.
 //
-// The QUIC library will otherwise treat this connection as
-// a dumb connection, using its ReadFrom and WriteTo methods
+// The QUIC library will treat this connection as a "dumb"
+// net.PacketConn, calling its ReadFrom and WriteTo methods
 // as opposed to more advanced methods that are available
 // under Linux and FreeBSD and improve the performance.
 //
 // It seems fine to avoid performance optimizations, because
-// they would compilcate the implementation on our side and
+// they would complicate the implementation on our side and
 // our use cases (blocking and heavy throttling) do not seem
 // to require such optimizations.
 //
 // See https://github.com/ooni/probe/issues/1754 for a more
-// comprehensive discussion.
+// comprehensive discussion of UDPLikeConn.
 type UDPLikeConn interface {
-	// An UDPLikeConn is a quic.OOBCapablePacketConn.
+	// An UDPLikeConn is a net.PacketConn conn.
 	net.PacketConn
 
-	// SetReadBuffer allows to set the read buffer.
+	// SetReadBuffer allows setting the read buffer.
 	SetReadBuffer(bytes int) error
 
-	// SyscallConn returns a conn suitable for calling syscalls.
+	// SyscallConn returns a conn suitable for calling syscalls,
+	// which is also instrumental to setting the read buffer.
 	SyscallConn() (syscall.RawConn, error)
 }
