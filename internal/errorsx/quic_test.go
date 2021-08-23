@@ -84,7 +84,7 @@ func TestErrorWrapperUDPConnWriteToFailure(t *testing.T) {
 	}
 }
 
-func TestErrorWrapperUDPConnReadMsgUDPSuccess(t *testing.T) {
+func TestErrorWrapperUDPConnReadFromSuccess(t *testing.T) {
 	expected := errors.New("mocked error")
 	quc := &errorWrapperUDPConn{
 		UDPLikeConn: &netxmocks.QUICUDPConn{
@@ -106,7 +106,7 @@ func TestErrorWrapperUDPConnReadMsgUDPSuccess(t *testing.T) {
 	}
 }
 
-func TestErrorWrapperUDPConnReadMsgUDPFailure(t *testing.T) {
+func TestErrorWrapperUDPConnReadFromFailure(t *testing.T) {
 	quc := &errorWrapperUDPConn{
 		UDPLikeConn: &netxmocks.QUICUDPConn{
 			MockReadFrom: func(b []byte) (int, net.Addr, error) {

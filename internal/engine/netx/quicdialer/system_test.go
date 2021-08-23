@@ -32,7 +32,7 @@ func TestQUICListenerSaverCannotListen(t *testing.T) {
 		Zone: "",
 	})
 	if !errors.Is(err, expected) {
-		t.Fatal("unepxected error", err)
+		t.Fatal("unexpected error", err)
 	}
 	if pconn != nil {
 		t.Fatal("expected nil pconn here")
