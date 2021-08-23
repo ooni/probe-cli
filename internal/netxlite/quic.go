@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 // QUICContextDialer is a dialer for QUIC using Context.
@@ -22,7 +23,7 @@ type QUICContextDialer interface {
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
 	// Listen creates a new listening UDPConn.
-	Listen(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error)
+	Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error)
 }
 
 // QUICListenerStdlib is a QUICListener using the standard library.
@@ -31,7 +32,7 @@ type QUICListenerStdlib struct{}
 var _ QUICListener = &QUICListenerStdlib{}
 
 // Listen implements QUICListener.Listen.
-func (qls *QUICListenerStdlib) Listen(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error) {
+func (qls *QUICListenerStdlib) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
 	return net.ListenUDP("udp", addr)
 }
 
@@ -118,13 +119,13 @@ func (d *QUICDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *
 	return config
 }
 
-// quicSessionOwnsConn ensures that we close the PacketConn.
+// quicSessionOwnsConn ensures that we close the UDPLikeConn.
 type quicSessionOwnsConn struct {
 	// EarlySession is the embedded early session
 	quic.EarlySession
 
 	// conn is the connection we own
-	conn net.PacketConn
+	conn quicx.UDPLikeConn
 }
 
 // CloseWithError implements quic.EarlySession.CloseWithError.

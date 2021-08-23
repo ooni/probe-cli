@@ -4,15 +4,15 @@ import (
 	"net"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
 	// Listen creates a new listening UDPConn.
-	Listen(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error)
+	Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error)
 }
 
 // QUICListenerSaver is a QUICListener that also implements saving events.
@@ -25,22 +25,27 @@ type QUICListenerSaver struct {
 }
 
 // Listen implements QUICListener.Listen.
-func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error) {
+func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
 	pconn, err := qls.QUICListener.Listen(addr)
 	if err != nil {
 		return nil, err
 	}
-	return saverUDPConn{OOBCapablePacketConn: pconn, saver: qls.Saver}, nil
+	return &saverUDPConn{
+		UDPLikeConn: pconn,
+		saver:       qls.Saver,
+	}, nil
 }
 
 type saverUDPConn struct {
-	quic.OOBCapablePacketConn
+	quicx.UDPLikeConn
 	saver *trace.Saver
 }
 
-func (c saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
+var _ quicx.UDPLikeConn = &saverUDPConn{}
+
+func (c *saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	start := time.Now()
-	count, err := c.OOBCapablePacketConn.WriteTo(p, addr)
+	count, err := c.UDPLikeConn.WriteTo(p, addr)
 	stop := time.Now()
 	c.saver.Write(trace.Event{
 		Address:  addr.String(),
@@ -54,16 +59,16 @@ func (c saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	return count, err
 }
 
-func (c saverUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
+func (c *saverUDPConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	start := time.Now()
-	n, oobn, flags, addr, err := c.OOBCapablePacketConn.ReadMsgUDP(b, oob)
+	n, addr, err := c.UDPLikeConn.ReadFrom(b)
 	stop := time.Now()
 	var data []byte
 	if n > 0 {
 		data = b[:n]
 	}
 	c.saver.Write(trace.Event{
-		Address:  addr.String(),
+		Address:  c.safeAddrString(addr),
 		Data:     data,
 		Duration: stop.Sub(start),
 		Err:      err,
@@ -71,5 +76,12 @@ func (c saverUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, er
 		Name:     errorsx.ReadFromOperation,
 		Time:     stop,
 	})
-	return n, oobn, flags, addr, err
+	return n, addr, err
+}
+
+func (c *saverUDPConn) safeAddrString(addr net.Addr) (out string) {
+	if addr != nil {
+		out = addr.String()
+	}
+	return
 }

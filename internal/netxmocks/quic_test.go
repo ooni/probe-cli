@@ -12,12 +12,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 func TestQUICListenerListen(t *testing.T) {
 	expected := errors.New("mocked error")
 	ql := &QUICListener{
-		MockListen: func(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error) {
+		MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
 			return nil, expected
 		},
 	}
@@ -287,33 +288,6 @@ func TestQUICUDPConnWriteTo(t *testing.T) {
 	}
 }
 
-func TestQUICUDPConnReadMsgUDP(t *testing.T) {
-	expected := errors.New("mocked error")
-	quc := &QUICUDPConn{
-		MockReadMsgUDP: func(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
-			return 0, 0, 0, nil, expected
-		},
-	}
-	b := make([]byte, 128)
-	oob := make([]byte, 128)
-	n, oobn, flags, addr, err := quc.ReadMsgUDP(b, oob)
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected", err)
-	}
-	if n != 0 {
-		t.Fatal("expected zero here")
-	}
-	if oobn != 0 {
-		t.Fatal("expected zero here")
-	}
-	if flags != 0 {
-		t.Fatal("expected zero here")
-	}
-	if addr != nil {
-		t.Fatal("expected nil here")
-	}
-}
-
 func TestQUICUDPConnClose(t *testing.T) {
 	expected := errors.New("mocked error")
 	quc := &QUICUDPConn{
@@ -434,24 +408,15 @@ func TestQUICUDPConnSyscallConn(t *testing.T) {
 	}
 }
 
-func TestQUICUDPConnWriteMsgUDP(t *testing.T) {
+func TestQUICUDPConnSetReadBuffer(t *testing.T) {
 	expected := errors.New("mocked error")
 	quc := &QUICUDPConn{
-		MockWriteMsgUDP: func(b, oob []byte, addr *net.UDPAddr) (n int, oobn int, err error) {
-			return 0, 0, expected
+		MockSetReadBuffer: func(n int) error {
+			return expected
 		},
 	}
-	b := make([]byte, 128)
-	oob := make([]byte, 128)
-	addr := &net.UDPAddr{}
-	n, oobn, err := quc.WriteMsgUDP(b, oob, addr)
+	err := quc.SetReadBuffer(1 << 10)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected", err)
-	}
-	if n != 0 {
-		t.Fatal("expected 0 here")
-	}
-	if oobn != 0 {
-		t.Fatal("expected 0 here")
 	}
 }

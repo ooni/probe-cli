@@ -185,6 +185,9 @@ func TestUTLSHandshakerChrome(t *testing.T) {
 	}
 	cfg := &tls.Config{ServerName: "google.com"}
 	conn, err := net.Dial("tcp", "google.com:443")
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
 	conn, _, err = h.Handshake(context.Background(), conn, cfg)
 	if err != nil {
 		t.Fatal("unexpected error", err)

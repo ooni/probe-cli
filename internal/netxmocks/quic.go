@@ -8,15 +8,16 @@ import (
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
 // QUICListener is a mockable netxlite.QUICListener.
 type QUICListener struct {
-	MockListen func(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error)
+	MockListen func(addr *net.UDPAddr) (quicx.UDPLikeConn, error)
 }
 
 // Listen calls MockListen.
-func (ql *QUICListener) Listen(addr *net.UDPAddr) (quic.OOBCapablePacketConn, error) {
+func (ql *QUICListener) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
 	return ql.MockListen(addr)
 }
 
@@ -132,7 +133,6 @@ func (s *QUICEarlySession) ReceiveMessage() ([]byte, error) {
 // QUICUDPConn is an UDP conn used by QUIC.
 type QUICUDPConn struct {
 	MockWriteTo          func(p []byte, addr net.Addr) (int, error)
-	MockReadMsgUDP       func(b, oob []byte) (int, int, int, *net.UDPAddr, error)
 	MockClose            func() error
 	MockLocalAddr        func() net.Addr
 	MockRemoteAddr       func() net.Addr
@@ -141,19 +141,14 @@ type QUICUDPConn struct {
 	MockSetWriteDeadline func(t time.Time) error
 	MockReadFrom         func(p []byte) (n int, addr net.Addr, err error)
 	MockSyscallConn      func() (syscall.RawConn, error)
-	MockWriteMsgUDP      func(b, oob []byte, addr *net.UDPAddr) (n, oobn int, err error)
+	MockSetReadBuffer    func(n int) error
 }
 
-var _ quic.OOBCapablePacketConn = &QUICUDPConn{}
+var _ quicx.UDPLikeConn = &QUICUDPConn{}
 
 // WriteTo calls MockWriteTo.
 func (c *QUICUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	return c.MockWriteTo(p, addr)
-}
-
-// ReadMsgUDP calls MockReadMsgUDP.
-func (c *QUICUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
-	return c.MockReadMsgUDP(b, oob)
 }
 
 // Close calls MockClose.
@@ -196,7 +191,7 @@ func (c *QUICUDPConn) SyscallConn() (syscall.RawConn, error) {
 	return c.MockSyscallConn()
 }
 
-// WriteMsgUDP calls MockReadMsgUDP.
-func (c *QUICUDPConn) WriteMsgUDP(b, oob []byte, addr *net.UDPAddr) (n, oobn int, err error) {
-	return c.MockWriteMsgUDP(b, oob, addr)
+// SetReadBuffer calls MockSetReadBuffer.
+func (c *QUICUDPConn) SetReadBuffer(n int) error {
+	return c.MockSetReadBuffer(n)
 }
