@@ -125,7 +125,7 @@ type quicSessionOwnsConn struct {
 	quic.EarlySession
 
 	// conn is the connection we own
-	conn net.PacketConn
+	conn quicx.UDPLikeConn
 }
 
 // CloseWithError implements quic.EarlySession.CloseWithError.

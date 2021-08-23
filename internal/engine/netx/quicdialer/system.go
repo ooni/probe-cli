@@ -59,16 +59,16 @@ func (c *saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	return count, err
 }
 
-func (c *saverUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
+func (c *saverUDPConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	start := time.Now()
-	n, oobn, flags, addr, err := c.UDPLikeConn.ReadMsgUDP(b, oob)
+	n, addr, err := c.UDPLikeConn.ReadFrom(b)
 	stop := time.Now()
 	var data []byte
 	if n > 0 {
 		data = b[:n]
 	}
 	c.saver.Write(trace.Event{
-		Address:  addr.String(),
+		Address:  c.safeAddrString(addr),
 		Data:     data,
 		Duration: stop.Sub(start),
 		Err:      err,
@@ -76,5 +76,12 @@ func (c *saverUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, e
 		Name:     errorsx.ReadFromOperation,
 		Time:     stop,
 	})
-	return n, oobn, flags, addr, err
+	return n, addr, err
+}
+
+func (c *saverUDPConn) safeAddrString(addr net.Addr) (out string) {
+	if addr != nil {
+		out = addr.String()
+	}
+	return
 }

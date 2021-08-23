@@ -65,16 +65,16 @@ func (c *errorWrapperUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	return count, nil
 }
 
-// ReadMsgUDP implements quicx.UDPLikeConn.ReadMsgUDP.
-func (c *errorWrapperUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
-	n, oobn, flags, addr, err := c.UDPLikeConn.ReadMsgUDP(b, oob)
+// ReadFrom implements quicx.UDPLikeConn.ReadFrom.
+func (c *errorWrapperUDPConn) ReadFrom(b []byte) (int, net.Addr, error) {
+	n, addr, err := c.UDPLikeConn.ReadFrom(b)
 	if err != nil {
-		return 0, 0, 0, nil, SafeErrWrapperBuilder{
+		return 0, nil, SafeErrWrapperBuilder{
 			Error:     err,
 			Operation: ReadFromOperation,
 		}.MaybeBuild()
 	}
-	return n, oobn, flags, addr, nil
+	return n, addr, nil
 }
 
 // ErrorWrapperQUICDialer is a dialer that performs quic err wrapping

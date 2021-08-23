@@ -8,35 +8,32 @@ package quicx
 
 import (
 	"net"
-
-	"github.com/lucas-clemente/quic-go"
+	"syscall"
 )
 
-// UDPLikeConn is a quic.OOBCapablePacketConn that at the same time
-// also implements the net.Conn interface. We need to implement both
-// interfaces because of the panic occurred in the following PR:
+// UDPLikeConn is a net.PacketConn with some extra functions
+// required to convince the QUIC library (lucas-clemente/quic-go)
+// to inflate the receive buffer of the connection.
 //
-// https://github.com/ooni/probe-cli/pull/441#issuecomment-902815439
+// The QUIC library will otherwise treat this connection as
+// a dumb connection, using its ReadFrom and WriteTo methods
+// as opposed to more advanced methods that are available
+// under Linux and FreeBSD and improve the performance.
 //
-// Basically, endpoint.go's NewPacketConn unconditionally casts the
-// connect to a net.Conn. Thus, to avoid a panic, we need to have
-// since the beginning a connection compatible with udp.Conn. Another
-// strategy is to cast to after the ListenUDP, but it seems cleaner
-// to avoid casting, even though it requires more code.
+// It seems fine to avoid performance optimizations, because
+// they would compilcate the implementation on our side and
+// our use cases (blocking and heavy throttling) do not seem
+// to require such optimizations.
 //
-// We also need to implement SetReadBuffer, otherwise quic-go spews
-// the warning message described here:
-//
-// https://github.com/ooni/probe-cli/pull/448#issuecomment-903727780
-//
-// where it complains about a missing SetReadBuffer function.
+// See https://github.com/ooni/probe/issues/1754 for a more
+// comprehensive discussion.
 type UDPLikeConn interface {
 	// An UDPLikeConn is a quic.OOBCapablePacketConn.
-	quic.OOBCapablePacketConn
-
-	// An UDPLikeConn is also a net.Conn.
-	net.Conn
+	net.PacketConn
 
 	// SetReadBuffer allows to set the read buffer.
 	SetReadBuffer(bytes int) error
+
+	// SyscallConn returns a conn suitable for calling syscalls.
+	SyscallConn() (syscall.RawConn, error)
 }
