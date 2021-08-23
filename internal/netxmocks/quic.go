@@ -145,6 +145,7 @@ type QUICUDPConn struct {
 	MockWriteMsgUDP      func(b, oob []byte, addr *net.UDPAddr) (n, oobn int, err error)
 	MockRead             func(b []byte) (int, error)
 	MockWrite            func(b []byte) (int, error)
+	MockSetReadBuffer    func(n int) error
 }
 
 var _ quicx.UDPLikeConn = &QUICUDPConn{}
@@ -212,4 +213,9 @@ func (c *QUICUDPConn) Read(b []byte) (int, error) {
 // Write calls MockWrite.
 func (c *QUICUDPConn) Write(b []byte) (int, error) {
 	return c.MockWrite(b)
+}
+
+// SetReadBuffer calls MockSetReadBuffer.
+func (c *QUICUDPConn) SetReadBuffer(n int) error {
+	return c.MockSetReadBuffer(n)
 }

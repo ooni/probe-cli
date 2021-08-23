@@ -23,10 +23,20 @@ import (
 // since the beginning a connection compatible with udp.Conn. Another
 // strategy is to cast to after the ListenUDP, but it seems cleaner
 // to avoid casting, even though it requires more code.
+//
+// We also need to implement SetReadBuffer, otherwise quic-go spews
+// the warning message described here:
+//
+// https://github.com/ooni/probe-cli/pull/448#issuecomment-903727780
+//
+// where it complains about a missing SetReadBuffer function.
 type UDPLikeConn interface {
 	// An UDPLikeConn is a quic.OOBCapablePacketConn.
 	quic.OOBCapablePacketConn
 
 	// An UDPLikeConn is also a net.Conn.
 	net.Conn
+
+	// SetReadBuffer allows to set the read buffer.
+	SetReadBuffer(bytes int) error
 }
