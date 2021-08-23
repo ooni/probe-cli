@@ -1,7 +1,9 @@
 package quicdialer
 
 import (
+	"errors"
 	"net"
+	"syscall"
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
@@ -30,17 +32,25 @@ func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (quic.OOBCapablePacketCo
 	if err != nil {
 		return nil, err
 	}
-	return saverUDPConn{OOBCapablePacketConn: pconn, saver: qls.Saver}, nil
+	return &saverUDPConn{
+		pconn: pconn,
+		saver: qls.Saver,
+	}, nil
 }
 
 type saverUDPConn struct {
-	quic.OOBCapablePacketConn
+	pconn quic.OOBCapablePacketConn
 	saver *trace.Saver
 }
 
-func (c saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
+var (
+	_ net.Conn                  = &saverUDPConn{}
+	_ quic.OOBCapablePacketConn = &saverUDPConn{}
+)
+
+func (c *saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	start := time.Now()
-	count, err := c.OOBCapablePacketConn.WriteTo(p, addr)
+	count, err := c.pconn.WriteTo(p, addr)
 	stop := time.Now()
 	c.saver.Write(trace.Event{
 		Address:  addr.String(),
@@ -54,9 +64,9 @@ func (c saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	return count, err
 }
 
-func (c saverUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
+func (c *saverUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, error) {
 	start := time.Now()
-	n, oobn, flags, addr, err := c.OOBCapablePacketConn.ReadMsgUDP(b, oob)
+	n, oobn, flags, addr, err := c.pconn.ReadMsgUDP(b, oob)
 	stop := time.Now()
 	var data []byte
 	if n > 0 {
@@ -72,4 +82,70 @@ func (c saverUDPConn) ReadMsgUDP(b, oob []byte) (int, int, int, *net.UDPAddr, er
 		Time:     stop,
 	})
 	return n, oobn, flags, addr, err
+}
+
+func (c *saverUDPConn) Close() error {
+	return c.pconn.Close()
+}
+
+func (c *saverUDPConn) LocalAddr() net.Addr {
+	// XXX
+	conn, ok := c.pconn.(net.Conn)
+	if !ok {
+		return &net.UDPAddr{}
+	}
+	return conn.LocalAddr()
+}
+
+func (c *saverUDPConn) RemoteAddr() net.Addr {
+	// XXX
+	conn, ok := c.pconn.(net.Conn)
+	if !ok {
+		return &net.UDPAddr{}
+	}
+	return conn.RemoteAddr()
+}
+
+func (c *saverUDPConn) Read(b []byte) (int, error) {
+	// XXX
+	conn, ok := c.pconn.(net.Conn)
+	if !ok {
+		return 0, errors.New("cannot cast to net.Conn")
+	}
+	return conn.Read(b)
+}
+
+func (c *saverUDPConn) Write(b []byte) (int, error) {
+	// XXX
+	conn, ok := c.pconn.(net.Conn)
+	if !ok {
+		return 0, errors.New("cannot cast to net.Conn")
+	}
+	return conn.Write(b)
+}
+
+func (c *saverUDPConn) SetDeadline(d time.Time) error {
+	return c.pconn.SetDeadline(d)
+}
+
+func (c *saverUDPConn) SetReadDeadline(d time.Time) error {
+	return c.pconn.SetReadDeadline(d)
+}
+
+func (c *saverUDPConn) SetWriteDeadline(d time.Time) error {
+	return c.pconn.SetReadDeadline(d)
+}
+
+func (c *saverUDPConn) ReadFrom(p []byte) (n int, addr net.Addr, err error) {
+	// XXX
+	return c.pconn.ReadFrom(p)
+}
+
+func (c *saverUDPConn) SyscallConn() (syscall.RawConn, error) {
+	return c.pconn.SyscallConn()
+}
+
+func (c *saverUDPConn) WriteMsgUDP(b, oob []byte, addr *net.UDPAddr) (n, oobn int, err error) {
+	// XXX
+	return c.pconn.WriteMsgUDP(b, oob, addr)
 }
