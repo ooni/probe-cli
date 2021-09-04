@@ -91,12 +91,12 @@ func (oo OOClient) Do(ctx context.Context, config OOConfig) (*CtrlResponse, erro
 		return nil, fmt.Errorf("%w: %s", ErrInvalidURL, err.Error())
 	}
 	addrs, err := oo.Resolver.LookupHost(ctx, targetURL.Hostname())
-	if err != nil {
-		return nil, err
-	}
-	endpoints, err := MakeTCPEndpoints(targetURL, addrs)
-	if err != nil {
-		return nil, err
+	endpoints := []string{}
+	if err == nil {
+		endpoints, err = MakeTCPEndpoints(targetURL, addrs)
+		if err != nil {
+			return nil, err
+		}
 	}
 	creq := ctrlRequest{
 		HTTPRequest: config.TargetURL,
