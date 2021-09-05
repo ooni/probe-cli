@@ -7,13 +7,24 @@ import (
 	utls "gitlab.com/yawning/utls.git"
 )
 
+// NewTLSHandshakerUTLS creates a new TLS handshaker using the
+// gitlab.com/yawning/utls library to create TLS conns.
+func NewTLSHandshakerUTLS(logger Logger, id *utls.ClientHelloID) TLSHandshaker {
+	return &tlsHandshakerLogger{
+		TLSHandshaker: &tlsHandshakerConfigurable{
+			NewConn: newConnUTLS(id),
+		},
+		Logger: logger,
+	}
+}
+
 // utlsConn implements TLSConn and uses a utls UConn as its underlying connection
 type utlsConn struct {
 	*utls.UConn
 }
 
-// NewConnUTLS creates a NewConn function creating a utls connection with a specified ClientHelloID
-func NewConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tls.Config) TLSConn {
+// newConnUTLS creates a NewConn function creating a utls connection with a specified ClientHelloID
+func newConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tls.Config) TLSConn {
 	return func(conn net.Conn, config *tls.Config) TLSConn {
 		uConfig := &utls.Config{
 			RootCAs:                     config.RootCAs,

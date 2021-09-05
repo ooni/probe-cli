@@ -124,6 +124,15 @@ type TLSHandshaker interface {
 		net.Conn, tls.ConnectionState, error)
 }
 
+// NewTLSHandshakerStdlib creates a new TLS handshaker using the
+// go standard library to create TLS connections.
+func NewTLSHandshakerStdlib(logger Logger) TLSHandshaker {
+	return &tlsHandshakerLogger{
+		TLSHandshaker: &tlsHandshakerConfigurable{},
+		Logger:        logger,
+	}
+}
+
 // tlsHandshakerConfigurable is a configurable TLS handshaker that
 // uses by default the standard library's TLS implementation.
 type tlsHandshakerConfigurable struct {
