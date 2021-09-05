@@ -3,6 +3,7 @@ package netxlite
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"net"
 
 	utls "gitlab.com/yawning/utls.git"
@@ -43,17 +44,29 @@ func newConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tl
 	}
 }
 
-func (c *utlsConn) HandshakeContext(ctx context.Context) error {
+// ErrUTLSHandshakePanic indicates that there was panic handshaking
+// when we were using the yawning/utls library for parroting.
+//
+// See https://github.com/ooni/probe/issues/1770
+var ErrUTLSHandshakePanic = errors.New("utls: handshake panic")
+
+func (c *utlsConn) HandshakeContext(ctx context.Context) (err error) {
 	errch := make(chan error, 1)
 	go func() {
+		defer func() {
+			// See https://github.com/ooni/probe/issues/1770
+			if recover() != nil {
+				errch <- ErrUTLSHandshakePanic
+			}
+		}()
 		errch <- c.handshakefn()()
 	}()
 	select {
-	case err := <-errch:
-		return err
+	case err = <-errch:
 	case <-ctx.Done():
-		return ctx.Err()
+		err = ctx.Err()
 	}
+	return
 }
 
 func (c *utlsConn) handshakefn() func() error {
