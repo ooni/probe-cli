@@ -190,7 +190,7 @@ func TestTLSHandshakerConfigurableSetsDefaultRootCAs(t *testing.T) {
 		NewConn: func(conn net.Conn, config *tls.Config) TLSConn {
 			gotTLSConfig = config
 			return &mocks.TLSConn{
-				MockHandshake: func() error {
+				MockHandshakeContext: func(ctx context.Context) error {
 					return expected
 				},
 			}

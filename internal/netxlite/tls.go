@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net"
 	"time"
+
+	oohttp "github.com/ooni/oohttp"
 )
 
 var (
@@ -103,17 +105,12 @@ func ConfigureTLSVersion(config *tls.Config, version string) error {
 	return nil
 }
 
-// TLSConn is any tls.Conn-like structure.
-type TLSConn interface {
-	// net.Conn is the embedded conn.
-	net.Conn
+// TLSConn is the type of connection that oohttp expects from
+// any library that implements TLS functionality.
+type TLSConn = oohttp.TLSConn
 
-	// ConnectionState returns the TLS connection state.
-	ConnectionState() tls.ConnectionState
-
-	// Handshake performs the handshake.
-	Handshake() error
-}
+// Ensures that a tls.Conn implements the TLSConn interface.
+var _ TLSConn = &tls.Conn{}
 
 // TLSHandshaker is the generic TLS handshaker.
 type TLSHandshaker interface {
@@ -154,11 +151,6 @@ var defaultCertPool = NewDefaultCertPool()
 // Handshake implements Handshaker.Handshake. This function will
 // configure the code to use the built-in Mozilla CA if the config
 // field contains a nil RootCAs field.
-//
-// Bug
-//
-// Until Go 1.17 is released, this function will not honour
-// the context. We'll however always enforce an overall timeout.
 func (h *tlsHandshakerConfigurable) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {
@@ -173,7 +165,7 @@ func (h *tlsHandshakerConfigurable) Handshake(
 		config.RootCAs = defaultCertPool
 	}
 	tlsconn := h.newConn(conn, config)
-	if err := tlsconn.Handshake(); err != nil {
+	if err := tlsconn.HandshakeContext(ctx); err != nil {
 		return nil, tls.ConnectionState{}, err
 	}
 	return tlsconn, tlsconn.ConnectionState(), nil

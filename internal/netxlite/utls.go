@@ -1,6 +1,7 @@
 package netxlite
 
 import (
+	"context"
 	"crypto/tls"
 	"net"
 
@@ -21,9 +22,13 @@ func NewTLSHandshakerUTLS(logger Logger, id *utls.ClientHelloID) TLSHandshaker {
 // utlsConn implements TLSConn and uses a utls UConn as its underlying connection
 type utlsConn struct {
 	*utls.UConn
+	testableHandshake func() error
 }
 
-// newConnUTLS creates a NewConn function creating a utls connection with a specified ClientHelloID
+// Ensures that a utlsConn implements the TLSConn interface.
+var _ TLSConn = &utlsConn{}
+
+// newConnUTLS returns a NewConn function for creating utlsConn instances.
 func newConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tls.Config) TLSConn {
 	return func(conn net.Conn, config *tls.Config) TLSConn {
 		uConfig := &utls.Config{
@@ -34,8 +39,28 @@ func newConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tl
 			DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
 		}
 		tlsConn := utls.UClient(conn, uConfig, *clientHello)
-		return &utlsConn{tlsConn}
+		return &utlsConn{UConn: tlsConn}
 	}
+}
+
+func (c *utlsConn) HandshakeContext(ctx context.Context) error {
+	errch := make(chan error, 1)
+	go func() {
+		errch <- c.handshakefn()()
+	}()
+	select {
+	case err := <-errch:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (c *utlsConn) handshakefn() func() error {
+	if c.testableHandshake != nil {
+		return c.testableHandshake
+	}
+	return c.UConn.Handshake
 }
 
 func (c *utlsConn) ConnectionState() tls.ConnectionState {

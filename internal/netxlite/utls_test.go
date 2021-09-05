@@ -3,8 +3,11 @@ package netxlite
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"net"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/apex/log"
 	utls "gitlab.com/yawning/utls.git"
@@ -44,4 +47,38 @@ func TestNewTLSHandshakerUTLSTypes(t *testing.T) {
 	if thc.NewConn == nil {
 		t.Fatal("expected non-nil NewConn")
 	}
+}
+
+func TestUTLSConnHandshakeNotInterrupted(t *testing.T) {
+	ctx := context.Background()
+	conn := &utlsConn{
+		testableHandshake: func() error {
+			return nil
+		},
+	}
+	err := conn.HandshakeContext(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUTLSConnHandshakeInterrupted(t *testing.T) {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	sigch := make(chan interface{})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
+	conn := &utlsConn{
+		testableHandshake: func() error {
+			defer wg.Done()
+			<-sigch
+			return nil
+		},
+	}
+	err := conn.HandshakeContext(ctx)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal("not the error we expected", err)
+	}
+	close(sigch)
+	wg.Wait()
 }
