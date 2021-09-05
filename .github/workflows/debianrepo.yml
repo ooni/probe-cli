@@ -3,8 +3,7 @@ name: linux
 on:
   push:
     branches:
-      - "master"
-      - "issue/1484"
+      - "release/**"
 
 jobs:
   test_386:
