@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"reflect"
@@ -20,14 +21,14 @@ func TestTLSConnConnectionState(t *testing.T) {
 	}
 }
 
-func TestTLSConnHandshake(t *testing.T) {
+func TestTLSConnHandshakeContext(t *testing.T) {
 	expected := errors.New("mocked error")
 	c := &TLSConn{
-		MockHandshake: func() error {
+		MockHandshakeContext: func(ctx context.Context) error {
 			return expected
 		},
 	}
-	err := c.Handshake()
+	err := c.HandshakeContext(context.Background())
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected", err)
 	}

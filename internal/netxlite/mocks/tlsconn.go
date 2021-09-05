@@ -1,6 +1,9 @@
 package mocks
 
-import "crypto/tls"
+import (
+	"context"
+	"crypto/tls"
+)
 
 // TLSConn allows to mock netxlite.TLSConn.
 type TLSConn struct {
@@ -10,8 +13,8 @@ type TLSConn struct {
 	// MockConnectionState allows to mock the ConnectionState method.
 	MockConnectionState func() tls.ConnectionState
 
-	// MockHandshake allows to mock the Handshake method.
-	MockHandshake func() error
+	// MockHandshakeContext allows to mock the HandshakeContext method.
+	MockHandshakeContext func(ctx context.Context) error
 }
 
 // ConnectionState calls MockConnectionState.
@@ -19,7 +22,7 @@ func (c *TLSConn) ConnectionState() tls.ConnectionState {
 	return c.MockConnectionState()
 }
 
-// Handshake calls MockHandshake.
-func (c *TLSConn) Handshake() error {
-	return c.MockHandshake()
+// HandshakeContext calls MockHandshakeContext.
+func (c *TLSConn) HandshakeContext(ctx context.Context) error {
+	return c.MockHandshakeContext(ctx)
 }
