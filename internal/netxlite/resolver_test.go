@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
@@ -12,7 +14,7 @@ import (
 )
 
 func TestResolverSystemNetworkAddress(t *testing.T) {
-	r := resolverSystem{}
+	r := &resolverSystem{}
 	if r.Network() != "system" {
 		t.Fatal("invalid Network")
 	}
@@ -22,13 +24,81 @@ func TestResolverSystemNetworkAddress(t *testing.T) {
 }
 
 func TestResolverSystemWorksAsIntended(t *testing.T) {
-	r := resolverSystem{}
+	r := &resolverSystem{}
+	defer r.CloseIdleConnections()
 	addrs, err := r.LookupHost(context.Background(), "dns.google.com")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if addrs == nil {
 		t.Fatal("expected non-nil result here")
+	}
+}
+
+func TestResolverSystemDefaultTimeout(t *testing.T) {
+	r := &resolverSystem{}
+	if r.timeout() != 15*time.Second {
+		t.Fatal("unexpected default timeout")
+	}
+}
+
+func TestResolverSystemWithTimeoutAndSuccess(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	r := &resolverSystem{
+		testableTimeout: 1 * time.Microsecond,
+		testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			defer wg.Done()
+			time.Sleep(1 * time.Millisecond)
+			return []string{"8.8.8.8"}, nil
+		},
+	}
+	ctx := context.Background()
+	addrs, err := r.LookupHost(ctx, "example.antani")
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal("not the error we expected", err)
+	}
+	if addrs != nil {
+		t.Fatal("invalid addrs")
+	}
+	wg.Wait()
+}
+
+func TestResolverSystemWithTimeoutAndFailure(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	r := &resolverSystem{
+		testableTimeout: 1 * time.Microsecond,
+		testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			defer wg.Done()
+			time.Sleep(1 * time.Millisecond)
+			return nil, errors.New("no such host")
+		},
+	}
+	ctx := context.Background()
+	addrs, err := r.LookupHost(ctx, "example.antani")
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal("not the error we expected", err)
+	}
+	if addrs != nil {
+		t.Fatal("invalid addrs")
+	}
+	wg.Wait()
+}
+
+func TestResolverSystemWithNXDOMAIN(t *testing.T) {
+	r := &resolverSystem{
+		testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return nil, errors.New("no such host")
+		},
+	}
+	ctx := context.Background()
+	addrs, err := r.LookupHost(ctx, "example.antani")
+	if err == nil || !strings.HasSuffix(err.Error(), "no such host") {
+		t.Fatal("not the error we expected", err)
+	}
+	if addrs != nil {
+		t.Fatal("invalid addrs")
 	}
 }
 

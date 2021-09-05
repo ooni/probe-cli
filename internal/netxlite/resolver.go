@@ -40,13 +40,52 @@ func NewResolver(config *ResolverConfig) Resolver {
 }
 
 // resolverSystem is the system resolver.
-type resolverSystem struct{}
+type resolverSystem struct {
+	testableTimeout    time.Duration
+	testableLookupHost func(ctx context.Context, domain string) ([]string, error)
+}
 
 var _ Resolver = &resolverSystem{}
 
 // LookupHost implements Resolver.LookupHost.
 func (r *resolverSystem) LookupHost(ctx context.Context, hostname string) ([]string, error) {
-	return net.DefaultResolver.LookupHost(ctx, hostname)
+	// This code forces adding a shorter timeout to the domain name
+	// resolutions when using the system resolver. We have seen cases
+	// in which such a timeout becomes too large. One such case is
+	// described in https://github.com/ooni/probe/issues/1726.
+	addrsch, errch := make(chan []string, 1), make(chan error, 1)
+	ctx, cancel := context.WithTimeout(ctx, r.timeout())
+	defer cancel()
+	go func() {
+		addrs, err := r.lookupHost()(ctx, hostname)
+		if err != nil {
+			errch <- err
+			return
+		}
+		addrsch <- addrs
+	}()
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case addrs := <-addrsch:
+		return addrs, nil
+	case err := <-errch:
+		return nil, err
+	}
+}
+
+func (r *resolverSystem) timeout() time.Duration {
+	if r.testableTimeout > 0 {
+		return r.testableTimeout
+	}
+	return 15 * time.Second
+}
+
+func (r *resolverSystem) lookupHost() func(ctx context.Context, domain string) ([]string, error) {
+	if r.testableLookupHost != nil {
+		return r.testableLookupHost
+	}
+	return net.DefaultResolver.LookupHost
 }
 
 // Network implements Resolver.Network.
