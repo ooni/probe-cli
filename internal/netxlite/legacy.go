@@ -1,6 +1,7 @@
 package netxlite
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -59,3 +60,65 @@ type (
 	TLSHandshakerConfigurable = tlsHandshakerConfigurable
 	TLSHandshakerLogger       = tlsHandshakerLogger
 )
+
+// ResolverLegacy performs domain name resolutions.
+//
+// This definition of Resolver is DEPRECATED. New code should use
+// the more complete definition in the new Resolver interface.
+//
+// Existing code in ooni/probe-cli is still using this definition.
+type ResolverLegacy interface {
+	// LookupHost behaves like net.Resolver.LookupHost.
+	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
+}
+
+// NewResolverLegacyAdapter adapts a ResolverLegacy to
+// become compatible with the Resolver definition.
+func NewResolverLegacyAdapter(reso ResolverLegacy) Resolver {
+	return &ResolverLegacyAdapter{reso}
+}
+
+// ResolverLegacyAdapter makes a ResolverLegacy behave like
+// it was a Resolver type. If ResolverLegacy is actually also
+// a Resolver, this adapter will just forward missing calls,
+// otherwise it will implement a sensible default action.
+type ResolverLegacyAdapter struct {
+	ResolverLegacy
+}
+
+var _ Resolver = &ResolverLegacyAdapter{}
+
+type resolverLegacyNetworker interface {
+	Network() string
+}
+
+// Network implements Resolver.Network.
+func (r *ResolverLegacyAdapter) Network() string {
+	if rn, ok := r.ResolverLegacy.(resolverLegacyNetworker); ok {
+		return rn.Network()
+	}
+	return "adapter"
+}
+
+type resolverLegacyAddresser interface {
+	Address() string
+}
+
+// Address implements Resolver.Address.
+func (r *ResolverLegacyAdapter) Address() string {
+	if ra, ok := r.ResolverLegacy.(resolverLegacyAddresser); ok {
+		return ra.Address()
+	}
+	return ""
+}
+
+type resolverLegacyIdleConnectionsCloser interface {
+	CloseIdleConnections()
+}
+
+// CloseIdleConnections implements Resolver.CloseIdleConnections.
+func (r *ResolverLegacyAdapter) CloseIdleConnections() {
+	if ra, ok := r.ResolverLegacy.(resolverLegacyIdleConnectionsCloser); ok {
+		ra.CloseIdleConnections()
+	}
+}

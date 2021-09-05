@@ -24,7 +24,7 @@ type Config struct {
 	checker   InitChecker
 	explorer  Explorer
 	generator Generator
-	resolver  netxlite.Resolver
+	resolver  netxlite.ResolverLegacy
 }
 
 // Measure performs the three consecutive steps of the testhelper algorithm:
@@ -87,10 +87,12 @@ func newDNSFailedResponse(err error, URL string) *ControlResponse {
 }
 
 // newResolver creates a new DNS resolver instance
-func newResolver() netxlite.Resolver {
+func newResolver() netxlite.ResolverLegacy {
 	childResolver, err := netx.NewDNSClient(netx.Config{Logger: log.Log}, "doh://google")
 	runtimex.PanicOnError(err, "NewDNSClient failed")
-	var r netxlite.Resolver = childResolver
-	r = &netxlite.ResolverIDNA{Resolver: r}
+	var r netxlite.ResolverLegacy = childResolver
+	r = &netxlite.ResolverIDNA{
+		Resolver: netxlite.NewResolverLegacyAdapter(r),
+	}
 	return r
 }

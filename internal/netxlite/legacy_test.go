@@ -2,9 +2,11 @@ package netxlite
 
 import (
 	"errors"
+	"net"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestReduceErrors(t *testing.T) {
@@ -43,4 +45,40 @@ func TestReduceErrors(t *testing.T) {
 			t.Fatal("wrong result")
 		}
 	})
+}
+
+func TestResolverLegacyAdapterWithCompatibleType(t *testing.T) {
+	var called bool
+	r := NewResolverLegacyAdapter(&mocks.Resolver{
+		MockNetwork: func() string {
+			return "network"
+		},
+		MockAddress: func() string {
+			return "address"
+		},
+		MockCloseIdleConnections: func() {
+			called = true
+		},
+	})
+	if r.Network() != "network" {
+		t.Fatal("invalid Network")
+	}
+	if r.Address() != "address" {
+		t.Fatal("invalid Address")
+	}
+	r.CloseIdleConnections()
+	if !called {
+		t.Fatal("not called")
+	}
+}
+
+func TestResolverLegacyAdapterDefaults(t *testing.T) {
+	r := NewResolverLegacyAdapter(&net.Resolver{})
+	if r.Network() != "adapter" {
+		t.Fatal("invalid Network")
+	}
+	if r.Address() != "" {
+		t.Fatal("invalid Address")
+	}
+	r.CloseIdleConnections() // does not crash
 }

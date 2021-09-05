@@ -2,9 +2,10 @@ package netxlite
 
 import (
 	"crypto/tls"
-	"net"
 	"net/http"
 	"testing"
+
+	"github.com/apex/log"
 )
 
 func TestHTTP3TransportWorks(t *testing.T) {
@@ -12,7 +13,7 @@ func TestHTTP3TransportWorks(t *testing.T) {
 		Dialer: &quicDialerQUICGo{
 			QUICListener: &quicListenerStdlib{},
 		},
-		Resolver: &net.Resolver{},
+		Resolver: NewResolver(&ResolverConfig{Logger: log.Log}),
 	}
 	txp := NewHTTP3Transport(d, &tls.Config{})
 	client := &http.Client{Transport: txp}

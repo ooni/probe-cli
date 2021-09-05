@@ -33,23 +33,29 @@ func NewRequest(ctx context.Context, URL *url.URL, headers http.Header) *http.Re
 
 // NewDialerResolver contructs a new dialer for TCP connections,
 // with default, errorwrapping and resolve functionalities
-func NewDialerResolver(resolver netxlite.Resolver) netxlite.Dialer {
+func NewDialerResolver(resolver netxlite.ResolverLegacy) netxlite.Dialer {
 	var d netxlite.Dialer = netxlite.DefaultDialer
 	d = &errorsx.ErrorWrapperDialer{Dialer: d}
-	d = &netxlite.DialerResolver{Resolver: resolver, Dialer: d}
+	d = &netxlite.DialerResolver{
+		Resolver: netxlite.NewResolverLegacyAdapter(resolver),
+		Dialer:   d,
+	}
 	return d
 }
 
 // NewQUICDialerResolver creates a new QUICDialerResolver
 // with default, errorwrapping and resolve functionalities
-func NewQUICDialerResolver(resolver netxlite.Resolver) netxlite.QUICContextDialer {
+func NewQUICDialerResolver(resolver netxlite.ResolverLegacy) netxlite.QUICContextDialer {
 	var ql quicdialer.QUICListener = &netxlite.QUICListenerStdlib{}
 	ql = &errorsx.ErrorWrapperQUICListener{QUICListener: ql}
 	var dialer netxlite.QUICContextDialer = &netxlite.QUICDialerQUICGo{
 		QUICListener: ql,
 	}
 	dialer = &errorsx.ErrorWrapperQUICDialer{Dialer: dialer}
-	dialer = &netxlite.QUICDialerResolver{Resolver: resolver, Dialer: dialer}
+	dialer = &netxlite.QUICDialerResolver{
+		Resolver: netxlite.NewResolverLegacyAdapter(resolver),
+		Dialer:   dialer,
+	}
 	return dialer
 }
 

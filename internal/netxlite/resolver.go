@@ -12,6 +12,31 @@ import (
 type Resolver interface {
 	// LookupHost behaves like net.Resolver.LookupHost.
 	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
+
+	// Network returns the resolver type (e.g., system, dot, doh).
+	Network() string
+
+	// Address returns the resolver address (e.g., 8.8.8.8:53).
+	Address() string
+
+	// CloseIdleConnections closes idle connections, if any.
+	CloseIdleConnections()
+}
+
+// ResolverConfig contains config for creating a resolver.
+type ResolverConfig struct {
+	// Logger is the MANDATORY logger to use.
+	Logger Logger
+}
+
+// NewResolver creates a new resolver.
+func NewResolver(config *ResolverConfig) Resolver {
+	return &resolverIDNA{
+		Resolver: &resolverLogger{
+			Resolver: &resolverSystem{},
+			Logger:   config.Logger,
+		},
+	}
 }
 
 // resolverSystem is the system resolver.
@@ -32,6 +57,11 @@ func (r *resolverSystem) Network() string {
 // Address implements Resolver.Address.
 func (r *resolverSystem) Address() string {
 	return ""
+}
+
+// CloseIdleConnections implements Resolver.CloseIdleConnections.
+func (r *resolverSystem) CloseIdleConnections() {
+	// nothing
 }
 
 // DefaultResolver is the resolver we use by default.
@@ -59,30 +89,6 @@ func (r *resolverLogger) LookupHost(ctx context.Context, hostname string) ([]str
 	return addrs, nil
 }
 
-type resolverNetworker interface {
-	Network() string
-}
-
-// Network implements Resolver.Network.
-func (r *resolverLogger) Network() string {
-	if rn, ok := r.Resolver.(resolverNetworker); ok {
-		return rn.Network()
-	}
-	return "logger"
-}
-
-type resolverAddresser interface {
-	Address() string
-}
-
-// Address implements Resolver.Address.
-func (r *resolverLogger) Address() string {
-	if ra, ok := r.Resolver.(resolverAddresser); ok {
-		return ra.Address()
-	}
-	return ""
-}
-
 // resolverIDNA supports resolving Internationalized Domain Names.
 //
 // See RFC3492 for more information.
@@ -97,20 +103,4 @@ func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]strin
 		return nil, err
 	}
 	return r.Resolver.LookupHost(ctx, host)
-}
-
-// Network implements Resolver.Network.
-func (r *resolverIDNA) Network() string {
-	if rn, ok := r.Resolver.(resolverNetworker); ok {
-		return rn.Network()
-	}
-	return "idna"
-}
-
-// Address implements Resolver.Address.
-func (r *resolverIDNA) Address() string {
-	if ra, ok := r.Resolver.(resolverAddresser); ok {
-		return ra.Address()
-	}
-	return ""
 }

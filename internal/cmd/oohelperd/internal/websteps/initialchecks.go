@@ -31,7 +31,7 @@ type InitChecker interface {
 
 // DefaultInitChecker is the default InitChecker.
 type DefaultInitChecker struct {
-	resolver netxlite.Resolver
+	resolver netxlite.ResolverLegacy
 }
 
 // InitialChecks checks whether the URL is valid and whether the

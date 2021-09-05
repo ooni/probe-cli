@@ -24,7 +24,7 @@ type Generator interface {
 type DefaultGenerator struct {
 	dialer     netxlite.Dialer
 	quicDialer netxlite.QUICContextDialer
-	resolver   netxlite.Resolver
+	resolver   netxlite.ResolverLegacy
 	transport  http.RoundTripper
 }
 

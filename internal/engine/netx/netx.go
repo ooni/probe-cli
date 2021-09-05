@@ -134,12 +134,15 @@ func NewResolver(config Config) Resolver {
 	}
 	r = &errorsx.ErrorWrapperResolver{Resolver: r}
 	if config.Logger != nil {
-		r = &netxlite.ResolverLogger{Logger: config.Logger, Resolver: r}
+		r = &netxlite.ResolverLogger{
+			Logger:   config.Logger,
+			Resolver: netxlite.NewResolverLegacyAdapter(r),
+		}
 	}
 	if config.ResolveSaver != nil {
 		r = resolver.SaverResolver{Resolver: r, Saver: config.ResolveSaver}
 	}
-	return &resolver.IDNAResolver{Resolver: r}
+	return &resolver.IDNAResolver{Resolver: netxlite.NewResolverLegacyAdapter(r)}
 }
 
 // NewDialer creates a new Dialer from the specified config
@@ -176,7 +179,10 @@ func NewQUICDialer(config Config) QUICDialer {
 	if config.TLSSaver != nil {
 		d = quicdialer.HandshakeSaver{Saver: config.TLSSaver, Dialer: d}
 	}
-	d = &netxlite.QUICDialerResolver{Resolver: config.FullResolver, Dialer: d}
+	d = &netxlite.QUICDialerResolver{
+		Resolver: netxlite.NewResolverLegacyAdapter(config.FullResolver),
+		Dialer:   d,
+	}
 	return d
 }
 

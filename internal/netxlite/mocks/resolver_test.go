@@ -44,3 +44,16 @@ func TestResolverAddress(t *testing.T) {
 		t.Fatal("unexpected address", v)
 	}
 }
+
+func TestResolverCloseIdleConnections(t *testing.T) {
+	var called bool
+	r := &Resolver{
+		MockCloseIdleConnections: func() {
+			called = true
+		},
+	}
+	r.CloseIdleConnections()
+	if !called {
+		t.Fatal("not called")
+	}
+}

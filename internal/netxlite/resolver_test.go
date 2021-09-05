@@ -3,7 +3,6 @@ package netxlite
 import (
 	"context"
 	"errors"
-	"net"
 	"strings"
 	"testing"
 
@@ -71,26 +70,6 @@ func TestResolverLoggerWithFailure(t *testing.T) {
 	}
 }
 
-func TestResolverLoggerChildNetworkAddress(t *testing.T) {
-	r := &resolverLogger{Logger: log.Log, Resolver: DefaultResolver}
-	if r.Network() != "system" {
-		t.Fatal("invalid Network")
-	}
-	if r.Address() != "" {
-		t.Fatal("invalid Address")
-	}
-}
-
-func TestResolverLoggerNoChildNetworkAddress(t *testing.T) {
-	r := &resolverLogger{Logger: log.Log, Resolver: &net.Resolver{}}
-	if r.Network() != "logger" {
-		t.Fatal("invalid Network")
-	}
-	if r.Address() != "" {
-		t.Fatal("invalid Address")
-	}
-}
-
 func TestResolverIDNAWorksAsIntended(t *testing.T) {
 	expectedIPs := []string{"77.88.55.66"}
 	r := &resolverIDNA{
@@ -130,24 +109,22 @@ func TestResolverIDNAWithInvalidPunycode(t *testing.T) {
 	}
 }
 
-func TestResolverIDNAChildNetworkAddress(t *testing.T) {
-	r := &resolverIDNA{
-		Resolver: DefaultResolver,
+func TestNewResolverTypeChain(t *testing.T) {
+	r := NewResolver(&ResolverConfig{
+		Logger: log.Log,
+	})
+	ridna, ok := r.(*resolverIDNA)
+	if !ok {
+		t.Fatal("invalid resolver")
 	}
-	if v := r.Network(); v != "system" {
-		t.Fatal("invalid network", v)
+	rl, ok := ridna.Resolver.(*resolverLogger)
+	if !ok {
+		t.Fatal("invalid resolver")
 	}
-	if v := r.Address(); v != "" {
-		t.Fatal("invalid address", v)
+	if rl.Logger != log.Log {
+		t.Fatal("invalid logger")
 	}
-}
-
-func TestResolverIDNANoChildNetworkAddress(t *testing.T) {
-	r := &resolverIDNA{}
-	if v := r.Network(); v != "idna" {
-		t.Fatal("invalid network", v)
-	}
-	if v := r.Address(); v != "" {
-		t.Fatal("invalid address", v)
+	if _, ok := rl.Resolver.(*resolverSystem); !ok {
+		t.Fatal("invalid resolver")
 	}
 }

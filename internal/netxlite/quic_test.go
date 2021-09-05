@@ -215,7 +215,8 @@ func TestQUICDialerQUICGoTLSDefaultsForDoQ(t *testing.T) {
 func TestQUICDialerResolverSuccess(t *testing.T) {
 	tlsConfig := &tls.Config{}
 	dialer := &quicDialerResolver{
-		Resolver: &net.Resolver{}, Dialer: &quicDialerQUICGo{
+		Resolver: NewResolver(&ResolverConfig{Logger: log.Log}),
+		Dialer: &quicDialerQUICGo{
 			QUICListener: &quicListenerStdlib{},
 		}}
 	sess, err := dialer.DialContext(
@@ -233,7 +234,8 @@ func TestQUICDialerResolverSuccess(t *testing.T) {
 func TestQUICDialerResolverNoPort(t *testing.T) {
 	tlsConfig := &tls.Config{}
 	dialer := &quicDialerResolver{
-		Resolver: new(net.Resolver), Dialer: &quicDialerQUICGo{}}
+		Resolver: NewResolver(&ResolverConfig{Logger: log.Log}),
+		Dialer:   &quicDialerQUICGo{}}
 	sess, err := dialer.DialContext(
 		context.Background(), "udp", "www.google.com",
 		tlsConfig, &quic.Config{})
@@ -286,7 +288,8 @@ func TestQUICDialerResolverInvalidPort(t *testing.T) {
 	// to establish a connection leads to a failure
 	tlsConf := &tls.Config{}
 	dialer := &quicDialerResolver{
-		Resolver: new(net.Resolver), Dialer: &quicDialerQUICGo{
+		Resolver: NewResolver(&ResolverConfig{Logger: log.Log}),
+		Dialer: &quicDialerQUICGo{
 			QUICListener: &quicListenerStdlib{},
 		}}
 	sess, err := dialer.DialContext(
@@ -309,7 +312,8 @@ func TestQUICDialerResolverApplyTLSDefaults(t *testing.T) {
 	var gotTLSConfig *tls.Config
 	tlsConfig := &tls.Config{}
 	dialer := &quicDialerResolver{
-		Resolver: new(net.Resolver), Dialer: &mocks.QUICContextDialer{
+		Resolver: NewResolver(&ResolverConfig{Logger: log.Log}),
+		Dialer: &mocks.QUICContextDialer{
 			MockDialContext: func(ctx context.Context, network, address string,
 				tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 				gotTLSConfig = tlsConfig

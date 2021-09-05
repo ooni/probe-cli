@@ -24,7 +24,11 @@ func TestNewResolverVanilla(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(*errorsx.ErrorWrapperResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -48,7 +52,11 @@ func TestNewResolverSpecificResolver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(*errorsx.ErrorWrapperResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -70,7 +78,11 @@ func TestNewResolverWithBogonFilter(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(*errorsx.ErrorWrapperResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -96,16 +108,32 @@ func TestNewResolverWithLogging(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	lr, ok := ir.Resolver.(*netxlite.ResolverLogger)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	lr, ok := rla.ResolverLegacy.(*netxlite.ResolverLogger)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	if lr.Logger != log.Log {
 		t.Fatal("not the logger we expected")
 	}
-	ewr, ok := lr.Resolver.(*errorsx.ErrorWrapperResolver)
+	rla, ok = ir.Resolver.(*netxlite.ResolverLegacyAdapter)
 	if !ok {
 		t.Fatal("not the resolver we expected")
+	}
+	lr, ok = rla.ResolverLegacy.(*netxlite.ResolverLogger)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	rla, ok = lr.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
+	if !ok {
+		t.Fatalf("not the resolver we expected %T", rla.ResolverLegacy)
 	}
 	ar, ok := ewr.Resolver.(resolver.AddressResolver)
 	if !ok {
@@ -126,7 +154,11 @@ func TestNewResolverWithSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	sr, ok := ir.Resolver.(resolver.SaverResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	sr, ok := rla.ResolverLegacy.(resolver.SaverResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -155,7 +187,11 @@ func TestNewResolverWithReadWriteCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(*errorsx.ErrorWrapperResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -186,7 +222,11 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(*errorsx.ErrorWrapperResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
