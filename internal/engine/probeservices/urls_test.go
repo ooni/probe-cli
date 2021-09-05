@@ -9,6 +9,9 @@ import (
 )
 
 func TestFetchURLListSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	client := newclient()
 	client.BaseURL = "https://ams-pg-test.ooni.org"
 	config := model.URLListConfig{
