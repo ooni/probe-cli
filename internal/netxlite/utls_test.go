@@ -100,8 +100,7 @@ func TestUTLSConnHandshakeInterrupted(t *testing.T) {
 func TestUTLSConnHandshakePanic(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
-	defer cancel()
+	ctx := context.Background()
 	conn := &utlsConn{
 		testableHandshake: func() error {
 			defer wg.Done()
