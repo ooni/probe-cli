@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
@@ -65,14 +66,17 @@ func TestOBFS4DialerFailsWithConnectionErrorAndNoContextExpiration(t *testing.T)
 func TestOBFS4DialerFailsWithConnectionErrorAndContextExpiration(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	expected := errors.New("mocked error")
+	unexpected := errors.New("mocked error")
 	o4d := DefaultTestingOBFS4Bridge()
+	sigch := make(chan interface{})
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	o4d.UnderlyingDialer = &netxmocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-			// We cancel the context before returning the error, which makes
-			// the context cancellation happen before us returning.
 			cancel()
-			return nil, expected
+			<-sigch
+			wg.Done()
+			return nil, unexpected
 		},
 	}
 	conn, err := o4d.DialContext(ctx)
@@ -82,6 +86,8 @@ func TestOBFS4DialerFailsWithConnectionErrorAndContextExpiration(t *testing.T) {
 	if conn != nil {
 		t.Fatal("expected nil conn here")
 	}
+	close(sigch)
+	wg.Wait()
 }
 
 // obfs4connwrapper allows us to observe that Close has been called
