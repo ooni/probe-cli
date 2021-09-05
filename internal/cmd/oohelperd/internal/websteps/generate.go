@@ -22,7 +22,7 @@ type Generator interface {
 
 // DefaultGenerator is the default Generator.
 type DefaultGenerator struct {
-	dialer     netxlite.Dialer
+	dialer     netxlite.DialerLegacy
 	quicDialer netxlite.QUICContextDialer
 	resolver   netxlite.ResolverLegacy
 	transport  http.RoundTripper

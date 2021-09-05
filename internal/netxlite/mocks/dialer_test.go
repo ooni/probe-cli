@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestDialerWorks(t *testing.T) {
+func TestDialerDialContext(t *testing.T) {
 	expected := errors.New("mocked error")
 	d := Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
@@ -21,5 +21,18 @@ func TestDialerWorks(t *testing.T) {
 	}
 	if conn != nil {
 		t.Fatal("expected nil conn")
+	}
+}
+
+func TestDialerCloseIdleConnections(t *testing.T) {
+	var called bool
+	d := &Dialer{
+		MockCloseIdleConnections: func() {
+			called = true
+		},
+	}
+	d.CloseIdleConnections()
+	if !called {
+		t.Fatal("not called")
 	}
 }

@@ -72,7 +72,10 @@ func New(config *Config, resolver Resolver) Dialer {
 	var d Dialer = netxlite.DefaultDialer
 	d = &errorsx.ErrorWrapperDialer{Dialer: d}
 	if config.Logger != nil {
-		d = &netxlite.DialerLogger{Dialer: d, Logger: config.Logger}
+		d = &netxlite.DialerLogger{
+			Dialer: netxlite.NewDialerLegacyAdapter(d),
+			Logger: config.Logger,
+		}
 	}
 	if config.DialSaver != nil {
 		d = &saverDialer{Dialer: d, Saver: config.DialSaver}
@@ -82,7 +85,7 @@ func New(config *Config, resolver Resolver) Dialer {
 	}
 	d = &netxlite.DialerResolver{
 		Resolver: netxlite.NewResolverLegacyAdapter(resolver),
-		Dialer:   d,
+		Dialer:   netxlite.NewDialerLegacyAdapter(d),
 	}
 	d = &proxyDialer{ProxyURL: config.ProxyURL, Dialer: d}
 	if config.ContextByteCounting {

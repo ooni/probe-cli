@@ -209,7 +209,7 @@ func NewTLSDialer(config Config) TLSDialer {
 	config.TLSConfig.InsecureSkipVerify = config.NoTLSVerify
 	return &netxlite.TLSDialer{
 		Config:        config.TLSConfig,
-		Dialer:        config.Dialer,
+		Dialer:        netxlite.NewDialerLegacyAdapter(config.Dialer),
 		TLSHandshaker: h,
 	}
 }

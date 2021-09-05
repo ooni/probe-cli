@@ -1,8 +1,10 @@
 package netx_test
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -16,6 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestNewResolverVanilla(t *testing.T) {
@@ -486,8 +489,15 @@ func TestNewWithDialer(t *testing.T) {
 func TestNewWithTLSDialer(t *testing.T) {
 	expected := errors.New("mocked error")
 	tlsDialer := &netxlite.TLSDialer{
-		Config:        new(tls.Config),
-		Dialer:        netx.FakeDialer{Err: expected},
+		Config: new(tls.Config),
+		Dialer: &mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return nil, expected
+			},
+			MockCloseIdleConnections: func() {
+				// nothing
+			},
+		},
 		TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 	}
 	txp := netx.NewHTTPTransport(netx.Config{

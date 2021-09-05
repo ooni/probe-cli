@@ -10,15 +10,31 @@ import (
 type Dialer interface {
 	// DialContext behaves like net.Dialer.DialContext.
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+
+	// CloseIdleConnections closes idle connections, if any.
+	CloseIdleConnections()
 }
 
-// defaultDialer is the Dialer we use by default.
-var defaultDialer = &net.Dialer{
+// underlyingDialer is the Dialer we use by default.
+var underlyingDialer = &net.Dialer{
 	Timeout:   15 * time.Second,
 	KeepAlive: 15 * time.Second,
 }
 
-var _ Dialer = defaultDialer
+// dialerSystem dials using Go stdlib.
+type dialerSystem struct{}
+
+// DialContext implements Dialer.DialContext.
+func (d *dialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	return underlyingDialer.DialContext(ctx, network, address)
+}
+
+// CloseIdleConnections implements Dialer.CloseIdleConnections.
+func (d *dialerSystem) CloseIdleConnections() {
+	// nothing
+}
+
+var defaultDialer Dialer = &dialerSystem{}
 
 // dialerResolver is a dialer that uses the configured Resolver to resolver a
 // domain name to IP addresses, and the configured Dialer to connect.
@@ -66,6 +82,12 @@ func (d *dialerResolver) lookupHost(ctx context.Context, hostname string) ([]str
 	return d.Resolver.LookupHost(ctx, hostname)
 }
 
+// CloseIdleConnections implements Dialer.CloseIdleConnections.
+func (d *dialerResolver) CloseIdleConnections() {
+	d.Dialer.CloseIdleConnections()
+	d.Resolver.CloseIdleConnections()
+}
+
 // dialerLogger is a Dialer with logging.
 type dialerLogger struct {
 	// Dialer is the underlying dialer.
@@ -89,4 +111,9 @@ func (d *dialerLogger) DialContext(ctx context.Context, network, address string)
 	}
 	d.Logger.Debugf("dial %s/%s... ok in %s", address, network, elapsed)
 	return conn, nil
+}
+
+// CloseIdleConnections implements Dialer.CloseIdleConnections.
+func (d *dialerLogger) CloseIdleConnections() {
+	d.Dialer.CloseIdleConnections()
 }

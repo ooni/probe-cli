@@ -1,7 +1,6 @@
 package tlsdialer_test
 
 import (
-	"net"
 	"net/http"
 	"testing"
 
@@ -14,7 +13,7 @@ func TestTLSDialerSuccess(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	log.SetLevel(log.DebugLevel)
-	dialer := &netxlite.TLSDialer{Dialer: new(net.Dialer),
+	dialer := &netxlite.TLSDialer{Dialer: netxlite.DefaultDialer,
 		TLSHandshaker: &netxlite.TLSHandshakerLogger{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Logger:        log.Log,

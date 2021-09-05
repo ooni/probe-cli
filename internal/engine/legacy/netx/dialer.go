@@ -106,7 +106,7 @@ func (d *Dialer) DialTLS(network, address string) (net.Conn, error) {
 func newTLSDialer(d dialer.Dialer, config *tls.Config) *netxlite.TLSDialer {
 	return &netxlite.TLSDialer{
 		Config: config,
-		Dialer: d,
+		Dialer: netxlite.NewDialerLegacyAdapter(d),
 		TLSHandshaker: tlsdialer.EmitterTLSHandshaker{
 			TLSHandshaker: &errorsx.ErrorWrapperTLSHandshaker{
 				TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},

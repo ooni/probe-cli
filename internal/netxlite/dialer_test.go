@@ -13,8 +13,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
+func TestDialerSystemCloseIdleConnections(t *testing.T) {
+	d := &dialerSystem{}
+	d.CloseIdleConnections() // should not crash
+}
+
 func TestDialerResolverNoPort(t *testing.T) {
-	dialer := &dialerResolver{Dialer: &net.Dialer{}, Resolver: DefaultResolver}
+	dialer := &dialerResolver{Dialer: defaultDialer, Resolver: DefaultResolver}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "ooni.nu")
 	if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
 		t.Fatal("not the error we expected", err)
@@ -25,7 +30,7 @@ func TestDialerResolverNoPort(t *testing.T) {
 }
 
 func TestDialerResolverLookupHostAddress(t *testing.T) {
-	dialer := &dialerResolver{Dialer: new(net.Dialer), Resolver: &mocks.Resolver{
+	dialer := &dialerResolver{Dialer: defaultDialer, Resolver: &mocks.Resolver{
 		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 			return nil, errors.New("we should not call this function")
 		},
@@ -41,7 +46,7 @@ func TestDialerResolverLookupHostAddress(t *testing.T) {
 
 func TestDialerResolverLookupHostFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	dialer := &dialerResolver{Dialer: new(net.Dialer), Resolver: &mocks.Resolver{
+	dialer := &dialerResolver{Dialer: defaultDialer, Resolver: &mocks.Resolver{
 		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 			return nil, expected
 		},
@@ -115,6 +120,29 @@ func TestDialerResolverDialForManyIPSuccess(t *testing.T) {
 	conn.Close()
 }
 
+func TestDialerResolverCloseIdleConnections(t *testing.T) {
+	var (
+		calledDialer   bool
+		calledResolver bool
+	)
+	d := &dialerResolver{
+		Dialer: &mocks.Dialer{
+			MockCloseIdleConnections: func() {
+				calledDialer = true
+			},
+		},
+		Resolver: &mocks.Resolver{
+			MockCloseIdleConnections: func() {
+				calledResolver = true
+			},
+		},
+	}
+	d.CloseIdleConnections()
+	if !calledDialer || !calledResolver {
+		t.Fatal("not called")
+	}
+}
+
 func TestDialerLoggerSuccess(t *testing.T) {
 	d := &dialerLogger{
 		Dialer: &mocks.Dialer{
@@ -156,9 +184,26 @@ func TestDialerLoggerFailure(t *testing.T) {
 	}
 }
 
-func TestDefaultDialerHasTimeout(t *testing.T) {
+func TestDialerLoggerCloseIdleConnections(t *testing.T) {
+	var (
+		calledDialer bool
+	)
+	d := &dialerLogger{
+		Dialer: &mocks.Dialer{
+			MockCloseIdleConnections: func() {
+				calledDialer = true
+			},
+		},
+	}
+	d.CloseIdleConnections()
+	if !calledDialer {
+		t.Fatal("not called")
+	}
+}
+
+func TestUnderlyingDialerHasTimeout(t *testing.T) {
 	expected := 15 * time.Second
-	if defaultDialer.Timeout != expected {
+	if underlyingDialer.Timeout != expected {
 		t.Fatal("unexpected timeout value")
 	}
 }
