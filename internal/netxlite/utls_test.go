@@ -49,7 +49,7 @@ func TestNewTLSHandshakerUTLSTypes(t *testing.T) {
 	}
 }
 
-func TestUTLSConnHandshakeNotInterrupted(t *testing.T) {
+func TestUTLSConnHandshakeNotInterruptedSuccess(t *testing.T) {
 	ctx := context.Background()
 	conn := &utlsConn{
 		testableHandshake: func() error {
@@ -59,6 +59,20 @@ func TestUTLSConnHandshakeNotInterrupted(t *testing.T) {
 	err := conn.HandshakeContext(ctx)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestUTLSConnHandshakeNotInterruptedFailure(t *testing.T) {
+	expected := errors.New("mocked error")
+	ctx := context.Background()
+	conn := &utlsConn{
+		testableHandshake: func() error {
+			return expected
+		},
+	}
+	err := conn.HandshakeContext(ctx)
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected", err)
 	}
 }
 
@@ -80,5 +94,23 @@ func TestUTLSConnHandshakeInterrupted(t *testing.T) {
 		t.Fatal("not the error we expected", err)
 	}
 	close(sigch)
+	wg.Wait()
+}
+
+func TestUTLSConnHandshakePanic(t *testing.T) {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
+	conn := &utlsConn{
+		testableHandshake: func() error {
+			defer wg.Done()
+			panic("mascetti")
+		},
+	}
+	err := conn.HandshakeContext(ctx)
+	if !errors.Is(err, ErrUTLSHandshakePanic) {
+		t.Fatal("not the error we expected", err)
+	}
 	wg.Wait()
 }
