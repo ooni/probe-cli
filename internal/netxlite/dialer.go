@@ -15,6 +15,26 @@ type Dialer interface {
 	CloseIdleConnections()
 }
 
+// NewDialerWithResolver creates a dialer using the given resolver and logger.
+func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
+	return &dialerLogger{
+		Dialer: &dialerResolver{
+			Dialer: &dialerLogger{
+				Dialer: &dialerSystem{},
+				Logger: logger,
+			},
+			Resolver: resolver,
+		},
+		Logger: logger,
+	}
+}
+
+// NewDialerWithoutResolver creates a dialer that uses the given
+// logger and fails with ErrNoResolver when it is passed a domain name.
+func NewDialerWithoutResolver(logger Logger) Dialer {
+	return NewDialerWithResolver(logger, &nullResolver{})
+}
+
 // underlyingDialer is the Dialer we use by default.
 var underlyingDialer = &net.Dialer{
 	Timeout:   15 * time.Second,

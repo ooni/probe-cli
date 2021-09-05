@@ -13,7 +13,7 @@ func TestHTTP3TransportWorks(t *testing.T) {
 		Dialer: &quicDialerQUICGo{
 			QUICListener: &quicListenerStdlib{},
 		},
-		Resolver: NewResolver(&ResolverConfig{Logger: log.Log}),
+		Resolver: NewResolverSystem(log.Log),
 	}
 	txp := NewHTTP3Transport(d, &tls.Config{})
 	client := &http.Client{Transport: txp}
