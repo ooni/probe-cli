@@ -12,17 +12,17 @@ type Dialer interface {
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 
-// DefaultDialer is the Dialer we use by default.
-var DefaultDialer = &net.Dialer{
+// defaultDialer is the Dialer we use by default.
+var defaultDialer = &net.Dialer{
 	Timeout:   15 * time.Second,
 	KeepAlive: 15 * time.Second,
 }
 
-var _ Dialer = DefaultDialer
+var _ Dialer = defaultDialer
 
-// DialerResolver is a dialer that uses the configured Resolver to resolver a
+// dialerResolver is a dialer that uses the configured Resolver to resolver a
 // domain name to IP addresses, and the configured Dialer to connect.
-type DialerResolver struct {
+type dialerResolver struct {
 	// Dialer is the underlying Dialer.
 	Dialer Dialer
 
@@ -30,10 +30,10 @@ type DialerResolver struct {
 	Resolver Resolver
 }
 
-var _ Dialer = &DialerResolver{}
+var _ Dialer = &dialerResolver{}
 
 // DialContext implements Dialer.DialContext.
-func (d *DialerResolver) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *dialerResolver) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	onlyhost, onlyport, err := net.SplitHostPort(address)
 	if err != nil {
 		return nil, err
@@ -59,15 +59,15 @@ func (d *DialerResolver) DialContext(ctx context.Context, network, address strin
 }
 
 // lookupHost performs a domain name resolution.
-func (d *DialerResolver) lookupHost(ctx context.Context, hostname string) ([]string, error) {
+func (d *dialerResolver) lookupHost(ctx context.Context, hostname string) ([]string, error) {
 	if net.ParseIP(hostname) != nil {
 		return []string{hostname}, nil
 	}
 	return d.Resolver.LookupHost(ctx, hostname)
 }
 
-// DialerLogger is a Dialer with logging.
-type DialerLogger struct {
+// dialerLogger is a Dialer with logging.
+type dialerLogger struct {
 	// Dialer is the underlying dialer.
 	Dialer Dialer
 
@@ -75,10 +75,10 @@ type DialerLogger struct {
 	Logger Logger
 }
 
-var _ Dialer = &DialerLogger{}
+var _ Dialer = &dialerLogger{}
 
 // DialContext implements Dialer.DialContext
-func (d *DialerLogger) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *dialerLogger) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	d.Logger.Debugf("dial %s/%s...", address, network)
 	start := time.Now()
 	conn, err := d.Dialer.DialContext(ctx, network, address)

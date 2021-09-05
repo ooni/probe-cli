@@ -6,13 +6,13 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestErrorWrapperResolverSuccess(t *testing.T) {
 	orig := []string{"8.8.8.8"}
 	r := &ErrorWrapperResolver{
-		Resolver: &netxmocks.Resolver{
+		Resolver: &mocks.Resolver{
 			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 				return orig, nil
 			},
@@ -29,7 +29,7 @@ func TestErrorWrapperResolverSuccess(t *testing.T) {
 
 func TestErrorWrapperResolverFailure(t *testing.T) {
 	r := &ErrorWrapperResolver{
-		Resolver: &netxmocks.Resolver{
+		Resolver: &mocks.Resolver{
 			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 				return nil, errors.New("no such host")
 			},
@@ -53,7 +53,7 @@ func TestErrorWrapperResolverFailure(t *testing.T) {
 }
 
 func TestErrorWrapperResolverChildNetworkAddress(t *testing.T) {
-	r := &ErrorWrapperResolver{Resolver: &netxmocks.Resolver{
+	r := &ErrorWrapperResolver{Resolver: &mocks.Resolver{
 		MockNetwork: func() string {
 			return "udp"
 		},

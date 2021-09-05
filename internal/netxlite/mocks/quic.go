@@ -1,4 +1,4 @@
-package netxmocks
+package mocks
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/quicx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 // QUICListener is a mockable netxlite.QUICListener.

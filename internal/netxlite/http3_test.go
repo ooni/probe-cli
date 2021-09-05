@@ -8,9 +8,9 @@ import (
 )
 
 func TestHTTP3TransportWorks(t *testing.T) {
-	d := &QUICDialerResolver{
-		Dialer: &QUICDialerQUICGo{
-			QUICListener: &QUICListenerStdlib{},
+	d := &quicDialerResolver{
+		Dialer: &quicDialerQUICGo{
+			QUICListener: &quicListenerStdlib{},
 		},
 		Resolver: &net.Resolver{},
 	}

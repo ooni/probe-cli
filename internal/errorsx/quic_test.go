@@ -9,13 +9,13 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
-	"github.com/ooni/probe-cli/v3/internal/quicx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 func TestErrorWrapperQUICListenerSuccess(t *testing.T) {
 	ql := &ErrorWrapperQUICListener{
-		QUICListener: &netxmocks.QUICListener{
+		QUICListener: &mocks.QUICListener{
 			MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
 				return &net.UDPConn{}, nil
 			},
@@ -30,7 +30,7 @@ func TestErrorWrapperQUICListenerSuccess(t *testing.T) {
 
 func TestErrorWrapperQUICListenerFailure(t *testing.T) {
 	ql := &ErrorWrapperQUICListener{
-		QUICListener: &netxmocks.QUICListener{
+		QUICListener: &mocks.QUICListener{
 			MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
 				return nil, io.EOF
 			},
@@ -47,7 +47,7 @@ func TestErrorWrapperQUICListenerFailure(t *testing.T) {
 
 func TestErrorWrapperUDPConnWriteToSuccess(t *testing.T) {
 	quc := &errorWrapperUDPConn{
-		UDPLikeConn: &netxmocks.QUICUDPConn{
+		UDPLikeConn: &mocks.QUICUDPConn{
 			MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 				return 10, nil
 			},
@@ -67,7 +67,7 @@ func TestErrorWrapperUDPConnWriteToSuccess(t *testing.T) {
 func TestErrorWrapperUDPConnWriteToFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	quc := &errorWrapperUDPConn{
-		UDPLikeConn: &netxmocks.QUICUDPConn{
+		UDPLikeConn: &mocks.QUICUDPConn{
 			MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 				return 0, expected
 			},
@@ -87,7 +87,7 @@ func TestErrorWrapperUDPConnWriteToFailure(t *testing.T) {
 func TestErrorWrapperUDPConnReadFromSuccess(t *testing.T) {
 	expected := errors.New("mocked error")
 	quc := &errorWrapperUDPConn{
-		UDPLikeConn: &netxmocks.QUICUDPConn{
+		UDPLikeConn: &mocks.QUICUDPConn{
 			MockReadFrom: func(b []byte) (int, net.Addr, error) {
 				return 0, nil, expected
 			},
@@ -108,7 +108,7 @@ func TestErrorWrapperUDPConnReadFromSuccess(t *testing.T) {
 
 func TestErrorWrapperUDPConnReadFromFailure(t *testing.T) {
 	quc := &errorWrapperUDPConn{
-		UDPLikeConn: &netxmocks.QUICUDPConn{
+		UDPLikeConn: &mocks.QUICUDPConn{
 			MockReadFrom: func(b []byte) (int, net.Addr, error) {
 				return 10, nil, nil
 			},
@@ -129,7 +129,7 @@ func TestErrorWrapperUDPConnReadFromFailure(t *testing.T) {
 
 func TestErrorWrapperQUICDialerFailure(t *testing.T) {
 	ctx := context.Background()
-	d := &ErrorWrapperQUICDialer{Dialer: &netxmocks.QUICContextDialer{
+	d := &ErrorWrapperQUICDialer{Dialer: &mocks.QUICContextDialer{
 		MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 			return nil, io.EOF
 		},

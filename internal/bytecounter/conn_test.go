@@ -4,12 +4,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestConnWorksOnSuccess(t *testing.T) {
 	counter := New()
-	underlying := &netxmocks.Conn{
+	underlying := &mocks.Conn{
 		MockRead: func(b []byte) (int, error) {
 			return 10, nil
 		},
@@ -39,7 +39,7 @@ func TestConnWorksOnFailure(t *testing.T) {
 	readError := errors.New("read error")
 	writeError := errors.New("write error")
 	counter := New()
-	underlying := &netxmocks.Conn{
+	underlying := &mocks.Conn{
 		MockRead: func(b []byte) (int, error) {
 			return 0, readError
 		},

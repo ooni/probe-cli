@@ -12,14 +12,14 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
-	"github.com/ooni/probe-cli/v3/internal/quicx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 func TestQUICListenerSaverCannotListen(t *testing.T) {
 	expected := errors.New("mocked error")
 	qls := &quicdialer.QUICListenerSaver{
-		QUICListener: &netxmocks.QUICListener{
+		QUICListener: &mocks.QUICListener{
 			MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
 				return nil, expected
 			},

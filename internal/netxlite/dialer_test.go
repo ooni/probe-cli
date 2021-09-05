@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestDialerResolverNoPort(t *testing.T) {
-	dialer := &DialerResolver{Dialer: &net.Dialer{}, Resolver: DefaultResolver}
+	dialer := &dialerResolver{Dialer: &net.Dialer{}, Resolver: DefaultResolver}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "ooni.nu")
 	if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
 		t.Fatal("not the error we expected", err)
@@ -25,7 +25,7 @@ func TestDialerResolverNoPort(t *testing.T) {
 }
 
 func TestDialerResolverLookupHostAddress(t *testing.T) {
-	dialer := &DialerResolver{Dialer: new(net.Dialer), Resolver: &netxmocks.Resolver{
+	dialer := &dialerResolver{Dialer: new(net.Dialer), Resolver: &mocks.Resolver{
 		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 			return nil, errors.New("we should not call this function")
 		},
@@ -41,7 +41,7 @@ func TestDialerResolverLookupHostAddress(t *testing.T) {
 
 func TestDialerResolverLookupHostFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	dialer := &DialerResolver{Dialer: new(net.Dialer), Resolver: &netxmocks.Resolver{
+	dialer := &dialerResolver{Dialer: new(net.Dialer), Resolver: &mocks.Resolver{
 		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 			return nil, expected
 		},
@@ -57,7 +57,7 @@ func TestDialerResolverLookupHostFailure(t *testing.T) {
 }
 
 func TestDialerResolverDialForSingleIPFails(t *testing.T) {
-	dialer := &DialerResolver{Dialer: &netxmocks.Dialer{
+	dialer := &dialerResolver{Dialer: &mocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
@@ -72,12 +72,12 @@ func TestDialerResolverDialForSingleIPFails(t *testing.T) {
 }
 
 func TestDialerResolverDialForManyIPFails(t *testing.T) {
-	dialer := &DialerResolver{
-		Dialer: &netxmocks.Dialer{
+	dialer := &dialerResolver{
+		Dialer: &mocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, io.EOF
 			},
-		}, Resolver: &netxmocks.Resolver{
+		}, Resolver: &mocks.Resolver{
 			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 				return []string{"1.1.1.1", "8.8.8.8"}, nil
 			},
@@ -92,15 +92,15 @@ func TestDialerResolverDialForManyIPFails(t *testing.T) {
 }
 
 func TestDialerResolverDialForManyIPSuccess(t *testing.T) {
-	dialer := &DialerResolver{Dialer: &netxmocks.Dialer{
+	dialer := &dialerResolver{Dialer: &mocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-			return &netxmocks.Conn{
+			return &mocks.Conn{
 				MockClose: func() error {
 					return nil
 				},
 			}, nil
 		},
-	}, Resolver: &netxmocks.Resolver{
+	}, Resolver: &mocks.Resolver{
 		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 			return []string{"1.1.1.1", "8.8.8.8"}, nil
 		},
@@ -116,10 +116,10 @@ func TestDialerResolverDialForManyIPSuccess(t *testing.T) {
 }
 
 func TestDialerLoggerSuccess(t *testing.T) {
-	d := &DialerLogger{
-		Dialer: &netxmocks.Dialer{
+	d := &dialerLogger{
+		Dialer: &mocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-				return &netxmocks.Conn{
+				return &mocks.Conn{
 					MockClose: func() error {
 						return nil
 					},
@@ -139,8 +139,8 @@ func TestDialerLoggerSuccess(t *testing.T) {
 }
 
 func TestDialerLoggerFailure(t *testing.T) {
-	d := &DialerLogger{
-		Dialer: &netxmocks.Dialer{
+	d := &dialerLogger{
+		Dialer: &mocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, io.EOF
 			},
@@ -158,7 +158,7 @@ func TestDialerLoggerFailure(t *testing.T) {
 
 func TestDefaultDialerHasTimeout(t *testing.T) {
 	expected := 15 * time.Second
-	if DefaultDialer.Timeout != expected {
+	if defaultDialer.Timeout != expected {
 		t.Fatal("unexpected timeout value")
 	}
 }

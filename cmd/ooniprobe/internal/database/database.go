@@ -6,7 +6,7 @@ import (
 	"embed"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 	migrate "github.com/rubenv/sql-migrate"
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/sqlite"

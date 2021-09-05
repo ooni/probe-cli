@@ -33,19 +33,6 @@ func ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error) {
 	}
 }
 
-// MockableReader allows to mock any io.Reader.
-type MockableReader struct {
-	MockRead func(b []byte) (int, error)
-}
-
-// MockableReader implements an io.Reader.
-var _ io.Reader = &MockableReader{}
-
-// Read implements io.Reader.Read.
-func (r *MockableReader) Read(b []byte) (int, error) {
-	return r.MockRead(b)
-}
-
 // CopyContext is like io.Copy but may terminate earlier
 // when the context expires. This function has the same
 // caveats of ReadAllContext regarding the temporary leaking

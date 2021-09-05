@@ -66,7 +66,7 @@ func (m Measurer) ExperimentVersion() string {
 
 // SupportedQUICVersions are the H3 over QUIC versions we currently support
 var SupportedQUICVersions = map[string]bool{
-	"h3":    true,
+	"h3": true,
 }
 
 var (

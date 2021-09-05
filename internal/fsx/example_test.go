@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	"github.com/ooni/probe-cli/v3/internal/fsx"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 )
 
 func ExampleOpenFile_openingDir() {

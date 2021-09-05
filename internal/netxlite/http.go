@@ -17,8 +17,8 @@ type HTTPTransport interface {
 	CloseIdleConnections()
 }
 
-// HTTPTransportLogger is an HTTPTransport with logging.
-type HTTPTransportLogger struct {
+// httpTransportLogger is an HTTPTransport with logging.
+type httpTransportLogger struct {
 	// HTTPTransport is the underlying HTTP transport.
 	HTTPTransport HTTPTransport
 
@@ -26,10 +26,10 @@ type HTTPTransportLogger struct {
 	Logger Logger
 }
 
-var _ HTTPTransport = &HTTPTransportLogger{}
+var _ HTTPTransport = &httpTransportLogger{}
 
 // RoundTrip implements HTTPTransport.RoundTrip.
-func (txp *HTTPTransportLogger) RoundTrip(req *http.Request) (*http.Response, error) {
+func (txp *httpTransportLogger) RoundTrip(req *http.Request) (*http.Response, error) {
 	host := req.Host
 	if host == "" {
 		host = req.URL.Host
@@ -39,7 +39,7 @@ func (txp *HTTPTransportLogger) RoundTrip(req *http.Request) (*http.Response, er
 }
 
 // logTrip is an HTTP round trip with logging.
-func (txp *HTTPTransportLogger) logTrip(req *http.Request) (*http.Response, error) {
+func (txp *httpTransportLogger) logTrip(req *http.Request) (*http.Response, error) {
 	txp.Logger.Debugf("> %s %s", req.Method, req.URL.String())
 	for key, values := range req.Header {
 		for _, value := range values {
@@ -63,7 +63,7 @@ func (txp *HTTPTransportLogger) logTrip(req *http.Request) (*http.Response, erro
 }
 
 // CloseIdleConnections implement HTTPTransport.CloseIdleConnections.
-func (txp *HTTPTransportLogger) CloseIdleConnections() {
+func (txp *httpTransportLogger) CloseIdleConnections() {
 	txp.HTTPTransport.CloseIdleConnections()
 }
 

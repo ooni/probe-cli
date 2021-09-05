@@ -37,3 +37,25 @@ func reduceErrors(errorslist []error) error {
 	// TODO(bassosimone): handle this case in a better way
 	return errorslist[0]
 }
+
+// These vars export internal names to legacy ooni/probe-cli code.
+var (
+	DefaultDialer        = defaultDialer
+	DefaultTLSHandshaker = defaultTLSHandshaker
+)
+
+// These types export internal names to legacy ooni/probe-cli code.
+type (
+	DialerResolver            = dialerResolver
+	DialerLogger              = dialerLogger
+	HTTPTransportLogger       = httpTransportLogger
+	QUICListenerStdlib        = quicListenerStdlib
+	QUICDialerQUICGo          = quicDialerQUICGo
+	QUICDialerResolver        = quicDialerResolver
+	QUICDialerLogger          = quicDialerLogger
+	ResolverSystem            = resolverSystem
+	ResolverLogger            = resolverLogger
+	ResolverIDNA              = resolverIDNA
+	TLSHandshakerConfigurable = tlsHandshakerConfigurable
+	TLSHandshakerLogger       = tlsHandshakerLogger
+)
