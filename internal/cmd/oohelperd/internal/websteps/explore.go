@@ -56,7 +56,7 @@ func (e *DefaultExplorer) Explore(URL *url.URL, headers map[string][]string) ([]
 }
 
 // rearrange takes in input the final response of an HTTP transaction and an optional h3URL
-// (which is needed to derive the type of h3 protocol, i.e. h3 or h3-29),
+// (which is needed to derive the type of h3 protocol, typically h3),
 // and produces in output a list of round trips sorted
 // such that the first round trip is the first element in the out array.
 func (e *DefaultExplorer) rearrange(resp *http.Response, h3URL *h3URL) (out []*RoundTrip) {
