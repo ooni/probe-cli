@@ -49,7 +49,7 @@ var _ Resolver = &resolverSystem{}
 
 // LookupHost implements Resolver.LookupHost.
 func (r *resolverSystem) LookupHost(ctx context.Context, hostname string) ([]string, error) {
-	// This code of forces adding a shorter timeout to domain name
+	// This code forces adding a shorter timeout to the domain name
 	// resolutions when using the system resolver. We have seen cases
 	// in which such a timeout becomes too large. One such case is
 	// described in https://github.com/ooni/probe/issues/1726.
