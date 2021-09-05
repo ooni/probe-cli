@@ -33,8 +33,10 @@ type ResolverConfig struct {
 func NewResolver(config *ResolverConfig) Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{
-			Resolver: &resolverSystem{},
-			Logger:   config.Logger,
+			Resolver: &resolverShortCircuitIPAddr{
+				Resolver: &resolverSystem{},
+			},
+			Logger: config.Logger,
 		},
 	}
 }
@@ -142,4 +144,18 @@ func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]strin
 		return nil, err
 	}
 	return r.Resolver.LookupHost(ctx, host)
+}
+
+// resolverShortCircuitIPAddr recognizes when the input hostname is an
+// IP address and returns it immediately to the caller.
+type resolverShortCircuitIPAddr struct {
+	Resolver
+}
+
+// LookupHost implements Resolver.LookupHost.
+func (r *resolverShortCircuitIPAddr) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+	if net.ParseIP(hostname) != nil {
+		return []string{hostname}, nil
+	}
+	return r.Resolver.LookupHost(ctx, hostname)
 }
