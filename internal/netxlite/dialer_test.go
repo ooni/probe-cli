@@ -207,3 +207,31 @@ func TestUnderlyingDialerHasTimeout(t *testing.T) {
 		t.Fatal("unexpected timeout value")
 	}
 }
+
+func TestNewDialerWithoutResolverChain(t *testing.T) {
+	dlr := NewDialerWithoutResolver(log.Log)
+	dlog, okay := dlr.(*dialerLogger)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if dlog.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	dreso, okay := dlog.Dialer.(*dialerResolver)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if _, okay := dreso.Resolver.(*nullResolver); !okay {
+		t.Fatal("invalid Resolver type")
+	}
+	dlog, okay = dreso.Dialer.(*dialerLogger)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if dlog.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	if _, okay := dlog.Dialer.(*dialerSystem); !okay {
+		t.Fatal("invalid type")
+	}
+}

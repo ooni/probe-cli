@@ -2,6 +2,7 @@ package netxlite
 
 import (
 	"context"
+	"errors"
 	"net"
 	"time"
 
@@ -23,20 +24,15 @@ type Resolver interface {
 	CloseIdleConnections()
 }
 
-// ResolverConfig contains config for creating a resolver.
-type ResolverConfig struct {
-	// Logger is the MANDATORY logger to use.
-	Logger Logger
-}
-
-// NewResolver creates a new resolver.
-func NewResolver(config *ResolverConfig) Resolver {
+// NewResolverSystem creates a new resolver using system
+// facilities for resolving domain names (e.g., getaddrinfo).
+func NewResolverSystem(logger Logger) Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{
 			Resolver: &resolverShortCircuitIPAddr{
 				Resolver: &resolverSystem{},
 			},
-			Logger: config.Logger,
+			Logger: logger,
 		},
 	}
 }
@@ -158,4 +154,31 @@ func (r *resolverShortCircuitIPAddr) LookupHost(ctx context.Context, hostname st
 		return []string{hostname}, nil
 	}
 	return r.Resolver.LookupHost(ctx, hostname)
+}
+
+// ErrNoResolver indicates you are using a dialer without a resolver.
+var ErrNoResolver = errors.New("no configured resolver")
+
+// nullResolver is a resolver that is not capable of resolving
+// domain names to IP addresses and always returns ErrNoResolver.
+type nullResolver struct{}
+
+// LookupHost implements Resolver.LookupHost.
+func (r *nullResolver) LookupHost(ctx context.Context, hostname string) (addrs []string, err error) {
+	return nil, ErrNoResolver
+}
+
+// Network implements Resolver.Network.
+func (r *nullResolver) Network() string {
+	return "null"
+}
+
+// Address implements Resolver.Address.
+func (r *nullResolver) Address() string {
+	return ""
+}
+
+// CloseIdleConnections implements Resolver.CloseIdleConnections.
+func (r *nullResolver) CloseIdleConnections() {
+	// nothing
 }

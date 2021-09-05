@@ -180,9 +180,7 @@ func TestResolverIDNAWithInvalidPunycode(t *testing.T) {
 }
 
 func TestNewResolverTypeChain(t *testing.T) {
-	r := NewResolver(&ResolverConfig{
-		Logger: log.Log,
-	})
+	r := NewResolverSystem(log.Log)
 	ridna, ok := r.(*resolverIDNA)
 	if !ok {
 		t.Fatal("invalid resolver")
@@ -237,4 +235,23 @@ func TestResolverShortCircuitIPAddrWithDomain(t *testing.T) {
 	if addrs != nil {
 		t.Fatal("invalid result")
 	}
+}
+
+func TestNullResolverWorksAsIntended(t *testing.T) {
+	r := &nullResolver{}
+	ctx := context.Background()
+	addrs, err := r.LookupHost(ctx, "dns.google")
+	if !errors.Is(err, ErrNoResolver) {
+		t.Fatal("not the error we expected", err)
+	}
+	if addrs != nil {
+		t.Fatal("expected nil addr")
+	}
+	if r.Network() != "null" {
+		t.Fatal("invalid network")
+	}
+	if r.Address() != "" {
+		t.Fatal("invalid address")
+	}
+	r.CloseIdleConnections() // should not crash
 }
