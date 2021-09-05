@@ -9,7 +9,7 @@ import (
 	_ "embed"
 
 	"filippo.io/age"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 )
 
 //go:embed psiphon-config.json.age

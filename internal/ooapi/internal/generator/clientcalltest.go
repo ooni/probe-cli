@@ -168,7 +168,7 @@ func GenClientCallTestGo(file string) {
 	fmt.Fprint(&sb, "\t\"sync\"\n")
 	fmt.Fprint(&sb, "\n")
 	fmt.Fprint(&sb, "\t\"github.com/google/go-cmp/cmp\"\n")
-	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/iox\"\n")
+	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/netxlite/iox\"\n")
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/kvstore\"\n")
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel\"\n")
 	fmt.Fprint(&sb, ")\n")

@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/google/martian/v3/mitm"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 )
 
 // CensoringProxy is a proxy that does not behave correctly.

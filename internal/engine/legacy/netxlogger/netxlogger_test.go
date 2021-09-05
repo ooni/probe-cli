@@ -10,7 +10,7 @@ import (
 	"github.com/apex/log/handlers/discard"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 )
 
 func TestGood(t *testing.T) {

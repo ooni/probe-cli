@@ -45,7 +45,7 @@ import (
 	"sync"
 
 	pt "git.torproject.org/pluggable-transports/goptlib.git"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 )
 
 // PTDialer is a generic pluggable transports dialer.

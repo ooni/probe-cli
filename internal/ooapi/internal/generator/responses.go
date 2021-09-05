@@ -71,7 +71,7 @@ func GenResponsesGo(file string) {
 	fmt.Fprint(&sb, "\t\"io\"\n")
 	fmt.Fprint(&sb, "\t\"net/http\"\n")
 	fmt.Fprint(&sb, "\n")
-	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/iox\"\n")
+	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/netxlite/iox\"\n")
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel\"\n")
 	fmt.Fprint(&sb, ")\n\n")
 	for _, desc := range Descriptors {
