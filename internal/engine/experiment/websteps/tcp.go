@@ -8,7 +8,7 @@ import (
 )
 
 type TCPConfig struct {
-	Dialer   netxlite.Dialer
+	Dialer   netxlite.DialerLegacy
 	Endpoint string
 	Resolver netxlite.ResolverLegacy
 }

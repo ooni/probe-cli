@@ -33,12 +33,12 @@ func NewRequest(ctx context.Context, URL *url.URL, headers http.Header) *http.Re
 
 // NewDialerResolver contructs a new dialer for TCP connections,
 // with default, errorwrapping and resolve functionalities
-func NewDialerResolver(resolver netxlite.ResolverLegacy) netxlite.Dialer {
-	var d netxlite.Dialer = netxlite.DefaultDialer
+func NewDialerResolver(resolver netxlite.ResolverLegacy) netxlite.DialerLegacy {
+	var d netxlite.DialerLegacy = netxlite.DefaultDialer
 	d = &errorsx.ErrorWrapperDialer{Dialer: d}
 	d = &netxlite.DialerResolver{
 		Resolver: netxlite.NewResolverLegacyAdapter(resolver),
-		Dialer:   d,
+		Dialer:   netxlite.NewDialerLegacyAdapter(d),
 	}
 	return d
 }
@@ -80,12 +80,12 @@ func NewSingleTransport(conn net.Conn) http.RoundTripper {
 }
 
 // NewSingleTransport creates a new HTTP transport with a custom dialer and handshaker.
-func NewTransportWithDialer(dialer netxlite.Dialer, tlsConfig *tls.Config, handshaker netxlite.TLSHandshaker) http.RoundTripper {
+func NewTransportWithDialer(dialer netxlite.DialerLegacy, tlsConfig *tls.Config, handshaker netxlite.TLSHandshaker) http.RoundTripper {
 	transport := newBaseTransport()
 	transport.DialContext = dialer.DialContext
 	transport.DialTLSContext = (&netxlite.TLSDialer{
 		Config:        tlsConfig,
-		Dialer:        dialer,
+		Dialer:        netxlite.NewDialerLegacyAdapter(dialer),
 		TLSHandshaker: handshaker,
 	}).DialTLSContext
 	return transport

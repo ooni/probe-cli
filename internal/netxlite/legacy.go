@@ -3,6 +3,7 @@ package netxlite
 import (
 	"context"
 	"errors"
+	"net"
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/errorsx"
@@ -59,6 +60,7 @@ type (
 	ResolverIDNA              = resolverIDNA
 	TLSHandshakerConfigurable = tlsHandshakerConfigurable
 	TLSHandshakerLogger       = tlsHandshakerLogger
+	DialerSystem              = dialerSystem
 )
 
 // ResolverLegacy performs domain name resolutions.
@@ -119,6 +121,44 @@ type resolverLegacyIdleConnectionsCloser interface {
 // CloseIdleConnections implements Resolver.CloseIdleConnections.
 func (r *ResolverLegacyAdapter) CloseIdleConnections() {
 	if ra, ok := r.ResolverLegacy.(resolverLegacyIdleConnectionsCloser); ok {
+		ra.CloseIdleConnections()
+	}
+}
+
+// DialerLegacy establishes network connections.
+//
+// This definition is DEPRECATED. Please, use Dialer.
+//
+// Existing code in probe-cli can use it until we
+// have finished refactoring it.
+type DialerLegacy interface {
+	// DialContext behaves like net.Dialer.DialContext.
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+}
+
+// NewDialerLegacyAdapter adapts a DialerrLegacy to
+// become compatible with the Dialer definition.
+func NewDialerLegacyAdapter(d DialerLegacy) Dialer {
+	return &DialerLegacyAdapter{d}
+}
+
+// DialerLegacyAdapter makes a DialerLegacy behave like
+// it was a Dialer type. If DialerLegacy is actually also
+// a Dialer, this adapter will just forward missing calls,
+// otherwise it will implement a sensible default action.
+type DialerLegacyAdapter struct {
+	DialerLegacy
+}
+
+var _ Dialer = &DialerLegacyAdapter{}
+
+type dialerLegacyIdleConnectionsCloser interface {
+	CloseIdleConnections()
+}
+
+// CloseIdleConnections implements Resolver.CloseIdleConnections.
+func (d *DialerLegacyAdapter) CloseIdleConnections() {
+	if ra, ok := d.DialerLegacy.(dialerLegacyIdleConnectionsCloser); ok {
 		ra.CloseIdleConnections()
 	}
 }

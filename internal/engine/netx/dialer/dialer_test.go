@@ -36,7 +36,11 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 	if !ok {
 		t.Fatal("not a dnsDialer")
 	}
-	scd, ok := dnsd.Dialer.(*saverConnDialer)
+	dad, ok := dnsd.Dialer.(*netxlite.DialerLegacyAdapter)
+	if !ok {
+		t.Fatal("invalid type")
+	}
+	scd, ok := dad.DialerLegacy.(*saverConnDialer)
 	if !ok {
 		t.Fatal("not a saverConnDialer")
 	}
@@ -48,12 +52,16 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 	if !ok {
 		t.Fatal("not a loggingDialer")
 	}
-	ewd, ok := ld.Dialer.(*errorsx.ErrorWrapperDialer)
+	dad, ok = ld.Dialer.(*netxlite.DialerLegacyAdapter)
+	if !ok {
+		t.Fatal("invalid type")
+	}
+	ewd, ok := dad.DialerLegacy.(*errorsx.ErrorWrapperDialer)
 	if !ok {
 		t.Fatal("not an errorWrappingDialer")
 	}
-	_, ok = ewd.Dialer.(*net.Dialer)
+	_, ok = ewd.Dialer.(*netxlite.DialerSystem)
 	if !ok {
-		t.Fatal("not a net.Dialer")
+		t.Fatal("not a DialerSystem")
 	}
 }

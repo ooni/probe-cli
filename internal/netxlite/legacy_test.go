@@ -82,3 +82,21 @@ func TestResolverLegacyAdapterDefaults(t *testing.T) {
 	}
 	r.CloseIdleConnections() // does not crash
 }
+
+func TestDialerLegacyAdapterWithCompatibleType(t *testing.T) {
+	var called bool
+	r := NewDialerLegacyAdapter(&mocks.Dialer{
+		MockCloseIdleConnections: func() {
+			called = true
+		},
+	})
+	r.CloseIdleConnections()
+	if !called {
+		t.Fatal("not called")
+	}
+}
+
+func TestDialerLegacyAdapterDefaults(t *testing.T) {
+	r := NewDialerLegacyAdapter(&net.Dialer{})
+	r.CloseIdleConnections() // does not crash
+}
