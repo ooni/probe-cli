@@ -407,3 +407,21 @@ func TestTLSDialerConfigWithALPN(t *testing.T) {
 		t.Fatal(diff)
 	}
 }
+
+func TestNewTLSHandshakerStdlibTypes(t *testing.T) {
+	th := NewTLSHandshakerStdlib(log.Log)
+	thl, okay := th.(*tlsHandshakerLogger)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if thl.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	thc, okay := thl.TLSHandshaker.(*tlsHandshakerConfigurable)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if thc.NewConn != nil {
+		t.Fatal("expected nil NewConn")
+	}
+}

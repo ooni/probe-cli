@@ -44,6 +44,7 @@ func reduceErrors(errorslist []error) error {
 var (
 	DefaultDialer        = defaultDialer
 	DefaultTLSHandshaker = defaultTLSHandshaker
+	NewConnUTLS          = newConnUTLS
 )
 
 // These types export internal names to legacy ooni/probe-cli code.
