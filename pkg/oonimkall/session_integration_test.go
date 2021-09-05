@@ -406,6 +406,9 @@ func TestCheckInNoParams(t *testing.T) {
 }
 
 func TestFetchURLListSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
