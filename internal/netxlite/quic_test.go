@@ -12,7 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
-	"github.com/ooni/probe-cli/v3/internal/quicx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 func TestQUICDialerQUICGoCannotSplitHostPort(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/quicx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 // QUICContextDialer is a dialer for QUIC using Context.

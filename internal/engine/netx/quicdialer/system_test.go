@@ -13,7 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
-	"github.com/ooni/probe-cli/v3/internal/quicx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 func TestQUICListenerSaverCannotListen(t *testing.T) {
