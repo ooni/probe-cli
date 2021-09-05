@@ -52,8 +52,8 @@ func TestDoDownloadWithCancelledContext(t *testing.T) {
 	err := m.doDownload(
 		ctx, sess, model.NewPrinterCallbacks(log.Log), new(TestKeys),
 		"ws://host.name")
-	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
-		t.Fatal("not the error we expected")
+	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+		t.Fatal("not the error we expected", err)
 	}
 }
 
@@ -69,8 +69,8 @@ func TestDoUploadWithCancelledContext(t *testing.T) {
 	err := m.doUpload(
 		ctx, sess, model.NewPrinterCallbacks(log.Log), new(TestKeys),
 		"ws://host.name")
-	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
-		t.Fatal("not the error we expected")
+	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+		t.Fatal("not the error we expected", err)
 	}
 }
 
@@ -132,8 +132,8 @@ func TestFailDownload(t *testing.T) {
 		new(model.Measurement),
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
-		t.Fatal(err)
+	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+		t.Fatal("not the error we expected", err)
 	}
 }
 
@@ -153,8 +153,8 @@ func TestFailUpload(t *testing.T) {
 		new(model.Measurement),
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
-		t.Fatal(err)
+	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+		t.Fatal("not the error we expected", err)
 	}
 }
 

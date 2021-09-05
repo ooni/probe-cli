@@ -18,8 +18,8 @@ func TestDialDownloadWithCancelledContext(t *testing.T) {
 	cancel() // immediately halt
 	mgr := newDialManager("wss://hostname.fake", log.Log, "miniooni/0.1.0-dev")
 	conn, err := mgr.dialDownload(ctx)
-	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
-		t.Fatal("not the error we expected")
+	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+		t.Fatal("not the error we expected", err)
 	}
 	if conn != nil {
 		t.Fatal("expected nil conn here")
@@ -31,8 +31,8 @@ func TestDialUploadWithCancelledContext(t *testing.T) {
 	cancel() // immediately halt
 	mgr := newDialManager("wss://hostname.fake", log.Log, "miniooni/0.1.0-dev")
 	conn, err := mgr.dialUpload(ctx)
-	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
-		t.Fatal("not the error we expected")
+	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+		t.Fatal("not the error we expected", err)
 	}
 	if conn != nil {
 		t.Fatal("expected nil conn here")
