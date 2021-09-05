@@ -119,7 +119,7 @@ func TestConfigureTLSVersion(t *testing.T) {
 
 func TestTLSHandshakerConfigurableWithError(t *testing.T) {
 	var times []time.Time
-	h := &TLSHandshakerConfigurable{}
+	h := &tlsHandshakerConfigurable{}
 	tcpConn := &mocks.Conn{
 		MockWrite: func(b []byte) (int, error) {
 			return 0, io.EOF
@@ -165,7 +165,7 @@ func TestTLSHandshakerConfigurableSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer conn.Close()
-	handshaker := &TLSHandshakerConfigurable{}
+	handshaker := &tlsHandshakerConfigurable{}
 	ctx := context.Background()
 	config := &tls.Config{
 		InsecureSkipVerify: true,
@@ -186,7 +186,7 @@ func TestTLSHandshakerConfigurableSuccess(t *testing.T) {
 func TestTLSHandshakerConfigurableSetsDefaultRootCAs(t *testing.T) {
 	expected := errors.New("mocked error")
 	var gotTLSConfig *tls.Config
-	handshaker := &TLSHandshakerConfigurable{
+	handshaker := &tlsHandshakerConfigurable{
 		NewConn: func(conn net.Conn, config *tls.Config) TLSConn {
 			gotTLSConfig = config
 			return &mocks.TLSConn{
@@ -222,7 +222,7 @@ func TestTLSHandshakerConfigurableSetsDefaultRootCAs(t *testing.T) {
 }
 
 func TestTLSHandshakerLoggerSuccess(t *testing.T) {
-	th := &TLSHandshakerLogger{
+	th := &tlsHandshakerLogger{
 		TLSHandshaker: &mocks.TLSHandshaker{
 			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 				return tls.Client(conn, config), tls.ConnectionState{}, nil
@@ -251,7 +251,7 @@ func TestTLSHandshakerLoggerSuccess(t *testing.T) {
 
 func TestTLSHandshakerLoggerFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	th := &TLSHandshakerLogger{
+	th := &tlsHandshakerLogger{
 		TLSHandshaker: &mocks.TLSHandshaker{
 			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 				return nil, tls.ConnectionState{}, expected
@@ -317,7 +317,7 @@ func TestTLSDialerFailureHandshaking(t *testing.T) {
 				return nil
 			}}, nil
 		}},
-		TLSHandshaker: &TLSHandshakerConfigurable{},
+		TLSHandshaker: &tlsHandshakerConfigurable{},
 	}
 	conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
 	if !errors.Is(err, io.EOF) {

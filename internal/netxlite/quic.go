@@ -26,18 +26,18 @@ type QUICListener interface {
 	Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error)
 }
 
-// QUICListenerStdlib is a QUICListener using the standard library.
-type QUICListenerStdlib struct{}
+// quicListenerStdlib is a QUICListener using the standard library.
+type quicListenerStdlib struct{}
 
-var _ QUICListener = &QUICListenerStdlib{}
+var _ QUICListener = &quicListenerStdlib{}
 
 // Listen implements QUICListener.Listen.
-func (qls *QUICListenerStdlib) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
 	return net.ListenUDP("udp", addr)
 }
 
-// QUICDialerQUICGo dials using the lucas-clemente/quic-go library.
-type QUICDialerQUICGo struct {
+// quicDialerQUICGo dials using the lucas-clemente/quic-go library.
+type quicDialerQUICGo struct {
 	// QUICListener is the underlying QUICListener to use.
 	QUICListener QUICListener
 
@@ -47,7 +47,7 @@ type QUICDialerQUICGo struct {
 		quicConfig *quic.Config) (quic.EarlySession, error)
 }
 
-var _ QUICContextDialer = &QUICDialerQUICGo{}
+var _ QUICContextDialer = &quicDialerQUICGo{}
 
 // errInvalidIP indicates that a string is not a valid IP.
 var errInvalidIP = errors.New("netxlite: invalid IP")
@@ -60,7 +60,7 @@ var errInvalidIP = errors.New("netxlite: invalid IP")
 //
 // 2. if tlsConfig.NextProtos is empty _and_ the port is 443 or 8853,
 // then we configure, respectively, "h3" and "dq".
-func (d *QUICDialerQUICGo) DialContext(ctx context.Context, network string,
+func (d *quicDialerQUICGo) DialContext(ctx context.Context, network string,
 	address string, tlsConfig *tls.Config, quicConfig *quic.Config) (
 	quic.EarlySession, error) {
 	onlyhost, onlyport, err := net.SplitHostPort(address)
@@ -89,7 +89,7 @@ func (d *QUICDialerQUICGo) DialContext(ctx context.Context, network string,
 	return &quicSessionOwnsConn{EarlySession: sess, conn: pconn}, nil
 }
 
-func (d *QUICDialerQUICGo) dialEarlyContext(ctx context.Context,
+func (d *quicDialerQUICGo) dialEarlyContext(ctx context.Context,
 	pconn net.PacketConn, remoteAddr net.Addr, address string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 	if d.mockDialEarlyContext != nil {
@@ -102,7 +102,7 @@ func (d *QUICDialerQUICGo) dialEarlyContext(ctx context.Context,
 
 // maybeApplyTLSDefaults ensures that we're using our certificate pool, if
 // needed, and that we use a suitable ALPN, if needed, for h3 and dq.
-func (d *QUICDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *tls.Config {
+func (d *quicDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *tls.Config {
 	config = config.Clone()
 	if config.RootCAs == nil {
 		config.RootCAs = defaultCertPool
@@ -136,9 +136,9 @@ func (sess *quicSessionOwnsConn) CloseWithError(
 	return err
 }
 
-// QUICDialerResolver is a dialer that uses the configured Resolver
+// quicDialerResolver is a dialer that uses the configured Resolver
 // to resolve a domain name to IP addrs.
-type QUICDialerResolver struct {
+type quicDialerResolver struct {
 	// Dialer is the underlying QUIC dialer.
 	Dialer QUICContextDialer
 
@@ -146,14 +146,14 @@ type QUICDialerResolver struct {
 	Resolver Resolver
 }
 
-var _ QUICContextDialer = &QUICDialerResolver{}
+var _ QUICContextDialer = &quicDialerResolver{}
 
 // DialContext implements QUICContextDialer.DialContext. This function
 // will apply the following TLS defaults:
 //
 // 1. if tlsConfig.ServerName is empty, we will use the hostname
 // contained inside of the `address` endpoint.
-func (d *QUICDialerResolver) DialContext(
+func (d *quicDialerResolver) DialContext(
 	ctx context.Context, network, address string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 	onlyhost, onlyport, err := net.SplitHostPort(address)
@@ -183,7 +183,7 @@ func (d *QUICDialerResolver) DialContext(
 }
 
 // maybeApplyTLSDefaults sets the SNI if it's not already configured.
-func (d *QUICDialerResolver) maybeApplyTLSDefaults(config *tls.Config, host string) *tls.Config {
+func (d *quicDialerResolver) maybeApplyTLSDefaults(config *tls.Config, host string) *tls.Config {
 	config = config.Clone()
 	if config.ServerName == "" {
 		config.ServerName = host
@@ -192,15 +192,15 @@ func (d *QUICDialerResolver) maybeApplyTLSDefaults(config *tls.Config, host stri
 }
 
 // lookupHost performs a domain name resolution.
-func (d *QUICDialerResolver) lookupHost(ctx context.Context, hostname string) ([]string, error) {
+func (d *quicDialerResolver) lookupHost(ctx context.Context, hostname string) ([]string, error) {
 	if net.ParseIP(hostname) != nil {
 		return []string{hostname}, nil
 	}
 	return d.Resolver.LookupHost(ctx, hostname)
 }
 
-// QUICDialerLogger is a dialer with logging.
-type QUICDialerLogger struct {
+// quicDialerLogger is a dialer with logging.
+type quicDialerLogger struct {
 	// Dialer is the underlying QUIC dialer.
 	Dialer QUICContextDialer
 
@@ -208,10 +208,10 @@ type QUICDialerLogger struct {
 	Logger Logger
 }
 
-var _ QUICContextDialer = &QUICDialerLogger{}
+var _ QUICContextDialer = &quicDialerLogger{}
 
 // DialContext implements QUICContextDialer.DialContext.
-func (d *QUICDialerLogger) DialContext(
+func (d *quicDialerLogger) DialContext(
 	ctx context.Context, network, address string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 	d.Logger.Debugf("quic %s/%s...", address, network)

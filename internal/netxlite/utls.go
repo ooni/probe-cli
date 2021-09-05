@@ -7,8 +7,8 @@ import (
 	utls "gitlab.com/yawning/utls.git"
 )
 
-// UTLSConn implements TLSConn and uses a utls UConn as its underlying connection
-type UTLSConn struct {
+// utlsConn implements TLSConn and uses a utls UConn as its underlying connection
+type utlsConn struct {
 	*utls.UConn
 }
 
@@ -23,11 +23,11 @@ func NewConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tl
 			DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
 		}
 		tlsConn := utls.UClient(conn, uConfig, *clientHello)
-		return &UTLSConn{tlsConn}
+		return &utlsConn{tlsConn}
 	}
 }
 
-func (c *UTLSConn) ConnectionState() tls.ConnectionState {
+func (c *utlsConn) ConnectionState() tls.ConnectionState {
 	uState := c.Conn.ConnectionState()
 	return tls.ConnectionState{
 		Version:                     uState.Version,
@@ -35,7 +35,7 @@ func (c *UTLSConn) ConnectionState() tls.ConnectionState {
 		DidResume:                   uState.DidResume,
 		CipherSuite:                 uState.CipherSuite,
 		NegotiatedProtocol:          uState.NegotiatedProtocol,
-		NegotiatedProtocolIsMutual:  true,
+		NegotiatedProtocolIsMutual:  uState.NegotiatedProtocolIsMutual,
 		ServerName:                  uState.ServerName,
 		PeerCertificates:            uState.PeerCertificates,
 		VerifiedChains:              uState.VerifiedChains,

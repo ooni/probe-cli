@@ -124,9 +124,9 @@ type TLSHandshaker interface {
 		net.Conn, tls.ConnectionState, error)
 }
 
-// TLSHandshakerConfigurable is a configurable TLS handshaker that
+// tlsHandshakerConfigurable is a configurable TLS handshaker that
 // uses by default the standard library's TLS implementation.
-type TLSHandshakerConfigurable struct {
+type tlsHandshakerConfigurable struct {
 	// NewConn is the OPTIONAL factory for creating a new connection. If
 	// this factory is not set, we'll use the stdlib.
 	NewConn func(conn net.Conn, config *tls.Config) TLSConn
@@ -136,7 +136,7 @@ type TLSHandshakerConfigurable struct {
 	Timeout time.Duration
 }
 
-var _ TLSHandshaker = &TLSHandshakerConfigurable{}
+var _ TLSHandshaker = &tlsHandshakerConfigurable{}
 
 // defaultCertPool is the cert pool we use by default. We store this
 // value into a private variable to enable for unit testing.
@@ -150,7 +150,7 @@ var defaultCertPool = NewDefaultCertPool()
 //
 // Until Go 1.17 is released, this function will not honour
 // the context. We'll however always enforce an overall timeout.
-func (h *TLSHandshakerConfigurable) Handshake(
+func (h *tlsHandshakerConfigurable) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {
 	timeout := h.Timeout
@@ -171,18 +171,18 @@ func (h *TLSHandshakerConfigurable) Handshake(
 }
 
 // newConn creates a new TLSConn.
-func (h *TLSHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) TLSConn {
+func (h *tlsHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) TLSConn {
 	if h.NewConn != nil {
 		return h.NewConn(conn, config)
 	}
 	return tls.Client(conn, config)
 }
 
-// DefaultTLSHandshaker is the default TLS handshaker.
-var DefaultTLSHandshaker = &TLSHandshakerConfigurable{}
+// defaultTLSHandshaker is the default TLS handshaker.
+var defaultTLSHandshaker = &tlsHandshakerConfigurable{}
 
-// TLSHandshakerLogger is a TLSHandshaker with logging.
-type TLSHandshakerLogger struct {
+// tlsHandshakerLogger is a TLSHandshaker with logging.
+type tlsHandshakerLogger struct {
 	// TLSHandshaker is the underlying handshaker.
 	TLSHandshaker TLSHandshaker
 
@@ -190,10 +190,10 @@ type TLSHandshakerLogger struct {
 	Logger Logger
 }
 
-var _ TLSHandshaker = &TLSHandshakerLogger{}
+var _ TLSHandshaker = &tlsHandshakerLogger{}
 
 // Handshake implements Handshaker.Handshake
-func (h *TLSHandshakerLogger) Handshake(
+func (h *tlsHandshakerLogger) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {
 	h.Logger.Debugf(

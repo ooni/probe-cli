@@ -10,7 +10,7 @@ import (
 )
 
 func TestUTLSHandshakerChrome(t *testing.T) {
-	h := &TLSHandshakerConfigurable{
+	h := &tlsHandshakerConfigurable{
 		NewConn: NewConnUTLS(&utls.HelloChrome_Auto),
 	}
 	cfg := &tls.Config{ServerName: "google.com"}

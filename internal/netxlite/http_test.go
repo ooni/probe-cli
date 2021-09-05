@@ -18,7 +18,7 @@ import (
 )
 
 func TestHTTPTransportLoggerFailure(t *testing.T) {
-	txp := &HTTPTransportLogger{
+	txp := &httpTransportLogger{
 		Logger: log.Log,
 		HTTPTransport: &mocks.HTTPTransport{
 			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
@@ -38,7 +38,7 @@ func TestHTTPTransportLoggerFailure(t *testing.T) {
 
 func TestHTTPTransportLoggerFailureWithNoHostHeader(t *testing.T) {
 	foundHost := &atomicx.Int64{}
-	txp := &HTTPTransportLogger{
+	txp := &httpTransportLogger{
 		Logger: log.Log,
 		HTTPTransport: &mocks.HTTPTransport{
 			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
@@ -70,7 +70,7 @@ func TestHTTPTransportLoggerFailureWithNoHostHeader(t *testing.T) {
 }
 
 func TestHTTPTransportLoggerSuccess(t *testing.T) {
-	txp := &HTTPTransportLogger{
+	txp := &httpTransportLogger{
 		Logger: log.Log,
 		HTTPTransport: &mocks.HTTPTransport{
 			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
@@ -95,7 +95,7 @@ func TestHTTPTransportLoggerSuccess(t *testing.T) {
 
 func TestHTTPTransportLoggerCloseIdleConnections(t *testing.T) {
 	calls := &atomicx.Int64{}
-	txp := &HTTPTransportLogger{
+	txp := &httpTransportLogger{
 		HTTPTransport: &mocks.HTTPTransport{
 			MockCloseIdleConnections: func() {
 				calls.Add(1)
@@ -110,11 +110,11 @@ func TestHTTPTransportLoggerCloseIdleConnections(t *testing.T) {
 }
 
 func TestHTTPTransportWorks(t *testing.T) {
-	d := &DialerResolver{
-		Dialer:   DefaultDialer,
+	d := &dialerResolver{
+		Dialer:   defaultDialer,
 		Resolver: &net.Resolver{},
 	}
-	th := &TLSHandshakerConfigurable{}
+	th := &tlsHandshakerConfigurable{}
 	txp := NewHTTPTransport(d, &tls.Config{}, th)
 	client := &http.Client{Transport: txp}
 	resp, err := client.Get("https://www.google.com/robots.txt")
@@ -127,7 +127,7 @@ func TestHTTPTransportWorks(t *testing.T) {
 
 func TestHTTPTransportWithFailingDialer(t *testing.T) {
 	expected := errors.New("mocked error")
-	d := &DialerResolver{
+	d := &dialerResolver{
 		Dialer: &mocks.Dialer{
 			MockDialContext: func(ctx context.Context,
 				network, address string) (net.Conn, error) {
@@ -136,7 +136,7 @@ func TestHTTPTransportWithFailingDialer(t *testing.T) {
 		},
 		Resolver: &net.Resolver{},
 	}
-	th := &TLSHandshakerConfigurable{}
+	th := &tlsHandshakerConfigurable{}
 	txp := NewHTTPTransport(d, &tls.Config{}, th)
 	client := &http.Client{Transport: txp}
 	resp, err := client.Get("https://www.google.com/robots.txt")
