@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestReadAllContextCommonCase(t *testing.T) {
@@ -23,7 +25,7 @@ func TestReadAllContextCommonCase(t *testing.T) {
 
 func TestReadAllContextWithError(t *testing.T) {
 	expected := errors.New("mocked error")
-	r := &MockableReader{
+	r := &mocks.Reader{
 		MockRead: func(b []byte) (int, error) {
 			return 0, expected
 		},
@@ -53,7 +55,7 @@ func TestReadAllContextWithCancelledContext(t *testing.T) {
 
 func TestReadAllContextWithErrorAndCancelledContext(t *testing.T) {
 	expected := errors.New("mocked error")
-	r := &MockableReader{
+	r := &mocks.Reader{
 		MockRead: func(b []byte) (int, error) {
 			time.Sleep(time.Millisecond)
 			return 0, expected
@@ -84,7 +86,7 @@ func TestCopyContextCommonCase(t *testing.T) {
 
 func TestCopyContextWithError(t *testing.T) {
 	expected := errors.New("mocked error")
-	r := &MockableReader{
+	r := &mocks.Reader{
 		MockRead: func(b []byte) (int, error) {
 			return 0, expected
 		},
@@ -114,7 +116,7 @@ func TestCopyContextWithCancelledContext(t *testing.T) {
 
 func TestCopyContextWithErrorAndCancelledContext(t *testing.T) {
 	expected := errors.New("mocked error")
-	r := &MockableReader{
+	r := &mocks.Reader{
 		MockRead: func(b []byte) (int, error) {
 			time.Sleep(time.Millisecond)
 			return 0, expected
