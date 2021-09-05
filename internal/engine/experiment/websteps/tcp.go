@@ -10,7 +10,7 @@ import (
 type TCPConfig struct {
 	Dialer   netxlite.Dialer
 	Endpoint string
-	Resolver netxlite.Resolver
+	Resolver netxlite.ResolverLegacy
 }
 
 // TCPDo performs the TCP check.

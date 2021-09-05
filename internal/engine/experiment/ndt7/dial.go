@@ -35,7 +35,10 @@ func newDialManager(ndt7URL string, logger model.Logger, userAgent string) dialM
 
 func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*websocket.Conn, error) {
 	var reso resolver.Resolver = &netxlite.ResolverSystem{}
-	reso = &netxlite.ResolverLogger{Resolver: reso, Logger: mgr.logger}
+	reso = &netxlite.ResolverLogger{
+		Resolver: netxlite.NewResolverLegacyAdapter(reso),
+		Logger:   mgr.logger,
+	}
 	dlr := dialer.New(&dialer.Config{
 		ContextByteCounting: true,
 		Logger:              mgr.logger,

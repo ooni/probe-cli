@@ -11,7 +11,7 @@ import (
 type QUICConfig struct {
 	Endpoint   string
 	QUICDialer netxlite.QUICContextDialer
-	Resolver   netxlite.Resolver
+	Resolver   netxlite.ResolverLegacy
 	TLSConf    *tls.Config
 }
 

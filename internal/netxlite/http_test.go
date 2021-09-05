@@ -112,7 +112,7 @@ func TestHTTPTransportLoggerCloseIdleConnections(t *testing.T) {
 func TestHTTPTransportWorks(t *testing.T) {
 	d := &dialerResolver{
 		Dialer:   defaultDialer,
-		Resolver: &net.Resolver{},
+		Resolver: NewResolver(&ResolverConfig{Logger: log.Log}),
 	}
 	th := &tlsHandshakerConfigurable{}
 	txp := NewHTTPTransport(d, &tls.Config{}, th)
@@ -134,7 +134,7 @@ func TestHTTPTransportWithFailingDialer(t *testing.T) {
 				return nil, expected
 			},
 		},
-		Resolver: &net.Resolver{},
+		Resolver: NewResolver(&ResolverConfig{Logger: log.Log}),
 	}
 	th := &tlsHandshakerConfigurable{}
 	txp := NewHTTPTransport(d, &tls.Config{}, th)

@@ -19,7 +19,10 @@ func testresolverquick(t *testing.T, reso resolver.Resolver) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	reso = &netxlite.ResolverLogger{Logger: log.Log, Resolver: reso}
+	reso = &netxlite.ResolverLogger{
+		Logger:   log.Log,
+		Resolver: netxlite.NewResolverLegacyAdapter(reso),
+	}
 	addrs, err := reso.LookupHost(context.Background(), "dns.google.com")
 	if err != nil {
 		t.Fatal(err)
@@ -45,7 +48,10 @@ func testresolverquickidna(t *testing.T, reso resolver.Resolver) {
 		t.Skip("skip test in short mode")
 	}
 	reso = &resolver.IDNAResolver{
-		Resolver: &netxlite.ResolverLogger{Logger: log.Log, Resolver: reso},
+		Resolver: &netxlite.ResolverLogger{
+			Logger:   log.Log,
+			Resolver: netxlite.NewResolverLegacyAdapter(reso),
+		},
 	}
 	addrs, err := reso.LookupHost(context.Background(), "яндекс.рф")
 	if err != nil {

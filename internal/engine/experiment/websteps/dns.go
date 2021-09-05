@@ -11,7 +11,7 @@ import (
 
 type DNSConfig struct {
 	Domain   string
-	Resolver netxlite.Resolver
+	Resolver netxlite.ResolverLegacy
 }
 
 // DNSDo performs the DNS check.
@@ -21,7 +21,9 @@ func DNSDo(ctx context.Context, config DNSConfig) ([]string, error) {
 		childResolver, err := netx.NewDNSClient(netx.Config{Logger: log.Log}, "doh://google")
 		runtimex.PanicOnError(err, "NewDNSClient failed")
 		resolver = childResolver
-		resolver = &netxlite.ResolverIDNA{Resolver: resolver}
+		resolver = &netxlite.ResolverIDNA{
+			Resolver: netxlite.NewResolverLegacyAdapter(resolver),
+		}
 	}
 	return resolver.LookupHost(ctx, config.Domain)
 }

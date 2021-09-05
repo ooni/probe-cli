@@ -27,7 +27,7 @@ type Explorer interface {
 
 // DefaultExplorer is the default Explorer.
 type DefaultExplorer struct {
-	resolver netxlite.Resolver
+	resolver netxlite.ResolverLegacy
 }
 
 // Explore returns a list of round trips sorted so that the first
