@@ -14,13 +14,13 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/iox"
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestHTTPTransportLoggerFailure(t *testing.T) {
 	txp := &HTTPTransportLogger{
 		Logger: log.Log,
-		HTTPTransport: &netxmocks.HTTPTransport{
+		HTTPTransport: &mocks.HTTPTransport{
 			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
 				return nil, io.EOF
 			},
@@ -40,7 +40,7 @@ func TestHTTPTransportLoggerFailureWithNoHostHeader(t *testing.T) {
 	foundHost := &atomicx.Int64{}
 	txp := &HTTPTransportLogger{
 		Logger: log.Log,
-		HTTPTransport: &netxmocks.HTTPTransport{
+		HTTPTransport: &mocks.HTTPTransport{
 			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
 				if req.Header.Get("Host") == "www.google.com" {
 					foundHost.Add(1)
@@ -72,7 +72,7 @@ func TestHTTPTransportLoggerFailureWithNoHostHeader(t *testing.T) {
 func TestHTTPTransportLoggerSuccess(t *testing.T) {
 	txp := &HTTPTransportLogger{
 		Logger: log.Log,
-		HTTPTransport: &netxmocks.HTTPTransport{
+		HTTPTransport: &mocks.HTTPTransport{
 			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					Body: io.NopCloser(strings.NewReader("")),
@@ -96,7 +96,7 @@ func TestHTTPTransportLoggerSuccess(t *testing.T) {
 func TestHTTPTransportLoggerCloseIdleConnections(t *testing.T) {
 	calls := &atomicx.Int64{}
 	txp := &HTTPTransportLogger{
-		HTTPTransport: &netxmocks.HTTPTransport{
+		HTTPTransport: &mocks.HTTPTransport{
 			MockCloseIdleConnections: func() {
 				calls.Add(1)
 			},
@@ -128,7 +128,7 @@ func TestHTTPTransportWorks(t *testing.T) {
 func TestHTTPTransportWithFailingDialer(t *testing.T) {
 	expected := errors.New("mocked error")
 	d := &DialerResolver{
-		Dialer: &netxmocks.Dialer{
+		Dialer: &mocks.Dialer{
 			MockDialContext: func(ctx context.Context,
 				network, address string) (net.Conn, error) {
 				return nil, expected

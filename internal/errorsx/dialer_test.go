@@ -7,12 +7,12 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestErrorWrapperDialerFailure(t *testing.T) {
 	ctx := context.Background()
-	d := &ErrorWrapperDialer{Dialer: &netxmocks.Dialer{
+	d := &ErrorWrapperDialer{Dialer: &mocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
@@ -39,7 +39,7 @@ func TestErrorWrapperDialerFailure(t *testing.T) {
 func TestErrorWrapperDialerSuccess(t *testing.T) {
 	origConn := &net.TCPConn{}
 	ctx := context.Background()
-	d := &ErrorWrapperDialer{Dialer: &netxmocks.Dialer{
+	d := &ErrorWrapperDialer{Dialer: &mocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return origConn, nil
 		},
@@ -59,7 +59,7 @@ func TestErrorWrapperDialerSuccess(t *testing.T) {
 
 func TestErrorWrapperConnReadFailure(t *testing.T) {
 	c := &errorWrapperConn{
-		Conn: &netxmocks.Conn{
+		Conn: &mocks.Conn{
 			MockRead: func(b []byte) (int, error) {
 				return 0, io.EOF
 			},
@@ -87,7 +87,7 @@ func TestErrorWrapperConnReadFailure(t *testing.T) {
 
 func TestErrorWrapperConnReadSuccess(t *testing.T) {
 	c := &errorWrapperConn{
-		Conn: &netxmocks.Conn{
+		Conn: &mocks.Conn{
 			MockRead: func(b []byte) (int, error) {
 				return len(b), nil
 			},
@@ -105,7 +105,7 @@ func TestErrorWrapperConnReadSuccess(t *testing.T) {
 
 func TestErrorWrapperConnWriteFailure(t *testing.T) {
 	c := &errorWrapperConn{
-		Conn: &netxmocks.Conn{
+		Conn: &mocks.Conn{
 			MockWrite: func(b []byte) (int, error) {
 				return 0, io.EOF
 			},
@@ -133,7 +133,7 @@ func TestErrorWrapperConnWriteFailure(t *testing.T) {
 
 func TestErrorWrapperConnWriteSuccess(t *testing.T) {
 	c := &errorWrapperConn{
-		Conn: &netxmocks.Conn{
+		Conn: &mocks.Conn{
 			MockWrite: func(b []byte) (int, error) {
 				return len(b), nil
 			},
@@ -151,7 +151,7 @@ func TestErrorWrapperConnWriteSuccess(t *testing.T) {
 
 func TestErrorWrapperConnCloseFailure(t *testing.T) {
 	c := &errorWrapperConn{
-		Conn: &netxmocks.Conn{
+		Conn: &mocks.Conn{
 			MockClose: func() error {
 				return io.EOF
 			},
@@ -175,7 +175,7 @@ func TestErrorWrapperConnCloseFailure(t *testing.T) {
 
 func TestErrorWrapperConnCloseSuccess(t *testing.T) {
 	c := &errorWrapperConn{
-		Conn: &netxmocks.Conn{
+		Conn: &mocks.Conn{
 			MockClose: func() error {
 				return nil
 			},

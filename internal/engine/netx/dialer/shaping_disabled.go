@@ -1,3 +1,4 @@
+//go:build !shaping
 // +build !shaping
 
 package dialer

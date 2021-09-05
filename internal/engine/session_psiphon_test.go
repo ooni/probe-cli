@@ -1,3 +1,4 @@
+//go:build ooni_psiphon_config
 // +build ooni_psiphon_config
 
 package engine

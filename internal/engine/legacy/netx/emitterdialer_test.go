@@ -10,7 +10,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestEmitterFailure(t *testing.T) {
@@ -20,7 +20,7 @@ func TestEmitterFailure(t *testing.T) {
 		Beginning: time.Now(),
 		Handler:   saver,
 	})
-	d := EmitterDialer{Dialer: &netxmocks.Dialer{
+	d := EmitterDialer{Dialer: &mocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
@@ -69,9 +69,9 @@ func TestEmitterSuccess(t *testing.T) {
 		Beginning: time.Now(),
 		Handler:   saver,
 	})
-	d := EmitterDialer{Dialer: &netxmocks.Dialer{
+	d := EmitterDialer{Dialer: &mocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-			return &netxmocks.Conn{
+			return &mocks.Conn{
 				MockRead: func(b []byte) (int, error) {
 					return 0, io.EOF
 				},

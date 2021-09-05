@@ -8,17 +8,17 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestErrorWrapperTLSHandshakerFailure(t *testing.T) {
-	th := ErrorWrapperTLSHandshaker{TLSHandshaker: &netxmocks.TLSHandshaker{
+	th := ErrorWrapperTLSHandshaker{TLSHandshaker: &mocks.TLSHandshaker{
 		MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 			return nil, tls.ConnectionState{}, io.EOF
 		},
 	}}
 	conn, _, err := th.Handshake(
-		context.Background(), &netxmocks.Conn{
+		context.Background(), &mocks.Conn{
 			MockRead: func(b []byte) (int, error) {
 				return 0, io.EOF
 			},

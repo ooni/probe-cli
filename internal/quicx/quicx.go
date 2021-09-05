@@ -3,7 +3,7 @@
 // This code introduces the UDPLikeConn, whose documentation explain
 // why we need to introduce this new type. We could not put this
 // code inside an existing package because it's used (as of 20 Aug 2021)
-// by the netxlite package as well as by the netxmocks package.
+// by the netxlite package as well as by the mocks package.
 package quicx
 
 import (

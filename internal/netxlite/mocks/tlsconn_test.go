@@ -1,4 +1,4 @@
-package netxmocks
+package mocks
 
 import (
 	"crypto/tls"

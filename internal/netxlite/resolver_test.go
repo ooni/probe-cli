@@ -9,7 +9,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestResolverSystemNetworkAddress(t *testing.T) {
@@ -37,7 +37,7 @@ func TestResolverLoggerWithSuccess(t *testing.T) {
 	expected := []string{"1.1.1.1"}
 	r := ResolverLogger{
 		Logger: log.Log,
-		Resolver: &netxmocks.Resolver{
+		Resolver: &mocks.Resolver{
 			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 				return expected, nil
 			},
@@ -56,7 +56,7 @@ func TestResolverLoggerWithFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	r := ResolverLogger{
 		Logger: log.Log,
-		Resolver: &netxmocks.Resolver{
+		Resolver: &mocks.Resolver{
 			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 				return nil, expected
 			},
@@ -94,7 +94,7 @@ func TestResolverLoggerNoChildNetworkAddress(t *testing.T) {
 func TestResolverIDNAWorksAsIntended(t *testing.T) {
 	expectedIPs := []string{"77.88.55.66"}
 	r := &ResolverIDNA{
-		Resolver: &netxmocks.Resolver{
+		Resolver: &mocks.Resolver{
 			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 				if domain != "xn--d1acpjx3f.xn--p1ai" {
 					return nil, errors.New("passed invalid domain")
@@ -114,7 +114,7 @@ func TestResolverIDNAWorksAsIntended(t *testing.T) {
 }
 
 func TestIDNAResolverWithInvalidPunycode(t *testing.T) {
-	r := &ResolverIDNA{Resolver: &netxmocks.Resolver{
+	r := &ResolverIDNA{Resolver: &mocks.Resolver{
 		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 			return nil, errors.New("should not happen")
 		},

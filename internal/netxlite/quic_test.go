@@ -11,7 +11,7 @@ import (
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 	"github.com/ooni/probe-cli/v3/internal/quicx"
 )
 
@@ -75,7 +75,7 @@ func TestQUICDialerQUICGoCannotListen(t *testing.T) {
 		ServerName: "www.google.com",
 	}
 	systemdialer := QUICDialerQUICGo{
-		QUICListener: &netxmocks.QUICListener{
+		QUICListener: &mocks.QUICListener{
 			MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
 				return nil, expected
 			},
@@ -246,7 +246,7 @@ func TestQUICDialerResolverNoPort(t *testing.T) {
 }
 
 func TestQUICDialerResolverLookupHostAddress(t *testing.T) {
-	dialer := &QUICDialerResolver{Resolver: &netxmocks.Resolver{
+	dialer := &QUICDialerResolver{Resolver: &mocks.Resolver{
 		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 			// We should not arrive here and call this function but if we do then
 			// there is going to be an error that fails this test.
@@ -265,7 +265,7 @@ func TestQUICDialerResolverLookupHostAddress(t *testing.T) {
 func TestQUICDialerResolverLookupHostFailure(t *testing.T) {
 	tlsConfig := &tls.Config{}
 	expected := errors.New("mocked error")
-	dialer := &QUICDialerResolver{Resolver: &netxmocks.Resolver{
+	dialer := &QUICDialerResolver{Resolver: &mocks.Resolver{
 		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 			return nil, expected
 		},
@@ -309,7 +309,7 @@ func TestQUICDialerResolverApplyTLSDefaults(t *testing.T) {
 	var gotTLSConfig *tls.Config
 	tlsConfig := &tls.Config{}
 	dialer := &QUICDialerResolver{
-		Resolver: new(net.Resolver), Dialer: &netxmocks.QUICContextDialer{
+		Resolver: new(net.Resolver), Dialer: &mocks.QUICContextDialer{
 			MockDialContext: func(ctx context.Context, network, address string,
 				tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 				gotTLSConfig = tlsConfig
@@ -335,11 +335,11 @@ func TestQUICDialerResolverApplyTLSDefaults(t *testing.T) {
 
 func TestQUICDialerLoggerSuccess(t *testing.T) {
 	d := &QUICDialerLogger{
-		Dialer: &netxmocks.QUICContextDialer{
+		Dialer: &mocks.QUICContextDialer{
 			MockDialContext: func(ctx context.Context, network string,
 				address string, tlsConfig *tls.Config,
 				quicConfig *quic.Config) (quic.EarlySession, error) {
-				return &netxmocks.QUICEarlySession{
+				return &mocks.QUICEarlySession{
 					MockCloseWithError: func(
 						code quic.ApplicationErrorCode, reason string) error {
 						return nil
@@ -364,7 +364,7 @@ func TestQUICDialerLoggerSuccess(t *testing.T) {
 func TestQUICDialerLoggerFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	d := &QUICDialerLogger{
-		Dialer: &netxmocks.QUICContextDialer{
+		Dialer: &mocks.QUICContextDialer{
 			MockDialContext: func(ctx context.Context, network string,
 				address string, tlsConfig *tls.Config,
 				quicConfig *quic.Config) (quic.EarlySession, error) {

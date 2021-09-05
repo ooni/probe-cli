@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestTLSDialerFailureSplitHostPort(t *testing.T) {
@@ -44,8 +44,8 @@ func TestTLSDialerFailureHandshaking(t *testing.T) {
 	ctx := context.Background()
 	dialer := TLSDialer{
 		Config: &tls.Config{},
-		Dialer: &netxmocks.Dialer{MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-			return &netxmocks.Conn{MockWrite: func(b []byte) (int, error) {
+		Dialer: &mocks.Dialer{MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+			return &mocks.Conn{MockWrite: func(b []byte) (int, error) {
 				return 0, io.EOF
 			}, MockClose: func() error {
 				return nil
@@ -67,8 +67,8 @@ func TestTLSDialerFailureHandshaking(t *testing.T) {
 func TestTLSDialerSuccessHandshaking(t *testing.T) {
 	ctx := context.Background()
 	dialer := TLSDialer{
-		Dialer: &netxmocks.Dialer{MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-			return &netxmocks.Conn{MockWrite: func(b []byte) (int, error) {
+		Dialer: &mocks.Dialer{MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+			return &mocks.Conn{MockWrite: func(b []byte) (int, error) {
 				return 0, io.EOF
 			}, MockClose: func() error {
 				return nil
@@ -76,7 +76,7 @@ func TestTLSDialerSuccessHandshaking(t *testing.T) {
 				return nil
 			}}, nil
 		}},
-		TLSHandshaker: &netxmocks.TLSHandshaker{
+		TLSHandshaker: &mocks.TLSHandshaker{
 			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 				return tls.Client(conn, config), tls.ConnectionState{}, nil
 			},

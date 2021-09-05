@@ -14,14 +14,14 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 	utls "gitlab.com/yawning/utls.git"
 )
 
 func TestTLSHandshakerConfigurableWithError(t *testing.T) {
 	var times []time.Time
 	h := &TLSHandshakerConfigurable{}
-	tcpConn := &netxmocks.Conn{
+	tcpConn := &mocks.Conn{
 		MockWrite: func(b []byte) (int, error) {
 			return 0, io.EOF
 		},
@@ -90,7 +90,7 @@ func TestTLSHandshakerConfigurableSetsDefaultRootCAs(t *testing.T) {
 	handshaker := &TLSHandshakerConfigurable{
 		NewConn: func(conn net.Conn, config *tls.Config) TLSConn {
 			gotTLSConfig = config
-			return &netxmocks.TLSConn{
+			return &mocks.TLSConn{
 				MockHandshake: func() error {
 					return expected
 				},
@@ -99,7 +99,7 @@ func TestTLSHandshakerConfigurableSetsDefaultRootCAs(t *testing.T) {
 	}
 	ctx := context.Background()
 	config := &tls.Config{}
-	conn := &netxmocks.Conn{
+	conn := &mocks.Conn{
 		MockSetDeadline: func(t time.Time) error {
 			return nil
 		},
@@ -124,14 +124,14 @@ func TestTLSHandshakerConfigurableSetsDefaultRootCAs(t *testing.T) {
 
 func TestTLSHandshakerLoggerSuccess(t *testing.T) {
 	th := &TLSHandshakerLogger{
-		TLSHandshaker: &netxmocks.TLSHandshaker{
+		TLSHandshaker: &mocks.TLSHandshaker{
 			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 				return tls.Client(conn, config), tls.ConnectionState{}, nil
 			},
 		},
 		Logger: log.Log,
 	}
-	conn := &netxmocks.Conn{
+	conn := &mocks.Conn{
 		MockClose: func() error {
 			return nil
 		},
@@ -153,14 +153,14 @@ func TestTLSHandshakerLoggerSuccess(t *testing.T) {
 func TestTLSHandshakerLoggerFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	th := &TLSHandshakerLogger{
-		TLSHandshaker: &netxmocks.TLSHandshaker{
+		TLSHandshaker: &mocks.TLSHandshaker{
 			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 				return nil, tls.ConnectionState{}, expected
 			},
 		},
 		Logger: log.Log,
 	}
-	conn := &netxmocks.Conn{
+	conn := &mocks.Conn{
 		MockClose: func() error {
 			return nil
 		},

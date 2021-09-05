@@ -10,7 +10,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/iox"
-	"github.com/ooni/probe-cli/v3/internal/netxmocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func dorequest(ctx context.Context, url string) error {
@@ -76,7 +76,7 @@ func TestByteCounterNoHandlers(t *testing.T) {
 }
 
 func TestByteCounterConnectFailure(t *testing.T) {
-	dialer := &byteCounterDialer{Dialer: &netxmocks.Dialer{
+	dialer := &byteCounterDialer{Dialer: &mocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
