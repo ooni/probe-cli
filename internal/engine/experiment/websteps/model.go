@@ -46,7 +46,7 @@ type URLMeasurement struct {
 // _inside_ the test helper to describe the discovery phase where
 // we gather all the URLs that can derive from a given URL.
 type RoundTripInfo struct {
-	// Proto is the protocol used, it can be "h2", "http/1.1", "h3", "h3-29".
+	// Proto is the protocol used, it can be "h2", "http/1.1", "h3".
 	Proto string
 
 	// Request is the original HTTP request. Headers also include cookies.
@@ -83,7 +83,7 @@ type EndpointMeasurement struct {
 	// Endpoint is the endpoint we're measuring.
 	Endpoint string `json:"endpoint"`
 
-	// Protocol is one of "http", "https", "h3", and "h3-29".
+	// Protocol is one of "http", "https", and "h3".
 	Protocol string `json:"protocol"`
 
 	// TCPConnect is the TCP connect measurement. This field
@@ -91,7 +91,7 @@ type EndpointMeasurement struct {
 	TCPConnect *TCPConnectMeasurement `json:"tcp_connect"`
 
 	// QUICHandshake is the QUIC handshake measurement. This field
-	// is only meaningful when the protocol is one of "h3" and "h3-29".
+	// is only meaningful when the protocol is "h3".
 	QUICHandshake *QUICHandshakeMeasurement `json:"quic_handshake"`
 
 	// TLSHandshake is the TLS handshake measurement. This field
