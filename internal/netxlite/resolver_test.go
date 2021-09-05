@@ -194,7 +194,47 @@ func TestNewResolverTypeChain(t *testing.T) {
 	if rl.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	if _, ok := rl.Resolver.(*resolverSystem); !ok {
+	scia, ok := rl.Resolver.(*resolverShortCircuitIPAddr)
+	if !ok {
 		t.Fatal("invalid resolver")
+	}
+	if _, ok := scia.Resolver.(*resolverSystem); !ok {
+		t.Fatal("invalid resolver")
+	}
+}
+
+func TestResolverShortCircuitIPAddrWithIPAddr(t *testing.T) {
+	r := &resolverShortCircuitIPAddr{
+		Resolver: &mocks.Resolver{
+			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				return nil, errors.New("mocked error")
+			},
+		},
+	}
+	ctx := context.Background()
+	addrs, err := r.LookupHost(ctx, "8.8.8.8")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(addrs) != 1 || addrs[0] != "8.8.8.8" {
+		t.Fatal("invalid result")
+	}
+}
+
+func TestResolverShortCircuitIPAddrWithDomain(t *testing.T) {
+	r := &resolverShortCircuitIPAddr{
+		Resolver: &mocks.Resolver{
+			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				return nil, errors.New("mocked error")
+			},
+		},
+	}
+	ctx := context.Background()
+	addrs, err := r.LookupHost(ctx, "dns.google")
+	if err == nil || err.Error() != "mocked error" {
+		t.Fatal("not the error we expected", err)
+	}
+	if addrs != nil {
+		t.Fatal("invalid result")
 	}
 }
