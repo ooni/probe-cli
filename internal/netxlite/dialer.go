@@ -2,7 +2,9 @@ package netxlite
 
 import (
 	"context"
+	"errors"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -136,4 +138,39 @@ func (d *dialerLogger) DialContext(ctx context.Context, network, address string)
 // CloseIdleConnections implements Dialer.CloseIdleConnections.
 func (d *dialerLogger) CloseIdleConnections() {
 	d.Dialer.CloseIdleConnections()
+}
+
+// ErrNoConnReuse indicates we cannot reuse the connection provided
+// to a single use (possibly TLS) dialer.
+var ErrNoConnReuse = errors.New("cannot reuse connection")
+
+// NewSingleUseDialer returns a dialer that returns the given connection once
+// and after that always fails with the ErrNoConnReuse error.
+func NewSingleUseDialer(conn net.Conn) Dialer {
+	return &dialerSingleUse{conn: conn}
+}
+
+// dialerSingleUse is the type of Dialer returned by NewSingleDialer.
+type dialerSingleUse struct {
+	sync.Mutex
+	conn net.Conn
+}
+
+var _ Dialer = &dialerSingleUse{}
+
+// DialContext implements Dialer.DialContext.
+func (s *dialerSingleUse) DialContext(ctx context.Context, network string, addr string) (net.Conn, error) {
+	defer s.Unlock()
+	s.Lock()
+	if s.conn == nil {
+		return nil, ErrNoConnReuse
+	}
+	var conn net.Conn
+	conn, s.conn = s.conn, nil
+	return conn, nil
+}
+
+// CloseIdleConnections closes idle connections.
+func (s *dialerSingleUse) CloseIdleConnections() {
+	// nothing
 }

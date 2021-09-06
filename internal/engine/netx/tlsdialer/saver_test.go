@@ -22,7 +22,7 @@ func TestSaverTLSHandshakerSuccessWithReadWrite(t *testing.T) {
 	}
 	nextprotos := []string{"h2"}
 	saver := &trace.Saver{}
-	tlsdlr := &netxlite.TLSDialer{
+	tlsdlr := &netxlite.TLSDialerLegacy{
 		Config: &tls.Config{NextProtos: nextprotos},
 		Dialer: netxlite.NewDialerLegacyAdapter(
 			dialer.New(&dialer.Config{ReadWriteSaver: saver}, &net.Resolver{}),
@@ -117,7 +117,7 @@ func TestSaverTLSHandshakerSuccess(t *testing.T) {
 	}
 	nextprotos := []string{"h2"}
 	saver := &trace.Saver{}
-	tlsdlr := &netxlite.TLSDialer{
+	tlsdlr := &netxlite.TLSDialerLegacy{
 		Config: &tls.Config{NextProtos: nextprotos},
 		Dialer: netxlite.DefaultDialer,
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
@@ -183,7 +183,7 @@ func TestSaverTLSHandshakerHostnameError(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	saver := &trace.Saver{}
-	tlsdlr := &netxlite.TLSDialer{
+	tlsdlr := &netxlite.TLSDialerLegacy{
 		Dialer: netxlite.DefaultDialer,
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
@@ -216,7 +216,7 @@ func TestSaverTLSHandshakerInvalidCertError(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	saver := &trace.Saver{}
-	tlsdlr := &netxlite.TLSDialer{
+	tlsdlr := &netxlite.TLSDialerLegacy{
 		Dialer: netxlite.DefaultDialer,
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
@@ -249,7 +249,7 @@ func TestSaverTLSHandshakerAuthorityError(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	saver := &trace.Saver{}
-	tlsdlr := &netxlite.TLSDialer{
+	tlsdlr := &netxlite.TLSDialerLegacy{
 		Dialer: netxlite.DefaultDialer,
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
@@ -282,7 +282,7 @@ func TestSaverTLSHandshakerNoTLSVerify(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	saver := &trace.Saver{}
-	tlsdlr := &netxlite.TLSDialer{
+	tlsdlr := &netxlite.TLSDialerLegacy{
 		Config: &tls.Config{InsecureSkipVerify: true},
 		Dialer: netxlite.DefaultDialer,
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{

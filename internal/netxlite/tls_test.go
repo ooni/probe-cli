@@ -280,21 +280,21 @@ func TestTLSHandshakerLoggerFailure(t *testing.T) {
 
 func TestTLSDialerCloseIdleConnections(t *testing.T) {
 	var called bool
-	dialer := &TLSDialer{
+	dialer := &tlsDialer{
 		Dialer: &mocks.Dialer{
 			MockCloseIdleConnections: func() {
 				called = true
 			},
 		},
 	}
-	dialer.CloseIdleConnection()
+	dialer.CloseIdleConnections()
 	if !called {
 		t.Fatal("not called")
 	}
 }
 
 func TestTLSDialerDialTLSContextFailureSplitHostPort(t *testing.T) {
-	dialer := &TLSDialer{}
+	dialer := &tlsDialer{}
 	ctx := context.Background()
 	const address = "www.google.com" // missing port
 	conn, err := dialer.DialTLSContext(ctx, "tcp", address)
@@ -309,7 +309,7 @@ func TestTLSDialerDialTLSContextFailureSplitHostPort(t *testing.T) {
 func TestTLSDialerDialTLSContextFailureDialing(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately fail
-	dialer := TLSDialer{Dialer: defaultDialer}
+	dialer := tlsDialer{Dialer: defaultDialer}
 	conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
 	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
 		t.Fatal("not the error we expected", err)
@@ -321,7 +321,7 @@ func TestTLSDialerDialTLSContextFailureDialing(t *testing.T) {
 
 func TestTLSDialerDialTLSContextFailureHandshaking(t *testing.T) {
 	ctx := context.Background()
-	dialer := TLSDialer{
+	dialer := tlsDialer{
 		Config: &tls.Config{},
 		Dialer: &mocks.Dialer{MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 			return &mocks.Conn{MockWrite: func(b []byte) (int, error) {
@@ -345,7 +345,7 @@ func TestTLSDialerDialTLSContextFailureHandshaking(t *testing.T) {
 
 func TestTLSDialerDialTLSContextSuccessHandshaking(t *testing.T) {
 	ctx := context.Background()
-	dialer := TLSDialer{
+	dialer := tlsDialer{
 		Dialer: &mocks.Dialer{MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 			return &mocks.Conn{MockWrite: func(b []byte) (int, error) {
 				return 0, io.EOF
@@ -372,7 +372,7 @@ func TestTLSDialerDialTLSContextSuccessHandshaking(t *testing.T) {
 }
 
 func TestTLSDialerConfigFromEmptyConfigForWeb(t *testing.T) {
-	d := &TLSDialer{}
+	d := &tlsDialer{}
 	config := d.config("www.google.com", "443")
 	if config.ServerName != "www.google.com" {
 		t.Fatal("invalid server name")
@@ -383,7 +383,7 @@ func TestTLSDialerConfigFromEmptyConfigForWeb(t *testing.T) {
 }
 
 func TestTLSDialerConfigFromEmptyConfigForDoT(t *testing.T) {
-	d := &TLSDialer{}
+	d := &tlsDialer{}
 	config := d.config("dns.google", "853")
 	if config.ServerName != "dns.google" {
 		t.Fatal("invalid server name")
@@ -394,7 +394,7 @@ func TestTLSDialerConfigFromEmptyConfigForDoT(t *testing.T) {
 }
 
 func TestTLSDialerConfigWithServerName(t *testing.T) {
-	d := &TLSDialer{
+	d := &tlsDialer{
 		Config: &tls.Config{
 			ServerName: "example.com",
 		},
@@ -409,7 +409,7 @@ func TestTLSDialerConfigWithServerName(t *testing.T) {
 }
 
 func TestTLSDialerConfigWithALPN(t *testing.T) {
-	d := &TLSDialer{
+	d := &tlsDialer{
 		Config: &tls.Config{
 			NextProtos: []string{"h2"},
 		},
@@ -438,5 +438,45 @@ func TestNewTLSHandshakerStdlibTypes(t *testing.T) {
 	}
 	if thc.NewConn != nil {
 		t.Fatal("expected nil NewConn")
+	}
+}
+
+func TestNewTLSDialerWorksAsIntended(t *testing.T) {
+	d := &mocks.Dialer{}
+	tlsh := &mocks.TLSHandshaker{}
+	td := NewTLSDialer(d, tlsh)
+	tdut, okay := td.(*tlsDialer)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if tdut.Config == nil {
+		t.Fatal("unexpected config")
+	}
+	if tdut.Dialer != d {
+		t.Fatal("unexpected dialer")
+	}
+	if tdut.TLSHandshaker != tlsh {
+		t.Fatal("invalid handshaker")
+	}
+}
+
+func TestNewSingleUseTLSDialerWorksAsIntended(t *testing.T) {
+	conn := &mocks.TLSConn{}
+	d := NewSingleUseTLSDialer(conn)
+	outconn, err := d.DialTLSContext(context.Background(), "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conn != outconn {
+		t.Fatal("invalid outconn")
+	}
+	for i := 0; i < 4; i++ {
+		outconn, err = d.DialTLSContext(context.Background(), "", "")
+		if !errors.Is(err, ErrNoConnReuse) {
+			t.Fatal("not the error we expected", err)
+		}
+		if outconn != nil {
+			t.Fatal("expected nil outconn here")
+		}
 	}
 }

@@ -255,7 +255,7 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 
 func TestNewTLSDialerVanilla(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{})
-	rtd, ok := td.(*netxlite.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -287,7 +287,7 @@ func TestNewTLSDialerWithConfig(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		TLSConfig: new(tls.Config),
 	})
-	rtd, ok := td.(*netxlite.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -316,7 +316,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		Logger: log.Log,
 	})
-	rtd, ok := td.(*netxlite.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -356,7 +356,7 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		TLSSaver: saver,
 	})
-	rtd, ok := td.(*netxlite.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -396,7 +396,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
 		TLSConfig:   new(tls.Config),
 		NoTLSVerify: true,
 	})
-	rtd, ok := td.(*netxlite.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -428,7 +428,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		NoTLSVerify: true,
 	})
-	rtd, ok := td.(*netxlite.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -488,7 +488,7 @@ func TestNewWithDialer(t *testing.T) {
 
 func TestNewWithTLSDialer(t *testing.T) {
 	expected := errors.New("mocked error")
-	tlsDialer := &netxlite.TLSDialer{
+	tlsDialer := &netxlite.TLSDialerLegacy{
 		Config: new(tls.Config),
 		Dialer: &mocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {

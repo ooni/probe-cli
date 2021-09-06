@@ -103,8 +103,8 @@ func (d *Dialer) DialTLS(network, address string) (net.Conn, error) {
 // - SystemTLSHandshaker
 //
 // If you have others needs, manually build the chain you need.
-func newTLSDialer(d dialer.Dialer, config *tls.Config) *netxlite.TLSDialer {
-	return &netxlite.TLSDialer{
+func newTLSDialer(d dialer.Dialer, config *tls.Config) *netxlite.TLSDialerLegacy {
+	return &netxlite.TLSDialerLegacy{
 		Config: config,
 		Dialer: netxlite.NewDialerLegacyAdapter(d),
 		TLSHandshaker: tlsdialer.EmitterTLSHandshaker{

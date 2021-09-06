@@ -216,8 +216,29 @@ func (h *tlsHandshakerLogger) Handshake(
 	return tlsconn, state, nil
 }
 
-// TLSDialer is the TLS dialer
-type TLSDialer struct {
+// TLSDialer is a Dialer dialing TLS connections.
+type TLSDialer interface {
+	// CloseIdleConnections closes idle connections, if any.
+	CloseIdleConnections()
+
+	// DialTLSContext dials a TLS connection.
+	DialTLSContext(ctx context.Context, network, address string) (net.Conn, error)
+}
+
+// NewTLSDialer creates a new TLS dialer using the given dialer
+// and TLS handshaker to establish TLS connections.
+func NewTLSDialer(dialer Dialer, handshaker TLSHandshaker) TLSDialer {
+	return NewTLSDialerWithConfig(dialer, handshaker, &tls.Config{})
+}
+
+// NewTLSDialerWithConfig is like NewTLSDialer but takes an optional config
+// parameter containing your desired TLS configuration.
+func NewTLSDialerWithConfig(d Dialer, h TLSHandshaker, c *tls.Config) TLSDialer {
+	return &tlsDialer{Config: c, Dialer: d, TLSHandshaker: h}
+}
+
+// tlsDialer is the TLS dialer
+type tlsDialer struct {
 	// Config is the OPTIONAL tls config.
 	Config *tls.Config
 
@@ -228,13 +249,15 @@ type TLSDialer struct {
 	TLSHandshaker TLSHandshaker
 }
 
-// CloseIdleConnection closes idle connections, if any.
-func (d *TLSDialer) CloseIdleConnection() {
+var _ TLSDialer = &tlsDialer{}
+
+// CloseIdleConnections implements TLSDialer.CloseIdleConnections.
+func (d *tlsDialer) CloseIdleConnections() {
 	d.Dialer.CloseIdleConnections()
 }
 
-// DialTLSContext dials a TLS connection.
-func (d *TLSDialer) DialTLSContext(ctx context.Context, network, address string) (net.Conn, error) {
+// DialTLSContext implements TLSDialer.DialTLSContext.
+func (d *tlsDialer) DialTLSContext(ctx context.Context, network, address string) (net.Conn, error) {
 	host, port, err := net.SplitHostPort(address)
 	if err != nil {
 		return nil, err
@@ -258,7 +281,7 @@ func (d *TLSDialer) DialTLSContext(ctx context.Context, network, address string)
 // We set the ServerName field if not already set.
 //
 // We set the ALPN if the port is 443 or 853, if not already set.
-func (d *TLSDialer) config(host, port string) *tls.Config {
+func (d *tlsDialer) config(host, port string) *tls.Config {
 	config := d.Config
 	if config == nil {
 		config = &tls.Config{}
@@ -276,4 +299,23 @@ func (d *TLSDialer) config(host, port string) *tls.Config {
 		}
 	}
 	return config
+}
+
+// NewSingleUseTLSDialer is like NewSingleUseDialer but takes
+// in input a TLSConn rather than a net.Conn.
+func NewSingleUseTLSDialer(conn TLSConn) TLSDialer {
+	return &tlsDialerSingleUseAdapter{NewSingleUseDialer(conn)}
+}
+
+// tlsDialerSingleUseAdapter adapts dialerSingleUse to
+// be a TLSDialer type rather than a Dialer type.
+type tlsDialerSingleUseAdapter struct {
+	Dialer
+}
+
+var _ TLSDialer = &tlsDialerSingleUseAdapter{}
+
+// DialTLSContext implements TLSDialer.DialTLSContext.
+func (d *tlsDialerSingleUseAdapter) DialTLSContext(ctx context.Context, network, address string) (net.Conn, error) {
+	return d.Dialer.DialContext(ctx, network, address)
 }
