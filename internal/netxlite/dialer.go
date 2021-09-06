@@ -22,8 +22,9 @@ func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
 	return &dialerLogger{
 		Dialer: &dialerResolver{
 			Dialer: &dialerLogger{
-				Dialer: &dialerSystem{},
-				Logger: logger,
+				Dialer:          &dialerSystem{},
+				Logger:          logger,
+				operationSuffix: "_address",
 			},
 			Resolver: resolver,
 		},
@@ -120,21 +121,31 @@ type dialerLogger struct {
 
 	// Logger is the underlying logger.
 	Logger Logger
+
+	// operationSuffix is appended to the operation name.
+	//
+	// We use this suffix to distinguish the output from dialing
+	// with the output from dialing an IP address when we are
+	// using a dialer without resolver, where otherwise both lines
+	// would read something like `dial 8.8.8.8:443...`
+	operationSuffix string
 }
 
 var _ Dialer = &dialerLogger{}
 
 // DialContext implements Dialer.DialContext
 func (d *dialerLogger) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	d.Logger.Debugf("dial %s/%s...", address, network)
+	d.Logger.Debugf("dial%s %s/%s...", d.operationSuffix, address, network)
 	start := time.Now()
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	elapsed := time.Since(start)
 	if err != nil {
-		d.Logger.Debugf("dial %s/%s... %s in %s", address, network, err, elapsed)
+		d.Logger.Debugf("dial%s %s/%s... %s in %s", d.operationSuffix,
+			address, network, err, elapsed)
 		return nil, err
 	}
-	d.Logger.Debugf("dial %s/%s... ok in %s", address, network, elapsed)
+	d.Logger.Debugf("dial%s %s/%s... ok in %s", d.operationSuffix,
+		address, network, elapsed)
 	return conn, nil
 }
 
