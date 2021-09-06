@@ -169,6 +169,9 @@ func (d *quicDialerResolver) DialContext(
 	// than just calling ReduceErrors. We are not ready to do that
 	// yet, though. To do that, we need first to modify nettests so
 	// that we actually avoid dialing when measuring.
+	//
+	// See also the quirks.go file. This is clearly a QUIRK.
+	addrs = quirkSortIPAddrs(addrs)
 	var errorslist []error
 	for _, addr := range addrs {
 		target := net.JoinHostPort(addr, onlyport)
@@ -179,7 +182,7 @@ func (d *quicDialerResolver) DialContext(
 		}
 		errorslist = append(errorslist, err)
 	}
-	return nil, reduceErrors(errorslist)
+	return nil, quirkReduceErrors(errorslist)
 }
 
 // maybeApplyTLSDefaults sets the SNI if it's not already configured.
