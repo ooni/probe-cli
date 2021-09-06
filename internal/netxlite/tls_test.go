@@ -278,7 +278,22 @@ func TestTLSHandshakerLoggerFailure(t *testing.T) {
 	}
 }
 
-func TestTLSDialerFailureSplitHostPort(t *testing.T) {
+func TestTLSDialerCloseIdleConnections(t *testing.T) {
+	var called bool
+	dialer := &TLSDialer{
+		Dialer: &mocks.Dialer{
+			MockCloseIdleConnections: func() {
+				called = true
+			},
+		},
+	}
+	dialer.CloseIdleConnection()
+	if !called {
+		t.Fatal("not called")
+	}
+}
+
+func TestTLSDialerDialTLSContextFailureSplitHostPort(t *testing.T) {
 	dialer := &TLSDialer{}
 	ctx := context.Background()
 	const address = "www.google.com" // missing port
@@ -291,7 +306,7 @@ func TestTLSDialerFailureSplitHostPort(t *testing.T) {
 	}
 }
 
-func TestTLSDialerFailureDialing(t *testing.T) {
+func TestTLSDialerDialTLSContextFailureDialing(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately fail
 	dialer := TLSDialer{Dialer: defaultDialer}
@@ -304,7 +319,7 @@ func TestTLSDialerFailureDialing(t *testing.T) {
 	}
 }
 
-func TestTLSDialerFailureHandshaking(t *testing.T) {
+func TestTLSDialerDialTLSContextFailureHandshaking(t *testing.T) {
 	ctx := context.Background()
 	dialer := TLSDialer{
 		Config: &tls.Config{},
@@ -328,7 +343,7 @@ func TestTLSDialerFailureHandshaking(t *testing.T) {
 	}
 }
 
-func TestTLSDialerSuccessHandshaking(t *testing.T) {
+func TestTLSDialerDialTLSContextSuccessHandshaking(t *testing.T) {
 	ctx := context.Background()
 	dialer := TLSDialer{
 		Dialer: &mocks.Dialer{MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
