@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net"
 	"strconv"
+	"sync"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
@@ -287,4 +288,37 @@ func (d *quicDialerLogger) DialContext(
 // CloseIdleConnections implements QUICDialer.CloseIdleConnections.
 func (d *quicDialerLogger) CloseIdleConnections() {
 	d.Dialer.CloseIdleConnections()
+}
+
+// NewSingleUseQUICDialer returns a dialer that returns the given connection
+// once and after that always fails with the ErrNoConnReuse error.
+func NewSingleUseQUICDialer(sess quic.EarlySession) QUICDialer {
+	return &quicDialerSingleUse{sess: sess}
+}
+
+// quicDialerSingleUse is the QUICDialer returned by NewSingleQUICDialer.
+type quicDialerSingleUse struct {
+	sync.Mutex
+	sess quic.EarlySession
+}
+
+var _ QUICDialer = &quicDialerSingleUse{}
+
+// DialContext implements QUICDialer.DialContext.
+func (s *quicDialerSingleUse) DialContext(
+	ctx context.Context, network, addr string, tlsCfg *tls.Config,
+	cfg *quic.Config) (quic.EarlySession, error) {
+	var sess quic.EarlySession
+	defer s.Unlock()
+	s.Lock()
+	if s.sess == nil {
+		return nil, ErrNoConnReuse
+	}
+	sess, s.sess = s.sess, nil
+	return sess, nil
+}
+
+// CloseIdleConnections closes idle connections.
+func (s *quicDialerSingleUse) CloseIdleConnections() {
+	// nothing to do
 }

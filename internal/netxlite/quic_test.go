@@ -460,3 +460,26 @@ func TestNewQUICDialerWithoutResolverChain(t *testing.T) {
 		t.Fatal("invalid quic listener")
 	}
 }
+
+func TestNewSingleUseQUICDialerWorksAsIntended(t *testing.T) {
+	sess := &mocks.QUICEarlySession{}
+	qd := NewSingleUseQUICDialer(sess)
+	outsess, err := qd.DialContext(
+		context.Background(), "", "", &tls.Config{}, &quic.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sess != outsess {
+		t.Fatal("invalid outsess")
+	}
+	for i := 0; i < 4; i++ {
+		outsess, err = qd.DialContext(
+			context.Background(), "", "", &tls.Config{}, &quic.Config{})
+		if !errors.Is(err, ErrNoConnReuse) {
+			t.Fatal("not the error we expected", err)
+		}
+		if outsess != nil {
+			t.Fatal("expected nil outconn here")
+		}
+	}
+}
