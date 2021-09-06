@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/apex/log"
 	oohttp "github.com/ooni/oohttp"
@@ -111,7 +112,8 @@ func TestHTTPTransportLoggerCloseIdleConnections(t *testing.T) {
 
 func TestHTTPTransportWorks(t *testing.T) {
 	d := NewDialerWithResolver(log.Log, NewResolverSystem(log.Log))
-	txp := NewHTTPTransport(log.Log, d, NewTLSHandshakerStdlib(log.Log))
+	td := NewTLSDialer(d, NewTLSHandshakerStdlib(log.Log))
+	txp := NewHTTPTransport(log.Log, d, td)
 	client := &http.Client{Transport: txp}
 	defer client.CloseIdleConnections()
 	resp, err := client.Get("https://www.google.com/robots.txt")
@@ -136,7 +138,8 @@ func TestHTTPTransportWithFailingDialer(t *testing.T) {
 		},
 		Resolver: NewResolverSystem(log.Log),
 	}
-	txp := NewHTTPTransport(log.Log, d, NewTLSHandshakerStdlib(log.Log))
+	td := NewTLSDialer(d, NewTLSHandshakerStdlib(log.Log))
+	txp := NewHTTPTransport(log.Log, d, td)
 	client := &http.Client{Transport: txp}
 	resp, err := client.Get("https://www.google.com/robots.txt")
 	if !errors.Is(err, expected) {
@@ -153,8 +156,8 @@ func TestHTTPTransportWithFailingDialer(t *testing.T) {
 
 func TestNewHTTPTransport(t *testing.T) {
 	d := &mocks.Dialer{}
-	th := &mocks.TLSHandshaker{}
-	txp := NewHTTPTransport(log.Log, d, th)
+	td := &mocks.TLSDialer{}
+	txp := NewHTTPTransport(log.Log, d, td)
 	logtxp, okay := txp.(*httpTransportLogger)
 	if !okay {
 		t.Fatal("invalid type")
@@ -173,8 +176,12 @@ func TestNewHTTPTransport(t *testing.T) {
 	if udt.Dialer != d {
 		t.Fatal("invalid dialer")
 	}
-	if txpcc.TLSDialer.(*tlsDialer).TLSHandshaker != th {
-		t.Fatal("invalid tls handshaker")
+	utdt, okay := txpcc.TLSDialer.(*httpTLSDialerWithReadTimeout)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if utdt.TLSDialer != td {
+		t.Fatal("invalid tls dialer")
 	}
 	stdwtxp, okay := txpcc.HTTPTransport.(*oohttp.StdlibTransport)
 	if !okay {
@@ -194,5 +201,213 @@ func TestNewHTTPTransport(t *testing.T) {
 	}
 	if stdwtxp.Transport.DialContext == nil {
 		t.Fatal("invalid DialContext")
+	}
+}
+
+func TestHTTPDialerWithReadTimeout(t *testing.T) {
+	var (
+		calledWithZeroTime    bool
+		calledWithNonZeroTime bool
+	)
+	origConn := &mocks.Conn{
+		MockSetReadDeadline: func(t time.Time) error {
+			switch t.IsZero() {
+			case true:
+				calledWithZeroTime = true
+			case false:
+				calledWithNonZeroTime = true
+			}
+			return nil
+		},
+		MockRead: func(b []byte) (int, error) {
+			return 0, io.EOF
+		},
+	}
+	d := &httpDialerWithReadTimeout{
+		Dialer: &mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return origConn, nil
+			},
+		},
+	}
+	ctx := context.Background()
+	conn, err := d.DialContext(ctx, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, okay := conn.(*httpConnWithReadTimeout); !okay {
+		t.Fatal("invalid conn type")
+	}
+	if conn.(*httpConnWithReadTimeout).Conn != origConn {
+		t.Fatal("invalid origin conn")
+	}
+	b := make([]byte, 1024)
+	count, err := conn.Read(b)
+	if !errors.Is(err, io.EOF) {
+		t.Fatal("invalid error")
+	}
+	if count != 0 {
+		t.Fatal("invalid count")
+	}
+	if !calledWithZeroTime || !calledWithNonZeroTime {
+		t.Fatal("not called")
+	}
+}
+
+func TestHTTPTLSDialerWithReadTimeout(t *testing.T) {
+	var (
+		calledWithZeroTime    bool
+		calledWithNonZeroTime bool
+	)
+	origConn := &mocks.TLSConn{
+		Conn: mocks.Conn{
+			MockSetReadDeadline: func(t time.Time) error {
+				switch t.IsZero() {
+				case true:
+					calledWithZeroTime = true
+				case false:
+					calledWithNonZeroTime = true
+				}
+				return nil
+			},
+			MockRead: func(b []byte) (int, error) {
+				return 0, io.EOF
+			},
+		},
+	}
+	d := &httpTLSDialerWithReadTimeout{
+		TLSDialer: &mocks.TLSDialer{
+			MockDialTLSContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return origConn, nil
+			},
+		},
+	}
+	ctx := context.Background()
+	conn, err := d.DialTLSContext(ctx, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, okay := conn.(*httpTLSConnWithReadTimeout); !okay {
+		t.Fatal("invalid conn type")
+	}
+	if conn.(*httpTLSConnWithReadTimeout).TLSConn != origConn {
+		t.Fatal("invalid origin conn")
+	}
+	b := make([]byte, 1024)
+	count, err := conn.Read(b)
+	if !errors.Is(err, io.EOF) {
+		t.Fatal("invalid error")
+	}
+	if count != 0 {
+		t.Fatal("invalid count")
+	}
+	if !calledWithZeroTime || !calledWithNonZeroTime {
+		t.Fatal("not called")
+	}
+}
+
+func TestHTTPDialerWithReadTimeoutDialingFailure(t *testing.T) {
+	expected := errors.New("mocked error")
+	d := &httpDialerWithReadTimeout{
+		Dialer: &mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return nil, expected
+			},
+		},
+	}
+	conn, err := d.DialContext(context.Background(), "", "")
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected")
+	}
+	if conn != nil {
+		t.Fatal("expected nil conn here")
+	}
+}
+
+func TestHTTPDialerWithReadTimeoutDialingSuccess(t *testing.T) {
+	origConn := &mocks.Conn{}
+	d := &httpDialerWithReadTimeout{
+		Dialer: &mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return origConn, nil
+			},
+		},
+	}
+	conn, err := d.DialContext(context.Background(), "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	uconn, okay := conn.(*httpConnWithReadTimeout)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if uconn.Conn != origConn {
+		t.Fatal("invalid underlying conn")
+	}
+}
+
+func TestHTTPTLSDialerWithReadTimeoutDialingFailure(t *testing.T) {
+	expected := errors.New("mocked error")
+	d := &httpTLSDialerWithReadTimeout{
+		TLSDialer: &mocks.TLSDialer{
+			MockDialTLSContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return nil, expected
+			},
+		},
+	}
+	conn, err := d.DialTLSContext(context.Background(), "", "")
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected")
+	}
+	if conn != nil {
+		t.Fatal("expected nil conn here")
+	}
+}
+
+func TestHTTPTLSDialerWithInvalidConnType(t *testing.T) {
+	var called bool
+	d := &httpTLSDialerWithReadTimeout{
+		TLSDialer: &mocks.TLSDialer{
+			MockDialTLSContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return &mocks.Conn{
+					MockClose: func() error {
+						called = true
+						return nil
+					},
+				}, nil
+			},
+		},
+	}
+	conn, err := d.DialTLSContext(context.Background(), "", "")
+	if !errors.Is(err, ErrNotTLSConn) {
+		t.Fatal("not the error we expected")
+	}
+	if conn != nil {
+		t.Fatal("expected nil conn here")
+	}
+	if !called {
+		t.Fatal("not called")
+	}
+}
+
+func TestHTTPTLSDialerWithReadTimeoutDialingSuccess(t *testing.T) {
+	origConn := &mocks.TLSConn{}
+	d := &httpTLSDialerWithReadTimeout{
+		TLSDialer: &mocks.TLSDialer{
+			MockDialTLSContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return origConn, nil
+			},
+		},
+	}
+	conn, err := d.DialTLSContext(context.Background(), "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	uconn, okay := conn.(*httpTLSConnWithReadTimeout)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if uconn.TLSConn != origConn {
+		t.Fatal("invalid underlying conn")
 	}
 }
