@@ -164,7 +164,7 @@ func NewSingleUseDialer(conn net.Conn) Dialer {
 	return &dialerSingleUse{conn: conn}
 }
 
-// dialerSingleUse is the type of Dialer returned by NewSingleDialer.
+// dialerSingleUse is the Dialer returned by NewSingleDialer.
 type dialerSingleUse struct {
 	sync.Mutex
 	conn net.Conn
