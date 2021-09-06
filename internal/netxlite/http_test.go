@@ -2,7 +2,6 @@ package netxlite
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"io"
 	"net"
@@ -110,22 +109,19 @@ func TestHTTPTransportLoggerCloseIdleConnections(t *testing.T) {
 }
 
 func TestHTTPTransportWorks(t *testing.T) {
-	d := &dialerResolver{
-		Dialer:   defaultDialer,
-		Resolver: NewResolverSystem(log.Log),
-	}
-	th := &tlsHandshakerConfigurable{}
-	txp := NewHTTPTransport(d, &tls.Config{}, th)
+	d := NewDialerWithResolver(log.Log, NewResolverSystem(log.Log))
+	txp := NewHTTPTransport(d, NewTLSHandshakerStdlib(log.Log))
 	client := &http.Client{Transport: txp}
+	defer client.CloseIdleConnections()
 	resp, err := client.Get("https://www.google.com/robots.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
 	resp.Body.Close()
-	txp.CloseIdleConnections()
 }
 
 func TestHTTPTransportWithFailingDialer(t *testing.T) {
+	called := &atomicx.Int64{}
 	expected := errors.New("mocked error")
 	d := &dialerResolver{
 		Dialer: &mocks.Dialer{
@@ -133,11 +129,13 @@ func TestHTTPTransportWithFailingDialer(t *testing.T) {
 				network, address string) (net.Conn, error) {
 				return nil, expected
 			},
+			MockCloseIdleConnections: func() {
+				called.Add(1)
+			},
 		},
 		Resolver: NewResolverSystem(log.Log),
 	}
-	th := &tlsHandshakerConfigurable{}
-	txp := NewHTTPTransport(d, &tls.Config{}, th)
+	txp := NewHTTPTransport(d, NewTLSHandshakerStdlib(log.Log))
 	client := &http.Client{Transport: txp}
 	resp, err := client.Get("https://www.google.com/robots.txt")
 	if !errors.Is(err, expected) {
@@ -146,5 +144,47 @@ func TestHTTPTransportWithFailingDialer(t *testing.T) {
 	if resp != nil {
 		t.Fatal("expected non-nil response here")
 	}
-	txp.CloseIdleConnections()
+	client.CloseIdleConnections()
+	if called.Load() < 1 {
+		t.Fatal("did not propagate CloseIdleConnections")
+	}
+}
+
+func TestNewHTTPTransport(t *testing.T) {
+	d := &mocks.Dialer{}
+	th := &mocks.TLSHandshaker{}
+	txp := NewHTTPTransport(d, th)
+	txpcc, okay := txp.(*httpTransportConnectionsCloser)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	udt, okay := txpcc.Dialer.(*httpDialerWithReadTimeout)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if udt.Dialer != d {
+		t.Fatal("invalid dialer")
+	}
+	if txpcc.TLSDialer.(*tlsDialer).TLSHandshaker != th {
+		t.Fatal("invalid tls handshaker")
+	}
+	htxp, okay := txpcc.HTTPTransport.(*http.Transport)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if !htxp.ForceAttemptHTTP2 {
+		t.Fatal("invalid ForceAttemptHTTP2")
+	}
+	if !htxp.DisableCompression {
+		t.Fatal("invalid DisableCompression")
+	}
+	if htxp.MaxConnsPerHost != 1 {
+		t.Fatal("invalid MaxConnPerHost")
+	}
+	if htxp.DialTLSContext == nil {
+		t.Fatal("invalid DialTLSContext")
+	}
+	if htxp.DialContext == nil {
+		t.Fatal("invalid DialContext")
+	}
 }

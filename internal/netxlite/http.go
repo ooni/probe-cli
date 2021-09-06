@@ -2,7 +2,6 @@ package netxlite
 
 import (
 	"context"
-	"crypto/tls"
 	"net"
 	"net/http"
 	"time"
@@ -67,17 +66,37 @@ func (txp *httpTransportLogger) CloseIdleConnections() {
 	txp.HTTPTransport.CloseIdleConnections()
 }
 
-// NewHTTPTransport creates a new HTTP transport using Go stdlib.
-func NewHTTPTransport(dialer Dialer, tlsConfig *tls.Config,
-	handshaker TLSHandshaker) HTTPTransport {
+// httpTransportConnectionsCloser is an HTTPTransport that
+// correctly forwards CloseIdleConnections.
+type httpTransportConnectionsCloser struct {
+	HTTPTransport
+	Dialer
+	TLSDialer
+}
+
+// CloseIdleConnections forwards the CloseIdleConnections calls.
+func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
+	txp.HTTPTransport.CloseIdleConnections()
+	txp.Dialer.CloseIdleConnections()
+	txp.TLSDialer.CloseIdleConnections()
+}
+
+// NewHTTPTransport creates a new HTTP transport using the given
+// dialer and TLS handshaker to create connections.
+//
+// We need a TLS handshaker here, as opposed to a TLSDialer, because we
+// wrap the dialer we'll use to enforce timeouts for HTTP idle
+// connections (see https://github.com/ooni/probe/issues/1609 for more info).
+func NewHTTPTransport(dialer Dialer, tlsHandshaker TLSHandshaker) HTTPTransport {
+	// TODO(bassosimone): here we should copy code living inside the
+	// websteps prototype to use the oohttp library.
 	txp := http.DefaultTransport.(*http.Transport).Clone()
+	// This wrapping ensures that we always have a timeout when we
+	// are using HTTP; see https://github.com/ooni/probe/issues/1609.
 	dialer = &httpDialerWithReadTimeout{dialer}
 	txp.DialContext = dialer.DialContext
-	txp.DialTLSContext = (&tlsDialer{
-		Config:        tlsConfig,
-		Dialer:        dialer,
-		TLSHandshaker: handshaker,
-	}).DialTLSContext
+	tlsDialer := NewTLSDialer(dialer, tlsHandshaker)
+	txp.DialTLSContext = tlsDialer.DialTLSContext
 	// Better for Cloudflare DNS and also better because we have less
 	// noisy events and we can better understand what happened.
 	txp.MaxConnsPerHost = 1
@@ -86,7 +105,13 @@ func NewHTTPTransport(dialer Dialer, tlsConfig *tls.Config,
 	// back the true headers, such as Content-Length. This change is
 	// functional to OONI's goal of observing the network.
 	txp.DisableCompression = true
-	return txp
+	txp.ForceAttemptHTTP2 = true
+	// Ensure we correctly forward CloseIdleConnections.
+	return &httpTransportConnectionsCloser{
+		HTTPTransport: txp,
+		Dialer:        dialer,
+		TLSDialer:     tlsDialer,
+	}
 }
 
 // httpDialerWithReadTimeout enforces a read timeout for all HTTP
