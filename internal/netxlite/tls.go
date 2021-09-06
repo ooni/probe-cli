@@ -228,6 +228,11 @@ type TLSDialer struct {
 	TLSHandshaker TLSHandshaker
 }
 
+// CloseIdleConnection closes idle connections, if any.
+func (d *TLSDialer) CloseIdleConnection() {
+	d.Dialer.CloseIdleConnections()
+}
+
 // DialTLSContext dials a TLS connection.
 func (d *TLSDialer) DialTLSContext(ctx context.Context, network, address string) (net.Conn, error) {
 	host, port, err := net.SplitHostPort(address)
