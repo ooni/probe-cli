@@ -10,5 +10,7 @@ import (
 //
 // New code should use netxlite.NewHTTP3Transport instead.
 func NewHTTP3Transport(config Config) RoundTripper {
-	return netxlite.NewHTTP3Transport(config.QUICDialer, config.TLSConfig)
+	return netxlite.NewHTTP3Transport(
+		netxlite.NewQUICDialerFromContextDialerAdapter(config.QUICDialer),
+		config.TLSConfig)
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestHTTP3TransportWorks(t *testing.T) {
@@ -23,4 +24,19 @@ func TestHTTP3TransportWorks(t *testing.T) {
 	}
 	resp.Body.Close()
 	txp.CloseIdleConnections()
+}
+
+func TestHTTP3TransportClosesIdleConnections(t *testing.T) {
+	var called bool
+	d := &mocks.QUICDialer{
+		MockCloseIdleConnections: func() {
+			called = true
+		},
+	}
+	txp := NewHTTP3Transport(d, &tls.Config{})
+	client := &http.Client{Transport: txp}
+	client.CloseIdleConnections()
+	if !called {
+		t.Fatal("not called")
+	}
 }

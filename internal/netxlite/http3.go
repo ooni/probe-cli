@@ -13,7 +13,7 @@ import (
 // an http3.RoundTripper. This is necessary because the
 // http3.RoundTripper does not support DialContext.
 type http3Dialer struct {
-	Dialer QUICContextDialer
+	Dialer QUICDialer
 }
 
 // dial is like QUICContextDialer.DialContext but without context.
@@ -25,7 +25,8 @@ func (d *http3Dialer) dial(network, address string, tlsConfig *tls.Config,
 
 // http3Transport is an HTTPTransport using the http3 protocol.
 type http3Transport struct {
-	child *http3.RoundTripper
+	child  *http3.RoundTripper
+	dialer QUICDialer
 }
 
 var _ HTTPTransport = &http3Transport{}
@@ -38,13 +39,14 @@ func (txp *http3Transport) RoundTrip(req *http.Request) (*http.Response, error) 
 // CloseIdleConnections implements HTTPTransport.CloseIdleConnections.
 func (txp *http3Transport) CloseIdleConnections() {
 	txp.child.Close()
+	txp.dialer.CloseIdleConnections()
 }
 
 // NewHTTP3Transport creates a new HTTPTransport using http3. The
 // dialer argument MUST NOT be nil. If the tlsConfig argument is nil,
 // then the code will use the default TLS configuration.
 func NewHTTP3Transport(
-	dialer QUICContextDialer, tlsConfig *tls.Config) HTTPTransport {
+	dialer QUICDialer, tlsConfig *tls.Config) HTTPTransport {
 	return &http3Transport{
 		child: &http3.RoundTripper{
 			Dial: (&http3Dialer{dialer}).dial,
@@ -55,5 +57,6 @@ func NewHTTP3Transport(
 			DisableCompression: true,
 			TLSClientConfig:    tlsConfig,
 		},
+		dialer: dialer,
 	}
 }
