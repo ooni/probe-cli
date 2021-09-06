@@ -42,8 +42,11 @@ func (c *TLSConn) HandshakeContext(ctx context.Context) error {
 
 // TLSDialer allows to mock netxlite.TLSDialer.
 type TLSDialer struct {
+	// MockCloseIdleConnections allows to mock the CloseIdleConnections method.
 	MockCloseIdleConnections func()
-	MockDialTLSContext       func(ctx context.Context, network, address string) (net.Conn, error)
+
+	// MockDialTLSContext allows to mock the DialTLSContext method.
+	MockDialTLSContext func(ctx context.Context, network, address string) (net.Conn, error)
 }
 
 // CloseIdleConnections calls MockCloseIdleConnections.
