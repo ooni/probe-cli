@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	oohttp "github.com/ooni/oohttp"
 )
 
 // HTTPTransport is an http.Transport-like structure.
@@ -87,30 +89,58 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 // We need a TLS handshaker here, as opposed to a TLSDialer, because we
 // wrap the dialer we'll use to enforce timeouts for HTTP idle
 // connections (see https://github.com/ooni/probe/issues/1609 for more info).
-func NewHTTPTransport(dialer Dialer, tlsHandshaker TLSHandshaker) HTTPTransport {
-	// TODO(bassosimone): here we should copy code living inside the
-	// websteps prototype to use the oohttp library.
-	txp := http.DefaultTransport.(*http.Transport).Clone()
+//
+// The returned transport will use the given Logger for logging.
+//
+// The returned transport will gracefully handle TLS connections
+// created using gitlab.com/yawning/utls.git.
+//
+// The returned transport will not have a configured proxy, not
+// even the proxy configurable from the environment.
+//
+// The returned transport will disable transparent decompression
+// of compressed response bodies (and will not automatically
+// ask for such compression, though you can always do that manually).
+func NewHTTPTransport(logger Logger, dialer Dialer, tlsHandshaker TLSHandshaker) HTTPTransport {
+	// Using oohttp to support any TLS library.
+	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
+
 	// This wrapping ensures that we always have a timeout when we
 	// are using HTTP; see https://github.com/ooni/probe/issues/1609.
 	dialer = &httpDialerWithReadTimeout{dialer}
 	txp.DialContext = dialer.DialContext
 	tlsDialer := NewTLSDialer(dialer, tlsHandshaker)
 	txp.DialTLSContext = tlsDialer.DialTLSContext
+
+	// We are using a different strategy to implement proxy: we
+	// use a specific dialer that knows about proxying.
+	txp.Proxy = nil
+
 	// Better for Cloudflare DNS and also better because we have less
 	// noisy events and we can better understand what happened.
+	//
+	// UNDOCUMENTED: I am wondering whether we can relax this constraint.
 	txp.MaxConnsPerHost = 1
+
 	// The following (1) reduces the number of headers that Go will
 	// automatically send for us and (2) ensures that we always receive
 	// back the true headers, such as Content-Length. This change is
 	// functional to OONI's goal of observing the network.
 	txp.DisableCompression = true
+
+	// Required to enable using HTTP/2 (which will be anyway forced
+	// upon us when we are using TLS parroting).
 	txp.ForceAttemptHTTP2 = true
-	// Ensure we correctly forward CloseIdleConnections.
-	return &httpTransportConnectionsCloser{
-		HTTPTransport: txp,
-		Dialer:        dialer,
-		TLSDialer:     tlsDialer,
+
+	// Ensure we correctly forward CloseIdleConnections and compose
+	// with a logging transport thus enabling logging.
+	return &httpTransportLogger{
+		HTTPTransport: &httpTransportConnectionsCloser{
+			HTTPTransport: &oohttp.StdlibTransport{Transport: txp},
+			Dialer:        dialer,
+			TLSDialer:     tlsDialer,
+		},
+		Logger: logger,
 	}
 }
 

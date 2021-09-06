@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
@@ -110,7 +111,7 @@ func TestHTTPTransportLoggerCloseIdleConnections(t *testing.T) {
 
 func TestHTTPTransportWorks(t *testing.T) {
 	d := NewDialerWithResolver(log.Log, NewResolverSystem(log.Log))
-	txp := NewHTTPTransport(d, NewTLSHandshakerStdlib(log.Log))
+	txp := NewHTTPTransport(log.Log, d, NewTLSHandshakerStdlib(log.Log))
 	client := &http.Client{Transport: txp}
 	defer client.CloseIdleConnections()
 	resp, err := client.Get("https://www.google.com/robots.txt")
@@ -135,7 +136,7 @@ func TestHTTPTransportWithFailingDialer(t *testing.T) {
 		},
 		Resolver: NewResolverSystem(log.Log),
 	}
-	txp := NewHTTPTransport(d, NewTLSHandshakerStdlib(log.Log))
+	txp := NewHTTPTransport(log.Log, d, NewTLSHandshakerStdlib(log.Log))
 	client := &http.Client{Transport: txp}
 	resp, err := client.Get("https://www.google.com/robots.txt")
 	if !errors.Is(err, expected) {
@@ -153,8 +154,15 @@ func TestHTTPTransportWithFailingDialer(t *testing.T) {
 func TestNewHTTPTransport(t *testing.T) {
 	d := &mocks.Dialer{}
 	th := &mocks.TLSHandshaker{}
-	txp := NewHTTPTransport(d, th)
-	txpcc, okay := txp.(*httpTransportConnectionsCloser)
+	txp := NewHTTPTransport(log.Log, d, th)
+	logtxp, okay := txp.(*httpTransportLogger)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if logtxp.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	txpcc, okay := logtxp.HTTPTransport.(*httpTransportConnectionsCloser)
 	if !okay {
 		t.Fatal("invalid type")
 	}
@@ -168,23 +176,23 @@ func TestNewHTTPTransport(t *testing.T) {
 	if txpcc.TLSDialer.(*tlsDialer).TLSHandshaker != th {
 		t.Fatal("invalid tls handshaker")
 	}
-	htxp, okay := txpcc.HTTPTransport.(*http.Transport)
+	stdwtxp, okay := txpcc.HTTPTransport.(*oohttp.StdlibTransport)
 	if !okay {
 		t.Fatal("invalid type")
 	}
-	if !htxp.ForceAttemptHTTP2 {
+	if !stdwtxp.Transport.ForceAttemptHTTP2 {
 		t.Fatal("invalid ForceAttemptHTTP2")
 	}
-	if !htxp.DisableCompression {
+	if !stdwtxp.Transport.DisableCompression {
 		t.Fatal("invalid DisableCompression")
 	}
-	if htxp.MaxConnsPerHost != 1 {
+	if stdwtxp.Transport.MaxConnsPerHost != 1 {
 		t.Fatal("invalid MaxConnPerHost")
 	}
-	if htxp.DialTLSContext == nil {
+	if stdwtxp.Transport.DialTLSContext == nil {
 		t.Fatal("invalid DialTLSContext")
 	}
-	if htxp.DialContext == nil {
+	if stdwtxp.Transport.DialContext == nil {
 		t.Fatal("invalid DialContext")
 	}
 }
