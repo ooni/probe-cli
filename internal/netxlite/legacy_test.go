@@ -60,3 +60,21 @@ func TestDialerLegacyAdapterDefaults(t *testing.T) {
 	r := NewDialerLegacyAdapter(&net.Dialer{})
 	r.CloseIdleConnections() // does not crash
 }
+
+func TestQUICContextDialerAdapterWithCompatibleType(t *testing.T) {
+	var called bool
+	d := NewQUICDialerFromContextDialerAdapter(&mocks.QUICDialer{
+		MockCloseIdleConnections: func() {
+			called = true
+		},
+	})
+	d.CloseIdleConnections()
+	if !called {
+		t.Fatal("not called")
+	}
+}
+
+func TestQUICContextDialerAdapterDefaults(t *testing.T) {
+	d := NewQUICDialerFromContextDialerAdapter(&mocks.QUICContextDialer{})
+	d.CloseIdleConnections() // does not crash
+}

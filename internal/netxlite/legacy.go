@@ -2,7 +2,10 @@ package netxlite
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
+
+	"github.com/lucas-clemente/quic-go"
 )
 
 // These vars export internal names to legacy ooni/probe-cli code.
@@ -127,5 +130,41 @@ type dialerLegacyIdleConnectionsCloser interface {
 func (d *DialerLegacyAdapter) CloseIdleConnections() {
 	if ra, ok := d.DialerLegacy.(dialerLegacyIdleConnectionsCloser); ok {
 		ra.CloseIdleConnections()
+	}
+}
+
+// QUICContextDialer is a dialer for QUIC using Context.
+//
+// This is a LEGACY name. New code should use QUICDialer directly.
+//
+// Use NewQUICDialerFromContextDialerAdapter if you need to
+// adapt an existing QUICContextDialer to a QUICDialer.
+type QUICContextDialer interface {
+	// DialContext establishes a new QUIC session using the given
+	// network and address. The tlsConfig and the quicConfig arguments
+	// MUST NOT be nil. Returns either the session or an error.
+	DialContext(ctx context.Context, network, address string,
+		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error)
+}
+
+// NewQUICDialerFromContextDialerAdapter creates a new
+// QUICDialer from a QUICContextDialer.
+func NewQUICDialerFromContextDialerAdapter(d QUICContextDialer) QUICDialer {
+	return &QUICContextDialerAdapter{d}
+}
+
+// QUICContextDialerAdapter adapta a QUICContextDialer to be a QUICDialer.
+type QUICContextDialerAdapter struct {
+	QUICContextDialer
+}
+
+type quicContextDialerConnectionsCloser interface {
+	CloseIdleConnections()
+}
+
+// CloseIdleConnections implements QUICDialer.CloseIdleConnections.
+func (d *QUICContextDialerAdapter) CloseIdleConnections() {
+	if o, ok := d.QUICContextDialer.(quicContextDialerConnectionsCloser); ok {
+		o.CloseIdleConnections()
 	}
 }

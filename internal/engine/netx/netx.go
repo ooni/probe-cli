@@ -181,7 +181,7 @@ func NewQUICDialer(config Config) QUICDialer {
 	}
 	d = &netxlite.QUICDialerResolver{
 		Resolver: netxlite.NewResolverLegacyAdapter(config.FullResolver),
-		Dialer:   d,
+		Dialer:   netxlite.NewQUICDialerFromContextDialerAdapter(d),
 	}
 	return d
 }
