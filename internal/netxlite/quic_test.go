@@ -427,3 +427,36 @@ func TestQUICDialerLoggerFailure(t *testing.T) {
 		t.Fatal("expected nil session")
 	}
 }
+
+func TestNewQUICDialerWithoutResolverChain(t *testing.T) {
+	ql := NewQUICListener()
+	dlr := NewQUICDialerWithoutResolver(ql, log.Log)
+	dlog, okay := dlr.(*quicDialerLogger)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if dlog.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	dr, okay := dlog.Dialer.(*quicDialerResolver)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if _, okay := dr.Resolver.(*nullResolver); !okay {
+		t.Fatal("invalid resolver type")
+	}
+	dlog, okay = dr.Dialer.(*quicDialerLogger)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if dlog.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	dgo, okay := dlog.Dialer.(*quicDialerQUICGo)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if dgo.QUICListener != ql {
+		t.Fatal("invalid quic listener")
+	}
+}

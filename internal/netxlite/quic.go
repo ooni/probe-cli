@@ -11,6 +11,28 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
+// QUICListener listens for QUIC connections.
+type QUICListener interface {
+	// Listen creates a new listening UDPConn.
+	Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error)
+}
+
+// NewQUICListener creates a new QUICListener using the standard
+// library to create listening UDP sockets.
+func NewQUICListener() QUICListener {
+	return &quicListenerStdlib{}
+}
+
+// quicListenerStdlib is a QUICListener using the standard library.
+type quicListenerStdlib struct{}
+
+var _ QUICListener = &quicListenerStdlib{}
+
+// Listen implements QUICListener.Listen.
+func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+	return net.ListenUDP("udp", addr)
+}
+
 // QUICDialer dials QUIC sessions.
 type QUICDialer interface {
 	// DialContext establishes a new QUIC session using the given
@@ -23,20 +45,32 @@ type QUICDialer interface {
 	CloseIdleConnections()
 }
 
-// QUICListener listens for QUIC connections.
-type QUICListener interface {
-	// Listen creates a new listening UDPConn.
-	Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error)
+// NewQUICDialerWithResolver returns a QUICDialer using the given
+// QUICListener to create listening connections and the given Resolver
+// to resolve domain names (if needed).
+func NewQUICDialerWithResolver(listener QUICListener,
+	logger Logger, resolver Resolver) QUICDialer {
+	return &quicDialerLogger{
+		Dialer: &quicDialerResolver{
+			Dialer: &quicDialerLogger{
+				Dialer: &quicDialerQUICGo{
+					QUICListener: listener,
+				},
+				Logger:          logger,
+				operationSuffix: "_address",
+			},
+			Resolver: resolver,
+		},
+		Logger: logger,
+	}
 }
 
-// quicListenerStdlib is a QUICListener using the standard library.
-type quicListenerStdlib struct{}
-
-var _ QUICListener = &quicListenerStdlib{}
-
-// Listen implements QUICListener.Listen.
-func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
-	return net.ListenUDP("udp", addr)
+// NewQUICDialerWithoutResolver is like NewQUICDialerWithResolver
+// except that there is no configured resolver. So, if you pass in
+// an address containing a domain name, the dial will fail with
+// the ErrNoResolver failure.
+func NewQUICDialerWithoutResolver(listener QUICListener, logger Logger) QUICDialer {
+	return NewQUICDialerWithResolver(listener, logger, &nullResolver{})
 }
 
 // quicDialerQUICGo dials using the lucas-clemente/quic-go library.
@@ -223,6 +257,14 @@ type quicDialerLogger struct {
 
 	// Logger is the underlying logger.
 	Logger Logger
+
+	// operationSuffix is appended to the operation name.
+	//
+	// We use this suffix to distinguish the output from dialing
+	// with the output from dialing an IP address when we are
+	// using a dialer without resolver, where otherwise both lines
+	// would read something like `dial 8.8.8.8:443...`
+	operationSuffix string
 }
 
 var _ QUICDialer = &quicDialerLogger{}
@@ -231,13 +273,14 @@ var _ QUICDialer = &quicDialerLogger{}
 func (d *quicDialerLogger) DialContext(
 	ctx context.Context, network, address string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
-	d.Logger.Debugf("quic %s/%s...", address, network)
+	d.Logger.Debugf("quic_dial%s %s/%s...", d.operationSuffix, address, network)
 	sess, err := d.Dialer.DialContext(ctx, network, address, tlsConfig, quicConfig)
 	if err != nil {
-		d.Logger.Debugf("quic %s/%s... %s", address, network, err)
+		d.Logger.Debugf("quic_dial%s %s/%s... %s", d.operationSuffix,
+			address, network, err)
 		return nil, err
 	}
-	d.Logger.Debugf("quic %s/%s... ok", address, network)
+	d.Logger.Debugf("quic_dial%s %s/%s... ok", d.operationSuffix, address, network)
 	return sess, nil
 }
 
