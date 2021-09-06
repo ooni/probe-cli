@@ -135,7 +135,8 @@ func (e *DefaultExplorer) getH3(h3URL *h3URL, headers map[string][]string) (*htt
 	tlsConf := &tls.Config{
 		NextProtos: []string{h3URL.proto},
 	}
-	transport := netxlite.NewHTTP3Transport(dialer, tlsConf)
+	transport := netxlite.NewHTTP3Transport(
+		netxlite.NewQUICDialerFromContextDialerAdapter(dialer), tlsConf)
 	// TODO(bassosimone): here we should use runtimex.PanicOnError
 	jarjar, _ := cookiejar.New(nil)
 	clnt := &http.Client{
