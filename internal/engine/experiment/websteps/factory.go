@@ -54,7 +54,7 @@ func NewQUICDialerResolver(resolver netxlite.ResolverLegacy) netxlite.QUICContex
 	dialer = &errorsx.ErrorWrapperQUICDialer{Dialer: dialer}
 	dialer = &netxlite.QUICDialerResolver{
 		Resolver: netxlite.NewResolverLegacyAdapter(resolver),
-		Dialer:   dialer,
+		Dialer:   netxlite.NewQUICDialerFromContextDialerAdapter(dialer),
 	}
 	return dialer
 }

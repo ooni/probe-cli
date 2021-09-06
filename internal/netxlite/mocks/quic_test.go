@@ -31,9 +31,9 @@ func TestQUICListenerListen(t *testing.T) {
 	}
 }
 
-func TestQUICContextDialerDialContext(t *testing.T) {
+func TestQUICDialerDialContext(t *testing.T) {
 	expected := errors.New("mocked error")
-	qcd := &QUICContextDialer{
+	qcd := &QUICDialer{
 		MockDialContext: func(ctx context.Context, network string, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 			return nil, expected
 		},
@@ -47,6 +47,19 @@ func TestQUICContextDialerDialContext(t *testing.T) {
 	}
 	if sess != nil {
 		t.Fatal("expected nil session")
+	}
+}
+
+func TestQUICDialerCloseIdleConnections(t *testing.T) {
+	var called bool
+	qcd := &QUICDialer{
+		MockCloseIdleConnections: func() {
+			called = true
+		},
+	}
+	qcd.CloseIdleConnections()
+	if !called {
+		t.Fatal("not called")
 	}
 }
 

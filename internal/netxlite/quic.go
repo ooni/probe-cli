@@ -11,13 +11,16 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
-// QUICContextDialer is a dialer for QUIC using Context.
-type QUICContextDialer interface {
+// QUICDialer dials QUIC sessions.
+type QUICDialer interface {
 	// DialContext establishes a new QUIC session using the given
 	// network and address. The tlsConfig and the quicConfig arguments
 	// MUST NOT be nil. Returns either the session or an error.
 	DialContext(ctx context.Context, network, address string,
 		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error)
+
+	// CloseIdleConnections closes idle connections, if any.
+	CloseIdleConnections()
 }
 
 // QUICListener listens for QUIC connections.
@@ -47,12 +50,12 @@ type quicDialerQUICGo struct {
 		quicConfig *quic.Config) (quic.EarlySession, error)
 }
 
-var _ QUICContextDialer = &quicDialerQUICGo{}
+var _ QUICDialer = &quicDialerQUICGo{}
 
 // errInvalidIP indicates that a string is not a valid IP.
 var errInvalidIP = errors.New("netxlite: invalid IP")
 
-// DialContext implements ContextDialer.DialContext. This function will
+// DialContext implements QUICDialer.DialContext. This function will
 // apply the following TLS defaults:
 //
 // 1. if tlsConfig.RootCAs is nil, we use the Mozilla CA that we
@@ -119,6 +122,11 @@ func (d *quicDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *
 	return config
 }
 
+// CloseIdleConnections closes idle connections.
+func (d *quicDialerQUICGo) CloseIdleConnections() {
+	// nothing to do
+}
+
 // quicSessionOwnsConn ensures that we close the UDPLikeConn.
 type quicSessionOwnsConn struct {
 	// EarlySession is the embedded early session
@@ -139,16 +147,16 @@ func (sess *quicSessionOwnsConn) CloseWithError(
 // quicDialerResolver is a dialer that uses the configured Resolver
 // to resolve a domain name to IP addrs.
 type quicDialerResolver struct {
-	// Dialer is the underlying QUIC dialer.
-	Dialer QUICContextDialer
+	// Dialer is the underlying QUICDialer.
+	Dialer QUICDialer
 
-	// Resolver is the underlying resolver.
+	// Resolver is the underlying Resolver.
 	Resolver Resolver
 }
 
-var _ QUICContextDialer = &quicDialerResolver{}
+var _ QUICDialer = &quicDialerResolver{}
 
-// DialContext implements QUICContextDialer.DialContext. This function
+// DialContext implements QUICDialer.DialContext. This function
 // will apply the following TLS defaults:
 //
 // 1. if tlsConfig.ServerName is empty, we will use the hostname
@@ -202,16 +210,22 @@ func (d *quicDialerResolver) lookupHost(ctx context.Context, hostname string) ([
 	return d.Resolver.LookupHost(ctx, hostname)
 }
 
+// CloseIdleConnections implements QUICDialer.CloseIdleConnections.
+func (d *quicDialerResolver) CloseIdleConnections() {
+	d.Dialer.CloseIdleConnections()
+	d.Resolver.CloseIdleConnections()
+}
+
 // quicDialerLogger is a dialer with logging.
 type quicDialerLogger struct {
 	// Dialer is the underlying QUIC dialer.
-	Dialer QUICContextDialer
+	Dialer QUICDialer
 
 	// Logger is the underlying logger.
 	Logger Logger
 }
 
-var _ QUICContextDialer = &quicDialerLogger{}
+var _ QUICDialer = &quicDialerLogger{}
 
 // DialContext implements QUICContextDialer.DialContext.
 func (d *quicDialerLogger) DialContext(
@@ -225,4 +239,9 @@ func (d *quicDialerLogger) DialContext(
 	}
 	d.Logger.Debugf("quic %s/%s... ok", address, network)
 	return sess, nil
+}
+
+// CloseIdleConnections implements QUICDialer.CloseIdleConnections.
+func (d *quicDialerLogger) CloseIdleConnections() {
+	d.Dialer.CloseIdleConnections()
 }

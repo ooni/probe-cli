@@ -21,16 +21,25 @@ func (ql *QUICListener) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
 	return ql.MockListen(addr)
 }
 
-// QUICContextDialer is a mockable netxlite.QUICContextDialer.
-type QUICContextDialer struct {
+// QUICDialer is a mockable netxlite.QUICDialer.
+type QUICDialer struct {
+	// MockDialContext allows mocking DialContext.
 	MockDialContext func(ctx context.Context, network, address string,
 		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error)
+
+	// MockCloseIdleConnections allows mocking CloseIdleConnections.
+	MockCloseIdleConnections func()
 }
 
 // DialContext calls MockDialContext.
-func (qcd *QUICContextDialer) DialContext(ctx context.Context, network, address string,
+func (qcd *QUICDialer) DialContext(ctx context.Context, network, address string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 	return qcd.MockDialContext(ctx, network, address, tlsConfig, quicConfig)
+}
+
+// CloseIdleConnections calls MockCloseIdleConnections.
+func (qcd *QUICDialer) CloseIdleConnections() {
+	qcd.MockCloseIdleConnections()
 }
 
 // QUICEarlySession is a mockable quic.EarlySession.
