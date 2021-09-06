@@ -324,28 +324,6 @@ func TestHTTPDialerWithReadTimeoutDialingFailure(t *testing.T) {
 	}
 }
 
-func TestHTTPDialerWithReadTimeoutDialingSuccess(t *testing.T) {
-	origConn := &mocks.Conn{}
-	d := &httpDialerWithReadTimeout{
-		Dialer: &mocks.Dialer{
-			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-				return origConn, nil
-			},
-		},
-	}
-	conn, err := d.DialContext(context.Background(), "", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	uconn, okay := conn.(*httpConnWithReadTimeout)
-	if !okay {
-		t.Fatal("invalid type")
-	}
-	if uconn.Conn != origConn {
-		t.Fatal("invalid underlying conn")
-	}
-}
-
 func TestHTTPTLSDialerWithReadTimeoutDialingFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	d := &httpTLSDialerWithReadTimeout{
@@ -387,27 +365,5 @@ func TestHTTPTLSDialerWithInvalidConnType(t *testing.T) {
 	}
 	if !called {
 		t.Fatal("not called")
-	}
-}
-
-func TestHTTPTLSDialerWithReadTimeoutDialingSuccess(t *testing.T) {
-	origConn := &mocks.TLSConn{}
-	d := &httpTLSDialerWithReadTimeout{
-		TLSDialer: &mocks.TLSDialer{
-			MockDialTLSContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-				return origConn, nil
-			},
-		},
-	}
-	conn, err := d.DialTLSContext(context.Background(), "", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	uconn, okay := conn.(*httpTLSConnWithReadTimeout)
-	if !okay {
-		t.Fatal("invalid type")
-	}
-	if uconn.TLSConn != origConn {
-		t.Fatal("invalid underlying conn")
 	}
 }
