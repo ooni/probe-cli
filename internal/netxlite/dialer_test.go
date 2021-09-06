@@ -235,3 +235,24 @@ func TestNewDialerWithoutResolverChain(t *testing.T) {
 		t.Fatal("invalid type")
 	}
 }
+
+func TestNewSingleUseDialerWorksAsIntended(t *testing.T) {
+	conn := &mocks.Conn{}
+	d := NewSingleUseDialer(conn)
+	outconn, err := d.DialContext(context.Background(), "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conn != outconn {
+		t.Fatal("invalid outconn")
+	}
+	for i := 0; i < 4; i++ {
+		outconn, err = d.DialContext(context.Background(), "", "")
+		if !errors.Is(err, ErrNoConnReuse) {
+			t.Fatal("not the error we expected", err)
+		}
+		if outconn != nil {
+			t.Fatal("expected nil outconn here")
+		}
+	}
+}

@@ -83,7 +83,7 @@ func NewSingleTransport(conn net.Conn) http.RoundTripper {
 func NewTransportWithDialer(dialer netxlite.DialerLegacy, tlsConfig *tls.Config, handshaker netxlite.TLSHandshaker) http.RoundTripper {
 	transport := newBaseTransport()
 	transport.DialContext = dialer.DialContext
-	transport.DialTLSContext = (&netxlite.TLSDialer{
+	transport.DialTLSContext = (&netxlite.TLSDialerLegacy{
 		Config:        tlsConfig,
 		Dialer:        netxlite.NewDialerLegacyAdapter(dialer),
 		TLSHandshaker: handshaker,

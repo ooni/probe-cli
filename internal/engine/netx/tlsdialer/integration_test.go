@@ -13,7 +13,7 @@ func TestTLSDialerSuccess(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	log.SetLevel(log.DebugLevel)
-	dialer := &netxlite.TLSDialer{Dialer: netxlite.DefaultDialer,
+	dialer := &netxlite.TLSDialerLegacy{Dialer: netxlite.DefaultDialer,
 		TLSHandshaker: &netxlite.TLSHandshakerLogger{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Logger:        log.Log,

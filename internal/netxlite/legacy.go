@@ -62,6 +62,7 @@ type (
 	TLSHandshakerConfigurable = tlsHandshakerConfigurable
 	TLSHandshakerLogger       = tlsHandshakerLogger
 	DialerSystem              = dialerSystem
+	TLSDialerLegacy           = tlsDialer
 )
 
 // ResolverLegacy performs domain name resolutions.

@@ -73,7 +73,7 @@ func NewHTTPTransport(dialer Dialer, tlsConfig *tls.Config,
 	txp := http.DefaultTransport.(*http.Transport).Clone()
 	dialer = &httpDialerWithReadTimeout{dialer}
 	txp.DialContext = dialer.DialContext
-	txp.DialTLSContext = (&TLSDialer{
+	txp.DialTLSContext = (&tlsDialer{
 		Config:        tlsConfig,
 		Dialer:        dialer,
 		TLSHandshaker: handshaker,
