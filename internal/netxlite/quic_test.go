@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"io"
 	"net"
 	"strings"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
@@ -452,7 +454,11 @@ func TestNewQUICDialerWithoutResolverChain(t *testing.T) {
 	if dlog.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	dgo, okay := dlog.Dialer.(*quicDialerQUICGo)
+	ew, okay := dlog.Dialer.(*quicDialerErrWrapper)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	dgo, okay := ew.QUICDialer.(*quicDialerQUICGo)
 	if !okay {
 		t.Fatal("invalid type")
 	}
@@ -482,4 +488,189 @@ func TestNewSingleUseQUICDialerWorksAsIntended(t *testing.T) {
 			t.Fatal("expected nil outconn here")
 		}
 	}
+}
+
+func TestQUICListenerErrWrapper(t *testing.T) {
+	t.Run("Listen", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			expectedConn := &mocks.QUICUDPConn{}
+			ql := &quicListenerErrWrapper{
+				QUICListener: &mocks.QUICListener{
+					MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+						return expectedConn, nil
+					},
+				},
+			}
+			conn, err := ql.Listen(&net.UDPAddr{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			ewconn := conn.(*quicErrWrapperUDPLikeConn)
+			if ewconn.UDPLikeConn != expectedConn {
+				t.Fatal("unexpected conn")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expectedErr := io.EOF
+			ql := &quicListenerErrWrapper{
+				QUICListener: &mocks.QUICListener{
+					MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+						return nil, expectedErr
+					},
+				},
+			}
+			conn, err := ql.Listen(&net.UDPAddr{})
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
+		})
+	})
+}
+
+func TestQUICErrWrapperUDPLikeConn(t *testing.T) {
+	t.Run("ReadFrom", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			expectedAddr := &net.UDPAddr{}
+			p := make([]byte, 128)
+			conn := &quicErrWrapperUDPLikeConn{
+				UDPLikeConn: &mocks.QUICUDPConn{
+					MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
+						return len(p), expectedAddr, nil
+					},
+				},
+			}
+			count, addr, err := conn.ReadFrom(p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if count != len(p) {
+				t.Fatal("unexpected count")
+			}
+			if addr != expectedAddr {
+				t.Fatal("unexpected addr")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			p := make([]byte, 128)
+			expectedErr := io.EOF
+			conn := &quicErrWrapperUDPLikeConn{
+				UDPLikeConn: &mocks.QUICUDPConn{
+					MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
+						return 0, nil, expectedErr
+					},
+				},
+			}
+			count, addr, err := conn.ReadFrom(p)
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+			if count != 0 {
+				t.Fatal("unexpected count")
+			}
+			if addr != nil {
+				t.Fatal("unexpected addr")
+			}
+		})
+	})
+
+	t.Run("WriteTo", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			p := make([]byte, 128)
+			conn := &quicErrWrapperUDPLikeConn{
+				UDPLikeConn: &mocks.QUICUDPConn{
+					MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+						return len(p), nil
+					},
+				},
+			}
+			count, err := conn.WriteTo(p, &net.UDPAddr{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if count != len(p) {
+				t.Fatal("unexpected count")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			p := make([]byte, 128)
+			expectedErr := io.EOF
+			conn := &quicErrWrapperUDPLikeConn{
+				UDPLikeConn: &mocks.QUICUDPConn{
+					MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+						return 0, expectedErr
+					},
+				},
+			}
+			count, err := conn.WriteTo(p, &net.UDPAddr{})
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+			if count != 0 {
+				t.Fatal("unexpected count")
+			}
+		})
+	})
+}
+
+func TestQUICDialerErrWrapper(t *testing.T) {
+	t.Run("CloseIdleConnections", func(t *testing.T) {
+		var called bool
+		d := &quicDialerErrWrapper{
+			QUICDialer: &mocks.QUICDialer{
+				MockCloseIdleConnections: func() {
+					called = true
+				},
+			},
+		}
+		d.CloseIdleConnections()
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+
+	t.Run("DialContext", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			expectedSess := &mocks.QUICEarlySession{}
+			d := &quicDialerErrWrapper{
+				QUICDialer: &mocks.QUICDialer{
+					MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+						return expectedSess, nil
+					},
+				},
+			}
+			ctx := context.Background()
+			sess, err := d.DialContext(ctx, "", "", &tls.Config{}, &quic.Config{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if sess != expectedSess {
+				t.Fatal("unexpected sess")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expectedErr := io.EOF
+			d := &quicDialerErrWrapper{
+				QUICDialer: &mocks.QUICDialer{
+					MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+						return nil, expectedErr
+					},
+				},
+			}
+			ctx := context.Background()
+			sess, err := d.DialContext(ctx, "", "", &tls.Config{}, &quic.Config{})
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+			if sess != nil {
+				t.Fatal("unexpected sess")
+			}
+		})
+	})
 }

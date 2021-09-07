@@ -10,6 +10,7 @@ import (
 	"time"
 
 	oohttp "github.com/ooni/oohttp"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 var (
@@ -125,8 +126,10 @@ type TLSHandshaker interface {
 // go standard library to create TLS connections.
 func NewTLSHandshakerStdlib(logger Logger) TLSHandshaker {
 	return &tlsHandshakerLogger{
-		TLSHandshaker: &tlsHandshakerConfigurable{},
-		Logger:        logger,
+		TLSHandshaker: &tlsHandshakerErrWrapper{
+			TLSHandshaker: &tlsHandshakerConfigurable{},
+		},
+		Logger: logger,
 	}
 }
 
@@ -318,4 +321,24 @@ var _ TLSDialer = &tlsDialerSingleUseAdapter{}
 // DialTLSContext implements TLSDialer.DialTLSContext.
 func (d *tlsDialerSingleUseAdapter) DialTLSContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return d.Dialer.DialContext(ctx, network, address)
+}
+
+// tlsHandshakerErrWrapper wraps the returned error to be an OONI error
+type tlsHandshakerErrWrapper struct {
+	TLSHandshaker
+}
+
+// Handshake implements TLSHandshaker.Handshake
+func (h *tlsHandshakerErrWrapper) Handshake(
+	ctx context.Context, conn net.Conn, config *tls.Config,
+) (net.Conn, tls.ConnectionState, error) {
+	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
+	if err != nil {
+		return nil, tls.ConnectionState{}, &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyTLSHandshakeError(err),
+			Operation:  errorsx.TLSHandshakeOperation,
+			WrappedErr: err,
+		}
+	}
+	return tlsconn, state, nil
 }

@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"golang.org/x/net/idna"
 )
 
@@ -30,7 +31,9 @@ func NewResolverSystem(logger Logger) Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{
 			Resolver: &resolverShortCircuitIPAddr{
-				Resolver: &resolverSystem{},
+				Resolver: &resolverErrWrapper{
+					Resolver: &resolverSystem{},
+				},
 			},
 			Logger: logger,
 		},
@@ -181,4 +184,24 @@ func (r *nullResolver) Address() string {
 // CloseIdleConnections implements Resolver.CloseIdleConnections.
 func (r *nullResolver) CloseIdleConnections() {
 	// nothing
+}
+
+// resolverErrWrapper is a Resolver that knows about wrapping errors.
+type resolverErrWrapper struct {
+	Resolver
+}
+
+var _ Resolver = &resolverErrWrapper{}
+
+// LookupHost implements Resolver.LookupHost
+func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+	addrs, err := r.Resolver.LookupHost(ctx, hostname)
+	if err != nil {
+		return nil, &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyResolverError(err),
+			Operation:  errorsx.ResolveOperation,
+			WrappedErr: err,
+		}
+	}
+	return addrs, nil
 }
