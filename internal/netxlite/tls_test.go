@@ -16,6 +16,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -432,7 +433,11 @@ func TestNewTLSHandshakerStdlibTypes(t *testing.T) {
 	if thl.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	thc, okay := thl.TLSHandshaker.(*tlsHandshakerConfigurable)
+	ew, okay := thl.TLSHandshaker.(*tlsHandshakerErrWrapper)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	thc, okay := ew.TLSHandshaker.(*tlsHandshakerConfigurable)
 	if !okay {
 		t.Fatal("invalid type")
 	}
@@ -479,4 +484,52 @@ func TestNewSingleUseTLSDialerWorksAsIntended(t *testing.T) {
 			t.Fatal("expected nil outconn here")
 		}
 	}
+}
+
+func TestTLSHandshakerErrWrapper(t *testing.T) {
+	t.Run("Handshake", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			expectedConn := &mocks.TLSConn{}
+			expectedState := tls.ConnectionState{
+				Version: tls.VersionTLS12,
+			}
+			th := &tlsHandshakerErrWrapper{
+				TLSHandshaker: &mocks.TLSHandshaker{
+					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+						return expectedConn, expectedState, nil
+					},
+				},
+			}
+			ctx := context.Background()
+			conn, state, err := th.Handshake(ctx, &mocks.Conn{}, &tls.Config{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if expectedState.Version != state.Version {
+				t.Fatal("unexpected state")
+			}
+			if expectedConn != conn {
+				t.Fatal("unexpected conn")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expectedErr := io.EOF
+			th := &tlsHandshakerErrWrapper{
+				TLSHandshaker: &mocks.TLSHandshaker{
+					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+						return nil, tls.ConnectionState{}, expectedErr
+					},
+				},
+			}
+			ctx := context.Background()
+			conn, _, err := th.Handshake(ctx, &mocks.Conn{}, &tls.Config{})
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+			if conn != nil {
+				t.Fatal("unexpected conn")
+			}
+		})
+	})
 }

@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
@@ -21,7 +22,7 @@ type QUICListener interface {
 // NewQUICListener creates a new QUICListener using the standard
 // library to create listening UDP sockets.
 func NewQUICListener() QUICListener {
-	return &quicListenerStdlib{}
+	return &quicListenerErrWrapper{&quicListenerStdlib{}}
 }
 
 // quicListenerStdlib is a QUICListener using the standard library.
@@ -54,9 +55,10 @@ func NewQUICDialerWithResolver(listener QUICListener,
 	return &quicDialerLogger{
 		Dialer: &quicDialerResolver{
 			Dialer: &quicDialerLogger{
-				Dialer: &quicDialerQUICGo{
-					QUICListener: listener,
-				},
+				Dialer: &quicDialerErrWrapper{
+					QUICDialer: &quicDialerQUICGo{
+						QUICListener: listener,
+					}},
 				Logger:          logger,
 				operationSuffix: "_address",
 			},
@@ -321,4 +323,79 @@ func (s *quicDialerSingleUse) DialContext(
 // CloseIdleConnections closes idle connections.
 func (s *quicDialerSingleUse) CloseIdleConnections() {
 	// nothing to do
+}
+
+// quicListenerErrWrapper is a QUICListener that wraps errors.
+type quicListenerErrWrapper struct {
+	// QUICListener is the underlying listener.
+	QUICListener
+}
+
+var _ QUICListener = &quicListenerErrWrapper{}
+
+// Listen implements QUICListener.Listen.
+func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+	pconn, err := qls.QUICListener.Listen(addr)
+	if err != nil {
+		return nil, &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyGenericError(err),
+			Operation:  errorsx.QUICListenOperation,
+			WrappedErr: err,
+		}
+	}
+	return &quicErrWrapperUDPLikeConn{pconn}, nil
+}
+
+// quicErrWrapperUDPLikeConn is a quicx.UDPLikeConn that wraps errors.
+type quicErrWrapperUDPLikeConn struct {
+	// UDPLikeConn is the underlying conn.
+	quicx.UDPLikeConn
+}
+
+var _ quicx.UDPLikeConn = &quicErrWrapperUDPLikeConn{}
+
+// WriteTo implements quicx.UDPLikeConn.WriteTo.
+func (c *quicErrWrapperUDPLikeConn) WriteTo(p []byte, addr net.Addr) (int, error) {
+	count, err := c.UDPLikeConn.WriteTo(p, addr)
+	if err != nil {
+		return 0, &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyGenericError(err),
+			Operation:  errorsx.WriteToOperation,
+			WrappedErr: err,
+		}
+	}
+	return count, nil
+}
+
+// ReadFrom implements quicx.UDPLikeConn.ReadFrom.
+func (c *quicErrWrapperUDPLikeConn) ReadFrom(b []byte) (int, net.Addr, error) {
+	n, addr, err := c.UDPLikeConn.ReadFrom(b)
+	if err != nil {
+		return 0, nil, &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyGenericError(err),
+			Operation:  errorsx.ReadFromOperation,
+			WrappedErr: err,
+		}
+	}
+	return n, addr, nil
+}
+
+// quicDialerErrWrapper is a dialer that performs quic err wrapping
+type quicDialerErrWrapper struct {
+	QUICDialer
+}
+
+// DialContext implements ContextDialer.DialContext
+func (d *quicDialerErrWrapper) DialContext(
+	ctx context.Context, network string, host string,
+	tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
+	sess, err := d.QUICDialer.DialContext(ctx, network, host, tlsCfg, cfg)
+	if err != nil {
+		return nil, &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyQUICHandshakeError(err),
+			Operation:  errorsx.QUICHandshakeOperation,
+			WrappedErr: err,
+		}
+	}
+	return sess, nil
 }

@@ -3,6 +3,7 @@ package netxlite
 import (
 	"context"
 	"errors"
+	"io"
 	"strings"
 	"sync"
 	"testing"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -196,7 +198,11 @@ func TestNewResolverTypeChain(t *testing.T) {
 	if !ok {
 		t.Fatal("invalid resolver")
 	}
-	if _, ok := scia.Resolver.(*resolverSystem); !ok {
+	ew, ok := scia.Resolver.(*resolverErrWrapper)
+	if !ok {
+		t.Fatal("invalid resolver")
+	}
+	if _, ok := ew.Resolver.(*resolverSystem); !ok {
 		t.Fatal("invalid resolver")
 	}
 }
@@ -254,4 +260,89 @@ func TestNullResolverWorksAsIntended(t *testing.T) {
 		t.Fatal("invalid address")
 	}
 	r.CloseIdleConnections() // should not crash
+}
+
+func TestResolverErrWrapper(t *testing.T) {
+	t.Run("LookupHost", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			expected := []string{"8.8.8.8", "8.8.4.4"}
+			reso := &resolverErrWrapper{
+				Resolver: &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						return expected, nil
+					},
+				},
+			}
+			ctx := context.Background()
+			addrs, err := reso.LookupHost(ctx, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(expected, addrs); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expected := io.EOF
+			reso := &resolverErrWrapper{
+				Resolver: &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						return nil, expected
+					},
+				},
+			}
+			ctx := context.Background()
+			addrs, err := reso.LookupHost(ctx, "")
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+			if addrs != nil {
+				t.Fatal("unexpected addrs")
+			}
+		})
+	})
+
+	t.Run("Network", func(t *testing.T) {
+		expected := "foobar"
+		reso := &resolverErrWrapper{
+			Resolver: &mocks.Resolver{
+				MockNetwork: func() string {
+					return expected
+				},
+			},
+		}
+		if reso.Network() != expected {
+			t.Fatal("invalid network")
+		}
+	})
+
+	t.Run("Address", func(t *testing.T) {
+		expected := "foobar"
+		reso := &resolverErrWrapper{
+			Resolver: &mocks.Resolver{
+				MockAddress: func() string {
+					return expected
+				},
+			},
+		}
+		if reso.Address() != expected {
+			t.Fatal("invalid address")
+		}
+	})
+
+	t.Run("CloseIdleConnections", func(t *testing.T) {
+		var called bool
+		reso := &resolverErrWrapper{
+			Resolver: &mocks.Resolver{
+				MockCloseIdleConnections: func() {
+					called = true
+				},
+			},
+		}
+		reso.CloseIdleConnections()
+		if !called {
+			t.Fatal("not called")
+		}
+	})
 }

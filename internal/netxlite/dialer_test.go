@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -231,7 +232,11 @@ func TestNewDialerWithoutResolverChain(t *testing.T) {
 	if dlog.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	if _, okay := dlog.Dialer.(*dialerSystem); !okay {
+	dew, okay := dlog.Dialer.(*dialerErrWrapper)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	if _, okay := dew.Dialer.(*dialerSystem); !okay {
 		t.Fatal("invalid type")
 	}
 }
@@ -255,4 +260,173 @@ func TestNewSingleUseDialerWorksAsIntended(t *testing.T) {
 			t.Fatal("expected nil outconn here")
 		}
 	}
+}
+
+func TestDialerErrWrapper(t *testing.T) {
+	t.Run("DialContext on success", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			expectedConn := &mocks.Conn{}
+			d := &dialerErrWrapper{
+				Dialer: &mocks.Dialer{
+					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+						return expectedConn, nil
+					},
+				},
+			}
+			ctx := context.Background()
+			conn, err := d.DialContext(ctx, "", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			errWrapperConn := conn.(*dialerErrWrapperConn)
+			if errWrapperConn.Conn != expectedConn {
+				t.Fatal("unexpected conn")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expectedErr := io.EOF
+			d := &dialerErrWrapper{
+				Dialer: &mocks.Dialer{
+					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+						return nil, expectedErr
+					},
+				},
+			}
+			ctx := context.Background()
+			conn, err := d.DialContext(ctx, "", "")
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
+		})
+	})
+
+	t.Run("CloseIdleConnections", func(t *testing.T) {
+		var called bool
+		d := &dialerErrWrapper{
+			Dialer: &mocks.Dialer{
+				MockCloseIdleConnections: func() {
+					called = true
+				},
+			},
+		}
+		d.CloseIdleConnections()
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+}
+
+func TestDialerErrWrapperConn(t *testing.T) {
+	t.Run("Read", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			b := make([]byte, 128)
+			conn := &dialerErrWrapperConn{
+				Conn: &mocks.Conn{
+					MockRead: func(b []byte) (int, error) {
+						return len(b), nil
+					},
+				},
+			}
+			count, err := conn.Read(b)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if count != len(b) {
+				t.Fatal("unexpected count")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			b := make([]byte, 128)
+			expectedErr := io.EOF
+			conn := &dialerErrWrapperConn{
+				Conn: &mocks.Conn{
+					MockRead: func(b []byte) (int, error) {
+						return 0, expectedErr
+					},
+				},
+			}
+			count, err := conn.Read(b)
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+			if count != 0 {
+				t.Fatal("unexpected count")
+			}
+		})
+	})
+
+	t.Run("Write", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			b := make([]byte, 128)
+			conn := &dialerErrWrapperConn{
+				Conn: &mocks.Conn{
+					MockWrite: func(b []byte) (int, error) {
+						return len(b), nil
+					},
+				},
+			}
+			count, err := conn.Write(b)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if count != len(b) {
+				t.Fatal("unexpected count")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			b := make([]byte, 128)
+			expectedErr := io.EOF
+			conn := &dialerErrWrapperConn{
+				Conn: &mocks.Conn{
+					MockWrite: func(b []byte) (int, error) {
+						return 0, expectedErr
+					},
+				},
+			}
+			count, err := conn.Write(b)
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+			if count != 0 {
+				t.Fatal("unexpected count")
+			}
+		})
+	})
+
+	t.Run("Close", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			conn := &dialerErrWrapperConn{
+				Conn: &mocks.Conn{
+					MockClose: func() error {
+						return nil
+					},
+				},
+			}
+			err := conn.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expectedErr := io.EOF
+			conn := &dialerErrWrapperConn{
+				Conn: &mocks.Conn{
+					MockClose: func() error {
+						return expectedErr
+					},
+				},
+			}
+			err := conn.Close()
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+		})
+	})
 }

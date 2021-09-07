@@ -13,8 +13,10 @@ import (
 // gitlab.com/yawning/utls library to create TLS conns.
 func NewTLSHandshakerUTLS(logger Logger, id *utls.ClientHelloID) TLSHandshaker {
 	return &tlsHandshakerLogger{
-		TLSHandshaker: &tlsHandshakerConfigurable{
-			NewConn: newConnUTLS(id),
+		TLSHandshaker: &tlsHandshakerErrWrapper{
+			TLSHandshaker: &tlsHandshakerConfigurable{
+				NewConn: newConnUTLS(id),
+			},
 		},
 		Logger: logger,
 	}

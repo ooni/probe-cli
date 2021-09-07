@@ -6,6 +6,8 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // Dialer establishes network connections.
@@ -22,7 +24,9 @@ func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
 	return &dialerLogger{
 		Dialer: &dialerResolver{
 			Dialer: &dialerLogger{
-				Dialer:          &dialerSystem{},
+				Dialer: &dialerErrWrapper{
+					Dialer: &dialerSystem{},
+				},
 				Logger:          logger,
 				operationSuffix: "_address",
 			},
@@ -187,4 +191,76 @@ func (s *dialerSingleUse) DialContext(ctx context.Context, network string, addr 
 // CloseIdleConnections closes idle connections.
 func (s *dialerSingleUse) CloseIdleConnections() {
 	// nothing
+}
+
+// TODO(bassosimone): introduce factory for creating errors and
+// write tests that ensure the factory works correctly.
+
+// dialerErrWrapper is a dialer that performs error wrapping. The connection
+// returned by the DialContext function will also perform error wrapping.
+type dialerErrWrapper struct {
+	// Dialer is the underlying dialer.
+	Dialer
+}
+
+var _ Dialer = &dialerErrWrapper{}
+
+// DialContext implements Dialer.DialContext.
+func (d *dialerErrWrapper) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	conn, err := d.Dialer.DialContext(ctx, network, address)
+	if err != nil {
+		return nil, &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyGenericError(err),
+			Operation:  errorsx.ConnectOperation,
+			WrappedErr: err,
+		}
+	}
+	return &dialerErrWrapperConn{Conn: conn}, nil
+}
+
+// dialerErrWrapperConn is a net.Conn that performs error wrapping.
+type dialerErrWrapperConn struct {
+	// Conn is the underlying connection.
+	net.Conn
+}
+
+var _ net.Conn = &dialerErrWrapperConn{}
+
+// Read implements net.Conn.Read.
+func (c *dialerErrWrapperConn) Read(b []byte) (int, error) {
+	count, err := c.Conn.Read(b)
+	if err != nil {
+		return 0, &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyGenericError(err),
+			Operation:  errorsx.ReadOperation,
+			WrappedErr: err,
+		}
+	}
+	return count, nil
+}
+
+// Write implements net.Conn.Write.
+func (c *dialerErrWrapperConn) Write(b []byte) (int, error) {
+	count, err := c.Conn.Write(b)
+	if err != nil {
+		return 0, &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyGenericError(err),
+			Operation:  errorsx.WriteOperation,
+			WrappedErr: err,
+		}
+	}
+	return count, nil
+}
+
+// Close implements net.Conn.Close.
+func (c *dialerErrWrapperConn) Close() error {
+	err := c.Conn.Close()
+	if err != nil {
+		return &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyGenericError(err),
+			Operation:  errorsx.CloseOperation,
+			WrappedErr: err,
+		}
+	}
+	return nil
 }

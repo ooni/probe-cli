@@ -40,7 +40,11 @@ func TestNewTLSHandshakerUTLSTypes(t *testing.T) {
 	if thl.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	thc, okay := thl.TLSHandshaker.(*tlsHandshakerConfigurable)
+	ew, okay := thl.TLSHandshaker.(*tlsHandshakerErrWrapper)
+	if !okay {
+		t.Fatal("invalid type")
+	}
+	thc, okay := ew.TLSHandshaker.(*tlsHandshakerConfigurable)
 	if !okay {
 		t.Fatal("invalid type")
 	}
