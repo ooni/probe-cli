@@ -3,6 +3,7 @@ package netxlite
 import (
 	"context"
 	"crypto/tls"
+	"io"
 	"net/http"
 
 	"github.com/lucas-clemente/quic-go"
@@ -13,19 +14,25 @@ import (
 // an http3.RoundTripper. This is necessary because the
 // http3.RoundTripper does not support DialContext.
 type http3Dialer struct {
-	Dialer QUICDialer
+	QUICDialer
 }
 
 // dial is like QUICContextDialer.DialContext but without context.
 func (d *http3Dialer) dial(network, address string, tlsConfig *tls.Config,
 	quicConfig *quic.Config) (quic.EarlySession, error) {
-	return d.Dialer.DialContext(
+	return d.QUICDialer.DialContext(
 		context.Background(), network, address, tlsConfig, quicConfig)
+}
+
+// http3RoundTripper is the abstract type of quic-go/http3.RoundTripper.
+type http3RoundTripper interface {
+	http.RoundTripper
+	io.Closer
 }
 
 // http3Transport is an HTTPTransport using the http3 protocol.
 type http3Transport struct {
-	child  *http3.RoundTripper
+	child  http3RoundTripper
 	dialer QUICDialer
 }
 
