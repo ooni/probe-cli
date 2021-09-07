@@ -18,6 +18,26 @@ import (
 
 // ClassifyGenericError is the generic classifier mapping an error
 // occurred during an operation to an OONI failure string.
+//
+// If the input error is already an ErrWrapper we don't perform
+// the classification again and we return its Failure to the caller.
+//
+// Classification rules
+//
+// We put inside this classifier:
+//
+// - system call errors
+//
+// - generic errors that can occur in multiple places
+//
+// - all the errors that depend on strings
+//
+// The more specific classifiers will call this classifier if
+// they fail to find a mapping for the input error.
+//
+// If everything else fails, this classifier returns a string
+// like "unknown_failure: XXX" where XXX has been scrubbed
+// so to remove any network endpoints from its value.
 func ClassifyGenericError(err error) string {
 	// The list returned here matches the values used by MK unless
 	// explicitly noted otherwise with a comment.
@@ -27,6 +47,9 @@ func ClassifyGenericError(err error) string {
 		return errwrapper.Error() // we've already wrapped it
 	}
 
+	// Classify system errors first. We could use strings for many
+	// of them on Unix, but this would fail on Windows as described
+	// by https://github.com/ooni/probe/issues/1526.
 	if failure := classifySyscallError(err); failure != "" {
 		return failure
 	}
@@ -34,6 +57,7 @@ func ClassifyGenericError(err error) string {
 	if errors.Is(err, context.Canceled) {
 		return FailureInterrupted
 	}
+
 	s := err.Error()
 	if strings.HasSuffix(s, "operation was canceled") {
 		return FailureInterrupted
@@ -50,7 +74,6 @@ func ClassifyGenericError(err error) string {
 	if strings.HasSuffix(s, "i/o timeout") {
 		return FailureGenericTimeoutError
 	}
-	// TODO(kelmenhorst,bassosimone): this can probably be moved since it's TLS specific
 	if strings.HasSuffix(s, "TLS handshake timeout") {
 		return FailureGenericTimeoutError
 	}
@@ -60,11 +83,13 @@ func ClassifyGenericError(err error) string {
 		// that we return here is significantly more specific.
 		return FailureDNSNXDOMAINError
 	}
+
 	formatted := fmt.Sprintf("unknown_failure: %s", s)
 	return scrubber.Scrub(formatted) // scrub IP addresses in the error
 }
 
-// TLS alert protocol as defined in RFC8446
+// TLS alert protocol as defined in RFC8446. We need these definitions
+// to figure out which error occurred during a QUIC handshake.
 const (
 	// Sender was unable to negotiate an acceptable set of security parameters given the options available.
 	quicTLSAlertHandshakeFailure = 40
@@ -94,6 +119,11 @@ const (
 	quicTLSUnrecognizedName = 112
 )
 
+// quicIsCertificateError tells us whether a specific TLS alert error
+// we received is actually an error depending on the certificate.
+//
+// The set of checks we implement here is a set of heuristics based
+// on our understanding of the TLS spec and may need tweaks.
 func quicIsCertificateError(alert uint8) bool {
 	return (alert == quicTLSAlertBadCertificate ||
 		alert == quicTLSAlertUnsupportedCertificate ||
@@ -104,17 +134,25 @@ func quicIsCertificateError(alert uint8) bool {
 
 // ClassifyQUICHandshakeError maps an error occurred during the QUIC
 // handshake to an OONI failure string.
+//
+// If the input error is already an ErrWrapper we don't perform
+// the classification again and we return its Failure to the caller.
+//
+// If this classifier fails, it calls ClassifyGenericError and
+// returns to the caller its return value.
 func ClassifyQUICHandshakeError(err error) string {
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
 	}
 
-	var versionNegotiation *quic.VersionNegotiationError
-	var statelessReset *quic.StatelessResetError
-	var handshakeTimeout *quic.HandshakeTimeoutError
-	var idleTimeout *quic.IdleTimeoutError
-	var transportError *quic.TransportError
+	var (
+		versionNegotiation *quic.VersionNegotiationError
+		statelessReset     *quic.StatelessResetError
+		handshakeTimeout   *quic.HandshakeTimeoutError
+		idleTimeout        *quic.IdleTimeoutError
+		transportError     *quic.TransportError
+	)
 
 	if errors.As(err, &versionNegotiation) {
 		return FailureQUICIncompatibleVersion
@@ -137,8 +175,9 @@ func ClassifyQUICHandshakeError(err error) string {
 		if quicIsCertificateError(errCode) {
 			return FailureSSLInvalidCertificate
 		}
-		// TLSAlertDecryptError and TLSAlertHandshakeFailure are summarized to a FailureSSLHandshake error because both
-		// alerts are caused by a failed or corrupted parameter negotiation during the TLS handshake.
+		// TLSAlertDecryptError and TLSAlertHandshakeFailure are summarized to a
+		// FailureSSLHandshake error because both alerts are caused by a failed or
+		// corrupted parameter negotiation during the TLS handshake.
 		if errCode == quicTLSAlertDecryptError || errCode == quicTLSAlertHandshakeFailure {
 			return FailureSSLFailedHandshake
 		}
@@ -152,13 +191,18 @@ func ClassifyQUICHandshakeError(err error) string {
 	return ClassifyGenericError(err)
 }
 
-// ErrDNSBogon indicates that we found a bogon address. This is the
-// correct value with which to initialize MeasurementRoot.ErrDNSBogon
-// to tell this library to return an error when a bogon is found.
+// ErrDNSBogon indicates that we found a bogon address. Code that
+// filters for DNS bogons MUST use this error.
 var ErrDNSBogon = errors.New("dns: detected bogon address")
 
 // ClassifyResolverError maps an error occurred during a domain name
 // resolution to the corresponding OONI failure string.
+//
+// If the input error is already an ErrWrapper we don't perform
+// the classification again and we return its Failure to the caller.
+//
+// If this classifier fails, it calls ClassifyGenericError and
+// returns to the caller its return value.
 func ClassifyResolverError(err error) string {
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
@@ -172,6 +216,12 @@ func ClassifyResolverError(err error) string {
 
 // ClassifyTLSHandshakeError maps an error occurred during the TLS
 // handshake to an OONI failure string.
+//
+// If the input error is already an ErrWrapper we don't perform
+// the classification again and we return its Failure to the caller.
+//
+// If this classifier fails, it calls ClassifyGenericError and
+// returns to the caller its return value.
 func ClassifyTLSHandshakeError(err error) string {
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {

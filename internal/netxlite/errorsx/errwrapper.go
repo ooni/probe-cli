@@ -2,17 +2,28 @@ package errorsx
 
 // ErrWrapper is our error wrapper for Go errors. The key objective of
 // this structure is to properly set Failure, which is also returned by
-// the Error() method, so be one of the OONI defined strings.
+// the Error() method, to be one of the OONI failure strings.
+//
+// OONI failure strings are defined in the github.com/ooni/spec repo
+// at https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md.
 type ErrWrapper struct {
 	// Failure is the OONI failure string. The failure strings are
 	// loosely backward compatible with Measurement Kit.
 	//
 	// This is either one of the FailureXXX strings or any other
-	// string like `unknown_failure ...`. The latter represents an
+	// string like `unknown_failure: ...`. The latter represents an
 	// error that we have not yet mapped to a failure.
 	Failure string
 
-	// Operation is the operation that failed. If possible, it
+	// Operation is the operation that failed.
+	//
+	// New code will always nest ErrWrapper and you need to
+	// walk the chain to find what happened.
+	//
+	// The following comment describes the DEPRECATED
+	// legacy behavior implements by internal/engine/legacy/errorsx:
+	//
+	// If possible, the Operation string
 	// SHOULD be a _major_ operation. Major operations are:
 	//
 	// - ResolveOperation: resolving a domain name failed
