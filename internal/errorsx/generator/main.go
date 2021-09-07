@@ -35,7 +35,7 @@ func (es *ErrorSpec) AsFailureVar() string {
 
 // AsFailureString returns the OONI failure string.
 func (es *ErrorSpec) AsFailureString() string {
-	return es.failure
+	return strcase.ToSnake(es.failure)
 }
 
 // NewSystemError constructs a new ErrorSpec representing a system
@@ -87,6 +87,20 @@ var Specs = []*ErrorSpec{
 	NewSystemError("EACCES", "permission_denied"),
 	NewSystemError("EPROTONOSUPPORT", "protocol_not_supported"),
 	NewSystemError("EPROTOTYPE", "wrong_protocol_type"),
+
+	// Implementation note: we need to specify acronyms we
+	// want to be upper case in uppercase here. For example,
+	// we must write "DNS" rather than writing "dns".
+	NewLibraryError("DNS_bogon_error"),
+	NewLibraryError("DNS_NXDOMAIN_error"),
+	NewLibraryError("EOF_error"),
+	NewLibraryError("generic_timeout_error"),
+	NewLibraryError("QUIC_incompatible_version"),
+	NewLibraryError("SSL_failed_handshake"),
+	NewLibraryError("SSL_invalid_hostname"),
+	NewLibraryError("SSL_unknown_authority"),
+	NewLibraryError("SSL_invalid_certificate"),
+	NewLibraryError("JSON_parse_error"),
 }
 
 func fileCreate(filename string) *os.File {
@@ -129,6 +143,9 @@ func writeSystemSpecificFile(kind string) {
 	filePrintf(filep, "import \"golang.org/x/sys/%s\"\n\n", kind)
 	fileWrite(filep, "const (\n")
 	for _, spec := range Specs {
+		if !spec.IsSystemError() {
+			continue
+		}
 		filePrintf(filep, "\t%s = %s.%s\n",
 			spec.AsErrnoName(), kind, spec.AsErrnoName())
 	}
@@ -149,13 +166,28 @@ func writeGenericFile() {
 	fileWrite(filep, "\t\"syscall\"\n")
 	fileWrite(filep, ")\n\n")
 
-	fileWrite(filep, "// This enumeration lists the syscall-derived failures defined at\n")
+	fileWrite(filep, "// This enumeration lists the failures defined at\n")
 	fileWrite(filep, "// https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md\n")
-	fileWrite(filep, "//\n")
-	fileWrite(filep, "// See also the enumeration at failures.go for the failures that\n")
-	fileWrite(filep, "// DO NOT derive from system call errors.\n")
 	fileWrite(filep, "const (\n")
+	fileWrite(filep, "//\n")
+	fileWrite(filep, "// System errors\n")
+	fileWrite(filep, "//\n")
 	for _, spec := range Specs {
+		if !spec.IsSystemError() {
+			continue
+		}
+		filePrintf(filep, "\t%s = \"%s\"\n",
+			spec.AsFailureVar(),
+			spec.AsFailureString())
+	}
+	fileWrite(filep, "\n")
+	fileWrite(filep, "//\n")
+	fileWrite(filep, "// Library errors\n")
+	fileWrite(filep, "//\n")
+	for _, spec := range Specs {
+		if spec.IsSystemError() {
+			continue
+		}
 		filePrintf(filep, "\t%s = \"%s\"\n",
 			spec.AsFailureVar(),
 			spec.AsFailureString())
@@ -175,6 +207,9 @@ func writeGenericFile() {
 	fileWrite(filep, "\t}\n")
 	fileWrite(filep, "\tswitch errno {\n")
 	for _, spec := range Specs {
+		if !spec.IsSystemError() {
+			continue
+		}
 		filePrintf(filep, "\tcase %s:\n", spec.AsErrnoName())
 		filePrintf(filep, "\t\treturn %s\n", spec.AsFailureVar())
 	}
@@ -205,6 +240,9 @@ func writeGenericTestFile() {
 	fileWrite(filep, "\t}\n")
 
 	for _, spec := range Specs {
+		if !spec.IsSystemError() {
+			continue
+		}
 		filePrintf(filep, "\tif v := toSyscallErr(%s); v != %s {\n",
 			spec.AsErrnoName(), spec.AsFailureVar())
 		filePrintf(filep, "\t\tt.Fatalf(\"expected '%%s', got '%%s'\", %s, v)\n",

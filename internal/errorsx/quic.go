@@ -107,7 +107,7 @@ func classifyQUICFailure(err error) string {
 	var transportError *quic.TransportError
 
 	if errors.As(err, &versionNegotiation) {
-		return FailureNoCompatibleQUICVersion
+		return FailureQUICIncompatibleVersion
 	}
 	if errors.As(err, &statelessReset) {
 		return FailureConnectionReset
@@ -130,7 +130,7 @@ func classifyQUICFailure(err error) string {
 		// TLSAlertDecryptError and TLSAlertHandshakeFailure are summarized to a FailureSSLHandshake error because both
 		// alerts are caused by a failed or corrupted parameter negotiation during the TLS handshake.
 		if errCode == quicTLSAlertDecryptError || errCode == quicTLSAlertHandshakeFailure {
-			return FailureSSLHandshake
+			return FailureSSLFailedHandshake
 		}
 		if errCode == quicTLSAlertUnknownCA {
 			return FailureSSLUnknownAuthority

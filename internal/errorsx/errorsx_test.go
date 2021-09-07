@@ -162,7 +162,7 @@ func TestClassifyQUICFailure(t *testing.T) {
 		}
 	})
 	t.Run("for incompatible quic version", func(t *testing.T) {
-		if classifyQUICFailure(&quic.VersionNegotiationError{}) != FailureNoCompatibleQUICVersion {
+		if classifyQUICFailure(&quic.VersionNegotiationError{}) != FailureQUICIncompatibleVersion {
 			t.Fatal("unexpected results")
 		}
 	})
@@ -183,7 +183,7 @@ func TestClassifyQUICFailure(t *testing.T) {
 	})
 	t.Run("for QUIC CRYPTO Handshake", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSAlertHandshakeFailure
-		if classifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLHandshake {
+		if classifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLFailedHandshake {
 			t.Fatal("unexpected results")
 		}
 	})
