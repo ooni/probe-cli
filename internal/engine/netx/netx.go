@@ -32,13 +32,13 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
-	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/errorsx"
+	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )

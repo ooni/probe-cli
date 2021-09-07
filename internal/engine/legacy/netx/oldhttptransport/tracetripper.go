@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 )
