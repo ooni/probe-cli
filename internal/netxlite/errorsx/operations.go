@@ -1,6 +1,7 @@
 package errorsx
 
-// Operations that we measure.
+// Operations that we measure. They are the possibly values of
+// the ErrWrapper.Operation field.
 const (
 	// ResolveOperation is the operation where we resolve a domain name.
 	ResolveOperation = "resolve"

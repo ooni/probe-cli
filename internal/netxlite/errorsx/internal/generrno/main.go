@@ -234,25 +234,32 @@ func writeGenericTestFile() {
 	fileWrite(filep, "\t\"testing\"\n")
 	fileWrite(filep, ")\n\n")
 
-	fileWrite(filep, "func TestToSyscallErr(t *testing.T) {\n")
-	fileWrite(filep, "\tif v := classifySyscallError(io.EOF); v != \"\" {\n")
-	fileWrite(filep, "\t\tt.Fatalf(\"expected empty string, got '%s'\", v)\n")
-	fileWrite(filep, "\t}\n")
+	fileWrite(filep, "func TestClassifySyscallError(t *testing.T) {\n")
+	fileWrite(filep, "\tt.Run(\"for a non-syscall error\", func (t *testing.T) {\n")
+	fileWrite(filep, "\t\tif v := classifySyscallError(io.EOF); v != \"\" {\n")
+	fileWrite(filep, "\t\t\tt.Fatalf(\"expected empty string, got '%s'\", v)\n")
+	fileWrite(filep, "\t\t}\n")
+	fileWrite(filep, "\t})\n\n")
 
 	for _, spec := range Specs {
 		if !spec.IsSystemError() {
 			continue
 		}
-		filePrintf(filep, "\tif v := classifySyscallError(%s); v != %s {\n",
+		filePrintf(filep, "\tt.Run(\"for %s\", func (t *testing.T) {\n",
+			spec.AsErrnoName())
+		filePrintf(filep, "\t\tif v := classifySyscallError(%s); v != %s {\n",
 			spec.AsErrnoName(), spec.AsFailureVar())
-		filePrintf(filep, "\t\tt.Fatalf(\"expected '%%s', got '%%s'\", %s, v)\n",
+		filePrintf(filep, "\t\t\tt.Fatalf(\"expected '%%s', got '%%s'\", %s, v)\n",
 			spec.AsFailureVar())
-		fileWrite(filep, "\t}\n")
+		fileWrite(filep, "\t\t}\n")
+		fileWrite(filep, "\t})\n\n")
 	}
 
-	fileWrite(filep, "\tif v := classifySyscallError(syscall.Errno(0)); v != \"\" {\n")
-	fileWrite(filep, "\t\tt.Fatalf(\"expected empty string, got '%s'\", v)\n")
-	fileWrite(filep, "\t}\n")
+	fileWrite(filep, "\tt.Run(\"for the zero errno value\", func (t *testing.T) {\n")
+	fileWrite(filep, "\t\tif v := classifySyscallError(syscall.Errno(0)); v != \"\" {\n")
+	fileWrite(filep, "\t\t\tt.Fatalf(\"expected empty string, got '%s'\", v)\n")
+	fileWrite(filep, "\t\t}\n")
+	fileWrite(filep, "\t})\n")
 	fileWrite(filep, "}\n")
 
 	fileClose(filep)
