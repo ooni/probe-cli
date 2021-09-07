@@ -23,19 +23,20 @@ var _ Resolver = &ErrorWrapperResolver{}
 func (r *ErrorWrapperResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	err = SafeErrWrapperBuilder{
-		Classifier: classifyResolveFailure,
+		Classifier: ClassifyResolverError,
 		Error:      err,
 		Operation:  ResolveOperation,
 	}.MaybeBuild()
 	return addrs, err
 }
 
-// classifyResolveFailure is a classifier to translate DNS resolving errors to OONI error strings.
-func classifyResolveFailure(err error) string {
+// ClassifyResolverError maps an error occurred during a domain name
+// resolution to the corresponding OONI failure string.
+func ClassifyResolverError(err error) string {
 	if errors.Is(err, ErrDNSBogon) {
 		return FailureDNSBogonError // not in MK
 	}
-	return toFailureString(err)
+	return ClassifyGenericError(err)
 }
 
 type resolverNetworker interface {

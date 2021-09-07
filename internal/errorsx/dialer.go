@@ -23,7 +23,7 @@ func (d *ErrorWrapperDialer) DialContext(ctx context.Context, network, address s
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
 		return nil, &ErrWrapper{
-			Failure:    toFailureString(err),
+			Failure:    ClassifyGenericError(err),
 			Operation:  ConnectOperation,
 			WrappedErr: err,
 		}
@@ -42,7 +42,7 @@ func (c *errorWrapperConn) Read(b []byte) (int, error) {
 	count, err := c.Conn.Read(b)
 	if err != nil {
 		return 0, &ErrWrapper{
-			Failure:    toFailureString(err),
+			Failure:    ClassifyGenericError(err),
 			Operation:  ReadOperation,
 			WrappedErr: err,
 		}
@@ -55,7 +55,7 @@ func (c *errorWrapperConn) Write(b []byte) (int, error) {
 	count, err := c.Conn.Write(b)
 	if err != nil {
 		return 0, &ErrWrapper{
-			Failure:    toFailureString(err),
+			Failure:    ClassifyGenericError(err),
 			Operation:  WriteOperation,
 			WrappedErr: err,
 		}
@@ -68,7 +68,7 @@ func (c *errorWrapperConn) Close() error {
 	err := c.Conn.Close()
 	if err != nil {
 		return &ErrWrapper{
-			Failure:    toFailureString(err),
+			Failure:    ClassifyGenericError(err),
 			Operation:  CloseOperation,
 			WrappedErr: err,
 		}

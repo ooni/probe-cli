@@ -88,7 +88,7 @@ func (d *ErrorWrapperQUICDialer) DialContext(
 	tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
 	sess, err := d.Dialer.DialContext(ctx, network, host, tlsCfg, cfg)
 	err = SafeErrWrapperBuilder{
-		Classifier: classifyQUICFailure,
+		Classifier: ClassifyQUICHandshakeError,
 		Error:      err,
 		Operation:  QUICHandshakeOperation,
 	}.MaybeBuild()
@@ -98,8 +98,9 @@ func (d *ErrorWrapperQUICDialer) DialContext(
 	return sess, nil
 }
 
-// classifyQUICFailure is a classifier to translate QUIC errors to OONI error strings.
-func classifyQUICFailure(err error) string {
+// ClassifyQUICHandshakeError maps an error occurred during the QUIC
+// handshake to an OONI failure string.
+func ClassifyQUICHandshakeError(err error) string {
 	var versionNegotiation *quic.VersionNegotiationError
 	var statelessReset *quic.StatelessResetError
 	var handshakeTimeout *quic.HandshakeTimeoutError
@@ -139,7 +140,7 @@ func classifyQUICFailure(err error) string {
 			return FailureSSLInvalidHostname
 		}
 	}
-	return toFailureString(err)
+	return ClassifyGenericError(err)
 }
 
 // TLS alert protocol as defined in RFC8446

@@ -25,15 +25,16 @@ func (h *ErrorWrapperTLSHandshaker) Handshake(
 ) (net.Conn, tls.ConnectionState, error) {
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	err = SafeErrWrapperBuilder{
-		Classifier: classifyTLSFailure,
+		Classifier: ClassifyTLSHandshakeError,
 		Error:      err,
 		Operation:  TLSHandshakeOperation,
 	}.MaybeBuild()
 	return tlsconn, state, err
 }
 
-// classifyTLSFailure is a classifier to translate TLS errors to OONI error strings.
-func classifyTLSFailure(err error) string {
+// ClassifyTLSHandshakeError maps an error occurred during the TLS
+// handshake to an OONI failure string.
+func ClassifyTLSHandshakeError(err error) string {
 	var x509HostnameError x509.HostnameError
 	if errors.As(err, &x509HostnameError) {
 		// Test case: https://wrong.host.badssl.com/
@@ -50,5 +51,5 @@ func classifyTLSFailure(err error) string {
 		// Test case: https://expired.badssl.com/
 		return FailureSSLInvalidCertificate
 	}
-	return toFailureString(err)
+	return ClassifyGenericError(err)
 }

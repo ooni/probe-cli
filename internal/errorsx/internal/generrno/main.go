@@ -194,10 +194,10 @@ func writeGenericFile() {
 	}
 	fileWrite(filep, ")\n\n")
 
-	fileWrite(filep, "// toSyscallErr converts a syscall error to the\n")
+	fileWrite(filep, "// classifySyscallError converts a syscall error to the\n")
 	fileWrite(filep, "// proper OONI error. Returns the OONI error string\n")
 	fileWrite(filep, "// on success, an empty string otherwise.\n")
-	fileWrite(filep, "func toSyscallErr(err error) string {\n")
+	fileWrite(filep, "func classifySyscallError(err error) string {\n")
 	fileWrite(filep, "\t// filter out system errors: necessary to detect all windows errors\n")
 	fileWrite(filep, "\t// https://github.com/ooni/probe/issues/1526 describes the problem\n")
 	fileWrite(filep, "\t// of mapping localized windows errors.\n")
@@ -235,7 +235,7 @@ func writeGenericTestFile() {
 	fileWrite(filep, ")\n\n")
 
 	fileWrite(filep, "func TestToSyscallErr(t *testing.T) {\n")
-	fileWrite(filep, "\tif v := toSyscallErr(io.EOF); v != \"\" {\n")
+	fileWrite(filep, "\tif v := classifySyscallError(io.EOF); v != \"\" {\n")
 	fileWrite(filep, "\t\tt.Fatalf(\"expected empty string, got '%s'\", v)\n")
 	fileWrite(filep, "\t}\n")
 
@@ -243,14 +243,14 @@ func writeGenericTestFile() {
 		if !spec.IsSystemError() {
 			continue
 		}
-		filePrintf(filep, "\tif v := toSyscallErr(%s); v != %s {\n",
+		filePrintf(filep, "\tif v := classifySyscallError(%s); v != %s {\n",
 			spec.AsErrnoName(), spec.AsFailureVar())
 		filePrintf(filep, "\t\tt.Fatalf(\"expected '%%s', got '%%s'\", %s, v)\n",
 			spec.AsFailureVar())
 		fileWrite(filep, "\t}\n")
 	}
 
-	fileWrite(filep, "\tif v := toSyscallErr(syscall.Errno(0)); v != \"\" {\n")
+	fileWrite(filep, "\tif v := classifySyscallError(syscall.Errno(0)); v != \"\" {\n")
 	fileWrite(filep, "\t\tt.Fatalf(\"expected empty string, got '%s'\", v)\n")
 	fileWrite(filep, "\t}\n")
 	fileWrite(filep, "}\n")
