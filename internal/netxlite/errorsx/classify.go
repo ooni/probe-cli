@@ -11,11 +11,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
-// TODO (kelmenhorst, bassosimone):
-// Use errors.Is / errors.As more often, when possible, in this classifier.
-// These methods are more robust to library changes than strings.
-// errors.Is / errors.As can only be used when the error is exported.
-
 // ClassifyGenericError is the generic classifier mapping an error
 // occurred during an operation to an OONI failure string.
 //
@@ -58,6 +53,18 @@ func ClassifyGenericError(err error) string {
 		return FailureInterrupted
 	}
 
+	if failure := classifyWithStringSuffix(err); failure != "" {
+		return failure
+	}
+
+	formatted := fmt.Sprintf("unknown_failure: %s", err.Error())
+	return scrubber.Scrub(formatted) // scrub IP addresses in the error
+}
+
+// classifyWithStringSuffix is a subset of ClassifyGenericError that
+// performs classification by looking at error suffixes. This function
+// will return an empty string if it cannot classify the error.
+func classifyWithStringSuffix(err error) string {
 	s := err.Error()
 	if strings.HasSuffix(s, "operation was canceled") {
 		return FailureInterrupted
@@ -83,9 +90,7 @@ func ClassifyGenericError(err error) string {
 		// that we return here is significantly more specific.
 		return FailureDNSNXDOMAINError
 	}
-
-	formatted := fmt.Sprintf("unknown_failure: %s", s)
-	return scrubber.Scrub(formatted) // scrub IP addresses in the error
+	return "" // not found
 }
 
 // TLS alert protocol as defined in RFC8446. We need these definitions
