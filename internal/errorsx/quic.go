@@ -87,13 +87,12 @@ func (d *ErrorWrapperQUICDialer) DialContext(
 	ctx context.Context, network string, host string,
 	tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
 	sess, err := d.Dialer.DialContext(ctx, network, host, tlsCfg, cfg)
-	err = SafeErrWrapperBuilder{
-		Classifier: errorsx.ClassifyQUICHandshakeError,
-		Error:      err,
-		Operation:  errorsx.QUICHandshakeOperation,
-	}.MaybeBuild()
 	if err != nil {
-		return nil, err
+		return nil, SafeErrWrapperBuilder{
+			Classifier: errorsx.ClassifyQUICHandshakeError,
+			Error:      err,
+			Operation:  errorsx.QUICHandshakeOperation,
+		}.MaybeBuild()
 	}
 	return sess, nil
 }
