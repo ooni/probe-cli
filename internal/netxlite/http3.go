@@ -24,7 +24,7 @@ func (d *http3Dialer) dial(network, address string, tlsConfig *tls.Config,
 		context.Background(), network, address, tlsConfig, quicConfig)
 }
 
-// http3RoundTripper is the abstracy type of quic-go/http3.RoundTripper.
+// http3RoundTripper is the abstract type of quic-go/http3.RoundTripper.
 type http3RoundTripper interface {
 	http.RoundTripper
 	io.Closer
