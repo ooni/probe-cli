@@ -124,19 +124,6 @@ const (
 	quicTLSUnrecognizedName = 112
 )
 
-// quicIsCertificateError tells us whether a specific TLS alert error
-// we received is actually an error depending on the certificate.
-//
-// The set of checks we implement here is a set of heuristics based
-// on our understanding of the TLS spec and may need tweaks.
-func quicIsCertificateError(alert uint8) bool {
-	return (alert == quicTLSAlertBadCertificate ||
-		alert == quicTLSAlertUnsupportedCertificate ||
-		alert == quicTLSAlertCertificateExpired ||
-		alert == quicTLSAlertCertificateRevoked ||
-		alert == quicTLSAlertCertificateUnknown)
-}
-
 // ClassifyQUICHandshakeError maps an error occurred during the QUIC
 // handshake to an OONI failure string.
 //
@@ -194,6 +181,29 @@ func ClassifyQUICHandshakeError(err error) string {
 		}
 	}
 	return ClassifyGenericError(err)
+}
+
+// quicIsCertificateError tells us whether a specific TLS alert error
+// we received is actually an error depending on the certificate.
+//
+// The set of checks we implement here is a set of heuristics based
+// on our understanding of the TLS spec and may need tweaks.
+func quicIsCertificateError(alert uint8) bool {
+	// List out each case separately so we know we test them
+	switch alert {
+	case quicTLSAlertBadCertificate:
+		return true
+	case quicTLSAlertUnsupportedCertificate:
+		return true
+	case quicTLSAlertCertificateExpired:
+		return true
+	case quicTLSAlertCertificateRevoked:
+		return true
+	case quicTLSAlertCertificateUnknown:
+		return true
+	default:
+		return false
+	}
 }
 
 // ErrDNSBogon indicates that we found a bogon address. Code that
