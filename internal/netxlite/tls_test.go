@@ -310,7 +310,7 @@ func TestTLSDialerDialTLSContextFailureSplitHostPort(t *testing.T) {
 func TestTLSDialerDialTLSContextFailureDialing(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately fail
-	dialer := tlsDialer{Dialer: defaultDialer}
+	dialer := tlsDialer{Dialer: &dialerSystem{}}
 	conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
 	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
 		t.Fatal("not the error we expected", err)

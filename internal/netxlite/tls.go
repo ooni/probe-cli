@@ -73,7 +73,7 @@ func TLSCipherSuiteString(value uint16) string {
 func NewDefaultCertPool() *x509.CertPool {
 	pool := x509.NewCertPool()
 	// Assumption: AppendCertsFromPEM cannot fail because we
-	// run this function already in the generate.go file
+	// have a test in certify_test.go that guarantees that
 	pool.AppendCertsFromPEM([]byte(pemcerts))
 	return pool
 }

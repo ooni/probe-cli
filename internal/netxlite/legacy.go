@@ -10,7 +10,7 @@ import (
 
 // These vars export internal names to legacy ooni/probe-cli code.
 var (
-	DefaultDialer        = defaultDialer
+	DefaultDialer        = &dialerSystem{}
 	DefaultTLSHandshaker = defaultTLSHandshaker
 	NewConnUTLS          = newConnUTLS
 )
