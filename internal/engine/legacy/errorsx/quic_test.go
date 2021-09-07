@@ -48,7 +48,7 @@ func TestErrorWrapperQUICListenerFailure(t *testing.T) {
 
 func TestErrorWrapperUDPConnWriteToSuccess(t *testing.T) {
 	quc := &errorWrapperUDPConn{
-		UDPLikeConn: &mocks.QUICUDPConn{
+		UDPLikeConn: &mocks.QUICUDPLikeConn{
 			MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 				return 10, nil
 			},
@@ -68,7 +68,7 @@ func TestErrorWrapperUDPConnWriteToSuccess(t *testing.T) {
 func TestErrorWrapperUDPConnWriteToFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	quc := &errorWrapperUDPConn{
-		UDPLikeConn: &mocks.QUICUDPConn{
+		UDPLikeConn: &mocks.QUICUDPLikeConn{
 			MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 				return 0, expected
 			},
@@ -88,7 +88,7 @@ func TestErrorWrapperUDPConnWriteToFailure(t *testing.T) {
 func TestErrorWrapperUDPConnReadFromSuccess(t *testing.T) {
 	expected := errors.New("mocked error")
 	quc := &errorWrapperUDPConn{
-		UDPLikeConn: &mocks.QUICUDPConn{
+		UDPLikeConn: &mocks.QUICUDPLikeConn{
 			MockReadFrom: func(b []byte) (int, net.Addr, error) {
 				return 0, nil, expected
 			},
@@ -109,7 +109,7 @@ func TestErrorWrapperUDPConnReadFromSuccess(t *testing.T) {
 
 func TestErrorWrapperUDPConnReadFromFailure(t *testing.T) {
 	quc := &errorWrapperUDPConn{
-		UDPLikeConn: &mocks.QUICUDPConn{
+		UDPLikeConn: &mocks.QUICUDPLikeConn{
 			MockReadFrom: func(b []byte) (int, net.Addr, error) {
 				return 10, nil, nil
 			},

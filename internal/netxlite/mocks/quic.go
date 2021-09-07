@@ -139,8 +139,8 @@ func (s *QUICEarlySession) ReceiveMessage() ([]byte, error) {
 	return s.MockReceiveMessage()
 }
 
-// QUICUDPConn is an UDP conn used by QUIC.
-type QUICUDPConn struct {
+// QUICUDPLikeConn is an UDP conn used by QUIC.
+type QUICUDPLikeConn struct {
 	MockWriteTo          func(p []byte, addr net.Addr) (int, error)
 	MockClose            func() error
 	MockLocalAddr        func() net.Addr
@@ -153,54 +153,54 @@ type QUICUDPConn struct {
 	MockSetReadBuffer    func(n int) error
 }
 
-var _ quicx.UDPLikeConn = &QUICUDPConn{}
+var _ quicx.UDPLikeConn = &QUICUDPLikeConn{}
 
 // WriteTo calls MockWriteTo.
-func (c *QUICUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
+func (c *QUICUDPLikeConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	return c.MockWriteTo(p, addr)
 }
 
 // Close calls MockClose.
-func (c *QUICUDPConn) Close() error {
+func (c *QUICUDPLikeConn) Close() error {
 	return c.MockClose()
 }
 
 // LocalAddr calls MockLocalAddr.
-func (c *QUICUDPConn) LocalAddr() net.Addr {
+func (c *QUICUDPLikeConn) LocalAddr() net.Addr {
 	return c.MockLocalAddr()
 }
 
 // RemoteAddr calls MockRemoteAddr.
-func (c *QUICUDPConn) RemoteAddr() net.Addr {
+func (c *QUICUDPLikeConn) RemoteAddr() net.Addr {
 	return c.MockRemoteAddr()
 }
 
 // SetDeadline calls MockSetDeadline.
-func (c *QUICUDPConn) SetDeadline(t time.Time) error {
+func (c *QUICUDPLikeConn) SetDeadline(t time.Time) error {
 	return c.MockSetDeadline(t)
 }
 
 // SetReadDeadline calls MockSetReadDeadline.
-func (c *QUICUDPConn) SetReadDeadline(t time.Time) error {
+func (c *QUICUDPLikeConn) SetReadDeadline(t time.Time) error {
 	return c.MockSetReadDeadline(t)
 }
 
 // SetWriteDeadline calls MockSetWriteDeadline.
-func (c *QUICUDPConn) SetWriteDeadline(t time.Time) error {
+func (c *QUICUDPLikeConn) SetWriteDeadline(t time.Time) error {
 	return c.MockSetWriteDeadline(t)
 }
 
 // ReadFrom calls MockReadFrom.
-func (c *QUICUDPConn) ReadFrom(b []byte) (int, net.Addr, error) {
+func (c *QUICUDPLikeConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	return c.MockReadFrom(b)
 }
 
 // SyscallConn calls MockSyscallConn.
-func (c *QUICUDPConn) SyscallConn() (syscall.RawConn, error) {
+func (c *QUICUDPLikeConn) SyscallConn() (syscall.RawConn, error) {
 	return c.MockSyscallConn()
 }
 
 // SetReadBuffer calls MockSetReadBuffer.
-func (c *QUICUDPConn) SetReadBuffer(n int) error {
+func (c *QUICUDPLikeConn) SetReadBuffer(n int) error {
 	return c.MockSetReadBuffer(n)
 }
