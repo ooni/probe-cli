@@ -5,7 +5,8 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // Control performs the control request and returns the response.
@@ -18,7 +19,7 @@ func Control(
 		Logger:     sess.Logger(),
 	}
 	// make sure error is wrapped
-	err = errorsx.SafeErrWrapperBuilder{
+	err = errorsxlegacy.SafeErrWrapperBuilder{
 		Error:     clnt.PostJSON(ctx, resourcePath, creq, &out),
 		Operation: errorsx.TopLevelOperation,
 	}.MaybeBuild()

@@ -7,6 +7,7 @@ import (
 	"net"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -18,14 +19,14 @@ func TestErrorWrapperDialerFailure(t *testing.T) {
 		},
 	}}
 	conn, err := d.DialContext(ctx, "tcp", "www.google.com:443")
-	var ew *ErrWrapper
+	var ew *errorsx.ErrWrapper
 	if !errors.As(err, &ew) {
 		t.Fatal("cannot convert to ErrWrapper")
 	}
-	if ew.Operation != ConnectOperation {
+	if ew.Operation != errorsx.ConnectOperation {
 		t.Fatal("unexpected operation", ew.Operation)
 	}
-	if ew.Failure != FailureEOFError {
+	if ew.Failure != errorsx.FailureEOFError {
 		t.Fatal("unexpected failure", ew.Failure)
 	}
 	if !errors.Is(ew.WrappedErr, io.EOF) {
@@ -67,14 +68,14 @@ func TestErrorWrapperConnReadFailure(t *testing.T) {
 	}
 	buf := make([]byte, 1024)
 	cnt, err := c.Read(buf)
-	var ew *ErrWrapper
+	var ew *errorsx.ErrWrapper
 	if !errors.As(err, &ew) {
 		t.Fatal("cannot cast error to ErrWrapper")
 	}
-	if ew.Operation != ReadOperation {
+	if ew.Operation != errorsx.ReadOperation {
 		t.Fatal("invalid operation", ew.Operation)
 	}
-	if ew.Failure != FailureEOFError {
+	if ew.Failure != errorsx.FailureEOFError {
 		t.Fatal("invalid failure", ew.Failure)
 	}
 	if !errors.Is(ew.WrappedErr, io.EOF) {
@@ -113,14 +114,14 @@ func TestErrorWrapperConnWriteFailure(t *testing.T) {
 	}
 	buf := make([]byte, 1024)
 	cnt, err := c.Write(buf)
-	var ew *ErrWrapper
+	var ew *errorsx.ErrWrapper
 	if !errors.As(err, &ew) {
 		t.Fatal("cannot cast error to ErrWrapper")
 	}
-	if ew.Operation != WriteOperation {
+	if ew.Operation != errorsx.WriteOperation {
 		t.Fatal("invalid operation", ew.Operation)
 	}
-	if ew.Failure != FailureEOFError {
+	if ew.Failure != errorsx.FailureEOFError {
 		t.Fatal("invalid failure", ew.Failure)
 	}
 	if !errors.Is(ew.WrappedErr, io.EOF) {
@@ -158,14 +159,14 @@ func TestErrorWrapperConnCloseFailure(t *testing.T) {
 		},
 	}
 	err := c.Close()
-	var ew *ErrWrapper
+	var ew *errorsx.ErrWrapper
 	if !errors.As(err, &ew) {
 		t.Fatal("cannot cast error to ErrWrapper")
 	}
-	if ew.Operation != CloseOperation {
+	if ew.Operation != errorsx.CloseOperation {
 		t.Fatal("invalid operation", ew.Operation)
 	}
-	if ew.Failure != FailureEOFError {
+	if ew.Failure != errorsx.FailureEOFError {
 		t.Fatal("invalid failure", ew.Failure)
 	}
 	if !errors.Is(ew.WrappedErr, io.EOF) {

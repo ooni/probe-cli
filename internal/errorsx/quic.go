@@ -3,10 +3,10 @@ package errorsx
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
@@ -39,7 +39,7 @@ func (qls *ErrorWrapperQUICListener) Listen(addr *net.UDPAddr) (quicx.UDPLikeCon
 	if err != nil {
 		return nil, SafeErrWrapperBuilder{
 			Error:     err,
-			Operation: QUICListenOperation,
+			Operation: errorsx.QUICListenOperation,
 		}.MaybeBuild()
 	}
 	return &errorWrapperUDPConn{pconn}, nil
@@ -59,7 +59,7 @@ func (c *errorWrapperUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	if err != nil {
 		return 0, SafeErrWrapperBuilder{
 			Error:     err,
-			Operation: WriteToOperation,
+			Operation: errorsx.WriteToOperation,
 		}.MaybeBuild()
 	}
 	return count, nil
@@ -71,7 +71,7 @@ func (c *errorWrapperUDPConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	if err != nil {
 		return 0, nil, SafeErrWrapperBuilder{
 			Error:     err,
-			Operation: ReadFromOperation,
+			Operation: errorsx.ReadFromOperation,
 		}.MaybeBuild()
 	}
 	return n, addr, nil
@@ -88,95 +88,12 @@ func (d *ErrorWrapperQUICDialer) DialContext(
 	tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
 	sess, err := d.Dialer.DialContext(ctx, network, host, tlsCfg, cfg)
 	err = SafeErrWrapperBuilder{
-		Classifier: ClassifyQUICHandshakeError,
+		Classifier: errorsx.ClassifyQUICHandshakeError,
 		Error:      err,
-		Operation:  QUICHandshakeOperation,
+		Operation:  errorsx.QUICHandshakeOperation,
 	}.MaybeBuild()
 	if err != nil {
 		return nil, err
 	}
 	return sess, nil
-}
-
-// ClassifyQUICHandshakeError maps an error occurred during the QUIC
-// handshake to an OONI failure string.
-func ClassifyQUICHandshakeError(err error) string {
-	var versionNegotiation *quic.VersionNegotiationError
-	var statelessReset *quic.StatelessResetError
-	var handshakeTimeout *quic.HandshakeTimeoutError
-	var idleTimeout *quic.IdleTimeoutError
-	var transportError *quic.TransportError
-
-	if errors.As(err, &versionNegotiation) {
-		return FailureQUICIncompatibleVersion
-	}
-	if errors.As(err, &statelessReset) {
-		return FailureConnectionReset
-	}
-	if errors.As(err, &handshakeTimeout) {
-		return FailureGenericTimeoutError
-	}
-	if errors.As(err, &idleTimeout) {
-		return FailureGenericTimeoutError
-	}
-	if errors.As(err, &transportError) {
-		if transportError.ErrorCode == quic.ConnectionRefused {
-			return FailureConnectionRefused
-		}
-		// the TLS Alert constants are taken from RFC8446
-		errCode := uint8(transportError.ErrorCode)
-		if quicIsCertificateError(errCode) {
-			return FailureSSLInvalidCertificate
-		}
-		// TLSAlertDecryptError and TLSAlertHandshakeFailure are summarized to a FailureSSLHandshake error because both
-		// alerts are caused by a failed or corrupted parameter negotiation during the TLS handshake.
-		if errCode == quicTLSAlertDecryptError || errCode == quicTLSAlertHandshakeFailure {
-			return FailureSSLFailedHandshake
-		}
-		if errCode == quicTLSAlertUnknownCA {
-			return FailureSSLUnknownAuthority
-		}
-		if errCode == quicTLSUnrecognizedName {
-			return FailureSSLInvalidHostname
-		}
-	}
-	return ClassifyGenericError(err)
-}
-
-// TLS alert protocol as defined in RFC8446
-const (
-	// Sender was unable to negotiate an acceptable set of security parameters given the options available.
-	quicTLSAlertHandshakeFailure = 40
-
-	// Certificate was corrupt, contained signatures that did not verify correctly, etc.
-	quicTLSAlertBadCertificate = 42
-
-	// Certificate was of an unsupported type.
-	quicTLSAlertUnsupportedCertificate = 43
-
-	// Certificate was revoked by its signer.
-	quicTLSAlertCertificateRevoked = 44
-
-	// Certificate has expired or is not currently valid.
-	quicTLSAlertCertificateExpired = 45
-
-	// Some unspecified issue arose in processing the certificate, rendering it unacceptable.
-	quicTLSAlertCertificateUnknown = 46
-
-	// Certificate was not accepted because the CA certificate could not be located or could not be matched with a known trust anchor.
-	quicTLSAlertUnknownCA = 48
-
-	// Handshake (not record layer) cryptographic operation failed.
-	quicTLSAlertDecryptError = 51
-
-	// Sent by servers when no server exists identified by the name provided by the client via the "server_name" extension.
-	quicTLSUnrecognizedName = 112
-)
-
-func quicIsCertificateError(alert uint8) bool {
-	return (alert == quicTLSAlertBadCertificate ||
-		alert == quicTLSAlertUnsupportedCertificate ||
-		alert == quicTLSAlertCertificateExpired ||
-		alert == quicTLSAlertCertificateRevoked ||
-		alert == quicTLSAlertCertificateUnknown)
 }

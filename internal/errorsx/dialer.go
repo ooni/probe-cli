@@ -3,6 +3,8 @@ package errorsx
 import (
 	"context"
 	"net"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // Dialer establishes network connections.
@@ -22,9 +24,9 @@ type ErrorWrapperDialer struct {
 func (d *ErrorWrapperDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
-		return nil, &ErrWrapper{
-			Failure:    ClassifyGenericError(err),
-			Operation:  ConnectOperation,
+		return nil, &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyGenericError(err),
+			Operation:  errorsx.ConnectOperation,
 			WrappedErr: err,
 		}
 	}
@@ -41,9 +43,9 @@ type errorWrapperConn struct {
 func (c *errorWrapperConn) Read(b []byte) (int, error) {
 	count, err := c.Conn.Read(b)
 	if err != nil {
-		return 0, &ErrWrapper{
-			Failure:    ClassifyGenericError(err),
-			Operation:  ReadOperation,
+		return 0, &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyGenericError(err),
+			Operation:  errorsx.ReadOperation,
 			WrappedErr: err,
 		}
 	}
@@ -54,9 +56,9 @@ func (c *errorWrapperConn) Read(b []byte) (int, error) {
 func (c *errorWrapperConn) Write(b []byte) (int, error) {
 	count, err := c.Conn.Write(b)
 	if err != nil {
-		return 0, &ErrWrapper{
-			Failure:    ClassifyGenericError(err),
-			Operation:  WriteOperation,
+		return 0, &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyGenericError(err),
+			Operation:  errorsx.WriteOperation,
 			WrappedErr: err,
 		}
 	}
@@ -67,9 +69,9 @@ func (c *errorWrapperConn) Write(b []byte) (int, error) {
 func (c *errorWrapperConn) Close() error {
 	err := c.Conn.Close()
 	if err != nil {
-		return &ErrWrapper{
-			Failure:    ClassifyGenericError(err),
-			Operation:  CloseOperation,
+		return &errorsx.ErrWrapper{
+			Failure:    errorsx.ClassifyGenericError(err),
+			Operation:  errorsx.CloseOperation,
 			WrappedErr: err,
 		}
 	}

@@ -12,7 +12,8 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 )
 
@@ -116,7 +117,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		TLSHandshakeDone: func(state tls.ConnectionState, err error) {
 			// Wrapping the error even if we're not returning it because it may
 			// less confusing to users to see the wrapped name
-			err = errorsx.SafeErrWrapperBuilder{
+			err = errorsxlegacy.SafeErrWrapperBuilder{
 				Error:     err,
 				Operation: errorsx.TLSHandshakeOperation,
 			}.MaybeBuild()
@@ -171,7 +172,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		WroteRequest: func(info httptrace.WroteRequestInfo) {
 			// Wrapping the error even if we're not returning it because it may
 			// less confusing to users to see the wrapped name
-			err := errorsx.SafeErrWrapperBuilder{
+			err := errorsxlegacy.SafeErrWrapperBuilder{
 				Error:     info.Err,
 				Operation: errorsx.HTTPRoundTripOperation,
 			}.MaybeBuild()
@@ -207,7 +208,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	resp, err := t.roundTripper.RoundTrip(req)
-	err = errorsx.SafeErrWrapperBuilder{
+	err = errorsxlegacy.SafeErrWrapperBuilder{
 		Error:     err,
 		Operation: majorOp,
 	}.MaybeBuild()

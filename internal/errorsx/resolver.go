@@ -2,7 +2,8 @@ package errorsx
 
 import (
 	"context"
-	"errors"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // Resolver is a DNS resolver. The *net.Resolver used by Go implements
@@ -23,20 +24,11 @@ var _ Resolver = &ErrorWrapperResolver{}
 func (r *ErrorWrapperResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	err = SafeErrWrapperBuilder{
-		Classifier: ClassifyResolverError,
+		Classifier: errorsx.ClassifyResolverError,
 		Error:      err,
-		Operation:  ResolveOperation,
+		Operation:  errorsx.ResolveOperation,
 	}.MaybeBuild()
 	return addrs, err
-}
-
-// ClassifyResolverError maps an error occurred during a domain name
-// resolution to the corresponding OONI failure string.
-func ClassifyResolverError(err error) string {
-	if errors.Is(err, ErrDNSBogon) {
-		return FailureDNSBogonError // not in MK
-	}
-	return ClassifyGenericError(err)
 }
 
 type resolverNetworker interface {

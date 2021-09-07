@@ -6,6 +6,7 @@ import (
 	"net"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -40,14 +41,14 @@ func TestErrorWrapperResolverFailure(t *testing.T) {
 	if addrs != nil {
 		t.Fatal("expected nil addr here")
 	}
-	var errWrapper *ErrWrapper
+	var errWrapper *errorsx.ErrWrapper
 	if !errors.As(err, &errWrapper) {
 		t.Fatal("cannot properly cast the returned error")
 	}
-	if errWrapper.Failure != FailureDNSNXDOMAINError {
+	if errWrapper.Failure != errorsx.FailureDNSNXDOMAINError {
 		t.Fatal("unexpected failure")
 	}
-	if errWrapper.Operation != ResolveOperation {
+	if errWrapper.Operation != errorsx.ResolveOperation {
 		t.Fatal("unexpected Operation")
 	}
 }

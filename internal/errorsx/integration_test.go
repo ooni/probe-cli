@@ -6,8 +6,9 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 func TestErrorWrapperQUICDialerInvalidCertificate(t *testing.T) {
@@ -18,7 +19,7 @@ func TestErrorWrapperQUICDialerInvalidCertificate(t *testing.T) {
 		ServerName: servername,
 	}
 
-	dlr := &errorsx.ErrorWrapperQUICDialer{Dialer: &netxlite.QUICDialerQUICGo{
+	dlr := &errorsxlegacy.ErrorWrapperQUICDialer{Dialer: &netxlite.QUICDialerQUICGo{
 		QUICListener: &netxlite.QUICListenerStdlib{},
 	}}
 	// use Google IP
@@ -41,7 +42,7 @@ func TestErrorWrapperQUICDialerSuccess(t *testing.T) {
 		NextProtos: []string{"h3"},
 		ServerName: "www.google.com",
 	}
-	d := &errorsx.ErrorWrapperQUICDialer{Dialer: &netxlite.QUICDialerQUICGo{
+	d := &errorsxlegacy.ErrorWrapperQUICDialer{Dialer: &netxlite.QUICDialerQUICGo{
 		QUICListener: &netxlite.QUICListenerStdlib{},
 	}}
 	sess, err := d.DialContext(ctx, "udp", "216.58.212.164:443", tlsConf, &quic.Config{})

@@ -5,7 +5,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity/internal"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // The following set of status flags identifies in a more nuanced way the
