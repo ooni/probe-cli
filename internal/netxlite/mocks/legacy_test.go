@@ -9,7 +9,7 @@ import (
 	"github.com/lucas-clemente/quic-go"
 )
 
-func TestQUICContextDialerDialContext(t *testing.T) {
+func TestQUICContextDialer(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		qcd := &QUICContextDialer{

@@ -289,7 +289,7 @@ func TestQUICEarlySession(t *testing.T) {
 	})
 }
 
-func TestQUICUDPConn(t *testing.T) {
+func TestQUICUDPLikeConn(t *testing.T) {
 	t.Run("WriteTo", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		quc := &QUICUDPLikeConn{
