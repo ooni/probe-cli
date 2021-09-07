@@ -19,7 +19,16 @@ type Dialer interface {
 	CloseIdleConnections()
 }
 
-// NewDialerWithResolver creates a dialer using the given resolver and logger.
+// NewDialerWithResolver creates a new Dialer. The returned Dialer
+// has the following properties:
+//
+// 1. logs events using the given logger
+//
+// 2. resolves domain names using the givern resolver
+//
+// 3. wraps errors
+//
+// 4. has a configured connect timeout
 func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
 	return &dialerLogger{
 		Dialer: &dialerResolver{
@@ -36,32 +45,36 @@ func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
 	}
 }
 
-// NewDialerWithoutResolver creates a dialer that uses the given
-// logger and fails with ErrNoResolver when it is passed a domain name.
+// NewDialerWithoutResolver is like NewDialerWithResolver except that
+// it will fail with ErrNoResolver if passed a domain name.
 func NewDialerWithoutResolver(logger Logger) Dialer {
 	return NewDialerWithResolver(logger, &nullResolver{})
 }
 
-// underlyingDialer is the Dialer we use by default.
-var underlyingDialer = &net.Dialer{
-	Timeout:   15 * time.Second,
-	KeepAlive: 15 * time.Second,
+// dialerSystem dials using Go stdlib.
+type dialerSystem struct {
+	// timeout is the OPTIONAL timeout used for testing.
+	timeout time.Duration
 }
 
-// dialerSystem dials using Go stdlib.
-type dialerSystem struct{}
+// newUnderlyingDialer creates a new underlying dialer.
+func (d *dialerSystem) newUnderlyingDialer() *net.Dialer {
+	t := d.timeout
+	if t <= 0 {
+		t = 15 * time.Second
+	}
+	return &net.Dialer{Timeout: t}
+}
 
 // DialContext implements Dialer.DialContext.
 func (d *dialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return underlyingDialer.DialContext(ctx, network, address)
+	return d.newUnderlyingDialer().DialContext(ctx, network, address)
 }
 
 // CloseIdleConnections implements Dialer.CloseIdleConnections.
 func (d *dialerSystem) CloseIdleConnections() {
 	// nothing
 }
-
-var defaultDialer Dialer = &dialerSystem{}
 
 // dialerResolver is a dialer that uses the configured Resolver to resolver a
 // domain name to IP addresses, and the configured Dialer to connect.
