@@ -34,47 +34,47 @@ func TestMaybeBuildFactory(t *testing.T) {
 func TestToFailureString(t *testing.T) {
 	t.Run("for already wrapped error", func(t *testing.T) {
 		err := SafeErrWrapperBuilder{Error: io.EOF}.MaybeBuild()
-		if toFailureString(err) != FailureEOFError {
+		if ClassifyGenericError(err) != FailureEOFError {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("for context.Canceled", func(t *testing.T) {
-		if toFailureString(context.Canceled) != FailureInterrupted {
+		if ClassifyGenericError(context.Canceled) != FailureInterrupted {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("for operation was canceled error", func(t *testing.T) {
-		if toFailureString(errors.New("operation was canceled")) != FailureInterrupted {
+		if ClassifyGenericError(errors.New("operation was canceled")) != FailureInterrupted {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("for EOF", func(t *testing.T) {
-		if toFailureString(io.EOF) != FailureEOFError {
+		if ClassifyGenericError(io.EOF) != FailureEOFError {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for canceled", func(t *testing.T) {
-		if toFailureString(syscall.ECANCELED) != FailureOperationCanceled {
+		if ClassifyGenericError(syscall.ECANCELED) != FailureOperationCanceled {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for connection_refused", func(t *testing.T) {
-		if toFailureString(syscall.ECONNREFUSED) != FailureConnectionRefused {
+		if ClassifyGenericError(syscall.ECONNREFUSED) != FailureConnectionRefused {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for connection_reset", func(t *testing.T) {
-		if toFailureString(syscall.ECONNRESET) != FailureConnectionReset {
+		if ClassifyGenericError(syscall.ECONNRESET) != FailureConnectionReset {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for host_unreachable", func(t *testing.T) {
-		if toFailureString(syscall.EHOSTUNREACH) != FailureHostUnreachable {
+		if ClassifyGenericError(syscall.EHOSTUNREACH) != FailureHostUnreachable {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for system timeout", func(t *testing.T) {
-		if toFailureString(syscall.ETIMEDOUT) != FailureTimedOut {
+		if ClassifyGenericError(syscall.ETIMEDOUT) != FailureTimedOut {
 			t.Fatal("unexpected results")
 		}
 	})
@@ -82,12 +82,12 @@ func TestToFailureString(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1)
 		defer cancel()
 		<-ctx.Done()
-		if toFailureString(ctx.Err()) != FailureGenericTimeoutError {
+		if ClassifyGenericError(ctx.Err()) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for stun's transaction is timed out", func(t *testing.T) {
-		if toFailureString(stun.ErrTransactionTimeOut) != FailureGenericTimeoutError {
+		if ClassifyGenericError(stun.ErrTransactionTimeOut) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
@@ -101,18 +101,18 @@ func TestToFailureString(t *testing.T) {
 		if conn != nil {
 			t.Fatal("expected nil connection here")
 		}
-		if toFailureString(err) != FailureGenericTimeoutError {
+		if ClassifyGenericError(err) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for TLS handshake timeout error", func(t *testing.T) {
 		err := errors.New("net/http: TLS handshake timeout")
-		if toFailureString(err) != FailureGenericTimeoutError {
+		if ClassifyGenericError(err) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for no such host", func(t *testing.T) {
-		if toFailureString(&net.DNSError{
+		if ClassifyGenericError(&net.DNSError{
 			Err: "no such host",
 		}) != FailureDNSNXDOMAINError {
 			t.Fatal("unexpected results")
@@ -121,7 +121,7 @@ func TestToFailureString(t *testing.T) {
 	t.Run("for errors including IPv4 address", func(t *testing.T) {
 		input := errors.New("read tcp 10.0.2.15:56948->93.184.216.34:443: use of closed network connection")
 		expected := "unknown_failure: read tcp [scrubbed]->[scrubbed]: use of closed network connection"
-		out := toFailureString(input)
+		out := ClassifyGenericError(input)
 		if out != expected {
 			t.Fatal(cmp.Diff(expected, out))
 		}
@@ -129,7 +129,7 @@ func TestToFailureString(t *testing.T) {
 	t.Run("for errors including IPv6 address", func(t *testing.T) {
 		input := errors.New("read tcp [::1]:56948->[::1]:443: use of closed network connection")
 		expected := "unknown_failure: read tcp [scrubbed]->[scrubbed]: use of closed network connection"
-		out := toFailureString(input)
+		out := ClassifyGenericError(input)
 		if out != expected {
 			t.Fatal(cmp.Diff(expected, out))
 		}
@@ -149,7 +149,7 @@ func TestToFailureString(t *testing.T) {
 		if sess != nil {
 			t.Fatal("expected nil session here")
 		}
-		if toFailureString(err) != FailureGenericTimeoutError {
+		if ClassifyGenericError(err) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
@@ -157,51 +157,51 @@ func TestToFailureString(t *testing.T) {
 
 func TestClassifyQUICFailure(t *testing.T) {
 	t.Run("for connection_reset", func(t *testing.T) {
-		if classifyQUICFailure(&quic.StatelessResetError{}) != FailureConnectionReset {
+		if ClassifyQUICHandshakeError(&quic.StatelessResetError{}) != FailureConnectionReset {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for incompatible quic version", func(t *testing.T) {
-		if classifyQUICFailure(&quic.VersionNegotiationError{}) != FailureQUICIncompatibleVersion {
+		if ClassifyQUICHandshakeError(&quic.VersionNegotiationError{}) != FailureQUICIncompatibleVersion {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for quic connection refused", func(t *testing.T) {
-		if classifyQUICFailure(&quic.TransportError{ErrorCode: quic.ConnectionRefused}) != FailureConnectionRefused {
+		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: quic.ConnectionRefused}) != FailureConnectionRefused {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for quic handshake timeout", func(t *testing.T) {
-		if classifyQUICFailure(&quic.HandshakeTimeoutError{}) != FailureGenericTimeoutError {
+		if ClassifyQUICHandshakeError(&quic.HandshakeTimeoutError{}) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for QUIC idle connection timeout", func(t *testing.T) {
-		if classifyQUICFailure(&quic.IdleTimeoutError{}) != FailureGenericTimeoutError {
+		if ClassifyQUICHandshakeError(&quic.IdleTimeoutError{}) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for QUIC CRYPTO Handshake", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSAlertHandshakeFailure
-		if classifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLFailedHandshake {
+		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLFailedHandshake {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for QUIC CRYPTO Invalid Certificate", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSAlertBadCertificate
-		if classifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
+		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for QUIC CRYPTO Unknown CA", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSAlertUnknownCA
-		if classifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLUnknownAuthority {
+		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLUnknownAuthority {
 			t.Fatal("unexpected results")
 		}
 	})
 	t.Run("for QUIC CRYPTO Bad Hostname", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSUnrecognizedName
-		if classifyQUICFailure(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidHostname {
+		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidHostname {
 			t.Fatal("unexpected results")
 		}
 	})
@@ -210,7 +210,7 @@ func TestClassifyQUICFailure(t *testing.T) {
 
 func TestClassifyResolveFailure(t *testing.T) {
 	t.Run("for ErrDNSBogon", func(t *testing.T) {
-		if classifyResolveFailure(ErrDNSBogon) != FailureDNSBogonError {
+		if ClassifyResolverError(ErrDNSBogon) != FailureDNSBogonError {
 			t.Fatal("unexpected result")
 		}
 	})
@@ -219,19 +219,19 @@ func TestClassifyResolveFailure(t *testing.T) {
 func TestClassifyTLSFailure(t *testing.T) {
 	t.Run("for x509.HostnameError", func(t *testing.T) {
 		var err x509.HostnameError
-		if classifyTLSFailure(err) != FailureSSLInvalidHostname {
+		if ClassifyTLSHandshakeError(err) != FailureSSLInvalidHostname {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("for x509.UnknownAuthorityError", func(t *testing.T) {
 		var err x509.UnknownAuthorityError
-		if classifyTLSFailure(err) != FailureSSLUnknownAuthority {
+		if ClassifyTLSHandshakeError(err) != FailureSSLUnknownAuthority {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("for x509.CertificateInvalidError", func(t *testing.T) {
 		var err x509.CertificateInvalidError
-		if classifyTLSFailure(err) != FailureSSLInvalidCertificate {
+		if ClassifyTLSHandshakeError(err) != FailureSSLInvalidCertificate {
 			t.Fatal("unexpected result")
 		}
 	})

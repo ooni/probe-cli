@@ -85,7 +85,7 @@ func (b SafeErrWrapperBuilder) MaybeBuild() (err error) {
 	if b.Error != nil {
 		classifier := b.Classifier
 		if classifier == nil {
-			classifier = toFailureString
+			classifier = ClassifyGenericError
 		}
 		err = &ErrWrapper{
 			Failure:    classifier(b.Error),
@@ -100,7 +100,10 @@ func (b SafeErrWrapperBuilder) MaybeBuild() (err error) {
 // Use errors.Is / errors.As more often, when possible, in this classifier.
 // These methods are more robust to library changes than strings.
 // errors.Is / errors.As can only be used when the error is exported.
-func toFailureString(err error) string {
+
+// ClassifyGenericError is the generic classifier mapping an error
+// occurred during an operation to an OONI failure string.
+func ClassifyGenericError(err error) string {
 	// The list returned here matches the values used by MK unless
 	// explicitly noted otherwise with a comment.
 
@@ -111,7 +114,7 @@ func toFailureString(err error) string {
 		return errwrapper.Error() // we've already wrapped it
 	}
 
-	if failure := toSyscallErr(err); failure != "" {
+	if failure := classifySyscallError(err); failure != "" {
 		return failure
 	}
 
