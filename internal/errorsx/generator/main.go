@@ -12,99 +12,82 @@ import (
 
 // ErrorSpec specifies the error we care about.
 type ErrorSpec struct {
-	// Errno is the error name as an errno value (e.g., ECONNREFUSED).
-	Errno string
+	// errno is the error name as an errno value (e.g., ECONNREFUSED).
+	errno string
 
-	// Failure is the error name according to OONI (e.g., FailureConnectionRefused).
-	Failure string
+	// failure is the error name according to OONI (e.g., FailureConnectionRefused).
+	failure string
+}
+
+// AsErrnoName returns the name of the corresponding errno, if this
+// is a system error, or panics otherwise.
+func (es *ErrorSpec) AsErrnoName() string {
+	if !es.IsSystemError() {
+		panic("not a system error")
+	}
+	return es.errno
+}
+
+// AsFailureVar returns the name of the failure var.
+func (es *ErrorSpec) AsFailureVar() string {
+	return "Failure" + strcase.ToCamel(es.failure)
+}
+
+// AsFailureString returns the OONI failure string.
+func (es *ErrorSpec) AsFailureString() string {
+	return es.failure
+}
+
+// NewSystemError constructs a new ErrorSpec representing a system
+// error, i.e., an error returned by a system call.
+func NewSystemError(errno, failure string) *ErrorSpec {
+	return &ErrorSpec{errno: errno, failure: failure}
+}
+
+// NewLibraryError constructs a new ErrorSpec representing a library
+// error, i.e., an error returned by the Go standard library or by other
+// dependecies written typicall in Go (e.g., quic-go).
+func NewLibraryError(failure string) *ErrorSpec {
+	return &ErrorSpec{failure: failure}
+}
+
+// IsSystemError returns whether this ErrorSpec describes a system
+// error, i.e., an error returned by a syscall.
+func (es *ErrorSpec) IsSystemError() bool {
+	return es.errno != ""
 }
 
 // Specs contains all the error specs.
-var Specs = []ErrorSpec{{
-	Errno:   "ECANCELED",
-	Failure: "OperationCanceled",
-}, {
-	Errno:   "ECONNREFUSED",
-	Failure: "ConnectionRefused",
-}, {
-	Errno:   "ECONNRESET",
-	Failure: "ConnectionReset",
-}, {
-	Errno:   "EHOSTUNREACH",
-	Failure: "HostUnreachable",
-}, {
-	Errno:   "ETIMEDOUT",
-	Failure: "TimedOut",
-}, {
-	Errno:   "EAFNOSUPPORT",
-	Failure: "AddressFamilyNotSupported",
-}, {
-	Errno:   "EADDRINUSE",
-	Failure: "AddressInUse",
-}, {
-	Errno:   "EADDRNOTAVAIL",
-	Failure: "AddressNotAvailable",
-}, {
-	Errno:   "EISCONN",
-	Failure: "AlreadyConnected",
-}, {
-	Errno:   "EFAULT",
-	Failure: "BadAddress",
-}, {
-	Errno:   "EBADF",
-	Failure: "BadFileDescriptor",
-}, {
-	Errno:   "ECONNABORTED",
-	Failure: "ConnectionAborted",
-}, {
-	Errno:   "EALREADY",
-	Failure: "ConnectionAlreadyInProgress",
-}, {
-	Errno:   "EDESTADDRREQ",
-	Failure: "DestinationAddressRequired",
-}, {
-	Errno:   "EINTR",
-	Failure: "Interrupted",
-}, {
-	Errno:   "EINVAL",
-	Failure: "InvalidArgument",
-}, {
-	Errno:   "EMSGSIZE",
-	Failure: "MessageSize",
-}, {
-	Errno:   "ENETDOWN",
-	Failure: "NetworkDown",
-}, {
-	Errno:   "ENETRESET",
-	Failure: "NetworkReset",
-}, {
-	Errno:   "ENETUNREACH",
-	Failure: "NetworkUnreachable",
-}, {
-	Errno:   "ENOBUFS",
-	Failure: "NoBufferSpace",
-}, {
-	Errno:   "ENOPROTOOPT",
-	Failure: "NoProtocolOption",
-}, {
-	Errno:   "ENOTSOCK",
-	Failure: "NotASocket",
-}, {
-	Errno:   "ENOTCONN",
-	Failure: "NotConnected",
-}, {
-	Errno:   "EWOULDBLOCK",
-	Failure: "OperationWouldBlock",
-}, {
-	Errno:   "EACCES",
-	Failure: "PermissionDenied",
-}, {
-	Errno:   "EPROTONOSUPPORT",
-	Failure: "ProtocolNotSupported",
-}, {
-	Errno:   "EPROTOTYPE",
-	Failure: "WrongProtocolType",
-}}
+var Specs = []*ErrorSpec{
+	NewSystemError("ECANCELED", "operation_canceled"),
+	NewSystemError("ECONNREFUSED", "connection_refused"),
+	NewSystemError("ECONNRESET", "connection_reset"),
+	NewSystemError("EHOSTUNREACH", "host_unreachable"),
+	NewSystemError("ETIMEDOUT", "timed_out"),
+	NewSystemError("EAFNOSUPPORT", "address_family_not_supported"),
+	NewSystemError("EADDRINUSE", "address_in_use"),
+	NewSystemError("EADDRNOTAVAIL", "address_not_available"),
+	NewSystemError("EISCONN", "already_connected"),
+	NewSystemError("EFAULT", "bad_address"),
+	NewSystemError("EBADF", "bad_file_descriptor"),
+	NewSystemError("ECONNABORTED", "connection_aborted"),
+	NewSystemError("EALREADY", "connection_already_in_progress"),
+	NewSystemError("EDESTADDRREQ", "destination_address_required"),
+	NewSystemError("EINTR", "interrupted"),
+	NewSystemError("EINVAL", "invalid_argument"),
+	NewSystemError("EMSGSIZE", "message_size"),
+	NewSystemError("ENETDOWN", "network_down"),
+	NewSystemError("ENETRESET", "network_reset"),
+	NewSystemError("ENETUNREACH", "network_unreachable"),
+	NewSystemError("ENOBUFS", "no_buffer_space"),
+	NewSystemError("ENOPROTOOPT", "no_protocol_option"),
+	NewSystemError("ENOTSOCK", "not_a_socket"),
+	NewSystemError("ENOTCONN", "not_connected"),
+	NewSystemError("EWOULDBLOCK", "operation_would_block"),
+	NewSystemError("EACCES", "permission_denied"),
+	NewSystemError("EPROTONOSUPPORT", "protocol_not_supported"),
+	NewSystemError("EPROTOTYPE", "wrong_protocol_type"),
+}
 
 func fileCreate(filename string) *os.File {
 	filep, err := os.Create(filename)
@@ -146,7 +129,8 @@ func writeSystemSpecificFile(kind string) {
 	filePrintf(filep, "import \"golang.org/x/sys/%s\"\n\n", kind)
 	fileWrite(filep, "const (\n")
 	for _, spec := range Specs {
-		filePrintf(filep, "\t%s = %s.%s\n", spec.Errno, kind, spec.Errno)
+		filePrintf(filep, "\t%s = %s.%s\n",
+			spec.AsErrnoName(), kind, spec.AsErrnoName())
 	}
 	fileWrite(filep, ")\n\n")
 	fileClose(filep)
@@ -172,8 +156,9 @@ func writeGenericFile() {
 	fileWrite(filep, "// DO NOT derive from system call errors.\n")
 	fileWrite(filep, "const (\n")
 	for _, spec := range Specs {
-		filePrintf(filep, "\tFailure%s = \"%s\"\n", spec.Failure,
-			strcase.ToSnake(spec.Failure))
+		filePrintf(filep, "\t%s = \"%s\"\n",
+			spec.AsFailureVar(),
+			spec.AsFailureString())
 	}
 	fileWrite(filep, ")\n\n")
 
@@ -190,10 +175,8 @@ func writeGenericFile() {
 	fileWrite(filep, "\t}\n")
 	fileWrite(filep, "\tswitch errno {\n")
 	for _, spec := range Specs {
-		if spec.Failure != "" {
-			filePrintf(filep, "\tcase %s:\n", spec.Errno)
-			filePrintf(filep, "\t\treturn Failure%s\n", spec.Failure)
-		}
+		filePrintf(filep, "\tcase %s:\n", spec.AsErrnoName())
+		filePrintf(filep, "\t\treturn %s\n", spec.AsFailureVar())
 	}
 	fileWrite(filep, "\t}\n")
 	fileWrite(filep, "\treturn \"\"\n")
@@ -222,8 +205,10 @@ func writeGenericTestFile() {
 	fileWrite(filep, "\t}\n")
 
 	for _, spec := range Specs {
-		filePrintf(filep, "\tif v := toSyscallErr(%s); v != Failure%s {\n", spec.Errno, spec.Failure)
-		filePrintf(filep, "\t\tt.Fatalf(\"expected '%%s', got '%%s'\", Failure%s, v)\n", spec.Failure)
+		filePrintf(filep, "\tif v := toSyscallErr(%s); v != %s {\n",
+			spec.AsErrnoName(), spec.AsFailureVar())
+		filePrintf(filep, "\t\tt.Fatalf(\"expected '%%s', got '%%s'\", %s, v)\n",
+			spec.AsFailureVar())
 		fileWrite(filep, "\t}\n")
 	}
 
