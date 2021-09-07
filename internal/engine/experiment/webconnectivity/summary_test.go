@@ -7,7 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 func TestSummarize(t *testing.T) {

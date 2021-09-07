@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // This file contains weird stuff that we carried over from

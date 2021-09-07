@@ -3,9 +3,9 @@ package errorsx
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
-	"errors"
 	"net"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // TLSHandshaker is the generic TLS handshaker
@@ -25,31 +25,9 @@ func (h *ErrorWrapperTLSHandshaker) Handshake(
 ) (net.Conn, tls.ConnectionState, error) {
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	err = SafeErrWrapperBuilder{
-		Classifier: ClassifyTLSHandshakeError,
+		Classifier: errorsx.ClassifyTLSHandshakeError,
 		Error:      err,
-		Operation:  TLSHandshakeOperation,
+		Operation:  errorsx.TLSHandshakeOperation,
 	}.MaybeBuild()
 	return tlsconn, state, err
-}
-
-// ClassifyTLSHandshakeError maps an error occurred during the TLS
-// handshake to an OONI failure string.
-func ClassifyTLSHandshakeError(err error) string {
-	var x509HostnameError x509.HostnameError
-	if errors.As(err, &x509HostnameError) {
-		// Test case: https://wrong.host.badssl.com/
-		return FailureSSLInvalidHostname
-	}
-	var x509UnknownAuthorityError x509.UnknownAuthorityError
-	if errors.As(err, &x509UnknownAuthorityError) {
-		// Test case: https://self-signed.badssl.com/. This error has
-		// never been among the ones returned by MK.
-		return FailureSSLUnknownAuthority
-	}
-	var x509CertificateInvalidError x509.CertificateInvalidError
-	if errors.As(err, &x509CertificateInvalidError) {
-		// Test case: https://expired.badssl.com/
-		return FailureSSLInvalidCertificate
-	}
-	return ClassifyGenericError(err)
 }

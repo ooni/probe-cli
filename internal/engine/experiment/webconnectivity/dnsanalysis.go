@@ -4,7 +4,7 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // DNSAnalysisResult contains the results of analysing comparing

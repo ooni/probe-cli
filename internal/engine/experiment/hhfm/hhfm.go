@@ -19,7 +19,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 )
@@ -180,7 +181,7 @@ func Transact(txp Transport, req *http.Request,
 	callbacks model.ExperimentCallbacks) (*http.Response, []byte, error) {
 	// make sure that we return a wrapped error here
 	resp, data, err := transact(txp, req, callbacks)
-	err = errorsx.SafeErrWrapperBuilder{
+	err = errorsxlegacy.SafeErrWrapperBuilder{
 		Error: err, Operation: errorsx.TopLevelOperation}.MaybeBuild()
 	return resp, data, err
 }

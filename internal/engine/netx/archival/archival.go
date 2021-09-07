@@ -19,7 +19,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // ExtSpec describes a data format extension
@@ -110,7 +111,7 @@ func NewFailure(err error) *string {
 	// The following code guarantees that the error is always wrapped even
 	// when we could not actually hit our code that does the wrapping. A case
 	// in which this happen is with context deadline for HTTP.
-	err = errorsx.SafeErrWrapperBuilder{
+	err = errorsxlegacy.SafeErrWrapperBuilder{
 		Error:     err,
 		Operation: errorsx.TopLevelOperation,
 	}.MaybeBuild()

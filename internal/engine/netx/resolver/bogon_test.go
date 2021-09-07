@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 func TestResolverIsBogon(t *testing.T) {
