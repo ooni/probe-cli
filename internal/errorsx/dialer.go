@@ -24,11 +24,11 @@ type ErrorWrapperDialer struct {
 func (d *ErrorWrapperDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
-		return nil, &errorsx.ErrWrapper{
-			Failure:    errorsx.ClassifyGenericError(err),
+		return nil, SafeErrWrapperBuilder{
+			Classifier: errorsx.ClassifyGenericError,
 			Operation:  errorsx.ConnectOperation,
-			WrappedErr: err,
-		}
+			Error:      err,
+		}.MaybeBuild()
 	}
 	return &errorWrapperConn{Conn: conn}, nil
 }
@@ -43,11 +43,11 @@ type errorWrapperConn struct {
 func (c *errorWrapperConn) Read(b []byte) (int, error) {
 	count, err := c.Conn.Read(b)
 	if err != nil {
-		return 0, &errorsx.ErrWrapper{
-			Failure:    errorsx.ClassifyGenericError(err),
+		return 0, SafeErrWrapperBuilder{
+			Classifier: errorsx.ClassifyGenericError,
 			Operation:  errorsx.ReadOperation,
-			WrappedErr: err,
-		}
+			Error:      err,
+		}.MaybeBuild()
 	}
 	return count, nil
 }
@@ -56,11 +56,11 @@ func (c *errorWrapperConn) Read(b []byte) (int, error) {
 func (c *errorWrapperConn) Write(b []byte) (int, error) {
 	count, err := c.Conn.Write(b)
 	if err != nil {
-		return 0, &errorsx.ErrWrapper{
-			Failure:    errorsx.ClassifyGenericError(err),
+		return 0, SafeErrWrapperBuilder{
+			Classifier: errorsx.ClassifyGenericError,
 			Operation:  errorsx.WriteOperation,
-			WrappedErr: err,
-		}
+			Error:      err,
+		}.MaybeBuild()
 	}
 	return count, nil
 }
@@ -69,11 +69,11 @@ func (c *errorWrapperConn) Write(b []byte) (int, error) {
 func (c *errorWrapperConn) Close() error {
 	err := c.Conn.Close()
 	if err != nil {
-		return &errorsx.ErrWrapper{
-			Failure:    errorsx.ClassifyGenericError(err),
+		return SafeErrWrapperBuilder{
+			Classifier: errorsx.ClassifyGenericError,
 			Operation:  errorsx.CloseOperation,
-			WrappedErr: err,
-		}
+			Error:      err,
+		}.MaybeBuild()
 	}
 	return nil
 }
