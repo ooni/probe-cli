@@ -462,3 +462,15 @@ func TestDialerErrWrapperConn(t *testing.T) {
 		})
 	})
 }
+
+func TestNewNullDialer(t *testing.T) {
+	dialer := NewNullDialer()
+	conn, err := dialer.DialContext(context.Background(), "", "")
+	if !errors.Is(err, ErrNoDialer) {
+		t.Fatal("unexpected err", err)
+	}
+	if conn != nil {
+		t.Fatal("expected nil conn")
+	}
+	dialer.CloseIdleConnections() // does not crash
+}

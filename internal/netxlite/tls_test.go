@@ -536,3 +536,15 @@ func TestTLSHandshakerErrWrapper(t *testing.T) {
 		})
 	})
 }
+
+func TestNewNullTLSDialer(t *testing.T) {
+	dialer := NewNullTLSDialer()
+	conn, err := dialer.DialTLSContext(context.Background(), "", "")
+	if !errors.Is(err, ErrNoTLSDialer) {
+		t.Fatal("unexpected err", err)
+	}
+	if conn != nil {
+		t.Fatal("expected nil conn")
+	}
+	dialer.CloseIdleConnections() // does not crash
+}

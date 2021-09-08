@@ -342,3 +342,23 @@ func (h *tlsHandshakerErrWrapper) Handshake(
 	}
 	return tlsconn, state, nil
 }
+
+// ErrNoTLSDialer indicates that no TLS dialer is configured.
+var ErrNoTLSDialer = errors.New("no configured TLS dialer")
+
+// NewNullTLSDialer returns a TLS dialer that always fails.
+func NewNullTLSDialer() TLSDialer {
+	return &nullTLSDialer{}
+}
+
+type nullTLSDialer struct{}
+
+var _ TLSDialer = &nullTLSDialer{}
+
+func (*nullTLSDialer) DialTLSContext(ctx context.Context, network, address string) (net.Conn, error) {
+	return nil, ErrNoTLSDialer
+}
+
+func (*nullTLSDialer) CloseIdleConnections() {
+	// nothing to do
+}
