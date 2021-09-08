@@ -73,6 +73,9 @@ type Classifier func(err error) string
 
 // NewErrWrapper creates a new ErrWrapper using the given
 // classifier, operation name, and underlying error.
+//
+// This function panics if classifier is nil, or operation
+// is the empty string or error is nil.
 func NewErrWrapper(c Classifier, op string, err error) *ErrWrapper {
 	if c == nil {
 		panic("nil classifier")
