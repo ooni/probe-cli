@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/apex/log"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/lucas-clemente/quic-go/http3"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
@@ -80,8 +81,12 @@ func TestNewHTTP3Transport(t *testing.T) {
 	t.Run("creates the correct type chain", func(t *testing.T) {
 		qd := &mocks.QUICDialer{}
 		config := &tls.Config{}
-		txp := NewHTTP3Transport(qd, config)
-		h3txp := txp.(*http3Transport)
+		txp := NewHTTP3Transport(log.Log, qd, config)
+		logger := txp.(*httpTransportLogger)
+		if logger.Logger != log.Log {
+			t.Fatal("invalid logger")
+		}
+		h3txp := logger.HTTPTransport.(*http3Transport)
 		if h3txp.dialer != qd {
 			t.Fatal("invalid dialer")
 		}
