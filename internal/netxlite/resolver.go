@@ -27,6 +27,20 @@ type Resolver interface {
 
 // NewResolverSystem creates a new resolver using system
 // facilities for resolving domain names (e.g., getaddrinfo).
+//
+// The resolver will provide the following guarantees:
+//
+// 1. handles IDNA;
+//
+// 2. performs logging;
+//
+// 3. short-circuits IP addresses like getaddrinfo does (i.e.,
+// resolving "1.1.1.1" yields []string{"1.1.1.1"};
+//
+// 4. wraps errors;
+//
+// 5. enforces reasonable timeouts (
+// see https://github.com/ooni/probe/issues/1726).
 func NewResolverSystem(logger Logger) Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{
@@ -48,7 +62,6 @@ type resolverSystem struct {
 
 var _ Resolver = &resolverSystem{}
 
-// LookupHost implements Resolver.LookupHost.
 func (r *resolverSystem) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	// This code forces adding a shorter timeout to the domain name
 	// resolutions when using the system resolver. We have seen cases
@@ -89,23 +102,17 @@ func (r *resolverSystem) lookupHost() func(ctx context.Context, domain string) (
 	return net.DefaultResolver.LookupHost
 }
 
-// Network implements Resolver.Network.
 func (r *resolverSystem) Network() string {
 	return "system"
 }
 
-// Address implements Resolver.Address.
 func (r *resolverSystem) Address() string {
 	return ""
 }
 
-// CloseIdleConnections implements Resolver.CloseIdleConnections.
 func (r *resolverSystem) CloseIdleConnections() {
-	// nothing
+	// nothing to do
 }
-
-// DefaultResolver is the resolver we use by default.
-var DefaultResolver = &resolverSystem{}
 
 // resolverLogger is a resolver that emits events
 type resolverLogger struct {
@@ -115,7 +122,6 @@ type resolverLogger struct {
 
 var _ Resolver = &resolverLogger{}
 
-// LookupHost returns the IP addresses of a host
 func (r *resolverLogger) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	r.Logger.Debugf("resolve %s...", hostname)
 	start := time.Now()
@@ -136,7 +142,6 @@ type resolverIDNA struct {
 	Resolver
 }
 
-// LookupHost implements Resolver.LookupHost.
 func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	host, err := idna.ToASCII(hostname)
 	if err != nil {
@@ -151,7 +156,6 @@ type resolverShortCircuitIPAddr struct {
 	Resolver
 }
 
-// LookupHost implements Resolver.LookupHost.
 func (r *resolverShortCircuitIPAddr) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	if net.ParseIP(hostname) != nil {
 		return []string{hostname}, nil
@@ -166,24 +170,20 @@ var ErrNoResolver = errors.New("no configured resolver")
 // domain names to IP addresses and always returns ErrNoResolver.
 type nullResolver struct{}
 
-// LookupHost implements Resolver.LookupHost.
 func (r *nullResolver) LookupHost(ctx context.Context, hostname string) (addrs []string, err error) {
 	return nil, ErrNoResolver
 }
 
-// Network implements Resolver.Network.
 func (r *nullResolver) Network() string {
 	return "null"
 }
 
-// Address implements Resolver.Address.
 func (r *nullResolver) Address() string {
 	return ""
 }
 
-// CloseIdleConnections implements Resolver.CloseIdleConnections.
 func (r *nullResolver) CloseIdleConnections() {
-	// nothing
+	// nothing to do
 }
 
 // resolverErrWrapper is a Resolver that knows about wrapping errors.
@@ -193,7 +193,6 @@ type resolverErrWrapper struct {
 
 var _ Resolver = &resolverErrWrapper{}
 
-// LookupHost implements Resolver.LookupHost
 func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	if err != nil {

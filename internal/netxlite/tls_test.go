@@ -118,10 +118,22 @@ func TestConfigureTLSVersion(t *testing.T) {
 	}
 }
 
+func TestNewTLSHandshakerStdlib(t *testing.T) {
+	th := NewTLSHandshakerStdlib(log.Log)
+	logger := th.(*tlsHandshakerLogger)
+	if logger.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	errWrapper := logger.TLSHandshaker.(*tlsHandshakerErrWrapper)
+	configurable := errWrapper.TLSHandshaker.(*tlsHandshakerConfigurable)
+	if configurable.NewConn != nil {
+		t.Fatal("expected nil NewConn")
+	}
+}
+
 func TestTLSHandshakerConfigurable(t *testing.T) {
 	t.Run("Handshake", func(t *testing.T) {
 		t.Run("with error", func(t *testing.T) {
-
 			var times []time.Time
 			h := &tlsHandshakerConfigurable{}
 			tcpConn := &mocks.Conn{
@@ -230,13 +242,19 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 func TestTLSHandshakerLogger(t *testing.T) {
 	t.Run("Handshake", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
+			var count int
+			lo := &mocks.Logger{
+				MockDebugf: func(format string, v ...interface{}) {
+					count++
+				},
+			}
 			th := &tlsHandshakerLogger{
 				TLSHandshaker: &mocks.TLSHandshaker{
 					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 						return tls.Client(conn, config), tls.ConnectionState{}, nil
 					},
 				},
-				Logger: log.Log,
+				Logger: lo,
 			}
 			conn := &mocks.Conn{
 				MockClose: func() error {
@@ -255,9 +273,18 @@ func TestTLSHandshakerLogger(t *testing.T) {
 			if !reflect.ValueOf(connState).IsZero() {
 				t.Fatal("expected zero ConnectionState here")
 			}
+			if count != 2 {
+				t.Fatal("invalid count")
+			}
 		})
 
 		t.Run("on failure", func(t *testing.T) {
+			var count int
+			lo := &mocks.Logger{
+				MockDebugf: func(format string, v ...interface{}) {
+					count++
+				},
+			}
 			expected := errors.New("mocked error")
 			th := &tlsHandshakerLogger{
 				TLSHandshaker: &mocks.TLSHandshaker{
@@ -265,7 +292,7 @@ func TestTLSHandshakerLogger(t *testing.T) {
 						return nil, tls.ConnectionState{}, expected
 					},
 				},
-				Logger: log.Log,
+				Logger: lo,
 			}
 			conn := &mocks.Conn{
 				MockClose: func() error {
@@ -284,8 +311,27 @@ func TestTLSHandshakerLogger(t *testing.T) {
 			if !reflect.ValueOf(connState).IsZero() {
 				t.Fatal("expected zero ConnectionState here")
 			}
+			if count != 2 {
+				t.Fatal("invalid count")
+			}
 		})
 	})
+}
+
+func TestNewTLSDialer(t *testing.T) {
+	d := &mocks.Dialer{}
+	th := &mocks.TLSHandshaker{}
+	dialer := NewTLSDialer(d, th)
+	tlsd := dialer.(*tlsDialer)
+	if tlsd.Config == nil {
+		t.Fatal("unexpected config")
+	}
+	if tlsd.Dialer != d {
+		t.Fatal("unexpected dialer")
+	}
+	if tlsd.TLSHandshaker != th {
+		t.Fatal("invalid handshaker")
+	}
 }
 
 func TestTLSDialer(t *testing.T) {
@@ -437,35 +483,6 @@ func TestTLSDialer(t *testing.T) {
 			}
 		})
 	})
-}
-
-func TestNewTLSHandshakerStdlib(t *testing.T) {
-	th := NewTLSHandshakerStdlib(log.Log)
-	logger := th.(*tlsHandshakerLogger)
-	if logger.Logger != log.Log {
-		t.Fatal("invalid logger")
-	}
-	errWrapper := logger.TLSHandshaker.(*tlsHandshakerErrWrapper)
-	configurable := errWrapper.TLSHandshaker.(*tlsHandshakerConfigurable)
-	if configurable.NewConn != nil {
-		t.Fatal("expected nil NewConn")
-	}
-}
-
-func TestNewTLSDialer(t *testing.T) {
-	d := &mocks.Dialer{}
-	th := &mocks.TLSHandshaker{}
-	dialer := NewTLSDialer(d, th)
-	tlsd := dialer.(*tlsDialer)
-	if tlsd.Config == nil {
-		t.Fatal("unexpected config")
-	}
-	if tlsd.Dialer != d {
-		t.Fatal("unexpected dialer")
-	}
-	if tlsd.TLSHandshaker != th {
-		t.Fatal("invalid handshaker")
-	}
 }
 
 func TestNewSingleUseTLSDialer(t *testing.T) {

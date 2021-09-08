@@ -17,6 +17,34 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
+func TestNewQUICListener(t *testing.T) {
+	ql := NewQUICListener()
+	qew := ql.(*quicListenerErrWrapper)
+	_ = qew.QUICListener.(*quicListenerStdlib)
+}
+
+func TestNewQUICDialer(t *testing.T) {
+	ql := NewQUICListener()
+	dlr := NewQUICDialerWithoutResolver(ql, log.Log)
+	logger := dlr.(*quicDialerLogger)
+	if logger.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	resolver := logger.Dialer.(*quicDialerResolver)
+	if _, okay := resolver.Resolver.(*nullResolver); !okay {
+		t.Fatal("invalid resolver type")
+	}
+	logger = resolver.Dialer.(*quicDialerLogger)
+	if logger.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	errWrapper := logger.Dialer.(*quicDialerErrWrapper)
+	base := errWrapper.QUICDialer.(*quicDialerQUICGo)
+	if base.QUICListener != ql {
+		t.Fatal("invalid quic listener")
+	}
+}
+
 func TestQUICDialerQUICGo(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("cannot split host port", func(t *testing.T) {
@@ -223,7 +251,6 @@ func TestQUICDialerQUICGo(t *testing.T) {
 }
 
 func TestQUICDialerResolver(t *testing.T) {
-
 	t.Run("CloseIdleConnections", func(t *testing.T) {
 		var (
 			forDialer   bool
@@ -302,7 +329,7 @@ func TestQUICDialerResolver(t *testing.T) {
 			}
 		})
 
-		t.Run("with invalid port", func(t *testing.T) {
+		t.Run("with invalid port (i.e., the zero port)", func(t *testing.T) {
 			// This test allows us to check for the case where every attempt
 			// to establish a connection leads to a failure
 			tlsConf := &tls.Config{}
@@ -376,7 +403,6 @@ func TestQUICDialerResolver(t *testing.T) {
 }
 
 func TestQUICLoggerDialer(t *testing.T) {
-
 	t.Run("CloseIdleConnections", func(t *testing.T) {
 		var forDialer bool
 		d := &quicDialerLogger{
@@ -394,6 +420,12 @@ func TestQUICLoggerDialer(t *testing.T) {
 
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
+			var called int
+			lo := &mocks.Logger{
+				MockDebugf: func(format string, v ...interface{}) {
+					called++
+				},
+			}
 			d := &quicDialerLogger{
 				Dialer: &mocks.QUICDialer{
 					MockDialContext: func(ctx context.Context, network string,
@@ -407,7 +439,7 @@ func TestQUICLoggerDialer(t *testing.T) {
 						}, nil
 					},
 				},
-				Logger: log.Log,
+				Logger: lo,
 			}
 			ctx := context.Background()
 			tlsConfig := &tls.Config{}
@@ -419,9 +451,18 @@ func TestQUICLoggerDialer(t *testing.T) {
 			if err := sess.CloseWithError(0, ""); err != nil {
 				t.Fatal(err)
 			}
+			if called != 2 {
+				t.Fatal("invalid number of calls")
+			}
 		})
 
 		t.Run("on failure", func(t *testing.T) {
+			var called int
+			lo := &mocks.Logger{
+				MockDebugf: func(format string, v ...interface{}) {
+					called++
+				},
+			}
 			expected := errors.New("mocked error")
 			d := &quicDialerLogger{
 				Dialer: &mocks.QUICDialer{
@@ -431,7 +472,7 @@ func TestQUICLoggerDialer(t *testing.T) {
 						return nil, expected
 					},
 				},
-				Logger: log.Log,
+				Logger: lo,
 			}
 			ctx := context.Background()
 			tlsConfig := &tls.Config{}
@@ -443,30 +484,11 @@ func TestQUICLoggerDialer(t *testing.T) {
 			if sess != nil {
 				t.Fatal("expected nil session")
 			}
+			if called != 2 {
+				t.Fatal("invalid number of calls")
+			}
 		})
 	})
-}
-
-func TestNewQUICDialer(t *testing.T) {
-	ql := NewQUICListener()
-	dlr := NewQUICDialerWithoutResolver(ql, log.Log)
-	logger := dlr.(*quicDialerLogger)
-	if logger.Logger != log.Log {
-		t.Fatal("invalid logger")
-	}
-	resolver := logger.Dialer.(*quicDialerResolver)
-	if _, okay := resolver.Resolver.(*nullResolver); !okay {
-		t.Fatal("invalid resolver type")
-	}
-	logger = resolver.Dialer.(*quicDialerLogger)
-	if logger.Logger != log.Log {
-		t.Fatal("invalid logger")
-	}
-	errWrapper := logger.Dialer.(*quicDialerErrWrapper)
-	base := errWrapper.QUICDialer.(*quicDialerQUICGo)
-	if base.QUICListener != ql {
-		t.Fatal("invalid quic listener")
-	}
 }
 
 func TestNewSingleUseQUICDialer(t *testing.T) {

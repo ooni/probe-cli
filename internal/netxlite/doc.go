@@ -24,6 +24,9 @@
 //
 // We also want to mock any underlying dependency for testing.
 //
+// We also want to map errors to OONI failures, which are described by
+// https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md.
+//
 // Operations
 //
 // This package implements the following operations:

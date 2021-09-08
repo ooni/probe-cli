@@ -54,26 +54,34 @@ func TestQuirkReduceErrors(t *testing.T) {
 }
 
 func TestQuirkSortIPAddrs(t *testing.T) {
-	addrs := []string{
-		"::1",
-		"192.168.1.2",
-		"2a00:1450:4002:404::2004",
-		"142.250.184.36",
-		"2604:8800:5000:82:466:38ff:fecb:d46e",
-		"198.145.29.83",
-		"95.216.163.36",
-	}
-	expected := []string{
-		"192.168.1.2",
-		"142.250.184.36",
-		"198.145.29.83",
-		"95.216.163.36",
-		"::1",
-		"2a00:1450:4002:404::2004",
-		"2604:8800:5000:82:466:38ff:fecb:d46e",
-	}
-	out := quirkSortIPAddrs(addrs)
-	if diff := cmp.Diff(expected, out); diff != "" {
-		t.Fatal(diff)
-	}
+	t.Run("with some addrs", func(t *testing.T) {
+		addrs := []string{
+			"::1",
+			"192.168.1.2",
+			"2a00:1450:4002:404::2004",
+			"142.250.184.36",
+			"2604:8800:5000:82:466:38ff:fecb:d46e",
+			"198.145.29.83",
+			"95.216.163.36",
+		}
+		expected := []string{
+			"192.168.1.2",
+			"142.250.184.36",
+			"198.145.29.83",
+			"95.216.163.36",
+			"::1",
+			"2a00:1450:4002:404::2004",
+			"2604:8800:5000:82:466:38ff:fecb:d46e",
+		}
+		out := quirkSortIPAddrs(addrs)
+		if diff := cmp.Diff(expected, out); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("with an empty list", func(t *testing.T) {
+		if quirkSortIPAddrs(nil) != nil {
+			t.Fatal("expected nil output")
+		}
+	})
 }

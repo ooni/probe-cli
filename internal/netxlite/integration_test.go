@@ -12,6 +12,26 @@ import (
 	utls "gitlab.com/yawning/utls.git"
 )
 
+func TestResolver(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
+	t.Run("works as intended", func(t *testing.T) {
+		// TODO(bassosimone): this is actually an integration
+		// test but how to test this case?
+		r := netxlite.NewResolverSystem(log.Log)
+		defer r.CloseIdleConnections()
+		addrs, err := r.LookupHost(context.Background(), "dns.google.com")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if addrs == nil {
+			t.Fatal("expected non-nil result here")
+		}
+	})
+}
+
 func TestHTTPTransport(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")

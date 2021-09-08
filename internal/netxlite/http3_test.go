@@ -33,7 +33,7 @@ func TestHTTP3Dialer(t *testing.T) {
 	})
 }
 
-func TestHTTP3TransportClosesIdleConnections(t *testing.T) {
+func TestHTTP3Transport(t *testing.T) {
 	t.Run("CloseIdleConnections", func(t *testing.T) {
 		var (
 			calledHTTP3  bool

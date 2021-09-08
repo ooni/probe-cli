@@ -50,6 +50,24 @@ type QUICDialer interface {
 // NewQUICDialerWithResolver returns a QUICDialer using the given
 // QUICListener to create listening connections and the given Resolver
 // to resolve domain names (if needed).
+//
+// Properties of the dialer:
+//
+// 1. logs events using the given logger;
+//
+// 2. resolves domain names using the givern resolver;
+//
+// 3. when using a resolver, _may_ attempt multiple dials
+// in parallel (happy eyeballs) and _may_ return an aggregate
+// error to the caller;
+//
+// 4. wraps errors;
+//
+// 5. has a configured connect timeout;
+//
+// 6. if a dialer wraps a resolver, the dialer will forward
+// the CloseIdleConnection call to its resolver (which is
+// instrumental to manage a DoH resolver connections properly).
 func NewQUICDialerWithResolver(listener QUICListener,
 	logger Logger, resolver Resolver) QUICDialer {
 	return &quicDialerLogger{
@@ -210,12 +228,9 @@ func (d *quicDialerResolver) DialContext(
 		return nil, err
 	}
 	tlsConfig = d.maybeApplyTLSDefaults(tlsConfig, onlyhost)
-	// TODO(bassosimone): here we should be using multierror rather
-	// than just calling ReduceErrors. We are not ready to do that
-	// yet, though. To do that, we need first to modify nettests so
-	// that we actually avoid dialing when measuring.
-	//
-	// See also the quirks.go file. This is clearly a QUIRK.
+	// See TODO(https://github.com/ooni/probe/issues/1779) however
+	// this is less of a problem for QUIC because so far we have been
+	// using it to perform research only (i.e., urlgetter).
 	addrs = quirkSortIPAddrs(addrs)
 	var errorslist []error
 	for _, addr := range addrs {

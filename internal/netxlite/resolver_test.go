@@ -15,6 +15,18 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
+func TestNewResolverSystem(t *testing.T) {
+	resolver := NewResolverSystem(log.Log)
+	idna := resolver.(*resolverIDNA)
+	logger := idna.Resolver.(*resolverLogger)
+	if logger.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
+	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
+	_ = errWrapper.Resolver.(*resolverSystem)
+}
+
 func TestResolverSystem(t *testing.T) {
 	t.Run("Network and Address", func(t *testing.T) {
 		r := &resolverSystem{}
@@ -26,16 +38,9 @@ func TestResolverSystem(t *testing.T) {
 		}
 	})
 
-	t.Run("works as intended", func(t *testing.T) {
+	t.Run("CloseIdleConnections", func(t *testing.T) {
 		r := &resolverSystem{}
-		defer r.CloseIdleConnections()
-		addrs, err := r.LookupHost(context.Background(), "dns.google.com")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if addrs == nil {
-			t.Fatal("expected non-nil result here")
-		}
+		r.CloseIdleConnections() // to cover it
 	})
 
 	t.Run("check default timeout", func(t *testing.T) {
@@ -45,7 +50,30 @@ func TestResolverSystem(t *testing.T) {
 		}
 	})
 
+	t.Run("check default lookup host func not nil", func(t *testing.T) {
+		r := &resolverSystem{}
+		if r.lookupHost() == nil {
+			t.Fatal("expected non-nil func here")
+		}
+	})
+
 	t.Run("LookupHost", func(t *testing.T) {
+		t.Run("with success", func(t *testing.T) {
+			r := &resolverSystem{
+				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return []string{"8.8.8.8"}, nil
+				},
+			}
+			ctx := context.Background()
+			addrs, err := r.LookupHost(ctx, "example.antani")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(addrs) != 1 || addrs[0] != "8.8.8.8" {
+				t.Fatal("invalid addrs")
+			}
+		})
+
 		t.Run("with timeout and success", func(t *testing.T) {
 			wg := &sync.WaitGroup{}
 			wg.Add(1)
@@ -111,9 +139,15 @@ func TestResolverSystem(t *testing.T) {
 func TestResolverLogger(t *testing.T) {
 	t.Run("LookupHost", func(t *testing.T) {
 		t.Run("with success", func(t *testing.T) {
+			var count int
+			lo := &mocks.Logger{
+				MockDebugf: func(format string, v ...interface{}) {
+					count++
+				},
+			}
 			expected := []string{"1.1.1.1"}
 			r := resolverLogger{
-				Logger: log.Log,
+				Logger: lo,
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 						return expected, nil
@@ -127,12 +161,21 @@ func TestResolverLogger(t *testing.T) {
 			if diff := cmp.Diff(expected, addrs); diff != "" {
 				t.Fatal(diff)
 			}
+			if count != 2 {
+				t.Fatal("unexpected count")
+			}
 		})
 
 		t.Run("with failure", func(t *testing.T) {
+			var count int
+			lo := &mocks.Logger{
+				MockDebugf: func(format string, v ...interface{}) {
+					count++
+				},
+			}
 			expected := errors.New("mocked error")
 			r := resolverLogger{
-				Logger: log.Log,
+				Logger: lo,
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 						return nil, expected
@@ -145,6 +188,9 @@ func TestResolverLogger(t *testing.T) {
 			}
 			if addrs != nil {
 				t.Fatal("expected nil addr here")
+			}
+			if count != 2 {
+				t.Fatal("unexpected count")
 			}
 		})
 	})
@@ -191,18 +237,6 @@ func TestResolverIDNA(t *testing.T) {
 			}
 		})
 	})
-}
-
-func TestNewResolverSystem(t *testing.T) {
-	resolver := NewResolverSystem(log.Log)
-	idna := resolver.(*resolverIDNA)
-	logger := idna.Resolver.(*resolverLogger)
-	if logger.Logger != log.Log {
-		t.Fatal("invalid logger")
-	}
-	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
-	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
-	_ = errWrapper.Resolver.(*resolverSystem)
 }
 
 func TestResolverShortCircuitIPAddr(t *testing.T) {
@@ -261,7 +295,7 @@ func TestNullResolver(t *testing.T) {
 	if r.Address() != "" {
 		t.Fatal("invalid address")
 	}
-	r.CloseIdleConnections() // should not crash
+	r.CloseIdleConnections() // for coverage
 }
 
 func TestResolverErrWrapper(t *testing.T) {
