@@ -21,7 +21,7 @@ func TestResolver(t *testing.T) {
 	t.Run("works as intended", func(t *testing.T) {
 		// TODO(bassosimone): this is actually an integration
 		// test but how to test this case?
-		r := netxlite.NewResolverSystem(log.Log)
+		r := netxlite.NewResolverStdlib(log.Log)
 		defer r.CloseIdleConnections()
 		addrs, err := r.LookupHost(context.Background(), "dns.google.com")
 		if err != nil {
@@ -39,7 +39,7 @@ func TestHTTPTransport(t *testing.T) {
 	}
 
 	t.Run("works as intended", func(t *testing.T) {
-		d := netxlite.NewDialerWithResolver(log.Log, netxlite.NewResolverSystem(log.Log))
+		d := netxlite.NewDialerWithResolver(log.Log, netxlite.NewResolverStdlib(log.Log))
 		td := netxlite.NewTLSDialer(d, netxlite.NewTLSHandshakerStdlib(log.Log))
 		txp := netxlite.NewHTTPTransport(log.Log, d, td)
 		client := &http.Client{Transport: txp}
@@ -61,7 +61,7 @@ func TestHTTP3Transport(t *testing.T) {
 		d := netxlite.NewQUICDialerWithResolver(
 			netxlite.NewQUICListener(),
 			log.Log,
-			netxlite.NewResolverSystem(log.Log),
+			netxlite.NewResolverStdlib(log.Log),
 		)
 		txp := netxlite.NewHTTP3Transport(log.Log, d, &tls.Config{})
 		client := &http.Client{Transport: txp}
@@ -119,7 +119,7 @@ func TestQUICDialer(t *testing.T) {
 	t.Run("can guess the SNI and ALPN when using a domain name for web", func(t *testing.T) {
 		d := netxlite.NewQUICDialerWithResolver(
 			netxlite.NewQUICListener(), log.Log,
-			netxlite.NewResolverSystem(log.Log),
+			netxlite.NewResolverStdlib(log.Log),
 		)
 		ctx := context.Background()
 		sess, err := d.DialContext(

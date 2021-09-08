@@ -44,7 +44,7 @@ type Config struct {
 	// Bug
 	//
 	// This implementation cannot properly account for the bytes that are sent by
-	// persistent connections, because they strick to the counters set when the
+	// persistent connections, because they stick to the counters set when the
 	// connection was established. This typically means we miss the bytes sent and
 	// received when submitting a measurement. Such bytes are specifically not
 	// seen by the experiment specific byte counter.

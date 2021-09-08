@@ -25,7 +25,7 @@ type Resolver interface {
 	CloseIdleConnections()
 }
 
-// NewResolverSystem creates a new resolver using system
+// NewResolverStdlib creates a new resolver using system
 // facilities for resolving domain names (e.g., getaddrinfo).
 //
 // The resolver will provide the following guarantees:
@@ -41,7 +41,7 @@ type Resolver interface {
 //
 // 5. enforces reasonable timeouts (
 // see https://github.com/ooni/probe/issues/1726).
-func NewResolverSystem(logger Logger) Resolver {
+func NewResolverStdlib(logger Logger) Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{
 			Resolver: &resolverShortCircuitIPAddr{

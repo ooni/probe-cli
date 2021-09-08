@@ -18,14 +18,14 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 func newclient() probeservices.Client {
-	txp := netx.NewHTTPTransport(netx.Config{Logger: log.Log})
+	txp := netxlite.NewHTTPTransportStdlib(log.Log)
 	ua := fmt.Sprintf("apitool/%s ooniprobe-engine/%s", version.Version, version.Version)
 	return probeservices.Client{
 		Client: httpx.Client{
