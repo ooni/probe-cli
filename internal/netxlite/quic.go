@@ -67,7 +67,15 @@ type QUICDialer interface {
 //
 // 6. if a dialer wraps a resolver, the dialer will forward
 // the CloseIdleConnection call to its resolver (which is
-// instrumental to manage a DoH resolver connections properly).
+// instrumental to manage a DoH resolver connections properly);
+//
+// 7. will use the bundled CA unless you provide another CA;
+//
+// 8. will attempt to guess SNI when resolving domain names
+// and otherwise will not set the SNI;
+//
+// 9. will attempt to guess ALPN when the port is known and
+// otherwise will not set the ALPN.
 func NewQUICDialerWithResolver(listener QUICListener,
 	logger Logger, resolver Resolver) QUICDialer {
 	return &quicDialerLogger{

@@ -179,6 +179,16 @@ func ClassifyQUICHandshakeError(err error) string {
 		if errCode == quicTLSUnrecognizedName {
 			return FailureSSLInvalidHostname
 		}
+
+		// quic.TransportError wraps OONI errors using the error
+		// code quic.InternalError. So, if the error code is
+		// an internal error, search for a OONI error and, if
+		// found, just return such an error.
+		if transportError.ErrorCode == quic.InternalError {
+			if s := failuresMap[transportError.ErrorMessage]; s != "" {
+				return s
+			}
+		}
 	}
 	return ClassifyGenericError(err)
 }

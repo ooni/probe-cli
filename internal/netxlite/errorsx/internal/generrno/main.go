@@ -194,6 +194,15 @@ func writeGenericFile() {
 	}
 	fileWrite(filep, ")\n\n")
 
+	fileWrite(filep, "// failureMap lists all failures so we can match them\n")
+	fileWrite(filep, "// when they are wrapped by quic.TransportError.\n")
+	fileWrite(filep, "var failuresMap = map[string]string{\n")
+	for _, spec := range Specs {
+		filePrintf(filep, "\t\"%s\": \"%s\",\n",
+			spec.AsFailureString(), spec.AsFailureString())
+	}
+	fileWrite(filep, "}\n\n")
+
 	fileWrite(filep, "// classifySyscallError converts a syscall error to the\n")
 	fileWrite(filep, "// proper OONI error. Returns the OONI error string\n")
 	fileWrite(filep, "// on success, an empty string otherwise.\n")
