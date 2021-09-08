@@ -16,7 +16,7 @@ import (
 )
 
 func TestNewResolverSystem(t *testing.T) {
-	resolver := NewResolverSystem(log.Log)
+	resolver := NewResolverStdlib(log.Log)
 	idna := resolver.(*resolverIDNA)
 	logger := idna.Resolver.(*resolverLogger)
 	if logger.Logger != log.Log {

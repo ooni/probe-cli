@@ -32,6 +32,7 @@ type (
 	TLSHandshakerLogger       = tlsHandshakerLogger
 	DialerSystem              = dialerSystem
 	TLSDialerLegacy           = tlsDialer
+	UserAgentTransport        = httpUserAgentTransport
 )
 
 // ResolverLegacy performs domain name resolutions.

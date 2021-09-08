@@ -106,6 +106,9 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 // necessary to perform sane measurements with tracing. We will be
 // able to possibly relax this requirement after we change the
 // way in which we perform measurements.
+//
+// The returned transport will set a default user agent if the
+// request has not already set a user agent.
 func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 	// Using oohttp to support any TLS library.
 	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
@@ -137,13 +140,15 @@ func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTra
 
 	// Ensure we correctly forward CloseIdleConnections and compose
 	// with a logging transport thus enabling logging.
-	return &httpTransportLogger{
-		HTTPTransport: &httpTransportConnectionsCloser{
-			HTTPTransport: &oohttp.StdlibTransport{Transport: txp},
-			Dialer:        dialer,
-			TLSDialer:     tlsDialer,
+	return &httpUserAgentTransport{
+		HTTPTransport: &httpTransportLogger{
+			HTTPTransport: &httpTransportConnectionsCloser{
+				HTTPTransport: &oohttp.StdlibTransport{Transport: txp},
+				Dialer:        dialer,
+				TLSDialer:     tlsDialer,
+			},
+			Logger: logger,
 		},
-		Logger: logger,
 	}
 }
 
@@ -232,4 +237,30 @@ func (c *httpTLSConnWithReadTimeout) Read(b []byte) (int, error) {
 	c.TLSConn.SetReadDeadline(time.Now().Add(httpConnReadTimeout))
 	defer c.TLSConn.SetReadDeadline(time.Time{})
 	return c.TLSConn.Read(b)
+}
+
+// httpUserAgentTransport is a transport that ensures that we always
+// set an OONI specific default User-Agent header.
+type httpUserAgentTransport struct {
+	HTTPTransport
+}
+
+const defaultHTTPUserAgent = "miniooni/0.1.0-dev"
+
+func (txp *httpUserAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Header.Get("User-Agent") == "" {
+		req.Header.Set("User-Agent", defaultHTTPUserAgent)
+	}
+	return txp.HTTPTransport.RoundTrip(req)
+}
+
+var _ HTTPTransport = &httpUserAgentTransport{}
+
+// NewHTTPTransportStdlib creates a new HTTPTransport that uses
+// the Go standard library for all operations, including DNS
+// resolutions and TLS handshakes.
+func NewHTTPTransportStdlib(logger Logger) HTTPTransport {
+	dialer := NewDialerWithResolver(logger, NewResolverStdlib(logger))
+	tlsDialer := NewTLSDialer(dialer, NewTLSHandshakerStdlib(logger))
+	return NewHTTPTransport(logger, dialer, tlsDialer)
 }

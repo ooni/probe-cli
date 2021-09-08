@@ -202,7 +202,7 @@ func TestNewHTTPTransport(t *testing.T) {
 					called.Add(1)
 				},
 			},
-			Resolver: NewResolverSystem(log.Log),
+			Resolver: NewResolverStdlib(log.Log),
 		}
 		td := NewTLSDialer(d, NewTLSHandshakerStdlib(log.Log))
 		txp := NewHTTPTransport(log.Log, d, td)
@@ -224,7 +224,8 @@ func TestNewHTTPTransport(t *testing.T) {
 		d := &mocks.Dialer{}
 		td := &mocks.TLSDialer{}
 		txp := NewHTTPTransport(log.Log, d, td)
-		logger := txp.(*httpTransportLogger)
+		ua := txp.(*httpUserAgentTransport)
+		logger := ua.HTTPTransport.(*httpTransportLogger)
 		if logger.Logger != log.Log {
 			t.Fatal("invalid logger")
 		}
@@ -422,4 +423,79 @@ func TestHTTPTLSDialerWithReadTimeout(t *testing.T) {
 			t.Fatal("not called")
 		}
 	})
+}
+
+func TestHTTPUserAgentTransport(t *testing.T) {
+	t.Run("CloseIdleConnections", func(t *testing.T) {
+		var called bool
+		txp := &httpUserAgentTransport{
+			HTTPTransport: &mocks.HTTPTransport{
+				MockCloseIdleConnections: func() {
+					called = true
+				},
+			},
+		}
+		txp.CloseIdleConnections()
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+
+	t.Run("RoundTrip", func(t *testing.T) {
+		t.Run("without an user-agent", func(t *testing.T) {
+			var ua string
+			txp := &httpUserAgentTransport{
+				HTTPTransport: &mocks.HTTPTransport{
+					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+						ua = req.Header.Get("User-Agent")
+						return &http.Response{}, nil
+					},
+				},
+			}
+			txp.RoundTrip(&http.Request{Header: make(http.Header)})
+			if ua != defaultHTTPUserAgent {
+				t.Fatal("not the expected user-agent")
+			}
+		})
+
+		t.Run("with an user-agent", func(t *testing.T) {
+			var ua string
+			expected := "antani/1.0"
+			txp := &httpUserAgentTransport{
+				HTTPTransport: &mocks.HTTPTransport{
+					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+						ua = req.Header.Get("User-Agent")
+						return &http.Response{}, nil
+					},
+				},
+			}
+			txp.RoundTrip(&http.Request{
+				Header: http.Header{
+					"User-Agent": {expected},
+				},
+			})
+			if ua != expected {
+				t.Fatal("not the expected user-agent")
+			}
+		})
+	})
+}
+
+func TestNewHTTPTransportStdlib(t *testing.T) {
+	// What to test about this factory?
+	txp := NewHTTPTransportStdlib(log.Log)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // immediately!
+	req, err := http.NewRequestWithContext(ctx, "GET", "http://x.org", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := txp.RoundTrip(req)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("unexpected err", err)
+	}
+	if resp != nil {
+		t.Fatal("unexpected resp")
+	}
+	txp.CloseIdleConnections()
 }
