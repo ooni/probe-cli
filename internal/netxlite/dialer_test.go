@@ -79,7 +79,7 @@ func TestDialerSystem(t *testing.T) {
 			start := time.Now()
 			conn, err := d.DialContext(ctx, "tcp", "dns.google:443")
 			stop := time.Now()
-			if err == nil || err.Error() != "dial tcp: i/o timeout" {
+			if err == nil || !strings.HasSuffix(err.Error(), "i/o timeout") {
 				t.Fatal(err)
 			}
 			if conn != nil {
