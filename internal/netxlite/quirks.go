@@ -29,6 +29,8 @@ import (
 //
 // This is CLEARLY a QUIRK anyway. There may code depending on how
 // we do things here and it's tricky to remove this behavior.
+//
+// See TODO(https://github.com/ooni/probe/issues/1779).
 func quirkReduceErrors(errorslist []error) error {
 	if len(errorslist) == 0 {
 		return nil
@@ -49,6 +51,8 @@ func quirkReduceErrors(errorslist []error) error {
 //
 // It saddens me to have this quirk, but it is here to pair
 // with quirkReduceErrors, which assumes that <facepalm>.
+//
+// See TODO(https://github.com/ooni/probe/issues/1779).
 func quirkSortIPAddrs(addrs []string) (out []string) {
 	isIPv6 := func(x string) bool {
 		// This check for identifying IPv6 is discussed

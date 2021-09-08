@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -16,8 +17,8 @@ import (
 
 func TestNewDialer(t *testing.T) {
 	t.Run("produces a chain with the expected types", func(t *testing.T) {
-		dlr := NewDialerWithoutResolver(log.Log)
-		logger := dlr.(*dialerLogger)
+		d := NewDialerWithoutResolver(log.Log)
+		logger := d.(*dialerLogger)
 		if logger.Logger != log.Log {
 			t.Fatal("invalid logger")
 		}
@@ -35,54 +36,76 @@ func TestNewDialer(t *testing.T) {
 }
 
 func TestDialerSystem(t *testing.T) {
-	t.Run("has a default timeout of 15 seconds", func(t *testing.T) {
+	t.Run("has a default timeout", func(t *testing.T) {
 		d := &dialerSystem{}
 		ud := d.newUnderlyingDialer()
-		if ud.Timeout != 15*time.Second {
-			t.Fatal("invalid default timeout")
+		if ud.Timeout != dialerDefaultTimeout {
+			t.Fatal("unexpected default timeout")
 		}
 	})
 
-	t.Run("we can change the default timeout for testing", func(t *testing.T) {
-		d := &dialerSystem{timeout: 1 * time.Second}
+	t.Run("we can change the timeout for testing", func(t *testing.T) {
+		const smaller = 1 * time.Second
+		d := &dialerSystem{timeout: smaller}
 		ud := d.newUnderlyingDialer()
-		if ud.Timeout != 1*time.Second {
-			t.Fatal("invalid default timeout")
+		if ud.Timeout != smaller {
+			t.Fatal("unexpected timeout")
 		}
 	})
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
 		d := &dialerSystem{}
-		d.CloseIdleConnections() // should not crash
+		d.CloseIdleConnections() // to avoid missing coverage
 	})
 
-	t.Run("DialContext with canceled context", func(t *testing.T) {
-		d := &dialerSystem{}
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel() // immediately!
-		conn, err := d.DialContext(ctx, "tcp", "dns.google:443")
-		if err == nil || err.Error() != "dial tcp: operation was canceled" {
-			t.Fatal("unexpected err", err)
-		}
-		if conn != nil {
-			t.Fatal("unexpected conn")
-		}
+	t.Run("DialContext", func(t *testing.T) {
+		t.Run("with canceled context", func(t *testing.T) {
+			d := &dialerSystem{}
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel() // immediately!
+			conn, err := d.DialContext(ctx, "tcp", "dns.google:443")
+			if err == nil || err.Error() != "dial tcp: operation was canceled" {
+				t.Fatal("unexpected err", err)
+			}
+			if conn != nil {
+				t.Fatal("unexpected conn")
+			}
+		})
+
+		t.Run("enforces the configured timeout", func(t *testing.T) {
+			const timeout = 1 * time.Millisecond
+			d := &dialerSystem{timeout: timeout}
+			ctx := context.Background()
+			start := time.Now()
+			conn, err := d.DialContext(ctx, "tcp", "dns.google:443")
+			stop := time.Now()
+			if err == nil || !strings.HasSuffix(err.Error(), "i/o timeout") {
+				t.Fatal(err)
+			}
+			if conn != nil {
+				t.Fatal("unexpected conn")
+			}
+			if stop.Sub(start) > 100*time.Millisecond {
+				t.Fatal("undable to enforce timeout")
+			}
+		})
 	})
 }
 
 func TestDialerResolver(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
-		t.Run("without a port", func(t *testing.T) {
+		t.Run("fails without a port", func(t *testing.T) {
 			d := &dialerResolver{
 				Dialer:   &dialerSystem{},
 				Resolver: &resolverSystem{},
 			}
-			conn, err := d.DialContext(context.Background(), "tcp", "ooni.nu")
+			const missingPort = "ooni.nu"
+			conn, err := d.DialContext(context.Background(), "tcp", missingPort)
 			if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
-				t.Fatal("not the error we expected", err)
+				t.Fatal("unexpected err", err)
 			}
 			if conn != nil {
-				t.Fatal("expected a nil conn here")
+				t.Fatal("unexpected conn")
 			}
 		})
 
@@ -111,9 +134,13 @@ func TestDialerResolver(t *testing.T) {
 						return nil, io.EOF
 					},
 				},
-				Resolver: &nullResolver{},
+				Resolver: &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						return []string{"1.1.1.1", "8.8.8.8"}, nil
+					},
+				},
 			}
-			conn, err := d.DialContext(context.Background(), "tcp", "1.1.1.1:853")
+			conn, err := d.DialContext(context.Background(), "tcp", "dot.dns:853")
 			if !errors.Is(err, io.EOF) {
 				t.Fatal("not the error we expected")
 			}
@@ -123,16 +150,18 @@ func TestDialerResolver(t *testing.T) {
 		})
 
 		t.Run("handles dialing success correctly for many IP addresses", func(t *testing.T) {
+			expectedConn := &mocks.Conn{
+				MockClose: func() error {
+					return nil
+				},
+			}
 			d := &dialerResolver{
 				Dialer: &mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-						return &mocks.Conn{
-							MockClose: func() error {
-								return nil
-							},
-						}, nil
+						return expectedConn, nil
 					},
-				}, Resolver: &mocks.Resolver{
+				},
+				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 						return []string{"1.1.1.1", "8.8.8.8"}, nil
 					},
@@ -142,10 +171,165 @@ func TestDialerResolver(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if conn == nil {
-				t.Fatal("expected non-nil conn")
+			if conn != expectedConn {
+				t.Fatal("unexpected conn")
 			}
 			conn.Close()
+		})
+
+		t.Run("calls the underlying dialer sequentially", func(t *testing.T) {
+			// This test is fundamental to the following
+			// TODO(https://github.com/ooni/probe/issues/1779)
+			mu := &sync.Mutex{}
+			d := &dialerResolver{
+				Dialer: &mocks.Dialer{
+					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+						// It should not happen to have parallel dials with
+						// this implementation. When we have parallelism greater
+						// than one, this code will lock forever and we'll see
+						// a failed test and see we broke the QUIRK.
+						defer mu.Unlock()
+						mu.Lock()
+						return nil, io.EOF
+					},
+				},
+				Resolver: &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						return []string{"1.1.1.1", "8.8.8.8"}, nil
+					},
+				},
+			}
+			conn, err := d.DialContext(context.Background(), "tcp", "dot.dns:853")
+			if !errors.Is(err, io.EOF) {
+				t.Fatal("not the error we expected")
+			}
+			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
+		})
+
+		t.Run("attempts with IPv4 addresses before IPv6 addresses", func(t *testing.T) {
+			// This test is fundamental to the following
+			// TODO(https://github.com/ooni/probe/issues/1779)
+			mu := &sync.Mutex{}
+			var attempts []string
+			d := &dialerResolver{
+				Dialer: &mocks.Dialer{
+					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+						// It should not happen to have parallel dials with
+						// this implementation. When we have parallelism greater
+						// than one, this code will lock forever and we'll see
+						// a failed test and see we broke the QUIRK.
+						defer mu.Unlock()
+						attempts = append(attempts, address)
+						mu.Lock()
+						return nil, io.EOF
+					},
+				},
+				Resolver: &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						return []string{"2001:4860:4860::8888", "8.8.8.8"}, nil
+					},
+				},
+			}
+			conn, err := d.DialContext(context.Background(), "tcp", "dot.dns:853")
+			if !errors.Is(err, io.EOF) {
+				t.Fatal("not the error we expected")
+			}
+			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
+			mu.Lock()
+			asExpected := (attempts[0] == "8.8.8.8:853" &&
+				attempts[1] == "[2001:4860:4860::8888]:853")
+			mu.Unlock()
+			if !asExpected {
+				t.Fatal("addresses not reordered")
+			}
+		})
+
+		t.Run("returns the first meaningful error if there is one", func(t *testing.T) {
+			// This test is fundamental to the following
+			// TODO(https://github.com/ooni/probe/issues/1779)
+			mu := &sync.Mutex{}
+			errorsList := []error{
+				errors.New("a mocked error"),
+				errorsx.NewErrWrapper(
+					errorsx.ClassifyGenericError,
+					errorsx.CloseOperation,
+					io.EOF,
+				),
+			}
+			var errorIdx int
+			d := &dialerResolver{
+				Dialer: &mocks.Dialer{
+					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+						// It should not happen to have parallel dials with
+						// this implementation. When we have parallelism greater
+						// than one, this code will lock forever and we'll see
+						// a failed test and see we broke the QUIRK.
+						defer mu.Unlock()
+						err := errorsList[errorIdx]
+						errorIdx++
+						mu.Lock()
+						return nil, err
+					},
+				},
+				Resolver: &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						return []string{"2001:4860:4860::8888", "8.8.8.8"}, nil
+					},
+				},
+			}
+			conn, err := d.DialContext(context.Background(), "tcp", "dot.dns:853")
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
+		})
+
+		t.Run("though ignores the unknown failures", func(t *testing.T) {
+			// This test is fundamental to the following
+			// TODO(https://github.com/ooni/probe/issues/1779)
+			mu := &sync.Mutex{}
+			errorsList := []error{
+				errors.New("a mocked error"),
+				errorsx.NewErrWrapper(
+					errorsx.ClassifyGenericError,
+					errorsx.CloseOperation,
+					errors.New("antani"),
+				),
+			}
+			var errorIdx int
+			d := &dialerResolver{
+				Dialer: &mocks.Dialer{
+					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+						// It should not happen to have parallel dials with
+						// this implementation. When we have parallelism greater
+						// than one, this code will lock forever and we'll see
+						// a failed test and see we broke the QUIRK.
+						defer mu.Unlock()
+						err := errorsList[errorIdx]
+						errorIdx++
+						mu.Lock()
+						return nil, err
+					},
+				},
+				Resolver: &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						return []string{"2001:4860:4860::8888", "8.8.8.8"}, nil
+					},
+				},
+			}
+			conn, err := d.DialContext(context.Background(), "tcp", "dot.dns:853")
+			if err == nil || err.Error() != "a mocked error" {
+				t.Fatal("unexpected err", err)
+			}
+			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
 		})
 	})
 
@@ -207,6 +391,12 @@ func TestDialerResolver(t *testing.T) {
 func TestDialerLogger(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("handles success correctly", func(t *testing.T) {
+			var count int
+			lo := &mocks.Logger{
+				MockDebugf: func(format string, v ...interface{}) {
+					count++
+				},
+			}
 			d := &dialerLogger{
 				Dialer: &mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
@@ -217,7 +407,7 @@ func TestDialerLogger(t *testing.T) {
 						}, nil
 					},
 				},
-				Logger: log.Log,
+				Logger: lo,
 			}
 			conn, err := d.DialContext(context.Background(), "tcp", "www.google.com:443")
 			if err != nil {
@@ -227,16 +417,25 @@ func TestDialerLogger(t *testing.T) {
 				t.Fatal("expected non-nil conn here")
 			}
 			conn.Close()
+			if count != 2 {
+				t.Fatal("not enough log calls")
+			}
 		})
 
 		t.Run("handles failure correctly", func(t *testing.T) {
+			var count int
+			lo := &mocks.Logger{
+				MockDebugf: func(format string, v ...interface{}) {
+					count++
+				},
+			}
 			d := &dialerLogger{
 				Dialer: &mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 						return nil, io.EOF
 					},
 				},
-				Logger: log.Log,
+				Logger: lo,
 			}
 			conn, err := d.DialContext(context.Background(), "tcp", "www.google.com:443")
 			if !errors.Is(err, io.EOF) {
@@ -244,6 +443,9 @@ func TestDialerLogger(t *testing.T) {
 			}
 			if conn != nil {
 				t.Fatal("expected nil conn here")
+			}
+			if count != 2 {
+				t.Fatal("not enough log calls")
 			}
 		})
 	})
@@ -290,7 +492,7 @@ func TestDialerSingleUse(t *testing.T) {
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
 		d := &dialerSingleUse{}
-		d.CloseIdleConnections() // does not crash
+		d.CloseIdleConnections() // to have the coverage
 	})
 }
 
@@ -472,5 +674,5 @@ func TestNewNullDialer(t *testing.T) {
 	if conn != nil {
 		t.Fatal("expected nil conn")
 	}
-	dialer.CloseIdleConnections() // does not crash
+	dialer.CloseIdleConnections() // to have coverage
 }
