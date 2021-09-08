@@ -277,3 +277,23 @@ func (c *dialerErrWrapperConn) Close() error {
 	}
 	return nil
 }
+
+// ErrNoDialer indicates that no dialer is configured.
+var ErrNoDialer = errors.New("no configured dialer")
+
+// NewNullDialer returns a dialer that always fails.
+func NewNullDialer() Dialer {
+	return &nullDialer{}
+}
+
+type nullDialer struct{}
+
+var _ Dialer = &nullDialer{}
+
+func (*nullDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	return nil, ErrNoDialer
+}
+
+func (*nullDialer) CloseIdleConnections() {
+	// nothing to do
+}
