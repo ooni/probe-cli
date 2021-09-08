@@ -21,8 +21,17 @@ import (
 func TestHTTPTransportLogger(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		t.Run("with failure", func(t *testing.T) {
+			var count int
+			lo := &mocks.Logger{
+				MockDebug: func(message string) {
+					count++
+				},
+				MockDebugf: func(format string, v ...interface{}) {
+					count++
+				},
+			}
 			txp := &httpTransportLogger{
-				Logger: log.Log,
+				Logger: lo,
 				HTTPTransport: &mocks.HTTPTransport{
 					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
 						return nil, io.EOF
@@ -36,6 +45,9 @@ func TestHTTPTransportLogger(t *testing.T) {
 			}
 			if resp != nil {
 				t.Fatal("expected nil response here")
+			}
+			if count < 1 {
+				t.Fatal("no logs?!")
 			}
 		})
 
@@ -73,8 +85,17 @@ func TestHTTPTransportLogger(t *testing.T) {
 		})
 
 		t.Run("with success", func(t *testing.T) {
+			var count int
+			lo := &mocks.Logger{
+				MockDebug: func(message string) {
+					count++
+				},
+				MockDebugf: func(format string, v ...interface{}) {
+					count++
+				},
+			}
 			txp := &httpTransportLogger{
-				Logger: log.Log,
+				Logger: lo,
 				HTTPTransport: &mocks.HTTPTransport{
 					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
 						return &http.Response{
@@ -94,6 +115,9 @@ func TestHTTPTransportLogger(t *testing.T) {
 			}
 			iox.ReadAllContext(context.Background(), resp.Body)
 			resp.Body.Close()
+			if count < 1 {
+				t.Fatal("no logs?!")
+			}
 		})
 	})
 

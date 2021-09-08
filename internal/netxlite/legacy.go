@@ -13,6 +13,7 @@ var (
 	DefaultDialer        = &dialerSystem{}
 	DefaultTLSHandshaker = defaultTLSHandshaker
 	NewConnUTLS          = newConnUTLS
+	DefaultResolver      = &resolverSystem{}
 )
 
 // These types export internal names to legacy ooni/probe-cli code.

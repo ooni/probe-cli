@@ -11,15 +11,18 @@ import (
 
 // NewTLSHandshakerUTLS creates a new TLS handshaker using the
 // gitlab.com/yawning/utls library to create TLS conns.
+//
+// The handshaker guarantees:
+//
+// 1. logging
+//
+// 2. error wrapping
+//
+// Passing a nil `id` will make this function panic.
 func NewTLSHandshakerUTLS(logger Logger, id *utls.ClientHelloID) TLSHandshaker {
-	return &tlsHandshakerLogger{
-		TLSHandshaker: &tlsHandshakerErrWrapper{
-			TLSHandshaker: &tlsHandshakerConfigurable{
-				NewConn: newConnUTLS(id),
-			},
-		},
-		Logger: logger,
-	}
+	return newTLSHandshaker(&tlsHandshakerConfigurable{
+		NewConn: newConnUTLS(id),
+	}, logger)
 }
 
 // utlsConn implements TLSConn and uses a utls UConn as its underlying connection

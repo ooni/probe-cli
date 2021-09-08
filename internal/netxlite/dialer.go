@@ -40,7 +40,11 @@ type Dialer interface {
 //
 // 4. wraps errors;
 //
-// 5. has a configured connect timeout.
+// 5. has a configured connect timeout;
+//
+// 6. if a dialer wraps a resolver, the dialer will forward
+// the CloseIdleConnection call to its resolver (which is
+// instrumental to manage a DoH resolver connections properly).
 func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
 	return &dialerLogger{
 		Dialer: &dialerResolver{

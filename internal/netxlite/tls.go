@@ -99,7 +99,7 @@ func ConfigureTLSVersion(config *tls.Config, version string) error {
 		config.MinVersion = tls.VersionTLS10
 		config.MaxVersion = tls.VersionTLS10
 	case "":
-		// nothing
+		// nothing to do
 	default:
 		return ErrInvalidTLSVersion
 	}
@@ -119,7 +119,7 @@ type TLSHandshaker interface {
 	// the given config. This function DOES NOT take ownership of the connection
 	// and it's your responsibility to close it on failure.
 	//
-	// The returned connection will always implement the TLSConn interface
+	// QUIRK: The returned connection will always implement the TLSConn interface
 	// exposed by this package. A future version of this interface will instead
 	// return directly a TLSConn and remove the ConnectionState param.
 	Handshake(ctx context.Context, conn net.Conn, config *tls.Config) (
@@ -128,10 +128,21 @@ type TLSHandshaker interface {
 
 // NewTLSHandshakerStdlib creates a new TLS handshaker using the
 // go standard library to create TLS connections.
+//
+// The handshaker guarantees:
+//
+// 1. logging
+//
+// 2. error wrapping
 func NewTLSHandshakerStdlib(logger Logger) TLSHandshaker {
+	return newTLSHandshaker(&tlsHandshakerConfigurable{}, logger)
+}
+
+// newTLSHandshaker is the common factory for creating a new TLSHandshaker
+func newTLSHandshaker(th TLSHandshaker, logger Logger) TLSHandshaker {
 	return &tlsHandshakerLogger{
 		TLSHandshaker: &tlsHandshakerErrWrapper{
-			TLSHandshaker: &tlsHandshakerConfigurable{},
+			TLSHandshaker: th,
 		},
 		Logger: logger,
 	}
@@ -191,11 +202,8 @@ var defaultTLSHandshaker = &tlsHandshakerConfigurable{}
 
 // tlsHandshakerLogger is a TLSHandshaker with logging.
 type tlsHandshakerLogger struct {
-	// TLSHandshaker is the underlying handshaker.
-	TLSHandshaker TLSHandshaker
-
-	// Logger is the underlying logger.
-	Logger Logger
+	TLSHandshaker
+	Logger
 }
 
 var _ TLSHandshaker = &tlsHandshakerLogger{}

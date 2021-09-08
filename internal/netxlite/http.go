@@ -30,7 +30,6 @@ type httpTransportLogger struct {
 
 var _ HTTPTransport = &httpTransportLogger{}
 
-// RoundTrip implements HTTPTransport.RoundTrip.
 func (txp *httpTransportLogger) RoundTrip(req *http.Request) (*http.Response, error) {
 	host := req.Host
 	if host == "" {
@@ -64,13 +63,12 @@ func (txp *httpTransportLogger) logTrip(req *http.Request) (*http.Response, erro
 	return resp, nil
 }
 
-// CloseIdleConnections implement HTTPTransport.CloseIdleConnections.
 func (txp *httpTransportLogger) CloseIdleConnections() {
 	txp.HTTPTransport.CloseIdleConnections()
 }
 
 // httpTransportConnectionsCloser is an HTTPTransport that
-// correctly forwards CloseIdleConnections.
+// correctly forwards CloseIdleConnections calls.
 type httpTransportConnectionsCloser struct {
 	HTTPTransport
 	Dialer
@@ -98,6 +96,16 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 // The returned transport will disable transparent decompression
 // of compressed response bodies (and will not automatically
 // ask for such compression, though you can always do that manually).
+//
+// The returned transport will configure TCP and TLS connections
+// created using its dialer and TLS dialer to always have a
+// read watchdog timeout to address https://github.com/ooni/probe/issues/1609.
+//
+// The returned transport will always enforce 1 connection per host
+// and we cannot get rid of this QUIRK requirement because it is
+// necessary to perform sane measurements with tracing. We will be
+// able to possibly relax this requirement after we change the
+// way in which we perform measurements.
 func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 	// Using oohttp to support any TLS library.
 	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
@@ -115,8 +123,6 @@ func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTra
 
 	// Better for Cloudflare DNS and also better because we have less
 	// noisy events and we can better understand what happened.
-	//
-	// UNDOCUMENTED: I am wondering whether we can relax this constraint.
 	txp.MaxConnsPerHost = 1
 
 	// The following (1) reduces the number of headers that Go will
@@ -175,7 +181,7 @@ func (d *httpTLSDialerWithReadTimeout) DialTLSContext(
 	if err != nil {
 		return nil, err
 	}
-	tconn, okay := conn.(TLSConn)
+	tconn, okay := conn.(TLSConn) // part of the contract but let's be graceful
 	if !okay {
 		conn.Close() // we own the conn here
 		return nil, ErrNotTLSConn
