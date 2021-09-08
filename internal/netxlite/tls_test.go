@@ -118,354 +118,357 @@ func TestConfigureTLSVersion(t *testing.T) {
 	}
 }
 
-func TestTLSHandshakerConfigurableWithError(t *testing.T) {
-	var times []time.Time
-	h := &tlsHandshakerConfigurable{}
-	tcpConn := &mocks.Conn{
-		MockWrite: func(b []byte) (int, error) {
-			return 0, io.EOF
-		},
-		MockSetDeadline: func(t time.Time) error {
-			times = append(times, t)
-			return nil
-		},
-	}
-	ctx := context.Background()
-	conn, _, err := h.Handshake(ctx, tcpConn, &tls.Config{
-		ServerName: "x.org",
-	})
-	if err != io.EOF {
-		t.Fatal("not the error that we expected")
-	}
-	if conn != nil {
-		t.Fatal("expected nil con here")
-	}
-	if len(times) != 2 {
-		t.Fatal("expected two time entries")
-	}
-	if !times[0].After(time.Now()) {
-		t.Fatal("timeout not in the future")
-	}
-	if !times[1].IsZero() {
-		t.Fatal("did not clear timeout on exit")
-	}
-}
+func TestTLSHandshakerConfigurable(t *testing.T) {
+	t.Run("Handshake", func(t *testing.T) {
+		t.Run("with error", func(t *testing.T) {
 
-func TestTLSHandshakerConfigurableSuccess(t *testing.T) {
-	handler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.WriteHeader(200)
-	})
-	srvr := httptest.NewTLSServer(handler)
-	defer srvr.Close()
-	URL, err := url.Parse(srvr.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	conn, err := net.Dial("tcp", URL.Host)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer conn.Close()
-	handshaker := &tlsHandshakerConfigurable{}
-	ctx := context.Background()
-	config := &tls.Config{
-		InsecureSkipVerify: true,
-		MinVersion:         tls.VersionTLS13,
-		MaxVersion:         tls.VersionTLS13,
-		ServerName:         URL.Hostname(),
-	}
-	tlsConn, connState, err := handshaker.Handshake(ctx, conn, config)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tlsConn.Close()
-	if connState.Version != tls.VersionTLS13 {
-		t.Fatal("unexpected TLS version")
-	}
-}
-
-func TestTLSHandshakerConfigurableSetsDefaultRootCAs(t *testing.T) {
-	expected := errors.New("mocked error")
-	var gotTLSConfig *tls.Config
-	handshaker := &tlsHandshakerConfigurable{
-		NewConn: func(conn net.Conn, config *tls.Config) TLSConn {
-			gotTLSConfig = config
-			return &mocks.TLSConn{
-				MockHandshakeContext: func(ctx context.Context) error {
-					return expected
+			var times []time.Time
+			h := &tlsHandshakerConfigurable{}
+			tcpConn := &mocks.Conn{
+				MockWrite: func(b []byte) (int, error) {
+					return 0, io.EOF
+				},
+				MockSetDeadline: func(t time.Time) error {
+					times = append(times, t)
+					return nil
 				},
 			}
-		},
-	}
-	ctx := context.Background()
-	config := &tls.Config{}
-	conn := &mocks.Conn{
-		MockSetDeadline: func(t time.Time) error {
-			return nil
-		},
-	}
-	tlsConn, connState, err := handshaker.Handshake(ctx, conn, config)
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected", err)
-	}
-	if !reflect.ValueOf(connState).IsZero() {
-		t.Fatal("expected zero connState here")
-	}
-	if tlsConn != nil {
-		t.Fatal("expected nil tlsConn here")
-	}
-	if config.RootCAs != nil {
-		t.Fatal("config.RootCAs should still be nil")
-	}
-	if gotTLSConfig.RootCAs != defaultCertPool {
-		t.Fatal("gotTLSConfig.RootCAs has not been correctly set")
-	}
+			ctx := context.Background()
+			conn, _, err := h.Handshake(ctx, tcpConn, &tls.Config{
+				ServerName: "x.org",
+			})
+			if err != io.EOF {
+				t.Fatal("not the error that we expected")
+			}
+			if conn != nil {
+				t.Fatal("expected nil con here")
+			}
+			if len(times) != 2 {
+				t.Fatal("expected two time entries")
+			}
+			if !times[0].After(time.Now()) {
+				t.Fatal("timeout not in the future")
+			}
+			if !times[1].IsZero() {
+				t.Fatal("did not clear timeout on exit")
+			}
+		})
+
+		t.Run("with success", func(t *testing.T) {
+			handler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				rw.WriteHeader(200)
+			})
+			srvr := httptest.NewTLSServer(handler)
+			defer srvr.Close()
+			URL, err := url.Parse(srvr.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+			conn, err := net.Dial("tcp", URL.Host)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer conn.Close()
+			handshaker := &tlsHandshakerConfigurable{}
+			ctx := context.Background()
+			config := &tls.Config{
+				InsecureSkipVerify: true,
+				MinVersion:         tls.VersionTLS13,
+				MaxVersion:         tls.VersionTLS13,
+				ServerName:         URL.Hostname(),
+			}
+			tlsConn, connState, err := handshaker.Handshake(ctx, conn, config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tlsConn.Close()
+			if connState.Version != tls.VersionTLS13 {
+				t.Fatal("unexpected TLS version")
+			}
+		})
+
+		t.Run("sets default root CA", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			var gotTLSConfig *tls.Config
+			handshaker := &tlsHandshakerConfigurable{
+				NewConn: func(conn net.Conn, config *tls.Config) TLSConn {
+					gotTLSConfig = config
+					return &mocks.TLSConn{
+						MockHandshakeContext: func(ctx context.Context) error {
+							return expected
+						},
+					}
+				},
+			}
+			ctx := context.Background()
+			config := &tls.Config{}
+			conn := &mocks.Conn{
+				MockSetDeadline: func(t time.Time) error {
+					return nil
+				},
+			}
+			tlsConn, connState, err := handshaker.Handshake(ctx, conn, config)
+			if !errors.Is(err, expected) {
+				t.Fatal("not the error we expected", err)
+			}
+			if !reflect.ValueOf(connState).IsZero() {
+				t.Fatal("expected zero connState here")
+			}
+			if tlsConn != nil {
+				t.Fatal("expected nil tlsConn here")
+			}
+			if config.RootCAs != nil {
+				t.Fatal("config.RootCAs should still be nil")
+			}
+			if gotTLSConfig.RootCAs != defaultCertPool {
+				t.Fatal("gotTLSConfig.RootCAs has not been correctly set")
+			}
+		})
+	})
 }
 
-func TestTLSHandshakerLoggerSuccess(t *testing.T) {
-	th := &tlsHandshakerLogger{
-		TLSHandshaker: &mocks.TLSHandshaker{
-			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-				return tls.Client(conn, config), tls.ConnectionState{}, nil
+func TestTLSHandshakerLogger(t *testing.T) {
+	t.Run("Handshake", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			th := &tlsHandshakerLogger{
+				TLSHandshaker: &mocks.TLSHandshaker{
+					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+						return tls.Client(conn, config), tls.ConnectionState{}, nil
+					},
+				},
+				Logger: log.Log,
+			}
+			conn := &mocks.Conn{
+				MockClose: func() error {
+					return nil
+				},
+			}
+			config := &tls.Config{}
+			ctx := context.Background()
+			tlsConn, connState, err := th.Handshake(ctx, conn, config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := tlsConn.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.ValueOf(connState).IsZero() {
+				t.Fatal("expected zero ConnectionState here")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			th := &tlsHandshakerLogger{
+				TLSHandshaker: &mocks.TLSHandshaker{
+					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+						return nil, tls.ConnectionState{}, expected
+					},
+				},
+				Logger: log.Log,
+			}
+			conn := &mocks.Conn{
+				MockClose: func() error {
+					return nil
+				},
+			}
+			config := &tls.Config{}
+			ctx := context.Background()
+			tlsConn, connState, err := th.Handshake(ctx, conn, config)
+			if !errors.Is(err, expected) {
+				t.Fatal("not the error we expected", err)
+			}
+			if tlsConn != nil {
+				t.Fatal("expected nil conn here")
+			}
+			if !reflect.ValueOf(connState).IsZero() {
+				t.Fatal("expected zero ConnectionState here")
+			}
+		})
+	})
+}
+
+func TestTLSDialer(t *testing.T) {
+	t.Run("CloseIdleConnections", func(t *testing.T) {
+		var called bool
+		dialer := &tlsDialer{
+			Dialer: &mocks.Dialer{
+				MockCloseIdleConnections: func() {
+					called = true
+				},
 			},
-		},
-		Logger: log.Log,
-	}
-	conn := &mocks.Conn{
-		MockClose: func() error {
-			return nil
-		},
-	}
-	config := &tls.Config{}
-	ctx := context.Background()
-	tlsConn, connState, err := th.Handshake(ctx, conn, config)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := tlsConn.Close(); err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.ValueOf(connState).IsZero() {
-		t.Fatal("expected zero ConnectionState here")
-	}
+		}
+		dialer.CloseIdleConnections()
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+
+	t.Run("DialTLSContext", func(t *testing.T) {
+		t.Run("failure to split host and port", func(t *testing.T) {
+			dialer := &tlsDialer{}
+			ctx := context.Background()
+			const address = "www.google.com" // missing port
+			conn, err := dialer.DialTLSContext(ctx, "tcp", address)
+			if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
+				t.Fatal("not the error we expected", err)
+			}
+			if conn != nil {
+				t.Fatal("connection is not nil")
+			}
+		})
+
+		t.Run("failure dialing", func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel() // immediately fail
+			dialer := tlsDialer{Dialer: &dialerSystem{}}
+			conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
+			if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
+				t.Fatal("not the error we expected", err)
+			}
+			if conn != nil {
+				t.Fatal("connection is not nil")
+			}
+		})
+
+		t.Run("failure handshaking", func(t *testing.T) {
+			ctx := context.Background()
+			dialer := tlsDialer{
+				Config: &tls.Config{},
+				Dialer: &mocks.Dialer{MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+					return &mocks.Conn{MockWrite: func(b []byte) (int, error) {
+						return 0, io.EOF
+					}, MockClose: func() error {
+						return nil
+					}, MockSetDeadline: func(t time.Time) error {
+						return nil
+					}}, nil
+				}},
+				TLSHandshaker: &tlsHandshakerConfigurable{},
+			}
+			conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
+			if !errors.Is(err, io.EOF) {
+				t.Fatal("not the error we expected", err)
+			}
+			if conn != nil {
+				t.Fatal("connection is not nil")
+			}
+		})
+
+		t.Run("success handshaking", func(t *testing.T) {
+			ctx := context.Background()
+			dialer := tlsDialer{
+				Dialer: &mocks.Dialer{MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+					return &mocks.Conn{MockWrite: func(b []byte) (int, error) {
+						return 0, io.EOF
+					}, MockClose: func() error {
+						return nil
+					}, MockSetDeadline: func(t time.Time) error {
+						return nil
+					}}, nil
+				}},
+				TLSHandshaker: &mocks.TLSHandshaker{
+					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+						return tls.Client(conn, config), tls.ConnectionState{}, nil
+					},
+				},
+			}
+			conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if conn == nil {
+				t.Fatal("connection is nil")
+			}
+			conn.Close()
+		})
+	})
+
+	t.Run("config", func(t *testing.T) {
+		t.Run("from empty config for web", func(t *testing.T) {
+			d := &tlsDialer{}
+			config := d.config("www.google.com", "443")
+			if config.ServerName != "www.google.com" {
+				t.Fatal("invalid server name")
+			}
+			if diff := cmp.Diff(config.NextProtos, []string{"h2", "http/1.1"}); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("from empty config for dot", func(t *testing.T) {
+			d := &tlsDialer{}
+			config := d.config("dns.google", "853")
+			if config.ServerName != "dns.google" {
+				t.Fatal("invalid server name")
+			}
+			if diff := cmp.Diff(config.NextProtos, []string{"dot"}); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("with server name", func(t *testing.T) {
+			d := &tlsDialer{
+				Config: &tls.Config{
+					ServerName: "example.com",
+				},
+			}
+			config := d.config("dns.google", "853")
+			if config.ServerName != "example.com" {
+				t.Fatal("invalid server name")
+			}
+			if diff := cmp.Diff(config.NextProtos, []string{"dot"}); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("with alpn", func(t *testing.T) {
+			d := &tlsDialer{
+				Config: &tls.Config{
+					NextProtos: []string{"h2"},
+				},
+			}
+			config := d.config("dns.google", "853")
+			if config.ServerName != "dns.google" {
+				t.Fatal("invalid server name")
+			}
+			if diff := cmp.Diff(config.NextProtos, []string{"h2"}); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	})
 }
 
-func TestTLSHandshakerLoggerFailure(t *testing.T) {
-	expected := errors.New("mocked error")
-	th := &tlsHandshakerLogger{
-		TLSHandshaker: &mocks.TLSHandshaker{
-			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-				return nil, tls.ConnectionState{}, expected
-			},
-		},
-		Logger: log.Log,
-	}
-	conn := &mocks.Conn{
-		MockClose: func() error {
-			return nil
-		},
-	}
-	config := &tls.Config{}
-	ctx := context.Background()
-	tlsConn, connState, err := th.Handshake(ctx, conn, config)
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected", err)
-	}
-	if tlsConn != nil {
-		t.Fatal("expected nil conn here")
-	}
-	if !reflect.ValueOf(connState).IsZero() {
-		t.Fatal("expected zero ConnectionState here")
-	}
-}
-
-func TestTLSDialerCloseIdleConnections(t *testing.T) {
-	var called bool
-	dialer := &tlsDialer{
-		Dialer: &mocks.Dialer{
-			MockCloseIdleConnections: func() {
-				called = true
-			},
-		},
-	}
-	dialer.CloseIdleConnections()
-	if !called {
-		t.Fatal("not called")
-	}
-}
-
-func TestTLSDialerDialTLSContextFailureSplitHostPort(t *testing.T) {
-	dialer := &tlsDialer{}
-	ctx := context.Background()
-	const address = "www.google.com" // missing port
-	conn, err := dialer.DialTLSContext(ctx, "tcp", address)
-	if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
-		t.Fatal("not the error we expected", err)
-	}
-	if conn != nil {
-		t.Fatal("connection is not nil")
-	}
-}
-
-func TestTLSDialerDialTLSContextFailureDialing(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // immediately fail
-	dialer := tlsDialer{Dialer: &dialerSystem{}}
-	conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
-	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
-		t.Fatal("not the error we expected", err)
-	}
-	if conn != nil {
-		t.Fatal("connection is not nil")
-	}
-}
-
-func TestTLSDialerDialTLSContextFailureHandshaking(t *testing.T) {
-	ctx := context.Background()
-	dialer := tlsDialer{
-		Config: &tls.Config{},
-		Dialer: &mocks.Dialer{MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-			return &mocks.Conn{MockWrite: func(b []byte) (int, error) {
-				return 0, io.EOF
-			}, MockClose: func() error {
-				return nil
-			}, MockSetDeadline: func(t time.Time) error {
-				return nil
-			}}, nil
-		}},
-		TLSHandshaker: &tlsHandshakerConfigurable{},
-	}
-	conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
-	if !errors.Is(err, io.EOF) {
-		t.Fatal("not the error we expected", err)
-	}
-	if conn != nil {
-		t.Fatal("connection is not nil")
-	}
-}
-
-func TestTLSDialerDialTLSContextSuccessHandshaking(t *testing.T) {
-	ctx := context.Background()
-	dialer := tlsDialer{
-		Dialer: &mocks.Dialer{MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-			return &mocks.Conn{MockWrite: func(b []byte) (int, error) {
-				return 0, io.EOF
-			}, MockClose: func() error {
-				return nil
-			}, MockSetDeadline: func(t time.Time) error {
-				return nil
-			}}, nil
-		}},
-		TLSHandshaker: &mocks.TLSHandshaker{
-			MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-				return tls.Client(conn, config), tls.ConnectionState{}, nil
-			},
-		},
-	}
-	conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if conn == nil {
-		t.Fatal("connection is nil")
-	}
-	conn.Close()
-}
-
-func TestTLSDialerConfigFromEmptyConfigForWeb(t *testing.T) {
-	d := &tlsDialer{}
-	config := d.config("www.google.com", "443")
-	if config.ServerName != "www.google.com" {
-		t.Fatal("invalid server name")
-	}
-	if diff := cmp.Diff(config.NextProtos, []string{"h2", "http/1.1"}); diff != "" {
-		t.Fatal(diff)
-	}
-}
-
-func TestTLSDialerConfigFromEmptyConfigForDoT(t *testing.T) {
-	d := &tlsDialer{}
-	config := d.config("dns.google", "853")
-	if config.ServerName != "dns.google" {
-		t.Fatal("invalid server name")
-	}
-	if diff := cmp.Diff(config.NextProtos, []string{"dot"}); diff != "" {
-		t.Fatal(diff)
-	}
-}
-
-func TestTLSDialerConfigWithServerName(t *testing.T) {
-	d := &tlsDialer{
-		Config: &tls.Config{
-			ServerName: "example.com",
-		},
-	}
-	config := d.config("dns.google", "853")
-	if config.ServerName != "example.com" {
-		t.Fatal("invalid server name")
-	}
-	if diff := cmp.Diff(config.NextProtos, []string{"dot"}); diff != "" {
-		t.Fatal(diff)
-	}
-}
-
-func TestTLSDialerConfigWithALPN(t *testing.T) {
-	d := &tlsDialer{
-		Config: &tls.Config{
-			NextProtos: []string{"h2"},
-		},
-	}
-	config := d.config("dns.google", "853")
-	if config.ServerName != "dns.google" {
-		t.Fatal("invalid server name")
-	}
-	if diff := cmp.Diff(config.NextProtos, []string{"h2"}); diff != "" {
-		t.Fatal(diff)
-	}
-}
-
-func TestNewTLSHandshakerStdlibTypes(t *testing.T) {
+func TestNewTLSHandshakerStdlib(t *testing.T) {
 	th := NewTLSHandshakerStdlib(log.Log)
-	thl, okay := th.(*tlsHandshakerLogger)
-	if !okay {
-		t.Fatal("invalid type")
-	}
-	if thl.Logger != log.Log {
+	logger := th.(*tlsHandshakerLogger)
+	if logger.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	ew, okay := thl.TLSHandshaker.(*tlsHandshakerErrWrapper)
-	if !okay {
-		t.Fatal("invalid type")
-	}
-	thc, okay := ew.TLSHandshaker.(*tlsHandshakerConfigurable)
-	if !okay {
-		t.Fatal("invalid type")
-	}
-	if thc.NewConn != nil {
+	errWrapper := logger.TLSHandshaker.(*tlsHandshakerErrWrapper)
+	configurable := errWrapper.TLSHandshaker.(*tlsHandshakerConfigurable)
+	if configurable.NewConn != nil {
 		t.Fatal("expected nil NewConn")
 	}
 }
 
-func TestNewTLSDialerWorksAsIntended(t *testing.T) {
+func TestNewTLSDialer(t *testing.T) {
 	d := &mocks.Dialer{}
-	tlsh := &mocks.TLSHandshaker{}
-	td := NewTLSDialer(d, tlsh)
-	tdut, okay := td.(*tlsDialer)
-	if !okay {
-		t.Fatal("invalid type")
-	}
-	if tdut.Config == nil {
+	th := &mocks.TLSHandshaker{}
+	dialer := NewTLSDialer(d, th)
+	tlsd := dialer.(*tlsDialer)
+	if tlsd.Config == nil {
 		t.Fatal("unexpected config")
 	}
-	if tdut.Dialer != d {
+	if tlsd.Dialer != d {
 		t.Fatal("unexpected dialer")
 	}
-	if tdut.TLSHandshaker != tlsh {
+	if tlsd.TLSHandshaker != th {
 		t.Fatal("invalid handshaker")
 	}
 }
 
-func TestNewSingleUseTLSDialerWorksAsIntended(t *testing.T) {
+func TestNewSingleUseTLSDialer(t *testing.T) {
 	conn := &mocks.TLSConn{}
 	d := NewSingleUseTLSDialer(conn)
 	outconn, err := d.DialTLSContext(context.Background(), "", "")
