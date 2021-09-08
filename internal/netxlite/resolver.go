@@ -197,11 +197,8 @@ var _ Resolver = &resolverErrWrapper{}
 func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	if err != nil {
-		return nil, &errorsx.ErrWrapper{
-			Failure:    errorsx.ClassifyResolverError(err),
-			Operation:  errorsx.ResolveOperation,
-			WrappedErr: err,
-		}
+		return nil, errorsx.NewErrWrapper(
+			errorsx.ClassifyResolverError, errorsx.ResolveOperation, err)
 	}
 	return addrs, nil
 }

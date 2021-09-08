@@ -67,3 +67,25 @@ func (e *ErrWrapper) Unwrap() error {
 func (e *ErrWrapper) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.Failure)
 }
+
+// Classifier is the type of function that performs classification.
+type Classifier func(err error) string
+
+// NewErrWrapper creates a new ErrWrapper using the given
+// classifier, operation name, and underlying error.
+func NewErrWrapper(c Classifier, op string, err error) *ErrWrapper {
+	if c == nil {
+		panic("nil classifier")
+	}
+	if op == "" {
+		panic("empty op")
+	}
+	if err == nil {
+		panic("nil err")
+	}
+	return &ErrWrapper{
+		Failure:    c(err),
+		Operation:  op,
+		WrappedErr: err,
+	}
+}

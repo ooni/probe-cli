@@ -338,11 +338,8 @@ func (h *tlsHandshakerErrWrapper) Handshake(
 ) (net.Conn, tls.ConnectionState, error) {
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	if err != nil {
-		return nil, tls.ConnectionState{}, &errorsx.ErrWrapper{
-			Failure:    errorsx.ClassifyTLSHandshakeError(err),
-			Operation:  errorsx.TLSHandshakeOperation,
-			WrappedErr: err,
-		}
+		return nil, tls.ConnectionState{}, errorsx.NewErrWrapper(
+			errorsx.ClassifyTLSHandshakeError, errorsx.TLSHandshakeOperation, err)
 	}
 	return tlsconn, state, nil
 }

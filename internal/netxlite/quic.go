@@ -337,11 +337,8 @@ var _ QUICListener = &quicListenerErrWrapper{}
 func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
 	pconn, err := qls.QUICListener.Listen(addr)
 	if err != nil {
-		return nil, &errorsx.ErrWrapper{
-			Failure:    errorsx.ClassifyGenericError(err),
-			Operation:  errorsx.QUICListenOperation,
-			WrappedErr: err,
-		}
+		return nil, errorsx.NewErrWrapper(
+			errorsx.ClassifyGenericError, errorsx.QUICListenOperation, err)
 	}
 	return &quicErrWrapperUDPLikeConn{pconn}, nil
 }
@@ -358,11 +355,8 @@ var _ quicx.UDPLikeConn = &quicErrWrapperUDPLikeConn{}
 func (c *quicErrWrapperUDPLikeConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	count, err := c.UDPLikeConn.WriteTo(p, addr)
 	if err != nil {
-		return 0, &errorsx.ErrWrapper{
-			Failure:    errorsx.ClassifyGenericError(err),
-			Operation:  errorsx.WriteToOperation,
-			WrappedErr: err,
-		}
+		return 0, errorsx.NewErrWrapper(
+			errorsx.ClassifyGenericError, errorsx.WriteToOperation, err)
 	}
 	return count, nil
 }
@@ -371,11 +365,8 @@ func (c *quicErrWrapperUDPLikeConn) WriteTo(p []byte, addr net.Addr) (int, error
 func (c *quicErrWrapperUDPLikeConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	n, addr, err := c.UDPLikeConn.ReadFrom(b)
 	if err != nil {
-		return 0, nil, &errorsx.ErrWrapper{
-			Failure:    errorsx.ClassifyGenericError(err),
-			Operation:  errorsx.ReadFromOperation,
-			WrappedErr: err,
-		}
+		return 0, nil, errorsx.NewErrWrapper(
+			errorsx.ClassifyGenericError, errorsx.ReadFromOperation, err)
 	}
 	return n, addr, nil
 }
@@ -391,11 +382,8 @@ func (d *quicDialerErrWrapper) DialContext(
 	tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
 	sess, err := d.QUICDialer.DialContext(ctx, network, host, tlsCfg, cfg)
 	if err != nil {
-		return nil, &errorsx.ErrWrapper{
-			Failure:    errorsx.ClassifyQUICHandshakeError(err),
-			Operation:  errorsx.QUICHandshakeOperation,
-			WrappedErr: err,
-		}
+		return nil, errorsx.NewErrWrapper(
+			errorsx.ClassifyQUICHandshakeError, errorsx.QUICHandshakeOperation, err)
 	}
 	return sess, nil
 }
