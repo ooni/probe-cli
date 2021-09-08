@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	utls "gitlab.com/yawning/utls.git"
 )
@@ -87,6 +88,48 @@ func TestUTLSHandshaker(t *testing.T) {
 		}
 		if conn == nil {
 			t.Fatal("nil connection")
+		}
+	})
+}
+
+func TestQUICDialer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+
+	t.Run("works as intended", func(t *testing.T) {
+		tlsConfig := &tls.Config{
+			ServerName: "dns.google",
+		}
+		d := netxlite.NewQUICDialerWithoutResolver(
+			netxlite.NewQUICListener(), log.Log,
+		)
+		ctx := context.Background()
+		sess, err := d.DialContext(
+			ctx, "udp", "8.8.8.8:443", tlsConfig, &quic.Config{})
+		if err != nil {
+			t.Fatal("not the error we expected", err)
+		}
+		<-sess.HandshakeComplete().Done()
+		if err := sess.CloseWithError(0, ""); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("can guess the SNI and ALPN when using a domain name for web", func(t *testing.T) {
+		d := netxlite.NewQUICDialerWithResolver(
+			netxlite.NewQUICListener(), log.Log,
+			netxlite.NewResolverSystem(log.Log),
+		)
+		ctx := context.Background()
+		sess, err := d.DialContext(
+			ctx, "udp", "dns.google:443", &tls.Config{}, &quic.Config{})
+		if err != nil {
+			t.Fatal("not the error we expected", err)
+		}
+		<-sess.HandshakeComplete().Done()
+		if err := sess.CloseWithError(0, ""); err != nil {
+			t.Fatal(err)
 		}
 	})
 }

@@ -210,6 +210,16 @@ func TestClassifyQUICHandshakeError(t *testing.T) {
 		}
 	})
 
+	t.Run("for a TransportError wrapping an OONI error", func(t *testing.T) {
+		err := &quic.TransportError{
+			ErrorCode:    quic.InternalError,
+			ErrorMessage: FailureHostUnreachable,
+		}
+		if ClassifyQUICHandshakeError(err) != FailureHostUnreachable {
+			t.Fatal("unexpected results")
+		}
+	})
+
 	t.Run("for another kind of error", func(t *testing.T) {
 		if ClassifyQUICHandshakeError(io.EOF) != FailureEOFError {
 			t.Fatal("unexpected result")

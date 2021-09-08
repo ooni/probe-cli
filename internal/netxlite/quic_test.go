@@ -144,28 +144,6 @@ func TestQUICDialerQUICGo(t *testing.T) {
 			}
 		})
 
-		t.Run("works as intended", func(t *testing.T) {
-			if testing.Short() {
-				t.Skip("skip test in short mode")
-			}
-			tlsConfig := &tls.Config{
-				ServerName: "dns.google",
-			}
-			systemdialer := quicDialerQUICGo{
-				QUICListener: &quicListenerStdlib{},
-			}
-			ctx := context.Background()
-			sess, err := systemdialer.DialContext(
-				ctx, "udp", "8.8.8.8:443", tlsConfig, &quic.Config{})
-			if err != nil {
-				t.Fatal("not the error we expected", err)
-			}
-			<-sess.HandshakeComplete().Done()
-			if err := sess.CloseWithError(0, ""); err != nil {
-				t.Fatal(err)
-			}
-		})
-
 		t.Run("TLS defaults for web", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			var gotTLSConfig *tls.Config
