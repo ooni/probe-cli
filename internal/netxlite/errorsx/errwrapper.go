@@ -1,5 +1,7 @@
 package errorsx
 
+import "encoding/json"
+
 // ErrWrapper is our error wrapper for Go errors. The key objective of
 // this structure is to properly set Failure, which is also returned by
 // the Error() method, to be one of the OONI failure strings.
@@ -59,4 +61,9 @@ func (e *ErrWrapper) Error() string {
 // Unwrap allows to access the underlying error
 func (e *ErrWrapper) Unwrap() error {
 	return e.WrappedErr
+}
+
+// MarshalJSON converts an ErrWrapper to a JSON value.
+func (e *ErrWrapper) MarshalJSON() ([]byte, error) {
+	return json.Marshal(e.Failure)
 }
