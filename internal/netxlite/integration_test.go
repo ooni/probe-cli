@@ -42,7 +42,7 @@ func TestHTTP3Transport(t *testing.T) {
 			log.Log,
 			netxlite.NewResolverSystem(log.Log),
 		)
-		txp := netxlite.NewHTTP3Transport(d, &tls.Config{})
+		txp := netxlite.NewHTTP3Transport(log.Log, d, &tls.Config{})
 		client := &http.Client{Transport: txp}
 		resp, err := client.Get("https://www.google.com/robots.txt")
 		if err != nil {

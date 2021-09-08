@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/websteps"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -135,7 +136,9 @@ func (e *DefaultExplorer) getH3(h3URL *h3URL, headers map[string][]string) (*htt
 	tlsConf := &tls.Config{
 		NextProtos: []string{h3URL.proto},
 	}
-	transport := netxlite.NewHTTP3Transport(
+	// Rationale for using log.Log here: we're already using log.Log
+	// in this package, so it seems fair to use it also here
+	transport := netxlite.NewHTTP3Transport(log.Log,
 		netxlite.NewQUICDialerFromContextDialerAdapter(dialer), tlsConf)
 	// TODO(bassosimone): here we should use runtimex.PanicOnError
 	jarjar, _ := cookiejar.New(nil)
