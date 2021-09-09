@@ -22,7 +22,7 @@ const (
 )
 
 // Encode implements Encoder.Encode
-func (e MiekgEncoder) Encode(domain string, qtype uint16, padding bool) ([]byte, error) {
+func (e *MiekgEncoder) Encode(domain string, qtype uint16, padding bool) ([]byte, error) {
 	question := dns.Question{
 		Name:   dns.Fqdn(domain),
 		Qtype:  qtype,
@@ -49,4 +49,4 @@ func (e MiekgEncoder) Encode(domain string, qtype uint16, padding bool) ([]byte,
 	return query.Pack()
 }
 
-var _ Encoder = MiekgEncoder{}
+var _ Encoder = &MiekgEncoder{}

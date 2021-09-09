@@ -37,32 +37,37 @@ type SerialResolver struct {
 }
 
 // NewSerialResolver creates a new OONI Resolver instance.
-func NewSerialResolver(t RoundTripper) SerialResolver {
-	return SerialResolver{
-		Encoder:     MiekgEncoder{},
-		Decoder:     MiekgDecoder{},
+func NewSerialResolver(t RoundTripper) *SerialResolver {
+	return &SerialResolver{
+		Encoder:     &MiekgEncoder{},
+		Decoder:     &MiekgDecoder{},
 		NumTimeouts: &atomicx.Int64{},
 		Txp:         t,
 	}
 }
 
 // Transport returns the transport being used.
-func (r SerialResolver) Transport() RoundTripper {
+func (r *SerialResolver) Transport() RoundTripper {
 	return r.Txp
 }
 
 // Network implements Resolver.Network
-func (r SerialResolver) Network() string {
+func (r *SerialResolver) Network() string {
 	return r.Txp.Network()
 }
 
 // Address implements Resolver.Address
-func (r SerialResolver) Address() string {
+func (r *SerialResolver) Address() string {
 	return r.Txp.Address()
 }
 
+// CloseIdleConnections closes idle connections.
+func (r *SerialResolver) CloseIdleConnections() {
+	r.Txp.CloseIdleConnections()
+}
+
 // LookupHost implements Resolver.LookupHost.
-func (r SerialResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	var addrs []string
 	addrsA, errA := r.roundTripWithRetry(ctx, hostname, dns.TypeA)
 	addrsAAAA, errAAAA := r.roundTripWithRetry(ctx, hostname, dns.TypeAAAA)
@@ -74,7 +79,7 @@ func (r SerialResolver) LookupHost(ctx context.Context, hostname string) ([]stri
 	return addrs, nil
 }
 
-func (r SerialResolver) roundTripWithRetry(
+func (r *SerialResolver) roundTripWithRetry(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
 	var errorslist []error
 	for i := 0; i < 3; i++ {
@@ -100,7 +105,7 @@ func (r SerialResolver) roundTripWithRetry(
 	return nil, errorslist[0]
 }
 
-func (r SerialResolver) roundTrip(
+func (r *SerialResolver) roundTrip(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
 	querydata, err := r.Encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
 	if err != nil {
@@ -113,4 +118,4 @@ func (r SerialResolver) roundTrip(
 	return r.Decoder.Decode(qtype, replydata)
 }
 
-var _ Resolver = SerialResolver{}
+var _ Resolver = &SerialResolver{}
