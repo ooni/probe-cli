@@ -1,17 +1,15 @@
-package resolver_test
+package resolver
 
 import (
 	"context"
 	"errors"
 	"net"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 )
 
 func TestDNSOverTCPTransportQueryTooLarge(t *testing.T) {
 	const address = "9.9.9.9:53"
-	txp := resolver.NewDNSOverTCP(new(net.Dialer).DialContext, address)
+	txp := NewDNSOverTCP(new(net.Dialer).DialContext, address)
 	reply, err := txp.RoundTrip(context.Background(), make([]byte, 1<<18))
 	if err == nil {
 		t.Fatal("expected an error here")
@@ -24,8 +22,8 @@ func TestDNSOverTCPTransportQueryTooLarge(t *testing.T) {
 func TestDNSOverTCPTransportDialFailure(t *testing.T) {
 	const address = "9.9.9.9:53"
 	mocked := errors.New("mocked error")
-	fakedialer := resolver.FakeDialer{Err: mocked}
-	txp := resolver.NewDNSOverTCP(fakedialer.DialContext, address)
+	fakedialer := FakeDialer{Err: mocked}
+	txp := NewDNSOverTCP(fakedialer.DialContext, address)
 	reply, err := txp.RoundTrip(context.Background(), make([]byte, 1<<11))
 	if !errors.Is(err, mocked) {
 		t.Fatal("not the error we expected")
@@ -38,10 +36,10 @@ func TestDNSOverTCPTransportDialFailure(t *testing.T) {
 func TestDNSOverTCPTransportSetDealineFailure(t *testing.T) {
 	const address = "9.9.9.9:53"
 	mocked := errors.New("mocked error")
-	fakedialer := resolver.FakeDialer{Conn: &resolver.FakeConn{
+	fakedialer := FakeDialer{Conn: &FakeConn{
 		SetDeadlineError: mocked,
 	}}
-	txp := resolver.NewDNSOverTCP(fakedialer.DialContext, address)
+	txp := NewDNSOverTCP(fakedialer.DialContext, address)
 	reply, err := txp.RoundTrip(context.Background(), make([]byte, 1<<11))
 	if !errors.Is(err, mocked) {
 		t.Fatal("not the error we expected")
@@ -54,10 +52,10 @@ func TestDNSOverTCPTransportSetDealineFailure(t *testing.T) {
 func TestDNSOverTCPTransportWriteFailure(t *testing.T) {
 	const address = "9.9.9.9:53"
 	mocked := errors.New("mocked error")
-	fakedialer := resolver.FakeDialer{Conn: &resolver.FakeConn{
+	fakedialer := FakeDialer{Conn: &FakeConn{
 		WriteError: mocked,
 	}}
-	txp := resolver.NewDNSOverTCP(fakedialer.DialContext, address)
+	txp := NewDNSOverTCP(fakedialer.DialContext, address)
 	reply, err := txp.RoundTrip(context.Background(), make([]byte, 1<<11))
 	if !errors.Is(err, mocked) {
 		t.Fatal("not the error we expected")
@@ -70,10 +68,10 @@ func TestDNSOverTCPTransportWriteFailure(t *testing.T) {
 func TestDNSOverTCPTransportReadFailure(t *testing.T) {
 	const address = "9.9.9.9:53"
 	mocked := errors.New("mocked error")
-	fakedialer := resolver.FakeDialer{Conn: &resolver.FakeConn{
+	fakedialer := FakeDialer{Conn: &FakeConn{
 		ReadError: mocked,
 	}}
-	txp := resolver.NewDNSOverTCP(fakedialer.DialContext, address)
+	txp := NewDNSOverTCP(fakedialer.DialContext, address)
 	reply, err := txp.RoundTrip(context.Background(), make([]byte, 1<<11))
 	if !errors.Is(err, mocked) {
 		t.Fatal("not the error we expected")
@@ -86,11 +84,11 @@ func TestDNSOverTCPTransportReadFailure(t *testing.T) {
 func TestDNSOverTCPTransportSecondReadFailure(t *testing.T) {
 	const address = "9.9.9.9:53"
 	mocked := errors.New("mocked error")
-	fakedialer := resolver.FakeDialer{Conn: &resolver.FakeConn{
+	fakedialer := FakeDialer{Conn: &FakeConn{
 		ReadError: mocked,
 		ReadData:  []byte{byte(0), byte(2)},
 	}}
-	txp := resolver.NewDNSOverTCP(fakedialer.DialContext, address)
+	txp := NewDNSOverTCP(fakedialer.DialContext, address)
 	reply, err := txp.RoundTrip(context.Background(), make([]byte, 1<<11))
 	if !errors.Is(err, mocked) {
 		t.Fatal("not the error we expected")
@@ -103,11 +101,11 @@ func TestDNSOverTCPTransportSecondReadFailure(t *testing.T) {
 func TestDNSOverTCPTransportAllGood(t *testing.T) {
 	const address = "9.9.9.9:53"
 	mocked := errors.New("mocked error")
-	fakedialer := resolver.FakeDialer{Conn: &resolver.FakeConn{
+	fakedialer := FakeDialer{Conn: &FakeConn{
 		ReadError: mocked,
 		ReadData:  []byte{byte(0), byte(1), byte(1)},
 	}}
-	txp := resolver.NewDNSOverTCP(fakedialer.DialContext, address)
+	txp := NewDNSOverTCP(fakedialer.DialContext, address)
 	reply, err := txp.RoundTrip(context.Background(), make([]byte, 1<<11))
 	if err != nil {
 		t.Fatal(err)
@@ -119,7 +117,7 @@ func TestDNSOverTCPTransportAllGood(t *testing.T) {
 
 func TestDNSOverTCPTransportOK(t *testing.T) {
 	const address = "9.9.9.9:53"
-	txp := resolver.NewDNSOverTCP(new(net.Dialer).DialContext, address)
+	txp := NewDNSOverTCP(new(net.Dialer).DialContext, address)
 	if txp.RequiresPadding() != false {
 		t.Fatal("invalid RequiresPadding")
 	}
@@ -133,7 +131,7 @@ func TestDNSOverTCPTransportOK(t *testing.T) {
 
 func TestDNSOverTLSTransportOK(t *testing.T) {
 	const address = "9.9.9.9:853"
-	txp := resolver.NewDNSOverTLS(resolver.DialTLSContext, address)
+	txp := NewDNSOverTLS(DialTLSContext, address)
 	if txp.RequiresPadding() != true {
 		t.Fatal("invalid RequiresPadding")
 	}

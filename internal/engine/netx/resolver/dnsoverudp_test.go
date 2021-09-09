@@ -1,18 +1,16 @@
-package resolver_test
+package resolver
 
 import (
 	"context"
 	"errors"
 	"net"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 )
 
 func TestDNSOverUDPDialFailure(t *testing.T) {
 	mocked := errors.New("mocked error")
 	const address = "9.9.9.9:53"
-	txp := resolver.NewDNSOverUDP(resolver.FakeDialer{Err: mocked}, address)
+	txp := NewDNSOverUDP(FakeDialer{Err: mocked}, address)
 	data, err := txp.RoundTrip(context.Background(), nil)
 	if !errors.Is(err, mocked) {
 		t.Fatal("not the error we expected")
@@ -24,9 +22,9 @@ func TestDNSOverUDPDialFailure(t *testing.T) {
 
 func TestDNSOverUDPSetDeadlineError(t *testing.T) {
 	mocked := errors.New("mocked error")
-	txp := resolver.NewDNSOverUDP(
-		resolver.FakeDialer{
-			Conn: &resolver.FakeConn{
+	txp := NewDNSOverUDP(
+		FakeDialer{
+			Conn: &FakeConn{
 				SetDeadlineError: mocked,
 			},
 		}, "9.9.9.9:53",
@@ -42,9 +40,9 @@ func TestDNSOverUDPSetDeadlineError(t *testing.T) {
 
 func TestDNSOverUDPWriteFailure(t *testing.T) {
 	mocked := errors.New("mocked error")
-	txp := resolver.NewDNSOverUDP(
-		resolver.FakeDialer{
-			Conn: &resolver.FakeConn{
+	txp := NewDNSOverUDP(
+		FakeDialer{
+			Conn: &FakeConn{
 				WriteError: mocked,
 			},
 		}, "9.9.9.9:53",
@@ -60,9 +58,9 @@ func TestDNSOverUDPWriteFailure(t *testing.T) {
 
 func TestDNSOverUDPReadFailure(t *testing.T) {
 	mocked := errors.New("mocked error")
-	txp := resolver.NewDNSOverUDP(
-		resolver.FakeDialer{
-			Conn: &resolver.FakeConn{
+	txp := NewDNSOverUDP(
+		FakeDialer{
+			Conn: &FakeConn{
 				ReadError: mocked,
 			},
 		}, "9.9.9.9:53",
@@ -78,9 +76,9 @@ func TestDNSOverUDPReadFailure(t *testing.T) {
 
 func TestDNSOverUDPReadSuccess(t *testing.T) {
 	const expected = 17
-	txp := resolver.NewDNSOverUDP(
-		resolver.FakeDialer{
-			Conn: &resolver.FakeConn{ReadData: make([]byte, 17)},
+	txp := NewDNSOverUDP(
+		FakeDialer{
+			Conn: &FakeConn{ReadData: make([]byte, 17)},
 		}, "9.9.9.9:53",
 	)
 	data, err := txp.RoundTrip(context.Background(), nil)
@@ -94,7 +92,7 @@ func TestDNSOverUDPReadSuccess(t *testing.T) {
 
 func TestDNSOverUDPTransportOK(t *testing.T) {
 	const address = "9.9.9.9:53"
-	txp := resolver.NewDNSOverUDP(&net.Dialer{}, address)
+	txp := NewDNSOverUDP(&net.Dialer{}, address)
 	if txp.RequiresPadding() != false {
 		t.Fatal("invalid RequiresPadding")
 	}

@@ -93,6 +93,10 @@ func (ft FakeTransport) Network() string {
 	return "fake"
 }
 
+func (fk FakeTransport) CloseIdleConnections() {
+	// nothing to do
+}
+
 type FakeEncoder struct {
 	Data []byte
 	Err  error

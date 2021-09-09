@@ -124,7 +124,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSPowerdns(t *testing.T) {
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
-	dohtxp, ok := stxp.RoundTripper.(resolver.DNSOverHTTPS)
+	dohtxp, ok := stxp.RoundTripper.(*resolver.DNSOverHTTPS)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -200,7 +200,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSGoogle(t *testing.T) {
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
-	dohtxp, ok := stxp.RoundTripper.(resolver.DNSOverHTTPS)
+	dohtxp, ok := stxp.RoundTripper.(*resolver.DNSOverHTTPS)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -276,7 +276,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSCloudflare(t *testing.T) 
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
-	dohtxp, ok := stxp.RoundTripper.(resolver.DNSOverHTTPS)
+	dohtxp, ok := stxp.RoundTripper.(*resolver.DNSOverHTTPS)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -352,7 +352,7 @@ func TestConfigurerNewConfigurationResolverUDP(t *testing.T) {
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
-	udptxp, ok := stxp.RoundTripper.(resolver.DNSOverUDP)
+	udptxp, ok := stxp.RoundTripper.(*resolver.DNSOverUDP)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}

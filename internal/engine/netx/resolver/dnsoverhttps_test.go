@@ -1,4 +1,4 @@
-package resolver_test
+package resolver
 
 import (
 	"bytes"
@@ -10,12 +10,12 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestDNSOverHTTPSNewRequestFailure(t *testing.T) {
 	const invalidURL = "\t"
-	txp := resolver.NewDNSOverHTTPS(http.DefaultClient, invalidURL)
+	txp := NewDNSOverHTTPS(http.DefaultClient, invalidURL)
 	data, err := txp.RoundTrip(context.Background(), nil)
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 		t.Fatal("expected an error here")
@@ -27,9 +27,11 @@ func TestDNSOverHTTPSNewRequestFailure(t *testing.T) {
 
 func TestDNSOverHTTPSClientDoFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	txp := resolver.DNSOverHTTPS{
-		Do: func(*http.Request) (*http.Response, error) {
-			return nil, expected
+	txp := &DNSOverHTTPS{
+		Client: &mocks.HTTPClient{
+			MockDo: func(*http.Request) (*http.Response, error) {
+				return nil, expected
+			},
 		},
 		URL: "https://cloudflare-dns.com/dns-query",
 	}
@@ -43,12 +45,14 @@ func TestDNSOverHTTPSClientDoFailure(t *testing.T) {
 }
 
 func TestDNSOverHTTPSHTTPFailure(t *testing.T) {
-	txp := resolver.DNSOverHTTPS{
-		Do: func(*http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: 500,
-				Body:       io.NopCloser(strings.NewReader("")),
-			}, nil
+	txp := &DNSOverHTTPS{
+		Client: &mocks.HTTPClient{
+			MockDo: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 500,
+					Body:       io.NopCloser(strings.NewReader("")),
+				}, nil
+			},
 		},
 		URL: "https://cloudflare-dns.com/dns-query",
 	}
@@ -62,12 +66,14 @@ func TestDNSOverHTTPSHTTPFailure(t *testing.T) {
 }
 
 func TestDNSOverHTTPSMissingContentType(t *testing.T) {
-	txp := resolver.DNSOverHTTPS{
-		Do: func(*http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: 200,
-				Body:       io.NopCloser(strings.NewReader("")),
-			}, nil
+	txp := &DNSOverHTTPS{
+		Client: &mocks.HTTPClient{
+			MockDo: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader("")),
+				}, nil
+			},
 		},
 		URL: "https://cloudflare-dns.com/dns-query",
 	}
@@ -82,15 +88,17 @@ func TestDNSOverHTTPSMissingContentType(t *testing.T) {
 
 func TestDNSOverHTTPSSuccess(t *testing.T) {
 	body := []byte("AAA")
-	txp := resolver.DNSOverHTTPS{
-		Do: func(*http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: 200,
-				Body:       io.NopCloser(bytes.NewReader(body)),
-				Header: http.Header{
-					"Content-Type": []string{"application/dns-message"},
-				},
-			}, nil
+	txp := &DNSOverHTTPS{
+		Client: &mocks.HTTPClient{
+			MockDo: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewReader(body)),
+					Header: http.Header{
+						"Content-Type": []string{"application/dns-message"},
+					},
+				}, nil
+			},
 		},
 		URL: "https://cloudflare-dns.com/dns-query",
 	}
@@ -105,7 +113,7 @@ func TestDNSOverHTTPSSuccess(t *testing.T) {
 
 func TestDNSOverHTTPTransportOK(t *testing.T) {
 	const queryURL = "https://cloudflare-dns.com/dns-query"
-	txp := resolver.NewDNSOverHTTPS(http.DefaultClient, queryURL)
+	txp := NewDNSOverHTTPS(http.DefaultClient, queryURL)
 	if txp.Network() != "doh" {
 		t.Fatal("invalid network")
 	}
@@ -120,10 +128,12 @@ func TestDNSOverHTTPTransportOK(t *testing.T) {
 func TestDNSOverHTTPSClientSetsUserAgent(t *testing.T) {
 	expected := errors.New("mocked error")
 	var correct bool
-	txp := resolver.DNSOverHTTPS{
-		Do: func(req *http.Request) (*http.Response, error) {
-			correct = req.Header.Get("User-Agent") == httpheader.UserAgent()
-			return nil, expected
+	txp := &DNSOverHTTPS{
+		Client: &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				correct = req.Header.Get("User-Agent") == httpheader.UserAgent()
+				return nil, expected
+			},
 		},
 		URL: "https://cloudflare-dns.com/dns-query",
 	}
@@ -144,10 +154,12 @@ func TestDNSOverHTTPSHostOverride(t *testing.T) {
 	expected := errors.New("mocked error")
 
 	hostOverride := "test.com"
-	txp := resolver.DNSOverHTTPS{
-		Do: func(req *http.Request) (*http.Response, error) {
-			correct = req.Host == hostOverride
-			return nil, expected
+	txp := &DNSOverHTTPS{
+		Client: &mocks.HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				correct = req.Host == hostOverride
+				return nil, expected
+			},
 		},
 		URL:          "https://cloudflare-dns.com/dns-query",
 		HostOverride: hostOverride,

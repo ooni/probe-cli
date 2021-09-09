@@ -680,7 +680,7 @@ func TestNewDNSClientPowerdnsDoH(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	if _, ok := r.Transport().(resolver.DNSOverHTTPS); !ok {
+	if _, ok := r.Transport().(*resolver.DNSOverHTTPS); !ok {
 		t.Fatal("not the transport we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -696,7 +696,7 @@ func TestNewDNSClientGoogleDoH(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	if _, ok := r.Transport().(resolver.DNSOverHTTPS); !ok {
+	if _, ok := r.Transport().(*resolver.DNSOverHTTPS); !ok {
 		t.Fatal("not the transport we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -712,7 +712,7 @@ func TestNewDNSClientCloudflareDoH(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	if _, ok := r.Transport().(resolver.DNSOverHTTPS); !ok {
+	if _, ok := r.Transport().(*resolver.DNSOverHTTPS); !ok {
 		t.Fatal("not the transport we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -733,7 +733,7 @@ func TestNewDNSClientCloudflareDoHSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
-	if _, ok := txp.RoundTripper.(resolver.DNSOverHTTPS); !ok {
+	if _, ok := txp.RoundTripper.(*resolver.DNSOverHTTPS); !ok {
 		t.Fatal("not the transport we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -749,7 +749,7 @@ func TestNewDNSClientUDP(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	if _, ok := r.Transport().(resolver.DNSOverUDP); !ok {
+	if _, ok := r.Transport().(*resolver.DNSOverUDP); !ok {
 		t.Fatal("not the transport we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -770,7 +770,7 @@ func TestNewDNSClientUDPDNSSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
-	if _, ok := txp.RoundTripper.(resolver.DNSOverUDP); !ok {
+	if _, ok := txp.RoundTripper.(*resolver.DNSOverUDP); !ok {
 		t.Fatal("not the transport we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -786,7 +786,7 @@ func TestNewDNSClientTCP(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	txp, ok := r.Transport().(resolver.DNSOverTCP)
+	txp, ok := r.Transport().(*resolver.DNSOverTCP)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -811,7 +811,7 @@ func TestNewDNSClientTCPDNSSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
-	dotcp, ok := txp.RoundTripper.(resolver.DNSOverTCP)
+	dotcp, ok := txp.RoundTripper.(*resolver.DNSOverTCP)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -831,7 +831,7 @@ func TestNewDNSClientDoT(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	txp, ok := r.Transport().(resolver.DNSOverTCP)
+	txp, ok := r.Transport().(*resolver.DNSOverTCP)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -856,7 +856,7 @@ func TestNewDNSClientDoTDNSSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
-	dotls, ok := txp.RoundTripper.(resolver.DNSOverTCP)
+	dotls, ok := txp.RoundTripper.(*resolver.DNSOverTCP)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
