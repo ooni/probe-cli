@@ -174,8 +174,6 @@ func TestForwardWriteError(t *testing.T) {
 
 type mockedConnReadOkay struct {
 	net.Conn
-	localIP  net.IP
-	remoteIP net.IP
 }
 
 func (c *mockedConnReadOkay) Read(b []byte) (int, error) {
