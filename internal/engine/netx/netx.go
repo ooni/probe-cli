@@ -118,7 +118,9 @@ func NewResolver(config Config) Resolver {
 		config.BaseResolver = &netxlite.ResolverSystem{}
 	}
 	var r Resolver = config.BaseResolver
-	r = resolver.AddressResolver{Resolver: r}
+	r = &resolver.AddressResolver{
+		Resolver: netxlite.NewResolverLegacyAdapter(r),
+	}
 	if config.CacheResolutions {
 		r = &resolver.CacheResolver{Resolver: r}
 	}

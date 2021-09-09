@@ -33,6 +33,7 @@ type (
 	DialerSystem              = dialerSystem
 	TLSDialerLegacy           = tlsDialer
 	UserAgentTransport        = httpUserAgentTransport
+	AddressResolver           = resolverShortCircuitIPAddr
 )
 
 // ResolverLegacy performs domain name resolutions.
