@@ -13,6 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestEmitterTransportSuccess(t *testing.T) {
@@ -107,9 +108,11 @@ func TestEmitterResolverFailure(t *testing.T) {
 	}
 	ctx = modelx.WithMeasurementRoot(ctx, root)
 	r := resolver.EmitterResolver{Resolver: resolver.NewSerialResolver(
-		resolver.DNSOverHTTPS{
-			Do: func(req *http.Request) (*http.Response, error) {
-				return nil, io.EOF
+		&resolver.DNSOverHTTPS{
+			Client: &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					return nil, io.EOF
+				},
 			},
 			URL: "https://dns.google.com/",
 		},

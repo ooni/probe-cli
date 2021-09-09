@@ -11,28 +11,35 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 )
 
+// HTTPClient is the HTTP client expected by DNSOverHTTPS.
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+	CloseIdleConnections()
+}
+
 // DNSOverHTTPS is a DNS over HTTPS RoundTripper. Requests are submitted over
 // an HTTP/HTTPS channel provided by URL using the Do function.
 type DNSOverHTTPS struct {
-	Do           func(req *http.Request) (*http.Response, error)
+	Client       HTTPClient
 	URL          string
 	HostOverride string
 }
 
 // NewDNSOverHTTPS creates a new DNSOverHTTP instance from the
 // specified http.Client and URL, as a convenience.
-func NewDNSOverHTTPS(client *http.Client, URL string) DNSOverHTTPS {
+func NewDNSOverHTTPS(client *http.Client, URL string) *DNSOverHTTPS {
 	return NewDNSOverHTTPSWithHostOverride(client, URL, "")
 }
 
 // NewDNSOverHTTPSWithHostOverride is like NewDNSOverHTTPS except that
 // it's creating a resolver where we use the specified host.
-func NewDNSOverHTTPSWithHostOverride(client *http.Client, URL, hostOverride string) DNSOverHTTPS {
-	return DNSOverHTTPS{Do: client.Do, URL: URL, HostOverride: hostOverride}
+func NewDNSOverHTTPSWithHostOverride(
+	client *http.Client, URL, hostOverride string) *DNSOverHTTPS {
+	return &DNSOverHTTPS{Client: client, URL: URL, HostOverride: hostOverride}
 }
 
 // RoundTrip implements RoundTripper.RoundTrip.
-func (t DNSOverHTTPS) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
+func (t *DNSOverHTTPS) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
 	req, err := http.NewRequest("POST", t.URL, bytes.NewReader(query))
@@ -43,7 +50,7 @@ func (t DNSOverHTTPS) RoundTrip(ctx context.Context, query []byte) ([]byte, erro
 	req.Header.Set("user-agent", httpheader.UserAgent())
 	req.Header.Set("content-type", "application/dns-message")
 	var resp *http.Response
-	resp, err = t.Do(req.WithContext(ctx))
+	resp, err = t.Client.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -60,18 +67,23 @@ func (t DNSOverHTTPS) RoundTrip(ctx context.Context, query []byte) ([]byte, erro
 }
 
 // RequiresPadding returns true for DoH according to RFC8467
-func (t DNSOverHTTPS) RequiresPadding() bool {
+func (t *DNSOverHTTPS) RequiresPadding() bool {
 	return true
 }
 
 // Network returns the transport network (e.g., doh, dot)
-func (t DNSOverHTTPS) Network() string {
+func (t *DNSOverHTTPS) Network() string {
 	return "doh"
 }
 
 // Address returns the upstream server address.
-func (t DNSOverHTTPS) Address() string {
+func (t *DNSOverHTTPS) Address() string {
 	return t.URL
 }
 
-var _ RoundTripper = DNSOverHTTPS{}
+// CloseIdleConnections closes idle connections.
+func (t *DNSOverHTTPS) CloseIdleConnections() {
+	t.Client.CloseIdleConnections()
+}
+
+var _ RoundTripper = &DNSOverHTTPS{}

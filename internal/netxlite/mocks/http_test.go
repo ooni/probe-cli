@@ -38,3 +38,34 @@ func TestHTTPTransport(t *testing.T) {
 		}
 	})
 }
+
+func TestHTTPClient(t *testing.T) {
+	t.Run("Do", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		clnt := &HTTPClient{
+			MockDo: func(req *http.Request) (*http.Response, error) {
+				return nil, expected
+			},
+		}
+		resp, err := clnt.Do(&http.Request{})
+		if !errors.Is(err, expected) {
+			t.Fatal("not the error we expected", err)
+		}
+		if resp != nil {
+			t.Fatal("expected nil response here")
+		}
+	})
+
+	t.Run("CloseIdleConnections", func(t *testing.T) {
+		called := &atomicx.Int64{}
+		clnt := &HTTPClient{
+			MockCloseIdleConnections: func() {
+				called.Add(1)
+			},
+		}
+		clnt.CloseIdleConnections()
+		if called.Load() != 1 {
+			t.Fatal("not called")
+		}
+	})
+}

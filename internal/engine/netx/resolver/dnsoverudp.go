@@ -18,12 +18,12 @@ type DNSOverUDP struct {
 }
 
 // NewDNSOverUDP creates a DNSOverUDP instance.
-func NewDNSOverUDP(dialer Dialer, address string) DNSOverUDP {
-	return DNSOverUDP{dialer: dialer, address: address}
+func NewDNSOverUDP(dialer Dialer, address string) *DNSOverUDP {
+	return &DNSOverUDP{dialer: dialer, address: address}
 }
 
 // RoundTrip implements RoundTripper.RoundTrip.
-func (t DNSOverUDP) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
+func (t *DNSOverUDP) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
 	conn, err := t.dialer.DialContext(ctx, "udp", t.address)
 	if err != nil {
 		return nil, err
@@ -47,18 +47,23 @@ func (t DNSOverUDP) RoundTrip(ctx context.Context, query []byte) ([]byte, error)
 }
 
 // RequiresPadding returns false for UDP according to RFC8467
-func (t DNSOverUDP) RequiresPadding() bool {
+func (t *DNSOverUDP) RequiresPadding() bool {
 	return false
 }
 
 // Network returns the transport network (e.g., doh, dot)
-func (t DNSOverUDP) Network() string {
+func (t *DNSOverUDP) Network() string {
 	return "udp"
 }
 
 // Address returns the upstream server address.
-func (t DNSOverUDP) Address() string {
+func (t *DNSOverUDP) Address() string {
 	return t.address
 }
 
-var _ RoundTripper = DNSOverUDP{}
+// CloseIdleConnections closes idle connections.
+func (t *DNSOverUDP) CloseIdleConnections() {
+	// nothing to do
+}
+
+var _ RoundTripper = &DNSOverUDP{}

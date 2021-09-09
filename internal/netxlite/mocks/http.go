@@ -17,3 +17,20 @@ func (txp *HTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 func (txp *HTTPTransport) CloseIdleConnections() {
 	txp.MockCloseIdleConnections()
 }
+
+// HTTPClient allows mocking an http.Client.
+type HTTPClient struct {
+	MockDo func(req *http.Request) (*http.Response, error)
+
+	MockCloseIdleConnections func()
+}
+
+// Do calls MockDo.
+func (txp *HTTPClient) Do(req *http.Request) (*http.Response, error) {
+	return txp.MockDo(req)
+}
+
+// CloseIdleConnections calls MockCloseIdleConnections.
+func (txp *HTTPClient) CloseIdleConnections() {
+	txp.MockCloseIdleConnections()
+}

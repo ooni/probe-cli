@@ -22,6 +22,9 @@ type RoundTripper interface {
 
 	// Address is the address of the round tripper (e.g. "1.1.1.1:853")
 	Address() string
+
+	// CloseIdleConnections closes idle connections.
+	CloseIdleConnections()
 }
 
 // SerialResolver is a resolver that first issues an A query and then
@@ -81,7 +84,7 @@ func (r SerialResolver) roundTripWithRetry(
 		}
 		errorslist = append(errorslist, err)
 		var operr *net.OpError
-		if errors.As(err, &operr) == false || operr.Timeout() == false {
+		if !errors.As(err, &operr) || !operr.Timeout() {
 			// The first error is the one that is most likely to be caused
 			// by the network. Subsequent errors are more likely to be caused
 			// by context deadlines. So, the first error is attached to an
