@@ -1,4 +1,4 @@
-package resolver
+package dnsx
 
 import "github.com/miekg/dns"
 
