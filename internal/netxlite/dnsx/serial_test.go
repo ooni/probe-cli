@@ -1,20 +1,21 @@
-package resolver_test
+package dnsx
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"net"
 	"strings"
-	"syscall"
 	"testing"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 func TestOONIGettingTransport(t *testing.T) {
-	txp := resolver.NewDNSOverTLS(resolver.DialTLSContext, "8.8.8.8:853")
-	r := resolver.NewSerialResolver(txp)
+	txp := NewDNSOverTLS((&tls.Dialer{}).DialContext, "8.8.8.8:853")
+	r := NewSerialResolver(txp)
 	rtx := r.Transport()
 	if rtx.Network() != "dot" || rtx.Address() != "8.8.8.8:853" {
 		t.Fatal("not the transport we expected")
@@ -29,8 +30,15 @@ func TestOONIGettingTransport(t *testing.T) {
 
 func TestOONIEncodeError(t *testing.T) {
 	mocked := errors.New("mocked error")
-	txp := resolver.NewDNSOverTLS(resolver.DialTLSContext, "8.8.8.8:853")
-	r := resolver.SerialResolver{Encoder: resolver.FakeEncoder{Err: mocked}, Txp: txp}
+	txp := NewDNSOverTLS((&tls.Dialer{}).DialContext, "8.8.8.8:853")
+	r := SerialResolver{
+		Encoder: &mocks.Encoder{
+			MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
+				return nil, mocked
+			},
+		},
+		Txp: txp,
+	}
 	addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
 	if !errors.Is(err, mocked) {
 		t.Fatal("not the error we expected")
@@ -42,8 +50,15 @@ func TestOONIEncodeError(t *testing.T) {
 
 func TestOONIRoundTripError(t *testing.T) {
 	mocked := errors.New("mocked error")
-	txp := resolver.FakeTransport{Err: mocked}
-	r := resolver.NewSerialResolver(txp)
+	txp := &mocks.RoundTripper{
+		MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+			return nil, mocked
+		},
+		MockRequiresPadding: func() bool {
+			return true
+		},
+	}
+	r := NewSerialResolver(txp)
 	addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
 	if !errors.Is(err, mocked) {
 		t.Fatal("not the error we expected")
@@ -54,8 +69,15 @@ func TestOONIRoundTripError(t *testing.T) {
 }
 
 func TestOONIWithEmptyReply(t *testing.T) {
-	txp := resolver.FakeTransport{Data: resolver.GenReplySuccess(t, dns.TypeA)}
-	r := resolver.NewSerialResolver(txp)
+	txp := &mocks.RoundTripper{
+		MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+			return genReplySuccess(t, dns.TypeA), nil
+		},
+		MockRequiresPadding: func() bool {
+			return true
+		},
+	}
+	r := NewSerialResolver(txp)
 	addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
 	if err == nil || !strings.HasSuffix(err.Error(), "no response returned") {
 		t.Fatal("not the error we expected")
@@ -66,10 +88,15 @@ func TestOONIWithEmptyReply(t *testing.T) {
 }
 
 func TestOONIWithAReply(t *testing.T) {
-	txp := resolver.FakeTransport{
-		Data: resolver.GenReplySuccess(t, dns.TypeA, "8.8.8.8"),
+	txp := &mocks.RoundTripper{
+		MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+			return genReplySuccess(t, dns.TypeA, "8.8.8.8"), nil
+		},
+		MockRequiresPadding: func() bool {
+			return true
+		},
 	}
-	r := resolver.NewSerialResolver(txp)
+	r := NewSerialResolver(txp)
 	addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
 	if err != nil {
 		t.Fatal(err)
@@ -80,10 +107,15 @@ func TestOONIWithAReply(t *testing.T) {
 }
 
 func TestOONIWithAAAAReply(t *testing.T) {
-	txp := resolver.FakeTransport{
-		Data: resolver.GenReplySuccess(t, dns.TypeAAAA, "::1"),
+	txp := &mocks.RoundTripper{
+		MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+			return genReplySuccess(t, dns.TypeAAAA, "::1"), nil
+		},
+		MockRequiresPadding: func() bool {
+			return true
+		},
 	}
-	r := resolver.NewSerialResolver(txp)
+	r := NewSerialResolver(txp)
 	addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
 	if err != nil {
 		t.Fatal(err)
@@ -94,12 +126,17 @@ func TestOONIWithAAAAReply(t *testing.T) {
 }
 
 func TestOONIWithTimeout(t *testing.T) {
-	txp := resolver.FakeTransport{
-		Err: &net.OpError{Err: syscall.ETIMEDOUT, Op: "dial"},
+	txp := &mocks.RoundTripper{
+		MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+			return nil, &net.OpError{Err: errorsx.ETIMEDOUT, Op: "dial"}
+		},
+		MockRequiresPadding: func() bool {
+			return true
+		},
 	}
-	r := resolver.NewSerialResolver(txp)
+	r := NewSerialResolver(txp)
 	addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
-	if !errors.Is(err, syscall.ETIMEDOUT) {
+	if !errors.Is(err, errorsx.ETIMEDOUT) {
 		t.Fatal("not the error we expected")
 	}
 	if addrs != nil {

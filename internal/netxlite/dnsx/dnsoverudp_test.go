@@ -1,16 +1,24 @@
-package resolver
+package dnsx
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"net"
 	"testing"
+	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestDNSOverUDPDialFailure(t *testing.T) {
 	mocked := errors.New("mocked error")
 	const address = "9.9.9.9:53"
-	txp := NewDNSOverUDP(FakeDialer{Err: mocked}, address)
+	txp := NewDNSOverUDP(&mocks.Dialer{
+		MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+			return nil, mocked
+		},
+	}, address)
 	data, err := txp.RoundTrip(context.Background(), nil)
 	if !errors.Is(err, mocked) {
 		t.Fatal("not the error we expected")
@@ -23,9 +31,16 @@ func TestDNSOverUDPDialFailure(t *testing.T) {
 func TestDNSOverUDPSetDeadlineError(t *testing.T) {
 	mocked := errors.New("mocked error")
 	txp := NewDNSOverUDP(
-		FakeDialer{
-			Conn: &FakeConn{
-				SetDeadlineError: mocked,
+		&mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return &mocks.Conn{
+					MockSetDeadline: func(t time.Time) error {
+						return mocked
+					},
+					MockClose: func() error {
+						return nil
+					},
+				}, nil
 			},
 		}, "9.9.9.9:53",
 	)
@@ -41,9 +56,19 @@ func TestDNSOverUDPSetDeadlineError(t *testing.T) {
 func TestDNSOverUDPWriteFailure(t *testing.T) {
 	mocked := errors.New("mocked error")
 	txp := NewDNSOverUDP(
-		FakeDialer{
-			Conn: &FakeConn{
-				WriteError: mocked,
+		&mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return &mocks.Conn{
+					MockSetDeadline: func(t time.Time) error {
+						return nil
+					},
+					MockWrite: func(b []byte) (int, error) {
+						return 0, mocked
+					},
+					MockClose: func() error {
+						return nil
+					},
+				}, nil
 			},
 		}, "9.9.9.9:53",
 	)
@@ -59,9 +84,22 @@ func TestDNSOverUDPWriteFailure(t *testing.T) {
 func TestDNSOverUDPReadFailure(t *testing.T) {
 	mocked := errors.New("mocked error")
 	txp := NewDNSOverUDP(
-		FakeDialer{
-			Conn: &FakeConn{
-				ReadError: mocked,
+		&mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return &mocks.Conn{
+					MockSetDeadline: func(t time.Time) error {
+						return nil
+					},
+					MockWrite: func(b []byte) (int, error) {
+						return len(b), nil
+					},
+					MockRead: func(b []byte) (int, error) {
+						return 0, mocked
+					},
+					MockClose: func() error {
+						return nil
+					},
+				}, nil
 			},
 		}, "9.9.9.9:53",
 	)
@@ -76,9 +114,23 @@ func TestDNSOverUDPReadFailure(t *testing.T) {
 
 func TestDNSOverUDPReadSuccess(t *testing.T) {
 	const expected = 17
+	input := bytes.NewReader(make([]byte, expected))
 	txp := NewDNSOverUDP(
-		FakeDialer{
-			Conn: &FakeConn{ReadData: make([]byte, 17)},
+		&mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return &mocks.Conn{
+					MockSetDeadline: func(t time.Time) error {
+						return nil
+					},
+					MockWrite: func(b []byte) (int, error) {
+						return len(b), nil
+					},
+					MockRead: input.Read,
+					MockClose: func() error {
+						return nil
+					},
+				}, nil
+			},
 		}, "9.9.9.9:53",
 	)
 	data, err := txp.RoundTrip(context.Background(), nil)
