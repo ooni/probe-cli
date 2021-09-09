@@ -9,8 +9,12 @@ import (
 	"strings"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 )
+
+// Resolver resolves domain names.
+type Resolver interface {
+	LookupHost(ctx context.Context, hostname string) ([]string, error)
+}
 
 // CensoringResolver is a censoring resolver.
 type CensoringResolver struct {
@@ -27,7 +31,7 @@ type CensoringResolver struct {
 // and TLS proxies will pick them up. dnsNetwork and dnsAddress are the
 // settings to configure the upstream, non censored DNS.
 func NewCensoringResolver(
-	blocked, hijacked, ignored []string, uncensored netx.Resolver,
+	blocked, hijacked, ignored []string, uncensored Resolver,
 ) *CensoringResolver {
 	return &CensoringResolver{
 		blocked:    blocked,

@@ -12,8 +12,12 @@ import (
 	"sync"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 )
+
+// Dialer establishes network connections
+type Dialer interface {
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+}
 
 // CensoringProxy is a censoring TLS proxy
 type CensoringProxy struct {
@@ -27,7 +31,7 @@ type CensoringProxy struct {
 // the SNII record of a ClientHello. dnsNetwork and dnsAddress are
 // settings to configure the upstream, non censored DNS.
 func NewCensoringProxy(
-	keywords []string, uncensored netx.Dialer,
+	keywords []string, uncensored Dialer,
 ) *CensoringProxy {
 	return &CensoringProxy{
 		keywords: keywords,

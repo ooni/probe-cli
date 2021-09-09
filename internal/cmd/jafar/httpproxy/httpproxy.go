@@ -9,8 +9,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 )
 
 const product = "jafar/0.1.0"
@@ -27,7 +25,7 @@ type CensoringProxy struct {
 // the Host header of a request. dnsNetwork and dnsAddress are
 // settings to configure the upstream, non censored DNS.
 func NewCensoringProxy(
-	keywords []string, uncensored netx.HTTPRoundTripper,
+	keywords []string, uncensored http.RoundTripper,
 ) *CensoringProxy {
 	return &CensoringProxy{keywords: keywords, transport: uncensored}
 }
