@@ -1,15 +1,14 @@
-package resolver_test
+package resolver
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 )
 
 func TestEncoderEncodeA(t *testing.T) {
-	e := resolver.MiekgEncoder{}
+	e := &MiekgEncoder{}
 	data, err := e.Encode("x.org", dns.TypeA, false)
 	if err != nil {
 		t.Fatal(err)
@@ -18,7 +17,7 @@ func TestEncoderEncodeA(t *testing.T) {
 }
 
 func TestEncoderEncodeAAAA(t *testing.T) {
-	e := resolver.MiekgEncoder{}
+	e := &MiekgEncoder{}
 	data, err := e.Encode("x.org", dns.TypeAAAA, false)
 	if err != nil {
 		t.Fatal(err)
@@ -68,7 +67,7 @@ func TestEncoderPadding(t *testing.T) {
 	// The purpose of this unit test is to make sure that for a wide
 	// array of values we obtain the right query size.
 	getquerylen := func(domainlen int, padding bool) int {
-		e := resolver.MiekgEncoder{}
+		e := &MiekgEncoder{}
 		data, err := e.Encode(
 			// This is not a valid name because it ends up being way
 			// longer than 255 octets. However, the library is allowing
@@ -89,7 +88,7 @@ func TestEncoderPadding(t *testing.T) {
 		if vanillalen < domainlen {
 			t.Fatal("vanillalen is smaller than domainlen")
 		}
-		if (paddedlen % resolver.PaddingDesiredBlockSize) != 0 {
+		if (paddedlen % PaddingDesiredBlockSize) != 0 {
 			t.Fatal("paddedlen is not a multiple of PaddingDesiredBlockSize")
 		}
 		if paddedlen < vanillalen {

@@ -17,7 +17,7 @@ type Decoder interface {
 type MiekgDecoder struct{}
 
 // Decode implements Decoder.Decode.
-func (d MiekgDecoder) Decode(qtype uint16, data []byte) ([]string, error) {
+func (d *MiekgDecoder) Decode(qtype uint16, data []byte) ([]string, error) {
 	reply := new(dns.Msg)
 	if err := reply.Unpack(data); err != nil {
 		return nil, err
@@ -51,4 +51,4 @@ func (d MiekgDecoder) Decode(qtype uint16, data []byte) ([]string, error) {
 	return addrs, nil
 }
 
-var _ Decoder = MiekgDecoder{}
+var _ Decoder = &MiekgDecoder{}

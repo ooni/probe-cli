@@ -676,7 +676,7 @@ func TestNewDNSClientPowerdnsDoH(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -692,7 +692,7 @@ func TestNewDNSClientGoogleDoH(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -708,7 +708,7 @@ func TestNewDNSClientCloudflareDoH(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -725,7 +725,7 @@ func TestNewDNSClientCloudflareDoHSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -745,7 +745,7 @@ func TestNewDNSClientUDP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -762,7 +762,7 @@ func TestNewDNSClientUDPDNSSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -782,7 +782,7 @@ func TestNewDNSClientTCP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -803,7 +803,7 @@ func TestNewDNSClientTCPDNSSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -827,7 +827,7 @@ func TestNewDNSClientDoT(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -848,7 +848,7 @@ func TestNewDNSClientDoTDNSSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}

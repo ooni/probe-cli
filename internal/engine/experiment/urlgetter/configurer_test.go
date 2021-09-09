@@ -116,7 +116,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSPowerdns(t *testing.T) {
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
 	}
-	sr, ok := configuration.HTTPConfig.BaseResolver.(resolver.SerialResolver)
+	sr, ok := configuration.HTTPConfig.BaseResolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -192,7 +192,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSGoogle(t *testing.T) {
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
 	}
-	sr, ok := configuration.HTTPConfig.BaseResolver.(resolver.SerialResolver)
+	sr, ok := configuration.HTTPConfig.BaseResolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -268,7 +268,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSCloudflare(t *testing.T) 
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
 	}
-	sr, ok := configuration.HTTPConfig.BaseResolver.(resolver.SerialResolver)
+	sr, ok := configuration.HTTPConfig.BaseResolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -344,7 +344,7 @@ func TestConfigurerNewConfigurationResolverUDP(t *testing.T) {
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
 	}
-	sr, ok := configuration.HTTPConfig.BaseResolver.(resolver.SerialResolver)
+	sr, ok := configuration.HTTPConfig.BaseResolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
