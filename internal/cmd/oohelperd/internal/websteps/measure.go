@@ -28,8 +28,11 @@ type Config struct {
 }
 
 // Measure performs the three consecutive steps of the testhelper algorithm:
+//
 // 1. InitialChecks
+//
 // 2. Explore
+//
 // 3. Generate
 func Measure(ctx context.Context, creq *CtrlRequest, config *Config) (*ControlResponse, error) {
 	var (
