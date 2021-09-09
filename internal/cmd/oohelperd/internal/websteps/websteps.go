@@ -27,7 +27,7 @@ var newfailure = archival.NewFailure
 // including the empirical CDF of the body size for test lists URLs.
 const maxAcceptableBody = 1 << 24
 
-// Handler implements the Web Connectivity test helper HTTP API.
+// Handler implements the websteps test helper HTTP API.
 type Handler struct {
 	Config *Config
 }
