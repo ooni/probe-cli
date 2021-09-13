@@ -30,7 +30,11 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) {
 	defer config.Wg.Done()
 	req, err := http.NewRequestWithContext(ctx, "GET", config.URL, nil)
 	if err != nil {
-		config.Out <- CtrlHTTPResponse{Failure: newfailure(err)}
+		config.Out <- CtrlHTTPResponse{
+			BodyLength: -1,
+			Failure:    newfailure(err),
+			StatusCode: -1,
+		}
 		return
 	}
 	// The original test helper failed with extra headers while here
@@ -45,7 +49,11 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) {
 	}
 	resp, err := config.Client.Do(req)
 	if err != nil {
-		config.Out <- CtrlHTTPResponse{Failure: newfailure(err)}
+		config.Out <- CtrlHTTPResponse{
+			BodyLength: -1,
+			Failure:    newfailure(err),
+			StatusCode: -1,
+		}
 		return
 	}
 	defer resp.Body.Close()
