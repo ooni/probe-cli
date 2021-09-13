@@ -30,7 +30,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) {
 	defer config.Wg.Done()
 	req, err := http.NewRequestWithContext(ctx, "GET", config.URL, nil)
 	if err != nil {
-		config.Out <- CtrlHTTPResponse{
+		config.Out <- CtrlHTTPResponse{ // fix: emit -1 like the old test helper does
 			BodyLength: -1,
 			Failure:    newfailure(err),
 			StatusCode: -1,
@@ -49,7 +49,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) {
 	}
 	resp, err := config.Client.Do(req)
 	if err != nil {
-		config.Out <- CtrlHTTPResponse{
+		config.Out <- CtrlHTTPResponse{ // fix: emit -1 like old test helper does
 			BodyLength: -1,
 			Failure:    newfailure(err),
 			StatusCode: -1,

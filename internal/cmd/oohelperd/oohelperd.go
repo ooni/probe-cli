@@ -32,6 +32,7 @@ func init() {
 	dialer = netx.NewDialer(netx.Config{Logger: log.Log})
 	txp := netx.NewHTTPTransport(netx.Config{Logger: log.Log})
 	httpx = &http.Client{Transport: txp}
+	// fix: use 8.8.8.8:53/udp so we pin to a specific resolver.
 	var err error
 	resolver, err = netx.NewDNSClient(netx.Config{Logger: log.Log}, "udp://8.8.8.8:53")
 	runtimex.PanicOnError(err, "NewDNSClient failed")
