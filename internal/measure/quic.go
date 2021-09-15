@@ -70,7 +70,7 @@ func (qh *quicHandshaker) QUICHandshake(ctx context.Context, address string,
 	select {
 	case <-sess.HandshakeComplete().Done():
 	case <-ctx.Done():
-		m.Failure = err
+		m.Failure = ctx.Err()
 		return m
 	}
 	state := sess.ConnectionState().TLS

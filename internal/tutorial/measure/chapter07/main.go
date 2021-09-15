@@ -39,16 +39,13 @@ import (
 //
 // ### The main function
 //
+// The initial part of this program should look familiar. We are
+// defining options using the `flag` package. Then we parse the
+// command line flags using `Parse`. Then we create a context attached
+// to a timeout for the whole scanning operation.
+//
 // ```Go
 func main() {
-	// ```
-	//
-	// The initial part of this program should look familiar. We are
-	// defining options using the `flag` package. Then we parse the
-	// command line flags using `Parse`. Then we create a context attached
-	// to a timeout for the whole scanning operation.
-	//
-	// ```Go
 	URL := flag.String("url", "https://dns.google/", "URL to measure")
 	timeout := flag.Duration("timeout", 30*time.Second, "timeout to use")
 	flag.Parse()
@@ -57,21 +54,22 @@ func main() {
 	defer cancel()
 	// ```
 	//
-	// Next we record the beginning of time, we create a new `Trace`,
-	// and we make an instance of the `urlMeasurer`. This type
+	// Next we record the beginning of time and we create a new `Trace`.
+	//
+	// ```Go
+	begin := time.Now()
+	// ```
+	//
+	// Then, we make an instance of the `urlMeasurer`. This type
 	// represents the possibility of measuring an URL (without any
 	// redirection for now).
-	//
 	// When we initialize the `urlMeasurer`, we pass to it an
 	// instance of `Measurer` created like we did in previous chapters.
 	//
 	// ```Go
-	begin := time.Now()
-	trace := measure.NewTrace(begin)
 	ux := &urlMeasurer{
-		Begin:    begin,
-		Logger:   log.Log,
-		Measurer: measure.NewMeasurerStdlib(begin, log.Log, trace),
+		Begin:  begin,
+		Logger: log.Log,
 	}
 	// ```
 	//
@@ -102,15 +100,25 @@ func main() {
 // ```Go
 
 type urlMeasurer struct {
-	Begin    time.Time
-	Logger   measure.Logger
-	Measurer *measure.Measurer
+	Begin  time.Time
+	Logger measure.Logger
 }
 
 // ```
 //
-// The `urlMeasurement` struct is the result of measuring an URL. This
-// type consists of the following subtypes:
+// The `urlMeasurement` struct is the result of measuring an URL.
+//
+// ```Go
+
+type urlMeasurement struct {
+	URLParse  *measure.ParseURLResult          `json:"url_parse"`
+	DNS       []*measure.LookupHostResult      `json:"dns"`
+	Endpoints []*measure.HTTPEndpointGetResult `json:"endpoints"`
+}
+
+// ```
+//
+// This type consists of the following subtypes:
 //
 // - URLParse is a data structure we encounter now for the first
 // time. It represent the result of parsing an URL and also contains
@@ -125,16 +133,6 @@ type urlMeasurer struct {
 // - Endpoints contains the measurement of each endpoint discovered
 // through the DNS. (The program we have written in the previous
 // chapter was filling one of the structs saved in Endpoints.)
-//
-// ```Go
-
-type urlMeasurement struct {
-	URLParse  *measure.ParseURLResult          `json:"url_parse"`
-	DNS       []*measure.LookupHostResult      `json:"dns"`
-	Endpoints []*measure.HTTPEndpointGetResult `json:"endpoints"`
-}
-
-// ```
 //
 // ### The Measure method
 //
@@ -153,7 +151,7 @@ func (ux *urlMeasurer) Measure(ctx context.Context, URL string) *urlMeasurement 
 	//
 	// ```Go
 	m := &urlMeasurement{}
-	m.URLParse = ux.Measurer.ParseURL(URL)
+	m.URLParse = measure.ParseURL(URL)
 	if !m.URLParse.Successful() {
 		return m
 	}
@@ -171,7 +169,7 @@ func (ux *urlMeasurer) Measure(ctx context.Context, URL string) *urlMeasurement 
 	// the result to the list of DNS resolutions.
 	//
 	// ```Go
-	m.DNS = append(m.DNS, ux.Measurer.LookupHostSystem(ctx, host))
+	m.DNS = append(m.DNS, ux.lookupHostSystem(ctx, host))
 	// ```
 	//
 	// 2. querying Cloudflare's public DNS-over-UDP endpoint 1.1.1.1:53
@@ -180,30 +178,26 @@ func (ux *urlMeasurer) Measure(ctx context.Context, URL string) *urlMeasurement 
 	//
 	// ```Go
 	const cfDNS = "1.1.1.1:53"
-	m.DNS = append(m.DNS, ux.Measurer.LookupHostUDP(ctx, host, dns.TypeA, cfDNS))
-	m.DNS = append(m.DNS, ux.Measurer.LookupHostUDP(ctx, host, dns.TypeAAAA, cfDNS))
+	m.DNS = append(m.DNS, ux.lookupHostUDP(ctx, host, dns.TypeA, cfDNS))
+	m.DNS = append(m.DNS, ux.lookupHostUDP(ctx, host, dns.TypeAAAA, cfDNS))
 	// ```
 	//
 	// The next step is to reduce the results of all resolutions (which
 	// only contain IP addresses) to a unique set of endpoints. That
 	// is, we remove duplicate addresses and we correctly append
-	// the port. (URL parsing will fail if there is no explicit port
-	// and it cannot guess the port from the scheme, hence we can
-	// trust `Port` here to be a valid port.)
-	//
+	// the port.
 	// Note that all the above DNS resolutions may have failed. This
 	// is fine: `MergeEndpoints` will return an empty list if the
 	// input list is also empty.
 	//
 	// ```Go
-	epnts := ux.Measurer.MergeEndpoints(m.DNS, m.URLParse.Port)
+	epnts := measure.MergeEndpoints(m.DNS, m.URLParse.Port)
 	// ```
 	//
 	// As the final step, we cycle through the (possibly empty) list
 	// of endpoints and we measure each of them. Note how measuring an
 	// endpoint requires the context, the original parsed URL, and
 	// the address of the endpoint itself.
-	//
 	// After we measure each endpoint, we append the result to the
 	// list of endpoint measurements.
 	//
@@ -222,12 +216,39 @@ func (ux *urlMeasurer) Measure(ctx context.Context, URL string) *urlMeasurement 
 
 // ```
 //
+// ### Utility functions
+//
+// These are small utility functions where we create a temporary
+// `Measurer` and perform the required action. We create a new `Measurer`
+// each time so there is no overlap in the Traces. As mentioned in
+// previous chapters, this is the recommended usage.
+//
+// ```Go
+
+func (ux *urlMeasurer) lookupHostSystem(
+	ctx context.Context, domain string) *measure.LookupHostResult {
+	mx := measure.NewMeasurerStdlib(ux.Begin, ux.Logger)
+	return mx.LookupHostSystem(ctx, domain)
+}
+
+func (ux *urlMeasurer) lookupHostUDP(ctx context.Context,
+	domain string, qtype uint16, serverAddr string) *measure.LookupHostResult {
+	mx := measure.NewMeasurerStdlib(ux.Begin, ux.Logger)
+	return mx.LookupHostUDP(ctx, domain, qtype, serverAddr)
+}
+
+// ```
+//
 // ### Measuring a single endpoint
 //
 // ```Go
 
 func (ux *urlMeasurer) measureEndpoint(ctx context.Context,
 	URL *url.URL, endpoint string) *measure.HTTPEndpointGetResult {
+	// ```
+	// We create a measurer.
+	// ```Go
+	mx := measure.NewMeasurerStdlib(ux.Begin, ux.Logger)
 	// ```
 	//
 	// We create a cookie jar like we did before. Since we are not
@@ -258,7 +279,7 @@ func (ux *urlMeasurer) measureEndpoint(ctx context.Context,
 	// did in the previous chapter).
 	//
 	// ```Go
-	return ux.Measurer.HTTPSEndpointGet(ctx, endpoint, tlsConfig, httpRequest)
+	return mx.HTTPSEndpointGet(ctx, endpoint, tlsConfig, httpRequest)
 }
 
 // ```

@@ -10,7 +10,7 @@ code that measures endpoints. (In this context, with endpoint we mean
 a TCP/UDP endpoint composed of an IPv4/IPv6 address and a port.)
 
 We separate DNS from endpoint measurement because we noticed cases where,
-e.g., `8.8.4.4:443/tcp` was working and `8.8.4.4:443/tcp` was blocked. For
+e.g., `8.8.4.4:443/tcp` was working and `8.8.8.8:443/tcp` was blocked. For
 this reason, we want to measure all of a service's endpoints.
 
 The `internal/measure` library implements these *operations*:

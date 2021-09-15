@@ -33,6 +33,7 @@ import (
 
 func main() {
 	// ```
+	// ### Setup
 	//
 	// This first part of `main.go` is really similar to the previous
 	// chapter, so there is not much new to say here.
@@ -45,12 +46,12 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 	begin := time.Now()
+	trace := measure.NewTrace(begin)
 	// ```
 	//
 	// We create a `Measurer` like we did in the previous chapter.
 	//
 	// ```Go
-	trace := measure.NewTrace(begin)
 	mx := &measure.Measurer{
 		Begin:          begin,
 		Logger:         log.Log,
@@ -61,14 +62,19 @@ func main() {
 	}
 	// ```
 	//
+	// ### Measurer.TCPConnect flow
+	//
 	// We then call `TCPConnect`, which executes the connect *flow*. The
 	// input is the context (for timeouts), and the address of the
-	// endpoint to which we want to connect. The result is a message `m` that
-	// we are going to print later.
+	// endpoint to which we want to connect.
 	//
 	// ```Go
 	m := mx.TCPConnect(ctx, *address)
 	// ```
+	//
+	// The result is a message `m` that we are going to print later.
+	//
+	// ### Printing the results
 	//
 	// We don't need to worry about closing connections. The `TCPConnect`
 	// flow closes the connection for us. (If you need the connection
@@ -121,6 +127,8 @@ func main() {
 //
 // Let us now see if we can provoke some errors and timeouts.
 //
+// ### Measurement with connection refused
+//
 // Let us start with an IP address where there's no listening socket:
 //
 // ```bash
@@ -140,6 +148,8 @@ func main() {
 // ```
 //
 // And here's an error telling us the connection was refused.
+//
+// ### Measurement with timeouts
 //
 // Let us now try to obtain a timeout:
 //

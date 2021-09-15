@@ -10,6 +10,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
+// TODO(bassosimone): add a unique ID to each new connection
+// so we can be sure the events depend on that conn.
+
 // Trace contains a network events trace.
 type Trace struct {
 	begin   time.Time

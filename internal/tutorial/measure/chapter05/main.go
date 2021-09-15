@@ -42,16 +42,13 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 	begin := time.Now()
-	trace := measure.NewTrace(begin)
-	mx := measure.NewMeasurerStdlib(begin, log.Log, trace)
+	mx := measure.NewMeasurerStdlib(begin, log.Log)
 	// ```
 	//
-	// The main difference compared to the previous chapter is that
-	// QUIC combines connecting and handshaking into the same operation,
-	// so the arguments are: the context for timeouts, the address of
-	// the UDP endpoint, the TLS configuration.
+	// ### The QUICEndpointDial flow
 	//
-	// There are no other significant differences in the program.
+	// The main difference compared to the previous chapter is that
+	// QUIC combines connecting and handshaking into the same operation.
 	//
 	// ```Go
 	m := mx.QUICEndpointDial(ctx, *address, &tls.Config{
@@ -59,6 +56,17 @@ func main() {
 		NextProtos: []string{"h3"},
 		RootCAs:    netxlite.NewDefaultCertPool(),
 	})
+	// ```
+	//
+	// The arguments are: the context for timeouts, the address of
+	// the UDP endpoint, the TLS configuration.
+	//
+	// ### Printing the results
+	//
+	// There are no other significant differences in the program: we
+	// just print the JSON as we did before.
+	//
+	// ```Go
 	data, err := json.Marshal(m)
 	runtimex.PanicOnError(err, "json.Marshal failed")
 	fmt.Printf("%s\n", string(data))

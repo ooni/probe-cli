@@ -14,6 +14,11 @@ import (
 // Measurer performs measurements. Make sure you fill all the
 // fields labelled as MANDATORY before using a Measurer.
 //
+// The typical usage is that you create a Measurer and run a
+// single measurement with it. If you settle for more complex
+// usage patterns, you need to take care of not having
+// overlapping traces. So, the suggested usage is the simplest.
+//
 // CAVEAT: the Measurer is not designed to be used by multiple
 // goroutines at the same time. A future version of this codebase
 // MAY provide more guarantees in this regard.
@@ -50,10 +55,9 @@ type Measurer struct {
 //
 // The logger param prints logs.
 //
-// The trace param collects network I/O events.
-//
 // Do not pass to this factory nil or empty parameters.
-func NewMeasurerStdlib(begin time.Time, logger Logger, trace *Trace) *Measurer {
+func NewMeasurerStdlib(begin time.Time, logger Logger) *Measurer {
+	trace := NewTrace(begin)
 	return &Measurer{
 		Begin:          begin,
 		Logger:         logger,
@@ -66,7 +70,7 @@ func NewMeasurerStdlib(begin time.Time, logger Logger, trace *Trace) *Measurer {
 
 // MergeEndpoints takes in input the result of multiple DNS resolutions
 // and a port number and creates a list of unique endpoints.
-func (mx *Measurer) MergeEndpoints(all []*LookupHostResult, port string) (epnts []string) {
+func MergeEndpoints(all []*LookupHostResult, port string) (epnts []string) {
 	freq := make(map[string]int)
 	for _, one := range all {
 		for _, addr := range one.Addrs {
@@ -119,7 +123,7 @@ func (m *ParseURLResult) Hostname() string {
 // will, in particular, figure out which port should be used for
 // the related endpoint. If it cannot figure out the port, the code
 // will fail and the Failure field will be set accordingly.
-func (mx *Measurer) ParseURL(URL string) *ParseURLResult {
+func ParseURL(URL string) *ParseURLResult {
 	m := &ParseURLResult{URL: URL}
 	m.Parsed, m.Failure = url.Parse(URL)
 	if m.Failure != nil {

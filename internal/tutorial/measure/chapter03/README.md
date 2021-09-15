@@ -42,14 +42,26 @@ func main() {
 	begin := time.Now()
 ```
 
+### Creating a Measurer using a factory
+
 This time, rather than manually filling all the fields of the
 `Measurer` like we did before, we call a factory function that
 is equivalent to the many-liner we wrote previously.
 
 ```Go
-	trace := measure.NewTrace(begin)
-	mx := measure.NewMeasurerStdlib(begin, log.Log, trace)
+	mx := measure.NewMeasurerStdlib(begin, log.Log)
 ```
+
+The advantage of this factory is that the code is less
+verbose. You can still modify fields _before usage_ if you
+need to change any of them.
+
+Also, this factory creates a trace for the measurer
+automatically. The suggested usage is to use a
+measurer for a single measurement. So you do not
+have to worry about overlapping events in the trace.
+
+### The Measurer.LookupHostUDP flow
 
 We now invoke the `LookupHostUDP` flow. We specify:
 
@@ -61,6 +73,10 @@ We now invoke the `LookupHostUDP` flow. We specify:
 
 - the address of the DNS-over-UDP server endpoint.
 
+```Go
+	m := mx.LookupHostUDP(ctx, *query, dns.TypeA, *address)
+```
+
 This flow returns the same data type as `LookupHostSystem` though
 `LookupHostSystem` queries for `A` and `AAAA` together. In the
 future there may be a compound flow that queries both `A` and `AAAA`
@@ -70,9 +86,7 @@ Likewise, the system resolver may implement caching and retries
 while `LookupHostUDP` does not. It just sends a query once and
 returns the response (if any) or a timeout error.
 
-```Go
-	m := mx.LookupHostUDP(ctx, *query, dns.TypeA, *address)
-```
+### Printing the results
 
 Let us now print this message like we did before.
 
@@ -157,6 +171,8 @@ put IPv4 when querying for `A` and IPv6 for `AAAA`.
 Let us now try to provoke some errors and see how the
 output JSON changes because of them.
 
+### Measurement with NXDOMAIN
+
 Let us first try to get a NXDOMAIN error.
 
 ```bash
@@ -199,6 +215,8 @@ This produces the following JSON:
 ```
 
 We indeed get a NXDOMAIN error as the failure.
+
+### Measurement with timeout
 
 Let us now query an IP address known for not responding
 to DNS queries, to get a timeout.
@@ -284,6 +302,8 @@ And here's what we see:
 
 So we see that the watchdog timeout for the UDP socket
 defaults to five seconds.
+
+### Measurement with REFUSED error
 
 Let us now try to get a REFUSED DNS Rcode, again from servers
 that are, let's say, kind enough to easily help.

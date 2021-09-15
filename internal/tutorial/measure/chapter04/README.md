@@ -41,13 +41,20 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 	begin := time.Now()
-	trace := measure.NewTrace(begin)
-	mx := measure.NewMeasurerStdlib(begin, log.Log, trace)
+	mx := measure.NewMeasurerStdlib(begin, log.Log)
 ```
+
+### The TLSEndpointDial flow
 
 We run the flow to obtain a measurement. We don't need to
 close the TLS connection: flows are self-contained.
-
+```Go
+	m := mx.TLSEndpointDial(ctx, *address, &tls.Config{
+		NextProtos: []string{"h2", "http/1.1"},
+		ServerName: *sni,
+		RootCAs:    netxlite.NewDefaultCertPool(),
+	})
+```
 These are the arguments:
 
 - ctx for propagating timeout information;
@@ -57,13 +64,7 @@ These are the arguments:
 - a TLS config containing the ALPN settings, the SNI
 settings and the root CA to use.
 
-```Go
-	m := mx.TLSEndpointDial(ctx, *address, &tls.Config{
-		NextProtos: []string{"h2", "http/1.1"},
-		ServerName: *sni,
-		RootCAs:    netxlite.NewDefaultCertPool(),
-	})
-```
+### Printing the measurement
 
 And this is the usual spell to print the measurement.
 
@@ -199,6 +200,8 @@ Let us comment the JSON in detail:
 
 Let us now provoke some errors.
 
+### Measurement with timeout
+
 First, let's see what if the connection fails.
 
 ```bash
@@ -220,6 +223,8 @@ Here's the JSON:
   "network_events": null
 }
 ```
+
+### Measurement with wrong SNI
 
 Now let us try what happens with a different SNI:
 
@@ -301,6 +306,8 @@ And here's the JSON:
 Here we see that the TLS handshake fails and we are getting
 the offending certificate in the `peer_certificates`.
 
+### Measurement with self-signed certificate
+
 Let us now try with a self-signed certificate:
 
 ```bash
@@ -377,6 +384,8 @@ Which leads to this JSON:
   ]
 }
 ```
+
+### Measurement with expired certificate
 
 Let us also try with an expired certificate:
 
@@ -455,6 +464,8 @@ And we get this JSON:
 }
 ```
 
+### Measurement with connection reset
+
 Let's run further experiments using jafar (`go build -v ./internal/cmd/jafar`)
 and a Linux box to simulate censorship conditions.
 
@@ -518,6 +529,8 @@ We obtain this JSON:
 
 This is what happens when there is a RST based on the SNI. (You can
 now use Ctrl-C to interrupt `jafar`.)
+
+### Measurement with timeout
 
 Let us now see what happens if a packet in the handshake is dropped:
 

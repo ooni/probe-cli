@@ -46,15 +46,14 @@ func main() {
 	defer cancel()
 	URL := &url.URL{Scheme: "https", Host: *address, Path: *urlPath}
 	begin := time.Now()
-	trace := measure.NewTrace(begin)
-	mx := measure.NewMeasurerStdlib(begin, log.Log, trace)
+	mx := measure.NewMeasurerStdlib(begin, log.Log)
 ```
+
+### Creating a TLS config
 
 In previous examples, we have always provided the TLS config
 inline. Here, we create a named variable to reduce the amount
-of information packed in a single line of code. Apart from
-that, this configuration is the same we have been providing
-previously when handshaking to TLS endpoints on port 443.
+of information packed in a single line of code.
 
 ```Go
 	tlsConfig := &tls.Config{
@@ -64,6 +63,11 @@ previously when handshaking to TLS endpoints on port 443.
 	}
 ```
 
+Apart from that, this configuration is the same we have been providing
+previously when handshaking to TLS endpoints on port 443.
+
+### Creating a cookie jar
+
 The following is a new piece of code we have not
 encountered so far. It creates a new jar for cookies
 that prevents a domain from setting a cookie for an
@@ -71,25 +75,34 @@ unrelated domain. We need to keep track of cookies
 when measuring because, among other things, some
 redirections do not work without cookies.
 
+```Go
+	cookies := measure.NewCookieJar()
+```
+
 See https://github.com/ooni/probe/issues/1727 for
 more information on the behavior of URLS belonging
 to the github.com/citizenlab/test-list repo, that
 is, the URLs we most frequently test.
 
-```Go
-	cookies := measure.NewCookieJar()
-```
+### Creating a new HTTP request
 
-The next step is creating an `HTTPRequest`. We use
-a factory to create it that also forces using a specific
-host header rather than using the URL's hostname.
+The next step is creating an `HTTPRequest`.
 
 ```Go
 	httpRequest := measure.NewHTTPRequestWithHostOverride(URL, cookies, *hostHeader)
 ```
 
-We are now ready to run the `HTTPSEndpointGet` flow. The
-arguments are:
+We use a factory to create it that also forces using a specific
+host header rather than using the URL's hostname.
+
+### The HTTPSEndpointGet flow
+
+We are now ready to run the `HTTPSEndpointGet` flow.
+
+```Go
+	m := mx.HTTPSEndpointGet(ctx, *address, tlsConfig, httpRequest)
+```
+The arguments are:
 
 - a context to carry timeout information;
 
@@ -100,9 +113,7 @@ arguments are:
 - the httpRequest struct that contains information regarding
 sending the request and getting back a response.
 
-```Go
-	m := mx.HTTPSEndpointGet(ctx, *address, tlsConfig, httpRequest)
-```
+### Printing the measurement
 
 The rest of the program is pretty standard, so we are
 not going to comment it in detail.
