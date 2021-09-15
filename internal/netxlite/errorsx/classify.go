@@ -84,11 +84,17 @@ func classifyWithStringSuffix(err error) string {
 	if strings.HasSuffix(s, "TLS handshake timeout") {
 		return FailureGenericTimeoutError
 	}
-	if strings.HasSuffix(s, "no such host") {
+	if strings.HasSuffix(s, DNSNoSuchHostSuffix) {
 		// This is dns_lookup_error in MK but such error is used as a
 		// generic "hey, the lookup failed" error. Instead, this error
 		// that we return here is significantly more specific.
 		return FailureDNSNXDOMAINError
+	}
+	if strings.HasSuffix(s, DNSServerMisbehavingSuffix) {
+		return FailureDNSServerMisbehaving
+	}
+	if strings.HasSuffix(s, DNSNoAnswerSuffix) {
+		return FailureDNSNoAnswer
 	}
 	return "" // not found
 }
@@ -220,6 +226,21 @@ func quicIsCertificateError(alert uint8) bool {
 // filters for DNS bogons MUST use this error.
 var ErrDNSBogon = errors.New("dns: detected bogon address")
 
+// These strings are same as the standard library.
+const (
+	DNSNoSuchHostSuffix        = "no such host"
+	DNSServerMisbehavingSuffix = "server misbehaving"
+	DNSNoAnswerSuffix          = "no answer from DNS server"
+)
+
+// These errors are returned by the decoder and/or the serial resolver.
+var (
+	ErrOODNSNoSuchHost  = fmt.Errorf("ooniresolver: %s", DNSNoSuchHostSuffix)
+	ErrOODNSRefused     = errors.New("ooniresolver: refused")
+	ErrOODNSMisbehaving = fmt.Errorf("ooniresolver: %s", DNSServerMisbehavingSuffix)
+	ErrOODNSNoAnswer    = fmt.Errorf("ooniresolver: %s", DNSNoAnswerSuffix)
+)
+
 // ClassifyResolverError maps an error occurred during a domain name
 // resolution to the corresponding OONI failure string.
 //
@@ -235,6 +256,11 @@ func ClassifyResolverError(err error) string {
 	}
 	if errors.Is(err, ErrDNSBogon) {
 		return FailureDNSBogonError // not in MK
+	}
+	// Implementation note: we match errors that share the same
+	// string of the stdlib in the generic classifier.
+	if errors.Is(err, ErrOODNSRefused) {
+		return FailureDNSRefusedError // not in MK
 	}
 	return ClassifyGenericError(err)
 }

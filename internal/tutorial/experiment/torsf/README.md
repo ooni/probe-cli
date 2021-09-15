@@ -18,3 +18,15 @@ In the [fourth step](chapter04/) we will replace the code
 simulating a real `torsf` experiment with a minimal implementation
 of such an experiment that uses other code in `ooni/probe-cli` to
 attempt to bootstrap `tor` over Snowflake.
+
+## Regenerating this tutorial
+
+Most of the text of these tutorials comes from comments in real
+Go code, to ensure that the code we show is always working against
+the main development branch. For this reason, one should not edit
+the README.md files manually when a Go file is also present in the
+same directory. The following command regenerates all tutorials.
+
+```
+(cd ./internal/tutorial && go run ./generator)
+```

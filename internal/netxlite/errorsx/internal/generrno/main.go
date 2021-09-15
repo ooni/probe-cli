@@ -93,6 +93,9 @@ var Specs = []*ErrorSpec{
 	// we must write "DNS" rather than writing "dns".
 	NewLibraryError("DNS_bogon_error"),
 	NewLibraryError("DNS_NXDOMAIN_error"),
+	NewLibraryError("DNS_refused_error"),
+	NewLibraryError("DNS_server_misbehaving"),
+	NewLibraryError("DNS_no_answer"),
 	NewLibraryError("EOF_error"),
 	NewLibraryError("generic_timeout_error"),
 	NewLibraryError("QUIC_incompatible_version"),

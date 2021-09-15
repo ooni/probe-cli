@@ -1,11 +1,13 @@
 /apitool
 /apitool.exe
+/badproxy.pem
 /*.asc
 /coverage.cov
 /*.deb
 /debops-ci
 .DS_Store
 /*.jsonl
+/jafar
 /miniooni
 /miniooni.exe
 /oohelper

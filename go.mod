@@ -28,7 +28,7 @@ require (
 	github.com/miekg/dns v1.1.42
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.6.6
-	github.com/ooni/oohttp v0.0.0-20210908222758-cba9b1ce5ecf
+	github.com/ooni/oohttp v0.0.0-20210914195914-d55cbb49a8c5
 	github.com/ooni/probe-assets v0.3.1
 	github.com/ooni/psiphon v0.8.0
 	github.com/oschwald/geoip2-golang v1.5.0
@@ -43,7 +43,7 @@ require (
 	gitlab.com/yawning/utls.git v0.0.12-1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/mod v0.5.0 // indirect
-	golang.org/x/net v0.0.0-20210908191846-a5e095526f91
+	golang.org/x/net v0.0.0-20210913180222-943fd674d43e
 	golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.5 // indirect
