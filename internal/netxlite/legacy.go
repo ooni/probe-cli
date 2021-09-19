@@ -98,6 +98,16 @@ func (r *ResolverLegacyAdapter) CloseIdleConnections() {
 	}
 }
 
+func (r *ResolverLegacyAdapter) LookupHostWithoutRetry(
+	ctx context.Context, domain string, qtype uint16) ([]string, error) {
+	return nil, ErrNoDNSTransport
+}
+
+func (r *ResolverLegacyAdapter) LookupHTTPSWithoutRetry(
+	ctx context.Context, domain string) (HTTPS, error) {
+	return nil, ErrNoDNSTransport
+}
+
 // DialerLegacy establishes network connections.
 //
 // This definition is DEPRECATED. Please, use Dialer.

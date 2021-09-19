@@ -67,6 +67,29 @@ func NewDialerWithoutResolver(logger Logger) Dialer {
 	return NewDialerWithResolver(logger, &nullResolver{})
 }
 
+type Connector = Dialer
+
+func NewDialerWithConnector(
+	logger Logger, resolver Resolver, connector Connector) Dialer {
+	return &dialerLogger{
+		Dialer: &dialerResolver{
+			Dialer:   connector,
+			Resolver: resolver,
+		},
+		Logger: logger,
+	}
+}
+
+func NewConnector(logger Logger) Connector {
+	return &dialerLogger{
+		Dialer: &dialerErrWrapper{
+			Dialer: &dialerSystem{},
+		},
+		Logger:          logger,
+		operationSuffix: "_address",
+	}
+}
+
 // dialerSystem uses system facilities to perform domain name
 // resolution and guarantees we have a dialer timeout.
 type dialerSystem struct {

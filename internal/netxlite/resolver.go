@@ -3,12 +3,18 @@ package netxlite
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"time"
 
+	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"golang.org/x/net/idna"
 )
+
+// HTTPS is the type returned for HTTPS queries.
+type HTTPS = dnsx.HTTPS
 
 // Resolver performs domain name resolutions.
 type Resolver interface {
@@ -23,7 +29,22 @@ type Resolver interface {
 
 	// CloseIdleConnections closes idle connections, if any.
 	CloseIdleConnections()
+
+	// LookupHostWithoutRetry issues a single lookup host query
+	// for the given qtype (dns.TypeA or dns.TypeAAAA) without any
+	// retry mechanism whatsoever.
+	LookupHostWithoutRetry(
+		ctx context.Context, domain string, qtype uint16) ([]string, error)
+
+	// LookupHTTPSWithoutRetry issues a single HTTPS query for
+	// a domain without any retry mechanism whatsoever.
+	LookupHTTPSWithoutRetry(
+		ctx context.Context, domain string) (HTTPS, error)
 }
+
+// ErrNoDNSTransport indicates that the requested Resolver operation
+// cannot be performed because we're using the "system" resolver.
+var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
 // NewResolverStdlib creates a new resolver using system
 // facilities for resolving domain names (e.g., getaddrinfo).
@@ -42,11 +63,15 @@ type Resolver interface {
 // 5. enforces reasonable timeouts (
 // see https://github.com/ooni/probe/issues/1726).
 func NewResolverStdlib(logger Logger) Resolver {
+	return WrapResolver(logger, &resolverSystem{})
+}
+
+func WrapResolver(logger Logger, resolver Resolver) Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{
 			Resolver: &resolverShortCircuitIPAddr{
 				Resolver: &resolverErrWrapper{
-					Resolver: &resolverSystem{},
+					Resolver: resolver,
 				},
 			},
 			Logger: logger,
@@ -114,6 +139,16 @@ func (r *resolverSystem) CloseIdleConnections() {
 	// nothing to do
 }
 
+func (r *resolverSystem) LookupHostWithoutRetry(
+	ctx context.Context, domain string, qtype uint16) ([]string, error) {
+	return nil, ErrNoDNSTransport
+}
+
+func (r *resolverSystem) LookupHTTPSWithoutRetry(
+	ctx context.Context, domain string) (HTTPS, error) {
+	return nil, ErrNoDNSTransport
+}
+
 // resolverLogger is a resolver that emits events
 type resolverLogger struct {
 	Resolver
@@ -123,16 +158,51 @@ type resolverLogger struct {
 var _ Resolver = &resolverLogger{}
 
 func (r *resolverLogger) LookupHost(ctx context.Context, hostname string) ([]string, error) {
-	r.Logger.Debugf("resolve %s...", hostname)
+	prefix := fmt.Sprintf("resolve[A,AAAA] %s with %s (%s)", hostname, r.Network(), r.Address())
+	r.Logger.Debugf("%s...", prefix)
 	start := time.Now()
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	elapsed := time.Since(start)
 	if err != nil {
-		r.Logger.Debugf("resolve %s... %s in %s", hostname, err, elapsed)
+		r.Logger.Debugf("%s... %s in %s", prefix, err, elapsed)
 		return nil, err
 	}
-	r.Logger.Debugf("resolve %s... %+v in %s", hostname, addrs, elapsed)
+	r.Logger.Debugf("%s... %+v in %s", prefix, addrs, elapsed)
 	return addrs, nil
+}
+
+func (r *resolverLogger) LookupHostWithoutRetry(
+	ctx context.Context, domain string, qtype uint16) ([]string, error) {
+	qtypename := dns.TypeToString[qtype]
+	prefix := fmt.Sprintf("resolve[%s] %s with %s (%s)", qtypename, domain, r.Network(), r.Address())
+	r.Logger.Debugf("%s...", prefix)
+	start := time.Now()
+	addrs, err := r.Resolver.LookupHostWithoutRetry(ctx, domain, qtype)
+	elapsed := time.Since(start)
+	if err != nil {
+		r.Logger.Debugf("%s... %s in %s", prefix, err, elapsed)
+		return nil, err
+	}
+	r.Logger.Debugf("%s... %+v in %s", prefix, addrs, elapsed)
+	return addrs, nil
+}
+
+func (r *resolverLogger) LookupHTTPSWithoutRetry(
+	ctx context.Context, domain string) (HTTPS, error) {
+	prefix := fmt.Sprintf("resolve[HTTPS] %s with %s (%s)", domain, r.Network(), r.Address())
+	r.Logger.Debugf("%s...", prefix)
+	start := time.Now()
+	https, err := r.Resolver.LookupHTTPSWithoutRetry(ctx, domain)
+	elapsed := time.Since(start)
+	if err != nil {
+		r.Logger.Debugf("%s... %s in %s", prefix, err, elapsed)
+		return nil, err
+	}
+	alpn := https.ALPN()
+	a := https.IPv4Hint()
+	aaaa := https.IPv6Hint()
+	r.Logger.Debugf("%s... %+v %+v %+v in %s", prefix, alpn, a, aaaa, elapsed)
+	return https, nil
 }
 
 // resolverIDNA supports resolving Internationalized Domain Names.
@@ -148,6 +218,24 @@ func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]strin
 		return nil, err
 	}
 	return r.Resolver.LookupHost(ctx, host)
+}
+
+func (r *resolverIDNA) LookupHostWithoutRetry(
+	ctx context.Context, domain string, qtype uint16) ([]string, error) {
+	host, err := idna.ToASCII(domain)
+	if err != nil {
+		return nil, err
+	}
+	return r.Resolver.LookupHostWithoutRetry(ctx, host, qtype)
+}
+
+func (r *resolverIDNA) LookupHTTPSWithoutRetry(
+	ctx context.Context, domain string) (HTTPS, error) {
+	host, err := idna.ToASCII(domain)
+	if err != nil {
+		return nil, err
+	}
+	return r.Resolver.LookupHTTPSWithoutRetry(ctx, host)
 }
 
 // resolverShortCircuitIPAddr recognizes when the input hostname is an
@@ -186,6 +274,16 @@ func (r *nullResolver) CloseIdleConnections() {
 	// nothing to do
 }
 
+func (r *nullResolver) LookupHostWithoutRetry(
+	ctx context.Context, domain string, qtype uint16) ([]string, error) {
+	return nil, ErrNoDNSTransport
+}
+
+func (r *nullResolver) LookupHTTPSWithoutRetry(
+	ctx context.Context, domain string) (HTTPS, error) {
+	return nil, ErrNoDNSTransport
+}
+
 // resolverErrWrapper is a Resolver that knows about wrapping errors.
 type resolverErrWrapper struct {
 	Resolver
@@ -200,4 +298,24 @@ func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([
 			errorsx.ClassifyResolverError, errorsx.ResolveOperation, err)
 	}
 	return addrs, nil
+}
+
+func (r *resolverErrWrapper) LookupHostWithoutRetry(
+	ctx context.Context, domain string, qtype uint16) ([]string, error) {
+	addrs, err := r.Resolver.LookupHostWithoutRetry(ctx, domain, qtype)
+	if err != nil {
+		return nil, errorsx.NewErrWrapper(
+			errorsx.ClassifyResolverError, errorsx.ResolveOperation, err)
+	}
+	return addrs, nil
+}
+
+func (r *resolverErrWrapper) LookupHTTPSWithoutRetry(
+	ctx context.Context, domain string) (HTTPS, error) {
+	out, err := r.Resolver.LookupHTTPSWithoutRetry(ctx, domain)
+	if err != nil {
+		return nil, errorsx.NewErrWrapper(
+			errorsx.ClassifyResolverError, errorsx.ResolveOperation, err)
+	}
+	return out, nil
 }

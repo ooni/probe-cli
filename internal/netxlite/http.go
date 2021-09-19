@@ -110,6 +110,10 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 // The returned transport will set a default user agent if the
 // request has not already set a user agent.
 func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
+	return WrapHTTPTransport(logger, NewOOHTTPBaseTransport(dialer, tlsDialer))
+}
+
+func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 	// Using oohttp to support any TLS library.
 	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
 
@@ -138,16 +142,20 @@ func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTra
 	// upon us when we are using TLS parroting).
 	txp.ForceAttemptHTTP2 = true
 
+	return &httpTransportConnectionsCloser{
+		HTTPTransport: &oohttp.StdlibTransport{Transport: txp},
+		Dialer:        dialer,
+		TLSDialer:     tlsDialer,
+	}
+}
+
+func WrapHTTPTransport(logger Logger, txp HTTPTransport) HTTPTransport {
 	// Ensure we correctly forward CloseIdleConnections and compose
 	// with a logging transport thus enabling logging.
 	return &httpUserAgentTransport{
 		HTTPTransport: &httpTransportLogger{
-			HTTPTransport: &httpTransportConnectionsCloser{
-				HTTPTransport: &oohttp.StdlibTransport{Transport: txp},
-				Dialer:        dialer,
-				TLSDialer:     tlsDialer,
-			},
-			Logger: logger,
+			HTTPTransport: txp,
+			Logger:        logger,
 		},
 	}
 }

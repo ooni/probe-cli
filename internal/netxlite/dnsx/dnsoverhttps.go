@@ -27,14 +27,14 @@ type DNSOverHTTPS struct {
 
 // NewDNSOverHTTPS creates a new DNSOverHTTP instance from the
 // specified http.Client and URL, as a convenience.
-func NewDNSOverHTTPS(client *http.Client, URL string) *DNSOverHTTPS {
+func NewDNSOverHTTPS(client HTTPClient, URL string) *DNSOverHTTPS {
 	return NewDNSOverHTTPSWithHostOverride(client, URL, "")
 }
 
 // NewDNSOverHTTPSWithHostOverride is like NewDNSOverHTTPS except that
 // it's creating a resolver where we use the specified host.
 func NewDNSOverHTTPSWithHostOverride(
-	client *http.Client, URL, hostOverride string) *DNSOverHTTPS {
+	client HTTPClient, URL, hostOverride string) *DNSOverHTTPS {
 	return &DNSOverHTTPS{Client: client, URL: URL, HostOverride: hostOverride}
 }
 

@@ -10,7 +10,7 @@ import (
 
 func TestDecoderUnpackError(t *testing.T) {
 	d := &MiekgDecoder{}
-	data, err := d.Decode(dns.TypeA, nil)
+	data, err := d.DecodeLookupHost(dns.TypeA, nil)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -21,7 +21,7 @@ func TestDecoderUnpackError(t *testing.T) {
 
 func TestDecoderNXDOMAIN(t *testing.T) {
 	d := &MiekgDecoder{}
-	data, err := d.Decode(dns.TypeA, genReplyError(t, dns.RcodeNameError))
+	data, err := d.DecodeLookupHost(dns.TypeA, genReplyError(t, dns.RcodeNameError))
 	if err == nil || !strings.HasSuffix(err.Error(), "no such host") {
 		t.Fatal("not the error we expected")
 	}
@@ -32,7 +32,7 @@ func TestDecoderNXDOMAIN(t *testing.T) {
 
 func TestDecoderOtherError(t *testing.T) {
 	d := &MiekgDecoder{}
-	data, err := d.Decode(dns.TypeA, genReplyError(t, dns.RcodeRefused))
+	data, err := d.DecodeLookupHost(dns.TypeA, genReplyError(t, dns.RcodeRefused))
 	if err == nil || !strings.HasSuffix(err.Error(), "query failed") {
 		t.Fatal("not the error we expected")
 	}
@@ -43,7 +43,7 @@ func TestDecoderOtherError(t *testing.T) {
 
 func TestDecoderNoAddress(t *testing.T) {
 	d := &MiekgDecoder{}
-	data, err := d.Decode(dns.TypeA, genReplySuccess(t, dns.TypeA))
+	data, err := d.DecodeLookupHost(dns.TypeA, genReplySuccess(t, dns.TypeA))
 	if err == nil || !strings.HasSuffix(err.Error(), "no response returned") {
 		t.Fatal("not the error we expected")
 	}
@@ -54,7 +54,7 @@ func TestDecoderNoAddress(t *testing.T) {
 
 func TestDecoderDecodeA(t *testing.T) {
 	d := &MiekgDecoder{}
-	data, err := d.Decode(
+	data, err := d.DecodeLookupHost(
 		dns.TypeA, genReplySuccess(t, dns.TypeA, "1.1.1.1", "8.8.8.8"))
 	if err != nil {
 		t.Fatal(err)
@@ -72,7 +72,7 @@ func TestDecoderDecodeA(t *testing.T) {
 
 func TestDecoderDecodeAAAA(t *testing.T) {
 	d := &MiekgDecoder{}
-	data, err := d.Decode(
+	data, err := d.DecodeLookupHost(
 		dns.TypeAAAA, genReplySuccess(t, dns.TypeAAAA, "::1", "fe80::1"))
 	if err != nil {
 		t.Fatal(err)
@@ -90,7 +90,7 @@ func TestDecoderDecodeAAAA(t *testing.T) {
 
 func TestDecoderUnexpectedAReply(t *testing.T) {
 	d := &MiekgDecoder{}
-	data, err := d.Decode(
+	data, err := d.DecodeLookupHost(
 		dns.TypeA, genReplySuccess(t, dns.TypeAAAA, "::1", "fe80::1"))
 	if err == nil || !strings.HasSuffix(err.Error(), "no response returned") {
 		t.Fatal("not the error we expected")
@@ -102,7 +102,7 @@ func TestDecoderUnexpectedAReply(t *testing.T) {
 
 func TestDecoderUnexpectedAAAAReply(t *testing.T) {
 	d := &MiekgDecoder{}
-	data, err := d.Decode(
+	data, err := d.DecodeLookupHost(
 		dns.TypeAAAA, genReplySuccess(t, dns.TypeA, "1.1.1.1", "8.8.4.4."))
 	if err == nil || !strings.HasSuffix(err.Error(), "no response returned") {
 		t.Fatal("not the error we expected")
