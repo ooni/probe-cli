@@ -206,10 +206,10 @@ type HTTPRedirectEvent struct {
 	ConnID int64
 
 	// URL is the URL triggering the redirect.
-	URL string
+	URL *url.URL
 
 	// Location is the URL to which we're redirected.
-	Location string
+	Location *url.URL
 
 	// Cookies contains the cookies for Location.
 	Cookies []*http.Cookie
@@ -242,8 +242,8 @@ func newHTTPClient(origin Origin, db DB,
 				Origin:        origin,
 				MeasurementID: db.MeasurementID(),
 				ConnID:        txp.ConnID(),
-				URL:           via[0].URL.String(),
-				Location:      req.URL.String(),
+				URL:           via[0].URL, // bug in Go stdlib if we crash here
+				Location:      req.URL,
 				Cookies:       cookiejar.Cookies(req.URL),
 				Error:         err,
 			})

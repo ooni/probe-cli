@@ -71,6 +71,65 @@ type Endpoint struct {
 	*BaseMeasurement
 }
 
+// Run performs all the WebSteps step.
+//
+// We define "step" as the process by which we have an input URL
+// and we perform the following operations:
+//
+// 1. lookup of all the possible endpoints for the URL;
+//
+// 2. measurement of each available endpoint.
+//
+// After a step has run, we search for all the redirection URLs
+// and we run a new step with the new URLs.
+//
+// Arguments
+//
+// - ctx is the context to implement timeouts;
+//
+// - mx is the measurex.Measurer to use;
+//
+// - URL is the URL from which we start measuring;
+//
+// - dnsResolverUDP is the address of the DNS resolver endpoint
+// using UDP we wish to use (e.g., "8.8.8.8:53").
+//
+// Return value
+//
+// A list of SingleStep structures where the Endpoints array may be empty
+// if we have no been able to discover endpoints.
+func Run(ctx context.Context, mx *measurex.Measurer,
+	URL *url.URL, dnsResolverUDP string) (v []*SingleStep) {
+	jar := measurex.NewCookieJar()
+	inputs := []*url.URL{URL}
+Loop:
+	for len(inputs) > 0 {
+		dups := make(map[string]*url.URL)
+		for _, input := range inputs {
+			select {
+			case <-ctx.Done():
+				break Loop
+			default:
+				mx.Infof("RunSingleStep url=%s dnsResolverUDP=%s jar=%+v",
+					input, dnsResolverUDP, jar)
+				m := RunSingleStep(ctx, mx, jar, input, dnsResolverUDP)
+				v = append(v, m)
+				for _, epnt := range m.Endpoints {
+					for _, redir := range epnt.HTTPRedirect {
+						dups[redir.Location.String()] = redir.Location
+					}
+				}
+			}
+		}
+		inputs = nil
+		for _, input := range dups {
+			mx.Infof("newRedirection %s", input)
+			inputs = append(inputs, input)
+		}
+	}
+	return
+}
+
 // RunSingleStep performs a single WebSteps step.
 //
 // We define "step" as the process by which we have an input URL
