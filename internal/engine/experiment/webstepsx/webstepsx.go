@@ -15,6 +15,9 @@ type SingleStep struct {
 	// URL is the URL this measurement refers to.
 	URL string
 
+	// Oddities contains all the oddities of all endpoints.
+	Oddities []measurex.Oddity
+
 	// LookupEndpoints contains the LookupEndpoints measurement.
 	LookupEndpoints *LookupEndpoints
 
@@ -22,37 +25,23 @@ type SingleStep struct {
 	Endpoints []*Endpoint
 }
 
-// BaseMeasurement is a measurement part of Result.
-type BaseMeasurement struct {
-	// Connect contains all the connect operations.
-	Connect []*measurex.NetworkEvent
-
-	// ReadWrite contains all the read and write operations.
-	ReadWrite []*measurex.NetworkEvent
-
-	// Close contains all the close operations.
-	Close []*measurex.NetworkEvent
-
-	// TLSHandshake contains all the TLS handshakes.
-	TLSHandshake []*measurex.TLSHandshakeEvent
-
-	// QUICHandshake contains all the QUIC handshakes.
-	QUICHandshake []*measurex.QUICHandshakeEvent
-
-	// LookupHost contains all the host lookups.
-	LookupHost []*measurex.LookupHostEvent
-
-	// LookupHTTPSSvc contains all the HTTPSSvc lookups.
-	LookupHTTPSSvc []*measurex.LookupHTTPSSvcEvent
-
-	// DNSRoundTrip contains all the DNS round trips.
-	DNSRoundTrip []*measurex.DNSRoundTripEvent
-
-	// HTTPRoundTrip contains all the HTTP round trips.
-	HTTPRoundTrip []*measurex.HTTPRoundTripEvent
-
-	// HTTPRedirect contains all the redirections.
-	HTTPRedirect []*measurex.HTTPRedirectEvent
+// computeOddities computes the Oddities field my merging all
+// the oddities appearing in the Endpoints list.
+func (ss *SingleStep) computeOddities() {
+	unique := make(map[measurex.Oddity]bool)
+	for _, oddity := range ss.LookupEndpoints.Oddities {
+		unique[oddity] = true
+	}
+	for _, epnt := range ss.Endpoints {
+		for _, oddity := range epnt.Oddities {
+			unique[oddity] = true
+		}
+	}
+	for oddity := range unique {
+		if oddity != "" {
+			ss.Oddities = append(ss.Oddities, oddity)
+		}
+	}
 }
 
 // LookupEndpoints describes the measurement of endpoints lookup.
@@ -60,7 +49,7 @@ type LookupEndpoints struct {
 	// Domain is the domain this measurement refers to.
 	Domain string
 
-	*BaseMeasurement
+	*measurex.BaseMeasurement
 }
 
 // Endpoint describes the measurement of a given endpoint.
@@ -68,7 +57,7 @@ type Endpoint struct {
 	// Endpoint is the endpoint this measurement refers to.
 	Endpoint string
 
-	*BaseMeasurement
+	*measurex.BaseMeasurement
 }
 
 // Run performs all the WebSteps step.
@@ -162,13 +151,14 @@ Loop:
 func RunSingleStep(ctx context.Context, mx *measurex.Measurer,
 	cookiekar http.CookieJar, URL *url.URL, dnsResolverUDP string) (m *SingleStep) {
 	m = &SingleStep{URL: URL.String()}
+	defer m.computeOddities()
 	mid := mx.NewMeasurement()
 	mx.Infof("LookupHTTPEndpoints measurementID=%d url=%s dnsResolverUDP=%s",
 		mid, URL.String(), dnsResolverUDP)
 	epnts, _ := mx.LookupHTTPEndpoints(ctx, URL, dnsResolverUDP)
 	m.LookupEndpoints = &LookupEndpoints{
 		Domain:          URL.Hostname(),
-		BaseMeasurement: newBaseMeasurement(mx, mid),
+		BaseMeasurement: mx.NewBaseMeasurement(mid),
 	}
 	for _, epnt := range epnts {
 		mid = mx.NewMeasurement()
@@ -177,34 +167,8 @@ func RunSingleStep(ctx context.Context, mx *measurex.Measurer,
 		mx.HTTPEndpointGet(ctx, epnt, cookiekar)
 		m.Endpoints = append(m.Endpoints, &Endpoint{
 			Endpoint:        epnt.String(),
-			BaseMeasurement: newBaseMeasurement(mx, mid),
+			BaseMeasurement: mx.NewBaseMeasurement(mid),
 		})
 	}
 	return
-}
-
-// newBaseMeasurement creates a new Base Measurement.
-//
-// To this end, it filters all possible events by MeasurementID.
-//
-// Arguments
-//
-// - id is the MeasurementID.
-//
-// Return value
-//
-// A valid BaseMeasurement containing possibly empty lists of events.
-func newBaseMeasurement(mx *measurex.Measurer, id int64) *BaseMeasurement {
-	return &BaseMeasurement{
-		Connect:        mx.SelectAllFromConnect(id),
-		ReadWrite:      mx.SelectAllFromReadWrite(id),
-		Close:          mx.SelectAllFromClose(id),
-		TLSHandshake:   mx.SelectAllFromTLSHandshake(id),
-		QUICHandshake:  mx.SelectAllFromQUICHandshake(id),
-		LookupHost:     mx.SelectAllFromLookupHost(id),
-		LookupHTTPSSvc: mx.SelectAllFromLookupHTTPSSvc(id),
-		DNSRoundTrip:   mx.SelectAllFromDNSRoundTrip(id),
-		HTTPRoundTrip:  mx.SelectAllFromHTTPRoundTrip(id),
-		HTTPRedirect:   mx.SelectAllFromHTTPRedirect(id),
-	}
 }

@@ -124,15 +124,12 @@ func (d *netxliteDialerAdapter) DialContext(
 //
 // A Resolver.
 func (mx *Measurer) newResolverUDP(address string) Resolver {
-	// TODO(bassosimone): the resolver we compose here is missing
-	// some capabilities like IDNA. We should instead have the proper
-	// factory inside netxlite for creating this resolver.
 	return WrapResolver(mx.Origin, mx.DB, &netxlite.ResolverLogger{
-		Resolver: dnsx.NewSerialResolver(
+		Resolver: netxlite.WrapResolver(mx.Logger, dnsx.NewSerialResolver(
 			WrapDNSXRoundTripper(mx.DB, dnsx.NewDNSOverUDP(
 				&netxliteDialerAdapter{mx.newDialerWithSystemResolver()},
 				address,
-			))),
+			)))),
 		Logger: mx.Logger,
 	})
 }
@@ -600,7 +597,8 @@ func (e *HTTPEndpoint) String() string {
 
 // LookupHTTPEndpoints is like LookupEndpoints but performs a
 // specialized lookup for an HTTP/HTTPS URL. Such a lookup also
-// includes querying the WCTH to discover extra endpoints.
+// includes querying the WCTH to discover extra endpoints. If
+// the URL scheme is HTTPS we also query for HTTPSSvc.
 //
 // Arguments
 //
@@ -622,9 +620,13 @@ func (mx *Measurer) LookupHTTPEndpoints(
 	if err != nil {
 		return nil, err
 	}
-	httpsSvcInfo, _ := mx.LookupHTTPSSvcUDP(ctx, URL.Hostname(), address)
-	httpsSvcEndpoints := mx.parseHTTPSSvcReply(port, httpsSvcInfo)
-	mx.Infof("LookupHTTPSSvcUDP endpoints=%+v", httpsSvcEndpoints)
+	var httpsSvcEndpoints []*Endpoint
+	switch URL.Scheme {
+	case "https": // only lookup for HTTP3 endpoints when scheme is HTTPS
+		info, _ := mx.LookupHTTPSSvcUDP(ctx, URL.Hostname(), address)
+		httpsSvcEndpoints = mx.parseHTTPSSvcReply(port, info)
+		mx.Infof("LookupHTTPSSvcUDP endpoints=%+v", httpsSvcEndpoints)
+	}
 	endpoints, _ := mx.LookupEndpoints(ctx, URL.Hostname(), port, address)
 	endpoints = append(endpoints, httpsSvcEndpoints...)
 	wcthEndpoints, _ := mx.lookupWCTH(ctx, URL, endpoints, port)
@@ -923,4 +925,107 @@ func (mx *Measurer) SelectAllFromHTTPRedirect(id int64) (out []*HTTPRedirectEven
 		}
 	}
 	return
+}
+
+// BaseMeasurement groups all the events that have the same MeasurementID.
+type BaseMeasurement struct {
+	// Oddities lists all the oddities inside this measurement. See
+	// NewBaseMeasurement's docs for more info.
+	Oddities []Oddity
+
+	// Connect contains all the connect operations.
+	Connect []*NetworkEvent
+
+	// ReadWrite contains all the read and write operations.
+	ReadWrite []*NetworkEvent
+
+	// Close contains all the close operations.
+	Close []*NetworkEvent
+
+	// TLSHandshake contains all the TLS handshakes.
+	TLSHandshake []*TLSHandshakeEvent
+
+	// QUICHandshake contains all the QUIC handshakes.
+	QUICHandshake []*QUICHandshakeEvent
+
+	// LookupHost contains all the host lookups.
+	LookupHost []*LookupHostEvent
+
+	// LookupHTTPSSvc contains all the HTTPSSvc lookups.
+	LookupHTTPSSvc []*LookupHTTPSSvcEvent
+
+	// DNSRoundTrip contains all the DNS round trips.
+	DNSRoundTrip []*DNSRoundTripEvent
+
+	// HTTPRoundTrip contains all the HTTP round trips.
+	HTTPRoundTrip []*HTTPRoundTripEvent
+
+	// HTTPRedirect contains all the redirections.
+	HTTPRedirect []*HTTPRedirectEvent
+}
+
+// NewBaseMeasurement creates a new Base Measurement by gathering all
+// the events inside the database with a given MeasurementID.
+//
+// As part of the process, this function computes the Oddities field by
+// gathering the oddities of the following operations:
+//
+// - connect;
+//
+// - tlsHandshake;
+//
+// - quicHandshake;
+//
+// - lookupHost;
+//
+// - httpRoundTrip.
+//
+// Arguments
+//
+// - id is the MeasurementID.
+//
+// Return value
+//
+// A valid BaseMeasurement containing possibly empty lists of events.
+func (mx *Measurer) NewBaseMeasurement(id int64) *BaseMeasurement {
+	m := &BaseMeasurement{
+		Connect:        mx.SelectAllFromConnect(id),
+		ReadWrite:      mx.SelectAllFromReadWrite(id),
+		Close:          mx.SelectAllFromClose(id),
+		TLSHandshake:   mx.SelectAllFromTLSHandshake(id),
+		QUICHandshake:  mx.SelectAllFromQUICHandshake(id),
+		LookupHost:     mx.SelectAllFromLookupHost(id),
+		LookupHTTPSSvc: mx.SelectAllFromLookupHTTPSSvc(id),
+		DNSRoundTrip:   mx.SelectAllFromDNSRoundTrip(id),
+		HTTPRoundTrip:  mx.SelectAllFromHTTPRoundTrip(id),
+		HTTPRedirect:   mx.SelectAllFromHTTPRedirect(id),
+	}
+	m.computeOddities()
+	return m
+}
+
+// computeOddities computes all the oddities inside m. See
+// NewBaseMeasurement's docs for more details.
+func (m *BaseMeasurement) computeOddities() {
+	unique := make(map[Oddity]bool)
+	for _, ev := range m.Connect {
+		unique[ev.Oddity] = true
+	}
+	for _, ev := range m.TLSHandshake {
+		unique[ev.Oddity] = true
+	}
+	for _, ev := range m.QUICHandshake {
+		unique[ev.Oddity] = true
+	}
+	for _, ev := range m.LookupHost {
+		unique[ev.Oddity] = true
+	}
+	for _, ev := range m.HTTPRoundTrip {
+		unique[ev.Oddity] = true
+	}
+	for key := range unique {
+		if key != "" {
+			m.Oddities = append(m.Oddities, key)
+		}
+	}
 }

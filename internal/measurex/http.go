@@ -91,6 +91,7 @@ type HTTPRoundTripEvent struct {
 	Started              time.Time
 	Finished             time.Time
 	Error                error
+	Oddity               Oddity
 	ResponseStatus       int
 	ResponseHeader       http.Header
 	ResponseBodySnapshot []byte
@@ -118,6 +119,16 @@ func (txp *httpTransportx) RoundTrip(req *http.Request) (*http.Response, error) 
 		rt.Error = err
 		txp.db.InsertIntoHTTPRoundTrip(rt)
 		return nil, err
+	}
+	switch {
+	case resp.StatusCode == 403:
+		rt.Oddity = OddityStatus403
+	case resp.StatusCode == 404:
+		rt.Oddity = OddityStatus404
+	case resp.StatusCode == 503:
+		rt.Oddity = OddityStatus503
+	case resp.StatusCode >= 400:
+		rt.Oddity = OddityStatusOther
 	}
 	rt.ResponseStatus = resp.StatusCode
 	rt.ResponseHeader = resp.Header

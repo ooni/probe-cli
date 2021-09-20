@@ -9,9 +9,10 @@ type Oddity string
 // This enumeration lists all known oddities
 var (
 	// tcp.connect
-	OddityTCPConnectTimeout = Oddity("tcp.connect.timeout")
-	OddityTCPConnectRefused = Oddity("tcp.connect.refused")
-	OddityTCPConnectOher    = Oddity("tcp.connect.other")
+	OddityTCPConnectTimeout         = Oddity("tcp.connect.timeout")
+	OddityTCPConnectRefused         = Oddity("tcp.connect.refused")
+	OddityTCPConnectHostUnreachable = Oddity("tcp.connect.host_unreachable")
+	OddityTCPConnectOher            = Oddity("tcp.connect.other")
 
 	// tls.handshake
 	OddityTLSHandshakeTimeout = Oddity("tls.handshake.timeout")
@@ -19,8 +20,9 @@ var (
 	OddityTLSHandshakeOther   = Oddity("tls.handshake.other")
 
 	// quic.handshake
-	OddityQUICHandshakeTimeout = Oddity("quic.handshake.timeout")
-	OddityQUICHandshakeOther   = Oddity("quic.handshake.other")
+	OddityQUICHandshakeTimeout         = Oddity("quic.handshake.timeout")
+	OddityQUICHandshakeHostUnreachable = Oddity("quic.handshake.host_unreachable")
+	OddityQUICHandshakeOther           = Oddity("quic.handshake.other")
 
 	// dns.lookup
 	OddityDNSLookupNXDOMAIN = Oddity("dns.lookup.nxdomain")
@@ -28,4 +30,10 @@ var (
 	OddityDNSLookupRefused  = Oddity("dns.lookup.refused")
 	OddityDNSLookupBogon    = Oddity("dns.lookup.bogon")
 	OddityDNSLookupOther    = Oddity("dns.lookup.other")
+
+	// http.status
+	OddityStatus403   = Oddity("http.status.403")
+	OddityStatus404   = Oddity("http.status.404")
+	OddityStatus503   = Oddity("http.status.503")
+	OddityStatusOther = Oddity("http.status.other")
 )

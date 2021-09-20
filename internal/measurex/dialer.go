@@ -112,6 +112,8 @@ func (c *dialerx) computeOddity(err error) Oddity {
 		return OddityTCPConnectTimeout
 	case errorsx.FailureConnectionRefused:
 		return OddityTCPConnectRefused
+	case errorsx.FailureHostUnreachable:
+		return OddityTCPConnectHostUnreachable
 	default:
 		return OddityTCPConnectOher
 	}

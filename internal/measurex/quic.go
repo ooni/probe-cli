@@ -239,6 +239,8 @@ func (qh *quicDialerx) computeOddity(err error) Oddity {
 	switch err.Error() {
 	case errorsx.FailureGenericTimeoutError:
 		return OddityQUICHandshakeTimeout
+	case errorsx.FailureHostUnreachable:
+		return OddityQUICHandshakeHostUnreachable
 	default:
 		return OddityQUICHandshakeOther
 	}
