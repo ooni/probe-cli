@@ -39,10 +39,10 @@ func (r *Resolver) LookupHostWithoutRetry(
 	panic("not yet implemented")
 }
 
-// HTTPS is an HTTPS reply.
-type HTTPS = model.HTTPS
+// HTTPSSvc is an HTTPSSvc reply.
+type HTTPSSvc = model.HTTPSSvc
 
-func (r *Resolver) LookupHTTPSWithoutRetry(
-	ctx context.Context, domain string) (HTTPS, error) {
+func (r *Resolver) LookupHTTPSSvcWithoutRetry(
+	ctx context.Context, domain string) (HTTPSSvc, error) {
 	panic("not yet implemented")
 }

@@ -103,8 +103,8 @@ func (r *ResolverLegacyAdapter) LookupHostWithoutRetry(
 	return nil, ErrNoDNSTransport
 }
 
-func (r *ResolverLegacyAdapter) LookupHTTPSWithoutRetry(
-	ctx context.Context, domain string) (HTTPS, error) {
+func (r *ResolverLegacyAdapter) LookupHTTPSSvcWithoutRetry(
+	ctx context.Context, domain string) (HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
 }
 

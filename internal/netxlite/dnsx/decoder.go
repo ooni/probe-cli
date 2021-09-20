@@ -6,8 +6,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
-// HTTPS is an HTTPS reply.
-type HTTPS = model.HTTPS
+// HTTPSSvc is an HTTPSSvc reply.
+type HTTPSSvc = model.HTTPSSvc
 
 type https struct {
 	alpn     []string
@@ -15,7 +15,7 @@ type https struct {
 	ipv6hint []string
 }
 
-var _ HTTPS = &https{}
+var _ HTTPSSvc = &https{}
 
 func (h *https) ALPN() []string {
 	return h.alpn
@@ -35,7 +35,7 @@ type Decoder interface {
 	DecodeLookupHost(qtype uint16, data []byte) ([]string, error)
 
 	// DecodeHTTPS decodes an HTTPS reply.
-	DecodeHTTPS(data []byte) (HTTPS, error)
+	DecodeHTTPS(data []byte) (HTTPSSvc, error)
 }
 
 // MiekgDecoder uses github.com/miekg/dns to implement the Decoder.
@@ -60,7 +60,7 @@ func (d *MiekgDecoder) parseReply(data []byte) (*dns.Msg, error) {
 	}
 }
 
-func (d *MiekgDecoder) DecodeHTTPS(data []byte) (HTTPS, error) {
+func (d *MiekgDecoder) DecodeHTTPS(data []byte) (HTTPSSvc, error) {
 	reply, err := d.parseReply(data)
 	if err != nil {
 		return nil, err

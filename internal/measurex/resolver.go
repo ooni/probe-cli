@@ -1,0 +1,94 @@
+package measurex
+
+import (
+	"context"
+	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
+)
+
+// HTTPSSvc is the result returned by HTTPSSvc queries.
+type HTTPSSvc = dnsx.HTTPSSvc
+
+// Resolver is the resolver type we use.
+type Resolver interface {
+	netxlite.Resolver
+}
+
+// WrapResolver wraps a netxlite.Resolver to add measurex capabilities.
+func WrapResolver(origin Origin, db DB, r netxlite.Resolver) Resolver {
+	return &resolverx{Resolver: r, db: db, origin: origin}
+}
+
+type resolverx struct {
+	netxlite.Resolver
+	db     DB
+	origin Origin
+}
+
+// LookupHostEvent contains the result of a host lookup.
+type LookupHostEvent struct {
+	Origin        Origin
+	MeasurementID int64
+	Network       string
+	Address       string
+	Domain        string
+	Started       time.Time
+	Finished      time.Time
+	Error         error
+	Addrs         []string
+}
+
+func (r *resolverx) LookupHost(ctx context.Context, domain string) ([]string, error) {
+	started := time.Now()
+	addrs, err := r.Resolver.LookupHost(ctx, domain)
+	finished := time.Now()
+	r.db.InsertIntoLookupHost(&LookupHostEvent{
+		Origin:        r.origin,
+		MeasurementID: r.db.MeasurementID(),
+		Network:       r.Resolver.Network(),
+		Address:       r.Resolver.Address(),
+		Domain:        domain,
+		Started:       started,
+		Finished:      finished,
+		Error:         err,
+		Addrs:         addrs,
+	})
+	return addrs, err
+}
+
+// LookupHTTPSSvcEvent is the event emitted when we perform
+// an HTTPSSvc DNS query for a domain.
+type LookupHTTPSSvcEvent struct {
+	Origin        Origin
+	MeasurementID int64
+	Domain        string
+	Started       time.Time
+	Finished      time.Time
+	Error         error
+	IPv4          []string
+	IPv6          []string
+	ALPN          []string
+}
+
+func (r *resolverx) LookupHTTPSSvcWithoutRetry(ctx context.Context, domain string) (HTTPSSvc, error) {
+	started := time.Now()
+	https, err := r.Resolver.LookupHTTPSSvcWithoutRetry(ctx, domain)
+	finished := time.Now()
+	ev := &LookupHTTPSSvcEvent{
+		Origin:        r.origin,
+		MeasurementID: r.db.MeasurementID(),
+		Domain:        domain,
+		Started:       started,
+		Finished:      finished,
+		Error:         err,
+	}
+	if err == nil {
+		ev.IPv4 = https.IPv4Hint()
+		ev.IPv6 = https.IPv6Hint()
+		ev.ALPN = https.ALPN()
+	}
+	r.db.InsertIntoLookupHTTPSSvc(ev)
+	return https, err
+}

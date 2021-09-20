@@ -13,8 +13,8 @@ import (
 	"golang.org/x/net/idna"
 )
 
-// HTTPS is the type returned for HTTPS queries.
-type HTTPS = dnsx.HTTPS
+// HTTPSSvc is the type returned for HTTPSSvc queries.
+type HTTPSSvc = dnsx.HTTPSSvc
 
 // Resolver performs domain name resolutions.
 type Resolver interface {
@@ -36,10 +36,10 @@ type Resolver interface {
 	LookupHostWithoutRetry(
 		ctx context.Context, domain string, qtype uint16) ([]string, error)
 
-	// LookupHTTPSWithoutRetry issues a single HTTPS query for
+	// LookupHTTPSSvcWithoutRetry issues a single HTTPS query for
 	// a domain without any retry mechanism whatsoever.
-	LookupHTTPSWithoutRetry(
-		ctx context.Context, domain string) (HTTPS, error)
+	LookupHTTPSSvcWithoutRetry(
+		ctx context.Context, domain string) (HTTPSSvc, error)
 }
 
 // ErrNoDNSTransport indicates that the requested Resolver operation
@@ -144,8 +144,8 @@ func (r *resolverSystem) LookupHostWithoutRetry(
 	return nil, ErrNoDNSTransport
 }
 
-func (r *resolverSystem) LookupHTTPSWithoutRetry(
-	ctx context.Context, domain string) (HTTPS, error) {
+func (r *resolverSystem) LookupHTTPSSvcWithoutRetry(
+	ctx context.Context, domain string) (HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
 }
 
@@ -187,12 +187,12 @@ func (r *resolverLogger) LookupHostWithoutRetry(
 	return addrs, nil
 }
 
-func (r *resolverLogger) LookupHTTPSWithoutRetry(
-	ctx context.Context, domain string) (HTTPS, error) {
+func (r *resolverLogger) LookupHTTPSSvcWithoutRetry(
+	ctx context.Context, domain string) (HTTPSSvc, error) {
 	prefix := fmt.Sprintf("resolve[HTTPS] %s with %s (%s)", domain, r.Network(), r.Address())
 	r.Logger.Debugf("%s...", prefix)
 	start := time.Now()
-	https, err := r.Resolver.LookupHTTPSWithoutRetry(ctx, domain)
+	https, err := r.Resolver.LookupHTTPSSvcWithoutRetry(ctx, domain)
 	elapsed := time.Since(start)
 	if err != nil {
 		r.Logger.Debugf("%s... %s in %s", prefix, err, elapsed)
@@ -230,12 +230,12 @@ func (r *resolverIDNA) LookupHostWithoutRetry(
 }
 
 func (r *resolverIDNA) LookupHTTPSWithoutRetry(
-	ctx context.Context, domain string) (HTTPS, error) {
+	ctx context.Context, domain string) (HTTPSSvc, error) {
 	host, err := idna.ToASCII(domain)
 	if err != nil {
 		return nil, err
 	}
-	return r.Resolver.LookupHTTPSWithoutRetry(ctx, host)
+	return r.Resolver.LookupHTTPSSvcWithoutRetry(ctx, host)
 }
 
 // resolverShortCircuitIPAddr recognizes when the input hostname is an
@@ -279,8 +279,8 @@ func (r *nullResolver) LookupHostWithoutRetry(
 	return nil, ErrNoDNSTransport
 }
 
-func (r *nullResolver) LookupHTTPSWithoutRetry(
-	ctx context.Context, domain string) (HTTPS, error) {
+func (r *nullResolver) LookupHTTPSSvcWithoutRetry(
+	ctx context.Context, domain string) (HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
 }
 
@@ -311,8 +311,8 @@ func (r *resolverErrWrapper) LookupHostWithoutRetry(
 }
 
 func (r *resolverErrWrapper) LookupHTTPSWithoutRetry(
-	ctx context.Context, domain string) (HTTPS, error) {
-	out, err := r.Resolver.LookupHTTPSWithoutRetry(ctx, domain)
+	ctx context.Context, domain string) (HTTPSSvc, error) {
+	out, err := r.Resolver.LookupHTTPSSvcWithoutRetry(ctx, domain)
 	if err != nil {
 		return nil, errorsx.NewErrWrapper(
 			errorsx.ClassifyResolverError, errorsx.ResolveOperation, err)
