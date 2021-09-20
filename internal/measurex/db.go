@@ -38,6 +38,10 @@ type DB interface {
 	InsertIntoHTTPRedirect(ev *HTTPRedirectEvent)
 	SelectAllFromHTTPRedirect() []*HTTPRedirectEvent
 
+	// QUICHandshake table
+	InsertIntoQUICHandshake(ev *QUICHandshakeEvent)
+	SelectAllFromQUICHandshake() []*QUICHandshakeEvent
+
 	// NextConnID increments and returns the connection ID.
 	NextConnID() int64
 

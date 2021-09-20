@@ -3,7 +3,7 @@ package measurex
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"crypto/tls"
 	"errors"
 	"io"
 	"net/http"
@@ -59,6 +59,15 @@ func NewHTTPTransportWithTLSConn(
 		logger, netxlite.NewNullDialer(),
 		netxlite.NewSingleUseTLSDialer(conn),
 	), conn.ConnID())
+}
+
+// NewHTTPTransportWithQUICSess creates and wraps an HTTPTransport that
+// does not dial and only uses the given QUIC session.
+func NewHTTPTransportWithQUICSess(
+	origin Origin, logger Logger, db DB, sess QUICEarlySession) HTTPTransport {
+	return WrapHTTPTransportWithConnID(origin, db, netxlite.NewHTTP3Transport(
+		logger, netxlite.NewSingleUseQUICDialer(sess), &tls.Config{},
+	), sess.ConnID())
 }
 
 type httpTransportx struct {
@@ -172,6 +181,9 @@ func NewHTTPClientWithRedirects(origin Origin, db DB, txp HTTPTransport) HTTPCli
 // The Via field contains the requests issued so far. The first
 // request inside Via is the last one that has been issued.
 //
+// The Cookies field contains all the cookies that the
+// implementation would set for the Request.URL.
+//
 // The Error field can have three values:
 //
 // - nil if the redirect occurred;
@@ -180,44 +192,34 @@ func NewHTTPClientWithRedirects(origin Origin, db DB, txp HTTPTransport) HTTPCli
 //
 // - http.ErrUseLastResponse if redirections are disabled.
 type HTTPRedirectEvent struct {
-	Origin        Origin
+	// Origin is the event origin ("probe" or "th")
+	Origin Origin
+
+	// MeasurementID is the measurement inside which
+	// this event occurred.
 	MeasurementID int64
-	ConnID        int64
-	Request       *http.Request
-	Via           []*http.Request
-	Error         error
-}
 
-// MarshalJSON marshals an HTTPRedirectEvent to JSON.
-func (ev *HTTPRedirectEvent) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{
-		"Origin":        ev.Origin,
-		"MeasurementID": ev.MeasurementID,
-		"ConnID":        ev.ConnID,
-		"Request":       ev.simplifyRequest(ev.Request),
-		"Via":           ev.simplifyRequests(ev.Via),
-		"Error":         ev.Error,
-	}
-	return json.Marshal(m)
-}
+	// ConnID is the ID of the connection we are using,
+	// which may be zero if undefined.
+	ConnID int64
 
-// simplifyRequest simplifies a single http.Request so
-// that it could be serialized as a JSON.
-func (ev *HTTPRedirectEvent) simplifyRequest(req *http.Request) (out map[string]interface{}) {
-	out = map[string]interface{}{
-		"URL":    req.URL,
-		"Header": req.Header,
-	}
-	return
-}
+	// URL is the URL triggering the redirect.
+	URL string
 
-// simplifyRequests is simplifyRequest applied to a list
-// of http.Request rather than just one of them.
-func (ev *HTTPRedirectEvent) simplifyRequests(req []*http.Request) (out []map[string]interface{}) {
-	for _, r := range req {
-		out = append(out, ev.simplifyRequest(r))
-	}
-	return
+	// Location is the URL to which we're redirected.
+	Location string
+
+	// Cookies contains the cookies for Location.
+	Cookies []*http.Cookie
+
+	// The Error field can have three values:
+	//
+	// - nil if the redirect occurred;
+	//
+	// - ErrHTTPTooManyRedirects when we see too many redirections;
+	//
+	// - http.ErrUseLastResponse if redirections are disabled.
+	Error error
 }
 
 // ErrHTTPTooManyRedirects is the unexported error that the standard library
@@ -225,9 +227,10 @@ func (ev *HTTPRedirectEvent) simplifyRequests(req []*http.Request) (out []map[st
 var ErrHTTPTooManyRedirects = errors.New("stopped after 10 redirects")
 
 func newHTTPClient(origin Origin, db DB, txp HTTPTransport, defaultErr error) HTTPClient {
+	cookiejar := NewCookieJar()
 	return &http.Client{
 		Transport: txp,
-		Jar:       NewCookieJar(),
+		Jar:       cookiejar,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			err := defaultErr
 			if len(via) >= 10 {
@@ -237,8 +240,9 @@ func newHTTPClient(origin Origin, db DB, txp HTTPTransport, defaultErr error) HT
 				Origin:        origin,
 				MeasurementID: db.MeasurementID(),
 				ConnID:        txp.ConnID(),
-				Request:       req,
-				Via:           via,
+				URL:           via[0].URL.String(),
+				Location:      req.URL.String(),
+				Cookies:       cookiejar.Cookies(req.URL),
 				Error:         err,
 			})
 			return err

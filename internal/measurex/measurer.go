@@ -79,7 +79,7 @@ func (mx *Measurer) NewMeasurement() int64 {
 func (mx *Measurer) LookupHostSystem(
 	ctx context.Context, domain string) (addrs []string, err error) {
 	const timeout = 4 * time.Second
-	mx.infof("LookupHost[getaddrinfo] %s (timeout %s)...", domain, timeout)
+	mx.infof("LookupHostSystem domain=%s timeout=%s...", domain, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	r := mx.newResolverSystem()
@@ -153,7 +153,8 @@ func (mx *Measurer) newResolverUDP(address string) Resolver {
 func (mx *Measurer) LookupHostUDP(
 	ctx context.Context, domain, address string) ([]string, error) {
 	const timeout = 4 * time.Second
-	mx.infof("LookupHost[udp://%s] %s (timeout %s)...", address, domain, timeout)
+	mx.infof("LookupHostUDP serverEndpoint=%s/udp domain=%s timeout=%s...",
+		address, domain, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	r := mx.newResolverUDP(address)
@@ -177,7 +178,8 @@ func (mx *Measurer) LookupHostUDP(
 func (mx *Measurer) LookupHTTPSSvcUDP(
 	ctx context.Context, domain, address string) (HTTPSSvc, error) {
 	const timeout = 4 * time.Second
-	mx.infof("LookupHTTPSSvc[udp://%s] %s (timeout %s)...", address, domain, timeout)
+	mx.infof("LookupHTTPSSvcUDP engine=udp://%s domain=%s timeout=%s...",
+		address, domain, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	r := mx.newResolverUDP(address)
@@ -206,7 +208,7 @@ func (mx *Measurer) newDialerWithoutResolver() Dialer {
 // Either an established Conn or an error.
 func (mx *Measurer) TCPConnect(ctx context.Context, address string) (Conn, error) {
 	const timeout = 10 * time.Second
-	mx.infof("TCPConnect %s (timeout %s)...", address, timeout)
+	mx.infof("TCPConnect endpoint=%s timeout=%s...", address, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	d := mx.newDialerWithoutResolver()
@@ -255,11 +257,51 @@ func (mx *Measurer) TLSConnect(ctx context.Context,
 		return nil, err
 	}
 	const timeout = 10 * time.Second
-	mx.infof("TLSHandshake[SNI=%s,ALPN=%+v] %s (timeout %s)...",
+	mx.infof("TLSHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
 		config.ServerName, config.NextProtos, address, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	return mx.TLSHandshaker.Handshake(ctx, conn, config)
+}
+
+// QUICConnect connects and TLS handshakes with a QUIC endpoint.
+//
+// Arguments
+//
+// - ctx is the context allowing to timeout the whole operation;
+//
+// - address is the endpoint address (e.g., "1.1.1.1:443");
+//
+// - config contains the TLS config (see below).
+//
+// TLS config
+//
+// You MUST set the following config fields:
+//
+// - ServerName to the desired SNI or InsecureSkipVerify to
+// skip the certificate name verification;
+//
+// - RootCAs to nextlite.NewDefaultCertPool() output;
+//
+// - NextProtos to the desired ALPN ([]string{"h2", "http/1.1"} for
+// HTTPS and []string{"dot"} for DNS-over-TLS).
+//
+// Return value
+//
+// Either an established quic.EarlySession or an error.
+func (mx *Measurer) QUICConnect(ctx context.Context,
+	address string, config *tls.Config) (QUICEarlySession, error) {
+	const timeout = 10 * time.Second
+	mx.infof("QUICHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
+		config.ServerName, config.NextProtos, address, timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	qd := WrapQUICDialer(mx.Origin, mx.DB, netxlite.NewQUICDialerWithoutResolver(
+		WrapQUICListener(mx.Origin, mx.DB, netxlite.NewQUICListener()),
+		mx.Logger,
+	))
+	defer qd.CloseIdleConnections()
+	return qd.DialContext(ctx, address, config)
 }
 
 // ErrUnknownHTTPEndpointNetwork indicates that we don't know
@@ -284,7 +326,7 @@ func (mx *Measurer) HTTPEndpointGet(
 	ctx context.Context, epnt *HTTPEndpoint) (*http.Response, error) {
 	switch epnt.Network {
 	case NetworkQUIC:
-		return nil, ErrUnknownHTTPEndpointNetwork
+		return mx.httpEndpointGetQUIC(ctx, epnt)
 	case NetworkTCP:
 		return mx.httpEndpointGetTCP(ctx, epnt)
 	default:
@@ -351,11 +393,35 @@ func (mx *Measurer) httpEndpointGetHTTPS(
 	return mx.httpClientDo(ctx, clnt, epnt, req)
 }
 
+// httpEndpointGetQUIC specializes httpEndpointGetTCP for QUIC.
+func (mx *Measurer) httpEndpointGetQUIC(
+	ctx context.Context, epnt *HTTPEndpoint) (*http.Response, error) {
+	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
+	if err != nil {
+		return nil, err
+	}
+	req.Header = epnt.Header
+	sess, err := mx.QUICConnect(ctx, epnt.Address, &tls.Config{
+		ServerName: epnt.SNI,
+		NextProtos: epnt.ALPN,
+		RootCAs:    netxlite.NewDefaultCertPool(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	// TODO(bassosimone): close session with correct message
+	defer sess.CloseWithError(0, "") // we own it
+	clnt := NewHTTPClientWithoutRedirects(mx.Origin, mx.DB,
+		NewHTTPTransportWithQUICSess(mx.Origin, mx.Logger, mx.DB, sess))
+	defer clnt.CloseIdleConnections()
+	return mx.httpClientDo(ctx, clnt, epnt, req)
+}
+
 func (mx *Measurer) httpClientDo(ctx context.Context, clnt HTTPClient,
 	epnt *HTTPEndpoint, req *http.Request) (*http.Response, error) {
 	const timeout = 15 * time.Second
-	mx.infof("HTTPGet[epnt=%s] %s (timeout %s)...",
-		epnt.Address, epnt.URL.String(), timeout)
+	mx.infof("httpClientDo endpoint=%s method=%s url=%s headers=%+v timeout=%s...",
+		epnt.String(), req.Method, req.URL.String(), req.Header, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	return clnt.Do(req.WithContext(ctx))
@@ -416,7 +482,9 @@ var ErrLookupEndpoints = errors.New("endpoints lookup failed")
 func (mx *Measurer) LookupEndpoints(
 	ctx context.Context, domain, port, address string) ([]*Endpoint, error) {
 	udpAddrs, _ := mx.LookupHostUDP(ctx, domain, address)
+	mx.infof("LookupHostUDP addrs=%+v", udpAddrs)
 	systemAddrs, _ := mx.LookupHostSystem(ctx, domain)
+	mx.infof("LookupHostSystem addrs=%+v", systemAddrs)
 	var out []*Endpoint
 	out = append(out, mx.parseLookupHostReply(port, systemAddrs)...)
 	out = append(out, mx.parseLookupHostReply(port, udpAddrs)...)
@@ -553,10 +621,15 @@ func (mx *Measurer) LookupHTTPEndpoints(
 		return nil, err
 	}
 	httpsSvcInfo, _ := mx.LookupHTTPSSvcUDP(ctx, URL.Hostname(), address)
+	httpsSvcEndpoints := mx.parseHTTPSSvcReply(port, httpsSvcInfo)
+	mx.infof("LookupHTTPSSvcUDP endpoints=%+v", httpsSvcEndpoints)
 	endpoints, _ := mx.LookupEndpoints(ctx, URL.Hostname(), port, address)
-	endpoints = append(endpoints, mx.parseHTTPSSvcReply(port, httpsSvcInfo)...)
-	endpoints, _ = mx.lookupWCTH(ctx, URL, endpoints, port)
+	endpoints = append(endpoints, httpsSvcEndpoints...)
+	wcthEndpoints, _ := mx.lookupWCTH(ctx, URL, endpoints, port)
+	mx.infof("lookupWCTH endpoints=%+v", wcthEndpoints)
+	endpoints = append(endpoints, wcthEndpoints...)
 	endpoints = mx.mergeEndpoints(endpoints)
+	mx.infof("mergeEndpoints endpoints=%+v", endpoints)
 	if len(endpoints) < 1 {
 		return nil, ErrLookupEndpoints
 	}
@@ -630,11 +703,12 @@ func (mx *Measurer) alpnForHTTPEndpoint(network EndpointNetwork) []string {
 // Return value
 //
 // Either a list of endpoints (which may possibly be empty) in case
-// of success or an error in case of failure.
+// of success or an error in case of failure. Note that the returned
+// list of endpoints ONLY includes the ones discovered via WCTH.
 func (mx *Measurer) lookupWCTH(ctx context.Context,
 	URL *url.URL, endpoints []*Endpoint, port string) ([]*Endpoint, error) {
 	const timeout = 30 * time.Second
-	mx.infof("WCTH[backend=%s] %s %+v %s (timeout %s)...",
+	mx.infof("lookupWCTH backend=%s url=%s endpoints=%+v port=%s timeout=%s...",
 		mx.WCTHURL, URL.String(), endpoints, port, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -643,14 +717,18 @@ func (mx *Measurer) lookupWCTH(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+	var out []*Endpoint
 	for _, addr := range resp.DNS.Addrs {
+		if net.ParseIP(addr) == nil {
+			continue // the WCTH may also return the CNAME
+		}
 		addrport := net.JoinHostPort(addr, port)
-		endpoints = append(endpoints, &Endpoint{
+		out = append(out, &Endpoint{
 			Network: NetworkTCP,
 			Address: addrport,
 		})
 	}
-	return endpoints, nil
+	return out, nil
 }
 
 // onlyTCPEndpoints takes in input a list of endpoints and returns
@@ -725,4 +803,122 @@ func (mx *Measurer) parseHTTPSSvcReply(port string, info HTTPSSvc) (out []*Endpo
 // infof formats and logs an informational message using mx.Logger.
 func (mx *Measurer) infof(format string, v ...interface{}) {
 	mx.Logger.Infof(format, v...)
+}
+
+// selectAllFromConnect selects all the entries inside of the
+// Connect table that have the given MeasurementID.
+//
+// Arguments
+//
+// - id is the MeasurementID to filter for.
+//
+// Return value
+//
+// A possibly-empty list of events.
+func (mx *Measurer) selectAllFromConnect(id int64) (out []*NetworkEvent) {
+	for _, ev := range mx.DB.SelectAllFromDial() {
+		if id == ev.MeasurementID {
+			out = append(out, ev)
+		}
+	}
+	return
+}
+
+// selectAllFromReadWrite is like selectAllFromConnect except
+// that it works on the table named ReadWrite.
+func (mx *Measurer) selectAllFromReadWrite(id int64) (out []*NetworkEvent) {
+	for _, ev := range mx.DB.SelectAllFromReadWrite() {
+		if id == ev.MeasurementID {
+			out = append(out, ev)
+		}
+	}
+	return
+}
+
+// selectAllFromClose is like selectAllFromConnect except
+// that it works on the table named Close.
+func (mx *Measurer) selectAllFromClose(id int64) (out []*NetworkEvent) {
+	for _, ev := range mx.DB.SelectAllFromClose() {
+		if id == ev.MeasurementID {
+			out = append(out, ev)
+		}
+	}
+	return
+}
+
+// selectAllFromTLSHandshake is like selectAllFromConnect except
+// that it works on the table named TLSHandshake.
+func (mx *Measurer) selectAllFromTLSHandshake(id int64) (out []*TLSHandshakeEvent) {
+	for _, ev := range mx.DB.SelectAllFromTLSHandshake() {
+		if id == ev.MeasurementID {
+			out = append(out, ev)
+		}
+	}
+	return
+}
+
+// selectAllFromQUICHandshake is like selectAllFromConnect except
+// that it works on the table named QUICHandshake.
+func (mx *Measurer) selectAllFromQUICHandshake(id int64) (out []*QUICHandshakeEvent) {
+	for _, ev := range mx.DB.SelectAllFromQUICHandshake() {
+		if id == ev.MeasurementID {
+			out = append(out, ev)
+		}
+	}
+	return
+}
+
+// selectAllFromLookupHost is like selectAllFromConnect except
+// that it works on the table named LookupHost.
+func (mx *Measurer) selectAllFromLookupHost(id int64) (out []*LookupHostEvent) {
+	for _, ev := range mx.DB.SelectAllFromLookupHost() {
+		if id == ev.MeasurementID {
+			out = append(out, ev)
+		}
+	}
+	return
+}
+
+// selectAllFromLookupHTTPSSvc is like selectAllFromConnect except
+// that it works on the table named LookupHTTPSSvc.
+func (mx *Measurer) selectAllFromLookupHTTPSSvc(id int64) (out []*LookupHTTPSSvcEvent) {
+	for _, ev := range mx.DB.SelectAllFromLookupHTTPSSvc() {
+		if id == ev.MeasurementID {
+			out = append(out, ev)
+		}
+	}
+	return
+}
+
+// selectAllFromDNSRoundTrip is like selectAllFromConnect except
+// that it works on the table named DNSRoundTrip.
+func (mx *Measurer) selectAllFromDNSRoundTrip(id int64) (out []*DNSRoundTripEvent) {
+	for _, ev := range mx.DB.SelectAllFromDNSRoundTrip() {
+		if id == ev.MeasurementID {
+			out = append(out, ev)
+		}
+	}
+	return
+}
+
+// selectAllFromHTTPRoundTrip is like selectAllFromConnect except
+// that it works on the table named HTTPRoundTrip.
+func (mx *Measurer) selectAllFromHTTPRoundTrip(id int64) (out []*HTTPRoundTripEvent) {
+	for _, ev := range mx.DB.SelectAllFromHTTPRoundTrip() {
+		if id == ev.MeasurementID {
+			out = append(out, ev)
+		}
+	}
+	return
+}
+
+// selectAllFromHTTPRedirect is like selectAllFromConnect except
+// that it works on the table named HTTPRedirect.
+func (mx *Measurer) selectAllFromHTTPRedirect(id int64) (out []*HTTPRedirectEvent) {
+	for _, ev := range mx.DB.SelectAllFromHTTPRedirect() {
+		if id == ev.MeasurementID {
+			out = append(out, ev)
+		}
+	}
+	return
 }

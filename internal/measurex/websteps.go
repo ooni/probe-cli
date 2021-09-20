@@ -34,6 +34,9 @@ type WebStepBaseMeasurement struct {
 	// TLSHandshake contains all the TLS handshakes.
 	TLSHandshake []*TLSHandshakeEvent
 
+	// QUICHandshake contains all the QUIC handshakes.
+	QUICHandshake []*QUICHandshakeEvent
+
 	// LookupHost contains all the host lookups.
 	LookupHost []*LookupHostEvent
 
@@ -71,7 +74,6 @@ type WebStepEndpoint struct {
 // We define WebStep as the process by which we have an input URL
 // and we perform the following operations:
 //
-//
 // 1. lookup of all the possible endpoints for the URL;
 //
 // 2. measurement of each available endpoint.
@@ -94,10 +96,13 @@ type WebStepEndpoint struct {
 // empty if we have no been able to discover endpoints.
 func (mx *Measurer) WebStep(
 	ctx context.Context, URL *url.URL, dnsResolverUDP string) (m *WebStepResult) {
+	mx.infof("WebStep url=%s dnsResolverUDP=%s", URL.String(), dnsResolverUDP)
 	m = &WebStepResult{
 		URL: URL.String(),
 	}
 	mid := mx.NewMeasurement()
+	mx.infof("LookupHTTPEndpoints measurementID=%d url=%s dnsResolverUDP=%s",
+		mid, URL.String(), dnsResolverUDP)
 	epnts, _ := mx.LookupHTTPEndpoints(ctx, URL, dnsResolverUDP)
 	m.LookupEndpoints = &WebStepLookupEndpoints{
 		Domain:                 URL.Hostname(),
@@ -105,6 +110,8 @@ func (mx *Measurer) WebStep(
 	}
 	for _, epnt := range epnts {
 		mid = mx.NewMeasurement()
+		mx.infof("HTTPEndpointGet measurementID=%d url=%s endpoint=%s dnsResolverUDP=%s",
+			mid, URL.String(), epnt.String(), dnsResolverUDP)
 		mx.HTTPEndpointGet(ctx, epnt)
 		m.Endpoints = append(m.Endpoints, &WebStepEndpoint{
 			Endpoint:               epnt.String(),
@@ -131,117 +138,11 @@ func (mx *Measurer) newWebStepBaseMeasurement(id int64) *WebStepBaseMeasurement 
 		ReadWrite:      mx.selectAllFromReadWrite(id),
 		Close:          mx.selectAllFromClose(id),
 		TLSHandshake:   mx.selectAllFromTLSHandshake(id),
+		QUICHandshake:  mx.selectAllFromQUICHandshake(id),
 		LookupHost:     mx.selectAllFromLookupHost(id),
 		LookupHTTPSSvc: mx.selectAllFromLookupHTTPSSvc(id),
 		DNSRoundTrip:   mx.selectAllFromDNSRoundTrip(id),
 		HTTPRoundTrip:  mx.selectAllFromHTTPRoundTrip(id),
 		HTTPRedirect:   mx.selectAllFromHTTPRedirect(id),
 	}
-}
-
-// selectAllFromConnect selects all the entries inside of the
-// Connect table that have the given MeasurementID.
-//
-// Arguments
-//
-// - id is the MeasurementID to filter for.
-//
-// Return value
-//
-// A possibly-empty list of events.
-func (mx *Measurer) selectAllFromConnect(id int64) (out []*NetworkEvent) {
-	for _, ev := range mx.DB.SelectAllFromDial() {
-		if id == ev.MeasurementID {
-			out = append(out, ev)
-		}
-	}
-	return
-}
-
-// selectAllFromReadWrite is like selectAllFromConnect except
-// that it works on the table named ReadWrite.
-func (mx *Measurer) selectAllFromReadWrite(id int64) (out []*NetworkEvent) {
-	for _, ev := range mx.DB.SelectAllFromReadWrite() {
-		if id == ev.MeasurementID {
-			out = append(out, ev)
-		}
-	}
-	return
-}
-
-// selectAllFromClose is like selectAllFromConnect except
-// that it works on the table named Close.
-func (mx *Measurer) selectAllFromClose(id int64) (out []*NetworkEvent) {
-	for _, ev := range mx.DB.SelectAllFromClose() {
-		if id == ev.MeasurementID {
-			out = append(out, ev)
-		}
-	}
-	return
-}
-
-// selectAllFromTLSHandshake is like selectAllFromConnect except
-// that it works on the table named TLSHandshake.
-func (mx *Measurer) selectAllFromTLSHandshake(id int64) (out []*TLSHandshakeEvent) {
-	for _, ev := range mx.DB.SelectAllFromTLSHandshake() {
-		if id == ev.MeasurementID {
-			out = append(out, ev)
-		}
-	}
-	return
-}
-
-// selectAllFromLookupHost is like selectAllFromConnect except
-// that it works on the table named LookupHost.
-func (mx *Measurer) selectAllFromLookupHost(id int64) (out []*LookupHostEvent) {
-	for _, ev := range mx.DB.SelectAllFromLookupHost() {
-		if id == ev.MeasurementID {
-			out = append(out, ev)
-		}
-	}
-	return
-}
-
-// selectAllFromLookupHTTPSSvc is like selectAllFromConnect except
-// that it works on the table named LookupHTTPSSvc.
-func (mx *Measurer) selectAllFromLookupHTTPSSvc(id int64) (out []*LookupHTTPSSvcEvent) {
-	for _, ev := range mx.DB.SelectAllFromLookupHTTPSSvc() {
-		if id == ev.MeasurementID {
-			out = append(out, ev)
-		}
-	}
-	return
-}
-
-// selectAllFromDNSRoundTrip is like selectAllFromConnect except
-// that it works on the table named DNSRoundTrip.
-func (mx *Measurer) selectAllFromDNSRoundTrip(id int64) (out []*DNSRoundTripEvent) {
-	for _, ev := range mx.DB.SelectAllFromDNSRoundTrip() {
-		if id == ev.MeasurementID {
-			out = append(out, ev)
-		}
-	}
-	return
-}
-
-// selectAllFromHTTPRoundTrip is like selectAllFromConnect except
-// that it works on the table named HTTPRoundTrip.
-func (mx *Measurer) selectAllFromHTTPRoundTrip(id int64) (out []*HTTPRoundTripEvent) {
-	for _, ev := range mx.DB.SelectAllFromHTTPRoundTrip() {
-		if id == ev.MeasurementID {
-			out = append(out, ev)
-		}
-	}
-	return
-}
-
-// selectAllFromHTTPRedirect is like selectAllFromConnect except
-// that it works on the table named HTTPRedirect.
-func (mx *Measurer) selectAllFromHTTPRedirect(id int64) (out []*HTTPRedirectEvent) {
-	for _, ev := range mx.DB.SelectAllFromHTTPRedirect() {
-		if id == ev.MeasurementID {
-			out = append(out, ev)
-		}
-	}
-	return
 }

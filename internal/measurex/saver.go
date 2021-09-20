@@ -13,6 +13,7 @@ type Saver struct {
 	dnsRoundTripTable  []*DNSRoundTripEvent
 	httpRoundTripTable []*HTTPRoundTripEvent
 	httpRedirectTable  []*HTTPRedirectEvent
+	quicHandshakeTable []*QUICHandshakeEvent
 	connID             int64
 	measurementID      int64
 	mu                 sync.Mutex
@@ -131,6 +132,19 @@ func (s *Saver) InsertIntoHTTPRedirect(ev *HTTPRedirectEvent) {
 func (s *Saver) SelectAllFromHTTPRedirect() (out []*HTTPRedirectEvent) {
 	s.mu.Lock()
 	out = append(out, s.httpRedirectTable...)
+	s.mu.Unlock()
+	return
+}
+
+func (s *Saver) InsertIntoQUICHandshake(ev *QUICHandshakeEvent) {
+	s.mu.Lock()
+	s.quicHandshakeTable = append(s.quicHandshakeTable, ev)
+	s.mu.Unlock()
+}
+
+func (s *Saver) SelectAllFromQUICHandshake() (out []*QUICHandshakeEvent) {
+	s.mu.Lock()
+	out = append(out, s.quicHandshakeTable...)
 	s.mu.Unlock()
 	return
 }
