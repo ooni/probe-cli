@@ -6,7 +6,7 @@ package measurex
 // the test helper see different results.
 type Oddity string
 
-// This enumeration lists all known oddities
+// This enumeration lists all known oddities.
 var (
 	// tcp.connect
 	OddityTCPConnectTimeout         = Oddity("tcp.connect.timeout")

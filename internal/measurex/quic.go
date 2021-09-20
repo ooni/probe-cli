@@ -15,8 +15,9 @@ import (
 // QUICListener creates listening connections for QUIC.
 type QUICListener = netxlite.QUICListener
 
-// WrapQUICListener wraps a netxlite.QUICListener to add measurex capabilities.
-func WrapQUICListener(origin Origin, db DB, ql netxlite.QUICListener) QUICListener {
+// WrapQUICListener takes in input a netxlite.QUICListener and returns
+// a new listener that saves measurements into the DB.
+func WrapQUICListener(origin Origin, db EventDB, ql netxlite.QUICListener) QUICListener {
 	return &quicListenerx{
 		QUICListener: ql,
 		db:           db,
@@ -26,11 +27,14 @@ func WrapQUICListener(origin Origin, db DB, ql netxlite.QUICListener) QUICListen
 
 type quicListenerx struct {
 	netxlite.QUICListener
-	db     DB
+	db     EventDB
 	origin Origin
 }
 
-func (ql *quicListenerx) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+// QUICPacketConn is an UDP PacketConn used by QUIC.
+type QUICPacketConn = quicx.UDPLikeConn
+
+func (ql *quicListenerx) Listen(addr *net.UDPAddr) (QUICPacketConn, error) {
 	pconn, err := ql.QUICListener.Listen(addr)
 	if err != nil {
 		return nil, err
@@ -47,15 +51,15 @@ func (ql *quicListenerx) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
 type quicUDPLikeConnx struct {
 	quicx.UDPLikeConn
 	connID    int64
-	db        DB
+	db        EventDB
 	localAddr string
 	origin    Origin
 }
 
 func (c *quicUDPLikeConnx) WriteTo(p []byte, addr net.Addr) (int, error) {
-	started := time.Now()
+	started := c.db.ElapsedTime()
 	count, err := c.UDPLikeConn.WriteTo(p, addr)
-	finished := time.Now()
+	finished := c.db.ElapsedTime()
 	c.db.InsertIntoReadWrite(&NetworkEvent{
 		Origin:        c.origin,
 		MeasurementID: c.db.MeasurementID(),
@@ -73,9 +77,9 @@ func (c *quicUDPLikeConnx) WriteTo(p []byte, addr net.Addr) (int, error) {
 }
 
 func (c *quicUDPLikeConnx) ReadFrom(b []byte) (int, net.Addr, error) {
-	started := time.Now()
+	started := c.db.ElapsedTime()
 	count, addr, err := c.UDPLikeConn.ReadFrom(b)
-	finished := time.Now()
+	finished := c.db.ElapsedTime()
 	c.db.InsertIntoReadWrite(&NetworkEvent{
 		Origin:        c.origin,
 		MeasurementID: c.db.MeasurementID(),
@@ -100,9 +104,9 @@ func (c *quicUDPLikeConnx) addrStringIfNotNil(addr net.Addr) (out string) {
 }
 
 func (c *quicUDPLikeConnx) Close() error {
-	started := time.Now()
+	started := c.db.ElapsedTime()
 	err := c.UDPLikeConn.Close()
-	finished := time.Now()
+	finished := c.db.ElapsedTime()
 	c.db.InsertIntoReadWrite(&NetworkEvent{
 		Origin:        c.origin,
 		MeasurementID: c.db.MeasurementID(),
@@ -119,6 +123,8 @@ func (c *quicUDPLikeConnx) Close() error {
 	return err
 }
 
+// LocalAddr returns the local address and also implements a
+// hack to pass to the session the ConnID.
 func (c *quicUDPLikeConnx) LocalAddr() net.Addr {
 	localAddr := c.UDPLikeConn.LocalAddr()
 	if localAddr == nil {
@@ -132,14 +138,16 @@ type quicLocalAddrx struct {
 	connID int64
 }
 
-// QUICEarlySession is the type we use to wrap quic.EarlySession
+// QUICEarlySession is the type we use to wrap quic.EarlySession. This
+// kind of session knows about the underlying ConnID.
 type QUICEarlySession interface {
 	quic.EarlySession
 
 	ConnID() int64
 }
 
-// QUICDialer creates QUIC sessions.
+// QUICDialer creates QUIC sessions. This kind of dialer will
+// save QUIC handshake measurements into the DB.
 type QUICDialer interface {
 	DialContext(ctx context.Context, address string,
 		tlsConfig *tls.Config) (QUICEarlySession, error)
@@ -158,8 +166,8 @@ type QUICHandshakeEvent struct {
 	SNI             string
 	ALPN            []string
 	SkipVerify      bool
-	Started         time.Time
-	Finished        time.Time
+	Started         time.Duration
+	Finished        time.Duration
 	Error           error
 	Oddity          Oddity
 	TLSVersion      string
@@ -168,8 +176,9 @@ type QUICHandshakeEvent struct {
 	PeerCerts       [][]byte
 }
 
-// WrapQUICDialer wraps a netxlite.QUICDialer to add measurex capabilities.
-func WrapQUICDialer(origin Origin, db DB, dialer netxlite.QUICDialer) QUICDialer {
+// WrapQUICDialer creates a new QUICDialer that will save
+// QUIC handshake events into the DB.
+func WrapQUICDialer(origin Origin, db EventDB, dialer netxlite.QUICDialer) QUICDialer {
 	return &quicDialerx{
 		QUICDialer: dialer,
 		origin:     origin,
@@ -179,13 +188,13 @@ func WrapQUICDialer(origin Origin, db DB, dialer netxlite.QUICDialer) QUICDialer
 
 type quicDialerx struct {
 	netxlite.QUICDialer
-	db     DB
+	db     EventDB
 	origin Origin
 }
 
 func (qh *quicDialerx) DialContext(ctx context.Context,
 	address string, tlsConfig *tls.Config) (QUICEarlySession, error) {
-	started := time.Now()
+	started := qh.db.ElapsedTime()
 	var (
 		localAddr *quicLocalAddrx
 		state     tls.ConnectionState
@@ -205,7 +214,7 @@ func (qh *quicDialerx) DialContext(ctx context.Context,
 			sess, err = nil, ctx.Err()
 		}
 	}
-	finished := time.Now()
+	finished := qh.db.ElapsedTime()
 	qh.db.InsertIntoQUICHandshake(&QUICHandshakeEvent{
 		Origin:          qh.origin,
 		MeasurementID:   qh.db.MeasurementID(),
@@ -246,15 +255,6 @@ func (qh *quicDialerx) computeOddity(err error) Oddity {
 	}
 }
 
-type quicEarlySessionx struct {
-	quic.EarlySession
-	connID int64
-}
-
-func (qes *quicEarlySessionx) ConnID() int64 {
-	return qes.connID
-}
-
 func (qh *quicDialerx) connIDIfNotNil(addr *quicLocalAddrx) (out int64) {
 	if addr != nil {
 		out = addr.connID
@@ -271,4 +271,13 @@ func (qh *quicDialerx) localAddrIfNotNil(addr *quicLocalAddrx) (out string) {
 
 func (qh *quicDialerx) CloseIdleConnections() {
 	qh.QUICDialer.CloseIdleConnections()
+}
+
+type quicEarlySessionx struct {
+	quic.EarlySession
+	connID int64
+}
+
+func (qes *quicEarlySessionx) ConnID() int64 {
+	return qes.connID
 }

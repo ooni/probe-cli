@@ -1,53 +1,47 @@
 package measurex
 
-// DB is the database holding measurements.
-type DB interface {
-	// Dial table
+import "time"
+
+// EventDB is a "database" holding events records as seen by the
+// networking code that needs to save events.
+type EventDB interface {
+	// ElapsedTime returns the elapsed time since the beginning
+	// of time as configured into the database.
+	ElapsedTime() time.Duration
+
+	// InsertIntoDial saves a Dial event.
 	InsertIntoDial(ev *NetworkEvent)
-	SelectAllFromDial() []*NetworkEvent
 
-	// ReadWrite table
+	// InsertIntoReadWrite saves an I/O event.
 	InsertIntoReadWrite(ev *NetworkEvent)
-	SelectAllFromReadWrite() []*NetworkEvent
 
-	// Close table
+	// InsertIntoClose saves a close event.
 	InsertIntoClose(ev *NetworkEvent)
-	SelectAllFromClose() []*NetworkEvent
 
-	// TLSHandshake table
+	// InsertIntoTLSHandshake saves a TLS handshake event.
 	InsertIntoTLSHandshake(ev *TLSHandshakeEvent)
-	SelectAllFromTLSHandshake() []*TLSHandshakeEvent
 
-	// LookupHost table
+	// InsertIntoLookupHost saves a lookup host event.
 	InsertIntoLookupHost(ev *LookupHostEvent)
-	SelectAllFromLookupHost() []*LookupHostEvent
 
-	// LookupHTTPSSvc table
+	// InsertIntoLookupHTTPSvc saves an HTTPSvc lookup event.
 	InsertIntoLookupHTTPSSvc(ev *LookupHTTPSSvcEvent)
-	SelectAllFromLookupHTTPSSvc() []*LookupHTTPSSvcEvent
 
-	// DNSRoundTrip table
+	// InsertIntoDNSRoundTrip saves a DNS round trip event.
 	InsertIntoDNSRoundTrip(ev *DNSRoundTripEvent)
-	SelectAllFromDNSRoundTrip() []*DNSRoundTripEvent
 
-	// HTTPRoundTrip table
+	// InsertIntoHTTPRoundTrip saves an HTTP round trip event.
 	InsertIntoHTTPRoundTrip(ev *HTTPRoundTripEvent)
-	SelectAllFromHTTPRoundTrip() []*HTTPRoundTripEvent
 
-	// HTTPRedirect table
+	// InsertIntoHTTPRedirect saves an HTTP redirect event.
 	InsertIntoHTTPRedirect(ev *HTTPRedirectEvent)
-	SelectAllFromHTTPRedirect() []*HTTPRedirectEvent
 
-	// QUICHandshake table
+	// InsertIntoQUICHandshake saves a QUIC handshake event.
 	InsertIntoQUICHandshake(ev *QUICHandshakeEvent)
-	SelectAllFromQUICHandshake() []*QUICHandshakeEvent
 
 	// NextConnID increments and returns the connection ID.
 	NextConnID() int64
 
-	// MeasurementID returns the measurement ID.
+	// MeasurementID returns the current measurement ID.
 	MeasurementID() int64
-
-	// NextMeasurement increments and returns the measurement ID.
-	NextMeasurement() int64
 }

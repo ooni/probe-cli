@@ -12,19 +12,51 @@ import (
 // HTTPSSvc is the result returned by HTTPSSvc queries.
 type HTTPSSvc = dnsx.HTTPSSvc
 
-// Resolver is the resolver type we use.
+// Resolver is the resolver type we use. This resolver will
+// store resolve events into the DB.
 type Resolver interface {
 	netxlite.Resolver
 }
 
-// WrapResolver wraps a netxlite.Resolver to add measurex capabilities.
-func WrapResolver(origin Origin, db DB, r netxlite.Resolver) Resolver {
+// WrapResolver wraps a Resolver so that we save measurements into the DB.
+func WrapResolver(origin Origin, db EventDB, r netxlite.Resolver) Resolver {
 	return &resolverx{Resolver: r, db: db, origin: origin}
+}
+
+// NewResolverSystem is a convenience factory for creating a
+// system resolver that saves measurements into a DB.
+func NewResolverSystem(origin Origin, db EventDB, logger Logger) Resolver {
+	return WrapResolver(origin, db, netxlite.NewResolverStdlib(logger))
+}
+
+// NewResolverUDP is a convenience factory for creating a Resolver
+// using UDP that saves measurements into the DB.
+//
+// Arguments:
+//
+// - origin is OrigiProbe or OriginTH;
+//
+// - db is where to save events;
+//
+// - logger is the logger;
+//
+// - address is the resolver address (e.g., "1.1.1.1:53").
+func NewResolverUDP(origin Origin, db EventDB, logger Logger, address string) Resolver {
+	return WrapResolver(origin, db, &netxlite.ResolverLogger{
+		Resolver: netxlite.WrapResolver(logger, dnsx.NewSerialResolver(
+			WrapDNSXRoundTripper(origin, db, dnsx.NewDNSOverUDP(
+				&netxliteDialerAdapter{
+					NewDialerWithSystemResolver(origin, db, logger),
+				},
+				address,
+			)))),
+		Logger: logger,
+	})
 }
 
 type resolverx struct {
 	netxlite.Resolver
-	db     DB
+	db     EventDB
 	origin Origin
 }
 
@@ -35,17 +67,17 @@ type LookupHostEvent struct {
 	Network       string
 	Address       string
 	Domain        string
-	Started       time.Time
-	Finished      time.Time
+	Started       time.Duration
+	Finished      time.Duration
 	Error         error
 	Oddity        Oddity
 	Addrs         []string
 }
 
 func (r *resolverx) LookupHost(ctx context.Context, domain string) ([]string, error) {
-	started := time.Now()
+	started := r.db.ElapsedTime()
 	addrs, err := r.Resolver.LookupHost(ctx, domain)
-	finished := time.Now()
+	finished := r.db.ElapsedTime()
 	r.db.InsertIntoLookupHost(&LookupHostEvent{
 		Origin:        r.origin,
 		MeasurementID: r.db.MeasurementID(),
@@ -64,7 +96,7 @@ func (r *resolverx) LookupHost(ctx context.Context, domain string) ([]string, er
 func (r *resolverx) computeOddityLookupHost(addrs []string, err error) Oddity {
 	if err == nil {
 		for _, addr := range addrs {
-			if IsBogon(addr) {
+			if isBogon(addr) {
 				return OddityDNSLookupBogon
 			}
 		}
@@ -87,9 +119,11 @@ func (r *resolverx) computeOddityLookupHost(addrs []string, err error) Oddity {
 type LookupHTTPSSvcEvent struct {
 	Origin        Origin
 	MeasurementID int64
+	Network       string
+	Address       string
 	Domain        string
-	Started       time.Time
-	Finished      time.Time
+	Started       time.Duration
+	Finished      time.Duration
 	Error         error
 	Oddity        Oddity
 	IPv4          []string
@@ -98,12 +132,14 @@ type LookupHTTPSSvcEvent struct {
 }
 
 func (r *resolverx) LookupHTTPSSvcWithoutRetry(ctx context.Context, domain string) (HTTPSSvc, error) {
-	started := time.Now()
+	started := r.db.ElapsedTime()
 	https, err := r.Resolver.LookupHTTPSSvcWithoutRetry(ctx, domain)
-	finished := time.Now()
+	finished := r.db.ElapsedTime()
 	ev := &LookupHTTPSSvcEvent{
 		Origin:        r.origin,
 		MeasurementID: r.db.MeasurementID(),
+		Network:       r.Resolver.Network(),
+		Address:       r.Resolver.Address(),
 		Domain:        domain,
 		Started:       started,
 		Finished:      finished,

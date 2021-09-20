@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -19,16 +18,16 @@ import (
 
 // WCTHWorker is the Web Connectivity test helper worker.
 type WCTHWorker struct {
-	db     DB
+	db     EventDB
 	logger Logger
 	clnt   HTTPClient
-	URL    string
+	url    string
 }
 
 // NewWCTHWorker creates a new TestHelper instance using the
 // web connectivity test helper protocol.
 //
-// Arguments
+// Arguments:
 //
 // - logger is the logger to use;
 //
@@ -40,8 +39,8 @@ type WCTHWorker struct {
 //
 // All arguments are mandatory.
 func NewWCTHWorker(
-	logger Logger, db DB, clnt HTTPClient, URL string) *WCTHWorker {
-	return &WCTHWorker{db: db, logger: logger, clnt: clnt, URL: URL}
+	logger Logger, db EventDB, clnt HTTPClient, URL string) *WCTHWorker {
+	return &WCTHWorker{db: db, logger: logger, clnt: clnt, url: URL}
 }
 
 var errWCTHRequestFailed = errors.New("wcth: request failed")
@@ -73,8 +72,8 @@ func (w *WCTHWorker) parseResp(URL *url.URL, resp *WCTHResponse) {
 		Network:       "system",
 		Address:       "",
 		Domain:        URL.Hostname(),
-		Started:       time.Time{},
-		Finished:      time.Time{},
+		Started:       0,
+		Finished:      0,
 		Error:         w.newError(resp.DNS.Failure),
 		Addrs:         w.filterDNSAddrs(resp.DNS.Addrs),
 	})
@@ -87,8 +86,8 @@ func (w *WCTHWorker) parseResp(URL *url.URL, resp *WCTHResponse) {
 			Network:       "tcp",
 			RemoteAddr:    addr,
 			LocalAddr:     "",
-			Started:       time.Time{},
-			Finished:      time.Time{},
+			Started:       0,
+			Finished:      0,
 			Error:         w.newError(status.Failure),
 			Count:         0,
 		})
@@ -104,7 +103,7 @@ func (w *WCTHWorker) newHTTPRequest(ctx context.Context,
 	}
 	reqBody, err := json.Marshal(wtchReq)
 	runtimex.PanicOnError(err, "json.Marshal failed")
-	req, err := http.NewRequestWithContext(ctx, "POST", w.URL, bytes.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", w.url, bytes.NewReader(reqBody))
 	if err != nil {
 		return nil, err
 	}

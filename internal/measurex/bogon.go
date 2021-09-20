@@ -6,6 +6,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+// isBogon returns whether if an IP address is bogon. Passing to this
+// function a non-IP address causes it to return true.
+func isBogon(address string) bool {
+	ip := net.ParseIP(address)
+	return ip == nil || isPrivate(ip)
+}
+
 var privateIPBlocks []*net.IPNet
 
 func init() {
@@ -38,11 +45,4 @@ func isPrivate(ip net.IP) bool {
 		}
 	}
 	return false
-}
-
-// IsBogon returns whether if an IP address is bogon. Passing to this
-// function a non-IP address causes it to return bogon.
-func IsBogon(address string) bool {
-	ip := net.ParseIP(address)
-	return ip == nil || isPrivate(ip)
 }

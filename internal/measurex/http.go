@@ -18,25 +18,37 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-// HTTPTransport is the HTTP transport type we use.
+// HTTPTransport is the HTTP transport type we use. This transport
+// is a normal netxlite.HTTPTransport but also knows about the ConnID.
+//
+// The RoundTrip method of this transport MAY read a small snapshot
+// of the response body to include it into the measurement. When this
+// happens, the transport will nonetheless return a response body
+// that is suitable for reading the whole body again. The only difference
+// with reading the body normally is timing. The snapshot will be read
+// immediately because it's already cached in RAM. The rest of the
+// body instead will be read normally, using the network.
 type HTTPTransport interface {
 	netxlite.HTTPTransport
 
-	// ConnID returns the connection ID.
+	// ConnID returns the connection ID. When this value is zero
+	// or negative it means it has not been set.
 	ConnID() int64
 }
 
-// WrapHTTPTransport wraps a netxlite.HTTPTransport to add measurex
-// capabilities. With this constructor the conn ID is undefined.
+// WrapHTTPTransport takes in input a netxlite.HTTPTransport and
+// returns an HTTPTransport that uses the DB to save events occurring
+// during HTTP round trips. With this constructor the ConnID is
+// not set, hence ConnID will always return zero.
 func WrapHTTPTransport(
-	origin Origin, db DB, txp netxlite.HTTPTransport) HTTPTransport {
+	origin Origin, db EventDB, txp netxlite.HTTPTransport) HTTPTransport {
 	return WrapHTTPTransportWithConnID(origin, db, txp, 0)
 }
 
 // WrapHTTPTransportWithConnID is like WrapHTTPTransport but also
-// sets the conn ID, which is otherwise undefined.
+// sets the conn ID, which is otherwise set to zero.
 func WrapHTTPTransportWithConnID(origin Origin,
-	db DB, txp netxlite.HTTPTransport, connID int64) HTTPTransport {
+	db EventDB, txp netxlite.HTTPTransport, connID int64) HTTPTransport {
 	return &httpTransportx{
 		HTTPTransport: txp, db: db, connID: connID, origin: origin}
 }
@@ -44,36 +56,34 @@ func WrapHTTPTransportWithConnID(origin Origin,
 // NewHTTPTransportWithConn creates and wraps an HTTPTransport that
 // does not dial and only uses the given conn.
 func NewHTTPTransportWithConn(
-	origin Origin, logger Logger, db DB, conn Conn) HTTPTransport {
-	return WrapHTTPTransportWithConnID(origin, db, netxlite.NewHTTPTransport(
-		logger, netxlite.NewSingleUseDialer(conn),
-		netxlite.NewNullTLSDialer(),
-	), conn.ConnID())
+	origin Origin, logger Logger, db EventDB, conn Conn) HTTPTransport {
+	txp := netxlite.NewHTTPTransport(logger, netxlite.NewSingleUseDialer(conn),
+		netxlite.NewNullTLSDialer())
+	return WrapHTTPTransportWithConnID(origin, db, txp, conn.ConnID())
 }
 
 // NewHTTPTransportWithTLSConn creates and wraps an HTTPTransport that
 // does not dial and only uses the given conn.
 func NewHTTPTransportWithTLSConn(
-	origin Origin, logger Logger, db DB, conn TLSConn) HTTPTransport {
-	return WrapHTTPTransportWithConnID(origin, db, netxlite.NewHTTPTransport(
-		logger, netxlite.NewNullDialer(),
-		netxlite.NewSingleUseTLSDialer(conn),
-	), conn.ConnID())
+	origin Origin, logger Logger, db EventDB, conn TLSConn) HTTPTransport {
+	txp := netxlite.NewHTTPTransport(logger, netxlite.NewNullDialer(),
+		netxlite.NewSingleUseTLSDialer(conn))
+	return WrapHTTPTransportWithConnID(origin, db, txp, conn.ConnID())
 }
 
 // NewHTTPTransportWithQUICSess creates and wraps an HTTPTransport that
 // does not dial and only uses the given QUIC session.
 func NewHTTPTransportWithQUICSess(
-	origin Origin, logger Logger, db DB, sess QUICEarlySession) HTTPTransport {
-	return WrapHTTPTransportWithConnID(origin, db, netxlite.NewHTTP3Transport(
-		logger, netxlite.NewSingleUseQUICDialer(sess), &tls.Config{},
-	), sess.ConnID())
+	origin Origin, logger Logger, db EventDB, sess QUICEarlySession) HTTPTransport {
+	txp := netxlite.NewHTTP3Transport(
+		logger, netxlite.NewSingleUseQUICDialer(sess), &tls.Config{})
+	return WrapHTTPTransportWithConnID(origin, db, txp, sess.ConnID())
 }
 
 type httpTransportx struct {
 	netxlite.HTTPTransport
 	connID int64
-	db     DB
+	db     EventDB
 	origin Origin
 }
 
@@ -82,19 +92,20 @@ type httpTransportx struct {
 // If ConnID is zero or negative, it means undefined. This happens
 // when we create a transport without knowing the ConnID.
 type HTTPRoundTripEvent struct {
-	Origin               Origin
-	MeasurementID        int64
-	ConnID               int64
-	RequestMethod        string
-	RequestURL           *url.URL
-	RequestHeader        http.Header
-	Started              time.Time
-	Finished             time.Time
-	Error                error
-	Oddity               Oddity
-	ResponseStatus       int
-	ResponseHeader       http.Header
-	ResponseBodySnapshot []byte
+	Origin               Origin        // OriginProbe or OriginTH
+	MeasurementID        int64         // ID of the measurement
+	ConnID               int64         // ID of the conn (<= zero means undefined)
+	RequestMethod        string        // Request method
+	RequestURL           *url.URL      // Request URL
+	RequestHeader        http.Header   // Request headers
+	Started              time.Duration // Beginning of round trip
+	Finished             time.Duration // End of round trip
+	Error                error         // Error or nil
+	Oddity               Oddity        // Oddity classification
+	ResponseStatus       int           // Status code
+	ResponseHeader       http.Header   // Response headers
+	ResponseBodySnapshot []byte        // Body snapshot
+	MaxBodySnapshotSize  int64         // Max size for snapshot
 }
 
 // We only read a small snapshot of the body to keep measurements
@@ -103,19 +114,20 @@ type HTTPRoundTripEvent struct {
 const maxBodySnapshot = 1 << 11
 
 func (txp *httpTransportx) RoundTrip(req *http.Request) (*http.Response, error) {
-	started := time.Now()
+	started := txp.db.ElapsedTime()
 	resp, err := txp.HTTPTransport.RoundTrip(req)
 	rt := &HTTPRoundTripEvent{
-		Origin:        txp.origin,
-		MeasurementID: txp.db.MeasurementID(),
-		ConnID:        txp.connID,
-		RequestMethod: req.Method,
-		RequestURL:    req.URL,
-		RequestHeader: req.Header,
-		Started:       started,
+		Origin:              txp.origin,
+		MeasurementID:       txp.db.MeasurementID(),
+		ConnID:              txp.connID,
+		RequestMethod:       req.Method,
+		RequestURL:          req.URL,
+		RequestHeader:       req.Header,
+		Started:             started,
+		MaxBodySnapshotSize: maxBodySnapshot,
 	}
 	if err != nil {
-		rt.Finished = time.Now()
+		rt.Finished = txp.db.ElapsedTime()
 		rt.Error = err
 		txp.db.InsertIntoHTTPRoundTrip(rt)
 		return nil, err
@@ -135,10 +147,10 @@ func (txp *httpTransportx) RoundTrip(req *http.Request) (*http.Response, error) 
 	r := io.LimitReader(resp.Body, maxBodySnapshot)
 	body, err := iox.ReadAllContext(req.Context(), r)
 	if errors.Is(err, io.EOF) && resp.Close {
-		err = nil // we expected to see an EOF here
+		err = nil // we expected to see an EOF here, so no real error
 	}
 	if err != nil {
-		rt.Finished = time.Now()
+		rt.Finished = txp.db.ElapsedTime()
 		rt.Error = err
 		txp.db.InsertIntoHTTPRoundTrip(rt)
 		return nil, err
@@ -148,7 +160,7 @@ func (txp *httpTransportx) RoundTrip(req *http.Request) (*http.Response, error) 
 		Closer: resp.Body,
 	}
 	rt.ResponseBodySnapshot = body
-	rt.Finished = time.Now()
+	rt.Finished = txp.db.ElapsedTime()
 	txp.db.InsertIntoHTTPRoundTrip(rt)
 	return resp, nil
 }
@@ -162,7 +174,9 @@ func (txp *httpTransportx) ConnID() int64 {
 	return txp.connID
 }
 
-// HTTPClient is the HTTP client type we use.
+// HTTPClient is the HTTP client type we use. This interface is
+// compatible with http.Client. What changes in this kind of clients
+// is that we'll insert redirection events into the DB.
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 	CloseIdleConnections()
@@ -171,39 +185,18 @@ type HTTPClient interface {
 // NewHTTPClient creates a new HTTPClient instance that
 // does not automatically perform redirects.
 func NewHTTPClientWithoutRedirects(
-	origin Origin, db DB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
+	origin Origin, db EventDB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
 	return newHTTPClient(origin, db, jar, txp, http.ErrUseLastResponse)
 }
 
 // NewHTTPClientWithRedirects creates a new HTTPClient
 // instance that automatically perform redirects.
 func NewHTTPClientWithRedirects(
-	origin Origin, db DB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
+	origin Origin, db EventDB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
 	return newHTTPClient(origin, db, jar, txp, nil)
 }
 
 // HTTPRedirectEvent records an HTTP redirect.
-//
-// If ConnID is zero or negative, it means undefined. This happens
-// when we create a transport without knowing the ConnID.
-//
-// The Request field contains the next request to issue. When
-// redirects are disabled, this field contains the request you
-// should issue to continue the redirect chain.
-//
-// The Via field contains the requests issued so far. The first
-// request inside Via is the last one that has been issued.
-//
-// The Cookies field contains all the cookies that the
-// implementation would set for the Request.URL.
-//
-// The Error field can have three values:
-//
-// - nil if the redirect occurred;
-//
-// - ErrHTTPTooManyRedirects when we see too many redirections;
-//
-// - http.ErrUseLastResponse if redirections are disabled.
 type HTTPRedirectEvent struct {
 	// Origin is the event origin ("probe" or "th")
 	Origin Origin
@@ -239,7 +232,7 @@ type HTTPRedirectEvent struct {
 // would return when hitting too many redirects.
 var ErrHTTPTooManyRedirects = errors.New("stopped after 10 redirects")
 
-func newHTTPClient(origin Origin, db DB,
+func newHTTPClient(origin Origin, db EventDB,
 	cookiejar http.CookieJar, txp HTTPTransport, defaultErr error) HTTPClient {
 	return &http.Client{
 		Transport: txp,
@@ -303,12 +296,4 @@ func NewHTTPRequestWithContext(ctx context.Context,
 // http.Request using the GET method and the given URL.
 func NewHTTPGetRequest(ctx context.Context, URL string) (*http.Request, error) {
 	return NewHTTPRequestWithContext(ctx, "GET", URL, nil)
-}
-
-// MustNewHTTPGetRequest is a convenience factory for creating
-// a new http.Request using GET that panics on error.
-func MustNewHTTPGetRequest(ctx context.Context, URL string) *http.Request {
-	req, err := NewHTTPGetRequest(ctx, URL)
-	runtimex.PanicOnError(err, "NewHTTPGetRequest failed")
-	return req
 }

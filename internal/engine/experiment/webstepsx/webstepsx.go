@@ -13,27 +13,33 @@ import (
 // SingleStep contains the results of a single web step.
 type SingleStep struct {
 	// URL is the URL this measurement refers to.
-	URL string
+	URL string `json:"url"`
 
 	// Oddities contains all the oddities of all endpoints.
-	Oddities []measurex.Oddity
+	Oddities []measurex.Oddity `json:"oddities"`
 
-	// LookupEndpoints contains the LookupEndpoints measurement.
-	LookupEndpoints *LookupEndpoints
+	// DNS contains all the DNS measurements.
+	DNS []*measurex.Measurement `json:"dns"`
 
-	// Endpoints contains all the endpoints measurements.
-	Endpoints []*Endpoint
+	// Control contains all the control measurements.
+	Control []*measurex.Measurement `json:"control"`
+
+	// Endpoints contains a measurement for each endpoints (which
+	// may be empty if DNS lookup failed).
+	Endpoints []*measurex.Measurement `json:"endpoints"`
 }
 
 // computeOddities computes the Oddities field my merging all
 // the oddities appearing in the Endpoints list.
 func (ss *SingleStep) computeOddities() {
 	unique := make(map[measurex.Oddity]bool)
-	for _, oddity := range ss.LookupEndpoints.Oddities {
-		unique[oddity] = true
+	for _, entry := range ss.DNS {
+		for _, oddity := range entry.Oddities {
+			unique[oddity] = true
+		}
 	}
-	for _, epnt := range ss.Endpoints {
-		for _, oddity := range epnt.Oddities {
+	for _, entry := range ss.Endpoints {
+		for _, oddity := range entry.Oddities {
 			unique[oddity] = true
 		}
 	}
@@ -44,20 +50,19 @@ func (ss *SingleStep) computeOddities() {
 	}
 }
 
-// LookupEndpoints describes the measurement of endpoints lookup.
-type LookupEndpoints struct {
-	// Domain is the domain this measurement refers to.
-	Domain string
+// URLMeasurer measures a single URL.
+//
+// Make sure you fill the fields marked as MANDATORY.
+type URLMeasurer struct {
+	// DNSResolverUDP is the MANDATORY address of an DNS
+	// over UDP resolver (e.g., "8.8.4.4.:53").
+	DNSResolverUDP string
 
-	*measurex.BaseMeasurement
-}
+	// Mx is the MANDATORY measurex.Measurer.
+	Mx *measurex.Measurer
 
-// Endpoint describes the measurement of a given endpoint.
-type Endpoint struct {
-	// Endpoint is the endpoint this measurement refers to.
-	Endpoint string
-
-	*measurex.BaseMeasurement
+	// URL is the MANDATORY URL to measure.
+	URL *url.URL
 }
 
 // Run performs all the WebSteps step.
@@ -72,25 +77,13 @@ type Endpoint struct {
 // After a step has run, we search for all the redirection URLs
 // and we run a new step with the new URLs.
 //
-// Arguments
-//
-// - ctx is the context to implement timeouts;
-//
-// - mx is the measurex.Measurer to use;
-//
-// - URL is the URL from which we start measuring;
-//
-// - dnsResolverUDP is the address of the DNS resolver endpoint
-// using UDP we wish to use (e.g., "8.8.8.8:53").
-//
-// Return value
+// Return value:
 //
 // A list of SingleStep structures where the Endpoints array may be empty
 // if we have no been able to discover endpoints.
-func Run(ctx context.Context, mx *measurex.Measurer,
-	URL *url.URL, dnsResolverUDP string) (v []*SingleStep) {
+func (um *URLMeasurer) Run(ctx context.Context) (v []*SingleStep) {
 	jar := measurex.NewCookieJar()
-	inputs := []*url.URL{URL}
+	inputs := []*url.URL{um.URL}
 Loop:
 	for len(inputs) > 0 {
 		dups := make(map[string]*url.URL)
@@ -99,9 +92,9 @@ Loop:
 			case <-ctx.Done():
 				break Loop
 			default:
-				mx.Infof("RunSingleStep url=%s dnsResolverUDP=%s jar=%+v",
-					input, dnsResolverUDP, jar)
-				m := RunSingleStep(ctx, mx, jar, input, dnsResolverUDP)
+				um.Mx.Infof("RunSingleStep url=%s dnsResolverUDP=%s jar=%+v",
+					input, um.DNSResolverUDP, jar)
+				m := um.RunSingleStep(ctx, jar, input)
 				v = append(v, m)
 				for _, epnt := range m.Endpoints {
 					for _, redir := range epnt.HTTPRedirect {
@@ -112,7 +105,7 @@ Loop:
 		}
 		inputs = nil
 		for _, input := range dups {
-			mx.Infof("newRedirection %s", input)
+			um.Mx.Infof("newRedirection %s", input)
 			inputs = append(inputs, input)
 		}
 	}
@@ -121,54 +114,45 @@ Loop:
 
 // RunSingleStep performs a single WebSteps step.
 //
-// We define "step" as the process by which we have an input URL
-// and we perform the following operations:
+// This function DOES NOT automatically follow redirections.
 //
-// 1. lookup of all the possible endpoints for the URL;
-//
-// 2. measurement of each available endpoint.
-//
-// This function DOES NOT automatically follow redirections. Though
-// we have enough information to know how to follow them.
-//
-// Arguments
+// Arguments:
 //
 // - ctx is the context to implement timeouts;
 //
-// - mx is the measurex.Measurer to use;
-//
 // - cookiejar is the http.CookieJar for cookies;
 //
-// - URL is the URL to measure;
+// - URL is the URL to measure.
 //
-// - dnsResolverUDP is the address of the DNS resolver endpoint
-// using UDP we wish to use (e.g., "8.8.8.8:53").
-//
-// Return value
+// Return value:
 //
 // A SingleStep structure where the Endpoints array may be empty
 // if we have no been able to discover endpoints.
-func RunSingleStep(ctx context.Context, mx *measurex.Measurer,
-	cookiekar http.CookieJar, URL *url.URL, dnsResolverUDP string) (m *SingleStep) {
+func (um *URLMeasurer) RunSingleStep(ctx context.Context,
+	cookiekar http.CookieJar, URL *url.URL) (m *SingleStep) {
 	m = &SingleStep{URL: URL.String()}
 	defer m.computeOddities()
-	mid := mx.NewMeasurement()
-	mx.Infof("LookupHTTPEndpoints measurementID=%d url=%s dnsResolverUDP=%s",
-		mid, URL.String(), dnsResolverUDP)
-	epnts, _ := mx.LookupHTTPEndpoints(ctx, URL, dnsResolverUDP)
-	m.LookupEndpoints = &LookupEndpoints{
-		Domain:          URL.Hostname(),
-		BaseMeasurement: mx.NewBaseMeasurement(mid),
+	port, err := measurex.PortFromURL(URL)
+	if err != nil {
+		return
 	}
-	for _, epnt := range epnts {
-		mid = mx.NewMeasurement()
-		mx.Infof("HTTPEndpointGet measurementID=%d url=%s endpoint=%s dnsResolverUDP=%s",
-			mid, URL.String(), epnt.String(), dnsResolverUDP)
-		mx.HTTPEndpointGet(ctx, epnt, cookiekar)
-		m.Endpoints = append(m.Endpoints, &Endpoint{
-			Endpoint:        epnt.String(),
-			BaseMeasurement: mx.NewBaseMeasurement(mid),
-		})
+	switch URL.Scheme {
+	case "https":
+		m.DNS = append(m.DNS, um.Mx.LookupHTTPSSvcUDP(
+			ctx, URL.Hostname(), um.DNSResolverUDP))
+	default:
+		// nothing to do
+	}
+	m.DNS = append(m.DNS, um.Mx.LookupHostSystem(ctx, URL.Hostname()))
+	m.DNS = append(m.DNS, um.Mx.LookupHostUDP(ctx, URL.Hostname(), um.DNSResolverUDP))
+	endpoints := um.Mx.DB.SelectAllEndpointsForDomain(URL.Hostname(), port)
+	m.Control = append(m.Control, um.Mx.LookupWCTH(ctx, URL, endpoints, port))
+	httpEndpoints, err := um.Mx.DB.SelectAllHTTPEndpointsForDomain(URL)
+	if err != nil {
+		return
+	}
+	for _, epnt := range httpEndpoints {
+		m.Endpoints = append(m.Endpoints, um.Mx.HTTPEndpointGet(ctx, epnt, cookiekar))
 	}
 	return
 }

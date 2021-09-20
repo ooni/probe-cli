@@ -19,26 +19,25 @@ type TLSConn interface {
 	ConnID() int64
 }
 
-// TLSHandshaker is the TLS handshaker type we use.
+// TLSHandshaker is the TLS handshaker type we use. This handshaker
+// will save TLS handshake events into the DB.
 type TLSHandshaker interface {
 	Handshake(ctx context.Context, conn Conn, config *tls.Config) (TLSConn, error)
 }
 
-// WrapTLSHandshaker wraps a netxlite.TLSHandshaker to add measurex capabilities.
-func WrapTLSHandshaker(origin Origin, db DB, thx netxlite.TLSHandshaker) TLSHandshaker {
+// WrapTLSHandshaker wraps a netxlite.TLSHandshaker to return a new
+// instance of TLSHandshaker that saves events into the DB.
+func WrapTLSHandshaker(origin Origin, db EventDB, thx netxlite.TLSHandshaker) TLSHandshaker {
 	return &tlsHandshakerx{TLSHandshaker: thx, db: db, origin: origin}
 }
 
 type tlsHandshakerx struct {
 	netxlite.TLSHandshaker
-	db     DB
+	db     EventDB
 	origin Origin
 }
 
 // TLSHandshakeEvent contains a TLS handshake event.
-//
-// Note that EndpointID and HTTPRoundTripID only make sense when
-// the DB we're using enforces precise HTTP round trips.
 type TLSHandshakeEvent struct {
 	Origin          Origin
 	MeasurementID   int64
@@ -50,8 +49,8 @@ type TLSHandshakeEvent struct {
 	SNI             string
 	ALPN            []string
 	SkipVerify      bool
-	Started         time.Time
-	Finished        time.Time
+	Started         time.Duration
+	Finished        time.Duration
 	Error           error
 	Oddity          Oddity
 	TLSVersion      string
@@ -65,9 +64,9 @@ func (thx *tlsHandshakerx) Handshake(ctx context.Context,
 	network := conn.RemoteAddr().Network()
 	remoteAddr := conn.RemoteAddr().String()
 	localAddr := conn.LocalAddr().String()
-	started := time.Now()
+	started := thx.db.ElapsedTime()
 	tconn, state, err := thx.TLSHandshaker.Handshake(ctx, conn, config)
-	finished := time.Now()
+	finished := thx.db.ElapsedTime()
 	thx.db.InsertIntoTLSHandshake(&TLSHandshakeEvent{
 		Origin:          thx.origin,
 		MeasurementID:   thx.db.MeasurementID(),

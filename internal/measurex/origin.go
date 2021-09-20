@@ -3,8 +3,10 @@ package measurex
 // Origin is the origin of a measurement.
 type Origin string
 
-// These are the possible origins.
 var (
+	// OriginProbe means that the probe performed this measurement.
 	OriginProbe = Origin("probe")
-	OriginTH    = Origin("th")
+
+	// OriginTH means that the test helper performed this measurement.
+	OriginTH = Origin("th")
 )
