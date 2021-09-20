@@ -159,14 +159,16 @@ type HTTPClient interface {
 
 // NewHTTPClient creates a new HTTPClient instance that
 // does not automatically perform redirects.
-func NewHTTPClientWithoutRedirects(origin Origin, db DB, txp HTTPTransport) HTTPClient {
-	return newHTTPClient(origin, db, txp, http.ErrUseLastResponse)
+func NewHTTPClientWithoutRedirects(
+	origin Origin, db DB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
+	return newHTTPClient(origin, db, jar, txp, http.ErrUseLastResponse)
 }
 
 // NewHTTPClientWithRedirects creates a new HTTPClient
 // instance that automatically perform redirects.
-func NewHTTPClientWithRedirects(origin Origin, db DB, txp HTTPTransport) HTTPClient {
-	return newHTTPClient(origin, db, txp, nil)
+func NewHTTPClientWithRedirects(
+	origin Origin, db DB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
+	return newHTTPClient(origin, db, jar, txp, nil)
 }
 
 // HTTPRedirectEvent records an HTTP redirect.
@@ -226,8 +228,8 @@ type HTTPRedirectEvent struct {
 // would return when hitting too many redirects.
 var ErrHTTPTooManyRedirects = errors.New("stopped after 10 redirects")
 
-func newHTTPClient(origin Origin, db DB, txp HTTPTransport, defaultErr error) HTTPClient {
-	cookiejar := NewCookieJar()
+func newHTTPClient(origin Origin, db DB,
+	cookiejar http.CookieJar, txp HTTPTransport, defaultErr error) HTTPClient {
 	return &http.Client{
 		Transport: txp,
 		Jar:       cookiejar,

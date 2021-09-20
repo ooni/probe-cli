@@ -79,7 +79,7 @@ func (mx *Measurer) NewMeasurement() int64 {
 func (mx *Measurer) LookupHostSystem(
 	ctx context.Context, domain string) (addrs []string, err error) {
 	const timeout = 4 * time.Second
-	mx.infof("LookupHostSystem domain=%s timeout=%s...", domain, timeout)
+	mx.Infof("LookupHostSystem domain=%s timeout=%s...", domain, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	r := mx.newResolverSystem()
@@ -153,7 +153,7 @@ func (mx *Measurer) newResolverUDP(address string) Resolver {
 func (mx *Measurer) LookupHostUDP(
 	ctx context.Context, domain, address string) ([]string, error) {
 	const timeout = 4 * time.Second
-	mx.infof("LookupHostUDP serverEndpoint=%s/udp domain=%s timeout=%s...",
+	mx.Infof("LookupHostUDP serverEndpoint=%s/udp domain=%s timeout=%s...",
 		address, domain, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -178,7 +178,7 @@ func (mx *Measurer) LookupHostUDP(
 func (mx *Measurer) LookupHTTPSSvcUDP(
 	ctx context.Context, domain, address string) (HTTPSSvc, error) {
 	const timeout = 4 * time.Second
-	mx.infof("LookupHTTPSSvcUDP engine=udp://%s domain=%s timeout=%s...",
+	mx.Infof("LookupHTTPSSvcUDP engine=udp://%s domain=%s timeout=%s...",
 		address, domain, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -208,7 +208,7 @@ func (mx *Measurer) newDialerWithoutResolver() Dialer {
 // Either an established Conn or an error.
 func (mx *Measurer) TCPConnect(ctx context.Context, address string) (Conn, error) {
 	const timeout = 10 * time.Second
-	mx.infof("TCPConnect endpoint=%s timeout=%s...", address, timeout)
+	mx.Infof("TCPConnect endpoint=%s timeout=%s...", address, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	d := mx.newDialerWithoutResolver()
@@ -257,7 +257,7 @@ func (mx *Measurer) TLSConnect(ctx context.Context,
 		return nil, err
 	}
 	const timeout = 10 * time.Second
-	mx.infof("TLSHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
+	mx.Infof("TLSHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
 		config.ServerName, config.NextProtos, address, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -292,7 +292,7 @@ func (mx *Measurer) TLSConnect(ctx context.Context,
 func (mx *Measurer) QUICConnect(ctx context.Context,
 	address string, config *tls.Config) (QUICEarlySession, error) {
 	const timeout = 10 * time.Second
-	mx.infof("QUICHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
+	mx.Infof("QUICHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
 		config.ServerName, config.NextProtos, address, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -317,18 +317,20 @@ var ErrUnknownHTTPEndpointNetwork = errors.New("unknown HTTPEndpoint.Network")
 //
 // - ctx is the context allowing to timeout the operation;
 //
-// - epnt is the HTTP endpoint.
+// - epnt is the HTTP endpoint;
+//
+// - jar is the cookie jar to use.
 //
 // Return value
 //
 // Either an HTTP response, on success, or an error.
 func (mx *Measurer) HTTPEndpointGet(
-	ctx context.Context, epnt *HTTPEndpoint) (*http.Response, error) {
+	ctx context.Context, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
 	switch epnt.Network {
 	case NetworkQUIC:
-		return mx.httpEndpointGetQUIC(ctx, epnt)
+		return mx.httpEndpointGetQUIC(ctx, epnt, jar)
 	case NetworkTCP:
-		return mx.httpEndpointGetTCP(ctx, epnt)
+		return mx.httpEndpointGetTCP(ctx, epnt, jar)
 	default:
 		return nil, ErrUnknownHTTPEndpointNetwork
 	}
@@ -340,12 +342,12 @@ var ErrUnknownHTTPEndpointURLScheme = errors.New("unknown HTTPEndpoint.URL.Schem
 
 // httpEndpointGetTCP specializes HTTPSEndpointGet for HTTP and HTTPS.
 func (mx *Measurer) httpEndpointGetTCP(
-	ctx context.Context, epnt *HTTPEndpoint) (*http.Response, error) {
+	ctx context.Context, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
 	switch epnt.URL.Scheme {
 	case "http":
-		return mx.httpEndpointGetHTTP(ctx, epnt)
+		return mx.httpEndpointGetHTTP(ctx, epnt, jar)
 	case "https":
-		return mx.httpEndpointGetHTTPS(ctx, epnt)
+		return mx.httpEndpointGetHTTPS(ctx, epnt, jar)
 	default:
 		return nil, ErrUnknownHTTPEndpointURLScheme
 	}
@@ -353,7 +355,7 @@ func (mx *Measurer) httpEndpointGetTCP(
 
 // httpEndpointGetHTTP specializes httpEndpointGetTCP for HTTP.
 func (mx *Measurer) httpEndpointGetHTTP(
-	ctx context.Context, epnt *HTTPEndpoint) (*http.Response, error) {
+	ctx context.Context, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
 	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
 	if err != nil {
 		return nil, err
@@ -364,7 +366,7 @@ func (mx *Measurer) httpEndpointGetHTTP(
 		return nil, err
 	}
 	defer conn.Close() // we own it
-	clnt := NewHTTPClientWithoutRedirects(mx.Origin, mx.DB,
+	clnt := NewHTTPClientWithoutRedirects(mx.Origin, mx.DB, jar,
 		NewHTTPTransportWithConn(mx.Origin, mx.Logger, mx.DB, conn))
 	defer clnt.CloseIdleConnections()
 	return mx.httpClientDo(ctx, clnt, epnt, req)
@@ -372,7 +374,7 @@ func (mx *Measurer) httpEndpointGetHTTP(
 
 // httpEndpointGetHTTPS specializes httpEndpointGetTCP for HTTPS.
 func (mx *Measurer) httpEndpointGetHTTPS(
-	ctx context.Context, epnt *HTTPEndpoint) (*http.Response, error) {
+	ctx context.Context, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
 	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
 	if err != nil {
 		return nil, err
@@ -387,7 +389,7 @@ func (mx *Measurer) httpEndpointGetHTTPS(
 		return nil, err
 	}
 	defer conn.Close() // we own it
-	clnt := NewHTTPClientWithoutRedirects(mx.Origin, mx.DB,
+	clnt := NewHTTPClientWithoutRedirects(mx.Origin, mx.DB, jar,
 		NewHTTPTransportWithTLSConn(mx.Origin, mx.Logger, mx.DB, conn))
 	defer clnt.CloseIdleConnections()
 	return mx.httpClientDo(ctx, clnt, epnt, req)
@@ -395,7 +397,7 @@ func (mx *Measurer) httpEndpointGetHTTPS(
 
 // httpEndpointGetQUIC specializes httpEndpointGetTCP for QUIC.
 func (mx *Measurer) httpEndpointGetQUIC(
-	ctx context.Context, epnt *HTTPEndpoint) (*http.Response, error) {
+	ctx context.Context, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
 	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
 	if err != nil {
 		return nil, err
@@ -411,7 +413,7 @@ func (mx *Measurer) httpEndpointGetQUIC(
 	}
 	// TODO(bassosimone): close session with correct message
 	defer sess.CloseWithError(0, "") // we own it
-	clnt := NewHTTPClientWithoutRedirects(mx.Origin, mx.DB,
+	clnt := NewHTTPClientWithoutRedirects(mx.Origin, mx.DB, jar,
 		NewHTTPTransportWithQUICSess(mx.Origin, mx.Logger, mx.DB, sess))
 	defer clnt.CloseIdleConnections()
 	return mx.httpClientDo(ctx, clnt, epnt, req)
@@ -420,7 +422,7 @@ func (mx *Measurer) httpEndpointGetQUIC(
 func (mx *Measurer) httpClientDo(ctx context.Context, clnt HTTPClient,
 	epnt *HTTPEndpoint, req *http.Request) (*http.Response, error) {
 	const timeout = 15 * time.Second
-	mx.infof("httpClientDo endpoint=%s method=%s url=%s headers=%+v timeout=%s...",
+	mx.Infof("httpClientDo endpoint=%s method=%s url=%s headers=%+v timeout=%s...",
 		epnt.String(), req.Method, req.URL.String(), req.Header, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -482,9 +484,9 @@ var ErrLookupEndpoints = errors.New("endpoints lookup failed")
 func (mx *Measurer) LookupEndpoints(
 	ctx context.Context, domain, port, address string) ([]*Endpoint, error) {
 	udpAddrs, _ := mx.LookupHostUDP(ctx, domain, address)
-	mx.infof("LookupHostUDP addrs=%+v", udpAddrs)
+	mx.Infof("LookupHostUDP addrs=%+v", udpAddrs)
 	systemAddrs, _ := mx.LookupHostSystem(ctx, domain)
-	mx.infof("LookupHostSystem addrs=%+v", systemAddrs)
+	mx.Infof("LookupHostSystem addrs=%+v", systemAddrs)
 	var out []*Endpoint
 	out = append(out, mx.parseLookupHostReply(port, systemAddrs)...)
 	out = append(out, mx.parseLookupHostReply(port, udpAddrs)...)
@@ -622,14 +624,14 @@ func (mx *Measurer) LookupHTTPEndpoints(
 	}
 	httpsSvcInfo, _ := mx.LookupHTTPSSvcUDP(ctx, URL.Hostname(), address)
 	httpsSvcEndpoints := mx.parseHTTPSSvcReply(port, httpsSvcInfo)
-	mx.infof("LookupHTTPSSvcUDP endpoints=%+v", httpsSvcEndpoints)
+	mx.Infof("LookupHTTPSSvcUDP endpoints=%+v", httpsSvcEndpoints)
 	endpoints, _ := mx.LookupEndpoints(ctx, URL.Hostname(), port, address)
 	endpoints = append(endpoints, httpsSvcEndpoints...)
 	wcthEndpoints, _ := mx.lookupWCTH(ctx, URL, endpoints, port)
-	mx.infof("lookupWCTH endpoints=%+v", wcthEndpoints)
+	mx.Infof("lookupWCTH endpoints=%+v", wcthEndpoints)
 	endpoints = append(endpoints, wcthEndpoints...)
 	endpoints = mx.mergeEndpoints(endpoints)
-	mx.infof("mergeEndpoints endpoints=%+v", endpoints)
+	mx.Infof("mergeEndpoints endpoints=%+v", endpoints)
 	if len(endpoints) < 1 {
 		return nil, ErrLookupEndpoints
 	}
@@ -708,7 +710,7 @@ func (mx *Measurer) alpnForHTTPEndpoint(network EndpointNetwork) []string {
 func (mx *Measurer) lookupWCTH(ctx context.Context,
 	URL *url.URL, endpoints []*Endpoint, port string) ([]*Endpoint, error) {
 	const timeout = 30 * time.Second
-	mx.infof("lookupWCTH backend=%s url=%s endpoints=%+v port=%s timeout=%s...",
+	mx.Infof("lookupWCTH backend=%s url=%s endpoints=%+v port=%s timeout=%s...",
 		mx.WCTHURL, URL.String(), endpoints, port, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -800,12 +802,12 @@ func (mx *Measurer) parseHTTPSSvcReply(port string, info HTTPSSvc) (out []*Endpo
 	return
 }
 
-// infof formats and logs an informational message using mx.Logger.
-func (mx *Measurer) infof(format string, v ...interface{}) {
+// Infof formats and logs an informational message using mx.Logger.
+func (mx *Measurer) Infof(format string, v ...interface{}) {
 	mx.Logger.Infof(format, v...)
 }
 
-// selectAllFromConnect selects all the entries inside of the
+// SelectAllFromConnect selects all the entries inside of the
 // Connect table that have the given MeasurementID.
 //
 // Arguments
@@ -815,7 +817,7 @@ func (mx *Measurer) infof(format string, v ...interface{}) {
 // Return value
 //
 // A possibly-empty list of events.
-func (mx *Measurer) selectAllFromConnect(id int64) (out []*NetworkEvent) {
+func (mx *Measurer) SelectAllFromConnect(id int64) (out []*NetworkEvent) {
 	for _, ev := range mx.DB.SelectAllFromDial() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -824,9 +826,9 @@ func (mx *Measurer) selectAllFromConnect(id int64) (out []*NetworkEvent) {
 	return
 }
 
-// selectAllFromReadWrite is like selectAllFromConnect except
+// SelectAllFromReadWrite is like selectAllFromConnect except
 // that it works on the table named ReadWrite.
-func (mx *Measurer) selectAllFromReadWrite(id int64) (out []*NetworkEvent) {
+func (mx *Measurer) SelectAllFromReadWrite(id int64) (out []*NetworkEvent) {
 	for _, ev := range mx.DB.SelectAllFromReadWrite() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -835,9 +837,9 @@ func (mx *Measurer) selectAllFromReadWrite(id int64) (out []*NetworkEvent) {
 	return
 }
 
-// selectAllFromClose is like selectAllFromConnect except
+// SelectAllFromClose is like selectAllFromConnect except
 // that it works on the table named Close.
-func (mx *Measurer) selectAllFromClose(id int64) (out []*NetworkEvent) {
+func (mx *Measurer) SelectAllFromClose(id int64) (out []*NetworkEvent) {
 	for _, ev := range mx.DB.SelectAllFromClose() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -846,9 +848,9 @@ func (mx *Measurer) selectAllFromClose(id int64) (out []*NetworkEvent) {
 	return
 }
 
-// selectAllFromTLSHandshake is like selectAllFromConnect except
+// SelectAllFromTLSHandshake is like selectAllFromConnect except
 // that it works on the table named TLSHandshake.
-func (mx *Measurer) selectAllFromTLSHandshake(id int64) (out []*TLSHandshakeEvent) {
+func (mx *Measurer) SelectAllFromTLSHandshake(id int64) (out []*TLSHandshakeEvent) {
 	for _, ev := range mx.DB.SelectAllFromTLSHandshake() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -857,9 +859,9 @@ func (mx *Measurer) selectAllFromTLSHandshake(id int64) (out []*TLSHandshakeEven
 	return
 }
 
-// selectAllFromQUICHandshake is like selectAllFromConnect except
+// SelectAllFromQUICHandshake is like selectAllFromConnect except
 // that it works on the table named QUICHandshake.
-func (mx *Measurer) selectAllFromQUICHandshake(id int64) (out []*QUICHandshakeEvent) {
+func (mx *Measurer) SelectAllFromQUICHandshake(id int64) (out []*QUICHandshakeEvent) {
 	for _, ev := range mx.DB.SelectAllFromQUICHandshake() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -868,9 +870,9 @@ func (mx *Measurer) selectAllFromQUICHandshake(id int64) (out []*QUICHandshakeEv
 	return
 }
 
-// selectAllFromLookupHost is like selectAllFromConnect except
+// SelectAllFromLookupHost is like selectAllFromConnect except
 // that it works on the table named LookupHost.
-func (mx *Measurer) selectAllFromLookupHost(id int64) (out []*LookupHostEvent) {
+func (mx *Measurer) SelectAllFromLookupHost(id int64) (out []*LookupHostEvent) {
 	for _, ev := range mx.DB.SelectAllFromLookupHost() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -879,9 +881,9 @@ func (mx *Measurer) selectAllFromLookupHost(id int64) (out []*LookupHostEvent) {
 	return
 }
 
-// selectAllFromLookupHTTPSSvc is like selectAllFromConnect except
+// SelectAllFromLookupHTTPSSvc is like selectAllFromConnect except
 // that it works on the table named LookupHTTPSSvc.
-func (mx *Measurer) selectAllFromLookupHTTPSSvc(id int64) (out []*LookupHTTPSSvcEvent) {
+func (mx *Measurer) SelectAllFromLookupHTTPSSvc(id int64) (out []*LookupHTTPSSvcEvent) {
 	for _, ev := range mx.DB.SelectAllFromLookupHTTPSSvc() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -890,9 +892,9 @@ func (mx *Measurer) selectAllFromLookupHTTPSSvc(id int64) (out []*LookupHTTPSSvc
 	return
 }
 
-// selectAllFromDNSRoundTrip is like selectAllFromConnect except
+// SelectAllFromDNSRoundTrip is like selectAllFromConnect except
 // that it works on the table named DNSRoundTrip.
-func (mx *Measurer) selectAllFromDNSRoundTrip(id int64) (out []*DNSRoundTripEvent) {
+func (mx *Measurer) SelectAllFromDNSRoundTrip(id int64) (out []*DNSRoundTripEvent) {
 	for _, ev := range mx.DB.SelectAllFromDNSRoundTrip() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -901,9 +903,9 @@ func (mx *Measurer) selectAllFromDNSRoundTrip(id int64) (out []*DNSRoundTripEven
 	return
 }
 
-// selectAllFromHTTPRoundTrip is like selectAllFromConnect except
+// SelectAllFromHTTPRoundTrip is like selectAllFromConnect except
 // that it works on the table named HTTPRoundTrip.
-func (mx *Measurer) selectAllFromHTTPRoundTrip(id int64) (out []*HTTPRoundTripEvent) {
+func (mx *Measurer) SelectAllFromHTTPRoundTrip(id int64) (out []*HTTPRoundTripEvent) {
 	for _, ev := range mx.DB.SelectAllFromHTTPRoundTrip() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -912,9 +914,9 @@ func (mx *Measurer) selectAllFromHTTPRoundTrip(id int64) (out []*HTTPRoundTripEv
 	return
 }
 
-// selectAllFromHTTPRedirect is like selectAllFromConnect except
+// SelectAllFromHTTPRedirect is like selectAllFromConnect except
 // that it works on the table named HTTPRedirect.
-func (mx *Measurer) selectAllFromHTTPRedirect(id int64) (out []*HTTPRedirectEvent) {
+func (mx *Measurer) SelectAllFromHTTPRedirect(id int64) (out []*HTTPRedirectEvent) {
 	for _, ev := range mx.DB.SelectAllFromHTTPRedirect() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
