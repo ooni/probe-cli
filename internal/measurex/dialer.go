@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // Conn is the connection type we use.
@@ -57,6 +58,7 @@ type NetworkEvent struct {
 	Started       time.Time
 	Finished      time.Time
 	Error         error
+	Oddity        Oddity
 	Count         int
 }
 
@@ -77,6 +79,7 @@ func (d *dialerx) DialContext(
 		Started:       started,
 		Finished:      finished,
 		Error:         err,
+		Oddity:        d.computeOddity(err),
 		Count:         0,
 	})
 	if err != nil {
@@ -98,6 +101,20 @@ func (c *dialerx) localAddrIfNotNil(conn net.Conn) (addr string) {
 		addr = conn.LocalAddr().String()
 	}
 	return
+}
+
+func (c *dialerx) computeOddity(err error) Oddity {
+	if err == nil {
+		return ""
+	}
+	switch err.Error() {
+	case errorsx.FailureGenericTimeoutError:
+		return OddityTCPConnectTimeout
+	case errorsx.FailureConnectionRefused:
+		return OddityTCPConnectRefused
+	default:
+		return OddityTCPConnectOher
+	}
 }
 
 type connx struct {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
@@ -160,6 +161,7 @@ type QUICHandshakeEvent struct {
 	Started         time.Time
 	Finished        time.Time
 	Error           error
+	Oddity          Oddity
 	TLSVersion      string
 	CipherSuite     string
 	NegotiatedProto string
@@ -217,6 +219,7 @@ func (qh *quicDialerx) DialContext(ctx context.Context,
 		Started:         started,
 		Finished:        finished,
 		Error:           err,
+		Oddity:          qh.computeOddity(err),
 		TLSVersion:      netxlite.TLSVersionString(state.Version),
 		CipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		NegotiatedProto: state.NegotiatedProtocol,
@@ -227,6 +230,18 @@ func (qh *quicDialerx) DialContext(ctx context.Context,
 	}
 	return &quicEarlySessionx{
 		EarlySession: sess, connID: qh.connIDIfNotNil(localAddr)}, nil
+}
+
+func (qh *quicDialerx) computeOddity(err error) Oddity {
+	if err == nil {
+		return ""
+	}
+	switch err.Error() {
+	case errorsx.FailureGenericTimeoutError:
+		return OddityQUICHandshakeTimeout
+	default:
+		return OddityQUICHandshakeOther
+	}
 }
 
 type quicEarlySessionx struct {

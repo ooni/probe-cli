@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // TLSConn is the TLS conn type we use.
@@ -52,6 +53,7 @@ type TLSHandshakeEvent struct {
 	Started         time.Time
 	Finished        time.Time
 	Error           error
+	Oddity          Oddity
 	TLSVersion      string
 	CipherSuite     string
 	NegotiatedProto string
@@ -80,6 +82,7 @@ func (thx *tlsHandshakerx) Handshake(ctx context.Context,
 		Started:         started,
 		Finished:        finished,
 		Error:           err,
+		Oddity:          thx.computeOddity(err),
 		TLSVersion:      netxlite.TLSVersionString(state.Version),
 		CipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		NegotiatedProto: state.NegotiatedProtocol,
@@ -90,6 +93,20 @@ func (thx *tlsHandshakerx) Handshake(ctx context.Context,
 	}
 	return &tlsConnx{
 		TLSConn: tconn.(netxlite.TLSConn), connID: conn.ConnID()}, nil
+}
+
+func (thx *tlsHandshakerx) computeOddity(err error) Oddity {
+	if err == nil {
+		return ""
+	}
+	switch err.Error() {
+	case errorsx.FailureGenericTimeoutError:
+		return OddityTLSHandshakeTimeout
+	case errorsx.FailureConnectionReset:
+		return OddityTLSHandshakeReset
+	default:
+		return OddityTLSHandshakeOther
+	}
 }
 
 type tlsConnx struct {

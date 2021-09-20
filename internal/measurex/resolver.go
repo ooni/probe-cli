@@ -6,6 +6,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // HTTPSSvc is the result returned by HTTPSSvc queries.
@@ -37,6 +38,7 @@ type LookupHostEvent struct {
 	Started       time.Time
 	Finished      time.Time
 	Error         error
+	Oddity        Oddity
 	Addrs         []string
 }
 
@@ -53,9 +55,31 @@ func (r *resolverx) LookupHost(ctx context.Context, domain string) ([]string, er
 		Started:       started,
 		Finished:      finished,
 		Error:         err,
+		Oddity:        r.computeOddityLookupHost(addrs, err),
 		Addrs:         addrs,
 	})
 	return addrs, err
+}
+
+func (r *resolverx) computeOddityLookupHost(addrs []string, err error) Oddity {
+	if err == nil {
+		for _, addr := range addrs {
+			if IsBogon(addr) {
+				return OddityDNSLookupBogon
+			}
+		}
+		return ""
+	}
+	switch err.Error() {
+	case errorsx.FailureGenericTimeoutError:
+		return OddityDNSLookupTimeout
+	case errorsx.FailureDNSNXDOMAINError:
+		return OddityDNSLookupNXDOMAIN
+	case errorsx.FailureDNSRefusedError:
+		return OddityDNSLookupRefused
+	default:
+		return OddityDNSLookupOther
+	}
 }
 
 // LookupHTTPSSvcEvent is the event emitted when we perform
@@ -67,6 +91,7 @@ type LookupHTTPSSvcEvent struct {
 	Started       time.Time
 	Finished      time.Time
 	Error         error
+	Oddity        Oddity
 	IPv4          []string
 	IPv6          []string
 	ALPN          []string
@@ -83,6 +108,7 @@ func (r *resolverx) LookupHTTPSSvcWithoutRetry(ctx context.Context, domain strin
 		Started:       started,
 		Finished:      finished,
 		Error:         err,
+		Oddity:        Oddity(r.computeOddityHTTPSSvc(https, err)),
 	}
 	if err == nil {
 		ev.IPv4 = https.IPv4Hint()
@@ -91,4 +117,14 @@ func (r *resolverx) LookupHTTPSSvcWithoutRetry(ctx context.Context, domain strin
 	}
 	r.db.InsertIntoLookupHTTPSSvc(ev)
 	return https, err
+}
+
+func (r *resolverx) computeOddityHTTPSSvc(https HTTPSSvc, err error) Oddity {
+	if err != nil {
+		return r.computeOddityLookupHost(nil, err)
+	}
+	var addrs []string
+	addrs = append(addrs, https.IPv4Hint()...)
+	addrs = append(addrs, https.IPv6Hint()...)
+	return r.computeOddityLookupHost(addrs, nil)
 }
