@@ -1,0 +1,31 @@
+package measurex
+
+// Oddity is an unexpected result on the probe or
+// or test helper side during a measurement. We will
+// promote the oddity to anomaly if the probe and
+// the test helper see different results.
+type Oddity string
+
+// This enumeration lists all known oddities
+var (
+	// tcp.connect
+	OddityTCPConnectTimeout = Oddity("tcp.connect.timeout")
+	OddityTCPConnectRefused = Oddity("tcp.connect.refused")
+	OddityTCPConnectOher    = Oddity("tcp.connect.other")
+
+	// tls.handshake
+	OddityTLSHandshakeTimeout = Oddity("tls.handshake.timeout")
+	OddityTLSHandshakeReset   = Oddity("tls.handshake.reset")
+	OddityTLSHandshakeOther   = Oddity("tls.handshake.other")
+
+	// quic.handshake
+	OddityQUICHandshakeTimeout = Oddity("quic.handshake.timeout")
+	OddityQUICHandshakeOther   = Oddity("quic.handshake.other")
+
+	// dns.lookup
+	OddityDNSLookupNXDOMAIN = Oddity("dns.lookup.nxdomain")
+	OddityDNSLookupTimeout  = Oddity("dns.lookup.timeout")
+	OddityDNSLookupRefused  = Oddity("dns.lookup.refused")
+	OddityDNSLookupBogon    = Oddity("dns.lookup.bogon")
+	OddityDNSLookupOther    = Oddity("dns.lookup.other")
+)
