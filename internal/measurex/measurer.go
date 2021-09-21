@@ -691,6 +691,10 @@ type URLMeasurement struct {
 	// Endpoints contains a measurement for each endpoint
 	// that we discovered via DNS or TH.
 	Endpoints []*Measurement
+
+	// RedirectURLs contain the URLs to which we should fetch
+	// if we choose to follow redirections.
+	RedirectURLs []string
 }
 
 // MeasureHTTPURL measures an HTTP or HTTPS URL. The DNS resolvers
@@ -739,6 +743,17 @@ func (mx *Measurer) MeasureHTTPURL(
 	}
 	for epnt := range mx.HTTPEndpointGetParallel(ctx, cookies, epnts...) {
 		m.Endpoints = append(m.Endpoints, epnt)
+	}
+	dups := make(map[string]bool)
+	for _, epnt := range m.Endpoints {
+		for _, redir := range epnt.HTTPRedirect {
+			loc := redir.Location.String()
+			if _, found := dups[loc]; found {
+				continue
+			}
+			dups[loc] = true
+			m.RedirectURLs = append(m.RedirectURLs, loc)
+		}
 	}
 	return m
 }
