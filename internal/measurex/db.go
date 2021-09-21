@@ -56,7 +56,32 @@ type EventDB interface {
 
 // DB is an EventDB that saves events and also allows to
 // ask questions regarding the saved events.
+//
+// Caveats: the way in which we assign an ID to a measurement
+// (i.e., a related set of operations) assumes that we don't
+// run paralell measurements with the same DB. To run parallel
+// measurements, you need to create a children DB using the
+// NewChildrenDB factory function.
 type DB struct {
+	*dbSharedWithChildren
+
+	// the measurementID must not be shared with children
+	// running in parallel because it must stay const during
+	// the whole measurements or we cannot measure.
+	//
+	// Use NewChildrenDB to create one or more children
+	// that can run in parallel with each other and their parent.
+	measurementID int64
+	mu            sync.Mutex
+}
+
+// dbSharedWithChildren is the part of the database shared
+// with children databases. These databases are created during
+// parallel measurements but need to insert into the same
+// tables of the parent database. The ConnID can also be part
+// of this structure. The only element that needs to be constant
+// during a measurement is the MeasurementID.
+type dbSharedWithChildren struct {
 	// database tables
 	dialTable          []*NetworkEvent
 	readWriteTable     []*NetworkEvent
@@ -69,61 +94,60 @@ type DB struct {
 	httpRedirectTable  []*HTTPRedirectEvent
 	quicHandshakeTable []*QUICHandshakeEvent
 
-	// mu protects all the above tables
+	// mu protects all the above tables and ConnID
 	mu sync.Mutex
 
-	// internals is shared with child databases
-	internals *dbInternals
-}
-
-func (db *DB) clone() *DB {
-	return &DB{internals: db.internals}
-}
-
-type dbInternals struct {
-	begin         time.Time
-	connID        int64
-	measurementID int64
-	mu            sync.Mutex
-}
-
-func (dbi *dbInternals) NextConnID() (out int64) {
-	dbi.mu.Lock()
-	dbi.connID++ // start from 1
-	out = dbi.connID
-	dbi.mu.Unlock()
-	return
-}
-
-func (dbi *dbInternals) MeasurementID() (out int64) {
-	dbi.mu.Lock()
-	out = dbi.measurementID
-	dbi.mu.Unlock()
-	return
-}
-
-func (dbi *dbInternals) NextMeasurement() (out int64) {
-	dbi.mu.Lock()
-	dbi.measurementID++ // start from 1
-	out = dbi.measurementID
-	dbi.mu.Unlock()
-	return
+	// other pieces of data we can share with children
+	// because they have more relaxed constaints than the
+	// measurement ID: begin is read-only and ConnID is
+	// read once and then propagated.
+	begin  time.Time
+	connID int64
 }
 
 var _ EventDB = &DB{}
 
-// NewSaver creates a new instance of Saver.
-func NewSaver(begin time.Time) *DB {
-	return &DB{internals: &dbInternals{begin: begin}}
+var (
+	baseMeasurementID int32
+	measurementIDmu   sync.Mutex
+)
+
+func nextBaseMeasurementID() (out int64) {
+	measurementIDmu.Lock()
+	baseMeasurementID++
+	out = (int64(baseMeasurementID) << 32)
+	measurementIDmu.Unlock()
+	return
+}
+
+// NewDB creates a new instance of DB. This instance will have the base
+// time configured to be begin. Also, its base measurement ID will depend
+// on how many databases we have created so far. Each database gets its
+// own 31 bit namespace for measurements.
+func NewDB(begin time.Time) *DB {
+	return &DB{
+		dbSharedWithChildren: &dbSharedWithChildren{begin: begin},
+		measurementID:        nextBaseMeasurementID(),
+	}
+}
+
+// NewChildDB returns a DB that has the same base measurement and
+// tables of the original DB but gets a new measurement namespace. You
+// should use this factory every time you run parallel measurements.
+func (db *DB) NewChildDB() *DB {
+	return &DB{
+		dbSharedWithChildren: db.dbSharedWithChildren,
+		measurementID:        nextBaseMeasurementID(),
+	}
 }
 
 // ElapsedTime implements EventDB.ElapsedTime.
-func (db *DB) ElapsedTime() time.Duration {
-	return time.Since(db.internals.begin)
+func (db *dbSharedWithChildren) ElapsedTime() time.Duration {
+	return time.Since(db.begin)
 }
 
 // DeleteAll deletes all the saved data.
-func (db *DB) DeleteAll() {
+func (db *dbSharedWithChildren) DeleteAll() {
 	db.mu.Lock()
 	db.dialTable = nil
 	db.readWriteTable = nil
@@ -139,14 +163,14 @@ func (db *DB) DeleteAll() {
 }
 
 // InsertIntoDial implements EventDB.InsertIntoDial.
-func (db *DB) InsertIntoDial(ev *NetworkEvent) {
+func (db *dbSharedWithChildren) InsertIntoDial(ev *NetworkEvent) {
 	db.mu.Lock()
 	db.dialTable = append(db.dialTable, ev)
 	db.mu.Unlock()
 }
 
 // SelectAllFromDial returns all dial events.
-func (db *DB) SelectAllFromDial() (out []*NetworkEvent) {
+func (db *dbSharedWithChildren) SelectAllFromDial() (out []*NetworkEvent) {
 	db.mu.Lock()
 	out = append(out, db.dialTable...)
 	db.mu.Unlock()
@@ -154,14 +178,14 @@ func (db *DB) SelectAllFromDial() (out []*NetworkEvent) {
 }
 
 // InsertIntoReadWrite implements EventDB.InsertIntoReadWrite.
-func (db *DB) InsertIntoReadWrite(ev *NetworkEvent) {
+func (db *dbSharedWithChildren) InsertIntoReadWrite(ev *NetworkEvent) {
 	db.mu.Lock()
 	db.readWriteTable = append(db.readWriteTable, ev)
 	db.mu.Unlock()
 }
 
 // SelectAllFromReadWrite returns all I/O events.
-func (db *DB) SelectAllFromReadWrite() (out []*NetworkEvent) {
+func (db *dbSharedWithChildren) SelectAllFromReadWrite() (out []*NetworkEvent) {
 	db.mu.Lock()
 	out = append(out, db.readWriteTable...)
 	db.mu.Unlock()
@@ -169,14 +193,14 @@ func (db *DB) SelectAllFromReadWrite() (out []*NetworkEvent) {
 }
 
 // InsertIntoClose implements EventDB.InsertIntoClose.
-func (db *DB) InsertIntoClose(ev *NetworkEvent) {
+func (db *dbSharedWithChildren) InsertIntoClose(ev *NetworkEvent) {
 	db.mu.Lock()
 	db.closeTable = append(db.closeTable, ev)
 	db.mu.Unlock()
 }
 
 // SelectAllFromClose returns all close events.
-func (db *DB) SelectAllFromClose() (out []*NetworkEvent) {
+func (db *dbSharedWithChildren) SelectAllFromClose() (out []*NetworkEvent) {
 	db.mu.Lock()
 	out = append(out, db.closeTable...)
 	db.mu.Unlock()
@@ -184,14 +208,14 @@ func (db *DB) SelectAllFromClose() (out []*NetworkEvent) {
 }
 
 // InsertIntoTLSHandshake implements EventDB.InsertIntoTLSHandshake.
-func (db *DB) InsertIntoTLSHandshake(ev *TLSHandshakeEvent) {
+func (db *dbSharedWithChildren) InsertIntoTLSHandshake(ev *TLSHandshakeEvent) {
 	db.mu.Lock()
 	db.tlsHandshakeTable = append(db.tlsHandshakeTable, ev)
 	db.mu.Unlock()
 }
 
 // SelectAllFromTLSHandshake returns all TLS handshake events.
-func (db *DB) SelectAllFromTLSHandshake() (out []*TLSHandshakeEvent) {
+func (db *dbSharedWithChildren) SelectAllFromTLSHandshake() (out []*TLSHandshakeEvent) {
 	db.mu.Lock()
 	out = append(out, db.tlsHandshakeTable...)
 	db.mu.Unlock()
@@ -199,14 +223,14 @@ func (db *DB) SelectAllFromTLSHandshake() (out []*TLSHandshakeEvent) {
 }
 
 // InsertIntoLookupHost implements EventDB.InsertIntoLookupHost.
-func (db *DB) InsertIntoLookupHost(ev *LookupHostEvent) {
+func (db *dbSharedWithChildren) InsertIntoLookupHost(ev *LookupHostEvent) {
 	db.mu.Lock()
 	db.lookupHostTable = append(db.lookupHostTable, ev)
 	db.mu.Unlock()
 }
 
 // SelectAllFromLookupHost returns all the lookup host events.
-func (db *DB) SelectAllFromLookupHost() (out []*LookupHostEvent) {
+func (db *dbSharedWithChildren) SelectAllFromLookupHost() (out []*LookupHostEvent) {
 	db.mu.Lock()
 	out = append(out, db.lookupHostTable...)
 	db.mu.Unlock()
@@ -214,14 +238,14 @@ func (db *DB) SelectAllFromLookupHost() (out []*LookupHostEvent) {
 }
 
 // InsertIntoHTTPSSvc implements EventDB.InsertIntoHTTPSSvc
-func (db *DB) InsertIntoLookupHTTPSSvc(ev *LookupHTTPSSvcEvent) {
+func (db *dbSharedWithChildren) InsertIntoLookupHTTPSSvc(ev *LookupHTTPSSvcEvent) {
 	db.mu.Lock()
 	db.lookupHTTPSvcTable = append(db.lookupHTTPSvcTable, ev)
 	db.mu.Unlock()
 }
 
 // SelectAllFromLookupHTTPSSvc returns all HTTPSSvc lookup events.
-func (db *DB) SelectAllFromLookupHTTPSSvc() (out []*LookupHTTPSSvcEvent) {
+func (db *dbSharedWithChildren) SelectAllFromLookupHTTPSSvc() (out []*LookupHTTPSSvcEvent) {
 	db.mu.Lock()
 	out = append(out, db.lookupHTTPSvcTable...)
 	db.mu.Unlock()
@@ -229,14 +253,14 @@ func (db *DB) SelectAllFromLookupHTTPSSvc() (out []*LookupHTTPSSvcEvent) {
 }
 
 // InsertIntoDNSRoundTrip implements EventDB.InsertIntoDNSRoundTrip.
-func (db *DB) InsertIntoDNSRoundTrip(ev *DNSRoundTripEvent) {
+func (db *dbSharedWithChildren) InsertIntoDNSRoundTrip(ev *DNSRoundTripEvent) {
 	db.mu.Lock()
 	db.dnsRoundTripTable = append(db.dnsRoundTripTable, ev)
 	db.mu.Unlock()
 }
 
 // SelectAllFromDNSRoundTrip returns all DNS round trip events.
-func (db *DB) SelectAllFromDNSRoundTrip() (out []*DNSRoundTripEvent) {
+func (db *dbSharedWithChildren) SelectAllFromDNSRoundTrip() (out []*DNSRoundTripEvent) {
 	db.mu.Lock()
 	out = append(out, db.dnsRoundTripTable...)
 	db.mu.Unlock()
@@ -244,14 +268,14 @@ func (db *DB) SelectAllFromDNSRoundTrip() (out []*DNSRoundTripEvent) {
 }
 
 // InsertIntoHTTPRoundTrip implements EventDB.InsertIntoHTTPRoundTrip.
-func (db *DB) InsertIntoHTTPRoundTrip(ev *HTTPRoundTripEvent) {
+func (db *dbSharedWithChildren) InsertIntoHTTPRoundTrip(ev *HTTPRoundTripEvent) {
 	db.mu.Lock()
 	db.httpRoundTripTable = append(db.httpRoundTripTable, ev)
 	db.mu.Unlock()
 }
 
 // SelectAllFromHTTPRoundTrip returns all HTTP round trip events.
-func (db *DB) SelectAllFromHTTPRoundTrip() (out []*HTTPRoundTripEvent) {
+func (db *dbSharedWithChildren) SelectAllFromHTTPRoundTrip() (out []*HTTPRoundTripEvent) {
 	db.mu.Lock()
 	out = append(out, db.httpRoundTripTable...)
 	db.mu.Unlock()
@@ -259,14 +283,14 @@ func (db *DB) SelectAllFromHTTPRoundTrip() (out []*HTTPRoundTripEvent) {
 }
 
 // InsertIntoHTTPRedirect implements EventDB.InsertIntoHTTPRedirect.
-func (db *DB) InsertIntoHTTPRedirect(ev *HTTPRedirectEvent) {
+func (db *dbSharedWithChildren) InsertIntoHTTPRedirect(ev *HTTPRedirectEvent) {
 	db.mu.Lock()
 	db.httpRedirectTable = append(db.httpRedirectTable, ev)
 	db.mu.Unlock()
 }
 
 // SelectAllFromHTTPRedirect returns all HTTP redirections.
-func (db *DB) SelectAllFromHTTPRedirect() (out []*HTTPRedirectEvent) {
+func (db *dbSharedWithChildren) SelectAllFromHTTPRedirect() (out []*HTTPRedirectEvent) {
 	db.mu.Lock()
 	out = append(out, db.httpRedirectTable...)
 	db.mu.Unlock()
@@ -274,14 +298,14 @@ func (db *DB) SelectAllFromHTTPRedirect() (out []*HTTPRedirectEvent) {
 }
 
 // InsertIntoQUICHandshake implements EventDB.InsertIntoQUICHandshake.
-func (db *DB) InsertIntoQUICHandshake(ev *QUICHandshakeEvent) {
+func (db *dbSharedWithChildren) InsertIntoQUICHandshake(ev *QUICHandshakeEvent) {
 	db.mu.Lock()
 	db.quicHandshakeTable = append(db.quicHandshakeTable, ev)
 	db.mu.Unlock()
 }
 
 // SelectAllFromQUICHandshake returns all QUIC handshake events.
-func (db *DB) SelectAllFromQUICHandshake() (out []*QUICHandshakeEvent) {
+func (db *dbSharedWithChildren) SelectAllFromQUICHandshake() (out []*QUICHandshakeEvent) {
 	db.mu.Lock()
 	out = append(out, db.quicHandshakeTable...)
 	db.mu.Unlock()
@@ -289,24 +313,35 @@ func (db *DB) SelectAllFromQUICHandshake() (out []*QUICHandshakeEvent) {
 }
 
 // NextConnID implements EventDB.NextConnID.
-func (db *DB) NextConnID() (out int64) {
-	return db.internals.NextConnID()
+func (db *dbSharedWithChildren) NextConnID() (out int64) {
+	db.mu.Lock()
+	db.connID++ // start from 1
+	out = db.connID
+	db.mu.Unlock()
+	return
 }
 
 // MeasurementID implements EventDB.MeasurementID.
 func (db *DB) MeasurementID() (out int64) {
-	return db.internals.MeasurementID()
+	db.mu.Lock()
+	out = db.measurementID
+	db.mu.Unlock()
+	return
 }
 
 // NextMeasurement increments the internal MeasurementID and
 // returns it, so that later you can reference the current measurement.
 func (db *DB) NextMeasurement() (out int64) {
-	return db.internals.NextMeasurement()
+	db.mu.Lock()
+	db.measurementID++ // start from 1
+	out = db.measurementID
+	db.mu.Unlock()
+	return
 }
 
 // SelectAllFromDialWithMeasurementID calls SelectAllFromConnect
 // and filters the result by MeasurementID.
-func (db *DB) SelectAllFromDialWithMeasurementID(id int64) (out []*NetworkEvent) {
+func (db *dbSharedWithChildren) SelectAllFromDialWithMeasurementID(id int64) (out []*NetworkEvent) {
 	for _, ev := range db.SelectAllFromDial() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -317,7 +352,7 @@ func (db *DB) SelectAllFromDialWithMeasurementID(id int64) (out []*NetworkEvent)
 
 // SelectAllFromReadWriteWithMeasurementID calls SelectAllFromReadWrite and
 // filters the result by MeasurementID.
-func (db *DB) SelectAllFromReadWriteWithMeasurementID(id int64) (out []*NetworkEvent) {
+func (db *dbSharedWithChildren) SelectAllFromReadWriteWithMeasurementID(id int64) (out []*NetworkEvent) {
 	for _, ev := range db.SelectAllFromReadWrite() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -328,7 +363,7 @@ func (db *DB) SelectAllFromReadWriteWithMeasurementID(id int64) (out []*NetworkE
 
 // SelectAllFromCloseWithMeasurementID calls SelectAllFromClose
 // and filters the result by MeasurementID.
-func (db *DB) SelectAllFromCloseWithMeasurementID(id int64) (out []*NetworkEvent) {
+func (db *dbSharedWithChildren) SelectAllFromCloseWithMeasurementID(id int64) (out []*NetworkEvent) {
 	for _, ev := range db.SelectAllFromClose() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -339,7 +374,7 @@ func (db *DB) SelectAllFromCloseWithMeasurementID(id int64) (out []*NetworkEvent
 
 // SelectAllFromTLSHandshakeWithMeasurementID calls SelectAllFromTLSHandshake
 // and filters the result by MeasurementID.
-func (db *DB) SelectAllFromTLSHandshakeWithMeasurementID(id int64) (out []*TLSHandshakeEvent) {
+func (db *dbSharedWithChildren) SelectAllFromTLSHandshakeWithMeasurementID(id int64) (out []*TLSHandshakeEvent) {
 	for _, ev := range db.SelectAllFromTLSHandshake() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -350,7 +385,7 @@ func (db *DB) SelectAllFromTLSHandshakeWithMeasurementID(id int64) (out []*TLSHa
 
 // SelectAllFromQUICHandshakeWithMeasurementID calls SelectAllFromQUICSHandshake
 // and filters the result by MeasurementID.
-func (db *DB) SelectAllFromQUICHandshakeWithMeasurementID(id int64) (out []*QUICHandshakeEvent) {
+func (db *dbSharedWithChildren) SelectAllFromQUICHandshakeWithMeasurementID(id int64) (out []*QUICHandshakeEvent) {
 	for _, ev := range db.SelectAllFromQUICHandshake() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -361,7 +396,7 @@ func (db *DB) SelectAllFromQUICHandshakeWithMeasurementID(id int64) (out []*QUIC
 
 // SelectAllFromLookupHostWithMeasurementID calls SelectAllFromLookupHost
 // and filters the result by MeasurementID.
-func (db *DB) SelectAllFromLookupHostWithMeasurementID(id int64) (out []*LookupHostEvent) {
+func (db *dbSharedWithChildren) SelectAllFromLookupHostWithMeasurementID(id int64) (out []*LookupHostEvent) {
 	for _, ev := range db.SelectAllFromLookupHost() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -372,7 +407,7 @@ func (db *DB) SelectAllFromLookupHostWithMeasurementID(id int64) (out []*LookupH
 
 // SelectAllFromLookupHTTPSSvcWithMeasurementID calls SelectAllFromHTTPSSvc
 // and filters the result by MeasurementID.
-func (db *DB) SelectAllFromLookupHTTPSSvcWithMeasurementID(id int64) (out []*LookupHTTPSSvcEvent) {
+func (db *dbSharedWithChildren) SelectAllFromLookupHTTPSSvcWithMeasurementID(id int64) (out []*LookupHTTPSSvcEvent) {
 	for _, ev := range db.SelectAllFromLookupHTTPSSvc() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -383,7 +418,7 @@ func (db *DB) SelectAllFromLookupHTTPSSvcWithMeasurementID(id int64) (out []*Loo
 
 // SelectAllFromDNSRoundTripWithMeasurementID calls SelectAllFromDNSRoundTrip
 // and filters the result by MeasurementID.
-func (db *DB) SelectAllFromDNSRoundTripWithMeasurementID(id int64) (out []*DNSRoundTripEvent) {
+func (db *dbSharedWithChildren) SelectAllFromDNSRoundTripWithMeasurementID(id int64) (out []*DNSRoundTripEvent) {
 	for _, ev := range db.SelectAllFromDNSRoundTrip() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -394,7 +429,7 @@ func (db *DB) SelectAllFromDNSRoundTripWithMeasurementID(id int64) (out []*DNSRo
 
 // SelectAllFromHTTPRoundTripWithMeasurementID calls SelectAllFromHTTPRoundTrip
 // and filters the result by MeasurementID.
-func (db *DB) SelectAllFromHTTPRoundTripWithMeasurementID(id int64) (out []*HTTPRoundTripEvent) {
+func (db *dbSharedWithChildren) SelectAllFromHTTPRoundTripWithMeasurementID(id int64) (out []*HTTPRoundTripEvent) {
 	for _, ev := range db.SelectAllFromHTTPRoundTrip() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -405,7 +440,7 @@ func (db *DB) SelectAllFromHTTPRoundTripWithMeasurementID(id int64) (out []*HTTP
 
 // SelectAllFromHTTPRedirectWithMeasurementID calls SelectAllFromHTTPRedirect
 // and filters the result by MeasurementID.
-func (db *DB) SelectAllFromHTTPRedirectWithMeasurementID(id int64) (out []*HTTPRedirectEvent) {
+func (db *dbSharedWithChildren) SelectAllFromHTTPRedirectWithMeasurementID(id int64) (out []*HTTPRedirectEvent) {
 	for _, ev := range db.SelectAllFromHTTPRedirect() {
 		if id == ev.MeasurementID {
 			out = append(out, ev)
@@ -447,14 +482,14 @@ func (e *Endpoint) String() string {
 // - domain is the domain we want to connect to;
 //
 // - port is the port for the endpoint.
-func (db *DB) SelectAllEndpointsForDomain(domain, port string) (out []*Endpoint) {
+func (db *dbSharedWithChildren) SelectAllEndpointsForDomain(domain, port string) (out []*Endpoint) {
 	out = append(out, db.selectAllTCPEndpoints(domain, port)...)
 	out = append(out, db.selectAllQUICEndpoints(domain, port)...)
 	out = db.deduplicateEndpoints(out)
 	return
 }
 
-func (db *DB) selectAllTCPEndpoints(domain, port string) (out []*Endpoint) {
+func (db *dbSharedWithChildren) selectAllTCPEndpoints(domain, port string) (out []*Endpoint) {
 	for _, entry := range db.SelectAllFromLookupHost() {
 		if domain != entry.Domain {
 			continue
@@ -469,7 +504,7 @@ func (db *DB) selectAllTCPEndpoints(domain, port string) (out []*Endpoint) {
 	return
 }
 
-func (db *DB) selectAllQUICEndpoints(domain, port string) (out []*Endpoint) {
+func (db *dbSharedWithChildren) selectAllQUICEndpoints(domain, port string) (out []*Endpoint) {
 	for _, entry := range db.SelectAllFromLookupHTTPSSvc() {
 		if domain != entry.Domain {
 			continue
@@ -485,7 +520,7 @@ func (db *DB) selectAllQUICEndpoints(domain, port string) (out []*Endpoint) {
 	return
 }
 
-func (db *DB) deduplicateEndpoints(epnts []*Endpoint) (out []*Endpoint) {
+func (db *dbSharedWithChildren) deduplicateEndpoints(epnts []*Endpoint) (out []*Endpoint) {
 	duplicates := make(map[string]*Endpoint)
 	for _, epnt := range epnts {
 		duplicates[epnt.String()] = epnt
@@ -496,11 +531,11 @@ func (db *DB) deduplicateEndpoints(epnts []*Endpoint) (out []*Endpoint) {
 	return
 }
 
-func (db *DB) newEndpoint(addr, port string, network EndpointNetwork) *Endpoint {
+func (db *dbSharedWithChildren) newEndpoint(addr, port string, network EndpointNetwork) *Endpoint {
 	return &Endpoint{Network: network, Address: net.JoinHostPort(addr, port)}
 }
 
-func (db *DB) supportsHTTP3(entry *LookupHTTPSSvcEvent) bool {
+func (db *dbSharedWithChildren) supportsHTTP3(entry *LookupHTTPSSvcEvent) bool {
 	for _, alpn := range entry.ALPN {
 		switch alpn {
 		case "h3":
@@ -547,7 +582,7 @@ func (e *HTTPEndpoint) String() string {
 // - URL is the URL for which we want endpoints;
 //
 // Returns a list of endpoints or an error.
-func (db *DB) SelectAllHTTPEndpointsForURL(URL *url.URL) ([]*HTTPEndpoint, error) {
+func (db *dbSharedWithChildren) SelectAllHTTPEndpointsForURL(URL *url.URL) ([]*HTTPEndpoint, error) {
 	domain := URL.Hostname()
 	port, err := PortFromURL(URL)
 	if err != nil {
@@ -590,7 +625,7 @@ func PortFromURL(URL *url.URL) (string, error) {
 	}
 }
 
-func (db *DB) alpnForHTTPEndpoint(network EndpointNetwork) []string {
+func (db *dbSharedWithChildren) alpnForHTTPEndpoint(network EndpointNetwork) []string {
 	switch network {
 	case NetworkQUIC:
 		return []string{"h3"}

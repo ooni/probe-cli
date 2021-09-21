@@ -36,7 +36,7 @@ type Measurer struct {
 // NewMeasurerWithDefaultSettings creates a new Measurer
 // instance using the most default settings.
 func NewMeasurerWithDefaultSettings() *Measurer {
-	db := NewSaver(time.Now())
+	db := NewDB(time.Now())
 	return &Measurer{
 		DB:            db,
 		HTTPClient:    &http.Client{},
@@ -506,7 +506,11 @@ func (mx *Measurer) HTTPEndpointGetParallel(ctx context.Context,
 	const parallelism = 3
 	for i := 0; i < parallelism; i++ {
 		go func() {
-			child := mx.clone(mx.DB.clone())
+			// Important: we need a children DB because we need a
+			// separate MeasurementID namespace. The whole package
+			// does not keep constant MeasurementID if you don't
+			// use this factory for creating a new child.
+			child := mx.clone(mx.DB.NewChildDB())
 			for epnt := range input {
 				output <- child.HTTPEndpointGet(ctx, epnt, jar)
 			}
