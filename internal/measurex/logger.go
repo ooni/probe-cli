@@ -47,19 +47,9 @@ func (ol *operationLogger) logloop() {
 	defer timer.Stop()
 	select {
 	case <-timer.C:
-	case <-ol.sighup:
-		return
-	}
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	for {
 		ol.logger.Infof("%s... in progress", ol.message)
-		select {
-		case <-ol.sighup:
-			return
-		case <-ticker.C:
-			// continue the loop
-		}
+	case <-ol.sighup:
+		// we'll emit directly in stop
 	}
 }
 

@@ -20,6 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/pborman/getopt/v2"
 )
@@ -27,6 +28,7 @@ import (
 // Options contains the options you can set from the CLI.
 type Options struct {
 	Annotations      []string
+	BWMon            string
 	ExtraOptions     []string
 	HomeDir          string
 	Inputs           []string
@@ -60,6 +62,9 @@ var (
 func init() {
 	getopt.FlagLong(
 		&globalOptions.Annotations, "annotation", 'A', "Add annotaton", "KEY=VALUE",
+	)
+	getopt.FlagLong(
+		&globalOptions.BWMon, "bwmon", 0, "Monitor bandwidth and save results to file", "PATH",
 	)
 	getopt.FlagLong(
 		&globalOptions.ExtraOptions, "option", 'O',
@@ -294,6 +299,10 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	}
 
 	ctx := context.Background()
+
+	if currentOptions.BWMon != "" {
+		netxlite.MonitorBandwidth(ctx, currentOptions.BWMon)
+	}
 
 	extraOptions := mustMakeMap(currentOptions.ExtraOptions)
 	annotations := mustMakeMap(currentOptions.Annotations)

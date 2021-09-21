@@ -110,7 +110,8 @@ func (d *dialerSystem) newUnderlyingDialer() *net.Dialer {
 }
 
 func (d *dialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return d.newUnderlyingDialer().DialContext(ctx, network, address)
+	return bwmonitor.MaybeWrapConn(
+		d.newUnderlyingDialer().DialContext(ctx, network, address))
 }
 
 func (d *dialerSystem) CloseIdleConnections() {
