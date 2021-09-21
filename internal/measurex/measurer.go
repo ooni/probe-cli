@@ -28,7 +28,7 @@ type Measurer struct {
 	Origin Origin
 
 	// TLSHandshaker is the MANDATORY TLS handshaker.
-	TLSHandshaker TLSHandshaker
+	TLSHandshaker netxlite.TLSHandshaker
 }
 
 // NewMeasurerWithDefaultSettings creates a new Measurer
@@ -40,24 +40,12 @@ func NewMeasurerWithDefaultSettings() *Measurer {
 		HTTPClient:    &http.Client{},
 		Logger:        log.Log,
 		Origin:        OriginProbe,
-		TLSHandshaker: NewTLSHandshakerStdlib(OriginProbe, db, log.Log),
-	}
-}
-
-// Clone returns a clone of the current Measurer with the given
-// DB instead of the DB used by the original Measurer.
-func (mx *Measurer) Clone(db *DB) *Measurer {
-	return &Measurer{
-		DB:            db,
-		HTTPClient:    mx.HTTPClient,
-		Logger:        mx.Logger,
-		Origin:        mx.Origin,
-		TLSHandshaker: mx.TLSHandshaker,
+		TLSHandshaker: netxlite.NewTLSHandshakerStdlib(log.Log),
 	}
 }
 
 func (mx *Measurer) nextMeasurement() int64 {
-	return mx.DB.NextMeasurement()
+	return mx.DB.NextMeasurementID()
 }
 
 // LookupHostSystem performs a LookupHost using the system resolver.
@@ -66,11 +54,11 @@ func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *Measur
 	mx.Logf("LookupHostSystem domain=%s timeout=%s...", domain, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	r := NewResolverSystem(mx.Origin, mx.DB, mx.Logger)
+	mid := mx.nextMeasurement()
+	r := NewResolverSystem(mid, mx.Origin, mx.DB, mx.Logger)
 	defer r.CloseIdleConnections()
-	id := mx.nextMeasurement()
 	_, _ = r.LookupHost(ctx, domain)
-	return NewMeasurement(mx.DB, id)
+	return NewMeasurement(mx.DB, mid)
 }
 
 // LookupHostUDP is like LookupHostSystem but uses an UDP resolver.
@@ -91,11 +79,11 @@ func (mx *Measurer) LookupHostUDP(
 		address, domain, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	r := NewResolverUDP(mx.Origin, mx.DB, mx.Logger, address)
+	mid := mx.nextMeasurement()
+	r := NewResolverUDP(mid, mx.Origin, mx.DB, mx.Logger, address)
 	defer r.CloseIdleConnections()
-	id := mx.nextMeasurement()
 	_, _ = r.LookupHost(ctx, domain)
-	return NewMeasurement(mx.DB, id)
+	return NewMeasurement(mx.DB, mid)
 }
 
 // LookupHTTPSSvcUDP issues an HTTPSSvc query for the given domain.
@@ -116,11 +104,11 @@ func (mx *Measurer) LookupHTTPSSvcUDP(
 		address, domain, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	r := NewResolverUDP(mx.Origin, mx.DB, mx.Logger, address)
+	mid := mx.nextMeasurement()
+	r := NewResolverUDP(mid, mx.Origin, mx.DB, mx.Logger, address)
 	defer r.CloseIdleConnections()
-	id := mx.nextMeasurement()
 	_, _ = r.LookupHTTPSSvcWithoutRetry(ctx, domain)
-	return NewMeasurement(mx.DB, id)
+	return NewMeasurement(mx.DB, mid)
 }
 
 // TCPConnect establishes a connection with a TCP endpoint.
@@ -133,9 +121,9 @@ func (mx *Measurer) LookupHTTPSSvcUDP(
 //
 // Returns a Measurement.
 func (mx *Measurer) TCPConnect(ctx context.Context, address string) *Measurement {
-	id := mx.nextMeasurement()
-	conn, _ := mx.tcpConnect(ctx, address)
-	measurement := NewMeasurement(mx.DB, id)
+	mid := mx.nextMeasurement()
+	conn, _ := mx.tcpConnect(ctx, mid, address)
+	measurement := NewMeasurement(mx.DB, mid)
 	if conn != nil {
 		conn.Close()
 	}
@@ -143,12 +131,13 @@ func (mx *Measurer) TCPConnect(ctx context.Context, address string) *Measurement
 }
 
 // tcpConnect is like TCPConnect but does not create a new measurement.
-func (mx *Measurer) tcpConnect(ctx context.Context, address string) (Conn, error) {
+func (mx *Measurer) tcpConnect(ctx context.Context,
+	measurementID int64, address string) (Conn, error) {
 	const timeout = 10 * time.Second
 	mx.Logf("TCPConnect endpoint=%s timeout=%s...", address, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	d := NewDialerWithoutResolver(mx.Origin, mx.DB, mx.Logger)
+	d := NewDialerWithoutResolver(measurementID, mx.Origin, mx.DB, mx.Logger)
 	defer d.CloseIdleConnections()
 	return d.DialContext(ctx, "tcp", address)
 }
@@ -185,9 +174,9 @@ func (mx *Measurer) tcpConnect(ctx context.Context, address string) (Conn, error
 // Returns a Measurement.
 func (mx *Measurer) TLSConnectAndHandshake(ctx context.Context,
 	address string, config *tls.Config) *Measurement {
-	id := mx.nextMeasurement()
-	conn, _ := mx.tlsConnectAndHandshake(ctx, address, config)
-	measurement := NewMeasurement(mx.DB, id)
+	mid := mx.nextMeasurement()
+	conn, _ := mx.tlsConnectAndHandshake(ctx, mid, address, config)
+	measurement := NewMeasurement(mx.DB, mid)
 	if conn != nil {
 		conn.Close()
 	}
@@ -197,8 +186,8 @@ func (mx *Measurer) TLSConnectAndHandshake(ctx context.Context,
 // tlsConnectAndHandshake is like TLSConnectAndHandshake
 // but does not create a new measurement.
 func (mx *Measurer) tlsConnectAndHandshake(ctx context.Context,
-	address string, config *tls.Config) (TLSConn, error) {
-	conn, err := mx.tcpConnect(ctx, address)
+	measurementID int64, address string, config *tls.Config) (TLSConn, error) {
+	conn, err := mx.tcpConnect(ctx, measurementID, address)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +196,8 @@ func (mx *Measurer) tlsConnectAndHandshake(ctx context.Context,
 		config.ServerName, config.NextProtos, address, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	return mx.TLSHandshaker.Handshake(ctx, conn, config)
+	th := WrapTLSHandshaker(measurementID, mx.Origin, mx.DB, mx.TLSHandshaker)
+	return th.Handshake(ctx, conn, config)
 }
 
 // QUICHandshake connects and TLS handshakes with a QUIC endpoint.
@@ -233,9 +223,9 @@ func (mx *Measurer) tlsConnectAndHandshake(ctx context.Context,
 // Returns a Measurement.
 func (mx *Measurer) QUICHandshake(ctx context.Context, address string,
 	config *tls.Config) *Measurement {
-	id := mx.nextMeasurement()
-	sess, _ := mx.quicHandshake(ctx, address, config)
-	measurement := NewMeasurement(mx.DB, id)
+	mid := mx.nextMeasurement()
+	sess, _ := mx.quicHandshake(ctx, mid, address, config)
+	measurement := NewMeasurement(mx.DB, mid)
 	if sess != nil {
 		// TODO(bassosimone): close session with correct message
 		sess.CloseWithError(0, "")
@@ -244,17 +234,18 @@ func (mx *Measurer) QUICHandshake(ctx context.Context, address string,
 }
 
 // quicHandshake is like QUICHandshake but does not create a new measurement.
-func (mx *Measurer) quicHandshake(ctx context.Context,
+func (mx *Measurer) quicHandshake(ctx context.Context, measurementID int64,
 	address string, config *tls.Config) (QUICEarlySession, error) {
 	const timeout = 10 * time.Second
 	mx.Logf("QUICHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
 		config.ServerName, config.NextProtos, address, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	qd := WrapQUICDialer(mx.Origin, mx.DB, netxlite.NewQUICDialerWithoutResolver(
-		WrapQUICListener(mx.Origin, mx.DB, netxlite.NewQUICListener()),
-		mx.Logger,
-	))
+	qd := WrapQUICDialer(measurementID, mx.Origin, mx.DB,
+		netxlite.NewQUICDialerWithoutResolver(WrapQUICListener(
+			measurementID, mx.Origin, mx.DB, netxlite.NewQUICListener()),
+			mx.Logger,
+		))
 	defer qd.CloseIdleConnections()
 	return qd.DialContext(ctx, address, config)
 }
@@ -331,14 +322,14 @@ func (mx *Measurer) HTTPEndpointPrepareGet(ctx context.Context,
 // httpEndpointGet implements HTTPEndpointGet.
 func (mx *Measurer) httpEndpointGet(ctx context.Context, epnt *HTTPEndpoint,
 	jar http.CookieJar) (resp *http.Response, m *Measurement, err error) {
-	id := mx.nextMeasurement()
+	mid := mx.nextMeasurement()
 	switch epnt.Network {
 	case NetworkQUIC:
-		resp, err = mx.httpEndpointGetQUIC(ctx, epnt, jar)
-		m = NewMeasurement(mx.DB, id)
+		resp, err = mx.httpEndpointGetQUIC(ctx, mid, epnt, jar)
+		m = NewMeasurement(mx.DB, mid)
 	case NetworkTCP:
-		resp, err = mx.httpEndpointGetTCP(ctx, epnt, jar)
-		m = NewMeasurement(mx.DB, id)
+		resp, err = mx.httpEndpointGetTCP(ctx, mid, epnt, jar)
+		m = NewMeasurement(mx.DB, mid)
 	default:
 		m, err = &Measurement{}, errUnknownHTTPEndpointNetwork
 	}
@@ -346,46 +337,46 @@ func (mx *Measurer) httpEndpointGet(ctx context.Context, epnt *HTTPEndpoint,
 }
 
 // httpEndpointGetTCP specializes HTTPSEndpointGet for HTTP and HTTPS.
-func (mx *Measurer) httpEndpointGetTCP(
-	ctx context.Context, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
+func (mx *Measurer) httpEndpointGetTCP(ctx context.Context,
+	measurementID int64, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
 	switch epnt.URL.Scheme {
 	case "http":
-		return mx.httpEndpointGetHTTP(ctx, epnt, jar)
+		return mx.httpEndpointGetHTTP(ctx, measurementID, epnt, jar)
 	case "https":
-		return mx.httpEndpointGetHTTPS(ctx, epnt, jar)
+		return mx.httpEndpointGetHTTPS(ctx, measurementID, epnt, jar)
 	default:
 		return nil, errUnknownHTTPEndpointURLScheme
 	}
 }
 
 // httpEndpointGetHTTP specializes httpEndpointGetTCP for HTTP.
-func (mx *Measurer) httpEndpointGetHTTP(
-	ctx context.Context, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
+func (mx *Measurer) httpEndpointGetHTTP(ctx context.Context,
+	measurementID int64, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
 	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
 	if err != nil {
 		return nil, err
 	}
 	req.Header = epnt.Header
-	conn, err := mx.tcpConnect(ctx, epnt.Address)
+	conn, err := mx.tcpConnect(ctx, measurementID, epnt.Address)
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close() // we own it
-	clnt := NewHTTPClientWithoutRedirects(mx.Origin, mx.DB, jar,
-		NewHTTPTransportWithConn(mx.Origin, mx.Logger, mx.DB, conn))
+	clnt := NewHTTPClientWithoutRedirects(measurementID, mx.Origin, mx.DB, jar,
+		NewHTTPTransportWithConn(measurementID, mx.Origin, mx.Logger, mx.DB, conn))
 	defer clnt.CloseIdleConnections()
 	return mx.httpClientDo(ctx, clnt, epnt, req)
 }
 
 // httpEndpointGetHTTPS specializes httpEndpointGetTCP for HTTPS.
-func (mx *Measurer) httpEndpointGetHTTPS(
-	ctx context.Context, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
+func (mx *Measurer) httpEndpointGetHTTPS(ctx context.Context,
+	measurementID int64, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
 	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
 	if err != nil {
 		return nil, err
 	}
 	req.Header = epnt.Header
-	conn, err := mx.tlsConnectAndHandshake(ctx, epnt.Address, &tls.Config{
+	conn, err := mx.tlsConnectAndHandshake(ctx, measurementID, epnt.Address, &tls.Config{
 		ServerName: epnt.SNI,
 		NextProtos: epnt.ALPN,
 		RootCAs:    netxlite.NewDefaultCertPool(),
@@ -394,21 +385,21 @@ func (mx *Measurer) httpEndpointGetHTTPS(
 		return nil, err
 	}
 	defer conn.Close() // we own it
-	clnt := NewHTTPClientWithoutRedirects(mx.Origin, mx.DB, jar,
-		NewHTTPTransportWithTLSConn(mx.Origin, mx.Logger, mx.DB, conn))
+	clnt := NewHTTPClientWithoutRedirects(measurementID, mx.Origin, mx.DB, jar,
+		NewHTTPTransportWithTLSConn(measurementID, mx.Origin, mx.Logger, mx.DB, conn))
 	defer clnt.CloseIdleConnections()
 	return mx.httpClientDo(ctx, clnt, epnt, req)
 }
 
 // httpEndpointGetQUIC specializes httpEndpointGetTCP for QUIC.
-func (mx *Measurer) httpEndpointGetQUIC(
-	ctx context.Context, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
+func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
+	measurementID int64, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
 	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
 	if err != nil {
 		return nil, err
 	}
 	req.Header = epnt.Header
-	sess, err := mx.quicHandshake(ctx, epnt.Address, &tls.Config{
+	sess, err := mx.quicHandshake(ctx, measurementID, epnt.Address, &tls.Config{
 		ServerName: epnt.SNI,
 		NextProtos: epnt.ALPN,
 		RootCAs:    netxlite.NewDefaultCertPool(),
@@ -418,8 +409,8 @@ func (mx *Measurer) httpEndpointGetQUIC(
 	}
 	// TODO(bassosimone): close session with correct message
 	defer sess.CloseWithError(0, "") // we own it
-	clnt := NewHTTPClientWithoutRedirects(mx.Origin, mx.DB, jar,
-		NewHTTPTransportWithQUICSess(mx.Origin, mx.Logger, mx.DB, sess))
+	clnt := NewHTTPClientWithoutRedirects(measurementID, mx.Origin, mx.DB, jar,
+		NewHTTPTransportWithQUICSess(measurementID, mx.Origin, mx.Logger, mx.DB, sess))
 	defer clnt.CloseIdleConnections()
 	return mx.httpClientDo(ctx, clnt, epnt, req)
 }
@@ -459,10 +450,10 @@ func (mx *Measurer) LookupWCTH(ctx context.Context, URL *url.URL,
 		WCTHURL, URL.String(), endpoints, port, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	w := NewWCTHWorker(mx.Logger, mx.DB, mx.HTTPClient, WCTHURL)
-	id := mx.nextMeasurement()
+	mid := mx.nextMeasurement()
+	w := NewWCTHWorker(mid, mx.Logger, mx.DB, mx.HTTPClient, WCTHURL)
 	_, _ = w.Run(ctx, URL, mx.onlyTCPEndpoints(endpoints))
-	return NewMeasurement(mx.DB, id)
+	return NewMeasurement(mx.DB, mid)
 }
 
 // onlyTCPEndpoints takes in input a list of endpoints and returns
@@ -504,13 +495,8 @@ func (mx *Measurer) HTTPEndpointGetParallel(ctx context.Context,
 	const parallelism = 3
 	for i := 0; i < parallelism; i++ {
 		go func() {
-			// Important: we need a children DB because we need a
-			// separate MeasurementID namespace. The whole package
-			// does not keep constant MeasurementID if you don't
-			// use this factory for creating a new child.
-			child := mx.Clone(mx.DB.NewChildDB())
 			for epnt := range input {
-				output <- child.HTTPEndpointGet(ctx, epnt, jar)
+				output <- mx.HTTPEndpointGet(ctx, epnt, jar)
 			}
 			done <- true
 		}()
@@ -553,13 +539,8 @@ func (mx *Measurer) LookupURLHostParallel(
 	const parallelism = 3
 	for i := 0; i < parallelism; i++ {
 		go func() {
-			// Important: we need a children DB because we need a
-			// separate MeasurementID namespace. The whole package
-			// does not keep constant MeasurementID if you don't
-			// use this factory for creating a new child.
-			child := mx.Clone(mx.DB.NewChildDB())
 			for reso := range resolvers {
-				child.lookupHostWithResolverInfo(ctx, reso, URL, output)
+				mx.lookupHostWithResolverInfo(ctx, reso, URL, output)
 			}
 			done <- true
 		}()
@@ -597,7 +578,7 @@ func (mx *Measurer) lookupHostWithResolverInfo(
 	}
 }
 
-// LookupostParallel is like LookupURLHostParallel but we only
+// LookupHostParallel is like LookupURLHostParallel but we only
 // have in input an hostname rather than a URL. As such, we cannot
 // determine whether to perform HTTPSSvc lookups and so we aren't
 // going to perform this kind of lookups in this case.
@@ -634,13 +615,8 @@ func (mx *Measurer) QueryTestHelperParallel(
 	const parallelism = 1 // maybe raise in the future?
 	for i := 0; i < parallelism; i++ {
 		go func() {
-			// Important: we need a children DB because we need a
-			// separate MeasurementID namespace. The whole package
-			// does not keep constant MeasurementID if you don't
-			// use this factory for creating a new child.
-			child := mx.Clone(mx.DB.NewChildDB())
 			for th := range ths {
-				child.asyncTestHelperQuery(ctx, th, URL, output)
+				mx.asyncTestHelperQuery(ctx, th, URL, output)
 			}
 			done <- true
 		}()

@@ -18,9 +18,10 @@ import (
 
 // WCTHWorker is the Web Connectivity test helper worker.
 type WCTHWorker struct {
+	clnt   HTTPClient
 	db     EventDB
 	logger Logger
-	clnt   HTTPClient
+	mid    int64
 	url    string
 }
 
@@ -28,6 +29,8 @@ type WCTHWorker struct {
 // web connectivity test helper protocol.
 //
 // Arguments:
+//
+// - measurementID is the measurement ID;
 //
 // - logger is the logger to use;
 //
@@ -38,9 +41,15 @@ type WCTHWorker struct {
 // - URL is the WCTH service URL.
 //
 // All arguments are mandatory.
-func NewWCTHWorker(
+func NewWCTHWorker(measurementID int64,
 	logger Logger, db EventDB, clnt HTTPClient, URL string) *WCTHWorker {
-	return &WCTHWorker{db: db, logger: logger, clnt: clnt, url: URL}
+	return &WCTHWorker{
+		db:     db,
+		logger: logger,
+		clnt:   clnt,
+		url:    URL,
+		mid:    measurementID,
+	}
 }
 
 var errWCTHRequestFailed = errors.New("wcth: request failed")
@@ -68,7 +77,7 @@ func (w *WCTHWorker) Run(
 func (w *WCTHWorker) parseResp(URL *url.URL, resp *WCTHResponse) {
 	w.db.InsertIntoLookupHost(&LookupHostEvent{
 		Origin:        OriginTH,
-		MeasurementID: w.db.MeasurementID(),
+		MeasurementID: w.mid,
 		Network:       "system",
 		Address:       "",
 		Domain:        URL.Hostname(),
@@ -80,7 +89,7 @@ func (w *WCTHWorker) parseResp(URL *url.URL, resp *WCTHResponse) {
 	for addr, status := range resp.TCPConnect {
 		w.db.InsertIntoDial(&NetworkEvent{
 			Origin:        OriginTH,
-			MeasurementID: w.db.MeasurementID(),
+			MeasurementID: w.mid,
 			ConnID:        0,
 			Operation:     "connect",
 			Network:       "tcp",

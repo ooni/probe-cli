@@ -45,20 +45,24 @@ type Dialer interface {
 //
 // Arguments:
 //
-// - origin is either OriginProbe or OriginTH
+// - measurementID is the measurement ID;
 //
-// - db is the database in which to store measurements
+// - origin is either OriginProbe or OriginTH;
 //
-// - d is the underlying netxlite.Dialer to use
-func WrapDialer(origin Origin, db EventDB, d netxlite.Dialer) Dialer {
-	return &dialerx{Dialer: d, db: db, origin: origin}
+// - db is the database in which to store measurements;
+//
+// - d is the underlying netxlite.Dialer to use.
+func WrapDialer(measurementID int64,
+	origin Origin, db EventDB, d netxlite.Dialer) Dialer {
+	return &dialerx{Dialer: d, db: db, origin: origin, mid: measurementID}
 }
 
 // NewDialerWithoutResolver is a convenience factory for creating
 // a dialer that saves measurements into the DB and that is not attached
 // to any resolver (hence only works when passed IP addresses).
-func NewDialerWithoutResolver(origin Origin, db EventDB, logger Logger) Dialer {
-	return WrapDialer(origin, db, netxlite.NewDialerWithoutResolver(
+func NewDialerWithoutResolver(
+	measurementID int64, origin Origin, db EventDB, logger Logger) Dialer {
+	return WrapDialer(measurementID, origin, db, netxlite.NewDialerWithoutResolver(
 		logger,
 	))
 }
@@ -76,9 +80,10 @@ func (d *netxliteDialerAdapter) DialContext(
 
 // NewDialerWithSystemResolver is a convenience factory for creating
 // a dialer that saves measurements into mx.DB and uses the system resolver.
-func NewDialerWithSystemResolver(origin Origin, db EventDB, logger Logger) Dialer {
-	r := NewResolverSystem(origin, db, logger)
-	return WrapDialer(origin, db, netxlite.NewDialerWithResolver(
+func NewDialerWithSystemResolver(
+	measurementID int64, origin Origin, db EventDB, logger Logger) Dialer {
+	r := NewResolverSystem(measurementID, origin, db, logger)
+	return WrapDialer(measurementID, origin, db, netxlite.NewDialerWithResolver(
 		logger, r,
 	))
 }
@@ -86,6 +91,7 @@ func NewDialerWithSystemResolver(origin Origin, db EventDB, logger Logger) Diale
 type dialerx struct {
 	netxlite.Dialer
 	db     EventDB
+	mid    int64
 	origin Origin
 }
 
@@ -114,7 +120,7 @@ func (d *dialerx) DialContext(
 	finished := d.db.ElapsedTime()
 	d.db.InsertIntoDial(&NetworkEvent{
 		Origin:        d.origin,
-		MeasurementID: d.db.MeasurementID(),
+		MeasurementID: d.mid,
 		ConnID:        connID,
 		Operation:     "connect",
 		Network:       network,
@@ -137,6 +143,7 @@ func (d *dialerx) DialContext(
 		localAddr:  conn.LocalAddr().String(),
 		network:    network,
 		origin:     d.origin,
+		mid:        d.mid,
 	}, nil
 }
 
@@ -169,6 +176,7 @@ type connx struct {
 	connID     int64
 	remoteAddr string
 	localAddr  string
+	mid        int64
 	network    string
 	origin     Origin
 }
@@ -183,7 +191,7 @@ func (c *connx) Read(b []byte) (int, error) {
 	finished := c.db.ElapsedTime()
 	c.db.InsertIntoReadWrite(&NetworkEvent{
 		Origin:        c.origin,
-		MeasurementID: c.db.MeasurementID(),
+		MeasurementID: c.mid,
 		ConnID:        c.connID,
 		Operation:     "read",
 		Network:       c.network,
@@ -203,7 +211,7 @@ func (c *connx) Write(b []byte) (int, error) {
 	finished := c.db.ElapsedTime()
 	c.db.InsertIntoReadWrite(&NetworkEvent{
 		Origin:        c.origin,
-		MeasurementID: c.db.MeasurementID(),
+		MeasurementID: c.mid,
 		ConnID:        c.connID,
 		Operation:     "write",
 		Network:       c.network,
@@ -223,7 +231,7 @@ func (c *connx) Close() error {
 	finished := c.db.ElapsedTime()
 	c.db.InsertIntoClose(&NetworkEvent{
 		Origin:        c.origin,
-		MeasurementID: c.db.MeasurementID(),
+		MeasurementID: c.mid,
 		ConnID:        c.connID,
 		Operation:     "close",
 		Network:       c.network,

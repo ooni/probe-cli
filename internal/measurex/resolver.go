@@ -19,20 +19,25 @@ type Resolver interface {
 }
 
 // WrapResolver wraps a Resolver so that we save measurements into the DB.
-func WrapResolver(origin Origin, db EventDB, r netxlite.Resolver) Resolver {
-	return &resolverx{Resolver: r, db: db, origin: origin}
+func WrapResolver(measurementID int64,
+	origin Origin, db EventDB, r netxlite.Resolver) Resolver {
+	return &resolverx{Resolver: r, db: db, origin: origin, mid: measurementID}
 }
 
 // NewResolverSystem is a convenience factory for creating a
 // system resolver that saves measurements into a DB.
-func NewResolverSystem(origin Origin, db EventDB, logger Logger) Resolver {
-	return WrapResolver(origin, db, netxlite.NewResolverStdlib(logger))
+func NewResolverSystem(measurementID int64,
+	origin Origin, db EventDB, logger Logger) Resolver {
+	return WrapResolver(
+		measurementID, origin, db, netxlite.NewResolverStdlib(logger))
 }
 
 // NewResolverUDP is a convenience factory for creating a Resolver
 // using UDP that saves measurements into the DB.
 //
 // Arguments:
+//
+// - measurementID is the measurement ID;
 //
 // - origin is OrigiProbe or OriginTH;
 //
@@ -41,12 +46,14 @@ func NewResolverSystem(origin Origin, db EventDB, logger Logger) Resolver {
 // - logger is the logger;
 //
 // - address is the resolver address (e.g., "1.1.1.1:53").
-func NewResolverUDP(origin Origin, db EventDB, logger Logger, address string) Resolver {
-	return WrapResolver(origin, db, &netxlite.ResolverLogger{
+func NewResolverUDP(measurementID int64,
+	origin Origin, db EventDB, logger Logger, address string) Resolver {
+	return WrapResolver(measurementID, origin, db, &netxlite.ResolverLogger{
 		Resolver: netxlite.WrapResolver(logger, dnsx.NewSerialResolver(
-			WrapDNSXRoundTripper(origin, db, dnsx.NewDNSOverUDP(
+			WrapDNSXRoundTripper(measurementID, origin, db, dnsx.NewDNSOverUDP(
 				&netxliteDialerAdapter{
-					NewDialerWithSystemResolver(origin, db, logger),
+					NewDialerWithSystemResolver(
+						measurementID, origin, db, logger),
 				},
 				address,
 			)))),
@@ -57,6 +64,7 @@ func NewResolverUDP(origin Origin, db EventDB, logger Logger, address string) Re
 type resolverx struct {
 	netxlite.Resolver
 	db     EventDB
+	mid    int64
 	origin Origin
 }
 
@@ -81,7 +89,7 @@ func (r *resolverx) LookupHost(ctx context.Context, domain string) ([]string, er
 	finished := r.db.ElapsedTime()
 	r.db.InsertIntoLookupHost(&LookupHostEvent{
 		Origin:        r.origin,
-		MeasurementID: r.db.MeasurementID(),
+		MeasurementID: r.mid,
 		Network:       r.Resolver.Network(),
 		Address:       r.Resolver.Address(),
 		Domain:        domain,
@@ -139,7 +147,7 @@ func (r *resolverx) LookupHTTPSSvcWithoutRetry(ctx context.Context, domain strin
 	finished := r.db.ElapsedTime()
 	ev := &LookupHTTPSSvcEvent{
 		Origin:        r.origin,
-		MeasurementID: r.db.MeasurementID(),
+		MeasurementID: r.mid,
 		Network:       r.Resolver.Network(),
 		Address:       r.Resolver.Address(),
 		Domain:        domain,

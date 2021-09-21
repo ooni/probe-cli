@@ -27,19 +27,28 @@ type TLSHandshaker interface {
 
 // WrapTLSHandshaker wraps a netxlite.TLSHandshaker to return a new
 // instance of TLSHandshaker that saves events into the DB.
-func WrapTLSHandshaker(origin Origin, db EventDB, thx netxlite.TLSHandshaker) TLSHandshaker {
-	return &tlsHandshakerx{TLSHandshaker: thx, db: db, origin: origin}
+func WrapTLSHandshaker(measurementID int64,
+	origin Origin, db EventDB, thx netxlite.TLSHandshaker) TLSHandshaker {
+	return &tlsHandshakerx{
+		TLSHandshaker: thx,
+		db:            db,
+		origin:        origin,
+		mid:           measurementID,
+	}
 }
 
 // NewTLSHandshakerStdlib creates a new TLS handshaker that
 // saves results into the DB and uses the stdlib for TLS.
-func NewTLSHandshakerStdlib(origin Origin, db EventDB, logger Logger) TLSHandshaker {
-	return WrapTLSHandshaker(origin, db, netxlite.NewTLSHandshakerStdlib(logger))
+func NewTLSHandshakerStdlib(measurementID int64,
+	origin Origin, db EventDB, logger Logger) TLSHandshaker {
+	return WrapTLSHandshaker(
+		measurementID, origin, db, netxlite.NewTLSHandshakerStdlib(logger))
 }
 
 type tlsHandshakerx struct {
 	netxlite.TLSHandshaker
 	db     EventDB
+	mid    int64
 	origin Origin
 }
 
@@ -75,7 +84,7 @@ func (thx *tlsHandshakerx) Handshake(ctx context.Context,
 	finished := thx.db.ElapsedTime()
 	thx.db.InsertIntoTLSHandshake(&TLSHandshakeEvent{
 		Origin:          thx.origin,
-		MeasurementID:   thx.db.MeasurementID(),
+		MeasurementID:   thx.mid,
 		ConnID:          conn.ConnID(),
 		Engine:          "", // TODO(bassosimone): add support
 		Network:         network,

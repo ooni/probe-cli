@@ -6,12 +6,6 @@ type Measurement struct {
 	// MeasurementID is the measurement MeasurementID.
 	MeasurementID int64
 
-	// URL is the URL this measurement refers to.
-	URL string `json:",omitempty"`
-
-	// Endpoint is the endpoint this measurement refers to.
-	Endpoint string `json:",omitempty"`
-
 	// Oddities lists all the oddities inside this measurement. See
 	// newMeasurement's docs for more info.
 	Oddities []Oddity

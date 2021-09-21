@@ -14,13 +14,20 @@ type DNSTransport = dnsx.RoundTripper
 
 // WrapDNSXRoundTripper wraps a dnsx.RoundTripper and returns a
 // DNSTransport that saves DNSRoundTripEvents into the DB.
-func WrapDNSXRoundTripper(origin Origin, db EventDB, rt dnsx.RoundTripper) DNSTransport {
-	return &dnsxTransportx{db: db, RoundTripper: rt, origin: origin}
+func WrapDNSXRoundTripper(
+	measurementID int64, origin Origin, db EventDB, rt dnsx.RoundTripper) DNSTransport {
+	return &dnsxTransportx{
+		db:           db,
+		RoundTripper: rt,
+		origin:       origin,
+		mid:          measurementID,
+	}
 }
 
 type dnsxTransportx struct {
 	dnsx.RoundTripper
 	db     EventDB
+	mid    int64
 	origin Origin
 }
 
@@ -45,7 +52,7 @@ func (txp *dnsxTransportx) RoundTrip(ctx context.Context, query []byte) ([]byte,
 	finished := txp.db.ElapsedTime()
 	txp.db.InsertIntoDNSRoundTrip(&DNSRoundTripEvent{
 		Origin:        txp.origin,
-		MeasurementID: txp.db.MeasurementID(),
+		MeasurementID: txp.mid,
 		Network:       txp.RoundTripper.Network(),
 		Address:       txp.RoundTripper.Address(),
 		Query:         query,
