@@ -14,6 +14,9 @@ type ArchivalURLMeasurement struct {
 	TH                      []*ArchivalMeasurement `json:"th"`
 	CannotGenerateEndpoints bool                   `json:"cannot_generate_endpoints"`
 	Endpoints               []*ArchivalMeasurement `json:"endpoints"`
+	DNSRuntime              float64                `json:"dns_runtime"`
+	THRuntime               float64                `json:"th_runtime"`
+	EpntsRuntime            float64                `json:"epnts_runtime"`
 }
 
 // NewArchivalURLMeasurement constructs a new instance
@@ -26,6 +29,9 @@ func NewArchivalURLMeasurement(in *URLMeasurement) (out *ArchivalURLMeasurement)
 		TH:                      NewArchivalMeasurementList(in.TH...),
 		CannotGenerateEndpoints: in.CannotGenerateEndpoints,
 		Endpoints:               NewArchivalMeasurementList(in.Endpoints...),
+		DNSRuntime:              in.DNSRuntime.Seconds(),
+		THRuntime:               in.THRuntime.Seconds(),
+		EpntsRuntime:            in.EpntsRuntime.Seconds(),
 	}
 }
 

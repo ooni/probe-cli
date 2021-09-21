@@ -676,26 +676,32 @@ func (mx *Measurer) MeasureURL(
 	mx.Logf("MeasureURL url=%s", URL)
 	m := &URLMeasurement{URL: URL}
 	begin := time.Now()
-	defer func() { m.Runtime = time.Since(begin) }()
+	defer func() { m.TotalRuntime = time.Since(begin) }()
 	parsed, err := url.Parse(URL)
 	if err != nil {
 		m.CannotParseURL = true
 		return m
 	}
+	dnsBegin := time.Now()
 	for dns := range mx.LookupURLHostParallel(ctx, parsed) {
 		m.DNS = append(m.DNS, dns)
 	}
+	m.DNSRuntime = time.Since(dnsBegin)
+	thBegin := time.Now()
 	for th := range mx.QueryTestHelperParallel(ctx, parsed) {
 		m.TH = append(m.TH, th)
 	}
+	m.THRuntime = time.Since(thBegin)
 	epnts, err := mx.DB.SelectAllHTTPEndpointsForURL(parsed)
 	if err != nil {
 		m.CannotGenerateEndpoints = true
 		return m
 	}
+	epntRuntime := time.Now()
 	for epnt := range mx.HTTPEndpointGetParallel(ctx, cookies, epnts...) {
 		m.Endpoints = append(m.Endpoints, epnt)
 	}
+	m.EpntsRuntime = time.Since(epntRuntime)
 	m.fillRedirects()
 	return m
 }

@@ -137,8 +137,17 @@ type URLMeasurement struct {
 	// if we choose to follow redirections.
 	RedirectURLs []string
 
-	// Runtime is the total time to measure this URL.
-	Runtime time.Duration
+	// TotalRuntime is the total time to measure this URL.
+	TotalRuntime time.Duration
+
+	// DNSRuntime is the time to run all DNS checks.
+	DNSRuntime time.Duration
+
+	// THRuntime is the total time to invoke all test helpers.
+	THRuntime time.Duration
+
+	// EpntsRuntime is the total time to check all the endpoints.
+	EpntsRuntime time.Duration
 }
 
 // fillRedirects takes in input a complete URLMeasurement and fills
