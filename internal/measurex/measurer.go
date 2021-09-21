@@ -51,7 +51,7 @@ func (mx *Measurer) nextMeasurement() int64 {
 // LookupHostSystem performs a LookupHost using the system resolver.
 func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *Measurement {
 	const timeout = 4 * time.Second
-	ol := newOperationLogger(mx.Logger, "LookupHost %s", domain)
+	ol := newOperationLogger(mx.Logger, "LookupHost %s with getaddrinfo", domain)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	mid := mx.nextMeasurement()
