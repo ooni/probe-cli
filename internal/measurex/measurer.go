@@ -668,3 +668,77 @@ func (mx *Measurer) asyncTestHelperQuery(
 		// don't know what to do
 	}
 }
+
+// URLMeasurement is the measurement of a whole URL. It contains
+// a bunch of measurements detailing each measurement step.
+type URLMeasurement struct {
+	// URL is the URL we're measuring.
+	URL string
+
+	// CannotParseURL is true if the input URL could not be parsed.
+	CannotParseURL bool
+
+	// DNS contains all the DNS related measurements.
+	DNS []*Measurement
+
+	// TH contains all the measurements from the test helpers.
+	TH []*Measurement
+
+	// CannotGenerateEndpoints for URL is true if the code tasked of
+	// generating a list of endpoints for the URL fails.
+	CannotGenerateEndpoints bool
+
+	// Endpoints contains a measurement for each endpoint
+	// that we discovered via DNS or TH.
+	Endpoints []*Measurement
+}
+
+// MeasureHTTPURL measures an HTTP or HTTPS URL. The DNS resolvers
+// and the Test Helpers we use in this measurement are the ones
+// configured into the database. The default is to use the system
+// resolver and to use not Test Helper. Use RegisterWCTH and
+// RegisterUDPResolvers (and other similar functions that have
+// not been written at the moment of writing this note) to
+// augment the set of resolvers and Test Helpers we use here.
+//
+// Arguments:
+//
+// - ctx is the context for timeout/cancellation
+//
+// - URL is the URL to measure
+//
+// - cookies contains the cookies we should use for measuring
+// this URL and possibly future redirections.
+//
+// To create an empty set of cookies, use NewCookieJar. It's
+// normal to have empty cookies at the beginning. If we follow
+// extra redirections after this run then the cookie jar will
+// contain the cookies for following the next redirection.
+//
+// We need cookies because a small amount of URLs does not
+// redirect properly without cookies. This has been
+// documented at https://github.com/ooni/probe/issues/1727.
+func (mx *Measurer) MeasureHTTPURL(
+	ctx context.Context, URL string, cookies http.CookieJar) *URLMeasurement {
+	m := &URLMeasurement{URL: URL}
+	parsed, err := url.Parse(URL)
+	if err != nil {
+		m.CannotParseURL = true
+		return m
+	}
+	for dns := range mx.LookupURLHostParallel(ctx, parsed) {
+		m.DNS = append(m.DNS, dns)
+	}
+	for th := range mx.QueryTestHelperParallel(ctx, parsed) {
+		m.TH = append(m.TH, th)
+	}
+	epnts, err := mx.DB.SelectAllHTTPEndpointsForURL(parsed)
+	if err != nil {
+		m.CannotGenerateEndpoints = true
+		return m
+	}
+	for epnt := range mx.HTTPEndpointGetParallel(ctx, cookies, epnts...) {
+		m.Endpoints = append(m.Endpoints, epnt)
+	}
+	return m
+}
