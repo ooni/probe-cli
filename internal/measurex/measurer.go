@@ -63,7 +63,7 @@ func (mx *Measurer) nextMeasurement() int64 {
 // LookupHostSystem performs a LookupHost using the system resolver.
 func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *Measurement {
 	const timeout = 4 * time.Second
-	mx.Infof("LookupHostSystem domain=%s timeout=%s...", domain, timeout)
+	mx.Logf("LookupHostSystem domain=%s timeout=%s...", domain, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	r := NewResolverSystem(mx.Origin, mx.DB, mx.Logger)
@@ -87,7 +87,7 @@ func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *Measur
 func (mx *Measurer) LookupHostUDP(
 	ctx context.Context, domain, address string) *Measurement {
 	const timeout = 4 * time.Second
-	mx.Infof("LookupHostUDP serverEndpoint=%s/udp domain=%s timeout=%s...",
+	mx.Logf("LookupHostUDP serverEndpoint=%s/udp domain=%s timeout=%s...",
 		address, domain, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -112,7 +112,7 @@ func (mx *Measurer) LookupHostUDP(
 func (mx *Measurer) LookupHTTPSSvcUDP(
 	ctx context.Context, domain, address string) *Measurement {
 	const timeout = 4 * time.Second
-	mx.Infof("LookupHTTPSSvcUDP engine=udp://%s domain=%s timeout=%s...",
+	mx.Logf("LookupHTTPSSvcUDP engine=udp://%s domain=%s timeout=%s...",
 		address, domain, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -145,7 +145,7 @@ func (mx *Measurer) TCPConnect(ctx context.Context, address string) *Measurement
 // tcpConnect is like TCPConnect but does not create a new measurement.
 func (mx *Measurer) tcpConnect(ctx context.Context, address string) (Conn, error) {
 	const timeout = 10 * time.Second
-	mx.Infof("TCPConnect endpoint=%s timeout=%s...", address, timeout)
+	mx.Logf("TCPConnect endpoint=%s timeout=%s...", address, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	d := NewDialerWithoutResolver(mx.Origin, mx.DB, mx.Logger)
@@ -203,7 +203,7 @@ func (mx *Measurer) tlsConnectAndHandshake(ctx context.Context,
 		return nil, err
 	}
 	const timeout = 10 * time.Second
-	mx.Infof("TLSHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
+	mx.Logf("TLSHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
 		config.ServerName, config.NextProtos, address, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -247,7 +247,7 @@ func (mx *Measurer) QUICHandshake(ctx context.Context, address string,
 func (mx *Measurer) quicHandshake(ctx context.Context,
 	address string, config *tls.Config) (QUICEarlySession, error) {
 	const timeout = 10 * time.Second
-	mx.Infof("QUICHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
+	mx.Logf("QUICHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
 		config.ServerName, config.NextProtos, address, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -427,7 +427,7 @@ func (mx *Measurer) httpEndpointGetQUIC(
 func (mx *Measurer) httpClientDo(ctx context.Context, clnt HTTPClient,
 	epnt *HTTPEndpoint, req *http.Request) (*http.Response, error) {
 	const timeout = 15 * time.Second
-	mx.Infof("httpClientDo endpoint=%s method=%s url=%s headers=%+v timeout=%s...",
+	mx.Logf("httpClientDo endpoint=%s method=%s url=%s headers=%+v timeout=%s...",
 		epnt.String(), req.Method, req.URL.String(), req.Header, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -455,7 +455,7 @@ func (mx *Measurer) httpClientDo(ctx context.Context, clnt HTTPClient,
 func (mx *Measurer) LookupWCTH(ctx context.Context, URL *url.URL,
 	endpoints []*Endpoint, port string, WCTHURL string) *Measurement {
 	const timeout = 30 * time.Second
-	mx.Infof("lookupWCTH backend=%s url=%s endpoints=%+v port=%s timeout=%s...",
+	mx.Logf("lookupWCTH backend=%s url=%s endpoints=%+v port=%s timeout=%s...",
 		WCTHURL, URL.String(), endpoints, port, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -477,8 +477,9 @@ func (mx *Measurer) onlyTCPEndpoints(endpoints []*Endpoint) (out []string) {
 	return
 }
 
-// Infof formats and logs an informational message using mx.Logger.
-func (mx *Measurer) Infof(format string, v ...interface{}) {
+// Logf formats and logs a message using mx.Logger. All messages
+// logged by Measurer should use this function to emit logs.
+func (mx *Measurer) Logf(format string, v ...interface{}) {
 	mx.Logger.Infof(format, v...)
 }
 
@@ -697,7 +698,7 @@ type URLMeasurement struct {
 	RedirectURLs []string
 }
 
-// MeasureHTTPURL measures an HTTP or HTTPS URL. The DNS resolvers
+// MeasureURL measures an HTTP or HTTPS URL. The DNS resolvers
 // and the Test Helpers we use in this measurement are the ones
 // configured into the database. The default is to use the system
 // resolver and to use not Test Helper. Use RegisterWCTH and
@@ -722,8 +723,9 @@ type URLMeasurement struct {
 // We need cookies because a small amount of URLs does not
 // redirect properly without cookies. This has been
 // documented at https://github.com/ooni/probe/issues/1727.
-func (mx *Measurer) MeasureHTTPURL(
+func (mx *Measurer) MeasureURL(
 	ctx context.Context, URL string, cookies http.CookieJar) *URLMeasurement {
+	mx.Logf("MeasureURL url=%s", URL)
 	m := &URLMeasurement{URL: URL}
 	parsed, err := url.Parse(URL)
 	if err != nil {
@@ -744,6 +746,13 @@ func (mx *Measurer) MeasureHTTPURL(
 	for epnt := range mx.HTTPEndpointGetParallel(ctx, cookies, epnts...) {
 		m.Endpoints = append(m.Endpoints, epnt)
 	}
+	m.fillRedirects()
+	return m
+}
+
+// fillRedirects takes in input a complete URLMeasurement and fills
+// the field named Redirects with all redirections.
+func (m *URLMeasurement) fillRedirects() {
 	dups := make(map[string]bool)
 	for _, epnt := range m.Endpoints {
 		for _, redir := range epnt.HTTPRedirect {
@@ -755,5 +764,50 @@ func (mx *Measurer) MeasureHTTPURL(
 			m.RedirectURLs = append(m.RedirectURLs, loc)
 		}
 	}
-	return m
+}
+
+// redirectionQueue is the type we use to manage the redirection
+// queue and to follow a reasonable number of redirects.
+type redirectionQueue struct {
+	q   []string
+	cnt int
+}
+
+func (r *redirectionQueue) append(URL ...string) {
+	r.q = append(r.q, URL...)
+}
+
+func (r *redirectionQueue) popleft() (URL string) {
+	URL = r.q[0]
+	r.q = r.q[1:]
+	return
+}
+
+func (r *redirectionQueue) empty() bool {
+	return len(r.q) <= 0
+}
+
+func (r *redirectionQueue) redirectionsCount() int {
+	return r.cnt
+}
+
+// MeasureURLAndFollowRedirections is like MeasureURL except
+// that it _also_ follows all the HTTP redirections.
+func (mx *Measurer) MeasureHTTPURLAndFollowRedirections(ctx context.Context,
+	URL string, cookies http.CookieJar) <-chan *URLMeasurement {
+	out := make(chan *URLMeasurement)
+	go func() {
+		defer close(out)
+		m := mx.MeasureURL(ctx, URL, cookies)
+		out <- m
+		rq := &redirectionQueue{q: m.RedirectURLs}
+		const maxRedirects = 7
+		for !rq.empty() && rq.redirectionsCount() < maxRedirects {
+			URL = rq.popleft()
+			m = mx.MeasureURL(ctx, URL, cookies)
+			out <- m
+			rq.append(m.RedirectURLs...)
+		}
+	}()
+	return out
 }
