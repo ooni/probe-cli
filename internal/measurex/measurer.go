@@ -51,13 +51,14 @@ func (mx *Measurer) nextMeasurement() int64 {
 // LookupHostSystem performs a LookupHost using the system resolver.
 func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *Measurement {
 	const timeout = 4 * time.Second
-	mx.Logf("LookupHostSystem domain=%s timeout=%s...", domain, timeout)
+	ol := newOperationLogger(mx.Logger, "LookupHost %s", domain)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	mid := mx.nextMeasurement()
 	r := NewResolverSystem(mid, mx.Origin, mx.DB, mx.Logger)
 	defer r.CloseIdleConnections()
-	_, _ = r.LookupHost(ctx, domain)
+	_, err := r.LookupHost(ctx, domain)
+	ol.Stop(err)
 	return NewMeasurement(mx.DB, mid)
 }
 
@@ -75,14 +76,14 @@ func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *Measur
 func (mx *Measurer) LookupHostUDP(
 	ctx context.Context, domain, address string) *Measurement {
 	const timeout = 4 * time.Second
-	mx.Logf("LookupHostUDP serverEndpoint=%s/udp domain=%s timeout=%s...",
-		address, domain, timeout)
+	ol := newOperationLogger(mx.Logger, "LookupHost %s with %s/udp", domain, address)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	mid := mx.nextMeasurement()
 	r := NewResolverUDP(mid, mx.Origin, mx.DB, mx.Logger, address)
 	defer r.CloseIdleConnections()
-	_, _ = r.LookupHost(ctx, domain)
+	_, err := r.LookupHost(ctx, domain)
+	ol.Stop(err)
 	return NewMeasurement(mx.DB, mid)
 }
 
@@ -100,14 +101,14 @@ func (mx *Measurer) LookupHostUDP(
 func (mx *Measurer) LookupHTTPSSvcUDP(
 	ctx context.Context, domain, address string) *Measurement {
 	const timeout = 4 * time.Second
-	mx.Logf("LookupHTTPSSvcUDP engine=udp://%s domain=%s timeout=%s...",
-		address, domain, timeout)
+	ol := newOperationLogger(mx.Logger, "LookupHTTPSvc %s with %s/udp", domain, address)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	mid := mx.nextMeasurement()
 	r := NewResolverUDP(mid, mx.Origin, mx.DB, mx.Logger, address)
 	defer r.CloseIdleConnections()
-	_, _ = r.LookupHTTPSSvcWithoutRetry(ctx, domain)
+	_, err := r.LookupHTTPSSvcWithoutRetry(ctx, domain)
+	ol.Stop(err)
 	return NewMeasurement(mx.DB, mid)
 }
 
@@ -134,12 +135,14 @@ func (mx *Measurer) TCPConnect(ctx context.Context, address string) *Measurement
 func (mx *Measurer) tcpConnect(ctx context.Context,
 	measurementID int64, address string) (Conn, error) {
 	const timeout = 10 * time.Second
-	mx.Logf("TCPConnect endpoint=%s timeout=%s...", address, timeout)
+	ol := newOperationLogger(mx.Logger, "TCPConnect %s", address)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	d := NewDialerWithoutResolver(measurementID, mx.Origin, mx.DB, mx.Logger)
 	defer d.CloseIdleConnections()
-	return d.DialContext(ctx, "tcp", address)
+	conn, err := d.DialContext(ctx, "tcp", address)
+	ol.Stop(err)
+	return conn, err
 }
 
 // TLSConnectAndHandshake connects and TLS handshakes with a TCP endpoint.
@@ -192,12 +195,14 @@ func (mx *Measurer) tlsConnectAndHandshake(ctx context.Context,
 		return nil, err
 	}
 	const timeout = 10 * time.Second
-	mx.Logf("TLSHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
-		config.ServerName, config.NextProtos, address, timeout)
+	ol := newOperationLogger(mx.Logger,
+		"TLSHandshake %s with sni=%s", address, config.ServerName)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	th := WrapTLSHandshaker(measurementID, mx.Origin, mx.DB, mx.TLSHandshaker)
-	return th.Handshake(ctx, conn, config)
+	tlsConn, err := th.Handshake(ctx, conn, config)
+	ol.Stop(err)
+	return tlsConn, err
 }
 
 // QUICHandshake connects and TLS handshakes with a QUIC endpoint.
@@ -237,8 +242,8 @@ func (mx *Measurer) QUICHandshake(ctx context.Context, address string,
 func (mx *Measurer) quicHandshake(ctx context.Context, measurementID int64,
 	address string, config *tls.Config) (QUICEarlySession, error) {
 	const timeout = 10 * time.Second
-	mx.Logf("QUICHandshake sni=%s alpn=%+v endpoint=%s timeout=%s...",
-		config.ServerName, config.NextProtos, address, timeout)
+	ol := newOperationLogger(mx.Logger,
+		"QUICHandshake %s with sni=%s", address, config.ServerName)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	qd := WrapQUICDialer(measurementID, mx.Origin, mx.DB,
@@ -247,7 +252,9 @@ func (mx *Measurer) quicHandshake(ctx context.Context, measurementID int64,
 			mx.Logger,
 		))
 	defer qd.CloseIdleConnections()
-	return qd.DialContext(ctx, address, config)
+	sess, err := qd.DialContext(ctx, address, config)
+	ol.Stop(err)
+	return sess, err
 }
 
 // HTTPEndpointGet performs a GET request for an HTTP endpoint.
@@ -418,11 +425,13 @@ func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
 func (mx *Measurer) httpClientDo(ctx context.Context, clnt HTTPClient,
 	epnt *HTTPEndpoint, req *http.Request) (*http.Response, error) {
 	const timeout = 15 * time.Second
-	mx.Logf("httpClientDo endpoint=%s method=%s url=%s headers=%+v timeout=%s...",
-		epnt.String(), req.Method, req.URL.String(), req.Header, timeout)
+	ol := newOperationLogger(mx.Logger,
+		"%s %s with %s/%s", req.Method, req.URL.String(), epnt.Address, epnt.Network)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	return clnt.Do(req.WithContext(ctx))
+	resp, err := clnt.Do(req.WithContext(ctx))
+	ol.Stop(err)
+	return resp, err
 }
 
 // LookupWCTH performs an Endpoint lookup using the WCTH (i.e.,
@@ -446,13 +455,13 @@ func (mx *Measurer) httpClientDo(ctx context.Context, clnt HTTPClient,
 func (mx *Measurer) LookupWCTH(ctx context.Context, URL *url.URL,
 	endpoints []*Endpoint, port string, WCTHURL string) *Measurement {
 	const timeout = 30 * time.Second
-	mx.Logf("lookupWCTH backend=%s url=%s endpoints=%+v port=%s timeout=%s...",
-		WCTHURL, URL.String(), endpoints, port, timeout)
+	ol := newOperationLogger(mx.Logger, "WCTH %s with %s", URL.String(), WCTHURL)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	mid := mx.nextMeasurement()
 	w := NewWCTHWorker(mid, mx.Logger, mx.DB, mx.HTTPClient, WCTHURL)
-	_, _ = w.Run(ctx, URL, mx.onlyTCPEndpoints(endpoints))
+	_, err := w.Run(ctx, URL, mx.onlyTCPEndpoints(endpoints))
+	ol.Stop(err)
 	return NewMeasurement(mx.DB, mid)
 }
 
@@ -466,12 +475,6 @@ func (mx *Measurer) onlyTCPEndpoints(endpoints []*Endpoint) (out []string) {
 		}
 	}
 	return
-}
-
-// Logf formats and logs a message using mx.Logger. All messages
-// logged by Measurer should use this function to emit logs.
-func (mx *Measurer) Logf(format string, v ...interface{}) {
-	mx.Logger.Infof(format, v...)
 }
 
 // HTTPEndpointGetParallel performs an HTTPEndpointGet for each
@@ -673,7 +676,7 @@ func (mx *Measurer) asyncTestHelperQuery(
 // documented at https://github.com/ooni/probe/issues/1727.
 func (mx *Measurer) MeasureURL(
 	ctx context.Context, URL string, cookies http.CookieJar) *URLMeasurement {
-	mx.Logf("MeasureURL url=%s", URL)
+	mx.Logger.Infof("MeasureURL url=%s", URL)
 	m := &URLMeasurement{URL: URL}
 	begin := time.Now()
 	defer func() { m.TotalRuntime = time.Since(begin) }()

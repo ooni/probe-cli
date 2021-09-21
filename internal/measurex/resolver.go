@@ -48,8 +48,8 @@ func NewResolverSystem(measurementID int64,
 // - address is the resolver address (e.g., "1.1.1.1:53").
 func NewResolverUDP(measurementID int64,
 	origin Origin, db EventDB, logger Logger, address string) Resolver {
-	return WrapResolver(measurementID, origin, db, &netxlite.ResolverLogger{
-		Resolver: netxlite.WrapResolver(logger, dnsx.NewSerialResolver(
+	return WrapResolver(measurementID, origin, db,
+		netxlite.WrapResolver(logger, dnsx.NewSerialResolver(
 			WrapDNSXRoundTripper(measurementID, origin, db, dnsx.NewDNSOverUDP(
 				&netxliteDialerAdapter{
 					NewDialerWithSystemResolver(
@@ -57,8 +57,7 @@ func NewResolverUDP(measurementID int64,
 				},
 				address,
 			)))),
-		Logger: logger,
-	})
+	)
 }
 
 type resolverx struct {

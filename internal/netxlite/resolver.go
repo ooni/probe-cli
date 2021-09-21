@@ -229,7 +229,7 @@ func (r *resolverIDNA) LookupHostWithoutRetry(
 	return r.Resolver.LookupHostWithoutRetry(ctx, host, qtype)
 }
 
-func (r *resolverIDNA) LookupHTTPSWithoutRetry(
+func (r *resolverIDNA) LookupHTTPSSvcWithoutRetry(
 	ctx context.Context, domain string) (HTTPSSvc, error) {
 	host, err := idna.ToASCII(domain)
 	if err != nil {
@@ -310,7 +310,7 @@ func (r *resolverErrWrapper) LookupHostWithoutRetry(
 	return addrs, nil
 }
 
-func (r *resolverErrWrapper) LookupHTTPSWithoutRetry(
+func (r *resolverErrWrapper) LookupHTTPSSvcWithoutRetry(
 	ctx context.Context, domain string) (HTTPSSvc, error) {
 	out, err := r.Resolver.LookupHTTPSSvcWithoutRetry(ctx, domain)
 	if err != nil {
