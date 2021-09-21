@@ -5,6 +5,8 @@
 /*.deb
 /debops-ci
 .DS_Store
+/jafar
+/jafar.exe
 /*.jsonl
 /miniooni
 /miniooni.exe
