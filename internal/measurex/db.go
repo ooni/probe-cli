@@ -93,6 +93,7 @@ type dbSharedWithChildren struct {
 	httpRoundTripTable []*HTTPRoundTripEvent
 	httpRedirectTable  []*HTTPRedirectEvent
 	quicHandshakeTable []*QUICHandshakeEvent
+	resolversTable     []*ResolverInfo
 
 	// mu protects all the above tables and ConnID
 	mu sync.Mutex
@@ -309,6 +310,49 @@ func (db *dbSharedWithChildren) SelectAllFromQUICHandshake() (out []*QUICHandsha
 	db.mu.Lock()
 	out = append(out, db.quicHandshakeTable...)
 	db.mu.Unlock()
+	return
+}
+
+// ResolverInfo contains info about a DNS resolver.
+type ResolverInfo struct {
+	// Network is the resolver's network (e.g., "doh", "udp")
+	Network string
+
+	// Address is the address (e.g., "1.1.1.1:53", "https://1.1.1.1/dns-query")
+	Address string
+}
+
+// string returns a string representation of the resolver.
+func (ri *ResolverInfo) string() string {
+	return fmt.Sprintf("%s@%s", ri.Network, ri.Address)
+}
+
+// InsertIntoResolvers inserts a given resolver into the resolver's table.
+func (db *dbSharedWithChildren) InsertIntoResolvers(network, address string) {
+	db.mu.Lock()
+	db.resolversTable = append(db.resolversTable, &ResolverInfo{
+		Network: network,
+		Address: address,
+	})
+	db.mu.Unlock()
+}
+
+// SelectAllFromResolvers returns all the configured resolvers. This function
+// ensures that the system resolver is in the list and also ensures that we
+// return in output a list only containing unique resolvers.
+func (db *dbSharedWithChildren) SelectAllFromResolvers() (out []*ResolverInfo) {
+	all := append([]*ResolverInfo{}, &ResolverInfo{Network: "system"})
+	db.mu.Lock()
+	all = append(all, db.resolversTable...)
+	db.mu.Unlock()
+	unique := make(map[string]bool)
+	for _, reso := range all {
+		if _, found := unique[reso.string()]; found {
+			continue
+		}
+		unique[reso.string()] = true
+		out = append(out, reso)
+	}
 	return
 }
 

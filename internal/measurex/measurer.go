@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -47,8 +48,9 @@ func NewMeasurerWithDefaultSettings() *Measurer {
 	}
 }
 
-// clone returns a clone of the current measurer with a new DB.
-func (mx *Measurer) clone(db *DB) *Measurer {
+// Clone returns a clone of the current Measurer with the given
+// DB instead of the DB used by the original Measurer.
+func (mx *Measurer) Clone(db *DB) *Measurer {
 	return &Measurer{
 		DB:            db,
 		HTTPClient:    mx.HTTPClient,
@@ -488,7 +490,7 @@ func (mx *Measurer) Infof(format string, v ...interface{}) {
 // HTTPEndpointGetParallel performs an HTTPEndpointGet for each
 // input endpoint using a pool of background goroutines.
 //
-// This function returns to the caller a channel where to run
+// This function returns to the caller a channel where to read
 // measurements from. The channel is closed when done.
 func (mx *Measurer) HTTPEndpointGetParallel(ctx context.Context,
 	jar http.CookieJar, epnts ...*HTTPEndpoint) <-chan *Measurement {
@@ -510,7 +512,7 @@ func (mx *Measurer) HTTPEndpointGetParallel(ctx context.Context,
 			// separate MeasurementID namespace. The whole package
 			// does not keep constant MeasurementID if you don't
 			// use this factory for creating a new child.
-			child := mx.clone(mx.DB.NewChildDB())
+			child := mx.Clone(mx.DB.NewChildDB())
 			for epnt := range input {
 				output <- child.HTTPEndpointGet(ctx, epnt, jar)
 			}
@@ -524,4 +526,89 @@ func (mx *Measurer) HTTPEndpointGetParallel(ctx context.Context,
 		close(output)
 	}()
 	return output
+}
+
+// RegisterUDPResolvers registers UDP resolvers into the DB.
+func (mx *Measurer) RegisterUDPResolvers(resolvers ...string) {
+	for _, resolver := range resolvers {
+		mx.DB.InsertIntoResolvers("udp", resolver)
+	}
+}
+
+// LookupURLHostParallel performs an LookupHost-like operation for each
+// DNS resolver registered into the database using a pool of background
+// goroutines.
+//
+// This function returns to the caller a channel where to read
+// measurements from. The channel is closed when done.
+func (mx *Measurer) LookupURLHostParallel(
+	ctx context.Context, URL *url.URL) <-chan *Measurement {
+	var (
+		done      = make(chan interface{})
+		resolvers = make(chan *ResolverInfo)
+		output    = make(chan *Measurement)
+	)
+	go func() {
+		defer close(resolvers)
+		for _, reso := range mx.DB.SelectAllFromResolvers() {
+			resolvers <- reso
+		}
+	}()
+	const parallelism = 3
+	for i := 0; i < parallelism; i++ {
+		go func() {
+			// Important: we need a children DB because we need a
+			// separate MeasurementID namespace. The whole package
+			// does not keep constant MeasurementID if you don't
+			// use this factory for creating a new child.
+			child := mx.Clone(mx.DB.NewChildDB())
+			for reso := range resolvers {
+				child.lookupHostWithResolverInfo(ctx, reso, URL, output)
+			}
+			done <- true
+		}()
+	}
+	go func() {
+		for i := 0; i < parallelism; i++ {
+			<-done
+		}
+		close(output)
+	}()
+	return output
+}
+
+// lookupHostWithResolverInfo performs a LookupHost-like
+// operation using the given ResolverInfo.
+func (mx *Measurer) lookupHostWithResolverInfo(
+	ctx context.Context, reso *ResolverInfo, URL *url.URL,
+	output chan<- *Measurement) {
+	switch reso.Network {
+	case "system":
+		output <- mx.LookupHostSystem(ctx, URL.Hostname())
+	case "udp":
+		output <- mx.LookupHostUDP(ctx, URL.Hostname(), reso.Address)
+	default:
+		return
+	}
+	switch URL.Scheme {
+	case "https":
+	default:
+		return
+	}
+	switch reso.Network {
+	case "udp":
+		output <- mx.LookupHTTPSSvcUDP(ctx, URL.Hostname(), reso.Address)
+	}
+}
+
+// LookupostParallel is like LookupURLHostParallel but we only
+// have in input an hostname rather than a URL. As such, we cannot
+// determine whether to perform HTTPSSvc lookups and so we aren't
+// going to perform this kind of lookups in this case.
+func (mx *Measurer) LookupHostParallel(
+	ctx context.Context, hostname, port string) <-chan *Measurement {
+	return mx.LookupURLHostParallel(ctx, &url.URL{
+		Scheme: "", // so we don't see https and we don't try HTTPSSvc
+		Host:   net.JoinHostPort(hostname, port),
+	})
 }
