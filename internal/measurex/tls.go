@@ -31,6 +31,12 @@ func WrapTLSHandshaker(origin Origin, db EventDB, thx netxlite.TLSHandshaker) TL
 	return &tlsHandshakerx{TLSHandshaker: thx, db: db, origin: origin}
 }
 
+// NewTLSHandshakerStdlib creates a new TLS handshaker that
+// saves results into the DB and uses the stdlib for TLS.
+func NewTLSHandshakerStdlib(origin Origin, db EventDB, logger Logger) TLSHandshaker {
+	return WrapTLSHandshaker(origin, db, netxlite.NewTLSHandshakerStdlib(logger))
+}
+
 type tlsHandshakerx struct {
 	netxlite.TLSHandshaker
 	db     EventDB
@@ -103,6 +109,12 @@ func (thx *tlsHandshakerx) computeOddity(err error) Oddity {
 		return OddityTLSHandshakeTimeout
 	case errorsx.FailureConnectionReset:
 		return OddityTLSHandshakeReset
+	case errorsx.FailureEOFError:
+		return OddityTLSHandshakeUnexpectedEOF
+	case errorsx.FailureSSLInvalidHostname:
+		return OddityTLSHandshakeInvalidHostname
+	case errorsx.FailureSSLUnknownAuthority:
+		return OddityTLSHandshakeUnknownAuthority
 	default:
 		return OddityTLSHandshakeOther
 	}

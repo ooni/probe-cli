@@ -64,6 +64,7 @@ type resolverx struct {
 type LookupHostEvent struct {
 	Origin        Origin
 	MeasurementID int64
+	ConnID        int64 // connID (typically zero)
 	Network       string
 	Address       string
 	Domain        string
@@ -119,6 +120,7 @@ func (r *resolverx) computeOddityLookupHost(addrs []string, err error) Oddity {
 type LookupHTTPSSvcEvent struct {
 	Origin        Origin
 	MeasurementID int64
+	ConnID        int64 // connID (typically zero)
 	Network       string
 	Address       string
 	Domain        string

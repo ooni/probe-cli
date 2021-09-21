@@ -15,9 +15,12 @@ var (
 	OddityTCPConnectOher            = Oddity("tcp.connect.other")
 
 	// tls.handshake
-	OddityTLSHandshakeTimeout = Oddity("tls.handshake.timeout")
-	OddityTLSHandshakeReset   = Oddity("tls.handshake.reset")
-	OddityTLSHandshakeOther   = Oddity("tls.handshake.other")
+	OddityTLSHandshakeTimeout          = Oddity("tls.handshake.timeout")
+	OddityTLSHandshakeReset            = Oddity("tls.handshake.reset")
+	OddityTLSHandshakeOther            = Oddity("tls.handshake.other")
+	OddityTLSHandshakeUnexpectedEOF    = Oddity("tls.handshake.unexpected_eof")
+	OddityTLSHandshakeInvalidHostname  = Oddity("tls.handshake.invalid_hostname")
+	OddityTLSHandshakeUnknownAuthority = Oddity("tls.handshake.unknown_authority")
 
 	// quic.handshake
 	OddityQUICHandshakeTimeout         = Oddity("quic.handshake.timeout")

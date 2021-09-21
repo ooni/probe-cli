@@ -3,48 +3,48 @@ package measurex
 // Measurement groups all the events that have the same MeasurementID. This
 // data format is not compatible with the OONI data format.
 type Measurement struct {
-	// ID is the measurement ID.
-	ID int64
+	// MeasurementID is the measurement MeasurementID.
+	MeasurementID int64
 
-	// URL is the OPTIONAL URL this measurement refers to.
-	URL string
+	// URL is the URL this measurement refers to.
+	URL string `json:",omitempty"`
 
-	// Endpoint is the OPTIONAL endpoint this measurement refers to.
-	Endpoint string
+	// Endpoint is the endpoint this measurement refers to.
+	Endpoint string `json:",omitempty"`
 
 	// Oddities lists all the oddities inside this measurement. See
 	// newMeasurement's docs for more info.
 	Oddities []Oddity
 
 	// Connect contains all the connect operations.
-	Connect []*NetworkEvent
+	Connect []*NetworkEvent `json:",omitempty"`
 
 	// ReadWrite contains all the read and write operations.
-	ReadWrite []*NetworkEvent
+	ReadWrite []*NetworkEvent `json:",omitempty"`
 
 	// Close contains all the close operations.
-	Close []*NetworkEvent
+	Close []*NetworkEvent `json:",omitempty"`
 
 	// TLSHandshake contains all the TLS handshakes.
-	TLSHandshake []*TLSHandshakeEvent
+	TLSHandshake []*TLSHandshakeEvent `json:",omitempty"`
 
 	// QUICHandshake contains all the QUIC handshakes.
-	QUICHandshake []*QUICHandshakeEvent
+	QUICHandshake []*QUICHandshakeEvent `json:",omitempty"`
 
 	// LookupHost contains all the host lookups.
-	LookupHost []*LookupHostEvent
+	LookupHost []*LookupHostEvent `json:",omitempty"`
 
 	// LookupHTTPSSvc contains all the HTTPSSvc lookups.
-	LookupHTTPSSvc []*LookupHTTPSSvcEvent
+	LookupHTTPSSvc []*LookupHTTPSSvcEvent `json:",omitempty"`
 
 	// DNSRoundTrip contains all the DNS round trips.
-	DNSRoundTrip []*DNSRoundTripEvent
+	DNSRoundTrip []*DNSRoundTripEvent `json:",omitempty"`
 
 	// HTTPRoundTrip contains all the HTTP round trips.
-	HTTPRoundTrip []*HTTPRoundTripEvent
+	HTTPRoundTrip []*HTTPRoundTripEvent `json:",omitempty"`
 
 	// HTTPRedirect contains all the redirections.
-	HTTPRedirect []*HTTPRedirectEvent
+	HTTPRedirect []*HTTPRedirectEvent `json:",omitempty"`
 }
 
 // NewMeasurement creates a new Measurement by gathering all the
@@ -70,9 +70,9 @@ type Measurement struct {
 // - id is the MeasurementID.
 //
 // Returns a Measurement possibly containing empty lists of events.
-func NewMeasurement(db *Saver, id int64) *Measurement {
+func NewMeasurement(db *DB, id int64) *Measurement {
 	m := &Measurement{
-		ID:             id,
+		MeasurementID:  id,
 		Connect:        db.SelectAllFromDialWithMeasurementID(id),
 		ReadWrite:      db.SelectAllFromReadWriteWithMeasurementID(id),
 		Close:          db.SelectAllFromCloseWithMeasurementID(id),

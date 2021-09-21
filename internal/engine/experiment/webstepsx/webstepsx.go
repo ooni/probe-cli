@@ -147,7 +147,7 @@ func (um *URLMeasurer) RunSingleStep(ctx context.Context,
 	m.DNS = append(m.DNS, um.Mx.LookupHostUDP(ctx, URL.Hostname(), um.DNSResolverUDP))
 	endpoints := um.Mx.DB.SelectAllEndpointsForDomain(URL.Hostname(), port)
 	m.Control = append(m.Control, um.Mx.LookupWCTH(ctx, URL, endpoints, port))
-	httpEndpoints, err := um.Mx.DB.SelectAllHTTPEndpointsForDomain(URL)
+	httpEndpoints, err := um.Mx.DB.SelectAllHTTPEndpointsForURL(URL)
 	if err != nil {
 		return
 	}

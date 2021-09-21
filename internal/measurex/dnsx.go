@@ -29,6 +29,7 @@ type dnsxTransportx struct {
 type DNSRoundTripEvent struct {
 	Origin        Origin        // OriginProbe or OriginTH
 	MeasurementID int64         // ID of the measurement
+	ConnID        int64         // connID (typically zero)
 	Network       string        // DNS resolver's network (e.g., "dot", "doh")
 	Address       string        // DNS resolver's address or URL (for "doh")
 	Query         []byte        // Raw query
@@ -43,6 +44,7 @@ func (txp *dnsxTransportx) RoundTrip(ctx context.Context, query []byte) ([]byte,
 	reply, err := txp.RoundTripper.RoundTrip(ctx, query)
 	finished := txp.db.ElapsedTime()
 	txp.db.InsertIntoDNSRoundTrip(&DNSRoundTripEvent{
+		Origin:        txp.origin,
 		MeasurementID: txp.db.MeasurementID(),
 		Network:       txp.RoundTripper.Network(),
 		Address:       txp.RoundTripper.Address(),

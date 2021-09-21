@@ -8,13 +8,14 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Measurer performs measurements.
 type Measurer struct {
 	// DB is the MANDATORY database to use.
-	DB *Saver
+	DB *DB
 
 	// HTTPClient is the MANDATORY HTTP client for the WCTH.
 	HTTPClient HTTPClient
@@ -30,6 +31,32 @@ type Measurer struct {
 
 	// WCTHURL is the MANDATORY URL of the WCTH.
 	WCTHURL string
+}
+
+// NewMeasurerWithDefaultSettings creates a new Measurer
+// instance using the most default settings.
+func NewMeasurerWithDefaultSettings() *Measurer {
+	db := NewSaver(time.Now())
+	return &Measurer{
+		DB:            db,
+		HTTPClient:    &http.Client{},
+		Logger:        log.Log,
+		Origin:        OriginProbe,
+		TLSHandshaker: NewTLSHandshakerStdlib(OriginProbe, db, log.Log),
+		WCTHURL:       "https://wcth.ooni.io/",
+	}
+}
+
+// clone returns a clone of the current measurer with a new DB.
+func (mx *Measurer) clone(db *DB) *Measurer {
+	return &Measurer{
+		DB:            db,
+		HTTPClient:    mx.HTTPClient,
+		Logger:        mx.Logger,
+		Origin:        mx.Origin,
+		TLSHandshaker: mx.TLSHandshaker,
+		WCTHURL:       mx.WCTHURL,
+	}
 }
 
 func (mx *Measurer) nextMeasurement() int64 {
@@ -129,7 +156,7 @@ func (mx *Measurer) tcpConnect(ctx context.Context, address string) (Conn, error
 	return d.DialContext(ctx, "tcp", address)
 }
 
-// TLSConnect connects and TLS handshakes with a TCP endpoint.
+// TLSConnectAndHandshake connects and TLS handshakes with a TCP endpoint.
 //
 // Arguments:
 //
@@ -159,10 +186,10 @@ func (mx *Measurer) tcpConnect(ctx context.Context, address string) (Conn, error
 // utls.ClientHelloID thay you're using.
 //
 // Returns a Measurement.
-func (mx *Measurer) TLSConnect(ctx context.Context,
+func (mx *Measurer) TLSConnectAndHandshake(ctx context.Context,
 	address string, config *tls.Config) *Measurement {
 	id := mx.nextMeasurement()
-	conn, _ := mx.tlsConnect(ctx, address, config)
+	conn, _ := mx.tlsConnectAndHandshake(ctx, address, config)
 	measurement := NewMeasurement(mx.DB, id)
 	if conn != nil {
 		conn.Close()
@@ -170,8 +197,9 @@ func (mx *Measurer) TLSConnect(ctx context.Context,
 	return measurement
 }
 
-// tlsConnect is like TLSConnect but does not create a new measurement
-func (mx *Measurer) tlsConnect(ctx context.Context,
+// tlsConnectAndHandshake is like TLSConnectAndHandshake
+// but does not create a new measurement.
+func (mx *Measurer) tlsConnectAndHandshake(ctx context.Context,
 	address string, config *tls.Config) (TLSConn, error) {
 	conn, err := mx.tcpConnect(ctx, address)
 	if err != nil {
@@ -237,7 +265,7 @@ func (mx *Measurer) quicHandshake(ctx context.Context,
 // HTTPEndpointGet performs a GET request for an HTTP endpoint.
 //
 // This function WILL NOT follow redirects. If there is a redirect
-// you will see it inside the specific mx.DB table.
+// you will see it inside the specific database table.
 //
 // Arguments:
 //
@@ -248,28 +276,77 @@ func (mx *Measurer) quicHandshake(ctx context.Context,
 // - jar is the cookie jar to use.
 //
 // Returns a measurement. The returned measurement is empty if
-// the endpoint is misconfigured or the URL has an unknow scheme.
+// the endpoint is misconfigured or the URL has an unknown scheme.
 func (mx *Measurer) HTTPEndpointGet(
-	ctx context.Context, epnt *HTTPEndpoint, jar http.CookieJar) (m *Measurement) {
-	id := mx.nextMeasurement()
-	var resp *http.Response
-	switch epnt.Network {
-	case NetworkQUIC:
-		resp, _ = mx.httpEndpointGetQUIC(ctx, epnt, jar)
-		m = NewMeasurement(mx.DB, id)
-	case NetworkTCP:
-		resp, _ = mx.httpEndpointGetTCP(ctx, epnt, jar)
-		m = NewMeasurement(mx.DB, id)
-	default:
-		m = &Measurement{}
-	}
+	ctx context.Context, epnt *HTTPEndpoint, jar http.CookieJar) *Measurement {
+	resp, m, _ := mx.httpEndpointGet(ctx, epnt, jar)
 	if resp != nil {
 		resp.Body.Close()
 	}
-	return
+	return m
 }
 
-var errUnknownHTTPEndpointURLScheme = errors.New("unknown HTTPEndpoint.URL.Scheme")
+var (
+	errUnknownHTTPEndpointURLScheme = errors.New("unknown HTTPEndpoint.URL.Scheme")
+	errUnknownHTTPEndpointNetwork   = errors.New("unknown HTTPEndpoint.Network")
+)
+
+// HTTPPreparedRequest is a suspended request that only awaits
+// for you to Resume it to deliver a result.
+type HTTPPreparedRequest struct {
+	resp *http.Response
+	m    *Measurement
+	err  error
+}
+
+// Resume resumes the request and yields either a response or an error. You
+// shall not call this function more than once.
+func (r *HTTPPreparedRequest) Resume() (*http.Response, error) {
+	return r.resp, r.err
+}
+
+// Measurement returns the associated measurement.
+func (r *HTTPPreparedRequest) Measurement() *Measurement {
+	return r.m
+}
+
+// HTTPEndpointPrepareGet prepares a GET request for an HTTP endpoint.
+//
+// This prepared request WILL NOT follow redirects. If there is a redirect
+// you will see it inside the specific database table.
+//
+// Arguments:
+//
+// - ctx is the context allowing to timeout the operation;
+//
+// - epnt is the HTTP endpoint;
+//
+// - jar is the cookie jar to use.
+//
+// Returns either a prepared request or an error.
+func (mx *Measurer) HTTPEndpointPrepareGet(ctx context.Context,
+	epnt *HTTPEndpoint, jar http.CookieJar) *HTTPPreparedRequest {
+	out := &HTTPPreparedRequest{}
+	out.resp, out.m, out.err = mx.httpEndpointGet(ctx, epnt, jar)
+	return out
+}
+
+// httpEndpointGet implements HTTPEndpointGet.
+func (mx *Measurer) httpEndpointGet(ctx context.Context, epnt *HTTPEndpoint,
+	jar http.CookieJar) (resp *http.Response, m *Measurement, err error) {
+	id := mx.nextMeasurement()
+	switch epnt.Network {
+	case NetworkQUIC:
+		resp, err = mx.httpEndpointGetQUIC(ctx, epnt, jar)
+		m = NewMeasurement(mx.DB, id)
+	case NetworkTCP:
+		resp, err = mx.httpEndpointGetTCP(ctx, epnt, jar)
+		m = NewMeasurement(mx.DB, id)
+	default:
+		m, err = &Measurement{}, errUnknownHTTPEndpointNetwork
+	}
+	return
+}
 
 // httpEndpointGetTCP specializes HTTPSEndpointGet for HTTP and HTTPS.
 func (mx *Measurer) httpEndpointGetTCP(
@@ -311,7 +388,7 @@ func (mx *Measurer) httpEndpointGetHTTPS(
 		return nil, err
 	}
 	req.Header = epnt.Header
-	conn, err := mx.tlsConnect(ctx, epnt.Address, &tls.Config{
+	conn, err := mx.tlsConnectAndHandshake(ctx, epnt.Address, &tls.Config{
 		ServerName: epnt.SNI,
 		NextProtos: epnt.ALPN,
 		RootCAs:    netxlite.NewDefaultCertPool(),
@@ -406,4 +483,41 @@ func (mx *Measurer) onlyTCPEndpoints(endpoints []*Endpoint) (out []string) {
 // Infof formats and logs an informational message using mx.Logger.
 func (mx *Measurer) Infof(format string, v ...interface{}) {
 	mx.Logger.Infof(format, v...)
+}
+
+// HTTPEndpointGetParallel performs an HTTPEndpointGet for each
+// input endpoint using a pool of background goroutines.
+//
+// This function returns to the caller a channel where to run
+// measurements from. The channel is closed when done.
+func (mx *Measurer) HTTPEndpointGetParallel(ctx context.Context,
+	jar http.CookieJar, epnts ...*HTTPEndpoint) <-chan *Measurement {
+	var (
+		done   = make(chan interface{})
+		input  = make(chan *HTTPEndpoint)
+		output = make(chan *Measurement)
+	)
+	go func() {
+		defer close(input)
+		for _, epnt := range epnts {
+			input <- epnt
+		}
+	}()
+	const parallelism = 3
+	for i := 0; i < parallelism; i++ {
+		go func() {
+			child := mx.clone(mx.DB.clone())
+			for epnt := range input {
+				output <- child.HTTPEndpointGet(ctx, epnt, jar)
+			}
+			done <- true
+		}()
+	}
+	go func() {
+		for i := 0; i < parallelism; i++ {
+			<-done
+		}
+		close(output)
+	}()
+	return output
 }

@@ -80,6 +80,12 @@ func (r *SerialResolver) lookupHostWithRetry(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
 	var errorslist []error
 	for i := 0; i < 3; i++ {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+			// fallthrough
+		}
 		replies, err := r.LookupHostWithoutRetry(ctx, hostname, qtype)
 		if err == nil {
 			return replies, nil
