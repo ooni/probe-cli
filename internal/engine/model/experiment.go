@@ -21,6 +21,44 @@ type ExperimentSession interface {
 	UserAgent() string
 }
 
+// ExperimentAsyncTestKeys is the type of test keys returned by an experiment
+// when running in async fashion rather than in sync fashion.
+type ExperimentAsyncTestKeys struct {
+	// MeasurementRuntime should return the total measurement runtime.
+	MeasurementRuntime float64
+
+	// TestKeys should return the actual test keys.
+	TestKeys interface{}
+
+	// Extensions returns the extensions used by this experiment.
+	Extensions map[string]int64
+}
+
+// ExperimentMeasurerAsync is an experiment that can run in async fashion.
+type ExperimentMeasurerAsync interface {
+	// RunAsync runs the experiment in async fashion.
+	//
+	// Arguments:
+	//
+	// - ctx is the context for deadline/timeout/cancellation
+	//
+	// - sess is the measurement session
+	//
+	// - input is the input URL to measure
+	//
+	// - callbacks contains the experiment callbacks
+	//
+	// Returns either a channel where TestKeys are posted or an error.
+	//
+	// An error indicate specific preconditions for running the experiment
+	// are not met (e.g., the input URL is invalid).
+	//
+	// On success, the experiment will post on the channel each new
+	// measurement until it is done and closes the channel.
+	RunAsync(ctx context.Context, sess ExperimentSession, input string,
+		callbacks ExperimentCallbacks) (<-chan *ExperimentAsyncTestKeys, error)
+}
+
 // ExperimentCallbacks contains experiment event-handling callbacks
 type ExperimentCallbacks interface {
 	// OnProgress provides information about an experiment progress.

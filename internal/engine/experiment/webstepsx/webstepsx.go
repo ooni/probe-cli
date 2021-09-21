@@ -1,158 +1,154 @@
 // Package webstepsx contains a websteps implementation
 // based on the internal/measurex package.
+//
+// This implementation does not follow any existing spec
+// rather we are modeling the spec on this one.
 package webstepsx
 
 import (
 	"context"
-	"net/http"
+	"errors"
 	"net/url"
+	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// SingleStep contains the results of a single web step.
-type SingleStep struct {
-	// URL is the URL this measurement refers to.
-	URL string `json:"url"`
+const (
+	testName    = "websteps"
+	testVersion = "0.0.2"
+)
 
-	// Oddities contains all the oddities of all endpoints.
-	Oddities []measurex.Oddity `json:"oddities"`
+// Config contains the experiment config.
+type Config struct{}
 
-	// DNS contains all the DNS measurements.
-	DNS []*measurex.Measurement `json:"dns"`
-
-	// Control contains all the control measurements.
-	Control []*measurex.Measurement `json:"control"`
-
-	// Endpoints contains a measurement for each endpoints (which
-	// may be empty if DNS lookup failed).
-	Endpoints []*measurex.Measurement `json:"endpoints"`
+// TestKeys contains the experiment's test keys.
+type TestKeys struct {
+	*measurex.ArchivalURLMeasurement
 }
 
-// computeOddities computes the Oddities field my merging all
-// the oddities appearing in the Endpoints list.
-func (ss *SingleStep) computeOddities() {
-	unique := make(map[measurex.Oddity]bool)
-	for _, entry := range ss.DNS {
-		for _, oddity := range entry.Oddities {
-			unique[oddity] = true
-		}
-	}
-	for _, entry := range ss.Endpoints {
-		for _, oddity := range entry.Oddities {
-			unique[oddity] = true
-		}
-	}
-	for oddity := range unique {
-		if oddity != "" {
-			ss.Oddities = append(ss.Oddities, oddity)
-		}
-	}
+// Measurer performs the measurement.
+type Measurer struct {
+	Config Config
 }
 
-// URLMeasurer measures a single URL.
-//
-// Make sure you fill the fields marked as MANDATORY.
-type URLMeasurer struct {
-	// DNSResolverUDP is the MANDATORY address of an DNS
-	// over UDP resolver (e.g., "8.8.4.4.:53").
-	DNSResolverUDP string
+var (
+	_ model.ExperimentMeasurer      = &Measurer{}
+	_ model.ExperimentMeasurerAsync = &Measurer{}
+)
 
-	// Mx is the MANDATORY measurex.Measurer.
-	Mx *measurex.Measurer
-
-	// URL is the MANDATORY URL to measure.
-	URL *url.URL
+// NewExperimentMeasurer creates a new ExperimentMeasurer.
+func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
+	return &Measurer{Config: config}
 }
 
-// Run performs all the WebSteps step.
-//
-// We define "step" as the process by which we have an input URL
-// and we perform the following operations:
-//
-// 1. lookup of all the possible endpoints for the URL;
-//
-// 2. measurement of each available endpoint.
-//
-// After a step has run, we search for all the redirection URLs
-// and we run a new step with the new URLs.
-//
-// Return value:
-//
-// A list of SingleStep structures where the Endpoints array may be empty
-// if we have no been able to discover endpoints.
-func (um *URLMeasurer) Run(ctx context.Context) (v []*SingleStep) {
-	jar := measurex.NewCookieJar()
-	inputs := []*url.URL{um.URL}
-Loop:
-	for len(inputs) > 0 {
-		dups := make(map[string]*url.URL)
-		for _, input := range inputs {
-			select {
-			case <-ctx.Done():
-				break Loop
-			default:
-				um.Mx.Infof("RunSingleStep url=%s dnsResolverUDP=%s jar=%+v",
-					input, um.DNSResolverUDP, jar)
-				m := um.RunSingleStep(ctx, jar, input)
-				v = append(v, m)
-				for _, epnt := range m.Endpoints {
-					for _, redir := range epnt.HTTPRedirect {
-						dups[redir.Location.String()] = redir.Location
-					}
-				}
-			}
-		}
-		inputs = nil
-		for _, input := range dups {
-			um.Mx.Infof("newRedirection %s", input)
-			inputs = append(inputs, input)
-		}
-	}
-	return
+// ExperimentName implements ExperimentMeasurer.ExperExperimentName.
+func (mx *Measurer) ExperimentName() string {
+	return testName
 }
 
-// RunSingleStep performs a single WebSteps step.
-//
-// This function DOES NOT automatically follow redirections.
-//
-// Arguments:
-//
-// - ctx is the context to implement timeouts;
-//
-// - cookiejar is the http.CookieJar for cookies;
-//
-// - URL is the URL to measure.
-//
-// Return value:
-//
-// A SingleStep structure where the Endpoints array may be empty
-// if we have no been able to discover endpoints.
-func (um *URLMeasurer) RunSingleStep(ctx context.Context,
-	cookiekar http.CookieJar, URL *url.URL) (m *SingleStep) {
-	m = &SingleStep{URL: URL.String()}
-	defer m.computeOddities()
-	port, err := measurex.PortFromURL(URL)
+// ExperimentVersion implements ExperimentMeasurer.ExperExperimentVersion.
+func (mx *Measurer) ExperimentVersion() string {
+	return testVersion
+}
+
+var (
+	// ErrNoAvailableTestHelpers is emitted when there are no available test helpers.
+	ErrNoAvailableTestHelpers = errors.New("no available helpers")
+
+	// ErrNoInput indicates that no input was provided.
+	ErrNoInput = errors.New("no input provided")
+
+	// ErrInputIsNotAnURL indicates that the input is not an URL.
+	ErrInputIsNotAnURL = errors.New("input is not an URL")
+
+	// ErrUnsupportedInput indicates that the input URL scheme is unsupported.
+	ErrUnsupportedInput = errors.New("unsupported input scheme")
+)
+
+// RunAsync implements ExperimentMeasurerAsync.RunAsync.
+func (mx *Measurer) RunAsync(
+	ctx context.Context, sess model.ExperimentSession, input string,
+	callbacks model.ExperimentCallbacks) (<-chan *model.ExperimentAsyncTestKeys, error) {
+	// 1. Parse and verify URL
+	URL, err := url.Parse(input)
 	if err != nil {
-		return
+		return nil, ErrInputIsNotAnURL
 	}
-	switch URL.Scheme {
-	case "https":
-		m.DNS = append(m.DNS, um.Mx.LookupHTTPSSvcUDP(
-			ctx, URL.Hostname(), um.DNSResolverUDP))
-	default:
-		// nothing to do
+	if URL.Scheme != "http" && URL.Scheme != "https" {
+		return nil, ErrUnsupportedInput
 	}
-	m.DNS = append(m.DNS, um.Mx.LookupHostSystem(ctx, URL.Hostname()))
-	m.DNS = append(m.DNS, um.Mx.LookupHostUDP(ctx, URL.Hostname(), um.DNSResolverUDP))
-	endpoints := um.Mx.DB.SelectAllEndpointsForDomain(URL.Hostname(), port)
-	m.Control = append(m.Control, um.Mx.LookupWCTH(ctx, URL, endpoints, port))
-	httpEndpoints, err := um.Mx.DB.SelectAllHTTPEndpointsForURL(URL)
-	if err != nil {
-		return
+	// 2. Find the testhelper
+	testhelpers, _ := sess.GetTestHelpersByName("web-connectivity")
+	var testhelper *model.Service
+	for _, th := range testhelpers {
+		if th.Type == "https" {
+			testhelper = &th
+			break
+		}
 	}
-	for _, epnt := range httpEndpoints {
-		m.Endpoints = append(m.Endpoints, um.Mx.HTTPEndpointGet(ctx, epnt, cookiekar))
+	if testhelper == nil {
+		return nil, ErrNoAvailableTestHelpers
 	}
-	return
+	out := make(chan *model.ExperimentAsyncTestKeys)
+	go mx.runAsync(ctx, sess, input, testhelper, out)
+	return out, nil
+}
+
+func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
+	URL string, th *model.Service, out chan<- *model.ExperimentAsyncTestKeys) {
+	defer close(out)
+	begin := time.Now()
+	db := measurex.NewDB(begin)
+	mmx := &measurex.Measurer{
+		DB:            db,
+		HTTPClient:    sess.DefaultHTTPClient(),
+		Logger:        sess.Logger(),
+		Origin:        measurex.OriginProbe,
+		TLSHandshaker: netxlite.NewTLSHandshakerStdlib(sess.Logger()),
+	}
+	mmx.RegisterUDPResolvers("8.8.4.4:53", "8.8.8.8:53", "1.1.1.1:53", "1.0.0.1:53")
+	mmx.RegisterWCTH(th.Address)
+	cookies := measurex.NewCookieJar()
+	in := mmx.MeasureHTTPURLAndFollowRedirections(ctx, URL, cookies)
+	for m := range in {
+		out <- &model.ExperimentAsyncTestKeys{
+			MeasurementRuntime: time.Since(begin).Seconds(),
+			TestKeys: &TestKeys{
+				measurex.NewArchivalURLMeasurement(m),
+			},
+			Extensions: map[string]int64{
+				archival.ExtHTTP.Name:         archival.ExtHTTP.V,
+				archival.ExtDNS.Name:          archival.ExtDNS.V,
+				archival.ExtNetevents.Name:    archival.ExtNetevents.V,
+				archival.ExtTCPConnect.Name:   archival.ExtTCPConnect.V,
+				archival.ExtTLSHandshake.Name: archival.ExtTLSHandshake.V,
+			},
+		}
+	}
+}
+
+// Run implements ExperimentMeasurer.Run.
+func (mx *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
+	measurement *model.Measurement, callbacks model.ExperimentCallbacks) error {
+	return errors.New("sync run is not implemented")
+}
+
+// SummaryKeys contains summary keys for this experiment.
+//
+// Note that this structure is part of the ABI contract with probe-cli
+// therefore we should be careful when changing it.
+type SummaryKeys struct {
+	Accessible bool   `json:"accessible"`
+	Blocking   string `json:"blocking"`
+	IsAnomaly  bool   `json:"-"`
+}
+
+// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
+func (mx *Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
+	sk := SummaryKeys{}
+	return sk, nil
 }

@@ -92,28 +92,100 @@ func (e *Experiment) ReportID() string {
 // Measure performs a measurement with input. We assume that you have
 // configured the available test helpers, either manually or by calling
 // the session's MaybeLookupBackends() method.
+//
+// Deprecated: This function will return just the first measurement
+// returned by the experiments that implement the model.ExperimentRunnerAsync
+// interface. All the other measurements will be lost. To get all the
+// measurements returned by such experiments, use MeasureAsync.
 func (e *Experiment) Measure(input string) (*model.Measurement, error) {
 	return e.MeasureWithContext(context.Background(), input)
 }
 
-// MeasureWithContext is like Measure but with context.
-func (e *Experiment) MeasureWithContext(
-	ctx context.Context, input string,
-) (measurement *model.Measurement, err error) {
-	err = e.session.MaybeLookupLocationContext(ctx) // this already tracks session bytes
+// experimentAsyncWrapper makes a sync experiment behave like it was async
+type experimentAsyncWrapper struct {
+	*Experiment
+}
+
+var _ model.ExperimentMeasurerAsync = &experimentAsyncWrapper{}
+
+// RunAsync implements ExperimentMeasurerAsync.RunAsync.
+func (eaw *experimentAsyncWrapper) RunAsync(
+	ctx context.Context, sess model.ExperimentSession, input string,
+	callbacks model.ExperimentCallbacks) (<-chan *model.ExperimentAsyncTestKeys, error) {
+	out := make(chan *model.ExperimentAsyncTestKeys)
+	measurement := eaw.newMeasurement(input)
+	start := time.Now()
+	err := eaw.measurer.Run(ctx, eaw.session, measurement, eaw.callbacks)
+	stop := time.Now()
 	if err != nil {
-		return
+		return nil, err
+	}
+	go func() {
+		out <- &model.ExperimentAsyncTestKeys{
+			Extensions:         measurement.Extensions,
+			MeasurementRuntime: stop.Sub(start).Seconds(),
+			TestKeys:           measurement.TestKeys,
+		}
+		close(out)
+	}()
+	return out, nil
+}
+
+func (e *Experiment) MeasureAsync(
+	ctx context.Context, input string) (<-chan *model.Measurement, error) {
+	err := e.session.MaybeLookupLocationContext(ctx) // this already tracks session bytes
+	if err != nil {
+		return nil, err
 	}
 	ctx = dialer.WithSessionByteCounter(ctx, e.session.byteCounter)
 	ctx = dialer.WithExperimentByteCounter(ctx, e.byteCounter)
-	measurement = e.newMeasurement(input)
-	start := time.Now()
-	err = e.measurer.Run(ctx, e.session, measurement, e.callbacks)
-	stop := time.Now()
-	measurement.MeasurementRuntime = stop.Sub(start).Seconds()
-	scrubErr := measurement.Scrub(e.session.ProbeIP())
-	if err == nil {
-		err = scrubErr
+	var async model.ExperimentMeasurerAsync
+	if v, okay := e.measurer.(model.ExperimentMeasurerAsync); okay {
+		async = v
+	} else {
+		async = &experimentAsyncWrapper{e}
+	}
+	in, err := async.RunAsync(ctx, e.session, input, e.callbacks)
+	if err != nil {
+		return nil, err
+	}
+	out := make(chan *model.Measurement)
+	go func() {
+		defer close(out)
+		for tk := range in {
+			measurement := e.newMeasurement(input)
+			measurement.Extensions = tk.Extensions
+			measurement.MeasurementRuntime = tk.MeasurementRuntime
+			measurement.TestKeys = tk.TestKeys
+			if err := measurement.Scrub(e.session.ProbeIP()); err != nil {
+				continue
+			}
+			out <- measurement
+		}
+	}()
+	return out, nil
+}
+
+// MeasureWithContext is like Measure but with context.
+//
+// Deprecated: This function will return just the first measurement
+// returned by the experiments that implement the model.ExperimentRunnerAsync
+// interface. All the other measurements will be lost. To get all the
+// measurements returned by such experiments, use MeasureAsync.
+func (e *Experiment) MeasureWithContext(
+	ctx context.Context, input string,
+) (measurement *model.Measurement, err error) {
+	out, err := e.MeasureAsync(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+	for m := range out {
+		if measurement == nil {
+			measurement = m // as documented
+		}
+	}
+	if measurement == nil {
+		err = errors.New("experiment returned no measurements")
 	}
 	return
 }
