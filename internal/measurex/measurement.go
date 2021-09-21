@@ -1,5 +1,7 @@
 package measurex
 
+import "time"
+
 // Measurement groups all the events that have the same MeasurementID. This
 // data format is not compatible with the OONI data format.
 type Measurement struct {
@@ -104,6 +106,53 @@ func (m *Measurement) computeOddities() {
 	for key := range unique {
 		if key != "" {
 			m.Oddities = append(m.Oddities, key)
+		}
+	}
+}
+
+// URLMeasurement is the measurement of a whole URL. It contains
+// a bunch of measurements detailing each measurement step.
+type URLMeasurement struct {
+	// URL is the URL we're measuring.
+	URL string
+
+	// CannotParseURL is true if the input URL could not be parsed.
+	CannotParseURL bool
+
+	// DNS contains all the DNS related measurements.
+	DNS []*Measurement
+
+	// TH contains all the measurements from the test helpers.
+	TH []*Measurement
+
+	// CannotGenerateEndpoints for URL is true if the code tasked of
+	// generating a list of endpoints for the URL fails.
+	CannotGenerateEndpoints bool
+
+	// Endpoints contains a measurement for each endpoint
+	// that we discovered via DNS or TH.
+	Endpoints []*Measurement
+
+	// RedirectURLs contain the URLs to which we should fetch
+	// if we choose to follow redirections.
+	RedirectURLs []string
+
+	// Runtime is the total time to measure this URL.
+	Runtime time.Duration
+}
+
+// fillRedirects takes in input a complete URLMeasurement and fills
+// the field named Redirects with all redirections.
+func (m *URLMeasurement) fillRedirects() {
+	dups := make(map[string]bool)
+	for _, epnt := range m.Endpoints {
+		for _, redir := range epnt.HTTPRedirect {
+			loc := redir.Location.String()
+			if _, found := dups[loc]; found {
+				continue
+			}
+			dups[loc] = true
+			m.RedirectURLs = append(m.RedirectURLs, loc)
 		}
 	}
 }

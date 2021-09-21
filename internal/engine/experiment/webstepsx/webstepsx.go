@@ -116,7 +116,7 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 	in := mmx.MeasureHTTPURLAndFollowRedirections(ctx, URL, cookies)
 	for m := range in {
 		out <- &model.ExperimentAsyncTestKeys{
-			MeasurementRuntime: time.Since(begin).Seconds(),
+			MeasurementRuntime: m.Runtime.Seconds(),
 			TestKeys: &TestKeys{
 				measurex.NewArchivalURLMeasurement(m),
 			},

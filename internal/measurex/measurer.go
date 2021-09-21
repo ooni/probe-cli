@@ -646,34 +646,6 @@ func (mx *Measurer) asyncTestHelperQuery(
 	}
 }
 
-// URLMeasurement is the measurement of a whole URL. It contains
-// a bunch of measurements detailing each measurement step.
-type URLMeasurement struct {
-	// URL is the URL we're measuring.
-	URL string
-
-	// CannotParseURL is true if the input URL could not be parsed.
-	CannotParseURL bool
-
-	// DNS contains all the DNS related measurements.
-	DNS []*Measurement
-
-	// TH contains all the measurements from the test helpers.
-	TH []*Measurement
-
-	// CannotGenerateEndpoints for URL is true if the code tasked of
-	// generating a list of endpoints for the URL fails.
-	CannotGenerateEndpoints bool
-
-	// Endpoints contains a measurement for each endpoint
-	// that we discovered via DNS or TH.
-	Endpoints []*Measurement
-
-	// RedirectURLs contain the URLs to which we should fetch
-	// if we choose to follow redirections.
-	RedirectURLs []string
-}
-
 // MeasureURL measures an HTTP or HTTPS URL. The DNS resolvers
 // and the Test Helpers we use in this measurement are the ones
 // configured into the database. The default is to use the system
@@ -703,6 +675,8 @@ func (mx *Measurer) MeasureURL(
 	ctx context.Context, URL string, cookies http.CookieJar) *URLMeasurement {
 	mx.Logf("MeasureURL url=%s", URL)
 	m := &URLMeasurement{URL: URL}
+	begin := time.Now()
+	defer func() { m.Runtime = time.Since(begin) }()
 	parsed, err := url.Parse(URL)
 	if err != nil {
 		m.CannotParseURL = true
@@ -724,22 +698,6 @@ func (mx *Measurer) MeasureURL(
 	}
 	m.fillRedirects()
 	return m
-}
-
-// fillRedirects takes in input a complete URLMeasurement and fills
-// the field named Redirects with all redirections.
-func (m *URLMeasurement) fillRedirects() {
-	dups := make(map[string]bool)
-	for _, epnt := range m.Endpoints {
-		for _, redir := range epnt.HTTPRedirect {
-			loc := redir.Location.String()
-			if _, found := dups[loc]; found {
-				continue
-			}
-			dups[loc] = true
-			m.RedirectURLs = append(m.RedirectURLs, loc)
-		}
-	}
 }
 
 // redirectionQueue is the type we use to manage the redirection
