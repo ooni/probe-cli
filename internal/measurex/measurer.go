@@ -29,9 +29,6 @@ type Measurer struct {
 
 	// TLSHandshaker is the MANDATORY TLS handshaker.
 	TLSHandshaker TLSHandshaker
-
-	// WCTHURL is the MANDATORY URL of the WCTH.
-	WCTHURL string
 }
 
 // NewMeasurerWithDefaultSettings creates a new Measurer
@@ -44,7 +41,6 @@ func NewMeasurerWithDefaultSettings() *Measurer {
 		Logger:        log.Log,
 		Origin:        OriginProbe,
 		TLSHandshaker: NewTLSHandshakerStdlib(OriginProbe, db, log.Log),
-		WCTHURL:       "https://wcth.ooni.io/",
 	}
 }
 
@@ -57,7 +53,6 @@ func (mx *Measurer) Clone(db *DB) *Measurer {
 		Logger:        mx.Logger,
 		Origin:        mx.Origin,
 		TLSHandshaker: mx.TLSHandshaker,
-		WCTHURL:       mx.WCTHURL,
 	}
 }
 
@@ -458,13 +453,13 @@ func (mx *Measurer) httpClientDo(ctx context.Context, clnt HTTPClient,
 //
 // Returns a measurement.
 func (mx *Measurer) LookupWCTH(ctx context.Context, URL *url.URL,
-	endpoints []*Endpoint, port string) *Measurement {
+	endpoints []*Endpoint, port string, WCTHURL string) *Measurement {
 	const timeout = 30 * time.Second
 	mx.Infof("lookupWCTH backend=%s url=%s endpoints=%+v port=%s timeout=%s...",
-		mx.WCTHURL, URL.String(), endpoints, port, timeout)
+		WCTHURL, URL.String(), endpoints, port, timeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	w := NewWCTHWorker(mx.Logger, mx.DB, mx.HTTPClient, mx.WCTHURL)
+	w := NewWCTHWorker(mx.Logger, mx.DB, mx.HTTPClient, WCTHURL)
 	id := mx.nextMeasurement()
 	_, _ = w.Run(ctx, URL, mx.onlyTCPEndpoints(endpoints))
 	return NewMeasurement(mx.DB, id)
@@ -611,4 +606,65 @@ func (mx *Measurer) LookupHostParallel(
 		Scheme: "", // so we don't see https and we don't try HTTPSSvc
 		Host:   net.JoinHostPort(hostname, port),
 	})
+}
+
+// RegisterWCTH registers URLs for the WCTH.
+func (mx *Measurer) RegisterWCTH(URLs ...string) {
+	for _, URL := range URLs {
+		mx.DB.InsertIntoTestHelpers("wcth", URL)
+	}
+}
+
+// QueryTestHelperParallel performs a parallel query for the
+// given URL to all known test helpers.
+func (mx *Measurer) QueryTestHelperParallel(
+	ctx context.Context, URL *url.URL) <-chan *Measurement {
+	var (
+		done   = make(chan interface{})
+		ths    = make(chan *TestHelperInfo)
+		output = make(chan *Measurement)
+	)
+	go func() {
+		defer close(ths)
+		for _, th := range mx.DB.SelectAllFromTestHelpers() {
+			ths <- th
+		}
+	}()
+	const parallelism = 1 // maybe raise in the future?
+	for i := 0; i < parallelism; i++ {
+		go func() {
+			// Important: we need a children DB because we need a
+			// separate MeasurementID namespace. The whole package
+			// does not keep constant MeasurementID if you don't
+			// use this factory for creating a new child.
+			child := mx.Clone(mx.DB.NewChildDB())
+			for th := range ths {
+				child.asyncTestHelperQuery(ctx, th, URL, output)
+			}
+			done <- true
+		}()
+	}
+	go func() {
+		for i := 0; i < parallelism; i++ {
+			<-done
+		}
+		close(output)
+	}()
+	return output
+}
+
+func (mx *Measurer) asyncTestHelperQuery(
+	ctx context.Context, th *TestHelperInfo, URL *url.URL,
+	output chan<- *Measurement) {
+	switch th.Protocol {
+	case "wcth":
+		port, err := PortFromURL(URL)
+		if err != nil {
+			return // TODO(bassosimone): what to do about this error?
+		}
+		endpoints := mx.DB.SelectAllEndpointsForDomain(URL.Hostname(), port)
+		output <- mx.LookupWCTH(ctx, URL, endpoints, port, th.URL)
+	default:
+		// don't know what to do
+	}
 }

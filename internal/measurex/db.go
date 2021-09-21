@@ -94,6 +94,7 @@ type dbSharedWithChildren struct {
 	httpRedirectTable  []*HTTPRedirectEvent
 	quicHandshakeTable []*QUICHandshakeEvent
 	resolversTable     []*ResolverInfo
+	testHelpersTable   []*TestHelperInfo
 
 	// mu protects all the above tables and ConnID
 	mu sync.Mutex
@@ -352,6 +353,48 @@ func (db *dbSharedWithChildren) SelectAllFromResolvers() (out []*ResolverInfo) {
 		}
 		unique[reso.string()] = true
 		out = append(out, reso)
+	}
+	return
+}
+
+// TestHelperInfo contains info about a test helper.
+type TestHelperInfo struct {
+	// Protocol is the test helpers's protocol (e.g., "wcth")
+	Protocol string
+
+	// URL is the URL (e.g., "https://wcth.ooni.io/")
+	URL string
+}
+
+// string returns a string representation of the resolver.
+func (ti *TestHelperInfo) string() string {
+	return fmt.Sprintf("%s@%s", ti.Protocol, ti.URL)
+}
+
+// InsertIntoTestHelpers inserts a given TH into the test helpers's table.
+func (db *dbSharedWithChildren) InsertIntoTestHelpers(proto, URL string) {
+	db.mu.Lock()
+	db.testHelpersTable = append(db.testHelpersTable, &TestHelperInfo{
+		Protocol: proto,
+		URL:      URL,
+	})
+	db.mu.Unlock()
+}
+
+// SelectAllFromTestHelperss returns all the configured THs. This function
+// ensures that we return in output a list only containing unique THs.
+func (db *dbSharedWithChildren) SelectAllFromTestHelpers() (out []*TestHelperInfo) {
+	var all []*TestHelperInfo
+	db.mu.Lock()
+	all = append(all, db.testHelpersTable...)
+	db.mu.Unlock()
+	unique := make(map[string]bool)
+	for _, th := range all {
+		if _, found := unique[th.string()]; found {
+			continue
+		}
+		unique[th.string()] = true
+		out = append(out, th)
 	}
 	return
 }
