@@ -77,6 +77,22 @@ func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *DNSMea
 	}
 }
 
+// lookupHostForeign performs a LookupHost using a "foreign" resolver.
+func (mx *Measurer) lookupHostForeign(
+	ctx context.Context, domain string, r Resolver) *DNSMeasurement {
+	const timeout = 4 * time.Second
+	ol := newOperationLogger(mx.Logger, "LookupHost %s with %s", domain, r.Network())
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	db := &MeasurementDB{}
+	_, err := mx.WrapResolver(db, r).LookupHost(ctx, domain)
+	ol.Stop(err)
+	return &DNSMeasurement{
+		Domain:      domain,
+		Measurement: db.AsMeasurement(),
+	}
+}
+
 // LookupHostUDP is like LookupHostSystem but uses an UDP resolver.
 //
 // Arguments:
@@ -126,6 +142,23 @@ func (mx *Measurer) LookupHTTPSSvcUDP(
 	r := mx.NewResolverUDP(db, mx.Logger, address)
 	defer r.CloseIdleConnections()
 	_, err := r.LookupHTTPSSvcWithoutRetry(ctx, domain)
+	ol.Stop(err)
+	return &DNSMeasurement{
+		Domain:      domain,
+		Measurement: db.AsMeasurement(),
+	}
+}
+
+// lookupHTTPSSvcUDPForeign is like LookupHTTPSSvcUDP
+// except that it uses a "foreign" resolver.
+func (mx *Measurer) lookupHTTPSSvcUDPForeign(
+	ctx context.Context, domain string, r Resolver) *DNSMeasurement {
+	const timeout = 4 * time.Second
+	ol := newOperationLogger(mx.Logger, "LookupHTTPSvc %s with %s", domain, r.Address())
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	db := &MeasurementDB{}
+	_, err := mx.WrapResolver(db, r).LookupHTTPSSvcWithoutRetry(ctx, domain)
 	ol.Stop(err)
 	return &DNSMeasurement{
 		Domain:      domain,
@@ -528,13 +561,33 @@ func (mx *Measurer) HTTPEndpointGetParallel(ctx context.Context,
 	return output
 }
 
+// ResolverNetwork identifies the network of a resolver.
+type ResolverNetwork string
+
+var (
+	// ResolverSystem is the system resolver (i.e., getaddrinfo)
+	ResolverSystem = ResolverNetwork("system")
+
+	// ResolverUDP is a resolver using DNS-over-UDP
+	ResolverUDP = ResolverNetwork("udp")
+
+	// ResolverForeign is a resolver that is not managed by
+	// this package. We can wrap it, but we don't be able to
+	// observe any event but Lookup{Host,HTTPSvc}
+	ResolverForeign = ResolverNetwork("foreign")
+)
+
 // ResolverInfo contains info about a DNS resolver.
 type ResolverInfo struct {
 	// Network is the resolver's network (e.g., "doh", "udp")
-	Network string
+	Network ResolverNetwork
 
 	// Address is the address (e.g., "1.1.1.1:53", "https://1.1.1.1/dns-query")
 	Address string
+
+	// ForeignResolver is only used when Network's
+	// value equals the ResolverForeign constant.
+	ForeignResolver Resolver
 }
 
 // LookupURLHostParallel performs an LookupHost-like operation for each
@@ -576,10 +629,12 @@ func (mx *Measurer) lookupHostWithResolverInfo(
 	ctx context.Context, reso *ResolverInfo, URL *url.URL,
 	output chan<- *DNSMeasurement) {
 	switch reso.Network {
-	case "system":
+	case ResolverSystem:
 		output <- mx.LookupHostSystem(ctx, URL.Hostname())
-	case "udp":
+	case ResolverUDP:
 		output <- mx.LookupHostUDP(ctx, URL.Hostname(), reso.Address)
+	case ResolverForeign:
+		output <- mx.lookupHostForeign(ctx, URL.Hostname(), reso.ForeignResolver)
 	default:
 		return
 	}
@@ -589,8 +644,10 @@ func (mx *Measurer) lookupHostWithResolverInfo(
 		return
 	}
 	switch reso.Network {
-	case "udp":
+	case ResolverUDP:
 		output <- mx.LookupHTTPSSvcUDP(ctx, URL.Hostname(), reso.Address)
+	case ResolverForeign:
+		output <- mx.lookupHTTPSSvcUDPForeign(ctx, URL.Hostname(), reso.ForeignResolver)
 	}
 }
 
@@ -628,6 +685,8 @@ func (mx *Measurer) LookupHostParallel(
 //
 // - URL is the URL to measure
 //
+// - header contains the HTTP headers for the request
+//
 // - cookies contains the cookies we should use for measuring
 // this URL and possibly future redirections.
 //
@@ -640,7 +699,8 @@ func (mx *Measurer) LookupHostParallel(
 // redirect properly without cookies. This has been
 // documented at https://github.com/ooni/probe/issues/1727.
 func (mx *Measurer) MeasureURL(
-	ctx context.Context, URL string, cookies http.CookieJar) (*URLMeasurement, error) {
+	ctx context.Context, URL string, headers http.Header,
+	cookies http.CookieJar) (*URLMeasurement, error) {
 	mx.Logger.Infof("MeasureURL url=%s", URL)
 	m := &URLMeasurement{URL: URL}
 	begin := time.Now()
@@ -657,7 +717,7 @@ func (mx *Measurer) MeasureURL(
 		m.DNS = append(m.DNS, dns)
 	}
 	m.DNSRuntime = time.Since(dnsBegin)
-	epnts, err := AllHTTPEndpointsForURL(parsed, m.DNS...)
+	epnts, err := AllHTTPEndpointsForURL(parsed, headers, m.DNS...)
 	if err != nil {
 		return nil, err
 	}
@@ -698,11 +758,11 @@ func (r *redirectionQueue) redirectionsCount() int {
 // MeasureURLAndFollowRedirections is like MeasureURL except
 // that it _also_ follows all the HTTP redirections.
 func (mx *Measurer) MeasureHTTPURLAndFollowRedirections(ctx context.Context,
-	URL string, cookies http.CookieJar) <-chan *URLMeasurement {
+	URL string, headers http.Header, cookies http.CookieJar) <-chan *URLMeasurement {
 	out := make(chan *URLMeasurement)
 	go func() {
 		defer close(out)
-		meas, err := mx.MeasureURL(ctx, URL, cookies)
+		meas, err := mx.MeasureURL(ctx, URL, headers, cookies)
 		if err != nil {
 			mx.Logger.Warnf("mx.MeasureURL failed: %s", err.Error())
 			return
@@ -712,7 +772,7 @@ func (mx *Measurer) MeasureHTTPURLAndFollowRedirections(ctx context.Context,
 		const maxRedirects = 7
 		for !rq.empty() && rq.redirectionsCount() < maxRedirects {
 			URL = rq.popleft()
-			meas, err = mx.MeasureURL(ctx, URL, cookies)
+			meas, err = mx.MeasureURL(ctx, URL, headers, cookies)
 			if err != nil {
 				mx.Logger.Warnf("mx.MeasureURL failed: %s", err.Error())
 				return

@@ -2,6 +2,7 @@ package measurex
 
 import (
 	"net"
+	"net/http"
 	"net/url"
 	"time"
 )
@@ -179,8 +180,11 @@ func (m *DNSMeasurement) supportsHTTP3(entry *LookupHTTPSSvcEvent) bool {
 //
 // - URL is the URL for which we want endpoints;
 //
+// - headers are the headers to use.
+//
 // Returns a list of endpoints or an error.
-func (m *DNSMeasurement) allHTTPEndpointsForURL(URL *url.URL) ([]*HTTPEndpoint, error) {
+func (m *DNSMeasurement) allHTTPEndpointsForURL(
+	URL *url.URL, headers http.Header) ([]*HTTPEndpoint, error) {
 	domain := URL.Hostname()
 	port, err := PortFromURL(URL)
 	if err != nil {
@@ -199,7 +203,24 @@ func (m *DNSMeasurement) allHTTPEndpointsForURL(URL *url.URL) ([]*HTTPEndpoint, 
 			SNI:     domain,
 			ALPN:    alpnForHTTPEndpoint(epnt.Network),
 			URL:     URL,
-			Header:  NewHTTPRequestHeaderForMeasuring(),
+			Header:  headers,
+		})
+	}
+	return out, nil
+}
+
+// AllEndpointsForURL is like AllHTTPEndpointsForURL but return
+// simple Endpoints rather than HTTPEndpoints.
+func AllEndpointsForURL(URL *url.URL, meas ...*DNSMeasurement) ([]*Endpoint, error) {
+	all, err := AllHTTPEndpointsForURL(URL, http.Header{}, meas...)
+	if err != nil {
+		return nil, err
+	}
+	var out []*Endpoint
+	for _, epnt := range all {
+		out = append(out, &Endpoint{
+			Network: epnt.Network,
+			Address: epnt.Address,
 		})
 	}
 	return out, nil
@@ -208,11 +229,13 @@ func (m *DNSMeasurement) allHTTPEndpointsForURL(URL *url.URL) ([]*HTTPEndpoint, 
 // AllHTTPEndpointsForURL gathers all the HTTP endpoints for a given
 // URL from a list of DNSMeasurements, removes duplicates and returns
 // the result. This call may fail if we cannot determine the port
-// from the URL, in which case we return an error.
-func AllHTTPEndpointsForURL(URL *url.URL, meas ...*DNSMeasurement) ([]*HTTPEndpoint, error) {
+// from the URL, in which case we return an error. You MUST supply
+// the headers you want to use for measuring.
+func AllHTTPEndpointsForURL(URL *url.URL,
+	headers http.Header, meas ...*DNSMeasurement) ([]*HTTPEndpoint, error) {
 	var out []*HTTPEndpoint
 	for _, m := range meas {
-		epnt, err := m.allHTTPEndpointsForURL(URL)
+		epnt, err := m.allHTTPEndpointsForURL(URL, headers)
 		if err != nil {
 			return nil, err
 		}

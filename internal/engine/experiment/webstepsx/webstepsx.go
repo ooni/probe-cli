@@ -118,7 +118,8 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 		TLSHandshaker: netxlite.NewTLSHandshakerStdlib(sess.Logger()),
 	}
 	cookies := measurex.NewCookieJar()
-	in := mmx.MeasureHTTPURLAndFollowRedirections(ctx, URL, cookies)
+	in := mmx.MeasureHTTPURLAndFollowRedirections(
+		ctx, URL, measurex.NewHTTPRequestHeaderForMeasuring(), cookies)
 	for m := range in {
 		out <- &model.ExperimentAsyncTestKeys{
 			MeasurementRuntime: m.TotalRuntime.Seconds(),

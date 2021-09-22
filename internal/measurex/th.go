@@ -220,16 +220,9 @@ func (c *THClient) Run(ctx context.Context, URL string) (*THServerResponse, erro
 	for m := range mx.LookupURLHostParallel(ctx, parsed, c.DNServers...) {
 		dns = append(dns, m)
 	}
-	httpEndpoints, err := AllHTTPEndpointsForURL(parsed, dns...)
+	endpoints, err := AllEndpointsForURL(parsed, dns...)
 	if err != nil {
 		return nil, err
-	}
-	var endpoints []*Endpoint
-	for _, epnt := range httpEndpoints {
-		endpoints = append(endpoints, &Endpoint{
-			Network: epnt.Network,
-			Address: epnt.Address,
-		})
 	}
 	return (&THClientCall{
 		Endpoints:  endpoints,
@@ -665,7 +658,7 @@ func (h *THHandler) dohQuery(ctx context.Context, URL *url.URL) (
 	default:
 		// nothing
 	}
-	epnts, _ = AllHTTPEndpointsForURL(URL) // nil on failure
+	epnts, _ = AllHTTPEndpointsForURL(URL, NewHTTPRequestHeaderForMeasuring()) // nil on failure
 	return
 }
 
