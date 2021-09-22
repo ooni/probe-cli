@@ -619,7 +619,7 @@ func (db *DB) SelectAllHTTPEndpointsForURL(URL *url.URL) ([]*HTTPEndpoint, error
 			Network: epnt.Network,
 			Address: epnt.Address,
 			SNI:     domain,
-			ALPN:    db.alpnForHTTPEndpoint(epnt.Network),
+			ALPN:    alpnForHTTPEndpoint(epnt.Network),
 			URL:     URL,
 			Header:  NewHTTPRequestHeaderForMeasuring(),
 		})
@@ -642,16 +642,5 @@ func PortFromURL(URL *url.URL) (string, error) {
 		return "80", nil
 	default:
 		return "", ErrCannotDeterminePortFromURL
-	}
-}
-
-func (db *DB) alpnForHTTPEndpoint(network EndpointNetwork) []string {
-	switch network {
-	case NetworkQUIC:
-		return []string{"h3"}
-	case NetworkTCP:
-		return []string{"h2", "http/1.1"}
-	default:
-		return nil
 	}
 }

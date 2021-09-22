@@ -12,6 +12,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/cmd/oohelper/internal"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -20,8 +21,9 @@ var (
 	debug       = flag.Bool("debug", false, "Toggle debug mode")
 	httpClient  *http.Client
 	resolver    netx.Resolver
-	server      = flag.String("server", "https://wcth.ooni.io/", "URL of the test helper")
+	server      = flag.String("server", "", "URL of the test helper")
 	target      = flag.String("target", "", "Target URL for the test helper")
+	fwebsteps   = flag.Bool("websteps", false, "Use the websteps TH")
 )
 
 func newhttpclient() *http.Client {
@@ -43,18 +45,46 @@ func init() {
 }
 
 func main() {
+	defer cancel()
 	logmap := map[bool]log.Level{
 		true:  log.DebugLevel,
 		false: log.InfoLevel,
 	}
 	flag.Parse()
 	log.SetLevel(logmap[*debug])
-	clnt := internal.OOClient{HTTPClient: httpClient, Resolver: resolver}
-	config := internal.OOConfig{TargetURL: *target, ServerURL: *server}
-	defer cancel()
-	cresp, err := clnt.Do(ctx, config)
-	runtimex.PanicOnError(err, "client.Do failed")
+	apimap := map[bool]func() interface{}{
+		false: wcth,
+		true:  webstepsth,
+	}
+	cresp := apimap[*fwebsteps]()
 	data, err := json.MarshalIndent(cresp, "", "    ")
 	runtimex.PanicOnError(err, "json.MarshalIndent failed")
 	fmt.Printf("%s\n", string(data))
+}
+
+func webstepsth() interface{} {
+	serverURL := *server
+	if serverURL == "" {
+		serverURL = "http://127.0.0.1:8080/api/v1/websteps"
+	}
+	clnt := &measurex.THClient{
+		DNServers:  []string{"8.8.8.8:53", "8.8.4.4:53", "1.1.1.1:53", "1.0.0.1:53"},
+		HTTPClient: httpClient,
+		ServerURL:  serverURL,
+	}
+	cresp, err := clnt.Run(ctx, *target)
+	runtimex.PanicOnError(err, "client.Run failed")
+	return cresp
+}
+
+func wcth() interface{} {
+	serverURL := *server
+	if serverURL == "" {
+		serverURL = "https://wcth.ooni.io/"
+	}
+	clnt := internal.OOClient{HTTPClient: httpClient, Resolver: resolver}
+	config := internal.OOConfig{TargetURL: *target, ServerURL: serverURL}
+	cresp, err := clnt.Do(ctx, config)
+	runtimex.PanicOnError(err, "client.Do failed")
+	return cresp
 }
