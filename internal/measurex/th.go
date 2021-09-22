@@ -360,6 +360,7 @@ func (h *THHandler) singleStep(
 	for me := range mx.HTTPEndpointGetParallel(ctx, jar, epnts...) {
 		m.Endpoints = append(m.Endpoints, h.newTHEndpointMeasurement(me))
 	}
+	h.maybeQUICFollowUp(ctx, m, epnts...)
 	return m, nil
 }
 
@@ -424,6 +425,75 @@ func (h *THHandler) onlyAllowedHeaders(header http.Header) (out http.Header) {
 		}
 	}
 	return
+}
+
+// maybeQUICFollowUp checks whether we need to use Alt-Svc to check
+// for QUIC. We query for HTTPSSvc but currently only Cloudflare
+// implements this proposed standard. So, this function is
+// where we take care of all the other servers implementing QUIC.
+func (h *THHandler) maybeQUICFollowUp(ctx context.Context,
+	m *THServerResponse, epnts ...*HTTPEndpoint) {
+	altsvc := []string{}
+	for _, epnt := range m.Endpoints {
+		// Check whether we have a QUIC handshake. If so, then
+		// HTTPSSvc worked and we can stop here.
+		if epnt.QUICHandshake != nil {
+			return
+		}
+		for _, rtrip := range epnt.HTTPRoundTrip {
+			if v := rtrip.ResponseHeader.Get("alt-svc"); v != "" {
+				altsvc = append(altsvc, v)
+			}
+		}
+	}
+	// syntax:
+	//
+	// Alt-Svc: clear
+	// Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>
+	// Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>; persist=1
+	//
+	// multiple entries may be separated by comma.
+	//
+	// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Alt-Svc
+	for _, header := range altsvc {
+		entries := strings.Split(header, ",")
+		if len(entries) < 1 {
+			continue
+		}
+		for _, entry := range entries {
+			parts := strings.Split(entry, ";")
+			if len(parts) < 1 {
+				continue
+			}
+			if parts[0] == "h3=\":443\"" {
+				h.doQUICFollowUp(ctx, m, epnts...)
+				return
+			}
+		}
+	}
+}
+
+// doQUICFollowUp runs when we know there's QUIC support via Alt-Svc.
+func (h *THHandler) doQUICFollowUp(ctx context.Context,
+	m *THServerResponse, epnts ...*HTTPEndpoint) {
+	quicEpnts := []*HTTPEndpoint{}
+	// do not mutate the existing list rather create a new one
+	for _, epnt := range epnts {
+		quicEpnts = append(quicEpnts, &HTTPEndpoint{
+			Domain:  epnt.Domain,
+			Network: NetworkQUIC,
+			Address: epnt.Address,
+			SNI:     epnt.SNI,
+			ALPN:    []string{"h3"},
+			URL:     epnt.URL,
+			Header:  epnt.Header,
+		})
+	}
+	mx := NewMeasurerWithDefaultSettings()
+	jar := NewCookieJar()
+	for me := range mx.HTTPEndpointGetParallel(ctx, jar, quicEpnts...) {
+		m.Endpoints = append(m.Endpoints, h.newTHEndpointMeasurement(me))
+	}
 }
 
 //
