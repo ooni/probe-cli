@@ -18,6 +18,9 @@ type bandwidthStats struct {
 	// Timestamp is the timestamp when we saved this snapshot.
 	Timestamp time.Time
 
+	// Elapsed is the elapsed time since the beginning.
+	Elapsed time.Duration
+
 	// Read is the number of bytes read using Read.
 	Read int64
 
@@ -33,6 +36,7 @@ type bandwidthStats struct {
 
 // bandwidthMonitor monitors the bandwidth usage.
 type bandwidthMonitor struct {
+	begin   time.Time
 	enabled *atomicx.Int64
 	stats   bandwidthStats
 	mu      sync.Mutex
@@ -65,6 +69,7 @@ func (bwmon *bandwidthMonitor) measure(ctx context.Context, filename string) {
 func (bwmon *bandwidthMonitor) saveSnapshot(t time.Time, filename string) {
 	bwmon.mu.Lock()
 	bwmon.stats.Timestamp = t
+	bwmon.stats.Elapsed = t.Sub(bwmon.begin)
 	data, err := json.Marshal(bwmon.stats)
 	bwmon.stats = bandwidthStats{}
 	bwmon.mu.Unlock()
@@ -177,5 +182,6 @@ func (c *bwmonUDPLikeConn) ReadFrom(b []byte) (int, net.Addr, error) {
 
 // bwmonitor is the bandwidth monitor singleton
 var bwmonitor = &bandwidthMonitor{
+	begin:   time.Now(),
 	enabled: &atomicx.Int64{},
 }
