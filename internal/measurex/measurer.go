@@ -16,6 +16,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/apex/log"
@@ -34,6 +35,11 @@ type Measurer struct {
 
 	// Logger is the MANDATORY logger to use.
 	Logger Logger
+
+	// MeasureURLHelper is the OPTIONAL test helper to use when
+	// we're measuring using the MeasureURL function. If this field
+	// is not set, we'll not be using any helper.
+	MeasureURLHelper MeasureURLHelper
 
 	// Resolvers is the MANDATORY list of resolvers.
 	Resolvers []*ResolverInfo
@@ -671,6 +677,47 @@ func (mx *Measurer) LookupHostParallel(
 	return out
 }
 
+// MeasureURLHelper is a Test Helper that discovers additional
+// endpoints after MeasureURL has finished discovering endpoints
+// via the usual DNS mechanism. The MeasureURLHelper:
+//
+// - is used by experiments to call a real test helper, i.e.,
+// a remote service providing extra endpoints
+//
+// - is used by test helpers to augment the set of endpoints
+// discovered so far with the ones provided by a client.
+type MeasureURLHelper interface {
+	// LookupExtraHTTPEndpoints searches for extra HTTP endpoints
+	// suitable for the given URL we're measuring.
+	//
+	// Arguments:
+	//
+	// - ctx is the context for timeout/cancellation/deadline
+	//
+	// - URL is the URL we're currently measuring
+	//
+	// - headers contains the HTTP headers we wish to use
+	//
+	// - epnts is the current list of endpoints
+	//
+	// This function SHOULD return a NEW list of extra endpoints
+	// it discovered and SHOULD NOT merge the epnts endpoints with
+	// extra endpoints it discovered. Therefore:
+	//
+	// - on any kind of error it MUST return nil, err
+	//
+	// - on success it MUST return the NEW endpoints it discovered
+	//
+	// It is the caller's responsibility to merge the NEW list of
+	// endpoints with the ones it passed as argument.
+	//
+	// It is also the caller's responsibility to ENSURE that the
+	// newly returned endpoints only use the few headers that our
+	// test helper protocol allows one to set.
+	LookupExtraHTTPEndpoints(ctx context.Context, URL *url.URL,
+		headers http.Header, epnts ...*HTTPEndpoint) ([]*HTTPEndpoint, error)
+}
+
 // MeasureURL measures an HTTP or HTTPS URL. The DNS resolvers
 // and the Test Helpers we use in this measurement are the ones
 // configured into the database. The default is to use the system
@@ -721,13 +768,110 @@ func (mx *Measurer) MeasureURL(
 	if err != nil {
 		return nil, err
 	}
+	if mx.MeasureURLHelper != nil {
+		thBegin := time.Now()
+		extraEpnts, _ := mx.MeasureURLHelper.LookupExtraHTTPEndpoints(
+			ctx, parsed, headers, epnts...)
+		epnts = removeDuplicateHTTPEndpoints(append(epnts, extraEpnts...)...)
+		m.THRuntime = time.Since(thBegin)
+		mx.enforceAllowedHeadersOnly(epnts)
+	}
 	epntRuntime := time.Now()
 	for epnt := range mx.HTTPEndpointGetParallel(ctx, cookies, epnts...) {
 		m.Endpoints = append(m.Endpoints, epnt)
 	}
+	mx.maybeQUICFollowUp(ctx, m, cookies, epnts...)
 	m.EpntsRuntime = time.Since(epntRuntime)
 	m.fillRedirects()
 	return m, nil
+}
+
+// maybeQUICFollowUp checks whether we need to use Alt-Svc to check
+// for QUIC. We query for HTTPSSvc but currently only Cloudflare
+// implements this proposed standard. So, this function is
+// where we take care of all the other servers implementing QUIC.
+func (mx *Measurer) maybeQUICFollowUp(ctx context.Context,
+	m *URLMeasurement, cookies http.CookieJar, epnts ...*HTTPEndpoint) {
+	altsvc := []string{}
+	for _, epnt := range m.Endpoints {
+		// Check whether we have a QUIC handshake. If so, then
+		// HTTPSSvc worked and we can stop here.
+		if epnt.QUICHandshake != nil {
+			return
+		}
+		for _, rtrip := range epnt.HTTPRoundTrip {
+			if v := rtrip.ResponseHeader.Get("alt-svc"); v != "" {
+				altsvc = append(altsvc, v)
+			}
+		}
+	}
+	// syntax:
+	//
+	// Alt-Svc: clear
+	// Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>
+	// Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>; persist=1
+	//
+	// multiple entries may be separated by comma.
+	//
+	// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Alt-Svc
+	for _, header := range altsvc {
+		entries := strings.Split(header, ",")
+		if len(entries) < 1 {
+			continue
+		}
+		for _, entry := range entries {
+			parts := strings.Split(entry, ";")
+			if len(parts) < 1 {
+				continue
+			}
+			if parts[0] == "h3=\":443\"" {
+				mx.doQUICFollowUp(ctx, m, cookies, epnts...)
+				return
+			}
+		}
+	}
+}
+
+// doQUICFollowUp runs when we know there's QUIC support via Alt-Svc.
+func (mx *Measurer) doQUICFollowUp(ctx context.Context,
+	m *URLMeasurement, cookies http.CookieJar, epnts ...*HTTPEndpoint) {
+	quicEpnts := []*HTTPEndpoint{}
+	// do not mutate the existing list rather create a new one
+	for _, epnt := range epnts {
+		quicEpnts = append(quicEpnts, &HTTPEndpoint{
+			Domain:  epnt.Domain,
+			Network: NetworkQUIC,
+			Address: epnt.Address,
+			SNI:     epnt.SNI,
+			ALPN:    []string{"h3"},
+			URL:     epnt.URL,
+			Header:  epnt.Header,
+		})
+	}
+	for mquic := range mx.HTTPEndpointGetParallel(ctx, cookies, quicEpnts...) {
+		m.Endpoints = append(m.Endpoints, mquic)
+	}
+}
+
+func (mx *Measurer) enforceAllowedHeadersOnly(epnts []*HTTPEndpoint) {
+	for _, epnt := range epnts {
+		epnt.Header = mx.keepOnlyAllowedHeaders(epnt.Header)
+	}
+}
+
+func (mx *Measurer) keepOnlyAllowedHeaders(header http.Header) (out http.Header) {
+	out = http.Header{}
+	for k, vv := range header {
+		switch strings.ToLower(k) {
+		case "accept", "accept-language", "cookie", "user-agent":
+			for _, v := range vv {
+				out.Add(k, v)
+			}
+		default:
+			// ignore all the other headers
+		}
+	}
+	return
 }
 
 // redirectionQueue is the type we use to manage the redirection
