@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -24,6 +25,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
@@ -31,103 +33,64 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-// HTTPTransport is the HTTP transport type we use. This transport
-// is a normal netxlite.HTTPTransport but also knows about the ConnID.
-//
-// The RoundTrip method of this transport MAY read a small snapshot
-// of the response body to include it into the measurement. When this
-// happens, the transport will nonetheless return a response body
-// that is suitable for reading the whole body again. The only difference
-// with reading the body normally is timing. The snapshot will be read
-// immediately because it's already cached in RAM. The rest of the
-// body instead will be read normally, using the network.
-type HTTPTransport interface {
-	netxlite.HTTPTransport
+// HTTPTransport is the HTTP transport type we use.
+type HTTPTransport = netxlite.HTTPTransport
 
-	// ConnID returns the connection ID. When this value is zero
-	// or negative it means it has not been set.
-	ConnID() int64
-}
-
-// WrapHTTPTransport takes in input a netxlite.HTTPTransport and
-// returns an HTTPTransport that uses the DB to save events occurring
-// during HTTP round trips. With this constructor the ConnID is
-// not set, hence ConnID will always return zero.
-func WrapHTTPTransport(measurementID int64,
-	origin Origin, db EventDB, txp netxlite.HTTPTransport) HTTPTransport {
-	return WrapHTTPTransportWithConnID(measurementID, origin, db, txp, 0)
-}
-
-// WrapHTTPTransportWithConnID is like WrapHTTPTransport but also
-// sets the conn ID, which is otherwise set to zero.
-func WrapHTTPTransportWithConnID(measurementID int64, origin Origin,
-	db EventDB, txp netxlite.HTTPTransport, connID int64) HTTPTransport {
-	return &httpTransportx{
-		HTTPTransport: txp,
-		db:            db,
-		connID:        connID,
-		mid:           measurementID,
-		origin:        origin,
-	}
+// WrapHTTPTransport creates a new transport that saves
+// HTTP events into the WritableDB.
+func (mx *Measurer) WrapHTTPTransport(db WritableDB, txp HTTPTransport) HTTPTransport {
+	return &httpTransportDB{HTTPTransport: txp, db: db, begin: mx.Begin}
 }
 
 // NewHTTPTransportWithConn creates and wraps an HTTPTransport that
 // does not dial and only uses the given conn.
-func NewHTTPTransportWithConn(measurementID int64,
-	origin Origin, logger Logger, db EventDB, conn Conn) HTTPTransport {
-	txp := netxlite.NewHTTPTransport(logger, netxlite.NewSingleUseDialer(conn),
-		netxlite.NewNullTLSDialer())
-	return WrapHTTPTransportWithConnID(
-		measurementID, origin, db, txp, conn.ConnID())
+func (mx *Measurer) NewHTTPTransportWithConn(logger Logger, db WritableDB, conn Conn) HTTPTransport {
+	return mx.WrapHTTPTransport(db, netxlite.NewHTTPTransport(
+		logger, netxlite.NewSingleUseDialer(conn), netxlite.NewNullTLSDialer()))
 }
 
 // NewHTTPTransportWithTLSConn creates and wraps an HTTPTransport that
 // does not dial and only uses the given conn.
-func NewHTTPTransportWithTLSConn(measurementID int64,
-	origin Origin, logger Logger, db EventDB, conn TLSConn) HTTPTransport {
-	txp := netxlite.NewHTTPTransport(logger, netxlite.NewNullDialer(),
-		netxlite.NewSingleUseTLSDialer(conn))
-	return WrapHTTPTransportWithConnID(
-		measurementID, origin, db, txp, conn.ConnID())
+func (mx *Measurer) NewHTTPTransportWithTLSConn(
+	logger Logger, db WritableDB, conn netxlite.TLSConn) HTTPTransport {
+	return mx.WrapHTTPTransport(db, netxlite.NewHTTPTransport(
+		logger, netxlite.NewNullDialer(), netxlite.NewSingleUseTLSDialer(conn)))
 }
 
 // NewHTTPTransportWithQUICSess creates and wraps an HTTPTransport that
 // does not dial and only uses the given QUIC session.
-func NewHTTPTransportWithQUICSess(measurementID int64,
-	origin Origin, logger Logger, db EventDB, sess QUICEarlySession) HTTPTransport {
-	txp := netxlite.NewHTTP3Transport(
-		logger, netxlite.NewSingleUseQUICDialer(sess), &tls.Config{})
-	return WrapHTTPTransportWithConnID(
-		measurementID, origin, db, txp, sess.ConnID())
+func (mx *Measurer) NewHTTPTransportWithQUICSess(
+	logger Logger, db WritableDB, sess quic.EarlySession) HTTPTransport {
+	return mx.WrapHTTPTransport(db, netxlite.NewHTTP3Transport(
+		logger, netxlite.NewSingleUseQUICDialer(sess), &tls.Config{}))
 }
 
-type httpTransportx struct {
+type httpTransportDB struct {
 	netxlite.HTTPTransport
-	connID int64
-	db     EventDB
-	mid    int64
-	origin Origin
+	begin time.Time
+	db    WritableDB
 }
 
 // HTTPRoundTripEvent contains information about an HTTP round trip.
-//
-// If ConnID is zero or negative, it means undefined. This happens
-// when we create a transport without knowing the ConnID.
 type HTTPRoundTripEvent struct {
-	Origin               Origin        // OriginProbe or OriginTH
-	MeasurementID        int64         // ID of the measurement
-	ConnID               int64         // ID of the conn (<= zero means undefined)
-	RequestMethod        string        // Request method
-	RequestURL           *url.URL      // Request URL
-	RequestHeader        http.Header   // Request headers
-	Started              time.Duration // Beginning of round trip
-	Finished             time.Duration // End of round trip
-	Error                error         // Error or nil
-	Oddity               Oddity        // Oddity classification
-	ResponseStatus       int           // Status code
-	ResponseHeader       http.Header   // Response headers
-	ResponseBodySnapshot []byte        // Body snapshot
-	MaxBodySnapshotSize  int64         // Max size for snapshot
+	RequestMethod        string
+	RequestURL           *url.URL
+	RequestHeader        http.Header
+	Started              float64
+	Finished             float64
+	Error                error
+	Oddity               Oddity
+	ResponseStatus       int
+	ResponseHeader       http.Header
+	ResponseBodySnapshot []byte
+	MaxBodySnapshotSize  int64
+}
+
+// MarshalJSON marshals a HTTPRoundTripEvent to the archival
+// format that is similar to df-001-httpt.
+func (ev *HTTPRoundTripEvent) MarshalJSON() ([]byte, error) {
+	archival := NewArchivalHTTPRoundTrip(ev)
+	return json.Marshal(archival)
 }
 
 // We only read a small snapshot of the body to keep measurements
@@ -135,13 +98,10 @@ type HTTPRoundTripEvent struct {
 // but we'll also allow for reading more bytes from the conn.
 const maxBodySnapshot = 1 << 11
 
-func (txp *httpTransportx) RoundTrip(req *http.Request) (*http.Response, error) {
-	started := txp.db.ElapsedTime()
+func (txp *httpTransportDB) RoundTrip(req *http.Request) (*http.Response, error) {
+	started := time.Since(txp.begin).Seconds()
 	resp, err := txp.HTTPTransport.RoundTrip(req)
 	rt := &HTTPRoundTripEvent{
-		Origin:              txp.origin,
-		MeasurementID:       txp.mid,
-		ConnID:              txp.connID,
 		RequestMethod:       req.Method,
 		RequestURL:          req.URL,
 		RequestHeader:       req.Header,
@@ -149,7 +109,7 @@ func (txp *httpTransportx) RoundTrip(req *http.Request) (*http.Response, error) 
 		MaxBodySnapshotSize: maxBodySnapshot,
 	}
 	if err != nil {
-		rt.Finished = txp.db.ElapsedTime()
+		rt.Finished = time.Since(txp.begin).Seconds()
 		rt.Error = err
 		txp.db.InsertIntoHTTPRoundTrip(rt)
 		return nil, err
@@ -172,7 +132,7 @@ func (txp *httpTransportx) RoundTrip(req *http.Request) (*http.Response, error) 
 		err = nil // we expected to see an EOF here, so no real error
 	}
 	if err != nil {
-		rt.Finished = txp.db.ElapsedTime()
+		rt.Finished = time.Since(txp.begin).Seconds()
 		rt.Error = err
 		txp.db.InsertIntoHTTPRoundTrip(rt)
 		return nil, err
@@ -182,7 +142,7 @@ func (txp *httpTransportx) RoundTrip(req *http.Request) (*http.Response, error) 
 		Closer: resp.Body,
 	}
 	rt.ResponseBodySnapshot = body
-	rt.Finished = txp.db.ElapsedTime()
+	rt.Finished = time.Since(txp.begin).Seconds()
 	txp.db.InsertIntoHTTPRoundTrip(rt)
 	return resp, nil
 }
@@ -192,13 +152,9 @@ type httpTransportBody struct {
 	io.Closer
 }
 
-func (txp *httpTransportx) ConnID() int64 {
-	return txp.connID
-}
-
 // HTTPClient is the HTTP client type we use. This interface is
 // compatible with http.Client. What changes in this kind of clients
-// is that we'll insert redirection events into the DB.
+// is that we'll insert redirection events into the WritableDB.
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 	CloseIdleConnections()
@@ -206,33 +162,20 @@ type HTTPClient interface {
 
 // NewHTTPClient creates a new HTTPClient instance that
 // does not automatically perform redirects.
-func NewHTTPClientWithoutRedirects(measurementID int64,
-	origin Origin, db EventDB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
-	return newHTTPClient(
-		measurementID, origin, db, jar, txp, http.ErrUseLastResponse)
+func NewHTTPClientWithoutRedirects(
+	db WritableDB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
+	return newHTTPClient(db, jar, txp, http.ErrUseLastResponse)
 }
 
 // NewHTTPClientWithRedirects creates a new HTTPClient
 // instance that automatically perform redirects.
-func NewHTTPClientWithRedirects(measurementID int64,
-	origin Origin, db EventDB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
-	return newHTTPClient(
-		measurementID, origin, db, jar, txp, nil)
+func NewHTTPClientWithRedirects(
+	db WritableDB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
+	return newHTTPClient(db, jar, txp, nil)
 }
 
 // HTTPRedirectEvent records an HTTP redirect.
 type HTTPRedirectEvent struct {
-	// Origin is the event origin ("probe" or "th")
-	Origin Origin
-
-	// MeasurementID is the measurement inside which
-	// this event occurred.
-	MeasurementID int64
-
-	// ConnID is the ID of the connection we are using,
-	// which may be zero if undefined.
-	ConnID int64
-
 	// URL is the URL triggering the redirect.
 	URL *url.URL
 
@@ -256,8 +199,8 @@ type HTTPRedirectEvent struct {
 // would return when hitting too many redirects.
 var ErrHTTPTooManyRedirects = errors.New("stopped after 10 redirects")
 
-func newHTTPClient(measurementID int64, origin Origin, db EventDB,
-	cookiejar http.CookieJar, txp HTTPTransport, defaultErr error) HTTPClient {
+func newHTTPClient(db WritableDB, cookiejar http.CookieJar,
+	txp HTTPTransport, defaultErr error) HTTPClient {
 	return &http.Client{
 		Transport: txp,
 		Jar:       cookiejar,
@@ -267,13 +210,10 @@ func newHTTPClient(measurementID int64, origin Origin, db EventDB,
 				err = ErrHTTPTooManyRedirects
 			}
 			db.InsertIntoHTTPRedirect(&HTTPRedirectEvent{
-				Origin:        origin,
-				MeasurementID: measurementID,
-				ConnID:        txp.ConnID(),
-				URL:           via[0].URL, // bug in Go stdlib if we crash here
-				Location:      req.URL,
-				Cookies:       cookiejar.Cookies(req.URL),
-				Error:         err,
+				URL:      via[0].URL, // bug in Go stdlib if we crash here
+				Location: req.URL,
+				Cookies:  cookiejar.Cookies(req.URL),
+				Error:    err,
 			})
 			return err
 		},

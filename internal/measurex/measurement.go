@@ -1,5 +1,11 @@
 package measurex
 
+import (
+	"net"
+	"net/url"
+	"time"
+)
+
 //
 // Measurement
 //
@@ -7,154 +13,34 @@ package measurex
 // produced by this package.
 //
 
-import "time"
-
-// Measurement groups all the events that have the same MeasurementID. This
-// data format is not compatible with the OONI data format.
-type Measurement struct {
-	// MeasurementID is the measurement MeasurementID.
-	MeasurementID int64
-
-	// Oddities lists all the oddities inside this measurement. See
-	// newMeasurement's docs for more info.
-	Oddities []Oddity
-
-	// Connect contains all the connect operations.
-	Connect []*NetworkEvent `json:",omitempty"`
-
-	// ReadWrite contains all the read and write operations.
-	ReadWrite []*NetworkEvent `json:",omitempty"`
-
-	// Close contains all the close operations.
-	Close []*NetworkEvent `json:",omitempty"`
-
-	// TLSHandshake contains all the TLS handshakes.
-	TLSHandshake []*TLSHandshakeEvent `json:",omitempty"`
-
-	// QUICHandshake contains all the QUIC handshakes.
-	QUICHandshake []*QUICHandshakeEvent `json:",omitempty"`
-
-	// LookupHost contains all the host lookups.
-	LookupHost []*LookupHostEvent `json:",omitempty"`
-
-	// LookupHTTPSSvc contains all the HTTPSSvc lookups.
-	LookupHTTPSSvc []*LookupHTTPSSvcEvent `json:",omitempty"`
-
-	// DNSRoundTrip contains all the DNS round trips.
-	DNSRoundTrip []*DNSRoundTripEvent `json:",omitempty"`
-
-	// HTTPRoundTrip contains all the HTTP round trips.
-	HTTPRoundTrip []*HTTPRoundTripEvent `json:",omitempty"`
-
-	// HTTPRedirect contains all the redirections.
-	HTTPRedirect []*HTTPRedirectEvent `json:",omitempty"`
-}
-
-// NewMeasurement creates a new Measurement by gathering all the
-// events inside the database with a given MeasurementID.
-//
-// As part of the process, this function computes the Oddities field by
-// gathering the oddities of the following operations:
-//
-// - connect;
-//
-// - tlsHandshake;
-//
-// - quicHandshake;
-//
-// - lookupHost;
-//
-// - httpRoundTrip.
-//
-// Arguments:
-//
-// - begin is the time when we started measuring;
-//
-// - id is the MeasurementID.
-//
-// Returns a Measurement possibly containing empty lists of events.
-func NewMeasurement(db *DB, id int64) *Measurement {
-	m := &Measurement{
-		MeasurementID:  id,
-		Connect:        db.SelectAllFromDialWithMeasurementID(id),
-		ReadWrite:      db.SelectAllFromReadWriteWithMeasurementID(id),
-		Close:          db.SelectAllFromCloseWithMeasurementID(id),
-		TLSHandshake:   db.SelectAllFromTLSHandshakeWithMeasurementID(id),
-		QUICHandshake:  db.SelectAllFromQUICHandshakeWithMeasurementID(id),
-		LookupHost:     db.SelectAllFromLookupHostWithMeasurementID(id),
-		LookupHTTPSSvc: db.SelectAllFromLookupHTTPSSvcWithMeasurementID(id),
-		DNSRoundTrip:   db.SelectAllFromDNSRoundTripWithMeasurementID(id),
-		HTTPRoundTrip:  db.SelectAllFromHTTPRoundTripWithMeasurementID(id),
-		HTTPRedirect:   db.SelectAllFromHTTPRedirectWithMeasurementID(id),
-	}
-	m.computeOddities()
-	return m
-}
-
-// computeOddities computes all the oddities inside m. See
-// newMeasurement's docs for more information.
-func (m *Measurement) computeOddities() {
-	unique := make(map[Oddity]bool)
-	for _, ev := range m.Connect {
-		unique[ev.Oddity] = true
-	}
-	for _, ev := range m.TLSHandshake {
-		unique[ev.Oddity] = true
-	}
-	for _, ev := range m.QUICHandshake {
-		unique[ev.Oddity] = true
-	}
-	for _, ev := range m.LookupHost {
-		unique[ev.Oddity] = true
-	}
-	for _, ev := range m.HTTPRoundTrip {
-		unique[ev.Oddity] = true
-	}
-	for key := range unique {
-		if key != "" {
-			m.Oddities = append(m.Oddities, key)
-		}
-	}
-}
-
 // URLMeasurement is the measurement of a whole URL. It contains
 // a bunch of measurements detailing each measurement step.
 type URLMeasurement struct {
 	// URL is the URL we're measuring.
-	URL string
-
-	// CannotParseURL is true if the input URL could not be parsed.
-	CannotParseURL bool
+	URL string `json:"url"`
 
 	// DNS contains all the DNS related measurements.
-	DNS []*Measurement
-
-	// TH contains all the measurements from the test helpers.
-	TH []*Measurement
-
-	// CannotGenerateEndpoints for URL is true if the code tasked of
-	// generating a list of endpoints for the URL fails.
-	CannotGenerateEndpoints bool
+	DNS []*DNSMeasurement `json:"dns"`
 
 	// Endpoints contains a measurement for each endpoint
 	// that we discovered via DNS or TH.
-	Endpoints []*Measurement
+	Endpoints []*HTTPEndpointMeasurement `json:"endpoints"`
 
 	// RedirectURLs contain the URLs to which we should fetch
 	// if we choose to follow redirections.
-	RedirectURLs []string
+	RedirectURLs []string `json:"-"`
 
 	// TotalRuntime is the total time to measure this URL.
-	TotalRuntime time.Duration
+	TotalRuntime time.Duration `json:"-"`
 
 	// DNSRuntime is the time to run all DNS checks.
-	DNSRuntime time.Duration
+	DNSRuntime time.Duration `json:"x_dns_runtime"`
 
 	// THRuntime is the total time to invoke all test helpers.
-	THRuntime time.Duration
+	THRuntime time.Duration `json:"x_th_runtime"`
 
 	// EpntsRuntime is the total time to check all the endpoints.
-	EpntsRuntime time.Duration
+	EpntsRuntime time.Duration `json:"x_epnts_runtime"`
 }
 
 // fillRedirects takes in input a complete URLMeasurement and fills
@@ -171,4 +57,187 @@ func (m *URLMeasurement) fillRedirects() {
 			m.RedirectURLs = append(m.RedirectURLs, loc)
 		}
 	}
+}
+
+// Measurement groups all the events that have the same MeasurementID. This
+// data format is not compatible with the OONI data format.
+type Measurement struct {
+	// Connect contains all the connect operations.
+	Connect []*NetworkEvent `json:"connect,omitempty"`
+
+	// ReadWrite contains all the read and write operations.
+	ReadWrite []*NetworkEvent `json:"read_write,omitempty"`
+
+	// Close contains all the close operations.
+	Close []*NetworkEvent `json:"-"`
+
+	// TLSHandshake contains all the TLS handshakes.
+	TLSHandshake []*TLSHandshakeEvent `json:"tls_handshake,omitempty"`
+
+	// QUICHandshake contains all the QUIC handshakes.
+	QUICHandshake []*QUICHandshakeEvent `json:"quic_handshake,omitempty"`
+
+	// LookupHost contains all the host lookups.
+	LookupHost []*LookupHostEvent `json:"lookup_host,omitempty"`
+
+	// LookupHTTPSSvc contains all the HTTPSSvc lookups.
+	LookupHTTPSSvc []*LookupHTTPSSvcEvent `json:"lookup_httpssvc,omitempty"`
+
+	// DNSRoundTrip contains all the DNS round trips.
+	DNSRoundTrip []*DNSRoundTripEvent `json:"dns_round_trip,omitempty"`
+
+	// HTTPRoundTrip contains all the HTTP round trips.
+	HTTPRoundTrip []*HTTPRoundTripEvent `json:"http_round_trip,omitempty"`
+
+	// HTTPRedirect contains all the redirections.
+	HTTPRedirect []*HTTPRedirectEvent `json:"-"`
+}
+
+// DNSMeasurement is a DNS measurement.
+type DNSMeasurement struct {
+	// Domain is the domain this measurement refers to.
+	Domain string `json:"domain"`
+
+	// A DNSMeasurement is a Measurement.
+	*Measurement
+}
+
+// allEndpointsForDomain returns all the endpoints for
+// a specific domain contained in a measurement.
+//
+// Arguments:
+//
+// - domain is the domain we want to connect to;
+//
+// - port is the port for the endpoint.
+func (m *DNSMeasurement) allEndpointsForDomain(domain, port string) (out []*Endpoint) {
+	out = append(out, m.allTCPEndpoints(domain, port)...)
+	out = append(out, m.allQUICEndpoints(domain, port)...)
+	return
+}
+
+// AllEndpointsForDomain gathers all the endpoints for a given domain from
+// a list of DNSMeasurements, removes duplicates and returns the result.
+func AllEndpointsForDomain(domain, port string, meas ...*DNSMeasurement) ([]*Endpoint, error) {
+	var out []*Endpoint
+	for _, m := range meas {
+		epnt := m.allEndpointsForDomain(domain, port)
+		out = append(out, epnt...)
+	}
+	return removeDuplicateEndpoints(out...), nil
+}
+
+func (m *DNSMeasurement) allTCPEndpoints(domain, port string) (out []*Endpoint) {
+	for _, entry := range m.LookupHost {
+		if domain != entry.Domain {
+			continue
+		}
+		for _, addr := range entry.Addrs {
+			if net.ParseIP(addr) == nil {
+				continue // skip CNAME entries courtesy the WCTH
+			}
+			out = append(out, m.newEndpoint(addr, port, NetworkTCP))
+		}
+	}
+	return
+}
+
+func (m *DNSMeasurement) allQUICEndpoints(domain, port string) (out []*Endpoint) {
+	for _, entry := range m.LookupHTTPSSvc {
+		if domain != entry.Domain {
+			continue
+		}
+		if !m.supportsHTTP3(entry) {
+			continue
+		}
+		addrs := append([]string{}, entry.IPv4...)
+		for _, addr := range append(addrs, entry.IPv6...) {
+			out = append(out, m.newEndpoint(addr, port, NetworkQUIC))
+		}
+	}
+	return
+}
+
+func (m *DNSMeasurement) newEndpoint(addr, port string, network EndpointNetwork) *Endpoint {
+	return &Endpoint{Network: network, Address: net.JoinHostPort(addr, port)}
+}
+
+func (m *DNSMeasurement) supportsHTTP3(entry *LookupHTTPSSvcEvent) bool {
+	for _, alpn := range entry.ALPN {
+		switch alpn {
+		case "h3":
+			return true
+		}
+	}
+	return false
+}
+
+// allHTTPEndpointsForURL returns all the HTTPEndpoints matching
+// a specific URL's domain inside this measurement.
+//
+// Arguments:
+//
+// - URL is the URL for which we want endpoints;
+//
+// Returns a list of endpoints or an error.
+func (m *DNSMeasurement) allHTTPEndpointsForURL(URL *url.URL) ([]*HTTPEndpoint, error) {
+	domain := URL.Hostname()
+	port, err := PortFromURL(URL)
+	if err != nil {
+		return nil, err
+	}
+	epnts := m.allEndpointsForDomain(domain, port)
+	var out []*HTTPEndpoint
+	for _, epnt := range epnts {
+		if URL.Scheme != "https" && epnt.Network == NetworkQUIC {
+			continue // we'll only use QUIC with HTTPS
+		}
+		out = append(out, &HTTPEndpoint{
+			Domain:  domain,
+			Network: epnt.Network,
+			Address: epnt.Address,
+			SNI:     domain,
+			ALPN:    alpnForHTTPEndpoint(epnt.Network),
+			URL:     URL,
+			Header:  NewHTTPRequestHeaderForMeasuring(),
+		})
+	}
+	return out, nil
+}
+
+// AllHTTPEndpointsForURL gathers all the HTTP endpoints for a given
+// URL from a list of DNSMeasurements, removes duplicates and returns
+// the result. This call may fail if we cannot determine the port
+// from the URL, in which case we return an error.
+func AllHTTPEndpointsForURL(URL *url.URL, meas ...*DNSMeasurement) ([]*HTTPEndpoint, error) {
+	var out []*HTTPEndpoint
+	for _, m := range meas {
+		epnt, err := m.allHTTPEndpointsForURL(URL)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, epnt...)
+	}
+	return removeDuplicateHTTPEndpoints(out...), nil
+}
+
+// EndpointMeasurement is an endpoint measurement.
+type EndpointMeasurement struct {
+	// Endpoint is the endpoint this measurement refers to.
+	Endpoint string `json:"endpoint"`
+
+	// An EndpointMeasurement is a Measurement.
+	*Measurement
+}
+
+// HTTPEndpointMeasurement is an HTTP endpoint measurement.
+type HTTPEndpointMeasurement struct {
+	// URL is the URL this measurement refers to.
+	URL string `json:"url"`
+
+	// Endpoint is the endpoint this measurement refers to.
+	Endpoint string `json:"endpoint"`
+
+	// An HTTPEndpointMeasurement is a Measurement.
+	*Measurement
 }

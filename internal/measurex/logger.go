@@ -21,6 +21,9 @@ type Logger interface {
 
 	Info(msg string)
 	Infof(format string, v ...interface{})
+
+	Warn(msg string)
+	Warnf(format string, v ...interface{})
 }
 
 // newOperationLogger creates a new logger that logs

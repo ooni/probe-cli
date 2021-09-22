@@ -27,7 +27,7 @@ type Config struct{}
 
 // TestKeys contains the experiment's test keys.
 type TestKeys struct {
-	*measurex.ArchivalURLMeasurement
+	*measurex.URLMeasurement
 }
 
 // Measurer performs the measurement.
@@ -101,25 +101,28 @@ func (mx *Measurer) RunAsync(
 func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 	URL string, th *model.Service, out chan<- *model.ExperimentAsyncTestKeys) {
 	defer close(out)
-	begin := time.Now()
-	db := measurex.NewDB(begin)
 	mmx := &measurex.Measurer{
-		DB:            db,
-		HTTPClient:    sess.DefaultHTTPClient(),
-		Logger:        sess.Logger(),
-		Origin:        measurex.OriginProbe,
+		Begin:      time.Now(),
+		HTTPClient: sess.DefaultHTTPClient(),
+		Logger:     sess.Logger(),
+		Resolvers: []*measurex.ResolverInfo{{
+			Network: "system",
+			Address: "",
+		}, {
+			Network: "udp",
+			Address: "8.8.4.4:53",
+		}, {
+			Network: "udp",
+			Address: "1.1.1.1:53",
+		}},
 		TLSHandshaker: netxlite.NewTLSHandshakerStdlib(sess.Logger()),
 	}
-	mmx.RegisterUDPResolvers("8.8.4.4:53", "8.8.8.8:53", "1.1.1.1:53", "1.0.0.1:53")
-	mmx.RegisterWCTH(th.Address)
 	cookies := measurex.NewCookieJar()
 	in := mmx.MeasureHTTPURLAndFollowRedirections(ctx, URL, cookies)
 	for m := range in {
 		out <- &model.ExperimentAsyncTestKeys{
 			MeasurementRuntime: m.TotalRuntime.Seconds(),
-			TestKeys: &TestKeys{
-				measurex.NewArchivalURLMeasurement(m),
-			},
+			TestKeys:           &TestKeys{m},
 			Extensions: map[string]int64{
 				archival.ExtHTTP.Name:         archival.ExtHTTP.V,
 				archival.ExtDNS.Name:          archival.ExtDNS.V,

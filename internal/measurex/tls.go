@@ -3,8 +3,7 @@ package measurex
 //
 // TLS
 //
-// Wrappers for netxlite's TLS that allow one to
-// save network events into an EventDB type.
+// Wraps TLS code to write events into a WritableDB.
 //
 
 import (
@@ -12,91 +11,65 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"net"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
-// TLSConn is the TLS conn type we use.
-type TLSConn interface {
-	netxlite.TLSConn
-
-	// ConnID returns the connection ID.
-	ConnID() int64
-}
-
-// TLSHandshaker is the TLS handshaker type we use. This handshaker
-// will save TLS handshake events into the DB.
-type TLSHandshaker interface {
-	Handshake(ctx context.Context, conn Conn, config *tls.Config) (TLSConn, error)
-}
+// TLSHandshaker performs TLS handshakes.
+type TLSHandshaker = netxlite.TLSHandshaker
 
 // WrapTLSHandshaker wraps a netxlite.TLSHandshaker to return a new
 // instance of TLSHandshaker that saves events into the DB.
-func WrapTLSHandshaker(measurementID int64,
-	origin Origin, db EventDB, thx netxlite.TLSHandshaker) TLSHandshaker {
-	return &tlsHandshakerx{
-		TLSHandshaker: thx,
-		db:            db,
-		origin:        origin,
-		mid:           measurementID,
-	}
+func (mx *Measurer) WrapTLSHandshaker(db WritableDB, thx netxlite.TLSHandshaker) TLSHandshaker {
+	return &tlsHandshakerDB{TLSHandshaker: thx, db: db, begin: mx.Begin}
 }
 
 // NewTLSHandshakerStdlib creates a new TLS handshaker that
 // saves results into the DB and uses the stdlib for TLS.
-func NewTLSHandshakerStdlib(measurementID int64,
-	origin Origin, db EventDB, logger Logger) TLSHandshaker {
-	return WrapTLSHandshaker(
-		measurementID, origin, db, netxlite.NewTLSHandshakerStdlib(logger))
+func (mx *Measurer) NewTLSHandshakerStdlib(db WritableDB, logger Logger) TLSHandshaker {
+	return mx.WrapTLSHandshaker(db, netxlite.NewTLSHandshakerStdlib(logger))
 }
 
-type tlsHandshakerx struct {
+type tlsHandshakerDB struct {
 	netxlite.TLSHandshaker
-	db     EventDB
-	mid    int64
-	origin Origin
+	begin time.Time
+	db    WritableDB
 }
 
 // TLSHandshakeEvent contains a TLS handshake event.
 type TLSHandshakeEvent struct {
-	Origin          Origin
-	MeasurementID   int64
-	ConnID          int64
-	Engine          string
-	Network         string
-	RemoteAddr      string
-	LocalAddr       string
-	SNI             string
-	ALPN            []string
-	SkipVerify      bool
-	Started         time.Duration
-	Finished        time.Duration
-	Error           error
-	Oddity          Oddity
-	TLSVersion      string
-	CipherSuite     string
-	NegotiatedProto string
-	PeerCerts       [][]byte
+	// JSON names compatible with df-006-tlshandshake
+	CipherSuite     string                `json:"cipher_suite"`
+	Error           error                 `json:"failure"`
+	NegotiatedProto string                `json:"negotiated_proto"`
+	TLSVersion      string                `json:"tls_version"`
+	PeerCerts       []*ArchivalBinaryData `json:"peer_certificates"`
+	Finished        float64               `json:"t"`
+
+	// JSON names that are consistent with the
+	// spirit of the spec but are not in it
+	RemoteAddr string   `json:"address"`
+	SNI        string   `json:"server_name"` // used in prod
+	ALPN       []string `json:"alpn"`
+	SkipVerify bool     `json:"no_tls_verify"` // used in prod
+	Oddity     Oddity   `json:"oddity"`
+	Network    string   `json:"proto"`
+	Started    float64  `json:"started"`
 }
 
-func (thx *tlsHandshakerx) Handshake(ctx context.Context,
-	conn Conn, config *tls.Config) (TLSConn, error) {
+func (thx *tlsHandshakerDB) Handshake(ctx context.Context,
+	conn Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 	network := conn.RemoteAddr().Network()
 	remoteAddr := conn.RemoteAddr().String()
-	localAddr := conn.LocalAddr().String()
-	started := thx.db.ElapsedTime()
+	started := time.Since(thx.begin).Seconds()
 	tconn, state, err := thx.TLSHandshaker.Handshake(ctx, conn, config)
-	finished := thx.db.ElapsedTime()
+	finished := time.Since(thx.begin).Seconds()
 	thx.db.InsertIntoTLSHandshake(&TLSHandshakeEvent{
-		Origin:          thx.origin,
-		MeasurementID:   thx.mid,
-		ConnID:          conn.ConnID(),
-		Engine:          "", // TODO(bassosimone): add support
 		Network:         network,
 		RemoteAddr:      remoteAddr,
-		LocalAddr:       localAddr,
 		SNI:             config.ServerName,
 		ALPN:            config.NextProtos,
 		SkipVerify:      config.InsecureSkipVerify,
@@ -107,16 +80,12 @@ func (thx *tlsHandshakerx) Handshake(ctx context.Context,
 		TLSVersion:      netxlite.TLSVersionString(state.Version),
 		CipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		NegotiatedProto: state.NegotiatedProtocol,
-		PeerCerts:       peerCerts(err, &state),
+		PeerCerts:       NewArchivalTLSCerts(peerCerts(err, &state)),
 	})
-	if err != nil {
-		return nil, err
-	}
-	return &tlsConnx{
-		TLSConn: tconn.(netxlite.TLSConn), connID: conn.ConnID()}, nil
+	return tconn, state, err
 }
 
-func (thx *tlsHandshakerx) computeOddity(err error) Oddity {
+func (thx *tlsHandshakerDB) computeOddity(err error) Oddity {
 	if err == nil {
 		return ""
 	}
@@ -134,15 +103,6 @@ func (thx *tlsHandshakerx) computeOddity(err error) Oddity {
 	default:
 		return OddityTLSHandshakeOther
 	}
-}
-
-type tlsConnx struct {
-	netxlite.TLSConn
-	connID int64
-}
-
-func (c *tlsConnx) ConnID() int64 {
-	return c.connID
 }
 
 func peerCerts(err error, state *tls.ConnectionState) (out [][]byte) {

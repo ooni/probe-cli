@@ -47,7 +47,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -186,7 +185,7 @@ const thMaxAcceptableBodySize = 1 << 20
 type THClient struct {
 	// DNSServers is the MANDATORY list of DNS-over-UDP
 	// servers to use to discover endpoints locally.
-	DNServers []string
+	DNServers []*ResolverInfo
 
 	// HTTPClient is the MANDATORY HTTP client to
 	// use for contacting the TH.
@@ -217,9 +216,11 @@ func (c *THClient) Run(ctx context.Context, URL string) (*THServerResponse, erro
 		return nil, err
 	}
 	mx := NewMeasurerWithDefaultSettings()
-	mx.RegisterUDPResolvers(c.DNServers...)
-	mx.LookupURLHostParallel(ctx, parsed)
-	httpEndpoints, err := mx.DB.SelectAllHTTPEndpointsForURL(parsed)
+	var dns []*DNSMeasurement
+	for m := range mx.LookupURLHostParallel(ctx, parsed, c.DNServers...) {
+		dns = append(dns, m)
+	}
+	httpEndpoints, err := AllHTTPEndpointsForURL(parsed, dns...)
 	if err != nil {
 		return nil, err
 	}
@@ -540,9 +541,9 @@ func (h *THHandler) doQUICFollowUp(ctx context.Context,
 // newTHEndpointMeasurement takes in input an endpoint
 // measurement performed by a measurer and emits in output
 // the simplified THEndpointMeasurement equivalent.
-func (h *THHandler) newTHEndpointMeasurement(in *Measurement) *THEndpointMeasurement {
+func (h *THHandler) newTHEndpointMeasurement(in *HTTPEndpointMeasurement) *THEndpointMeasurement {
 	return &THEndpointMeasurement{
-		Oddities:      in.Oddities,
+		// TODO(bassosimone): here we need to add more fields
 		Connect:       h.newTHConnectEventList(in.Connect),
 		TLSHandshake:  h.newTLSHandshakesList(in.TLSHandshake),
 		QUICHandshake: h.newQUICHandshakeList(in.QUICHandshake),
@@ -646,30 +647,30 @@ var thResolver = netxlite.WrapResolver(log.Log, dnsx.NewSerialResolver(
 // - the THDNSMeasurement for the THServeResponse message
 func (h *THHandler) dohQuery(ctx context.Context, URL *url.URL) (
 	epnts []*HTTPEndpoint, meas *THDNSMeasurement) {
-	db := NewDB(time.Now()) // timing is not sent back to client
-	r := WrapResolver(0, OriginTH, db, thResolver)
+	db := &MeasurementDB{}
+	r := NewMeasurerWithDefaultSettings().WrapResolver(db, thResolver)
 	meas = &THDNSMeasurement{}
 	op := newOperationLogger(log.Log,
 		"dohQuery A/AAAA for %s with %s", URL.Hostname(), r.Address())
 	_, err := r.LookupHost(ctx, URL.Hostname())
 	op.Stop(err)
-	meas.LookupHost = h.newTHLookupHostList(db)
+	meas.LookupHost = h.newTHLookupHostList(db.AsMeasurement())
 	switch URL.Scheme {
 	case "https":
 		op := newOperationLogger(log.Log,
 			"dohQuery HTTPSSvc for %s with %s", URL.Hostname(), r.Address())
 		_, err = r.LookupHTTPSSvcWithoutRetry(ctx, URL.Hostname())
 		op.Stop(err)
-		meas.LookupHTTPSSvc = h.newTHLookupHTTPSSvcList(db)
+		meas.LookupHTTPSSvc = h.newTHLookupHTTPSSvcList(db.AsMeasurement())
 	default:
 		// nothing
 	}
-	epnts, _ = db.SelectAllHTTPEndpointsForURL(URL) // nil on failure
+	epnts, _ = AllHTTPEndpointsForURL(URL) // nil on failure
 	return
 }
 
-func (h *THHandler) newTHLookupHostList(db *DB) (out []*THLookupHostEvent) {
-	for _, entry := range db.SelectAllFromLookupHost() {
+func (h *THHandler) newTHLookupHostList(m *Measurement) (out []*THLookupHostEvent) {
+	for _, entry := range m.LookupHost {
 		out = append(out, &THLookupHostEvent{
 			Network: entry.Network,
 			Address: entry.Address,
@@ -682,8 +683,8 @@ func (h *THHandler) newTHLookupHostList(db *DB) (out []*THLookupHostEvent) {
 	return
 }
 
-func (h *THHandler) newTHLookupHTTPSSvcList(db *DB) (out []*THLookupHTTPSSvcEvent) {
-	for _, entry := range db.SelectAllFromLookupHTTPSSvc() {
+func (h *THHandler) newTHLookupHTTPSSvcList(m *Measurement) (out []*THLookupHTTPSSvcEvent) {
+	for _, entry := range m.LookupHTTPSSvc {
 		out = append(out, &THLookupHTTPSSvcEvent{
 			Network: entry.Network,
 			Address: entry.Address,
