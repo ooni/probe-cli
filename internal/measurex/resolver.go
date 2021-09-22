@@ -1,5 +1,12 @@
 package measurex
 
+//
+// Resolver
+//
+// Wrappers for netxlite's resolvers that are able
+// to store events into an EventDB.
+//
+
 import (
 	"context"
 	"time"

@@ -1,5 +1,11 @@
 package measurex
 
+//
+// Oddity
+//
+// Here we define the oddity type.
+//
+
 // Oddity is an unexpected result on the probe or
 // or test helper side during a measurement. We will
 // promote the oddity to anomaly if the probe and

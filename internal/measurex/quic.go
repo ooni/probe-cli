@@ -1,5 +1,12 @@
 package measurex
 
+//
+// QUIC
+//
+// Wrappers for netxlite's QUIC code that are capable of
+// saving interesting events into an EventDB.
+//
+
 import (
 	"context"
 	"crypto/tls"

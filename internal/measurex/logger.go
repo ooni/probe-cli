@@ -1,5 +1,11 @@
 package measurex
 
+//
+// Logger
+//
+// Code for logging
+//
+
 import (
 	"fmt"
 	"sync"

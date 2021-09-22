@@ -1,5 +1,14 @@
 package measurex
 
+//
+// Measurer
+//
+// High-level API for running measurements. The code in here
+// has been designed to easily implement the new websteps
+// network experiment, which is quite complex. It should be
+// possible to write most other experiments using a Measurer.
+//
+
 import (
 	"context"
 	"crypto/tls"

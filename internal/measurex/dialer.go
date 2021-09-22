@@ -1,5 +1,12 @@
 package measurex
 
+//
+// Dialer
+//
+// This file contains basic networking code. We wrap the fundamental
+// netxlite.Dialer type to store measurements into an EventDB.
+//
+
 import (
 	"context"
 	"net"

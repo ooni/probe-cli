@@ -1,5 +1,11 @@
 package measurex
 
+//
+// Utils
+//
+// This is where we put free functions.
+//
+
 // alpnForHTTPEndpoint selects the correct ALPN for an HTTP endpoint
 // given the network. On failure, we return a nil list.
 func alpnForHTTPEndpoint(network EndpointNetwork) []string {

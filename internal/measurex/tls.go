@@ -1,5 +1,12 @@
 package measurex
 
+//
+// TLS
+//
+// Wrappers for netxlite's TLS that allow one to
+// save network events into an EventDB type.
+//
+
 import (
 	"context"
 	"crypto/tls"

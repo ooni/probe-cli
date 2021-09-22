@@ -1,5 +1,11 @@
 package measurex
 
+//
+// Origin
+//
+// Here we define the origin type.
+//
+
 // Origin is the origin of a measurement.
 type Origin string
 

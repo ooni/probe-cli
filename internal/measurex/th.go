@@ -1,5 +1,42 @@
 package measurex
 
+//
+// TH (Test Helper)
+//
+// This file contains an implementation of the
+// (proposed) websteps test helper spec.
+//
+// Why is this code in this package?
+//
+// The measurex model allows you to define test
+// helpers that run in the DNS lookup phase. This
+// model is quite nice because it allows you to
+// discover additional IP addresses for the domain
+// you're testing. When your local resolver is
+// censored, the TH is how we get extra IP addresses
+// for the domain to test.
+//
+// The current TH code requires you to submit an
+// HTTP or HTTPS URL. If we relax this constraint,
+// we can have a more flexible test helper that
+// may be useful also for other experiments.
+//
+// Here are some ideas:
+//
+// - `dnslookup://domain` lookups a domain according
+// to the test helper's resolver;
+//
+// - `tlshandshake://endpoint` performs a domain
+// lookup and then a TLS handshake;
+//
+// - `quichandshake://endpoint` likewise.
+//
+// To conclude, this code is here because its
+// trajectory is that of making it the base
+// building block for building several types
+// of test helpers.
+//
+
 import (
 	"bytes"
 	"context"

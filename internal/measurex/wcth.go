@@ -1,5 +1,16 @@
 package measurex
 
+//
+// WCTH (Web Connectivity Test Helper)
+//
+// We use the WCTH as an alternative DNS for gathering
+// additional IP addresses to test, which is useful when
+// your local DNS is censored.
+//
+// This code is merely here to bootstrap websteps and
+// should be removed when we have a proper test helper.
+//
+
 import (
 	"bytes"
 	"context"

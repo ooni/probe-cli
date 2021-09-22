@@ -1,5 +1,11 @@
 package measurex
 
+//
+// Archival
+//
+// This file defines how we serialize measurements to JSON.
+//
+
 import (
 	"net/http"
 	"strings"

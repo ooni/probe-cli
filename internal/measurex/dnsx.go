@@ -1,5 +1,12 @@
 package measurex
 
+//
+// DNSX (DNS eXtensions)
+//
+// This file contains basic networking code. We wrap the fundamental
+// dnsx.RoundTripper type to store measurements into an EventDB.
+//
+
 import (
 	"context"
 	"time"

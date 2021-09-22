@@ -1,5 +1,12 @@
 package measurex
 
+//
+// Measurement
+//
+// Here we define the fundamental measurement types
+// produced by this package.
+//
+
 import "time"
 
 // Measurement groups all the events that have the same MeasurementID. This

@@ -1,5 +1,18 @@
 package measurex
 
+//
+// DB
+//
+// This file defines two types:
+//
+// - EventDB is the interface for storing events that
+// we pass to the networking code
+//
+// - DB is a concrete implementation of EventDB that we
+// use for building measurements and generally for extracting
+// information useful for implementing experiments
+//
+
 import (
 	"errors"
 	"fmt"

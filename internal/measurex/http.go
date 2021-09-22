@@ -1,5 +1,18 @@
 package measurex
 
+//
+// HTTP
+//
+// This file contains basic networking code. We provide:
+//
+// - a wrapper for netxlite.HTTPTransport that stores
+// round trip events into an EventDB
+//
+// - an interface that is http.Client like and one internal
+// implementation of such an interface that helps us to
+// store HTTP redirections info into an EventDB
+//
+
 import (
 	"bytes"
 	"context"
