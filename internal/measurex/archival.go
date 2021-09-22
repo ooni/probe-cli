@@ -16,38 +16,6 @@ import (
 //
 
 //
-// DNSRoundTrip
-//
-
-// TODO(bassosimone): this is a candidate to not be in archival but
-// rather to be what we actually save into the WritableDB.
-
-// ArchivalDNSRoundTrip is the archival fromat for DNSRoundTripEvent.
-type ArchivalDNSRoundTrip struct {
-	Network  string              `json:"engine"`
-	Address  string              `json:"resolver_address"`
-	Query    *ArchivalBinaryData `json:"raw_query"`
-	Started  float64             `json:"started"`
-	Finished float64             `json:"t"`
-	Error    error               `json:"failure"`
-	Reply    *ArchivalBinaryData `json:"raw_reply"`
-}
-
-// NewArchivalDNSRoundTrip converts a DNSRoundTripEvent
-// to the corresponding archival format.
-func NewArchivalDNSRoundTrip(in *DNSRoundTripEvent) (out *ArchivalDNSRoundTrip) {
-	return &ArchivalDNSRoundTrip{
-		Network:  in.Network,
-		Address:  in.Address,
-		Query:    NewArchivalBinaryData(in.Query),
-		Started:  in.Started,
-		Finished: in.Finished,
-		Error:    in.Error,
-		Reply:    NewArchivalBinaryData(in.Reply),
-	}
-}
-
-//
 // BinaryData
 //
 

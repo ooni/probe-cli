@@ -8,7 +8,6 @@ package measurex
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
@@ -33,20 +32,15 @@ type dnsxRoundTripperDB struct {
 
 // DNSRoundTripEvent contains the result of a DNS round trip.
 type DNSRoundTripEvent struct {
-	Network  string
-	Address  string
-	Query    []byte
-	Started  float64
-	Finished float64
-	Error    error
-	Reply    []byte
-}
-
-// MarshalJSON marshals a DNSRoundTripEvent to the archival
-// format that is similar to df-002-dnst.
-func (ev *DNSRoundTripEvent) MarshalJSON() ([]byte, error) {
-	archival := NewArchivalDNSRoundTrip(ev)
-	return json.Marshal(archival)
+	// This data structure is not in df-002-dns but the names and
+	// semantics try to be consistent with such a spec.
+	Network  string              `json:"engine"`
+	Address  string              `json:"resolver_address"`
+	Query    *ArchivalBinaryData `json:"raw_query"`
+	Started  float64             `json:"started"`
+	Finished float64             `json:"t"`
+	Error    error               `json:"failure"`
+	Reply    *ArchivalBinaryData `json:"raw_reply"`
 }
 
 func (txp *dnsxRoundTripperDB) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
@@ -56,11 +50,11 @@ func (txp *dnsxRoundTripperDB) RoundTrip(ctx context.Context, query []byte) ([]b
 	txp.db.InsertIntoDNSRoundTrip(&DNSRoundTripEvent{
 		Network:  txp.RoundTripper.Network(),
 		Address:  txp.RoundTripper.Address(),
-		Query:    query,
+		Query:    NewArchivalBinaryData(query),
 		Started:  started,
 		Finished: finished,
 		Error:    err,
-		Reply:    reply,
+		Reply:    NewArchivalBinaryData(reply),
 	})
 	return reply, err
 }
