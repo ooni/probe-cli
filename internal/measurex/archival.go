@@ -8,14 +8,7 @@ import (
 //
 // Archival
 //
-// This file defines helpers to serialize to the OONI data format. Some of
-// our data structure are already pretty close to the desired format, while
-// other are more flat, which makes processing simpler. So, when we need
-// help we use routines from this file to serialize correctly.
-//
-
-//
-// BinaryData
+// This file defines helpers to serialize to the OONI data format.
 //
 
 // ArchivalBinaryData is the archival format for binary data.
@@ -35,10 +28,6 @@ func NewArchivalBinaryData(data []byte) (out *ArchivalBinaryData) {
 	}
 	return
 }
-
-//
-// HTTPRoundTrip
-//
 
 // ArchivalHeaders is a list of HTTP headers.
 type ArchivalHeaders map[string]string
@@ -65,10 +54,6 @@ func NewArchivalHeaders(in http.Header) (out ArchivalHeaders) {
 	return
 }
 
-//
-// TLSCerts
-//
-
 // NewArchivalTLSCertList builds a new []ArchivalBinaryData
 // from a list of raw x509 certificates data.
 func NewArchivalTLSCerts(in [][]byte) (out []*ArchivalBinaryData) {
@@ -81,11 +66,9 @@ func NewArchivalTLSCerts(in [][]byte) (out []*ArchivalBinaryData) {
 	return
 }
 
-//
-// Failure
-//
-
-// NewArchivalFailure creates an archival failure from an error.
+// NewArchivalFailure creates an archival failure from an error. We
+// cannot round trip an error using JSON, so we serialize to this
+// intermediate format that is a sort of Optional<string>.
 func NewArchivalFailure(err error) *string {
 	if err == nil {
 		return nil

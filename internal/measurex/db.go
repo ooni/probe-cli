@@ -5,19 +5,18 @@ package measurex
 //
 // This file defines two types:
 //
-// - WritableDB is the interface for storing events that
-// we pass to the networking code
+// - WritableDB is the interface allowing networking code
+// (e.g., Dialer to save measurement events);
 //
-// - MeasurementDB is a concrete database in which network
-// code stores events and from which you can create a
-// measurement with all the collected events
+// - MeasurementDB implements WritableDB and allows high-level
+// code to generate a Measurement from all the events.
 //
 
-import (
-	"sync"
-)
+import "sync"
 
-// WritableDB is a measurement database in which you can write.
+// WritableDB is an events "database" in which networking code
+// (e.g., Dialer) can save measurement events (e.g., the result
+// of a connect, a TLS handshake, a read).
 type WritableDB interface {
 	// InsertIntoDial saves a Dial event.
 	InsertIntoDial(ev *NetworkEvent)
@@ -50,9 +49,10 @@ type WritableDB interface {
 	InsertIntoQUICHandshake(ev *QUICHandshakeEvent)
 }
 
-// MeasurementDB is a database for assembling a measurement.
+// MeasurementDB is a WritableDB that also allows high-level code
+// to generate a Measurement from all the saved events.
 type MeasurementDB struct {
-	// database tables
+	// database "tables"
 	dialTable          []*NetworkEvent
 	readWriteTable     []*NetworkEvent
 	closeTable         []*NetworkEvent
@@ -77,8 +77,8 @@ func (db *MeasurementDB) InsertIntoDial(ev *NetworkEvent) {
 	db.mu.Unlock()
 }
 
-// selectAllFromDial returns all dial events.
-func (db *MeasurementDB) selectAllFromDial() (out []*NetworkEvent) {
+// selectAllFromDialUnlocked returns all dial events.
+func (db *MeasurementDB) selectAllFromDialUnlocked() (out []*NetworkEvent) {
 	out = append(out, db.dialTable...)
 	return
 }
@@ -90,8 +90,8 @@ func (db *MeasurementDB) InsertIntoReadWrite(ev *NetworkEvent) {
 	db.mu.Unlock()
 }
 
-// selectAllFromReadWrite returns all I/O events.
-func (db *MeasurementDB) selectAllFromReadWrite() (out []*NetworkEvent) {
+// selectAllFromReadWriteUnlocked returns all I/O events.
+func (db *MeasurementDB) selectAllFromReadWriteUnlocked() (out []*NetworkEvent) {
 	out = append(out, db.readWriteTable...)
 	return
 }
@@ -103,8 +103,8 @@ func (db *MeasurementDB) InsertIntoClose(ev *NetworkEvent) {
 	db.mu.Unlock()
 }
 
-// selectAllFromClose returns all close events.
-func (db *MeasurementDB) selectAllFromClose() (out []*NetworkEvent) {
+// selectAllFromCloseUnlocked returns all close events.
+func (db *MeasurementDB) selectAllFromCloseUnlocked() (out []*NetworkEvent) {
 	out = append(out, db.closeTable...)
 	return
 }
@@ -116,8 +116,8 @@ func (db *MeasurementDB) InsertIntoTLSHandshake(ev *TLSHandshakeEvent) {
 	db.mu.Unlock()
 }
 
-// selectAllFromTLSHandshake returns all TLS handshake events.
-func (db *MeasurementDB) selectAllFromTLSHandshake() (out []*TLSHandshakeEvent) {
+// selectAllFromTLSHandshakeUnlocked returns all TLS handshake events.
+func (db *MeasurementDB) selectAllFromTLSHandshakeUnlocked() (out []*TLSHandshakeEvent) {
 	out = append(out, db.tlsHandshakeTable...)
 	return
 }
@@ -129,8 +129,8 @@ func (db *MeasurementDB) InsertIntoLookupHost(ev *DNSLookupEvent) {
 	db.mu.Unlock()
 }
 
-// selectAllFromLookupHost returns all the lookup host events.
-func (db *MeasurementDB) selectAllFromLookupHost() (out []*DNSLookupEvent) {
+// selectAllFromLookupHostUnlocked returns all the lookup host events.
+func (db *MeasurementDB) selectAllFromLookupHostUnlocked() (out []*DNSLookupEvent) {
 	out = append(out, db.lookupHostTable...)
 	return
 }
@@ -142,8 +142,8 @@ func (db *MeasurementDB) InsertIntoLookupHTTPSSvc(ev *DNSLookupEvent) {
 	db.mu.Unlock()
 }
 
-// selectAllFromLookupHTTPSSvc returns all HTTPSSvc lookup events.
-func (db *MeasurementDB) selectAllFromLookupHTTPSSvc() (out []*DNSLookupEvent) {
+// selectAllFromLookupHTTPSSvcUnlocked returns all HTTPSSvc lookup events.
+func (db *MeasurementDB) selectAllFromLookupHTTPSSvcUnlocked() (out []*DNSLookupEvent) {
 	out = append(out, db.lookupHTTPSvcTable...)
 	return
 }
@@ -155,8 +155,8 @@ func (db *MeasurementDB) InsertIntoDNSRoundTrip(ev *DNSRoundTripEvent) {
 	db.mu.Unlock()
 }
 
-// selectAllFromDNSRoundTrip returns all DNS round trip events.
-func (db *MeasurementDB) selectAllFromDNSRoundTrip() (out []*DNSRoundTripEvent) {
+// selectAllFromDNSRoundTripUnlocked returns all DNS round trip events.
+func (db *MeasurementDB) selectAllFromDNSRoundTripUnlocked() (out []*DNSRoundTripEvent) {
 	out = append(out, db.dnsRoundTripTable...)
 	return
 }
@@ -168,8 +168,8 @@ func (db *MeasurementDB) InsertIntoHTTPRoundTrip(ev *HTTPRoundTripEvent) {
 	db.mu.Unlock()
 }
 
-// selectAllFromHTTPRoundTrip returns all HTTP round trip events.
-func (db *MeasurementDB) selectAllFromHTTPRoundTrip() (out []*HTTPRoundTripEvent) {
+// selectAllFromHTTPRoundTripUnlocked returns all HTTP round trip events.
+func (db *MeasurementDB) selectAllFromHTTPRoundTripUnlocked() (out []*HTTPRoundTripEvent) {
 	out = append(out, db.httpRoundTripTable...)
 	return
 }
@@ -181,8 +181,8 @@ func (db *MeasurementDB) InsertIntoHTTPRedirect(ev *HTTPRedirectEvent) {
 	db.mu.Unlock()
 }
 
-// selectAllFromHTTPRedirect returns all HTTP redirections.
-func (db *MeasurementDB) selectAllFromHTTPRedirect() (out []*HTTPRedirectEvent) {
+// selectAllFromHTTPRedirectUnlocked returns all HTTP redirections.
+func (db *MeasurementDB) selectAllFromHTTPRedirectUnlocked() (out []*HTTPRedirectEvent) {
 	out = append(out, db.httpRedirectTable...)
 	return
 }
@@ -194,8 +194,8 @@ func (db *MeasurementDB) InsertIntoQUICHandshake(ev *QUICHandshakeEvent) {
 	db.mu.Unlock()
 }
 
-// selectAllFromQUICHandshake returns all QUIC handshake events.
-func (db *MeasurementDB) selectAllFromQUICHandshake() (out []*QUICHandshakeEvent) {
+// selectAllFromQUICHandshakeUnlocked returns all QUIC handshake events.
+func (db *MeasurementDB) selectAllFromQUICHandshakeUnlocked() (out []*QUICHandshakeEvent) {
 	out = append(out, db.quicHandshakeTable...)
 	return
 }
@@ -203,21 +203,20 @@ func (db *MeasurementDB) selectAllFromQUICHandshake() (out []*QUICHandshakeEvent
 // AsMeasurement converts the current state of the database into
 // a finalized Measurement structure. The original events will remain
 // into the database. To start a new measurement cycle, just create
-// a new MeasurementDB instance. You are not supposed to modify
-// the Measurement returned by this method.
+// a new MeasurementDB instance and use that.
 func (db *MeasurementDB) AsMeasurement() *Measurement {
 	db.mu.Lock()
 	meas := &Measurement{
-		Connect:        db.selectAllFromDial(),
-		ReadWrite:      db.selectAllFromReadWrite(),
-		Close:          db.selectAllFromClose(),
-		TLSHandshake:   db.selectAllFromTLSHandshake(),
-		QUICHandshake:  db.selectAllFromQUICHandshake(),
-		LookupHost:     db.selectAllFromLookupHost(),
-		LookupHTTPSSvc: db.selectAllFromLookupHTTPSSvc(),
-		DNSRoundTrip:   db.selectAllFromDNSRoundTrip(),
-		HTTPRoundTrip:  db.selectAllFromHTTPRoundTrip(),
-		HTTPRedirect:   db.selectAllFromHTTPRedirect(),
+		Connect:        db.selectAllFromDialUnlocked(),
+		ReadWrite:      db.selectAllFromReadWriteUnlocked(),
+		Close:          db.selectAllFromCloseUnlocked(),
+		TLSHandshake:   db.selectAllFromTLSHandshakeUnlocked(),
+		QUICHandshake:  db.selectAllFromQUICHandshakeUnlocked(),
+		LookupHost:     db.selectAllFromLookupHostUnlocked(),
+		LookupHTTPSSvc: db.selectAllFromLookupHTTPSSvcUnlocked(),
+		DNSRoundTrip:   db.selectAllFromDNSRoundTripUnlocked(),
+		HTTPRoundTrip:  db.selectAllFromHTTPRoundTripUnlocked(),
+		HTTPRedirect:   db.selectAllFromHTTPRedirectUnlocked(),
 	}
 	db.mu.Unlock()
 	return meas
