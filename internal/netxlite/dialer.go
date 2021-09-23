@@ -46,11 +46,15 @@ type Dialer interface {
 // the CloseIdleConnection call to its resolver (which is
 // instrumental to manage a DoH resolver connections properly).
 func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
+	return WrapDialer(logger, resolver, &dialerSystem{})
+}
+
+func WrapDialer(logger Logger, resolver Resolver, dialer Dialer) Dialer {
 	return &dialerLogger{
 		Dialer: &dialerResolver{
 			Dialer: &dialerLogger{
 				Dialer: &dialerErrWrapper{
-					Dialer: &dialerSystem{},
+					Dialer: dialer,
 				},
 				Logger:          logger,
 				operationSuffix: "_address",

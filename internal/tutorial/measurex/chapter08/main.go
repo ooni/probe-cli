@@ -13,8 +13,8 @@ import (
 )
 
 type measurement struct {
-	DNS       []*measurex.Measurement
-	Endpoints []*measurex.Measurement
+	DNS       []*measurex.DNSMeasurement
+	Endpoints []*measurex.HTTPEndpointMeasurement
 }
 
 func main() {
@@ -30,7 +30,8 @@ func main() {
 	m := &measurement{}
 	m.DNS = append(m.DNS, mx.LookupHostUDP(ctx, parsed.Hostname(), *address))
 	m.DNS = append(m.DNS, mx.LookupHTTPSSvcUDP(ctx, parsed.Hostname(), *address))
-	httpEndpoints, err := mx.DB.SelectAllHTTPEndpointsForURL(parsed)
+	headers := measurex.NewHTTPRequestHeaderForMeasuring()
+	httpEndpoints, err := measurex.AllHTTPEndpointsForURL(parsed, headers, m.DNS...)
 	runtimex.PanicOnError(err, "cannot get all the HTTP endpoints")
 	cookies := measurex.NewCookieJar()
 	for _, epnt := range httpEndpoints {

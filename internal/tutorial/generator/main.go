@@ -90,6 +90,25 @@ func gentorsf() {
 	gen(path.Join(prefix, "chapter04"), "torsf.go")
 }
 
+// genmeasurex generates the measurex chapters.
+func genmeasurex() {
+	prefix := path.Join(".", "measurex")
+	gen(path.Join(prefix, "chapter01"), "main.go")
+	gen(path.Join(prefix, "chapter02"), "main.go")
+	gen(path.Join(prefix, "chapter03"), "main.go")
+	gen(path.Join(prefix, "chapter04"), "main.go")
+	gen(path.Join(prefix, "chapter05"), "main.go")
+	gen(path.Join(prefix, "chapter06"), "main.go")
+	gen(path.Join(prefix, "chapter07"), "main.go")
+	gen(path.Join(prefix, "chapter08"), "main.go")
+	gen(path.Join(prefix, "chapter09"), "main.go")
+	gen(path.Join(prefix, "chapter10"), "main.go")
+	gen(path.Join(prefix, "chapter11"), "main.go")
+	gen(path.Join(prefix, "chapter12"), "main.go")
+	gen(path.Join(prefix, "chapter13"), "main.go")
+}
+
 func main() {
 	gentorsf()
+	genmeasurex()
 }

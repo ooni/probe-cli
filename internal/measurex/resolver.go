@@ -26,7 +26,12 @@ type Resolver = netxlite.Resolver
 
 // WrapResolver creates a new Resolver that saves events into the WritableDB.
 func (mx *Measurer) WrapResolver(db WritableDB, r netxlite.Resolver) Resolver {
-	return &resolverDB{Resolver: r, db: db, begin: mx.Begin}
+	return WrapResolver(mx.Begin, db, r)
+}
+
+// WrapResolver wraps a resolver.
+func WrapResolver(begin time.Time, db WritableDB, r netxlite.Resolver) Resolver {
+	return &resolverDB{Resolver: r, db: db, begin: begin}
 }
 
 // NewResolverSystem creates a system resolver and then wraps

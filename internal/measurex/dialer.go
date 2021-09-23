@@ -25,7 +25,12 @@ type Dialer = netxlite.Dialer
 // into the given WritableDB. The net.Conns created by
 // a wrapped dialer also write into the WritableDB.
 func (mx *Measurer) WrapDialer(db WritableDB, dialer netxlite.Dialer) Dialer {
-	return &dialerDB{Dialer: dialer, db: db, begin: mx.Begin}
+	return WrapDialer(mx.Begin, db, dialer)
+}
+
+// WrapDialer wraps a dialer.
+func WrapDialer(begin time.Time, db WritableDB, dialer netxlite.Dialer) Dialer {
+	return &dialerDB{Dialer: dialer, db: db, begin: begin}
 }
 
 // NewDialerWithSystemResolver creates a

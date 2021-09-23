@@ -184,7 +184,7 @@ func (mx *Measurer) lookupHTTPSSvcUDPForeign(
 // Returns an EndpointMeasurement.
 func (mx *Measurer) TCPConnect(ctx context.Context, address string) *EndpointMeasurement {
 	db := &MeasurementDB{}
-	conn, _ := mx.tcpConnect(ctx, db, address)
+	conn, _ := mx.TCPConnectWithDB(ctx, db, address)
 	measurement := db.AsMeasurement()
 	if conn != nil {
 		conn.Close()
@@ -196,8 +196,9 @@ func (mx *Measurer) TCPConnect(ctx context.Context, address string) *EndpointMea
 	}
 }
 
-// tcpConnect is like TCPConnect but does not create a new measurement.
-func (mx *Measurer) tcpConnect(ctx context.Context, db WritableDB, address string) (Conn, error) {
+// TCPConnectWithDB is like TCPConnect but does not create a new measurement,
+// rather it just stores the events inside of the given DB.
+func (mx *Measurer) TCPConnectWithDB(ctx context.Context, db WritableDB, address string) (Conn, error) {
 	const timeout = 10 * time.Second
 	ol := NewOperationLogger(mx.Logger, "TCPConnect %s", address)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -242,7 +243,7 @@ func (mx *Measurer) tcpConnect(ctx context.Context, db WritableDB, address strin
 func (mx *Measurer) TLSConnectAndHandshake(ctx context.Context,
 	address string, config *tls.Config) *EndpointMeasurement {
 	db := &MeasurementDB{}
-	conn, _ := mx.tlsConnectAndHandshake(ctx, db, address, config)
+	conn, _ := mx.TLSConnectAndHandshakeWithDB(ctx, db, address, config)
 	measurement := db.AsMeasurement()
 	if conn != nil {
 		conn.Close()
@@ -254,11 +255,11 @@ func (mx *Measurer) TLSConnectAndHandshake(ctx context.Context,
 	}
 }
 
-// tlsConnectAndHandshake is like TLSConnectAndHandshake
-// but does not create a new measurement.
-func (mx *Measurer) tlsConnectAndHandshake(ctx context.Context,
+// TLSConnectAndHandshakeWithDB is like TLSConnectAndHandshake but
+// uses the given DB instead of creating a new Measurement.
+func (mx *Measurer) TLSConnectAndHandshakeWithDB(ctx context.Context,
 	db WritableDB, address string, config *tls.Config) (netxlite.TLSConn, error) {
-	conn, err := mx.tcpConnect(ctx, db, address)
+	conn, err := mx.TCPConnectWithDB(ctx, db, address)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +302,7 @@ func (mx *Measurer) tlsConnectAndHandshake(ctx context.Context,
 func (mx *Measurer) QUICHandshake(ctx context.Context, address string,
 	config *tls.Config) *EndpointMeasurement {
 	db := &MeasurementDB{}
-	sess, _ := mx.quicHandshake(ctx, db, address, config)
+	sess, _ := mx.QUICHandshakeWithDB(ctx, db, address, config)
 	measurement := db.AsMeasurement()
 	if sess != nil {
 		// TODO(bassosimone): close session with correct message
@@ -314,8 +315,10 @@ func (mx *Measurer) QUICHandshake(ctx context.Context, address string,
 	}
 }
 
-// quicHandshake is like QUICHandshake but does not create a new measurement.
-func (mx *Measurer) quicHandshake(ctx context.Context, db WritableDB,
+// QUICHandshakeWithDB is like QUICHandshake but uses the given
+// db to store events rather than creating a temporary one and
+// use it to generate a new Measuremet.
+func (mx *Measurer) QUICHandshakeWithDB(ctx context.Context, db WritableDB,
 	address string, config *tls.Config) (quic.EarlySession, error) {
 	const timeout = 10 * time.Second
 	ol := NewOperationLogger(mx.Logger,
@@ -355,7 +358,10 @@ func (mx *Measurer) HTTPEndpointGet(
 
 var (
 	errUnknownHTTPEndpointURLScheme = errors.New("unknown HTTPEndpoint.URL.Scheme")
-	errUnknownHTTPEndpointNetwork   = errors.New("unknown HTTPEndpoint.Network")
+
+	// ErrUnknownHTTPEndpointNetwork means that the given endpoint's
+	// network is of a type that we don't know how to handle.
+	ErrUnknownHTTPEndpointNetwork = errors.New("unknown HTTPEndpoint.Network")
 )
 
 // HTTPPreparedRequest is a suspended request that only awaits
@@ -423,15 +429,22 @@ func (mx *Measurer) httpEndpointGet(ctx context.Context, epnt *HTTPEndpoint,
 func (mx *Measurer) httpEndpointGetMeasurement(ctx context.Context, epnt *HTTPEndpoint,
 	jar http.CookieJar) (resp *http.Response, m *Measurement, err error) {
 	db := &MeasurementDB{}
+	resp, err = mx.HTTPEndpointGetWithDB(ctx, epnt, db, jar)
+	m = db.AsMeasurement()
+	return
+}
+
+// HTTPEndpointGetWithDB is an HTTPEndpointGet that stores the
+// events into the given WritableDB.
+func (mx *Measurer) HTTPEndpointGetWithDB(ctx context.Context, epnt *HTTPEndpoint,
+	db WritableDB, jar http.CookieJar) (resp *http.Response, err error) {
 	switch epnt.Network {
 	case NetworkQUIC:
 		resp, err = mx.httpEndpointGetQUIC(ctx, db, epnt, jar)
-		m = db.AsMeasurement()
 	case NetworkTCP:
 		resp, err = mx.httpEndpointGetTCP(ctx, db, epnt, jar)
-		m = db.AsMeasurement()
 	default:
-		m, err = &Measurement{}, errUnknownHTTPEndpointNetwork
+		err = ErrUnknownHTTPEndpointNetwork
 	}
 	return
 }
@@ -457,7 +470,7 @@ func (mx *Measurer) httpEndpointGetHTTP(ctx context.Context,
 		return nil, err
 	}
 	req.Header = epnt.Header
-	conn, err := mx.tcpConnect(ctx, db, epnt.Address)
+	conn, err := mx.TCPConnectWithDB(ctx, db, epnt.Address)
 	if err != nil {
 		return nil, err
 	}
@@ -476,7 +489,7 @@ func (mx *Measurer) httpEndpointGetHTTPS(ctx context.Context,
 		return nil, err
 	}
 	req.Header = epnt.Header
-	conn, err := mx.tlsConnectAndHandshake(ctx, db, epnt.Address, &tls.Config{
+	conn, err := mx.TLSConnectAndHandshakeWithDB(ctx, db, epnt.Address, &tls.Config{
 		ServerName: epnt.SNI,
 		NextProtos: epnt.ALPN,
 		RootCAs:    netxlite.NewDefaultCertPool(),
@@ -499,7 +512,7 @@ func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
 		return nil, err
 	}
 	req.Header = epnt.Header
-	sess, err := mx.quicHandshake(ctx, db, epnt.Address, &tls.Config{
+	sess, err := mx.QUICHandshakeWithDB(ctx, db, epnt.Address, &tls.Config{
 		ServerName: epnt.SNI,
 		NextProtos: epnt.ALPN,
 		RootCAs:    netxlite.NewDefaultCertPool(),

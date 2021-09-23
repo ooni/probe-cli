@@ -13,8 +13,8 @@ import (
 )
 
 type measurement struct {
-	DNS       []*measurex.Measurement
-	Endpoints []*measurex.Measurement
+	DNS       []*measurex.DNSMeasurement
+	Endpoints []*measurex.HTTPEndpointMeasurement
 }
 
 func main() {
@@ -26,12 +26,25 @@ func main() {
 	parsed, err := url.Parse(*URL)
 	runtimex.PanicOnError(err, "url.Parse failed")
 	mx := measurex.NewMeasurerWithDefaultSettings()
+	mx.Resolvers = []*measurex.ResolverInfo{{
+		Network: measurex.ResolverUDP,
+		Address: "8.8.8.8:53",
+	}, {
+		Network: measurex.ResolverUDP,
+		Address: "8.8.4.4:53",
+	}, {
+		Network: measurex.ResolverUDP,
+		Address: "1.1.1.1:53",
+	}, {
+		Network: measurex.ResolverUDP,
+		Address: "1.0.0.1:53",
+	}}
 	m := &measurement{}
-	mx.RegisterUDPResolvers("8.8.8.8:53", "8.8.4.4:53", "1.1.1.1:53", "1.0.0.1:53")
 	for dns := range mx.LookupURLHostParallel(ctx, parsed) {
 		m.DNS = append(m.DNS, dns)
 	}
-	httpEndpoints, err := mx.DB.SelectAllHTTPEndpointsForURL(parsed)
+	headers := measurex.NewHTTPRequestHeaderForMeasuring()
+	httpEndpoints, err := measurex.AllHTTPEndpointsForURL(parsed, headers, m.DNS...)
 	runtimex.PanicOnError(err, "cannot get all the HTTP endpoints")
 	cookies := measurex.NewCookieJar()
 	for epnt := range mx.HTTPEndpointGetParallel(ctx, cookies, httpEndpoints...) {

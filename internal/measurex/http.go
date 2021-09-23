@@ -39,13 +39,30 @@ type HTTPTransport = netxlite.HTTPTransport
 
 // WrapHTTPTransport creates a new transport that saves
 // HTTP events into the WritableDB.
-func (mx *Measurer) WrapHTTPTransport(db WritableDB, txp HTTPTransport) HTTPTransport {
-	return &httpTransportDB{HTTPTransport: txp, db: db, begin: mx.Begin}
+func (mx *Measurer) WrapHTTPTransport(
+	db WritableDB, txp HTTPTransport) *HTTPTransportDB {
+	return WrapHTTPTransport(mx.Begin, db, txp)
+}
+
+// We only read a small snapshot of the body to keep measurements
+// lean, since we're mostly interested in TLS interference nowadays
+// but we'll also allow for reading more bytes from the conn.
+const httpMaxBodySnapshot = 1 << 11
+
+func WrapHTTPTransport(
+	begin time.Time, db WritableDB, txp HTTPTransport) *HTTPTransportDB {
+	return &HTTPTransportDB{
+		HTTPTransport:       txp,
+		Begin:               begin,
+		DB:                  db,
+		MaxBodySnapshotSize: httpMaxBodySnapshot,
+	}
 }
 
 // NewHTTPTransportWithConn creates and wraps an HTTPTransport that
 // does not dial and only uses the given conn.
-func (mx *Measurer) NewHTTPTransportWithConn(logger Logger, db WritableDB, conn Conn) HTTPTransport {
+func (mx *Measurer) NewHTTPTransportWithConn(
+	logger Logger, db WritableDB, conn Conn) *HTTPTransportDB {
 	return mx.WrapHTTPTransport(db, netxlite.NewHTTPTransport(
 		logger, netxlite.NewSingleUseDialer(conn), netxlite.NewNullTLSDialer()))
 }
@@ -53,7 +70,7 @@ func (mx *Measurer) NewHTTPTransportWithConn(logger Logger, db WritableDB, conn 
 // NewHTTPTransportWithTLSConn creates and wraps an HTTPTransport that
 // does not dial and only uses the given conn.
 func (mx *Measurer) NewHTTPTransportWithTLSConn(
-	logger Logger, db WritableDB, conn netxlite.TLSConn) HTTPTransport {
+	logger Logger, db WritableDB, conn netxlite.TLSConn) *HTTPTransportDB {
 	return mx.WrapHTTPTransport(db, netxlite.NewHTTPTransport(
 		logger, netxlite.NewNullDialer(), netxlite.NewSingleUseTLSDialer(conn)))
 }
@@ -61,15 +78,29 @@ func (mx *Measurer) NewHTTPTransportWithTLSConn(
 // NewHTTPTransportWithQUICSess creates and wraps an HTTPTransport that
 // does not dial and only uses the given QUIC session.
 func (mx *Measurer) NewHTTPTransportWithQUICSess(
-	logger Logger, db WritableDB, sess quic.EarlySession) HTTPTransport {
+	logger Logger, db WritableDB, sess quic.EarlySession) *HTTPTransportDB {
 	return mx.WrapHTTPTransport(db, netxlite.NewHTTP3Transport(
 		logger, netxlite.NewSingleUseQUICDialer(sess), &tls.Config{}))
 }
 
-type httpTransportDB struct {
+// HTTPTransportDB is an implementation of HTTPTransport that
+// writes measurement events into a WritableDB.
+//
+// There are many factories to construct this data type. Otherwise,
+// you can construct it manually. In which case, do not modify
+// public fields during usage, since this may cause a data race.
+type HTTPTransportDB struct {
 	netxlite.HTTPTransport
-	begin time.Time
-	db    WritableDB
+
+	// Begin is when we started measuring.
+	Begin time.Time
+
+	// DB is where to write events.
+	DB WritableDB
+
+	// MaxBodySnapshotSize is the maximum size of the body
+	// snapshot that we take during a round trip.
+	MaxBodySnapshotSize int64
 }
 
 // HTTPRequest is the HTTP request.
@@ -106,13 +137,8 @@ type HTTPRoundTripEvent struct {
 	Oddity Oddity `json:"oddity"`
 }
 
-// We only read a small snapshot of the body to keep measurements
-// lean, since we're mostly interested in TLS interference nowadays
-// but we'll also allow for reading more bytes from the conn.
-const maxBodySnapshot = 1 << 11
-
-func (txp *httpTransportDB) RoundTrip(req *http.Request) (*http.Response, error) {
-	started := time.Since(txp.begin).Seconds()
+func (txp *HTTPTransportDB) RoundTrip(req *http.Request) (*http.Response, error) {
+	started := time.Since(txp.Begin).Seconds()
 	resp, err := txp.HTTPTransport.RoundTrip(req)
 	rt := &HTTPRoundTripEvent{
 		Request: &HTTPRequest{
@@ -123,9 +149,9 @@ func (txp *httpTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 		Started: started,
 	}
 	if err != nil {
-		rt.Finished = time.Since(txp.begin).Seconds()
+		rt.Finished = time.Since(txp.Begin).Seconds()
 		rt.Failure = NewArchivalFailure(err)
-		txp.db.InsertIntoHTTPRoundTrip(rt)
+		txp.DB.InsertIntoHTTPRoundTrip(rt)
 		return nil, err
 	}
 	switch {
@@ -142,15 +168,15 @@ func (txp *httpTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 		Code:    int64(resp.StatusCode),
 		Headers: NewArchivalHeaders(resp.Header),
 	}
-	r := io.LimitReader(resp.Body, maxBodySnapshot)
+	r := io.LimitReader(resp.Body, txp.MaxBodySnapshotSize)
 	body, err := iox.ReadAllContext(req.Context(), r)
 	if errors.Is(err, io.EOF) && resp.Close {
 		err = nil // we expected to see an EOF here, so no real error
 	}
 	if err != nil {
-		rt.Finished = time.Since(txp.begin).Seconds()
+		rt.Finished = time.Since(txp.Begin).Seconds()
 		rt.Failure = NewArchivalFailure(err)
-		txp.db.InsertIntoHTTPRoundTrip(rt)
+		txp.DB.InsertIntoHTTPRoundTrip(rt)
 		return nil, err
 	}
 	resp.Body = &httpTransportBody{ // allow for reading more if needed
@@ -159,10 +185,10 @@ func (txp *httpTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 	}
 	rt.Response.Body = NewArchivalBinaryData(body)
 	rt.Response.BodyLength = int64(len(body))
-	rt.Response.BodyIsTruncated = len(body) >= maxBodySnapshot
+	rt.Response.BodyIsTruncated = int64(len(body)) >= txp.MaxBodySnapshotSize
 	rt.Response.BodyIsUTF8 = utf8.Valid(body)
-	rt.Finished = time.Since(txp.begin).Seconds()
-	txp.db.InsertIntoHTTPRoundTrip(rt)
+	rt.Finished = time.Since(txp.Begin).Seconds()
+	txp.DB.InsertIntoHTTPRoundTrip(rt)
 	return resp, nil
 }
 
