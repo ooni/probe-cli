@@ -77,7 +77,7 @@ type DNSLookupEvent struct {
 	// fields inside df-002-dnst
 	Answers   []DNSLookupAnswer `json:"answers"`
 	Network   string            `json:"engine"`
-	Error     error             `json:"failure"`
+	Failure   *string           `json:"failure"`
 	Domain    string            `json:"hostname"`
 	QueryType string            `json:"query_type"`
 	Address   string            `json:"resolver_address"`
@@ -131,7 +131,7 @@ func (r *resolverDB) LookupHost(ctx context.Context, domain string) ([]string, e
 			Answers:   r.computeAnswers(addrs, qtype),
 			Network:   r.Resolver.Network(),
 			Address:   r.Resolver.Address(),
-			Error:     err,
+			Failure:   NewArchivalFailure(err),
 			Domain:    domain,
 			QueryType: qtype,
 			Finished:  finished,
@@ -189,7 +189,7 @@ func (r *resolverDB) LookupHTTPSSvcWithoutRetry(ctx context.Context, domain stri
 		QueryType: "HTTPS",
 		Started:   started,
 		Finished:  finished,
-		Error:     err,
+		Failure:   NewArchivalFailure(err),
 		Oddity:    Oddity(r.computeOddityHTTPSSvc(https, err)),
 	}
 	if err == nil {

@@ -28,6 +28,7 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"golang.org/x/net/publicsuffix"
@@ -74,16 +75,16 @@ type httpTransportDB struct {
 // HTTPRequest is the HTTP request.
 type HTTPRequest struct {
 	// Names consistent with df-001-http.md
-	Method      string              `json:"method"`
-	URL         string              `json:"url"`
-	HeadersList ArchivalHeadersList `json:"headers_list"`
+	Method  string          `json:"method"`
+	URL     string          `json:"url"`
+	Headers ArchivalHeaders `json:"headers"`
 }
 
 // HTTPResponse is the HTTP response.
 type HTTPResponse struct {
 	// Names consistent with df-001-http.md
 	Code            int64               `json:"code"`
-	HeadersList     ArchivalHeadersList `json:"headers_list"`
+	Headers         ArchivalHeaders     `json:"headers"`
 	Body            *ArchivalBinaryData `json:"body"`
 	BodyIsTruncated bool                `json:"body_is_truncated"`
 
@@ -95,7 +96,7 @@ type HTTPResponse struct {
 // HTTPRoundTripEvent contains information about an HTTP round trip.
 type HTTPRoundTripEvent struct {
 	// JSON names following the df-001-httpt data format.
-	Error    error         `json:"failure"`
+	Failure  *string       `json:"failure"`
 	Request  *HTTPRequest  `json:"request"`
 	Response *HTTPResponse `json:"response"`
 	Finished float64       `json:"t"`
@@ -115,15 +116,15 @@ func (txp *httpTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 	resp, err := txp.HTTPTransport.RoundTrip(req)
 	rt := &HTTPRoundTripEvent{
 		Request: &HTTPRequest{
-			Method:      req.Method,
-			URL:         req.URL.String(),
-			HeadersList: NewArchivalHeadersList(req.Header),
+			Method:  req.Method,
+			URL:     req.URL.String(),
+			Headers: NewArchivalHeaders(req.Header),
 		},
 		Started: started,
 	}
 	if err != nil {
 		rt.Finished = time.Since(txp.begin).Seconds()
-		rt.Error = err
+		rt.Failure = NewArchivalFailure(err)
 		txp.db.InsertIntoHTTPRoundTrip(rt)
 		return nil, err
 	}
@@ -138,8 +139,8 @@ func (txp *httpTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 		rt.Oddity = OddityStatusOther
 	}
 	rt.Response = &HTTPResponse{
-		Code:        int64(resp.StatusCode),
-		HeadersList: NewArchivalHeadersList(resp.Header),
+		Code:    int64(resp.StatusCode),
+		Headers: NewArchivalHeaders(resp.Header),
 	}
 	r := io.LimitReader(resp.Body, maxBodySnapshot)
 	body, err := iox.ReadAllContext(req.Context(), r)
@@ -148,7 +149,7 @@ func (txp *httpTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 	}
 	if err != nil {
 		rt.Finished = time.Since(txp.begin).Seconds()
-		rt.Error = err
+		rt.Failure = NewArchivalFailure(err)
 		txp.db.InsertIntoHTTPRoundTrip(rt)
 		return nil, err
 	}
@@ -219,13 +220,16 @@ var ErrHTTPTooManyRedirects = errors.New("stopped after 10 redirects")
 
 func newHTTPClient(db WritableDB, cookiejar http.CookieJar,
 	txp HTTPTransport, defaultErr error) HTTPClient {
-	return &http.Client{
+	return &httpClientErrWrapper{&http.Client{
 		Transport: txp,
 		Jar:       cookiejar,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			err := defaultErr
 			if len(via) >= 10 {
 				err = ErrHTTPTooManyRedirects
+			}
+			if err != nil {
+				err = errorsx.NewTopLevelGenericErrWrapper(err)
 			}
 			db.InsertIntoHTTPRedirect(&HTTPRedirectEvent{
 				URL:      via[0].URL, // bug in Go stdlib if we crash here
@@ -235,7 +239,19 @@ func newHTTPClient(db WritableDB, cookiejar http.CookieJar,
 			})
 			return err
 		},
+	}}
+}
+
+type httpClientErrWrapper struct {
+	HTTPClient
+}
+
+func (c *httpClientErrWrapper) Do(req *http.Request) (*http.Response, error) {
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		err = errorsx.NewTopLevelGenericErrWrapper(err)
 	}
+	return resp, err
 }
 
 // NewCookieJar is a convenience factory for creating an http.CookieJar

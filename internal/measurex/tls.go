@@ -43,7 +43,7 @@ type tlsHandshakerDB struct {
 type TLSHandshakeEvent struct {
 	// JSON names compatible with df-006-tlshandshake
 	CipherSuite     string                `json:"cipher_suite"`
-	Error           error                 `json:"failure"`
+	Failure         *string               `json:"failure"`
 	NegotiatedProto string                `json:"negotiated_proto"`
 	TLSVersion      string                `json:"tls_version"`
 	PeerCerts       []*ArchivalBinaryData `json:"peer_certificates"`
@@ -75,7 +75,7 @@ func (thx *tlsHandshakerDB) Handshake(ctx context.Context,
 		SkipVerify:      config.InsecureSkipVerify,
 		Started:         started,
 		Finished:        finished,
-		Error:           err,
+		Failure:         NewArchivalFailure(err),
 		Oddity:          thx.computeOddity(err),
 		TLSVersion:      netxlite.TLSVersionString(state.Version),
 		CipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),

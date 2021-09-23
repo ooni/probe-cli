@@ -52,7 +52,7 @@ type dialerDB struct {
 type NetworkEvent struct {
 	// JSON names compatible with df-008-netevents
 	RemoteAddr string  `json:"address"`
-	Error      error   `json:"failure"`
+	Failure    *string `json:"failure"`
 	Count      int     `json:"num_bytes,omitempty"`
 	Operation  string  `json:"operation"`
 	Network    string  `json:"proto"`
@@ -74,7 +74,7 @@ func (d *dialerDB) DialContext(
 		RemoteAddr: address,
 		Started:    started,
 		Finished:   finished,
-		Error:      err,
+		Failure:    NewArchivalFailure(err),
 		Oddity:     d.computeOddity(err),
 		Count:      0,
 	})
@@ -124,7 +124,7 @@ func (c *connDB) Read(b []byte) (int, error) {
 		RemoteAddr: c.remoteAddr,
 		Started:    started,
 		Finished:   finished,
-		Error:      err,
+		Failure:    NewArchivalFailure(err),
 		Count:      count,
 	})
 	return count, err
@@ -140,7 +140,7 @@ func (c *connDB) Write(b []byte) (int, error) {
 		RemoteAddr: c.remoteAddr,
 		Started:    started,
 		Finished:   finished,
-		Error:      err,
+		Failure:    NewArchivalFailure(err),
 		Count:      count,
 	})
 	return count, err
@@ -156,7 +156,7 @@ func (c *connDB) Close() error {
 		RemoteAddr: c.remoteAddr,
 		Started:    started,
 		Finished:   finished,
-		Error:      err,
+		Failure:    NewArchivalFailure(err),
 		Count:      0,
 	})
 	return err

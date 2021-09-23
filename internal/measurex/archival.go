@@ -1,7 +1,6 @@
 package measurex
 
 import (
-	"log"
 	"net/http"
 	"strings"
 )
@@ -41,31 +40,26 @@ func NewArchivalBinaryData(data []byte) (out *ArchivalBinaryData) {
 // HTTPRoundTrip
 //
 
-// ArchivalHeadersList is a list of HTTP headers.
-type ArchivalHeadersList [][]string
+// ArchivalHeaders is a list of HTTP headers.
+type ArchivalHeaders map[string]string
 
 // Get searches for the first header with the named key
 // and returns it. If not found, returns an empty string.
-func (headers ArchivalHeadersList) Get(key string) string {
-	key = strings.ToLower(key)
-	for _, entry := range headers {
-		if len(entry) != 2 {
-			log.Printf("headers: malformed header: %+v", entry)
-			continue
-		}
-		headerKey, headerValue := entry[0], entry[1]
-		if strings.ToLower(headerKey) == key {
-			return headerValue
-		}
-	}
-	return ""
+func (headers ArchivalHeaders) Get(key string) string {
+	return headers[strings.ToLower(key)]
 }
 
-// NewArchivalHeadersList builds a new HeadersList from http.Header.
-func NewArchivalHeadersList(in http.Header) (out ArchivalHeadersList) {
+// NewArchivalHeaders builds a new HeadersList from http.Header.
+func NewArchivalHeaders(in http.Header) (out ArchivalHeaders) {
+	out = make(ArchivalHeaders)
 	for k, vv := range in {
 		for _, v := range vv {
-			out = append(out, []string{k, v})
+			// It breaks my hearth a little bit to ignore
+			// subsequent headers, but this does not happen
+			// very frequently, and I know the pipeline
+			// parses the map headers format only.
+			out[strings.ToLower(k)] = v
+			break
 		}
 	}
 	return
@@ -85,4 +79,17 @@ func NewArchivalTLSCerts(in [][]byte) (out []*ArchivalBinaryData) {
 		})
 	}
 	return
+}
+
+//
+// Failure
+//
+
+// NewArchivalFailure creates an archival failure from an error.
+func NewArchivalFailure(err error) *string {
+	if err == nil {
+		return nil
+	}
+	s := err.Error()
+	return &s
 }

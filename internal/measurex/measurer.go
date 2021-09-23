@@ -805,7 +805,7 @@ func (mx *Measurer) maybeQUICFollowUp(ctx context.Context,
 				stdlog.Printf("malformed HTTPRoundTrip@%d: %+v", idx, rtrip)
 				continue
 			}
-			if v := rtrip.Response.HeadersList.Get("alt-svc"); v != "" {
+			if v := rtrip.Response.Headers.Get("alt-svc"); v != "" {
 				altsvc = append(altsvc, v)
 			}
 		}

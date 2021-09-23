@@ -61,7 +61,7 @@ func (c *udpLikeConnDB) WriteTo(p []byte, addr net.Addr) (int, error) {
 		RemoteAddr: addr.String(),
 		Started:    started,
 		Finished:   finished,
-		Error:      err,
+		Failure:    NewArchivalFailure(err),
 		Count:      count,
 	})
 	return count, err
@@ -77,7 +77,7 @@ func (c *udpLikeConnDB) ReadFrom(b []byte) (int, net.Addr, error) {
 		RemoteAddr: addrStringIfNotNil(addr),
 		Started:    started,
 		Finished:   finished,
-		Error:      err,
+		Failure:    NewArchivalFailure(err),
 		Count:      count,
 	})
 	return count, addr, err
@@ -93,7 +93,7 @@ func (c *udpLikeConnDB) Close() error {
 		RemoteAddr: "",
 		Started:    started,
 		Finished:   finished,
-		Error:      err,
+		Failure:    NewArchivalFailure(err),
 		Count:      0,
 	})
 	return err
@@ -147,7 +147,7 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, network, address string
 		SkipVerify:      tlsConfig.InsecureSkipVerify,
 		Started:         started,
 		Finished:        finished,
-		Error:           err,
+		Failure:         NewArchivalFailure(err),
 		Oddity:          qh.computeOddity(err),
 		TLSVersion:      netxlite.TLSVersionString(state.Version),
 		CipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),

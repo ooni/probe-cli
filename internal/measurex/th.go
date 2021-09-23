@@ -46,7 +46,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -74,103 +73,15 @@ type THClientRequest struct {
 
 // THServerResponse is the response from the test helper.
 type THServerResponse struct {
+	// URL is the URL this measurement refers to.
+	URL string `json:"url"`
+
 	// DNS contains all the DNS related measurements.
-	DNS *THDNSMeasurement
+	DNS []*DNSMeasurement `json:"dns"`
 
 	// Endpoints contains a measurement for each endpoint
 	// that was discovered by the probe or the TH.
-	Endpoints []*THEndpointMeasurement
-}
-
-// THDNSMeasurement is a DNS measurement performed by the test helper.
-type THDNSMeasurement struct {
-	// Oddities lists all the oddities inside this measurement.
-	Oddities []Oddity
-
-	// LookupHost contains all the host lookups.
-	LookupHost []*THLookupHostEvent `json:",omitempty"`
-
-	// LookupHTTPSSvc contains all the HTTPSSvc lookups.
-	LookupHTTPSSvc []*THLookupHTTPSSvcEvent `json:",omitempty"`
-}
-
-// THLookupHostEvent is the LookupHost event sent
-// back by the test helper.
-type THLookupHostEvent struct {
-	Network string
-	Address string
-	Domain  string
-	Error   *string
-	Oddity  Oddity
-	Addrs   []string
-}
-
-// THLookupHTTPSSvcEvent is the LookupHTTPSvc event sent
-// back by the test helper.
-type THLookupHTTPSSvcEvent struct {
-	Network string
-	Address string
-	Domain  string
-	Error   *string
-	Oddity  Oddity
-	IPv4    []string
-	IPv6    []string
-	ALPN    []string
-}
-
-// THEndpointMeasurement is an endpoint measurement
-// performed by the test helper.
-type THEndpointMeasurement struct {
-	// Oddities lists all the oddities inside this measurement.
-	Oddities []Oddity
-
-	// Connect contains all the connect operations.
-	Connect []*THConnectEvent `json:",omitempty"`
-
-	// TLSHandshake contains all the TLS handshakes.
-	TLSHandshake []*THHandshakeEvent `json:",omitempty"`
-
-	// QUICHandshake contains all the QUIC handshakes.
-	QUICHandshake []*THHandshakeEvent `json:",omitempty"`
-
-	// HTTPRoundTrip contains all the HTTP round trips.
-	HTTPRoundTrip []*THHTTPRoundTripEvent `json:",omitempty"`
-}
-
-// THConnectEvent is the connect event sent back by the test helper.
-type THConnectEvent struct {
-	Network    string
-	RemoteAddr string
-	Error      *string
-	Oddity     Oddity
-}
-
-// THHandshakeEvent is the handshake event sent
-// back by the test helper.
-type THHandshakeEvent struct {
-	Network         string
-	RemoteAddr      string
-	SNI             string
-	ALPN            []string
-	Error           *string
-	Oddity          Oddity
-	TLSVersion      string
-	CipherSuite     string
-	NegotiatedProto string
-}
-
-// THHTTPRoundTripEvent is the HTTP round trip event
-// sent back by the test helper.
-type THHTTPRoundTripEvent struct {
-	RequestMethod            string
-	RequestURL               string
-	RequestHeader            http.Header
-	Error                    *string
-	Oddity                   Oddity
-	ResponseStatus           int64
-	ResponseHeader           http.Header
-	ResponseBodySnapshotSize int64
-	MaxBodySnapshotSize      int64
+	Endpoints []*HTTPEndpointMeasurement `json:"endpoints"`
 }
 
 // thMaxAcceptableBodySize is the maximum acceptable body size by TH code.
@@ -378,48 +289,105 @@ func (h *THHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // The return value is either a THServerResponse or an error.
 func (h *THHandler) singleStep(
 	ctx context.Context, req *THClientRequest) (*THServerResponse, error) {
-	parsedURL, err := url.Parse(req.URL)
-	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
-		return nil, errors.New("invalid request url")
-	}
-	epnts, dns := h.dohQuery(ctx, parsedURL)
-	m := &THServerResponse{DNS: dns}
-	epnts = h.prepareEnpoints(
-		epnts, parsedURL, req.Endpoints, req.HTTPRequestHeaders)
 	mx := NewMeasurerWithDefaultSettings()
+	mx.MeasureURLHelper = &thMeasureURLHelper{req.Endpoints}
+	mx.Resolvers = []*ResolverInfo{{
+		Network:         ResolverForeign,
+		ForeignResolver: thResolver,
+	}}
 	jar := NewCookieJar()
-	for me := range mx.HTTPEndpointGetParallel(ctx, jar, epnts...) {
-		m.Endpoints = append(m.Endpoints, h.newTHEndpointMeasurement(me))
+	meas, err := mx.MeasureURL(ctx, req.URL, req.HTTPRequestHeaders, jar)
+	if err != nil {
+		return nil, err
 	}
-	h.maybeQUICFollowUp(ctx, m, epnts...)
-	return m, nil
+	return &THServerResponse{
+		URL:       req.URL,
+		DNS:       meas.DNS,
+		Endpoints: h.simplifyEndpoints(meas.Endpoints),
+	}, nil
 }
 
-// prepareEnpoints takes in input a list of endpoints discovered
-// so far by the TH and extends this list by adding the endpoints
-// discovered by the client. Before returning, this function
-// ensures that we don't have any duplicate endpoint.
-//
-// Arguments:
-//
-// - the list of endpoints discovered by the TH
-//
-// - the URL provided by the probe
-//
-// - the endpoints provided by the probe
-//
-// - the headers provided by the probe
-//
-// The return value may be an empty list if both the client
-// and the TH failed to discover any endpoint.
-//
-// When the return value contains endpoints, we also fill
-// the HTTPEndpoint.Header field using the header param
-// provided by the client. We don't allow arbitrary headers:
-// we only copy a subset of allowed headers.
-func (h *THHandler) prepareEnpoints(epnts []*HTTPEndpoint, URL *url.URL,
-	clientEpnts []*Endpoint, header http.Header) (out []*HTTPEndpoint) {
-	for _, epnt := range clientEpnts {
+func (h *THHandler) simplifyEndpoints(
+	in []*HTTPEndpointMeasurement) (out []*HTTPEndpointMeasurement) {
+	for _, epnt := range in {
+		out = append(out, &HTTPEndpointMeasurement{
+			URL:         epnt.URL,
+			Endpoint:    epnt.Endpoint,
+			Measurement: h.simplifyMeasurement(epnt.Measurement),
+		})
+	}
+	return
+}
+
+func (h *THHandler) simplifyMeasurement(in *Measurement) (out *Measurement) {
+	out = &Measurement{
+		Connect:        in.Connect,
+		TLSHandshake:   h.simplifyHandshake(in.TLSHandshake),
+		QUICHandshake:  h.simplifyHandshake(in.QUICHandshake),
+		LookupHost:     in.LookupHost,
+		LookupHTTPSSvc: in.LookupHTTPSSvc,
+		HTTPRoundTrip:  h.simplifyHTTPRoundTrip(in.HTTPRoundTrip),
+	}
+	return
+}
+
+func (h *THHandler) simplifyHandshake(in []*TLSHandshakeEvent) (out []*TLSHandshakeEvent) {
+	for _, ev := range in {
+		out = append(out, &TLSHandshakeEvent{
+			CipherSuite:     ev.CipherSuite,
+			Failure:         ev.Failure,
+			NegotiatedProto: ev.NegotiatedProto,
+			TLSVersion:      ev.TLSVersion,
+			PeerCerts:       nil,
+			Finished:        0,
+			RemoteAddr:      ev.RemoteAddr,
+			SNI:             ev.SNI,
+			ALPN:            ev.ALPN,
+			SkipVerify:      ev.SkipVerify,
+			Oddity:          ev.Oddity,
+			Network:         ev.Network,
+			Started:         0,
+		})
+	}
+	return
+}
+
+func (h *THHandler) simplifyHTTPRoundTrip(in []*HTTPRoundTripEvent) (out []*HTTPRoundTripEvent) {
+	for _, ev := range in {
+		out = append(out, &HTTPRoundTripEvent{
+			Failure:  ev.Failure,
+			Request:  ev.Request,
+			Response: h.simplifyHTTPResponse(ev.Response),
+			Finished: 0,
+			Started:  0,
+			Oddity:   ev.Oddity,
+		})
+	}
+	return
+}
+
+func (h *THHandler) simplifyHTTPResponse(in *HTTPResponse) (out *HTTPResponse) {
+	if in != nil {
+		out = &HTTPResponse{
+			Code:            in.Code,
+			Headers:         in.Headers,
+			Body:            nil,
+			BodyIsTruncated: in.BodyIsTruncated,
+			BodyLength:      in.BodyLength,
+			BodyIsUTF8:      in.BodyIsUTF8,
+		}
+	}
+	return
+}
+
+type thMeasureURLHelper struct {
+	epnts []*Endpoint
+}
+
+func (thh *thMeasureURLHelper) LookupExtraHTTPEndpoints(
+	ctx context.Context, URL *url.URL, headers http.Header,
+	serverEpnts ...*HTTPEndpoint) (epnts []*HTTPEndpoint, err error) {
+	for _, epnt := range thh.epnts {
 		epnts = append(epnts, &HTTPEndpoint{
 			Domain:  URL.Hostname(),
 			Network: epnt.Network,
@@ -427,191 +395,11 @@ func (h *THHandler) prepareEnpoints(epnts []*HTTPEndpoint, URL *url.URL,
 			SNI:     URL.Hostname(),
 			ALPN:    alpnForHTTPEndpoint(epnt.Network),
 			URL:     URL,
-			Header:  http.Header{}, // see the loop below
-		})
-	}
-	dups := make(map[string]bool)
-	for _, epnt := range epnts {
-		id := epnt.String()
-		if _, found := dups[id]; found {
-			continue
-		}
-		dups[id] = true
-		epnt.Header = h.onlyAllowedHeaders(header)
-		out = append(out, epnt)
-	}
-	return
-}
-
-func (h *THHandler) onlyAllowedHeaders(header http.Header) (out http.Header) {
-	out = http.Header{}
-	for k, vv := range header {
-		switch strings.ToLower(k) {
-		case "accept", "accept-language", "user-agent":
-			for _, v := range vv {
-				out.Add(k, v)
-			}
-		default:
-			// ignore all the other headers
-		}
-	}
-	return
-}
-
-// maybeQUICFollowUp checks whether we need to use Alt-Svc to check
-// for QUIC. We query for HTTPSSvc but currently only Cloudflare
-// implements this proposed standard. So, this function is
-// where we take care of all the other servers implementing QUIC.
-func (h *THHandler) maybeQUICFollowUp(ctx context.Context,
-	m *THServerResponse, epnts ...*HTTPEndpoint) {
-	altsvc := []string{}
-	for _, epnt := range m.Endpoints {
-		// Check whether we have a QUIC handshake. If so, then
-		// HTTPSSvc worked and we can stop here.
-		if epnt.QUICHandshake != nil {
-			return
-		}
-		for _, rtrip := range epnt.HTTPRoundTrip {
-			if v := rtrip.ResponseHeader.Get("alt-svc"); v != "" {
-				altsvc = append(altsvc, v)
-			}
-		}
-	}
-	// syntax:
-	//
-	// Alt-Svc: clear
-	// Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>
-	// Alt-Svc: <protocol-id>=<alt-authority>; ma=<max-age>; persist=1
-	//
-	// multiple entries may be separated by comma.
-	//
-	// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Alt-Svc
-	for _, header := range altsvc {
-		entries := strings.Split(header, ",")
-		if len(entries) < 1 {
-			continue
-		}
-		for _, entry := range entries {
-			parts := strings.Split(entry, ";")
-			if len(parts) < 1 {
-				continue
-			}
-			if parts[0] == "h3=\":443\"" {
-				h.doQUICFollowUp(ctx, m, epnts...)
-				return
-			}
-		}
-	}
-}
-
-// doQUICFollowUp runs when we know there's QUIC support via Alt-Svc.
-func (h *THHandler) doQUICFollowUp(ctx context.Context,
-	m *THServerResponse, epnts ...*HTTPEndpoint) {
-	quicEpnts := []*HTTPEndpoint{}
-	// do not mutate the existing list rather create a new one
-	for _, epnt := range epnts {
-		quicEpnts = append(quicEpnts, &HTTPEndpoint{
-			Domain:  epnt.Domain,
-			Network: NetworkQUIC,
-			Address: epnt.Address,
-			SNI:     epnt.SNI,
-			ALPN:    []string{"h3"},
-			URL:     epnt.URL,
-			Header:  epnt.Header,
-		})
-	}
-	mx := NewMeasurerWithDefaultSettings()
-	jar := NewCookieJar()
-	for me := range mx.HTTPEndpointGetParallel(ctx, jar, quicEpnts...) {
-		m.Endpoints = append(m.Endpoints, h.newTHEndpointMeasurement(me))
-	}
-}
-
-//
-// TH server: marshalling of endpoint measurements
-//
-
-// newTHEndpointMeasurement takes in input an endpoint
-// measurement performed by a measurer and emits in output
-// the simplified THEndpointMeasurement equivalent.
-func (h *THHandler) newTHEndpointMeasurement(in *HTTPEndpointMeasurement) *THEndpointMeasurement {
-	return &THEndpointMeasurement{
-		// TODO(bassosimone): here we need to add more fields
-		Connect:       h.newTHConnectEventList(in.Connect),
-		TLSHandshake:  h.newTLSHandshakesList(in.TLSHandshake),
-		QUICHandshake: h.newQUICHandshakeList(in.QUICHandshake),
-		HTTPRoundTrip: h.newHTTPRoundTripList(in.HTTPRoundTrip),
-	}
-}
-
-func (h *THHandler) newTHConnectEventList(in []*NetworkEvent) (out []*THConnectEvent) {
-	for _, e := range in {
-		out = append(out, &THConnectEvent{
-			Network:    e.Network,
-			RemoteAddr: e.RemoteAddr,
-			Error:      h.errorToFailure(e.Error),
-			Oddity:     e.Oddity,
+			Header:  headers, // but overriden later anyway
 		})
 	}
 	return
 }
-
-func (h *THHandler) newTLSHandshakesList(in []*TLSHandshakeEvent) (out []*THHandshakeEvent) {
-	for _, e := range in {
-		out = append(out, &THHandshakeEvent{
-			Network:         e.Network,
-			RemoteAddr:      e.RemoteAddr,
-			SNI:             e.SNI,
-			ALPN:            e.ALPN,
-			Error:           h.errorToFailure(e.Error),
-			Oddity:          e.Oddity,
-			TLSVersion:      e.TLSVersion,
-			CipherSuite:     e.CipherSuite,
-			NegotiatedProto: e.NegotiatedProto,
-		})
-	}
-	return
-}
-
-func (h *THHandler) newQUICHandshakeList(in []*QUICHandshakeEvent) (out []*THHandshakeEvent) {
-	for _, e := range in {
-		out = append(out, &THHandshakeEvent{
-			Network:         e.Network,
-			RemoteAddr:      e.RemoteAddr,
-			SNI:             e.SNI,
-			ALPN:            e.ALPN,
-			Error:           h.errorToFailure(e.Error),
-			Oddity:          e.Oddity,
-			TLSVersion:      e.TLSVersion,
-			CipherSuite:     e.CipherSuite,
-			NegotiatedProto: e.NegotiatedProto,
-		})
-	}
-	return
-}
-
-func (h *THHandler) newHTTPRoundTripList(in []*HTTPRoundTripEvent) (out []*THHTTPRoundTripEvent) {
-	/*
-		for _, e := range in {
-			out = append(out, &THHTTPRoundTripEvent{
-						RequestMethod:            e.RequestMethod,
-						RequestURL:               e.RequestURL.String(),
-						RequestHeader:            e.RequestHeader,
-					Error:                    h.errorToFailure(e.Error),
-					Oddity:                   e.Oddity,
-					ResponseStatus:           int64(e.ResponseStatus),
-					ResponseHeader:           e.ResponseHeader,
-					ResponseBodySnapshotSize: int64(len(e.ResponseBodySnapshot)),
-					MaxBodySnapshotSize:      e.MaxBodySnapshotSize,
-			})
-		}
-	*/
-	return
-}
-
-//
-// TH server: DNS
-//
 
 // thResolverURL is the DNS resolver URL used by the TH. We use an
 // encrypted resolver to reduce the risk that there is DNS-over-UDP
@@ -625,93 +413,3 @@ const thResolverURL = "https://dns.google/dns-query"
 var thResolver = netxlite.WrapResolver(log.Log, dnsx.NewSerialResolver(
 	dnsx.NewDNSOverHTTPS(http.DefaultClient, thResolverURL),
 ))
-
-// dohQuery discovers endpoints for the URL's hostname using DoH.
-//
-// Arguments:
-//
-// - ctx is the context for deadline/cancellation/timeout
-//
-// - parsedURL is the parsed URL
-//
-// Returns:
-//
-// - a possibly empty list of HTTPEndpoints (this happens for
-// example if the URL's hostname causes NXDOMAIN)
-//
-// - the THDNSMeasurement for the THServeResponse message
-func (h *THHandler) dohQuery(ctx context.Context, URL *url.URL) (
-	epnts []*HTTPEndpoint, meas *THDNSMeasurement) {
-	db := &MeasurementDB{}
-	r := NewMeasurerWithDefaultSettings().WrapResolver(db, thResolver)
-	meas = &THDNSMeasurement{}
-	op := newOperationLogger(log.Log,
-		"dohQuery A/AAAA for %s with %s", URL.Hostname(), r.Address())
-	_, err := r.LookupHost(ctx, URL.Hostname())
-	op.Stop(err)
-	meas.LookupHost = h.newTHLookupHostList(db.AsMeasurement())
-	switch URL.Scheme {
-	case "https":
-		op := newOperationLogger(log.Log,
-			"dohQuery HTTPSSvc for %s with %s", URL.Hostname(), r.Address())
-		_, err = r.LookupHTTPSSvcWithoutRetry(ctx, URL.Hostname())
-		op.Stop(err)
-		meas.LookupHTTPSSvc = h.newTHLookupHTTPSSvcList(db.AsMeasurement())
-	default:
-		// nothing
-	}
-	epnts, _ = AllHTTPEndpointsForURL(URL, NewHTTPRequestHeaderForMeasuring()) // nil on failure
-	return
-}
-
-func (h *THHandler) newTHLookupHostList(m *Measurement) (out []*THLookupHostEvent) {
-	for _, entry := range m.LookupHost {
-		out = append(out, &THLookupHostEvent{
-			Network: entry.Network,
-			Address: entry.Address,
-			Domain:  entry.Domain,
-			Error:   h.errorToFailure(entry.Error),
-			Oddity:  entry.Oddity,
-			//Addrs:   entry.Addrs,
-		})
-	}
-	return
-}
-
-func (h *THHandler) newTHLookupHTTPSSvcList(m *Measurement) (out []*THLookupHTTPSSvcEvent) {
-	for _, entry := range m.LookupHTTPSSvc {
-		out = append(out, &THLookupHTTPSSvcEvent{
-			Network: entry.Network,
-			Address: entry.Address,
-			Domain:  entry.Domain,
-			Error:   h.errorToFailure(entry.Error),
-			Oddity:  entry.Oddity,
-			/*
-				IPv4:    entry.IPv4,
-				IPv6:    entry.IPv6,
-				ALPN:    entry.ALPN,
-			*/
-		})
-	}
-	return
-}
-
-//
-// TH server: utility functions
-//
-
-// errorToFailure converts an error type to a failure type (which
-// is loosely defined as a pointer to a string).
-//
-// When the error is nil, the string pointer is nil. When the error is
-// not nil, the pointer points to the err.Error() string.
-//
-// We cannot unmarshal Go errors from JSON. Therefore, we need to
-// convert to this type when we're marshalling.
-func (h *THHandler) errorToFailure(err error) (out *string) {
-	if err != nil {
-		s := err.Error()
-		out = &s
-	}
-	return
-}

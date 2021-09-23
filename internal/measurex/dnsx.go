@@ -39,7 +39,7 @@ type DNSRoundTripEvent struct {
 	Query    *ArchivalBinaryData `json:"raw_query"`
 	Started  float64             `json:"started"`
 	Finished float64             `json:"t"`
-	Error    error               `json:"failure"`
+	Failure  *string             `json:"failure"`
 	Reply    *ArchivalBinaryData `json:"raw_reply"`
 }
 
@@ -53,7 +53,7 @@ func (txp *dnsxRoundTripperDB) RoundTrip(ctx context.Context, query []byte) ([]b
 		Query:    NewArchivalBinaryData(query),
 		Started:  started,
 		Finished: finished,
-		Error:    err,
+		Failure:  NewArchivalFailure(err),
 		Reply:    NewArchivalBinaryData(reply),
 	})
 	return reply, err
