@@ -8,7 +8,8 @@ package measurex
 
 import (
 	"context"
-	"encoding/json"
+	"net"
+	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -60,40 +61,100 @@ type resolverDB struct {
 	db    WritableDB
 }
 
-// LookupHostEvent contains the result of a host lookup.
-type LookupHostEvent struct {
-	Network  string
-	Address  string
-	Domain   string
-	Started  float64
-	Finished float64
-	Error    error
-	Oddity   Oddity
-	Addrs    []string
+// DNSLookupAnswer is a DNS lookup answer.
+type DNSLookupAnswer struct {
+	// JSON names compatible with df-002-dnst's spec
+	Type string `json:"answer_type"`
+	IPv4 string `json:"ipv4,omitempty"`
+	IPv6 string `json:"ivp6,omitempty"`
+
+	// Names not part of the spec.
+	ALPN string `json:"alpn,omitempty"`
 }
 
-// MarshalJSON marshals a LookupHostEvent to the archival
-// format compatible with df-002-dnst.
-func (ev *LookupHostEvent) MarshalJSON() ([]byte, error) {
-	archival := NewArchivalLookupHostList(ev)
-	return json.Marshal(archival)
+// DNSLookupEvent contains the results of a DNS lookup.
+type DNSLookupEvent struct {
+	// fields inside df-002-dnst
+	Answers   []DNSLookupAnswer `json:"answers"`
+	Network   string            `json:"engine"`
+	Error     error             `json:"failure"`
+	Domain    string            `json:"hostname"`
+	QueryType string            `json:"query_type"`
+	Address   string            `json:"resolver_address"`
+	Finished  float64           `json:"t"`
+
+	// Names not part of the spec.
+	Started float64 `json:"started"`
+	Oddity  Oddity  `json:"oddity"`
+}
+
+// SupportsHTTP3 returns true if this query is for HTTPS and
+// the answer contains an ALPN for "h3"
+func (ev *DNSLookupEvent) SupportsHTTP3() bool {
+	if ev.QueryType != "HTTPS" {
+		return false
+	}
+	for _, ans := range ev.Answers {
+		switch ans.Type {
+		case "ALPN":
+			if ans.ALPN == "h3" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Addrs returns all the IPv4/IPv6 addresses
+func (ev *DNSLookupEvent) Addrs() (out []string) {
+	for _, ans := range ev.Answers {
+		switch ans.Type {
+		case "A":
+			if net.ParseIP(ans.IPv4) != nil {
+				out = append(out, ans.IPv4)
+			}
+		case "AAAA":
+			if net.ParseIP(ans.IPv6) != nil {
+				out = append(out, ans.IPv6)
+			}
+		}
+	}
+	return
 }
 
 func (r *resolverDB) LookupHost(ctx context.Context, domain string) ([]string, error) {
 	started := time.Since(r.begin).Seconds()
 	addrs, err := r.Resolver.LookupHost(ctx, domain)
 	finished := time.Since(r.begin).Seconds()
-	r.db.InsertIntoLookupHost(&LookupHostEvent{
-		Network:  r.Resolver.Network(),
-		Address:  r.Resolver.Address(),
-		Domain:   domain,
-		Started:  started,
-		Finished: finished,
-		Error:    err,
-		Oddity:   r.computeOddityLookupHost(addrs, err),
-		Addrs:    addrs,
-	})
+	for _, qtype := range []string{"A", "AAAA"} {
+		ev := &DNSLookupEvent{
+			Answers:   r.computeAnswers(addrs, qtype),
+			Network:   r.Resolver.Network(),
+			Address:   r.Resolver.Address(),
+			Error:     err,
+			Domain:    domain,
+			QueryType: qtype,
+			Finished:  finished,
+			Started:   started,
+			Oddity:    r.computeOddityLookupHost(addrs, err),
+		}
+		r.db.InsertIntoLookupHost(ev)
+	}
 	return addrs, err
+}
+
+func (r *resolverDB) computeAnswers(addrs []string, qtype string) (out []DNSLookupAnswer) {
+	for _, addr := range addrs {
+		if qtype == "A" && !strings.Contains(addr, ":") {
+			out = append(out, DNSLookupAnswer{Type: qtype, IPv4: addr})
+			continue
+		}
+		if qtype == "AAAA" && strings.Contains(addr, ":") {
+			out = append(out, DNSLookupAnswer{Type: qtype, IPv6: addr})
+			continue
+		}
+	}
+	return
 }
 
 func (r *resolverDB) computeOddityLookupHost(addrs []string, err error) Oddity {
@@ -117,44 +178,39 @@ func (r *resolverDB) computeOddityLookupHost(addrs []string, err error) Oddity {
 	return ""
 }
 
-// LookupHTTPSSvcEvent contains the results of an HTTPSSvc lookup.
-type LookupHTTPSSvcEvent struct {
-	Network  string
-	Address  string
-	Domain   string
-	Started  float64
-	Finished float64
-	Error    error
-	Oddity   Oddity
-	IPv4     []string
-	IPv6     []string
-	ALPN     []string
-}
-
-// MarshalJSON marshals a LookupHTTPSSvcEvent to the archival
-// format that is similar to df-002-dnst.
-func (ev *LookupHTTPSSvcEvent) MarshalJSON() ([]byte, error) {
-	archival := NewArchivalLookupHTTPSSvcList(ev)
-	return json.Marshal(archival)
-}
-
 func (r *resolverDB) LookupHTTPSSvcWithoutRetry(ctx context.Context, domain string) (HTTPSSvc, error) {
 	started := time.Since(r.begin).Seconds()
 	https, err := r.Resolver.LookupHTTPSSvcWithoutRetry(ctx, domain)
 	finished := time.Since(r.begin).Seconds()
-	ev := &LookupHTTPSSvcEvent{
-		Network:  r.Resolver.Network(),
-		Address:  r.Resolver.Address(),
-		Domain:   domain,
-		Started:  started,
-		Finished: finished,
-		Error:    err,
-		Oddity:   Oddity(r.computeOddityHTTPSSvc(https, err)),
+	ev := &DNSLookupEvent{
+		Network:   r.Resolver.Network(),
+		Address:   r.Resolver.Address(),
+		Domain:    domain,
+		QueryType: "HTTPS",
+		Started:   started,
+		Finished:  finished,
+		Error:     err,
+		Oddity:    Oddity(r.computeOddityHTTPSSvc(https, err)),
 	}
 	if err == nil {
-		ev.IPv4 = https.IPv4Hint()
-		ev.IPv6 = https.IPv6Hint()
-		ev.ALPN = https.ALPN()
+		for _, addr := range https.IPv4Hint() {
+			ev.Answers = append(ev.Answers, DNSLookupAnswer{
+				Type: "A",
+				IPv4: addr,
+			})
+		}
+		for _, addr := range https.IPv6Hint() {
+			ev.Answers = append(ev.Answers, DNSLookupAnswer{
+				Type: "AAAA",
+				IPv6: addr,
+			})
+		}
+		for _, alpn := range https.ALPN() {
+			ev.Answers = append(ev.Answers, DNSLookupAnswer{
+				Type: "ALPN",
+				ALPN: alpn,
+			})
+		}
 	}
 	r.db.InsertIntoLookupHTTPSSvc(ev)
 	return https, err

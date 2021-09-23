@@ -32,10 +32,10 @@ type WritableDB interface {
 	InsertIntoTLSHandshake(ev *TLSHandshakeEvent)
 
 	// InsertIntoLookupHost saves a lookup host event.
-	InsertIntoLookupHost(ev *LookupHostEvent)
+	InsertIntoLookupHost(ev *DNSLookupEvent)
 
 	// InsertIntoLookupHTTPSvc saves an HTTPSvc lookup event.
-	InsertIntoLookupHTTPSSvc(ev *LookupHTTPSSvcEvent)
+	InsertIntoLookupHTTPSSvc(ev *DNSLookupEvent)
 
 	// InsertIntoDNSRoundTrip saves a DNS round trip event.
 	InsertIntoDNSRoundTrip(ev *DNSRoundTripEvent)
@@ -57,8 +57,8 @@ type MeasurementDB struct {
 	readWriteTable     []*NetworkEvent
 	closeTable         []*NetworkEvent
 	tlsHandshakeTable  []*TLSHandshakeEvent
-	lookupHostTable    []*LookupHostEvent
-	lookupHTTPSvcTable []*LookupHTTPSSvcEvent
+	lookupHostTable    []*DNSLookupEvent
+	lookupHTTPSvcTable []*DNSLookupEvent
 	dnsRoundTripTable  []*DNSRoundTripEvent
 	httpRoundTripTable []*HTTPRoundTripEvent
 	httpRedirectTable  []*HTTPRedirectEvent
@@ -123,27 +123,27 @@ func (db *MeasurementDB) selectAllFromTLSHandshake() (out []*TLSHandshakeEvent) 
 }
 
 // InsertIntoLookupHost implements EventDB.InsertIntoLookupHost.
-func (db *MeasurementDB) InsertIntoLookupHost(ev *LookupHostEvent) {
+func (db *MeasurementDB) InsertIntoLookupHost(ev *DNSLookupEvent) {
 	db.mu.Lock()
 	db.lookupHostTable = append(db.lookupHostTable, ev)
 	db.mu.Unlock()
 }
 
 // selectAllFromLookupHost returns all the lookup host events.
-func (db *MeasurementDB) selectAllFromLookupHost() (out []*LookupHostEvent) {
+func (db *MeasurementDB) selectAllFromLookupHost() (out []*DNSLookupEvent) {
 	out = append(out, db.lookupHostTable...)
 	return
 }
 
 // InsertIntoHTTPSSvc implements EventDB.InsertIntoHTTPSSvc
-func (db *MeasurementDB) InsertIntoLookupHTTPSSvc(ev *LookupHTTPSSvcEvent) {
+func (db *MeasurementDB) InsertIntoLookupHTTPSSvc(ev *DNSLookupEvent) {
 	db.mu.Lock()
 	db.lookupHTTPSvcTable = append(db.lookupHTTPSvcTable, ev)
 	db.mu.Unlock()
 }
 
 // selectAllFromLookupHTTPSSvc returns all HTTPSSvc lookup events.
-func (db *MeasurementDB) selectAllFromLookupHTTPSSvc() (out []*LookupHTTPSSvcEvent) {
+func (db *MeasurementDB) selectAllFromLookupHTTPSSvc() (out []*DNSLookupEvent) {
 	out = append(out, db.lookupHTTPSvcTable...)
 	return
 }

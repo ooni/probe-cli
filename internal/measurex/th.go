@@ -672,7 +672,7 @@ func (h *THHandler) newTHLookupHostList(m *Measurement) (out []*THLookupHostEven
 			Domain:  entry.Domain,
 			Error:   h.errorToFailure(entry.Error),
 			Oddity:  entry.Oddity,
-			Addrs:   entry.Addrs,
+			//Addrs:   entry.Addrs,
 		})
 	}
 	return
@@ -686,9 +686,11 @@ func (h *THHandler) newTHLookupHTTPSSvcList(m *Measurement) (out []*THLookupHTTP
 			Domain:  entry.Domain,
 			Error:   h.errorToFailure(entry.Error),
 			Oddity:  entry.Oddity,
-			IPv4:    entry.IPv4,
-			IPv6:    entry.IPv6,
-			ALPN:    entry.ALPN,
+			/*
+				IPv4:    entry.IPv4,
+				IPv6:    entry.IPv6,
+				ALPN:    entry.ALPN,
+			*/
 		})
 	}
 	return

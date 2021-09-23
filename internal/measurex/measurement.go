@@ -79,10 +79,10 @@ type Measurement struct {
 	QUICHandshake []*QUICHandshakeEvent `json:"quic_handshake,omitempty"`
 
 	// LookupHost contains all the host lookups.
-	LookupHost []*LookupHostEvent `json:"lookup_host,omitempty"`
+	LookupHost []*DNSLookupEvent `json:"lookup_host,omitempty"`
 
 	// LookupHTTPSSvc contains all the HTTPSSvc lookups.
-	LookupHTTPSSvc []*LookupHTTPSSvcEvent `json:"lookup_httpssvc,omitempty"`
+	LookupHTTPSSvc []*DNSLookupEvent `json:"lookup_httpssvc,omitempty"`
 
 	// DNSRoundTrip contains all the DNS round trips.
 	DNSRoundTrip []*DNSRoundTripEvent `json:"dns_round_trip,omitempty"`
@@ -133,7 +133,7 @@ func (m *DNSMeasurement) allTCPEndpoints(domain, port string) (out []*Endpoint) 
 		if domain != entry.Domain {
 			continue
 		}
-		for _, addr := range entry.Addrs {
+		for _, addr := range entry.Addrs() {
 			if net.ParseIP(addr) == nil {
 				continue // skip CNAME entries courtesy the WCTH
 			}
@@ -148,11 +148,10 @@ func (m *DNSMeasurement) allQUICEndpoints(domain, port string) (out []*Endpoint)
 		if domain != entry.Domain {
 			continue
 		}
-		if !m.supportsHTTP3(entry) {
+		if !entry.SupportsHTTP3() {
 			continue
 		}
-		addrs := append([]string{}, entry.IPv4...)
-		for _, addr := range append(addrs, entry.IPv6...) {
+		for _, addr := range entry.Addrs() {
 			out = append(out, m.newEndpoint(addr, port, NetworkQUIC))
 		}
 	}
@@ -161,16 +160,6 @@ func (m *DNSMeasurement) allQUICEndpoints(domain, port string) (out []*Endpoint)
 
 func (m *DNSMeasurement) newEndpoint(addr, port string, network EndpointNetwork) *Endpoint {
 	return &Endpoint{Network: network, Address: net.JoinHostPort(addr, port)}
-}
-
-func (m *DNSMeasurement) supportsHTTP3(entry *LookupHTTPSSvcEvent) bool {
-	for _, alpn := range entry.ALPN {
-		switch alpn {
-		case "h3":
-			return true
-		}
-	}
-	return false
 }
 
 // allHTTPEndpointsForURL returns all the HTTPEndpoints matching

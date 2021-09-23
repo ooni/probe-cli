@@ -31,16 +31,6 @@ type httpTransportLogger struct {
 var _ HTTPTransport = &httpTransportLogger{}
 
 func (txp *httpTransportLogger) RoundTrip(req *http.Request) (*http.Response, error) {
-	host := req.Host
-	if host == "" {
-		host = req.URL.Host
-	}
-	req.Header.Set("Host", host) // anticipate what Go would do
-	return txp.logTrip(req)
-}
-
-// logTrip is an HTTP round trip with logging.
-func (txp *httpTransportLogger) logTrip(req *http.Request) (*http.Response, error) {
 	txp.Logger.Debugf("> %s %s", req.Method, req.URL.String())
 	for key, values := range req.Header {
 		for _, value := range values {

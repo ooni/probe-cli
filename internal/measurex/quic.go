@@ -87,7 +87,7 @@ func (c *udpLikeConnDB) Close() error {
 	started := time.Since(c.begin).Seconds()
 	err := c.UDPLikeConn.Close()
 	finished := time.Since(c.begin).Seconds()
-	c.db.InsertIntoReadWrite(&NetworkEvent{
+	c.db.InsertIntoClose(&NetworkEvent{
 		Operation:  "close",
 		Network:    "quic",
 		RemoteAddr: "",
