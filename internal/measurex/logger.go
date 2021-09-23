@@ -26,10 +26,10 @@ type Logger interface {
 	Warnf(format string, v ...interface{})
 }
 
-// newOperationLogger creates a new logger that logs
+// NewOperationLogger creates a new logger that logs
 // about an in-progress operation.
-func newOperationLogger(logger Logger, format string, v ...interface{}) *operationLogger {
-	ol := &operationLogger{
+func NewOperationLogger(logger Logger, format string, v ...interface{}) *OperationLogger {
+	ol := &OperationLogger{
 		sighup:  make(chan interface{}),
 		logger:  logger,
 		once:    &sync.Once{},
@@ -41,8 +41,8 @@ func newOperationLogger(logger Logger, format string, v ...interface{}) *operati
 	return ol
 }
 
-// operationLogger logs about an in-progress operation
-type operationLogger struct {
+// OperationLogger logs about an in-progress operation
+type OperationLogger struct {
 	logger  Logger
 	message string
 	once    *sync.Once
@@ -50,7 +50,7 @@ type operationLogger struct {
 	wg      *sync.WaitGroup
 }
 
-func (ol *operationLogger) logloop() {
+func (ol *OperationLogger) logloop() {
 	defer ol.wg.Done()
 	timer := time.NewTimer(500 * time.Millisecond)
 	defer timer.Stop()
@@ -62,7 +62,7 @@ func (ol *operationLogger) logloop() {
 	}
 }
 
-func (ol *operationLogger) Stop(err error) {
+func (ol *OperationLogger) Stop(err error) {
 	ol.once.Do(func() {
 		close(ol.sighup)
 		ol.wg.Wait()

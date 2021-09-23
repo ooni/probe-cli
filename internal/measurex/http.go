@@ -228,9 +228,6 @@ func newHTTPClient(db WritableDB, cookiejar http.CookieJar,
 			if len(via) >= 10 {
 				err = ErrHTTPTooManyRedirects
 			}
-			if err != nil {
-				err = errorsx.NewTopLevelGenericErrWrapper(err)
-			}
 			db.InsertIntoHTTPRedirect(&HTTPRedirectEvent{
 				URL:      via[0].URL, // bug in Go stdlib if we crash here
 				Location: req.URL,

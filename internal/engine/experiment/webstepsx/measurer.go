@@ -1,13 +1,15 @@
-// Package webstepsx contains a websteps implementation
-// based on the internal/measurex package.
-//
-// This implementation does not follow any existing spec
-// rather we are modeling the spec on this one.
 package webstepsx
+
+//
+// Measurer
+//
+// This file contains the client implementation.
+//
 
 import (
 	"context"
 	"errors"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -28,6 +30,8 @@ type Config struct{}
 // TestKeys contains the experiment's test keys.
 type TestKeys struct {
 	*measurex.URLMeasurement
+
+	TH *THServerResponse `json:"th"`
 }
 
 // Measurer performs the measurement.
@@ -93,29 +97,39 @@ func (mx *Measurer) RunAsync(
 	if testhelper == nil {
 		return nil, ErrNoAvailableTestHelpers
 	}
+	testhelper.Address = "http://127.0.0.1:8080/api/v1/websteps" // TODO(bassosimone): remove!
 	out := make(chan *model.ExperimentAsyncTestKeys)
 	go mx.runAsync(ctx, sess, input, testhelper, out)
 	return out, nil
 }
 
+var measurerResolvers = []*measurex.ResolverInfo{{
+	Network: "system",
+	Address: "",
+}, {
+	Network: "udp",
+	Address: "8.8.4.4:53",
+}, {
+	Network: "udp",
+	Address: "1.1.1.1:53",
+}}
+
 func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 	URL string, th *model.Service, out chan<- *model.ExperimentAsyncTestKeys) {
 	defer close(out)
-	mmx := &measurex.Measurer{
-		Begin:      time.Now(),
-		HTTPClient: sess.DefaultHTTPClient(),
+	helper := &measurerMeasureURLHelper{
+		Clnt:       sess.DefaultHTTPClient(),
 		Logger:     sess.Logger(),
-		Resolvers: []*measurex.ResolverInfo{{
-			Network: "system",
-			Address: "",
-		}, {
-			Network: "udp",
-			Address: "8.8.4.4:53",
-		}, {
-			Network: "udp",
-			Address: "1.1.1.1:53",
-		}},
-		TLSHandshaker: netxlite.NewTLSHandshakerStdlib(sess.Logger()),
+		THURL:      th.Address,
+		thResponse: make(chan *THServerResponse, 1), // buffer
+	}
+	mmx := &measurex.Measurer{
+		Begin:            time.Now(),
+		HTTPClient:       sess.DefaultHTTPClient(),
+		MeasureURLHelper: helper,
+		Logger:           sess.Logger(),
+		Resolvers:        measurerResolvers,
+		TLSHandshaker:    netxlite.NewTLSHandshakerStdlib(sess.Logger()),
 	}
 	cookies := measurex.NewCookieJar()
 	in := mmx.MeasureHTTPURLAndFollowRedirections(
@@ -123,7 +137,10 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 	for m := range in {
 		out <- &model.ExperimentAsyncTestKeys{
 			MeasurementRuntime: m.TotalRuntime.Seconds(),
-			TestKeys:           &TestKeys{m},
+			TestKeys: &TestKeys{
+				URLMeasurement: m,
+				TH:             <-helper.thResponse,
+			},
 			Extensions: map[string]int64{
 				archival.ExtHTTP.Name:         archival.ExtHTTP.V,
 				archival.ExtDNS.Name:          archival.ExtDNS.V,
@@ -133,6 +150,57 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 			},
 		}
 	}
+}
+
+// measurerMeasureURLHelper injects the TH into the normal
+// URL measurement flow implemented by measurex.
+type measurerMeasureURLHelper struct {
+	// Clnt is the MANDATORY client to use
+	Clnt measurex.HTTPClient
+
+	// Logger is the MANDATORY Logger to use
+	Logger model.Logger
+
+	// THURL is the MANDATORY TH URL.
+	THURL string
+
+	// thResponse is the response from the TH.
+	thResponse chan *THServerResponse
+}
+
+func (mth *measurerMeasureURLHelper) LookupExtraHTTPEndpoints(
+	ctx context.Context, URL *url.URL, headers http.Header,
+	curEndpoints ...*measurex.HTTPEndpoint) ([]*measurex.HTTPEndpoint, error) {
+	cc := &THClientCall{
+		Endpoints:  measurex.HTTPEndpointsToEndpoints(curEndpoints),
+		HTTPClient: mth.Clnt,
+		Header:     headers,
+		THURL:      mth.THURL,
+		TargetURL:  URL.String(),
+	}
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	ol := measurex.NewOperationLogger(
+		mth.Logger, "THClientCall %s", URL.String())
+	resp, err := cc.Call(ctx)
+	ol.Stop(err)
+	mth.thResponse <- resp // note that nil is ~fine here
+	if err != nil {
+		return nil, err
+	}
+	var out []*measurex.HTTPEndpoint
+	for _, epnt := range resp.Endpoints {
+		out = append(out, &measurex.HTTPEndpoint{
+			Domain:  URL.Hostname(),
+			Network: epnt.Network,
+			Address: epnt.Address,
+			SNI:     URL.Hostname(),
+			ALPN:    measurex.ALPNForHTTPEndpoint(epnt.Network),
+			URL:     URL,
+			Header:  headers,
+		})
+	}
+	return out, nil
 }
 
 // Run implements ExperimentMeasurer.Run.

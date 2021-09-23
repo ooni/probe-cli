@@ -1,40 +1,10 @@
-package measurex
+package webstepsx
 
 //
 // TH (Test Helper)
 //
 // This file contains an implementation of the
 // (proposed) websteps test helper spec.
-//
-// Why is this code in this package?
-//
-// The measurex model allows you to define test
-// helpers that run in the DNS lookup phase. This
-// model is quite nice because it allows you to
-// discover additional IP addresses for the domain
-// you're testing. When your local resolver is
-// censored, the TH is how we get extra IP addresses
-// for the domain to test.
-//
-// The current TH code requires you to submit an
-// HTTP or HTTPS URL. If we relax this constraint,
-// we can have a more flexible test helper that
-// may be useful also for other experiments.
-//
-// Here are some ideas:
-//
-// - `dnslookup://domain` lookups a domain according
-// to the test helper's resolver;
-//
-// - `tlshandshake://endpoint` performs a domain
-// lookup and then a TLS handshake;
-//
-// - `quichandshake://endpoint` likewise.
-//
-// To conclude, this code is here because its
-// trajectory is that of making it the base
-// building block for building several types
-// of test helpers.
 //
 
 import (
@@ -48,6 +18,7 @@ import (
 	"net/url"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
@@ -62,7 +33,7 @@ import (
 // THClientRequest is the request received by the test helper.
 type THClientRequest struct {
 	// Endpoints is a list of endpoints to measure.
-	Endpoints []*Endpoint
+	Endpoints []*measurex.Endpoint
 
 	// URL is the URL we want to measure.
 	URL string
@@ -73,15 +44,12 @@ type THClientRequest struct {
 
 // THServerResponse is the response from the test helper.
 type THServerResponse struct {
-	// URL is the URL this measurement refers to.
-	URL string `json:"url"`
-
 	// DNS contains all the DNS related measurements.
-	DNS []*DNSMeasurement `json:"dns"`
+	DNS []*measurex.DNSMeasurement `json:"dns"`
 
 	// Endpoints contains a measurement for each endpoint
 	// that was discovered by the probe or the TH.
-	Endpoints []*HTTPEndpointMeasurement `json:"endpoints"`
+	Endpoints []*measurex.HTTPEndpointMeasurement `json:"endpoints"`
 }
 
 // thMaxAcceptableBodySize is the maximum acceptable body size by TH code.
@@ -96,11 +64,11 @@ const thMaxAcceptableBodySize = 1 << 20
 type THClient struct {
 	// DNSServers is the MANDATORY list of DNS-over-UDP
 	// servers to use to discover endpoints locally.
-	DNServers []*ResolverInfo
+	DNServers []*measurex.ResolverInfo
 
 	// HTTPClient is the MANDATORY HTTP client to
 	// use for contacting the TH.
-	HTTPClient HTTPClient
+	HTTPClient measurex.HTTPClient
 
 	// ServerURL is the MANDATORY URL of the TH HTTP endpoint.
 	ServerURL string
@@ -126,19 +94,19 @@ func (c *THClient) Run(ctx context.Context, URL string) (*THServerResponse, erro
 	if err != nil {
 		return nil, err
 	}
-	mx := NewMeasurerWithDefaultSettings()
-	var dns []*DNSMeasurement
+	mx := measurex.NewMeasurerWithDefaultSettings()
+	var dns []*measurex.DNSMeasurement
 	for m := range mx.LookupURLHostParallel(ctx, parsed, c.DNServers...) {
 		dns = append(dns, m)
 	}
-	endpoints, err := AllEndpointsForURL(parsed, dns...)
+	endpoints, err := measurex.AllEndpointsForURL(parsed, dns...)
 	if err != nil {
 		return nil, err
 	}
 	return (&THClientCall{
 		Endpoints:  endpoints,
 		HTTPClient: c.HTTPClient,
-		Header:     NewHTTPRequestHeaderForMeasuring(),
+		Header:     measurex.NewHTTPRequestHeaderForMeasuring(),
 		THURL:      c.ServerURL,
 		TargetURL:  URL,
 	}).Call(ctx)
@@ -146,17 +114,13 @@ func (c *THClient) Run(ctx context.Context, URL string) (*THServerResponse, erro
 
 // THClientCall allows to perform a single TH client call. Make sure
 // you fill all the fields marked as MANDATORY before use.
-//
-// This is a low-level API for calling the TH. If you are writing
-// a CLI client, use THClient. If you are writing code for the
-// Measurer, use THMeasurerClientCall.
 type THClientCall struct {
 	// Endpoints contains the MANDATORY endpoints we discovered.
-	Endpoints []*Endpoint
+	Endpoints []*measurex.Endpoint
 
 	// HTTPClient is the MANDATORY HTTP client to
 	// use for contacting the TH.
-	HTTPClient HTTPClient
+	HTTPClient measurex.HTTPClient
 
 	// Header contains the MANDATORY request headers.
 	Header http.Header
@@ -196,10 +160,10 @@ func (c *THClientCall) httpClientDo(req *http.Request) (*THServerResponse, error
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 { // THHandler returns either 400 or 200
 		return nil, errTHRequestFailed
 	}
-	defer resp.Body.Close()
 	r := io.LimitReader(resp.Body, thMaxAcceptableBodySize)
 	respBody, err := iox.ReadAllContext(req.Context(), r)
 	if err != nil {
@@ -289,38 +253,38 @@ func (h *THHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // The return value is either a THServerResponse or an error.
 func (h *THHandler) singleStep(
 	ctx context.Context, req *THClientRequest) (*THServerResponse, error) {
-	mx := NewMeasurerWithDefaultSettings()
+	mx := measurex.NewMeasurerWithDefaultSettings()
 	mx.MeasureURLHelper = &thMeasureURLHelper{req.Endpoints}
-	mx.Resolvers = []*ResolverInfo{{
-		Network:         ResolverForeign,
+	mx.Resolvers = []*measurex.ResolverInfo{{
+		Network:         measurex.ResolverForeign,
 		ForeignResolver: thResolver,
 	}}
-	jar := NewCookieJar()
+	jar := measurex.NewCookieJar()
 	meas, err := mx.MeasureURL(ctx, req.URL, req.HTTPRequestHeaders, jar)
 	if err != nil {
 		return nil, err
 	}
 	return &THServerResponse{
-		URL:       req.URL,
 		DNS:       meas.DNS,
 		Endpoints: h.simplifyEndpoints(meas.Endpoints),
 	}, nil
 }
 
 func (h *THHandler) simplifyEndpoints(
-	in []*HTTPEndpointMeasurement) (out []*HTTPEndpointMeasurement) {
+	in []*measurex.HTTPEndpointMeasurement) (out []*measurex.HTTPEndpointMeasurement) {
 	for _, epnt := range in {
-		out = append(out, &HTTPEndpointMeasurement{
+		out = append(out, &measurex.HTTPEndpointMeasurement{
 			URL:         epnt.URL,
-			Endpoint:    epnt.Endpoint,
+			Network:     epnt.Network,
+			Address:     epnt.Address,
 			Measurement: h.simplifyMeasurement(epnt.Measurement),
 		})
 	}
 	return
 }
 
-func (h *THHandler) simplifyMeasurement(in *Measurement) (out *Measurement) {
-	out = &Measurement{
+func (h *THHandler) simplifyMeasurement(in *measurex.Measurement) (out *measurex.Measurement) {
+	out = &measurex.Measurement{
 		Connect:        in.Connect,
 		TLSHandshake:   h.simplifyHandshake(in.TLSHandshake),
 		QUICHandshake:  h.simplifyHandshake(in.QUICHandshake),
@@ -331,9 +295,10 @@ func (h *THHandler) simplifyMeasurement(in *Measurement) (out *Measurement) {
 	return
 }
 
-func (h *THHandler) simplifyHandshake(in []*TLSHandshakeEvent) (out []*TLSHandshakeEvent) {
+func (h *THHandler) simplifyHandshake(
+	in []*measurex.TLSHandshakeEvent) (out []*measurex.TLSHandshakeEvent) {
 	for _, ev := range in {
-		out = append(out, &TLSHandshakeEvent{
+		out = append(out, &measurex.TLSHandshakeEvent{
 			CipherSuite:     ev.CipherSuite,
 			Failure:         ev.Failure,
 			NegotiatedProto: ev.NegotiatedProto,
@@ -352,9 +317,10 @@ func (h *THHandler) simplifyHandshake(in []*TLSHandshakeEvent) (out []*TLSHandsh
 	return
 }
 
-func (h *THHandler) simplifyHTTPRoundTrip(in []*HTTPRoundTripEvent) (out []*HTTPRoundTripEvent) {
+func (h *THHandler) simplifyHTTPRoundTrip(
+	in []*measurex.HTTPRoundTripEvent) (out []*measurex.HTTPRoundTripEvent) {
 	for _, ev := range in {
-		out = append(out, &HTTPRoundTripEvent{
+		out = append(out, &measurex.HTTPRoundTripEvent{
 			Failure:  ev.Failure,
 			Request:  ev.Request,
 			Response: h.simplifyHTTPResponse(ev.Response),
@@ -366,9 +332,10 @@ func (h *THHandler) simplifyHTTPRoundTrip(in []*HTTPRoundTripEvent) (out []*HTTP
 	return
 }
 
-func (h *THHandler) simplifyHTTPResponse(in *HTTPResponse) (out *HTTPResponse) {
+func (h *THHandler) simplifyHTTPResponse(
+	in *measurex.HTTPResponse) (out *measurex.HTTPResponse) {
 	if in != nil {
-		out = &HTTPResponse{
+		out = &measurex.HTTPResponse{
 			Code:            in.Code,
 			Headers:         in.Headers,
 			Body:            nil,
@@ -381,19 +348,19 @@ func (h *THHandler) simplifyHTTPResponse(in *HTTPResponse) (out *HTTPResponse) {
 }
 
 type thMeasureURLHelper struct {
-	epnts []*Endpoint
+	epnts []*measurex.Endpoint
 }
 
 func (thh *thMeasureURLHelper) LookupExtraHTTPEndpoints(
 	ctx context.Context, URL *url.URL, headers http.Header,
-	serverEpnts ...*HTTPEndpoint) (epnts []*HTTPEndpoint, err error) {
+	serverEpnts ...*measurex.HTTPEndpoint) (epnts []*measurex.HTTPEndpoint, err error) {
 	for _, epnt := range thh.epnts {
-		epnts = append(epnts, &HTTPEndpoint{
+		epnts = append(epnts, &measurex.HTTPEndpoint{
 			Domain:  URL.Hostname(),
 			Network: epnt.Network,
 			Address: epnt.Address,
 			SNI:     URL.Hostname(),
-			ALPN:    alpnForHTTPEndpoint(epnt.Network),
+			ALPN:    measurex.ALPNForHTTPEndpoint(epnt.Network),
 			URL:     URL,
 			Header:  headers, // but overriden later anyway
 		})

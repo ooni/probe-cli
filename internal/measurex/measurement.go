@@ -190,7 +190,7 @@ func (m *DNSMeasurement) allHTTPEndpointsForURL(
 			Network: epnt.Network,
 			Address: epnt.Address,
 			SNI:     domain,
-			ALPN:    alpnForHTTPEndpoint(epnt.Network),
+			ALPN:    ALPNForHTTPEndpoint(epnt.Network),
 			URL:     URL,
 			Header:  headers,
 		})
@@ -235,8 +235,11 @@ func AllHTTPEndpointsForURL(URL *url.URL,
 
 // EndpointMeasurement is an endpoint measurement.
 type EndpointMeasurement struct {
-	// Endpoint is the endpoint this measurement refers to.
-	Endpoint string `json:"endpoint"`
+	// Network is the network of this endpoint.
+	Network EndpointNetwork `json:"network"`
+
+	// Address is the address of this endpoint.
+	Address string `json:"address"`
 
 	// An EndpointMeasurement is a Measurement.
 	*Measurement
@@ -247,8 +250,11 @@ type HTTPEndpointMeasurement struct {
 	// URL is the URL this measurement refers to.
 	URL string `json:"url"`
 
-	// Endpoint is the endpoint this measurement refers to.
-	Endpoint string `json:"endpoint"`
+	// Network is the network of this endpoint.
+	Network EndpointNetwork `json:"network"`
+
+	// Address is the address of this endpoint.
+	Address string `json:"address"`
 
 	// An HTTPEndpointMeasurement is a Measurement.
 	*Measurement

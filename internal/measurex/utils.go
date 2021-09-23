@@ -12,9 +12,9 @@ import (
 // This is where we put free functions.
 //
 
-// alpnForHTTPEndpoint selects the correct ALPN for an HTTP endpoint
+// ALPNForHTTPEndpoint selects the correct ALPN for an HTTP endpoint
 // given the network. On failure, we return a nil list.
-func alpnForHTTPEndpoint(network EndpointNetwork) []string {
+func ALPNForHTTPEndpoint(network EndpointNetwork) []string {
 	switch network {
 	case NetworkQUIC:
 		return []string{"h3"}
@@ -72,6 +72,17 @@ func removeDuplicateHTTPEndpoints(epnts ...*HTTPEndpoint) (out []*HTTPEndpoint) 
 	}
 	for _, epnt := range duplicates {
 		out = append(out, epnt)
+	}
+	return
+}
+
+// HTTPEndpointsToEndpoints convers HTTPEndpoints to Endpoints
+func HTTPEndpointsToEndpoints(in []*HTTPEndpoint) (out []*Endpoint) {
+	for _, epnt := range in {
+		out = append(out, &Endpoint{
+			Network: epnt.Network,
+			Address: epnt.Address,
+		})
 	}
 	return
 }

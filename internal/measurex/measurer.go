@@ -70,7 +70,7 @@ func NewMeasurerWithDefaultSettings() *Measurer {
 // LookupHostSystem performs a LookupHost using the system resolver.
 func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *DNSMeasurement {
 	const timeout = 4 * time.Second
-	ol := newOperationLogger(mx.Logger, "LookupHost %s with getaddrinfo", domain)
+	ol := NewOperationLogger(mx.Logger, "LookupHost %s with getaddrinfo", domain)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	db := &MeasurementDB{}
@@ -88,7 +88,7 @@ func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *DNSMea
 func (mx *Measurer) lookupHostForeign(
 	ctx context.Context, domain string, r Resolver) *DNSMeasurement {
 	const timeout = 4 * time.Second
-	ol := newOperationLogger(mx.Logger, "LookupHost %s with %s", domain, r.Network())
+	ol := NewOperationLogger(mx.Logger, "LookupHost %s with %s", domain, r.Network())
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	db := &MeasurementDB{}
@@ -114,7 +114,7 @@ func (mx *Measurer) lookupHostForeign(
 func (mx *Measurer) LookupHostUDP(
 	ctx context.Context, domain, address string) *DNSMeasurement {
 	const timeout = 4 * time.Second
-	ol := newOperationLogger(mx.Logger, "LookupHost %s with %s/udp", domain, address)
+	ol := NewOperationLogger(mx.Logger, "LookupHost %s with %s/udp", domain, address)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	db := &MeasurementDB{}
@@ -142,7 +142,7 @@ func (mx *Measurer) LookupHostUDP(
 func (mx *Measurer) LookupHTTPSSvcUDP(
 	ctx context.Context, domain, address string) *DNSMeasurement {
 	const timeout = 4 * time.Second
-	ol := newOperationLogger(mx.Logger, "LookupHTTPSvc %s with %s/udp", domain, address)
+	ol := NewOperationLogger(mx.Logger, "LookupHTTPSvc %s with %s/udp", domain, address)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	db := &MeasurementDB{}
@@ -161,7 +161,7 @@ func (mx *Measurer) LookupHTTPSSvcUDP(
 func (mx *Measurer) lookupHTTPSSvcUDPForeign(
 	ctx context.Context, domain string, r Resolver) *DNSMeasurement {
 	const timeout = 4 * time.Second
-	ol := newOperationLogger(mx.Logger, "LookupHTTPSvc %s with %s", domain, r.Address())
+	ol := NewOperationLogger(mx.Logger, "LookupHTTPSvc %s with %s", domain, r.Address())
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	db := &MeasurementDB{}
@@ -190,10 +190,8 @@ func (mx *Measurer) TCPConnect(ctx context.Context, address string) *EndpointMea
 		conn.Close()
 	}
 	return &EndpointMeasurement{
-		Endpoint: (&Endpoint{
-			Network: NetworkTCP,
-			Address: address,
-		}).String(),
+		Network:     NetworkTCP,
+		Address:     address,
 		Measurement: measurement,
 	}
 }
@@ -201,7 +199,7 @@ func (mx *Measurer) TCPConnect(ctx context.Context, address string) *EndpointMea
 // tcpConnect is like TCPConnect but does not create a new measurement.
 func (mx *Measurer) tcpConnect(ctx context.Context, db WritableDB, address string) (Conn, error) {
 	const timeout = 10 * time.Second
-	ol := newOperationLogger(mx.Logger, "TCPConnect %s", address)
+	ol := NewOperationLogger(mx.Logger, "TCPConnect %s", address)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	d := mx.NewDialerWithoutResolver(db, mx.Logger)
@@ -250,10 +248,8 @@ func (mx *Measurer) TLSConnectAndHandshake(ctx context.Context,
 		conn.Close()
 	}
 	return &EndpointMeasurement{
-		Endpoint: (&Endpoint{
-			Network: NetworkTCP,
-			Address: address,
-		}).String(),
+		Network:     NetworkTCP,
+		Address:     address,
 		Measurement: measurement,
 	}
 }
@@ -267,15 +263,18 @@ func (mx *Measurer) tlsConnectAndHandshake(ctx context.Context,
 		return nil, err
 	}
 	const timeout = 10 * time.Second
-	ol := newOperationLogger(mx.Logger,
+	ol := NewOperationLogger(mx.Logger,
 		"TLSHandshake %s with sni=%s", address, config.ServerName)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	th := mx.WrapTLSHandshaker(db, mx.TLSHandshaker)
 	tlsConn, _, err := th.Handshake(ctx, conn, config)
 	ol.Stop(err)
+	if err != nil {
+		return nil, err
+	}
 	// cast safe according to the docs of netxlite's handshaker
-	return tlsConn.(netxlite.TLSConn), err
+	return tlsConn.(netxlite.TLSConn), nil
 }
 
 // QUICHandshake connects and TLS handshakes with a QUIC endpoint.
@@ -309,10 +308,8 @@ func (mx *Measurer) QUICHandshake(ctx context.Context, address string,
 		sess.CloseWithError(0, "")
 	}
 	return &EndpointMeasurement{
-		Endpoint: (&Endpoint{
-			Network: NetworkQUIC,
-			Address: address,
-		}).String(),
+		Network:     NetworkQUIC,
+		Address:     address,
 		Measurement: measurement,
 	}
 }
@@ -321,7 +318,7 @@ func (mx *Measurer) QUICHandshake(ctx context.Context, address string,
 func (mx *Measurer) quicHandshake(ctx context.Context, db WritableDB,
 	address string, config *tls.Config) (quic.EarlySession, error) {
 	const timeout = 10 * time.Second
-	ol := newOperationLogger(mx.Logger,
+	ol := NewOperationLogger(mx.Logger,
 		"QUICHandshake %s with sni=%s", address, config.ServerName)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -406,11 +403,9 @@ func (mx *Measurer) httpEndpointGet(ctx context.Context, epnt *HTTPEndpoint,
 	jar http.CookieJar) (*http.Response, *HTTPEndpointMeasurement, error) {
 	resp, m, err := mx.httpEndpointGetMeasurement(ctx, epnt, jar)
 	out := &HTTPEndpointMeasurement{
-		URL: epnt.URL.String(),
-		Endpoint: (&Endpoint{
-			Network: epnt.Network,
-			Address: epnt.Address,
-		}).String(),
+		URL:         epnt.URL.String(),
+		Network:     epnt.Network,
+		Address:     epnt.Address,
 		Measurement: m,
 	}
 	return resp, out, err
@@ -523,7 +518,7 @@ func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
 func (mx *Measurer) httpClientDo(ctx context.Context, clnt HTTPClient,
 	epnt *HTTPEndpoint, req *http.Request) (*http.Response, error) {
 	const timeout = 15 * time.Second
-	ol := newOperationLogger(mx.Logger,
+	ol := NewOperationLogger(mx.Logger,
 		"%s %s with %s/%s", req.Method, req.URL.String(), epnt.Address, epnt.Network)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()

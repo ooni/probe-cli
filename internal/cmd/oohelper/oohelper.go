@@ -11,6 +11,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/cmd/oohelper/internal"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webstepsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -67,7 +68,7 @@ func webstepsth() interface{} {
 	if serverURL == "" {
 		serverURL = "http://127.0.0.1:8080/api/v1/websteps"
 	}
-	clnt := &measurex.THClient{
+	clnt := &webstepsx.THClient{
 		DNServers: []*measurex.ResolverInfo{{
 			Network: "udp",
 			Address: "8.8.4.4:53",
