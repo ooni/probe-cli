@@ -13,6 +13,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	stdlog "log"
 	"net"
 	"net/http"
 	"net/url"
@@ -799,8 +800,12 @@ func (mx *Measurer) maybeQUICFollowUp(ctx context.Context,
 		if epnt.QUICHandshake != nil {
 			return
 		}
-		for _, rtrip := range epnt.HTTPRoundTrip {
-			if v := rtrip.ResponseHeader.Get("alt-svc"); v != "" {
+		for idx, rtrip := range epnt.HTTPRoundTrip {
+			if rtrip.Response == nil {
+				stdlog.Printf("malformed HTTPRoundTrip@%d: %+v", idx, rtrip)
+				continue
+			}
+			if v := rtrip.Response.HeadersList.Get("alt-svc"); v != "" {
 				altsvc = append(altsvc, v)
 			}
 		}

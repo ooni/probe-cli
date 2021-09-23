@@ -1,9 +1,9 @@
 package measurex
 
 import (
+	"log"
 	"net/http"
 	"strings"
-	"unicode/utf8"
 )
 
 //
@@ -41,75 +41,31 @@ func NewArchivalBinaryData(data []byte) (out *ArchivalBinaryData) {
 // HTTPRoundTrip
 //
 
-// ArchivalHTTPRoundTrip is the archival format for HTTPRoundTripEvent.
-type ArchivalHTTPRoundTrip struct {
-	// JSON names following the df-001-httpt data format.
-	Error    error                 `json:"failure"`
-	Request  *ArchivalHTTPRequest  `json:"request"`
-	Response *ArchivalHTTPResponse `json:"response"`
-	Finished float64               `json:"t"`
-	Started  float64               `json:"started"`
+// ArchivalHeadersList is a list of HTTP headers.
+type ArchivalHeadersList [][]string
 
-	// Names not in the specification
-	Oddity Oddity `json:"oddity"`
-}
-
-// ArchivalHTTPRequest is the archival representation of a request.
-type ArchivalHTTPRequest struct {
-	Method      string     `json:"method"`
-	URL         string     `json:"url"`
-	HeadersList [][]string `json:"headers_list"`
-}
-
-// ArchivalHTTPResponse is the archival representation of a response.
-type ArchivalHTTPResponse struct {
-	Code            int64       `json:"code"`
-	HeadersList     [][]string  `json:"headers_list"`
-	Body            interface{} `json:"body"`
-	BodyIsTruncated bool        `json:"body_is_truncated"`
-}
-
-// NewArchivalHTTPRoundTrip converts an HTTPRoundTripEvent
-// to the corresponding archival format.
-func NewArchivalHTTPRoundTrip(in *HTTPRoundTripEvent) (out *ArchivalHTTPRoundTrip) {
-	return &ArchivalHTTPRoundTrip{
-		Error: in.Error,
-		Request: &ArchivalHTTPRequest{
-			Method:      in.RequestMethod,
-			URL:         in.RequestURL.String(),
-			HeadersList: NewArchivalHeadersList(in.RequestHeader),
-		},
-		Response: &ArchivalHTTPResponse{
-			Code:            int64(in.ResponseStatus),
-			HeadersList:     NewArchivalHeadersList(in.ResponseHeader),
-			Body:            NewArchivalHTTPBody(in.ResponseBodySnapshot),
-			BodyIsTruncated: int64(len(in.ResponseBodySnapshot)) >= in.MaxBodySnapshotSize,
-		},
-		Finished: in.Finished,
-		Started:  in.Started,
-		Oddity:   in.Oddity,
+// Get searches for the first header with the named key
+// and returns it. If not found, returns an empty string.
+func (headers ArchivalHeadersList) Get(key string) string {
+	key = strings.ToLower(key)
+	for _, entry := range headers {
+		if len(entry) != 2 {
+			log.Printf("headers: malformed header: %+v", entry)
+			continue
+		}
+		headerKey, headerValue := entry[0], entry[1]
+		if strings.ToLower(headerKey) == key {
+			return headerValue
+		}
 	}
+	return ""
 }
 
 // NewArchivalHeadersList builds a new HeadersList from http.Header.
-func NewArchivalHeadersList(in http.Header) (out [][]string) {
+func NewArchivalHeadersList(in http.Header) (out ArchivalHeadersList) {
 	for k, vv := range in {
 		for _, v := range vv {
 			out = append(out, []string{k, v})
-		}
-	}
-	return
-}
-
-// NewArchivalHTTPBody builds a new HTTP body for archival from the body.
-func NewArchivalHTTPBody(body []byte) (out interface{}) {
-	if body != nil {
-		if utf8.Valid(body) {
-			return string(body)
-		}
-		out = &ArchivalBinaryData{
-			Data:   body,
-			Format: "base64",
 		}
 	}
 	return

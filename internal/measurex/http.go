@@ -17,13 +17,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"time"
+	"unicode/utf8"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
@@ -71,26 +71,38 @@ type httpTransportDB struct {
 	db    WritableDB
 }
 
-// HTTPRoundTripEvent contains information about an HTTP round trip.
-type HTTPRoundTripEvent struct {
-	RequestMethod        string
-	RequestURL           *url.URL
-	RequestHeader        http.Header
-	Started              float64
-	Finished             float64
-	Error                error
-	Oddity               Oddity
-	ResponseStatus       int
-	ResponseHeader       http.Header
-	ResponseBodySnapshot []byte
-	MaxBodySnapshotSize  int64
+// HTTPRequest is the HTTP request.
+type HTTPRequest struct {
+	// Names consistent with df-001-http.md
+	Method      string              `json:"method"`
+	URL         string              `json:"url"`
+	HeadersList ArchivalHeadersList `json:"headers_list"`
 }
 
-// MarshalJSON marshals a HTTPRoundTripEvent to the archival
-// format that is similar to df-001-httpt.
-func (ev *HTTPRoundTripEvent) MarshalJSON() ([]byte, error) {
-	archival := NewArchivalHTTPRoundTrip(ev)
-	return json.Marshal(archival)
+// HTTPResponse is the HTTP response.
+type HTTPResponse struct {
+	// Names consistent with df-001-http.md
+	Code            int64               `json:"code"`
+	HeadersList     ArchivalHeadersList `json:"headers_list"`
+	Body            *ArchivalBinaryData `json:"body"`
+	BodyIsTruncated bool                `json:"body_is_truncated"`
+
+	// Fields not part of the spec
+	BodyLength int64 `json:"x_body_length"`
+	BodyIsUTF8 bool  `json:"x_body_is_utf8"`
+}
+
+// HTTPRoundTripEvent contains information about an HTTP round trip.
+type HTTPRoundTripEvent struct {
+	// JSON names following the df-001-httpt data format.
+	Error    error         `json:"failure"`
+	Request  *HTTPRequest  `json:"request"`
+	Response *HTTPResponse `json:"response"`
+	Finished float64       `json:"t"`
+	Started  float64       `json:"started"`
+
+	// Names not in the specification
+	Oddity Oddity `json:"oddity"`
 }
 
 // We only read a small snapshot of the body to keep measurements
@@ -102,11 +114,12 @@ func (txp *httpTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 	started := time.Since(txp.begin).Seconds()
 	resp, err := txp.HTTPTransport.RoundTrip(req)
 	rt := &HTTPRoundTripEvent{
-		RequestMethod:       req.Method,
-		RequestURL:          req.URL,
-		RequestHeader:       req.Header,
-		Started:             started,
-		MaxBodySnapshotSize: maxBodySnapshot,
+		Request: &HTTPRequest{
+			Method:      req.Method,
+			URL:         req.URL.String(),
+			HeadersList: NewArchivalHeadersList(req.Header),
+		},
+		Started: started,
 	}
 	if err != nil {
 		rt.Finished = time.Since(txp.begin).Seconds()
@@ -124,8 +137,10 @@ func (txp *httpTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 	case resp.StatusCode >= 400:
 		rt.Oddity = OddityStatusOther
 	}
-	rt.ResponseStatus = resp.StatusCode
-	rt.ResponseHeader = resp.Header
+	rt.Response = &HTTPResponse{
+		Code:        int64(resp.StatusCode),
+		HeadersList: NewArchivalHeadersList(resp.Header),
+	}
 	r := io.LimitReader(resp.Body, maxBodySnapshot)
 	body, err := iox.ReadAllContext(req.Context(), r)
 	if errors.Is(err, io.EOF) && resp.Close {
@@ -141,7 +156,10 @@ func (txp *httpTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 		Reader: io.MultiReader(bytes.NewReader(body), resp.Body),
 		Closer: resp.Body,
 	}
-	rt.ResponseBodySnapshot = body
+	rt.Response.Body = NewArchivalBinaryData(body)
+	rt.Response.BodyLength = int64(len(body))
+	rt.Response.BodyIsTruncated = len(body) >= maxBodySnapshot
+	rt.Response.BodyIsUTF8 = utf8.Valid(body)
 	rt.Finished = time.Since(txp.begin).Seconds()
 	txp.db.InsertIntoHTTPRoundTrip(rt)
 	return resp, nil

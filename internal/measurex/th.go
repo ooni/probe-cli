@@ -591,19 +591,21 @@ func (h *THHandler) newQUICHandshakeList(in []*QUICHandshakeEvent) (out []*THHan
 }
 
 func (h *THHandler) newHTTPRoundTripList(in []*HTTPRoundTripEvent) (out []*THHTTPRoundTripEvent) {
-	for _, e := range in {
-		out = append(out, &THHTTPRoundTripEvent{
-			RequestMethod:            e.RequestMethod,
-			RequestURL:               e.RequestURL.String(),
-			RequestHeader:            e.RequestHeader,
-			Error:                    h.errorToFailure(e.Error),
-			Oddity:                   e.Oddity,
-			ResponseStatus:           int64(e.ResponseStatus),
-			ResponseHeader:           e.ResponseHeader,
-			ResponseBodySnapshotSize: int64(len(e.ResponseBodySnapshot)),
-			MaxBodySnapshotSize:      e.MaxBodySnapshotSize,
-		})
-	}
+	/*
+		for _, e := range in {
+			out = append(out, &THHTTPRoundTripEvent{
+						RequestMethod:            e.RequestMethod,
+						RequestURL:               e.RequestURL.String(),
+						RequestHeader:            e.RequestHeader,
+					Error:                    h.errorToFailure(e.Error),
+					Oddity:                   e.Oddity,
+					ResponseStatus:           int64(e.ResponseStatus),
+					ResponseHeader:           e.ResponseHeader,
+					ResponseBodySnapshotSize: int64(len(e.ResponseBodySnapshot)),
+					MaxBodySnapshotSize:      e.MaxBodySnapshotSize,
+			})
+		}
+	*/
 	return
 }
 
