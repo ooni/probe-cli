@@ -562,6 +562,6 @@ Here's the answer I get:
 
 ## Conclusion
 
-We have seen how we can configure and use the flow for
-sending DNS queries over UDP and we have seen some common errors.
+We have seen how we sending DNS queries over UDP, measure the
+results, and what happens on common error conditions.
 

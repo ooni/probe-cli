@@ -70,6 +70,22 @@ type MeasurementDB struct {
 
 var _ WritableDB = &MeasurementDB{}
 
+// DeleteAll deletes all the content of the DB.
+func (db *MeasurementDB) DeleteAll() {
+	db.mu.Lock()
+	db.dialTable = nil
+	db.readWriteTable = nil
+	db.closeTable = nil
+	db.tlsHandshakeTable = nil
+	db.lookupHostTable = nil
+	db.lookupHTTPSvcTable = nil
+	db.dnsRoundTripTable = nil
+	db.httpRoundTripTable = nil
+	db.httpRedirectTable = nil
+	db.quicHandshakeTable = nil
+	db.mu.Unlock()
+}
+
 // InsertIntoDial implements EventDB.InsertIntoDial.
 func (db *MeasurementDB) InsertIntoDial(ev *NetworkEvent) {
 	db.mu.Lock()

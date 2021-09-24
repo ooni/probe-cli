@@ -91,10 +91,14 @@ func main() {
 //
 // Here is the JSON we obtain in output:
 //
-// ```JSON
+// ```JavaScript
 // {
+//   // These two fields identify the endpoint
 //   "network": "tcp",
 //   "address": "8.8.4.4:443",
+//
+//   // This block contains the results of the connect syscall
+//   // using the df-008-netevents data format.
 //   "connect": [
 //     {
 //       "address": "8.8.4.4:443",

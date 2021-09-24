@@ -46,6 +46,10 @@ func main() {
 	// We call the `ConnectAndHandshake` method. The arguments
 	// are the context, the address, and a TLS config.
 	//
+	// Under the hood, the code will call the TCP connect functionality
+	// we have seen in chapter02, using the address argument. Then, if
+	// successful, it will TLS handshake using the given TLS config.
+	//
 	// ```Go
 	m := mx.TLSConnectAndHandshake(ctx, *address, &tls.Config{
 		ServerName: *sni,
@@ -54,7 +58,8 @@ func main() {
 	})
 	// ```
 	//
-	// The three fields above are the files you should always set
+	// Regarding the TLS config, in particular,
+	// the three fields above are the files you should always set
 	// in a TLS config when doing handshakes manually. The `ServerName`
 	// field forces the SNI, the NextProtos field forces the ALPN,
 	// and the `RootCAs` field is overridden so that we use the
@@ -185,7 +190,7 @@ func main() {
 // compatible with the data formats specified at
 // https://github.com/ooni/spec/tree/master/data-formats.
 //
-// ### Exercises
+// ### Suggested follow-up experiments
 //
 // Try to run experiments in the following scenarios, and
 // check the output JSON to familiarize with what changes in
@@ -202,6 +207,16 @@ func main() {
 // 5. measurement with connection reset during handshake
 //
 // 6. measurement with timeout during handshake
+//
+// Here are the commands I used for each proposed exercise:
+//
+// 1. go run -race ./internal/tutorial/measurex/chapter04 -address 8.8.4.4:1
+//
+// 2. go run -race ./internal/tutorial/measurex/chapter04 -sni example.org
+//
+// 3. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni self-signed.badssl.com
+//
+// 4. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni expire.badssl.com
 //
 // To emulate the two last scenario, if you're on Linux, a
 // possibility is building Jafar with this command:
@@ -232,17 +247,3 @@ func main() {
 // this flow produces different output on different error conditions.
 //
 // -=-=- StopHere -=-=-
-//
-// Here are the commands I used for each proposed exercise:
-//
-// 1. go run -race ./internal/tutorial/measurex/chapter04 -address 8.8.4.4:1
-//
-// 2. go run -race ./internal/tutorial/measurex/chapter04 -sni example.org
-//
-// 3. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni self-signed.badssl.com
-//
-// 4. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni expire.badssl.com
-//
-// 5. use jafar as suggested with vanilla go run ... command
-//
-// 6. use jafar as suggested with vanilla go run ... command

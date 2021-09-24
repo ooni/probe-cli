@@ -106,6 +106,7 @@ func genmeasurex() {
 	gen(path.Join(prefix, "chapter11"), "main.go")
 	gen(path.Join(prefix, "chapter12"), "main.go")
 	gen(path.Join(prefix, "chapter13"), "main.go")
+	gen(path.Join(prefix, "chapter14"), "main.go")
 }
 
 func main() {

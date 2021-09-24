@@ -356,6 +356,13 @@ func (mx *Measurer) HTTPEndpointGet(
 	return m
 }
 
+// HTTPEndpointGetWithoutCookies is like HTTPEndpointGet
+// but does not require you to provide a CookieJar.
+func (mx *Measurer) HTTPEndpointGetWithoutCookies(
+	ctx context.Context, epnt *HTTPEndpoint) *HTTPEndpointMeasurement {
+	return mx.HTTPEndpointGet(ctx, epnt, NewCookieJar())
+}
+
 var (
 	errUnknownHTTPEndpointURLScheme = errors.New("unknown HTTPEndpoint.URL.Scheme")
 
@@ -363,46 +370,6 @@ var (
 	// network is of a type that we don't know how to handle.
 	ErrUnknownHTTPEndpointNetwork = errors.New("unknown HTTPEndpoint.Network")
 )
-
-// HTTPPreparedRequest is a suspended request that only awaits
-// for you to Resume it to deliver a result.
-type HTTPPreparedRequest struct {
-	resp *http.Response
-	m    *HTTPEndpointMeasurement
-	err  error
-}
-
-// Resume resumes the request and yields either a response or an error. You
-// shall not call this function more than once.
-func (r *HTTPPreparedRequest) Resume() (*http.Response, error) {
-	return r.resp, r.err
-}
-
-// Measurement returns the associated measurement.
-func (r *HTTPPreparedRequest) Measurement() *HTTPEndpointMeasurement {
-	return r.m
-}
-
-// HTTPEndpointPrepareGet prepares a GET request for an HTTP endpoint.
-//
-// This prepared request WILL NOT follow redirects. If there is a redirect
-// you will see it inside the specific database table.
-//
-// Arguments:
-//
-// - ctx is the context allowing to timeout the operation;
-//
-// - epnt is the HTTP endpoint;
-//
-// - jar is the cookie jar to use.
-//
-// Returns either a prepared request or an error.
-func (mx *Measurer) HTTPEndpointPrepareGet(ctx context.Context,
-	epnt *HTTPEndpoint, jar http.CookieJar) *HTTPPreparedRequest {
-	out := &HTTPPreparedRequest{}
-	out.resp, out.m, out.err = mx.httpEndpointGet(ctx, epnt, jar)
-	return out
-}
 
 // httpEndpointGet implements HTTPEndpointGet.
 func (mx *Measurer) httpEndpointGet(ctx context.Context, epnt *HTTPEndpoint,
@@ -429,7 +396,7 @@ func (mx *Measurer) httpEndpointGet(ctx context.Context, epnt *HTTPEndpoint,
 func (mx *Measurer) httpEndpointGetMeasurement(ctx context.Context, epnt *HTTPEndpoint,
 	jar http.CookieJar) (resp *http.Response, m *Measurement, err error) {
 	db := &MeasurementDB{}
-	resp, err = mx.HTTPEndpointGetWithDB(ctx, epnt, db, jar)
+	resp, err = mx.httpEndpointGetWithDB(ctx, epnt, db, jar)
 	m = db.AsMeasurement()
 	return
 }
@@ -437,6 +404,21 @@ func (mx *Measurer) httpEndpointGetMeasurement(ctx context.Context, epnt *HTTPEn
 // HTTPEndpointGetWithDB is an HTTPEndpointGet that stores the
 // events into the given WritableDB.
 func (mx *Measurer) HTTPEndpointGetWithDB(ctx context.Context, epnt *HTTPEndpoint,
+	db WritableDB, jar http.CookieJar) (err error) {
+	switch epnt.Network {
+	case NetworkQUIC:
+		_, err = mx.httpEndpointGetQUIC(ctx, db, epnt, jar)
+	case NetworkTCP:
+		_, err = mx.httpEndpointGetTCP(ctx, db, epnt, jar)
+	default:
+		err = ErrUnknownHTTPEndpointNetwork
+	}
+	return
+}
+
+// httpEndpointGetWithDB is an HTTPEndpointGet that stores the
+// events into the given WritableDB.
+func (mx *Measurer) httpEndpointGetWithDB(ctx context.Context, epnt *HTTPEndpoint,
 	db WritableDB, jar http.CookieJar) (resp *http.Response, err error) {
 	switch epnt.Network {
 	case NetworkQUIC:
@@ -465,11 +447,6 @@ func (mx *Measurer) httpEndpointGetTCP(ctx context.Context,
 // httpEndpointGetHTTP specializes httpEndpointGetTCP for HTTP.
 func (mx *Measurer) httpEndpointGetHTTP(ctx context.Context,
 	db WritableDB, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
-	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
-	if err != nil {
-		return nil, err
-	}
-	req.Header = epnt.Header
 	conn, err := mx.TCPConnectWithDB(ctx, db, epnt.Address)
 	if err != nil {
 		return nil, err
@@ -478,17 +455,12 @@ func (mx *Measurer) httpEndpointGetHTTP(ctx context.Context,
 	clnt := NewHTTPClientWithoutRedirects(db, jar,
 		mx.NewHTTPTransportWithConn(mx.Logger, db, conn))
 	defer clnt.CloseIdleConnections()
-	return mx.httpClientDo(ctx, clnt, epnt, req)
+	return mx.httpClientDo(ctx, clnt, epnt)
 }
 
 // httpEndpointGetHTTPS specializes httpEndpointGetTCP for HTTPS.
 func (mx *Measurer) httpEndpointGetHTTPS(ctx context.Context,
 	db WritableDB, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
-	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
-	if err != nil {
-		return nil, err
-	}
-	req.Header = epnt.Header
 	conn, err := mx.TLSConnectAndHandshakeWithDB(ctx, db, epnt.Address, &tls.Config{
 		ServerName: epnt.SNI,
 		NextProtos: epnt.ALPN,
@@ -501,17 +473,12 @@ func (mx *Measurer) httpEndpointGetHTTPS(ctx context.Context,
 	clnt := NewHTTPClientWithoutRedirects(db, jar,
 		mx.NewHTTPTransportWithTLSConn(mx.Logger, db, conn))
 	defer clnt.CloseIdleConnections()
-	return mx.httpClientDo(ctx, clnt, epnt, req)
+	return mx.httpClientDo(ctx, clnt, epnt)
 }
 
 // httpEndpointGetQUIC specializes httpEndpointGetTCP for QUIC.
 func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
 	db WritableDB, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
-	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
-	if err != nil {
-		return nil, err
-	}
-	req.Header = epnt.Header
 	sess, err := mx.QUICHandshakeWithDB(ctx, db, epnt.Address, &tls.Config{
 		ServerName: epnt.SNI,
 		NextProtos: epnt.ALPN,
@@ -525,11 +492,29 @@ func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
 	clnt := NewHTTPClientWithoutRedirects(db, jar,
 		mx.NewHTTPTransportWithQUICSess(mx.Logger, db, sess))
 	defer clnt.CloseIdleConnections()
-	return mx.httpClientDo(ctx, clnt, epnt, req)
+	return mx.httpClientDo(ctx, clnt, epnt)
 }
 
-func (mx *Measurer) httpClientDo(ctx context.Context, clnt HTTPClient,
-	epnt *HTTPEndpoint, req *http.Request) (*http.Response, error) {
+func (mx *Measurer) HTTPClientGET(
+	ctx context.Context, clnt HTTPClient, URL *url.URL) (*http.Response, error) {
+	return mx.httpClientDo(ctx, clnt, &HTTPEndpoint{
+		Domain:  URL.Hostname(),
+		Network: "tcp",
+		Address: URL.Hostname(),
+		SNI:     "",         // not needed
+		ALPN:    []string{}, // not needed
+		URL:     URL,
+		Header:  NewHTTPRequestHeaderForMeasuring(),
+	})
+}
+
+func (mx *Measurer) httpClientDo(ctx context.Context,
+	clnt HTTPClient, epnt *HTTPEndpoint) (*http.Response, error) {
+	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
+	if err != nil {
+		return nil, err
+	}
+	req.Header = epnt.Header
 	const timeout = 15 * time.Second
 	ol := NewOperationLogger(mx.Logger,
 		"%s %s with %s/%s", req.Method, req.URL.String(), epnt.Address, epnt.Network)
@@ -914,7 +899,7 @@ func (r *redirectionQueue) redirectionsCount() int {
 
 // MeasureURLAndFollowRedirections is like MeasureURL except
 // that it _also_ follows all the HTTP redirections.
-func (mx *Measurer) MeasureHTTPURLAndFollowRedirections(ctx context.Context,
+func (mx *Measurer) MeasureURLAndFollowRedirections(ctx context.Context,
 	URL string, headers http.Header, cookies http.CookieJar) <-chan *URLMeasurement {
 	out := make(chan *URLMeasurement)
 	go func() {
