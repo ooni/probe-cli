@@ -45,7 +45,7 @@ func main() {
 	defer cancel()
 	// ```
 	//
-	// ### Creaging a Measurer
+	// ### Creating a Measurer
 	//
 	// We create a `Measurer` like we did in the previous chapter.
 	//
@@ -53,10 +53,10 @@ func main() {
 	mx := measurex.NewMeasurerWithDefaultSettings()
 	// ```
 	//
-	// ### Establishing a TCP connection.
+	// ### Establishing a TCP connection
 	//
 	// We then call `TCPConnect`, which establishes a connection
-	// and returns the corresponding measurent.
+	// and returns the corresponding measurement.
 	//
 	// The arguments are the context (for timeouts), and the address
 	// of the endpoint to which we want to connect. (Here and in
@@ -119,7 +119,7 @@ func main() {
 //
 // - the destination endpoint address is "8.8.4.4:443";
 //
-// - connect terminated ~0.027 seconds into the program life;
+// - connect terminated ~0.027 seconds into the program's life;
 //
 // - the operation succeeded (`failure` is `nil`).
 //
