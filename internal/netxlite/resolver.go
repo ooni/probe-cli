@@ -46,10 +46,15 @@ type Resolver interface {
 // cannot be performed because we're using the "system" resolver.
 var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
-// NewResolverStdlib creates a new resolver using system
-// facilities for resolving domain names (e.g., getaddrinfo).
-//
-// The resolver will provide the following guarantees:
+// NewResolverStdlib creates a new Resolver by combining
+// WrapResolver with an internal "system" resolver type that
+// adds extra functionality to net.Resolver.
+func NewResolverStdlib(logger Logger) Resolver {
+	return WrapResolver(logger, &resolverSystem{})
+}
+
+// WrapResolver creates a new resolver that wraps an
+// existing resolver to add these properties:
 //
 // 1. handles IDNA;
 //
@@ -62,10 +67,6 @@ var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 //
 // 5. enforces reasonable timeouts (
 // see https://github.com/ooni/probe/issues/1726).
-func NewResolverStdlib(logger Logger) Resolver {
-	return WrapResolver(logger, &resolverSystem{})
-}
-
 func WrapResolver(logger Logger, resolver Resolver) Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{

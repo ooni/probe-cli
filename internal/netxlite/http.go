@@ -72,10 +72,14 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 	txp.TLSDialer.CloseIdleConnections()
 }
 
-// NewHTTPTransport creates a new HTTP transport using the given
+// NewHTTPTransport combines NewOOHTTPBaseTransport and
+// WrapHTTPTransport to construct a new HTTPTransport.
+func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
+	return WrapHTTPTransport(logger, NewOOHTTPBaseTransport(dialer, tlsDialer))
+}
+
+// NewOOHTTPBaseTransport creates a new HTTP transport using the given
 // dialer and TLS dialer to create connections.
-//
-// The returned transport will use the given Logger for logging.
 //
 // The returned transport will gracefully handle TLS connections
 // created using gitlab.com/yawning/utls.git.
@@ -96,13 +100,6 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 // necessary to perform sane measurements with tracing. We will be
 // able to possibly relax this requirement after we change the
 // way in which we perform measurements.
-//
-// The returned transport will set a default user agent if the
-// request has not already set a user agent.
-func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
-	return WrapHTTPTransport(logger, NewOOHTTPBaseTransport(dialer, tlsDialer))
-}
-
 func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 	// Using oohttp to support any TLS library.
 	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
@@ -132,6 +129,7 @@ func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 	// upon us when we are using TLS parroting).
 	txp.ForceAttemptHTTP2 = true
 
+	// Ensure we correctly forward CloseIdleConnections.
 	return &httpTransportConnectionsCloser{
 		HTTPTransport: &oohttp.StdlibTransport{Transport: txp},
 		Dialer:        dialer,
@@ -139,6 +137,11 @@ func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 	}
 }
 
+// WrapHTTPTransport creates a new HTTP transport using
+// the given logger for logging.
+//
+// The returned transport will set a default user agent if the
+// request has not already set a user agent.
 func WrapHTTPTransport(logger Logger, txp HTTPTransport) HTTPTransport {
 	// Ensure we correctly forward CloseIdleConnections and compose
 	// with a logging transport thus enabling logging.
