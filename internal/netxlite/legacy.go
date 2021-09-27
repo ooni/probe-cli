@@ -97,6 +97,11 @@ func (r *ResolverLegacyAdapter) CloseIdleConnections() {
 	}
 }
 
+func (r *ResolverLegacyAdapter) LookupHTTPS(
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	return nil, ErrNoDNSTransport
+}
+
 // DialerLegacy establishes network connections.
 //
 // This definition is DEPRECATED. Please, use Dialer.

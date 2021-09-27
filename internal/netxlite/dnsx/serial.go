@@ -61,6 +61,21 @@ func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]str
 	return addrs, nil
 }
 
+// LookupHTTPS issues an HTTPS query without retrying on failure.
+func (r *SerialResolver) LookupHTTPS(
+	ctx context.Context, hostname string) (*HTTPSSvc, error) {
+	querydata, err := r.Encoder.Encode(
+		hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
+	if err != nil {
+		return nil, err
+	}
+	replydata, err := r.Txp.RoundTrip(ctx, querydata)
+	if err != nil {
+		return nil, err
+	}
+	return r.Decoder.DecodeHTTPS(replydata)
+}
+
 func (r *SerialResolver) lookupHostWithRetry(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
 	var errorslist []error

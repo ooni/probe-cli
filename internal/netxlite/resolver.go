@@ -7,9 +7,13 @@ import (
 	"net"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"golang.org/x/net/idna"
 )
+
+// HTTPSSvc is the type returned for HTTPSSvc queries.
+type HTTPSSvc = dnsx.HTTPSSvc
 
 // Resolver performs domain name resolutions.
 type Resolver interface {
@@ -24,7 +28,16 @@ type Resolver interface {
 
 	// CloseIdleConnections closes idle connections, if any.
 	CloseIdleConnections()
+
+	// LookupHTTPS issues a single HTTPS query for
+	// a domain without any retry mechanism whatsoever.
+	LookupHTTPS(
+		ctx context.Context, domain string) (*HTTPSSvc, error)
 }
+
+// ErrNoDNSTransport indicates that the requested Resolver operation
+// cannot be performed because we're using the "system" resolver.
+var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
 // NewResolverStdlib creates a new Resolver by combining
 // WrapResolver with an internal "system" resolver type that
@@ -120,6 +133,11 @@ func (r *resolverSystem) CloseIdleConnections() {
 	// nothing to do
 }
 
+func (r *resolverSystem) LookupHTTPS(
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	return nil, ErrNoDNSTransport
+}
+
 // resolverLogger is a resolver that emits events
 type resolverLogger struct {
 	Resolver
@@ -142,6 +160,24 @@ func (r *resolverLogger) LookupHost(ctx context.Context, hostname string) ([]str
 	return addrs, nil
 }
 
+func (r *resolverLogger) LookupHTTPS(
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	prefix := fmt.Sprintf("resolve[HTTPS] %s with %s (%s)", domain, r.Network(), r.Address())
+	r.Logger.Debugf("%s...", prefix)
+	start := time.Now()
+	https, err := r.Resolver.LookupHTTPS(ctx, domain)
+	elapsed := time.Since(start)
+	if err != nil {
+		r.Logger.Debugf("%s... %s in %s", prefix, err, elapsed)
+		return nil, err
+	}
+	alpn := https.ALPN
+	a := https.IPv4
+	aaaa := https.IPv6
+	r.Logger.Debugf("%s... %+v %+v %+v in %s", prefix, alpn, a, aaaa, elapsed)
+	return https, nil
+}
+
 // resolverIDNA supports resolving Internationalized Domain Names.
 //
 // See RFC3492 for more information.
@@ -155,6 +191,15 @@ func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]strin
 		return nil, err
 	}
 	return r.Resolver.LookupHost(ctx, host)
+}
+
+func (r *resolverIDNA) LookupHTTPS(
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	host, err := idna.ToASCII(domain)
+	if err != nil {
+		return nil, err
+	}
+	return r.Resolver.LookupHTTPS(ctx, host)
 }
 
 // resolverShortCircuitIPAddr recognizes when the input hostname is an
@@ -193,6 +238,11 @@ func (r *nullResolver) CloseIdleConnections() {
 	// nothing to do
 }
 
+func (r *nullResolver) LookupHTTPS(
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	return nil, ErrNoDNSTransport
+}
+
 // resolverErrWrapper is a Resolver that knows about wrapping errors.
 type resolverErrWrapper struct {
 	Resolver
@@ -207,4 +257,14 @@ func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([
 			errorsx.ClassifyResolverError, errorsx.ResolveOperation, err)
 	}
 	return addrs, nil
+}
+
+func (r *resolverErrWrapper) LookupHTTPS(
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	out, err := r.Resolver.LookupHTTPS(ctx, domain)
+	if err != nil {
+		return nil, errorsx.NewErrWrapper(
+			errorsx.ClassifyResolverError, errorsx.ResolveOperation, err)
+	}
+	return out, nil
 }

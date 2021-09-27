@@ -1,6 +1,10 @@
 package mocks
 
-import "context"
+import (
+	"context"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx/model"
+)
 
 // Resolver is a mockable Resolver.
 type Resolver struct {
@@ -28,4 +32,12 @@ func (r *Resolver) Network() string {
 // CloseIdleConnections calls MockCloseIdleConnections.
 func (r *Resolver) CloseIdleConnections() {
 	r.MockCloseIdleConnections()
+}
+
+// HTTPSSvc is an HTTPSSvc reply.
+type HTTPSSvc = model.HTTPSSvc
+
+func (r *Resolver) LookupHTTPS(
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	panic("not yet implemented")
 }
