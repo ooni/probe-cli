@@ -31,16 +31,6 @@ type httpTransportLogger struct {
 var _ HTTPTransport = &httpTransportLogger{}
 
 func (txp *httpTransportLogger) RoundTrip(req *http.Request) (*http.Response, error) {
-	host := req.Host
-	if host == "" {
-		host = req.URL.Host
-	}
-	req.Header.Set("Host", host) // anticipate what Go would do
-	return txp.logTrip(req)
-}
-
-// logTrip is an HTTP round trip with logging.
-func (txp *httpTransportLogger) logTrip(req *http.Request) (*http.Response, error) {
 	txp.Logger.Debugf("> %s %s", req.Method, req.URL.String())
 	for key, values := range req.Header {
 		for _, value := range values {
@@ -149,15 +139,10 @@ func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 
 // WrapHTTPTransport creates a new HTTP transport using
 // the given logger for logging.
-//
-// The returned transport will set a default user agent if the
-// request has not already set a user agent.
 func WrapHTTPTransport(logger Logger, txp HTTPTransport) HTTPTransport {
-	return &httpUserAgentTransport{
-		HTTPTransport: &httpTransportLogger{
-			HTTPTransport: txp,
-			Logger:        logger,
-		},
+	return &httpTransportLogger{
+		HTTPTransport: txp,
+		Logger:        logger,
 	}
 }
 
@@ -247,23 +232,6 @@ func (c *httpTLSConnWithReadTimeout) Read(b []byte) (int, error) {
 	defer c.TLSConn.SetReadDeadline(time.Time{})
 	return c.TLSConn.Read(b)
 }
-
-// httpUserAgentTransport is a transport that ensures that we always
-// set an OONI specific default User-Agent header.
-type httpUserAgentTransport struct {
-	HTTPTransport
-}
-
-const defaultHTTPUserAgent = "miniooni/0.1.0-dev"
-
-func (txp *httpUserAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", defaultHTTPUserAgent)
-	}
-	return txp.HTTPTransport.RoundTrip(req)
-}
-
-var _ HTTPTransport = &httpUserAgentTransport{}
 
 // NewHTTPTransportStdlib creates a new HTTPTransport that uses
 // the Go standard library for all operations, including DNS

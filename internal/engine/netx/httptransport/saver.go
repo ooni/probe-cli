@@ -52,7 +52,7 @@ type SaverMetadataHTTPTransport struct {
 // RoundTrip implements RoundTripper.RoundTrip
 func (txp SaverMetadataHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	txp.Saver.Write(trace.Event{
-		HTTPHeaders: req.Header,
+		HTTPHeaders: txp.CloneHeaders(req),
 		HTTPMethod:  req.Method,
 		HTTPURL:     req.URL.String(),
 		Transport:   txp.Transport,
@@ -70,6 +70,19 @@ func (txp SaverMetadataHTTPTransport) RoundTrip(req *http.Request) (*http.Respon
 		Time:           time.Now(),
 	})
 	return resp, err
+}
+
+// CloneHeaders returns a clone of the headers where we have
+// also set the host header, which normally is not set by
+// golang until it serializes the request itself.
+func (txp SaverMetadataHTTPTransport) CloneHeaders(req *http.Request) http.Header {
+	header := req.Header.Clone()
+	if req.Host != "" {
+		header.Set("Host", req.Host)
+	} else {
+		header.Set("Host", req.URL.Host)
+	}
+	return header
 }
 
 // SaverTransactionHTTPTransport is a RoundTripper that saves

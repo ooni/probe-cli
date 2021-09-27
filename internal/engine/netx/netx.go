@@ -252,7 +252,6 @@ func NewHTTPTransport(config Config) HTTPRoundTripper {
 		txp = httptransport.SaverTransactionHTTPTransport{
 			RoundTripper: txp, Saver: config.HTTPSaver}
 	}
-	txp = &httptransport.UserAgentTransport{HTTPTransport: txp}
 	return txp
 }
 
