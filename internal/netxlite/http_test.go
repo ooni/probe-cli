@@ -6,7 +6,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -48,39 +47,6 @@ func TestHTTPTransportLogger(t *testing.T) {
 			}
 			if count < 1 {
 				t.Fatal("no logs?!")
-			}
-		})
-
-		t.Run("we add the host header", func(t *testing.T) {
-			foundHost := &atomicx.Int64{}
-			txp := &httpTransportLogger{
-				Logger: log.Log,
-				HTTPTransport: &mocks.HTTPTransport{
-					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
-						if req.Header.Get("Host") == "www.google.com" {
-							foundHost.Add(1)
-						}
-						return nil, io.EOF
-					},
-				},
-			}
-			req := &http.Request{
-				Header: http.Header{},
-				URL: &url.URL{
-					Scheme: "https",
-					Host:   "www.google.com",
-					Path:   "/",
-				},
-			}
-			resp, err := txp.RoundTrip(req)
-			if !errors.Is(err, io.EOF) {
-				t.Fatal("not the error we expected")
-			}
-			if resp != nil {
-				t.Fatal("expected nil response here")
-			}
-			if foundHost.Load() != 1 {
-				t.Fatal("host header was not added")
 			}
 		})
 
@@ -224,8 +190,7 @@ func TestNewHTTPTransport(t *testing.T) {
 		d := &mocks.Dialer{}
 		td := &mocks.TLSDialer{}
 		txp := NewHTTPTransport(log.Log, d, td)
-		ua := txp.(*httpUserAgentTransport)
-		logger := ua.HTTPTransport.(*httpTransportLogger)
+		logger := txp.(*httpTransportLogger)
 		if logger.Logger != log.Log {
 			t.Fatal("invalid logger")
 		}
@@ -422,62 +387,6 @@ func TestHTTPTLSDialerWithReadTimeout(t *testing.T) {
 		if !called {
 			t.Fatal("not called")
 		}
-	})
-}
-
-func TestHTTPUserAgentTransport(t *testing.T) {
-	t.Run("CloseIdleConnections", func(t *testing.T) {
-		var called bool
-		txp := &httpUserAgentTransport{
-			HTTPTransport: &mocks.HTTPTransport{
-				MockCloseIdleConnections: func() {
-					called = true
-				},
-			},
-		}
-		txp.CloseIdleConnections()
-		if !called {
-			t.Fatal("not called")
-		}
-	})
-
-	t.Run("RoundTrip", func(t *testing.T) {
-		t.Run("without an user-agent", func(t *testing.T) {
-			var ua string
-			txp := &httpUserAgentTransport{
-				HTTPTransport: &mocks.HTTPTransport{
-					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
-						ua = req.Header.Get("User-Agent")
-						return &http.Response{}, nil
-					},
-				},
-			}
-			txp.RoundTrip(&http.Request{Header: make(http.Header)})
-			if ua != defaultHTTPUserAgent {
-				t.Fatal("not the expected user-agent")
-			}
-		})
-
-		t.Run("with an user-agent", func(t *testing.T) {
-			var ua string
-			expected := "antani/1.0"
-			txp := &httpUserAgentTransport{
-				HTTPTransport: &mocks.HTTPTransport{
-					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
-						ua = req.Header.Get("User-Agent")
-						return &http.Response{}, nil
-					},
-				},
-			}
-			txp.RoundTrip(&http.Request{
-				Header: http.Header{
-					"User-Agent": {expected},
-				},
-			})
-			if ua != expected {
-				t.Fatal("not the expected user-agent")
-			}
-		})
 	})
 }
 

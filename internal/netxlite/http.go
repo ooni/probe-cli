@@ -233,27 +233,6 @@ func (c *httpTLSConnWithReadTimeout) Read(b []byte) (int, error) {
 	return c.TLSConn.Read(b)
 }
 
-// httpUserAgentTransport is a transport that ensures that we always
-// set an OONI specific default User-Agent header.
-//
-// Deprecated: this transport mutates its own request, which is not
-// what a transport should do. We should add headers when we are
-// creating requests rather than using this transport.
-type httpUserAgentTransport struct {
-	HTTPTransport
-}
-
-const defaultHTTPUserAgent = "miniooni/0.1.0-dev"
-
-func (txp *httpUserAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", defaultHTTPUserAgent)
-	}
-	return txp.HTTPTransport.RoundTrip(req)
-}
-
-var _ HTTPTransport = &httpUserAgentTransport{}
-
 // NewHTTPTransportStdlib creates a new HTTPTransport that uses
 // the Go standard library for all operations, including DNS
 // resolutions and TLS handshakes.
