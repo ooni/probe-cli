@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
@@ -197,4 +198,113 @@ func TestParseReply(t *testing.T) {
 	if reply != nil {
 		t.Fatal("expected nil reply")
 	}
+}
+
+func genReplyHTTPS(t *testing.T, alpns, ipv4, ipv6 []string) []byte {
+	question := dns.Question{
+		Name:   dns.Fqdn("x.org"),
+		Qtype:  dns.TypeHTTPS,
+		Qclass: dns.ClassINET,
+	}
+	query := new(dns.Msg)
+	query.Id = dns.Id()
+	query.RecursionDesired = true
+	query.Question = make([]dns.Question, 1)
+	query.Question[0] = question
+	reply := new(dns.Msg)
+	reply.Compress = true
+	reply.MsgHdr.RecursionAvailable = true
+	reply.SetReply(query)
+	answer := &dns.HTTPS{
+		SVCB: dns.SVCB{
+			Hdr: dns.RR_Header{
+				Name:     dns.Fqdn("x.org"),
+				Rrtype:   dns.TypeHTTPS,
+				Class:    dns.ClassINET,
+				Ttl:      100,
+				Rdlength: 0,
+			},
+			Priority: 5,
+			Target:   dns.Fqdn("x.org"),
+			Value:    []dns.SVCBKeyValue{},
+		},
+	}
+	reply.Answer = append(reply.Answer, answer)
+	if len(alpns) > 0 {
+		answer.Value = append(answer.Value, &dns.SVCBAlpn{
+			Alpn: alpns,
+		})
+		answer.Hdr.Rdlength++
+	}
+	if len(ipv4) > 0 {
+		var addrs []net.IP
+		for _, addr := range ipv4 {
+			addrs = append(addrs, net.ParseIP(addr))
+		}
+		answer.Value = append(answer.Value, &dns.SVCBIPv4Hint{
+			Hint: addrs,
+		})
+		answer.Hdr.Rdlength++
+	}
+	if len(ipv6) > 0 {
+		var addrs []net.IP
+		for _, addr := range ipv6 {
+			addrs = append(addrs, net.ParseIP(addr))
+		}
+		answer.Value = append(answer.Value, &dns.SVCBIPv6Hint{
+			Hint: addrs,
+		})
+		answer.Hdr.Rdlength++
+	}
+	data, err := reply.Pack()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
+}
+
+func TestDecodeHTTPS(t *testing.T) {
+	t.Run("with nil data", func(t *testing.T) {
+		d := &MiekgDecoder{}
+		reply, err := d.DecodeHTTPS(nil)
+		if err == nil || err.Error() != "dns: overflow unpacking uint16" {
+			t.Fatal("not the error we expected", err)
+		}
+		if reply != nil {
+			t.Fatal("expected nil reply")
+		}
+	})
+
+	t.Run("with empty answer", func(t *testing.T) {
+		data := genReplyHTTPS(t, nil, nil, nil)
+		d := &MiekgDecoder{}
+		reply, err := d.DecodeHTTPS(data)
+		if !errors.Is(err, errorsx.ErrOODNSNoAnswer) {
+			t.Fatal("unexpected err", err)
+		}
+		if reply != nil {
+			t.Fatal("expected nil reply")
+		}
+	})
+
+	t.Run("with full answer", func(t *testing.T) {
+		alpn := []string{"h3"}
+		v4 := []string{"1.1.1.1"}
+		v6 := []string{"::1"}
+		data := genReplyHTTPS(t, alpn, v4, v6)
+		d := &MiekgDecoder{}
+		reply, err := d.DecodeHTTPS(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diff := cmp.Diff(alpn, reply.ALPN); diff != "" {
+			t.Fatal(diff)
+		}
+		if diff := cmp.Diff(v4, reply.IPv4); diff != "" {
+			t.Fatal(diff)
+		}
+		if diff := cmp.Diff(v6, reply.IPv6); diff != "" {
+			t.Fatal(diff)
+		}
+	})
 }

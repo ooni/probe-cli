@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
@@ -159,4 +160,94 @@ func TestSerialResolverCloseIdleConnections(t *testing.T) {
 	if !called {
 		t.Fatal("not called")
 	}
+}
+
+func TestSerialResolverLookupHTTPS(t *testing.T) {
+	t.Run("for encoding error", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		r := &SerialResolver{
+			Encoder: &mocks.Encoder{
+				MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
+					return nil, expected
+				},
+			},
+			Decoder:     nil,
+			NumTimeouts: &atomicx.Int64{},
+			Txp: &mocks.RoundTripper{
+				MockRequiresPadding: func() bool {
+					return false
+				},
+			},
+		}
+		ctx := context.Background()
+		https, err := r.LookupHTTPS(ctx, "example.com")
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err", err)
+		}
+		if https != nil {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("for round-trip error", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		r := &SerialResolver{
+			Encoder: &mocks.Encoder{
+				MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
+					return make([]byte, 64), nil
+				},
+			},
+			Decoder:     nil,
+			NumTimeouts: &atomicx.Int64{},
+			Txp: &mocks.RoundTripper{
+				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+					return nil, expected
+				},
+				MockRequiresPadding: func() bool {
+					return false
+				},
+			},
+		}
+		ctx := context.Background()
+		https, err := r.LookupHTTPS(ctx, "example.com")
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err", err)
+		}
+		if https != nil {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("for decode error", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		r := &SerialResolver{
+			Encoder: &mocks.Encoder{
+				MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
+					return make([]byte, 64), nil
+				},
+			},
+			Decoder: &mocks.Decoder{
+				MockDecodeHTTPS: func(reply []byte) (*mocks.HTTPSSvc, error) {
+					return nil, expected
+				},
+			},
+			NumTimeouts: &atomicx.Int64{},
+			Txp: &mocks.RoundTripper{
+				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+					return make([]byte, 128), nil
+				},
+				MockRequiresPadding: func() bool {
+					return false
+				},
+			},
+		}
+		ctx := context.Background()
+		https, err := r.LookupHTTPS(ctx, "example.com")
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err", err)
+		}
+		if https != nil {
+			t.Fatal("unexpected result")
+		}
+	})
 }

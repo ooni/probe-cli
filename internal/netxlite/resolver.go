@@ -240,7 +240,7 @@ func (r *nullResolver) CloseIdleConnections() {
 
 func (r *nullResolver) LookupHTTPS(
 	ctx context.Context, domain string) (*HTTPSSvc, error) {
-	return nil, ErrNoDNSTransport
+	return nil, ErrNoResolver
 }
 
 // resolverErrWrapper is a Resolver that knows about wrapping errors.
