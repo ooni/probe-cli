@@ -77,6 +77,13 @@ func TestClassifyGenericError(t *testing.T) {
 		}
 	})
 
+	t.Run("for use of closed network connection", func(t *testing.T) {
+		err := errors.New("read tcp 10.0.2.15:56948->93.184.216.34:443: use of closed network connection")
+		if ClassifyGenericError(err) != FailureConnectionAlreadyClosed {
+			t.Fatal("unexpected results")
+		}
+	})
+
 	// Now we're back in ClassifyGenericError
 
 	t.Run("for context.Canceled", func(t *testing.T) {
@@ -87,8 +94,8 @@ func TestClassifyGenericError(t *testing.T) {
 
 	t.Run("for unknown errors", func(t *testing.T) {
 		t.Run("with an IPv4 address", func(t *testing.T) {
-			input := errors.New("read tcp 10.0.2.15:56948->93.184.216.34:443: use of closed network connection")
-			expected := "unknown_failure: read tcp [scrubbed]->[scrubbed]: use of closed network connection"
+			input := errors.New("read tcp 10.0.2.15:56948->93.184.216.34:443: some error")
+			expected := "unknown_failure: read tcp [scrubbed]->[scrubbed]: some error"
 			out := ClassifyGenericError(input)
 			if out != expected {
 				t.Fatal(cmp.Diff(expected, out))
@@ -96,8 +103,8 @@ func TestClassifyGenericError(t *testing.T) {
 		})
 
 		t.Run("with an IPv6 address", func(t *testing.T) {
-			input := errors.New("read tcp [::1]:56948->[::1]:443: use of closed network connection")
-			expected := "unknown_failure: read tcp [scrubbed]->[scrubbed]: use of closed network connection"
+			input := errors.New("read tcp [::1]:56948->[::1]:443: some error")
+			expected := "unknown_failure: read tcp [scrubbed]->[scrubbed]: some error"
 			out := ClassifyGenericError(input)
 			if out != expected {
 				t.Fatal(cmp.Diff(expected, out))
