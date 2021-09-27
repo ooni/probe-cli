@@ -92,3 +92,9 @@ func NewErrWrapper(c Classifier, op string, err error) *ErrWrapper {
 		WrappedErr: err,
 	}
 }
+
+// NewTopLevelGenericErrWrapper wraps an error occurring at top
+// level using the most generic available classifier.
+func NewTopLevelGenericErrWrapper(err error) *ErrWrapper {
+	return NewErrWrapper(ClassifyGenericError, TopLevelOperation, err)
+}
