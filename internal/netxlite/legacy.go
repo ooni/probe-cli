@@ -97,11 +97,6 @@ func (r *ResolverLegacyAdapter) CloseIdleConnections() {
 	}
 }
 
-func (r *ResolverLegacyAdapter) LookupHostWithoutRetry(
-	ctx context.Context, domain string, qtype uint16) ([]string, error) {
-	return nil, ErrNoDNSTransport
-}
-
 func (r *ResolverLegacyAdapter) LookupHTTPSSvcWithoutRetry(
 	ctx context.Context, domain string) (HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport

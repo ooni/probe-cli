@@ -30,12 +30,6 @@ type Resolver interface {
 	// CloseIdleConnections closes idle connections, if any.
 	CloseIdleConnections()
 
-	// LookupHostWithoutRetry issues a single lookup host query
-	// for the given qtype (dns.TypeA or dns.TypeAAAA) without any
-	// retry mechanism whatsoever.
-	LookupHostWithoutRetry(
-		ctx context.Context, domain string, qtype uint16) ([]string, error)
-
 	// LookupHTTPSSvcWithoutRetry issues a single HTTPS query for
 	// a domain without any retry mechanism whatsoever.
 	LookupHTTPSSvcWithoutRetry(
@@ -140,11 +134,6 @@ func (r *resolverSystem) CloseIdleConnections() {
 	// nothing to do
 }
 
-func (r *resolverSystem) LookupHostWithoutRetry(
-	ctx context.Context, domain string, qtype uint16) ([]string, error) {
-	return nil, ErrNoDNSTransport
-}
-
 func (r *resolverSystem) LookupHTTPSSvcWithoutRetry(
 	ctx context.Context, domain string) (HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
@@ -163,22 +152,6 @@ func (r *resolverLogger) LookupHost(ctx context.Context, hostname string) ([]str
 	r.Logger.Debugf("%s...", prefix)
 	start := time.Now()
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
-	elapsed := time.Since(start)
-	if err != nil {
-		r.Logger.Debugf("%s... %s in %s", prefix, err, elapsed)
-		return nil, err
-	}
-	r.Logger.Debugf("%s... %+v in %s", prefix, addrs, elapsed)
-	return addrs, nil
-}
-
-func (r *resolverLogger) LookupHostWithoutRetry(
-	ctx context.Context, domain string, qtype uint16) ([]string, error) {
-	qtypename := dns.TypeToString[qtype]
-	prefix := fmt.Sprintf("resolve[%s] %s with %s (%s)", qtypename, domain, r.Network(), r.Address())
-	r.Logger.Debugf("%s...", prefix)
-	start := time.Now()
-	addrs, err := r.Resolver.LookupHostWithoutRetry(ctx, domain, qtype)
 	elapsed := time.Since(start)
 	if err != nil {
 		r.Logger.Debugf("%s... %s in %s", prefix, err, elapsed)
@@ -219,15 +192,6 @@ func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]strin
 		return nil, err
 	}
 	return r.Resolver.LookupHost(ctx, host)
-}
-
-func (r *resolverIDNA) LookupHostWithoutRetry(
-	ctx context.Context, domain string, qtype uint16) ([]string, error) {
-	host, err := idna.ToASCII(domain)
-	if err != nil {
-		return nil, err
-	}
-	return r.Resolver.LookupHostWithoutRetry(ctx, host, qtype)
 }
 
 func (r *resolverIDNA) LookupHTTPSSvcWithoutRetry(
@@ -275,11 +239,6 @@ func (r *nullResolver) CloseIdleConnections() {
 	// nothing to do
 }
 
-func (r *nullResolver) LookupHostWithoutRetry(
-	ctx context.Context, domain string, qtype uint16) ([]string, error) {
-	return nil, ErrNoDNSTransport
-}
-
 func (r *nullResolver) LookupHTTPSSvcWithoutRetry(
 	ctx context.Context, domain string) (HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
@@ -294,16 +253,6 @@ var _ Resolver = &resolverErrWrapper{}
 
 func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
-	if err != nil {
-		return nil, errorsx.NewErrWrapper(
-			errorsx.ClassifyResolverError, errorsx.ResolveOperation, err)
-	}
-	return addrs, nil
-}
-
-func (r *resolverErrWrapper) LookupHostWithoutRetry(
-	ctx context.Context, domain string, qtype uint16) ([]string, error) {
-	addrs, err := r.Resolver.LookupHostWithoutRetry(ctx, domain, qtype)
 	if err != nil {
 		return nil, errorsx.NewErrWrapper(
 			errorsx.ClassifyResolverError, errorsx.ResolveOperation, err)

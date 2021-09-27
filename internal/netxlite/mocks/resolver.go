@@ -34,11 +34,6 @@ func (r *Resolver) CloseIdleConnections() {
 	r.MockCloseIdleConnections()
 }
 
-func (r *Resolver) LookupHostWithoutRetry(
-	ctx context.Context, domain string, qtype uint16) ([]string, error) {
-	panic("not yet implemented")
-}
-
 // HTTPSSvc is an HTTPSSvc reply.
 type HTTPSSvc = model.HTTPSSvc
 
