@@ -75,7 +75,12 @@ func TestHTTPTransportLogger(t *testing.T) {
 				},
 			}
 			client := &http.Client{Transport: txp}
-			resp, err := client.Get("https://www.google.com")
+			req, err := http.NewRequest("GET", "https://www.google.com", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header.Set("User-Agent", "miniooni/0.1.0-dev")
+			resp, err := client.Do(req)
 			if err != nil {
 				t.Fatal(err)
 			}
