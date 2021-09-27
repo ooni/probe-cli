@@ -143,8 +143,6 @@ func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 // The returned transport will set a default user agent if the
 // request has not already set a user agent.
 func WrapHTTPTransport(logger Logger, txp HTTPTransport) HTTPTransport {
-	// Ensure we correctly forward CloseIdleConnections and compose
-	// with a logging transport thus enabling logging.
 	return &httpUserAgentTransport{
 		HTTPTransport: &httpTransportLogger{
 			HTTPTransport: txp,
