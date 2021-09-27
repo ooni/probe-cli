@@ -121,7 +121,7 @@ type TLSHandshaker interface {
 	//
 	// QUIRK: The returned connection will always implement the TLSConn interface
 	// exposed by this package. A future version of this interface will instead
-	// return directly a TLSConn and remove the ConnectionState param.
+	// return directly a TLSConn to avoid unconditional castings.
 	Handshake(ctx context.Context, conn net.Conn, config *tls.Config) (
 		net.Conn, tls.ConnectionState, error)
 }

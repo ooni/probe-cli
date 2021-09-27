@@ -3,6 +3,7 @@ package netxlite
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"time"
 
@@ -128,15 +129,16 @@ type resolverLogger struct {
 var _ Resolver = &resolverLogger{}
 
 func (r *resolverLogger) LookupHost(ctx context.Context, hostname string) ([]string, error) {
-	r.Logger.Debugf("resolve %s...", hostname)
+	prefix := fmt.Sprintf("resolve[A,AAAA] %s with %s (%s)", hostname, r.Network(), r.Address())
+	r.Logger.Debugf("%s...", prefix)
 	start := time.Now()
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	elapsed := time.Since(start)
 	if err != nil {
-		r.Logger.Debugf("resolve %s... %s in %s", hostname, err, elapsed)
+		r.Logger.Debugf("%s... %s in %s", prefix, err, elapsed)
 		return nil, err
 	}
-	r.Logger.Debugf("resolve %s... %+v in %s", hostname, addrs, elapsed)
+	r.Logger.Debugf("%s... %+v in %s", prefix, addrs, elapsed)
 	return addrs, nil
 }
 

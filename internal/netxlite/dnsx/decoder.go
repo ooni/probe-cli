@@ -1,34 +1,42 @@
 package dnsx
 
 import (
-	"errors"
-
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
-// The Decoder decodes a DNS reply into A or AAAA entries. It will use the
-// provided qtype and only look for mathing entries. It will return error if
-// there are no entries for the requested qtype inside the reply.
+// The Decoder decodes DNS replies.
 type Decoder interface {
-	Decode(qtype uint16, data []byte) ([]string, error)
+	// DecodeLookupHost decodes an A or AAAA reply.
+	DecodeLookupHost(qtype uint16, data []byte) ([]string, error)
 }
 
 // MiekgDecoder uses github.com/miekg/dns to implement the Decoder.
 type MiekgDecoder struct{}
 
-// Decode implements Decoder.Decode.
-func (d *MiekgDecoder) Decode(qtype uint16, data []byte) ([]string, error) {
+func (d *MiekgDecoder) parseReply(data []byte) (*dns.Msg, error) {
 	reply := new(dns.Msg)
 	if err := reply.Unpack(data); err != nil {
 		return nil, err
 	}
 	// TODO(bassosimone): map more errors to net.DNSError names
+	// TODO(bassosimone): add support for lame referral.
 	switch reply.Rcode {
 	case dns.RcodeSuccess:
+		return reply, nil
 	case dns.RcodeNameError:
-		return nil, errors.New("ooniresolver: no such host")
+		return nil, errorsx.ErrOODNSNoSuchHost
+	case dns.RcodeRefused:
+		return nil, errorsx.ErrOODNSRefused
 	default:
-		return nil, errors.New("ooniresolver: query failed")
+		return nil, errorsx.ErrOODNSMisbehaving
+	}
+}
+
+func (d *MiekgDecoder) DecodeLookupHost(qtype uint16, data []byte) ([]string, error) {
+	reply, err := d.parseReply(data)
+	if err != nil {
+		return nil, err
 	}
 	var addrs []string
 	for _, answer := range reply.Answer {
@@ -46,7 +54,7 @@ func (d *MiekgDecoder) Decode(qtype uint16, data []byte) ([]string, error) {
 		}
 	}
 	if len(addrs) <= 0 {
-		return nil, errors.New("ooniresolver: no response returned")
+		return nil, errorsx.ErrOODNSNoAnswer
 	}
 	return addrs, nil
 }

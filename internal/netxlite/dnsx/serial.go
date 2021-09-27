@@ -51,8 +51,8 @@ func (r *SerialResolver) CloseIdleConnections() {
 // LookupHost implements Resolver.LookupHost.
 func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	var addrs []string
-	addrsA, errA := r.roundTripWithRetry(ctx, hostname, dns.TypeA)
-	addrsAAAA, errAAAA := r.roundTripWithRetry(ctx, hostname, dns.TypeAAAA)
+	addrsA, errA := r.lookupHostWithRetry(ctx, hostname, dns.TypeA)
+	addrsAAAA, errAAAA := r.lookupHostWithRetry(ctx, hostname, dns.TypeAAAA)
 	if errA != nil && errAAAA != nil {
 		return nil, errA
 	}
@@ -61,11 +61,11 @@ func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]str
 	return addrs, nil
 }
 
-func (r *SerialResolver) roundTripWithRetry(
+func (r *SerialResolver) lookupHostWithRetry(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
 	var errorslist []error
 	for i := 0; i < 3; i++ {
-		replies, err := r.roundTrip(ctx, hostname, qtype)
+		replies, err := r.lookupHostWithoutRetry(ctx, hostname, qtype)
 		if err == nil {
 			return replies, nil
 		}
@@ -87,7 +87,9 @@ func (r *SerialResolver) roundTripWithRetry(
 	return nil, errorslist[0]
 }
 
-func (r *SerialResolver) roundTrip(
+// lookupHostWithoutRetry issues a lookup host query for the specified
+// qtype (dns.A or dns.AAAA) without retrying on failure.
+func (r *SerialResolver) lookupHostWithoutRetry(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
 	querydata, err := r.Encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
 	if err != nil {
@@ -97,5 +99,5 @@ func (r *SerialResolver) roundTrip(
 	if err != nil {
 		return nil, err
 	}
-	return r.Decoder.Decode(qtype, replydata)
+	return r.Decoder.DecodeLookupHost(qtype, replydata)
 }

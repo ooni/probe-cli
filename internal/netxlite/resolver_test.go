@@ -146,11 +146,17 @@ func TestResolverLogger(t *testing.T) {
 				},
 			}
 			expected := []string{"1.1.1.1"}
-			r := resolverLogger{
+			r := &resolverLogger{
 				Logger: lo,
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 						return expected, nil
+					},
+					MockNetwork: func() string {
+						return "system"
+					},
+					MockAddress: func() string {
+						return ""
 					},
 				},
 			}
@@ -174,11 +180,17 @@ func TestResolverLogger(t *testing.T) {
 				},
 			}
 			expected := errors.New("mocked error")
-			r := resolverLogger{
+			r := &resolverLogger{
 				Logger: lo,
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 						return nil, expected
+					},
+					MockNetwork: func() string {
+						return "system"
+					},
+					MockAddress: func() string {
+						return ""
 					},
 				},
 			}

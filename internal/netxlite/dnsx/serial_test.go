@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"net"
-	"strings"
 	"testing"
 
 	"github.com/miekg/dns"
@@ -79,8 +78,8 @@ func TestOONIWithEmptyReply(t *testing.T) {
 	}
 	r := NewSerialResolver(txp)
 	addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
-	if err == nil || !strings.HasSuffix(err.Error(), "no response returned") {
-		t.Fatal("not the error we expected")
+	if !errors.Is(err, errorsx.ErrOODNSNoAnswer) {
+		t.Fatal("not the error we expected", err)
 	}
 	if addrs != nil {
 		t.Fatal("expected nil address here")
@@ -144,5 +143,20 @@ func TestOONIWithTimeout(t *testing.T) {
 	}
 	if r.NumTimeouts.Load() <= 0 {
 		t.Fatal("we didn't actually take the timeouts")
+	}
+}
+
+func TestSerialResolverCloseIdleConnections(t *testing.T) {
+	var called bool
+	r := &SerialResolver{
+		Txp: &mocks.RoundTripper{
+			MockCloseIdleConnections: func() {
+				called = true
+			},
+		},
+	}
+	r.CloseIdleConnections()
+	if !called {
+		t.Fatal("not called")
 	}
 }
