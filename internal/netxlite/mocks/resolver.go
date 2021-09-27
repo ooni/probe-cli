@@ -38,6 +38,6 @@ func (r *Resolver) CloseIdleConnections() {
 type HTTPSSvc = model.HTTPSSvc
 
 func (r *Resolver) LookupHTTPS(
-	ctx context.Context, domain string) (HTTPSSvc, error) {
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
 	panic("not yet implemented")
 }

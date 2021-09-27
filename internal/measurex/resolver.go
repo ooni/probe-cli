@@ -183,7 +183,7 @@ func (r *resolverDB) computeOddityLookupHost(addrs []string, err error) Oddity {
 	return ""
 }
 
-func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (HTTPSSvc, error) {
+func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (*HTTPSSvc, error) {
 	started := time.Since(r.begin).Seconds()
 	https, err := r.Resolver.LookupHTTPS(ctx, domain)
 	finished := time.Since(r.begin).Seconds()
@@ -198,19 +198,19 @@ func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (HTTPSSvc, 
 		Oddity:    Oddity(r.computeOddityHTTPSSvc(https, err)),
 	}
 	if err == nil {
-		for _, addr := range https.IPv4Hint() {
+		for _, addr := range https.IPv4 {
 			ev.Answers = append(ev.Answers, DNSLookupAnswer{
 				Type: "A",
 				IPv4: addr,
 			})
 		}
-		for _, addr := range https.IPv6Hint() {
+		for _, addr := range https.IPv6 {
 			ev.Answers = append(ev.Answers, DNSLookupAnswer{
 				Type: "AAAA",
 				IPv6: addr,
 			})
 		}
-		for _, alpn := range https.ALPN() {
+		for _, alpn := range https.ALPN {
 			ev.Answers = append(ev.Answers, DNSLookupAnswer{
 				Type: "ALPN",
 				ALPN: alpn,
@@ -221,12 +221,12 @@ func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (HTTPSSvc, 
 	return https, err
 }
 
-func (r *resolverDB) computeOddityHTTPSSvc(https HTTPSSvc, err error) Oddity {
+func (r *resolverDB) computeOddityHTTPSSvc(https *HTTPSSvc, err error) Oddity {
 	if err != nil {
 		return r.computeOddityLookupHost(nil, err)
 	}
 	var addrs []string
-	addrs = append(addrs, https.IPv4Hint()...)
-	addrs = append(addrs, https.IPv6Hint()...)
+	addrs = append(addrs, https.IPv4...)
+	addrs = append(addrs, https.IPv6...)
 	return r.computeOddityLookupHost(addrs, nil)
 }

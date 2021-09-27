@@ -9,33 +9,13 @@ import (
 // HTTPSSvc is an HTTPSSvc reply.
 type HTTPSSvc = model.HTTPSSvc
 
-type https struct {
-	alpn     []string
-	ipv4hint []string
-	ipv6hint []string
-}
-
-var _ HTTPSSvc = &https{}
-
-func (h *https) ALPN() []string {
-	return h.alpn
-}
-
-func (h *https) IPv4Hint() []string {
-	return h.ipv4hint
-}
-
-func (h *https) IPv6Hint() []string {
-	return h.ipv6hint
-}
-
 // The Decoder decodes DNS replies.
 type Decoder interface {
 	// DecodeLookupHost decodes an A or AAAA reply.
 	DecodeLookupHost(qtype uint16, data []byte) ([]string, error)
 
 	// DecodeHTTPS decodes an HTTPS reply.
-	DecodeHTTPS(data []byte) (HTTPSSvc, error)
+	DecodeHTTPS(data []byte) (*HTTPSSvc, error)
 }
 
 // MiekgDecoder uses github.com/miekg/dns to implement the Decoder.
@@ -60,32 +40,32 @@ func (d *MiekgDecoder) parseReply(data []byte) (*dns.Msg, error) {
 	}
 }
 
-func (d *MiekgDecoder) DecodeHTTPS(data []byte) (HTTPSSvc, error) {
+func (d *MiekgDecoder) DecodeHTTPS(data []byte) (*HTTPSSvc, error) {
 	reply, err := d.parseReply(data)
 	if err != nil {
 		return nil, err
 	}
-	out := &https{}
+	out := &HTTPSSvc{}
 	for _, answer := range reply.Answer {
 		switch avalue := answer.(type) {
 		case *dns.HTTPS:
 			for _, v := range avalue.Value {
 				switch extv := v.(type) {
 				case *dns.SVCBAlpn:
-					out.alpn = extv.Alpn
+					out.ALPN = extv.Alpn
 				case *dns.SVCBIPv4Hint:
 					for _, ip := range extv.Hint {
-						out.ipv4hint = append(out.ipv4hint, ip.String())
+						out.IPv4 = append(out.IPv4, ip.String())
 					}
 				case *dns.SVCBIPv6Hint:
 					for _, ip := range extv.Hint {
-						out.ipv6hint = append(out.ipv6hint, ip.String())
+						out.IPv6 = append(out.IPv6, ip.String())
 					}
 				}
 			}
 		}
 	}
-	if len(out.alpn) <= 0 {
+	if len(out.ALPN) <= 0 {
 		return nil, errorsx.ErrOODNSNoAnswer
 	}
 	return out, nil

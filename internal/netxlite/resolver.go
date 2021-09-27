@@ -7,7 +7,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"golang.org/x/net/idna"
@@ -33,7 +32,7 @@ type Resolver interface {
 	// LookupHTTPS issues a single HTTPS query for
 	// a domain without any retry mechanism whatsoever.
 	LookupHTTPS(
-		ctx context.Context, domain string) (HTTPSSvc, error)
+		ctx context.Context, domain string) (*HTTPSSvc, error)
 }
 
 // ErrNoDNSTransport indicates that the requested Resolver operation
@@ -135,7 +134,7 @@ func (r *resolverSystem) CloseIdleConnections() {
 }
 
 func (r *resolverSystem) LookupHTTPS(
-	ctx context.Context, domain string) (HTTPSSvc, error) {
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
 }
 
@@ -162,7 +161,7 @@ func (r *resolverLogger) LookupHost(ctx context.Context, hostname string) ([]str
 }
 
 func (r *resolverLogger) LookupHTTPS(
-	ctx context.Context, domain string) (HTTPSSvc, error) {
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
 	prefix := fmt.Sprintf("resolve[HTTPS] %s with %s (%s)", domain, r.Network(), r.Address())
 	r.Logger.Debugf("%s...", prefix)
 	start := time.Now()
@@ -172,9 +171,9 @@ func (r *resolverLogger) LookupHTTPS(
 		r.Logger.Debugf("%s... %s in %s", prefix, err, elapsed)
 		return nil, err
 	}
-	alpn := https.ALPN()
-	a := https.IPv4Hint()
-	aaaa := https.IPv6Hint()
+	alpn := https.ALPN
+	a := https.IPv4
+	aaaa := https.IPv6
 	r.Logger.Debugf("%s... %+v %+v %+v in %s", prefix, alpn, a, aaaa, elapsed)
 	return https, nil
 }
@@ -195,7 +194,7 @@ func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]strin
 }
 
 func (r *resolverIDNA) LookupHTTPS(
-	ctx context.Context, domain string) (HTTPSSvc, error) {
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
 	host, err := idna.ToASCII(domain)
 	if err != nil {
 		return nil, err
@@ -240,7 +239,7 @@ func (r *nullResolver) CloseIdleConnections() {
 }
 
 func (r *nullResolver) LookupHTTPS(
-	ctx context.Context, domain string) (HTTPSSvc, error) {
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
 }
 
@@ -261,7 +260,7 @@ func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([
 }
 
 func (r *resolverErrWrapper) LookupHTTPS(
-	ctx context.Context, domain string) (HTTPSSvc, error) {
+	ctx context.Context, domain string) (*HTTPSSvc, error) {
 	out, err := r.Resolver.LookupHTTPS(ctx, domain)
 	if err != nil {
 		return nil, errorsx.NewErrWrapper(
