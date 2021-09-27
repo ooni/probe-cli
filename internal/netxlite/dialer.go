@@ -19,8 +19,14 @@ type Dialer interface {
 	CloseIdleConnections()
 }
 
-// NewDialerWithResolver creates a new Dialer. The returned Dialer
-// has the following properties:
+// NewDialerWithResolver is a convenience factory that calls
+// WrapDialer for a stdlib dialer type.
+func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
+	return WrapDialer(logger, resolver, &dialerSystem{})
+}
+
+// WrapDialer creates a new Dialer that wraps the given
+// Dialer. The returned Dialer has the following properties:
 //
 // 1. logs events using the given logger;
 //
@@ -45,12 +51,12 @@ type Dialer interface {
 // 6. if a dialer wraps a resolver, the dialer will forward
 // the CloseIdleConnection call to its resolver (which is
 // instrumental to manage a DoH resolver connections properly).
-func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
+func WrapDialer(logger Logger, resolver Resolver, dialer Dialer) Dialer {
 	return &dialerLogger{
 		Dialer: &dialerResolver{
 			Dialer: &dialerLogger{
 				Dialer: &dialerErrWrapper{
-					Dialer: &dialerSystem{},
+					Dialer: dialer,
 				},
 				Logger:          logger,
 				operationSuffix: "_address",

@@ -25,10 +25,15 @@ type Resolver interface {
 	CloseIdleConnections()
 }
 
-// NewResolverStdlib creates a new resolver using system
-// facilities for resolving domain names (e.g., getaddrinfo).
-//
-// The resolver will provide the following guarantees:
+// NewResolverStdlib creates a new Resolver by combining
+// WrapResolver with an internal "system" resolver type that
+// adds extra functionality to net.Resolver.
+func NewResolverStdlib(logger Logger) Resolver {
+	return WrapResolver(logger, &resolverSystem{})
+}
+
+// WrapResolver creates a new resolver that wraps an
+// existing resolver to add these properties:
 //
 // 1. handles IDNA;
 //
@@ -41,12 +46,12 @@ type Resolver interface {
 //
 // 5. enforces reasonable timeouts (
 // see https://github.com/ooni/probe/issues/1726).
-func NewResolverStdlib(logger Logger) Resolver {
+func WrapResolver(logger Logger, resolver Resolver) Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{
 			Resolver: &resolverShortCircuitIPAddr{
 				Resolver: &resolverErrWrapper{
-					Resolver: &resolverSystem{},
+					Resolver: resolver,
 				},
 			},
 			Logger: logger,
