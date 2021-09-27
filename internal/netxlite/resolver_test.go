@@ -134,6 +134,17 @@ func TestResolverSystem(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("LookupHTTPS", func(t *testing.T) {
+		r := &resolverSystem{}
+		https, err := r.LookupHTTPS(context.Background(), "x.org")
+		if !errors.Is(err, ErrNoDNSTransport) {
+			t.Fatal("not the error we expected")
+		}
+		if https != nil {
+			t.Fatal("expected nil result")
+		}
+	})
 }
 
 func TestResolverLogger(t *testing.T) {
@@ -206,6 +217,80 @@ func TestResolverLogger(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("LookupHTTPS", func(t *testing.T) {
+		t.Run("with success", func(t *testing.T) {
+			var count int
+			lo := &mocks.Logger{
+				MockDebugf: func(format string, v ...interface{}) {
+					count++
+				},
+			}
+			expected := &HTTPSSvc{
+				ALPN: []string{"h3"},
+				IPv4: []string{"1.1.1.1"},
+			}
+			r := &resolverLogger{
+				Logger: lo,
+				Resolver: &mocks.Resolver{
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+						return expected, nil
+					},
+					MockNetwork: func() string {
+						return "system"
+					},
+					MockAddress: func() string {
+						return ""
+					},
+				},
+			}
+			https, err := r.LookupHTTPS(context.Background(), "dns.google")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(expected, https); diff != "" {
+				t.Fatal(diff)
+			}
+			if count != 2 {
+				t.Fatal("unexpected count")
+			}
+		})
+
+		t.Run("with failure", func(t *testing.T) {
+			var count int
+			lo := &mocks.Logger{
+				MockDebugf: func(format string, v ...interface{}) {
+					count++
+				},
+			}
+			expected := errors.New("mocked error")
+			r := &resolverLogger{
+				Logger: lo,
+				Resolver: &mocks.Resolver{
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+						return nil, expected
+					},
+					MockNetwork: func() string {
+						return "system"
+					},
+					MockAddress: func() string {
+						return ""
+					},
+				},
+			}
+			https, err := r.LookupHTTPS(context.Background(), "dns.google")
+			if !errors.Is(err, expected) {
+				t.Fatal("not the error we expected", err)
+			}
+			if https != nil {
+				t.Fatal("expected nil addr here")
+			}
+			if count != 2 {
+				t.Fatal("unexpected count")
+			}
+		})
+	})
+
 }
 
 func TestResolverIDNA(t *testing.T) {
@@ -245,6 +330,51 @@ func TestResolverIDNA(t *testing.T) {
 				t.Fatal("not the error we expected")
 			}
 			if addrs != nil {
+				t.Fatal("expected no response here")
+			}
+		})
+	})
+
+	t.Run("LookupHTTPS", func(t *testing.T) {
+		t.Run("with valid IDNA in input", func(t *testing.T) {
+			expected := &HTTPSSvc{
+				ALPN: []string{"h3"},
+				IPv4: []string{"1.1.1.1"},
+				IPv6: []string{},
+			}
+			r := &resolverIDNA{
+				Resolver: &mocks.Resolver{
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+						if domain != "xn--d1acpjx3f.xn--p1ai" {
+							return nil, errors.New("passed invalid domain")
+						}
+						return expected, nil
+					},
+				},
+			}
+			ctx := context.Background()
+			https, err := r.LookupHTTPS(ctx, "яндекс.рф")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(expected, https); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("with invalid punycode", func(t *testing.T) {
+			r := &resolverIDNA{Resolver: &mocks.Resolver{
+				MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+					return nil, errors.New("should not happen")
+				},
+			}}
+			// See https://www.farsightsecurity.com/blog/txt-record/punycode-20180711/
+			ctx := context.Background()
+			https, err := r.LookupHTTPS(ctx, "xn--0000h")
+			if err == nil || !strings.HasPrefix(err.Error(), "idna: invalid label") {
+				t.Fatal("not the error we expected")
+			}
+			if https != nil {
 				t.Fatal("expected no response here")
 			}
 		})
@@ -292,22 +422,43 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 }
 
 func TestNullResolver(t *testing.T) {
-	r := &nullResolver{}
-	ctx := context.Background()
-	addrs, err := r.LookupHost(ctx, "dns.google")
-	if !errors.Is(err, ErrNoResolver) {
-		t.Fatal("not the error we expected", err)
-	}
-	if addrs != nil {
-		t.Fatal("expected nil addr")
-	}
-	if r.Network() != "null" {
-		t.Fatal("invalid network")
-	}
-	if r.Address() != "" {
-		t.Fatal("invalid address")
-	}
-	r.CloseIdleConnections() // for coverage
+	t.Run("LookupHost", func(t *testing.T) {
+		r := &nullResolver{}
+		ctx := context.Background()
+		addrs, err := r.LookupHost(ctx, "dns.google")
+		if !errors.Is(err, ErrNoResolver) {
+			t.Fatal("not the error we expected", err)
+		}
+		if addrs != nil {
+			t.Fatal("expected nil addr")
+		}
+		if r.Network() != "null" {
+			t.Fatal("invalid network")
+		}
+		if r.Address() != "" {
+			t.Fatal("invalid address")
+		}
+		r.CloseIdleConnections() // for coverage
+	})
+
+	t.Run("LookupHTTPS", func(t *testing.T) {
+		r := &nullResolver{}
+		ctx := context.Background()
+		addrs, err := r.LookupHTTPS(ctx, "dns.google")
+		if !errors.Is(err, ErrNoResolver) {
+			t.Fatal("not the error we expected", err)
+		}
+		if addrs != nil {
+			t.Fatal("expected nil addr")
+		}
+		if r.Network() != "null" {
+			t.Fatal("invalid network")
+		}
+		if r.Address() != "" {
+			t.Fatal("invalid address")
+		}
+		r.CloseIdleConnections() // for coverage
+	})
 }
 
 func TestResolverErrWrapper(t *testing.T) {
@@ -392,5 +543,47 @@ func TestResolverErrWrapper(t *testing.T) {
 		if !called {
 			t.Fatal("not called")
 		}
+	})
+
+	t.Run("LookupHTTPS", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			expected := &HTTPSSvc{
+				ALPN: []string{"h3"},
+			}
+			reso := &resolverErrWrapper{
+				Resolver: &mocks.Resolver{
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+						return expected, nil
+					},
+				},
+			}
+			ctx := context.Background()
+			https, err := reso.LookupHTTPS(ctx, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(expected, https); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expected := io.EOF
+			reso := &resolverErrWrapper{
+				Resolver: &mocks.Resolver{
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+						return nil, expected
+					},
+				},
+			}
+			ctx := context.Background()
+			https, err := reso.LookupHTTPS(ctx, "")
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
+			}
+			if https != nil {
+				t.Fatal("unexpected addrs")
+			}
+		})
 	})
 }

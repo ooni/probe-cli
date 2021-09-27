@@ -12,6 +12,7 @@ type Resolver struct {
 	MockNetwork              func() string
 	MockAddress              func() string
 	MockCloseIdleConnections func()
+	MockLookupHTTPS          func(ctx context.Context, domain string) (*HTTPSSvc, error)
 }
 
 // LookupHost calls MockLookupHost.
@@ -37,7 +38,7 @@ func (r *Resolver) CloseIdleConnections() {
 // HTTPSSvc is an HTTPSSvc reply.
 type HTTPSSvc = model.HTTPSSvc
 
-func (r *Resolver) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
-	panic("not yet implemented")
+// LookupHTTPS calls MockLookupHTTPS.
+func (r *Resolver) LookupHTTPS(ctx context.Context, domain string) (*HTTPSSvc, error) {
+	return r.MockLookupHTTPS(ctx, domain)
 }
