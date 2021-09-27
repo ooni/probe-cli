@@ -101,6 +101,7 @@ var Specs = []*ErrorSpec{
 	NewLibraryError("SSL_unknown_authority"),
 	NewLibraryError("SSL_invalid_certificate"),
 	NewLibraryError("JSON_parse_error"),
+	NewLibraryError("connection_already_closed"),
 }
 
 func fileCreate(filename string) *os.File {

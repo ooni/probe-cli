@@ -90,6 +90,9 @@ func classifyWithStringSuffix(err error) string {
 		// that we return here is significantly more specific.
 		return FailureDNSNXDOMAINError
 	}
+	if strings.HasSuffix(s, "use of closed network connection") {
+		return FailureConnectionAlreadyClosed
+	}
 	return "" // not found
 }
 
