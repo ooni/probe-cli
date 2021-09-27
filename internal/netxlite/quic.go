@@ -394,6 +394,16 @@ func (c *quicErrWrapperUDPLikeConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	return n, addr, nil
 }
 
+// Close implements quicx.UDPLikeConn.Close.
+func (c *quicErrWrapperUDPLikeConn) Close() error {
+	err := c.UDPLikeConn.Close()
+	if err != nil {
+		return errorsx.NewErrWrapper(
+			errorsx.ClassifyGenericError, errorsx.ReadFromOperation, err)
+	}
+	return nil
+}
+
 // quicDialerErrWrapper is a dialer that performs quic err wrapping
 type quicDialerErrWrapper struct {
 	QUICDialer
