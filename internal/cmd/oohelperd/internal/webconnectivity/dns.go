@@ -28,5 +28,8 @@ type DNSConfig struct {
 func DNSDo(ctx context.Context, config *DNSConfig) {
 	defer config.Wg.Done()
 	addrs, err := config.Resolver.LookupHost(ctx, config.Domain)
+	if addrs == nil {
+		addrs = []string{} // fix: the old test helper did that
+	}
 	config.Out <- CtrlDNSResult{Failure: newfailure(err), Addrs: addrs}
 }
