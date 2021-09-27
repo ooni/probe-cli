@@ -183,9 +183,9 @@ func (r *resolverDB) computeOddityLookupHost(addrs []string, err error) Oddity {
 	return ""
 }
 
-func (r *resolverDB) LookupHTTPSSvcWithoutRetry(ctx context.Context, domain string) (HTTPSSvc, error) {
+func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (HTTPSSvc, error) {
 	started := time.Since(r.begin).Seconds()
-	https, err := r.Resolver.LookupHTTPSSvcWithoutRetry(ctx, domain)
+	https, err := r.Resolver.LookupHTTPS(ctx, domain)
 	finished := time.Since(r.begin).Seconds()
 	ev := &DNSLookupEvent{
 		Network:   r.Resolver.Network(),

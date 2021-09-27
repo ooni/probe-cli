@@ -97,7 +97,7 @@ func (r *ResolverLegacyAdapter) CloseIdleConnections() {
 	}
 }
 
-func (r *ResolverLegacyAdapter) LookupHTTPSSvcWithoutRetry(
+func (r *ResolverLegacyAdapter) LookupHTTPS(
 	ctx context.Context, domain string) (HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
 }

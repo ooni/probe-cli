@@ -148,7 +148,7 @@ func (mx *Measurer) LookupHTTPSSvcUDP(
 	db := &MeasurementDB{}
 	r := mx.NewResolverUDP(db, mx.Logger, address)
 	defer r.CloseIdleConnections()
-	_, err := r.LookupHTTPSSvcWithoutRetry(ctx, domain)
+	_, err := r.LookupHTTPS(ctx, domain)
 	ol.Stop(err)
 	return &DNSMeasurement{
 		Domain:      domain,
@@ -165,7 +165,7 @@ func (mx *Measurer) lookupHTTPSSvcUDPForeign(
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	db := &MeasurementDB{}
-	_, err := mx.WrapResolver(db, r).LookupHTTPSSvcWithoutRetry(ctx, domain)
+	_, err := mx.WrapResolver(db, r).LookupHTTPS(ctx, domain)
 	ol.Stop(err)
 	return &DNSMeasurement{
 		Domain:      domain,

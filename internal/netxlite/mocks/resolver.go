@@ -37,7 +37,7 @@ func (r *Resolver) CloseIdleConnections() {
 // HTTPSSvc is an HTTPSSvc reply.
 type HTTPSSvc = model.HTTPSSvc
 
-func (r *Resolver) LookupHTTPSSvcWithoutRetry(
+func (r *Resolver) LookupHTTPS(
 	ctx context.Context, domain string) (HTTPSSvc, error) {
 	panic("not yet implemented")
 }
