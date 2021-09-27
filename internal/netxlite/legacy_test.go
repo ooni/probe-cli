@@ -1,6 +1,8 @@
 package netxlite
 
 import (
+	"context"
+	"errors"
 	"net"
 	"testing"
 
@@ -42,6 +44,17 @@ func TestResolverLegacyAdapter(t *testing.T) {
 			t.Fatal("invalid Address")
 		}
 		r.CloseIdleConnections() // does not crash
+	})
+
+	t.Run("for LookupHTTPS", func(t *testing.T) {
+		r := NewResolverLegacyAdapter(&net.Resolver{})
+		https, err := r.LookupHTTPS(context.Background(), "x.org")
+		if !errors.Is(err, ErrNoDNSTransport) {
+			t.Fatal("not the error we expected")
+		}
+		if https != nil {
+			t.Fatal("expected nil result")
+		}
 	})
 }
 

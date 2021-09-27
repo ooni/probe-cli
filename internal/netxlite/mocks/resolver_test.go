@@ -58,4 +58,21 @@ func TestResolver(t *testing.T) {
 			t.Fatal("not called")
 		}
 	})
+
+	t.Run("LookupHTTPS", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		r := &Resolver{
+			MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+				return nil, expected
+			},
+		}
+		ctx := context.Background()
+		https, err := r.LookupHTTPS(ctx, "dns.google")
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected error", err)
+		}
+		if https != nil {
+			t.Fatal("expected nil addr")
+		}
+	})
 }
