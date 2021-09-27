@@ -2,27 +2,27 @@ package dnsx
 
 import "github.com/miekg/dns"
 
-// The Encoder encodes DNS queries to bytes
-type Encoder interface {
+// The DNSEncoder encodes DNS queries to bytes
+type DNSEncoder interface {
 	Encode(domain string, qtype uint16, padding bool) ([]byte, error)
 }
 
-// MiekgEncoder uses github.com/miekg/dns to implement the Encoder.
-type MiekgEncoder struct{}
+// DNSEncoderMiekg uses github.com/miekg/dns to implement the Encoder.
+type DNSEncoderMiekg struct{}
 
 const (
-	// PaddingDesiredBlockSize is the size that the padded query should be multiple of
-	PaddingDesiredBlockSize = 128
+	// dnsPaddingDesiredBlockSize is the size that the padded query should be multiple of
+	dnsPaddingDesiredBlockSize = 128
 
-	// EDNS0MaxResponseSize is the maximum response size for EDNS0
-	EDNS0MaxResponseSize = 4096
+	// dnsEDNS0MaxResponseSize is the maximum response size for EDNS0
+	dnsEDNS0MaxResponseSize = 4096
 
-	// DNSSECEnabled turns on support for DNSSEC when using EDNS0
-	DNSSECEnabled = true
+	// dnsDNSSECEnabled turns on support for DNSSEC when using EDNS0
+	dnsDNSSECEnabled = true
 )
 
 // Encode implements Encoder.Encode
-func (e *MiekgEncoder) Encode(domain string, qtype uint16, padding bool) ([]byte, error) {
+func (e *DNSEncoderMiekg) Encode(domain string, qtype uint16, padding bool) ([]byte, error) {
 	question := dns.Question{
 		Name:   dns.Fqdn(domain),
 		Qtype:  qtype,
@@ -34,14 +34,14 @@ func (e *MiekgEncoder) Encode(domain string, qtype uint16, padding bool) ([]byte
 	query.Question = make([]dns.Question, 1)
 	query.Question[0] = question
 	if padding {
-		query.SetEdns0(EDNS0MaxResponseSize, DNSSECEnabled)
+		query.SetEdns0(dnsEDNS0MaxResponseSize, dnsDNSSECEnabled)
 		// Clients SHOULD pad queries to the closest multiple of
 		// 128 octets RFC8467#section-4.1. We inflate the query
 		// length by the size of the option (i.e. 4 octets). The
 		// cast to uint is necessary to make the modulus operation
 		// work as intended when the desiredBlockSize is smaller
 		// than (query.Len()+4) ¯\_(ツ)_/¯.
-		remainder := (PaddingDesiredBlockSize - uint(query.Len()+4)) % PaddingDesiredBlockSize
+		remainder := (dnsPaddingDesiredBlockSize - uint(query.Len()+4)) % dnsPaddingDesiredBlockSize
 		opt := new(dns.EDNS0_PADDING)
 		opt.Padding = make([]byte, remainder)
 		query.IsEdns0().Option = append(query.IsEdns0().Option, opt)
@@ -49,4 +49,4 @@ func (e *MiekgEncoder) Encode(domain string, qtype uint16, padding bool) ([]byte
 	return query.Pack()
 }
 
-var _ Encoder = &MiekgEncoder{}
+var _ DNSEncoder = &DNSEncoderMiekg{}

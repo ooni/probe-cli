@@ -7,10 +7,10 @@ import (
 	"github.com/miekg/dns"
 )
 
-func TestEncoder(t *testing.T) {
+func TestDNSEncoder(t *testing.T) {
 	t.Run("Encode", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		e := &Encoder{
+		e := &DNSEncoder{
 			MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
 				return nil, expected
 			},

@@ -12,24 +12,24 @@ import (
 // SerialResolver is a resolver that first issues an A query and then
 // issues an AAAA query for the requested domain.
 type SerialResolver struct {
-	Encoder     Encoder
-	Decoder     Decoder
+	Encoder     DNSEncoder
+	Decoder     DNSDecoder
 	NumTimeouts *atomicx.Int64
-	Txp         RoundTripper
+	Txp         DNSTransport
 }
 
 // NewSerialResolver creates a new OONI Resolver instance.
-func NewSerialResolver(t RoundTripper) *SerialResolver {
+func NewSerialResolver(t DNSTransport) *SerialResolver {
 	return &SerialResolver{
-		Encoder:     &MiekgEncoder{},
-		Decoder:     &MiekgDecoder{},
+		Encoder:     &DNSEncoderMiekg{},
+		Decoder:     &DNSDecoderMiekg{},
 		NumTimeouts: &atomicx.Int64{},
 		Txp:         t,
 	}
 }
 
 // Transport returns the transport being used.
-func (r *SerialResolver) Transport() RoundTripper {
+func (r *SerialResolver) Transport() DNSTransport {
 	return r.Txp
 }
 

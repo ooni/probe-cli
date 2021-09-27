@@ -66,4 +66,4 @@ func (t *DNSOverUDP) CloseIdleConnections() {
 	// nothing to do
 }
 
-var _ RoundTripper = &DNSOverUDP{}
+var _ DNSTransport = &DNSOverUDP{}

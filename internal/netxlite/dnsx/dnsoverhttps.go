@@ -86,4 +86,4 @@ func (t *DNSOverHTTPS) CloseIdleConnections() {
 	t.Client.CloseIdleConnections()
 }
 
-var _ RoundTripper = &DNSOverHTTPS{}
+var _ DNSTransport = &DNSOverHTTPS{}

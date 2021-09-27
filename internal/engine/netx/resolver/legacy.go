@@ -19,9 +19,9 @@ type (
 	DNSOverHTTPS    = dnsx.DNSOverHTTPS
 	DNSOverTCP      = dnsx.DNSOverTCP
 	DNSOverUDP      = dnsx.DNSOverUDP
-	MiekgEncoder    = dnsx.MiekgEncoder
-	MiekgDecoder    = dnsx.MiekgDecoder
-	RoundTripper    = dnsx.RoundTripper
+	MiekgEncoder    = dnsx.DNSEncoderMiekg
+	MiekgDecoder    = dnsx.DNSDecoderMiekg
+	RoundTripper    = dnsx.DNSTransport
 	SerialResolver  = dnsx.SerialResolver
 	Dialer          = dnsx.Dialer
 	DialContextFunc = dnsx.DialContextFunc

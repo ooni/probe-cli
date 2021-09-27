@@ -8,10 +8,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 )
 
-func TestRoundTripper(t *testing.T) {
+func TestDNSTransport(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		txp := &RoundTripper{
+		txp := &DNSTransport{
 			MockRoundTrip: func(ctx context.Context, query []byte) ([]byte, error) {
 				return nil, expected
 			},
@@ -26,7 +26,7 @@ func TestRoundTripper(t *testing.T) {
 	})
 
 	t.Run("RequiresPadding", func(t *testing.T) {
-		txp := &RoundTripper{
+		txp := &DNSTransport{
 			MockRequiresPadding: func() bool {
 				return true
 			},
@@ -37,7 +37,7 @@ func TestRoundTripper(t *testing.T) {
 	})
 
 	t.Run("Network", func(t *testing.T) {
-		txp := &RoundTripper{
+		txp := &DNSTransport{
 			MockNetwork: func() string {
 				return "antani"
 			},
@@ -48,7 +48,7 @@ func TestRoundTripper(t *testing.T) {
 	})
 
 	t.Run("Address", func(t *testing.T) {
-		txp := &RoundTripper{
+		txp := &DNSTransport{
 			MockAddress: func() string {
 				return "mascetti"
 			},
@@ -60,7 +60,7 @@ func TestRoundTripper(t *testing.T) {
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
 		called := &atomicx.Int64{}
-		txp := &RoundTripper{
+		txp := &DNSTransport{
 			MockCloseIdleConnections: func() {
 				called.Add(1)
 			},

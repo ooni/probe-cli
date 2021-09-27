@@ -32,7 +32,7 @@ func TestOONIEncodeError(t *testing.T) {
 	mocked := errors.New("mocked error")
 	txp := NewDNSOverTLS((&tls.Dialer{}).DialContext, "8.8.8.8:853")
 	r := SerialResolver{
-		Encoder: &mocks.Encoder{
+		Encoder: &mocks.DNSEncoder{
 			MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
 				return nil, mocked
 			},
@@ -50,7 +50,7 @@ func TestOONIEncodeError(t *testing.T) {
 
 func TestOONIRoundTripError(t *testing.T) {
 	mocked := errors.New("mocked error")
-	txp := &mocks.RoundTripper{
+	txp := &mocks.DNSTransport{
 		MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
 			return nil, mocked
 		},
@@ -69,7 +69,7 @@ func TestOONIRoundTripError(t *testing.T) {
 }
 
 func TestOONIWithEmptyReply(t *testing.T) {
-	txp := &mocks.RoundTripper{
+	txp := &mocks.DNSTransport{
 		MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
 			return genReplySuccess(t, dns.TypeA), nil
 		},
@@ -88,7 +88,7 @@ func TestOONIWithEmptyReply(t *testing.T) {
 }
 
 func TestOONIWithAReply(t *testing.T) {
-	txp := &mocks.RoundTripper{
+	txp := &mocks.DNSTransport{
 		MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
 			return genReplySuccess(t, dns.TypeA, "8.8.8.8"), nil
 		},
@@ -107,7 +107,7 @@ func TestOONIWithAReply(t *testing.T) {
 }
 
 func TestOONIWithAAAAReply(t *testing.T) {
-	txp := &mocks.RoundTripper{
+	txp := &mocks.DNSTransport{
 		MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
 			return genReplySuccess(t, dns.TypeAAAA, "::1"), nil
 		},
@@ -126,7 +126,7 @@ func TestOONIWithAAAAReply(t *testing.T) {
 }
 
 func TestOONIWithTimeout(t *testing.T) {
-	txp := &mocks.RoundTripper{
+	txp := &mocks.DNSTransport{
 		MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
 			return nil, &net.OpError{Err: errorsx.ETIMEDOUT, Op: "dial"}
 		},
@@ -150,7 +150,7 @@ func TestOONIWithTimeout(t *testing.T) {
 func TestSerialResolverCloseIdleConnections(t *testing.T) {
 	var called bool
 	r := &SerialResolver{
-		Txp: &mocks.RoundTripper{
+		Txp: &mocks.DNSTransport{
 			MockCloseIdleConnections: func() {
 				called = true
 			},
@@ -166,14 +166,14 @@ func TestSerialResolverLookupHTTPS(t *testing.T) {
 	t.Run("for encoding error", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		r := &SerialResolver{
-			Encoder: &mocks.Encoder{
+			Encoder: &mocks.DNSEncoder{
 				MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
 					return nil, expected
 				},
 			},
 			Decoder:     nil,
 			NumTimeouts: &atomicx.Int64{},
-			Txp: &mocks.RoundTripper{
+			Txp: &mocks.DNSTransport{
 				MockRequiresPadding: func() bool {
 					return false
 				},
@@ -192,14 +192,14 @@ func TestSerialResolverLookupHTTPS(t *testing.T) {
 	t.Run("for round-trip error", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		r := &SerialResolver{
-			Encoder: &mocks.Encoder{
+			Encoder: &mocks.DNSEncoder{
 				MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
 					return make([]byte, 64), nil
 				},
 			},
 			Decoder:     nil,
 			NumTimeouts: &atomicx.Int64{},
-			Txp: &mocks.RoundTripper{
+			Txp: &mocks.DNSTransport{
 				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
 					return nil, expected
 				},
@@ -221,18 +221,18 @@ func TestSerialResolverLookupHTTPS(t *testing.T) {
 	t.Run("for decode error", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		r := &SerialResolver{
-			Encoder: &mocks.Encoder{
+			Encoder: &mocks.DNSEncoder{
 				MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
 					return make([]byte, 64), nil
 				},
 			},
-			Decoder: &mocks.Decoder{
+			Decoder: &mocks.DNSDecoder{
 				MockDecodeHTTPS: func(reply []byte) (*mocks.HTTPSSvc, error) {
 					return nil, expected
 				},
 			},
 			NumTimeouts: &atomicx.Int64{},
-			Txp: &mocks.RoundTripper{
+			Txp: &mocks.DNSTransport{
 				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
 					return make([]byte, 128), nil
 				},
