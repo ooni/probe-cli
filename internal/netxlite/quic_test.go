@@ -472,6 +472,7 @@ func TestQUICLoggerDialer(t *testing.T) {
 func TestNewSingleUseQUICDialer(t *testing.T) {
 	sess := &mocks.QUICEarlySession{}
 	qd := NewSingleUseQUICDialer(sess)
+	defer qd.CloseIdleConnections()
 	outsess, err := qd.DialContext(
 		context.Background(), "", "", &tls.Config{}, &quic.Config{})
 	if err != nil {
@@ -615,6 +616,37 @@ func TestQUICErrWrapperUDPLikeConn(t *testing.T) {
 			}
 			if count != 0 {
 				t.Fatal("unexpected count")
+			}
+		})
+	})
+
+	t.Run("Close", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			conn := &quicErrWrapperUDPLikeConn{
+				UDPLikeConn: &mocks.QUICUDPLikeConn{
+					MockClose: func() error {
+						return nil
+					},
+				},
+			}
+			err := conn.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			expectedErr := io.EOF
+			conn := &quicErrWrapperUDPLikeConn{
+				UDPLikeConn: &mocks.QUICUDPLikeConn{
+					MockClose: func() error {
+						return expectedErr
+					},
+				},
+			}
+			err := conn.Close()
+			if err == nil || err.Error() != errorsx.FailureEOFError {
+				t.Fatal("unexpected err", err)
 			}
 		})
 	})
