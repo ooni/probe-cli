@@ -102,3 +102,19 @@ func TestNewErrWrapper(t *testing.T) {
 		}
 	})
 }
+
+func TestNewTopLevelGenericErrWrapper(t *testing.T) {
+	out := NewTopLevelGenericErrWrapper(io.EOF)
+	if out.Failure != FailureEOFError {
+		t.Fatal("invalid failure")
+	}
+	if out.Operation != TopLevelOperation {
+		t.Fatal("invalid operation")
+	}
+	if !errors.Is(out, io.EOF) {
+		t.Fatal("invalid underlying error using errors.Is")
+	}
+	if !errors.Is(out.WrappedErr, io.EOF) {
+		t.Fatal("invalid WrappedErr")
+	}
+}
