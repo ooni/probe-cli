@@ -29,7 +29,7 @@ func (h *https) IPv6Hint() []string {
 	return h.ipv6hint
 }
 
-// The Decoder decodes a DNS replies.
+// The Decoder decodes DNS replies.
 type Decoder interface {
 	// DecodeLookupHost decodes an A or AAAA reply.
 	DecodeLookupHost(qtype uint16, data []byte) ([]string, error)
