@@ -175,3 +175,18 @@ func TestDNSOverHTTPSHostOverride(t *testing.T) {
 		t.Fatal("did not see correct host override")
 	}
 }
+
+func TestDNSOverHTTPSCloseIdleConnections(t *testing.T) {
+	var called bool
+	doh := &DNSOverHTTPS{
+		Client: &mocks.HTTPClient{
+			MockCloseIdleConnections: func() {
+				called = true
+			},
+		},
+	}
+	doh.CloseIdleConnections()
+	if !called {
+		t.Fatal("not called")
+	}
+}

@@ -77,6 +77,18 @@ func TestClassifyGenericError(t *testing.T) {
 		}
 	})
 
+	t.Run("for dns server misbehaving", func(t *testing.T) {
+		if ClassifyGenericError(errors.New("dns server misbehaving")) != FailureDNSServerMisbehaving {
+			t.Fatal("unexpected results")
+		}
+	})
+
+	t.Run("for no answer from DNS server", func(t *testing.T) {
+		if ClassifyGenericError(errors.New("no answer from DNS server")) != FailureDNSNoAnswer {
+			t.Fatal("unexpected results")
+		}
+	})
+
 	t.Run("for use of closed network connection", func(t *testing.T) {
 		err := errors.New("read tcp 10.0.2.15:56948->93.184.216.34:443: use of closed network connection")
 		if ClassifyGenericError(err) != FailureConnectionAlreadyClosed {
@@ -247,6 +259,12 @@ func TestClassifyResolverError(t *testing.T) {
 
 	t.Run("for ErrDNSBogon", func(t *testing.T) {
 		if ClassifyResolverError(ErrDNSBogon) != FailureDNSBogonError {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("for refused", func(t *testing.T) {
+		if ClassifyResolverError(ErrOODNSRefused) != FailureDNSRefusedError {
 			t.Fatal("unexpected result")
 		}
 	})
