@@ -139,15 +139,10 @@ func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 
 // WrapHTTPTransport creates a new HTTP transport using
 // the given logger for logging.
-//
-// The returned transport will set a default user agent if the
-// request has not already set a user agent.
 func WrapHTTPTransport(logger Logger, txp HTTPTransport) HTTPTransport {
-	return &httpUserAgentTransport{
-		HTTPTransport: &httpTransportLogger{
-			HTTPTransport: txp,
-			Logger:        logger,
-		},
+	return &httpTransportLogger{
+		HTTPTransport: txp,
+		Logger:        logger,
 	}
 }
 
@@ -240,6 +235,10 @@ func (c *httpTLSConnWithReadTimeout) Read(b []byte) (int, error) {
 
 // httpUserAgentTransport is a transport that ensures that we always
 // set an OONI specific default User-Agent header.
+//
+// Deprecated: this transport mutates its own request, which is not
+// what a transport should do. We should add headers when we are
+// creating requests rather than using this transport.
 type httpUserAgentTransport struct {
 	HTTPTransport
 }
