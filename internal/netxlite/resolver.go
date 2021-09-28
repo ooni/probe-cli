@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"golang.org/x/net/idna"
 )
 
@@ -253,8 +252,7 @@ var _ Resolver = &resolverErrWrapper{}
 func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	if err != nil {
-		return nil, errorsx.NewErrWrapper(
-			errorsx.ClassifyResolverError, errorsx.ResolveOperation, err)
+		return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, err)
 	}
 	return addrs, nil
 }
@@ -263,8 +261,7 @@ func (r *resolverErrWrapper) LookupHTTPS(
 	ctx context.Context, domain string) (*HTTPSSvc, error) {
 	out, err := r.Resolver.LookupHTTPS(ctx, domain)
 	if err != nil {
-		return nil, errorsx.NewErrWrapper(
-			errorsx.ClassifyResolverError, errorsx.ResolveOperation, err)
+		return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, err)
 	}
 	return out, nil
 }

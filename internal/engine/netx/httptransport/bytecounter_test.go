@@ -10,7 +10,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestByteCounterFailure(t *testing.T) {
@@ -69,7 +69,7 @@ func TestByteCounterSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := iox.ReadAllContext(context.Background(), resp.Body)
+	data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func TestByteCounterSuccessWithEOF(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := iox.ReadAllContext(context.Background(), resp.Body)
+	data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

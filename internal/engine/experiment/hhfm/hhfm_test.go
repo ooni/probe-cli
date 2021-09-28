@@ -18,7 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -161,14 +161,14 @@ func TestCancelledContext(t *testing.T) {
 	if tk.Agent != "agent" {
 		t.Fatal("invalid Agent")
 	}
-	if *tk.Failure != errorsx.FailureInterrupted {
+	if *tk.Failure != netxlite.FailureInterrupted {
 		t.Fatal("invalid Failure")
 	}
 	if len(tk.Requests) != 1 {
 		t.Fatal("invalid Requests")
 	}
 	request := tk.Requests[0]
-	if *request.Failure != errorsx.FailureInterrupted {
+	if *request.Failure != netxlite.FailureInterrupted {
 		t.Fatal("invalid Requests[0].Failure")
 	}
 	if request.Request.Body.Value != "" {
@@ -480,7 +480,7 @@ func TestInvalidJSONBody(t *testing.T) {
 	if tk.Agent != "agent" {
 		t.Fatal("invalid Agent")
 	}
-	if *tk.Failure != errorsx.FailureJSONParseError {
+	if *tk.Failure != netxlite.FailureJSONParseError {
 		t.Fatal("invalid Failure")
 	}
 	if len(tk.Requests) != 1 {

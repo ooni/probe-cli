@@ -12,7 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -97,7 +97,7 @@ func TestCancelledContext(t *testing.T) {
 		t.Fatal("unexpected FailureList length")
 	}
 	for _, failure := range tk.FailureList {
-		if *failure != errorsx.FailureInterrupted {
+		if *failure != netxlite.FailureInterrupted {
 			t.Fatal("unexpected failure")
 		}
 	}

@@ -13,7 +13,6 @@ import (
 	"github.com/apex/log"
 	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -84,7 +83,7 @@ func TestHTTPTransportLogger(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			iox.ReadAllContext(context.Background(), resp.Body)
+			ReadAllContext(context.Background(), resp.Body)
 			resp.Body.Close()
 			if count < 1 {
 				t.Fatal("no logs?!")

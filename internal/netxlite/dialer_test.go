@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -254,9 +253,9 @@ func TestDialerResolver(t *testing.T) {
 			mu := &sync.Mutex{}
 			errorsList := []error{
 				errors.New("a mocked error"),
-				errorsx.NewErrWrapper(
-					errorsx.ClassifyGenericError,
-					errorsx.CloseOperation,
+				NewErrWrapper(
+					ClassifyGenericError,
+					CloseOperation,
 					io.EOF,
 				),
 			}
@@ -282,7 +281,7 @@ func TestDialerResolver(t *testing.T) {
 				},
 			}
 			conn, err := d.DialContext(context.Background(), "tcp", "dot.dns:853")
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 			if conn != nil {
@@ -296,9 +295,9 @@ func TestDialerResolver(t *testing.T) {
 			mu := &sync.Mutex{}
 			errorsList := []error{
 				errors.New("a mocked error"),
-				errorsx.NewErrWrapper(
-					errorsx.ClassifyGenericError,
-					errorsx.CloseOperation,
+				NewErrWrapper(
+					ClassifyGenericError,
+					CloseOperation,
 					errors.New("antani"),
 				),
 			}
@@ -529,7 +528,7 @@ func TestDialerErrWrapper(t *testing.T) {
 			}
 			ctx := context.Background()
 			conn, err := d.DialContext(ctx, "", "")
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 			if conn != nil {
@@ -585,7 +584,7 @@ func TestDialerErrWrapperConn(t *testing.T) {
 				},
 			}
 			count, err := conn.Read(b)
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 			if count != 0 {
@@ -624,7 +623,7 @@ func TestDialerErrWrapperConn(t *testing.T) {
 				},
 			}
 			count, err := conn.Write(b)
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 			if count != 0 {
@@ -658,7 +657,7 @@ func TestDialerErrWrapperConn(t *testing.T) {
 				},
 			}
 			err := conn.Close()
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 		})

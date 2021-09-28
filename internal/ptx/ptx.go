@@ -45,7 +45,7 @@ import (
 	"sync"
 
 	pt "git.torproject.org/pluggable-transports/goptlib.git"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // PTDialer is a generic pluggable transports dialer.
@@ -110,11 +110,11 @@ func (lst *Listener) forward(ctx context.Context, left, right net.Conn, done cha
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		iox.CopyContext(ctx, left, right)
+		netxlite.CopyContext(ctx, left, right)
 	}()
 	go func() {
 		defer wg.Done()
-		iox.CopyContext(ctx, right, left)
+		netxlite.CopyContext(ctx, right, left)
 	}()
 	wg.Wait()
 }

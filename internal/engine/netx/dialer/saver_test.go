@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -44,7 +44,7 @@ func TestSaverDialerFailure(t *testing.T) {
 	if !errors.Is(ev[0].Err, expected) {
 		t.Fatal("unexpected Err")
 	}
-	if ev[0].Name != errorsx.ConnectOperation {
+	if ev[0].Name != netxlite.ConnectOperation {
 		t.Fatal("unexpected Name")
 	}
 	if ev[0].Proto != "tcp" {

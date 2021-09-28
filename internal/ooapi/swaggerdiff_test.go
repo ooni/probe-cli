@@ -13,7 +13,7 @@ import (
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/ooapi/internal/openapi"
 )
 
@@ -37,7 +37,7 @@ func getServerModel(serverURL string) *openapi.Swagger {
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
-	data, err := iox.ReadAllContext(context.Background(), resp.Body)
+	data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		log.Fatal(err)
 	}

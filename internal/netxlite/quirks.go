@@ -3,8 +3,6 @@ package netxlite
 import (
 	"errors"
 	"strings"
-
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // This file contains weird stuff that we carried over from
@@ -36,7 +34,7 @@ func quirkReduceErrors(errorslist []error) error {
 		return nil
 	}
 	for _, err := range errorslist {
-		var wrapper *errorsx.ErrWrapper
+		var wrapper *ErrWrapper
 		if errors.As(err, &wrapper) && !strings.HasPrefix(
 			err.Error(), "unknown_failure",
 		) {

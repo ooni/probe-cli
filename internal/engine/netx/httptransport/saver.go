@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // SaverPerformanceHTTPTransport is a RoundTripper that saves
@@ -172,7 +172,7 @@ func ignoreExpectedEOF(err error, resp *http.Response) error {
 }
 
 func saverSnapRead(ctx context.Context, r io.ReadCloser, snapsize int) ([]byte, error) {
-	return iox.ReadAllContext(ctx, io.LimitReader(r, int64(snapsize)))
+	return netxlite.ReadAllContext(ctx, io.LimitReader(r, int64(snapsize)))
 }
 
 func saverCompose(data []byte, r io.ReadCloser) io.ReadCloser {

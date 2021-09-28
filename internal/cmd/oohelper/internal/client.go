@@ -13,7 +13,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -130,7 +130,7 @@ func (oo OOClient) Do(ctx context.Context, config OOConfig) (*CtrlResponse, erro
 	if resp.StatusCode != 200 {
 		return nil, ErrHTTPStatusCode
 	}
-	data, err = iox.ReadAllContext(ctx, resp.Body)
+	data, err = netxlite.ReadAllContext(ctx, resp.Body)
 	if err != nil {
 		return nil, err
 	}

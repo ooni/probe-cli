@@ -9,7 +9,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/oldhttptransport"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"golang.org/x/net/http2"
 )
 
@@ -82,10 +82,10 @@ func (t *HTTPTransport) RoundTrip(
 	resp, err = t.roundTripper.RoundTrip(req)
 	// For safety wrap the error as modelx.HTTPRoundTripOperation but this
 	// will only be used if the error chain does not contain any
-	// other major operation failure. See errorsx.ErrWrapper.
+	// other major operation failure. See netxlite.ErrWrapper.
 	err = errorsxlegacy.SafeErrWrapperBuilder{
 		Error:     err,
-		Operation: errorsx.HTTPRoundTripOperation,
+		Operation: netxlite.HTTPRoundTripOperation,
 	}.MaybeBuild()
 	return resp, err
 }

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	oohttp "github.com/ooni/oohttp"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 var (
@@ -346,8 +345,8 @@ func (h *tlsHandshakerErrWrapper) Handshake(
 ) (net.Conn, tls.ConnectionState, error) {
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	if err != nil {
-		return nil, tls.ConnectionState{}, errorsx.NewErrWrapper(
-			errorsx.ClassifyTLSHandshakeError, errorsx.TLSHandshakeOperation, err)
+		return nil, tls.ConnectionState{}, NewErrWrapper(
+			ClassifyTLSHandshakeError, TLSHandshakeOperation, err)
 	}
 	return tlsconn, state, nil
 }

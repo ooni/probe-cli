@@ -11,17 +11,16 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 const httpRequestFailed = "http_request_failed"
 
 // ErrHTTPRequestFailed indicates that the HTTP request failed.
-var ErrHTTPRequestFailed = &errorsx.ErrWrapper{
+var ErrHTTPRequestFailed = &netxlite.ErrWrapper{
 	Failure:    httpRequestFailed,
-	Operation:  errorsx.TopLevelOperation,
+	Operation:  netxlite.TopLevelOperation,
 	WrappedErr: errors.New(httpRequestFailed),
 }
 
@@ -92,7 +91,7 @@ func (r Runner) httpGet(ctx context.Context, url string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	if _, err = iox.CopyContext(ctx, io.Discard, resp.Body); err != nil {
+	if _, err = netxlite.CopyContext(ctx, io.Discard, resp.Body); err != nil {
 		return err
 	}
 	// Implementation note: we shall check for this error once we have read the

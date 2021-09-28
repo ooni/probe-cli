@@ -354,7 +354,8 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		if err != nil {
 			return c, err
 		}
-		var txp resolver.RoundTripper = resolver.NewDNSOverUDP(dialer, endpoint)
+		var txp resolver.RoundTripper = resolver.NewDNSOverUDP(
+			netxlite.NewDialerLegacyAdapter(dialer), endpoint)
 		if config.ResolveSaver != nil {
 			txp = resolver.SaverDNSTransport{
 				RoundTripper: txp,

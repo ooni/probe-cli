@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const requestnoredirect = `{
@@ -188,7 +188,7 @@ func TestWorkingAsIntended(t *testing.T) {
 			if resp.StatusCode != expect.respStatusCode {
 				t.Fatalf("unexpected status code: %+v", resp.StatusCode)
 			}
-			data, err := iox.ReadAllContext(context.Background(), resp.Body)
+			data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -220,7 +220,7 @@ func TestHandlerWithInternalServerError(t *testing.T) {
 	if resp.StatusCode != 500 {
 		t.Fatalf("unexpected status code: %+v", resp.StatusCode)
 	}
-	_, err = iox.ReadAllContext(context.Background(), resp.Body)
+	_, err = netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

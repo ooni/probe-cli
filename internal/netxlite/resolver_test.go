@@ -11,7 +11,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -493,7 +492,7 @@ func TestResolverErrWrapper(t *testing.T) {
 			}
 			ctx := context.Background()
 			addrs, err := reso.LookupHost(ctx, "")
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 			if addrs != nil {
@@ -578,7 +577,7 @@ func TestResolverErrWrapper(t *testing.T) {
 			}
 			ctx := context.Background()
 			https, err := reso.LookupHTTPS(ctx, "")
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 			if https != nil {

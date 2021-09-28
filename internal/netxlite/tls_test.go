@@ -16,7 +16,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -544,7 +543,7 @@ func TestTLSHandshakerErrWrapper(t *testing.T) {
 			}
 			ctx := context.Background()
 			conn, _, err := th.Handshake(ctx, &mocks.Conn{}, &tls.Config{})
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 			if conn != nil {

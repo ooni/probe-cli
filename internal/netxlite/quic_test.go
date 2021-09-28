@@ -12,7 +12,6 @@ import (
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
@@ -524,7 +523,7 @@ func TestQUICListenerErrWrapper(t *testing.T) {
 				},
 			}
 			conn, err := ql.Listen(&net.UDPAddr{})
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 			if conn != nil {
@@ -569,7 +568,7 @@ func TestQUICErrWrapperUDPLikeConn(t *testing.T) {
 				},
 			}
 			count, addr, err := conn.ReadFrom(p)
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 			if count != 0 {
@@ -611,7 +610,7 @@ func TestQUICErrWrapperUDPLikeConn(t *testing.T) {
 				},
 			}
 			count, err := conn.WriteTo(p, &net.UDPAddr{})
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 			if count != 0 {
@@ -645,7 +644,7 @@ func TestQUICErrWrapperUDPLikeConn(t *testing.T) {
 				},
 			}
 			err := conn.Close()
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 		})
@@ -699,7 +698,7 @@ func TestQUICDialerErrWrapper(t *testing.T) {
 			}
 			ctx := context.Background()
 			sess, err := d.DialContext(ctx, "", "", &tls.Config{}, &quic.Config{})
-			if err == nil || err.Error() != errorsx.FailureEOFError {
+			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
 			if sess != nil {

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type FakeTransport struct {
@@ -19,7 +19,7 @@ func (txp FakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return txp.Func(req)
 	}
 	if req.Body != nil {
-		iox.ReadAllContext(req.Context(), req.Body)
+		netxlite.ReadAllContext(req.Context(), req.Body)
 		req.Body.Close()
 	}
 	if txp.Err != nil {

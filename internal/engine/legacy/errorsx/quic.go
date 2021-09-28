@@ -6,7 +6,7 @@ import (
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
@@ -39,7 +39,7 @@ func (qls *ErrorWrapperQUICListener) Listen(addr *net.UDPAddr) (quicx.UDPLikeCon
 	if err != nil {
 		return nil, SafeErrWrapperBuilder{
 			Error:     err,
-			Operation: errorsx.QUICListenOperation,
+			Operation: netxlite.QUICListenOperation,
 		}.MaybeBuild()
 	}
 	return &errorWrapperUDPConn{pconn}, nil
@@ -59,7 +59,7 @@ func (c *errorWrapperUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	if err != nil {
 		return 0, SafeErrWrapperBuilder{
 			Error:     err,
-			Operation: errorsx.WriteToOperation,
+			Operation: netxlite.WriteToOperation,
 		}.MaybeBuild()
 	}
 	return count, nil
@@ -71,7 +71,7 @@ func (c *errorWrapperUDPConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	if err != nil {
 		return 0, nil, SafeErrWrapperBuilder{
 			Error:     err,
-			Operation: errorsx.ReadFromOperation,
+			Operation: netxlite.ReadFromOperation,
 		}.MaybeBuild()
 	}
 	return n, addr, nil
@@ -89,9 +89,9 @@ func (d *ErrorWrapperQUICDialer) DialContext(
 	sess, err := d.Dialer.DialContext(ctx, network, host, tlsCfg, cfg)
 	if err != nil {
 		return nil, SafeErrWrapperBuilder{
-			Classifier: errorsx.ClassifyQUICHandshakeError,
+			Classifier: netxlite.ClassifyQUICHandshakeError,
 			Error:      err,
-			Operation:  errorsx.QUICHandshakeOperation,
+			Operation:  netxlite.QUICHandshakeOperation,
 		}.MaybeBuild()
 	}
 	return sess, nil
