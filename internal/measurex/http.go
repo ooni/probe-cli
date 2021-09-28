@@ -28,8 +28,6 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"golang.org/x/net/publicsuffix"
 )
@@ -169,7 +167,7 @@ func (txp *HTTPTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 		Headers: NewArchivalHeaders(resp.Header),
 	}
 	r := io.LimitReader(resp.Body, txp.MaxBodySnapshotSize)
-	body, err := iox.ReadAllContext(req.Context(), r)
+	body, err := netxlite.ReadAllContext(req.Context(), r)
 	if errors.Is(err, io.EOF) && resp.Close {
 		err = nil // we expected to see an EOF here, so no real error
 	}
@@ -272,7 +270,7 @@ type httpClientErrWrapper struct {
 func (c *httpClientErrWrapper) Do(req *http.Request) (*http.Response, error) {
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		err = errorsx.NewTopLevelGenericErrWrapper(err)
+		err = netxlite.NewTopLevelGenericErrWrapper(err)
 	}
 	return resp, err
 }

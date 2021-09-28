@@ -20,8 +20,6 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -165,7 +163,7 @@ func (c *THClientCall) httpClientDo(req *http.Request) (*THServerResponse, error
 		return nil, errTHRequestFailed
 	}
 	r := io.LimitReader(resp.Body, thMaxAcceptableBodySize)
-	respBody, err := iox.ReadAllContext(req.Context(), r)
+	respBody, err := netxlite.ReadAllContext(req.Context(), r)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +207,7 @@ func (h *THHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	reader := io.LimitReader(req.Body, thMaxAcceptableBodySize)
-	data, err := iox.ReadAllContext(req.Context(), reader)
+	data, err := netxlite.ReadAllContext(req.Context(), reader)
 	if err != nil {
 		w.WriteHeader(400)
 		return
@@ -377,6 +375,6 @@ const thResolverURL = "https://dns.google/dns-query"
 //
 // Here we're using github.com/apex/log as the logger, which
 // is fine because this is backend only code.
-var thResolver = netxlite.WrapResolver(log.Log, dnsx.NewSerialResolver(
-	dnsx.NewDNSOverHTTPS(http.DefaultClient, thResolverURL),
+var thResolver = netxlite.WrapResolver(log.Log, netxlite.NewSerialResolver(
+	netxlite.NewDNSOverHTTPS(http.DefaultClient, thResolverURL),
 ))

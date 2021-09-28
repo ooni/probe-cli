@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // Conn is a network connection.
@@ -100,11 +99,11 @@ func (c *dialerDB) computeOddity(err error) Oddity {
 		return ""
 	}
 	switch err.Error() {
-	case errorsx.FailureGenericTimeoutError:
+	case netxlite.FailureGenericTimeoutError:
 		return OddityTCPConnectTimeout
-	case errorsx.FailureConnectionRefused:
+	case netxlite.FailureConnectionRefused:
 		return OddityTCPConnectRefused
-	case errorsx.FailureHostUnreachable:
+	case netxlite.FailureHostUnreachable:
 		return OddityTCPConnectHostUnreachable
 	default:
 		return OddityTCPConnectOher

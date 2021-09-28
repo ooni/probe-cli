@@ -14,7 +14,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // HTTPSSvc is the result returned by HTTPSSvc queries.
@@ -52,8 +51,8 @@ func (mx *Measurer) NewResolverSystem(db WritableDB, logger Logger) Resolver {
 // - address is the resolver address (e.g., "1.1.1.1:53").
 func (mx *Measurer) NewResolverUDP(db WritableDB, logger Logger, address string) Resolver {
 	return mx.WrapResolver(db, netxlite.WrapResolver(
-		logger, dnsx.NewSerialResolver(
-			mx.WrapDNSXRoundTripper(db, dnsx.NewDNSOverUDP(
+		logger, netxlite.NewSerialResolver(
+			mx.WrapDNSXRoundTripper(db, netxlite.NewDNSOverUDP(
 				mx.NewDialerWithSystemResolver(db, logger),
 				address,
 			)))),
@@ -165,11 +164,11 @@ func (r *resolverDB) computeAnswers(addrs []string, qtype string) (out []DNSLook
 func (r *resolverDB) computeOddityLookupHost(addrs []string, err error) Oddity {
 	if err != nil {
 		switch err.Error() {
-		case errorsx.FailureGenericTimeoutError:
+		case netxlite.FailureGenericTimeoutError:
 			return OddityDNSLookupTimeout
-		case errorsx.FailureDNSNXDOMAINError:
+		case netxlite.FailureDNSNXDOMAINError:
 			return OddityDNSLookupNXDOMAIN
-		case errorsx.FailureDNSRefusedError:
+		case netxlite.FailureDNSRefusedError:
 			return OddityDNSLookupRefused
 		default:
 			return OddityDNSLookupOther

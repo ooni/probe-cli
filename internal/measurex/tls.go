@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // TLSHandshaker performs TLS handshakes.
@@ -90,15 +89,15 @@ func (thx *tlsHandshakerDB) computeOddity(err error) Oddity {
 		return ""
 	}
 	switch err.Error() {
-	case errorsx.FailureGenericTimeoutError:
+	case netxlite.FailureGenericTimeoutError:
 		return OddityTLSHandshakeTimeout
-	case errorsx.FailureConnectionReset:
+	case netxlite.FailureConnectionReset:
 		return OddityTLSHandshakeReset
-	case errorsx.FailureEOFError:
+	case netxlite.FailureEOFError:
 		return OddityTLSHandshakeUnexpectedEOF
-	case errorsx.FailureSSLInvalidHostname:
+	case netxlite.FailureSSLInvalidHostname:
 		return OddityTLSHandshakeInvalidHostname
-	case errorsx.FailureSSLUnknownAuthority:
+	case netxlite.FailureSSLUnknownAuthority:
 		return OddityTLSHandshakeUnknownAuthority
 	default:
 		return OddityTLSHandshakeOther

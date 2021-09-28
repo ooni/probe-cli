@@ -14,7 +14,6 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
@@ -162,9 +161,9 @@ func (qh *quicDialerDB) computeOddity(err error) Oddity {
 		return ""
 	}
 	switch err.Error() {
-	case errorsx.FailureGenericTimeoutError:
+	case netxlite.FailureGenericTimeoutError:
 		return OddityQUICHandshakeTimeout
-	case errorsx.FailureHostUnreachable:
+	case netxlite.FailureHostUnreachable:
 		return OddityQUICHandshakeHostUnreachable
 	default:
 		return OddityQUICHandshakeOther

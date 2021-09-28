@@ -10,22 +10,22 @@ import (
 	"context"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // DNSXRoundTripper is a transport for sending raw DNS queries
 // and receiving raw DNS replies. The internal/netxlite/dnsx
 // package implements a bunch of these transports.
-type DNSXRoundTripper = dnsx.RoundTripper
+type DNSTransport = netxlite.DNSTransport
 
 // WrapDNSXRoundTripper creates a new DNSXRoundTripper that
 // saves events into the given WritableDB.
-func (mx *Measurer) WrapDNSXRoundTripper(db WritableDB, rtx dnsx.RoundTripper) DNSXRoundTripper {
-	return &dnsxRoundTripperDB{db: db, RoundTripper: rtx, begin: mx.Begin}
+func (mx *Measurer) WrapDNSXRoundTripper(db WritableDB, rtx netxlite.DNSTransport) DNSTransport {
+	return &dnsxRoundTripperDB{db: db, DNSTransport: rtx, begin: mx.Begin}
 }
 
 type dnsxRoundTripperDB struct {
-	dnsx.RoundTripper
+	netxlite.DNSTransport
 	begin time.Time
 	db    WritableDB
 }
@@ -45,11 +45,11 @@ type DNSRoundTripEvent struct {
 
 func (txp *dnsxRoundTripperDB) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
 	started := time.Since(txp.begin).Seconds()
-	reply, err := txp.RoundTripper.RoundTrip(ctx, query)
+	reply, err := txp.DNSTransport.RoundTrip(ctx, query)
 	finished := time.Since(txp.begin).Seconds()
 	txp.db.InsertIntoDNSRoundTrip(&DNSRoundTripEvent{
-		Network:  txp.RoundTripper.Network(),
-		Address:  txp.RoundTripper.Address(),
+		Network:  txp.DNSTransport.Network(),
+		Address:  txp.DNSTransport.Address(),
 		Query:    NewArchivalBinaryData(query),
 		Started:  started,
 		Finished: finished,
