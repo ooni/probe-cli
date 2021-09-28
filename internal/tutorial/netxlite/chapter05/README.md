@@ -86,6 +86,8 @@ func fatal(err error) {
 
 ## Running the code
 
+### Vanilla run
+
 You can now run this code as follows:
 
 ```bash
@@ -94,13 +96,15 @@ go run -race ./internal/tutorial/netxlite/chapter05
 
 You will see debug logs describing what is happening along with timing info.
 
-Now, here are a few possible follow-up runs:
+### NXDOMAIN error
 
 ```bash
 go run -race ./internal/tutorial/netxlite/chapter05 -hostname antani.ooni.io
 ```
 
 should cause a `dns_nxdomain_error`, because the domain does not exist.
+
+### Timeout
 
 ```bash
 go run -race ./internal/tutorial/netxlite/chapter05 -timeout 10us

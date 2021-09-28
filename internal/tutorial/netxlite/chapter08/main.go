@@ -130,6 +130,8 @@ func fatal(err error) {
 //
 // ## Running the code
 //
+// ### Vanilla run
+//
 // You can now run this code as follows:
 //
 // ```bash
@@ -138,14 +140,16 @@ func fatal(err error) {
 //
 // You will see debug logs describing what is happening along with timing info.
 //
-// Now, here are a few possible follow-up runs:
+// ### QUIC handshake timeout
 //
 // ```bash
 // go run -race ./internal/tutorial/netxlite/chapter08 -address 8.8.4.4:1
 // ```
 //
-// should cause a connect timeout error. Try lowering the timout adding, e.g.,
+// should cause a QUIC handshake timeout error. Try lowering the timout adding, e.g.,
 // the `-timeout 5s` flag to the command line.
+//
+// ### SNI mismatch
 //
 // ```bash
 // go run -race ./internal/tutorial/netxlite/chapter08 -sni example.com

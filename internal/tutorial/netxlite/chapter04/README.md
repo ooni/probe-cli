@@ -128,6 +128,8 @@ func fatal(err error) {
 
 ## Running the code
 
+### Vanilla run
+
 You can now run this code as follows:
 
 ```bash
@@ -136,7 +138,7 @@ go run -race ./internal/tutorial/netxlite/chapter04
 
 You will see debug logs describing what is happening along with timing info.
 
-Now, here are a few possible follow-up runs:
+### QUIC handshake timeout
 
 ```bash
 go run -race ./internal/tutorial/netxlite/chapter04 -address 8.8.4.4:1
@@ -144,6 +146,8 @@ go run -race ./internal/tutorial/netxlite/chapter04 -address 8.8.4.4:1
 
 should cause a QUIC timeout error. Try lowering the timout adding, e.g.,
 the `-timeout 5s` flag to the command line.
+
+### SNI mismatch
 
 ```bash
 go run -race ./internal/tutorial/netxlite/chapter04 -sni example.com

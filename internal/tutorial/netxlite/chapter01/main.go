@@ -1,6 +1,6 @@
 // -=-=- StartHere -=-=-
 //
-// # Chapter I: establisghing TCP connections
+// # Chapter I: establishing TCP connections
 //
 // In this chapter we will write together a `main.go` file that
 // uses netxlite to establish a new TCP connection.
@@ -134,6 +134,8 @@ func fatal(err error) {
 //
 // ## Running the code
 //
+// ### Vanilla run
+//
 // You can now run this code as follows:
 //
 // ```bash
@@ -142,7 +144,7 @@ func fatal(err error) {
 //
 // You will see debug logs describing what is happening along with timing info.
 //
-// Now, here are a few possible follow-up runs:
+// ### Connection timeout
 //
 // ```bash
 // go run -race ./internal/tutorial/netxlite/chapter01 -address 8.8.4.4:1
@@ -150,6 +152,8 @@ func fatal(err error) {
 //
 // should cause a connect timeout error. Try lowering the timout adding, e.g.,
 // the `-timeout 5s` flag to the command line.
+//
+// ### Connection refused
 //
 // ```bash
 // go run -race ./internal/tutorial/netxlite/chapter01 -address '[::1]:1'

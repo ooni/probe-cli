@@ -178,6 +178,8 @@ func fatal(err error) {
 //
 // ## Running the code
 //
+// ### Vanilla run
+//
 // You can now run this code as follows:
 //
 // ```bash
@@ -186,7 +188,7 @@ func fatal(err error) {
 //
 // You will see debug logs describing what is happening along with timing info.
 //
-// Now, here are a few possible follow-up runs:
+// ### Connect timeout
 //
 // ```bash
 // go run -race ./internal/tutorial/netxlite/chapter02 -address 8.8.4.4:1
@@ -195,6 +197,8 @@ func fatal(err error) {
 // should cause a connect timeout error. Try lowering the timout adding, e.g.,
 // the `-timeout 5s` flag to the command line.
 //
+// ### Connection refused
+//
 // ```bash
 // go run -race ./internal/tutorial/netxlite/chapter02 -address '[::1]:1'
 // ```
@@ -202,12 +206,48 @@ func fatal(err error) {
 // should give you a connection refused error in most cases. (We are quoting
 // the `::1` IPv6 address using `[` and `]` here.)
 //
+// ### SNI mismatch
+//
 // ```bash
 // go run -race ./internal/tutorial/netxlite/chapter02 -sni example.com
 // ```
 //
 // should give you a TLS invalid hostname error (for historical reasons
 // named `ssl_invalid_hostname`).
+//
+// ### TLS handshake reset
+//
+// If you're on Linux, build Jafar (`go build -v ./internal/cmd/jafar`)
+// and then run:
+//
+// ```bash
+// sudo ./jafar -iptables-reset-keyword dns.google
+// ```
+//
+// Then run in another terminal
+//
+// ```bash
+// go run ./internal/tutorial/netxlite/chapter02
+// ```
+//
+// Then you can interrupt Jafar using ^C.
+//
+// ### TLS handshake timeout
+//
+// If you're on Linux, build Jafar (`go build -v ./internal/cmd/jafar`)
+// and then run:
+//
+// ```bash
+// sudo ./jafar -iptables-drop-keyword dns.google
+// ```
+//
+// Then run in another terminal
+//
+// ```bash
+// go run ./internal/tutorial/netxlite/chapter02
+// ```
+//
+// Then you can interrupt Jafar using ^C.
 //
 // ## Conclusions
 //

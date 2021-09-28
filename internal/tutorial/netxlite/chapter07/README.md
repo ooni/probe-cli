@@ -152,6 +152,8 @@ func fatal(err error) {
 
 ## Running the code
 
+### Vanilla run
+
 You can now run this code as follows:
 
 ```bash
@@ -160,7 +162,7 @@ go run -race ./internal/tutorial/netxlite/chapter07
 
 You will see debug logs describing what is happening along with timing info.
 
-Now, here are a few possible follow-up runs:
+### Connect timeout
 
 ```bash
 go run -race ./internal/tutorial/netxlite/chapter07 -address 8.8.4.4:1
@@ -169,12 +171,16 @@ go run -race ./internal/tutorial/netxlite/chapter07 -address 8.8.4.4:1
 should cause a connect timeout error. Try lowering the timout adding, e.g.,
 the `-timeout 5s` flag to the command line.
 
+### Connection refused
+
 ```bash
 go run -race ./internal/tutorial/netxlite/chapter07 -address '[::1]:1'
 ```
 
 should give you a connection refused error in most cases. (We are quoting
 the `::1` IPv6 address using `[` and `]` here.)
+
+### SNI mismatch
 
 ```bash
 go run -race ./internal/tutorial/netxlite/chapter07 -sni example.com
