@@ -28,6 +28,10 @@ func TestMeasurementSubmissionFailure(t *testing.T) {
 }
 
 func TestRunnerMaybeLookupLocationFailure(t *testing.T) {
+	if testing.Short() {
+		// TODO(https://github.com/ooni/probe-cli/pull/518)
+		t.Skip("skip test in short mode")
+	}
 	out := make(chan *Event)
 	settings := &Settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
@@ -54,7 +58,7 @@ func TestRunnerMaybeLookupLocationFailure(t *testing.T) {
 				}
 			case "status.queued", "status.started", "status.end":
 			default:
-				panic(fmt.Sprintf("unexpected key: %s", ev.Key))
+				panic(fmt.Sprintf("unexpected key: %s - %+v", ev.Key, ev.Value))
 			}
 		}
 		seench <- seen
