@@ -24,7 +24,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"gitlab.com/yawning/obfs4.git/transports"
 	obfs4base "gitlab.com/yawning/obfs4.git/transports/base"
@@ -327,7 +327,7 @@ func HTTPDo(
 				config.MaxResponseBodySnapSize,
 			),
 		)
-		data, err := iox.ReadAllContext(ctx, reader)
+		data, err := netxlite.ReadAllContext(ctx, reader)
 		mu.Lock()
 		results.BodySnap, results.Error = data, err
 		mu.Unlock()

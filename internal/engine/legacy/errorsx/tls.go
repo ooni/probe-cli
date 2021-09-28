@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"net"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // TLSHandshaker is the generic TLS handshaker
@@ -25,9 +25,9 @@ func (h *ErrorWrapperTLSHandshaker) Handshake(
 ) (net.Conn, tls.ConnectionState, error) {
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	err = SafeErrWrapperBuilder{
-		Classifier: errorsx.ClassifyTLSHandshakeError,
+		Classifier: netxlite.ClassifyTLSHandshakeError,
 		Error:      err,
-		Operation:  errorsx.TLSHandshakeOperation,
+		Operation:  netxlite.TLSHandshakeOperation,
 	}.MaybeBuild()
 	return tlsconn, state, err
 }

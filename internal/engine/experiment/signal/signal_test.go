@@ -9,7 +9,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -85,7 +85,7 @@ func TestUpdate(t *testing.T) {
 		},
 		TestKeys: urlgetter.TestKeys{
 			Failure: (func() *string {
-				s := errorsx.FailureEOFError
+				s := netxlite.FailureEOFError
 				return &s
 			})(),
 		},
@@ -93,7 +93,7 @@ func TestUpdate(t *testing.T) {
 	if tk.SignalBackendStatus != "blocked" {
 		t.Fatal("SignalBackendStatus should be blocked")
 	}
-	if *tk.SignalBackendFailure != errorsx.FailureEOFError {
+	if *tk.SignalBackendFailure != netxlite.FailureEOFError {
 		t.Fatal("invalid SignalBackendError")
 	}
 }

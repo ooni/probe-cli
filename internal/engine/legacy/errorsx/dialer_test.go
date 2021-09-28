@@ -7,7 +7,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -19,14 +19,14 @@ func TestErrorWrapperDialerFailure(t *testing.T) {
 		},
 	}}
 	conn, err := d.DialContext(ctx, "tcp", "www.google.com:443")
-	var ew *errorsx.ErrWrapper
+	var ew *netxlite.ErrWrapper
 	if !errors.As(err, &ew) {
 		t.Fatal("cannot convert to ErrWrapper")
 	}
-	if ew.Operation != errorsx.ConnectOperation {
+	if ew.Operation != netxlite.ConnectOperation {
 		t.Fatal("unexpected operation", ew.Operation)
 	}
-	if ew.Failure != errorsx.FailureEOFError {
+	if ew.Failure != netxlite.FailureEOFError {
 		t.Fatal("unexpected failure", ew.Failure)
 	}
 	if !errors.Is(ew.WrappedErr, io.EOF) {
@@ -68,14 +68,14 @@ func TestErrorWrapperConnReadFailure(t *testing.T) {
 	}
 	buf := make([]byte, 1024)
 	cnt, err := c.Read(buf)
-	var ew *errorsx.ErrWrapper
+	var ew *netxlite.ErrWrapper
 	if !errors.As(err, &ew) {
 		t.Fatal("cannot cast error to ErrWrapper")
 	}
-	if ew.Operation != errorsx.ReadOperation {
+	if ew.Operation != netxlite.ReadOperation {
 		t.Fatal("invalid operation", ew.Operation)
 	}
-	if ew.Failure != errorsx.FailureEOFError {
+	if ew.Failure != netxlite.FailureEOFError {
 		t.Fatal("invalid failure", ew.Failure)
 	}
 	if !errors.Is(ew.WrappedErr, io.EOF) {
@@ -114,14 +114,14 @@ func TestErrorWrapperConnWriteFailure(t *testing.T) {
 	}
 	buf := make([]byte, 1024)
 	cnt, err := c.Write(buf)
-	var ew *errorsx.ErrWrapper
+	var ew *netxlite.ErrWrapper
 	if !errors.As(err, &ew) {
 		t.Fatal("cannot cast error to ErrWrapper")
 	}
-	if ew.Operation != errorsx.WriteOperation {
+	if ew.Operation != netxlite.WriteOperation {
 		t.Fatal("invalid operation", ew.Operation)
 	}
-	if ew.Failure != errorsx.FailureEOFError {
+	if ew.Failure != netxlite.FailureEOFError {
 		t.Fatal("invalid failure", ew.Failure)
 	}
 	if !errors.Is(ew.WrappedErr, io.EOF) {
@@ -159,14 +159,14 @@ func TestErrorWrapperConnCloseFailure(t *testing.T) {
 		},
 	}
 	err := c.Close()
-	var ew *errorsx.ErrWrapper
+	var ew *netxlite.ErrWrapper
 	if !errors.As(err, &ew) {
 		t.Fatal("cannot cast error to ErrWrapper")
 	}
-	if ew.Operation != errorsx.CloseOperation {
+	if ew.Operation != netxlite.CloseOperation {
 		t.Fatal("invalid operation", ew.Operation)
 	}
-	if ew.Failure != errorsx.FailureEOFError {
+	if ew.Failure != netxlite.FailureEOFError {
 		t.Fatal("invalid failure", ew.Failure)
 	}
 	if !errors.Is(ew.WrappedErr, io.EOF) {

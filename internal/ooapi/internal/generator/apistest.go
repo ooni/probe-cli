@@ -231,7 +231,7 @@ func (d *Descriptor) genTestRoundTrip(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 	fmt.Fprint(sb, "\th.count++\n")
 	fmt.Fprint(sb, "\tif r.Body != nil {\n")
-	fmt.Fprint(sb, "\t\tdata, err := iox.ReadAllContext(r.Context(), r.Body)\n")
+	fmt.Fprint(sb, "\t\tdata, err := netxlite.ReadAllContext(r.Context(), r.Body)\n")
 	fmt.Fprint(sb, "\t\tif err != nil {\n")
 	fmt.Fprintf(sb, "\t\t\tw.WriteHeader(400)\n")
 	fmt.Fprintf(sb, "\t\t\treturn\n")
@@ -451,7 +451,7 @@ func GenAPIsTestGo(file string) {
 	fmt.Fprint(&sb, "\t\"sync\"\n")
 	fmt.Fprint(&sb, "\n")
 	fmt.Fprint(&sb, "\t\"github.com/google/go-cmp/cmp\"\n")
-	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/netxlite/iox\"\n")
+	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/netxlite\"\n")
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel\"\n")
 	fmt.Fprint(&sb, ")\n")
 	for _, desc := range Descriptors {

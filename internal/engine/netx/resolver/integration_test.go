@@ -70,14 +70,14 @@ func TestNewResolverSystem(t *testing.T) {
 
 func TestNewResolverUDPAddress(t *testing.T) {
 	reso := resolver.NewSerialResolver(
-		resolver.NewDNSOverUDP(new(net.Dialer), "8.8.8.8:53"))
+		resolver.NewDNSOverUDP(netxlite.NewDialerLegacyAdapter(&net.Dialer{}), "8.8.8.8:53"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverUDPDomain(t *testing.T) {
 	reso := resolver.NewSerialResolver(
-		resolver.NewDNSOverUDP(new(net.Dialer), "dns.google.com:53"))
+		resolver.NewDNSOverUDP(netxlite.NewDialerLegacyAdapter(&net.Dialer{}), "dns.google.com:53"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }

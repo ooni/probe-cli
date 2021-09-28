@@ -11,7 +11,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
@@ -111,7 +111,7 @@ func (tk *TestKeys) ComputeEndpointStatus(v urlgetter.MultiOutput, dns, tcp **bo
 	// start where all is unknown
 	*dns, *tcp = nil, nil
 	// process DNS first
-	if v.TestKeys.FailedOperation != nil && *v.TestKeys.FailedOperation == errorsx.ResolveOperation {
+	if v.TestKeys.FailedOperation != nil && *v.TestKeys.FailedOperation == netxlite.ResolveOperation {
 		tk.FacebookDNSBlocking = &trueValue
 		*dns = &falseValue
 		return // we know that the DNS has failed
@@ -127,7 +127,7 @@ func (tk *TestKeys) ComputeEndpointStatus(v urlgetter.MultiOutput, dns, tcp **bo
 	}
 	*dns = &trueValue
 	// now process connect
-	if v.TestKeys.FailedOperation != nil && *v.TestKeys.FailedOperation == errorsx.ConnectOperation {
+	if v.TestKeys.FailedOperation != nil && *v.TestKeys.FailedOperation == netxlite.ConnectOperation {
 		tk.FacebookTCPBlocking = &trueValue
 		*tcp = &falseValue
 		return // because connect failed

@@ -10,8 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestSuccess(t *testing.T) {
@@ -38,7 +37,7 @@ func TestSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = iox.ReadAllContext(context.Background(), resp.Body); err != nil {
+	if _, err = netxlite.ReadAllContext(context.Background(), resp.Body); err != nil {
 		t.Fatal(err)
 	}
 	if err = resp.Body.Close(); err != nil {
@@ -78,10 +77,10 @@ func TestBogonResolutionNotBroken(t *testing.T) {
 		Logger:       log.Log,
 	})
 	addrs, err := r.LookupHost(context.Background(), "www.google.com")
-	if !errors.Is(err, errorsx.ErrDNSBogon) {
+	if !errors.Is(err, netxlite.ErrDNSBogon) {
 		t.Fatal("not the error we expected")
 	}
-	if err.Error() != errorsx.FailureDNSBogonError {
+	if err.Error() != netxlite.FailureDNSBogonError {
 		t.Fatal("error not correctly wrapped")
 	}
 	if len(addrs) > 0 {

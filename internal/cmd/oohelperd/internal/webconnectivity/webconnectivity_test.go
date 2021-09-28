@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
 )
 
 const simplerequest = `{
@@ -126,7 +125,7 @@ func TestWorkingAsIntended(t *testing.T) {
 			if v := resp.Header.Get("content-type"); v != expect.respContentType {
 				t.Fatalf("unexpected content-type: %s", v)
 			}
-			data, err := iox.ReadAllContext(context.Background(), resp.Body)
+			data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 			if err != nil {
 				t.Fatal(err)
 			}

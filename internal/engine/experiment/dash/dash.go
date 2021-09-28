@@ -18,8 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
@@ -87,7 +86,7 @@ func (r runner) NewHTTPRequest(meth, url string, body io.Reader) (*http.Request,
 }
 
 func (r runner) ReadAllContext(ctx context.Context, reader io.Reader) ([]byte, error) {
-	return iox.ReadAllContext(ctx, reader)
+	return netxlite.ReadAllContext(ctx, reader)
 }
 
 func (r runner) Scheme() string {
@@ -172,7 +171,7 @@ func (r runner) measure(
 		// of the latest connect time. We should have one sample in most
 		// cases, because the connection should be persistent.
 		for _, ev := range r.saver.Read() {
-			if ev.Name == errorsx.ConnectOperation {
+			if ev.Name == netxlite.ConnectOperation {
 				connectTime = ev.Duration.Seconds()
 			}
 		}

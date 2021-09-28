@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestResolverIsBogon(t *testing.T) {
@@ -29,7 +29,7 @@ func TestBogonAwareResolverWithBogon(t *testing.T) {
 		Resolver: resolver.NewFakeResolverWithResult([]string{"127.0.0.1"}),
 	}
 	addrs, err := r.LookupHost(context.Background(), "dns.google.com")
-	if !errors.Is(err, errorsx.ErrDNSBogon) {
+	if !errors.Is(err, netxlite.ErrDNSBogon) {
 		t.Fatal("not the error we expected")
 	}
 	if len(addrs) > 0 {

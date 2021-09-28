@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -27,7 +27,7 @@ func dorequest(ctx context.Context, url string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := iox.CopyContext(ctx, io.Discard, resp.Body); err != nil {
+	if _, err := netxlite.CopyContext(ctx, io.Discard, resp.Body); err != nil {
 		return err
 	}
 	return resp.Body.Close()

@@ -8,7 +8,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
@@ -30,14 +30,14 @@ func TestErrorWrapperTLSHandshakerFailure(t *testing.T) {
 	if conn != nil {
 		t.Fatal("expected nil con here")
 	}
-	var errWrapper *errorsx.ErrWrapper
+	var errWrapper *netxlite.ErrWrapper
 	if !errors.As(err, &errWrapper) {
 		t.Fatal("cannot cast to ErrWrapper")
 	}
-	if errWrapper.Failure != errorsx.FailureEOFError {
+	if errWrapper.Failure != netxlite.FailureEOFError {
 		t.Fatal("unexpected Failure")
 	}
-	if errWrapper.Operation != errorsx.TLSHandshakeOperation {
+	if errWrapper.Operation != netxlite.TLSHandshakeOperation {
 		t.Fatal("unexpected Operation")
 	}
 }

@@ -65,8 +65,8 @@ run `go mod tidy` to minimize such changes.
 
 - use `./internal/fsx.OpenFile` when you need to open a file
 
-- use `./internal/netxlite/iox.ReadAllContext` instead of `io.ReadAll`
-and `./internal/netxlite/iox.CopyContext` instead of `io.Copy`
+- use `./internal/netxlite.ReadAllContext` instead of `io.ReadAll`
+and `./internal/netxlite.CopyContext` instead of `io.Copy`
 
 ## Code testing requirements
 

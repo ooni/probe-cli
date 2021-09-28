@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestGood(t *testing.T) {
@@ -17,7 +17,7 @@ func TestGood(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp.Body.Close()
-	_, err = iox.ReadAllContext(context.Background(), resp.Body)
+	_, err = netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

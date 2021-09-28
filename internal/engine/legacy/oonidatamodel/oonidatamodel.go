@@ -20,7 +20,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 // ExtSpec describes a data format extension
@@ -418,7 +417,7 @@ func NewNetworkEventsList(results oonitemplates.Results) NetworkEventsList {
 			out = append(out, &NetworkEvent{
 				Address:   in.Connect.RemoteAddress,
 				Failure:   makeFailure(in.Connect.Error),
-				Operation: errorsx.ConnectOperation,
+				Operation: netxlite.ConnectOperation,
 				T:         in.Connect.DurationSinceBeginning.Seconds(),
 			})
 			// fallthrough
@@ -426,7 +425,7 @@ func NewNetworkEventsList(results oonitemplates.Results) NetworkEventsList {
 		if in.Read != nil {
 			out = append(out, &NetworkEvent{
 				Failure:   makeFailure(in.Read.Error),
-				Operation: errorsx.ReadOperation,
+				Operation: netxlite.ReadOperation,
 				NumBytes:  in.Read.NumBytes,
 				T:         in.Read.DurationSinceBeginning.Seconds(),
 			})
@@ -435,7 +434,7 @@ func NewNetworkEventsList(results oonitemplates.Results) NetworkEventsList {
 		if in.Write != nil {
 			out = append(out, &NetworkEvent{
 				Failure:   makeFailure(in.Write.Error),
-				Operation: errorsx.WriteOperation,
+				Operation: netxlite.WriteOperation,
 				NumBytes:  in.Write.NumBytes,
 				T:         in.Write.DurationSinceBeginning.Seconds(),
 			})

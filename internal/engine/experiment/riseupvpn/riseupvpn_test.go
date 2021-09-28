@@ -17,7 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
@@ -270,11 +270,11 @@ func TestUpdateWithMixedResults(t *testing.T) {
 		},
 		TestKeys: urlgetter.TestKeys{
 			FailedOperation: (func() *string {
-				s := errorsx.HTTPRoundTripOperation
+				s := netxlite.HTTPRoundTripOperation
 				return &s
 			})(),
 			Failure: (func() *string {
-				s := errorsx.FailureEOFError
+				s := netxlite.FailureEOFError
 				return &s
 			})(),
 		},
@@ -291,7 +291,7 @@ func TestUpdateWithMixedResults(t *testing.T) {
 	if tk.APIStatus != "blocked" {
 		t.Fatal("ApiStatus should be blocked")
 	}
-	if *tk.APIFailure != errorsx.FailureEOFError {
+	if *tk.APIFailure != netxlite.FailureEOFError {
 		t.Fatal("invalid ApiFailure")
 	}
 	if tk.FailingGateways != nil {
@@ -730,7 +730,7 @@ func generateMockGetter(requestResponse map[string]string, responseStatus map[st
 			responseBody = ""
 			eofError := io.EOF.Error()
 			failure = &eofError
-			connectOperation := errorsx.ConnectOperation
+			connectOperation := netxlite.ConnectOperation
 			failedOperation = &connectOperation
 			responseStatus = 0
 		}

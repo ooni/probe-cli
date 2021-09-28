@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/uncensored"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestPass(t *testing.T) {
@@ -102,7 +102,7 @@ func checkrequest(
 	if !foundProduct && expectVia {
 		t.Fatal("Via header not found")
 	}
-	proxiedData, err := iox.ReadAllContext(context.Background(), resp.Body)
+	proxiedData, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func checkbody(t *testing.T, proxiedData []byte, host string) {
 		t.Fatal("unexpected status code")
 	}
 	defer resp.Body.Close()
-	data, err := iox.ReadAllContext(context.Background(), resp.Body)
+	data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

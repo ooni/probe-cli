@@ -8,7 +8,6 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 )
 
 func TestErrorWrapperQUICDialerInvalidCertificate(t *testing.T) {
@@ -31,7 +30,7 @@ func TestErrorWrapperQUICDialerInvalidCertificate(t *testing.T) {
 	if sess != nil {
 		t.Fatal("expected nil sess here")
 	}
-	if err.Error() != errorsx.FailureSSLInvalidCertificate {
+	if err.Error() != netxlite.FailureSSLInvalidCertificate {
 		t.Fatal("unexpected failure")
 	}
 }

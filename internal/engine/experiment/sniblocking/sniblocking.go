@@ -15,7 +15,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
@@ -64,24 +64,24 @@ func (tk *TestKeys) classify() string {
 		return classSuccessGotServerHello
 	}
 	switch *tk.Target.Failure {
-	case errorsx.FailureConnectionRefused:
+	case netxlite.FailureConnectionRefused:
 		return classAnomalyTestHelperUnreachable
-	case errorsx.FailureConnectionReset:
+	case netxlite.FailureConnectionReset:
 		return classInterferenceReset
-	case errorsx.FailureDNSNXDOMAINError:
+	case netxlite.FailureDNSNXDOMAINError:
 		return classAnomalyTestHelperUnreachable
-	case errorsx.FailureEOFError:
+	case netxlite.FailureEOFError:
 		return classInterferenceClosed
-	case errorsx.FailureGenericTimeoutError:
+	case netxlite.FailureGenericTimeoutError:
 		if tk.Control.Failure != nil {
 			return classAnomalyTestHelperUnreachable
 		}
 		return classAnomalyTimeout
-	case errorsx.FailureSSLInvalidCertificate:
+	case netxlite.FailureSSLInvalidCertificate:
 		return classInterferenceInvalidCertificate
-	case errorsx.FailureSSLInvalidHostname:
+	case netxlite.FailureSSLInvalidHostname:
 		return classSuccessGotServerHello
-	case errorsx.FailureSSLUnknownAuthority:
+	case netxlite.FailureSSLUnknownAuthority:
 		return classInterferenceUnknownAuthority
 	}
 	return classAnomalyUnexpectedFailure
@@ -117,8 +117,8 @@ func (m *Measurer) measureone(
 	select {
 	case <-time.After(sleeptime):
 	case <-ctx.Done():
-		s := errorsx.FailureInterrupted
-		failedop := errorsx.TopLevelOperation
+		s := netxlite.FailureInterrupted
+		failedop := netxlite.TopLevelOperation
 		return Subresult{
 			TestKeys: urlgetter.TestKeys{
 				FailedOperation: &failedop,

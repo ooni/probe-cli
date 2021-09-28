@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
@@ -128,7 +128,7 @@ func (c Client) query(ctx context.Context, path string) (resultRecord, error) {
 	if resp.StatusCode != 200 {
 		return resultRecord{}, fmt.Errorf("%w: %d", ErrRequestFailed, resp.StatusCode)
 	}
-	data, err := iox.ReadAllContext(ctx, resp.Body)
+	data, err := netxlite.ReadAllContext(ctx, resp.Body)
 	if err != nil {
 		return resultRecord{}, err
 	}

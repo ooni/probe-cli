@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
@@ -143,14 +143,14 @@ func TestErrorWrapperQUICDialerFailure(t *testing.T) {
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("expected another error here")
 	}
-	var errWrapper *errorsx.ErrWrapper
+	var errWrapper *netxlite.ErrWrapper
 	if !errors.As(err, &errWrapper) {
 		t.Fatal("cannot cast to ErrWrapper")
 	}
-	if errWrapper.Operation != errorsx.QUICHandshakeOperation {
+	if errWrapper.Operation != netxlite.QUICHandshakeOperation {
 		t.Fatal("unexpected Operation")
 	}
-	if errWrapper.Failure != errorsx.FailureEOFError {
+	if errWrapper.Failure != netxlite.FailureEOFError {
 		t.Fatal("unexpected failure")
 	}
 }

@@ -13,7 +13,7 @@ import (
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -42,7 +42,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	reader := &io.LimitedReader{R: req.Body, N: maxAcceptableBody}
-	data, err := iox.ReadAllContext(req.Context(), reader)
+	data, err := netxlite.ReadAllContext(req.Context(), reader)
 	if err != nil {
 		w.WriteHeader(400)
 		return
