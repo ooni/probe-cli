@@ -9,8 +9,8 @@ import (
 // HTTPSSvc is an HTTPSSvc reply.
 type HTTPSSvc = model.HTTPSSvc
 
-// The Decoder decodes DNS replies.
-type Decoder interface {
+// The DNSDecoder decodes DNS replies.
+type DNSDecoder interface {
 	// DecodeLookupHost decodes an A or AAAA reply.
 	DecodeLookupHost(qtype uint16, data []byte) ([]string, error)
 
@@ -18,10 +18,10 @@ type Decoder interface {
 	DecodeHTTPS(data []byte) (*HTTPSSvc, error)
 }
 
-// MiekgDecoder uses github.com/miekg/dns to implement the Decoder.
-type MiekgDecoder struct{}
+// DNSDecoderMiekg uses github.com/miekg/dns to implement the Decoder.
+type DNSDecoderMiekg struct{}
 
-func (d *MiekgDecoder) parseReply(data []byte) (*dns.Msg, error) {
+func (d *DNSDecoderMiekg) parseReply(data []byte) (*dns.Msg, error) {
 	reply := new(dns.Msg)
 	if err := reply.Unpack(data); err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (d *MiekgDecoder) parseReply(data []byte) (*dns.Msg, error) {
 	}
 }
 
-func (d *MiekgDecoder) DecodeHTTPS(data []byte) (*HTTPSSvc, error) {
+func (d *DNSDecoderMiekg) DecodeHTTPS(data []byte) (*HTTPSSvc, error) {
 	reply, err := d.parseReply(data)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (d *MiekgDecoder) DecodeHTTPS(data []byte) (*HTTPSSvc, error) {
 	return out, nil
 }
 
-func (d *MiekgDecoder) DecodeLookupHost(qtype uint16, data []byte) ([]string, error) {
+func (d *DNSDecoderMiekg) DecodeLookupHost(qtype uint16, data []byte) ([]string, error) {
 	reply, err := d.parseReply(data)
 	if err != nil {
 		return nil, err
@@ -97,4 +97,4 @@ func (d *MiekgDecoder) DecodeLookupHost(qtype uint16, data []byte) ([]string, er
 	return addrs, nil
 }
 
-var _ Decoder = &MiekgDecoder{}
+var _ DNSDecoder = &DNSDecoderMiekg{}

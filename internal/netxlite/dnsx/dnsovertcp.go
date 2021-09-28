@@ -99,4 +99,4 @@ func (t *DNSOverTCP) CloseIdleConnections() {
 	// nothing to do
 }
 
-var _ RoundTripper = &DNSOverTCP{}
+var _ DNSTransport = &DNSOverTCP{}

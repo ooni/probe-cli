@@ -7,10 +7,10 @@ import (
 	"github.com/miekg/dns"
 )
 
-func TestDecoder(t *testing.T) {
+func TestDNSDecoder(t *testing.T) {
 	t.Run("DecodeLookupHost", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		e := &Decoder{
+		e := &DNSDecoder{
 			MockDecodeLookupHost: func(qtype uint16, reply []byte) ([]string, error) {
 				return nil, expected
 			},
@@ -26,7 +26,7 @@ func TestDecoder(t *testing.T) {
 
 	t.Run("DecodeHTTPS", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		e := &Decoder{
+		e := &DNSDecoder{
 			MockDecodeHTTPS: func(reply []byte) (*HTTPSSvc, error) {
 				return nil, expected
 			},

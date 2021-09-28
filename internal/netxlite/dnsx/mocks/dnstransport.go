@@ -2,8 +2,8 @@ package mocks
 
 import "context"
 
-// RoundTripper allows mocking dnsx.RoundTripper.
-type RoundTripper struct {
+// DNSTransport allows mocking dnsx.DNSTransport.
+type DNSTransport struct {
 	MockRoundTrip func(ctx context.Context, query []byte) (reply []byte, err error)
 
 	MockRequiresPadding func() bool
@@ -16,26 +16,26 @@ type RoundTripper struct {
 }
 
 // RoundTrip calls MockRoundTrip.
-func (txp *RoundTripper) RoundTrip(ctx context.Context, query []byte) (reply []byte, err error) {
+func (txp *DNSTransport) RoundTrip(ctx context.Context, query []byte) (reply []byte, err error) {
 	return txp.MockRoundTrip(ctx, query)
 }
 
 // RequiresPadding calls MockRequiresPadding.
-func (txp *RoundTripper) RequiresPadding() bool {
+func (txp *DNSTransport) RequiresPadding() bool {
 	return txp.MockRequiresPadding()
 }
 
 // Network calls MockNetwork.
-func (txp *RoundTripper) Network() string {
+func (txp *DNSTransport) Network() string {
 	return txp.MockNetwork()
 }
 
 // Address calls MockAddress.
-func (txp *RoundTripper) Address() string {
+func (txp *DNSTransport) Address() string {
 	return txp.MockAddress()
 }
 
 // CloseIdleConnections calls MockCloseIdleConnections.
-func (txp *RoundTripper) CloseIdleConnections() {
+func (txp *DNSTransport) CloseIdleConnections() {
 	txp.MockCloseIdleConnections()
 }

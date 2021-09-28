@@ -2,8 +2,8 @@ package dnsx
 
 import "context"
 
-// RoundTripper represents an abstract DNS transport.
-type RoundTripper interface {
+// DNSTransport represents an abstract DNS transport.
+type DNSTransport interface {
 	// RoundTrip sends a DNS query and receives the reply.
 	RoundTrip(ctx context.Context, query []byte) (reply []byte, err error)
 
