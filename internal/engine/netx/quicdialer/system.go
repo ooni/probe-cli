@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
@@ -53,7 +53,7 @@ func (c *saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 		Duration: stop.Sub(start),
 		Err:      err,
 		NumBytes: count,
-		Name:     errorsx.WriteToOperation,
+		Name:     netxlite.WriteToOperation,
 		Time:     stop,
 	})
 	return count, err
@@ -73,7 +73,7 @@ func (c *saverUDPConn) ReadFrom(b []byte) (int, net.Addr, error) {
 		Duration: stop.Sub(start),
 		Err:      err,
 		NumBytes: n,
-		Name:     errorsx.ReadFromOperation,
+		Name:     netxlite.ReadFromOperation,
 		Time:     stop,
 	})
 	return n, addr, err

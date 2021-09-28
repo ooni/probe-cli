@@ -11,7 +11,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
@@ -76,7 +75,7 @@ func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
 			t.Fatal("unexpected NumBytes")
 		}
 		switch ev[idx].Name {
-		case errorsx.ReadFromOperation, errorsx.WriteToOperation:
+		case netxlite.ReadFromOperation, netxlite.WriteToOperation:
 		default:
 			t.Fatal("unexpected Name")
 		}

@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestMeasureSuccess(t *testing.T) {
@@ -79,7 +79,7 @@ func TestMeasureInitialChecksFailWithNXDOMAIN(t *testing.T) {
 	if resp.URLs[0].DNS == nil {
 		t.Fatal("DNS entry should not be nil")
 	}
-	if *resp.URLs[0].DNS.Failure != errorsx.FailureDNSNXDOMAINError {
+	if *resp.URLs[0].DNS.Failure != netxlite.FailureDNSNXDOMAINError {
 		t.Fatal("unexpected failure")
 	}
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices/testorchestra"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func newclient() *probeservices.Client {
@@ -165,7 +165,7 @@ func TestCloudfront(t *testing.T) {
 	if resp.StatusCode != 200 {
 		t.Fatal("unexpected status code")
 	}
-	data, err := iox.ReadAllContext(req.Context(), resp.Body)
+	data, err := netxlite.ReadAllContext(req.Context(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

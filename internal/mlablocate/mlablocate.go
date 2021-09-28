@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Logger is the logger expected by this package.
@@ -93,7 +93,7 @@ func (c *Client) Query(ctx context.Context, tool string) (Result, error) {
 	if resp.StatusCode != 200 {
 		return Result{}, fmt.Errorf("mlablocate: non-200 status code: %d", resp.StatusCode)
 	}
-	data, err := iox.ReadAllContext(ctx, resp.Body)
+	data, err := netxlite.ReadAllContext(ctx, resp.Body)
 	if err != nil {
 		return Result{}, err
 	}

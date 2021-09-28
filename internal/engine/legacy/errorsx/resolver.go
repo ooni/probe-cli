@@ -3,7 +3,7 @@ package errorsx
 import (
 	"context"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Resolver is a DNS resolver. The *net.Resolver used by Go implements
@@ -24,9 +24,9 @@ var _ Resolver = &ErrorWrapperResolver{}
 func (r *ErrorWrapperResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	err = SafeErrWrapperBuilder{
-		Classifier: errorsx.ClassifyResolverError,
+		Classifier: netxlite.ClassifyResolverError,
 		Error:      err,
-		Operation:  errorsx.ResolveOperation,
+		Operation:  netxlite.ResolveOperation,
 	}.MaybeBuild()
 	return addrs, err
 }

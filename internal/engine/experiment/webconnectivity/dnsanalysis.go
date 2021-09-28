@@ -4,7 +4,7 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // DNSAnalysisResult contains the results of analysing comparing
@@ -44,7 +44,7 @@ func DNSAnalysis(URL *url.URL, measurement DNSLookupResult,
 		switch *control.DNS.Failure {
 		case DNSNameError: // the control returns this on NXDOMAIN error
 			switch *measurement.Failure {
-			case errorsx.FailureDNSNXDOMAINError:
+			case netxlite.FailureDNSNXDOMAINError:
 				out.DNSConsistency = &DNSConsistent
 			}
 		}

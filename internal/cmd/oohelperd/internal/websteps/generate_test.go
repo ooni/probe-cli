@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -68,7 +68,7 @@ func TestGenerateDNSFailure(t *testing.T) {
 	if urlMeasurements[0].DNS == nil {
 		t.Fatal("DNS should not be nil")
 	}
-	if urlMeasurements[0].DNS.Failure == nil || *urlMeasurements[0].DNS.Failure != errorsx.FailureDNSNXDOMAINError {
+	if urlMeasurements[0].DNS.Failure == nil || *urlMeasurements[0].DNS.Failure != netxlite.FailureDNSNXDOMAINError {
 		t.Fatal("unexpected DNS failure type")
 	}
 }

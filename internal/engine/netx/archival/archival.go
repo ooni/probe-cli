@@ -20,7 +20,7 @@ import (
 	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // ExtSpec describes a data format extension
@@ -81,7 +81,7 @@ type TCPConnectEntry struct {
 func NewTCPConnectList(begin time.Time, events []trace.Event) []TCPConnectEntry {
 	var out []TCPConnectEntry
 	for _, event := range events {
-		if event.Name != errorsx.ConnectOperation {
+		if event.Name != netxlite.ConnectOperation {
 			continue
 		}
 		if event.Proto != "tcp" {
@@ -113,9 +113,9 @@ func NewFailure(err error) *string {
 	// in which this happen is with context deadline for HTTP.
 	err = errorsxlegacy.SafeErrWrapperBuilder{
 		Error:     err,
-		Operation: errorsx.TopLevelOperation,
+		Operation: netxlite.TopLevelOperation,
 	}.MaybeBuild()
-	errWrapper := err.(*errorsx.ErrWrapper)
+	errWrapper := err.(*netxlite.ErrWrapper)
 	s := errWrapper.Failure
 	if s == "" {
 		s = "unknown_failure: errWrapper.Failure is empty"
@@ -129,8 +129,8 @@ func NewFailedOperation(err error) *string {
 		return nil
 	}
 	var (
-		errWrapper *errorsx.ErrWrapper
-		s          = errorsx.UnknownOperation
+		errWrapper *netxlite.ErrWrapper
+		s          = netxlite.UnknownOperation
 	)
 	if errors.As(err, &errWrapper) && errWrapper.Operation != "" {
 		s = errWrapper.Operation
@@ -475,7 +475,7 @@ type NetworkEvent struct {
 func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent {
 	var out []NetworkEvent
 	for _, ev := range events {
-		if ev.Name == errorsx.ConnectOperation {
+		if ev.Name == netxlite.ConnectOperation {
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
 				Failure:   NewFailure(ev.Err),
@@ -485,7 +485,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 			})
 			continue
 		}
-		if ev.Name == errorsx.ReadOperation {
+		if ev.Name == netxlite.ReadOperation {
 			out = append(out, NetworkEvent{
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
@@ -494,7 +494,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 			})
 			continue
 		}
-		if ev.Name == errorsx.WriteOperation {
+		if ev.Name == netxlite.WriteOperation {
 			out = append(out, NetworkEvent{
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
@@ -503,7 +503,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 			})
 			continue
 		}
-		if ev.Name == errorsx.ReadFromOperation {
+		if ev.Name == netxlite.ReadFromOperation {
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
 				Failure:   NewFailure(ev.Err),
@@ -513,7 +513,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 			})
 			continue
 		}
-		if ev.Name == errorsx.WriteToOperation {
+		if ev.Name == netxlite.WriteToOperation {
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
 				Failure:   NewFailure(ev.Err),

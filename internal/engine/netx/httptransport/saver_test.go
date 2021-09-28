@@ -12,7 +12,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestSaverPerformanceNoMultipleEvents(t *testing.T) {
@@ -248,7 +248,7 @@ func TestSaverBodySuccess(t *testing.T) {
 	txp := httptransport.SaverBodyHTTPTransport{
 		RoundTripper: httptransport.FakeTransport{
 			Func: func(req *http.Request) (*http.Response, error) {
-				data, err := iox.ReadAllContext(context.Background(), req.Body)
+				data, err := netxlite.ReadAllContext(context.Background(), req.Body)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -277,7 +277,7 @@ func TestSaverBodySuccess(t *testing.T) {
 		t.Fatal("unexpected status code")
 	}
 	defer resp.Body.Close()
-	data, err := iox.ReadAllContext(context.Background(), resp.Body)
+	data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -118,7 +118,8 @@ func newResolver(
 	if network == "udp" {
 		// Same rationale as above: avoid possible endless loop
 		return newResolverWrapper(beginning, handler, newResolverUDP(
-			newDialer(beginning, handler), withPort(address, "53"),
+			netxlite.NewDialerLegacyAdapter(newDialer(beginning, handler)),
+			withPort(address, "53"),
 		)), nil
 	}
 	return nil, errors.New("resolver.New: unsupported network value")

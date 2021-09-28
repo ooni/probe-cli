@@ -20,8 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
@@ -165,7 +164,7 @@ func (m Measurer) Run(
 	// parse response body
 	var jsonHeaders JSONHeaders
 	if err := json.Unmarshal(data, &jsonHeaders); err != nil {
-		failure := errorsx.FailureJSONParseError
+		failure := netxlite.FailureJSONParseError
 		tk.Failure = &failure
 		tk.Tampering.Total = true
 		return nil // measurement did not fail, we measured tampering
@@ -182,7 +181,7 @@ func Transact(txp Transport, req *http.Request,
 	// make sure that we return a wrapped error here
 	resp, data, err := transact(txp, req, callbacks)
 	err = errorsxlegacy.SafeErrWrapperBuilder{
-		Error: err, Operation: errorsx.TopLevelOperation}.MaybeBuild()
+		Error: err, Operation: netxlite.TopLevelOperation}.MaybeBuild()
 	return resp, data, err
 }
 
@@ -199,7 +198,7 @@ func transact(txp Transport, req *http.Request,
 		return nil, nil, urlgetter.ErrHTTPRequestFailed
 	}
 	callbacks.OnProgress(0.75, "reading response body...")
-	data, err := iox.ReadAllContext(req.Context(), resp.Body)
+	data, err := netxlite.ReadAllContext(req.Context(), resp.Body)
 	callbacks.OnProgress(1.00, fmt.Sprintf("got reseponse body... %+v", err))
 	if err != nil {
 		return nil, nil, err

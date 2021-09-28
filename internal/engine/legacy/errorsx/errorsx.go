@@ -4,7 +4,7 @@ package errorsx
 import (
 	"errors"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // SafeErrWrapperBuilder contains a builder for ErrWrapper that
@@ -27,9 +27,9 @@ func (b SafeErrWrapperBuilder) MaybeBuild() (err error) {
 	if b.Error != nil {
 		classifier := b.Classifier
 		if classifier == nil {
-			classifier = errorsx.ClassifyGenericError
+			classifier = netxlite.ClassifyGenericError
 		}
-		err = &errorsx.ErrWrapper{
+		err = &netxlite.ErrWrapper{
 			Failure:    classifier(b.Error),
 			Operation:  toOperationString(b.Error, b.Operation),
 			WrappedErr: b.Error,
@@ -39,30 +39,30 @@ func (b SafeErrWrapperBuilder) MaybeBuild() (err error) {
 }
 
 func toOperationString(err error, operation string) string {
-	var errwrapper *errorsx.ErrWrapper
+	var errwrapper *netxlite.ErrWrapper
 	if errors.As(err, &errwrapper) {
 		// Basically, as explained in ErrWrapper docs, let's
 		// keep the child major operation, if any.
-		if errwrapper.Operation == errorsx.ConnectOperation {
+		if errwrapper.Operation == netxlite.ConnectOperation {
 			return errwrapper.Operation
 		}
-		if errwrapper.Operation == errorsx.HTTPRoundTripOperation {
+		if errwrapper.Operation == netxlite.HTTPRoundTripOperation {
 			return errwrapper.Operation
 		}
-		if errwrapper.Operation == errorsx.ResolveOperation {
+		if errwrapper.Operation == netxlite.ResolveOperation {
 			return errwrapper.Operation
 		}
-		if errwrapper.Operation == errorsx.TLSHandshakeOperation {
+		if errwrapper.Operation == netxlite.TLSHandshakeOperation {
 			return errwrapper.Operation
 		}
-		if errwrapper.Operation == errorsx.QUICHandshakeOperation {
+		if errwrapper.Operation == netxlite.QUICHandshakeOperation {
 			return errwrapper.Operation
 		}
 		if errwrapper.Operation == "quic_handshake_start" {
-			return errorsx.QUICHandshakeOperation
+			return netxlite.QUICHandshakeOperation
 		}
 		if errwrapper.Operation == "quic_handshake_done" {
-			return errorsx.QUICHandshakeOperation
+			return netxlite.QUICHandshakeOperation
 		}
 		// FALLTHROUGH
 	}

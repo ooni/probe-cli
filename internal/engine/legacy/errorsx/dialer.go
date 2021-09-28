@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Dialer establishes network connections.
@@ -25,8 +25,8 @@ func (d *ErrorWrapperDialer) DialContext(ctx context.Context, network, address s
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
 		return nil, SafeErrWrapperBuilder{
-			Classifier: errorsx.ClassifyGenericError,
-			Operation:  errorsx.ConnectOperation,
+			Classifier: netxlite.ClassifyGenericError,
+			Operation:  netxlite.ConnectOperation,
 			Error:      err,
 		}.MaybeBuild()
 	}
@@ -44,8 +44,8 @@ func (c *errorWrapperConn) Read(b []byte) (int, error) {
 	count, err := c.Conn.Read(b)
 	if err != nil {
 		return 0, SafeErrWrapperBuilder{
-			Classifier: errorsx.ClassifyGenericError,
-			Operation:  errorsx.ReadOperation,
+			Classifier: netxlite.ClassifyGenericError,
+			Operation:  netxlite.ReadOperation,
 			Error:      err,
 		}.MaybeBuild()
 	}
@@ -57,8 +57,8 @@ func (c *errorWrapperConn) Write(b []byte) (int, error) {
 	count, err := c.Conn.Write(b)
 	if err != nil {
 		return 0, SafeErrWrapperBuilder{
-			Classifier: errorsx.ClassifyGenericError,
-			Operation:  errorsx.WriteOperation,
+			Classifier: netxlite.ClassifyGenericError,
+			Operation:  netxlite.WriteOperation,
 			Error:      err,
 		}.MaybeBuild()
 	}
@@ -70,8 +70,8 @@ func (c *errorWrapperConn) Close() error {
 	err := c.Conn.Close()
 	if err != nil {
 		return SafeErrWrapperBuilder{
-			Classifier: errorsx.ClassifyGenericError,
-			Operation:  errorsx.CloseOperation,
+			Classifier: netxlite.ClassifyGenericError,
+			Operation:  netxlite.CloseOperation,
 			Error:      err,
 		}.MaybeBuild()
 	}

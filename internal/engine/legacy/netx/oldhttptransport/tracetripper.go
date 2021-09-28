@@ -13,8 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // TraceTripper performs single HTTP transactions.
@@ -28,7 +27,7 @@ type TraceTripper struct {
 func NewTraceTripper(roundTripper http.RoundTripper) *TraceTripper {
 	return &TraceTripper{
 		readAllErrs:    &atomicx.Int64{},
-		readAllContext: iox.ReadAllContext,
+		readAllContext: netxlite.ReadAllContext,
 		roundTripper:   roundTripper,
 	}
 }
@@ -84,7 +83,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	var (
 		err              error
-		majorOp          = errorsx.HTTPRoundTripOperation
+		majorOp          = netxlite.HTTPRoundTripOperation
 		majorOpMu        sync.Mutex
 		requestBody      []byte
 		requestHeaders   = http.Header{}
@@ -104,7 +103,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	tracer := &httptrace.ClientTrace{
 		TLSHandshakeStart: func() {
 			majorOpMu.Lock()
-			majorOp = errorsx.TLSHandshakeOperation
+			majorOp = netxlite.TLSHandshakeOperation
 			majorOpMu.Unlock()
 			// Event emitted by net/http when DialTLS is not
 			// configured in the http.Transport
@@ -119,7 +118,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			// less confusing to users to see the wrapped name
 			err = errorsxlegacy.SafeErrWrapperBuilder{
 				Error:     err,
-				Operation: errorsx.TLSHandshakeOperation,
+				Operation: netxlite.TLSHandshakeOperation,
 			}.MaybeBuild()
 			durationSinceBeginning := time.Since(root.Beginning)
 			// Event emitted by net/http when DialTLS is not
@@ -134,7 +133,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		},
 		GotConn: func(info httptrace.GotConnInfo) {
 			majorOpMu.Lock()
-			majorOp = errorsx.HTTPRoundTripOperation
+			majorOp = netxlite.HTTPRoundTripOperation
 			majorOpMu.Unlock()
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPConnectionReady: &modelx.HTTPConnectionReadyEvent{
@@ -174,7 +173,7 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			// less confusing to users to see the wrapped name
 			err := errorsxlegacy.SafeErrWrapperBuilder{
 				Error:     info.Err,
-				Operation: errorsx.HTTPRoundTripOperation,
+				Operation: netxlite.HTTPRoundTripOperation,
 			}.MaybeBuild()
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPRequestDone: &modelx.HTTPRequestDoneEvent{

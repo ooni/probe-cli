@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewTLSConnectionState(t *testing.T) {
@@ -61,7 +61,7 @@ func TestMeasurementRootWithMeasurementRootPanic(t *testing.T) {
 
 func TestErrWrapperPublicAPI(t *testing.T) {
 	child := errors.New("mocked error")
-	wrapper := &errorsx.ErrWrapper{
+	wrapper := &netxlite.ErrWrapper{
 		Failure:    "moobar",
 		WrappedErr: child,
 	}

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // saverDialer saves events occurring during the dial
@@ -24,7 +24,7 @@ func (d *saverDialer) DialContext(ctx context.Context, network, address string) 
 		Address:  address,
 		Duration: stop.Sub(start),
 		Err:      err,
-		Name:     errorsx.ConnectOperation,
+		Name:     netxlite.ConnectOperation,
 		Proto:    network,
 		Time:     stop,
 	})
@@ -61,7 +61,7 @@ func (c *saverConn) Read(p []byte) (int, error) {
 		Duration: stop.Sub(start),
 		Err:      err,
 		NumBytes: count,
-		Name:     errorsx.ReadOperation,
+		Name:     netxlite.ReadOperation,
 		Time:     stop,
 	})
 	return count, err
@@ -76,7 +76,7 @@ func (c *saverConn) Write(p []byte) (int, error) {
 		Duration: stop.Sub(start),
 		Err:      err,
 		NumBytes: count,
-		Name:     errorsx.WriteOperation,
+		Name:     netxlite.WriteOperation,
 		Time:     stop,
 	})
 	return count, err
