@@ -90,6 +90,19 @@ func gentorsf() {
 	gen(path.Join(prefix, "chapter04"), "torsf.go")
 }
 
+// gennetxlite generates the netxlite chapters.
+func gennetxlite() {
+	prefix := path.Join(".", "netxlite")
+	gen(path.Join(prefix, "chapter01"), "main.go")
+	gen(path.Join(prefix, "chapter02"), "main.go")
+	gen(path.Join(prefix, "chapter03"), "main.go")
+	gen(path.Join(prefix, "chapter04"), "main.go")
+	gen(path.Join(prefix, "chapter05"), "main.go")
+	gen(path.Join(prefix, "chapter06"), "main.go")
+	gen(path.Join(prefix, "chapter07"), "main.go")
+	gen(path.Join(prefix, "chapter08"), "main.go")
+}
 func main() {
 	gentorsf()
+	gennetxlite()
 }

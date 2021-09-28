@@ -45,6 +45,15 @@ func NewResolverStdlib(logger Logger) Resolver {
 	return WrapResolver(logger, &resolverSystem{})
 }
 
+// NewResolverUDP creates a new Resolver by combining
+// WrapResolver with a SerialResolver attached to
+// a DNSOverUDP transport.
+func NewResolverUDP(logger Logger, dialer Dialer, address string) Resolver {
+	return WrapResolver(logger, NewSerialResolver(
+		NewDNSOverUDP(dialer, address),
+	))
+}
+
 // WrapResolver creates a new resolver that wraps an
 // existing resolver to add these properties:
 //
