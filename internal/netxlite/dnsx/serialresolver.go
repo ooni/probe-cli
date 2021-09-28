@@ -61,7 +61,7 @@ func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]str
 	return addrs, nil
 }
 
-// LookupHTTPS issues an HTTPS query without retrying on failure.
+// LookupHTTPS implements Resolver.LookupHTTPS.
 func (r *SerialResolver) LookupHTTPS(
 	ctx context.Context, hostname string) (*HTTPSSvc, error) {
 	querydata, err := r.Encoder.Encode(
