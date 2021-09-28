@@ -54,7 +54,7 @@ func TestRunnerMaybeLookupLocationFailure(t *testing.T) {
 				}
 			case "status.queued", "status.started", "status.end":
 			default:
-				panic(fmt.Sprintf("unexpected key: %s", ev.Key))
+				panic(fmt.Sprintf("unexpected key: %s - %+v", ev.Key, ev.Value))
 			}
 		}
 		seench <- seen
