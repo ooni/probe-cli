@@ -41,7 +41,7 @@ type (
 
 // ResolverLegacy performs domain name resolutions.
 //
-// Depecated: new code should use Resolver.
+// Deprecated: new code should use Resolver.
 //
 // Existing code in ooni/probe-cli is still using this definition.
 type ResolverLegacy interface {
