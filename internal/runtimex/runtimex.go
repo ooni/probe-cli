@@ -10,3 +10,15 @@ func PanicOnError(err error, message string) {
 		panic(fmt.Errorf("%s: %w", message, err))
 	}
 }
+
+// PanicIfFalse calls panic if assertion is false.
+func PanicIfFalse(assertion bool, message string) {
+	if !assertion {
+		panic(message)
+	}
+}
+
+// PanicIfTrue calls panic if assertion is true.
+func PanicIfTrue(assertion bool, message string) {
+	PanicIfFalse(!assertion, message)
+}

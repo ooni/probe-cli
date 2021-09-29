@@ -177,7 +177,7 @@ func TestNewHTTPTransport(t *testing.T) {
 		td := NewTLSDialer(d, NewTLSHandshakerStdlib(log.Log))
 		txp := NewHTTPTransport(log.Log, d, td)
 		client := &http.Client{Transport: txp}
-		resp, err := client.Get("https://www.google.com/robots.txt")
+		resp, err := client.Get("https://8.8.4.4/robots.txt")
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
