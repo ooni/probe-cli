@@ -30,8 +30,6 @@ type Config struct{}
 // TestKeys contains the experiment's test keys.
 type TestKeys struct {
 	*measurex.URLMeasurement
-
-	TH *THServerResponse `json:"th"`
 }
 
 // Measurer performs the measurement.
@@ -118,10 +116,9 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 	URL string, th *model.Service, out chan<- *model.ExperimentAsyncTestKeys) {
 	defer close(out)
 	helper := &measurerMeasureURLHelper{
-		Clnt:       sess.DefaultHTTPClient(),
-		Logger:     sess.Logger(),
-		THURL:      th.Address,
-		thResponse: make(chan *THServerResponse, 1), // buffer
+		Clnt:   sess.DefaultHTTPClient(),
+		Logger: sess.Logger(),
+		THURL:  th.Address,
 	}
 	mmx := &measurex.Measurer{
 		Begin:            time.Now(),
@@ -137,10 +134,7 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 	for m := range in {
 		out <- &model.ExperimentAsyncTestKeys{
 			MeasurementRuntime: m.TotalRuntime.Seconds(),
-			TestKeys: &TestKeys{
-				URLMeasurement: m,
-				TH:             <-helper.thResponse,
-			},
+			TestKeys:           &TestKeys{URLMeasurement: m},
 			Extensions: map[string]int64{
 				archival.ExtHTTP.Name:         archival.ExtHTTP.V,
 				archival.ExtDNS.Name:          archival.ExtDNS.V,
@@ -163,14 +157,12 @@ type measurerMeasureURLHelper struct {
 
 	// THURL is the MANDATORY TH URL.
 	THURL string
-
-	// thResponse is the response from the TH.
-	thResponse chan *THServerResponse
 }
 
 func (mth *measurerMeasureURLHelper) LookupExtraHTTPEndpoints(
 	ctx context.Context, URL *url.URL, headers http.Header,
-	curEndpoints ...*measurex.HTTPEndpoint) ([]*measurex.HTTPEndpoint, error) {
+	curEndpoints ...*measurex.HTTPEndpoint) (
+	[]*measurex.HTTPEndpoint, interface{}, error) {
 	cc := &THClientCall{
 		Endpoints:  measurex.HTTPEndpointsToEndpoints(curEndpoints),
 		HTTPClient: mth.Clnt,
@@ -184,9 +176,8 @@ func (mth *measurerMeasureURLHelper) LookupExtraHTTPEndpoints(
 		mth.Logger, "THClientCall %s", URL.String())
 	resp, err := cc.Call(ctx)
 	ol.Stop(err)
-	mth.thResponse <- resp // note that nil is ~fine here
 	if err != nil {
-		return nil, err
+		return nil, resp, err
 	}
 	var out []*measurex.HTTPEndpoint
 	for _, epnt := range resp.Endpoints {
@@ -200,7 +191,7 @@ func (mth *measurerMeasureURLHelper) LookupExtraHTTPEndpoints(
 			Header:  headers,
 		})
 	}
-	return out, nil
+	return out, resp, nil
 }
 
 // Run implements ExperimentMeasurer.Run.

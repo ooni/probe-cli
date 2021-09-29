@@ -351,7 +351,8 @@ type thMeasureURLHelper struct {
 
 func (thh *thMeasureURLHelper) LookupExtraHTTPEndpoints(
 	ctx context.Context, URL *url.URL, headers http.Header,
-	serverEpnts ...*measurex.HTTPEndpoint) (epnts []*measurex.HTTPEndpoint, err error) {
+	serverEpnts ...*measurex.HTTPEndpoint) (
+	epnts []*measurex.HTTPEndpoint, thMeaurement interface{}, err error) {
 	for _, epnt := range thh.epnts {
 		epnts = append(epnts, &measurex.HTTPEndpoint{
 			Domain:  URL.Hostname(),

@@ -31,6 +31,9 @@ type URLMeasurement struct {
 	// if we choose to follow redirections.
 	RedirectURLs []string `json:"-"`
 
+	// THMeasurement is the measurement collected by the TH.
+	TH interface{} `json:"th,omitempty"`
+
 	// TotalRuntime is the total time to measure this URL.
 	TotalRuntime time.Duration `json:"-"`
 

@@ -701,6 +701,8 @@ type MeasureURLHelper interface {
 	// - on any kind of error it MUST return nil, err
 	//
 	// - on success it MUST return the NEW endpoints it discovered
+	// as well as the TH measurement to be added to the measurement
+	// that the URL measurer is constructing.
 	//
 	// It is the caller's responsibility to merge the NEW list of
 	// endpoints with the ones it passed as argument.
@@ -709,7 +711,8 @@ type MeasureURLHelper interface {
 	// newly returned endpoints only use the few headers that our
 	// test helper protocol allows one to set.
 	LookupExtraHTTPEndpoints(ctx context.Context, URL *url.URL,
-		headers http.Header, epnts ...*HTTPEndpoint) ([]*HTTPEndpoint, error)
+		headers http.Header, epnts ...*HTTPEndpoint) (
+		newEpnts []*HTTPEndpoint, thMeasurement interface{}, err error)
 }
 
 // MeasureURL measures an HTTP or HTTPS URL. The DNS resolvers
@@ -764,10 +767,11 @@ func (mx *Measurer) MeasureURL(
 	}
 	if mx.MeasureURLHelper != nil {
 		thBegin := time.Now()
-		extraEpnts, _ := mx.MeasureURLHelper.LookupExtraHTTPEndpoints(
+		extraEpnts, thMeasurement, _ := mx.MeasureURLHelper.LookupExtraHTTPEndpoints(
 			ctx, parsed, headers, epnts...)
-		epnts = removeDuplicateHTTPEndpoints(append(epnts, extraEpnts...)...)
 		m.THRuntime = time.Since(thBegin)
+		epnts = removeDuplicateHTTPEndpoints(append(epnts, extraEpnts...)...)
+		m.TH = thMeasurement
 		mx.enforceAllowedHeadersOnly(epnts)
 	}
 	epntRuntime := time.Now()
