@@ -273,7 +273,11 @@ func (r *Runner) Run(ctx context.Context) {
 				Idx:     int64(idx),
 				Input:   input,
 			})
-			// fallthrough: we want to submit the report anyway
+			// Historical note: here we used to fallthrough but, since we have
+			// implemented async measurements, the case where there is an error
+			// and we also have a valid measurement cant't happen anymore. So,
+			// now the only valid strategy here is to continue.
+			continue
 		}
 		data, err := json.Marshal(m)
 		runtimex.PanicOnError(err, "measurement.MarshalJSON failed")

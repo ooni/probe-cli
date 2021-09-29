@@ -24,17 +24,20 @@ type ExperimentSession interface {
 // ExperimentAsyncTestKeys is the type of test keys returned by an experiment
 // when running in async fashion rather than in sync fashion.
 type ExperimentAsyncTestKeys struct {
-	// MeasurementRuntime should return the total measurement runtime.
+	// MeasurementRuntime is the total measurement runtime.
 	MeasurementRuntime float64
 
-	// TestKeys should return the actual test keys.
+	// TestKeys contains the actual test keys.
 	TestKeys interface{}
 
-	// Extensions returns the extensions used by this experiment.
+	// Extensions contains the extensions used by this experiment.
 	Extensions map[string]int64
 }
 
-// ExperimentMeasurerAsync is an experiment that can run in async fashion.
+// ExperimentMeasurerAsync is a measurer that can run in async fashion.
+//
+// Currently this functionality is optional, but we will likely
+// migrate all experiments to use this functionality in 2022.
 type ExperimentMeasurerAsync interface {
 	// RunAsync runs the experiment in async fashion.
 	//
@@ -50,7 +53,7 @@ type ExperimentMeasurerAsync interface {
 	//
 	// Returns either a channel where TestKeys are posted or an error.
 	//
-	// An error indicate specific preconditions for running the experiment
+	// An error indicates that specific preconditions for running the experiment
 	// are not met (e.g., the input URL is invalid).
 	//
 	// On success, the experiment will post on the channel each new
