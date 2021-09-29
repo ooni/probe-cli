@@ -224,9 +224,25 @@ func TestMeasureWithDialer(t *testing.T) {
 	})
 
 	t.Run("on timeout", func(t *testing.T) {
+		// Note: this test was flaky sometimes on macOS. I've seen in
+		// particular this failure on 2021-09-29:
+		//
+		// ```
+		// 2021/09/29 23:48:32 http: TLS handshake error from 127.0.0.1:49946: read tcp 127.0.0.1:49945->127.0.0.1:49946: use of closed network connection
+		// --- FAIL: TestMeasureWithDialer (8.25s)
+		// --- FAIL: TestMeasureWithDialer/on_timeout (8.22s)
+		//   integration_test.go:233: not the error we expected timed_out
+		// ```
+		//
+		// My explanation of this failure is that the ETIMEDOUT from
+		// the kernel races with the timeout we've configured. For this
+		// reason, I have set a smaller context timeout (see below).
+		//
 		d := netxlite.NewDialerWithoutResolver(log.Log)
 		defer d.CloseIdleConnections()
-		ctx := context.Background()
+		const timeout = 5 * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
 		// Here we assume 8.8.4.4:1 is filtered
 		conn, err := d.DialContext(ctx, "tcp", "8.8.4.4:1")
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
