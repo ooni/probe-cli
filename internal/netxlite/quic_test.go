@@ -252,25 +252,6 @@ func TestQUICDialerResolver(t *testing.T) {
 	})
 
 	t.Run("DialContext", func(t *testing.T) {
-		t.Run("on success", func(t *testing.T) {
-			tlsConfig := &tls.Config{}
-			dialer := &quicDialerResolver{
-				Resolver: NewResolverStdlib(log.Log),
-				Dialer: &quicDialerQUICGo{
-					QUICListener: &quicListenerStdlib{},
-				}}
-			sess, err := dialer.DialContext(
-				context.Background(), "udp", "www.google.com:443",
-				tlsConfig, &quic.Config{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			<-sess.HandshakeComplete().Done()
-			if err := sess.CloseWithError(0, ""); err != nil {
-				t.Fatal(err)
-			}
-		})
-
 		t.Run("with missing port", func(t *testing.T) {
 			tlsConfig := &tls.Config{}
 			dialer := &quicDialerResolver{
@@ -306,7 +287,7 @@ func TestQUICDialerResolver(t *testing.T) {
 			}
 		})
 
-		t.Run("with invalid port (i.e., the zero port)", func(t *testing.T) {
+		t.Run("with invalid, non-numeric port)", func(t *testing.T) {
 			// This test allows us to check for the case where every attempt
 			// to establish a connection leads to a failure
 			tlsConf := &tls.Config{}
@@ -316,13 +297,12 @@ func TestQUICDialerResolver(t *testing.T) {
 					QUICListener: &quicListenerStdlib{},
 				}}
 			sess, err := dialer.DialContext(
-				context.Background(), "udp", "www.google.com:0",
+				context.Background(), "udp", "8.8.4.4:x",
 				tlsConf, &quic.Config{})
 			if err == nil {
 				t.Fatal("expected an error here")
 			}
-			if !strings.HasSuffix(err.Error(), "sendto: invalid argument") &&
-				!strings.HasSuffix(err.Error(), "sendto: can't assign requested address") {
+			if !strings.HasSuffix(err.Error(), "invalid syntax") {
 				t.Fatal("not the error we expected", err)
 			}
 			if sess != nil {
@@ -344,7 +324,7 @@ func TestQUICDialerResolver(t *testing.T) {
 					},
 				}}
 			sess, err := dialer.DialContext(
-				context.Background(), "udp", "www.google.com:443",
+				context.Background(), "udp", "8.8.4.4:443",
 				tlsConfig, &quic.Config{})
 			if !errors.Is(err, expected) {
 				t.Fatal("not the error we expected", err)
@@ -355,7 +335,7 @@ func TestQUICDialerResolver(t *testing.T) {
 			if tlsConfig.ServerName != "" {
 				t.Fatal("should not have changed tlsConfig.ServerName")
 			}
-			if gotTLSConfig.ServerName != "www.google.com" {
+			if gotTLSConfig.ServerName != "8.8.4.4" {
 				t.Fatal("gotTLSConfig.ServerName has not been set")
 			}
 		})

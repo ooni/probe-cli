@@ -12,6 +12,22 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
+// errorWithTimeout is an error that golang will always consider
+// to be a timeout because it has a Timeout() bool method
+type errorWithTimeout struct {
+	error
+}
+
+// Timeout returns whether this error is a timeout.
+func (err *errorWithTimeout) Timeout() bool {
+	return true
+}
+
+// Unwrap allows to unwrap the error.
+func (err *errorWithTimeout) Unwrap() error {
+	return err.error
+}
+
 func TestSerialResolver(t *testing.T) {
 	t.Run("transport okay", func(t *testing.T) {
 		txp := NewDNSOverTLS((&tls.Dialer{}).DialContext, "8.8.8.8:853")
@@ -129,7 +145,10 @@ func TestSerialResolver(t *testing.T) {
 		t.Run("with timeout", func(t *testing.T) {
 			txp := &mocks.DNSTransport{
 				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-					return nil, &net.OpError{Err: ETIMEDOUT, Op: "dial"}
+					return nil, &net.OpError{
+						Err: &errorWithTimeout{ETIMEDOUT},
+						Op:  "dial",
+					}
 				},
 				MockRequiresPadding: func() bool {
 					return true
