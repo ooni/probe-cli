@@ -130,10 +130,19 @@ type TLSHandshaker interface {
 	// the given config. This function DOES NOT take ownership of the connection
 	// and it's your responsibility to close it on failure.
 	//
+	// Recommended tlsConfig setup:
+	//
+	// - set ServerName to be the SNI;
+	//
+	// - set RootCAs to NewDefaultCertPool();
+	//
+	// - set NextProtos to []string{"h2", "http/1.1"} for HTTPS
+	// and []string{"dot"} for DNS-over-TLS.
+	//
 	// QUIRK: The returned connection will always implement the TLSConn interface
 	// exposed by this package. A future version of this interface will instead
 	// return directly a TLSConn to avoid unconditional castings.
-	Handshake(ctx context.Context, conn net.Conn, config *tls.Config) (
+	Handshake(ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (
 		net.Conn, tls.ConnectionState, error)
 }
 
