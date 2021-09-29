@@ -10,9 +10,9 @@ changes you need to modify `./internal/tutorial/measurex/chapter01/main.go`.)
 
 ## The system resolver
 
-We define "system resolver" the DNS resolver implemented by the C
+We define "system resolver" as the DNS resolver implemented by the C
 library. On Unix, the most popular interface to such a resolver is
-`getaddrinfo(3)` C library function.
+the `getaddrinfo(3)` C library function.
 
 Most OONI experiments (also known as nettests) use the system
 resolver to map domain names to IP addresses. The advantage of
@@ -20,8 +20,8 @@ the system resolver is that it's provided by the system. So,
 it should _generally_ work. Also, it is the resolver that the
 user of the system will use every day, therefore its results
 should be representative (even though the rise of DNS over
-HTTPS embedded in browser may make this statement less solid
-than it appeared ten years ago).
+HTTPS embedded in browsers may make this statement less solid
+than it were ten years ago).
 
 The disadvantage of the system resolver is that we do not
 know how it is configured. Say the user has configured a
@@ -74,7 +74,7 @@ We call `flag.Parse` to parse the CLI flags.
 ```
 
 We create a context and we attach a timeout to it. (This is a pretty
-standard way to configure a timeout in Go.)
+standard way of configuring a timeout in Go.)
 
 ```Go
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
@@ -119,10 +119,10 @@ The return value of `(*net.Resolver).LookupHost` is either a
 list of IP addresses or an error. Our `LookupHostSystem` method,
 instead, returns a `*measurex.DNSMeasurement` type.
 
-This is probably a good moment to remind you about Go's
+This is probably a good moment to remind you of Go's
 built in help system. We could include a definition of the
 `DNSMeasurement` structure, but since this definition is
-just a comment in the main.go file, it may age badly.
+just a comment in the main.go file, it might age badly.
 
 Instead, if you run
 
@@ -138,7 +138,7 @@ checking the docs of `Measurement` with
 go doc ./internal/measurex.Measurement
 ```
 
-we see a container of events
+we can see a container of events
 classified by event type. In our case, because we're
 doing a `LookupHost`, we should have at least one entry
 inside of the `Measurement.LookupHost` field.
@@ -243,7 +243,7 @@ what the system resolver would most likely do.)
 
 The most important fields are:
 
-- _engine_, indidcating that we are using the "system" resolver;
+- _engine_, indicating that we are using the "system" resolver;
 
 - _hostname_, meaning that we wanted to resolve the "example.com" domain;
 
@@ -361,6 +361,6 @@ an oddity is an error put in context.
 
 ## Conclusions
 
-This is it. We have seen how to measure the system resolver and we have
+This is it. We have seen how to measure with the system resolver and we have
 also seen which easy-to-provoke errors we can get.
 

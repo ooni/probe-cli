@@ -101,6 +101,12 @@ func genmeasurex() {
 	gen(path.Join(prefix, "chapter06"), "main.go")
 	gen(path.Join(prefix, "chapter07"), "main.go")
 	gen(path.Join(prefix, "chapter08"), "main.go")
+	gen(path.Join(prefix, "chapter09"), "main.go")
+	gen(path.Join(prefix, "chapter10"), "main.go")
+	gen(path.Join(prefix, "chapter11"), "main.go")
+	gen(path.Join(prefix, "chapter12"), "main.go")
+	gen(path.Join(prefix, "chapter13"), "main.go")
+	gen(path.Join(prefix, "chapter14"), "main.go")
 }
 
 // gennetxlite generates the netxlite chapters.
