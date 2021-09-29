@@ -1,4 +1,3 @@
-// Package engine contains the engine API.
 package engine
 
 import (
@@ -92,28 +91,130 @@ func (e *Experiment) ReportID() string {
 // Measure performs a measurement with input. We assume that you have
 // configured the available test helpers, either manually or by calling
 // the session's MaybeLookupBackends() method.
+//
+// Return value: strictly either a non-nil measurement and
+// a nil error or a nil measurement and a non-nil error.
+//
+// CAVEAT: while this API is perfectly fine for experiments that
+// return a single measurement, it will only return the first measurement
+// when used with an asynchronous experiment. We plan on eventually
+// migrating all experiments to run in asynchronous fashion.
+//
+// Deprecated: use MeasureWithContext instead, please.
 func (e *Experiment) Measure(input string) (*model.Measurement, error) {
 	return e.MeasureWithContext(context.Background(), input)
 }
 
-// MeasureWithContext is like Measure but with context.
-func (e *Experiment) MeasureWithContext(
-	ctx context.Context, input string,
-) (measurement *model.Measurement, err error) {
-	err = e.session.MaybeLookupLocationContext(ctx) // this already tracks session bytes
+// experimentAsyncWrapper makes a sync experiment behave like it was async
+type experimentAsyncWrapper struct {
+	*Experiment
+}
+
+var _ model.ExperimentMeasurerAsync = &experimentAsyncWrapper{}
+
+// RunAsync implements ExperimentMeasurerAsync.RunAsync.
+func (eaw *experimentAsyncWrapper) RunAsync(
+	ctx context.Context, sess model.ExperimentSession, input string,
+	callbacks model.ExperimentCallbacks) (<-chan *model.ExperimentAsyncTestKeys, error) {
+	out := make(chan *model.ExperimentAsyncTestKeys)
+	measurement := eaw.Experiment.newMeasurement(input)
+	start := time.Now()
+	err := eaw.Experiment.measurer.Run(ctx, eaw.session, measurement, eaw.callbacks)
+	stop := time.Now()
 	if err != nil {
-		return
+		return nil, err
+	}
+	go func() {
+		defer close(out) // signal the reader we're done!
+		out <- &model.ExperimentAsyncTestKeys{
+			Extensions:         measurement.Extensions,
+			MeasurementRuntime: stop.Sub(start).Seconds(),
+			TestKeys:           measurement.TestKeys,
+		}
+	}()
+	return out, nil
+}
+
+// MeasureAsync runs an async measurement. This operation could post
+// one or more measurements onto the returned channel. We'll close the
+// channel when we've emitted all the measurements.
+//
+// Arguments:
+//
+// - ctx is the context for deadline/cancellation/timeout;
+//
+// - input is the input (typically a URL but it could also be
+// just an endpoint or an empty string for input-less experiments
+// such as, e.g., ndt7 and dash).
+//
+// Return value:
+//
+// - on success, channel where to post measurements (the channel
+// will be closed when done) and nil error;
+//
+// - on failure, nil channel and non-nil error.
+func (e *Experiment) MeasureAsync(
+	ctx context.Context, input string) (<-chan *model.Measurement, error) {
+	err := e.session.MaybeLookupLocationContext(ctx) // this already tracks session bytes
+	if err != nil {
+		return nil, err
 	}
 	ctx = dialer.WithSessionByteCounter(ctx, e.session.byteCounter)
 	ctx = dialer.WithExperimentByteCounter(ctx, e.byteCounter)
-	measurement = e.newMeasurement(input)
-	start := time.Now()
-	err = e.measurer.Run(ctx, e.session, measurement, e.callbacks)
-	stop := time.Now()
-	measurement.MeasurementRuntime = stop.Sub(start).Seconds()
-	scrubErr := measurement.Scrub(e.session.ProbeIP())
-	if err == nil {
-		err = scrubErr
+	var async model.ExperimentMeasurerAsync
+	if v, okay := e.measurer.(model.ExperimentMeasurerAsync); okay {
+		async = v
+	} else {
+		async = &experimentAsyncWrapper{e}
+	}
+	in, err := async.RunAsync(ctx, e.session, input, e.callbacks)
+	if err != nil {
+		return nil, err
+	}
+	out := make(chan *model.Measurement)
+	go func() {
+		defer close(out) // we need to signal the consumer we're done
+		for tk := range in {
+			measurement := e.newMeasurement(input)
+			measurement.Extensions = tk.Extensions
+			measurement.MeasurementRuntime = tk.MeasurementRuntime
+			measurement.TestKeys = tk.TestKeys
+			if err := measurement.Scrub(e.session.ProbeIP()); err != nil {
+				// If we fail to scrub the measurement then we are not going to
+				// submit it. Most likely causes of error here are unlikely,
+				// e.g., the TestKeys being not serializable.
+				e.session.Logger().Warnf("can't scrub measurement: %s", err.Error())
+				continue
+			}
+			out <- measurement
+		}
+	}()
+	return out, nil
+}
+
+// MeasureWithContext is like Measure but with context.
+//
+// Return value: strictly either a non-nil measurement and
+// a nil error or a nil measurement and a non-nil error.
+//
+// CAVEAT: while this API is perfectly fine for experiments that
+// return a single measurement, it will only return the first measurement
+// when used with an asynchronous experiment. We plan on eventually
+// migrating all experiments to run in asynchronous fashion.
+func (e *Experiment) MeasureWithContext(
+	ctx context.Context, input string,
+) (measurement *model.Measurement, err error) {
+	out, err := e.MeasureAsync(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+	for m := range out {
+		if measurement == nil {
+			measurement = m // as documented just return the first one
+		}
+	}
+	if measurement == nil {
+		err = errors.New("experiment returned no measurements")
 	}
 	return
 }
@@ -139,11 +240,12 @@ func (e *Experiment) SubmitAndUpdateMeasurement(measurement *model.Measurement) 
 func (e *Experiment) SubmitAndUpdateMeasurementContext(
 	ctx context.Context, measurement *model.Measurement) error {
 	if e.report == nil {
-		return errors.New("Report is not open")
+		return errors.New("report is not open")
 	}
 	return e.report.SubmitMeasurement(ctx, measurement)
 }
 
+// newMeasurement creates a new measurement for this experiment with the given input.
 func (e *Experiment) newMeasurement(input string) *model.Measurement {
 	utctimenow := time.Now().UTC()
 	m := &model.Measurement{

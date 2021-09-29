@@ -10,15 +10,15 @@ import (
 // InputProcessorExperiment is the Experiment
 // according to InputProcessor.
 type InputProcessorExperiment interface {
-	MeasureWithContext(
-		ctx context.Context, input string) (*model.Measurement, error)
+	MeasureAsync(
+		ctx context.Context, input string) (<-chan *model.Measurement, error)
 }
 
 // InputProcessorExperimentWrapper is a wrapper for an
 // Experiment that also allow to pass around the input index.
 type InputProcessorExperimentWrapper interface {
-	MeasureWithContext(
-		ctx context.Context, idx int, input string) (*model.Measurement, error)
+	MeasureAsync(
+		ctx context.Context, input string, idx int) (<-chan *model.Measurement, error)
 }
 
 // NewInputProcessorExperimentWrapper creates a new
@@ -32,9 +32,9 @@ type inputProcessorExperimentWrapper struct {
 	exp InputProcessorExperiment
 }
 
-func (ipew inputProcessorExperimentWrapper) MeasureWithContext(
-	ctx context.Context, idx int, input string) (*model.Measurement, error) {
-	return ipew.exp.MeasureWithContext(ctx, input)
+func (ipew inputProcessorExperimentWrapper) MeasureAsync(
+	ctx context.Context, input string, idx int) (<-chan *model.Measurement, error) {
+	return ipew.exp.MeasureAsync(ctx, input)
 }
 
 var _ InputProcessorExperimentWrapper = inputProcessorExperimentWrapper{}
@@ -142,21 +142,29 @@ func (ip *InputProcessor) run(ctx context.Context) (int, error) {
 			return stopMaxRuntime, nil
 		}
 		input := url.URL
-		meas, err := ip.Experiment.MeasureWithContext(ctx, idx, input)
+		var measurements []*model.Measurement
+		source, err := ip.Experiment.MeasureAsync(ctx, input, idx)
 		if err != nil {
 			return 0, err
 		}
-		meas.AddAnnotations(ip.Annotations)
-		meas.Options = ip.Options
-		err = ip.Submitter.Submit(ctx, idx, meas)
-		if err != nil {
-			return 0, err
+		// NOTE: we don't want to intermix measuring with submitting
+		// therefore we collect all measurements first
+		for meas := range source {
+			measurements = append(measurements, meas)
 		}
-		// Note: must be after submission because submission modifies
-		// the measurement to include the report ID.
-		err = ip.Saver.SaveMeasurement(idx, meas)
-		if err != nil {
-			return 0, err
+		for _, meas := range measurements {
+			meas.AddAnnotations(ip.Annotations)
+			meas.Options = ip.Options
+			err = ip.Submitter.Submit(ctx, idx, meas)
+			if err != nil {
+				return 0, err
+			}
+			// Note: must be after submission because submission modifies
+			// the measurement to include the report ID.
+			err = ip.Saver.SaveMeasurement(idx, meas)
+			if err != nil {
+				return 0, err
+			}
 		}
 	}
 	return stopNormal, nil

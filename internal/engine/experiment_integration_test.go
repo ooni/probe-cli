@@ -213,8 +213,8 @@ func TestMeasurementFailure(t *testing.T) {
 	if err.Error() != "mocked error" {
 		t.Fatal("unexpected error type")
 	}
-	if measurement == nil {
-		t.Fatal("expected non nil measurement here")
+	if measurement != nil {
+		t.Fatal("expected nil measurement here")
 	}
 }
 

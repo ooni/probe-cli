@@ -460,15 +460,12 @@ type experimentWrapper struct {
 	total int
 }
 
-func (ew *experimentWrapper) MeasureWithContext(
-	ctx context.Context, idx int, input string) (*model.Measurement, error) {
+func (ew *experimentWrapper) MeasureAsync(
+	ctx context.Context, input string, idx int) (<-chan *model.Measurement, error) {
 	if input != "" {
 		log.Infof("[%d/%d] running with input: %s", idx+1, ew.total, input)
 	}
-	measurement, err := ew.child.MeasureWithContext(ctx, idx, input)
-	warnOnError(err, "measurement failed")
-	// policy: we do not stop the loop if the measurement fails
-	return measurement, nil
+	return ew.child.MeasureAsync(ctx, input, idx)
 }
 
 type submitterWrapper struct {
