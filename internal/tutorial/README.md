@@ -10,6 +10,8 @@ real OONI code, it should always be up to date.
 
 - [Rewriting the torsf experiment](experiment/torsf/)
 
+- [Using the measurex package to write network experiments](measurex)
+
 
 ## Regenerating the tutorials
 
