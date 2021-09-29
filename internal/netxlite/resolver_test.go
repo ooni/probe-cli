@@ -93,11 +93,12 @@ func TestResolverSystem(t *testing.T) {
 		t.Run("with timeout and success", func(t *testing.T) {
 			wg := &sync.WaitGroup{}
 			wg.Add(1)
+			done := make(chan interface{})
 			r := &resolverSystem{
 				testableTimeout: 1 * time.Microsecond,
 				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					defer wg.Done()
-					time.Sleep(1 * time.Millisecond)
+					<-done
 					return []string{"8.8.8.8"}, nil
 				},
 			}
@@ -109,17 +110,19 @@ func TestResolverSystem(t *testing.T) {
 			if addrs != nil {
 				t.Fatal("invalid addrs")
 			}
+			close(done)
 			wg.Wait()
 		})
 
 		t.Run("with timeout and failure", func(t *testing.T) {
 			wg := &sync.WaitGroup{}
 			wg.Add(1)
+			done := make(chan interface{})
 			r := &resolverSystem{
 				testableTimeout: 1 * time.Microsecond,
 				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					defer wg.Done()
-					time.Sleep(1 * time.Millisecond)
+					<-done
 					return nil, errors.New("no such host")
 				},
 			}
@@ -131,6 +134,7 @@ func TestResolverSystem(t *testing.T) {
 			if addrs != nil {
 				t.Fatal("invalid addrs")
 			}
+			close(done)
 			wg.Wait()
 		})
 

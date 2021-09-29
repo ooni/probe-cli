@@ -72,17 +72,19 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 	txp.TLSDialer.CloseIdleConnections()
 }
 
-// NewHTTPTransport combines NewOOHTTPBaseTransport and
-// WrapHTTPTransport to construct a new HTTPTransport.
+// NewHTTPTransport combines NewOOHTTPBaseTransport and WrapHTTPTransport.
+//
+// This factory and NewHTTPTransportStdlib are the recommended
+// ways of creating a new HTTPTransport.
 func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 	return WrapHTTPTransport(logger, NewOOHTTPBaseTransport(dialer, tlsDialer))
 }
 
-// NewOOHTTPBaseTransport creates a new HTTP transport using the given
-// dialer and TLS dialer to create connections.
+// NewOOHTTPBaseTransport creates an HTTPTransport using the given dialers.
 //
 // The returned transport will gracefully handle TLS connections
-// created using gitlab.com/yawning/utls.git.
+// created using gitlab.com/yawning/utls.git, if the TLS dialer
+// is a dialer using such library for TLS operations.
 //
 // The returned transport will not have a configured proxy, not
 // even the proxy configurable from the environment.
@@ -100,6 +102,8 @@ func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTra
 // necessary to perform sane measurements with tracing. We will be
 // able to possibly relax this requirement after we change the
 // way in which we perform measurements.
+//
+// This is a low level factory. Consider not using it directly.
 func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 	// Using oohttp to support any TLS library.
 	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
@@ -137,8 +141,9 @@ func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 	}
 }
 
-// WrapHTTPTransport creates a new HTTP transport using
-// the given logger for logging.
+// WrapHTTPTransport creates an HTTPTransport using the given logger.
+//
+// This is a low level factory. Consider not using it directly.
 func WrapHTTPTransport(logger Logger, txp HTTPTransport) HTTPTransport {
 	return &httpTransportLogger{
 		HTTPTransport: txp,
@@ -168,9 +173,9 @@ type httpTLSDialerWithReadTimeout struct {
 	TLSDialer
 }
 
-// ErrNotTLSConn indicates that a TLSDialer returns a net.Conn
-// that does not implement the TLSConn interface. This error should
-// only happen when we do something wrong setting up HTTP code.
+// ErrNotTLSConn occur when an interface accepts a net.Conn but
+// internally needs a TLSConn and you pass a net.Conn that doesn't
+// implement TLSConn to such an interface.
 var ErrNotTLSConn = errors.New("not a TLSConn")
 
 // DialTLSContext implements TLSDialer's DialTLSContext.
@@ -233,9 +238,13 @@ func (c *httpTLSConnWithReadTimeout) Read(b []byte) (int, error) {
 	return c.TLSConn.Read(b)
 }
 
-// NewHTTPTransportStdlib creates a new HTTPTransport that uses
-// the Go standard library for all operations, including DNS
-// resolutions and TLS handshakes.
+// NewHTTPTransportStdlib creates a new HTTPTransport using
+// the stdlib for DNS resolutions and TLS.
+//
+// This factory calls NewHTTPTransport with suitable dialers.
+//
+// This factory and NewHTTPTransport are the recommended
+// ways of creating a new HTTPTransport.
 func NewHTTPTransportStdlib(logger Logger) HTTPTransport {
 	dialer := NewDialerWithResolver(logger, NewResolverStdlib(logger))
 	tlsDialer := NewTLSDialer(dialer, NewTLSHandshakerStdlib(logger))

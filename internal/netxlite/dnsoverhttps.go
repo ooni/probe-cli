@@ -10,34 +10,44 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 )
 
-// HTTPClient is the HTTP client expected by DNSOverHTTPS.
+// HTTPClient is an http.Client-like interface.
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 	CloseIdleConnections()
 }
 
-// DNSOverHTTPS is a DNS over HTTPS RoundTripper. Requests are submitted over
-// an HTTP/HTTPS channel provided by URL using the Do function.
+// DNSOverHTTPS is a DNS-over-HTTPS DNSTransport.
 type DNSOverHTTPS struct {
-	Client       HTTPClient
-	URL          string
+	// Client is the MANDATORY http client to use.
+	Client HTTPClient
+
+	// URL is the MANDATORY URL of the DNS-over-HTTPS server.
+	URL string
+
+	// HostOverride is OPTIONAL and allows to override the
+	// Host header sent in every request.
 	HostOverride string
 }
 
-// NewDNSOverHTTPS creates a new DNSOverHTTP instance from the
-// specified http.Client and URL, as a convenience.
+// NewDNSOverHTTPS creates a new DNSOverHTTPS instance.
+//
+// Arguments:
+//
+// - client in http.Client-like type (e.g., http.DefaultClient);
+//
+// - URL is the DoH resolver URL (e.g., https://1.1.1.1/dns-query).
 func NewDNSOverHTTPS(client HTTPClient, URL string) *DNSOverHTTPS {
 	return NewDNSOverHTTPSWithHostOverride(client, URL, "")
 }
 
-// NewDNSOverHTTPSWithHostOverride is like NewDNSOverHTTPS except that
-// it's creating a resolver where we use the specified host.
+// NewDNSOverHTTPSWithHostOverride creates a new DNSOverHTTPS
+// with the given Host header override.
 func NewDNSOverHTTPSWithHostOverride(
 	client HTTPClient, URL, hostOverride string) *DNSOverHTTPS {
 	return &DNSOverHTTPS{Client: client, URL: URL, HostOverride: hostOverride}
 }
 
-// RoundTrip implements RoundTripper.RoundTrip.
+// RoundTrip sends a query and receives a reply.
 func (t *DNSOverHTTPS) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
@@ -65,22 +75,22 @@ func (t *DNSOverHTTPS) RoundTrip(ctx context.Context, query []byte) ([]byte, err
 	return ReadAllContext(ctx, resp.Body)
 }
 
-// RequiresPadding returns true for DoH according to RFC8467
+// RequiresPadding returns true for DoH according to RFC8467.
 func (t *DNSOverHTTPS) RequiresPadding() bool {
 	return true
 }
 
-// Network returns the transport network (e.g., doh, dot)
+// Network returns the transport network, i.e., "doh".
 func (t *DNSOverHTTPS) Network() string {
 	return "doh"
 }
 
-// Address returns the upstream server address.
+// Address returns the URL we're using for the DoH server.
 func (t *DNSOverHTTPS) Address() string {
 	return t.URL
 }
 
-// CloseIdleConnections closes idle connections.
+// CloseIdleConnections closes idle connections, if any.
 func (t *DNSOverHTTPS) CloseIdleConnections() {
 	t.Client.CloseIdleConnections()
 }

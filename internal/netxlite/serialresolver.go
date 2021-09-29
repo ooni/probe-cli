@@ -9,16 +9,26 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 )
 
-// SerialResolver is a resolver that first issues an A query and then
-// issues an AAAA query for the requested domain.
+// SerialResolver uses a transport and sends performs a LookupHost
+// operation in a serial fashion (query for A first, wait for response,
+// then query for AAAA, and wait for response), hence its name.
+//
+// You should probably use NewSerialResolver to create a new instance.
 type SerialResolver struct {
-	Encoder     DNSEncoder
-	Decoder     DNSDecoder
+	// Encoder is the MANDATORY encoder to use.
+	Encoder DNSEncoder
+
+	// Decoder is the MANDATORY decoder to use.
+	Decoder DNSDecoder
+
+	// NumTimeouts is MANDATORY and counts the number of timeouts.
 	NumTimeouts *atomicx.Int64
-	Txp         DNSTransport
+
+	// Txp is the underlying DNS transport.
+	Txp DNSTransport
 }
 
-// NewSerialResolver creates a new OONI Resolver instance.
+// NewSerialResolver creates a new SerialResolver instance.
 func NewSerialResolver(t DNSTransport) *SerialResolver {
 	return &SerialResolver{
 		Encoder:     &DNSEncoderMiekg{},
@@ -33,22 +43,22 @@ func (r *SerialResolver) Transport() DNSTransport {
 	return r.Txp
 }
 
-// Network implements Resolver.Network
+// Network returns the "network" of the underlying transport.
 func (r *SerialResolver) Network() string {
 	return r.Txp.Network()
 }
 
-// Address implements Resolver.Address
+// Address returns the "address" of the underlying transport.
 func (r *SerialResolver) Address() string {
 	return r.Txp.Address()
 }
 
-// CloseIdleConnections closes idle connections.
+// CloseIdleConnections closes idle connections, if any.
 func (r *SerialResolver) CloseIdleConnections() {
 	r.Txp.CloseIdleConnections()
 }
 
-// LookupHost implements Resolver.LookupHost.
+// LookupHost performs an A lookup followed by an AAAA lookup for hostname.
 func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	var addrs []string
 	addrsA, errA := r.lookupHostWithRetry(ctx, hostname, dns.TypeA)

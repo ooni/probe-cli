@@ -1,6 +1,6 @@
 package netxlite
 
-// Operations that we measure. They are the possibly values of
+// Operations that we measure. They are the possible values of
 // the ErrWrapper.Operation field.
 const (
 	// ResolveOperation is the operation where we resolve a domain name.

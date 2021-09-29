@@ -11,7 +11,7 @@ import (
 	"golang.org/x/net/idna"
 )
 
-// HTTPSSvc is the type returned for HTTPSSvc queries.
+// HTTPSSvc is the type returned for HTTPS queries.
 type HTTPSSvc = dnsx.HTTPSSvc
 
 // Resolver performs domain name resolutions.
@@ -28,26 +28,31 @@ type Resolver interface {
 	// CloseIdleConnections closes idle connections, if any.
 	CloseIdleConnections()
 
-	// LookupHTTPS issues a single HTTPS query for
-	// a domain without any retry mechanism whatsoever.
+	// LookupHTTPS issues an HTTPS query for a domain.
 	LookupHTTPS(
 		ctx context.Context, domain string) (*HTTPSSvc, error)
 }
 
-// ErrNoDNSTransport indicates that the requested Resolver operation
-// cannot be performed because we're using the "system" resolver.
+// ErrNoDNSTransport is the error returned when you attempt to perform
+// a DNS operation that requires a custom DNSTransport (e.g., DNSOverHTTPS)
+// but you are using the "system" resolver instead.
 var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
-// NewResolverStdlib creates a new Resolver by combining
-// WrapResolver with an internal "system" resolver type that
-// adds extra functionality to net.Resolver.
+// NewResolverStdlib creates a new Resolver by combining WrapResolver
+// with an internal "system" resolver type.
 func NewResolverStdlib(logger Logger) Resolver {
 	return WrapResolver(logger, &resolverSystem{})
 }
 
-// NewResolverUDP creates a new Resolver by combining
-// WrapResolver with a SerialResolver attached to
-// a DNSOverUDP transport.
+// NewResolverUDP creates a new Resolver using DNS-over-UDP.
+//
+// Arguments:
+//
+// - logger is the logger to use
+//
+// - dialer is the dialer to create and connect UDP conns
+//
+// - address is the server address (e.g., 1.1.1.1:53)
 func NewResolverUDP(logger Logger, dialer Dialer, address string) Resolver {
 	return WrapResolver(logger, NewSerialResolver(
 		NewDNSOverUDP(dialer, address),
@@ -68,6 +73,8 @@ func NewResolverUDP(logger Logger, dialer Dialer, address string) Resolver {
 //
 // 5. enforces reasonable timeouts (
 // see https://github.com/ooni/probe/issues/1726).
+//
+// This is a low-level factory. Use only if out of alternatives.
 func WrapResolver(logger Logger, resolver Resolver) Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{
@@ -223,7 +230,9 @@ func (r *resolverShortCircuitIPAddr) LookupHost(ctx context.Context, hostname st
 	return r.Resolver.LookupHost(ctx, hostname)
 }
 
-// ErrNoResolver indicates you are using a dialer without a resolver.
+// ErrNoResolver is the type of error returned by "without resolver"
+// dialer when asked to dial for and endpoint containing a domain name,
+// since they can only dial for endpoints containing IP addresses.
 var ErrNoResolver = errors.New("no configured resolver")
 
 // nullResolver is a resolver that is not capable of resolving

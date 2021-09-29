@@ -228,7 +228,9 @@ func writeSystemSpecificFile(system string) {
 	fileWrite(filep, ")\n\n")
 
 	fileWrite(filep, "// This enumeration provides a canonical name for\n")
-	fileWrite(filep, "// every system-call error we support on this systems.\n")
+	fileWrite(filep, "// every system-call error we support. Note: this list\n")
+	fileWrite(filep, "// is system dependent. You're currently looking at\n")
+	filePrintf(filep, "// the list of errors for %s.\n", system)
 	fileWrite(filep, "const (\n")
 	for _, spec := range Specs {
 		if !spec.IsSystemError() || !spec.IsForSystem(system) {
@@ -272,7 +274,8 @@ func writeGenericFile() {
 	fileWrite(filep, "//go:generate go run ./internal/generrno/\n\n")
 
 	fileWrite(filep, "// This enumeration lists the failures defined at\n")
-	fileWrite(filep, "// https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md\n")
+	fileWrite(filep, "// https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md.\n")
+	fileWrite(filep, "// Please, refer to that document for more information.\n")
 	fileWrite(filep, "const (\n")
 	names := make(map[string]string)
 	for _, spec := range Specs {

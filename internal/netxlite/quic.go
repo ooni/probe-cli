@@ -12,10 +12,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
+// UDPLikeConn is the kind of UDP socket used by QUIC.
+type UDPLikeConn = quicx.UDPLikeConn
+
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
-	// Listen creates a new listening UDPConn.
-	Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error)
+	// Listen creates a new listening UDPLikeConn.
+	Listen(addr *net.UDPAddr) (UDPLikeConn, error)
 }
 
 // NewQUICListener creates a new QUICListener using the standard
@@ -30,7 +33,7 @@ type quicListenerStdlib struct{}
 var _ QUICListener = &quicListenerStdlib{}
 
 // Listen implements QUICListener.Listen.
-func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (UDPLikeConn, error) {
 	return bwmonitor.MaybeWrapUDPLikeConn(net.ListenUDP("udp", addr))
 }
 
@@ -39,6 +42,16 @@ type QUICDialer interface {
 	// DialContext establishes a new QUIC session using the given
 	// network and address. The tlsConfig and the quicConfig arguments
 	// MUST NOT be nil. Returns either the session or an error.
+	//
+	// Recommended tlsConfig setup:
+	//
+	// - set ServerName to be the SNI;
+	//
+	// - set RootCAs to NewDefaultCertPool();
+	//
+	// - set NextProtos to []string{"h3"}.
+	//
+	// Typically, you want to pass `&quic.Config{}` as quicConfig.
 	DialContext(ctx context.Context, network, address string,
 		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error)
 
@@ -66,15 +79,7 @@ type QUICDialer interface {
 //
 // 6. if a dialer wraps a resolver, the dialer will forward
 // the CloseIdleConnection call to its resolver (which is
-// instrumental to manage a DoH resolver connections properly);
-//
-// 7. will use the bundled CA unless you provide another CA;
-//
-// 8. will attempt to guess SNI when resolving domain names
-// and otherwise will not set the SNI;
-//
-// 9. will attempt to guess ALPN when the port is known and
-// otherwise will not set the ALPN.
+// instrumental to manage a DoH resolver connections properly).
 func NewQUICDialerWithResolver(listener QUICListener,
 	logger Logger, resolver Resolver) QUICDialer {
 	return &quicDialerLogger{
@@ -195,7 +200,7 @@ type quicSessionOwnsConn struct {
 	quic.EarlySession
 
 	// conn is the connection we own
-	conn quicx.UDPLikeConn
+	conn UDPLikeConn
 }
 
 // CloseWithError implements quic.EarlySession.CloseWithError.
@@ -314,8 +319,7 @@ func (d *quicDialerLogger) CloseIdleConnections() {
 	d.Dialer.CloseIdleConnections()
 }
 
-// NewSingleUseQUICDialer returns a dialer that returns the given connection
-// once and after that always fails with the ErrNoConnReuse error.
+// NewSingleUseQUICDialer is like NewSingleUseDialer but for QUIC.
 func NewSingleUseQUICDialer(sess quic.EarlySession) QUICDialer {
 	return &quicDialerSingleUse{sess: sess}
 }
@@ -356,7 +360,7 @@ type quicListenerErrWrapper struct {
 var _ QUICListener = &quicListenerErrWrapper{}
 
 // Listen implements QUICListener.Listen.
-func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (UDPLikeConn, error) {
 	pconn, err := qls.QUICListener.Listen(addr)
 	if err != nil {
 		return nil, NewErrWrapper(ClassifyGenericError, QUICListenOperation, err)
@@ -364,15 +368,15 @@ func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn,
 	return &quicErrWrapperUDPLikeConn{pconn}, nil
 }
 
-// quicErrWrapperUDPLikeConn is a quicx.UDPLikeConn that wraps errors.
+// quicErrWrapperUDPLikeConn is a UDPLikeConn that wraps errors.
 type quicErrWrapperUDPLikeConn struct {
 	// UDPLikeConn is the underlying conn.
-	quicx.UDPLikeConn
+	UDPLikeConn
 }
 
-var _ quicx.UDPLikeConn = &quicErrWrapperUDPLikeConn{}
+var _ UDPLikeConn = &quicErrWrapperUDPLikeConn{}
 
-// WriteTo implements quicx.UDPLikeConn.WriteTo.
+// WriteTo implements UDPLikeConn.WriteTo.
 func (c *quicErrWrapperUDPLikeConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	count, err := c.UDPLikeConn.WriteTo(p, addr)
 	if err != nil {
@@ -381,7 +385,7 @@ func (c *quicErrWrapperUDPLikeConn) WriteTo(p []byte, addr net.Addr) (int, error
 	return count, nil
 }
 
-// ReadFrom implements quicx.UDPLikeConn.ReadFrom.
+// ReadFrom implements UDPLikeConn.ReadFrom.
 func (c *quicErrWrapperUDPLikeConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	n, addr, err := c.UDPLikeConn.ReadFrom(b)
 	if err != nil {
@@ -390,7 +394,7 @@ func (c *quicErrWrapperUDPLikeConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	return n, addr, nil
 }
 
-// Close implements quicx.UDPLikeConn.Close.
+// Close implements UDPLikeConn.Close.
 func (c *quicErrWrapperUDPLikeConn) Close() error {
 	err := c.UDPLikeConn.Close()
 	if err != nil {

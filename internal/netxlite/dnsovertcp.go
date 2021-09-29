@@ -9,15 +9,12 @@ import (
 	"time"
 )
 
-// DialContextFunc is a generic function for dialing a connection.
+// DialContextFunc is the type of net.Dialer.DialContext.
 type DialContextFunc func(context.Context, string, string) (net.Conn, error)
 
-// DNSOverTCP is a DNS over TCP/TLS RoundTripper. Use NewDNSOverTCP
-// and NewDNSOverTLS to create specific instances that use plaintext
-// queries or encrypted queries over TLS.
+// DNSOverTCP is a DNS-over-{TCP,TLS} DNSTransport.
 //
-// As a known bug, this implementation always creates a new connection
-// for each incoming query, thus increasing the response delay.
+// Bug: this implementation always creates a new connection for each query.
 type DNSOverTCP struct {
 	dial            DialContextFunc
 	address         string
@@ -26,6 +23,12 @@ type DNSOverTCP struct {
 }
 
 // NewDNSOverTCP creates a new DNSOverTCP transport.
+//
+// Arguments:
+//
+// - dial is a function with the net.Dialer.DialContext's signature;
+//
+// - address is the endpoint address (e.g., 8.8.8.8:53).
 func NewDNSOverTCP(dial DialContextFunc, address string) *DNSOverTCP {
 	return &DNSOverTCP{
 		dial:            dial,
@@ -36,6 +39,12 @@ func NewDNSOverTCP(dial DialContextFunc, address string) *DNSOverTCP {
 }
 
 // NewDNSOverTLS creates a new DNSOverTLS transport.
+//
+// Arguments:
+//
+// - dial is a function with the net.Dialer.DialContext's signature;
+//
+// - address is the endpoint address (e.g., 8.8.8.8:853).
 func NewDNSOverTLS(dial DialContextFunc, address string) *DNSOverTCP {
 	return &DNSOverTCP{
 		dial:            dial,
@@ -45,7 +54,7 @@ func NewDNSOverTLS(dial DialContextFunc, address string) *DNSOverTCP {
 	}
 }
 
-// RoundTrip implements RoundTripper.RoundTrip.
+// RoundTrip sends a query and receives a reply.
 func (t *DNSOverTCP) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
 	if len(query) > math.MaxUint16 {
 		return nil, errors.New("query too long")
@@ -84,17 +93,17 @@ func (t *DNSOverTCP) RequiresPadding() bool {
 	return t.requiresPadding
 }
 
-// Network returns the transport network (e.g., doh, dot)
+// Network returns the transport network, i.e., "dot" or "tcp".
 func (t *DNSOverTCP) Network() string {
 	return t.network
 }
 
-// Address returns the upstream server address.
+// Address returns the upstream server endpoint (e.g., "1.1.1.1:853").
 func (t *DNSOverTCP) Address() string {
 	return t.address
 }
 
-// CloseIdleConnections closes idle connections.
+// CloseIdleConnections closes idle connections, if any.
 func (t *DNSOverTCP) CloseIdleConnections() {
 	// nothing to do
 }

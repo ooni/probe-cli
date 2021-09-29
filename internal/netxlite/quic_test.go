@@ -13,7 +13,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 func TestNewQUICListener(t *testing.T) {
@@ -108,7 +107,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 			}
 			systemdialer := quicDialerQUICGo{
 				QUICListener: &mocks.QUICListener{
-					MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+					MockListen: func(addr *net.UDPAddr) (UDPLikeConn, error) {
 						return nil, expected
 					},
 				},
@@ -478,7 +477,7 @@ func TestQUICListenerErrWrapper(t *testing.T) {
 			expectedConn := &mocks.QUICUDPLikeConn{}
 			ql := &quicListenerErrWrapper{
 				QUICListener: &mocks.QUICListener{
-					MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+					MockListen: func(addr *net.UDPAddr) (UDPLikeConn, error) {
 						return expectedConn, nil
 					},
 				},
@@ -497,7 +496,7 @@ func TestQUICListenerErrWrapper(t *testing.T) {
 			expectedErr := io.EOF
 			ql := &quicListenerErrWrapper{
 				QUICListener: &mocks.QUICListener{
-					MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+					MockListen: func(addr *net.UDPAddr) (UDPLikeConn, error) {
 						return nil, expectedErr
 					},
 				},
