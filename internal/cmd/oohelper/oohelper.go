@@ -66,7 +66,7 @@ func main() {
 func webstepsth() interface{} {
 	serverURL := *server
 	if serverURL == "" {
-		serverURL = "http://127.0.0.1:8080/api/v1/websteps"
+		serverURL = "https://1.th.ooni.org/api/v1/websteps"
 	}
 	clnt := &webstepsx.THClient{
 		DNServers: []*measurex.ResolverInfo{{
