@@ -17,8 +17,7 @@ type Dialer interface {
 	CloseIdleConnections()
 }
 
-// NewDialerWithResolver is a convenience factory that calls
-// WrapDialer for a stdlib dialer type.
+// NewDialerWithResolver calls WrapDialer for the stdlib dialer.
 func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
 	return WrapDialer(logger, resolver, &dialerSystem{})
 }
@@ -30,14 +29,14 @@ func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
 //
 // 2. resolves domain names using the givern resolver;
 //
-// 3. when using a resolver, each available enpoint is tried
+// 3. when the resolver is not a "null" resolver,
+// each available enpoint is tried
 // sequentially. On error, the code will return what it believes
 // to be the most representative error in the pack. Most often,
-// such an error is the first one that occurred. Choosing the
+// the first error that occurred. Choosing the
 // error to return using this logic is a QUIRK that we owe
 // to the original implementation of netx. We cannot change
-// this behavior until all the legacy code that relies on
-// it has been migrated to more sane patterns.
+// this behavior until we refactor legacy code using it.
 //
 // Removing this quirk from the codebase is documented as
 // TODO(https://github.com/ooni/probe/issues/1779).
@@ -49,6 +48,9 @@ func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
 // 6. if a dialer wraps a resolver, the dialer will forward
 // the CloseIdleConnection call to its resolver (which is
 // instrumental to manage a DoH resolver connections properly).
+//
+// In general, do not use WrapDialer directly but try to use
+// more high-level factories, e.g., NewDialerWithResolver.
 func WrapDialer(logger Logger, resolver Resolver, dialer Dialer) Dialer {
 	return &dialerLogger{
 		Dialer: &dialerResolver{
@@ -65,8 +67,9 @@ func WrapDialer(logger Logger, resolver Resolver, dialer Dialer) Dialer {
 	}
 }
 
-// NewDialerWithoutResolver is like NewDialerWithResolver except that
-// it will fail with ErrNoResolver if passed a domain name.
+// NewDialerWithoutResolver calls NewDialerWithResolver with a "null" resolver.
+//
+// The returned dialer fails with ErrNoResolver if passed a domain name.
 func NewDialerWithoutResolver(logger Logger) Dialer {
 	return NewDialerWithResolver(logger, &nullResolver{})
 }
@@ -183,12 +186,15 @@ func (d *dialerLogger) CloseIdleConnections() {
 	d.Dialer.CloseIdleConnections()
 }
 
-// ErrNoConnReuse indicates we cannot reuse the connection provided
-// to a single use (possibly TLS) dialer.
+// ErrNoConnReuse is the type of error returned when you create a
+// "single use" dialer or a "single use" TLS dialer and you dial
+// more than once, which is not supported by such a dialer.
 var ErrNoConnReuse = errors.New("cannot reuse connection")
 
-// NewSingleUseDialer returns a dialer that returns the given connection once
-// and after that always fails with the ErrNoConnReuse error.
+// NewSingleUseDialer returns a "single use" dialer. The first
+// dial will succed and return conn regardless of the network
+// and address arguments passed to DialContext. Any subsequent
+// dial returns ErrNoConnReuse.
 func NewSingleUseDialer(conn net.Conn) Dialer {
 	return &dialerSingleUse{conn: conn}
 }
@@ -263,10 +269,11 @@ func (c *dialerErrWrapperConn) Close() error {
 	return nil
 }
 
-// ErrNoDialer indicates that no dialer is configured.
+// ErrNoDialer is the type of error returned by "null" dialers
+// when you attempt to dial with them.
 var ErrNoDialer = errors.New("no configured dialer")
 
-// NewNullDialer returns a dialer that always fails.
+// NewNullDialer returns a dialer that always fails with ErrNoDialer.
 func NewNullDialer() Dialer {
 	return &nullDialer{}
 }

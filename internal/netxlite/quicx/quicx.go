@@ -1,9 +1,4 @@
 // Package quicx contains lucas-clemente/quic-go extensions.
-//
-// This code introduces the UDPLikeConn, whose documentation explain
-// why we need to introduce this new type. We could not put this
-// code inside an existing package because it's used (as of 20 Aug 2021)
-// by the netxlite package as well as by the mocks package.
 package quicx
 
 import (
@@ -17,8 +12,8 @@ import (
 //
 // The QUIC library will treat this connection as a "dumb"
 // net.PacketConn, calling its ReadFrom and WriteTo methods
-// as opposed to more advanced methods that are available
-// under Linux and FreeBSD and improve the performance.
+// as opposed to more efficient methods that are available
+// under Linux and (maybe?) FreeBSD.
 //
 // It seems fine to avoid performance optimizations, because
 // they would complicate the implementation on our side and

@@ -11,28 +11,29 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
-// ClassifyGenericError is the generic classifier mapping an error
-// occurred during an operation to an OONI failure string.
+// ClassifyGenericError is maps an error occurred during an operation
+// to an OONI failure string. This specific classifier is the most
+// generic one. You usually use it when mapping I/O errors. You should
+// check whether there is a specific classifier for more specific
+// operations (e.g., DNS resolution, TLS handshake).
 //
-// If the input error is already an ErrWrapper we don't perform
-// the classification again and we return its Failure to the caller.
-//
-// Classification rules
+// If the input error is an *ErrWrapper we don't perform
+// the classification again and we return its Failure.
 //
 // We put inside this classifier:
 //
-// - system call errors
+// - system call errors;
 //
-// - generic errors that can occur in multiple places
+// - generic errors that can occur in multiple places;
 //
-// - all the errors that depend on strings
+// - all the errors that depend on strings.
 //
 // The more specific classifiers will call this classifier if
 // they fail to find a mapping for the input error.
 //
 // If everything else fails, this classifier returns a string
 // like "unknown_failure: XXX" where XXX has been scrubbed
-// so to remove any network endpoints from its value.
+// so to remove any network endpoints from the original error string.
 func ClassifyGenericError(err error) string {
 	// The list returned here matches the values used by MK unless
 	// explicitly noted otherwise with a comment.
@@ -133,14 +134,14 @@ const (
 	quicTLSUnrecognizedName = 112
 )
 
-// ClassifyQUICHandshakeError maps an error occurred during the QUIC
-// handshake to an OONI failure string.
+// ClassifyQUICHandshakeError maps errors during a QUIC
+// handshake to OONI failure strings.
 //
-// If the input error is already an ErrWrapper we don't perform
-// the classification again and we return its Failure to the caller.
+// If the input error is an *ErrWrapper we don't perform
+// the classification again and we return its Failure.
 //
-// If this classifier fails, it calls ClassifyGenericError and
-// returns to the caller its return value.
+// If this classifier fails, it calls ClassifyGenericError
+// and returns to the caller its return value.
 func ClassifyQUICHandshakeError(err error) string {
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
@@ -229,14 +230,17 @@ func quicIsCertificateError(alert uint8) bool {
 // filters for DNS bogons MUST use this error.
 var ErrDNSBogon = errors.New("dns: detected bogon address")
 
-// These strings are same as the standard library.
+// We use these strings to string-match errors in the standard library
+// and map such errors to OONI failures.
 const (
 	DNSNoSuchHostSuffix        = "no such host"
 	DNSServerMisbehavingSuffix = "server misbehaving"
 	DNSNoAnswerSuffix          = "no answer from DNS server"
 )
 
-// These errors are returned by the decoder and/or the serial resolver.
+// These errors are returned by custom DNSTransport instances (e.g.,
+// DNSOverHTTPS and DNSOverUDP). Their suffix matches the equivalent
+// unexported errors used by the Go standard library.
 var (
 	ErrOODNSNoSuchHost  = fmt.Errorf("ooniresolver: %s", DNSNoSuchHostSuffix)
 	ErrOODNSRefused     = errors.New("ooniresolver: refused")
@@ -244,11 +248,11 @@ var (
 	ErrOODNSNoAnswer    = fmt.Errorf("ooniresolver: %s", DNSNoAnswerSuffix)
 )
 
-// ClassifyResolverError maps an error occurred during a domain name
-// resolution to the corresponding OONI failure string.
+// ClassifyResolverError maps DNS resolution errors to
+// OONI failure strings.
 //
-// If the input error is already an ErrWrapper we don't perform
-// the classification again and we return its Failure to the caller.
+// If the input error is an *ErrWrapper we don't perform
+// the classification again and we return its Failure.
 //
 // If this classifier fails, it calls ClassifyGenericError and
 // returns to the caller its return value.
@@ -271,8 +275,8 @@ func ClassifyResolverError(err error) string {
 // ClassifyTLSHandshakeError maps an error occurred during the TLS
 // handshake to an OONI failure string.
 //
-// If the input error is already an ErrWrapper we don't perform
-// the classification again and we return its Failure to the caller.
+// If the input error is an *ErrWrapper we don't perform
+// the classification again and we return its Failure.
 //
 // If this classifier fails, it calls ClassifyGenericError and
 // returns to the caller its return value.

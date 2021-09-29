@@ -9,6 +9,8 @@ import (
 )
 
 // These vars export internal names to legacy ooni/probe-cli code.
+//
+// Deprecated: do not use these names in new code.
 var (
 	DefaultDialer        = &dialerSystem{}
 	DefaultTLSHandshaker = defaultTLSHandshaker
@@ -17,6 +19,8 @@ var (
 )
 
 // These types export internal names to legacy ooni/probe-cli code.
+//
+// Deprecated: do not use these names in new code.
 type (
 	DialerResolver            = dialerResolver
 	DialerLogger              = dialerLogger
@@ -37,8 +41,7 @@ type (
 
 // ResolverLegacy performs domain name resolutions.
 //
-// This definition of Resolver is DEPRECATED. New code should use
-// the more complete definition in the new Resolver interface.
+// Deprecated: new code should use Resolver.
 //
 // Existing code in ooni/probe-cli is still using this definition.
 type ResolverLegacy interface {
@@ -52,10 +55,7 @@ func NewResolverLegacyAdapter(reso ResolverLegacy) Resolver {
 	return &ResolverLegacyAdapter{reso}
 }
 
-// ResolverLegacyAdapter makes a ResolverLegacy behave like
-// it was a Resolver type. If ResolverLegacy is actually also
-// a Resolver, this adapter will just forward missing calls,
-// otherwise it will implement a sensible default action.
+// ResolverLegacyAdapter makes a ResolverLegacy behave like a Resolver.
 type ResolverLegacyAdapter struct {
 	ResolverLegacy
 }
@@ -97,6 +97,7 @@ func (r *ResolverLegacyAdapter) CloseIdleConnections() {
 	}
 }
 
+// LookupHTTPS always returns ErrDNSNoTransport.
 func (r *ResolverLegacyAdapter) LookupHTTPS(
 	ctx context.Context, domain string) (*HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
@@ -104,7 +105,7 @@ func (r *ResolverLegacyAdapter) LookupHTTPS(
 
 // DialerLegacy establishes network connections.
 //
-// This definition is DEPRECATED. Please, use Dialer.
+// Deprecated: please use Dialer instead.
 //
 // Existing code in probe-cli can use it until we
 // have finished refactoring it.
@@ -115,6 +116,8 @@ type DialerLegacy interface {
 
 // NewDialerLegacyAdapter adapts a DialerrLegacy to
 // become compatible with the Dialer definition.
+//
+// Deprecated: do not use this function in new code.
 func NewDialerLegacyAdapter(d DialerLegacy) Dialer {
 	return &DialerLegacyAdapter{d}
 }
@@ -133,7 +136,7 @@ type dialerLegacyIdleConnectionsCloser interface {
 	CloseIdleConnections()
 }
 
-// CloseIdleConnections implements Resolver.CloseIdleConnections.
+// CloseIdleConnections implements Dialer.CloseIdleConnections.
 func (d *DialerLegacyAdapter) CloseIdleConnections() {
 	if ra, ok := d.DialerLegacy.(dialerLegacyIdleConnectionsCloser); ok {
 		ra.CloseIdleConnections()
@@ -142,10 +145,10 @@ func (d *DialerLegacyAdapter) CloseIdleConnections() {
 
 // QUICContextDialer is a dialer for QUIC using Context.
 //
-// This is a LEGACY name. New code should use QUICDialer directly.
+// Deprecated: new code should use QUICDialer.
 //
 // Use NewQUICDialerFromContextDialerAdapter if you need to
-// adapt an existing QUICContextDialer to a QUICDialer.
+// adapt to QUICDialer.
 type QUICContextDialer interface {
 	// DialContext establishes a new QUIC session using the given
 	// network and address. The tlsConfig and the quicConfig arguments
@@ -160,7 +163,7 @@ func NewQUICDialerFromContextDialerAdapter(d QUICContextDialer) QUICDialer {
 	return &QUICContextDialerAdapter{d}
 }
 
-// QUICContextDialerAdapter adapta a QUICContextDialer to be a QUICDialer.
+// QUICContextDialerAdapter adapts a QUICContextDialer to be a QUICDialer.
 type QUICContextDialerAdapter struct {
 	QUICContextDialer
 }

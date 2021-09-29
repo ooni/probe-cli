@@ -5,18 +5,24 @@ import (
 	"time"
 )
 
-// DNSOverUDP is a DNS over UDP RoundTripper.
+// DNSOverUDP is a DNS-over-UDP DNSTransport.
 type DNSOverUDP struct {
 	dialer  Dialer
 	address string
 }
 
 // NewDNSOverUDP creates a DNSOverUDP instance.
+//
+// Arguments:
+//
+// - dialer is any type that implements the Dialer interface;
+//
+// - address is the endpoint address (e.g., 8.8.8.8:53).
 func NewDNSOverUDP(dialer Dialer, address string) *DNSOverUDP {
 	return &DNSOverUDP{dialer: dialer, address: address}
 }
 
-// RoundTrip implements RoundTripper.RoundTrip.
+// RoundTrip sends a query and receives a reply.
 func (t *DNSOverUDP) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
 	conn, err := t.dialer.DialContext(ctx, "udp", t.address)
 	if err != nil {
@@ -40,12 +46,12 @@ func (t *DNSOverUDP) RoundTrip(ctx context.Context, query []byte) ([]byte, error
 	return reply[:n], nil
 }
 
-// RequiresPadding returns false for UDP according to RFC8467
+// RequiresPadding returns false for UDP according to RFC8467.
 func (t *DNSOverUDP) RequiresPadding() bool {
 	return false
 }
 
-// Network returns the transport network (e.g., doh, dot)
+// Network returns the transport network, i.e., "udp".
 func (t *DNSOverUDP) Network() string {
 	return "udp"
 }
@@ -55,7 +61,7 @@ func (t *DNSOverUDP) Address() string {
 	return t.address
 }
 
-// CloseIdleConnections closes idle connections.
+// CloseIdleConnections closes idle connections, if any.
 func (t *DNSOverUDP) CloseIdleConnections() {
 	// nothing to do
 }

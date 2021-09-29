@@ -53,12 +53,12 @@ type ErrWrapper struct {
 	WrappedErr error
 }
 
-// Error returns a description of the error that occurred.
+// Error returns the OONI failure string for this error.
 func (e *ErrWrapper) Error() string {
 	return e.Failure
 }
 
-// Unwrap allows to access the underlying error
+// Unwrap allows to access the underlying error.
 func (e *ErrWrapper) Unwrap() error {
 	return e.WrappedErr
 }
@@ -68,7 +68,9 @@ func (e *ErrWrapper) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.Failure)
 }
 
-// Classifier is the type of function that performs classification.
+// Classifier is the type of the function that maps a Go error
+// to a OONI failure string defined at
+// https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md.
 type Classifier func(err error) string
 
 // NewErrWrapper creates a new ErrWrapper using the given
@@ -94,7 +96,7 @@ func NewErrWrapper(c Classifier, op string, err error) *ErrWrapper {
 }
 
 // NewTopLevelGenericErrWrapper wraps an error occurring at top
-// level using the most generic available classifier.
+// level using ClassifyGenericError as classifier.
 func NewTopLevelGenericErrWrapper(err error) *ErrWrapper {
 	return NewErrWrapper(ClassifyGenericError, TopLevelOperation, err)
 }
