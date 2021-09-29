@@ -287,7 +287,7 @@ func TestQUICDialerResolver(t *testing.T) {
 			}
 		})
 
-		t.Run("with invalid port (i.e., the zero port)", func(t *testing.T) {
+		t.Run("with invalid, non-numeric port)", func(t *testing.T) {
 			// This test allows us to check for the case where every attempt
 			// to establish a connection leads to a failure
 			tlsConf := &tls.Config{}
@@ -297,13 +297,12 @@ func TestQUICDialerResolver(t *testing.T) {
 					QUICListener: &quicListenerStdlib{},
 				}}
 			sess, err := dialer.DialContext(
-				context.Background(), "udp", "8.8.4.4:0",
+				context.Background(), "udp", "8.8.4.4:x",
 				tlsConf, &quic.Config{})
 			if err == nil {
 				t.Fatal("expected an error here")
 			}
-			if !strings.HasSuffix(err.Error(), "sendto: invalid argument") &&
-				!strings.HasSuffix(err.Error(), "sendto: can't assign requested address") {
+			if !strings.HasSuffix(err.Error(), "invalid syntax") {
 				t.Fatal("not the error we expected", err)
 			}
 			if sess != nil {
