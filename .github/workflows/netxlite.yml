@@ -1,5 +1,5 @@
 # netxlite runs unit and integration tests on our fundamental net library
-name: coverage
+name: netxlite
 on:
   pull_request:
   push:
