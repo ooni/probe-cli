@@ -146,7 +146,13 @@ func TestTLSProxy(t *testing.T) {
 		conn.Write([]byte("GET / HTTP/1.0\r\n\r\n"))
 		buff := make([]byte, 1<<17)
 		_, err = conn.Read(buff)
-		if err == nil || !strings.HasSuffix(err.Error(), "connection reset by peer") {
+		// Implementation note: we need to wrap the error because
+		// otherwise the error string on Windows is different from Unix
+		if err == nil {
+			t.Fatal("expected non-nil error")
+		}
+		err = netxlite.NewTopLevelGenericErrWrapper(err)
+		if err.Error() != netxlite.FailureConnectionReset {
 			t.Fatal("unexpected err", err)
 		}
 		listener.Close()
