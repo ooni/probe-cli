@@ -102,6 +102,7 @@ func (es *ErrorSpec) IsSystemError() bool {
 	return es.errno != ""
 }
 
+// Specs contains all the error specs.
 var Specs = []*ErrorSpec{
 	NewSystemError("ECONNREFUSED", "connection_refused"),
 	NewSystemError("ECONNRESET", "connection_reset"),
