@@ -51,7 +51,10 @@ var (
 	}
 )
 
-// TLSVersionString returns a TLS version string.
+// TLSVersionString returns a TLS version string. If value is zero, we
+// return the empty string. If the value is unknown, we return
+// `TLS_VERSION_UNKNOWN_ddd` where `ddd` is the numeric value passed
+// to this function.
 func TLSVersionString(value uint16) string {
 	if str, found := tlsVersionString[value]; found {
 		return str
@@ -59,7 +62,10 @@ func TLSVersionString(value uint16) string {
 	return fmt.Sprintf("TLS_VERSION_UNKNOWN_%d", value)
 }
 
-// TLSCipherSuiteString returns the TLS cipher suite as a string.
+// TLSCipherSuiteString returns the TLS cipher suite as a string. If value
+// is zero, we return the empty string. If we don't know the mapping from
+// the value to a cipher suite name, we return `TLS_CIPHER_SUITE_UNKNOWN_ddd`
+// where `ddd` is the numeric value passed to this function.
 func TLSCipherSuiteString(value uint16) string {
 	if str, found := tlsCipherSuiteString[value]; found {
 		return str
@@ -67,8 +73,9 @@ func TLSCipherSuiteString(value uint16) string {
 	return fmt.Sprintf("TLS_CIPHER_SUITE_UNKNOWN_%d", value)
 }
 
-// NewDefaultCertPool returns a copy of the default x509
-// certificate pool that we bundle from Mozilla.
+// NewDefaultCertPool returns the default x509 certificate pool
+// that we bundle from Mozilla. It's safe to modify the returned
+// value: every invocation returns a distinct *x509.CertPool instance.
 func NewDefaultCertPool() *x509.CertPool {
 	pool := x509.NewCertPool()
 	// Assumption: AppendCertsFromPEM cannot fail because we
@@ -82,7 +89,9 @@ func NewDefaultCertPool() *x509.CertPool {
 var ErrInvalidTLSVersion = errors.New("invalid TLS version")
 
 // ConfigureTLSVersion configures the correct TLS version into
-// the specified *tls.Config or returns an error.
+// a *tls.Config or returns ErrInvalidTLSVersion.
+//
+// Recognized strings: TLSv1.3, TLSv1.2, TLSv1.1, TLSv1.0.
 func ConfigureTLSVersion(config *tls.Config, version string) error {
 	switch version {
 	case "TLSv1.3":
@@ -106,7 +115,10 @@ func ConfigureTLSVersion(config *tls.Config, version string) error {
 }
 
 // TLSConn is the type of connection that oohttp expects from
-// any library that implements TLS functionality.
+// any library that implements TLS functionality. By using this
+// kind of TLSConn we're able to use both the standard library
+// and gitlab.com/yawning/utls.git to perform TLS operations. Note
+// that the stdlib's tls.Conn implements this interface.
 type TLSConn = oohttp.TLSConn
 
 // Ensures that a tls.Conn implements the TLSConn interface.
@@ -126,7 +138,7 @@ type TLSHandshaker interface {
 }
 
 // NewTLSHandshakerStdlib creates a new TLS handshaker using the
-// go standard library to create TLS connections.
+// go standard library to manage TLS.
 //
 // The handshaker guarantees:
 //
@@ -235,18 +247,17 @@ type TLSDialer interface {
 	// CloseIdleConnections closes idle connections, if any.
 	CloseIdleConnections()
 
-	// DialTLSContext dials a TLS connection.
+	// DialTLSContext dials a TLS connection. This method will always
+	// return to you a TLSConn, so you can always safely cast to TLSConn.
 	DialTLSContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 
-// NewTLSDialer creates a new TLS dialer using the given dialer
-// and TLS handshaker to establish TLS connections.
+// NewTLSDialer creates a new TLS dialer using the given dialer and handshaker.
 func NewTLSDialer(dialer Dialer, handshaker TLSHandshaker) TLSDialer {
 	return NewTLSDialerWithConfig(dialer, handshaker, &tls.Config{})
 }
 
-// NewTLSDialerWithConfig is like NewTLSDialer but takes an optional config
-// parameter containing your desired TLS configuration.
+// NewTLSDialerWithConfig is like NewTLSDialer with an optional config.
 func NewTLSDialerWithConfig(d Dialer, h TLSHandshaker, c *tls.Config) TLSDialer {
 	return &tlsDialer{Config: c, Dialer: d, TLSHandshaker: h}
 }
@@ -351,10 +362,11 @@ func (h *tlsHandshakerErrWrapper) Handshake(
 	return tlsconn, state, nil
 }
 
-// ErrNoTLSDialer indicates that no TLS dialer is configured.
+// ErrNoTLSDialer is the type of error returned by "null" TLS dialers
+// when you attempt to dial with them.
 var ErrNoTLSDialer = errors.New("no configured TLS dialer")
 
-// NewNullTLSDialer returns a TLS dialer that always fails.
+// NewNullTLSDialer returns a TLS dialer that always fails with ErrNoTLSDialer.
 func NewNullTLSDialer() TLSDialer {
 	return &nullTLSDialer{}
 }

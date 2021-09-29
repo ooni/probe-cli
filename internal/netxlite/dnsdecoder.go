@@ -5,9 +5,34 @@ import "github.com/miekg/dns"
 // The DNSDecoder decodes DNS replies.
 type DNSDecoder interface {
 	// DecodeLookupHost decodes an A or AAAA reply.
+	//
+	// Arguments:
+	//
+	// - qtype is the query type (e.g., dns.TypeAAAA)
+	//
+	// - data contains the reply bytes read from a DNSTransport
+	//
+	// Returns:
+	//
+	// - on success, a list of IP addrs inside the reply and a nil error
+	//
+	// - on failure, a nil list and an error.
+	//
+	// Note that this function will return an error if there is no
+	// IP address inside of the reply.
 	DecodeLookupHost(qtype uint16, data []byte) ([]string, error)
 
 	// DecodeHTTPS decodes an HTTPS reply.
+	//
+	// The argument is the reply as read by the DNSTransport.
+	//
+	// On success, this function returns an HTTPSSvc structure and
+	// a nil error. On failure, the HTTPSSvc pointer is nil and
+	// the error points to the error that occurred.
+	//
+	// This function will return an error if the HTTPS reply does not
+	// contain at least a valid ALPN entry. It will not return
+	// an error, though, when there are no IPv4/IPv6 hints in the reply.
 	DecodeHTTPS(data []byte) (*HTTPSSvc, error)
 }
 

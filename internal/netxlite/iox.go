@@ -8,10 +8,11 @@ import (
 // ReadAllContext is like io.ReadAll but reads r in a
 // background goroutine. This function will return
 // earlier if the context is cancelled. In which case
-// we will continue reading from r in the background
+// we will continue reading from the reader in the background
 // goroutine, and we will discard the result. To stop
-// the long-running goroutine, you need to close the
-// connection bound to the r reader, if possible.
+// the long-running goroutine, close the connection
+// bound to the reader. Until such a connection is closed,
+// you're leaking the backround goroutine and doing I/O.
 func ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error) {
 	datach, errch := make(chan []byte, 1), make(chan error, 1) // buffers
 	go func() {
@@ -35,7 +36,7 @@ func ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error) {
 // CopyContext is like io.Copy but may terminate earlier
 // when the context expires. This function has the same
 // caveats of ReadAllContext regarding the temporary leaking
-// of the background goroutine used to do I/O.
+// of the background I/O goroutine.
 func CopyContext(ctx context.Context, dst io.Writer, src io.Reader) (int64, error) {
 	countch, errch := make(chan int64, 1), make(chan error, 1) // buffers
 	go func() {

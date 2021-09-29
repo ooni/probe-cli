@@ -9,8 +9,10 @@ import (
 	utls "gitlab.com/yawning/utls.git"
 )
 
-// NewTLSHandshakerUTLS creates a new TLS handshaker using the
-// gitlab.com/yawning/utls library to create TLS conns.
+// NewTLSHandshakerUTLS creates a new TLS handshaker using
+// gitlab.com/yawning/utls for TLS.
+//
+// The id is the address of something like utls.HelloFirefox_55.
 //
 // The handshaker guarantees:
 //
@@ -51,8 +53,7 @@ func newConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tl
 
 // ErrUTLSHandshakePanic indicates that there was panic handshaking
 // when we were using the yawning/utls library for parroting.
-//
-// See https://github.com/ooni/probe/issues/1770
+// See https://github.com/ooni/probe/issues/1770 for more information.
 var ErrUTLSHandshakePanic = errors.New("utls: handshake panic")
 
 func (c *utlsConn) HandshakeContext(ctx context.Context) (err error) {
