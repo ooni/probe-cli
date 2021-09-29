@@ -139,6 +139,7 @@ func compare(serverURL string) bool {
 }
 
 func TestWithProductionAPI(t *testing.T) {
+	t.Skip("skip until we use this part of the codebase")
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
@@ -149,6 +150,7 @@ func TestWithProductionAPI(t *testing.T) {
 }
 
 func TestWithTestingAPI(t *testing.T) {
+	t.Skip("skip until we use this part of the codebase")
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
