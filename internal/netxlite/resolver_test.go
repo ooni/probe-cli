@@ -26,6 +26,23 @@ func TestNewResolverSystem(t *testing.T) {
 	_ = errWrapper.Resolver.(*resolverSystem)
 }
 
+func TestNewResolverUDP(t *testing.T) {
+	d := NewDialerWithoutResolver(log.Log)
+	resolver := NewResolverUDP(log.Log, d, "1.1.1.1:53")
+	idna := resolver.(*resolverIDNA)
+	logger := idna.Resolver.(*resolverLogger)
+	if logger.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
+	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
+	serio := errWrapper.Resolver.(*SerialResolver)
+	txp := serio.Transport().(*DNSOverUDP)
+	if txp.Address() != "1.1.1.1:53" {
+		t.Fatal("invalid address")
+	}
+}
+
 func TestResolverSystem(t *testing.T) {
 	t.Run("Network and Address", func(t *testing.T) {
 		r := &resolverSystem{}

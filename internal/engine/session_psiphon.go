@@ -9,7 +9,7 @@ import (
 	_ "embed"
 
 	"filippo.io/age"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 //go:embed psiphon-config.json.age
@@ -35,7 +35,7 @@ func (s *sessionTunnelEarlySession) FetchPsiphonConfig(ctx context.Context) ([]b
 	if err != nil {
 		return nil, err
 	}
-	return iox.ReadAllContext(ctx, output)
+	return netxlite.ReadAllContext(ctx, output)
 }
 
 // FetchPsiphonConfig decrypts psiphonConfigJSONAge using
