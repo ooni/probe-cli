@@ -885,6 +885,7 @@ type redirectionQueue struct {
 
 func (r *redirectionQueue) append(URL ...string) {
 	r.q = append(r.q, URL...)
+	r.cnt++
 }
 
 func (r *redirectionQueue) popleft() (URL string) {
