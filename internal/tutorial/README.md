@@ -12,6 +12,7 @@ real OONI code, it should always be up to date.
 
 - [Using the measurex package to write network experiments](measurex)
 
+- [Low-level networking using netxlite](netxlite)
 
 ## Regenerating the tutorials
 
