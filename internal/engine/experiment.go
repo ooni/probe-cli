@@ -128,6 +128,7 @@ func (eaw *experimentAsyncWrapper) RunAsync(
 		defer close(out) // signal the reader we're done!
 		out <- &model.ExperimentAsyncTestKeys{
 			Extensions:         measurement.Extensions,
+			Input:              measurement.Input,
 			MeasurementRuntime: stop.Sub(start).Seconds(),
 			TestKeys:           measurement.TestKeys,
 		}
@@ -177,6 +178,7 @@ func (e *Experiment) MeasureAsync(
 		for tk := range in {
 			measurement := e.newMeasurement(input)
 			measurement.Extensions = tk.Extensions
+			measurement.Input = tk.Input
 			measurement.MeasurementRuntime = tk.MeasurementRuntime
 			measurement.TestKeys = tk.TestKeys
 			if err := measurement.Scrub(e.session.ProbeIP()); err != nil {
