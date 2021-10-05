@@ -19,7 +19,7 @@ import (
 
 const (
 	testName    = "web_connectivity"
-	testVersion = "0.4.0"
+	testVersion = "0.4.1"
 )
 
 // Config contains the experiment config.
@@ -63,6 +63,18 @@ type TestKeys struct {
 
 	// Top-level analysis
 	Summary
+
+	// DNSRuntime is the time to run all DNS checks.
+	DNSRuntime time.Duration `json:"x_dns_runtime"`
+
+	// THRuntime is the total time to invoke all test helpers.
+	THRuntime time.Duration `json:"x_th_runtime"`
+
+	// TCPTLSRuntime is the total time to perform TCP/TLS "connects".
+	TCPTLSRuntime time.Duration `json:"x_tcptls_runtime"`
+
+	// HTTPRuntime is the total time to perform the HTTP GET.
+	HTTPRuntime time.Duration `json:"x_http_runtime"`
 }
 
 // Measurer performs the measurement.
@@ -151,14 +163,17 @@ func (m Measurer) Run(
 		"backend": testhelper,
 	}
 	// 2. perform the DNS lookup step
+	dnsBegin := time.Now()
 	dnsResult := DNSLookup(ctx, DNSLookupConfig{
 		Begin:   measurement.MeasurementStartTimeSaved,
 		Session: sess, URL: URL})
+	tk.DNSRuntime = time.Since(dnsBegin)
 	tk.Queries = append(tk.Queries, dnsResult.TestKeys.Queries...)
 	tk.DNSExperimentFailure = dnsResult.Failure
 	epnts := NewEndpoints(URL, dnsResult.Addresses())
 	sess.Logger().Infof("using control: %s", testhelper.Address)
 	// 3. perform the control measurement
+	thBegin := time.Now()
 	tk.Control, err = Control(ctx, sess, testhelper.Address, ControlRequest{
 		HTTPRequest: URL.String(),
 		HTTPRequestHeaders: map[string][]string{
@@ -168,6 +183,7 @@ func (m Measurer) Run(
 		},
 		TCPConnect: epnts.Endpoints(),
 	})
+	tk.THRuntime = time.Since(thBegin)
 	tk.ControlFailure = archival.NewFailure(err)
 	// 4. analyze DNS results
 	if tk.ControlFailure == nil {
@@ -181,12 +197,14 @@ func (m Measurer) Run(
 	// returned by the control experiment.
 	//
 	// See https://github.com/ooni/probe/issues/1414
+	tcptlsBegin := time.Now()
 	connectsResult := Connects(ctx, ConnectsConfig{
 		Begin:         measurement.MeasurementStartTimeSaved,
 		Session:       sess,
 		TargetURL:     URL,
 		URLGetterURLs: epnts.URLs(),
 	})
+	tk.TCPTLSRuntime = time.Since(tcptlsBegin)
 	sess.Logger().Infof(
 		"TCP/TLS endpoints: %d/%d reachable", connectsResult.Successes, connectsResult.Total)
 	for _, tcpkeys := range connectsResult.AllKeys {
@@ -206,12 +224,14 @@ func (m Measurer) Run(
 	tk.TCPConnectAttempts = connectsResult.Total
 	tk.TCPConnectSuccesses = connectsResult.Successes
 	// 6. perform HTTP/HTTPS measurement
+	httpBegin := time.Now()
 	httpResult := HTTPGet(ctx, HTTPGetConfig{
 		Addresses: dnsResult.Addresses(),
 		Begin:     measurement.MeasurementStartTimeSaved,
 		Session:   sess,
 		TargetURL: URL,
 	})
+	tk.HTTPRuntime = time.Since(httpBegin)
 	tk.HTTPExperimentFailure = httpResult.Failure
 	tk.Requests = append(tk.Requests, httpResult.TestKeys.Requests...)
 	// 7. compare HTTP measurement to control
