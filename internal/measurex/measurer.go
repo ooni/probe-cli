@@ -778,7 +778,12 @@ func (mx *Measurer) MeasureURL(
 	for epnt := range mx.HTTPEndpointGetParallel(ctx, cookies, epnts...) {
 		m.Endpoints = append(m.Endpoints, epnt)
 	}
-	mx.maybeQUICFollowUp(ctx, m, cookies, epnts...)
+	switch parsed.Scheme {
+	case "https":
+		mx.maybeQUICFollowUp(ctx, m, cookies, epnts...)
+	default:
+		// nothing to do
+	}
 	m.EpntsRuntime = time.Since(epntRuntime)
 	m.fillRedirects()
 	return m, nil
