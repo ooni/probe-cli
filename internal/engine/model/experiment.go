@@ -24,14 +24,17 @@ type ExperimentSession interface {
 // ExperimentAsyncTestKeys is the type of test keys returned by an experiment
 // when running in async fashion rather than in sync fashion.
 type ExperimentAsyncTestKeys struct {
+	// Extensions contains the extensions used by this experiment.
+	Extensions map[string]int64
+
+	// Input is the input this measurement refers to.
+	Input MeasurementTarget
+
 	// MeasurementRuntime is the total measurement runtime.
 	MeasurementRuntime float64
 
 	// TestKeys contains the actual test keys.
 	TestKeys interface{}
-
-	// Extensions contains the extensions used by this experiment.
-	Extensions map[string]int64
 }
 
 // ExperimentMeasurerAsync is a measurer that can run in async fashion.

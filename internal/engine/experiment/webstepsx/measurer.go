@@ -133,8 +133,6 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 		ctx, URL, measurex.NewHTTPRequestHeaderForMeasuring(), cookies)
 	for m := range in {
 		out <- &model.ExperimentAsyncTestKeys{
-			MeasurementRuntime: m.TotalRuntime.Seconds(),
-			TestKeys:           &TestKeys{URLMeasurement: m},
 			Extensions: map[string]int64{
 				archival.ExtHTTP.Name:         archival.ExtHTTP.V,
 				archival.ExtDNS.Name:          archival.ExtDNS.V,
@@ -142,6 +140,9 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 				archival.ExtTCPConnect.Name:   archival.ExtTCPConnect.V,
 				archival.ExtTLSHandshake.Name: archival.ExtTLSHandshake.V,
 			},
+			Input:              model.MeasurementTarget(m.URL),
+			MeasurementRuntime: m.TotalRuntime.Seconds(),
+			TestKeys:           &TestKeys{URLMeasurement: m},
 		}
 	}
 }
