@@ -8,5 +8,5 @@
     "Netem": "delay 50ms",
     "TBF": "rate 700kbit burst 12kb limit 88kb"
   },
-  "Args": [ "--yes", "-n", "dash" ]
+  "Args": [ "--yes", "-n", "ndt7" ]
 }
