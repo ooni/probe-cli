@@ -118,7 +118,7 @@ func TestConfigureTLSVersion(t *testing.T) {
 }
 
 func TestNewTLSHandshakerStdlib(t *testing.T) {
-	th := NewTLSHandshakerStdlib(log.Log)
+	th := NewTLSHandshakerDefault(log.Log)
 	logger := th.(*tlsHandshakerLogger)
 	if logger.Logger != log.Log {
 		t.Fatal("invalid logger")

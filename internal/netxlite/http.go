@@ -247,6 +247,6 @@ func (c *httpTLSConnWithReadTimeout) Read(b []byte) (int, error) {
 // ways of creating a new HTTPTransport.
 func NewHTTPTransportStdlib(logger Logger) HTTPTransport {
 	dialer := NewDialerWithResolver(logger, NewResolverStdlib(logger))
-	tlsDialer := NewTLSDialer(dialer, NewTLSHandshakerStdlib(logger))
+	tlsDialer := NewTLSDialer(dialer, NewTLSHandshakerDefault(logger))
 	return NewHTTPTransport(logger, dialer, tlsDialer)
 }

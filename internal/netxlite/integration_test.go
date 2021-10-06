@@ -365,7 +365,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 
 	t.Run("for stdlib handshaker", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerStdlib(log.Log)
+			th := netxlite.NewTLSHandshakerDefault(log.Log)
 			err := successFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -373,7 +373,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on connection reset", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerStdlib(log.Log)
+			th := netxlite.NewTLSHandshakerDefault(log.Log)
 			err := connectionResetFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -381,7 +381,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		})
 
 		t.Run("on timeout", func(t *testing.T) {
-			th := netxlite.NewTLSHandshakerStdlib(log.Log)
+			th := netxlite.NewTLSHandshakerDefault(log.Log)
 			err := timeoutFlow(th)
 			if err != nil {
 				t.Fatal(err)
@@ -477,7 +477,7 @@ func TestHTTPTransport(t *testing.T) {
 
 	t.Run("works as intended", func(t *testing.T) {
 		d := netxlite.NewDialerWithResolver(log.Log, netxlite.NewResolverStdlib(log.Log))
-		td := netxlite.NewTLSDialer(d, netxlite.NewTLSHandshakerStdlib(log.Log))
+		td := netxlite.NewTLSDialer(d, netxlite.NewTLSHandshakerDefault(log.Log))
 		txp := netxlite.NewHTTPTransport(log.Log, d, td)
 		client := &http.Client{Transport: txp}
 		resp, err := client.Get("https://www.google.com/robots.txt")

@@ -127,7 +127,7 @@ func dialTCP(ctx context.Context, address string) (net.Conn, error) {
 
 func handshakeTLS(ctx context.Context, tcpConn net.Conn,
 	config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-	th := netxlite.NewTLSHandshakerStdlib(log.Log)
+	th := netxlite.NewTLSHandshakerDefault(log.Log)
 	return th.Handshake(ctx, tcpConn, config)
 }
 

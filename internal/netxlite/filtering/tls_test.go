@@ -25,7 +25,7 @@ func TestTLSProxy(t *testing.T) {
 
 	dialTLS := func(ctx context.Context, endpoint string, sni string) (net.Conn, error) {
 		d := netxlite.NewDialerWithoutResolver(log.Log)
-		th := netxlite.NewTLSHandshakerStdlib(log.Log)
+		th := netxlite.NewTLSHandshakerDefault(log.Log)
 		tdx := netxlite.NewTLSDialerWithConfig(d, th, &tls.Config{
 			ServerName: sni,
 			NextProtos: []string{"h2", "http/1.1"},

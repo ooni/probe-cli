@@ -174,7 +174,7 @@ func TestNewHTTPTransport(t *testing.T) {
 			},
 			Resolver: NewResolverStdlib(log.Log),
 		}
-		td := NewTLSDialer(d, NewTLSHandshakerStdlib(log.Log))
+		td := NewTLSDialer(d, NewTLSHandshakerDefault(log.Log))
 		txp := NewHTTPTransport(log.Log, d, td)
 		client := &http.Client{Transport: txp}
 		resp, err := client.Get("https://8.8.4.4/robots.txt")
