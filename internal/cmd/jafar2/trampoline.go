@@ -35,14 +35,24 @@ func (t *Trampoline) write(f *File, c *Config, m *Miniooni) {
 	f.WriteString("#!/bin/sh\n")
 	f.WriteString("set -ex\n")
 	if c.Upload != nil {
-		f.WriteString(fmt.Sprintf(
-			"tc qdisc add dev eth0 root handle 1: netem %s\n",
-			c.Upload.Netem,
-		))
-		f.WriteString(fmt.Sprintf(
-			"tc qdisc add dev eth0 parent 1: handle 2: tbf %s\n",
-			c.Upload.TBF,
-		))
+		parent := "root"
+		if c.Upload.Netem != "" {
+			f.WriteString(fmt.Sprintf(
+				"tc qdisc add dev eth0 root handle 1: netem %s\n",
+				c.Upload.Netem,
+			))
+			parent = "parent 1:"
+		}
+		if c.Upload.TBF != "" {
+			f.WriteString(fmt.Sprintf(
+				"tc qdisc add dev eth0 %s handle 2: tbf %s\n",
+				parent, c.Upload.TBF,
+			))
+		}
 	}
-	f.WriteString(fmt.Sprintf("%s %s\n", m.Path(), QuoteShellArgs(c.Args)))
+	command := c.Command
+	if command == "" {
+		command = m.Path()
+	}
+	f.WriteString(fmt.Sprintf("%s %s\n", command, QuoteShellArgs(c.Args)))
 }
