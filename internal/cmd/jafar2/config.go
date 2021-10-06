@@ -16,16 +16,20 @@ type Config struct {
 	// Upload describes the constraints in the upload path.
 	Upload *PathConstraints
 
-	// Args contains the arguments to pass to miniooni.
+	// Command is the optional command to run. If missing, we'll
+	// run a version of miniooni built by jafar2 itself.
+	Command string
+
+	// Args contains the arguments to pass to the command.
 	Args []string
 }
 
 // PathConstraints describes the constraints of a given path.
 type PathConstraints struct {
-	// Netem contains parameters for `tc qdisc ... netem ${parameters}`.
+	// Netem contains OPTIONAL parameters for `tc qdisc ... netem ${parameters}`.
 	Netem string
 
-	// TBF contains parameters for `tc qdisc ... tbf ${parameters}`.
+	// TBF contains OPTIONAL parameters for `tc qdisc ... tbf ${parameters}`.
 	TBF string
 }
 

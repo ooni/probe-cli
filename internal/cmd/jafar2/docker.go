@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/randx"
 	"golang.org/x/sys/execabs"
@@ -49,7 +50,7 @@ type DockerNetwork struct {
 // NewDockerNetwork creates a new DockerNetwork instance.
 func NewDockerNetwork(config *Config, shell Shell) *DockerNetwork {
 	const networkSize = 16
-	name := "mezanine-" + randx.Letters(networkSize)
+	name := "jafar2-" + randx.Letters(networkSize)
 	cmd := execabs.Command("docker", "network", "create", "-d", "bridge", name)
 	bridge := "br-" + string(shell.MustCaptureOutput(cmd)[:12])
 	return &DockerNetwork{bridge: bridge, name: name, shell: shell}
@@ -113,35 +114,26 @@ func DockerRun(config *Config, sh Shell, dev string,
 }
 
 func dockerRunTcQdiscNetem(config *PathConstraints, sh Shell, dev string) {
-	arguments := []string{
-		"tc",
-		"qdisc",
-		"add",
-		"dev",
-		dev,
-		"root",
-		"handle",
-		"1:",
-		"netem",
+	if config.Netem == "" {
+		return
 	}
+	args := fmt.Sprintf("tc qdisc add dev %s root handle 1: netem", dev)
+	arguments := strings.Split(args, " ")
 	arguments = append(arguments, SplitShellArgs(config.Netem)...)
 	cmd := NewCommandWithStdio("sudo", arguments...)
 	sh.MustRun(cmd)
 }
 
 func dockerRunTcQdiscTBF(config *PathConstraints, sh Shell, dev string) {
-	arguments := []string{
-		"tc",
-		"qdisc",
-		"add",
-		"dev",
-		dev,
-		"parent",
-		"1:",
-		"handle",
-		"2:",
-		"tbf",
+	if config.TBF == "" {
+		return
 	}
+	parent := "root"
+	if config.Netem != "" {
+		parent = "parent 1:"
+	}
+	args := fmt.Sprintf("tc qdisc add dev %s %s handle 2: tbf", dev, parent)
+	arguments := strings.Split(args, " ")
 	arguments = append(arguments, SplitShellArgs(config.TBF)...)
 	cmd := NewCommandWithStdio("sudo", arguments...)
 	sh.MustRun(cmd)
