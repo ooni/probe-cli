@@ -1,0 +1,13 @@
+{
+  "Blackhole": null,
+  "Download": {
+    "Netem": "delay 400ms loss 10% 25%",
+    "TBF": "rate 100kbit burst 12kb limit 20kb"
+  },
+  "Upload": {
+    "Netem": "delay 400ms loss 10% 25%",
+    "TBF": "rate 100kbit burst 12kb limit 20kb"
+  },
+  "Args": [ "--yes", "-n", "--bwmon", "bwmon-websteps-maxruntime-losses.jsonl", "--max-runtime", "600",
+    "--random", "-o", "report-websteps-maxruntime-losses.jsonl", "websteps" ]
+}
