@@ -15,9 +15,9 @@ changes you need to modify `./internal/tutorial/measurex/chapter11/main.go`.)
 ## main.go
 
 The beginning of the program is much simpler. We have removed
-out custom measurement type. We are now going to use the
+our custom measurement type. We are now going to use the
 `URLMeasurement` type (`go doc ./internal/measurex.URLMeasurement`),
-which as the same fields of `measurement` in chapter10 _plus_
+which has the same fields of `measurement` in chapter10 _plus_
 some extra fields that we'll examine in a later chapter.
 
 ```Go
@@ -77,7 +77,7 @@ The arguments are:
 The return value is either an `URLMeasurement`
 or an error. The error happens, for example, if
 the input URL scheme is not "http" or "https" (which
-we handled by panicking in chapter11).
+we handled by panicking in chapter07).
 
 Now, rather than panicking inside `MeasureURL`, we
 return the error to the caller and we `panic`

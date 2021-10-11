@@ -11,7 +11,7 @@
 // will only see a "QUIC handshake event".
 //
 // Having said that, let us now move on and see the code of
-// the simple program that shows this functionality.
+// the simple program that uses this functionality.
 //
 // (This file is auto-generated. Do not edit it directly! To apply
 // changes you need to modify `./internal/tutorial/measure/chapter05/main.go`.)
@@ -64,7 +64,7 @@ func main() {
 	// the arguments for the TLS config also apply here. We need
 	// to specify the SNI (`ServerName`), the ALPN (`NextProtos`),
 	// and the CA pool we want to use. Here, again, we're using
-	// the CA pool from cURL that we bundle with ooniprobe.
+	// the CA pool from cURL that we bundle with OONI Probe.
 	//
 	// As we did in the previous chapters, here's the usual three
 	// lines of code for printing the resulting measurement.
@@ -225,7 +225,7 @@ func main() {
 //   ],
 //
 //   // This section describes the QUIC handshake and it has
-//   // basically the same fields of the TLS handshake.
+//   // basically the same fields as the TLS handshake.
 //   "quic_handshake": [
 //     {
 //       "cipher_suite": "TLS_CHACHA20_POLY1305_SHA256",
@@ -261,9 +261,9 @@ func main() {
 // }
 // ```
 //
-// Here are some suggestions on other experiments to run:
+// Here are some suggestions for other experiments to run:
 //
-// 1. obtain a timeout by connecting on a port that is not
+// 1. obtain a timeout by connecting to a port that is not
 // actually listening for QUIC;
 //
 // 2. obtain a certificate validation error by forcing
@@ -272,7 +272,7 @@ func main() {
 // 3. use a different ALPN (by changing the code), and see
 // how the error and the oddity are handled. Can we do
 // anything about this by changing `./internal/netxlite/errorx`
-// to better support for this specific error condition?
+// to better support this specific error condition?
 //
 // ## Conclusion
 //

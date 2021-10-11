@@ -1,15 +1,15 @@
 
 # Chapter VI: Getting a webpage from an HTTP/HTTPS/HTTP3 endpoint.
 
-This chapter describes measuring getting a webpage from an
+This chapter describes measuring the retrieval of a webpage from an
 HTTPS endpoint. We have seen how to TCP connect, we have
 seen how to TLS handshake, now it's time to see how we can
-combine these operations with fetching a webpage from a
-given TCP endpoint speaking HTTP and TLS. (As well as to
-provide you with information on how to otherwise fetch
+combine these operations with that of fetching a webpage from a
+given TCP endpoint speaking HTTP and TLS. (As well as
+providing you with information on how to otherwise fetch
 from HTTP and HTTP/3 endpoints.)
 
-The program we're going to write, `main.go`, will show a
+The program we're going to write, `main.go`, will use a
 high-level operation to perform this measurement in a
 single API call. The code implementing this API call will
 combine the operations we have seen in previous chapter

@@ -68,7 +68,7 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 	// ```
 	//
 	// We start by parsing the input URL. If we cannot parse it, of
-	// course this is an hard error and we cannot continue.
+	// course this is a hard error and we cannot continue.
 	//
 	// ```Go
 	parsedURL, err := url.Parse(URL)
@@ -101,7 +101,7 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 
 	// ```
 	//
-	// This is code we have already seen in previous chapter.
+	// This is code we have already seen in the previous chapters.
 	//
 	//
 	// ### 2. Building a list of endpoints
@@ -150,7 +150,7 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 	// ### 5. HTTP measurement
 	//
 	// We need to manually build a `MeasurementDB`. This is a
-	// "database" where networking code will store events.
+	// "database" where the networking code will store events.
 	//
 	// ```Go
 
@@ -191,7 +191,7 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 	// body is not implemented by this function but rather
 	// is a property of the "tracing" HTTP transport we
 	// created above (this type of transport is the one we
-	// have been internally using in all the examples
+	// have been using internally in all the examples
 	// presented so far.)
 	//
 	// ```Go
