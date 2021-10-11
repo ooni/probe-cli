@@ -314,7 +314,7 @@ func (s *Session) Close() error {
 func (s *Session) doClose() {
 	s.httpDefaultTransport.CloseIdleConnections()
 	s.resolver.CloseIdleConnections()
-	s.logger.Infof("%s", s.resolver.Stats())
+	s.logger.Debugf("%s", s.resolver.Stats())
 	if s.tunnel != nil {
 		s.tunnel.Stop()
 	}
