@@ -58,7 +58,7 @@ func main() {
 ```
 ### Call LookupHTTPSSvc
 
-Here we perform the `LookupHostUDP` we performed in the
+Here we perform the `LookupHostUDP` we used in the
 previous chapter and then we call `LookupHTTPSvcUDP`.
 
 ```Go
@@ -67,7 +67,7 @@ previous chapter and then we call `LookupHTTPSvcUDP`.
 ```
 
 The `LookupHTTPSSvcUDP` function has the same signature
-of `LookupHostUDP` _but_ it behaves differently. Rather than
+as `LookupHostUDP` _but_ it behaves differently. Rather than
 querying for `A` and `AAAA`, it performs an `HTTPS` DNS
 lookup. This query returns:
 
@@ -80,7 +80,7 @@ lookup. This query returns:
 ### Build an []HTTPEndpoint and run serial measurements
 
 Here we call `AllHTTPEndpointsForURL` like we did in the
-previous chapter. However, note that we pass to it the
+previous chapter. However, note that we pass it the
 whole content of `m.DNS`, which now contains not only the
 A/AAAA lookups results but also the HTTPS lookup results.
 

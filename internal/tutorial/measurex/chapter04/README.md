@@ -192,8 +192,8 @@ https://github.com/ooni/spec/tree/master/data-formats.
 ### Suggested follow-up experiments
 
 Try to run experiments in the following scenarios, and
-check the output JSON to familiarize with what changes in
-different error conditions.
+check the output JSON to familiarize yourself with what
+changes in different error conditions.
 
 1. measurement that causes timeout
 
@@ -217,7 +217,7 @@ Here are the commands I used for each proposed exercise:
 
 4. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni expire.badssl.com
 
-To emulate the two last scenario, if you're on Linux, a
+To emulate the last two scenarios, if you're on Linux, a
 possibility is building Jafar with this command:
 
 ```
@@ -243,5 +243,5 @@ Likewise, you can obtain a timeout using the
 ## Conclusion
 
 We have seen how to measure TLS handshakes. We have seen how
-this flow produces different output on different error conditions.
+this flow produces a different output on different error conditions.
 

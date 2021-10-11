@@ -30,7 +30,7 @@ import (
 )
 
 func main() {
-	query := flag.String("query", "example.com", "domain to resolver")
+	query := flag.String("query", "example.com", "domain to resolve")
 	address := flag.String("address", "8.8.4.4:53", "DNS-over-UDP server address")
 	timeout := flag.Duration("timeout", 60*time.Second, "timeout to use")
 	flag.Parse()
@@ -429,9 +429,9 @@ Here's the corresponding JSON:
 }
 ```
 
-We see that we do fail with a timeout (I have marked some of them
+We see that we fail with a timeout (I have marked some of them
 with comments inside the JSON). We see the timeout at three different
-level of abstractions (from lower to higher abstraction): at the socket layer,
+levels of abstractions (from lower to higher abstraction): at the socket layer,
 during the DNS round trip, during the DNS lookup.
 
 What we also see is that `t`'s value is ~5s when the `read` event
@@ -562,6 +562,6 @@ Here's the answer I get:
 
 ## Conclusion
 
-We have seen how we sending DNS queries over UDP, measure the
+We have seen how to send DNS queries over UDP, measure the
 results, and what happens on common error conditions.
 
