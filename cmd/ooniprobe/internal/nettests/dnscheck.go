@@ -52,7 +52,7 @@ func init() {
 
 // Run starts the nettest.
 func (n DNSCheck) Run(ctl *Controller) error {
-	builder, err := ctl.Session.NewExperimentBuilder("run")
+	builder, err := ctl.Session.NewExperimentBuilder("dnscheck")
 	if err != nil {
 		return err
 	}
