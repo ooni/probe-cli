@@ -34,6 +34,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) {
 			BodyLength: -1,
 			Failure:    newfailure(err),
 			StatusCode: -1,
+			Headers:    map[string]string{},
 		}
 		return
 	}
@@ -53,6 +54,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) {
 			BodyLength: -1,
 			Failure:    newfailure(err),
 			StatusCode: -1,
+			Headers:    map[string]string{},
 		}
 		return
 	}
