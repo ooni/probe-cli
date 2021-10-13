@@ -48,7 +48,7 @@ func dnsMapFailure(failure *string) *string {
 		switch *failure {
 		case netxlite.FailureDNSNXDOMAINError:
 			// We have a name for this string because dnsanalysis.go is
-			// alreayd checking for this specific error string.
+			// already checking for this specific error string.
 			s := webconnectivity.DNSNameError
 			return &s
 		case netxlite.FailureDNSNoAnswer,
