@@ -1,53 +1,25 @@
 package nettests
 
-import (
-	"encoding/json"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/dnscheck"
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/run"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
-)
-
 // DNSCheck nettest implementation.
 type DNSCheck struct{}
 
-var dnsCheckDefaultInput []string
-
-func dnsCheckMustMakeInput(input *run.StructuredInput) string {
-	data, err := json.Marshal(input)
-	runtimex.PanicOnError(err, "json.Marshal failed")
-	return string(data)
-}
-
-func init() {
-	// The following code just adds a minimal set of URLs to
-	// test using DNSCheck, so we start exposing it.
-	//
-	// TODO(bassosimone):
-	//
-	// 1. we should be getting input from the backend instead of
-	// having an hardcoded list of inputs here.
-	//
-	// 2. we should modify dnscheck to accept http3://... as a
-	// shortcut for https://... with h3. If we don't do that, we
-	// are stuck with the h3 results hiding h2 results in OONI
-	// Explorer because they use the same URL.
-	//
-	// 3. it seems we have the problem that dnscheck results
-	// appear as the `run` nettest in `ooniprobe list <ID>` because
-	// dnscheck is run using the `run` functionality.
-	dnsCheckDefaultInput = append(dnsCheckDefaultInput, dnsCheckMustMakeInput(
-		&run.StructuredInput{
-			DNSCheck: dnscheck.Config{},
-			Name:     "dnscheck",
-			Input:    "https://dns.google/dns-query",
-		}))
-	dnsCheckDefaultInput = append(dnsCheckDefaultInput, dnsCheckMustMakeInput(
-		&run.StructuredInput{
-			DNSCheck: dnscheck.Config{},
-			Name:     "dnscheck",
-			Input:    "https://cloudflare-dns.com/dns-query",
-		}))
+// TODO(https://github.com/ooni/probe/issues/1390): we need to
+// implement serving DNSCheck targets from the API
+var dnsCheckDefaultInput = []string{
+	"https://dns.google/dns-query",
+	"https://8.8.8.8/dns-query",
+	"dot://8.8.8.8:853/",
+	"dot://8.8.4.4:853/",
+	"https://8.8.4.4/dns-query",
+	"https://cloudflare-dns.com/dns-query",
+	"https://1.1.1.1/dns-query",
+	"https://1.0.0.1/dns-query",
+	"dot://1.1.1.1:853/",
+	"dot://1.0.0.1:853/",
+	"https://dns.quad9.net/dns-query",
+	"https://9.9.9.9/dns-query",
+	"dot://9.9.9.9:853/",
+	"dot://dns.quad9.net/",
 }
 
 // Run starts the nettest.

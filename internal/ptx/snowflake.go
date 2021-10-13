@@ -115,6 +115,7 @@ func (d *SnowflakeDialer) iceAddresses() []string {
 	if len(d.ICEAddresses) > 0 {
 		return d.ICEAddresses
 	}
+	// TODO: keep in sync with snowflake and c/o/i/nettests/stunreachability.go
 	return []string{
 		"stun:stun.voip.blackberry.com:3478",
 		"stun:stun.altar.com.pl:3478",
