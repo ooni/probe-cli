@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
@@ -272,6 +273,7 @@ func (e *Experiment) newMeasurement(input string) *model.Measurement {
 	m.AddAnnotation("engine_name", "ooniprobe-engine")
 	m.AddAnnotation("engine_version", version.Version)
 	m.AddAnnotation("platform", e.session.Platform())
+	m.AddAnnotation("architecture", runtime.GOARCH)
 	return m
 }
 
