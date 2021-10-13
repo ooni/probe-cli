@@ -7,6 +7,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // newfailure is a convenience shortcut to save typing
@@ -31,5 +32,35 @@ func DNSDo(ctx context.Context, config *DNSConfig) {
 	if addrs == nil {
 		addrs = []string{} // fix: the old test helper did that
 	}
-	config.Out <- CtrlDNSResult{Failure: newfailure(err), Addrs: addrs}
+	failure := dnsMapFailure(newfailure(err))
+	config.Out <- CtrlDNSResult{Failure: failure, Addrs: addrs}
+}
+
+// dnsMapFailure attempts to map netxlite failures to the strings
+// used by the original OONI test helper.
+//
+// See https://github.com/ooni/backend/blob/6ec4fda5b18/oonib/testhelpers/http_helpers.py#L430
+func dnsMapFailure(failure *string) *string {
+	switch failure {
+	case nil:
+		return nil
+	default:
+		switch *failure {
+		case netxlite.FailureDNSNXDOMAINError:
+			// We have a name for this string because dnsanalysis.go is
+			// already checking for this specific error string.
+			s := webconnectivity.DNSNameError
+			return &s
+		case netxlite.FailureDNSNoAnswer,
+			netxlite.FailureDNSNonRecoverableFailure,
+			netxlite.FailureDNSRefusedError,
+			netxlite.FailureDNSServerMisbehaving,
+			netxlite.FailureDNSTemporaryFailure:
+			s := "dns_server_failure"
+			return &s
+		default:
+			s := "unknown_error"
+			return &s
+		}
+	}
 }
