@@ -15,6 +15,7 @@ type ControlRequest struct {
 	HTTPRequest        string              `json:"http_request"`
 	HTTPRequestHeaders map[string][]string `json:"http_request_headers"`
 	TCPConnect         []string            `json:"tcp_connect"`
+	IncludeHTTPResponses bool `json:"include_http_responses"`
 }
 
 // ControlTCPConnectResult is the result of the TCP connect

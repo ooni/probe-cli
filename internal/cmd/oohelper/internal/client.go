@@ -110,6 +110,7 @@ func (oo OOClient) Do(ctx context.Context, config OOConfig) (*CtrlResponse, erro
 			"User-Agent":      {httpheader.UserAgent()},
 		},
 		TCPConnect: endpoints,
+		IncludeHTTPResponses: true,
 	}
 	data, err := json.Marshal(creq)
 	runtimex.PanicOnError(err, "oohelper: cannot marshal control request")
