@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 45*time.Second)
 	debug       = flag.Bool("debug", false, "Toggle debug mode")
 	httpClient  *http.Client
 	resolver    netx.Resolver
