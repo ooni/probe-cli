@@ -31,7 +31,7 @@ func Test_dnsMapFailure(t *testing.T) {
 	}, {
 		name:    "no answer",
 		failure: stringPointerForString(netxlite.FailureDNSNoAnswer),
-		want:    stringPointerForString("dns_server_failure"),
+		want:    nil,
 	}, {
 		name:    "non recoverable failure",
 		failure: stringPointerForString(netxlite.FailureDNSNonRecoverableFailure),

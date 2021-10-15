@@ -51,8 +51,13 @@ func dnsMapFailure(failure *string) *string {
 			// already checking for this specific error string.
 			s := webconnectivity.DNSNameError
 			return &s
-		case netxlite.FailureDNSNoAnswer,
-			netxlite.FailureDNSNonRecoverableFailure,
+		case netxlite.FailureDNSNoAnswer:
+			// In this case the legacy TH would produce an empty
+			// reply that is not attached to any error.
+			//
+			// See https://github.com/ooni/probe/issues/1707#issuecomment-944322725
+			return nil
+		case netxlite.FailureDNSNonRecoverableFailure,
 			netxlite.FailureDNSRefusedError,
 			netxlite.FailureDNSServerMisbehaving,
 			netxlite.FailureDNSTemporaryFailure:

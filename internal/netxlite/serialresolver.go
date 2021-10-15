@@ -64,6 +64,9 @@ func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]str
 	addrsA, errA := r.lookupHostWithRetry(ctx, hostname, dns.TypeA)
 	addrsAAAA, errAAAA := r.lookupHostWithRetry(ctx, hostname, dns.TypeAAAA)
 	if errA != nil && errAAAA != nil {
+		// Note: we choose to return the errA because we assume that
+		// it's the more meaningful one: the errAAAA may just be telling
+		// us that there is no AAAA record for the website.
 		return nil, errA
 	}
 	addrs = append(addrs, addrsA...)
