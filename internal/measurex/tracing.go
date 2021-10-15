@@ -51,7 +51,7 @@ func NewTracingHTTPTransportWithDefaultSettings(
 	return NewTracingHTTPTransport(logger, begin, db,
 		netxlite.NewResolverStdlib(logger),
 		netxlite.NewDialerWithoutResolver(logger),
-		netxlite.NewTLSHandshakerStdlib(logger))
+		netxlite.NewTLSHandshakerDefault(logger))
 }
 
 func (mx *Measurer) NewTracingHTTPTransportWithDefaultSettings(

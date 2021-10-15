@@ -6,10 +6,13 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"log"
 	"net"
+	"os"
 	"time"
 
 	oohttp "github.com/ooni/oohttp"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 var (
@@ -146,16 +149,29 @@ type TLSHandshaker interface {
 		net.Conn, tls.ConnectionState, error)
 }
 
-// NewTLSHandshakerStdlib creates a new TLS handshaker using the
-// go standard library to manage TLS.
+// NewTLSHandshakerDefault creates a new TLS handshaker using the
+// default-configured TLS handshaker. This is the stdlib handshaker
+// unless the OONI_PARROTING variable is set to either "chrome" or
+// "firefox", in which case we'll use parroting.
 //
 // The handshaker guarantees:
 //
 // 1. logging
 //
 // 2. error wrapping
-func NewTLSHandshakerStdlib(logger Logger) TLSHandshaker {
-	return newTLSHandshaker(&tlsHandshakerConfigurable{}, logger)
+func NewTLSHandshakerDefault(logger Logger) TLSHandshaker {
+	var newConn func(conn net.Conn, config *tls.Config) oohttp.TLSConn
+	switch parrot := os.Getenv("OONI_PARROTING"); parrot {
+	case "firefox":
+		newConn = newConnUTLS(&utls.HelloFirefox_Auto)
+		log.Printf("netxlite: using firefox TLS parroting")
+	case "chrome":
+		newConn = newConnUTLS(&utls.HelloChrome_Auto)
+		log.Printf("netxlite: using chrome TLS parroting")
+	default:
+		// nothing to do
+	}
+	return newTLSHandshaker(&tlsHandshakerConfigurable{NewConn: newConn}, logger)
 }
 
 // newTLSHandshaker is the common factory for creating a new TLSHandshaker

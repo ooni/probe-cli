@@ -1,0 +1,13 @@
+{
+  "Blackhole": null,
+  "Download": {
+    "Netem": "delay 15ms",
+    "TBF": "rate 7000kbit burst 12kb limit 875kb"
+  },
+  "Upload": {
+    "Netem": "delay 15ms",
+    "TBF": "rate 700kbit burst 12kb limit 88kb"
+  },
+  "Args": [ "--yes", "-n", "--bwmon", "bwmon-websteps.json",
+    "-o", "report-websteps.jsonl", "websteps" ]
+}

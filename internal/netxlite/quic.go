@@ -34,7 +34,7 @@ var _ QUICListener = &quicListenerStdlib{}
 
 // Listen implements QUICListener.Listen.
 func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (UDPLikeConn, error) {
-	return net.ListenUDP("udp", addr)
+	return bwmonitor.MaybeWrapUDPLikeConn(net.ListenUDP("udp", addr))
 }
 
 // QUICDialer dials QUIC sessions.

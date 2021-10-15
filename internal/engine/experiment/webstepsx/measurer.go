@@ -126,7 +126,7 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 		MeasureURLHelper: helper,
 		Logger:           sess.Logger(),
 		Resolvers:        measurerResolvers,
-		TLSHandshaker:    netxlite.NewTLSHandshakerStdlib(sess.Logger()),
+		TLSHandshaker:    netxlite.NewTLSHandshakerDefault(sess.Logger()),
 	}
 	cookies := measurex.NewCookieJar()
 	in := mmx.MeasureURLAndFollowRedirections(

@@ -63,7 +63,7 @@ func NewMeasurerWithDefaultSettings() *Measurer {
 			Network: "udp",
 			Address: "8.8.4.4:53",
 		}},
-		TLSHandshaker: netxlite.NewTLSHandshakerStdlib(log.Log),
+		TLSHandshaker: netxlite.NewTLSHandshakerDefault(log.Log),
 	}
 }
 
