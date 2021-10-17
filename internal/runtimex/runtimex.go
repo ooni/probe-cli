@@ -2,7 +2,10 @@
 // https://pkg.go.dev/github.com/m-lab/go/rtx, except that it's simpler.
 package runtimex
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 // PanicOnError calls panic() if err is not nil.
 func PanicOnError(err error, message string) {
@@ -21,4 +24,12 @@ func PanicIfFalse(assertion bool, message string) {
 // PanicIfTrue calls panic if assertion is true.
 func PanicIfTrue(assertion bool, message string) {
 	PanicIfFalse(!assertion, message)
+}
+
+// TrapPanics transforms a panic into a clean exit from the program.
+func TrapPanics() {
+	if v := recover(); v != nil {
+		fmt.Fprint(os.Stderr, v, "\n")
+		os.Exit(1)
+	}
 }
