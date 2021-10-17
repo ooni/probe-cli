@@ -16,6 +16,12 @@ type Environment struct {
 	// Cleanup runs a cleanup before setting up the namespace.
 	Cleanup bool
 
+	// DownlinkDelay is the downlink delay for netem.
+	DownlinkDelay OptDelay
+
+	// DownlinkRate is the downlink rate for netem.
+	DownlinkRate OptRate
+
 	// DryRun disables destructive operations and only prints commands.
 	DryRun bool
 
@@ -28,6 +34,12 @@ type Environment struct {
 	// Help indicates we want the user to see the help message.
 	Help bool
 
+	// LocalAddress is the address to assign to the local veth.
+	LocalAddress OptIPAddress
+
+	// LocalVeth is the name of the local veth.
+	LocalVeth OptDevice
+
 	// NamespaceName is the name of the network namespace.
 	NamespaceName OptNetns
 
@@ -37,14 +49,14 @@ type Environment struct {
 	// NamespaceVeth is the veth to use in the namespace.
 	NamespaceVeth OptDevice
 
-	// LocalAddress is the address to assign to the local veth.
-	LocalAddress OptIPAddress
-
-	// LocalVeth is the name of the local veth.
-	LocalVeth OptDevice
-
 	// Netmask is the netmask to use.
 	Netmask OptNetmask
+
+	// UplinkDelay is the uplink delay for netem.
+	UplinkDelay OptDelay
+
+	// UplinkRate is the uplink rate for netem.
+	UplinkRate OptRate
 
 	// User specifies the user that you want to run as.
 	User OptUserGroup
@@ -55,16 +67,20 @@ func NewEnvironment() *Environment {
 	return &Environment{
 		Block:            OptEndpointsList{},
 		Cleanup:          false,
+		DownlinkDelay:    "",
+		DownlinkRate:     "",
 		DryRun:           false,
 		ForwardChain:     "CI_FORWARD",
 		Group:            "root",
 		Help:             false,
+		LocalAddress:     "10.14.17.1",
+		LocalVeth:        "civeth0",
 		NamespaceName:    "cinetns",
 		NamespaceAddress: "10.14.17.11",
 		NamespaceVeth:    "civeth1",
-		LocalAddress:     "10.14.17.1",
-		LocalVeth:        "civeth0",
 		Netmask:          "24",
+		UplinkDelay:      "",
+		UplinkRate:       "",
 		User:             "root",
 	}
 }
@@ -76,6 +92,10 @@ func (env *Environment) DescribeOption(opt string) string {
 		return "Registers endpoints to block (e.g., 8.8.8.8:443/tcp)"
 	case "cleanup":
 		return "Runs cleanup before creating namespace (useful if a previous run crashed)"
+	case "downlink-delay":
+		return "Sets downlink extra delay (e.g., 10ms)"
+	case "downlink-rate":
+		return "Sets downlink rate (e.g., 100kbit)"
 	case "dry-run":
 		return "Shows what would have been done if -n was not specified"
 	case "forward-chain":
@@ -96,6 +116,10 @@ func (env *Environment) DescribeOption(opt string) string {
 		return "Name for the local virtual ethernet connected to the namespace's one"
 	case "netmask":
 		return "Netmask to use for addresses assigned to virtual ethernets"
+	case "uplink-delay":
+		return "Sets uplink extra delay (e.g., 10ms)"
+	case "uplink-rate":
+		return "Sets uplink rate (e.g., 100kbit)"
 	case "user":
 		return "Name of the user to run <command> as"
 	default:

@@ -53,6 +53,12 @@ func (nns *Netns) Create() error {
 	if err := nns.maybeBlockEndpoints(); err != nil {
 		return err
 	}
+	if err := nns.maybeApplyNetemConfigLocal(); err != nil {
+		return err
+	}
+	if err := nns.maybeApplyNetemConfigNamespace(); err != nil {
+		return err
+	}
 	return nns.writeResolvConf()
 }
 
@@ -112,7 +118,7 @@ func (nns *Netns) createFwdChain() error {
 	return ShellRunf(nns.sh, "iptables -I FORWARD -j %s", nns.env.ForwardChain)
 }
 
-// maybeBlockEndpoints adds rules for block endpoints.
+// maybeBlockEndpoints adds rules to block endpoints.
 func (nns *Netns) maybeBlockEndpoints() error {
 	for _, epnt := range nns.env.Block.Endpoints {
 		err := nns.sh.Runv([]string{
@@ -137,6 +143,57 @@ func (nns *Netns) maybeBlockEndpoints() error {
 		}
 	}
 	return nil
+}
+
+// maybeApplyNetemConfigLocal adds rules to simulate network environments
+// to the local virtual ethernet device.
+func (nns *Netns) maybeApplyNetemConfigLocal() error {
+	cmdline, err := nns.netemCmdline(
+		nns.env.LocalVeth, nns.env.DownlinkRate, nns.env.DownlinkDelay)
+	if err != nil || len(cmdline) < 1 {
+		return err
+	}
+	return nns.sh.Runv(cmdline)
+}
+
+// maybeApplyNetemConfigNamespace adds rules to simulate network environments
+// to the namespace's virtual ethernet device.
+func (nns *Netns) maybeApplyNetemConfigNamespace() error {
+	cmdline, err := nns.netemCmdline(
+		nns.env.NamespaceVeth, nns.env.UplinkRate, nns.env.UplinkDelay)
+	if err != nil || len(cmdline) < 1 {
+		return err
+	}
+	return nns.sh.Runv(append([]string{
+		"ip", "netns", "exec", nns.env.NamespaceName.String()}, cmdline...))
+}
+
+func (nns *Netns) netemCmdline(dev OptDevice, rate OptRate, delay OptDelay) ([]string, error) {
+	if rate == "" && delay == "" {
+		return nil, nil
+	}
+	tcbin, err := execabs.LookPath("tc")
+	if err != nil {
+		return nil, err
+	}
+	cmdline := []string{
+		tcbin,
+		"qdisc",
+		"add",
+		"dev",
+		dev.String(),
+		"root",
+		"netem",
+	}
+	if rate != "" {
+		cmdline = append(cmdline, "rate")
+		cmdline = append(cmdline, rate.String())
+	}
+	if delay != "" {
+		cmdline = append(cmdline, "delay")
+		cmdline = append(cmdline, delay.String())
+	}
+	return cmdline, nil
 }
 
 // writeResolvConf writes a resolv.conf for the namespace.

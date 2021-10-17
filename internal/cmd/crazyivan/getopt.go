@@ -14,6 +14,9 @@ var (
 	// regexpChain identifies valid iptables chains
 	regexpChain = regexp.MustCompile("^[A-Z0-9_]{1,16}$")
 
+	// regexpDelay identifies valid delays
+	regexpDelay = regexp.MustCompile("^[a-z0-9]{1,32}$")
+
 	// regexpDevice identifies valid device names
 	regexpDevice = regexp.MustCompile("^[a-zA-z0-9]{1,16}$")
 
@@ -22,6 +25,9 @@ var (
 
 	// regexpNetmask identifies valid netmasks
 	regexpNetmask = regexp.MustCompile("^[1-9][0-9]?$")
+
+	// regexpRate identifies valid rates
+	regexpRate = regexp.MustCompile("^[a-z0-9]{1,32}$")
 
 	// regexpUserGroup identifiers a valid user or group name
 	regexpUserGroup = regexp.MustCompile("^[a-zA-Z0-9]{1,64}$")
@@ -194,5 +200,39 @@ func (o *OptUserGroup) Set(value string, opt getopt.Option) error {
 
 // String implements getopt.Value.String.
 func (o *OptUserGroup) String() string {
+	return string(*o)
+}
+
+// OptRate is the rate value for netem.
+type OptRate string
+
+// Set implements getopt.Value.Set.
+func (o *OptRate) Set(value string, opt getopt.Option) error {
+	if !regexpRate.MatchString(value) {
+		return errors.New("invalid rate for netem")
+	}
+	*o = OptRate(value)
+	return nil
+}
+
+// String implements getopt.Value.String.
+func (o *OptRate) String() string {
+	return string(*o)
+}
+
+// OptDelay is the rate value for netem.
+type OptDelay string
+
+// Set implements getopt.Value.Set.
+func (o *OptDelay) Set(value string, opt getopt.Option) error {
+	if !regexpDelay.MatchString(value) {
+		return errors.New("invalid delay for netem")
+	}
+	*o = OptDelay(value)
+	return nil
+}
+
+// String implements getopt.Value.String.
+func (o *OptDelay) String() string {
 	return string(*o)
 }
