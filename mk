@@ -81,7 +81,7 @@ GOLANG_EXTRA_FLAGS =
 
 #help:
 #help: * GOLANG_VERSION_NUMBER : the expected version number for golang.
-GOLANG_VERSION_NUMBER = 1.16.4
+GOLANG_VERSION_NUMBER = 1.17.2
 
 #help:
 #help: * GPG_USER              : allows overriding the default GPG user used
