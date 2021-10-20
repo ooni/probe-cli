@@ -2,18 +2,18 @@ package geolocate
 
 import "testing"
 
-const ipAddr = "35.204.49.125"
+const ipAddr = "8.8.8.8"
 
 func TestLookupASN(t *testing.T) {
 	asn, org, err := LookupASN(ipAddr)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if asn <= 0 {
-		t.Fatal("unexpected ASN value")
+	if asn != 15169 {
+		t.Fatal("unexpected ASN value", asn)
 	}
-	if len(org) <= 0 {
-		t.Fatal("unexpected org value")
+	if org != "Google LLC" {
+		t.Fatal("unexpected org value", org)
 	}
 }
 
@@ -35,8 +35,8 @@ func TestLookupCC(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cc) != 2 {
-		t.Fatal("does not seem a country code")
+	if cc != "US" {
+		t.Fatal("invalid country code", cc)
 	}
 }
 
