@@ -6,6 +6,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // CtrlTCPResult is the result of the TCP check performed by the test helper.
@@ -35,8 +36,34 @@ func TCPDo(ctx context.Context, config *TCPConfig) {
 	config.Out <- TCPResultPair{
 		Endpoint: config.Endpoint,
 		Result: CtrlTCPResult{
-			Failure: newfailure(err),
+			Failure: tcpMapFailure(newfailure(err)),
 			Status:  err == nil,
 		},
+	}
+}
+
+// tcpMapFailure attempts to map netxlite failures to the strings
+// used by the original OONI test helper.
+//
+// See https://github.com/ooni/backend/blob/6ec4fda5b18/oonib/testhelpers/http_helpers.py#L392
+func tcpMapFailure(failure *string) *string {
+	switch failure {
+	case nil:
+		return nil
+	default:
+		switch *failure {
+		case netxlite.FailureGenericTimeoutError:
+			return failure // already using the same name
+		case netxlite.FailureConnectionRefused:
+			s := "connection_refused_error"
+			return &s
+		default:
+			// The definition of this error according to Twisted is
+			// "something went wrong when connecting". Because we are
+			// indeed basically just connecting here, it seems safe
+			// to map any other error to "connect_error" here.
+			s := "connect_error"
+			return &s
+		}
 	}
 }

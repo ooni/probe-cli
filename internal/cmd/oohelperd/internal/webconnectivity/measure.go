@@ -76,7 +76,12 @@ func Measure(ctx context.Context, config MeasureConfig, creq *CtrlRequest) (*Ctr
 	select {
 	case cresp.DNS = <-dnsch:
 	default:
-		// we land here when there's no domain name
+		// we need to emit a non-nil Addrs to match exactly
+		// the behavior of the legacy TH
+		cresp.DNS = CtrlDNSResult{
+			Failure: nil,
+			Addrs:   []string{},
+		}
 	}
 	cresp.HTTPRequest = <-httpch
 	cresp.TCPConnect = make(map[string]CtrlTCPResult)

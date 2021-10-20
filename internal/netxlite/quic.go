@@ -154,6 +154,7 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context, network string,
 	sess, err := d.dialEarlyContext(
 		ctx, pconn, udpAddr, address, tlsConfig, quicConfig)
 	if err != nil {
+		pconn.Close() // we own it on failure
 		return nil, err
 	}
 	return &quicSessionOwnsConn{EarlySession: sess, conn: pconn}, nil
