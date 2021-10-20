@@ -3,8 +3,8 @@ package httpheader
 
 // UserAgent returns the User-Agent header used for measuring.
 func UserAgent() string {
-	// 11.0% as of May 13, 2021 according to https://techblog.willshouse.com/2012/01/03/most-common-user-agents/
-	const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+	// 10.0% as of Oct 20, 2021 according to https://techblog.willshouse.com/2012/01/03/most-common-user-agents/
+	const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36"
 	return ua
 }
 
@@ -12,5 +12,5 @@ func UserAgent() string {
 // pretent to be a command line HTTP client.
 func CLIUserAgent() string {
 	// here we always put the latest version of cURL.
-	return "curl/7.76.1"
+	return "curl/7.79.1"
 }
