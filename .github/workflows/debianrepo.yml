@@ -3,7 +3,9 @@ name: debianrepo
 on:
   push:
     branches:
+      - "stable"
       - "release/**"
+      - "master"
       - "debianrepo"
 
 jobs:
