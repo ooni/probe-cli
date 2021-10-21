@@ -11,13 +11,13 @@ jobs:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: ./E2E/debian.sh docker i386
+      - run: ./E2E/debian.sh i386
 
   test_amd64:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: ./E2E/debian.sh docker amd64
+      - run: ./E2E/debian.sh amd64
 
   test_arm:
     runs-on: "ubuntu-20.04"
@@ -25,13 +25,13 @@ jobs:
       - uses: actions/checkout@v2
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y qemu-user-static
-      - run: ./E2E/debian.sh docker armhf
+      - run: ./E2E/debian.sh armhf
 
-  build_arm64:
+  test_arm64:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
       - run: sudo apt-get update -q
       - run: sudo apt-get dist-upgrade -y
       - run: sudo apt-get install -y qemu-user-static
-      - run: ./E2E/debian.sh docker arm64
+      - run: ./E2E/debian.sh arm64

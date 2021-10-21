@@ -11,7 +11,7 @@ install_flow() {
 	apt-get update
 	apt-get install --yes gnupg
 	apt-key adv --verbose --keyserver hkp://keyserver.ubuntu.com --recv-keys 'B5A08F01796E7F521861B449372D1FF271F2DD50'
-	echo "deb http://deb.ooni.org/ unstable main" | tee /etc/apt/sources.list.d/ooniprobe.list
+	echo "deb [arch=$1] http://deb.ooni.org/ unstable main" | tee /etc/apt/sources.list.d/ooniprobe.list
 	apt-get update
 	apt-get install --yes ooniprobe-cli
 }
@@ -35,7 +35,7 @@ if [ "$1" = "docker" ]; then
 	docker_flow "$2"
 
 elif [ "$1" = "install" ]; then
-	install_flow
+	install_flow $1
 
 else
 	echo "usage: $0 docker {i386,amd64,armhf,arm64}" 1>&2
