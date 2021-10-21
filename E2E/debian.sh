@@ -35,7 +35,7 @@ if [ "$1" = "docker" ]; then
 	docker_flow "$2"
 
 elif [ "$1" = "install" ]; then
-	install_flow $1
+	install_flow $2
 
 else
 	echo "usage: $0 docker {i386,amd64,armhf,arm64}" 1>&2
