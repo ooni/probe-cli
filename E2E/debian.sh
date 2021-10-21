@@ -25,7 +25,7 @@ docker_flow() {
 	}
 	set -x
 	docker pull debian:stable
-	docker run debian:stable ./E2E/debian.sh install $1
+	docker run -v "$(pwd):/ooni" -w /ooni debian:stable ./E2E/debian.sh install $1
 }
 
 if [ "$1" = "docker" ]; then
