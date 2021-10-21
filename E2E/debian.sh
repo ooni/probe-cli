@@ -8,6 +8,7 @@ set -e
 install_flow() {
 	set -x
 	export DEBIAN_FRONTEND=noninteractive
+	dpkg --add-architecture
 	apt-get update
 	apt-get install --yes gnupg
 	apt-key adv --verbose --keyserver hkp://keyserver.ubuntu.com --recv-keys 'B5A08F01796E7F521861B449372D1FF271F2DD50'
@@ -23,8 +24,8 @@ docker_flow() {
 		exit 1
 	}
 	set -x
-	docker pull --platform "linux/$1" debian:stable
-	docker run --platform "linux/$1" -v "$(pwd):/ooni" -w /ooni debian:stable ./E2E/debian.sh install
+	docker pull debian:stable
+	docker run debian:stable ./E2E/debian.sh install $1
 }
 
 if [ "$1" = "docker" ]; then
@@ -35,7 +36,7 @@ if [ "$1" = "docker" ]; then
 	docker_flow "$2"
 
 elif [ "$1" = "install" ]; then
-	install_flow $2
+	install_flow "$2"
 
 else
 	echo "usage: $0 docker {i386,amd64,armhf,arm64}" 1>&2
