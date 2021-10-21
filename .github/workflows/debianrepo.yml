@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - "release/**"
-      - "debianrepo"
-
 
 jobs:
   test_386:
@@ -29,7 +27,7 @@ jobs:
       - run: ./E2E/debian.sh docker armhf
 
   build_arm64:
-    runs-on: "ubuntu-18.04"
+    runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
       - run: sudo apt-get update -q
