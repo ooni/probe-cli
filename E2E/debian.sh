@@ -15,6 +15,7 @@ install_flow() {
 	echo "deb [arch=$1] http://deb.ooni.org/ unstable main" | tee /etc/apt/sources.list.d/ooniprobe.list
 	apt-get update
 	apt-get install --yes ooniprobe-cli
+	dpkg -l | grep ooniprobe-cli > DEBIAN_INSTALLED_PACKAGE.txt
 }
 
 docker_flow() {

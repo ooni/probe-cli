@@ -4,6 +4,7 @@
 /coverage.cov
 /*.deb
 /debops-ci
+/DEBIAN_INSTALLED_PACKAGE.txt
 .DS_Store
 /*.jsonl
 /miniooni
