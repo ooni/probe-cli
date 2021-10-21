@@ -1,5 +1,5 @@
 # debianrepo ensures we can install on debian with the official build instructions
-name: linux
+name: debianrepo
 on:
   push:
     branches:
