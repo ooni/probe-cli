@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "release/**"
+      - "stable"
 
 jobs:
   build_amd64:

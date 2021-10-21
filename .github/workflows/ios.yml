@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "release/**"
+      - "stable"
 jobs:
   test:
     runs-on: macos-10.15

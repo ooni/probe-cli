@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - "release/**"
+      - "stable"
 jobs:
   test:
     runs-on: ubuntu-20.04
