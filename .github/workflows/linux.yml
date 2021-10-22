@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - "release/**"
-      - "stable"
-      - "linux"
 
 jobs:
   build_386:
