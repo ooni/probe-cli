@@ -9,7 +9,7 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ "release/**" ]
+    branches: [ "master", "release/**" ]
 
 jobs:
   analyze:
