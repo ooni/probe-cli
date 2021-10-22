@@ -10,9 +10,9 @@ This repository contains core OONI tools written in Go:
 
 - the CLI client ([cmd/ooniprobe](cmd/ooniprobe));
 
-- the mobile library ([pkg/oonimkall](pkg/oonimkall));
-
 - the test helper server ([internal/cmd/oohelperd](internal/cmd/oohelperd));
+
+- the mobile library ([pkg/oonimkall](pkg/oonimkall));
 
 - and all the related support packages (inside [internal](internal)).
 
