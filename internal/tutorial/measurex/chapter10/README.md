@@ -115,7 +115,7 @@ The rest of the program is exactly like in chapter09.
 Let us perform a vanilla run first:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter10
+go run -race ./internal/tutorial/measurex/chapter10 | jq
 ```
 
 Take a look at the JSON output. Can you spot that

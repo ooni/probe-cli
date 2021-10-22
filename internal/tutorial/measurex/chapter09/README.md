@@ -112,7 +112,7 @@ our `m` container and we print it.
 Let us perform a vanilla run first:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter09
+go run -race ./internal/tutorial/measurex/chapter09 | jq
 ```
 
 Take a look at the JSON output. Can you spot that

@@ -124,7 +124,7 @@ Finally, we print the results.
 Let us perform a vanilla run first:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter07
+go run -race ./internal/tutorial/measurex/chapter07 | jq
 ```
 
 Please, check the JSON output. Do you recognize the fields
