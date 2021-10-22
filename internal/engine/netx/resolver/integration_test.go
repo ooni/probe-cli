@@ -8,6 +8,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func init() {
@@ -18,7 +19,10 @@ func testresolverquick(t *testing.T, reso resolver.Resolver) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	reso = resolver.LoggingResolver{Logger: log.Log, Resolver: reso}
+	reso = &netxlite.ResolverLogger{
+		Logger:   log.Log,
+		Resolver: netxlite.NewResolverLegacyAdapter(reso),
+	}
 	addrs, err := reso.LookupHost(context.Background(), "dns.google.com")
 	if err != nil {
 		t.Fatal(err)
@@ -43,8 +47,11 @@ func testresolverquickidna(t *testing.T, reso resolver.Resolver) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	reso = resolver.IDNAResolver{
-		resolver.LoggingResolver{Logger: log.Log, Resolver: reso},
+	reso = &resolver.IDNAResolver{
+		Resolver: &netxlite.ResolverLogger{
+			Logger:   log.Log,
+			Resolver: netxlite.NewResolverLegacyAdapter(reso),
+		},
 	}
 	addrs, err := reso.LookupHost(context.Background(), "яндекс.рф")
 	if err != nil {
@@ -56,21 +63,21 @@ func testresolverquickidna(t *testing.T, reso resolver.Resolver) {
 }
 
 func TestNewResolverSystem(t *testing.T) {
-	reso := resolver.SystemResolver{}
+	reso := &netxlite.ResolverSystem{}
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverUDPAddress(t *testing.T) {
 	reso := resolver.NewSerialResolver(
-		resolver.NewDNSOverUDP(new(net.Dialer), "8.8.8.8:53"))
+		resolver.NewDNSOverUDP(netxlite.NewDialerLegacyAdapter(&net.Dialer{}), "8.8.8.8:53"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverUDPDomain(t *testing.T) {
 	reso := resolver.NewSerialResolver(
-		resolver.NewDNSOverUDP(new(net.Dialer), "dns.google.com:53"))
+		resolver.NewDNSOverUDP(netxlite.NewDialerLegacyAdapter(&net.Dialer{}), "dns.google.com:53"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }

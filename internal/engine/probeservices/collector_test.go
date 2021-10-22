@@ -15,7 +15,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type fakeTestKeys struct {
@@ -234,7 +234,7 @@ func TestEndToEnd(t *testing.T) {
 				return
 			}
 			if r.RequestURI == "/report/_id" {
-				data, err := iox.ReadAllContext(r.Context(), r.Body)
+				data, err := netxlite.ReadAllContext(r.Context(), r.Body)
 				if err != nil {
 					panic(err)
 				}

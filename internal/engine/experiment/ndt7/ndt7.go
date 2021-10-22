@@ -11,10 +11,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mlablocatev2"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
+	"github.com/ooni/probe-cli/v3/internal/mlablocatev2"
 )
 
 const (

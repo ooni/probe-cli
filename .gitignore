@@ -3,6 +3,7 @@
 /*.asc
 /coverage.cov
 /*.deb
+/DEBIAN_INSTALLED_PACKAGE.txt
 /debops-ci
 .DS_Store
 /*.jsonl
@@ -17,6 +18,8 @@
 /ooniprobe_checksums.txt.asc
 /ooniprobe.exe
 /probe-cli.cov
+/ptxclient
+/ptxclient.exe
 /*.tar.gz
 /testdata/gotmp
 /*.zip

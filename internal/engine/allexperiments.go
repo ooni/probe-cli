@@ -20,8 +20,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/telegram"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlstool"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tor"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/torsf"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/websteps"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/whatsapp"
 )
 
@@ -289,6 +291,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
+	"torsf": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, torsf.NewExperimentMeasurer(
+					*config.(*torsf.Config),
+				))
+			},
+			config:      &torsf.Config{},
+			inputPolicy: InputNone,
+		}
+	},
+
 	"urlgetter": func(session *Session) *ExperimentBuilder {
 		return &ExperimentBuilder{
 			build: func(config interface{}) *Experiment {
@@ -309,6 +323,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &webconnectivity.Config{},
+			inputPolicy: InputOrQueryBackend,
+		}
+	},
+
+	"websteps": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, websteps.NewExperimentMeasurer(
+					*config.(*websteps.Config),
+				))
+			},
+			config:      &websteps.Config{},
 			inputPolicy: InputOrQueryBackend,
 		}
 	},

@@ -11,7 +11,7 @@ import (
 
 	goptlib "git.torproject.org/pluggable-transports/goptlib.git"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"gitlab.com/yawning/obfs4.git/transports"
 	obfs4base "gitlab.com/yawning/obfs4.git/transports/base"
 )
@@ -55,7 +55,7 @@ func TestDNSLookupCancellation(t *testing.T) {
 	if results.Error == nil {
 		t.Fatal("expected an error here")
 	}
-	if results.Error.Error() != errorx.FailureGenericTimeoutError {
+	if results.Error.Error() != netxlite.FailureGenericTimeoutError {
 		t.Fatal("not the error we expected")
 	}
 	if len(results.Addresses) > 0 {
@@ -170,7 +170,7 @@ func TestTLSConnectCancellation(t *testing.T) {
 	if results.Error == nil {
 		t.Fatal("expected an error here")
 	}
-	if results.Error.Error() != errorx.FailureGenericTimeoutError {
+	if results.Error.Error() != netxlite.FailureGenericTimeoutError {
 		t.Fatal("not the error we expected")
 	}
 }
@@ -386,23 +386,4 @@ func (txp *faketransport) ClientFactory(stateDir string) (obfs4base.ClientFactor
 
 func (txp *faketransport) ServerFactory(stateDir string, args *goptlib.Args) (obfs4base.ServerFactory, error) {
 	return txp.txp.ServerFactory(stateDir, args)
-}
-
-func TestConnmapper(t *testing.T) {
-	var mapper connmapper
-	if mapper.scramble(-1) >= 0 {
-		t.Fatal("unexpected value for negative input")
-	}
-	if mapper.scramble(1234) != 2 {
-		t.Fatal("unexpected second value")
-	}
-	if mapper.scramble(12) != 3 {
-		t.Fatal("unexpected third value")
-	}
-	if mapper.scramble(12) != mapper.scramble(12) {
-		t.Fatal("not idempotent")
-	}
-	if mapper.scramble(0) != 0 {
-		t.Fatal("unexpected value for zero input")
-	}
 }

@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func getShasum(path string) (string, error) {
@@ -19,7 +19,7 @@ func getShasum(path string) (string, error) {
 		return "", err
 	}
 	defer f.Close()
-	if _, err := iox.CopyContext(context.Background(), hasher, f); err != nil {
+	if _, err := netxlite.CopyContext(context.Background(), hasher, f); err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(hasher.Sum(nil)), nil

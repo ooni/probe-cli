@@ -15,19 +15,13 @@ type Transport struct {
 // New creates a new Transport.
 func New(roundTripper http.RoundTripper) *Transport {
 	return &Transport{
-		roundTripper: NewTransactioner(NewBodyTracer(
-			NewTraceTripper(roundTripper))),
+		roundTripper: NewBodyTracer(NewTraceTripper(roundTripper)),
 	}
 }
 
 // RoundTrip executes a single HTTP transaction, returning
 // a Response for the provided Request.
 func (t *Transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
-	// Make sure we're not sending Go's default User-Agent
-	// if the user has configured no user agent
-	if req.Header.Get("User-Agent") == "" {
-		req.Header["User-Agent"] = nil
-	}
 	return t.roundTripper.RoundTrip(req)
 }
 

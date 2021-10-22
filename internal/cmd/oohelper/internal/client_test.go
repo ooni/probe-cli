@@ -104,14 +104,23 @@ func TestOOClientDoWithResolverFailure(t *testing.T) {
 		ServerURL: "https://wcth.ooni.io",
 	}
 	clnt := internal.OOClient{
-		Resolver: internal.NewFakeResolverThatFails(),
+		HTTPClient: http.DefaultClient,
+		Resolver:   internal.NewFakeResolverThatFails(),
 	}
 	cresp, err := clnt.Do(ctx, config)
-	if !errors.Is(err, internal.ErrNotFound) {
-		t.Fatalf("not the error we expected: %+v", err)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if cresp != nil {
-		t.Fatal("expected nil response")
+	if len(cresp.TCPConnect) > 0 {
+		// The current implementation of the test helper (the legacy codebase)
+		// only follows the IP addresses returned by the client.
+		t.Fatal("expected empty TCPConnect here")
+	}
+	if cresp.HTTPRequest.StatusCode != 200 {
+		t.Fatal("expected 200 status code here")
+	}
+	if len(cresp.DNS.Addrs) < 1 {
+		t.Fatal("expected at least an IP address here")
 	}
 }
 

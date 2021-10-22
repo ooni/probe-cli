@@ -17,9 +17,10 @@ import (
 	"unicode/utf8"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
+	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // ExtSpec describes a data format extension
@@ -70,20 +71,17 @@ type TCPConnectStatus struct {
 // TCPConnectEntry contains one of the entries that are part
 // of the "tcp_connect" key of a OONI report.
 type TCPConnectEntry struct {
-	ConnID        int64            `json:"conn_id,omitempty"`
-	DialID        int64            `json:"dial_id,omitempty"`
-	IP            string           `json:"ip"`
-	Port          int              `json:"port"`
-	Status        TCPConnectStatus `json:"status"`
-	T             float64          `json:"t"`
-	TransactionID int64            `json:"transaction_id,omitempty"`
+	IP     string           `json:"ip"`
+	Port   int              `json:"port"`
+	Status TCPConnectStatus `json:"status"`
+	T      float64          `json:"t"`
 }
 
 // NewTCPConnectList creates a new TCPConnectList
 func NewTCPConnectList(begin time.Time, events []trace.Event) []TCPConnectEntry {
 	var out []TCPConnectEntry
 	for _, event := range events {
-		if event.Name != errorx.ConnectOperation {
+		if event.Name != netxlite.ConnectOperation {
 			continue
 		}
 		if event.Proto != "tcp" {
@@ -113,11 +111,11 @@ func NewFailure(err error) *string {
 	// The following code guarantees that the error is always wrapped even
 	// when we could not actually hit our code that does the wrapping. A case
 	// in which this happen is with context deadline for HTTP.
-	err = errorx.SafeErrWrapperBuilder{
+	err = errorsxlegacy.SafeErrWrapperBuilder{
 		Error:     err,
-		Operation: errorx.TopLevelOperation,
+		Operation: netxlite.TopLevelOperation,
 	}.MaybeBuild()
-	errWrapper := err.(*errorx.ErrWrapper)
+	errWrapper := err.(*netxlite.ErrWrapper)
 	s := errWrapper.Failure
 	if s == "" {
 		s = "unknown_failure: errWrapper.Failure is empty"
@@ -131,8 +129,8 @@ func NewFailedOperation(err error) *string {
 		return nil
 	}
 	var (
-		errWrapper *errorx.ErrWrapper
-		s          = errorx.UnknownOperation
+		errWrapper *netxlite.ErrWrapper
+		s          = netxlite.UnknownOperation
 	)
 	if errors.As(err, &errWrapper) && errWrapper.Operation != "" {
 		s = errWrapper.Operation
@@ -289,11 +287,10 @@ type HTTPResponse struct {
 // RequestEntry is one of the entries that are part of
 // the "requests" key of a OONI report.
 type RequestEntry struct {
-	Failure       *string      `json:"failure"`
-	Request       HTTPRequest  `json:"request"`
-	Response      HTTPResponse `json:"response"`
-	T             float64      `json:"t"`
-	TransactionID int64        `json:"transaction_id,omitempty"`
+	Failure  *string      `json:"failure"`
+	Request  HTTPRequest  `json:"request"`
+	Response HTTPResponse `json:"response"`
+	T        float64      `json:"t"`
 }
 
 func addheaders(
@@ -382,7 +379,6 @@ type DNSAnswerEntry struct {
 // DNSQueryEntry is a DNS query with possibly an answer
 type DNSQueryEntry struct {
 	Answers          []DNSAnswerEntry `json:"answers"`
-	DialID           int64            `json:"dial_id,omitempty"`
 	Engine           string           `json:"engine"`
 	Failure          *string          `json:"failure"`
 	Hostname         string           `json:"hostname"`
@@ -391,7 +387,6 @@ type DNSQueryEntry struct {
 	ResolverPort     *string          `json:"resolver_port"`
 	ResolverAddress  string           `json:"resolver_address"`
 	T                float64          `json:"t"`
-	TransactionID    int64            `json:"transaction_id,omitempty"`
 }
 
 type dnsQueryType string
@@ -467,23 +462,20 @@ func (qtype dnsQueryType) makequeryentry(begin time.Time, ev trace.Event) DNSQue
 // and most fields are optional. They are only added when it makes sense
 // for them to be there _and_ we have data to show.
 type NetworkEvent struct {
-	Address       string   `json:"address,omitempty"`
-	ConnID        int64    `json:"conn_id,omitempty"`
-	DialID        int64    `json:"dial_id,omitempty"`
-	Failure       *string  `json:"failure"`
-	NumBytes      int64    `json:"num_bytes,omitempty"`
-	Operation     string   `json:"operation"`
-	Proto         string   `json:"proto,omitempty"`
-	T             float64  `json:"t"`
-	Tags          []string `json:"tags,omitempty"`
-	TransactionID int64    `json:"transaction_id,omitempty"`
+	Address   string   `json:"address,omitempty"`
+	Failure   *string  `json:"failure"`
+	NumBytes  int64    `json:"num_bytes,omitempty"`
+	Operation string   `json:"operation"`
+	Proto     string   `json:"proto,omitempty"`
+	T         float64  `json:"t"`
+	Tags      []string `json:"tags,omitempty"`
 }
 
 // NewNetworkEventsList returns a list of DNS queries.
 func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent {
 	var out []NetworkEvent
 	for _, ev := range events {
-		if ev.Name == errorx.ConnectOperation {
+		if ev.Name == netxlite.ConnectOperation {
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
 				Failure:   NewFailure(ev.Err),
@@ -493,7 +485,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 			})
 			continue
 		}
-		if ev.Name == errorx.ReadOperation {
+		if ev.Name == netxlite.ReadOperation {
 			out = append(out, NetworkEvent{
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
@@ -502,7 +494,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 			})
 			continue
 		}
-		if ev.Name == errorx.WriteOperation {
+		if ev.Name == netxlite.WriteOperation {
 			out = append(out, NetworkEvent{
 				Failure:   NewFailure(ev.Err),
 				Operation: ev.Name,
@@ -511,7 +503,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 			})
 			continue
 		}
-		if ev.Name == errorx.ReadFromOperation {
+		if ev.Name == netxlite.ReadFromOperation {
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
 				Failure:   NewFailure(ev.Err),
@@ -521,7 +513,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 			})
 			continue
 		}
-		if ev.Name == errorx.WriteToOperation {
+		if ev.Name == netxlite.WriteToOperation {
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
 				Failure:   NewFailure(ev.Err),
@@ -543,7 +535,6 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 // TLSHandshake contains TLS handshake data
 type TLSHandshake struct {
 	CipherSuite        string             `json:"cipher_suite"`
-	ConnID             int64              `json:"conn_id,omitempty"`
 	Failure            *string            `json:"failure"`
 	NegotiatedProtocol string             `json:"negotiated_protocol"`
 	NoTLSVerify        bool               `json:"no_tls_verify"`
@@ -552,7 +543,6 @@ type TLSHandshake struct {
 	T                  float64            `json:"t"`
 	Tags               []string           `json:"tags"`
 	TLSVersion         string             `json:"tls_version"`
-	TransactionID      int64              `json:"transaction_id,omitempty"`
 }
 
 // NewTLSHandshakesList creates a new TLSHandshakesList

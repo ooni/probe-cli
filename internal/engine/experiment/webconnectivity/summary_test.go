@@ -7,7 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestSummarize(t *testing.T) {
@@ -18,14 +18,14 @@ func TestSummarize(t *testing.T) {
 		httpDiff               = "http-diff"
 		httpFailure            = "http-failure"
 		nilstring              *string
-		probeConnectionRefused = errorx.FailureConnectionRefused
-		probeConnectionReset   = errorx.FailureConnectionReset
-		probeEOFError          = errorx.FailureEOFError
-		probeNXDOMAIN          = errorx.FailureDNSNXDOMAINError
-		probeTimeout           = errorx.FailureGenericTimeoutError
-		probeSSLInvalidHost    = errorx.FailureSSLInvalidHostname
-		probeSSLInvalidCert    = errorx.FailureSSLInvalidCertificate
-		probeSSLUnknownAuth    = errorx.FailureSSLUnknownAuthority
+		probeConnectionRefused = netxlite.FailureConnectionRefused
+		probeConnectionReset   = netxlite.FailureConnectionReset
+		probeEOFError          = netxlite.FailureEOFError
+		probeNXDOMAIN          = netxlite.FailureDNSNXDOMAINError
+		probeTimeout           = netxlite.FailureGenericTimeoutError
+		probeSSLInvalidHost    = netxlite.FailureSSLInvalidHostname
+		probeSSLInvalidCert    = netxlite.FailureSSLInvalidCertificate
+		probeSSLUnknownAuth    = netxlite.FailureSSLUnknownAuthority
 		tcpIP                  = "tcp_ip"
 		trueValue              = true
 	)

@@ -1,36 +1,36 @@
 # debianrepo ensures we can install on debian with the official build instructions
-name: linux
+name: debianrepo
 on:
   push:
     branches:
       - "master"
-      - "issue/1484"
+      - "release/**"
 
 jobs:
   test_386:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: ./E2E/debian.sh docker i386
+      - run: sudo ./E2E/debian.sh docker i386
+      - run: sudo cat DEBIAN_INSTALLED_PACKAGE.txt
 
   test_amd64:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: ./E2E/debian.sh docker amd64
+      - run: sudo ./E2E/debian.sh docker amd64
+      - run: sudo cat DEBIAN_INSTALLED_PACKAGE.txt
 
   test_arm:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: sudo apt-get update -q
-      - run: sudo apt-get install -y qemu-user-static
-      - run: ./E2E/debian.sh docker armhf
+      - run: sudo ./E2E/debian.sh docker armhf
+      - run: sudo cat DEBIAN_INSTALLED_PACKAGE.txt
 
-  build_arm64:
+  test_arm64:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: sudo apt-get update -q
-      - run: sudo apt-get install -y qemu-user-static
-      - run: ./E2E/debian.sh docker arm64
+      - run: sudo ./E2E/debian.sh docker arm64
+      - run: sudo cat DEBIAN_INSTALLED_PACKAGE.txt

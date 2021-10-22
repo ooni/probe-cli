@@ -13,7 +13,7 @@ import (
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/ooapi/internal/openapi"
 )
 
@@ -37,7 +37,7 @@ func getServerModel(serverURL string) *openapi.Swagger {
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
-	data, err := iox.ReadAllContext(context.Background(), resp.Body)
+	data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -139,6 +139,7 @@ func compare(serverURL string) bool {
 }
 
 func TestWithProductionAPI(t *testing.T) {
+	t.Skip("skip until we use this part of the codebase")
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
@@ -149,6 +150,7 @@ func TestWithProductionAPI(t *testing.T) {
 }
 
 func TestWithTestingAPI(t *testing.T) {
+	t.Skip("skip until we use this part of the codebase")
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}

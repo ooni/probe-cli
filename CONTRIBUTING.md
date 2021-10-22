@@ -5,17 +5,19 @@ to open pull requests. An open pull request will be reviewed by a core
 developer. The review may request you to apply changes. Once the assigned
 reviewer is satisfied, they will merge the pull request.
 
+## OONI Software Development Guidelines
+
+Please, make sure you read [OONI Software Development Guidelines](
+https://ooni.org/post/ooni-software-development-guidelines/). We try in
+general to follow these guidelines when working on ooni/probe-cli. In
+the unlikely care where those guidelines conflict with this document, this
+document will take precedence.
+
 ## Opening issues
 
 Please, before opening a new issue, check whether the issue or feature request
-you want us to consider has not already been reported by someone else.
-
-For new issues, please use: [github.com/ooni/probe](
-https://github.com/ooni/probe/issues/new?labels=ooni/probe-cli&assignee=bassosimone).
-
-Please, also check [github.com/ooni/probe-engine](
-https://github.com/ooni/probe-engine) for legacy issues. This is
-the repository where the measurement engine previously was located.
+you want us to consider has not already been reported by someone else. The
+issue tracker is at [github.com/ooni/probe/issues](https://github.com/ooni/probe/issues).
 
 ## PR requirements
 
@@ -26,7 +28,7 @@ request that modifies existing functionality should not decrease the
 existing code coverage.
 
 Long-running tests should be skipped when running tests in short mode
-using `go test -short`. We prefer external testing to internal
+using `go test -short`. We prefer internal testing to external
 testing. We generally have a file called `foo_test.go` with tests
 for every `foo.go` file. Sometimes we separate long running
 integration tests in a `foo_integration_test.go` file.
@@ -63,8 +65,8 @@ run `go mod tidy` to minimize such changes.
 
 - use `./internal/fsx.OpenFile` when you need to open a file
 
-- use `./internal/iox.ReadAllContext` instead of `io.ReadAll`
-and `./internal/iox.CopyContext` instead of `io.Copy`
+- use `./internal/netxlite.ReadAllContext` instead of `io.ReadAll`
+and `./internal/netxlite.CopyContext` instead of `io.Copy`
 
 ## Code testing requirements
 
@@ -79,14 +81,54 @@ https://github.com/ooni/spec) repository. If the spec is missing,
 please help the pull request reviewer to create it. If the spec is
 not clear, please let us know during the review.
 
-When you write a new experiment, keep the measurement phase and the
-results analysis phases as separate functions. This helps us a lot
-to write better unit tests for our code.
+To get a sense of what we expect from an experiment, see the [internal/tutorial](
+https://github.com/ooni/probe-cli/tree/master/internal/tutorial) tutorial
 
-To get a sense of what we expect from an experiment, see:
+## Branching and releasing
 
-- the internal/engine/experiment/example experiment
+The following diagram illustrates the overall branching and releasing
+strategy loosely followed by the core team. If you are an external
+contributor, you generally only care about the development part, which
+is on the left-hand side of the diagram.
 
-- the internal/engine/experiment/webconnectivity experiment
+![branching and releasing](docs/branching.png)
 
-Thank you!
+Development uses the `master` branch. When we need to implement a
+feature or fix a bug, we branch off of the `master` branch. We squash
+and merge to include a feature or fix branch back into `master`.
+
+We periodically tag `-alpha` releases directly on `master`. The
+semantics of such releases is that we reached a point where we have
+features we would like to test using the `miniooni` research CLI
+client. As part of these releases, we also update dependencies and
+embedded assets. This process ensures that we perform better testing
+of dependencies and assets as part of development.
+
+The `master` branch and pull requests only run CI lightweight tests
+that ensure the code still compiles, has good coverage, and we are
+not introducing regressions in terms of the measurement engine.
+
+To draft a release we branch off of `master` and create a `release/x.y`
+branch where `x` is the major number and `y` is the minor number. For
+release branches, we enable a very comprehensive set of tests that run
+automatically with every commit. The purpose of a release branch is to
+make sure all checks are green and hotfix bugs that we may discover
+as part of more extensively testing a release candidate. Beta and stable
+releases should occur on this branch. Subsequent patch releases should
+also occur on this branch. We have one such branch for each `x.y`
+release. If there are fixes on `master` that we want to backport, we
+cherry-pick them into the release branch. Likewise, if we need to
+forward port fixes, we cherry-pick them into `master`.
+
+When we branch off release `x.y` from `master`, we also need to bump
+the `alpha` version used by `master`.
+
+None of the branches described so far automatically publishes any
+binary package. To publish binary packages we use the `PRODUCT-staging`
+branches (e.g., `mobile-staging`). To trigger these builds, we merge
+from a release branch into the desired `PRODUCT-staging` branch. This
+design ensures that we only publish binary packages when we want to
+do so. Because we merge from a release branch, we are not pushing alpha
+code to binary releases. (The only exception to this rule is `miniooni`,
+treated differently because it's an `alpha` client.)
+

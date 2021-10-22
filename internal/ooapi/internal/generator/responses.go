@@ -23,7 +23,7 @@ func (d *Descriptor) genNewResponse(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 	fmt.Fprint(sb, "\tdefer resp.Body.Close()\n")
 	fmt.Fprint(sb, "\treader := io.LimitReader(resp.Body, 4<<20)\n")
-	fmt.Fprint(sb, "\tdata, err := iox.ReadAllContext(ctx, reader)\n")
+	fmt.Fprint(sb, "\tdata, err := netxlite.ReadAllContext(ctx, reader)\n")
 	fmt.Fprint(sb, "\tif err != nil {\n")
 	fmt.Fprint(sb, "\t\treturn nil, err\n")
 	fmt.Fprint(sb, "\t}\n")
@@ -71,7 +71,7 @@ func GenResponsesGo(file string) {
 	fmt.Fprint(&sb, "\t\"io\"\n")
 	fmt.Fprint(&sb, "\t\"net/http\"\n")
 	fmt.Fprint(&sb, "\n")
-	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/iox\"\n")
+	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/netxlite\"\n")
 	fmt.Fprint(&sb, "\t\"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel\"\n")
 	fmt.Fprint(&sb, ")\n\n")
 	for _, desc := range Descriptors {

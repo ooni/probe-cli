@@ -9,11 +9,11 @@ import (
 	"net"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/pion/stun"
 )
@@ -58,7 +58,7 @@ func (m *Measurer) ExperimentVersion() string {
 }
 
 func wrap(err error) error {
-	return errorx.SafeErrWrapperBuilder{
+	return errorsx.SafeErrWrapperBuilder{
 		Error:     err,
 		Operation: "stun",
 	}.MaybeBuild()

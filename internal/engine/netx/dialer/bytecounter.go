@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 )
 
 // byteCounterDialer is a byte-counting-aware dialer. To perform byte counting, you
@@ -20,12 +20,13 @@ func (d *byteCounterDialer) DialContext(
 	if err != nil {
 		return nil, err
 	}
-	exp := contextExperimentByteCounter(ctx)
-	sess := contextSessionByteCounter(ctx)
-	if exp == nil && sess == nil {
-		return conn, nil // no point in wrapping
+	if exp := contextExperimentByteCounter(ctx); exp != nil {
+		conn = &bytecounter.Conn{Conn: conn, Counter: exp}
 	}
-	return &byteCounterConnWrapper{Conn: conn, exp: exp, sess: sess}, nil
+	if sess := contextSessionByteCounter(ctx); sess != nil {
+		conn = &bytecounter.Conn{Conn: conn, Counter: sess}
+	}
+	return conn, nil
 }
 
 type byteCounterSessionKey struct{}
@@ -52,32 +53,4 @@ func contextExperimentByteCounter(ctx context.Context) *bytecounter.Counter {
 // WithExperimentByteCounter assigns the experiment byte counter to the context.
 func WithExperimentByteCounter(ctx context.Context, counter *bytecounter.Counter) context.Context {
 	return context.WithValue(ctx, byteCounterExperimentKey{}, counter)
-}
-
-type byteCounterConnWrapper struct {
-	net.Conn
-	exp  *bytecounter.Counter
-	sess *bytecounter.Counter
-}
-
-func (c *byteCounterConnWrapper) Read(p []byte) (int, error) {
-	count, err := c.Conn.Read(p)
-	if c.exp != nil {
-		c.exp.CountBytesReceived(count)
-	}
-	if c.sess != nil {
-		c.sess.CountBytesReceived(count)
-	}
-	return count, err
-}
-
-func (c *byteCounterConnWrapper) Write(p []byte) (int, error) {
-	count, err := c.Conn.Write(p)
-	if c.exp != nil {
-		c.exp.CountBytesSent(count)
-	}
-	if c.sess != nil {
-		c.sess.CountBytesSent(count)
-	}
-	return count, err
 }

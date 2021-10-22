@@ -14,12 +14,6 @@ type ContextDialer interface {
 		tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error)
 }
 
-// Dialer dials QUIC connections.
-type Dialer interface {
-	// Note: assumes that tlsCfg and cfg are not nil.
-	Dial(network, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error)
-}
-
 // Resolver is the interface we expect from a resolver.
 type Resolver interface {
 	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestSnowflakeDialerWorks(t *testing.T) {
@@ -50,7 +50,7 @@ func TestSnowflakeDialerWorksWithMocks(t *testing.T) {
 		newClientTransport: func(brokerURL, frontDomain string, iceAddresses []string, keepLocalAddresses bool, maxSnowflakes int) (snowflakeTransport, error) {
 			return &mockableSnowflakeTransport{
 				MockDial: func() (net.Conn, error) {
-					return &mockablex.Conn{
+					return &mocks.Conn{
 						MockClose: func() error {
 							return nil
 						},
@@ -144,7 +144,7 @@ func TestSnowflakeDialerWorksWithWithCancelledContext(t *testing.T) {
 			return &mockableSnowflakeTransport{
 				MockDial: func() (net.Conn, error) {
 					cancel() // cause a cancel before we can really have a conn
-					return &mockablex.Conn{
+					return &mocks.Conn{
 						MockClose: func() error {
 							called.Add(1)
 							return nil

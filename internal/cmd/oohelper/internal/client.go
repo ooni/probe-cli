@@ -13,8 +13,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
@@ -38,13 +37,18 @@ var (
 	ErrCannotParseJSONReply    = errors.New("oohelper: cannot parse JSON reply")
 )
 
+// Resolver resolves domain names.
+type Resolver interface {
+	LookupHost(ctx context.Context, hostname string) ([]string, error)
+}
+
 // OOClient is a client for the OONI Web Connectivity test helper.
 type OOClient struct {
 	// HTTPClient is the HTTP client to use.
 	HTTPClient *http.Client
 
 	// Resolver is the resolver to user.
-	Resolver netx.Resolver
+	Resolver Resolver
 }
 
 // OOConfig contains configuration for the client.
@@ -91,12 +95,12 @@ func (oo OOClient) Do(ctx context.Context, config OOConfig) (*CtrlResponse, erro
 		return nil, fmt.Errorf("%w: %s", ErrInvalidURL, err.Error())
 	}
 	addrs, err := oo.Resolver.LookupHost(ctx, targetURL.Hostname())
-	if err != nil {
-		return nil, err
-	}
-	endpoints, err := MakeTCPEndpoints(targetURL, addrs)
-	if err != nil {
-		return nil, err
+	endpoints := []string{}
+	if err == nil {
+		endpoints, err = MakeTCPEndpoints(targetURL, addrs)
+		if err != nil {
+			return nil, err
+		}
 	}
 	creq := ctrlRequest{
 		HTTPRequest: config.TargetURL,
@@ -126,7 +130,7 @@ func (oo OOClient) Do(ctx context.Context, config OOConfig) (*CtrlResponse, erro
 	if resp.StatusCode != 200 {
 		return nil, ErrHTTPStatusCode
 	}
-	data, err = iox.ReadAllContext(ctx, resp.Body)
+	data, err = netxlite.ReadAllContext(ctx, resp.Body)
 	if err != nil {
 		return nil, err
 	}

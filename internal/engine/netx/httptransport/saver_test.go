@@ -5,13 +5,14 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestSaverPerformanceNoMultipleEvents(t *testing.T) {
@@ -247,7 +248,7 @@ func TestSaverBodySuccess(t *testing.T) {
 	txp := httptransport.SaverBodyHTTPTransport{
 		RoundTripper: httptransport.FakeTransport{
 			Func: func(req *http.Request) (*http.Response, error) {
-				data, err := iox.ReadAllContext(context.Background(), req.Body)
+				data, err := netxlite.ReadAllContext(context.Background(), req.Body)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -276,7 +277,7 @@ func TestSaverBodySuccess(t *testing.T) {
 		t.Fatal("unexpected status code")
 	}
 	defer resp.Body.Close()
-	data, err := iox.ReadAllContext(context.Background(), resp.Body)
+	data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -428,4 +429,36 @@ func TestSaverBodyResponseReadError(t *testing.T) {
 	if ev[0].Time.After(time.Now()) {
 		t.Fatal("invalid Time")
 	}
+}
+
+func TestCloneHeaders(t *testing.T) {
+	t.Run("with req.Host set", func(t *testing.T) {
+		req := &http.Request{
+			Host: "www.example.com",
+			URL: &url.URL{
+				Host: "www.kernel.org",
+			},
+			Header: http.Header{},
+		}
+		txp := httptransport.SaverMetadataHTTPTransport{}
+		header := txp.CloneHeaders(req)
+		if header.Get("Host") != "www.example.com" {
+			t.Fatal("did not set Host header correctly")
+		}
+	})
+
+	t.Run("with only req.URL.Host set", func(t *testing.T) {
+		req := &http.Request{
+			Host: "",
+			URL: &url.URL{
+				Host: "www.kernel.org",
+			},
+			Header: http.Header{},
+		}
+		txp := httptransport.SaverMetadataHTTPTransport{}
+		header := txp.CloneHeaders(req)
+		if header.Get("Host") != "www.kernel.org" {
+			t.Fatal("did not set Host header correctly")
+		}
+	})
 }

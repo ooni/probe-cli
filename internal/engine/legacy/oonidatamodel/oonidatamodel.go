@@ -19,8 +19,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // ExtSpec describes a data format extension
@@ -63,13 +62,10 @@ type TCPConnectStatus struct {
 // TCPConnectEntry contains one of the entries that are part
 // of the "tcp_connect" key of a OONI report.
 type TCPConnectEntry struct {
-	ConnID        int64            `json:"conn_id,omitempty"`
-	DialID        int64            `json:"dial_id,omitempty"`
-	IP            string           `json:"ip"`
-	Port          int              `json:"port"`
-	Status        TCPConnectStatus `json:"status"`
-	T             float64          `json:"t"`
-	TransactionID int64            `json:"transaction_id,omitempty"`
+	IP     string           `json:"ip"`
+	Port   int              `json:"port"`
+	Status TCPConnectStatus `json:"status"`
+	T      float64          `json:"t"`
 }
 
 // TCPConnectList is a list of TCPConnectEntry
@@ -83,16 +79,13 @@ func NewTCPConnectList(results oonitemplates.Results) TCPConnectList {
 		ip, sport, _ := net.SplitHostPort(connect.RemoteAddress)
 		iport, _ := strconv.Atoi(sport)
 		out = append(out, TCPConnectEntry{
-			ConnID: connect.ConnID,
-			DialID: connect.DialID,
-			IP:     ip,
-			Port:   iport,
+			IP:   ip,
+			Port: iport,
 			Status: TCPConnectStatus{
 				Failure: makeFailure(connect.Error),
 				Success: connect.Error == nil,
 			},
-			T:             connect.DurationSinceBeginning.Seconds(),
-			TransactionID: connect.TransactionID,
+			T: connect.DurationSinceBeginning.Seconds(),
 		})
 	}
 	return out
@@ -259,10 +252,9 @@ type HTTPResponse struct {
 // RequestEntry is one of the entries that are part of
 // the "requests" key of a OONI report.
 type RequestEntry struct {
-	Failure       *string      `json:"failure"`
-	Request       HTTPRequest  `json:"request"`
-	Response      HTTPResponse `json:"response"`
-	TransactionID int64        `json:"transaction_id,omitempty"`
+	Failure  *string      `json:"failure"`
+	Request  HTTPRequest  `json:"request"`
+	Response HTTPResponse `json:"response"`
 }
 
 // RequestList is a list of RequestEntry
@@ -316,7 +308,6 @@ func NewRequestList(results oonitemplates.Results) RequestList {
 		entry.Response.Body.Value = string(in[idx].ResponseBodySnap)
 		entry.Response.BodyIsTruncated = in[idx].MaxBodySnapSize > 0 &&
 			int64(len(in[idx].ResponseBodySnap)) >= in[idx].MaxBodySnapSize
-		entry.TransactionID = in[idx].TransactionID
 		out = append(out, entry)
 	}
 	return out
@@ -334,7 +325,6 @@ type DNSAnswerEntry struct {
 // DNSQueryEntry is a DNS query with possibly an answer
 type DNSQueryEntry struct {
 	Answers          []DNSAnswerEntry `json:"answers"`
-	DialID           int64            `json:"dial_id,omitempty"`
 	Engine           string           `json:"engine"`
 	Failure          *string          `json:"failure"`
 	Hostname         string           `json:"hostname"`
@@ -343,7 +333,6 @@ type DNSQueryEntry struct {
 	ResolverPort     *string          `json:"resolver_port"`
 	ResolverAddress  string           `json:"resolver_address"`
 	T                float64          `json:"t"`
-	TransactionID    int64            `json:"transaction_id,omitempty"`
 }
 
 type (
@@ -393,28 +382,23 @@ func (qtype dnsQueryType) makeanswerentry(addr string) DNSAnswerEntry {
 
 func (qtype dnsQueryType) makequeryentry(resolve *modelx.ResolveDoneEvent) DNSQueryEntry {
 	return DNSQueryEntry{
-		DialID:          resolve.DialID,
 		Engine:          resolve.TransportNetwork,
 		Failure:         makeFailure(resolve.Error),
 		Hostname:        resolve.Hostname,
 		QueryType:       string(qtype),
 		ResolverAddress: resolve.TransportAddress,
 		T:               resolve.DurationSinceBeginning.Seconds(),
-		TransactionID:   resolve.TransactionID,
 	}
 }
 
 // NetworkEvent is a network event.
 type NetworkEvent struct {
-	Address       string  `json:"address,omitempty"`
-	ConnID        int64   `json:"conn_id,omitempty"`
-	DialID        int64   `json:"dial_id,omitempty"`
-	Failure       *string `json:"failure"`
-	NumBytes      int64   `json:"num_bytes,omitempty"`
-	Operation     string  `json:"operation"`
-	Proto         string  `json:"proto"`
-	T             float64 `json:"t"`
-	TransactionID int64   `json:"transaction_id,omitempty"`
+	Address   string  `json:"address,omitempty"`
+	Failure   *string `json:"failure"`
+	NumBytes  int64   `json:"num_bytes,omitempty"`
+	Operation string  `json:"operation"`
+	Proto     string  `json:"proto"`
+	T         float64 `json:"t"`
 }
 
 // NetworkEventsList is a list of network events.
@@ -431,35 +415,27 @@ func NewNetworkEventsList(results oonitemplates.Results) NetworkEventsList {
 	for _, in := range results.NetworkEvents {
 		if in.Connect != nil {
 			out = append(out, &NetworkEvent{
-				Address:       in.Connect.RemoteAddress,
-				ConnID:        in.Connect.ConnID,
-				DialID:        in.Connect.DialID,
-				Failure:       makeFailure(in.Connect.Error),
-				Operation:     errorx.ConnectOperation,
-				Proto:         protocolName[in.Connect.ConnID >= 0],
-				T:             in.Connect.DurationSinceBeginning.Seconds(),
-				TransactionID: in.Connect.TransactionID,
+				Address:   in.Connect.RemoteAddress,
+				Failure:   makeFailure(in.Connect.Error),
+				Operation: netxlite.ConnectOperation,
+				T:         in.Connect.DurationSinceBeginning.Seconds(),
 			})
 			// fallthrough
 		}
 		if in.Read != nil {
 			out = append(out, &NetworkEvent{
-				ConnID:    in.Read.ConnID,
 				Failure:   makeFailure(in.Read.Error),
-				Operation: errorx.ReadOperation,
+				Operation: netxlite.ReadOperation,
 				NumBytes:  in.Read.NumBytes,
-				Proto:     protocolName[in.Read.ConnID >= 0],
 				T:         in.Read.DurationSinceBeginning.Seconds(),
 			})
 			// fallthrough
 		}
 		if in.Write != nil {
 			out = append(out, &NetworkEvent{
-				ConnID:    in.Write.ConnID,
 				Failure:   makeFailure(in.Write.Error),
-				Operation: errorx.WriteOperation,
+				Operation: netxlite.WriteOperation,
 				NumBytes:  in.Write.NumBytes,
-				Proto:     protocolName[in.Write.ConnID >= 0],
 				T:         in.Write.DurationSinceBeginning.Seconds(),
 			})
 			// fallthrough
@@ -471,13 +447,11 @@ func NewNetworkEventsList(results oonitemplates.Results) NetworkEventsList {
 // TLSHandshake contains TLS handshake data
 type TLSHandshake struct {
 	CipherSuite        string             `json:"cipher_suite"`
-	ConnID             int64              `json:"conn_id,omitempty"`
 	Failure            *string            `json:"failure"`
 	NegotiatedProtocol string             `json:"negotiated_protocol"`
 	PeerCertificates   []MaybeBinaryValue `json:"peer_certificates"`
 	T                  float64            `json:"t"`
 	TLSVersion         string             `json:"tls_version"`
-	TransactionID      int64              `json:"transaction_id,omitempty"`
 }
 
 // TLSHandshakesList is a list of TLS handshakes
@@ -488,14 +462,12 @@ func NewTLSHandshakesList(results oonitemplates.Results) TLSHandshakesList {
 	var out TLSHandshakesList
 	for _, in := range results.TLSHandshakes {
 		out = append(out, TLSHandshake{
-			CipherSuite:        tlsx.CipherSuiteString(in.ConnectionState.CipherSuite),
-			ConnID:             in.ConnID,
+			CipherSuite:        netxlite.TLSCipherSuiteString(in.ConnectionState.CipherSuite),
 			Failure:            makeFailure(in.Error),
 			NegotiatedProtocol: in.ConnectionState.NegotiatedProtocol,
 			PeerCertificates:   makePeerCerts(in.ConnectionState.PeerCertificates),
 			T:                  in.DurationSinceBeginning.Seconds(),
-			TLSVersion:         tlsx.VersionString(in.ConnectionState.Version),
-			TransactionID:      in.TransactionID,
+			TLSVersion:         netxlite.TLSVersionString(in.ConnectionState.Version),
 		})
 	}
 	return out

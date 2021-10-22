@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	"github.com/ooni/probe-cli/v3/internal/fsx"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func ExampleOpenFile_openingDir() {
@@ -27,7 +27,7 @@ func ExampleOpenFile_openingFile() {
 	if err != nil {
 		log.Fatal("unexpected error", err)
 	}
-	data, err := iox.ReadAllContext(context.Background(), filep)
+	data, err := netxlite.ReadAllContext(context.Background(), filep)
 	if err != nil {
 		log.Fatal("unexpected error", err)
 	}

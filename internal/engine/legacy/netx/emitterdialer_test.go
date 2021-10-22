@@ -8,22 +8,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestEmitterFailure(t *testing.T) {
-	ctx := dialid.WithDialID(context.Background())
+	ctx := context.Background()
 	saver := &handlers.SavingHandler{}
 	ctx = modelx.WithMeasurementRoot(ctx, &modelx.MeasurementRoot{
 		Beginning: time.Now(),
 		Handler:   saver,
 	})
-	ctx = transactionid.WithTransactionID(ctx)
-	d := EmitterDialer{Dialer: mockablex.Dialer{
+	d := EmitterDialer{Dialer: &mocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, io.EOF
 		},
@@ -43,17 +40,11 @@ func TestEmitterFailure(t *testing.T) {
 		t.Fatal("expected non nil Connect")
 	}
 	conninfo := events[0].Connect
-	if conninfo.ConnID != 0 {
-		t.Fatal("unexpected ConnID value")
-	}
 	emitterCheckConnectEventCommon(t, conninfo, io.EOF)
 }
 
 func emitterCheckConnectEventCommon(
 	t *testing.T, conninfo *modelx.ConnectEvent, err error) {
-	if conninfo.DialID == 0 {
-		t.Fatal("unexpected DialID value")
-	}
 	if conninfo.DurationSinceBeginning == 0 {
 		t.Fatal("unexpected DurationSinceBeginning value")
 	}
@@ -69,22 +60,18 @@ func emitterCheckConnectEventCommon(
 	if conninfo.SyscallDuration == 0 {
 		t.Fatal("unexpected SyscallDuration value")
 	}
-	if conninfo.TransactionID == 0 {
-		t.Fatal("unexpected TransactionID value")
-	}
 }
 
 func TestEmitterSuccess(t *testing.T) {
-	ctx := dialid.WithDialID(context.Background())
+	ctx := context.Background()
 	saver := &handlers.SavingHandler{}
 	ctx = modelx.WithMeasurementRoot(ctx, &modelx.MeasurementRoot{
 		Beginning: time.Now(),
 		Handler:   saver,
 	})
-	ctx = transactionid.WithTransactionID(ctx)
-	d := EmitterDialer{Dialer: mockablex.Dialer{
+	d := EmitterDialer{Dialer: &mocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-			return &mockablex.Conn{
+			return &mocks.Conn{
 				MockRead: func(b []byte) (int, error) {
 					return 0, io.EOF
 				},
@@ -118,9 +105,6 @@ func TestEmitterSuccess(t *testing.T) {
 		t.Fatal("expected non nil Connect")
 	}
 	conninfo := events[0].Connect
-	if conninfo.ConnID == 0 {
-		t.Fatal("unexpected ConnID value")
-	}
 	emitterCheckConnectEventCommon(t, conninfo, nil)
 	if events[1].Read == nil {
 		t.Fatal("expected non nil Read")
@@ -137,9 +121,6 @@ func TestEmitterSuccess(t *testing.T) {
 }
 
 func emitterCheckReadEvent(t *testing.T, ev *modelx.ReadEvent) {
-	if ev.ConnID == 0 {
-		t.Fatal("unexpected ConnID")
-	}
 	if ev.DurationSinceBeginning == 0 {
 		t.Fatal("unexpected DurationSinceBeginning")
 	}
@@ -155,9 +136,6 @@ func emitterCheckReadEvent(t *testing.T, ev *modelx.ReadEvent) {
 }
 
 func emitterCheckWriteEvent(t *testing.T, ev *modelx.WriteEvent) {
-	if ev.ConnID == 0 {
-		t.Fatal("unexpected ConnID")
-	}
 	if ev.DurationSinceBeginning == 0 {
 		t.Fatal("unexpected DurationSinceBeginning")
 	}
@@ -173,9 +151,6 @@ func emitterCheckWriteEvent(t *testing.T, ev *modelx.WriteEvent) {
 }
 
 func emitterCheckCloseEvent(t *testing.T, ev *modelx.CloseEvent) {
-	if ev.ConnID == 0 {
-		t.Fatal("unexpected ConnID")
-	}
 	if ev.DurationSinceBeginning == 0 {
 		t.Fatal("unexpected DurationSinceBeginning")
 	}

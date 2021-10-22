@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type downloadManager struct {
@@ -46,7 +46,7 @@ func (mgr downloadManager) run(ctx context.Context) error {
 // we used to return `nil` on context errors, this function is
 // here to keep the previous behavior by filtering the error
 // returned when reading messages, given that now reading messages
-// can fail midway because we use iox.ReadAllContext.
+// can fail midway because we use netxlite.ReadAllContext.
 func (mgr downloadManager) reduceErr(err error) error {
 	if errors.Is(err, context.Canceled) {
 		return nil
@@ -72,7 +72,7 @@ func (mgr downloadManager) doRun(ctx context.Context) error {
 			return err
 		}
 		if kind == websocket.TextMessage {
-			data, err := iox.ReadAllContext(ctx, reader)
+			data, err := netxlite.ReadAllContext(ctx, reader)
 			if err != nil {
 				return err
 			}
@@ -82,7 +82,7 @@ func (mgr downloadManager) doRun(ctx context.Context) error {
 			}
 			continue
 		}
-		n, err := iox.CopyContext(ctx, io.Discard, reader)
+		n, err := netxlite.CopyContext(ctx, io.Discard, reader)
 		if err != nil {
 			return err
 		}

@@ -13,7 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -21,7 +21,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "web_connectivity" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.4.0" {
+	if measurer.ExperimentVersion() != "0.4.1" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -69,10 +69,10 @@ func TestMeasureWithCancelledContext(t *testing.T) {
 		t.Fatal(err)
 	}
 	tk := measurement.TestKeys.(*webconnectivity.TestKeys)
-	if *tk.ControlFailure != errorx.FailureInterrupted {
+	if *tk.ControlFailure != netxlite.FailureInterrupted {
 		t.Fatal("unexpected control_failure")
 	}
-	if *tk.DNSExperimentFailure != errorx.FailureInterrupted {
+	if *tk.DNSExperimentFailure != netxlite.FailureInterrupted {
 		t.Fatal("unexpected dns_experiment_failure")
 	}
 	if tk.HTTPExperimentFailure != nil {

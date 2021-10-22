@@ -5,10 +5,11 @@ import (
 	"errors"
 	"net"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/mockablex"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestOBFS4DialerWorks(t *testing.T) {
@@ -26,7 +27,7 @@ func TestOBFS4DialerWorks(t *testing.T) {
 		t.Fatal("unexpected value returned by Name")
 	}
 	bridgearg := o4d.AsBridgeArgument()
-	expectedbridge := "obfs4 192.95.36.142:443 CDF2E852BF539B82BD10E27E9115A31734E378C2 cert=qUVQ0srL1JI/vO6V6m/24anYXiJD3QP2HgzUKQtQ7GRqqUvs7P+tG43RtAqdhLOALP7DJQ iat-mode=1"
+	expectedbridge := "obfs4 209.148.46.65:443 74FAD13168806246602538555B5521A0383A1875 cert=ssH+9rP8dG2NLDN2XuFw63hIO/9MNNinLmxQDpVa+7kTOa9/m+tGWT1SmSYpQ9uTBGa6Hw iat-mode=0"
 	if bridgearg != expectedbridge {
 		t.Fatal("unexpected AsBridgeArgument value", bridgearg)
 	}
@@ -48,7 +49,7 @@ func TestOBFS4DialerFailsWithInvalidCert(t *testing.T) {
 func TestOBFS4DialerFailsWithConnectionErrorAndNoContextExpiration(t *testing.T) {
 	expected := errors.New("mocked error")
 	o4d := DefaultTestingOBFS4Bridge()
-	o4d.UnderlyingDialer = &mockablex.Dialer{
+	o4d.UnderlyingDialer = &mocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			return nil, expected
 		},
@@ -65,14 +66,17 @@ func TestOBFS4DialerFailsWithConnectionErrorAndNoContextExpiration(t *testing.T)
 func TestOBFS4DialerFailsWithConnectionErrorAndContextExpiration(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	expected := errors.New("mocked error")
+	unexpected := errors.New("mocked error")
 	o4d := DefaultTestingOBFS4Bridge()
-	o4d.UnderlyingDialer = &mockablex.Dialer{
+	sigch := make(chan interface{})
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	o4d.UnderlyingDialer = &mocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-			// We cancel the context before returning the error, which makes
-			// the context cancellation happen before us returning.
 			cancel()
-			return nil, expected
+			<-sigch
+			wg.Done()
+			return nil, unexpected
 		},
 	}
 	conn, err := o4d.DialContext(ctx)
@@ -82,6 +86,8 @@ func TestOBFS4DialerFailsWithConnectionErrorAndContextExpiration(t *testing.T) {
 	if conn != nil {
 		t.Fatal("expected nil conn here")
 	}
+	close(sigch)
+	wg.Wait()
 }
 
 // obfs4connwrapper allows us to observe that Close has been called
@@ -101,7 +107,7 @@ func TestOBFS4DialerWorksWithContextExpiration(t *testing.T) {
 	defer cancel()
 	called := &atomicx.Int64{}
 	o4d := DefaultTestingOBFS4Bridge()
-	o4d.UnderlyingDialer = &mockablex.Dialer{
+	o4d.UnderlyingDialer = &mocks.Dialer{
 		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 			// We cancel the context before returning the error, which makes
 			// the context cancellation happen before us returning.

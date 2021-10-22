@@ -5,7 +5,7 @@ Requires=ooniprobe-cli.service
 [Timer]
 Unit=ooniprobe-cli.service
 OnCalendar=daily
-RandomizedDelaySec=24h
+RandomizedDelaySec=12h
 
 [Install]
 WantedBy=timers.target

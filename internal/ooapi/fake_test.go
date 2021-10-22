@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type FakeCodec struct {
@@ -31,7 +31,7 @@ type FakeHTTPClient struct {
 func (c *FakeHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	time.Sleep(10 * time.Microsecond)
 	if req.Body != nil {
-		_, _ = iox.ReadAllContext(req.Context(), req.Body)
+		_, _ = netxlite.ReadAllContext(req.Context(), req.Body)
 		req.Body.Close()
 	}
 	if c.Err != nil {

@@ -13,7 +13,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestTraceTripperSuccess(t *testing.T) {
@@ -25,7 +25,7 @@ func TestTraceTripperSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp.Body.Close()
-	_, err = iox.ReadAllContext(context.Background(), resp.Body)
+	_, err = netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +156,7 @@ func TestTraceTripperWithCorrectSnaps(t *testing.T) {
 
 	// Read the whole response body, parse it as valid DNS
 	// reply and verify we obtained what we expected
-	replyData, err := iox.ReadAllContext(context.Background(), resp.Body)
+	replyData, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

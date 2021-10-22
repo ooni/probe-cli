@@ -1,37 +1,49 @@
 package netx_test
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestNewResolverVanilla(t *testing.T) {
 	r := netx.NewResolver(netx.Config{})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(resolver.ErrorWrapperResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ar, ok := ewr.Resolver.(resolver.AddressResolver)
+	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	ar, ok := ewr.Resolver.(*resolver.AddressResolver)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	_, ok = arw.ResolverLegacy.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -43,19 +55,27 @@ func TestNewResolverSpecificResolver(t *testing.T) {
 			// not initialized because it doesn't matter in this context
 		},
 	})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(resolver.ErrorWrapperResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ar, ok := ewr.Resolver.(resolver.AddressResolver)
+	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.BogonResolver)
+	ar, ok := ewr.Resolver.(*resolver.AddressResolver)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	_, ok = arw.ResolverLegacy.(resolver.BogonResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -65,11 +85,15 @@ func TestNewResolverWithBogonFilter(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
 		BogonIsError: true,
 	})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(resolver.ErrorWrapperResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -77,11 +101,15 @@ func TestNewResolverWithBogonFilter(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ar, ok := br.Resolver.(resolver.AddressResolver)
+	ar, ok := br.Resolver.(*resolver.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	_, ok = arw.ResolverLegacy.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -91,26 +119,46 @@ func TestNewResolverWithLogging(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
 		Logger: log.Log,
 	})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	lr, ok := ir.Resolver.(resolver.LoggingResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	lr, ok := rla.ResolverLegacy.(*netxlite.ResolverLogger)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	if lr.Logger != log.Log {
 		t.Fatal("not the logger we expected")
 	}
-	ewr, ok := lr.Resolver.(resolver.ErrorWrapperResolver)
+	rla, ok = ir.Resolver.(*netxlite.ResolverLegacyAdapter)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ar, ok := ewr.Resolver.(resolver.AddressResolver)
+	lr, ok = rla.ResolverLegacy.(*netxlite.ResolverLogger)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	rla, ok = lr.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
+	if !ok {
+		t.Fatalf("not the resolver we expected %T", rla.ResolverLegacy)
+	}
+	ar, ok := ewr.Resolver.(*resolver.AddressResolver)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	_, ok = arw.ResolverLegacy.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -121,26 +169,34 @@ func TestNewResolverWithSaver(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
 		ResolveSaver: saver,
 	})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	sr, ok := ir.Resolver.(resolver.SaverResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	sr, ok := rla.ResolverLegacy.(resolver.SaverResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	if sr.Saver != saver {
 		t.Fatal("not the saver we expected")
 	}
-	ewr, ok := sr.Resolver.(resolver.ErrorWrapperResolver)
+	ewr, ok := sr.Resolver.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ar, ok := ewr.Resolver.(resolver.AddressResolver)
+	ar, ok := ewr.Resolver.(*resolver.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	_, ok = arw.ResolverLegacy.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -150,11 +206,15 @@ func TestNewResolverWithReadWriteCache(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
 		CacheResolutions: true,
 	})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(resolver.ErrorWrapperResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -165,11 +225,15 @@ func TestNewResolverWithReadWriteCache(t *testing.T) {
 	if cr.ReadOnly != false {
 		t.Fatal("expected readwrite cache here")
 	}
-	ar, ok := cr.Resolver.(resolver.AddressResolver)
+	ar, ok := cr.Resolver.(*resolver.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	_, ok = arw.ResolverLegacy.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -181,11 +245,15 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 			"dns.google.com": {"8.8.8.8"},
 		},
 	})
-	ir, ok := r.(resolver.IDNAResolver)
+	ir, ok := r.(*resolver.IDNAResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := ir.Resolver.(resolver.ErrorWrapperResolver)
+	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -199,11 +267,15 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 	if cr.Get("dns.google.com")[0] != "8.8.8.8" {
 		t.Fatal("cache not correctly prefilled")
 	}
-	ar, ok := cr.Resolver.(resolver.AddressResolver)
+	ar, ok := cr.Resolver.(*resolver.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.SystemResolver)
+	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
+	if !ok {
+		t.Fatal("not the resolver we expected")
+	}
+	_, ok = arw.ResolverLegacy.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -211,7 +283,7 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 
 func TestNewTLSDialerVanilla(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{})
-	rtd, ok := td.(tlsdialer.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -230,15 +302,11 @@ func TestNewTLSDialerVanilla(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	ewth, ok := rtd.TLSHandshaker.(tlsdialer.ErrorWrapperTLSHandshaker)
+	ewth, ok := rtd.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -247,7 +315,7 @@ func TestNewTLSDialerWithConfig(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		TLSConfig: new(tls.Config),
 	})
-	rtd, ok := td.(tlsdialer.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -263,15 +331,11 @@ func TestNewTLSDialerWithConfig(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	ewth, ok := rtd.TLSHandshaker.(tlsdialer.ErrorWrapperTLSHandshaker)
+	ewth, ok := rtd.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -280,7 +344,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		Logger: log.Log,
 	})
-	rtd, ok := td.(tlsdialer.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -299,22 +363,18 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	lth, ok := rtd.TLSHandshaker.(tlsdialer.LoggingTLSHandshaker)
+	lth, ok := rtd.TLSHandshaker.(*netxlite.TLSHandshakerLogger)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 	if lth.Logger != log.Log {
 		t.Fatal("not the Logger we expected")
 	}
-	ewth, ok := lth.TLSHandshaker.(tlsdialer.ErrorWrapperTLSHandshaker)
+	ewth, ok := lth.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -324,7 +384,7 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		TLSSaver: saver,
 	})
-	rtd, ok := td.(tlsdialer.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -350,15 +410,11 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	if sth.Saver != saver {
 		t.Fatal("not the Logger we expected")
 	}
-	ewth, ok := sth.TLSHandshaker.(tlsdialer.ErrorWrapperTLSHandshaker)
+	ewth, ok := sth.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -368,7 +424,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
 		TLSConfig:   new(tls.Config),
 		NoTLSVerify: true,
 	})
-	rtd, ok := td.(tlsdialer.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -387,15 +443,11 @@ func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	ewth, ok := rtd.TLSHandshaker.(tlsdialer.ErrorWrapperTLSHandshaker)
+	ewth, ok := rtd.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
@@ -404,7 +456,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 	td := netx.NewTLSDialer(netx.Config{
 		NoTLSVerify: true,
 	})
-	rtd, ok := td.(tlsdialer.TLSDialer)
+	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
 	}
@@ -426,26 +478,18 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	ewth, ok := rtd.TLSHandshaker.(tlsdialer.ErrorWrapperTLSHandshaker)
+	ewth, ok := rtd.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	tth, ok := ewth.TLSHandshaker.(tlsdialer.TimeoutTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := tth.TLSHandshaker.(tlsdialer.SystemTLSHandshaker); !ok {
+	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
 }
 
 func TestNewVanilla(t *testing.T) {
 	txp := netx.NewHTTPTransport(netx.Config{})
-	uatxp, ok := txp.(httptransport.UserAgentTransport)
-	if !ok {
-		t.Fatal("not the transport we expected")
-	}
-	if _, ok := uatxp.RoundTripper.(*http.Transport); !ok {
+	if _, ok := txp.(*http.Transport); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -468,10 +512,17 @@ func TestNewWithDialer(t *testing.T) {
 
 func TestNewWithTLSDialer(t *testing.T) {
 	expected := errors.New("mocked error")
-	tlsDialer := tlsdialer.TLSDialer{
-		Config:        new(tls.Config),
-		Dialer:        netx.FakeDialer{Err: expected},
-		TLSHandshaker: tlsdialer.SystemTLSHandshaker{},
+	tlsDialer := &netxlite.TLSDialerLegacy{
+		Config: new(tls.Config),
+		Dialer: &mocks.Dialer{
+			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+				return nil, expected
+			},
+			MockCloseIdleConnections: func() {
+				// nothing
+			},
+		},
+		TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 	}
 	txp := netx.NewHTTPTransport(netx.Config{
 		TLSDialer: tlsDialer,
@@ -491,11 +542,7 @@ func TestNewWithByteCounter(t *testing.T) {
 	txp := netx.NewHTTPTransport(netx.Config{
 		ByteCounter: counter,
 	})
-	uatxp, ok := txp.(httptransport.UserAgentTransport)
-	if !ok {
-		t.Fatal("not the transport we expected")
-	}
-	bctxp, ok := uatxp.RoundTripper.(httptransport.ByteCountingTransport)
+	bctxp, ok := txp.(httptransport.ByteCountingTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -511,18 +558,14 @@ func TestNewWithLogger(t *testing.T) {
 	txp := netx.NewHTTPTransport(netx.Config{
 		Logger: log.Log,
 	})
-	uatxp, ok := txp.(httptransport.UserAgentTransport)
-	if !ok {
-		t.Fatal("not the transport we expected")
-	}
-	ltxp, ok := uatxp.RoundTripper.(httptransport.LoggingTransport)
+	ltxp, ok := txp.(*netxlite.HTTPTransportLogger)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
 	if ltxp.Logger != log.Log {
 		t.Fatal("not the logger we expected")
 	}
-	if _, ok := ltxp.RoundTripper.(*http.Transport); !ok {
+	if _, ok := ltxp.HTTPTransport.(*http.Transport); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -532,11 +575,7 @@ func TestNewWithSaver(t *testing.T) {
 	txp := netx.NewHTTPTransport(netx.Config{
 		HTTPSaver: saver,
 	})
-	uatxp, ok := txp.(httptransport.UserAgentTransport)
-	if !ok {
-		t.Fatal("not the transport we expected")
-	}
-	stxptxp, ok := uatxp.RoundTripper.(httptransport.SaverTransactionHTTPTransport)
+	stxptxp, ok := txp.(httptransport.SaverTransactionHTTPTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -597,7 +636,7 @@ func TestNewDNSClientSystemResolver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := dnsclient.Resolver.(resolver.SystemResolver); !ok {
+	if _, ok := dnsclient.Resolver.(*netxlite.ResolverSystem); !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -609,7 +648,7 @@ func TestNewDNSClientEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := dnsclient.Resolver.(resolver.SystemResolver); !ok {
+	if _, ok := dnsclient.Resolver.(*netxlite.ResolverSystem); !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -621,11 +660,11 @@ func TestNewDNSClientPowerdnsDoH(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	if _, ok := r.Transport().(resolver.DNSOverHTTPS); !ok {
+	if _, ok := r.Transport().(*resolver.DNSOverHTTPS); !ok {
 		t.Fatal("not the transport we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -637,11 +676,11 @@ func TestNewDNSClientGoogleDoH(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	if _, ok := r.Transport().(resolver.DNSOverHTTPS); !ok {
+	if _, ok := r.Transport().(*resolver.DNSOverHTTPS); !ok {
 		t.Fatal("not the transport we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -653,11 +692,11 @@ func TestNewDNSClientCloudflareDoH(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	if _, ok := r.Transport().(resolver.DNSOverHTTPS); !ok {
+	if _, ok := r.Transport().(*resolver.DNSOverHTTPS); !ok {
 		t.Fatal("not the transport we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -670,7 +709,7 @@ func TestNewDNSClientCloudflareDoHSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -678,7 +717,7 @@ func TestNewDNSClientCloudflareDoHSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
-	if _, ok := txp.RoundTripper.(resolver.DNSOverHTTPS); !ok {
+	if _, ok := txp.RoundTripper.(*resolver.DNSOverHTTPS); !ok {
 		t.Fatal("not the transport we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -690,11 +729,11 @@ func TestNewDNSClientUDP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	if _, ok := r.Transport().(resolver.DNSOverUDP); !ok {
+	if _, ok := r.Transport().(*resolver.DNSOverUDP); !ok {
 		t.Fatal("not the transport we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -707,7 +746,7 @@ func TestNewDNSClientUDPDNSSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -715,7 +754,7 @@ func TestNewDNSClientUDPDNSSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
-	if _, ok := txp.RoundTripper.(resolver.DNSOverUDP); !ok {
+	if _, ok := txp.RoundTripper.(*resolver.DNSOverUDP); !ok {
 		t.Fatal("not the transport we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -727,11 +766,11 @@ func TestNewDNSClientTCP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	txp, ok := r.Transport().(resolver.DNSOverTCP)
+	txp, ok := r.Transport().(*resolver.DNSOverTCP)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -748,7 +787,7 @@ func TestNewDNSClientTCPDNSSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -756,7 +795,7 @@ func TestNewDNSClientTCPDNSSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
-	dotcp, ok := txp.RoundTripper.(resolver.DNSOverTCP)
+	dotcp, ok := txp.RoundTripper.(*resolver.DNSOverTCP)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -772,11 +811,11 @@ func TestNewDNSClientDoT(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	txp, ok := r.Transport().(resolver.DNSOverTCP)
+	txp, ok := r.Transport().(*resolver.DNSOverTCP)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -793,7 +832,7 @@ func TestNewDNSClientDoTDNSSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(resolver.SerialResolver)
+	r, ok := dnsclient.Resolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -801,7 +840,7 @@ func TestNewDNSClientDoTDNSSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
-	dotls, ok := txp.RoundTripper.(resolver.DNSOverTCP)
+	dotls, ok := txp.RoundTripper.(*resolver.DNSOverTCP)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -871,7 +910,7 @@ func TestNewDNSClientBadUDPEndpoint(t *testing.T) {
 func TestNewDNSCLientWithInvalidTLSVersion(t *testing.T) {
 	_, err := netx.NewDNSClientWithOverrides(
 		netx.Config{}, "dot://8.8.8.8", "", "", "TLSv999")
-	if !errors.Is(err, tlsx.ErrInvalidTLSVersion) {
+	if !errors.Is(err, netxlite.ErrInvalidTLSVersion) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 }

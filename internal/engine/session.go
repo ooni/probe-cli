@@ -11,11 +11,11 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/sessionresolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/platform"

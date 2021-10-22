@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 )
 
 func TestDefaultByteCounter(t *testing.T) {

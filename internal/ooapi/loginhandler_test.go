@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel"
 )
 
@@ -72,7 +72,7 @@ func (lh *LoginHandler) register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
-	data, err := iox.ReadAllContext(r.Context(), r.Body)
+	data, err := netxlite.ReadAllContext(r.Context(), r.Body)
 	if err != nil {
 		w.WriteHeader(400)
 		return
@@ -113,7 +113,7 @@ func (lh *LoginHandler) login(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		return
 	}
-	data, err := iox.ReadAllContext(r.Context(), r.Body)
+	data, err := netxlite.ReadAllContext(r.Context(), r.Body)
 	if err != nil {
 		w.WriteHeader(400)
 		return

@@ -7,11 +7,10 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestSuccess(t *testing.T) {
@@ -38,7 +37,7 @@ func TestSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = iox.ReadAllContext(context.Background(), resp.Body); err != nil {
+	if _, err = netxlite.ReadAllContext(context.Background(), resp.Body); err != nil {
 		t.Fatal(err)
 	}
 	if err = resp.Body.Close(); err != nil {
@@ -68,9 +67,6 @@ func TestSuccess(t *testing.T) {
 }
 
 func TestBogonResolutionNotBroken(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
 	saver := new(trace.Saver)
 	r := netx.NewResolver(netx.Config{
 		BogonIsError: true,
@@ -81,13 +77,13 @@ func TestBogonResolutionNotBroken(t *testing.T) {
 		Logger:       log.Log,
 	})
 	addrs, err := r.LookupHost(context.Background(), "www.google.com")
-	if !errors.Is(err, errorx.ErrDNSBogon) {
+	if !errors.Is(err, netxlite.ErrDNSBogon) {
 		t.Fatal("not the error we expected")
 	}
-	if err.Error() != errorx.FailureDNSBogonError {
+	if err.Error() != netxlite.FailureDNSBogonError {
 		t.Fatal("error not correctly wrapped")
 	}
-	if len(addrs) != 1 || addrs[0] != "127.0.0.1" {
-		t.Fatal("address was not returned")
+	if len(addrs) > 0 {
+		t.Fatal("expected no addresses here")
 	}
 }

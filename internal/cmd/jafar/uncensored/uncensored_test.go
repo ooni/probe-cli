@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestGood(t *testing.T) {
@@ -56,7 +56,7 @@ func TestGood(t *testing.T) {
 	if resp.StatusCode != 200 {
 		t.Fatal("invalid status-code")
 	}
-	data, err := iox.ReadAllContext(context.Background(), resp.Body)
+	data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

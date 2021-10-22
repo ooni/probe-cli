@@ -9,9 +9,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 var (
@@ -116,7 +118,8 @@ func newResolver(
 	if network == "udp" {
 		// Same rationale as above: avoid possible endless loop
 		return newResolverWrapper(beginning, handler, newResolverUDP(
-			newDialer(beginning, handler), withPort(address, "53"),
+			netxlite.NewDialerLegacyAdapter(newDialer(beginning, handler)),
+			withPort(address, "53"),
 		)), nil
 	}
 	return nil, errors.New("resolver.New: unsupported network value")
@@ -149,7 +152,7 @@ func ChainResolvers(primary, secondary modelx.DNSResolver) modelx.DNSResolver {
 }
 
 func resolverWrapResolver(r resolver.Resolver) resolver.EmitterResolver {
-	return resolver.EmitterResolver{Resolver: resolver.ErrorWrapperResolver{Resolver: r}}
+	return resolver.EmitterResolver{Resolver: &errorsx.ErrorWrapperResolver{Resolver: r}}
 }
 
 func resolverWrapTransport(txp resolver.RoundTripper) resolver.EmitterResolver {
@@ -158,7 +161,7 @@ func resolverWrapTransport(txp resolver.RoundTripper) resolver.EmitterResolver {
 }
 
 func newResolverSystem() resolver.EmitterResolver {
-	return resolverWrapResolver(resolver.SystemResolver{})
+	return resolverWrapResolver(&netxlite.ResolverSystem{})
 }
 
 func newResolverUDP(dialer resolver.Dialer, address string) resolver.EmitterResolver {

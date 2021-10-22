@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -51,6 +51,11 @@ func IsBogon(address string) bool {
 
 // BogonResolver is a bogon aware resolver. When a bogon is encountered in
 // a reply, this resolver will return an error.
+//
+// Deprecation warning
+//
+// This resolver is deprecated. The right thing to do would be to check
+// for bogons right after a domain name resolution in the nettest.
 type BogonResolver struct {
 	Resolver
 }
@@ -59,10 +64,8 @@ type BogonResolver struct {
 func (r BogonResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	for _, addr := range addrs {
-		if IsBogon(addr) == true {
-			// We need to return the addrs otherwise the caller cannot see/log/save
-			// the specific addresses that triggered our bogon filter
-			return addrs, errorx.ErrDNSBogon
+		if IsBogon(addr) {
+			return nil, netxlite.ErrDNSBogon
 		}
 	}
 	return addrs, err

@@ -11,12 +11,9 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/connid"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
+	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // TraceTripper performs single HTTP transactions.
@@ -30,7 +27,7 @@ type TraceTripper struct {
 func NewTraceTripper(roundTripper http.RoundTripper) *TraceTripper {
 	return &TraceTripper{
 		readAllErrs:    &atomicx.Int64{},
-		readAllContext: iox.ReadAllContext,
+		readAllContext: netxlite.ReadAllContext,
 		roundTripper:   roundTripper,
 	}
 }
@@ -76,20 +73,17 @@ func readSnap(
 func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	root := modelx.ContextMeasurementRootOrDefault(req.Context())
 
-	tid := transactionid.ContextTransactionID(req.Context())
 	root.Handler.OnMeasurement(modelx.Measurement{
 		HTTPRoundTripStart: &modelx.HTTPRoundTripStartEvent{
-			DialID:                 dialid.ContextDialID(req.Context()),
 			DurationSinceBeginning: time.Since(root.Beginning),
 			Method:                 req.Method,
-			TransactionID:          tid,
 			URL:                    req.URL.String(),
 		},
 	})
 
 	var (
 		err              error
-		majorOp          = errorx.HTTPRoundTripOperation
+		majorOp          = netxlite.HTTPRoundTripOperation
 		majorOpMu        sync.Mutex
 		requestBody      []byte
 		requestHeaders   = http.Header{}
@@ -109,24 +103,22 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	tracer := &httptrace.ClientTrace{
 		TLSHandshakeStart: func() {
 			majorOpMu.Lock()
-			majorOp = errorx.TLSHandshakeOperation
+			majorOp = netxlite.TLSHandshakeOperation
 			majorOpMu.Unlock()
 			// Event emitted by net/http when DialTLS is not
 			// configured in the http.Transport
 			root.Handler.OnMeasurement(modelx.Measurement{
 				TLSHandshakeStart: &modelx.TLSHandshakeStartEvent{
 					DurationSinceBeginning: time.Since(root.Beginning),
-					TransactionID:          tid,
 				},
 			})
 		},
 		TLSHandshakeDone: func(state tls.ConnectionState, err error) {
 			// Wrapping the error even if we're not returning it because it may
 			// less confusing to users to see the wrapped name
-			err = errorx.SafeErrWrapperBuilder{
-				Error:         err,
-				Operation:     errorx.TLSHandshakeOperation,
-				TransactionID: tid,
+			err = errorsxlegacy.SafeErrWrapperBuilder{
+				Error:     err,
+				Operation: netxlite.TLSHandshakeOperation,
 			}.MaybeBuild()
 			durationSinceBeginning := time.Since(root.Beginning)
 			// Event emitted by net/http when DialTLS is not
@@ -136,22 +128,16 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 					ConnectionState:        modelx.NewTLSConnectionState(state),
 					Error:                  err,
 					DurationSinceBeginning: durationSinceBeginning,
-					TransactionID:          tid,
 				},
 			})
 		},
 		GotConn: func(info httptrace.GotConnInfo) {
 			majorOpMu.Lock()
-			majorOp = errorx.HTTPRoundTripOperation
+			majorOp = netxlite.HTTPRoundTripOperation
 			majorOpMu.Unlock()
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPConnectionReady: &modelx.HTTPConnectionReadyEvent{
-					ConnID: connid.Compute(
-						info.Conn.LocalAddr().Network(),
-						info.Conn.LocalAddr().String(),
-					),
 					DurationSinceBeginning: time.Since(root.Beginning),
-					TransactionID:          tid,
 				},
 			})
 		},
@@ -168,7 +154,6 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 				HTTPRequestHeader: &modelx.HTTPRequestHeaderEvent{
 					DurationSinceBeginning: time.Since(root.Beginning),
 					Key:                    key,
-					TransactionID:          tid,
 					Value:                  values,
 				},
 			})
@@ -179,24 +164,21 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 					DurationSinceBeginning: time.Since(root.Beginning),
 					Headers:                requestHeaders, // [*]
 					Method:                 req.Method,     // [*]
-					TransactionID:          tid,
-					URL:                    req.URL, // [*]
+					URL:                    req.URL,        // [*]
 				},
 			})
 		},
 		WroteRequest: func(info httptrace.WroteRequestInfo) {
 			// Wrapping the error even if we're not returning it because it may
 			// less confusing to users to see the wrapped name
-			err := errorx.SafeErrWrapperBuilder{
-				Error:         info.Err,
-				Operation:     errorx.HTTPRoundTripOperation,
-				TransactionID: tid,
+			err := errorsxlegacy.SafeErrWrapperBuilder{
+				Error:     info.Err,
+				Operation: netxlite.HTTPRoundTripOperation,
 			}.MaybeBuild()
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPRequestDone: &modelx.HTTPRequestDoneEvent{
 					DurationSinceBeginning: time.Since(root.Beginning),
 					Error:                  err,
-					TransactionID:          tid,
 				},
 			})
 		},
@@ -204,7 +186,6 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			root.Handler.OnMeasurement(modelx.Measurement{
 				HTTPResponseStart: &modelx.HTTPResponseStartEvent{
 					DurationSinceBeginning: time.Since(root.Beginning),
-					TransactionID:          tid,
 				},
 			})
 		},
@@ -226,10 +207,9 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	resp, err := t.roundTripper.RoundTrip(req)
-	err = errorx.SafeErrWrapperBuilder{
-		Error:         err,
-		Operation:     majorOp,
-		TransactionID: tid,
+	err = errorsxlegacy.SafeErrWrapperBuilder{
+		Error:     err,
+		Operation: majorOp,
 	}.MaybeBuild()
 	// [*] Require less event joining work by providing info that
 	// makes this event alone actionable for OONI
@@ -241,7 +221,6 @@ func (t *TraceTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		RequestMethod:          req.Method,       // [*]
 		RequestURL:             req.URL.String(), // [*]
 		MaxBodySnapSize:        snapSize,
-		TransactionID:          tid,
 	}
 	if resp != nil {
 		event.ResponseHeaders = resp.Header

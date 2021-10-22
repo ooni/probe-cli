@@ -13,8 +13,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func dowithclient(t *testing.T, client *netx.HTTPClient) {
@@ -24,7 +23,7 @@ func dowithclient(t *testing.T, client *netx.HTTPClient) {
 		t.Fatal(err)
 	}
 	defer resp.Body.Close()
-	_, err = iox.ReadAllContext(context.Background(), resp.Body)
+	_, err = netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +125,7 @@ func httpProxyTestMain(t *testing.T, client *http.Client, expect int) {
 		t.Fatal(err)
 	}
 	defer resp.Body.Close()
-	_, err = iox.ReadAllContext(context.Background(), resp.Body)
+	_, err = netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +147,7 @@ func TestHTTPTransportTimeout(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
-	if !strings.HasSuffix(err.Error(), errorx.FailureGenericTimeoutError) {
+	if !strings.HasSuffix(err.Error(), netxlite.FailureGenericTimeoutError) {
 		t.Fatal("not the error we expected")
 	}
 	if resp != nil {

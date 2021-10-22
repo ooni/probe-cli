@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Logger is the definition of Logger used by this package.
@@ -101,7 +101,7 @@ func (c Client) Do(request *http.Request) ([]byte, error) {
 	if response.StatusCode >= 400 {
 		return nil, fmt.Errorf("httpx: request failed: %s", response.Status)
 	}
-	return iox.ReadAllContext(request.Context(), response.Body)
+	return netxlite.ReadAllContext(request.Context(), response.Body)
 }
 
 // DoJSON performs the provided request and unmarshals the JSON response body

@@ -16,7 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -32,7 +32,7 @@ func TestSessionByteCounter(t *testing.T) {
 	}
 	defer resp.Body.Close()
 	ctx := context.Background()
-	if _, err := iox.CopyContext(ctx, io.Discard, resp.Body); err != nil {
+	if _, err := netxlite.CopyContext(ctx, io.Discard, resp.Body); err != nil {
 		t.Fatal(err)
 	}
 	if s.KibiBytesSent() <= 0 || s.KibiBytesReceived() <= 0 {

@@ -10,9 +10,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/telegram"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -94,7 +94,7 @@ func TestUpdateWithNoAccessPointsBlocking(t *testing.T) {
 		},
 		TestKeys: urlgetter.TestKeys{
 			Failure: (func() *string {
-				s := errorx.FailureEOFError
+				s := netxlite.FailureEOFError
 				return &s
 			})(),
 		},
@@ -125,7 +125,7 @@ func TestUpdateWithNilFailedOperation(t *testing.T) {
 		},
 		TestKeys: urlgetter.TestKeys{
 			Failure: (func() *string {
-				s := errorx.FailureEOFError
+				s := netxlite.FailureEOFError
 				return &s
 			})(),
 		},
@@ -137,7 +137,7 @@ func TestUpdateWithNilFailedOperation(t *testing.T) {
 		},
 		TestKeys: urlgetter.TestKeys{
 			Failure: (func() *string {
-				s := errorx.FailureEOFError
+				s := netxlite.FailureEOFError
 				return &s
 			})(),
 		},
@@ -159,11 +159,11 @@ func TestUpdateWithNonConnectFailedOperation(t *testing.T) {
 		},
 		TestKeys: urlgetter.TestKeys{
 			FailedOperation: (func() *string {
-				s := errorx.ConnectOperation
+				s := netxlite.ConnectOperation
 				return &s
 			})(),
 			Failure: (func() *string {
-				s := errorx.FailureEOFError
+				s := netxlite.FailureEOFError
 				return &s
 			})(),
 		},
@@ -175,11 +175,11 @@ func TestUpdateWithNonConnectFailedOperation(t *testing.T) {
 		},
 		TestKeys: urlgetter.TestKeys{
 			FailedOperation: (func() *string {
-				s := errorx.HTTPRoundTripOperation
+				s := netxlite.HTTPRoundTripOperation
 				return &s
 			})(),
 			Failure: (func() *string {
-				s := errorx.FailureEOFError
+				s := netxlite.FailureEOFError
 				return &s
 			})(),
 		},
@@ -201,11 +201,11 @@ func TestUpdateWithAllConnectsFailed(t *testing.T) {
 		},
 		TestKeys: urlgetter.TestKeys{
 			FailedOperation: (func() *string {
-				s := errorx.ConnectOperation
+				s := netxlite.ConnectOperation
 				return &s
 			})(),
 			Failure: (func() *string {
-				s := errorx.FailureEOFError
+				s := netxlite.FailureEOFError
 				return &s
 			})(),
 		},
@@ -217,11 +217,11 @@ func TestUpdateWithAllConnectsFailed(t *testing.T) {
 		},
 		TestKeys: urlgetter.TestKeys{
 			FailedOperation: (func() *string {
-				s := errorx.ConnectOperation
+				s := netxlite.ConnectOperation
 				return &s
 			})(),
 			Failure: (func() *string {
-				s := errorx.FailureEOFError
+				s := netxlite.FailureEOFError
 				return &s
 			})(),
 		},
@@ -243,11 +243,11 @@ func TestUpdateWebWithMixedResults(t *testing.T) {
 		},
 		TestKeys: urlgetter.TestKeys{
 			FailedOperation: (func() *string {
-				s := errorx.HTTPRoundTripOperation
+				s := netxlite.HTTPRoundTripOperation
 				return &s
 			})(),
 			Failure: (func() *string {
-				s := errorx.FailureEOFError
+				s := netxlite.FailureEOFError
 				return &s
 			})(),
 		},
@@ -265,7 +265,7 @@ func TestUpdateWebWithMixedResults(t *testing.T) {
 	if tk.TelegramWebStatus != "blocked" {
 		t.Fatal("TelegramWebStatus should be blocked")
 	}
-	if *tk.TelegramWebFailure != errorx.FailureEOFError {
+	if *tk.TelegramWebFailure != netxlite.FailureEOFError {
 		t.Fatal("invalid TelegramWebFailure")
 	}
 }

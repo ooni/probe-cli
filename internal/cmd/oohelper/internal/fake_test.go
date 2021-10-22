@@ -9,7 +9,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/iox"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type FakeResolver struct {
@@ -63,7 +63,7 @@ func (txp FakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return txp.Func(req)
 	}
 	if req.Body != nil {
-		iox.ReadAllContext(req.Context(), req.Body)
+		netxlite.ReadAllContext(req.Context(), req.Body)
 		req.Body.Close()
 	}
 	if txp.Err != nil {
