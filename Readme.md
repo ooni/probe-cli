@@ -6,7 +6,7 @@ The [Open Observatory of Network Interference](https://ooni.org) (OONI) is a fre
 that aims to empower decentralized efforts in increasing transparency of
 Internet censorship around the world.
 
-This repository contains core OONI tools:
+This repository contains core OONI tools written in Go:
 
 - the CLI client ([cmd/ooniprobe](cmd/ooniprobe));
 
