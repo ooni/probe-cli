@@ -1,11 +1,10 @@
-# linux builds ooniprobe for Linux
+# linux builds and publishes ooniprobe for Linux
 name: linux
 on:
   push:
     branches:
       - "release/**"
-      - "stable"
-      - "linux"
+      - "ooniprobe-staging"
 
 jobs:
   build_386:
@@ -15,6 +14,7 @@ jobs:
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/386
       - run: ./E2E/ooniprobe.sh ./CLI/linux/386/ooniprobe
       - run: ./CLI/linux/pubdebian
+        if: github.ref == 'refs/heads/ooniprobe-staging'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -27,6 +27,7 @@ jobs:
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/amd64
       - run: ./E2E/ooniprobe.sh ./CLI/linux/amd64/ooniprobe
       - run: ./CLI/linux/pubdebian
+        if: github.ref == 'refs/heads/ooniprobe-staging'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -41,6 +42,7 @@ jobs:
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm
       - run: ./E2E/ooniprobe.sh ./CLI/linux/arm/ooniprobe
       - run: ./CLI/linux/pubdebian
+        if: github.ref == 'refs/heads/ooniprobe-staging'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -55,6 +57,7 @@ jobs:
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm64
       - run: ./E2E/ooniprobe.sh ./CLI/linux/arm64/ooniprobe
       - run: ./CLI/linux/pubdebian
+        if: github.ref == 'refs/heads/ooniprobe-staging'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
