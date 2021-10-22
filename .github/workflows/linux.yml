@@ -5,6 +5,7 @@ on:
     branches:
       - "release/**"
       - "stable"
+      - "linux"
 
 jobs:
   build_386:

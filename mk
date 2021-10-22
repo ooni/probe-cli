@@ -278,8 +278,8 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 # This extra .PHONY for linux/386 is to help printing targets 🤷.
 .PHONY:     ./CLI/linux/386/ooniprobe
 ./debian/386: search/for/docker ./CLI/linux/386/ooniprobe
-	docker pull --platform linux/386 debian:stable
-	docker run --platform linux/386 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/pkgdebian 386 "$(DEBIAN_TILDE_VERSION)"
+	docker pull debian:stable
+	docker run -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/pkgdebian 386 "$(DEBIAN_TILDE_VERSION)"
 
 #help:
 #help: * `./mk ./debian/amd64`: debian/amd64
@@ -287,8 +287,8 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 # This extra .PHONY for linux/amd64 is to help printing targets 🤷.
 .PHONY:     ./CLI/linux/amd64/ooniprobe
 ./debian/amd64: search/for/docker ./CLI/linux/amd64/ooniprobe
-	docker pull --platform linux/amd64 debian:stable
-	docker run --platform linux/amd64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/pkgdebian amd64 "$(DEBIAN_TILDE_VERSION)"
+	docker pull debian:stable
+	docker run -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/pkgdebian amd64 "$(DEBIAN_TILDE_VERSION)"
 
 # Note that we're building for armv7 here
 #help:
@@ -297,8 +297,8 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 # This extra .PHONY for linux/arm is to help printing targets 🤷.
 .PHONY:     ./CLI/linux/arm/ooniprobe
 ./debian/arm: search/for/docker ./CLI/linux/arm/ooniprobe
-	docker pull --platform linux/arm/v7 debian:stable
-	docker run --platform linux/arm/v7 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/pkgdebian arm "$(DEBIAN_TILDE_VERSION)"
+	docker pull debian:stable
+	docker run -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/pkgdebian arm "$(DEBIAN_TILDE_VERSION)"
 
 #help:
 #help: * `./mk ./debian/arm64`: debian/arm64
@@ -306,8 +306,8 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 # This extra .PHONY for linux/arm64 is to help printing targets 🤷.
 .PHONY:     ./CLI/linux/arm64/ooniprobe
 ./debian/arm64: search/for/docker ./CLI/linux/arm64/ooniprobe
-	docker pull --platform linux/arm64 debian:stable
-	docker run --platform linux/arm64 -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/pkgdebian arm64 "$(DEBIAN_TILDE_VERSION)"
+	docker pull debian:stable
+	docker run -v $(shell pwd):/ooni -w /ooni debian:stable ./CLI/linux/pkgdebian arm64 "$(DEBIAN_TILDE_VERSION)"
 
 #help:
 #help: The `./mk ./CLI/ooniprobe/linux` command builds the ooniprobe official command
