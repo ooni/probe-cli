@@ -104,14 +104,14 @@ client. As part of these releases, we also update dependencies and
 embedded assets. This process ensures that we perform better testing
 of dependencies and assets as part of development.
 
-The `master` branch and pull requests only run lightweight tests
+The `master` branch and pull requests only run CI lightweight tests
 that ensure the code still compiles, has good coverage, and we are
 not introducing regressions in terms of the measurement engine.
 
 To draft a release we branch off of `master` and create a `release/x.y`
 branch where `x` is the major number and `y` is the minor number. For
 release branches, we enable a very comprehensive set of tests that run
-autmatically with every commit. The purpose of a release branch is to
+automatically with every commit. The purpose of a release branch is to
 make sure all checks are green and hotfix bugs that we may discover
 as part of more extensively testing a release candidate. Beta and stable
 releases should occur on this branch. Subsequent patch releases should
@@ -130,5 +130,5 @@ from a release branch into the desired `PRODUCT-staging` branch. This
 design ensures that we only publish binary packages when we want to
 do so. Because we merge from a release branch, we are not pushing alpha
 code to binary releases. (The only exception to this rule is `miniooni`,
-which is treated differently because it is an `alpha` client.)
+treated differently because it's an `alpha` client.)
 
