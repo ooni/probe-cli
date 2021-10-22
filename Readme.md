@@ -30,7 +30,9 @@ Report issues at [github.com/ooni/probe](
 https://github.com/ooni/probe/issues/new?labels=ooni/probe-cli&assignee=bassosimone).
 Please, make sure you add the `ooni/probe-cli` label.
 
-## ooniprobe
+## Build instructions
+
+### ooniprobe
 
 Be sure you have golang >= 1.17 and a C compiler (Mingw-w64 for Windows). You
 can build using:
@@ -41,7 +43,7 @@ go build -v ./cmd/ooniprobe
 
 This will generate a binary called `ooniprobe` in the current directory.
 
-## Android bindings
+### Android bindings
 
 Make sure you have GNU make installed, then run:
 
@@ -56,7 +58,7 @@ The generated bindings are (manually) pushed to the Maven Central package
 repository. The instructions explaining how to integrate these bindings
 are published along with the release notes.
 
-## iOS bindings
+### iOS bindings
 
 Make sure you have GNU make installed, then run:
 
@@ -70,7 +72,7 @@ cannot clone private repositories in the https://github.com/ooni namespace.)
 The generated bindings are (manually) added to GitHub releases. The instructions
 explaining how to integrate these bindings are published along with the release notes.
 
-## miniooni
+### miniooni
 
 Miniooni is the experimental OONI client used for research. Compile using:
 
@@ -80,7 +82,7 @@ go build -v ./internal/cmd/miniooni
 
 This will generate a binary called `miniooni` in the current directory.
 
-## oohelperd
+### oohelperd
 
 Oohelperd is the test helper server. Compile using:
 
@@ -90,7 +92,7 @@ go build -v ./internal/cmd/oohelperd
 
 This will generate a binary called `oohelperd` in the current directory.
 
-## Specification
+## Specifications
 
 Every nettest (aka experiment) implemented in this repository has a companion
 spec in the [ooni/spec](https://github.com/ooni/spec) repository.
