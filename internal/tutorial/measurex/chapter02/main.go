@@ -86,7 +86,7 @@ func main() {
 // this operation by running:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter02
+// go run -race ./internal/tutorial/measurex/chapter02 | jq
 // ```
 //
 // Here is the JSON we obtain in output:
@@ -130,7 +130,7 @@ func main() {
 // Let us start with an IP address where there's no listening socket:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter02 -address 127.0.0.1:1
+// go run -race ./internal/tutorial/measurex/chapter02 -address 127.0.0.1:1 | jq
 // ```
 //
 // We get this JSON:
@@ -162,7 +162,7 @@ func main() {
 // Let us now try to obtain a timeout:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter02 -address 8.8.4.4:1
+// go run -race ./internal/tutorial/measurex/chapter02 -address 8.8.4.4:1 | jq
 // ```
 //
 // We get this JSON:
@@ -193,7 +193,7 @@ func main() {
 // Let us now use a very small timeout:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter02 -address 8.8.4.4:1 -timeout 100ms
+// go run -race ./internal/tutorial/measurex/chapter02 -address 8.8.4.4:1 -timeout 100ms | jq
 // ```
 //
 // To get this JSON:

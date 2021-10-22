@@ -251,7 +251,7 @@ func main() {
 // Let us perform a vanilla run first:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter14
+// go run -race ./internal/tutorial/measurex/chapter14 | jq
 // ```
 //
 // Take a look at the JSON.

@@ -459,19 +459,19 @@ func main() {
 // 1. provoke a connect error by using:
 //
 // ```
-// go run -race ./internal/tutorial/measurex/chapter06 -address 127.0.0.1:1
+// go run -race ./internal/tutorial/measurex/chapter06 -address 127.0.0.1:1 | jq
 // ```
 //
 // 2. provoke a TLS handshake error by using:
 //
 // ```
-// go run -race ./internal/tutorial/measurex/chapter06 -sni example.com
+// go run -race ./internal/tutorial/measurex/chapter06 -sni example.com | jq
 // ```
 //
 // 3. provoke an HTTP round trip error by using:
 //
 // ```
-// go run -race ./internal/tutorial/measurex/chapter06 -address 8.8.8.8:853
+// go run -race ./internal/tutorial/measurex/chapter06 -address 8.8.8.8:853 | jq
 // ```
 //
 // 4. modify the code to fetch an HTTP endpoint instead (hint: you

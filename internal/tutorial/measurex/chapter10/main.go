@@ -116,7 +116,7 @@ func main() {
 // Let us perform a vanilla run first:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter10
+// go run -race ./internal/tutorial/measurex/chapter10 | jq
 // ```
 //
 // Take a look at the JSON output. Can you spot that

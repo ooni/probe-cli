@@ -96,13 +96,13 @@ func main() {
 // Let us perform a vanilla run first:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter11
+// go run -race ./internal/tutorial/measurex/chapter11 | jq
 // ```
 //
 // Take a look at the JSON output and compare it with:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter10 -url https://www.google.com
+// go run -race ./internal/tutorial/measurex/chapter10 -url https://www.google.com | jq
 // ```
 //
 // (which is basically forcing chapter10 to run with the
@@ -115,7 +115,7 @@ func main() {
 // Now run:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter11 -url https://google.com
+// go run -race ./internal/tutorial/measurex/chapter11 -url https://google.com | jq
 // ```
 //
 // Do you see the opportunity there for following redirections? :^).

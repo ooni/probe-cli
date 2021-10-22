@@ -112,7 +112,7 @@ func main() {
 // Let us perform a vanilla run first:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter08
+// go run -race ./internal/tutorial/measurex/chapter08 | jq
 // ```
 //
 // Please, check the JSON output. Do you recognize the fields

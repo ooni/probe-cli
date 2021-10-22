@@ -70,7 +70,7 @@ func main() {
 // As before, let us start off with a vanilla run:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter03
+// go run -race ./internal/tutorial/measurex/chapter03 | jq
 // ```
 //
 // This time we get a much larger JSON, so I will pretend it is
@@ -247,7 +247,7 @@ func main() {
 // Let us try to get a NXDOMAIN error.
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter03 -query antani.ooni.org
+// go run -race ./internal/tutorial/measurex/chapter03 -query antani.ooni.org | jq
 // ```
 //
 // This produces the following JSON:
@@ -444,7 +444,7 @@ func main() {
 // that are, let's say, kind enough to easily help.
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter03 -address 180.97.36.63:53
+// go run -race ./internal/tutorial/measurex/chapter03 -address 180.97.36.63:53 | jq
 // ```
 //
 // Here's the answer I get:
