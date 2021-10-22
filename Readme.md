@@ -1,20 +1,28 @@
 # OONI Probe Client Library and CLI
 
-* Documentation: [![GoDoc](https://godoc.org/github.com/ooni/probe-cli?status.svg)](https://godoc.org/github.com/ooni/probe-cli)
+The Open Observatory of Network Interference (OONI) is a free software project
+that aims to empower decentralized efforts in increasing transparency of
+Internet censorship around the world. Please, see [ooni.org](https://ooni.org) for
+more information.
 
-* `go test -race -short ./...` status: [![Short Tests Status](https://github.com/ooni/probe-cli/workflows/shorttests/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Ashorttests)
+This repository contains core OONI tools:
 
-* `go test -race ./...` status: [![All Tests Status](https://github.com/ooni/probe-cli/workflows/alltests/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Aalltests)
+- the CLI client ([cmd/ooniprobe](cmd/ooniprobe));
 
-* Code coverage for `-short` tests: [![Coverage Status](https://coveralls.io/repos/github/ooni/probe-cli/badge.svg?branch=master)](https://coveralls.io/github/ooni/probe-cli?branch=master)
+- the mobile library ([pkg/oonimkall](pkg/oonimkall));
 
-* Go Report Card: [![Go Report Card](https://goreportcard.com/badge/github.com/ooni/probe-cli)](https://goreportcard.com/report/github.com/ooni/probe-cli)
+- the test helper server ([internal/cmd/oohelperd](internal/cmd/oohelperd));
 
-* Debian package builds: [![linux-debian-packages](https://github.com/ooni/probe-cli/workflows/linux-debian-packages/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Alinux-debian-packages)
+- and all the related support packages (inside [internal](internal)).
 
-* Open issues: [![GitHub issues by-label](https://img.shields.io/github/issues/ooni/probe/ooni/probe-cli?style=plastic)](https://github.com/ooni/probe/labels/ooni%2Fprobe-cli)
+Every top-level directory in this repository contains an explanatory README file.
 
-The next generation OONI Probe: client library and Command Line Interface.
+| --- | --- |
+| Documentation | [![GoDoc](https://godoc.org/github.com/ooni/probe-cli?status.svg)](https://godoc.org/github.com/ooni/probe-cli) |
+| `go test -race -short ./...` status | [![Short Tests Status](https://github.com/ooni/probe-cli/workflows/shorttests/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Ashorttests) |
+| Coverage for `-short` tests | [![Coverage Status](https://coveralls.io/repos/github/ooni/probe-cli/badge.svg?branch=master)](https://coveralls.io/github/ooni/probe-cli?branch=master) |
+| Go Report Card | [![Go Report Card](https://goreportcard.com/badge/github.com/ooni/probe-cli)](https://goreportcard.com/report/github.com/ooni/probe-cli) |
+| Debian package builds | [![linux-debian-packages](https://github.com/ooni/probe-cli/workflows/linux-debian-packages/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Alinux-debian-packages) |
 
 ## User setup
 
@@ -28,13 +36,9 @@ Report issues at [github.com/ooni/probe](
 https://github.com/ooni/probe/issues/new?labels=ooni/probe-cli&assignee=bassosimone).
 Please, make sure you add the `ooni/probe-cli` label.
 
-## Repository organization
-
-Every top-level directory contains an explanatory README file.
-
 ## ooniprobe
 
-Be sure you have golang >= 1.16 and a C compiler (Mingw-w64 for Windows). You
+Be sure you have golang >= 1.17 and a C compiler (Mingw-w64 for Windows). You
 can build using:
 
 ```bash
@@ -82,11 +86,24 @@ go build -v ./internal/cmd/miniooni
 
 This will generate a binary called `miniooni` in the current directory.
 
+## oohelperd
+
+Oohelperd is the test helper server. Compile using:
+
+```bash
+go build -v ./internal/cmd/oohelperd
+```
+
+This will generate a binary called `oohelperd` in the current directory.
+
 ## Specification
 
 Every nettest (aka experiment) implemented in this repository has a companion
 spec in the [ooni/spec](https://github.com/ooni/spec) repository.
 
+## Contributing
+
+Please, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Updating dependencies
 
