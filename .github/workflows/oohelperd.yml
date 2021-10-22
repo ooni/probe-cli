@@ -1,10 +1,10 @@
-# oohelperd builds oohelperd for Linux
+# oohelperd builds and publishes oohelperd for Linux
 name: oohelperd
 on:
   push:
     branches:
       - "release/**"
-      - "stable"
+      - "oohelperd-staging"
 
 jobs:
   build_amd64:
@@ -32,6 +32,7 @@ jobs:
           dpkg-buildpackage -us -uc -b
 
       - name: upload package
+        if: github.ref == 'refs/heads/oohelperd-staging'
         run: |
           curl -fsSLO https://raw.githubusercontent.com/ooni/sysadmin/master/tools/debops-ci
           chmod +x debops-ci

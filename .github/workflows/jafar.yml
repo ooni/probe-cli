@@ -1,3 +1,4 @@
+# jafar checks whether the jafar tool is still WAI.
 name: jafar
 on:
   push:
