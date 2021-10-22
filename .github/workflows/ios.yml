@@ -3,6 +3,7 @@ name: ios
 on:
   push:
     branches:
+      - "mobile-staging"
       - "release/**"
 jobs:
   test:

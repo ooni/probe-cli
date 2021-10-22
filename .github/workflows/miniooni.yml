@@ -5,6 +5,7 @@ name: miniooni
 on:
   push:
     branches:
+      - "master"
       - "release/**"
 jobs:
   test:
