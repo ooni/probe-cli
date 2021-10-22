@@ -81,7 +81,7 @@ lines of code for printing the resulting measurement.
 As before, let us start off with a vanilla run:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter05
+go run -race ./internal/tutorial/measurex/chapter05 | jq
 ```
 
 Produces this JSON:

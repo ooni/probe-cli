@@ -79,7 +79,7 @@ is closed when done by `MeasureURLAndFollowRedirections`, so we leave the loop.
 Let us perform a vanilla run first:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter12
+go run -race ./internal/tutorial/measurex/chapter12 | jq
 ```
 
 Take a look at the JSON. You should see several redirects

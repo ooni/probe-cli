@@ -190,9 +190,10 @@ Let us run the program with default arguments first. You can do
 this operation by running:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter01
+go run -race ./internal/tutorial/measurex/chapter01 | jq
 ```
 
+Where `jq` is being used to make the output more presentable.
 If you do that you obtain some logging messages, which are out of
 the scope of this tutorial, and the following JSON:
 
@@ -257,7 +258,7 @@ Let us now change the domain to resolve to be `antani.ooni.org` (a
 nonexisting domain), which we can do by running this command:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter01 -domain antani.ooni.org
+go run -race ./internal/tutorial/measurex/chapter01 -domain antani.ooni.org | jq
 ```
 
 This is the output JSON:
@@ -318,7 +319,7 @@ top of which `measurex` is written.)
 Let us now try with an insanely low timeout:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter01 -timeout 250us
+go run -race ./internal/tutorial/measurex/chapter01 -timeout 250us | jq
 ```
 
 To get this JSON:

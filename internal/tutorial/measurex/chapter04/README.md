@@ -80,7 +80,7 @@ the measurement itself, which we print below.
 As before, let us start off with a vanilla run:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter04
+go run -race ./internal/tutorial/measurex/chapter04 | jq
 ```
 
 Let us comment the JSON in detail:
@@ -209,13 +209,13 @@ changes in different error conditions.
 
 Here are the commands I used for each proposed exercise:
 
-1. go run -race ./internal/tutorial/measurex/chapter04 -address 8.8.4.4:1
+1. go run -race ./internal/tutorial/measurex/chapter04 -address 8.8.4.4:1 | jq
 
-2. go run -race ./internal/tutorial/measurex/chapter04 -sni example.org
+2. go run -race ./internal/tutorial/measurex/chapter04 -sni example.org | jq
 
-3. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni self-signed.badssl.com
+3. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni self-signed.badssl.com | jq
 
-4. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni expire.badssl.com
+4. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni expire.badssl.com | jq
 
 To emulate the last two scenarios, if you're on Linux, a
 possibility is building Jafar with this command:
