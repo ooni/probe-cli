@@ -31,6 +31,7 @@ type Options struct {
 	HomeDir          string
 	Inputs           []string
 	InputFilePaths   []string
+	JafarSpec        string
 	Limit            int64
 	MaxRuntime       int64
 	NoJSON           bool
@@ -76,6 +77,10 @@ func init() {
 	getopt.FlagLong(
 		&globalOptions.Inputs, "input", 'i',
 		"Add test-dependent input to the test input", "INPUT",
+	)
+	getopt.FlagLong(
+		&globalOptions.JafarSpec, "jafar-spec", 0,
+		"Specifies censorship rules to apply for QA purposes", "FILE",
 	)
 	getopt.FlagLong(
 		&globalOptions.Limit, "limit", 0,
@@ -292,6 +297,8 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	if currentOptions.Tunnel != "" {
 		currentOptions.Proxy = fmt.Sprintf("%s:///", currentOptions.Tunnel)
 	}
+
+	MaybeParseJafarSpec(currentOptions.JafarSpec)
 
 	ctx := context.Background()
 
