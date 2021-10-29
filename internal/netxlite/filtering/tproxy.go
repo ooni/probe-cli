@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
@@ -18,9 +19,13 @@ import (
 type TProxyPolicy string
 
 const (
-	// TProxyPolicyDropSYN only applies to outgoing TCP connections and
+	// TProxyPolicyTCPDropSYN only applies to outgoing TCP connections and
 	// causes the TCP segment to be dropped.
-	TProxyPolicyDropSYN = TProxyPolicy("drop-syn")
+	TProxyPolicyTCPDropSYN = TProxyPolicy("tcp-drop-syn")
+
+	// TProxyPolicyTCPReject only applies to outgoing TCP connections and
+	// causes the TCP segment to be replied with RST.
+	TProxyPolicyTCPReject = TProxyPolicy("tcp-reject")
 
 	// TProxyPolicyDropData applies to existing TCP/UDP connections
 	// and causes outgoing data to be dropped.
@@ -36,10 +41,17 @@ const (
 	// server, which will apply TLSActions to ClientHelloes.
 	TProxyPolicyHijackTLS = TProxyPolicy("hijack-tls")
 
+	// TProxyPolicyHijackTLSMITM is like TProxyPolicyHijackTLS except
+	// that the target server uses a self signed certificate.
+	TProxyPolicyHijackTLSMITM = TProxyPolicy("hijack-tls-mitm")
+
 	// TProxyPolicyHijackHTTP only applies to TCP connections and causes
 	// the destination address to become the one of the local HTTP
 	// server, which will apply HTTPActions to HTTP requests.
 	TProxyPolicyHijackHTTP = TProxyPolicy("hijack-http")
+
+	// TProxyPolicyHijackQUICMITM is like TProxyPolicyHijackTLSMITM but for QUIC.
+	TProxyPolicyHijackQUICMITM = TProxyPolicy("hijack-quic-mitm")
 )
 
 // TProxyConfig contains configuration for TProxy.
@@ -87,8 +99,14 @@ type TProxy struct {
 	// logger is the underlying logger to use.
 	logger Logger
 
+	// quicListener is the QUIC listener.
+	quicListener quic.Listener
+
 	// tlsListener is the TLS listener.
 	tlsListener net.Listener
+
+	// tlsListenerMITM is the TLS-MITM listener.
+	tlsListenerMITM net.Listener
 }
 
 // NewTProxy creates a new TProxy instance.
@@ -122,6 +140,23 @@ func NewTProxy(config *TProxyConfig, logger Logger) (*TProxy, error) {
 		p.tlsListener.Close()
 		return nil, err
 	}
+	mitmTLSProxy := &MITMTLSProxy{}
+	p.tlsListenerMITM, err = mitmTLSProxy.Start("127.0.0.1:0")
+	if err != nil {
+		p.dnsListener.Close()
+		p.tlsListener.Close()
+		p.httpListener.Close()
+		return nil, err
+	}
+	mitmQUICProxy := &MITMQUICProxy{}
+	p.quicListener, err = mitmQUICProxy.Start("127.0.0.1:0")
+	if err != nil {
+		p.dnsListener.Close()
+		p.tlsListener.Close()
+		p.httpListener.Close()
+		p.tlsListenerMITM.Close()
+		return nil, err
+	}
 	return p, nil
 }
 
@@ -141,7 +176,12 @@ func (p *TProxy) canonicalizeDNS() {
 
 // Close closes the resources used by a TProxy.
 func (p *TProxy) Close() error {
+	p.dnsClient.CloseIdleConnections()
 	p.dnsListener.Close()
+	p.httpListener.Close()
+	p.tlsListener.Close()
+	p.tlsListenerMITM.Close()
+	p.quicListener.Close()
 	return nil
 }
 
@@ -189,6 +229,11 @@ func (c *tProxyUDPLikeConn) WriteTo(pkt []byte, addr net.Addr) (int, error) {
 		// If we're asked to drop this packet, we'll just pretend we've
 		// emitted it on the wire without emitting it.
 		return len(pkt), nil
+	case TProxyPolicyHijackQUICMITM:
+		// If we're asked to hijack QUIC, we'll simply replace
+		// the destination address with the local QUIC's one
+		c.proxy.logger.Infof("tproxy: WriteTo: %s => %s", endpoint, policy)
+		return c.UDPLikeConn.WriteTo(pkt, c.proxy.quicListener.Addr())
 	default:
 		c.proxy.logger.Infof("tproxy: WriteTo: %s => %s", endpoint, policy)
 		return c.UDPLikeConn.WriteTo(pkt, addr)
@@ -210,7 +255,7 @@ func (d *tProxyDialer) DialContext(ctx context.Context, network, address string)
 	endpoint := fmt.Sprintf("%s/%s", address, network)
 	policy := d.proxy.config.Endpoints[endpoint]
 	switch policy {
-	case TProxyPolicyDropSYN:
+	case TProxyPolicyTCPDropSYN:
 		// If we're asked to drop SYN segments, then we will just not
 		// dial at all and wait for the context to expire. To avoid
 		// blocking the dialing operation forever, we'll ensure that
@@ -224,6 +269,13 @@ func (d *tProxyDialer) DialContext(ctx context.Context, network, address string)
 			defer cancel()
 			<-ctx.Done()
 			return nil, errors.New("i/o timeout")
+		default:
+			return nil, ErrCannotApplyTProxyPolicy
+		}
+	case TProxyPolicyTCPReject:
+		switch network {
+		case "tcp", "tcp4", "tcp6":
+			return nil, netxlite.ECONNREFUSED
 		default:
 			return nil, ErrCannotApplyTProxyPolicy
 		}
@@ -244,6 +296,16 @@ func (d *tProxyDialer) DialContext(ctx context.Context, network, address string)
 		case "tcp", "tcp4", "tcp6":
 			d.proxy.logger.Infof("tproxy: DialContext: %s/%s => %s", address, network, policy)
 			address = d.proxy.tlsListener.Addr().String()
+		default:
+			return nil, ErrCannotApplyTProxyPolicy
+		}
+	case TProxyPolicyHijackTLSMITM:
+		// If we're asked to hijack TLS, we'll simply replace
+		// the destination address with the local TLS's one
+		switch network {
+		case "tcp", "tcp4", "tcp6":
+			d.proxy.logger.Infof("tproxy: DialContext: %s/%s => %s", address, network, policy)
+			address = d.proxy.tlsListenerMITM.Addr().String()
 		default:
 			return nil, ErrCannotApplyTProxyPolicy
 		}
