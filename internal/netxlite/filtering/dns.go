@@ -13,7 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// DNSAction is the action that this proxy should take.
+// DNSAction is a DNS filtering action that this proxy should take.
 type DNSAction string
 
 const (

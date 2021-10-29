@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-// TLSAction is the action that this proxy should take.
+// TLSAction is a TLS filtering action that this proxy should take.
 type TLSAction string
 
 const (

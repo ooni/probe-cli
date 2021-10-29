@@ -322,6 +322,8 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		runtimex.PanicOnError(err, "cannot create tproxy instance")
 		defer tproxy.Close()
 		netxlite.TProxy = tproxy
+		log.Infof("miniooni: disabling submission with --censor to avoid pulluting OONI data")
+		currentOptions.NoCollector = true
 	}
 
 	//Mon Jan 2 15:04:05 -0700 MST 2006

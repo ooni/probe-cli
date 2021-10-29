@@ -33,8 +33,13 @@ const (
 
 	// TProxyPolicyHijackTLS only applies to TCP connections and causes
 	// the destination address to become the one of the local TLS
-	// server, which will apply DNSActions to ClientHelloes.
+	// server, which will apply TLSActions to ClientHelloes.
 	TProxyPolicyHijackTLS = TProxyPolicy("hijack-tls")
+
+	// TProxyPolicyHijackHTTP only applies to TCP connections and causes
+	// the destination address to become the one of the local HTTP
+	// server, which will apply HTTPActions to HTTP requests.
+	TProxyPolicyHijackHTTP = TProxyPolicy("hijack-http")
 )
 
 // TProxyConfig contains configuration for TProxy.
@@ -47,6 +52,9 @@ type TProxyConfig struct {
 
 	// SNIs contains rules for filtering TLS SNIs.
 	SNIs map[string]TLSAction
+
+	// Hosts contains rules for filtering by HTTP host.
+	Hosts map[string]HTTPAction
 }
 
 // NewTProxyConfig reads the TProxyConfig from the given file.
@@ -72,6 +80,9 @@ type TProxy struct {
 
 	// dnsListener is the DNS listener.
 	dnsListener DNSListener
+
+	// httpListener is the HTTP listener.
+	httpListener net.Listener
 
 	// logger is the underlying logger to use.
 	logger Logger
@@ -102,7 +113,21 @@ func NewTProxy(config *TProxyConfig, logger Logger) (*TProxy, error) {
 		return nil, err
 	}
 	p.canonicalizeDNS()
+	httpProxy := &HTTPProxy{
+		OnIncomingHost: p.onIncomingHost,
+	}
+	p.httpListener, err = httpProxy.Start("127.0.0.1:0")
+	if err != nil {
+		p.dnsListener.Close()
+		p.tlsListener.Close()
+		return nil, err
+	}
 	return p, nil
+}
+
+// Name returns the name of this tproxy.
+func (*TProxy) Name() string {
+	return "filtering"
 }
 
 // canonicalizeDNS ensures all DNS names are canonicalized.
@@ -222,6 +247,16 @@ func (d *tProxyDialer) DialContext(ctx context.Context, network, address string)
 		default:
 			return nil, ErrCannotApplyTProxyPolicy
 		}
+	case TProxyPolicyHijackHTTP:
+		// If we're asked to hijack HTTP, we'll simply replace
+		// the destination address with the local HTTP's one
+		switch network {
+		case "tcp", "tcp4", "tcp6":
+			d.proxy.logger.Infof("tproxy: DialContext: %s/%s => %s", address, network, policy)
+			address = d.proxy.httpListener.Addr().String()
+		default:
+			return nil, ErrCannotApplyTProxyPolicy
+		}
 	default:
 		// nothing
 	}
@@ -276,4 +311,14 @@ func (c *tProxyConn) Write(b []byte) (int, error) {
 	default:
 		return c.Conn.Write(b)
 	}
+}
+
+// onIncomingHost is called for filtering HTTP hosts.
+func (p *TProxy) onIncomingHost(host string) HTTPAction {
+	policy := p.config.Hosts[host]
+	if policy == "" {
+		policy = HTTPActionPass
+	}
+	p.logger.Infof("tproxy: HTTP: %s => %s", host, policy)
+	return policy
 }

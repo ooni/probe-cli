@@ -16,6 +16,9 @@ import (
 // policies. The implementation of this functionality is not part of netxlite:
 // here we only have the basic mechanism to make this possible.
 type TProxable interface {
+	// Name is the name of the implementation.
+	Name() string
+
 	// ListenUDP creates a new quicx.UDPLikeConn conn.
 	ListenUDP(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error)
 
@@ -42,6 +45,11 @@ var TProxy TProxable = &TProxyStdlib{}
 // TProxyStdlib is the default TProxable implementation that uses
 // the stdlib in the most obvious way for every functionality.
 type TProxyStdlib struct{}
+
+// Name returns the name of this tproxy.
+func (*TProxyStdlib) Name() string {
+	return "stdlib"
+}
 
 // ListenUDP calls net.ListenUDP.
 func (*TProxyStdlib) ListenUDP(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {

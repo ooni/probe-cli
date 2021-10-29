@@ -175,7 +175,7 @@ func (r *resolverDB) computeOddityLookupHost(addrs []string, err error) Oddity {
 		}
 	}
 	for _, addr := range addrs {
-		if isBogon(addr) {
+		if netxlite.IsBogon(addr) {
 			return OddityDNSLookupBogon
 		}
 	}
