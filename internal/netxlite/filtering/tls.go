@@ -10,28 +10,28 @@ import (
 )
 
 // TLSAction is the action that this proxy should take.
-type TLSAction int
+type TLSAction string
 
 const (
-	// TLSActionProxy proxies the traffic to the destination.
-	TLSActionProxy = TLSAction(iota)
+	// TLSActionPass passes the traffic to the destination.
+	TLSActionPass = TLSAction("pass")
 
 	// TLSActionReset resets the connection.
-	TLSActionReset
+	TLSActionReset = TLSAction("reset")
 
 	// TLSActionTimeout causes the connection to timeout.
-	TLSActionTimeout
+	TLSActionTimeout = TLSAction("timeout")
 
 	// TLSActionEOF closes the connection.
-	TLSActionEOF
+	TLSActionEOF = TLSAction("eof")
 
 	// TLSActionAlertInternalError sends an internal error
 	// alert message to the TLS client.
-	TLSActionAlertInternalError
+	TLSActionAlertInternalError = TLSAction("internal-error")
 
 	// TLSActionAlertUnrecognizedName tells the client that
 	// it's handshaking with an unknown SNI.
-	TLSActionAlertUnrecognizedName
+	TLSActionAlertUnrecognizedName = TLSAction("alert-unrecognized-name")
 )
 
 // TLSProxy is a TLS proxy that routes the traffic depending
@@ -86,7 +86,7 @@ func (p *TLSProxy) handle(conn net.Conn) {
 		return
 	}
 	switch p.OnIncomingSNI(sni) {
-	case TLSActionProxy:
+	case TLSActionPass:
 		p.proxy(conn, sni, hello)
 	case TLSActionTimeout:
 		p.timeout(conn)

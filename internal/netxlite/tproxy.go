@@ -8,8 +8,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
-// TProxable is the fundamental type used by the netxlite package to create
-// net.Conn and quicx.UDPLikeConn, as well as to use the stdlib resolver.
+// TProxable is the fundamental type used by the netxlite package to perform
+// low-level network operations for which, by default, we use the stdlib.
+//
+// The t stands for transparent. By using this type as the fundamental type,
+// we can transparently intercept connections and implement censorship
+// policies. The implementation of this functionality is not part of netxlite:
+// here we only have the basic mechanism to make this possible.
 type TProxable interface {
 	// ListenUDP creates a new quicx.UDPLikeConn conn.
 	ListenUDP(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error)
