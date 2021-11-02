@@ -405,10 +405,10 @@ func TestTProxyDial(t *testing.T) {
 		}
 	})
 
-	t.Run("with reject", func(t *testing.T) {
+	t.Run("with reject SYN", func(t *testing.T) {
 		config := &TProxyConfig{
 			Endpoints: map[string]TProxyPolicy{
-				"130.192.16.171:80/tcp": TProxyPolicyTCPReject,
+				"130.192.16.171:80/tcp": TProxyPolicyTCPRejectSYN,
 			},
 		}
 		proxy, err := NewTProxy(config, log.Log)

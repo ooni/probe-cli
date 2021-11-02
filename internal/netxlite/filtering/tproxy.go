@@ -14,9 +14,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
-// ErrCannotApplyTProxyPolicy means that the policy cannot be applied.
-var ErrCannotApplyTProxyPolicy = errors.New("tproxy: cannot apply policy")
-
 // TProxyPolicy is a policy for the transparent proxy.
 type TProxyPolicy string
 
@@ -25,39 +22,36 @@ const (
 	// causes the TCP segment to be dropped.
 	TProxyPolicyTCPDropSYN = TProxyPolicy("tcp-drop-syn")
 
-	// TProxyPolicyTCPReject only applies to outgoing TCP connections and
+	// TProxyPolicyTCPRejectSYN only applies to outgoing TCP connections and
 	// causes the TCP segment to be replied to with RST.
-	TProxyPolicyTCPReject = TProxyPolicy("tcp-reject")
+	TProxyPolicyTCPRejectSYN = TProxyPolicy("tcp-reject-syn")
 
 	// TProxyPolicyDropData applies to existing TCP/UDP connections
 	// and causes outgoing data to be dropped.
 	TProxyPolicyDropData = TProxyPolicy("drop-data")
 
-	// TProxyPolicyHijackDNS only applies to UDP connections and causes
-	// the destination address to become the one of the local DNS
-	// server, which will apply DNSActions to incoming queries.
+	// TProxyPolicyHijackDNS causes the dialer to replace the target
+	// address with the address of the local censored resolver.
 	TProxyPolicyHijackDNS = TProxyPolicy("hijack-dns")
 
-	// TProxyPolicyHijackTLS only applies to TCP connections and causes
-	// the destination address to become the one of the local TLS
-	// server, which will apply TLSActions to ClientHelloes.
+	// TProxyPolicyHijackTLS causes the dialer to replace the target
+	// address with the address of the local censored TLS server.
 	TProxyPolicyHijackTLS = TProxyPolicy("hijack-tls")
 
-	// TProxyPolicyHijackHTTP only applies to TCP connections and causes
-	// the destination address to become the one of the local HTTP
-	// server, which will apply HTTPActions to HTTP requests.
+	// TProxyPolicyHijackHTTP causes the dialer to replace the target
+	// address with the address of the local censored HTTP server.
 	TProxyPolicyHijackHTTP = TProxyPolicy("hijack-http")
 )
 
 // TProxyConfig contains configuration for TProxy.
 type TProxyConfig struct {
 	// Domains contains rules for filtering the lookup of domains. Note
-	// that the map MUST contain FQDNs (e.g. `x.org.`). That is, you need
-	// to append the final dot representing the whole name space. If you
+	// that the map MUST contain FQDNs. That is, you need to append
+	// a final dot to the domain name (e.g., `example.com.`).  If you
 	// use the NewTProxyConfig factory, you don't need to worry about this
-	// issue, because the factory will normalize the entries. Otherwise,
-	// you can explicitly call the CanonicalizeDNS method after you've
-	// created the TProxyConfig and before using it.
+	// issue, because the factory will canonicalize non-canonical
+	// entries. Otherwise, you can explicitly call the CanonicalizeDNS
+	// method _before_ using the TProxy.
 	Domains map[string]DNSAction
 
 	// Endpoints contains rules for filtering TCP/UDP endpoints.
@@ -267,7 +261,7 @@ func (d *tProxyDialer) DialContext(ctx context.Context, network, address string)
 		defer cancel()
 		<-ctx.Done()
 		return nil, errors.New("i/o timeout")
-	case TProxyPolicyTCPReject:
+	case TProxyPolicyTCPRejectSYN:
 		d.proxy.logger.Infof("tproxy: DialContext: %s/%s => %s", address, network, policy)
 		return nil, netxlite.ECONNREFUSED
 	case TProxyPolicyHijackDNS:
@@ -322,8 +316,9 @@ func (p *TProxy) onQuery(domain string) DNSAction {
 	policy := p.config.Domains[domain]
 	if policy == "" {
 		policy = DNSActionPass
+	} else {
+		p.logger.Infof("tproxy: DNS: %s => %s", domain, policy)
 	}
-	p.logger.Infof("tproxy: DNS: %s => %s", domain, policy)
 	return policy
 }
 
@@ -332,8 +327,9 @@ func (p *TProxy) onIncomingSNI(sni string) TLSAction {
 	policy := p.config.SNIs[sni]
 	if policy == "" {
 		policy = TLSActionPass
+	} else {
+		p.logger.Infof("tproxy: TLS: %s => %s", sni, policy)
 	}
-	p.logger.Infof("tproxy: TLS: %s => %s", sni, policy)
 	return policy
 }
 
@@ -342,7 +338,8 @@ func (p *TProxy) onIncomingHost(host string) HTTPAction {
 	policy := p.config.Hosts[host]
 	if policy == "" {
 		policy = HTTPActionPass
+	} else {
+		p.logger.Infof("tproxy: HTTP: %s => %s", host, policy)
 	}
-	p.logger.Infof("tproxy: HTTP: %s => %s", host, policy)
 	return policy
 }
