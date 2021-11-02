@@ -125,7 +125,7 @@ func TestDNSProxy(t *testing.T) {
 		r := newresolver(listener)
 		addrs, err := r.LookupHost(ctx, "dns.google")
 		if err == nil || err.Error() != netxlite.FailureDNSNoAnswer {
-			t.Fatal(err)
+			t.Fatal("unexpected err", err)
 		}
 		if addrs != nil {
 			t.Fatal("expected empty addrs")
@@ -149,7 +149,7 @@ func TestDNSProxy(t *testing.T) {
 		r := newresolver(listener)
 		addrs, err := r.LookupHost(ctx, "dns.google")
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
-			t.Fatal(err)
+			t.Fatal("unexpected err", err)
 		}
 		if addrs != nil {
 			t.Fatal("expected empty addrs")
@@ -162,7 +162,7 @@ func TestDNSProxy(t *testing.T) {
 		p := &DNSProxy{}
 		listener, err := p.Start("127.0.0.1")
 		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
-			t.Fatal("not the error we expected", err)
+			t.Fatal("unexpected err", err)
 		}
 		if listener != nil {
 			t.Fatal("expected nil listener")
@@ -280,7 +280,7 @@ func TestDNSProxy(t *testing.T) {
 			query.Rcode = -1 // causes Pack to fail
 			reply, err := p.proxy(query)
 			if err == nil || !strings.HasSuffix(err.Error(), "bad rcode") {
-				t.Fatal("not the error we expected", err)
+				t.Fatal("unexpected err", err)
 			}
 			if reply != nil {
 				t.Fatal("expected nil reply")
@@ -317,7 +317,7 @@ func TestDNSProxy(t *testing.T) {
 			}
 			reply, err := p.proxy(&dns.Msg{})
 			if err == nil || !strings.HasSuffix(err.Error(), "overflow unpacking uint16") {
-				t.Fatal("not the error we expected", err)
+				t.Fatal("unexpected err", err)
 			}
 			if reply != nil {
 				t.Fatal("expected nil reply here")

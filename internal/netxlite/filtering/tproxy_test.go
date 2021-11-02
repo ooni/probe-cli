@@ -22,7 +22,7 @@ func TestNewTProxyConfig(t *testing.T) {
 	t.Run("with nonexistent file", func(t *testing.T) {
 		config, err := NewTProxyConfig(filepath.Join("testdata", "nonexistent"))
 		if !errors.Is(err, syscall.ENOENT) {
-			t.Fatal("not the error we expected", err)
+			t.Fatal("unexpected err", err)
 		}
 		if config != nil {
 			t.Fatal("expected nil config here")
@@ -32,7 +32,7 @@ func TestNewTProxyConfig(t *testing.T) {
 	t.Run("with file containing invalid JSON", func(t *testing.T) {
 		config, err := NewTProxyConfig(filepath.Join("testdata", "invalid.json"))
 		if err == nil || !strings.HasSuffix(err.Error(), "unexpected end of JSON input") {
-			t.Fatal("not the error we expected", err)
+			t.Fatal("unexpected err", err)
 		}
 		if config != nil {
 			t.Fatal("expected nil config here")
@@ -69,7 +69,7 @@ func TestNewTProxy(t *testing.T) {
 		config := &TProxyConfig{}
 		proxy, err := newTProxy(config, log.Log, "127.0.0.1", "", "")
 		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
-			t.Fatal("not the error we expected", err)
+			t.Fatal("unexpected err", err)
 		}
 		if proxy != nil {
 			t.Fatal("expected nil proxy here")
@@ -80,7 +80,7 @@ func TestNewTProxy(t *testing.T) {
 		config := &TProxyConfig{}
 		proxy, err := newTProxy(config, log.Log, "127.0.0.1:0", "127.0.0.1", "")
 		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
-			t.Fatal("not the error we expected", err)
+			t.Fatal("unexpected err", err)
 		}
 		if proxy != nil {
 			t.Fatal("expected nil proxy here")
@@ -91,7 +91,7 @@ func TestNewTProxy(t *testing.T) {
 		config := &TProxyConfig{}
 		proxy, err := newTProxy(config, log.Log, "127.0.0.1:0", "127.0.0.1:0", "127.0.0.1")
 		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
-			t.Fatal("not the error we expected", err)
+			t.Fatal("unexpected err", err)
 		}
 		if proxy != nil {
 			t.Fatal("expected nil proxy here")
@@ -109,7 +109,7 @@ func TestTProxyQUIC(t *testing.T) {
 			defer proxy.Close()
 			pconn, err := proxy.ListenUDP("tcp", &net.UDPAddr{})
 			if err == nil || !strings.HasSuffix(err.Error(), "unknown network tcp") {
-				t.Fatal("not the error we expected", err)
+				t.Fatal("unexpected err", err)
 			}
 			if pconn != nil {
 				t.Fatal("expected nil pconn here")
@@ -246,7 +246,7 @@ func TestTProxyLookupHost(t *testing.T) {
 		ctx := context.Background()
 		addrs, err := proxy.LookupHost(ctx, "dns.google")
 		if err == nil || err.Error() != "dns_nxdomain_error" {
-			t.Fatal("not the error we expected", err)
+			t.Fatal("unexpected err", err)
 		}
 		if len(addrs) != 0 {
 			t.Fatal("too many addrs")
@@ -300,10 +300,13 @@ func TestTProxyOnIncomingSNI(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		tconn := tls.Client(conn, &tls.Config{ServerName: "dns.google"})
-		err = tconn.HandshakeContext(ctx)
-		if err == nil {
-			t.Fatal("expected an error here")
+		tlsh := netxlite.NewTLSHandshakerStdlib(log.Log)
+		tconn, _, err := tlsh.Handshake(ctx, conn, &tls.Config{ServerName: "dns.google"})
+		if err == nil || err.Error() != netxlite.FailureConnectionReset {
+			t.Fatal("unexpected err", err)
+		}
+		if tconn != nil {
+			t.Fatal("expected nil tconn")
 		}
 		conn.Close()
 	})
@@ -349,7 +352,13 @@ func TestTProxyOnIncomingHost(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer proxy.Close()
-		dialer := proxy.NewTProxyDialer(10 * time.Second)
+		dialer := netxlite.WrapDialer(
+			log.Log,
+			netxlite.NewResolverStdlib(log.Log),
+			&tProxyDialerAdapter{
+				proxy.NewTProxyDialer(10 * time.Second),
+			},
+		)
 		req, err := http.NewRequest("GET", "http://130.192.16.171:80", nil)
 		if err != nil {
 			t.Fatal(err)
@@ -357,8 +366,8 @@ func TestTProxyOnIncomingHost(t *testing.T) {
 		req.Host = "nexa.polito.it"
 		txp := &http.Transport{DialContext: dialer.DialContext}
 		resp, err := txp.RoundTrip(req)
-		if err == nil {
-			t.Fatal("expected non-nil error here")
+		if err == nil || !strings.HasSuffix(err.Error(), netxlite.FailureConnectionReset) {
+			t.Fatal("unexpected err", err)
 		}
 		if resp != nil {
 			t.Fatal("expected nil resp here")
@@ -388,8 +397,8 @@ func TestTProxyDial(t *testing.T) {
 		req.Host = "nexa.polito.it"
 		txp := &http.Transport{DialContext: dialer.DialContext}
 		resp, err := txp.RoundTrip(req)
-		if err == nil {
-			t.Fatal("expected non-nil error here")
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatal("unexpected err", err)
 		}
 		if resp != nil {
 			t.Fatal("expected nil resp here")
@@ -407,7 +416,10 @@ func TestTProxyDial(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer proxy.Close()
-		dialer := proxy.NewTProxyDialer(10 * time.Second)
+		dialer := netxlite.WrapDialer(log.Log,
+			netxlite.NewResolverStdlib(log.Log),
+			&tProxyDialerAdapter{
+				proxy.NewTProxyDialer(10 * time.Second)})
 		req, err := http.NewRequest("GET", "http://130.192.16.171:80", nil)
 		if err != nil {
 			t.Fatal(err)
@@ -415,8 +427,8 @@ func TestTProxyDial(t *testing.T) {
 		req.Host = "nexa.polito.it"
 		txp := &http.Transport{DialContext: dialer.DialContext}
 		resp, err := txp.RoundTrip(req)
-		if err == nil {
-			t.Fatal("expected non-nil error here")
+		if err == nil || !strings.HasSuffix(err.Error(), netxlite.FailureConnectionRefused) {
+			t.Fatal("unexpected err", err)
 		}
 		if resp != nil {
 			t.Fatal("expected nil resp here")
@@ -445,8 +457,8 @@ func TestTProxyDial(t *testing.T) {
 		req.Host = "nexa.polito.it"
 		txp := &http.Transport{DialContext: dialer.DialContext}
 		resp, err := txp.RoundTrip(req)
-		if err == nil {
-			t.Fatal("expected non-nil error here")
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatal("unexpected err", err)
 		}
 		if resp != nil {
 			t.Fatal("expected nil resp here")
@@ -469,10 +481,10 @@ func TestTProxyDial(t *testing.T) {
 		defer proxy.Close()
 		dialer := proxy.NewTProxyDialer(10 * time.Second)
 		resolver := netxlite.NewResolverUDP(
-			log.Log, netxlite.NewDialerLegacyAdapter(dialer), "8.8.8.8:53")
+			log.Log, &tProxyDialerAdapter{dialer}, "8.8.8.8:53")
 		addrs, err := resolver.LookupHost(context.Background(), "example.com")
-		if err == nil {
-			t.Fatal("expected an error here")
+		if err == nil || err.Error() != netxlite.FailureDNSNXDOMAINError {
+			t.Fatal("unexpected err", err)
 		}
 		if len(addrs) != 0 {
 			t.Fatal("expected no addrs here")
@@ -489,8 +501,8 @@ func TestTProxyDial(t *testing.T) {
 		dialer := proxy.NewTProxyDialer(10 * time.Second)
 		ctx := context.Background()
 		conn, err := dialer.DialContext(ctx, "tcp", "127.0.0.1")
-		if err == nil {
-			t.Fatal("expected nil error here")
+		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
+			t.Fatal("unexpected err", err)
 		}
 		if conn != nil {
 			t.Fatal("expected nil conn here")

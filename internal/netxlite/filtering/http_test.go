@@ -2,6 +2,7 @@ package filtering
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -97,7 +98,7 @@ func TestHTTPProxy(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp, err := httpGET(ctx, listener.Addr(), "nexa.polito.it")
-		if err == nil || !strings.HasSuffix(err.Error(), "context deadline exceeded") {
+		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatal("unexpected err", err)
 		}
 		if resp != nil {
@@ -160,7 +161,7 @@ func TestHTTPProxy(t *testing.T) {
 		p := &HTTPProxy{}
 		listener, err := p.Start("127.0.0.1")
 		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
-			t.Fatal("not the error we expected", err)
+			t.Fatal("unexpected err", err)
 		}
 		if listener != nil {
 			t.Fatal("expected nil listener")

@@ -251,7 +251,7 @@ func TestTLSProxy(t *testing.T) {
 		p := &TLSProxy{}
 		listener, err := p.Start("127.0.0.1")
 		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
-			t.Fatal("not the error we expected", err)
+			t.Fatal("unexpected err", err)
 		}
 		if listener != nil {
 			t.Fatal("expected nil listener")
