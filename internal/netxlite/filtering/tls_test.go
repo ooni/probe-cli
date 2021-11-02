@@ -36,7 +36,7 @@ func TestTLSProxy(t *testing.T) {
 
 	t.Run("TLSActionProxy with default proxy", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionProxy)
+		listener, done, err := newproxy(TLSActionPass)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -135,7 +135,7 @@ func TestTLSProxy(t *testing.T) {
 	})
 
 	t.Run("handle cannot read ClientHello", func(t *testing.T) {
-		listener, done, err := newproxy(TLSActionProxy)
+		listener, done, err := newproxy(TLSActionPass)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -161,7 +161,7 @@ func TestTLSProxy(t *testing.T) {
 
 	t.Run("TLSActionProxy fails because we don't have SNI", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionProxy)
+		listener, done, err := newproxy(TLSActionPass)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -178,7 +178,7 @@ func TestTLSProxy(t *testing.T) {
 
 	t.Run("TLSActionProxy fails because we can't dial", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionProxy)
+		listener, done, err := newproxy(TLSActionPass)
 		if err != nil {
 			t.Fatal(err)
 		}
