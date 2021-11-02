@@ -1,4 +1,4 @@
-package measurex
+package netxlite
 
 //
 // Bogon
@@ -14,9 +14,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// isBogon returns whether if an IP address is bogon. Passing to this
+// IsBogon returns whether if an IP address is bogon. Passing to this
 // function a non-IP address causes it to return true.
-func isBogon(address string) bool {
+func IsBogon(address string) bool {
 	ip := net.ParseIP(address)
 	return ip == nil || isPrivate(ip)
 }
