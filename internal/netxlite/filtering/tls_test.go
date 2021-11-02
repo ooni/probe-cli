@@ -148,8 +148,8 @@ func TestTLSProxy(t *testing.T) {
 		_, err = conn.Read(buff)
 		// Implementation note: we need to wrap the error because
 		// otherwise the error string on Windows is different from Unix
-		if err == nil {
-			t.Fatal("expected non-nil error")
+		if err == nil || !strings.HasSuffix(err.Error(), "connection reset by peer") {
+			t.Fatal("not the error we expected", err)
 		}
 		err = netxlite.NewTopLevelGenericErrWrapper(err)
 		if err.Error() != netxlite.FailureConnectionReset {
@@ -251,8 +251,8 @@ func TestTLSProxy(t *testing.T) {
 	t.Run("Start fails on an invalid address", func(t *testing.T) {
 		p := &TLSProxy{}
 		listener, err := p.Start("127.0.0.1")
-		if err == nil {
-			t.Fatal("expected an error")
+		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
+			t.Fatal("not the error we expected", err)
 		}
 		if listener != nil {
 			t.Fatal("expected nil listener")

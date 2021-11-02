@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -160,8 +161,8 @@ func TestDNSProxy(t *testing.T) {
 	t.Run("Start with invalid address", func(t *testing.T) {
 		p := &DNSProxy{}
 		listener, err := p.Start("127.0.0.1")
-		if err == nil {
-			t.Fatal("expected an error")
+		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
+			t.Fatal("not the error we expected", err)
 		}
 		if listener != nil {
 			t.Fatal("expected nil listener")
@@ -278,8 +279,8 @@ func TestDNSProxy(t *testing.T) {
 			query := &dns.Msg{}
 			query.Rcode = -1 // causes Pack to fail
 			reply, err := p.proxy(query)
-			if err == nil {
-				t.Fatal("expected error here")
+			if err == nil || !strings.HasSuffix(err.Error(), "bad rcode") {
+				t.Fatal("not the error we expected", err)
 			}
 			if reply != nil {
 				t.Fatal("expected nil reply")
@@ -315,8 +316,8 @@ func TestDNSProxy(t *testing.T) {
 				},
 			}
 			reply, err := p.proxy(&dns.Msg{})
-			if err == nil {
-				t.Fatal("expected error")
+			if err == nil || !strings.HasSuffix(err.Error(), "overflow unpacking uint16") {
+				t.Fatal("not the error we expected", err)
 			}
 			if reply != nil {
 				t.Fatal("expected nil reply here")
