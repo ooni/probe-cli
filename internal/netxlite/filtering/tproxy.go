@@ -14,20 +14,18 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
-// TProxyPolicy is a policy for the transparent proxy.
+// TProxyPolicy is a policy for TPRoxy.
 type TProxyPolicy string
 
 const (
-	// TProxyPolicyTCPDropSYN only applies to outgoing TCP connections and
-	// causes the TCP segment to be dropped.
+	// TProxyPolicyTCPDropSYN simulates a SYN segment being dropped.
 	TProxyPolicyTCPDropSYN = TProxyPolicy("tcp-drop-syn")
 
-	// TProxyPolicyTCPRejectSYN only applies to outgoing TCP connections and
-	// causes the TCP segment to be replied to with RST.
+	// TProxyPolicyTCPRejectSYN simulates a closed TCP port.
 	TProxyPolicyTCPRejectSYN = TProxyPolicy("tcp-reject-syn")
 
-	// TProxyPolicyDropData applies to existing TCP/UDP connections
-	// and causes outgoing data to be dropped.
+	// TProxyPolicyDropData drops outgoing data of an
+	// established TCP/UDP connection.
 	TProxyPolicyDropData = TProxyPolicy("drop-data")
 
 	// TProxyPolicyHijackDNS causes the dialer to replace the target

@@ -18,6 +18,16 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
+// tProxyDialerAdapter adapts a netxlite.TProxyDialer to be a netxlite.Dialer.
+type tProxyDialerAdapter struct {
+	netxlite.TProxyDialer
+}
+
+// CloseIdleConnections implements Dialer.CloseIdleConnections.
+func (*tProxyDialerAdapter) CloseIdleConnections() {
+	// nothing
+}
+
 func TestNewTProxyConfig(t *testing.T) {
 	t.Run("with nonexistent file", func(t *testing.T) {
 		config, err := NewTProxyConfig(filepath.Join("testdata", "nonexistent"))
