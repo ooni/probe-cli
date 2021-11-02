@@ -9,21 +9,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-func TestResolverIsBogon(t *testing.T) {
-	if resolver.IsBogon("antani") != true {
-		t.Fatal("unexpected result")
-	}
-	if resolver.IsBogon("127.0.0.1") != true {
-		t.Fatal("unexpected result")
-	}
-	if resolver.IsBogon("1.1.1.1") != false {
-		t.Fatal("unexpected result")
-	}
-	if resolver.IsBogon("10.0.1.1") != true {
-		t.Fatal("unexpected result")
-	}
-}
-
 func TestBogonAwareResolverWithBogon(t *testing.T) {
 	r := resolver.BogonResolver{
 		Resolver: resolver.NewFakeResolverWithResult([]string{"127.0.0.1"}),
