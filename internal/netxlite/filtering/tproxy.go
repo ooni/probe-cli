@@ -43,6 +43,15 @@ const (
 
 // TProxyConfig contains configuration for TProxy.
 type TProxyConfig struct {
+	// DNSCache is the cached used when the domains policy is "cache". Note
+	// that the map MUST contain FQDNs. That is, you need to append
+	// a final dot to the domain name (e.g., `example.com.`).  If you
+	// use the NewTProxyConfig factory, you don't need to worry about this
+	// issue, because the factory will canonicalize non-canonical
+	// entries. Otherwise, you can explicitly call the CanonicalizeDNS
+	// method _before_ using the TProxy.
+	DNSCache map[string][]string
+
 	// Domains contains rules for filtering the lookup of domains. Note
 	// that the map MUST contain FQDNs. That is, you need to append
 	// a final dot to the domain name (e.g., `example.com.`).  If you
@@ -84,6 +93,11 @@ func (c *TProxyConfig) CanonicalizeDNS() {
 		domains[dns.CanonicalName(domain)] = policy
 	}
 	c.Domains = domains
+	cache := make(map[string][]string)
+	for domain, addrs := range c.DNSCache {
+		cache[dns.CanonicalName(domain)] = addrs
+	}
+	c.DNSCache = cache
 }
 
 // TProxy is a netxlite.TProxable that implements self censorship.
@@ -146,7 +160,7 @@ func newTProxy(config *TProxyConfig, logger Logger, dnsListenerAddr,
 
 func (p *TProxy) newDNSListener(listenAddr string) error {
 	var err error
-	dnsProxy := &DNSProxy{OnQuery: p.onQuery}
+	dnsProxy := &DNSProxy{Cache: p.config.DNSCache, OnQuery: p.onQuery}
 	p.dnsListener, err = dnsProxy.Start(listenAddr)
 	return err
 }

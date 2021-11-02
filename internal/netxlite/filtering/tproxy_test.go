@@ -58,7 +58,10 @@ func TestNewTProxyConfig(t *testing.T) {
 			t.Fatal("expected non-nil config here")
 		}
 		if config.Domains["x.org."] != "pass" {
-			t.Fatal("did not auto-canonicalize names")
+			t.Fatal("did not auto-canonicalize config.Domains")
+		}
+		if len(config.DNSCache["dns.google."]) != 2 {
+			t.Fatal("did not auto-canonicalize config.DNSCache")
 		}
 	})
 }
@@ -516,6 +519,57 @@ func TestTProxyDial(t *testing.T) {
 		}
 		if conn != nil {
 			t.Fatal("expected nil conn here")
+		}
+	})
+}
+
+func TestTProxyDNSCache(t *testing.T) {
+	t.Run("without cache but with the cache rule", func(t *testing.T) {
+		config := &TProxyConfig{
+			Domains: map[string]DNSAction{
+				"dns.google.": DNSActionCache,
+			},
+		}
+		proxy, err := NewTProxy(config, log.Log)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ctx := context.Background()
+		addrs, err := proxy.LookupHost(ctx, "dns.google")
+		if err == nil || err.Error() != netxlite.FailureDNSNXDOMAINError {
+			t.Fatal("unexpected err", err)
+		}
+		if addrs != nil {
+			t.Fatal("expected nil addrs")
+		}
+	})
+
+	t.Run("with cache", func(t *testing.T) {
+		config := &TProxyConfig{
+			DNSCache: map[string][]string{
+				"dns.google.": {"8.8.8.8", "8.8.4.4"},
+			},
+			Domains: map[string]DNSAction{
+				"dns.google.": DNSActionCache,
+			},
+		}
+		proxy, err := NewTProxy(config, log.Log)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ctx := context.Background()
+		addrs, err := proxy.LookupHost(ctx, "dns.google")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(addrs) != 2 {
+			t.Fatal("expected two addrs")
+		}
+		if addrs[0] != "8.8.8.8" {
+			t.Fatal("invalid first address")
+		}
+		if addrs[1] != "8.8.4.4" {
+			t.Fatal("invalid second address")
 		}
 	})
 }
