@@ -92,20 +92,24 @@ func (p *DNSProxy) oneloop(pconn net.PacketConn) bool {
 		return !strings.HasSuffix(err.Error(), "use of closed network connection")
 	}
 	buffer = buffer[:count]
+	go p.serveAsync(pconn, addr, buffer)
+	return true
+}
+
+func (p *DNSProxy) serveAsync(pconn net.PacketConn, addr net.Addr, buffer []byte) {
 	query := &dns.Msg{}
 	if err := query.Unpack(buffer); err != nil {
-		return true // can continue
+		return
 	}
 	reply, err := p.reply(query)
 	if err != nil {
-		return true // can continue
+		return
 	}
 	replyBytes, err := reply.Pack()
 	if err != nil {
-		return true // can continue
+		return
 	}
 	pconn.WriteTo(replyBytes, addr)
-	return true // can continue
 }
 
 func (p *DNSProxy) reply(query *dns.Msg) (*dns.Msg, error) {
