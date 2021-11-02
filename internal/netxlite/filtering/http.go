@@ -39,20 +39,13 @@ type HTTPProxy struct {
 
 // Start starts the proxy.
 func (p *HTTPProxy) Start(address string) (net.Listener, error) {
-	listener, _, err := p.start(address)
-	return listener, err
-}
-
-// Start starts the proxy.
-func (p *HTTPProxy) start(address string) (net.Listener, <-chan interface{}, error) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	done := make(chan interface{})
 	server := &http.Server{Handler: p}
 	go server.Serve(listener)
-	return listener, done, nil
+	return listener, nil
 }
 
 var httpBlockpage451 = []byte(`<html><head>
@@ -91,13 +84,13 @@ func (p *HTTPProxy) handle(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *HTTPProxy) hijack(w http.ResponseWriter, r *http.Request, policy HTTPAction) {
-	hijacker, okay := w.(http.Hijacker)
-	if !okay {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	// Note:
+	//
+	// 1. we assume we can hihack the connection
+	//
+	// 2. Hijack won't fail the first time it's invoked
+	hijacker := w.(http.Hijacker)
 	conn, _, err := hijacker.Hijack()
-	// Note: Hijack will not fail the first time it's invoked
 	runtimex.PanicOnError(err, "hijacker.Hijack failed")
 	defer conn.Close()
 	switch policy {
@@ -118,10 +111,6 @@ func (p *HTTPProxy) proxy(w http.ResponseWriter, r *http.Request) {
 		Host:   r.Host,
 		Scheme: "http",
 	})
-	proxy.ModifyResponse = func(resp *http.Response) error {
-		resp.Header.Add("Via", httpProxyProduct) // see ServeHTTP
-		return nil
-	}
 	proxy.Transport = http.DefaultTransport
 	proxy.ServeHTTP(w, r)
 }

@@ -29,7 +29,7 @@ func TestDNSProxy(t *testing.T) {
 		return r
 	}
 
-	t.Run("DNSActionProxy with default proxy", func(t *testing.T) {
+	t.Run("DNSActionPass", func(t *testing.T) {
 		ctx := context.Background()
 		listener, done, err := newproxy(DNSActionPass)
 		if err != nil {

@@ -34,7 +34,7 @@ func TestTLSProxy(t *testing.T) {
 		return tdx.DialTLSContext(ctx, "tcp", endpoint)
 	}
 
-	t.Run("TLSActionProxy with default proxy", func(t *testing.T) {
+	t.Run("TLSActionPass", func(t *testing.T) {
 		ctx := context.Background()
 		listener, done, err := newproxy(TLSActionPass)
 		if err != nil {
@@ -159,7 +159,7 @@ func TestTLSProxy(t *testing.T) {
 		<-done // wait for background goroutine to exit
 	})
 
-	t.Run("TLSActionProxy fails because we don't have SNI", func(t *testing.T) {
+	t.Run("TLSActionPass fails because we don't have SNI", func(t *testing.T) {
 		ctx := context.Background()
 		listener, done, err := newproxy(TLSActionPass)
 		if err != nil {
@@ -176,7 +176,7 @@ func TestTLSProxy(t *testing.T) {
 		<-done // wait for background goroutine to exit
 	})
 
-	t.Run("TLSActionProxy fails because we can't dial", func(t *testing.T) {
+	t.Run("TLSActionPass fails because we can't dial", func(t *testing.T) {
 		ctx := context.Background()
 		listener, done, err := newproxy(TLSActionPass)
 		if err != nil {
