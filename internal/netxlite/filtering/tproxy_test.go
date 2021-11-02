@@ -3,10 +3,12 @@ package filtering
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"net"
 	"net/http"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -19,7 +21,7 @@ import (
 func TestNewTProxyConfig(t *testing.T) {
 	t.Run("with nonexistent file", func(t *testing.T) {
 		config, err := NewTProxyConfig(filepath.Join("testdata", "nonexistent"))
-		if err == nil || !strings.HasSuffix(err.Error(), "no such file or directory") {
+		if !errors.Is(err, syscall.ENOENT) {
 			t.Fatal("not the error we expected", err)
 		}
 		if config != nil {

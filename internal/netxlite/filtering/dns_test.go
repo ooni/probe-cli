@@ -44,11 +44,11 @@ func TestDNSProxy(t *testing.T) {
 		if addrs == nil {
 			t.Fatal("unexpected empty addrs")
 		}
-		var foundQuad8 bool
+		var found bool
 		for _, addr := range addrs {
-			foundQuad8 = foundQuad8 || addr == "8.8.8.8"
+			found = found || addr == "8.8.8.8"
 		}
-		if !foundQuad8 {
+		if !found {
 			t.Fatal("did not find 8.8.8.8")
 		}
 		listener.Close()
@@ -105,11 +105,11 @@ func TestDNSProxy(t *testing.T) {
 		if addrs == nil {
 			t.Fatal("expected non-empty addrs")
 		}
-		var found127001 bool
+		var found bool
 		for _, addr := range addrs {
-			found127001 = found127001 || addr == "127.0.0.1"
+			found = found || addr == "127.0.0.1"
 		}
-		if !found127001 {
+		if !found {
 			t.Fatal("did not find 127.0.0.1")
 		}
 		listener.Close()
@@ -141,8 +141,8 @@ func TestDNSProxy(t *testing.T) {
 		// careful because lots of legacy code uses SerialResolver.
 		const timeout = time.Second
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		listener, done, err := newproxy(DNSActionTimeout)
 		defer cancel()
+		listener, done, err := newproxy(DNSActionTimeout)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -274,7 +274,7 @@ func TestDNSProxy(t *testing.T) {
 	})
 
 	t.Run("proxy", func(t *testing.T) {
-		t.Run("pack fails", func(t *testing.T) {
+		t.Run("Pack fails", func(t *testing.T) {
 			p := &DNSProxy{}
 			query := &dns.Msg{}
 			query.Rcode = -1 // causes Pack to fail
@@ -306,7 +306,7 @@ func TestDNSProxy(t *testing.T) {
 			}
 		})
 
-		t.Run("unpack fails", func(t *testing.T) {
+		t.Run("Unpack fails", func(t *testing.T) {
 			p := &DNSProxy{
 				Upstream: &mocks.DNSTransport{
 					MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {

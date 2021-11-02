@@ -62,13 +62,13 @@ func (p *TLSProxy) mainloop(listener net.Listener, done chan<- interface{}) {
 	defer close(done)
 	for {
 		conn, err := listener.Accept()
-		if err == nil {
-			go p.handle(conn)
-			continue
-		}
-		if strings.HasSuffix(err.Error(), "use of closed network connection") {
+		if err != nil && strings.HasSuffix(err.Error(), "use of closed network connection") {
 			break
 		}
+		if err != nil {
+			continue
+		}
+		go p.handle(conn)
 	}
 }
 
@@ -143,10 +143,11 @@ type tlsClientHelloReader struct {
 
 func (c *tlsClientHelloReader) Read(b []byte) (int, error) {
 	count, err := c.Conn.Read(b)
-	if err == nil {
-		c.clientHello = append(c.clientHello, b[:count]...)
+	if err != nil {
+		return 0, err
 	}
-	return count, err
+	c.clientHello = append(c.clientHello, b[:count]...)
+	return count, nil
 }
 
 // Write prevents writing on the real connection

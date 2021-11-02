@@ -134,25 +134,24 @@ func TestTLSProxy(t *testing.T) {
 		<-done // wait for background goroutine to exit
 	})
 
+	dial := func(ctx context.Context, endpoint string) (net.Conn, error) {
+		d := netxlite.NewDialerWithoutResolver(log.Log)
+		return d.DialContext(ctx, "tcp", endpoint)
+	}
+
 	t.Run("handle cannot read ClientHello", func(t *testing.T) {
 		listener, done, err := newproxy(TLSActionPass)
 		if err != nil {
 			t.Fatal(err)
 		}
-		conn, err := net.Dial("tcp", listener.Addr().String())
+		conn, err := dial(context.Background(), listener.Addr().String())
 		if err != nil {
 			t.Fatal(err)
 		}
 		conn.Write([]byte("GET / HTTP/1.0\r\n\r\n"))
 		buff := make([]byte, 1<<17)
 		_, err = conn.Read(buff)
-		// Implementation note: we need to wrap the error because
-		// otherwise the error string on Windows is different from Unix
-		if err == nil || !strings.HasSuffix(err.Error(), "connection reset by peer") {
-			t.Fatal("not the error we expected", err)
-		}
-		err = netxlite.NewTopLevelGenericErrWrapper(err)
-		if err.Error() != netxlite.FailureConnectionReset {
+		if err == nil || err.Error() != netxlite.FailureConnectionReset {
 			t.Fatal("unexpected err", err)
 		}
 		listener.Close()
