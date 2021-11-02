@@ -13,27 +13,27 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// DNSAction is the action that this proxy should take.
-type DNSAction int
+// DNSAction is a DNS filtering action that this proxy should take.
+type DNSAction string
 
 const (
-	// DNSActionProxy proxies the traffic to the upstream server.
-	DNSActionProxy = DNSAction(iota)
+	// DNSActionPass pass the traffic to the upstream server.
+	DNSActionPass = DNSAction("pass")
 
 	// DNSActionNXDOMAIN replies with NXDOMAIN.
-	DNSActionNXDOMAIN
+	DNSActionNXDOMAIN = DNSAction("nxdomain")
 
 	// DNSActionRefused replies with Refused.
-	DNSActionRefused
+	DNSActionRefused = DNSAction("refused")
 
 	// DNSActionLocalHost replies with `127.0.0.1` and `::1`.
-	DNSActionLocalHost
+	DNSActionLocalHost = DNSAction("localhost")
 
-	// DNSActionEmpty returns an empty reply.
-	DNSActionEmpty
+	// DNSActionNoAnswer returns an empty reply.
+	DNSActionNoAnswer = DNSAction("no-answer")
 
 	// DNSActionTimeout never replies to the query.
-	DNSActionTimeout
+	DNSActionTimeout = DNSAction("timeout")
 )
 
 // DNSProxy is a DNS proxy that routes traffic to an upstream
@@ -121,13 +121,13 @@ func (p *DNSProxy) replyDefault(query *dns.Msg) (*dns.Msg, error) {
 	}
 	name := query.Question[0].Name
 	switch p.OnQuery(name) {
-	case DNSActionProxy:
+	case DNSActionPass:
 		return p.proxy(query)
 	case DNSActionNXDOMAIN:
 		return p.nxdomain(query), nil
 	case DNSActionLocalHost:
 		return p.localHost(query), nil
-	case DNSActionEmpty:
+	case DNSActionNoAnswer:
 		return p.empty(query), nil
 	case DNSActionTimeout:
 		return nil, errors.New("let's ignore this query")

@@ -31,7 +31,7 @@ func TestDNSProxy(t *testing.T) {
 
 	t.Run("DNSActionProxy with default proxy", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(DNSActionProxy)
+		listener, done, err := newproxy(DNSActionPass)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -117,7 +117,7 @@ func TestDNSProxy(t *testing.T) {
 
 	t.Run("DNSActionEmpty", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(DNSActionEmpty)
+		listener, done, err := newproxy(DNSActionNoAnswer)
 		if err != nil {
 			t.Fatal(err)
 		}
