@@ -17,7 +17,7 @@ import (
 type DNSAction string
 
 const (
-	// DNSActionPass pass the traffic to the upstream server.
+	// DNSActionPass passes the traffic to the upstream server.
 	DNSActionPass = DNSAction("pass")
 
 	// DNSActionNXDOMAIN replies with NXDOMAIN.
