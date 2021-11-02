@@ -257,4 +257,38 @@ func TestTLSProxy(t *testing.T) {
 			t.Fatal("expected nil listener")
 		}
 	})
+
+	t.Run("oneloop correctly handles a listener error", func(t *testing.T) {
+		listener := &mocks.Listener{
+			MockAccept: func() (net.Conn, error) {
+				return nil, errors.New("mocked error")
+			},
+		}
+		p := &TLSProxy{}
+		if !p.oneloop(listener) {
+			t.Fatal("should return true here")
+		}
+	})
+}
+
+func TestTLSClientHelloReader(t *testing.T) {
+	t.Run("on failure", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		chr := &tlsClientHelloReader{
+			Conn: &mocks.Conn{
+				MockRead: func(b []byte) (int, error) {
+					return 0, expected
+				},
+			},
+			clientHello: []byte{},
+		}
+		buf := make([]byte, 128)
+		count, err := chr.Read(buf)
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err", err)
+		}
+		if count != 0 {
+			t.Fatal("invalid count")
+		}
+	})
 }
