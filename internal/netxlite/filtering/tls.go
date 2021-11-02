@@ -48,7 +48,6 @@ func (p *TLSProxy) Start(address string) (net.Listener, error) {
 	return listener, err
 }
 
-// Start starts the proxy.
 func (p *TLSProxy) start(address string) (net.Listener, <-chan interface{}, error) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
