@@ -1,4 +1,7 @@
 {
+    "DNSCache": {
+        "dns.google": ["8.8.8.8", "8.8.4.4"]
+    },
     "Domains": {
         "x.org": "pass"
     }

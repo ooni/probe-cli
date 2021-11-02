@@ -34,11 +34,19 @@ const (
 
 	// DNSActionTimeout never replies to the query.
 	DNSActionTimeout = DNSAction("timeout")
+
+	// DNSActionCache causes the proxy to check the cache. If there
+	// are entries, they are returned. Otherwise, NXDOMAIN is returned.
+	DNSActionCache = DNSAction("cache")
 )
 
 // DNSProxy is a DNS proxy that routes traffic to an upstream
 // resolver and may implement filtering policies.
 type DNSProxy struct {
+	// Cache is the DNS cache. Note that the keys of the map
+	// must be FQDNs (i.e., including the final `.`).
+	Cache map[string][]string
+
 	// OnQuery is the MANDATORY hook called whenever we
 	// receive a query for the given domain.
 	OnQuery func(domain string) DNSAction
@@ -135,6 +143,8 @@ func (p *DNSProxy) replyDefault(query *dns.Msg) (*dns.Msg, error) {
 		return p.empty(query), nil
 	case DNSActionTimeout:
 		return nil, errors.New("let's ignore this query")
+	case DNSActionCache:
+		return p.cache(name, query), nil
 	default:
 		return p.refused(query), nil
 	}
@@ -211,6 +221,20 @@ func (p *DNSProxy) proxy(query *dns.Msg) (*dns.Msg, error) {
 		return nil, err
 	}
 	return reply, nil
+}
+
+func (p *DNSProxy) cache(name string, query *dns.Msg) *dns.Msg {
+	addrs := p.Cache[name]
+	var ipAddrs []net.IP
+	for _, addr := range addrs {
+		if ip := net.ParseIP(addr); ip != nil {
+			ipAddrs = append(ipAddrs, ip)
+		}
+	}
+	if len(ipAddrs) <= 0 {
+		return p.nxdomain(query)
+	}
+	return p.compose(query, ipAddrs...)
 }
 
 func (p *DNSProxy) dnstransport() DNSTransport {

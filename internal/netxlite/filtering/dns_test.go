@@ -15,13 +15,18 @@ import (
 )
 
 func TestDNSProxy(t *testing.T) {
-	newproxy := func(action DNSAction) (DNSListener, <-chan interface{}, error) {
+	newProxyWithCache := func(action DNSAction, cache map[string][]string) (DNSListener, <-chan interface{}, error) {
 		p := &DNSProxy{
+			Cache: cache,
 			OnQuery: func(domain string) DNSAction {
 				return action
 			},
 		}
 		return p.start("127.0.0.1:0")
+	}
+
+	newProxy := func(action DNSAction) (DNSListener, <-chan interface{}, error) {
+		return newProxyWithCache(action, nil)
 	}
 
 	newresolver := func(listener DNSListener) netxlite.Resolver {
@@ -32,7 +37,7 @@ func TestDNSProxy(t *testing.T) {
 
 	t.Run("DNSActionPass", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(DNSActionPass)
+		listener, done, err := newProxy(DNSActionPass)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -57,7 +62,7 @@ func TestDNSProxy(t *testing.T) {
 
 	t.Run("DNSActionNXDOMAIN", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(DNSActionNXDOMAIN)
+		listener, done, err := newProxy(DNSActionNXDOMAIN)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -75,7 +80,7 @@ func TestDNSProxy(t *testing.T) {
 
 	t.Run("DNSActionRefused", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(DNSActionRefused)
+		listener, done, err := newProxy(DNSActionRefused)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -93,7 +98,7 @@ func TestDNSProxy(t *testing.T) {
 
 	t.Run("DNSActionLocalHost", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(DNSActionLocalHost)
+		listener, done, err := newProxy(DNSActionLocalHost)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -118,7 +123,7 @@ func TestDNSProxy(t *testing.T) {
 
 	t.Run("DNSActionEmpty", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(DNSActionNoAnswer)
+		listener, done, err := newProxy(DNSActionNoAnswer)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -142,7 +147,7 @@ func TestDNSProxy(t *testing.T) {
 		const timeout = time.Second
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		listener, done, err := newproxy(DNSActionTimeout)
+		listener, done, err := newProxy(DNSActionTimeout)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -153,6 +158,51 @@ func TestDNSProxy(t *testing.T) {
 		}
 		if addrs != nil {
 			t.Fatal("expected empty addrs")
+		}
+		listener.Close()
+		<-done // wait for background goroutine to exit
+	})
+
+	t.Run("DNSActionCache without entries", func(t *testing.T) {
+		ctx := context.Background()
+		listener, done, err := newProxyWithCache(DNSActionCache, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r := newresolver(listener)
+		addrs, err := r.LookupHost(ctx, "dns.google")
+		if err == nil || err.Error() != netxlite.FailureDNSNXDOMAINError {
+			t.Fatal("unexpected err", err)
+		}
+		if addrs != nil {
+			t.Fatal("expected empty addrs")
+		}
+		listener.Close()
+		<-done // wait for background goroutine to exit
+	})
+
+	t.Run("DNSActionCache with entries", func(t *testing.T) {
+		ctx := context.Background()
+		cache := map[string][]string{
+			"dns.google.": {"8.8.8.8", "8.8.4.4"},
+		}
+		listener, done, err := newProxyWithCache(DNSActionCache, cache)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r := newresolver(listener)
+		addrs, err := r.LookupHost(ctx, "dns.google")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(addrs) != 2 {
+			t.Fatal("expected two entries")
+		}
+		if addrs[0] != "8.8.8.8" {
+			t.Fatal("invalid first entry")
+		}
+		if addrs[1] != "8.8.4.4" {
+			t.Fatal("invalid second entry")
 		}
 		listener.Close()
 		<-done // wait for background goroutine to exit
