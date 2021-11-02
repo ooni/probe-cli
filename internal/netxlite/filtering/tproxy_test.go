@@ -224,6 +224,320 @@ func TestTProxyQUIC(t *testing.T) {
 				t.Fatal("called")
 			}
 		})
+
+		t.Run("with divert policy", func(t *testing.T) {
+			t.Run("no divert entry", func(t *testing.T) {
+				config := &TProxyConfig{
+					Endpoints: map[string]TProxyPolicy{
+						"127.0.0.1:1234/udp": TProxyPolicyDivert,
+					},
+				}
+				proxy, err := NewTProxy(config, log.Log)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer proxy.Close()
+				var called bool
+				proxy.listenUDP = func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+					return &mocks.QUICUDPLikeConn{
+						MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+							called = true
+							return len(p), nil
+						},
+					}, nil
+				}
+				pconn, err := proxy.ListenUDP("udp", &net.UDPAddr{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				data := make([]byte, 128)
+				destAddr := &net.UDPAddr{
+					IP:   net.IPv4(127, 0, 0, 1),
+					Port: 1234,
+					Zone: "",
+				}
+				count, err := pconn.WriteTo(data, destAddr)
+				if !errors.Is(err, errMissingDivertEntry) {
+					t.Fatal("unexpected err", err)
+				}
+				if count != 0 {
+					t.Fatal("unexpected number of bytes written")
+				}
+				if called {
+					t.Fatal("called")
+				}
+			})
+
+			t.Run("invalid protocol", func(t *testing.T) {
+				config := &TProxyConfig{
+					Divert: map[string]string{
+						"127.0.0.1:1234/udp": "127.0.0.1:1235",
+					},
+					Endpoints: map[string]TProxyPolicy{
+						"127.0.0.1:1234/udp": TProxyPolicyDivert,
+					},
+				}
+				proxy, err := NewTProxy(config, log.Log)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer proxy.Close()
+				var called bool
+				proxy.listenUDP = func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+					return &mocks.QUICUDPLikeConn{
+						MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+							called = true
+							return len(p), nil
+						},
+					}, nil
+				}
+				pconn, err := proxy.ListenUDP("udp", &net.UDPAddr{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				data := make([]byte, 128)
+				destAddr := &net.UDPAddr{
+					IP:   net.IPv4(127, 0, 0, 1),
+					Port: 1234,
+					Zone: "",
+				}
+				count, err := pconn.WriteTo(data, destAddr)
+				if !errors.Is(err, errInvalidDivertProtocol) {
+					t.Fatal("unexpected err", err)
+				}
+				if count != 0 {
+					t.Fatal("unexpected number of bytes written")
+				}
+				if called {
+					t.Fatal("called")
+				}
+			})
+
+			t.Run("invalid addrport", func(t *testing.T) {
+				config := &TProxyConfig{
+					Divert: map[string]string{
+						"127.0.0.1:1234/udp": "127.0.0.1/udp",
+					},
+					Endpoints: map[string]TProxyPolicy{
+						"127.0.0.1:1234/udp": TProxyPolicyDivert,
+					},
+				}
+				proxy, err := NewTProxy(config, log.Log)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer proxy.Close()
+				var called bool
+				proxy.listenUDP = func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+					return &mocks.QUICUDPLikeConn{
+						MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+							called = true
+							return len(p), nil
+						},
+					}, nil
+				}
+				pconn, err := proxy.ListenUDP("udp", &net.UDPAddr{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				data := make([]byte, 128)
+				destAddr := &net.UDPAddr{
+					IP:   net.IPv4(127, 0, 0, 1),
+					Port: 1234,
+					Zone: "",
+				}
+				count, err := pconn.WriteTo(data, destAddr)
+				if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
+					t.Fatal("unexpected err", err)
+				}
+				if count != 0 {
+					t.Fatal("unexpected number of bytes written")
+				}
+				if called {
+					t.Fatal("called")
+				}
+			})
+
+			t.Run("invalid address", func(t *testing.T) {
+				config := &TProxyConfig{
+					Divert: map[string]string{
+						"127.0.0.1:1234/udp": "localhost:1235/udp",
+					},
+					Endpoints: map[string]TProxyPolicy{
+						"127.0.0.1:1234/udp": TProxyPolicyDivert,
+					},
+				}
+				proxy, err := NewTProxy(config, log.Log)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer proxy.Close()
+				var called bool
+				proxy.listenUDP = func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+					return &mocks.QUICUDPLikeConn{
+						MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+							called = true
+							return len(p), nil
+						},
+					}, nil
+				}
+				pconn, err := proxy.ListenUDP("udp", &net.UDPAddr{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				data := make([]byte, 128)
+				destAddr := &net.UDPAddr{
+					IP:   net.IPv4(127, 0, 0, 1),
+					Port: 1234,
+					Zone: "",
+				}
+				count, err := pconn.WriteTo(data, destAddr)
+				if !errors.Is(err, errInvalidDivertIP) {
+					t.Fatal("unexpected err", err)
+				}
+				if count != 0 {
+					t.Fatal("unexpected number of bytes written")
+				}
+				if called {
+					t.Fatal("called")
+				}
+			})
+
+			t.Run("invalid port syntax", func(t *testing.T) {
+				config := &TProxyConfig{
+					Divert: map[string]string{
+						"127.0.0.1:1234/udp": "127.0.0.1:xo/udp",
+					},
+					Endpoints: map[string]TProxyPolicy{
+						"127.0.0.1:1234/udp": TProxyPolicyDivert,
+					},
+				}
+				proxy, err := NewTProxy(config, log.Log)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer proxy.Close()
+				var called bool
+				proxy.listenUDP = func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+					return &mocks.QUICUDPLikeConn{
+						MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+							called = true
+							return len(p), nil
+						},
+					}, nil
+				}
+				pconn, err := proxy.ListenUDP("udp", &net.UDPAddr{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				data := make([]byte, 128)
+				destAddr := &net.UDPAddr{
+					IP:   net.IPv4(127, 0, 0, 1),
+					Port: 1234,
+					Zone: "",
+				}
+				count, err := pconn.WriteTo(data, destAddr)
+				if err == nil || !strings.HasSuffix(err.Error(), "invalid syntax") {
+					t.Fatal("unexpected err", err)
+				}
+				if count != 0 {
+					t.Fatal("unexpected number of bytes written")
+				}
+				if called {
+					t.Fatal("called")
+				}
+			})
+
+			t.Run("invalid port value", func(t *testing.T) {
+				config := &TProxyConfig{
+					Divert: map[string]string{
+						"127.0.0.1:1234/udp": "127.0.0.1:65536/udp",
+					},
+					Endpoints: map[string]TProxyPolicy{
+						"127.0.0.1:1234/udp": TProxyPolicyDivert,
+					},
+				}
+				proxy, err := NewTProxy(config, log.Log)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer proxy.Close()
+				var called bool
+				proxy.listenUDP = func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+					return &mocks.QUICUDPLikeConn{
+						MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+							called = true
+							return len(p), nil
+						},
+					}, nil
+				}
+				pconn, err := proxy.ListenUDP("udp", &net.UDPAddr{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				data := make([]byte, 128)
+				destAddr := &net.UDPAddr{
+					IP:   net.IPv4(127, 0, 0, 1),
+					Port: 1234,
+					Zone: "",
+				}
+				count, err := pconn.WriteTo(data, destAddr)
+				if !errors.Is(err, errInvalidDivertPort) {
+					t.Fatal("unexpected err", err)
+				}
+				if count != 0 {
+					t.Fatal("unexpected number of bytes written")
+				}
+				if called {
+					t.Fatal("called")
+				}
+			})
+
+			t.Run("correct settings", func(t *testing.T) {
+				config := &TProxyConfig{
+					Divert: map[string]string{
+						"127.0.0.1:1234/udp": "127.0.0.1:1235/udp",
+					},
+					Endpoints: map[string]TProxyPolicy{
+						"127.0.0.1:1234/udp": TProxyPolicyDivert,
+					},
+				}
+				proxy, err := NewTProxy(config, log.Log)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer proxy.Close()
+				var realAddr *net.UDPAddr
+				proxy.listenUDP = func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+					return &mocks.QUICUDPLikeConn{
+						MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+							realAddr = addr.(*net.UDPAddr)
+							return len(p), nil
+						},
+					}, nil
+				}
+				pconn, err := proxy.ListenUDP("udp", &net.UDPAddr{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				data := make([]byte, 128)
+				destAddr := &net.UDPAddr{
+					IP:   net.IPv4(127, 0, 0, 1),
+					Port: 1234,
+					Zone: "",
+				}
+				count, err := pconn.WriteTo(data, destAddr)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if count != len(data) {
+					t.Fatal("unexpected number of bytes written")
+				}
+				if realAddr == nil || (*realAddr).Port != 1235 {
+					t.Fatal("invalid realAddr or invalid port value")
+				}
+			})
+		})
 	})
 }
 
@@ -520,6 +834,111 @@ func TestTProxyDial(t *testing.T) {
 		if conn != nil {
 			t.Fatal("expected nil conn here")
 		}
+	})
+
+	t.Run("with divert", func(t *testing.T) {
+		t.Run("with missing entry", func(t *testing.T) {
+			config := &TProxyConfig{
+				Endpoints: map[string]TProxyPolicy{
+					"8.8.8.8:53/udp": TProxyPolicyDivert,
+				},
+			}
+			proxy, err := NewTProxy(config, log.Log)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer proxy.Close()
+			dialer := proxy.NewTProxyDialer(10 * time.Second)
+			resolver := netxlite.NewResolverUDP(
+				log.Log, &tProxyDialerAdapter{dialer}, "8.8.8.8:53")
+			addrs, err := resolver.LookupHost(context.Background(), "example.com")
+			if !errors.Is(err, errMissingDivertEntry) {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected no addrs here")
+			}
+		})
+
+		t.Run("with no divert protocol", func(t *testing.T) {
+			config := &TProxyConfig{
+				Divert: map[string]string{
+					"8.8.8.8:53/udp": "8.8.8.8:54",
+				},
+				Endpoints: map[string]TProxyPolicy{
+					"8.8.8.8:53/udp": TProxyPolicyDivert,
+				},
+			}
+			proxy, err := NewTProxy(config, log.Log)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer proxy.Close()
+			dialer := proxy.NewTProxyDialer(10 * time.Second)
+			resolver := netxlite.NewResolverUDP(
+				log.Log, &tProxyDialerAdapter{dialer}, "8.8.8.8:53")
+			addrs, err := resolver.LookupHost(context.Background(), "example.com")
+			if !errors.Is(err, errInvalidDivertProtocol) {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected no addrs here")
+			}
+		})
+
+		t.Run("with invalid divert protocol", func(t *testing.T) {
+			config := &TProxyConfig{
+				Divert: map[string]string{
+					"8.8.8.8:53/udp": "8.8.8.8:54/antani",
+				},
+				Endpoints: map[string]TProxyPolicy{
+					"8.8.8.8:53/udp": TProxyPolicyDivert,
+				},
+			}
+			proxy, err := NewTProxy(config, log.Log)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer proxy.Close()
+			dialer := proxy.NewTProxyDialer(10 * time.Second)
+			resolver := netxlite.NewResolverUDP(
+				log.Log, &tProxyDialerAdapter{dialer}, "8.8.8.8:53")
+			addrs, err := resolver.LookupHost(context.Background(), "example.com")
+			if !errors.Is(err, errInvalidDivertProtocol) {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected no addrs here")
+			}
+		})
+
+		t.Run("with all good", func(t *testing.T) {
+			config := &TProxyConfig{
+				Divert: map[string]string{
+					"8.8.8.8:53/udp": "8.8.8.8:54/udp",
+				},
+				Endpoints: map[string]TProxyPolicy{
+					"8.8.8.8:53/udp": TProxyPolicyDivert,
+				},
+			}
+			proxy, err := NewTProxy(config, log.Log)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer proxy.Close()
+			dialer := proxy.NewTProxyDialer(10 * time.Second)
+			resolver := netxlite.NewResolverUDP(
+				log.Log, &tProxyDialerAdapter{dialer}, "8.8.8.8:53")
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			defer cancel()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected no addrs here")
+			}
+		})
 	})
 }
 
