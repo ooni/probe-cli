@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/miekg/dns"
@@ -41,10 +39,6 @@ const (
 	// TProxyPolicyHijackHTTP causes the dialer to replace the target
 	// address with the address of the local censored HTTP server.
 	TProxyPolicyHijackHTTP = TProxyPolicy("hijack-http")
-
-	// TProxyPolicyDivert causes the dialer, or WriteTo, to look into the
-	// divert table to map the endpoint to another endpoint.
-	TProxyPolicyDivert = TProxyPolicy("divert")
 )
 
 // TProxyConfig contains configuration for TProxy.
@@ -57,10 +51,6 @@ type TProxyConfig struct {
 	// entries. Otherwise, you can explicitly call the CanonicalizeDNS
 	// method _before_ using the TProxy.
 	DNSCache map[string][]string
-
-	// Divert is a table that maps an endpoint to another endpoint. This
-	// table is only cheched when using the "divert" policy in the Endpoints table.
-	Divert map[string]string
 
 	// Domains contains rules for filtering the lookup of domains. Note
 	// that the map MUST contain FQDNs. That is, you need to append
@@ -234,51 +224,9 @@ func (c *tProxyUDPLikeConn) WriteTo(pkt []byte, addr net.Addr) (int, error) {
 	case TProxyPolicyDropData:
 		c.proxy.logger.Infof("tproxy: WriteTo: %s => %s", endpoint, policy)
 		return len(pkt), nil
-	case TProxyPolicyDivert:
-		c.proxy.logger.Infof("tproxy: WriteTo: %s => %s", endpoint, policy)
-		return c.writeToWithDivert(pkt, endpoint)
 	default:
 		return c.UDPLikeConn.WriteTo(pkt, addr)
 	}
-}
-
-var (
-	errMissingDivertEntry    = errors.New("tproxy: missing divert entry")
-	errInvalidDivertProtocol = errors.New("tproxy: invalid divert protocol")
-	errInvalidDivertIP       = errors.New("tproxy: invalid divert IP")
-	errInvalidDivertPort     = errors.New("tproxy: invalid divert port")
-)
-
-func (c *tProxyUDPLikeConn) writeToWithDivert(pkt []byte, endpoint string) (int, error) {
-	divert := c.proxy.config.Divert[endpoint]
-	if divert == "" {
-		return 0, errMissingDivertEntry
-	}
-	idx := strings.LastIndex(divert, "/udp")
-	if idx < 0 {
-		return 0, errInvalidDivertProtocol
-	}
-	divert = divert[:idx]
-	addr, port, err := net.SplitHostPort(divert)
-	if err != nil {
-		return 0, err
-	}
-	ipAddr := net.ParseIP(addr)
-	if ipAddr == nil {
-		return 0, errInvalidDivertIP
-	}
-	portnum, err := strconv.Atoi(port)
-	if err != nil {
-		return 0, err
-	}
-	if portnum <= 0 || portnum > 65535 {
-		return 0, errInvalidDivertPort
-	}
-	udpAddr := &net.UDPAddr{
-		IP:   ipAddr,
-		Port: portnum,
-	}
-	return c.UDPLikeConn.WriteTo(pkt, udpAddr)
 }
 
 //
@@ -328,9 +276,6 @@ func (d *tProxyDialer) DialContext(ctx context.Context, network, address string)
 	case TProxyPolicyTCPRejectSYN:
 		d.proxy.logger.Infof("tproxy: DialContext: %s/%s => %s", address, network, policy)
 		return nil, netxlite.ECONNREFUSED
-	case TProxyPolicyDivert:
-		d.proxy.logger.Infof("tproxy: DialContext: %s/%s => %s", address, network, policy)
-		return d.dialContextWithDivert(ctx, network, endpoint)
 	case TProxyPolicyHijackDNS:
 		d.proxy.logger.Infof("tproxy: DialContext: %s/%s => %s", address, network, policy)
 		address = d.proxy.dnsListener.LocalAddr().String()
@@ -343,29 +288,6 @@ func (d *tProxyDialer) DialContext(ctx context.Context, network, address string)
 	default:
 		// nothing
 	}
-	return d.doDialContext(ctx, network, address)
-}
-
-func (d *tProxyDialer) dialContextWithDivert(
-	ctx context.Context, network, endpoint string) (net.Conn, error) {
-	divert := d.proxy.config.Divert[endpoint]
-	if divert == "" {
-		return nil, errMissingDivertEntry
-	}
-	idx := strings.LastIndex(divert, "/")
-	if idx < 0 {
-		return nil, errInvalidDivertProtocol
-	}
-	address := divert[:idx]
-	protocol := divert[idx+1:]
-	if protocol != "tcp" && protocol != "udp" {
-		return nil, errInvalidDivertProtocol
-	}
-	return d.doDialContext(ctx, network, address)
-}
-
-func (d *tProxyDialer) doDialContext(
-	ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.dialer.DialContext(ctx, network, address)
 	if err != nil {
 		return nil, err
