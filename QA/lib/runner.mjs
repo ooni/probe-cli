@@ -46,17 +46,14 @@ function runExperiment(testCase, experiment, checker) {
     exec(`./miniooni -n --censor ${censorJson} -o ${reportJson} -i ${testCase.input} ${experiment}`)
     console.log("")
     const report = readReportFile(reportJson)
-    const analysisResult = checker(experiment, report)
+    const analysisResult = checker(testCase, experiment, report)
     console.log("")
     console.log("")
-    switch (analysisResult) {
-        case true:
-        case false:
-            return analysisResult
-        default:
-            console.log("the analysis function returned neither true nor false")
-            process.exit(1)
+    if (analysisResult !== true && analysisResult !== false) {
+       console.log("the analysis function returned neither true nor false")
+       process.exit(1)
     }
+    return analysisResult
 }
 
 // recompileMiniooni recompiles miniooni if needed.
@@ -78,8 +75,13 @@ function recompileMiniooni() {
 // serialization of a filtering.TProxyConfig struct);
 //
 // - experiments (object): the keys are names of nettests
-// to run and the values are functions taking two arguments:
-// the name of the experiment and its JSON report.
+// to run and the values are functions taking three arguments:
+//
+// - the test case structure
+//
+// - the name of the current experiment
+//
+// - the JSON report
 export function runTestCase(testCase) {
     recompileMiniooni()
     console.log("")
