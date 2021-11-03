@@ -22,4 +22,5 @@
 /ptxclient.exe
 /*.tar.gz
 /testdata/gotmp
+/tmp-*
 /*.zip
