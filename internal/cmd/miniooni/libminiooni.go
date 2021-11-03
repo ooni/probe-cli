@@ -20,6 +20,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/pborman/getopt/v2"
 )
@@ -27,6 +30,7 @@ import (
 // Options contains the options you can set from the CLI.
 type Options struct {
 	Annotations      []string
+	Censor           string
 	ExtraOptions     []string
 	HomeDir          string
 	Inputs           []string
@@ -60,6 +64,10 @@ var (
 func init() {
 	getopt.FlagLong(
 		&globalOptions.Annotations, "annotation", 'A', "Add annotaton", "KEY=VALUE",
+	)
+	getopt.FlagLong(
+		&globalOptions.Censor, "censor", 0,
+		"Specifies censorship rules to apply for QA purposes", "FILE",
 	)
 	getopt.FlagLong(
 		&globalOptions.ExtraOptions, "option", 'O',
@@ -306,6 +314,17 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		currentOptions.ReportFile = "report.jsonl"
 	}
 	log.Log = logger
+
+	if currentOptions.Censor != "" {
+		config, err := filtering.NewTProxyConfig(currentOptions.Censor)
+		runtimex.PanicOnError(err, "cannot parse --censor file as JSON")
+		tproxy, err := filtering.NewTProxy(config, log.Log)
+		runtimex.PanicOnError(err, "cannot create tproxy instance")
+		defer tproxy.Close()
+		netxlite.TProxy = tproxy
+		log.Infof("miniooni: disabling submission with --censor to avoid pulluting OONI data")
+		currentOptions.NoCollector = true
+	}
 
 	//Mon Jan 2 15:04:05 -0700 MST 2006
 	log.Infof("Current time: %s", time.Now().Format("2006-01-02 15:04:05 MST"))
