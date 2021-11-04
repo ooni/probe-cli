@@ -179,7 +179,7 @@ func NewArchivalHeaders(in http.Header) (out ArchivalHeaders) {
 // NewArchivalHTTPRoundTripEvent converts an HTTPRoundTrip to its archival format.
 func NewArchivalHTTPRoundTripEvent(in *HTTPRoundTripEvent) *ArchivalHTTPRoundTripEvent {
 	return &ArchivalHTTPRoundTripEvent{
-		Failure: new(string),
+		Failure: in.Failure,
 		Request: &HTTPRequest{
 			Method:  in.Method,
 			URL:     in.URL,
