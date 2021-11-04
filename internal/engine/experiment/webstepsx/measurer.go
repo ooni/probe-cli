@@ -95,7 +95,7 @@ func (mx *Measurer) RunAsync(
 	if testhelper == nil {
 		return nil, ErrNoAvailableTestHelpers
 	}
-	testhelper.Address = "http://127.0.0.1:8080/api/v1/websteps" // TODO(bassosimone): remove!
+	testhelper.Address = "https://1.th.ooni.org/api/v1/websteps" // TODO(bassosimone): remove!
 	out := make(chan *model.ExperimentAsyncTestKeys)
 	go mx.runAsync(ctx, sess, input, testhelper, out)
 	return out, nil
