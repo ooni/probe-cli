@@ -13,7 +13,6 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	stdlog "log"
 	"net"
 	"net/http"
 	"net/url"
@@ -712,7 +711,7 @@ type MeasureURLHelper interface {
 	// test helper protocol allows one to set.
 	LookupExtraHTTPEndpoints(ctx context.Context, URL *url.URL,
 		headers http.Header, epnts ...*HTTPEndpoint) (
-		newEpnts []*HTTPEndpoint, thMeasurement interface{}, err error)
+		newEpnts []*HTTPEndpoint, thMeasurement *THMeasurement, err error)
 }
 
 // MeasureURL measures an HTTP or HTTPS URL. The DNS resolvers
@@ -802,12 +801,8 @@ func (mx *Measurer) maybeQUICFollowUp(ctx context.Context,
 		if epnt.QUICHandshake != nil {
 			return
 		}
-		for idx, rtrip := range epnt.HTTPRoundTrip {
-			if rtrip.Response == nil {
-				stdlog.Printf("malformed HTTPRoundTrip@%d: %+v", idx, rtrip)
-				continue
-			}
-			if v := rtrip.Response.Headers.Get("alt-svc"); v != "" {
+		for _, rtrip := range epnt.HTTPRoundTrip {
+			if v := rtrip.ResponseHeaders.Get("alt-svc"); v != "" {
 				altsvc = append(altsvc, v)
 			}
 		}

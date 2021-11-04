@@ -32,15 +32,13 @@ type dnsxRoundTripperDB struct {
 
 // DNSRoundTripEvent contains the result of a DNS round trip.
 type DNSRoundTripEvent struct {
-	// This data structure is not in df-002-dns but the names and
-	// semantics try to be consistent with such a spec.
-	Network  string              `json:"engine"`
-	Address  string              `json:"resolver_address"`
-	Query    *ArchivalBinaryData `json:"raw_query"`
-	Started  float64             `json:"started"`
-	Finished float64             `json:"t"`
-	Failure  *string             `json:"failure"`
-	Reply    *ArchivalBinaryData `json:"raw_reply"`
+	Network  string
+	Address  string
+	Query    []byte
+	Started  float64
+	Finished float64
+	Failure  *string
+	Reply    []byte
 }
 
 func (txp *dnsxRoundTripperDB) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
@@ -50,11 +48,11 @@ func (txp *dnsxRoundTripperDB) RoundTrip(ctx context.Context, query []byte) ([]b
 	txp.db.InsertIntoDNSRoundTrip(&DNSRoundTripEvent{
 		Network:  txp.DNSTransport.Network(),
 		Address:  txp.DNSTransport.Address(),
-		Query:    NewArchivalBinaryData(query),
+		Query:    query,
 		Started:  started,
 		Finished: finished,
-		Failure:  NewArchivalFailure(err),
-		Reply:    NewArchivalBinaryData(reply),
+		Failure:  NewFailure(err),
+		Reply:    reply,
 	})
 	return reply, err
 }

@@ -46,10 +46,10 @@ func print(v interface{}) {
 // ```Go
 
 type measurement struct {
-	Queries       []*measurex.DNSLookupEvent     `json:"queries"`
-	TCPConnect    []*measurex.NetworkEvent       `json:"tcp_connect"`
-	TLSHandshakes []*measurex.TLSHandshakeEvent  `json:"tls_handshakes"`
-	Requests      []*measurex.HTTPRoundTripEvent `json:"requests"`
+	Queries       []*measurex.DNSLookupEvent        `json:"queries"`
+	TCPConnect    []*measurex.NetworkEvent          `json:"tcp_connect"`
+	TLSHandshakes []*measurex.QUICTLSHandshakeEvent `json:"tls_handshakes"`
+	Requests      []*measurex.HTTPRoundTripEvent    `json:"requests"`
 }
 
 // ```
