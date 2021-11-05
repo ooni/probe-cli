@@ -45,10 +45,10 @@ that a Web Connectivity measurement should have.
 ```Go
 
 type measurement struct {
-	Queries       []*measurex.DNSLookupEvent     `json:"queries"`
-	TCPConnect    []*measurex.NetworkEvent       `json:"tcp_connect"`
-	TLSHandshakes []*measurex.TLSHandshakeEvent  `json:"tls_handshakes"`
-	Requests      []*measurex.HTTPRoundTripEvent `json:"requests"`
+	Queries       []*measurex.ArchivalDNSLookupEvent        `json:"queries"`
+	TCPConnect    []*measurex.ArchivalTCPConnect            `json:"tcp_connect"`
+	TLSHandshakes []*measurex.ArchivalQUICTLSHandshakeEvent `json:"tls_handshakes"`
+	Requests      []*measurex.ArchivalHTTPRoundTripEvent    `json:"requests"`
 }
 
 ```
@@ -96,7 +96,8 @@ the input URL's domain using the system resolver.
 
 ```Go
 	dns := mx.LookupHostSystem(ctx, parsedURL.Hostname())
-	m.Queries = append(m.Queries, dns.LookupHost...)
+	m.Queries = append(
+		m.Queries, measurex.NewArchivalDNSLookupEventList(dns.LookupHost)...)
 
 ```
 
@@ -128,7 +129,8 @@ whether the input URL is HTTP or HTTPS.
 		switch parsedURL.Scheme {
 		case "http":
 			tcp := mx.TCPConnect(ctx, epnt.Address)
-			m.TCPConnect = append(m.TCPConnect, tcp.Connect...)
+			m.TCPConnect = append(
+				m.TCPConnect, measurex.NewArchivalTCPConnectList(tcp.Connect)...)
 		case "https":
 			config := &tls.Config{
 				ServerName: parsedURL.Hostname(),
@@ -136,8 +138,10 @@ whether the input URL is HTTP or HTTPS.
 				RootCAs:    netxlite.NewDefaultCertPool(),
 			}
 			tls := mx.TLSConnectAndHandshake(ctx, epnt.Address, config)
-			m.TCPConnect = append(m.TCPConnect, tls.Connect...)
-			m.TLSHandshakes = append(m.TLSHandshakes, tls.TLSHandshake...)
+			m.TCPConnect = append(
+				m.TCPConnect, measurex.NewArchivalTCPConnectList(tls.Connect)...)
+			m.TLSHandshakes = append(m.TLSHandshakes,
+				measurex.NewArchivalQUICTLSHandshakeEventList(tls.TLSHandshake)...)
 		}
 	}
 
@@ -222,7 +226,8 @@ the chapters we have seen so far.
 
 ```Go
 
-	m.Requests = append(m.Requests, db.AsMeasurement().HTTPRoundTrip...)
+	m.Requests = append(m.Requests, measurex.NewArchivalHTTPRoundTripEventList(
+		db.AsMeasurement().HTTPRoundTrip)...)
 	return m, nil
 }
 

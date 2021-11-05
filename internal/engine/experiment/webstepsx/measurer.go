@@ -29,7 +29,7 @@ type Config struct{}
 
 // TestKeys contains the experiment's test keys.
 type TestKeys struct {
-	*measurex.URLMeasurement
+	*measurex.ArchivalURLMeasurement
 }
 
 // Measurer performs the measurement.
@@ -142,7 +142,9 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 			},
 			Input:              model.MeasurementTarget(m.URL),
 			MeasurementRuntime: m.TotalRuntime.Seconds(),
-			TestKeys:           &TestKeys{URLMeasurement: m},
+			TestKeys: &TestKeys{
+				ArchivalURLMeasurement: measurex.NewArchivalURLMeasurement(m),
+			},
 		}
 	}
 }
@@ -163,7 +165,7 @@ type measurerMeasureURLHelper struct {
 func (mth *measurerMeasureURLHelper) LookupExtraHTTPEndpoints(
 	ctx context.Context, URL *url.URL, headers http.Header,
 	curEndpoints ...*measurex.HTTPEndpoint) (
-	[]*measurex.HTTPEndpoint, interface{}, error) {
+	[]*measurex.HTTPEndpoint, *measurex.THMeasurement, error) {
 	cc := &THClientCall{
 		Endpoints:  measurex.HTTPEndpointsToEndpoints(curEndpoints),
 		HTTPClient: mth.Clnt,

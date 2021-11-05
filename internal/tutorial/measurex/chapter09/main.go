@@ -102,6 +102,11 @@ func main() {
 	// Like we did before, we append the resulting measurements to
 	// our `m` container and we print it.
 	//
+	// Exercise: here we're not using the OONI data format and we're
+	// instead printing the internally used data structures. Can
+	// you modify the code to emit data using OONI's data format here?
+	// (Hint: there are conversion functions in `measurex`.)
+	//
 	// ```Go
 	print(m)
 }
