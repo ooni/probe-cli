@@ -513,7 +513,7 @@ func (mx *Measurer) httpClientDo(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	req.Header = epnt.Header
+	req.Header = epnt.Header.Clone() // must clone because of parallel usage
 	const timeout = 15 * time.Second
 	ol := NewOperationLogger(mx.Logger,
 		"%s %s with %s/%s", req.Method, req.URL.String(), epnt.Address, epnt.Network)
