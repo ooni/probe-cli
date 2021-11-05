@@ -381,7 +381,12 @@ This is the JSON output. Let us comment it in detail:
   // is formatted according to https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md:
   "requests": [
     {
+
+      // This field indicates whether there was an error during
+      // the HTTP round trip:
       "failure": null,
+
+      // This field contains the request method, URL, and HTTP headers
       "request": {
         "method": "GET",
         "url": "https://dns.google/",
@@ -391,6 +396,8 @@ This is the JSON output. Let us comment it in detail:
           "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36"
         }
       },
+
+      // This field contains the response status code, body, and headers.
       "response": {
         "code": 200,
         "headers": {
@@ -407,16 +414,42 @@ This is the JSON output. Let us comment it in detail:
           "x-frame-options": "SAMEORIGIN",
           "x-xss-protection": "0"
         },
+
+        // The body in particular is a snapshot of the response
+        // body: we don't want to read and submit to the OONI
+        // collector large bodies.
         "body": {
           "data": "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4gPGhlYWQ+IDx0aXRsZT5Hb29nbGUgUHVibGljIEROUzwvdGl0bGU+ICA8bWV0YSBjaGFyc2V0PSJVVEYtOCI+IDxsaW5rIGhyZWY9Ii9zdGF0aWMvOTNkZDU5NTQvZmF2aWNvbi5wbmciIHJlbD0ic2hvcnRjdXQgaWNvbiIgdHlwZT0iaW1hZ2UvcG5nIj4gPGxpbmsgaHJlZj0iL3N0YXRpYy84MzZhZWJjNi9tYXR0ZXIubWluLmNzcyIgcmVsPSJzdHlsZXNoZWV0Ij4gPGxpbmsgaHJlZj0iL3N0YXRpYy9iODUzNmMzNy9zaGFyZWQuY3NzIiByZWw9InN0eWxlc2hlZXQiPiA8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPiAgPGxpbmsgaHJlZj0iL3N0YXRpYy9kMDVjZDZiYS9yb290LmNzcyIgcmVsPSJzdHlsZXNoZWV0Ij4gPC9oZWFkPiA8Ym9keT4gPHNwYW4gY2xhc3M9ImZpbGxlciB0b3AiPjwvc3Bhbj4gICA8ZGl2IGNsYXNzPSJsb2dvIiB0aXRsZT0iR29vZ2xlIFB1YmxpYyBETlMiPiA8ZGl2IGNsYXNzPSJsb2dvLXRleHQiPjxzcGFuPlB1YmxpYyBETlM8L3NwYW4+PC9kaXY+IDwvZGl2PiAgPGZvcm0gYWN0aW9uPSIvcXVlcnkiIG1ldGhvZD0iR0VUIj4gIDxkaXYgY2xhc3M9InJvdyI+IDxsYWJlbCBjbGFzcz0ibWF0dGVyLXRleHRmaWVsZC1vdXRsaW5lZCI+IDxpbnB1dCB0eXBlPSJ0ZXh0IiBuYW1lPSJuYW1lIiBwbGFjZWhvbGRlcj0iJm5ic3A7Ij4gPHNwYW4+RE5TIE5hbWU8L3NwYW4+IDxwIGNsYXNzPSJoZWxwIj4gRW50ZXIgYSBkb21haW4gKGxpa2UgZXhhbXBsZS5jb20pIG9yIElQIGFkZHJlc3MgKGxpa2UgOC44LjguOCBvciAyMDAxOjQ4NjA6NDg2MDo6ODg0NCkgaGVyZS4gPC9wPiA8L2xhYmVsPiA8YnV0dG9uIGNsYXNzPSJtYXR0ZXItYnV0dG9uLWNvbnRhaW5lZCBtYXR0ZXItcHJpbWFyeSIgdHlwZT0ic3VibWl0Ij5SZXNvbHZlPC9idXR0b24+IDwvZGl2PiA8L2Zvcm0+ICA8c3BhbiBjbGFzcz0iZmlsbGVyIGJvdHRvbSI+PC9zcGFuPiA8Zm9vdGVyIGNsYXNzPSJyb3ciPiA8YSBocmVmPSJodHRwczovL2RldmVsb3BlcnMuZ29vZ2xlLmNvbS9zcGVlZC9wdWJsaWMtZG5zIj5IZWxwPC9hPiA8YSBocmVmPSIvY2FjaGUiPkNhY2hlIEZsdXNoPC9hPiA8c3BhbiBjbGFzcz0iZmlsbGVyIj48L3NwYW4+IDxhIGhyZWY9Imh0dHBzOi8vZGV2ZWxvcGVycy5nb29nbGUuY29tL3NwZWVkL3B1YmxpYy1kbnMvZG9jcy91c2luZyI+IEdldCBTdGFydGVkIHdpdGggR29vZ2xlIFB1YmxpYyBETlMgPC9hPiA8L2Zvb3Rlcj4gICA8c2NyaXB0IG5vbmNlPSJ5L09HbGlMUjJnYkVmVEcyaTRNQWF3PT0iPmRvY3VtZW50LmZvcm1zWzBdLm5hbWUuZm9jdXMoKTs8L3NjcmlwdD4gPC9ib2R5PiA8L2h0bWw+",
           "format": "base64"
         },
+
+        // This field tells us whether the size of the read
+        // snapshot was smaller than the snapshot size. If
+        // not, then the body has been truncated.
         "body_is_truncated": false,
+
+        // These extra fields are not part of the spec and
+        // hence we prefix them with `x_`. They tell us
+        // the length of the body and whether the content
+        // of the body is valid UTF8.
         "x_body_length": 1383,
         "x_body_is_utf8": true
       },
+
+      // The t field is the moment where we finished the
+      // round trip and saved the event. The started field
+      // is instead when we started the round trip.
+      //
+      // You may notice that the start of the round trip
+      // if after the `t` of the handshake. This tells us
+      // that the code first connects, then handshakes, and
+      // finally creates HTTP code for performing the
+      // round trip.
       "t": 0.471535167,
       "started": 0.087176458,
+
+      // As usual we also compute an oddity value related
+      // in this case to the HTTP round trip.
       "oddity": ""
     }
   ]
