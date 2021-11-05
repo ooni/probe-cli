@@ -84,7 +84,7 @@ export const testCases = [
                         "status_code_match": null,
                         "headers_match": null,
                         "title_match": null,
-                        "accessible": false,
+                        "accessible": null,
                         "blocking": null, // TODO(bassosimone): this is clearly a bug
                     })
                     return result
@@ -196,7 +196,7 @@ export const testCases = [
                         "status_code_match": null,
                         "headers_match": null,
                         "title_match": null,
-                        "accessible": false,
+                        "accessible": null,
                         "blocking": null, // TODO(bassosimone): this is clearly a bug
                     })
                     return result
