@@ -87,7 +87,8 @@ func (c *THClient) Run(ctx context.Context, URL string) (*THServerResponse, erro
 	}
 	mx := measurex.NewMeasurerWithDefaultSettings()
 	var dns []*measurex.DNSMeasurement
-	for m := range mx.LookupURLHostParallel(ctx, parsed, c.DNServers...) {
+	const parallelism = 3
+	for m := range mx.LookupURLHostParallel(ctx, parallelism, parsed, c.DNServers...) {
 		dns = append(dns, m)
 	}
 	endpoints, err := measurex.AllEndpointsForURL(parsed, dns...)
@@ -251,7 +252,8 @@ func (h *THHandler) singleStep(
 		ForeignResolver: thResolver,
 	}}
 	jar := measurex.NewCookieJar()
-	meas, err := mx.MeasureURL(ctx, req.URL, req.HTTPRequestHeaders, jar)
+	const parallelism = 3
+	meas, err := mx.MeasureURL(ctx, parallelism, req.URL, req.HTTPRequestHeaders, jar)
 	if err != nil {
 		return nil, err
 	}
