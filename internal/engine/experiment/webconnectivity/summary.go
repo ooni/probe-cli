@@ -82,7 +82,7 @@ type Summary struct {
 //
 // Because of that, we must preserve the original behaviour.
 func DetermineBlocking(s Summary) interface{} {
-	if s.Accessible != nil && *s.Accessible == true {
+	if s.Accessible != nil && *s.Accessible {
 		return false
 	}
 	return s.BlockingReason
