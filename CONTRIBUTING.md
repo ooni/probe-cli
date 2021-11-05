@@ -118,7 +118,9 @@ releases should occur on this branch. Subsequent patch releases should
 also occur on this branch. We have one such branch for each `x.y`
 release. If there are fixes on `master` that we want to backport, we
 cherry-pick them into the release branch. Likewise, if we need to
-forward port fixes, we cherry-pick them into `master`.
+forward port fixes, we cherry-pick them into `master`. When we backport,
+the commit message should start with `[backport]`; when we forward
+port, the commit message should start with `[forwardport]`.
 
 When we branch off release `x.y` from `master`, we also need to bump
 the `alpha` version used by `master`.
