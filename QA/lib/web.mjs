@@ -540,4 +540,102 @@ export const testCases = [
             },
         },
     },
+
+    //
+    // More complex scenarios
+    //
+
+    // In this scenario the second IP address for the domain fails
+    // with reset. Web Connectivity sees that but overall says it's
+    // all good because the good IP happens to be the first. We'll
+    // see what changes if we swap the IPs in the next scenario.
+    {
+        name: "web_tcp_second_ip_connection_reset",
+        description: "the second IP returned by DNS fails with connection reset",
+        input: "https://dns.google/",
+        blocking: {
+            DNSCache: {
+                "dns.google": ["8.8.4.4", "8.8.8.8"],
+            },
+            Domains: {
+                "dns.google": "cache",
+            },
+            Endpoints: {
+                "8.8.8.8:443/tcp": "hijack-tls",
+            },
+            SNIs: {
+                "dns.google": "reset",
+            },
+        },
+        experiments: {
+            websteps: (testCase, name, report) => {
+                return checkMeasurement(testCase, name, report)
+            },
+            web_connectivity: (testCase, name, report) => {
+                return checkMeasurement(testCase, name, report, (tk) => {
+                    let result = true
+                    result = result && webConnectivityCheckTopLevel(tk, {
+                        "dns_experiment_failure": null,
+                        "dns_consistency": "consistent",
+                        "control_failure": null,
+                        "http_experiment_failure": null,
+                        "body_length_match": true,
+                        "body_proportion": 1,
+                        "status_code_match": true,
+                        "headers_match": true,
+                        "title_match": true,
+                        "accessible": true,
+                        "blocking": false,
+                    })
+                    return result
+                })
+            },
+        },
+    },
+
+    // This scenario is like the previous one except that we swap
+    // the IP addresses and now Web Connectivity says failure.
+    {
+        name: "web_tcp_first_ip_connection_reset",
+        description: "the first IP returned by DNS fails with connection reset",
+        input: "https://dns.google/",
+        blocking: {
+            DNSCache: {
+                "dns.google": ["8.8.4.4", "8.8.8.8"],
+            },
+            Domains: {
+                "dns.google": "cache",
+            },
+            Endpoints: {
+                "8.8.4.4:443/tcp": "hijack-tls",
+            },
+            SNIs: {
+                "dns.google": "reset",
+            },
+        },
+        experiments: {
+            websteps: (testCase, name, report) => {
+                return checkMeasurement(testCase, name, report)
+            },
+            web_connectivity: (testCase, name, report) => {
+                return checkMeasurement(testCase, name, report, (tk) => {
+                    let result = true
+                    result = result && webConnectivityCheckTopLevel(tk, {
+                        "dns_experiment_failure": null,
+                        "dns_consistency": "consistent",
+                        "control_failure": null,
+                        "http_experiment_failure": "connection_reset",
+                        "body_length_match": null,
+                        "body_proportion": 0,
+                        "status_code_match": null,
+                        "headers_match": null,
+                        "title_match": null,
+                        "accessible": false,
+                        "blocking": "http-failure",
+                    })
+                    return result
+                })
+            },
+        },
+    },
 ]
