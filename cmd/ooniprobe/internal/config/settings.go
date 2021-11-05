@@ -6,9 +6,7 @@ type Sharing struct {
 }
 
 // Advanced settings
-type Advanced struct {
-	SendCrashReports bool `json:"send_crash_reports"`
-}
+type Advanced struct{}
 
 // Nettests related settings
 type Nettests struct {
