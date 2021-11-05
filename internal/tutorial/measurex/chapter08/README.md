@@ -101,6 +101,15 @@ This is it. The rest of the program is exactly the same.
 	for _, epnt := range httpEndpoints {
 		m.Endpoints = append(m.Endpoints, mx.HTTPEndpointGetWithoutCookies(ctx, epnt))
 	}
+```
+
+(Note that here, like in the previous chapter, we are not converting
+to the OONI data format. Rather, we're just dumping the internally
+used data structures. Exercise: can you modify this program to emit
+a JSON compliant with the OONI data format by using the proper]
+conversion functions exported by `measurex`?)
+
+```Go
 	print(m)
 }
 

@@ -8,6 +8,5 @@
     "websites_max_runtime": 0
   },
   "advanced": {
-    "send_crash_reports": true
   }
 }

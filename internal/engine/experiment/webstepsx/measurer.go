@@ -21,7 +21,7 @@ import (
 
 const (
 	testName    = "websteps"
-	testVersion = "0.0.2"
+	testVersion = "0.0.3"
 )
 
 // Config contains the experiment config.
@@ -29,7 +29,7 @@ type Config struct{}
 
 // TestKeys contains the experiment's test keys.
 type TestKeys struct {
-	*measurex.URLMeasurement
+	*measurex.ArchivalURLMeasurement
 }
 
 // Measurer performs the measurement.
@@ -107,9 +107,6 @@ var measurerResolvers = []*measurex.ResolverInfo{{
 }, {
 	Network: "udp",
 	Address: "8.8.4.4:53",
-}, {
-	Network: "udp",
-	Address: "1.1.1.1:53",
 }}
 
 func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
@@ -129,8 +126,9 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 		TLSHandshaker:    netxlite.NewTLSHandshakerStdlib(sess.Logger()),
 	}
 	cookies := measurex.NewCookieJar()
+	const parallelism = 3
 	in := mmx.MeasureURLAndFollowRedirections(
-		ctx, URL, measurex.NewHTTPRequestHeaderForMeasuring(), cookies)
+		ctx, parallelism, URL, measurex.NewHTTPRequestHeaderForMeasuring(), cookies)
 	for m := range in {
 		out <- &model.ExperimentAsyncTestKeys{
 			Extensions: map[string]int64{
@@ -142,7 +140,9 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 			},
 			Input:              model.MeasurementTarget(m.URL),
 			MeasurementRuntime: m.TotalRuntime.Seconds(),
-			TestKeys:           &TestKeys{URLMeasurement: m},
+			TestKeys: &TestKeys{
+				ArchivalURLMeasurement: measurex.NewArchivalURLMeasurement(m),
+			},
 		}
 	}
 }
@@ -163,7 +163,7 @@ type measurerMeasureURLHelper struct {
 func (mth *measurerMeasureURLHelper) LookupExtraHTTPEndpoints(
 	ctx context.Context, URL *url.URL, headers http.Header,
 	curEndpoints ...*measurex.HTTPEndpoint) (
-	[]*measurex.HTTPEndpoint, interface{}, error) {
+	[]*measurex.HTTPEndpoint, *measurex.THMeasurement, error) {
 	cc := &THClientCall{
 		Endpoints:  measurex.HTTPEndpointsToEndpoints(curEndpoints),
 		HTTPClient: mth.Clnt,

@@ -69,10 +69,12 @@ address is quoted with "[" and "]" if IPv6, e.g., `[::1]:53`.)
 
 ### Printing the measurement
 
-The rest of the main function is just like in the previous chapter.
+The rest of the main function is just like in the previous
+chapter. Like we did before, we convert the obtained measurement
+to the "archival" data format before printing.
 
 ```Go
-	data, err := json.Marshal(m)
+	data, err := json.Marshal(measurex.NewArchivalEndpointMeasurement(m))
 	runtimex.PanicOnError(err, "json.Marshal failed")
 	fmt.Printf("%s\n", string(data))
 }
@@ -98,19 +100,23 @@ Here is the JSON we obtain in output:
 
   // This block contains the results of the connect syscall
   // using the df-008-netevents data format.
-  "connect": [
-    {
-      "address": "8.8.4.4:443",
+  "tcp_connect": [{
+    "ip": "8.8.4.4",
+    "port": 443,
+    "t": 0.020303,
+    "status": {
+      "blocked": false,
       "failure": null,
-      "operation": "connect",
-      "proto": "tcp",
-      "t": 0.026879041,
-      "started": 8.8625e-05,
-      "oddity": ""
-    }
-  ]
+      "success": true
+    },
+    "started": 0.000109292,
+    "oddity": ""
+  }]
 }
 ```
+
+This JSON implements [the df-005-tcpconnect](https://github.com/ooni/spec/blob/master/data-formats/df-005-tcpconnect.md)
+OONI data format.
 
 This is what it says:
 
@@ -118,7 +124,7 @@ This is what it says:
 
 - the destination endpoint address is "8.8.4.4:443";
 
-- connect terminated ~0.027 seconds into the program's life;
+- connect terminated ~0.020 seconds into the program's life (see `t`);
 
 - the operation succeeded (`failure` is `nil`).
 
@@ -138,19 +144,21 @@ We get this JSON:
 {
   "network": "tcp",
   "address": "127.0.0.1:1",
-  "connect": [
+  "tcp_connect": [
     {
-      "address": "127.0.0.1:1",
-      "failure": "connection_refused",
-      "operation": "connect",
-      "proto": "tcp",
-      "t": 0.000372167,
-      "started": 8.4917e-05,
+      "ip": "127.0.0.1",
+      "port": 1,
+      "t": 0.000457584,
+      "status": {
+        "blocked": true,
+        "failure": "connection_refused",
+        "success": false
+      },
+      "started": 0.000104792,
       "oddity": "tcp.connect.refused"
     }
   ]
 }
-
 ```
 
 And here's an error telling us the connection was refused and
@@ -170,14 +178,17 @@ We get this JSON:
 {
   "network": "tcp",
   "address": "8.8.4.4:1",
-  "connect": [
+  "tcp_connect": [
     {
-      "address": "8.8.4.4:1",
-      "failure": "generic_timeout_error",
-      "operation": "connect",
-      "proto": "tcp",
-      "t": 10.005494583,
-      "started": 8.4833e-05,
+      "ip": "8.8.4.4",
+      "port": 1,
+      "t": 10.006558625,
+      "status": {
+        "blocked": true,
+        "failure": "generic_timeout_error",
+        "success": false
+      },
+      "started": 9.55e-05,
       "oddity": "tcp.connect.timeout"
     }
   ]
@@ -201,21 +212,26 @@ To get this JSON:
 {
   "network": "tcp",
   "address": "8.8.4.4:1",
-  "connect": [
+  "tcp_connect": [
     {
-      "address": "8.8.4.4:1",
-      "failure": "generic_timeout_error",
-      "operation": "connect",
-      "proto": "tcp",
-      "t": 0.10148025,
-      "started": 0.000122375,
+      "ip": "8.8.4.4",
+      "port": 1,
+      "t": 0.105445125,
+      "status": {
+        "blocked": true,
+        "failure": "generic_timeout_error",
+        "success": false
+      },
+      "started": 9.4083e-05,
       "oddity": "tcp.connect.timeout"
     }
   ]
 }
 ```
 
-We see a timeout after ~0.1s. We enforce a reasonably small
+We see a timeout after ~0.1s.
+
+We enforce a reasonably small
 timeout for connecting, equal to 10 s, because we want to
 guarantee that measurements eventually terminate. Also, since
 often censorship is implemented by timing out, we don't want

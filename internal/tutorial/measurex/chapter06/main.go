@@ -173,7 +173,7 @@ func main() {
 	// Let us now print the resulting measurement.
 	//
 	// ```Go
-	print(m)
+	print(measurex.NewArchivalHTTPEndpointMeasurement(m))
 }
 
 // ```
@@ -183,7 +183,7 @@ func main() {
 // Let us perform a vanilla run first:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter06
+// go run -race ./internal/tutorial/measurex/chapter06 | jq
 // ```
 //
 // This is the JSON output. Let us comment it in detail:
@@ -197,31 +197,17 @@ func main() {
 //   "network": "tcp",
 //   "address": "8.8.4.4:443",
 //
-//   // Internally, HTTPEndpointGetWithoutCookies calls
-//   // TCPConnect and here we see the corresponding event
-//   "connect": [
-//     {
-//       "address": "8.8.4.4:443",
-//       "failure": null,
-//       "operation": "connect",
-//       "proto": "tcp",
-//       "t": 0.02422375,
-//       "started": 0.002269291,
-//       "oddity": ""
-//     }
-//   ],
-//
 //   // These are the I/O operations we have already seen
 //   // in previous chapters
-//   "read_write": [
+//   "network_events": [
 //     {
 //       "address": "8.8.4.4:443",
 //       "failure": null,
 //       "num_bytes": 280,
 //       "operation": "write",
 //       "proto": "tcp",
-//       "t": 0.024931791,
-//       "started": 0.024910416,
+//       "t": 0.045800292,
+//       "started": 0.045782167,
 //       "oddity": ""
 //     },
 //     {
@@ -230,18 +216,18 @@ func main() {
 //       "num_bytes": 517,
 //       "operation": "read",
 //       "proto": "tcp",
-//       "t": 0.063629791,
-//       "started": 0.024935666,
+//       "t": 0.082571,
+//       "started": 0.045805458,
 //       "oddity": ""
 //     },
 //     {
 //       "address": "8.8.4.4:443",
 //       "failure": null,
-//       "num_bytes": 4301,
+//       "num_bytes": 4303,
 //       "operation": "read",
 //       "proto": "tcp",
-//       "t": 0.064183,
-//       "started": 0.064144208,
+//       "t": 0.084400542,
+//       "started": 0.084372667,
 //       "oddity": ""
 //     },
 //     {
@@ -250,8 +236,8 @@ func main() {
 //       "num_bytes": 64,
 //       "operation": "write",
 //       "proto": "tcp",
-//       "t": 0.065464041,
-//       "started": 0.065441333,
+//       "t": 0.086762625,
+//       "started": 0.086748292,
 //       "oddity": ""
 //     },
 //     {
@@ -260,8 +246,8 @@ func main() {
 //       "num_bytes": 86,
 //       "operation": "write",
 //       "proto": "tcp",
-//       "t": 0.067256083,
-//       "started": 0.067224375,
+//       "t": 0.087851,
+//       "started": 0.087837625,
 //       "oddity": ""
 //     },
 //     {
@@ -270,8 +256,8 @@ func main() {
 //       "num_bytes": 201,
 //       "operation": "write",
 //       "proto": "tcp",
-//       "t": 0.067674416,
-//       "started": 0.067652375,
+//       "t": 0.089527292,
+//       "started": 0.089507958,
 //       "oddity": ""
 //     },
 //     {
@@ -280,8 +266,8 @@ func main() {
 //       "num_bytes": 93,
 //       "operation": "read",
 //       "proto": "tcp",
-//       "t": 0.086618708,
-//       "started": 0.067599208,
+//       "t": 0.168585625,
+//       "started": 0.088068375,
 //       "oddity": ""
 //     },
 //     {
@@ -290,18 +276,28 @@ func main() {
 //       "num_bytes": 31,
 //       "operation": "write",
 //       "proto": "tcp",
-//       "t": 0.086703625,
-//       "started": 0.0866745,
+//       "t": 0.168713542,
+//       "started": 0.168671417,
 //       "oddity": ""
 //     },
 //     {
 //       "address": "8.8.4.4:443",
 //       "failure": null,
-//       "num_bytes": 2028,
+//       "num_bytes": 2000,
 //       "operation": "read",
 //       "proto": "tcp",
-//       "t": 0.337785916,
-//       "started": 0.086717333,
+//       "t": 0.468671417,
+//       "started": 0.168759333,
+//       "oddity": ""
+//     },
+//     {
+//       "address": "8.8.4.4:443",
+//       "failure": null,
+//       "num_bytes": 39,
+//       "operation": "read",
+//       "proto": "tcp",
+//       "t": 0.47118175,
+//       "started": 0.471169667,
 //       "oddity": ""
 //     },
 //     {
@@ -310,8 +306,8 @@ func main() {
 //       "num_bytes": 39,
 //       "operation": "write",
 //       "proto": "tcp",
-//       "t": 0.338514916,
-//       "started": 0.338485375,
+//       "t": 0.471335458,
+//       "started": 0.471268583,
 //       "oddity": ""
 //     },
 //     {
@@ -320,17 +316,25 @@ func main() {
 //       "num_bytes": 24,
 //       "operation": "write",
 //       "proto": "tcp",
-//       "t": 0.338800833,
-//       "started": 0.338788625,
+//       "t": 0.471865,
+//       "started": 0.471836292,
 //       "oddity": ""
-//     },
+//     }
+//   ],
+//
+//   // Internally, HTTPEndpointGetWithoutCookies calls
+//   // TCPConnect and here we see the corresponding event
+//   "tcp_connect": [
 //     {
-//       "address": "8.8.4.4:443",
-//       "failure": "connection_already_closed",
-//       "operation": "read",
-//       "proto": "tcp",
-//       "t": 0.338888041,
-//       "started": 0.338523291,
+//       "ip": "8.8.4.4",
+//       "port": 443,
+//       "t": 0.043644958,
+//       "status": {
+//         "blocked": false,
+//         "failure": null,
+//         "success": true
+//       },
+//       "started": 0.022849458,
 //       "oddity": ""
 //     }
 //   ],
@@ -340,7 +344,7 @@ func main() {
 //   // specified a QUIC endpoint we would instead see here a
 //   // QUIC handshake event. And, we would not see any handshake
 //   // if the URL was instead an HTTP URL.
-//   "tls_handshake": [
+//   "tls_handshakes": [
 //     {
 //       "cipher_suite": "TLS_AES_128_GCM_SHA256",
 //       "failure": null,
@@ -348,7 +352,7 @@ func main() {
 //       "tls_version": "TLSv1.3",
 //       "peer_certificates": [
 //         {
-//           "data": "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",
+//           "data": "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",
 //           "format": "base64"
 //         },
 //         {
@@ -360,7 +364,7 @@ func main() {
 //           "format": "base64"
 //         }
 //       ],
-//       "t": 0.065514708,
+//       "t": 0.086816667,
 //       "address": "8.8.4.4:443",
 //       "server_name": "dns.google",
 //       "alpn": [
@@ -370,13 +374,13 @@ func main() {
 //       "no_tls_verify": false,
 //       "oddity": "",
 //       "proto": "tcp",
-//       "started": 0.024404083
+//       "started": 0.043971083
 //     }
 //   ],
 //
 //   // Finally here we see information about the round trip, which
-//   // is formatted according the df-001-httpt data format:
-//   "http_round_trip": [
+//   // is formatted according to https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md:
+//   "requests": [
 //     {
 //
 //       // This field indicates whether there was an error during
@@ -390,21 +394,20 @@ func main() {
 //         "headers": {
 //           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 //           "accept-language": "en-US;q=0.8,en;q=0.5",
-//           "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+//           "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36"
 //         }
 //       },
 //
-//       // This field contains the response status code, body,
-//       // and headers.
+//       // This field contains the response status code, body, and headers.
 //       "response": {
 //         "code": 200,
 //         "headers": {
 //           "accept-ranges": "none",
-//           "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"",
+//           "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\"",
 //           "cache-control": "private",
-//           "content-security-policy": "object-src 'none';base-uri 'self';script-src 'nonce-bSLcJjaotppZl3Y2moIaxg==' 'strict-dynamic' 'report-sample' 'unsafe-eval' 'unsafe-inline' https: http:;report-uri https://csp.withgoogle.com/csp/honest_dns/1_0;frame-ancestors 'none'",
+//           "content-security-policy": "object-src 'none';base-uri 'self';script-src 'nonce-y/OGliLR2gbEfTG2i4MAaw==' 'strict-dynamic' 'report-sample' 'unsafe-eval' 'unsafe-inline' https: http:;report-uri https://csp.withgoogle.com/csp/honest_dns/1_0;frame-ancestors 'none'",
 //           "content-type": "text/html; charset=UTF-8",
-//           "date": "Fri, 24 Sep 2021 08:51:01 GMT",
+//           "date": "Fri, 05 Nov 2021 08:59:37 GMT",
 //           "server": "scaffolding on HTTPServer2",
 //           "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
 //           "vary": "Accept-Encoding",
@@ -417,7 +420,7 @@ func main() {
 //         // body: we don't want to read and submit to the OONI
 //         // collector large bodies.
 //         "body": {
-//           "data": "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4gPGhlYWQ+IDx0aXRsZT5Hb29nbGUgUHVibGljIEROUzwvdGl0bGU+ICA8bWV0YSBjaGFyc2V0PSJVVEYtOCI+IDxsaW5rIGhyZWY9Ii9zdGF0aWMvOTNkZDU5NTQvZmF2aWNvbi5wbmciIHJlbD0ic2hvcnRjdXQgaWNvbiIgdHlwZT0iaW1hZ2UvcG5nIj4gPGxpbmsgaHJlZj0iL3N0YXRpYy84MzZhZWJjNi9tYXR0ZXIubWluLmNzcyIgcmVsPSJzdHlsZXNoZWV0Ij4gPGxpbmsgaHJlZj0iL3N0YXRpYy9iODUzNmMzNy9zaGFyZWQuY3NzIiByZWw9InN0eWxlc2hlZXQiPiA8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPiAgPGxpbmsgaHJlZj0iL3N0YXRpYy9kMDVjZDZiYS9yb290LmNzcyIgcmVsPSJzdHlsZXNoZWV0Ij4gPC9oZWFkPiA8Ym9keT4gPHNwYW4gY2xhc3M9ImZpbGxlciB0b3AiPjwvc3Bhbj4gICA8ZGl2IGNsYXNzPSJsb2dvIiB0aXRsZT0iR29vZ2xlIFB1YmxpYyBETlMiPiA8ZGl2IGNsYXNzPSJsb2dvLXRleHQiPjxzcGFuPlB1YmxpYyBETlM8L3NwYW4+PC9kaXY+IDwvZGl2PiAgPGZvcm0gYWN0aW9uPSIvcXVlcnkiIG1ldGhvZD0iR0VUIj4gIDxkaXYgY2xhc3M9InJvdyI+IDxsYWJlbCBjbGFzcz0ibWF0dGVyLXRleHRmaWVsZC1vdXRsaW5lZCI+IDxpbnB1dCB0eXBlPSJ0ZXh0IiBuYW1lPSJuYW1lIiBwbGFjZWhvbGRlcj0iJm5ic3A7Ij4gPHNwYW4+RE5TIE5hbWU8L3NwYW4+IDxwIGNsYXNzPSJoZWxwIj4gRW50ZXIgYSBkb21haW4gKGxpa2UgZXhhbXBsZS5jb20pIG9yIElQIGFkZHJlc3MgKGxpa2UgOC44LjguOCBvciAyMDAxOjQ4NjA6NDg2MDo6ODg0NCkgaGVyZS4gPC9wPiA8L2xhYmVsPiA8YnV0dG9uIGNsYXNzPSJtYXR0ZXItYnV0dG9uLWNvbnRhaW5lZCBtYXR0ZXItcHJpbWFyeSIgdHlwZT0ic3VibWl0Ij5SZXNvbHZlPC9idXR0b24+IDwvZGl2PiA8L2Zvcm0+ICA8c3BhbiBjbGFzcz0iZmlsbGVyIGJvdHRvbSI+PC9zcGFuPiA8Zm9vdGVyIGNsYXNzPSJyb3ciPiA8YSBocmVmPSJodHRwczovL2RldmVsb3BlcnMuZ29vZ2xlLmNvbS9zcGVlZC9wdWJsaWMtZG5zIj5IZWxwPC9hPiA8YSBocmVmPSIvY2FjaGUiPkNhY2hlIEZsdXNoPC9hPiA8c3BhbiBjbGFzcz0iZmlsbGVyIj48L3NwYW4+IDxhIGhyZWY9Imh0dHBzOi8vZGV2ZWxvcGVycy5nb29nbGUuY29tL3NwZWVkL3B1YmxpYy1kbnMvZG9jcy91c2luZyI+IEdldCBTdGFydGVkIHdpdGggR29vZ2xlIFB1YmxpYyBETlMgPC9hPiA8L2Zvb3Rlcj4gICA8c2NyaXB0IG5vbmNlPSJiU0xjSmphb3RwcFpsM1kybW9JYXhnPT0iPmRvY3VtZW50LmZvcm1zWzBdLm5hbWUuZm9jdXMoKTs8L3NjcmlwdD4gPC9ib2R5PiA8L2h0bWw+",
+//           "data": "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4gPGhlYWQ+IDx0aXRsZT5Hb29nbGUgUHVibGljIEROUzwvdGl0bGU+ICA8bWV0YSBjaGFyc2V0PSJVVEYtOCI+IDxsaW5rIGhyZWY9Ii9zdGF0aWMvOTNkZDU5NTQvZmF2aWNvbi5wbmciIHJlbD0ic2hvcnRjdXQgaWNvbiIgdHlwZT0iaW1hZ2UvcG5nIj4gPGxpbmsgaHJlZj0iL3N0YXRpYy84MzZhZWJjNi9tYXR0ZXIubWluLmNzcyIgcmVsPSJzdHlsZXNoZWV0Ij4gPGxpbmsgaHJlZj0iL3N0YXRpYy9iODUzNmMzNy9zaGFyZWQuY3NzIiByZWw9InN0eWxlc2hlZXQiPiA8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEiPiAgPGxpbmsgaHJlZj0iL3N0YXRpYy9kMDVjZDZiYS9yb290LmNzcyIgcmVsPSJzdHlsZXNoZWV0Ij4gPC9oZWFkPiA8Ym9keT4gPHNwYW4gY2xhc3M9ImZpbGxlciB0b3AiPjwvc3Bhbj4gICA8ZGl2IGNsYXNzPSJsb2dvIiB0aXRsZT0iR29vZ2xlIFB1YmxpYyBETlMiPiA8ZGl2IGNsYXNzPSJsb2dvLXRleHQiPjxzcGFuPlB1YmxpYyBETlM8L3NwYW4+PC9kaXY+IDwvZGl2PiAgPGZvcm0gYWN0aW9uPSIvcXVlcnkiIG1ldGhvZD0iR0VUIj4gIDxkaXYgY2xhc3M9InJvdyI+IDxsYWJlbCBjbGFzcz0ibWF0dGVyLXRleHRmaWVsZC1vdXRsaW5lZCI+IDxpbnB1dCB0eXBlPSJ0ZXh0IiBuYW1lPSJuYW1lIiBwbGFjZWhvbGRlcj0iJm5ic3A7Ij4gPHNwYW4+RE5TIE5hbWU8L3NwYW4+IDxwIGNsYXNzPSJoZWxwIj4gRW50ZXIgYSBkb21haW4gKGxpa2UgZXhhbXBsZS5jb20pIG9yIElQIGFkZHJlc3MgKGxpa2UgOC44LjguOCBvciAyMDAxOjQ4NjA6NDg2MDo6ODg0NCkgaGVyZS4gPC9wPiA8L2xhYmVsPiA8YnV0dG9uIGNsYXNzPSJtYXR0ZXItYnV0dG9uLWNvbnRhaW5lZCBtYXR0ZXItcHJpbWFyeSIgdHlwZT0ic3VibWl0Ij5SZXNvbHZlPC9idXR0b24+IDwvZGl2PiA8L2Zvcm0+ICA8c3BhbiBjbGFzcz0iZmlsbGVyIGJvdHRvbSI+PC9zcGFuPiA8Zm9vdGVyIGNsYXNzPSJyb3ciPiA8YSBocmVmPSJodHRwczovL2RldmVsb3BlcnMuZ29vZ2xlLmNvbS9zcGVlZC9wdWJsaWMtZG5zIj5IZWxwPC9hPiA8YSBocmVmPSIvY2FjaGUiPkNhY2hlIEZsdXNoPC9hPiA8c3BhbiBjbGFzcz0iZmlsbGVyIj48L3NwYW4+IDxhIGhyZWY9Imh0dHBzOi8vZGV2ZWxvcGVycy5nb29nbGUuY29tL3NwZWVkL3B1YmxpYy1kbnMvZG9jcy91c2luZyI+IEdldCBTdGFydGVkIHdpdGggR29vZ2xlIFB1YmxpYyBETlMgPC9hPiA8L2Zvb3Rlcj4gICA8c2NyaXB0IG5vbmNlPSJ5L09HbGlMUjJnYkVmVEcyaTRNQWF3PT0iPmRvY3VtZW50LmZvcm1zWzBdLm5hbWUuZm9jdXMoKTs8L3NjcmlwdD4gPC9ib2R5PiA8L2h0bWw+",
 //           "format": "base64"
 //         },
 //
@@ -437,14 +440,14 @@ func main() {
 //       // The t field is the moment where we finished the
 //       // round trip and saved the event. The started field
 //       // is instead when we started the round trip.
-//
+//       //
 //       // You may notice that the start of the round trip
 //       // if after the `t` of the handshake. This tells us
 //       // that the code first connects, then handshakes, and
 //       // finally creates HTTP code for performing the
 //       // round trip.
-//       "t": 0.338674625,
-//       "started": 0.065926625,
+//       "t": 0.471535167,
+//       "started": 0.087176458,
 //
 //       // As usual we also compute an oddity value related
 //       // in this case to the HTTP round trip.

@@ -7,7 +7,5 @@
   "nettests": {
     "websites_max_runtime": 15
   },
-  "advanced": {
-    "send_crash_reports": true
-  }
+  "advanced": {}
 }

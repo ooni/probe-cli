@@ -65,6 +65,10 @@ The arguments are:
 
 - the context as usual
 
+- the number of parallel goroutines to use to perform parallelizable
+operations (passing zero or negative will cause the code to use
+a reasonably small default value)
+
 - the unparsed URL to measure
 
 - the headers we want to use
@@ -72,7 +76,8 @@ The arguments are:
 - a jar for cookies
 
 ```Go
-	m, err := mx.MeasureURL(ctx, *URL, headers, cookies)
+	const parallelism = 3
+	m, err := mx.MeasureURL(ctx, parallelism, *URL, headers, cookies)
 ```
 The return value is either an `URLMeasurement`
 or an error. The error happens, for example, if
