@@ -62,11 +62,16 @@ returns a channel where it posts the result of measuring
 the original URL along with all its redirections. Internally,
 `MeasureURLAndFollowRedirections` calls `MeasureURL`.
 
+The parallelism argument dictates how many parallel goroutine
+to use for parallelizable operations. (A zero or negative
+value implies that the code should use a sensible default value.)
+
 We accumulate the results in `URLs` and print `m`. The channel
 is closed when done by `MeasureURLAndFollowRedirections`, so we leave the loop.
 
 ```Go
-	for m := range mx.MeasureURLAndFollowRedirections(ctx, *URL, headers, cookies) {
+	const parallelism = 3
+	for m := range mx.MeasureURLAndFollowRedirections(ctx, parallelism, *URL, headers, cookies) {
 		all.URLs = append(all.URLs, measurex.NewArchivalURLMeasurement(m))
 	}
 	print(all)

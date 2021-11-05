@@ -88,7 +88,7 @@ func main() {
 	//
 	// - all the endpoints to measure
 	//
-	// The parallelism argument tells the code how many parallel goroutine
+	// The parallelism argument tells the code how many parallel goroutines
 	// to use for parallelizable operations. If this value is zero or negative,
 	// the code will use a reasonably small default.
 	//
