@@ -88,9 +88,14 @@ func main() {
 	//
 	// - all the endpoints to measure
 	//
+	// The parallelism argument tells the code how many parallel goroutines
+	// to use for parallelizable operations. If this value is zero or negative,
+	// the code will use a reasonably small default.
+	//
 	// ```Go
 	cookies := measurex.NewCookieJar()
-	for epnt := range mx.HTTPEndpointGetParallel(ctx, cookies, httpEndpoints...) {
+	const parallelism = 3
+	for epnt := range mx.HTTPEndpointGetParallel(ctx, parallelism, cookies, httpEndpoints...) {
 		m.Endpoints = append(m.Endpoints, epnt)
 	}
 	// ```
