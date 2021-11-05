@@ -21,7 +21,7 @@ import (
 
 const (
 	testName    = "websteps"
-	testVersion = "0.0.2"
+	testVersion = "0.0.3"
 )
 
 // Config contains the experiment config.
@@ -107,9 +107,6 @@ var measurerResolvers = []*measurex.ResolverInfo{{
 }, {
 	Network: "udp",
 	Address: "8.8.4.4:53",
-}, {
-	Network: "udp",
-	Address: "1.1.1.1:53",
 }}
 
 func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
