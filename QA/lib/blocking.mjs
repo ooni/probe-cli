@@ -2,8 +2,6 @@
 
 // hijackPopularDNSServers returns an object containing the rules
 // for hijacking popular DNS servers with `miniooni --censor`.
-//
-// This function is an helper function for populating test cases.
 export function hijackPopularDNSServers() {
     return {
         // cloudflare

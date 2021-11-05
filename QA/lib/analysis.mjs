@@ -54,8 +54,6 @@ function checkInput(testCase, report) {
 
 // checkExperimentName ensures that the experimentName is correctly
 // set in the output report file.
-//
-// This function helps to implement per-experiment checkers.
 function checkExperimentName(name, report) {
     const result = report.test_name === name
     console.log(`checking whether the experiment name is correct... ${result}`)
@@ -168,7 +166,7 @@ function checkTestKeys(report) {
 // - report is the JSON measurement
 //
 // - extraChecks is the optional callback to perform extra checks
-// that takes in input the testCase, the name, and the report.
+// that takes in input the report's test keys.
 export function checkMeasurement(testCase, name, report, extraChecks) {
     let result = true
     result = result && checkAnnotations(report)

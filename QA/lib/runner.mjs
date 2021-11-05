@@ -11,12 +11,13 @@ import path from "path"
 // with enough entropy that every run has a different name.
 //
 // See https://stackoverflow.com/questions/7055061 for an insightful
-// discussion on how one should or should not create temp files.
+// discussion about creating temporary files in node.
 function tempFile(suffix) {
     return path.join(`tmp-${crypto.randomBytes(16).toString('hex')}.${suffix}`)
 }
 
-// exec executes a command. This function throws on failure.
+// exec executes a command. This function throws on failure. The stdout
+// and stderr should be console.log-ed once the command returns.
 function exec(command) {
     console.log(`+ ${command}`)
     child_process.execSync(command)
@@ -43,8 +44,10 @@ function runExperiment(testCase, experiment, checker) {
     console.log("")
     const censorJson = writeCensorJsonFile(testCase)
     const reportJson = tempFile("json")
+    // Note: using -n because we don't want to submit QA checks.
     exec(`./miniooni -n --censor ${censorJson} -o ${reportJson} -i ${testCase.input} ${experiment}`)
     console.log("")
+    // TODO(bassosimone): support multiple entries per file
     const report = readReportFile(reportJson)
     const analysisResult = checker(testCase, experiment, report)
     console.log("")
@@ -75,13 +78,8 @@ function recompileMiniooni() {
 // serialization of a filtering.TProxyConfig struct);
 //
 // - experiments (object): the keys are names of nettests
-// to run and the values are functions taking three arguments:
-//
-// - the test case structure
-//
-// - the name of the current experiment
-//
-// - the JSON report
+// to run and the values are functions taking as their
+// unique argument the experiment's test_keys.
 export function runTestCase(testCase) {
     recompileMiniooni()
     console.log("")

@@ -1,8 +1,10 @@
 // This file contains test cases for web nettests.
 
-import { hijackPopularDNSServers } from "./blocking.mjs"
 import { checkMeasurement } from "./analysis.mjs"
 
+// webConnectivityCheckTopLevel checks the top-level keys
+// of the web connectivity experiment agains a template
+// object. Returns true if they match, false on mismatch.
 function webConnectivityCheckTopLevel(tk, template) {
     let result = true
     for (const [key, value] of Object.entries(template)) {
@@ -83,7 +85,7 @@ export const testCases = [
                         "headers_match": null,
                         "title_match": null,
                         "accessible": false,
-                        "blocking": null, // TODO: this is clearly a bug
+                        "blocking": null, // TODO(bassosimone): this is clearly a bug
                     })
                     return result
                 })
@@ -107,7 +109,7 @@ export const testCases = [
             web_connectivity: (testCase, name, report) => {
                 return checkMeasurement(testCase, name, report, (tk) => {
                     let result = true
-                    // TODO: Web Connectivity does not correctly handle this case
+                    // TODO(bassosimone): Web Connectivity does not correctly handle this case
                     // but, still, correctly sets blocking as "dns"
                     result = result && webConnectivityCheckTopLevel(tk, {
                         "dns_experiment_failure": null,
@@ -147,7 +149,7 @@ export const testCases = [
             web_connectivity: (testCase, name, report) => {
                 return checkMeasurement(testCase, name, report, (tk) => {
                     let result = true
-                    // TODO: Web Connectivity does not correctly handle this case
+                    // TODO(bassosimone): Web Connectivity does not correctly handle this case
                     // but, still, correctly sets blocking as "dns"
                     result = result && webConnectivityCheckTopLevel(tk, {
                         "dns_experiment_failure": null,
@@ -195,7 +197,7 @@ export const testCases = [
                         "headers_match": null,
                         "title_match": null,
                         "accessible": false,
-                        "blocking": null, // TODO: this is clearly a bug
+                        "blocking": null, // TODO(bassosimone): this is clearly a bug
                     })
                     return result
                 })
@@ -230,7 +232,7 @@ export const testCases = [
                         "headers_match": null,
                         "title_match": null,
                         "accessible": null,
-                        "blocking": null, // TODO: this is clearly a bug
+                        "blocking": null, // TODO(bassosimone): this is clearly a bug
                     })
                     return result
                 })
@@ -239,7 +241,7 @@ export const testCases = [
 
     },
 
-    // Here we should insert more checks where not only the system
+    // TODO(bassosimone): here we should insert more checks where not only the system
     // resolver is blocked but also other resolvers are.
 
     //
@@ -519,7 +521,7 @@ export const testCases = [
             web_connectivity: (testCase, name, report) => {
                 return checkMeasurement(testCase, name, report, (tk) => {
                     let result = true
-                    // TODO: there is no easy way to check for the body
+                    // TODO(bassosimone): there is no easy way to check for the body
                     // proportion robustly because it's a float.
                     result = result && webConnectivityCheckTopLevel(tk, {
                         "dns_experiment_failure": null,

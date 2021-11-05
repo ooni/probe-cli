@@ -5,19 +5,8 @@ import { testCases as webTestCases } from "./lib/web.mjs"
 
 // testCases lists all the test cases.
 //
-// A test case is an object with the following fields:
-//
-// - name (string): the name of the test case;
-//
-// - description (string): a description of the test case;
-//
-// - input (string): the input to pass to the experiment;
-//
-// - blocking (object): a blocking specification (i.e., the
-// serialization of a filtering.TProxyConfig struct);
-//
-// - experiments (object): names of the experiments to run
-// mapping to the function to use to verify the results.
+// A test case is an object with the structure described
+// by the documentation of runTestCase in ./lib/runner.mjs.
 const testCases = [
     ...webTestCases,
 ]
@@ -92,8 +81,8 @@ function commandList() {
 // main is the main function.
 function main() {
     const usageAndExit = (exitcode) => {
-        console.log("usage: node ./QA/web.mjs list")
-        console.log("usage: node ./QA/web.mjs run [test_case_name...]")
+        console.log("usage: node ./QA/index.mjs list")
+        console.log("usage: node ./QA/index.mjs run [test_case_name...]")
         process.exit(exitcode)
     }
     if (process.argv.length < 3) {
