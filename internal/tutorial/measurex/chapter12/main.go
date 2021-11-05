@@ -33,7 +33,7 @@ import (
 )
 
 type measurement struct {
-	URLs []*measurex.URLMeasurement
+	URLs []*measurex.ArchivalURLMeasurement
 }
 
 func print(v interface{}) {
@@ -68,7 +68,7 @@ func main() {
 	//
 	// ```Go
 	for m := range mx.MeasureURLAndFollowRedirections(ctx, *URL, headers, cookies) {
-		all.URLs = append(all.URLs, m)
+		all.URLs = append(all.URLs, measurex.NewArchivalURLMeasurement(m))
 	}
 	print(all)
 }
@@ -86,6 +86,9 @@ func main() {
 // Take a look at the JSON. You should see several redirects
 // and that we measure each endpoint of each redirect, including
 // QUIC endpoints that we discover on the way.
+//
+// Exercise: remove code for converting to OONI data format
+// and compare output with previous chapter. See any difference?
 //
 // ## Conclusion
 //

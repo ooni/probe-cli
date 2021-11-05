@@ -32,7 +32,7 @@ import (
 )
 
 type measurement struct {
-	URLs []*measurex.URLMeasurement
+	URLs []*measurex.ArchivalURLMeasurement
 }
 
 func print(v interface{}) {
@@ -67,7 +67,7 @@ is closed when done by `MeasureURLAndFollowRedirections`, so we leave the loop.
 
 ```Go
 	for m := range mx.MeasureURLAndFollowRedirections(ctx, *URL, headers, cookies) {
-		all.URLs = append(all.URLs, m)
+		all.URLs = append(all.URLs, measurex.NewArchivalURLMeasurement(m))
 	}
 	print(all)
 }
@@ -85,6 +85,9 @@ go run -race ./internal/tutorial/measurex/chapter12 | jq
 Take a look at the JSON. You should see several redirects
 and that we measure each endpoint of each redirect, including
 QUIC endpoints that we discover on the way.
+
+Exercise: remove code for converting to OONI data format
+and compare output with previous chapter. See any difference?
 
 ## Conclusion
 

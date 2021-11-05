@@ -111,6 +111,15 @@ func NewArchivalDNSRoundTripEvent(in *DNSRoundTripEvent) *ArchivalDNSRoundTripEv
 	}
 }
 
+// NewArchivalDNSRoundTripEventList converts a DNSRoundTripEvent
+// list to the corresponding archival format.
+func NewArchivalDNSRoundTripEventList(in []*DNSRoundTripEvent) (out []*ArchivalDNSRoundTripEvent) {
+	for _, ev := range in {
+		out = append(out, NewArchivalDNSRoundTripEvent(ev))
+	}
+	return
+}
+
 //
 // HTTPRoundTrip
 //
@@ -383,6 +392,8 @@ type ArchivalTCPConnectStatus struct {
 
 // NewArchivalTCPConnect converts a NetworkEvent to an ArchivalTCPConnect.
 func NewArchivalTCPConnect(in *NetworkEvent) *ArchivalTCPConnect {
+	// We ignore errors because values come from Go code that
+	// emits correct serialization of TCP/UDP addresses.
 	addr, port, _ := net.SplitHostPort(in.RemoteAddr)
 	portnum, _ := strconv.Atoi(port)
 	return &ArchivalTCPConnect{
@@ -400,7 +411,8 @@ func NewArchivalTCPConnect(in *NetworkEvent) *ArchivalTCPConnect {
 }
 
 // NewArchivalTCPConnectList converts a list of NetworkEvent
-// to a list of ArchivalTCPConnect.
+// to a list of ArchivalTCPConnect. In doing that, the code
+// only considers "connect" events using the TCP protocol.
 func NewArchivalTCPConnectList(in []*NetworkEvent) (out []*ArchivalTCPConnect) {
 	for _, ev := range in {
 		if ev.Operation != "connect" {
@@ -448,7 +460,33 @@ func NewArchivalURLMeasurement(in *URLMeasurement) *ArchivalURLMeasurement {
 }
 
 //
-// ArchivalTHMeasurement
+// EndpointMeasurement
+//
+
+// ArchivalEndpointMeasurement is the archival representation of EndpointMeasurement.
+type ArchivalEndpointMeasurement struct {
+	// Network is the network of this endpoint.
+	Network EndpointNetwork `json:"network"`
+
+	// Address is the address of this endpoint.
+	Address string `json:"address"`
+
+	// An EndpointMeasurement is a Measurement.
+	*ArchivalMeasurement
+}
+
+// NewArchivalEndpointMeasurement converts an EndpointMeasurement
+// to the corresponding archival data format.
+func NewArchivalEndpointMeasurement(in *EndpointMeasurement) *ArchivalEndpointMeasurement {
+	return &ArchivalEndpointMeasurement{
+		Network:             in.Network,
+		Address:             in.Address,
+		ArchivalMeasurement: NewArchivalMeasurement(in.Measurement),
+	}
+}
+
+//
+// THMeasurement
 //
 
 // ArchivalTHMeasurement is the archival representation of THMeasurement.
@@ -466,7 +504,7 @@ func NewArchivalTHMeasurement(in *THMeasurement) *ArchivalTHMeasurement {
 }
 
 //
-// ArchivalDNSMeasurement
+// DNSMeasurement
 //
 
 // ArchivalDNSMeasurement is the archival representation of DNSMeasurement.
@@ -475,14 +513,19 @@ type ArchivalDNSMeasurement struct {
 	*ArchivalMeasurement
 }
 
+// NewArchivalDNSMeasurement converts a DNSMeasurement to an ArchivalDNSMeasurement.
+func NewArchivalDNSMeasurement(in *DNSMeasurement) *ArchivalDNSMeasurement {
+	return &ArchivalDNSMeasurement{
+		Domain:              in.Domain,
+		ArchivalMeasurement: NewArchivalMeasurement(in.Measurement),
+	}
+}
+
 // NewArchivalDNSMeasurementList converts a list of DNSMeasurement
-// to a list of Archival DNSMeasurement.
+// to a list of ArchivalDNSMeasurement.
 func NewArchivalDNSMeasurementList(in []*DNSMeasurement) (out []*ArchivalDNSMeasurement) {
 	for _, m := range in {
-		out = append(out, &ArchivalDNSMeasurement{
-			Domain:              m.Domain,
-			ArchivalMeasurement: NewArchivalMeasurement(m.Measurement),
-		})
+		out = append(out, NewArchivalDNSMeasurement(m))
 	}
 	return
 }
@@ -500,16 +543,22 @@ type ArchivalHTTPEndpointMeasurement struct {
 	*ArchivalMeasurement
 }
 
+// NewArchivalHTTPEndpointMeasurement converts an HTTPEndpointMeasurement
+// to an ArchivalHTTPEndpointMeasurement.
+func NewArchivalHTTPEndpointMeasurement(in *HTTPEndpointMeasurement) *ArchivalHTTPEndpointMeasurement {
+	return &ArchivalHTTPEndpointMeasurement{
+		URL:                 in.URL,
+		Network:             in.Network,
+		Address:             in.Address,
+		ArchivalMeasurement: NewArchivalMeasurement(in.Measurement),
+	}
+}
+
 // NewArchivalHTTPEndpointMeasurementList converts a list of HTTPEndpointMeasurement
 // to a list of ArchivalHTTPEndpointMeasurement.
 func NewArchivalHTTPEndpointMeasurementList(in []*HTTPEndpointMeasurement) (out []*ArchivalHTTPEndpointMeasurement) {
 	for _, m := range in {
-		out = append(out, &ArchivalHTTPEndpointMeasurement{
-			URL:                 m.URL,
-			Network:             m.Network,
-			Address:             m.Address,
-			ArchivalMeasurement: NewArchivalMeasurement(m.Measurement),
-		})
+		out = append(out, NewArchivalHTTPEndpointMeasurement(m))
 	}
 	return
 }
@@ -521,6 +570,7 @@ func NewArchivalHTTPEndpointMeasurementList(in []*HTTPEndpointMeasurement) (out 
 // ArchivalMeasurement is the archival representation of a Measurement.
 type ArchivalMeasurement struct {
 	NetworkEvents  []*ArchivalNetworkEvent          `json:"network_events,omitempty"`
+	DNSEvents      []*ArchivalDNSRoundTripEvent     `json:"dns_events,omitempty"`
 	Queries        []*ArchivalDNSLookupEvent        `json:"queries,omitempty"`
 	TCPConnect     []*ArchivalTCPConnect            `json:"tcp_connect,omitempty"`
 	TLSHandshakes  []*ArchivalQUICTLSHandshakeEvent `json:"tls_handshakes,omitempty"`
@@ -532,7 +582,8 @@ type ArchivalMeasurement struct {
 func NewArchivalMeasurement(in *Measurement) *ArchivalMeasurement {
 	out := &ArchivalMeasurement{
 		NetworkEvents:  NewArchivalNetworkEventList(in.ReadWrite),
-		Queries:        nil,
+		DNSEvents:      NewArchivalDNSRoundTripEventList(in.DNSRoundTrip),
+		Queries:        nil, // done below
 		TCPConnect:     NewArchivalTCPConnectList(in.Connect),
 		TLSHandshakes:  NewArchivalQUICTLSHandshakeEventList(in.TLSHandshake),
 		QUICHandshakes: NewArchivalQUICTLSHandshakeEventList(in.QUICHandshake),

@@ -58,7 +58,7 @@ func main() {
 	// we print using the usual three-liner.
 	//
 	// ```Go
-	data, err := json.Marshal(m)
+	data, err := json.Marshal(measurex.NewArchivalDNSMeasurement(m))
 	runtimex.PanicOnError(err, "json.Marshal failed")
 	fmt.Printf("%s\n", string(data))
 }
@@ -84,42 +84,22 @@ func main() {
 // {
 //   "domain": "example.com",
 //
-//   // This block tells us about the UDP connect events
-//   // where we bind to the server's endpoint
-//   "connect": [
-//     {
-//       "address": "8.8.4.4:53",
-//       "failure": null,
-//       "operation": "connect",
-//       "proto": "udp",
-//       "t": 0.00043175,
-//       "started": 0.000191958,
-//       "oddity": ""
-//     },
-//     {
-//       "address": "8.8.4.4:53",
-//       "failure": null,
-//       "operation": "connect",
-//       "proto": "udp",
-//       "t": 0.042198458,
-//       "started": 0.042113208,
-//       "oddity": ""
-//     }
-//   ],
-//
 //   // This block shows the read and write events
 //   // occurred on the sockets (because we control
 //   // in full the implementation of this DNS
 //   // over UDP resolver, we can see these events)
-//   "read_write": [
+//   //
+//   // See https://github.com/ooni/spec/blob/master/data-formats/df-008-netevents.md
+//   // for a description of this data format.
+//   "network_events": [
 //     {
 //       "address": "8.8.4.4:53",
 //       "failure": null,
 //       "num_bytes": 29,
 //       "operation": "write",
 //       "proto": "udp",
-//       "t": 0.000459583,
-//       "started": 0.00043825,
+//       "t": 0.00048825,
+//       "started": 0.000462917,
 //       "oddity": ""
 //     },
 //     {
@@ -128,8 +108,8 @@ func main() {
 //       "num_bytes": 45,
 //       "operation": "read",
 //       "proto": "udp",
-//       "t": 0.041955792,
-//       "started": 0.000471833,
+//       "t": 0.022081833,
+//       "started": 0.000502625,
 //       "oddity": ""
 //     },
 //     {
@@ -138,8 +118,8 @@ func main() {
 //       "num_bytes": 29,
 //       "operation": "write",
 //       "proto": "udp",
-//       "t": 0.042218917,
-//       "started": 0.042203,
+//       "t": 0.022433083,
+//       "started": 0.022423875,
 //       "oddity": ""
 //     },
 //     {
@@ -148,9 +128,49 @@ func main() {
 //       "num_bytes": 57,
 //       "operation": "read",
 //       "proto": "udp",
-//       "t": 0.196646583,
-//       "started": 0.042233167,
+//       "t": 0.046706,
+//       "started": 0.022443833,
 //       "oddity": ""
+//     }
+//   ],
+//
+//   // This block shows the query we sent (encoded as base64)
+//   // and the response we received. Here we clearly see
+//   // that we perform two DNS "round trip" (i.e., send request
+//   // and receive response) to resolve a domain: one for
+//   // A and the other for AAAA.
+//   //
+//   // We don't have a specification for this data format yet.
+//   "dns_events": [
+//     {
+//       "engine": "udp",
+//       "resolver_address": "8.8.4.4:53",
+//       "raw_query": {
+//         "data": "dGwBAAABAAAAAAAAB2V4YW1wbGUDY29tAAABAAE=",
+//         "format": "base64"
+//       },
+//       "started": 0.000205083,
+//       "t": 0.022141333,
+//       "failure": null,
+//       "raw_reply": {
+//         "data": "dGyBgAABAAEAAAAAB2V4YW1wbGUDY29tAAABAAHADAABAAEAAEuIAARduNgi",
+//         "format": "base64"
+//       }
+//     },
+//     {
+//       "engine": "udp",
+//       "resolver_address": "8.8.4.4:53",
+//       "raw_query": {
+//         "data": "Ts8BAAABAAAAAAAAB2V4YW1wbGUDY29tAAAcAAE=",
+//         "format": "base64"
+//       },
+//       "started": 0.022221417,
+//       "t": 0.046733125,
+//       "failure": null,
+//       "raw_reply": {
+//         "data": "Ts+BgAABAAEAAAAAB2V4YW1wbGUDY29tAAAcAAHADAAcAAEAAFOQABAmBigAAiAAAQJIGJMlyBlG",
+//         "format": "base64"
+//       }
 //     }
 //   ],
 //
@@ -160,7 +180,7 @@ func main() {
 //   // Also note how here the resolver_address is the
 //   // correct endpoint address and the engine tells us
 //   // that we're using DNS over UDP.
-//   "lookup_host": [
+//   "queries": [
 //     {
 //       "answers": [
 //         {
@@ -173,8 +193,8 @@ func main() {
 //       "hostname": "example.com",
 //       "query_type": "A",
 //       "resolver_address": "8.8.4.4:53",
-//       "t": 0.196777042,
-//       "started": 0.000118542,
+//       "t": 0.046766833,
+//       "started": 0.000124375,
 //       "oddity": ""
 //     },
 //     {
@@ -189,47 +209,9 @@ func main() {
 //       "hostname": "example.com",
 //       "query_type": "AAAA",
 //       "resolver_address": "8.8.4.4:53",
-//       "t": 0.196777042,
-//       "started": 0.000118542,
+//       "t": 0.046766833,
+//       "started": 0.000124375,
 //       "oddity": ""
-//     }
-//   ],
-//
-//   // This block shows the query we sent (encoded as base64)
-//   // and the response we received. Here we clearly see
-//   // that we perform two DNS "round trip" (i.e., send request
-//   // and receive response) to resolve a domain: one for
-//   // A and the other for AAAA.
-//   "dns_round_trip": [
-//     {
-//       "engine": "udp",
-//       "resolver_address": "8.8.4.4:53",
-//       "raw_query": {
-//         "data": "PrcBAAABAAAAAAAAB2V4YW1wbGUDY29tAAABAAE=",
-//         "format": "base64"
-//       },
-//       "started": 0.000191625,
-//       "t": 0.041998667,
-//       "failure": null,
-//       "raw_reply": {
-//         "data": "PreBgAABAAEAAAAAB2V4YW1wbGUDY29tAAABAAHADAABAAEAAE8BAARduNgi",
-//         "format": "base64"
-//       }
-//     },
-//     {
-//       "engine": "udp",
-//       "resolver_address": "8.8.4.4:53",
-//       "raw_query": {
-//         "data": "LAwBAAABAAAAAAAAB2V4YW1wbGUDY29tAAAcAAE=",
-//         "format": "base64"
-//       },
-//       "started": 0.04210775,
-//       "t": 0.196701333,
-//       "failure": null,
-//       "raw_reply": {
-//         "data": "LAyBgAABAAEAAAAAB2V4YW1wbGUDY29tAAAcAAHADAAcAAEAAE6nABAmBigAAiAAAQJIGJMlyBlG",
-//         "format": "base64"
-//       }
 //     }
 //   ]
 // }
@@ -255,9 +237,42 @@ func main() {
 // ```JavaScript
 // {
 //   "domain": "antani.ooni.org",
-//   "connect": [ /* snip */ ],
-//   "read_write": [ /* snip */ ],
-//   "lookup_host": [
+//   "network_events": [ /* snip */ ],
+//
+//   "dns_events": [
+//     {
+//       "engine": "udp",
+//       "resolver_address": "8.8.4.4:53",
+//       "raw_query": {
+//         "data": "p7YBAAABAAAAAAAABmFudGFuaQRvb25pA29yZwAAAQAB",
+//         "format": "base64"
+//       },
+//       "started": 0.000152959,
+//       "t": 0.051650917,
+//       "failure": null,
+//       "raw_reply": {
+//         "data": "p7aBgwABAAAAAQAABmFudGFuaQRvb25pA29yZwAAAQABwBMABgABAAAHCAA9BGRuczERcmVnaXN0cmFyLXNlcnZlcnMDY29tAApob3N0bWFzdGVywDJhbwqOAACowAAADhAACTqAAAAOEQ==",
+//         "format": "base64"
+//       }
+//     },
+//     {
+//       "engine": "udp",
+//       "resolver_address": "8.8.4.4:53",
+//       "raw_query": {
+//         "data": "ILkBAAABAAAAAAAABmFudGFuaQRvb25pA29yZwAAHAAB",
+//         "format": "base64"
+//       },
+//       "started": 0.051755209,
+//       "t": 0.101094375,
+//       "failure": null,
+//       "raw_reply": {
+//         "data": "ILmBgwABAAAAAQAABmFudGFuaQRvb25pA29yZwAAHAABwBMABgABAAAHCAA9BGRuczERcmVnaXN0cmFyLXNlcnZlcnMDY29tAApob3N0bWFzdGVywDJhbwqOAACowAAADhAACTqAAAAOEQ==",
+//         "format": "base64"
+//       }
+//     }
+//   ],
+//
+//   "queries": [
 //     {
 //       "answers": null,
 //       "engine": "udp",
@@ -265,8 +280,8 @@ func main() {
 //       "hostname": "antani.ooni.org",
 //       "query_type": "A",
 //       "resolver_address": "8.8.4.4:53",
-//       "t": 0.098208709,
-//       "started": 8.95e-05,
+//       "t": 0.101241667,
+//       "started": 8.8e-05,
 //       "oddity": "dns.lookup.nxdomain"
 //     },
 //     {
@@ -276,41 +291,9 @@ func main() {
 //       "hostname": "antani.ooni.org",
 //       "query_type": "AAAA",
 //       "resolver_address": "8.8.4.4:53",
-//       "t": 0.098208709,
-//       "started": 8.95e-05,
+//       "t": 0.101241667,
+//       "started": 8.8e-05,
 //       "oddity": "dns.lookup.nxdomain"
-//     }
-//   ],
-//   "dns_round_trip": [
-//     {
-//       "engine": "udp",
-//       "resolver_address": "8.8.4.4:53",
-//       "raw_query": {
-//         "data": "jLIBAAABAAAAAAAABmFudGFuaQRvb25pA29yZwAAAQAB",
-//         "format": "base64"
-//       },
-//       "started": 0.000141542,
-//       "t": 0.034689417,
-//       "failure": null,
-//       "raw_reply": {
-//         "data": "jLKBgwABAAAAAQAABmFudGFuaQRvb25pA29yZwAAAQABwBMABgABAAAHCAA9BGRuczERcmVnaXN0cmFyLXNlcnZlcnMDY29tAApob3N0bWFzdGVywDJhABz8AACowAAADhAACTqAAAAOEQ==",
-//         "format": "base64"
-//       }
-//     },
-//     {
-//       "engine": "udp",
-//       "resolver_address": "8.8.4.4:53",
-//       "raw_query": {
-//         "data": "azEBAAABAAAAAAAABmFudGFuaQRvb25pA29yZwAAHAAB",
-//         "format": "base64"
-//       },
-//       "started": 0.034776709,
-//       "t": 0.098170542,
-//       "failure": null,
-//       "raw_reply": {
-//         "data": "azGBgwABAAAAAQAABmFudGFuaQRvb25pA29yZwAAHAABwBMABgABAAAHCAA9BGRuczERcmVnaXN0cmFyLXNlcnZlcnMDY29tAApob3N0bWFzdGVywDJhABz8AACowAAADhAACTqAAAAOEQ==",
-//         "format": "base64"
-//       }
 //     }
 //   ]
 // }
@@ -324,10 +307,10 @@ func main() {
 // package main
 //
 // import (
-// "fmt"
-// "encoding/base64"
+//     "fmt"
+//     "encoding/base64"
 //
-// "github.com/miekg/dns"
+//     "github.com/miekg/dns"
 // )
 //
 // func main() {
@@ -367,16 +350,15 @@ func main() {
 // ```JavaScript
 // {
 //   "domain": "example.com",
-//   "connect": [ /* snip */ ],
-//   "read_write": [
+//   "network_events": [
 //     {
 //       "address": "182.92.22.222:53",
 //       "failure": null,
 //       "num_bytes": 29,
 //       "operation": "write",
 //       "proto": "udp",
-//       "t": 0.0005275,
-//       "started": 0.000500209,
+//       "t": 0.000479583,
+//       "started": 0.00045525,
 //       "oddity": ""
 //     },
 //     {
@@ -384,47 +366,48 @@ func main() {
 //       "failure": "generic_timeout_error",  /* <--- */
 //       "operation": "read",
 //       "proto": "udp",
-//       "t": 5.001140125,
-//       "started": 0.000544042,
+//       "t": 5.006016292,
+//       "started": 0.000491792,
 //       "oddity": ""
 //     }
 //   ],
-//   "lookup_host": [
-//     {
-//       "answers": null,
-//       "engine": "udp",
-//       "failure": "generic_timeout_error",  /* <--- */
-//       "hostname": "example.com",
-//       "query_type": "A",
-//       "resolver_address": "182.92.22.222:53",
-//       "t": 5.001462084,
-//       "started": 0.000127917,
-//       "oddity": "dns.lookup.timeout"       /* <--- */
-//     },
-//     {
-//       "answers": null,
-//       "engine": "udp",
-//       "failure": "generic_timeout_error",
-//       "hostname": "example.com",
-//       "query_type": "AAAA",
-//       "resolver_address": "182.92.22.222:53",
-//       "t": 5.001462084,
-//       "started": 0.000127917,
-//       "oddity": "dns.lookup.timeout"
-//     }
-//   ],
-//   "dns_round_trip": [
+//   "dns_events": [
 //     {
 //       "engine": "udp",
 //       "resolver_address": "182.92.22.222:53",
 //       "raw_query": {
-//         "data": "ej8BAAABAAAAAAAAB2V4YW1wbGUDY29tAAABAAE=",
+//         "data": "GRUBAAABAAAAAAAAB2V4YW1wbGUDY29tAAABAAE=",
 //         "format": "base64"
 //       },
-//       "started": 0.000220584,
-//       "t": 5.001317417,
-//       "failure": "generic_timeout_error",
+//       "started": 0.00018225,
+//       "t": 5.006185667,
+//       "failure": "generic_timeout_error",   /* <--- */
 //       "raw_reply": null
+//     }
+//     /* snip */
+//   ],
+//   "queries": [
+//     {
+//       "answers": null,
+//       "engine": "udp",
+//       "failure": "generic_timeout_error",   /* <--- */
+//       "hostname": "example.com",
+//       "query_type": "A",
+//       "resolver_address": "182.92.22.222:53",
+//       "t": 5.007385458,
+//       "started": 0.000107583,
+//       "oddity": "dns.lookup.timeout"
+//     },
+//     {
+//       "answers": null,
+//       "engine": "udp",
+//       "failure": "generic_timeout_error",   /* <--- */
+//       "hostname": "example.com",
+//       "query_type": "AAAA",
+//       "resolver_address": "182.92.22.222:53",
+//       "t": 5.007385458,
+//       "started": 0.000107583,
+//       "oddity": "dns.lookup.timeout"
 //     }
 //   ]
 // }
@@ -432,8 +415,9 @@ func main() {
 //
 // We see that we fail with a timeout (I have marked some of them
 // with comments inside the JSON). We see the timeout at three different
-// levels of abstractions (from lower to higher abstraction): at the socket layer,
-// during the DNS round trip, during the DNS lookup.
+// levels of abstractions (from lower to higher abstraction): at the socket
+// layer (`network_events`), during the DNS round trip (`dns_events`),
+// during the DNS lookup (`queries`).
 //
 // What we also see is that `t`'s value is ~5s when the `read` event
 // fails, which tells us about the socket's read timeout.
@@ -452,18 +436,17 @@ func main() {
 // ```JavaScript
 // {
 //   "domain": "example.com",
-//   "connect": [ /* snip */ ],
 //
-//   // The I/O events look normal this time
-//   "read_write": [
+//   // The network events look normal this time
+//   "network_events": [
 //     {
 //       "address": "180.97.36.63:53",
 //       "failure": null,
 //       "num_bytes": 29,
 //       "operation": "write",
 //       "proto": "udp",
-//       "t": 0.000333583,
-//       "started": 0.000312125,
+//       "t": 0.000492125,
+//       "started": 0.000467042,
 //       "oddity": ""
 //     },
 //     {
@@ -472,8 +455,8 @@ func main() {
 //       "num_bytes": 29,
 //       "operation": "read",
 //       "proto": "udp",
-//       "t": 0.334948125,
-//       "started": 0.000366625,
+//       "t": 0.321373542,
+//       "started": 0.000504833,
 //       "oddity": ""
 //     },
 //     {
@@ -482,8 +465,8 @@ func main() {
 //       "num_bytes": 29,
 //       "operation": "write",
 //       "proto": "udp",
-//       "t": 0.3358025,
-//       "started": 0.335725958,
+//       "t": 0.322500875,
+//       "started": 0.322450042,
 //       "oddity": ""
 //     },
 //     {
@@ -492,15 +475,49 @@ func main() {
 //       "num_bytes": 29,
 //       "operation": "read",
 //       "proto": "udp",
-//       "t": 0.739987666,
-//       "started": 0.335863875,
+//       "t": 0.655514542,
+//       "started": 0.322557667,
 //       "oddity": ""
 //     }
 //   ],
 //
-//   // But we see both in the error and in the oddity
+//   // Exercise: do like I did before and decode the messages
+//   "dns_events": [
+//     {
+//       "engine": "udp",
+//       "resolver_address": "180.97.36.63:53",
+//       "raw_query": {
+//         "data": "WcgBAAABAAAAAAAAB2V4YW1wbGUDY29tAAABAAE=",
+//         "format": "base64"
+//       },
+//       "started": 0.000209875,
+//       "t": 0.321504042,
+//       "failure": null,
+//       "raw_reply": {
+//         "data": "WciBBQABAAAAAAAAB2V4YW1wbGUDY29tAAABAAE=",
+//         "format": "base64"
+//       }
+//     },
+//     {
+//       "engine": "udp",
+//       "resolver_address": "180.97.36.63:53",
+//       "raw_query": {
+//         "data": "I9oBAAABAAAAAAAAB2V4YW1wbGUDY29tAAAcAAE=",
+//         "format": "base64"
+//       },
+//       "started": 0.321672042,
+//       "t": 0.655680792,
+//       "failure": null,
+//       "raw_reply": {
+//         "data": "I9qBBQABAAAAAAAAB2V4YW1wbGUDY29tAAAcAAE=",
+//         "format": "base64"
+//       }
+//     }
+//   ],
+//
+//   // We see both in the error and in the oddity
 //   // that the response was "REFUSED"
-//   "lookup_host": [
+//   "queries": [
 //     {
 //       "answers": null,
 //       "engine": "udp",
@@ -508,8 +525,8 @@ func main() {
 //       "hostname": "example.com",
 //       "query_type": "A",
 //       "resolver_address": "180.97.36.63:53",
-//       "t": 0.7402975,
-//       "started": 7.2291e-05,
+//       "t": 0.655814875,
+//       "started": 0.000107417,
 //       "oddity": "dns.lookup.refused"
 //     },
 //     {
@@ -519,43 +536,9 @@ func main() {
 //       "hostname": "example.com",
 //       "query_type": "AAAA",
 //       "resolver_address": "180.97.36.63:53",
-//       "t": 0.7402975,
-//       "started": 7.2291e-05,
+//       "t": 0.655814875,
+//       "started": 0.000107417,
 //       "oddity": "dns.lookup.refused"
-//     }
-//   ],
-//
-//   // Exercise: do like I did before and decode the messages
-//   "dns_round_trip": [
-//     {
-//       "engine": "udp",
-//       "resolver_address": "180.97.36.63:53",
-//       "raw_query": {
-//         "data": "crkBAAABAAAAAAAAB2V4YW1wbGUDY29tAAABAAE=",
-//         "format": "base64"
-//       },
-//       "started": 0.000130666,
-//       "t": 0.33509925,
-//       "failure": null,
-//       "raw_reply": {
-//         "data": "crmBBQABAAAAAAAAB2V4YW1wbGUDY29tAAABAAE=",
-//         "format": "base64"
-//       }
-//     },
-//     {
-//       "engine": "udp",
-//       "resolver_address": "180.97.36.63:53",
-//       "raw_query": {
-//         "data": "ywcBAAABAAAAAAAAB2V4YW1wbGUDY29tAAAcAAE=",
-//         "format": "base64"
-//       },
-//       "started": 0.335321333,
-//       "t": 0.740152375,
-//       "failure": null,
-//       "raw_reply": {
-//         "data": "yweBBQABAAAAAAAAB2V4YW1wbGUDY29tAAAcAAE=",
-//         "format": "base64"
-//       }
 //     }
 //   ]
 // }
