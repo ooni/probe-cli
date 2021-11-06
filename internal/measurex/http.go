@@ -244,7 +244,7 @@ var ErrHTTPTooManyRedirects = errors.New("stopped after 10 redirects")
 
 func newHTTPClient(db WritableDB, cookiejar http.CookieJar,
 	txp HTTPTransport, defaultErr error) HTTPClient {
-	return &httpClientErrWrapper{&http.Client{
+	return netxlite.WrapHTTPClient(&http.Client{
 		Transport: txp,
 		Jar:       cookiejar,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -260,19 +260,7 @@ func newHTTPClient(db WritableDB, cookiejar http.CookieJar,
 			})
 			return err
 		},
-	}}
-}
-
-type httpClientErrWrapper struct {
-	HTTPClient
-}
-
-func (c *httpClientErrWrapper) Do(req *http.Request) (*http.Response, error) {
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		err = netxlite.NewTopLevelGenericErrWrapper(err)
-	}
-	return resp, err
+	})
 }
 
 // NewCookieJar is a convenience factory for creating an http.CookieJar

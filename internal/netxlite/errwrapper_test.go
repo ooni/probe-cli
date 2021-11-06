@@ -3,6 +3,7 @@ package netxlite
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"testing"
 
@@ -99,6 +100,22 @@ func TestNewErrWrapper(t *testing.T) {
 		}
 		if ew.WrappedErr != io.EOF {
 			t.Fatal("unexpected WrappedErr")
+		}
+	})
+
+	t.Run("when the underlying error is already a wrapped error", func(t *testing.T) {
+		ew := NewErrWrapper(classifySyscallError, ReadOperation, ECONNRESET)
+		var err1 error = ew
+		err2 := fmt.Errorf("cannot read: %w", err1)
+		ew2 := NewErrWrapper(ClassifyGenericError, TopLevelOperation, err2)
+		if ew2.Failure != ew.Failure {
+			t.Fatal("not the same failure")
+		}
+		if ew2.Operation != ew.Operation {
+			t.Fatal("not the same operation")
+		}
+		if ew2.WrappedErr != err2 {
+			t.Fatal("invalid underlying error")
 		}
 	})
 }

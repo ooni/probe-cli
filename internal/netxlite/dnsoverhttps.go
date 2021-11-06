@@ -10,12 +10,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 )
 
-// HTTPClient is an http.Client-like interface.
-type HTTPClient interface {
-	Do(req *http.Request) (*http.Response, error)
-	CloseIdleConnections()
-}
-
 // DNSOverHTTPS is a DNS-over-HTTPS DNSTransport.
 type DNSOverHTTPS struct {
 	// Client is the MANDATORY http client to use.

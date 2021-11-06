@@ -38,6 +38,8 @@ func ClassifyGenericError(err error) string {
 	// The list returned here matches the values used by MK unless
 	// explicitly noted otherwise with a comment.
 
+	// QUIRK: we cannot remove this check as long as this function
+	// is exported and used independently from NewErrWrapper.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
@@ -143,6 +145,9 @@ const (
 // If this classifier fails, it calls ClassifyGenericError
 // and returns to the caller its return value.
 func ClassifyQUICHandshakeError(err error) string {
+
+	// QUIRK: we cannot remove this check as long as this function
+	// is exported and used independently from NewErrWrapper.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
@@ -257,10 +262,14 @@ var (
 // If this classifier fails, it calls ClassifyGenericError and
 // returns to the caller its return value.
 func ClassifyResolverError(err error) string {
+
+	// QUIRK: we cannot remove this check as long as this function
+	// is exported and used independently from NewErrWrapper.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
 	}
+
 	if errors.Is(err, ErrDNSBogon) {
 		return FailureDNSBogonError // not in MK
 	}
@@ -281,10 +290,14 @@ func ClassifyResolverError(err error) string {
 // If this classifier fails, it calls ClassifyGenericError and
 // returns to the caller its return value.
 func ClassifyTLSHandshakeError(err error) string {
+
+	// QUIRK: we cannot remove this check as long as this function
+	// is exported and used independently from NewErrWrapper.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
 	}
+
 	var x509HostnameError x509.HostnameError
 	if errors.As(err, &x509HostnameError) {
 		// Test case: https://wrong.host.badssl.com/
