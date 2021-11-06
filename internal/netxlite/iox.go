@@ -27,9 +27,9 @@ func ReadAllContext(ctx context.Context, r io.Reader) ([]byte, error) {
 	case data := <-datach:
 		return data, nil
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, NewTopLevelGenericErrWrapper(ctx.Err())
 	case err := <-errch:
-		return nil, err
+		return nil, NewTopLevelGenericErrWrapper(err)
 	}
 }
 
@@ -51,8 +51,8 @@ func CopyContext(ctx context.Context, dst io.Writer, src io.Reader) (int64, erro
 	case count := <-countch:
 		return count, nil
 	case <-ctx.Done():
-		return 0, ctx.Err()
+		return 0, NewTopLevelGenericErrWrapper(ctx.Err())
 	case err := <-errch:
-		return 0, err
+		return 0, NewTopLevelGenericErrWrapper(err)
 	}
 }

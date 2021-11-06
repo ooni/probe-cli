@@ -36,6 +36,10 @@ func TestReadAllContext(t *testing.T) {
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
+		var errWrapper *ErrWrapper
+		if !errors.As(err, &errWrapper) {
+			t.Fatal("the returned error is not wrapped")
+		}
 		if len(out) != 0 {
 			t.Fatal("not the expected number of bytes")
 		}
@@ -65,6 +69,10 @@ func TestReadAllContext(t *testing.T) {
 		if !errors.Is(err, context.Canceled) {
 			t.Fatal("not the error we expected", err)
 		}
+		var errWrapper *ErrWrapper
+		if !errors.As(err, &errWrapper) {
+			t.Fatal("the returned error is not wrapped")
+		}
 		if len(out) != 0 {
 			t.Fatal("not the expected number of bytes")
 		}
@@ -89,6 +97,10 @@ func TestReadAllContext(t *testing.T) {
 		out, err := ReadAllContext(ctx, r)
 		if !errors.Is(err, context.Canceled) {
 			t.Fatal("not the error we expected", err)
+		}
+		var errWrapper *ErrWrapper
+		if !errors.As(err, &errWrapper) {
+			t.Fatal("the returned error is not wrapped")
 		}
 		if len(out) != 0 {
 			t.Fatal("not the expected number of bytes")
@@ -123,6 +135,10 @@ func TestCopyContext(t *testing.T) {
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
+		var errWrapper *ErrWrapper
+		if !errors.As(err, &errWrapper) {
+			t.Fatal("the returned error is not wrapped")
+		}
 		if out != 0 {
 			t.Fatal("not the expected number of bytes")
 		}
@@ -152,6 +168,10 @@ func TestCopyContext(t *testing.T) {
 		if !errors.Is(err, context.Canceled) {
 			t.Fatal("not the error we expected", err)
 		}
+		var errWrapper *ErrWrapper
+		if !errors.As(err, &errWrapper) {
+			t.Fatal("the returned error is not wrapped")
+		}
 		if out != 0 {
 			t.Fatal("not the expected number of bytes")
 		}
@@ -176,6 +196,10 @@ func TestCopyContext(t *testing.T) {
 		out, err := CopyContext(ctx, io.Discard, r)
 		if !errors.Is(err, context.Canceled) {
 			t.Fatal("not the error we expected", err)
+		}
+		var errWrapper *ErrWrapper
+		if !errors.As(err, &errWrapper) {
+			t.Fatal("the returned error is not wrapped")
 		}
 		if out != 0 {
 			t.Fatal("not the expected number of bytes")
