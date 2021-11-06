@@ -1,6 +1,9 @@
 package netxlite
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+)
 
 // ErrWrapper is our error wrapper for Go errors. The key objective of
 // this structure is to properly set Failure, which is also returned by
@@ -78,7 +81,19 @@ type Classifier func(err error) string
 //
 // This function panics if classifier is nil, or operation
 // is the empty string or error is nil.
+//
+// If the err argument has already been classified, the returned
+// error wrapper will use the same classification string and
+// failed operation of the original wrapped error.
 func NewErrWrapper(c Classifier, op string, err error) *ErrWrapper {
+	var wrapper *ErrWrapper
+	if errors.As(err, &wrapper) {
+		return &ErrWrapper{
+			Failure:    wrapper.Failure,
+			Operation:  wrapper.Operation,
+			WrappedErr: err,
+		}
+	}
 	if c == nil {
 		panic("nil classifier")
 	}
@@ -97,6 +112,10 @@ func NewErrWrapper(c Classifier, op string, err error) *ErrWrapper {
 
 // NewTopLevelGenericErrWrapper wraps an error occurring at top
 // level using ClassifyGenericError as classifier.
+//
+// If the err argument has already been classified, the returned
+// error wrapper will use the same classification string and
+// failed operation of the original error.
 func NewTopLevelGenericErrWrapper(err error) *ErrWrapper {
 	return NewErrWrapper(ClassifyGenericError, TopLevelOperation, err)
 }
