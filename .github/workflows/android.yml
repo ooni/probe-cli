@@ -6,6 +6,7 @@ on:
       - "mobile-staging"
       - "release/**"
       - "stable"
+      - "issue/1863"
 jobs:
   test:
     runs-on: ubuntu-20.04
