@@ -10,6 +10,6 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: "1.17.2"
+          go-version: "1.17.3"
       - uses: actions/checkout@v2
       - run: ./QA/rundocker.bash "telegram"
