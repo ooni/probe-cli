@@ -31,20 +31,20 @@ help:
 #help: * ANDROID_CLI_SHA256    : the SHA256 of the Android CLI tools file. We always
 #help:                           download the Linux version, which seems to work
 #help:                           also on macOS (thank you, Java! :pray:).
-ANDROID_CLI_SHA256 = 7a00faadc0864f78edd8f4908a629a46d622375cbe2e5814e82934aebecdb622
+ANDROID_CLI_SHA256 = 124f2d5115eee365df6cf3228ffbca6fc3911d16f8025bebd5b1c6e2fcfa7faf
 
 #help:
 #help: * ANDROID_CLI_VERSION   : the version of the Android CLI tools.
-ANDROID_CLI_VERSION = 7302050
+ANDROID_CLI_VERSION = 7583922
 
 #help:
 #help: * ANDROID_INSTALL_EXTRA : contains the android tools we install in addition
 #help:                           to the NDK in order to build oonimkall.aar.
-ANDROID_INSTALL_EXTRA = 'build-tools;29.0.3' 'platforms;android-30'
+ANDROID_INSTALL_EXTRA = 'build-tools;29.0.3' 'platforms;android-31'
 
 #help:
 #help: * ANDROID_NDK_VERSION   : Android NDK version.
-ANDROID_NDK_VERSION = 22.1.7171670
+ANDROID_NDK_VERSION = 23.1.7779620
 
 #help:
 #help: * DEBIAN_TILDE_VERSION  : if non-empty, this should be "[0-9]+" and
@@ -81,7 +81,7 @@ GOLANG_EXTRA_FLAGS =
 
 #help:
 #help: * GOLANG_VERSION_NUMBER : the expected version number for golang.
-GOLANG_VERSION_NUMBER = 1.17.2
+GOLANG_VERSION_NUMBER = 1.17.3
 
 #help:
 #help: * GPG_USER              : allows overriding the default GPG user used
@@ -93,6 +93,10 @@ GPG_USER = simone@openobservatory.org
 #help:
 #help: * MINGW_W64_VERSION     : the expected mingw-w64 version.
 MINGW_W64_VERSION = 10.3.1
+
+#help:
+#help: * OONIGO_BRANCH         : the github.com/ooni/go branch to use.
+OONIGO_BRANCH = oonigo1.17
 
 #help:
 #help: * OONI_PSIPHON_TAGS     : build tags for `go build -tags ...` that cause
@@ -658,7 +662,7 @@ __really_clone_private_repo:
 #help: The `./mk ooni/go` command builds the latest version of ooni/go.
 .PHONY: ooni/go
 ooni/go: search/for/bash search/for/git search/for/go $(OONIGODIR)
-	test -d $(OONIGODIR) || git clone -b ooni --single-branch --depth 8 $(OONIGO_REPO) $(OONIGODIR)
+	test -d $(OONIGODIR) || git clone -b $(OONIGO_BRANCH) --single-branch --depth 8 $(OONIGO_REPO) $(OONIGODIR)
 	cd $(OONIGODIR) && git pull --ff-only
 	cd $(OONIGODIR)/src && ./make.bash
 
@@ -674,6 +678,7 @@ OONIGO_REPO = https://github.com/ooni/go
 .PHONY: android/sdk
 android/sdk: search/for/java
 	test -d $(OONI_ANDROID_HOME) || $(MAKE) -f mk android/sdk/download
+	test -f $(__ANDROID_SDKMANAGER) || { echo "please run './mk android/sdk/download'"; exit 1; }
 	echo "Yes" | $(__ANDROID_SDKMANAGER) --install $(ANDROID_INSTALL_EXTRA) 'ndk;$(ANDROID_NDK_VERSION)'
 
 # __ANDROID_SKDMANAGER is the path to android's sdkmanager tool
