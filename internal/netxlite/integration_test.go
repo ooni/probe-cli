@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 	utls "gitlab.com/yawning/utls.git"
 )
 
@@ -435,11 +437,11 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		config := &tls.Config{
-			ServerName: "dns.google",
+			ServerName: quictesting.Domain,
 			NextProtos: []string{"h3"},
 			RootCAs:    netxlite.NewDefaultCertPool(),
 		}
-		sess, err := d.DialContext(ctx, "udp", "8.8.4.4:443", config, &quic.Config{})
+		sess, err := d.DialContext(ctx, "udp", quictesting.Endpoint("443"), config, &quic.Config{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -455,12 +457,12 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		config := &tls.Config{
-			ServerName: "dns.google",
+			ServerName: quictesting.Domain,
 			NextProtos: []string{"h3"},
 			RootCAs:    netxlite.NewDefaultCertPool(),
 		}
-		// Here we assume 8.8.4.4:1 is filtered
-		sess, err := d.DialContext(ctx, "udp", "8.8.4.4:1", config, &quic.Config{})
+		// Here we assume <target-address>:1 is filtered
+		sess, err := d.DialContext(ctx, "udp", quictesting.Endpoint("1"), config, &quic.Config{})
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
 			t.Fatal("not the error we expected", err)
 		}
@@ -502,7 +504,8 @@ func TestHTTP3Transport(t *testing.T) {
 		)
 		txp := netxlite.NewHTTP3Transport(log.Log, d, &tls.Config{})
 		client := &http.Client{Transport: txp}
-		resp, err := client.Get("https://www.google.com/robots.txt")
+		URL := (&url.URL{Scheme: "https", Host: quictesting.Domain, Path: "/"}).String()
+		resp, err := client.Get(URL)
 		if err != nil {
 			t.Fatal(err)
 		}

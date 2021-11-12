@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -84,12 +85,11 @@ func TestGetFailure(t *testing.T) {
 }
 
 func TestGetH3Success(t *testing.T) {
-	u, err := url.Parse("https://www.google.com")
-	runtimex.PanicOnError(err, "url.Parse failed for clearly good URL")
+	u := &url.URL{Scheme: "https", Host: quictesting.Domain, Path: "/"}
 	h3u := &h3URL{URL: u, proto: "h3"}
 	resp, err := explorer.getH3(h3u, nil)
 	if err != nil {
-		t.Fatal("unexpected error")
+		t.Fatal("unexpected error", err)
 	}
 	if resp == nil {
 		t.Fatal("unexpected nil response")
