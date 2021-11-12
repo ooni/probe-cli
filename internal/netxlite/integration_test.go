@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -421,6 +422,22 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 
+	const domain = "www.cloudflare.com"
+	addrs, err := net.LookupHost(domain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var targetAddress string
+	for _, addr := range addrs {
+		if net.ParseIP(addr) != nil && !strings.Contains(addr, ":") {
+			targetAddress = addr
+			break
+		}
+	}
+	if targetAddress == "" {
+		t.Fatal("cannot figure out a target address")
+	}
+
 	//
 	// Measurement conditions we care about:
 	//
@@ -435,11 +452,12 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		config := &tls.Config{
-			ServerName: "dns.google",
+			ServerName: domain,
 			NextProtos: []string{"h3"},
 			RootCAs:    netxlite.NewDefaultCertPool(),
 		}
-		sess, err := d.DialContext(ctx, "udp", "8.8.4.4:443", config, &quic.Config{})
+		targetEndpoint := net.JoinHostPort(targetAddress, "443")
+		sess, err := d.DialContext(ctx, "udp", targetEndpoint, config, &quic.Config{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -455,12 +473,13 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		config := &tls.Config{
-			ServerName: "dns.google",
+			ServerName: domain,
 			NextProtos: []string{"h3"},
 			RootCAs:    netxlite.NewDefaultCertPool(),
 		}
-		// Here we assume 8.8.4.4:1 is filtered
-		sess, err := d.DialContext(ctx, "udp", "8.8.4.4:1", config, &quic.Config{})
+		// Here we assume <target-address>:1 is filtered
+		targetEndpoint := net.JoinHostPort(targetAddress, "1")
+		sess, err := d.DialContext(ctx, "udp", targetEndpoint, config, &quic.Config{})
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
 			t.Fatal("not the error we expected", err)
 		}
@@ -502,7 +521,7 @@ func TestHTTP3Transport(t *testing.T) {
 		)
 		txp := netxlite.NewHTTP3Transport(log.Log, d, &tls.Config{})
 		client := &http.Client{Transport: txp}
-		resp, err := client.Get("https://www.google.com/robots.txt")
+		resp, err := client.Get("https://www.cloudflare.com/robots.txt")
 		if err != nil {
 			t.Fatal(err)
 		}
