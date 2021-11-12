@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 	utls "gitlab.com/yawning/utls.git"
 )
 
@@ -422,22 +422,6 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 
-	const domain = "www.cloudflare.com"
-	addrs, err := net.LookupHost(domain)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var targetAddress string
-	for _, addr := range addrs {
-		if net.ParseIP(addr) != nil && !strings.Contains(addr, ":") {
-			targetAddress = addr
-			break
-		}
-	}
-	if targetAddress == "" {
-		t.Fatal("cannot figure out a target address")
-	}
-
 	//
 	// Measurement conditions we care about:
 	//
@@ -452,12 +436,11 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		config := &tls.Config{
-			ServerName: domain,
+			ServerName: quictesting.Domain,
 			NextProtos: []string{"h3"},
 			RootCAs:    netxlite.NewDefaultCertPool(),
 		}
-		targetEndpoint := net.JoinHostPort(targetAddress, "443")
-		sess, err := d.DialContext(ctx, "udp", targetEndpoint, config, &quic.Config{})
+		sess, err := d.DialContext(ctx, "udp", quictesting.Endpoint("443"), config, &quic.Config{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -473,13 +456,12 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		defer d.CloseIdleConnections()
 		ctx := context.Background()
 		config := &tls.Config{
-			ServerName: domain,
+			ServerName: quictesting.Domain,
 			NextProtos: []string{"h3"},
 			RootCAs:    netxlite.NewDefaultCertPool(),
 		}
 		// Here we assume <target-address>:1 is filtered
-		targetEndpoint := net.JoinHostPort(targetAddress, "1")
-		sess, err := d.DialContext(ctx, "udp", targetEndpoint, config, &quic.Config{})
+		sess, err := d.DialContext(ctx, "udp", quictesting.Endpoint("1"), config, &quic.Config{})
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
 			t.Fatal("not the error we expected", err)
 		}
@@ -521,7 +503,8 @@ func TestHTTP3Transport(t *testing.T) {
 		)
 		txp := netxlite.NewHTTP3Transport(log.Log, d, &tls.Config{})
 		client := &http.Client{Transport: txp}
-		resp, err := client.Get("https://www.cloudflare.com/robots.txt")
+		url := fmt.Sprintf("https://%s/robots.txt", quictesting.Domain)
+		resp, err := client.Get(url)
 		if err != nil {
 			t.Fatal(err)
 		}

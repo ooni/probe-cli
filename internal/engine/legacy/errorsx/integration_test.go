@@ -8,9 +8,10 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 )
 
-func TestErrorWrapperQUICDialerInvalidCertificate(t *testing.T) {
+func TestErrorWrapperQUICDialerFailure(t *testing.T) {
 	nextprotos := []string{"h3"}
 	servername := "example.com"
 	tlsConf := &tls.Config{
@@ -21,17 +22,16 @@ func TestErrorWrapperQUICDialerInvalidCertificate(t *testing.T) {
 	dlr := &errorsxlegacy.ErrorWrapperQUICDialer{Dialer: &netxlite.QUICDialerQUICGo{
 		QUICListener: &netxlite.QUICListenerStdlib{},
 	}}
-	// use Google IP
 	sess, err := dlr.DialContext(context.Background(), "udp",
-		"216.58.212.164:443", tlsConf, &quic.Config{})
+		quictesting.Endpoint("443"), tlsConf, &quic.Config{})
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
 	if sess != nil {
 		t.Fatal("expected nil sess here")
 	}
-	if err.Error() != netxlite.FailureSSLInvalidCertificate {
-		t.Fatal("unexpected failure")
+	if err.Error() != netxlite.FailureSSLFailedHandshake {
+		t.Fatal("unexpected failure", err.Error())
 	}
 }
 
@@ -39,12 +39,12 @@ func TestErrorWrapperQUICDialerSuccess(t *testing.T) {
 	ctx := context.Background()
 	tlsConf := &tls.Config{
 		NextProtos: []string{"h3"},
-		ServerName: "www.google.com",
+		ServerName: quictesting.Domain,
 	}
 	d := &errorsxlegacy.ErrorWrapperQUICDialer{Dialer: &netxlite.QUICDialerQUICGo{
 		QUICListener: &netxlite.QUICListenerStdlib{},
 	}}
-	sess, err := d.DialContext(ctx, "udp", "216.58.212.164:443", tlsConf, &quic.Config{})
+	sess, err := d.DialContext(ctx, "udp", quictesting.Endpoint("443"), tlsConf, &quic.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
