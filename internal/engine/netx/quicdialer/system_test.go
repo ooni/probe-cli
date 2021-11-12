@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
@@ -42,7 +43,7 @@ func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
 	// This is the most common use case for collecting reads, writes
 	tlsConf := &tls.Config{
 		NextProtos: []string{"h3"},
-		ServerName: "www.google.com",
+		ServerName: quictesting.Domain,
 	}
 	saver := &trace.Saver{}
 	systemdialer := &netxlite.QUICDialerQUICGo{
@@ -52,7 +53,7 @@ func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
 		},
 	}
 	_, err := systemdialer.DialContext(context.Background(), "udp",
-		"216.58.212.164:443", tlsConf, &quic.Config{})
+		quictesting.Endpoint("443"), tlsConf, &quic.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
