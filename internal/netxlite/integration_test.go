@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -503,8 +504,8 @@ func TestHTTP3Transport(t *testing.T) {
 		)
 		txp := netxlite.NewHTTP3Transport(log.Log, d, &tls.Config{})
 		client := &http.Client{Transport: txp}
-		url := fmt.Sprintf("https://%s/robots.txt", quictesting.Domain)
-		resp, err := client.Get(url)
+		URL := (&url.URL{Scheme: "https", Host: quictesting.Domain, Path: "/"}).String()
+		resp, err := client.Get(URL)
 		if err != nil {
 			t.Fatal(err)
 		}
