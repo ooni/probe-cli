@@ -16,7 +16,7 @@ import (
 
 const (
 	testName    = "psiphon"
-	testVersion = "0.5.0"
+	testVersion = "0.5.1"
 )
 
 // Config contains the experiment's configuration.
