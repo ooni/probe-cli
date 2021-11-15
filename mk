@@ -488,7 +488,7 @@ __android_build_with_ooni_go: search/for/go
 #help: * `./mk ./MOBILE/ios/xcframework`: the xcframework
 .PHONY:     ./MOBILE/ios/oonimkall.xcframework
 ./MOBILE/ios/oonimkall.xcframework: search/for/go search/for/xcode maybe/copypsiphon
-	go get -u -v golang.org/x/mobile/cmd/gomobile@latest
+	go get -u golang.org/x/mobile/cmd/gomobile
 	$(GOMOBILE) init
 	PATH=$(shell go env GOPATH)/bin:$$PATH $(GOMOBILE) bind -target ios -o $@ -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
 
