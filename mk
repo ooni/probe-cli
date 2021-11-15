@@ -119,7 +119,7 @@ OONI_ANDROID_HOME = $(HOME)/.ooniprobe-build/sdk/android
 
 #help:
 #help: * XCODE_VERSION         : the version of Xcode we expect.
-XCODE_VERSION = 12.5
+XCODE_VERSION = 13.1
 
 #quickhelp:
 #quickhelp: The `./mk show-config` command shows the current value of the
@@ -474,21 +474,21 @@ __android_build_with_ooni_go: search/for/go
 #help: You can also build the following subtargets:
 .PHONY: ./MOBILE/ios
 ./MOBILE/ios:                             \
-	./MOBILE/ios/oonimkall.framework.zip  \
+	./MOBILE/ios/oonimkall.xcframework.zip  \
 	./MOBILE/ios/oonimkall.podspec
 
 #help:
-#help: * `./mk ./MOBILE/ios/oonimkall.framework.zip`: zip the framework
-.PHONY:   ./MOBILE/ios/oonimkall.framework.zip
-./MOBILE/ios/oonimkall.framework.zip: search/for/zip ./MOBILE/ios/oonimkall.framework
-	cd ./MOBILE/ios && rm -rf oonimkall.framework.zip
-	cd ./MOBILE/ios && zip -yr oonimkall.framework.zip oonimkall.framework
+#help: * `./mk ./MOBILE/ios/oonimkall.xcframework.zip`: zip the xcframework
+.PHONY:   ./MOBILE/ios/oonimkall.xcframework.zip
+./MOBILE/ios/oonimkall.xcframework.zip: search/for/zip ./MOBILE/ios/oonimkall.xcframework
+	cd ./MOBILE/ios && rm -rf oonimkall.xcframework.zip
+	cd ./MOBILE/ios && zip -yr oonimkall.xcframework.zip oonimkall.xcframework
 
 #help:
-#help: * `./mk ./MOBILE/ios/framework`: the framework
-.PHONY:     ./MOBILE/ios/oonimkall.framework
-./MOBILE/ios/oonimkall.framework: search/for/go search/for/xcode maybe/copypsiphon
-	go get -u golang.org/x/mobile/cmd/gomobile
+#help: * `./mk ./MOBILE/ios/xcframework`: the xcframework
+.PHONY:     ./MOBILE/ios/oonimkall.xcframework
+./MOBILE/ios/oonimkall.xcframework: search/for/go search/for/xcode maybe/copypsiphon
+	go get -u -v golang.org/x/mobile/cmd/gomobile@latest
 	$(GOMOBILE) init
 	PATH=$(shell go env GOPATH)/bin:$$PATH $(GOMOBILE) bind -target ios -o $@ -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
 

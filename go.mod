@@ -50,9 +50,9 @@ require (
 	gitlab.com/yawning/utls.git v0.0.12-1
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20211109214657-ef0fda0de508
-	golang.org/x/sys v0.0.0-20211020064051-0ec99a608a1b
+	golang.org/x/sys v0.0.0-20211113001501-0c823b97ae02
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/tools v0.1.7 // indirect
+	golang.org/x/tools v0.1.8-0.20211022200916-316ba0b74098 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	upper.io/db.v3 v3.8.0+incompatible
