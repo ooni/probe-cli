@@ -189,6 +189,6 @@ func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, e
 	}
 	sk.SignalBackendStatus = tk.SignalBackendStatus
 	sk.SignalBackendFailure = tk.SignalBackendFailure
-	sk.IsAnomaly = tk.SignalBackendStatus == "blocking"
+	sk.IsAnomaly = tk.SignalBackendStatus == "blocked"
 	return sk, nil
 }
