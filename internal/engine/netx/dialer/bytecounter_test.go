@@ -1,22 +1,22 @@
-package dialer_test
+package dialer
 
 import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func dorequest(ctx context.Context, url string) error {
 	txp := http.DefaultTransport.(*http.Transport).Clone()
 	defer txp.CloseIdleConnections()
-	dialer := dialer.ByteCounterDialer{Dialer: new(net.Dialer)}
+	dialer := &byteCounterDialer{Dialer: new(net.Dialer)}
 	txp.DialContext = dialer.DialContext
 	client := &http.Client{Transport: txp}
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://www.google.com", nil)
@@ -27,7 +27,7 @@ func dorequest(ctx context.Context, url string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
+	if _, err := netxlite.CopyContext(ctx, io.Discard, resp.Body); err != nil {
 		return err
 	}
 	return resp.Body.Close()
@@ -39,17 +39,23 @@ func TestByteCounterNormalUsage(t *testing.T) {
 	}
 	sess := bytecounter.New()
 	ctx := context.Background()
-	ctx = dialer.WithSessionByteCounter(ctx, sess)
+	ctx = WithSessionByteCounter(ctx, sess)
 	if err := dorequest(ctx, "http://www.google.com"); err != nil {
 		t.Fatal(err)
 	}
 	exp := bytecounter.New()
-	ctx = dialer.WithExperimentByteCounter(ctx, exp)
+	ctx = WithExperimentByteCounter(ctx, exp)
 	if err := dorequest(ctx, "http://facebook.com"); err != nil {
 		t.Fatal(err)
 	}
+	if exp.Received.Load() <= 0 {
+		t.Fatal("experiment should have received some bytes")
+	}
 	if sess.Received.Load() <= exp.Received.Load() {
 		t.Fatal("session should have received more than experiment")
+	}
+	if exp.Sent.Load() <= 0 {
+		t.Fatal("experiment should have sent some bytes")
 	}
 	if sess.Sent.Load() <= exp.Sent.Load() {
 		t.Fatal("session should have sent more than experiment")
@@ -70,7 +76,11 @@ func TestByteCounterNoHandlers(t *testing.T) {
 }
 
 func TestByteCounterConnectFailure(t *testing.T) {
-	dialer := dialer.ByteCounterDialer{Dialer: dialer.EOFDialer{}}
+	dialer := &byteCounterDialer{Dialer: &mocks.Dialer{
+		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+			return nil, io.EOF
+		},
+	}}
 	conn, err := dialer.DialContext(context.Background(), "tcp", "www.google.com:80")
 	if !errors.Is(err, io.EOF) {
 		t.Fatal("not the error we expected")

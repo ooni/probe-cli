@@ -6,11 +6,12 @@ import (
 	"net"
 	"net/url"
 	"strings"
-	"sync/atomic"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/multierror"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/multierror"
 )
 
 func TestNetworkWorks(t *testing.T) {
@@ -30,7 +31,7 @@ func TestAddressWorks(t *testing.T) {
 func TestTypicalUsageWithFailure(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
-	reso := &Resolver{}
+	reso := &Resolver{KVStore: &kvstore.Memory{}}
 	addrs, err := reso.LookupHost(ctx, "ooni.org")
 	if !errors.Is(err, ErrLookupHost) {
 		t.Fatal("not the error we expected", err)
@@ -82,6 +83,7 @@ func TestTypicalUsageWithSuccess(t *testing.T) {
 	expected := []string{"8.8.8.8", "8.8.4.4"}
 	ctx := context.Background()
 	reso := &Resolver{
+		KVStore: &kvstore.Memory{},
 		dnsClientMaker: &fakeDNSClientMaker{
 			reso: &FakeResolver{Data: expected},
 		},
@@ -252,7 +254,7 @@ func TestMaybeConfusionManyEntries(t *testing.T) {
 
 func TestResolverWorksWithProxy(t *testing.T) {
 	var (
-		works      int32
+		works      = &atomicx.Int64{}
 		startuperr = make(chan error)
 		listench   = make(chan net.Listener)
 		done       = make(chan interface{})
@@ -273,7 +275,7 @@ func TestResolverWorksWithProxy(t *testing.T) {
 				// shutdown by the main goroutine.
 				return
 			}
-			atomic.AddInt32(&works, 1)
+			works.Add(1)
 			conn.Close()
 		}
 	}()
@@ -283,10 +285,13 @@ func TestResolverWorksWithProxy(t *testing.T) {
 	}
 	listener := <-listench
 	// use the proxy
-	reso := &Resolver{ProxyURL: &url.URL{
-		Scheme: "socks5",
-		Host:   listener.Addr().String(),
-	}}
+	reso := &Resolver{
+		ProxyURL: &url.URL{
+			Scheme: "socks5",
+			Host:   listener.Addr().String(),
+		},
+		KVStore: &kvstore.Memory{},
+	}
 	ctx := context.Background()
 	addrs, err := reso.LookupHost(ctx, "ooni.org")
 	// cleanly shutdown the listener
@@ -299,7 +304,7 @@ func TestResolverWorksWithProxy(t *testing.T) {
 	if addrs != nil {
 		t.Fatal("expected nil addrs")
 	}
-	if works < 1 {
+	if works.Load() < 1 {
 		t.Fatal("expected to see a positive number of entries here")
 	}
 }

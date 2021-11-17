@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"sort"
@@ -17,12 +16,12 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/randx"
+	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/selfcensor"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
 const (
@@ -165,7 +164,7 @@ func (m Measurer) Run(
 	// parse response body
 	var jsonHeaders JSONHeaders
 	if err := json.Unmarshal(data, &jsonHeaders); err != nil {
-		failure := errorx.FailureJSONParseError
+		failure := netxlite.FailureJSONParseError
 		tk.Failure = &failure
 		tk.Tampering.Total = true
 		return nil // measurement did not fail, we measured tampering
@@ -181,8 +180,8 @@ func Transact(txp Transport, req *http.Request,
 	callbacks model.ExperimentCallbacks) (*http.Response, []byte, error) {
 	// make sure that we return a wrapped error here
 	resp, data, err := transact(txp, req, callbacks)
-	err = errorx.SafeErrWrapperBuilder{
-		Error: err, Operation: errorx.TopLevelOperation}.MaybeBuild()
+	err = errorsxlegacy.SafeErrWrapperBuilder{
+		Error: err, Operation: netxlite.TopLevelOperation}.MaybeBuild()
 	return resp, data, err
 }
 
@@ -199,7 +198,7 @@ func transact(txp Transport, req *http.Request,
 		return nil, nil, urlgetter.ErrHTTPRequestFailed
 	}
 	callbacks.OnProgress(0.75, "reading response body...")
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := netxlite.ReadAllContext(req.Context(), resp.Body)
 	callbacks.OnProgress(1.00, fmt.Sprintf("got reseponse body... %+v", err))
 	if err != nil {
 		return nil, nil, err
@@ -312,18 +311,20 @@ type JSONHeaders struct {
 // guarantee that the connection is used for a single request and that
 // such a request does not contain any body.
 type Dialer struct {
-	Dialer  netx.Dialer // used for testing
+	Dialer  dialer.Dialer // used for testing
 	Headers map[string]string
 }
 
 // DialContext dials a specific connection and arranges such that
 // headers in the outgoing request are transformed.
 func (d Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	dialer := d.Dialer
-	if dialer == nil {
-		dialer = selfcensor.DefaultDialer
+	child := d.Dialer
+	if child == nil {
+		// TODO(bassosimone): figure out why using dialer.New here
+		// causes the experiment to fail with eof_error
+		child = &net.Dialer{Timeout: 15 * time.Second}
 	}
-	conn, err := dialer.DialContext(ctx, network, address)
+	conn, err := child.DialContext(ctx, network, address)
 	if err != nil {
 		return nil, err
 	}

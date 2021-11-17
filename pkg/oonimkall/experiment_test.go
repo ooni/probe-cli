@@ -3,8 +3,8 @@ package oonimkall
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
@@ -17,16 +17,18 @@ func (cb *FakeExperimentCallbacks) OnProgress(percentage float64, message string
 // FakeExperimentSession is a fake experimentSession
 type FakeExperimentSession struct {
 	ExperimentBuilder       experimentBuilder
-	LockCount               int32
+	LockCount               *atomicx.Int64
 	LookupBackendsErr       error
 	LookupLocationErr       error
 	NewExperimentBuilderErr error
-	UnlockCount             int32
+	UnlockCount             *atomicx.Int64
 }
 
 // lock implements experimentSession.lock
 func (sess *FakeExperimentSession) lock() {
-	atomic.AddInt32(&sess.LockCount, 1)
+	if sess.LockCount != nil {
+		sess.LockCount.Add(1)
+	}
 }
 
 // maybeLookupBackends implements experimentSession.maybeLookupBackends
@@ -46,7 +48,9 @@ func (sess *FakeExperimentSession) newExperimentBuilder(name string) (experiment
 
 // unlock implements experimentSession.unlock
 func (sess *FakeExperimentSession) unlock() {
-	atomic.AddInt32(&sess.UnlockCount, 1)
+	if sess.UnlockCount != nil {
+		sess.UnlockCount.Add(1)
+	}
 }
 
 // FakeExperimentBuilder is a fake experimentBuilder

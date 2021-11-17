@@ -10,16 +10,16 @@ import (
 	"os"
 	"sync"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/sessionresolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
-	"github.com/ooni/probe-cli/v3/internal/engine/tunnel"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/platform"
+	"github.com/ooni/probe-cli/v3/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -52,7 +52,7 @@ type Session struct {
 	availableTestHelpers     map[string][]model.Service
 	byteCounter              *bytecounter.Counter
 	httpDefaultTransport     netx.HTTPRoundTripper
-	kvStore                  model.KeyValueStore
+	kvStore                  KVStore
 	location                 *geolocate.Results
 	logger                   model.Logger
 	proxyURL                 *url.URL
@@ -142,7 +142,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		return nil, errors.New("SoftwareVersion is empty")
 	}
 	if config.KVStore == nil {
-		config.KVStore = kvstore.NewMemoryKeyValueStore()
+		config.KVStore = &kvstore.Memory{}
 	}
 	// Implementation note: if config.TempDir is empty, then Go will
 	// use the temporary directory on the current system. This should
@@ -157,7 +157,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		byteCounter:             bytecounter.New(),
 		kvStore:                 config.KVStore,
 		logger:                  config.Logger,
-		queryProbeServicesCount: atomicx.NewInt64(),
+		queryProbeServicesCount: &atomicx.Int64{},
 		softwareName:            config.SoftwareName,
 		softwareVersion:         config.SoftwareVersion,
 		tempDir:                 tempDir,
@@ -645,11 +645,11 @@ func (s *Session) MaybeLookupBackendsContext(ctx context.Context) error {
 // LookupLocationContext performs a location lookup. If you want memoisation
 // of the results, you should use MaybeLookupLocationContext.
 func (s *Session) LookupLocationContext(ctx context.Context) (*geolocate.Results, error) {
-	task := geolocate.Must(geolocate.NewTask(geolocate.Config{
+	task := geolocate.NewTask(geolocate.Config{
 		Logger:    s.Logger(),
 		Resolver:  s.resolver,
 		UserAgent: s.UserAgent(),
-	}))
+	})
 	return task.Run(ctx)
 }
 

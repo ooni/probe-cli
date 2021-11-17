@@ -8,8 +8,8 @@ import (
 	"io/fs"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/fsx"
 )
 
 // These errors are returned by the InputLoader.
@@ -154,7 +154,7 @@ func (il *InputLoader) loadLocal() ([]model.URLInfo, error) {
 		inputs = append(inputs, model.URLInfo{URL: input})
 	}
 	for _, filepath := range il.SourceFiles {
-		extra, err := il.readfile(filepath, fsx.Open)
+		extra, err := il.readfile(filepath, fsx.OpenFile)
 		if err != nil {
 			return nil, err
 		}

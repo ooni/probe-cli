@@ -9,17 +9,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"runtime"
 	"time"
 
 	"github.com/montanaflynn/stats"
-	"github.com/ooni/probe-cli/v3/internal/engine/humanizex"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/humanize"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
@@ -86,8 +85,8 @@ func (r runner) NewHTTPRequest(meth, url string, body io.Reader) (*http.Request,
 	return http.NewRequest(meth, url, body)
 }
 
-func (r runner) ReadAll(reader io.Reader) ([]byte, error) {
-	return ioutil.ReadAll(reader)
+func (r runner) ReadAllContext(ctx context.Context, reader io.Reader) ([]byte, error) {
+	return netxlite.ReadAllContext(ctx, reader)
 }
 
 func (r runner) Scheme() string {
@@ -172,16 +171,16 @@ func (r runner) measure(
 		// of the latest connect time. We should have one sample in most
 		// cases, because the connection should be persistent.
 		for _, ev := range r.saver.Read() {
-			if ev.Name == errorx.ConnectOperation {
+			if ev.Name == netxlite.ConnectOperation {
 				connectTime = ev.Duration.Seconds()
 			}
 		}
 		current.ConnectTime = connectTime
 		r.tk.ReceiverData = append(r.tk.ReceiverData, current)
 		total += current.Received
-		avgspeed := 8 * float64(total) / time.Now().Sub(begin).Seconds()
+		avgspeed := 8 * float64(total) / time.Since(begin).Seconds()
 		percentage := float64(current.Iteration) / float64(numIterations)
-		message := fmt.Sprintf("streaming: speed: %s", humanizex.SI(avgspeed, "bit/s"))
+		message := fmt.Sprintf("streaming: speed: %s", humanize.SI(avgspeed, "bit/s"))
 		r.callbacks.OnProgress(percentage, message)
 		current.Iteration++
 		speed := float64(current.Received) / float64(current.Elapsed)

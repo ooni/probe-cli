@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -26,8 +25,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/resolver"
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/tlsproxy"
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/uncensored"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
-	"github.com/ooni/probe-cli/v3/internal/engine/shellx"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
 var (
@@ -185,11 +184,11 @@ func badProxyStartTLS() net.Listener {
 	proxy := badproxy.NewCensoringProxy()
 	listener, cert, err := proxy.StartTLS(*badProxyAddressTLS)
 	runtimex.PanicOnError(err, "proxy.StartTLS failed")
-	err = ioutil.WriteFile(*badProxyTLSOutputCA, pem.EncodeToMemory(&pem.Block{
+	err = os.WriteFile(*badProxyTLSOutputCA, pem.EncodeToMemory(&pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: cert.Raw,
 	}), 0644)
-	runtimex.PanicOnError(err, "ioutil.WriteFile failed")
+	runtimex.PanicOnError(err, "os.WriteFile failed")
 	return listener
 }
 
@@ -276,7 +275,7 @@ func main() {
 	policy := iptablesStart()
 	var err error
 	if *mainCommand != "" {
-		err = shellx.RunCommandline(fmt.Sprintf(
+		err = shellx.RunCommandline(log.Log, fmt.Sprintf(
 			"sudo -u '%s' -- %s", *mainUser, *mainCommand,
 		))
 	} else {

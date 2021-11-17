@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/utils"
@@ -14,7 +14,7 @@ const ConfigVersion = 1
 
 // ReadConfig reads the configuration from the path
 func ReadConfig(path string) (*Config, error) {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (c *Config) Write() error {
 	if c.path == "" {
 		return errors.New("config file path is empty")
 	}
-	if err := ioutil.WriteFile(c.path, configJSON, 0644); err != nil {
+	if err := os.WriteFile(c.path, configJSON, 0644); err != nil {
 		return errors.Wrap(err, "writing config JSON")
 	}
 	return nil

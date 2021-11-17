@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
 )
 
 // resolvemaker contains rules for making a resolver.
@@ -28,8 +28,6 @@ var allmakers = []*resolvermaker{{
 	url: "http3://cloudflare-dns.com/dns-query",
 }, {
 	url: "https://dns.google/dns-query",
-}, {
-	url: "http3://dns.google/dns-query",
 }, {
 	url: "https://dns.quad9.net/dns-query",
 }, {

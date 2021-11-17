@@ -11,6 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // The Configurer job is to construct a Configuration that can
@@ -89,7 +90,7 @@ func (c Configurer) NewConfiguration() (Configuration, error) {
 	if c.Config.TLSServerName != "" {
 		configuration.HTTPConfig.TLSConfig.ServerName = c.Config.TLSServerName
 	}
-	err = netx.ConfigureTLSVersion(
+	err = netxlite.ConfigureTLSVersion(
 		configuration.HTTPConfig.TLSConfig, c.Config.TLSVersion,
 	)
 	if err != nil {

@@ -1,9 +1,10 @@
 package httpx
 
 import (
-	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type FakeTransport struct {
@@ -18,7 +19,7 @@ func (txp FakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return txp.Func(req)
 	}
 	if req.Body != nil {
-		ioutil.ReadAll(req.Body)
+		netxlite.ReadAllContext(req.Context(), req.Body)
 		req.Body.Close()
 	}
 	if txp.Err != nil {

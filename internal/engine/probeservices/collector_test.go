@@ -3,9 +3,9 @@ package probeservices_test
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -15,6 +15,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type fakeTestKeys struct {
@@ -233,11 +234,11 @@ func TestEndToEnd(t *testing.T) {
 				return
 			}
 			if r.RequestURI == "/report/_id" {
-				data, err := ioutil.ReadAll(r.Body)
+				data, err := netxlite.ReadAllContext(r.Context(), r.Body)
 				if err != nil {
 					panic(err)
 				}
-				sdata, err := ioutil.ReadFile("../testdata/collector-expected.jsonl")
+				sdata, err := os.ReadFile("../testdata/collector-expected.jsonl")
 				if err != nil {
 					panic(err)
 				}

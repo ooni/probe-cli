@@ -3,7 +3,7 @@ package dash
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -11,10 +11,10 @@ import (
 
 	"github.com/apex/log"
 	"github.com/montanaflynn/stats"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestRunnerLoopLocateFailure(t *testing.T) {
@@ -47,7 +47,7 @@ func TestRunnerLoopNegotiateFailure(t *testing.T) {
 				all: []FakeHTTPTransport{
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"fqdn": "ams01.measurementlab.net"}`)),
 							StatusCode: 200,
 						},
@@ -77,14 +77,14 @@ func TestRunnerLoopMeasureFailure(t *testing.T) {
 				all: []FakeHTTPTransport{
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"fqdn": "ams01.measurementlab.net"}`)),
 							StatusCode: 200,
 						},
 					},
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"authorization": "xx", "unchoked": 1}`)),
 							StatusCode: 200,
 						},
@@ -108,7 +108,7 @@ func TestRunnerLoopMeasureFailure(t *testing.T) {
 func TestRunnerLoopCollectFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := new(trace.Saver)
-	saver.Write(trace.Event{Name: errorx.ConnectOperation, Duration: 150 * time.Millisecond})
+	saver.Write(trace.Event{Name: netxlite.ConnectOperation, Duration: 150 * time.Millisecond})
 	r := runner{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 		httpClient: &http.Client{
@@ -116,21 +116,21 @@ func TestRunnerLoopCollectFailure(t *testing.T) {
 				all: []FakeHTTPTransport{
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"fqdn": "ams01.measurementlab.net"}`)),
 							StatusCode: 200,
 						},
 					},
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"authorization": "xx", "unchoked": 1}`)),
 							StatusCode: 200,
 						},
 					},
 					{
 						resp: &http.Response{
-							Body:       ioutil.NopCloser(strings.NewReader(`1234567`)),
+							Body:       io.NopCloser(strings.NewReader(`1234567`)),
 							StatusCode: 200,
 						},
 					},
@@ -152,7 +152,7 @@ func TestRunnerLoopCollectFailure(t *testing.T) {
 
 func TestRunnerLoopSuccess(t *testing.T) {
 	saver := new(trace.Saver)
-	saver.Write(trace.Event{Name: errorx.ConnectOperation, Duration: 150 * time.Millisecond})
+	saver.Write(trace.Event{Name: netxlite.ConnectOperation, Duration: 150 * time.Millisecond})
 	r := runner{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 		httpClient: &http.Client{
@@ -160,27 +160,27 @@ func TestRunnerLoopSuccess(t *testing.T) {
 				all: []FakeHTTPTransport{
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"fqdn": "ams01.measurementlab.net"}`)),
 							StatusCode: 200,
 						},
 					},
 					{
 						resp: &http.Response{
-							Body: ioutil.NopCloser(strings.NewReader(
+							Body: io.NopCloser(strings.NewReader(
 								`{"authorization": "xx", "unchoked": 1}`)),
 							StatusCode: 200,
 						},
 					},
 					{
 						resp: &http.Response{
-							Body:       ioutil.NopCloser(strings.NewReader(`1234567`)),
+							Body:       io.NopCloser(strings.NewReader(`1234567`)),
 							StatusCode: 200,
 						},
 					},
 					{
 						resp: &http.Response{
-							Body:       ioutil.NopCloser(strings.NewReader(`[]`)),
+							Body:       io.NopCloser(strings.NewReader(`[]`)),
 							StatusCode: 200,
 						},
 					},

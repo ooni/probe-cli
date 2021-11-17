@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
@@ -17,7 +17,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "ndt" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.8.0" {
+	if measurer.ExperimentVersion() != "0.9.0" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -40,17 +40,6 @@ func TestDiscoverCancelledContext(t *testing.T) {
 	}
 }
 
-type verifyRequestTransport struct {
-	ExpectedError error
-}
-
-func (txp *verifyRequestTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.URL.RawQuery != "ip=1.2.3.4" {
-		return nil, errors.New("invalid req.URL.RawQuery")
-	}
-	return nil, txp.ExpectedError
-}
-
 func TestDoDownloadWithCancelledContext(t *testing.T) {
 	m := new(Measurer)
 	sess := &mockable.Session{
@@ -63,8 +52,8 @@ func TestDoDownloadWithCancelledContext(t *testing.T) {
 	err := m.doDownload(
 		ctx, sess, model.NewPrinterCallbacks(log.Log), new(TestKeys),
 		"ws://host.name")
-	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
-		t.Fatal("not the error we expected")
+	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+		t.Fatal("not the error we expected", err)
 	}
 }
 
@@ -80,8 +69,8 @@ func TestDoUploadWithCancelledContext(t *testing.T) {
 	err := m.doUpload(
 		ctx, sess, model.NewPrinterCallbacks(log.Log), new(TestKeys),
 		"ws://host.name")
-	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
-		t.Fatal("not the error we expected")
+	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+		t.Fatal("not the error we expected", err)
 	}
 }
 
@@ -143,8 +132,8 @@ func TestFailDownload(t *testing.T) {
 		new(model.Measurement),
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
-		t.Fatal(err)
+	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+		t.Fatal("not the error we expected", err)
 	}
 }
 
@@ -164,8 +153,8 @@ func TestFailUpload(t *testing.T) {
 		new(model.Measurement),
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
-		t.Fatal(err)
+	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+		t.Fatal("not the error we expected", err)
 	}
 }
 

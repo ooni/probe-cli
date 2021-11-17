@@ -10,9 +10,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 )
 
 const userAgent = "miniooni/0.1.0-dev"
@@ -153,21 +151,6 @@ func TestNewRequestUserAgentIsSet(t *testing.T) {
 	}
 }
 
-func TestNewRequestTunnelingIsPossible(t *testing.T) {
-	client := newClient()
-	client.ProxyURL = &url.URL{Scheme: "socks5", Host: "[::1]:54321"}
-	req, err := client.NewRequest(
-		context.Background(), "GET", "/", nil, nil,
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cmp := cmp.Diff(dialer.ContextProxyURL(req.Context()), client.ProxyURL)
-	if cmp != "" {
-		t.Fatal(cmp)
-	}
-}
-
 func TestClientDoJSONClientDoFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	client := newClient()
@@ -263,10 +246,6 @@ func TestCreateJSONSuccess(t *testing.T) {
 	if response.Data != `{"headers":{"Foo":"bar"}}` {
 		t.Fatal(response.Data)
 	}
-}
-
-type httpbinput struct {
-	Data string `json:"data"`
 }
 
 func TestUpdateJSONSuccess(t *testing.T) {

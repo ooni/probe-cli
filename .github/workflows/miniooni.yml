@@ -5,18 +5,20 @@ name: miniooni
 on:
   push:
     branches:
+      - "master"
       - "release/**"
+      - "stable"
 jobs:
   test:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: "1.16.4"
+          go-version: "1.17.3"
       - uses: actions/checkout@v2
       - run: ./mk OONI_PSIPHON_TAGS="" ./CLI/miniooni
 
-      - run: ./CLI/linux/amd64/miniooni --yes -nNi https://example.com web_connectivity
+      - run: ./E2E/miniooni.bash ./CLI/linux/amd64/miniooni
 
       - uses: actions/upload-artifact@v1
         with:

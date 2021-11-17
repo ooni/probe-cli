@@ -14,10 +14,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
@@ -270,11 +270,11 @@ func TestUpdateWithMixedResults(t *testing.T) {
 		},
 		TestKeys: urlgetter.TestKeys{
 			FailedOperation: (func() *string {
-				s := errorx.HTTPRoundTripOperation
+				s := netxlite.HTTPRoundTripOperation
 				return &s
 			})(),
 			Failure: (func() *string {
-				s := errorx.FailureEOFError
+				s := netxlite.FailureEOFError
 				return &s
 			})(),
 		},
@@ -291,7 +291,7 @@ func TestUpdateWithMixedResults(t *testing.T) {
 	if tk.APIStatus != "blocked" {
 		t.Fatal("ApiStatus should be blocked")
 	}
-	if *tk.APIFailure != errorx.FailureEOFError {
+	if *tk.APIFailure != netxlite.FailureEOFError {
 		t.Fatal("invalid ApiFailure")
 	}
 	if tk.FailingGateways != nil {
@@ -730,7 +730,7 @@ func generateMockGetter(requestResponse map[string]string, responseStatus map[st
 			responseBody = ""
 			eofError := io.EOF.Error()
 			failure = &eofError
-			connectOperation := errorx.ConnectOperation
+			connectOperation := netxlite.ConnectOperation
 			failedOperation = &connectOperation
 			responseStatus = 0
 		}

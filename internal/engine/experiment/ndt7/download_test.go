@@ -143,3 +143,20 @@ type goodJSONReader struct{}
 func (r *goodJSONReader) Read(p []byte) (int, error) {
 	return copy(p, []byte(`{}`)), io.EOF
 }
+
+func TestDownloadReduceErr(t *testing.T) {
+	mgr := downloadManager{}
+	if mgr.reduceErr(context.Canceled) != nil {
+		t.Fatal("reduceErr not working as intended for context.Canceled")
+	}
+	if mgr.reduceErr(context.DeadlineExceeded) != nil {
+		t.Fatal("reduceErr not working as intended for context.DeadlineExceeded")
+	}
+	if mgr.reduceErr(nil) != nil {
+		t.Fatal("reduceErr not working as intended for nil")
+	}
+	expected := errors.New("mocked error")
+	if mgr.reduceErr(expected) != expected {
+		t.Fatal("reduceErr not working as intended for other errors")
+	}
+}

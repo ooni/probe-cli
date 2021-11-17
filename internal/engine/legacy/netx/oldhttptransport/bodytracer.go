@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
 )
 
 // BodyTracer performs single HTTP transactions and emits
@@ -33,7 +32,6 @@ func (t *BodyTracer) RoundTrip(req *http.Request) (resp *http.Response, err erro
 	resp.Body = &bodyWrapper{
 		ReadCloser: resp.Body,
 		root:       modelx.ContextMeasurementRootOrDefault(req.Context()),
-		tid:        transactionid.ContextTransactionID(req.Context()),
 	}
 	return
 }
@@ -52,7 +50,6 @@ func (t *BodyTracer) CloseIdleConnections() {
 type bodyWrapper struct {
 	io.ReadCloser
 	root *modelx.MeasurementRoot
-	tid  int64
 }
 
 func (bw *bodyWrapper) Read(b []byte) (n int, err error) {
@@ -63,8 +60,7 @@ func (bw *bodyWrapper) Read(b []byte) (n int, err error) {
 			// bytes read (0 <= n <= len(p)) and any error encountered."
 			Data:                   b[:n],
 			Error:                  err,
-			DurationSinceBeginning: time.Now().Sub(bw.root.Beginning),
-			TransactionID:          bw.tid,
+			DurationSinceBeginning: time.Since(bw.root.Beginning),
 		},
 	})
 	return
@@ -74,8 +70,7 @@ func (bw *bodyWrapper) Close() (err error) {
 	err = bw.ReadCloser.Close()
 	bw.root.Handler.OnMeasurement(modelx.Measurement{
 		HTTPResponseDone: &modelx.HTTPResponseDoneEvent{
-			DurationSinceBeginning: time.Now().Sub(bw.root.Beginning),
-			TransactionID:          bw.tid,
+			DurationSinceBeginning: time.Since(bw.root.Beginning),
 		},
 	})
 	return

@@ -6,13 +6,16 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"io/ioutil"
 	"net"
+	"os"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Dialer performs measurements while dialing.
@@ -59,24 +62,23 @@ func maybeWithMeasurementRoot(
 // - DNSDialer (topmost)
 // - EmitterDialer
 // - ErrorWrapperDialer
-// - TimeoutDialer
 // - ByteCountingDialer
-// - net.Dialer
+// - dialer.Default
 //
 // If you have others needs, manually build the chain you need.
-func newDNSDialer(resolver dialer.Resolver) dialer.DNSDialer {
-	return dialer.DNSDialer{
-		Dialer: dialer.EmitterDialer{
-			Dialer: dialer.ErrorWrapperDialer{
-				Dialer: dialer.TimeoutDialer{
-					Dialer: dialer.ByteCounterDialer{
-						Dialer: new(net.Dialer),
-					},
-				},
-			},
-		},
-		Resolver: resolver,
-	}
+func newDNSDialer(resolver dialer.Resolver) dialer.Dialer {
+	// Implementation note: we're wrapping the result of dialer.New
+	// on the outside, while previously we were puttting the
+	// EmitterDialer before the DNSDialer (see the above comment).
+	//
+	// Yet, this is fine because the only experiment which is
+	// using this code is tor, for which it doesn't matter.
+	//
+	// Also (and I am always scared to write this kind of
+	// comments), we should rewrite tor soon.
+	return &EmitterDialer{dialer.New(&dialer.Config{
+		ContextByteCounting: true,
+	}, resolver)}
 }
 
 // DialContext is like Dial but the context allows to interrupt a
@@ -101,15 +103,13 @@ func (d *Dialer) DialTLS(network, address string) (net.Conn, error) {
 // - SystemTLSHandshaker
 //
 // If you have others needs, manually build the chain you need.
-func newTLSDialer(d dialer.Dialer, config *tls.Config) dialer.TLSDialer {
-	return dialer.TLSDialer{
+func newTLSDialer(d dialer.Dialer, config *tls.Config) *netxlite.TLSDialerLegacy {
+	return &netxlite.TLSDialerLegacy{
 		Config: config,
-		Dialer: d,
-		TLSHandshaker: dialer.EmitterTLSHandshaker{
-			TLSHandshaker: dialer.ErrorWrapperTLSHandshaker{
-				TLSHandshaker: dialer.TimeoutTLSHandshaker{
-					TLSHandshaker: dialer.SystemTLSHandshaker{},
-				},
+		Dialer: netxlite.NewDialerLegacyAdapter(d),
+		TLSHandshaker: tlsdialer.EmitterTLSHandshaker{
+			TLSHandshaker: &errorsx.ErrorWrapperTLSHandshaker{
+				TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			},
 		},
 	}
@@ -130,12 +130,12 @@ func (d *Dialer) DialTLSContext(
 // function is not goroutine safe. Make sure you call it before starting
 // to use this specific dialer.
 func (d *Dialer) SetCABundle(path string) error {
-	cert, err := ioutil.ReadFile(path)
+	cert, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 	pool := x509.NewCertPool()
-	if pool.AppendCertsFromPEM(cert) == false {
+	if !pool.AppendCertsFromPEM(cert) {
 		return errors.New("AppendCertsFromPEM failed")
 	}
 	d.TLSConfig.RootCAs = pool

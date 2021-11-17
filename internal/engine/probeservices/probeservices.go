@@ -28,7 +28,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
@@ -95,11 +95,10 @@ func NewClient(sess Session, endpoint model.Service) (*Client, error) {
 			BaseURL:    endpoint.Address,
 			HTTPClient: sess.DefaultHTTPClient(),
 			Logger:     sess.Logger(),
-			ProxyURL:   sess.ProxyURL(),
 			UserAgent:  sess.UserAgent(),
 		},
-		LoginCalls:    atomicx.NewInt64(),
-		RegisterCalls: atomicx.NewInt64(),
+		LoginCalls:    &atomicx.Int64{},
+		RegisterCalls: &atomicx.Int64{},
 		StateFile:     NewStateFile(sess.KeyValueStore()),
 	}
 	switch endpoint.Type {

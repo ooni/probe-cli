@@ -9,9 +9,9 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestConfigurerNewConfigurationVanilla(t *testing.T) {
@@ -116,7 +116,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSPowerdns(t *testing.T) {
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
 	}
-	sr, ok := configuration.HTTPConfig.BaseResolver.(resolver.SerialResolver)
+	sr, ok := configuration.HTTPConfig.BaseResolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -124,7 +124,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSPowerdns(t *testing.T) {
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
-	dohtxp, ok := stxp.RoundTripper.(resolver.DNSOverHTTPS)
+	dohtxp, ok := stxp.RoundTripper.(*resolver.DNSOverHTTPS)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -192,7 +192,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSGoogle(t *testing.T) {
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
 	}
-	sr, ok := configuration.HTTPConfig.BaseResolver.(resolver.SerialResolver)
+	sr, ok := configuration.HTTPConfig.BaseResolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -200,7 +200,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSGoogle(t *testing.T) {
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
-	dohtxp, ok := stxp.RoundTripper.(resolver.DNSOverHTTPS)
+	dohtxp, ok := stxp.RoundTripper.(*resolver.DNSOverHTTPS)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -268,7 +268,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSCloudflare(t *testing.T) 
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
 	}
-	sr, ok := configuration.HTTPConfig.BaseResolver.(resolver.SerialResolver)
+	sr, ok := configuration.HTTPConfig.BaseResolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -276,7 +276,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSCloudflare(t *testing.T) 
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
-	dohtxp, ok := stxp.RoundTripper.(resolver.DNSOverHTTPS)
+	dohtxp, ok := stxp.RoundTripper.(*resolver.DNSOverHTTPS)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -344,7 +344,7 @@ func TestConfigurerNewConfigurationResolverUDP(t *testing.T) {
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
 	}
-	sr, ok := configuration.HTTPConfig.BaseResolver.(resolver.SerialResolver)
+	sr, ok := configuration.HTTPConfig.BaseResolver.(*resolver.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -352,7 +352,7 @@ func TestConfigurerNewConfigurationResolverUDP(t *testing.T) {
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
-	udptxp, ok := stxp.RoundTripper.(resolver.DNSOverUDP)
+	udptxp, ok := stxp.RoundTripper.(*resolver.DNSOverUDP)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -711,7 +711,7 @@ func TestConfigurerNewConfigurationTLSvInvalid(t *testing.T) {
 		Saver:  saver,
 	}
 	_, err := configurer.NewConfiguration()
-	if !errors.Is(err, netx.ErrInvalidTLSVersion) {
+	if !errors.Is(err, netxlite.ErrInvalidTLSVersion) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
 }

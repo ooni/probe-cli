@@ -1,0 +1,76 @@
+#!/bin/sh
+# This script creates a Debian package. When run by `./mk`, it
+# is run inside a debian:stable container. It's fine to also
+# run this script from any debian-like system, as long as the
+# following ASSUMPTIONS are met:
+#
+# 1. the `ooniprobe` we are packaging is available at
+# this path `./CLI/linux/$GOARCH/ooniprobe`;
+#
+# 2. we are running on a debian system that is capable
+# of running binaries for the architecture that we wanna
+# package, either natively or via qemu-user-static.
+
+if [ $# -ne 1 ] && [ $# -ne 2 ]; then
+	echo "usage: $0 {arch} [run_number]" 1>&2
+	exit 1
+fi
+goarch=$1
+run_number=$2
+set -ex
+
+# Copy the target binary in the correct location expected
+# by the debian/ooniprobe-cli.install file.
+rm -rf ./debian/bin
+mkdir -p ./debian/bin
+cp "./CLI/linux/$goarch/ooniprobe" ./debian/bin
+
+# figure out the version number from the binary itself (which rests
+# on the assumption that we can run such a binary)
+version=$(./debian/bin/ooniprobe version)
+if [ -n "$run_number" ]; then
+	version="${version}~${run_number}"
+fi
+
+darch=""
+case $goarch in
+386)
+	darch="i386"
+	;;
+amd64)
+	darch="amd64"
+	;;
+arm)
+	darch="armhf"
+	;;
+arm64)
+	darch="arm64"
+	;;
+esac
+echo "Building for GOARCH=$goarch / DEBARCH=$darch"
+
+# The OONI_DEB_DRY_RUN is a semi-undocumented feature allowing
+# us to see the commands that would be run by this script.
+
+$OONI_DEB_DRY_RUN dpkg --add-architecture $darch
+
+# install the dependencies required by the build process
+$OONI_DEB_DRY_RUN apt-get update -q
+$OONI_DEB_DRY_RUN apt-get build-dep -y --no-install-recommends .
+
+# keep the original changelog file safe
+$OONI_DEB_DRY_RUN cp ./debian/changelog ./debian/changelog.oocopy
+
+$OONI_DEB_DRY_RUN dch -v "$version" "New version ${version}"
+$OONI_DEB_DRY_RUN dpkg-buildpackage -a $darch -us -uc -b
+
+# restore the original changelog file
+$OONI_DEB_DRY_RUN mv ./debian/changelog.oocopy ./debian/changelog
+
+# move the package so that we don't loose track
+# of it when using a build container
+$OONI_DEB_DRY_RUN mv ../*.deb .
+
+# install the package on the container as a smoke test to
+# ensure that it is installable.
+DEBIAN_FRONTEND=noninteractive dpkg -i "ooniprobe-cli_${version}_${darch}.deb"

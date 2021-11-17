@@ -1,9 +1,10 @@
-# linux builds ooniprobe for Linux
+# linux builds and publishes ooniprobe for Linux
 name: linux
 on:
   push:
     branches:
       - "release/**"
+      - "ooniprobe-staging"
 
 jobs:
   build_386:
@@ -11,12 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/386
-      - run: ./smoketest.sh ./CLI/linux/386/ooniprobe
-      - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
-      - run: |
-          for deb in *.deb; do
-            ./.github/workflows/debops-ci --arch i386 --show-commands upload --bucket-name ooni-deb $deb
-          done
+      - run: ./E2E/ooniprobe.sh ./CLI/linux/386/ooniprobe
+      - run: ./CLI/linux/pubdebian
+        if: github.ref == 'refs/heads/ooniprobe-staging'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -27,12 +25,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/amd64
-      - run: ./smoketest.sh ./CLI/linux/amd64/ooniprobe
-      - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
-      - run: |
-          for deb in *.deb; do
-            ./.github/workflows/debops-ci --arch amd64 --show-commands upload --bucket-name ooni-deb $deb
-          done
+      - run: ./E2E/ooniprobe.sh ./CLI/linux/amd64/ooniprobe
+      - run: ./CLI/linux/pubdebian
+        if: github.ref == 'refs/heads/ooniprobe-staging'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -45,17 +40,13 @@ jobs:
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y qemu-user-static
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm
-      - run: ./smoketest.sh ./CLI/linux/arm/ooniprobe
-      - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
-      - run: |
-          for deb in *.deb; do
-            ./.github/workflows/debops-ci --arch armhf --show-commands upload --bucket-name ooni-deb $deb
-          done
+      - run: ./E2E/ooniprobe.sh ./CLI/linux/arm/ooniprobe
+      - run: ./CLI/linux/pubdebian
+        if: github.ref == 'refs/heads/ooniprobe-staging'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           DEB_GPG_KEY: ${{ secrets.DEB_GPG_KEY }}
-
 
   build_arm64:
     runs-on: "ubuntu-20.04"
@@ -64,12 +55,9 @@ jobs:
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y qemu-user-static
       - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm64
-      - run: ./smoketest.sh ./CLI/linux/arm64/ooniprobe
-      - run: sudo apt-get install -y --no-install-recommends git python3 python3-requests python3-gnupg s3cmd
-      - run: |
-          for deb in *.deb; do
-            ./.github/workflows/debops-ci --arch arm64 --show-commands upload --bucket-name ooni-deb $deb
-          done
+      - run: ./E2E/ooniprobe.sh ./CLI/linux/arm64/ooniprobe
+      - run: ./CLI/linux/pubdebian
+        if: github.ref == 'refs/heads/ooniprobe-staging'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

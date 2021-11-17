@@ -3,45 +3,57 @@ package quicdialer_test
 import (
 	"context"
 	"crypto/tls"
+	"errors"
+	"net"
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
-func TestSystemDialerInvalidIPFailure(t *testing.T) {
-	tlsConf := &tls.Config{
-		NextProtos: []string{"h3-29"},
-		ServerName: "www.google.com",
+func TestQUICListenerSaverCannotListen(t *testing.T) {
+	expected := errors.New("mocked error")
+	qls := &quicdialer.QUICListenerSaver{
+		QUICListener: &mocks.QUICListener{
+			MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+				return nil, expected
+			},
+		},
+		Saver: &trace.Saver{},
 	}
-	saver := &trace.Saver{}
-	systemdialer := quicdialer.SystemDialer{
-		Saver: saver,
+	pconn, err := qls.Listen(&net.UDPAddr{
+		IP:   []byte{},
+		Port: 8080,
+		Zone: "",
+	})
+	if !errors.Is(err, expected) {
+		t.Fatal("unexpected error", err)
 	}
-	sess, err := systemdialer.DialContext(context.Background(), "udp", "a.b.c.d:0", tlsConf, &quic.Config{})
-	if err == nil {
-		t.Fatal("expected an error here")
-	}
-	if sess != nil {
-		t.Fatal("expected nil sess here")
-	}
-	if err.Error() != "quicdialer: invalid IP representation" {
-		t.Fatal("expected another error here")
+	if pconn != nil {
+		t.Fatal("expected nil pconn here")
 	}
 }
 
 func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
 	// This is the most common use case for collecting reads, writes
 	tlsConf := &tls.Config{
-		NextProtos: []string{"h3-29"},
-		ServerName: "www.google.com",
+		NextProtos: []string{"h3"},
+		ServerName: quictesting.Domain,
 	}
 	saver := &trace.Saver{}
-	systemdialer := quicdialer.SystemDialer{Saver: saver}
+	systemdialer := &netxlite.QUICDialerQUICGo{
+		QUICListener: &quicdialer.QUICListenerSaver{
+			QUICListener: &netxlite.QUICListenerStdlib{},
+			Saver:        saver,
+		},
+	}
 	_, err := systemdialer.DialContext(context.Background(), "udp",
-		"216.58.212.164:443", tlsConf, &quic.Config{})
+		quictesting.Endpoint("443"), tlsConf, &quic.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +76,7 @@ func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
 			t.Fatal("unexpected NumBytes")
 		}
 		switch ev[idx].Name {
-		case errorx.ReadFromOperation, errorx.WriteToOperation:
+		case netxlite.ReadFromOperation, netxlite.WriteToOperation:
 		default:
 			t.Fatal("unexpected Name")
 		}

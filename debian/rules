@@ -14,5 +14,17 @@ override_dh_auto_build:
 override_dh_dwz:
 	true
 
+override_dh_strip:
+	# We cross compile and build packages for any arch from
+	# linux/amd64 so we need to avoid this step. BTW this step
+	# is not needed because we already strip when building.
+	true
+
+override_dh_makeshlibs:
+	# We cross compile and build packages for any arch from
+	# linux/amd64 so we need to avoid this step. BTW this step
+	# is not needed because we don't have any shlib.
+	true
+
 override_dh_auto_install:
 	dh_auto_install -- --no-source

@@ -11,6 +11,8 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 )
 
 type MockDialer struct {
@@ -28,19 +30,21 @@ func (d MockDialer) DialContext(ctx context.Context, network, host string,
 }
 
 func TestHandshakeSaverSuccess(t *testing.T) {
-	nextprotos := []string{"h3-29"}
-	servername := "www.google.com"
+	nextprotos := []string{"h3"}
+	servername := quictesting.Domain
 	tlsConf := &tls.Config{
 		NextProtos: nextprotos,
 		ServerName: servername,
 	}
 	saver := &trace.Saver{}
 	dlr := quicdialer.HandshakeSaver{
-		Dialer: quicdialer.SystemDialer{},
-		Saver:  saver,
+		Dialer: &netxlite.QUICDialerQUICGo{
+			QUICListener: &netxlite.QUICListenerStdlib{},
+		},
+		Saver: saver,
 	}
 	sess, err := dlr.DialContext(context.Background(), "udp",
-		"216.58.212.164:443", tlsConf, &quic.Config{})
+		quictesting.Endpoint("443"), tlsConf, &quic.Config{})
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
@@ -54,7 +58,7 @@ func TestHandshakeSaverSuccess(t *testing.T) {
 	if ev[0].Name != "quic_handshake_start" {
 		t.Fatal("unexpected Name")
 	}
-	if ev[0].TLSServerName != "www.google.com" {
+	if ev[0].TLSServerName != quictesting.Domain {
 		t.Fatal("unexpected TLSServerName")
 	}
 	if !reflect.DeepEqual(ev[0].TLSNextProtos, nextprotos) {
@@ -75,7 +79,7 @@ func TestHandshakeSaverSuccess(t *testing.T) {
 	if !reflect.DeepEqual(ev[1].TLSNextProtos, nextprotos) {
 		t.Fatal("unexpected TLSNextProtos")
 	}
-	if ev[1].TLSServerName != "www.google.com" {
+	if ev[1].TLSServerName != quictesting.Domain {
 		t.Fatal("unexpected TLSServerName")
 	}
 	if ev[1].Time.Before(ev[0].Time) {
@@ -84,19 +88,21 @@ func TestHandshakeSaverSuccess(t *testing.T) {
 }
 
 func TestHandshakeSaverHostNameError(t *testing.T) {
-	nextprotos := []string{"h3-29"}
-	servername := "wrong.host.badssl.com"
+	nextprotos := []string{"h3"}
+	servername := "example.com"
 	tlsConf := &tls.Config{
 		NextProtos: nextprotos,
 		ServerName: servername,
 	}
 	saver := &trace.Saver{}
 	dlr := quicdialer.HandshakeSaver{
-		Dialer: quicdialer.SystemDialer{},
-		Saver:  saver,
+		Dialer: &netxlite.QUICDialerQUICGo{
+			QUICListener: &netxlite.QUICListenerStdlib{},
+		},
+		Saver: saver,
 	}
 	sess, err := dlr.DialContext(context.Background(), "udp",
-		"216.58.212.164:443", tlsConf, &quic.Config{})
+		quictesting.Endpoint("443"), tlsConf, &quic.Config{})
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -110,8 +116,7 @@ func TestHandshakeSaverHostNameError(t *testing.T) {
 		if ev.NoTLSVerify == true {
 			t.Fatal("expected NoTLSVerify to be false")
 		}
-		if !strings.Contains(ev.Err.Error(),
-			"certificate is valid for www.google.com, not "+servername) {
+		if !strings.HasSuffix(ev.Err.Error(), "tls: handshake failure") {
 			t.Fatal("unexpected error", ev.Err)
 		}
 	}

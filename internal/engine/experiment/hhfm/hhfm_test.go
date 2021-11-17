@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -13,13 +13,12 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/hhfm"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -55,7 +54,7 @@ func TestSuccess(t *testing.T) {
 		t.Fatal("invalid Agent")
 	}
 	if tk.Failure != nil {
-		t.Fatal("invalid Failure")
+		t.Fatal("invalid Failure", *tk.Failure)
 	}
 	if len(tk.Requests) != 1 {
 		t.Fatal("invalid Requests")
@@ -113,9 +112,6 @@ func TestSuccess(t *testing.T) {
 	if request.T != 0 {
 		t.Fatal("invalid Requests[0].T")
 	}
-	if request.TransactionID != 0 {
-		t.Fatal("invalid Requests[0].TransactionID")
-	}
 	if tk.SOCKSProxy != nil {
 		t.Fatal("invalid SOCKSProxy")
 	}
@@ -165,14 +161,14 @@ func TestCancelledContext(t *testing.T) {
 	if tk.Agent != "agent" {
 		t.Fatal("invalid Agent")
 	}
-	if *tk.Failure != errorx.FailureInterrupted {
+	if *tk.Failure != netxlite.FailureInterrupted {
 		t.Fatal("invalid Failure")
 	}
 	if len(tk.Requests) != 1 {
 		t.Fatal("invalid Requests")
 	}
 	request := tk.Requests[0]
-	if *request.Failure != errorx.FailureInterrupted {
+	if *request.Failure != netxlite.FailureInterrupted {
 		t.Fatal("invalid Requests[0].Failure")
 	}
 	if request.Request.Body.Value != "" {
@@ -223,9 +219,6 @@ func TestCancelledContext(t *testing.T) {
 	}
 	if request.T != 0 {
 		t.Fatal("invalid Requests[0].T")
-	}
-	if request.TransactionID != 0 {
-		t.Fatal("invalid Requests[0].TransactionID")
 	}
 	if tk.SOCKSProxy != nil {
 		t.Fatal("invalid SOCKSProxy")
@@ -487,7 +480,7 @@ func TestInvalidJSONBody(t *testing.T) {
 	if tk.Agent != "agent" {
 		t.Fatal("invalid Agent")
 	}
-	if *tk.Failure != errorx.FailureJSONParseError {
+	if *tk.Failure != netxlite.FailureJSONParseError {
 		t.Fatal("invalid Failure")
 	}
 	if len(tk.Requests) != 1 {
@@ -522,7 +515,7 @@ func TestInvalidJSONBody(t *testing.T) {
 
 func TestTransactStatusCodeFailure(t *testing.T) {
 	txp := FakeTransport{Resp: &http.Response{
-		Body:       ioutil.NopCloser(strings.NewReader("")),
+		Body:       io.NopCloser(strings.NewReader("")),
 		StatusCode: 500,
 	}}
 	resp, body, err := hhfm.Transact(txp, &http.Request{},
@@ -555,25 +548,6 @@ func TestTransactCannotReadBody(t *testing.T) {
 	if body != nil {
 		t.Fatal("body is not nil")
 	}
-}
-
-func newsession(t *testing.T) model.ExperimentSession {
-	sess, err := engine.NewSession(context.Background(), engine.SessionConfig{
-		AvailableProbeServices: []model.Service{{
-			Address: "https://ams-pg-test.ooni.org",
-			Type:    "https",
-		}},
-		Logger:          log.Log,
-		SoftwareName:    "ooniprobe-engine",
-		SoftwareVersion: "0.0.1",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := sess.MaybeLookupBackends(); err != nil {
-		t.Fatal(err)
-	}
-	return sess
 }
 
 func TestTestKeys_FillTampering(t *testing.T) {

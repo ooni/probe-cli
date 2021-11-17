@@ -150,10 +150,11 @@ func TestInputProcessorGood(t *testing.T) {
 		Submitter: NewInputProcessorSubmitterWrapper(submitter),
 	}
 	ctx := context.Background()
-	if err := ip.Run(ctx); err != nil {
+	reason, err := ip.run(ctx)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if ip.terminatedByMaxRuntime > 0 {
+	if reason != stopNormal {
 		t.Fatal("terminated by max runtime!?")
 	}
 	if len(fipe.M) != 2 || len(saver.M) != 2 || len(submitter.M) != 2 {
@@ -192,10 +193,11 @@ func TestInputProcessorMaxRuntime(t *testing.T) {
 		Submitter:  NewInputProcessorSubmitterWrapper(submitter),
 	}
 	ctx := context.Background()
-	if err := ip.Run(ctx); err != nil {
+	reason, err := ip.run(ctx)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if ip.terminatedByMaxRuntime <= 0 {
+	if reason != stopMaxRuntime {
 		t.Fatal("not terminated by max runtime")
 	}
 }

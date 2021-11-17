@@ -1,3 +1,4 @@
+//go:build ooni_psiphon_config
 // +build ooni_psiphon_config
 
 package engine
@@ -6,9 +7,9 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
-	"io/ioutil"
 
 	"filippo.io/age"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 //go:embed psiphon-config.json.age
@@ -34,7 +35,7 @@ func (s *sessionTunnelEarlySession) FetchPsiphonConfig(ctx context.Context) ([]b
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.ReadAll(output)
+	return netxlite.ReadAllContext(ctx, output)
 }
 
 // FetchPsiphonConfig decrypts psiphonConfigJSONAge using

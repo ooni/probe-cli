@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 )
 
 type FakeDialer struct {
@@ -93,6 +93,10 @@ func (ft FakeTransport) Network() string {
 	return "fake"
 }
 
+func (fk FakeTransport) CloseIdleConnections() {
+	// nothing to do
+}
+
 type FakeEncoder struct {
 	Data []byte
 	Err  error
@@ -109,11 +113,11 @@ type FakeResolver struct {
 }
 
 func NewFakeResolverThatFails() FakeResolver {
-	return FakeResolver{NumFailures: atomicx.NewInt64(), Err: errNotFound}
+	return FakeResolver{NumFailures: &atomicx.Int64{}, Err: errNotFound}
 }
 
 func NewFakeResolverWithResult(r []string) FakeResolver {
-	return FakeResolver{NumFailures: atomicx.NewInt64(), Result: r}
+	return FakeResolver{NumFailures: &atomicx.Int64{}, Result: r}
 }
 
 var errNotFound = &net.DNSError{

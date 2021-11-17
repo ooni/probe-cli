@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,6 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -31,7 +31,8 @@ func TestSessionByteCounter(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp.Body.Close()
-	if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
+	ctx := context.Background()
+	if _, err := netxlite.CopyContext(ctx, io.Discard, resp.Body); err != nil {
 		t.Fatal(err)
 	}
 	if s.KibiBytesSent() <= 0 || s.KibiBytesReceived() <= 0 {

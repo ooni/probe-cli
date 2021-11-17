@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlstool/internal"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/randx"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
 func TestSplitter84restSmall(t *testing.T) {

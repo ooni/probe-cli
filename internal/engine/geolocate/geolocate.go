@@ -5,21 +5,19 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
 const (
-	// DefaultProbeASN is the default probe ASN as number.
+	// DefaultProbeASN is the default probe ASN as a number.
 	DefaultProbeASN uint = 0
 
 	// DefaultProbeCC is the default probe CC.
 	DefaultProbeCC = "ZZ"
 
 	// DefaultProbeIP is the default probe IP.
-	DefaultProbeIP = model.DefaultProbeIP
+	DefaultProbeIP = "127.0.0.1"
 
 	// DefaultProbeNetworkName is the default probe network name.
 	DefaultProbeNetworkName = ""
@@ -46,40 +44,37 @@ var (
 type Logger interface {
 	Debug(msg string)
 	Debugf(format string, v ...interface{})
-	Info(msg string)
 	Infof(format string, v ...interface{})
-	Warn(msg string)
-	Warnf(format string, v ...interface{})
 }
 
-// Results contains geolocate results
+// Results contains geolocate results.
 type Results struct {
-	// ASN is the autonomous system number
+	// ASN is the autonomous system number.
 	ASN uint
 
-	// CountryCode is the country code
+	// CountryCode is the country code.
 	CountryCode string
 
 	// didResolverLookup indicates whether we did a resolver lookup.
 	didResolverLookup bool
 
-	// NetworkName is the network name
+	// NetworkName is the network name.
 	NetworkName string
 
-	// IP is the probe IP
+	// IP is the probe IP.
 	ProbeIP string
 
-	// ResolverASN is the resolver ASN
+	// ResolverASN is the resolver ASN.
 	ResolverASN uint
 
-	// ResolverIP is the resolver IP
+	// ResolverIP is the resolver IP.
 	ResolverIP string
 
-	// ResolverNetworkName is the resolver network name
+	// ResolverNetworkName is the resolver network name.
 	ResolverNetworkName string
 }
 
-// ASNString returns the ASN as a string
+// ASNString returns the ASN as a string.
 func (r *Results) ASNString() string {
 	return fmt.Sprintf("AS%d", r.ASN)
 }
@@ -123,16 +118,19 @@ type Config struct {
 	UserAgent string
 }
 
-// Must ensures that NewTask is successful.
-func Must(task *Task, err error) *Task {
-	runtimex.PanicOnError(err, "NewTask failed")
-	return task
-}
+// discardLogger just ignores log messages thrown at it.
+type discardLogger struct{}
+
+func (*discardLogger) Debug(msg string) {}
+
+func (*discardLogger) Debugf(format string, v ...interface{}) {}
+
+func (*discardLogger) Infof(format string, v ...interface{}) {}
 
 // NewTask creates a new instance of Task from config.
-func NewTask(config Config) (*Task, error) {
+func NewTask(config Config) *Task {
 	if config.Logger == nil {
-		config.Logger = model.DiscardLogger
+		config.Logger = &discardLogger{}
 	}
 	if config.UserAgent == "" {
 		config.UserAgent = fmt.Sprintf("ooniprobe-engine/%s", version.Version)
@@ -147,7 +145,7 @@ func NewTask(config Config) (*Task, error) {
 		probeASNLookupper:    mmdbLookupper{},
 		resolverASNLookupper: mmdbLookupper{},
 		resolverIPLookupper:  resolverLookupClient{},
-	}, nil
+	}
 }
 
 // Task performs a geolocation. You must create a new

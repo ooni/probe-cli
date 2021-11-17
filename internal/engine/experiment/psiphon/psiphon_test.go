@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/psiphon"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
@@ -23,7 +23,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "psiphon" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.5.0" {
+	if measurer.ExperimentVersion() != "0.5.1" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -83,7 +83,7 @@ func TestRunWillPrintSomethingWithCancelledContext(t *testing.T) {
 		time.Sleep(2 * time.Second)
 		cancel() // fail after we've given the printer a chance to run
 	}
-	observer := observerCallbacks{progress: atomicx.NewInt64()}
+	observer := observerCallbacks{progress: &atomicx.Int64{}}
 	err := measurer.Run(ctx, newfakesession(), measurement, observer)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("expected another error here")

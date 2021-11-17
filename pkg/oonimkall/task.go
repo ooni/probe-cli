@@ -43,8 +43,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/pkg/oonimkall/internal/tasks"
 )
 
@@ -77,8 +77,8 @@ func StartTask(input string) (*Task, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	task := &Task{
 		cancel:    cancel,
-		isdone:    atomicx.NewInt64(),
-		isstopped: atomicx.NewInt64(),
+		isdone:    &atomicx.Int64{},
+		isstopped: &atomicx.Int64{},
 		out:       make(chan *tasks.Event, bufsiz),
 	}
 	go func() {

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -92,7 +91,7 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 		return nil, errors.New("cannot access measurement file")
 	}
 	measurementFilePath := measurement.Measurement.MeasurementFilePath.String
-	b, err := ioutil.ReadFile(measurementFilePath)
+	b, err := os.ReadFile(measurementFilePath)
 	if err != nil {
 		return nil, err
 	}

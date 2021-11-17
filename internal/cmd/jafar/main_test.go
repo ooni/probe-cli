@@ -6,8 +6,9 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/cmd/jafar/iptables"
-	"github.com/ooni/probe-cli/v3/internal/engine/shellx"
+	"github.com/ooni/probe-cli/v3/internal/shellx"
 )
 
 func ensureWeStartOverWithIPTables() {
@@ -74,7 +75,7 @@ func TestMustx(t *testing.T) {
 			called   int
 			exitcode int
 		)
-		err := shellx.Run("curl", "-sf", "") // cause exitcode == 3
+		err := shellx.Run(log.Log, "curl", "-sf", "") // cause exitcode == 3
 		mustx(err, "", func(ec int) {
 			called++
 			exitcode = ec

@@ -80,14 +80,14 @@ func HTTPStatusCodeMatch(tk urlgetter.TestKeys, ctrl ControlResponse) (out *bool
 		return // no real status code
 	}
 	measurement := tk.Requests[0].Response.Code
-	if control == 0 {
+	if control <= 0 {
 		return // no real status code
 	}
-	if measurement == 0 {
+	if measurement <= 0 {
 		return // no real status code
 	}
 	value := control == measurement
-	if value == true {
+	if value {
 		// if the status codes are equal, they clearly match
 		out = &value
 		return
@@ -110,10 +110,10 @@ func HTTPHeadersMatch(tk urlgetter.TestKeys, ctrl ControlResponse) *bool {
 	if len(tk.Requests) <= 0 {
 		return nil
 	}
-	if tk.Requests[0].Response.Code == 0 {
+	if tk.Requests[0].Response.Code <= 0 {
 		return nil
 	}
-	if ctrl.HTTPRequest.StatusCode == 0 {
+	if ctrl.HTTPRequest.StatusCode <= 0 {
 		return nil
 	}
 	control := ctrl.HTTPRequest.Headers
@@ -186,7 +186,9 @@ func HTTPHeadersMatch(tk urlgetter.TestKeys, ctrl ControlResponse) *bool {
 
 // GetTitle returns the title or an empty string.
 func GetTitle(measurementBody string) string {
-	re := regexp.MustCompile(`(?i)<title>([^<]{1,128})</title>`) // like MK
+	// MK used {1,128} but we're making it larger here to get longer titles
+	// e.g. <http://www.isa.gov.il/Pages/default.aspx>'s one
+	re := regexp.MustCompile(`(?i)<title>([^<]{1,512})</title>`)
 	v := re.FindStringSubmatch(measurementBody)
 	if len(v) < 2 {
 		return ""
@@ -201,13 +203,13 @@ func HTTPTitleMatch(tk urlgetter.TestKeys, ctrl ControlResponse) (out *bool) {
 		return
 	}
 	response := tk.Requests[0].Response
-	if response.Code == 0 {
+	if response.Code <= 0 {
 		return
 	}
 	if response.BodyIsTruncated {
 		return
 	}
-	if ctrl.HTTPRequest.StatusCode == 0 {
+	if ctrl.HTTPRequest.StatusCode <= 0 {
 		return
 	}
 	control := ctrl.HTTPRequest.Title

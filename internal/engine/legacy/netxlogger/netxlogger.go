@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/tlsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Logger is the interface we expect from a logger
@@ -33,15 +33,13 @@ func (h *Handler) OnMeasurement(m modelx.Measurement) {
 	// DNS
 	if m.ResolveStart != nil {
 		h.logger.Debugf(
-			"[httpTxID: %d] resolving: %s",
-			m.ResolveStart.TransactionID,
+			"resolving: %s",
 			m.ResolveStart.Hostname,
 		)
 	}
 	if m.ResolveDone != nil {
 		h.logger.Debugf(
-			"[httpTxID: %d] resolve done: %s, %s",
-			m.ResolveDone.TransactionID,
+			"resolve done: %s, %s",
 			fmtError(m.ResolveDone.Error),
 			m.ResolveDone.Addresses,
 		)
@@ -50,8 +48,7 @@ func (h *Handler) OnMeasurement(m modelx.Measurement) {
 	// Syscalls
 	if m.Connect != nil {
 		h.logger.Debugf(
-			"[httpTxID: %d] connect done: %s, %s (rtt=%s)",
-			m.Connect.TransactionID,
+			"connect done: %s, %s (rtt=%s)",
 			fmtError(m.Connect.Error),
 			m.Connect.RemoteAddress,
 			m.Connect.SyscallDuration,
@@ -61,17 +58,15 @@ func (h *Handler) OnMeasurement(m modelx.Measurement) {
 	// TLS
 	if m.TLSHandshakeStart != nil {
 		h.logger.Debugf(
-			"[httpTxID: %d] TLS handshake: (forceSNI='%s')",
-			m.TLSHandshakeStart.TransactionID,
+			"TLS handshake: (forceSNI='%s')",
 			m.TLSHandshakeStart.SNI,
 		)
 	}
 	if m.TLSHandshakeDone != nil {
 		h.logger.Debugf(
-			"[httpTxID: %d] TLS done: %s, %s (alpn='%s')",
-			m.TLSHandshakeDone.TransactionID,
+			"TLS done: %s, %s (alpn='%s')",
 			fmtError(m.TLSHandshakeDone.Error),
-			tlsx.VersionString(m.TLSHandshakeDone.ConnectionState.Version),
+			netxlite.TLSVersionString(m.TLSHandshakeDone.ConnectionState.Version),
 			m.TLSHandshakeDone.ConnectionState.NegotiatedProtocol,
 		)
 	}
@@ -86,16 +81,14 @@ func (h *Handler) OnMeasurement(m modelx.Measurement) {
 			}
 		}
 		h.logger.Debugf(
-			"[httpTxID: %d] > %s %s %s",
-			m.HTTPRequestHeadersDone.TransactionID,
+			"> %s %s %s",
 			m.HTTPRequestHeadersDone.Method,
 			m.HTTPRequestHeadersDone.URL.RequestURI(),
 			proto,
 		)
 		if proto == "HTTP/2.0" {
 			h.logger.Debugf(
-				"[httpTxID: %d] > Host: %s",
-				m.HTTPRequestHeadersDone.TransactionID,
+				"> Host: %s",
 				m.HTTPRequestHeadersDone.URL.Host,
 			)
 		}
@@ -105,31 +98,22 @@ func (h *Handler) OnMeasurement(m modelx.Measurement) {
 			}
 			for _, value := range values {
 				h.logger.Debugf(
-					"[httpTxID: %d] > %s: %s",
-					m.HTTPRequestHeadersDone.TransactionID,
+					"> %s: %s",
 					key, value,
 				)
 			}
 		}
-		h.logger.Debugf(
-			"[httpTxID: %d] >", m.HTTPRequestHeadersDone.TransactionID)
+		h.logger.Debug(">")
 	}
 	if m.HTTPRequestDone != nil {
-		h.logger.Debugf(
-			"[httpTxID: %d] request sent; waiting for response",
-			m.HTTPRequestDone.TransactionID,
-		)
+		h.logger.Debug("request sent; waiting for response")
 	}
 	if m.HTTPResponseStart != nil {
-		h.logger.Debugf(
-			"[httpTxID: %d] start receiving response",
-			m.HTTPResponseStart.TransactionID,
-		)
+		h.logger.Debug("start receiving response")
 	}
 	if m.HTTPRoundTripDone != nil && m.HTTPRoundTripDone.Error == nil {
 		h.logger.Debugf(
-			"[httpTxID: %d] < %s %d %s",
-			m.HTTPRoundTripDone.TransactionID,
+			"< %s %d %s",
 			m.HTTPRoundTripDone.ResponseProto,
 			m.HTTPRoundTripDone.ResponseStatusCode,
 			http.StatusText(int(m.HTTPRoundTripDone.ResponseStatusCode)),
@@ -137,29 +121,25 @@ func (h *Handler) OnMeasurement(m modelx.Measurement) {
 		for key, values := range m.HTTPRoundTripDone.ResponseHeaders {
 			for _, value := range values {
 				h.logger.Debugf(
-					"[httpTxID: %d] < %s: %s",
-					m.HTTPRoundTripDone.TransactionID,
+					"< %s: %s",
 					key, value,
 				)
 			}
 		}
-		h.logger.Debugf(
-			"[httpTxID: %d] <", m.HTTPRoundTripDone.TransactionID)
+		h.logger.Debug("<")
 	}
 
 	// HTTP response body
 	if m.HTTPResponseBodyPart != nil {
 		h.logger.Debugf(
-			"[httpTxID: %d] body part: %s, %d",
-			m.HTTPResponseBodyPart.TransactionID,
+			"body part: %s, %d",
 			fmtError(m.HTTPResponseBodyPart.Error),
 			len(m.HTTPResponseBodyPart.Data),
 		)
 	}
 	if m.HTTPResponseDone != nil {
-		h.logger.Debugf(
-			"[httpTxID: %d] end of response",
-			m.HTTPResponseDone.TransactionID,
+		h.logger.Debug(
+			"end of response",
 		)
 	}
 }

@@ -1,11 +1,12 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"embed"
-	"io/ioutil"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	migrate "github.com/rubenv/sql-migrate"
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/sqlite"
@@ -19,7 +20,7 @@ func readAsset(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.ReadAll(filep)
+	return netxlite.ReadAllContext(context.Background(), filep)
 }
 
 func readAssetDir(path string) ([]string, error) {

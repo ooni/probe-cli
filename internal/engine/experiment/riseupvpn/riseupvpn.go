@@ -11,8 +11,8 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
@@ -183,7 +183,7 @@ func (m Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	measurement.TestKeys = testkeys
 	urlgetter.RegisterExtensions(measurement)
 
-	certPool := netx.NewDefaultCertPool()
+	certPool := netxlite.NewDefaultCertPool()
 
 	// used multiple times below
 	multi := urlgetter.Multi{
