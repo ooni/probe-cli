@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -57,7 +57,7 @@ func TestCollectInternalError(t *testing.T) {
 func TestCollectReadAllFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		Body:       io.NopCloser(bytes.NewReader(nil)),
 		StatusCode: 200,
 	}}
 	deps := FakeDeps{
@@ -76,7 +76,7 @@ func TestCollectReadAllFailure(t *testing.T) {
 
 func TestCollectInvalidJSON(t *testing.T) {
 	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		Body:       io.NopCloser(bytes.NewReader(nil)),
 		StatusCode: 200,
 	}}
 	deps := FakeDeps{
@@ -95,7 +95,7 @@ func TestCollectInvalidJSON(t *testing.T) {
 
 func TestCollectSuccess(t *testing.T) {
 	txp := FakeHTTPTransport{resp: &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		Body:       io.NopCloser(bytes.NewReader(nil)),
 		StatusCode: 200,
 	}}
 	deps := FakeDeps{

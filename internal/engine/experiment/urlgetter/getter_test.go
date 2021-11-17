@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 )
 
 func TestGetterHTTPSWithTunnelCannotCreateTempDir(t *testing.T) {

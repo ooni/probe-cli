@@ -28,7 +28,7 @@ func (mmdbLookupper) LookupASN(ip string) (asn uint, org string, err error) {
 }
 
 // LookupASN returns the ASN and the organization associated with the
-// given ip using the ASN database at path.
+// given IP address.
 func LookupASN(ip string) (asn uint, org string, err error) {
 	return (mmdbLookupper{}).LookupASN(ip)
 }

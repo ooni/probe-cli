@@ -20,11 +20,12 @@ import (
 	"time"
 
 	goptlib "git.torproject.org/pluggable-transports/goptlib.git"
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"gitlab.com/yawning/obfs4.git/transports"
 	obfs4base "gitlab.com/yawning/obfs4.git/transports/base"
 )
@@ -37,7 +38,7 @@ type channelHandler struct {
 func newChannelHandler(ch chan<- modelx.Measurement) *channelHandler {
 	return &channelHandler{
 		ch:         ch,
-		lateWrites: atomicx.NewInt64(),
+		lateWrites: &atomicx.Int64{},
 	}
 }
 
@@ -70,45 +71,8 @@ type Results struct {
 	TLSHandshakes []*modelx.TLSHandshakeDoneEvent
 }
 
-type connmapper struct {
-	counter int64
-	mu      sync.Mutex
-	once    sync.Once
-	table   map[int64]int64
-}
-
-// scramble maps a ConnID to a different number to avoid emitting
-// the port numbers. We preserve the sign because it's used to
-// distinguish between TCP (positive) and UDP (negative). A special
-// case is zero, which is always mapped to zero, since the zero
-// port means "unspecified" in netx code.
-func (m *connmapper) scramble(cid int64) int64 {
-	m.once.Do(func() {
-		m.table = make(map[int64]int64)
-		m.table[0] = 0 // means unspecified in netx
-	})
-	// See https://stackoverflow.com/a/38140573/4354461
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if value, found := m.table[cid]; found == true {
-		return value
-	}
-	var factor int64 = 1
-	if cid < 0 {
-		factor = -1
-	}
-	m.counter++ // we must never emit zero
-	value := factor * m.counter
-	m.table[cid] = value
-	return value
-}
-
-// cm is the global connmapper
-var cm connmapper
-
 func (r *Results) onMeasurement(m modelx.Measurement, lowLevel bool) {
 	if m.Connect != nil {
-		m.Connect.ConnID = cm.scramble(m.Connect.ConnID)
 		r.Connects = append(r.Connects, m.Connect)
 		if lowLevel {
 			r.NetworkEvents = append(r.NetworkEvents, &m)
@@ -121,17 +85,14 @@ func (r *Results) onMeasurement(m modelx.Measurement, lowLevel bool) {
 		r.Resolves = append(r.Resolves, m.ResolveDone)
 	}
 	if m.TLSHandshakeDone != nil {
-		m.TLSHandshakeDone.ConnID = cm.scramble(m.TLSHandshakeDone.ConnID)
 		r.TLSHandshakes = append(r.TLSHandshakes, m.TLSHandshakeDone)
 	}
 	if m.Read != nil {
-		m.Read.ConnID = cm.scramble(m.Read.ConnID)
 		if lowLevel {
 			r.NetworkEvents = append(r.NetworkEvents, &m)
 		}
 	}
 	if m.Write != nil {
-		m.Write.ConnID = cm.scramble(m.Write.ConnID)
 		if lowLevel {
 			r.NetworkEvents = append(r.NetworkEvents, &m)
 		}
@@ -366,7 +327,7 @@ func HTTPDo(
 				config.MaxResponseBodySnapSize,
 			),
 		)
-		data, err := ioutil.ReadAll(reader)
+		data, err := netxlite.ReadAllContext(ctx, reader)
 		mu.Lock()
 		results.BodySnap, results.Error = data, err
 		mu.Unlock()

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // WebConnectivityConfig contains settings for WebConnectivity.

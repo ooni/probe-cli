@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestChainLookupHost(t *testing.T) {
 	r := resolver.ChainResolver{
 		Primary:   resolver.NewFakeResolverThatFails(),
-		Secondary: resolver.SystemResolver{},
+		Secondary: &netxlite.ResolverSystem{},
 	}
 	if r.Address() != "" {
 		t.Fatal("invalid address")

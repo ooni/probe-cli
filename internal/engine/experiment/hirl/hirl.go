@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/randx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
 const (
@@ -293,7 +293,7 @@ func RunMethod(ctx context.Context, config RunMethodConfig) {
 		count, err := conn.Read(data)
 		if err != nil {
 			// We expect this method to terminate w/ timeout
-			if err.Error() == errorx.FailureGenericTimeoutError {
+			if err.Error() == netxlite.FailureGenericTimeoutError {
 				err = nil
 			}
 			result.Err = err

@@ -3,13 +3,13 @@ package internal
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type FakeResolver struct {
@@ -19,11 +19,11 @@ type FakeResolver struct {
 }
 
 func NewFakeResolverThatFails() FakeResolver {
-	return FakeResolver{NumFailures: atomicx.NewInt64(), Err: ErrNotFound}
+	return FakeResolver{NumFailures: &atomicx.Int64{}, Err: ErrNotFound}
 }
 
 func NewFakeResolverWithResult(r []string) FakeResolver {
-	return FakeResolver{NumFailures: atomicx.NewInt64(), Result: r}
+	return FakeResolver{NumFailures: &atomicx.Int64{}, Result: r}
 }
 
 var ErrNotFound = &net.DNSError{
@@ -63,7 +63,7 @@ func (txp FakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return txp.Func(req)
 	}
 	if req.Body != nil {
-		ioutil.ReadAll(req.Body)
+		netxlite.ReadAllContext(req.Context(), req.Body)
 		req.Body.Close()
 	}
 	if txp.Err != nil {

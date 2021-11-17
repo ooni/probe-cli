@@ -12,7 +12,7 @@ type Logger interface {
 	// Info emits an informational message.
 	Info(msg string)
 
-	// Infof format and emits an informational message.
+	// Infof formats and emits an informational message.
 	Infof(format string, v ...interface{})
 
 	// Warn emits a warning message.

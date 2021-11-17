@@ -6,8 +6,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/randx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
 func TestHTTPBodyLengthChecks(t *testing.T) {
@@ -66,6 +66,25 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 			ctrl: webconnectivity.ControlResponse{
 				HTTPRequest: webconnectivity.ControlHTTPRequestResult{
 					BodyLength: 1024,
+				},
+			},
+		},
+		lengthMatch: nil,
+	}, {
+		name: "control length is negative",
+		args: args{
+			tk: urlgetter.TestKeys{
+				Requests: []archival.RequestEntry{{
+					Response: archival.HTTPResponse{
+						Body: archival.MaybeBinaryValue{
+							Value: randx.Letters(768),
+						},
+					},
+				}},
+			},
+			ctrl: webconnectivity.ControlResponse{
+				HTTPRequest: webconnectivity.ControlHTTPRequestResult{
+					BodyLength: -1,
 				},
 			},
 		},
@@ -250,6 +269,22 @@ func TestStatusCodeMatch(t *testing.T) {
 			},
 		},
 	}, {
+		name: "with response status code and -1 as control status code",
+		args: args{
+			tk: urlgetter.TestKeys{
+				Requests: []archival.RequestEntry{{
+					Response: archival.HTTPResponse{
+						Code: 200,
+					},
+				}},
+			},
+			ctrl: webconnectivity.ControlResponse{
+				HTTPRequest: webconnectivity.ControlHTTPRequestResult{
+					StatusCode: -1,
+				},
+			},
+		},
+	}, {
 		name: "with only control status code and no response status code",
 		args: args{
 			tk: urlgetter.TestKeys{
@@ -338,6 +373,26 @@ func TestHeadersMatch(t *testing.T) {
 				}},
 			},
 			ctrl: webconnectivity.ControlResponse{},
+		},
+		want: nil,
+	}, {
+		name: "with negative control status code",
+		args: args{
+			tk: urlgetter.TestKeys{
+				Requests: []archival.RequestEntry{{
+					Response: archival.HTTPResponse{
+						Headers: map[string]archival.MaybeBinaryValue{
+							"Date": {Value: "Mon Jul 13 21:10:08 CEST 2020"},
+						},
+						Code: 200,
+					},
+				}},
+			},
+			ctrl: webconnectivity.ControlResponse{
+				HTTPRequest: webconnectivity.ControlHTTPRequestResult{
+					StatusCode: -1,
+				},
+			},
 		},
 		want: nil,
 	}, {
@@ -748,6 +803,25 @@ func TestTitleMatch(t *testing.T) {
 			},
 		},
 		wantOut: &trueValue,
+	}, {
+		name: "when the control status code is negative",
+		args: args{
+			tk: urlgetter.TestKeys{
+				Requests: []archival.RequestEntry{{
+					Response: archival.HTTPResponse{
+						Code: 200,
+						Body: archival.MaybeBinaryValue{
+							Value: "<HTML><TiTLe>La commUNity di MSN</tITLE></HTML>"},
+					},
+				}},
+			},
+			ctrl: webconnectivity.ControlResponse{
+				HTTPRequest: webconnectivity.ControlHTTPRequestResult{
+					StatusCode: -1,
+				},
+			},
+		},
+		wantOut: nil,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

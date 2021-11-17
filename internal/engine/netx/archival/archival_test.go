@@ -14,8 +14,8 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewTCPConnectList(t *testing.T) {
@@ -47,20 +47,20 @@ func TestNewTCPConnectList(t *testing.T) {
 			}, {
 				Address:  "8.8.8.8:853",
 				Duration: 30 * time.Millisecond,
-				Name:     errorx.ConnectOperation,
+				Name:     netxlite.ConnectOperation,
 				Proto:    "tcp",
 				Time:     begin.Add(130 * time.Millisecond),
 			}, {
 				Address:  "8.8.8.8:853",
 				Duration: 55 * time.Millisecond,
-				Name:     errorx.ConnectOperation,
+				Name:     netxlite.ConnectOperation,
 				Proto:    "udp",
 				Time:     begin.Add(130 * time.Millisecond),
 			}, {
 				Address:  "8.8.4.4:53",
 				Duration: 50 * time.Millisecond,
 				Err:      io.EOF,
-				Name:     errorx.ConnectOperation,
+				Name:     netxlite.ConnectOperation,
 				Proto:    "tcp",
 				Time:     begin.Add(180 * time.Millisecond),
 			}},
@@ -314,14 +314,14 @@ func TestNewDNSQueriesList(t *testing.T) {
 			}, {
 				Address:  "8.8.8.8:853",
 				Duration: 30 * time.Millisecond,
-				Name:     errorx.ConnectOperation,
+				Name:     netxlite.ConnectOperation,
 				Proto:    "tcp",
 				Time:     begin.Add(130 * time.Millisecond),
 			}, {
 				Address:  "8.8.4.4:53",
 				Duration: 50 * time.Millisecond,
 				Err:      io.EOF,
-				Name:     errorx.ConnectOperation,
+				Name:     netxlite.ConnectOperation,
 				Proto:    "tcp",
 				Time:     begin.Add(180 * time.Millisecond),
 			}},
@@ -371,7 +371,7 @@ func TestNewDNSQueriesList(t *testing.T) {
 		args: args{
 			begin: begin,
 			events: []trace.Event{{
-				Err:      &errorx.ErrWrapper{Failure: errorx.FailureDNSNXDOMAINError},
+				Err:      &netxlite.ErrWrapper{Failure: netxlite.FailureDNSNXDOMAINError},
 				Hostname: "dns.google.com",
 				Name:     "resolve_done",
 				Time:     begin.Add(200 * time.Millisecond),
@@ -380,14 +380,14 @@ func TestNewDNSQueriesList(t *testing.T) {
 		want: []archival.DNSQueryEntry{{
 			Answers: nil,
 			Failure: archival.NewFailure(
-				&errorx.ErrWrapper{Failure: errorx.FailureDNSNXDOMAINError}),
+				&netxlite.ErrWrapper{Failure: netxlite.FailureDNSNXDOMAINError}),
 			Hostname:  "dns.google.com",
 			QueryType: "A",
 			T:         0.2,
 		}, {
 			Answers: nil,
 			Failure: archival.NewFailure(
-				&errorx.ErrWrapper{Failure: errorx.FailureDNSNXDOMAINError}),
+				&netxlite.ErrWrapper{Failure: netxlite.FailureDNSNXDOMAINError}),
 			Hostname:  "dns.google.com",
 			QueryType: "AAAA",
 			T:         0.2,
@@ -425,35 +425,35 @@ func TestNewNetworkEventsList(t *testing.T) {
 		args: args{
 			begin: begin,
 			events: []trace.Event{{
-				Name:    errorx.ConnectOperation,
+				Name:    netxlite.ConnectOperation,
 				Address: "8.8.8.8:853",
 				Err:     io.EOF,
 				Proto:   "tcp",
 				Time:    begin.Add(7 * time.Millisecond),
 			}, {
-				Name:     errorx.ReadOperation,
+				Name:     netxlite.ReadOperation,
 				Err:      context.Canceled,
 				NumBytes: 7117,
 				Time:     begin.Add(11 * time.Millisecond),
 			}, {
 				Address:  "8.8.8.8:853",
-				Name:     errorx.ReadFromOperation,
+				Name:     netxlite.ReadFromOperation,
 				Err:      context.Canceled,
 				NumBytes: 7117,
 				Time:     begin.Add(11 * time.Millisecond),
 			}, {
-				Name:     errorx.WriteOperation,
+				Name:     netxlite.WriteOperation,
 				Err:      websocket.ErrBadHandshake,
 				NumBytes: 4114,
 				Time:     begin.Add(14 * time.Millisecond),
 			}, {
 				Address:  "8.8.8.8:853",
-				Name:     errorx.WriteToOperation,
+				Name:     netxlite.WriteToOperation,
 				Err:      websocket.ErrBadHandshake,
 				NumBytes: 4114,
 				Time:     begin.Add(14 * time.Millisecond),
 			}, {
-				Name: errorx.CloseOperation,
+				Name: netxlite.CloseOperation,
 				Err:  websocket.ErrReadLimit,
 				Time: begin.Add(17 * time.Millisecond),
 			}},
@@ -461,34 +461,34 @@ func TestNewNetworkEventsList(t *testing.T) {
 		want: []archival.NetworkEvent{{
 			Address:   "8.8.8.8:853",
 			Failure:   archival.NewFailure(io.EOF),
-			Operation: errorx.ConnectOperation,
+			Operation: netxlite.ConnectOperation,
 			Proto:     "tcp",
 			T:         0.007,
 		}, {
 			Failure:   archival.NewFailure(context.Canceled),
 			NumBytes:  7117,
-			Operation: errorx.ReadOperation,
+			Operation: netxlite.ReadOperation,
 			T:         0.011,
 		}, {
 			Address:   "8.8.8.8:853",
 			Failure:   archival.NewFailure(context.Canceled),
 			NumBytes:  7117,
-			Operation: errorx.ReadFromOperation,
+			Operation: netxlite.ReadFromOperation,
 			T:         0.011,
 		}, {
 			Failure:   archival.NewFailure(websocket.ErrBadHandshake),
 			NumBytes:  4114,
-			Operation: errorx.WriteOperation,
+			Operation: netxlite.WriteOperation,
 			T:         0.014,
 		}, {
 			Address:   "8.8.8.8:853",
 			Failure:   archival.NewFailure(websocket.ErrBadHandshake),
 			NumBytes:  4114,
-			Operation: errorx.WriteToOperation,
+			Operation: netxlite.WriteToOperation,
 			T:         0.014,
 		}, {
 			Failure:   archival.NewFailure(websocket.ErrReadLimit),
-			Operation: errorx.CloseOperation,
+			Operation: netxlite.CloseOperation,
 			T:         0.017,
 		}},
 	}}
@@ -523,7 +523,7 @@ func TestNewTLSHandshakesList(t *testing.T) {
 		args: args{
 			begin: begin,
 			events: []trace.Event{{
-				Name: errorx.CloseOperation,
+				Name: netxlite.CloseOperation,
 				Err:  websocket.ErrReadLimit,
 				Time: begin.Add(17 * time.Millisecond),
 			}, {
@@ -929,18 +929,18 @@ func TestNewFailure(t *testing.T) {
 	}, {
 		name: "when error is wrapped and failure meaningful",
 		args: args{
-			err: &errorx.ErrWrapper{
-				Failure: errorx.FailureConnectionRefused,
+			err: &netxlite.ErrWrapper{
+				Failure: netxlite.FailureConnectionRefused,
 			},
 		},
 		want: func() *string {
-			s := errorx.FailureConnectionRefused
+			s := netxlite.FailureConnectionRefused
 			return &s
 		}(),
 	}, {
 		name: "when error is wrapped and failure is not meaningful",
 		args: args{
-			err: &errorx.ErrWrapper{},
+			err: &netxlite.ErrWrapper{},
 		},
 		want: func() *string {
 			s := "unknown_failure: errWrapper.Failure is empty"
@@ -1002,24 +1002,24 @@ func TestNewFailedOperation(t *testing.T) {
 	}, {
 		name: "With wrapped error and non-empty operation",
 		args: args{
-			err: &errorx.ErrWrapper{
-				Failure:   errorx.FailureConnectionRefused,
-				Operation: errorx.ConnectOperation,
+			err: &netxlite.ErrWrapper{
+				Failure:   netxlite.FailureConnectionRefused,
+				Operation: netxlite.ConnectOperation,
 			},
 		},
 		want: (func() *string {
-			s := errorx.ConnectOperation
+			s := netxlite.ConnectOperation
 			return &s
 		})(),
 	}, {
 		name: "With wrapped error and empty operation",
 		args: args{
-			err: &errorx.ErrWrapper{
-				Failure: errorx.FailureConnectionRefused,
+			err: &netxlite.ErrWrapper{
+				Failure: netxlite.FailureConnectionRefused,
 			},
 		},
 		want: (func() *string {
-			s := errorx.UnknownOperation
+			s := netxlite.UnknownOperation
 			return &s
 		})(),
 	}, {
@@ -1028,7 +1028,7 @@ func TestNewFailedOperation(t *testing.T) {
 			err: io.EOF,
 		},
 		want: (func() *string {
-			s := errorx.UnknownOperation
+			s := netxlite.UnknownOperation
 			return &s
 		})(),
 	}}

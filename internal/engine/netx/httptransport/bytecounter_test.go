@@ -1,15 +1,16 @@
 package httptransport_test
 
 import (
+	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestByteCounterFailure(t *testing.T) {
@@ -48,7 +49,7 @@ func TestByteCounterSuccess(t *testing.T) {
 		Counter: counter,
 		RoundTripper: httptransport.FakeTransport{
 			Resp: &http.Response{
-				Body: ioutil.NopCloser(strings.NewReader("1234567")),
+				Body: io.NopCloser(strings.NewReader("1234567")),
 				Header: http.Header{
 					"Server": []string{"antani/0.1.0"},
 				},
@@ -68,7 +69,7 @@ func TestByteCounterSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +105,7 @@ func TestByteCounterSuccessWithEOF(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

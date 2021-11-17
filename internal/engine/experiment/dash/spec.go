@@ -1,12 +1,6 @@
 package dash
 
 const (
-	// currentServerSchemaVersion is the version of the server schema that
-	// will be adopted by this implementation. Version 3 is the one that is
-	// Neubot uses. We needed to bump the version because Web100 is not on
-	// M-Lab anymore and hence we need to make a breaking change.
-	currentServerSchemaVersion = 4
-
 	// negotiatePath is the URL path used to negotiate
 	negotiatePath = "/negotiate/dash"
 

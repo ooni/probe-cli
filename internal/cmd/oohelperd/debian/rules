@@ -1,0 +1,19 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE=1
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	dh_auto_clean
+
+override_dh_auto_build:
+	# The oohelperd binary is provided
+	cp ../../../oohelperd .
+
+override_dh_dwz:
+	true
+
+override_dh_auto_install:
+	dh_auto_install -- --no-source

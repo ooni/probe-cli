@@ -9,8 +9,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestGetterWithVeryShortTimeout(t *testing.T) {
@@ -31,7 +31,7 @@ func TestGetterWithVeryShortTimeout(t *testing.T) {
 	if tk.BootstrapTime != 0 {
 		t.Fatal("not the BootstrapTime we expected")
 	}
-	if tk.FailedOperation == nil || *tk.FailedOperation != errorx.TopLevelOperation {
+	if tk.FailedOperation == nil || *tk.FailedOperation != netxlite.TopLevelOperation {
 		t.Fatal("not the FailedOperation we expected")
 	}
 	if tk.Failure == nil || *tk.Failure != "generic_timeout_error" {
@@ -98,7 +98,7 @@ func TestGetterWithCancelledContextVanilla(t *testing.T) {
 	if tk.BootstrapTime != 0 {
 		t.Fatal("not the BootstrapTime we expected")
 	}
-	if tk.FailedOperation == nil || *tk.FailedOperation != errorx.TopLevelOperation {
+	if tk.FailedOperation == nil || *tk.FailedOperation != netxlite.TopLevelOperation {
 		t.Fatal("not the FailedOperation we expected")
 	}
 	if tk.Failure == nil || !strings.HasSuffix(*tk.Failure, "interrupted") {
@@ -166,7 +166,7 @@ func TestGetterWithCancelledContextAndMethod(t *testing.T) {
 	if tk.BootstrapTime != 0 {
 		t.Fatal("not the BootstrapTime we expected")
 	}
-	if tk.FailedOperation == nil || *tk.FailedOperation != errorx.TopLevelOperation {
+	if tk.FailedOperation == nil || *tk.FailedOperation != netxlite.TopLevelOperation {
 		t.Fatal("not the FailedOperation we expected")
 	}
 	if tk.Failure == nil || !strings.HasSuffix(*tk.Failure, "interrupted") {
@@ -236,7 +236,7 @@ func TestGetterWithCancelledContextNoFollowRedirects(t *testing.T) {
 	if tk.BootstrapTime != 0 {
 		t.Fatal("not the BootstrapTime we expected")
 	}
-	if tk.FailedOperation == nil || *tk.FailedOperation != errorx.TopLevelOperation {
+	if tk.FailedOperation == nil || *tk.FailedOperation != netxlite.TopLevelOperation {
 		t.Fatal("not the FailedOperation we expected")
 	}
 	if tk.Failure == nil || !strings.HasSuffix(*tk.Failure, "interrupted") {
@@ -306,7 +306,7 @@ func TestGetterWithCancelledContextCannotStartTunnel(t *testing.T) {
 	if tk.BootstrapTime != 0 {
 		t.Fatal("not the BootstrapTime we expected")
 	}
-	if tk.FailedOperation == nil || *tk.FailedOperation != errorx.TopLevelOperation {
+	if tk.FailedOperation == nil || *tk.FailedOperation != netxlite.TopLevelOperation {
 		t.Fatal("not the FailedOperation we expected")
 	}
 	if tk.Failure == nil || *tk.Failure != "interrupted" {
@@ -361,7 +361,7 @@ func TestGetterWithCancelledContextUnknownResolverURL(t *testing.T) {
 	if tk.BootstrapTime != 0 {
 		t.Fatal("not the BootstrapTime we expected")
 	}
-	if tk.FailedOperation == nil || *tk.FailedOperation != errorx.TopLevelOperation {
+	if tk.FailedOperation == nil || *tk.FailedOperation != netxlite.TopLevelOperation {
 		t.Fatal("not the FailedOperation we expected")
 	}
 	if tk.Failure == nil || *tk.Failure != "unknown_failure: unsupported resolver scheme" {
@@ -446,7 +446,7 @@ func TestGetterIntegrationHTTPS(t *testing.T) {
 			resolveStart = true
 		case "resolve_done":
 			resolveDone = true
-		case errorx.ConnectOperation:
+		case netxlite.ConnectOperation:
 			connect = true
 		case "tls_handshake_start":
 			tlsHandshakeStart = true
@@ -587,7 +587,7 @@ func TestGetterIntegrationTLSHandshake(t *testing.T) {
 			resolveStart = true
 		case "resolve_done":
 			resolveDone = true
-		case errorx.ConnectOperation:
+		case netxlite.ConnectOperation:
 			connect = true
 		case "tls_handshake_start":
 			tlsHandshakeStart = true
@@ -705,7 +705,7 @@ func TestGetterHTTPSWithTunnel(t *testing.T) {
 			resolveStart = true
 		case "resolve_done":
 			resolveDone = true
-		case errorx.ConnectOperation:
+		case netxlite.ConnectOperation:
 			connect = true
 		case "tls_handshake_start":
 			tlsHandshakeStart = true

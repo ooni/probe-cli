@@ -16,7 +16,7 @@ import (
 
 const (
 	testName    = "psiphon"
-	testVersion = "0.5.0"
+	testVersion = "0.5.1"
 )
 
 // Config contains the experiment's configuration.
@@ -70,7 +70,7 @@ func (m *Measurer) Run(
 	ctx context.Context, sess model.ExperimentSession,
 	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
 ) error {
-	const maxruntime = 60
+	const maxruntime = 300
 	ctx, cancel := context.WithTimeout(ctx, maxruntime*time.Second)
 	var (
 		wg     sync.WaitGroup

@@ -7,12 +7,17 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
 func TestWebConnectivityRunnerWithMaybeLookupBackendsFailure(t *testing.T) {
 	errMocked := errors.New("mocked error")
-	sess := &FakeExperimentSession{LookupBackendsErr: errMocked}
+	sess := &FakeExperimentSession{
+		LockCount:         &atomicx.Int64{},
+		LookupBackendsErr: errMocked,
+		UnlockCount:       &atomicx.Int64{},
+	}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()
 	config := &WebConnectivityConfig{Input: "https://ooni.org"}
@@ -23,14 +28,18 @@ func TestWebConnectivityRunnerWithMaybeLookupBackendsFailure(t *testing.T) {
 	if out != nil {
 		t.Fatal("expected nil here")
 	}
-	if sess.LockCount != 1 || sess.UnlockCount != 1 {
+	if sess.LockCount.Load() != 1 || sess.UnlockCount.Load() != 1 {
 		t.Fatal("invalid locking pattern")
 	}
 }
 
 func TestWebConnectivityRunnerWithMaybeLookupLocationFailure(t *testing.T) {
 	errMocked := errors.New("mocked error")
-	sess := &FakeExperimentSession{LookupLocationErr: errMocked}
+	sess := &FakeExperimentSession{
+		LockCount:         &atomicx.Int64{},
+		LookupLocationErr: errMocked,
+		UnlockCount:       &atomicx.Int64{},
+	}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()
 	config := &WebConnectivityConfig{Input: "https://ooni.org"}
@@ -41,14 +50,18 @@ func TestWebConnectivityRunnerWithMaybeLookupLocationFailure(t *testing.T) {
 	if out != nil {
 		t.Fatal("expected nil here")
 	}
-	if sess.LockCount != 1 || sess.UnlockCount != 1 {
+	if sess.LockCount.Load() != 1 || sess.UnlockCount.Load() != 1 {
 		t.Fatal("invalid locking pattern")
 	}
 }
 
 func TestWebConnectivityRunnerWithNewExperimentBuilderFailure(t *testing.T) {
 	errMocked := errors.New("mocked error")
-	sess := &FakeExperimentSession{NewExperimentBuilderErr: errMocked}
+	sess := &FakeExperimentSession{
+		LockCount:               &atomicx.Int64{},
+		NewExperimentBuilderErr: errMocked,
+		UnlockCount:             &atomicx.Int64{},
+	}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()
 	config := &WebConnectivityConfig{Input: "https://ooni.org"}
@@ -59,7 +72,7 @@ func TestWebConnectivityRunnerWithNewExperimentBuilderFailure(t *testing.T) {
 	if out != nil {
 		t.Fatal("expected nil here")
 	}
-	if sess.LockCount != 1 || sess.UnlockCount != 1 {
+	if sess.LockCount.Load() != 1 || sess.UnlockCount.Load() != 1 {
 		t.Fatal("invalid locking pattern")
 	}
 }
@@ -69,7 +82,11 @@ func TestWebConnectivityRunnerWithMeasureFailure(t *testing.T) {
 	cbs := &FakeExperimentCallbacks{}
 	e := &FakeExperiment{Err: errMocked}
 	eb := &FakeExperimentBuilder{Experiment: e}
-	sess := &FakeExperimentSession{ExperimentBuilder: eb}
+	sess := &FakeExperimentSession{
+		LockCount:         &atomicx.Int64{},
+		ExperimentBuilder: eb,
+		UnlockCount:       &atomicx.Int64{},
+	}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()
 	config := &WebConnectivityConfig{
@@ -83,7 +100,7 @@ func TestWebConnectivityRunnerWithMeasureFailure(t *testing.T) {
 	if out != nil {
 		t.Fatal("expected nil here")
 	}
-	if sess.LockCount != 1 || sess.UnlockCount != 1 {
+	if sess.LockCount.Load() != 1 || sess.UnlockCount.Load() != 1 {
 		t.Fatal("invalid locking pattern")
 	}
 	if eb.Callbacks != cbs {
@@ -99,7 +116,11 @@ func TestWebConnectivityRunnerWithNoError(t *testing.T) {
 	cbs := &FakeExperimentCallbacks{}
 	e := &FakeExperiment{Measurement: m, Sent: 10, Received: 128}
 	eb := &FakeExperimentBuilder{Experiment: e}
-	sess := &FakeExperimentSession{ExperimentBuilder: eb}
+	sess := &FakeExperimentSession{
+		LockCount:         &atomicx.Int64{},
+		ExperimentBuilder: eb,
+		UnlockCount:       &atomicx.Int64{},
+	}
 	runner := &webConnectivityRunner{sess: sess}
 	ctx := context.Background()
 	config := &WebConnectivityConfig{
@@ -113,7 +134,7 @@ func TestWebConnectivityRunnerWithNoError(t *testing.T) {
 	if out == nil {
 		t.Fatal("expected non-nil here")
 	}
-	if sess.LockCount != 1 || sess.UnlockCount != 1 {
+	if sess.LockCount.Load() != 1 || sess.UnlockCount.Load() != 1 {
 		t.Fatal("invalid locking pattern")
 	}
 	if eb.Callbacks != cbs {

@@ -5,13 +5,16 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/sessionresolver"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 )
 
 func TestSessionResolverGood(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	reso := &sessionresolver.Resolver{}
+	reso := &sessionresolver.Resolver{
+		KVStore: &kvstore.Memory{},
+	}
 	defer reso.CloseIdleConnections()
 	if reso.Network() != "sessionresolver" {
 		t.Fatal("unexpected Network")

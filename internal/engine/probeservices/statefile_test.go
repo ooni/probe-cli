@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 )
 
 func TestStateAuth(t *testing.T) {
@@ -67,7 +67,7 @@ func TestStateCredentials(t *testing.T) {
 func TestStateFileMemoryIntegration(t *testing.T) {
 	// Does the StateFile have the property that we can write
 	// values into it and then read again the same files?
-	sf := probeservices.NewStateFile(kvstore.NewMemoryKeyValueStore())
+	sf := probeservices.NewStateFile(&kvstore.Memory{})
 	s := probeservices.State{
 		Expire:   time.Now(),
 		Password: "xy",
@@ -85,7 +85,7 @@ func TestStateFileMemoryIntegration(t *testing.T) {
 }
 
 func TestStateFileSetMarshalError(t *testing.T) {
-	sf := probeservices.NewStateFile(kvstore.NewMemoryKeyValueStore())
+	sf := probeservices.NewStateFile(&kvstore.Memory{})
 	s := probeservices.State{
 		Expire:   time.Now(),
 		Password: "xy",
@@ -102,7 +102,7 @@ func TestStateFileSetMarshalError(t *testing.T) {
 }
 
 func TestStateFileGetKVStoreGetError(t *testing.T) {
-	sf := probeservices.NewStateFile(kvstore.NewMemoryKeyValueStore())
+	sf := probeservices.NewStateFile(&kvstore.Memory{})
 	expected := errors.New("mocked error")
 	failingfunc := func(string) ([]byte, error) {
 		return nil, expected
@@ -126,7 +126,7 @@ func TestStateFileGetKVStoreGetError(t *testing.T) {
 }
 
 func TestStateFileGetUnmarshalError(t *testing.T) {
-	sf := probeservices.NewStateFile(kvstore.NewMemoryKeyValueStore())
+	sf := probeservices.NewStateFile(&kvstore.Memory{})
 	if err := sf.Set(probeservices.State{}); err != nil {
 		t.Fatal(err)
 	}

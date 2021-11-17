@@ -7,11 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Logger is the definition of Logger used by this package.
@@ -39,10 +38,6 @@ type Client struct {
 
 	// Logger is the logger to use.
 	Logger Logger
-
-	// ProxyURL allows to force a proxy URL to fallback to a
-	// tunnel, e.g., Psiphon.
-	ProxyURL *url.URL
 
 	// UserAgent is the user agent to use.
 	UserAgent string
@@ -93,11 +88,6 @@ func (c Client) NewRequest(ctx context.Context, method, resourcePath string,
 		request.Header.Set("Accept", c.Accept)
 	}
 	request.Header.Set("User-Agent", c.UserAgent)
-	// Implementation note: the following allows tunneling if c.ProxyURL
-	// is not nil. Because the proxy URL is set as part of each request
-	// generated using this function, every request that eventually needs
-	// to reconnect will always do so using the proxy.
-	ctx = dialer.WithProxyURL(ctx, c.ProxyURL)
 	return request.WithContext(ctx), nil
 }
 
@@ -111,7 +101,7 @@ func (c Client) Do(request *http.Request) ([]byte, error) {
 	if response.StatusCode >= 400 {
 		return nil, fmt.Errorf("httpx: request failed: %s", response.Status)
 	}
-	return ioutil.ReadAll(response.Body)
+	return netxlite.ReadAllContext(request.Context(), response.Body)
 }
 
 // DoJSON performs the provided request and unmarshals the JSON response body

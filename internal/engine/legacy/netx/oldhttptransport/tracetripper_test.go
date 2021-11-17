@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
 	"sync"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestTraceTripperSuccess(t *testing.T) {
@@ -25,7 +25,7 @@ func TestTraceTripperSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp.Body.Close()
-	_, err = ioutil.ReadAll(resp.Body)
+	_, err = netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func (h *roundTripHandler) OnMeasurement(m modelx.Measurement) {
 
 func TestTraceTripperReadAllFailure(t *testing.T) {
 	transport := NewTraceTripper(http.DefaultTransport)
-	transport.readAll = func(r io.Reader) ([]byte, error) {
+	transport.readAllContext = func(ctx context.Context, r io.Reader) ([]byte, error) {
 		return nil, io.EOF
 	}
 	client := &http.Client{Transport: transport}
@@ -156,7 +156,7 @@ func TestTraceTripperWithCorrectSnaps(t *testing.T) {
 
 	// Read the whole response body, parse it as valid DNS
 	// reply and verify we obtained what we expected
-	replyData, err := ioutil.ReadAll(resp.Body)
+	replyData, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,7 +230,7 @@ func TestTraceTripperWithReadAllFailingForBody(t *testing.T) {
 	// use such transport to configure an ordinary client
 	transport := NewTraceTripper(http.DefaultTransport)
 	errorMocked := errors.New("mocked error")
-	transport.readAll = func(r io.Reader) ([]byte, error) {
+	transport.readAllContext = func(ctx context.Context, r io.Reader) ([]byte, error) {
 		return nil, errorMocked
 	}
 	const snapSize = 15

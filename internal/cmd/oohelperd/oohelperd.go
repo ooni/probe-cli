@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal"
+	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal/websteps"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 const maxAcceptableBody = 1 << 24
@@ -30,7 +32,10 @@ func init() {
 	dialer = netx.NewDialer(netx.Config{Logger: log.Log})
 	txp := netx.NewHTTPTransport(netx.Config{Logger: log.Log})
 	httpx = &http.Client{Transport: txp}
-	resolver = netx.NewResolver(netx.Config{Logger: log.Log})
+	// fix: use 8.8.8.8:53/udp so we pin to a specific resolver.
+	var err error
+	resolver, err = netx.NewDNSClient(netx.Config{Logger: log.Log}, "udp://8.8.8.8:53")
+	runtimex.PanicOnError(err, "NewDNSClient failed")
 }
 
 func shutdown(srv *http.Server) {
@@ -52,7 +57,8 @@ func main() {
 
 func testableMain() {
 	mux := http.NewServeMux()
-	mux.Handle("/", internal.Handler{
+	mux.Handle("/api/unstable/websteps", &websteps.Handler{Config: &websteps.Config{}})
+	mux.Handle("/", webconnectivity.Handler{
 		Client:            httpx,
 		Dialer:            dialer,
 		MaxAcceptableBody: maxAcceptableBody,

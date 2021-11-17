@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/mockable"
+	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/errorx"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
@@ -29,64 +29,64 @@ func TestTestKeysClassify(t *testing.T) {
 	})
 	t.Run("with tk.Target.Failure == connection_refused", func(t *testing.T) {
 		tk := new(TestKeys)
-		tk.Target.Failure = asStringPtr(errorx.FailureConnectionRefused)
+		tk.Target.Failure = asStringPtr(netxlite.FailureConnectionRefused)
 		if tk.classify() != classAnomalyTestHelperUnreachable {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("with tk.Target.Failure == dns_nxdomain_error", func(t *testing.T) {
 		tk := new(TestKeys)
-		tk.Target.Failure = asStringPtr(errorx.FailureDNSNXDOMAINError)
+		tk.Target.Failure = asStringPtr(netxlite.FailureDNSNXDOMAINError)
 		if tk.classify() != classAnomalyTestHelperUnreachable {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("with tk.Target.Failure == connection_reset", func(t *testing.T) {
 		tk := new(TestKeys)
-		tk.Target.Failure = asStringPtr(errorx.FailureConnectionReset)
+		tk.Target.Failure = asStringPtr(netxlite.FailureConnectionReset)
 		if tk.classify() != classInterferenceReset {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("with tk.Target.Failure == eof_error", func(t *testing.T) {
 		tk := new(TestKeys)
-		tk.Target.Failure = asStringPtr(errorx.FailureEOFError)
+		tk.Target.Failure = asStringPtr(netxlite.FailureEOFError)
 		if tk.classify() != classInterferenceClosed {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("with tk.Target.Failure == ssl_invalid_hostname", func(t *testing.T) {
 		tk := new(TestKeys)
-		tk.Target.Failure = asStringPtr(errorx.FailureSSLInvalidHostname)
+		tk.Target.Failure = asStringPtr(netxlite.FailureSSLInvalidHostname)
 		if tk.classify() != classSuccessGotServerHello {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("with tk.Target.Failure == ssl_unknown_authority", func(t *testing.T) {
 		tk := new(TestKeys)
-		tk.Target.Failure = asStringPtr(errorx.FailureSSLUnknownAuthority)
+		tk.Target.Failure = asStringPtr(netxlite.FailureSSLUnknownAuthority)
 		if tk.classify() != classInterferenceUnknownAuthority {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("with tk.Target.Failure == ssl_invalid_certificate", func(t *testing.T) {
 		tk := new(TestKeys)
-		tk.Target.Failure = asStringPtr(errorx.FailureSSLInvalidCertificate)
+		tk.Target.Failure = asStringPtr(netxlite.FailureSSLInvalidCertificate)
 		if tk.classify() != classInterferenceInvalidCertificate {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("with tk.Target.Failure == generic_timeout_error #1", func(t *testing.T) {
 		tk := new(TestKeys)
-		tk.Target.Failure = asStringPtr(errorx.FailureGenericTimeoutError)
+		tk.Target.Failure = asStringPtr(netxlite.FailureGenericTimeoutError)
 		if tk.classify() != classAnomalyTimeout {
 			t.Fatal("unexpected result")
 		}
 	})
 	t.Run("with tk.Target.Failure == generic_timeout_error #2", func(t *testing.T) {
 		tk := new(TestKeys)
-		tk.Target.Failure = asStringPtr(errorx.FailureGenericTimeoutError)
-		tk.Control.Failure = asStringPtr(errorx.FailureGenericTimeoutError)
+		tk.Target.Failure = asStringPtr(netxlite.FailureGenericTimeoutError)
+		tk.Control.Failure = asStringPtr(netxlite.FailureGenericTimeoutError)
 		if tk.classify() != classAnomalyTestHelperUnreachable {
 			t.Fatal("unexpected result")
 		}
@@ -191,10 +191,10 @@ func TestMeasureoneCancelledContext(t *testing.T) {
 	if result.DNSCache != nil {
 		t.Fatal("not the expected DNSCache")
 	}
-	if result.FailedOperation == nil || *result.FailedOperation != errorx.TopLevelOperation {
+	if result.FailedOperation == nil || *result.FailedOperation != netxlite.TopLevelOperation {
 		t.Fatal("not the expected FailedOperation")
 	}
-	if result.Failure == nil || *result.Failure != errorx.FailureInterrupted {
+	if result.Failure == nil || *result.Failure != netxlite.FailureInterrupted {
 		t.Fatal("not the expected failure")
 	}
 	if result.NetworkEvents != nil {
@@ -295,10 +295,10 @@ func TestMeasureoneSuccess(t *testing.T) {
 	if result.DNSCache != nil {
 		t.Fatal("not the expected DNSCache")
 	}
-	if result.FailedOperation == nil || *result.FailedOperation != errorx.TLSHandshakeOperation {
+	if result.FailedOperation == nil || *result.FailedOperation != netxlite.TLSHandshakeOperation {
 		t.Fatal("not the expected FailedOperation")
 	}
-	if result.Failure == nil || *result.Failure != errorx.FailureSSLInvalidHostname {
+	if result.Failure == nil || *result.Failure != netxlite.FailureSSLInvalidHostname {
 		t.Fatal("unexpected failure")
 	}
 	if len(result.NetworkEvents) < 1 {
@@ -348,7 +348,7 @@ func TestMeasureonewithcacheWorks(t *testing.T) {
 		if result.Cached != expected {
 			t.Fatal("unexpected cached")
 		}
-		if *result.Failure != errorx.FailureSSLInvalidHostname {
+		if *result.Failure != netxlite.FailureSSLInvalidHostname {
 			t.Fatal("unexpected failure")
 		}
 		if result.SNI != "kernel.org" {

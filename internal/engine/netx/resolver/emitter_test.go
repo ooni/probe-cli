@@ -10,16 +10,14 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/dialid"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/handlers"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/transactionid"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestEmitterTransportSuccess(t *testing.T) {
 	ctx := context.Background()
-	ctx = dialid.WithDialID(ctx)
 	handler := &handlers.SavingHandler{}
 	root := &modelx.MeasurementRoot{
 		Beginning: time.Now(),
@@ -48,9 +46,6 @@ func TestEmitterTransportSuccess(t *testing.T) {
 	if !bytes.Equal(events[0].DNSQuery.Data, querydata) {
 		t.Fatal("invalid query data")
 	}
-	if events[0].DNSQuery.DialID == 0 {
-		t.Fatal("invalid query DialID")
-	}
 	if events[0].DNSQuery.DurationSinceBeginning <= 0 {
 		t.Fatal("invalid duration since beginning")
 	}
@@ -60,9 +55,6 @@ func TestEmitterTransportSuccess(t *testing.T) {
 	if !bytes.Equal(events[1].DNSReply.Data, replydata) {
 		t.Fatal("missing reply data")
 	}
-	if events[1].DNSReply.DialID != 1 {
-		t.Fatal("invalid query DialID")
-	}
 	if events[1].DNSReply.DurationSinceBeginning <= 0 {
 		t.Fatal("invalid duration since beginning")
 	}
@@ -70,7 +62,6 @@ func TestEmitterTransportSuccess(t *testing.T) {
 
 func TestEmitterTransportFailure(t *testing.T) {
 	ctx := context.Background()
-	ctx = dialid.WithDialID(ctx)
 	handler := &handlers.SavingHandler{}
 	root := &modelx.MeasurementRoot{
 		Beginning: time.Now(),
@@ -103,9 +94,6 @@ func TestEmitterTransportFailure(t *testing.T) {
 	if !bytes.Equal(events[0].DNSQuery.Data, querydata) {
 		t.Fatal("invalid query data")
 	}
-	if events[0].DNSQuery.DialID == 0 {
-		t.Fatal("invalid query DialID")
-	}
 	if events[0].DNSQuery.DurationSinceBeginning <= 0 {
 		t.Fatal("invalid duration since beginning")
 	}
@@ -113,8 +101,6 @@ func TestEmitterTransportFailure(t *testing.T) {
 
 func TestEmitterResolverFailure(t *testing.T) {
 	ctx := context.Background()
-	ctx = dialid.WithDialID(ctx)
-	ctx = transactionid.WithTransactionID(ctx)
 	handler := &handlers.SavingHandler{}
 	root := &modelx.MeasurementRoot{
 		Beginning: time.Now(),
@@ -122,9 +108,11 @@ func TestEmitterResolverFailure(t *testing.T) {
 	}
 	ctx = modelx.WithMeasurementRoot(ctx, root)
 	r := resolver.EmitterResolver{Resolver: resolver.NewSerialResolver(
-		resolver.DNSOverHTTPS{
-			Do: func(req *http.Request) (*http.Response, error) {
-				return nil, io.EOF
+		&resolver.DNSOverHTTPS{
+			Client: &mocks.HTTPClient{
+				MockDo: func(req *http.Request) (*http.Response, error) {
+					return nil, io.EOF
+				},
 			},
 			URL: "https://dns.google.com/",
 		},
@@ -143,17 +131,11 @@ func TestEmitterResolverFailure(t *testing.T) {
 	if events[0].ResolveStart == nil {
 		t.Fatal("missing ResolveStart field")
 	}
-	if events[0].ResolveStart.DialID == 0 {
-		t.Fatal("invalid DialID")
-	}
 	if events[0].ResolveStart.DurationSinceBeginning <= 0 {
 		t.Fatal("invalid duration since beginning")
 	}
 	if events[0].ResolveStart.Hostname != "www.google.com" {
 		t.Fatal("invalid Hostname")
-	}
-	if events[0].ResolveStart.TransactionID == 0 {
-		t.Fatal("invalid TransactionID")
 	}
 	if events[0].ResolveStart.TransportAddress != "https://dns.google.com/" {
 		t.Fatal("invalid TransportAddress")
@@ -164,9 +146,6 @@ func TestEmitterResolverFailure(t *testing.T) {
 	if events[1].ResolveDone == nil {
 		t.Fatal("missing ResolveDone field")
 	}
-	if events[1].ResolveDone.DialID == 0 {
-		t.Fatal("invalid DialID")
-	}
 	if events[1].ResolveDone.DurationSinceBeginning <= 0 {
 		t.Fatal("invalid duration since beginning")
 	}
@@ -175,9 +154,6 @@ func TestEmitterResolverFailure(t *testing.T) {
 	}
 	if events[1].ResolveDone.Hostname != "www.google.com" {
 		t.Fatal("invalid Hostname")
-	}
-	if events[1].ResolveDone.TransactionID == 0 {
-		t.Fatal("invalid TransactionID")
 	}
 	if events[1].ResolveDone.TransportAddress != "https://dns.google.com/" {
 		t.Fatal("invalid TransportAddress")
@@ -189,8 +165,6 @@ func TestEmitterResolverFailure(t *testing.T) {
 
 func TestEmitterResolverSuccess(t *testing.T) {
 	ctx := context.Background()
-	ctx = dialid.WithDialID(ctx)
-	ctx = transactionid.WithTransactionID(ctx)
 	handler := &handlers.SavingHandler{}
 	root := &modelx.MeasurementRoot{
 		Beginning: time.Now(),

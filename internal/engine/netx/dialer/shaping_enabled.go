@@ -1,3 +1,4 @@
+//go:build shaping
 // +build shaping
 
 package dialer
@@ -8,15 +9,15 @@ import (
 	"time"
 )
 
-// ShapingDialer ensures we don't use too much bandwidth
+// shapingDialer ensures we don't use too much bandwidth
 // when using integration tests at GitHub. To select
 // the implementation with shaping use `-tags shaping`.
-type ShapingDialer struct {
+type shapingDialer struct {
 	Dialer
 }
 
 // DialContext implements Dialer.DialContext
-func (d ShapingDialer) DialContext(
+func (d *shapingDialer) DialContext(
 	ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
@@ -29,12 +30,12 @@ type shapingConn struct {
 	net.Conn
 }
 
-func (c shapingConn) Read(p []byte) (int, error) {
+func (c *shapingConn) Read(p []byte) (int, error) {
 	time.Sleep(100 * time.Millisecond)
 	return c.Conn.Read(p)
 }
 
-func (c shapingConn) Write(p []byte) (int, error) {
+func (c *shapingConn) Write(p []byte) (int, error) {
 	time.Sleep(100 * time.Millisecond)
 	return c.Conn.Write(p)
 }

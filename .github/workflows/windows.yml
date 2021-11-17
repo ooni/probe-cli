@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - "release/**"
+      - "stable"
 jobs:
   build:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: "1.16.4"
+          go-version: "1.17.3"
       - uses: actions/checkout@v2
       - run: sudo apt install mingw-w64
       - run: ./mk OONI_PSIPHON_TAGS="" MINGW_W64_VERSION="9.3-win32" ./CLI/windows/amd64/ooniprobe.exe
