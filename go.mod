@@ -32,7 +32,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.6.6
 	github.com/onsi/ginkgo v1.16.5 // indirect
-	github.com/ooni/oohttp v0.0.0-20211019141953-f1c2702fbb1e
+	github.com/ooni/oohttp v0.0.0-20211110125146-9fc06c067bd6
 	github.com/ooni/probe-assets v0.5.0
 	github.com/ooni/psiphon v0.9.0
 	github.com/oschwald/geoip2-golang v1.5.0
@@ -49,10 +49,10 @@ require (
 	gitlab.com/yawning/obfs4.git v0.0.0-20210511220700-e330d1b7024b
 	gitlab.com/yawning/utls.git v0.0.12-1
 	golang.org/x/mod v0.5.1 // indirect
-	golang.org/x/net v0.0.0-20211020060615-d418f374d309
-	golang.org/x/sys v0.0.0-20211020064051-0ec99a608a1b
+	golang.org/x/net v0.0.0-20211109214657-ef0fda0de508
+	golang.org/x/sys v0.0.0-20211113001501-0c823b97ae02
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/tools v0.1.7 // indirect
+	golang.org/x/tools v0.1.8-0.20211022200916-316ba0b74098 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	upper.io/db.v3 v3.8.0+incompatible

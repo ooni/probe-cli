@@ -16,6 +16,49 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
+func TestHTTPTransportErrWrapper(t *testing.T) {
+	t.Run("RoundTrip", func(t *testing.T) {
+		t.Run("with failure", func(t *testing.T) {
+			txp := &httpTransportErrWrapper{
+				HTTPTransport: &mocks.HTTPTransport{
+					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+						return nil, io.EOF
+					},
+				},
+			}
+			resp, err := txp.RoundTrip(&http.Request{})
+			var errWrapper *ErrWrapper
+			if !errors.As(err, &errWrapper) {
+				t.Fatal("the returned error is not an ErrWrapper")
+			}
+			if errWrapper.Failure != FailureEOFError {
+				t.Fatal("unexpected failure", errWrapper.Failure)
+			}
+			if resp != nil {
+				t.Fatal("expected nil response")
+			}
+		})
+
+		t.Run("with success", func(t *testing.T) {
+			expect := &http.Response{}
+			txp := &httpTransportErrWrapper{
+				HTTPTransport: &mocks.HTTPTransport{
+					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+						return expect, nil
+					},
+				},
+			}
+			resp, err := txp.RoundTrip(&http.Request{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp != expect {
+				t.Fatal("not the expected response")
+			}
+		})
+	})
+}
+
 func TestHTTPTransportLogger(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		t.Run("with failure", func(t *testing.T) {
@@ -198,7 +241,8 @@ func TestNewHTTPTransport(t *testing.T) {
 		if logger.Logger != log.Log {
 			t.Fatal("invalid logger")
 		}
-		connectionsCloser := logger.HTTPTransport.(*httpTransportConnectionsCloser)
+		errWrapper := logger.HTTPTransport.(*httpTransportErrWrapper)
+		connectionsCloser := errWrapper.HTTPTransport.(*httpTransportConnectionsCloser)
 		withReadTimeout := connectionsCloser.Dialer.(*httpDialerWithReadTimeout)
 		if withReadTimeout.Dialer != d {
 			t.Fatal("invalid dialer")
@@ -411,4 +455,57 @@ func TestNewHTTPTransportStdlib(t *testing.T) {
 		t.Fatal("unexpected resp")
 	}
 	txp.CloseIdleConnections()
+}
+
+func TestHTTPClientErrWrapper(t *testing.T) {
+	t.Run("Do", func(t *testing.T) {
+		t.Run("with failure", func(t *testing.T) {
+			clnt := &httpClientErrWrapper{
+				HTTPClient: &mocks.HTTPClient{
+					MockDo: func(req *http.Request) (*http.Response, error) {
+						return nil, io.EOF
+					},
+				},
+			}
+			resp, err := clnt.Do(&http.Request{})
+			var errWrapper *ErrWrapper
+			if !errors.As(err, &errWrapper) {
+				t.Fatal("the returned error is not an ErrWrapper")
+			}
+			if errWrapper.Failure != FailureEOFError {
+				t.Fatal("unexpected failure", errWrapper.Failure)
+			}
+			if resp != nil {
+				t.Fatal("expected nil response")
+			}
+		})
+
+		t.Run("with success", func(t *testing.T) {
+			expect := &http.Response{}
+			clnt := &httpClientErrWrapper{
+				HTTPClient: &mocks.HTTPClient{
+					MockDo: func(req *http.Request) (*http.Response, error) {
+						return expect, nil
+					},
+				},
+			}
+			resp, err := clnt.Do(&http.Request{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp != expect {
+				t.Fatal("not the expected response")
+			}
+		})
+	})
+}
+
+func TestWrapHTTPClient(t *testing.T) {
+	origClient := &http.Client{}
+	wrapped := WrapHTTPClient(origClient)
+	errWrapper := wrapped.(*httpClientErrWrapper)
+	innerClient := errWrapper.HTTPClient.(*http.Client)
+	if innerClient != origClient {
+		t.Fatal("not the inner client we expected")
+	}
 }

@@ -80,14 +80,14 @@ func HTTPStatusCodeMatch(tk urlgetter.TestKeys, ctrl ControlResponse) (out *bool
 		return // no real status code
 	}
 	measurement := tk.Requests[0].Response.Code
-	if control == 0 {
+	if control <= 0 {
 		return // no real status code
 	}
-	if measurement == 0 {
+	if measurement <= 0 {
 		return // no real status code
 	}
 	value := control == measurement
-	if value == true {
+	if value {
 		// if the status codes are equal, they clearly match
 		out = &value
 		return
@@ -110,10 +110,10 @@ func HTTPHeadersMatch(tk urlgetter.TestKeys, ctrl ControlResponse) *bool {
 	if len(tk.Requests) <= 0 {
 		return nil
 	}
-	if tk.Requests[0].Response.Code == 0 {
+	if tk.Requests[0].Response.Code <= 0 {
 		return nil
 	}
-	if ctrl.HTTPRequest.StatusCode == 0 {
+	if ctrl.HTTPRequest.StatusCode <= 0 {
 		return nil
 	}
 	control := ctrl.HTTPRequest.Headers
@@ -203,13 +203,13 @@ func HTTPTitleMatch(tk urlgetter.TestKeys, ctrl ControlResponse) (out *bool) {
 		return
 	}
 	response := tk.Requests[0].Response
-	if response.Code == 0 {
+	if response.Code <= 0 {
 		return
 	}
 	if response.BodyIsTruncated {
 		return
 	}
-	if ctrl.HTTPRequest.StatusCode == 0 {
+	if ctrl.HTTPRequest.StatusCode <= 0 {
 		return
 	}
 	control := ctrl.HTTPRequest.Title

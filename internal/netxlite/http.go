@@ -19,6 +19,19 @@ type HTTPTransport interface {
 	CloseIdleConnections()
 }
 
+// httpTransportErrWrapper is an HTTPTransport with error wrapping.
+type httpTransportErrWrapper struct {
+	HTTPTransport
+}
+
+func (txp *httpTransportErrWrapper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := txp.HTTPTransport.RoundTrip(req)
+	if err != nil {
+		return nil, NewTopLevelGenericErrWrapper(err)
+	}
+	return resp, nil
+}
+
 // httpTransportLogger is an HTTPTransport with logging.
 type httpTransportLogger struct {
 	// HTTPTransport is the underlying HTTP transport.
@@ -141,12 +154,13 @@ func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 	}
 }
 
-// WrapHTTPTransport creates an HTTPTransport using the given logger.
+// WrapHTTPTransport creates an HTTPTransport using the given logger
+// and guarantees that returned errors are wrapped.
 //
 // This is a low level factory. Consider not using it directly.
 func WrapHTTPTransport(logger Logger, txp HTTPTransport) HTTPTransport {
 	return &httpTransportLogger{
-		HTTPTransport: txp,
+		HTTPTransport: &httpTransportErrWrapper{txp},
 		Logger:        logger,
 	}
 }
@@ -249,4 +263,27 @@ func NewHTTPTransportStdlib(logger Logger) HTTPTransport {
 	dialer := NewDialerWithResolver(logger, NewResolverStdlib(logger))
 	tlsDialer := NewTLSDialer(dialer, NewTLSHandshakerStdlib(logger))
 	return NewHTTPTransport(logger, dialer, tlsDialer)
+}
+
+// HTTPClient is an http.Client-like interface.
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+	CloseIdleConnections()
+}
+
+// WrapHTTPClient wraps an HTTP client to add error wrapping capabilities.
+func WrapHTTPClient(clnt HTTPClient) HTTPClient {
+	return &httpClientErrWrapper{clnt}
+}
+
+type httpClientErrWrapper struct {
+	HTTPClient
+}
+
+func (c *httpClientErrWrapper) Do(req *http.Request) (*http.Response, error) {
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, NewTopLevelGenericErrWrapper(err)
+	}
+	return resp, nil
 }
