@@ -16,6 +16,9 @@ jobs:
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
           echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
       - run: ./E2E/ooniprobe.sh ./CLI/linux/386/ooniprobe
       - run: ./CLI/linux/pubdebian
         if: github.ref == 'refs/heads/ooniprobe-staging'
@@ -31,6 +34,9 @@ jobs:
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
           echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
       - run: ./mk DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/amd64
       - run: ./E2E/ooniprobe.sh ./CLI/linux/amd64/ooniprobe
       - run: ./CLI/linux/pubdebian
@@ -49,6 +55,9 @@ jobs:
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
           echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
       - run: ./mk DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm
       - run: ./E2E/ooniprobe.sh ./CLI/linux/arm/ooniprobe
       - run: ./CLI/linux/pubdebian
@@ -67,6 +76,9 @@ jobs:
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
           echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
       - run: ./mk DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm64
       - run: ./E2E/ooniprobe.sh ./CLI/linux/arm64/ooniprobe
       - run: ./CLI/linux/pubdebian

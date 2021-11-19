@@ -19,5 +19,8 @@ jobs:
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
           echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
       - run: ./mk XCODE_VERSION=12.4 ./MOBILE/ios/oonimkall.xcframework.zip
