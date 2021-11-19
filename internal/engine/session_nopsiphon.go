@@ -29,3 +29,8 @@ var errPsiphonNoEmbeddedConfig = errors.New("no embedded configuration file")
 func (s *sessionTunnelEarlySession) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 	return nil, errPsiphonNoEmbeddedConfig
 }
+
+// CheckEmbeddedPsiphonConfig checks whether we can load psiphon's config
+func CheckEmbeddedPsiphonConfig() error {
+	return nil
+}
