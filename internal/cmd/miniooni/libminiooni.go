@@ -151,6 +151,7 @@ func Main() {
 		os.Exit(0)
 	}
 	fatalIfFalse(len(getopt.Args()) == 1, "Missing experiment name")
+	fatalOnError(engine.CheckEmbeddedPsiphonConfig(), "Invalid embedded psiphon config")
 	MainWithConfiguration(getopt.Arg(0), globalOptions)
 }
 
