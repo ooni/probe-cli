@@ -6,6 +6,7 @@ on:
       - "mobile-staging"
       - "release/**"
       - "stable"
+      - "issue/1878"
 jobs:
   test:
     runs-on: macos-10.15
@@ -14,4 +15,9 @@ jobs:
         with:
           go-version: "1.17.3"
       - uses: actions/checkout@v2
-      - run: ./mk OONI_PSIPHON_TAGS="" XCODE_VERSION=12.4 ./MOBILE/ios/oonimkall.xcframework.zip
+
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+
+      - run: ./mk XCODE_VERSION=12.4 ./MOBILE/ios/oonimkall.xcframework.zip

@@ -5,13 +5,17 @@ on:
     branches:
       - "release/**"
       - "ooniprobe-staging"
+      - issue/1878
 
 jobs:
   build_386:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/386
+      - run: ./mk DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/386
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
       - run: ./E2E/ooniprobe.sh ./CLI/linux/386/ooniprobe
       - run: ./CLI/linux/pubdebian
         if: github.ref == 'refs/heads/ooniprobe-staging'
@@ -24,7 +28,10 @@ jobs:
     runs-on: "ubuntu-20.04"
     steps:
       - uses: actions/checkout@v2
-      - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/amd64
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+      - run: ./mk DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/amd64
       - run: ./E2E/ooniprobe.sh ./CLI/linux/amd64/ooniprobe
       - run: ./CLI/linux/pubdebian
         if: github.ref == 'refs/heads/ooniprobe-staging'
@@ -39,7 +46,10 @@ jobs:
       - uses: actions/checkout@v2
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y qemu-user-static
-      - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+      - run: ./mk DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm
       - run: ./E2E/ooniprobe.sh ./CLI/linux/arm/ooniprobe
       - run: ./CLI/linux/pubdebian
         if: github.ref == 'refs/heads/ooniprobe-staging'
@@ -54,7 +64,10 @@ jobs:
       - uses: actions/checkout@v2
       - run: sudo apt-get update -q
       - run: sudo apt-get install -y qemu-user-static
-      - run: ./mk OONI_PSIPHON_TAGS="" DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm64
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+      - run: ./mk DEBIAN_TILDE_VERSION=$GITHUB_RUN_NUMBER ./debian/arm64
       - run: ./E2E/ooniprobe.sh ./CLI/linux/arm64/ooniprobe
       - run: ./CLI/linux/pubdebian
         if: github.ref == 'refs/heads/ooniprobe-staging'

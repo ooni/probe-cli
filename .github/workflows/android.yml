@@ -6,6 +6,7 @@ on:
       - "mobile-staging"
       - "release/**"
       - "stable"
+      - "issue/1878"
 jobs:
   test:
     runs-on: ubuntu-20.04
@@ -14,4 +15,9 @@ jobs:
         with:
           go-version: "1.17.3"
       - uses: actions/checkout@v2
-      - run: ./mk OONI_PSIPHON_TAGS="" ./MOBILE/android/oonimkall.aar
+
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+
+      - run: ./mk ./MOBILE/android/oonimkall.aar
