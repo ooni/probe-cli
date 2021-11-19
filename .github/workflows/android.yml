@@ -14,4 +14,14 @@ jobs:
         with:
           go-version: "1.17.3"
       - uses: actions/checkout@v2
-      - run: ./mk OONI_PSIPHON_TAGS="" ./MOBILE/android/oonimkall.aar
+        with:
+          fetch-depth: 0
+
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
+
+      - run: ./mk ./MOBILE/android/oonimkall.aar

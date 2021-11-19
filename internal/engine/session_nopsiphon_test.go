@@ -19,3 +19,9 @@ func TestEarlySessionNoPsiphonFetchPsiphonConfig(t *testing.T) {
 		t.Fatal("expected nil here")
 	}
 }
+
+func TestCheckEmbeddedPsiphonConfig(t *testing.T) {
+	if err := CheckEmbeddedPsiphonConfig(); err != nil {
+		t.Fatal(err)
+	}
+}
