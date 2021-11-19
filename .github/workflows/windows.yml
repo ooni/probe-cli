@@ -13,6 +13,8 @@ jobs:
         with:
           go-version: "1.17.3"
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - run: sudo apt install mingw-w64
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
