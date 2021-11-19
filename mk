@@ -500,7 +500,7 @@ __android_build_with_ooni_go: search/for/go
 
 # important: OONIMKALL_V and OONIMKALL_R MUST be expanded just once so we use `:=`
 OONIMKALL_V := $(shell date -u +%Y.%m.%d-%H%M%S)
-OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
+OONIMKALL_R := $(shell git describe --tags)
 
 #help: The `debian/publish` target publishes all the debian packages
 #help: present in the toplevel directory using debopos-ci.
