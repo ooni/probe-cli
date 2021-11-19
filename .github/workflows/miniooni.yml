@@ -8,7 +8,6 @@ on:
       - "master"
       - "release/**"
       - "stable"
-      - "issue/1878"
 jobs:
   test:
     runs-on: ubuntu-20.04

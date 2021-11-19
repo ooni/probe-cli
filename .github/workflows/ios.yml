@@ -6,7 +6,6 @@ on:
       - "mobile-staging"
       - "release/**"
       - "stable"
-      - "issue/1878"
 jobs:
   test:
     runs-on: macos-10.15
