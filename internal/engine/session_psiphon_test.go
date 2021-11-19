@@ -18,3 +18,9 @@ func TestSessionEmbeddedPsiphonConfig(t *testing.T) {
 		t.Fatal("expected non-nil data here")
 	}
 }
+
+func TestCheckEmbeddedPsiphonConfig(t *testing.T) {
+	if err := CheckEmbeddedPsiphonConfig(); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -637,13 +637,31 @@ search/for/zip:
 	@command -v zip || { echo "not found"; exit 1; }
 
 #help:
-#help: The `./mk maybe/copypsiphon` command copies the private psiphon config
-#help: file into the current tree unless `$(OONI_PSIPHON_TAGS)` is empty.
+#help: The `./mk maybe/copypsiphon` command checks whether we want
+#help: to embed the Psiphon config file into the build. To this end,
+#help: this command checks whether OONI_PSIPHON_TAGS is set. In
+#help: such a case, this command checks whether the required files
+#help: are already in place. If not, this command fetches them
+#help: by cloning the github.com/ooni/probe-private repo.
+#
+# Note: we check for files being already there before attempting
+# to clone _because_ we put files in there using secrets when
+# running cloud builds. This saves us from including a token with
+# `repo` scope as a build secret, which is a very broad scope.
+#
+# Cloning the private repository, instead, is the way in which
+# local builds get access to the psiphon config files.
 .PHONY: maybe/copypsiphon
 maybe/copypsiphon: search/for/git
-	test -z "$(OONI_PSIPHON_TAGS)" || $(MAKE) -f mk $(OONIPRIVATE)
-	test -z "$(OONI_PSIPHON_TAGS)" || cp $(OONIPRIVATE)/psiphon-config.key ./internal/engine
-	test -z "$(OONI_PSIPHON_TAGS)" || cp $(OONIPRIVATE)/psiphon-config.json.age ./internal/engine
+	@if test "$(OONI_PSIPHON_TAGS)" = "ooni_psiphon_config"; then \
+		if test ! -f ./internal/engine/psiphon-config.json.age -a \
+		        ! -f ./internal/engine/psiphon-config.key; then \
+			echo "copying psiphon configuration file into ./internal/engine"; \
+			$(MAKE) -f mk $(OONIPRIVATE) || exit 1; \
+			cp $(OONIPRIVATE)/psiphon-config.key ./internal/engine || exit 1; \
+			cp $(OONIPRIVATE)/psiphon-config.json.age ./internal/engine || exit 1; \
+		fi; \
+	fi
 
 # OONIPRIVATE is the directory where we clone the private repository.
 OONIPRIVATE = $(GIT_CLONE_DIR)/github.com/ooni/probe-private
