@@ -17,4 +17,8 @@ export GOARM=$GOARM
 export CGO_ENABLED=1
 export GOOS=linux
 export GOARCH=$GOARCH
-go build -o "./CLI/ooniprobe-linux-$GOARCH" -ldflags='-s -w -extldflags "-static"' "$@" ./cmd/ooniprobe
+archname=$GOARCH
+if [ "$GOARCH" = "arm" -a "$GOARM" = "7" ]; then
+	archname="armv7"
+fi
+go build -o "./CLI/ooniprobe-linux-$archname" -ldflags='-s -w -extldflags "-static"' "$@" ./cmd/ooniprobe
