@@ -511,7 +511,7 @@ OONIGO_REPO = https://github.com/ooni/go
 #help: correct version of the Android sdk.
 .PHONY: android/sdk
 android/sdk: search/for/java
-	test -d $(OONI_ANDROID_HOME) && rm -rf $(OONI_ANDROID_HOME)
+	rm -rf $(OONI_ANDROID_HOME)
 	$(MAKE) -f mk android/sdk/download
 	test -f $(__ANDROID_SDKMANAGER) || { echo "please run './mk android/sdk/download'"; exit 1; }
 	echo "Yes" | $(__ANDROID_SDKMANAGER) --install $(ANDROID_INSTALL_EXTRA) 'ndk;$(ANDROID_NDK_VERSION)'
