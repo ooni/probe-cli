@@ -56,17 +56,6 @@ $(GIT_CLONE_DIR):
 	mkdir -p $(GIT_CLONE_DIR)
 
 #help:
-#help: * GOLANG_DOCKER_GOCACHE : where to store golang's build cache to
-#help:                           speed up subsequent Docker builds.
-GOLANG_DOCKER_GOCACHE = $(HOME)/.ooniprobe-build/docker/gocache
-
-#help:
-#help: * GOLANG_DOCKER_GOPATH  : GOPATH directory used by builds running
-#help:                           inside docker to significantly speed
-#help:                           up subsequent Docker based builds.
-GOLANG_DOCKER_GOPATH := $(HOME)/.ooniprobe-build/docker/gopath
-
-#help:
 #help: * GOLANG_EXTRA_FLAGS    : extra flags passed to `go build ...`, empty by
 #help:                           default. Useful to pass flags to `go`, e.g.:
 #help:
@@ -118,8 +107,6 @@ show-config:
 	@echo "ANDROID_INSTALL_EXTRA=$(ANDROID_INSTALL_EXTRA)"
 	@echo "ANDROID_NDK_VERSION=$(ANDROID_NDK_VERSION)"
 	@echo "GIT_CLONE_DIR=$(GIT_CLONE_DIR)"
-	@echo "GOLANG_DOCKER_GOCACHE=$(GOLANG_DOCKER_GOCACHE)"
-	@echo "GOLANG_DOCKER_GOPATH=$(GOLANG_DOCKER_GOPATH)"
 	@echo "GOLANG_EXTRA_FLAGS=$(GOLANG_EXTRA_FLAGS)"
 	@echo "GOLANG_VERSION_NUMBER=$(GOLANG_VERSION_NUMBER)"
 	@echo "MINGW_W64_VERSION=$(MINGW_W64_VERSION)"
@@ -145,7 +132,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help:
 #help: You can also build the following subtargets:
 .PHONY: ./CLI/miniooni
-./CLI/miniooni:                       \
+./CLI/miniooni: \
 	./CLI/miniooni-darwin-amd64 \
 	./CLI/miniooni-darwin-arm64 \
 	./CLI/miniooni-linux-386 \
@@ -217,9 +204,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help:
 #help: You can also build the following subtargets:
 .PHONY: ./CLI/ooniprobe-darwin
-./CLI/ooniprobe-darwin: \
-	./CLI/ooniprobe-darwin-amd64 \
-	./CLI/ooniprobe-darwin-arm64
+./CLI/ooniprobe-darwin: ./CLI/ooniprobe-darwin-amd64 ./CLI/ooniprobe-darwin-arm64
 
 # We force CGO_ENABLED=1 because in principle we may be cross compiling. In
 # reality it's hard to see a macOS/darwin build not made on macOS.
@@ -254,28 +239,28 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 .PHONY:     ./CLI/ooniprobe-linux-386
 ./CLI/ooniprobe-linux-386: search/for/docker maybe/copypsiphon
 	docker pull --platform linux/386 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/386 -e GOPATH=/gopath -e GOARCH=386 -v $(GOLANG_DOCKER_GOCACHE)/386:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	docker run --platform linux/386 -e GOPATH=/gopath -e GOARCH=386 -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
 #help:
 #help: * `./mk ./CLI/ooniprobe-linux-amd64`: linux/amd64
 .PHONY:     ./CLI/ooniprobe-linux-amd64
 ./CLI/ooniprobe-linux-amd64: search/for/docker maybe/copypsiphon
 	docker pull --platform linux/amd64 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/amd64 -e GOPATH=/gopath -e GOARCH=amd64 -v $(GOLANG_DOCKER_GOCACHE)/amd64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	docker run --platform linux/amd64 -e GOPATH=/gopath -e GOARCH=amd64 -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
 #help:
 #help: * `./mk ./CLI/ooniprobe-linux-armv7`: linux/arm
 .PHONY:     ./CLI/ooniprobe-linux-armv7
 ./CLI/ooniprobe-linux-armv7: search/for/docker maybe/copypsiphon
 	docker pull --platform linux/arm/v7 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/arm/v7 -e GOPATH=/gopath -e GOARCH=arm -e GOARM=7 -v $(GOLANG_DOCKER_GOCACHE)/arm:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	docker run --platform linux/arm/v7 -e GOPATH=/gopath -e GOARCH=arm -e GOARM=7 -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
 #help:
 #help: * `./mk ./CLI/ooniprobe-linux-arm64`: linux/arm64
 .PHONY:     ./CLI/ooniprobe-linux-arm64
 ./CLI/ooniprobe-linux-arm64: search/for/docker maybe/copypsiphon
 	docker pull --platform linux/arm64 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/arm64 -e GOPATH=/gopath -e GOARCH=arm64 -v $(GOLANG_DOCKER_GOCACHE)/arm64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	docker run --platform linux/arm64 -e GOPATH=/gopath -e GOARCH=arm64 -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
 #help:
 #help: The `./mk ./CLI/ooniprobe-windows` command builds the ooniprobe official
@@ -305,10 +290,13 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help:
 #help: You can also build the following subtargets:
 .PHONY: ./MOBILE/android
-./MOBILE/android: ./MOBILE/android/oonimkall.aar
-	cp ./MOBILE/android/oonimkall.aar ./MOBILE/android/oonimkall-$(OONIMKALL_V).aar
-	cp ./MOBILE/android/oonimkall-sources.jar ./MOBILE/android/oonimkall-$(OONIMKALL_V)-sources.jar
-	cat ./MOBILE/android/template.pom | sed -e "s/@VERSION@/$(OONIMKALL_V)/g" > ./MOBILE/android/oonimkall-$(OONIMKALL_V).pom
+./MOBILE/android: ./MOBILE/android/oonimkall.aar ./MOBILE/android/oonimkall.pom
+
+#help:
+#help: * `./mk ./MOBILE/android/oonimkall.pom`: the POM
+.PHONY:   ./MOBILE/android/oonimkall.pom
+./MOBILE/android/oonimkall.pom:
+	cat ./MOBILE/android/template.pom | sed -e "s/@VERSION@/$(OONIMKALL_V)/g" > ./MOBILE/android/oonimkall.pom
 
 #help:
 #help: * `./mk ./MOBILE/android/oonimkall.aar`: the AAR
@@ -325,16 +313,14 @@ GOMOBILE = $(shell go env GOPATH)/bin/gomobile
 __android_build_with_ooni_go: search/for/go
 	go get -u golang.org/x/mobile/cmd/gomobile
 	$(GOMOBILE) init
-	PATH=$(shell go env GOPATH)/bin:$$PATH ANDROID_HOME=$(OONI_ANDROID_HOME) ANDROID_NDK_HOME=$(OONI_ANDROID_HOME)/ndk/$(ANDROID_NDK_VERSION) $(GOMOBILE) bind -target android -o ./MOBILE/android/oonimkall.aar -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
+	PATH=$(shell go env GOPATH)/bin:$$PATH ANDROID_HOME=$(OONI_ANDROID_HOME) ANDROID_NDK_HOME=$(OONI_ANDROID_HOME)/ndk/$(ANDROID_NDK_VERSION) $(GOMOBILE) bind -x -target android -o ./MOBILE/android/oonimkall.aar -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
 
 #help:
 #help: The `./mk ./MOBILE/ios` command builds the oonimkall library for iOS.
 #help:
 #help: You can also build the following subtargets:
 .PHONY: ./MOBILE/ios
-./MOBILE/ios: \
-	./MOBILE/ios/oonimkall.xcframework.zip  \
-	./MOBILE/ios/oonimkall.podspec
+./MOBILE/ios: ./MOBILE/ios/oonimkall.xcframework.zip ./MOBILE/ios/oonimkall.podspec
 
 #help:
 #help: * `./mk ./MOBILE/ios/oonimkall.xcframework.zip`: zip the xcframework
@@ -503,17 +489,15 @@ OONIPRIVATE_REPO = git@github.com:ooni/probe-private
 
 # $(OONIPRIVATE) clones the private repository in $(GIT_CLONE_DIR)
 $(OONIPRIVATE): search/for/git $(GIT_CLONE_DIR)
-	test -d $(OONIPRIVATE) || $(MAKE) -f mk __really_clone_private_repo
-
-__really_clone_private_repo:
+	test -d $(OONIPRIVATE) && rm -rf $(OONIPRIVATE)
 	git clone $(OONIPRIVATE_REPO) $(OONIPRIVATE)
 
 #help:
 #help: The `./mk ooni/go` command builds the latest version of ooni/go.
 .PHONY: ooni/go
 ooni/go: search/for/bash search/for/git search/for/go $(OONIGODIR)
-	test -d $(OONIGODIR) || git clone -b $(OONIGO_BRANCH) --single-branch --depth 8 $(OONIGO_REPO) $(OONIGODIR)
-	cd $(OONIGODIR) && git pull --ff-only
+	rm -rf $(OONIGODIR)
+	git clone -b $(OONIGO_BRANCH) --single-branch --depth 8 $(OONIGO_REPO) $(OONIGODIR)
 	cd $(OONIGODIR)/src && ./make.bash
 
 # OONIGODIR is the directory in which we clone ooni/go
@@ -527,7 +511,8 @@ OONIGO_REPO = https://github.com/ooni/go
 #help: correct version of the Android sdk.
 .PHONY: android/sdk
 android/sdk: search/for/java
-	test -d $(OONI_ANDROID_HOME) || $(MAKE) -f mk android/sdk/download
+	test -d $(OONI_ANDROID_HOME) && rm -rf $(OONI_ANDROID_HOME)
+	$(MAKE) -f mk android/sdk/download
 	test -f $(__ANDROID_SDKMANAGER) || { echo "please run './mk android/sdk/download'"; exit 1; }
 	echo "Yes" | $(__ANDROID_SDKMANAGER) --install $(ANDROID_INSTALL_EXTRA) 'ndk;$(ANDROID_NDK_VERSION)'
 
