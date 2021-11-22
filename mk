@@ -276,7 +276,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help:
 #help: * `./mk ./CLI/ooniprobe-windows-386.exe`: windows/386
 .PHONY:     ./CLI/ooniprobe-windows-386.exe
-./CLI/ooniprobe-windows-38.exe: search/for/go search/for/mingw-w64 maybe/copypsiphon
+./CLI/ooniprobe-windows-386.exe: search/for/go search/for/mingw-w64 maybe/copypsiphon
 	GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
 
 #help:
