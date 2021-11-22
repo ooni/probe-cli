@@ -161,68 +161,68 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help: You can also build the following subtargets:
 .PHONY: ./CLI/miniooni
 ./CLI/miniooni:                       \
-	./CLI/darwin/amd64/miniooni       \
-	./CLI/darwin/arm64/miniooni       \
-	./CLI/linux/386/miniooni          \
-	./CLI/linux/amd64/miniooni        \
-	./CLI/linux/arm/miniooni          \
-	./CLI/linux/arm64/miniooni        \
-	./CLI/windows/386/miniooni.exe    \
-	./CLI/windows/amd64/miniooni.exe
+	./CLI/miniooni-darwin-amd64 \
+	./CLI/miniooni-darwin-arm64 \
+	./CLI/miniooni-linux-386 \
+	./CLI/miniooni-linux-amd64 \
+	./CLI/miniooni-linux-armv7 \
+	./CLI/miniooni-linux-arm64 \
+	./CLI/miniooni-windows-386.exe \
+	./CLI/miniooni-windows-amd64.exe
 
 # All the miniooni targets build with CGO_ENABLED=0 such that the build
 # succeeds when the GOOS/GOARCH is such that we aren't crosscompiling
 # (e.g., targeting darwin/amd64 on darwin/amd64) _and_ there's no C compiler
 # installed on the system. We can afford that since miniooni is pure Go.
 #help:
-#help: * `./mk ./CLI/darwin/amd64/miniooni`: darwin/amd64
-.PHONY:   ./CLI/darwin/amd64/miniooni
-./CLI/darwin/amd64/miniooni: search/for/go maybe/copypsiphon
+#help: * `./mk ./CLI/miniooni-darwin-amd64`: darwin/amd64
+.PHONY:   ./CLI/miniooni-darwin-amd64
+./CLI/miniooni-darwin-amd64: search/for/go maybe/copypsiphon
 	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 #help:
-#help: * `./mk ./CLI/darwin/arm64/miniooni`: darwin/arm64
-.PHONY:   ./CLI/darwin/arm64/miniooni
-./CLI/darwin/arm64/miniooni: search/for/go maybe/copypsiphon
+#help: * `./mk ./CLI/miniooni-darwin-arm64`: darwin/arm64
+.PHONY:   ./CLI/miniooni-darwin-arm64
+./CLI/miniooni-darwin-arm64: search/for/go maybe/copypsiphon
 	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 # When building for Linux we use `-tags netgo` and `-extldflags -static` to produce
 # a statically linked binary that completely bypasses libc.
 #help:
-#help: * `./mk ./CLI/linux/386/miniooni`: linux/386
-.PHONY:   ./CLI/linux/386/miniooni
-./CLI/linux/386/miniooni: search/for/go maybe/copypsiphon
+#help: * `./mk ./CLI/miniooni-linux-386`: linux/386
+.PHONY:   ./CLI/miniooni-linux-386
+./CLI/miniooni-linux-386: search/for/go maybe/copypsiphon
 	GOOS=linux GOARCH=386 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 #help:
-#help: * `./mk ./CLI/linux/amd64/miniooni`: linux/amd64
-.PHONY:   ./CLI/linux/amd64/miniooni
-./CLI/linux/amd64/miniooni: search/for/go maybe/copypsiphon
+#help: * `./mk ./CLI/miniooni-linux-amd64`: linux/amd64
+.PHONY:   ./CLI/miniooni-linux-amd64
+./CLI/miniooni-linux-amd64: search/for/go maybe/copypsiphon
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 # When building for GOARCH=arm, we always force GOARM=7 (i.e., armhf/armv7).
 #help:
-#help: * `./mk ./CLI/linux/arm/miniooni`: linux/arm
-.PHONY:   ./CLI/linux/arm/miniooni
-./CLI/linux/arm/miniooni: search/for/go maybe/copypsiphon
+#help: * `./mk ./CLI/miniooni-linux-armv7`: linux/armv7
+.PHONY:   ./CLI/miniooni-linux-armv7
+./CLI/miniooni-linux-armv7: search/for/go maybe/copypsiphon
 	GOOS=linux GOARCH=arm CGO_ENABLED=0 GOARM=7 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 #help:
-#help: * `./mk ./CLI/linux/arm64/miniooni`: linux/arm64
-.PHONY:   ./CLI/linux/arm64/miniooni
-./CLI/linux/arm64/miniooni: search/for/go maybe/copypsiphon
+#help: * `./mk ./CLI/miniooni-linux-arm64`: linux/arm64
+.PHONY:   ./CLI/miniooni-linux-arm64
+./CLI/miniooni-linux-arm64: search/for/go maybe/copypsiphon
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 #help:
-#help: * `./mk ./CLI/windows/386/miniooni.exe`: windows/386
-.PHONY:   ./CLI/windows/386/miniooni.exe
-./CLI/windows/386/miniooni.exe: search/for/go maybe/copypsiphon
+#help: * `./mk ./CLI/miniooni-windows-386.exe`: windows/386
+.PHONY:   ./CLI/miniooni-windows-386.exe
+./CLI/miniooni-windows-386.exe: search/for/go maybe/copypsiphon
 	GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 #help:
-#help: * `./mk ./CLI/windows/amd64/miniooni.exe`: windows/amd64
-.PHONY:   ./CLI/windows/amd64/miniooni.exe
-./CLI/windows/amd64/miniooni.exe: search/for/go maybe/copypsiphon
+#help: * `./mk ./CLI/miniooni-windows-amd64.exe`: windows/amd64
+.PHONY:   ./CLI/miniooni-windows-amd64.exe
+./CLI/miniooni-windows-amd64.exe: search/for/go maybe/copypsiphon
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
 
 #help:
