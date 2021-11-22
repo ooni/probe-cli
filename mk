@@ -261,21 +261,21 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 .PHONY:     ./CLI/ooniprobe-linux-amd64
 ./CLI/ooniprobe-linux-amd64: search/for/docker maybe/copypsiphon
 	docker pull --platform linux/amd64 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/amd64 -e GOPATH=/gopath -e GOARCH=amd64 -v $(GOLANG_DOCKER_GOCACHE)/amd64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	docker run --platform linux/amd64 -e GOPATH=/gopath -e GOARCH=amd64 -v $(GOLANG_DOCKER_GOCACHE)/amd64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
 #help:
 #help: * `./mk ./CLI/ooniprobe-linux-armv7`: linux/arm
 .PHONY:     ./CLI/ooniprobe-linux-armv7
 ./CLI/ooniprobe-linux-armv7: search/for/docker maybe/copypsiphon
 	docker pull --platform linux/arm/v7 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/arm/v7 -e GOPATH=/gopath -e GOARCH=arm -e GOARM=7 -v $(GOLANG_DOCKER_GOCACHE)/arm:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	docker run --platform linux/arm/v7 -e GOPATH=/gopath -e GOARCH=arm -e GOARM=7 -v $(GOLANG_DOCKER_GOCACHE)/arm:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
 #help:
 #help: * `./mk ./CLI/ooniprobe-linux-arm64`: linux/arm64
 .PHONY:     ./CLI/ooniprobe-linux-arm64
 ./CLI/ooniprobe-linux-arm64: search/for/docker maybe/copypsiphon
 	docker pull --platform linux/arm64 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/arm64 -e GOPATH=/gopath -e GOARCH=arm64 -v $(GOLANG_DOCKER_GOCACHE)/arm64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/linux/build -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	docker run --platform linux/arm64 -e GOPATH=/gopath -e GOARCH=arm64 -v $(GOLANG_DOCKER_GOCACHE)/arm64:/root/.cache/go-build -v $(GOLANG_DOCKER_GOPATH):/gopath -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
 
 #help:
 #help: The `./mk ./CLI/ooniprobe-windows` command builds the ooniprobe official
