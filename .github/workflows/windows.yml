@@ -4,7 +4,10 @@ on:
   push:
     branches:
       - "release/**"
-      - "stable"
+      - "issue/1879"
+    tags:
+      - "v*"
+
 jobs:
   build:
     runs-on: "ubuntu-20.04"
@@ -25,8 +28,13 @@ jobs:
       - run: ./mk MINGW_W64_VERSION="9.3-win32" ./CLI/ooniprobe-windows
       - uses: actions/upload-artifact@v2
         with:
-          name: ooniprobe.exe
+          name: ooniprobe-windows-amd64.exe
           path: ./CLI/ooniprobe-windows-amd64.exe
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ooniprobe-windows-386.exe
+          path: ./CLI/ooniprobe-windows-386.exe
+
   test:
     needs: build
     runs-on: "windows-2019"
@@ -34,5 +42,25 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
-          name: ooniprobe.exe
-      - run: bash.exe ./E2E/ooniprobe.sh ./ooniprobe.exe
+          name: ooniprobe-windows-amd64.exe
+      - run: bash.exe ./E2E/ooniprobe.sh ./ooniprobe-windows-amd64.exe
+
+  publish:
+    needs: test
+    runs-on: "ubuntu-20.04"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: ooniprobe-windows-amd64.exe
+      - uses: actions/download-artifact@v2
+        with:
+          name: ooniprobe-windows-386.exe
+      - run: |
+          tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
+          gh release create -p $tag --target $GITHUB_SHA || true
+          gh release upload $tag --clobber ooniprobe-windows-386.exe \
+                                           ooniprobe-windows-amd64.exe
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
