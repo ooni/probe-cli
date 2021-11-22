@@ -496,11 +496,14 @@ type ArchivalTHMeasurement struct {
 }
 
 // NewArchivalTHMeasurement creates the archival representation of THMeasurement.
-func NewArchivalTHMeasurement(in *THMeasurement) *ArchivalTHMeasurement {
-	return &ArchivalTHMeasurement{
-		DNS:       NewArchivalDNSMeasurementList(in.DNS),
-		Endpoints: NewArchivalHTTPEndpointMeasurementList(in.Endpoints),
+func NewArchivalTHMeasurement(in *THMeasurement) (out *ArchivalTHMeasurement) {
+	if in != nil {
+		out = &ArchivalTHMeasurement{
+			DNS:       NewArchivalDNSMeasurementList(in.DNS),
+			Endpoints: NewArchivalHTTPEndpointMeasurementList(in.Endpoints),
+		}
 	}
+	return
 }
 
 //

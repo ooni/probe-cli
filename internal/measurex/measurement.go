@@ -31,7 +31,8 @@ type URLMeasurement struct {
 	// if we choose to follow redirections.
 	RedirectURLs []string
 
-	// TH is the measurement collected by the TH.
+	// TH is the measurement collected by the TH. This field
+	// will be nil if we cannot contact the TH.
 	TH *THMeasurement
 
 	// TotalRuntime is the total time to measure this URL.
