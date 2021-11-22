@@ -17,4 +17,4 @@ export GOARM=$GOARM
 export CGO_ENABLED=1
 export GOOS=linux
 export GOARCH=$GOARCH
-go build -o "./CLI-ooniprobe-linux-$GOARCH" -ldflags='-s -w -extldflags "-static"' "$@" ./cmd/ooniprobe
+go build -o "./CLI/ooniprobe-linux-$GOARCH" -ldflags='-s -w -extldflags "-static"' "$@" ./cmd/ooniprobe
