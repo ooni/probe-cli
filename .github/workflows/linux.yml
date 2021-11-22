@@ -70,4 +70,3 @@ jobs:
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
       - run: ./mk ./CLI/ooniprobe-linux-arm64
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-arm64
-
