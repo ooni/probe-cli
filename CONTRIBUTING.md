@@ -123,12 +123,6 @@ forward port fixes, we cherry-pick them into `master`.
 When we branch off release `x.y` from `master`, we also need to bump
 the `alpha` version used by `master`.
 
-None of the branches described so far automatically publishes any
-binary package. To publish binary packages we use the `PRODUCT-staging`
-branches (e.g., `mobile-staging`). To trigger these builds, we merge
-from a release branch into the desired `PRODUCT-staging` branch. This
-design ensures that we only publish binary packages when we want to
-do so. Because we merge from a release branch, we are not pushing alpha
-code to binary releases. (The only exception to this rule is `miniooni`,
-treated differently because it's an `alpha` client.)
+We build binary packages for each tagged release. We will use external
+tools for publishing binaries to our Debian repository, Maven Central, etc.
 
