@@ -489,7 +489,7 @@ OONIPRIVATE_REPO = git@github.com:ooni/probe-private
 
 # $(OONIPRIVATE) clones the private repository in $(GIT_CLONE_DIR)
 $(OONIPRIVATE): search/for/git $(GIT_CLONE_DIR)
-	test -d $(OONIPRIVATE) && rm -rf $(OONIPRIVATE)
+	rm -rf $(OONIPRIVATE)
 	git clone $(OONIPRIVATE_REPO) $(OONIPRIVATE)
 
 #help:
