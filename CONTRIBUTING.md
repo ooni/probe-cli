@@ -125,43 +125,5 @@ port, the commit message should start with `[forwardport]`.
 When we branch off release `x.y` from `master`, we also need to bump
 the `alpha` version used by `master`.
 
-In addition we have `PRODUCT-staging` branches for each product. These
-branches are described below:
-
-- `miniooni-staging`: branch for building and publishing `miniooni`
-binaries. This branch marges from the `master` branch when we tag
-alpha releases. We use this strategy because `miniooni` is an alpha client.
-We publish the resulting binaries in alpha releases.
-
-- `mobile-staging`: branch for building and publishing iOS and
-Android releases of the `pkg/oonimkall` library. This branch
-merges from the release branches or the release tags. We use this
-strategy because mobile releases are either beta quality or
-production quality releases. We publish the resulting binaries
-in beta quality or stable releases.
-
-- `oohelperd-staging`: branch for building and publishing `oohelperd`
-binaries. This branch merges from the release branches or the
-release tags. We use this strategy because `oohelperd` releases
-are either beta quality or production quality releases. We
-publish the resulting binaries in OONI's internal Debian repository.
-
-- `ooniprobe-staging`: branch for building and publising `ooniprobe`
-binaries. This branch merges from the release branches or the
-release tags. We use this strategy because `ooniprobe` releases
-are either beta quality or production quality releases. We
-publish the resulting binaries both in beta quality or stable
-releases and in OONI's public Debian repository.
-
-Builds proper happen either in this repository, using GitHub
-actions, or using private build machines. Sometimes we need
-private build machines to inject specific secrets into the
-binary (e.g., we currently use this to inject OONI's Psiphon config).
-
-Additionally, we currently publish as Github Actions artifacts
-`miniooni` binaries for selected Linux architectures for
-each commit that lands into the `master` branch. You will
-find those binaries [in the results of each individual build](
-https://github.com/ooni/probe-cli/actions/workflows/miniooni.yml)
-until they are automatically removed by GitHub compatibly with
-the build assets retention period (should be 90 days).
+We build binary packages for each tagged release. We will use external
+tools for publishing binaries to our Debian repository, Maven Central, etc.
