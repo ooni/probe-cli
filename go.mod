@@ -32,7 +32,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.6.6
 	github.com/onsi/ginkgo v1.16.5 // indirect
-	github.com/ooni/go-libtor v1.0.299-0.20211123141717-522b08b6426f // indirect
+	github.com/ooni/go-libtor v1.1.4 // indirect
 	github.com/ooni/oohttp v0.0.0-20211110125146-9fc06c067bd6
 	github.com/ooni/probe-assets v0.5.0
 	github.com/ooni/psiphon v0.9.0
@@ -52,7 +52,7 @@ require (
 	golang.org/x/mobile v0.0.0-20211109191125-d61a72f26a1a // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20211109214657-ef0fda0de508
-	golang.org/x/sys v0.0.0-20211117180635-dee7805ff2e1
+	golang.org/x/sys v0.0.0-20211123173158-ef496fb156ab
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.8-0.20211022200916-316ba0b74098 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
