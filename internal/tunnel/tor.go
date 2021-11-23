@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/cretz/bine/tor"
+	"github.com/ooni/go-libtor"
 )
 
 // torProcess is a running tor process.
@@ -77,15 +78,16 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	// Implementation note: here we make sure that we're not going to
 	// execute a binary called "tor" in the current directory on Windows
 	// as documented in https://blog.golang.org/path-security.
-	exePath, err := config.execabsLookPath(config.torBinary())
-	if err != nil {
-		return nil, err
-	}
-	config.logger().Infof("tunnel: exec: %s %+v", exePath, extraArgs)
+	// exePath, err := config.execabsLookPath(config.torBinary())
+	// if err != nil {
+	//	return nil, err
+	// }
+	// config.logger().Infof("tunnel: exec: %s %+v", exePath, extraArgs)
 	instance, err := config.torStart(ctx, &tor.StartConf{
+		ProcessCreator: libtor.Creator,
 		DataDir:   stateDir,
 		ExtraArgs: extraArgs,
-		ExePath:   exePath,
+		// ExePath:   exePath,
 		NoHush:    true,
 	})
 	if err != nil {
