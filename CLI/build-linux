@@ -14,8 +14,11 @@ apk add --no-progress gcc git linux-headers musl-dev
 # some of the following exports are redundant but are however
 # useful because they provide explicit logging
 export GOARM=$GOARM
-export GOPATH=$GOPATH
 export CGO_ENABLED=1
 export GOOS=linux
 export GOARCH=$GOARCH
-go build -o "./CLI/linux/$GOARCH/" -ldflags='-s -w -extldflags "-static"' "$@" ./cmd/ooniprobe
+archname=$GOARCH
+if [ "$GOARCH" = "arm" -a "$GOARM" = "7" ]; then
+	archname="armv7"
+fi
+go build -o "./CLI/ooniprobe-linux-$archname" -ldflags='-s -w -extldflags "-static"' "$@" ./cmd/ooniprobe
