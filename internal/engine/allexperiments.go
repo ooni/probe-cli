@@ -251,7 +251,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &stunreachability.Config{},
-			inputPolicy: InputOptional,
+			inputPolicy: InputStrictlyRequired,
 		}
 	},
 
