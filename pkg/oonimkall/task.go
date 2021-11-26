@@ -45,7 +45,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/pkg/oonimkall/internal/tasks"
 )
 
 // Task is an asynchronous task running an experiment. It mimics the
@@ -63,13 +62,13 @@ type Task struct {
 	cancel    context.CancelFunc
 	isdone    *atomicx.Int64
 	isstopped *atomicx.Int64
-	out       chan *tasks.Event
+	out       chan *event
 }
 
 // StartTask starts an asynchronous task. The input argument is a
 // serialized JSON conforming to MK v0.10.9's API.
 func StartTask(input string) (*Task, error) {
-	var settings tasks.Settings
+	var settings settings
 	if err := json.Unmarshal([]byte(input), &settings); err != nil {
 		return nil, err
 	}
@@ -79,12 +78,12 @@ func StartTask(input string) (*Task, error) {
 		cancel:    cancel,
 		isdone:    &atomicx.Int64{},
 		isstopped: &atomicx.Int64{},
-		out:       make(chan *tasks.Event, bufsiz),
+		out:       make(chan *event, bufsiz),
 	}
 	go func() {
 		defer close(task.out)
 		defer task.isstopped.Add(1)
-		tasks.Run(ctx, &settings, task.out)
+		run(ctx, &settings, task.out)
 	}()
 	return task, nil
 }

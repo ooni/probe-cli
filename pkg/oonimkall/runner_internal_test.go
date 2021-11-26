@@ -1,4 +1,4 @@
-package tasks
+package oonimkall
 
 import (
 	"context"
@@ -32,11 +32,11 @@ func TestRunnerMaybeLookupLocationFailure(t *testing.T) {
 		// TODO(https://github.com/ooni/probe-cli/pull/518)
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *Event)
-	settings := &Settings{
+	out := make(chan *event)
+	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Name:      "Example",
-		Options: SettingsOptions{
+		Options: settingsOptions{
 			SoftwareName:    "oonimkall-test",
 			SoftwareVersion: "0.1.0",
 		},
@@ -52,7 +52,7 @@ func TestRunnerMaybeLookupLocationFailure(t *testing.T) {
 				"failure.cc_lookup", "failure.resolver_lookup":
 				seen++
 			case "status.progress":
-				evv := ev.Value.(EventStatusProgress)
+				evv := ev.Value.(eventStatusProgress)
 				if evv.Percentage >= 0.2 {
 					panic(fmt.Sprintf("too much progress: %+v", ev))
 				}
@@ -64,7 +64,7 @@ func TestRunnerMaybeLookupLocationFailure(t *testing.T) {
 		seench <- seen
 	}()
 	expected := errors.New("mocked error")
-	r := NewRunner(settings, out)
+	r := newRunner(settings, out)
 	r.maybeLookupLocation = func(*engine.Session) error {
 		return expected
 	}

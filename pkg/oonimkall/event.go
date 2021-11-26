@@ -1,14 +1,14 @@
-package tasks
+package oonimkall
 
 type eventEmpty struct{}
 
-// EventFailure contains information on a failure.
-type EventFailure struct {
+// eventFailure contains information on a failure.
+type eventFailure struct {
 	Failure string `json:"failure"`
 }
 
-// EventLog is an event containing a log message.
-type EventLog struct {
+// eventLog is an event containing a log message.
+type eventLog struct {
 	LogLevel string `json:"log_level"`
 	Message  string `json:"message"`
 }
@@ -33,8 +33,8 @@ type eventStatusGeoIPLookup struct {
 	ProbeNetworkName string `json:"probe_network_name"`
 }
 
-// EventStatusProgress reports progress information.
-type EventStatusProgress struct {
+// eventStatusProgress reports progress information.
+type eventStatusProgress struct {
 	Message    string  `json:"message"`
 	Percentage float64 `json:"percentage"`
 }
@@ -49,9 +49,9 @@ type eventStatusResolverLookup struct {
 	ResolverNetworkName string `json:"resolver_network_name"`
 }
 
-// Event is an event emitted by a task. This structure extends the event
+// event is an event emitted by a task. This structure extends the event
 // described by MK v0.10.9 FFI API (https://git.io/Jv4Rv).
-type Event struct {
+type event struct {
 	Key   string      `json:"key"`
 	Value interface{} `json:"value"`
 }
