@@ -679,7 +679,7 @@ func TestStringListToModelURLInfoWithValidInput(t *testing.T) {
 func TestStringListToModelURLInfoWithInvalidInput(t *testing.T) {
 	input := []string{
 		"stun://stun.voip.blackberry.com:3478",
-		"\t",
+		"\t",  // <- not a valid URL
 		"stun://stun.altar.com.pl:3478",
 	}
 	output, err := stringListToModelURLInfo(input, nil)

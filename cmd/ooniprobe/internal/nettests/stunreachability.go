@@ -13,7 +13,7 @@ type STUNReachability struct{}
 func (n STUNReachability) lookupURLs(ctl *Controller) ([]string, error) {
 	inputloader := &engine.InputLoader{
 		CheckInConfig: &model.CheckInConfig{
-			// not needed because we have default input
+			// not needed because we have default static input in the engine
 		},
 		ExperimentName: "stunreachability",
 		InputPolicy:    engine.InputOrStaticDefault,

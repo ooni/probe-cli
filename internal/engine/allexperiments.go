@@ -131,7 +131,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config: &example.Config{
-				Message:   "Good day from the example with input experiment!",
+				Message:   "Good day from the example with default static input experiment!",
 				SleepTime: int64(time.Second),
 			},
 			interruptible: true,
@@ -147,7 +147,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config: &example.Config{
-				Message:   "Good day from the example with input experiment!",
+				Message:   "Good day from the misconfigured example with default static input experiment!",
 				SleepTime: int64(time.Second),
 			},
 			interruptible: true,

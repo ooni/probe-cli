@@ -209,7 +209,6 @@ func (r *Runner) Run(ctx context.Context) {
 			// that we always query the backend or use default input from
 			// here and the app reacts to our changes. If we do that, we
 			// are easily able to show results in the apps.
-			log.Printf("***** %s", r.settings.Name)
 			inputs, err := engine.StaticBareInputForExperiment(r.settings.Name)
 			if err != nil {
 				r.emitter.EmitFailureStartup("no input provided")
