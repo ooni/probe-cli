@@ -1,5 +1,4 @@
-// Package tasks implements tasks run using the oonimkall API.
-package tasks
+package oonimkall
 
 import (
 	"context"
@@ -36,42 +35,42 @@ const (
 	statusStarted                = "status.started"
 )
 
-// Run runs the task specified by settings.Name until completion. This is the
+// run runs the task specified by settings.Name until completion. This is the
 // top-level API that should be called by oonimkall.
-func Run(ctx context.Context, settings *Settings, out chan<- *Event) {
-	r := NewRunner(settings, out)
+func run(ctx context.Context, settings *settings, out chan<- *event) {
+	r := newRunner(settings, out)
 	r.Run(ctx)
 }
 
-// Runner runs a specific task
-type Runner struct {
-	emitter             *EventEmitter
+// runner runs a specific task
+type runner struct {
+	emitter             *eventEmitter
 	maybeLookupLocation func(*engine.Session) error
-	out                 chan<- *Event
-	settings            *Settings
+	out                 chan<- *event
+	settings            *settings
 }
 
-// NewRunner creates a new task runner
-func NewRunner(settings *Settings, out chan<- *Event) *Runner {
-	return &Runner{
-		emitter:  NewEventEmitter(settings.DisabledEvents, out),
+// newRunner creates a new task runner
+func newRunner(settings *settings, out chan<- *event) *runner {
+	return &runner{
+		emitter:  newEventEmitter(settings.DisabledEvents, out),
 		out:      out,
 		settings: settings,
 	}
 }
 
-// FailureInvalidVersion is the failure returned when Version is invalid
-const FailureInvalidVersion = "invalid Settings.Version number"
+// failureInvalidVersion is the failure returned when Version is invalid
+const failureInvalidVersion = "invalid Settings.Version number"
 
-func (r *Runner) hasUnsupportedSettings(logger *ChanLogger) bool {
+func (r *runner) hasUnsupportedSettings(logger *chanLogger) bool {
 	if r.settings.Version < 1 {
-		r.emitter.EmitFailureStartup(FailureInvalidVersion)
+		r.emitter.EmitFailureStartup(failureInvalidVersion)
 		return true
 	}
 	return false
 }
 
-func (r *Runner) newsession(ctx context.Context, logger *ChanLogger) (*engine.Session, error) {
+func (r *runner) newsession(ctx context.Context, logger *chanLogger) (*engine.Session, error) {
 	kvstore, err := kvstore.NewFS(r.settings.StateDir)
 	if err != nil {
 		return nil, err
@@ -106,7 +105,7 @@ func (r *Runner) newsession(ctx context.Context, logger *ChanLogger) (*engine.Se
 	return engine.NewSession(ctx, config)
 }
 
-func (r *Runner) contextForExperiment(
+func (r *runner) contextForExperiment(
 	ctx context.Context, builder *engine.ExperimentBuilder,
 ) context.Context {
 	if builder.Interruptible() {
@@ -116,11 +115,11 @@ func (r *Runner) contextForExperiment(
 }
 
 type runnerCallbacks struct {
-	emitter *EventEmitter
+	emitter *eventEmitter
 }
 
 func (cb *runnerCallbacks) OnProgress(percentage float64, message string) {
-	cb.emitter.Emit(statusProgress, EventStatusProgress{
+	cb.emitter.Emit(statusProgress, eventStatusProgress{
 		Percentage: 0.4 + (percentage * 0.6), // open report is 40%
 		Message:    message,
 	})
@@ -129,8 +128,8 @@ func (cb *runnerCallbacks) OnProgress(percentage float64, message string) {
 // Run runs the runner until completion. The context argument controls
 // when to stop when processing multiple inputs, as well as when to stop
 // experiments explicitly marked as interruptible.
-func (r *Runner) Run(ctx context.Context) {
-	logger := NewChanLogger(r.emitter, r.settings.LogLevel, r.out)
+func (r *runner) Run(ctx context.Context) {
+	logger := newChanLogger(r.emitter, r.settings.LogLevel, r.out)
 	r.emitter.Emit(statusQueued, eventEmpty{})
 	if r.hasUnsupportedSettings(logger) {
 		return
