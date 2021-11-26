@@ -59,7 +59,7 @@ func main() {
 	// ```
 	// ### Call LookupHTTPSSvc
 	//
-	// Here we perform the `LookupHostUDP` we performed in the
+	// Here we perform the `LookupHostUDP` we used in the
 	// previous chapter and then we call `LookupHTTPSvcUDP`.
 	//
 	// ```Go
@@ -68,7 +68,7 @@ func main() {
 	// ```
 	//
 	// The `LookupHTTPSSvcUDP` function has the same signature
-	// of `LookupHostUDP` _but_ it behaves differently. Rather than
+	// as `LookupHostUDP` _but_ it behaves differently. Rather than
 	// querying for `A` and `AAAA`, it performs an `HTTPS` DNS
 	// lookup. This query returns:
 	//
@@ -81,7 +81,7 @@ func main() {
 	// ### Build an []HTTPEndpoint and run serial measurements
 	//
 	// Here we call `AllHTTPEndpointsForURL` like we did in the
-	// previous chapter. However, note that we pass to it the
+	// previous chapter. However, note that we pass it the
 	// whole content of `m.DNS`, which now contains not only the
 	// A/AAAA lookups results but also the HTTPS lookup results.
 	//
@@ -102,6 +102,15 @@ func main() {
 	for _, epnt := range httpEndpoints {
 		m.Endpoints = append(m.Endpoints, mx.HTTPEndpointGetWithoutCookies(ctx, epnt))
 	}
+	// ```
+	//
+	// (Note that here, like in the previous chapter, we are not converting
+	// to the OONI data format. Rather, we're just dumping the internally
+	// used data structures. Exercise: can you modify this program to emit
+	// a JSON compliant with the OONI data format by using the proper]
+	// conversion functions exported by `measurex`?)
+	//
+	// ```Go
 	print(m)
 }
 
@@ -112,7 +121,7 @@ func main() {
 // Let us perform a vanilla run first:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter08
+// go run -race ./internal/tutorial/measurex/chapter08 | jq
 // ```
 //
 // Please, check the JSON output. Do you recognize the fields

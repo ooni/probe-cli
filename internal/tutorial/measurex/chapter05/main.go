@@ -11,7 +11,7 @@
 // will only see a "QUIC handshake event".
 //
 // Having said that, let us now move on and see the code of
-// the simple program that shows this functionality.
+// the simple program that uses this functionality.
 //
 // (This file is auto-generated. Do not edit it directly! To apply
 // changes you need to modify `./internal/tutorial/measure/chapter05/main.go`.)
@@ -64,13 +64,13 @@ func main() {
 	// the arguments for the TLS config also apply here. We need
 	// to specify the SNI (`ServerName`), the ALPN (`NextProtos`),
 	// and the CA pool we want to use. Here, again, we're using
-	// the CA pool from cURL that we bundle with ooniprobe.
+	// the CA pool from cURL that we bundle with OONI Probe.
 	//
 	// As we did in the previous chapters, here's the usual three
 	// lines of code for printing the resulting measurement.
 	//
 	// ```
-	data, err := json.Marshal(m)
+	data, err := json.Marshal(measurex.NewArchivalEndpointMeasurement(m))
 	runtimex.PanicOnError(err, "json.Marshal failed")
 	fmt.Printf("%s\n", string(data))
 }
@@ -82,7 +82,7 @@ func main() {
 // As before, let us start off with a vanilla run:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter05
+// go run -race ./internal/tutorial/measurex/chapter05 | jq
 // ```
 //
 // Produces this JSON:
@@ -101,15 +101,15 @@ func main() {
 //   // are actually `recvfrom` and `sendto` but here
 //   // we follow the Go convention of using read/write
 //   // more frequently than send/recv.)
-//   "read_write": [
+//   "network_events": [
 //     {
 //       "address": "8.8.4.4:443",
 //       "failure": null,
 //       "num_bytes": 1252,
 //       "operation": "write_to",
 //       "proto": "quic",
-//       "t": 0.003903167,
-//       "started": 0.0037395,
+//       "t": 0.027184208,
+//       "started": 0.027127208,
 //       "oddity": ""
 //     },
 //     {
@@ -118,8 +118,8 @@ func main() {
 //       "num_bytes": 1252,
 //       "operation": "read_from",
 //       "proto": "quic",
-//       "t": 0.029389125,
-//       "started": 0.002954792,
+//       "t": 0.053116458,
+//       "started": 0.025626583,
 //       "oddity": ""
 //     },
 //     {
@@ -128,8 +128,8 @@ func main() {
 //       "num_bytes": 1252,
 //       "operation": "write_to",
 //       "proto": "quic",
-//       "t": 0.029757584,
-//       "started": 0.02972325,
+//       "t": 0.054538792,
+//       "started": 0.054517542,
 //       "oddity": ""
 //     },
 //     {
@@ -138,8 +138,8 @@ func main() {
 //       "num_bytes": 1252,
 //       "operation": "read_from",
 //       "proto": "quic",
-//       "t": 0.045039875,
-//       "started": 0.029424792,
+//       "t": 0.069144958,
+//       "started": 0.053194208,
 //       "oddity": ""
 //     },
 //     {
@@ -148,8 +148,8 @@ func main() {
 //       "num_bytes": 1252,
 //       "operation": "read_from",
 //       "proto": "quic",
-//       "t": 0.045055334,
-//       "started": 0.045049625,
+//       "t": 0.069183458,
+//       "started": 0.069173292,
 //       "oddity": ""
 //     },
 //     {
@@ -158,28 +158,28 @@ func main() {
 //       "num_bytes": 1252,
 //       "operation": "read_from",
 //       "proto": "quic",
-//       "t": 0.045073917,
-//       "started": 0.045069667,
+//       "t": 0.06920225,
+//       "started": 0.069197875,
 //       "oddity": ""
 //     },
 //     {
 //       "address": "8.8.4.4:443",
 //       "failure": null,
-//       "num_bytes": 1233,
+//       "num_bytes": 1216,
 //       "operation": "read_from",
 //       "proto": "quic",
-//       "t": 0.04508,
-//       "started": 0.045075292,
+//       "t": 0.069210958,
+//       "started": 0.069206875,
 //       "oddity": ""
 //     },
 //     {
 //       "address": "8.8.4.4:443",
 //       "failure": null,
-//       "num_bytes": 64,
+//       "num_bytes": 65,
 //       "operation": "read_from",
 //       "proto": "quic",
-//       "t": 0.045088167,
-//       "started": 0.045081167,
+//       "t": 0.069220667,
+//       "started": 0.069217375,
 //       "oddity": ""
 //     },
 //     {
@@ -188,8 +188,8 @@ func main() {
 //       "num_bytes": 44,
 //       "operation": "write_to",
 //       "proto": "quic",
-//       "t": 0.045370417,
-//       "started": 0.045338667,
+//       "t": 0.069433417,
+//       "started": 0.069417625,
 //       "oddity": ""
 //     },
 //     {
@@ -198,8 +198,8 @@ func main() {
 //       "num_bytes": 44,
 //       "operation": "write_to",
 //       "proto": "quic",
-//       "t": 0.045392125,
-//       "started": 0.045380959,
+//       "t": 0.069677625,
+//       "started": 0.069647458,
 //       "oddity": ""
 //     },
 //     {
@@ -208,8 +208,8 @@ func main() {
 //       "num_bytes": 83,
 //       "operation": "write_to",
 //       "proto": "quic",
-//       "t": 0.047042542,
-//       "started": 0.047001917,
+//       "t": 0.073461917,
+//       "started": 0.073432875,
 //       "oddity": ""
 //     },
 //     {
@@ -218,15 +218,15 @@ func main() {
 //       "num_bytes": 33,
 //       "operation": "write_to",
 //       "proto": "quic",
-//       "t": 0.047060834,
-//       "started": 0.047046875,
+//       "t": 0.073559417,
+//       "started": 0.073542542,
 //       "oddity": ""
 //     }
 //   ],
 //
 //   // This section describes the QUIC handshake and it has
-//   // basically the same fields of the TLS handshake.
-//   "quic_handshake": [
+//   // basically the same fields as the TLS handshake.
+//   "quic_handshakes": [
 //     {
 //       "cipher_suite": "TLS_CHACHA20_POLY1305_SHA256",
 //       "failure": null,
@@ -234,7 +234,7 @@ func main() {
 //       "tls_version": "TLSv1.3",
 //       "peer_certificates": [
 //         {
-//           "data": "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",
+//           "data": "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",
 //           "format": "base64"
 //         },
 //         {
@@ -246,7 +246,7 @@ func main() {
 //           "format": "base64"
 //         }
 //       ],
-//       "t": 0.047042459,
+//       "t": 0.073469208,
 //       "address": "8.8.4.4:443",
 //       "server_name": "dns.google",
 //       "alpn": [
@@ -255,15 +255,15 @@ func main() {
 //       "no_tls_verify": false,
 //       "oddity": "",
 //       "proto": "quic",
-//       "started": 0.002154834
+//       "started": 0.025061583
 //     }
 //   ]
 // }
 // ```
 //
-// Here are some suggestions on other experiments to run:
+// Here are some suggestions for other experiments to run:
 //
-// 1. obtain a timeout by connecting on a port that is not
+// 1. obtain a timeout by connecting to a port that is not
 // actually listening for QUIC;
 //
 // 2. obtain a certificate validation error by forcing
@@ -272,7 +272,7 @@ func main() {
 // 3. use a different ALPN (by changing the code), and see
 // how the error and the oddity are handled. Can we do
 // anything about this by changing `./internal/netxlite/errorx`
-// to better support for this specific error condition?
+// to better support this specific error condition?
 //
 // ## Conclusion
 //

@@ -167,8 +167,12 @@ format, in the remainder of this program we're
 going to serialize the `Measurement` to JSON and
 print it to the standard output.
 
+Rather than serializing the raw `Measurement` struct,
+we first convert it to the "archival" format. This is the
+data format specified at [ooni/spec](https://github.com/ooni/spec/tree/master/data-formats).
+
 ```Go
-	data, err := json.Marshal(m)
+	data, err := json.Marshal(measurex.NewArchivalDNSMeasurement(m))
 	runtimex.PanicOnError(err, "json.Marshal failed")
 	fmt.Printf("%s\n", string(data))
 ```
@@ -190,8 +194,10 @@ Let us run the program with default arguments first. You can do
 this operation by running:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter01
+go run -race ./internal/tutorial/measurex/chapter01 | jq
 ```
+
+Where `jq` is being used to make the output more presentable.
 
 If you do that you obtain some logging messages, which are out of
 the scope of this tutorial, and the following JSON:
@@ -199,7 +205,7 @@ the scope of this tutorial, and the following JSON:
 ```JSON
 {
   "domain": "example.com",
-  "lookup_host": [
+  "queries": [
     {
       "answers": [
         {
@@ -236,6 +242,9 @@ the scope of this tutorial, and the following JSON:
 }
 ```
 
+This JSON [implements the df-002-dnst](https://github.com/ooni/spec/blob/master/data-formats/df-002-dnst.md)
+OONI data format.
+
 You see that we have two messages here. OONI splits a DNS
 resolution performed using the system resolver into two "fake"
 DNS resolutions for A and AAAA. (Under the hood, this is
@@ -257,7 +266,7 @@ Let us now change the domain to resolve to be `antani.ooni.org` (a
 nonexisting domain), which we can do by running this command:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter01 -domain antani.ooni.org
+go run -race ./internal/tutorial/measurex/chapter01 -domain antani.ooni.org | jq
 ```
 
 This is the output JSON:
@@ -265,7 +274,7 @@ This is the output JSON:
 ```JSON
 {
   "domain": "antani.ooni.org",
-  "lookup_host": [
+  "queries": [
     {
       "answers": null,
       "engine": "system",
@@ -318,7 +327,7 @@ top of which `measurex` is written.)
 Let us now try with an insanely low timeout:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter01 -timeout 250us
+go run -race ./internal/tutorial/measurex/chapter01 -timeout 250us | jq
 ```
 
 To get this JSON:
@@ -326,7 +335,7 @@ To get this JSON:
 ```JSON
 {
   "domain": "example.com",
-  "lookup_host": [
+  "queries": [
     {
       "answers": null,
       "engine": "system",

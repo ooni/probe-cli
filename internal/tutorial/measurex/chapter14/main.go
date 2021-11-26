@@ -46,10 +46,10 @@ func print(v interface{}) {
 // ```Go
 
 type measurement struct {
-	Queries       []*measurex.DNSLookupEvent     `json:"queries"`
-	TCPConnect    []*measurex.NetworkEvent       `json:"tcp_connect"`
-	TLSHandshakes []*measurex.TLSHandshakeEvent  `json:"tls_handshakes"`
-	Requests      []*measurex.HTTPRoundTripEvent `json:"requests"`
+	Queries       []*measurex.ArchivalDNSLookupEvent        `json:"queries"`
+	TCPConnect    []*measurex.ArchivalTCPConnect            `json:"tcp_connect"`
+	TLSHandshakes []*measurex.ArchivalQUICTLSHandshakeEvent `json:"tls_handshakes"`
+	Requests      []*measurex.ArchivalHTTPRoundTripEvent    `json:"requests"`
 }
 
 // ```
@@ -68,7 +68,7 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 	// ```
 	//
 	// We start by parsing the input URL. If we cannot parse it, of
-	// course this is an hard error and we cannot continue.
+	// course this is a hard error and we cannot continue.
 	//
 	// ```Go
 	parsedURL, err := url.Parse(URL)
@@ -97,11 +97,12 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 	//
 	// ```Go
 	dns := mx.LookupHostSystem(ctx, parsedURL.Hostname())
-	m.Queries = append(m.Queries, dns.LookupHost...)
+	m.Queries = append(
+		m.Queries, measurex.NewArchivalDNSLookupEventList(dns.LookupHost)...)
 
 	// ```
 	//
-	// This is code we have already seen in previous chapter.
+	// This is code we have already seen in the previous chapters.
 	//
 	//
 	// ### 2. Building a list of endpoints
@@ -129,7 +130,8 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 		switch parsedURL.Scheme {
 		case "http":
 			tcp := mx.TCPConnect(ctx, epnt.Address)
-			m.TCPConnect = append(m.TCPConnect, tcp.Connect...)
+			m.TCPConnect = append(
+				m.TCPConnect, measurex.NewArchivalTCPConnectList(tcp.Connect)...)
 		case "https":
 			config := &tls.Config{
 				ServerName: parsedURL.Hostname(),
@@ -137,8 +139,10 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 				RootCAs:    netxlite.NewDefaultCertPool(),
 			}
 			tls := mx.TLSConnectAndHandshake(ctx, epnt.Address, config)
-			m.TCPConnect = append(m.TCPConnect, tls.Connect...)
-			m.TLSHandshakes = append(m.TLSHandshakes, tls.TLSHandshake...)
+			m.TCPConnect = append(
+				m.TCPConnect, measurex.NewArchivalTCPConnectList(tls.Connect)...)
+			m.TLSHandshakes = append(m.TLSHandshakes,
+				measurex.NewArchivalQUICTLSHandshakeEventList(tls.TLSHandshake)...)
 		}
 	}
 
@@ -150,7 +154,7 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 	// ### 5. HTTP measurement
 	//
 	// We need to manually build a `MeasurementDB`. This is a
-	// "database" where networking code will store events.
+	// "database" where the networking code will store events.
 	//
 	// ```Go
 
@@ -191,7 +195,7 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 	// body is not implemented by this function but rather
 	// is a property of the "tracing" HTTP transport we
 	// created above (this type of transport is the one we
-	// have been internally using in all the examples
+	// have been using internally in all the examples
 	// presented so far.)
 	//
 	// ```Go
@@ -223,7 +227,8 @@ func webConnectivity(ctx context.Context, URL string) (*measurement, error) {
 	//
 	// ```Go
 
-	m.Requests = append(m.Requests, db.AsMeasurement().HTTPRoundTrip...)
+	m.Requests = append(m.Requests, measurex.NewArchivalHTTPRoundTripEventList(
+		db.AsMeasurement().HTTPRoundTrip)...)
 	return m, nil
 }
 
@@ -251,7 +256,7 @@ func main() {
 // Let us perform a vanilla run first:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter14
+// go run -race ./internal/tutorial/measurex/chapter14 | jq
 // ```
 //
 // Take a look at the JSON.

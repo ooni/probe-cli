@@ -60,7 +60,7 @@ func (c *udpLikeConnDB) WriteTo(p []byte, addr net.Addr) (int, error) {
 		RemoteAddr: addr.String(),
 		Started:    started,
 		Finished:   finished,
-		Failure:    NewArchivalFailure(err),
+		Failure:    NewFailure(err),
 		Count:      count,
 	})
 	return count, err
@@ -76,7 +76,7 @@ func (c *udpLikeConnDB) ReadFrom(b []byte) (int, net.Addr, error) {
 		RemoteAddr: addrStringIfNotNil(addr),
 		Started:    started,
 		Finished:   finished,
-		Failure:    NewArchivalFailure(err),
+		Failure:    NewFailure(err),
 		Count:      count,
 	})
 	return count, addr, err
@@ -92,14 +92,11 @@ func (c *udpLikeConnDB) Close() error {
 		RemoteAddr: "",
 		Started:    started,
 		Finished:   finished,
-		Failure:    NewArchivalFailure(err),
+		Failure:    NewFailure(err),
 		Count:      0,
 	})
 	return err
 }
-
-// QUICHandshakeEvent is the result of QUICHandshake.
-type QUICHandshakeEvent = TLSHandshakeEvent
 
 // NewQUICDialerWithoutResolver creates a new QUICDialer that is not
 // attached to any resolver. This means that every attempt to dial any
@@ -138,7 +135,7 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, network, address string
 		}
 	}
 	finished := time.Since(qh.begin).Seconds()
-	qh.db.InsertIntoQUICHandshake(&QUICHandshakeEvent{
+	qh.db.InsertIntoQUICHandshake(&QUICTLSHandshakeEvent{
 		Network:         "quic",
 		RemoteAddr:      address,
 		SNI:             tlsConfig.ServerName,
@@ -146,12 +143,12 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, network, address string
 		SkipVerify:      tlsConfig.InsecureSkipVerify,
 		Started:         started,
 		Finished:        finished,
-		Failure:         NewArchivalFailure(err),
+		Failure:         NewFailure(err),
 		Oddity:          qh.computeOddity(err),
 		TLSVersion:      netxlite.TLSVersionString(state.Version),
 		CipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		NegotiatedProto: state.NegotiatedProtocol,
-		PeerCerts:       NewArchivalTLSCerts(peerCerts(nil, &state)),
+		PeerCerts:       peerCerts(nil, &state),
 	})
 	return sess, err
 }

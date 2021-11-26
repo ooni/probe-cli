@@ -34,9 +34,9 @@ func TestTLSProxy(t *testing.T) {
 		return tdx.DialTLSContext(ctx, "tcp", endpoint)
 	}
 
-	t.Run("TLSActionProxy with default proxy", func(t *testing.T) {
+	t.Run("TLSActionPass", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionProxy)
+		listener, done, err := newproxy(TLSActionPass)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -134,34 +134,33 @@ func TestTLSProxy(t *testing.T) {
 		<-done // wait for background goroutine to exit
 	})
 
+	dial := func(ctx context.Context, endpoint string) (net.Conn, error) {
+		d := netxlite.NewDialerWithoutResolver(log.Log)
+		return d.DialContext(ctx, "tcp", endpoint)
+	}
+
 	t.Run("handle cannot read ClientHello", func(t *testing.T) {
-		listener, done, err := newproxy(TLSActionProxy)
+		listener, done, err := newproxy(TLSActionPass)
 		if err != nil {
 			t.Fatal(err)
 		}
-		conn, err := net.Dial("tcp", listener.Addr().String())
+		conn, err := dial(context.Background(), listener.Addr().String())
 		if err != nil {
 			t.Fatal(err)
 		}
 		conn.Write([]byte("GET / HTTP/1.0\r\n\r\n"))
 		buff := make([]byte, 1<<17)
 		_, err = conn.Read(buff)
-		// Implementation note: we need to wrap the error because
-		// otherwise the error string on Windows is different from Unix
-		if err == nil {
-			t.Fatal("expected non-nil error")
-		}
-		err = netxlite.NewTopLevelGenericErrWrapper(err)
-		if err.Error() != netxlite.FailureConnectionReset {
+		if err == nil || err.Error() != netxlite.FailureConnectionReset {
 			t.Fatal("unexpected err", err)
 		}
 		listener.Close()
 		<-done // wait for background goroutine to exit
 	})
 
-	t.Run("TLSActionProxy fails because we don't have SNI", func(t *testing.T) {
+	t.Run("TLSActionPass fails because we don't have SNI", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionProxy)
+		listener, done, err := newproxy(TLSActionPass)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -176,9 +175,9 @@ func TestTLSProxy(t *testing.T) {
 		<-done // wait for background goroutine to exit
 	})
 
-	t.Run("TLSActionProxy fails because we can't dial", func(t *testing.T) {
+	t.Run("TLSActionPass fails because we can't dial", func(t *testing.T) {
 		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionProxy)
+		listener, done, err := newproxy(TLSActionPass)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -251,11 +250,45 @@ func TestTLSProxy(t *testing.T) {
 	t.Run("Start fails on an invalid address", func(t *testing.T) {
 		p := &TLSProxy{}
 		listener, err := p.Start("127.0.0.1")
-		if err == nil {
-			t.Fatal("expected an error")
+		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
+			t.Fatal("unexpected err", err)
 		}
 		if listener != nil {
 			t.Fatal("expected nil listener")
+		}
+	})
+
+	t.Run("oneloop correctly handles a listener error", func(t *testing.T) {
+		listener := &mocks.Listener{
+			MockAccept: func() (net.Conn, error) {
+				return nil, errors.New("mocked error")
+			},
+		}
+		p := &TLSProxy{}
+		if !p.oneloop(listener) {
+			t.Fatal("should return true here")
+		}
+	})
+}
+
+func TestTLSClientHelloReader(t *testing.T) {
+	t.Run("on failure", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		chr := &tlsClientHelloReader{
+			Conn: &mocks.Conn{
+				MockRead: func(b []byte) (int, error) {
+					return 0, expected
+				},
+			},
+			clientHello: []byte{},
+		}
+		buf := make([]byte, 128)
+		count, err := chr.Read(buf)
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err", err)
+		}
+		if count != 0 {
+			t.Fatal("invalid count")
 		}
 	})
 }

@@ -44,3 +44,10 @@ func (s *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 	child := &sessionTunnelEarlySession{}
 	return child.FetchPsiphonConfig(ctx)
 }
+
+// CheckEmbeddedPsiphonConfig checks whether we can load psiphon's config
+func CheckEmbeddedPsiphonConfig() error {
+	child := &sessionTunnelEarlySession{}
+	_, err := child.FetchPsiphonConfig(context.Background())
+	return err
+}

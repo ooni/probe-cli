@@ -38,25 +38,21 @@ type tlsHandshakerDB struct {
 	db    WritableDB
 }
 
-// TLSHandshakeEvent contains a TLS handshake event.
-type TLSHandshakeEvent struct {
-	// JSON names compatible with df-006-tlshandshake
-	CipherSuite     string                `json:"cipher_suite"`
-	Failure         *string               `json:"failure"`
-	NegotiatedProto string                `json:"negotiated_proto"`
-	TLSVersion      string                `json:"tls_version"`
-	PeerCerts       []*ArchivalBinaryData `json:"peer_certificates"`
-	Finished        float64               `json:"t"`
-
-	// JSON names that are consistent with the
-	// spirit of the spec but are not in it
-	RemoteAddr string   `json:"address"`
-	SNI        string   `json:"server_name"` // used in prod
-	ALPN       []string `json:"alpn"`
-	SkipVerify bool     `json:"no_tls_verify"` // used in prod
-	Oddity     Oddity   `json:"oddity"`
-	Network    string   `json:"proto"`
-	Started    float64  `json:"started"`
+// QUICTLSHandshakeEvent contains a QUIC or TLS handshake event.
+type QUICTLSHandshakeEvent struct {
+	CipherSuite     string
+	Failure         *string
+	NegotiatedProto string
+	TLSVersion      string
+	PeerCerts       [][]byte
+	Finished        float64
+	RemoteAddr      string
+	SNI             string
+	ALPN            []string
+	SkipVerify      bool
+	Oddity          Oddity
+	Network         string
+	Started         float64
 }
 
 func (thx *tlsHandshakerDB) Handshake(ctx context.Context,
@@ -66,7 +62,7 @@ func (thx *tlsHandshakerDB) Handshake(ctx context.Context,
 	started := time.Since(thx.begin).Seconds()
 	tconn, state, err := thx.TLSHandshaker.Handshake(ctx, conn, config)
 	finished := time.Since(thx.begin).Seconds()
-	thx.db.InsertIntoTLSHandshake(&TLSHandshakeEvent{
+	thx.db.InsertIntoTLSHandshake(&QUICTLSHandshakeEvent{
 		Network:         network,
 		RemoteAddr:      remoteAddr,
 		SNI:             config.ServerName,
@@ -74,12 +70,12 @@ func (thx *tlsHandshakerDB) Handshake(ctx context.Context,
 		SkipVerify:      config.InsecureSkipVerify,
 		Started:         started,
 		Finished:        finished,
-		Failure:         NewArchivalFailure(err),
+		Failure:         NewFailure(err),
 		Oddity:          thx.computeOddity(err),
 		TLSVersion:      netxlite.TLSVersionString(state.Version),
 		CipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		NegotiatedProto: state.NegotiatedProtocol,
-		PeerCerts:       NewArchivalTLSCerts(peerCerts(err, &state)),
+		PeerCerts:       peerCerts(err, &state),
 	})
 	return tconn, state, err
 }

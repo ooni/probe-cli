@@ -91,7 +91,8 @@ func main() {
 	// does not make sense to send this query.
 	//
 	// ```Go
-	for dns := range mx.LookupURLHostParallel(ctx, parsed, resolvers...) {
+	const parallelism = 3
+	for dns := range mx.LookupURLHostParallel(ctx, parallelism, parsed, resolvers...) {
 		m.DNS = append(m.DNS, dns)
 	}
 	// ```
@@ -103,7 +104,7 @@ func main() {
 	httpEndpoints, err := measurex.AllHTTPEndpointsForURL(parsed, headers, m.DNS...)
 	runtimex.PanicOnError(err, "cannot get all the HTTP endpoints")
 	cookies := measurex.NewCookieJar()
-	for epnt := range mx.HTTPEndpointGetParallel(ctx, cookies, httpEndpoints...) {
+	for epnt := range mx.HTTPEndpointGetParallel(ctx, parallelism, cookies, httpEndpoints...) {
 		m.Endpoints = append(m.Endpoints, epnt)
 	}
 	print(m)
@@ -116,7 +117,7 @@ func main() {
 // Let us perform a vanilla run first:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter10
+// go run -race ./internal/tutorial/measurex/chapter10 | jq
 // ```
 //
 // Take a look at the JSON output. Can you spot that

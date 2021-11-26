@@ -88,9 +88,14 @@ func main() {
 	//
 	// - all the endpoints to measure
 	//
+	// The parallelism argument tells the code how many parallel goroutines
+	// to use for parallelizable operations. If this value is zero or negative,
+	// the code will use a reasonably small default.
+	//
 	// ```Go
 	cookies := measurex.NewCookieJar()
-	for epnt := range mx.HTTPEndpointGetParallel(ctx, cookies, httpEndpoints...) {
+	const parallelism = 3
+	for epnt := range mx.HTTPEndpointGetParallel(ctx, parallelism, cookies, httpEndpoints...) {
 		m.Endpoints = append(m.Endpoints, epnt)
 	}
 	// ```
@@ -101,6 +106,11 @@ func main() {
 	//
 	// Like we did before, we append the resulting measurements to
 	// our `m` container and we print it.
+	//
+	// Exercise: here we're not using the OONI data format and we're
+	// instead printing the internally used data structures. Can
+	// you modify the code to emit data using OONI's data format here?
+	// (Hint: there are conversion functions in `measurex`.)
 	//
 	// ```Go
 	print(m)
@@ -113,7 +123,7 @@ func main() {
 // Let us perform a vanilla run first:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter09
+// go run -race ./internal/tutorial/measurex/chapter09 | jq
 // ```
 //
 // Take a look at the JSON output. Can you spot that

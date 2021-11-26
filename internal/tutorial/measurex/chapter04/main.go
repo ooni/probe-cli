@@ -70,7 +70,7 @@ func main() {
 	// the measurement itself, which we print below.
 	//
 	// ```
-	data, err := json.Marshal(m)
+	data, err := json.Marshal(measurex.NewArchivalEndpointMeasurement(m))
 	runtimex.PanicOnError(err, "json.Marshal failed")
 	fmt.Printf("%s\n", string(data))
 }
@@ -81,7 +81,7 @@ func main() {
 // As before, let us start off with a vanilla run:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter04
+// go run -race ./internal/tutorial/measurex/chapter04 | jq
 // ```
 //
 // Let us comment the JSON in detail:
@@ -91,30 +91,16 @@ func main() {
 //   "network": "tcp",
 //   "address": "8.8.4.4:443",
 //
-//   // This block is generated when connecting to a TCP
-//   // socket, as we've already seen in chapter02
-//   "connect": [
-//     {
-//       "address": "8.8.4.4:443",
-//       "failure": null,
-//       "operation": "connect",
-//       "proto": "tcp",
-//       "t": 0.046959084,
-//       "started": 0.022998875,
-//       "oddity": ""
-//     }
-//   ],
-//
 //   // These are the I/O events during the handshake
-//   "read_write": [
+//   "network_events": [
 //     {
 //       "address": "8.8.4.4:443",
 //       "failure": null,
 //       "num_bytes": 280,
 //       "operation": "write",
 //       "proto": "tcp",
-//       "t": 0.048752875,
-//       "started": 0.04874125,
+//       "t": 0.048268333,
+//       "started": 0.048246666,
 //       "oddity": ""
 //     },
 //     {
@@ -123,18 +109,18 @@ func main() {
 //       "num_bytes": 517,
 //       "operation": "read",
 //       "proto": "tcp",
-//       "t": 0.087221334,
-//       "started": 0.048760417,
+//       "t": 0.086214708,
+//       "started": 0.048287791,
 //       "oddity": ""
 //     },
 //     {
 //       "address": "8.8.4.4:443",
 //       "failure": null,
-//       "num_bytes": 4301,
+//       "num_bytes": 4303,
 //       "operation": "read",
 //       "proto": "tcp",
-//       "t": 0.088843584,
-//       "started": 0.088830959,
+//       "t": 0.087951708,
+//       "started": 0.08792725,
 //       "oddity": ""
 //     },
 //     {
@@ -143,14 +129,33 @@ func main() {
 //       "num_bytes": 64,
 //       "operation": "write",
 //       "proto": "tcp",
-//       "t": 0.092078042,
-//       "started": 0.092064042,
+//       "t": 0.090097833,
+//       "started": 0.090083875,
 //       "oddity": ""
 //     }
 //   ],
 //
-//   // This block contains information about the handshake
-//   "tls_handshake": [
+//   // This block is generated when connecting to a TCP
+//   // socket, as we've already seen in chapter02
+//   "tcp_connect": [
+//     {
+//       "ip": "8.8.4.4",
+//       "port": 443,
+//       "t": 0.046022583,
+//       "status": {
+//         "blocked": false,
+//         "failure": null,
+//         "success": true
+//       },
+//       "started": 0.024424916,
+//       "oddity": ""
+//     }
+//   ],
+//
+//   // This block contains information about the handshake.
+//   //
+//   // See https://github.com/ooni/spec/blob/master/data-formats/df-006-tlshandshake.md
+//   "tls_handshakes": [
 //     {
 //       "cipher_suite": "TLS_AES_128_GCM_SHA256",
 //       "failure": null,
@@ -158,7 +163,7 @@ func main() {
 //       "tls_version": "TLSv1.3",
 //       "peer_certificates": [
 //         {
-//           "data": "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",
+//           "data": "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",
 //           "format": "base64"
 //         },
 //         {
@@ -170,7 +175,7 @@ func main() {
 //           "format": "base64"
 //         }
 //       ],
-//       "t": 0.092117709,
+//       "t": 0.090150666,
 //       "address": "8.8.4.4:443",
 //       "server_name": "dns.google",
 //       "alpn": [
@@ -180,21 +185,17 @@ func main() {
 //       "no_tls_verify": false,
 //       "oddity": "",
 //       "proto": "tcp",
-//       "started": 0.047288542
+//       "started": 0.04635975
 //     }
 //   ]
 // }
 // ```
 //
-// All the data formats we're using here are, by the way,
-// compatible with the data formats specified at
-// https://github.com/ooni/spec/tree/master/data-formats.
-//
 // ### Suggested follow-up experiments
 //
 // Try to run experiments in the following scenarios, and
-// check the output JSON to familiarize with what changes in
-// different error conditions.
+// check the output JSON to familiarize yourself with what
+// changes in different error conditions.
 //
 // 1. measurement that causes timeout
 //
@@ -210,15 +211,15 @@ func main() {
 //
 // Here are the commands I used for each proposed exercise:
 //
-// 1. go run -race ./internal/tutorial/measurex/chapter04 -address 8.8.4.4:1
+// 1. go run -race ./internal/tutorial/measurex/chapter04 -address 8.8.4.4:1 | jq
 //
-// 2. go run -race ./internal/tutorial/measurex/chapter04 -sni example.org
+// 2. go run -race ./internal/tutorial/measurex/chapter04 -sni example.org | jq
 //
-// 3. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni self-signed.badssl.com
+// 3. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni self-signed.badssl.com | jq
 //
-// 4. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni expire.badssl.com
+// 4. go run -race ./internal/tutorial/measurex/chapter04 -address 104.154.89.105:443 -sni expire.badssl.com | jq
 //
-// To emulate the two last scenario, if you're on Linux, a
+// To emulate the last two scenarios, if you're on Linux, a
 // possibility is building Jafar with this command:
 //
 // ```
@@ -244,6 +245,6 @@ func main() {
 // ## Conclusion
 //
 // We have seen how to measure TLS handshakes. We have seen how
-// this flow produces different output on different error conditions.
+// this flow produces a different output on different error conditions.
 //
 // -=-=- StopHere -=-=-

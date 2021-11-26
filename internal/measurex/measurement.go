@@ -18,33 +18,34 @@ import (
 // a bunch of measurements detailing each measurement step.
 type URLMeasurement struct {
 	// URL is the URL we're measuring.
-	URL string `json:"url"`
+	URL string
 
 	// DNS contains all the DNS related measurements.
-	DNS []*DNSMeasurement `json:"dns"`
+	DNS []*DNSMeasurement
 
 	// Endpoints contains a measurement for each endpoint
 	// that we discovered via DNS or TH.
-	Endpoints []*HTTPEndpointMeasurement `json:"endpoints"`
+	Endpoints []*HTTPEndpointMeasurement
 
 	// RedirectURLs contain the URLs to which we should fetch
 	// if we choose to follow redirections.
-	RedirectURLs []string `json:"-"`
+	RedirectURLs []string
 
-	// THMeasurement is the measurement collected by the TH.
-	TH interface{} `json:"th,omitempty"`
+	// TH is the measurement collected by the TH. This field
+	// will be nil if we cannot contact the TH.
+	TH *THMeasurement
 
 	// TotalRuntime is the total time to measure this URL.
-	TotalRuntime time.Duration `json:"-"`
+	TotalRuntime time.Duration
 
 	// DNSRuntime is the time to run all DNS checks.
-	DNSRuntime time.Duration `json:"x_dns_runtime"`
+	DNSRuntime time.Duration
 
 	// THRuntime is the total time to invoke all test helpers.
-	THRuntime time.Duration `json:"x_th_runtime"`
+	THRuntime time.Duration
 
 	// EpntsRuntime is the total time to check all the endpoints.
-	EpntsRuntime time.Duration `json:"x_epnts_runtime"`
+	EpntsRuntime time.Duration
 }
 
 // fillRedirects takes in input a complete URLMeasurement and fills
@@ -67,40 +68,40 @@ func (m *URLMeasurement) fillRedirects() {
 // data format is not compatible with the OONI data format.
 type Measurement struct {
 	// Connect contains all the connect operations.
-	Connect []*NetworkEvent `json:"connect,omitempty"`
+	Connect []*NetworkEvent
 
 	// ReadWrite contains all the read and write operations.
-	ReadWrite []*NetworkEvent `json:"read_write,omitempty"`
+	ReadWrite []*NetworkEvent
 
 	// Close contains all the close operations.
-	Close []*NetworkEvent `json:"-"`
+	Close []*NetworkEvent
 
 	// TLSHandshake contains all the TLS handshakes.
-	TLSHandshake []*TLSHandshakeEvent `json:"tls_handshake,omitempty"`
+	TLSHandshake []*QUICTLSHandshakeEvent
 
 	// QUICHandshake contains all the QUIC handshakes.
-	QUICHandshake []*QUICHandshakeEvent `json:"quic_handshake,omitempty"`
+	QUICHandshake []*QUICTLSHandshakeEvent
 
 	// LookupHost contains all the host lookups.
-	LookupHost []*DNSLookupEvent `json:"lookup_host,omitempty"`
+	LookupHost []*DNSLookupEvent
 
 	// LookupHTTPSSvc contains all the HTTPSSvc lookups.
-	LookupHTTPSSvc []*DNSLookupEvent `json:"lookup_httpssvc,omitempty"`
+	LookupHTTPSSvc []*DNSLookupEvent
 
 	// DNSRoundTrip contains all the DNS round trips.
-	DNSRoundTrip []*DNSRoundTripEvent `json:"dns_round_trip,omitempty"`
+	DNSRoundTrip []*DNSRoundTripEvent
 
 	// HTTPRoundTrip contains all the HTTP round trips.
-	HTTPRoundTrip []*HTTPRoundTripEvent `json:"http_round_trip,omitempty"`
+	HTTPRoundTrip []*HTTPRoundTripEvent
 
 	// HTTPRedirect contains all the redirections.
-	HTTPRedirect []*HTTPRedirectEvent `json:"-"`
+	HTTPRedirect []*HTTPRedirectEvent
 }
 
 // DNSMeasurement is a DNS measurement.
 type DNSMeasurement struct {
 	// Domain is the domain this measurement refers to.
-	Domain string `json:"domain"`
+	Domain string
 
 	// A DNSMeasurement is a Measurement.
 	*Measurement
@@ -239,10 +240,10 @@ func AllHTTPEndpointsForURL(URL *url.URL,
 // EndpointMeasurement is an endpoint measurement.
 type EndpointMeasurement struct {
 	// Network is the network of this endpoint.
-	Network EndpointNetwork `json:"network"`
+	Network EndpointNetwork
 
 	// Address is the address of this endpoint.
-	Address string `json:"address"`
+	Address string
 
 	// An EndpointMeasurement is a Measurement.
 	*Measurement
@@ -251,14 +252,24 @@ type EndpointMeasurement struct {
 // HTTPEndpointMeasurement is an HTTP endpoint measurement.
 type HTTPEndpointMeasurement struct {
 	// URL is the URL this measurement refers to.
-	URL string `json:"url"`
+	URL string
 
 	// Network is the network of this endpoint.
-	Network EndpointNetwork `json:"network"`
+	Network EndpointNetwork
 
 	// Address is the address of this endpoint.
-	Address string `json:"address"`
+	Address string
 
 	// An HTTPEndpointMeasurement is a Measurement.
 	*Measurement
+}
+
+// THMeasurement is the measurement performed by the TH.
+type THMeasurement struct {
+	// DNS contains all the DNS related measurements.
+	DNS []*DNSMeasurement
+
+	// Endpoints contains a measurement for each endpoint
+	// that was discovered by the probe or the TH.
+	Endpoints []*HTTPEndpointMeasurement
 }

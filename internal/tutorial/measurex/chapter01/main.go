@@ -168,8 +168,12 @@ func main() {
 	// going to serialize the `Measurement` to JSON and
 	// print it to the standard output.
 	//
+	// Rather than serializing the raw `Measurement` struct,
+	// we first convert it to the "archival" format. This is the
+	// data format specified at [ooni/spec](https://github.com/ooni/spec/tree/master/data-formats).
+	//
 	// ```Go
-	data, err := json.Marshal(m)
+	data, err := json.Marshal(measurex.NewArchivalDNSMeasurement(m))
 	runtimex.PanicOnError(err, "json.Marshal failed")
 	fmt.Printf("%s\n", string(data))
 	// ```
@@ -191,8 +195,10 @@ func main() {
 // this operation by running:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter01
+// go run -race ./internal/tutorial/measurex/chapter01 | jq
 // ```
+//
+// Where `jq` is being used to make the output more presentable.
 //
 // If you do that you obtain some logging messages, which are out of
 // the scope of this tutorial, and the following JSON:
@@ -200,7 +206,7 @@ func main() {
 // ```JSON
 // {
 //   "domain": "example.com",
-//   "lookup_host": [
+//   "queries": [
 //     {
 //       "answers": [
 //         {
@@ -237,6 +243,9 @@ func main() {
 // }
 // ```
 //
+// This JSON [implements the df-002-dnst](https://github.com/ooni/spec/blob/master/data-formats/df-002-dnst.md)
+// OONI data format.
+//
 // You see that we have two messages here. OONI splits a DNS
 // resolution performed using the system resolver into two "fake"
 // DNS resolutions for A and AAAA. (Under the hood, this is
@@ -258,7 +267,7 @@ func main() {
 // nonexisting domain), which we can do by running this command:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter01 -domain antani.ooni.org
+// go run -race ./internal/tutorial/measurex/chapter01 -domain antani.ooni.org | jq
 // ```
 //
 // This is the output JSON:
@@ -266,7 +275,7 @@ func main() {
 // ```JSON
 // {
 //   "domain": "antani.ooni.org",
-//   "lookup_host": [
+//   "queries": [
 //     {
 //       "answers": null,
 //       "engine": "system",
@@ -319,7 +328,7 @@ func main() {
 // Let us now try with an insanely low timeout:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter01 -timeout 250us
+// go run -race ./internal/tutorial/measurex/chapter01 -timeout 250us | jq
 // ```
 //
 // To get this JSON:
@@ -327,7 +336,7 @@ func main() {
 // ```JSON
 // {
 //   "domain": "example.com",
-//   "lookup_host": [
+//   "queries": [
 //     {
 //       "answers": null,
 //       "engine": "system",

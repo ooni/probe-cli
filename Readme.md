@@ -1,20 +1,22 @@
 # OONI Probe Client Library and CLI
 
-* Documentation: [![GoDoc](https://godoc.org/github.com/ooni/probe-cli?status.svg)](https://godoc.org/github.com/ooni/probe-cli)
+[![GoDoc](https://godoc.org/github.com/ooni/probe-cli?status.svg)](https://godoc.org/github.com/ooni/probe-cli) [![Short Tests Status](https://github.com/ooni/probe-cli/workflows/shorttests/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Ashorttests) [![Coverage Status](https://coveralls.io/repos/github/ooni/probe-cli/badge.svg?branch=master)](https://coveralls.io/github/ooni/probe-cli?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/ooni/probe-cli)](https://goreportcard.com/report/github.com/ooni/probe-cli) [![linux-debian-packages](https://github.com/ooni/probe-cli/workflows/linux-debian-packages/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Alinux-debian-packages)
 
-* `go test -race -short ./...` status: [![Short Tests Status](https://github.com/ooni/probe-cli/workflows/shorttests/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Ashorttests)
+The [Open Observatory of Network Interference](https://ooni.org) (OONI) is a non-profit free software project
+that aims to empower decentralized efforts in documenting
+Internet censorship around the world.
 
-* `go test -race ./...` status: [![All Tests Status](https://github.com/ooni/probe-cli/workflows/alltests/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Aalltests)
+This repository contains core OONI tools written in Go:
 
-* Code coverage for `-short` tests: [![Coverage Status](https://coveralls.io/repos/github/ooni/probe-cli/badge.svg?branch=master)](https://coveralls.io/github/ooni/probe-cli?branch=master)
+- the CLI client ([cmd/ooniprobe](cmd/ooniprobe));
 
-* Go Report Card: [![Go Report Card](https://goreportcard.com/badge/github.com/ooni/probe-cli)](https://goreportcard.com/report/github.com/ooni/probe-cli)
+- the test helper server ([internal/cmd/oohelperd](internal/cmd/oohelperd));
 
-* Debian package builds: [![linux-debian-packages](https://github.com/ooni/probe-cli/workflows/linux-debian-packages/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Alinux-debian-packages)
+- the mobile library ([pkg/oonimkall](pkg/oonimkall));
 
-* Open issues: [![GitHub issues by-label](https://img.shields.io/github/issues/ooni/probe/ooni/probe-cli?style=plastic)](https://github.com/ooni/probe/labels/ooni%2Fprobe-cli)
+- and all the related support packages (inside [internal](internal)).
 
-The next generation OONI Probe: client library and Command Line Interface.
+Every top-level directory in this repository contains an explanatory README file.
 
 ## User setup
 
@@ -28,13 +30,11 @@ Report issues at [github.com/ooni/probe](
 https://github.com/ooni/probe/issues/new?labels=ooni/probe-cli&assignee=bassosimone).
 Please, make sure you add the `ooni/probe-cli` label.
 
-## Repository organization
+## Build instructions
 
-Every top-level directory contains an explanatory README file.
+### ooniprobe
 
-## ooniprobe
-
-Be sure you have golang >= 1.16 and a C compiler (Mingw-w64 for Windows). You
+Be sure you have golang >= 1.17 and a C compiler (Mingw-w64 for Windows). You
 can build using:
 
 ```bash
@@ -43,7 +43,7 @@ go build -v ./cmd/ooniprobe
 
 This will generate a binary called `ooniprobe` in the current directory.
 
-## Android bindings
+### Android bindings
 
 Make sure you have GNU make installed, then run:
 
@@ -58,7 +58,7 @@ The generated bindings are (manually) pushed to the Maven Central package
 repository. The instructions explaining how to integrate these bindings
 are published along with the release notes.
 
-## iOS bindings
+### iOS bindings
 
 Make sure you have GNU make installed, then run:
 
@@ -72,7 +72,7 @@ cannot clone private repositories in the https://github.com/ooni namespace.)
 The generated bindings are (manually) added to GitHub releases. The instructions
 explaining how to integrate these bindings are published along with the release notes.
 
-## miniooni
+### miniooni
 
 Miniooni is the experimental OONI client used for research. Compile using:
 
@@ -82,11 +82,24 @@ go build -v ./internal/cmd/miniooni
 
 This will generate a binary called `miniooni` in the current directory.
 
-## Specification
+### oohelperd
+
+Oohelperd is the test helper server. Compile using:
+
+```bash
+go build -v ./internal/cmd/oohelperd
+```
+
+This will generate a binary called `oohelperd` in the current directory.
+
+## Specifications
 
 Every nettest (aka experiment) implemented in this repository has a companion
 spec in the [ooni/spec](https://github.com/ooni/spec) repository.
 
+## Contributing
+
+Please, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Updating dependencies
 

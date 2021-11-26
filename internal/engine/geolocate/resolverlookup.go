@@ -20,7 +20,7 @@ type resolverLookupClient struct{}
 
 func (rlc resolverLookupClient) do(ctx context.Context, r dnsResolver) (string, error) {
 	var ips []string
-	ips, err := r.LookupHost(ctx, "whoami.akamai.net")
+	ips, err := r.LookupHost(ctx, "whoami.v4.powerdns.org")
 	if err != nil {
 		return "", err
 	}

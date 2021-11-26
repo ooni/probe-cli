@@ -13,32 +13,40 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// DNSAction is the action that this proxy should take.
-type DNSAction int
+// DNSAction is a DNS filtering action that this proxy should take.
+type DNSAction string
 
 const (
-	// DNSActionProxy proxies the traffic to the upstream server.
-	DNSActionProxy = DNSAction(iota)
+	// DNSActionPass passes the traffic to the upstream server.
+	DNSActionPass = DNSAction("pass")
 
 	// DNSActionNXDOMAIN replies with NXDOMAIN.
-	DNSActionNXDOMAIN
+	DNSActionNXDOMAIN = DNSAction("nxdomain")
 
 	// DNSActionRefused replies with Refused.
-	DNSActionRefused
+	DNSActionRefused = DNSAction("refused")
 
 	// DNSActionLocalHost replies with `127.0.0.1` and `::1`.
-	DNSActionLocalHost
+	DNSActionLocalHost = DNSAction("localhost")
 
-	// DNSActionEmpty returns an empty reply.
-	DNSActionEmpty
+	// DNSActionNoAnswer returns an empty reply.
+	DNSActionNoAnswer = DNSAction("no-answer")
 
 	// DNSActionTimeout never replies to the query.
-	DNSActionTimeout
+	DNSActionTimeout = DNSAction("timeout")
+
+	// DNSActionCache causes the proxy to check the cache. If there
+	// are entries, they are returned. Otherwise, NXDOMAIN is returned.
+	DNSActionCache = DNSAction("cache")
 )
 
 // DNSProxy is a DNS proxy that routes traffic to an upstream
 // resolver and may implement filtering policies.
 type DNSProxy struct {
+	// Cache is the DNS cache. Note that the keys of the map
+	// must be FQDNs (i.e., including the final `.`).
+	Cache map[string][]string
+
 	// OnQuery is the MANDATORY hook called whenever we
 	// receive a query for the given domain.
 	OnQuery func(domain string) DNSAction
@@ -92,20 +100,24 @@ func (p *DNSProxy) oneloop(pconn net.PacketConn) bool {
 		return !strings.HasSuffix(err.Error(), "use of closed network connection")
 	}
 	buffer = buffer[:count]
+	go p.serveAsync(pconn, addr, buffer)
+	return true
+}
+
+func (p *DNSProxy) serveAsync(pconn net.PacketConn, addr net.Addr, buffer []byte) {
 	query := &dns.Msg{}
 	if err := query.Unpack(buffer); err != nil {
-		return true // can continue
+		return
 	}
 	reply, err := p.reply(query)
 	if err != nil {
-		return true // can continue
+		return
 	}
 	replyBytes, err := reply.Pack()
 	if err != nil {
-		return true // can continue
+		return
 	}
 	pconn.WriteTo(replyBytes, addr)
-	return true // can continue
 }
 
 func (p *DNSProxy) reply(query *dns.Msg) (*dns.Msg, error) {
@@ -121,16 +133,18 @@ func (p *DNSProxy) replyDefault(query *dns.Msg) (*dns.Msg, error) {
 	}
 	name := query.Question[0].Name
 	switch p.OnQuery(name) {
-	case DNSActionProxy:
+	case DNSActionPass:
 		return p.proxy(query)
 	case DNSActionNXDOMAIN:
 		return p.nxdomain(query), nil
 	case DNSActionLocalHost:
 		return p.localHost(query), nil
-	case DNSActionEmpty:
+	case DNSActionNoAnswer:
 		return p.empty(query), nil
 	case DNSActionTimeout:
 		return nil, errors.New("let's ignore this query")
+	case DNSActionCache:
+		return p.cache(name, query), nil
 	default:
 		return p.refused(query), nil
 	}
@@ -207,6 +221,20 @@ func (p *DNSProxy) proxy(query *dns.Msg) (*dns.Msg, error) {
 		return nil, err
 	}
 	return reply, nil
+}
+
+func (p *DNSProxy) cache(name string, query *dns.Msg) *dns.Msg {
+	addrs := p.Cache[name]
+	var ipAddrs []net.IP
+	for _, addr := range addrs {
+		if ip := net.ParseIP(addr); ip != nil {
+			ipAddrs = append(ipAddrs, ip)
+		}
+	}
+	if len(ipAddrs) <= 0 {
+		return p.nxdomain(query)
+	}
+	return p.compose(query, ipAddrs...)
 }
 
 func (p *DNSProxy) dnstransport() DNSTransport {

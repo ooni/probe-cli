@@ -81,16 +81,49 @@ https://github.com/ooni/spec) repository. If the spec is missing,
 please help the pull request reviewer to create it. If the spec is
 not clear, please let us know during the review.
 
-When you write a new experiment, keep the measurement phase and the
-results analysis phases as separate functions. This helps us a lot
-to write better unit tests for our code.
+To get a sense of what we expect from an experiment, see the [internal/tutorial](
+https://github.com/ooni/probe-cli/tree/master/internal/tutorial) tutorial
 
-To get a sense of what we expect from an experiment, see:
+## Branching and releasing
 
-- the internal/engine/experiment/example experiment
+The following diagram illustrates the overall branching and releasing
+strategy loosely followed by the core team. If you are an external
+contributor, you generally only care about the development part, which
+is on the left-hand side of the diagram.
 
-- the internal/engine/experiment/webconnectivity experiment
+![branching and releasing](docs/branching.png)
 
-- the [internal/tutorial](https://github.com/ooni/probe-cli/tree/master/internal/tutorial) tutorial
+Development uses the `master` branch. When we need to implement a
+feature or fix a bug, we branch off of the `master` branch. We squash
+and merge to include a feature or fix branch back into `master`.
 
-Thank you!
+We periodically tag `-alpha` releases directly on `master`. The
+semantics of such releases is that we reached a point where we have
+features we would like to test using the `miniooni` research CLI
+client. As part of these releases, we also update dependencies and
+embedded assets. This process ensures that we perform better testing
+of dependencies and assets as part of development.
+
+The `master` branch and pull requests only run CI lightweight tests
+that ensure the code still compiles, has good coverage, and we are
+not introducing regressions in terms of the measurement engine.
+
+To draft a release we branch off of `master` and create a `release/x.y`
+branch where `x` is the major number and `y` is the minor number. For
+release branches, we enable a very comprehensive set of tests that run
+automatically with every commit. The purpose of a release branch is to
+make sure all checks are green and hotfix bugs that we may discover
+as part of more extensively testing a release candidate. Beta and stable
+releases should occur on this branch. Subsequent patch releases should
+also occur on this branch. We have one such branch for each `x.y`
+release. If there are fixes on `master` that we want to backport, we
+cherry-pick them into the release branch. Likewise, if we need to
+forward port fixes, we cherry-pick them into `master`. When we backport,
+the commit message should start with `[backport]`; when we forward
+port, the commit message should start with `[forwardport]`.
+
+When we branch off release `x.y` from `master`, we also need to bump
+the `alpha` version used by `master`.
+
+We build binary packages for each tagged release. We will use external
+tools for publishing binaries to our Debian repository, Maven Central, etc.

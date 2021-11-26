@@ -15,9 +15,9 @@ changes you need to modify `./internal/tutorial/measurex/chapter11/main.go`.)
 ## main.go
 
 The beginning of the program is much simpler. We have removed
-out custom measurement type. We are now going to use the
+our custom measurement type. We are now going to use the
 `URLMeasurement` type (`go doc ./internal/measurex.URLMeasurement`),
-which as the same fields of `measurement` in chapter10 _plus_
+which has the same fields of `measurement` in chapter10 _plus_
 some extra fields that we'll examine in a later chapter.
 
 ```Go
@@ -65,6 +65,10 @@ The arguments are:
 
 - the context as usual
 
+- the number of parallel goroutines to use to perform parallelizable
+operations (passing zero or negative will cause the code to use
+a reasonably small default value)
+
 - the unparsed URL to measure
 
 - the headers we want to use
@@ -72,12 +76,13 @@ The arguments are:
 - a jar for cookies
 
 ```Go
-	m, err := mx.MeasureURL(ctx, *URL, headers, cookies)
+	const parallelism = 3
+	m, err := mx.MeasureURL(ctx, parallelism, *URL, headers, cookies)
 ```
 The return value is either an `URLMeasurement`
 or an error. The error happens, for example, if
 the input URL scheme is not "http" or "https" (which
-we handled by panicking in chapter11).
+we handled by panicking in chapter07).
 
 Now, rather than panicking inside `MeasureURL`, we
 return the error to the caller and we `panic`
@@ -95,13 +100,13 @@ here on `main` using the `PanicOnError` function.
 Let us perform a vanilla run first:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter11
+go run -race ./internal/tutorial/measurex/chapter11 | jq
 ```
 
 Take a look at the JSON output and compare it with:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter10 -url https://www.google.com
+go run -race ./internal/tutorial/measurex/chapter10 -url https://www.google.com | jq
 ```
 
 (which is basically forcing chapter10 to run with the
@@ -114,7 +119,7 @@ and compare it to the code written in chapter10?
 Now run:
 
 ```bash
-go run -race ./internal/tutorial/measurex/chapter11 -url https://google.com
+go run -race ./internal/tutorial/measurex/chapter11 -url https://google.com | jq
 ```
 
 Do you see the opportunity there for following redirections? :^).

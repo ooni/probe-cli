@@ -112,7 +112,8 @@ func main() {
 	}
 	// ```
 	//
-	// Finally, we print the results.
+	// Finally, we print the results. (Note that here we are not
+	// converting to the OONI archival data format.)
 	//
 	// ```Go
 	print(m)
@@ -125,11 +126,14 @@ func main() {
 // Let us perform a vanilla run first:
 //
 // ```bash
-// go run -race ./internal/tutorial/measurex/chapter07
+// go run -race ./internal/tutorial/measurex/chapter07 | jq
 // ```
 //
 // Please, check the JSON output. Do you recognize the fields
-// we have described in previous chapters?
+// we have described in previous chapters, even though we didn't
+// convert to the OONI data format? Can you modify the code to
+// use the OONI data format in the output by calling the proper
+// conversion functions exported by `measurex`?
 //
 // Can you provoke common errors such as DNS resolution
 // errors, TCP connect errors, TLS handshake errors, and

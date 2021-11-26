@@ -122,7 +122,6 @@ func Onboarding(config *config.Config) error {
 
 	config.Lock()
 	config.InformedConsent = true
-	config.Advanced.SendCrashReports = settings.SendCrashReports
 	config.Sharing.UploadResults = settings.UploadResults
 	config.Unlock()
 

@@ -165,10 +165,14 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 			if err := c.msmts[idx64].Failed(c.Probe.DB(), err.Error()); err != nil {
 				return errors.Wrap(err, "failed to mark measurement as failed")
 			}
-			// Even with a failed measurement, we want to continue. We want to
-			// record and submit the information we have. Saving the information
-			// is useful for local inspection. Submitting it is useful to us to
-			// understand what went wrong (censorship? bug? anomaly?).
+			// Since https://github.com/ooni/probe-cli/pull/527, the Measure
+			// function returns EITHER a valid measurement OR an error. Before
+			// that, instead, the measurement was valid EVEN in case of an
+			// error, which is quite not the <value> OR <error> semantics that
+			// is so typical and widespread in the Go ecosystem. So, we must
+			// jump to the next iteration of the loop here rather than falling
+			// through and attempting to do something with the measurement.
+			continue
 		}
 
 		saveToDisk := true

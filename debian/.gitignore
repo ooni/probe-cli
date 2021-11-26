@@ -1,7 +1,0 @@
-/bin
-/.debhelper/
-/debhelper-build-stamp
-/files
-/ooniprobe-cli/
-/ooniprobe-cli.postrm.debhelper
-/ooniprobe-cli.substvars

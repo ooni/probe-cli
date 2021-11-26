@@ -124,31 +124,33 @@ type HTTPResponse struct {
 
 // HTTPRoundTripEvent contains information about an HTTP round trip.
 type HTTPRoundTripEvent struct {
-	// JSON names following the df-001-httpt data format.
-	Failure  *string       `json:"failure"`
-	Request  *HTTPRequest  `json:"request"`
-	Response *HTTPResponse `json:"response"`
-	Finished float64       `json:"t"`
-	Started  float64       `json:"started"`
-
-	// Names not in the specification
-	Oddity Oddity `json:"oddity"`
+	Failure                 *string
+	Method                  string
+	URL                     string
+	RequestHeaders          http.Header
+	StatusCode              int64
+	ResponseHeaders         http.Header
+	ResponseBody            []byte
+	ResponseBodyLength      int64
+	ResponseBodyIsTruncated bool
+	ResponseBodyIsUTF8      bool
+	Finished                float64
+	Started                 float64
+	Oddity                  Oddity
 }
 
 func (txp *HTTPTransportDB) RoundTrip(req *http.Request) (*http.Response, error) {
 	started := time.Since(txp.Begin).Seconds()
 	resp, err := txp.HTTPTransport.RoundTrip(req)
 	rt := &HTTPRoundTripEvent{
-		Request: &HTTPRequest{
-			Method:  req.Method,
-			URL:     req.URL.String(),
-			Headers: NewArchivalHeaders(req.Header),
-		},
-		Started: started,
+		Method:         req.Method,
+		URL:            req.URL.String(),
+		RequestHeaders: req.Header,
+		Started:        started,
 	}
 	if err != nil {
 		rt.Finished = time.Since(txp.Begin).Seconds()
-		rt.Failure = NewArchivalFailure(err)
+		rt.Failure = NewFailure(err)
 		txp.DB.InsertIntoHTTPRoundTrip(rt)
 		return nil, err
 	}
@@ -162,10 +164,8 @@ func (txp *HTTPTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 	case resp.StatusCode >= 400:
 		rt.Oddity = OddityStatusOther
 	}
-	rt.Response = &HTTPResponse{
-		Code:    int64(resp.StatusCode),
-		Headers: NewArchivalHeaders(resp.Header),
-	}
+	rt.StatusCode = int64(resp.StatusCode)
+	rt.ResponseHeaders = resp.Header
 	r := io.LimitReader(resp.Body, txp.MaxBodySnapshotSize)
 	body, err := netxlite.ReadAllContext(req.Context(), r)
 	if errors.Is(err, io.EOF) && resp.Close {
@@ -173,7 +173,7 @@ func (txp *HTTPTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 	}
 	if err != nil {
 		rt.Finished = time.Since(txp.Begin).Seconds()
-		rt.Failure = NewArchivalFailure(err)
+		rt.Failure = NewFailure(err)
 		txp.DB.InsertIntoHTTPRoundTrip(rt)
 		return nil, err
 	}
@@ -181,10 +181,10 @@ func (txp *HTTPTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 		Reader: io.MultiReader(bytes.NewReader(body), resp.Body),
 		Closer: resp.Body,
 	}
-	rt.Response.Body = NewArchivalBinaryData(body)
-	rt.Response.BodyLength = int64(len(body))
-	rt.Response.BodyIsTruncated = int64(len(body)) >= txp.MaxBodySnapshotSize
-	rt.Response.BodyIsUTF8 = utf8.Valid(body)
+	rt.ResponseBody = body
+	rt.ResponseBodyLength = int64(len(body))
+	rt.ResponseBodyIsTruncated = int64(len(body)) >= txp.MaxBodySnapshotSize
+	rt.ResponseBodyIsUTF8 = utf8.Valid(body)
 	rt.Finished = time.Since(txp.Begin).Seconds()
 	txp.DB.InsertIntoHTTPRoundTrip(rt)
 	return resp, nil
@@ -244,7 +244,7 @@ var ErrHTTPTooManyRedirects = errors.New("stopped after 10 redirects")
 
 func newHTTPClient(db WritableDB, cookiejar http.CookieJar,
 	txp HTTPTransport, defaultErr error) HTTPClient {
-	return &httpClientErrWrapper{&http.Client{
+	return netxlite.WrapHTTPClient(&http.Client{
 		Transport: txp,
 		Jar:       cookiejar,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -260,19 +260,7 @@ func newHTTPClient(db WritableDB, cookiejar http.CookieJar,
 			})
 			return err
 		},
-	}}
-}
-
-type httpClientErrWrapper struct {
-	HTTPClient
-}
-
-func (c *httpClientErrWrapper) Do(req *http.Request) (*http.Response, error) {
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		err = netxlite.NewTopLevelGenericErrWrapper(err)
-	}
-	return resp, err
+	})
 }
 
 // NewCookieJar is a convenience factory for creating an http.CookieJar

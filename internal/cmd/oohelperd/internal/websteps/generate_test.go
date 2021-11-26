@@ -12,6 +12,7 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -297,8 +298,7 @@ func TestGenerateHTTPSTLSFailure(t *testing.T) {
 }
 
 func TestGenerateH3(t *testing.T) {
-	u, err := url.Parse("https://www.google.com")
-	runtimex.PanicOnError(err, "url.Parse failed")
+	u := &url.URL{Scheme: "https", Host: quictesting.Domain, Path: "/"}
 	rt := &RoundTrip{
 		Proto: "h3",
 		Request: &http.Request{
@@ -309,10 +309,7 @@ func TestGenerateH3(t *testing.T) {
 		},
 		SortIndex: 0,
 	}
-	endpointMeasurement := generator.GenerateH3Endpoint(context.Background(), rt, "173.194.76.103:443")
-	if err != nil {
-		t.Fatal("unexpected err")
-	}
+	endpointMeasurement := generator.GenerateH3Endpoint(context.Background(), rt, quictesting.Endpoint("443"))
 	if endpointMeasurement == nil {
 		t.Fatal("unexpected nil urlMeasurement")
 	}

@@ -28,7 +28,7 @@ type WritableDB interface {
 	InsertIntoClose(ev *NetworkEvent)
 
 	// InsertIntoTLSHandshake saves a TLS handshake event.
-	InsertIntoTLSHandshake(ev *TLSHandshakeEvent)
+	InsertIntoTLSHandshake(ev *QUICTLSHandshakeEvent)
 
 	// InsertIntoLookupHost saves a lookup host event.
 	InsertIntoLookupHost(ev *DNSLookupEvent)
@@ -46,7 +46,7 @@ type WritableDB interface {
 	InsertIntoHTTPRedirect(ev *HTTPRedirectEvent)
 
 	// InsertIntoQUICHandshake saves a QUIC handshake event.
-	InsertIntoQUICHandshake(ev *QUICHandshakeEvent)
+	InsertIntoQUICHandshake(ev *QUICTLSHandshakeEvent)
 }
 
 // MeasurementDB is a WritableDB that also allows high-level code
@@ -56,13 +56,13 @@ type MeasurementDB struct {
 	dialTable          []*NetworkEvent
 	readWriteTable     []*NetworkEvent
 	closeTable         []*NetworkEvent
-	tlsHandshakeTable  []*TLSHandshakeEvent
+	tlsHandshakeTable  []*QUICTLSHandshakeEvent
 	lookupHostTable    []*DNSLookupEvent
 	lookupHTTPSvcTable []*DNSLookupEvent
 	dnsRoundTripTable  []*DNSRoundTripEvent
 	httpRoundTripTable []*HTTPRoundTripEvent
 	httpRedirectTable  []*HTTPRedirectEvent
-	quicHandshakeTable []*QUICHandshakeEvent
+	quicHandshakeTable []*QUICTLSHandshakeEvent
 
 	// mu protects all the fields
 	mu sync.Mutex
@@ -126,14 +126,14 @@ func (db *MeasurementDB) selectAllFromCloseUnlocked() (out []*NetworkEvent) {
 }
 
 // InsertIntoTLSHandshake implements EventDB.InsertIntoTLSHandshake.
-func (db *MeasurementDB) InsertIntoTLSHandshake(ev *TLSHandshakeEvent) {
+func (db *MeasurementDB) InsertIntoTLSHandshake(ev *QUICTLSHandshakeEvent) {
 	db.mu.Lock()
 	db.tlsHandshakeTable = append(db.tlsHandshakeTable, ev)
 	db.mu.Unlock()
 }
 
 // selectAllFromTLSHandshakeUnlocked returns all TLS handshake events.
-func (db *MeasurementDB) selectAllFromTLSHandshakeUnlocked() (out []*TLSHandshakeEvent) {
+func (db *MeasurementDB) selectAllFromTLSHandshakeUnlocked() (out []*QUICTLSHandshakeEvent) {
 	out = append(out, db.tlsHandshakeTable...)
 	return
 }
@@ -204,14 +204,14 @@ func (db *MeasurementDB) selectAllFromHTTPRedirectUnlocked() (out []*HTTPRedirec
 }
 
 // InsertIntoQUICHandshake implements EventDB.InsertIntoQUICHandshake.
-func (db *MeasurementDB) InsertIntoQUICHandshake(ev *QUICHandshakeEvent) {
+func (db *MeasurementDB) InsertIntoQUICHandshake(ev *QUICTLSHandshakeEvent) {
 	db.mu.Lock()
 	db.quicHandshakeTable = append(db.quicHandshakeTable, ev)
 	db.mu.Unlock()
 }
 
 // selectAllFromQUICHandshakeUnlocked returns all QUIC handshake events.
-func (db *MeasurementDB) selectAllFromQUICHandshakeUnlocked() (out []*QUICHandshakeEvent) {
+func (db *MeasurementDB) selectAllFromQUICHandshakeUnlocked() (out []*QUICTLSHandshakeEvent) {
 	out = append(out, db.quicHandshakeTable...)
 	return
 }

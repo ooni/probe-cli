@@ -1,2 +1,0 @@
-debian/bin/ooniprobe /usr/bin
-debian/ooniprobe.conf.disabled /etc/ooniprobe

@@ -9,29 +9,29 @@ import (
 	"sync"
 )
 
-// TLSAction is the action that this proxy should take.
-type TLSAction int
+// TLSAction is a TLS filtering action that this proxy should take.
+type TLSAction string
 
 const (
-	// TLSActionProxy proxies the traffic to the destination.
-	TLSActionProxy = TLSAction(iota)
+	// TLSActionPass passes the traffic to the destination.
+	TLSActionPass = TLSAction("pass")
 
 	// TLSActionReset resets the connection.
-	TLSActionReset
+	TLSActionReset = TLSAction("reset")
 
 	// TLSActionTimeout causes the connection to timeout.
-	TLSActionTimeout
+	TLSActionTimeout = TLSAction("timeout")
 
 	// TLSActionEOF closes the connection.
-	TLSActionEOF
+	TLSActionEOF = TLSAction("eof")
 
 	// TLSActionAlertInternalError sends an internal error
 	// alert message to the TLS client.
-	TLSActionAlertInternalError
+	TLSActionAlertInternalError = TLSAction("internal-error")
 
 	// TLSActionAlertUnrecognizedName tells the client that
 	// it's handshaking with an unknown SNI.
-	TLSActionAlertUnrecognizedName
+	TLSActionAlertUnrecognizedName = TLSAction("alert-unrecognized-name")
 )
 
 // TLSProxy is a TLS proxy that routes the traffic depending
@@ -48,7 +48,6 @@ func (p *TLSProxy) Start(address string) (net.Listener, error) {
 	return listener, err
 }
 
-// Start starts the proxy.
 func (p *TLSProxy) start(address string) (net.Listener, <-chan interface{}, error) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
@@ -61,16 +60,21 @@ func (p *TLSProxy) start(address string) (net.Listener, <-chan interface{}, erro
 
 func (p *TLSProxy) mainloop(listener net.Listener, done chan<- interface{}) {
 	defer close(done)
-	for {
-		conn, err := listener.Accept()
-		if err == nil {
-			go p.handle(conn)
-			continue
-		}
-		if strings.HasSuffix(err.Error(), "use of closed network connection") {
-			break
-		}
+	for p.oneloop(listener) {
+		// nothing
 	}
+}
+
+func (p *TLSProxy) oneloop(listener net.Listener) bool {
+	conn, err := listener.Accept()
+	if err != nil && strings.HasSuffix(err.Error(), "use of closed network connection") {
+		return false // we need to stop
+	}
+	if err != nil {
+		return true // we can continue running
+	}
+	go p.handle(conn)
+	return true // we can continue running
 }
 
 const (
@@ -86,7 +90,7 @@ func (p *TLSProxy) handle(conn net.Conn) {
 		return
 	}
 	switch p.OnIncomingSNI(sni) {
-	case TLSActionProxy:
+	case TLSActionPass:
 		p.proxy(conn, sni, hello)
 	case TLSActionTimeout:
 		p.timeout(conn)
@@ -144,10 +148,11 @@ type tlsClientHelloReader struct {
 
 func (c *tlsClientHelloReader) Read(b []byte) (int, error) {
 	count, err := c.Conn.Read(b)
-	if err == nil {
-		c.clientHello = append(c.clientHello, b[:count]...)
+	if err != nil {
+		return 0, err
 	}
-	return count, err
+	c.clientHello = append(c.clientHello, b[:count]...)
+	return count, nil
 }
 
 // Write prevents writing on the real connection

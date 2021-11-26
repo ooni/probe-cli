@@ -133,7 +133,7 @@ func (r *resolverSystem) lookupHost() func(ctx context.Context, domain string) (
 	if r.testableLookupHost != nil {
 		return r.testableLookupHost
 	}
-	return net.DefaultResolver.LookupHost
+	return TProxy.LookupHost
 }
 
 func (r *resolverSystem) Network() string {
