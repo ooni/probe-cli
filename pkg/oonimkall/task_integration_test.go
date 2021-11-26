@@ -1,4 +1,4 @@
-package oonimkall_test
+package oonimkall
 
 import (
 	"encoding/json"
@@ -9,8 +9,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/pkg/oonimkall"
-	"github.com/ooni/probe-cli/v3/pkg/oonimkall/internal/tasks"
 )
 
 type eventlike struct {
@@ -22,7 +20,7 @@ func TestGood(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	task, err := oonimkall.StartTask(`{
+	task, err := StartTask(`{
 		"assets_dir": "../testdata/oonimkall/assets",
 		"log_level": "DEBUG",
 		"name": "Example",
@@ -69,7 +67,7 @@ func TestWithMeasurementFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	task, err := oonimkall.StartTask(`{
+	task, err := StartTask(`{
 		"assets_dir": "../testdata/oonimkall/assets",
 		"log_level": "DEBUG",
 		"name": "ExampleWithFailure",
@@ -98,7 +96,7 @@ func TestWithMeasurementFailure(t *testing.T) {
 }
 
 func TestInvalidJSON(t *testing.T) {
-	task, err := oonimkall.StartTask(`{`)
+	task, err := StartTask(`{`)
 	var syntaxerr *json.SyntaxError
 	if !errors.As(err, &syntaxerr) {
 		t.Fatal("not the expected error")
@@ -109,7 +107,7 @@ func TestInvalidJSON(t *testing.T) {
 }
 
 func TestUnsupportedSetting(t *testing.T) {
-	task, err := oonimkall.StartTask(`{
+	task, err := StartTask(`{
 		"assets_dir": "../testdata/oonimkall/assets",
 		"log_level": "DEBUG",
 		"name": "Example",
@@ -130,7 +128,7 @@ func TestUnsupportedSetting(t *testing.T) {
 			t.Fatal(err)
 		}
 		if event.Key == "failure.startup" {
-			if strings.Contains(eventstr, tasks.FailureInvalidVersion) {
+			if strings.Contains(eventstr, failureInvalidVersion) {
 				seen = true
 			}
 		}
@@ -141,7 +139,7 @@ func TestUnsupportedSetting(t *testing.T) {
 }
 
 func TestEmptyStateDir(t *testing.T) {
-	task, err := oonimkall.StartTask(`{
+	task, err := StartTask(`{
 		"assets_dir": "../testdata/oonimkall/assets",
 		"log_level": "DEBUG",
 		"name": "Example",
@@ -173,7 +171,7 @@ func TestEmptyStateDir(t *testing.T) {
 }
 
 func TestUnknownExperiment(t *testing.T) {
-	task, err := oonimkall.StartTask(`{
+	task, err := StartTask(`{
 		"assets_dir": "../testdata/oonimkall/assets",
 		"log_level": "DEBUG",
 		"name": "Antani",
@@ -209,7 +207,7 @@ func TestInputIsRequired(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	task, err := oonimkall.StartTask(`{
+	task, err := StartTask(`{
 		"assets_dir": "../testdata/oonimkall/assets",
 		"log_level": "DEBUG",
 		"name": "ExampleWithInput",
@@ -246,7 +244,7 @@ func TestMaxRuntime(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	begin := time.Now()
-	task, err := oonimkall.StartTask(`{
+	task, err := StartTask(`{
 		"assets_dir": "../testdata/oonimkall/assets",
 		"inputs": ["a", "b", "c"],
 		"name": "ExampleWithInput",
@@ -293,7 +291,7 @@ func TestInterruptExampleWithInput(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	t.Skip("Skipping broken test; see https://github.com/ooni/probe-cli/v3/internal/engine/issues/992")
-	task, err := oonimkall.StartTask(`{
+	task, err := StartTask(`{
 		"assets_dir": "../testdata/oonimkall/assets",
 		"inputs": [
 			"http://www.kernel.org/",
@@ -360,7 +358,7 @@ func TestInterruptNdt7(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	task, err := oonimkall.StartTask(`{
+	task, err := StartTask(`{
 		"assets_dir": "../testdata/oonimkall/assets",
 		"name": "Ndt7",
 		"options": {
@@ -417,7 +415,7 @@ func TestCountBytesForExample(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	task, err := oonimkall.StartTask(`{
+	task, err := StartTask(`{
 		"assets_dir": "../testdata/oonimkall/assets",
 		"name": "Example",
 		"options": {
@@ -457,7 +455,7 @@ func TestPrivacyAndScrubbing(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	task, err := oonimkall.StartTask(`{
+	task, err := StartTask(`{
 			"assets_dir": "../testdata/oonimkall/assets",
 			"name": "Example",
 			"options": {
@@ -500,7 +498,7 @@ func TestNonblock(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	task, err := oonimkall.StartTask(`{
+	task, err := StartTask(`{
 		"assets_dir": "../testdata/oonimkall/assets",
 		"name": "Example",
 		"options": {

@@ -1,9 +1,9 @@
-package tasks
+package oonimkall
 
 // Settings contains settings for a task. This structure derives from
 // the one described by MK v0.10.9 FFI API (https://git.io/Jv4Rv), yet
 // since 2020-12-03 we're not backwards compatible anymore.
-type Settings struct {
+type settings struct {
 	// Annotations contains the annotations to be added
 	// to every measurements performed by the task.
 	Annotations map[string]string `json:"annotations,omitempty"`
@@ -30,7 +30,7 @@ type Settings struct {
 	Name string `json:"name"`
 
 	// Options contains the task options.
-	Options SettingsOptions `json:"options"`
+	Options settingsOptions `json:"options"`
 
 	// Proxy allows you to optionally force a specific proxy
 	// rather than using no proxy (the default).
@@ -66,8 +66,8 @@ type Settings struct {
 	Version int64 `json:"version"`
 }
 
-// SettingsOptions contains the settings options
-type SettingsOptions struct {
+// settingsOptions contains the settings options
+type settingsOptions struct {
 	// MaxRuntime is the maximum runtime expressed in seconds. A negative
 	// value for this field disables the maximum runtime. Using
 	// a zero value will also mean disabled. This is not the

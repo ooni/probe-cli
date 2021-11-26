@@ -1,4 +1,4 @@
-package tasks_test
+package oonimkall
 
 import (
 	"context"
@@ -8,8 +8,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/ooni/probe-cli/v3/pkg/oonimkall/internal/tasks"
 )
 
 func TestRunnerMaybeLookupBackendsFailure(t *testing.T) {
@@ -17,11 +15,11 @@ func TestRunnerMaybeLookupBackendsFailure(t *testing.T) {
 		w.WriteHeader(500)
 	}))
 	defer server.Close()
-	out := make(chan *tasks.Event)
-	settings := &tasks.Settings{
+	out := make(chan *event)
+	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Name:      "Example",
-		Options: tasks.SettingsOptions{
+		Options: settingsOptions{
 			ProbeServicesBaseURL: server.URL,
 			SoftwareName:         "oonimkall-test",
 			SoftwareVersion:      "0.1.0",
@@ -30,14 +28,14 @@ func TestRunnerMaybeLookupBackendsFailure(t *testing.T) {
 		Version:  1,
 	}
 	go func() {
-		tasks.Run(context.Background(), settings, out)
+		run(context.Background(), settings, out)
 		close(out)
 	}()
 	var failures []string
 	for ev := range out {
 		switch ev.Key {
 		case "failure.startup":
-			failure := ev.Value.(tasks.EventFailure).Failure
+			failure := ev.Value.(eventFailure).Failure
 			failures = append(failures, failure)
 		case "status.queued", "status.started", "log", "status.end":
 		default:
@@ -71,11 +69,11 @@ func TestRunnerOpenReportFailure(t *testing.T) {
 		w.WriteHeader(500)
 	}))
 	defer server.Close()
-	out := make(chan *tasks.Event)
-	settings := &tasks.Settings{
+	out := make(chan *event)
+	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Name:      "Example",
-		Options: tasks.SettingsOptions{
+		Options: settingsOptions{
 			ProbeServicesBaseURL: server.URL,
 			SoftwareName:         "oonimkall-test",
 			SoftwareVersion:      "0.1.0",
@@ -91,7 +89,7 @@ func TestRunnerOpenReportFailure(t *testing.T) {
 			case "failure.report_create":
 				seen++
 			case "status.progress":
-				evv := ev.Value.(tasks.EventStatusProgress)
+				evv := ev.Value.(eventStatusProgress)
 				if evv.Percentage >= 0.4 {
 					panic(fmt.Sprintf("too much progress: %+v", ev))
 				}
@@ -103,7 +101,7 @@ func TestRunnerOpenReportFailure(t *testing.T) {
 		}
 		seench <- seen
 	}()
-	tasks.Run(context.Background(), settings, out)
+	run(context.Background(), settings, out)
 	close(out)
 	if n := <-seench; n != 1 {
 		t.Fatal("unexpected number of events")
@@ -114,12 +112,12 @@ func TestRunnerGood(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *tasks.Event)
-	settings := &tasks.Settings{
+	out := make(chan *event)
+	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		LogLevel:  "DEBUG",
 		Name:      "Example",
-		Options: tasks.SettingsOptions{
+		Options: settingsOptions{
 			SoftwareName:    "oonimkall-test",
 			SoftwareVersion: "0.1.0",
 		},
@@ -127,7 +125,7 @@ func TestRunnerGood(t *testing.T) {
 		Version:  1,
 	}
 	go func() {
-		tasks.Run(context.Background(), settings, out)
+		run(context.Background(), settings, out)
 		close(out)
 	}()
 	var found bool
@@ -145,32 +143,32 @@ func TestRunnerWithUnsupportedSettings(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *tasks.Event)
-	settings := &tasks.Settings{
+	out := make(chan *event)
+	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		LogLevel:  "DEBUG",
 		Name:      "Example",
-		Options: tasks.SettingsOptions{
+		Options: settingsOptions{
 			SoftwareName:    "oonimkall-test",
 			SoftwareVersion: "0.1.0",
 		},
 		StateDir: "../../testdata/oonimkall/state",
 	}
 	go func() {
-		tasks.Run(context.Background(), settings, out)
+		run(context.Background(), settings, out)
 		close(out)
 	}()
 	var failures []string
 	for ev := range out {
 		if ev.Key == "failure.startup" {
-			failure := ev.Value.(tasks.EventFailure).Failure
+			failure := ev.Value.(eventFailure).Failure
 			failures = append(failures, failure)
 		}
 	}
 	if len(failures) != 1 {
 		t.Fatal("invalid number of failures")
 	}
-	if failures[0] != tasks.FailureInvalidVersion {
+	if failures[0] != failureInvalidVersion {
 		t.Fatal("not the failure we expected")
 	}
 }
@@ -179,12 +177,12 @@ func TestRunnerWithInvalidKVStorePath(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *tasks.Event)
-	settings := &tasks.Settings{
+	out := make(chan *event)
+	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		LogLevel:  "DEBUG",
 		Name:      "Example",
-		Options: tasks.SettingsOptions{
+		Options: settingsOptions{
 			SoftwareName:    "oonimkall-test",
 			SoftwareVersion: "0.1.0",
 		},
@@ -192,13 +190,13 @@ func TestRunnerWithInvalidKVStorePath(t *testing.T) {
 		Version:  1,
 	}
 	go func() {
-		tasks.Run(context.Background(), settings, out)
+		run(context.Background(), settings, out)
 		close(out)
 	}()
 	var failures []string
 	for ev := range out {
 		if ev.Key == "failure.startup" {
-			failure := ev.Value.(tasks.EventFailure).Failure
+			failure := ev.Value.(eventFailure).Failure
 			failures = append(failures, failure)
 		}
 	}
@@ -214,12 +212,12 @@ func TestRunnerWithInvalidExperimentName(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *tasks.Event)
-	settings := &tasks.Settings{
+	out := make(chan *event)
+	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		LogLevel:  "DEBUG",
 		Name:      "Nonexistent",
-		Options: tasks.SettingsOptions{
+		Options: settingsOptions{
 			SoftwareName:    "oonimkall-test",
 			SoftwareVersion: "0.1.0",
 		},
@@ -227,13 +225,13 @@ func TestRunnerWithInvalidExperimentName(t *testing.T) {
 		Version:  1,
 	}
 	go func() {
-		tasks.Run(context.Background(), settings, out)
+		run(context.Background(), settings, out)
 		close(out)
 	}()
 	var failures []string
 	for ev := range out {
 		if ev.Key == "failure.startup" {
-			failure := ev.Value.(tasks.EventFailure).Failure
+			failure := ev.Value.(eventFailure).Failure
 			failures = append(failures, failure)
 		}
 	}
@@ -249,12 +247,12 @@ func TestRunnerWithMissingInput(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *tasks.Event)
-	settings := &tasks.Settings{
+	out := make(chan *event)
+	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		LogLevel:  "DEBUG",
 		Name:      "ExampleWithInput",
-		Options: tasks.SettingsOptions{
+		Options: settingsOptions{
 			SoftwareName:    "oonimkall-test",
 			SoftwareVersion: "0.1.0",
 		},
@@ -262,13 +260,13 @@ func TestRunnerWithMissingInput(t *testing.T) {
 		Version:  1,
 	}
 	go func() {
-		tasks.Run(context.Background(), settings, out)
+		run(context.Background(), settings, out)
 		close(out)
 	}()
 	var failures []string
 	for ev := range out {
 		if ev.Key == "failure.startup" {
-			failure := ev.Value.(tasks.EventFailure).Failure
+			failure := ev.Value.(eventFailure).Failure
 			failures = append(failures, failure)
 		}
 	}
@@ -284,13 +282,13 @@ func TestRunnerWithMaxRuntime(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *tasks.Event)
-	settings := &tasks.Settings{
+	out := make(chan *event)
+	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Inputs:    []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"},
 		LogLevel:  "DEBUG",
 		Name:      "ExampleWithInput",
-		Options: tasks.SettingsOptions{
+		Options: settingsOptions{
 			MaxRuntime:      1,
 			SoftwareName:    "oonimkall-test",
 			SoftwareVersion: "0.1.0",
@@ -300,7 +298,7 @@ func TestRunnerWithMaxRuntime(t *testing.T) {
 	}
 	begin := time.Now()
 	go func() {
-		tasks.Run(context.Background(), settings, out)
+		run(context.Background(), settings, out)
 		close(out)
 	}()
 	var found bool
@@ -320,7 +318,7 @@ func TestRunnerWithMaxRuntime(t *testing.T) {
 	// 1. https://github.com/ooni/probe-cli/v3/internal/engine/pull/588/checks?check_run_id=667263788
 	//
 	// 2. https://github.com/ooni/probe-cli/v3/internal/engine/pull/588/checks?check_run_id=667263855
-	if time.Now().Sub(begin) > 10*time.Second {
+	if time.Since(begin) > 10*time.Second {
 		t.Fatal("expected shorter runtime")
 	}
 }
@@ -329,13 +327,13 @@ func TestRunnerWithMaxRuntimeNonInterruptible(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *tasks.Event)
-	settings := &tasks.Settings{
+	out := make(chan *event)
+	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Inputs:    []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"},
 		LogLevel:  "DEBUG",
 		Name:      "ExampleWithInputNonInterruptible",
-		Options: tasks.SettingsOptions{
+		Options: settingsOptions{
 			MaxRuntime:      1,
 			SoftwareName:    "oonimkall-test",
 			SoftwareVersion: "0.1.0",
@@ -345,7 +343,7 @@ func TestRunnerWithMaxRuntimeNonInterruptible(t *testing.T) {
 	}
 	begin := time.Now()
 	go func() {
-		tasks.Run(context.Background(), settings, out)
+		run(context.Background(), settings, out)
 		close(out)
 	}()
 	var found bool
@@ -365,7 +363,7 @@ func TestRunnerWithMaxRuntimeNonInterruptible(t *testing.T) {
 	// 1. https://github.com/ooni/probe-cli/v3/internal/engine/pull/588/checks?check_run_id=667263788
 	//
 	// 2. https://github.com/ooni/probe-cli/v3/internal/engine/pull/588/checks?check_run_id=667263855
-	if time.Now().Sub(begin) > 10*time.Second {
+	if time.Since(begin) > 10*time.Second {
 		t.Fatal("expected shorter runtime")
 	}
 }
@@ -374,13 +372,13 @@ func TestRunnerWithFailedMeasurement(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *tasks.Event)
-	settings := &tasks.Settings{
+	out := make(chan *event)
+	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Inputs:    []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"},
 		LogLevel:  "DEBUG",
 		Name:      "ExampleWithFailure",
-		Options: tasks.SettingsOptions{
+		Options: settingsOptions{
 			MaxRuntime:      1,
 			SoftwareName:    "oonimkall-test",
 			SoftwareVersion: "0.1.0",
@@ -389,7 +387,7 @@ func TestRunnerWithFailedMeasurement(t *testing.T) {
 		Version:  1,
 	}
 	go func() {
-		tasks.Run(context.Background(), settings, out)
+		run(context.Background(), settings, out)
 		close(out)
 	}()
 	var found bool
