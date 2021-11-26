@@ -5,7 +5,7 @@ type DNSCheck struct{}
 
 // TODO(https://github.com/ooni/probe/issues/1390): we need to
 // implement serving DNSCheck targets from the API
-var dnsCheckDefaultInput = []string{
+var dnsCheckDefaultInput = mustStringListToModelURLInfo([]string{
 	"https://dns.google/dns-query",
 	"https://8.8.8.8/dns-query",
 	"dot://8.8.8.8:853/",
@@ -20,7 +20,7 @@ var dnsCheckDefaultInput = []string{
 	"https://9.9.9.9/dns-query",
 	"dot://9.9.9.9:853/",
 	"dot://dns.quad9.net/",
-}
+})
 
 // Run starts the nettest.
 func (n DNSCheck) Run(ctl *Controller) error {
@@ -28,5 +28,9 @@ func (n DNSCheck) Run(ctl *Controller) error {
 	if err != nil {
 		return err
 	}
-	return ctl.Run(builder, dnsCheckDefaultInput)
+	input, err := ctl.BuildAndSetInputIdxMap(ctl.Probe.DB(), dnsCheckDefaultInput)
+	if err != nil {
+		return err
+	}
+	return ctl.Run(builder, input)
 }
