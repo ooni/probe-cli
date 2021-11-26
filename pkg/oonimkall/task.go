@@ -59,10 +59,9 @@ import (
 // running as subsequent Tasks to reuse the Session connections
 // created with the OONI probe services backends.
 type Task struct {
-	cancel    context.CancelFunc
-	isdone    *atomicx.Int64
-	isstopped *atomicx.Int64
-	out       chan *event
+	cancel context.CancelFunc
+	isdone *atomicx.Int64
+	out    chan *event
 }
 
 // StartTask starts an asynchronous task. The input argument is a
@@ -75,15 +74,13 @@ func StartTask(input string) (*Task, error) {
 	const bufsiz = 128 // common case: we don't want runner to block
 	ctx, cancel := context.WithCancel(context.Background())
 	task := &Task{
-		cancel:    cancel,
-		isdone:    &atomicx.Int64{},
-		isstopped: &atomicx.Int64{},
-		out:       make(chan *event, bufsiz),
+		cancel: cancel,
+		isdone: &atomicx.Int64{},
+		out:    make(chan *event, bufsiz),
 	}
 	go func() {
-		defer close(task.out)
-		defer task.isstopped.Add(1)
 		run(ctx, &settings, task.out)
+		task.out <- nil // signal that we're done w/o closing the channel
 	}()
 	return task, nil
 }
@@ -92,6 +89,9 @@ func StartTask(input string) (*Task, error) {
 // string is a serialized JSON following MK v0.10.9's API.
 func (t *Task) WaitForNextEvent() string {
 	const terminated = `{"key":"task_terminated","value":{}}` // like MK
+	if t.isdone.Load() != 0 {
+		return terminated
+	}
 	evp := <-t.out
 	if evp == nil {
 		t.isdone.Add(1)
@@ -105,6 +105,10 @@ func (t *Task) WaitForNextEvent() string {
 // IsDone returns true if the task is done.
 func (t *Task) IsDone() bool {
 	return t.isdone.Load() != 0
+}
+
+func (t *Task) isRunning() bool {
+	return !t.IsDone()
 }
 
 // Interrupt interrupts the task.
