@@ -416,10 +416,11 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 			OnWiFi:   true, // meaning: not on 4G
 			Charging: true,
 		},
-		InputPolicy:  builder.InputPolicy(),
-		StaticInputs: currentOptions.Inputs,
-		SourceFiles:  currentOptions.InputFilePaths,
-		Session:      sess,
+		ExperimentName: experimentName,
+		InputPolicy:    builder.InputPolicy(),
+		StaticInputs:   currentOptions.Inputs,
+		SourceFiles:    currentOptions.InputFilePaths,
+		Session:        sess,
 	}
 	inputs, err := inputLoader.Load(context.Background())
 	fatalOnError(err, "cannot load inputs")

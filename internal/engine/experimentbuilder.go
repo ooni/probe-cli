@@ -36,6 +36,11 @@ const (
 	// InputNone indicates that the experiment does not want any
 	// input and ignores the input if provided with it.
 	InputNone = InputPolicy("none")
+
+	// We gather input from StaticInput and SourceFiles. If there is
+	// input, we return it. Otherwise, we return an internal static
+	// list of inputs to be used with this experiment.
+	InputOrStaticDefault = InputPolicy("or_static_default")
 )
 
 // ExperimentBuilder is an experiment builder.

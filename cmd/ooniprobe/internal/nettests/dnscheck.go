@@ -1,26 +1,32 @@
 package nettests
 
+import (
+	"context"
+
+	engine "github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/engine/model"
+)
+
 // DNSCheck nettest implementation.
 type DNSCheck struct{}
 
-// TODO(https://github.com/ooni/probe/issues/1390): we need to
-// implement serving DNSCheck targets from the API
-var dnsCheckDefaultInput = mustStringListToModelURLInfo([]string{
-	"https://dns.google/dns-query",
-	"https://8.8.8.8/dns-query",
-	"dot://8.8.8.8:853/",
-	"dot://8.8.4.4:853/",
-	"https://8.8.4.4/dns-query",
-	"https://cloudflare-dns.com/dns-query",
-	"https://1.1.1.1/dns-query",
-	"https://1.0.0.1/dns-query",
-	"dot://1.1.1.1:853/",
-	"dot://1.0.0.1:853/",
-	"https://dns.quad9.net/dns-query",
-	"https://9.9.9.9/dns-query",
-	"dot://9.9.9.9:853/",
-	"dot://dns.quad9.net/",
-})
+func (n DNSCheck) lookupURLs(ctl *Controller) ([]string, error) {
+	inputloader := &engine.InputLoader{
+		CheckInConfig: &model.CheckInConfig{
+			// not needed because we have default input
+		},
+		ExperimentName: "dnscheck",
+		InputPolicy:    engine.InputOrStaticDefault,
+		Session:        ctl.Session,
+		SourceFiles:    ctl.InputFiles,
+		StaticInputs:   ctl.Inputs,
+	}
+	testlist, err := inputloader.Load(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	return ctl.BuildAndSetInputIdxMap(ctl.Probe.DB(), testlist)
+}
 
 // Run starts the nettest.
 func (n DNSCheck) Run(ctl *Controller) error {
@@ -28,9 +34,9 @@ func (n DNSCheck) Run(ctl *Controller) error {
 	if err != nil {
 		return err
 	}
-	input, err := ctl.BuildAndSetInputIdxMap(ctl.Probe.DB(), dnsCheckDefaultInput)
+	urls, err := n.lookupURLs(ctl)
 	if err != nil {
 		return err
 	}
-	return ctl.Run(builder, input)
+	return ctl.Run(builder, urls)
 }

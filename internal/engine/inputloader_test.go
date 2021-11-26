@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -203,6 +204,101 @@ func TestInputLoaderInputStrictlyRequiredWithEmptyFile(t *testing.T) {
 	}
 	if out != nil {
 		t.Fatal("not the output we expected")
+	}
+}
+
+func TestInputLoaderInputOrStaticDefaultWithInput(t *testing.T) {
+	il := &InputLoader{
+		ExperimentName: "dnscheck",
+		StaticInputs:   []string{"https://www.google.com/"},
+		SourceFiles: []string{
+			"testdata/inputloader1.txt",
+			"testdata/inputloader2.txt",
+		},
+		InputPolicy: InputOrStaticDefault,
+	}
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 5 {
+		t.Fatal("not the output length we expected")
+	}
+	expect := []model.URLInfo{
+		{URL: "https://www.google.com/"},
+		{URL: "https://www.x.org/"},
+		{URL: "https://www.slashdot.org/"},
+		{URL: "https://abc.xyz/"},
+		{URL: "https://run.ooni.io/"},
+	}
+	if diff := cmp.Diff(out, expect); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestInputLoaderInputOrStaticDefaultWithEmptyFile(t *testing.T) {
+	il := &InputLoader{
+		ExperimentName: "dnscheck",
+		InputPolicy:    InputOrStaticDefault,
+		SourceFiles: []string{
+			"testdata/inputloader1.txt",
+			"testdata/inputloader3.txt", // we want it before inputloader2.txt
+			"testdata/inputloader2.txt",
+		},
+	}
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if !errors.Is(err, ErrDetectedEmptyFile) {
+		t.Fatalf("not the error we expected: %+v", err)
+	}
+	if out != nil {
+		t.Fatal("not the output we expected")
+	}
+}
+
+func TestInputLoaderInputOrStaticDefaultWithoutInputDNSCheck(t *testing.T) {
+	il := &InputLoader{
+		ExperimentName: "dnscheck",
+		InputPolicy:    InputOrStaticDefault,
+	}
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(dnsCheckDefaultInput, out); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestInputLoaderInputOrStaticDefaultWithoutInputStunReachability(t *testing.T) {
+	il := &InputLoader{
+		ExperimentName: "stunreachability",
+		InputPolicy:    InputOrStaticDefault,
+	}
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(stunReachabilityDefaultInput, out); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestInputLoaderInputOrStaticDefaultWithoutInputOther(t *testing.T) {
+	il := &InputLoader{
+		ExperimentName: "xx",
+		InputPolicy:    InputOrStaticDefault,
+	}
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if !errors.Is(err, ErrNoStaticInput) {
+		t.Fatal("not the error we expected", err)
+	}
+	if out != nil {
+		t.Fatal("expected nil result here")
 	}
 }
 
@@ -492,5 +588,45 @@ func TestInputLoaderLoggerWorksAsIntended(t *testing.T) {
 	out := inputLoader.logger()
 	if out != logger {
 		t.Fatal("logger not working as intended")
+	}
+}
+
+func TestStringListToModelURLInfoWithValidInput(t *testing.T) {
+	input := []string{
+		"stun://stun.voip.blackberry.com:3478",
+		"stun://stun.altar.com.pl:3478",
+	}
+	output, err := stringListToModelURLInfo(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(input) != len(output) {
+		t.Fatal("unexpected output length")
+	}
+	for idx := 0; idx < len(input); idx++ {
+		if input[idx] != output[idx].URL {
+			t.Fatal("unexpected entry")
+		}
+		if output[idx].CategoryCode != "MISC" {
+			t.Fatal("unexpected category")
+		}
+		if output[idx].CountryCode != "XX" {
+			t.Fatal("unexpected country")
+		}
+	}
+}
+
+func TestStringListToModelURLInfoWithInvalidInput(t *testing.T) {
+	input := []string{
+		"stun://stun.voip.blackberry.com:3478",
+		"\t",
+		"stun://stun.altar.com.pl:3478",
+	}
+	output, err := stringListToModelURLInfo(input)
+	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
+		t.Fatal("no the error we expected", err)
+	}
+	if output != nil {
+		t.Fatal("unexpected nil output")
 	}
 }

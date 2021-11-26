@@ -8,7 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
-func lookupURLs(ctl *Controller, categories []string) ([]string, error) {
+func (n WebConnectivity) lookupURLs(ctl *Controller, categories []string) ([]string, error) {
 	inputloader := &engine.InputLoader{
 		CheckInConfig: &model.CheckInConfig{
 			// Setting Charging and OnWiFi to true causes the CheckIn
@@ -21,10 +21,11 @@ func lookupURLs(ctl *Controller, categories []string) ([]string, error) {
 				CategoryCodes: categories,
 			},
 		},
-		InputPolicy:  engine.InputOrQueryBackend,
-		Session:      ctl.Session,
-		SourceFiles:  ctl.InputFiles,
-		StaticInputs: ctl.Inputs,
+		ExperimentName: "web_connectivity",
+		InputPolicy:    engine.InputOrQueryBackend,
+		Session:        ctl.Session,
+		SourceFiles:    ctl.InputFiles,
+		StaticInputs:   ctl.Inputs,
 	}
 	testlist, err := inputloader.Load(context.Background())
 	if err != nil {
@@ -39,13 +40,11 @@ type WebConnectivity struct{}
 // Run starts the test
 func (n WebConnectivity) Run(ctl *Controller) error {
 	log.Debugf("Enabled category codes are the following %v", ctl.Probe.Config().Nettests.WebsitesEnabledCategoryCodes)
-	urls, err := lookupURLs(ctl, ctl.Probe.Config().Nettests.WebsitesEnabledCategoryCodes)
+	urls, err := n.lookupURLs(ctl, ctl.Probe.Config().Nettests.WebsitesEnabledCategoryCodes)
 	if err != nil {
 		return err
 	}
-	builder, err := ctl.Session.NewExperimentBuilder(
-		"web_connectivity",
-	)
+	builder, err := ctl.Session.NewExperimentBuilder("web_connectivity")
 	if err != nil {
 		return err
 	}
