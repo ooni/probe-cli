@@ -122,6 +122,9 @@ type THClientCall struct {
 
 	// TargetURL is the MANDATORY URL to measure.
 	TargetURL string
+
+	// UserAgent is the OPTIONAL user-agent to use.
+	UserAgent string
 }
 
 // Call performs the specified TH call and returns either a response or an error.
@@ -140,7 +143,7 @@ func (c *THClientCall) Call(ctx context.Context) (*THServerResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", fmt.Sprintf("ooniprobe-cli/%s", version.Version))
+	req.Header.Set("User-Agent", c.UserAgent)
 	return c.httpClientDo(req)
 }
 
