@@ -5,8 +5,10 @@ package stunreachability
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
@@ -20,7 +22,7 @@ import (
 
 const (
 	testName    = "stunreachability"
-	testVersion = "0.2.0"
+	testVersion = "0.3.0"
 )
 
 // Config contains the experiment config.
@@ -64,6 +66,12 @@ func wrap(err error) error {
 	}.MaybeBuild()
 }
 
+// errStunMissingInput means that the user did not provide any input
+var errStunMissingInput = errors.New("stun: missing input")
+
+// errStunMissingPortInURL means the URL is missing the port
+var errStunMissingPortInURL = errors.New("stun: missing port in URL")
+
 // Run implements ExperimentMeasurer.Run.
 func (m *Measurer) Run(
 	ctx context.Context, sess model.ExperimentSession,
@@ -72,7 +80,18 @@ func (m *Measurer) Run(
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
 	registerExtensions(measurement)
-	if err := wrap(tk.run(ctx, m.config, sess, measurement, callbacks)); err != nil {
+	input := string(measurement.Input)
+	if input == "" {
+		return errStunMissingInput
+	}
+	URL, err := url.Parse(input)
+	if err != nil {
+		return err
+	}
+	if URL.Port() == "" {
+		return errStunMissingPortInURL
+	}
+	if err := wrap(tk.run(ctx, m.config, sess, measurement, callbacks, URL.Host)); err != nil {
 		s := err.Error()
 		tk.Failure = &s
 		return err
@@ -83,12 +102,8 @@ func (m *Measurer) Run(
 func (tk *TestKeys) run(
 	ctx context.Context, config Config, sess model.ExperimentSession,
 	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
+	endpoint string,
 ) error {
-	const defaultAddress = "stun.l.google.com:19302"
-	endpoint := string(measurement.Input)
-	if endpoint == "" {
-		endpoint = defaultAddress
-	}
 	callbacks.OnProgress(0, fmt.Sprintf("stunreachability: measuring: %s...", endpoint))
 	defer callbacks.OnProgress(
 		1, fmt.Sprintf("stunreachability: measuring: %s... done", endpoint))
