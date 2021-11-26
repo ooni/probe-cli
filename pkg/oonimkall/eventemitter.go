@@ -1,5 +1,7 @@
 package oonimkall
 
+import "time"
+
 // eventEmitter emits event on a channel
 type eventEmitter struct {
 	disabled map[string]bool
@@ -36,5 +38,13 @@ func (ee *eventEmitter) Emit(key string, value interface{}) {
 	if ee.disabled[key] {
 		return
 	}
-	ee.out <- &event{Key: key, Value: value}
+	const maxSendTimeout = 250 * time.Millisecond
+	timer := time.NewTimer(maxSendTimeout)
+	defer timer.Stop()
+	select {
+	case ee.out <- &event{Key: key, Value: value}:
+		// good, we've been able to send the new event
+	case <-timer.C:
+		// oops, we've timed out sending
+	}
 }
