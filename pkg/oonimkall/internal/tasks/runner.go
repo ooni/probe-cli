@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/url"
 	"time"
 
@@ -190,12 +189,15 @@ func (r *Runner) Run(ctx context.Context) {
 	})
 
 	builder.SetCallbacks(&runnerCallbacks{emitter: r.emitter})
-	if len(r.settings.Inputs) <= 0 {
-		switch builder.InputPolicy() {
-		case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
+
+	switch builder.InputPolicy() {
+	case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
+		if len(r.settings.Inputs) <= 0 {
 			r.emitter.EmitFailureStartup("no input provided")
 			return
-		case engine.InputOrStaticDefault:
+		}
+	case engine.InputOrStaticDefault:
+		if len(r.settings.Inputs) <= 0 {
 			// TODO(bassosimone): before ooni/probe#1814 stunreachability
 			// had a default input and was working on mobile. Now it doesn't
 			// have any default input. We cannot break it. So, we're doing
@@ -215,10 +217,17 @@ func (r *Runner) Run(ctx context.Context) {
 				return
 			}
 			r.settings.Inputs = inputs
-		default:
-			r.settings.Inputs = append(r.settings.Inputs, "")
 		}
+	case engine.InputOptional:
+		// do nothing in this case
+	default: // treat this case as engine.InputNone.
+		if len(r.settings.Inputs) > 0 {
+			r.emitter.EmitFailureStartup("experiment does not accept input")
+			return
+		}
+		r.settings.Inputs = append(r.settings.Inputs, "")
 	}
+
 	experiment := builder.NewExperiment()
 	defer func() {
 		endEvent.DownloadedKB = experiment.KibiBytesReceived()

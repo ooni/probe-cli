@@ -447,7 +447,6 @@ func TestRunnerWithFailedMeasurement(t *testing.T) {
 	out := make(chan *tasks.Event)
 	settings := &tasks.Settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
-		Inputs:    []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"},
 		LogLevel:  "DEBUG",
 		Name:      "ExampleWithFailure",
 		Options: tasks.SettingsOptions{
