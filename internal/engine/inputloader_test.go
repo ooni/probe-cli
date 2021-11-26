@@ -267,8 +267,20 @@ func TestInputLoaderInputOrStaticDefaultWithoutInputDNSCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(dnsCheckDefaultInput, out); diff != "" {
-		t.Fatal(diff)
+	if len(out) != len(dnsCheckDefaultInput) {
+		t.Fatal("invalid output length")
+	}
+	for idx := 0; idx < len(dnsCheckDefaultInput); idx++ {
+		e := out[idx]
+		if e.CategoryCode != "MISC" {
+			t.Fatal("invalid category code")
+		}
+		if e.CountryCode != "XX" {
+			t.Fatal("invalid country code")
+		}
+		if e.URL != dnsCheckDefaultInput[idx] {
+			t.Fatal("invalid URL")
+		}
 	}
 }
 
@@ -282,8 +294,56 @@ func TestInputLoaderInputOrStaticDefaultWithoutInputStunReachability(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(stunReachabilityDefaultInput, out); diff != "" {
-		t.Fatal(diff)
+	if len(out) != len(stunReachabilityDefaultInput) {
+		t.Fatal("invalid output length")
+	}
+	for idx := 0; idx < len(stunReachabilityDefaultInput); idx++ {
+		e := out[idx]
+		if e.CategoryCode != "MISC" {
+			t.Fatal("invalid category code")
+		}
+		if e.CountryCode != "XX" {
+			t.Fatal("invalid country code")
+		}
+		if e.URL != stunReachabilityDefaultInput[idx] {
+			t.Fatal("invalid URL")
+		}
+	}
+}
+
+func TestInputLoaderInputOrStaticDefaultWithoutInputExampleWithDefaultInput(t *testing.T) {
+	il := &InputLoader{
+		ExperimentName: "example_with_default_input",
+		InputPolicy:    InputOrStaticDefault,
+	}
+	ctx := context.Background()
+	out, err := il.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != len(exampleWithDefaultInputInput) {
+		t.Fatal("invalid output length")
+	}
+	for idx := 0; idx < len(exampleWithDefaultInputInput); idx++ {
+		e := out[idx]
+		if e.CategoryCode != "MISC" {
+			t.Fatal("invalid category code")
+		}
+		if e.CountryCode != "XX" {
+			t.Fatal("invalid country code")
+		}
+		if e.URL != exampleWithDefaultInputInput[idx] {
+			t.Fatal("invalid URL")
+		}
+	}
+}
+
+func TestStaticBareInputForExperimentWorksWithNonCanonicalNames(t *testing.T) {
+	names := []string{"DNSCheck", "STUNReachability", "ExampleWithDefaultInput"}
+	for _, name := range names {
+		if _, err := staticInputForExperiment(name); err != nil {
+			t.Fatal("failure for", name, ":", err)
+		}
 	}
 }
 
@@ -596,7 +656,7 @@ func TestStringListToModelURLInfoWithValidInput(t *testing.T) {
 		"stun://stun.voip.blackberry.com:3478",
 		"stun://stun.altar.com.pl:3478",
 	}
-	output, err := stringListToModelURLInfo(input)
+	output, err := stringListToModelURLInfo(input, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -622,8 +682,24 @@ func TestStringListToModelURLInfoWithInvalidInput(t *testing.T) {
 		"\t",
 		"stun://stun.altar.com.pl:3478",
 	}
-	output, err := stringListToModelURLInfo(input)
+	output, err := stringListToModelURLInfo(input, nil)
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
+		t.Fatal("no the error we expected", err)
+	}
+	if output != nil {
+		t.Fatal("unexpected nil output")
+	}
+}
+
+func TestStringListToModelURLInfoWithError(t *testing.T) {
+	input := []string{
+		"stun://stun.voip.blackberry.com:3478",
+		"\t",
+		"stun://stun.altar.com.pl:3478",
+	}
+	expected := errors.New("mocked error")
+	output, err := stringListToModelURLInfo(input, expected)
+	if !errors.Is(err, expected) {
 		t.Fatal("no the error we expected", err)
 	}
 	if output != nil {

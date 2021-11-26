@@ -53,6 +53,11 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
+	//
+	// The following few experiments are variations on the example
+	// experiment, which are useful for testing oonimkall.
+	//
+
 	"example": func(session *Session) *ExperimentBuilder {
 		return &ExperimentBuilder{
 			build: func(config interface{}) *Experiment {
@@ -85,10 +90,6 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	// TODO(bassosimone): when we can set experiment options using the JSON
-	// we need to get rid of all these multiple experiments.
-	//
-	// See https://github.com/ooni/probe-engine/issues/413
 	"example_with_input_non_interruptible": func(session *Session) *ExperimentBuilder {
 		return &ExperimentBuilder{
 			build: func(config interface{}) *Experiment {
@@ -119,6 +120,38 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 			},
 			interruptible: true,
 			inputPolicy:   InputNone,
+		}
+	},
+
+	"example_with_default_input": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, example.NewExperimentMeasurer(
+					*config.(*example.Config), "example_with_default_input",
+				))
+			},
+			config: &example.Config{
+				Message:   "Good day from the example with input experiment!",
+				SleepTime: int64(time.Second),
+			},
+			interruptible: true,
+			inputPolicy:   InputOrStaticDefault,
+		}
+	},
+
+	"example_with_default_input_wrongly_configured": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, example.NewExperimentMeasurer(
+					*config.(*example.Config), "example_with_default_input_wrongly_configured",
+				))
+			},
+			config: &example.Config{
+				Message:   "Good day from the example with input experiment!",
+				SleepTime: int64(time.Second),
+			},
+			interruptible: true,
+			inputPolicy:   InputOrStaticDefault,
 		}
 	},
 

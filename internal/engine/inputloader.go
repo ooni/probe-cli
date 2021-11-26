@@ -11,7 +11,6 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
 )
 
@@ -165,7 +164,7 @@ func (il *InputLoader) loadOrQueryBackend(ctx context.Context) ([]model.URLInfo,
 
 // TODO(https://github.com/ooni/probe/issues/1390): we need to
 // implement serving DNSCheck targets from the API
-var dnsCheckDefaultInput = mustStringListToModelURLInfo([]string{
+var dnsCheckDefaultInput = []string{
 	"https://dns.google/dns-query",
 	"https://8.8.8.8/dns-query",
 	"dot://8.8.8.8:853/",
@@ -180,9 +179,39 @@ var dnsCheckDefaultInput = mustStringListToModelURLInfo([]string{
 	"https://9.9.9.9/dns-query",
 	"dot://9.9.9.9:853/",
 	"dot://dns.quad9.net/",
-})
+}
 
-var stunReachabilityDefaultInput = mustStringListToModelURLInfo(stuninput.AsnStunReachabilityInput())
+var stunReachabilityDefaultInput = stuninput.AsnStunReachabilityInput()
+
+var exampleWithDefaultInputInput = []string{
+	"https://example.com",
+	"https://example.org",
+}
+
+// StaticBareInputForExperiment returns the list of strings an
+// experiment should use as static input. In case there is no
+// static input for this experiment, we return an error.
+func StaticBareInputForExperiment(name string) ([]string, error) {
+	// Implementation note: we may be called from pkg/oonimkall
+	// with a non-canonical experiment name, so we need to convert
+	// the experiment name to be canonical before proceeding.
+	switch canonicalizeExperimentName(name) {
+	case "dnscheck":
+		return dnsCheckDefaultInput, nil
+	case "stunreachability":
+		return stunReachabilityDefaultInput, nil
+	case "example_with_default_input": // used for testing pkg/oonimkall
+		return exampleWithDefaultInputInput, nil
+	default:
+		return nil, ErrNoStaticInput
+	}
+}
+
+// staticInputForExperiment returns the static input for the given experiment
+// or an error if there's no static input for the experiment.
+func staticInputForExperiment(name string) ([]model.URLInfo, error) {
+	return stringListToModelURLInfo(StaticBareInputForExperiment(name))
+}
 
 // loadOrStaticDefault implements the InputOrStaticDefault policy.
 func (il *InputLoader) loadOrStaticDefault(ctx context.Context) ([]model.URLInfo, error) {
@@ -190,14 +219,7 @@ func (il *InputLoader) loadOrStaticDefault(ctx context.Context) ([]model.URLInfo
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
 	}
-	switch il.ExperimentName {
-	case "dnscheck":
-		return dnsCheckDefaultInput, nil
-	case "stunreachability":
-		return stunReachabilityDefaultInput, nil
-	default:
-		return nil, ErrNoStaticInput
-	}
+	return staticInputForExperiment(il.ExperimentName)
 }
 
 // loadLocal loads inputs from StaticInputs and SourceFiles.
@@ -323,9 +345,13 @@ func (il *InputLoader) logger() InputLoaderLogger {
 // which would have been returned by an hypothetical backend
 // API serving input for a test for which we don't have an API
 // yet (e.g., stunreachability and dnscheck).
-func stringListToModelURLInfo(input []string) (output []model.URLInfo, err error) {
+func stringListToModelURLInfo(input []string, err error) ([]model.URLInfo, error) {
+	if err != nil {
+		return nil, err
+	}
+	var output []model.URLInfo
 	for _, URL := range input {
-		if _, err = url.Parse(URL); err != nil {
+		if _, err := url.Parse(URL); err != nil {
 			return nil, err
 		}
 		output = append(output, model.URLInfo{
@@ -334,13 +360,5 @@ func stringListToModelURLInfo(input []string) (output []model.URLInfo, err error
 			URL:          URL,
 		})
 	}
-	return
-}
-
-// mustStringListToModelURLInfo is a stringListToModelURLInfo
-// that calls panic in case there is an error.
-func mustStringListToModelURLInfo(input []string) []model.URLInfo {
-	output, err := stringListToModelURLInfo(input)
-	runtimex.PanicOnError(err, "stringListToModelURLInfo failed")
-	return output
+	return output, nil
 }

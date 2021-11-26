@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/url"
 	"time"
 
@@ -194,8 +195,30 @@ func (r *Runner) Run(ctx context.Context) {
 		case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
 			r.emitter.EmitFailureStartup("no input provided")
 			return
+		case engine.InputOrStaticDefault:
+			// TODO(bassosimone): before ooni/probe#1814 stunreachability
+			// had a default input and was working on mobile. Now it doesn't
+			// have any default input. We cannot break it. So, we're doing
+			// something similar to what did before, i.e., we provide
+			// input for this experiment. As a collaterall effect, we also
+			// provide input for the dnscheck experiment. Yet, it kinda
+			// sucks that a user would not see the URLs in the app. We
+			// should do the following: (1) consolidate the code for running
+			// experiments so that the code in here uses the same code we
+			// are using for ooniprobe and miniooni; (2) change the app so
+			// that we always query the backend or use default input from
+			// here and the app reacts to our changes. If we do that, we
+			// are easily able to show results in the apps.
+			log.Printf("***** %s", r.settings.Name)
+			inputs, err := engine.StaticBareInputForExperiment(r.settings.Name)
+			if err != nil {
+				r.emitter.EmitFailureStartup("no input provided")
+				return
+			}
+			r.settings.Inputs = inputs
+		default:
+			r.settings.Inputs = append(r.settings.Inputs, "")
 		}
-		r.settings.Inputs = append(r.settings.Inputs, "")
 	}
 	experiment := builder.NewExperiment()
 	defer func() {

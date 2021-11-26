@@ -192,6 +192,10 @@ func canonicalizeExperimentName(name string) string {
 	switch name = strcase.ToSnake(name); name {
 	case "ndt_7":
 		name = "ndt" // since 2020-03-18, we use ndt7 to implement ndt by default
+	case "dns_check":
+		name = "dnscheck"
+	case "stun_reachability":
+		name = "stunreachability"
 	default:
 	}
 	return name

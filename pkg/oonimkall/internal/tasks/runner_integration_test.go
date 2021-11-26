@@ -280,6 +280,76 @@ func TestRunnerWithMissingInput(t *testing.T) {
 	}
 }
 
+func TestRunnerWithDefaultInput(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	out := make(chan *tasks.Event)
+	settings := &tasks.Settings{
+		AssetsDir: "../../testdata/oonimkall/assets",
+		LogLevel:  "DEBUG",
+		Name:      "ExampleWithDefaultInput",
+		Options: tasks.SettingsOptions{
+			SoftwareName:    "oonimkall-test",
+			SoftwareVersion: "0.1.0",
+		},
+		StateDir: "../../testdata/oonimkall/state",
+		Version:  1,
+	}
+	go func() {
+		tasks.Run(context.Background(), settings, out)
+		close(out)
+	}()
+	var found bool
+	for ev := range out {
+		if ev.Key == "status.end" {
+			found = true
+			continue
+		}
+		if ev.Key == "failure.startup" {
+			t.Fatal("seen a failure.startup event")
+		}
+	}
+	if !found {
+		t.Fatal("status.end event not found")
+	}
+}
+
+func TestRunnerWithDefaultInputWronglyConfigured(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	out := make(chan *tasks.Event)
+	settings := &tasks.Settings{
+		AssetsDir: "../../testdata/oonimkall/assets",
+		LogLevel:  "DEBUG",
+		Name:      "ExampleWithDefaultInputWronglyConfigured",
+		Options: tasks.SettingsOptions{
+			SoftwareName:    "oonimkall-test",
+			SoftwareVersion: "0.1.0",
+		},
+		StateDir: "../../testdata/oonimkall/state",
+		Version:  1,
+	}
+	go func() {
+		tasks.Run(context.Background(), settings, out)
+		close(out)
+	}()
+	var failures []string
+	for ev := range out {
+		if ev.Key == "failure.startup" {
+			failure := ev.Value.(tasks.EventFailure).Failure
+			failures = append(failures, failure)
+		}
+	}
+	if len(failures) != 1 {
+		t.Fatal("invalid number of failures")
+	}
+	if failures[0] != "no input provided" {
+		t.Fatalf("not the failure we expected: %s", failures[0])
+	}
+}
+
 func TestRunnerWithMaxRuntime(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
