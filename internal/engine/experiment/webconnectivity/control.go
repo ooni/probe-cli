@@ -57,6 +57,7 @@ func Control(
 		BaseURL:    thAddr,
 		HTTPClient: sess.DefaultHTTPClient(),
 		Logger:     sess.Logger(),
+		UserAgent:  sess.UserAgent(),
 	}
 	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
 	// make sure error is wrapped
