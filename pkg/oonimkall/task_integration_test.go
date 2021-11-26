@@ -511,13 +511,13 @@ func TestNonblock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !task.IsRunning() {
+	if !task.isRunning() {
 		t.Fatal("The runner should be running at this point")
 	}
 	// If the task blocks because it emits too much events, this test
 	// will run forever and will be killed. Because we have room for up
 	// to 128 events in the buffer, we should hopefully be fine.
-	for task.IsRunning() {
+	for task.isRunning() {
 		time.Sleep(time.Second)
 	}
 	for !task.IsDone() {
