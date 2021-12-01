@@ -38,7 +38,9 @@ const (
 // run runs the task specified by settings.Name until completion. This is the
 // top-level API that should be called by oonimkall.
 func run(ctx context.Context, settings *settings, out chan<- *event) {
-	r := newRunner(settings, out)
+	eof := make(chan interface{})
+	defer close(eof) // tell the emitter to not emit anymore.
+	r := newRunner(settings, out, eof)
 	r.Run(ctx)
 }
 
@@ -51,9 +53,9 @@ type runner struct {
 }
 
 // newRunner creates a new task runner
-func newRunner(settings *settings, out chan<- *event) *runner {
+func newRunner(settings *settings, out chan<- *event, eof <-chan interface{}) *runner {
 	return &runner{
-		emitter:  newEventEmitter(settings.DisabledEvents, out),
+		emitter:  newEventEmitter(settings.DisabledEvents, out, eof),
 		out:      out,
 		settings: settings,
 	}
