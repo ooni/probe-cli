@@ -290,7 +290,7 @@ func TestInterruptExampleWithInput(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	t.Skip("Skipping broken test; see https://github.com/ooni/probe-cli/v3/internal/engine/issues/992")
+	t.Skip("Skipping broken test; see https://github.com/ooni/probe-engine/issues/992")
 	task, err := StartTask(`{
 		"assets_dir": "../testdata/oonimkall/assets",
 		"inputs": [
@@ -494,7 +494,9 @@ func TestPrivacyAndScrubbing(t *testing.T) {
 	}
 }
 
-func TestNonblock(t *testing.T) {
+func TestNonblockWithFewEvents(t *testing.T) {
+	// This test tests whether we won't block for a small
+	// number of events emitted by the task
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
@@ -511,16 +513,16 @@ func TestNonblock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !task.isRunning() {
-		t.Fatal("The runner should be running at this point")
-	}
-	// If the task blocks because it emits too much events, this test
-	// will run forever and will be killed. Because we have room for up
-	// to 128 events in the buffer, we should hopefully be fine.
-	for task.isRunning() {
-		time.Sleep(time.Second)
-	}
+	// Wait for the task thread to start
+	<-task.isstarted
+	// Wait for the task thread to complete
+	<-task.isstopped
+	var count int
 	for !task.IsDone() {
 		task.WaitForNextEvent()
+		count++
+	}
+	if count < 5 {
+		t.Fatal("too few events")
 	}
 }
