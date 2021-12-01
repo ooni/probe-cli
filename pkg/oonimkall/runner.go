@@ -64,7 +64,7 @@ func newRunner(settings *settings, out chan<- *event, eof <-chan interface{}) *r
 // failureInvalidVersion is the failure returned when Version is invalid
 const failureInvalidVersion = "invalid Settings.Version number"
 
-func (r *runner) hasUnsupportedSettings(logger *chanLogger) bool {
+func (r *runner) hasUnsupportedSettings() bool {
 	if r.settings.Version < 1 {
 		r.emitter.EmitFailureStartup(failureInvalidVersion)
 		return true
@@ -72,7 +72,7 @@ func (r *runner) hasUnsupportedSettings(logger *chanLogger) bool {
 	return false
 }
 
-func (r *runner) newsession(ctx context.Context, logger *chanLogger) (*engine.Session, error) {
+func (r *runner) newsession(ctx context.Context, logger model.Logger) (*engine.Session, error) {
 	kvstore, err := kvstore.NewFS(r.settings.StateDir)
 	if err != nil {
 		return nil, err
@@ -131,9 +131,9 @@ func (cb *runnerCallbacks) OnProgress(percentage float64, message string) {
 // when to stop when processing multiple inputs, as well as when to stop
 // experiments explicitly marked as interruptible.
 func (r *runner) Run(ctx context.Context) {
-	logger := newChanLogger(r.emitter, r.settings.LogLevel, r.out)
+	var logger model.Logger = newTaskLogger(r.emitter, r.settings.LogLevel)
 	r.emitter.Emit(statusQueued, eventEmpty{})
-	if r.hasUnsupportedSettings(logger) {
+	if r.hasUnsupportedSettings() {
 		return
 	}
 	r.emitter.Emit(statusStarted, eventEmpty{})
