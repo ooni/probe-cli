@@ -30,19 +30,6 @@ func TestTaskLogger(t *testing.T) {
 		logger.Warnf("%s", warningMessage)
 	}
 
-	// newEmitterForTesting creates a taskEmitter for testing.
-	newEmitterForTesting := func(events *[]*event) taskEmitter {
-		emitter := &MockableTaskEmitter{
-			MockableEmit: func(key string, value interface{}) {
-				*events = append(*events, &event{
-					Key:   key,
-					Value: value,
-				})
-			},
-		}
-		return emitter
-	}
-
 	// convertEventsToLogEvents converts the generic events to
 	// logEvents and fails if this operation is not possible.
 	convertEventsToLogEvents := func(t *testing.T, in []*event) (out []eventLog) {
@@ -82,11 +69,10 @@ func TestTaskLogger(t *testing.T) {
 	}
 
 	t.Run("debug logger", func(t *testing.T) {
-		var events []*event
-		emitter := newEmitterForTesting(&events)
+		emitter := &CollectorTaskEmitter{}
 		logger := newTaskLogger(emitter, logLevelDebug)
 		emitMessages(logger)
-		logEvents := convertEventsToLogEvents(t, events)
+		logEvents := convertEventsToLogEvents(t, emitter.Collect())
 		checkNumberOfEvents(t, logEvents, 6)
 		matchEvent(t, logEvents[0], logLevelDebug, debugMessage)
 		matchEvent(t, logEvents[1], logLevelDebug, debugMessage)
@@ -97,11 +83,10 @@ func TestTaskLogger(t *testing.T) {
 	})
 
 	t.Run("info logger", func(t *testing.T) {
-		var events []*event
-		emitter := newEmitterForTesting(&events)
+		emitter := &CollectorTaskEmitter{}
 		logger := newTaskLogger(emitter, logLevelInfo)
 		emitMessages(logger)
-		logEvents := convertEventsToLogEvents(t, events)
+		logEvents := convertEventsToLogEvents(t, emitter.Collect())
 		checkNumberOfEvents(t, logEvents, 4)
 		matchEvent(t, logEvents[0], logLevelInfo, infoMessage)
 		matchEvent(t, logEvents[1], logLevelInfo, infoMessage)
@@ -110,11 +95,10 @@ func TestTaskLogger(t *testing.T) {
 	})
 
 	t.Run("warn logger", func(t *testing.T) {
-		var events []*event
-		emitter := newEmitterForTesting(&events)
+		emitter := &CollectorTaskEmitter{}
 		logger := newTaskLogger(emitter, logLevelWarning)
 		emitMessages(logger)
-		logEvents := convertEventsToLogEvents(t, events)
+		logEvents := convertEventsToLogEvents(t, emitter.Collect())
 		checkNumberOfEvents(t, logEvents, 2)
 		matchEvent(t, logEvents[0], logLevelWarning, warningMessage)
 		matchEvent(t, logEvents[1], logLevelWarning, warningMessage)

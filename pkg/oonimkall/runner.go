@@ -35,28 +35,31 @@ const (
 	statusStarted                = "status.started"
 )
 
-// run runs the task specified by settings.Name until completion. This is the
-// top-level API that should be called by oonimkall.
-func run(ctx context.Context, settings *settings, out chan<- *event) {
-	eof := make(chan interface{})
-	defer close(eof) // tell the emitter to not emit anymore.
-	r := newRunner(settings, out, eof)
+// runTask runs the task specified by settings.Name until completion. This is the
+// top-level API that should be called by task.go.
+func runTask(ctx context.Context, settings *settings, out chan<- *event) {
+	emitter := newTaskEmitterUsingChan(out)
+	defer emitter.Close()
+	runTaskWithEmitter(ctx, settings, emitter)
+}
+
+// runTaskWithEmitter runs the task with a given emitter.
+func runTaskWithEmitter(ctx context.Context, settings *settings, emitter taskEmitter) {
+	r := newRunner(settings, emitter)
 	r.Run(ctx)
 }
 
 // runner runs a specific task
 type runner struct {
-	emitter             *eventEmitter
+	emitter             *taskEmitterWrapper
 	maybeLookupLocation func(*engine.Session) error
-	out                 chan<- *event
 	settings            *settings
 }
 
 // newRunner creates a new task runner
-func newRunner(settings *settings, out chan<- *event, eof <-chan interface{}) *runner {
+func newRunner(settings *settings, emitter taskEmitter) *runner {
 	return &runner{
-		emitter:  newEventEmitter(settings.DisabledEvents, out, eof),
-		out:      out,
+		emitter:  &taskEmitterWrapper{emitter},
 		settings: settings,
 	}
 }
@@ -117,7 +120,7 @@ func (r *runner) contextForExperiment(
 }
 
 type runnerCallbacks struct {
-	emitter *eventEmitter
+	emitter taskEmitter
 }
 
 func (cb *runnerCallbacks) OnProgress(percentage float64, message string) {

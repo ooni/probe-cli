@@ -1,5 +1,7 @@
 package oonimkall
 
+import "io"
+
 //
 // Task Model
 //
@@ -59,4 +61,10 @@ type taskEmitter interface {
 	// Emit emits the event (unless the emitter is
 	// configured to ignore this event key).
 	Emit(key string, value interface{})
+}
+
+// taskEmitterCloser is a closeable taskEmitter.
+type taskEmitterCloser interface {
+	taskEmitter
+	io.Closer
 }
