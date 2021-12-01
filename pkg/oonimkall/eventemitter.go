@@ -1,16 +1,16 @@
 package oonimkall
 
-import "time"
-
 // eventEmitter emits event on a channel
 type eventEmitter struct {
 	disabled map[string]bool
+	eof      <-chan interface{}
 	out      chan<- *event
 }
 
 // newEventEmitter creates a new Emitter
-func newEventEmitter(disabledEvents []string, out chan<- *event) *eventEmitter {
-	ee := &eventEmitter{out: out}
+func newEventEmitter(disabledEvents []string, out chan<- *event,
+	eof <-chan interface{}) *eventEmitter {
+	ee := &eventEmitter{eof: eof, out: out}
 	ee.disabled = make(map[string]bool)
 	for _, eventname := range disabledEvents {
 		ee.disabled[eventname] = true
@@ -38,13 +38,10 @@ func (ee *eventEmitter) Emit(key string, value interface{}) {
 	if ee.disabled[key] {
 		return
 	}
-	const maxSendTimeout = 250 * time.Millisecond
-	timer := time.NewTimer(maxSendTimeout)
-	defer timer.Stop()
+	// Prevent this goroutine from blocking on `ee.out` if the caller
+	// has already told us it's not going to accept more events.
 	select {
 	case ee.out <- &event{Key: key, Value: value}:
-		// good, we've been able to send the new event
-	case <-timer.C:
-		// oops, we've timed out sending
+	case <-ee.eof:
 	}
 }

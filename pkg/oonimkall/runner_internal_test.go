@@ -44,32 +44,39 @@ func TestRunnerMaybeLookupLocationFailure(t *testing.T) {
 		Version:  1,
 	}
 	seench := make(chan int64)
+	eof := make(chan interface{})
 	go func() {
 		var seen int64
-		for ev := range out {
-			switch ev.Key {
-			case "failure.ip_lookup", "failure.asn_lookup",
-				"failure.cc_lookup", "failure.resolver_lookup":
-				seen++
-			case "status.progress":
-				evv := ev.Value.(eventStatusProgress)
-				if evv.Percentage >= 0.2 {
-					panic(fmt.Sprintf("too much progress: %+v", ev))
+	Loop:
+		for {
+			select {
+			case ev := <-out:
+				switch ev.Key {
+				case "failure.ip_lookup", "failure.asn_lookup",
+					"failure.cc_lookup", "failure.resolver_lookup":
+					seen++
+				case "status.progress":
+					evv := ev.Value.(eventStatusProgress)
+					if evv.Percentage >= 0.2 {
+						panic(fmt.Sprintf("too much progress: %+v", ev))
+					}
+				case "status.queued", "status.started", "status.end":
+				default:
+					panic(fmt.Sprintf("unexpected key: %s - %+v", ev.Key, ev.Value))
 				}
-			case "status.queued", "status.started", "status.end":
-			default:
-				panic(fmt.Sprintf("unexpected key: %s - %+v", ev.Key, ev.Value))
+			case <-eof:
+				break Loop
 			}
 		}
 		seench <- seen
 	}()
 	expected := errors.New("mocked error")
-	r := newRunner(settings, out)
+	r := newRunner(settings, out, eof)
 	r.maybeLookupLocation = func(*engine.Session) error {
 		return expected
 	}
 	r.Run(context.Background())
-	close(out)
+	close(eof)
 	if n := <-seench; n != 4 {
 		t.Fatal("unexpected number of events")
 	}

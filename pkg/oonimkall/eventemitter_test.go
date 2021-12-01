@@ -4,15 +4,22 @@ import "testing"
 
 func TestDisabledEvents(t *testing.T) {
 	out := make(chan *event)
-	emitter := newEventEmitter([]string{"log"}, out)
+	eof := make(chan interface{})
+	emitter := newEventEmitter([]string{"log"}, out, eof)
 	go func() {
 		emitter.Emit("log", eventLog{Message: "foo"})
-		close(out)
+		close(eof)
 	}()
 	var count int64
-	for ev := range out {
-		if ev.Key == "log" {
-			count++
+Loop:
+	for {
+		select {
+		case ev := <-out:
+			if ev.Key == "log" {
+				count++
+			}
+		case <-eof:
+			break Loop
 		}
 	}
 	if count > 0 {
@@ -22,18 +29,25 @@ func TestDisabledEvents(t *testing.T) {
 
 func TestEmitFailureStartup(t *testing.T) {
 	out := make(chan *event)
-	emitter := newEventEmitter([]string{}, out)
+	eof := make(chan interface{})
+	emitter := newEventEmitter([]string{}, out, eof)
 	go func() {
 		emitter.EmitFailureStartup("mocked error")
-		close(out)
+		close(eof)
 	}()
 	var found bool
-	for ev := range out {
-		if ev.Key == "failure.startup" {
-			evv := ev.Value.(eventFailure) // panic if not castable
-			if evv.Failure == "mocked error" {
-				found = true
+Loop:
+	for {
+		select {
+		case ev := <-out:
+			if ev.Key == "failure.startup" {
+				evv := ev.Value.(eventFailure) // panic if not castable
+				if evv.Failure == "mocked error" {
+					found = true
+				}
 			}
+		case <-eof:
+			break Loop
 		}
 	}
 	if !found {
@@ -43,18 +57,25 @@ func TestEmitFailureStartup(t *testing.T) {
 
 func TestEmitStatusProgress(t *testing.T) {
 	out := make(chan *event)
-	emitter := newEventEmitter([]string{}, out)
+	eof := make(chan interface{})
+	emitter := newEventEmitter([]string{}, out, eof)
 	go func() {
 		emitter.EmitStatusProgress(0.7, "foo")
-		close(out)
+		close(eof)
 	}()
 	var found bool
-	for ev := range out {
-		if ev.Key == "status.progress" {
-			evv := ev.Value.(eventStatusProgress) // panic if not castable
-			if evv.Message == "foo" && evv.Percentage == 0.7 {
-				found = true
+Loop:
+	for {
+		select {
+		case ev := <-out:
+			if ev.Key == "status.progress" {
+				evv := ev.Value.(eventStatusProgress) // panic if not castable
+				if evv.Message == "foo" && evv.Percentage == 0.7 {
+					found = true
+				}
 			}
+		case <-eof:
+			break Loop
 		}
 	}
 	if !found {
