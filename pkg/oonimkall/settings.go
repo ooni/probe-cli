@@ -15,6 +15,9 @@ type settings struct {
 
 	// DisabledEvents contains disabled events. See
 	// https://git.io/Jv4Rv for the events names.
+	//
+	// This setting is currently ignored. We noticed the
+	// code was ignoring it on 2021-12-01.
 	DisabledEvents []string `json:"disabled_events,omitempty"`
 
 	// Inputs contains the inputs. The task will fail if it
