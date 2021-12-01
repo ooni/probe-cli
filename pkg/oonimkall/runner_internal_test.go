@@ -28,10 +28,6 @@ func TestMeasurementSubmissionFailure(t *testing.T) {
 }
 
 func TestRunnerMaybeLookupLocationFailure(t *testing.T) {
-	if testing.Short() {
-		// TODO(https://github.com/ooni/probe-cli/pull/518)
-		t.Skip("skip test in short mode")
-	}
 	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Name:      "Example",
@@ -45,8 +41,23 @@ func TestRunnerMaybeLookupLocationFailure(t *testing.T) {
 	emitter := &CollectorTaskEmitter{}
 	r := newRunner(settings, emitter)
 	expected := errors.New("mocked error")
-	r.maybeLookupLocation = func(*engine.Session) error {
-		return expected
+	r.sessionBuilder = &MockableSessionBuilder{
+		MockNewSession: func(ctx context.Context, config engine.SessionConfig) (taskSession, error) {
+			return &MockableSession{
+				MockClose: func() error {
+					return nil
+				},
+				MockNewExperimentBuilderByName: func(name string) (taskExperimentBuilder, error) {
+					return &MockableExperimentBuilder{}, nil
+				},
+				MockMaybeLookupBackendsContext: func(ctx context.Context) error {
+					return nil
+				},
+				MockMaybeLookupLocationContext: func(ctx context.Context) error {
+					return expected
+				},
+			}, nil
+		},
 	}
 	r.Run(context.Background())
 	var seen int

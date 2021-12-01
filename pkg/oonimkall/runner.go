@@ -51,16 +51,17 @@ func runTaskWithEmitter(ctx context.Context, settings *settings, emitter taskEmi
 
 // runner runs a specific task
 type runner struct {
-	emitter             *taskEmitterWrapper
-	maybeLookupLocation func(*engine.Session) error
-	settings            *settings
+	emitter        *taskEmitterWrapper
+	sessionBuilder taskSessionBuilder
+	settings       *settings
 }
 
 // newRunner creates a new task runner
 func newRunner(settings *settings, emitter taskEmitter) *runner {
 	return &runner{
-		emitter:  &taskEmitterWrapper{emitter},
-		settings: settings,
+		emitter:        &taskEmitterWrapper{emitter},
+		sessionBuilder: &taskSessionBuilderEngine{},
+		settings:       settings,
 	}
 }
 
@@ -75,7 +76,7 @@ func (r *runner) hasUnsupportedSettings() bool {
 	return false
 }
 
-func (r *runner) newsession(ctx context.Context, logger model.Logger) (*engine.Session, error) {
+func (r *runner) newsession(ctx context.Context, logger model.Logger) (taskSession, error) {
 	kvstore, err := kvstore.NewFS(r.settings.StateDir)
 	if err != nil {
 		return nil, err
@@ -107,11 +108,11 @@ func (r *runner) newsession(ctx context.Context, logger model.Logger) (*engine.S
 			Address: r.settings.Options.ProbeServicesBaseURL,
 		}}
 	}
-	return engine.NewSession(ctx, config)
+	return r.sessionBuilder.NewSession(ctx, config)
 }
 
 func (r *runner) contextForExperiment(
-	ctx context.Context, builder *engine.ExperimentBuilder,
+	ctx context.Context, builder taskExperimentBuilder,
 ) context.Context {
 	if builder.Interruptible() {
 		return ctx
@@ -151,27 +152,21 @@ func (r *runner) Run(ctx context.Context) {
 		r.emitter.Emit(statusEnd, endEvent)
 	}()
 
-	builder, err := sess.NewExperimentBuilder(r.settings.Name)
+	builder, err := sess.NewExperimentBuilderByName(r.settings.Name)
 	if err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
 		return
 	}
 
 	logger.Info("Looking up OONI backends... please, be patient")
-	if err := sess.MaybeLookupBackends(); err != nil {
+	if err := sess.MaybeLookupBackendsContext(ctx); err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
 		return
 	}
 	r.emitter.EmitStatusProgress(0.1, "contacted bouncer")
 
 	logger.Info("Looking up your location... please, be patient")
-	maybeLookupLocation := r.maybeLookupLocation
-	if maybeLookupLocation == nil {
-		maybeLookupLocation = func(sess *engine.Session) error {
-			return sess.MaybeLookupLocation()
-		}
-	}
-	if err := maybeLookupLocation(sess); err != nil {
+	if err := sess.MaybeLookupLocationContext(ctx); err != nil {
 		r.emitter.EmitFailureGeneric(failureIPLookup, err.Error())
 		r.emitter.EmitFailureGeneric(failureASNLookup, err.Error())
 		r.emitter.EmitFailureGeneric(failureCCLookup, err.Error())
@@ -201,14 +196,14 @@ func (r *runner) Run(ctx context.Context) {
 		}
 		r.settings.Inputs = append(r.settings.Inputs, "")
 	}
-	experiment := builder.NewExperiment()
+	experiment := builder.NewExperimentInstance()
 	defer func() {
 		endEvent.DownloadedKB = experiment.KibiBytesReceived()
 		endEvent.UploadedKB = experiment.KibiBytesSent()
 	}()
 	if !r.settings.Options.NoCollector {
 		logger.Info("Opening report... please, be patient")
-		if err := experiment.OpenReport(); err != nil {
+		if err := experiment.OpenReportContext(ctx); err != nil {
 			r.emitter.EmitFailureGeneric(failureReportCreate, err.Error())
 			return
 		}
@@ -288,7 +283,7 @@ func (r *runner) Run(ctx context.Context) {
 		})
 		if !r.settings.Options.NoCollector {
 			logger.Info("Submitting measurement... please, be patient")
-			err := experiment.SubmitAndUpdateMeasurement(m)
+			err := experiment.SubmitAndUpdateMeasurementContext(ctx, m)
 			r.emitter.Emit(measurementSubmissionEventName(err), eventMeasurementGeneric{
 				Idx:     int64(idx),
 				Input:   input,
