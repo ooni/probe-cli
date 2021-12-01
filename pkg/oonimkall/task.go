@@ -84,7 +84,7 @@ func StartTask(input string) (*Task, error) {
 	}
 	go func() {
 		close(task.isstarted)
-		run(ctx, &settings, task.out)
+		runTask(ctx, &settings, task.out)
 		task.out <- nil // signal that we're done w/o closing the channel
 		close(task.isstopped)
 	}()

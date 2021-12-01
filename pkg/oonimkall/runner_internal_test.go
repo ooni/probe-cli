@@ -32,7 +32,6 @@ func TestRunnerMaybeLookupLocationFailure(t *testing.T) {
 		// TODO(https://github.com/ooni/probe-cli/pull/518)
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *event)
 	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Name:      "Example",
@@ -43,41 +42,30 @@ func TestRunnerMaybeLookupLocationFailure(t *testing.T) {
 		StateDir: "../../testdata/oonimkall/state",
 		Version:  1,
 	}
-	seench := make(chan int64)
-	eof := make(chan interface{})
-	go func() {
-		var seen int64
-	Loop:
-		for {
-			select {
-			case ev := <-out:
-				switch ev.Key {
-				case "failure.ip_lookup", "failure.asn_lookup",
-					"failure.cc_lookup", "failure.resolver_lookup":
-					seen++
-				case "status.progress":
-					evv := ev.Value.(eventStatusProgress)
-					if evv.Percentage >= 0.2 {
-						panic(fmt.Sprintf("too much progress: %+v", ev))
-					}
-				case "status.queued", "status.started", "status.end":
-				default:
-					panic(fmt.Sprintf("unexpected key: %s - %+v", ev.Key, ev.Value))
-				}
-			case <-eof:
-				break Loop
-			}
-		}
-		seench <- seen
-	}()
+	emitter := &CollectorTaskEmitter{}
+	r := newRunner(settings, emitter)
 	expected := errors.New("mocked error")
-	r := newRunner(settings, out, eof)
 	r.maybeLookupLocation = func(*engine.Session) error {
 		return expected
 	}
 	r.Run(context.Background())
-	close(eof)
-	if n := <-seench; n != 4 {
+	var seen int
+	for _, ev := range emitter.Collect() {
+		switch ev.Key {
+		case "failure.ip_lookup", "failure.asn_lookup",
+			"failure.cc_lookup", "failure.resolver_lookup":
+			seen++
+		case "status.progress":
+			evv := ev.Value.(eventStatusProgress)
+			if evv.Percentage >= 0.2 {
+				panic(fmt.Sprintf("too much progress: %+v", ev))
+			}
+		case "status.queued", "status.started", "status.end":
+		default:
+			panic(fmt.Sprintf("unexpected key: %s - %+v", ev.Key, ev.Value))
+		}
+	}
+	if seen != 4 {
 		t.Fatal("unexpected number of events")
 	}
 }

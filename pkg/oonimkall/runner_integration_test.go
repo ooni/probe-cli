@@ -15,7 +15,6 @@ func TestRunnerMaybeLookupBackendsFailure(t *testing.T) {
 		w.WriteHeader(500)
 	}))
 	defer server.Close()
-	out := make(chan *event)
 	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Name:      "Example",
@@ -27,12 +26,10 @@ func TestRunnerMaybeLookupBackendsFailure(t *testing.T) {
 		StateDir: "../../testdata/oonimkall/state",
 		Version:  1,
 	}
-	go func() {
-		run(context.Background(), settings, out)
-		close(out)
-	}()
+	collector := &CollectorTaskEmitter{}
+	runTaskWithEmitter(context.Background(), settings, collector)
 	var failures []string
-	for ev := range out {
+	for _, ev := range collector.Collect() {
 		switch ev.Key {
 		case "failure.startup":
 			failure := ev.Value.(eventFailure).Failure
@@ -69,7 +66,6 @@ func TestRunnerOpenReportFailure(t *testing.T) {
 		w.WriteHeader(500)
 	}))
 	defer server.Close()
-	out := make(chan *event)
 	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Name:      "Example",
@@ -81,29 +77,25 @@ func TestRunnerOpenReportFailure(t *testing.T) {
 		StateDir: "../../testdata/oonimkall/state",
 		Version:  1,
 	}
-	seench := make(chan int64)
-	go func() {
-		var seen int64
-		for ev := range out {
-			switch ev.Key {
-			case "failure.report_create":
-				seen++
-			case "status.progress":
-				evv := ev.Value.(eventStatusProgress)
-				if evv.Percentage >= 0.4 {
-					panic(fmt.Sprintf("too much progress: %+v", ev))
-				}
-			case "status.queued", "status.started", "log", "status.end",
-				"status.geoip_lookup", "status.resolver_lookup":
-			default:
-				panic(fmt.Sprintf("unexpected key: %s", ev.Key))
+	collector := &CollectorTaskEmitter{}
+	runTaskWithEmitter(context.Background(), settings, collector)
+	var seen int
+	for _, ev := range collector.Collect() {
+		switch ev.Key {
+		case "failure.report_create":
+			seen++
+		case "status.progress":
+			evv := ev.Value.(eventStatusProgress)
+			if evv.Percentage >= 0.4 {
+				panic(fmt.Sprintf("too much progress: %+v", ev))
 			}
+		case "status.queued", "status.started", "log", "status.end",
+			"status.geoip_lookup", "status.resolver_lookup":
+		default:
+			panic(fmt.Sprintf("unexpected key: %s", ev.Key))
 		}
-		seench <- seen
-	}()
-	run(context.Background(), settings, out)
-	close(out)
-	if n := <-seench; n != 1 {
+	}
+	if seen != 1 {
 		t.Fatal("unexpected number of events")
 	}
 }
@@ -112,7 +104,6 @@ func TestRunnerGood(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *event)
 	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		LogLevel:  "DEBUG",
@@ -124,12 +115,10 @@ func TestRunnerGood(t *testing.T) {
 		StateDir: "../../testdata/oonimkall/state",
 		Version:  1,
 	}
-	go func() {
-		run(context.Background(), settings, out)
-		close(out)
-	}()
+	collector := &CollectorTaskEmitter{}
+	runTaskWithEmitter(context.Background(), settings, collector)
 	var found bool
-	for ev := range out {
+	for _, ev := range collector.Collect() {
 		if ev.Key == "status.end" {
 			found = true
 		}
@@ -143,7 +132,6 @@ func TestRunnerWithUnsupportedSettings(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *event)
 	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		LogLevel:  "DEBUG",
@@ -154,12 +142,10 @@ func TestRunnerWithUnsupportedSettings(t *testing.T) {
 		},
 		StateDir: "../../testdata/oonimkall/state",
 	}
-	go func() {
-		run(context.Background(), settings, out)
-		close(out)
-	}()
+	collector := &CollectorTaskEmitter{}
+	runTaskWithEmitter(context.Background(), settings, collector)
 	var failures []string
-	for ev := range out {
+	for _, ev := range collector.Collect() {
 		if ev.Key == "failure.startup" {
 			failure := ev.Value.(eventFailure).Failure
 			failures = append(failures, failure)
@@ -177,7 +163,6 @@ func TestRunnerWithInvalidKVStorePath(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *event)
 	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		LogLevel:  "DEBUG",
@@ -189,12 +174,10 @@ func TestRunnerWithInvalidKVStorePath(t *testing.T) {
 		StateDir: "", // must be empty to cause the failure below
 		Version:  1,
 	}
-	go func() {
-		run(context.Background(), settings, out)
-		close(out)
-	}()
+	collector := &CollectorTaskEmitter{}
+	runTaskWithEmitter(context.Background(), settings, collector)
 	var failures []string
-	for ev := range out {
+	for _, ev := range collector.Collect() {
 		if ev.Key == "failure.startup" {
 			failure := ev.Value.(eventFailure).Failure
 			failures = append(failures, failure)
@@ -212,7 +195,6 @@ func TestRunnerWithInvalidExperimentName(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *event)
 	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		LogLevel:  "DEBUG",
@@ -224,12 +206,10 @@ func TestRunnerWithInvalidExperimentName(t *testing.T) {
 		StateDir: "../../testdata/oonimkall/state",
 		Version:  1,
 	}
-	go func() {
-		run(context.Background(), settings, out)
-		close(out)
-	}()
+	collector := &CollectorTaskEmitter{}
+	runTaskWithEmitter(context.Background(), settings, collector)
 	var failures []string
-	for ev := range out {
+	for _, ev := range collector.Collect() {
 		if ev.Key == "failure.startup" {
 			failure := ev.Value.(eventFailure).Failure
 			failures = append(failures, failure)
@@ -247,7 +227,6 @@ func TestRunnerWithMissingInput(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *event)
 	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		LogLevel:  "DEBUG",
@@ -259,12 +238,10 @@ func TestRunnerWithMissingInput(t *testing.T) {
 		StateDir: "../../testdata/oonimkall/state",
 		Version:  1,
 	}
-	go func() {
-		run(context.Background(), settings, out)
-		close(out)
-	}()
+	collector := &CollectorTaskEmitter{}
+	runTaskWithEmitter(context.Background(), settings, collector)
 	var failures []string
-	for ev := range out {
+	for _, ev := range collector.Collect() {
 		if ev.Key == "failure.startup" {
 			failure := ev.Value.(eventFailure).Failure
 			failures = append(failures, failure)
@@ -282,7 +259,6 @@ func TestRunnerWithMaxRuntime(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *event)
 	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Inputs:    []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"},
@@ -297,12 +273,10 @@ func TestRunnerWithMaxRuntime(t *testing.T) {
 		Version:  1,
 	}
 	begin := time.Now()
-	go func() {
-		run(context.Background(), settings, out)
-		close(out)
-	}()
+	collector := &CollectorTaskEmitter{}
+	runTaskWithEmitter(context.Background(), settings, collector)
 	var found bool
-	for ev := range out {
+	for _, ev := range collector.Collect() {
 		if ev.Key == "status.end" {
 			found = true
 		}
@@ -327,7 +301,6 @@ func TestRunnerWithMaxRuntimeNonInterruptible(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *event)
 	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Inputs:    []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"},
@@ -342,12 +315,10 @@ func TestRunnerWithMaxRuntimeNonInterruptible(t *testing.T) {
 		Version:  1,
 	}
 	begin := time.Now()
-	go func() {
-		run(context.Background(), settings, out)
-		close(out)
-	}()
+	collector := &CollectorTaskEmitter{}
+	runTaskWithEmitter(context.Background(), settings, collector)
 	var found bool
-	for ev := range out {
+	for _, ev := range collector.Collect() {
 		if ev.Key == "status.end" {
 			found = true
 		}
@@ -372,7 +343,6 @@ func TestRunnerWithFailedMeasurement(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	out := make(chan *event)
 	settings := &settings{
 		AssetsDir: "../../testdata/oonimkall/assets",
 		Inputs:    []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"},
@@ -386,12 +356,10 @@ func TestRunnerWithFailedMeasurement(t *testing.T) {
 		StateDir: "../../testdata/oonimkall/state",
 		Version:  1,
 	}
-	go func() {
-		run(context.Background(), settings, out)
-		close(out)
-	}()
+	collector := &CollectorTaskEmitter{}
+	runTaskWithEmitter(context.Background(), settings, collector)
 	var found bool
-	for ev := range out {
+	for _, ev := range collector.Collect() {
 		if ev.Key == "failure.measurement" {
 			found = true
 		}
