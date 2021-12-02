@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
@@ -19,7 +18,6 @@ func TestStartTaskGood(t *testing.T) {
 		"log_level": "DEBUG",
 		"name": "Example",
 		"options": {
-			"probe_services_base_url": "https://ams-pg-test.ooni.org/",
 			"software_name": "oonimkall-test",
 			"software_version": "0.1.0"
 		},
@@ -29,14 +27,8 @@ func TestStartTaskGood(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// interrupt the task so we also exercise this functionality
-	go func() {
-		<-time.After(time.Second)
-		task.Interrupt()
-	}()
 	for !task.IsDone() {
 		eventstr := task.WaitForNextEvent()
-		t.Log(eventstr)
 		var event eventlike
 		if err := json.Unmarshal([]byte(eventstr), &event); err != nil {
 			t.Fatal(err)
