@@ -55,7 +55,7 @@ func TestTaskEmitterWrapper(t *testing.T) {
 			t.Fatal("invalid number of events")
 		}
 		ev := events[0]
-		if ev.Key != failureStartup {
+		if ev.Key != eventTypeFailureStartup {
 			t.Fatal("invalid key")
 		}
 		value := ev.Value.(eventFailure)
@@ -95,7 +95,7 @@ func TestTaskEmitterWrapper(t *testing.T) {
 			t.Fatal("invalid number of events")
 		}
 		ev := events[0]
-		if ev.Key != statusProgress {
+		if ev.Key != eventTypeStatusProgress {
 			t.Fatal("invalid key")
 		}
 		value := ev.Value.(eventStatusProgress)
