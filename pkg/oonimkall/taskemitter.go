@@ -49,7 +49,7 @@ type taskEmitterWrapper struct {
 
 // EmitFailureStartup emits the failureStartup event
 func (ee *taskEmitterWrapper) EmitFailureStartup(failure string) {
-	ee.EmitFailureGeneric(failureStartup, failure)
+	ee.EmitFailureGeneric(eventTypeFailureStartup, failure)
 }
 
 // EmitFailureGeneric emits a failure event
@@ -59,5 +59,5 @@ func (ee *taskEmitterWrapper) EmitFailureGeneric(name, failure string) {
 
 // EmitStatusProgress emits the status.Progress event
 func (ee *taskEmitterWrapper) EmitStatusProgress(percentage float64, message string) {
-	ee.Emit(statusProgress, eventStatusProgress{Message: message, Percentage: percentage})
+	ee.Emit(eventTypeStatusProgress, eventStatusProgress{Message: message, Percentage: percentage})
 }

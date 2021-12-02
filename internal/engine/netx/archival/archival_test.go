@@ -206,7 +206,7 @@ func TestNewRequestList(t *testing.T) {
 		}},
 	}, {
 		// for an example of why we need to sort headers, see
-		// https://github.com/ooni/probe-cli/v3/internal/engine/pull/751/checks?check_run_id=853562310
+		// https://github.com/ooni/probe-engine/pull/751/checks?check_run_id=853562310
 		name: "run with redirect and headers to sort",
 		args: args{
 			begin: begin,

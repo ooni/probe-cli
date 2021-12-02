@@ -158,7 +158,7 @@ func (r runner) measure(
 			// connecting or later. We cannot say that very precisely
 			// because, in principle, we may reconnect. So we always
 			// return error here. This comment is being introduced so
-			// that we don't do https://github.com/ooni/probe-cli/v3/internal/engine/pull/526
+			// that we don't do https://github.com/ooni/probe-engine/pull/526
 			// again, because that isn't accurate.
 			return err
 		}
