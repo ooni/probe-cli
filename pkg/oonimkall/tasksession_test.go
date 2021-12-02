@@ -9,6 +9,17 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
+func TestTaskKVSToreFSBuilderEngine(t *testing.T) {
+	b := &taskKVStoreFSBuilderEngine{}
+	store, err := b.NewFS("testdata/state")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if store == nil {
+		t.Fatal("expected non-nil store here")
+	}
+}
+
 func TestTaskSessionBuilderEngine(t *testing.T) {
 	t.Run("NewSession", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {

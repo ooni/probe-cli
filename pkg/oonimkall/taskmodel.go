@@ -87,6 +87,13 @@ type taskEmitterCloser interface {
 // The abstraction representing a OONI session is taskSession.
 //
 
+// taskKVStoreFSBuilder constructs a KVStore with
+// filesystem backing for running tests.
+type taskKVStoreFSBuilder interface {
+	// NewFS creates a new KVStore using the filesystem.
+	NewFS(path string) (model.KeyValueStore, error)
+}
+
 // taskSessionBuilder constructs a new Session.
 type taskSessionBuilder interface {
 	// NewSession creates a new taskSession.
@@ -178,4 +185,17 @@ type taskExperiment interface {
 	// and updates its report ID on success.
 	SubmitAndUpdateMeasurementContext(
 		ctx context.Context, measurement *model.Measurement) error
+}
+
+//
+// Task Running
+//
+// This section contains the interfaces allowing us
+// to run a task until completion.
+//
+
+// taskRunner runs a task until completion.
+type taskRunner interface {
+	// Run runs until completion.
+	Run(ctx context.Context)
 }
