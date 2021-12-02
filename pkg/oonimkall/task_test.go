@@ -19,6 +19,7 @@ func TestStartTaskGood(t *testing.T) {
 		"log_level": "DEBUG",
 		"name": "Example",
 		"options": {
+			"probe_services_url": "https://ams-pg-test.ooni.org/",
 			"software_name": "oonimkall-test",
 			"software_version": "0.1.0"
 		},
