@@ -35,6 +35,7 @@ func TestStartTaskGood(t *testing.T) {
 	}()
 	for !task.IsDone() {
 		eventstr := task.WaitForNextEvent()
+		t.Log(eventstr)
 		var event eventlike
 		if err := json.Unmarshal([]byte(eventstr), &event); err != nil {
 			t.Fatal(err)
