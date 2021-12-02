@@ -12,22 +12,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// runTask runs the task specified by settings.Name until completion. This is the
-// top-level API that should be called by task.go.
-func runTask(ctx context.Context, settings *settings, out chan<- *event) {
-	// TODO(bassosimone): this API should be inlined into task.go
-	// and the top-level API should be testable in the tests.
-	emitter := newTaskEmitterUsingChan(out)
-	defer emitter.Close()
-	runTaskWithEmitter(ctx, settings, emitter)
-}
-
-// runTaskWithEmitter runs the task with a given emitter.
-func runTaskWithEmitter(ctx context.Context, settings *settings, emitter taskEmitter) {
-	r := newRunner(settings, emitter)
-	r.Run(ctx)
-}
-
 // runnerForTask runs a specific task
 type runnerForTask struct {
 	emitter        *taskEmitterWrapper
