@@ -23,7 +23,7 @@
 // (measurement-kit/measurement-kit@v0.10.9) for a comprehensive
 // description of MK's FFI API.
 //
-// See also https://github.com/ooni/probe-cli/v3/internal/engine/pull/347 for the
+// See also https://github.com/ooni/probe-engine/pull/347 for the
 // design document describing the task API.
 //
 // See also https://github.com/ooni/probe-cli/v3/internal/engine/blob/master/DESIGN.md,
@@ -33,7 +33,7 @@
 //
 // The Session API is a Go API that can be exported to mobile apps
 // using the gomobile tool. The latest design document for this API is
-// at https://github.com/ooni/probe-cli/v3/internal/engine/pull/954.
+// at https://github.com/ooni/probe-engine/pull/954.
 //
 // The basic tenet of the session API is that you create an instance
 // of `Session` and use it to perform the operations you need.
@@ -84,8 +84,11 @@ func StartTask(input string) (*Task, error) {
 	}
 	go func() {
 		close(task.isstarted)
-		run(ctx, &settings, task.out)
+		emitter := newTaskEmitterUsingChan(task.out)
+		r := newRunner(&settings, emitter)
+		r.Run(ctx)
 		task.out <- nil // signal that we're done w/o closing the channel
+		emitter.Close()
 		close(task.isstopped)
 	}()
 	return task, nil
