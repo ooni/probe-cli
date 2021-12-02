@@ -274,9 +274,9 @@ func TestMaxRuntime(t *testing.T) {
 	// CI builds) using `-tags shaping`). We have experimentally determined
 	// that ~10 seconds is the typical CI test run time. See:
 	//
-	// 1. https://github.com/ooni/probe-cli/v3/internal/engine/pull/588/checks?check_run_id=667263788
+	// 1. https://github.com/ooni/probe-engine/pull/588/checks?check_run_id=667263788
 	//
-	// 2. https://github.com/ooni/probe-cli/v3/internal/engine/pull/588/checks?check_run_id=667263855
+	// 2. https://github.com/ooni/probe-engine/pull/588/checks?check_run_id=667263855
 	//
 	// In case there are further timeouts, e.g. in the sessionresolver, the
 	// time used by the experiment will be much more. This is for example the
