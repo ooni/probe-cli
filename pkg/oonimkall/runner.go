@@ -9,9 +9,10 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
+
+// TODO(bassosimone): this file should be named taskrunner.go.
 
 const (
 	failureIPLookup              = "failure.ip_lookup"
@@ -38,6 +39,8 @@ const (
 // runTask runs the task specified by settings.Name until completion. This is the
 // top-level API that should be called by task.go.
 func runTask(ctx context.Context, settings *settings, out chan<- *event) {
+	// TODO(bassosimone): this API should be inlined into task.go
+	// and the top-level API should be testable in the tests.
 	emitter := newTaskEmitterUsingChan(out)
 	defer emitter.Close()
 	runTaskWithEmitter(ctx, settings, emitter)
@@ -52,6 +55,7 @@ func runTaskWithEmitter(ctx context.Context, settings *settings, emitter taskEmi
 // runner runs a specific task
 type runner struct {
 	emitter        *taskEmitterWrapper
+	kvStoreBuilder taskKVStoreFSBuilder
 	sessionBuilder taskSessionBuilder
 	settings       *settings
 }
@@ -60,6 +64,7 @@ type runner struct {
 func newRunner(settings *settings, emitter taskEmitter) *runner {
 	return &runner{
 		emitter:        &taskEmitterWrapper{emitter},
+		kvStoreBuilder: &taskKVStoreFSBuilderEngine{},
 		sessionBuilder: &taskSessionBuilderEngine{},
 		settings:       settings,
 	}
@@ -77,13 +82,11 @@ func (r *runner) hasUnsupportedSettings() bool {
 }
 
 func (r *runner) newsession(ctx context.Context, logger model.Logger) (taskSession, error) {
-	kvstore, err := kvstore.NewFS(r.settings.StateDir)
+	kvstore, err := r.kvStoreBuilder.NewFS(r.settings.StateDir)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO(bassosimone): write tests for this functionality
-	// See https://github.com/ooni/probe/issues/1465.
 	var proxyURL *url.URL
 	if r.settings.Proxy != "" {
 		var err error
@@ -138,6 +141,7 @@ func (r *runner) Run(ctx context.Context) {
 	var logger model.Logger = newTaskLogger(r.emitter, r.settings.LogLevel)
 	r.emitter.Emit(statusQueued, eventEmpty{})
 	if r.hasUnsupportedSettings() {
+		// event failureStartup already emitted
 		return
 	}
 	r.emitter.Emit(statusStarted, eventEmpty{})

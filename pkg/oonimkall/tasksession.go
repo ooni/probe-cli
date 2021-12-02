@@ -4,11 +4,23 @@ import (
 	"context"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
+	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/kvstore"
 )
 
 //
 // This file implements taskSession and derived types.
 //
+
+// taskKVStoreFSBuilderEngine creates a new KVStore
+// using the ./internal/engine package.
+type taskKVStoreFSBuilderEngine struct{}
+
+var _ taskKVStoreFSBuilder = &taskKVStoreFSBuilderEngine{}
+
+func (*taskKVStoreFSBuilderEngine) NewFS(path string) (model.KeyValueStore, error) {
+	return kvstore.NewFS(path)
+}
 
 // taskSessionBuilderEngine builds a new session
 // using the ./internal/engine package.
