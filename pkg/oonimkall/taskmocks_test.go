@@ -2,6 +2,7 @@ package oonimkall
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
@@ -46,21 +47,31 @@ func (e *CollectorTaskEmitter) Collect() (out []*event) {
 	return
 }
 
-// MockableSessionBuilder is a mockable taskSessionBuilder.
-type MockableSessionBuilder struct {
+// SessionBuilderConfigSaver is a session builder that
+// saves the received config and returns an error.
+type SessionBuilderConfigSaver struct {
+	Config engine.SessionConfig
+}
+
+var _ taskSessionBuilder = &SessionBuilderConfigSaver{}
+
+func (b *SessionBuilderConfigSaver) NewSession(
+	ctx context.Context, config engine.SessionConfig) (taskSession, error) {
+	b.Config = config
+	return nil, errors.New("mocked error")
+}
+
+// MockableTaskRunnerDependencies allows to mock all the
+// dependencies of taskRunner using a single structure.
+type MockableTaskRunnerDependencies struct {
+
+	// taskSessionBuilder:
+
 	MockNewSession func(ctx context.Context,
 		config engine.SessionConfig) (taskSession, error)
-}
 
-var _ taskSessionBuilder = &MockableSessionBuilder{}
+	// taskSession:
 
-func (b *MockableSessionBuilder) NewSession(
-	ctx context.Context, config engine.SessionConfig) (taskSession, error) {
-	return b.MockNewSession(ctx, config)
-}
-
-// MockableSession is a mockable taskSession.
-type MockableSession struct {
 	MockClose                      func() error
 	MockNewExperimentBuilderByName func(name string) (taskExperimentBuilder, error)
 	MockMaybeLookupBackendsContext func(ctx context.Context) error
@@ -72,121 +83,140 @@ type MockableSession struct {
 	MockResolverASNString          func() string
 	MockResolverIP                 func() string
 	MockResolverNetworkName        func() string
-}
 
-var _ taskSession = &MockableSession{}
+	// taskExperimentBuilder:
 
-func (sess *MockableSession) Close() error {
-	return sess.MockClose()
-}
-
-func (sess *MockableSession) NewExperimentBuilderByName(name string) (taskExperimentBuilder, error) {
-	return sess.MockNewExperimentBuilderByName(name)
-}
-
-func (sess *MockableSession) MaybeLookupBackendsContext(ctx context.Context) error {
-	return sess.MockMaybeLookupBackendsContext(ctx)
-}
-
-func (sess *MockableSession) MaybeLookupLocationContext(ctx context.Context) error {
-	return sess.MockMaybeLookupLocationContext(ctx)
-}
-
-func (sess *MockableSession) ProbeIP() string {
-	return sess.MockProbeIP()
-}
-
-func (sess *MockableSession) ProbeASNString() string {
-	return sess.MockProbeASNString()
-}
-
-func (sess *MockableSession) ProbeCC() string {
-	return sess.MockProbeCC()
-}
-
-func (sess *MockableSession) ProbeNetworkName() string {
-	return sess.MockProbeNetworkName()
-}
-
-func (sess *MockableSession) ResolverASNString() string {
-	return sess.MockResolverASNString()
-}
-
-func (sess *MockableSession) ResolverIP() string {
-	return sess.MockResolverIP()
-}
-
-func (sess *MockableSession) ResolverNetworkName() string {
-	return sess.MockResolverNetworkName()
-}
-
-// MockableExperimentBuilder is a mockable taskExperimentBuilder.
-type MockableExperimentBuilder struct {
 	MockableSetCallbacks          func(callbacks model.ExperimentCallbacks)
 	MockableInputPolicy           func() engine.InputPolicy
 	MockableNewExperimentInstance func() taskExperiment
 	MockableInterruptible         func() bool
-}
 
-var _ taskExperimentBuilder = &MockableExperimentBuilder{}
+	// taskExperiment:
 
-func (b *MockableExperimentBuilder) SetCallbacks(callbacks model.ExperimentCallbacks) {
-	b.MockableSetCallbacks(callbacks)
-}
-
-func (b *MockableExperimentBuilder) InputPolicy() engine.InputPolicy {
-	return b.MockableInputPolicy()
-}
-
-func (b *MockableExperimentBuilder) NewExperimentInstance() taskExperiment {
-	return b.MockableNewExperimentInstance()
-}
-
-func (b *MockableExperimentBuilder) Interruptible() bool {
-	return b.MockableInterruptible()
-}
-
-// MockableExperiment is a mockable taskExperiment.
-type MockableExperiment struct {
-	MockableKibiBytesReceived func() float64
-
-	MockableKibiBytesSent func() float64
-
-	MockableOpenReportContext func(ctx context.Context) error
-
-	MockableReportID func() string
-
+	MockableKibiBytesReceived  func() float64
+	MockableKibiBytesSent      func() float64
+	MockableOpenReportContext  func(ctx context.Context) error
+	MockableReportID           func() string
 	MockableMeasureWithContext func(ctx context.Context, input string) (
 		measurement *model.Measurement, err error)
-
 	MockableSubmitAndUpdateMeasurementContext func(
 		ctx context.Context, measurement *model.Measurement) error
 }
 
-var _ taskExperiment = &MockableExperiment{}
+var (
+	_ taskSessionBuilder    = &MockableTaskRunnerDependencies{}
+	_ taskSession           = &MockableTaskRunnerDependencies{}
+	_ taskExperimentBuilder = &MockableTaskRunnerDependencies{}
+	_ taskExperiment        = &MockableTaskRunnerDependencies{}
+)
 
-func (exp *MockableExperiment) KibiBytesReceived() float64 {
-	return exp.MockableKibiBytesReceived()
+func (dep *MockableTaskRunnerDependencies) NewSession(
+	ctx context.Context, config engine.SessionConfig) (taskSession, error) {
+	if f := dep.MockNewSession; f != nil {
+		return f(ctx, config)
+	}
+	return dep, nil
 }
 
-func (exp *MockableExperiment) KibiBytesSent() float64 {
-	return exp.MockableKibiBytesSent()
+func (dep *MockableTaskRunnerDependencies) Close() error {
+	return dep.MockClose()
 }
 
-func (exp *MockableExperiment) OpenReportContext(ctx context.Context) error {
-	return exp.MockableOpenReportContext(ctx)
+func (dep *MockableTaskRunnerDependencies) NewExperimentBuilderByName(name string) (taskExperimentBuilder, error) {
+	if f := dep.MockNewExperimentBuilderByName; f != nil {
+		return f(name)
+	}
+	return dep, nil
 }
 
-func (exp *MockableExperiment) ReportID() string {
-	return exp.MockableReportID()
+func (dep *MockableTaskRunnerDependencies) MaybeLookupBackendsContext(ctx context.Context) error {
+	return dep.MockMaybeLookupBackendsContext(ctx)
 }
 
-func (exp *MockableExperiment) MeasureWithContext(ctx context.Context, input string) (
+func (dep *MockableTaskRunnerDependencies) MaybeLookupLocationContext(ctx context.Context) error {
+	return dep.MockMaybeLookupLocationContext(ctx)
+}
+
+func (dep *MockableTaskRunnerDependencies) ProbeIP() string {
+	return dep.MockProbeIP()
+}
+
+func (dep *MockableTaskRunnerDependencies) ProbeASNString() string {
+	return dep.MockProbeASNString()
+}
+
+func (dep *MockableTaskRunnerDependencies) ProbeCC() string {
+	return dep.MockProbeCC()
+}
+
+func (dep *MockableTaskRunnerDependencies) ProbeNetworkName() string {
+	return dep.MockProbeNetworkName()
+}
+
+func (dep *MockableTaskRunnerDependencies) ResolverASNString() string {
+	return dep.MockResolverASNString()
+}
+
+func (dep *MockableTaskRunnerDependencies) ResolverIP() string {
+	return dep.MockResolverIP()
+}
+
+func (dep *MockableTaskRunnerDependencies) ResolverNetworkName() string {
+	return dep.MockResolverNetworkName()
+}
+
+func (dep *MockableTaskRunnerDependencies) SetCallbacks(callbacks model.ExperimentCallbacks) {
+	dep.MockableSetCallbacks(callbacks)
+}
+
+func (dep *MockableTaskRunnerDependencies) InputPolicy() engine.InputPolicy {
+	return dep.MockableInputPolicy()
+}
+
+func (dep *MockableTaskRunnerDependencies) NewExperimentInstance() taskExperiment {
+	if f := dep.MockableNewExperimentInstance; f != nil {
+		return f()
+	}
+	return dep
+}
+
+func (dep *MockableTaskRunnerDependencies) Interruptible() bool {
+	return dep.MockableInterruptible()
+}
+
+func (dep *MockableTaskRunnerDependencies) KibiBytesReceived() float64 {
+	return dep.MockableKibiBytesReceived()
+}
+
+func (dep *MockableTaskRunnerDependencies) KibiBytesSent() float64 {
+	return dep.MockableKibiBytesSent()
+}
+
+func (dep *MockableTaskRunnerDependencies) OpenReportContext(ctx context.Context) error {
+	return dep.MockableOpenReportContext(ctx)
+}
+
+func (dep *MockableTaskRunnerDependencies) ReportID() string {
+	return dep.MockableReportID()
+}
+
+func (dep *MockableTaskRunnerDependencies) MeasureWithContext(ctx context.Context, input string) (
 	measurement *model.Measurement, err error) {
-	return exp.MockableMeasureWithContext(ctx, input)
+	return dep.MockableMeasureWithContext(ctx, input)
 }
 
-func (exp *MockableExperiment) SubmitAndUpdateMeasurementContext(
+func (dep *MockableTaskRunnerDependencies) SubmitAndUpdateMeasurementContext(
 	ctx context.Context, measurement *model.Measurement) error {
-	return exp.MockableSubmitAndUpdateMeasurementContext(ctx, measurement)
+	return dep.MockableSubmitAndUpdateMeasurementContext(ctx, measurement)
+}
+
+// MockableKVStoreFSBuilder is a mockable taskKVStoreFSBuilder.
+type MockableKVStoreFSBuilder struct {
+	MockNewFS func(path string) (model.KeyValueStore, error)
+}
+
+var _ taskKVStoreFSBuilder = &MockableKVStoreFSBuilder{}
+
+func (m *MockableKVStoreFSBuilder) NewFS(path string) (model.KeyValueStore, error) {
+	return m.MockNewFS(path)
 }
