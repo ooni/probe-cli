@@ -73,6 +73,21 @@ func TestRunWithNoPort(t *testing.T) {
 	}
 }
 
+func TestRunWithUnsupportedURLScheme(t *testing.T) {
+	measurer := NewExperimentMeasurer(Config{})
+	measurement := new(model.Measurement)
+	measurement.Input = model.MeasurementTarget("https://stun.ekiga.net:3478")
+	err := measurer.Run(
+		context.Background(),
+		&mockable.Session{},
+		measurement,
+		model.NewPrinterCallbacks(log.Log),
+	)
+	if !errors.Is(err, errUnsupportedURLScheme) {
+		t.Fatal("not the error we expected", err)
+	}
+}
+
 func TestRunWithInput(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)

@@ -72,6 +72,9 @@ var errStunMissingInput = errors.New("stun: missing input")
 // errStunMissingPortInURL means the URL is missing the port
 var errStunMissingPortInURL = errors.New("stun: missing port in URL")
 
+// errUnsupportedURLScheme means we don't support the URL scheme
+var errUnsupportedURLScheme = errors.New("stun: unsupported URL scheme")
+
 // Run implements ExperimentMeasurer.Run.
 func (m *Measurer) Run(
 	ctx context.Context, sess model.ExperimentSession,
@@ -90,6 +93,9 @@ func (m *Measurer) Run(
 	}
 	if URL.Port() == "" {
 		return errStunMissingPortInURL
+	}
+	if URL.Scheme != "stun" {
+		return errUnsupportedURLScheme
 	}
 	if err := wrap(tk.run(ctx, m.config, sess, measurement, callbacks, URL.Host)); err != nil {
 		s := err.Error()
