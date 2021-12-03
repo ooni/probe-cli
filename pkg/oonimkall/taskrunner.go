@@ -155,6 +155,21 @@ func (r *runnerForTask) Run(ctx context.Context) {
 
 	builder.SetCallbacks(&runnerCallbacks{emitter: r.emitter})
 
+	// TODO(bassosimone): replace the following code with an
+	// invocation of the InputLoader. Since I am making these
+	// changes before a release and I've already changed the
+	// code a lot, I'd rather avoid changing it even more,
+	// for the following reason:
+	//
+	// If we add an call InputLoader here, this code will
+	// magically invoke check-in for InputOrQueryBackend,
+	// which we need to make sure the app can handle. This is
+	// the main reason why now I don't fill like properly
+	// fixing this code and use InputLoader: too much work
+	// in too little time, so mistakes more likely.
+	//
+	// In fact, our current app assumes that it's its
+	// responsibility to load the inputs, not oonimkall's.
 	switch builder.InputPolicy() {
 	case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
 		if len(r.settings.Inputs) <= 0 {
@@ -163,28 +178,17 @@ func (r *runnerForTask) Run(ctx context.Context) {
 		}
 	case engine.InputOrStaticDefault:
 		if len(r.settings.Inputs) <= 0 {
-			// TODO(bassosimone): before ooni/probe#1814 stunreachability
-			// had a default input and was working on mobile. Now it doesn't
-			// have any default input. We cannot break it. So, we're doing
-			// something similar to what did before, i.e., we provide
-			// input for this experiment. As a collaterall effect, we also
-			// provide input for the dnscheck experiment. Yet, it kinda
-			// sucks that a user would not see the URLs in the app. We
-			// should do the following: (1) consolidate the code for running
-			// experiments so that the code in here uses the same code we
-			// are using for ooniprobe and miniooni; (2) change the app so
-			// that we always query the backend or use default input from
-			// here and the app reacts to our changes. If we do that, we
-			// are easily able to show results in the apps.
 			inputs, err := engine.StaticBareInputForExperiment(r.settings.Name)
 			if err != nil {
-				r.emitter.EmitFailureStartup("no input provided")
+				r.emitter.EmitFailureStartup("no default static input for this experiment")
 				return
 			}
 			r.settings.Inputs = inputs
 		}
 	case engine.InputOptional:
-		// do nothing in this case
+		if len(r.settings.Inputs) <= 0 {
+			r.settings.Inputs = append(r.settings.Inputs, "")
+		}
 	default: // treat this case as engine.InputNone.
 		if len(r.settings.Inputs) > 0 {
 			r.emitter.EmitFailureStartup("experiment does not accept input")
