@@ -413,9 +413,12 @@ func TestTaskRunnerRun(t *testing.T) {
 		assertReducedEventsLike(t, expect, reduced)
 	})
 
-	t.Run("with success and no input", func(t *testing.T) {
+	t.Run("with success and InputNone policy", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
+		fake.MockableInputPolicy = func() engine.InputPolicy {
+			return engine.InputNone
+		}
 		runner.sessionBuilder = fake
 		events := runAndCollect(runner, emitter)
 		reduced := reduceEventsKeysIgnoreLog(events)
@@ -436,9 +439,12 @@ func TestTaskRunnerRun(t *testing.T) {
 		assertReducedEventsLike(t, expect, reduced)
 	})
 
-	t.Run("with measurement failure and no input", func(t *testing.T) {
+	t.Run("with measurement failure and InputNone policy", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		fake := fakeSuccessfulRun()
+		fake.MockableInputPolicy = func() engine.InputPolicy {
+			return engine.InputNone
+		}
 		fake.MockableMeasureWithContext = func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
 			return nil, errors.New("preconditions error")
 		}
