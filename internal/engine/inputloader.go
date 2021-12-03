@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"net/url"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
+	"github.com/ooni/probe-cli/v3/internal/stuninput"
 )
 
 // These errors are returned by the InputLoader.
@@ -18,6 +20,7 @@ var (
 	ErrDetectedEmptyFile = errors.New("file did not contain any input")
 	ErrInputRequired     = errors.New("no input provided")
 	ErrNoInputExpected   = errors.New("we did not expect any input")
+	ErrNoStaticInput     = errors.New("no static input for this experiment")
 )
 
 // InputLoaderSession is the session according to an InputLoader. We
@@ -58,6 +61,12 @@ type InputLoaderLogger interface {
 // input, we return it. Otherwise, we use OONI's probe services
 // to gather input using the best API for the task.
 //
+// InputOrStaticDefault
+//
+// We gather input from StaticInput and SourceFiles. If there is
+// input, we return it. Otherwise, we return an internal static
+// list of inputs to be used with this experiment.
+//
 // InputStrictlyRequired
 //
 // We gather input from StaticInput and SourceFiles. If there is
@@ -68,6 +77,10 @@ type InputLoader struct {
 	// there are fields inside it that are not set, then we
 	// will set them to a default value.
 	CheckInConfig *model.CheckInConfig
+
+	// ExperimentName is the name of the experiment. This field
+	// is only used together with the InputOrStaticDefault policy.
+	ExperimentName string
 
 	// InputPolicy specifies the input policy for the
 	// current experiment. We will not load any input if
@@ -105,6 +118,8 @@ func (il *InputLoader) Load(ctx context.Context) ([]model.URLInfo, error) {
 		return il.loadOrQueryBackend(ctx)
 	case InputStrictlyRequired:
 		return il.loadStrictlyRequired(ctx)
+	case InputOrStaticDefault:
+		return il.loadOrStaticDefault(ctx)
 	default:
 		return il.loadNone()
 	}
@@ -145,6 +160,59 @@ func (il *InputLoader) loadOrQueryBackend(ctx context.Context) ([]model.URLInfo,
 		return inputs, err
 	}
 	return il.loadRemote(ctx)
+}
+
+// TODO(https://github.com/ooni/probe/issues/1390): we need to
+// implement serving DNSCheck targets from the API
+var dnsCheckDefaultInput = []string{
+	"https://dns.google/dns-query",
+	"https://8.8.8.8/dns-query",
+	"dot://8.8.8.8:853/",
+	"dot://8.8.4.4:853/",
+	"https://8.8.4.4/dns-query",
+	"https://cloudflare-dns.com/dns-query",
+	"https://1.1.1.1/dns-query",
+	"https://1.0.0.1/dns-query",
+	"dot://1.1.1.1:853/",
+	"dot://1.0.0.1:853/",
+	"https://dns.quad9.net/dns-query",
+	"https://9.9.9.9/dns-query",
+	"dot://9.9.9.9:853/",
+	"dot://dns.quad9.net/",
+}
+
+var stunReachabilityDefaultInput = stuninput.AsnStunReachabilityInput()
+
+// staticBareInputForExperiment returns the list of strings an
+// experiment should use as static input. In case there is no
+// static input for this experiment, we return an error.
+func staticBareInputForExperiment(name string) ([]string, error) {
+	// Implementation note: we may be called from pkg/oonimkall
+	// with a non-canonical experiment name, so we need to convert
+	// the experiment name to be canonical before proceeding.
+	switch canonicalizeExperimentName(name) {
+	case "dnscheck":
+		return dnsCheckDefaultInput, nil
+	case "stunreachability":
+		return stunReachabilityDefaultInput, nil
+	default:
+		return nil, ErrNoStaticInput
+	}
+}
+
+// staticInputForExperiment returns the static input for the given experiment
+// or an error if there's no static input for the experiment.
+func staticInputForExperiment(name string) ([]model.URLInfo, error) {
+	return stringListToModelURLInfo(staticBareInputForExperiment(name))
+}
+
+// loadOrStaticDefault implements the InputOrStaticDefault policy.
+func (il *InputLoader) loadOrStaticDefault(ctx context.Context) ([]model.URLInfo, error) {
+	inputs, err := il.loadLocal()
+	if err != nil || len(inputs) > 0 {
+		return inputs, err
+	}
+	return staticInputForExperiment(il.ExperimentName)
 }
 
 // loadLocal loads inputs from StaticInputs and SourceFiles.
@@ -263,4 +331,27 @@ func (il *InputLoader) logger() InputLoaderLogger {
 		return il.Logger
 	}
 	return log.Log
+}
+
+// stringListToModelURLInfo is an utility function to convert
+// a list of strings containing URLs into a list of model.URLInfo
+// which would have been returned by an hypothetical backend
+// API serving input for a test for which we don't have an API
+// yet (e.g., stunreachability and dnscheck).
+func stringListToModelURLInfo(input []string, err error) ([]model.URLInfo, error) {
+	if err != nil {
+		return nil, err
+	}
+	var output []model.URLInfo
+	for _, URL := range input {
+		if _, err := url.Parse(URL); err != nil {
+			return nil, err
+		}
+		output = append(output, model.URLInfo{
+			CategoryCode: "MISC", // hard to find a category
+			CountryCode:  "XX",   // representing no country
+			URL:          URL,
+		})
+	}
+	return output, nil
 }

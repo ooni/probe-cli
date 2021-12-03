@@ -49,7 +49,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &dnscheck.Config{},
-			inputPolicy: InputStrictlyRequired,
+			inputPolicy: InputOrStaticDefault,
 		}
 	},
 
@@ -198,7 +198,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &stunreachability.Config{},
-			inputPolicy: InputStrictlyRequired,
+			inputPolicy: InputOrStaticDefault,
 		}
 	},
 
