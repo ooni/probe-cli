@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+// TODO(bassosimone): we should use internal/netxlite/mocks rather
+// than rolling out a custom type private to this package.
+
 type FakeConn struct {
 	ReadError             error
 	ReadData              []byte
