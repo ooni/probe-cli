@@ -311,35 +311,8 @@ func TestInputLoaderInputOrStaticDefaultWithoutInputStunReachability(t *testing.
 	}
 }
 
-func TestInputLoaderInputOrStaticDefaultWithoutInputExampleWithDefaultInput(t *testing.T) {
-	il := &InputLoader{
-		ExperimentName: "example_with_default_input",
-		InputPolicy:    InputOrStaticDefault,
-	}
-	ctx := context.Background()
-	out, err := il.Load(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(out) != len(exampleWithDefaultInputInput) {
-		t.Fatal("invalid output length")
-	}
-	for idx := 0; idx < len(exampleWithDefaultInputInput); idx++ {
-		e := out[idx]
-		if e.CategoryCode != "MISC" {
-			t.Fatal("invalid category code")
-		}
-		if e.CountryCode != "XX" {
-			t.Fatal("invalid country code")
-		}
-		if e.URL != exampleWithDefaultInputInput[idx] {
-			t.Fatal("invalid URL")
-		}
-	}
-}
-
 func TestStaticBareInputForExperimentWorksWithNonCanonicalNames(t *testing.T) {
-	names := []string{"DNSCheck", "STUNReachability", "ExampleWithDefaultInput"}
+	names := []string{"DNSCheck", "STUNReachability"}
 	for _, name := range names {
 		if _, err := staticInputForExperiment(name); err != nil {
 			t.Fatal("failure for", name, ":", err)
@@ -347,7 +320,7 @@ func TestStaticBareInputForExperimentWorksWithNonCanonicalNames(t *testing.T) {
 	}
 }
 
-func TestInputLoaderInputOrStaticDefaultWithoutInputOther(t *testing.T) {
+func TestInputLoaderInputOrStaticDefaultWithoutInputOtherName(t *testing.T) {
 	il := &InputLoader{
 		ExperimentName: "xx",
 		InputPolicy:    InputOrStaticDefault,
@@ -679,7 +652,7 @@ func TestStringListToModelURLInfoWithValidInput(t *testing.T) {
 func TestStringListToModelURLInfoWithInvalidInput(t *testing.T) {
 	input := []string{
 		"stun://stun.voip.blackberry.com:3478",
-		"\t",  // <- not a valid URL
+		"\t", // <- not a valid URL
 		"stun://stun.altar.com.pl:3478",
 	}
 	output, err := stringListToModelURLInfo(input, nil)

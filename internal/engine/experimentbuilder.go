@@ -188,6 +188,10 @@ func (b *ExperimentBuilder) NewExperiment() *Experiment {
 
 // canonicalizeExperimentName allows code to provide experiment names
 // in a more flexible way, where we have aliases.
+//
+// Because we allow for uppercase experiment names for backwards
+// compatibility with MK, we need to add some exceptions here when
+// mapping (e.g., DNSCheck => dnscheck).
 func canonicalizeExperimentName(name string) string {
 	switch name = strcase.ToSnake(name); name {
 	case "ndt_7":
