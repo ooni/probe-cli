@@ -183,10 +183,10 @@ var dnsCheckDefaultInput = []string{
 
 var stunReachabilityDefaultInput = stuninput.AsnStunReachabilityInput()
 
-// staticBareInputForExperiment returns the list of strings an
+// StaticBareInputForExperiment returns the list of strings an
 // experiment should use as static input. In case there is no
 // static input for this experiment, we return an error.
-func staticBareInputForExperiment(name string) ([]string, error) {
+func StaticBareInputForExperiment(name string) ([]string, error) {
 	// Implementation note: we may be called from pkg/oonimkall
 	// with a non-canonical experiment name, so we need to convert
 	// the experiment name to be canonical before proceeding.
@@ -203,7 +203,7 @@ func staticBareInputForExperiment(name string) ([]string, error) {
 // staticInputForExperiment returns the static input for the given experiment
 // or an error if there's no static input for the experiment.
 func staticInputForExperiment(name string) ([]model.URLInfo, error) {
-	return stringListToModelURLInfo(staticBareInputForExperiment(name))
+	return stringListToModelURLInfo(StaticBareInputForExperiment(name))
 }
 
 // loadOrStaticDefault implements the InputOrStaticDefault policy.

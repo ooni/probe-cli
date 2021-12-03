@@ -154,10 +154,31 @@ func (r *runnerForTask) Run(ctx context.Context) {
 	})
 
 	builder.SetCallbacks(&runnerCallbacks{emitter: r.emitter})
-	if len(r.settings.Inputs) <= 0 {
-		switch builder.InputPolicy() {
-		case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
+
+	// TODO(bassosimone): replace the following code with an
+	// invocation of the InputLoader. Since I am making these
+	// changes before a release and I've already changed a
+	// lot, I'd rather avoid changing even more.
+	switch builder.InputPolicy() {
+	case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
+		if len(r.settings.Inputs) <= 0 {
 			r.emitter.EmitFailureStartup("no input provided")
+			return
+		}
+	case engine.InputOrStaticDefault:
+		if len(r.settings.Inputs) <= 0 {
+			inputs, err := engine.StaticBareInputForExperiment(r.settings.Name)
+			if err != nil {
+				r.emitter.EmitFailureStartup("no input provided")
+				return
+			}
+			r.settings.Inputs = inputs
+		}
+	case engine.InputOptional:
+		// do nothing in this case
+	default: // treat this case as engine.InputNone.
+		if len(r.settings.Inputs) > 0 {
+			r.emitter.EmitFailureStartup("experiment does not accept input")
 			return
 		}
 		r.settings.Inputs = append(r.settings.Inputs, "")
