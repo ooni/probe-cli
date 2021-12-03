@@ -157,8 +157,8 @@ func (r *runnerForTask) Run(ctx context.Context) {
 
 	// TODO(bassosimone): replace the following code with an
 	// invocation of the InputLoader. Since I am making these
-	// changes before a release and I've already changed a
-	// lot, I'd rather avoid changing even more.
+	// changes before a release and I've already changed the
+	// code a lot, I'd rather avoid changing it even more.
 	switch builder.InputPolicy() {
 	case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
 		if len(r.settings.Inputs) <= 0 {
@@ -175,7 +175,9 @@ func (r *runnerForTask) Run(ctx context.Context) {
 			r.settings.Inputs = inputs
 		}
 	case engine.InputOptional:
-		// do nothing in this case
+		if len(r.settings.Inputs) <= 0 {
+			r.settings.Inputs = append(r.settings.Inputs, "")
+		}
 	default: // treat this case as engine.InputNone.
 		if len(r.settings.Inputs) > 0 {
 			r.emitter.EmitFailureStartup("experiment does not accept input")

@@ -508,7 +508,7 @@ func TestTaskRunnerRun(t *testing.T) {
 		assertReducedEventsLike(t, expect, reduced)
 	})
 
-	t.Run("with success and InputOptional", func(t *testing.T) {
+	t.Run("with success and InputOptional and input", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}
 		fake := fakeSuccessfulRun()
@@ -547,6 +547,34 @@ func TestTaskRunnerRun(t *testing.T) {
 			//
 			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeStatusProgress, Count: 1},
+			{Key: eventTypeMeasurement, Count: 1},
+			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
+			{Key: eventTypeStatusMeasurementDone, Count: 1},
+			//
+			{Key: eventTypeStatusEnd, Count: 1},
+		}
+		assertReducedEventsLike(t, expect, reduced)
+	})
+
+	t.Run("with success and InputOptional and no input", func(t *testing.T) {
+		runner, emitter := newRunnerForTesting()
+		fake := fakeSuccessfulRun()
+		fake.MockableInputPolicy = func() engine.InputPolicy {
+			return engine.InputOptional
+		}
+		runner.sessionBuilder = fake
+		events := runAndCollect(runner, emitter)
+		reduced := reduceEventsKeysIgnoreLog(events)
+		expect := []eventKeyCount{
+			{Key: eventTypeStatusQueued, Count: 1},
+			{Key: eventTypeStatusStarted, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 3},
+			{Key: eventTypeStatusGeoIPLookup, Count: 1},
+			{Key: eventTypeStatusResolverLookup, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 1},
+			{Key: eventTypeStatusReportCreate, Count: 1},
+			//
+			{Key: eventTypeStatusMeasurementStart, Count: 1},
 			{Key: eventTypeMeasurement, Count: 1},
 			{Key: eventTypeStatusMeasurementSubmission, Count: 1},
 			{Key: eventTypeStatusMeasurementDone, Count: 1},
