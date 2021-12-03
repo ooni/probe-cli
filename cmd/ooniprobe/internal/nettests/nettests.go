@@ -13,6 +13,7 @@ import (
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/pkg/errors"
+	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 // Nettest interface. Every Nettest should implement this.
@@ -64,12 +65,49 @@ type Controller struct {
 	curInputIdx int
 }
 
-// SetInputIdxMap is used to set the mapping of index into input. This mapping
-// is used to reference, for example, a particular URL based on the index inside
-// of the input list and the index of it in the database.
-func (c *Controller) SetInputIdxMap(inputIdxMap map[int64]int64) error {
-	c.inputIdxMap = inputIdxMap
-	return nil
+// BuildAndSetInputIdxMap takes in input a list of URLs in the format
+// returned by the check-in API (i.e., model.URLInfo) and performs
+// the following actions:
+//
+// 1. inserts each URL into the database;
+//
+// 2. builds a list of bare URLs to be tested;
+//
+// 3. registers a mapping between each URL and an index
+// and stores it into the controller.
+//
+// Arguments:
+//
+// - db is the database in which to register the URL;
+//
+// - testlist is the result from the check-in API (or possibly
+// a manually constructed list when applicable, e.g., for dnscheck
+// until we have an API for serving its input).
+//
+// Results:
+//
+// - on success, a list of strings containing URLs to test;
+//
+// - on failure, an error.
+func (c *Controller) BuildAndSetInputIdxMap(
+	db sqlbuilder.Database, testlist []model.URLInfo) ([]string, error) {
+	var urls []string
+	urlIDMap := make(map[int64]int64)
+	for idx, url := range testlist {
+		log.Debugf("Going over URL %d", idx)
+		urlID, err := database.CreateOrUpdateURL(
+			db, url.URL, url.CategoryCode, url.CountryCode,
+		)
+		if err != nil {
+			log.Error("failed to add to the URL table")
+			return nil, err
+		}
+		log.Debugf("Mapped URL %s to idx %d and urlID %d", url.URL, idx, urlID)
+		urlIDMap[int64(idx)] = urlID
+		urls = append(urls, url.URL)
+	}
+	c.inputIdxMap = urlIDMap
+	return urls, nil
 }
 
 // SetNettestIndex is used to set the current nettest index and total nettest
