@@ -158,7 +158,18 @@ func (r *runnerForTask) Run(ctx context.Context) {
 	// TODO(bassosimone): replace the following code with an
 	// invocation of the InputLoader. Since I am making these
 	// changes before a release and I've already changed the
-	// code a lot, I'd rather avoid changing it even more.
+	// code a lot, I'd rather avoid changing it even more,
+	// for the following reason:
+	//
+	// If we add an call InputLoader here, this code will
+	// magically invoke check-in for InputOrQueryBackend,
+	// which we need to make sure the app can handle. This is
+	// the main reason why now I don't fill like properly
+	// fixing this code and use InputLoader: too much work
+	// in too little time, so mistakes more likely.
+	//
+	// In fact, our current app assumes that it's its
+	// responsibility to load the inputs, not oonimkall's.
 	switch builder.InputPolicy() {
 	case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
 		if len(r.settings.Inputs) <= 0 {
