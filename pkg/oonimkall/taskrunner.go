@@ -169,7 +169,7 @@ func (r *runnerForTask) Run(ctx context.Context) {
 		if len(r.settings.Inputs) <= 0 {
 			inputs, err := engine.StaticBareInputForExperiment(r.settings.Name)
 			if err != nil {
-				r.emitter.EmitFailureStartup("no input provided")
+				r.emitter.EmitFailureStartup("no default static input for this experiment")
 				return
 			}
 			r.settings.Inputs = inputs
