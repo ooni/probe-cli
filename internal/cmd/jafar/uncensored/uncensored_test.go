@@ -11,6 +11,7 @@ import (
 )
 
 func TestGood(t *testing.T) {
+	t.Skip("TODO(https://github.com/ooni/probe/issues/1913)")
 	client, err := NewClient("dot://1.1.1.1:853")
 	if err != nil {
 		t.Fatal(err)
