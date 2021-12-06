@@ -32,8 +32,8 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.6.6
 	github.com/onsi/ginkgo v1.16.5 // indirect
-	github.com/ooni/oohttp v0.0.0-20211206145729-209dd31a30a4
-	github.com/ooni/probe-assets v0.5.0
+	github.com/ooni/oohttp v0.0.0-20211206150145-a14131163a5e
+	github.com/ooni/probe-assets v0.6.0
 	github.com/ooni/psiphon v0.9.0
 	github.com/oschwald/geoip2-golang v1.5.0
 	github.com/pborman/getopt/v2 v2.1.0
