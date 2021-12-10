@@ -15,9 +15,9 @@ func getTorStartConf(config *Config, dataDir string, extraArgs []string) (*tor.S
 		return nil, err
 	}
 	return &tor.StartConf{
-		ExePath: exePath,
-		DataDir: dataDir,
+		ExePath:   exePath,
+		DataDir:   dataDir,
 		ExtraArgs: extraArgs,
-		NoHush: true,
+		NoHush:    true,
 	}, nil
 }
