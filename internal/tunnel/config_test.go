@@ -86,6 +86,7 @@ func TestConfigTorBinary(t *testing.T) {
 	t.Run("with OONI_TOR_BINARY and empty TorBinary", func(t *testing.T) {
 		expected := "./tor.exe"
 		os.Setenv(ooniTorBinaryEnv, expected)
+		defer os.Unsetenv(ooniTorBinaryEnv)
 		config := newConfig("", expected, errors.New("should not be seen"))
 		verifyExpectations(t, config, expected, nil)
 	})
@@ -93,6 +94,7 @@ func TestConfigTorBinary(t *testing.T) {
 	t.Run("with OONI_TOR_BINARY and TorBinary not in PATH", func(t *testing.T) {
 		expected := errors.New("no such binary in PATH")
 		os.Setenv(ooniTorBinaryEnv, "./tor.exe")
+		defer os.Unsetenv(ooniTorBinaryEnv)
 		config := newConfig("tor-real", "", expected)
 		verifyExpectations(t, config, "", expected)
 	})
@@ -100,6 +102,7 @@ func TestConfigTorBinary(t *testing.T) {
 	t.Run("with OONI_TOR_BINARY and TorBinary in PATH", func(t *testing.T) {
 		expected := "/usr/bin/tor-real"
 		os.Setenv(ooniTorBinaryEnv, "./tor.exe")
+		defer os.Unsetenv(ooniTorBinaryEnv)
 		config := newConfig("tor-real", expected, nil)
 		verifyExpectations(t, config, expected, nil)
 	})
