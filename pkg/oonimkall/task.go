@@ -23,7 +23,7 @@
 // (measurement-kit/measurement-kit@v0.10.9) for a comprehensive
 // description of MK's FFI API.
 //
-// See also https://github.com/ooni/probe-cli/v3/internal/engine/pull/347 for the
+// See also https://github.com/ooni/probe-engine/pull/347 for the
 // design document describing the task API.
 //
 // See also https://github.com/ooni/probe-cli/v3/internal/engine/blob/master/DESIGN.md,
@@ -33,7 +33,7 @@
 //
 // The Session API is a Go API that can be exported to mobile apps
 // using the gomobile tool. The latest design document for this API is
-// at https://github.com/ooni/probe-cli/v3/internal/engine/pull/954.
+// at https://github.com/ooni/probe-engine/pull/954.
 //
 // The basic tenet of the session API is that you create an instance
 // of `Session` and use it to perform the operations you need.
@@ -45,7 +45,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
-	"github.com/ooni/probe-cli/v3/pkg/oonimkall/internal/tasks"
 )
 
 // Task is an asynchronous task running an experiment. It mimics the
@@ -62,14 +61,15 @@ import (
 type Task struct {
 	cancel    context.CancelFunc
 	isdone    *atomicx.Int64
-	isstopped *atomicx.Int64
-	out       chan *tasks.Event
+	isstarted chan interface{} // for testing
+	isstopped chan interface{} // for testing
+	out       chan *event
 }
 
 // StartTask starts an asynchronous task. The input argument is a
 // serialized JSON conforming to MK v0.10.9's API.
 func StartTask(input string) (*Task, error) {
-	var settings tasks.Settings
+	var settings settings
 	if err := json.Unmarshal([]byte(input), &settings); err != nil {
 		return nil, err
 	}
@@ -78,13 +78,18 @@ func StartTask(input string) (*Task, error) {
 	task := &Task{
 		cancel:    cancel,
 		isdone:    &atomicx.Int64{},
-		isstopped: &atomicx.Int64{},
-		out:       make(chan *tasks.Event, bufsiz),
+		isstarted: make(chan interface{}),
+		isstopped: make(chan interface{}),
+		out:       make(chan *event, bufsiz),
 	}
 	go func() {
-		defer close(task.out)
-		defer task.isstopped.Add(1)
-		tasks.Run(ctx, &settings, task.out)
+		close(task.isstarted)
+		emitter := newTaskEmitterUsingChan(task.out)
+		r := newRunner(&settings, emitter)
+		r.Run(ctx)
+		task.out <- nil // signal that we're done w/o closing the channel
+		emitter.Close()
+		close(task.isstopped)
 	}()
 	return task, nil
 }
@@ -93,6 +98,9 @@ func StartTask(input string) (*Task, error) {
 // string is a serialized JSON following MK v0.10.9's API.
 func (t *Task) WaitForNextEvent() string {
 	const terminated = `{"key":"task_terminated","value":{}}` // like MK
+	if t.isdone.Load() != 0 {
+		return terminated
+	}
 	evp := <-t.out
 	if evp == nil {
 		t.isdone.Add(1)

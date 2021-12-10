@@ -1,5 +1,4 @@
-// Package tasks implements tasks run using the oonimkall API.
-package tasks
+package oonimkall
 
 import (
 	"context"
@@ -10,75 +9,46 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
-	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-const (
-	failureIPLookup              = "failure.ip_lookup"
-	failureASNLookup             = "failure.asn_lookup"
-	failureCCLookup              = "failure.cc_lookup"
-	failureMeasurement           = "failure.measurement"
-	failureMeasurementSubmission = "failure.measurement_submission"
-	failureReportCreate          = "failure.report_create"
-	failureResolverLookup        = "failure.resolver_lookup"
-	failureStartup               = "failure.startup"
-	measurement                  = "measurement"
-	statusEnd                    = "status.end"
-	statusGeoIPLookup            = "status.geoip_lookup"
-	statusMeasurementDone        = "status.measurement_done"
-	statusMeasurementStart       = "status.measurement_start"
-	statusMeasurementSubmission  = "status.measurement_submission"
-	statusProgress               = "status.progress"
-	statusQueued                 = "status.queued"
-	statusReportCreate           = "status.report_create"
-	statusResolverLookup         = "status.resolver_lookup"
-	statusStarted                = "status.started"
-)
-
-// Run runs the task specified by settings.Name until completion. This is the
-// top-level API that should be called by oonimkall.
-func Run(ctx context.Context, settings *Settings, out chan<- *Event) {
-	r := NewRunner(settings, out)
-	r.Run(ctx)
+// runnerForTask runs a specific task
+type runnerForTask struct {
+	emitter        *taskEmitterWrapper
+	kvStoreBuilder taskKVStoreFSBuilder
+	sessionBuilder taskSessionBuilder
+	settings       *settings
 }
 
-// Runner runs a specific task
-type Runner struct {
-	emitter             *EventEmitter
-	maybeLookupLocation func(*engine.Session) error
-	out                 chan<- *Event
-	settings            *Settings
-}
+var _ taskRunner = &runnerForTask{}
 
-// NewRunner creates a new task runner
-func NewRunner(settings *Settings, out chan<- *Event) *Runner {
-	return &Runner{
-		emitter:  NewEventEmitter(settings.DisabledEvents, out),
-		out:      out,
-		settings: settings,
+// newRunner creates a new task runner
+func newRunner(settings *settings, emitter taskEmitter) *runnerForTask {
+	return &runnerForTask{
+		emitter:        &taskEmitterWrapper{emitter},
+		kvStoreBuilder: &taskKVStoreFSBuilderEngine{},
+		sessionBuilder: &taskSessionBuilderEngine{},
+		settings:       settings,
 	}
 }
 
-// FailureInvalidVersion is the failure returned when Version is invalid
-const FailureInvalidVersion = "invalid Settings.Version number"
+// failureInvalidVersion is the failure returned when Version is invalid
+const failureInvalidVersion = "invalid Settings.Version number"
 
-func (r *Runner) hasUnsupportedSettings(logger *ChanLogger) bool {
-	if r.settings.Version < 1 {
-		r.emitter.EmitFailureStartup(FailureInvalidVersion)
+func (r *runnerForTask) hasUnsupportedSettings() bool {
+	if r.settings.Version < taskABIVersion {
+		r.emitter.EmitFailureStartup(failureInvalidVersion)
 		return true
 	}
 	return false
 }
 
-func (r *Runner) newsession(ctx context.Context, logger *ChanLogger) (*engine.Session, error) {
-	kvstore, err := kvstore.NewFS(r.settings.StateDir)
+func (r *runnerForTask) newsession(ctx context.Context, logger model.Logger) (taskSession, error) {
+	kvstore, err := r.kvStoreBuilder.NewFS(r.settings.StateDir)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO(bassosimone): write tests for this functionality
-	// See https://github.com/ooni/probe/issues/1465.
 	var proxyURL *url.URL
 	if r.settings.Proxy != "" {
 		var err error
@@ -103,11 +73,11 @@ func (r *Runner) newsession(ctx context.Context, logger *ChanLogger) (*engine.Se
 			Address: r.settings.Options.ProbeServicesBaseURL,
 		}}
 	}
-	return engine.NewSession(ctx, config)
+	return r.sessionBuilder.NewSession(ctx, config)
 }
 
-func (r *Runner) contextForExperiment(
-	ctx context.Context, builder *engine.ExperimentBuilder,
+func (r *runnerForTask) contextForExperiment(
+	ctx context.Context, builder taskExperimentBuilder,
 ) context.Context {
 	if builder.Interruptible() {
 		return ctx
@@ -116,11 +86,11 @@ func (r *Runner) contextForExperiment(
 }
 
 type runnerCallbacks struct {
-	emitter *EventEmitter
+	emitter taskEmitter
 }
 
 func (cb *runnerCallbacks) OnProgress(percentage float64, message string) {
-	cb.emitter.Emit(statusProgress, EventStatusProgress{
+	cb.emitter.Emit(eventTypeStatusProgress, eventStatusProgress{
 		Percentage: 0.4 + (percentage * 0.6), // open report is 40%
 		Message:    message,
 	})
@@ -129,13 +99,14 @@ func (cb *runnerCallbacks) OnProgress(percentage float64, message string) {
 // Run runs the runner until completion. The context argument controls
 // when to stop when processing multiple inputs, as well as when to stop
 // experiments explicitly marked as interruptible.
-func (r *Runner) Run(ctx context.Context) {
-	logger := NewChanLogger(r.emitter, r.settings.LogLevel, r.out)
-	r.emitter.Emit(statusQueued, eventEmpty{})
-	if r.hasUnsupportedSettings(logger) {
+func (r *runnerForTask) Run(ctx context.Context) {
+	var logger model.Logger = newTaskLogger(r.emitter, r.settings.LogLevel)
+	r.emitter.Emit(eventTypeStatusQueued, eventEmpty{})
+	if r.hasUnsupportedSettings() {
+		// event failureStartup already emitted
 		return
 	}
-	r.emitter.Emit(statusStarted, eventEmpty{})
+	r.emitter.Emit(eventTypeStatusStarted, eventEmpty{})
 	sess, err := r.newsession(ctx, logger)
 	if err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
@@ -144,72 +115,100 @@ func (r *Runner) Run(ctx context.Context) {
 	endEvent := new(eventStatusEnd)
 	defer func() {
 		sess.Close()
-		r.emitter.Emit(statusEnd, endEvent)
+		r.emitter.Emit(eventTypeStatusEnd, endEvent)
 	}()
 
-	builder, err := sess.NewExperimentBuilder(r.settings.Name)
+	builder, err := sess.NewExperimentBuilderByName(r.settings.Name)
 	if err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
 		return
 	}
 
 	logger.Info("Looking up OONI backends... please, be patient")
-	if err := sess.MaybeLookupBackends(); err != nil {
+	if err := sess.MaybeLookupBackendsContext(ctx); err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
 		return
 	}
 	r.emitter.EmitStatusProgress(0.1, "contacted bouncer")
 
 	logger.Info("Looking up your location... please, be patient")
-	maybeLookupLocation := r.maybeLookupLocation
-	if maybeLookupLocation == nil {
-		maybeLookupLocation = func(sess *engine.Session) error {
-			return sess.MaybeLookupLocation()
-		}
-	}
-	if err := maybeLookupLocation(sess); err != nil {
-		r.emitter.EmitFailureGeneric(failureIPLookup, err.Error())
-		r.emitter.EmitFailureGeneric(failureASNLookup, err.Error())
-		r.emitter.EmitFailureGeneric(failureCCLookup, err.Error())
-		r.emitter.EmitFailureGeneric(failureResolverLookup, err.Error())
+	if err := sess.MaybeLookupLocationContext(ctx); err != nil {
+		r.emitter.EmitFailureGeneric(eventTypeFailureIPLookup, err.Error())
+		r.emitter.EmitFailureGeneric(eventTypeFailureASNLookup, err.Error())
+		r.emitter.EmitFailureGeneric(eventTypeFailureCCLookup, err.Error())
+		r.emitter.EmitFailureGeneric(eventTypeFailureResolverLookup, err.Error())
 		return
 	}
 	r.emitter.EmitStatusProgress(0.2, "geoip lookup")
 	r.emitter.EmitStatusProgress(0.3, "resolver lookup")
-	r.emitter.Emit(statusGeoIPLookup, eventStatusGeoIPLookup{
+	r.emitter.Emit(eventTypeStatusGeoIPLookup, eventStatusGeoIPLookup{
 		ProbeIP:          sess.ProbeIP(),
 		ProbeASN:         sess.ProbeASNString(),
 		ProbeCC:          sess.ProbeCC(),
 		ProbeNetworkName: sess.ProbeNetworkName(),
 	})
-	r.emitter.Emit(statusResolverLookup, eventStatusResolverLookup{
+	r.emitter.Emit(eventTypeStatusResolverLookup, eventStatusResolverLookup{
 		ResolverASN:         sess.ResolverASNString(),
 		ResolverIP:          sess.ResolverIP(),
 		ResolverNetworkName: sess.ResolverNetworkName(),
 	})
 
 	builder.SetCallbacks(&runnerCallbacks{emitter: r.emitter})
-	if len(r.settings.Inputs) <= 0 {
-		switch builder.InputPolicy() {
-		case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
+
+	// TODO(bassosimone): replace the following code with an
+	// invocation of the InputLoader. Since I am making these
+	// changes before a release and I've already changed the
+	// code a lot, I'd rather avoid changing it even more,
+	// for the following reason:
+	//
+	// If we add an call InputLoader here, this code will
+	// magically invoke check-in for InputOrQueryBackend,
+	// which we need to make sure the app can handle. This is
+	// the main reason why now I don't fill like properly
+	// fixing this code and use InputLoader: too much work
+	// in too little time, so mistakes more likely.
+	//
+	// In fact, our current app assumes that it's its
+	// responsibility to load the inputs, not oonimkall's.
+	switch builder.InputPolicy() {
+	case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
+		if len(r.settings.Inputs) <= 0 {
 			r.emitter.EmitFailureStartup("no input provided")
+			return
+		}
+	case engine.InputOrStaticDefault:
+		if len(r.settings.Inputs) <= 0 {
+			inputs, err := engine.StaticBareInputForExperiment(r.settings.Name)
+			if err != nil {
+				r.emitter.EmitFailureStartup("no default static input for this experiment")
+				return
+			}
+			r.settings.Inputs = inputs
+		}
+	case engine.InputOptional:
+		if len(r.settings.Inputs) <= 0 {
+			r.settings.Inputs = append(r.settings.Inputs, "")
+		}
+	default: // treat this case as engine.InputNone.
+		if len(r.settings.Inputs) > 0 {
+			r.emitter.EmitFailureStartup("experiment does not accept input")
 			return
 		}
 		r.settings.Inputs = append(r.settings.Inputs, "")
 	}
-	experiment := builder.NewExperiment()
+	experiment := builder.NewExperimentInstance()
 	defer func() {
 		endEvent.DownloadedKB = experiment.KibiBytesReceived()
 		endEvent.UploadedKB = experiment.KibiBytesSent()
 	}()
 	if !r.settings.Options.NoCollector {
 		logger.Info("Opening report... please, be patient")
-		if err := experiment.OpenReport(); err != nil {
-			r.emitter.EmitFailureGeneric(failureReportCreate, err.Error())
+		if err := experiment.OpenReportContext(ctx); err != nil {
+			r.emitter.EmitFailureGeneric(eventTypeFailureReportCreate, err.Error())
 			return
 		}
 		r.emitter.EmitStatusProgress(0.4, "open report")
-		r.emitter.Emit(statusReportCreate, eventStatusReportGeneric{
+		r.emitter.Emit(eventTypeStatusReportCreate, eventStatusReportGeneric{
 			ReportID: experiment.ReportID(),
 		})
 	}
@@ -241,7 +240,7 @@ func (r *Runner) Run(ctx context.Context) {
 			break
 		}
 		logger.Infof("Starting measurement with index %d", idx)
-		r.emitter.Emit(statusMeasurementStart, eventMeasurementGeneric{
+		r.emitter.Emit(eventTypeStatusMeasurementStart, eventMeasurementGeneric{
 			Idx:   int64(idx),
 			Input: input,
 		})
@@ -268,7 +267,7 @@ func (r *Runner) Run(ctx context.Context) {
 		}
 		m.AddAnnotations(r.settings.Annotations)
 		if err != nil {
-			r.emitter.Emit(failureMeasurement, eventMeasurementGeneric{
+			r.emitter.Emit(eventTypeFailureMeasurement, eventMeasurementGeneric{
 				Failure: err.Error(),
 				Idx:     int64(idx),
 				Input:   input,
@@ -281,14 +280,14 @@ func (r *Runner) Run(ctx context.Context) {
 		}
 		data, err := json.Marshal(m)
 		runtimex.PanicOnError(err, "measurement.MarshalJSON failed")
-		r.emitter.Emit(measurement, eventMeasurementGeneric{
+		r.emitter.Emit(eventTypeMeasurement, eventMeasurementGeneric{
 			Idx:     int64(idx),
 			Input:   input,
 			JSONStr: string(data),
 		})
 		if !r.settings.Options.NoCollector {
 			logger.Info("Submitting measurement... please, be patient")
-			err := experiment.SubmitAndUpdateMeasurement(m)
+			err := experiment.SubmitAndUpdateMeasurementContext(ctx, m)
 			r.emitter.Emit(measurementSubmissionEventName(err), eventMeasurementGeneric{
 				Idx:     int64(idx),
 				Input:   input,
@@ -296,7 +295,7 @@ func (r *Runner) Run(ctx context.Context) {
 				Failure: measurementSubmissionFailure(err),
 			})
 		}
-		r.emitter.Emit(statusMeasurementDone, eventMeasurementGeneric{
+		r.emitter.Emit(eventTypeStatusMeasurementDone, eventMeasurementGeneric{
 			Idx:   int64(idx),
 			Input: input,
 		})
@@ -305,9 +304,9 @@ func (r *Runner) Run(ctx context.Context) {
 
 func measurementSubmissionEventName(err error) string {
 	if err != nil {
-		return failureMeasurementSubmission
+		return eventTypeFailureMeasurementSubmission
 	}
-	return statusMeasurementSubmission
+	return eventTypeStatusMeasurementSubmission
 }
 
 func measurementSubmissionFailure(err error) string {

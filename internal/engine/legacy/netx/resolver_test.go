@@ -28,7 +28,7 @@ func testresolverquick(t *testing.T, network, address string) {
 	}
 	var foundquad8 bool
 	for _, addr := range addrs {
-		// See https://github.com/ooni/probe-cli/v3/internal/engine/pull/954/checks?check_run_id=1182269025
+		// See https://github.com/ooni/probe-engine/pull/954/checks?check_run_id=1182269025
 		if addr == "8.8.8.8" || addr == "2001:4860:4860::8888" {
 			foundquad8 = true
 		}

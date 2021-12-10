@@ -113,9 +113,10 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 	URL string, th *model.Service, out chan<- *model.ExperimentAsyncTestKeys) {
 	defer close(out)
 	helper := &measurerMeasureURLHelper{
-		Clnt:   sess.DefaultHTTPClient(),
-		Logger: sess.Logger(),
-		THURL:  th.Address,
+		Clnt:      sess.DefaultHTTPClient(),
+		Logger:    sess.Logger(),
+		THURL:     th.Address,
+		UserAgent: sess.UserAgent(),
 	}
 	mmx := &measurex.Measurer{
 		Begin:            time.Now(),
@@ -158,6 +159,9 @@ type measurerMeasureURLHelper struct {
 
 	// THURL is the MANDATORY TH URL.
 	THURL string
+
+	// UserAgent is the OPTIONAL user-agent to use.
+	UserAgent string
 }
 
 func (mth *measurerMeasureURLHelper) LookupExtraHTTPEndpoints(
@@ -170,6 +174,7 @@ func (mth *measurerMeasureURLHelper) LookupExtraHTTPEndpoints(
 		Header:     headers,
 		THURL:      mth.THURL,
 		TargetURL:  URL.String(),
+		UserAgent:  mth.UserAgent,
 	}
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()

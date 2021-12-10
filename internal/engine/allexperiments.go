@@ -49,7 +49,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &dnscheck.Config{},
-			inputPolicy: InputStrictlyRequired,
+			inputPolicy: InputOrStaticDefault,
 		}
 	},
 
@@ -63,59 +63,6 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 			config: &example.Config{
 				Message:   "Good day from the example experiment!",
 				SleepTime: int64(time.Second),
-			},
-			interruptible: true,
-			inputPolicy:   InputNone,
-		}
-	},
-
-	"example_with_input": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, example.NewExperimentMeasurer(
-					*config.(*example.Config), "example_with_input",
-				))
-			},
-			config: &example.Config{
-				Message:   "Good day from the example with input experiment!",
-				SleepTime: int64(time.Second),
-			},
-			interruptible: true,
-			inputPolicy:   InputStrictlyRequired,
-		}
-	},
-
-	// TODO(bassosimone): when we can set experiment options using the JSON
-	// we need to get rid of all these multiple experiments.
-	//
-	// See https://github.com/ooni/probe-engine/issues/413
-	"example_with_input_non_interruptible": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, example.NewExperimentMeasurer(
-					*config.(*example.Config), "example_with_input_non_interruptible",
-				))
-			},
-			config: &example.Config{
-				Message:   "Good day from the example with input experiment!",
-				SleepTime: int64(time.Second),
-			},
-			interruptible: false,
-			inputPolicy:   InputStrictlyRequired,
-		}
-	},
-
-	"example_with_failure": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, example.NewExperimentMeasurer(
-					*config.(*example.Config), "example_with_failure",
-				))
-			},
-			config: &example.Config{
-				Message:     "Good day from the example with failure experiment!",
-				ReturnError: true,
-				SleepTime:   int64(time.Second),
 			},
 			interruptible: true,
 			inputPolicy:   InputNone,
@@ -251,7 +198,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &stunreachability.Config{},
-			inputPolicy: InputOptional,
+			inputPolicy: InputOrStaticDefault,
 		}
 	},
 

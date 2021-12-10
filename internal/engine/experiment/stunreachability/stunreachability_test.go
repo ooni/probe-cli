@@ -1,37 +1,36 @@
-package stunreachability_test
+package stunreachability
 
 import (
 	"context"
 	"errors"
 	"net"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/stunreachability"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/pion/stun"
 )
 
+const (
+	defaultEndpoint = "stun.ekiga.net:3478"
+	defaultInput    = "stun://" + defaultEndpoint
+)
+
 func TestMeasurerExperimentNameVersion(t *testing.T) {
-	measurer := stunreachability.NewExperimentMeasurer(stunreachability.Config{})
+	measurer := NewExperimentMeasurer(Config{})
 	if measurer.ExperimentName() != "stunreachability" {
 		t.Fatal("unexpected ExperimentName")
 	}
-	if measurer.ExperimentVersion() != "0.2.0" {
+	if measurer.ExperimentVersion() != "0.3.0" {
 		t.Fatal("unexpected ExperimentVersion")
 	}
 }
 
-func TestRun(t *testing.T) {
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		// See https://github.com/ooni/probe-engine/issues/874#issuecomment-679850652
-		t.Skip("skipping broken test on GitHub Actions")
-	}
-	measurer := stunreachability.NewExperimentMeasurer(stunreachability.Config{})
+func TestRunWithoutInput(t *testing.T) {
+	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
 	err := measurer.Run(
 		context.Background(),
@@ -39,29 +38,60 @@ func TestRun(t *testing.T) {
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tk := measurement.TestKeys.(*stunreachability.TestKeys)
-	if tk.Failure != nil {
-		t.Fatal("expected nil failure here")
-	}
-	if tk.Endpoint != "stun.l.google.com:19302" {
-		t.Fatal("unexpected endpoint")
-	}
-	if len(tk.NetworkEvents) <= 0 {
-		t.Fatal("no network events?!")
-	}
-	if len(tk.Queries) <= 0 {
-		t.Fatal("no DNS queries?!")
+	if !errors.Is(err, errStunMissingInput) {
+		t.Fatal("not the error we expected", err)
 	}
 }
 
-func TestRunCustomInput(t *testing.T) {
-	input := "stun.ekiga.net:3478"
-	measurer := stunreachability.NewExperimentMeasurer(stunreachability.Config{})
+func TestRunWithInvalidURL(t *testing.T) {
+	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementTarget(input)
+	measurement.Input = model.MeasurementTarget("\t") // <- invalid URL
+	err := measurer.Run(
+		context.Background(),
+		&mockable.Session{},
+		measurement,
+		model.NewPrinterCallbacks(log.Log),
+	)
+	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
+		t.Fatal("not the error we expected", err)
+	}
+}
+
+func TestRunWithNoPort(t *testing.T) {
+	measurer := NewExperimentMeasurer(Config{})
+	measurement := new(model.Measurement)
+	measurement.Input = model.MeasurementTarget("stun://stun.ekiga.net")
+	err := measurer.Run(
+		context.Background(),
+		&mockable.Session{},
+		measurement,
+		model.NewPrinterCallbacks(log.Log),
+	)
+	if !errors.Is(err, errStunMissingPortInURL) {
+		t.Fatal("not the error we expected", err)
+	}
+}
+
+func TestRunWithUnsupportedURLScheme(t *testing.T) {
+	measurer := NewExperimentMeasurer(Config{})
+	measurement := new(model.Measurement)
+	measurement.Input = model.MeasurementTarget("https://stun.ekiga.net:3478")
+	err := measurer.Run(
+		context.Background(),
+		&mockable.Session{},
+		measurement,
+		model.NewPrinterCallbacks(log.Log),
+	)
+	if !errors.Is(err, errUnsupportedURLScheme) {
+		t.Fatal("not the error we expected", err)
+	}
+}
+
+func TestRunWithInput(t *testing.T) {
+	measurer := NewExperimentMeasurer(Config{})
+	measurement := new(model.Measurement)
+	measurement.Input = model.MeasurementTarget(defaultInput)
 	err := measurer.Run(
 		context.Background(),
 		&mockable.Session{},
@@ -71,11 +101,11 @@ func TestRunCustomInput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tk := measurement.TestKeys.(*stunreachability.TestKeys)
+	tk := measurement.TestKeys.(*TestKeys)
 	if tk.Failure != nil {
 		t.Fatal("expected nil failure here")
 	}
-	if tk.Endpoint != input {
+	if tk.Endpoint != defaultEndpoint {
 		t.Fatal("unexpected endpoint")
 	}
 	if len(tk.NetworkEvents) <= 0 {
@@ -89,22 +119,23 @@ func TestRunCustomInput(t *testing.T) {
 func TestCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately fail everything
-	measurer := stunreachability.NewExperimentMeasurer(stunreachability.Config{})
+	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
+	measurement.Input = model.MeasurementTarget(defaultInput)
 	err := measurer.Run(
 		ctx,
 		&mockable.Session{},
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if err.Error() != "interrupted" {
-		t.Fatal("not the error we expected")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("not the error we expected", err)
 	}
-	tk := measurement.TestKeys.(*stunreachability.TestKeys)
+	tk := measurement.TestKeys.(*TestKeys)
 	if *tk.Failure != "interrupted" {
 		t.Fatal("expected different failure here")
 	}
-	if tk.Endpoint != "stun.l.google.com:19302" {
+	if tk.Endpoint != defaultEndpoint {
 		t.Fatal("unexpected endpoint")
 	}
 	if len(tk.NetworkEvents) <= 0 {
@@ -117,20 +148,20 @@ func TestCancelledContext(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := sk.(stunreachability.SummaryKeys); !ok {
+	if _, ok := sk.(SummaryKeys); !ok {
 		t.Fatal("invalid type for summary keys")
 	}
 }
 
 func TestNewClientFailure(t *testing.T) {
-	config := &stunreachability.Config{}
+	config := &Config{}
 	expected := errors.New("mocked error")
-	config.SetNewClient(
-		func(conn stun.Connection, options ...stun.ClientOption) (*stun.Client, error) {
-			return nil, expected
-		})
-	measurer := stunreachability.NewExperimentMeasurer(*config)
+	config.newClient = func(conn stun.Connection, options ...stun.ClientOption) (*stun.Client, error) {
+		return nil, expected
+	}
+	measurer := NewExperimentMeasurer(*config)
 	measurement := new(model.Measurement)
+	measurement.Input = model.MeasurementTarget(defaultInput)
 	err := measurer.Run(
 		context.Background(),
 		&mockable.Session{},
@@ -140,11 +171,11 @@ func TestNewClientFailure(t *testing.T) {
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
-	tk := measurement.TestKeys.(*stunreachability.TestKeys)
+	tk := measurement.TestKeys.(*TestKeys)
 	if !strings.HasPrefix(*tk.Failure, "unknown_failure") {
 		t.Fatal("expected different failure here")
 	}
-	if tk.Endpoint != "stun.l.google.com:19302" {
+	if tk.Endpoint != defaultEndpoint {
 		t.Fatal("unexpected endpoint")
 	}
 	if len(tk.NetworkEvents) <= 0 {
@@ -156,15 +187,15 @@ func TestNewClientFailure(t *testing.T) {
 }
 
 func TestStartFailure(t *testing.T) {
-	config := &stunreachability.Config{}
+	config := &Config{}
 	expected := errors.New("mocked error")
-	config.SetDialContext(
-		func(ctx context.Context, network, address string) (net.Conn, error) {
-			conn := &stunreachability.FakeConn{WriteError: expected}
-			return conn, nil
-		})
-	measurer := stunreachability.NewExperimentMeasurer(*config)
+	config.dialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+		conn := &FakeConn{WriteError: expected}
+		return conn, nil
+	}
+	measurer := NewExperimentMeasurer(*config)
 	measurement := new(model.Measurement)
+	measurement.Input = model.MeasurementTarget(defaultInput)
 	err := measurer.Run(
 		context.Background(),
 		&mockable.Session{},
@@ -174,11 +205,11 @@ func TestStartFailure(t *testing.T) {
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
-	tk := measurement.TestKeys.(*stunreachability.TestKeys)
+	tk := measurement.TestKeys.(*TestKeys)
 	if !strings.HasPrefix(*tk.Failure, "unknown_failure") {
 		t.Fatal("expected different failure here")
 	}
-	if tk.Endpoint != "stun.l.google.com:19302" {
+	if tk.Endpoint != defaultEndpoint {
 		t.Fatal("unexpected endpoint")
 	}
 	// We're bypassing normal network with custom dial function
@@ -194,15 +225,15 @@ func TestReadFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	config := &stunreachability.Config{}
+	config := &Config{}
 	expected := errors.New("mocked error")
-	config.SetDialContext(
-		func(ctx context.Context, network, address string) (net.Conn, error) {
-			conn := &stunreachability.FakeConn{ReadError: expected}
-			return conn, nil
-		})
-	measurer := stunreachability.NewExperimentMeasurer(*config)
+	config.dialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+		conn := &FakeConn{ReadError: expected}
+		return conn, nil
+	}
+	measurer := NewExperimentMeasurer(*config)
 	measurement := new(model.Measurement)
+	measurement.Input = model.MeasurementTarget(defaultInput)
 	err := measurer.Run(
 		context.Background(),
 		&mockable.Session{},
@@ -212,11 +243,11 @@ func TestReadFailure(t *testing.T) {
 	if !errors.Is(err, stun.ErrTransactionTimeOut) {
 		t.Fatal("not the error we expected")
 	}
-	tk := measurement.TestKeys.(*stunreachability.TestKeys)
+	tk := measurement.TestKeys.(*TestKeys)
 	if *tk.Failure != netxlite.FailureGenericTimeoutError {
 		t.Fatal("expected different failure here")
 	}
-	if tk.Endpoint != "stun.l.google.com:19302" {
+	if tk.Endpoint != defaultEndpoint {
 		t.Fatal("unexpected endpoint")
 	}
 	// We're bypassing normal network with custom dial function
@@ -229,13 +260,13 @@ func TestReadFailure(t *testing.T) {
 }
 
 func TestSummaryKeysGeneric(t *testing.T) {
-	measurement := &model.Measurement{TestKeys: &stunreachability.TestKeys{}}
-	m := &stunreachability.Measurer{}
+	measurement := &model.Measurement{TestKeys: &TestKeys{}}
+	m := &Measurer{}
 	osk, err := m.GetSummaryKeys(measurement)
 	if err != nil {
 		t.Fatal(err)
 	}
-	sk := osk.(stunreachability.SummaryKeys)
+	sk := osk.(SummaryKeys)
 	if sk.IsAnomaly {
 		t.Fatal("invalid isAnomaly")
 	}
