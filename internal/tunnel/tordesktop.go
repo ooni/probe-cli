@@ -2,9 +2,9 @@
 
 package tunnel
 
-import (
-	"github.com/cretz/bine/tor"
-)
+// This file implements our strategy for running tor on desktop.
+
+import "github.com/cretz/bine/tor"
 
 // getTorStartConf in this configuration uses torExePath to get a
 // suitable tor binary and then executes it.

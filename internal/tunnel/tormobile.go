@@ -2,6 +2,8 @@
 
 package tunnel
 
+// This file implements our strategy for running tor on mobile.
+
 import (
 	"github.com/cretz/bine/tor"
 	"github.com/ooni/go-libtor"
