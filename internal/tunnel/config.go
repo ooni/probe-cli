@@ -154,14 +154,20 @@ const ooniTorBinaryEnv = "OONI_TOR_BINARY"
 // 2. if os.Getenv("OONI_TOR_BINARY") is set, we use its value;
 //
 // 3. otherwise, we return "tor".
-func (c *Config) torBinary() string {
+//
+// Implementation note: in cases 1 and 3 we use execabs.LookPath
+// to guarantee we're not going to execute a binary outside of the
+// PATH (see https://blog.golang.org/path-security for more info
+// on how this bug could affect Windows). In case 2, we're instead
+// just going to trust the binary set by the probe-desktop app.
+func (c *Config) torBinary() (string, error) {
 	if c.TorBinary != "" {
-		return c.TorBinary
+		return c.execabsLookPath(c.TorBinary)
 	}
 	if binary := os.Getenv(ooniTorBinaryEnv); binary != "" {
-		return binary
+		return binary, nil
 	}
-	return "tor"
+	return c.execabsLookPath("tor")
 }
 
 // torStart calls either testTorStart or tor.Start.
