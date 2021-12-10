@@ -73,7 +73,7 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	extraArgs = append(extraArgs, "Log")
 	extraArgs = append(extraArgs, fmt.Sprintf(`notice file %s`, logfile))
 
-	config.logger().Infof("tunnel: exec: %s %+v", stateDir, extraArgs)
+	config.logger().Infof("tunnel: tor: exec params: %s %+v", stateDir, extraArgs)
 	torStartConf, err := getTorStartConf(config, stateDir, extraArgs)
 	if err != nil {
 		return nil, err

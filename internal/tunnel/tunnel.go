@@ -19,6 +19,14 @@
 // that does not embed such a configuration, it won't
 // be possible to address this use case.
 //
+// For tor tunnels, we have two distinct configurations: on
+// mobile we use github.com/ooni/go-libtor; on desktop we use
+// a more complex strategy. If the OONI_TOR_BINARY environment
+// variable is set, we assume its value is the path to the
+// tor binary and use it. Otherwise, we search for an executable
+// called "tor" in the PATH and use it. Those two strategies
+// are implemented, respectively by tormobile.go and tordesktop.go.
+//
 // See session.go in the engine package for more details
 // concerning this second use case.
 package tunnel

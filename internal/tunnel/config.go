@@ -140,11 +140,26 @@ func (c *Config) startPsiphon(ctx context.Context, config []byte,
 		DataRootDirectory: &workdir}, nil, nil)
 }
 
-// torBinary returns the tor binary path, if configured, or
-// the default path, otherwise.
+// ooniTorBinaryEnv is the name of the environment variable
+// we're using to get the path to the tor binary when we are
+// being run by the ooni/probe-desktop application.
+const ooniTorBinaryEnv = "OONI_TOR_BINARY"
+
+// torBinary returns the tor binary path.
+//
+// Here's is the algorithm:
+//
+// 1. if c.TorBinary is set, we use its value;
+//
+// 2. if os.Getenv("OONI_TOR_BINARY") is set, we use its value;
+//
+// 3. otherwise, we return "tor".
 func (c *Config) torBinary() string {
 	if c.TorBinary != "" {
 		return c.TorBinary
+	}
+	if binary := os.Getenv(ooniTorBinaryEnv); binary != "" {
+		return binary
 	}
 	return "tor"
 }
