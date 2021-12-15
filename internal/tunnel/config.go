@@ -140,13 +140,34 @@ func (c *Config) startPsiphon(ctx context.Context, config []byte,
 		DataRootDirectory: &workdir}, nil, nil)
 }
 
-// torBinary returns the tor binary path, if configured, or
-// the default path, otherwise.
-func (c *Config) torBinary() string {
+// ooniTorBinaryEnv is the name of the environment variable
+// we're using to get the path to the tor binary when we are
+// being run by the ooni/probe-desktop application.
+const ooniTorBinaryEnv = "OONI_TOR_BINARY"
+
+// torBinary returns the tor binary path.
+//
+// Here's is the algorithm:
+//
+// 1. if c.TorBinary is set, we use its value;
+//
+// 2. if os.Getenv("OONI_TOR_BINARY") is set, we use its value;
+//
+// 3. otherwise, we return "tor".
+//
+// Implementation note: in cases 1 and 3 we use execabs.LookPath
+// to guarantee we're not going to execute a binary outside of the
+// PATH (see https://blog.golang.org/path-security for more info
+// on how this bug could affect Windows). In case 2, we're instead
+// just going to trust the binary set by the probe-desktop app.
+func (c *Config) torBinary() (string, error) {
 	if c.TorBinary != "" {
-		return c.TorBinary
+		return c.execabsLookPath(c.TorBinary)
 	}
-	return "tor"
+	if binary := os.Getenv(ooniTorBinaryEnv); binary != "" {
+		return binary, nil
+	}
+	return c.execabsLookPath("tor")
 }
 
 // torStart calls either testTorStart or tor.Start.
