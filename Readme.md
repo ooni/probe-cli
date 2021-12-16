@@ -18,6 +18,12 @@ This repository contains core OONI tools written in Go:
 
 Every top-level directory in this repository contains an explanatory README file.
 
+## License
+
+```
+SPDX-License-Identifier: GPL-3.0-or-later
+```
+
 ## User setup
 
 Please, follow the instructions at [ooni.org/install/cli](https://ooni.org/install/cli)
