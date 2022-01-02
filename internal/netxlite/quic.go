@@ -12,13 +12,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// UDPLikeConn is the kind of UDP socket used by QUIC.
-type UDPLikeConn = model.UDPLikeConn
-
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
 	// Listen creates a new listening UDPLikeConn.
-	Listen(addr *net.UDPAddr) (UDPLikeConn, error)
+	Listen(addr *net.UDPAddr) (model.UDPLikeConn, error)
 }
 
 // NewQUICListener creates a new QUICListener using the standard
@@ -33,7 +30,7 @@ type quicListenerStdlib struct{}
 var _ QUICListener = &quicListenerStdlib{}
 
 // Listen implements QUICListener.Listen.
-func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (UDPLikeConn, error) {
+func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	return TProxy.ListenUDP("udp", addr)
 }
 
@@ -201,7 +198,7 @@ type quicSessionOwnsConn struct {
 	quic.EarlySession
 
 	// conn is the connection we own
-	conn UDPLikeConn
+	conn model.UDPLikeConn
 }
 
 // CloseWithError implements quic.EarlySession.CloseWithError.
@@ -361,7 +358,7 @@ type quicListenerErrWrapper struct {
 var _ QUICListener = &quicListenerErrWrapper{}
 
 // Listen implements QUICListener.Listen.
-func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (UDPLikeConn, error) {
+func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	pconn, err := qls.QUICListener.Listen(addr)
 	if err != nil {
 		return nil, NewErrWrapper(ClassifyGenericError, QUICListenOperation, err)
@@ -372,10 +369,10 @@ func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (UDPLikeConn, error
 // quicErrWrapperUDPLikeConn is a UDPLikeConn that wraps errors.
 type quicErrWrapperUDPLikeConn struct {
 	// UDPLikeConn is the underlying conn.
-	UDPLikeConn
+	model.UDPLikeConn
 }
 
-var _ UDPLikeConn = &quicErrWrapperUDPLikeConn{}
+var _ model.UDPLikeConn = &quicErrWrapperUDPLikeConn{}
 
 // WriteTo implements UDPLikeConn.WriteTo.
 func (c *quicErrWrapperUDPLikeConn) WriteTo(p []byte, addr net.Addr) (int, error) {
