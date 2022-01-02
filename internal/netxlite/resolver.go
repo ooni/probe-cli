@@ -50,7 +50,7 @@ func NewResolverStdlib(logger Logger) Resolver {
 // - dialer is the dialer to create and connect UDP conns
 //
 // - address is the server address (e.g., 1.1.1.1:53)
-func NewResolverUDP(logger Logger, dialer Dialer, address string) Resolver {
+func NewResolverUDP(logger Logger, dialer model.Dialer, address string) Resolver {
 	return WrapResolver(logger, NewSerialResolver(
 		NewDNSOverUDP(dialer, address),
 	))

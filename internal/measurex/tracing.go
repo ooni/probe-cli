@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -26,7 +27,7 @@ import (
 //
 // - handshake is the TLS handshaker to use
 func NewTracingHTTPTransport(logger Logger, begin time.Time, db WritableDB,
-	resolver Resolver, dialer Dialer, handshaker TLSHandshaker) *HTTPTransportDB {
+	resolver Resolver, dialer model.Dialer, handshaker TLSHandshaker) *HTTPTransportDB {
 	resolver = WrapResolver(begin, db, resolver)
 	dialer = netxlite.WrapDialer(logger, resolver, WrapDialer(begin, db, dialer))
 	tlsDialer := netxlite.NewTLSDialer(dialer, handshaker)

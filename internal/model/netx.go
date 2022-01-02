@@ -79,6 +79,15 @@ type DNSTransport interface {
 	CloseIdleConnections()
 }
 
+// Dialer establishes network connections.
+type Dialer interface {
+	// DialContext behaves like net.Dialer.DialContext.
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+
+	// CloseIdleConnections closes idle connections, if any.
+	CloseIdleConnections()
+}
+
 // HTTPSSvc is the reply to an HTTPS DNS query.
 type HTTPSSvc struct {
 	// ALPN contains the ALPNs inside the HTTPS reply.

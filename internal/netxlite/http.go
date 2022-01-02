@@ -8,6 +8,7 @@ import (
 	"time"
 
 	oohttp "github.com/ooni/oohttp"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // HTTPTransport is an http.Transport-like structure.
@@ -74,7 +75,7 @@ func (txp *httpTransportLogger) CloseIdleConnections() {
 // correctly forwards CloseIdleConnections calls.
 type httpTransportConnectionsCloser struct {
 	HTTPTransport
-	Dialer
+	model.Dialer
 	TLSDialer
 }
 
@@ -89,7 +90,7 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 //
 // This factory and NewHTTPTransportStdlib are the recommended
 // ways of creating a new HTTPTransport.
-func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
+func NewHTTPTransport(logger Logger, dialer model.Dialer, tlsDialer TLSDialer) HTTPTransport {
 	return WrapHTTPTransport(logger, NewOOHTTPBaseTransport(dialer, tlsDialer))
 }
 
@@ -117,7 +118,7 @@ func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTra
 // way in which we perform measurements.
 //
 // This is a low level factory. Consider not using it directly.
-func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
+func NewOOHTTPBaseTransport(dialer model.Dialer, tlsDialer TLSDialer) HTTPTransport {
 	// Using oohttp to support any TLS library.
 	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
 
@@ -168,7 +169,7 @@ func WrapHTTPTransport(logger Logger, txp HTTPTransport) HTTPTransport {
 // httpDialerWithReadTimeout enforces a read timeout for all HTTP
 // connections. See https://github.com/ooni/probe/issues/1609.
 type httpDialerWithReadTimeout struct {
-	Dialer
+	model.Dialer
 }
 
 // DialContext implements Dialer.DialContext.

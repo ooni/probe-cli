@@ -26,6 +26,6 @@ type (
 	MiekgDecoder    = netxlite.DNSDecoderMiekg
 	RoundTripper    = model.DNSTransport
 	SerialResolver  = netxlite.SerialResolver
-	Dialer          = netxlite.Dialer
+	Dialer          = model.Dialer
 	DialContextFunc = netxlite.DialContextFunc
 )

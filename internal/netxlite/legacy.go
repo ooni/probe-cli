@@ -119,7 +119,7 @@ type DialerLegacy interface {
 // become compatible with the Dialer definition.
 //
 // Deprecated: do not use this function in new code.
-func NewDialerLegacyAdapter(d DialerLegacy) Dialer {
+func NewDialerLegacyAdapter(d DialerLegacy) model.Dialer {
 	return &DialerLegacyAdapter{d}
 }
 
@@ -131,7 +131,7 @@ type DialerLegacyAdapter struct {
 	DialerLegacy
 }
 
-var _ Dialer = &DialerLegacyAdapter{}
+var _ model.Dialer = &DialerLegacyAdapter{}
 
 type dialerLegacyIdleConnectionsCloser interface {
 	CloseIdleConnections()

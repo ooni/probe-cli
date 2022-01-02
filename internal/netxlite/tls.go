@@ -10,6 +10,7 @@ import (
 	"time"
 
 	oohttp "github.com/ooni/oohttp"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 var (
@@ -262,12 +263,12 @@ type TLSDialer interface {
 }
 
 // NewTLSDialer creates a new TLS dialer using the given dialer and handshaker.
-func NewTLSDialer(dialer Dialer, handshaker TLSHandshaker) TLSDialer {
+func NewTLSDialer(dialer model.Dialer, handshaker TLSHandshaker) TLSDialer {
 	return NewTLSDialerWithConfig(dialer, handshaker, &tls.Config{})
 }
 
 // NewTLSDialerWithConfig is like NewTLSDialer with an optional config.
-func NewTLSDialerWithConfig(d Dialer, h TLSHandshaker, c *tls.Config) TLSDialer {
+func NewTLSDialerWithConfig(d model.Dialer, h TLSHandshaker, c *tls.Config) TLSDialer {
 	return &tlsDialer{Config: c, Dialer: d, TLSHandshaker: h}
 }
 
@@ -277,7 +278,7 @@ type tlsDialer struct {
 	Config *tls.Config
 
 	// Dialer is the MANDATORY dialer.
-	Dialer Dialer
+	Dialer model.Dialer
 
 	// TLSHandshaker is the MANDATORY TLS handshaker.
 	TLSHandshaker TLSHandshaker
@@ -344,7 +345,7 @@ func NewSingleUseTLSDialer(conn TLSConn) TLSDialer {
 // tlsDialerSingleUseAdapter adapts dialerSingleUse to
 // be a TLSDialer type rather than a Dialer type.
 type tlsDialerSingleUseAdapter struct {
-	Dialer
+	model.Dialer
 }
 
 var _ TLSDialer = &tlsDialerSingleUseAdapter{}
