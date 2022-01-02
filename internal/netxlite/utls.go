@@ -22,7 +22,7 @@ import (
 // 2. error wrapping
 //
 // Passing a nil `id` will make this function panic.
-func NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) TLSHandshaker {
+func NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
 	return newTLSHandshaker(&tlsHandshakerConfigurable{
 		NewConn: newConnUTLS(id),
 	}, logger)

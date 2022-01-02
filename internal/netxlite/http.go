@@ -76,7 +76,7 @@ func (txp *httpTransportLogger) CloseIdleConnections() {
 type httpTransportConnectionsCloser struct {
 	HTTPTransport
 	model.Dialer
-	TLSDialer
+	model.TLSDialer
 }
 
 // CloseIdleConnections forwards the CloseIdleConnections calls.
@@ -90,7 +90,7 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 //
 // This factory and NewHTTPTransportStdlib are the recommended
 // ways of creating a new HTTPTransport.
-func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer TLSDialer) HTTPTransport {
+func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer model.TLSDialer) HTTPTransport {
 	return WrapHTTPTransport(logger, NewOOHTTPBaseTransport(dialer, tlsDialer))
 }
 
@@ -118,7 +118,7 @@ func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer T
 // way in which we perform measurements.
 //
 // This is a low level factory. Consider not using it directly.
-func NewOOHTTPBaseTransport(dialer model.Dialer, tlsDialer TLSDialer) HTTPTransport {
+func NewOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) HTTPTransport {
 	// Using oohttp to support any TLS library.
 	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
 
@@ -185,7 +185,7 @@ func (d *httpDialerWithReadTimeout) DialContext(
 // httpTLSDialerWithReadTimeout enforces a read timeout for all HTTP
 // connections. See https://github.com/ooni/probe/issues/1609.
 type httpTLSDialerWithReadTimeout struct {
-	TLSDialer
+	model.TLSDialer
 }
 
 // ErrNotTLSConn occur when an interface accepts a net.Conn but

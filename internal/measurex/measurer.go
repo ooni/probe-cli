@@ -46,7 +46,7 @@ type Measurer struct {
 	Resolvers []*ResolverInfo
 
 	// TLSHandshaker is the MANDATORY TLS handshaker.
-	TLSHandshaker netxlite.TLSHandshaker
+	TLSHandshaker model.TLSHandshaker
 }
 
 // NewMeasurerWithDefaultSettings creates a new Measurer

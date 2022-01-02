@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"syscall"
 )
@@ -117,6 +118,38 @@ type Resolver interface {
 	// LookupHTTPS issues an HTTPS query for a domain.
 	LookupHTTPS(
 		ctx context.Context, domain string) (*HTTPSSvc, error)
+}
+
+// TLSDialer is a Dialer dialing TLS connections.
+type TLSDialer interface {
+	// CloseIdleConnections closes idle connections, if any.
+	CloseIdleConnections()
+
+	// DialTLSContext dials a TLS connection. This method will always
+	// return to you a TLSConn, so you can always safely cast to TLSConn.
+	DialTLSContext(ctx context.Context, network, address string) (net.Conn, error)
+}
+
+// TLSHandshaker is the generic TLS handshaker.
+type TLSHandshaker interface {
+	// Handshake creates a new TLS connection from the given connection and
+	// the given config. This function DOES NOT take ownership of the connection
+	// and it's your responsibility to close it on failure.
+	//
+	// Recommended tlsConfig setup:
+	//
+	// - set ServerName to be the SNI;
+	//
+	// - set RootCAs to NewDefaultCertPool();
+	//
+	// - set NextProtos to []string{"h2", "http/1.1"} for HTTPS
+	// and []string{"dot"} for DNS-over-TLS.
+	//
+	// QUIRK: The returned connection will always implement the TLSConn interface
+	// exposed by this package. A future version of this interface will instead
+	// return directly a TLSConn to avoid unconditional castings.
+	Handshake(ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (
+		net.Conn, tls.ConnectionState, error)
 }
 
 // UDPLikeConn is a net.PacketConn with some extra functions
