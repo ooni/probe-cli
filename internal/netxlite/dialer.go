@@ -78,12 +78,12 @@ var _ model.Dialer = &dialerSystem{}
 
 const dialerDefaultTimeout = 15 * time.Second
 
-func (d *dialerSystem) newUnderlyingDialer() TProxyDialer {
+func (d *dialerSystem) newUnderlyingDialer() model.SimpleDialer {
 	t := d.timeout
 	if t <= 0 {
 		t = dialerDefaultTimeout
 	}
-	return TProxy.NewTProxyDialer(t)
+	return TProxy.NewSimpleDialer(t)
 }
 
 func (d *dialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {

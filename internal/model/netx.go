@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"syscall"
+	"time"
 
 	"github.com/lucas-clemente/quic-go"
 )
@@ -83,10 +84,16 @@ type DNSTransport interface {
 	CloseIdleConnections()
 }
 
-// Dialer establishes network connections.
-type Dialer interface {
+// SimpleDialer establishes network connections.
+type SimpleDialer interface {
 	// DialContext behaves like net.Dialer.DialContext.
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+}
+
+// Dialer is a SimpleDialer with the possibility of closing open connections.
+type Dialer interface {
+	// A Dialer is also a SimpleDialer.
+	SimpleDialer
 
 	// CloseIdleConnections closes idle connections, if any.
 	CloseIdleConnections()
@@ -224,4 +231,19 @@ type UDPLikeConn interface {
 	// SyscallConn returns a conn suitable for calling syscalls,
 	// which is also instrumental to setting the read buffer.
 	SyscallConn() (syscall.RawConn, error)
+}
+
+// UnderlyingNetworkLibrary defines the basic functionality from
+// which the network extensions depend. By changing the default
+// implementation of this interface, we can implement a wide array
+// of tests, including self censorship tests.
+type UnderlyingNetworkLibrary interface {
+	// ListenUDP creates a new model.UDPLikeConn conn.
+	ListenUDP(network string, laddr *net.UDPAddr) (UDPLikeConn, error)
+
+	// LookupHost lookups a domain using the stdlib resolver.
+	LookupHost(ctx context.Context, domain string) ([]string, error)
+
+	// NewSimpleDialer returns a new SimpleDialer.
+	NewSimpleDialer(timeout time.Duration) SimpleDialer
 }

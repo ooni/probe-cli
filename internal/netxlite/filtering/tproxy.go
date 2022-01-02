@@ -100,7 +100,7 @@ func (c *TProxyConfig) CanonicalizeDNS() {
 	c.DNSCache = cache
 }
 
-// TProxy is a netxlite.TProxable that implements self censorship.
+// TProxy is a model.UnderlyingNetworkLibrary that implements self censorship.
 type TProxy struct {
 	// config contains settings for TProxy.
 	config *TProxyConfig
@@ -242,8 +242,8 @@ func (p *TProxy) LookupHost(ctx context.Context, domain string) ([]string, error
 // Dialer
 //
 
-// NewTProxyDialer implements netxlite.TProxy.NewTProxyDialer.
-func (p *TProxy) NewTProxyDialer(timeout time.Duration) netxlite.TProxyDialer {
+// NewSimpleDialer implements netxlite.TProxy.NewTProxyDialer.
+func (p *TProxy) NewSimpleDialer(timeout time.Duration) model.SimpleDialer {
 	return &tProxyDialer{
 		dialer: &net.Dialer{Timeout: timeout},
 		proxy:  p,

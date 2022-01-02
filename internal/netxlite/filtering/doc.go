@@ -1,7 +1,7 @@
 // Package filtering allows to implement self-censorship.
 //
-// The top-level struct is the TProxy. It implements netxlite's
-// TProxable interface. Therefore, you can use TProxy to
+// The top-level struct is the TProxy. It implements model's
+// UnderlyingNetworkLibrary interface. Therefore, you can use TProxy to
 // implement filtering and blocking of TCP, TLS, QUIC, DNS, HTTP.
 //
 // We also expose proxies that implement filtering policies for
