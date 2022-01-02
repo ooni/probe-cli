@@ -3,7 +3,7 @@ package resolver
 import "github.com/ooni/probe-cli/v3/internal/netxlite"
 
 // Variables that other packages expect to find here but have been
-// moved into the internal/netxlite/dnsx package.
+// moved into the internal/netxlite package.
 var (
 	NewSerialResolver               = netxlite.NewSerialResolver
 	NewDNSOverUDP                   = netxlite.NewDNSOverUDP
@@ -14,7 +14,7 @@ var (
 )
 
 // Types that other packages expect to find here but have been
-// moved into the internal/netxlite/dnsx package.
+// moved into the internal/netxlite package.
 type (
 	DNSOverHTTPS    = netxlite.DNSOverHTTPS
 	DNSOverTCP      = netxlite.DNSOverTCP

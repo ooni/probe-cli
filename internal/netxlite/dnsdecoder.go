@@ -1,6 +1,9 @@
 package netxlite
 
-import "github.com/miekg/dns"
+import (
+	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
 
 // The DNSDecoder decodes DNS replies.
 type DNSDecoder interface {
@@ -33,7 +36,7 @@ type DNSDecoder interface {
 	// This function will return an error if the HTTPS reply does not
 	// contain at least a valid ALPN entry. It will not return
 	// an error, though, when there are no IPv4/IPv6 hints in the reply.
-	DecodeHTTPS(data []byte) (*HTTPSSvc, error)
+	DecodeHTTPS(data []byte) (*model.HTTPSSvc, error)
 }
 
 // DNSDecoderMiekg uses github.com/miekg/dns to implement the Decoder.
@@ -58,12 +61,12 @@ func (d *DNSDecoderMiekg) parseReply(data []byte) (*dns.Msg, error) {
 	}
 }
 
-func (d *DNSDecoderMiekg) DecodeHTTPS(data []byte) (*HTTPSSvc, error) {
+func (d *DNSDecoderMiekg) DecodeHTTPS(data []byte) (*model.HTTPSSvc, error) {
 	reply, err := d.parseReply(data)
 	if err != nil {
 		return nil, err
 	}
-	out := &HTTPSSvc{}
+	out := &model.HTTPSSvc{}
 	for _, answer := range reply.Answer {
 		switch avalue := answer.(type) {
 		case *dns.HTTPS:

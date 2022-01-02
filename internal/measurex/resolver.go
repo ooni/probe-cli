@@ -11,12 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
 )
-
-// HTTPSSvc is the result returned by HTTPSSvc queries.
-type HTTPSSvc = dnsx.HTTPSSvc
 
 // Resolver is the resolver type we use. This resolver will
 // store resolve events into the DB.
@@ -160,7 +157,7 @@ func (r *resolverDB) computeOddityLookupHost(addrs []string, err error) Oddity {
 	return ""
 }
 
-func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (*HTTPSSvc, error) {
+func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	started := time.Since(r.begin).Seconds()
 	https, err := r.Resolver.LookupHTTPS(ctx, domain)
 	finished := time.Since(r.begin).Seconds()
@@ -183,7 +180,7 @@ func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (*HTTPSSvc,
 	return https, err
 }
 
-func (r *resolverDB) computeOddityHTTPSSvc(https *HTTPSSvc, err error) Oddity {
+func (r *resolverDB) computeOddityHTTPSSvc(https *model.HTTPSSvc, err error) Oddity {
 	if err != nil {
 		return r.computeOddityLookupHost(nil, err)
 	}

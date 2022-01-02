@@ -9,6 +9,18 @@ import (
 // Network extensions
 //
 
+// HTTPSSvc is the reply to an HTTPS DNS query.
+type HTTPSSvc struct {
+	// ALPN contains the ALPNs inside the HTTPS reply.
+	ALPN []string
+
+	// IPv4 contains the IPv4 hints (which may be empty).
+	IPv4 []string
+
+	// IPv6 contains the IPv6 hints (which may be empty).
+	IPv6 []string
+}
+
 // UDPLikeConn is a net.PacketConn with some extra functions
 // required to convince the QUIC library (lucas-clemente/quic-go)
 // to inflate the receive buffer of the connection.

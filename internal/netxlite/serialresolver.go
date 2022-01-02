@@ -7,6 +7,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // SerialResolver uses a transport and sends performs a LookupHost
@@ -76,7 +77,7 @@ func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]str
 
 // LookupHTTPS implements Resolver.LookupHTTPS.
 func (r *SerialResolver) LookupHTTPS(
-	ctx context.Context, hostname string) (*HTTPSSvc, error) {
+	ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
 	querydata, err := r.Encoder.Encode(
 		hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
 	if err != nil {

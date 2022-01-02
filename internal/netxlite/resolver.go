@@ -7,12 +7,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"golang.org/x/net/idna"
 )
-
-// HTTPSSvc is the type returned for HTTPS queries.
-type HTTPSSvc = dnsx.HTTPSSvc
 
 // Resolver performs domain name resolutions.
 type Resolver interface {
@@ -30,7 +27,7 @@ type Resolver interface {
 
 	// LookupHTTPS issues an HTTPS query for a domain.
 	LookupHTTPS(
-		ctx context.Context, domain string) (*HTTPSSvc, error)
+		ctx context.Context, domain string) (*model.HTTPSSvc, error)
 }
 
 // ErrNoDNSTransport is the error returned when you attempt to perform
@@ -149,7 +146,7 @@ func (r *resolverSystem) CloseIdleConnections() {
 }
 
 func (r *resolverSystem) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
 }
 
@@ -176,7 +173,7 @@ func (r *resolverLogger) LookupHost(ctx context.Context, hostname string) ([]str
 }
 
 func (r *resolverLogger) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	prefix := fmt.Sprintf("resolve[HTTPS] %s with %s (%s)", domain, r.Network(), r.Address())
 	r.Logger.Debugf("%s...", prefix)
 	start := time.Now()
@@ -209,7 +206,7 @@ func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]strin
 }
 
 func (r *resolverIDNA) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	host, err := idna.ToASCII(domain)
 	if err != nil {
 		return nil, err
@@ -256,7 +253,7 @@ func (r *nullResolver) CloseIdleConnections() {
 }
 
 func (r *nullResolver) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	return nil, ErrNoResolver
 }
 
@@ -276,7 +273,7 @@ func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([
 }
 
 func (r *resolverErrWrapper) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	out, err := r.Resolver.LookupHTTPS(ctx, domain)
 	if err != nil {
 		return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, err)

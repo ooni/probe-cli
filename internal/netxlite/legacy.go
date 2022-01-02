@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // These vars export internal names to legacy ooni/probe-cli code.
@@ -99,7 +100,7 @@ func (r *ResolverLegacyAdapter) CloseIdleConnections() {
 
 // LookupHTTPS always returns ErrDNSNoTransport.
 func (r *ResolverLegacyAdapter) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
 }
 

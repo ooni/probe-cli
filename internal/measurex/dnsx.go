@@ -14,7 +14,7 @@ import (
 )
 
 // DNSXRoundTripper is a transport for sending raw DNS queries
-// and receiving raw DNS replies. The internal/netxlite/dnsx
+// and receiving raw DNS replies. The internal/netxlite
 // package implements a bunch of these transports.
 type DNSTransport = netxlite.DNSTransport
 
