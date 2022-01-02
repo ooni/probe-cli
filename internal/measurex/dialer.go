@@ -31,7 +31,7 @@ func WrapDialer(begin time.Time, db WritableDB, dialer model.Dialer) model.Diale
 }
 
 // NewDialerWithSystemResolver creates a
-func (mx *Measurer) NewDialerWithSystemResolver(db WritableDB, logger Logger) model.Dialer {
+func (mx *Measurer) NewDialerWithSystemResolver(db WritableDB, logger model.Logger) model.Dialer {
 	r := mx.NewResolverSystem(db, logger)
 	return mx.WrapDialer(db, netxlite.NewDialerWithResolver(logger, r))
 }
@@ -39,7 +39,7 @@ func (mx *Measurer) NewDialerWithSystemResolver(db WritableDB, logger Logger) mo
 // NewDialerWithoutResolver is a convenience factory for creating
 // a dialer that saves measurements into the DB and that is not attached
 // to any resolver (hence only works when passed IP addresses).
-func (mx *Measurer) NewDialerWithoutResolver(db WritableDB, logger Logger) model.Dialer {
+func (mx *Measurer) NewDialerWithoutResolver(db WritableDB, logger model.Logger) model.Dialer {
 	return mx.WrapDialer(db, netxlite.NewDialerWithoutResolver(logger))
 }
 

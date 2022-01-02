@@ -41,7 +41,7 @@ func TestScrubLogger(t *testing.T) {
 
 	t.Run("for debug", func(t *testing.T) {
 		logger := new(savingLogger)
-		scrubber := &Logger{UnderlyingLogger: logger}
+		scrubber := &Logger{Logger: logger}
 		scrubber.Debug(input)
 		if len(logger.debug) != 1 && len(logger.info) != 0 && len(logger.warn) != 0 {
 			t.Fatal("unexpected number of log lines written")
@@ -53,7 +53,7 @@ func TestScrubLogger(t *testing.T) {
 
 	t.Run("for debugf", func(t *testing.T) {
 		logger := new(savingLogger)
-		scrubber := &Logger{UnderlyingLogger: logger}
+		scrubber := &Logger{Logger: logger}
 		scrubber.Debugf("%s", input)
 		if len(logger.debug) != 1 && len(logger.info) != 0 && len(logger.warn) != 0 {
 			t.Fatal("unexpected number of log lines written")
@@ -65,7 +65,7 @@ func TestScrubLogger(t *testing.T) {
 
 	t.Run("for info", func(t *testing.T) {
 		logger := new(savingLogger)
-		scrubber := &Logger{UnderlyingLogger: logger}
+		scrubber := &Logger{Logger: logger}
 		scrubber.Info(input)
 		if len(logger.debug) != 0 && len(logger.info) != 1 && len(logger.warn) != 0 {
 			t.Fatal("unexpected number of log lines written")
@@ -77,7 +77,7 @@ func TestScrubLogger(t *testing.T) {
 
 	t.Run("for infof", func(t *testing.T) {
 		logger := new(savingLogger)
-		scrubber := &Logger{UnderlyingLogger: logger}
+		scrubber := &Logger{Logger: logger}
 		scrubber.Infof("%s", input)
 		if len(logger.debug) != 0 && len(logger.info) != 1 && len(logger.warn) != 0 {
 			t.Fatal("unexpected number of log lines written")
@@ -89,7 +89,7 @@ func TestScrubLogger(t *testing.T) {
 
 	t.Run("for warn", func(t *testing.T) {
 		logger := new(savingLogger)
-		scrubber := &Logger{UnderlyingLogger: logger}
+		scrubber := &Logger{Logger: logger}
 		scrubber.Warn(input)
 		if len(logger.debug) != 0 && len(logger.info) != 0 && len(logger.warn) != 1 {
 			t.Fatal("unexpected number of log lines written")
@@ -101,7 +101,7 @@ func TestScrubLogger(t *testing.T) {
 
 	t.Run("for warnf", func(t *testing.T) {
 		logger := new(savingLogger)
-		scrubber := &Logger{UnderlyingLogger: logger}
+		scrubber := &Logger{Logger: logger}
 		scrubber.Warnf("%s", input)
 		if len(logger.debug) != 0 && len(logger.info) != 0 && len(logger.warn) != 1 {
 			t.Fatal("unexpected number of log lines written")

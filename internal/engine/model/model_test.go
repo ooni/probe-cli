@@ -211,13 +211,3 @@ func TestScrubMarshalError(t *testing.T) {
 		t.Fatal("not the error we expected")
 	}
 }
-
-func TestDiscardLoggerWorksAsIntended(t *testing.T) {
-	logger := model.DiscardLogger
-	logger.Debug("foo")
-	logger.Debugf("%s", "foo")
-	logger.Info("foo")
-	logger.Infof("%s", "foo")
-	logger.Warn("foo")
-	logger.Warnf("%s", "foo")
-}

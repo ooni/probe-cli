@@ -6,11 +6,12 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestConfigLoggerDefault(t *testing.T) {
 	config := &Config{}
-	if config.logger() != defaultLogger {
+	if config.logger() != model.DiscardLogger {
 		t.Fatal("not the logger we expected")
 	}
 }

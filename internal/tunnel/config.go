@@ -8,16 +8,10 @@ import (
 	"github.com/armon/go-socks5"
 	"github.com/cretz/bine/control"
 	"github.com/cretz/bine/tor"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/psiphon/oopsi/github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
 	"golang.org/x/sys/execabs"
 )
-
-// Logger is the logger to use. Its signature is compatibile
-// with the apex/log logger signature.
-type Logger interface {
-	// Infof formats and emits an informative message
-	Infof(format string, v ...interface{})
-}
 
 // Config contains the configuration for creating a Tunnel instance. You need
 // to fill all the mandatory fields. You SHOULD NOT modify the content of this
@@ -41,7 +35,7 @@ type Config struct {
 
 	// Logger is the optional logger to use. If empty we use a default
 	// implementation that does not emit any output.
-	Logger Logger
+	Logger model.InfoLogger
 
 	// TorArgs contains the optional arguments that you want us to pass
 	// to the tor binary when invoking it. By default we do not
@@ -81,21 +75,12 @@ type Config struct {
 	testTorGetInfo func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error)
 }
 
-// silentLogger is a logger that does not emit output.
-type silentLogger struct{}
-
-// Infof implements Logger.Infof.
-func (sl *silentLogger) Infof(format string, v ...interface{}) {}
-
-// defaultLogger is the default logger.
-var defaultLogger = &silentLogger{}
-
 // logger returns the logger to use.
-func (c *Config) logger() Logger {
+func (c *Config) logger() model.InfoLogger {
 	if c.Logger != nil {
 		return c.Logger
 	}
-	return defaultLogger
+	return model.DiscardLogger
 }
 
 // execabsLookPath calls either testExeabsLookPath or execabs.LookPath

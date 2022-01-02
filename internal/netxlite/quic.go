@@ -78,7 +78,7 @@ type QUICDialer interface {
 // the CloseIdleConnection call to its resolver (which is
 // instrumental to manage a DoH resolver connections properly).
 func NewQUICDialerWithResolver(listener QUICListener,
-	logger Logger, resolver Resolver) QUICDialer {
+	logger model.DebugLogger, resolver Resolver) QUICDialer {
 	return &quicDialerLogger{
 		Dialer: &quicDialerResolver{
 			Dialer: &quicDialerLogger{
@@ -99,7 +99,7 @@ func NewQUICDialerWithResolver(listener QUICListener,
 // except that there is no configured resolver. So, if you pass in
 // an address containing a domain name, the dial will fail with
 // the ErrNoResolver failure.
-func NewQUICDialerWithoutResolver(listener QUICListener, logger Logger) QUICDialer {
+func NewQUICDialerWithoutResolver(listener QUICListener, logger model.DebugLogger) QUICDialer {
 	return NewQUICDialerWithResolver(listener, logger, &nullResolver{})
 }
 
@@ -284,7 +284,7 @@ type quicDialerLogger struct {
 	Dialer QUICDialer
 
 	// Logger is the underlying logger.
-	Logger Logger
+	Logger model.DebugLogger
 
 	// operationSuffix is appended to the operation name.
 	//

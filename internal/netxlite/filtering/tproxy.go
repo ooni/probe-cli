@@ -118,7 +118,7 @@ type TProxy struct {
 	listenUDP func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error)
 
 	// logger is the underlying logger to use.
-	logger Logger
+	logger model.InfoLogger
 
 	// tlsListener is the TLS listener.
 	tlsListener net.Listener
@@ -129,11 +129,11 @@ type TProxy struct {
 //
 
 // NewTProxy creates a new TProxy instance.
-func NewTProxy(config *TProxyConfig, logger Logger) (*TProxy, error) {
+func NewTProxy(config *TProxyConfig, logger model.InfoLogger) (*TProxy, error) {
 	return newTProxy(config, logger, "127.0.0.1:0", "127.0.0.1:0", "127.0.0.1:0")
 }
 
-func newTProxy(config *TProxyConfig, logger Logger, dnsListenerAddr,
+func newTProxy(config *TProxyConfig, logger model.InfoLogger, dnsListenerAddr,
 	tlsListenerAddr, httpListenerAddr string) (*TProxy, error) {
 	p := &TProxy{
 		config: config,
@@ -165,12 +165,12 @@ func (p *TProxy) newDNSListener(listenAddr string) error {
 	return err
 }
 
-func (p *TProxy) newDNSClient(logger Logger) {
+func (p *TProxy) newDNSClient(logger model.DebugLogger) {
 	dialer := netxlite.NewDialerWithoutResolver(logger)
 	p.dnsClient = netxlite.NewResolverUDP(logger, dialer, p.dnsListener.LocalAddr().String())
 }
 
-func (p *TProxy) newTLSListener(listenAddr string, logger Logger) error {
+func (p *TProxy) newTLSListener(listenAddr string, logger model.DebugLogger) error {
 	var err error
 	tlsProxy := &TLSProxy{OnIncomingSNI: p.onIncomingSNI}
 	p.tlsListener, err = tlsProxy.Start(listenAddr)

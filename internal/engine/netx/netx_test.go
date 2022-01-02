@@ -367,7 +367,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if lth.Logger != log.Log {
+	if lth.DebugLogger != log.Log {
 		t.Fatal("not the Logger we expected")
 	}
 	ewth, ok := lth.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)

@@ -27,6 +27,7 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"golang.org/x/net/publicsuffix"
@@ -60,7 +61,7 @@ func WrapHTTPTransport(
 // NewHTTPTransportWithConn creates and wraps an HTTPTransport that
 // does not dial and only uses the given conn.
 func (mx *Measurer) NewHTTPTransportWithConn(
-	logger Logger, db WritableDB, conn Conn) *HTTPTransportDB {
+	logger model.Logger, db WritableDB, conn Conn) *HTTPTransportDB {
 	return mx.WrapHTTPTransport(db, netxlite.NewHTTPTransport(
 		logger, netxlite.NewSingleUseDialer(conn), netxlite.NewNullTLSDialer()))
 }
@@ -68,7 +69,7 @@ func (mx *Measurer) NewHTTPTransportWithConn(
 // NewHTTPTransportWithTLSConn creates and wraps an HTTPTransport that
 // does not dial and only uses the given conn.
 func (mx *Measurer) NewHTTPTransportWithTLSConn(
-	logger Logger, db WritableDB, conn netxlite.TLSConn) *HTTPTransportDB {
+	logger model.Logger, db WritableDB, conn netxlite.TLSConn) *HTTPTransportDB {
 	return mx.WrapHTTPTransport(db, netxlite.NewHTTPTransport(
 		logger, netxlite.NewNullDialer(), netxlite.NewSingleUseTLSDialer(conn)))
 }
@@ -76,7 +77,7 @@ func (mx *Measurer) NewHTTPTransportWithTLSConn(
 // NewHTTPTransportWithQUICSess creates and wraps an HTTPTransport that
 // does not dial and only uses the given QUIC session.
 func (mx *Measurer) NewHTTPTransportWithQUICSess(
-	logger Logger, db WritableDB, sess quic.EarlySession) *HTTPTransportDB {
+	logger model.Logger, db WritableDB, sess quic.EarlySession) *HTTPTransportDB {
 	return mx.WrapHTTPTransport(db, netxlite.NewHTTP3Transport(
 		logger, netxlite.NewSingleUseQUICDialer(sess), &tls.Config{}))
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	utls "gitlab.com/yawning/utls.git"
 )
 
@@ -21,7 +22,7 @@ import (
 // 2. error wrapping
 //
 // Passing a nil `id` will make this function panic.
-func NewTLSHandshakerUTLS(logger Logger, id *utls.ClientHelloID) TLSHandshaker {
+func NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) TLSHandshaker {
 	return newTLSHandshaker(&tlsHandshakerConfigurable{
 		NewConn: newConnUTLS(id),
 	}, logger)

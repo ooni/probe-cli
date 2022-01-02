@@ -26,7 +26,7 @@ import (
 // - resolver is the underlying resolver to use
 //
 // - handshake is the TLS handshaker to use
-func NewTracingHTTPTransport(logger Logger, begin time.Time, db WritableDB,
+func NewTracingHTTPTransport(logger model.Logger, begin time.Time, db WritableDB,
 	resolver Resolver, dialer model.Dialer, handshaker TLSHandshaker) *HTTPTransportDB {
 	resolver = WrapResolver(begin, db, resolver)
 	dialer = netxlite.WrapDialer(logger, resolver, WrapDialer(begin, db, dialer))
@@ -48,7 +48,7 @@ func NewTracingHTTPTransport(logger Logger, begin time.Time, db WritableDB,
 // eventually become the measurement
 //
 func NewTracingHTTPTransportWithDefaultSettings(
-	begin time.Time, logger Logger, db WritableDB) *HTTPTransportDB {
+	begin time.Time, logger model.Logger, db WritableDB) *HTTPTransportDB {
 	return NewTracingHTTPTransport(logger, begin, db,
 		netxlite.NewResolverStdlib(logger),
 		netxlite.NewDialerWithoutResolver(logger),
@@ -56,7 +56,7 @@ func NewTracingHTTPTransportWithDefaultSettings(
 }
 
 func (mx *Measurer) NewTracingHTTPTransportWithDefaultSettings(
-	logger Logger, db WritableDB) *HTTPTransportDB {
+	logger model.Logger, db WritableDB) *HTTPTransportDB {
 	return NewTracingHTTPTransport(
 		mx.Logger, mx.Begin, db, mx.NewResolverSystem(db, mx.Logger),
 		mx.NewDialerWithoutResolver(db, mx.Logger),

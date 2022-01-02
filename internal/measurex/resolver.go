@@ -31,7 +31,7 @@ func WrapResolver(begin time.Time, db WritableDB, r netxlite.Resolver) Resolver 
 
 // NewResolverSystem creates a system resolver and then wraps
 // it using the WrapResolver function/
-func (mx *Measurer) NewResolverSystem(db WritableDB, logger Logger) Resolver {
+func (mx *Measurer) NewResolverSystem(db WritableDB, logger model.Logger) Resolver {
 	return mx.WrapResolver(db, netxlite.NewResolverStdlib(logger))
 }
 
@@ -45,7 +45,7 @@ func (mx *Measurer) NewResolverSystem(db WritableDB, logger Logger) Resolver {
 // - logger is the logger;
 //
 // - address is the resolver address (e.g., "1.1.1.1:53").
-func (mx *Measurer) NewResolverUDP(db WritableDB, logger Logger, address string) Resolver {
+func (mx *Measurer) NewResolverUDP(db WritableDB, logger model.Logger, address string) Resolver {
 	return mx.WrapResolver(db, netxlite.WrapResolver(
 		logger, netxlite.NewSerialResolver(
 			mx.WrapDNSXRoundTripper(db, netxlite.NewDNSOverUDP(

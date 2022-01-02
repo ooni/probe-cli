@@ -11,7 +11,7 @@ import (
 )
 
 // NewDialerWithResolver calls WrapDialer for the stdlib dialer.
-func NewDialerWithResolver(logger Logger, resolver Resolver) model.Dialer {
+func NewDialerWithResolver(logger model.DebugLogger, resolver Resolver) model.Dialer {
 	return WrapDialer(logger, resolver, &dialerSystem{})
 }
 
@@ -44,26 +44,26 @@ func NewDialerWithResolver(logger Logger, resolver Resolver) model.Dialer {
 //
 // In general, do not use WrapDialer directly but try to use
 // more high-level factories, e.g., NewDialerWithResolver.
-func WrapDialer(logger Logger, resolver Resolver, dialer model.Dialer) model.Dialer {
+func WrapDialer(logger model.DebugLogger, resolver Resolver, dialer model.Dialer) model.Dialer {
 	return &dialerLogger{
 		Dialer: &dialerResolver{
 			Dialer: &dialerLogger{
 				Dialer: &dialerErrWrapper{
 					Dialer: dialer,
 				},
-				Logger:          logger,
+				DebugLogger:     logger,
 				operationSuffix: "_address",
 			},
 			Resolver: resolver,
 		},
-		Logger: logger,
+		DebugLogger: logger,
 	}
 }
 
 // NewDialerWithoutResolver calls NewDialerWithResolver with a "null" resolver.
 //
 // The returned dialer fails with ErrNoResolver if passed a domain name.
-func NewDialerWithoutResolver(logger Logger) model.Dialer {
+func NewDialerWithoutResolver(logger model.DebugLogger) model.Dialer {
 	return NewDialerWithResolver(logger, &nullResolver{})
 }
 
@@ -147,7 +147,7 @@ type dialerLogger struct {
 	model.Dialer
 
 	// Logger is the underlying logger.
-	Logger
+	model.DebugLogger
 
 	// operationSuffix is appended to the operation name.
 	//
@@ -161,16 +161,16 @@ type dialerLogger struct {
 var _ model.Dialer = &dialerLogger{}
 
 func (d *dialerLogger) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	d.Logger.Debugf("dial%s %s/%s...", d.operationSuffix, address, network)
+	d.DebugLogger.Debugf("dial%s %s/%s...", d.operationSuffix, address, network)
 	start := time.Now()
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	elapsed := time.Since(start)
 	if err != nil {
-		d.Logger.Debugf("dial%s %s/%s... %s in %s", d.operationSuffix,
+		d.DebugLogger.Debugf("dial%s %s/%s... %s in %s", d.operationSuffix,
 			address, network, err, elapsed)
 		return nil, err
 	}
-	d.Logger.Debugf("dial%s %s/%s... ok in %s", d.operationSuffix,
+	d.DebugLogger.Debugf("dial%s %s/%s... ok in %s", d.operationSuffix,
 		address, network, elapsed)
 	return conn, nil
 }

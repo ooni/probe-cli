@@ -39,7 +39,7 @@ type httpTransportLogger struct {
 	HTTPTransport HTTPTransport
 
 	// Logger is the underlying logger.
-	Logger Logger
+	Logger model.DebugLogger
 }
 
 var _ HTTPTransport = &httpTransportLogger{}
@@ -90,7 +90,7 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 //
 // This factory and NewHTTPTransportStdlib are the recommended
 // ways of creating a new HTTPTransport.
-func NewHTTPTransport(logger Logger, dialer model.Dialer, tlsDialer TLSDialer) HTTPTransport {
+func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer TLSDialer) HTTPTransport {
 	return WrapHTTPTransport(logger, NewOOHTTPBaseTransport(dialer, tlsDialer))
 }
 
@@ -159,7 +159,7 @@ func NewOOHTTPBaseTransport(dialer model.Dialer, tlsDialer TLSDialer) HTTPTransp
 // and guarantees that returned errors are wrapped.
 //
 // This is a low level factory. Consider not using it directly.
-func WrapHTTPTransport(logger Logger, txp HTTPTransport) HTTPTransport {
+func WrapHTTPTransport(logger model.DebugLogger, txp HTTPTransport) HTTPTransport {
 	return &httpTransportLogger{
 		HTTPTransport: &httpTransportErrWrapper{txp},
 		Logger:        logger,
@@ -260,7 +260,7 @@ func (c *httpTLSConnWithReadTimeout) Read(b []byte) (int, error) {
 //
 // This factory and NewHTTPTransport are the recommended
 // ways of creating a new HTTPTransport.
-func NewHTTPTransportStdlib(logger Logger) HTTPTransport {
+func NewHTTPTransportStdlib(logger model.DebugLogger) HTTPTransport {
 	dialer := NewDialerWithResolver(logger, NewResolverStdlib(logger))
 	tlsDialer := NewTLSDialer(dialer, NewTLSHandshakerStdlib(logger))
 	return NewHTTPTransport(logger, dialer, tlsDialer)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -39,13 +40,6 @@ var (
 	// DefaultResolverASNString is the default resolver ASN as a string.
 	DefaultResolverASNString = fmt.Sprintf("AS%d", DefaultResolverASN)
 )
-
-// Logger is the definition of Logger used by this package.
-type Logger interface {
-	Debug(msg string)
-	Debugf(format string, v ...interface{})
-	Infof(format string, v ...interface{})
-}
 
 // Results contains geolocate results.
 type Results struct {
@@ -111,7 +105,7 @@ type Config struct {
 
 	// Logger is the logger to use. If not set, then we will
 	// use a logger that discards all messages.
-	Logger Logger
+	Logger model.Logger
 
 	// UserAgent is the user agent to use. If not set, then
 	// we will use a default user agent.
@@ -130,7 +124,7 @@ func (*discardLogger) Infof(format string, v ...interface{}) {}
 // NewTask creates a new instance of Task from config.
 func NewTask(config Config) *Task {
 	if config.Logger == nil {
-		config.Logger = &discardLogger{}
+		config.Logger = model.DiscardLogger
 	}
 	if config.UserAgent == "" {
 		config.UserAgent = fmt.Sprintf("ooniprobe-engine/%s", version.Version)

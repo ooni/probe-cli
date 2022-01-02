@@ -16,7 +16,7 @@ func TestTLSDialerSuccess(t *testing.T) {
 	dialer := &netxlite.TLSDialerLegacy{Dialer: netxlite.DefaultDialer,
 		TLSHandshaker: &netxlite.TLSHandshakerLogger{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
-			Logger:        log.Log,
+			DebugLogger:   log.Log,
 		},
 	}
 	txp := &http.Transport{

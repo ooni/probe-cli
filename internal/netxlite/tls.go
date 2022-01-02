@@ -155,17 +155,17 @@ type TLSHandshaker interface {
 // 1. logging
 //
 // 2. error wrapping
-func NewTLSHandshakerStdlib(logger Logger) TLSHandshaker {
+func NewTLSHandshakerStdlib(logger model.DebugLogger) TLSHandshaker {
 	return newTLSHandshaker(&tlsHandshakerConfigurable{}, logger)
 }
 
 // newTLSHandshaker is the common factory for creating a new TLSHandshaker
-func newTLSHandshaker(th TLSHandshaker, logger Logger) TLSHandshaker {
+func newTLSHandshaker(th TLSHandshaker, logger model.DebugLogger) TLSHandshaker {
 	return &tlsHandshakerLogger{
 		TLSHandshaker: &tlsHandshakerErrWrapper{
 			TLSHandshaker: th,
 		},
-		Logger: logger,
+		DebugLogger: logger,
 	}
 }
 
@@ -224,7 +224,7 @@ var defaultTLSHandshaker = &tlsHandshakerConfigurable{}
 // tlsHandshakerLogger is a TLSHandshaker with logging.
 type tlsHandshakerLogger struct {
 	TLSHandshaker
-	Logger
+	model.DebugLogger
 }
 
 var _ TLSHandshaker = &tlsHandshakerLogger{}
@@ -233,18 +233,18 @@ var _ TLSHandshaker = &tlsHandshakerLogger{}
 func (h *tlsHandshakerLogger) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {
-	h.Logger.Debugf(
+	h.DebugLogger.Debugf(
 		"tls {sni=%s next=%+v}...", config.ServerName, config.NextProtos)
 	start := time.Now()
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	elapsed := time.Since(start)
 	if err != nil {
-		h.Logger.Debugf(
+		h.DebugLogger.Debugf(
 			"tls {sni=%s next=%+v}... %s in %s", config.ServerName,
 			config.NextProtos, err, elapsed)
 		return nil, tls.ConnectionState{}, err
 	}
-	h.Logger.Debugf(
+	h.DebugLogger.Debugf(
 		"tls {sni=%s next=%+v}... ok in %s {next=%s cipher=%s v=%s}",
 		config.ServerName, config.NextProtos, elapsed, state.NegotiatedProtocol,
 		TLSCipherSuiteString(state.CipherSuite),

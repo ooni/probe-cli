@@ -103,7 +103,7 @@ func (c *udpLikeConnDB) Close() error {
 // address containing a domain name will fail. This QUICDialer will
 // save any event into the WritableDB. Any QUICConn created by it will
 // likewise save any event into the WritableDB.
-func (mx *Measurer) NewQUICDialerWithoutResolver(db WritableDB, logger Logger) QUICDialer {
+func (mx *Measurer) NewQUICDialerWithoutResolver(db WritableDB, logger model.Logger) QUICDialer {
 	return &quicDialerDB{db: db, logger: logger, begin: mx.Begin}
 }
 
@@ -111,7 +111,7 @@ type quicDialerDB struct {
 	netxlite.QUICDialer
 	begin  time.Time
 	db     WritableDB
-	logger Logger
+	logger model.Logger
 }
 
 func (qh *quicDialerDB) DialContext(ctx context.Context, network, address string,

@@ -7,6 +7,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 )
 
@@ -67,7 +68,7 @@ func (r *Resolver) byteCounter() *bytecounter.Counter {
 }
 
 // logger returns the configured logger or a default
-func (r *Resolver) logger() Logger {
+func (r *Resolver) logger() model.Logger {
 	if r.Logger != nil {
 		return r.Logger
 	}

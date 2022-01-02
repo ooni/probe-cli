@@ -21,6 +21,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -34,7 +35,7 @@ type Measurer struct {
 	HTTPClient HTTPClient
 
 	// Logger is the MANDATORY logger to use.
-	Logger Logger
+	Logger model.Logger
 
 	// MeasureURLHelper is the OPTIONAL test helper to use when
 	// we're measuring using the MeasureURL function. If this field

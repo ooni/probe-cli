@@ -7,6 +7,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -20,15 +21,6 @@ type Dialer interface {
 type Resolver interface {
 	// LookupHost behaves like net.Resolver.LookupHost.
 	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
-}
-
-// Logger is the interface we expect from a logger.
-type Logger interface {
-	// Debugf formats and emits a debug message.
-	Debugf(format string, v ...interface{})
-
-	// Debug emits a debug message.
-	Debug(msg string)
 }
 
 // Config contains the settings for New.
@@ -58,7 +50,7 @@ type Config struct {
 
 	// Logger is the optional logger. If not set, there
 	// will be no logging from the new dialer.
-	Logger Logger
+	Logger model.DebugLogger
 
 	// ProxyURL is the optional proxy URL.
 	ProxyURL *url.URL
@@ -73,8 +65,8 @@ func New(config *Config, resolver Resolver) Dialer {
 	d = &errorsx.ErrorWrapperDialer{Dialer: d}
 	if config.Logger != nil {
 		d = &netxlite.DialerLogger{
-			Dialer: netxlite.NewDialerLegacyAdapter(d),
-			Logger: config.Logger,
+			Dialer:      netxlite.NewDialerLegacyAdapter(d),
+			DebugLogger: config.Logger,
 		}
 	}
 	if config.DialSaver != nil {

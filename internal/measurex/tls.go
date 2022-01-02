@@ -14,6 +14,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -28,7 +29,7 @@ func (mx *Measurer) WrapTLSHandshaker(db WritableDB, thx netxlite.TLSHandshaker)
 
 // NewTLSHandshakerStdlib creates a new TLS handshaker that
 // saves results into the DB and uses the stdlib for TLS.
-func (mx *Measurer) NewTLSHandshakerStdlib(db WritableDB, logger Logger) TLSHandshaker {
+func (mx *Measurer) NewTLSHandshakerStdlib(db WritableDB, logger model.Logger) TLSHandshaker {
 	return mx.WrapTLSHandshaker(db, netxlite.NewTLSHandshakerStdlib(logger))
 }
 

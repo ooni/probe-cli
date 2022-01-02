@@ -37,7 +37,7 @@ var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
 // NewResolverStdlib creates a new Resolver by combining WrapResolver
 // with an internal "system" resolver type.
-func NewResolverStdlib(logger Logger) Resolver {
+func NewResolverStdlib(logger model.DebugLogger) Resolver {
 	return WrapResolver(logger, &resolverSystem{})
 }
 
@@ -50,7 +50,7 @@ func NewResolverStdlib(logger Logger) Resolver {
 // - dialer is the dialer to create and connect UDP conns
 //
 // - address is the server address (e.g., 1.1.1.1:53)
-func NewResolverUDP(logger Logger, dialer model.Dialer, address string) Resolver {
+func NewResolverUDP(logger model.DebugLogger, dialer model.Dialer, address string) Resolver {
 	return WrapResolver(logger, NewSerialResolver(
 		NewDNSOverUDP(dialer, address),
 	))
@@ -72,7 +72,7 @@ func NewResolverUDP(logger Logger, dialer model.Dialer, address string) Resolver
 // see https://github.com/ooni/probe/issues/1726).
 //
 // This is a low-level factory. Use only if out of alternatives.
-func WrapResolver(logger Logger, resolver Resolver) Resolver {
+func WrapResolver(logger model.DebugLogger, resolver Resolver) Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{
 			Resolver: &resolverShortCircuitIPAddr{
@@ -153,7 +153,7 @@ func (r *resolverSystem) LookupHTTPS(
 // resolverLogger is a resolver that emits events
 type resolverLogger struct {
 	Resolver
-	Logger Logger
+	Logger model.DebugLogger
 }
 
 var _ Resolver = &resolverLogger{}

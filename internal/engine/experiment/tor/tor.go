@@ -327,7 +327,7 @@ func maybeScrubbingLogger(input model.Logger, kt keytarget) model.Logger {
 	if !kt.private() {
 		return input
 	}
-	return &scrubber.Logger{UnderlyingLogger: input}
+	return &scrubber.Logger{Logger: input}
 }
 
 func (rc *resultsCollector) defaultFlexibleConnect(

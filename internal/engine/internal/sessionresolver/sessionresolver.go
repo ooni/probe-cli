@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -67,7 +68,7 @@ type Resolver struct {
 
 	// Logger is the optional logger you want us to use
 	// to emit log messages.
-	Logger Logger
+	Logger model.Logger
 
 	// ProxyURL is the optional URL of the socks5 proxy
 	// we should be using. If not set, then we WON'T use
