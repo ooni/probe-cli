@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // DNSOverHTTPS is a DNS-over-HTTPS DNSTransport.
@@ -89,4 +90,4 @@ func (t *DNSOverHTTPS) CloseIdleConnections() {
 	t.Client.CloseIdleConnections()
 }
 
-var _ DNSTransport = &DNSOverHTTPS{}
+var _ model.DNSTransport = &DNSOverHTTPS{}

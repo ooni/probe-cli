@@ -1,6 +1,9 @@
 package resolver
 
-import "github.com/ooni/probe-cli/v3/internal/netxlite"
+import (
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+)
 
 // Variables that other packages expect to find here but have been
 // moved into the internal/netxlite package.
@@ -21,7 +24,7 @@ type (
 	DNSOverUDP      = netxlite.DNSOverUDP
 	MiekgEncoder    = netxlite.DNSEncoderMiekg
 	MiekgDecoder    = netxlite.DNSDecoderMiekg
-	RoundTripper    = netxlite.DNSTransport
+	RoundTripper    = model.DNSTransport
 	SerialResolver  = netxlite.SerialResolver
 	Dialer          = netxlite.Dialer
 	DialContextFunc = netxlite.DialContextFunc

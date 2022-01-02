@@ -7,6 +7,8 @@ import (
 	"math"
 	"net"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // DialContextFunc is the type of net.Dialer.DialContext.
@@ -108,4 +110,4 @@ func (t *DNSOverTCP) CloseIdleConnections() {
 	// nothing to do
 }
 
-var _ DNSTransport = &DNSOverTCP{}
+var _ model.DNSTransport = &DNSOverTCP{}

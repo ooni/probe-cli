@@ -3,6 +3,8 @@ package netxlite
 import (
 	"context"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // DNSOverUDP is a DNS-over-UDP DNSTransport.
@@ -66,4 +68,4 @@ func (t *DNSOverUDP) CloseIdleConnections() {
 	// nothing to do
 }
 
-var _ DNSTransport = &DNSOverUDP{}
+var _ model.DNSTransport = &DNSOverUDP{}
