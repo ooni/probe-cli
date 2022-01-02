@@ -12,48 +12,20 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// QUICListener listens for QUIC connections.
-type QUICListener interface {
-	// Listen creates a new listening UDPLikeConn.
-	Listen(addr *net.UDPAddr) (model.UDPLikeConn, error)
-}
-
 // NewQUICListener creates a new QUICListener using the standard
 // library to create listening UDP sockets.
-func NewQUICListener() QUICListener {
+func NewQUICListener() model.QUICListener {
 	return &quicListenerErrWrapper{&quicListenerStdlib{}}
 }
 
 // quicListenerStdlib is a QUICListener using the standard library.
 type quicListenerStdlib struct{}
 
-var _ QUICListener = &quicListenerStdlib{}
+var _ model.QUICListener = &quicListenerStdlib{}
 
 // Listen implements QUICListener.Listen.
 func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	return TProxy.ListenUDP("udp", addr)
-}
-
-// QUICDialer dials QUIC sessions.
-type QUICDialer interface {
-	// DialContext establishes a new QUIC session using the given
-	// network and address. The tlsConfig and the quicConfig arguments
-	// MUST NOT be nil. Returns either the session or an error.
-	//
-	// Recommended tlsConfig setup:
-	//
-	// - set ServerName to be the SNI;
-	//
-	// - set RootCAs to NewDefaultCertPool();
-	//
-	// - set NextProtos to []string{"h3"}.
-	//
-	// Typically, you want to pass `&quic.Config{}` as quicConfig.
-	DialContext(ctx context.Context, network, address string,
-		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error)
-
-	// CloseIdleConnections closes idle connections, if any.
-	CloseIdleConnections()
 }
 
 // NewQUICDialerWithResolver returns a QUICDialer using the given
@@ -77,8 +49,8 @@ type QUICDialer interface {
 // 6. if a dialer wraps a resolver, the dialer will forward
 // the CloseIdleConnection call to its resolver (which is
 // instrumental to manage a DoH resolver connections properly).
-func NewQUICDialerWithResolver(listener QUICListener,
-	logger model.DebugLogger, resolver model.Resolver) QUICDialer {
+func NewQUICDialerWithResolver(listener model.QUICListener,
+	logger model.DebugLogger, resolver model.Resolver) model.QUICDialer {
 	return &quicDialerLogger{
 		Dialer: &quicDialerResolver{
 			Dialer: &quicDialerLogger{
@@ -99,14 +71,14 @@ func NewQUICDialerWithResolver(listener QUICListener,
 // except that there is no configured resolver. So, if you pass in
 // an address containing a domain name, the dial will fail with
 // the ErrNoResolver failure.
-func NewQUICDialerWithoutResolver(listener QUICListener, logger model.DebugLogger) QUICDialer {
+func NewQUICDialerWithoutResolver(listener model.QUICListener, logger model.DebugLogger) model.QUICDialer {
 	return NewQUICDialerWithResolver(listener, logger, &nullResolver{})
 }
 
 // quicDialerQUICGo dials using the lucas-clemente/quic-go library.
 type quicDialerQUICGo struct {
 	// QUICListener is the underlying QUICListener to use.
-	QUICListener QUICListener
+	QUICListener model.QUICListener
 
 	// mockDialEarlyContext allows to mock quic.DialEarlyContext.
 	mockDialEarlyContext func(ctx context.Context, pconn net.PacketConn,
@@ -114,7 +86,7 @@ type quicDialerQUICGo struct {
 		quicConfig *quic.Config) (quic.EarlySession, error)
 }
 
-var _ QUICDialer = &quicDialerQUICGo{}
+var _ model.QUICDialer = &quicDialerQUICGo{}
 
 // errInvalidIP indicates that a string is not a valid IP.
 var errInvalidIP = errors.New("netxlite: invalid IP")
@@ -213,13 +185,13 @@ func (sess *quicSessionOwnsConn) CloseWithError(
 // to resolve a domain name to IP addrs.
 type quicDialerResolver struct {
 	// Dialer is the underlying QUICDialer.
-	Dialer QUICDialer
+	Dialer model.QUICDialer
 
 	// Resolver is the underlying Resolver.
 	Resolver model.Resolver
 }
 
-var _ QUICDialer = &quicDialerResolver{}
+var _ model.QUICDialer = &quicDialerResolver{}
 
 // DialContext implements QUICDialer.DialContext. This function
 // will apply the following TLS defaults:
@@ -281,7 +253,7 @@ func (d *quicDialerResolver) CloseIdleConnections() {
 // quicDialerLogger is a dialer with logging.
 type quicDialerLogger struct {
 	// Dialer is the underlying QUIC dialer.
-	Dialer QUICDialer
+	Dialer model.QUICDialer
 
 	// Logger is the underlying logger.
 	Logger model.DebugLogger
@@ -295,7 +267,7 @@ type quicDialerLogger struct {
 	operationSuffix string
 }
 
-var _ QUICDialer = &quicDialerLogger{}
+var _ model.QUICDialer = &quicDialerLogger{}
 
 // DialContext implements QUICContextDialer.DialContext.
 func (d *quicDialerLogger) DialContext(
@@ -318,7 +290,7 @@ func (d *quicDialerLogger) CloseIdleConnections() {
 }
 
 // NewSingleUseQUICDialer is like NewSingleUseDialer but for QUIC.
-func NewSingleUseQUICDialer(sess quic.EarlySession) QUICDialer {
+func NewSingleUseQUICDialer(sess quic.EarlySession) model.QUICDialer {
 	return &quicDialerSingleUse{sess: sess}
 }
 
@@ -328,7 +300,7 @@ type quicDialerSingleUse struct {
 	sess quic.EarlySession
 }
 
-var _ QUICDialer = &quicDialerSingleUse{}
+var _ model.QUICDialer = &quicDialerSingleUse{}
 
 // DialContext implements QUICDialer.DialContext.
 func (s *quicDialerSingleUse) DialContext(
@@ -352,10 +324,10 @@ func (s *quicDialerSingleUse) CloseIdleConnections() {
 // quicListenerErrWrapper is a QUICListener that wraps errors.
 type quicListenerErrWrapper struct {
 	// QUICListener is the underlying listener.
-	QUICListener
+	model.QUICListener
 }
 
-var _ QUICListener = &quicListenerErrWrapper{}
+var _ model.QUICListener = &quicListenerErrWrapper{}
 
 // Listen implements QUICListener.Listen.
 func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
@@ -403,7 +375,7 @@ func (c *quicErrWrapperUDPLikeConn) Close() error {
 
 // quicDialerErrWrapper is a dialer that performs quic err wrapping
 type quicDialerErrWrapper struct {
-	QUICDialer
+	model.QUICDialer
 }
 
 // DialContext implements ContextDialer.DialContext

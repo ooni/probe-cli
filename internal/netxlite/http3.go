@@ -15,7 +15,7 @@ import (
 // an http3.RoundTripper. This is necessary because the
 // http3.RoundTripper does not support DialContext.
 type http3Dialer struct {
-	QUICDialer
+	model.QUICDialer
 }
 
 // dial is like QUICContextDialer.DialContext but without context.
@@ -34,7 +34,7 @@ type http3RoundTripper interface {
 // http3Transport is an HTTPTransport using the http3 protocol.
 type http3Transport struct {
 	child  http3RoundTripper
-	dialer QUICDialer
+	dialer model.QUICDialer
 }
 
 var _ HTTPTransport = &http3Transport{}
@@ -54,7 +54,7 @@ func (txp *http3Transport) CloseIdleConnections() {
 // dialer argument MUST NOT be nil. If the tlsConfig argument is nil,
 // then the code will use the default TLS configuration.
 func NewHTTP3Transport(
-	logger model.DebugLogger, dialer QUICDialer, tlsConfig *tls.Config) HTTPTransport {
+	logger model.DebugLogger, dialer model.QUICDialer, tlsConfig *tls.Config) HTTPTransport {
 	return &httpTransportLogger{
 		HTTPTransport: &http3Transport{
 			child: &http3.RoundTripper{

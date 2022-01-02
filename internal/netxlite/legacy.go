@@ -160,7 +160,7 @@ type QUICContextDialer interface {
 
 // NewQUICDialerFromContextDialerAdapter creates a new
 // QUICDialer from a QUICContextDialer.
-func NewQUICDialerFromContextDialerAdapter(d QUICContextDialer) QUICDialer {
+func NewQUICDialerFromContextDialerAdapter(d QUICContextDialer) model.QUICDialer {
 	return &QUICContextDialerAdapter{d}
 }
 

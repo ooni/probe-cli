@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"net"
 	"syscall"
+
+	"github.com/lucas-clemente/quic-go"
 )
 
 //
@@ -99,6 +101,34 @@ type HTTPSSvc struct {
 
 	// IPv6 contains the IPv6 hints (which may be empty).
 	IPv6 []string
+}
+
+// QUICListener listens for QUIC connections.
+type QUICListener interface {
+	// Listen creates a new listening UDPLikeConn.
+	Listen(addr *net.UDPAddr) (UDPLikeConn, error)
+}
+
+// QUICDialer dials QUIC sessions.
+type QUICDialer interface {
+	// DialContext establishes a new QUIC session using the given
+	// network and address. The tlsConfig and the quicConfig arguments
+	// MUST NOT be nil. Returns either the session or an error.
+	//
+	// Recommended tlsConfig setup:
+	//
+	// - set ServerName to be the SNI;
+	//
+	// - set RootCAs to NewDefaultCertPool();
+	//
+	// - set NextProtos to []string{"h3"}.
+	//
+	// Typically, you want to pass `&quic.Config{}` as quicConfig.
+	DialContext(ctx context.Context, network, address string,
+		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error)
+
+	// CloseIdleConnections closes idle connections, if any.
+	CloseIdleConnections()
 }
 
 // Resolver performs domain name resolutions.
