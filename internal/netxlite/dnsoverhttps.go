@@ -14,7 +14,7 @@ import (
 // DNSOverHTTPS is a DNS-over-HTTPS DNSTransport.
 type DNSOverHTTPS struct {
 	// Client is the MANDATORY http client to use.
-	Client HTTPClient
+	Client model.HTTPClient
 
 	// URL is the MANDATORY URL of the DNS-over-HTTPS server.
 	URL string
@@ -31,14 +31,14 @@ type DNSOverHTTPS struct {
 // - client in http.Client-like type (e.g., http.DefaultClient);
 //
 // - URL is the DoH resolver URL (e.g., https://1.1.1.1/dns-query).
-func NewDNSOverHTTPS(client HTTPClient, URL string) *DNSOverHTTPS {
+func NewDNSOverHTTPS(client model.HTTPClient, URL string) *DNSOverHTTPS {
 	return NewDNSOverHTTPSWithHostOverride(client, URL, "")
 }
 
 // NewDNSOverHTTPSWithHostOverride creates a new DNSOverHTTPS
 // with the given Host header override.
 func NewDNSOverHTTPSWithHostOverride(
-	client HTTPClient, URL, hostOverride string) *DNSOverHTTPS {
+	client model.HTTPClient, URL, hostOverride string) *DNSOverHTTPS {
 	return &DNSOverHTTPS{Client: client, URL: URL, HostOverride: hostOverride}
 }
 

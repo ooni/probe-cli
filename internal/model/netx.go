@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"net"
+	"net/http"
 	"syscall"
 
 	"github.com/lucas-clemente/quic-go"
@@ -88,6 +89,21 @@ type Dialer interface {
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 
 	// CloseIdleConnections closes idle connections, if any.
+	CloseIdleConnections()
+}
+
+// HTTPClient is an http.Client-like interface.
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+	CloseIdleConnections()
+}
+
+// HTTPTransport is an http.Transport-like structure.
+type HTTPTransport interface {
+	// RoundTrip performs the HTTP round trip.
+	RoundTrip(req *http.Request) (*http.Response, error)
+
+	// CloseIdleConnections closes idle connections.
 	CloseIdleConnections()
 }
 

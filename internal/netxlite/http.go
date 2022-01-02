@@ -11,18 +11,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// HTTPTransport is an http.Transport-like structure.
-type HTTPTransport interface {
-	// RoundTrip performs the HTTP round trip.
-	RoundTrip(req *http.Request) (*http.Response, error)
-
-	// CloseIdleConnections closes idle connections.
-	CloseIdleConnections()
-}
-
 // httpTransportErrWrapper is an HTTPTransport with error wrapping.
 type httpTransportErrWrapper struct {
-	HTTPTransport
+	model.HTTPTransport
 }
 
 func (txp *httpTransportErrWrapper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -36,13 +27,13 @@ func (txp *httpTransportErrWrapper) RoundTrip(req *http.Request) (*http.Response
 // httpTransportLogger is an HTTPTransport with logging.
 type httpTransportLogger struct {
 	// HTTPTransport is the underlying HTTP transport.
-	HTTPTransport HTTPTransport
+	HTTPTransport model.HTTPTransport
 
 	// Logger is the underlying logger.
 	Logger model.DebugLogger
 }
 
-var _ HTTPTransport = &httpTransportLogger{}
+var _ model.HTTPTransport = &httpTransportLogger{}
 
 func (txp *httpTransportLogger) RoundTrip(req *http.Request) (*http.Response, error) {
 	txp.Logger.Debugf("> %s %s", req.Method, req.URL.String())
@@ -74,7 +65,7 @@ func (txp *httpTransportLogger) CloseIdleConnections() {
 // httpTransportConnectionsCloser is an HTTPTransport that
 // correctly forwards CloseIdleConnections calls.
 type httpTransportConnectionsCloser struct {
-	HTTPTransport
+	model.HTTPTransport
 	model.Dialer
 	model.TLSDialer
 }
@@ -90,7 +81,7 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 //
 // This factory and NewHTTPTransportStdlib are the recommended
 // ways of creating a new HTTPTransport.
-func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer model.TLSDialer) HTTPTransport {
+func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer model.TLSDialer) model.HTTPTransport {
 	return WrapHTTPTransport(logger, NewOOHTTPBaseTransport(dialer, tlsDialer))
 }
 
@@ -118,7 +109,7 @@ func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer m
 // way in which we perform measurements.
 //
 // This is a low level factory. Consider not using it directly.
-func NewOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) HTTPTransport {
+func NewOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) model.HTTPTransport {
 	// Using oohttp to support any TLS library.
 	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
 
@@ -159,7 +150,7 @@ func NewOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) HTTP
 // and guarantees that returned errors are wrapped.
 //
 // This is a low level factory. Consider not using it directly.
-func WrapHTTPTransport(logger model.DebugLogger, txp HTTPTransport) HTTPTransport {
+func WrapHTTPTransport(logger model.DebugLogger, txp model.HTTPTransport) model.HTTPTransport {
 	return &httpTransportLogger{
 		HTTPTransport: &httpTransportErrWrapper{txp},
 		Logger:        logger,
@@ -260,25 +251,19 @@ func (c *httpTLSConnWithReadTimeout) Read(b []byte) (int, error) {
 //
 // This factory and NewHTTPTransport are the recommended
 // ways of creating a new HTTPTransport.
-func NewHTTPTransportStdlib(logger model.DebugLogger) HTTPTransport {
+func NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
 	dialer := NewDialerWithResolver(logger, NewResolverStdlib(logger))
 	tlsDialer := NewTLSDialer(dialer, NewTLSHandshakerStdlib(logger))
 	return NewHTTPTransport(logger, dialer, tlsDialer)
 }
 
-// HTTPClient is an http.Client-like interface.
-type HTTPClient interface {
-	Do(req *http.Request) (*http.Response, error)
-	CloseIdleConnections()
-}
-
 // WrapHTTPClient wraps an HTTP client to add error wrapping capabilities.
-func WrapHTTPClient(clnt HTTPClient) HTTPClient {
+func WrapHTTPClient(clnt model.HTTPClient) model.HTTPClient {
 	return &httpClientErrWrapper{clnt}
 }
 
 type httpClientErrWrapper struct {
-	HTTPClient
+	model.HTTPClient
 }
 
 func (c *httpClientErrWrapper) Do(req *http.Request) (*http.Response, error) {

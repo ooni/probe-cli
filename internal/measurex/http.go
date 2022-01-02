@@ -33,13 +33,10 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-// HTTPTransport is the HTTP transport type we use.
-type HTTPTransport = netxlite.HTTPTransport
-
 // WrapHTTPTransport creates a new transport that saves
 // HTTP events into the WritableDB.
 func (mx *Measurer) WrapHTTPTransport(
-	db WritableDB, txp HTTPTransport) *HTTPTransportDB {
+	db WritableDB, txp model.HTTPTransport) *HTTPTransportDB {
 	return WrapHTTPTransport(mx.Begin, db, txp)
 }
 
@@ -49,7 +46,7 @@ func (mx *Measurer) WrapHTTPTransport(
 const httpMaxBodySnapshot = 1 << 11
 
 func WrapHTTPTransport(
-	begin time.Time, db WritableDB, txp HTTPTransport) *HTTPTransportDB {
+	begin time.Time, db WritableDB, txp model.HTTPTransport) *HTTPTransportDB {
 	return &HTTPTransportDB{
 		HTTPTransport:       txp,
 		Begin:               begin,
@@ -89,7 +86,7 @@ func (mx *Measurer) NewHTTPTransportWithQUICSess(
 // you can construct it manually. In which case, do not modify
 // public fields during usage, since this may cause a data race.
 type HTTPTransportDB struct {
-	netxlite.HTTPTransport
+	model.HTTPTransport
 
 	// Begin is when we started measuring.
 	Begin time.Time
@@ -207,14 +204,14 @@ type HTTPClient interface {
 // NewHTTPClient creates a new HTTPClient instance that
 // does not automatically perform redirects.
 func NewHTTPClientWithoutRedirects(
-	db WritableDB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
+	db WritableDB, jar http.CookieJar, txp model.HTTPTransport) HTTPClient {
 	return newHTTPClient(db, jar, txp, http.ErrUseLastResponse)
 }
 
 // NewHTTPClientWithRedirects creates a new HTTPClient
 // instance that automatically perform redirects.
 func NewHTTPClientWithRedirects(
-	db WritableDB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
+	db WritableDB, jar http.CookieJar, txp model.HTTPTransport) HTTPClient {
 	return newHTTPClient(db, jar, txp, nil)
 }
 
@@ -244,7 +241,7 @@ type HTTPRedirectEvent struct {
 var ErrHTTPTooManyRedirects = errors.New("stopped after 10 redirects")
 
 func newHTTPClient(db WritableDB, cookiejar http.CookieJar,
-	txp HTTPTransport, defaultErr error) HTTPClient {
+	txp model.HTTPTransport, defaultErr error) HTTPClient {
 	return netxlite.WrapHTTPClient(&http.Client{
 		Transport: txp,
 		Jar:       cookiejar,
