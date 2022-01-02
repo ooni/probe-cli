@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 // TProxyPolicy is a policy for TPRoxy.
@@ -115,7 +115,7 @@ type TProxy struct {
 	httpListener net.Listener
 
 	// listenUDP allows overriding net.ListenUDP calls in tests
-	listenUDP func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error)
+	listenUDP func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error)
 
 	// logger is the underlying logger to use.
 	logger Logger
@@ -137,7 +137,7 @@ func newTProxy(config *TProxyConfig, logger Logger, dnsListenerAddr,
 	tlsListenerAddr, httpListenerAddr string) (*TProxy, error) {
 	p := &TProxy{
 		config: config,
-		listenUDP: func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+		listenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
 			return net.ListenUDP(network, laddr)
 		},
 		logger: logger,
@@ -198,7 +198,7 @@ func (p *TProxy) Close() error {
 //
 
 // ListenUDP implements netxlite.TProxy.ListenUDP.
-func (p *TProxy) ListenUDP(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+func (p *TProxy) ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
 	pconn, err := p.listenUDP(network, laddr)
 	if err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ func (p *TProxy) ListenUDP(network string, laddr *net.UDPAddr) (quicx.UDPLikeCon
 // tProxyUDPLikeConn is a TProxy-aware UDPLikeConn.
 type tProxyUDPLikeConn struct {
 	// UDPLikeConn is the underlying conn type.
-	quicx.UDPLikeConn
+	model.UDPLikeConn
 
 	// proxy refers to the TProxy.
 	proxy *TProxy

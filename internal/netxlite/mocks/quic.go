@@ -8,16 +8,16 @@ import (
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // QUICListener is a mockable netxlite.QUICListener.
 type QUICListener struct {
-	MockListen func(addr *net.UDPAddr) (quicx.UDPLikeConn, error)
+	MockListen func(addr *net.UDPAddr) (model.UDPLikeConn, error)
 }
 
 // Listen calls MockListen.
-func (ql *QUICListener) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+func (ql *QUICListener) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	return ql.MockListen(addr)
 }
 
@@ -153,7 +153,7 @@ type QUICUDPLikeConn struct {
 	MockSetReadBuffer    func(n int) error
 }
 
-var _ quicx.UDPLikeConn = &QUICUDPLikeConn{}
+var _ model.UDPLikeConn = &QUICUDPLikeConn{}
 
 // WriteTo calls MockWriteTo.
 func (c *QUICUDPLikeConn) WriteTo(p []byte, addr net.Addr) (int, error) {

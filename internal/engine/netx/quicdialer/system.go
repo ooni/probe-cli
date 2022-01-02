@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
 	// Listen creates a new listening UDPConn.
-	Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error)
+	Listen(addr *net.UDPAddr) (model.UDPLikeConn, error)
 }
 
 // QUICListenerSaver is a QUICListener that also implements saving events.
@@ -25,7 +25,7 @@ type QUICListenerSaver struct {
 }
 
 // Listen implements QUICListener.Listen.
-func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	pconn, err := qls.QUICListener.Listen(addr)
 	if err != nil {
 		return nil, err
@@ -37,11 +37,11 @@ func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, erro
 }
 
 type saverUDPConn struct {
-	quicx.UDPLikeConn
+	model.UDPLikeConn
 	saver *trace.Saver
 }
 
-var _ quicx.UDPLikeConn = &saverUDPConn{}
+var _ model.UDPLikeConn = &saverUDPConn{}
 
 func (c *saverUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	start := time.Now()

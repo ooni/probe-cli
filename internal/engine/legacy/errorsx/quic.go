@@ -6,8 +6,8 @@ import (
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 // QUICContextDialer is a dialer for QUIC using Context.
@@ -22,7 +22,7 @@ type QUICContextDialer interface {
 // QUICListener listens for QUIC connections.
 type QUICListener interface {
 	// Listen creates a new listening UDPConn.
-	Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error)
+	Listen(addr *net.UDPAddr) (model.UDPLikeConn, error)
 }
 
 // ErrorWrapperQUICListener is a QUICListener that wraps errors.
@@ -34,7 +34,7 @@ type ErrorWrapperQUICListener struct {
 var _ QUICListener = &ErrorWrapperQUICListener{}
 
 // Listen implements QUICListener.Listen.
-func (qls *ErrorWrapperQUICListener) Listen(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+func (qls *ErrorWrapperQUICListener) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	pconn, err := qls.QUICListener.Listen(addr)
 	if err != nil {
 		return nil, SafeErrWrapperBuilder{
@@ -45,15 +45,15 @@ func (qls *ErrorWrapperQUICListener) Listen(addr *net.UDPAddr) (quicx.UDPLikeCon
 	return &errorWrapperUDPConn{pconn}, nil
 }
 
-// errorWrapperUDPConn is a quicx.UDPLikeConn that wraps errors.
+// errorWrapperUDPConn is a model.UDPLikeConn that wraps errors.
 type errorWrapperUDPConn struct {
 	// UDPLikeConn is the underlying conn.
-	quicx.UDPLikeConn
+	model.UDPLikeConn
 }
 
-var _ quicx.UDPLikeConn = &errorWrapperUDPConn{}
+var _ model.UDPLikeConn = &errorWrapperUDPConn{}
 
-// WriteTo implements quicx.UDPLikeConn.WriteTo.
+// WriteTo implements model.UDPLikeConn.WriteTo.
 func (c *errorWrapperUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	count, err := c.UDPLikeConn.WriteTo(p, addr)
 	if err != nil {
@@ -65,7 +65,7 @@ func (c *errorWrapperUDPConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	return count, nil
 }
 
-// ReadFrom implements quicx.UDPLikeConn.ReadFrom.
+// ReadFrom implements model.UDPLikeConn.ReadFrom.
 func (c *errorWrapperUDPConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	n, addr, err := c.UDPLikeConn.ReadFrom(b)
 	if err != nil {

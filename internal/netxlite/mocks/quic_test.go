@@ -12,14 +12,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestQUICListenerListen(t *testing.T) {
 	t.Run("Listen", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		ql := &QUICListener{
-			MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return nil, expected
 			},
 		}

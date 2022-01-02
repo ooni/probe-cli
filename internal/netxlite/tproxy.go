@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // TProxable is the fundamental type used by the netxlite package to perform
@@ -16,8 +16,8 @@ import (
 // policies. The implementation of this functionality is not part of netxlite:
 // here we only have the basic mechanism to make this possible.
 type TProxable interface {
-	// ListenUDP creates a new quicx.UDPLikeConn conn.
-	ListenUDP(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error)
+	// ListenUDP creates a new model.UDPLikeConn conn.
+	ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error)
 
 	// LookupHost lookups a domain using the stdlib resolver.
 	LookupHost(ctx context.Context, domain string) ([]string, error)
@@ -33,7 +33,7 @@ type TProxyDialer interface {
 }
 
 // TProxy is the fundamental variable controlling how netxlite creates
-// net.Conn and quicx.UDPLikeConn, as well as how it uses the stdlib
+// net.Conn and model.UDPLikeConn, as well as how it uses the stdlib
 // resolver. By modifying this variable, you can effectively transparently
 // proxy netxlite (and hence OONI) activities to other services. This is
 // quite convenient when performing quality assurance tests.
@@ -44,7 +44,7 @@ var TProxy TProxable = &TProxyStdlib{}
 type TProxyStdlib struct{}
 
 // ListenUDP calls net.ListenUDP.
-func (*TProxyStdlib) ListenUDP(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+func (*TProxyStdlib) ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
 	return net.ListenUDP(network, laddr)
 }
 

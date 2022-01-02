@@ -9,11 +9,11 @@ import (
 	"sync"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // UDPLikeConn is the kind of UDP socket used by QUIC.
-type UDPLikeConn = quicx.UDPLikeConn
+type UDPLikeConn = model.UDPLikeConn
 
 // QUICListener listens for QUIC connections.
 type QUICListener interface {

@@ -1,10 +1,13 @@
-// Package quicx contains lucas-clemente/quic-go extensions.
-package quicx
+package model
 
 import (
 	"net"
 	"syscall"
 )
+
+//
+// Network extensions
+//
 
 // UDPLikeConn is a net.PacketConn with some extra functions
 // required to convince the QUIC library (lucas-clemente/quic-go)

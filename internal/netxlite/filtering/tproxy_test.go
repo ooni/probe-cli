@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 // tProxyDialerAdapter adapts a netxlite.TProxyDialer to be a netxlite.Dialer.
@@ -158,7 +158,7 @@ func TestTProxyQUIC(t *testing.T) {
 			}
 			defer proxy.Close()
 			var called bool
-			proxy.listenUDP = func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+			proxy.listenUDP = func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return &mocks.QUICUDPLikeConn{
 					MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 						called = true
@@ -195,7 +195,7 @@ func TestTProxyQUIC(t *testing.T) {
 			}
 			defer proxy.Close()
 			var called bool
-			proxy.listenUDP = func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+			proxy.listenUDP = func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return &mocks.QUICUDPLikeConn{
 					MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 						called = true
