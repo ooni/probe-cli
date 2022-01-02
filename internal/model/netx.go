@@ -100,6 +100,25 @@ type HTTPSSvc struct {
 	IPv6 []string
 }
 
+// Resolver performs domain name resolutions.
+type Resolver interface {
+	// LookupHost behaves like net.Resolver.LookupHost.
+	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
+
+	// Network returns the resolver type (e.g., system, dot, doh).
+	Network() string
+
+	// Address returns the resolver address (e.g., 8.8.8.8:53).
+	Address() string
+
+	// CloseIdleConnections closes idle connections, if any.
+	CloseIdleConnections()
+
+	// LookupHTTPS issues an HTTPS query for a domain.
+	LookupHTTPS(
+		ctx context.Context, domain string) (*HTTPSSvc, error)
+}
+
 // UDPLikeConn is a net.PacketConn with some extra functions
 // required to convince the QUIC library (lucas-clemente/quic-go)
 // to inflate the receive buffer of the connection.

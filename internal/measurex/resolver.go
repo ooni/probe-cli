@@ -15,23 +15,19 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// Resolver is the resolver type we use. This resolver will
-// store resolve events into the DB.
-type Resolver = netxlite.Resolver
-
 // WrapResolver creates a new Resolver that saves events into the WritableDB.
-func (mx *Measurer) WrapResolver(db WritableDB, r netxlite.Resolver) Resolver {
+func (mx *Measurer) WrapResolver(db WritableDB, r model.Resolver) model.Resolver {
 	return WrapResolver(mx.Begin, db, r)
 }
 
 // WrapResolver wraps a resolver.
-func WrapResolver(begin time.Time, db WritableDB, r netxlite.Resolver) Resolver {
+func WrapResolver(begin time.Time, db WritableDB, r model.Resolver) model.Resolver {
 	return &resolverDB{Resolver: r, db: db, begin: begin}
 }
 
 // NewResolverSystem creates a system resolver and then wraps
 // it using the WrapResolver function/
-func (mx *Measurer) NewResolverSystem(db WritableDB, logger model.Logger) Resolver {
+func (mx *Measurer) NewResolverSystem(db WritableDB, logger model.Logger) model.Resolver {
 	return mx.WrapResolver(db, netxlite.NewResolverStdlib(logger))
 }
 
@@ -45,7 +41,7 @@ func (mx *Measurer) NewResolverSystem(db WritableDB, logger model.Logger) Resolv
 // - logger is the logger;
 //
 // - address is the resolver address (e.g., "1.1.1.1:53").
-func (mx *Measurer) NewResolverUDP(db WritableDB, logger model.Logger, address string) Resolver {
+func (mx *Measurer) NewResolverUDP(db WritableDB, logger model.Logger, address string) model.Resolver {
 	return mx.WrapResolver(db, netxlite.WrapResolver(
 		logger, netxlite.NewSerialResolver(
 			mx.WrapDNSXRoundTripper(db, netxlite.NewDNSOverUDP(
@@ -56,7 +52,7 @@ func (mx *Measurer) NewResolverUDP(db WritableDB, logger model.Logger, address s
 }
 
 type resolverDB struct {
-	netxlite.Resolver
+	model.Resolver
 	begin time.Time
 	db    WritableDB
 }

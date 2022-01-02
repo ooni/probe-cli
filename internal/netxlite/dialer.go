@@ -11,7 +11,7 @@ import (
 )
 
 // NewDialerWithResolver calls WrapDialer for the stdlib dialer.
-func NewDialerWithResolver(logger model.DebugLogger, resolver Resolver) model.Dialer {
+func NewDialerWithResolver(logger model.DebugLogger, resolver model.Resolver) model.Dialer {
 	return WrapDialer(logger, resolver, &dialerSystem{})
 }
 
@@ -44,7 +44,7 @@ func NewDialerWithResolver(logger model.DebugLogger, resolver Resolver) model.Di
 //
 // In general, do not use WrapDialer directly but try to use
 // more high-level factories, e.g., NewDialerWithResolver.
-func WrapDialer(logger model.DebugLogger, resolver Resolver, dialer model.Dialer) model.Dialer {
+func WrapDialer(logger model.DebugLogger, resolver model.Resolver, dialer model.Dialer) model.Dialer {
 	return &dialerLogger{
 		Dialer: &dialerResolver{
 			Dialer: &dialerLogger{
@@ -97,7 +97,7 @@ func (d *dialerSystem) CloseIdleConnections() {
 // dialerResolver combines dialing with domain name resolution.
 type dialerResolver struct {
 	model.Dialer
-	Resolver
+	model.Resolver
 }
 
 var _ model.Dialer = &dialerResolver{}

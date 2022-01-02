@@ -52,7 +52,7 @@ type ResolverLegacy interface {
 
 // NewResolverLegacyAdapter adapts a ResolverLegacy to
 // become compatible with the Resolver definition.
-func NewResolverLegacyAdapter(reso ResolverLegacy) Resolver {
+func NewResolverLegacyAdapter(reso ResolverLegacy) model.Resolver {
 	return &ResolverLegacyAdapter{reso}
 }
 
@@ -61,7 +61,7 @@ type ResolverLegacyAdapter struct {
 	ResolverLegacy
 }
 
-var _ Resolver = &ResolverLegacyAdapter{}
+var _ model.Resolver = &ResolverLegacyAdapter{}
 
 type resolverLegacyNetworker interface {
 	Network() string

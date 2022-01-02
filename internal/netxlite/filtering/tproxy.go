@@ -106,7 +106,7 @@ type TProxy struct {
 	config *TProxyConfig
 
 	// dnsClient is the DNS client we'll internally use.
-	dnsClient netxlite.Resolver
+	dnsClient model.Resolver
 
 	// dnsListener is the DNS listener.
 	dnsListener DNSListener

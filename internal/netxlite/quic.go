@@ -78,7 +78,7 @@ type QUICDialer interface {
 // the CloseIdleConnection call to its resolver (which is
 // instrumental to manage a DoH resolver connections properly).
 func NewQUICDialerWithResolver(listener QUICListener,
-	logger model.DebugLogger, resolver Resolver) QUICDialer {
+	logger model.DebugLogger, resolver model.Resolver) QUICDialer {
 	return &quicDialerLogger{
 		Dialer: &quicDialerResolver{
 			Dialer: &quicDialerLogger{
@@ -216,7 +216,7 @@ type quicDialerResolver struct {
 	Dialer QUICDialer
 
 	// Resolver is the underlying Resolver.
-	Resolver Resolver
+	Resolver model.Resolver
 }
 
 var _ QUICDialer = &quicDialerResolver{}

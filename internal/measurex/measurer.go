@@ -86,7 +86,7 @@ func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *DNSMea
 
 // lookupHostForeign performs a LookupHost using a "foreign" resolver.
 func (mx *Measurer) lookupHostForeign(
-	ctx context.Context, domain string, r Resolver) *DNSMeasurement {
+	ctx context.Context, domain string, r model.Resolver) *DNSMeasurement {
 	const timeout = 4 * time.Second
 	ol := NewOperationLogger(mx.Logger, "LookupHost %s with %s", domain, r.Network())
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -159,7 +159,7 @@ func (mx *Measurer) LookupHTTPSSvcUDP(
 // lookupHTTPSSvcUDPForeign is like LookupHTTPSSvcUDP
 // except that it uses a "foreign" resolver.
 func (mx *Measurer) lookupHTTPSSvcUDPForeign(
-	ctx context.Context, domain string, r Resolver) *DNSMeasurement {
+	ctx context.Context, domain string, r model.Resolver) *DNSMeasurement {
 	const timeout = 4 * time.Second
 	ol := NewOperationLogger(mx.Logger, "LookupHTTPSvc %s with %s", domain, r.Address())
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -592,7 +592,7 @@ type ResolverInfo struct {
 
 	// ForeignResolver is only used when Network's
 	// value equals the ResolverForeign constant.
-	ForeignResolver Resolver
+	ForeignResolver model.Resolver
 }
 
 // LookupURLHostParallel performs an LookupHost-like operation for each

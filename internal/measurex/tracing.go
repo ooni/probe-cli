@@ -27,7 +27,7 @@ import (
 //
 // - handshake is the TLS handshaker to use
 func NewTracingHTTPTransport(logger model.Logger, begin time.Time, db WritableDB,
-	resolver Resolver, dialer model.Dialer, handshaker TLSHandshaker) *HTTPTransportDB {
+	resolver model.Resolver, dialer model.Dialer, handshaker TLSHandshaker) *HTTPTransportDB {
 	resolver = WrapResolver(begin, db, resolver)
 	dialer = netxlite.WrapDialer(logger, resolver, WrapDialer(begin, db, dialer))
 	tlsDialer := netxlite.NewTLSDialer(dialer, handshaker)
