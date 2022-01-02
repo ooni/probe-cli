@@ -17,10 +17,10 @@ import (
 // You should probably use NewSerialResolver to create a new instance.
 type SerialResolver struct {
 	// Encoder is the MANDATORY encoder to use.
-	Encoder DNSEncoder
+	Encoder model.DNSEncoder
 
 	// Decoder is the MANDATORY decoder to use.
-	Decoder DNSDecoder
+	Decoder model.DNSDecoder
 
 	// NumTimeouts is MANDATORY and counts the number of timeouts.
 	NumTimeouts *atomicx.Int64

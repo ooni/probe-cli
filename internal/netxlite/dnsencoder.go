@@ -1,23 +1,9 @@
 package netxlite
 
-import "github.com/miekg/dns"
-
-// The DNSEncoder encodes DNS queries to bytes
-type DNSEncoder interface {
-	// Encode transforms its arguments into a serialized DNS query.
-	//
-	// Arguments:
-	//
-	// - domain is the domain for the query (e.g., x.org);
-	//
-	// - qtype is the query type (e.g., dns.TypeA);
-	//
-	// - padding is whether to add padding to the query.
-	//
-	// On success, this function returns a valid byte array and
-	// a nil error. On failure, we have an error and the byte array is nil.
-	Encode(domain string, qtype uint16, padding bool) ([]byte, error)
-}
+import (
+	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
 
 // DNSEncoderMiekg uses github.com/miekg/dns to implement the Encoder.
 type DNSEncoderMiekg struct{}
@@ -60,4 +46,4 @@ func (e *DNSEncoderMiekg) Encode(domain string, qtype uint16, padding bool) ([]b
 	return query.Pack()
 }
 
-var _ DNSEncoder = &DNSEncoderMiekg{}
+var _ model.DNSEncoder = &DNSEncoderMiekg{}
