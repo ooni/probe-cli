@@ -1,4 +1,4 @@
-package model_test
+package model
 
 import (
 	"bytes"
@@ -6,12 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
 func TestMeasurementTargetMarshalJSON(t *testing.T) {
-	var mt model.MeasurementTarget
+	var mt MeasurementTarget
 	data, err := json.Marshal(mt)
 	if err != nil {
 		t.Fatal(err)
@@ -35,7 +33,7 @@ type fakeTestKeys struct {
 }
 
 func TestAddAnnotations(t *testing.T) {
-	m := &model.Measurement{}
+	m := &Measurement{}
 	m.AddAnnotations(map[string]string{
 		"foo": "bar",
 		"f":   "b",
@@ -68,8 +66,8 @@ type makeMeasurementConfig struct {
 	ResolverASN         string
 }
 
-func makeMeasurement(config makeMeasurementConfig) model.Measurement {
-	return model.Measurement{
+func makeMeasurement(config makeMeasurementConfig) Measurement {
+	return Measurement{
 		DataFormatVersion:    "0.3.0",
 		ID:                   "bdd20d7a-bba5-40dd-a111-9863d7908572",
 		MeasurementStartTime: "2018-11-01 15:33:20",
@@ -181,25 +179,25 @@ func TestScrubNoScrubbingRequired(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Count(data, []byte(model.Scrubbed)) > 0 {
+	if bytes.Count(data, []byte(Scrubbed)) > 0 {
 		t.Fatal("We should not see any scrubbing")
 	}
 }
 
 func TestScrubInvalidIP(t *testing.T) {
-	m := &model.Measurement{
+	m := &Measurement{
 		ProbeASN: "AS1234",
 		ProbeCC:  "IT",
 	}
 	err := m.Scrub("") // invalid IP
-	if !errors.Is(err, model.ErrInvalidProbeIP) {
+	if !errors.Is(err, ErrInvalidProbeIP) {
 		t.Fatal("not the error we expected")
 	}
 }
 
 func TestScrubMarshalError(t *testing.T) {
 	expected := errors.New("mocked error")
-	m := &model.Measurement{
+	m := &Measurement{
 		ProbeASN: "AS1234",
 		ProbeCC:  "IT",
 	}

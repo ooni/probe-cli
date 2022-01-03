@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/example"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestCreateAll(t *testing.T) {

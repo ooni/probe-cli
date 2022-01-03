@@ -69,7 +69,7 @@ The mockable package contains widely used mocks.
 The model package contains the data model used by OONI experiments.
 
 ```Go
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 
 ```
 

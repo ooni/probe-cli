@@ -3,7 +3,7 @@ package probeservices
 import (
 	"context"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 type checkInResult struct {

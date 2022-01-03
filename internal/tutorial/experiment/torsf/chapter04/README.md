@@ -30,7 +30,7 @@ As we have already seen, the `model` package defines the
 generic data model used by all experiments.
 
 ```Go
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 
 ```
 

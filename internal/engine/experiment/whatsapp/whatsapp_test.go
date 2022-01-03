@@ -14,7 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/whatsapp"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpfailure"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {

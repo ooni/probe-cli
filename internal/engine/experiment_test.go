@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestExperimentHonoursSharingDefaults(t *testing.T) {
