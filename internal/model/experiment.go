@@ -5,6 +5,11 @@ import (
 	"net/http"
 )
 
+//
+// Definition of experiment and types used by the
+// implemenation of all experiments.
+//
+
 // ExperimentSession is the experiment's view of a session.
 type ExperimentSession interface {
 	GetTestHelpersByName(name string) ([]OOAPIService, bool)

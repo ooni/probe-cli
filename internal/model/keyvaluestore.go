@@ -1,5 +1,9 @@
 package model
 
+//
+// Definition of a key-value store.
+//
+
 // KeyValueStore is a generic key-value store.
 type KeyValueStore interface {
 	// Get gets the value of the given key or returns an

@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+//
+// Definition of the result of a network measurement.
+//
+
 const (
 	// DefaultProbeIP is the default probe IP.
 	DefaultProbeIP = "127.0.0.1"
