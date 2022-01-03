@@ -152,7 +152,7 @@ func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
 // URL measurement flow implemented by measurex.
 type measurerMeasureURLHelper struct {
 	// Clnt is the MANDATORY client to use
-	Clnt measurex.HTTPClient
+	Clnt model.HTTPClient
 
 	// Logger is the MANDATORY Logger to use
 	Logger model.Logger

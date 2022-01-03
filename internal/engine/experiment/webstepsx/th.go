@@ -19,6 +19,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -59,7 +60,7 @@ type THClient struct {
 
 	// HTTPClient is the MANDATORY HTTP client to
 	// use for contacting the TH.
-	HTTPClient measurex.HTTPClient
+	HTTPClient model.HTTPClient
 
 	// ServerURL is the MANDATORY URL of the TH HTTP endpoint.
 	ServerURL string
@@ -112,7 +113,7 @@ type THClientCall struct {
 
 	// HTTPClient is the MANDATORY HTTP client to
 	// use for contacting the TH.
-	HTTPClient measurex.HTTPClient
+	HTTPClient model.HTTPClient
 
 	// Header contains the MANDATORY request headers.
 	Header http.Header

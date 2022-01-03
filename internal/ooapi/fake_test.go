@@ -41,6 +41,8 @@ func (c *FakeHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return c.Resp, nil
 }
 
+func (c *FakeHTTPClient) CloseIdleConnections() {}
+
 type FakeBody struct {
 	Data []byte
 	Err  error
