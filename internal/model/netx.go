@@ -178,8 +178,8 @@ type TLSDialer interface {
 	// CloseIdleConnections closes idle connections, if any.
 	CloseIdleConnections()
 
-	// DialTLSContext dials a TLS connection. This method will always
-	// return to you a TLSConn, so you can always safely cast to TLSConn.
+	// DialTLSContext dials a TLS connection. This method will always return
+	// to you a oohttp.TLSConn, so you can always safely cast to it.
 	DialTLSContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 
@@ -199,7 +199,7 @@ type TLSHandshaker interface {
 	// and []string{"dot"} for DNS-over-TLS.
 	//
 	// QUIRK: The returned connection will always implement the TLSConn interface
-	// exposed by this package. A future version of this interface will instead
+	// exposed by ooni/oohttp. A future version of this interface may instead
 	// return directly a TLSConn to avoid unconditional castings.
 	Handshake(ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (
 		net.Conn, tls.ConnectionState, error)
