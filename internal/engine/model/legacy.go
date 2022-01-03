@@ -7,3 +7,6 @@ type Logger = parentmodel.Logger
 
 // DiscardLogger refers to the real DiscardLogger definition.
 var DiscardLogger = parentmodel.DiscardLogger
+
+// KeyValueStore refers to the real KeyValueStore definition.
+type KeyValueStore = parentmodel.KeyValueStore

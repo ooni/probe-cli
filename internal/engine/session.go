@@ -26,7 +26,7 @@ import (
 // SessionConfig contains the Session config
 type SessionConfig struct {
 	AvailableProbeServices []model.Service
-	KVStore                KVStore
+	KVStore                model.KeyValueStore
 	Logger                 model.Logger
 	ProxyURL               *url.URL
 	SoftwareName           string
@@ -52,7 +52,7 @@ type Session struct {
 	availableTestHelpers     map[string][]model.Service
 	byteCounter              *bytecounter.Counter
 	httpDefaultTransport     netx.HTTPRoundTripper
-	kvStore                  KVStore
+	kvStore                  model.KeyValueStore
 	location                 *geolocate.Results
 	logger                   model.Logger
 	proxyURL                 *url.URL

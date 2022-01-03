@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 	"net/http"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // JSONCodec is a JSON encoder and decoder. Generally, we use a
@@ -57,10 +59,4 @@ type GobCodec interface {
 // KVStore is a key-value store. This is the interface the
 // client expect for the key-value store used to save persistent
 // state (typically on the file system).
-type KVStore interface {
-	// Get gets a value from the key-value store.
-	Get(key string) ([]byte, error)
-
-	// Set stores a value into the key-value store.
-	Set(key string, value []byte) error
-}
+type KVStore = model.KeyValueStore

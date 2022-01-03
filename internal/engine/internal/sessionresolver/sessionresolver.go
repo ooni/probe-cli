@@ -64,7 +64,7 @@ type Resolver struct {
 	// KVStore is the MANDATORY key-value store where you
 	// want us to write statistics about which resolver is
 	// working better in your network.
-	KVStore KVStore
+	KVStore model.KeyValueStore
 
 	// Logger is the optional logger you want us to use
 	// to emit log messages.
