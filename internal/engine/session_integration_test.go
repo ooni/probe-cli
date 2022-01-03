@@ -90,7 +90,7 @@ func TestSessionTorArgsTorBinary(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	sess, err := NewSession(context.Background(), SessionConfig{
-		AvailableProbeServices: []model.Service{{
+		AvailableProbeServices: []model.OOAPIService{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",
 		}},
@@ -122,7 +122,7 @@ func TestSessionTorArgsTorBinary(t *testing.T) {
 
 func newSessionForTestingNoLookupsWithProxyURL(t *testing.T, URL *url.URL) *Session {
 	sess, err := NewSession(context.Background(), SessionConfig{
-		AvailableProbeServices: []model.Service{{
+		AvailableProbeServices: []model.OOAPIService{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",
 		}},
@@ -175,7 +175,7 @@ func TestInitOrchestraClientMaybeRegisterError(t *testing.T) {
 	cancel() // so we fail immediately
 	sess := newSessionForTestingNoLookups(t)
 	defer sess.Close()
-	clnt, err := probeservices.NewClient(sess, model.Service{
+	clnt, err := probeservices.NewClient(sess, model.OOAPIService{
 		Address: "https://ams-pg-test.ooni.org/",
 		Type:    "https",
 	})
@@ -200,7 +200,7 @@ func TestInitOrchestraClientMaybeLoginError(t *testing.T) {
 	ctx := context.Background()
 	sess := newSessionForTestingNoLookups(t)
 	defer sess.Close()
-	clnt, err := probeservices.NewClient(sess, model.Service{
+	clnt, err := probeservices.NewClient(sess, model.OOAPIService{
 		Address: "https://ams-pg-test.ooni.org/",
 		Type:    "https",
 	})
@@ -252,7 +252,7 @@ func TestMaybeLookupBackendsNewClientError(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	sess := newSessionForTestingNoLookups(t)
-	sess.availableProbeServices = []model.Service{{
+	sess.availableProbeServices = []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
 	}}
@@ -307,7 +307,7 @@ func TestSessionCheckInWithRealAPI(t *testing.T) {
 	}
 	sess := newSessionForTesting(t)
 	defer sess.Close()
-	results, err := sess.CheckIn(context.Background(), &model.CheckInConfig{})
+	results, err := sess.CheckIn(context.Background(), &model.OOAPICheckInConfig{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -412,7 +412,7 @@ func TestAllProbeServicesUnsupported(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer sess.Close()
-	sess.AppendAvailableProbeService(model.Service{
+	sess.AppendAvailableProbeService(model.OOAPIService{
 		Address: "mascetti",
 		Type:    "antani",
 	})
@@ -476,7 +476,7 @@ func TestNewOrchestraClientProbeServicesNewClientFailure(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	sess := newSessionForTestingNoLookups(t)
-	sess.selectedProbeServiceHook = func(svc *model.Service) {
+	sess.selectedProbeServiceHook = func(svc *model.OOAPIService) {
 		svc.Type = "antani" // should really not be supported for a long time
 	}
 	client, err := sess.NewOrchestraClient(context.Background())
@@ -504,7 +504,7 @@ func TestSessionFetchURLList(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	sess := newSessionForTesting(t)
-	resp, err := sess.FetchURLList(context.Background(), model.URLListConfig{})
+	resp, err := sess.FetchURLList(context.Background(), model.OOAPIURLListConfig{})
 	if err != nil {
 		t.Fatal(err)
 	}

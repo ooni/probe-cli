@@ -68,7 +68,7 @@ func (r *runnerForTask) newsession(ctx context.Context, logger model.Logger) (ta
 		TunnelDir:       r.settings.TunnelDir,
 	}
 	if r.settings.Options.ProbeServicesBaseURL != "" {
-		config.AvailableProbeServices = []model.Service{{
+		config.AvailableProbeServices = []model.OOAPIService{{
 			Type:    "https",
 			Address: r.settings.Options.ProbeServicesBaseURL,
 		}}

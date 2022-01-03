@@ -7,11 +7,11 @@ import (
 
 // ExperimentSession is the experiment's view of a session.
 type ExperimentSession interface {
-	GetTestHelpersByName(name string) ([]Service, bool)
+	GetTestHelpersByName(name string) ([]OOAPIService, bool)
 	DefaultHTTPClient() *http.Client
 	FetchPsiphonConfig(ctx context.Context) ([]byte, error)
-	FetchTorTargets(ctx context.Context, cc string) (map[string]TorTarget, error)
-	FetchURLList(ctx context.Context, config URLListConfig) ([]URLInfo, error)
+	FetchTorTargets(ctx context.Context, cc string) (map[string]OOAPITorTarget, error)
+	FetchURLList(ctx context.Context, config OOAPIURLListConfig) ([]OOAPIURLInfo, error)
 	Logger() Logger
 	ProbeCC() string
 	ResolverIP() string

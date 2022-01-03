@@ -377,7 +377,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		TunnelDir:       tunnelDir,
 	}
 	if currentOptions.ProbeServicesURL != "" {
-		config.AvailableProbeServices = []model.Service{{
+		config.AvailableProbeServices = []model.OOAPIService{{
 			Address: currentOptions.ProbeServicesURL,
 			Type:    "https",
 		}}
@@ -411,7 +411,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	fatalOnError(err, "cannot create experiment builder")
 
 	inputLoader := &engine.InputLoader{
-		CheckInConfig: &model.CheckInConfig{
+		CheckInConfig: &model.OOAPICheckInConfig{
 			RunType:  "manual",
 			OnWiFi:   true, // meaning: not on 4G
 			Charging: true,

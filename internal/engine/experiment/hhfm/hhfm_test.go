@@ -36,7 +36,7 @@ func TestSuccess(t *testing.T) {
 	ctx := context.Background()
 	sess := &mockable.Session{
 		MockableLogger: log.Log,
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"http-return-json-headers": {{
 				Address: "http://37.218.241.94:80",
 				Type:    "legacy",
@@ -144,7 +144,7 @@ func TestCancelledContext(t *testing.T) {
 	cancel()
 	sess := &mockable.Session{
 		MockableLogger: log.Log,
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"http-return-json-headers": {{
 				Address: "http://37.218.241.94:80",
 				Type:    "legacy",
@@ -303,7 +303,7 @@ func TestNoActualHelpersInList(t *testing.T) {
 	measurer := hhfm.NewExperimentMeasurer(hhfm.Config{})
 	ctx := context.Background()
 	sess := &mockable.Session{
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"http-return-json-headers": nil,
 		},
 	}
@@ -353,7 +353,7 @@ func TestWrongTestHelperType(t *testing.T) {
 	measurer := hhfm.NewExperimentMeasurer(hhfm.Config{})
 	ctx := context.Background()
 	sess := &mockable.Session{
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"http-return-json-headers": {{
 				Address: "http://127.0.0.1",
 				Type:    "antani",
@@ -406,7 +406,7 @@ func TestNewRequestFailure(t *testing.T) {
 	measurer := hhfm.NewExperimentMeasurer(hhfm.Config{})
 	ctx := context.Background()
 	sess := &mockable.Session{
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"http-return-json-headers": {{
 				Address: "http://127.0.0.1\t\t\t", // invalid
 				Type:    "legacy",
@@ -463,7 +463,7 @@ func TestInvalidJSONBody(t *testing.T) {
 	measurer := hhfm.NewExperimentMeasurer(hhfm.Config{})
 	ctx := context.Background()
 	sess := &mockable.Session{
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"http-return-json-headers": {{
 				Address: server.URL,
 				Type:    "legacy",

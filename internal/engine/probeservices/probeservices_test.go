@@ -25,7 +25,7 @@ func newclient() *probeservices.Client {
 			MockableHTTPClient: http.DefaultClient,
 			MockableLogger:     log.Log,
 		},
-		model.Service{
+		model.OOAPIService{
 			Address: "https://ams-pg-test.ooni.org/",
 			Type:    "https",
 		},
@@ -38,7 +38,7 @@ func newclient() *probeservices.Client {
 
 func TestNewClientHTTPS(t *testing.T) {
 	client, err := probeservices.NewClient(
-		&mockable.Session{}, model.Service{
+		&mockable.Session{}, model.OOAPIService{
 			Address: "https://x.org",
 			Type:    "https",
 		})
@@ -52,7 +52,7 @@ func TestNewClientHTTPS(t *testing.T) {
 
 func TestNewClientUnsupportedEndpoint(t *testing.T) {
 	client, err := probeservices.NewClient(
-		&mockable.Session{}, model.Service{
+		&mockable.Session{}, model.OOAPIService{
 			Address: "https://x.org",
 			Type:    "onion",
 		})
@@ -66,7 +66,7 @@ func TestNewClientUnsupportedEndpoint(t *testing.T) {
 
 func TestNewClientCloudfrontInvalidURL(t *testing.T) {
 	client, err := probeservices.NewClient(
-		&mockable.Session{}, model.Service{
+		&mockable.Session{}, model.OOAPIService{
 			Address: "\t\t\t",
 			Type:    "cloudfront",
 		})
@@ -80,7 +80,7 @@ func TestNewClientCloudfrontInvalidURL(t *testing.T) {
 
 func TestNewClientCloudfrontInvalidURLScheme(t *testing.T) {
 	client, err := probeservices.NewClient(
-		&mockable.Session{}, model.Service{
+		&mockable.Session{}, model.OOAPIService{
 			Address: "http://x.org",
 			Type:    "cloudfront",
 		})
@@ -94,7 +94,7 @@ func TestNewClientCloudfrontInvalidURLScheme(t *testing.T) {
 
 func TestNewClientCloudfrontInvalidURLWithPort(t *testing.T) {
 	client, err := probeservices.NewClient(
-		&mockable.Session{}, model.Service{
+		&mockable.Session{}, model.OOAPIService{
 			Address: "https://x.org:54321",
 			Type:    "cloudfront",
 		})
@@ -108,7 +108,7 @@ func TestNewClientCloudfrontInvalidURLWithPort(t *testing.T) {
 
 func TestNewClientCloudfrontInvalidFront(t *testing.T) {
 	client, err := probeservices.NewClient(
-		&mockable.Session{}, model.Service{
+		&mockable.Session{}, model.OOAPIService{
 			Address: "https://x.org",
 			Type:    "cloudfront",
 			Front:   "\t\t\t",
@@ -123,7 +123,7 @@ func TestNewClientCloudfrontInvalidFront(t *testing.T) {
 
 func TestNewClientCloudfrontGood(t *testing.T) {
 	client, err := probeservices.NewClient(
-		&mockable.Session{}, model.Service{
+		&mockable.Session{}, model.OOAPIService{
 			Address: "https://x.org",
 			Type:    "cloudfront",
 			Front:   "google.com",
@@ -144,7 +144,7 @@ func TestCloudfront(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	client, err := probeservices.NewClient(
-		&mockable.Session{}, model.Service{
+		&mockable.Session{}, model.OOAPIService{
 			Address: "https://meek.azureedge.net",
 			Type:    "cloudfront",
 			Front:   "ajax.aspnetcdn.com",
@@ -197,7 +197,7 @@ func TestDefaultProbeServicesWorkAsIntended(t *testing.T) {
 }
 
 func TestSortEndpoints(t *testing.T) {
-	in := []model.Service{{
+	in := []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
 	}, {
@@ -208,7 +208,7 @@ func TestSortEndpoints(t *testing.T) {
 		Type:    "https",
 		Address: "https://ams-ps2.ooni.nu:443",
 	}}
-	expect := []model.Service{{
+	expect := []model.OOAPIService{{
 		Type:    "https",
 		Address: "https://ams-ps2.ooni.nu:443",
 	}, {
@@ -227,7 +227,7 @@ func TestSortEndpoints(t *testing.T) {
 }
 
 func TestOnlyHTTPS(t *testing.T) {
-	in := []model.Service{{
+	in := []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
 	}, {
@@ -244,7 +244,7 @@ func TestOnlyHTTPS(t *testing.T) {
 		Type:    "https",
 		Address: "https://mia-ps-nonexistent.ooni.io",
 	}}
-	expect := []model.Service{{
+	expect := []model.OOAPIService{{
 		Type:    "https",
 		Address: "https://ams-ps-nonexistent.ooni.io",
 	}, {
@@ -263,7 +263,7 @@ func TestOnlyHTTPS(t *testing.T) {
 
 func TestOnlyFallbacks(t *testing.T) {
 	// put onion first so we also verify that we sort the endpoints
-	in := []model.Service{{
+	in := []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
 	}, {
@@ -280,7 +280,7 @@ func TestOnlyFallbacks(t *testing.T) {
 		Type:    "https",
 		Address: "https://mia-ps-nonexistent.ooni.io",
 	}}
-	expect := []model.Service{{
+	expect := []model.OOAPIService{{
 		Front:   "dkyhjv0wpi2dk.cloudfront.net",
 		Type:    "cloudfront",
 		Address: "https://dkyhjv0wpi2dk.cloudfront.net",
@@ -297,7 +297,7 @@ func TestOnlyFallbacks(t *testing.T) {
 
 func TestTryAllCanceledContext(t *testing.T) {
 	// put onion first so we also verify that we sort the endpoints
-	in := []model.Service{{
+	in := []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
 	}, {
@@ -401,7 +401,7 @@ func TestTryAllIntegrationWeRaceForFastestHTTPS(t *testing.T) {
 	}
 	const pattern = "^https://ps[1-4].ooni.io$"
 	// put onion first so we also verify that we sort the endpoints
-	in := []model.Service{{
+	in := []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
 	}, {
@@ -472,7 +472,7 @@ func TestTryAllIntegrationWeFallback(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	// put onion first so we also verify that we sort the endpoints
-	in := []model.Service{{
+	in := []model.OOAPIService{{
 		Type:    "onion",
 		Address: "httpo://jehhrikjjqrlpufu.onion",
 	}, {
@@ -573,32 +573,32 @@ func TestSelectBestOnlyFailures(t *testing.T) {
 func TestSelectBestSelectsTheFastest(t *testing.T) {
 	in := []*probeservices.Candidate{{
 		Duration: 10 * time.Millisecond,
-		Endpoint: model.Service{
+		Endpoint: model.OOAPIService{
 			Address: "https://ps1.ooni.io",
 			Type:    "https",
 		},
 	}, {
 		Duration: 4 * time.Millisecond,
-		Endpoint: model.Service{
+		Endpoint: model.OOAPIService{
 			Address: "https://ps2.ooni.io",
 			Type:    "https",
 		},
 	}, {
 		Duration: 7 * time.Millisecond,
-		Endpoint: model.Service{
+		Endpoint: model.OOAPIService{
 			Address: "https://ps3.ooni.io",
 			Type:    "https",
 		},
 	}, {
 		Duration: 11 * time.Millisecond,
-		Endpoint: model.Service{
+		Endpoint: model.OOAPIService{
 			Address: "https://ps4.ooni.io",
 			Type:    "https",
 		},
 	}}
 	expected := &probeservices.Candidate{
 		Duration: 4 * time.Millisecond,
-		Endpoint: model.Service{
+		Endpoint: model.OOAPIService{
 			Address: "https://ps2.ooni.io",
 			Type:    "https",
 		},

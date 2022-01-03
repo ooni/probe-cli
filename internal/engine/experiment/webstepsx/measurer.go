@@ -85,7 +85,7 @@ func (mx *Measurer) RunAsync(
 	}
 	// 2. Find the testhelper
 	testhelpers, _ := sess.GetTestHelpersByName("web-connectivity")
-	var testhelper *model.Service
+	var testhelper *model.OOAPIService
 	for _, th := range testhelpers {
 		if th.Type == "https" {
 			testhelper = &th
@@ -110,7 +110,7 @@ var measurerResolvers = []*measurex.ResolverInfo{{
 }}
 
 func (mx *Measurer) runAsync(ctx context.Context, sess model.ExperimentSession,
-	URL string, th *model.Service, out chan<- *model.ExperimentAsyncTestKeys) {
+	URL string, th *model.OOAPIService, out chan<- *model.ExperimentAsyncTestKeys) {
 	defer close(out)
 	helper := &measurerMeasureURLHelper{
 		Clnt:      sess.DefaultHTTPClient(),

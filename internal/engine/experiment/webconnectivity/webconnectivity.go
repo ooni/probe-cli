@@ -149,7 +149,7 @@ func (m Measurer) Run(
 	}
 	// 1. find test helper
 	testhelpers, _ := sess.GetTestHelpersByName("web-connectivity")
-	var testhelper *model.Service
+	var testhelper *model.OOAPIService
 	for _, th := range testhelpers {
 		if th.Type == "https" {
 			testhelper = &th

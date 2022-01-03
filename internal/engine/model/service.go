@@ -1,11 +1,11 @@
 package model
 
-// Service describes a backend service.
+// OOAPIService describes a backend service.
 //
 // The fields of this struct have the meaning described in v2.0.0 of the OONI
 // bouncer specification defined by
 // https://github.com/ooni/spec/blob/master/backends/bk-004-bouncer.md.
-type Service struct {
+type OOAPIService struct {
 	// Address is the address of the server.
 	Address string `json:"address"`
 

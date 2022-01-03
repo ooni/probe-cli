@@ -1,7 +1,7 @@
 package model
 
-// TorTarget is a target for the tor experiment.
-type TorTarget struct {
+// OOAPITorTarget is a target for the tor experiment.
+type OOAPITorTarget struct {
 	// Address is the address of the target.
 	Address string `json:"address"`
 

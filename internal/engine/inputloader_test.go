@@ -113,7 +113,7 @@ func TestInputLoaderInputOptionalWithInput(t *testing.T) {
 	if len(out) != 5 {
 		t.Fatal("not the output length we expected")
 	}
-	expect := []model.URLInfo{
+	expect := []model.OOAPIURLInfo{
 		{URL: "https://www.google.com/"},
 		{URL: "https://www.x.org/"},
 		{URL: "https://www.slashdot.org/"},
@@ -162,7 +162,7 @@ func TestInputLoaderInputStrictlyRequiredWithInput(t *testing.T) {
 	if len(out) != 5 {
 		t.Fatal("not the output length we expected")
 	}
-	expect := []model.URLInfo{
+	expect := []model.OOAPIURLInfo{
 		{URL: "https://www.google.com/"},
 		{URL: "https://www.x.org/"},
 		{URL: "https://www.slashdot.org/"},
@@ -225,7 +225,7 @@ func TestInputLoaderInputOrStaticDefaultWithInput(t *testing.T) {
 	if len(out) != 5 {
 		t.Fatal("not the output length we expected")
 	}
-	expect := []model.URLInfo{
+	expect := []model.OOAPIURLInfo{
 		{URL: "https://www.google.com/"},
 		{URL: "https://www.x.org/"},
 		{URL: "https://www.slashdot.org/"},
@@ -352,7 +352,7 @@ func TestInputLoaderInputOrQueryBackendWithInput(t *testing.T) {
 	if len(out) != 5 {
 		t.Fatal("not the output length we expected")
 	}
-	expect := []model.URLInfo{
+	expect := []model.OOAPIURLInfo{
 		{URL: "https://www.google.com/"},
 		{URL: "https://www.x.org/"},
 		{URL: "https://www.slashdot.org/"},
@@ -446,7 +446,7 @@ func TestInputLoaderReadfileScannerFailure(t *testing.T) {
 type InputLoaderMockableSession struct {
 	// Output contains the output of CheckIn. It should
 	// be nil when Error is not-nil.
-	Output *model.CheckInInfo
+	Output *model.OOAPICheckInInfo
 
 	// Error is the error to be returned by CheckIn. It
 	// should be nil when Output is not-nil.
@@ -455,7 +455,7 @@ type InputLoaderMockableSession struct {
 
 // CheckIn implements InputLoaderSession.CheckIn.
 func (sess *InputLoaderMockableSession) CheckIn(
-	ctx context.Context, config *model.CheckInConfig) (*model.CheckInInfo, error) {
+	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error) {
 	if sess.Output == nil && sess.Error == nil {
 		return nil, errors.New("both Output and Error are nil")
 	}
@@ -480,7 +480,7 @@ func TestInputLoaderCheckInFailure(t *testing.T) {
 func TestInputLoaderCheckInSuccessWithNilWebConnectivity(t *testing.T) {
 	il := &InputLoader{
 		Session: &InputLoaderMockableSession{
-			Output: &model.CheckInInfo{},
+			Output: &model.OOAPICheckInInfo{},
 		},
 	}
 	out, err := il.loadRemote(context.Background())
@@ -495,8 +495,8 @@ func TestInputLoaderCheckInSuccessWithNilWebConnectivity(t *testing.T) {
 func TestInputLoaderCheckInSuccessWithNoURLs(t *testing.T) {
 	il := &InputLoader{
 		Session: &InputLoaderMockableSession{
-			Output: &model.CheckInInfo{
-				WebConnectivity: &model.CheckInInfoWebConnectivity{},
+			Output: &model.OOAPICheckInInfo{
+				WebConnectivity: &model.OOAPICheckInInfoWebConnectivity{},
 			},
 		},
 	}
@@ -510,7 +510,7 @@ func TestInputLoaderCheckInSuccessWithNoURLs(t *testing.T) {
 }
 
 func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
-	expect := []model.URLInfo{{
+	expect := []model.OOAPIURLInfo{{
 		CategoryCode: "NEWS",
 		CountryCode:  "IT",
 		URL:          "https://repubblica.it",
@@ -521,8 +521,8 @@ func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
 	}}
 	il := &InputLoader{
 		Session: &InputLoaderMockableSession{
-			Output: &model.CheckInInfo{
-				WebConnectivity: &model.CheckInInfoWebConnectivity{
+			Output: &model.OOAPICheckInInfo{
+				WebConnectivity: &model.OOAPICheckInInfoWebConnectivity{
 					URLs: expect,
 				},
 			},
@@ -538,7 +538,7 @@ func TestInputLoaderCheckInSuccessWithSomeURLs(t *testing.T) {
 }
 
 func TestPreventMistakesWithCategories(t *testing.T) {
-	input := []model.URLInfo{{
+	input := []model.OOAPIURLInfo{{
 		CategoryCode: "NEWS",
 		URL:          "https://repubblica.it/",
 		CountryCode:  "IT",
@@ -551,7 +551,7 @@ func TestPreventMistakesWithCategories(t *testing.T) {
 		URL:          "https://addons.mozilla.org/",
 		CountryCode:  "XX",
 	}}
-	desired := []model.URLInfo{{
+	desired := []model.OOAPIURLInfo{{
 		CategoryCode: "NEWS",
 		URL:          "https://repubblica.it/",
 		CountryCode:  "IT",
@@ -568,7 +568,7 @@ func TestPreventMistakesWithCategories(t *testing.T) {
 }
 
 func TestPreventMistakesWithoutCategoriesAndNil(t *testing.T) {
-	input := []model.URLInfo{{
+	input := []model.OOAPIURLInfo{{
 		CategoryCode: "NEWS",
 		URL:          "https://repubblica.it/",
 		CountryCode:  "IT",
@@ -589,7 +589,7 @@ func TestPreventMistakesWithoutCategoriesAndNil(t *testing.T) {
 }
 
 func TestPreventMistakesWithoutCategoriesAndEmpty(t *testing.T) {
-	input := []model.URLInfo{{
+	input := []model.OOAPIURLInfo{{
 		CategoryCode: "NEWS",
 		URL:          "https://repubblica.it/",
 		CountryCode:  "IT",

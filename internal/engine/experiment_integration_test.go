@@ -454,7 +454,7 @@ func TestOpenReportFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	exp := builder.NewExperiment()
-	exp.session.selectedProbeService = &model.Service{
+	exp.session.selectedProbeService = &model.OOAPIService{
 		Address: server.URL,
 		Type:    "https",
 	}
@@ -475,7 +475,7 @@ func TestOpenReportNewClientFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	exp := builder.NewExperiment()
-	exp.session.selectedProbeService = &model.Service{
+	exp.session.selectedProbeService = &model.OOAPIService{
 		Address: "antani:///",
 		Type:    "antani",
 	}
@@ -523,7 +523,7 @@ func TestOpenReportNonHTTPS(t *testing.T) {
 	}
 	sess := newSessionForTestingNoLookups(t)
 	defer sess.Close()
-	sess.availableProbeServices = []model.Service{
+	sess.availableProbeServices = []model.OOAPIService{
 		{
 			Address: "antani",
 			Type:    "mascetti",

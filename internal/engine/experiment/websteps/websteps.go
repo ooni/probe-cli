@@ -111,7 +111,7 @@ func (m Measurer) Run(
 	// 3. Find the testhelper
 	// TODO(kelmenhorst,bassosimone): this is not used at the moment, but the hardcoded local address
 	testhelpers, _ := sess.GetTestHelpersByName("web-connectivity")
-	var testhelper *model.Service
+	var testhelper *model.OOAPIService
 	for _, th := range testhelpers {
 		if th.Type == "https" {
 			testhelper = &th

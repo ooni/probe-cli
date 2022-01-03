@@ -27,7 +27,7 @@ var (
 // introduce this abstraction because it helps us with testing.
 type InputLoaderSession interface {
 	CheckIn(ctx context.Context,
-		config *model.CheckInConfig) (*model.CheckInInfo, error)
+		config *model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error)
 }
 
 // InputLoaderLogger is the logger according to an InputLoader.
@@ -76,7 +76,7 @@ type InputLoader struct {
 	// not set, then we'll create a default config. If set but
 	// there are fields inside it that are not set, then we
 	// will set them to a default value.
-	CheckInConfig *model.CheckInConfig
+	CheckInConfig *model.OOAPICheckInConfig
 
 	// ExperimentName is the name of the experiment. This field
 	// is only used together with the InputOrStaticDefault policy.
@@ -110,7 +110,7 @@ type InputLoader struct {
 
 // Load attempts to load input using the specified input loader. We will
 // return a list of URLs because this is the only input we support.
-func (il *InputLoader) Load(ctx context.Context) ([]model.URLInfo, error) {
+func (il *InputLoader) Load(ctx context.Context) ([]model.OOAPIURLInfo, error) {
 	switch il.InputPolicy {
 	case InputOptional:
 		return il.loadOptional()
@@ -126,26 +126,26 @@ func (il *InputLoader) Load(ctx context.Context) ([]model.URLInfo, error) {
 }
 
 // loadNone implements the InputNone policy.
-func (il *InputLoader) loadNone() ([]model.URLInfo, error) {
+func (il *InputLoader) loadNone() ([]model.OOAPIURLInfo, error) {
 	if len(il.StaticInputs) > 0 || len(il.SourceFiles) > 0 {
 		return nil, ErrNoInputExpected
 	}
 	// Note that we need to return a single empty entry.
-	return []model.URLInfo{{}}, nil
+	return []model.OOAPIURLInfo{{}}, nil
 }
 
 // loadOptional implements the InputOptional policy.
-func (il *InputLoader) loadOptional() ([]model.URLInfo, error) {
+func (il *InputLoader) loadOptional() ([]model.OOAPIURLInfo, error) {
 	inputs, err := il.loadLocal()
 	if err == nil && len(inputs) <= 0 {
 		// Note that we need to return a single empty entry.
-		inputs = []model.URLInfo{{}}
+		inputs = []model.OOAPIURLInfo{{}}
 	}
 	return inputs, err
 }
 
 // loadStrictlyRequired implements the InputStrictlyRequired policy.
-func (il *InputLoader) loadStrictlyRequired(ctx context.Context) ([]model.URLInfo, error) {
+func (il *InputLoader) loadStrictlyRequired(ctx context.Context) ([]model.OOAPIURLInfo, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
@@ -154,7 +154,7 @@ func (il *InputLoader) loadStrictlyRequired(ctx context.Context) ([]model.URLInf
 }
 
 // loadOrQueryBackend implements the InputOrQueryBackend policy.
-func (il *InputLoader) loadOrQueryBackend(ctx context.Context) ([]model.URLInfo, error) {
+func (il *InputLoader) loadOrQueryBackend(ctx context.Context) ([]model.OOAPIURLInfo, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
@@ -202,12 +202,12 @@ func StaticBareInputForExperiment(name string) ([]string, error) {
 
 // staticInputForExperiment returns the static input for the given experiment
 // or an error if there's no static input for the experiment.
-func staticInputForExperiment(name string) ([]model.URLInfo, error) {
+func staticInputForExperiment(name string) ([]model.OOAPIURLInfo, error) {
 	return stringListToModelURLInfo(StaticBareInputForExperiment(name))
 }
 
 // loadOrStaticDefault implements the InputOrStaticDefault policy.
-func (il *InputLoader) loadOrStaticDefault(ctx context.Context) ([]model.URLInfo, error) {
+func (il *InputLoader) loadOrStaticDefault(ctx context.Context) ([]model.OOAPIURLInfo, error) {
 	inputs, err := il.loadLocal()
 	if err != nil || len(inputs) > 0 {
 		return inputs, err
@@ -216,10 +216,10 @@ func (il *InputLoader) loadOrStaticDefault(ctx context.Context) ([]model.URLInfo
 }
 
 // loadLocal loads inputs from StaticInputs and SourceFiles.
-func (il *InputLoader) loadLocal() ([]model.URLInfo, error) {
-	inputs := []model.URLInfo{}
+func (il *InputLoader) loadLocal() ([]model.OOAPIURLInfo, error) {
+	inputs := []model.OOAPIURLInfo{}
 	for _, input := range il.StaticInputs {
-		inputs = append(inputs, model.URLInfo{URL: input})
+		inputs = append(inputs, model.OOAPIURLInfo{URL: input})
 	}
 	for _, filepath := range il.SourceFiles {
 		extra, err := il.readfile(filepath, fsx.OpenFile)
@@ -240,8 +240,8 @@ type inputLoaderOpenFn func(filepath string) (fs.File, error)
 
 // readfile reads inputs from the specified file. The open argument should be
 // compatible with stdlib's fs.Open and helps us with unit testing.
-func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]model.URLInfo, error) {
-	inputs := []model.URLInfo{}
+func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]model.OOAPIURLInfo, error) {
+	inputs := []model.OOAPIURLInfo{}
 	filep, err := open(filepath)
 	if err != nil {
 		return nil, err
@@ -254,7 +254,7 @@ func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]mode
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line != "" {
-			inputs = append(inputs, model.URLInfo{URL: line})
+			inputs = append(inputs, model.OOAPIURLInfo{URL: line})
 		}
 	}
 	if scanner.Err() != nil {
@@ -264,14 +264,14 @@ func (il *InputLoader) readfile(filepath string, open inputLoaderOpenFn) ([]mode
 }
 
 // loadRemote loads inputs from a remote source.
-func (il *InputLoader) loadRemote(ctx context.Context) ([]model.URLInfo, error) {
+func (il *InputLoader) loadRemote(ctx context.Context) ([]model.OOAPIURLInfo, error) {
 	config := il.CheckInConfig
 	if config == nil {
 		// Note: Session.CheckIn documentation says it will fill in
 		// any field with a required value with a reasonable default
 		// if such value is missing. So, here we just need to be
 		// concerned about NOT passing it a NULL pointer.
-		config = &model.CheckInConfig{}
+		config = &model.OOAPICheckInConfig{}
 	}
 	reply, err := il.checkIn(ctx, config)
 	if err != nil {
@@ -287,7 +287,7 @@ func (il *InputLoader) loadRemote(ctx context.Context) ([]model.URLInfo, error) 
 // the URLs that are not part of the requested categories. This is done for
 // robustness, just in case we or the API do something wrong.
 func (il *InputLoader) checkIn(
-	ctx context.Context, config *model.CheckInConfig) (*model.CheckInInfo, error) {
+	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error) {
 	reply, err := il.Session.CheckIn(ctx, config)
 	if err != nil {
 		return nil, err
@@ -304,7 +304,7 @@ func (il *InputLoader) checkIn(
 // preventMistakes makes the code more robust with respect to any possible
 // integration issue where the backend returns to us URLs that don't
 // belong to the category codes we requested.
-func (il *InputLoader) preventMistakes(input []model.URLInfo, categories []string) (output []model.URLInfo) {
+func (il *InputLoader) preventMistakes(input []model.OOAPIURLInfo, categories []string) (output []model.OOAPIURLInfo) {
 	if len(categories) <= 0 {
 		return input
 	}
@@ -338,16 +338,16 @@ func (il *InputLoader) logger() InputLoaderLogger {
 // which would have been returned by an hypothetical backend
 // API serving input for a test for which we don't have an API
 // yet (e.g., stunreachability and dnscheck).
-func stringListToModelURLInfo(input []string, err error) ([]model.URLInfo, error) {
+func stringListToModelURLInfo(input []string, err error) ([]model.OOAPIURLInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	var output []model.URLInfo
+	var output []model.OOAPIURLInfo
 	for _, URL := range input {
 		if _, err := url.Parse(URL); err != nil {
 			return nil, err
 		}
-		output = append(output, model.URLInfo{
+		output = append(output, model.OOAPIURLInfo{
 			CategoryCode: "MISC", // hard to find a category
 			CountryCode:  "XX",   // representing no country
 			URL:          URL,

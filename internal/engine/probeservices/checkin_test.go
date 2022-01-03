@@ -11,7 +11,7 @@ import (
 func TestCheckInSuccess(t *testing.T) {
 	client := newclient()
 	client.BaseURL = "https://ams-pg-test.ooni.org"
-	config := model.CheckInConfig{
+	config := model.OOAPICheckInConfig{
 		Charging:        true,
 		OnWiFi:          true,
 		Platform:        "android",
@@ -20,7 +20,7 @@ func TestCheckInSuccess(t *testing.T) {
 		RunType:         "timed",
 		SoftwareName:    "ooniprobe-android",
 		SoftwareVersion: "2.7.1",
-		WebConnectivity: model.CheckInConfigWebConnectivity{
+		WebConnectivity: model.OOAPICheckInConfigWebConnectivity{
 			CategoryCodes: []string{"NEWS", "CULTR"},
 		},
 	}
@@ -48,7 +48,7 @@ func TestCheckInSuccess(t *testing.T) {
 func TestCheckInFailure(t *testing.T) {
 	client := newclient()
 	client.BaseURL = "https://\t\t\t/" // cause test to fail
-	config := model.CheckInConfig{
+	config := model.OOAPICheckInConfig{
 		Charging:        true,
 		OnWiFi:          true,
 		Platform:        "android",
@@ -57,7 +57,7 @@ func TestCheckInFailure(t *testing.T) {
 		RunType:         "timed",
 		SoftwareName:    "ooniprobe-android",
 		SoftwareVersion: "2.7.1",
-		WebConnectivity: model.CheckInConfigWebConnectivity{
+		WebConnectivity: model.OOAPICheckInConfigWebConnectivity{
 			CategoryCodes: []string{"NEWS", "CULTR"},
 		},
 	}

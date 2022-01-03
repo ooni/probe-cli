@@ -49,7 +49,7 @@ type InputProcessor struct {
 	Experiment InputProcessorExperimentWrapper
 
 	// Inputs is the list of inputs to measure.
-	Inputs []model.URLInfo
+	Inputs []model.OOAPIURLInfo
 
 	// MaxRuntime is the optional maximum runtime
 	// when looping over a list of inputs (e.g. when
