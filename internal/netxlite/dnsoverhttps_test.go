@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestDNSOverHTTPS(t *testing.T) {

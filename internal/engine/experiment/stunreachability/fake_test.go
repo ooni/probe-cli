@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// TODO(bassosimone): we should use internal/netxlite/mocks rather
+// TODO(bassosimone): we should use internal/model/mocks rather
 // than rolling out a custom type private to this package.
 
 type FakeConn struct {

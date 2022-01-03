@@ -13,7 +13,7 @@ import (
 	"github.com/apex/log"
 	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestHTTPTransportErrWrapper(t *testing.T) {
