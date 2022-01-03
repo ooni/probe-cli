@@ -2,6 +2,11 @@
 // automatically generate the code in this package from the
 // apimodel and internal/generator packages.
 //
+// Note
+//
+// This package is currrently unused. We plan on replacing
+// existing code to speak with the OONI API with it.
+//
 // Usage
 //
 // You need to create a Client. Make sure you set all
