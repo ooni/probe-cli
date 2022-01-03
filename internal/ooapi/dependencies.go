@@ -40,10 +40,7 @@ type templateExecutor interface {
 // http.DefaultClient as the default HTTPClient used by Client.
 // Consumers of this package typically provide a custom HTTPClient
 // with additional functionality (e.g., DoH, circumvention).
-type HTTPClient interface {
-	// Do should work like http.Client.Do.
-	Do(req *http.Request) (*http.Response, error)
-}
+type HTTPClient = model.HTTPClient
 
 // GobCodec is a Gob encoder and decoder. Generally, we use a
 // default GobCodec in Client. This is the interface to implement

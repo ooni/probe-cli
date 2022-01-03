@@ -19,3 +19,5 @@ func (c *VerboseHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	c.T.Logf("< %d", resp.StatusCode)
 	return resp, nil
 }
+
+func (c *VerboseHTTPClient) CloseIdleConnections() {}

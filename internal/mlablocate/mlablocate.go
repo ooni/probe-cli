@@ -16,18 +16,12 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// HTTPClient is anything that looks like an http.Client.
-type HTTPClient interface {
-	// Do behaves like http.Client.Do.
-	Do(req *http.Request) (*http.Response, error)
-}
-
 // Client is a locate.measurementlab.net client. Please use the
 // NewClient factory to construct a new instance of client, otherwise
 // you MUST fill all the fields marked as MANDATORY.
 type Client struct {
 	// HTTPClient is the MANDATORY http client to use.
-	HTTPClient HTTPClient
+	HTTPClient model.HTTPClient
 
 	// Hostname is the MANDATORY hostname of the mlablocate API.
 	Hostname string
@@ -43,7 +37,7 @@ type Client struct {
 }
 
 // NewClient creates a new locate.measurementlab.net client.
-func NewClient(httpClient HTTPClient, logger model.DebugLogger, userAgent string) *Client {
+func NewClient(httpClient model.HTTPClient, logger model.DebugLogger, userAgent string) *Client {
 	return &Client{
 		HTTPClient: httpClient,
 		Hostname:   "locate.measurementlab.net",

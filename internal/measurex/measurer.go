@@ -32,7 +32,7 @@ type Measurer struct {
 	Begin time.Time
 
 	// HTTPClient is the MANDATORY HTTP client for the WCTH.
-	HTTPClient HTTPClient
+	HTTPClient model.HTTPClient
 
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger
@@ -496,7 +496,7 @@ func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
 }
 
 func (mx *Measurer) HTTPClientGET(
-	ctx context.Context, clnt HTTPClient, URL *url.URL) (*http.Response, error) {
+	ctx context.Context, clnt model.HTTPClient, URL *url.URL) (*http.Response, error) {
 	return mx.httpClientDo(ctx, clnt, &HTTPEndpoint{
 		Domain:  URL.Hostname(),
 		Network: "tcp",
@@ -509,7 +509,7 @@ func (mx *Measurer) HTTPClientGET(
 }
 
 func (mx *Measurer) httpClientDo(ctx context.Context,
-	clnt HTTPClient, epnt *HTTPEndpoint) (*http.Response, error) {
+	clnt model.HTTPClient, epnt *HTTPEndpoint) (*http.Response, error) {
 	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
 	if err != nil {
 		return nil, err
