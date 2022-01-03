@@ -10,8 +10,9 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	nlmocks "github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestErrorWrapperQUICListenerSuccess(t *testing.T) {
@@ -130,7 +131,7 @@ func TestErrorWrapperUDPConnReadFromFailure(t *testing.T) {
 
 func TestErrorWrapperQUICDialerFailure(t *testing.T) {
 	ctx := context.Background()
-	d := &ErrorWrapperQUICDialer{Dialer: &mocks.QUICContextDialer{
+	d := &ErrorWrapperQUICDialer{Dialer: &nlmocks.QUICContextDialer{
 		MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 			return nil, io.EOF
 		},
