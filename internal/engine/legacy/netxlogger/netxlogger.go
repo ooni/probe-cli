@@ -9,22 +9,17 @@ import (
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netx/modelx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// Logger is the interface we expect from a logger
-type Logger interface {
-	Debug(msg string)
-	Debugf(format string, v ...interface{})
-}
-
 // Handler is a handler that logs events.
 type Handler struct {
-	logger Logger
+	logger model.DebugLogger
 }
 
 // NewHandler returns a new logging handler.
-func NewHandler(logger Logger) *Handler {
+func NewHandler(logger model.DebugLogger) *Handler {
 	return &Handler{logger: logger}
 }
 

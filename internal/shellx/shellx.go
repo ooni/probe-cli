@@ -7,13 +7,9 @@ import (
 	"strings"
 
 	"github.com/google/shlex"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"golang.org/x/sys/execabs"
 )
-
-// Logger is the logger expected by this package.
-type Logger interface {
-	Infof(format string, v ...interface{})
-}
 
 // runconfig is the configuration for run.
 type runconfig struct {
@@ -48,7 +44,7 @@ func run(config runconfig) error {
 }
 
 // Run executes the specified command with the specified args.
-func Run(logger Logger, name string, arg ...string) error {
+func Run(logger model.InfoLogger, name string, arg ...string) error {
 	return run(runconfig{
 		args:     arg,
 		command:  name,
@@ -76,7 +72,7 @@ func RunQuiet(name string, arg ...string) error {
 var ErrNoCommandToExecute = errors.New("shellx: no command to execute")
 
 // RunCommandline executes the given command line.
-func RunCommandline(logger Logger, cmdline string) error {
+func RunCommandline(logger model.InfoLogger, cmdline string) error {
 	args, err := shlex.Split(cmdline)
 	if err != nil {
 		return err

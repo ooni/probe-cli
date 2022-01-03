@@ -1,9 +1,10 @@
-// Package kvstore contains key-value stores.
 package kvstore
 
 import (
 	"errors"
 	"sync"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // ErrNoSuchKey indicates that there's no value for the given key.
@@ -17,6 +18,8 @@ type Memory struct {
 	// mu provides mutual exclusion
 	mu sync.Mutex
 }
+
+var _ model.KeyValueStore = &Memory{}
 
 // Get returns the specified key's value. In case of error, the
 // error type is such that errors.Is(err, ErrNoSuchKey).

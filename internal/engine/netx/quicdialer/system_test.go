@@ -10,17 +10,17 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 func TestQUICListenerSaverCannotListen(t *testing.T) {
 	expected := errors.New("mocked error")
 	qls := &quicdialer.QUICListenerSaver{
 		QUICListener: &mocks.QUICListener{
-			MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return nil, expected
 			},
 		},

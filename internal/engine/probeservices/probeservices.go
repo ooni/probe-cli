@@ -30,7 +30,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 var (
@@ -89,7 +89,7 @@ func (c Client) GetCredsAndAuth() (*LoginCredentials, *LoginAuth, error) {
 
 // NewClient creates a new client for the specified probe services endpoint. This
 // function fails, e.g., we don't support the specified endpoint.
-func NewClient(sess Session, endpoint model.Service) (*Client, error) {
+func NewClient(sess Session, endpoint model.OOAPIService) (*Client, error) {
 	client := &Client{
 		Client: httpx.Client{
 			BaseURL:    endpoint.Address,

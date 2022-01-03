@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // MultiInput is the input for Multi.Run().

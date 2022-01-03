@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // These vars export internal names to legacy ooni/probe-cli code.
@@ -51,7 +52,7 @@ type ResolverLegacy interface {
 
 // NewResolverLegacyAdapter adapts a ResolverLegacy to
 // become compatible with the Resolver definition.
-func NewResolverLegacyAdapter(reso ResolverLegacy) Resolver {
+func NewResolverLegacyAdapter(reso ResolverLegacy) model.Resolver {
 	return &ResolverLegacyAdapter{reso}
 }
 
@@ -60,7 +61,7 @@ type ResolverLegacyAdapter struct {
 	ResolverLegacy
 }
 
-var _ Resolver = &ResolverLegacyAdapter{}
+var _ model.Resolver = &ResolverLegacyAdapter{}
 
 type resolverLegacyNetworker interface {
 	Network() string
@@ -99,7 +100,7 @@ func (r *ResolverLegacyAdapter) CloseIdleConnections() {
 
 // LookupHTTPS always returns ErrDNSNoTransport.
 func (r *ResolverLegacyAdapter) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
 }
 
@@ -118,7 +119,7 @@ type DialerLegacy interface {
 // become compatible with the Dialer definition.
 //
 // Deprecated: do not use this function in new code.
-func NewDialerLegacyAdapter(d DialerLegacy) Dialer {
+func NewDialerLegacyAdapter(d DialerLegacy) model.Dialer {
 	return &DialerLegacyAdapter{d}
 }
 
@@ -130,7 +131,7 @@ type DialerLegacyAdapter struct {
 	DialerLegacy
 }
 
-var _ Dialer = &DialerLegacyAdapter{}
+var _ model.Dialer = &DialerLegacyAdapter{}
 
 type dialerLegacyIdleConnectionsCloser interface {
 	CloseIdleConnections()
@@ -159,7 +160,7 @@ type QUICContextDialer interface {
 
 // NewQUICDialerFromContextDialerAdapter creates a new
 // QUICDialer from a QUICContextDialer.
-func NewQUICDialerFromContextDialerAdapter(d QUICContextDialer) QUICDialer {
+func NewQUICDialerFromContextDialerAdapter(d QUICContextDialer) model.QUICDialer {
 	return &QUICContextDialerAdapter{d}
 }
 

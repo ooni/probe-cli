@@ -6,19 +6,12 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// Dialer establishes network connections.
-type Dialer interface {
-	// DialContext behaves like net.Dialer.DialContext.
-	DialContext(ctx context.Context, network, address string) (net.Conn, error)
-
-	// CloseIdleConnections closes idle connections, if any.
-	CloseIdleConnections()
-}
-
 // NewDialerWithResolver calls WrapDialer for the stdlib dialer.
-func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
+func NewDialerWithResolver(logger model.DebugLogger, resolver model.Resolver) model.Dialer {
 	return WrapDialer(logger, resolver, &dialerSystem{})
 }
 
@@ -51,26 +44,26 @@ func NewDialerWithResolver(logger Logger, resolver Resolver) Dialer {
 //
 // In general, do not use WrapDialer directly but try to use
 // more high-level factories, e.g., NewDialerWithResolver.
-func WrapDialer(logger Logger, resolver Resolver, dialer Dialer) Dialer {
+func WrapDialer(logger model.DebugLogger, resolver model.Resolver, dialer model.Dialer) model.Dialer {
 	return &dialerLogger{
 		Dialer: &dialerResolver{
 			Dialer: &dialerLogger{
 				Dialer: &dialerErrWrapper{
 					Dialer: dialer,
 				},
-				Logger:          logger,
+				DebugLogger:     logger,
 				operationSuffix: "_address",
 			},
 			Resolver: resolver,
 		},
-		Logger: logger,
+		DebugLogger: logger,
 	}
 }
 
 // NewDialerWithoutResolver calls NewDialerWithResolver with a "null" resolver.
 //
 // The returned dialer fails with ErrNoResolver if passed a domain name.
-func NewDialerWithoutResolver(logger Logger) Dialer {
+func NewDialerWithoutResolver(logger model.DebugLogger) model.Dialer {
 	return NewDialerWithResolver(logger, &nullResolver{})
 }
 
@@ -81,16 +74,16 @@ type dialerSystem struct {
 	timeout time.Duration
 }
 
-var _ Dialer = &dialerSystem{}
+var _ model.Dialer = &dialerSystem{}
 
 const dialerDefaultTimeout = 15 * time.Second
 
-func (d *dialerSystem) newUnderlyingDialer() TProxyDialer {
+func (d *dialerSystem) newUnderlyingDialer() model.SimpleDialer {
 	t := d.timeout
 	if t <= 0 {
 		t = dialerDefaultTimeout
 	}
-	return TProxy.NewTProxyDialer(t)
+	return TProxy.NewSimpleDialer(t)
 }
 
 func (d *dialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
@@ -103,11 +96,11 @@ func (d *dialerSystem) CloseIdleConnections() {
 
 // dialerResolver combines dialing with domain name resolution.
 type dialerResolver struct {
-	Dialer
-	Resolver
+	model.Dialer
+	model.Resolver
 }
 
-var _ Dialer = &dialerResolver{}
+var _ model.Dialer = &dialerResolver{}
 
 func (d *dialerResolver) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	// QUIRK: this routine and the related routines in quirks.go cannot
@@ -151,10 +144,10 @@ func (d *dialerResolver) CloseIdleConnections() {
 // dialerLogger is a Dialer with logging.
 type dialerLogger struct {
 	// Dialer is the underlying dialer.
-	Dialer
+	model.Dialer
 
 	// Logger is the underlying logger.
-	Logger
+	model.DebugLogger
 
 	// operationSuffix is appended to the operation name.
 	//
@@ -165,19 +158,19 @@ type dialerLogger struct {
 	operationSuffix string
 }
 
-var _ Dialer = &dialerLogger{}
+var _ model.Dialer = &dialerLogger{}
 
 func (d *dialerLogger) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	d.Logger.Debugf("dial%s %s/%s...", d.operationSuffix, address, network)
+	d.DebugLogger.Debugf("dial%s %s/%s...", d.operationSuffix, address, network)
 	start := time.Now()
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	elapsed := time.Since(start)
 	if err != nil {
-		d.Logger.Debugf("dial%s %s/%s... %s in %s", d.operationSuffix,
+		d.DebugLogger.Debugf("dial%s %s/%s... %s in %s", d.operationSuffix,
 			address, network, err, elapsed)
 		return nil, err
 	}
-	d.Logger.Debugf("dial%s %s/%s... ok in %s", d.operationSuffix,
+	d.DebugLogger.Debugf("dial%s %s/%s... ok in %s", d.operationSuffix,
 		address, network, elapsed)
 	return conn, nil
 }
@@ -195,7 +188,7 @@ var ErrNoConnReuse = errors.New("cannot reuse connection")
 // dial will succed and return conn regardless of the network
 // and address arguments passed to DialContext. Any subsequent
 // dial returns ErrNoConnReuse.
-func NewSingleUseDialer(conn net.Conn) Dialer {
+func NewSingleUseDialer(conn net.Conn) model.Dialer {
 	return &dialerSingleUse{conn: conn}
 }
 
@@ -205,7 +198,7 @@ type dialerSingleUse struct {
 	conn net.Conn
 }
 
-var _ Dialer = &dialerSingleUse{}
+var _ model.Dialer = &dialerSingleUse{}
 
 func (s *dialerSingleUse) DialContext(ctx context.Context, network string, addr string) (net.Conn, error) {
 	defer s.Unlock()
@@ -225,10 +218,10 @@ func (s *dialerSingleUse) CloseIdleConnections() {
 // dialerErrWrapper is a dialer that performs error wrapping. The connection
 // returned by the DialContext function will also perform error wrapping.
 type dialerErrWrapper struct {
-	Dialer
+	model.Dialer
 }
 
-var _ Dialer = &dialerErrWrapper{}
+var _ model.Dialer = &dialerErrWrapper{}
 
 func (d *dialerErrWrapper) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
@@ -274,13 +267,13 @@ func (c *dialerErrWrapperConn) Close() error {
 var ErrNoDialer = errors.New("no configured dialer")
 
 // NewNullDialer returns a dialer that always fails with ErrNoDialer.
-func NewNullDialer() Dialer {
+func NewNullDialer() model.Dialer {
 	return &nullDialer{}
 }
 
 type nullDialer struct{}
 
-var _ Dialer = &nullDialer{}
+var _ model.Dialer = &nullDialer{}
 
 func (*nullDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return nil, ErrNoDialer

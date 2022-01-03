@@ -11,24 +11,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
-
-// Logger is the logger type we use. This type is compatible
-// with the logger type of github.com/apex/log.
-type Logger interface {
-	netxlite.Logger
-
-	Info(msg string)
-	Infof(format string, v ...interface{})
-
-	Warn(msg string)
-	Warnf(format string, v ...interface{})
-}
 
 // NewOperationLogger creates a new logger that logs
 // about an in-progress operation.
-func NewOperationLogger(logger Logger, format string, v ...interface{}) *OperationLogger {
+func NewOperationLogger(logger model.Logger, format string, v ...interface{}) *OperationLogger {
 	ol := &OperationLogger{
 		sighup:  make(chan interface{}),
 		logger:  logger,
@@ -43,7 +31,7 @@ func NewOperationLogger(logger Logger, format string, v ...interface{}) *Operati
 
 // OperationLogger logs about an in-progress operation
 type OperationLogger struct {
-	logger  Logger
+	logger  model.Logger
 	message string
 	once    *sync.Once
 	sighup  chan interface{}

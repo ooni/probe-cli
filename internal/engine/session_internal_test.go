@@ -10,14 +10,14 @@ import (
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-func (s *Session) GetAvailableProbeServices() []model.Service {
+func (s *Session) GetAvailableProbeServices() []model.OOAPIService {
 	return s.getAvailableProbeServicesUnlocked()
 }
 
-func (s *Session) AppendAvailableProbeService(svc model.Service) {
+func (s *Session) AppendAvailableProbeService(svc model.OOAPIService) {
 	s.availableProbeServices = append(s.availableProbeServices, svc)
 }
 
@@ -29,11 +29,11 @@ func (s *Session) QueryProbeServicesCount() int64 {
 // probeservices.Client used by Session.CheckIn.
 type mockableProbeServicesClientForCheckIn struct {
 	// Config is the config passed to the call.
-	Config *model.CheckInConfig
+	Config *model.OOAPICheckInConfig
 
 	// Results contains the results of the call. This field MUST be
 	// non-nil if and only if Error is nil.
-	Results *model.CheckInInfo
+	Results *model.OOAPICheckInInfo
 
 	// Error indicates whether the call failed. This field MUST be
 	// non-nil if and only if Error is nil.
@@ -45,7 +45,7 @@ type mockableProbeServicesClientForCheckIn struct {
 
 // CheckIn implements sessionProbeServicesClientForCheckIn.CheckIn.
 func (c *mockableProbeServicesClientForCheckIn) CheckIn(
-	ctx context.Context, config model.CheckInConfig) (*model.CheckInInfo, error) {
+	ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error) {
 	defer c.mu.Unlock()
 	c.mu.Lock()
 	if c.Config != nil {
@@ -59,10 +59,10 @@ func (c *mockableProbeServicesClientForCheckIn) CheckIn(
 }
 
 func TestSessionCheckInSuccessful(t *testing.T) {
-	results := &model.CheckInInfo{
-		WebConnectivity: &model.CheckInInfoWebConnectivity{
+	results := &model.OOAPICheckInInfo{
+		WebConnectivity: &model.OOAPICheckInInfoWebConnectivity{
 			ReportID: "xxx-x-xx",
-			URLs: []model.URLInfo{{
+			URLs: []model.OOAPIURLInfo{{
 				CategoryCode: "NEWS",
 				CountryCode:  "IT",
 				URL:          "https://www.repubblica.it/",
@@ -91,7 +91,7 @@ func TestSessionCheckInSuccessful(t *testing.T) {
 			return mockedClnt, nil
 		},
 	}
-	out, err := s.CheckIn(context.Background(), &model.CheckInConfig{})
+	out, err := s.CheckIn(context.Background(), &model.OOAPICheckInConfig{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +128,7 @@ func TestSessionCheckInCannotLookupLocation(t *testing.T) {
 			return errMocked
 		},
 	}
-	out, err := s.CheckIn(context.Background(), &model.CheckInConfig{})
+	out, err := s.CheckIn(context.Background(), &model.OOAPICheckInConfig{})
 	if !errors.Is(err, errMocked) {
 		t.Fatal("no the error we expected", err)
 	}
@@ -154,7 +154,7 @@ func TestSessionCheckInCannotCreateProbeServicesClient(t *testing.T) {
 			return nil, errMocked
 		},
 	}
-	out, err := s.CheckIn(context.Background(), &model.CheckInConfig{})
+	out, err := s.CheckIn(context.Background(), &model.OOAPICheckInConfig{})
 	if !errors.Is(err, errMocked) {
 		t.Fatal("no the error we expected", err)
 	}
@@ -215,7 +215,7 @@ func TestSessionFetchURLListWithCancelledContext(t *testing.T) {
 	sess := &Session{}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // cause failure
-	resp, err := sess.FetchURLList(ctx, model.URLListConfig{})
+	resp, err := sess.FetchURLList(ctx, model.OOAPIURLListConfig{})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("not the error we expected", err)
 	}

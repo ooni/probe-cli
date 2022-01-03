@@ -14,10 +14,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/sessionresolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -25,8 +25,8 @@ import (
 
 // SessionConfig contains the Session config
 type SessionConfig struct {
-	AvailableProbeServices []model.Service
-	KVStore                KVStore
+	AvailableProbeServices []model.OOAPIService
+	KVStore                model.KeyValueStore
 	Logger                 model.Logger
 	ProxyURL               *url.URL
 	SoftwareName           string
@@ -48,18 +48,18 @@ type SessionConfig struct {
 // of such resources. It is not possible to reuse a Session. You MUST
 // NOT attempt to use a Session again after Session.Close.
 type Session struct {
-	availableProbeServices   []model.Service
-	availableTestHelpers     map[string][]model.Service
+	availableProbeServices   []model.OOAPIService
+	availableTestHelpers     map[string][]model.OOAPIService
 	byteCounter              *bytecounter.Counter
 	httpDefaultTransport     netx.HTTPRoundTripper
-	kvStore                  KVStore
+	kvStore                  model.KeyValueStore
 	location                 *geolocate.Results
 	logger                   model.Logger
 	proxyURL                 *url.URL
 	queryProbeServicesCount  *atomicx.Int64
 	resolver                 *sessionresolver.Resolver
-	selectedProbeServiceHook func(*model.Service)
-	selectedProbeService     *model.Service
+	selectedProbeServiceHook func(*model.OOAPIService)
+	selectedProbeService     *model.OOAPIService
 	softwareName             string
 	softwareVersion          string
 	tempDir                  string
@@ -103,7 +103,7 @@ type Session struct {
 // sessionProbeServicesClientForCheckIn returns the probe services
 // client that we should be using for performing the check-in.
 type sessionProbeServicesClientForCheckIn interface {
-	CheckIn(ctx context.Context, config model.CheckInConfig) (*model.CheckInInfo, error)
+	CheckIn(ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error)
 }
 
 // NewSession creates a new session. This factory function will
@@ -243,7 +243,7 @@ func (s *Session) KibiBytesSent() float64 {
 //
 // The return value is either the check-in response or an error.
 func (s *Session) CheckIn(
-	ctx context.Context, config *model.CheckInConfig) (*model.CheckInInfo, error) {
+	ctx context.Context, config *model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error) {
 	if err := s.maybeLookupLocationContext(ctx); err != nil {
 		return nil, err
 	}
@@ -323,7 +323,7 @@ func (s *Session) doClose() {
 
 // GetTestHelpersByName returns the available test helpers that
 // use the specified name, or false if there's none.
-func (s *Session) GetTestHelpersByName(name string) ([]model.Service, bool) {
+func (s *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool) {
 	defer s.mu.Unlock()
 	s.mu.Lock()
 	services, ok := s.availableTestHelpers[name]
@@ -337,7 +337,7 @@ func (s *Session) DefaultHTTPClient() *http.Client {
 
 // FetchTorTargets fetches tor targets from the API.
 func (s *Session) FetchTorTargets(
-	ctx context.Context, cc string) (map[string]model.TorTarget, error) {
+	ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error) {
 	clnt, err := s.NewOrchestraClient(ctx)
 	if err != nil {
 		return nil, err
@@ -347,7 +347,7 @@ func (s *Session) FetchTorTargets(
 
 // FetchURLList fetches the URL list from the API.
 func (s *Session) FetchURLList(
-	ctx context.Context, config model.URLListConfig) ([]model.URLInfo, error) {
+	ctx context.Context, config model.OOAPIURLListConfig) ([]model.OOAPIURLInfo, error) {
 	clnt, err := s.NewOrchestraClient(ctx)
 	if err != nil {
 		return nil, err
@@ -576,7 +576,7 @@ func (s *Session) UserAgent() (useragent string) {
 // getAvailableProbeServicesUnlocked returns the available probe
 // services. This function WILL NOT acquire the mu mutex, therefore,
 // you MUST ensure you are using it from a locked context.
-func (s *Session) getAvailableProbeServicesUnlocked() []model.Service {
+func (s *Session) getAvailableProbeServicesUnlocked() []model.OOAPIService {
 	if len(s.availableProbeServices) > 0 {
 		return s.availableProbeServices
 	}

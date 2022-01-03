@@ -8,20 +8,12 @@ import (
 	"time"
 
 	oohttp "github.com/ooni/oohttp"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
-
-// HTTPTransport is an http.Transport-like structure.
-type HTTPTransport interface {
-	// RoundTrip performs the HTTP round trip.
-	RoundTrip(req *http.Request) (*http.Response, error)
-
-	// CloseIdleConnections closes idle connections.
-	CloseIdleConnections()
-}
 
 // httpTransportErrWrapper is an HTTPTransport with error wrapping.
 type httpTransportErrWrapper struct {
-	HTTPTransport
+	model.HTTPTransport
 }
 
 func (txp *httpTransportErrWrapper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -35,13 +27,13 @@ func (txp *httpTransportErrWrapper) RoundTrip(req *http.Request) (*http.Response
 // httpTransportLogger is an HTTPTransport with logging.
 type httpTransportLogger struct {
 	// HTTPTransport is the underlying HTTP transport.
-	HTTPTransport HTTPTransport
+	HTTPTransport model.HTTPTransport
 
 	// Logger is the underlying logger.
-	Logger Logger
+	Logger model.DebugLogger
 }
 
-var _ HTTPTransport = &httpTransportLogger{}
+var _ model.HTTPTransport = &httpTransportLogger{}
 
 func (txp *httpTransportLogger) RoundTrip(req *http.Request) (*http.Response, error) {
 	txp.Logger.Debugf("> %s %s", req.Method, req.URL.String())
@@ -73,9 +65,9 @@ func (txp *httpTransportLogger) CloseIdleConnections() {
 // httpTransportConnectionsCloser is an HTTPTransport that
 // correctly forwards CloseIdleConnections calls.
 type httpTransportConnectionsCloser struct {
-	HTTPTransport
-	Dialer
-	TLSDialer
+	model.HTTPTransport
+	model.Dialer
+	model.TLSDialer
 }
 
 // CloseIdleConnections forwards the CloseIdleConnections calls.
@@ -89,7 +81,7 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 //
 // This factory and NewHTTPTransportStdlib are the recommended
 // ways of creating a new HTTPTransport.
-func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
+func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer model.TLSDialer) model.HTTPTransport {
 	return WrapHTTPTransport(logger, NewOOHTTPBaseTransport(dialer, tlsDialer))
 }
 
@@ -117,7 +109,7 @@ func NewHTTPTransport(logger Logger, dialer Dialer, tlsDialer TLSDialer) HTTPTra
 // way in which we perform measurements.
 //
 // This is a low level factory. Consider not using it directly.
-func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
+func NewOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) model.HTTPTransport {
 	// Using oohttp to support any TLS library.
 	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
 
@@ -158,7 +150,7 @@ func NewOOHTTPBaseTransport(dialer Dialer, tlsDialer TLSDialer) HTTPTransport {
 // and guarantees that returned errors are wrapped.
 //
 // This is a low level factory. Consider not using it directly.
-func WrapHTTPTransport(logger Logger, txp HTTPTransport) HTTPTransport {
+func WrapHTTPTransport(logger model.DebugLogger, txp model.HTTPTransport) model.HTTPTransport {
 	return &httpTransportLogger{
 		HTTPTransport: &httpTransportErrWrapper{txp},
 		Logger:        logger,
@@ -168,7 +160,7 @@ func WrapHTTPTransport(logger Logger, txp HTTPTransport) HTTPTransport {
 // httpDialerWithReadTimeout enforces a read timeout for all HTTP
 // connections. See https://github.com/ooni/probe/issues/1609.
 type httpDialerWithReadTimeout struct {
-	Dialer
+	model.Dialer
 }
 
 // DialContext implements Dialer.DialContext.
@@ -184,7 +176,7 @@ func (d *httpDialerWithReadTimeout) DialContext(
 // httpTLSDialerWithReadTimeout enforces a read timeout for all HTTP
 // connections. See https://github.com/ooni/probe/issues/1609.
 type httpTLSDialerWithReadTimeout struct {
-	TLSDialer
+	model.TLSDialer
 }
 
 // ErrNotTLSConn occur when an interface accepts a net.Conn but
@@ -259,25 +251,19 @@ func (c *httpTLSConnWithReadTimeout) Read(b []byte) (int, error) {
 //
 // This factory and NewHTTPTransport are the recommended
 // ways of creating a new HTTPTransport.
-func NewHTTPTransportStdlib(logger Logger) HTTPTransport {
+func NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
 	dialer := NewDialerWithResolver(logger, NewResolverStdlib(logger))
 	tlsDialer := NewTLSDialer(dialer, NewTLSHandshakerStdlib(logger))
 	return NewHTTPTransport(logger, dialer, tlsDialer)
 }
 
-// HTTPClient is an http.Client-like interface.
-type HTTPClient interface {
-	Do(req *http.Request) (*http.Response, error)
-	CloseIdleConnections()
-}
-
 // WrapHTTPClient wraps an HTTP client to add error wrapping capabilities.
-func WrapHTTPClient(clnt HTTPClient) HTTPClient {
+func WrapHTTPClient(clnt model.HTTPClient) model.HTTPClient {
 	return &httpClientErrWrapper{clnt}
 }
 
 type httpClientErrWrapper struct {
-	HTTPClient
+	model.HTTPClient
 }
 
 func (c *httpClientErrWrapper) Do(req *http.Request) (*http.Response, error) {

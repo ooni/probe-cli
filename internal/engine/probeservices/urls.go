@@ -6,17 +6,17 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 type urlListResult struct {
-	Results []model.URLInfo `json:"results"`
+	Results []model.OOAPIURLInfo `json:"results"`
 }
 
 // FetchURLList fetches the list of URLs used by WebConnectivity. The config
 // argument contains the optional settings. Returns the list of URLs, on success,
 // or an explanatory error, in case of failure.
-func (c Client) FetchURLList(ctx context.Context, config model.URLListConfig) ([]model.URLInfo, error) {
+func (c Client) FetchURLList(ctx context.Context, config model.OOAPIURLListConfig) ([]model.OOAPIURLInfo, error) {
 	query := url.Values{}
 	if config.CountryCode != "" {
 		query.Set("country_code", config.CountryCode)

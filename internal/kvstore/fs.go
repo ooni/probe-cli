@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/rogpeppe/go-internal/lockedfile"
 )
 
@@ -14,6 +15,8 @@ import (
 type FS struct {
 	basedir string
 }
+
+var _ model.KeyValueStore = &FS{}
 
 // NewFS creates a new kvstore.FileSystem.
 func NewFS(basedir string) (kvs *FS, err error) {

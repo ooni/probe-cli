@@ -3,7 +3,7 @@ package engine
 import (
 	"errors"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // Saver saves a measurement on some persistent storage.

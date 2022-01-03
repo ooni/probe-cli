@@ -39,14 +39,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
-
-// Logger is the logger assumed by this package
-type Logger interface {
-	Debugf(format string, v ...interface{})
-	Debug(message string)
-}
 
 // Dialer is the definition of dialer assumed by this package.
 type Dialer interface {
@@ -95,7 +90,7 @@ type Config struct {
 	QUICDialer          QUICDialer           // default: quicdialer.DNSDialer
 	HTTP3Enabled        bool                 // default: disabled
 	HTTPSaver           *trace.Saver         // default: not saving HTTP
-	Logger              Logger               // default: no logging
+	Logger              model.DebugLogger    // default: no logging
 	NoTLSVerify         bool                 // default: perform TLS verify
 	ProxyURL            *url.URL             // default: no proxy
 	ReadWriteSaver      *trace.Saver         // default: not saving read/write
@@ -196,7 +191,7 @@ func NewTLSDialer(config Config) TLSDialer {
 	var h tlsHandshaker = &netxlite.TLSHandshakerConfigurable{}
 	h = &errorsx.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
 	if config.Logger != nil {
-		h = &netxlite.TLSHandshakerLogger{Logger: config.Logger, TLSHandshaker: h}
+		h = &netxlite.TLSHandshakerLogger{DebugLogger: config.Logger, TLSHandshaker: h}
 	}
 	if config.TLSSaver != nil {
 		h = tlsdialer.SaverTLSHandshaker{TLSHandshaker: h, Saver: config.TLSSaver}

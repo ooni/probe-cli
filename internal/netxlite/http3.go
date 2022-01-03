@@ -8,13 +8,14 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/lucas-clemente/quic-go/http3"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // http3Dialer adapts a QUICContextDialer to work with
 // an http3.RoundTripper. This is necessary because the
 // http3.RoundTripper does not support DialContext.
 type http3Dialer struct {
-	QUICDialer
+	model.QUICDialer
 }
 
 // dial is like QUICContextDialer.DialContext but without context.
@@ -33,10 +34,10 @@ type http3RoundTripper interface {
 // http3Transport is an HTTPTransport using the http3 protocol.
 type http3Transport struct {
 	child  http3RoundTripper
-	dialer QUICDialer
+	dialer model.QUICDialer
 }
 
-var _ HTTPTransport = &http3Transport{}
+var _ model.HTTPTransport = &http3Transport{}
 
 // RoundTrip implements HTTPTransport.RoundTrip.
 func (txp *http3Transport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -53,7 +54,7 @@ func (txp *http3Transport) CloseIdleConnections() {
 // dialer argument MUST NOT be nil. If the tlsConfig argument is nil,
 // then the code will use the default TLS configuration.
 func NewHTTP3Transport(
-	logger Logger, dialer QUICDialer, tlsConfig *tls.Config) HTTPTransport {
+	logger model.DebugLogger, dialer model.QUICDialer, tlsConfig *tls.Config) model.HTTPTransport {
 	return &httpTransportLogger{
 		HTTPTransport: &http3Transport{
 			child: &http3.RoundTripper{

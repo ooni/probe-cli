@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestDNSOverTCP(t *testing.T) {

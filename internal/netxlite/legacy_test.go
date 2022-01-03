@@ -6,7 +6,8 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	nlmocks "github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestResolverLegacyAdapter(t *testing.T) {
@@ -93,7 +94,7 @@ func TestQUICContextDialerAdapter(t *testing.T) {
 	})
 
 	t.Run("with incompatible type", func(t *testing.T) {
-		d := NewQUICDialerFromContextDialerAdapter(&mocks.QUICContextDialer{})
+		d := NewQUICDialerFromContextDialerAdapter(&nlmocks.QUICContextDialer{})
 		d.CloseIdleConnections() // does not crash
 	})
 }

@@ -13,6 +13,9 @@ where `$package` is the name of the package.
 
 Some notable packages:
 
+- [model](model) contains the interfaces and data model shared
+by most packages inside this directory;
+
 - [netxlite](netxlite) is the underlying networking library;
 
 - [tutorial](tutorial) contains tutorials on writing new experiments,

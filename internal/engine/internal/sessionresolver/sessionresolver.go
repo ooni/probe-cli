@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -63,11 +64,11 @@ type Resolver struct {
 	// KVStore is the MANDATORY key-value store where you
 	// want us to write statistics about which resolver is
 	// working better in your network.
-	KVStore KVStore
+	KVStore model.KeyValueStore
 
 	// Logger is the optional logger you want us to use
 	// to emit log messages.
-	Logger Logger
+	Logger model.Logger
 
 	// ProxyURL is the optional URL of the socks5 proxy
 	// we should be using. If not set, then we WON'T use

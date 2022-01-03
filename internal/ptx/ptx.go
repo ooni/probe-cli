@@ -45,6 +45,7 @@ import (
 	"sync"
 
 	pt "git.torproject.org/pluggable-transports/goptlib.git"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -75,7 +76,7 @@ type Listener struct {
 	// Logger is the optional logger. When not set, this library
 	// will not emit logs. (But the underlying pluggable transport
 	// may still emit its own log messages.)
-	Logger Logger
+	Logger model.Logger
 
 	// mu provides mutual exclusion for accessing internals.
 	mu sync.Mutex
@@ -94,7 +95,7 @@ type Listener struct {
 }
 
 // logger returns the Logger, if set, or the defaultLogger.
-func (lst *Listener) logger() Logger {
+func (lst *Listener) logger() model.Logger {
 	if lst.Logger != nil {
 		return lst.Logger
 	}

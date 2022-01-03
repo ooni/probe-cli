@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
 // TProxyPolicy is a policy for TPRoxy.
@@ -100,13 +100,13 @@ func (c *TProxyConfig) CanonicalizeDNS() {
 	c.DNSCache = cache
 }
 
-// TProxy is a netxlite.TProxable that implements self censorship.
+// TProxy is a model.UnderlyingNetworkLibrary that implements self censorship.
 type TProxy struct {
 	// config contains settings for TProxy.
 	config *TProxyConfig
 
 	// dnsClient is the DNS client we'll internally use.
-	dnsClient netxlite.Resolver
+	dnsClient model.Resolver
 
 	// dnsListener is the DNS listener.
 	dnsListener DNSListener
@@ -115,10 +115,10 @@ type TProxy struct {
 	httpListener net.Listener
 
 	// listenUDP allows overriding net.ListenUDP calls in tests
-	listenUDP func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error)
+	listenUDP func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error)
 
 	// logger is the underlying logger to use.
-	logger Logger
+	logger model.InfoLogger
 
 	// tlsListener is the TLS listener.
 	tlsListener net.Listener
@@ -129,15 +129,15 @@ type TProxy struct {
 //
 
 // NewTProxy creates a new TProxy instance.
-func NewTProxy(config *TProxyConfig, logger Logger) (*TProxy, error) {
+func NewTProxy(config *TProxyConfig, logger model.InfoLogger) (*TProxy, error) {
 	return newTProxy(config, logger, "127.0.0.1:0", "127.0.0.1:0", "127.0.0.1:0")
 }
 
-func newTProxy(config *TProxyConfig, logger Logger, dnsListenerAddr,
+func newTProxy(config *TProxyConfig, logger model.InfoLogger, dnsListenerAddr,
 	tlsListenerAddr, httpListenerAddr string) (*TProxy, error) {
 	p := &TProxy{
 		config: config,
-		listenUDP: func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+		listenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
 			return net.ListenUDP(network, laddr)
 		},
 		logger: logger,
@@ -165,12 +165,12 @@ func (p *TProxy) newDNSListener(listenAddr string) error {
 	return err
 }
 
-func (p *TProxy) newDNSClient(logger Logger) {
+func (p *TProxy) newDNSClient(logger model.DebugLogger) {
 	dialer := netxlite.NewDialerWithoutResolver(logger)
 	p.dnsClient = netxlite.NewResolverUDP(logger, dialer, p.dnsListener.LocalAddr().String())
 }
 
-func (p *TProxy) newTLSListener(listenAddr string, logger Logger) error {
+func (p *TProxy) newTLSListener(listenAddr string, logger model.DebugLogger) error {
 	var err error
 	tlsProxy := &TLSProxy{OnIncomingSNI: p.onIncomingSNI}
 	p.tlsListener, err = tlsProxy.Start(listenAddr)
@@ -198,7 +198,7 @@ func (p *TProxy) Close() error {
 //
 
 // ListenUDP implements netxlite.TProxy.ListenUDP.
-func (p *TProxy) ListenUDP(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+func (p *TProxy) ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
 	pconn, err := p.listenUDP(network, laddr)
 	if err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ func (p *TProxy) ListenUDP(network string, laddr *net.UDPAddr) (quicx.UDPLikeCon
 // tProxyUDPLikeConn is a TProxy-aware UDPLikeConn.
 type tProxyUDPLikeConn struct {
 	// UDPLikeConn is the underlying conn type.
-	quicx.UDPLikeConn
+	model.UDPLikeConn
 
 	// proxy refers to the TProxy.
 	proxy *TProxy
@@ -242,8 +242,8 @@ func (p *TProxy) LookupHost(ctx context.Context, domain string) ([]string, error
 // Dialer
 //
 
-// NewTProxyDialer implements netxlite.TProxy.NewTProxyDialer.
-func (p *TProxy) NewTProxyDialer(timeout time.Duration) netxlite.TProxyDialer {
+// NewSimpleDialer implements netxlite.TProxy.NewTProxyDialer.
+func (p *TProxy) NewSimpleDialer(timeout time.Duration) model.SimpleDialer {
 	return &tProxyDialer{
 		dialer: &net.Dialer{Timeout: timeout},
 		proxy:  p,

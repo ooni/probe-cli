@@ -6,7 +6,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 	legacyerrorsx "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 

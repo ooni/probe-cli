@@ -3,12 +3,14 @@ package geolocate
 import (
 	"context"
 	"net/http"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func invalidIPLookup(
 	ctx context.Context,
 	httpClient *http.Client,
-	logger Logger,
+	logger model.Logger,
 	userAgent string,
 ) (string, error) {
 	return "invalid IP", nil

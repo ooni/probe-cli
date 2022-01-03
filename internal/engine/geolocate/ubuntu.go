@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 type ubuntuResponse struct {
@@ -16,7 +17,7 @@ type ubuntuResponse struct {
 func ubuntuIPLookup(
 	ctx context.Context,
 	httpClient *http.Client,
-	logger Logger,
+	logger model.Logger,
 	userAgent string,
 ) (string, error) {
 	data, err := (httpx.Client{

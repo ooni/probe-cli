@@ -17,7 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netxlogger"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonidatamodel"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
@@ -144,14 +144,14 @@ func (tk *TestKeys) fillToplevelKeys() {
 // Measurer performs the measurement.
 type Measurer struct {
 	config          Config
-	fetchTorTargets func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.TorTarget, error)
+	fetchTorTargets func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.OOAPITorTarget, error)
 }
 
 // NewMeasurer creates a new Measurer
 func NewMeasurer(config Config) *Measurer {
 	return &Measurer{
 		config: config,
-		fetchTorTargets: func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.TorTarget, error) {
+		fetchTorTargets: func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.OOAPITorTarget, error) {
 			return sess.FetchTorTargets(ctx, cc)
 		},
 	}
@@ -189,7 +189,7 @@ func (m *Measurer) Run(
 
 func (m *Measurer) gimmeTargets(
 	ctx context.Context, sess model.ExperimentSession,
-) (map[string]model.TorTarget, error) {
+) (map[string]model.OOAPITorTarget, error) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 	return m.fetchTorTargets(ctx, sess, sess.ProbeCC())
@@ -198,7 +198,7 @@ func (m *Measurer) gimmeTargets(
 // keytarget contains a key and the related target
 type keytarget struct {
 	key    string
-	target model.TorTarget
+	target model.OOAPITorTarget
 }
 
 // private returns whether a target is private. We consider private
@@ -222,7 +222,7 @@ func (m *Measurer) measureTargets(
 	sess model.ExperimentSession,
 	measurement *model.Measurement,
 	callbacks model.ExperimentCallbacks,
-	targets map[string]model.TorTarget,
+	targets map[string]model.OOAPITorTarget,
 ) {
 	// run measurements in parallel
 	var waitgroup sync.WaitGroup
@@ -327,7 +327,7 @@ func maybeScrubbingLogger(input model.Logger, kt keytarget) model.Logger {
 	if !kt.private() {
 		return input
 	}
-	return &scrubber.Logger{UnderlyingLogger: input}
+	return &scrubber.Logger{Logger: input}
 }
 
 func (rc *resultsCollector) defaultFlexibleConnect(

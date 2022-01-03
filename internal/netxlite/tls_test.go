@@ -16,7 +16,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestVersionString(t *testing.T) {
@@ -120,7 +120,7 @@ func TestConfigureTLSVersion(t *testing.T) {
 func TestNewTLSHandshakerStdlib(t *testing.T) {
 	th := NewTLSHandshakerStdlib(log.Log)
 	logger := th.(*tlsHandshakerLogger)
-	if logger.Logger != log.Log {
+	if logger.DebugLogger != log.Log {
 		t.Fatal("invalid logger")
 	}
 	errWrapper := logger.TLSHandshaker.(*tlsHandshakerErrWrapper)
@@ -253,7 +253,7 @@ func TestTLSHandshakerLogger(t *testing.T) {
 						return tls.Client(conn, config), tls.ConnectionState{}, nil
 					},
 				},
-				Logger: lo,
+				DebugLogger: lo,
 			}
 			conn := &mocks.Conn{
 				MockClose: func() error {
@@ -291,7 +291,7 @@ func TestTLSHandshakerLogger(t *testing.T) {
 						return nil, tls.ConnectionState{}, expected
 					},
 				},
-				Logger: lo,
+				DebugLogger: lo,
 			}
 			conn := &mocks.Conn{
 				MockClose: func() error {

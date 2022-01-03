@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestFetchURLListSuccess(t *testing.T) {
@@ -14,7 +14,7 @@ func TestFetchURLListSuccess(t *testing.T) {
 	}
 	client := newclient()
 	client.BaseURL = "https://ams-pg-test.ooni.org"
-	config := model.URLListConfig{
+	config := model.OOAPIURLListConfig{
 		Categories:  []string{"NEWS", "CULTR"},
 		CountryCode: "IT",
 		Limit:       17,
@@ -37,7 +37,7 @@ func TestFetchURLListSuccess(t *testing.T) {
 func TestFetchURLListFailure(t *testing.T) {
 	client := newclient()
 	client.BaseURL = "https://\t\t\t/" // cause test to fail
-	config := model.URLListConfig{
+	config := model.OOAPIURLListConfig{
 		Categories:  []string{"NEWS", "CULTR"},
 		CountryCode: "IT",
 		Limit:       17,

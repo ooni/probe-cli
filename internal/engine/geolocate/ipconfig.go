@@ -7,12 +7,13 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func ipConfigIPLookup(
 	ctx context.Context,
 	httpClient *http.Client,
-	logger Logger,
+	logger model.Logger,
 	userAgent string,
 ) (string, error) {
 	data, err := (httpx.Client{

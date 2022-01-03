@@ -5,19 +5,19 @@ import (
 
 	"github.com/apex/log"
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func (n WebConnectivity) lookupURLs(ctl *Controller, categories []string) ([]string, error) {
 	inputloader := &engine.InputLoader{
-		CheckInConfig: &model.CheckInConfig{
+		CheckInConfig: &model.OOAPICheckInConfig{
 			// Setting Charging and OnWiFi to true causes the CheckIn
 			// API to return to us as much URL as possible with the
 			// given RunType hint.
 			Charging: true,
 			OnWiFi:   true,
 			RunType:  ctl.RunType,
-			WebConnectivity: model.CheckInConfigWebConnectivity{
+			WebConnectivity: model.OOAPICheckInConfigWebConnectivity{
 				CategoryCodes: categories,
 			},
 		},

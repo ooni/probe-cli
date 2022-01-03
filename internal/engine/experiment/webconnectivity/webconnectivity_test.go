@@ -11,8 +11,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -202,7 +202,7 @@ func TestMeasureWithNoAvailableTestHelpers(t *testing.T) {
 
 func newsession(t *testing.T, lookupBackends bool) model.ExperimentSession {
 	sess, err := engine.NewSession(context.Background(), engine.SessionConfig{
-		AvailableProbeServices: []model.Service{{
+		AvailableProbeServices: []model.OOAPIService{{
 			Address: "https://ams-pg-test.ooni.org",
 			Type:    "https",
 		}},

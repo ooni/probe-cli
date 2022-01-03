@@ -11,7 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/output"
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
 	"upper.io/db.v3/lib/sqlbuilder"
 )
@@ -90,7 +90,7 @@ type Controller struct {
 //
 // - on failure, an error.
 func (c *Controller) BuildAndSetInputIdxMap(
-	db sqlbuilder.Database, testlist []model.URLInfo) ([]string, error) {
+	db sqlbuilder.Database, testlist []model.OOAPIURLInfo) ([]string, error) {
 	var urls []string
 	urlIDMap := make(map[int64]int64)
 	for idx, url := range testlist {

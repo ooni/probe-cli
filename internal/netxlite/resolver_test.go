@@ -11,7 +11,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestNewResolverSystem(t *testing.T) {
@@ -246,14 +247,14 @@ func TestResolverLogger(t *testing.T) {
 					count++
 				},
 			}
-			expected := &HTTPSSvc{
+			expected := &model.HTTPSSvc{
 				ALPN: []string{"h3"},
 				IPv4: []string{"1.1.1.1"},
 			}
 			r := &resolverLogger{
 				Logger: lo,
 				Resolver: &mocks.Resolver{
-					MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 						return expected, nil
 					},
 					MockNetwork: func() string {
@@ -287,7 +288,7 @@ func TestResolverLogger(t *testing.T) {
 			r := &resolverLogger{
 				Logger: lo,
 				Resolver: &mocks.Resolver{
-					MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 						return nil, expected
 					},
 					MockNetwork: func() string {
@@ -357,14 +358,14 @@ func TestResolverIDNA(t *testing.T) {
 
 	t.Run("LookupHTTPS", func(t *testing.T) {
 		t.Run("with valid IDNA in input", func(t *testing.T) {
-			expected := &HTTPSSvc{
+			expected := &model.HTTPSSvc{
 				ALPN: []string{"h3"},
 				IPv4: []string{"1.1.1.1"},
 				IPv6: []string{},
 			}
 			r := &resolverIDNA{
 				Resolver: &mocks.Resolver{
-					MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 						if domain != "xn--d1acpjx3f.xn--p1ai" {
 							return nil, errors.New("passed invalid domain")
 						}
@@ -384,7 +385,7 @@ func TestResolverIDNA(t *testing.T) {
 
 		t.Run("with invalid punycode", func(t *testing.T) {
 			r := &resolverIDNA{Resolver: &mocks.Resolver{
-				MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+				MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 					return nil, errors.New("should not happen")
 				},
 			}}
@@ -567,12 +568,12 @@ func TestResolverErrWrapper(t *testing.T) {
 
 	t.Run("LookupHTTPS", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
-			expected := &HTTPSSvc{
+			expected := &model.HTTPSSvc{
 				ALPN: []string{"h3"},
 			}
 			reso := &resolverErrWrapper{
 				Resolver: &mocks.Resolver{
-					MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 						return expected, nil
 					},
 				},
@@ -591,7 +592,7 @@ func TestResolverErrWrapper(t *testing.T) {
 			expected := io.EOF
 			reso := &resolverErrWrapper{
 				Resolver: &mocks.Resolver{
-					MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 						return nil, expected
 					},
 				},

@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // Session allows to mock sessions.
 type Session struct {
-	MockableTestHelpers              map[string][]model.Service
+	MockableTestHelpers              map[string][]model.OOAPIService
 	MockableHTTPClient               *http.Client
 	MockableLogger                   model.Logger
 	MockableMaybeResolverIP          string
@@ -24,9 +24,9 @@ type Session struct {
 	MockableProxyURL                 *url.URL
 	MockableFetchPsiphonConfigResult []byte
 	MockableFetchPsiphonConfigErr    error
-	MockableFetchTorTargetsResult    map[string]model.TorTarget
+	MockableFetchTorTargetsResult    map[string]model.OOAPITorTarget
 	MockableFetchTorTargetsErr       error
-	MockableFetchURLListResult       []model.URLInfo
+	MockableFetchURLListResult       []model.OOAPIURLInfo
 	MockableFetchURLListErr          error
 	MockableResolverIP               string
 	MockableSoftwareName             string
@@ -38,7 +38,7 @@ type Session struct {
 }
 
 // GetTestHelpersByName implements ExperimentSession.GetTestHelpersByName
-func (sess *Session) GetTestHelpersByName(name string) ([]model.Service, bool) {
+func (sess *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool) {
 	services, okay := sess.MockableTestHelpers[name]
 	return services, okay
 }
@@ -55,13 +55,13 @@ func (sess *Session) FetchPsiphonConfig(ctx context.Context) ([]byte, error) {
 
 // FetchTorTargets implements ExperimentSession.TorTargets
 func (sess *Session) FetchTorTargets(
-	ctx context.Context, cc string) (map[string]model.TorTarget, error) {
+	ctx context.Context, cc string) (map[string]model.OOAPITorTarget, error) {
 	return sess.MockableFetchTorTargetsResult, sess.MockableFetchTorTargetsErr
 }
 
 // FetchURLList implements ExperimentSession.FetchURLList.
 func (sess *Session) FetchURLList(
-	ctx context.Context, config model.URLListConfig) ([]model.URLInfo, error) {
+	ctx context.Context, config model.OOAPIURLListConfig) ([]model.OOAPIURLInfo, error) {
 	return sess.MockableFetchURLListResult, sess.MockableFetchURLListErr
 }
 

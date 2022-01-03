@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pion/stun"
 )
 
@@ -20,7 +21,7 @@ type stunClient interface {
 type stunConfig struct {
 	Dial     func(network string, address string) (stunClient, error)
 	Endpoint string
-	Logger   Logger
+	Logger   model.Logger
 }
 
 func stunDialer(network string, address string) (stunClient, error) {
@@ -75,7 +76,7 @@ func stunIPLookup(ctx context.Context, config stunConfig) (string, error) {
 func stunEkigaIPLookup(
 	ctx context.Context,
 	httpClient *http.Client,
-	logger Logger,
+	logger model.Logger,
 	userAgent string,
 ) (string, error) {
 	return stunIPLookup(ctx, stunConfig{
@@ -87,7 +88,7 @@ func stunEkigaIPLookup(
 func stunGoogleIPLookup(
 	ctx context.Context,
 	httpClient *http.Client,
-	logger Logger,
+	logger model.Logger,
 	userAgent string,
 ) (string, error) {
 	return stunIPLookup(ctx, stunConfig{

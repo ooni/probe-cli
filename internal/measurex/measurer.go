@@ -21,6 +21,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -34,7 +35,7 @@ type Measurer struct {
 	HTTPClient HTTPClient
 
 	// Logger is the MANDATORY logger to use.
-	Logger Logger
+	Logger model.Logger
 
 	// MeasureURLHelper is the OPTIONAL test helper to use when
 	// we're measuring using the MeasureURL function. If this field
@@ -45,7 +46,7 @@ type Measurer struct {
 	Resolvers []*ResolverInfo
 
 	// TLSHandshaker is the MANDATORY TLS handshaker.
-	TLSHandshaker netxlite.TLSHandshaker
+	TLSHandshaker model.TLSHandshaker
 }
 
 // NewMeasurerWithDefaultSettings creates a new Measurer
@@ -85,7 +86,7 @@ func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *DNSMea
 
 // lookupHostForeign performs a LookupHost using a "foreign" resolver.
 func (mx *Measurer) lookupHostForeign(
-	ctx context.Context, domain string, r Resolver) *DNSMeasurement {
+	ctx context.Context, domain string, r model.Resolver) *DNSMeasurement {
 	const timeout = 4 * time.Second
 	ol := NewOperationLogger(mx.Logger, "LookupHost %s with %s", domain, r.Network())
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -158,7 +159,7 @@ func (mx *Measurer) LookupHTTPSSvcUDP(
 // lookupHTTPSSvcUDPForeign is like LookupHTTPSSvcUDP
 // except that it uses a "foreign" resolver.
 func (mx *Measurer) lookupHTTPSSvcUDPForeign(
-	ctx context.Context, domain string, r Resolver) *DNSMeasurement {
+	ctx context.Context, domain string, r model.Resolver) *DNSMeasurement {
 	const timeout = 4 * time.Second
 	ol := NewOperationLogger(mx.Logger, "LookupHTTPSvc %s with %s", domain, r.Address())
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -591,7 +592,7 @@ type ResolverInfo struct {
 
 	// ForeignResolver is only used when Network's
 	// value equals the ResolverForeign constant.
-	ForeignResolver Resolver
+	ForeignResolver model.Resolver
 }
 
 // LookupURLHostParallel performs an LookupHost-like operation for each

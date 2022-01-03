@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"regexp"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -27,12 +28,6 @@ var (
 	// ErrEmptyResponse indicates that no hosts were returned
 	ErrEmptyResponse = errors.New("mlablocatev2: empty response")
 )
-
-// Logger is the logger expected by this package.
-type Logger interface {
-	// Debugf formats and emits a debug message.
-	Debugf(format string, v ...interface{})
-}
 
 // HTTPClient is anything that looks like an http.Client.
 type HTTPClient interface {
@@ -51,7 +46,7 @@ type Client struct {
 	Hostname string
 
 	// Logger is the MANDATORY logger to use.
-	Logger Logger
+	Logger model.DebugLogger
 
 	// Scheme is the MANDATORY scheme to use (http or https).
 	Scheme string
@@ -61,7 +56,7 @@ type Client struct {
 }
 
 // NewClient creates a client for v2 of the locate services.
-func NewClient(httpClient HTTPClient, logger Logger, userAgent string) Client {
+func NewClient(httpClient HTTPClient, logger model.DebugLogger, userAgent string) Client {
 	return Client{
 		HTTPClient: httpClient,
 		Hostname:   "locate.measurementlab.net",

@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/iancoleman/strcase"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // InputPolicy describes the experiment policy with respect to input. That is

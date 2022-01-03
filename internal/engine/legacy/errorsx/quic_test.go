@@ -9,15 +9,16 @@ import (
 	"testing"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
+	nlmocks "github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
 
 func TestErrorWrapperQUICListenerSuccess(t *testing.T) {
 	ql := &ErrorWrapperQUICListener{
 		QUICListener: &mocks.QUICListener{
-			MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return &net.UDPConn{}, nil
 			},
 		},
@@ -32,7 +33,7 @@ func TestErrorWrapperQUICListenerSuccess(t *testing.T) {
 func TestErrorWrapperQUICListenerFailure(t *testing.T) {
 	ql := &ErrorWrapperQUICListener{
 		QUICListener: &mocks.QUICListener{
-			MockListen: func(addr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return nil, io.EOF
 			},
 		},
@@ -130,7 +131,7 @@ func TestErrorWrapperUDPConnReadFromFailure(t *testing.T) {
 
 func TestErrorWrapperQUICDialerFailure(t *testing.T) {
 	ctx := context.Background()
-	d := &ErrorWrapperQUICDialer{Dialer: &mocks.QUICContextDialer{
+	d := &ErrorWrapperQUICDialer{Dialer: &nlmocks.QUICContextDialer{
 		MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
 			return nil, io.EOF
 		},

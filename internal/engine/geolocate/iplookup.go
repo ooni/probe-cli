@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
 )
 
@@ -25,7 +26,7 @@ var (
 
 type lookupFunc func(
 	ctx context.Context, client *http.Client,
-	logger Logger, userAgent string,
+	logger model.Logger, userAgent string,
 ) (string, error)
 
 type method struct {
@@ -67,7 +68,7 @@ type ipLookupClient struct {
 	Resolver Resolver
 
 	// Logger is the logger to use
-	Logger Logger
+	Logger model.Logger
 
 	// UserAgent is the user agent to use
 	UserAgent string

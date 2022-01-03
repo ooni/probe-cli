@@ -13,26 +13,17 @@ import (
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
 )
 
-// QUICConn is the kind of conn used by QUIC.
-type QUICConn = quicx.UDPLikeConn
-
-// QUICDialer creates QUICSesssions.
-type QUICDialer = netxlite.QUICDialer
-
-// QUICListener creates listening connections for QUIC.
-type QUICListener = netxlite.QUICListener
-
 type quicListenerDB struct {
-	netxlite.QUICListener
+	model.QUICListener
 	begin time.Time
 	db    WritableDB
 }
 
-func (ql *quicListenerDB) Listen(addr *net.UDPAddr) (QUICConn, error) {
+func (ql *quicListenerDB) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	pconn, err := ql.QUICListener.Listen(addr)
 	if err != nil {
 		return nil, err
@@ -45,7 +36,7 @@ func (ql *quicListenerDB) Listen(addr *net.UDPAddr) (QUICConn, error) {
 }
 
 type udpLikeConnDB struct {
-	quicx.UDPLikeConn
+	model.UDPLikeConn
 	begin time.Time
 	db    WritableDB
 }
@@ -103,15 +94,15 @@ func (c *udpLikeConnDB) Close() error {
 // address containing a domain name will fail. This QUICDialer will
 // save any event into the WritableDB. Any QUICConn created by it will
 // likewise save any event into the WritableDB.
-func (mx *Measurer) NewQUICDialerWithoutResolver(db WritableDB, logger Logger) QUICDialer {
+func (mx *Measurer) NewQUICDialerWithoutResolver(db WritableDB, logger model.Logger) model.QUICDialer {
 	return &quicDialerDB{db: db, logger: logger, begin: mx.Begin}
 }
 
 type quicDialerDB struct {
-	netxlite.QUICDialer
+	model.QUICDialer
 	begin  time.Time
 	db     WritableDB
-	logger Logger
+	logger model.Logger
 }
 
 func (qh *quicDialerDB) DialContext(ctx context.Context, network, address string,

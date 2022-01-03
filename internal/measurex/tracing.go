@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -25,8 +26,8 @@ import (
 // - resolver is the underlying resolver to use
 //
 // - handshake is the TLS handshaker to use
-func NewTracingHTTPTransport(logger Logger, begin time.Time, db WritableDB,
-	resolver Resolver, dialer Dialer, handshaker TLSHandshaker) *HTTPTransportDB {
+func NewTracingHTTPTransport(logger model.Logger, begin time.Time, db WritableDB,
+	resolver model.Resolver, dialer model.Dialer, handshaker model.TLSHandshaker) *HTTPTransportDB {
 	resolver = WrapResolver(begin, db, resolver)
 	dialer = netxlite.WrapDialer(logger, resolver, WrapDialer(begin, db, dialer))
 	tlsDialer := netxlite.NewTLSDialer(dialer, handshaker)
@@ -47,7 +48,7 @@ func NewTracingHTTPTransport(logger Logger, begin time.Time, db WritableDB,
 // eventually become the measurement
 //
 func NewTracingHTTPTransportWithDefaultSettings(
-	begin time.Time, logger Logger, db WritableDB) *HTTPTransportDB {
+	begin time.Time, logger model.Logger, db WritableDB) *HTTPTransportDB {
 	return NewTracingHTTPTransport(logger, begin, db,
 		netxlite.NewResolverStdlib(logger),
 		netxlite.NewDialerWithoutResolver(logger),
@@ -55,7 +56,7 @@ func NewTracingHTTPTransportWithDefaultSettings(
 }
 
 func (mx *Measurer) NewTracingHTTPTransportWithDefaultSettings(
-	logger Logger, db WritableDB) *HTTPTransportDB {
+	logger model.Logger, db WritableDB) *HTTPTransportDB {
 	return NewTracingHTTPTransport(
 		mx.Logger, mx.Begin, db, mx.NewResolverSystem(db, mx.Logger),
 		mx.NewDialerWithoutResolver(db, mx.Logger),

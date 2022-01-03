@@ -7,6 +7,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // SerialResolver uses a transport and sends performs a LookupHost
@@ -16,20 +17,20 @@ import (
 // You should probably use NewSerialResolver to create a new instance.
 type SerialResolver struct {
 	// Encoder is the MANDATORY encoder to use.
-	Encoder DNSEncoder
+	Encoder model.DNSEncoder
 
 	// Decoder is the MANDATORY decoder to use.
-	Decoder DNSDecoder
+	Decoder model.DNSDecoder
 
 	// NumTimeouts is MANDATORY and counts the number of timeouts.
 	NumTimeouts *atomicx.Int64
 
 	// Txp is the underlying DNS transport.
-	Txp DNSTransport
+	Txp model.DNSTransport
 }
 
 // NewSerialResolver creates a new SerialResolver instance.
-func NewSerialResolver(t DNSTransport) *SerialResolver {
+func NewSerialResolver(t model.DNSTransport) *SerialResolver {
 	return &SerialResolver{
 		Encoder:     &DNSEncoderMiekg{},
 		Decoder:     &DNSDecoderMiekg{},
@@ -39,7 +40,7 @@ func NewSerialResolver(t DNSTransport) *SerialResolver {
 }
 
 // Transport returns the transport being used.
-func (r *SerialResolver) Transport() DNSTransport {
+func (r *SerialResolver) Transport() model.DNSTransport {
 	return r.Txp
 }
 
@@ -76,7 +77,7 @@ func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]str
 
 // LookupHTTPS implements Resolver.LookupHTTPS.
 func (r *SerialResolver) LookupHTTPS(
-	ctx context.Context, hostname string) (*HTTPSSvc, error) {
+	ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
 	querydata, err := r.Encoder.Encode(
 		hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
 	if err != nil {

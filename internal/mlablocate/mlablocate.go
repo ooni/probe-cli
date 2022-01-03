@@ -12,14 +12,9 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
-
-// Logger is the logger expected by this package.
-type Logger interface {
-	// Debugf formats and emits a debug message.
-	Debugf(format string, v ...interface{})
-}
 
 // HTTPClient is anything that looks like an http.Client.
 type HTTPClient interface {
@@ -38,7 +33,7 @@ type Client struct {
 	Hostname string
 
 	// Logger is the MANDATORY logger to use.
-	Logger Logger
+	Logger model.DebugLogger
 
 	// Scheme is the MANDATORY scheme to use (http or https).
 	Scheme string
@@ -48,7 +43,7 @@ type Client struct {
 }
 
 // NewClient creates a new locate.measurementlab.net client.
-func NewClient(httpClient HTTPClient, logger Logger, userAgent string) *Client {
+func NewClient(httpClient HTTPClient, logger model.DebugLogger, userAgent string) *Client {
 	return &Client{
 		HTTPClient: httpClient,
 		Hostname:   "locate.measurementlab.net",

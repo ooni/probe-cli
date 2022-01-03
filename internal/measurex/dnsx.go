@@ -10,22 +10,17 @@ import (
 	"context"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
-
-// DNSXRoundTripper is a transport for sending raw DNS queries
-// and receiving raw DNS replies. The internal/netxlite/dnsx
-// package implements a bunch of these transports.
-type DNSTransport = netxlite.DNSTransport
 
 // WrapDNSXRoundTripper creates a new DNSXRoundTripper that
 // saves events into the given WritableDB.
-func (mx *Measurer) WrapDNSXRoundTripper(db WritableDB, rtx netxlite.DNSTransport) DNSTransport {
+func (mx *Measurer) WrapDNSXRoundTripper(db WritableDB, rtx model.DNSTransport) model.DNSTransport {
 	return &dnsxRoundTripperDB{db: db, DNSTransport: rtx, begin: mx.Begin}
 }
 
 type dnsxRoundTripperDB struct {
-	netxlite.DNSTransport
+	model.DNSTransport
 	begin time.Time
 	db    WritableDB
 }

@@ -1,13 +1,12 @@
-package model_test
+package model
 
 import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 )
 
 func TestPrinterCallbacksCallbacks(t *testing.T) {
-	printer := model.NewPrinterCallbacks(log.Log)
+	printer := NewPrinterCallbacks(log.Log)
 	printer.OnProgress(0.4, "progress")
 }

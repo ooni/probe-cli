@@ -3,11 +3,13 @@ package netxlite
 import (
 	"context"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // DNSOverUDP is a DNS-over-UDP DNSTransport.
 type DNSOverUDP struct {
-	dialer  Dialer
+	dialer  model.Dialer
 	address string
 }
 
@@ -18,7 +20,7 @@ type DNSOverUDP struct {
 // - dialer is any type that implements the Dialer interface;
 //
 // - address is the endpoint address (e.g., 8.8.8.8:53).
-func NewDNSOverUDP(dialer Dialer, address string) *DNSOverUDP {
+func NewDNSOverUDP(dialer model.Dialer, address string) *DNSOverUDP {
 	return &DNSOverUDP{dialer: dialer, address: address}
 }
 
@@ -66,4 +68,4 @@ func (t *DNSOverUDP) CloseIdleConnections() {
 	// nothing to do
 }
 
-var _ DNSTransport = &DNSOverUDP{}
+var _ model.DNSTransport = &DNSOverUDP{}

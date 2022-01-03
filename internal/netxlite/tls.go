@@ -10,6 +10,7 @@ import (
 	"time"
 
 	oohttp "github.com/ooni/oohttp"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 var (
@@ -124,28 +125,6 @@ type TLSConn = oohttp.TLSConn
 // Ensures that a tls.Conn implements the TLSConn interface.
 var _ TLSConn = &tls.Conn{}
 
-// TLSHandshaker is the generic TLS handshaker.
-type TLSHandshaker interface {
-	// Handshake creates a new TLS connection from the given connection and
-	// the given config. This function DOES NOT take ownership of the connection
-	// and it's your responsibility to close it on failure.
-	//
-	// Recommended tlsConfig setup:
-	//
-	// - set ServerName to be the SNI;
-	//
-	// - set RootCAs to NewDefaultCertPool();
-	//
-	// - set NextProtos to []string{"h2", "http/1.1"} for HTTPS
-	// and []string{"dot"} for DNS-over-TLS.
-	//
-	// QUIRK: The returned connection will always implement the TLSConn interface
-	// exposed by this package. A future version of this interface will instead
-	// return directly a TLSConn to avoid unconditional castings.
-	Handshake(ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (
-		net.Conn, tls.ConnectionState, error)
-}
-
 // NewTLSHandshakerStdlib creates a new TLS handshaker using the
 // go standard library to manage TLS.
 //
@@ -154,17 +133,17 @@ type TLSHandshaker interface {
 // 1. logging
 //
 // 2. error wrapping
-func NewTLSHandshakerStdlib(logger Logger) TLSHandshaker {
+func NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
 	return newTLSHandshaker(&tlsHandshakerConfigurable{}, logger)
 }
 
 // newTLSHandshaker is the common factory for creating a new TLSHandshaker
-func newTLSHandshaker(th TLSHandshaker, logger Logger) TLSHandshaker {
+func newTLSHandshaker(th model.TLSHandshaker, logger model.DebugLogger) model.TLSHandshaker {
 	return &tlsHandshakerLogger{
 		TLSHandshaker: &tlsHandshakerErrWrapper{
 			TLSHandshaker: th,
 		},
-		Logger: logger,
+		DebugLogger: logger,
 	}
 }
 
@@ -180,7 +159,7 @@ type tlsHandshakerConfigurable struct {
 	Timeout time.Duration
 }
 
-var _ TLSHandshaker = &tlsHandshakerConfigurable{}
+var _ model.TLSHandshaker = &tlsHandshakerConfigurable{}
 
 // defaultCertPool is the cert pool we use by default. We store this
 // value into a private variable to enable for unit testing.
@@ -222,28 +201,28 @@ var defaultTLSHandshaker = &tlsHandshakerConfigurable{}
 
 // tlsHandshakerLogger is a TLSHandshaker with logging.
 type tlsHandshakerLogger struct {
-	TLSHandshaker
-	Logger
+	model.TLSHandshaker
+	model.DebugLogger
 }
 
-var _ TLSHandshaker = &tlsHandshakerLogger{}
+var _ model.TLSHandshaker = &tlsHandshakerLogger{}
 
 // Handshake implements Handshaker.Handshake
 func (h *tlsHandshakerLogger) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {
-	h.Logger.Debugf(
+	h.DebugLogger.Debugf(
 		"tls {sni=%s next=%+v}...", config.ServerName, config.NextProtos)
 	start := time.Now()
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	elapsed := time.Since(start)
 	if err != nil {
-		h.Logger.Debugf(
+		h.DebugLogger.Debugf(
 			"tls {sni=%s next=%+v}... %s in %s", config.ServerName,
 			config.NextProtos, err, elapsed)
 		return nil, tls.ConnectionState{}, err
 	}
-	h.Logger.Debugf(
+	h.DebugLogger.Debugf(
 		"tls {sni=%s next=%+v}... ok in %s {next=%s cipher=%s v=%s}",
 		config.ServerName, config.NextProtos, elapsed, state.NegotiatedProtocol,
 		TLSCipherSuiteString(state.CipherSuite),
@@ -251,23 +230,13 @@ func (h *tlsHandshakerLogger) Handshake(
 	return tlsconn, state, nil
 }
 
-// TLSDialer is a Dialer dialing TLS connections.
-type TLSDialer interface {
-	// CloseIdleConnections closes idle connections, if any.
-	CloseIdleConnections()
-
-	// DialTLSContext dials a TLS connection. This method will always
-	// return to you a TLSConn, so you can always safely cast to TLSConn.
-	DialTLSContext(ctx context.Context, network, address string) (net.Conn, error)
-}
-
 // NewTLSDialer creates a new TLS dialer using the given dialer and handshaker.
-func NewTLSDialer(dialer Dialer, handshaker TLSHandshaker) TLSDialer {
+func NewTLSDialer(dialer model.Dialer, handshaker model.TLSHandshaker) model.TLSDialer {
 	return NewTLSDialerWithConfig(dialer, handshaker, &tls.Config{})
 }
 
 // NewTLSDialerWithConfig is like NewTLSDialer with an optional config.
-func NewTLSDialerWithConfig(d Dialer, h TLSHandshaker, c *tls.Config) TLSDialer {
+func NewTLSDialerWithConfig(d model.Dialer, h model.TLSHandshaker, c *tls.Config) model.TLSDialer {
 	return &tlsDialer{Config: c, Dialer: d, TLSHandshaker: h}
 }
 
@@ -277,13 +246,13 @@ type tlsDialer struct {
 	Config *tls.Config
 
 	// Dialer is the MANDATORY dialer.
-	Dialer Dialer
+	Dialer model.Dialer
 
 	// TLSHandshaker is the MANDATORY TLS handshaker.
-	TLSHandshaker TLSHandshaker
+	TLSHandshaker model.TLSHandshaker
 }
 
-var _ TLSDialer = &tlsDialer{}
+var _ model.TLSDialer = &tlsDialer{}
 
 // CloseIdleConnections implements TLSDialer.CloseIdleConnections.
 func (d *tlsDialer) CloseIdleConnections() {
@@ -337,17 +306,17 @@ func (d *tlsDialer) config(host, port string) *tls.Config {
 
 // NewSingleUseTLSDialer is like NewSingleUseDialer but takes
 // in input a TLSConn rather than a net.Conn.
-func NewSingleUseTLSDialer(conn TLSConn) TLSDialer {
+func NewSingleUseTLSDialer(conn TLSConn) model.TLSDialer {
 	return &tlsDialerSingleUseAdapter{NewSingleUseDialer(conn)}
 }
 
 // tlsDialerSingleUseAdapter adapts dialerSingleUse to
 // be a TLSDialer type rather than a Dialer type.
 type tlsDialerSingleUseAdapter struct {
-	Dialer
+	model.Dialer
 }
 
-var _ TLSDialer = &tlsDialerSingleUseAdapter{}
+var _ model.TLSDialer = &tlsDialerSingleUseAdapter{}
 
 // DialTLSContext implements TLSDialer.DialTLSContext.
 func (d *tlsDialerSingleUseAdapter) DialTLSContext(ctx context.Context, network, address string) (net.Conn, error) {
@@ -356,7 +325,7 @@ func (d *tlsDialerSingleUseAdapter) DialTLSContext(ctx context.Context, network,
 
 // tlsHandshakerErrWrapper wraps the returned error to be an OONI error
 type tlsHandshakerErrWrapper struct {
-	TLSHandshaker
+	model.TLSHandshaker
 }
 
 // Handshake implements TLSHandshaker.Handshake
@@ -376,13 +345,13 @@ func (h *tlsHandshakerErrWrapper) Handshake(
 var ErrNoTLSDialer = errors.New("no configured TLS dialer")
 
 // NewNullTLSDialer returns a TLS dialer that always fails with ErrNoTLSDialer.
-func NewNullTLSDialer() TLSDialer {
+func NewNullTLSDialer() model.TLSDialer {
 	return &nullTLSDialer{}
 }
 
 type nullTLSDialer struct{}
 
-var _ TLSDialer = &nullTLSDialer{}
+var _ model.TLSDialer = &nullTLSDialer{}
 
 func (*nullTLSDialer) DialTLSContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return nil, ErrNoTLSDialer

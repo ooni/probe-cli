@@ -11,30 +11,23 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
 )
 
-// HTTPSSvc is the result returned by HTTPSSvc queries.
-type HTTPSSvc = dnsx.HTTPSSvc
-
-// Resolver is the resolver type we use. This resolver will
-// store resolve events into the DB.
-type Resolver = netxlite.Resolver
-
 // WrapResolver creates a new Resolver that saves events into the WritableDB.
-func (mx *Measurer) WrapResolver(db WritableDB, r netxlite.Resolver) Resolver {
+func (mx *Measurer) WrapResolver(db WritableDB, r model.Resolver) model.Resolver {
 	return WrapResolver(mx.Begin, db, r)
 }
 
 // WrapResolver wraps a resolver.
-func WrapResolver(begin time.Time, db WritableDB, r netxlite.Resolver) Resolver {
+func WrapResolver(begin time.Time, db WritableDB, r model.Resolver) model.Resolver {
 	return &resolverDB{Resolver: r, db: db, begin: begin}
 }
 
 // NewResolverSystem creates a system resolver and then wraps
 // it using the WrapResolver function/
-func (mx *Measurer) NewResolverSystem(db WritableDB, logger Logger) Resolver {
+func (mx *Measurer) NewResolverSystem(db WritableDB, logger model.Logger) model.Resolver {
 	return mx.WrapResolver(db, netxlite.NewResolverStdlib(logger))
 }
 
@@ -48,7 +41,7 @@ func (mx *Measurer) NewResolverSystem(db WritableDB, logger Logger) Resolver {
 // - logger is the logger;
 //
 // - address is the resolver address (e.g., "1.1.1.1:53").
-func (mx *Measurer) NewResolverUDP(db WritableDB, logger Logger, address string) Resolver {
+func (mx *Measurer) NewResolverUDP(db WritableDB, logger model.Logger, address string) model.Resolver {
 	return mx.WrapResolver(db, netxlite.WrapResolver(
 		logger, netxlite.NewSerialResolver(
 			mx.WrapDNSXRoundTripper(db, netxlite.NewDNSOverUDP(
@@ -59,7 +52,7 @@ func (mx *Measurer) NewResolverUDP(db WritableDB, logger Logger, address string)
 }
 
 type resolverDB struct {
-	netxlite.Resolver
+	model.Resolver
 	begin time.Time
 	db    WritableDB
 }
@@ -160,7 +153,7 @@ func (r *resolverDB) computeOddityLookupHost(addrs []string, err error) Oddity {
 	return ""
 }
 
-func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (*HTTPSSvc, error) {
+func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	started := time.Since(r.begin).Seconds()
 	https, err := r.Resolver.LookupHTTPS(ctx, domain)
 	finished := time.Since(r.begin).Seconds()
@@ -183,7 +176,7 @@ func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (*HTTPSSvc,
 	return https, err
 }
 
-func (r *resolverDB) computeOddityHTTPSSvc(https *HTTPSSvc, err error) Oddity {
+func (r *resolverDB) computeOddityHTTPSSvc(https *model.HTTPSSvc, err error) Oddity {
 	if err != nil {
 		return r.computeOddityLookupHost(nil, err)
 	}

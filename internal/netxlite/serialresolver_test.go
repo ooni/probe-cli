@@ -9,7 +9,8 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 // errorWithTimeout is an error that golang will always consider
@@ -248,7 +249,7 @@ func TestSerialResolver(t *testing.T) {
 					},
 				},
 				Decoder: &mocks.DNSDecoder{
-					MockDecodeHTTPS: func(reply []byte) (*mocks.HTTPSSvc, error) {
+					MockDecodeHTTPS: func(reply []byte) (*model.HTTPSSvc, error) {
 						return nil, expected
 					},
 				},

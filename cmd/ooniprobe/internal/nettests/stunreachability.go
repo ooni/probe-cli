@@ -4,7 +4,7 @@ import (
 	"context"
 
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // STUNReachability nettest implementation.
@@ -12,7 +12,7 @@ type STUNReachability struct{}
 
 func (n STUNReachability) lookupURLs(ctl *Controller) ([]string, error) {
 	inputloader := &engine.InputLoader{
-		CheckInConfig: &model.CheckInConfig{
+		CheckInConfig: &model.OOAPICheckInConfig{
 			// not needed because we have default static input in the engine
 		},
 		ExperimentName: "stunreachability",

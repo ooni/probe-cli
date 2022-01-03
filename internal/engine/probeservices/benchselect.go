@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // Default returns the default probe services
-func Default() []model.Service {
-	return []model.Service{{
+func Default() []model.OOAPIService {
+	return []model.OOAPIService{{
 		Address: "https://ps1.ooni.io",
 		Type:    "https",
 	}, {
@@ -23,7 +23,7 @@ func Default() []model.Service {
 }
 
 // SortEndpoints gives priority to https, then cloudfronted, then onion.
-func SortEndpoints(in []model.Service) (out []model.Service) {
+func SortEndpoints(in []model.OOAPIService) (out []model.OOAPIService) {
 	for _, entry := range in {
 		if entry.Type == "https" {
 			out = append(out, entry)
@@ -43,7 +43,7 @@ func SortEndpoints(in []model.Service) (out []model.Service) {
 }
 
 // OnlyHTTPS returns the HTTPS endpoints only.
-func OnlyHTTPS(in []model.Service) (out []model.Service) {
+func OnlyHTTPS(in []model.OOAPIService) (out []model.OOAPIService) {
 	for _, entry := range in {
 		if entry.Type == "https" {
 			out = append(out, entry)
@@ -53,7 +53,7 @@ func OnlyHTTPS(in []model.Service) (out []model.Service) {
 }
 
 // OnlyFallbacks returns the fallback endpoints only.
-func OnlyFallbacks(in []model.Service) (out []model.Service) {
+func OnlyFallbacks(in []model.OOAPIService) (out []model.OOAPIService) {
 	for _, entry := range SortEndpoints(in) {
 		if entry.Type != "https" {
 			out = append(out, entry)
@@ -71,10 +71,10 @@ type Candidate struct {
 	Err error
 
 	// Endpoint is the service endpoint.
-	Endpoint model.Service
+	Endpoint model.OOAPIService
 
 	// TestHelpers contains the data returned by the endpoint.
-	TestHelpers map[string][]model.Service
+	TestHelpers map[string][]model.OOAPIService
 }
 
 func (c *Candidate) try(ctx context.Context, sess Session) {
@@ -91,7 +91,7 @@ func (c *Candidate) try(ctx context.Context, sess Session) {
 	sess.Logger().Debugf("probe services: %+v: %+v %s", c.Endpoint, err, c.Duration)
 }
 
-func try(ctx context.Context, sess Session, svc model.Service) *Candidate {
+func try(ctx context.Context, sess Session, svc model.OOAPIService) *Candidate {
 	candidate := &Candidate{Endpoint: svc}
 	candidate.try(ctx, sess)
 	return candidate
@@ -107,7 +107,7 @@ func try(ctx context.Context, sess Session, svc model.Service) *Candidate {
 // such case, you will see a list of N failing HTTPS candidates, followed by a single
 // successful fallback candidate (e.g. cloudfronted). If all candidates fail, you
 // see in output a list containing all entries where Err is not nil.
-func TryAll(ctx context.Context, sess Session, in []model.Service) (out []*Candidate) {
+func TryAll(ctx context.Context, sess Session, in []model.OOAPIService) (out []*Candidate) {
 	var found bool
 	for _, svc := range OnlyHTTPS(in) {
 		candidate := try(ctx, sess, svc)

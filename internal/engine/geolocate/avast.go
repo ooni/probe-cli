@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 type avastResponse struct {
@@ -14,7 +15,7 @@ type avastResponse struct {
 func avastIPLookup(
 	ctx context.Context,
 	httpClient *http.Client,
-	logger Logger,
+	logger model.Logger,
 	userAgent string,
 ) (string, error) {
 	var v avastResponse

@@ -13,14 +13,14 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quicx"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 // tProxyDialerAdapter adapts a netxlite.TProxyDialer to be a netxlite.Dialer.
 type tProxyDialerAdapter struct {
-	netxlite.TProxyDialer
+	model.SimpleDialer
 }
 
 // CloseIdleConnections implements Dialer.CloseIdleConnections.
@@ -158,7 +158,7 @@ func TestTProxyQUIC(t *testing.T) {
 			}
 			defer proxy.Close()
 			var called bool
-			proxy.listenUDP = func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+			proxy.listenUDP = func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return &mocks.QUICUDPLikeConn{
 					MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 						called = true
@@ -195,7 +195,7 @@ func TestTProxyQUIC(t *testing.T) {
 			}
 			defer proxy.Close()
 			var called bool
-			proxy.listenUDP = func(network string, laddr *net.UDPAddr) (quicx.UDPLikeConn, error) {
+			proxy.listenUDP = func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
 				return &mocks.QUICUDPLikeConn{
 					MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 						called = true
@@ -280,7 +280,7 @@ func TestTProxyOnIncomingSNI(t *testing.T) {
 		}
 		defer proxy.Close()
 		ctx := context.Background()
-		dialer := proxy.NewTProxyDialer(10 * time.Second)
+		dialer := proxy.NewSimpleDialer(10 * time.Second)
 		conn, err := dialer.DialContext(ctx, "tcp", "8.8.8.8:443")
 		if err != nil {
 			t.Fatal(err)
@@ -308,7 +308,7 @@ func TestTProxyOnIncomingSNI(t *testing.T) {
 		}
 		defer proxy.Close()
 		ctx := context.Background()
-		dialer := proxy.NewTProxyDialer(10 * time.Second)
+		dialer := proxy.NewSimpleDialer(10 * time.Second)
 		conn, err := dialer.DialContext(ctx, "tcp", "8.8.8.8:443")
 		if err != nil {
 			t.Fatal(err)
@@ -337,7 +337,7 @@ func TestTProxyOnIncomingHost(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer proxy.Close()
-		dialer := proxy.NewTProxyDialer(10 * time.Second)
+		dialer := proxy.NewSimpleDialer(10 * time.Second)
 		req, err := http.NewRequest("GET", "http://130.192.16.171:80", nil)
 		if err != nil {
 			t.Fatal(err)
@@ -369,7 +369,7 @@ func TestTProxyOnIncomingHost(t *testing.T) {
 			log.Log,
 			netxlite.NewResolverStdlib(log.Log),
 			&tProxyDialerAdapter{
-				proxy.NewTProxyDialer(10 * time.Second),
+				proxy.NewSimpleDialer(10 * time.Second),
 			},
 		)
 		req, err := http.NewRequest("GET", "http://130.192.16.171:80", nil)
@@ -400,7 +400,7 @@ func TestTProxyDial(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer proxy.Close()
-		dialer := proxy.NewTProxyDialer(10 * time.Second)
+		dialer := proxy.NewSimpleDialer(10 * time.Second)
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 		req, err := http.NewRequestWithContext(ctx, "GET", "http://130.192.16.171:80", nil)
@@ -432,7 +432,7 @@ func TestTProxyDial(t *testing.T) {
 		dialer := netxlite.WrapDialer(log.Log,
 			netxlite.NewResolverStdlib(log.Log),
 			&tProxyDialerAdapter{
-				proxy.NewTProxyDialer(10 * time.Second)})
+				proxy.NewSimpleDialer(10 * time.Second)})
 		req, err := http.NewRequest("GET", "http://130.192.16.171:80", nil)
 		if err != nil {
 			t.Fatal(err)
@@ -459,7 +459,7 @@ func TestTProxyDial(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer proxy.Close()
-		dialer := proxy.NewTProxyDialer(10 * time.Second)
+		dialer := proxy.NewSimpleDialer(10 * time.Second)
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 		req, err := http.NewRequestWithContext(
@@ -492,7 +492,7 @@ func TestTProxyDial(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer proxy.Close()
-		dialer := proxy.NewTProxyDialer(10 * time.Second)
+		dialer := proxy.NewSimpleDialer(10 * time.Second)
 		resolver := netxlite.NewResolverUDP(
 			log.Log, &tProxyDialerAdapter{dialer}, "8.8.8.8:53")
 		addrs, err := resolver.LookupHost(context.Background(), "example.com")
@@ -511,7 +511,7 @@ func TestTProxyDial(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer proxy.Close()
-		dialer := proxy.NewTProxyDialer(10 * time.Second)
+		dialer := proxy.NewSimpleDialer(10 * time.Second)
 		ctx := context.Background()
 		conn, err := dialer.DialContext(ctx, "tcp", "127.0.0.1")
 		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {

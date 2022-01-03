@@ -24,8 +24,8 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -111,7 +111,7 @@ func (m Measurer) Run(
 	// 3. Find the testhelper
 	// TODO(kelmenhorst,bassosimone): this is not used at the moment, but the hardcoded local address
 	testhelpers, _ := sess.GetTestHelpersByName("web-connectivity")
-	var testhelper *model.Service
+	var testhelper *model.OOAPIService
 	for _, th := range testhelpers {
 		if th.Type == "https" {
 			testhelper = &th

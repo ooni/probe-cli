@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestDNSDecoder(t *testing.T) {
@@ -27,7 +28,7 @@ func TestDNSDecoder(t *testing.T) {
 	t.Run("DecodeHTTPS", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		e := &DNSDecoder{
-			MockDecodeHTTPS: func(reply []byte) (*HTTPSSvc, error) {
+			MockDecodeHTTPS: func(reply []byte) (*model.HTTPSSvc, error) {
 				return nil, expected
 			},
 		}

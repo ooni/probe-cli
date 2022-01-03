@@ -11,14 +11,14 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestNewDialer(t *testing.T) {
 	t.Run("produces a chain with the expected types", func(t *testing.T) {
 		d := NewDialerWithoutResolver(log.Log)
 		logger := d.(*dialerLogger)
-		if logger.Logger != log.Log {
+		if logger.DebugLogger != log.Log {
 			t.Fatal("invalid logger")
 		}
 		reso := logger.Dialer.(*dialerResolver)
@@ -26,7 +26,7 @@ func TestNewDialer(t *testing.T) {
 			t.Fatal("invalid Resolver type")
 		}
 		logger = reso.Dialer.(*dialerLogger)
-		if logger.Logger != log.Log {
+		if logger.DebugLogger != log.Log {
 			t.Fatal("invalid logger")
 		}
 		errWrapper := logger.Dialer.(*dialerErrWrapper)
@@ -406,7 +406,7 @@ func TestDialerLogger(t *testing.T) {
 						}, nil
 					},
 				},
-				Logger: lo,
+				DebugLogger: lo,
 			}
 			conn, err := d.DialContext(context.Background(), "tcp", "www.google.com:443")
 			if err != nil {
@@ -434,7 +434,7 @@ func TestDialerLogger(t *testing.T) {
 						return nil, io.EOF
 					},
 				},
-				Logger: lo,
+				DebugLogger: lo,
 			}
 			conn, err := d.DialContext(context.Background(), "tcp", "www.google.com:443")
 			if !errors.Is(err, io.EOF) {

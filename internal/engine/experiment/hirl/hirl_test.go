@@ -9,9 +9,9 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/hirl"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -30,7 +30,7 @@ func TestSuccess(t *testing.T) {
 	ctx := context.Background()
 	sess := &mockable.Session{
 		MockableLogger: log.Log,
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "37.218.241.93",
 				Type:    "legacy",
@@ -79,7 +79,7 @@ func TestCancelledContext(t *testing.T) {
 	cancel()
 	sess := &mockable.Session{
 		MockableLogger: log.Log,
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "37.218.241.93",
 				Type:    "legacy",
@@ -178,7 +178,7 @@ func TestWithFakeMethods(t *testing.T) {
 	}
 	ctx := context.Background()
 	sess := &mockable.Session{
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "127.0.0.1",
 				Type:    "legacy",
@@ -239,7 +239,7 @@ func TestWithNoMethods(t *testing.T) {
 	}
 	ctx := context.Background()
 	sess := &mockable.Session{
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "127.0.0.1",
 				Type:    "legacy",
@@ -302,7 +302,7 @@ func TestNoActualHelperInList(t *testing.T) {
 	measurer := hirl.NewExperimentMeasurer(hirl.Config{})
 	ctx := context.Background()
 	sess := &mockable.Session{
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": nil,
 		},
 	}
@@ -334,7 +334,7 @@ func TestWrongTestHelperType(t *testing.T) {
 	measurer := hirl.NewExperimentMeasurer(hirl.Config{})
 	ctx := context.Background()
 	sess := &mockable.Session{
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "127.0.0.1",
 				Type:    "antani",
@@ -368,7 +368,7 @@ func TestWrongTestHelperType(t *testing.T) {
 func TestRunMethodDialFailure(t *testing.T) {
 	sess := &mockable.Session{
 		MockableLogger: log.Log,
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "37.218.241.93",
 				Type:    "legacy",
@@ -415,7 +415,7 @@ func TestRunMethodDialFailure(t *testing.T) {
 func TestRunMethodSetDeadlineFailure(t *testing.T) {
 	sess := &mockable.Session{
 		MockableLogger: log.Log,
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "37.218.241.93",
 				Type:    "legacy",
@@ -464,7 +464,7 @@ func TestRunMethodSetDeadlineFailure(t *testing.T) {
 func TestRunMethodWriteFailure(t *testing.T) {
 	sess := &mockable.Session{
 		MockableLogger: log.Log,
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "37.218.241.93",
 				Type:    "legacy",
@@ -513,7 +513,7 @@ func TestRunMethodWriteFailure(t *testing.T) {
 func TestRunMethodReadEOFWithWrongData(t *testing.T) {
 	sess := &mockable.Session{
 		MockableLogger: log.Log,
-		MockableTestHelpers: map[string][]model.Service{
+		MockableTestHelpers: map[string][]model.OOAPIService{
 			"tcp-echo": {{
 				Address: "37.218.241.93",
 				Type:    "legacy",

@@ -13,8 +13,8 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity/internal"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 const (
@@ -149,7 +149,7 @@ func (m Measurer) Run(
 	}
 	// 1. find test helper
 	testhelpers, _ := sess.GetTestHelpersByName("web-connectivity")
-	var testhelper *model.Service
+	var testhelper *model.OOAPIService
 	for _, th := range testhelpers {
 		if th.Type == "https" {
 			testhelper = &th

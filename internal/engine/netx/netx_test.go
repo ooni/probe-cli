@@ -18,7 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestNewResolverVanilla(t *testing.T) {
@@ -367,7 +367,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
-	if lth.Logger != log.Log {
+	if lth.DebugLogger != log.Log {
 		t.Fatal("not the Logger we expected")
 	}
 	ewth, ok := lth.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)

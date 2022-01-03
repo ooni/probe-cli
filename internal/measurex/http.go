@@ -27,18 +27,16 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"golang.org/x/net/publicsuffix"
 )
 
-// HTTPTransport is the HTTP transport type we use.
-type HTTPTransport = netxlite.HTTPTransport
-
 // WrapHTTPTransport creates a new transport that saves
 // HTTP events into the WritableDB.
 func (mx *Measurer) WrapHTTPTransport(
-	db WritableDB, txp HTTPTransport) *HTTPTransportDB {
+	db WritableDB, txp model.HTTPTransport) *HTTPTransportDB {
 	return WrapHTTPTransport(mx.Begin, db, txp)
 }
 
@@ -48,7 +46,7 @@ func (mx *Measurer) WrapHTTPTransport(
 const httpMaxBodySnapshot = 1 << 11
 
 func WrapHTTPTransport(
-	begin time.Time, db WritableDB, txp HTTPTransport) *HTTPTransportDB {
+	begin time.Time, db WritableDB, txp model.HTTPTransport) *HTTPTransportDB {
 	return &HTTPTransportDB{
 		HTTPTransport:       txp,
 		Begin:               begin,
@@ -60,7 +58,7 @@ func WrapHTTPTransport(
 // NewHTTPTransportWithConn creates and wraps an HTTPTransport that
 // does not dial and only uses the given conn.
 func (mx *Measurer) NewHTTPTransportWithConn(
-	logger Logger, db WritableDB, conn Conn) *HTTPTransportDB {
+	logger model.Logger, db WritableDB, conn Conn) *HTTPTransportDB {
 	return mx.WrapHTTPTransport(db, netxlite.NewHTTPTransport(
 		logger, netxlite.NewSingleUseDialer(conn), netxlite.NewNullTLSDialer()))
 }
@@ -68,7 +66,7 @@ func (mx *Measurer) NewHTTPTransportWithConn(
 // NewHTTPTransportWithTLSConn creates and wraps an HTTPTransport that
 // does not dial and only uses the given conn.
 func (mx *Measurer) NewHTTPTransportWithTLSConn(
-	logger Logger, db WritableDB, conn netxlite.TLSConn) *HTTPTransportDB {
+	logger model.Logger, db WritableDB, conn netxlite.TLSConn) *HTTPTransportDB {
 	return mx.WrapHTTPTransport(db, netxlite.NewHTTPTransport(
 		logger, netxlite.NewNullDialer(), netxlite.NewSingleUseTLSDialer(conn)))
 }
@@ -76,7 +74,7 @@ func (mx *Measurer) NewHTTPTransportWithTLSConn(
 // NewHTTPTransportWithQUICSess creates and wraps an HTTPTransport that
 // does not dial and only uses the given QUIC session.
 func (mx *Measurer) NewHTTPTransportWithQUICSess(
-	logger Logger, db WritableDB, sess quic.EarlySession) *HTTPTransportDB {
+	logger model.Logger, db WritableDB, sess quic.EarlySession) *HTTPTransportDB {
 	return mx.WrapHTTPTransport(db, netxlite.NewHTTP3Transport(
 		logger, netxlite.NewSingleUseQUICDialer(sess), &tls.Config{}))
 }
@@ -88,7 +86,7 @@ func (mx *Measurer) NewHTTPTransportWithQUICSess(
 // you can construct it manually. In which case, do not modify
 // public fields during usage, since this may cause a data race.
 type HTTPTransportDB struct {
-	netxlite.HTTPTransport
+	model.HTTPTransport
 
 	// Begin is when we started measuring.
 	Begin time.Time
@@ -206,14 +204,14 @@ type HTTPClient interface {
 // NewHTTPClient creates a new HTTPClient instance that
 // does not automatically perform redirects.
 func NewHTTPClientWithoutRedirects(
-	db WritableDB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
+	db WritableDB, jar http.CookieJar, txp model.HTTPTransport) HTTPClient {
 	return newHTTPClient(db, jar, txp, http.ErrUseLastResponse)
 }
 
 // NewHTTPClientWithRedirects creates a new HTTPClient
 // instance that automatically perform redirects.
 func NewHTTPClientWithRedirects(
-	db WritableDB, jar http.CookieJar, txp HTTPTransport) HTTPClient {
+	db WritableDB, jar http.CookieJar, txp model.HTTPTransport) HTTPClient {
 	return newHTTPClient(db, jar, txp, nil)
 }
 
@@ -243,7 +241,7 @@ type HTTPRedirectEvent struct {
 var ErrHTTPTooManyRedirects = errors.New("stopped after 10 redirects")
 
 func newHTTPClient(db WritableDB, cookiejar http.CookieJar,
-	txp HTTPTransport, defaultErr error) HTTPClient {
+	txp model.HTTPTransport, defaultErr error) HTTPClient {
 	return netxlite.WrapHTTPClient(&http.Client{
 		Transport: txp,
 		Jar:       cookiejar,

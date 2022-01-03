@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 type FakeInputProcessorExperiment struct {
@@ -44,7 +44,7 @@ func TestInputProcessorMeasurementFailed(t *testing.T) {
 		Experiment: NewInputProcessorExperimentWrapper(
 			&FakeInputProcessorExperiment{Err: expected},
 		),
-		Inputs: []model.URLInfo{{
+		Inputs: []model.OOAPIURLInfo{{
 			URL: "https://www.kernel.org/",
 		}},
 	}
@@ -73,7 +73,7 @@ func TestInputProcessorSubmissionFailed(t *testing.T) {
 			"foo": "bar",
 		},
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
-		Inputs: []model.URLInfo{{
+		Inputs: []model.OOAPIURLInfo{{
 			URL: "https://www.kernel.org/",
 		}},
 		Options: []string{"fake=true"},
@@ -122,7 +122,7 @@ func TestInputProcessorSaveOnDiskFailed(t *testing.T) {
 		Experiment: NewInputProcessorExperimentWrapper(
 			&FakeInputProcessorExperiment{},
 		),
-		Inputs: []model.URLInfo{{
+		Inputs: []model.OOAPIURLInfo{{
 			URL: "https://www.kernel.org/",
 		}},
 		Options: []string{"fake=true"},
@@ -145,7 +145,7 @@ func TestInputProcessorGood(t *testing.T) {
 	submitter := &FakeInputProcessorSubmitter{Err: nil}
 	ip := &InputProcessor{
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
-		Inputs: []model.URLInfo{{
+		Inputs: []model.OOAPIURLInfo{{
 			URL: "https://www.kernel.org/",
 		}, {
 			URL: "https://www.slashdot.org/",
@@ -187,7 +187,7 @@ func TestInputProcessorMaxRuntime(t *testing.T) {
 	submitter := &FakeInputProcessorSubmitter{Err: nil}
 	ip := &InputProcessor{
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
-		Inputs: []model.URLInfo{{
+		Inputs: []model.OOAPIURLInfo{{
 			URL: "https://www.kernel.org/",
 		}, {
 			URL: "https://www.slashdot.org/",

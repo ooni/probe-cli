@@ -9,7 +9,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 const testVersion = "0.1.0"

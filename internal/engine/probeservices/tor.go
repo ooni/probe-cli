@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // FetchTorTargets returns the targets for the tor experiment.
-func (c Client) FetchTorTargets(ctx context.Context, cc string) (result map[string]model.TorTarget, err error) {
+func (c Client) FetchTorTargets(ctx context.Context, cc string) (result map[string]model.OOAPITorTarget, err error) {
 	_, auth, err := c.GetCredsAndAuth()
 	if err != nil {
 		return nil, err

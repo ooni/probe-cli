@@ -12,6 +12,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
@@ -275,7 +276,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		return d.DialContext(ctx, "tcp", address)
 	}
 
-	successFlow := func(th netxlite.TLSHandshaker) error {
+	successFlow := func(th model.TLSHandshaker) error {
 		ctx := context.Background()
 		conn, err := dial(ctx, "8.8.4.4:443")
 		if err != nil {
@@ -295,7 +296,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		return nil
 	}
 
-	connectionResetFlow := func(th netxlite.TLSHandshaker) error {
+	connectionResetFlow := func(th model.TLSHandshaker) error {
 		tlsProxy := &filtering.TLSProxy{
 			OnIncomingSNI: func(sni string) filtering.TLSAction {
 				return filtering.TLSActionReset
@@ -330,7 +331,7 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 		return nil
 	}
 
-	timeoutFlow := func(th netxlite.TLSHandshaker) error {
+	timeoutFlow := func(th model.TLSHandshaker) error {
 		tlsProxy := &filtering.TLSProxy{
 			OnIncomingSNI: func(sni string) filtering.TLSAction {
 				return filtering.TLSActionTimeout

@@ -7,31 +7,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite/dnsx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"golang.org/x/net/idna"
 )
-
-// HTTPSSvc is the type returned for HTTPS queries.
-type HTTPSSvc = dnsx.HTTPSSvc
-
-// Resolver performs domain name resolutions.
-type Resolver interface {
-	// LookupHost behaves like net.Resolver.LookupHost.
-	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
-
-	// Network returns the resolver type (e.g., system, dot, doh).
-	Network() string
-
-	// Address returns the resolver address (e.g., 8.8.8.8:53).
-	Address() string
-
-	// CloseIdleConnections closes idle connections, if any.
-	CloseIdleConnections()
-
-	// LookupHTTPS issues an HTTPS query for a domain.
-	LookupHTTPS(
-		ctx context.Context, domain string) (*HTTPSSvc, error)
-}
 
 // ErrNoDNSTransport is the error returned when you attempt to perform
 // a DNS operation that requires a custom DNSTransport (e.g., DNSOverHTTPS)
@@ -40,7 +18,7 @@ var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
 // NewResolverStdlib creates a new Resolver by combining WrapResolver
 // with an internal "system" resolver type.
-func NewResolverStdlib(logger Logger) Resolver {
+func NewResolverStdlib(logger model.DebugLogger) model.Resolver {
 	return WrapResolver(logger, &resolverSystem{})
 }
 
@@ -53,7 +31,7 @@ func NewResolverStdlib(logger Logger) Resolver {
 // - dialer is the dialer to create and connect UDP conns
 //
 // - address is the server address (e.g., 1.1.1.1:53)
-func NewResolverUDP(logger Logger, dialer Dialer, address string) Resolver {
+func NewResolverUDP(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
 	return WrapResolver(logger, NewSerialResolver(
 		NewDNSOverUDP(dialer, address),
 	))
@@ -75,7 +53,7 @@ func NewResolverUDP(logger Logger, dialer Dialer, address string) Resolver {
 // see https://github.com/ooni/probe/issues/1726).
 //
 // This is a low-level factory. Use only if out of alternatives.
-func WrapResolver(logger Logger, resolver Resolver) Resolver {
+func WrapResolver(logger model.DebugLogger, resolver model.Resolver) model.Resolver {
 	return &resolverIDNA{
 		Resolver: &resolverLogger{
 			Resolver: &resolverShortCircuitIPAddr{
@@ -94,7 +72,7 @@ type resolverSystem struct {
 	testableLookupHost func(ctx context.Context, domain string) ([]string, error)
 }
 
-var _ Resolver = &resolverSystem{}
+var _ model.Resolver = &resolverSystem{}
 
 func (r *resolverSystem) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	// This code forces adding a shorter timeout to the domain name
@@ -149,17 +127,17 @@ func (r *resolverSystem) CloseIdleConnections() {
 }
 
 func (r *resolverSystem) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	return nil, ErrNoDNSTransport
 }
 
 // resolverLogger is a resolver that emits events
 type resolverLogger struct {
-	Resolver
-	Logger Logger
+	model.Resolver
+	Logger model.DebugLogger
 }
 
-var _ Resolver = &resolverLogger{}
+var _ model.Resolver = &resolverLogger{}
 
 func (r *resolverLogger) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	prefix := fmt.Sprintf("resolve[A,AAAA] %s with %s (%s)", hostname, r.Network(), r.Address())
@@ -176,7 +154,7 @@ func (r *resolverLogger) LookupHost(ctx context.Context, hostname string) ([]str
 }
 
 func (r *resolverLogger) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	prefix := fmt.Sprintf("resolve[HTTPS] %s with %s (%s)", domain, r.Network(), r.Address())
 	r.Logger.Debugf("%s...", prefix)
 	start := time.Now()
@@ -197,7 +175,7 @@ func (r *resolverLogger) LookupHTTPS(
 //
 // See RFC3492 for more information.
 type resolverIDNA struct {
-	Resolver
+	model.Resolver
 }
 
 func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]string, error) {
@@ -209,7 +187,7 @@ func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]strin
 }
 
 func (r *resolverIDNA) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	host, err := idna.ToASCII(domain)
 	if err != nil {
 		return nil, err
@@ -220,7 +198,7 @@ func (r *resolverIDNA) LookupHTTPS(
 // resolverShortCircuitIPAddr recognizes when the input hostname is an
 // IP address and returns it immediately to the caller.
 type resolverShortCircuitIPAddr struct {
-	Resolver
+	model.Resolver
 }
 
 func (r *resolverShortCircuitIPAddr) LookupHost(ctx context.Context, hostname string) ([]string, error) {
@@ -256,16 +234,16 @@ func (r *nullResolver) CloseIdleConnections() {
 }
 
 func (r *nullResolver) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	return nil, ErrNoResolver
 }
 
 // resolverErrWrapper is a Resolver that knows about wrapping errors.
 type resolverErrWrapper struct {
-	Resolver
+	model.Resolver
 }
 
-var _ Resolver = &resolverErrWrapper{}
+var _ model.Resolver = &resolverErrWrapper{}
 
 func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
@@ -276,7 +254,7 @@ func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([
 }
 
 func (r *resolverErrWrapper) LookupHTTPS(
-	ctx context.Context, domain string) (*HTTPSSvc, error) {
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	out, err := r.Resolver.LookupHTTPS(ctx, domain)
 	if err != nil {
 		return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, err)

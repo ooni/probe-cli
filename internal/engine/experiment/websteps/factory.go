@@ -14,6 +14,7 @@ import (
 	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -80,7 +81,7 @@ func NewSingleTransport(conn net.Conn) http.RoundTripper {
 }
 
 // NewSingleTransport creates a new HTTP transport with a custom dialer and handshaker.
-func NewTransportWithDialer(dialer netxlite.DialerLegacy, tlsConfig *tls.Config, handshaker netxlite.TLSHandshaker) http.RoundTripper {
+func NewTransportWithDialer(dialer netxlite.DialerLegacy, tlsConfig *tls.Config, handshaker model.TLSHandshaker) http.RoundTripper {
 	transport := newBaseTransport()
 	transport.DialContext = dialer.DialContext
 	transport.DialTLSContext = (&netxlite.TLSDialerLegacy{

@@ -16,7 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonidatamodel"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
@@ -34,7 +34,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 func TestMeasurerMeasureFetchTorTargetsError(t *testing.T) {
 	measurer := NewMeasurer(Config{})
 	expected := errors.New("mocked error")
-	measurer.fetchTorTargets = func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.TorTarget, error) {
+	measurer.fetchTorTargets = func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.OOAPITorTarget, error) {
 		return nil, expected
 	}
 	err := measurer.Run(
@@ -52,7 +52,7 @@ func TestMeasurerMeasureFetchTorTargetsError(t *testing.T) {
 
 func TestMeasurerMeasureFetchTorTargetsEmptyList(t *testing.T) {
 	measurer := NewMeasurer(Config{})
-	measurer.fetchTorTargets = func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.TorTarget, error) {
+	measurer.fetchTorTargets = func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.OOAPITorTarget, error) {
 		return nil, nil
 	}
 	measurement := new(model.Measurement)
@@ -77,7 +77,7 @@ func TestMeasurerMeasureGoodWithMockedOrchestra(t *testing.T) {
 	// This test mocks orchestra to return a nil list of targets, so the code runs
 	// but we don't perform any actual network actions.
 	measurer := NewMeasurer(Config{})
-	measurer.fetchTorTargets = func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.TorTarget, error) {
+	measurer.fetchTorTargets = func(ctx context.Context, sess model.ExperimentSession, cc string) (map[string]model.OOAPITorTarget, error) {
 		return nil, nil
 	}
 	err := measurer.Run(
@@ -120,7 +120,7 @@ func TestMeasurerMeasureGood(t *testing.T) {
 
 var staticPrivateTestingTargetEndpoint = "192.95.36.142:443"
 
-var staticPrivateTestingTarget = model.TorTarget{
+var staticPrivateTestingTarget = model.OOAPITorTarget{
 	Address: staticPrivateTestingTargetEndpoint,
 	Params: map[string][]string{
 		"cert": {
@@ -139,7 +139,7 @@ func TestMeasurerMeasureSanitiseOutput(t *testing.T) {
 	measurer := NewMeasurer(Config{})
 	sess := newsession()
 	key := "xyz-xyz-xyz-theCh2ju-ahG4chei-Ai2eka0a"
-	sess.MockableFetchTorTargetsResult = map[string]model.TorTarget{
+	sess.MockableFetchTorTargetsResult = map[string]model.OOAPITorTarget{
 		key: staticPrivateTestingTarget,
 	}
 	measurement := new(model.Measurement)
@@ -172,7 +172,7 @@ func TestMeasurerMeasureSanitiseOutput(t *testing.T) {
 	}
 }
 
-var staticTestingTargets = []model.TorTarget{
+var staticTestingTargets = []model.OOAPITorTarget{
 	{
 		Address: "192.95.36.142:443",
 		Params: map[string][]string{
@@ -226,7 +226,7 @@ func TestMeasurerMeasureTargetsCanceledContext(t *testing.T) {
 		},
 		&measurement,
 		model.NewPrinterCallbacks(log.Log),
-		map[string]model.TorTarget{
+		map[string]model.OOAPITorTarget{
 			"xx": staticTestingTargets[0],
 		},
 	)
@@ -243,7 +243,7 @@ func TestMeasurerMeasureTargetsCanceledContext(t *testing.T) {
 	}
 }
 
-func wrapTestingTarget(tt model.TorTarget) keytarget {
+func wrapTestingTarget(tt model.OOAPITorTarget) keytarget {
 	return keytarget{
 		key:    "xx", // using an super simple key; should work anyway
 		target: tt,
@@ -683,7 +683,7 @@ func TestMaybeSanitize(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Run("nothing to do", func(t *testing.T) {
-		out := maybeSanitize(input, keytarget{target: model.TorTarget{Source: ""}})
+		out := maybeSanitize(input, keytarget{target: model.OOAPITorTarget{Source: ""}})
 		diff := cmp.Diff(input, out)
 		if diff != "" {
 			t.Fatal(diff)
@@ -694,7 +694,7 @@ func TestMaybeSanitize(t *testing.T) {
 		if err := json.Unmarshal(scrubbedTargetResult, &expected); err != nil {
 			t.Fatal(err)
 		}
-		out := maybeSanitize(input, keytarget{target: model.TorTarget{
+		out := maybeSanitize(input, keytarget{target: model.OOAPITorTarget{
 			Address: "85.31.186.98:443",
 			Source:  "bridgedb",
 		}})
@@ -709,7 +709,7 @@ func TestMaybeScrubbingLogger(t *testing.T) {
 	var input model.Logger = log.Log
 
 	t.Run("for when we don't need to save", func(t *testing.T) {
-		kt := keytarget{target: model.TorTarget{
+		kt := keytarget{target: model.OOAPITorTarget{
 			Source: "",
 		}}
 		out := maybeScrubbingLogger(input, kt)
@@ -722,7 +722,7 @@ func TestMaybeScrubbingLogger(t *testing.T) {
 	})
 
 	t.Run("for when we need to save", func(t *testing.T) {
-		kt := keytarget{target: model.TorTarget{
+		kt := keytarget{target: model.OOAPITorTarget{
 			Source: "bridgedb",
 		}}
 		out := maybeScrubbingLogger(input, kt)

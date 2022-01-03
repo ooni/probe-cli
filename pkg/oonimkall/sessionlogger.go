@@ -3,7 +3,7 @@ package oonimkall
 import (
 	"fmt"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 type loggerVerbose struct {

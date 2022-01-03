@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -17,7 +18,7 @@ const (
 	DefaultProbeCC = "ZZ"
 
 	// DefaultProbeIP is the default probe IP.
-	DefaultProbeIP = "127.0.0.1"
+	DefaultProbeIP = model.DefaultProbeIP
 
 	// DefaultProbeNetworkName is the default probe network name.
 	DefaultProbeNetworkName = ""
@@ -39,13 +40,6 @@ var (
 	// DefaultResolverASNString is the default resolver ASN as a string.
 	DefaultResolverASNString = fmt.Sprintf("AS%d", DefaultResolverASN)
 )
-
-// Logger is the definition of Logger used by this package.
-type Logger interface {
-	Debug(msg string)
-	Debugf(format string, v ...interface{})
-	Infof(format string, v ...interface{})
-}
 
 // Results contains geolocate results.
 type Results struct {
@@ -111,26 +105,17 @@ type Config struct {
 
 	// Logger is the logger to use. If not set, then we will
 	// use a logger that discards all messages.
-	Logger Logger
+	Logger model.Logger
 
 	// UserAgent is the user agent to use. If not set, then
 	// we will use a default user agent.
 	UserAgent string
 }
 
-// discardLogger just ignores log messages thrown at it.
-type discardLogger struct{}
-
-func (*discardLogger) Debug(msg string) {}
-
-func (*discardLogger) Debugf(format string, v ...interface{}) {}
-
-func (*discardLogger) Infof(format string, v ...interface{}) {}
-
 // NewTask creates a new instance of Task from config.
 func NewTask(config Config) *Task {
 	if config.Logger == nil {
-		config.Logger = &discardLogger{}
+		config.Logger = model.DiscardLogger
 	}
 	if config.UserAgent == "" {
 		config.UserAgent = fmt.Sprintf("ooniprobe-engine/%s", version.Version)

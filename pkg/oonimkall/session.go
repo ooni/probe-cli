@@ -11,9 +11,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
-	"github.com/ooni/probe-cli/v3/internal/engine/model"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -161,9 +161,9 @@ func newSessionWithContext(ctx context.Context, config *SessionConfig) (*Session
 	// the return value as it does not matter to us here.
 	_, _ = assetsdir.Cleanup(config.AssetsDir)
 
-	var availableps []model.Service
+	var availableps []model.OOAPIService
 	if config.ProbeServicesURL != "" {
-		availableps = append(availableps, model.Service{
+		availableps = append(availableps, model.OOAPIService{
 			Address: config.ProbeServicesURL,
 			Type:    "https",
 		})
@@ -347,8 +347,8 @@ func (ckw *CheckInConfigWebConnectivity) Add(cat string) {
 	ckw.CategoryCodes = append(ckw.CategoryCodes, cat)
 }
 
-func (ckw *CheckInConfigWebConnectivity) toModel() model.CheckInConfigWebConnectivity {
-	return model.CheckInConfigWebConnectivity{
+func (ckw *CheckInConfigWebConnectivity) toModel() model.OOAPICheckInConfigWebConnectivity {
+	return model.OOAPICheckInConfigWebConnectivity{
 		CategoryCodes: ckw.CategoryCodes,
 	}
 }
@@ -386,7 +386,7 @@ type CheckInInfoWebConnectivity struct {
 	ReportID string
 
 	// URLs contains the list of URLs to measure.
-	URLs []model.URLInfo
+	URLs []model.OOAPIURLInfo
 }
 
 // URLInfo contains info on a specific URL to measure.
@@ -421,7 +421,7 @@ func (ckw *CheckInInfoWebConnectivity) At(idx int64) *URLInfo {
 	}
 }
 
-func newCheckInInfoWebConnectivity(ckw *model.CheckInInfoWebConnectivity) *CheckInInfoWebConnectivity {
+func newCheckInInfoWebConnectivity(ckw *model.OOAPICheckInInfoWebConnectivity) *CheckInInfoWebConnectivity {
 	if ckw == nil {
 		return nil
 	}
@@ -466,7 +466,7 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 	if sess.TestingCheckInBeforeCheckIn != nil {
 		sess.TestingCheckInBeforeCheckIn(ctx) // for testing
 	}
-	cfg := model.CheckInConfig{
+	cfg := model.OOAPICheckInConfig{
 		Charging:        config.Charging,
 		OnWiFi:          config.OnWiFi,
 		Platform:        config.Platform,
@@ -494,7 +494,7 @@ type URLListConfig struct {
 
 // URLListResult contains the URLs returned from the FetchURL API
 type URLListResult struct {
-	Results []model.URLInfo
+	Results []model.OOAPIURLInfo
 }
 
 // AddCategory adds category code to the array in URLListConfig
@@ -538,7 +538,7 @@ func (sess *Session) FetchURLList(ctx *Context, config *URLListConfig) (*URLList
 			config.CountryCode = info.CountryCode
 		}
 	}
-	cfg := model.URLListConfig{
+	cfg := model.OOAPIURLListConfig{
 		Categories:  config.Categories,
 		CountryCode: config.CountryCode,
 		Limit:       config.Limit,

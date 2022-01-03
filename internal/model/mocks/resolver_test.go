@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestResolver(t *testing.T) {
@@ -62,7 +64,7 @@ func TestResolver(t *testing.T) {
 	t.Run("LookupHTTPS", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		r := &Resolver{
-			MockLookupHTTPS: func(ctx context.Context, domain string) (*HTTPSSvc, error) {
+			MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 				return nil, expected
 			},
 		}

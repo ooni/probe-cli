@@ -10,13 +10,9 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
-
-// Logger is the definition of Logger used by this package.
-type Logger interface {
-	Debugf(format string, v ...interface{})
-}
 
 // Client is an extended client.
 type Client struct {
@@ -37,7 +33,7 @@ type Client struct {
 	Host string
 
 	// Logger is the logger to use.
-	Logger Logger
+	Logger model.DebugLogger
 
 	// UserAgent is the user agent to use.
 	UserAgent string

@@ -10,8 +10,9 @@ import (
 
 	"github.com/apex/log"
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestDNSProxy(t *testing.T) {
@@ -29,7 +30,7 @@ func TestDNSProxy(t *testing.T) {
 		return newProxyWithCache(action, nil)
 	}
 
-	newresolver := func(listener DNSListener) netxlite.Resolver {
+	newresolver := func(listener DNSListener) model.Resolver {
 		dlr := netxlite.NewDialerWithoutResolver(log.Log)
 		r := netxlite.NewResolverUDP(log.Log, dlr, listener.LocalAddr().String())
 		return r
