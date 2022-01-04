@@ -115,7 +115,7 @@ func (c *APIClient) doJSON(request *http.Request, output interface{}) error {
 // GetJSON reads the JSON resource at resourcePath and unmarshals the
 // results into output. The request is bounded by the lifetime of the
 // context passed as argument. Returns the error that occurred.
-func (c APIClient) GetJSON(ctx context.Context, resourcePath string, output interface{}) error {
+func (c *APIClient) GetJSON(ctx context.Context, resourcePath string, output interface{}) error {
 	return c.GetJSONWithQuery(ctx, resourcePath, nil, output)
 }
 
