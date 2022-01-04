@@ -14,6 +14,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+// DefaultMaxBodySize is the default value for the maximum
+// body size you can fetch using an APIClient.
+const DefaultMaxBodySize = 1 << 22
+
 // APIClient is an extended HTTP client. To construct this APIClient, make
 // sure you initialize all fields marked as MANDATORY.
 type APIClient struct {
@@ -98,7 +102,12 @@ func (c *APIClient) do(request *http.Request) ([]byte, error) {
 	if response.StatusCode >= 400 {
 		return nil, fmt.Errorf("httpx: request failed: %s", response.Status)
 	}
-	return netxlite.ReadAllContext(request.Context(), response.Body)
+	r := io.LimitReader(response.Body, DefaultMaxBodySize)
+	data, err := netxlite.ReadAllContext(request.Context(), r)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 // doJSON performs the provided request and unmarshals the JSON response body
