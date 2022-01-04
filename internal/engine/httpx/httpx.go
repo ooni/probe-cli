@@ -14,28 +14,29 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// Client is an extended client.
+// Client is an extended HTTP client. To construct this Client, make
+// sure you initialize all fields marked as MANDATORY.
 type Client struct {
-	// Accept contains the accept header.
+	// Accept contains the OPTIONAL accept header.
 	Accept string
 
-	// Authorization contains the authorization header.
+	// Authorization contains the OPTIONAL authorization header.
 	Authorization string
 
-	// BaseURL is the base URL of the API.
+	// BaseURL is the MANDATORY base URL of the API.
 	BaseURL string
 
-	// HTTPClient is the real http client to use.
+	// HTTPClient is the MANDATORY underlying http client to use.
 	HTTPClient model.HTTPClient
 
-	// Host allows to set a specific host header. This is useful
+	// Host allows to OPTIONALLY set a specific host header. This is useful
 	// to implement, e.g., cloudfronting.
 	Host string
 
-	// Logger is the logger to use.
+	// Logger is MANDATORY the logger to use.
 	Logger model.DebugLogger
 
-	// UserAgent is the user agent to use.
+	// UserAgent is the OPTIONAL user agent to use.
 	UserAgent string
 }
 
