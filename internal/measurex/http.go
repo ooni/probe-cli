@@ -37,21 +37,43 @@ import (
 // HTTP events into the WritableDB.
 func (mx *Measurer) WrapHTTPTransport(
 	db WritableDB, txp model.HTTPTransport) *HTTPTransportDB {
-	return WrapHTTPTransport(mx.Begin, db, txp)
+	return WrapHTTPTransport(mx.Begin, db, txp, mx.httpMaxBodySnapshotSize())
 }
 
-// We only read a small snapshot of the body to keep measurements
-// lean, since we're mostly interested in TLS interference nowadays
-// but we'll also allow for reading more bytes from the conn.
-const httpMaxBodySnapshot = 1 << 11
+// DefaultHTTPMaxBodySnapshotSize is the default size used when
+// saving HTTP body snapshots. We only save a small snapshot of the
+// body to keep measurements lean, since we're mostly interested
+// in TLS interference nowadays and much less in full bodies.
+const DefaultHTTPMaxBodySnapshotSize = 1 << 11
 
+// httpMaxBodySnapshotSize selects the maximum body snapshot size.
+func (mx *Measurer) httpMaxBodySnapshotSize() int64 {
+	if mx.HTTPMaxBodySnapshotSize > 0 {
+		return mx.HTTPMaxBodySnapshotSize
+	}
+	return DefaultHTTPMaxBodySnapshotSize
+}
+
+// WrapHTTPTransport creates a new model.HTTPTransport instance
+// using the following configuration:
+//
+// - begin is the conventional "zero time" indicating the
+// moment when the measurement begun;
+//
+// - db is the writable DB into which to write the measurement;
+//
+// - txp is the underlying transport to use;
+//
+// - maxBodySnapshotSize is the max size of the response body snapshot
+// to save: we'll truncate bodies larger than that.
 func WrapHTTPTransport(
-	begin time.Time, db WritableDB, txp model.HTTPTransport) *HTTPTransportDB {
+	begin time.Time, db WritableDB, txp model.HTTPTransport,
+	maxBodySnapshotSize int64) *HTTPTransportDB {
 	return &HTTPTransportDB{
 		HTTPTransport:       txp,
 		Begin:               begin,
 		DB:                  db,
-		MaxBodySnapshotSize: httpMaxBodySnapshot,
+		MaxBodySnapshotSize: maxBodySnapshotSize,
 	}
 }
 
