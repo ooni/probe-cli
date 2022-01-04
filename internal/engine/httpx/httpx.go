@@ -156,17 +156,6 @@ func (c *APIClient) PostJSON(
 	return c.doJSON(request, output)
 }
 
-// PutJSON updates a JSON resource at a specific path and returns
-// the error that occurred and possibly an output document
-func (c *APIClient) PutJSON(
-	ctx context.Context, resourcePath string, input, output interface{}) error {
-	request, err := c.newRequestWithJSONBody(ctx, "PUT", resourcePath, nil, input)
-	if err != nil {
-		return err
-	}
-	return c.doJSON(request, output)
-}
-
 // FetchResource fetches the specified resource and returns it.
 func (c *APIClient) FetchResource(ctx context.Context, URLPath string) ([]byte, error) {
 	request, err := c.newRequest(ctx, "GET", URLPath, nil, nil)

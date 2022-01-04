@@ -248,22 +248,6 @@ func TestCreateJSONSuccess(t *testing.T) {
 	}
 }
 
-func TestUpdateJSONSuccess(t *testing.T) {
-	headers := httpbinheaders{
-		Headers: map[string]string{
-			"Foo": "bar",
-		},
-	}
-	var response httpbinpost
-	err := newClient().PutJSON(context.Background(), "/put", &headers, &response)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if response.Data != `{"headers":{"Foo":"bar"}}` {
-		t.Fatal(response.Data)
-	}
-}
-
 func TestReadJSONFailure(t *testing.T) {
 	var headers httpbinheaders
 	client := newClient()
@@ -279,16 +263,6 @@ func TestCreateJSONFailure(t *testing.T) {
 	client := newClient()
 	client.BaseURL = "\t\t\t\t"
 	err := client.PostJSON(context.Background(), "/headers", &headers, &headers)
-	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
-		t.Fatal("not the error we expected")
-	}
-}
-
-func TestUpdateJSONFailure(t *testing.T) {
-	var headers httpbinheaders
-	client := newClient()
-	client.BaseURL = "\t\t\t\t"
-	err := client.PutJSON(context.Background(), "/headers", &headers, &headers)
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 		t.Fatal("not the error we expected")
 	}
