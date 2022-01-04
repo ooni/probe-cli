@@ -20,7 +20,7 @@ func ubuntuIPLookup(
 	logger model.Logger,
 	userAgent string,
 ) (string, error) {
-	data, err := (httpx.Client{
+	data, err := (&httpx.APIClient{
 		BaseURL:    "https://geoip.ubuntu.com/",
 		HTTPClient: httpClient,
 		Logger:     logger,

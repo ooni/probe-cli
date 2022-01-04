@@ -14,7 +14,9 @@ func (c Client) FetchTorTargets(ctx context.Context, cc string) (result map[stri
 	if err != nil {
 		return nil, err
 	}
-	client := c.Client
+	// Note: the following code is very bad: it copies the original
+	// API client and then overrides one of its fields. Bleah...
+	client := c.APIClient
 	client.Authorization = fmt.Sprintf("Bearer %s", auth.Token)
 	query := url.Values{}
 	query.Add("country_code", cc)

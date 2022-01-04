@@ -15,8 +15,8 @@ import (
 
 const userAgent = "miniooni/0.1.0-dev"
 
-func newClient() Client {
-	return Client{
+func newClient() *APIClient {
+	return &APIClient{
 		BaseURL:    "https://httpbin.org",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -297,7 +297,7 @@ func TestUpdateJSONFailure(t *testing.T) {
 func TestFetchResourceIntegration(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	ctx := context.Background()
-	data, err := (Client{
+	data, err := (&APIClient{
 		BaseURL:    "http://facebook.com/",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -315,7 +315,7 @@ func TestFetchResourceExpiredContext(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	data, err := (Client{
+	data, err := (&APIClient{
 		BaseURL:    "http://facebook.com/",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -332,7 +332,7 @@ func TestFetchResourceExpiredContext(t *testing.T) {
 func TestFetchResourceInvalidURL(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	ctx := context.Background()
-	data, err := (Client{
+	data, err := (&APIClient{
 		BaseURL:    "http://\t/",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -355,7 +355,7 @@ func TestFetchResource400(t *testing.T) {
 	defer server.Close()
 	log.SetLevel(log.DebugLevel)
 	ctx := context.Background()
-	data, err := (Client{
+	data, err := (&APIClient{
 		Authorization: "foobar",
 		BaseURL:       server.URL,
 		HTTPClient:    http.DefaultClient,

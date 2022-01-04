@@ -13,7 +13,7 @@ import (
 func Control(
 	ctx context.Context, sess model.ExperimentSession,
 	thAddr string, resourcePath string, creq CtrlRequest) (out CtrlResponse, err error) {
-	clnt := httpx.Client{
+	clnt := &httpx.APIClient{
 		BaseURL:    thAddr,
 		HTTPClient: sess.DefaultHTTPClient(),
 		Logger:     sess.Logger(),

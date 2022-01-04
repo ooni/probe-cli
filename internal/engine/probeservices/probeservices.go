@@ -65,7 +65,7 @@ type Session interface {
 
 // Client is a client for the OONI probe services API.
 type Client struct {
-	httpx.Client
+	httpx.APIClient
 	LoginCalls    *atomicx.Int64
 	RegisterCalls *atomicx.Int64
 	StateFile     StateFile
@@ -91,7 +91,7 @@ func (c Client) GetCredsAndAuth() (*LoginCredentials, *LoginAuth, error) {
 // function fails, e.g., we don't support the specified endpoint.
 func NewClient(sess Session, endpoint model.OOAPIService) (*Client, error) {
 	client := &Client{
-		Client: httpx.Client{
+		APIClient: httpx.APIClient{
 			BaseURL:    endpoint.Address,
 			HTTPClient: sess.DefaultHTTPClient(),
 			Logger:     sess.Logger(),
@@ -115,7 +115,7 @@ func NewClient(sess Session, endpoint model.OOAPIService) (*Client, error) {
 		if URL.Scheme != "https" || URL.Host != URL.Hostname() {
 			return nil, ErrUnsupportedCloudFrontAddress
 		}
-		client.Client.Host = URL.Hostname()
+		client.APIClient.Host = URL.Hostname()
 		URL.Host = endpoint.Front
 		client.BaseURL = URL.String()
 		if _, err := url.Parse(client.BaseURL); err != nil {

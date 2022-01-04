@@ -20,7 +20,7 @@ func ipInfoIPLookup(
 	userAgent string,
 ) (string, error) {
 	var v ipInfoResponse
-	err := (httpx.Client{
+	err := (&httpx.APIClient{
 		Accept:     "application/json",
 		BaseURL:    "https://ipinfo.io",
 		HTTPClient: httpClient,

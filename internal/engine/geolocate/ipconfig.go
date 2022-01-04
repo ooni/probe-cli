@@ -16,7 +16,7 @@ func ipConfigIPLookup(
 	logger model.Logger,
 	userAgent string,
 ) (string, error) {
-	data, err := (httpx.Client{
+	data, err := (&httpx.APIClient{
 		BaseURL:    "https://ipconfig.io",
 		HTTPClient: httpClient,
 		Logger:     logger,
