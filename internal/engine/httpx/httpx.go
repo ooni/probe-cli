@@ -26,7 +26,7 @@ type Client struct {
 	BaseURL string
 
 	// HTTPClient is the real http client to use.
-	HTTPClient *http.Client
+	HTTPClient model.HTTPClient
 
 	// Host allows to set a specific host header. This is useful
 	// to implement, e.g., cloudfronting.
