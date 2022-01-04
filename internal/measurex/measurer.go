@@ -107,9 +107,11 @@ func NewMeasurerWithDefaultSettings() *Measurer {
 		MeasureURLHelper:        nil,
 		QUICHandshakeTimeout:    0,
 		Resolvers: []*ResolverInfo{{
-			Network:         "system",
-			Address:         "",
-			ForeignResolver: nil,
+			Network: "system",
+			Address: "",
+		}, {
+			Network: "udp",
+			Address: "8.8.4.4:53",
 		}},
 		TCPconnectTimeout:   0,
 		TLSHandshakeTimeout: 0,
