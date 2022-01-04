@@ -26,13 +26,18 @@ import (
 // - resolver is the underlying resolver to use
 //
 // - handshake is the TLS handshaker to use
+//
+// - maxBodySnapshotSize is the max size of the response body snapshot
+// to save: we'll truncate bodies larger than that.
 func NewTracingHTTPTransport(logger model.Logger, begin time.Time, db WritableDB,
-	resolver model.Resolver, dialer model.Dialer, handshaker model.TLSHandshaker) *HTTPTransportDB {
+	resolver model.Resolver, dialer model.Dialer, handshaker model.TLSHandshaker,
+	maxBodySnapshotSize int64) *HTTPTransportDB {
 	resolver = WrapResolver(begin, db, resolver)
 	dialer = netxlite.WrapDialer(logger, resolver, WrapDialer(begin, db, dialer))
 	tlsDialer := netxlite.NewTLSDialer(dialer, handshaker)
 	return WrapHTTPTransport(
-		begin, db, netxlite.NewHTTPTransport(logger, dialer, tlsDialer))
+		begin, db, netxlite.NewHTTPTransport(logger, dialer, tlsDialer),
+		maxBodySnapshotSize)
 }
 
 // NewTracingHTTPTransportWithDefaultSettings creates a new
@@ -46,21 +51,27 @@ func NewTracingHTTPTransport(logger model.Logger, begin time.Time, db WritableDB
 //
 // - db is the DB in which to write events that will
 // eventually become the measurement
-//
 func NewTracingHTTPTransportWithDefaultSettings(
 	begin time.Time, logger model.Logger, db WritableDB) *HTTPTransportDB {
 	return NewTracingHTTPTransport(logger, begin, db,
 		netxlite.NewResolverStdlib(logger),
 		netxlite.NewDialerWithoutResolver(logger),
-		netxlite.NewTLSHandshakerStdlib(logger))
+		netxlite.NewTLSHandshakerStdlib(logger),
+		DefaultHTTPMaxBodySnapshotSize)
 }
 
-func (mx *Measurer) NewTracingHTTPTransportWithDefaultSettings(
-	logger model.Logger, db WritableDB) *HTTPTransportDB {
+// NewTracingHTTPTransportWithDefaultSettings creates a new
+// HTTP transport with tracing capabilities and default settings.
+//
+// Arguments:
+//
+// - db is the DB in which to write events that will
+// eventually become the measurement
+func (mx *Measurer) NewTracingHTTPTransportWithDefaultSettings(db WritableDB) *HTTPTransportDB {
 	return NewTracingHTTPTransport(
 		mx.Logger, mx.Begin, db, mx.NewResolverSystem(db, mx.Logger),
 		mx.NewDialerWithoutResolver(db, mx.Logger),
-		mx.TLSHandshaker)
+		mx.TLSHandshaker, mx.httpMaxBodySnapshotSize())
 }
 
 // UnmeasuredHTTPEndpoints returns the endpoints whose IP address

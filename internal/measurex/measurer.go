@@ -31,8 +31,29 @@ type Measurer struct {
 	// Begin is when we started measuring (this field is MANDATORY).
 	Begin time.Time
 
+	// DNSLookupTimeout is the OPTIONAL timeout for performing
+	// a DNS lookup. If not set, we use a default value.
+	//
+	// Note that the underlying network implementation MAY use a
+	// shorter-than-you-selected watchdog timeout. In such a case,
+	// the shorter watchdog timeout will prevail.
+	DNSLookupTimeout time.Duration
+
 	// HTTPClient is the MANDATORY HTTP client for the WCTH.
 	HTTPClient model.HTTPClient
+
+	// HTTPMaxBodySnapshotSize is the OPTIONAL maximum size,
+	// in bytes, of the response body snapshot we save. If this field
+	// is zero or negative, we'll use a small default value.
+	HTTPMaxBodySnapshotSize int64
+
+	// HTTPRoundTripTimeout is the OPTIONAL timeout for performing
+	// an HTTP round trip. If not set, we use a default value.
+	//
+	// Note that the underlying network implementation MAY use a
+	// shorter-than-you-selected watchdog timeout. In such a case,
+	// the shorter watchdog timeout will prevail.
+	HTTPRoundTripTimeout time.Duration
 
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger
@@ -42,8 +63,32 @@ type Measurer struct {
 	// is not set, we'll not be using any helper.
 	MeasureURLHelper MeasureURLHelper
 
+	// QUICHandshakeTimeout is the OPTIONAL timeout for performing
+	// a QUIC handshake. If not set, we use a default value.
+	//
+	// Note that the underlying network implementation MAY use a
+	// shorter-than-you-selected watchdog timeout. In such a case,
+	// the shorter watchdog timeout will prevail.
+	QUICHandshakeTimeout time.Duration
+
 	// Resolvers is the MANDATORY list of resolvers.
 	Resolvers []*ResolverInfo
+
+	// TCPConnectTimeout is the OPTIONAL timeout for performing
+	// a tcp connect. If not set, we use a default value.
+	//
+	// Note that the underlying network implementation MAY use a
+	// shorter-than-you-selected watchdog timeout. In such a case,
+	// the shorter watchdog timeout will prevail.
+	TCPconnectTimeout time.Duration
+
+	// TLSHandshakeTimeout is the OPTIONAL timeout for performing
+	// a tls handshake. If not set, we use a default value.
+	//
+	// Note that the underlying network implementation MAY use a
+	// shorter-than-you-selected watchdog timeout. In such a case,
+	// the shorter watchdog timeout will prevail.
+	TLSHandshakeTimeout time.Duration
 
 	// TLSHandshaker is the MANDATORY TLS handshaker.
 	TLSHandshaker model.TLSHandshaker
@@ -53,9 +98,14 @@ type Measurer struct {
 // instance using the most default settings.
 func NewMeasurerWithDefaultSettings() *Measurer {
 	return &Measurer{
-		Begin:      time.Now(),
-		HTTPClient: &http.Client{},
-		Logger:     log.Log,
+		Begin:                   time.Now(),
+		DNSLookupTimeout:        0,
+		HTTPClient:              &http.Client{},
+		HTTPMaxBodySnapshotSize: 0,
+		HTTPRoundTripTimeout:    0,
+		Logger:                  log.Log,
+		MeasureURLHelper:        nil,
+		QUICHandshakeTimeout:    0,
 		Resolvers: []*ResolverInfo{{
 			Network: "system",
 			Address: "",
@@ -63,13 +113,26 @@ func NewMeasurerWithDefaultSettings() *Measurer {
 			Network: "udp",
 			Address: "8.8.4.4:53",
 		}},
-		TLSHandshaker: netxlite.NewTLSHandshakerStdlib(log.Log),
+		TCPconnectTimeout:   0,
+		TLSHandshakeTimeout: 0,
+		TLSHandshaker:       netxlite.NewTLSHandshakerStdlib(log.Log),
 	}
+}
+
+// DefaultDNSLookupTimeout is the default DNS lookup timeout.
+const DefaultDNSLookupTimeout = 4 * time.Second
+
+// dnsLookupTimeout selects the correct DNS lookup timeout.
+func (mx *Measurer) dnsLookupTimeout() time.Duration {
+	if mx.DNSLookupTimeout > 0 {
+		return mx.DNSLookupTimeout
+	}
+	return DefaultDNSLookupTimeout
 }
 
 // LookupHostSystem performs a LookupHost using the system resolver.
 func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *DNSMeasurement {
-	const timeout = 4 * time.Second
+	timeout := mx.dnsLookupTimeout()
 	ol := NewOperationLogger(mx.Logger, "LookupHost %s with getaddrinfo", domain)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -87,7 +150,7 @@ func (mx *Measurer) LookupHostSystem(ctx context.Context, domain string) *DNSMea
 // lookupHostForeign performs a LookupHost using a "foreign" resolver.
 func (mx *Measurer) lookupHostForeign(
 	ctx context.Context, domain string, r model.Resolver) *DNSMeasurement {
-	const timeout = 4 * time.Second
+	timeout := mx.dnsLookupTimeout()
 	ol := NewOperationLogger(mx.Logger, "LookupHost %s with %s", domain, r.Network())
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -113,7 +176,7 @@ func (mx *Measurer) lookupHostForeign(
 // Returns a DNSMeasurement.
 func (mx *Measurer) LookupHostUDP(
 	ctx context.Context, domain, address string) *DNSMeasurement {
-	const timeout = 4 * time.Second
+	timeout := mx.dnsLookupTimeout()
 	ol := NewOperationLogger(mx.Logger, "LookupHost %s with %s/udp", domain, address)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -141,7 +204,7 @@ func (mx *Measurer) LookupHostUDP(
 // Returns a DNSMeasurement.
 func (mx *Measurer) LookupHTTPSSvcUDP(
 	ctx context.Context, domain, address string) *DNSMeasurement {
-	const timeout = 4 * time.Second
+	timeout := mx.dnsLookupTimeout()
 	ol := NewOperationLogger(mx.Logger, "LookupHTTPSvc %s with %s/udp", domain, address)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -160,7 +223,7 @@ func (mx *Measurer) LookupHTTPSSvcUDP(
 // except that it uses a "foreign" resolver.
 func (mx *Measurer) lookupHTTPSSvcUDPForeign(
 	ctx context.Context, domain string, r model.Resolver) *DNSMeasurement {
-	const timeout = 4 * time.Second
+	timeout := mx.dnsLookupTimeout()
 	ol := NewOperationLogger(mx.Logger, "LookupHTTPSvc %s with %s", domain, r.Address())
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -196,10 +259,21 @@ func (mx *Measurer) TCPConnect(ctx context.Context, address string) *EndpointMea
 	}
 }
 
+// DefaultTCPConnectTimeout is the default TCP connect timeout.
+const DefaultTCPConnectTimeout = 15 * time.Second
+
+// tcpConnectTimeout selects the correct TCP connect timeout.
+func (mx *Measurer) tcpConnectTimeout() time.Duration {
+	if mx.TCPconnectTimeout > 0 {
+		return mx.TCPconnectTimeout
+	}
+	return DefaultTCPConnectTimeout
+}
+
 // TCPConnectWithDB is like TCPConnect but does not create a new measurement,
 // rather it just stores the events inside of the given DB.
 func (mx *Measurer) TCPConnectWithDB(ctx context.Context, db WritableDB, address string) (Conn, error) {
-	const timeout = 10 * time.Second
+	timeout := mx.tcpConnectTimeout()
 	ol := NewOperationLogger(mx.Logger, "TCPConnect %s", address)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -255,6 +329,17 @@ func (mx *Measurer) TLSConnectAndHandshake(ctx context.Context,
 	}
 }
 
+// DefaultTLSHandshakeTimeout is the default TLS handshake timeout.
+const DefaultTLSHandshakeTimeout = 10 * time.Second
+
+// tlsHandshakeTimeout selects the correct TLS handshake timeout.
+func (mx *Measurer) tlsHandshakeTimeout() time.Duration {
+	if mx.TLSHandshakeTimeout > 0 {
+		return mx.TLSHandshakeTimeout
+	}
+	return DefaultTLSHandshakeTimeout
+}
+
 // TLSConnectAndHandshakeWithDB is like TLSConnectAndHandshake but
 // uses the given DB instead of creating a new Measurement.
 func (mx *Measurer) TLSConnectAndHandshakeWithDB(ctx context.Context,
@@ -263,7 +348,7 @@ func (mx *Measurer) TLSConnectAndHandshakeWithDB(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	const timeout = 10 * time.Second
+	timeout := mx.tlsHandshakeTimeout()
 	ol := NewOperationLogger(mx.Logger,
 		"TLSHandshake %s with sni=%s", address, config.ServerName)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -315,12 +400,23 @@ func (mx *Measurer) QUICHandshake(ctx context.Context, address string,
 	}
 }
 
+// DefaultQUICHandshakeTimeout is the default QUIC handshake timeout.
+const DefaultQUICHandshakeTimeout = 10 * time.Second
+
+// quicHandshakeTimeout selects the correct QUIC handshake timeout.
+func (mx *Measurer) quicHandshakeTimeout() time.Duration {
+	if mx.QUICHandshakeTimeout > 0 {
+		return mx.QUICHandshakeTimeout
+	}
+	return DefaultQUICHandshakeTimeout
+}
+
 // QUICHandshakeWithDB is like QUICHandshake but uses the given
 // db to store events rather than creating a temporary one and
 // use it to generate a new Measuremet.
 func (mx *Measurer) QUICHandshakeWithDB(ctx context.Context, db WritableDB,
 	address string, config *tls.Config) (quic.EarlySession, error) {
-	const timeout = 10 * time.Second
+	timeout := mx.quicHandshakeTimeout()
 	ol := NewOperationLogger(mx.Logger,
 		"QUICHandshake %s with sni=%s", address, config.ServerName)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -495,6 +591,8 @@ func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
 	return mx.httpClientDo(ctx, clnt, epnt)
 }
 
+// HTTPClientGET performs a GET operation of the given URL
+// using the given HTTP client instance.
 func (mx *Measurer) HTTPClientGET(
 	ctx context.Context, clnt model.HTTPClient, URL *url.URL) (*http.Response, error) {
 	return mx.httpClientDo(ctx, clnt, &HTTPEndpoint{
@@ -508,6 +606,17 @@ func (mx *Measurer) HTTPClientGET(
 	})
 }
 
+// DefaultHTTPRoundTripTimeout is the default HTTP round-trip timeout.
+const DefaultHTTPRoundTripTimeout = 15 * time.Second
+
+// httpRoundTripTimeout selects the correct HTTP round-trip timeout.
+func (mx *Measurer) httpRoundTripTimeout() time.Duration {
+	if mx.HTTPRoundTripTimeout > 0 {
+		return mx.HTTPRoundTripTimeout
+	}
+	return DefaultHTTPRoundTripTimeout
+}
+
 func (mx *Measurer) httpClientDo(ctx context.Context,
 	clnt model.HTTPClient, epnt *HTTPEndpoint) (*http.Response, error) {
 	req, err := NewHTTPGetRequest(ctx, epnt.URL.String())
@@ -515,7 +624,7 @@ func (mx *Measurer) httpClientDo(ctx context.Context,
 		return nil, err
 	}
 	req.Header = epnt.Header.Clone() // must clone because of parallel usage
-	const timeout = 15 * time.Second
+	timeout := mx.httpRoundTripTimeout()
 	ol := NewOperationLogger(mx.Logger,
 		"%s %s with %s/%s", req.Method, req.URL.String(), epnt.Address, epnt.Network)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
