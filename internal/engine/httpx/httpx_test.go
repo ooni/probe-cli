@@ -1,4 +1,4 @@
-package httpx_test
+package httpx
 
 import (
 	"context"
@@ -11,13 +11,12 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 )
 
 const userAgent = "miniooni/0.1.0-dev"
 
-func newClient() httpx.Client {
-	return httpx.Client{
+func newClient() Client {
+	return Client{
 		BaseURL:    "https://httpbin.org",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -155,7 +154,7 @@ func TestNewRequestUserAgentIsSet(t *testing.T) {
 func TestClientDoJSONClientDoFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	client := newClient()
-	client.HTTPClient = &http.Client{Transport: httpx.FakeTransport{
+	client.HTTPClient = &http.Client{Transport: FakeTransport{
 		Err: expected,
 	}}
 	err := client.DoJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
@@ -166,10 +165,10 @@ func TestClientDoJSONClientDoFailure(t *testing.T) {
 
 func TestClientDoJSONResponseNotSuccessful(t *testing.T) {
 	client := newClient()
-	client.HTTPClient = &http.Client{Transport: httpx.FakeTransport{
+	client.HTTPClient = &http.Client{Transport: FakeTransport{
 		Resp: &http.Response{
 			StatusCode: 401,
-			Body:       httpx.FakeBody{},
+			Body:       FakeBody{},
 		},
 	}}
 	err := client.DoJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
@@ -181,10 +180,10 @@ func TestClientDoJSONResponseNotSuccessful(t *testing.T) {
 func TestClientDoJSONResponseReadingBodyError(t *testing.T) {
 	expected := errors.New("mocked error")
 	client := newClient()
-	client.HTTPClient = &http.Client{Transport: httpx.FakeTransport{
+	client.HTTPClient = &http.Client{Transport: FakeTransport{
 		Resp: &http.Response{
 			StatusCode: 200,
-			Body: httpx.FakeBody{
+			Body: FakeBody{
 				Err: expected,
 			},
 		},
@@ -197,10 +196,10 @@ func TestClientDoJSONResponseReadingBodyError(t *testing.T) {
 
 func TestClientDoJSONResponseIsNotJSON(t *testing.T) {
 	client := newClient()
-	client.HTTPClient = &http.Client{Transport: httpx.FakeTransport{
+	client.HTTPClient = &http.Client{Transport: FakeTransport{
 		Resp: &http.Response{
 			StatusCode: 200,
-			Body: httpx.FakeBody{
+			Body: FakeBody{
 				Err: io.EOF,
 			},
 		},
@@ -298,7 +297,7 @@ func TestUpdateJSONFailure(t *testing.T) {
 func TestFetchResourceIntegration(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	ctx := context.Background()
-	data, err := (httpx.Client{
+	data, err := (Client{
 		BaseURL:    "http://facebook.com/",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -316,7 +315,7 @@ func TestFetchResourceExpiredContext(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	data, err := (httpx.Client{
+	data, err := (Client{
 		BaseURL:    "http://facebook.com/",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -333,7 +332,7 @@ func TestFetchResourceExpiredContext(t *testing.T) {
 func TestFetchResourceInvalidURL(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	ctx := context.Background()
-	data, err := (httpx.Client{
+	data, err := (Client{
 		BaseURL:    "http://\t/",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -356,7 +355,7 @@ func TestFetchResource400(t *testing.T) {
 	defer server.Close()
 	log.SetLevel(log.DebugLevel)
 	ctx := context.Background()
-	data, err := (httpx.Client{
+	data, err := (Client{
 		Authorization: "foobar",
 		BaseURL:       server.URL,
 		HTTPClient:    http.DefaultClient,
