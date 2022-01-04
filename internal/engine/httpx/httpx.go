@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -92,6 +93,9 @@ func (c *APIClient) newRequest(ctx context.Context, method, resourcePath string,
 	return request.WithContext(ctx), nil
 }
 
+// ErrRequestFailed indicates that the server returned >= 400.
+var ErrRequestFailed = errors.New("httpx: request failed")
+
 // do performs the provided request and returns the response body or an error.
 func (c *APIClient) do(request *http.Request) ([]byte, error) {
 	response, err := c.HTTPClient.Do(request)
@@ -100,7 +104,7 @@ func (c *APIClient) do(request *http.Request) ([]byte, error) {
 	}
 	defer response.Body.Close()
 	if response.StatusCode >= 400 {
-		return nil, fmt.Errorf("httpx: request failed: %s", response.Status)
+		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, response.Status)
 	}
 	r := io.LimitReader(response.Body, DefaultMaxBodySize)
 	data, err := netxlite.ReadAllContext(request.Context(), r)
