@@ -76,8 +76,6 @@ func (c *APIClient) newRequest(ctx context.Context, method, resourcePath string,
 	if query != nil {
 		URL.RawQuery = query.Encode()
 	}
-	c.Logger.Debugf("httpx: method: %s", method)
-	c.Logger.Debugf("httpx: URL: %s", URL.String())
 	request, err := http.NewRequest(method, URL.String(), body)
 	if err != nil {
 		return nil, err
