@@ -8,6 +8,7 @@ import (
 	"time"
 
 	pt "git.torproject.org/pluggable-transports/goptlib.git"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"gitlab.com/yawning/obfs4.git/transports/base"
 	"gitlab.com/yawning/obfs4.git/transports/obfs4"
@@ -50,7 +51,7 @@ type OBFS4Dialer struct {
 
 	// UnderlyingDialer is the optional underlying dialer to
 	// use. If not set, we will use &net.Dialer{}.
-	UnderlyingDialer UnderlyingDialer
+	UnderlyingDialer model.SimpleDialer
 }
 
 // DialContext establishes a connection with the given obfs4 proxy. The context
@@ -94,8 +95,8 @@ func (d *OBFS4Dialer) parseargs(factory base.ClientFactory) (interface{}, error)
 	return factory.ParseArgs(args)
 }
 
-// underlyingDialer returns a suitable UnderlyingDialer.
-func (d *OBFS4Dialer) underlyingDialer() UnderlyingDialer {
+// underlyingDialer returns a suitable SimpleDialer.
+func (d *OBFS4Dialer) underlyingDialer() model.SimpleDialer {
 	if d.UnderlyingDialer != nil {
 		return d.UnderlyingDialer
 	}
@@ -120,7 +121,7 @@ type obfs4CancellableDialer struct {
 	parsedargs interface{}
 
 	// ud is the underlying Dialer to use.
-	ud UnderlyingDialer
+	ud model.SimpleDialer
 }
 
 // dial performs the dial.
