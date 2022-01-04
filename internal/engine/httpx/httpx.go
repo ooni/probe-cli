@@ -39,8 +39,8 @@ type Client struct {
 	UserAgent string
 }
 
-// NewRequestWithJSONBody creates a new request with a JSON body
-func (c Client) NewRequestWithJSONBody(
+// newRequestWithJSONBody creates a new request with a JSON body
+func (c Client) newRequestWithJSONBody(
 	ctx context.Context, method, resourcePath string,
 	query url.Values, body interface{}) (*http.Request, error) {
 	data, err := json.Marshal(body)
@@ -48,7 +48,7 @@ func (c Client) NewRequestWithJSONBody(
 		return nil, err
 	}
 	c.Logger.Debugf("httpx: request body: %d bytes", len(data))
-	request, err := c.NewRequest(
+	request, err := c.newRequest(
 		ctx, method, resourcePath, query, bytes.NewReader(data))
 	if err != nil {
 		return nil, err
@@ -59,8 +59,8 @@ func (c Client) NewRequestWithJSONBody(
 	return request, nil
 }
 
-// NewRequest creates a new request.
-func (c Client) NewRequest(ctx context.Context, method, resourcePath string,
+// newRequest creates a new request.
+func (c Client) newRequest(ctx context.Context, method, resourcePath string,
 	query url.Values, body io.Reader) (*http.Request, error) {
 	URL, err := url.Parse(c.BaseURL)
 	if err != nil {
@@ -87,8 +87,8 @@ func (c Client) NewRequest(ctx context.Context, method, resourcePath string,
 	return request.WithContext(ctx), nil
 }
 
-// Do performs the provided request and returns the response body or an error.
-func (c Client) Do(request *http.Request) ([]byte, error) {
+// do performs the provided request and returns the response body or an error.
+func (c Client) do(request *http.Request) ([]byte, error) {
 	response, err := c.HTTPClient.Do(request)
 	if err != nil {
 		return nil, err
@@ -100,10 +100,10 @@ func (c Client) Do(request *http.Request) ([]byte, error) {
 	return netxlite.ReadAllContext(request.Context(), response.Body)
 }
 
-// DoJSON performs the provided request and unmarshals the JSON response body
+// doJSON performs the provided request and unmarshals the JSON response body
 // into the provided output variable.
-func (c Client) DoJSON(request *http.Request, output interface{}) error {
-	data, err := c.Do(request)
+func (c Client) doJSON(request *http.Request, output interface{}) error {
+	data, err := c.do(request)
 	if err != nil {
 		return err
 	}
@@ -122,11 +122,11 @@ func (c Client) GetJSON(ctx context.Context, resourcePath string, output interfa
 func (c Client) GetJSONWithQuery(
 	ctx context.Context, resourcePath string,
 	query url.Values, output interface{}) error {
-	request, err := c.NewRequest(ctx, "GET", resourcePath, query, nil)
+	request, err := c.newRequest(ctx, "GET", resourcePath, query, nil)
 	if err != nil {
 		return err
 	}
-	return c.DoJSON(request, output)
+	return c.doJSON(request, output)
 }
 
 // PostJSON creates a JSON subresource of the resource at resourcePath
@@ -135,29 +135,29 @@ func (c Client) GetJSONWithQuery(
 // lifetime. Returns the error that occurred.
 func (c Client) PostJSON(
 	ctx context.Context, resourcePath string, input, output interface{}) error {
-	request, err := c.NewRequestWithJSONBody(ctx, "POST", resourcePath, nil, input)
+	request, err := c.newRequestWithJSONBody(ctx, "POST", resourcePath, nil, input)
 	if err != nil {
 		return err
 	}
-	return c.DoJSON(request, output)
+	return c.doJSON(request, output)
 }
 
 // PutJSON updates a JSON resource at a specific path and returns
 // the error that occurred and possibly an output document
 func (c Client) PutJSON(
 	ctx context.Context, resourcePath string, input, output interface{}) error {
-	request, err := c.NewRequestWithJSONBody(ctx, "PUT", resourcePath, nil, input)
+	request, err := c.newRequestWithJSONBody(ctx, "PUT", resourcePath, nil, input)
 	if err != nil {
 		return err
 	}
-	return c.DoJSON(request, output)
+	return c.doJSON(request, output)
 }
 
 // FetchResource fetches the specified resource and returns it.
 func (c Client) FetchResource(ctx context.Context, URLPath string) ([]byte, error) {
-	request, err := c.NewRequest(ctx, "GET", URLPath, nil, nil)
+	request, err := c.newRequest(ctx, "GET", URLPath, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return c.Do(request)
+	return c.do(request)
 }

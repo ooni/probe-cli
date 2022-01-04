@@ -26,7 +26,7 @@ func newClient() Client {
 
 func TestNewRequestWithJSONBodyJSONMarshalFailure(t *testing.T) {
 	client := newClient()
-	req, err := client.NewRequestWithJSONBody(
+	req, err := client.newRequestWithJSONBody(
 		context.Background(), "GET", "/", nil, make(chan interface{}),
 	)
 	if err == nil || !strings.HasPrefix(err.Error(), "json: unsupported type") {
@@ -40,7 +40,7 @@ func TestNewRequestWithJSONBodyJSONMarshalFailure(t *testing.T) {
 func TestNewRequestWithJSONBodyNewRequestFailure(t *testing.T) {
 	client := newClient()
 	client.BaseURL = "\t\t\t" // cause URL parse error
-	req, err := client.NewRequestWithJSONBody(
+	req, err := client.newRequestWithJSONBody(
 		context.Background(), "GET", "/", nil, nil,
 	)
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
@@ -56,7 +56,7 @@ func TestNewRequestWithQuery(t *testing.T) {
 	q := url.Values{}
 	q.Add("antani", "mascetti")
 	q.Add("melandri", "conte")
-	req, err := client.NewRequest(
+	req, err := client.newRequest(
 		context.Background(), "GET", "/", q, nil,
 	)
 	if err != nil {
@@ -72,7 +72,7 @@ func TestNewRequestWithQuery(t *testing.T) {
 
 func TestNewRequestNewRequestFailure(t *testing.T) {
 	client := newClient()
-	req, err := client.NewRequest(
+	req, err := client.newRequest(
 		context.Background(), "\t\t\t", "/", nil, nil,
 	)
 	if err == nil || !strings.HasPrefix(err.Error(), "net/http: invalid method") {
@@ -86,7 +86,7 @@ func TestNewRequestNewRequestFailure(t *testing.T) {
 func TestNewRequestCloudfronting(t *testing.T) {
 	client := newClient()
 	client.Host = "www.x.org"
-	req, err := client.NewRequest(
+	req, err := client.newRequest(
 		context.Background(), "GET", "/", nil, nil,
 	)
 	if err != nil {
@@ -100,7 +100,7 @@ func TestNewRequestCloudfronting(t *testing.T) {
 func TestNewRequestAcceptIsSet(t *testing.T) {
 	client := newClient()
 	client.Accept = "application/xml"
-	req, err := client.NewRequestWithJSONBody(
+	req, err := client.newRequestWithJSONBody(
 		context.Background(), "GET", "/", nil, []string{},
 	)
 	if err != nil {
@@ -113,7 +113,7 @@ func TestNewRequestAcceptIsSet(t *testing.T) {
 
 func TestNewRequestContentTypeIsSet(t *testing.T) {
 	client := newClient()
-	req, err := client.NewRequestWithJSONBody(
+	req, err := client.newRequestWithJSONBody(
 		context.Background(), "GET", "/", nil, []string{},
 	)
 	if err != nil {
@@ -127,7 +127,7 @@ func TestNewRequestContentTypeIsSet(t *testing.T) {
 func TestNewRequestAuthorizationHeader(t *testing.T) {
 	client := newClient()
 	client.Authorization = "deadbeef"
-	req, err := client.NewRequest(
+	req, err := client.newRequest(
 		context.Background(), "GET", "/", nil, nil,
 	)
 	if err != nil {
@@ -140,7 +140,7 @@ func TestNewRequestAuthorizationHeader(t *testing.T) {
 
 func TestNewRequestUserAgentIsSet(t *testing.T) {
 	client := newClient()
-	req, err := client.NewRequest(
+	req, err := client.newRequest(
 		context.Background(), "GET", "/", nil, nil,
 	)
 	if err != nil {
@@ -157,7 +157,7 @@ func TestClientDoJSONClientDoFailure(t *testing.T) {
 	client.HTTPClient = &http.Client{Transport: FakeTransport{
 		Err: expected,
 	}}
-	err := client.DoJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
+	err := client.doJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
@@ -171,7 +171,7 @@ func TestClientDoJSONResponseNotSuccessful(t *testing.T) {
 			Body:       FakeBody{},
 		},
 	}}
-	err := client.DoJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
+	err := client.doJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
 	if err == nil || !strings.HasPrefix(err.Error(), "httpx: request failed") {
 		t.Fatal("not the error we expected")
 	}
@@ -188,7 +188,7 @@ func TestClientDoJSONResponseReadingBodyError(t *testing.T) {
 			},
 		},
 	}}
-	err := client.DoJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
+	err := client.doJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
@@ -204,7 +204,7 @@ func TestClientDoJSONResponseIsNotJSON(t *testing.T) {
 			},
 		},
 	}}
-	err := client.DoJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
+	err := client.doJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
 	if err == nil || err.Error() != "unexpected end of JSON input" {
 		t.Fatal("not the error we expected")
 	}
