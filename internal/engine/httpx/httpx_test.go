@@ -1,22 +1,22 @@
-package httpx_test
+package httpx
 
 import (
 	"context"
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 )
 
 const userAgent = "miniooni/0.1.0-dev"
 
-func newClient() httpx.Client {
-	return httpx.Client{
+func newClient() *APIClient {
+	return &APIClient{
 		BaseURL:    "https://httpbin.org",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -26,7 +26,7 @@ func newClient() httpx.Client {
 
 func TestNewRequestWithJSONBodyJSONMarshalFailure(t *testing.T) {
 	client := newClient()
-	req, err := client.NewRequestWithJSONBody(
+	req, err := client.newRequestWithJSONBody(
 		context.Background(), "GET", "/", nil, make(chan interface{}),
 	)
 	if err == nil || !strings.HasPrefix(err.Error(), "json: unsupported type") {
@@ -40,7 +40,7 @@ func TestNewRequestWithJSONBodyJSONMarshalFailure(t *testing.T) {
 func TestNewRequestWithJSONBodyNewRequestFailure(t *testing.T) {
 	client := newClient()
 	client.BaseURL = "\t\t\t" // cause URL parse error
-	req, err := client.NewRequestWithJSONBody(
+	req, err := client.newRequestWithJSONBody(
 		context.Background(), "GET", "/", nil, nil,
 	)
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
@@ -56,7 +56,7 @@ func TestNewRequestWithQuery(t *testing.T) {
 	q := url.Values{}
 	q.Add("antani", "mascetti")
 	q.Add("melandri", "conte")
-	req, err := client.NewRequest(
+	req, err := client.newRequest(
 		context.Background(), "GET", "/", q, nil,
 	)
 	if err != nil {
@@ -72,7 +72,7 @@ func TestNewRequestWithQuery(t *testing.T) {
 
 func TestNewRequestNewRequestFailure(t *testing.T) {
 	client := newClient()
-	req, err := client.NewRequest(
+	req, err := client.newRequest(
 		context.Background(), "\t\t\t", "/", nil, nil,
 	)
 	if err == nil || !strings.HasPrefix(err.Error(), "net/http: invalid method") {
@@ -86,7 +86,7 @@ func TestNewRequestNewRequestFailure(t *testing.T) {
 func TestNewRequestCloudfronting(t *testing.T) {
 	client := newClient()
 	client.Host = "www.x.org"
-	req, err := client.NewRequest(
+	req, err := client.newRequest(
 		context.Background(), "GET", "/", nil, nil,
 	)
 	if err != nil {
@@ -100,7 +100,7 @@ func TestNewRequestCloudfronting(t *testing.T) {
 func TestNewRequestAcceptIsSet(t *testing.T) {
 	client := newClient()
 	client.Accept = "application/xml"
-	req, err := client.NewRequestWithJSONBody(
+	req, err := client.newRequestWithJSONBody(
 		context.Background(), "GET", "/", nil, []string{},
 	)
 	if err != nil {
@@ -113,7 +113,7 @@ func TestNewRequestAcceptIsSet(t *testing.T) {
 
 func TestNewRequestContentTypeIsSet(t *testing.T) {
 	client := newClient()
-	req, err := client.NewRequestWithJSONBody(
+	req, err := client.newRequestWithJSONBody(
 		context.Background(), "GET", "/", nil, []string{},
 	)
 	if err != nil {
@@ -127,7 +127,7 @@ func TestNewRequestContentTypeIsSet(t *testing.T) {
 func TestNewRequestAuthorizationHeader(t *testing.T) {
 	client := newClient()
 	client.Authorization = "deadbeef"
-	req, err := client.NewRequest(
+	req, err := client.newRequest(
 		context.Background(), "GET", "/", nil, nil,
 	)
 	if err != nil {
@@ -140,7 +140,7 @@ func TestNewRequestAuthorizationHeader(t *testing.T) {
 
 func TestNewRequestUserAgentIsSet(t *testing.T) {
 	client := newClient()
-	req, err := client.NewRequest(
+	req, err := client.newRequest(
 		context.Background(), "GET", "/", nil, nil,
 	)
 	if err != nil {
@@ -154,10 +154,10 @@ func TestNewRequestUserAgentIsSet(t *testing.T) {
 func TestClientDoJSONClientDoFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	client := newClient()
-	client.HTTPClient = &http.Client{Transport: httpx.FakeTransport{
+	client.HTTPClient = &http.Client{Transport: FakeTransport{
 		Err: expected,
 	}}
-	err := client.DoJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
+	err := client.doJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
@@ -165,13 +165,13 @@ func TestClientDoJSONClientDoFailure(t *testing.T) {
 
 func TestClientDoJSONResponseNotSuccessful(t *testing.T) {
 	client := newClient()
-	client.HTTPClient = &http.Client{Transport: httpx.FakeTransport{
+	client.HTTPClient = &http.Client{Transport: FakeTransport{
 		Resp: &http.Response{
 			StatusCode: 401,
-			Body:       httpx.FakeBody{},
+			Body:       FakeBody{},
 		},
 	}}
-	err := client.DoJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
+	err := client.doJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
 	if err == nil || !strings.HasPrefix(err.Error(), "httpx: request failed") {
 		t.Fatal("not the error we expected")
 	}
@@ -180,15 +180,15 @@ func TestClientDoJSONResponseNotSuccessful(t *testing.T) {
 func TestClientDoJSONResponseReadingBodyError(t *testing.T) {
 	expected := errors.New("mocked error")
 	client := newClient()
-	client.HTTPClient = &http.Client{Transport: httpx.FakeTransport{
+	client.HTTPClient = &http.Client{Transport: FakeTransport{
 		Resp: &http.Response{
 			StatusCode: 200,
-			Body: httpx.FakeBody{
+			Body: FakeBody{
 				Err: expected,
 			},
 		},
 	}}
-	err := client.DoJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
+	err := client.doJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
@@ -196,15 +196,15 @@ func TestClientDoJSONResponseReadingBodyError(t *testing.T) {
 
 func TestClientDoJSONResponseIsNotJSON(t *testing.T) {
 	client := newClient()
-	client.HTTPClient = &http.Client{Transport: httpx.FakeTransport{
+	client.HTTPClient = &http.Client{Transport: FakeTransport{
 		Resp: &http.Response{
 			StatusCode: 200,
-			Body: httpx.FakeBody{
+			Body: FakeBody{
 				Err: io.EOF,
 			},
 		},
 	}}
-	err := client.DoJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
+	err := client.doJSON(&http.Request{URL: &url.URL{Scheme: "https", Host: "x.org"}}, nil)
 	if err == nil || err.Error() != "unexpected end of JSON input" {
 		t.Fatal("not the error we expected")
 	}
@@ -248,22 +248,6 @@ func TestCreateJSONSuccess(t *testing.T) {
 	}
 }
 
-func TestUpdateJSONSuccess(t *testing.T) {
-	headers := httpbinheaders{
-		Headers: map[string]string{
-			"Foo": "bar",
-		},
-	}
-	var response httpbinpost
-	err := newClient().PutJSON(context.Background(), "/put", &headers, &response)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if response.Data != `{"headers":{"Foo":"bar"}}` {
-		t.Fatal(response.Data)
-	}
-}
-
 func TestReadJSONFailure(t *testing.T) {
 	var headers httpbinheaders
 	client := newClient()
@@ -284,12 +268,78 @@ func TestCreateJSONFailure(t *testing.T) {
 	}
 }
 
-func TestUpdateJSONFailure(t *testing.T) {
-	var headers httpbinheaders
-	client := newClient()
-	client.BaseURL = "\t\t\t\t"
-	err := client.PutJSON(context.Background(), "/headers", &headers, &headers)
+func TestFetchResourceIntegration(t *testing.T) {
+	log.SetLevel(log.DebugLevel)
+	ctx := context.Background()
+	data, err := (&APIClient{
+		BaseURL:    "http://facebook.com/",
+		HTTPClient: http.DefaultClient,
+		Logger:     log.Log,
+		UserAgent:  "ooniprobe-engine/0.1.0",
+	}).FetchResource(ctx, "/robots.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data) <= 0 {
+		t.Fatal("Did not expect an empty resource")
+	}
+}
+
+func TestFetchResourceExpiredContext(t *testing.T) {
+	log.SetLevel(log.DebugLevel)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	data, err := (&APIClient{
+		BaseURL:    "http://facebook.com/",
+		HTTPClient: http.DefaultClient,
+		Logger:     log.Log,
+		UserAgent:  "ooniprobe-engine/0.1.0",
+	}).FetchResource(ctx, "/robots.txt")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("not the error we expected")
+	}
+	if len(data) != 0 {
+		t.Fatal("expected an empty resource")
+	}
+}
+
+func TestFetchResourceInvalidURL(t *testing.T) {
+	log.SetLevel(log.DebugLevel)
+	ctx := context.Background()
+	data, err := (&APIClient{
+		BaseURL:    "http://\t/",
+		HTTPClient: http.DefaultClient,
+		Logger:     log.Log,
+		UserAgent:  "ooniprobe-engine/0.1.0",
+	}).FetchResource(ctx, "/robots.txt")
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 		t.Fatal("not the error we expected")
+	}
+	if len(data) != 0 {
+		t.Fatal("expected an empty resource")
+	}
+}
+
+func TestFetchResource400(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(400)
+		},
+	))
+	defer server.Close()
+	log.SetLevel(log.DebugLevel)
+	ctx := context.Background()
+	data, err := (&APIClient{
+		Authorization: "foobar",
+		BaseURL:       server.URL,
+		HTTPClient:    http.DefaultClient,
+		Logger:        log.Log,
+		UserAgent:     "ooniprobe-engine/0.1.0",
+	}).FetchResource(ctx, "")
+	if err == nil || !strings.HasSuffix(err.Error(), "400 Bad Request") {
+		t.Fatal("not the error we expected")
+	}
+	if len(data) != 0 {
+		t.Fatal("expected an empty resource")
 	}
 }

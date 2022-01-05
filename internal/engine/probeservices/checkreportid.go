@@ -16,7 +16,7 @@ func (c Client) CheckReportID(ctx context.Context, reportID string) (bool, error
 	query := url.Values{}
 	query.Add("report_id", reportID)
 	var response checkReportIDResponse
-	err := (httpx.Client{
+	err := (&httpx.APIClient{
 		BaseURL:    c.BaseURL,
 		HTTPClient: c.HTTPClient,
 		Logger:     c.Logger,

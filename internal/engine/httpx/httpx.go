@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,33 +15,38 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// Client is an extended client.
-type Client struct {
-	// Accept contains the accept header.
+// DefaultMaxBodySize is the default value for the maximum
+// body size you can fetch using an APIClient.
+const DefaultMaxBodySize = 1 << 22
+
+// APIClient is an extended HTTP client. To construct this APIClient, make
+// sure you initialize all fields marked as MANDATORY.
+type APIClient struct {
+	// Accept contains the OPTIONAL accept header.
 	Accept string
 
-	// Authorization contains the authorization header.
+	// Authorization contains the OPTIONAL authorization header.
 	Authorization string
 
-	// BaseURL is the base URL of the API.
+	// BaseURL is the MANDATORY base URL of the API.
 	BaseURL string
 
-	// HTTPClient is the real http client to use.
-	HTTPClient *http.Client
+	// HTTPClient is the MANDATORY underlying http client to use.
+	HTTPClient model.HTTPClient
 
-	// Host allows to set a specific host header. This is useful
+	// Host allows to OPTIONALLY set a specific host header. This is useful
 	// to implement, e.g., cloudfronting.
 	Host string
 
-	// Logger is the logger to use.
+	// Logger is MANDATORY the logger to use.
 	Logger model.DebugLogger
 
-	// UserAgent is the user agent to use.
+	// UserAgent is the OPTIONAL user agent to use.
 	UserAgent string
 }
 
-// NewRequestWithJSONBody creates a new request with a JSON body
-func (c Client) NewRequestWithJSONBody(
+// newRequestWithJSONBody creates a new request with a JSON body
+func (c *APIClient) newRequestWithJSONBody(
 	ctx context.Context, method, resourcePath string,
 	query url.Values, body interface{}) (*http.Request, error) {
 	data, err := json.Marshal(body)
@@ -48,7 +54,7 @@ func (c Client) NewRequestWithJSONBody(
 		return nil, err
 	}
 	c.Logger.Debugf("httpx: request body: %d bytes", len(data))
-	request, err := c.NewRequest(
+	request, err := c.newRequest(
 		ctx, method, resourcePath, query, bytes.NewReader(data))
 	if err != nil {
 		return nil, err
@@ -59,8 +65,8 @@ func (c Client) NewRequestWithJSONBody(
 	return request, nil
 }
 
-// NewRequest creates a new request.
-func (c Client) NewRequest(ctx context.Context, method, resourcePath string,
+// newRequest creates a new request.
+func (c *APIClient) newRequest(ctx context.Context, method, resourcePath string,
 	query url.Values, body io.Reader) (*http.Request, error) {
 	URL, err := url.Parse(c.BaseURL)
 	if err != nil {
@@ -70,8 +76,6 @@ func (c Client) NewRequest(ctx context.Context, method, resourcePath string,
 	if query != nil {
 		URL.RawQuery = query.Encode()
 	}
-	c.Logger.Debugf("httpx: method: %s", method)
-	c.Logger.Debugf("httpx: URL: %s", URL.String())
 	request, err := http.NewRequest(method, URL.String(), body)
 	if err != nil {
 		return nil, err
@@ -87,23 +91,31 @@ func (c Client) NewRequest(ctx context.Context, method, resourcePath string,
 	return request.WithContext(ctx), nil
 }
 
-// Do performs the provided request and returns the response body or an error.
-func (c Client) Do(request *http.Request) ([]byte, error) {
+// ErrRequestFailed indicates that the server returned >= 400.
+var ErrRequestFailed = errors.New("httpx: request failed")
+
+// do performs the provided request and returns the response body or an error.
+func (c *APIClient) do(request *http.Request) ([]byte, error) {
 	response, err := c.HTTPClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
 	if response.StatusCode >= 400 {
-		return nil, fmt.Errorf("httpx: request failed: %s", response.Status)
+		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, response.Status)
 	}
-	return netxlite.ReadAllContext(request.Context(), response.Body)
+	r := io.LimitReader(response.Body, DefaultMaxBodySize)
+	data, err := netxlite.ReadAllContext(request.Context(), r)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
-// DoJSON performs the provided request and unmarshals the JSON response body
+// doJSON performs the provided request and unmarshals the JSON response body
 // into the provided output variable.
-func (c Client) DoJSON(request *http.Request, output interface{}) error {
-	data, err := c.Do(request)
+func (c *APIClient) doJSON(request *http.Request, output interface{}) error {
+	data, err := c.do(request)
 	if err != nil {
 		return err
 	}
@@ -114,41 +126,39 @@ func (c Client) DoJSON(request *http.Request, output interface{}) error {
 // GetJSON reads the JSON resource at resourcePath and unmarshals the
 // results into output. The request is bounded by the lifetime of the
 // context passed as argument. Returns the error that occurred.
-func (c Client) GetJSON(ctx context.Context, resourcePath string, output interface{}) error {
+func (c *APIClient) GetJSON(ctx context.Context, resourcePath string, output interface{}) error {
 	return c.GetJSONWithQuery(ctx, resourcePath, nil, output)
 }
 
 // GetJSONWithQuery is like GetJSON but also has a query.
-func (c Client) GetJSONWithQuery(
+func (c *APIClient) GetJSONWithQuery(
 	ctx context.Context, resourcePath string,
 	query url.Values, output interface{}) error {
-	request, err := c.NewRequest(ctx, "GET", resourcePath, query, nil)
+	request, err := c.newRequest(ctx, "GET", resourcePath, query, nil)
 	if err != nil {
 		return err
 	}
-	return c.DoJSON(request, output)
+	return c.doJSON(request, output)
 }
 
 // PostJSON creates a JSON subresource of the resource at resourcePath
 // using the JSON document at input and returning the result into the
 // JSON document at output. The request is bounded by the context's
 // lifetime. Returns the error that occurred.
-func (c Client) PostJSON(
+func (c *APIClient) PostJSON(
 	ctx context.Context, resourcePath string, input, output interface{}) error {
-	request, err := c.NewRequestWithJSONBody(ctx, "POST", resourcePath, nil, input)
+	request, err := c.newRequestWithJSONBody(ctx, "POST", resourcePath, nil, input)
 	if err != nil {
 		return err
 	}
-	return c.DoJSON(request, output)
+	return c.doJSON(request, output)
 }
 
-// PutJSON updates a JSON resource at a specific path and returns
-// the error that occurred and possibly an output document
-func (c Client) PutJSON(
-	ctx context.Context, resourcePath string, input, output interface{}) error {
-	request, err := c.NewRequestWithJSONBody(ctx, "PUT", resourcePath, nil, input)
+// FetchResource fetches the specified resource and returns it.
+func (c *APIClient) FetchResource(ctx context.Context, URLPath string) ([]byte, error) {
+	request, err := c.newRequest(ctx, "GET", URLPath, nil, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return c.DoJSON(request, output)
+	return c.do(request)
 }

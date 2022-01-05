@@ -54,7 +54,7 @@ func (c Client) GetMeasurementMeta(
 		query.Add("full", "true")
 	}
 	var response MeasurementMeta
-	err := (httpx.Client{
+	err := (&httpx.APIClient{
 		BaseURL:    c.BaseURL,
 		HTTPClient: c.HTTPClient,
 		Logger:     c.Logger,

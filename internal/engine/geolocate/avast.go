@@ -19,7 +19,7 @@ func avastIPLookup(
 	userAgent string,
 ) (string, error) {
 	var v avastResponse
-	err := (httpx.Client{
+	err := (&httpx.APIClient{
 		BaseURL:    "https://ip-info.ff.avast.com",
 		HTTPClient: httpClient,
 		Logger:     logger,

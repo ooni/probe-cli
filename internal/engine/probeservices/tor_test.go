@@ -61,7 +61,7 @@ func (clnt *FetchTorTargetsHTTPTransport) RoundTrip(req *http.Request) (*http.Re
 func TestFetchTorTargetsSetsQueryString(t *testing.T) {
 	clnt := newclient()
 	txp := new(FetchTorTargetsHTTPTransport)
-	clnt.HTTPClient.Transport = txp
+	clnt.HTTPClient = &http.Client{Transport: txp}
 	if err := clnt.MaybeRegister(context.Background(), testorchestra.MetadataFixture()); err != nil {
 		t.Fatal(err)
 	}
