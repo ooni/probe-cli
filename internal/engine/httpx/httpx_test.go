@@ -404,4 +404,18 @@ func TestAPIClient(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("we honour context", func(t *testing.T) {
+		// It should suffice to check one of the public methods here
+		client := newAPIClient()
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // test should fail
+		data, err := client.FetchResource(ctx, "/")
+		if !errors.Is(err, context.Canceled) {
+			t.Fatal("unexpected err", err)
+		}
+		if data != nil {
+			t.Fatal("unexpected data")
+		}
+	})
 }
