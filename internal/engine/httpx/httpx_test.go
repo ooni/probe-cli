@@ -24,6 +24,21 @@ import (
 var userAgent = fmt.Sprintf("ooniprobe-cli/%s", version.Version)
 
 func TestAPIClientTemplate(t *testing.T) {
+	t.Run("WithBodyLogging", func(t *testing.T) {
+		tmpl := &APIClientTemplate{
+			HTTPClient: http.DefaultClient,
+			LogBody:    false, // explicit default initialization for clarity
+			Logger:     model.DiscardLogger,
+		}
+		child := tmpl.WithBodyLogging()
+		if !child.LogBody {
+			t.Fatal("expected body logging to be enabled")
+		}
+		if tmpl.LogBody {
+			t.Fatal("expected body logging to still be disabled")
+		}
+	})
+
 	t.Run("normal constructor", func(t *testing.T) {
 		// Implementation note: the fakefiller will ignore the
 		// fields it does not know how to fill, so we are filling
@@ -417,5 +432,181 @@ func TestAPIClient(t *testing.T) {
 		if data != nil {
 			t.Fatal("unexpected data")
 		}
+	})
+
+	t.Run("body logging", func(t *testing.T) {
+		t.Run("logging enabled and 200 Ok", func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					w.Write([]byte("[]"))
+				},
+			))
+			logs := make(chan string, 1024)
+			defer server.Close()
+			var (
+				input  []string
+				output []string
+			)
+			ctx := context.Background()
+			err := (&apiClient{
+				BaseURL:    server.URL,
+				HTTPClient: http.DefaultClient,
+				LogBody:    true,
+				Logger: &mocks.Logger{
+					MockDebugf: func(format string, v ...interface{}) {
+						logs <- fmt.Sprintf(format, v...)
+					},
+				},
+			}).PostJSON(ctx, "/", input, &output)
+			var found int
+			close(logs)
+			for entry := range logs {
+				if strings.HasPrefix(entry, "httpx: request body: ") {
+					found |= 1 << 0
+					continue
+				}
+				if strings.HasPrefix(entry, "httpx: response body: ") {
+					found |= 1 << 1
+					continue
+				}
+			}
+			if found != (1<<0 | 1<<1) {
+				t.Fatal("did not find logs")
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("logging enabled and 401 Unauthorized", func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(401)
+					w.Write([]byte("[]"))
+				},
+			))
+			logs := make(chan string, 1024)
+			defer server.Close()
+			var (
+				input  []string
+				output []string
+			)
+			ctx := context.Background()
+			err := (&apiClient{
+				BaseURL:    server.URL,
+				HTTPClient: http.DefaultClient,
+				LogBody:    true,
+				Logger: &mocks.Logger{
+					MockDebugf: func(format string, v ...interface{}) {
+						logs <- fmt.Sprintf(format, v...)
+					},
+				},
+			}).PostJSON(ctx, "/", input, &output)
+			var found int
+			close(logs)
+			for entry := range logs {
+				if strings.HasPrefix(entry, "httpx: request body: ") {
+					found |= 1 << 0
+					continue
+				}
+				if strings.HasPrefix(entry, "httpx: response body: ") {
+					found |= 1 << 1
+					continue
+				}
+			}
+			if found != (1<<0 | 1<<1) {
+				t.Fatal("did not find logs")
+			}
+			if !errors.Is(err, ErrRequestFailed) {
+				t.Fatal("unexpected err", err)
+			}
+		})
+
+		t.Run("logging NOT enabled and 200 Ok", func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					w.Write([]byte("[]"))
+				},
+			))
+			logs := make(chan string, 1024)
+			defer server.Close()
+			var (
+				input  []string
+				output []string
+			)
+			ctx := context.Background()
+			err := (&apiClient{
+				BaseURL:    server.URL,
+				HTTPClient: http.DefaultClient,
+				LogBody:    false, // explicit initialization
+				Logger: &mocks.Logger{
+					MockDebugf: func(format string, v ...interface{}) {
+						logs <- fmt.Sprintf(format, v...)
+					},
+				},
+			}).PostJSON(ctx, "/", input, &output)
+			var found int
+			close(logs)
+			for entry := range logs {
+				if strings.HasPrefix(entry, "httpx: request body: ") {
+					found |= 1 << 0
+					continue
+				}
+				if strings.HasPrefix(entry, "httpx: response body: ") {
+					found |= 1 << 1
+					continue
+				}
+			}
+			if found != 0 {
+				t.Fatal("did find logs")
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		t.Run("logging NOT enabled and 401 Unauthorized", func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(401)
+					w.Write([]byte("[]"))
+				},
+			))
+			logs := make(chan string, 1024)
+			defer server.Close()
+			var (
+				input  []string
+				output []string
+			)
+			ctx := context.Background()
+			err := (&apiClient{
+				BaseURL:    server.URL,
+				HTTPClient: http.DefaultClient,
+				LogBody:    false, // explicit initialization
+				Logger: &mocks.Logger{
+					MockDebugf: func(format string, v ...interface{}) {
+						logs <- fmt.Sprintf(format, v...)
+					},
+				},
+			}).PostJSON(ctx, "/", input, &output)
+			var found int
+			close(logs)
+			for entry := range logs {
+				if strings.HasPrefix(entry, "httpx: request body: ") {
+					found |= 1 << 0
+					continue
+				}
+				if strings.HasPrefix(entry, "httpx: response body: ") {
+					found |= 1 << 1
+					continue
+				}
+			}
+			if found != 0 {
+				t.Fatal("did find logs")
+			}
+			if !errors.Is(err, ErrRequestFailed) {
+				t.Fatal("unexpected err", err)
+			}
+		})
 	})
 }

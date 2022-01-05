@@ -33,11 +33,21 @@ type APIClientTemplate struct {
 	// to implement, e.g., cloudfronting.
 	Host string
 
+	// LogBody is the OPTIONAL flag to force logging the bodies.
+	LogBody bool
+
 	// Logger is MANDATORY the logger to use.
 	Logger model.DebugLogger
 
 	// UserAgent is the OPTIONAL user agent to use.
 	UserAgent string
+}
+
+// WithBodyLogging enables logging of request and response bodies.
+func (tmpl *APIClientTemplate) WithBodyLogging() *APIClientTemplate {
+	out := APIClientTemplate(*tmpl)
+	out.LogBody = true
+	return &out
 }
 
 // Build creates an APIClient from the APIClientTemplate.
@@ -99,6 +109,9 @@ type apiClient struct {
 	// to implement, e.g., cloudfronting.
 	Host string
 
+	// LogBody is the OPTIONAL flag to force logging the bodies.
+	LogBody bool
+
 	// Logger is MANDATORY the logger to use.
 	Logger model.DebugLogger
 
@@ -114,7 +127,10 @@ func (c *apiClient) newRequestWithJSONBody(
 	if err != nil {
 		return nil, err
 	}
-	c.Logger.Debugf("httpx: request body: %d bytes", len(data))
+	c.Logger.Debugf("httpx: request body length: %d bytes", len(data))
+	if c.LogBody {
+		c.Logger.Debugf("httpx: request body: %s", string(data))
+	}
 	request, err := c.newRequest(
 		ctx, method, resourcePath, query, bytes.NewReader(data))
 	if err != nil {
@@ -162,13 +178,19 @@ func (c *apiClient) do(request *http.Request) ([]byte, error) {
 		return nil, err
 	}
 	defer response.Body.Close()
-	if response.StatusCode >= 400 {
-		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, response.Status)
-	}
+	// Implementation note: always read and log the response body since
+	// it's quite useful to see the response JSON on API error.
 	r := io.LimitReader(response.Body, DefaultMaxBodySize)
 	data, err := netxlite.ReadAllContext(request.Context(), r)
 	if err != nil {
 		return nil, err
+	}
+	c.Logger.Debugf("httpx: response body length: %d bytes", len(data))
+	if c.LogBody {
+		c.Logger.Debugf("httpx: response body: %s", string(data))
+	}
+	if response.StatusCode >= 400 {
+		return nil, fmt.Errorf("%w: %s", ErrRequestFailed, response.Status)
 	}
 	return data, nil
 }
@@ -180,7 +202,6 @@ func (c *apiClient) doJSON(request *http.Request, output interface{}) error {
 	if err != nil {
 		return err
 	}
-	c.Logger.Debugf("httpx: response body: %d bytes", len(data))
 	return json.Unmarshal(data, output)
 }
 

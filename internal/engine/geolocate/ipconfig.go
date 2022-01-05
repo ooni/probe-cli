@@ -21,7 +21,7 @@ func ipConfigIPLookup(
 		HTTPClient: httpClient,
 		Logger:     logger,
 		UserAgent:  httpheader.CLIUserAgent(),
-	}).Build().FetchResource(ctx, "/")
+	}).WithBodyLogging().Build().FetchResource(ctx, "/")
 	if err != nil {
 		return DefaultProbeIP, err
 	}

@@ -59,7 +59,7 @@ func (c Client) GetMeasurementMeta(
 		HTTPClient: c.HTTPClient,
 		Logger:     c.Logger,
 		UserAgent:  c.UserAgent,
-	}).Build().GetJSONWithQuery(ctx, "/api/v1/measurement_meta", query, &response)
+	}).WithBodyLogging().Build().GetJSONWithQuery(ctx, "/api/v1/measurement_meta", query, &response)
 	if err != nil {
 		return nil, err
 	}

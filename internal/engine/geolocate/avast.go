@@ -24,7 +24,7 @@ func avastIPLookup(
 		HTTPClient: httpClient,
 		Logger:     logger,
 		UserAgent:  userAgent,
-	}).Build().GetJSON(ctx, "/v1/info", &v)
+	}).WithBodyLogging().Build().GetJSON(ctx, "/v1/info", &v)
 	if err != nil {
 		return DefaultProbeIP, err
 	}

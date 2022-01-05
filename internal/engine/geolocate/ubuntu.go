@@ -25,7 +25,7 @@ func ubuntuIPLookup(
 		HTTPClient: httpClient,
 		Logger:     logger,
 		UserAgent:  userAgent,
-	}).Build().FetchResource(ctx, "/lookup")
+	}).WithBodyLogging().Build().FetchResource(ctx, "/lookup")
 	if err != nil {
 		return DefaultProbeIP, err
 	}

@@ -21,7 +21,7 @@ func (c Client) CheckReportID(ctx context.Context, reportID string) (bool, error
 		HTTPClient: c.HTTPClient,
 		Logger:     c.Logger,
 		UserAgent:  c.UserAgent,
-	}).Build().GetJSONWithQuery(ctx, "/api/_/check_report_id", query, &response)
+	}).WithBodyLogging().Build().GetJSONWithQuery(ctx, "/api/_/check_report_id", query, &response)
 	if err != nil {
 		return false, err
 	}
