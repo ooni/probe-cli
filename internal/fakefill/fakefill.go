@@ -1,40 +1,54 @@
-package ooapi
+// Package fakefill contains code to fill structs for testing.
+//
+// This package is quite limited in scope and we can fill only the
+// structures you typically send over as JSONs.
+//
+// As part of future work, we aim to investigate whether we can
+// replace this implementation with https://go.dev/blog/fuzz-beta.
+package fakefill
 
 import (
 	"math/rand"
 	"reflect"
 	"sync"
-	"testing"
 	"time"
-
-	"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel"
 )
 
-// fakeFill fills specific data structures with random data. The only
+// Filler fills specific data structures with random data. The only
 // exception to this behaviour is time.Time, which is instead filled
 // with the current time plus a small random number of seconds.
 //
 // We use this implementation to initialize data in our model. The code
 // has been written with that in mind. It will require some hammering in
 // case we extend the model with new field types.
-type fakeFill struct {
-	mu  sync.Mutex
-	now func() time.Time
+//
+// Caveat: this kind of fillter does not support filling interfaces
+// and channels and other complex types. The current behavior when this
+// kind of data types is encountered is to just ignore them.
+type Filler struct {
+	// mu provides mutual exclusion
+	mu sync.Mutex
+
+	// Now is OPTIONAL and allows to mock the current time
+	Now func() time.Time
+
+	// rnd is the random number generator and is
+	// automatically initialized on first use
 	rnd *rand.Rand
 }
 
-func (ff *fakeFill) getRandLocked() *rand.Rand {
+func (ff *Filler) getRandLocked() *rand.Rand {
 	if ff.rnd == nil {
 		now := time.Now
-		if ff.now != nil {
-			now = ff.now
+		if ff.Now != nil {
+			now = ff.Now
 		}
 		ff.rnd = rand.New(rand.NewSource(now().UnixNano()))
 	}
 	return ff.rnd
 }
 
-func (ff *fakeFill) getRandomString() string {
+func (ff *Filler) getRandomString() string {
 	defer ff.mu.Unlock()
 	ff.mu.Lock()
 	rnd := ff.getRandLocked()
@@ -48,28 +62,28 @@ func (ff *fakeFill) getRandomString() string {
 	return string(b)
 }
 
-func (ff *fakeFill) getRandomInt64() int64 {
+func (ff *Filler) getRandomInt64() int64 {
 	defer ff.mu.Unlock()
 	ff.mu.Lock()
 	rnd := ff.getRandLocked()
 	return rnd.Int63()
 }
 
-func (ff *fakeFill) getRandomBool() bool {
+func (ff *Filler) getRandomBool() bool {
 	defer ff.mu.Unlock()
 	ff.mu.Lock()
 	rnd := ff.getRandLocked()
 	return rnd.Float64() >= 0.5
 }
 
-func (ff *fakeFill) getRandomSmallPositiveInt() int {
+func (ff *Filler) getRandomSmallPositiveInt() int {
 	defer ff.mu.Unlock()
 	ff.mu.Lock()
 	rnd := ff.getRandLocked()
 	return int(rnd.Int63n(8)) + 1 // safe cast
 }
 
-func (ff *fakeFill) doFill(v reflect.Value) {
+func (ff *Filler) doFill(v reflect.Value) {
 	for v.Type().Kind() == reflect.Ptr {
 		if v.IsNil() {
 			// if the pointer is nil, allocate an element
@@ -106,7 +120,7 @@ func (ff *fakeFill) doFill(v reflect.Value) {
 		}
 	case reflect.Map:
 		if v.Type().Key().Kind() != reflect.String {
-			return // not supported
+			panic("fakefill: we only support string key types")
 		}
 		v.Set(reflect.MakeMap(v.Type())) // we need to init the map
 		total := ff.getRandomSmallPositiveInt()
@@ -119,28 +133,7 @@ func (ff *fakeFill) doFill(v reflect.Value) {
 	}
 }
 
-// fill fills in with random data.
-func (ff *fakeFill) fill(in interface{}) {
+// Fill fills the input structure or pointer with random data.
+func (ff *Filler) Fill(in interface{}) {
 	ff.doFill(reflect.ValueOf(in))
-}
-
-func TestFakeFillAllocatesIntoAPointerToPointer(t *testing.T) {
-	var req *apimodel.URLsRequest
-	ff := &fakeFill{}
-	ff.fill(&req)
-	if req == nil {
-		t.Fatal("we expected non nil here")
-	}
-}
-
-func TestFakeFillAllocatesIntoAMapLike(t *testing.T) {
-	var resp apimodel.TorTargetsResponse
-	ff := &fakeFill{}
-	ff.fill(&resp)
-	if resp == nil {
-		t.Fatal("we expected non nil here")
-	}
-	if len(resp) < 1 {
-		t.Fatal("we expected some data here")
-	}
 }

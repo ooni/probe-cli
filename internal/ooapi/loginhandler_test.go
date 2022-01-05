@@ -96,7 +96,7 @@ func (lh *LoginHandler) register(w http.ResponseWriter, r *http.Request) {
 	}
 	var resp apimodel.RegisterResponse
 	ff := &fakeFill{}
-	ff.fill(&resp)
+	ff.Fill(&resp)
 	lh.state = append(lh.state, &loginState{
 		ClientID: resp.ClientID, Password: req.Password})
 	data, err = json.Marshal(&resp)
@@ -129,7 +129,7 @@ func (lh *LoginHandler) login(w http.ResponseWriter, r *http.Request) {
 		if req.ClientID == s.ClientID && req.Password == s.Password {
 			var resp apimodel.LoginResponse
 			ff := &fakeFill{}
-			ff.fill(&resp)
+			ff.Fill(&resp)
 			// We want the token to be many seconds in the future while
 			// ff.fill only sets the tokent to now plus a small delta.
 			resp.Expire = time.Now().Add(3600 * time.Second)
@@ -163,7 +163,7 @@ func (lh *LoginHandler) psiphon(w http.ResponseWriter, r *http.Request) {
 		if token == s.Token && time.Now().Before(s.Expire) {
 			var resp apimodel.PsiphonConfigResponse
 			ff := &fakeFill{}
-			ff.fill(&resp)
+			ff.Fill(&resp)
 			data, err := json.Marshal(&resp)
 			if err != nil {
 				w.WriteHeader(500)
@@ -192,7 +192,7 @@ func (lh *LoginHandler) tor(w http.ResponseWriter, r *http.Request) {
 		if token == s.Token && time.Now().Before(s.Expire) {
 			var resp apimodel.TorTargetsResponse
 			ff := &fakeFill{}
-			ff.fill(&resp)
+			ff.Fill(&resp)
 			data, err := json.Marshal(&resp)
 			if err != nil {
 				w.WriteHeader(500)

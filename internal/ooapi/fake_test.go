@@ -6,8 +6,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/fakefill"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
+
+// fakeFill forwards the fakefill.Filler type
+type fakeFill = fakefill.Filler
 
 type FakeCodec struct {
 	DecodeErr  error

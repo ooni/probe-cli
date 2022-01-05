@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/fakefill"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -18,39 +20,45 @@ const userAgent = "miniooni/0.1.0-dev"
 
 func TestAPIClientTemplate(t *testing.T) {
 	t.Run("normal constructor", func(t *testing.T) {
-		// TODO(bassosimone): we need to use fakeFiller here
+		// Implementation note: the fakefiller will ignore the
+		// fields it does not know how to fill, so we are filling
+		// those fields with plausible values in advance
 		tmpl := &APIClientTemplate{
-			Accept:        "application/json",
-			Authorization: "ORIG-TOKEN",
-			BaseURL:       "https://ams-pg.ooni.org/",
-			HTTPClient:    http.DefaultClient,
-			Host:          "ams-pg.ooni.org",
-			Logger:        model.DiscardLogger,
-			UserAgent:     userAgent,
+			HTTPClient: http.DefaultClient,
+			Logger:     model.DiscardLogger,
 		}
+		ff := &fakefill.Filler{}
+		ff.Fill(tmpl)
 		ac := tmpl.Build()
-		if ac == nil {
-			t.Fatal("expected non-nil Client here")
+		orig := apiClient(*tmpl)
+		if diff := cmp.Diff(&orig, ac); diff != "" {
+			t.Fatal(diff)
 		}
 	})
 
 	t.Run("constructor with authorization", func(t *testing.T) {
-		// TODO(bassosimone): we need to use fakeFiller here
+		// Implementation note: the fakefiller will ignore the
+		// fields it does not know how to fill, so we are filling
+		// those fields with plausible values in advance
 		tmpl := &APIClientTemplate{
-			Accept:        "application/json",
-			Authorization: "ORIG-TOKEN",
-			BaseURL:       "https://ams-pg.ooni.org/",
-			HTTPClient:    http.DefaultClient,
-			Host:          "ams-pg.ooni.org",
-			Logger:        model.DiscardLogger,
-			UserAgent:     userAgent,
+			HTTPClient: http.DefaultClient,
+			Logger:     model.DiscardLogger,
 		}
-		ac := tmpl.BuildWithAuthorization("AUTH-TOKEN")
-		if tmpl.Authorization != "ORIG-TOKEN" {
-			t.Fatal("invalid template Authorization")
+		ff := &fakefill.Filler{}
+		ff.Fill(tmpl)
+		tok := ""
+		ff.Fill(&tok)
+		ac := tmpl.BuildWithAuthorization(tok)
+		// the authorization should be different now
+		if tmpl.Authorization == ac.(*apiClient).Authorization {
+			t.Fatal("we expect Authorization to be different")
 		}
-		if ac.(*apiClient).Authorization != "AUTH-TOKEN" {
-			t.Fatal("invalid client Authorization")
+		// clear authorization for the comparison
+		tmpl.Authorization = ""
+		ac.(*apiClient).Authorization = ""
+		orig := apiClient(*tmpl)
+		if diff := cmp.Diff(&orig, ac); diff != "" {
+			t.Fatal(diff)
 		}
 	})
 }
