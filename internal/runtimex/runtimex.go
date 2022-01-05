@@ -22,3 +22,8 @@ func PanicIfFalse(assertion bool, message string) {
 func PanicIfTrue(assertion bool, message string) {
 	PanicIfFalse(!assertion, message)
 }
+
+// PanicIfNil calls panic if the given interface is nil.
+func PanicIfNil(v interface{}, message string) {
+	PanicIfTrue(v == nil, message)
+}

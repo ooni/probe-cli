@@ -12,12 +12,12 @@ func TestPanicOnError(t *testing.T) {
 		defer func() {
 			out = recover().(error)
 		}()
-		runtimex.PanicOnError(in, "antani failed")
+		runtimex.PanicOnError(in, "we expect this assertion to fail")
 		return
 	}
 
 	t.Run("error is nil", func(t *testing.T) {
-		runtimex.PanicOnError(nil, "antani failed")
+		runtimex.PanicOnError(nil, "this assertion should not fail")
 	})
 
 	t.Run("error is not nil", func(t *testing.T) {
@@ -38,7 +38,7 @@ func TestPanicIfFalse(t *testing.T) {
 	}
 
 	t.Run("assertion is true", func(t *testing.T) {
-		runtimex.PanicIfFalse(true, "antani failed")
+		runtimex.PanicIfFalse(true, "this assertion should not fail")
 	})
 
 	t.Run("assertion is false", func(t *testing.T) {
@@ -60,12 +60,34 @@ func TestPanicIfTrue(t *testing.T) {
 	}
 
 	t.Run("assertion is false", func(t *testing.T) {
-		runtimex.PanicIfTrue(false, "antani failed")
+		runtimex.PanicIfTrue(false, "this assertion should not fail")
 	})
 
 	t.Run("assertion is true", func(t *testing.T) {
 		message := "mocked error"
 		err := badfunc(true, message)
+		if err == nil || err.Error() != message {
+			t.Fatal("not the error we expected", err)
+		}
+	})
+}
+
+func TestPanicIfNil(t *testing.T) {
+	badfunc := func(in interface{}, message string) (out error) {
+		defer func() {
+			out = errors.New(recover().(string))
+		}()
+		runtimex.PanicIfNil(in, message)
+		return
+	}
+
+	t.Run("value is not nil", func(t *testing.T) {
+		runtimex.PanicIfNil(false, "this assertion should not fail")
+	})
+
+	t.Run("value is nil", func(t *testing.T) {
+		message := "mocked error"
+		err := badfunc(nil, message)
 		if err == nil || err.Error() != message {
 			t.Fatal("not the error we expected", err)
 		}
