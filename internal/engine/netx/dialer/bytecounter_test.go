@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func dorequest(ctx context.Context, url string) error {
