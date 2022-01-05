@@ -26,7 +26,7 @@ func ipInfoIPLookup(
 		HTTPClient: httpClient,
 		Logger:     logger,
 		UserAgent:  httpheader.CLIUserAgent(), // we must be a CLI client
-	}).Build().GetJSON(ctx, "/", &v)
+	}).WithBodyLogging().Build().GetJSON(ctx, "/", &v)
 	if err != nil {
 		return DefaultProbeIP, err
 	}

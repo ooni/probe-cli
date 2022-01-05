@@ -62,7 +62,7 @@ func Control(
 	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
 	// make sure error is wrapped
 	err = legacyerrorsx.SafeErrWrapperBuilder{
-		Error:     clnt.Build().PostJSON(ctx, "/", creq, &out),
+		Error:     clnt.WithBodyLogging().Build().PostJSON(ctx, "/", creq, &out),
 		Operation: netxlite.TopLevelOperation,
 	}.MaybeBuild()
 	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, err)

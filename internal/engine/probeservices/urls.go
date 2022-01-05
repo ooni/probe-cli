@@ -28,7 +28,7 @@ func (c Client) FetchURLList(ctx context.Context, config model.OOAPIURLListConfi
 		query.Set("category_codes", strings.Join(config.Categories, ","))
 	}
 	var response urlListResult
-	err := c.APIClientTemplate.Build().GetJSONWithQuery(ctx,
+	err := c.APIClientTemplate.WithBodyLogging().Build().GetJSONWithQuery(ctx,
 		"/api/v1/test-list/urls", query, &response)
 	if err != nil {
 		return nil, err

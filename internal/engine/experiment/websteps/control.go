@@ -20,7 +20,7 @@ func Control(
 	}
 	// make sure error is wrapped
 	err = errorsxlegacy.SafeErrWrapperBuilder{
-		Error:     clnt.Build().PostJSON(ctx, resourcePath, creq, &out),
+		Error:     clnt.WithBodyLogging().Build().PostJSON(ctx, resourcePath, creq, &out),
 		Operation: netxlite.TopLevelOperation,
 	}.MaybeBuild()
 	return

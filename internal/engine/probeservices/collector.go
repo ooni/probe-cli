@@ -105,7 +105,7 @@ func (c Client) OpenReport(ctx context.Context, rt ReportTemplate) (ReportChanne
 		return nil, ErrUnsupportedFormat
 	}
 	var cor collectorOpenResponse
-	if err := c.APIClientTemplate.Build().PostJSON(ctx, "/report", rt, &cor); err != nil {
+	if err := c.APIClientTemplate.WithBodyLogging().Build().PostJSON(ctx, "/report", rt, &cor); err != nil {
 		return nil, err
 	}
 	for _, format := range cor.SupportedFormats {
@@ -144,7 +144,7 @@ func (r reportChan) CanSubmit(m *model.Measurement) bool {
 func (r reportChan) SubmitMeasurement(ctx context.Context, m *model.Measurement) error {
 	var updateResponse collectorUpdateResponse
 	m.ReportID = r.ID
-	err := r.client.APIClientTemplate.Build().PostJSON(
+	err := r.client.APIClientTemplate.WithBodyLogging().Build().PostJSON(
 		ctx, fmt.Sprintf("/report/%s", r.ID), collectorUpdateRequest{
 			Format:  "json",
 			Content: m,
