@@ -8,8 +8,8 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestErrorWrapperTLSHandshakerFailure(t *testing.T) {

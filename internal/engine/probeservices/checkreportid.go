@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
+	"github.com/ooni/probe-cli/v3/internal/httpx"
 )
 
 type checkReportIDResponse struct {

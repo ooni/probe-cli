@@ -3,8 +3,8 @@ package websteps
 import (
 	"context"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/httpx"
 	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
+	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
