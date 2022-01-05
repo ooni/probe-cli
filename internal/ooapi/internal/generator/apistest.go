@@ -10,7 +10,7 @@ import (
 func (d *Descriptor) genTestNewRequest(sb *strings.Builder) {
 	fmt.Fprintf(sb, "\treq := &%s{}\n", d.RequestTypeNameAsStruct())
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
-	fmt.Fprint(sb, "\tff.fill(req)\n")
+	fmt.Fprint(sb, "\tff.Fill(req)\n")
 }
 
 func (d *Descriptor) genTestInvalidURL(sb *strings.Builder) {
@@ -245,7 +245,7 @@ func (d *Descriptor) genTestRoundTrip(sb *strings.Builder) {
 	fmt.Fprint(sb, "\th.userAgent = r.Header.Get(\"User-Agent\")\n")
 	fmt.Fprintf(sb, "\tvar out %s\n", d.ResponseTypeName())
 	fmt.Fprint(sb, "\tff := fakeFill{}\n")
-	fmt.Fprint(sb, "\tff.fill(&out)\n")
+	fmt.Fprint(sb, "\tff.Fill(&out)\n")
 	fmt.Fprintf(sb, "\th.resp = out\n")
 	fmt.Fprintf(sb, "\tdata, err := json.Marshal(out)\n")
 	fmt.Fprintf(sb, "\tif err != nil {\n")
@@ -264,11 +264,11 @@ func (d *Descriptor) genTestRoundTrip(sb *strings.Builder) {
 	fmt.Fprint(sb, "\tdefer srvr.Close()\n")
 	fmt.Fprintf(sb, "\treq := &%s{}\n", d.RequestTypeNameAsStruct())
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprintf(sb, "\tapi := &%s{BaseURL: srvr.URL}\n", d.APIStructName())
-	fmt.Fprint(sb, "\tff.fill(&api.UserAgent)\n")
+	fmt.Fprint(sb, "\tff.Fill(&api.UserAgent)\n")
 	if d.RequiresLogin {
-		fmt.Fprint(sb, "\tff.fill(&api.Token)\n")
+		fmt.Fprint(sb, "\tff.Fill(&api.Token)\n")
 	}
 
 	fmt.Fprint(sb, "\t// issue request\n")

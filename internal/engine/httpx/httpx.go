@@ -42,7 +42,7 @@ type APIClientTemplate struct {
 
 // Build creates an APIClient from the APIClientTemplate.
 func (tmpl *APIClientTemplate) Build() APIClient {
-	return tmpl.BuildWithAuthorization("")
+	return tmpl.BuildWithAuthorization(tmpl.Authorization)
 }
 
 // BuildWithAuthorization creates an APIClient from the

@@ -10,7 +10,7 @@ func (d *Descriptor) genTestRegisterAndLoginSuccess(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func TestRegisterAndLogin%sSuccess(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
-	fmt.Fprint(sb, "\tff.fill(&expect)\n")
+	fmt.Fprint(sb, "\tff.Fill(&expect)\n")
 
 	fmt.Fprint(sb, "\tregisterAPI := &FakeRegisterAPI{\n")
 	fmt.Fprint(sb, "\t\tResponse: &apimodel.RegisterResponse{\n")
@@ -39,7 +39,7 @@ func (d *Descriptor) genTestRegisterAndLoginSuccess(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 	fmt.Fprint(sb, "\tresp, err := login.Call(ctx, req)\n")
 	fmt.Fprint(sb, "\tif err != nil {\n")
@@ -67,7 +67,7 @@ func (d *Descriptor) genTestContinueUsingToken(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func Test%sContinueUsingToken(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
-	fmt.Fprint(sb, "\tff.fill(&expect)\n")
+	fmt.Fprint(sb, "\tff.Fill(&expect)\n")
 
 	fmt.Fprint(sb, "\tregisterAPI := &FakeRegisterAPI{\n")
 	fmt.Fprint(sb, "\t\tResponse: &apimodel.RegisterResponse{\n")
@@ -96,7 +96,7 @@ func (d *Descriptor) genTestContinueUsingToken(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 
 	fmt.Fprint(sb, "\t// step 1: we register and login and use the token\n")
@@ -157,7 +157,7 @@ func (d *Descriptor) genTestWithValidButExpiredToken(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func Test%sWithValidButExpiredToken(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
-	fmt.Fprint(sb, "\tff.fill(&expect)\n")
+	fmt.Fprint(sb, "\tff.Fill(&expect)\n")
 
 	fmt.Fprint(sb, "\terrMocked := errors.New(\"mocked error\")\n")
 	fmt.Fprint(sb, "\tregisterAPI := &FakeRegisterAPI{\n")
@@ -195,7 +195,7 @@ func (d *Descriptor) genTestWithValidButExpiredToken(sb *strings.Builder) {
 	fmt.Fprintf(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 	fmt.Fprint(sb, "\tresp, err := login.Call(ctx, req)\n")
 	fmt.Fprint(sb, "\tif err != nil {\n")
@@ -223,7 +223,7 @@ func (d *Descriptor) genTestWithRegisterAPIError(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func Test%sWithRegisterAPIError(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
-	fmt.Fprint(sb, "\tff.fill(&expect)\n")
+	fmt.Fprint(sb, "\tff.Fill(&expect)\n")
 
 	fmt.Fprint(sb, "\terrMocked := errors.New(\"mocked error\")\n")
 	fmt.Fprint(sb, "\tregisterAPI := &FakeRegisterAPI{\n")
@@ -242,7 +242,7 @@ func (d *Descriptor) genTestWithRegisterAPIError(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 	fmt.Fprint(sb, "\tresp, err := login.Call(ctx, req)\n")
 	fmt.Fprint(sb, "\tif !errors.Is(err, errMocked) {\n")
@@ -263,7 +263,7 @@ func (d *Descriptor) genTestWithLoginFailure(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func Test%sWithLoginFailure(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
-	fmt.Fprint(sb, "\tff.fill(&expect)\n")
+	fmt.Fprint(sb, "\tff.Fill(&expect)\n")
 
 	fmt.Fprint(sb, "\tregisterAPI := &FakeRegisterAPI{\n")
 	fmt.Fprint(sb, "\t\tResponse: &apimodel.RegisterResponse{\n")
@@ -290,7 +290,7 @@ func (d *Descriptor) genTestWithLoginFailure(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 	fmt.Fprint(sb, "\tresp, err := login.Call(ctx, req)\n")
 	fmt.Fprint(sb, "\tif !errors.Is(err, errMocked) {\n")
@@ -315,7 +315,7 @@ func (d *Descriptor) genTestRegisterAndLoginThenFail(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func TestRegisterAndLogin%sThenFail(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
-	fmt.Fprint(sb, "\tff.fill(&expect)\n")
+	fmt.Fprint(sb, "\tff.Fill(&expect)\n")
 
 	fmt.Fprint(sb, "\tregisterAPI := &FakeRegisterAPI{\n")
 	fmt.Fprint(sb, "\t\tResponse: &apimodel.RegisterResponse{\n")
@@ -345,7 +345,7 @@ func (d *Descriptor) genTestRegisterAndLoginThenFail(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 	fmt.Fprint(sb, "\tresp, err := login.Call(ctx, req)\n")
 	fmt.Fprint(sb, "\tif !errors.Is(err, errMocked) {\n")
@@ -398,7 +398,7 @@ func (d *Descriptor) genTestTheDatabaseIsReplaced(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 
 	fmt.Fprint(sb, "\t// step 1: we register and login and use the token\n")
@@ -476,7 +476,7 @@ func (d *Descriptor) genTestTheDatabaseIsReplacedThenFailure(sb *strings.Builder
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 
 	fmt.Fprint(sb, "\t// step 1: we register and login and use the token\n")
@@ -528,7 +528,7 @@ func (d *Descriptor) genTestRegisterAndLoginCannotWriteState(sb *strings.Builder
 	fmt.Fprintf(sb, "func TestRegisterAndLogin%sCannotWriteState(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
-	fmt.Fprint(sb, "\tff.fill(&expect)\n")
+	fmt.Fprint(sb, "\tff.Fill(&expect)\n")
 
 	fmt.Fprint(sb, "\tregisterAPI := &FakeRegisterAPI{\n")
 	fmt.Fprint(sb, "\t\tResponse: &apimodel.RegisterResponse{\n")
@@ -561,7 +561,7 @@ func (d *Descriptor) genTestRegisterAndLoginCannotWriteState(sb *strings.Builder
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 	fmt.Fprint(sb, "\tresp, err := login.Call(ctx, req)\n")
 	fmt.Fprint(sb, "\tif !errors.Is(err, errMocked) {\n")
@@ -586,7 +586,7 @@ func (d *Descriptor) genTestReadStateDecodeFailure(sb *strings.Builder) {
 	fmt.Fprintf(sb, "func Test%sReadStateDecodeFailure(t *testing.T) {\n", d.Name)
 	fmt.Fprint(sb, "\tff := &fakeFill{}\n")
 	fmt.Fprintf(sb, "\tvar expect %s\n", d.ResponseTypeName())
-	fmt.Fprint(sb, "\tff.fill(&expect)\n")
+	fmt.Fprint(sb, "\tff.Fill(&expect)\n")
 
 	fmt.Fprint(sb, "\terrMocked := errors.New(\"mocked error\")\n")
 
@@ -648,7 +648,7 @@ func (d *Descriptor) genTestClockIsOffThenSuccess(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 
 	fmt.Fprint(sb, "\t// step 1: we register and login and use the token\n")
@@ -728,7 +728,7 @@ func (d *Descriptor) genTestClockIsOffThen401(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 
 	fmt.Fprint(sb, "\t// step 1: we register and login and use the token\n")
@@ -809,7 +809,7 @@ func (d *Descriptor) genTestClockIsOffThen500(sb *strings.Builder) {
 	fmt.Fprint(sb, "\t}\n")
 
 	fmt.Fprintf(sb, "\tvar req %s\n", d.RequestTypeName())
-	fmt.Fprint(sb, "\tff.fill(&req)\n")
+	fmt.Fprint(sb, "\tff.Fill(&req)\n")
 	fmt.Fprint(sb, "\tctx := context.Background()\n")
 
 	fmt.Fprint(sb, "\t// step 1: we register and login and use the token\n")
