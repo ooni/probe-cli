@@ -15,7 +15,9 @@ import (
 // API for reducing boilerplate for simple measurements.
 //
 
-// EasyHTTPGET performs a GET with the given URL and default headers.
+// EasyHTTPRoundTripGET performs a GET with the given URL
+// and default headers. This function will perform just
+// a single HTTP round trip (i.e., no redirections).
 //
 // Arguments:
 //
@@ -31,9 +33,9 @@ import (
 // field will never be a nil pointer);
 //
 // - failure is either nil or a pointer to a OONI failure.
-func (mx *Measurer) EasyHTTPGET(ctx context.Context, timeout time.Duration,
+func (mx *Measurer) EasyHTTPRoundTripGET(ctx context.Context, timeout time.Duration,
 	URL string) (meas *ArchivalMeasurement, failure *string) {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout) // honour the timeout
 	defer cancel()
 	db := &MeasurementDB{}
 	req, err := NewHTTPRequestWithContext(ctx, "GET", URL, nil)
@@ -58,7 +60,11 @@ type EasyTLSConfig struct {
 
 // NewEasyTLSConfig creates a new EasyTLSConfig instance.
 func NewEasyTLSConfig() *EasyTLSConfig {
-	return &EasyTLSConfig{config: &tls.Config{}}
+	return &EasyTLSConfig{
+		config: &tls.Config{
+			RootCAs: netxlite.NewDefaultCertPool(),
+		},
+	}
 }
 
 // NewEasyTLSConfigWithServerName creates a new EasyTLSConfig
@@ -118,6 +124,7 @@ func (easy *EasyTLSConfig) asTLSConfig() *tls.Config {
 // - we use the Measurer's TCPConnectTimeout and TLSHandshakeTimeout.
 func (mx *Measurer) EasyTLSConnectAndHandshake(ctx context.Context, endpoint string,
 	tlsConfig *EasyTLSConfig) (meas *ArchivalMeasurement, failure *string) {
+	// Note: TLSConnectAndHandshakeWithDB uses the timeout configured inside mx.
 	db := &MeasurementDB{}
 	conn, err := mx.TLSConnectAndHandshakeWithDB(ctx, db, endpoint, tlsConfig.asTLSConfig())
 	if err != nil {
@@ -150,7 +157,7 @@ func (mx *Measurer) EasyTLSConnectAndHandshake(ctx context.Context, endpoint str
 // - we use the Measurer's TCPConnectTimeout.
 func (mx *Measurer) EasyTCPConnect(ctx context.Context,
 	endpoint string) (meas *ArchivalMeasurement, failure *string) {
-	// Note: TCPConnectWithDB has a default timeout.
+	// Note: TCPConnectWithDB uses the timeout configured inside mx.
 	db := &MeasurementDB{}
 	conn, err := mx.TCPConnectWithDB(ctx, db, endpoint)
 	if err != nil {
@@ -233,7 +240,7 @@ func newEasyOBFS4Params(dataDir string, rawParams map[string][]string) (*easyOBF
 func (mx *Measurer) EasyOBFS4ConnectAndHandshake(ctx context.Context,
 	timeout time.Duration, endpoint string, dataDir string,
 	rawParams map[string][]string) (meas *ArchivalMeasurement, failure *string) {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout) // honour the timeout
 	defer cancel()
 	db := &MeasurementDB{}
 	params, err := newEasyOBFS4Params(dataDir, rawParams)

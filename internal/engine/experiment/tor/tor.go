@@ -355,7 +355,7 @@ func (rc *resultsCollector) defaultFlexibleConnect(ctx context.Context,
 		const snapshotsize = 1 << 8 // no need to include all in report
 		mx.HTTPMaxBodySnapshotSize = snapshotsize
 		const timeout = 15 * time.Second
-		return mx.EasyHTTPGET(ctx, timeout, URL.String())
+		return mx.EasyHTTPRoundTripGET(ctx, timeout, URL.String())
 	case "or_port", "or_port_dirauth":
 		tlsConfig := measurex.NewEasyTLSConfig().InsecureSkipVerify(true)
 		return mx.EasyTLSConnectAndHandshake(ctx, kt.target.Address, tlsConfig)
