@@ -16,7 +16,7 @@ import (
 
 func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
 	client := probeservices.Client{
-		APIClient: httpx.APIClient{
+		APIClientTemplate: httpx.APIClientTemplate{
 			BaseURL:    "https://ams-pg.ooni.org/",
 			HTTPClient: http.DefaultClient,
 			Logger:     log.Log,
@@ -84,7 +84,7 @@ func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
 
 func TestGetMeasurementMetaWorkingWithCancelledContext(t *testing.T) {
 	client := probeservices.Client{
-		APIClient: httpx.APIClient{
+		APIClientTemplate: httpx.APIClientTemplate{
 			BaseURL:    "https://ams-pg.ooni.org/",
 			HTTPClient: http.DefaultClient,
 			Logger:     log.Log,

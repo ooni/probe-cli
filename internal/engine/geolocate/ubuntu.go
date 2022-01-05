@@ -20,12 +20,12 @@ func ubuntuIPLookup(
 	logger model.Logger,
 	userAgent string,
 ) (string, error) {
-	data, err := (&httpx.APIClient{
+	data, err := (&httpx.APIClientTemplate{
 		BaseURL:    "https://geoip.ubuntu.com/",
 		HTTPClient: httpClient,
 		Logger:     logger,
 		UserAgent:  userAgent,
-	}).FetchResource(ctx, "/lookup")
+	}).Build().FetchResource(ctx, "/lookup")
 	if err != nil {
 		return DefaultProbeIP, err
 	}

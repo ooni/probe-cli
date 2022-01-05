@@ -19,12 +19,12 @@ func avastIPLookup(
 	userAgent string,
 ) (string, error) {
 	var v avastResponse
-	err := (&httpx.APIClient{
+	err := (&httpx.APIClientTemplate{
 		BaseURL:    "https://ip-info.ff.avast.com",
 		HTTPClient: httpClient,
 		Logger:     logger,
 		UserAgent:  userAgent,
-	}).GetJSON(ctx, "/v1/info", &v)
+	}).Build().GetJSON(ctx, "/v1/info", &v)
 	if err != nil {
 		return DefaultProbeIP, err
 	}

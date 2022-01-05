@@ -54,12 +54,12 @@ func (c Client) GetMeasurementMeta(
 		query.Add("full", "true")
 	}
 	var response MeasurementMeta
-	err := (&httpx.APIClient{
+	err := (&httpx.APIClientTemplate{
 		BaseURL:    c.BaseURL,
 		HTTPClient: c.HTTPClient,
 		Logger:     c.Logger,
 		UserAgent:  c.UserAgent,
-	}).GetJSONWithQuery(ctx, "/api/v1/measurement_meta", query, &response)
+	}).Build().GetJSONWithQuery(ctx, "/api/v1/measurement_meta", query, &response)
 	if err != nil {
 		return nil, err
 	}
