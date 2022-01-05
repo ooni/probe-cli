@@ -16,7 +16,7 @@ type checkInResult struct {
 // Returns the list of tests to run and the URLs, on success, or an explanatory error, in case of failure.
 func (c Client) CheckIn(ctx context.Context, config model.OOAPICheckInConfig) (*model.OOAPICheckInInfo, error) {
 	var response checkInResult
-	if err := c.APIClient.PostJSON(ctx, "/api/v1/check-in", config, &response); err != nil {
+	if err := c.APIClientTemplate.Build().PostJSON(ctx, "/api/v1/check-in", config, &response); err != nil {
 		return nil, err
 	}
 	return &response.Tests, nil

@@ -16,12 +16,12 @@ func ipConfigIPLookup(
 	logger model.Logger,
 	userAgent string,
 ) (string, error) {
-	data, err := (&httpx.APIClient{
+	data, err := (&httpx.APIClientTemplate{
 		BaseURL:    "https://ipconfig.io",
 		HTTPClient: httpClient,
 		Logger:     logger,
 		UserAgent:  httpheader.CLIUserAgent(),
-	}).FetchResource(ctx, "/")
+	}).Build().FetchResource(ctx, "/")
 	if err != nil {
 		return DefaultProbeIP, err
 	}

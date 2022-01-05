@@ -20,13 +20,13 @@ func ipInfoIPLookup(
 	userAgent string,
 ) (string, error) {
 	var v ipInfoResponse
-	err := (&httpx.APIClient{
+	err := (&httpx.APIClientTemplate{
 		Accept:     "application/json",
 		BaseURL:    "https://ipinfo.io",
 		HTTPClient: httpClient,
 		Logger:     logger,
 		UserAgent:  httpheader.CLIUserAgent(), // we must be a CLI client
-	}).GetJSON(ctx, "/", &v)
+	}).Build().GetJSON(ctx, "/", &v)
 	if err != nil {
 		return DefaultProbeIP, err
 	}

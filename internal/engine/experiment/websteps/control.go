@@ -13,14 +13,14 @@ import (
 func Control(
 	ctx context.Context, sess model.ExperimentSession,
 	thAddr string, resourcePath string, creq CtrlRequest) (out CtrlResponse, err error) {
-	clnt := &httpx.APIClient{
+	clnt := &httpx.APIClientTemplate{
 		BaseURL:    thAddr,
 		HTTPClient: sess.DefaultHTTPClient(),
 		Logger:     sess.Logger(),
 	}
 	// make sure error is wrapped
 	err = errorsxlegacy.SafeErrWrapperBuilder{
-		Error:     clnt.PostJSON(ctx, resourcePath, creq, &out),
+		Error:     clnt.Build().PostJSON(ctx, resourcePath, creq, &out),
 		Operation: netxlite.TopLevelOperation,
 	}.MaybeBuild()
 	return

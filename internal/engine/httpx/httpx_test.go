@@ -11,12 +11,52 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 const userAgent = "miniooni/0.1.0-dev"
 
-func newClient() *APIClient {
-	return &APIClient{
+func TestAPIClientTemplate(t *testing.T) {
+	t.Run("normal constructor", func(t *testing.T) {
+		// TODO(bassosimone): we need to use fakeFiller here
+		tmpl := &APIClientTemplate{
+			Accept:        "application/json",
+			Authorization: "ORIG-TOKEN",
+			BaseURL:       "https://ams-pg.ooni.org/",
+			HTTPClient:    http.DefaultClient,
+			Host:          "ams-pg.ooni.org",
+			Logger:        model.DiscardLogger,
+			UserAgent:     userAgent,
+		}
+		ac := tmpl.Build()
+		if ac == nil {
+			t.Fatal("expected non-nil Client here")
+		}
+	})
+
+	t.Run("constructor with authorization", func(t *testing.T) {
+		// TODO(bassosimone): we need to use fakeFiller here
+		tmpl := &APIClientTemplate{
+			Accept:        "application/json",
+			Authorization: "ORIG-TOKEN",
+			BaseURL:       "https://ams-pg.ooni.org/",
+			HTTPClient:    http.DefaultClient,
+			Host:          "ams-pg.ooni.org",
+			Logger:        model.DiscardLogger,
+			UserAgent:     userAgent,
+		}
+		ac := tmpl.BuildWithAuthorization("AUTH-TOKEN")
+		if tmpl.Authorization != "ORIG-TOKEN" {
+			t.Fatal("invalid template Authorization")
+		}
+		if ac.(*apiClient).Authorization != "AUTH-TOKEN" {
+			t.Fatal("invalid client Authorization")
+		}
+	})
+}
+
+func newClient() *apiClient {
+	return &apiClient{
 		BaseURL:    "https://httpbin.org",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -271,7 +311,7 @@ func TestCreateJSONFailure(t *testing.T) {
 func TestFetchResourceIntegration(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	ctx := context.Background()
-	data, err := (&APIClient{
+	data, err := (&apiClient{
 		BaseURL:    "http://facebook.com/",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -289,7 +329,7 @@ func TestFetchResourceExpiredContext(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	data, err := (&APIClient{
+	data, err := (&apiClient{
 		BaseURL:    "http://facebook.com/",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -306,7 +346,7 @@ func TestFetchResourceExpiredContext(t *testing.T) {
 func TestFetchResourceInvalidURL(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	ctx := context.Background()
-	data, err := (&APIClient{
+	data, err := (&apiClient{
 		BaseURL:    "http://\t/",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.Log,
@@ -329,7 +369,7 @@ func TestFetchResource400(t *testing.T) {
 	defer server.Close()
 	log.SetLevel(log.DebugLevel)
 	ctx := context.Background()
-	data, err := (&APIClient{
+	data, err := (&apiClient{
 		Authorization: "foobar",
 		BaseURL:       server.URL,
 		HTTPClient:    http.DefaultClient,

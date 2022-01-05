@@ -15,7 +15,7 @@ import (
 
 func TestCheckReportIDWorkingAsIntended(t *testing.T) {
 	client := probeservices.Client{
-		APIClient: httpx.APIClient{
+		APIClientTemplate: httpx.APIClientTemplate{
 			BaseURL:    "https://ams-pg.ooni.org/",
 			HTTPClient: http.DefaultClient,
 			Logger:     log.Log,
@@ -38,7 +38,7 @@ func TestCheckReportIDWorkingAsIntended(t *testing.T) {
 
 func TestCheckReportIDWorkingWithCancelledContext(t *testing.T) {
 	client := probeservices.Client{
-		APIClient: httpx.APIClient{
+		APIClientTemplate: httpx.APIClientTemplate{
 			BaseURL:    "https://ams-pg.ooni.org/",
 			HTTPClient: http.DefaultClient,
 			Logger:     log.Log,

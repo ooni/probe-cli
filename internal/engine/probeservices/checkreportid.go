@@ -16,12 +16,12 @@ func (c Client) CheckReportID(ctx context.Context, reportID string) (bool, error
 	query := url.Values{}
 	query.Add("report_id", reportID)
 	var response checkReportIDResponse
-	err := (&httpx.APIClient{
+	err := (&httpx.APIClientTemplate{
 		BaseURL:    c.BaseURL,
 		HTTPClient: c.HTTPClient,
 		Logger:     c.Logger,
 		UserAgent:  c.UserAgent,
-	}).GetJSONWithQuery(ctx, "/api/_/check_report_id", query, &response)
+	}).Build().GetJSONWithQuery(ctx, "/api/_/check_report_id", query, &response)
 	if err != nil {
 		return false, err
 	}

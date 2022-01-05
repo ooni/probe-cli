@@ -29,7 +29,8 @@ func (c Client) MaybeLogin(ctx context.Context) error {
 	}
 	c.LoginCalls.Add(1)
 	var auth LoginAuth
-	if err := c.APIClient.PostJSON(ctx, "/api/v1/login", *creds, &auth); err != nil {
+	if err := c.APIClientTemplate.Build().PostJSON(
+		ctx, "/api/v1/login", *creds, &auth); err != nil {
 		return err
 	}
 	state.Expire = auth.Expire

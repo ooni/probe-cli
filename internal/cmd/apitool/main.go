@@ -28,7 +28,7 @@ func newclient() probeservices.Client {
 	txp := netxlite.NewHTTPTransportStdlib(log.Log)
 	ua := fmt.Sprintf("apitool/%s ooniprobe-engine/%s", version.Version, version.Version)
 	return probeservices.Client{
-		APIClient: httpx.APIClient{
+		APIClientTemplate: httpx.APIClientTemplate{
 			BaseURL:    "https://ams-pg.ooni.org/",
 			HTTPClient: &http.Client{Transport: txp},
 			Logger:     log.Log,
