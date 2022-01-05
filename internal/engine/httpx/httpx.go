@@ -137,7 +137,7 @@ func (c *apiClient) newRequest(ctx context.Context, method, resourcePath string,
 	if query != nil {
 		URL.RawQuery = query.Encode()
 	}
-	request, err := http.NewRequest(method, URL.String(), body)
+	request, err := http.NewRequestWithContext(ctx, method, URL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (c *apiClient) newRequest(ctx context.Context, method, resourcePath string,
 		request.Header.Set("Accept", c.Accept)
 	}
 	request.Header.Set("User-Agent", c.UserAgent)
-	return request.WithContext(ctx), nil
+	return request, nil
 }
 
 // ErrRequestFailed indicates that the server returned >= 400.
