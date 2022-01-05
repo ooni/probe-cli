@@ -71,3 +71,25 @@ func TestPanicIfTrue(t *testing.T) {
 		}
 	})
 }
+
+func TestPanicIfNil(t *testing.T) {
+	badfunc := func(in interface{}, message string) (out error) {
+		defer func() {
+			out = errors.New(recover().(string))
+		}()
+		runtimex.PanicIfNil(in, message)
+		return
+	}
+
+	t.Run("value is not nil", func(t *testing.T) {
+		runtimex.PanicIfNil(false, "antani failed")
+	})
+
+	t.Run("value is nil", func(t *testing.T) {
+		message := "mocked error"
+		err := badfunc(nil, message)
+		if err == nil || err.Error() != message {
+			t.Fatal("not the error we expected", err)
+		}
+	})
+}

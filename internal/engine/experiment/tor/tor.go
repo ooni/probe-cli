@@ -13,10 +13,8 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/netxlogger"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonidatamodel"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -31,7 +29,7 @@ const (
 	testName = "tor"
 
 	// testVersion is the version of this experiment
-	testVersion = "0.3.0"
+	testVersion = "0.4.0"
 )
 
 // Config contains the experiment config.
@@ -44,18 +42,18 @@ type Summary struct {
 
 // TargetResults contains the results of measuring a target.
 type TargetResults struct {
-	Agent          string                          `json:"agent"`
-	Failure        *string                         `json:"failure"`
-	NetworkEvents  oonidatamodel.NetworkEventsList `json:"network_events"`
-	Queries        oonidatamodel.DNSQueriesList    `json:"queries"`
-	Requests       oonidatamodel.RequestList       `json:"requests"`
-	Summary        map[string]Summary              `json:"summary"`
-	TargetAddress  string                          `json:"target_address"`
-	TargetName     string                          `json:"target_name,omitempty"`
-	TargetProtocol string                          `json:"target_protocol"`
-	TargetSource   string                          `json:"target_source,omitempty"`
-	TCPConnect     oonidatamodel.TCPConnectList    `json:"tcp_connect"`
-	TLSHandshakes  oonidatamodel.TLSHandshakesList `json:"tls_handshakes"`
+	Agent          string                                    `json:"agent"`
+	Failure        *string                                   `json:"failure"`
+	NetworkEvents  []*measurex.ArchivalNetworkEvent          `json:"network_events"`
+	Queries        []*measurex.ArchivalDNSLookupEvent        `json:"queries"`
+	Requests       []*measurex.ArchivalHTTPRoundTripEvent    `json:"requests"`
+	Summary        map[string]Summary                        `json:"summary"`
+	TargetAddress  string                                    `json:"target_address"`
+	TargetName     string                                    `json:"target_name,omitempty"`
+	TargetProtocol string                                    `json:"target_protocol"`
+	TargetSource   string                                    `json:"target_source,omitempty"`
+	TCPConnect     []*measurex.ArchivalTCPConnect            `json:"tcp_connect"`
+	TLSHandshakes  []*measurex.ArchivalQUICTLSHandshakeEvent `json:"tls_handshakes"`
 
 	// Only for testing. We don't care about this field otherwise. We
 	// cannot make this private because otherwise the IP address sanitizer
@@ -64,11 +62,11 @@ type TargetResults struct {
 }
 
 func registerExtensions(m *model.Measurement) {
-	oonidatamodel.ExtHTTP.AddTo(m)
-	oonidatamodel.ExtNetevents.AddTo(m)
-	oonidatamodel.ExtDNS.AddTo(m)
-	oonidatamodel.ExtTCPConnect.AddTo(m)
-	oonidatamodel.ExtTLSHandshake.AddTo(m)
+	archival.ExtHTTP.AddTo(m)
+	archival.ExtNetevents.AddTo(m)
+	archival.ExtDNS.AddTo(m)
+	archival.ExtTCPConnect.AddTo(m)
+	archival.ExtTLSHandshake.AddTo(m)
 }
 
 // fillSummary fills the Summary field used by the UI.
@@ -178,10 +176,6 @@ func (m *Measurer) Run(
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(
-		ctx, 15*time.Second*time.Duration(len(targets)),
-	)
-	defer cancel()
 	registerExtensions(measurement)
 	m.measureTargets(ctx, sess, measurement, callbacks, targets)
 	return nil
@@ -251,7 +245,7 @@ func (m *Measurer) measureTargets(
 type resultsCollector struct {
 	callbacks       model.ExperimentCallbacks
 	completed       *atomicx.Int64
-	flexibleConnect func(context.Context, keytarget) (oonitemplates.Results, error)
+	flexibleConnect func(context.Context, keytarget) (*measurex.ArchivalMeasurement, *string)
 	measurement     *model.Measurement
 	mu              sync.Mutex
 	sess            model.ExperimentSession
@@ -293,15 +287,16 @@ func maybeSanitize(input TargetResults, kt keytarget) TargetResults {
 func (rc *resultsCollector) measureSingleTarget(
 	ctx context.Context, kt keytarget, total int,
 ) {
-	tk, err := rc.flexibleConnect(ctx, kt)
+	tk, failure := rc.flexibleConnect(ctx, kt)
+	runtimex.PanicIfNil(tk, "measurex should guarantee non-nil here")
 	tr := TargetResults{
 		Agent:         "redirect",
-		Failure:       setFailure(err),
-		NetworkEvents: oonidatamodel.NewNetworkEventsList(tk),
-		Queries:       oonidatamodel.NewDNSQueriesList(tk),
-		Requests:      oonidatamodel.NewRequestList(tk),
-		TCPConnect:    oonidatamodel.NewTCPConnectList(tk),
-		TLSHandshakes: oonidatamodel.NewTLSHandshakesList(tk),
+		Failure:       failure,
+		NetworkEvents: tk.NetworkEvents,
+		Queries:       tk.Queries,
+		Requests:      tk.Requests,
+		TCPConnect:    tk.TCPConnect,
+		TLSHandshakes: tk.TLSHandshakes,
 	}
 	tr.fillSummary()
 	tr = maybeSanitize(tr, kt)
@@ -319,7 +314,7 @@ func (rc *resultsCollector) measureSingleTarget(
 	}
 	rc.callbacks.OnProgress(percentage, fmt.Sprintf(
 		"tor: access %s/%s: %s", kt.maybeTargetAddress(), kt.target.Protocol,
-		errString(err),
+		failureString(failure),
 	))
 }
 
@@ -330,56 +325,48 @@ func maybeScrubbingLogger(input model.Logger, kt keytarget) model.Logger {
 	return &scrubber.Logger{Logger: input}
 }
 
-func (rc *resultsCollector) defaultFlexibleConnect(
-	ctx context.Context, kt keytarget,
-) (tk oonitemplates.Results, err error) {
-	logger := maybeScrubbingLogger(rc.sess.Logger(), kt)
+// defaultFlexibleConnect is the default implementation of the
+// rc.flexibleConnect testable function.
+//
+// Arguments:
+//
+// - ctx is the context for timeout/cancellation;
+//
+// - kt contains information about the target.
+//
+// Returns:
+//
+// - tk is the measurement, which is always non nil because
+// the measurex "easy" API provides this guarantee;
+//
+// - failure is nil or an OONI failure string.
+func (rc *resultsCollector) defaultFlexibleConnect(ctx context.Context,
+	kt keytarget) (tk *measurex.ArchivalMeasurement, failure *string) {
+	mx := measurex.NewMeasurerWithDefaultSettings()
+	mx.Begin = rc.measurement.MeasurementStartTimeSaved
+	mx.Logger = maybeScrubbingLogger(rc.sess.Logger(), kt)
 	switch kt.target.Protocol {
 	case "dir_port":
-		url := url.URL{
+		URL := url.URL{
 			Host:   kt.target.Address,
 			Path:   "/tor/status-vote/current/consensus.z",
 			Scheme: "http",
 		}
 		const snapshotsize = 1 << 8 // no need to include all in report
-		r := oonitemplates.HTTPDo(ctx, oonitemplates.HTTPDoConfig{
-			Accept:                  httpheader.Accept(),
-			AcceptLanguage:          httpheader.AcceptLanguage(),
-			Beginning:               rc.measurement.MeasurementStartTimeSaved,
-			MaxEventsBodySnapSize:   snapshotsize,
-			MaxResponseBodySnapSize: snapshotsize,
-			Handler:                 netxlogger.NewHandler(logger),
-			Method:                  "GET",
-			URL:                     url.String(),
-			UserAgent:               httpheader.UserAgent(),
-		})
-		tk, err = r.TestKeys, r.Error
+		mx.HTTPMaxBodySnapshotSize = snapshotsize
+		const timeout = 15 * time.Second
+		return mx.EasyHTTPGET(ctx, timeout, URL.String())
 	case "or_port", "or_port_dirauth":
-		r := oonitemplates.TLSConnect(ctx, oonitemplates.TLSConnectConfig{
-			Address:            kt.target.Address,
-			Beginning:          rc.measurement.MeasurementStartTimeSaved,
-			InsecureSkipVerify: true,
-			Handler:            netxlogger.NewHandler(logger),
-		})
-		tk, err = r.TestKeys, r.Error
+		tlsConfig := measurex.NewEasyTLSConfig().InsecureSkipVerify(true)
+		return mx.EasyTLSConnectAndHandshake(ctx, kt.target.Address, tlsConfig)
 	case "obfs4":
-		r := oonitemplates.OBFS4Connect(ctx, oonitemplates.OBFS4ConnectConfig{
-			Address:      kt.target.Address,
-			Beginning:    rc.measurement.MeasurementStartTimeSaved,
-			Handler:      netxlogger.NewHandler(logger),
-			Params:       kt.target.Params,
-			StateBaseDir: rc.sess.TempDir(),
-		})
-		tk, err = r.TestKeys, r.Error
+		const timeout = 15 * time.Second
+		return mx.EasyOBFS4ConnectAndHandshake(
+			ctx, timeout, kt.target.Address, rc.sess.TempDir(),
+			kt.target.Params)
 	default:
-		r := oonitemplates.TCPConnect(ctx, oonitemplates.TCPConnectConfig{
-			Address:   kt.target.Address,
-			Beginning: rc.measurement.MeasurementStartTimeSaved,
-			Handler:   netxlogger.NewHandler(logger),
-		})
-		tk, err = r.TestKeys, r.Error
+		return mx.EasyTCPConnect(ctx, kt.target.Address)
 	}
-	return
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
@@ -387,18 +374,10 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 	return NewMeasurer(config)
 }
 
-func errString(err error) (s string) {
+func failureString(failure *string) (s string) {
 	s = "success"
-	if err != nil {
-		s = err.Error()
-	}
-	return
-}
-
-func setFailure(err error) (s *string) {
-	if err != nil {
-		descr := err.Error()
-		s = &descr
+	if failure != nil {
+		s = *failure
 	}
 	return
 }

@@ -13,9 +13,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonidatamodel"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/oonitemplates"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
+	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
@@ -26,7 +25,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "tor" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.3.0" {
+	if measurer.ExperimentVersion() != "0.4.0" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -118,15 +117,15 @@ func TestMeasurerMeasureGood(t *testing.T) {
 	}
 }
 
-var staticPrivateTestingTargetEndpoint = "192.95.36.142:443"
+var staticPrivateTestingTargetEndpoint = "209.148.46.65:443"
 
 var staticPrivateTestingTarget = model.OOAPITorTarget{
 	Address: staticPrivateTestingTargetEndpoint,
 	Params: map[string][]string{
 		"cert": {
-			"qUVQ0srL1JI/vO6V6m/24anYXiJD3QP2HgzUKQtQ7GRqqUvs7P+tG43RtAqdhLOALP7DJQ",
+			"ssH+9rP8dG2NLDN2XuFw63hIO/9MNNinLmxQDpVa+7kTOa9/m+tGWT1SmSYpQ9uTBGa6Hw",
 		},
-		"iat-mode": {"1"},
+		"iat-mode": {"0"},
 	},
 	Protocol: "obfs4",
 	Source:   "bridgedb",
@@ -159,7 +158,7 @@ func TestMeasurerMeasureSanitiseOutput(t *testing.T) {
 	tk := measurement.TestKeys.(*TestKeys)
 	entry := tk.Targets[key]
 	if entry.Failure != nil {
-		t.Fatal("measurement failed unexpectedly")
+		t.Fatal("measurement failed unexpectedly", *entry.Failure)
 	}
 	if !bytes.Contains(data, []byte(key)) {
 		t.Fatal("cannot find expected key")
@@ -258,8 +257,8 @@ func TestResultsCollectorMeasureSingleTargetGood(t *testing.T) {
 		new(model.Measurement),
 		model.NewPrinterCallbacks(log.Log),
 	)
-	rc.flexibleConnect = func(context.Context, keytarget) (oonitemplates.Results, error) {
-		return oonitemplates.Results{}, nil
+	rc.flexibleConnect = func(context.Context, keytarget) (*measurex.ArchivalMeasurement, *string) {
+		return &measurex.ArchivalMeasurement{}, nil
 	}
 	rc.measureSingleTarget(
 		context.Background(), wrapTestingTarget(staticTestingTargets[0]),
@@ -292,8 +291,9 @@ func TestResultsCollectorMeasureSingleTargetWithFailure(t *testing.T) {
 		new(model.Measurement),
 		model.NewPrinterCallbacks(log.Log),
 	)
-	rc.flexibleConnect = func(context.Context, keytarget) (oonitemplates.Results, error) {
-		return oonitemplates.Results{}, errors.New("mocked error")
+	rc.flexibleConnect = func(context.Context, keytarget) (*measurex.ArchivalMeasurement, *string) {
+		failure := "mocked error"
+		return &measurex.ArchivalMeasurement{}, &failure
 	}
 	rc.measureSingleTarget(
 		context.Background(), keytarget{
@@ -331,14 +331,14 @@ func TestDefautFlexibleConnectDirPort(t *testing.T) {
 	)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	tk, err := rc.defaultFlexibleConnect(ctx, wrapTestingTarget(staticTestingTargets[1]))
-	if err == nil {
-		t.Fatal("expected an error here")
+	tk, failure := rc.defaultFlexibleConnect(ctx, wrapTestingTarget(staticTestingTargets[1]))
+	if failure == nil {
+		t.Fatal("expected a failure here")
 	}
-	if !strings.HasSuffix(err.Error(), "interrupted") {
+	if !strings.HasSuffix(*failure, "interrupted") {
 		t.Fatal("not the error we expected")
 	}
-	if tk.HTTPRequests == nil {
+	if tk.Requests == nil {
 		t.Fatal("expected HTTP data here")
 	}
 }
@@ -353,18 +353,18 @@ func TestDefautFlexibleConnectOrPort(t *testing.T) {
 	)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	tk, err := rc.defaultFlexibleConnect(ctx, wrapTestingTarget(staticTestingTargets[2]))
-	if err == nil {
-		t.Fatal("expected an error here")
+	tk, failure := rc.defaultFlexibleConnect(ctx, wrapTestingTarget(staticTestingTargets[2]))
+	if failure == nil {
+		t.Fatal("expected a failure here")
 	}
-	if err.Error() != "interrupted" {
+	if *failure != "interrupted" {
 		t.Fatal("not the error we expected")
 	}
-	if tk.Connects == nil {
+	if tk.TCPConnect == nil {
 		t.Fatal("expected connects data here")
 	}
-	if tk.NetworkEvents == nil {
-		t.Fatal("expected network events data here")
+	if tk.NetworkEvents != nil {
+		t.Fatal("expected no network events data here")
 	}
 }
 
@@ -378,18 +378,18 @@ func TestDefautFlexibleConnectOBFS4(t *testing.T) {
 	)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	tk, err := rc.defaultFlexibleConnect(ctx, wrapTestingTarget(staticTestingTargets[0]))
-	if err == nil {
-		t.Fatal("expected an error here")
+	tk, failure := rc.defaultFlexibleConnect(ctx, wrapTestingTarget(staticTestingTargets[0]))
+	if failure == nil {
+		t.Fatal("expected a failure here")
 	}
-	if err.Error() != "interrupted" {
+	if *failure != "interrupted" {
 		t.Fatal("not the error we expected")
 	}
-	if tk.Connects == nil {
+	if tk.TCPConnect == nil {
 		t.Fatal("expected connects data here")
 	}
-	if tk.NetworkEvents == nil {
-		t.Fatal("expected network events data here")
+	if tk.NetworkEvents != nil {
+		t.Fatal("expected no network events data here")
 	}
 }
 
@@ -403,24 +403,25 @@ func TestDefautFlexibleConnectDefault(t *testing.T) {
 	)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	tk, err := rc.defaultFlexibleConnect(ctx, wrapTestingTarget(staticTestingTargets[3]))
-	if err == nil {
-		t.Fatal("expected an error here")
+	tk, failure := rc.defaultFlexibleConnect(ctx, wrapTestingTarget(staticTestingTargets[3]))
+	if failure == nil {
+		t.Fatal("expected a failure here")
 	}
-	if err.Error() != "interrupted" {
-		t.Fatalf("not the error we expected: %+v", err)
+	if *failure != "interrupted" {
+		t.Fatalf("not the error we expected: %+v", *failure)
 	}
-	if tk.Connects == nil {
-		t.Fatalf("expected connects data here, found: %+v", tk.Connects)
+	if tk.TCPConnect == nil {
+		t.Fatalf("expected connects data here, found: %+v", tk.TCPConnect)
 	}
 }
 
-func TestErrString(t *testing.T) {
-	if errString(nil) != "success" {
+func TestFailureString(t *testing.T) {
+	if failureString(nil) != "success" {
 		t.Fatal("not working with nil")
 	}
-	if errString(errors.New("antani")) != "antani" {
-		t.Fatal("not working with error")
+	s := "antani"
+	if failureString(&s) != "antani" {
+		t.Fatal("not working with non-nil string")
 	}
 }
 
@@ -436,8 +437,8 @@ func TestSummary(t *testing.T) {
 	t.Run("with a TCP connect and nothing else", func(t *testing.T) {
 		tr := new(TargetResults)
 		failure := "mocked_error"
-		tr.TCPConnect = append(tr.TCPConnect, oonidatamodel.TCPConnectEntry{
-			Status: oonidatamodel.TCPConnectStatus{
+		tr.TCPConnect = append(tr.TCPConnect, &measurex.ArchivalTCPConnect{
+			Status: &measurex.ArchivalTCPConnectStatus{
 				Success: true,
 				Failure: &failure,
 			},
@@ -453,8 +454,8 @@ func TestSummary(t *testing.T) {
 
 	t.Run("for OBFS4", func(t *testing.T) {
 		tr := new(TargetResults)
-		tr.TCPConnect = append(tr.TCPConnect, oonidatamodel.TCPConnectEntry{
-			Status: oonidatamodel.TCPConnectStatus{
+		tr.TCPConnect = append(tr.TCPConnect, &measurex.ArchivalTCPConnect{
+			Status: &measurex.ArchivalTCPConnectStatus{
 				Success: true,
 			},
 		})
@@ -474,16 +475,16 @@ func TestSummary(t *testing.T) {
 	})
 
 	t.Run("for or_port/or_port_dirauth", func(t *testing.T) {
-		doit := func(targetProtocol string, handshake *oonidatamodel.TLSHandshake) {
+		doit := func(targetProtocol string, handshake *measurex.ArchivalQUICTLSHandshakeEvent) {
 			tr := new(TargetResults)
-			tr.TCPConnect = append(tr.TCPConnect, oonidatamodel.TCPConnectEntry{
-				Status: oonidatamodel.TCPConnectStatus{
+			tr.TCPConnect = append(tr.TCPConnect, &measurex.ArchivalTCPConnect{
+				Status: &measurex.ArchivalTCPConnectStatus{
 					Success: true,
 				},
 			})
 			tr.TargetProtocol = targetProtocol
 			if handshake != nil {
-				tr.TLSHandshakes = append(tr.TLSHandshakes, *handshake)
+				tr.TLSHandshakes = append(tr.TLSHandshakes, handshake)
 			}
 			tr.fillSummary()
 			if len(tr.Summary) < 1 {
@@ -507,7 +508,7 @@ func TestSummary(t *testing.T) {
 		}
 		doit("or_port_dirauth", nil)
 		doit("or_port", nil)
-		doit("or_port", &oonidatamodel.TLSHandshake{
+		doit("or_port", &measurex.ArchivalQUICTLSHandshakeEvent{
 			Failure: (func() *string {
 				s := io.EOF.Error()
 				return &s
@@ -796,10 +797,10 @@ func TestSummaryKeysWorksAsIntended(t *testing.T) {
 func TestTargetResultsFillSummaryDirPort(t *testing.T) {
 	tr := &TargetResults{
 		TargetProtocol: "dir_port",
-		TCPConnect: oonidatamodel.TCPConnectList{{
+		TCPConnect: []*measurex.ArchivalTCPConnect{{
 			IP:   "1.2.3.4",
 			Port: 443,
-			Status: oonidatamodel.TCPConnectStatus{
+			Status: &measurex.ArchivalTCPConnectStatus{
 				Failure: nil,
 			},
 		}},
