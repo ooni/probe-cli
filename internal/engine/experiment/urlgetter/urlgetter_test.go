@@ -55,7 +55,7 @@ func TestMeasurerDNSCache(t *testing.T) {
 	if m.ExperimentName() != "urlgetter" {
 		t.Fatal("invalid experiment name")
 	}
-	if m.ExperimentVersion() != "0.1.0" {
+	if m.ExperimentVersion() != "0.2.0" {
 		t.Fatal("invalid experiment version")
 	}
 	measurement := new(model.Measurement)
