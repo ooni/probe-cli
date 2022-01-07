@@ -41,7 +41,7 @@ func (r SaverResolver) LookupHost(ctx context.Context, hostname string) ([]strin
 
 // SaverDNSTransport is a DNS transport that saves events
 type SaverDNSTransport struct {
-	RoundTripper
+	model.DNSTransport
 	Saver *trace.Saver
 }
 
@@ -55,7 +55,7 @@ func (txp SaverDNSTransport) RoundTrip(ctx context.Context, query []byte) ([]byt
 		Proto:    txp.Network(),
 		Time:     start,
 	})
-	reply, err := txp.RoundTripper.RoundTrip(ctx, query)
+	reply, err := txp.DNSTransport.RoundTrip(ctx, query)
 	stop := time.Now()
 	txp.Saver.Write(trace.Event{
 		Address:  txp.Address(),
@@ -71,4 +71,4 @@ func (txp SaverDNSTransport) RoundTrip(ctx context.Context, query []byte) ([]byt
 }
 
 var _ model.Resolver = SaverResolver{}
-var _ RoundTripper = SaverDNSTransport{}
+var _ model.DNSTransport = SaverDNSTransport{}

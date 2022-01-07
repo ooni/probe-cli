@@ -305,15 +305,15 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 	case "https":
 		config.TLSConfig.NextProtos = []string{"h2", "http/1.1"}
 		c.httpClient = &http.Client{Transport: NewHTTPTransport(config)}
-		var txp resolver.RoundTripper = resolver.NewDNSOverHTTPSWithHostOverride(
+		var txp model.DNSTransport = netxlite.NewDNSOverHTTPSWithHostOverride(
 			c.httpClient, URL, hostOverride)
 		if config.ResolveSaver != nil {
 			txp = resolver.SaverDNSTransport{
-				RoundTripper: txp,
+				DNSTransport: txp,
 				Saver:        config.ResolveSaver,
 			}
 		}
-		c.Resolver = resolver.NewSerialResolver(txp)
+		c.Resolver = netxlite.NewSerialResolver(txp)
 		return c, nil
 	case "udp":
 		dialer := NewDialer(config)
@@ -321,15 +321,15 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		if err != nil {
 			return c, err
 		}
-		var txp resolver.RoundTripper = resolver.NewDNSOverUDP(
+		var txp model.DNSTransport = netxlite.NewDNSOverUDP(
 			dialer, endpoint)
 		if config.ResolveSaver != nil {
 			txp = resolver.SaverDNSTransport{
-				RoundTripper: txp,
+				DNSTransport: txp,
 				Saver:        config.ResolveSaver,
 			}
 		}
-		c.Resolver = resolver.NewSerialResolver(txp)
+		c.Resolver = netxlite.NewSerialResolver(txp)
 		return c, nil
 	case "dot":
 		config.TLSConfig.NextProtos = []string{"dot"}
@@ -338,15 +338,15 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		if err != nil {
 			return c, err
 		}
-		var txp resolver.RoundTripper = resolver.NewDNSOverTLS(
+		var txp model.DNSTransport = netxlite.NewDNSOverTLS(
 			tlsDialer.DialTLSContext, endpoint)
 		if config.ResolveSaver != nil {
 			txp = resolver.SaverDNSTransport{
-				RoundTripper: txp,
+				DNSTransport: txp,
 				Saver:        config.ResolveSaver,
 			}
 		}
-		c.Resolver = resolver.NewSerialResolver(txp)
+		c.Resolver = netxlite.NewSerialResolver(txp)
 		return c, nil
 	case "tcp":
 		dialer := NewDialer(config)
@@ -354,15 +354,15 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		if err != nil {
 			return c, err
 		}
-		var txp resolver.RoundTripper = resolver.NewDNSOverTCP(
+		var txp model.DNSTransport = netxlite.NewDNSOverTCP(
 			dialer.DialContext, endpoint)
 		if config.ResolveSaver != nil {
 			txp = resolver.SaverDNSTransport{
-				RoundTripper: txp,
+				DNSTransport: txp,
 				Saver:        config.ResolveSaver,
 			}
 		}
-		c.Resolver = resolver.NewSerialResolver(txp)
+		c.Resolver = netxlite.NewSerialResolver(txp)
 		return c, nil
 	default:
 		return c, errors.New("unsupported resolver scheme")
