@@ -4,20 +4,22 @@ package uncensored
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // Client is DNS, HTTP, and TCP client.
 type Client struct {
 	dnsClient     *netx.DNSClient
-	httpTransport netx.HTTPRoundTripper
-	dialer        netx.Dialer
+	httpTransport model.HTTPTransport
+	dialer        model.Dialer
 }
 
 // NewClient creates a new Client.
@@ -48,7 +50,7 @@ func Must(client *Client, err error) *Client {
 // DefaultClient is the default client for DNS, HTTP, and TCP.
 var DefaultClient = Must(NewClient(""))
 
-var _ netx.Resolver = DefaultClient
+var _ model.Resolver = DefaultClient
 
 // Address implements netx.Resolver.Address
 func (c *Client) Address() string {
@@ -60,19 +62,24 @@ func (c *Client) LookupHost(ctx context.Context, domain string) ([]string, error
 	return c.dnsClient.LookupHost(ctx, domain)
 }
 
+// LookupHTTPS implements model.Resolver.LookupHTTPS.
+func (c *Client) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+	return nil, errors.New("not implemented")
+}
+
 // Network implements netx.Resolver.Network
 func (c *Client) Network() string {
 	return c.dnsClient.Network()
 }
 
-var _ netx.Dialer = DefaultClient
+var _ model.Dialer = DefaultClient
 
 // DialContext implements netx.Dialer.DialContext
 func (c *Client) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return c.dialer.DialContext(ctx, network, address)
 }
 
-var _ netx.HTTPRoundTripper = DefaultClient
+var _ model.HTTPTransport = DefaultClient
 
 // CloseIdleConnections implement netx.HTTPRoundTripper.CloseIdleConnections
 func (c *Client) CloseIdleConnections() {

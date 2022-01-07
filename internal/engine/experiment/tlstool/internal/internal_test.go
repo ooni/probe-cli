@@ -6,6 +6,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlstool/internal"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 var config = internal.DialerConfig{
@@ -14,7 +15,7 @@ var config = internal.DialerConfig{
 	SNI:    "dns.google",
 }
 
-func dial(t *testing.T, d netx.Dialer) {
+func dial(t *testing.T, d model.Dialer) {
 	td := netx.NewTLSDialer(netx.Config{Dialer: d})
 	conn, err := td.DialTLSContext(context.Background(), "tcp", "dns.google:853")
 	if err != nil {

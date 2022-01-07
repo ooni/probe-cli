@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/url"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"golang.org/x/net/proxy"
 )
 
@@ -13,7 +14,7 @@ import (
 // dialer is a passthrough for the next Dialer in chain. Otherwise, it will internally
 // create a SOCKS5 dialer that will connect to the proxy using the underlying Dialer.
 type proxyDialer struct {
-	Dialer
+	model.Dialer
 	ProxyURL *url.URL
 }
 
@@ -47,7 +48,7 @@ func (d *proxyDialer) dial(
 //
 // See https://git.io/JfJ4g.
 type proxyDialerWrapper struct {
-	Dialer
+	model.Dialer
 }
 
 func (d *proxyDialerWrapper) Dial(network, address string) (net.Conn, error) {

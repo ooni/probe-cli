@@ -36,6 +36,8 @@ func (d fakeQUICDialer) DialContext(ctx context.Context, network, address string
 	return nil, d.err
 }
 
+func (d fakeQUICDialer) CloseIdleConnections() {}
+
 type fakeDialer struct {
 	err error
 }
@@ -43,6 +45,8 @@ type fakeDialer struct {
 func (d fakeDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return nil, d.err
 }
+
+func (d fakeDialer) CloseIdleConnections() {}
 
 func TestGenerateDNSFailure(t *testing.T) {
 	u, err := url.Parse("https://www.google.google")

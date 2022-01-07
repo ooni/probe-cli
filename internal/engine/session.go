@@ -51,7 +51,7 @@ type Session struct {
 	availableProbeServices   []model.OOAPIService
 	availableTestHelpers     map[string][]model.OOAPIService
 	byteCounter              *bytecounter.Counter
-	httpDefaultTransport     netx.HTTPRoundTripper
+	httpDefaultTransport     model.HTTPTransport
 	kvStore                  model.KeyValueStore
 	location                 *geolocate.Results
 	logger                   model.Logger

@@ -2,6 +2,8 @@ package httptransport
 
 import (
 	"net/http"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // NewSystemTransport creates a new "system" HTTP transport. That is a transport
@@ -10,7 +12,7 @@ import (
 // Deprecation warning
 //
 // New code should use netxlite.NewHTTPTransport instead.
-func NewSystemTransport(config Config) RoundTripper {
+func NewSystemTransport(config Config) model.HTTPTransport {
 	txp := http.DefaultTransport.(*http.Transport).Clone()
 	txp.DialContext = config.Dialer.DialContext
 	txp.DialTLSContext = config.TLSDialer.DialTLSContext
@@ -25,4 +27,4 @@ func NewSystemTransport(config Config) RoundTripper {
 	return txp
 }
 
-var _ RoundTripper = &http.Transport{}
+var _ model.HTTPTransport = &http.Transport{}

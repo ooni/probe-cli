@@ -9,16 +9,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// QUICListener listens for QUIC connections.
-type QUICListener interface {
-	// Listen creates a new listening UDPConn.
-	Listen(addr *net.UDPAddr) (model.UDPLikeConn, error)
-}
-
 // QUICListenerSaver is a QUICListener that also implements saving events.
 type QUICListenerSaver struct {
 	// QUICListener is the underlying QUICListener.
-	QUICListener QUICListener
+	model.QUICListener
 
 	// Saver is the underlying Saver.
 	Saver *trace.Saver

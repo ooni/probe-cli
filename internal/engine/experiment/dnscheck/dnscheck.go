@@ -234,7 +234,7 @@ func (m *Measurer) Run(
 	return nil
 }
 
-func (m *Measurer) lookupHost(ctx context.Context, hostname string, r netx.Resolver) ([]string, error) {
+func (m *Measurer) lookupHost(ctx context.Context, hostname string, r model.Resolver) ([]string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 	return r.LookupHost(ctx, hostname)

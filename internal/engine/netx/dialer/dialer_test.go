@@ -1,7 +1,6 @@
 package dialer
 
 import (
-	"net"
 	"net/url"
 	"testing"
 
@@ -18,7 +17,7 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 		Logger:              log.Log,
 		ProxyURL:            &url.URL{},
 		ReadWriteSaver:      saver,
-	}, &net.Resolver{})
+	}, netxlite.DefaultResolver)
 	shd, ok := dlr.(*shapingDialer)
 	if !ok {
 		t.Fatal("not a shapingDialer")
@@ -35,11 +34,7 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 	if !ok {
 		t.Fatal("not a dnsDialer")
 	}
-	dad, ok := dnsd.Dialer.(*netxlite.DialerLegacyAdapter)
-	if !ok {
-		t.Fatal("invalid type")
-	}
-	scd, ok := dad.DialerLegacy.(*saverConnDialer)
+	scd, ok := dnsd.Dialer.(*saverConnDialer)
 	if !ok {
 		t.Fatal("not a saverConnDialer")
 	}
@@ -51,11 +46,7 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 	if !ok {
 		t.Fatal("not a loggingDialer")
 	}
-	dad, ok = ld.Dialer.(*netxlite.DialerLegacyAdapter)
-	if !ok {
-		t.Fatal("invalid type")
-	}
-	ewd, ok := dad.DialerLegacy.(*netxlite.ErrorWrapperDialer)
+	ewd, ok := ld.Dialer.(*netxlite.ErrorWrapperDialer)
 	if !ok {
 		t.Fatal("not an errorWrappingDialer")
 	}

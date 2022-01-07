@@ -22,12 +22,12 @@ func TestSaverPerformanceNoMultipleEvents(t *testing.T) {
 	saver := &trace.Saver{}
 	// register twice - do we see events twice?
 	txp := httptransport.SaverPerformanceHTTPTransport{
-		RoundTripper: http.DefaultTransport.(*http.Transport),
-		Saver:        saver,
+		HTTPTransport: http.DefaultTransport.(*http.Transport),
+		Saver:         saver,
 	}
 	txp = httptransport.SaverPerformanceHTTPTransport{
-		RoundTripper: txp,
-		Saver:        saver,
+		HTTPTransport: txp,
+		Saver:         saver,
 	}
 	req, err := http.NewRequest("GET", "https://www.google.com", nil)
 	if err != nil {
@@ -67,8 +67,8 @@ func TestSaverMetadataSuccess(t *testing.T) {
 	}
 	saver := &trace.Saver{}
 	txp := httptransport.SaverMetadataHTTPTransport{
-		RoundTripper: http.DefaultTransport.(*http.Transport),
-		Saver:        saver,
+		HTTPTransport: http.DefaultTransport.(*http.Transport),
+		Saver:         saver,
 	}
 	req, err := http.NewRequest("GET", "https://www.google.com", nil)
 	if err != nil {
@@ -121,7 +121,7 @@ func TestSaverMetadataFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := &trace.Saver{}
 	txp := httptransport.SaverMetadataHTTPTransport{
-		RoundTripper: httptransport.FakeTransport{
+		HTTPTransport: httptransport.FakeTransport{
 			Err: expected,
 		},
 		Saver: saver,
@@ -165,8 +165,8 @@ func TestSaverTransactionSuccess(t *testing.T) {
 	}
 	saver := &trace.Saver{}
 	txp := httptransport.SaverTransactionHTTPTransport{
-		RoundTripper: http.DefaultTransport.(*http.Transport),
-		Saver:        saver,
+		HTTPTransport: http.DefaultTransport.(*http.Transport),
+		Saver:         saver,
 	}
 	req, err := http.NewRequest("GET", "https://www.google.com", nil)
 	if err != nil {
@@ -206,7 +206,7 @@ func TestSaverTransactionFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := &trace.Saver{}
 	txp := httptransport.SaverTransactionHTTPTransport{
-		RoundTripper: httptransport.FakeTransport{
+		HTTPTransport: httptransport.FakeTransport{
 			Err: expected,
 		},
 		Saver: saver,
@@ -246,7 +246,7 @@ func TestSaverTransactionFailure(t *testing.T) {
 func TestSaverBodySuccess(t *testing.T) {
 	saver := new(trace.Saver)
 	txp := httptransport.SaverBodyHTTPTransport{
-		RoundTripper: httptransport.FakeTransport{
+		HTTPTransport: httptransport.FakeTransport{
 			Func: func(req *http.Request) (*http.Response, error) {
 				data, err := netxlite.ReadAllContext(context.Background(), req.Body)
 				if err != nil {
@@ -317,7 +317,7 @@ func TestSaverBodySuccess(t *testing.T) {
 func TestSaverBodyRequestReadError(t *testing.T) {
 	saver := new(trace.Saver)
 	txp := httptransport.SaverBodyHTTPTransport{
-		RoundTripper: httptransport.FakeTransport{
+		HTTPTransport: httptransport.FakeTransport{
 			Func: func(req *http.Request) (*http.Response, error) {
 				panic("should not be called")
 			},
@@ -348,7 +348,7 @@ func TestSaverBodyRoundTripError(t *testing.T) {
 	saver := new(trace.Saver)
 	expected := errors.New("mocked error")
 	txp := httptransport.SaverBodyHTTPTransport{
-		RoundTripper: httptransport.FakeTransport{
+		HTTPTransport: httptransport.FakeTransport{
 			Err: expected,
 		},
 		SnapshotSize: 4,
@@ -388,7 +388,7 @@ func TestSaverBodyResponseReadError(t *testing.T) {
 	saver := new(trace.Saver)
 	expected := errors.New("mocked error")
 	txp := httptransport.SaverBodyHTTPTransport{
-		RoundTripper: httptransport.FakeTransport{
+		HTTPTransport: httptransport.FakeTransport{
 			Func: func(req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 200,

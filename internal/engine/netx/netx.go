@@ -30,7 +30,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
@@ -42,41 +41,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// Dialer is the definition of dialer assumed by this package.
-type Dialer interface {
-	DialContext(ctx context.Context, network, address string) (net.Conn, error)
-}
-
-// QUICDialer is the definition of a dialer for QUIC assumed by this package.
-type QUICDialer interface {
-	DialContext(ctx context.Context, network, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error)
-}
-
-// TLSDialer is the definition of a TLS dialer assumed by this package.
-type TLSDialer interface {
-	DialTLSContext(ctx context.Context, network, address string) (net.Conn, error)
-}
-
-// HTTPRoundTripper is the definition of http.HTTPRoundTripper used by this package.
-type HTTPRoundTripper interface {
-	RoundTrip(req *http.Request) (*http.Response, error)
-	CloseIdleConnections()
-}
-
-// Resolver is the interface we expect from a resolver
-type Resolver interface {
-	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
-	Network() string
-	Address() string
-}
-
 // Config contains configuration for creating a new transport. When any
 // field of Config is nil/empty, we will use a suitable default.
 //
 // We use different savers for different kind of events such that the
 // user of this library can choose what to save.
 type Config struct {
-	BaseResolver        Resolver             // default: system resolver
+	BaseResolver        model.Resolver       // default: system resolver
 	BogonIsError        bool                 // default: bogon is not error
 	ByteCounter         *bytecounter.Counter // default: no explicit byte counting
 	CacheResolutions    bool                 // default: no caching
@@ -84,9 +55,9 @@ type Config struct {
 	ContextByteCounting bool                 // default: no implicit byte counting
 	DNSCache            map[string][]string  // default: cache is empty
 	DialSaver           *trace.Saver         // default: not saving dials
-	Dialer              Dialer               // default: dialer.DNSDialer
-	FullResolver        Resolver             // default: base resolver + goodies
-	QUICDialer          QUICDialer           // default: quicdialer.DNSDialer
+	Dialer              model.Dialer         // default: dialer.DNSDialer
+	FullResolver        model.Resolver       // default: base resolver + goodies
+	QUICDialer          model.QUICDialer     // default: quicdialer.DNSDialer
 	HTTP3Enabled        bool                 // default: disabled
 	HTTPSaver           *trace.Saver         // default: not saving HTTP
 	Logger              model.DebugLogger    // default: no logging
@@ -95,7 +66,7 @@ type Config struct {
 	ReadWriteSaver      *trace.Saver         // default: not saving read/write
 	ResolveSaver        *trace.Saver         // default: not saving resolves
 	TLSConfig           *tls.Config          // default: attempt using h2
-	TLSDialer           TLSDialer            // default: dialer.TLSDialer
+	TLSDialer           model.TLSDialer      // default: dialer.TLSDialer
 	TLSSaver            *trace.Saver         // default: not saving TLS
 }
 
@@ -107,13 +78,13 @@ type tlsHandshaker interface {
 var defaultCertPool *x509.CertPool = netxlite.NewDefaultCertPool()
 
 // NewResolver creates a new resolver from the specified config
-func NewResolver(config Config) Resolver {
+func NewResolver(config Config) model.Resolver {
 	if config.BaseResolver == nil {
 		config.BaseResolver = &netxlite.ResolverSystem{}
 	}
-	var r Resolver = config.BaseResolver
-	r = &resolver.AddressResolver{
-		Resolver: netxlite.NewResolverLegacyAdapter(r),
+	var r model.Resolver = config.BaseResolver
+	r = &netxlite.AddressResolver{
+		Resolver: r,
 	}
 	if config.CacheResolutions {
 		r = &resolver.CacheResolver{Resolver: r}
@@ -128,21 +99,21 @@ func NewResolver(config Config) Resolver {
 	if config.BogonIsError {
 		r = resolver.BogonResolver{Resolver: r}
 	}
-	r = &netxlite.ErrorWrapperResolver{Resolver: netxlite.NewResolverLegacyAdapter(r)}
+	r = &netxlite.ErrorWrapperResolver{Resolver: r}
 	if config.Logger != nil {
 		r = &netxlite.ResolverLogger{
 			Logger:   config.Logger,
-			Resolver: netxlite.NewResolverLegacyAdapter(r),
+			Resolver: r,
 		}
 	}
 	if config.ResolveSaver != nil {
 		r = resolver.SaverResolver{Resolver: r, Saver: config.ResolveSaver}
 	}
-	return &resolver.IDNAResolver{Resolver: netxlite.NewResolverLegacyAdapter(r)}
+	return &netxlite.ResolverIDNA{Resolver: r}
 }
 
 // NewDialer creates a new Dialer from the specified config
-func NewDialer(config Config) Dialer {
+func NewDialer(config Config) model.Dialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
@@ -156,11 +127,11 @@ func NewDialer(config Config) Dialer {
 }
 
 // NewQUICDialer creates a new DNS Dialer for QUIC, with the resolver from the specified config
-func NewQUICDialer(config Config) QUICDialer {
+func NewQUICDialer(config Config) model.QUICDialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	var ql quicdialer.QUICListener = &netxlite.QUICListenerStdlib{}
+	var ql model.QUICListener = &netxlite.QUICListenerStdlib{}
 	ql = &netxlite.ErrorWrapperQUICListener{QUICListener: ql}
 	if config.ReadWriteSaver != nil {
 		ql = &quicdialer.QUICListenerSaver{
@@ -168,24 +139,24 @@ func NewQUICDialer(config Config) QUICDialer {
 			Saver:        config.ReadWriteSaver,
 		}
 	}
-	var d quicdialer.ContextDialer = &netxlite.QUICDialerQUICGo{
+	var d model.QUICDialer = &netxlite.QUICDialerQUICGo{
 		QUICListener: ql,
 	}
 	d = &netxlite.ErrorWrapperQUICDialer{
-		QUICDialer: netxlite.NewQUICDialerFromContextDialerAdapter(d),
+		QUICDialer: d,
 	}
 	if config.TLSSaver != nil {
-		d = quicdialer.HandshakeSaver{Saver: config.TLSSaver, Dialer: d}
+		d = quicdialer.HandshakeSaver{Saver: config.TLSSaver, QUICDialer: d}
 	}
 	d = &netxlite.QUICDialerResolver{
-		Resolver: netxlite.NewResolverLegacyAdapter(config.FullResolver),
-		Dialer:   netxlite.NewQUICDialerFromContextDialerAdapter(d),
+		Resolver: config.FullResolver,
+		Dialer:   d,
 	}
 	return d
 }
 
 // NewTLSDialer creates a new TLSDialer from the specified config
-func NewTLSDialer(config Config) TLSDialer {
+func NewTLSDialer(config Config) model.TLSDialer {
 	if config.Dialer == nil {
 		config.Dialer = NewDialer(config)
 	}
@@ -207,14 +178,14 @@ func NewTLSDialer(config Config) TLSDialer {
 	config.TLSConfig.InsecureSkipVerify = config.NoTLSVerify
 	return &netxlite.TLSDialerLegacy{
 		Config:        config.TLSConfig,
-		Dialer:        netxlite.NewDialerLegacyAdapter(config.Dialer),
+		Dialer:        config.Dialer,
 		TLSHandshaker: h,
 	}
 }
 
 // NewHTTPTransport creates a new HTTPRoundTripper. You can further extend the returned
 // HTTPRoundTripper before wrapping it into an http.Client.
-func NewHTTPTransport(config Config) HTTPRoundTripper {
+func NewHTTPTransport(config Config) model.HTTPTransport {
 	if config.Dialer == nil {
 		config.Dialer = NewDialer(config)
 	}
@@ -233,27 +204,27 @@ func NewHTTPTransport(config Config) HTTPRoundTripper {
 
 	if config.ByteCounter != nil {
 		txp = httptransport.ByteCountingTransport{
-			Counter: config.ByteCounter, RoundTripper: txp}
+			Counter: config.ByteCounter, HTTPTransport: txp}
 	}
 	if config.Logger != nil {
 		txp = &netxlite.HTTPTransportLogger{Logger: config.Logger, HTTPTransport: txp}
 	}
 	if config.HTTPSaver != nil {
 		txp = httptransport.SaverMetadataHTTPTransport{
-			RoundTripper: txp, Saver: config.HTTPSaver, Transport: transport}
+			HTTPTransport: txp, Saver: config.HTTPSaver, Transport: transport}
 		txp = httptransport.SaverBodyHTTPTransport{
-			RoundTripper: txp, Saver: config.HTTPSaver}
+			HTTPTransport: txp, Saver: config.HTTPSaver}
 		txp = httptransport.SaverPerformanceHTTPTransport{
-			RoundTripper: txp, Saver: config.HTTPSaver}
+			HTTPTransport: txp, Saver: config.HTTPSaver}
 		txp = httptransport.SaverTransactionHTTPTransport{
-			RoundTripper: txp, Saver: config.HTTPSaver}
+			HTTPTransport: txp, Saver: config.HTTPSaver}
 	}
 	return txp
 }
 
 // httpTransportInfo contains the constructing function as well as the transport name
 type httpTransportInfo struct {
-	Factory       func(httptransport.Config) httptransport.RoundTripper
+	Factory       func(httptransport.Config) model.HTTPTransport
 	TransportName string
 }
 
@@ -271,7 +242,7 @@ var allTransportsInfo = map[bool]httpTransportInfo{
 // DNSClient is a DNS client. It wraps a Resolver and it possibly
 // also wraps an HTTP client, but only when we're using DoH.
 type DNSClient struct {
-	Resolver
+	model.Resolver
 	httpClient *http.Client
 }
 
@@ -351,7 +322,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 			return c, err
 		}
 		var txp resolver.RoundTripper = resolver.NewDNSOverUDP(
-			netxlite.NewDialerLegacyAdapter(dialer), endpoint)
+			dialer, endpoint)
 		if config.ResolveSaver != nil {
 			txp = resolver.SaverDNSTransport{
 				RoundTripper: txp,

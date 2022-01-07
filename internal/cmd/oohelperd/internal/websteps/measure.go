@@ -8,6 +8,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/websteps"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -24,7 +25,7 @@ type Config struct {
 	checker   InitChecker
 	explorer  Explorer
 	generator Generator
-	resolver  netxlite.ResolverLegacy
+	resolver  model.Resolver
 }
 
 // Measure performs the three consecutive steps of the testhelper algorithm:
@@ -90,12 +91,10 @@ func newDNSFailedResponse(err error, URL string) *ControlResponse {
 }
 
 // newResolver creates a new DNS resolver instance
-func newResolver() netxlite.ResolverLegacy {
+func newResolver() model.Resolver {
 	childResolver, err := netx.NewDNSClient(netx.Config{Logger: log.Log}, "doh://google")
 	runtimex.PanicOnError(err, "NewDNSClient failed")
-	var r netxlite.ResolverLegacy = childResolver
-	r = &netxlite.ResolverIDNA{
-		Resolver: netxlite.NewResolverLegacyAdapter(r),
-	}
+	var r model.Resolver = childResolver
+	r = &netxlite.ResolverIDNA{Resolver: r}
 	return r
 }

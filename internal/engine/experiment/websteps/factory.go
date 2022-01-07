@@ -32,11 +32,11 @@ func NewRequest(ctx context.Context, URL *url.URL, headers http.Header) *http.Re
 
 // NewDialerResolver contructs a new dialer for TCP connections,
 // with default, errorwrapping and resolve functionalities
-func NewDialerResolver(resolver netxlite.ResolverLegacy) model.Dialer {
+func NewDialerResolver(resolver model.Resolver) model.Dialer {
 	var d model.Dialer = netxlite.DefaultDialer
 	d = &netxlite.ErrorWrapperDialer{Dialer: d}
 	d = &netxlite.DialerResolver{
-		Resolver: netxlite.NewResolverLegacyAdapter(resolver),
+		Resolver: resolver,
 		Dialer:   d,
 	}
 	return d
@@ -44,7 +44,7 @@ func NewDialerResolver(resolver netxlite.ResolverLegacy) model.Dialer {
 
 // NewQUICDialerResolver creates a new QUICDialerResolver
 // with default, errorwrapping and resolve functionalities
-func NewQUICDialerResolver(resolver netxlite.ResolverLegacy) model.QUICDialer {
+func NewQUICDialerResolver(resolver model.Resolver) model.QUICDialer {
 	var ql model.QUICListener = &netxlite.QUICListenerStdlib{}
 	ql = &netxlite.ErrorWrapperQUICListener{QUICListener: ql}
 	var dialer model.QUICDialer = &netxlite.QUICDialerQUICGo{
@@ -52,7 +52,7 @@ func NewQUICDialerResolver(resolver netxlite.ResolverLegacy) model.QUICDialer {
 	}
 	dialer = &netxlite.ErrorWrapperQUICDialer{QUICDialer: dialer}
 	dialer = &netxlite.QUICDialerResolver{
-		Resolver: netxlite.NewResolverLegacyAdapter(resolver),
+		Resolver: resolver,
 		Dialer:   dialer,
 	}
 	return dialer
@@ -79,12 +79,12 @@ func NewSingleTransport(conn net.Conn) http.RoundTripper {
 }
 
 // NewSingleTransport creates a new HTTP transport with a custom dialer and handshaker.
-func NewTransportWithDialer(dialer netxlite.DialerLegacy, tlsConfig *tls.Config, handshaker model.TLSHandshaker) http.RoundTripper {
+func NewTransportWithDialer(dialer model.Dialer, tlsConfig *tls.Config, handshaker model.TLSHandshaker) http.RoundTripper {
 	transport := newBaseTransport()
 	transport.DialContext = dialer.DialContext
 	transport.DialTLSContext = (&netxlite.TLSDialerLegacy{
 		Config:        tlsConfig,
-		Dialer:        netxlite.NewDialerLegacyAdapter(dialer),
+		Dialer:        dialer,
 		TLSHandshaker: handshaker,
 	}).DialTLSContext
 	return transport

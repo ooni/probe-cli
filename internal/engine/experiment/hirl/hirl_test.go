@@ -388,7 +388,7 @@ func TestRunMethodDialFailure(t *testing.T) {
 			Out:     out,
 		},
 		Name: "random_invalid_version_number",
-		NewDialer: func(config netx.Config) netx.Dialer {
+		NewDialer: func(config netx.Config) model.Dialer {
 			return FakeDialer{Err: expected}
 		},
 		RequestLine: "GET / HTTP/ABC",
@@ -435,7 +435,7 @@ func TestRunMethodSetDeadlineFailure(t *testing.T) {
 			Out:     out,
 		},
 		Name: "random_invalid_version_number",
-		NewDialer: func(config netx.Config) netx.Dialer {
+		NewDialer: func(config netx.Config) model.Dialer {
 			return FakeDialer{Conn: &FakeConn{
 				SetDeadlineError: expected,
 			}}
@@ -484,7 +484,7 @@ func TestRunMethodWriteFailure(t *testing.T) {
 			Out:     out,
 		},
 		Name: "random_invalid_version_number",
-		NewDialer: func(config netx.Config) netx.Dialer {
+		NewDialer: func(config netx.Config) model.Dialer {
 			return FakeDialer{Conn: &FakeConn{
 				WriteError: expected,
 			}}
@@ -532,7 +532,7 @@ func TestRunMethodReadEOFWithWrongData(t *testing.T) {
 			Out:     out,
 		},
 		Name: "random_invalid_version_number",
-		NewDialer: func(config netx.Config) netx.Dialer {
+		NewDialer: func(config netx.Config) model.Dialer {
 			return FakeDialer{Conn: &FakeConn{
 				ReadData: []byte("0xdeadbeef"),
 			}}

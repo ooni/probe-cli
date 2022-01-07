@@ -10,13 +10,14 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // SaverPerformanceHTTPTransport is a RoundTripper that saves
 // performance events occurring during the round trip
 type SaverPerformanceHTTPTransport struct {
-	RoundTripper
+	model.HTTPTransport
 	Saver *trace.Saver
 }
 
@@ -38,13 +39,13 @@ func (txp SaverPerformanceHTTPTransport) RoundTrip(req *http.Request) (*http.Res
 		}
 		req = req.WithContext(httptrace.WithClientTrace(req.Context(), tracep))
 	}
-	return txp.RoundTripper.RoundTrip(req)
+	return txp.HTTPTransport.RoundTrip(req)
 }
 
 // SaverMetadataHTTPTransport is a RoundTripper that saves
 // events related to HTTP request and response metadata
 type SaverMetadataHTTPTransport struct {
-	RoundTripper
+	model.HTTPTransport
 	Saver     *trace.Saver
 	Transport string
 }
@@ -59,7 +60,7 @@ func (txp SaverMetadataHTTPTransport) RoundTrip(req *http.Request) (*http.Respon
 		Name:        "http_request_metadata",
 		Time:        time.Now(),
 	})
-	resp, err := txp.RoundTripper.RoundTrip(req)
+	resp, err := txp.HTTPTransport.RoundTrip(req)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +89,7 @@ func (txp SaverMetadataHTTPTransport) CloneHeaders(req *http.Request) http.Heade
 // SaverTransactionHTTPTransport is a RoundTripper that saves
 // events related to the HTTP transaction
 type SaverTransactionHTTPTransport struct {
-	RoundTripper
+	model.HTTPTransport
 	Saver *trace.Saver
 }
 
@@ -98,7 +99,7 @@ func (txp SaverTransactionHTTPTransport) RoundTrip(req *http.Request) (*http.Res
 		Name: "http_transaction_start",
 		Time: time.Now(),
 	})
-	resp, err := txp.RoundTripper.RoundTrip(req)
+	resp, err := txp.HTTPTransport.RoundTrip(req)
 	txp.Saver.Write(trace.Event{
 		Err:  err,
 		Name: "http_transaction_done",
@@ -110,7 +111,7 @@ func (txp SaverTransactionHTTPTransport) RoundTrip(req *http.Request) (*http.Res
 // SaverBodyHTTPTransport is a RoundTripper that saves
 // body events occurring during the round trip
 type SaverBodyHTTPTransport struct {
-	RoundTripper
+	model.HTTPTransport
 	Saver        *trace.Saver
 	SnapshotSize int
 }
@@ -135,7 +136,7 @@ func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, 
 			Time:            time.Now(),
 		})
 	}
-	resp, err := txp.RoundTripper.RoundTrip(req)
+	resp, err := txp.HTTPTransport.RoundTrip(req)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +185,7 @@ type saverReadCloser struct {
 	io.Reader
 }
 
-var _ RoundTripper = SaverPerformanceHTTPTransport{}
-var _ RoundTripper = SaverMetadataHTTPTransport{}
-var _ RoundTripper = SaverBodyHTTPTransport{}
-var _ RoundTripper = SaverTransactionHTTPTransport{}
+var _ model.HTTPTransport = SaverPerformanceHTTPTransport{}
+var _ model.HTTPTransport = SaverMetadataHTTPTransport{}
+var _ model.HTTPTransport = SaverBodyHTTPTransport{}
+var _ model.HTTPTransport = SaverTransactionHTTPTransport{}

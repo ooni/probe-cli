@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -21,7 +21,7 @@ type CtrlDNSResult = webconnectivity.ControlDNSResult
 type DNSConfig struct {
 	Domain   string
 	Out      chan CtrlDNSResult
-	Resolver netx.Resolver
+	Resolver model.Resolver
 	Wg       *sync.WaitGroup
 }
 

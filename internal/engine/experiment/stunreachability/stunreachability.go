@@ -13,7 +13,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -134,7 +133,7 @@ func (tk *TestKeys) run(
 }
 
 func (tk *TestKeys) do(
-	ctx context.Context, config Config, dialer dialer.Dialer, endpoint string) error {
+	ctx context.Context, config Config, dialer model.Dialer, endpoint string) error {
 	dialContext := dialer.DialContext
 	if config.dialContext != nil {
 		dialContext = config.dialContext

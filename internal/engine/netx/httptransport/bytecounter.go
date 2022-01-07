@@ -5,11 +5,12 @@ import (
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // ByteCountingTransport is a RoundTripper that counts bytes.
 type ByteCountingTransport struct {
-	RoundTripper
+	model.HTTPTransport
 	Counter *bytecounter.Counter
 }
 
@@ -20,7 +21,7 @@ func (txp ByteCountingTransport) RoundTrip(req *http.Request) (*http.Response, e
 			ReadCloser: req.Body, Account: txp.Counter.CountBytesSent}
 	}
 	txp.estimateRequestMetadata(req)
-	resp, err := txp.RoundTripper.RoundTrip(req)
+	resp, err := txp.HTTPTransport.RoundTrip(req)
 	if err != nil {
 		return nil, err
 	}
@@ -70,4 +71,4 @@ func (r byteCountingBody) Read(p []byte) (int, error) {
 	return count, err
 }
 
-var _ RoundTripper = ByteCountingTransport{}
+var _ model.HTTPTransport = ByteCountingTransport{}

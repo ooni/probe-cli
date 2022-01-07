@@ -17,7 +17,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/randx"
@@ -311,7 +310,7 @@ type JSONHeaders struct {
 // guarantee that the connection is used for a single request and that
 // such a request does not contain any body.
 type Dialer struct {
-	Dialer  dialer.Dialer // used for testing
+	Dialer  model.Dialer // used for testing
 	Headers map[string]string
 }
 
@@ -322,7 +321,7 @@ func (d Dialer) DialContext(ctx context.Context, network, address string) (net.C
 	if child == nil {
 		// TODO(bassosimone): figure out why using dialer.New here
 		// causes the experiment to fail with eof_error
-		child = &net.Dialer{Timeout: 15 * time.Second}
+		child = netxlite.DefaultDialer
 	}
 	conn, err := child.DialContext(ctx, network, address)
 	if err != nil {

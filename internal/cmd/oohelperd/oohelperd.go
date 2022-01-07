@@ -13,16 +13,17 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal/websteps"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webstepsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 const maxAcceptableBody = 1 << 24
 
 var (
-	dialer    netx.Dialer
+	dialer    model.Dialer
 	endpoint  = flag.String("endpoint", ":8080", "Endpoint where to listen")
 	httpx     *http.Client
-	resolver  netx.Resolver
+	resolver  model.Resolver
 	srvcancel context.CancelFunc
 	srvctx    context.Context
 	srvwg     = new(sync.WaitGroup)

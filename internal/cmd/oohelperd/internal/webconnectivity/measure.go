@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 type (
@@ -22,9 +22,9 @@ type (
 // MeasureConfig contains configuration for Measure.
 type MeasureConfig struct {
 	Client            *http.Client
-	Dialer            netx.Dialer
+	Dialer            model.Dialer
 	MaxAcceptableBody int64
-	Resolver          netx.Resolver
+	Resolver          model.Resolver
 }
 
 // Measure performs the measurement described by the request and

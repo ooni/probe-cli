@@ -4,12 +4,12 @@ package internal
 import (
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // DialerConfig contains the config for creating a dialer
 type DialerConfig struct {
-	Dialer netx.Dialer
+	Dialer model.Dialer
 	Delay  time.Duration
 	SNI    string
 }

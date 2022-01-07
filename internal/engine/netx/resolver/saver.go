@@ -5,11 +5,12 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // SaverResolver is a resolver that saves events
 type SaverResolver struct {
-	Resolver
+	model.Resolver
 	Saver *trace.Saver
 }
 
@@ -69,5 +70,5 @@ func (txp SaverDNSTransport) RoundTrip(ctx context.Context, query []byte) ([]byt
 	return reply, err
 }
 
-var _ Resolver = SaverResolver{}
+var _ model.Resolver = SaverResolver{}
 var _ RoundTripper = SaverDNSTransport{}

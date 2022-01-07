@@ -17,6 +17,8 @@ func (d FakeDialer) DialContext(ctx context.Context, network, address string) (n
 	return d.Conn, d.Err
 }
 
+func (d FakeDialer) CloseIdleConnections() {}
+
 type FakeConn struct {
 	ReadError             error
 	ReadData              []byte

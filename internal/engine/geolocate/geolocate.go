@@ -89,19 +89,12 @@ type resolverIPLookupper interface {
 	LookupResolverIP(ctx context.Context) (addr string, err error)
 }
 
-// Resolver is a DNS resolver.
-type Resolver interface {
-	LookupHost(ctx context.Context, domain string) ([]string, error)
-	Network() string
-	Address() string
-}
-
 // Config contains configuration for a geolocate Task.
 type Config struct {
 	// Resolver is the resolver we should use when
 	// making requests for discovering the IP. When
 	// this field is not set, we use the stdlib.
-	Resolver Resolver
+	Resolver model.Resolver
 
 	// Logger is the logger to use. If not set, then we will
 	// use a logger that discards all messages.

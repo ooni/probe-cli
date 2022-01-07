@@ -8,7 +8,7 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/websteps"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // Generate is the third step of the algorithm. Given the
@@ -22,9 +22,9 @@ type Generator interface {
 
 // DefaultGenerator is the default Generator.
 type DefaultGenerator struct {
-	dialer     netxlite.DialerLegacy
-	quicDialer netxlite.QUICContextDialer
-	resolver   netxlite.ResolverLegacy
+	dialer     model.Dialer
+	quicDialer model.QUICDialer
+	resolver   model.Resolver
 	transport  http.RoundTripper
 }
 
