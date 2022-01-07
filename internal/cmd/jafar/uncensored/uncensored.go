@@ -52,12 +52,12 @@ var DefaultClient = Must(NewClient(""))
 
 var _ model.Resolver = DefaultClient
 
-// Address implements netx.Resolver.Address
+// Address implements Resolver.Address
 func (c *Client) Address() string {
 	return c.dnsClient.Address()
 }
 
-// LookupHost implements netx.Resolver.LookupHost
+// LookupHost implements Resolver.LookupHost
 func (c *Client) LookupHost(ctx context.Context, domain string) ([]string, error) {
 	return c.dnsClient.LookupHost(ctx, domain)
 }
@@ -67,27 +67,27 @@ func (c *Client) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSv
 	return nil, errors.New("not implemented")
 }
 
-// Network implements netx.Resolver.Network
+// Network implements Resolver.Network
 func (c *Client) Network() string {
 	return c.dnsClient.Network()
 }
 
 var _ model.Dialer = DefaultClient
 
-// DialContext implements netx.Dialer.DialContext
+// DialContext implements Dialer.DialContext
 func (c *Client) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return c.dialer.DialContext(ctx, network, address)
 }
 
 var _ model.HTTPTransport = DefaultClient
 
-// CloseIdleConnections implement netx.HTTPRoundTripper.CloseIdleConnections
+// CloseIdleConnections implement HTTPRoundTripper.CloseIdleConnections
 func (c *Client) CloseIdleConnections() {
 	c.dnsClient.CloseIdleConnections()
 	c.httpTransport.CloseIdleConnections()
 }
 
-// RoundTrip implement netx.HTTPRoundTripper.RoundTrip
+// RoundTrip implement HTTPRoundTripper.RoundTrip
 func (c *Client) RoundTrip(req *http.Request) (*http.Response, error) {
 	return c.httpTransport.RoundTrip(req)
 }
