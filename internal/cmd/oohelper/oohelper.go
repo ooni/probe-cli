@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webstepsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -21,7 +22,7 @@ var (
 	ctx, cancel = context.WithCancel(context.Background())
 	debug       = flag.Bool("debug", false, "Toggle debug mode")
 	httpClient  *http.Client
-	resolver    netx.Resolver
+	resolver    model.Resolver
 	server      = flag.String("server", "", "URL of the test helper")
 	target      = flag.String("target", "", "Target URL for the test helper")
 	fwebsteps   = flag.Bool("websteps", false, "Use the websteps TH")

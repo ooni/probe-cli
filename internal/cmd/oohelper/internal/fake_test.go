@@ -2,13 +2,14 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -49,7 +50,13 @@ func (c FakeResolver) Address() string {
 	return ""
 }
 
-var _ netx.Resolver = FakeResolver{}
+func (c FakeResolver) CloseIdleConnections() {}
+
+func (c FakeResolver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+	return nil, errors.New("not implemented")
+}
+
+var _ model.Resolver = FakeResolver{}
 
 type FakeTransport struct {
 	Err  error
@@ -75,7 +82,7 @@ func (txp FakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func (txp FakeTransport) CloseIdleConnections() {}
 
-var _ netx.HTTPRoundTripper = FakeTransport{}
+var _ model.HTTPTransport = FakeTransport{}
 
 type FakeBody struct {
 	Data []byte

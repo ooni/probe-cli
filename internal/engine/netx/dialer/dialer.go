@@ -1,26 +1,12 @@
 package dialer
 
 import (
-	"context"
-	"net"
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
-
-// Dialer establishes network connections.
-type Dialer interface {
-	// DialContext behaves like net.Dialer.DialContext.
-	DialContext(ctx context.Context, network, address string) (net.Conn, error)
-}
-
-// Resolver is the interface we expect from a DNS resolver.
-type Resolver interface {
-	// LookupHost behaves like net.Resolver.LookupHost.
-	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
-}
 
 // Config contains the settings for New.
 type Config struct {
@@ -59,11 +45,11 @@ type Config struct {
 }
 
 // New creates a new Dialer from the specified config and resolver.
-func New(config *Config, resolver Resolver) Dialer {
-	var d Dialer = &netxlite.ErrorWrapperDialer{Dialer: netxlite.DefaultDialer}
+func New(config *Config, resolver model.Resolver) model.Dialer {
+	var d model.Dialer = &netxlite.ErrorWrapperDialer{Dialer: netxlite.DefaultDialer}
 	if config.Logger != nil {
 		d = &netxlite.DialerLogger{
-			Dialer:      netxlite.NewDialerLegacyAdapter(d),
+			Dialer:      d,
 			DebugLogger: config.Logger,
 		}
 	}
@@ -74,8 +60,8 @@ func New(config *Config, resolver Resolver) Dialer {
 		d = &saverConnDialer{Dialer: d, Saver: config.ReadWriteSaver}
 	}
 	d = &netxlite.DialerResolver{
-		Resolver: netxlite.NewResolverLegacyAdapter(resolver),
-		Dialer:   netxlite.NewDialerLegacyAdapter(d),
+		Resolver: resolver,
+		Dialer:   d,
 	}
 	d = &proxyDialer{ProxyURL: config.ProxyURL, Dialer: d}
 	if config.ContextByteCounting {

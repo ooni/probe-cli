@@ -107,7 +107,7 @@ func (m Measurer) Run(
 	return nil // return nil so we always submit the measurement
 }
 
-func (m Measurer) newDialer(logger model.Logger) netx.Dialer {
+func (m Measurer) newDialer(logger model.Logger) model.Dialer {
 	// TODO(bassosimone): this is a resolver that should hopefully work
 	// in many places. Maybe allow to configure it?
 	resolver, err := netx.NewDNSClientWithOverrides(netx.Config{Logger: logger},

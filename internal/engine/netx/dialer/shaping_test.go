@@ -1,13 +1,14 @@
 package dialer
 
 import (
-	"net"
 	"net/http"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestShapingDialerGood(t *testing.T) {
-	d := &shapingDialer{Dialer: &net.Dialer{}}
+	d := &shapingDialer{Dialer: netxlite.DefaultDialer}
 	txp := &http.Transport{DialContext: d.DialContext}
 	client := &http.Client{Transport: txp}
 	resp, err := client.Get("https://www.google.com/")

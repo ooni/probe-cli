@@ -65,7 +65,7 @@ var (
 
 type ipLookupClient struct {
 	// Resolver is the resolver to use for HTTP.
-	Resolver Resolver
+	Resolver model.Resolver
 
 	// Logger is the logger to use
 	Logger model.Logger

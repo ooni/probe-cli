@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -52,7 +51,7 @@ const requestWithoutDomainName = `{
 func TestWorkingAsIntended(t *testing.T) {
 	handler := Handler{
 		Client:            http.DefaultClient,
-		Dialer:            new(net.Dialer),
+		Dialer:            netxlite.DefaultDialer,
 		MaxAcceptableBody: 1 << 24,
 		Resolver:          &netxlite.ResolverSystem{},
 	}

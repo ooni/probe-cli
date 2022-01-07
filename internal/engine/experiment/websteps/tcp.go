@@ -4,13 +4,14 @@ import (
 	"context"
 	"net"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type TCPConfig struct {
-	Dialer   netxlite.DialerLegacy
+	Dialer   model.Dialer
 	Endpoint string
-	Resolver netxlite.ResolverLegacy
+	Resolver model.Resolver
 }
 
 // TCPDo performs the TCP check.

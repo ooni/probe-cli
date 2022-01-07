@@ -5,13 +5,14 @@ import (
 	"crypto/tls"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 type QUICConfig struct {
 	Endpoint   string
-	QUICDialer netxlite.QUICContextDialer
-	Resolver   netxlite.ResolverLegacy
+	QUICDialer model.QUICDialer
+	Resolver   model.Resolver
 	TLSConf    *tls.Config
 }
 

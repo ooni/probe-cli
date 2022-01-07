@@ -3,7 +3,6 @@ package tlsdialer_test
 import (
 	"context"
 	"crypto/tls"
-	"net"
 	"reflect"
 	"testing"
 	"time"
@@ -23,9 +22,7 @@ func TestSaverTLSHandshakerSuccessWithReadWrite(t *testing.T) {
 	saver := &trace.Saver{}
 	tlsdlr := &netxlite.TLSDialerLegacy{
 		Config: &tls.Config{NextProtos: nextprotos},
-		Dialer: netxlite.NewDialerLegacyAdapter(
-			dialer.New(&dialer.Config{ReadWriteSaver: saver}, &net.Resolver{}),
-		),
+		Dialer: dialer.New(&dialer.Config{ReadWriteSaver: saver}, netxlite.DefaultResolver),
 		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,

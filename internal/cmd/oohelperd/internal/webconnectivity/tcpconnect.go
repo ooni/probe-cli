@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -20,7 +20,7 @@ type TCPResultPair struct {
 
 // TCPConfig configures the TCP connect check.
 type TCPConfig struct {
-	Dialer   netx.Dialer
+	Dialer   model.Dialer
 	Endpoint string
 	Out      chan TCPResultPair
 	Wg       *sync.WaitGroup

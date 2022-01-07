@@ -251,7 +251,7 @@ func (meth squidCacheManager) Run(ctx context.Context, config MethodConfig) {
 type RunMethodConfig struct {
 	MethodConfig
 	Name        string
-	NewDialer   func(config netx.Config) netx.Dialer
+	NewDialer   func(config netx.Config) model.Dialer
 	RequestLine string
 }
 

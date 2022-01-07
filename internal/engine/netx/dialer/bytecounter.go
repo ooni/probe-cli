@@ -5,12 +5,13 @@ import (
 	"net"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // byteCounterDialer is a byte-counting-aware dialer. To perform byte counting, you
 // should make sure that you insert this dialer in the dialing chain.
 type byteCounterDialer struct {
-	Dialer
+	model.Dialer
 }
 
 // DialContext implements Dialer.DialContext

@@ -16,7 +16,7 @@ import (
 func dorequest(ctx context.Context, url string) error {
 	txp := http.DefaultTransport.(*http.Transport).Clone()
 	defer txp.CloseIdleConnections()
-	dialer := &byteCounterDialer{Dialer: new(net.Dialer)}
+	dialer := &byteCounterDialer{Dialer: netxlite.DefaultDialer}
 	txp.DialContext = dialer.DialContext
 	client := &http.Client{Transport: txp}
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://www.google.com", nil)

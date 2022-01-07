@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // InitialChecks is the first step of the test helper algorithm. We
@@ -31,7 +31,7 @@ type InitChecker interface {
 
 // DefaultInitChecker is the default InitChecker.
 type DefaultInitChecker struct {
-	resolver netxlite.ResolverLegacy
+	resolver model.Resolver
 }
 
 // InitialChecks checks whether the URL is valid and whether the

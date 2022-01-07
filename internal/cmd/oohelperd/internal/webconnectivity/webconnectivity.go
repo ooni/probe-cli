@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -15,9 +15,9 @@ import (
 // Handler implements the Web Connectivity test helper HTTP API.
 type Handler struct {
 	Client            *http.Client
-	Dialer            netx.Dialer
+	Dialer            model.Dialer
 	MaxAcceptableBody int64
-	Resolver          netx.Resolver
+	Resolver          model.Resolver
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {

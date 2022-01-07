@@ -22,27 +22,19 @@ import (
 
 func TestNewResolverVanilla(t *testing.T) {
 	r := netx.NewResolver(netx.Config{})
-	ir, ok := r.(*resolver.IDNAResolver)
+	ir, ok := r.(*netxlite.ResolverIDNA)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	ewr, ok := ir.Resolver.(*netxlite.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := rla.ResolverLegacy.(*netxlite.ErrorWrapperResolver)
+	ar, ok := ewr.Resolver.(*netxlite.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ar, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(*resolver.AddressResolver)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	_, ok = arw.ResolverLegacy.(*netxlite.ResolverSystem)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -54,27 +46,19 @@ func TestNewResolverSpecificResolver(t *testing.T) {
 			// not initialized because it doesn't matter in this context
 		},
 	})
-	ir, ok := r.(*resolver.IDNAResolver)
+	ir, ok := r.(*netxlite.ResolverIDNA)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	ewr, ok := ir.Resolver.(*netxlite.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := rla.ResolverLegacy.(*netxlite.ErrorWrapperResolver)
+	ar, ok := ewr.Resolver.(*netxlite.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ar, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(*resolver.AddressResolver)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	_, ok = arw.ResolverLegacy.(resolver.BogonResolver)
+	_, ok = ar.Resolver.(resolver.BogonResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -84,31 +68,23 @@ func TestNewResolverWithBogonFilter(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
 		BogonIsError: true,
 	})
-	ir, ok := r.(*resolver.IDNAResolver)
+	ir, ok := r.(*netxlite.ResolverIDNA)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	ewr, ok := ir.Resolver.(*netxlite.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := rla.ResolverLegacy.(*netxlite.ErrorWrapperResolver)
+	br, ok := ewr.Resolver.(resolver.BogonResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	br, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(resolver.BogonResolver)
+	ar, ok := br.Resolver.(*netxlite.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ar, ok := br.Resolver.(*resolver.AddressResolver)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	_, ok = arw.ResolverLegacy.(*netxlite.ResolverSystem)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -118,46 +94,26 @@ func TestNewResolverWithLogging(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
 		Logger: log.Log,
 	})
-	ir, ok := r.(*resolver.IDNAResolver)
+	ir, ok := r.(*netxlite.ResolverIDNA)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	lr, ok := rla.ResolverLegacy.(*netxlite.ResolverLogger)
+	lr, ok := ir.Resolver.(*netxlite.ResolverLogger)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	if lr.Logger != log.Log {
 		t.Fatal("not the logger we expected")
 	}
-	rla, ok = ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	ewr, ok := lr.Resolver.(*netxlite.ErrorWrapperResolver)
+	if !ok {
+		t.Fatalf("not the resolver we expected")
+	}
+	ar, ok := ewr.Resolver.(*netxlite.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	lr, ok = rla.ResolverLegacy.(*netxlite.ResolverLogger)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	rla, ok = lr.Resolver.(*netxlite.ResolverLegacyAdapter)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	ewr, ok := rla.ResolverLegacy.(*netxlite.ErrorWrapperResolver)
-	if !ok {
-		t.Fatalf("not the resolver we expected %T", rla.ResolverLegacy)
-	}
-	ar, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(*resolver.AddressResolver)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	_, ok = arw.ResolverLegacy.(*netxlite.ResolverSystem)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -168,15 +124,11 @@ func TestNewResolverWithSaver(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
 		ResolveSaver: saver,
 	})
-	ir, ok := r.(*resolver.IDNAResolver)
+	ir, ok := r.(*netxlite.ResolverIDNA)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	sr, ok := rla.ResolverLegacy.(resolver.SaverResolver)
+	sr, ok := ir.Resolver.(resolver.SaverResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -187,15 +139,11 @@ func TestNewResolverWithSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ar, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(*resolver.AddressResolver)
+	ar, ok := ewr.Resolver.(*netxlite.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	_, ok = arw.ResolverLegacy.(*netxlite.ResolverSystem)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -205,34 +153,26 @@ func TestNewResolverWithReadWriteCache(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
 		CacheResolutions: true,
 	})
-	ir, ok := r.(*resolver.IDNAResolver)
+	ir, ok := r.(*netxlite.ResolverIDNA)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	ewr, ok := ir.Resolver.(*netxlite.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := rla.ResolverLegacy.(*netxlite.ErrorWrapperResolver)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	cr, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(*resolver.CacheResolver)
+	cr, ok := ewr.Resolver.(*resolver.CacheResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	if cr.ReadOnly != false {
 		t.Fatal("expected readwrite cache here")
 	}
-	ar, ok := cr.Resolver.(*resolver.AddressResolver)
+	ar, ok := cr.Resolver.(*netxlite.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	_, ok = arw.ResolverLegacy.(*netxlite.ResolverSystem)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -244,19 +184,15 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 			"dns.google.com": {"8.8.8.8"},
 		},
 	})
-	ir, ok := r.(*resolver.IDNAResolver)
+	ir, ok := r.(*netxlite.ResolverIDNA)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	rla, ok := ir.Resolver.(*netxlite.ResolverLegacyAdapter)
+	ewr, ok := ir.Resolver.(*netxlite.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := rla.ResolverLegacy.(*netxlite.ErrorWrapperResolver)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	cr, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(*resolver.CacheResolver)
+	cr, ok := ewr.Resolver.(*resolver.CacheResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -266,15 +202,11 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 	if cr.Get("dns.google.com")[0] != "8.8.8.8" {
 		t.Fatal("cache not correctly prefilled")
 	}
-	ar, ok := cr.Resolver.(*resolver.AddressResolver)
+	ar, ok := cr.Resolver.(*netxlite.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	arw, ok := ar.Resolver.(*netxlite.ResolverLegacyAdapter)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	_, ok = arw.ResolverLegacy.(*netxlite.ResolverSystem)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -548,7 +480,7 @@ func TestNewWithByteCounter(t *testing.T) {
 	if bctxp.Counter != counter {
 		t.Fatal("not the byte counter we expected")
 	}
-	if _, ok := bctxp.RoundTripper.(*http.Transport); !ok {
+	if _, ok := bctxp.HTTPTransport.(*http.Transport); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -581,28 +513,28 @@ func TestNewWithSaver(t *testing.T) {
 	if stxptxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	sptxp, ok := stxptxp.RoundTripper.(httptransport.SaverPerformanceHTTPTransport)
+	sptxp, ok := stxptxp.HTTPTransport.(httptransport.SaverPerformanceHTTPTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
 	if sptxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	sbtxp, ok := sptxp.RoundTripper.(httptransport.SaverBodyHTTPTransport)
+	sbtxp, ok := sptxp.HTTPTransport.(httptransport.SaverBodyHTTPTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
 	if sbtxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	smtxp, ok := sbtxp.RoundTripper.(httptransport.SaverMetadataHTTPTransport)
+	smtxp, ok := sbtxp.HTTPTransport.(httptransport.SaverMetadataHTTPTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
 	if smtxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	if _, ok := smtxp.RoundTripper.(*http.Transport); !ok {
+	if _, ok := smtxp.HTTPTransport.(*http.Transport); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }

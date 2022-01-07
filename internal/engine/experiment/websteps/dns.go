@@ -5,13 +5,14 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 type DNSConfig struct {
 	Domain   string
-	Resolver netxlite.ResolverLegacy
+	Resolver model.Resolver
 }
 
 // DNSDo performs the DNS check.
@@ -22,7 +23,7 @@ func DNSDo(ctx context.Context, config DNSConfig) ([]string, error) {
 		runtimex.PanicOnError(err, "NewDNSClient failed")
 		resolver = childResolver
 		resolver = &netxlite.ResolverIDNA{
-			Resolver: netxlite.NewResolverLegacyAdapter(resolver),
+			Resolver: resolver,
 		}
 	}
 	return resolver.LookupHost(ctx, config.Domain)

@@ -7,13 +7,15 @@ import (
 	"context"
 	"net"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // shapingDialer ensures we don't use too much bandwidth
 // when using integration tests at GitHub. To select
 // the implementation with shaping use `-tags shaping`.
 type shapingDialer struct {
-	Dialer
+	model.Dialer
 }
 
 // DialContext implements Dialer.DialContext

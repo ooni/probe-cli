@@ -2,11 +2,13 @@ package resolver
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 type FakeDialer struct {
@@ -143,4 +145,11 @@ func (c FakeResolver) Address() string {
 	return ""
 }
 
-var _ Resolver = FakeResolver{}
+func (c FakeResolver) CloseIdleConnections() {}
+
+func (c FakeResolver) LookupHTTPS(
+	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+	return nil, errors.New("not implemented")
+}
+
+var _ model.Resolver = FakeResolver{}

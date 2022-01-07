@@ -3,12 +3,14 @@ package resolver
 import (
 	"context"
 	"sync"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // CacheResolver is a resolver that caches successful replies.
 type CacheResolver struct {
 	ReadOnly bool
-	Resolver
+	model.Resolver
 	mu    sync.Mutex
 	cache map[string][]string
 }

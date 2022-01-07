@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // SaverTLSHandshaker saves events occurring during the handshake
 type SaverTLSHandshaker struct {
-	TLSHandshaker
+	model.TLSHandshaker
 	Saver *trace.Saver
 }
 
@@ -46,4 +47,4 @@ func (h SaverTLSHandshaker) Handshake(
 	return tlsconn, state, err
 }
 
-var _ TLSHandshaker = SaverTLSHandshaker{}
+var _ model.TLSHandshaker = SaverTLSHandshaker{}

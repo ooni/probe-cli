@@ -6,11 +6,12 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestCacheFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	var r resolver.Resolver = resolver.FakeResolver{
+	var r model.Resolver = resolver.FakeResolver{
 		Err: expected,
 	}
 	cache := &resolver.CacheResolver{Resolver: r}
@@ -27,7 +28,7 @@ func TestCacheFailure(t *testing.T) {
 }
 
 func TestCacheHitSuccess(t *testing.T) {
-	var r resolver.Resolver = resolver.FakeResolver{
+	var r model.Resolver = resolver.FakeResolver{
 		Err: errors.New("mocked error"),
 	}
 	cache := &resolver.CacheResolver{Resolver: r}
@@ -42,7 +43,7 @@ func TestCacheHitSuccess(t *testing.T) {
 }
 
 func TestCacheMissSuccess(t *testing.T) {
-	var r resolver.Resolver = resolver.FakeResolver{
+	var r model.Resolver = resolver.FakeResolver{
 		Result: []string{"8.8.8.8"},
 	}
 	cache := &resolver.CacheResolver{Resolver: r}
@@ -59,7 +60,7 @@ func TestCacheMissSuccess(t *testing.T) {
 }
 
 func TestCacheReadonlySuccess(t *testing.T) {
-	var r resolver.Resolver = resolver.FakeResolver{
+	var r model.Resolver = resolver.FakeResolver{
 		Result: []string{"8.8.8.8"},
 	}
 	cache := &resolver.CacheResolver{Resolver: r, ReadOnly: true}

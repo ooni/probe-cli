@@ -110,6 +110,11 @@ func (r *Resolver) Stats() string {
 	return fmt.Sprintf("sessionresolver: %s", string(data))
 }
 
+// LookupHTTPS implements Resolver.LookupHTTPS.
+func (r *Resolver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+	return nil, errors.New("not implemented")
+}
+
 // ErrLookupHost indicates that LookupHost failed.
 var ErrLookupHost = errors.New("sessionresolver: LookupHost failed")
 

@@ -5,14 +5,14 @@ import (
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // Dialer creates net.Conn instances where (1) we delay writes if
 // a delay is configured and (2) we split outgoing buffers if there
 // is a configured splitter function.
 type Dialer struct {
-	netx.Dialer
+	model.Dialer
 	Delay    time.Duration
 	Splitter func([]byte) [][]byte
 }

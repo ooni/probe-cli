@@ -3,6 +3,7 @@ package resolver
 import (
 	"context"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -14,7 +15,7 @@ import (
 // This resolver is deprecated. The right thing to do would be to check
 // for bogons right after a domain name resolution in the nettest.
 type BogonResolver struct {
-	Resolver
+	model.Resolver
 }
 
 // LookupHost implements Resolver.LookupHost
@@ -28,4 +29,4 @@ func (r BogonResolver) LookupHost(ctx context.Context, hostname string) ([]strin
 	return addrs, err
 }
 
-var _ Resolver = BogonResolver{}
+var _ model.Resolver = BogonResolver{}

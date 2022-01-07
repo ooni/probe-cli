@@ -6,12 +6,13 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // saverDialer saves events occurring during the dial
 type saverDialer struct {
-	Dialer
+	model.Dialer
 	Saver *trace.Saver
 }
 
@@ -34,7 +35,7 @@ func (d *saverDialer) DialContext(ctx context.Context, network, address string) 
 // saverConnDialer wraps the returned connection such that we
 // collect all the read/write events that occur.
 type saverConnDialer struct {
-	Dialer
+	model.Dialer
 	Saver *trace.Saver
 }
 
@@ -82,6 +83,6 @@ func (c *saverConn) Write(p []byte) (int, error) {
 	return count, err
 }
 
-var _ Dialer = &saverDialer{}
-var _ Dialer = &saverConnDialer{}
+var _ model.Dialer = &saverDialer{}
+var _ model.Dialer = &saverConnDialer{}
 var _ net.Conn = &saverConn{}

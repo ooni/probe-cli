@@ -7,13 +7,14 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // HandshakeSaver saves events occurring during the handshake
 type HandshakeSaver struct {
-	Saver  *trace.Saver
-	Dialer ContextDialer
+	Saver *trace.Saver
+	model.QUICDialer
 }
 
 // DialContext implements ContextDialer.DialContext
@@ -31,7 +32,7 @@ func (h HandshakeSaver) DialContext(ctx context.Context, network string,
 		TLSServerName: tlsCfg.ServerName,
 		Time:          start,
 	})
-	sess, err := h.Dialer.DialContext(ctx, network, host, tlsCfg, cfg)
+	sess, err := h.QUICDialer.DialContext(ctx, network, host, tlsCfg, cfg)
 	stop := time.Now()
 	if err != nil {
 		h.Saver.Write(trace.Event{
