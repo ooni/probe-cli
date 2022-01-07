@@ -73,6 +73,10 @@ func (m Measurer) Run(
 	<-ctx.Done()
 	sess.Logger().Infof("%s", "Knock, knock, Neo.")
 	callbacks.OnProgress(1.0, m.config.Message)
+	// Note: if here we return an error, the parent code will assume
+	// something fundamental was wrong and we don't have a measurement
+	// to submit to the OONI collector. Keep this in mind when you
+	// are writing new experiments!
 	return err
 }
 

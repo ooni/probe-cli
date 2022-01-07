@@ -14,7 +14,7 @@ import (
 
 const (
 	testName    = "urlgetter"
-	testVersion = "0.1.0"
+	testVersion = "0.2.0"
 )
 
 // Config contains the experiment's configuration.
@@ -109,9 +109,9 @@ func (m Measurer) Run(
 		Session: sess,
 		Target:  string(measurement.Input),
 	}
-	tk, err := g.Get(ctx)
+	tk, _ := g.Get(ctx) // ignore error since we have the testkeys and we wanna submit them
 	measurement.TestKeys = &tk
-	return err
+	return nil
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.

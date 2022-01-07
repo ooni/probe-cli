@@ -24,7 +24,7 @@ func TestMeasurerExperimentNameVersion(t *testing.T) {
 	if measurer.ExperimentName() != "stunreachability" {
 		t.Fatal("unexpected ExperimentName")
 	}
-	if measurer.ExperimentVersion() != "0.3.0" {
+	if measurer.ExperimentVersion() != "0.4.0" {
 		t.Fatal("unexpected ExperimentVersion")
 	}
 }
@@ -128,7 +128,7 @@ func TestCancelledContext(t *testing.T) {
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if !errors.Is(err, context.Canceled) {
+	if !errors.Is(err, nil) { // nil because we want to submit
 		t.Fatal("not the error we expected", err)
 	}
 	tk := measurement.TestKeys.(*TestKeys)
@@ -168,7 +168,7 @@ func TestNewClientFailure(t *testing.T) {
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if !errors.Is(err, expected) {
+	if !errors.Is(err, nil) { // nil because we want to submit
 		t.Fatal("not the error we expected")
 	}
 	tk := measurement.TestKeys.(*TestKeys)
@@ -202,7 +202,7 @@ func TestStartFailure(t *testing.T) {
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if !errors.Is(err, expected) {
+	if !errors.Is(err, nil) { // nil because we want to submit
 		t.Fatal("not the error we expected")
 	}
 	tk := measurement.TestKeys.(*TestKeys)
@@ -240,7 +240,7 @@ func TestReadFailure(t *testing.T) {
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if !errors.Is(err, stun.ErrTransactionTimeOut) {
+	if !errors.Is(err, nil) { // nil because we want to submit
 		t.Fatal("not the error we expected")
 	}
 	tk := measurement.TestKeys.(*TestKeys)

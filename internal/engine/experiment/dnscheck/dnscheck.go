@@ -159,6 +159,9 @@ func (m *Measurer) Run(
 		return ErrUnsupportedURLScheme
 	}
 
+	// Implementation note: we must not return an error from now now. Returning an
+	// error means that we don't have a measurement to submit.
+
 	// 4. possibly expand a domain to a list of IP addresses.
 	//
 	// Implementation note: because the resolver we constructed also deals

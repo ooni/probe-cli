@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestNewExperimentMeasurer(t *testing.T) {
@@ -17,7 +17,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "ndt" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.9.0" {
+	if measurer.ExperimentVersion() != "0.10.0" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -52,7 +52,7 @@ func TestDoDownloadWithCancelledContext(t *testing.T) {
 	err := m.doDownload(
 		ctx, sess, model.NewPrinterCallbacks(log.Log), new(TestKeys),
 		"ws://host.name")
-	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+	if err == nil || err.Error() != netxlite.FailureInterrupted {
 		t.Fatal("not the error we expected", err)
 	}
 }
@@ -69,7 +69,7 @@ func TestDoUploadWithCancelledContext(t *testing.T) {
 	err := m.doUpload(
 		ctx, sess, model.NewPrinterCallbacks(log.Log), new(TestKeys),
 		"ws://host.name")
-	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+	if err == nil || err.Error() != netxlite.FailureInterrupted {
 		t.Fatal("not the error we expected", err)
 	}
 }
@@ -83,9 +83,18 @@ func TestRunWithCancelledContext(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately cancel
-	err := m.Run(ctx, sess, new(model.Measurement), model.NewPrinterCallbacks(log.Log))
-	if !errors.Is(err, context.Canceled) {
+	meas := &model.Measurement{}
+	err := m.Run(ctx, sess, meas, model.NewPrinterCallbacks(log.Log))
+	// Here we get nil because we still want to submit this measurement
+	if !errors.Is(err, nil) {
 		t.Fatal("not the error we expected")
+	}
+	if meas.TestKeys == nil {
+		t.Fatal("nil test keys")
+	}
+	tk := meas.TestKeys.(*TestKeys)
+	if tk.Failure == nil || *tk.Failure != netxlite.FailureInterrupted {
+		t.Fatal("unexpected tk.Failure")
 	}
 }
 
@@ -123,17 +132,27 @@ func TestFailDownload(t *testing.T) {
 	measurer.preDownloadHook = func() {
 		cancel()
 	}
+	meas := &model.Measurement{}
 	err := measurer.Run(
 		ctx,
 		&mockable.Session{
 			MockableHTTPClient: http.DefaultClient,
 			MockableLogger:     log.Log,
 		},
-		new(model.Measurement),
+		meas,
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
-		t.Fatal("not the error we expected", err)
+	// We expect a nil failure here because we want to submit anyway
+	// a measurement that failed to connect to m-lab.
+	if err != nil {
+		t.Fatal(err)
+	}
+	if meas.TestKeys == nil {
+		t.Fatal("expected non-nil TestKeys here")
+	}
+	tk := meas.TestKeys.(*TestKeys)
+	if tk.Failure == nil || *tk.Failure != netxlite.FailureInterrupted {
+		t.Fatal("unexpected tk.Failure")
 	}
 }
 
@@ -144,17 +163,26 @@ func TestFailUpload(t *testing.T) {
 	measurer.preUploadHook = func() {
 		cancel()
 	}
+	meas := &model.Measurement{}
 	err := measurer.Run(
 		ctx,
 		&mockable.Session{
 			MockableHTTPClient: http.DefaultClient,
 			MockableLogger:     log.Log,
 		},
-		new(model.Measurement),
+		meas,
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
-		t.Fatal("not the error we expected", err)
+	// Here we expect a nil error because we want to submit this measurement
+	if err != nil {
+		t.Fatal(err)
+	}
+	if meas.TestKeys == nil {
+		t.Fatal("expected non-nil tk.TestKeys here")
+	}
+	tk := meas.TestKeys.(*TestKeys)
+	if tk.Failure == nil || *tk.Failure != netxlite.FailureInterrupted {
+		t.Fatal("unexpected tk.Failure value")
 	}
 }
 

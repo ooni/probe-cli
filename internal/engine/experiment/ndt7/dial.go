@@ -55,6 +55,9 @@ func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*
 	headers.Add("User-Agent", mgr.userAgent)
 	mgr.logrequest(mgr.ndt7URL, headers)
 	conn, _, err := dialer.DialContext(ctx, mgr.ndt7URL, headers)
+	if err != nil {
+		err = netxlite.NewTopLevelGenericErrWrapper(err)
+	}
 	mgr.logresponse(err)
 	return conn, err
 }

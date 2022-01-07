@@ -174,7 +174,7 @@ func (m *Measurer) Run(
 ) error {
 	targets, err := m.gimmeTargets(ctx, sess)
 	if err != nil {
-		return err
+		return err // fail the measurement if we cannot get any target
 	}
 	registerExtensions(measurement)
 	m.measureTargets(ctx, sess, measurement, callbacks, targets)

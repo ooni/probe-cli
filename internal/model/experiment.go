@@ -105,7 +105,7 @@ type ExperimentMeasurer interface {
 	// return an error in case the experiment could not run (e.g.,
 	// a required input is missing). Otherwise, the code should just
 	// set the relevant OONI error inside of the measurement and
-	// return nil. This is important because the caller may not submit
+	// return nil. This is important because the caller WILL NOT submit
 	// the measurement if this method returns an error.
 	Run(
 		ctx context.Context, sess ExperimentSession,

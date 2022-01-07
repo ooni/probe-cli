@@ -18,7 +18,7 @@ func TestMeasurer(t *testing.T) {
 	if m.ExperimentName() != "urlgetter" {
 		t.Fatal("invalid experiment name")
 	}
-	if m.ExperimentVersion() != "0.1.0" {
+	if m.ExperimentVersion() != "0.2.0" {
 		t.Fatal("invalid experiment version")
 	}
 	measurement := new(model.Measurement)
@@ -27,7 +27,7 @@ func TestMeasurer(t *testing.T) {
 		ctx, &mockable.Session{},
 		measurement, model.NewPrinterCallbacks(log.Log),
 	)
-	if !errors.Is(err, context.Canceled) {
+	if !errors.Is(err, nil) { // nil because we want to submit the measurement
 		t.Fatal("not the error we expected")
 	}
 	if len(measurement.Extensions) != 6 {
@@ -64,7 +64,7 @@ func TestMeasurerDNSCache(t *testing.T) {
 		ctx, &mockable.Session{},
 		measurement, model.NewPrinterCallbacks(log.Log),
 	)
-	if !errors.Is(err, context.Canceled) {
+	if !errors.Is(err, nil) { // nil because we want to submit the measurement
 		t.Fatal("not the error we expected")
 	}
 	if len(measurement.Extensions) != 6 {

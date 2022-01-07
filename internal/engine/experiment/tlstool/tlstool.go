@@ -104,7 +104,7 @@ func (m Measurer) Run(
 			Failure: archival.NewFailure(err),
 		}
 	}
-	return nil
+	return nil // return nil so we always submit the measurement
 }
 
 func (m Measurer) newDialer(logger model.Logger) netx.Dialer {

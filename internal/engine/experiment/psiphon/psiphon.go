@@ -16,7 +16,7 @@ import (
 
 const (
 	testName    = "psiphon"
-	testVersion = "0.5.1"
+	testVersion = "0.6.0"
 )
 
 // Config contains the experiment's configuration.
@@ -92,14 +92,14 @@ func (m *Measurer) Run(
 	if m.BeforeGetHook != nil {
 		m.BeforeGetHook(g)
 	}
-	tk, err := g.Get(ctx)
+	tk, _ := g.Get(ctx) // ignore error since we have the testkeys and want to submit them
 	cancel()
 	wg.Wait()
 	measurement.TestKeys = &TestKeys{
 		TestKeys:   tk,
 		MaxRuntime: maxruntime,
 	}
-	return err
+	return nil
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
