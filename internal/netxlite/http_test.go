@@ -13,6 +13,7 @@ import (
 	"github.com/apex/log"
 	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
@@ -498,6 +499,18 @@ func TestHTTPClientErrWrapper(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestNewHTTPClientStdlib(t *testing.T) {
+	clnt := NewHTTPClientStdlib(model.DiscardLogger)
+	ewc, ok := clnt.(*httpClientErrWrapper)
+	if !ok {
+		t.Fatal("expected *httpClientErrWrapper")
+	}
+	_, ok = ewc.HTTPClient.(*http.Client)
+	if !ok {
+		t.Fatal("expected *http.Client")
+	}
 }
 
 func TestWrapHTTPClient(t *testing.T) {

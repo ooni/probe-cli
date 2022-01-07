@@ -63,7 +63,7 @@ func TestRunURLGetterWithCancelledContext(t *testing.T) {
 	sess := &mockable.Session{MockableLogger: log.Log}
 	callbacks := model.NewPrinterCallbacks(log.Log)
 	err := measurer.Run(ctx, sess, measurement, callbacks)
-	if err == nil {
+	if err != nil { // here we expected nil b/c we want to submit the measurement
 		t.Fatal(err)
 	}
 	if len(measurement.Extensions) != 6 {

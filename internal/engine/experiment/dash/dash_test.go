@@ -261,7 +261,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "dash" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.12.0" {
+	if measurer.ExperimentVersion() != "0.13.0" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -280,7 +280,9 @@ func TestMeasureWithCancelledContext(t *testing.T) {
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
-	if !errors.Is(err, context.Canceled) {
+	// See corresponding comment in Measurer.Run implementation to
+	// understand why here it's correct to return nil.
+	if !errors.Is(err, nil) {
 		t.Fatal("unexpected error value")
 	}
 	sk, err := m.GetSummaryKeys(measurement)

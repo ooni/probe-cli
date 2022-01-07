@@ -257,6 +257,13 @@ func NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
 	return NewHTTPTransport(logger, dialer, tlsDialer)
 }
 
+// NewHTTPClientStdlib creates a new HTTPClient that uses the
+// standard library for TLS and DNS resolutions.
+func NewHTTPClientStdlib(logger model.DebugLogger) model.HTTPClient {
+	txp := NewHTTPTransportStdlib(logger)
+	return WrapHTTPClient(&http.Client{Transport: txp})
+}
+
 // WrapHTTPClient wraps an HTTP client to add error wrapping capabilities.
 func WrapHTTPClient(clnt model.HTTPClient) model.HTTPClient {
 	return &httpClientErrWrapper{clnt}

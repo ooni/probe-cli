@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/apex/log"
 	"github.com/gorilla/websocket"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestDialDownloadWithCancelledContext(t *testing.T) {
@@ -18,7 +18,7 @@ func TestDialDownloadWithCancelledContext(t *testing.T) {
 	cancel() // immediately halt
 	mgr := newDialManager("wss://hostname.fake", log.Log, "miniooni/0.1.0-dev")
 	conn, err := mgr.dialDownload(ctx)
-	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+	if err == nil || err.Error() != netxlite.FailureInterrupted {
 		t.Fatal("not the error we expected", err)
 	}
 	if conn != nil {
@@ -31,7 +31,7 @@ func TestDialUploadWithCancelledContext(t *testing.T) {
 	cancel() // immediately halt
 	mgr := newDialManager("wss://hostname.fake", log.Log, "miniooni/0.1.0-dev")
 	conn, err := mgr.dialUpload(ctx)
-	if err == nil || !strings.HasSuffix(err.Error(), "context canceled") {
+	if err == nil || err.Error() != netxlite.FailureInterrupted {
 		t.Fatal("not the error we expected", err)
 	}
 	if conn != nil {

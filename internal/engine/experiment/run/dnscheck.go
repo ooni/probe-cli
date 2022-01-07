@@ -2,7 +2,6 @@ package run
 
 import (
 	"context"
-	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/dnscheck"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -10,7 +9,6 @@ import (
 
 type dnsCheckMain struct {
 	Endpoints *dnscheck.Endpoints
-	mu        sync.Mutex
 }
 
 func (m *dnsCheckMain) do(ctx context.Context, input StructuredInput,

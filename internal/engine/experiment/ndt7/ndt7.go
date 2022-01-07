@@ -1,6 +1,3 @@
-// Package ndt7 contains the ndt7 network experiment.
-//
-// See https://github.com/ooni/spec/blob/master/nettests/ts-022-ndt.md
 package ndt7
 
 import (
@@ -8,18 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/mlablocatev2"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
 	testName    = "ndt"
-	testVersion = "0.9.0"
+	testVersion = "0.10.0"
 )
 
 // Config contains the experiment settings
@@ -80,11 +76,7 @@ type Measurer struct {
 
 func (m *Measurer) discover(
 	ctx context.Context, sess model.ExperimentSession) (mlablocatev2.NDT7Result, error) {
-	httpClient := &http.Client{
-		Transport: netx.NewHTTPTransport(netx.Config{
-			Logger: sess.Logger(),
-		}),
-	}
+	httpClient := netxlite.NewHTTPClientStdlib(sess.Logger())
 	defer httpClient.CloseIdleConnections()
 	client := mlablocatev2.NewClient(httpClient, sess.Logger(), sess.UserAgent())
 	out, err := client.QueryNDT7(ctx)
@@ -228,7 +220,7 @@ func (m *Measurer) Run(
 	locateResult, err := m.discover(ctx, sess)
 	if err != nil {
 		tk.Failure = failureFromError(err)
-		return err
+		return nil // we still want to submit this measurement
 	}
 	tk.Server = ServerInfo{
 		Hostname: locateResult.Hostname,
@@ -240,7 +232,7 @@ func (m *Measurer) Run(
 	}
 	if err := m.doDownload(ctx, sess, callbacks, tk, locateResult.WSSDownloadURL); err != nil {
 		tk.Failure = failureFromError(err)
-		return err
+		return nil // we still want to submit this measurement
 	}
 	callbacks.OnProgress(0.5, fmt.Sprintf("   upload: url: %s", locateResult.WSSUploadURL))
 	if m.preUploadHook != nil {
@@ -248,7 +240,7 @@ func (m *Measurer) Run(
 	}
 	if err := m.doUpload(ctx, sess, callbacks, tk, locateResult.WSSUploadURL); err != nil {
 		tk.Failure = failureFromError(err)
-		return err
+		return nil // we still want to submit this measurement
 	}
 	return nil
 }

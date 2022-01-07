@@ -25,7 +25,7 @@ const (
 	defaultTimeout = 120 * time.Second
 	magicVersion   = "0.008000000"
 	testName       = "dash"
-	testVersion    = "0.12.0"
+	testVersion    = "0.13.0"
 	totalStep      = 15.0
 )
 
@@ -273,7 +273,13 @@ func (m Measurer) Run(
 	}
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
-	return r.do(ctx)
+	// Implementation note: we ignore the return value of r.do rather than
+	// returning it to the caller. We do that because returning an error means
+	// the measurement failed for some fundamental reason (e.g., the input
+	// is an URL that you cannot parse). For DASH, this case will never happen
+	// because there is no input, so always returning nil is fine here.
+	_ = r.do(ctx)
+	return nil
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.

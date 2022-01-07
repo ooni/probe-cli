@@ -23,7 +23,7 @@ func TestNewExperimentMeasurer(t *testing.T) {
 	if measurer.ExperimentName() != "psiphon" {
 		t.Fatal("unexpected name")
 	}
-	if measurer.ExperimentVersion() != "0.5.1" {
+	if measurer.ExperimentVersion() != "0.6.0" {
 		t.Fatal("unexpected version")
 	}
 }
@@ -35,7 +35,7 @@ func TestRunWithCancelledContext(t *testing.T) {
 	measurement := new(model.Measurement)
 	err := measurer.Run(ctx, newfakesession(), measurement,
 		model.NewPrinterCallbacks(log.Log))
-	if !errors.Is(err, context.Canceled) {
+	if !errors.Is(err, nil) { // nil because we want to submit the measurement
 		t.Fatal("expected another error here")
 	}
 	tk := measurement.TestKeys.(*psiphon.TestKeys)
@@ -66,7 +66,7 @@ func TestRunWithCustomInputAndCancelledContext(t *testing.T) {
 	cancel() // fail immediately
 	err := measurer.Run(ctx, newfakesession(), measurement,
 		model.NewPrinterCallbacks(log.Log))
-	if !errors.Is(err, context.Canceled) {
+	if !errors.Is(err, nil) { // nil because we want to submit the measurement
 		t.Fatal("expected another error here")
 	}
 	tk := measurement.TestKeys.(*psiphon.TestKeys)
@@ -85,7 +85,7 @@ func TestRunWillPrintSomethingWithCancelledContext(t *testing.T) {
 	}
 	observer := observerCallbacks{progress: &atomicx.Int64{}}
 	err := measurer.Run(ctx, newfakesession(), measurement, observer)
-	if !errors.Is(err, context.Canceled) {
+	if !errors.Is(err, nil) { // nil because we want to submit the measurement
 		t.Fatal("expected another error here")
 	}
 	tk := measurement.TestKeys.(*psiphon.TestKeys)

@@ -22,7 +22,7 @@ import (
 
 const (
 	testName    = "stunreachability"
-	testVersion = "0.3.0"
+	testVersion = "0.4.0"
 )
 
 // Config contains the experiment config.
@@ -100,7 +100,7 @@ func (m *Measurer) Run(
 	if err := wrap(tk.run(ctx, m.config, sess, measurement, callbacks, URL.Host)); err != nil {
 		s := err.Error()
 		tk.Failure = &s
-		return err
+		return nil // we want to submit this measurement
 	}
 	return nil
 }
