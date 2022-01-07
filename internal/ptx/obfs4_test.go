@@ -14,6 +14,7 @@ import (
 
 func TestOBFS4DialerWorks(t *testing.T) {
 	if testing.Short() {
+		// Was failing in https://github.com/ooni/probe-cli/pull/655
 		t.Skip("skip test in short mode")
 	}
 	o4d := DefaultTestingOBFS4Bridge()
@@ -104,6 +105,10 @@ func (c *obfs4connwrapper) Close() error {
 }
 
 func TestOBFS4DialerWorksWithContextExpiration(t *testing.T) {
+	if testing.Short() {
+		// Was failing in https://github.com/ooni/probe-cli/pull/655
+		t.Skip("skip test in short mode")
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	called := &atomicx.Int64{}
