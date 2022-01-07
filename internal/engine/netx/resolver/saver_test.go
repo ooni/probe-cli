@@ -114,7 +114,7 @@ func TestSaverDNSTransportFailure(t *testing.T) {
 	expected := errors.New("no such host")
 	saver := &trace.Saver{}
 	txp := resolver.SaverDNSTransport{
-		RoundTripper: resolver.FakeTransport{
+		DNSTransport: resolver.FakeTransport{
 			Err: expected,
 		},
 		Saver: saver,
@@ -164,7 +164,7 @@ func TestSaverDNSTransportSuccess(t *testing.T) {
 	expected := []byte("def")
 	saver := &trace.Saver{}
 	txp := resolver.SaverDNSTransport{
-		RoundTripper: resolver.FakeTransport{
+		DNSTransport: resolver.FakeTransport{
 			Data: expected,
 		},
 		Saver: saver,
