@@ -335,7 +335,7 @@ func (h *tlsHandshakerErrWrapper) Handshake(
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	if err != nil {
 		return nil, tls.ConnectionState{}, NewErrWrapper(
-			ClassifyTLSHandshakeError, TLSHandshakeOperation, err)
+			classifyTLSHandshakeError, TLSHandshakeOperation, err)
 	}
 	return tlsconn, state, nil
 }

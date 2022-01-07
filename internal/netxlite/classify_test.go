@@ -18,13 +18,13 @@ func TestClassifyGenericError(t *testing.T) {
 
 	t.Run("for input being already an ErrWrapper", func(t *testing.T) {
 		err := &ErrWrapper{Failure: FailureEOFError}
-		if ClassifyGenericError(err) != FailureEOFError {
+		if classifyGenericError(err) != FailureEOFError {
 			t.Fatal("did not classify existing ErrWrapper correctly")
 		}
 	})
 
 	t.Run("for a system call error", func(t *testing.T) {
-		if ClassifyGenericError(EWOULDBLOCK) != FailureOperationWouldBlock {
+		if classifyGenericError(EWOULDBLOCK) != FailureOperationWouldBlock {
 			t.Fatal("unexpected results")
 		}
 	})
@@ -35,63 +35,63 @@ func TestClassifyGenericError(t *testing.T) {
 	// is just an implementation detail.
 
 	t.Run("for operation was canceled", func(t *testing.T) {
-		if ClassifyGenericError(errors.New("operation was canceled")) != FailureInterrupted {
+		if classifyGenericError(errors.New("operation was canceled")) != FailureInterrupted {
 			t.Fatal("unexpected result")
 		}
 	})
 
 	t.Run("for EOF", func(t *testing.T) {
-		if ClassifyGenericError(io.EOF) != FailureEOFError {
+		if classifyGenericError(io.EOF) != FailureEOFError {
 			t.Fatal("unexpected result")
 		}
 	})
 
 	t.Run("for context deadline exceeded", func(t *testing.T) {
-		if ClassifyGenericError(context.DeadlineExceeded) != FailureGenericTimeoutError {
+		if classifyGenericError(context.DeadlineExceeded) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for stun's transaction is timed out", func(t *testing.T) {
-		if ClassifyGenericError(stun.ErrTransactionTimeOut) != FailureGenericTimeoutError {
+		if classifyGenericError(stun.ErrTransactionTimeOut) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for i/o timeout", func(t *testing.T) {
-		if ClassifyGenericError(errors.New("i/o timeout")) != FailureGenericTimeoutError {
+		if classifyGenericError(errors.New("i/o timeout")) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for TLS handshake timeout", func(t *testing.T) {
 		err := errors.New("net/http: TLS handshake timeout")
-		if ClassifyGenericError(err) != FailureGenericTimeoutError {
+		if classifyGenericError(err) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for no such host", func(t *testing.T) {
-		if ClassifyGenericError(errors.New("no such host")) != FailureDNSNXDOMAINError {
+		if classifyGenericError(errors.New("no such host")) != FailureDNSNXDOMAINError {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for dns server misbehaving", func(t *testing.T) {
-		if ClassifyGenericError(errors.New("dns server misbehaving")) != FailureDNSServerMisbehaving {
+		if classifyGenericError(errors.New("dns server misbehaving")) != FailureDNSServerMisbehaving {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for no answer from DNS server", func(t *testing.T) {
-		if ClassifyGenericError(errors.New("no answer from DNS server")) != FailureDNSNoAnswer {
+		if classifyGenericError(errors.New("no answer from DNS server")) != FailureDNSNoAnswer {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for use of closed network connection", func(t *testing.T) {
 		err := errors.New("read tcp 10.0.2.15:56948->93.184.216.34:443: use of closed network connection")
-		if ClassifyGenericError(err) != FailureConnectionAlreadyClosed {
+		if classifyGenericError(err) != FailureConnectionAlreadyClosed {
 			t.Fatal("unexpected results")
 		}
 	})
@@ -99,7 +99,7 @@ func TestClassifyGenericError(t *testing.T) {
 	// Now we're back in ClassifyGenericError
 
 	t.Run("for context.Canceled", func(t *testing.T) {
-		if ClassifyGenericError(context.Canceled) != FailureInterrupted {
+		if classifyGenericError(context.Canceled) != FailureInterrupted {
 			t.Fatal("unexpected result")
 		}
 	})
@@ -108,7 +108,7 @@ func TestClassifyGenericError(t *testing.T) {
 		t.Run("with an IPv4 address", func(t *testing.T) {
 			input := errors.New("read tcp 10.0.2.15:56948->93.184.216.34:443: some error")
 			expected := "unknown_failure: read tcp [scrubbed]->[scrubbed]: some error"
-			out := ClassifyGenericError(input)
+			out := classifyGenericError(input)
 			if out != expected {
 				t.Fatal(cmp.Diff(expected, out))
 			}
@@ -117,7 +117,7 @@ func TestClassifyGenericError(t *testing.T) {
 		t.Run("with an IPv6 address", func(t *testing.T) {
 			input := errors.New("read tcp [::1]:56948->[::1]:443: some error")
 			expected := "unknown_failure: read tcp [scrubbed]->[scrubbed]: some error"
-			out := ClassifyGenericError(input)
+			out := classifyGenericError(input)
 			if out != expected {
 				t.Fatal(cmp.Diff(expected, out))
 			}
@@ -131,100 +131,100 @@ func TestClassifyQUICHandshakeError(t *testing.T) {
 
 	t.Run("for input being already an ErrWrapper", func(t *testing.T) {
 		err := &ErrWrapper{Failure: FailureEOFError}
-		if ClassifyQUICHandshakeError(err) != FailureEOFError {
+		if classifyQUICHandshakeError(err) != FailureEOFError {
 			t.Fatal("did not classify existing ErrWrapper correctly")
 		}
 	})
 
 	t.Run("for incompatible quic version", func(t *testing.T) {
-		if ClassifyQUICHandshakeError(&quic.VersionNegotiationError{}) != FailureQUICIncompatibleVersion {
+		if classifyQUICHandshakeError(&quic.VersionNegotiationError{}) != FailureQUICIncompatibleVersion {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for stateless reset", func(t *testing.T) {
-		if ClassifyQUICHandshakeError(&quic.StatelessResetError{}) != FailureConnectionReset {
+		if classifyQUICHandshakeError(&quic.StatelessResetError{}) != FailureConnectionReset {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for handshake timeout", func(t *testing.T) {
-		if ClassifyQUICHandshakeError(&quic.HandshakeTimeoutError{}) != FailureGenericTimeoutError {
+		if classifyQUICHandshakeError(&quic.HandshakeTimeoutError{}) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for idle timeout", func(t *testing.T) {
-		if ClassifyQUICHandshakeError(&quic.IdleTimeoutError{}) != FailureGenericTimeoutError {
+		if classifyQUICHandshakeError(&quic.IdleTimeoutError{}) != FailureGenericTimeoutError {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for connection refused", func(t *testing.T) {
-		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: quic.ConnectionRefused}) != FailureConnectionRefused {
+		if classifyQUICHandshakeError(&quic.TransportError{ErrorCode: quic.ConnectionRefused}) != FailureConnectionRefused {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for bad certificate", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSAlertBadCertificate
-		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
+		if classifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for unsupported certificate", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSAlertUnsupportedCertificate
-		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
+		if classifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for certificate expired", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSAlertCertificateExpired
-		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
+		if classifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for certificate revoked", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSAlertCertificateRevoked
-		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
+		if classifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for certificate unknown", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSAlertCertificateUnknown
-		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
+		if classifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidCertificate {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for decrypt error", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSAlertDecryptError
-		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLFailedHandshake {
+		if classifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLFailedHandshake {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for handshake failure", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSAlertHandshakeFailure
-		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLFailedHandshake {
+		if classifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLFailedHandshake {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for unknown CA", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSAlertUnknownCA
-		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLUnknownAuthority {
+		if classifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLUnknownAuthority {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for unrecognized hostname", func(t *testing.T) {
 		var err quic.TransportErrorCode = quicTLSUnrecognizedName
-		if ClassifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidHostname {
+		if classifyQUICHandshakeError(&quic.TransportError{ErrorCode: err}) != FailureSSLInvalidHostname {
 			t.Fatal("unexpected results")
 		}
 	})
@@ -234,13 +234,13 @@ func TestClassifyQUICHandshakeError(t *testing.T) {
 			ErrorCode:    quic.InternalError,
 			ErrorMessage: FailureHostUnreachable,
 		}
-		if ClassifyQUICHandshakeError(err) != FailureHostUnreachable {
+		if classifyQUICHandshakeError(err) != FailureHostUnreachable {
 			t.Fatal("unexpected results")
 		}
 	})
 
 	t.Run("for another kind of error", func(t *testing.T) {
-		if ClassifyQUICHandshakeError(io.EOF) != FailureEOFError {
+		if classifyQUICHandshakeError(io.EOF) != FailureEOFError {
 			t.Fatal("unexpected result")
 		}
 	})
@@ -252,25 +252,25 @@ func TestClassifyResolverError(t *testing.T) {
 
 	t.Run("for input being already an ErrWrapper", func(t *testing.T) {
 		err := &ErrWrapper{Failure: FailureEOFError}
-		if ClassifyResolverError(err) != FailureEOFError {
+		if classifyResolverError(err) != FailureEOFError {
 			t.Fatal("did not classify existing ErrWrapper correctly")
 		}
 	})
 
 	t.Run("for ErrDNSBogon", func(t *testing.T) {
-		if ClassifyResolverError(ErrDNSBogon) != FailureDNSBogonError {
+		if classifyResolverError(ErrDNSBogon) != FailureDNSBogonError {
 			t.Fatal("unexpected result")
 		}
 	})
 
 	t.Run("for refused", func(t *testing.T) {
-		if ClassifyResolverError(ErrOODNSRefused) != FailureDNSRefusedError {
+		if classifyResolverError(ErrOODNSRefused) != FailureDNSRefusedError {
 			t.Fatal("unexpected result")
 		}
 	})
 
 	t.Run("for another kind of error", func(t *testing.T) {
-		if ClassifyResolverError(io.EOF) != FailureEOFError {
+		if classifyResolverError(io.EOF) != FailureEOFError {
 			t.Fatal("unexpected result")
 		}
 	})
@@ -282,34 +282,34 @@ func TestClassifyTLSHandshakeError(t *testing.T) {
 
 	t.Run("for input being already an ErrWrapper", func(t *testing.T) {
 		err := &ErrWrapper{Failure: FailureEOFError}
-		if ClassifyTLSHandshakeError(err) != FailureEOFError {
+		if classifyTLSHandshakeError(err) != FailureEOFError {
 			t.Fatal("did not classify existing ErrWrapper correctly")
 		}
 	})
 
 	t.Run("for x509.HostnameError", func(t *testing.T) {
 		var err x509.HostnameError
-		if ClassifyTLSHandshakeError(err) != FailureSSLInvalidHostname {
+		if classifyTLSHandshakeError(err) != FailureSSLInvalidHostname {
 			t.Fatal("unexpected result")
 		}
 	})
 
 	t.Run("for x509.UnknownAuthorityError", func(t *testing.T) {
 		var err x509.UnknownAuthorityError
-		if ClassifyTLSHandshakeError(err) != FailureSSLUnknownAuthority {
+		if classifyTLSHandshakeError(err) != FailureSSLUnknownAuthority {
 			t.Fatal("unexpected result")
 		}
 	})
 
 	t.Run("for x509.CertificateInvalidError", func(t *testing.T) {
 		var err x509.CertificateInvalidError
-		if ClassifyTLSHandshakeError(err) != FailureSSLInvalidCertificate {
+		if classifyTLSHandshakeError(err) != FailureSSLInvalidCertificate {
 			t.Fatal("unexpected result")
 		}
 	})
 
 	t.Run("for another kind of error", func(t *testing.T) {
-		if ClassifyTLSHandshakeError(io.EOF) != FailureEOFError {
+		if classifyTLSHandshakeError(io.EOF) != FailureEOFError {
 			t.Fatal("unexpected result")
 		}
 	})

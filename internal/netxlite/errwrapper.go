@@ -113,7 +113,7 @@ func NewErrWrapper(c Classifier, op string, err error) *ErrWrapper {
 // error wrapper will use the same classification string and
 // failed operation of the original error.
 func NewTopLevelGenericErrWrapper(err error) *ErrWrapper {
-	return NewErrWrapper(ClassifyGenericError, TopLevelOperation, err)
+	return NewErrWrapper(classifyGenericError, TopLevelOperation, err)
 }
 
 func classifyOperation(ew *ErrWrapper, operation string) string {

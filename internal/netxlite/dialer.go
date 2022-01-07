@@ -226,7 +226,7 @@ var _ model.Dialer = &dialerErrWrapper{}
 func (d *dialerErrWrapper) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
-		return nil, NewErrWrapper(ClassifyGenericError, ConnectOperation, err)
+		return nil, NewErrWrapper(classifyGenericError, ConnectOperation, err)
 	}
 	return &dialerErrWrapperConn{Conn: conn}, nil
 }
@@ -241,7 +241,7 @@ var _ net.Conn = &dialerErrWrapperConn{}
 func (c *dialerErrWrapperConn) Read(b []byte) (int, error) {
 	count, err := c.Conn.Read(b)
 	if err != nil {
-		return 0, NewErrWrapper(ClassifyGenericError, ReadOperation, err)
+		return 0, NewErrWrapper(classifyGenericError, ReadOperation, err)
 	}
 	return count, nil
 }
@@ -249,7 +249,7 @@ func (c *dialerErrWrapperConn) Read(b []byte) (int, error) {
 func (c *dialerErrWrapperConn) Write(b []byte) (int, error) {
 	count, err := c.Conn.Write(b)
 	if err != nil {
-		return 0, NewErrWrapper(ClassifyGenericError, WriteOperation, err)
+		return 0, NewErrWrapper(classifyGenericError, WriteOperation, err)
 	}
 	return count, nil
 }
@@ -257,7 +257,7 @@ func (c *dialerErrWrapperConn) Write(b []byte) (int, error) {
 func (c *dialerErrWrapperConn) Close() error {
 	err := c.Conn.Close()
 	if err != nil {
-		return NewErrWrapper(ClassifyGenericError, CloseOperation, err)
+		return NewErrWrapper(classifyGenericError, CloseOperation, err)
 	}
 	return nil
 }

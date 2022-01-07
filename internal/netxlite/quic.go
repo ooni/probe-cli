@@ -333,7 +333,7 @@ var _ model.QUICListener = &quicListenerErrWrapper{}
 func (qls *quicListenerErrWrapper) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 	pconn, err := qls.QUICListener.Listen(addr)
 	if err != nil {
-		return nil, NewErrWrapper(ClassifyGenericError, QUICListenOperation, err)
+		return nil, NewErrWrapper(classifyGenericError, QUICListenOperation, err)
 	}
 	return &quicErrWrapperUDPLikeConn{pconn}, nil
 }
@@ -350,7 +350,7 @@ var _ model.UDPLikeConn = &quicErrWrapperUDPLikeConn{}
 func (c *quicErrWrapperUDPLikeConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 	count, err := c.UDPLikeConn.WriteTo(p, addr)
 	if err != nil {
-		return 0, NewErrWrapper(ClassifyGenericError, WriteToOperation, err)
+		return 0, NewErrWrapper(classifyGenericError, WriteToOperation, err)
 	}
 	return count, nil
 }
@@ -359,7 +359,7 @@ func (c *quicErrWrapperUDPLikeConn) WriteTo(p []byte, addr net.Addr) (int, error
 func (c *quicErrWrapperUDPLikeConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	n, addr, err := c.UDPLikeConn.ReadFrom(b)
 	if err != nil {
-		return 0, nil, NewErrWrapper(ClassifyGenericError, ReadFromOperation, err)
+		return 0, nil, NewErrWrapper(classifyGenericError, ReadFromOperation, err)
 	}
 	return n, addr, nil
 }
@@ -368,7 +368,7 @@ func (c *quicErrWrapperUDPLikeConn) ReadFrom(b []byte) (int, net.Addr, error) {
 func (c *quicErrWrapperUDPLikeConn) Close() error {
 	err := c.UDPLikeConn.Close()
 	if err != nil {
-		return NewErrWrapper(ClassifyGenericError, ReadFromOperation, err)
+		return NewErrWrapper(classifyGenericError, ReadFromOperation, err)
 	}
 	return nil
 }
@@ -385,7 +385,7 @@ func (d *quicDialerErrWrapper) DialContext(
 	sess, err := d.QUICDialer.DialContext(ctx, network, host, tlsCfg, cfg)
 	if err != nil {
 		return nil, NewErrWrapper(
-			ClassifyQUICHandshakeError, QUICHandshakeOperation, err)
+			classifyQUICHandshakeError, QUICHandshakeOperation, err)
 	}
 	return sess, nil
 }

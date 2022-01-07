@@ -254,7 +254,7 @@ func TestDialerResolver(t *testing.T) {
 			errorsList := []error{
 				errors.New("a mocked error"),
 				NewErrWrapper(
-					ClassifyGenericError,
+					classifyGenericError,
 					CloseOperation,
 					io.EOF,
 				),
@@ -296,7 +296,7 @@ func TestDialerResolver(t *testing.T) {
 			errorsList := []error{
 				errors.New("a mocked error"),
 				NewErrWrapper(
-					ClassifyGenericError,
+					classifyGenericError,
 					CloseOperation,
 					errors.New("antani"),
 				),
