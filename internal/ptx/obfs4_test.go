@@ -13,8 +13,9 @@ import (
 )
 
 func TestOBFS4DialerWorks(t *testing.T) {
-	// This test is 0.3 seconds in my machine, so it's ~fine
-	// to run it even when we're in short mode
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	o4d := DefaultTestingOBFS4Bridge()
 	conn, err := o4d.DialContext(context.Background())
 	if err != nil {
