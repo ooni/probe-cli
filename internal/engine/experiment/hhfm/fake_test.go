@@ -19,8 +19,6 @@ func (d FakeDialer) DialContext(ctx context.Context, network, address string) (n
 	return d.Conn, d.Err
 }
 
-func (d FakeDialer) CloseIdleConnections() {}
-
 type FakeTransport struct {
 	Err  error
 	Func func(*http.Request) (*http.Response, error)

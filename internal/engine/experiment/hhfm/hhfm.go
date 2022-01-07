@@ -310,7 +310,7 @@ type JSONHeaders struct {
 // guarantee that the connection is used for a single request and that
 // such a request does not contain any body.
 type Dialer struct {
-	Dialer  model.Dialer // used for testing
+	Dialer  model.SimpleDialer // used for testing
 	Headers map[string]string
 }
 
@@ -321,7 +321,7 @@ func (d Dialer) DialContext(ctx context.Context, network, address string) (net.C
 	if child == nil {
 		// TODO(bassosimone): figure out why using dialer.New here
 		// causes the experiment to fail with eof_error
-		child = netxlite.DefaultDialer
+		child = &net.Dialer{Timeout: 15 * time.Second}
 	}
 	conn, err := child.DialContext(ctx, network, address)
 	if err != nil {
