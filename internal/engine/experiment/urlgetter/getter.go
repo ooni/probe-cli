@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"time"
 
-	legacyerrorsx "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -55,10 +54,9 @@ func (g Getter) Get(ctx context.Context) (TestKeys, error) {
 	tk, err := g.get(ctx, saver)
 	// Make sure we have an operation in cases where we fail before
 	// hitting our httptransport that does error wrapping.
-	err = legacyerrorsx.SafeErrWrapperBuilder{
-		Error:     err,
-		Operation: netxlite.TopLevelOperation,
-	}.MaybeBuild()
+	if err != nil {
+		err = netxlite.NewTopLevelGenericErrWrapper(err)
+	}
 	tk.FailedOperation = archival.NewFailedOperation(err)
 	tk.Failure = archival.NewFailure(err)
 	events := saver.Read()

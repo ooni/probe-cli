@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -56,7 +55,7 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 	if !ok {
 		t.Fatal("invalid type")
 	}
-	ewd, ok := dad.DialerLegacy.(*errorsx.ErrorWrapperDialer)
+	ewd, ok := dad.DialerLegacy.(*netxlite.ErrorWrapperDialer)
 	if !ok {
 		t.Fatal("not an errorWrappingDialer")
 	}

@@ -17,7 +17,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -111,10 +110,7 @@ func NewFailure(err error) *string {
 	// The following code guarantees that the error is always wrapped even
 	// when we could not actually hit our code that does the wrapping. A case
 	// in which this happen is with context deadline for HTTP.
-	err = errorsxlegacy.SafeErrWrapperBuilder{
-		Error:     err,
-		Operation: netxlite.TopLevelOperation,
-	}.MaybeBuild()
+	err = netxlite.NewTopLevelGenericErrWrapper(err)
 	errWrapper := err.(*netxlite.ErrWrapper)
 	s := errWrapper.Failure
 	if s == "" {

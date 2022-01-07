@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	legacyerrorsx "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -61,10 +60,10 @@ func Control(
 	}
 	sess.Logger().Infof("control for %s...", creq.HTTPRequest)
 	// make sure error is wrapped
-	err = legacyerrorsx.SafeErrWrapperBuilder{
-		Error:     clnt.WithBodyLogging().Build().PostJSON(ctx, "/", creq, &out),
-		Operation: netxlite.TopLevelOperation,
-	}.MaybeBuild()
+	err = clnt.WithBodyLogging().Build().PostJSON(ctx, "/", creq, &out)
+	if err != nil {
+		err = netxlite.NewTopLevelGenericErrWrapper(err)
+	}
 	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, err)
 	(&out.DNS).FillASNs(sess)
 	return

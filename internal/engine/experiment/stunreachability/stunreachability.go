@@ -11,12 +11,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/pion/stun"
 )
 
@@ -60,10 +60,10 @@ func (m *Measurer) ExperimentVersion() string {
 }
 
 func wrap(err error) error {
-	return errorsx.SafeErrWrapperBuilder{
-		Error:     err,
-		Operation: "stun",
-	}.MaybeBuild()
+	if err != nil {
+		return netxlite.NewTopLevelGenericErrWrapper(err)
+	}
+	return nil
 }
 
 // errStunMissingInput means that the user did not provide any input

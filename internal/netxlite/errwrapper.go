@@ -22,18 +22,13 @@ type ErrWrapper struct {
 
 	// Operation is the operation that failed.
 	//
-	// New code will always nest ErrWrapper and you need to
-	// walk the chain to find what happened.
-	//
-	// The following comment describes the DEPRECATED
-	// legacy behavior implements by internal/engine/legacy/errorsx:
-	//
-	// If possible, the Operation string
-	// SHOULD be a _major_ operation. Major operations are:
+	// If possible, the Operation string SHOULD be a _major_
+	// operation. Major operations are:
 	//
 	// - ResolveOperation: resolving a domain name failed
 	// - ConnectOperation: connecting to an IP failed
 	// - TLSHandshakeOperation: TLS handshaking failed
+	// - QUICHandshakeOperation: QUIC handshaking failed
 	// - HTTPRoundTripOperation: other errors during round trip
 	//
 	// Because a network connection doesn't necessarily know
@@ -84,13 +79,14 @@ type Classifier func(err error) string
 //
 // If the err argument has already been classified, the returned
 // error wrapper will use the same classification string and
-// failed operation of the original wrapped error.
+// will determine whether to keep the major operation as documented
+// in the ErrWrapper.Operation documentation.
 func NewErrWrapper(c Classifier, op string, err error) *ErrWrapper {
 	var wrapper *ErrWrapper
 	if errors.As(err, &wrapper) {
 		return &ErrWrapper{
 			Failure:    wrapper.Failure,
-			Operation:  wrapper.Operation,
+			Operation:  classifyOperation(wrapper, op),
 			WrappedErr: err,
 		}
 	}
@@ -117,5 +113,37 @@ func NewErrWrapper(c Classifier, op string, err error) *ErrWrapper {
 // error wrapper will use the same classification string and
 // failed operation of the original error.
 func NewTopLevelGenericErrWrapper(err error) *ErrWrapper {
-	return NewErrWrapper(ClassifyGenericError, TopLevelOperation, err)
+	return NewErrWrapper(classifyGenericError, TopLevelOperation, err)
+}
+
+func classifyOperation(ew *ErrWrapper, operation string) string {
+	// Basically, as explained in ErrWrapper docs, let's
+	// keep the child major operation, if any.
+	//
+	// QUIRK: this code is legacy code and we should not change
+	// it unless we also change the experiments that depend on it
+	// for determining the blocking reason based on the failed
+	// operation value (e.g., telegram, web connectivity).
+	if ew.Operation == ConnectOperation {
+		return ew.Operation
+	}
+	if ew.Operation == HTTPRoundTripOperation {
+		return ew.Operation
+	}
+	if ew.Operation == ResolveOperation {
+		return ew.Operation
+	}
+	if ew.Operation == TLSHandshakeOperation {
+		return ew.Operation
+	}
+	if ew.Operation == QUICHandshakeOperation {
+		return ew.Operation
+	}
+	if ew.Operation == "quic_handshake_start" {
+		return QUICHandshakeOperation
+	}
+	if ew.Operation == "quic_handshake_done" {
+		return QUICHandshakeOperation
+	}
+	return operation
 }

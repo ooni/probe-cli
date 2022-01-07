@@ -11,7 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
-// ClassifyGenericError is maps an error occurred during an operation
+// classifyGenericError is maps an error occurred during an operation
 // to an OONI failure string. This specific classifier is the most
 // generic one. You usually use it when mapping I/O errors. You should
 // check whether there is a specific classifier for more specific
@@ -34,7 +34,7 @@ import (
 // If everything else fails, this classifier returns a string
 // like "unknown_failure: XXX" where XXX has been scrubbed
 // so to remove any network endpoints from the original error string.
-func ClassifyGenericError(err error) string {
+func classifyGenericError(err error) string {
 	// The list returned here matches the values used by MK unless
 	// explicitly noted otherwise with a comment.
 
@@ -136,7 +136,7 @@ const (
 	quicTLSUnrecognizedName = 112
 )
 
-// ClassifyQUICHandshakeError maps errors during a QUIC
+// classifyQUICHandshakeError maps errors during a QUIC
 // handshake to OONI failure strings.
 //
 // If the input error is an *ErrWrapper we don't perform
@@ -144,7 +144,7 @@ const (
 //
 // If this classifier fails, it calls ClassifyGenericError
 // and returns to the caller its return value.
-func ClassifyQUICHandshakeError(err error) string {
+func classifyQUICHandshakeError(err error) string {
 
 	// QUIRK: we cannot remove this check as long as this function
 	// is exported and used independently from NewErrWrapper.
@@ -205,7 +205,7 @@ func ClassifyQUICHandshakeError(err error) string {
 			}
 		}
 	}
-	return ClassifyGenericError(err)
+	return classifyGenericError(err)
 }
 
 // quicIsCertificateError tells us whether a specific TLS alert error
@@ -253,7 +253,7 @@ var (
 	ErrOODNSNoAnswer    = fmt.Errorf("ooniresolver: %s", DNSNoAnswerSuffix)
 )
 
-// ClassifyResolverError maps DNS resolution errors to
+// classifyResolverError maps DNS resolution errors to
 // OONI failure strings.
 //
 // If the input error is an *ErrWrapper we don't perform
@@ -261,7 +261,7 @@ var (
 //
 // If this classifier fails, it calls ClassifyGenericError and
 // returns to the caller its return value.
-func ClassifyResolverError(err error) string {
+func classifyResolverError(err error) string {
 
 	// QUIRK: we cannot remove this check as long as this function
 	// is exported and used independently from NewErrWrapper.
@@ -278,10 +278,10 @@ func ClassifyResolverError(err error) string {
 	if errors.Is(err, ErrOODNSRefused) {
 		return FailureDNSRefusedError // not in MK
 	}
-	return ClassifyGenericError(err)
+	return classifyGenericError(err)
 }
 
-// ClassifyTLSHandshakeError maps an error occurred during the TLS
+// classifyTLSHandshakeError maps an error occurred during the TLS
 // handshake to an OONI failure string.
 //
 // If the input error is an *ErrWrapper we don't perform
@@ -289,7 +289,7 @@ func ClassifyResolverError(err error) string {
 //
 // If this classifier fails, it calls ClassifyGenericError and
 // returns to the caller its return value.
-func ClassifyTLSHandshakeError(err error) string {
+func classifyTLSHandshakeError(err error) string {
 
 	// QUIRK: we cannot remove this check as long as this function
 	// is exported and used independently from NewErrWrapper.
@@ -314,5 +314,5 @@ func ClassifyTLSHandshakeError(err error) string {
 		// Test case: https://expired.badssl.com/
 		return FailureSSLInvalidCertificate
 	}
-	return ClassifyGenericError(err)
+	return classifyGenericError(err)
 }

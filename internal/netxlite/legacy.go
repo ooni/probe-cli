@@ -26,6 +26,11 @@ type (
 	DialerResolver            = dialerResolver
 	DialerLogger              = dialerLogger
 	HTTPTransportLogger       = httpTransportLogger
+	ErrorWrapperDialer        = dialerErrWrapper
+	ErrorWrapperQUICListener  = quicListenerErrWrapper
+	ErrorWrapperQUICDialer    = quicDialerErrWrapper
+	ErrorWrapperResolver      = resolverErrWrapper
+	ErrorWrapperTLSHandshaker = tlsHandshakerErrWrapper
 	QUICListenerStdlib        = quicListenerStdlib
 	QUICDialerQUICGo          = quicDialerQUICGo
 	QUICDialerResolver        = quicDialerResolver
