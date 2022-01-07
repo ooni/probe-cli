@@ -3,7 +3,6 @@ package websteps
 import (
 	"context"
 
-	errorsxlegacy "github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -19,9 +18,9 @@ func Control(
 		Logger:     sess.Logger(),
 	}
 	// make sure error is wrapped
-	err = errorsxlegacy.SafeErrWrapperBuilder{
-		Error:     clnt.WithBodyLogging().Build().PostJSON(ctx, resourcePath, creq, &out),
-		Operation: netxlite.TopLevelOperation,
-	}.MaybeBuild()
+	err = clnt.WithBodyLogging().Build().PostJSON(ctx, resourcePath, creq, &out)
+	if err != nil {
+		err = netxlite.NewTopLevelGenericErrWrapper(err)
+	}
 	return
 }

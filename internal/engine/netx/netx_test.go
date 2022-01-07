@@ -11,7 +11,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
@@ -31,11 +30,11 @@ func TestNewResolverVanilla(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
+	ewr, ok := rla.ResolverLegacy.(*netxlite.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ar, ok := ewr.Resolver.(*resolver.AddressResolver)
+	ar, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(*resolver.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -63,11 +62,11 @@ func TestNewResolverSpecificResolver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
+	ewr, ok := rla.ResolverLegacy.(*netxlite.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ar, ok := ewr.Resolver.(*resolver.AddressResolver)
+	ar, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(*resolver.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -93,11 +92,11 @@ func TestNewResolverWithBogonFilter(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
+	ewr, ok := rla.ResolverLegacy.(*netxlite.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	br, ok := ewr.Resolver.(resolver.BogonResolver)
+	br, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(resolver.BogonResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -146,11 +145,11 @@ func TestNewResolverWithLogging(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
+	ewr, ok := rla.ResolverLegacy.(*netxlite.ErrorWrapperResolver)
 	if !ok {
 		t.Fatalf("not the resolver we expected %T", rla.ResolverLegacy)
 	}
-	ar, ok := ewr.Resolver.(*resolver.AddressResolver)
+	ar, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(*resolver.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -184,11 +183,11 @@ func TestNewResolverWithSaver(t *testing.T) {
 	if sr.Saver != saver {
 		t.Fatal("not the saver we expected")
 	}
-	ewr, ok := sr.Resolver.(*errorsx.ErrorWrapperResolver)
+	ewr, ok := sr.Resolver.(*netxlite.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ar, ok := ewr.Resolver.(*resolver.AddressResolver)
+	ar, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(*resolver.AddressResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -214,11 +213,11 @@ func TestNewResolverWithReadWriteCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
+	ewr, ok := rla.ResolverLegacy.(*netxlite.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	cr, ok := ewr.Resolver.(*resolver.CacheResolver)
+	cr, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(*resolver.CacheResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -253,11 +252,11 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	ewr, ok := rla.ResolverLegacy.(*errorsx.ErrorWrapperResolver)
+	ewr, ok := rla.ResolverLegacy.(*netxlite.ErrorWrapperResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	cr, ok := ewr.Resolver.(*resolver.CacheResolver)
+	cr, ok := ewr.Resolver.(*netxlite.ResolverLegacyAdapter).ResolverLegacy.(*resolver.CacheResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -302,7 +301,7 @@ func TestNewTLSDialerVanilla(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	ewth, ok := rtd.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)
+	ewth, ok := rtd.TLSHandshaker.(*netxlite.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
@@ -331,7 +330,7 @@ func TestNewTLSDialerWithConfig(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	ewth, ok := rtd.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)
+	ewth, ok := rtd.TLSHandshaker.(*netxlite.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
@@ -370,7 +369,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	if lth.DebugLogger != log.Log {
 		t.Fatal("not the Logger we expected")
 	}
-	ewth, ok := lth.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)
+	ewth, ok := lth.TLSHandshaker.(*netxlite.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
@@ -410,7 +409,7 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	if sth.Saver != saver {
 		t.Fatal("not the Logger we expected")
 	}
-	ewth, ok := sth.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)
+	ewth, ok := sth.TLSHandshaker.(*netxlite.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
@@ -443,7 +442,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	ewth, ok := rtd.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)
+	ewth, ok := rtd.TLSHandshaker.(*netxlite.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
@@ -478,7 +477,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	ewth, ok := rtd.TLSHandshaker.(*errorsx.ErrorWrapperTLSHandshaker)
+	ewth, ok := rtd.TLSHandshaker.(*netxlite.ErrorWrapperTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}

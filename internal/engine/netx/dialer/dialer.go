@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -61,8 +60,7 @@ type Config struct {
 
 // New creates a new Dialer from the specified config and resolver.
 func New(config *Config, resolver Resolver) Dialer {
-	var d Dialer = netxlite.DefaultDialer
-	d = &errorsx.ErrorWrapperDialer{Dialer: d}
+	var d Dialer = &netxlite.ErrorWrapperDialer{Dialer: netxlite.DefaultDialer}
 	if config.Logger != nil {
 		d = &netxlite.DialerLogger{
 			Dialer:      netxlite.NewDialerLegacyAdapter(d),

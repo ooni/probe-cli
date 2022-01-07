@@ -32,7 +32,6 @@ import (
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
@@ -129,7 +128,7 @@ func NewResolver(config Config) Resolver {
 	if config.BogonIsError {
 		r = resolver.BogonResolver{Resolver: r}
 	}
-	r = &errorsx.ErrorWrapperResolver{Resolver: r}
+	r = &netxlite.ErrorWrapperResolver{Resolver: netxlite.NewResolverLegacyAdapter(r)}
 	if config.Logger != nil {
 		r = &netxlite.ResolverLogger{
 			Logger:   config.Logger,
@@ -162,7 +161,7 @@ func NewQUICDialer(config Config) QUICDialer {
 		config.FullResolver = NewResolver(config)
 	}
 	var ql quicdialer.QUICListener = &netxlite.QUICListenerStdlib{}
-	ql = &errorsx.ErrorWrapperQUICListener{QUICListener: ql}
+	ql = &netxlite.ErrorWrapperQUICListener{QUICListener: ql}
 	if config.ReadWriteSaver != nil {
 		ql = &quicdialer.QUICListenerSaver{
 			QUICListener: ql,
@@ -172,7 +171,9 @@ func NewQUICDialer(config Config) QUICDialer {
 	var d quicdialer.ContextDialer = &netxlite.QUICDialerQUICGo{
 		QUICListener: ql,
 	}
-	d = &errorsx.ErrorWrapperQUICDialer{Dialer: d}
+	d = &netxlite.ErrorWrapperQUICDialer{
+		QUICDialer: netxlite.NewQUICDialerFromContextDialerAdapter(d),
+	}
 	if config.TLSSaver != nil {
 		d = quicdialer.HandshakeSaver{Saver: config.TLSSaver, Dialer: d}
 	}
@@ -189,7 +190,7 @@ func NewTLSDialer(config Config) TLSDialer {
 		config.Dialer = NewDialer(config)
 	}
 	var h tlsHandshaker = &netxlite.TLSHandshakerConfigurable{}
-	h = &errorsx.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
+	h = &netxlite.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
 	if config.Logger != nil {
 		h = &netxlite.TLSHandshakerLogger{DebugLogger: config.Logger, TLSHandshaker: h}
 	}

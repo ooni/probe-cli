@@ -12,8 +12,6 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/lucas-clemente/quic-go/http3"
 	oohttp "github.com/ooni/oohttp"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/errorsx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -34,28 +32,28 @@ func NewRequest(ctx context.Context, URL *url.URL, headers http.Header) *http.Re
 
 // NewDialerResolver contructs a new dialer for TCP connections,
 // with default, errorwrapping and resolve functionalities
-func NewDialerResolver(resolver netxlite.ResolverLegacy) netxlite.DialerLegacy {
-	var d netxlite.DialerLegacy = netxlite.DefaultDialer
-	d = &errorsx.ErrorWrapperDialer{Dialer: d}
+func NewDialerResolver(resolver netxlite.ResolverLegacy) model.Dialer {
+	var d model.Dialer = netxlite.DefaultDialer
+	d = &netxlite.ErrorWrapperDialer{Dialer: d}
 	d = &netxlite.DialerResolver{
 		Resolver: netxlite.NewResolverLegacyAdapter(resolver),
-		Dialer:   netxlite.NewDialerLegacyAdapter(d),
+		Dialer:   d,
 	}
 	return d
 }
 
 // NewQUICDialerResolver creates a new QUICDialerResolver
 // with default, errorwrapping and resolve functionalities
-func NewQUICDialerResolver(resolver netxlite.ResolverLegacy) netxlite.QUICContextDialer {
-	var ql quicdialer.QUICListener = &netxlite.QUICListenerStdlib{}
-	ql = &errorsx.ErrorWrapperQUICListener{QUICListener: ql}
-	var dialer netxlite.QUICContextDialer = &netxlite.QUICDialerQUICGo{
+func NewQUICDialerResolver(resolver netxlite.ResolverLegacy) model.QUICDialer {
+	var ql model.QUICListener = &netxlite.QUICListenerStdlib{}
+	ql = &netxlite.ErrorWrapperQUICListener{QUICListener: ql}
+	var dialer model.QUICDialer = &netxlite.QUICDialerQUICGo{
 		QUICListener: ql,
 	}
-	dialer = &errorsx.ErrorWrapperQUICDialer{Dialer: dialer}
+	dialer = &netxlite.ErrorWrapperQUICDialer{QUICDialer: dialer}
 	dialer = &netxlite.QUICDialerResolver{
 		Resolver: netxlite.NewResolverLegacyAdapter(resolver),
-		Dialer:   netxlite.NewQUICDialerFromContextDialerAdapter(dialer),
+		Dialer:   dialer,
 	}
 	return dialer
 }
