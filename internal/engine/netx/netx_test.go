@@ -544,10 +544,9 @@ func TestNewDNSClientInvalidURL(t *testing.T) {
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 		t.Fatal("not the error we expected")
 	}
-	if dnsclient.Resolver != nil {
+	if dnsclient != nil {
 		t.Fatal("expected nil resolver here")
 	}
-	dnsclient.CloseIdleConnections()
 }
 
 func TestNewDNSClientUnsupportedScheme(t *testing.T) {
@@ -555,10 +554,9 @@ func TestNewDNSClientUnsupportedScheme(t *testing.T) {
 	if err == nil || err.Error() != "unsupported resolver scheme" {
 		t.Fatal("not the error we expected")
 	}
-	if dnsclient.Resolver != nil {
+	if dnsclient != nil {
 		t.Fatal("expected nil resolver here")
 	}
-	dnsclient.CloseIdleConnections()
 }
 
 func TestNewDNSClientSystemResolver(t *testing.T) {
@@ -567,7 +565,7 @@ func TestNewDNSClientSystemResolver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := dnsclient.Resolver.(*netxlite.ResolverSystem); !ok {
+	if _, ok := dnsclient.(*netxlite.ResolverSystem); !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -579,7 +577,7 @@ func TestNewDNSClientEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := dnsclient.Resolver.(*netxlite.ResolverSystem); !ok {
+	if _, ok := dnsclient.(*netxlite.ResolverSystem); !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -591,7 +589,7 @@ func TestNewDNSClientPowerdnsDoH(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(*netxlite.SerialResolver)
+	r, ok := dnsclient.(*netxlite.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -607,7 +605,7 @@ func TestNewDNSClientGoogleDoH(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(*netxlite.SerialResolver)
+	r, ok := dnsclient.(*netxlite.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -623,7 +621,7 @@ func TestNewDNSClientCloudflareDoH(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(*netxlite.SerialResolver)
+	r, ok := dnsclient.(*netxlite.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -640,7 +638,7 @@ func TestNewDNSClientCloudflareDoHSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(*netxlite.SerialResolver)
+	r, ok := dnsclient.(*netxlite.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -660,7 +658,7 @@ func TestNewDNSClientUDP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(*netxlite.SerialResolver)
+	r, ok := dnsclient.(*netxlite.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -677,7 +675,7 @@ func TestNewDNSClientUDPDNSSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(*netxlite.SerialResolver)
+	r, ok := dnsclient.(*netxlite.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -697,7 +695,7 @@ func TestNewDNSClientTCP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(*netxlite.SerialResolver)
+	r, ok := dnsclient.(*netxlite.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -718,7 +716,7 @@ func TestNewDNSClientTCPDNSSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(*netxlite.SerialResolver)
+	r, ok := dnsclient.(*netxlite.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -742,7 +740,7 @@ func TestNewDNSClientDoT(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(*netxlite.SerialResolver)
+	r, ok := dnsclient.(*netxlite.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -763,7 +761,7 @@ func TestNewDNSClientDoTDNSSaver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, ok := dnsclient.Resolver.(*netxlite.SerialResolver)
+	r, ok := dnsclient.(*netxlite.SerialResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -787,7 +785,7 @@ func TestNewDNSCLientDoTWithoutPort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Resolver.Address() != "8.8.8.8:853" {
+	if c.Address() != "8.8.8.8:853" {
 		t.Fatal("expected default port to be added")
 	}
 }
@@ -798,7 +796,7 @@ func TestNewDNSCLientTCPWithoutPort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Resolver.Address() != "8.8.8.8:53" {
+	if c.Address() != "8.8.8.8:53" {
 		t.Fatal("expected default port to be added")
 	}
 }
@@ -809,7 +807,7 @@ func TestNewDNSCLientUDPWithoutPort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Resolver.Address() != "8.8.8.8:53" {
+	if c.Address() != "8.8.8.8:53" {
 		t.Fatal("expected default port to be added")
 	}
 }
