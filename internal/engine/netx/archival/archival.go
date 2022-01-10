@@ -5,8 +5,6 @@ package archival
 
 import (
 	"crypto/x509"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
@@ -14,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
@@ -22,59 +19,32 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// ExtSpec describes a data format extension
-type ExtSpec struct {
-	Name string // extension name
-	V    int64  // extension version
-}
-
-// AddTo adds the current ExtSpec to the specified measurement
-func (spec ExtSpec) AddTo(m *model.Measurement) {
-	if m.Extensions == nil {
-		m.Extensions = make(map[string]int64)
-	}
-	m.Extensions[spec.Name] = spec.V
-}
-
-var (
-	// ExtDNS is the version of df-002-dnst.md
-	ExtDNS = ExtSpec{Name: "dnst", V: 0}
-
-	// ExtNetevents is the version of df-008-netevents.md
-	ExtNetevents = ExtSpec{Name: "netevents", V: 0}
-
-	// ExtHTTP is the version of df-001-httpt.md
-	ExtHTTP = ExtSpec{Name: "httpt", V: 0}
-
-	// ExtTCPConnect is the version of df-005-tcpconnect.md
-	ExtTCPConnect = ExtSpec{Name: "tcpconnect", V: 0}
-
-	// ExtTLSHandshake is the version of df-006-tlshandshake.md
-	ExtTLSHandshake = ExtSpec{Name: "tlshandshake", V: 0}
-
-	// ExtTunnel is the version of df-009-tunnel.md
-	ExtTunnel = ExtSpec{Name: "tunnel", V: 0}
+// Compatibility types
+type (
+	ExtSpec          = model.ArchivalExtSpec
+	TCPConnectEntry  = model.ArchivalTCPConnectResult
+	TCPConnectStatus = model.ArchivalTCPConnectStatus
+	MaybeBinaryValue = model.ArchivalMaybeBinaryData
+	DNSQueryEntry    = model.ArchivalDNSLookupResult
+	DNSAnswerEntry   = model.ArchivalDNSAnswer
+	TLSHandshake     = model.ArchivalTLSOrQUICHandshakeResult
+	HTTPBody         = model.ArchivalHTTPBody
+	HTTPHeader       = model.ArchivalHTTPHeader
+	RequestEntry     = model.ArchivalHTTPRequestResult
+	HTTPRequest      = model.ArchivalHTTPRequest
+	HTTPResponse     = model.ArchivalHTTPResponse
+	NetworkEvent     = model.ArchivalNetworkEvent
 )
 
-// TCPConnectStatus contains the TCP connect status.
-//
-// The Blocked field breaks the separation between measurement and analysis
-// we have been enforcing for quite some time now. It is a legacy from the
-// Web Connectivity experiment and it should be here because of that.
-type TCPConnectStatus struct {
-	Blocked *bool   `json:"blocked,omitempty"` // Web Connectivity only
-	Failure *string `json:"failure"`
-	Success bool    `json:"success"`
-}
-
-// TCPConnectEntry contains one of the entries that are part
-// of the "tcp_connect" key of a OONI report.
-type TCPConnectEntry struct {
-	IP     string           `json:"ip"`
-	Port   int              `json:"port"`
-	Status TCPConnectStatus `json:"status"`
-	T      float64          `json:"t"`
-}
+// Compatibility variables
+var (
+	ExtDNS          = model.ArchivalExtDNS
+	ExtNetevents    = model.ArchivalExtNetevents
+	ExtHTTP         = model.ArchivalExtHTTP
+	ExtTCPConnect   = model.ArchivalExtTCPConnect
+	ExtTLSHandshake = model.ArchivalExtTLSHandshake
+	ExtTunnel       = model.ArchivalExtTunnel
+)
 
 // NewTCPConnectList creates a new TCPConnectList
 func NewTCPConnectList(begin time.Time, events []trace.Event) []TCPConnectEntry {
@@ -132,161 +102,6 @@ func NewFailedOperation(err error) *string {
 		s = errWrapper.Operation
 	}
 	return &s
-}
-
-// HTTPTor contains Tor information
-type HTTPTor struct {
-	ExitIP   *string `json:"exit_ip"`
-	ExitName *string `json:"exit_name"`
-	IsTor    bool    `json:"is_tor"`
-}
-
-// MaybeBinaryValue is a possibly binary string. We use this helper class
-// to define a custom JSON encoder that allows us to choose the proper
-// representation depending on whether the Value field is valid UTF-8 or not.
-type MaybeBinaryValue struct {
-	Value string
-}
-
-// MarshalJSON marshals a string-like to JSON following the OONI spec that
-// says that UTF-8 content is represened as string and non-UTF-8 content is
-// instead represented using `{"format":"base64","data":"..."}`.
-func (hb MaybeBinaryValue) MarshalJSON() ([]byte, error) {
-	if utf8.ValidString(hb.Value) {
-		return json.Marshal(hb.Value)
-	}
-	er := make(map[string]string)
-	er["format"] = "base64"
-	er["data"] = base64.StdEncoding.EncodeToString([]byte(hb.Value))
-	return json.Marshal(er)
-}
-
-// UnmarshalJSON is the opposite of MarshalJSON.
-func (hb *MaybeBinaryValue) UnmarshalJSON(d []byte) error {
-	if err := json.Unmarshal(d, &hb.Value); err == nil {
-		return nil
-	}
-	er := make(map[string]string)
-	if err := json.Unmarshal(d, &er); err != nil {
-		return err
-	}
-	if v, ok := er["format"]; !ok || v != "base64" {
-		return errors.New("missing or invalid format field")
-	}
-	if _, ok := er["data"]; !ok {
-		return errors.New("missing data field")
-	}
-	b64, err := base64.StdEncoding.DecodeString(er["data"])
-	if err != nil {
-		return err
-	}
-	hb.Value = string(b64)
-	return nil
-}
-
-// HTTPBody is an HTTP body. As an implementation note, this type must be
-// an alias for the MaybeBinaryValue type, otherwise the specific serialisation
-// mechanism implemented by MaybeBinaryValue is not working.
-type HTTPBody = MaybeBinaryValue
-
-// HTTPHeader is a single HTTP header.
-type HTTPHeader struct {
-	Key   string
-	Value MaybeBinaryValue
-}
-
-// MarshalJSON marshals a single HTTP header to a tuple where the first
-// element is a string and the second element is maybe-binary data.
-func (hh HTTPHeader) MarshalJSON() ([]byte, error) {
-	if utf8.ValidString(hh.Value.Value) {
-		return json.Marshal([]string{hh.Key, hh.Value.Value})
-	}
-	value := make(map[string]string)
-	value["format"] = "base64"
-	value["data"] = base64.StdEncoding.EncodeToString([]byte(hh.Value.Value))
-	return json.Marshal([]interface{}{hh.Key, value})
-}
-
-// UnmarshalJSON is the opposite of MarshalJSON.
-func (hh *HTTPHeader) UnmarshalJSON(d []byte) error {
-	var pair []interface{}
-	if err := json.Unmarshal(d, &pair); err != nil {
-		return err
-	}
-	if len(pair) != 2 {
-		return errors.New("unexpected pair length")
-	}
-	key, ok := pair[0].(string)
-	if !ok {
-		return errors.New("the key is not a string")
-	}
-	value, ok := pair[1].(string)
-	if !ok {
-		mapvalue, ok := pair[1].(map[string]interface{})
-		if !ok {
-			return errors.New("the value is neither a string nor a map[string]interface{}")
-		}
-		if _, ok := mapvalue["format"]; !ok {
-			return errors.New("missing format")
-		}
-		if v, ok := mapvalue["format"].(string); !ok || v != "base64" {
-			return errors.New("invalid format")
-		}
-		if _, ok := mapvalue["data"]; !ok {
-			return errors.New("missing data field")
-		}
-		v, ok := mapvalue["data"].(string)
-		if !ok {
-			return errors.New("the data field is not a string")
-		}
-		b64, err := base64.StdEncoding.DecodeString(v)
-		if err != nil {
-			return err
-		}
-		value = string(b64)
-	}
-	hh.Key, hh.Value = key, MaybeBinaryValue{Value: value}
-	return nil
-}
-
-// HTTPRequest contains an HTTP request.
-//
-// Headers are a map in Web Connectivity data format but
-// we have added support for a list since January 2020.
-type HTTPRequest struct {
-	Body            HTTPBody                    `json:"body"`
-	BodyIsTruncated bool                        `json:"body_is_truncated"`
-	HeadersList     []HTTPHeader                `json:"headers_list"`
-	Headers         map[string]MaybeBinaryValue `json:"headers"`
-	Method          string                      `json:"method"`
-	Tor             HTTPTor                     `json:"tor"`
-	Transport       string                      `json:"x_transport"`
-	URL             string                      `json:"url"`
-}
-
-// HTTPResponse contains an HTTP response.
-//
-// Headers are a map in Web Connectivity data format but
-// we have added support for a list since January 2020.
-type HTTPResponse struct {
-	Body            HTTPBody                    `json:"body"`
-	BodyIsTruncated bool                        `json:"body_is_truncated"`
-	Code            int64                       `json:"code"`
-	HeadersList     []HTTPHeader                `json:"headers_list"`
-	Headers         map[string]MaybeBinaryValue `json:"headers"`
-
-	// The following fields are not serialised but are useful to simplify
-	// analysing the measurements in telegram, whatsapp, etc.
-	Locations []string `json:"-"`
-}
-
-// RequestEntry is one of the entries that are part of
-// the "requests" key of a OONI report.
-type RequestEntry struct {
-	Failure  *string      `json:"failure"`
-	Request  HTTPRequest  `json:"request"`
-	Response HTTPResponse `json:"response"`
-	T        float64      `json:"t"`
 }
 
 func addheaders(
@@ -361,30 +176,6 @@ func newRequestList(begin time.Time, events []trace.Event) []RequestEntry {
 	return out
 }
 
-// DNSAnswerEntry is the answer to a DNS query
-type DNSAnswerEntry struct {
-	ASN        int64   `json:"asn,omitempty"`
-	ASOrgName  string  `json:"as_org_name,omitempty"`
-	AnswerType string  `json:"answer_type"`
-	Hostname   string  `json:"hostname,omitempty"`
-	IPv4       string  `json:"ipv4,omitempty"`
-	IPv6       string  `json:"ipv6,omitempty"`
-	TTL        *uint32 `json:"ttl"`
-}
-
-// DNSQueryEntry is a DNS query with possibly an answer
-type DNSQueryEntry struct {
-	Answers          []DNSAnswerEntry `json:"answers"`
-	Engine           string           `json:"engine"`
-	Failure          *string          `json:"failure"`
-	Hostname         string           `json:"hostname"`
-	QueryType        string           `json:"query_type"`
-	ResolverHostname *string          `json:"resolver_hostname"`
-	ResolverPort     *string          `json:"resolver_port"`
-	ResolverAddress  string           `json:"resolver_address"`
-	T                float64          `json:"t"`
-}
-
 type dnsQueryType string
 
 // NewDNSQueriesList returns a list of DNS queries.
@@ -454,19 +245,6 @@ func (qtype dnsQueryType) makequeryentry(begin time.Time, ev trace.Event) DNSQue
 	}
 }
 
-// NetworkEvent is a network event. It contains all the possible fields
-// and most fields are optional. They are only added when it makes sense
-// for them to be there _and_ we have data to show.
-type NetworkEvent struct {
-	Address   string   `json:"address,omitempty"`
-	Failure   *string  `json:"failure"`
-	NumBytes  int64    `json:"num_bytes,omitempty"`
-	Operation string   `json:"operation"`
-	Proto     string   `json:"proto,omitempty"`
-	T         float64  `json:"t"`
-	Tags      []string `json:"tags,omitempty"`
-}
-
 // NewNetworkEventsList returns a list of DNS queries.
 func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent {
 	var out []NetworkEvent
@@ -526,19 +304,6 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 		})
 	}
 	return out
-}
-
-// TLSHandshake contains TLS handshake data
-type TLSHandshake struct {
-	CipherSuite        string             `json:"cipher_suite"`
-	Failure            *string            `json:"failure"`
-	NegotiatedProtocol string             `json:"negotiated_protocol"`
-	NoTLSVerify        bool               `json:"no_tls_verify"`
-	PeerCertificates   []MaybeBinaryValue `json:"peer_certificates"`
-	ServerName         string             `json:"server_name"`
-	T                  float64            `json:"t"`
-	Tags               []string           `json:"tags"`
-	TLSVersion         string             `json:"tls_version"`
 }
 
 // NewTLSHandshakesList creates a new TLSHandshakesList

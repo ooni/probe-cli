@@ -26,7 +26,7 @@ func WrapResolver(begin time.Time, db WritableDB, r model.Resolver) model.Resolv
 }
 
 // NewResolverSystem creates a system resolver and then wraps
-// it using the WrapResolver function/
+// it using the WrapResolver function.
 func (mx *Measurer) NewResolverSystem(db WritableDB, logger model.Logger) model.Resolver {
 	return mx.WrapResolver(db, netxlite.NewResolverStdlib(logger))
 }
