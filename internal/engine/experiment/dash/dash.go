@@ -26,7 +26,7 @@ const (
 	magicVersion   = "0.008000000"
 	testName       = "dash"
 	testVersion    = "0.13.0"
-	totalStep      = 15.0
+	totalStep      = 15
 )
 
 var (
