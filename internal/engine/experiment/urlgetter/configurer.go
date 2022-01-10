@@ -26,7 +26,7 @@ type Configurer struct {
 // The Configuration is the configuration for running a measurement.
 type Configuration struct {
 	HTTPConfig netx.Config
-	DNSClient  netx.DNSClient
+	DNSClient  model.Resolver
 }
 
 // CloseIdleConnections will close idle connections, if needed.
@@ -82,7 +82,7 @@ func (c Configurer) NewConfiguration() (Configuration, error) {
 		return configuration, err
 	}
 	configuration.DNSClient = dnsclient
-	configuration.HTTPConfig.BaseResolver = dnsclient.Resolver
+	configuration.HTTPConfig.BaseResolver = dnsclient
 	// configure TLS
 	configuration.HTTPConfig.TLSConfig = &tls.Config{
 		NextProtos: []string{"h2", "http/1.1"},

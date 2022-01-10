@@ -17,7 +17,7 @@ import (
 
 // Client is DNS, HTTP, and TCP client.
 type Client struct {
-	dnsClient     *netx.DNSClient
+	dnsClient     model.Resolver
 	httpTransport model.HTTPTransport
 	dialer        model.Dialer
 }
@@ -34,7 +34,7 @@ func NewClient(resolverURL string) (*Client, error) {
 		return nil, err
 	}
 	return &Client{
-		dnsClient:     &configuration.DNSClient,
+		dnsClient:     configuration.DNSClient,
 		httpTransport: netx.NewHTTPTransport(configuration.HTTPConfig),
 		dialer:        netx.NewDialer(configuration.HTTPConfig),
 	}, nil

@@ -239,20 +239,6 @@ var allTransportsInfo = map[bool]httpTransportInfo{
 	},
 }
 
-// DNSClient is a DNS client. It wraps a Resolver and it possibly
-// also wraps an HTTP client, but only when we're using DoH.
-type DNSClient struct {
-	model.Resolver
-	httpClient *http.Client
-}
-
-// CloseIdleConnections closes idle connections, if any.
-func (c DNSClient) CloseIdleConnections() {
-	if c.httpClient != nil {
-		c.httpClient.CloseIdleConnections()
-	}
-}
-
 // NewDNSClient creates a new DNS client. The config argument is used to
 // create the underlying Dialer and/or HTTP transport, if needed. The URL
 // argument describes the kind of client that we want to make:
@@ -271,15 +257,14 @@ func (c DNSClient) CloseIdleConnections() {
 //
 // If config.ResolveSaver is not nil and we're creating an underlying
 // resolver where this is possible, we will also save events.
-func NewDNSClient(config Config, URL string) (DNSClient, error) {
+func NewDNSClient(config Config, URL string) (model.Resolver, error) {
 	return NewDNSClientWithOverrides(config, URL, "", "", "")
 }
 
 // NewDNSClientWithOverrides creates a new DNS client, similar to NewDNSClient,
 // with the option to override the default Hostname and SNI.
 func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
-	TLSVersion string) (DNSClient, error) {
-	var c DNSClient
+	TLSVersion string) (model.Resolver, error) {
 	switch URL {
 	case "doh://powerdns":
 		URL = "https://doh.powerdns.org/"
@@ -292,34 +277,32 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 	}
 	resolverURL, err := url.Parse(URL)
 	if err != nil {
-		return c, err
+		return nil, err
 	}
 	config.TLSConfig = &tls.Config{ServerName: SNIOverride}
 	if err := netxlite.ConfigureTLSVersion(config.TLSConfig, TLSVersion); err != nil {
-		return c, err
+		return nil, err
 	}
 	switch resolverURL.Scheme {
 	case "system":
-		c.Resolver = &netxlite.ResolverSystem{}
-		return c, nil
+		return &netxlite.ResolverSystem{}, nil
 	case "https":
 		config.TLSConfig.NextProtos = []string{"h2", "http/1.1"}
-		c.httpClient = &http.Client{Transport: NewHTTPTransport(config)}
+		httpClient := &http.Client{Transport: NewHTTPTransport(config)}
 		var txp model.DNSTransport = netxlite.NewDNSOverHTTPSWithHostOverride(
-			c.httpClient, URL, hostOverride)
+			httpClient, URL, hostOverride)
 		if config.ResolveSaver != nil {
 			txp = resolver.SaverDNSTransport{
 				DNSTransport: txp,
 				Saver:        config.ResolveSaver,
 			}
 		}
-		c.Resolver = netxlite.NewSerialResolver(txp)
-		return c, nil
+		return netxlite.NewSerialResolver(txp), nil
 	case "udp":
 		dialer := NewDialer(config)
 		endpoint, err := makeValidEndpoint(resolverURL)
 		if err != nil {
-			return c, err
+			return nil, err
 		}
 		var txp model.DNSTransport = netxlite.NewDNSOverUDP(
 			dialer, endpoint)
@@ -329,14 +312,13 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 				Saver:        config.ResolveSaver,
 			}
 		}
-		c.Resolver = netxlite.NewSerialResolver(txp)
-		return c, nil
+		return netxlite.NewSerialResolver(txp), nil
 	case "dot":
 		config.TLSConfig.NextProtos = []string{"dot"}
 		tlsDialer := NewTLSDialer(config)
 		endpoint, err := makeValidEndpoint(resolverURL)
 		if err != nil {
-			return c, err
+			return nil, err
 		}
 		var txp model.DNSTransport = netxlite.NewDNSOverTLS(
 			tlsDialer.DialTLSContext, endpoint)
@@ -346,13 +328,12 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 				Saver:        config.ResolveSaver,
 			}
 		}
-		c.Resolver = netxlite.NewSerialResolver(txp)
-		return c, nil
+		return netxlite.NewSerialResolver(txp), nil
 	case "tcp":
 		dialer := NewDialer(config)
 		endpoint, err := makeValidEndpoint(resolverURL)
 		if err != nil {
-			return c, err
+			return nil, err
 		}
 		var txp model.DNSTransport = netxlite.NewDNSOverTCP(
 			dialer.DialContext, endpoint)
@@ -362,10 +343,9 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 				Saver:        config.ResolveSaver,
 			}
 		}
-		c.Resolver = netxlite.NewSerialResolver(txp)
-		return c, nil
+		return netxlite.NewSerialResolver(txp), nil
 	default:
-		return c, errors.New("unsupported resolver scheme")
+		return nil, errors.New("unsupported resolver scheme")
 	}
 }
 
