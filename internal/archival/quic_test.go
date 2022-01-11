@@ -183,9 +183,6 @@ func TestSaverReadFrom(t *testing.T) {
 }
 
 func TestSaverQUICDialContext(t *testing.T) {
-	// TODO(bassosimone): here we're not testing the case in which
-	// the certificate is invalid for the required SNI.
-
 	// newQUICDialer creates a new QUICDialer for testing.
 	newQUICDialer := func(sess quic.EarlySession, err error) model.QUICDialer {
 		return &mocks.QUICDialer{
@@ -344,6 +341,25 @@ func TestSaverQUICDialContext(t *testing.T) {
 		if err := v.Validate(); err != nil {
 			t.Fatal(err)
 		}
+	})
+
+	// TODO(bassosimone): here we're not testing the case in which
+	// the certificate is invalid for the required SNI.
+	//
+	// We need first to figure out whether this is what happens
+	// when we validate for QUIC in such cases. If that's the case
+	// indeed, then we can write the tests.
+
+	t.Run("on x509.HostnameError", func(t *testing.T) {
+		t.Skip("test not implemented")
+	})
+
+	t.Run("on x509.UnknownAuthorityError", func(t *testing.T) {
+		t.Skip("test not implemented")
+	})
+
+	t.Run("on x509.CertificateInvalidError", func(t *testing.T) {
+		t.Skip("test not implemented")
 	})
 }
 
