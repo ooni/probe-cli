@@ -18,6 +18,7 @@ type DNSLookupEvent struct {
 	Domain          string
 	Failure         error
 	Finished        time.Time
+	LookupType      string
 	ResolverAddress string
 	ResolverNetwork string
 	Started         time.Time
@@ -34,6 +35,7 @@ func (s *Saver) LookupHost(ctx context.Context, reso model.Resolver, domain stri
 		Domain:          domain,
 		Failure:         err,
 		Finished:        time.Now(),
+		LookupType:      "getaddrinfo",
 		ResolverAddress: reso.Address(),
 		ResolverNetwork: reso.Network(),
 		Started:         started,
@@ -58,6 +60,7 @@ func (s *Saver) LookupHTTPS(ctx context.Context, reso model.Resolver, domain str
 		Domain:          domain,
 		Failure:         err,
 		Finished:        time.Now(),
+		LookupType:      "https",
 		ResolverAddress: reso.Address(),
 		ResolverNetwork: reso.Network(),
 		Started:         started,

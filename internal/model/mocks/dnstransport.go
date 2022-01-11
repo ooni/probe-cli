@@ -4,7 +4,7 @@ import "context"
 
 // DNSTransport allows mocking dnsx.DNSTransport.
 type DNSTransport struct {
-	MockRoundTrip func(ctx context.Context, query []byte) (reply []byte, err error)
+	MockRoundTrip func(ctx context.Context, query []byte) ([]byte, error)
 
 	MockRequiresPadding func() bool
 
@@ -16,7 +16,7 @@ type DNSTransport struct {
 }
 
 // RoundTrip calls MockRoundTrip.
-func (txp *DNSTransport) RoundTrip(ctx context.Context, query []byte) (reply []byte, err error) {
+func (txp *DNSTransport) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
 	return txp.MockRoundTrip(ctx, query)
 }
 
