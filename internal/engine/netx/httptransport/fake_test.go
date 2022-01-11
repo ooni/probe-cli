@@ -20,9 +20,14 @@ func (d FakeDialer) DialContext(ctx context.Context, network, address string) (n
 }
 
 type FakeTransport struct {
+	Name string
 	Err  error
 	Func func(*http.Request) (*http.Response, error)
 	Resp *http.Response
+}
+
+func (txp FakeTransport) Network() string {
+	return txp.Name
 }
 
 func (txp FakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {

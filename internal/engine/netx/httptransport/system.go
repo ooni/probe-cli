@@ -24,7 +24,16 @@ func NewSystemTransport(config Config) model.HTTPTransport {
 	// back the true headers, such as Content-Length. This change is
 	// functional to OONI's goal of observing the network.
 	txp.DisableCompression = true
-	return txp
+	return &SystemTransportWrapper{txp}
 }
 
-var _ model.HTTPTransport = &http.Transport{}
+// SystemTransportWrapper adapts *http.Transport to have the .Network method
+type SystemTransportWrapper struct {
+	*http.Transport
+}
+
+func (txp *SystemTransportWrapper) Network() string {
+	return "tcp"
+}
+
+var _ model.HTTPTransport = &SystemTransportWrapper{}

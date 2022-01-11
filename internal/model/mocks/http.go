@@ -4,8 +4,14 @@ import "net/http"
 
 // HTTPTransport mocks netxlite.HTTPTransport.
 type HTTPTransport struct {
+	MockNetwork              func() string
 	MockRoundTrip            func(req *http.Request) (*http.Response, error)
 	MockCloseIdleConnections func()
+}
+
+// Network calls MockNetwork.
+func (txp *HTTPTransport) Network() string {
+	return txp.MockNetwork()
 }
 
 // RoundTrip calls MockRoundTrip.

@@ -27,6 +27,7 @@ type HTTPRoundTripEvent struct {
 	ResponseHeaders         http.Header
 	Started                 time.Time
 	StatusCode              int64
+	Transport               string
 	URL                     string
 }
 
@@ -51,6 +52,7 @@ func (s *Saver) HTTPRoundTrip(
 		ResponseHeaders:         nil, // set later
 		Started:                 started,
 		StatusCode:              0, // set later
+		Transport:               txp.Network(),
 		URL:                     req.URL.String(),
 	}
 	if err != nil {

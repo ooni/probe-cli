@@ -66,7 +66,7 @@ func (t *Trace) NewArchivalTCPConnectResultList(begin time.Time) (out []model.Ar
 			IP:   ip,
 			Port: iport,
 			Status: model.ArchivalTCPConnectStatus{
-				// TODO(bassosimone): do we want to set the blocked field?
+				Blocked: nil, // Web Connectivity only, depends on the control
 				Failure: t.newFailure(ev.Failure),
 				Success: ev.Failure == nil,
 			},
@@ -102,7 +102,7 @@ func (t *Trace) newArchivalHTTPRequestList(begin time.Time) (out []model.Archiva
 				Headers:         t.newHTTPHeadersMap(ev.RequestHeaders),
 				Method:          ev.Method,
 				Tor:             model.ArchivalHTTPTor{},
-				Transport:       "", // TODO(bassosimone): how to set?
+				Transport:       ev.Transport,
 				URL:             ev.URL,
 			},
 			Response: model.ArchivalHTTPResponse{
@@ -113,7 +113,7 @@ func (t *Trace) newArchivalHTTPRequestList(begin time.Time) (out []model.Archiva
 				Code:            ev.StatusCode,
 				HeadersList:     t.newHTTPHeadersList(ev.ResponseHeaders),
 				Headers:         t.newHTTPHeadersMap(ev.ResponseHeaders),
-				Locations:       []string{}, // TODO(bassosimone): how to set?
+				Locations:       ev.ResponseHeaders.Values("Location"), // safe with nil headers
 			},
 			T: ev.Finished.Sub(begin).Seconds(),
 		})
@@ -172,7 +172,7 @@ func (t *Trace) NewArchivalDNSLookupResultList(begin time.Time) (out []model.Arc
 		aaaa := t.gatherAAAA(ev.Addresses)
 		if len(aaaa) <= 0 && ev.Failure == nil {
 			// We don't have any AAAA results. Historically we do not
-			// create a record for AAAA with no results.
+			// create a record for AAAA with no results when A succeeded
 			continue
 		}
 		out = append(out, model.ArchivalDNSLookupResult{
@@ -193,7 +193,7 @@ func (t *Trace) NewArchivalDNSLookupResultList(begin time.Time) (out []model.Arc
 func (t *Trace) gatherA(addrs []string) (out []model.ArchivalDNSAnswer) {
 	for _, addr := range addrs {
 		if strings.Contains(addr, ":") {
-			continue // it's AAAA
+			continue // it's AAAA so we need to skip it
 		}
 		answer := model.ArchivalDNSAnswer{AnswerType: "A"}
 		asn, org, _ := geolocate.LookupASN(addr)
@@ -207,7 +207,7 @@ func (t *Trace) gatherA(addrs []string) (out []model.ArchivalDNSAnswer) {
 func (t *Trace) gatherAAAA(addrs []string) (out []model.ArchivalDNSAnswer) {
 	for _, addr := range addrs {
 		if !strings.Contains(addr, ":") {
-			continue // it's A
+			continue // it's A so we need to skip it
 		}
 		answer := model.ArchivalDNSAnswer{AnswerType: "AAAA"}
 		asn, org, _ := geolocate.LookupASN(addr)
@@ -224,7 +224,15 @@ func (t *Trace) gatherAAAA(addrs []string) (out []model.ArchivalDNSAnswer) {
 
 // NewArchivalNetworkEventList builds a network events list in the OONI
 // archival data format out of the results saved inside the trace.
-func (t *Trace) NewArchivalNetworkEventList(begin time.Time) (out []model.ArchivalNetworkEvent) {
+func (t *Trace) NewArchivalNetworkEventList(begin time.Time) []model.ArchivalNetworkEvent {
+	return t.NewArchivalNetworkEventListWithTags(begin, nil)
+}
+
+// NewArchivalNetworkEventListWithTags builds a network events list in the OONI
+// archival data format out of the results saved inside the trace. This function
+// will also allow the caller to set specific tags inside the result.
+func (t *Trace) NewArchivalNetworkEventListWithTags(
+	begin time.Time, tags []string) (out []model.ArchivalNetworkEvent) {
 	for _, ev := range t.Network {
 		out = append(out, model.ArchivalNetworkEvent{
 			Address:   ev.RemoteAddr,
@@ -233,7 +241,7 @@ func (t *Trace) NewArchivalNetworkEventList(begin time.Time) (out []model.Archiv
 			Operation: ev.Operation,
 			Proto:     ev.Network,
 			T:         ev.Finished.Sub(begin).Seconds(),
-			Tags:      []string{}, // TODO(bassosimone): how to set?
+			Tags:      tags,
 		})
 	}
 	return
@@ -245,7 +253,15 @@ func (t *Trace) NewArchivalNetworkEventList(begin time.Time) (out []model.Archiv
 
 // NewArchivalTLSHandshakeResultList builds a TLS handshakes list in the OONI
 // archival data format out of the results saved inside the trace.
-func (t *Trace) NewArchivalTLSHandshakeResultList(begin time.Time) (out []model.ArchivalTLSOrQUICHandshakeResult) {
+func (t *Trace) NewArchivalTLSHandshakeResultList(begin time.Time) []model.ArchivalTLSOrQUICHandshakeResult {
+	return t.NewArchivalTLSHandshakeResultListWithTags(begin, nil)
+}
+
+// NewArchivalTLSHandshakeResultListWithTags builds a TLS handshakes list in the
+// OONI archival data format out of the results saved inside the trace. This function
+// will also allow the caller to set specific tags inside the result.
+func (t *Trace) NewArchivalTLSHandshakeResultListWithTags(
+	begin time.Time, tags []string) (out []model.ArchivalTLSOrQUICHandshakeResult) {
 	for _, ev := range t.TLSHandshake {
 		out = append(out, model.ArchivalTLSOrQUICHandshakeResult{
 			CipherSuite:        ev.CipherSuite,
@@ -255,7 +271,7 @@ func (t *Trace) NewArchivalTLSHandshakeResultList(begin time.Time) (out []model.
 			PeerCertificates:   t.makePeerCerts(ev.PeerCerts),
 			ServerName:         ev.SNI,
 			T:                  ev.Finished.Sub(begin).Seconds(),
-			Tags:               []string{}, // TODO(bassosimone): how to set?
+			Tags:               tags,
 			TLSVersion:         ev.TLSVersion,
 		})
 	}

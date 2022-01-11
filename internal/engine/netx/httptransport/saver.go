@@ -46,8 +46,7 @@ func (txp SaverPerformanceHTTPTransport) RoundTrip(req *http.Request) (*http.Res
 // events related to HTTP request and response metadata
 type SaverMetadataHTTPTransport struct {
 	model.HTTPTransport
-	Saver     *trace.Saver
-	Transport string
+	Saver *trace.Saver
 }
 
 // RoundTrip implements RoundTripper.RoundTrip
@@ -56,7 +55,7 @@ func (txp SaverMetadataHTTPTransport) RoundTrip(req *http.Request) (*http.Respon
 		HTTPHeaders: txp.CloneHeaders(req),
 		HTTPMethod:  req.Method,
 		HTTPURL:     req.URL.String(),
-		Transport:   txp.Transport,
+		Transport:   txp.HTTPTransport.Network(),
 		Name:        "http_request_metadata",
 		Time:        time.Now(),
 	})
