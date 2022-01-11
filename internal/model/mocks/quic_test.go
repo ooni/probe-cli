@@ -292,7 +292,7 @@ func TestQUICEarlySession(t *testing.T) {
 func TestQUICUDPLikeConn(t *testing.T) {
 	t.Run("WriteTo", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		quc := &QUICUDPLikeConn{
+		quc := &UDPLikeConn{
 			MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 				return 0, expected
 			},
@@ -310,7 +310,7 @@ func TestQUICUDPLikeConn(t *testing.T) {
 
 	t.Run("ConnClose", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		quc := &QUICUDPLikeConn{
+		quc := &UDPLikeConn{
 			MockClose: func() error {
 				return expected
 			},
@@ -326,7 +326,7 @@ func TestQUICUDPLikeConn(t *testing.T) {
 			IP:   net.IPv6loopback,
 			Port: 1234,
 		}
-		c := &QUICUDPLikeConn{
+		c := &UDPLikeConn{
 			MockLocalAddr: func() net.Addr {
 				return expected
 			},
@@ -342,7 +342,7 @@ func TestQUICUDPLikeConn(t *testing.T) {
 			IP:   net.IPv6loopback,
 			Port: 1234,
 		}
-		c := &QUICUDPLikeConn{
+		c := &UDPLikeConn{
 			MockRemoteAddr: func() net.Addr {
 				return expected
 			},
@@ -355,7 +355,7 @@ func TestQUICUDPLikeConn(t *testing.T) {
 
 	t.Run("SetDeadline", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		c := &QUICUDPLikeConn{
+		c := &UDPLikeConn{
 			MockSetDeadline: func(t time.Time) error {
 				return expected
 			},
@@ -368,7 +368,7 @@ func TestQUICUDPLikeConn(t *testing.T) {
 
 	t.Run("SetReadDeadline", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		c := &QUICUDPLikeConn{
+		c := &UDPLikeConn{
 			MockSetReadDeadline: func(t time.Time) error {
 				return expected
 			},
@@ -381,7 +381,7 @@ func TestQUICUDPLikeConn(t *testing.T) {
 
 	t.Run("SetWriteDeadline", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		c := &QUICUDPLikeConn{
+		c := &UDPLikeConn{
 			MockSetWriteDeadline: func(t time.Time) error {
 				return expected
 			},
@@ -394,7 +394,7 @@ func TestQUICUDPLikeConn(t *testing.T) {
 
 	t.Run("ConnReadFrom", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		quc := &QUICUDPLikeConn{
+		quc := &UDPLikeConn{
 			MockReadFrom: func(b []byte) (int, net.Addr, error) {
 				return 0, nil, expected
 			},
@@ -414,7 +414,7 @@ func TestQUICUDPLikeConn(t *testing.T) {
 
 	t.Run("SyscallConn", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		quc := &QUICUDPLikeConn{
+		quc := &UDPLikeConn{
 			MockSyscallConn: func() (syscall.RawConn, error) {
 				return nil, expected
 			},
@@ -430,7 +430,7 @@ func TestQUICUDPLikeConn(t *testing.T) {
 
 	t.Run("SetReadBuffer", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		quc := &QUICUDPLikeConn{
+		quc := &UDPLikeConn{
 			MockSetReadBuffer: func(n int) error {
 				return expected
 			},

@@ -41,19 +41,12 @@ func (s *Saver) ReadFrom(pconn model.UDPLikeConn, buf []byte) (int, net.Addr, er
 		Count:      count,
 		Failure:    err,
 		Finished:   time.Now(),
-		Network:    s.safeAddrNetwork(addr),
+		Network:    "udp", // must be always set even on failure
 		Operation:  netxlite.ReadFromOperation,
 		RemoteAddr: s.safeAddrString(addr),
 		Started:    started,
 	})
 	return count, addr, err
-}
-
-func (s *Saver) safeAddrNetwork(addr net.Addr) (out string) {
-	if addr != nil {
-		out = addr.Network()
-	}
-	return
 }
 
 func (s *Saver) safeAddrString(addr net.Addr) (out string) {

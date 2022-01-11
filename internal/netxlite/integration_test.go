@@ -424,6 +424,9 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 
+	// TODO(bassosimone): here we're not testing the case in which
+	// the certificate is invalid for the required SNI.
+
 	//
 	// Measurement conditions we care about:
 	//

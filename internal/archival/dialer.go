@@ -37,17 +37,10 @@ func (s *Saver) DialContext(ctx context.Context,
 		Finished:   time.Now(),
 		Network:    network,
 		Operation:  netxlite.ConnectOperation,
-		RemoteAddr: s.safeConnRemoteAddrString(conn),
+		RemoteAddr: address,
 		Started:    started,
 	})
 	return conn, err
-}
-
-func (s *Saver) safeConnRemoteAddrString(conn net.Conn) (out string) {
-	if conn != nil {
-		out = conn.RemoteAddr().String()
-	}
-	return
 }
 
 // Read reads from the given conn and stores the results in the saver.
