@@ -168,11 +168,50 @@ func ListResults(sess sqlbuilder.Database) ([]ResultNetwork, []ResultNetwork, er
 	doneResults := []ResultNetwork{}
 	incompleteResults := []ResultNetwork{}
 	req := sess.Select(
-		db.Raw("networks.*"),
-		db.Raw("results.*"),
+		db.Raw("networks.network_name"),
+		db.Raw("networks.network_type"),
+		db.Raw("networks.ip"),
+		db.Raw("networks.asn"),
+		db.Raw("networks.network_country_code"),
+
+		db.Raw("results.result_id"),
+		db.Raw("results.test_group_name"),
+		db.Raw("results.result_start_time"),
+		db.Raw("results.network_id"),
+		db.Raw("results.result_is_viewed"),
+		db.Raw("results.result_runtime"),
+		db.Raw("results.result_is_done"),
+		db.Raw("results.result_is_uploaded"),
+		db.Raw("results.result_data_usage_up"),
+		db.Raw("results.result_data_usage_down"),
+		db.Raw("results.measurement_dir"),
+
+		db.Raw("COUNT(CASE WHEN measurements.is_anomaly = TRUE THEN 1 END) as anomaly_count"),
+		db.Raw("COUNT() as total_count"),
+		db.Raw("group_concat(test_keys, '|') as test_keys"),
 	).From("results").
 		Join("networks").On("results.network_id = networks.network_id").
-		OrderBy("results.result_start_time")
+		Join("measurements").On("measurements.result_id = results.result_id").
+		OrderBy("results.result_start_time").
+		GroupBy(
+			db.Raw("networks.network_name"),
+			db.Raw("networks.network_type"),
+			db.Raw("networks.ip"),
+			db.Raw("networks.asn"),
+			db.Raw("networks.network_country_code"),
+
+			db.Raw("results.result_id"),
+			db.Raw("results.test_group_name"),
+			db.Raw("results.result_start_time"),
+			db.Raw("results.network_id"),
+			db.Raw("results.result_is_viewed"),
+			db.Raw("results.result_runtime"),
+			db.Raw("results.result_is_done"),
+			db.Raw("results.result_is_uploaded"),
+			db.Raw("results.result_data_usage_up"),
+			db.Raw("results.result_data_usage_down"),
+			db.Raw("results.measurement_dir"),
+		)
 	if err := req.Where("result_is_done = true").All(&doneResults); err != nil {
 		return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
 	}
