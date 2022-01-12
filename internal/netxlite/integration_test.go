@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	utls "gitlab.com/yawning/utls.git"
 )
 
@@ -492,6 +494,35 @@ func TestHTTPTransport(t *testing.T) {
 		}
 		resp.Body.Close()
 		client.CloseIdleConnections()
+	})
+
+	t.Run("we can read the body when the connection is closed", func(t *testing.T) {
+		// See https://github.com/ooni/probe/issues/1965
+		srvr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			hj := w.(http.Hijacker) // panic if not possible
+			conn, bufrw, err := hj.Hijack()
+			runtimex.PanicOnError(err, "hj.Hijack failed")
+			bufrw.WriteString("HTTP/1.0 302 Found\r\n")
+			bufrw.WriteString("Location: /text\r\n\r\n")
+			bufrw.Flush()
+			conn.Close()
+		}))
+		defer srvr.Close()
+		txp := netxlite.NewHTTPTransportStdlib(model.DiscardLogger)
+		req, err := http.NewRequest("GET", srvr.URL, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := txp.RoundTrip(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		data, err := netxlite.ReadAllContext(req.Context(), resp.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log(string(data))
 	})
 }
 

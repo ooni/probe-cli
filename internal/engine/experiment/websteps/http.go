@@ -1,8 +1,9 @@
 package websteps
 
 import (
-	"io"
 	"net/http"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // HTTPDo performs the HTTP check.
@@ -25,7 +26,7 @@ func HTTPDo(req *http.Request, transport http.RoundTripper) (*http.Response, []b
 		return nil, nil, err
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	body, err := netxlite.ReadAllContext(req.Context(), resp.Body)
 	if err != nil {
 		return resp, nil, nil
 	}

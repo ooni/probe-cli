@@ -3,7 +3,6 @@ package urlgetter_test
 import (
 	"context"
 	"errors"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -162,7 +161,7 @@ func TestRunnerHTTPNoRedirect(t *testing.T) {
 	}
 }
 
-func TestRunnerHTTPCannotReadBody(t *testing.T) {
+func TestRunnerHTTPWithConnectionClosedByServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hijacker, ok := w.(http.Hijacker)
 		if !ok {
@@ -183,8 +182,8 @@ func TestRunnerHTTPCannotReadBody(t *testing.T) {
 		Target: server.URL,
 	}
 	err := r.Run(context.Background())
-	if !errors.Is(err, io.EOF) {
-		t.Fatal("not the error we expected")
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -206,7 +205,7 @@ func TestRunnerHTTPWeHandle400Correctly(t *testing.T) {
 	}
 }
 
-func TestRunnerHTTPCannotReadBodyWinsOver400(t *testing.T) {
+func TestRunnerHTTPWithConnectionClosedByServerAnd400(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hijacker, ok := w.(http.Hijacker)
 		if !ok {
@@ -228,8 +227,8 @@ func TestRunnerHTTPCannotReadBodyWinsOver400(t *testing.T) {
 		Target: server.URL,
 	}
 	err := r.Run(context.Background())
-	if !errors.Is(err, io.EOF) {
-		t.Fatal("not the error we expected")
+	if !errors.Is(err, urlgetter.ErrHTTPRequestFailed) {
+		t.Fatal("not the error we expected", err)
 	}
 }
 

@@ -188,9 +188,6 @@ func (txp *HTTPTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 	rt.ResponseHeaders = resp.Header
 	r := io.LimitReader(resp.Body, txp.MaxBodySnapshotSize)
 	body, err := netxlite.ReadAllContext(req.Context(), r)
-	if errors.Is(err, io.EOF) && resp.Close {
-		err = nil // we expected to see an EOF here, so no real error
-	}
 	if err != nil {
 		rt.Finished = time.Since(txp.Begin).Seconds()
 		rt.Failure = NewFailure(err)
