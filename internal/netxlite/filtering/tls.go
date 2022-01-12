@@ -1,12 +1,14 @@
 package filtering
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
-	"io"
 	"net"
 	"strings"
 	"sync"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // TLSAction is a TLS filtering action that this proxy should take.
@@ -235,5 +237,5 @@ func (p *TLSProxy) connectingToMyself(conn net.Conn) bool {
 // forward will forward the traffic.
 func (p *TLSProxy) forward(wg *sync.WaitGroup, left net.Conn, right net.Conn) {
 	defer wg.Done()
-	io.Copy(left, right)
+	netxlite.CopyContext(context.Background(), left, right)
 }
