@@ -49,10 +49,6 @@ func TestReadAllContext(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		var errWrapper *ErrWrapper
-		if !errors.As(err, &errWrapper) {
-			t.Fatal("the returned error is not wrapped")
-		}
 		if len(out) <= 0 {
 			t.Fatal("we expected to see a positive number of bytes here")
 		}
@@ -182,10 +178,6 @@ func TestCopyContext(t *testing.T) {
 		out, err := CopyContext(context.Background(), io.Discard, r)
 		if err != nil {
 			t.Fatal(err)
-		}
-		var errWrapper *ErrWrapper
-		if !errors.As(err, &errWrapper) {
-			t.Fatal("the returned error is not wrapped")
 		}
 		if out <= 0 {
 			t.Fatal("we expected to see a positive number of bytes here")
