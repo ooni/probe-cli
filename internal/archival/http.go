@@ -44,7 +44,7 @@ func (s *Saver) HTTPRoundTrip(
 		Failure:                 nil,         // set later
 		Finished:                time.Time{}, // set later
 		Method:                  req.Method,
-		RequestHeaders:          req.Header.Clone(),
+		RequestHeaders:          s.cloneRequestHeaders(req),
 		ResponseBody:            nil, // set later
 		ResponseBodyIsTruncated: false,
 		ResponseBodyLength:      0,
@@ -80,6 +80,19 @@ func (s *Saver) HTTPRoundTrip(
 	rt.Finished = time.Now()
 	s.appendHTTPRoundTripEvent(rt)
 	return resp, nil
+}
+
+// cloneRequestHeaders ensure we include the Host header among the saved
+// headers, which is what OONI should do, even though the Go transport is
+// such that this header is added later when we're sending the request.
+func (s *Saver) cloneRequestHeaders(req *http.Request) http.Header {
+	header := req.Header.Clone()
+	if req.Host != "" {
+		header.Set("Host", req.Host)
+	} else {
+		header.Set("Host", req.URL.Host)
+	}
+	return header
 }
 
 type archivalHTTPTransportBody struct {

@@ -44,6 +44,7 @@ func TestSaverHTTPRoundTrip(t *testing.T) {
 			ExpectFailure: nil,
 			ExpectMethod:  "GET",
 			ExpectRequestHeaders: map[string][]string{
+				"Host":        {"127.0.0.1:8080"},
 				"User-Agent":  {"antani/1.0"},
 				"X-Client-IP": {"130.192.91.211"},
 			},
@@ -108,6 +109,7 @@ func TestSaverHTTPRoundTrip(t *testing.T) {
 			ExpectFailure: expectedError,
 			ExpectMethod:  "GET",
 			ExpectRequestHeaders: map[string][]string{
+				"Host":        {"127.0.0.1:8080"},
 				"User-Agent":  {"antani/1.0"},
 				"X-Client-IP": {"130.192.91.211"},
 			},
@@ -142,6 +144,7 @@ func TestSaverHTTPRoundTrip(t *testing.T) {
 			ExpectFailure: expectedError,
 			ExpectMethod:  "GET",
 			ExpectRequestHeaders: map[string][]string{
+				"Host":        {"127.0.0.1:8080"},
 				"User-Agent":  {"antani/1.0"},
 				"X-Client-IP": {"130.192.91.211"},
 			},
@@ -205,13 +208,18 @@ type SingleHTTPRoundTripValidator struct {
 func (v *SingleHTTPRoundTripValidator) NewHTTPRequest() *http.Request {
 	parsedURL, err := url.Parse(v.ExpectURL)
 	runtimex.PanicOnError(err, "url.Parse should not fail here")
+	// The saving code clones the headers and adds the host header, which
+	// Go would instead add later. So, a realistic mock should not include
+	// such an header inside of the http.Request.
+	clonedHeaders := v.ExpectRequestHeaders.Clone()
+	clonedHeaders.Del("Host")
 	return &http.Request{
 		Method:           v.ExpectMethod,
 		URL:              parsedURL,
 		Proto:            "",
 		ProtoMajor:       0,
 		ProtoMinor:       0,
-		Header:           v.ExpectRequestHeaders,
+		Header:           clonedHeaders,
 		Body:             nil,
 		GetBody:          nil,
 		ContentLength:    0,
