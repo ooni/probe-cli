@@ -1,0 +1,16 @@
+# checks performs several code quality checks
+name: checks
+on:
+  pull_request:
+  push:
+    branches:
+      - "master"
+jobs:
+  test:
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      matrix:
+        os: [ "ubuntu-20.04" ]
+    steps:
+      - uses: actions/checkout@v2
+      - run: ./script/nocopyreadall.bash
