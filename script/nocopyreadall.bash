@@ -2,9 +2,11 @@
 set -euo pipefail
 exitcode=0
 for file in $(find . -type f -name \*.go); do
-	#if [ "$file" = "./internal/netxlite/iox.go" ]; then
-	#  continue
-	#fi
+	if [ "$file" = "./internal/netxlite/iox.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file to
+		# implement safer wrappers for these functions.
+		continue
+	fi
 	if grep -q 'io\.ReadAll' $file; then
 		echo "in $file: do not use io.ReadAll, use netxlite.ReadAllContext" 1>&2
 		exitcode=1
