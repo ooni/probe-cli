@@ -1,21 +1,190 @@
 package archival
 
 import (
+	"bytes"
+	"context"
 	"errors"
+	"io"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestSaverHTTPRoundTrip(t *testing.T) {
-	t.Run("on success without EOF", func(t *testing.T) {})
+	// newHTTPTransport creates a new HTTP transport for testing.
+	newHTTPTransport := func(resp *http.Response, err error) model.HTTPTransport {
+		return &mocks.HTTPTransport{
+			MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+				return resp, err
+			},
+			MockNetwork: func() string {
+				return "tcp"
+			},
+		}
+	}
 
-	t.Run("on success with EOF", func(t *testing.T) {})
+	// successFlowWithBody is a successful test case with possible body truncation.
+	successFlowWithBody := func(realBody []byte, maxBodySize int64) error {
+		// truncate the expected body if required
+		expectedBody := realBody
+		truncated := false
+		if int64(len(realBody)) > maxBodySize {
+			expectedBody = realBody[:maxBodySize]
+			truncated = true
+		}
+		// construct the saver and the validator
+		saver := NewSaver()
+		v := &SingleHTTPRoundTripValidator{
+			ExpectFailure: nil,
+			ExpectMethod:  "GET",
+			ExpectRequestHeaders: map[string][]string{
+				"User-Agent":  {"antani/1.0"},
+				"X-Client-IP": {"130.192.91.211"},
+			},
+			ExpectResponseBody:            expectedBody,
+			ExpectResponseBodyIsTruncated: truncated,
+			ExpectResponseBodyLength:      int64(len(expectedBody)),
+			ExpectResponseHeaders: map[string][]string{
+				"Server":       {"antani/1.0"},
+				"Content-Type": {"text/plain"},
+			},
+			ExpectStatusCode: 200,
+			ExpectTransport:  "tcp",
+			ExpectURL:        "http://127.0.0.1:8080/antani",
+			RealResponseBody: realBody,
+			Saver:            saver,
+		}
+		// construct transport and perform the HTTP round trip
+		txp := newHTTPTransport(v.NewHTTPResponse(), nil)
+		resp, err := saver.HTTPRoundTrip(txp, maxBodySize, v.NewHTTPRequest())
+		if err != nil {
+			return err
+		}
+		if resp == nil {
+			return errors.New("expected non-nil resp")
+		}
+		// ensure that we can still read the _full_ response body
+		ctx := context.Background()
+		data, err := netxlite.ReadAllContext(ctx, resp.Body)
+		if err != nil {
+			return err
+		}
+		if diff := cmp.Diff(realBody, data); diff != "" {
+			return errors.New(diff)
+		}
+		// validate the content of the trace
+		return v.Validate()
+	}
 
-	t.Run("on failure during round trip", func(t *testing.T) {})
+	t.Run("on success without truncation", func(t *testing.T) {
+		realBody := []byte("0xdeadbeef")
+		const maxBodySize = 1 << 20
+		err := successFlowWithBody(realBody, maxBodySize)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 
-	t.Run("on failure reading body", func(t *testing.T) {})
+	t.Run("on success with truncation", func(t *testing.T) {
+		realBody := []byte("0xdeadbeef")
+		const maxBodySize = 4
+		err := successFlowWithBody(realBody, maxBodySize)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("on failure during round trip", func(t *testing.T) {
+		expectedError := netxlite.NewTopLevelGenericErrWrapper(netxlite.ECONNRESET)
+		const maxBodySize = 1 << 20
+		saver := NewSaver()
+		v := &SingleHTTPRoundTripValidator{
+			ExpectFailure: expectedError,
+			ExpectMethod:  "GET",
+			ExpectRequestHeaders: map[string][]string{
+				"User-Agent":  {"antani/1.0"},
+				"X-Client-IP": {"130.192.91.211"},
+			},
+			ExpectResponseBody:            nil,
+			ExpectResponseBodyIsTruncated: false,
+			ExpectResponseBodyLength:      0,
+			ExpectResponseHeaders:         nil,
+			ExpectStatusCode:              0,
+			ExpectTransport:               "tcp",
+			ExpectURL:                     "http://127.0.0.1:8080/antani",
+			RealResponseBody:              nil,
+			Saver:                         saver,
+		}
+		txp := newHTTPTransport(nil, expectedError)
+		resp, err := saver.HTTPRoundTrip(txp, maxBodySize, v.NewHTTPRequest())
+		if !errors.Is(err, expectedError) {
+			t.Fatal(err)
+		}
+		if resp != nil {
+			t.Fatal("expected nil resp")
+		}
+		if err := v.Validate(); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("on failure reading body", func(t *testing.T) {
+		expectedError := netxlite.NewTopLevelGenericErrWrapper(netxlite.ECONNRESET)
+		const maxBodySize = 1 << 20
+		saver := NewSaver()
+		v := &SingleHTTPRoundTripValidator{
+			ExpectFailure: expectedError,
+			ExpectMethod:  "GET",
+			ExpectRequestHeaders: map[string][]string{
+				"User-Agent":  {"antani/1.0"},
+				"X-Client-IP": {"130.192.91.211"},
+			},
+			ExpectResponseBody:            nil,
+			ExpectResponseBodyIsTruncated: false,
+			ExpectResponseBodyLength:      0,
+			ExpectResponseHeaders: map[string][]string{
+				"Server":       {"antani/1.0"},
+				"Content-Type": {"text/plain"},
+			},
+			ExpectStatusCode: 200,
+			ExpectTransport:  "tcp",
+			ExpectURL:        "http://127.0.0.1:8080/antani",
+			RealResponseBody: nil,
+			Saver:            saver,
+		}
+		resp := v.NewHTTPResponse()
+		// Hack the body so it returns a connection reset error
+		// after some useful piece of data. We do not see any
+		// body in the response or in the trace. We may possibly
+		// want to include all the body we could read into the
+		// trace in the future, but for now it seems fine to do
+		// exactly what the previous code was doing.
+		resp.Body = io.NopCloser(io.MultiReader(
+			bytes.NewReader([]byte("0xdeadbeef")),
+			&mocks.Reader{
+				MockRead: func(b []byte) (int, error) {
+					return 0, expectedError
+				},
+			},
+		))
+		txp := newHTTPTransport(resp, nil)
+		resp, err := saver.HTTPRoundTrip(txp, maxBodySize, v.NewHTTPRequest())
+		if !errors.Is(err, expectedError) {
+			t.Fatal("unexpected err", err)
+		}
+		if resp != nil {
+			t.Fatal("expected nil resp")
+		}
+		if err := v.Validate(); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 type SingleHTTPRoundTripValidator struct {
@@ -29,7 +198,56 @@ type SingleHTTPRoundTripValidator struct {
 	ExpectStatusCode              int64
 	ExpectTransport               string
 	ExpectURL                     string
+	RealResponseBody              []byte
 	Saver                         *Saver
+}
+
+func (v *SingleHTTPRoundTripValidator) NewHTTPRequest() *http.Request {
+	parsedURL, err := url.Parse(v.ExpectURL)
+	runtimex.PanicOnError(err, "url.Parse should not fail here")
+	return &http.Request{
+		Method:           v.ExpectMethod,
+		URL:              parsedURL,
+		Proto:            "",
+		ProtoMajor:       0,
+		ProtoMinor:       0,
+		Header:           v.ExpectRequestHeaders,
+		Body:             nil,
+		GetBody:          nil,
+		ContentLength:    0,
+		TransferEncoding: nil,
+		Close:            false,
+		Host:             "",
+		Form:             nil,
+		PostForm:         nil,
+		MultipartForm:    nil,
+		Trailer:          nil,
+		RemoteAddr:       "",
+		RequestURI:       "",
+		TLS:              nil,
+		Cancel:           nil,
+		Response:         nil,
+	}
+}
+
+func (v *SingleHTTPRoundTripValidator) NewHTTPResponse() *http.Response {
+	body := io.NopCloser(bytes.NewReader(v.RealResponseBody))
+	return &http.Response{
+		Status:           http.StatusText(int(v.ExpectStatusCode)),
+		StatusCode:       int(v.ExpectStatusCode),
+		Proto:            "",
+		ProtoMajor:       0,
+		ProtoMinor:       0,
+		Header:           v.ExpectResponseHeaders,
+		Body:             body,
+		ContentLength:    0,
+		TransferEncoding: nil,
+		Close:            false,
+		Uncompressed:     false,
+		Trailer:          nil,
+		Request:          nil,
+		TLS:              nil,
+	}
 }
 
 func (v *SingleHTTPRoundTripValidator) Validate() error {

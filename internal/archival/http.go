@@ -6,7 +6,6 @@ package archival
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -65,9 +64,6 @@ func (s *Saver) HTTPRoundTrip(
 	rt.ResponseHeaders = resp.Header.Clone()
 	r := io.LimitReader(resp.Body, maxBodySnapshotSize)
 	body, err := netxlite.ReadAllContext(req.Context(), r)
-	if errors.Is(err, io.EOF) && resp.Close {
-		err = nil // we expected to see an EOF here, so no real error
-	}
 	if err != nil {
 		rt.Finished = time.Now()
 		rt.Failure = err
