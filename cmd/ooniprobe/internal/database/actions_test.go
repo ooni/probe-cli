@@ -92,8 +92,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var m2 Measurement
-	err = sess.Collection("measurements").Find("measurement_id", m1.ID).One(&m2)
+	m2, err := CreateMeasurement(sess, reportID, testName, msmtFilePath, 0, resultID, urlID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,6 +109,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	result.Finished(sess)
 
 	var r Result
 	err = sess.Collection("measurements").Find("result_id", result.ID).One(&r)
@@ -125,11 +125,15 @@ func TestMeasurementWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(incomplete) != 1 {
-		t.Error("there should be 1 incomplete measurement")
+	if len(incomplete) != 0 {
+		t.Error("there should be 0 incomplete result")
 	}
-	if len(done) != 0 {
-		t.Error("there should be 0 done measurements")
+	if len(done) != 1 {
+		t.Error("there should be 1 done result")
+	}
+
+	if done[0].TotalCount != 2 {
+		t.Error("there should be a total of 2 measurements in the result")
 	}
 
 	msmts, err := ListMeasurements(sess, resultID)
