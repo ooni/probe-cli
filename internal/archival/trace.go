@@ -3,6 +3,7 @@ package archival
 import (
 	"net"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -82,16 +83,13 @@ func (t *Trace) NewArchivalTCPConnectResultList(begin time.Time) (out []model.Ar
 
 // NewArchivalHTTPRequestResultList builds an HTTP requests list in the OONI
 // archival data format out of the results saved inside the trace.
+//
+// This function will sort the emitted list of requests such that the last
+// request that happened in time is the first one to be emitted. If the
+// measurement code performs related requests sequentially (which is a kinda a
+// given because you cannot follow a redirect before reading the previous request),
+// then the result is sorted how the OONI pipeline expects it to be.
 func (t *Trace) NewArchivalHTTPRequestResultList(begin time.Time) (out []model.ArchivalHTTPRequestResult) {
-	// OONI wants the last request to appear first
-	tmp := t.newArchivalHTTPRequestList(begin)
-	for i := len(tmp) - 1; i >= 0; i-- {
-		out = append(out, tmp[i])
-	}
-	return
-}
-
-func (t *Trace) newArchivalHTTPRequestList(begin time.Time) (out []model.ArchivalHTTPRequestResult) {
 	for _, ev := range t.HTTPRoundTrip {
 		out = append(out, model.ArchivalHTTPRequestResult{
 			Failure: t.newFailure(ev.Failure),
@@ -118,6 +116,14 @@ func (t *Trace) newArchivalHTTPRequestList(begin time.Time) (out []model.Archiva
 			T: ev.Finished.Sub(begin).Seconds(),
 		})
 	}
+	// Implementation note: historically OONI has always added
+	// the _last_ measurement in _first_ position. This has only
+	// been relevant for sequentially performed requests. For
+	// this purpose it feels okay to use T as the sorting key,
+	// since it's the time when we exited RoundTrip().
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].T > out[j].T
+	})
 	return
 }
 
@@ -132,6 +138,11 @@ func (t *Trace) newHTTPHeadersList(source http.Header) (out []model.ArchivalHTTP
 			})
 		}
 	}
+	// Implementation note: we need to sort the keys to have
+	// stable testing since map iteration is random.
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].Key < out[j].Key
+	})
 	return
 }
 
@@ -200,6 +211,7 @@ func (t *Trace) gatherA(addrs []string) (out []model.ArchivalDNSAnswer) {
 		answer.ASN = int64(asn)
 		answer.ASOrgName = org
 		answer.IPv4 = addr
+		out = append(out, answer)
 	}
 	return
 }
@@ -214,6 +226,7 @@ func (t *Trace) gatherAAAA(addrs []string) (out []model.ArchivalDNSAnswer) {
 		answer.ASN = int64(asn)
 		answer.ASOrgName = org
 		answer.IPv6 = addr
+		out = append(out, answer)
 	}
 	return
 }
