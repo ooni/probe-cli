@@ -98,7 +98,13 @@ func init() {
 
 				// We only care to expose in the testKeys the value of the ndt test result
 				if result.TestGroupName == "performance" {
+					// The test_keys column are concanetated with the "|" character as a separator.
+					// We consider this to be safe since we only really care about values of the
+					// performance test_keys where the values are all numbers and none of the keys
+					// contain the "|" character.
 					for _, e := range strings.Split(result.TestKeys, "|") {
+						// We use the presence of the "download" key to indicate we have found the
+						// ndt test_keys, since the dash result does not contain it.
 						if strings.Contains(e, "download") {
 							testKeys = e
 						}

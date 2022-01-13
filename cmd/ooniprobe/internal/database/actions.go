@@ -128,6 +128,10 @@ func ListResults(sess sqlbuilder.Database) ([]ResultNetwork, []ResultNetwork, er
 
 		db.Raw("COUNT(CASE WHEN measurements.is_anomaly = TRUE THEN 1 END) as anomaly_count"),
 		db.Raw("COUNT() as total_count"),
+		// The test_keys column are concanetated with the "|" character as a separator.
+		// We consider this to be safe since we only really care about values of the
+		// performance test_keys where the values are all numbers and none of the keys
+		// contain the "|" character.
 		db.Raw("group_concat(test_keys, '|') as test_keys"),
 	).From("results").
 		Join("networks").On("results.network_id = networks.network_id").
