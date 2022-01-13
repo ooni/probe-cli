@@ -821,3 +821,101 @@ func TestTraceNewArchivalNetworkEventList(t *testing.T) {
 		})
 	}
 }
+
+func TestTraceNewArchivalTLSHandshakeResultList(t *testing.T) {
+	type fields struct {
+		DNSLookupHTTPS []*DNSLookupEvent
+		DNSLookupHost  []*DNSLookupEvent
+		DNSRoundTrip   []*DNSRoundTripEvent
+		HTTPRoundTrip  []*HTTPRoundTripEvent
+		Network        []*NetworkEvent
+		QUICHandshake  []*QUICTLSHandshakeEvent
+		TLSHandshake   []*QUICTLSHandshakeEvent
+	}
+	type args struct {
+		begin time.Time
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantOut []model.ArchivalTLSOrQUICHandshakeResult
+	}{{
+		name: "with empty trace",
+		fields: fields{
+			DNSLookupHTTPS: []*DNSLookupEvent{},
+			DNSLookupHost:  []*DNSLookupEvent{},
+			DNSRoundTrip:   []*DNSRoundTripEvent{},
+			HTTPRoundTrip:  []*HTTPRoundTripEvent{},
+			Network:        []*NetworkEvent{},
+			QUICHandshake:  []*QUICTLSHandshakeEvent{},
+			TLSHandshake:   []*QUICTLSHandshakeEvent{},
+		},
+		args: args{
+			begin: traceTime(0),
+		},
+		wantOut: nil,
+	}, {
+		name: "we fill all the fields we should be filling",
+		fields: fields{
+			DNSLookupHTTPS: []*DNSLookupEvent{},
+			DNSLookupHost:  []*DNSLookupEvent{},
+			DNSRoundTrip:   []*DNSRoundTripEvent{},
+			HTTPRoundTrip:  []*HTTPRoundTripEvent{},
+			Network:        []*NetworkEvent{},
+			QUICHandshake:  []*QUICTLSHandshakeEvent{},
+			TLSHandshake: []*QUICTLSHandshakeEvent{{
+				ALPN:            []string{"h2", "http/1.1"},
+				CipherSuite:     "TLS_AES_128_GCM_SHA256",
+				Failure:         netxlite.NewTopLevelGenericErrWrapper(io.EOF),
+				Finished:        traceTime(2),
+				NegotiatedProto: "h2",
+				Network:         "tcp",
+				PeerCerts: [][]byte{
+					[]byte("deadbeef"),
+					[]byte("xox"),
+				},
+				RemoteAddr: "8.8.8.8:443",
+				SNI:        "dns.google",
+				SkipVerify: true,
+				Started:    traceTime(1),
+				TLSVersion: "TLSv1.3",
+			}},
+		},
+		args: args{
+			begin: traceTime(0),
+		},
+		wantOut: []model.ArchivalTLSOrQUICHandshakeResult{{
+			CipherSuite:        "TLS_AES_128_GCM_SHA256",
+			Failure:            failureFromString(netxlite.FailureEOFError),
+			NegotiatedProtocol: "h2",
+			NoTLSVerify:        true,
+			PeerCertificates: []model.ArchivalMaybeBinaryData{{
+				Value: "deadbeef",
+			}, {
+				Value: "xox",
+			}},
+			ServerName: "dns.google",
+			T:          deltaSinceTraceTime(2),
+			Tags:       nil,
+			TLSVersion: "TLSv1.3",
+		}},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tr := &Trace{
+				DNSLookupHTTPS: tt.fields.DNSLookupHTTPS,
+				DNSLookupHost:  tt.fields.DNSLookupHost,
+				DNSRoundTrip:   tt.fields.DNSRoundTrip,
+				HTTPRoundTrip:  tt.fields.HTTPRoundTrip,
+				Network:        tt.fields.Network,
+				QUICHandshake:  tt.fields.QUICHandshake,
+				TLSHandshake:   tt.fields.TLSHandshake,
+			}
+			gotOut := tr.NewArchivalTLSHandshakeResultList(tt.args.begin)
+			if diff := cmp.Diff(tt.wantOut, gotOut); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}

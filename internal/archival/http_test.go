@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -187,6 +188,58 @@ func TestSaverHTTPRoundTrip(t *testing.T) {
 		if err := v.Validate(); err != nil {
 			t.Fatal(err)
 		}
+	})
+
+	t.Run("cloneRequestHeaders", func(t *testing.T) {
+		// doWithRequest is an helper function that creates a suitable
+		// round tripper and returns trace.HTTPRoundTrip[0] for inspection
+		doWithRequest := func(req *http.Request) (*HTTPRoundTripEvent, error) {
+			expect := errors.New("mocked err")
+			txp := newHTTPTransport(nil, expect)
+			saver := NewSaver()
+			const maxBodySize = 1 << 20 // irrelevant
+			resp, err := saver.HTTPRoundTrip(txp, maxBodySize, req)
+			if !errors.Is(err, expect) {
+				return nil, fmt.Errorf("unexpected error: %w", err)
+			}
+			if resp != nil {
+				return nil, errors.New("expected nil resp")
+			}
+			trace := saver.MoveOutTrace()
+			if len(trace.HTTPRoundTrip) != 1 {
+				return nil, errors.New("expected exactly one HTTPRoundTrip")
+			}
+			return trace.HTTPRoundTrip[0], nil
+		}
+
+		t.Run("with req.URL.Host", func(t *testing.T) {
+			req, err := http.NewRequest("GET", "https://x.org/", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ev, err := doWithRequest(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if ev.RequestHeaders.Get("Host") != "x.org" {
+				t.Fatal("unexpected request host")
+			}
+		})
+
+		t.Run("with req.Host", func(t *testing.T) {
+			req, err := http.NewRequest("GET", "https://x.org/", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Host = "google.com"
+			ev, err := doWithRequest(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if ev.RequestHeaders.Get("Host") != "google.com" {
+				t.Fatal("unexpected request host")
+			}
+		})
 	})
 }
 
