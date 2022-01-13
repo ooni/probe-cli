@@ -2,6 +2,7 @@ package archival
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -738,13 +739,85 @@ func TestTraceNewArchivalDNSLookupResultList(t *testing.T) {
 }
 
 func TestTraceNewArchivalNetworkEventList(t *testing.T) {
-}
-
-func TestTraceNewArchivalNetworkEventListWithTags(t *testing.T) {
-}
-
-func TestTraceNewArchivalTLSHandshakeResultList(t *testing.T) {
-}
-
-func TestTraceNewArchivalTLSHandshakeResultListWithTags(t *testing.T) {
+	type fields struct {
+		DNSLookupHTTPS []*DNSLookupEvent
+		DNSLookupHost  []*DNSLookupEvent
+		DNSRoundTrip   []*DNSRoundTripEvent
+		HTTPRoundTrip  []*HTTPRoundTripEvent
+		Network        []*NetworkEvent
+		QUICHandshake  []*QUICTLSHandshakeEvent
+		TLSHandshake   []*QUICTLSHandshakeEvent
+	}
+	type args struct {
+		begin time.Time
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantOut []model.ArchivalNetworkEvent
+	}{{
+		name: "with empty trace",
+		fields: fields{
+			DNSLookupHTTPS: []*DNSLookupEvent{},
+			DNSLookupHost:  []*DNSLookupEvent{},
+			DNSRoundTrip:   []*DNSRoundTripEvent{},
+			HTTPRoundTrip:  []*HTTPRoundTripEvent{},
+			Network:        []*NetworkEvent{},
+			QUICHandshake:  []*QUICTLSHandshakeEvent{},
+			TLSHandshake:   []*QUICTLSHandshakeEvent{},
+		},
+		args: args{
+			begin: traceTime(0),
+		},
+		wantOut: nil,
+	}, {
+		name: "we fill all the fields we should be filling",
+		fields: fields{
+			DNSLookupHTTPS: []*DNSLookupEvent{},
+			DNSLookupHost:  []*DNSLookupEvent{},
+			DNSRoundTrip:   []*DNSRoundTripEvent{},
+			HTTPRoundTrip:  []*HTTPRoundTripEvent{},
+			Network: []*NetworkEvent{{
+				Count:      1234,
+				Failure:    netxlite.NewTopLevelGenericErrWrapper(io.EOF),
+				Finished:   traceTime(2),
+				Network:    "tcp",
+				Operation:  netxlite.ReadOperation,
+				RemoteAddr: "8.8.8.8:443",
+				Started:    traceTime(1),
+			}},
+			QUICHandshake: []*QUICTLSHandshakeEvent{},
+			TLSHandshake:  []*QUICTLSHandshakeEvent{},
+		},
+		args: args{
+			begin: traceTime(0),
+		},
+		wantOut: []model.ArchivalNetworkEvent{{
+			Address:   "8.8.8.8:443",
+			Failure:   failureFromString(netxlite.FailureEOFError),
+			NumBytes:  1234,
+			Operation: netxlite.ReadOperation,
+			Proto:     "tcp",
+			T:         deltaSinceTraceTime(2),
+			Tags:      nil,
+		}},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tr := &Trace{
+				DNSLookupHTTPS: tt.fields.DNSLookupHTTPS,
+				DNSLookupHost:  tt.fields.DNSLookupHost,
+				DNSRoundTrip:   tt.fields.DNSRoundTrip,
+				HTTPRoundTrip:  tt.fields.HTTPRoundTrip,
+				Network:        tt.fields.Network,
+				QUICHandshake:  tt.fields.QUICHandshake,
+				TLSHandshake:   tt.fields.TLSHandshake,
+			}
+			gotOut := tr.NewArchivalNetworkEventList(tt.args.begin)
+			if diff := cmp.Diff(tt.wantOut, gotOut); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
 }

@@ -237,15 +237,7 @@ func (t *Trace) gatherAAAA(addrs []string) (out []model.ArchivalDNSAnswer) {
 
 // NewArchivalNetworkEventList builds a network events list in the OONI
 // archival data format out of the results saved inside the trace.
-func (t *Trace) NewArchivalNetworkEventList(begin time.Time) []model.ArchivalNetworkEvent {
-	return t.NewArchivalNetworkEventListWithTags(begin, nil)
-}
-
-// NewArchivalNetworkEventListWithTags builds a network events list in the OONI
-// archival data format out of the results saved inside the trace. This function
-// will also allow the caller to set specific tags inside the result.
-func (t *Trace) NewArchivalNetworkEventListWithTags(
-	begin time.Time, tags []string) (out []model.ArchivalNetworkEvent) {
+func (t *Trace) NewArchivalNetworkEventList(begin time.Time) (out []model.ArchivalNetworkEvent) {
 	for _, ev := range t.Network {
 		out = append(out, model.ArchivalNetworkEvent{
 			Address:   ev.RemoteAddr,
@@ -254,7 +246,7 @@ func (t *Trace) NewArchivalNetworkEventListWithTags(
 			Operation: ev.Operation,
 			Proto:     ev.Network,
 			T:         ev.Finished.Sub(begin).Seconds(),
-			Tags:      tags,
+			Tags:      nil,
 		})
 	}
 	return
@@ -266,15 +258,7 @@ func (t *Trace) NewArchivalNetworkEventListWithTags(
 
 // NewArchivalTLSHandshakeResultList builds a TLS handshakes list in the OONI
 // archival data format out of the results saved inside the trace.
-func (t *Trace) NewArchivalTLSHandshakeResultList(begin time.Time) []model.ArchivalTLSOrQUICHandshakeResult {
-	return t.NewArchivalTLSHandshakeResultListWithTags(begin, nil)
-}
-
-// NewArchivalTLSHandshakeResultListWithTags builds a TLS handshakes list in the
-// OONI archival data format out of the results saved inside the trace. This function
-// will also allow the caller to set specific tags inside the result.
-func (t *Trace) NewArchivalTLSHandshakeResultListWithTags(
-	begin time.Time, tags []string) (out []model.ArchivalTLSOrQUICHandshakeResult) {
+func (t *Trace) NewArchivalTLSHandshakeResultList(begin time.Time) (out []model.ArchivalTLSOrQUICHandshakeResult) {
 	for _, ev := range t.TLSHandshake {
 		out = append(out, model.ArchivalTLSOrQUICHandshakeResult{
 			CipherSuite:        ev.CipherSuite,
@@ -284,7 +268,7 @@ func (t *Trace) NewArchivalTLSHandshakeResultListWithTags(
 			PeerCertificates:   t.makePeerCerts(ev.PeerCerts),
 			ServerName:         ev.SNI,
 			T:                  ev.Finished.Sub(begin).Seconds(),
-			Tags:               tags,
+			Tags:               nil,
 			TLSVersion:         ev.TLSVersion,
 		})
 	}
