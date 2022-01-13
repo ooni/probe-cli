@@ -103,66 +103,6 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 	return msmtJSON, nil
 }
 
-// GetResultTestKeys returns a list of TestKeys for a given result
-func GetResultTestKeys(sess sqlbuilder.Database, resultID int64) (string, error) {
-	res := sess.Collection("measurements").Find("result_id", resultID)
-	defer res.Close()
-
-	var (
-		msmt Measurement
-		tk   PerformanceTestKeys
-	)
-	for res.Next(&msmt) {
-		// We only really care about performance keys.
-		// Note: since even in case of failure we still initialise an empty struct,
-		// it could be that these keys come out as initializes with the default
-		// values.
-		// XXX we may want to change this behaviour by adding `omitempty` to the
-		// struct definition.
-		if msmt.TestName != "ndt" && msmt.TestName != "dash" {
-			return "{}", nil
-		}
-		if err := json.Unmarshal([]byte(msmt.TestKeys), &tk); err != nil {
-			log.WithError(err).Error("failed to parse testKeys")
-			return "{}", err
-		}
-	}
-	b, err := json.Marshal(tk)
-	if err != nil {
-		log.WithError(err).Error("failed to serialize testKeys")
-		return "{}", err
-	}
-	return string(b), nil
-}
-
-// GetMeasurementCounts returns the number of anomalous and total measurement for a given result
-func GetMeasurementCounts(sess sqlbuilder.Database, resultID int64) (uint64, uint64, error) {
-	var (
-		totalCount uint64
-		anmlyCount uint64
-		err        error
-	)
-	col := sess.Collection("measurements")
-
-	// XXX these two queries can be done with a single query
-	totalCount, err = col.Find("result_id", resultID).
-		Count()
-	if err != nil {
-		log.WithError(err).Error("failed to get total count")
-		return totalCount, anmlyCount, err
-	}
-
-	anmlyCount, err = col.Find("result_id", resultID).
-		And(db.Cond{"is_anomaly": true}).Count()
-	if err != nil {
-		log.WithError(err).Error("failed to get anmly count")
-		return totalCount, anmlyCount, err
-	}
-
-	log.Debugf("counts: %d, %d, %d", resultID, totalCount, anmlyCount)
-	return totalCount, anmlyCount, err
-}
-
 // ListResults return the list of results
 func ListResults(sess sqlbuilder.Database) ([]ResultNetwork, []ResultNetwork, error) {
 	doneResults := []ResultNetwork{}
