@@ -70,7 +70,7 @@ func (s *Saver) HTTPRoundTrip(
 		s.appendHTTPRoundTripEvent(rt)
 		return nil, err
 	}
-	resp.Body = &archivalHTTPTransportBody{ // allow for reading more if needed
+	resp.Body = &archivalHTTPTransportBody{ // allow for reading again the whole body
 		Reader: io.MultiReader(bytes.NewReader(body), resp.Body),
 		Closer: resp.Body,
 	}
