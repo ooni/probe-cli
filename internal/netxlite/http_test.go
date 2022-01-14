@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
@@ -252,7 +251,7 @@ func TestNewHTTPTransport(t *testing.T) {
 		if tlsWithReadTimeout.TLSDialer != td {
 			t.Fatal("invalid tls dialer")
 		}
-		stdlib := connectionsCloser.HTTPTransport.(*oohttp.StdlibTransport)
+		stdlib := connectionsCloser.HTTPTransport.(*stdlibTransport)
 		if !stdlib.Transport.ForceAttemptHTTP2 {
 			t.Fatal("invalid ForceAttemptHTTP2")
 		}

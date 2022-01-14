@@ -420,7 +420,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 
 func TestNewVanilla(t *testing.T) {
 	txp := netx.NewHTTPTransport(netx.Config{})
-	if _, ok := txp.(*http.Transport); !ok {
+	if _, ok := txp.(*httptransport.SystemTransportWrapper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -480,7 +480,7 @@ func TestNewWithByteCounter(t *testing.T) {
 	if bctxp.Counter != counter {
 		t.Fatal("not the byte counter we expected")
 	}
-	if _, ok := bctxp.HTTPTransport.(*http.Transport); !ok {
+	if _, ok := bctxp.HTTPTransport.(*httptransport.SystemTransportWrapper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -496,7 +496,7 @@ func TestNewWithLogger(t *testing.T) {
 	if ltxp.Logger != log.Log {
 		t.Fatal("not the logger we expected")
 	}
-	if _, ok := ltxp.HTTPTransport.(*http.Transport); !ok {
+	if _, ok := ltxp.HTTPTransport.(*httptransport.SystemTransportWrapper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -534,7 +534,7 @@ func TestNewWithSaver(t *testing.T) {
 	if smtxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	if _, ok := smtxp.HTTPTransport.(*http.Transport); !ok {
+	if _, ok := smtxp.HTTPTransport.(*httptransport.SystemTransportWrapper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }

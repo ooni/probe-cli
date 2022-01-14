@@ -475,7 +475,7 @@ func TestNewSingleUseQUICDialer(t *testing.T) {
 func TestQUICListenerErrWrapper(t *testing.T) {
 	t.Run("Listen", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
-			expectedConn := &mocks.QUICUDPLikeConn{}
+			expectedConn := &mocks.UDPLikeConn{}
 			ql := &quicListenerErrWrapper{
 				QUICListener: &mocks.QUICListener{
 					MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
@@ -519,7 +519,7 @@ func TestQUICErrWrapperUDPLikeConn(t *testing.T) {
 			expectedAddr := &net.UDPAddr{}
 			p := make([]byte, 128)
 			conn := &quicErrWrapperUDPLikeConn{
-				UDPLikeConn: &mocks.QUICUDPLikeConn{
+				UDPLikeConn: &mocks.UDPLikeConn{
 					MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
 						return len(p), expectedAddr, nil
 					},
@@ -541,7 +541,7 @@ func TestQUICErrWrapperUDPLikeConn(t *testing.T) {
 			p := make([]byte, 128)
 			expectedErr := io.EOF
 			conn := &quicErrWrapperUDPLikeConn{
-				UDPLikeConn: &mocks.QUICUDPLikeConn{
+				UDPLikeConn: &mocks.UDPLikeConn{
 					MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
 						return 0, nil, expectedErr
 					},
@@ -564,7 +564,7 @@ func TestQUICErrWrapperUDPLikeConn(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
 			p := make([]byte, 128)
 			conn := &quicErrWrapperUDPLikeConn{
-				UDPLikeConn: &mocks.QUICUDPLikeConn{
+				UDPLikeConn: &mocks.UDPLikeConn{
 					MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 						return len(p), nil
 					},
@@ -583,7 +583,7 @@ func TestQUICErrWrapperUDPLikeConn(t *testing.T) {
 			p := make([]byte, 128)
 			expectedErr := io.EOF
 			conn := &quicErrWrapperUDPLikeConn{
-				UDPLikeConn: &mocks.QUICUDPLikeConn{
+				UDPLikeConn: &mocks.UDPLikeConn{
 					MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 						return 0, expectedErr
 					},
@@ -602,7 +602,7 @@ func TestQUICErrWrapperUDPLikeConn(t *testing.T) {
 	t.Run("Close", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
 			conn := &quicErrWrapperUDPLikeConn{
-				UDPLikeConn: &mocks.QUICUDPLikeConn{
+				UDPLikeConn: &mocks.UDPLikeConn{
 					MockClose: func() error {
 						return nil
 					},
@@ -617,7 +617,7 @@ func TestQUICErrWrapperUDPLikeConn(t *testing.T) {
 		t.Run("on failure", func(t *testing.T) {
 			expectedErr := io.EOF
 			conn := &quicErrWrapperUDPLikeConn{
-				UDPLikeConn: &mocks.QUICUDPLikeConn{
+				UDPLikeConn: &mocks.UDPLikeConn{
 					MockClose: func() error {
 						return expectedErr
 					},

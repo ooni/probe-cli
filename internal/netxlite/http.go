@@ -27,7 +27,7 @@ func (txp *httpTransportErrWrapper) RoundTrip(req *http.Request) (*http.Response
 // httpTransportLogger is an HTTPTransport with logging.
 type httpTransportLogger struct {
 	// HTTPTransport is the underlying HTTP transport.
-	HTTPTransport model.HTTPTransport
+	model.HTTPTransport
 
 	// Logger is the underlying logger.
 	Logger model.DebugLogger
@@ -140,10 +140,20 @@ func NewOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) mode
 
 	// Ensure we correctly forward CloseIdleConnections.
 	return &httpTransportConnectionsCloser{
-		HTTPTransport: &oohttp.StdlibTransport{Transport: txp},
+		HTTPTransport: &stdlibTransport{&oohttp.StdlibTransport{Transport: txp}},
 		Dialer:        dialer,
 		TLSDialer:     tlsDialer,
 	}
+}
+
+// stdlibTransport wraps oohttp.StdlibTransport to add .Network()
+type stdlibTransport struct {
+	*oohttp.StdlibTransport
+}
+
+// Network implements HTTPTransport.Network.
+func (txp *stdlibTransport) Network() string {
+	return "tcp"
 }
 
 // WrapHTTPTransport creates an HTTPTransport using the given logger

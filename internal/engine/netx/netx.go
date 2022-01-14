@@ -200,7 +200,6 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 	txp := tInfo.Factory(httptransport.Config{
 		Dialer: config.Dialer, QUICDialer: config.QUICDialer, TLSDialer: config.TLSDialer,
 		TLSConfig: config.TLSConfig})
-	transport := tInfo.TransportName
 
 	if config.ByteCounter != nil {
 		txp = httptransport.ByteCountingTransport{
@@ -211,7 +210,7 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 	}
 	if config.HTTPSaver != nil {
 		txp = httptransport.SaverMetadataHTTPTransport{
-			HTTPTransport: txp, Saver: config.HTTPSaver, Transport: transport}
+			HTTPTransport: txp, Saver: config.HTTPSaver}
 		txp = httptransport.SaverBodyHTTPTransport{
 			HTTPTransport: txp, Saver: config.HTTPSaver}
 		txp = httptransport.SaverPerformanceHTTPTransport{

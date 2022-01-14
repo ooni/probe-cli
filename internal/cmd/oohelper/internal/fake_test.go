@@ -59,9 +59,14 @@ func (c FakeResolver) LookupHTTPS(ctx context.Context, domain string) (*model.HT
 var _ model.Resolver = FakeResolver{}
 
 type FakeTransport struct {
+	Name string
 	Err  error
 	Func func(*http.Request) (*http.Response, error)
 	Resp *http.Response
+}
+
+func (txp FakeTransport) Network() string {
+	return txp.Name
 }
 
 func (txp FakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {

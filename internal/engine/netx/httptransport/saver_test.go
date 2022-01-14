@@ -12,6 +12,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -22,7 +23,7 @@ func TestSaverPerformanceNoMultipleEvents(t *testing.T) {
 	saver := &trace.Saver{}
 	// register twice - do we see events twice?
 	txp := httptransport.SaverPerformanceHTTPTransport{
-		HTTPTransport: http.DefaultTransport.(*http.Transport),
+		HTTPTransport: netxlite.NewHTTPTransportStdlib(model.DiscardLogger),
 		Saver:         saver,
 	}
 	txp = httptransport.SaverPerformanceHTTPTransport{
@@ -67,7 +68,7 @@ func TestSaverMetadataSuccess(t *testing.T) {
 	}
 	saver := &trace.Saver{}
 	txp := httptransport.SaverMetadataHTTPTransport{
-		HTTPTransport: http.DefaultTransport.(*http.Transport),
+		HTTPTransport: netxlite.NewHTTPTransportStdlib(model.DiscardLogger),
 		Saver:         saver,
 	}
 	req, err := http.NewRequest("GET", "https://www.google.com", nil)
@@ -165,7 +166,7 @@ func TestSaverTransactionSuccess(t *testing.T) {
 	}
 	saver := &trace.Saver{}
 	txp := httptransport.SaverTransactionHTTPTransport{
-		HTTPTransport: http.DefaultTransport.(*http.Transport),
+		HTTPTransport: netxlite.NewHTTPTransportStdlib(model.DiscardLogger),
 		Saver:         saver,
 	}
 	req, err := http.NewRequest("GET", "https://www.google.com", nil)

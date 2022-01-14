@@ -224,7 +224,7 @@ func TestDNSProxy(t *testing.T) {
 		t.Run("ReadFrom failure after which we should continue", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			p := &DNSProxy{}
-			conn := &mocks.QUICUDPLikeConn{
+			conn := &mocks.UDPLikeConn{
 				MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
 					return 0, nil, expected
 				},
@@ -238,7 +238,7 @@ func TestDNSProxy(t *testing.T) {
 		t.Run("ReadFrom the connection is closed", func(t *testing.T) {
 			expected := errors.New("use of closed network connection")
 			p := &DNSProxy{}
-			conn := &mocks.QUICUDPLikeConn{
+			conn := &mocks.UDPLikeConn{
 				MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
 					return 0, nil, expected
 				},
@@ -251,7 +251,7 @@ func TestDNSProxy(t *testing.T) {
 
 		t.Run("Unpack fails", func(t *testing.T) {
 			p := &DNSProxy{}
-			conn := &mocks.QUICUDPLikeConn{
+			conn := &mocks.UDPLikeConn{
 				MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
 					if len(p) < 4 {
 						panic("buffer too small")
@@ -268,7 +268,7 @@ func TestDNSProxy(t *testing.T) {
 
 		t.Run("reply fails", func(t *testing.T) {
 			p := &DNSProxy{}
-			conn := &mocks.QUICUDPLikeConn{
+			conn := &mocks.UDPLikeConn{
 				MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
 					query := &dns.Msg{}
 					query.Question = append(query.Question, dns.Question{})
@@ -300,7 +300,7 @@ func TestDNSProxy(t *testing.T) {
 					return reply, nil
 				},
 			}
-			conn := &mocks.QUICUDPLikeConn{
+			conn := &mocks.UDPLikeConn{
 				MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
 					query := &dns.Msg{}
 					query.Question = append(query.Question, dns.Question{})

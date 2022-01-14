@@ -39,6 +39,11 @@ type http3Transport struct {
 
 var _ model.HTTPTransport = &http3Transport{}
 
+// Network implements HTTPTransport.Network.
+func (txp *http3Transport) Network() string {
+	return "quic"
+}
+
 // RoundTrip implements HTTPTransport.RoundTrip.
 func (txp *http3Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return txp.child.RoundTrip(req)

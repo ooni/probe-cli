@@ -159,7 +159,7 @@ func TestTProxyQUIC(t *testing.T) {
 			defer proxy.Close()
 			var called bool
 			proxy.listenUDP = func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
-				return &mocks.QUICUDPLikeConn{
+				return &mocks.UDPLikeConn{
 					MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 						called = true
 						return len(p), nil
@@ -196,7 +196,7 @@ func TestTProxyQUIC(t *testing.T) {
 			defer proxy.Close()
 			var called bool
 			proxy.listenUDP = func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
-				return &mocks.QUICUDPLikeConn{
+				return &mocks.UDPLikeConn{
 					MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
 						called = true
 						return len(p), nil
