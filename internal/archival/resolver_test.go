@@ -320,10 +320,6 @@ type SingleDNSRoundTripValidator struct {
 }
 
 func (v *SingleDNSRoundTripValidator) Validate() error {
-	/*
-		Query:    query,
-		Reply:    reply,
-	*/
 	trace := v.Saver.MoveOutTrace()
 	if len(trace.DNSRoundTrip) != 1 {
 		return errors.New("expected a single entry")
