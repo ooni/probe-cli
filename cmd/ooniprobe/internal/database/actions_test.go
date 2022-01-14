@@ -87,17 +87,18 @@ func TestMeasurementWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 	m1.IsUploaded = true
+	m1.IsAnomaly = sql.NullBool{Valid: true, Bool: false}
 	err = sess.Collection("measurements").Find("measurement_id", m1.ID).Update(m1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var m2 Measurement
-	err = sess.Collection("measurements").Find("measurement_id", m1.ID).One(&m2)
+	m2, err := CreateMeasurement(sess, reportID, testName, msmtFilePath, 0, resultID, urlID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	m2.IsUploaded = false
+	m2.IsAnomaly = sql.NullBool{Valid: true, Bool: true}
 	err = sess.Collection("measurements").Find("measurement_id", m2.ID).Update(m2)
 	if err != nil {
 		t.Fatal(err)
@@ -110,6 +111,7 @@ func TestMeasurementWorkflow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	result.Finished(sess)
 
 	var r Result
 	err = sess.Collection("measurements").Find("result_id", result.ID).One(&r)
@@ -125,11 +127,18 @@ func TestMeasurementWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(incomplete) != 1 {
-		t.Error("there should be 1 incomplete measurement")
+	if len(incomplete) != 0 {
+		t.Error("there should be 0 incomplete result")
 	}
-	if len(done) != 0 {
-		t.Error("there should be 0 done measurements")
+	if len(done) != 1 {
+		t.Error("there should be 1 done result")
+	}
+
+	if done[0].TotalCount != 2 {
+		t.Error("there should be a total of 2 measurements in the result")
+	}
+	if done[0].AnomalyCount != 1 {
+		t.Error("there should be a total of 1 anomalies in the result")
 	}
 
 	msmts, err := ListMeasurements(sess, resultID)

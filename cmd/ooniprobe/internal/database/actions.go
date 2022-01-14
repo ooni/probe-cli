@@ -103,76 +103,59 @@ func GetMeasurementJSON(sess sqlbuilder.Database, measurementID int64) (map[stri
 	return msmtJSON, nil
 }
 
-// GetResultTestKeys returns a list of TestKeys for a given result
-func GetResultTestKeys(sess sqlbuilder.Database, resultID int64) (string, error) {
-	res := sess.Collection("measurements").Find("result_id", resultID)
-	defer res.Close()
-
-	var (
-		msmt Measurement
-		tk   PerformanceTestKeys
-	)
-	for res.Next(&msmt) {
-		// We only really care about performance keys.
-		// Note: since even in case of failure we still initialise an empty struct,
-		// it could be that these keys come out as initializes with the default
-		// values.
-		// XXX we may want to change this behaviour by adding `omitempty` to the
-		// struct definition.
-		if msmt.TestName != "ndt" && msmt.TestName != "dash" {
-			return "{}", nil
-		}
-		if err := json.Unmarshal([]byte(msmt.TestKeys), &tk); err != nil {
-			log.WithError(err).Error("failed to parse testKeys")
-			return "{}", err
-		}
-	}
-	b, err := json.Marshal(tk)
-	if err != nil {
-		log.WithError(err).Error("failed to serialize testKeys")
-		return "{}", err
-	}
-	return string(b), nil
-}
-
-// GetMeasurementCounts returns the number of anomalous and total measurement for a given result
-func GetMeasurementCounts(sess sqlbuilder.Database, resultID int64) (uint64, uint64, error) {
-	var (
-		totalCount uint64
-		anmlyCount uint64
-		err        error
-	)
-	col := sess.Collection("measurements")
-
-	// XXX these two queries can be done with a single query
-	totalCount, err = col.Find("result_id", resultID).
-		Count()
-	if err != nil {
-		log.WithError(err).Error("failed to get total count")
-		return totalCount, anmlyCount, err
-	}
-
-	anmlyCount, err = col.Find("result_id", resultID).
-		And(db.Cond{"is_anomaly": true}).Count()
-	if err != nil {
-		log.WithError(err).Error("failed to get anmly count")
-		return totalCount, anmlyCount, err
-	}
-
-	log.Debugf("counts: %d, %d, %d", resultID, totalCount, anmlyCount)
-	return totalCount, anmlyCount, err
-}
-
 // ListResults return the list of results
 func ListResults(sess sqlbuilder.Database) ([]ResultNetwork, []ResultNetwork, error) {
 	doneResults := []ResultNetwork{}
 	incompleteResults := []ResultNetwork{}
 	req := sess.Select(
-		db.Raw("networks.*"),
-		db.Raw("results.*"),
+		db.Raw("networks.network_name"),
+		db.Raw("networks.network_type"),
+		db.Raw("networks.ip"),
+		db.Raw("networks.asn"),
+		db.Raw("networks.network_country_code"),
+
+		db.Raw("results.result_id"),
+		db.Raw("results.test_group_name"),
+		db.Raw("results.result_start_time"),
+		db.Raw("results.network_id"),
+		db.Raw("results.result_is_viewed"),
+		db.Raw("results.result_runtime"),
+		db.Raw("results.result_is_done"),
+		db.Raw("results.result_is_uploaded"),
+		db.Raw("results.result_data_usage_up"),
+		db.Raw("results.result_data_usage_down"),
+		db.Raw("results.measurement_dir"),
+
+		db.Raw("COUNT(CASE WHEN measurements.is_anomaly = TRUE THEN 1 END) as anomaly_count"),
+		db.Raw("COUNT() as total_count"),
+		// The test_keys column are concanetated with the "|" character as a separator.
+		// We consider this to be safe since we only really care about values of the
+		// performance test_keys where the values are all numbers and none of the keys
+		// contain the "|" character.
+		db.Raw("group_concat(test_keys, '|') as test_keys"),
 	).From("results").
 		Join("networks").On("results.network_id = networks.network_id").
-		OrderBy("results.result_start_time")
+		Join("measurements").On("measurements.result_id = results.result_id").
+		OrderBy("results.result_start_time").
+		GroupBy(
+			db.Raw("networks.network_name"),
+			db.Raw("networks.network_type"),
+			db.Raw("networks.ip"),
+			db.Raw("networks.asn"),
+			db.Raw("networks.network_country_code"),
+
+			db.Raw("results.result_id"),
+			db.Raw("results.test_group_name"),
+			db.Raw("results.result_start_time"),
+			db.Raw("results.network_id"),
+			db.Raw("results.result_is_viewed"),
+			db.Raw("results.result_runtime"),
+			db.Raw("results.result_is_done"),
+			db.Raw("results.result_is_uploaded"),
+			db.Raw("results.result_data_usage_up"),
+			db.Raw("results.result_data_usage_down"),
+			db.Raw("results.measurement_dir"),
+		)
 	if err := req.Where("result_is_done = true").All(&doneResults); err != nil {
 		return doneResults, incompleteResults, errors.Wrap(err, "failed to get result done list")
 	}

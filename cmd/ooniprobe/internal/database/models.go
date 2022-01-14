@@ -11,8 +11,11 @@ import (
 // ResultNetwork is used to represent the structure made from the JOIN
 // between the results and networks tables.
 type ResultNetwork struct {
-	Result  `db:",inline"`
-	Network `db:",inline"`
+	Result       `db:",inline"`
+	Network      `db:",inline"`
+	AnomalyCount uint64 `db:"anomaly_count"`
+	TotalCount   uint64 `db:"total_count"`
+	TestKeys     string `db:"test_keys"`
 }
 
 // UploadedTotalCount is the count of the measurements which have been uploaded vs the total measurements in a given result set

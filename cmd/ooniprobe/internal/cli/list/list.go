@@ -1,6 +1,8 @@
 package list
 
 import (
+	"strings"
+
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
@@ -92,14 +94,23 @@ func init() {
 			netCount := make(map[uint]int)
 			output.SectionTitle("Results")
 			for idx, result := range doneResults {
-				totalCount, anmlyCount, err := database.GetMeasurementCounts(probeCLI.DB(), result.Result.ID)
-				if err != nil {
-					log.WithError(err).Error("failed to list measurement counts")
+				testKeys := "{}"
+
+				// We only care to expose in the testKeys the value of the ndt test result
+				if result.TestGroupName == "performance" {
+					// The test_keys column are concanetated with the "|" character as a separator.
+					// We consider this to be safe since we only really care about values of the
+					// performance test_keys where the values are all numbers and none of the keys
+					// contain the "|" character.
+					for _, e := range strings.Split(result.TestKeys, "|") {
+						// We use the presence of the "download" key to indicate we have found the
+						// ndt test_keys, since the dash result does not contain it.
+						if strings.Contains(e, "download") {
+							testKeys = e
+						}
+					}
 				}
-				testKeys, err := database.GetResultTestKeys(probeCLI.DB(), result.Result.ID)
-				if err != nil {
-					log.WithError(err).Error("failed to get testKeys")
-				}
+
 				output.ResultItem(output.ResultItemData{
 					ID:                      result.Result.ID,
 					Index:                   idx,
@@ -110,8 +121,8 @@ func init() {
 					Country:                 result.Network.CountryCode,
 					ASN:                     result.Network.ASN,
 					TestKeys:                testKeys,
-					MeasurementCount:        totalCount,
-					MeasurementAnomalyCount: anmlyCount,
+					MeasurementCount:        result.TotalCount,
+					MeasurementAnomalyCount: result.AnomalyCount,
 					Done:                    result.IsDone,
 					DataUsageUp:             result.DataUsageUp,
 					DataUsageDown:           result.DataUsageDown,
