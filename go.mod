@@ -25,6 +25,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/klauspost/reedsolomon v1.9.15 // indirect
 	github.com/lucas-clemente/quic-go v0.24.0
+	github.com/marten-seemann/qtls-go1-17 v0.1.0
 	github.com/mattn/go-colorable v0.1.12
 	github.com/mattn/go-sqlite3 v1.14.9 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
@@ -33,7 +34,7 @@ require (
 	github.com/montanaflynn/stats v0.6.6
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/ooni/go-libtor v1.1.4
-	github.com/ooni/oohttp v0.0.0-20211206150145-a14131163a5e
+	github.com/ooni/oohttp v0.0.0-20220118112935-940b7f7db71e
 	github.com/ooni/probe-assets v0.6.0
 	github.com/ooni/psiphon v0.9.0
 	github.com/oschwald/geoip2-golang v1.5.0
@@ -51,7 +52,7 @@ require (
 	gitlab.com/yawning/obfs4.git v0.0.0-20210511220700-e330d1b7024b
 	gitlab.com/yawning/utls.git v0.0.12-1
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e // indirect
-	golang.org/x/net v0.0.0-20211205041911-012df41ee64c
+	golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d
 	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d
 	golang.org/x/tools v0.1.8 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
