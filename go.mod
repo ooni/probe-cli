@@ -35,7 +35,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/ooni/go-libtor v1.1.4
 	github.com/ooni/oohttp v0.0.0-20220118112935-940b7f7db71e
-	github.com/ooni/probe-assets v0.6.0
+	github.com/ooni/probe-assets v0.7.0
 	github.com/ooni/psiphon v0.9.0
 	github.com/oschwald/geoip2-golang v1.5.0
 	github.com/pborman/getopt/v2 v2.1.0
