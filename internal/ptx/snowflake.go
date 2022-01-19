@@ -11,28 +11,9 @@ import (
 // SnowflakeDialer is a dialer for snowflake. When optional fields are
 // not specified, we use defaults from the snowflake repository.
 type SnowflakeDialer struct {
-	// BrokerURL is the optional broker URL. If not specified,
-	// we will be using a sensible default value.
-	BrokerURL string
-
-	// FrontDomain is the domain to use for fronting. If not
-	// specified, we will be using a sensible default.
-	FrontDomain string
-
-	// ICEAddresses contains the addresses to use for ICE. If not
-	// specified, we will be using a sensible default.
-	ICEAddresses []string
-
-	// MaxSnowflakes is the maximum number of snowflakes we
-	// should create per dialer. If negative or zero, we will
-	// be using a sensible default.
-	MaxSnowflakes int
-
 	// newClientTransport is an optional hook for creating
 	// an alternative snowflakeTransport in testing.
-	newClientTransport func(brokerURL string, frontDomain string,
-		iceAddresses []string, keepLocalAddresses bool,
-		maxSnowflakes int) (snowflakeTransport, error)
+	newClientTransport func(config sflib.ClientConfig) (snowflakeTransport, error)
 }
 
 // snowflakeTransport is anything that allows us to dial a snowflake
@@ -50,10 +31,14 @@ func (d *SnowflakeDialer) DialContext(ctx context.Context) (net.Conn, error) {
 func (d *SnowflakeDialer) dialContext(
 	ctx context.Context) (net.Conn, chan interface{}, error) {
 	done := make(chan interface{})
-	txp, err := d.newSnowflakeClient(
-		d.brokerURL(), d.frontDomain(), d.iceAddresses(),
-		false, d.maxSnowflakes(),
-	)
+	txp, err := d.newSnowflakeClient(sflib.ClientConfig{
+		BrokerURL:          d.brokerURL(),
+		AmpCacheURL:        d.ampCacheURL(),
+		FrontDomain:        d.frontDomain(),
+		ICEAddresses:       d.iceAddresses(),
+		KeepLocalAddresses: false,
+		Max:                d.maxSnowflakes(),
+	})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -83,53 +68,42 @@ func (d *SnowflakeDialer) dialContext(
 
 // newSnowflakeClient allows us to call a mock rather than
 // the real sflib.NewSnowflakeClient.
-func (d *SnowflakeDialer) newSnowflakeClient(brokerURL string, frontDomain string,
-	iceAddresses []string, keepLocalAddresses bool,
-	maxSnowflakes int) (snowflakeTransport, error) {
+func (d *SnowflakeDialer) newSnowflakeClient(config sflib.ClientConfig) (snowflakeTransport, error) {
 	if d.newClientTransport != nil {
-		return d.newClientTransport(brokerURL, frontDomain, iceAddresses,
-			keepLocalAddresses, maxSnowflakes)
+		return d.newClientTransport(config)
 	}
-	// XXX: should we set the AMP cache URL here?
-	return sflib.NewSnowflakeClient(sflib.ClientConfig{
-		BrokerURL:          brokerURL,
-		AmpCacheURL:        "",
-		FrontDomain:        frontDomain,
-		ICEAddresses:       iceAddresses,
-		KeepLocalAddresses: keepLocalAddresses,
-		Max:                maxSnowflakes,
-	})
+	return sflib.NewSnowflakeClient(config)
+}
+
+// ampCacheURL returns a suitable AMP cache URL.
+func (d *SnowflakeDialer) ampCacheURL() string {
+	// I tried using the following AMP cache and always got:
+	//
+	// 2022/01/19 16:51:28 AMP cache rendezvous response: 500 Internal Server Error
+	//
+	// So I disabled the AMP cache until we figure it out.
+	//
+	//return "https://cdn.ampproject.org/"
+	return ""
 }
 
 // brokerURL returns a suitable broker URL.
 func (d *SnowflakeDialer) brokerURL() string {
-	if d.BrokerURL != "" {
-		return d.BrokerURL
-	}
 	return "https://snowflake-broker.torproject.net.global.prod.fastly.net/"
 }
 
 // frontDomain returns a suitable front domain.
 func (d *SnowflakeDialer) frontDomain() string {
-	if d.FrontDomain != "" {
-		return d.FrontDomain
-	}
 	return "cdn.sstatic.net"
 }
 
 // iceAddresses returns suitable ICE addresses.
 func (d *SnowflakeDialer) iceAddresses() []string {
-	if len(d.ICEAddresses) > 0 {
-		return d.ICEAddresses
-	}
 	return stuninput.AsSnowflakeInput()
 }
 
 // maxSnowflakes returns the number of snowflakes to collect.
 func (d *SnowflakeDialer) maxSnowflakes() int {
-	if d.MaxSnowflakes > 0 {
-		return d.MaxSnowflakes
-	}
 	return 1
 }
 

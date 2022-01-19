@@ -6,6 +6,7 @@ import (
 	"net"
 	"testing"
 
+	sflib "git.torproject.org/pluggable-transports/snowflake.git/v2/client/lib"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
@@ -47,7 +48,7 @@ var _ snowflakeTransport = &mockableSnowflakeTransport{}
 
 func TestSnowflakeDialerWorksWithMocks(t *testing.T) {
 	sfd := &SnowflakeDialer{
-		newClientTransport: func(brokerURL, frontDomain string, iceAddresses []string, keepLocalAddresses bool, maxSnowflakes int) (snowflakeTransport, error) {
+		newClientTransport: func(config sflib.ClientConfig) (snowflakeTransport, error) {
 			return &mockableSnowflakeTransport{
 				MockDial: func() (net.Conn, error) {
 					return &mocks.Conn{
@@ -79,7 +80,7 @@ func TestSnowflakeDialerWorksWithMocks(t *testing.T) {
 func TestSnowflakeDialerCannotCreateTransport(t *testing.T) {
 	expected := errors.New("mocked error")
 	sfd := &SnowflakeDialer{
-		newClientTransport: func(brokerURL, frontDomain string, iceAddresses []string, keepLocalAddresses bool, maxSnowflakes int) (snowflakeTransport, error) {
+		newClientTransport: func(config sflib.ClientConfig) (snowflakeTransport, error) {
 			return nil, expected
 		},
 	}
@@ -95,7 +96,7 @@ func TestSnowflakeDialerCannotCreateTransport(t *testing.T) {
 func TestSnowflakeDialerCannotCreateConnWithNoContextExpiration(t *testing.T) {
 	expected := errors.New("mocked error")
 	sfd := &SnowflakeDialer{
-		newClientTransport: func(brokerURL, frontDomain string, iceAddresses []string, keepLocalAddresses bool, maxSnowflakes int) (snowflakeTransport, error) {
+		newClientTransport: func(config sflib.ClientConfig) (snowflakeTransport, error) {
 			return &mockableSnowflakeTransport{
 				MockDial: func() (net.Conn, error) {
 					return nil, expected
@@ -117,7 +118,7 @@ func TestSnowflakeDialerCannotCreateConnWithContextExpiration(t *testing.T) {
 	defer cancel()
 	expected := errors.New("mocked error")
 	sfd := &SnowflakeDialer{
-		newClientTransport: func(brokerURL, frontDomain string, iceAddresses []string, keepLocalAddresses bool, maxSnowflakes int) (snowflakeTransport, error) {
+		newClientTransport: func(config sflib.ClientConfig) (snowflakeTransport, error) {
 			return &mockableSnowflakeTransport{
 				MockDial: func() (net.Conn, error) {
 					cancel() // before returning to the caller
@@ -140,7 +141,7 @@ func TestSnowflakeDialerWorksWithWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	sfd := &SnowflakeDialer{
-		newClientTransport: func(brokerURL, frontDomain string, iceAddresses []string, keepLocalAddresses bool, maxSnowflakes int) (snowflakeTransport, error) {
+		newClientTransport: func(config sflib.ClientConfig) (snowflakeTransport, error) {
 			return &mockableSnowflakeTransport{
 				MockDial: func() (net.Conn, error) {
 					cancel() // cause a cancel before we can really have a conn
@@ -165,26 +166,5 @@ func TestSnowflakeDialerWorksWithWithCancelledContext(t *testing.T) {
 	<-done
 	if called.Load() != 1 {
 		t.Fatal("the goroutine did not call close")
-	}
-}
-
-func TestSnowflakeWeCanSetCustomValues(t *testing.T) {
-	sfd := &SnowflakeDialer{
-		BrokerURL:     "antani",
-		FrontDomain:   "mascetti",
-		ICEAddresses:  []string{"melandri"},
-		MaxSnowflakes: 11,
-	}
-	if sfd.brokerURL() != "antani" {
-		t.Fatal("invalid broker URL")
-	}
-	if sfd.frontDomain() != "mascetti" {
-		t.Fatal("invalid front domain")
-	}
-	if v := sfd.iceAddresses(); len(v) != 1 || v[0] != "melandri" {
-		t.Fatal("invalid ICE addresses")
-	}
-	if sfd.maxSnowflakes() != 11 {
-		t.Fatal("invalid max number of snowflakes")
 	}
 }

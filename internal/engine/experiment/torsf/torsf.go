@@ -89,11 +89,10 @@ func (m *Measurer) Run(
 			callbacks.OnProgress(1.0, "torsf experiment is finished")
 			return err
 		case <-ticker.C:
-			if m.config.DisableProgress {
-				continue
+			if !m.config.DisableProgress {
+				progress := time.Since(start).Seconds() / maxRuntime.Seconds()
+				callbacks.OnProgress(progress, "torsf experiment is running")
 			}
-			progress := time.Since(start).Seconds() / maxRuntime.Seconds()
-			callbacks.OnProgress(progress, "torsf experiment is running")
 		}
 	}
 }
