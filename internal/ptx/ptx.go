@@ -39,6 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -184,7 +185,9 @@ func (lst *Listener) acceptLoop(ctx context.Context, ln ptxSocksListener) {
 			if err, ok := err.(net.Error); ok && err.Temporary() {
 				continue
 			}
-			lst.logger().Warnf("ptx: socks accept error: %s", err)
+			if !errors.Is(err, net.ErrClosed) {
+				lst.logger().Warnf("ptx: socks accept error: %s", err)
+			}
 			return
 		}
 		go lst.handleSocksConn(ctx, conn)

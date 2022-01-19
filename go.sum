@@ -17,8 +17,8 @@ git.torproject.org/pluggable-transports/goptlib.git v1.0.0/go.mod h1:YT4XMSkuEXb
 git.torproject.org/pluggable-transports/goptlib.git v1.1.0/go.mod h1:YT4XMSkuEXbtqlydr9+OxqFAyspUv0Gr9qhM3B++o/Q=
 git.torproject.org/pluggable-transports/goptlib.git v1.2.0 h1:0qRF7Dw5qXd0FtZkjWUiAh5GTutRtDGL4GXUDJ4qMHs=
 git.torproject.org/pluggable-transports/goptlib.git v1.2.0/go.mod h1:4PBMl1dg7/3vMWSoWb46eGWlrxkUyn/CAJmxhDLAlDs=
-git.torproject.org/pluggable-transports/snowflake.git v1.1.0 h1:rl/LloEeBG1sqdZdVxdW1Gmb/c3ZjdvT5o3RV8iaDg4=
-git.torproject.org/pluggable-transports/snowflake.git v1.1.0/go.mod h1:+a2yI6dfEjwEnqPgXTtKobeHDEdgJa3ANZN4bjSQk+M=
+git.torproject.org/pluggable-transports/snowflake.git/v2 v2.0.1 h1:0hivepCHxfUr+GBypo9G2hJvKuYnOxNnm7/yPHoKuo4=
+git.torproject.org/pluggable-transports/snowflake.git/v2 v2.0.1/go.mod h1:Ja4gwzbs3jyXCx6PQMM6Vigj09gOl9ox7A3lHi1s+2I=
 github.com/AlecAivazis/survey/v2 v2.0.5/go.mod h1:WYBhg6f0y/fNYUuesWQc0PKbJcEliGcYHB9sNT3Bg74=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
@@ -679,6 +679,7 @@ gitlab.com/yawning/obfs4.git v0.0.0-20220102012252-cbf3f3cfa09c/go.mod h1:M/ySGu
 gitlab.com/yawning/utls.git v0.0.11-1/go.mod h1:eYdrOOCoedNc3xw50kJ/s8JquyxeS5kr3vkFZFPTI9w=
 gitlab.com/yawning/utls.git v0.0.12-1 h1:RL6O0MP2YI0KghuEU/uGN6+8b4183eqNWoYgx7CXD0U=
 gitlab.com/yawning/utls.git v0.0.12-1/go.mod h1:3ONKiSFR9Im/c3t5RKmMJTVdmZN496FNyk3mjrY1dyo=
+gitlab.torproject.org/tpo/anti-censorship/geoip v0.0.0-20210928150955-7ce4b3d98d01/go.mod h1:K3LOI4H8fa6j+7E10ViHeGEQV10304FG4j94ypmKLjY=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738/go.mod h1:dnLIgRNXwCJa5e+c6mIZCrds/GIG4ncV9HhK5PX7jPg=

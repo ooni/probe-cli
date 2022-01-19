@@ -16,10 +16,12 @@ import (
 )
 
 // testVersion is the tor experiment version.
-const testVersion = "0.1.0"
+const testVersion = "0.1.1"
 
 // Config contains the experiment config.
-type Config struct{}
+type Config struct {
+	DisableProgress bool `ooni:"Disable printing progress messages"`
+}
 
 // TestKeys contains the experiment's result.
 type TestKeys struct {
@@ -74,7 +76,7 @@ func (m *Measurer) Run(
 	testkeys := &TestKeys{}
 	measurement.TestKeys = testkeys
 	start := time.Now()
-	const maxRuntime = 300 * time.Second
+	const maxRuntime = 600 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, maxRuntime)
 	defer cancel()
 	errch := make(chan error)
@@ -87,6 +89,9 @@ func (m *Measurer) Run(
 			callbacks.OnProgress(1.0, "torsf experiment is finished")
 			return err
 		case <-ticker.C:
+			if m.config.DisableProgress {
+				continue
+			}
 			progress := time.Since(start).Seconds() / maxRuntime.Seconds()
 			callbacks.OnProgress(progress, "torsf experiment is running")
 		}

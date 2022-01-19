@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	sflib "git.torproject.org/pluggable-transports/snowflake.git/client/lib"
+	sflib "git.torproject.org/pluggable-transports/snowflake.git/v2/client/lib"
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
 )
 
@@ -90,9 +90,15 @@ func (d *SnowflakeDialer) newSnowflakeClient(brokerURL string, frontDomain strin
 		return d.newClientTransport(brokerURL, frontDomain, iceAddresses,
 			keepLocalAddresses, maxSnowflakes)
 	}
-	return sflib.NewSnowflakeClient(
-		brokerURL, frontDomain, iceAddresses,
-		keepLocalAddresses, maxSnowflakes)
+	// XXX: should we set the AMP cache URL here?
+	return sflib.NewSnowflakeClient(sflib.ClientConfig{
+		BrokerURL:          brokerURL,
+		AmpCacheURL:        "",
+		FrontDomain:        frontDomain,
+		ICEAddresses:       iceAddresses,
+		KeepLocalAddresses: keepLocalAddresses,
+		Max:                maxSnowflakes,
+	})
 }
 
 // brokerURL returns a suitable broker URL.
