@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
-	survey "gopkg.in/AlecAivazis/survey.v1"
 	db "upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 )

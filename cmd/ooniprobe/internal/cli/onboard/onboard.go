@@ -3,6 +3,7 @@ package onboard
 import (
 	"fmt"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/fatih/color"
@@ -11,7 +12,6 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/output"
 	"github.com/pkg/errors"
-	"gopkg.in/AlecAivazis/survey.v1"
 )
 
 // Onboarding start the interactive onboarding procedure
