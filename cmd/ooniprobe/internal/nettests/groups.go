@@ -55,6 +55,7 @@ var All = map[string]Group{
 		Nettests: []Nettest{
 			DNSCheck{},
 			STUNReachability{},
+			TorSf{},
 		},
 	},
 }
