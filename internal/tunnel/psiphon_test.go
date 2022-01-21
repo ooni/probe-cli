@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ooni/psiphon/oopsi/github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
+	"github.com/ooni/psiphon/tunnel-core/ClientLibrary/clientlib"
 )
 
 func TestPsiphonWithCancelledContext(t *testing.T) {

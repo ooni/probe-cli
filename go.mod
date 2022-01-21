@@ -11,12 +11,10 @@ require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/apex/log v1.9.0
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
-	github.com/creack/goselect v0.1.2 // indirect
 	github.com/cretz/bine v0.2.0
-	github.com/dchest/siphash v1.2.2 // indirect
 	github.com/fatih/color v1.13.0
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/google/go-cmp v0.5.5
+	github.com/google/go-cmp v0.5.6
 	github.com/google/martian/v3 v3.2.1
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.3.0
@@ -36,7 +34,7 @@ require (
 	github.com/ooni/go-libtor v1.1.4
 	github.com/ooni/oohttp v0.0.0-20220118112935-940b7f7db71e
 	github.com/ooni/probe-assets v0.7.0
-	github.com/ooni/psiphon v0.9.0
+	github.com/ooni/psiphon/tunnel-core v0.0.0-20220121102537-7fc0bcd97c5f
 	github.com/oschwald/geoip2-golang v1.5.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/interceptor v0.1.5 // indirect
