@@ -160,7 +160,7 @@ func TestGetSummaryKeys(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rsk := sk.(*SummaryKeys)
+	rsk := sk.(SummaryKeys)
 	if rsk.IsAnomaly {
 		t.Fatal("expected no anomaly here")
 	}

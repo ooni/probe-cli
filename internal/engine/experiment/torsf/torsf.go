@@ -173,5 +173,5 @@ type SummaryKeys struct {
 
 // GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
 func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	return &SummaryKeys{IsAnomaly: false}, nil
+	return SummaryKeys{IsAnomaly: false}, nil
 }
