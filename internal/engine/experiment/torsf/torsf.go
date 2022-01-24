@@ -6,6 +6,7 @@ package torsf
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"time"
 
@@ -80,7 +81,7 @@ func (m *Measurer) Run(
 	ctx, cancel := context.WithTimeout(ctx, maxRuntime)
 	defer cancel()
 	errch := make(chan error)
-	ticker := time.NewTicker(250 * time.Millisecond)
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 	go m.run(ctx, sess, testkeys, errch)
 	for {
@@ -90,8 +91,11 @@ func (m *Measurer) Run(
 			return err
 		case <-ticker.C:
 			if !m.config.DisableProgress {
-				progress := time.Since(start).Seconds() / maxRuntime.Seconds()
-				callbacks.OnProgress(progress, "torsf experiment is running")
+				elapsedTime := time.Since(start)
+				progress := elapsedTime.Seconds() / maxRuntime.Seconds()
+				callbacks.OnProgress(progress, fmt.Sprintf(
+					"torsf: elapsedTime: %.0f s; maxRuntime: %.0f s",
+					elapsedTime.Seconds(), maxRuntime.Seconds()))
 			}
 		}
 	}
