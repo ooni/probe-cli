@@ -40,7 +40,7 @@ ANDROID_CLI_VERSION = 7583922
 #help:
 #help: * ANDROID_INSTALL_EXTRA : contains the android tools we install in addition
 #help:                           to the NDK in order to build oonimkall.aar.
-ANDROID_INSTALL_EXTRA = 'build-tools;29.0.3' 'platforms;android-31'
+ANDROID_INSTALL_EXTRA = 'build-tools;32.0.0' 'platforms;android-31'
 
 #help:
 #help: * ANDROID_NDK_VERSION   : Android NDK version.
