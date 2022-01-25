@@ -35,7 +35,7 @@ type Config struct {
 
 	// Logger is the optional logger to use. If empty we use a default
 	// implementation that does not emit any output.
-	Logger model.InfoLogger
+	Logger model.Logger
 
 	// TorArgs contains the optional arguments that you want us to pass
 	// to the tor binary when invoking it. By default we do not
@@ -76,7 +76,7 @@ type Config struct {
 }
 
 // logger returns the logger to use.
-func (c *Config) logger() model.InfoLogger {
+func (c *Config) logger() model.Logger {
 	if c.Logger != nil {
 		return c.Logger
 	}
