@@ -87,8 +87,8 @@ func (m *Measurer) Run(
 	measurement.TestKeys = tk
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
+	mx := measurex.NewMeasurerWithDefaultSettings()
 	for i := int64(0); i < m.config.repetitions(); i++ {
-		mx := measurex.NewMeasurerWithDefaultSettings()
 		meas := mx.LookupHostUDP(ctx, m.config.domain(), parsed.Host)
 		tk.Pings = append(tk.Pings, &SinglePing{
 			DNSRoundTrips: measurex.NewArchivalDNSRoundTripEventList(meas.DNSRoundTrip),
