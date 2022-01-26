@@ -439,7 +439,6 @@ func TestHTTPTLSDialerWithReadTimeout(t *testing.T) {
 }
 
 func TestNewHTTPTransportStdlib(t *testing.T) {
-	// What to test about this factory?
 	txp := NewHTTPTransportStdlib(log.Log)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately!
@@ -453,6 +452,9 @@ func TestNewHTTPTransportStdlib(t *testing.T) {
 	}
 	if resp != nil {
 		t.Fatal("unexpected resp")
+	}
+	if txp.Network() != "tcp" {
+		t.Fatal("unexpected .Network return value")
 	}
 	txp.CloseIdleConnections()
 }

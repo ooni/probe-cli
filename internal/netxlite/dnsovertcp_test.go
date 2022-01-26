@@ -208,6 +208,7 @@ func TestDNSOverTCP(t *testing.T) {
 		if txp.Address() != address {
 			t.Fatal("invalid Address")
 		}
+		txp.CloseIdleConnections()
 	})
 
 	t.Run("other functions okay with TLS", func(t *testing.T) {
@@ -222,5 +223,6 @@ func TestDNSOverTCP(t *testing.T) {
 		if txp.Address() != address {
 			t.Fatal("invalid Address")
 		}
+		txp.CloseIdleConnections()
 	})
 }
