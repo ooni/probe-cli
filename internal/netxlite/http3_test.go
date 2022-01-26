@@ -59,6 +59,13 @@ func TestHTTP3Transport(t *testing.T) {
 		}
 	})
 
+	t.Run("Network", func(t *testing.T) {
+		txp := &http3Transport{}
+		if txp.Network() != "quic" {
+			t.Fatal("unexpected .Network return value")
+		}
+	})
+
 	t.Run("RoundTrip", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		txp := &http3Transport{

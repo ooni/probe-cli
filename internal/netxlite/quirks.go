@@ -9,6 +9,9 @@ import (
 // the original netx implementation and that we cannot remove
 // or change without thinking about the consequences.
 
+// See https://github.com/ooni/probe/issues/1985
+var errReduceErrorsEmptyList = errors.New("bug: reduceErrors given an empty list")
+
 // quirkReduceErrors finds a known error in a list of errors since
 // it's probably most relevant. If this error is not found, just
 // return the first error according to this reasoning:
@@ -31,7 +34,8 @@ import (
 // See TODO(https://github.com/ooni/probe/issues/1779).
 func quirkReduceErrors(errorslist []error) error {
 	if len(errorslist) == 0 {
-		return nil
+		// See https://github.com/ooni/probe/issues/1985
+		return errReduceErrorsEmptyList
 	}
 	for _, err := range errorslist {
 		var wrapper *ErrWrapper
