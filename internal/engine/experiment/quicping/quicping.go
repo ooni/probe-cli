@@ -9,7 +9,6 @@ import (
 	"fmt"
 	random "math/rand"
 	"net"
-	"net/url"
 	"time"
 
 	_ "crypto/sha256"
@@ -101,25 +100,21 @@ func (m *Measurer) Run(
 	measurement *model.Measurement,
 	callbacks model.ExperimentCallbacks,
 ) error {
-	url, err := url.Parse(string(measurement.Input))
+	host := string(measurement.Input)
+	service := net.JoinHostPort(host, m.config.port())
+	udpAddr, err := net.ResolveUDPAddr("udp4", service)
 	if err != nil {
-		return errors.New("input is not an URL")
+		return err
 	}
 	tk := new(TestKeys)
-	tk.Domain = url.Host
+	tk.Domain = host
 	tk.Repetitions = m.config.repetitions()
 	measurement.TestKeys = tk
 
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	service := net.JoinHostPort(url.Host, m.config.port())
-
 	// create UDP socket
-	udpAddr, err := net.ResolveUDPAddr("udp4", service)
-	if err != nil {
-		return err
-	}
 	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
 		return err
@@ -168,6 +163,7 @@ func (m *Measurer) Run(
 			Response:          &model.ArchivalMaybeBinaryData{Value: string(resp)},
 			SupportedVersions: supportedVersions,
 		})
+		sess.Logger().Infof("PING got response from %s", service)
 	}
 
 	return nil
