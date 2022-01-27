@@ -3,15 +3,13 @@ package geolocate
 import (
 	"context"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
-
-type ipInfoResponse struct {
-	IP string `json:"ip"`
-}
 
 func ipInfoIPLookup(
 	ctx context.Context,
@@ -19,16 +17,18 @@ func ipInfoIPLookup(
 	logger model.Logger,
 	userAgent string,
 ) (string, error) {
-	var v ipInfoResponse
-	err := (&httpx.APIClientTemplate{
-		Accept:     "application/json",
-		BaseURL:    "https://ipinfo.io",
+	data, err := (&httpx.APIClientTemplate{
+		BaseURL:    "https://www.nginx.com/cdn-cgi/trace",
 		HTTPClient: httpClient,
 		Logger:     logger,
-		UserAgent:  httpheader.CLIUserAgent(), // we must be a CLI client
-	}).WithBodyLogging().Build().GetJSON(ctx, "/", &v)
+		UserAgent:  httpheader.CLIUserAgent(),
+	}).WithBodyLogging().Build().FetchResource(ctx, "")
 	if err != nil {
 		return DefaultProbeIP, err
 	}
-	return v.IP, nil
+	r := regexp.MustCompile("(?:ip)=(.*)")
+	ip := strings.Trim(string(r.Find(data)), "ip=")
+
+	logger.Debugf("ipconfig: body: %s", ip)
+	return ip, nil
 }
