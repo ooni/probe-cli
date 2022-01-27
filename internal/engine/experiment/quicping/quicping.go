@@ -9,6 +9,7 @@ import (
 	"fmt"
 	random "math/rand"
 	"net"
+	"strconv"
 	"time"
 
 	_ "crypto/sha256"
@@ -35,7 +36,7 @@ type Config struct {
 	Repetitions int64 `ooni:"number of times to repeat the measurement"`
 
 	// Port is the port to test.
-	Port string `ooni:"port is the port to test"`
+	Port int64 `ooni:"port is the port to test"`
 
 	// WaitSeconds is the number of seconds to wait for the ping response
 	WaitSeconds int `ooni:"waitseconds is the number of seconds to wait for the ping response"`
@@ -49,8 +50,8 @@ func (c *Config) repetitions() int64 {
 }
 
 func (c *Config) port() string {
-	if c.Port != "" {
-		return c.Port
+	if c.Port != 0 {
+		return strconv.FormatInt(c.Port, 10)
 	}
 	return "443"
 }
