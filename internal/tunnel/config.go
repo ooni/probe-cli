@@ -9,7 +9,7 @@ import (
 	"github.com/cretz/bine/control"
 	"github.com/cretz/bine/tor"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/psiphon/tunnel-core/ClientLibrary/clientlib"
+	"github.com/Psiphon-Labs/psiphon-tunnel-core/ClientLibrary/clientlib"
 	"golang.org/x/sys/execabs"
 )
 
