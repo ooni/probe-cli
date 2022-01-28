@@ -3,32 +3,32 @@ package geolocate
 import (
 	"context"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-type ipInfoResponse struct {
-	IP string `json:"ip"`
-}
-
-func ipInfoIPLookup(
+func cloudflareIPLookup(
 	ctx context.Context,
 	httpClient *http.Client,
 	logger model.Logger,
 	userAgent string,
 ) (string, error) {
-	var v ipInfoResponse
-	err := (&httpx.APIClientTemplate{
-		Accept:     "application/json",
-		BaseURL:    "https://ipinfo.io",
+	data, err := (&httpx.APIClientTemplate{
+		BaseURL:    "https://www.cloudflare.com",
 		HTTPClient: httpClient,
 		Logger:     logger,
-		UserAgent:  httpheader.CLIUserAgent(), // we must be a CLI client
-	}).WithBodyLogging().Build().GetJSON(ctx, "/", &v)
+		UserAgent:  httpheader.CLIUserAgent(),
+	}).WithBodyLogging().Build().FetchResource(ctx, "/cdn-cgi/trace")
 	if err != nil {
 		return DefaultProbeIP, err
 	}
-	return v.IP, nil
+	r := regexp.MustCompile("(?:ip)=(.*)")
+	ip := strings.Trim(string(r.Find(data)), "ip=")
+
+	logger.Debugf("cloudflare: body: %s", ip)
+	return ip, nil
 }

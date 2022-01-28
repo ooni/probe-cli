@@ -3,7 +3,6 @@ package geolocate
 import (
 	"context"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
@@ -18,17 +17,15 @@ func ipConfigIPLookup(
 	userAgent string,
 ) (string, error) {
 	data, err := (&httpx.APIClientTemplate{
-		BaseURL:    "https://www.cloudflare.com/cdn-cgi/trace",
+		BaseURL:    "https://ipconfig.io",
 		HTTPClient: httpClient,
 		Logger:     logger,
 		UserAgent:  httpheader.CLIUserAgent(),
-	}).WithBodyLogging().Build().FetchResource(ctx, "")
+	}).WithBodyLogging().Build().FetchResource(ctx, "/")
 	if err != nil {
 		return DefaultProbeIP, err
 	}
-	r := regexp.MustCompile("(?:ip)=(.*)")
-	ip := strings.Trim(string(r.Find(data)), "ip=")
-
+	ip := strings.Trim(string(data), "\r\n\t ")
 	logger.Debugf("ipconfig: body: %s", ip)
 	return ip, nil
 }

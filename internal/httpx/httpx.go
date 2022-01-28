@@ -149,9 +149,7 @@ func (c *apiClient) newRequest(ctx context.Context, method, resourcePath string,
 	if err != nil {
 		return nil, err
 	}
-	if resourcePath != "" { // to access the resourcePath of a given URL itself, use "/" instead of "".
-		URL.Path = resourcePath
-	}
+	URL.Path = resourcePath
 	if query != nil {
 		URL.RawQuery = query.Encode()
 	}
