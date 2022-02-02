@@ -121,3 +121,37 @@ func (s *Saver) appendDNSRoundTripEvent(ev *DNSRoundTripEvent) {
 	s.trace.DNSRoundTrip = append(s.trace.DNSRoundTrip, ev)
 	s.mu.Unlock()
 }
+
+// WrapResolver takes in input a resolver and returns in output
+// a new one that uses this saver for saving events.
+func (s *Saver) WrapResolver(r model.Resolver) model.Resolver {
+	return &resolverSaver{Resolver: r, s: s}
+}
+
+type resolverSaver struct {
+	model.Resolver
+	s *Saver
+}
+
+func (r *resolverSaver) LookupHost(ctx context.Context, domain string) ([]string, error) {
+	return r.s.LookupHost(ctx, r.Resolver, domain)
+}
+
+func (r *resolverSaver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+	return r.s.LookupHTTPS(ctx, r.Resolver, domain)
+}
+
+// WrapDNSTransport takes in input a DNS transport and returns
+// in output a new one using this saver for saving events.
+func (s *Saver) WrapDNSTransport(txp model.DNSTransport) model.DNSTransport {
+	return &dnsTransportSaver{DNSTransport: txp, s: s}
+}
+
+type dnsTransportSaver struct {
+	model.DNSTransport
+	s *Saver
+}
+
+func (txp *dnsTransportSaver) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
+	return txp.s.DNSRoundTrip(ctx, txp.DNSTransport, query)
+}

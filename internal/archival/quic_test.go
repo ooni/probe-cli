@@ -461,3 +461,96 @@ func (v *SingleQUICTLSHandshakeValidator) Validate() error {
 	}
 	return nil
 }
+
+func TestWrapQUICDialer(t *testing.T) {
+	expected := errors.New("mocked error")
+	var qd model.QUICDialer = &mocks.QUICDialer{
+		MockDialContext: func(ctx context.Context, network string, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+			return nil, expected
+		},
+	}
+	s := NewSaver()
+	qd = s.WrapQUICDialer(qd)
+	ctx := context.Background()
+	sess, err := qd.DialContext(ctx, "udp", "8.8.8.8:443", &tls.Config{}, &quic.Config{})
+	if !errors.Is(err, expected) {
+		t.Fatal("unexpected error", err)
+	}
+	if sess != nil {
+		t.Fatal("expected nil sess")
+	}
+	mt := s.MoveOutTrace()
+	if len(mt.QUICHandshake) != 1 {
+		t.Fatal("did not save QUIC handshake")
+	}
+}
+
+func TestWrapQUICListener(t *testing.T) {
+	t.Run("if listening fails", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		var ql model.QUICListener = &mocks.QUICListener{
+			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+				return nil, expected
+			},
+		}
+		s := NewSaver()
+		ql = s.WrapQUICListener(ql)
+		pconn, err := ql.Listen(&net.UDPAddr{})
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected error", err)
+		}
+		if pconn != nil {
+			t.Fatal("expected nil pconn")
+		}
+		// nothing is saved here
+	})
+
+	t.Run("if listening succeeds", func(t *testing.T) {
+		var pconn model.UDPLikeConn = &mocks.UDPLikeConn{
+			MockReadFrom: func(p []byte) (int, net.Addr, error) {
+				return len(p), &net.UDPAddr{}, nil
+			},
+			MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+				return len(p), nil
+			},
+			MockClose: func() error {
+				return nil
+			},
+		}
+		var ql model.QUICListener = &mocks.QUICListener{
+			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+				return pconn, nil
+			},
+		}
+		s := NewSaver()
+		ql = s.WrapQUICListener(ql)
+		pconn, err := ql.Listen(&net.UDPAddr{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if pconn == nil {
+			t.Fatal("expected non-nil pconn")
+		}
+		const bufsiz = 256
+		buffer := make([]byte, bufsiz)
+		count, addr, err := pconn.ReadFrom(buffer)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if count != bufsiz {
+			t.Fatal("unexpected number of bytes read")
+		}
+		count, err = pconn.WriteTo(buffer, addr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if count != bufsiz {
+			t.Fatal("unexpected number of bytes written")
+		}
+		pconn.Close() // should not save any event
+		mt := s.MoveOutTrace()
+		if len(mt.Network) != 2 {
+			t.Fatal("did not register readFrom or writeTo event")
+		}
+	})
+}

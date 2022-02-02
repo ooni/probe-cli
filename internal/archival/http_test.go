@@ -352,3 +352,47 @@ func (v *SingleHTTPRoundTripValidator) Validate() error {
 	}
 	return nil
 }
+
+func TestWrapHTTPTransport(t *testing.T) {
+	expected := errors.New("mocked error")
+	var txp model.HTTPTransport = &mocks.HTTPTransport{
+		MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+			return nil, expected
+		},
+		MockNetwork: func() string {
+			return "tcp"
+		},
+	}
+	s := NewSaver()
+	txp = s.WrapHTTPTransport(txp, 1<<17)
+	resp, err := txp.RoundTrip(&http.Request{
+		Method:           "",
+		URL:              &url.URL{},
+		Proto:            "",
+		ProtoMajor:       0,
+		ProtoMinor:       0,
+		Header:           map[string][]string{},
+		Body:             nil,
+		ContentLength:    0,
+		TransferEncoding: []string{},
+		Close:            false,
+		Host:             "",
+		Form:             map[string][]string{},
+		PostForm:         map[string][]string{},
+		Trailer:          map[string][]string{},
+		RemoteAddr:       "",
+		RequestURI:       "",
+		Cancel:           make(<-chan struct{}),
+		Response:         &http.Response{},
+	})
+	if !errors.Is(err, expected) {
+		t.Fatal("unexpected error", err)
+	}
+	if resp != nil {
+		t.Fatal("expected nil resp")
+	}
+	mt := s.MoveOutTrace()
+	if len(mt.HTTPRoundTrip) != 1 {
+		t.Fatal("did not save HTTP round trip")
+	}
+}

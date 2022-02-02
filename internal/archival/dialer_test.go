@@ -279,3 +279,83 @@ func (v *SingleNetworkEventValidator) Validate() error {
 	}
 	return nil
 }
+
+func TestWrapDialer(t *testing.T) {
+	t.Run("when the underlying dial fails", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		var d model.Dialer = &mocks.Dialer{
+			MockDialContext: func(
+				ctx context.Context, network, address string) (net.Conn, error) {
+				return nil, expected
+			},
+		}
+		s := NewSaver()
+		d = s.WrapDialer(d)
+		ctx := context.Background()
+		conn, err := d.DialContext(ctx, "tcp", "8.8.8.8:443")
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected error", err)
+		}
+		if conn != nil {
+			t.Fatal("expected nil conn")
+		}
+		mt := s.MoveOutTrace()
+		if len(mt.Network) != 1 {
+			t.Fatal("did not register dial event")
+		}
+	})
+
+	t.Run("when the underlying dial succeeds", func(t *testing.T) {
+		var conn net.Conn = &mocks.Conn{
+			MockRead: func(b []byte) (int, error) {
+				return len(b), nil
+			},
+			MockWrite: func(b []byte) (int, error) {
+				return len(b), nil
+			},
+			MockClose: func() error {
+				return nil
+			},
+			MockRemoteAddr: func() net.Addr {
+				return &net.TCPAddr{}
+			},
+		}
+		var d model.Dialer = &mocks.Dialer{
+			MockDialContext: func(
+				ctx context.Context, network, address string) (net.Conn, error) {
+				return conn, nil
+			},
+		}
+		s := NewSaver()
+		d = s.WrapDialer(d)
+		ctx := context.Background()
+		conn, err := d.DialContext(ctx, "tcp", "8.8.8.8:443")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if conn == nil {
+			t.Fatal("expected non-nil conn")
+		}
+		const bufsiz = 256
+		buf := make([]byte, bufsiz)
+		count, err := conn.Read(buf)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if count != bufsiz {
+			t.Fatal("unexpected number of bytes read")
+		}
+		count, err = conn.Write(buf)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if count != bufsiz {
+			t.Fatal("unexpected number of bytes written")
+		}
+		conn.Close() // ensures we don't save the close event
+		mt := s.MoveOutTrace()
+		if len(mt.Network) != 3 {
+			t.Fatal("did not register dial, read, or write event")
+		}
+	})
+}

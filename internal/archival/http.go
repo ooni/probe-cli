@@ -105,3 +105,24 @@ func (s *Saver) appendHTTPRoundTripEvent(ev *HTTPRoundTripEvent) {
 	s.trace.HTTPRoundTrip = append(s.trace.HTTPRoundTrip, ev)
 	s.mu.Unlock()
 }
+
+// WrapHTTPTransport takes in input an HTTP transport and
+// returns a new one using the saver for saving.
+func (s *Saver) WrapHTTPTransport(txp model.HTTPTransport,
+	maxBodySnapshotSize int64) model.HTTPTransport {
+	return &httpTransportSaver{
+		HTTPTransport: txp,
+		mb:            maxBodySnapshotSize,
+		s:             s,
+	}
+}
+
+type httpTransportSaver struct {
+	model.HTTPTransport
+	mb int64
+	s  *Saver
+}
+
+func (txp *httpTransportSaver) RoundTrip(req *http.Request) (*http.Response, error) {
+	return txp.s.HTTPRoundTrip(txp.HTTPTransport, txp.mb, req)
+}

@@ -84,3 +84,36 @@ func (s *Saver) appendNetworkEvent(ev *NetworkEvent) {
 	s.trace.Network = append(s.trace.Network, ev)
 	s.mu.Unlock()
 }
+
+// WrapDialer takes in input a dialer and returns a new dialer
+// instance that saves into the current saver.
+func (s *Saver) WrapDialer(d model.Dialer) model.Dialer {
+	return &dialerSaver{Dialer: d, s: s}
+}
+
+type dialerSaver struct {
+	model.Dialer
+	s *Saver
+}
+
+func (d *dialerSaver) DialContext(
+	ctx context.Context, network, address string) (net.Conn, error) {
+	conn, err := d.s.DialContext(ctx, d.Dialer, network, address)
+	if err != nil {
+		return nil, err
+	}
+	return &connSaver{Conn: conn, s: d.s}, nil
+}
+
+type connSaver struct {
+	net.Conn
+	s *Saver
+}
+
+func (c *connSaver) Read(data []byte) (int, error) {
+	return c.s.Read(c.Conn, data)
+}
+
+func (c *connSaver) Write(data []byte) (int, error) {
+	return c.s.Write(c.Conn, data)
+}

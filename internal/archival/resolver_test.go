@@ -345,3 +345,93 @@ func (v *SingleDNSRoundTripValidator) Validate() error {
 	}
 	return nil
 }
+
+func TestWrapResolver(t *testing.T) {
+	t.Run("LookupHost", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		var reso model.Resolver = &mocks.Resolver{
+			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				return nil, expected
+			},
+			MockNetwork: func() string {
+				return "system"
+			},
+			MockAddress: func() string {
+				return ""
+			},
+		}
+		s := NewSaver()
+		reso = s.WrapResolver(reso)
+		ctx := context.Background()
+		addrs, err := reso.LookupHost(ctx, "dns.google")
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected error", err)
+		}
+		if addrs != nil {
+			t.Fatal("expected nil addrs here")
+		}
+		mt := s.MoveOutTrace()
+		if len(mt.DNSLookupHost) != 1 {
+			t.Fatal("did not record LookupHost")
+		}
+	})
+
+	t.Run("LookupHTTPS", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		var reso model.Resolver = &mocks.Resolver{
+			MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+				return nil, expected
+			},
+			MockNetwork: func() string {
+				return "system"
+			},
+			MockAddress: func() string {
+				return ""
+			},
+		}
+		s := NewSaver()
+		reso = s.WrapResolver(reso)
+		ctx := context.Background()
+		https, err := reso.LookupHTTPS(ctx, "dns.google")
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected error", err)
+		}
+		if https != nil {
+			t.Fatal("expected nil https here")
+		}
+		mt := s.MoveOutTrace()
+		if len(mt.DNSLookupHTTPS) != 1 {
+			t.Fatal("did not record LookupHTTPS")
+		}
+	})
+}
+
+func TestWrapDNSTransport(t *testing.T) {
+	expected := errors.New("mocked error")
+	var txp model.DNSTransport = &mocks.DNSTransport{
+		MockRoundTrip: func(ctx context.Context, query []byte) ([]byte, error) {
+			return nil, expected
+		},
+		MockNetwork: func() string {
+			return "udp"
+		},
+		MockAddress: func() string {
+			return "8.8.8.8:53"
+		},
+	}
+	s := NewSaver()
+	txp = s.WrapDNSTransport(txp)
+	req := make([]byte, 128)
+	ctx := context.Background()
+	resp, err := txp.RoundTrip(ctx, req)
+	if !errors.Is(err, expected) {
+		t.Fatal("unexpected error", err)
+	}
+	if resp != nil {
+		t.Fatal("expected nil resp")
+	}
+	mt := s.MoveOutTrace()
+	if len(mt.DNSRoundTrip) != 1 {
+		t.Fatal("did not record DNS round trip")
+	}
+}

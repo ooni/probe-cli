@@ -87,3 +87,19 @@ func (s *Saver) tlsPeerCerts(err error, state *tls.ConnectionState) (out [][]byt
 	}
 	return
 }
+
+// WrapTLSHandshaker takes in input a TLS handshaker and returns
+// a new one that uses this saver for saving events.
+func (s *Saver) WrapTLSHandshaker(th model.TLSHandshaker) model.TLSHandshaker {
+	return &tlsHandshakerSaver{TLSHandshaker: th, s: s}
+}
+
+type tlsHandshakerSaver struct {
+	model.TLSHandshaker
+	s *Saver
+}
+
+func (th *tlsHandshakerSaver) Handshake(ctx context.Context,
+	conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+	return th.s.TLSHandshake(ctx, th.TLSHandshaker, conn, config)
+}

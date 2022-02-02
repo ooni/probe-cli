@@ -176,3 +176,31 @@ func TestSaverTLSHandshake(t *testing.T) {
 		}
 	})
 }
+
+func TestWrapTLSHandshaker(t *testing.T) {
+	expected := errors.New("mocked error")
+	var th model.TLSHandshaker = &mocks.TLSHandshaker{
+		MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+			return nil, tls.ConnectionState{}, expected
+		},
+	}
+	tcpConn := &mocks.Conn{
+		MockRemoteAddr: func() net.Addr {
+			return &net.TCPAddr{}
+		},
+	}
+	s := NewSaver()
+	th = s.WrapTLSHandshaker(th)
+	ctx := context.Background()
+	tconn, _, err := th.Handshake(ctx, tcpConn, &tls.Config{})
+	if !errors.Is(err, expected) {
+		t.Fatal("unexpected error", err)
+	}
+	if tconn != nil {
+		t.Fatal("expected nil tconn")
+	}
+	mt := s.MoveOutTrace()
+	if len(mt.TLSHandshake) != 1 {
+		t.Fatal("did not record TLS handshake")
+	}
+}

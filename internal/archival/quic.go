@@ -93,3 +93,55 @@ func (s *Saver) appendQUICHandshake(ev *QUICTLSHandshakeEvent) {
 	s.trace.QUICHandshake = append(s.trace.QUICHandshake, ev)
 	s.mu.Unlock()
 }
+
+// WrapQUICDialer takes in input a QUIC dialer and returns in
+// output a new one using this saver to save events.
+func (s *Saver) WrapQUICDialer(d model.QUICDialer) model.QUICDialer {
+	return &quicDialerSaver{QUICDialer: d, s: s}
+}
+
+type quicDialerSaver struct {
+	model.QUICDialer
+	s *Saver
+}
+
+func (d *quicDialerSaver) DialContext(ctx context.Context, network, address string,
+	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+	return d.s.QUICDialContext(ctx, d.QUICDialer, network, address, tlsConfig, quicConfig)
+}
+
+// WrapQUICListener takes in input a QUIC listener and returns
+// in output a new one using this saver to save events.
+func (s *Saver) WrapQUICListener(ql model.QUICListener) model.QUICListener {
+	return &quicListenerSaver{QUICListener: ql, s: s}
+}
+
+type quicListenerSaver struct {
+	model.QUICListener
+	s *Saver
+}
+
+func (ql *quicListenerSaver) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+	pconn, err := ql.QUICListener.Listen(addr)
+	if err != nil {
+		return nil, err
+	}
+	pconn = &quicListenerUDPLikeConn{
+		UDPLikeConn: pconn,
+		s:           ql.s,
+	}
+	return pconn, nil
+}
+
+type quicListenerUDPLikeConn struct {
+	model.UDPLikeConn
+	s *Saver
+}
+
+func (c *quicListenerUDPLikeConn) ReadFrom(buf []byte) (int, net.Addr, error) {
+	return c.s.ReadFrom(c.UDPLikeConn, buf)
+}
+
+func (c *quicListenerUDPLikeConn) WriteTo(buf []byte, addr net.Addr) (int, error) {
+	return c.s.WriteTo(c.UDPLikeConn, buf, addr)
+}
