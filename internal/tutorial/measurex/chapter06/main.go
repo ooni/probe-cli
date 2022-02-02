@@ -207,8 +207,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "tcp",
 //       "t": 0.045800292,
-//       "started": 0.045782167,
-//       "oddity": ""
+//       "started": 0.045782167
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -217,8 +216,7 @@ func main() {
 //       "operation": "read",
 //       "proto": "tcp",
 //       "t": 0.082571,
-//       "started": 0.045805458,
-//       "oddity": ""
+//       "started": 0.045805458
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -227,8 +225,7 @@ func main() {
 //       "operation": "read",
 //       "proto": "tcp",
 //       "t": 0.084400542,
-//       "started": 0.084372667,
-//       "oddity": ""
+//       "started": 0.084372667
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -237,8 +234,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "tcp",
 //       "t": 0.086762625,
-//       "started": 0.086748292,
-//       "oddity": ""
+//       "started": 0.086748292
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -247,8 +243,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "tcp",
 //       "t": 0.087851,
-//       "started": 0.087837625,
-//       "oddity": ""
+//       "started": 0.087837625
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -257,8 +252,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "tcp",
 //       "t": 0.089527292,
-//       "started": 0.089507958,
-//       "oddity": ""
+//       "started": 0.089507958
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -267,8 +261,7 @@ func main() {
 //       "operation": "read",
 //       "proto": "tcp",
 //       "t": 0.168585625,
-//       "started": 0.088068375,
-//       "oddity": ""
+//       "started": 0.088068375
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -277,8 +270,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "tcp",
 //       "t": 0.168713542,
-//       "started": 0.168671417,
-//       "oddity": ""
+//       "started": 0.168671417
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -287,8 +279,7 @@ func main() {
 //       "operation": "read",
 //       "proto": "tcp",
 //       "t": 0.468671417,
-//       "started": 0.168759333,
-//       "oddity": ""
+//       "started": 0.168759333
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -297,8 +288,7 @@ func main() {
 //       "operation": "read",
 //       "proto": "tcp",
 //       "t": 0.47118175,
-//       "started": 0.471169667,
-//       "oddity": ""
+//       "started": 0.471169667
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -307,8 +297,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "tcp",
 //       "t": 0.471335458,
-//       "started": 0.471268583,
-//       "oddity": ""
+//       "started": 0.471268583
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -317,8 +306,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "tcp",
 //       "t": 0.471865,
-//       "started": 0.471836292,
-//       "oddity": ""
+//       "started": 0.471836292
 //     }
 //   ],
 //
@@ -334,8 +322,7 @@ func main() {
 //         "failure": null,
 //         "success": true
 //       },
-//       "started": 0.022849458,
-//       "oddity": ""
+//       "started": 0.022849458
 //     }
 //   ],
 //
@@ -372,7 +359,6 @@ func main() {
 //         "http/1.1"
 //       ],
 //       "no_tls_verify": false,
-//       "oddity": "",
 //       "proto": "tcp",
 //       "started": 0.043971083
 //     }
@@ -448,10 +434,6 @@ func main() {
 //       // round trip.
 //       "t": 0.471535167,
 //       "started": 0.087176458,
-//
-//       // As usual we also compute an oddity value related
-//       // in this case to the HTTP round trip.
-//       "oddity": ""
 //     }
 //   ]
 // }

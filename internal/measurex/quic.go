@@ -135,27 +135,12 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, network, address string
 		Started:         started,
 		Finished:        finished,
 		Failure:         NewFailure(err),
-		Oddity:          qh.computeOddity(err),
 		TLSVersion:      netxlite.TLSVersionString(state.Version),
 		CipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		NegotiatedProto: state.NegotiatedProtocol,
 		PeerCerts:       peerCerts(nil, &state),
 	})
 	return sess, err
-}
-
-func (qh *quicDialerDB) computeOddity(err error) Oddity {
-	if err == nil {
-		return ""
-	}
-	switch err.Error() {
-	case netxlite.FailureGenericTimeoutError:
-		return OddityQUICHandshakeTimeout
-	case netxlite.FailureHostUnreachable:
-		return OddityQUICHandshakeHostUnreachable
-	default:
-		return OddityQUICHandshakeOther
-	}
 }
 
 func (qh *quicDialerDB) CloseIdleConnections() {

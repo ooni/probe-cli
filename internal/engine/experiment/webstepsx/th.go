@@ -306,7 +306,6 @@ func (h *THHandler) simplifyHandshake(
 			SNI:             ev.SNI,
 			ALPN:            ev.ALPN,
 			SkipVerify:      ev.SkipVerify,
-			Oddity:          ev.Oddity,
 			Network:         ev.Network,
 			Started:         0,
 		})
@@ -330,7 +329,6 @@ func (h *THHandler) simplifyHTTPRoundTrip(
 			ResponseBodyIsUTF8:      ev.ResponseBodyIsUTF8,
 			Finished:                ev.Finished,
 			Started:                 ev.Started,
-			Oddity:                  ev.Oddity,
 		})
 	}
 	return

@@ -219,8 +219,7 @@ the scope of this tutorial, and the following JSON:
       "query_type": "A",
       "resolver_address": "",
       "t": 0.002996459,
-      "started": 9.8e-05,
-      "oddity": ""
+      "started": 9.8e-05
     },
     {
       "answers": [
@@ -235,8 +234,7 @@ the scope of this tutorial, and the following JSON:
       "query_type": "AAAA",
       "resolver_address": "",
       "t": 0.002996459,
-      "started": 9.8e-05,
-      "oddity": ""
+      "started": 9.8e-05
     }
   ]
 }
@@ -283,8 +281,7 @@ This is the output JSON:
       "query_type": "A",
       "resolver_address": "",
       "t": 0.072963834,
-      "started": 0.000125417,
-      "oddity": "dns.lookup.nxdomain"
+      "started": 0.000125417
     },
     {
       "answers": null,
@@ -294,30 +291,17 @@ This is the output JSON:
       "query_type": "AAAA",
       "resolver_address": "",
       "t": 0.072963834,
-      "started": 0.000125417,
-      "oddity": "dns.lookup.nxdomain"
+      "started": 0.000125417
     }
   ]
 }
 ```
 
-So we see a failure that says there was indeed an NXDOMAIN
-error and we also see a field named `oddity`.
-
-What is an oddity? We define oddity something unexpected thay
-may be explained by censorship as well as by a transient failure
-or other normal network conditions. (In this case, the result
-is perfectly normal since we're looking up a nonexistent domain.)
-
-The difference between failure and oddity is that the failure
-indicates the error that occurred, while the oddity classifies
-the error in the context of the operation during which it
-occurred. (In this case the difference is subtle, but we'll
-have a better example later, when we'll see what happens on timeout.)
+So we see a failure that says there was indeed an NXDOMAIN error.
 
 Failures are specified in
 [df-007-errors](https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md).
-Inside the `internal/netxlite/errorsx`
+Inside the `internal/netxlite`
 package, there is code that maps Go errors to failures. (The
 `netxlite` package is the fundamental network package we use, on
 top of which `measurex` is written.)
@@ -344,8 +328,7 @@ To get this JSON:
       "query_type": "A",
       "resolver_address": "",
       "t": 0.000489167,
-      "started": 9.2583e-05,
-      "oddity": "dns.lookup.timeout"
+      "started": 9.2583e-05
     },
     {
       "answers": null,
@@ -355,18 +338,13 @@ To get this JSON:
       "query_type": "AAAA",
       "resolver_address": "",
       "t": 0.000489167,
-      "started": 9.2583e-05,
-      "oddity": "dns.lookup.timeout"
+      "started": 9.2583e-05
     }
   ]
 }
 ```
 
-You should now better see the difference between a failure and
-an oddity. The context timeout maps to a `generic_timeout_error` while
-the oddity clearly indicates the timeout happens during a DNS
-lookup. As we mentioned above, the failure is just an error while
-an oddity is an error put in context.
+As expected, the measurement fails with a generic timeout error.
 
 ## Conclusions
 

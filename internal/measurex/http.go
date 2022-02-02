@@ -156,7 +156,6 @@ type HTTPRoundTripEvent struct {
 	ResponseBodyIsUTF8      bool
 	Finished                float64
 	Started                 float64
-	Oddity                  Oddity
 }
 
 func (txp *HTTPTransportDB) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -173,16 +172,6 @@ func (txp *HTTPTransportDB) RoundTrip(req *http.Request) (*http.Response, error)
 		rt.Failure = NewFailure(err)
 		txp.DB.InsertIntoHTTPRoundTrip(rt)
 		return nil, err
-	}
-	switch {
-	case resp.StatusCode == 403:
-		rt.Oddity = OddityStatus403
-	case resp.StatusCode == 404:
-		rt.Oddity = OddityStatus404
-	case resp.StatusCode == 503:
-		rt.Oddity = OddityStatus503
-	case resp.StatusCode >= 400:
-		rt.Oddity = OddityStatusOther
 	}
 	rt.StatusCode = int64(resp.StatusCode)
 	rt.ResponseHeaders = resp.Header

@@ -57,7 +57,6 @@ type NetworkEvent struct {
 	Count      int
 	Operation  string
 	Network    string
-	Oddity     Oddity
 	Finished   float64
 	Started    float64
 }
@@ -74,7 +73,6 @@ func (d *dialerDB) DialContext(
 		Started:    started,
 		Finished:   finished,
 		Failure:    NewFailure(err),
-		Oddity:     d.computeOddity(err),
 		Count:      0,
 	})
 	if err != nil {
@@ -87,22 +85,6 @@ func (d *dialerDB) DialContext(
 		network:    network,
 		remoteAddr: address,
 	}, nil
-}
-
-func (c *dialerDB) computeOddity(err error) Oddity {
-	if err == nil {
-		return ""
-	}
-	switch err.Error() {
-	case netxlite.FailureGenericTimeoutError:
-		return OddityTCPConnectTimeout
-	case netxlite.FailureConnectionRefused:
-		return OddityTCPConnectRefused
-	case netxlite.FailureHostUnreachable:
-		return OddityTCPConnectHostUnreachable
-	default:
-		return OddityTCPConnectOher
-	}
 }
 
 type connDB struct {

@@ -108,8 +108,7 @@ Produces this JSON:
       "operation": "write_to",
       "proto": "quic",
       "t": 0.027184208,
-      "started": 0.027127208,
-      "oddity": ""
+      "started": 0.027127208
     },
     {
       "address": "8.8.4.4:443",
@@ -118,8 +117,7 @@ Produces this JSON:
       "operation": "read_from",
       "proto": "quic",
       "t": 0.053116458,
-      "started": 0.025626583,
-      "oddity": ""
+      "started": 0.025626583
     },
     {
       "address": "8.8.4.4:443",
@@ -129,7 +127,6 @@ Produces this JSON:
       "proto": "quic",
       "t": 0.054538792,
       "started": 0.054517542,
-      "oddity": ""
     },
     {
       "address": "8.8.4.4:443",
@@ -138,8 +135,7 @@ Produces this JSON:
       "operation": "read_from",
       "proto": "quic",
       "t": 0.069144958,
-      "started": 0.053194208,
-      "oddity": ""
+      "started": 0.053194208
     },
     {
       "address": "8.8.4.4:443",
@@ -148,8 +144,7 @@ Produces this JSON:
       "operation": "read_from",
       "proto": "quic",
       "t": 0.069183458,
-      "started": 0.069173292,
-      "oddity": ""
+      "started": 0.069173292
     },
     {
       "address": "8.8.4.4:443",
@@ -158,8 +153,7 @@ Produces this JSON:
       "operation": "read_from",
       "proto": "quic",
       "t": 0.06920225,
-      "started": 0.069197875,
-      "oddity": ""
+      "started": 0.069197875
     },
     {
       "address": "8.8.4.4:443",
@@ -168,8 +162,7 @@ Produces this JSON:
       "operation": "read_from",
       "proto": "quic",
       "t": 0.069210958,
-      "started": 0.069206875,
-      "oddity": ""
+      "started": 0.069206875
     },
     {
       "address": "8.8.4.4:443",
@@ -178,8 +171,7 @@ Produces this JSON:
       "operation": "read_from",
       "proto": "quic",
       "t": 0.069220667,
-      "started": 0.069217375,
-      "oddity": ""
+      "started": 0.069217375
     },
     {
       "address": "8.8.4.4:443",
@@ -188,8 +180,7 @@ Produces this JSON:
       "operation": "write_to",
       "proto": "quic",
       "t": 0.069433417,
-      "started": 0.069417625,
-      "oddity": ""
+      "started": 0.069417625
     },
     {
       "address": "8.8.4.4:443",
@@ -198,8 +189,7 @@ Produces this JSON:
       "operation": "write_to",
       "proto": "quic",
       "t": 0.069677625,
-      "started": 0.069647458,
-      "oddity": ""
+      "started": 0.069647458
     },
     {
       "address": "8.8.4.4:443",
@@ -208,8 +198,7 @@ Produces this JSON:
       "operation": "write_to",
       "proto": "quic",
       "t": 0.073461917,
-      "started": 0.073432875,
-      "oddity": ""
+      "started": 0.073432875
     },
     {
       "address": "8.8.4.4:443",
@@ -218,8 +207,7 @@ Produces this JSON:
       "operation": "write_to",
       "proto": "quic",
       "t": 0.073559417,
-      "started": 0.073542542,
-      "oddity": ""
+      "started": 0.073542542
     }
   ],
 
@@ -252,7 +240,6 @@ Produces this JSON:
         "h3"
       ],
       "no_tls_verify": false,
-      "oddity": "",
       "proto": "quic",
       "started": 0.025061583
     }
@@ -269,7 +256,7 @@ actually listening for QUIC;
 a different SNI;
 
 3. use a different ALPN (by changing the code), and see
-how the error and the oddity are handled. Can we do
+how the error is handled. Can we do
 anything about this by changing `./internal/netxlite/errorx`
 to better support this specific error condition?
 

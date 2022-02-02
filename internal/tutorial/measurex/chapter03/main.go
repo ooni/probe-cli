@@ -99,8 +99,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "udp",
 //       "t": 0.00048825,
-//       "started": 0.000462917,
-//       "oddity": ""
+//       "started": 0.000462917
 //     },
 //     {
 //       "address": "8.8.4.4:53",
@@ -109,8 +108,7 @@ func main() {
 //       "operation": "read",
 //       "proto": "udp",
 //       "t": 0.022081833,
-//       "started": 0.000502625,
-//       "oddity": ""
+//       "started": 0.000502625
 //     },
 //     {
 //       "address": "8.8.4.4:53",
@@ -119,8 +117,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "udp",
 //       "t": 0.022433083,
-//       "started": 0.022423875,
-//       "oddity": ""
+//       "started": 0.022423875
 //     },
 //     {
 //       "address": "8.8.4.4:53",
@@ -129,8 +126,7 @@ func main() {
 //       "operation": "read",
 //       "proto": "udp",
 //       "t": 0.046706,
-//       "started": 0.022443833,
-//       "oddity": ""
+//       "started": 0.022443833
 //     }
 //   ],
 //
@@ -194,8 +190,7 @@ func main() {
 //       "query_type": "A",
 //       "resolver_address": "8.8.4.4:53",
 //       "t": 0.046766833,
-//       "started": 0.000124375,
-//       "oddity": ""
+//       "started": 0.000124375
 //     },
 //     {
 //       "answers": [
@@ -210,8 +205,7 @@ func main() {
 //       "query_type": "AAAA",
 //       "resolver_address": "8.8.4.4:53",
 //       "t": 0.046766833,
-//       "started": 0.000124375,
-//       "oddity": ""
+//       "started": 0.000124375
 //     }
 //   ]
 // }
@@ -281,8 +275,7 @@ func main() {
 //       "query_type": "A",
 //       "resolver_address": "8.8.4.4:53",
 //       "t": 0.101241667,
-//       "started": 8.8e-05,
-//       "oddity": "dns.lookup.nxdomain"
+//       "started": 8.8e-05
 //     },
 //     {
 //       "answers": null,
@@ -292,8 +285,7 @@ func main() {
 //       "query_type": "AAAA",
 //       "resolver_address": "8.8.4.4:53",
 //       "t": 0.101241667,
-//       "started": 8.8e-05,
-//       "oddity": "dns.lookup.nxdomain"
+//       "started": 8.8e-05
 //     }
 //   ]
 // }
@@ -358,8 +350,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "udp",
 //       "t": 0.000479583,
-//       "started": 0.00045525,
-//       "oddity": ""
+//       "started": 0.00045525
 //     },
 //     {
 //       "address": "182.92.22.222:53",
@@ -367,8 +358,7 @@ func main() {
 //       "operation": "read",
 //       "proto": "udp",
 //       "t": 5.006016292,
-//       "started": 0.000491792,
-//       "oddity": ""
+//       "started": 0.000491792
 //     }
 //   ],
 //   "dns_events": [
@@ -395,8 +385,7 @@ func main() {
 //       "query_type": "A",
 //       "resolver_address": "182.92.22.222:53",
 //       "t": 5.007385458,
-//       "started": 0.000107583,
-//       "oddity": "dns.lookup.timeout"
+//       "started": 0.000107583
 //     },
 //     {
 //       "answers": null,
@@ -406,8 +395,7 @@ func main() {
 //       "query_type": "AAAA",
 //       "resolver_address": "182.92.22.222:53",
 //       "t": 5.007385458,
-//       "started": 0.000107583,
-//       "oddity": "dns.lookup.timeout"
+//       "started": 0.000107583
 //     }
 //   ]
 // }
@@ -446,8 +434,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "udp",
 //       "t": 0.000492125,
-//       "started": 0.000467042,
-//       "oddity": ""
+//       "started": 0.000467042
 //     },
 //     {
 //       "address": "180.97.36.63:53",
@@ -456,8 +443,7 @@ func main() {
 //       "operation": "read",
 //       "proto": "udp",
 //       "t": 0.321373542,
-//       "started": 0.000504833,
-//       "oddity": ""
+//       "started": 0.000504833
 //     },
 //     {
 //       "address": "180.97.36.63:53",
@@ -466,8 +452,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "udp",
 //       "t": 0.322500875,
-//       "started": 0.322450042,
-//       "oddity": ""
+//       "started": 0.322450042
 //     },
 //     {
 //       "address": "180.97.36.63:53",
@@ -476,8 +461,7 @@ func main() {
 //       "operation": "read",
 //       "proto": "udp",
 //       "t": 0.655514542,
-//       "started": 0.322557667,
-//       "oddity": ""
+//       "started": 0.322557667
 //     }
 //   ],
 //
@@ -515,8 +499,7 @@ func main() {
 //     }
 //   ],
 //
-//   // We see both in the error and in the oddity
-//   // that the response was "REFUSED"
+//   // We see both in the error the response was "REFUSED"
 //   "queries": [
 //     {
 //       "answers": null,
@@ -526,8 +509,7 @@ func main() {
 //       "query_type": "A",
 //       "resolver_address": "180.97.36.63:53",
 //       "t": 0.655814875,
-//       "started": 0.000107417,
-//       "oddity": "dns.lookup.refused"
+//       "started": 0.000107417
 //     },
 //     {
 //       "answers": null,
@@ -537,8 +519,7 @@ func main() {
 //       "query_type": "AAAA",
 //       "resolver_address": "180.97.36.63:53",
 //       "t": 0.655814875,
-//       "started": 0.000107417,
-//       "oddity": "dns.lookup.refused"
+//       "started": 0.000107417
 //     }
 //   ]
 // }

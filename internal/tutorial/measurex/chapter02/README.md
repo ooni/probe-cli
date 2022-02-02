@@ -109,8 +109,7 @@ Here is the JSON we obtain in output:
       "failure": null,
       "success": true
     },
-    "started": 0.000109292,
-    "oddity": ""
+    "started": 0.000109292
   }]
 }
 ```
@@ -154,15 +153,13 @@ We get this JSON:
         "failure": "connection_refused",
         "success": false
       },
-      "started": 0.000104792,
-      "oddity": "tcp.connect.refused"
+      "started": 0.000104792
     }
   ]
 }
 ```
 
-And here's an error telling us the connection was refused and
-the oddity that classifies the error.
+And here's an error telling us the connection was refused.
 
 ### Measurement with timeouts
 
@@ -188,8 +185,7 @@ We get this JSON:
         "failure": "generic_timeout_error",
         "success": false
       },
-      "started": 9.55e-05,
-      "oddity": "tcp.connect.timeout"
+      "started": 9.55e-05
     }
   ]
 }
@@ -197,8 +193,7 @@ We get this JSON:
 
 So, we clearly see from the value of `t` that our 60 seconds
 default timeout did not hit, because there is a lower watchdog
-timeout (10 s). We also see again how the oddity is more
-precise than just the error alone.
+timeout (10 s).
 
 Let us now use a very small timeout:
 
@@ -222,8 +217,7 @@ To get this JSON:
         "failure": "generic_timeout_error",
         "success": false
       },
-      "started": 9.4083e-05,
-      "oddity": "tcp.connect.timeout"
+      "started": 9.4083e-05
     }
   ]
 }

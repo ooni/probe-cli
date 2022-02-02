@@ -51,9 +51,6 @@ type ArchivalNetworkEvent struct {
 	Network    string  `json:"proto"`
 	Finished   float64 `json:"t"`
 	Started    float64 `json:"started"`
-
-	// Names that are not part of the spec.
-	Oddity Oddity `json:"oddity"`
 }
 
 // NewArchivalNetworkEvent converts a network event to its archival format.
@@ -66,7 +63,6 @@ func NewArchivalNetworkEvent(in *NetworkEvent) *ArchivalNetworkEvent {
 		Network:    in.Network,
 		Finished:   in.Finished,
 		Started:    in.Started,
-		Oddity:     in.Oddity,
 	}
 }
 
@@ -155,9 +151,6 @@ type ArchivalHTTPRoundTripEvent struct {
 	Response *HTTPResponse `json:"response"`
 	Finished float64       `json:"t"`
 	Started  float64       `json:"started"`
-
-	// Names not in the specification
-	Oddity Oddity `json:"oddity"`
 }
 
 // ArchivalHeaders is a list of HTTP headers.
@@ -204,7 +197,6 @@ func NewArchivalHTTPRoundTripEvent(in *HTTPRoundTripEvent) *ArchivalHTTPRoundTri
 		},
 		Finished: in.Finished,
 		Started:  in.Started,
-		Oddity:   in.Oddity,
 	}
 }
 
@@ -238,7 +230,6 @@ type ArchivalQUICTLSHandshakeEvent struct {
 	SNI        string   `json:"server_name"` // used in prod
 	ALPN       []string `json:"alpn"`
 	SkipVerify bool     `json:"no_tls_verify"` // used in prod
-	Oddity     Oddity   `json:"oddity"`
 	Network    string   `json:"proto"`
 	Started    float64  `json:"started"`
 }
@@ -269,7 +260,6 @@ func NewArchivalQUICTLSHandshakeEvent(in *QUICTLSHandshakeEvent) *ArchivalQUICTL
 		SNI:             in.SNI,
 		ALPN:            in.ALPN,
 		SkipVerify:      in.SkipVerify,
-		Oddity:          in.Oddity,
 		Network:         in.Network,
 		Started:         in.Started,
 	}
@@ -314,7 +304,6 @@ type ArchivalDNSLookupEvent struct {
 
 	// Names not part of the spec.
 	Started float64 `json:"started"`
-	Oddity  Oddity  `json:"oddity"`
 }
 
 // NewArchivalDNSLookupAnswers creates a list of ArchivalDNSLookupAnswer.
@@ -352,7 +341,6 @@ func NewArchivalDNSLookupEvent(in *DNSLookupEvent) *ArchivalDNSLookupEvent {
 		Address:   in.Address,
 		Finished:  in.Finished,
 		Started:   in.Started,
-		Oddity:    in.Oddity,
 	}
 }
 
@@ -380,7 +368,6 @@ type ArchivalTCPConnect struct {
 
 	// Names not part of the spec.
 	Started float64 `json:"started"`
-	Oddity  Oddity  `json:"oddity"`
 }
 
 // ArchivalTCPConnectStatus contains the status of a TCP connect.
@@ -406,7 +393,6 @@ func NewArchivalTCPConnect(in *NetworkEvent) *ArchivalTCPConnect {
 			Success: in.Failure == nil,
 		},
 		Started: in.Started,
-		Oddity:  in.Oddity,
 	}
 }
 

@@ -66,7 +66,6 @@ type DNSLookupEvent struct {
 	Address   string
 	Finished  float64
 	Started   float64
-	Oddity    Oddity
 	A         []string
 	AAAA      []string
 	ALPN      []string
@@ -123,34 +122,7 @@ func (r *resolverDB) saveLookupResults(domain string, started, finished float64,
 			continue
 		}
 	}
-	switch qtype {
-	case "A":
-		ev.Oddity = r.computeOddityLookupHost(ev.A, err)
-	case "AAAA":
-		ev.Oddity = r.computeOddityLookupHost(ev.AAAA, err)
-	}
 	r.db.InsertIntoLookupHost(ev)
-}
-
-func (r *resolverDB) computeOddityLookupHost(addrs []string, err error) Oddity {
-	if err != nil {
-		switch err.Error() {
-		case netxlite.FailureGenericTimeoutError:
-			return OddityDNSLookupTimeout
-		case netxlite.FailureDNSNXDOMAINError:
-			return OddityDNSLookupNXDOMAIN
-		case netxlite.FailureDNSRefusedError:
-			return OddityDNSLookupRefused
-		default:
-			return OddityDNSLookupOther
-		}
-	}
-	for _, addr := range addrs {
-		if netxlite.IsBogon(addr) {
-			return OddityDNSLookupBogon
-		}
-	}
-	return ""
 }
 
 func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
@@ -165,7 +137,6 @@ func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (*model.HTT
 		Started:   started,
 		Finished:  finished,
 		Failure:   NewFailure(err),
-		Oddity:    Oddity(r.computeOddityHTTPSSvc(https, err)),
 	}
 	if err == nil {
 		ev.A = append(ev.A, https.IPv4...)
@@ -174,14 +145,4 @@ func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (*model.HTT
 	}
 	r.db.InsertIntoLookupHTTPSSvc(ev)
 	return https, err
-}
-
-func (r *resolverDB) computeOddityHTTPSSvc(https *model.HTTPSSvc, err error) Oddity {
-	if err != nil {
-		return r.computeOddityLookupHost(nil, err)
-	}
-	var addrs []string
-	addrs = append(addrs, https.IPv4...)
-	addrs = append(addrs, https.IPv6...)
-	return r.computeOddityLookupHost(addrs, nil)
 }

@@ -48,7 +48,6 @@ type QUICTLSHandshakeEvent struct {
 	SNI             string
 	ALPN            []string
 	SkipVerify      bool
-	Oddity          Oddity
 	Network         string
 	Started         float64
 }
@@ -69,33 +68,12 @@ func (thx *tlsHandshakerDB) Handshake(ctx context.Context,
 		Started:         started,
 		Finished:        finished,
 		Failure:         NewFailure(err),
-		Oddity:          thx.computeOddity(err),
 		TLSVersion:      netxlite.TLSVersionString(state.Version),
 		CipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		NegotiatedProto: state.NegotiatedProtocol,
 		PeerCerts:       peerCerts(err, &state),
 	})
 	return tconn, state, err
-}
-
-func (thx *tlsHandshakerDB) computeOddity(err error) Oddity {
-	if err == nil {
-		return ""
-	}
-	switch err.Error() {
-	case netxlite.FailureGenericTimeoutError:
-		return OddityTLSHandshakeTimeout
-	case netxlite.FailureConnectionReset:
-		return OddityTLSHandshakeReset
-	case netxlite.FailureEOFError:
-		return OddityTLSHandshakeUnexpectedEOF
-	case netxlite.FailureSSLInvalidHostname:
-		return OddityTLSHandshakeInvalidHostname
-	case netxlite.FailureSSLUnknownAuthority:
-		return OddityTLSHandshakeUnknownAuthority
-	default:
-		return OddityTLSHandshakeOther
-	}
 }
 
 func peerCerts(err error, state *tls.ConnectionState) (out [][]byte) {

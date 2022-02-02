@@ -100,8 +100,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "tcp",
 //       "t": 0.048268333,
-//       "started": 0.048246666,
-//       "oddity": ""
+//       "started": 0.048246666
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -110,8 +109,7 @@ func main() {
 //       "operation": "read",
 //       "proto": "tcp",
 //       "t": 0.086214708,
-//       "started": 0.048287791,
-//       "oddity": ""
+//       "started": 0.048287791
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -120,8 +118,7 @@ func main() {
 //       "operation": "read",
 //       "proto": "tcp",
 //       "t": 0.087951708,
-//       "started": 0.08792725,
-//       "oddity": ""
+//       "started": 0.08792725
 //     },
 //     {
 //       "address": "8.8.4.4:443",
@@ -130,8 +127,7 @@ func main() {
 //       "operation": "write",
 //       "proto": "tcp",
 //       "t": 0.090097833,
-//       "started": 0.090083875,
-//       "oddity": ""
+//       "started": 0.090083875
 //     }
 //   ],
 //
@@ -147,8 +143,7 @@ func main() {
 //         "failure": null,
 //         "success": true
 //       },
-//       "started": 0.024424916,
-//       "oddity": ""
+//       "started": 0.024424916
 //     }
 //   ],
 //
@@ -183,7 +178,6 @@ func main() {
 //         "http/1.1"
 //       ],
 //       "no_tls_verify": false,
-//       "oddity": "",
 //       "proto": "tcp",
 //       "started": 0.04635975
 //     }
