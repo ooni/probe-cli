@@ -130,7 +130,6 @@ func main() {
 		submitted += 1
 		json.Marshal(mm)
 		runtimex.PanicOnError(err, "json.Marshal should not fail here")
-		fmt.Println(mm.ReportID)
 	}
 	fmt.Println("Submitted measurements: ", submitted)
 }
