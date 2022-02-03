@@ -16,6 +16,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // A ConnectionID in QUIC
@@ -38,8 +39,8 @@ type Config struct {
 	// Port is the port to test.
 	Port int64 `ooni:"port is the port to test"`
 
-	// WaitSeconds is the number of seconds to wait for the ping response
-	WaitSeconds int `ooni:"waitseconds is the number of seconds to wait for the ping response"`
+	// Timeout is the number of milliseconds to wait for the ping response
+	Timeout int64 `ooni:"Timeout is the number of milliseconds to wait for the ping response"`
 }
 
 func (c *Config) repetitions() int64 {
@@ -56,11 +57,11 @@ func (c *Config) port() string {
 	return "443"
 }
 
-func (c *Config) waitseconds() int {
-	if c.WaitSeconds != 0 {
-		return c.WaitSeconds
+func (c *Config) timeout() int64 {
+	if c.Timeout != 0 {
+		return c.Timeout
 	}
-	return 5
+	return 5000
 }
 
 // TestKeys contains the experiment results.
@@ -115,22 +116,18 @@ func (m *Measurer) Run(
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	// create UDP socket
-	conn, err := net.DialUDP("udp", nil, udpAddr)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
 	for i := int64(0); i < m.config.repetitions(); i++ {
+		// create UDP socket
+		conn, err := net.DialUDP("udp", nil, udpAddr)
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
 		<-ticker.C
 		sess.Logger().Infof("PING %s", service)
 
-		sent, dstID, srcID, err := buildPacket() // build QUIC Initial packet
-		if err != nil {
-			return errors.New(fmt.Sprintf("buildPacket failed: %s", err.Error()))
-		}
-		_, err = conn.Write(sent) // send Initial packet
+		sent, dstID, srcID := buildPacket() // build QUIC Initial packet
+		_, err = conn.Write(sent)           // send Initial packet
 		if err != nil {
 			return errors.New(fmt.Sprintf("UDP send failed: %s", err.Error()))
 		}
@@ -147,14 +144,7 @@ func (m *Measurer) Run(
 		}
 		supportedVersions, err := m.dissectVersionNegotiation(resp, dstID, srcID) // dissect server response
 		if err != nil {
-			tk.Pings = append(tk.Pings, &SinglePing{
-				ConnIdDst: dstID,
-				ConnIdSrc: srcID,
-				Failure:   archival.NewFailure(err),
-				Ping:      &model.ArchivalMaybeBinaryData{Value: string(sent)},
-				Response:  &model.ArchivalMaybeBinaryData{Value: string(resp)},
-			})
-			continue
+			sess.Logger().Infof(fmt.Sprintf("response dissection failed: %s", err))
 		}
 		tk.Pings = append(tk.Pings, &SinglePing{
 			ConnIdDst:         dstID,
@@ -170,10 +160,10 @@ func (m *Measurer) Run(
 	return nil
 }
 
-// waitResponse reads the server response. Times out after m.config.waitseconds() seconds (default: 5).
+// waitResponse reads the server response. Times out after m.config.timeout() seconds (default: 5000).
 func (m *Measurer) waitResponse(conn *net.UDPConn) ([]byte, error) {
 	buffer := make([]byte, 1024)
-	conn.SetReadDeadline(time.Now().Add(time.Duration(m.config.waitseconds()) * time.Second))
+	conn.SetReadDeadline(time.Now().Add(time.Duration(m.config.timeout()) * time.Millisecond))
 	n, _, err := conn.ReadFromUDP(buffer)
 	if err != nil {
 		return nil, err
@@ -274,11 +264,8 @@ func buildHeader(destConnID, srcConnID ConnectionID, payloadLen int) []byte {
 // buildPacket constructs an Initial QUIC packet
 // and applies Initial protection.
 // https://www.rfc-editor.org/rfc/rfc9001.html#name-client-initial
-func buildPacket() ([]byte, ConnectionID, ConnectionID, error) {
-	destConnID, srcConnID, err := generateConnectionIDs()
-	if err != nil {
-		return nil, nil, nil, err
-	}
+func buildPacket() ([]byte, ConnectionID, ConnectionID) {
+	destConnID, srcConnID := generateConnectionIDs()
 	// generate random payload
 	minPayloadSize := 1200 - 14 - (len(destConnID) + len(srcConnID))
 	randomPayload := make([]byte, minPayloadSize)
@@ -291,40 +278,32 @@ func buildPacket() ([]byte, ConnectionID, ConnectionID, error) {
 	raw := append(hdr, encrypted...)
 
 	raw = encryptHeader(raw, hdr, clientSecret)
-	return raw, destConnID, srcConnID, nil
+	return raw, destConnID, srcConnID
 }
 
 // generateConnectionID generates a connection ID using cryptographic random
-func generateConnectionID(len int) (ConnectionID, error) {
+func generateConnectionID(len int) ConnectionID {
 	b := make([]byte, len)
-	if _, err := rand.Read(b); err != nil {
-		return nil, err
-	}
-	return ConnectionID(b), nil
+	_, err := rand.Read(b)
+	runtimex.PanicOnError(err, "rand.Read failed")
+	return ConnectionID(b)
 }
 
 // generateConnectionIDForInitial generates a connection ID for the Initial packet.
 // It uses a length randomly chosen between 8 and 18 bytes.
-func generateConnectionIDForInitial() (ConnectionID, error) {
+func generateConnectionIDForInitial() ConnectionID {
 	r := make([]byte, 1)
-	if _, err := rand.Read(r); err != nil {
-		return nil, err
-	}
+	_, err := rand.Read(r)
+	runtimex.PanicOnError(err, "rand.Read failed")
 	len := MinConnectionIDLenInitial + int(r[0])%(maxConnectionIDLen-MinConnectionIDLenInitial+1)
 	return generateConnectionID(len)
 }
 
 // generateConnectionIDs generates a destination and source connection ID.
-func generateConnectionIDs() ([]byte, []byte, error) {
-	destConnID, err := generateConnectionIDForInitial()
-	if err != nil {
-		return nil, nil, err
-	}
-	srcConnID, err := generateConnectionID(DefaultConnectionIDLength)
-	if err != nil {
-		return nil, nil, err
-	}
-	return destConnID, srcConnID, nil
+func generateConnectionIDs() ([]byte, []byte) {
+	destConnID := generateConnectionIDForInitial()
+	srcConnID := generateConnectionID(DefaultConnectionIDLength)
+	return destConnID, srcConnID
 }
 
 // errUnexpectedResponse is thrown when the response from the server

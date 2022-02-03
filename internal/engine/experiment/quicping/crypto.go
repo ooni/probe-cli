@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"golang.org/x/crypto/hkdf"
 )
 
@@ -31,13 +32,9 @@ func aeadAESGCMTLS13(key, nonceMask []byte) aead {
 		panic("tls: internal error: wrong nonce length")
 	}
 	aes, err := aes.NewCipher(key)
-	if err != nil {
-		panic(err)
-	}
+	runtimex.PanicOnError(err, fmt.Sprintf("aes.NewCipher failed: %s", err))
 	aead, err := cipher.NewGCM(aes)
-	if err != nil {
-		panic(err)
-	}
+	runtimex.PanicOnError(err, fmt.Sprintf("cipher.NewGCM failed: %s", err))
 	ret := &xorNonceAEAD{aead: aead}
 	copy(ret.nonceMask[:], nonceMask)
 	return ret
@@ -77,9 +74,7 @@ func computeSecrets(destConnID []byte) (clientSecret, serverSecret []byte) {
 func encryptHeader(raw, hdr, clientSecret []byte) []byte {
 	hp := computeHP(clientSecret)
 	block, err := aes.NewCipher(hp)
-	if err != nil {
-		panic(fmt.Sprintf("error creating new AES cipher: %s", err))
-	}
+	runtimex.PanicOnError(err, fmt.Sprintf("error creating new AES cipher: %s", err))
 	hdroffset := 0
 	payloadOffset := len(hdr)
 	sample := raw[payloadOffset : payloadOffset+16]
