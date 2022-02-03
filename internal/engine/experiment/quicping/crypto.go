@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
+// BSD 3-Clause "New" or "Revised" License
+// This code is borrowed from https://github.com/marten-seemann/qtls-go1-15
 // https://github.com/marten-seemann/qtls-go1-15/blob/0d137e9e3594d8e9c864519eff97b323321e5e74/cipher_suites.go#L281
 type aead interface {
 	cipher.AEAD
@@ -26,6 +28,8 @@ const (
 	noncePrefixLength = 4
 )
 
+// BSD 3-Clause "New" or "Revised" License
+// This code is borrowed from https://github.com/marten-seemann/qtls-go1-15
 // https://github.com/marten-seemann/qtls-go1-15/blob/0d137e9e3594d8e9c864519eff97b323321e5e74/cipher_suites.go#L375
 func aeadAESGCMTLS13(key, nonceMask []byte) aead {
 	if len(nonceMask) != aeadNonceLength {
@@ -40,37 +44,44 @@ func aeadAESGCMTLS13(key, nonceMask []byte) aead {
 	return ret
 }
 
-// computeInitialKeyAndIV derives the packet protection key and Initialization Vector (IV)
-// from the initial secret.
+// MIT License
+// This code is borrowed from https://github.com/lucas-clemente/quic-go/
+// https://github.com/lucas-clemente/quic-go/blob/f3b098775e40f96486c0065204145ddc8675eb7c/internal/handshake/initial_aead.go#L60
 // https://www.rfc-editor.org/rfc/rfc9001.html#protection-keys
+//
+// computeInitialKeyAndIV derives the packet protection key and Initialization Vector (IV) from the initial secret.
 func computeInitialKeyAndIV(secret []byte) (key, iv []byte) {
 	key = hkdfExpandLabel(crypto.SHA256, secret, []byte{}, "quic key", 16)
 	iv = hkdfExpandLabel(crypto.SHA256, secret, []byte{}, "quic iv", 12)
 	return
 }
 
-// computeHP derives the header protection key from the initial secret.
 // https://www.rfc-editor.org/rfc/rfc9001.html#protection-keys
+//
+// computeHP derives the header protection key from the initial secret.
 func computeHP(secret []byte) (hp []byte) {
 	hp = hkdfExpandLabel(crypto.SHA256, secret, []byte{}, "quic hp", 16)
 	return
 }
 
-// computeSecrets computes the initial secrets based on the destination connection ID.
+// MIT License
+// This code is borrowed from https://github.com/lucas-clemente/quic-go/
+// https://github.com/lucas-clemente/quic-go/blob/f3b098775e40f96486c0065204145ddc8675eb7c/internal/handshake/initial_aead.go#L53
 // https://www.rfc-editor.org/rfc/rfc9001.html#name-initial-secrets
+//
+// computeSecrets computes the initial secrets based on the destination connection ID.
 func computeSecrets(destConnID []byte) (clientSecret, serverSecret []byte) {
 	initialSalt := []byte{0x38, 0x76, 0x2c, 0xf7, 0xf5, 0x59, 0x34, 0xb3, 0x4d, 0x17, 0x9a, 0xe6, 0xa4, 0xc8, 0x0c, 0xad, 0xcc, 0xbb, 0x7f, 0x0a}
-	// initial_secret = HKDF-Extract(initial_salt,client_dst_connection_id)
 	initialSecret := hkdf.Extract(crypto.SHA256.New, destConnID, initialSalt)
-	// client_initial_secret = HKDF-Expand-Label(initial_secret, "client in", "", 32) = c00cf151ca5be075ed0ebfb5c80323c42d6b7db67881289af4008f1f6c357aea
 	clientSecret = hkdfExpandLabel(crypto.SHA256, initialSecret, []byte{}, "client in", crypto.SHA256.Size())
 	serverSecret = hkdfExpandLabel(crypto.SHA256, initialSecret, []byte{}, "server in", crypto.SHA256.Size())
 	return
 }
 
-// encryptHeader applies header protection to the packet bytes (raw).
 // https://www.rfc-editor.org/rfc/rfc9001.html#name-client-initial
 // https://www.rfc-editor.org/rfc/rfc9001.html#name-header-protection
+//
+// encryptHeader applies header protection to the packet bytes (raw).
 func encryptHeader(raw, hdr, clientSecret []byte) []byte {
 	hp := computeHP(clientSecret)
 	block, err := aes.NewCipher(hp)
@@ -94,8 +105,9 @@ func encryptHeader(raw, hdr, clientSecret []byte) []byte {
 	return raw
 }
 
-// encryptPayload encrypts the payload of the packet.
 // https://www.rfc-editor.org/rfc/rfc9001.html#name-packet-protection
+//
+// encryptPayload encrypts the payload of the packet.
 func encryptPayload(payload, destConnID ConnectionID, clientSecret []byte) []byte {
 	myKey, myIV := computeInitialKeyAndIV(clientSecret)
 	encrypter := aeadAESGCMTLS13(myKey, myIV)
@@ -108,8 +120,11 @@ func encryptPayload(payload, destConnID ConnectionID, clientSecret []byte) []byt
 	return encrypted
 }
 
-// hkdfExpandLabel HKDF expands a label.
+// MIT License
+// This code is borrowed from https://github.com/lucas-clemente/quic-go/
 // https://github.com/lucas-clemente/quic-go/blob/master/internal/handshake/hkdf.go
+//
+// hkdfExpandLabel HKDF expands a label.
 func hkdfExpandLabel(hash crypto.Hash, secret, context []byte, label string, length int) []byte {
 	b := make([]byte, 3, 3+6+len(label)+1+len(context))
 	binary.BigEndian.PutUint16(b, uint16(length))
@@ -128,8 +143,11 @@ func hkdfExpandLabel(hash crypto.Hash, secret, context []byte, label string, len
 	return out
 }
 
-// xoredNonceAEAD wraps an AEAD by XORing in a fixed pattern to the nonce before each call.
+// BSD 3-Clause "New" or "Revised" License
+// This code is borrowed from https://github.com/marten-seemann/qtls-go1-15
 // https://github.com/marten-seemann/qtls-go1-15/blob/0d137e9e3594d8e9c864519eff97b323321e5e74/cipher_suites.go#L319
+//
+// xoredNonceAEAD wraps an AEAD by XORing in a fixed pattern to the nonce before each call.
 type xorNonceAEAD struct {
 	nonceMask [aeadNonceLength]byte
 	aead      cipher.AEAD

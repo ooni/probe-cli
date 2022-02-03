@@ -1,13 +1,16 @@
+// Package quicping implements the quicping network experiment. This
+// implements, in particular, v0.1.0 of the spec.
+//
+// See https://github.com/ooni/spec/blob/master/nettests/ts-031-quicping.md.
 package quicping
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	random "math/rand"
 	"net"
 	"strconv"
 	"time"
@@ -22,9 +25,11 @@ import (
 // A ConnectionID in QUIC
 type ConnectionID []byte
 
-const maxConnectionIDLen = 18
-const MinConnectionIDLenInitial = 8
-const DefaultConnectionIDLength = 16
+const (
+	maxConnectionIDLen        = 18
+	minConnectionIDLenInitial = 8
+	defaultConnectionIDLength = 16
+)
 
 const (
 	testName    = "quicping"
@@ -66,18 +71,19 @@ func (c *Config) timeout() int64 {
 
 // TestKeys contains the experiment results.
 type TestKeys struct {
-	Domain      string
+	Domain      string        `json:"domain"`
 	Pings       []*SinglePing `json:"pings"`
-	Repetitions int64
+	Repetitions int64         `json:"repetitions"`
 }
 
+// SinglePing is a result of a single ping operation.
 type SinglePing struct {
-	ConnIdDst         ConnectionID
-	ConnIdSrc         ConnectionID
-	Failure           *string
-	Ping              *model.ArchivalMaybeBinaryData
-	Response          *model.ArchivalMaybeBinaryData
-	SupportedVersions []uint32
+	ConnIdDst         ConnectionID                   `json:"conn_id_dst"`
+	ConnIdSrc         ConnectionID                   `json:"conn_id_src"`
+	Failure           *string                        `json:"failure"`
+	Request           *model.ArchivalMaybeBinaryData `json:"request"`
+	Response          *model.ArchivalMaybeBinaryData `json:"response"`
+	SupportedVersions []uint32                       `json:"supported_versions"`
 }
 
 // Measurer performs the measurement.
@@ -108,9 +114,10 @@ func (m *Measurer) Run(
 	if err != nil {
 		return err
 	}
-	tk := new(TestKeys)
-	tk.Domain = host
-	tk.Repetitions = m.config.repetitions()
+	tk := &TestKeys{
+		Domain:      host,
+		Repetitions: m.config.repetitions(),
+	}
 	measurement.TestKeys = tk
 
 	ticker := time.NewTicker(1 * time.Second)
@@ -137,7 +144,7 @@ func (m *Measurer) Run(
 				ConnIdDst: dstID,
 				ConnIdSrc: srcID,
 				Failure:   archival.NewFailure(err),
-				Ping:      &model.ArchivalMaybeBinaryData{Value: string(sent)},
+				Request:   &model.ArchivalMaybeBinaryData{Value: string(sent)},
 				Response:  nil,
 			})
 			continue
@@ -150,7 +157,7 @@ func (m *Measurer) Run(
 			ConnIdDst:         dstID,
 			ConnIdSrc:         srcID,
 			Failure:           nil,
-			Ping:              &model.ArchivalMaybeBinaryData{Value: string(sent)},
+			Request:           &model.ArchivalMaybeBinaryData{Value: string(sent)},
 			Response:          &model.ArchivalMaybeBinaryData{Value: string(resp)},
 			SupportedVersions: supportedVersions,
 		})
@@ -168,7 +175,7 @@ func (m *Measurer) waitResponse(conn *net.UDPConn) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return buffer[0:n], nil
+	return buffer[:n], nil
 }
 
 // dissectVersionNegotiation dissects the Version Negotiation response
@@ -191,13 +198,13 @@ func (m *Measurer) dissectVersionNegotiation(i []byte, dstID, srcID ConnectionID
 	dstLength := i[5]
 	offset := 6 + uint8(dstLength)
 	dst := i[6:offset]
-	if hex.EncodeToString(dst) != hex.EncodeToString(srcID) {
+	if !bytes.Equal(dst, srcID) {
 		return nil, &errUnexpectedResponse{msg: fmt.Sprintf("destination connection ID: is %s, was %s", dst, srcID)}
 	}
 	srcLength := i[offset]
 	src := i[offset+1 : offset+1+srcLength]
 	offset = offset + 1 + srcLength
-	if hex.EncodeToString(src) != hex.EncodeToString(dstID) {
+	if !bytes.Equal(src, dstID) {
 		return nil, &errUnexpectedResponse{msg: fmt.Sprintf("destination connection ID: is %s, was %s", src, dstID)}
 	}
 
@@ -269,8 +276,7 @@ func buildPacket() ([]byte, ConnectionID, ConnectionID) {
 	// generate random payload
 	minPayloadSize := 1200 - 14 - (len(destConnID) + len(srcConnID))
 	randomPayload := make([]byte, minPayloadSize)
-	random.Seed(time.Now().UnixNano())
-	random.Read(randomPayload)
+	rand.Read(randomPayload)
 
 	clientSecret, _ := computeSecrets(destConnID)
 	encrypted := encryptPayload(randomPayload, destConnID, clientSecret)
@@ -295,14 +301,14 @@ func generateConnectionIDForInitial() ConnectionID {
 	r := make([]byte, 1)
 	_, err := rand.Read(r)
 	runtimex.PanicOnError(err, "rand.Read failed")
-	len := MinConnectionIDLenInitial + int(r[0])%(maxConnectionIDLen-MinConnectionIDLenInitial+1)
+	len := minConnectionIDLenInitial + int(r[0])%(maxConnectionIDLen-minConnectionIDLenInitial+1)
 	return generateConnectionID(len)
 }
 
 // generateConnectionIDs generates a destination and source connection ID.
 func generateConnectionIDs() ([]byte, []byte) {
 	destConnID := generateConnectionIDForInitial()
-	srcConnID := generateConnectionID(DefaultConnectionIDLength)
+	srcConnID := generateConnectionID(defaultConnectionIDLength)
 	return destConnID, srcConnID
 }
 
