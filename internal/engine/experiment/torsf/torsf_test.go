@@ -79,17 +79,20 @@ func TestSuccessWithMockedTunnelStart(t *testing.T) {
 	m := &Measurer{
 		config: Config{},
 		mockStartTunnel: func(
-			ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, string, error) {
+			ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, tunnel.DebugInfo, error) {
 			// run for some time so we also exercise printing progress.
 			time.Sleep(bootstrapTime)
 			return &mocks.Tunnel{
-				MockBootstrapTime: func() time.Duration {
-					return bootstrapTime
-				},
-				MockStop: func() {
-					called.Add(1)
-				},
-			}, filepath.Join("testdata", "tor.log"), nil
+					MockBootstrapTime: func() time.Duration {
+						return bootstrapTime
+					},
+					MockStop: func() {
+						called.Add(1)
+					},
+				}, tunnel.DebugInfo{
+					Name:        "tor",
+					LogFilePath: filepath.Join("testdata", "tor.log"),
+				}, nil
 		},
 	}
 	ctx := context.Background()
@@ -165,8 +168,12 @@ func TestFailureToStartTunnel(t *testing.T) {
 	m := &Measurer{
 		config: Config{},
 		mockStartTunnel: func(
-			ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, string, error) {
-			return nil, filepath.Join("testdata", "tor.log"), expected
+			ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, tunnel.DebugInfo, error) {
+			return nil,
+				tunnel.DebugInfo{
+					Name:        "tor",
+					LogFilePath: filepath.Join("testdata", "tor.log"),
+				}, expected
 		},
 	}
 	ctx := context.Background()

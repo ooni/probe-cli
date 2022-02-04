@@ -52,6 +52,9 @@ type TestKeys struct {
 
 	// TorLogs contains the bootstrap logs.
 	TorLogs []string `json:"tor_logs"`
+
+	// TorVersion contains the version of tor (if it's possible to obtain it).
+	TorVersion string `json:"tor_version"`
 }
 
 // Measurer performs the measurement.
@@ -66,7 +69,7 @@ type Measurer struct {
 	// mockStartTunnel is an optional function that allows us to override the
 	// default tunnel.Start function used to start a tunnel.
 	mockStartTunnel func(
-		ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, string, error)
+		ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, tunnel.DebugInfo, error)
 }
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
@@ -165,7 +168,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	defer func() {
 		out <- tk
 	}()
-	tun, logFilePath, err := m.startTunnel()(ctx, &tunnel.Config{
+	tun, debugInfo, err := m.startTunnel()(ctx, &tunnel.Config{
 		Name:      "tor",
 		Session:   sess,
 		TunnelDir: path.Join(m.baseTunnelDir(sess), "torsf"),
@@ -176,7 +179,8 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 			"Bridge", sfdialer.AsBridgeArgument(),
 		},
 	})
-	m.readTorLogs(sess.Logger(), tk, logFilePath)
+	tk.TorVersion = debugInfo.Version
+	m.readTorLogs(sess.Logger(), tk, debugInfo.LogFilePath)
 	if err != nil {
 		// Note: archival.NewFailure scrubs IP addresses
 		tk.Failure = archival.NewFailure(err)
@@ -257,7 +261,7 @@ func (m *Measurer) startListener(f func() error) error {
 
 // startTunnel returns the proper function to start a tunnel.
 func (m *Measurer) startTunnel() func(
-	ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, string, error) {
+	ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, tunnel.DebugInfo, error) {
 	if m.mockStartTunnel != nil {
 		return m.mockStartTunnel
 	}

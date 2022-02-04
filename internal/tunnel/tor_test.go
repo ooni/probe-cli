@@ -112,6 +112,30 @@ func TestTorStartFailure(t *testing.T) {
 	}
 }
 
+func TestTorGetProtocolInfoFailure(t *testing.T) {
+	expected := errors.New("mocked error")
+	ctx := context.Background()
+	tun, _, err := torStart(ctx, &Config{
+		Session:   &MockableSession{},
+		TunnelDir: "testdata",
+		testExecabsLookPath: func(name string) (string, error) {
+			return "/usr/local/bin/tor", nil
+		},
+		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
+			return &tor.Tor{}, nil
+		},
+		testTorProtocolInfo: func(tor *tor.Tor) (*control.ProtocolInfo, error) {
+			return nil, expected
+		},
+	})
+	if !errors.Is(err, expected) {
+		t.Fatal("not the error we expected")
+	}
+	if tun != nil {
+		t.Fatal("expected nil tunnel here")
+	}
+}
+
 func TestTorEnableNetworkFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
@@ -123,6 +147,9 @@ func TestTorEnableNetworkFailure(t *testing.T) {
 		},
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
+		},
+		testTorProtocolInfo: func(tor *tor.Tor) (*control.ProtocolInfo, error) {
+			return &control.ProtocolInfo{}, nil
 		},
 		testTorEnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
 			return expected
@@ -147,6 +174,9 @@ func TestTorGetInfoFailure(t *testing.T) {
 		},
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
+		},
+		testTorProtocolInfo: func(tor *tor.Tor) (*control.ProtocolInfo, error) {
+			return &control.ProtocolInfo{}, nil
 		},
 		testTorEnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
 			return nil
@@ -174,6 +204,9 @@ func TestTorGetInfoInvalidNumberOfKeys(t *testing.T) {
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
+		testTorProtocolInfo: func(tor *tor.Tor) (*control.ProtocolInfo, error) {
+			return &control.ProtocolInfo{}, nil
+		},
 		testTorEnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
 			return nil
 		},
@@ -199,6 +232,9 @@ func TestTorGetInfoInvalidKey(t *testing.T) {
 		},
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
+		},
+		testTorProtocolInfo: func(tor *tor.Tor) (*control.ProtocolInfo, error) {
+			return &control.ProtocolInfo{}, nil
 		},
 		testTorEnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
 			return nil
@@ -226,6 +262,9 @@ func TestTorGetInfoInvalidProxyType(t *testing.T) {
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
 		},
+		testTorProtocolInfo: func(tor *tor.Tor) (*control.ProtocolInfo, error) {
+			return &control.ProtocolInfo{}, nil
+		},
 		testTorEnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
 			return nil
 		},
@@ -251,6 +290,9 @@ func TestTorUnsupportedProxy(t *testing.T) {
 		},
 		testTorStart: func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error) {
 			return &tor.Tor{}, nil
+		},
+		testTorProtocolInfo: func(tor *tor.Tor) (*control.ProtocolInfo, error) {
+			return &control.ProtocolInfo{}, nil
 		},
 		testTorEnableNetwork: func(ctx context.Context, tor *tor.Tor, wait bool) error {
 			return nil

@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"context"
+	"errors"
 	"net"
 	"os"
 
@@ -65,6 +66,9 @@ type Config struct {
 
 	// testTorStart allows us to mock tor.Start.
 	testTorStart func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error)
+
+	// testTorProtocolInfo allows us to mock getting protocol info.
+	testTorProtocolInfo func(tor *tor.Tor) (*control.ProtocolInfo, error)
 
 	// testTorEnableNetwork allows us to fake a failure when
 	// telling to the tor daemon to enable the network.
@@ -161,6 +165,21 @@ func (c *Config) torStart(ctx context.Context, conf *tor.StartConf) (*tor.Tor, e
 		return c.testTorStart(ctx, conf)
 	}
 	return tor.Start(ctx, conf)
+}
+
+// errNoTorControl indicate you passed us a tor with a nil control field.
+var errNoTorControl = errors.New("tunnel: no tor control")
+
+// torProtocolInfo calls either testTorProtocolInfo or the
+// proper function to get back protocol information.
+func (c *Config) torProtocolInfo(tor *tor.Tor) (*control.ProtocolInfo, error) {
+	if c.testTorProtocolInfo != nil {
+		return c.testTorProtocolInfo(tor)
+	}
+	if tor.Control == nil {
+		return nil, errNoTorControl
+	}
+	return tor.Control.ProtocolInfo()
 }
 
 // torEnableNetwork calls either testTorEnableNetwork or tor.EnableNetwork.

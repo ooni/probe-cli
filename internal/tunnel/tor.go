@@ -58,17 +58,23 @@ var ErrTorReturnedUnsupportedProxy = errors.New(
 	"tor returned unsupported proxy")
 
 // torStart starts the tor tunnel.
-func torStart(ctx context.Context, config *Config) (Tunnel, string, error) {
+func torStart(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) {
+	debugInfo := DebugInfo{
+		LogFilePath: "",
+		Name:        "tor",
+		Version:     "",
+	}
 	select {
 	case <-ctx.Done():
-		return nil, "", ctx.Err() // allows to write unit tests using this code
+		return nil, debugInfo, ctx.Err() // allows to write unit tests using this code
 	default:
 	}
 	if config.TunnelDir == "" {
-		return nil, "", ErrEmptyTunnelDir
+		return nil, debugInfo, ErrEmptyTunnelDir
 	}
 	stateDir := filepath.Join(config.TunnelDir, "tor")
 	logfile := filepath.Join(stateDir, "tor.log")
+	debugInfo.LogFilePath = logfile
 	maybeCleanupTunnelDir(stateDir, logfile)
 	extraArgs := append([]string{}, config.TorArgs...)
 	extraArgs = append(extraArgs, "Log")
@@ -77,40 +83,45 @@ func torStart(ctx context.Context, config *Config) (Tunnel, string, error) {
 	extraArgs = append(extraArgs, fmt.Sprintf(`notice file %s`, logfile))
 	torStartConf, err := getTorStartConf(config, stateDir, extraArgs)
 	if err != nil {
-		return nil, logfile, err
+		return nil, debugInfo, err
 	}
 	instance, err := config.torStart(ctx, torStartConf)
 	if err != nil {
-		return nil, logfile, err
+		return nil, debugInfo, err
 	}
+	protoInfo, err := config.torProtocolInfo(instance)
+	if err != nil {
+		return nil, debugInfo, err
+	}
+	debugInfo.Version = protoInfo.TorVersion
 	instance.StopProcessOnClose = true
 	start := time.Now()
 	if err := config.torEnableNetwork(ctx, instance, true); err != nil {
 		instance.Close()
-		return nil, logfile, err
+		return nil, debugInfo, err
 	}
 	stop := time.Now()
 	// Adapted from <https://git.io/Jfc7N>
 	info, err := config.torGetInfo(instance.Control, "net/listeners/socks")
 	if err != nil {
 		instance.Close()
-		return nil, logfile, err
+		return nil, debugInfo, err
 	}
 	if len(info) != 1 || info[0].Key != "net/listeners/socks" {
 		instance.Close()
-		return nil, logfile, ErrTorUnableToGetSOCKSProxyAddress
+		return nil, debugInfo, ErrTorUnableToGetSOCKSProxyAddress
 	}
 	proxyAddress := info[0].Val
 	if strings.HasPrefix(proxyAddress, "unix:") {
 		instance.Close()
-		return nil, logfile, ErrTorReturnedUnsupportedProxy
+		return nil, debugInfo, ErrTorReturnedUnsupportedProxy
 	}
 	return &torTunnel{
 		bootstrapTime: stop.Sub(start),
 		instance:      instance,
 		logFilePath:   logfile,
 		proxy:         &url.URL{Scheme: "socks5", Host: proxyAddress},
-	}, logfile, nil
+	}, debugInfo, nil
 }
 
 // maybeCleanupTunnelDir removes stale files inside
