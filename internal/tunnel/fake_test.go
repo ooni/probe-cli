@@ -14,7 +14,7 @@ func TestFakeWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately fail
 	sess := &MockableSession{}
-	tunnel, err := fakeStart(ctx, &Config{
+	tunnel, _, err := fakeStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
 	})
@@ -29,7 +29,7 @@ func TestFakeWithCancelledContext(t *testing.T) {
 func TestFakeWithEmptyTunnelDir(t *testing.T) {
 	ctx := context.Background()
 	sess := &MockableSession{}
-	tunnel, err := fakeStart(ctx, &Config{
+	tunnel, _, err := fakeStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "",
 	})
@@ -45,7 +45,7 @@ func TestFakeWithFailingMkdirAll(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	sess := &MockableSession{}
-	tunnel, err := fakeStart(ctx, &Config{
+	tunnel, _, err := fakeStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
 		testMkdirAll: func(dir string, mode os.FileMode) error {
@@ -64,7 +64,7 @@ func TestFakeSocks5NewFails(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	sess := &MockableSession{}
-	tunnel, err := fakeStart(ctx, &Config{
+	tunnel, _, err := fakeStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
 		testSocks5New: func(conf *socks5.Config) (*socks5.Server, error) {
@@ -83,7 +83,7 @@ func TestFakeNetListenFails(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	sess := &MockableSession{}
-	tunnel, err := fakeStart(ctx, &Config{
+	tunnel, _, err := fakeStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
 		testNetListen: func(network, address string) (net.Listener, error) {

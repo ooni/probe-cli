@@ -32,11 +32,6 @@ type torTunnel struct {
 	proxy *url.URL
 }
 
-// LogFilePath implements Tunnel.LogFilePath.
-func (tt *torTunnel) LogFilePath() (string, bool) {
-	return tt.logFilePath, true
-}
-
 // BootstrapTime returns the bootstrap time
 func (tt *torTunnel) BootstrapTime() time.Duration {
 	return tt.bootstrapTime
