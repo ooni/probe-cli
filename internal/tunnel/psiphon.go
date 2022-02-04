@@ -30,35 +30,30 @@ func psiphonMakeWorkingDir(config *Config) (string, error) {
 }
 
 // psiphonStart starts the psiphon tunnel.
-func psiphonStart(ctx context.Context, config *Config) (Tunnel, error) {
+func psiphonStart(ctx context.Context, config *Config) (Tunnel, string, error) {
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err() // simplifies unit testing this code
+		return nil, "", ctx.Err() // simplifies unit testing this code
 	default:
 	}
 	if config.TunnelDir == "" {
-		return nil, ErrEmptyTunnelDir
+		return nil, "", ErrEmptyTunnelDir
 	}
 	configJSON, err := config.Session.FetchPsiphonConfig(ctx)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	workdir, err := psiphonMakeWorkingDir(config)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	start := time.Now()
 	tunnel, err := config.startPsiphon(ctx, configJSON, workdir)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	stop := time.Now()
-	return &psiphonTunnel{tunnel: tunnel, bootstrapTime: stop.Sub(start)}, nil
-}
-
-// LogFilePath implements Tunnel.LogFilePath.
-func (t *psiphonTunnel) LogFilePath() (string, bool) {
-	return "", false
+	return &psiphonTunnel{tunnel: tunnel, bootstrapTime: stop.Sub(start)}, "", nil
 }
 
 // Stop is an idempotent method that shuts down the tunnel

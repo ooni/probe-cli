@@ -63,14 +63,14 @@ var ErrTorReturnedUnsupportedProxy = errors.New(
 	"tor returned unsupported proxy")
 
 // torStart starts the tor tunnel.
-func torStart(ctx context.Context, config *Config) (Tunnel, error) {
+func torStart(ctx context.Context, config *Config) (Tunnel, string, error) {
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err() // allows to write unit tests using this code
+		return nil, "", ctx.Err() // allows to write unit tests using this code
 	default:
 	}
 	if config.TunnelDir == "" {
-		return nil, ErrEmptyTunnelDir
+		return nil, "", ErrEmptyTunnelDir
 	}
 	stateDir := filepath.Join(config.TunnelDir, "tor")
 	logfile := filepath.Join(stateDir, "tor.log")
@@ -82,40 +82,40 @@ func torStart(ctx context.Context, config *Config) (Tunnel, error) {
 	extraArgs = append(extraArgs, fmt.Sprintf(`notice file %s`, logfile))
 	torStartConf, err := getTorStartConf(config, stateDir, extraArgs)
 	if err != nil {
-		return nil, err
+		return nil, logfile, err
 	}
 	instance, err := config.torStart(ctx, torStartConf)
 	if err != nil {
-		return nil, err
+		return nil, logfile, err
 	}
 	instance.StopProcessOnClose = true
 	start := time.Now()
 	if err := config.torEnableNetwork(ctx, instance, true); err != nil {
 		instance.Close()
-		return nil, err
+		return nil, logfile, err
 	}
 	stop := time.Now()
 	// Adapted from <https://git.io/Jfc7N>
 	info, err := config.torGetInfo(instance.Control, "net/listeners/socks")
 	if err != nil {
 		instance.Close()
-		return nil, err
+		return nil, logfile, err
 	}
 	if len(info) != 1 || info[0].Key != "net/listeners/socks" {
 		instance.Close()
-		return nil, ErrTorUnableToGetSOCKSProxyAddress
+		return nil, logfile, ErrTorUnableToGetSOCKSProxyAddress
 	}
 	proxyAddress := info[0].Val
 	if strings.HasPrefix(proxyAddress, "unix:") {
 		instance.Close()
-		return nil, ErrTorReturnedUnsupportedProxy
+		return nil, logfile, ErrTorReturnedUnsupportedProxy
 	}
 	return &torTunnel{
 		bootstrapTime: stop.Sub(start),
 		instance:      instance,
 		logFilePath:   logfile,
 		proxy:         &url.URL{Scheme: "socks5", Host: proxyAddress},
-	}, nil
+	}, logfile, nil
 }
 
 // maybeCleanupTunnelDir removes stale files inside

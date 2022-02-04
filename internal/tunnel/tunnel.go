@@ -62,11 +62,6 @@ type Tunnel interface {
 	// SOCKS5ProxyURL returns the SOCSK5 proxy URL.
 	SOCKS5ProxyURL() *url.URL
 
-	// LogFilePath returns the location of the logfile. If
-	// you read the log file before calling stop, you should
-	// be prepared for it to contain incomplete lines.
-	LogFilePath() (string, bool)
-
 	// Stop stops the tunnel. You should not attempt to
 	// use the tunnel once this function is called.
 	Stop()
@@ -99,7 +94,16 @@ var ErrUnsupportedTunnelName = errors.New("unsupported tunnel name")
 // The "fake" tunnel is a fake tunnel that just exposes a
 // SOCKS5 proxy and then connects directly to server. We use
 // this special kind of tunnel to implement tests.
-func Start(ctx context.Context, config *Config) (Tunnel, error) {
+//
+// The return value is a triple:
+//
+// 1. a valid Tunnel on success, nil on failure;
+//
+// 2. the location where the tunnel writes its logs, if it
+// supports writing logs, or an empty string otherwise;
+//
+// 3. nil on success, an error on failure.
+func Start(ctx context.Context, config *Config) (Tunnel, string, error) {
 	switch config.Name {
 	case "fake":
 		return fakeStart(ctx, config)
@@ -108,6 +112,6 @@ func Start(ctx context.Context, config *Config) (Tunnel, error) {
 	case "tor":
 		return torStart(ctx, config)
 	default:
-		return nil, fmt.Errorf("%w: %s", ErrUnsupportedTunnelName, config.Name)
+		return nil, "", fmt.Errorf("%w: %s", ErrUnsupportedTunnelName, config.Name)
 	}
 }

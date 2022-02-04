@@ -7,6 +7,7 @@ package torsf
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -17,7 +18,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/ptx"
-	"github.com/ooni/probe-cli/v3/internal/scrubber"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 )
 
@@ -65,7 +65,8 @@ type Measurer struct {
 
 	// mockStartTunnel is an optional function that allows us to override the
 	// default tunnel.Start function used to start a tunnel.
-	mockStartTunnel func(ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, error)
+	mockStartTunnel func(
+		ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, string, error)
 }
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
@@ -164,7 +165,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	defer func() {
 		out <- tk
 	}()
-	tun, err := m.startTunnel()(ctx, &tunnel.Config{
+	tun, logFilePath, err := m.startTunnel()(ctx, &tunnel.Config{
 		Name:      "tor",
 		Session:   sess,
 		TunnelDir: path.Join(m.baseTunnelDir(sess), "torsf"),
@@ -175,7 +176,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 			"Bridge", sfdialer.AsBridgeArgument(),
 		},
 	})
-	m.readTorLogs(sess.Logger(), tk, tun)
+	m.readTorLogs(sess.Logger(), tk, logFilePath)
 	if err != nil {
 		// Note: archival.NewFailure scrubs IP addresses
 		tk.Failure = archival.NewFailure(err)
@@ -213,10 +214,9 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 // logs into the output, since we have a timestamp for the whole
 // experiment already, so we don't leak much more by also including
 // the Tor proper timestamps into the results.
-func (m *Measurer) readTorLogs(logger model.Logger, tk *TestKeys, tun tunnel.Tunnel) {
-	logFilePath, found := tun.LogFilePath()
-	if !found {
-		log.Warn("the tunnel claims it contains no log")
+func (m *Measurer) readTorLogs(logger model.Logger, tk *TestKeys, logFilePath string) {
+	if logFilePath == "" {
+		log.Warn("the tunnel claims there is no log file")
 		return
 	}
 	data, err := os.ReadFile(logFilePath)
@@ -226,13 +226,9 @@ func (m *Measurer) readTorLogs(logger model.Logger, tk *TestKeys, tun tunnel.Tun
 	}
 	for _, bline := range bytes.Split(data, []byte("\n")) {
 		sline := string(bline) // avoid IP addresses in logs
-		if strings.HasSuffix(sline, "opening a new log file.") {
-			tk.TorLogs = append(tk.TorLogs, sline)
-		}
 		if !strings.Contains(sline, "[notice]") {
 			continue
 		}
-		sline = scrubber.Scrub(sline) // maybe unneeded paranoia to avoid including IPs
 		if strings.Contains(sline, " Bootstrapped ") {
 			tk.TorLogs = append(tk.TorLogs, sline)
 		}
@@ -261,7 +257,7 @@ func (m *Measurer) startListener(f func() error) error {
 
 // startTunnel returns the proper function to start a tunnel.
 func (m *Measurer) startTunnel() func(
-	ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, error) {
+	ctx context.Context, config *tunnel.Config) (tunnel.Tunnel, string, error) {
 	if m.mockStartTunnel != nil {
 		return m.mockStartTunnel
 	}
@@ -281,7 +277,22 @@ type SummaryKeys struct {
 	IsAnomaly bool `json:"-"`
 }
 
+var (
+	// errInvalidTestKeysType indicates the test keys type is invalid.
+	errInvalidTestKeysType = errors.New("torsf: invalid test keys type")
+
+	//errNilTestKeys indicates that the test keys are nil.
+	errNilTestKeys = errors.New("torsf: nil test keys")
+)
+
 // GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
 func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
-	return SummaryKeys{IsAnomaly: false}, nil
+	testkeys, good := measurement.TestKeys.(*TestKeys)
+	if !good {
+		return nil, errInvalidTestKeysType
+	}
+	if testkeys == nil {
+		return nil, errNilTestKeys
+	}
+	return SummaryKeys{IsAnomaly: testkeys.Failure != nil}, nil
 }

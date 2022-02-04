@@ -181,7 +181,7 @@ func (m *Measurer) run(ctx context.Context,
 	// pluggable transport created by `ptl` and `sfdialer`.
 	//
 	// ```Go
-	tun, err := tunnel.Start(ctx, &tunnel.Config{
+	tun, _, err := tunnel.Start(ctx, &tunnel.Config{
 		Name:      "tor",
 		Session:   sess,
 		TunnelDir: path.Join(sess.TempDir(), "torsf"),
