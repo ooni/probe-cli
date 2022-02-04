@@ -100,7 +100,7 @@ func (lst *Listener) logger() model.Logger {
 	if lst.Logger != nil {
 		return lst.Logger
 	}
-	return defaultLogger
+	return model.DiscardLogger
 }
 
 // forward forwards the traffic from left to right and from right to left
