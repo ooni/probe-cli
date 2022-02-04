@@ -39,12 +39,12 @@ func TestByteCounterNormalUsage(t *testing.T) {
 	}
 	sess := bytecounter.New()
 	ctx := context.Background()
-	ctx = WithSessionByteCounter(ctx, sess)
+	ctx = bytecounter.WithSessionByteCounter(ctx, sess)
 	if err := dorequest(ctx, "http://www.google.com"); err != nil {
 		t.Fatal(err)
 	}
 	exp := bytecounter.New()
-	ctx = WithExperimentByteCounter(ctx, exp)
+	ctx = bytecounter.WithExperimentByteCounter(ctx, exp)
 	if err := dorequest(ctx, "http://facebook.com"); err != nil {
 		t.Fatal(err)
 	}

@@ -46,6 +46,7 @@ import (
 	"sync"
 
 	pt "git.torproject.org/pluggable-transports/goptlib.git"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -69,15 +70,23 @@ type PTDialer interface {
 // you fill the mandatory fields before using it. Do not modify public
 // fields after you called Start, since this causes data races.
 type Listener struct {
+	// ExperimentByteCounter is the OPTIONAL byte counter that
+	// counts the bytes consumed by the experiment.
+	ExperimentByteCounter *bytecounter.Counter
+
+	// Logger is the OPTIONAL logger. When not set, this library
+	// will not emit logs. (But the underlying pluggable transport
+	// may still emit its own log messages.)
+	Logger model.Logger
+
 	// PTDialer is the MANDATORY pluggable transports dialer
 	// to use. Both SnowflakeDialer and OBFS4Dialer implement this
 	// interface and can be thus safely used here.
 	PTDialer PTDialer
 
-	// Logger is the optional logger. When not set, this library
-	// will not emit logs. (But the underlying pluggable transport
-	// may still emit its own log messages.)
-	Logger model.Logger
+	// SessionByteCounter is the OPTIONAL byte counter that
+	// counts the bytes consumed by the session.
+	SessionByteCounter *bytecounter.Counter
 
 	// mu provides mutual exclusion for accessing internals.
 	mu sync.Mutex
@@ -126,6 +135,8 @@ func (lst *Listener) forward(ctx context.Context, left, right net.Conn, done cha
 // function TAKES OWNERSHIP of the two connections and ensures
 // that they are closed when we are done.
 func (lst *Listener) forwardWithContext(ctx context.Context, left, right net.Conn) {
+	left = bytecounter.MaybeWrap(left, lst.SessionByteCounter)
+	left = bytecounter.MaybeWrap(left, lst.ExperimentByteCounter)
 	defer left.Close()
 	defer right.Close()
 	done := make(chan struct{})

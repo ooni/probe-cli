@@ -1,0 +1,40 @@
+package bytecounter
+
+import (
+	"context"
+	"net"
+)
+
+type byteCounterSessionKey struct{}
+
+// ContextSessionByteCounter retrieves the session byte counter from the context
+func ContextSessionByteCounter(ctx context.Context) *Counter {
+	counter, _ := ctx.Value(byteCounterSessionKey{}).(*Counter)
+	return counter
+}
+
+// WithSessionByteCounter assigns the session byte counter to the context.
+func WithSessionByteCounter(ctx context.Context, counter *Counter) context.Context {
+	return context.WithValue(ctx, byteCounterSessionKey{}, counter)
+}
+
+type byteCounterExperimentKey struct{}
+
+// ContextExperimentByteCounter retrieves the experiment byte counter from the context
+func ContextExperimentByteCounter(ctx context.Context) *Counter {
+	counter, _ := ctx.Value(byteCounterExperimentKey{}).(*Counter)
+	return counter
+}
+
+// WithExperimentByteCounter assigns the experiment byte counter to the context.
+func WithExperimentByteCounter(ctx context.Context, counter *Counter) context.Context {
+	return context.WithValue(ctx, byteCounterExperimentKey{}, counter)
+}
+
+// WrapWithContextByteCounters wraps a conn with the byte counters
+// that have previosuly been configured into a context.
+func WrapWithContextByteCounters(ctx context.Context, conn net.Conn) net.Conn {
+	conn = MaybeWrap(conn, ContextExperimentByteCounter(ctx))
+	conn = MaybeWrap(conn, ContextSessionByteCounter(ctx))
+	return conn
+}

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/ptx"
@@ -98,7 +99,7 @@ func (m *Measurer) Run(
 	ctx context.Context, sess model.ExperimentSession,
 	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
 ) error {
-	ptl, sfdialer, err := m.setup(sess.Logger())
+	ptl, sfdialer, err := m.setup(ctx, sess.Logger())
 	if err != nil {
 		// we cannot setup the experiment
 		return err
@@ -134,7 +135,8 @@ func (m *Measurer) Run(
 // setup prepares for running the torsf experiment. Returns a valid ptx listener
 // and snowflake dialer on success. Returns an error on failure. On success,
 // remember to Stop the ptx listener when you're done.
-func (m *Measurer) setup(logger model.Logger) (*ptx.Listener, *ptx.SnowflakeDialer, error) {
+func (m *Measurer) setup(ctx context.Context,
+	logger model.Logger) (*ptx.Listener, *ptx.SnowflakeDialer, error) {
 	rm, err := ptx.NewSnowflakeRendezvousMethod(m.config.RendezvousMethod)
 	if err != nil {
 		// cannot run the experiment with unknown rendezvous method
@@ -142,8 +144,10 @@ func (m *Measurer) setup(logger model.Logger) (*ptx.Listener, *ptx.SnowflakeDial
 	}
 	sfdialer := ptx.NewSnowflakeDialerWithRendezvousMethod(rm)
 	ptl := &ptx.Listener{
-		PTDialer: sfdialer,
-		Logger:   logger,
+		ExperimentByteCounter: bytecounter.ContextExperimentByteCounter(ctx),
+		Logger:                logger,
+		PTDialer:              sfdialer,
+		SessionByteCounter:    bytecounter.ContextSessionByteCounter(ctx),
 	}
 	if err := m.startListener(ptl.Start); err != nil {
 		// This error condition mostly means "I could not open a local
