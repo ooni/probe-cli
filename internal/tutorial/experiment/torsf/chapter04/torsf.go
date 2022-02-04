@@ -141,8 +141,8 @@ func (m *Measurer) run(ctx context.Context,
 	// `ptx` package. This dialer will allow us to create a `net.Conn`-like
 	// network connection where traffic is sent using the Snowflake
 	// pluggable transport. There are several optional fields in
-	// `SnowflakeDialer`, but we don't need to override the default
-	// values, so we can just use a default-initialized struct.
+	// `SnowflakeDialer`; the `NewSnowflakeDialer` constructor will
+	// give us a suitable configured dialer with default settings.
 	//
 	// ```Go
 	sfdialer := ptx.NewSnowflakeDialer()
