@@ -18,6 +18,11 @@ type fakeTunnel struct {
 	once          sync.Once
 }
 
+// LogFilePath implements Tunnel.LogFilePath.
+func (t *fakeTunnel) LogFilePath() (string, bool) {
+	return "", false
+}
+
 // BootstrapTime implements Tunnel.BootstrapTime.
 func (t *fakeTunnel) BootstrapTime() time.Duration {
 	return t.bootstrapTime

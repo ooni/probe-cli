@@ -5,23 +5,35 @@
 package torsf
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"path"
+	"strings"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/ptx"
+	"github.com/ooni/probe-cli/v3/internal/scrubber"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 )
 
 // testVersion is the tor experiment version.
-const testVersion = "0.1.1"
+const testVersion = "0.2.0"
 
 // Config contains the experiment config.
 type Config struct {
+	// DisablePersistentDatadir disables using a persistent datadir.
+	DisablePersistentDatadir bool `ooni:"Disable using a persistent tor datadir"`
+
+	// DisableProgress disables printing progress messages.
 	DisableProgress bool `ooni:"Disable printing progress messages"`
+
+	// RendezvousMethod allows to choose the method with which to rendezvous.
+	RendezvousMethod string `ooni:"Choose the method with which to rendezvous. Must be one of amp and domain_fronting. Leaving this field empty means we should use the default."`
 }
 
 // TestKeys contains the experiment's result.
@@ -31,6 +43,15 @@ type TestKeys struct {
 
 	// Failure contains the failure string or nil.
 	Failure *string `json:"failure"`
+
+	// PersistentDatadir indicates whether we're using a persistent tor datadir.
+	PersistentDatadir bool `json:"persistent_datadir"`
+
+	// RendezvousMethod contains the method used to perform the rendezvous.
+	RendezvousMethod string `json:"rendezvous_method"`
+
+	// TorLogs contains the bootstrap logs.
+	TorLogs []string `json:"tor_logs"`
 }
 
 // Measurer performs the measurement.
@@ -73,22 +94,27 @@ func (m *Measurer) Run(
 	ctx context.Context, sess model.ExperimentSession,
 	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
 ) error {
+	ptl, sfdialer, err := m.setup(sess.Logger())
+	if err != nil {
+		// we cannot setup the experiment
+		return err
+	}
+	defer ptl.Stop()
 	m.registerExtensions(measurement)
-	testkeys := &TestKeys{}
-	measurement.TestKeys = testkeys
 	start := time.Now()
 	const maxRuntime = 600 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, maxRuntime)
 	defer cancel()
-	errch := make(chan error)
+	tkch := make(chan *TestKeys)
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
-	go m.run(ctx, sess, testkeys, errch)
+	go m.bootstrap(ctx, sess, tkch, ptl, sfdialer)
 	for {
 		select {
-		case err := <-errch:
+		case tk := <-tkch:
+			measurement.TestKeys = tk
 			callbacks.OnProgress(1.0, "torsf experiment is finished")
-			return err
+			return nil
 		case <-ticker.C:
 			if !m.config.DisableProgress {
 				elapsedTime := time.Since(start)
@@ -101,28 +127,47 @@ func (m *Measurer) Run(
 	}
 }
 
-// run runs the bootstrap. This function ONLY returns an error when
-// there has been a fundamental error starting the test. This behavior
-// follows the expectations for the ExperimentMeasurer.Run method.
-func (m *Measurer) run(ctx context.Context,
-	sess model.ExperimentSession, testkeys *TestKeys, errch chan<- error) {
-	sfdialer := &ptx.SnowflakeDialer{}
+// setup prepares for running the torsf experiment. Returns a valid ptx listener
+// and snowflake dialer on success. Returns an error on failure. On success,
+// remember to Stop the ptx listener when you're done.
+func (m *Measurer) setup(logger model.Logger) (*ptx.Listener, *ptx.SnowflakeDialer, error) {
+	rm, err := ptx.NewSnowflakeRendezvousMethod(m.config.RendezvousMethod)
+	if err != nil {
+		// cannot run the experiment with unknown rendezvous method
+		return nil, nil, err
+	}
+	sfdialer := ptx.NewSnowflakeDialerWithRendezvousMethod(rm)
 	ptl := &ptx.Listener{
 		PTDialer: sfdialer,
-		Logger:   sess.Logger(),
+		Logger:   logger,
 	}
 	if err := m.startListener(ptl.Start); err != nil {
-		testkeys.Failure = archival.NewFailure(err)
 		// This error condition mostly means "I could not open a local
 		// listening port", which strikes as fundamental failure.
-		errch <- err
-		return
+		return nil, nil, err
 	}
-	defer ptl.Stop()
+	logger.Infof("torsf: rendezvous method: '%s'", m.config.RendezvousMethod)
+	return ptl, sfdialer, nil
+}
+
+// bootstrap runs the bootstrap.
+func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
+	out chan<- *TestKeys, ptl *ptx.Listener, sfdialer *ptx.SnowflakeDialer) {
+	tk := &TestKeys{
+		BootstrapTime:     0,
+		Failure:           nil,
+		PersistentDatadir: !m.config.DisablePersistentDatadir,
+		RendezvousMethod:  sfdialer.RendezvousMethod.Name(),
+	}
+	sess.Logger().Infof(
+		"torsf: disable persistent datadir: %+v", m.config.DisablePersistentDatadir)
+	defer func() {
+		out <- tk
+	}()
 	tun, err := m.startTunnel()(ctx, &tunnel.Config{
 		Name:      "tor",
 		Session:   sess,
-		TunnelDir: path.Join(sess.TempDir(), "torsf"),
+		TunnelDir: path.Join(m.baseTunnelDir(sess), "torsf"),
 		Logger:    sess.Logger(),
 		TorArgs: []string{
 			"UseBridges", "1",
@@ -130,18 +175,79 @@ func (m *Measurer) run(ctx context.Context,
 			"Bridge", sfdialer.AsBridgeArgument(),
 		},
 	})
+	m.readTorLogs(sess.Logger(), tk, tun)
 	if err != nil {
 		// Note: archival.NewFailure scrubs IP addresses
-		testkeys.Failure = archival.NewFailure(err)
-		// This error condition means we could not bootstrap with snowflake
-		// for $reasons, so the experiment didn't fail, rather it did record
-		// that something prevented snowflake from running.
-		errch <- nil
+		tk.Failure = archival.NewFailure(err)
 		return
 	}
 	defer tun.Stop()
-	testkeys.BootstrapTime = tun.BootstrapTime().Seconds()
-	errch <- nil
+	tk.BootstrapTime = tun.BootstrapTime().Seconds()
+}
+
+// readTorLogs attempts to read and include the tor logs into
+// the test keys if this operation is possible.
+//
+// This function aims to _only_ include:
+//
+// 1. information on the tor version by intercepting the line that
+// writes which tor version is opening a log file;
+//
+// 2. notices (more detailed debug messages may contain information
+// that we'd rather not include into the logs?);
+//
+// 3. information about bootstrap (by looking at the progress of
+// the bootstrap we understand where it blocks and we also know the
+// amount of work tor needs to do, hence we know the cache status
+// because a working cache includes much less messages);
+//
+// 4. information about bridges being used (from there we know
+// if the bridge was cached of fresh, by the way).
+//
+// Tor is know to be good software that does not break its output
+// unnecessarily and that does not include PII into its logs unless
+// explicitly asked to. This fact gives me confidence that we can
+// safely include this subset of the logs into the results.
+//
+// On this note, I think it's safe to include timestamps from the
+// logs into the output, since we have a timestamp for the whole
+// experiment already, so we don't leak much more by also including
+// the Tor proper timestamps into the results.
+func (m *Measurer) readTorLogs(logger model.Logger, tk *TestKeys, tun tunnel.Tunnel) {
+	logFilePath, found := tun.LogFilePath()
+	if !found {
+		log.Warn("the tunnel claims it contains no log")
+		return
+	}
+	data, err := os.ReadFile(logFilePath)
+	if err != nil {
+		log.Warnf("could not read tor logs: %s", err.Error())
+		return
+	}
+	for _, bline := range bytes.Split(data, []byte("\n")) {
+		sline := string(bline) // avoid IP addresses in logs
+		if strings.HasSuffix(sline, "opening a new log file.") {
+			tk.TorLogs = append(tk.TorLogs, sline)
+		}
+		if !strings.Contains(sline, "[notice]") {
+			continue
+		}
+		sline = scrubber.Scrub(sline) // maybe unneeded paranoia to avoid including IPs
+		if strings.Contains(sline, " Bootstrapped ") {
+			tk.TorLogs = append(tk.TorLogs, sline)
+		}
+		if strings.Contains(sline, " new bridge descriptor ") {
+			tk.TorLogs = append(tk.TorLogs, sline)
+		}
+	}
+}
+
+// baseTunnelDir returns the base directory to use for tunnelling
+func (m *Measurer) baseTunnelDir(sess model.ExperimentSession) string {
+	if m.config.DisablePersistentDatadir {
+		return sess.TempDir()
+	}
+	return sess.TunnelDir()
 }
 
 // startListener either calls f or mockStartListener depending

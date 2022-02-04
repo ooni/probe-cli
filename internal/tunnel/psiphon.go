@@ -56,6 +56,11 @@ func psiphonStart(ctx context.Context, config *Config) (Tunnel, error) {
 	return &psiphonTunnel{tunnel: tunnel, bootstrapTime: stop.Sub(start)}, nil
 }
 
+// LogFilePath implements Tunnel.LogFilePath.
+func (t *psiphonTunnel) LogFilePath() (string, bool) {
+	return "", false
+}
+
 // Stop is an idempotent method that shuts down the tunnel
 func (t *psiphonTunnel) Stop() {
 	t.tunnel.Stop()

@@ -145,7 +145,7 @@ func (m *Measurer) run(ctx context.Context,
 	// values, so we can just use a default-initialized struct.
 	//
 	// ```Go
-	sfdialer := &ptx.SnowflakeDialer{}
+	sfdialer := ptx.NewSnowflakeDialer()
 	// ```
 	//
 	// Let us now create a listener. The `ptx.Listener` is a listener

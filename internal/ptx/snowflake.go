@@ -2,18 +2,128 @@ package ptx
 
 import (
 	"context"
+	"errors"
 	"net"
 
 	sflib "git.torproject.org/pluggable-transports/snowflake.git/v2/client/lib"
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
 )
 
-// SnowflakeDialer is a dialer for snowflake. When optional fields are
-// not specified, we use defaults from the snowflake repository.
+// SnowflakeRendezvousMethod is the method which with we perform the rendezvous.
+type SnowflakeRendezvousMethod interface {
+	// Name is the name of the method.
+	Name() string
+
+	// AMPCacheURL returns a suitable AMP cache URL.
+	AMPCacheURL() string
+
+	// BrokerURL returns a suitable broker URL.
+	BrokerURL() string
+
+	// FrontDomain returns a suitable front domain.
+	FrontDomain() string
+}
+
+// NewSnowflakeRendezvousMethodDomainFronting is a rendezvous method
+// that uses domain fronting to perform the rendezvous.
+func NewSnowflakeRendezvousMethodDomainFronting() SnowflakeRendezvousMethod {
+	return &snowflakeRendezvousMethodDomainFronting{}
+}
+
+type snowflakeRendezvousMethodDomainFronting struct{}
+
+func (d *snowflakeRendezvousMethodDomainFronting) Name() string {
+	return "domain_fronting"
+}
+
+func (d *snowflakeRendezvousMethodDomainFronting) AMPCacheURL() string {
+	return ""
+}
+
+func (d *snowflakeRendezvousMethodDomainFronting) BrokerURL() string {
+	return "https://snowflake-broker.torproject.net.global.prod.fastly.net/"
+}
+
+func (d *snowflakeRendezvousMethodDomainFronting) FrontDomain() string {
+	return "cdn.sstatic.net"
+}
+
+// NewSnowflakeRendezvousMethodAMP is a rendezvous method that
+// uses the AMP cache to perform the rendezvous.
+func NewSnowflakeRendezvousMethodAMP() SnowflakeRendezvousMethod {
+	return &snowflakeRendezvousMethodAMP{}
+}
+
+type snowflakeRendezvousMethodAMP struct{}
+
+func (d *snowflakeRendezvousMethodAMP) Name() string {
+	return "amp"
+}
+
+func (d *snowflakeRendezvousMethodAMP) AMPCacheURL() string {
+	return "https://cdn.ampproject.org/"
+}
+
+func (d *snowflakeRendezvousMethodAMP) BrokerURL() string {
+	return "https://snowflake-broker.torproject.net/"
+}
+
+func (d *snowflakeRendezvousMethodAMP) FrontDomain() string {
+	return "www.google.com"
+}
+
+// ErrSnowflakeNoSuchRendezvousMethod indicates the given rendezvous
+// method is not supported by this implementation.
+var ErrSnowflakeNoSuchRendezvousMethod = errors.New("ptx: unsupported rendezvous method")
+
+// NewSnowflakeRendezvousMethod creates a new rendezvous method by name. We currently
+// support the following rendezvous methods:
+//
+// 1. "domain_fronting" uses domain fronting with the sstatic.net CDN;
+//
+// 2. "" means default and it is currently equivalent to "domain_fronting" (but
+// we don't guarantee that this default may change over time);
+//
+// 3. "amp" uses the AMP cache.
+//
+// Returns either a valid rendezvous method or an error.
+func NewSnowflakeRendezvousMethod(method string) (SnowflakeRendezvousMethod, error) {
+	switch method {
+	case "domain_fronting", "":
+		return NewSnowflakeRendezvousMethodDomainFronting(), nil
+	case "amp":
+		return NewSnowflakeRendezvousMethodAMP(), nil
+	default:
+		return nil, ErrSnowflakeNoSuchRendezvousMethod
+	}
+}
+
+// SnowflakeDialer is a dialer for snowflake. You SHOULD either use a factory
+// for constructing this type or set the fields marked as MANDATORY.
 type SnowflakeDialer struct {
-	// newClientTransport is an optional hook for creating
+	// RendezvousMethod is the MANDATORY rendezvous method to use.
+	RendezvousMethod SnowflakeRendezvousMethod
+
+	// newClientTransport is an OPTIONAL hook for creating
 	// an alternative snowflakeTransport in testing.
 	newClientTransport func(config sflib.ClientConfig) (snowflakeTransport, error)
+}
+
+// NewSnowflakeDialer creates a SnowflakeDialer with default settings.
+func NewSnowflakeDialer() *SnowflakeDialer {
+	return &SnowflakeDialer{
+		RendezvousMethod:   NewSnowflakeRendezvousMethodDomainFronting(),
+		newClientTransport: nil,
+	}
+}
+
+// NewSnowflakeDialerWithRendezvousMethod creates a SnowflakeDialer
+// using the given RendezvousMethod explicitly.
+func NewSnowflakeDialerWithRendezvousMethod(m SnowflakeRendezvousMethod) *SnowflakeDialer {
+	return &SnowflakeDialer{
+		RendezvousMethod:   m,
+		newClientTransport: nil,
+	}
 }
 
 // snowflakeTransport is anything that allows us to dial a snowflake
@@ -32,9 +142,9 @@ func (d *SnowflakeDialer) dialContext(
 	ctx context.Context) (net.Conn, chan interface{}, error) {
 	done := make(chan interface{})
 	txp, err := d.newSnowflakeClient(sflib.ClientConfig{
-		BrokerURL:          d.brokerURL(),
-		AmpCacheURL:        d.ampCacheURL(),
-		FrontDomain:        d.frontDomain(),
+		BrokerURL:          d.RendezvousMethod.BrokerURL(),
+		AmpCacheURL:        d.RendezvousMethod.AMPCacheURL(),
+		FrontDomain:        d.RendezvousMethod.FrontDomain(),
 		ICEAddresses:       d.iceAddresses(),
 		KeepLocalAddresses: false,
 		Max:                d.maxSnowflakes(),
@@ -68,33 +178,12 @@ func (d *SnowflakeDialer) dialContext(
 
 // newSnowflakeClient allows us to call a mock rather than
 // the real sflib.NewSnowflakeClient.
-func (d *SnowflakeDialer) newSnowflakeClient(config sflib.ClientConfig) (snowflakeTransport, error) {
+func (d *SnowflakeDialer) newSnowflakeClient(
+	config sflib.ClientConfig) (snowflakeTransport, error) {
 	if d.newClientTransport != nil {
 		return d.newClientTransport(config)
 	}
 	return sflib.NewSnowflakeClient(config)
-}
-
-// ampCacheURL returns a suitable AMP cache URL.
-func (d *SnowflakeDialer) ampCacheURL() string {
-	// I tried using the following AMP cache and always got:
-	//
-	// 2022/01/19 16:51:28 AMP cache rendezvous response: 500 Internal Server Error
-	//
-	// So I disabled the AMP cache until we figure it out.
-	//
-	//return "https://cdn.ampproject.org/"
-	return ""
-}
-
-// brokerURL returns a suitable broker URL.
-func (d *SnowflakeDialer) brokerURL() string {
-	return "https://snowflake-broker.torproject.net.global.prod.fastly.net/"
-}
-
-// frontDomain returns a suitable front domain.
-func (d *SnowflakeDialer) frontDomain() string {
-	return "cdn.sstatic.net"
 }
 
 // iceAddresses returns suitable ICE addresses.

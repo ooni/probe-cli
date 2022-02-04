@@ -62,8 +62,13 @@ type Tunnel interface {
 	// SOCKS5ProxyURL returns the SOCSK5 proxy URL.
 	SOCKS5ProxyURL() *url.URL
 
+	// LogFilePath returns the location of the logfile. If
+	// you read the log file before calling stop, you should
+	// be prepared for it to contain incomplete lines.
+	LogFilePath() (string, bool)
+
 	// Stop stops the tunnel. You should not attempt to
-	// use any other tunnel method after Stop.
+	// use the tunnel once this function is called.
 	Stop()
 }
 

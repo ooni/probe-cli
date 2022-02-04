@@ -29,6 +29,11 @@ type mockedTunnel struct {
 	proxyURL      *url.URL
 }
 
+// LogFilePath implements Tunnel.LogFilePath.
+func (mt *mockedTunnel) LogFilePath() (string, bool) {
+	return "", false
+}
+
 // BootstrapTime implements Tunnel.BootstrapTime.
 func (mt *mockedTunnel) BootstrapTime() time.Duration {
 	return mt.bootstrapTime
