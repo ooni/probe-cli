@@ -122,8 +122,8 @@ func TestSuccessWithMockedTunnelStart(t *testing.T) {
 	if tk.RendezvousMethod != "domain_fronting" {
 		t.Fatal("unexpected rendezvous method")
 	}
-	if len(tk.TorLogs) != 11 {
-		t.Fatal("unexpected length of tor logs")
+	if count := len(tk.TorLogs); count != 9 {
+		t.Fatal("unexpected length of tor logs", count)
 	}
 }
 
@@ -203,8 +203,8 @@ func TestFailureToStartTunnel(t *testing.T) {
 	if tk.RendezvousMethod != "domain_fronting" {
 		t.Fatal("unexpected rendezvous method")
 	}
-	if len(tk.TorLogs) != 11 {
-		t.Fatal("unexpected number of tor logs")
+	if count := len(tk.TorLogs); count != 9 {
+		t.Fatal("unexpected length of tor logs", count)
 	}
 }
 
@@ -268,8 +268,8 @@ func TestReadTorLogs(t *testing.T) {
 		logger := model.DiscardLogger
 		tk := &TestKeys{}
 		m.readTorLogs(logger, tk, filepath.Join("testdata", "tor.log"))
-		if len(tk.TorLogs) != 11 {
-			t.Fatal("expected exactly 11 tor logs")
+		if count := len(tk.TorLogs); count != 9 {
+			t.Fatal("unexpected number of tor logs", count)
 		}
 	})
 }
