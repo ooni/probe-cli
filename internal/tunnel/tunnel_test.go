@@ -10,7 +10,7 @@ import (
 
 func TestStartNoTunnel(t *testing.T) {
 	ctx := context.Background()
-	tun, err := tunnel.Start(ctx, &tunnel.Config{
+	tun, _, err := tunnel.Start(ctx, &tunnel.Config{
 		Name:    "",
 		Session: &tunnel.MockableSession{},
 	})
@@ -25,7 +25,7 @@ func TestStartNoTunnel(t *testing.T) {
 func TestStartPsiphonWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
-	tun, err := tunnel.Start(ctx, &tunnel.Config{
+	tun, _, err := tunnel.Start(ctx, &tunnel.Config{
 		Name:      "psiphon",
 		Session:   &tunnel.MockableSession{},
 		TunnelDir: "testdata",
@@ -41,7 +41,7 @@ func TestStartPsiphonWithCancelledContext(t *testing.T) {
 func TestStartTorWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
-	tun, err := tunnel.Start(ctx, &tunnel.Config{
+	tun, _, err := tunnel.Start(ctx, &tunnel.Config{
 		Name:      "tor",
 		Session:   &tunnel.MockableSession{},
 		TunnelDir: "testdata",
@@ -56,7 +56,7 @@ func TestStartTorWithCancelledContext(t *testing.T) {
 
 func TestStartInvalidTunnel(t *testing.T) {
 	ctx := context.Background()
-	tun, err := tunnel.Start(ctx, &tunnel.Config{
+	tun, _, err := tunnel.Start(ctx, &tunnel.Config{
 		Name:      "antani",
 		Session:   &tunnel.MockableSession{},
 		TunnelDir: "testdata",
