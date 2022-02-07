@@ -9,7 +9,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -46,6 +46,9 @@ type Config struct {
 
 	// Timeout is the number of milliseconds to wait for the ping response
 	Timeout int64 `ooni:"Timeout is the number of milliseconds to wait for the ping response"`
+
+	// NetworkLibrary is the underlying network library. Can be used for testing.
+	NetworkLibrary model.UnderlyingNetworkLibrary
 }
 
 func (c *Config) repetitions() int64 {
@@ -67,6 +70,13 @@ func (c *Config) timeout() int64 {
 		return c.Timeout
 	}
 	return 5000
+}
+
+func (c *Config) networkLibrary() model.UnderlyingNetworkLibrary {
+	if c.NetworkLibrary != nil {
+		return c.NetworkLibrary
+	}
+	return &netxlite.TProxyStdlib{}
 }
 
 // TestKeys contains the experiment results.
@@ -125,7 +135,7 @@ func (m *Measurer) Run(
 
 	for i := int64(0); i < m.config.repetitions(); i++ {
 		// create UDP socket
-		conn, err := net.DialUDP("udp", nil, udpAddr)
+		conn, err := m.config.networkLibrary().ListenUDP("udp", &net.UDPAddr{})
 		if err != nil {
 			return err
 		}
@@ -133,10 +143,10 @@ func (m *Measurer) Run(
 		<-ticker.C
 		sess.Logger().Infof("PING %s", service)
 
-		sent, dstID, srcID := buildPacket() // build QUIC Initial packet
-		_, err = conn.Write(sent)           // send Initial packet
+		sent, dstID, srcID := buildPacket()  // build QUIC Initial packet
+		_, err = conn.WriteTo(sent, udpAddr) // send Initial packet
 		if err != nil {
-			return errors.New(fmt.Sprintf("UDP send failed: %s", err.Error()))
+			return err
 		}
 		resp, err := m.waitResponse(conn) // wait for server response
 		if err != nil {
@@ -149,7 +159,7 @@ func (m *Measurer) Run(
 			})
 			continue
 		}
-		supportedVersions, err := m.dissectVersionNegotiation(resp, dstID, srcID) // dissect server response
+		supportedVersions, err := m.DissectVersionNegotiation(resp, dstID, srcID) // dissect server response
 		if err != nil {
 			sess.Logger().Infof(fmt.Sprintf("response dissection failed: %s", err))
 		}
@@ -168,20 +178,20 @@ func (m *Measurer) Run(
 }
 
 // waitResponse reads the server response. Times out after m.config.timeout() seconds (default: 5000).
-func (m *Measurer) waitResponse(conn *net.UDPConn) ([]byte, error) {
+func (m *Measurer) waitResponse(conn model.UDPLikeConn) ([]byte, error) {
 	buffer := make([]byte, 1024)
 	conn.SetReadDeadline(time.Now().Add(time.Duration(m.config.timeout()) * time.Millisecond))
-	n, _, err := conn.ReadFromUDP(buffer)
+	n, _, err := conn.ReadFrom(buffer)
 	if err != nil {
 		return nil, err
 	}
 	return buffer[:n], nil
 }
 
-// dissectVersionNegotiation dissects the Version Negotiation response
+// DissectVersionNegotiation dissects the Version Negotiation response
 // and prints it to the command line.
 // https://www.rfc-editor.org/rfc/rfc9000.html#name-version-negotiation-packet
-func (m *Measurer) dissectVersionNegotiation(i []byte, dstID, srcID ConnectionID) ([]uint32, error) {
+func (m *Measurer) DissectVersionNegotiation(i []byte, dstID, srcID ConnectionID) ([]uint32, error) {
 	firstByte := uint8(i[0])
 	mask := 0b10000000
 	mask &= int(firstByte)
@@ -205,7 +215,7 @@ func (m *Measurer) dissectVersionNegotiation(i []byte, dstID, srcID ConnectionID
 	src := i[offset+1 : offset+1+srcLength]
 	offset = offset + 1 + srcLength
 	if !bytes.Equal(src, dstID) {
-		return nil, &errUnexpectedResponse{msg: fmt.Sprintf("destination connection ID: is %s, was %s", src, dstID)}
+		return nil, &errUnexpectedResponse{msg: fmt.Sprintf("source connection ID: is %s, was %s", src, dstID)}
 	}
 
 	n := uint8(len(i))

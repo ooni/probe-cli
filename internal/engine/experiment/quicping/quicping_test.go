@@ -2,14 +2,54 @@ package quicping_test
 
 import (
 	"context"
+	"encoding/hex"
+	"errors"
+	"net"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/quicping"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"net"
-	"strings"
-	"testing"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
+
+// FailStdLib is a failing model.UnderlyingNetworkLibrary.
+type FailStdLib struct {
+	err      error
+	writeErr error
+	readErr  error
+}
+
+// ListenUDP implements UnderlyingNetworkLibrary.ListenUDP.
+func (f *FailStdLib) ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
+	return &mocks.UDPLikeConn{
+		MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+			return 0, f.writeErr
+		},
+		MockReadFrom: func(p []byte) (int, net.Addr, error) {
+			return 0, nil, f.readErr
+		},
+		MockClose: func() error {
+			return nil
+		},
+		MockSetReadDeadline: func(t time.Time) error {
+			return nil
+		},
+	}, f.err
+}
+
+// LookupHost implements UnderlyingNetworkLibrary.LookupHost.
+func (f *FailStdLib) LookupHost(ctx context.Context, domain string) ([]string, error) {
+	return nil, f.err
+}
+
+// NewSimpleDialer implements UnderlyingNetworkLibrary.NewSimpleDialer.
+func (f *FailStdLib) NewSimpleDialer(timeout time.Duration) model.SimpleDialer {
+	return nil
+}
 
 func TestNewExperimentMeasurer(t *testing.T) {
 	measurer := quicping.NewExperimentMeasurer(quicping.Config{})
@@ -45,7 +85,7 @@ func TestReadTimeout(t *testing.T) {
 		Repetitions: int64(2),
 	})
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementTarget("cloudflare.com")
+	measurement.Input = model.MeasurementTarget("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	err := measurer.Run(context.Background(), sess, measurement,
 		model.NewPrinterCallbacks(log.Log))
@@ -63,10 +103,74 @@ func TestReadTimeout(t *testing.T) {
 	}
 }
 
+var mock = mocks.UDPLikeConn{}
+
+func TestListenFails(t *testing.T) {
+	expected := errors.New("expected")
+	measurer := quicping.NewExperimentMeasurer(quicping.Config{
+		NetworkLibrary: &FailStdLib{err: expected, readErr: nil, writeErr: nil},
+	})
+	measurement := new(model.Measurement)
+	measurement.Input = model.MeasurementTarget("google.com")
+	sess := &mockable.Session{MockableLogger: log.Log}
+	err := measurer.Run(context.Background(), sess, measurement,
+		model.NewPrinterCallbacks(log.Log))
+	if err == nil {
+		t.Fatal("expected an error here")
+	}
+	if err != expected {
+		t.Fatal("unexpected error type")
+	}
+}
+
+func TestWriteFails(t *testing.T) {
+	expected := errors.New("expected")
+	measurer := quicping.NewExperimentMeasurer(quicping.Config{
+		NetworkLibrary: &FailStdLib{err: nil, readErr: nil, writeErr: expected},
+	})
+	measurement := new(model.Measurement)
+	measurement.Input = model.MeasurementTarget("google.com")
+	sess := &mockable.Session{MockableLogger: log.Log}
+	err := measurer.Run(context.Background(), sess, measurement,
+		model.NewPrinterCallbacks(log.Log))
+	if err == nil {
+		t.Fatal("expected an error here")
+	}
+	if !errors.Is(err, expected) {
+		t.Fatal("unexpected error type")
+	}
+}
+
+func TestReadFails(t *testing.T) {
+	expected := errors.New("expected")
+	measurer := quicping.NewExperimentMeasurer(quicping.Config{
+		NetworkLibrary: &FailStdLib{err: nil, readErr: expected, writeErr: nil},
+		Repetitions:    2,
+	})
+	measurement := new(model.Measurement)
+	measurement.Input = model.MeasurementTarget("google.com")
+	sess := &mockable.Session{MockableLogger: log.Log}
+	err := measurer.Run(context.Background(), sess, measurement,
+		model.NewPrinterCallbacks(log.Log))
+	if err != nil {
+		t.Fatal("unexpected error")
+	}
+	tk := measurement.TestKeys.(*quicping.TestKeys)
+	if tk.Pings == nil || len(tk.Pings) != 2 {
+		t.Fatal("not enough pings")
+	}
+	for i, ping := range tk.Pings {
+		if ping.Failure == nil {
+			t.Fatal("expected an error here, ping", i)
+		}
+	}
+
+}
+
 func TestSucess(t *testing.T) {
 	measurer := quicping.NewExperimentMeasurer(quicping.Config{})
 	measurement := new(model.Measurement)
-	measurement.Input = model.MeasurementTarget("cloudflare.com")
+	measurement.Input = model.MeasurementTarget("google.com")
 	sess := &mockable.Session{MockableLogger: log.Log}
 	err := measurer.Run(context.Background(), sess, measurement,
 		model.NewPrinterCallbacks(log.Log))
@@ -74,7 +178,7 @@ func TestSucess(t *testing.T) {
 		t.Fatal("did not expect an error here")
 	}
 	tk := measurement.TestKeys.(*quicping.TestKeys)
-	if tk.Domain != "cloudflare.com" {
+	if tk.Domain != "google.com" {
 		t.Fatal("unexpected domain")
 	}
 	if tk.Repetitions != 10 {
@@ -97,5 +201,53 @@ func TestSucess(t *testing.T) {
 	}
 	if _, ok := sk.(quicping.SummaryKeys); !ok {
 		t.Fatal("invalid type for summary keys")
+	}
+}
+
+func TestDissect(t *testing.T) {
+	//                             destID--srcID: 040b9649d3fd4c038ab6c073966f3921--44d064031288e97646451f
+	versionNegotiationResponse, _ := hex.DecodeString("eb0000000010040b9649d3fd4c038ab6c073966f39210b44d064031288e97646451f00000001ff00001dff00001cff00001b")
+	measurer := quicping.NewExperimentMeasurer(quicping.Config{})
+	destIDOriginal, _ := hex.DecodeString("44d064031288e97646451f")
+	srcIDOriginal, _ := hex.DecodeString("040b9649d3fd4c038ab6c073966f3921")
+	_, err := measurer.(*quicping.Measurer).DissectVersionNegotiation(versionNegotiationResponse, destIDOriginal, srcIDOriginal)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+
+	versionNegotiationResponse[23] = byte(0xff)
+	_, err = measurer.(*quicping.Measurer).DissectVersionNegotiation(versionNegotiationResponse, destIDOriginal, srcIDOriginal)
+	if err == nil {
+		t.Fatal("expected an error here", err)
+	}
+	if !strings.Contains(err.Error(), "source connection ID: is") {
+		t.Fatal("unexpected error type", err)
+	}
+
+	versionNegotiationResponse[7] = byte(0xff)
+	_, err = measurer.(*quicping.Measurer).DissectVersionNegotiation(versionNegotiationResponse, destIDOriginal, srcIDOriginal)
+	if err == nil {
+		t.Fatal("expected an error here", err)
+	}
+	if !strings.Contains(err.Error(), "destination connection ID: is") {
+		t.Fatal("unexpected error type", err)
+	}
+
+	versionNegotiationResponse[1] = byte(0xff)
+	_, err = measurer.(*quicping.Measurer).DissectVersionNegotiation(versionNegotiationResponse, destIDOriginal, srcIDOriginal)
+	if err == nil {
+		t.Fatal("expected an error here", err)
+	}
+	if !strings.HasSuffix(err.Error(), "unexpected Version Negotiation format") {
+		t.Fatal("unexpected error type", err)
+	}
+
+	versionNegotiationResponse[0] = byte(0x01)
+	_, err = measurer.(*quicping.Measurer).DissectVersionNegotiation(versionNegotiationResponse, destIDOriginal, srcIDOriginal)
+	if err == nil {
+		t.Fatal("expected an error here", err)
+	}
+	if !strings.HasSuffix(err.Error(), "not a long header packet") {
+		t.Fatal("unexpected error type", err)
 	}
 }
