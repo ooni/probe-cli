@@ -25,9 +25,6 @@ type torTunnel struct {
 	// instance is the running tor instance
 	instance torProcess
 
-	// logFilePath is the path to the logfile.
-	logFilePath string
-
 	// proxy is the SOCKS5 proxy URL
 	proxy *url.URL
 }
@@ -119,7 +116,6 @@ func torStart(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) {
 	return &torTunnel{
 		bootstrapTime: stop.Sub(start),
 		instance:      instance,
-		logFilePath:   logfile,
 		proxy:         &url.URL{Scheme: "socks5", Host: proxyAddress},
 	}, debugInfo, nil
 }

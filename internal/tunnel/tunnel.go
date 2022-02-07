@@ -63,7 +63,7 @@ type Tunnel interface {
 	SOCKS5ProxyURL() *url.URL
 
 	// Stop stops the tunnel. You should not attempt to
-	// use the tunnel once this function is called.
+	// use any other tunnel method after Stop.
 	Stop()
 }
 

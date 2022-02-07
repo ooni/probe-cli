@@ -135,8 +135,6 @@ func (lst *Listener) forward(ctx context.Context, left, right net.Conn, done cha
 // function TAKES OWNERSHIP of the two connections and ensures
 // that they are closed when we are done.
 func (lst *Listener) forwardWithContext(ctx context.Context, left, right net.Conn) {
-	left = bytecounter.MaybeWrap(left, lst.SessionByteCounter)
-	left = bytecounter.MaybeWrap(left, lst.ExperimentByteCounter)
 	defer left.Close()
 	defer right.Close()
 	done := make(chan struct{})
@@ -162,6 +160,11 @@ func (lst *Listener) handleSocksConn(ctx context.Context, socksConn ptxSocksConn
 		lst.logger().Warnf("ptx: ContextDialer.DialContext error: %s", err)
 		return err // used for testing
 	}
+	// We _must_ wrap the ptConn. Wrapping the socks conn leads us to
+	// count the sent bytes as received and the received bytes as sent:
+	// bytes flow in the opposite direction there for the socks conn.
+	ptConn = bytecounter.MaybeWrap(ptConn, lst.SessionByteCounter)
+	ptConn = bytecounter.MaybeWrap(ptConn, lst.ExperimentByteCounter)
 	lst.forwardWithContext(ctx, socksConn, ptConn) // transfer ownership
 	return nil                                     // used for testing
 }

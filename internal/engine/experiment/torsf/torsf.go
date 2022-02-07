@@ -199,18 +199,15 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 //
 // This function aims to _only_ include:
 //
-// 1. information on the tor version by intercepting the line that
-// writes which tor version is opening a log file;
-//
-// 2. notices (more detailed debug messages may contain information
+// 1. notices (more detailed debug messages may contain information
 // that we'd rather not include into the logs?);
 //
-// 3. information about bootstrap (by looking at the progress of
+// 2. information about bootstrap (by looking at the progress of
 // the bootstrap we understand where it blocks and we also know the
 // amount of work tor needs to do, hence we know the cache status
 // because a working cache includes much less messages);
 //
-// 4. information about bridges being used (from there we know
+// 3. information about bridges being used (from there we know
 // if the bridge was cached of fresh, by the way).
 //
 // Tor is know to be good software that does not break its output
@@ -233,7 +230,7 @@ func (m *Measurer) readTorLogs(logger model.Logger, tk *TestKeys, logFilePath st
 		return
 	}
 	for _, bline := range bytes.Split(data, []byte("\n")) {
-		sline := string(bline) // avoid IP addresses in logs
+		sline := string(bline)
 		if !strings.Contains(sline, "[notice]") {
 			continue
 		}
