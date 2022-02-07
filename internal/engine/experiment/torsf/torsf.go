@@ -51,6 +51,9 @@ type TestKeys struct {
 	// RendezvousMethod contains the method used to perform the rendezvous.
 	RendezvousMethod string `json:"rendezvous_method"`
 
+	// SnowflakeEvents contains events emitted by Snowflake.
+	SnowflakeEvents []string `json:"snowflake_events"`
+
 	// TorLogs contains the bootstrap logs.
 	TorLogs []string `json:"tor_logs"`
 
@@ -166,12 +169,17 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 		Failure:           nil,
 		PersistentDatadir: !m.config.DisablePersistentDatadir,
 		RendezvousMethod:  sfdialer.RendezvousMethod.Name(),
+		SnowflakeEvents:   []string{},
+		TorLogs:           []string{},
+		TorVersion:        "",
 	}
 	sess.Logger().Infof(
 		"torsf: disable persistent datadir: %+v", m.config.DisablePersistentDatadir)
 	defer func() {
 		out <- tk
 	}()
+	sfcollector := ptx.NewSnowflakeEventCollector()
+	sfdialer.EventCollector = sfcollector
 	tun, debugInfo, err := m.startTunnel()(ctx, &tunnel.Config{
 		Name:      "tor",
 		Session:   sess,
@@ -185,6 +193,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	})
 	tk.TorVersion = debugInfo.Version
 	m.readTorLogs(sess.Logger(), tk, debugInfo.LogFilePath)
+	tk.SnowflakeEvents = sfcollector.MoveOut()
 	if err != nil {
 		// Note: archival.NewFailure scrubs IP addresses
 		tk.Failure = archival.NewFailure(err)

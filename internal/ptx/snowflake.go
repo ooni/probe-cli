@@ -3,9 +3,12 @@ package ptx
 import (
 	"context"
 	"errors"
+	"log"
 	"net"
+	"sync"
 
 	sflib "git.torproject.org/pluggable-transports/snowflake.git/v2/client/lib"
+	"git.torproject.org/pluggable-transports/snowflake.git/v2/common/event"
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
 )
 
@@ -98,9 +101,45 @@ func NewSnowflakeRendezvousMethod(method string) (SnowflakeRendezvousMethod, err
 	}
 }
 
+// SnowflakeEventCollector collects snowflake events.
+type SnowflakeEventCollector struct {
+	// events contains the events
+	events []string
+
+	// mu protects events
+	mu sync.Mutex
+}
+
+// NewSnowflakeEventCollector creates a new SnowflakeEventCollector.
+func NewSnowflakeEventCollector() *SnowflakeEventCollector {
+	return &SnowflakeEventCollector{}
+}
+
+var _ event.SnowflakeEventReceiver = &SnowflakeEventCollector{}
+
+// OnNewSnowflakeEvent implements SnowflakeEventReceiver.OnNewSnowflakeEvent.
+func (ec *SnowflakeEventCollector) OnNewSnowflakeEvent(ev event.SnowflakeEvent) {
+	log.Printf("******* snowflake: got event: %+v", ev)
+	ec.mu.Lock()
+	ec.events = append(ec.events, ev.String())
+	ec.mu.Unlock()
+}
+
+// MoveOut atomically moves the events collected so far out of this container
+func (ec *SnowflakeEventCollector) MoveOut() []string {
+	ec.mu.Lock()
+	out := ec.events
+	ec.events = nil
+	ec.mu.Unlock()
+	return out
+}
+
 // SnowflakeDialer is a dialer for snowflake. You SHOULD either use a factory
 // for constructing this type or set the fields marked as MANDATORY.
 type SnowflakeDialer struct {
+	// EventReceiver is the OPTIONAL SnowflakeEventCollector.
+	EventCollector *SnowflakeEventCollector
+
 	// RendezvousMethod is the MANDATORY rendezvous method to use.
 	RendezvousMethod SnowflakeRendezvousMethod
 
@@ -128,7 +167,14 @@ func NewSnowflakeDialerWithRendezvousMethod(m SnowflakeRendezvousMethod) *Snowfl
 
 // snowflakeTransport is anything that allows us to dial a snowflake
 type snowflakeTransport interface {
+	// Dial dials a snowflake connection.
 	Dial() (net.Conn, error)
+
+	// AddSnowflakeEventListener adds an event listener.
+	AddSnowflakeEventListener(receiver event.SnowflakeEventReceiver)
+
+	// RemoveSnowflakeEventListener removes an event listener.
+	RemoveSnowflakeEventListener(receiver event.SnowflakeEventReceiver)
 }
 
 // DialContext establishes a connection with the given SF proxy. The context
@@ -155,6 +201,10 @@ func (d *SnowflakeDialer) dialContext(
 	connch, errch := make(chan net.Conn), make(chan error, 1)
 	go func() {
 		defer close(done) // allow tests to synchronize with this goroutine's exit
+		evr := d.newEventReceiver()
+		log.Println("****** snowflake: adding event listener")
+		defer txp.RemoveSnowflakeEventListener(evr)
+		txp.AddSnowflakeEventListener(evr)
 		conn, err := txp.Dial()
 		if err != nil {
 			errch <- err // buffered channel
@@ -174,6 +224,23 @@ func (d *SnowflakeDialer) dialContext(
 	case <-ctx.Done():
 		return nil, done, ctx.Err()
 	}
+}
+
+// newEventReceiver creates a new SnowflakeEventReceiver.
+func (d *SnowflakeDialer) newEventReceiver() event.SnowflakeEventReceiver {
+	if d.EventCollector != nil {
+		return d.EventCollector
+	}
+	return &snowflakeEventIgnorer{}
+}
+
+type snowflakeEventIgnorer struct{}
+
+var _ event.SnowflakeEventReceiver = &snowflakeEventIgnorer{}
+
+func (ec *snowflakeEventIgnorer) OnNewSnowflakeEvent(ev event.SnowflakeEvent) {
+	log.Printf("******* snowflake: got event: %+v", ev)
+	// nothing
 }
 
 // newSnowflakeClient allows us to call a mock rather than
