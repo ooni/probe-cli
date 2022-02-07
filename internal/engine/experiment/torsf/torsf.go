@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strings"
+	"regexp"
 	"time"
 
 	"github.com/apex/log"
@@ -194,21 +194,17 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	tk.BootstrapTime = tun.BootstrapTime().Seconds()
 }
 
+// torProgressRegexp helps to extract progress info from logs.
+//
+// See https://regex101.com/r/3YfIed/1.
+var torProgressRegexp = regexp.MustCompile(
+	`^[A-Za-z0-9.: ]+ \[notice\] Bootstrapped [0-9]+% \([a-zA-z]+\): [A-Za-z0-9 ]+$`)
+
 // readTorLogs attempts to read and include the tor logs into
 // the test keys if this operation is possible.
 //
-// This function aims to _only_ include:
-//
-// 1. notices (more detailed debug messages may contain information
-// that we'd rather not include into the logs?);
-//
-// 2. information about bootstrap (by looking at the progress of
-// the bootstrap we understand where it blocks and we also know the
-// amount of work tor needs to do, hence we know the cache status
-// because a working cache includes much less messages);
-//
-// 3. information about bridges being used (from there we know
-// if the bridge was cached of fresh, by the way).
+// This function aims to _only_ include notice information about
+// bootstrap according to the torProgressRegexp regexp.
 //
 // Tor is know to be good software that does not break its output
 // unnecessarily and that does not include PII into its logs unless
@@ -230,15 +226,8 @@ func (m *Measurer) readTorLogs(logger model.Logger, tk *TestKeys, logFilePath st
 		return
 	}
 	for _, bline := range bytes.Split(data, []byte("\n")) {
-		sline := string(bline)
-		if !strings.Contains(sline, "[notice]") {
-			continue
-		}
-		if strings.Contains(sline, " Bootstrapped ") {
-			tk.TorLogs = append(tk.TorLogs, sline)
-		}
-		if strings.Contains(sline, " new bridge descriptor ") {
-			tk.TorLogs = append(tk.TorLogs, sline)
+		if torProgressRegexp.Match(bline) {
+			tk.TorLogs = append(tk.TorLogs, string(bline))
 		}
 	}
 }
