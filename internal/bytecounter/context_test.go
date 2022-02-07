@@ -28,7 +28,7 @@ func TestExperimentByteCounter(t *testing.T) {
 	}
 }
 
-func TestWrapWithContextByteCounters(t *testing.T) {
+func TestMaybeWrapWithContextByteCounters(t *testing.T) {
 	var conn net.Conn = &mocks.Conn{
 		MockRead: func(b []byte) (int, error) {
 			return len(b), nil
@@ -42,7 +42,7 @@ func TestWrapWithContextByteCounters(t *testing.T) {
 	ctx := context.Background()
 	ctx = WithSessionByteCounter(ctx, sessCounter)
 	ctx = WithExperimentByteCounter(ctx, expCounter)
-	conn = WrapWithContextByteCounters(ctx, conn)
+	conn = MaybeWrapWithContextByteCounters(ctx, conn)
 	buf := make([]byte, 128)
 	conn.Read(buf)
 	conn.Write(buf)

@@ -21,6 +21,6 @@ func (d *byteCounterDialer) DialContext(
 	if err != nil {
 		return nil, err
 	}
-	conn = bytecounter.WrapWithContextByteCounters(ctx, conn)
+	conn = bytecounter.MaybeWrapWithContextByteCounters(ctx, conn)
 	return conn, nil
 }
