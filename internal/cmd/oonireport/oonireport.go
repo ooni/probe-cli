@@ -19,8 +19,6 @@ import (
 	"github.com/pborman/getopt/v2"
 )
 
-// ./submit -F /home/kelmenhorst/fellowship/measurements/IR/20220116.jsonl [--control]
-
 var startTime = time.Now()
 
 type logHandler struct {
@@ -58,6 +56,57 @@ func canOpen(filepath string) bool {
 	return err == nil && stat.Mode().IsRegular()
 }
 
+func readLines(path string) []string {
+	// open measurement file
+	file, err := os.Open(path)
+	runtimex.PanicOnError(err, "Open file error.")
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	// the maximum line length should be selected really big
+	const maxCapacity = 800000
+	buf := make([]byte, maxCapacity)
+	scanner.Buffer(buf, maxCapacity)
+
+	// scan measurement file, one measurement per line
+	var lines []string
+	for scanner.Scan() {
+		line := scanner.Text()
+		lines = append(lines, line)
+	}
+	return lines
+}
+
+// newSession creates a new session
+func newSession(ctx context.Context) *engine.Session {
+	logger := &log.Logger{Level: log.InfoLevel, Handler: &logHandler{Writer: os.Stderr}}
+
+	config := engine.SessionConfig{
+		Logger:          logger,
+		SoftwareName:    softwareName,
+		SoftwareVersion: softwareVersion,
+	}
+	sess, err := engine.NewSession(ctx, config)
+	runtimex.PanicOnError(err, "Error when trying to create session.")
+	return sess
+}
+
+// new Submitter creates a probe services client and submitter
+func newSubmitter(sess *engine.Session, ctx context.Context) *probeservices.Submitter {
+	psc, err := sess.NewProbeServicesClient(ctx)
+	runtimex.PanicOnError(err, "error occurred while creating client")
+	submitter := probeservices.NewSubmitter(psc, sess.Logger())
+	return submitter
+}
+
+// toMeasurement loads an input string as model.Measurement
+func toMeasurement(s string) model.Measurement {
+	var mm model.Measurement
+	err := json.Unmarshal([]byte(s), &mm)
+	runtimex.PanicOnError(err, "json.Unmarshal error")
+	return mm
+}
+
 func main() {
 	defer func() {
 		if s := recover(); s != nil {
@@ -72,64 +121,21 @@ func main() {
 	fatalIfFalse(canOpen(args[1]), "Cannot open measurement file")
 
 	path = args[1]
+	lines := readLines(path)
 
 	ctx := context.Background()
-	logger := &log.Logger{Level: log.InfoLevel, Handler: &logHandler{Writer: os.Stderr}}
-
-	// create new session
-	config := engine.SessionConfig{
-		Logger:          logger,
-		SoftwareName:    softwareName,
-		SoftwareVersion: softwareVersion,
-	}
-	sess, err := engine.NewSession(ctx, config)
+	sess := newSession(ctx)
 	defer sess.Close()
 
-	// open measurement file
-	file, err := os.Open(path)
-	if err != nil {
-		fmt.Println("error while trying to open file", err)
-		return
-	}
-
-	scanner := bufio.NewScanner(file)
-	// the maximum line length should be selected really big
-	const maxCapacity = 800000
-	buf := make([]byte, maxCapacity)
-	scanner.Buffer(buf, maxCapacity)
-
-	// scan measurement file, one measurement per line
-	var lines []string
-	for scanner.Scan() {
-		line := scanner.Text()
-		lines = append(lines, line)
-	}
-	file.Close()
-
 	submitted := 0
-	for _, measurement := range lines {
-		// create probe services client and submitter
-		psc, err := sess.NewProbeServicesClient(ctx)
-		if err != nil {
-			fmt.Println("error occurred while creating client", err)
-			os.Exit(0)
-		}
-		submitter := probeservices.NewSubmitter(psc, sess.Logger())
+	submitter := newSubmitter(sess, ctx)
 
-		// load input as model.Measurement
-		var mm model.Measurement
-		if err := json.Unmarshal([]byte(measurement), &mm); err != nil {
-			fmt.Println("error occurred at json.Unmarshal", err)
-			os.Exit(0)
-		}
+	for _, line := range lines {
+		mm := toMeasurement(line)
 		// submit the measurement
-		if err := submitter.Submit(ctx, &mm); err != nil {
-			fmt.Println("error occurred while submitting", err)
-			os.Exit(0)
-		}
+		err := submitter.Submit(ctx, &mm)
+		runtimex.PanicOnError(err, "error occurred while submitting")
 		submitted += 1
-		json.Marshal(mm)
-		runtimex.PanicOnError(err, "json.Marshal should not fail here")
 	}
 	fmt.Println("Submitted measurements: ", submitted)
 }
