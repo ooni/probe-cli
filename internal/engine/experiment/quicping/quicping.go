@@ -121,6 +121,7 @@ func (m *Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
+// sendInfo contains the information of a sent ping request.
 type sendInfo struct {
 	dstID    ConnectionID
 	srcID    ConnectionID
@@ -136,6 +137,7 @@ func (m *Measurer) Run(
 	callbacks model.ExperimentCallbacks,
 ) error {
 	host := string(measurement.Input)
+	// allow URL input
 	if u, err := url.ParseRequestURI(host); err == nil {
 		host = u.Host
 	}
@@ -167,6 +169,7 @@ func (m *Measurer) Run(
 	var wg sync.WaitGroup
 	wg.Add(1)
 
+	// this goroutine sends a ping request every second
 	go func() {
 		for i := int64(0); i < rep; i++ {
 			sess.Logger().Infof("PING %s", service)
@@ -174,7 +177,7 @@ func (m *Measurer) Run(
 			sent, dstID, srcID := buildPacket()  // build QUIC Initial packet
 			_, err = conn.WriteTo(sent, udpAddr) // send Initial packet
 			sendTime := time.Now()
-			if err != nil {
+			if err != nil { // if send failed, log that ping attempt here
 				tk.Pings = append(tk.Pings, &SinglePing{
 					Failure:     archival.NewFailure(err),
 					RequestTime: formatTime(sendTime),
@@ -192,7 +195,7 @@ func (m *Measurer) Run(
 	for {
 		resp, respTime, err := m.waitResponse(conn) // wait for server response
 		if err != nil {
-			break
+			break // leave loop when the read timeout occured
 		}
 		supportedVersions, dst, err := m.DissectVersionNegotiation(resp) // dissect server response
 		if err != nil {
@@ -223,10 +226,11 @@ func (m *Measurer) Run(
 		sess.Logger().Infof("PING got response from %s", service)
 
 		if len(tk.Pings) == int(rep) {
-			break
+			break // leave loop when we collected all ping responses
 		}
 	}
 	wg.Wait()
+	// log all ping requests that have not been answered
 	timeoutErr := errors.New("i/o timeout")
 	for _, req := range sendInfoMap {
 		tk.Pings = append(tk.Pings, &SinglePing{
@@ -242,7 +246,7 @@ func (m *Measurer) Run(
 	return nil
 }
 
-// waitResponse reads the server response. Times out after m.config.timeout() seconds (default: 5000).
+// waitResponse reads the server response. Returns the received data and the time stamp.
 func (m *Measurer) waitResponse(conn model.UDPLikeConn) ([]byte, *time.Time, error) {
 	buffer := make([]byte, 1024)
 	n, _, err := conn.ReadFrom(buffer)
@@ -253,8 +257,9 @@ func (m *Measurer) waitResponse(conn model.UDPLikeConn) ([]byte, *time.Time, err
 	return buffer[:n], &respTime, nil
 }
 
-// DissectVersionNegotiation dissects the Version Negotiation response
-// and prints it to the command line.
+// DissectVersionNegotiation dissects the Version Negotiation response.
+// It returns the supported versions and the destination connection ID of the response,
+// The destination connection ID of the response has to coincide with the source connection ID of the request.
 // https://www.rfc-editor.org/rfc/rfc9000.html#name-version-negotiation-packet
 func (m *Measurer) DissectVersionNegotiation(i []byte) ([]uint32, string, error) {
 	firstByte := uint8(i[0])
