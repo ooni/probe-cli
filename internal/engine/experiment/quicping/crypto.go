@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
-// BSD 3-Clause "New" or "Revised" License
+// SPDX-License-Identifier: BSD-3-Clause
 // This code is borrowed from https://github.com/marten-seemann/qtls-go1-15
 // https://github.com/marten-seemann/qtls-go1-15/blob/0d137e9e3594d8e9c864519eff97b323321e5e74/cipher_suites.go#L281
 type aead interface {
@@ -28,7 +28,7 @@ const (
 	noncePrefixLength = 4
 )
 
-// BSD 3-Clause "New" or "Revised" License
+// SPDX-License-Identifier: BSD-3-Clause
 // This code is borrowed from https://github.com/marten-seemann/qtls-go1-15
 // https://github.com/marten-seemann/qtls-go1-15/blob/0d137e9e3594d8e9c864519eff97b323321e5e74/cipher_suites.go#L375
 func aeadAESGCMTLS13(key, nonceMask []byte) aead {
@@ -44,7 +44,7 @@ func aeadAESGCMTLS13(key, nonceMask []byte) aead {
 	return ret
 }
 
-// MIT License
+// SPDX-License-Identifier: MIT
 // This code is borrowed from https://github.com/lucas-clemente/quic-go/
 // https://github.com/lucas-clemente/quic-go/blob/f3b098775e40f96486c0065204145ddc8675eb7c/internal/handshake/initial_aead.go#L60
 // https://www.rfc-editor.org/rfc/rfc9001.html#protection-keys
@@ -64,7 +64,7 @@ func computeHP(secret []byte) (hp []byte) {
 	return
 }
 
-// MIT License
+// SPDX-License-Identifier: MIT
 // This code is borrowed from https://github.com/lucas-clemente/quic-go/
 // https://github.com/lucas-clemente/quic-go/blob/f3b098775e40f96486c0065204145ddc8675eb7c/internal/handshake/initial_aead.go#L53
 // https://www.rfc-editor.org/rfc/rfc9001.html#name-initial-secrets
@@ -120,7 +120,7 @@ func encryptPayload(payload, destConnID ConnectionID, clientSecret []byte) []byt
 	return encrypted
 }
 
-// MIT License
+// SPDX-License-Identifier: MIT
 // This code is borrowed from https://github.com/lucas-clemente/quic-go/
 // https://github.com/lucas-clemente/quic-go/blob/master/internal/handshake/hkdf.go
 //
@@ -143,7 +143,7 @@ func hkdfExpandLabel(hash crypto.Hash, secret, context []byte, label string, len
 	return out
 }
 
-// BSD 3-Clause "New" or "Revised" License
+// SPDX-License-Identifier: BSD-3-Clause
 // This code is borrowed from https://github.com/marten-seemann/qtls-go1-15
 // https://github.com/marten-seemann/qtls-go1-15/blob/0d137e9e3594d8e9c864519eff97b323321e5e74/cipher_suites.go#L319
 //
