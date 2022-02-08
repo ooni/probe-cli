@@ -161,11 +161,10 @@ func (m *Measurer) Run(
 	if err != nil {
 		return err
 	}
-	conn.SetReadDeadline(time.Now().Add(time.Duration(rep*m.config.timeout()) * time.Millisecond))
 	defer conn.Close()
+	conn.SetReadDeadline(time.Now().Add(time.Duration(rep*m.config.timeout()) * time.Millisecond))
 
 	sendInfoMap := make(map[string]*sendInfo)
-
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -225,7 +224,7 @@ func (m *Measurer) Run(
 		})
 		sess.Logger().Infof("PING got response from %s", service)
 
-		if len(tk.Pings) == int(rep) {
+		if len(tk.Pings) >= int(rep) {
 			break // leave loop when we collected all ping responses
 		}
 	}
