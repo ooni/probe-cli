@@ -18,10 +18,10 @@ import (
 
 // FailStdLib is a failing model.UnderlyingNetworkLibrary.
 type FailStdLib struct {
-	conn      model.UDPLikeConn
-	err       error
-	writeErr  error
-	readErr   error
+	conn     model.UDPLikeConn
+	err      error
+	writeErr error
+	readErr  error
 }
 
 // ListenUDP implements UnderlyingNetworkLibrary.ListenUDP.
@@ -61,7 +61,7 @@ func (f *FailStdLib) ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLik
 			MockClose: func() error {
 				return f.conn.Close()
 			},
-		}, nil 
+		}, nil
 	}
 	return &mocks.UDPLikeConn{}, nil
 }
@@ -88,7 +88,8 @@ func TestNewExperimentMeasurer(t *testing.T) {
 
 func TestInvalidHost(t *testing.T) {
 	measurer := quicping.NewExperimentMeasurer(quicping.Config{
-		Port: int64(443),
+		Port:        int64(443),
+		Repetitions: int64(1),
 	})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("a.a.a.a")
@@ -101,6 +102,25 @@ func TestInvalidHost(t *testing.T) {
 	if _, ok := err.(*net.DNSError); !ok {
 		t.Fatal("unexpected error type")
 	}
+}
+
+func TestURLInput(t *testing.T) {
+	measurer := quicping.NewExperimentMeasurer(quicping.Config{
+		Repetitions: int64(1),
+	})
+	measurement := new(model.Measurement)
+	measurement.Input = model.MeasurementTarget("https://google.com/")
+	sess := &mockable.Session{MockableLogger: log.Log}
+	err := measurer.Run(context.Background(), sess, measurement,
+		model.NewPrinterCallbacks(log.Log))
+	if err != nil {
+		t.Fatal("unexpected error")
+	}
+	tk := measurement.TestKeys.(*quicping.TestKeys)
+	if tk.Domain != "google.com" {
+		t.Fatal("unexpected domain")
+	}
+
 }
 
 func TestReadTimeout(t *testing.T) {
@@ -180,7 +200,7 @@ func TestReadFails(t *testing.T) {
 	expected := errors.New("expected")
 	measurer := quicping.NewExperimentMeasurer(quicping.Config{
 		NetworkLibrary: &FailStdLib{err: nil, readErr: expected, writeErr: nil},
-		Repetitions:    2,
+		Repetitions:    1,
 	})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("google.com")
@@ -191,7 +211,7 @@ func TestReadFails(t *testing.T) {
 		t.Fatal("unexpected error")
 	}
 	tk := measurement.TestKeys.(*quicping.TestKeys)
-	if tk.Pings == nil || len(tk.Pings) != 2 {
+	if tk.Pings == nil || len(tk.Pings) != 1 {
 		t.Fatal("not enough pings")
 	}
 	for i, ping := range tk.Pings {

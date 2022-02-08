@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
@@ -135,6 +136,9 @@ func (m *Measurer) Run(
 	callbacks model.ExperimentCallbacks,
 ) error {
 	host := string(measurement.Input)
+	if u, err := url.ParseRequestURI(host); err == nil {
+		host = u.Host
+	}
 	service := net.JoinHostPort(host, m.config.port())
 	udpAddr, err := net.ResolveUDPAddr("udp4", service)
 	if err != nil {
