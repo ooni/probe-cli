@@ -125,7 +125,8 @@ type obfs4CancellableDialer struct {
 }
 
 // dial performs the dial.
-func (d *obfs4CancellableDialer) dial(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *obfs4CancellableDialer) dial(
+	ctx context.Context, network, address string) (net.Conn, error) {
 	connch, errch := make(chan net.Conn), make(chan error, 1)
 	go func() {
 		defer close(d.done) // signal we're joining

@@ -1,10 +1,10 @@
 ## Checklist
 
 - [ ] I have read the [contribution guidelines](https://github.com/ooni/probe-cli/blob/master/CONTRIBUTING.md)
-- [ ] reference issue for this pull request: `REFERENCE_ISSUE_URL`
-- [ ] related ooni/spec pull request: `RELATED_OONI_SPEC_PULL_REQUEST_URL`
+- [ ] reference issue for this pull request: <!-- add URL here -->
+- [ ] if you changed anything related how experiments work and you need to reflect these changes in the ooni/spec repository, please link to the related ooni/spec pull request: <!-- add URL here -->
 
-Location of the issue tracker: https://github.com/ooni/probe
+<!-- Reminder: Location of the issue tracker: https://github.com/ooni/probe -->
 
 ## Description
 

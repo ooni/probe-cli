@@ -71,7 +71,10 @@ and `./internal/netxlite.CopyContext` instead of `io.Copy`
 ## Code testing requirements
 
 Make sure all tests pass with `go test -race ./...` run from the
-top-level directory of this repository.
+top-level directory of this repository. (Integration tests may be
+flaky, so there may be some failures here and and there; we know
+in particular that `./internal/cmd/jafar` is one of the usual
+suspects and that it's not super pleasant to test it under Linux.)
 
 ## Writing a new OONI experiment
 

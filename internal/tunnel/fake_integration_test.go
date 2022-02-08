@@ -26,7 +26,7 @@ func TestFakeStartStop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tunnel, err := tunnel.Start(context.Background(), &tunnel.Config{
+	tunnel, _, err := tunnel.Start(context.Background(), &tunnel.Config{
 		Name:      "fake",
 		Session:   sess,
 		TunnelDir: tunnelDir,

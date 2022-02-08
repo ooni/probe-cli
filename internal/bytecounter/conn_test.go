@@ -64,3 +64,34 @@ func TestConnWorksOnFailure(t *testing.T) {
 		t.Fatal("unexpected number of bytes sent")
 	}
 }
+
+func TestWrap(t *testing.T) {
+	conn := &mocks.Conn{}
+	counter := New()
+	nconn := Wrap(conn, counter)
+	_, good := nconn.(*Conn)
+	if !good {
+		t.Fatal("did not wrap")
+	}
+}
+
+func TestMaybeWrap(t *testing.T) {
+	t.Run("with nil counter", func(t *testing.T) {
+		conn := &mocks.Conn{}
+		nconn := MaybeWrap(conn, nil)
+		_, good := nconn.(*mocks.Conn)
+		if !good {
+			t.Fatal("did not wrap")
+		}
+	})
+
+	t.Run("with legit counter", func(t *testing.T) {
+		conn := &mocks.Conn{}
+		counter := New()
+		nconn := MaybeWrap(conn, counter)
+		_, good := nconn.(*Conn)
+		if !good {
+			t.Fatal("did not wrap")
+		}
+	})
+}

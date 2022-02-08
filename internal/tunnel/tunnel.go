@@ -74,6 +74,22 @@ var ErrEmptyTunnelDir = errors.New("TunnelDir is empty")
 // is not supported by this package.
 var ErrUnsupportedTunnelName = errors.New("unsupported tunnel name")
 
+// DebugInfo contains information useful to debug issues
+// when starting up a given tunnel fails.
+type DebugInfo struct {
+	// LogFilePath is the path to the log file, which MAY
+	// be empty in case we don't have a log file.
+	LogFilePath string
+
+	// Name is the name of the tunnel and will always
+	// be properly set by the code.
+	Name string
+
+	// Version is the tunnel version. This field MAY be
+	// empty if we don't know the version.
+	Version string
+}
+
 // Start starts a new tunnel by name or returns an error. We currently
 // support the following tunnels:
 //
@@ -94,7 +110,15 @@ var ErrUnsupportedTunnelName = errors.New("unsupported tunnel name")
 // The "fake" tunnel is a fake tunnel that just exposes a
 // SOCKS5 proxy and then connects directly to server. We use
 // this special kind of tunnel to implement tests.
-func Start(ctx context.Context, config *Config) (Tunnel, error) {
+//
+// The return value is a triple:
+//
+// 1. a valid Tunnel on success, nil on failure;
+//
+// 2. debugging information (both on success and failure);
+//
+// 3. nil on success, an error on failure.
+func Start(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) {
 	switch config.Name {
 	case "fake":
 		return fakeStart(ctx, config)
@@ -103,6 +127,7 @@ func Start(ctx context.Context, config *Config) (Tunnel, error) {
 	case "tor":
 		return torStart(ctx, config)
 	default:
-		return nil, fmt.Errorf("%w: %s", ErrUnsupportedTunnelName, config.Name)
+		di := DebugInfo{}
+		return nil, di, fmt.Errorf("%w: %s", ErrUnsupportedTunnelName, config.Name)
 	}
 }
