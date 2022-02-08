@@ -14,7 +14,6 @@ import (
 	"net"
 	"net/url"
 	"strconv"
-	"sync"
 	"time"
 
 	_ "crypto/sha256"
@@ -51,11 +50,8 @@ type Config struct {
 	// Port is the port to test.
 	Port int64 `ooni:"port is the port to test"`
 
-	// Timeout is the number of milliseconds to wait for the ping response
-	Timeout int64 `ooni:"Timeout is the number of milliseconds to wait for the ping response"`
-
-	// NetworkLibrary is the underlying network library. Can be used for testing.
-	NetworkLibrary model.UnderlyingNetworkLibrary
+	// networkLibrary is the underlying network library. Can be used for testing.
+	networkLib model.UnderlyingNetworkLibrary
 }
 
 func (c *Config) repetitions() int64 {
@@ -72,16 +68,9 @@ func (c *Config) port() string {
 	return "443"
 }
 
-func (c *Config) timeout() int64 {
-	if c.Timeout != 0 {
-		return c.Timeout
-	}
-	return 5000
-}
-
 func (c *Config) networkLibrary() model.UnderlyingNetworkLibrary {
-	if c.NetworkLibrary != nil {
-		return c.NetworkLibrary
+	if c.networkLib != nil {
+		return c.networkLib
 	}
 	return &netxlite.TProxyStdlib{}
 }
@@ -95,8 +84,8 @@ type TestKeys struct {
 
 // SinglePing is a result of a single ping operation.
 type SinglePing struct {
-	ConnIdDst         ConnectionID                   `json:"conn_id_dst"`
-	ConnIdSrc         ConnectionID                   `json:"conn_id_src"`
+	ConnIdDst         string                         `json:"conn_id_dst"`
+	ConnIdSrc         string                         `json:"conn_id_src"`
 	Failure           *string                        `json:"failure"`
 	Request           *model.ArchivalMaybeBinaryData `json:"request"`
 	RequestTime       string                         `json:"request_time"`
@@ -108,7 +97,6 @@ type SinglePing struct {
 // Measurer performs the measurement.
 type Measurer struct {
 	config Config
-	mu     sync.Mutex
 }
 
 // ExperimentName implements ExperimentMeasurer.ExperimentName.
@@ -121,12 +109,92 @@ func (m *Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
-// sendInfo contains the information of a sent ping request.
-type sendInfo struct {
-	dstID    ConnectionID
-	srcID    ConnectionID
-	sendTime time.Time
+// requestInfo contains the information of a sent ping request.
+type requestInfo struct {
+	t     time.Time
+	raw   []byte
+	dstID string
+	srcID string
+	err   error
+}
+
+// responseInfo contains the information of a received ping reponse.
+type responseInfo struct {
+	t        time.Time
 	raw      []byte
+	dstID    string
+	versions []uint32
+	err      error
+}
+
+// sender sends a ping requests to the target hosts every second
+func (m *Measurer) sender(
+	ctx context.Context,
+	pconn model.UDPLikeConn,
+	destAddr *net.UDPAddr,
+	out chan<- requestInfo,
+	sess model.ExperimentSession,
+) {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	i := 0
+	for i < int(m.config.repetitions()) {
+		select {
+		case <-ctx.Done():
+			return // user aborted or timeout expired
+
+		case sendTime := <-ticker.C:
+			packet, dstID, srcID := buildPacket()     // build QUIC Initial packet
+			_, err := pconn.WriteTo(packet, destAddr) // send Initial packet
+
+			sess.Logger().Infof("PING %s", destAddr)
+
+			// propagate send information, including errors
+			out <- requestInfo{raw: packet, t: sendTime, dstID: hex.EncodeToString(dstID), srcID: hex.EncodeToString(srcID), err: err}
+			i += 1
+
+		default:
+		}
+	}
+}
+
+// receiver receives incoming server responses and
+// dissects the payload of the version negotiation response
+func (m *Measurer) receiver(
+	ctx context.Context,
+	pconn model.UDPLikeConn,
+	out chan<- responseInfo,
+	sess model.ExperimentSession,
+) {
+	for ctx.Err() == nil {
+		// read (timeout was set in Run)
+		buffer := make([]byte, 1024)
+		n, addr, err := pconn.ReadFrom(buffer)
+		respTime := time.Now()
+		if err != nil {
+			// stop if the connection is already closed
+			if errors.Is(err, net.ErrClosed) {
+				break
+			}
+			// store read failures and continue receiving
+			out <- responseInfo{t: respTime, err: err}
+			continue
+		}
+		resp := buffer[:n]
+
+		// dissect server response
+		supportedVersions, dst, err := m.DissectVersionNegotiation(resp)
+		if err != nil {
+			// the response was likely not the expected version negotiation response, so ignore it
+			sess.Logger().Infof(fmt.Sprintf("response dissection failed: %s", err))
+			continue
+		}
+		// propagate receive information
+		out <- responseInfo{raw: resp, t: respTime, dstID: hex.EncodeToString(dst), versions: supportedVersions}
+
+		sess.Logger().Infof("PING got response from %s", addr)
+	}
 }
 
 // Run implements ExperimentMeasurer.Run.
@@ -153,125 +221,102 @@ func (m *Measurer) Run(
 	}
 	measurement.TestKeys = tk
 
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
 	// create UDP socket
-	conn, err := m.config.networkLibrary().ListenUDP("udp", &net.UDPAddr{})
+	pconn, err := m.config.networkLibrary().ListenUDP("udp", &net.UDPAddr{})
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
-	conn.SetReadDeadline(time.Now().Add(time.Duration(rep*m.config.timeout()) * time.Millisecond))
+	defer pconn.Close()
 
-	sendInfoMap := make(map[string]*sendInfo)
-	var wg sync.WaitGroup
-	wg.Add(1)
+	// set context and read timeouts
+	deadline := time.Duration(rep*5) * time.Second
+	pconn.SetReadDeadline(time.Now().Add(deadline))
+	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(5*rep))
+	defer cancel()
 
-	// this goroutine sends a ping request every second
-	go func() {
-		for i := int64(0); i < rep; i++ {
-			sess.Logger().Infof("PING %s", service)
+	sendInfoChan := make(chan requestInfo)
+	recvInfoChan := make(chan responseInfo)
+	sendMap := make(map[string]*requestInfo)
 
-			sent, dstID, srcID := buildPacket()  // build QUIC Initial packet
-			_, err = conn.WriteTo(sent, udpAddr) // send Initial packet
-			sendTime := time.Now()
-			if err != nil { // if send failed, log that ping attempt here
+	// start sender and receiver goroutines
+	go m.sender(ctx, pconn, udpAddr, sendInfoChan, sess)
+	go m.receiver(ctx, pconn, recvInfoChan, sess)
+L:
+	for {
+		select {
+		case req := <-sendInfoChan: // a new ping was sent
+			if req.err != nil {
 				tk.Pings = append(tk.Pings, &SinglePing{
-					Failure:     archival.NewFailure(err),
-					RequestTime: formatTime(sendTime),
+					ConnIdDst:   req.dstID,
+					ConnIdSrc:   req.srcID,
+					Failure:     archival.NewFailure(req.err),
+					Request:     &model.ArchivalMaybeBinaryData{Value: string(req.raw)},
+					RequestTime: formatTime(req.t),
 				})
 				continue
 			}
-			m.mu.Lock()
-			sendInfoMap[hex.EncodeToString(srcID)] = &sendInfo{dstID: dstID, srcID: srcID, raw: sent, sendTime: sendTime}
-			m.mu.Unlock()
-			<-ticker.C
-		}
-		wg.Done()
-	}()
+			sendMap[req.srcID] = &req
 
-	for {
-		resp, respTime, err := m.waitResponse(conn) // wait for server response
-		if err != nil {
-			break // leave loop when the read timeout occured
-		}
-		supportedVersions, dst, err := m.DissectVersionNegotiation(resp) // dissect server response
-		if err != nil {
-			sess.Logger().Infof(fmt.Sprintf("response dissection failed: %s", err))
-			continue
-		}
-		var (
-			req *sendInfo
-			ok  bool
-		)
-		m.mu.Lock()
-		if req, ok = sendInfoMap[dst]; !ok {
-			continue // we have not send a request for this response, so let's discard it for now
-		}
-		delete(sendInfoMap, dst)
-		m.mu.Unlock()
+		case resp := <-recvInfoChan: // a new response has been received
+			var (
+				req *requestInfo
+				ok  bool
+			)
+			// match response to request
+			if req, ok = sendMap[resp.dstID]; !ok {
+				continue // ignore any version negotiation response with an unknown destination ID
+			}
+			delete(sendMap, resp.dstID)
+			tk.Pings = append(tk.Pings, &SinglePing{
+				ConnIdDst:         req.dstID,
+				ConnIdSrc:         req.srcID,
+				Failure:           archival.NewFailure(resp.err),
+				Request:           &model.ArchivalMaybeBinaryData{Value: string(req.raw)},
+				RequestTime:       formatTime(req.t),
+				Response:          &model.ArchivalMaybeBinaryData{Value: string(resp.raw)},
+				ResponseTime:      formatTime(resp.t),
+				SupportedVersions: resp.versions,
+			})
+			if len(tk.Pings) >= int(rep) {
+				break L // break when we collected all ping responses
+			}
 
-		tk.Pings = append(tk.Pings, &SinglePing{
-			ConnIdDst:         req.dstID,
-			ConnIdSrc:         req.srcID,
-			Failure:           nil,
-			Request:           &model.ArchivalMaybeBinaryData{Value: string(req.raw)},
-			RequestTime:       formatTime(req.sendTime),
-			Response:          &model.ArchivalMaybeBinaryData{Value: string(resp)},
-			ResponseTime:      formatTime(*respTime),
-			SupportedVersions: supportedVersions,
-		})
-		sess.Logger().Infof("PING got response from %s", service)
+		case <-ctx.Done():
+			break L
 
-		if len(tk.Pings) >= int(rep) {
-			break // leave loop when we collected all ping responses
+		default:
 		}
 	}
-	wg.Wait()
-	// log all ping requests that have not been answered
+	// store all ping requests that have not been answered with a timeout failure
 	timeoutErr := errors.New("i/o timeout")
-	for _, req := range sendInfoMap {
+	for _, req := range sendMap {
 		tk.Pings = append(tk.Pings, &SinglePing{
-			ConnIdDst:         req.dstID,
-			ConnIdSrc:         req.srcID,
-			Failure:           archival.NewFailure(timeoutErr),
-			Request:           &model.ArchivalMaybeBinaryData{Value: string(req.raw)},
-			Response:          nil,
-			SupportedVersions: nil,
+			ConnIdDst:   req.dstID,
+			ConnIdSrc:   req.srcID,
+			Failure:     archival.NewFailure(timeoutErr),
+			Request:     &model.ArchivalMaybeBinaryData{Value: string(req.raw)},
+			RequestTime: formatTime(req.t),
 		})
 	}
-
 	return nil
-}
-
-// waitResponse reads the server response. Returns the received data and the time stamp.
-func (m *Measurer) waitResponse(conn model.UDPLikeConn) ([]byte, *time.Time, error) {
-	buffer := make([]byte, 1024)
-	n, _, err := conn.ReadFrom(buffer)
-	respTime := time.Now()
-	if err != nil {
-		return nil, nil, err
-	}
-	return buffer[:n], &respTime, nil
 }
 
 // DissectVersionNegotiation dissects the Version Negotiation response.
 // It returns the supported versions and the destination connection ID of the response,
 // The destination connection ID of the response has to coincide with the source connection ID of the request.
 // https://www.rfc-editor.org/rfc/rfc9000.html#name-version-negotiation-packet
-func (m *Measurer) DissectVersionNegotiation(i []byte) ([]uint32, string, error) {
+func (m *Measurer) DissectVersionNegotiation(i []byte) ([]uint32, ConnectionID, error) {
 	firstByte := uint8(i[0])
 	mask := 0b10000000
 	mask &= int(firstByte)
 	if mask == 0 {
-		return nil, "", &errUnexpectedResponse{msg: "not a long header packet"}
+		return nil, nil, &errUnexpectedResponse{msg: "not a long header packet"}
 	}
 
 	versionBytes := i[1:5]
 	v := binary.BigEndian.Uint32(versionBytes)
 	if v != 0 {
-		return nil, "", &errUnexpectedResponse{msg: "unexpected Version Negotiation format"}
+		return nil, nil, &errUnexpectedResponse{msg: "unexpected Version Negotiation format"}
 	}
 
 	dstLength := i[5]
@@ -284,7 +329,7 @@ func (m *Measurer) DissectVersionNegotiation(i []byte) ([]uint32, string, error)
 		supportedVersions = append(supportedVersions, binary.BigEndian.Uint32(i[offset:offset+4]))
 		offset += 4
 	}
-	return supportedVersions, hex.EncodeToString(dst), nil
+	return supportedVersions, dst, nil
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
