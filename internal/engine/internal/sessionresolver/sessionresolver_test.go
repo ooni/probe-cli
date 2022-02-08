@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
 )
 
@@ -85,7 +86,11 @@ func TestTypicalUsageWithSuccess(t *testing.T) {
 	reso := &Resolver{
 		KVStore: &kvstore.Memory{},
 		dnsClientMaker: &fakeDNSClientMaker{
-			reso: &FakeResolver{Data: expected},
+			reso: &mocks.Resolver{
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return expected, nil
+				},
+			},
 		},
 	}
 	addrs, err := reso.LookupHost(ctx, "dns.google")
@@ -101,14 +106,14 @@ func TestLittleLLookupHostWithInvalidURL(t *testing.T) {
 	reso := &Resolver{}
 	ctx := context.Background()
 	ri := &resolverinfo{URL: "\t\t\t", Score: 0.99}
-	addrs, err := reso.lookupHost(ctx, ri, "ooni.org")
+	addrs, score, err := reso.lookupHost(ctx, ri, "ooni.org")
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 		t.Fatal("not the error we expected", err)
 	}
 	if addrs != nil {
 		t.Fatal("expected nil addrs here")
 	}
-	if ri.Score != 0 {
+	if score != 0 {
 		t.Fatal("unexpected ri.Score", ri.Score)
 	}
 }
@@ -117,19 +122,23 @@ func TestLittleLLookupHostWithSuccess(t *testing.T) {
 	expected := []string{"8.8.8.8", "8.8.4.4"}
 	reso := &Resolver{
 		dnsClientMaker: &fakeDNSClientMaker{
-			reso: &FakeResolver{Data: expected},
+			reso: &mocks.Resolver{
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return expected, nil
+				},
+			},
 		},
 	}
 	ctx := context.Background()
 	ri := &resolverinfo{URL: "dot://dns-nonexistent.ooni.org", Score: 0.1}
-	addrs, err := reso.lookupHost(ctx, ri, "dns.google")
+	addrs, score, err := reso.lookupHost(ctx, ri, "dns.google")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(expected, addrs); diff != "" {
 		t.Fatal(diff)
 	}
-	if ri.Score < 0.88 || ri.Score > 0.92 {
+	if score < 0.88 || score > 0.92 {
 		t.Fatal("unexpected score", ri.Score)
 	}
 }
@@ -138,19 +147,23 @@ func TestLittleLLookupHostWithFailure(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	reso := &Resolver{
 		dnsClientMaker: &fakeDNSClientMaker{
-			reso: &FakeResolver{Err: errMocked},
+			reso: &mocks.Resolver{
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return nil, errMocked
+				},
+			},
 		},
 	}
 	ctx := context.Background()
 	ri := &resolverinfo{URL: "dot://dns-nonexistent.ooni.org", Score: 0.95}
-	addrs, err := reso.lookupHost(ctx, ri, "dns.google")
+	addrs, score, err := reso.lookupHost(ctx, ri, "dns.google")
 	if !errors.Is(err, errMocked) {
 		t.Fatal("not the error we expected", err)
 	}
 	if addrs != nil {
 		t.Fatal("expected nil addrs here")
 	}
-	if ri.Score < 0.094 || ri.Score > 0.096 {
+	if score < 0.094 || score > 0.096 {
 		t.Fatal("unexpected score", ri.Score)
 	}
 }
@@ -341,5 +354,16 @@ func TestShouldSkipWithProxyWorks(t *testing.T) {
 		if out != e.result {
 			t.Fatal("unexpected result for", e)
 		}
+	}
+}
+
+func TestResolverLookupHTTPS(t *testing.T) {
+	reso := &Resolver{}
+	https, err := reso.LookupHTTPS(context.Background(), "dns.google")
+	if !errors.Is(err, errLookupHTTPSNotImplemented) {
+		t.Fatal("unexpected error", err)
+	}
+	if https != nil {
+		t.Fatal("expected nil https")
 	}
 }
