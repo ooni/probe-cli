@@ -38,6 +38,10 @@ const (
 	testVersion = "0.1.0"
 )
 
+func formatTime(t time.Time) string {
+	return t.UTC().Format("2006-01-02 15:04:05.000000")
+}
+
 // Config contains the experiment configuration.
 type Config struct {
 	// Repetitions is the number of repetitions for each ping.
@@ -94,7 +98,9 @@ type SinglePing struct {
 	ConnIdSrc         ConnectionID                   `json:"conn_id_src"`
 	Failure           *string                        `json:"failure"`
 	Request           *model.ArchivalMaybeBinaryData `json:"request"`
+	RequestTime       string                         `json:"request_time"`
 	Response          *model.ArchivalMaybeBinaryData `json:"response"`
+	ResponseTime      string                         `json:"response_time"`
 	SupportedVersions []uint32                       `json:"supported_versions"`
 }
 
@@ -166,7 +172,8 @@ func (m *Measurer) Run(
 			sendTime := time.Now()
 			if err != nil {
 				tk.Pings = append(tk.Pings, &SinglePing{
-					Failure: archival.NewFailure(err),
+					Failure:     archival.NewFailure(err),
+					RequestTime: formatTime(sendTime),
 				})
 				continue
 			}
@@ -179,7 +186,7 @@ func (m *Measurer) Run(
 	}()
 
 	for {
-		resp, err := m.waitResponse(conn) // wait for server response
+		resp, respTime, err := m.waitResponse(conn) // wait for server response
 		if err != nil {
 			break
 		}
@@ -204,7 +211,9 @@ func (m *Measurer) Run(
 			ConnIdSrc:         req.srcID,
 			Failure:           nil,
 			Request:           &model.ArchivalMaybeBinaryData{Value: string(req.raw)},
+			RequestTime:       formatTime(req.sendTime),
 			Response:          &model.ArchivalMaybeBinaryData{Value: string(resp)},
+			ResponseTime:      formatTime(*respTime),
 			SupportedVersions: supportedVersions,
 		})
 		sess.Logger().Infof("PING got response from %s", service)
@@ -230,13 +239,14 @@ func (m *Measurer) Run(
 }
 
 // waitResponse reads the server response. Times out after m.config.timeout() seconds (default: 5000).
-func (m *Measurer) waitResponse(conn model.UDPLikeConn) ([]byte, error) {
+func (m *Measurer) waitResponse(conn model.UDPLikeConn) ([]byte, *time.Time, error) {
 	buffer := make([]byte, 1024)
 	n, _, err := conn.ReadFrom(buffer)
+	respTime := time.Now()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return buffer[:n], nil
+	return buffer[:n], &respTime, nil
 }
 
 // DissectVersionNegotiation dissects the Version Negotiation response
