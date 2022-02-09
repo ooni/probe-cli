@@ -100,22 +100,26 @@ func newSubmitter(sess *engine.Session, ctx context.Context) *probeservices.Subm
 }
 
 // toMeasurement loads an input string as model.Measurement
-func toMeasurement(s string) model.Measurement {
+func toMeasurement(s string) *model.Measurement {
 	var mm model.Measurement
 	err := json.Unmarshal([]byte(s), &mm)
 	runtimex.PanicOnError(err, "json.Unmarshal error")
-	return mm
+	return &mm
 }
 
-func main() {
-	defer func() {
-		if s := recover(); s != nil {
-			fmt.Fprintf(os.Stderr, "FATAL: %s\n", s)
-		}
-	}()
-	// parse command line arguments
-	getopt.Parse()
-	args := getopt.Args()
+func submitAll(ctx context.Context, lines []string, subm *probeservices.Submitter) int {
+	submitted := 0
+	for _, line := range lines {
+		mm := toMeasurement(line)
+		// submit the measurement
+		err := subm.Submit(ctx, mm)
+		runtimex.PanicOnError(err, "error occurred while submitting")
+		submitted += 1
+	}
+	return submitted
+}
+
+func mainWithArgs(args []string) {
 	fatalIfFalse(len(args) == 2, "Usage: ./oonireport upload <file>")
 	fatalIfFalse(args[0] == "upload", "Unsupported operation")
 	fatalIfFalse(canOpen(args[1]), "Cannot open measurement file")
@@ -127,15 +131,21 @@ func main() {
 	sess := newSession(ctx)
 	defer sess.Close()
 
-	submitted := 0
 	submitter := newSubmitter(sess, ctx)
 
-	for _, line := range lines {
-		mm := toMeasurement(line)
-		// submit the measurement
-		err := submitter.Submit(ctx, &mm)
-		runtimex.PanicOnError(err, "error occurred while submitting")
-		submitted += 1
-	}
-	fmt.Println("Submitted measurements: ", submitted)
+	n := submitAll(ctx, lines, submitter)
+
+	fmt.Println("Submitted measurements: ", n)
+}
+
+func main() {
+	defer func() {
+		if s := recover(); s != nil {
+			fmt.Fprintf(os.Stderr, "FATAL: %s\n", s)
+		}
+	}()
+	// parse command line arguments
+	getopt.Parse()
+	args := getopt.Args()
+	mainWithArgs(args)
 }
