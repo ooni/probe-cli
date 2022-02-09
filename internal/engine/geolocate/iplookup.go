@@ -41,6 +41,10 @@ var (
 			fn:   avastIPLookup,
 		},
 		{
+			name: "cloudflare",
+			fn:   cloudflareIPLookup,
+		},
+		{
 			name: "ipconfig",
 			fn:   ipConfigIPLookup,
 		},
