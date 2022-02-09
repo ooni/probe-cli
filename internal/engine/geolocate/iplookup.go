@@ -91,6 +91,10 @@ func makeSlice() []method {
 func (c ipLookupClient) doWithCustomFunc(
 	ctx context.Context, fn lookupFunc,
 ) (string, error) {
+	// Reliability fix: let these mechanisms timeout earlier.
+	const timeout = 7 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	// Implementation note: we MUST use an HTTP client that we're
 	// sure IS NOT using any proxy. To this end, we construct a
 	// client ourself that we know is not proxied.
