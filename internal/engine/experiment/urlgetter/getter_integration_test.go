@@ -429,9 +429,6 @@ func TestGetterIntegrationHTTPS(t *testing.T) {
 		connect                  bool
 		tlsHandshakeStart        bool
 		tlsHandshakeDone         bool
-		httpWroteHeaders         bool
-		httpWroteRequest         bool
-		httpFirstResponseByte    bool
 		httpResponseMetadata     bool
 		httpResponseBodySnapshot bool
 		httpTransactionDone      bool
@@ -452,12 +449,6 @@ func TestGetterIntegrationHTTPS(t *testing.T) {
 			tlsHandshakeStart = true
 		case "tls_handshake_done":
 			tlsHandshakeDone = true
-		case "http_wrote_headers":
-			httpWroteHeaders = true
-		case "http_wrote_request":
-			httpWroteRequest = true
-		case "http_first_response_byte":
-			httpFirstResponseByte = true
 		case "http_response_metadata":
 			httpResponseMetadata = true
 		case "http_response_body_snapshot":
@@ -474,9 +465,6 @@ func TestGetterIntegrationHTTPS(t *testing.T) {
 	ok = ok && connect
 	ok = ok && tlsHandshakeStart
 	ok = ok && tlsHandshakeDone
-	ok = ok && httpWroteHeaders
-	ok = ok && httpWroteRequest
-	ok = ok && httpFirstResponseByte
 	ok = ok && httpResponseMetadata
 	ok = ok && httpResponseBodySnapshot
 	ok = ok && httpTransactionDone
@@ -570,9 +558,6 @@ func TestGetterIntegrationTLSHandshake(t *testing.T) {
 		connect                  bool
 		tlsHandshakeStart        bool
 		tlsHandshakeDone         bool
-		httpWroteHeaders         bool
-		httpWroteRequest         bool
-		httpFirstResponseByte    bool
 		httpResponseMetadata     bool
 		httpResponseBodySnapshot bool
 		httpTransactionDone      bool
@@ -593,12 +578,6 @@ func TestGetterIntegrationTLSHandshake(t *testing.T) {
 			tlsHandshakeStart = true
 		case "tls_handshake_done":
 			tlsHandshakeDone = true
-		case "http_wrote_headers":
-			httpWroteHeaders = true
-		case "http_wrote_request":
-			httpWroteRequest = true
-		case "http_first_response_byte":
-			httpFirstResponseByte = true
 		case "http_response_metadata":
 			httpResponseMetadata = true
 		case "http_response_body_snapshot":
@@ -615,9 +594,6 @@ func TestGetterIntegrationTLSHandshake(t *testing.T) {
 	ok = ok && connect
 	ok = ok && tlsHandshakeStart
 	ok = ok && tlsHandshakeDone
-	ok = ok && !httpWroteHeaders
-	ok = ok && !httpWroteRequest
-	ok = ok && !httpFirstResponseByte
 	ok = ok && !httpResponseMetadata
 	ok = ok && !httpResponseBodySnapshot
 	ok = ok && !httpTransactionDone
@@ -688,9 +664,6 @@ func TestGetterHTTPSWithTunnel(t *testing.T) {
 		connect                  bool
 		tlsHandshakeStart        bool
 		tlsHandshakeDone         bool
-		httpWroteHeaders         bool
-		httpWroteRequest         bool
-		httpFirstResponseByte    bool
 		httpResponseMetadata     bool
 		httpResponseBodySnapshot bool
 		httpTransactionDone      bool
@@ -711,12 +684,6 @@ func TestGetterHTTPSWithTunnel(t *testing.T) {
 			tlsHandshakeStart = true
 		case "tls_handshake_done":
 			tlsHandshakeDone = true
-		case "http_wrote_headers":
-			httpWroteHeaders = true
-		case "http_wrote_request":
-			httpWroteRequest = true
-		case "http_first_response_byte":
-			httpFirstResponseByte = true
 		case "http_response_metadata":
 			httpResponseMetadata = true
 		case "http_response_body_snapshot":
@@ -733,9 +700,6 @@ func TestGetterHTTPSWithTunnel(t *testing.T) {
 	ok = ok && connect
 	ok = ok && tlsHandshakeStart
 	ok = ok && tlsHandshakeDone
-	ok = ok && httpWroteHeaders
-	ok = ok && httpWroteRequest
-	ok = ok && httpFirstResponseByte
 	ok = ok && httpResponseMetadata
 	ok = ok && httpResponseBodySnapshot
 	ok = ok && httpTransactionDone
