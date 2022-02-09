@@ -137,11 +137,10 @@ func TestDropKeywordHex(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	req, err := http.NewRequest("GET", "http://www.ooni.io", nil)
-	if err != nil {
-		t.Fatal(err)
+	reso := &net.Resolver{
+		PreferGo: true,
 	}
-	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+	addrs, err := reso.LookupHost(ctx, "www.ooni.io")
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -152,7 +151,7 @@ func TestDropKeywordHex(t *testing.T) {
 		!strings.HasSuffix(err.Error(), "no such host") {
 		t.Fatalf("unexpected error occurred: %+v", err)
 	}
-	if resp != nil {
+	if addrs != nil {
 		t.Fatal("expected nil response here")
 	}
 }
@@ -254,7 +253,10 @@ func TestHijackDNS(t *testing.T) {
 	if err := policy.Apply(); err != nil {
 		t.Fatal(err)
 	}
-	addrs, err := net.LookupHost("www.ooni.io")
+	reso := &net.Resolver{
+		PreferGo: true,
+	}
+	addrs, err := reso.LookupHost(context.Background(), "www.ooni.io")
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
