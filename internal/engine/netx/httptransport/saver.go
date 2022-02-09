@@ -5,41 +5,12 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"net/http/httptrace"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
-
-// SaverPerformanceHTTPTransport is a RoundTripper that saves
-// performance events occurring during the round trip
-type SaverPerformanceHTTPTransport struct {
-	model.HTTPTransport
-	Saver *trace.Saver
-}
-
-// RoundTrip implements RoundTripper.RoundTrip
-func (txp SaverPerformanceHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	tracep := httptrace.ContextClientTrace(req.Context())
-	if tracep == nil {
-		tracep = &httptrace.ClientTrace{
-			WroteHeaders: func() {
-				txp.Saver.Write(trace.Event{Name: "http_wrote_headers", Time: time.Now()})
-			},
-			WroteRequest: func(httptrace.WroteRequestInfo) {
-				txp.Saver.Write(trace.Event{Name: "http_wrote_request", Time: time.Now()})
-			},
-			GotFirstResponseByte: func() {
-				txp.Saver.Write(trace.Event{
-					Name: "http_first_response_byte", Time: time.Now()})
-			},
-		}
-		req = req.WithContext(httptrace.WithClientTrace(req.Context(), tracep))
-	}
-	return txp.HTTPTransport.RoundTrip(req)
-}
 
 // SaverMetadataHTTPTransport is a RoundTripper that saves
 // events related to HTTP request and response metadata
@@ -166,7 +137,6 @@ type saverReadCloser struct {
 	io.Reader
 }
 
-var _ model.HTTPTransport = SaverPerformanceHTTPTransport{}
 var _ model.HTTPTransport = SaverMetadataHTTPTransport{}
 var _ model.HTTPTransport = SaverBodyHTTPTransport{}
 var _ model.HTTPTransport = SaverTransactionHTTPTransport{}
