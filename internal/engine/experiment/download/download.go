@@ -74,7 +74,7 @@ func (m *Measurer) ExperimentVersion() string {
 var ErrFailure = errors.New("mocked error")
 
 // experimentTimeout is the whole experiment timeout.
-const experimentTimeout = 30 * time.Second
+const experimentTimeout = 90 * time.Second
 
 // Run implements model.ExperimentMeasurer.Run.
 func (m *Measurer) Run(
