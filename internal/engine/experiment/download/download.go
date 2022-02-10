@@ -154,6 +154,12 @@ func (m *Measurer) addDNSCache(reso model.Resolver) model.Resolver {
 	}
 }
 
+// rollingStats contains rolling stats for the download.
+type rollingStats struct {
+	lastSeconds float64
+	lastCount   int64
+}
+
 // bodyWrapper allows to print the download speed and to collect
 // download speed samples while we're downloading data.
 type bodyWrapper struct {
@@ -175,6 +181,9 @@ type bodyWrapper struct {
 	// ReadCloser is the real underlying body.
 	io.ReadCloser
 
+	// rolling contains rolling stats for the download.
+	rolling rollingStats
+
 	// samples contains the speed samples.
 	samples []*SpeedSample
 }
@@ -186,7 +195,10 @@ func newBodyWrapper(callbacks model.ExperimentCallbacks, rc io.ReadCloser) *body
 		callbacks:  callbacks,
 		cancel:     cancel,
 		count:      &atomicx.Int64{},
+		mu:         sync.Mutex{},
 		ReadCloser: rc,
+		rolling:    rollingStats{},
+		samples:    []*SpeedSample{},
 	}
 	go bw.loop(ctx)
 	return bw
@@ -218,15 +230,23 @@ func (bw *bodyWrapper) collectSample(now time.Time) {
 	d := now.Sub(bw.begin)
 	total := bw.count.Load()
 	elapsed := d.Seconds()
-	v := float64(total*8) / elapsed
+	if length := len(bw.samples); length > 0 {
+		bw.rolling.lastSeconds = bw.samples[length-1].T
+		bw.rolling.lastCount = bw.samples[length-1].Count
+	}
 	bw.mu.Lock()
 	bw.samples = append(bw.samples, &SpeedSample{
-		T:     d.Seconds(),
+		T:     elapsed,
 		Count: total,
 	})
 	bw.mu.Unlock()
-	uv := humanize.SI(v, "bit/s")
-	msg := fmt.Sprintf("average download speed: %s", uv)
+	currentSeconds := elapsed - bw.rolling.lastSeconds
+	currentCount := total - bw.rolling.lastCount
+	vi := float64(currentCount*8) / currentSeconds
+	uvi := humanize.SI(vi, "bit/s")
+	vavg := float64(total*8) / elapsed
+	uvavg := humanize.SI(vavg, "bit/s")
+	msg := fmt.Sprintf("speed: avg: %s; last: %s", uvavg, uvi)
 	percentage := elapsed / experimentTimeout.Seconds()
 	bw.callbacks.OnProgress(percentage, msg)
 }
