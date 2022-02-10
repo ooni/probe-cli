@@ -107,16 +107,18 @@ func toMeasurement(s string) *model.Measurement {
 	return &mm
 }
 
-func submitAll(ctx context.Context, lines []string, subm *probeservices.Submitter) int {
+func submitAll(ctx context.Context, lines []string, subm *probeservices.Submitter) (int, error) {
 	submitted := 0
 	for _, line := range lines {
 		mm := toMeasurement(line)
 		// submit the measurement
 		err := subm.Submit(ctx, mm)
-		runtimex.PanicOnError(err, "error occurred while submitting")
+		if err != nil {
+			return submitted, err
+		}
 		submitted += 1
 	}
-	return submitted
+	return submitted, nil
 }
 
 func mainWithArgs(args []string) {
@@ -133,7 +135,8 @@ func mainWithArgs(args []string) {
 
 	submitter := newSubmitter(sess, ctx)
 
-	n := submitAll(ctx, lines, submitter)
+	n, err := submitAll(ctx, lines, submitter)
+	runtimex.PanicOnError(err, "error occurred while submitting")
 
 	fmt.Println("Submitted measurements: ", n)
 }

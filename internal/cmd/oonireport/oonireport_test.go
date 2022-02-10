@@ -30,7 +30,7 @@ func TestNewSessionAndSubmitter(t *testing.T) {
 	}
 	subm := newSubmitter(sess, ctx)
 	if subm == nil {
-		t.Fatal("unexpected nil session")
+		t.Fatal("unexpected nil submitter")
 	}
 }
 
@@ -64,4 +64,22 @@ func TestMainEmptyFile(t *testing.T) {
 		}
 	}()
 	mainWithArgs([]string{"upload", "testdata/noentries.json"})
+}
+
+func TestSubmitAllFails(t *testing.T) {
+	ctx := context.Background()
+	sess := newSession(ctx)
+	subm := newSubmitter(sess, ctx)
+	lines := readLines("testdata/testmeasurement.json")
+
+	ctx, cancel := context.WithCancel(ctx)
+	cancel()
+
+	n, err := submitAll(ctx, lines, subm)
+	if err == nil {
+		t.Fatal("expected an error here")
+	}
+	if n != 0 {
+		t.Fatal("nothing should be submitted here")
+	}
 }
