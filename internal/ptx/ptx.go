@@ -46,6 +46,7 @@ import (
 	"sync"
 
 	pt "git.torproject.org/pluggable-transports/goptlib.git"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -69,15 +70,23 @@ type PTDialer interface {
 // you fill the mandatory fields before using it. Do not modify public
 // fields after you called Start, since this causes data races.
 type Listener struct {
+	// ExperimentByteCounter is the OPTIONAL byte counter that
+	// counts the bytes consumed by the experiment.
+	ExperimentByteCounter *bytecounter.Counter
+
+	// Logger is the OPTIONAL logger. When not set, this library
+	// will not emit logs. (But the underlying pluggable transport
+	// may still emit its own log messages.)
+	Logger model.Logger
+
 	// PTDialer is the MANDATORY pluggable transports dialer
 	// to use. Both SnowflakeDialer and OBFS4Dialer implement this
 	// interface and can be thus safely used here.
 	PTDialer PTDialer
 
-	// Logger is the optional logger. When not set, this library
-	// will not emit logs. (But the underlying pluggable transport
-	// may still emit its own log messages.)
-	Logger model.Logger
+	// SessionByteCounter is the OPTIONAL byte counter that
+	// counts the bytes consumed by the session.
+	SessionByteCounter *bytecounter.Counter
 
 	// mu provides mutual exclusion for accessing internals.
 	mu sync.Mutex
@@ -100,7 +109,7 @@ func (lst *Listener) logger() model.Logger {
 	if lst.Logger != nil {
 		return lst.Logger
 	}
-	return defaultLogger
+	return model.DiscardLogger
 }
 
 // forward forwards the traffic from left to right and from right to left
@@ -151,6 +160,11 @@ func (lst *Listener) handleSocksConn(ctx context.Context, socksConn ptxSocksConn
 		lst.logger().Warnf("ptx: ContextDialer.DialContext error: %s", err)
 		return err // used for testing
 	}
+	// We _must_ wrap the ptConn. Wrapping the socks conn leads us to
+	// count the sent bytes as received and the received bytes as sent:
+	// bytes flow in the opposite direction there for the socks conn.
+	ptConn = bytecounter.MaybeWrap(ptConn, lst.SessionByteCounter)
+	ptConn = bytecounter.MaybeWrap(ptConn, lst.ExperimentByteCounter)
 	lst.forwardWithContext(ctx, socksConn, ptConn) // transfer ownership
 	return nil                                     // used for testing
 }

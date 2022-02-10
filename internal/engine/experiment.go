@@ -11,7 +11,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -161,8 +160,8 @@ func (e *Experiment) MeasureAsync(
 	if err != nil {
 		return nil, err
 	}
-	ctx = dialer.WithSessionByteCounter(ctx, e.session.byteCounter)
-	ctx = dialer.WithExperimentByteCounter(ctx, e.byteCounter)
+	ctx = bytecounter.WithSessionByteCounter(ctx, e.session.byteCounter)
+	ctx = bytecounter.WithExperimentByteCounter(ctx, e.byteCounter)
 	var async model.ExperimentMeasurerAsync
 	if v, okay := e.measurer.(model.ExperimentMeasurerAsync); okay {
 		async = v

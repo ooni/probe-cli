@@ -4,7 +4,7 @@
 > evil genius to the evil grand vizier.
 
 Jafar is a censorship simulation tool used for testing OONI. It builds on
-any system but it really on works on Linux.
+any system but it really only works on Linux.
 
 ## Building
 

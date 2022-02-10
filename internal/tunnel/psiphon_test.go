@@ -13,7 +13,7 @@ func TestPsiphonWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // immediately fail
 	sess := &MockableSession{}
-	tunnel, err := psiphonStart(ctx, &Config{
+	tunnel, _, err := psiphonStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
 	})
@@ -28,7 +28,7 @@ func TestPsiphonWithCancelledContext(t *testing.T) {
 func TestPsiphonWithEmptyTunnelDir(t *testing.T) {
 	ctx := context.Background()
 	sess := &MockableSession{}
-	tunnel, err := psiphonStart(ctx, &Config{
+	tunnel, _, err := psiphonStart(ctx, &Config{
 		Session:   sess,
 		TunnelDir: "",
 	})
@@ -45,7 +45,7 @@ func TestPsiphonFetchPsiphonConfigFailure(t *testing.T) {
 	sess := &MockableSession{
 		Err: expected,
 	}
-	tunnel, err := psiphonStart(context.Background(), &Config{
+	tunnel, _, err := psiphonStart(context.Background(), &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
 	})
@@ -62,7 +62,7 @@ func TestPsiphonMkdirAllFailure(t *testing.T) {
 	sess := &MockableSession{
 		Result: []byte(`{}`),
 	}
-	tunnel, err := psiphonStart(context.Background(), &Config{
+	tunnel, _, err := psiphonStart(context.Background(), &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
 		testMkdirAll: func(path string, perm os.FileMode) error {
@@ -82,7 +82,7 @@ func TestPsiphonStartFailure(t *testing.T) {
 	sess := &MockableSession{
 		Result: []byte(`{}`),
 	}
-	tunnel, err := psiphonStart(context.Background(), &Config{
+	tunnel, _, err := psiphonStart(context.Background(), &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
 		testStartPsiphon: func(ctx context.Context, config []byte,

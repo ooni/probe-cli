@@ -34,6 +34,7 @@ type Session struct {
 	MockableTempDir                  string
 	MockableTorArgs                  []string
 	MockableTorBinary                string
+	MockableTunnelDir                string
 	MockableUserAgent                string
 }
 
@@ -133,6 +134,11 @@ func (sess *Session) TorArgs() []string {
 // TorBinary implements ExperimentSession.TorBinary.
 func (sess *Session) TorBinary() string {
 	return sess.MockableTorBinary
+}
+
+// TunnelDir implements ExperimentSession.TunnelDir.
+func (sess *Session) TunnelDir() string {
+	return sess.MockableTunnelDir
 }
 
 // UserAgent implements ExperimentSession.UserAgent

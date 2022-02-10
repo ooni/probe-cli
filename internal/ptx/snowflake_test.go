@@ -11,12 +11,107 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
+func TestSnowflakeMethodDomainFronting(t *testing.T) {
+	meth := NewSnowflakeRendezvousMethodDomainFronting()
+	if meth.AMPCacheURL() != "" {
+		t.Fatal("invalid amp cache URL")
+	}
+	const brokerURL = "https://snowflake-broker.torproject.net.global.prod.fastly.net/"
+	if meth.BrokerURL() != brokerURL {
+		t.Fatal("invalid broker URL")
+	}
+	const frontDomain = "cdn.sstatic.net"
+	if meth.FrontDomain() != frontDomain {
+		t.Fatal("invalid front domain")
+	}
+	if meth.Name() != "domain_fronting" {
+		t.Fatal("invalid name")
+	}
+}
+
+func TestSnowflakeMethodAMP(t *testing.T) {
+	meth := NewSnowflakeRendezvousMethodAMP()
+	const ampCacheURL = "https://cdn.ampproject.org/"
+	if meth.AMPCacheURL() != ampCacheURL {
+		t.Fatal("invalid amp cache URL")
+	}
+	const brokerURL = "https://snowflake-broker.torproject.net/"
+	if meth.BrokerURL() != brokerURL {
+		t.Fatal("invalid broker URL")
+	}
+	const frontDomain = "www.google.com"
+	if meth.FrontDomain() != frontDomain {
+		t.Fatal("invalid front domain")
+	}
+	if meth.Name() != "amp" {
+		t.Fatal("invalid name")
+	}
+}
+
+func TestNewSnowflakeRendezvousMethod(t *testing.T) {
+	t.Run("for domain_fronted", func(t *testing.T) {
+		meth, err := NewSnowflakeRendezvousMethod("domain_fronting")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := meth.(*snowflakeRendezvousMethodDomainFronting); !ok {
+			t.Fatal("unexpected method type")
+		}
+	})
+
+	t.Run("for empty string", func(t *testing.T) {
+		meth, err := NewSnowflakeRendezvousMethod("")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := meth.(*snowflakeRendezvousMethodDomainFronting); !ok {
+			t.Fatal("unexpected method type")
+		}
+	})
+
+	t.Run("for amp", func(t *testing.T) {
+		meth, err := NewSnowflakeRendezvousMethod("amp")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := meth.(*snowflakeRendezvousMethodAMP); !ok {
+			t.Fatal("unexpected method type")
+		}
+	})
+
+	t.Run("for another value", func(t *testing.T) {
+		meth, err := NewSnowflakeRendezvousMethod("amptani")
+		if !errors.Is(err, ErrSnowflakeNoSuchRendezvousMethod) {
+			t.Fatal("unexpected error", err)
+		}
+		if meth != nil {
+			t.Fatal("unexpected method value")
+		}
+	})
+}
+
+func TestNewSnowflakeDialer(t *testing.T) {
+	dialer := NewSnowflakeDialer()
+	_, ok := dialer.RendezvousMethod.(*snowflakeRendezvousMethodDomainFronting)
+	if !ok {
+		t.Fatal("invalid rendezvous method type")
+	}
+}
+
+func TestNewSnowflakeDialerWithRendezvousMethod(t *testing.T) {
+	meth := NewSnowflakeRendezvousMethodAMP()
+	dialer := NewSnowflakeDialerWithRendezvousMethod(meth)
+	if meth != dialer.RendezvousMethod {
+		t.Fatal("invalid rendezvous method value")
+	}
+}
+
 func TestSnowflakeDialerWorks(t *testing.T) {
 	// This test may sadly run for a very long time (~10s)
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	sfd := &SnowflakeDialer{}
+	sfd := NewSnowflakeDialer()
 	conn, err := sfd.DialContext(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -48,6 +143,7 @@ var _ snowflakeTransport = &mockableSnowflakeTransport{}
 
 func TestSnowflakeDialerWorksWithMocks(t *testing.T) {
 	sfd := &SnowflakeDialer{
+		RendezvousMethod: NewSnowflakeRendezvousMethodDomainFronting(),
 		newClientTransport: func(config sflib.ClientConfig) (snowflakeTransport, error) {
 			return &mockableSnowflakeTransport{
 				MockDial: func() (net.Conn, error) {
@@ -80,6 +176,7 @@ func TestSnowflakeDialerWorksWithMocks(t *testing.T) {
 func TestSnowflakeDialerCannotCreateTransport(t *testing.T) {
 	expected := errors.New("mocked error")
 	sfd := &SnowflakeDialer{
+		RendezvousMethod: NewSnowflakeRendezvousMethodDomainFronting(),
 		newClientTransport: func(config sflib.ClientConfig) (snowflakeTransport, error) {
 			return nil, expected
 		},
@@ -96,6 +193,7 @@ func TestSnowflakeDialerCannotCreateTransport(t *testing.T) {
 func TestSnowflakeDialerCannotCreateConnWithNoContextExpiration(t *testing.T) {
 	expected := errors.New("mocked error")
 	sfd := &SnowflakeDialer{
+		RendezvousMethod: NewSnowflakeRendezvousMethodDomainFronting(),
 		newClientTransport: func(config sflib.ClientConfig) (snowflakeTransport, error) {
 			return &mockableSnowflakeTransport{
 				MockDial: func() (net.Conn, error) {
@@ -118,6 +216,7 @@ func TestSnowflakeDialerCannotCreateConnWithContextExpiration(t *testing.T) {
 	defer cancel()
 	expected := errors.New("mocked error")
 	sfd := &SnowflakeDialer{
+		RendezvousMethod: NewSnowflakeRendezvousMethodDomainFronting(),
 		newClientTransport: func(config sflib.ClientConfig) (snowflakeTransport, error) {
 			return &mockableSnowflakeTransport{
 				MockDial: func() (net.Conn, error) {
@@ -141,6 +240,7 @@ func TestSnowflakeDialerWorksWithWithCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	sfd := &SnowflakeDialer{
+		RendezvousMethod: NewSnowflakeRendezvousMethodDomainFronting(),
 		newClientTransport: func(config sflib.ClientConfig) (snowflakeTransport, error) {
 			return &mockableSnowflakeTransport{
 				MockDial: func() (net.Conn, error) {

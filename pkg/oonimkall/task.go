@@ -9,6 +9,14 @@
 // reimplementation of the mkall API implemented by Measurement Kit
 // in, e.g., https://github.com/measurement-kit/mkall-ios.
 //
+// Semantic versioning policy
+//
+// This package is public for technical reasons. We cannot use `go
+// mobile` on a private package. Yet, we are not going to bump this
+// repository's major number in case we change oonimkall's API. We
+// consider this package our private API for interfacing with our
+// mobile applications for Android and iOS.
+//
 // Task API
 //
 // The basic tenet of the task API is that you define an experiment

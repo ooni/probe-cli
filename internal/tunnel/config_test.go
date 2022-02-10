@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/cretz/bine/tor"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -106,5 +107,18 @@ func TestConfigTorBinary(t *testing.T) {
 		defer os.Unsetenv(ooniTorBinaryEnv)
 		config := newConfig("tor-real", expected, nil)
 		verifyExpectations(t, config, expected, nil)
+	})
+}
+
+func TestConfigTorProtocolInfo(t *testing.T) {
+	t.Run("with nil Control field", func(t *testing.T) {
+		config := &Config{}
+		protocolInfo, err := config.torProtocolInfo(&tor.Tor{})
+		if !errors.Is(err, errNoTorControl) {
+			t.Fatal("unexpected error", err)
+		}
+		if protocolInfo != nil {
+			t.Fatal("expected nil protocol info")
+		}
 	})
 }

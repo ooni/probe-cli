@@ -16,52 +16,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-func TestSaverPerformanceNoMultipleEvents(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	saver := &trace.Saver{}
-	// register twice - do we see events twice?
-	txp := httptransport.SaverPerformanceHTTPTransport{
-		HTTPTransport: netxlite.NewHTTPTransportStdlib(model.DiscardLogger),
-		Saver:         saver,
-	}
-	txp = httptransport.SaverPerformanceHTTPTransport{
-		HTTPTransport: txp,
-		Saver:         saver,
-	}
-	req, err := http.NewRequest("GET", "https://www.google.com", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := txp.RoundTrip(req)
-	if err != nil {
-		t.Fatal("not the error we expected")
-	}
-	if resp == nil {
-		t.Fatal("expected non nil response here")
-	}
-	ev := saver.Read()
-	// we should specifically see the events not attached to any
-	// context being submitted twice. This is fine because they are
-	// explicit, while the context is implicit and hence leads to
-	// more subtle bugs. For example, this happens when you measure
-	// every event and combine HTTP with DoH.
-	if len(ev) != 3 {
-		t.Fatal("expected three events")
-	}
-	expected := []string{
-		"http_wrote_headers",       // measured with context
-		"http_wrote_request",       // measured with context
-		"http_first_response_byte", // measured with context
-	}
-	for i := 0; i < len(expected); i++ {
-		if ev[i].Name != expected[i] {
-			t.Fatal("unexpected event name")
-		}
-	}
-}
-
 func TestSaverMetadataSuccess(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")

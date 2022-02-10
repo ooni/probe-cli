@@ -95,6 +95,9 @@ type Session struct {
 	// may need to pass to urlgetter when it uses a tor tunnel.
 	torBinary string
 
+	// tunnelDir is the directory used by tunnels.
+	tunnelDir string
+
 	// tunnel is the optional tunnel that we may be using. It is created
 	// by NewSession and it is cleaned up by Close.
 	tunnel tunnel.Tunnel
@@ -163,6 +166,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		tempDir:                 tempDir,
 		torArgs:                 config.TorArgs,
 		torBinary:               config.TorBinary,
+		tunnelDir:               config.TunnelDir,
 	}
 	proxyURL := config.ProxyURL
 	if proxyURL != nil {
@@ -170,7 +174,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		case "psiphon", "tor", "fake":
 			config.Logger.Infof(
 				"starting '%s' tunnel; please be patient...", proxyURL.Scheme)
-			tunnel, err := tunnel.Start(ctx, &tunnel.Config{
+			tunnel, _, err := tunnel.Start(ctx, &tunnel.Config{
 				Logger:    config.Logger,
 				Name:      proxyURL.Scheme,
 				Session:   &sessionTunnelEarlySession{},
@@ -202,6 +206,11 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	httpConfig.FullResolver = sess.resolver
 	sess.httpDefaultTransport = netx.NewHTTPTransport(httpConfig)
 	return sess, nil
+}
+
+// TunnelDir returns the persistent directory used by tunnels.
+func (s *Session) TunnelDir() string {
+	return s.tunnelDir
 }
 
 // KibiBytesReceived accounts for the KibiBytes received by the HTTP clients
