@@ -10,10 +10,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -27,6 +29,8 @@ const (
 
 // Config contains the experiment config.
 type Config struct {
+	// DNSCache contains a DNS cache.
+	DNSCache string `ooni:"Add 'DOMAIN IP...' to cache"`
 }
 
 // SpeedSample is a download speed sample.
@@ -119,15 +123,35 @@ func (m *Measurer) Run(
 // not going to trace every I/O event because this will lead to a huge array.
 func (m *Measurer) newTransport(begin time.Time,
 	logger model.Logger, db *measurex.MeasurementDB) model.HTTPTransport {
-	resolver := measurex.WrapResolver(begin, db, netxlite.NewResolverStdlib(logger))
+	resolver := netxlite.NewResolverStdlib(logger)
+	resolver = m.addDNSCache(resolver)
+	resolver = measurex.WrapResolver(begin, db, resolver)
 	dialer := measurex.WrapDialerWithoutConnWrapping(begin, db,
-		netxlite.NewDialerWithResolver(logger, resolver))
+		netxlite.NewDialerWithoutResolver(logger))
+	dialer = netxlite.WrapDialer(logger, resolver, dialer)
 	th := measurex.WrapTLSHandshaker(begin, db, netxlite.NewTLSHandshakerStdlib(logger))
 	tlsDialer := netxlite.NewTLSDialer(dialer, th)
 	const smallBodySnapshot = 1 << 8
 	return measurex.WrapHTTPTransport(begin, db,
 		netxlite.NewHTTPTransport(logger, dialer, tlsDialer),
 		smallBodySnapshot)
+}
+
+// addDNSCache wraps an existing resolver to add DNS caching.
+func (m *Measurer) addDNSCache(reso model.Resolver) model.Resolver {
+	if len(m.config.DNSCache) <= 0 {
+		return reso
+	}
+	cache := make(map[string][]string)
+	v := strings.Split(m.config.DNSCache, " ")
+	if len(v) >= 2 {
+		cache[v[0]] = v[1:]
+	}
+	return &resolver.CacheResolver{
+		Cache:    cache,
+		ReadOnly: true,
+		Resolver: reso,
+	}
 }
 
 // bodyWrapper allows to print the download speed and to collect

@@ -9,10 +9,10 @@ import (
 
 // CacheResolver is a resolver that caches successful replies.
 type CacheResolver struct {
+	Cache    map[string][]string
 	ReadOnly bool
 	model.Resolver
-	mu    sync.Mutex
-	cache map[string][]string
+	mu sync.Mutex
 }
 
 // LookupHost implements Resolver.LookupHost
@@ -25,7 +25,7 @@ func (r *CacheResolver) LookupHost(
 	if err != nil {
 		return nil, err
 	}
-	if r.ReadOnly == false {
+	if !r.ReadOnly {
 		r.Set(hostname, entry)
 	}
 	return entry, nil
@@ -35,15 +35,15 @@ func (r *CacheResolver) LookupHost(
 func (r *CacheResolver) Get(domain string) []string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return r.cache[domain]
+	return r.Cache[domain]
 }
 
 // Set allows to pre-populate the cache
 func (r *CacheResolver) Set(domain string, addresses []string) {
 	r.mu.Lock()
-	if r.cache == nil {
-		r.cache = make(map[string][]string)
+	if r.Cache == nil {
+		r.Cache = make(map[string][]string)
 	}
-	r.cache[domain] = addresses
+	r.Cache[domain] = addresses
 	r.mu.Unlock()
 }
