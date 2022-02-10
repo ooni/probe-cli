@@ -112,7 +112,7 @@ func (m *Measurer) Run(
 	}
 	testkeys := &TestKeys{
 		ArchivalMeasurement: measurex.NewArchivalMeasurement(db.AsMeasurement()),
-		SpeedSamples:        body.moveOut(),
+		SpeedSamples:        body.moveSamplesOut(),
 		Failure:             m.asFailure(err),
 	}
 	measurement.TestKeys = testkeys
@@ -192,7 +192,8 @@ func newBodyWrapper(callbacks model.ExperimentCallbacks, rc io.ReadCloser) *body
 	return bw
 }
 
-func (bw *bodyWrapper) moveOut() (out []*SpeedSample) {
+func (bw *bodyWrapper) moveSamplesOut() (out []*SpeedSample) {
+	bw.collectSample(time.Now())
 	bw.mu.Lock()
 	out = bw.samples
 	bw.samples = nil
@@ -201,28 +202,33 @@ func (bw *bodyWrapper) moveOut() (out []*SpeedSample) {
 }
 
 func (bw *bodyWrapper) loop(ctx context.Context) {
-	tkr := time.NewTicker(500 * time.Millisecond)
+	tkr := time.NewTicker(250 * time.Millisecond)
 	for {
 		select {
 		case <-ctx.Done():
+			bw.collectSample(time.Now())
 			return
 		case now := <-tkr.C:
-			d := now.Sub(bw.begin)
-			total := bw.count.Load()
-			elapsed := d.Seconds()
-			v := float64(total*8) / elapsed
-			bw.mu.Lock()
-			bw.samples = append(bw.samples, &SpeedSample{
-				T:     d.Seconds(),
-				Count: total,
-			})
-			bw.mu.Unlock()
-			uv := humanize.SI(v, "bit/s")
-			msg := fmt.Sprintf("average download speed: %s", uv)
-			percentage := elapsed / experimentTimeout.Seconds()
-			bw.callbacks.OnProgress(percentage, msg)
+			bw.collectSample(now)
 		}
 	}
+}
+
+func (bw *bodyWrapper) collectSample(now time.Time) {
+	d := now.Sub(bw.begin)
+	total := bw.count.Load()
+	elapsed := d.Seconds()
+	v := float64(total*8) / elapsed
+	bw.mu.Lock()
+	bw.samples = append(bw.samples, &SpeedSample{
+		T:     d.Seconds(),
+		Count: total,
+	})
+	bw.mu.Unlock()
+	uv := humanize.SI(v, "bit/s")
+	msg := fmt.Sprintf("average download speed: %s", uv)
+	percentage := elapsed / experimentTimeout.Seconds()
+	bw.callbacks.OnProgress(percentage, msg)
 }
 
 func (bw *bodyWrapper) Read(data []byte) (int, error) {
