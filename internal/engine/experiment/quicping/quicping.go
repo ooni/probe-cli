@@ -323,6 +323,9 @@ func (m *Measurer) DissectVersionNegotiation(i []byte) ([]uint32, ConnectionID, 
 	offset := 6 + uint8(dstLength)
 	dst := i[6:offset]
 
+	srcLength := i[offset]
+	offset = offset + 1 + srcLength
+
 	n := uint8(len(i))
 	var supportedVersions []uint32
 	for offset < n {
