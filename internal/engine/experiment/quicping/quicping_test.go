@@ -38,8 +38,8 @@ func (f *FailStdLib) ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLik
 			MockReadFrom: func(p []byte) (int, net.Addr, error) {
 				return f.conn.ReadFrom(p)
 			},
-			MockSetReadDeadline: func(t time.Time) error {
-				return f.conn.SetReadDeadline(t)
+			MockSetDeadline: func(t time.Time) error {
+				return f.conn.SetDeadline(t)
 			},
 			MockClose: func() error {
 				return f.conn.Close()
@@ -54,8 +54,8 @@ func (f *FailStdLib) ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLik
 			MockReadFrom: func(p []byte) (int, net.Addr, error) {
 				return 0, nil, f.readErr
 			},
-			MockSetReadDeadline: func(t time.Time) error {
-				return f.conn.SetReadDeadline(t)
+			MockSetDeadline: func(t time.Time) error {
+				return f.conn.SetDeadline(t)
 			},
 			MockClose: func() error {
 				return f.conn.Close()
