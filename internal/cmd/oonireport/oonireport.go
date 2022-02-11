@@ -108,6 +108,8 @@ func toMeasurement(s string) *model.Measurement {
 	return &mm
 }
 
+// submitAll submits the measurements in input. Returns the count of submitted measurements, both
+// on success and on error, and the error that occurred (nil on success).
 func submitAll(ctx context.Context, lines []string, subm *probeservices.Submitter) (int, error) {
 	submitted := 0
 	for _, line := range lines {
