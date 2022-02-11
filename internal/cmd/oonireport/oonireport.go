@@ -1,3 +1,4 @@
+// Command oonireport uploads reports stored on disk to the OONI collector.
 package main
 
 import (
