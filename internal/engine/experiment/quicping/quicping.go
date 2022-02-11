@@ -153,8 +153,6 @@ func (m *Measurer) sender(
 			// propagate send information, including errors
 			out <- requestInfo{raw: packet, t: sendTime, dstID: hex.EncodeToString(dstID), srcID: hex.EncodeToString(srcID), err: err}
 			i += 1
-
-		default:
 		}
 	}
 }
@@ -283,8 +281,6 @@ L:
 
 		case <-ctx.Done():
 			break L
-
-		default:
 		}
 	}
 	// store all ping requests that have not been answered with a timeout failure
