@@ -73,7 +73,7 @@ func TestSubmitAllFails(t *testing.T) {
 	lines := readLines("testdata/testmeasurement.json")
 
 	ctx, cancel := context.WithCancel(ctx)
-	cancel()
+	cancel() // fail immediately
 
 	n, err := submitAll(ctx, lines, subm)
 	if err == nil {
