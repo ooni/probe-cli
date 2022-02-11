@@ -146,8 +146,13 @@ func TestSuccess(t *testing.T) {
 		if ping.Failure != nil {
 			t.Fatal("ping failed unexpectedly", i, *ping.Failure)
 		}
-		if ping.SupportedVersions == nil || len(ping.SupportedVersions) == 0 {
-			t.Fatal("server did not respond with supported versions")
+		for _, resp := range ping.Responses {
+			if resp.Failure != nil {
+				t.Fatal("unexepcted response failure")
+			}
+			if resp.SupportedVersions == nil || len(resp.SupportedVersions) == 0 {
+				t.Fatal("server did not respond with supported versions")
+			}
 		}
 	}
 	sk, err := measurer.GetSummaryKeys(measurement)

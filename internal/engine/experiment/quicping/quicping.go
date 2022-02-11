@@ -77,21 +77,41 @@ func (c *Config) networkLibrary() model.UnderlyingNetworkLibrary {
 
 // TestKeys contains the experiment results.
 type TestKeys struct {
-	Domain      string        `json:"domain"`
-	Pings       []*SinglePing `json:"pings"`
-	Repetitions int64         `json:"repetitions"`
+	Domain              string                `json:"domain"`
+	Pings               []*SinglePing         `json:"pings"`
+	UnexpectedResponses []*SinglePingResponse `json:"unexpected_responses"`
+	Repetitions         int64                 `json:"repetitions"`
 }
 
 // SinglePing is a result of a single ping operation.
 type SinglePing struct {
-	ConnIdDst         string                         `json:"conn_id_dst"`
-	ConnIdSrc         string                         `json:"conn_id_src"`
+	ConnIdDst   string                         `json:"conn_id_dst"`
+	ConnIdSrc   string                         `json:"conn_id_src"`
+	Failure     *string                        `json:"failure"`
+	Request     *model.ArchivalMaybeBinaryData `json:"request"`
+	RequestTime string                         `json:"request_time"`
+	Responses   []*SinglePingResponse          `json:"responses"`
+}
+
+type SinglePingResponse struct {
+	Data              *model.ArchivalMaybeBinaryData `json:"response_data"`
 	Failure           *string                        `json:"failure"`
-	Request           *model.ArchivalMaybeBinaryData `json:"request"`
-	RequestTime       string                         `json:"request_time"`
-	Response          *model.ArchivalMaybeBinaryData `json:"response"`
 	ResponseTime      string                         `json:"response_time"`
 	SupportedVersions []uint32                       `json:"supported_versions"`
+}
+
+// makeResponse is a utility function to create a SinglePingResponse
+func makeResponse(resp *responseInfo) *SinglePingResponse {
+	var data *model.ArchivalMaybeBinaryData
+	if resp.raw != nil {
+		data = &model.ArchivalMaybeBinaryData{Value: string(resp.raw)}
+	}
+	return &SinglePingResponse{
+		Data:              data,
+		Failure:           archival.NewFailure(resp.err),
+		ResponseTime:      formatTime(resp.t),
+		SupportedVersions: resp.versions,
+	}
 }
 
 // Measurer performs the measurement.
@@ -107,6 +127,13 @@ func (m *Measurer) ExperimentName() string {
 // ExperimentVersion implements ExperimentMeasurer.ExperimentVersion.
 func (m *Measurer) ExperimentVersion() string {
 	return testVersion
+}
+
+// pingInfo contains information about a ping request
+// and the corresponding ping responses
+type pingInfo struct {
+	request   *requestInfo
+	responses []*responseInfo
 }
 
 // requestInfo contains the information of a sent ping request.
@@ -184,8 +211,9 @@ func (m *Measurer) receiver(
 		// dissect server response
 		supportedVersions, dst, err := m.DissectVersionNegotiation(resp)
 		if err != nil {
-			// the response was likely not the expected version negotiation response, so ignore it
+			// the response was likely not the expected version negotiation response
 			sess.Logger().Infof(fmt.Sprintf("response dissection failed: %s", err))
+			out <- responseInfo{raw: resp, t: respTime, err: err}
 			continue
 		}
 		// propagate receive information
@@ -229,12 +257,12 @@ func (m *Measurer) Run(
 	// set context and read timeouts
 	deadline := time.Duration(rep*5) * time.Second
 	pconn.SetDeadline(time.Now().Add(deadline))
-	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(5*rep))
+	ctx, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 
 	sendInfoChan := make(chan requestInfo)
 	recvInfoChan := make(chan responseInfo)
-	sendMap := make(map[string]*requestInfo)
+	pingMap := make(map[string]*pingInfo)
 
 	// start sender and receiver goroutines
 	go m.sender(ctx, pconn, udpAddr, sendInfoChan, sess)
@@ -253,45 +281,57 @@ L:
 				})
 				continue
 			}
-			sendMap[req.srcID] = &req
+			pingMap[req.srcID] = &pingInfo{request: &req}
 
 		case resp := <-recvInfoChan: // a new response has been received
+			if resp.err != nil {
+				// resp failure means we cannot assign the response to a request
+				tk.UnexpectedResponses = append(tk.UnexpectedResponses, makeResponse(&resp))
+				continue
+			}
 			var (
-				req *requestInfo
-				ok  bool
+				ping *pingInfo
+				ok   bool
 			)
 			// match response to request
-			if req, ok = sendMap[resp.dstID]; !ok {
-				continue // ignore any version negotiation response with an unknown destination ID
+			if ping, ok = pingMap[resp.dstID]; !ok {
+				// version negotiation response with an unknown destination ID
+				tk.UnexpectedResponses = append(tk.UnexpectedResponses, makeResponse(&resp))
+				continue
 			}
-			delete(sendMap, resp.dstID)
-			tk.Pings = append(tk.Pings, &SinglePing{
-				ConnIdDst:         req.dstID,
-				ConnIdSrc:         req.srcID,
-				Failure:           archival.NewFailure(resp.err),
-				Request:           &model.ArchivalMaybeBinaryData{Value: string(req.raw)},
-				RequestTime:       formatTime(req.t),
-				Response:          &model.ArchivalMaybeBinaryData{Value: string(resp.raw)},
-				ResponseTime:      formatTime(resp.t),
-				SupportedVersions: resp.versions,
-			})
-			if len(tk.Pings) >= int(rep) {
-				break L // break when we collected all ping responses
-			}
+			ping.responses = append(ping.responses, &resp)
 
 		case <-ctx.Done():
 			break L
 		}
 	}
-	// store all ping requests that have not been answered with a timeout failure
+	// transform ping requests into TestKeys.Pings
 	timeoutErr := errors.New("i/o timeout")
-	for _, req := range sendMap {
+	for _, ping := range pingMap {
+		if ping.request == nil { // this should not happen
+			return errors.New("internal error: ping.request is nil")
+		}
+		if len(ping.responses) == 0 {
+			tk.Pings = append(tk.Pings, &SinglePing{
+				ConnIdDst:   ping.request.dstID,
+				ConnIdSrc:   ping.request.srcID,
+				Failure:     archival.NewFailure(timeoutErr),
+				Request:     &model.ArchivalMaybeBinaryData{Value: string(ping.request.raw)},
+				RequestTime: formatTime(ping.request.t),
+			})
+			continue
+		}
+		var responses []*SinglePingResponse
+		for _, resp := range ping.responses {
+			responses = append(responses, makeResponse(resp))
+		}
 		tk.Pings = append(tk.Pings, &SinglePing{
-			ConnIdDst:   req.dstID,
-			ConnIdSrc:   req.srcID,
-			Failure:     archival.NewFailure(timeoutErr),
-			Request:     &model.ArchivalMaybeBinaryData{Value: string(req.raw)},
-			RequestTime: formatTime(req.t),
+			ConnIdDst:   ping.request.dstID,
+			ConnIdSrc:   ping.request.srcID,
+			Failure:     nil,
+			Request:     &model.ArchivalMaybeBinaryData{Value: string(ping.request.raw)},
+			RequestTime: formatTime(ping.request.t),
+			Responses:   responses,
 		})
 	}
 	return nil
