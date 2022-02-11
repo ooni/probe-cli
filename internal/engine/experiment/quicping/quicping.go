@@ -255,7 +255,7 @@ func (m *Measurer) Run(
 	defer pconn.Close()
 
 	// set context and read timeouts
-	deadline := time.Duration(rep*5) * time.Second
+	deadline := time.Duration(rep*2) * time.Second
 	pconn.SetDeadline(time.Now().Add(deadline))
 	ctx, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
