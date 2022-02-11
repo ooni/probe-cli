@@ -189,6 +189,7 @@ func (p *Probe) Init(softwareName, softwareVersion string) error {
 		return errors.Wrap(err, "creating TempDir")
 	}
 	p.tempDir = tempDir
+	p.tunnelDir = utils.TunnelDir(p.home)
 
 	p.softwareName = softwareName
 	p.softwareVersion = softwareVersion
@@ -205,7 +206,7 @@ func (p *Probe) NewSession(ctx context.Context) (*engine.Session, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "creating engine's kvstore")
 	}
-	if err := os.MkdirAll(utils.TunnelDir(p.home), 0700); err != nil {
+	if err := os.MkdirAll(p.tunnelDir, 0700); err != nil {
 		return nil, errors.Wrap(err, "creating tunnel dir")
 	}
 	return engine.NewSession(ctx, engine.SessionConfig{
