@@ -139,9 +139,8 @@ func mainWithArgs(args []string) {
 	submitter := newSubmitter(sess, ctx)
 
 	n, err := submitAll(ctx, lines, submitter)
-	runtimex.PanicOnError(err, "error occurred while submitting")
-
 	fmt.Println("Submitted measurements: ", n)
+	runtimex.PanicOnError(err, "error occurred while submitting")
 }
 
 func main() {
