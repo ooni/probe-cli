@@ -272,7 +272,7 @@ func Collect(ctx context.Context, multi urlgetter.Multi, inputs []urlgetter.Mult
 			count++
 			percentage := float64(count) / float64(expect)
 			callbacks.OnProgress(percentage, fmt.Sprintf(
-				"dnscheck: measure %s: %+v", entry.Input.Config.ResolverURL, entry.Err,
+				"dnscheck: measure %s: %+v", entry.Input.Config.ResolverURL, model.ShowOkOnNill(entry.Err),
 			))
 			outputch <- entry
 		}
