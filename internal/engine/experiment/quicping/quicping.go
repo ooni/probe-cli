@@ -163,8 +163,7 @@ func (m *Measurer) sender(
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	i := 0
-	for i < int(m.config.repetitions()) {
+	for i := int64(0); i < m.config.repetitions(); i++ {
 		select {
 		case <-ctx.Done():
 			return // user aborted or timeout expired
@@ -178,7 +177,6 @@ func (m *Measurer) sender(
 
 			// propagate send information, including errors
 			out <- requestInfo{raw: packet, t: sendTime, dstID: hex.EncodeToString(dstID), srcID: hex.EncodeToString(srcID), err: err}
-			i += 1
 		}
 	}
 }
