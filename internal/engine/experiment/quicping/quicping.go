@@ -172,6 +172,9 @@ func (m *Measurer) sender(
 			sendTime := stime.Sub(measurement.MeasurementStartTimeSaved).Seconds()
 			packet, dstID, srcID := buildPacket()     // build QUIC Initial packet
 			_, err := pconn.WriteTo(packet, destAddr) // send Initial packet
+			if errors.Is(err, net.ErrClosed) {
+				return
+			}
 
 			sess.Logger().Infof("PING %s", destAddr)
 
