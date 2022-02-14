@@ -24,8 +24,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// A ConnectionID in QUIC
-type ConnectionID []byte
+// A connectionID in QUIC
+type connectionID []byte
 
 const (
 	maxConnectionIDLen        = 18
@@ -209,7 +209,7 @@ func (m *Measurer) receiver(
 		resp := buffer[:n]
 
 		// dissect server response
-		supportedVersions, dst, err := m.DissectVersionNegotiation(resp)
+		supportedVersions, dst, err := m.dissectVersionNegotiation(resp)
 		if err != nil {
 			// the response was likely not the expected version negotiation response
 			sess.Logger().Infof(fmt.Sprintf("response dissection failed: %s", err))
@@ -337,11 +337,11 @@ L:
 	return nil
 }
 
-// DissectVersionNegotiation dissects the Version Negotiation response.
+// dissectVersionNegotiation dissects the Version Negotiation response.
 // It returns the supported versions and the destination connection ID of the response,
 // The destination connection ID of the response has to coincide with the source connection ID of the request.
 // https://www.rfc-editor.org/rfc/rfc9000.html#name-version-negotiation-packet
-func (m *Measurer) DissectVersionNegotiation(i []byte) ([]uint32, ConnectionID, error) {
+func (m *Measurer) dissectVersionNegotiation(i []byte) ([]uint32, connectionID, error) {
 	firstByte := uint8(i[0])
 	mask := 0b10000000
 	mask &= int(firstByte)
@@ -391,7 +391,7 @@ func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, 
 
 // buildHeader creates the unprotected QUIC header.
 // https://www.rfc-editor.org/rfc/rfc9000.html#name-initial-packet
-func buildHeader(destConnID, srcConnID ConnectionID, payloadLen int) []byte {
+func buildHeader(destConnID, srcConnID connectionID, payloadLen int) []byte {
 	hdr := []byte{0xc3} // long header type, fixed
 
 	version := make([]byte, 4)
@@ -425,7 +425,7 @@ func buildHeader(destConnID, srcConnID ConnectionID, payloadLen int) []byte {
 // buildPacket constructs an Initial QUIC packet
 // and applies Initial protection.
 // https://www.rfc-editor.org/rfc/rfc9001.html#name-client-initial
-func buildPacket() ([]byte, ConnectionID, ConnectionID) {
+func buildPacket() ([]byte, connectionID, connectionID) {
 	destConnID, srcConnID := generateConnectionIDs()
 	// generate random payload
 	minPayloadSize := 1200 - 14 - (len(destConnID) + len(srcConnID))
@@ -442,16 +442,16 @@ func buildPacket() ([]byte, ConnectionID, ConnectionID) {
 }
 
 // generateConnectionID generates a connection ID using cryptographic random
-func generateConnectionID(len int) ConnectionID {
+func generateConnectionID(len int) connectionID {
 	b := make([]byte, len)
 	_, err := rand.Read(b)
 	runtimex.PanicOnError(err, "rand.Read failed")
-	return ConnectionID(b)
+	return connectionID(b)
 }
 
 // generateConnectionIDForInitial generates a connection ID for the Initial packet.
 // It uses a length randomly chosen between 8 and 18 bytes.
-func generateConnectionIDForInitial() ConnectionID {
+func generateConnectionIDForInitial() connectionID {
 	r := make([]byte, 1)
 	_, err := rand.Read(r)
 	runtimex.PanicOnError(err, "rand.Read failed")

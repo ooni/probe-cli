@@ -108,7 +108,7 @@ func encryptHeader(raw, hdr, clientSecret []byte) []byte {
 // https://www.rfc-editor.org/rfc/rfc9001.html#name-packet-protection
 //
 // encryptPayload encrypts the payload of the packet.
-func encryptPayload(payload, destConnID ConnectionID, clientSecret []byte) []byte {
+func encryptPayload(payload, destConnID connectionID, clientSecret []byte) []byte {
 	myKey, myIV := computeInitialKeyAndIV(clientSecret)
 	encrypter := aeadAESGCMTLS13(myKey, myIV)
 

@@ -282,7 +282,7 @@ func TestDissect(t *testing.T) {
 	versionNegotiationResponse, _ := hex.DecodeString("eb0000000010040b9649d3fd4c038ab6c073966f39210b44d064031288e97646451f00000001ff00001dff00001cff00001b")
 	measurer := NewExperimentMeasurer(Config{})
 	destID := "040b9649d3fd4c038ab6c073966f3921"
-	_, dst, err := measurer.(*Measurer).DissectVersionNegotiation(versionNegotiationResponse)
+	_, dst, err := measurer.(*Measurer).dissectVersionNegotiation(versionNegotiationResponse)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
@@ -291,7 +291,7 @@ func TestDissect(t *testing.T) {
 	}
 
 	versionNegotiationResponse[1] = byte(0xff)
-	_, _, err = measurer.(*Measurer).DissectVersionNegotiation(versionNegotiationResponse)
+	_, _, err = measurer.(*Measurer).dissectVersionNegotiation(versionNegotiationResponse)
 	if err == nil {
 		t.Fatal("expected an error here", err)
 	}
@@ -300,7 +300,7 @@ func TestDissect(t *testing.T) {
 	}
 
 	versionNegotiationResponse[0] = byte(0x01)
-	_, _, err = measurer.(*Measurer).DissectVersionNegotiation(versionNegotiationResponse)
+	_, _, err = measurer.(*Measurer).dissectVersionNegotiation(versionNegotiationResponse)
 	if err == nil {
 		t.Fatal("expected an error here", err)
 	}
