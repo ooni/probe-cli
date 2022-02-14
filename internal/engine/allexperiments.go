@@ -12,6 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/httphostheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/ndt7"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/psiphon"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/quicping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/run"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/signal"
@@ -139,6 +140,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 			},
 			config:      &psiphon.Config{},
 			inputPolicy: InputOptional,
+		}
+	},
+
+	"quicping": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, quicping.NewExperimentMeasurer(
+					*config.(*quicping.Config),
+				))
+			},
+			config:      &quicping.Config{},
+			inputPolicy: InputStrictlyRequired,
 		}
 	},
 
