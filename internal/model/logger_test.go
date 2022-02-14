@@ -11,3 +11,10 @@ func TestDiscardLoggerWorksAsIntended(t *testing.T) {
 	logger.Warn("foo")
 	logger.Warnf("%s", "foo")
 }
+
+func TestShowOkOnSuccess(t *testing.T) {
+	total := ShowOkOnSuccess(nil)
+	if total != "ok" {
+		t.Errorf("not the error we expected: %v", total)
+	}
+}
