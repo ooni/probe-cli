@@ -1,6 +1,9 @@
 package model
 
-import "testing"
+import (
+	"io"
+	"testing"
+)
 
 func TestDiscardLoggerWorksAsIntended(t *testing.T) {
 	logger := DiscardLogger
@@ -13,8 +16,18 @@ func TestDiscardLoggerWorksAsIntended(t *testing.T) {
 }
 
 func TestShowOkOnSuccess(t *testing.T) {
-	total := ShowOkOnSuccess(nil)
-	if total != "ok" {
-		t.Errorf("not the error we expected: %v", total)
-	}
+	t.Run("on success", func(t *testing.T) {
+		expectedResult := ShowOkOnSuccess(nil)
+		if expectedResult != "ok" {
+			t.Fatal("expected ok")
+		}
+	})
+
+	t.Run("on failure", func(t *testing.T) {
+		err := io.EOF
+		expectedResult := ShowOkOnSuccess(err)
+		if expectedResult != err.Error() {
+			t.Fatal("not the result we expected", expectedResult)
+		}
+	})
 }
