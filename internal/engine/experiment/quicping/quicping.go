@@ -311,7 +311,7 @@ L:
 		if ping.request == nil { // this should not happen
 			return errors.New("internal error: ping.request is nil")
 		}
-		if len(ping.responses) == 0 {
+		if len(ping.responses) <= 0 {
 			tk.Pings = append(tk.Pings, &SinglePing{
 				ConnIdDst:   ping.request.dstID,
 				ConnIdSrc:   ping.request.srcID,
