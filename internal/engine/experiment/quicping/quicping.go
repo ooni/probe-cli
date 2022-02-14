@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"sort"
 	"strconv"
 	"time"
 
@@ -37,10 +38,6 @@ const (
 	testName    = "quicping"
 	testVersion = "0.1.0"
 )
-
-func formatTime(t time.Time) string {
-	return t.UTC().Format("2006-01-02 15:04:05.000000")
-}
 
 // Config contains the experiment configuration.
 type Config struct {
@@ -85,18 +82,18 @@ type TestKeys struct {
 
 // SinglePing is a result of a single ping operation.
 type SinglePing struct {
-	ConnIdDst   string                         `json:"conn_id_dst"`
-	ConnIdSrc   string                         `json:"conn_id_src"`
-	Failure     *string                        `json:"failure"`
-	Request     *model.ArchivalMaybeBinaryData `json:"request"`
-	RequestTime string                         `json:"request_time"`
-	Responses   []*SinglePingResponse          `json:"responses"`
+	ConnIdDst string                         `json:"conn_id_dst"`
+	ConnIdSrc string                         `json:"conn_id_src"`
+	Failure   *string                        `json:"failure"`
+	Request   *model.ArchivalMaybeBinaryData `json:"request"`
+	T         float64                        `json:"t"`
+	Responses []*SinglePingResponse          `json:"responses"`
 }
 
 type SinglePingResponse struct {
 	Data              *model.ArchivalMaybeBinaryData `json:"response_data"`
 	Failure           *string                        `json:"failure"`
-	ResponseTime      string                         `json:"response_time"`
+	T                 float64                        `json:"t"`
 	SupportedVersions []uint32                       `json:"supported_versions"`
 }
 
@@ -109,7 +106,7 @@ func makeResponse(resp *responseInfo) *SinglePingResponse {
 	return &SinglePingResponse{
 		Data:              data,
 		Failure:           archival.NewFailure(resp.err),
-		ResponseTime:      formatTime(resp.t),
+		T:                 resp.t,
 		SupportedVersions: resp.versions,
 	}
 }
@@ -138,7 +135,7 @@ type pingInfo struct {
 
 // requestInfo contains the information of a sent ping request.
 type requestInfo struct {
-	t     time.Time
+	t     float64
 	raw   []byte
 	dstID string
 	srcID string
@@ -147,7 +144,7 @@ type requestInfo struct {
 
 // responseInfo contains the information of a received ping reponse.
 type responseInfo struct {
-	t        time.Time
+	t        float64
 	raw      []byte
 	dstID    string
 	versions []uint32
@@ -161,6 +158,7 @@ func (m *Measurer) sender(
 	destAddr *net.UDPAddr,
 	out chan<- requestInfo,
 	sess model.ExperimentSession,
+	measurement *model.Measurement,
 ) {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
@@ -171,7 +169,8 @@ func (m *Measurer) sender(
 		case <-ctx.Done():
 			return // user aborted or timeout expired
 
-		case sendTime := <-ticker.C:
+		case stime := <-ticker.C:
+			sendTime := stime.Sub(measurement.MeasurementStartTimeSaved).Seconds()
 			packet, dstID, srcID := buildPacket()     // build QUIC Initial packet
 			_, err := pconn.WriteTo(packet, destAddr) // send Initial packet
 
@@ -191,12 +190,13 @@ func (m *Measurer) receiver(
 	pconn model.UDPLikeConn,
 	out chan<- responseInfo,
 	sess model.ExperimentSession,
+	measurement *model.Measurement,
 ) {
 	for ctx.Err() == nil {
 		// read (timeout was set in Run)
 		buffer := make([]byte, 1024)
 		n, addr, err := pconn.ReadFrom(buffer)
-		respTime := time.Now()
+		respTime := time.Since(measurement.MeasurementStartTimeSaved).Seconds()
 		if err != nil {
 			// stop if the connection is already closed
 			if errors.Is(err, net.ErrClosed) {
@@ -265,19 +265,19 @@ func (m *Measurer) Run(
 	pingMap := make(map[string]*pingInfo)
 
 	// start sender and receiver goroutines
-	go m.sender(ctx, pconn, udpAddr, sendInfoChan, sess)
-	go m.receiver(ctx, pconn, recvInfoChan, sess)
+	go m.sender(ctx, pconn, udpAddr, sendInfoChan, sess, measurement)
+	go m.receiver(ctx, pconn, recvInfoChan, sess, measurement)
 L:
 	for {
 		select {
 		case req := <-sendInfoChan: // a new ping was sent
 			if req.err != nil {
 				tk.Pings = append(tk.Pings, &SinglePing{
-					ConnIdDst:   req.dstID,
-					ConnIdSrc:   req.srcID,
-					Failure:     archival.NewFailure(req.err),
-					Request:     &model.ArchivalMaybeBinaryData{Value: string(req.raw)},
-					RequestTime: formatTime(req.t),
+					ConnIdDst: req.dstID,
+					ConnIdSrc: req.srcID,
+					Failure:   archival.NewFailure(req.err),
+					Request:   &model.ArchivalMaybeBinaryData{Value: string(req.raw)},
+					T:         req.t,
 				})
 				continue
 			}
@@ -313,11 +313,11 @@ L:
 		}
 		if len(ping.responses) <= 0 {
 			tk.Pings = append(tk.Pings, &SinglePing{
-				ConnIdDst:   ping.request.dstID,
-				ConnIdSrc:   ping.request.srcID,
-				Failure:     archival.NewFailure(timeoutErr),
-				Request:     &model.ArchivalMaybeBinaryData{Value: string(ping.request.raw)},
-				RequestTime: formatTime(ping.request.t),
+				ConnIdDst: ping.request.dstID,
+				ConnIdSrc: ping.request.srcID,
+				Failure:   archival.NewFailure(timeoutErr),
+				Request:   &model.ArchivalMaybeBinaryData{Value: string(ping.request.raw)},
+				T:         ping.request.t,
 			})
 			continue
 		}
@@ -326,14 +326,17 @@ L:
 			responses = append(responses, makeResponse(resp))
 		}
 		tk.Pings = append(tk.Pings, &SinglePing{
-			ConnIdDst:   ping.request.dstID,
-			ConnIdSrc:   ping.request.srcID,
-			Failure:     nil,
-			Request:     &model.ArchivalMaybeBinaryData{Value: string(ping.request.raw)},
-			RequestTime: formatTime(ping.request.t),
-			Responses:   responses,
+			ConnIdDst: ping.request.dstID,
+			ConnIdSrc: ping.request.srcID,
+			Failure:   nil,
+			Request:   &model.ArchivalMaybeBinaryData{Value: string(ping.request.raw)},
+			T:         ping.request.t,
+			Responses: responses,
 		})
 	}
+	sort.Slice(tk.Pings, func(i, j int) bool {
+		return tk.Pings[i].T < tk.Pings[j].T
+	})
 	return nil
 }
 
