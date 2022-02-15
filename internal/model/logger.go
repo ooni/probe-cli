@@ -62,8 +62,8 @@ func (logDiscarder) Warn(msg string) {}
 // Warnf implements Logger.Warnf
 func (logDiscarder) Warnf(format string, v ...interface{}) {}
 
-// ShowOkOnNill emits "ok" on "<nil>"" values for success.
-func ShowOkOnSuccess(err error) string {
+// ErrorToStringOrOK emits "ok" on "<nil>"" values for success.
+func ErrorToStringOrOK(err error) string {
 	if err != nil {
 		return err.Error()
 	}

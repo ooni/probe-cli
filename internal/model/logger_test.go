@@ -15,9 +15,9 @@ func TestDiscardLoggerWorksAsIntended(t *testing.T) {
 	logger.Warnf("%s", "foo")
 }
 
-func TestShowOkOnSuccess(t *testing.T) {
+func TestErrorToStringOrOK(t *testing.T) {
 	t.Run("on success", func(t *testing.T) {
-		expectedResult := ShowOkOnSuccess(nil)
+		expectedResult := ErrorToStringOrOK(nil)
 		if expectedResult != "ok" {
 			t.Fatal("expected ok")
 		}
@@ -25,7 +25,7 @@ func TestShowOkOnSuccess(t *testing.T) {
 
 	t.Run("on failure", func(t *testing.T) {
 		err := io.EOF
-		expectedResult := ShowOkOnSuccess(err)
+		expectedResult := ErrorToStringOrOK(err)
 		if expectedResult != err.Error() {
 			t.Fatal("not the result we expected", expectedResult)
 		}
