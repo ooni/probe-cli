@@ -68,6 +68,9 @@ run `go mod tidy` to minimize such changes.
 - use `./internal/netxlite.ReadAllContext` instead of `io.ReadAll`
 and `./internal/netxlite.CopyContext` instead of `io.Copy`
 
+- use `./internal/model.ErrorToStringOrOK` when 
+an experiment logs intermediate results
+
 ## Code testing requirements
 
 Make sure all tests pass with `go test -race ./...` run from the
