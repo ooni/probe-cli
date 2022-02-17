@@ -20,9 +20,6 @@ const (
 type Config struct {
 	// Repetitions is the number of repetitions for each ping.
 	Repetitions int64 `ooni:"number of times to repeat the measurement"`
-
-	// Domain is the domain to test.
-	Domain string `ooni:"domain is the domain to test"`
 }
 
 func (c Config) repetitions() int64 {
@@ -89,6 +86,8 @@ func (m *Measurer) Run(
 }
 
 func (m *Measurer) tcpConnect(ctx context.Context, address string) *measurex.EndpointMeasurement {
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
 	mx := measurex.NewMeasurerWithDefaultSettings()
 	return mx.TCPConnect(ctx, address)
 }
