@@ -5,7 +5,7 @@ go 1.16
 require (
 	filippo.io/age v1.0.0
 	git.torproject.org/pluggable-transports/goptlib.git v1.2.0
-	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.0.1
+	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.0.2-0.20220203133848-00e8415d8eaf
 	github.com/AlecAivazis/survey/v2 v2.3.2
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect

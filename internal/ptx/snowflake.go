@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"net"
+	"sync"
 
 	sflib "git.torproject.org/pluggable-transports/snowflake.git/v2/client/lib"
+	"git.torproject.org/pluggable-transports/snowflake.git/v2/common/event"
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
 )
 
@@ -128,7 +130,14 @@ func NewSnowflakeDialerWithRendezvousMethod(m SnowflakeRendezvousMethod) *Snowfl
 
 // snowflakeTransport is anything that allows us to dial a snowflake
 type snowflakeTransport interface {
+	// Dial dials a snowflake connection.
 	Dial() (net.Conn, error)
+
+	// AddSnowflakeEventListener adds an event listener.
+	AddSnowflakeEventListener(receiver event.SnowflakeEventReceiver)
+
+	// RemoveSnowflakeEventListener removes an event listener.
+	RemoveSnowflakeEventListener(receiver event.SnowflakeEventReceiver)
 }
 
 // DialContext establishes a connection with the given SF proxy. The context
@@ -155,6 +164,10 @@ func (d *SnowflakeDialer) dialContext(
 	connch, errch := make(chan net.Conn), make(chan error, 1)
 	go func() {
 		defer close(done) // allow tests to synchronize with this goroutine's exit
+		evr := d.newEventReceiver()
+		log.Println("****** snowflake: adding event listener")
+		defer txp.RemoveSnowflakeEventListener(evr)
+		txp.AddSnowflakeEventListener(evr)
 		conn, err := txp.Dial()
 		if err != nil {
 			errch <- err // buffered channel
@@ -183,7 +196,7 @@ func (d *SnowflakeDialer) newSnowflakeClient(
 	if d.newClientTransport != nil {
 		return d.newClientTransport(config)
 	}
-	return sflib.NewSnowflakeClient(config)
+	return &snowflakeEventIgnorer{}
 }
 
 // iceAddresses returns suitable ICE addresses.
