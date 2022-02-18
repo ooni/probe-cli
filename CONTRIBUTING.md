@@ -13,6 +13,14 @@ general to follow these guidelines when working on ooni/probe-cli. In
 the unlikely care where those guidelines conflict with this document, this
 document will take precedence.
 
+### Golang resources
+
+We use golang as our primary language for the development of OONI Probe CLI and do check out the resources mentioned below, it may help you to level-up.
+
+- [Effective Go](https://go.dev/doc/effective_go)
+- [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
+- [Concurrency](https://go.dev/blog/pipelines) and [Data races](https://go.dev/ref/mem)
+
 ## Opening issues
 
 Please, before opening a new issue, check whether the issue or feature request
