@@ -6,6 +6,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // SaverResolver is a resolver that saves events
@@ -27,14 +28,15 @@ func (r SaverResolver) LookupHost(ctx context.Context, hostname string) ([]strin
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	stop := time.Now()
 	r.Saver.Write(trace.Event{
-		Addresses: addrs,
-		Address:   r.Resolver.Address(),
-		Duration:  stop.Sub(start),
-		Err:       err,
-		Hostname:  hostname,
-		Name:      "resolve_done",
-		Proto:     r.Resolver.Network(),
-		Time:      stop,
+		Addresses:         addrs,
+		Address:           r.Resolver.Address(),
+		Duration:          stop.Sub(start),
+		Err:               err,
+		GetaddrinfoRetval: netxlite.ErrorToGetaddrinfoRetval(err),
+		Hostname:          hostname,
+		Name:              "resolve_done",
+		Proto:             r.Resolver.Network(),
+		Time:              stop,
 	})
 	return addrs, err
 }

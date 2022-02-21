@@ -18,6 +18,7 @@ type Event struct {
 	Data               []byte              `json:",omitempty"`
 	Duration           time.Duration       `json:",omitempty"`
 	Err                error               `json:",omitempty"`
+	GetaddrinfoRetval  int64               `json:",omitempty"`
 	HTTPHeaders        http.Header         `json:",omitempty"`
 	HTTPMethod         string              `json:",omitempty"`
 	HTTPStatusCode     int                 `json:",omitempty"`

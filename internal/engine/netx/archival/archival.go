@@ -236,12 +236,13 @@ func (qtype dnsQueryType) makeanswerentry(addr string) DNSAnswerEntry {
 
 func (qtype dnsQueryType) makequeryentry(begin time.Time, ev trace.Event) DNSQueryEntry {
 	return DNSQueryEntry{
-		Engine:          ev.Proto,
-		Failure:         NewFailure(ev.Err),
-		Hostname:        ev.Hostname,
-		QueryType:       string(qtype),
-		ResolverAddress: ev.Address,
-		T:               ev.Time.Sub(begin).Seconds(),
+		Engine:            ev.Proto,
+		Failure:           NewFailure(ev.Err),
+		GetaddrinfoRetval: ev.GetaddrinfoRetval,
+		Hostname:          ev.Hostname,
+		QueryType:         string(qtype),
+		ResolverAddress:   ev.Address,
+		T:                 ev.Time.Sub(begin).Seconds(),
 	}
 }
 

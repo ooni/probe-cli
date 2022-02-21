@@ -2,6 +2,7 @@ package netxlite
 
 import (
 	"context"
+	"errors"
 	"net"
 )
 
@@ -45,4 +46,17 @@ func (err *ErrGetaddrinfo) Error() string {
 // Unwrap allows to get the underlying error.
 func (err *ErrGetaddrinfo) Unwrap() error {
 	return err.Underlying
+}
+
+// ErrorToGetaddrinfoRetval converts an arbitrary error to
+// the return value of getaddrinfo. If there is no underlying
+// getaddrinfo error, this function returns zero.
+func ErrorToGetaddrinfoRetval(err error) int64 {
+	if err != nil {
+		var aierr *ErrGetaddrinfo
+		if errors.As(err, &aierr) {
+			return aierr.Code
+		}
+	}
+	return 0
 }

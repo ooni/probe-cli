@@ -170,15 +170,16 @@ func (t *Trace) newHTTPHeadersMap(source http.Header) (out map[string]model.Arch
 func (t *Trace) NewArchivalDNSLookupResultList(begin time.Time) (out []model.ArchivalDNSLookupResult) {
 	for _, ev := range t.DNSLookupHost {
 		out = append(out, model.ArchivalDNSLookupResult{
-			Answers:          t.gatherA(ev.Addresses),
-			Engine:           ev.ResolverNetwork,
-			Failure:          t.newFailure(ev.Failure),
-			Hostname:         ev.Domain,
-			QueryType:        "A",
-			ResolverHostname: nil, // legacy
-			ResolverPort:     nil, // legacy
-			ResolverAddress:  ev.ResolverAddress,
-			T:                ev.Finished.Sub(begin).Seconds(),
+			Answers:           t.gatherA(ev.Addresses),
+			Engine:            ev.ResolverNetwork,
+			Failure:           t.newFailure(ev.Failure),
+			GetaddrinfoRetval: ev.GetaddrinfoRetval,
+			Hostname:          ev.Domain,
+			QueryType:         "A",
+			ResolverHostname:  nil, // legacy
+			ResolverPort:      nil, // legacy
+			ResolverAddress:   ev.ResolverAddress,
+			T:                 ev.Finished.Sub(begin).Seconds(),
 		})
 		aaaa := t.gatherAAAA(ev.Addresses)
 		if len(aaaa) <= 0 && ev.Failure == nil {
@@ -187,15 +188,16 @@ func (t *Trace) NewArchivalDNSLookupResultList(begin time.Time) (out []model.Arc
 			continue
 		}
 		out = append(out, model.ArchivalDNSLookupResult{
-			Answers:          aaaa,
-			Engine:           ev.ResolverNetwork,
-			Failure:          t.newFailure(ev.Failure),
-			Hostname:         ev.Domain,
-			QueryType:        "AAAA",
-			ResolverHostname: nil, // legacy
-			ResolverPort:     nil, // legacy
-			ResolverAddress:  ev.ResolverAddress,
-			T:                ev.Finished.Sub(begin).Seconds(),
+			Answers:           aaaa,
+			Engine:            ev.ResolverNetwork,
+			Failure:           t.newFailure(ev.Failure),
+			GetaddrinfoRetval: ev.GetaddrinfoRetval,
+			Hostname:          ev.Domain,
+			QueryType:         "AAAA",
+			ResolverHostname:  nil, // legacy
+			ResolverPort:      nil, // legacy
+			ResolverAddress:   ev.ResolverAddress,
+			T:                 ev.Finished.Sub(begin).Seconds(),
 		})
 	}
 	return

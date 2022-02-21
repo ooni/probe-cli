@@ -9,19 +9,21 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // DNSLookupEvent contains the results of a DNS lookup.
 type DNSLookupEvent struct {
-	ALPNs           []string
-	Addresses       []string
-	Domain          string
-	Failure         error
-	Finished        time.Time
-	LookupType      string
-	ResolverAddress string
-	ResolverNetwork string
-	Started         time.Time
+	ALPNs             []string
+	Addresses         []string
+	Domain            string
+	Failure           error
+	Finished          time.Time
+	GetaddrinfoRetval int64
+	LookupType        string
+	ResolverAddress   string
+	ResolverNetwork   string
+	Started           time.Time
 }
 
 // LookupHost performs a host lookup with the given resolver
@@ -30,15 +32,16 @@ func (s *Saver) LookupHost(ctx context.Context, reso model.Resolver, domain stri
 	started := time.Now()
 	addrs, err := reso.LookupHost(ctx, domain)
 	s.appendLookupHostEvent(&DNSLookupEvent{
-		ALPNs:           nil,
-		Addresses:       addrs,
-		Domain:          domain,
-		Failure:         err,
-		Finished:        time.Now(),
-		LookupType:      "getaddrinfo",
-		ResolverAddress: reso.Address(),
-		ResolverNetwork: reso.Network(),
-		Started:         started,
+		ALPNs:             nil,
+		Addresses:         addrs,
+		Domain:            domain,
+		Failure:           err,
+		Finished:          time.Now(),
+		GetaddrinfoRetval: netxlite.ErrorToGetaddrinfoRetval(err),
+		LookupType:        "getaddrinfo",
+		ResolverAddress:   reso.Address(),
+		ResolverNetwork:   reso.Network(),
+		Started:           started,
 	})
 	return addrs, err
 }

@@ -59,17 +59,18 @@ type resolverDB struct {
 
 // DNSLookupEvent contains the results of a DNS lookup.
 type DNSLookupEvent struct {
-	Network   string
-	Failure   *string
-	Domain    string
-	QueryType string
-	Address   string
-	Finished  float64
-	Started   float64
-	Oddity    Oddity
-	A         []string
-	AAAA      []string
-	ALPN      []string
+	Network           string
+	Failure           *string
+	GetaddrinfoRetval int64
+	Domain            string
+	QueryType         string
+	Address           string
+	Finished          float64
+	Started           float64
+	Oddity            Oddity
+	A                 []string
+	AAAA              []string
+	ALPN              []string
 }
 
 // SupportsHTTP3 returns true if this query is for HTTPS and
@@ -105,13 +106,14 @@ func (r *resolverDB) LookupHost(ctx context.Context, domain string) ([]string, e
 func (r *resolverDB) saveLookupResults(domain string, started, finished float64,
 	err error, addrs []string, qtype string) {
 	ev := &DNSLookupEvent{
-		Network:   r.Resolver.Network(),
-		Address:   r.Resolver.Address(),
-		Failure:   NewFailure(err),
-		Domain:    domain,
-		QueryType: qtype,
-		Finished:  finished,
-		Started:   started,
+		Network:           r.Resolver.Network(),
+		Address:           r.Resolver.Address(),
+		Failure:           NewFailure(err),
+		GetaddrinfoRetval: netxlite.ErrorToGetaddrinfoRetval(err),
+		Domain:            domain,
+		QueryType:         qtype,
+		Finished:          finished,
+		Started:           started,
 	}
 	for _, addr := range addrs {
 		if qtype == "A" && !strings.Contains(addr, ":") {
