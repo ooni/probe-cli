@@ -7,7 +7,7 @@ package netxlite
 
 #ifndef _WIN32
 #ifdef __linux__
-#define __GNU_SOURCE // define EAI_NODATA on GNU/Linux
+#define __GNU_SOURCE // expose EAI_NODATA on GNU/Linux
 #endif
 #include <netdb.h> // for getaddrinfo
 #else
@@ -95,7 +95,7 @@ func getaddrinfoDoLookupHost(ctx context.Context, domain string) ([]string, erro
 // getaddrinfoSingleton is the getaddrinfo singleton.
 var getaddrinfoSingleton = newGetaddrinfoState()
 
-// getaddrinfoSlot is a slot for calling getaddrinfo. The standard library
+// getaddrinfoSlot is a slot for calling getaddrinfo. The Go standard lib
 // limits the maximum number of parallel calls to getaddrinfo. They do that
 // to avoid committing too many threads if the system resolver for some
 // reason doesn't respond. We need to do the same. Because OONI does not
