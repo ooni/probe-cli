@@ -15,4 +15,7 @@ func TestIsBogon(t *testing.T) {
 	if IsBogon("10.0.1.1") != true {
 		t.Fatal("unexpected result")
 	}
+	if IsBogon("::1") != true {
+		t.Fatal("unexpected result")
+	}
 }
