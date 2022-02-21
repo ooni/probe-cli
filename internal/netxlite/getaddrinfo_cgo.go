@@ -81,11 +81,6 @@ import (
 	"unsafe"
 )
 
-// getaddrinfoAvailable returns whether getaddrinfo is available.
-func getaddrinfoAvailable() bool {
-	return true
-}
-
 // getaddrinfoDoLookupHost performs an host lookup with getaddrinfo. Whenever
 // possible the returned error is an ErrGetaddrinfo.
 func getaddrinfoDoLookupHost(ctx context.Context, domain string) ([]string, error) {

@@ -3,19 +3,14 @@ package netxlite
 import (
 	"context"
 	"errors"
-	"net"
 )
 
-// getaddrinfoLookupHost executes a DNS lookup using
-// libc's getaddrinfo and returns the results.
-//
-// This function will attempt to return an ErrGetaddrinfo
-// whenever the underlying getaddrinfo fails with one of
-// the usual error codes, e.g., EAI_NONAME.
+// getaddrinfoLookupHost attempts to execute a DNS lookup using
+// libc's getaddrinfo and returns the results. If we do not link
+// with libc, we'll fallback to net.DefaultResolver. Otherwise,
+// in case getaddrinfo returns non-zero, we'll return an instance
+// of ErrGetaddrinfo, which will contain the return code.
 func getaddrinfoLookupHost(ctx context.Context, domain string) ([]string, error) {
-	if !getaddrinfoAvailable() {
-		return net.DefaultResolver.LookupHost(ctx, domain)
-	}
 	return getaddrinfoDoLookupHost(ctx, domain)
 }
 
