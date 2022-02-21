@@ -16,7 +16,7 @@ func getaddrinfoLookupHost(ctx context.Context, domain string) ([]string, error)
 	return getaddrinfoDoLookupHost(ctx, domain)
 }
 
-// ErrGetaddrinfo represents the a getaddrinfo failure.
+// ErrGetaddrinfo represents a getaddrinfo failure.
 type ErrGetaddrinfo struct {
 	// Err is the error proper.
 	Underlying error
