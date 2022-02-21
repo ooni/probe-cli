@@ -3,6 +3,8 @@
 package netxlite
 
 /*
+#cgo windows LDFLAGS: -lws2_32
+
 #ifndef _WIN32
 #define __GNU_SOURCE // for EAI_NODATA on GNU/Linux
 #include <netdb.h>
@@ -35,14 +37,17 @@ static int OONIMapGetaddrinfoError(int rv) {
 		return OONI_EAI_OTHER;
 	}
 }
+
+static int OONIGetNameInfo(struct addrinfo *ainfo, char *host, unsigned int hostlen) {
+	return getnameinfo(
+		ainfo->ai_addr, ainfo->ai_addrlen, host, hostlen, NULL, 0, NI_NUMERICHOST);
+}
 */
 import "C"
 
 import (
 	"context"
 	"errors"
-	"net"
-	"runtime"
 	"syscall"
 	"unsafe"
 )
@@ -54,15 +59,7 @@ func getaddrinfoAvailable() bool {
 
 // getaddrinfoDoLookupHost performs an host lookup with getaddrinfo.
 func getaddrinfoDoLookupHost(ctx context.Context, domain string) ([]string, error) {
-	// Implementation note: we currently only call getaddrinfo
-	// directly when we're using an Android system because this
-	// fixes https://github.com/ooni/probe/issues/2029.
-	switch runtime.GOOS {
-	case "android", "linux":
-		return getaddrinfoSingleton.Do(ctx, domain)
-	default:
-		return net.DefaultResolver.LookupHost(ctx, domain)
-	}
+	return getaddrinfoSingleton.Do(ctx, domain)
 }
 
 // getaddrinfoSingleton is the getaddrinfo singleton.
@@ -217,16 +214,8 @@ func (state *getaddrinfoState) toAddressList(res *C.struct_addrinfo) ([]string, 
 
 // getnameinfo calls the getnameinfo C function.
 func (state *getaddrinfoState) getnameinfo(r *C.struct_addrinfo) (string, error) {
-	hostbuf := make([]byte, C.NI_NUMERICHOST)
-	res := C.getnameinfo(
-		r.ai_addr,
-		r.ai_addrlen,
-		(*C.char)(unsafe.Pointer(&hostbuf[0])),
-		C.NI_MAXHOST,
-		nil,
-		0,
-		C.NI_NUMERICHOST,
-	)
+	hostbuf := make([]byte, C.NI_MAXHOST)
+	res := C.OONIGetNameInfo(r, (*C.char)(unsafe.Pointer(&hostbuf[0])), C.NI_NUMERICHOST)
 	if res != 0 {
 		return "", errors.New("getnameinfo failed")
 	}
