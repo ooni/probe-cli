@@ -8,9 +8,6 @@ package netxlite
 #cgo windows LDFLAGS: -lws2_32
 
 #ifndef _WIN32
-#ifdef __linux__
-#define __GNU_SOURCE // expose EAI_NODATA on GNU/Linux
-#endif
 #include <netdb.h> // for getaddrinfo
 #else
 #include <ws2tcpip.h> // for getaddrinfo
