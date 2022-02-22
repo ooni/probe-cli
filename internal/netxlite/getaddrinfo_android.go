@@ -9,6 +9,11 @@ package netxlite
 //#include <netdb.h>
 import "C"
 
+import (
+	"errors"
+	"syscall"
+)
+
 const getaddrinfoAIFlags = C.AI_CANONNAME
 
 // toError is the function that converts the return value from

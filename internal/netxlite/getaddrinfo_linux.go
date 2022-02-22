@@ -11,6 +11,11 @@ package netxlite
 */
 import "C"
 
+import (
+	"errors"
+	"syscall"
+)
+
 // NOTE(rsc): In theory there are approximately balanced
 // arguments for and against including AI_ADDRCONFIG
 // in the flags (it includes IPv4 results only on IPv4 systems,
