@@ -46,7 +46,7 @@ func (state *getaddrinfoState) toError(code C.int, err error) ([]string, error) 
 		}
 		return nil, newErrGetaddrinfo(int64(code), err)
 	case C.EAI_NONAME:
-		err = errors.New(DNSNoSuchHostSuffix) // so it becomes ErrDNSNXDOMAIN
+		err = errors.New(DNSNoSuchHostSuffix) // so it becomes FailureDNSNXDOMAIN
 		return nil, newErrGetaddrinfo(int64(code), err)
 	default:
 		err = errors.New(DNSServerMisbehavingSuffix) // so it becomes FailureDNSServerMisbehaving

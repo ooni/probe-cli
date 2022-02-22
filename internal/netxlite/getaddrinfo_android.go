@@ -44,13 +44,13 @@ func (state *getaddrinfoState) toError(code C.int, err error) ([]string, error) 
 		// happen for GNU/Linux, Windows, and macOS but it may be
 		// the case for some other systems (maybe BSD?).
 		//
-		// So the design choice here is to map to NXDOMAIN for
+		// So the design choice here is to map to "no answer" for
 		// robustness but _also_ to record the original getaddrinfo
 		// code, so one can see it into the results.
 		//
 		// See https://github.com/ooni/probe/issues/2029 for the
 		// investigation on Android's getaddrinfo.
-		err = errors.New(DNSNoSuchHostSuffix) // so it becomes ErrDNSNXDOMAIN
+		err = errors.New(DNSNoAnswerSuffix) // so it becomes FailureNSNoAnswer
 		return nil, newErrGetaddrinfo(int64(code), err)
 	default:
 		err = errors.New(DNSServerMisbehavingSuffix) // so it becomes FailureDNSServerMisbehaving
