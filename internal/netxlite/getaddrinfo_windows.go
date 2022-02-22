@@ -2,7 +2,7 @@
 
 package netxlite
 
-//#include <netdb.h>
+//#include <ws2tcpip.h>
 import "C"
 
 import "syscall"
@@ -18,5 +18,5 @@ func (state *getaddrinfoState) toError(code C.int, err error) ([]string, error) 
 		// is no other error, just cast code to a syscall err.
 		err = syscall.Errno(code)
 	}
-	return newErrGetaddrinfo(int64(code), err)
+	return nil, newErrGetaddrinfo(int64(code), err)
 }
