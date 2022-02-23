@@ -17,7 +17,6 @@ type dialManager struct {
 	logger          model.Logger
 	proxyURL        *url.URL
 	readBufferSize  int
-	tlsConfig       *tls.Config
 	userAgent       string
 	writeBufferSize int
 }
@@ -43,10 +42,15 @@ func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*
 		Logger:              mgr.logger,
 		ProxyURL:            mgr.proxyURL,
 	}, reso)
+	// We force using our bundled CA pool, which should fix
+	// https://github.com/ooni/probe/issues/2031
+	tlsConfig := &tls.Config{
+		RootCAs: netxlite.NewDefaultCertPool(),
+	}
 	dialer := websocket.Dialer{
 		NetDialContext:  dlr.DialContext,
 		ReadBufferSize:  mgr.readBufferSize,
-		TLSClientConfig: mgr.tlsConfig,
+		TLSClientConfig: tlsConfig,
 		WriteBufferSize: mgr.writeBufferSize,
 	}
 	headers := http.Header{}
