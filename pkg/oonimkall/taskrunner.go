@@ -76,6 +76,8 @@ func (r *runnerForTask) newsession(ctx context.Context, logger model.Logger) (ta
 	return r.sessionBuilder.NewSession(ctx, config)
 }
 
+// contextForExperiment ensurs that for measuring we only use an
+// interruptible context when we can interrupt the experiment
 func (r *runnerForTask) contextForExperiment(
 	ctx context.Context, builder taskExperimentBuilder,
 ) context.Context {
@@ -99,7 +101,18 @@ func (cb *runnerCallbacks) OnProgress(percentage float64, message string) {
 // Run runs the runner until completion. The context argument controls
 // when to stop when processing multiple inputs, as well as when to stop
 // experiments explicitly marked as interruptible.
-func (r *runnerForTask) Run(ctx context.Context) {
+func (r *runnerForTask) Run(rootCtx context.Context) {
+	// Implementation note: this function uses these contexts:
+	//
+	// - rootCtx is the root context and is controlled by the user;
+	//
+	// - measCtx derives from rootCtx and is possibly tied to the
+	// maximum runtime and is used to choose when to stop measuring;
+	//
+	// - submitCtx is like measCtx but, in case we're using a max
+	// runtime, is given more time to finish submitting.
+	//
+	// See https://github.com/ooni/probe/issues/2037.
 	var logger model.Logger = newTaskLogger(r.emitter, r.settings.LogLevel)
 	r.emitter.Emit(eventTypeStatusQueued, eventEmpty{})
 	if r.hasUnsupportedSettings() {
@@ -107,7 +120,7 @@ func (r *runnerForTask) Run(ctx context.Context) {
 		return
 	}
 	r.emitter.Emit(eventTypeStatusStarted, eventEmpty{})
-	sess, err := r.newsession(ctx, logger)
+	sess, err := r.newsession(rootCtx, logger)
 	if err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
 		return
@@ -125,14 +138,14 @@ func (r *runnerForTask) Run(ctx context.Context) {
 	}
 
 	logger.Info("Looking up OONI backends... please, be patient")
-	if err := sess.MaybeLookupBackendsContext(ctx); err != nil {
+	if err := sess.MaybeLookupBackendsContext(rootCtx); err != nil {
 		r.emitter.EmitFailureStartup(err.Error())
 		return
 	}
 	r.emitter.EmitStatusProgress(0.1, "contacted bouncer")
 
 	logger.Info("Looking up your location... please, be patient")
-	if err := sess.MaybeLookupLocationContext(ctx); err != nil {
+	if err := sess.MaybeLookupLocationContext(rootCtx); err != nil {
 		r.emitter.EmitFailureGeneric(eventTypeFailureIPLookup, err.Error())
 		r.emitter.EmitFailureGeneric(eventTypeFailureASNLookup, err.Error())
 		r.emitter.EmitFailureGeneric(eventTypeFailureCCLookup, err.Error())
@@ -203,7 +216,7 @@ func (r *runnerForTask) Run(ctx context.Context) {
 	}()
 	if !r.settings.Options.NoCollector {
 		logger.Info("Opening report... please, be patient")
-		if err := experiment.OpenReportContext(ctx); err != nil {
+		if err := experiment.OpenReportContext(rootCtx); err != nil {
 			r.emitter.EmitFailureGeneric(eventTypeFailureReportCreate, err.Error())
 			return
 		}
@@ -212,6 +225,10 @@ func (r *runnerForTask) Run(ctx context.Context) {
 			ReportID: experiment.ReportID(),
 		})
 	}
+	measCtx, measCancel := context.WithCancel(rootCtx)
+	defer measCancel()
+	submitCtx, submitCancel := context.WithCancel(rootCtx)
+	defer submitCancel()
 	// This deviates a little bit from measurement-kit, for which
 	// a zero timeout is actually valid. Since it does not make much
 	// sense, here we're changing the behaviour.
@@ -224,11 +241,20 @@ func (r *runnerForTask) Run(ctx context.Context) {
 		// reasonable way web connectivity, so we should be ok.
 		switch builder.InputPolicy() {
 		case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
-			var cancel context.CancelFunc
-			ctx, cancel = context.WithTimeout(
-				ctx, time.Duration(r.settings.Options.MaxRuntime)*time.Second,
+			var (
+				cancelMeas   context.CancelFunc
+				cancelSubmit context.CancelFunc
 			)
-			defer cancel()
+			// We give the context used for submitting extra time so that
+			// it's possible to submit the last measurement.
+			//
+			// See https://github.com/ooni/probe/issues/2037 for more info.
+			maxRuntime := time.Duration(r.settings.Options.MaxRuntime) * time.Second
+			measCtx, cancelMeas = context.WithTimeout(measCtx, maxRuntime)
+			defer cancelMeas()
+			maxRuntime += 30 * time.Second
+			submitCtx, cancelSubmit = context.WithTimeout(submitCtx, maxRuntime)
+			defer cancelSubmit()
 		}
 	}
 	inputCount := len(r.settings.Inputs)
@@ -236,7 +262,7 @@ func (r *runnerForTask) Run(ctx context.Context) {
 	inflatedMaxRuntime := r.settings.Options.MaxRuntime + r.settings.Options.MaxRuntime/10
 	eta := start.Add(time.Duration(inflatedMaxRuntime) * time.Second)
 	for idx, input := range r.settings.Inputs {
-		if ctx.Err() != nil {
+		if measCtx.Err() != nil {
 			break
 		}
 		logger.Infof("Starting measurement with index %d", idx)
@@ -257,10 +283,10 @@ func (r *runnerForTask) Run(ctx context.Context) {
 			))
 		}
 		m, err := experiment.MeasureWithContext(
-			r.contextForExperiment(ctx, builder),
+			r.contextForExperiment(measCtx, builder),
 			input,
 		)
-		if builder.Interruptible() && ctx.Err() != nil {
+		if builder.Interruptible() && measCtx.Err() != nil {
 			// We want to stop here only if interruptible otherwise we want to
 			// submit measurement and stop at beginning of next iteration
 			break
@@ -287,7 +313,8 @@ func (r *runnerForTask) Run(ctx context.Context) {
 		})
 		if !r.settings.Options.NoCollector {
 			logger.Info("Submitting measurement... please, be patient")
-			err := experiment.SubmitAndUpdateMeasurementContext(ctx, m)
+			err := experiment.SubmitAndUpdateMeasurementContext(submitCtx, m)
+			warnOnFailure(logger, "cannot submit measurement", err)
 			r.emitter.Emit(measurementSubmissionEventName(err), eventMeasurementGeneric{
 				Idx:     int64(idx),
 				Input:   input,
@@ -299,6 +326,12 @@ func (r *runnerForTask) Run(ctx context.Context) {
 			Idx:   int64(idx),
 			Input: input,
 		})
+	}
+}
+
+func warnOnFailure(logger model.Logger, message string, err error) {
+	if err != nil {
+		logger.Warnf("%s: %s (%+v)", message, err.Error(), err)
 	}
 }
 
