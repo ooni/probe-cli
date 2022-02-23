@@ -163,7 +163,7 @@ func (r *Resolver) lookupHost(ctx context.Context, ri *resolverinfo, hostname st
 	}
 	addrs, err := r.timeLimitedLookup(ctx, re, hostname)
 	if err == nil {
-		r.logger().Infof("sessionresolver: %s... %v", ri.URL, nil)
+		r.logger().Infof("sessionresolver: %s... %v", ri.URL, model.ErrorToStringOrOK(nil))
 		ri.Score = ewma*1.0 + (1-ewma)*ri.Score // increase score
 		return addrs, nil
 	}
