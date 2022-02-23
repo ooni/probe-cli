@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/lucas-clemente/quic-go"
@@ -67,6 +68,14 @@ func classifyGenericError(err error) string {
 	return scrubber.Scrub(formatted) // scrub IP addresses in the error
 }
 
+// This suffix is returned on (some?) Android devices where getaddrinfo seems
+// to return EAI_NODATA instead of EAI_NONAME for NXDOMAIN conditions. We handle
+// this specific string to correctly route the error as an hotfix for just the
+// release/3.14 branch, while a more comprehensive fix will land in release/3.15.
+//
+// See https://github.com/ooni/probe/issues/2029.
+const dnsAndroidEAINODATASuffix = "No address associated with hostname"
+
 // classifyWithStringSuffix is a subset of ClassifyGenericError that
 // performs classification by looking at error suffixes. This function
 // will return an empty string if it cannot classify the error.
@@ -89,6 +98,17 @@ func classifyWithStringSuffix(err error) string {
 	}
 	if strings.HasSuffix(s, "TLS handshake timeout") {
 		return FailureGenericTimeoutError
+	}
+	if runtime.GOOS == "android" && strings.HasSuffix(s, dnsAndroidEAINODATASuffix) {
+		// Because this is a release hotfix, here we're going to apply
+		// the simplest fix and just consider EAI_NODATA to be same
+		// as NXDOMAIN, even though this is probably not the most correct
+		// mapping to apply. We're not going to merge this diff into
+		// master, thus it's okay to have this simplistic fix here while
+		// we work on a more comprehensive solution.
+		//
+		// See https://github.com/ooni/probe/issues/2029.
+		return FailureDNSNXDOMAINError
 	}
 	if strings.HasSuffix(s, DNSNoSuchHostSuffix) {
 		// This is dns_lookup_error in MK but such error is used as a
