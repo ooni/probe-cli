@@ -50,11 +50,11 @@ require (
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	gitlab.com/yawning/obfs4.git v0.0.0-20210511220700-e330d1b7024b
 	gitlab.com/yawning/utls.git v0.0.12-1
-	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce
+	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce // indirect
 	golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
+	golang.org/x/sys v0.0.0-20220222200937-f2425489ef4c
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
-	golang.org/x/tools v0.1.8 // indirect
+	golang.org/x/tools v0.1.9 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	upper.io/db.v3 v3.8.0+incompatible
 )
