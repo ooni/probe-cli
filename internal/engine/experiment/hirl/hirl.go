@@ -131,7 +131,7 @@ func (m Measurer) Run(
 		tk.Tampering = (tk.Tampering || result.Tampering)
 		completed++
 		percentage := (float64(completed)/float64(len(m.Methods)))*0.5 + 0.5
-		callbacks.OnProgress(percentage, fmt.Sprintf("%s... %+v", result.Name, result.Err))
+		callbacks.OnProgress(percentage, fmt.Sprintf("%s... %+v", result.Name, model.ErrorToStringOrOK(result.Err)))
 		if completed >= len(m.Methods) {
 			break
 		}
