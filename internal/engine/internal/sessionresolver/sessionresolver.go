@@ -87,9 +87,9 @@ type Resolver struct {
 	// mu provides synchronisation of internal fields.
 	mu sync.Mutex
 
-	// once ensures that CloseIdleConnection is
-	// run just once.
-	once sync.Once
+	// closeOnce ensures that CloseIdleConnection is
+	// run just closeOnce.
+	closeOnce sync.Once
 
 	// res maps a URL to a child resolver. We will
 	// construct child resolvers just once and we
@@ -100,7 +100,7 @@ type Resolver struct {
 // CloseIdleConnections closes the idle connections, if any. This
 // function is guaranteed to be idempotent.
 func (r *Resolver) CloseIdleConnections() {
-	r.once.Do(r.closeall)
+	r.closeOnce.Do(r.closeall)
 }
 
 // Stats returns stats about the session resolver.
@@ -110,9 +110,11 @@ func (r *Resolver) Stats() string {
 	return fmt.Sprintf("sessionresolver: %s", string(data))
 }
 
+var errLookupHTTPSNotImplemented = errors.New("not implemented")
+
 // LookupHTTPS implements Resolver.LookupHTTPS.
 func (r *Resolver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
-	return nil, errors.New("not implemented")
+	return nil, errLookupHTTPSNotImplemented
 }
 
 // ErrLookupHost indicates that LookupHost failed.
@@ -131,7 +133,8 @@ func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, e
 			r.logger().Infof("sessionresolver: skipping with proxy: %+v", e)
 			continue // we cannot proxy this URL so ignore it
 		}
-		addrs, err := r.lookupHost(ctx, e, hostname)
+		addrs, score, err := r.lookupHost(ctx, e, hostname)
+		e.Score = score
 		if err == nil {
 			return addrs, nil
 		}
@@ -153,23 +156,23 @@ func (r *Resolver) shouldSkipWithProxy(e *resolverinfo) bool {
 	}
 }
 
-func (r *Resolver) lookupHost(ctx context.Context, ri *resolverinfo, hostname string) ([]string, error) {
+func (r *Resolver) lookupHost(ctx context.Context,
+	ri *resolverinfo, hostname string) ([]string, float64, error) {
 	const ewma = 0.9 // the last sample is very important
 	re, err := r.getresolver(ri.URL)
 	if err != nil {
 		r.logger().Warnf("sessionresolver: getresolver: %s", err.Error())
-		ri.Score = 0 // this is a hard error
-		return nil, err
+		return nil, 0, err
 	}
 	addrs, err := r.timeLimitedLookup(ctx, re, hostname)
 	if err == nil {
 		r.logger().Infof("sessionresolver: %s... %v", ri.URL, nil)
-		ri.Score = ewma*1.0 + (1-ewma)*ri.Score // increase score
-		return addrs, nil
+		score := ewma*1.0 + (1-ewma)*ri.Score // increase score
+		return addrs, score, nil
 	}
 	r.logger().Warnf("sessionresolver: %s... %s", ri.URL, err.Error())
-	ri.Score = ewma*0.0 + (1-ewma)*ri.Score // decrease score
-	return nil, err
+	score := ewma*0.0 + (1-ewma)*ri.Score // decrease score
+	return nil, score, err
 }
 
 // maybeConfusion will rearrange the  first elements of the vector

@@ -7,6 +7,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestDefaultByteCounter(t *testing.T) {
@@ -29,7 +30,12 @@ func TestDefaultLogger(t *testing.T) {
 func TestGetResolverHTTPSStandard(t *testing.T) {
 	bc := bytecounter.New()
 	URL := "https://dns.google"
-	re := &FakeResolver{}
+	var closed bool
+	re := &mocks.Resolver{
+		MockCloseIdleConnections: func() {
+			closed = true
+		},
+	}
 	cmk := &fakeDNSClientMaker{reso: re}
 	reso := &Resolver{dnsClientMaker: cmk, ByteCounter: bc}
 	out, err := reso.getresolver(URL)
@@ -47,7 +53,7 @@ func TestGetResolverHTTPSStandard(t *testing.T) {
 		t.Fatal("not the result we expected")
 	}
 	reso.closeall()
-	if re.Closed != true {
+	if closed != true {
 		t.Fatal("was not closed")
 	}
 	if cmk.savedURL != URL {
@@ -70,7 +76,12 @@ func TestGetResolverHTTPSStandard(t *testing.T) {
 func TestGetResolverHTTP3(t *testing.T) {
 	bc := bytecounter.New()
 	URL := "http3://dns.google"
-	re := &FakeResolver{}
+	var closed bool
+	re := &mocks.Resolver{
+		MockCloseIdleConnections: func() {
+			closed = true
+		},
+	}
 	cmk := &fakeDNSClientMaker{reso: re}
 	reso := &Resolver{dnsClientMaker: cmk, ByteCounter: bc}
 	out, err := reso.getresolver(URL)
@@ -88,7 +99,7 @@ func TestGetResolverHTTP3(t *testing.T) {
 		t.Fatal("not the result we expected")
 	}
 	reso.closeall()
-	if re.Closed != true {
+	if closed != true {
 		t.Fatal("was not closed")
 	}
 	if cmk.savedURL != strings.Replace(URL, "http3://", "https://", 1) {
