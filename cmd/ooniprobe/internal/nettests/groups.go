@@ -58,6 +58,7 @@ var All = map[string]Group{
 			STUNReachability{},
 			TorSf{},
 			VanillaTor{},
+			OpenVPN{},
 		},
 		UnattendedOK: true,
 	},
