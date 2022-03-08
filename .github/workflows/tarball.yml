@@ -1,0 +1,30 @@
+# vendors Go modules and publishes tarball
+name: tarball
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  generate_tarball:
+    runs-on: "ubuntu-20.04"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17.6
+      - name: Generate release tarball
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          go mod vendor
+          tar czf ooni-probe-cli-${VERSION}.tar.gz --transform "s,^,ooni-probe-cli-${VERSION}/," *
+      - name: Upload release tarball
+        run: |
+          gh release create -p $GITHUB_REF_NAME --target $GITHUB_SHA || true
+          gh release upload $GITHUB_REF_NAME --clobber ooni-probe-cli-*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
