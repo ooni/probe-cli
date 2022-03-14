@@ -56,5 +56,6 @@ var All = map[string]Group{
 			STUNReachability{},
 			TorSf{},
 		},
+		UnattendedOK: true,
 	},
 }
