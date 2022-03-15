@@ -22,6 +22,7 @@ var All = map[string]Group{
 			Dash{},
 			NDT{},
 		},
+		UnattendedOK: false,
 	},
 	"middlebox": {
 		Label: "Middleboxes",
