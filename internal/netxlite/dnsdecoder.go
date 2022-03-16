@@ -32,7 +32,11 @@ func (d *DNSDecoderMiekg) DecodeHTTPS(data []byte) (*model.HTTPSSvc, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := &model.HTTPSSvc{}
+	out := &model.HTTPSSvc{
+		ALPN: []string{}, // ensure it's not nil
+		IPv4: []string{}, // ensure it's not nil
+		IPv6: []string{}, // ensure it's not nil
+	}
 	for _, answer := range reply.Answer {
 		switch avalue := answer.(type) {
 		case *dns.HTTPS:
@@ -52,7 +56,7 @@ func (d *DNSDecoderMiekg) DecodeHTTPS(data []byte) (*model.HTTPSSvc, error) {
 			}
 		}
 	}
-	if len(out.ALPN) <= 0 {
+	if len(out.IPv4) <= 0 && len(out.IPv6) <= 0 {
 		return nil, ErrOODNSNoAnswer
 	}
 	return out, nil
