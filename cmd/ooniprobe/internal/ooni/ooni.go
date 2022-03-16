@@ -18,13 +18,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/pkg/errors"
-	"upper.io/db.v3/lib/sqlbuilder"
+	"github.com/upper/db/v4"
 )
 
 // ProbeCLI is the OONI Probe CLI context.
 type ProbeCLI interface {
 	Config() *config.Config
-	DB() sqlbuilder.Database
+	DB() db.Session
 	IsBatch() bool
 	Home() string
 	TempDir() string
@@ -44,7 +44,7 @@ type ProbeEngine interface {
 // Probe contains the ooniprobe CLI context.
 type Probe struct {
 	config  *config.Config
-	db      sqlbuilder.Database
+	db      db.Session
 	isBatch bool
 
 	home      string
@@ -76,7 +76,7 @@ func (p *Probe) Config() *config.Config {
 }
 
 // DB returns the database we're using
-func (p *Probe) DB() sqlbuilder.Database {
+func (p *Probe) DB() db.Session {
 	return p.db
 }
 

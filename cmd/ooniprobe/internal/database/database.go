@@ -8,8 +8,8 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	migrate "github.com/rubenv/sql-migrate"
-	"upper.io/db.v3/lib/sqlbuilder"
-	"upper.io/db.v3/sqlite"
+	"github.com/upper/db/v4"
+	"github.com/upper/db/v4/adapter/sqlite"
 )
 
 //go:embed migrations/*.sql
@@ -36,14 +36,14 @@ func readAssetDir(path string) ([]string, error) {
 }
 
 // RunMigrations runs the database migrations
-func RunMigrations(db *sql.DB) error {
+func RunMigrations(sess *sql.DB) error {
 	log.Debugf("running migrations")
 	migrations := &migrate.AssetMigrationSource{
 		Asset:    readAsset,
 		AssetDir: readAssetDir,
 		Dir:      "migrations",
 	}
-	n, err := migrate.Exec(db, "sqlite3", migrations, migrate.Up)
+	n, err := migrate.Exec(sess, "sqlite3", migrations, migrate.Up)
 	if err != nil {
 		return err
 	}
@@ -52,12 +52,12 @@ func RunMigrations(db *sql.DB) error {
 }
 
 // Connect to the database
-func Connect(path string) (db sqlbuilder.Database, err error) {
+func Connect(path string) (sess db.Session, err error) {
 	settings := sqlite.ConnectionURL{
 		Database: path,
 		Options:  map[string]string{"_foreign_keys": "1"},
 	}
-	sess, err := sqlite.Open(settings)
+	sess, err = sqlite.Open(settings)
 	if err != nil {
 		log.WithError(err).Error("failed to open the DB")
 		return nil, err

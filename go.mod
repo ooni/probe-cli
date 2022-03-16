@@ -43,9 +43,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rogpeppe/go-internal v1.8.1
 	github.com/rubenv/sql-migrate v1.0.0
-	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/templexxx/cpu v0.0.9 // indirect
 	github.com/tjfoc/gmsm v1.4.1 // indirect
+	github.com/upper/db/v4 v4.5.2
 	github.com/xtaci/smux v1.5.16 // indirect
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	gitlab.com/yawning/obfs4.git v0.0.0-20220102012252-cbf3f3cfa09c
@@ -55,6 +55,4 @@ require (
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/tools v0.1.8 // indirect
-	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
-	upper.io/db.v3 v3.8.0+incompatible
 )

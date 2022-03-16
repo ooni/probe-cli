@@ -13,7 +13,7 @@ import (
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
-	"upper.io/db.v3/lib/sqlbuilder"
+	"github.com/upper/db/v4"
 )
 
 // Nettest interface. Every Nettest should implement this.
@@ -78,7 +78,7 @@ type Controller struct {
 //
 // Arguments:
 //
-// - db is the database in which to register the URL;
+// - sess is the database in which to register the URL;
 //
 // - testlist is the result from the check-in API (or possibly
 // a manually constructed list when applicable, e.g., for dnscheck
@@ -90,13 +90,13 @@ type Controller struct {
 //
 // - on failure, an error.
 func (c *Controller) BuildAndSetInputIdxMap(
-	db sqlbuilder.Database, testlist []model.OOAPIURLInfo) ([]string, error) {
+	sess db.Session, testlist []model.OOAPIURLInfo) ([]string, error) {
 	var urls []string
 	urlIDMap := make(map[int64]int64)
 	for idx, url := range testlist {
 		log.Debugf("Going over URL %d", idx)
 		urlID, err := database.CreateOrUpdateURL(
-			db, url.URL, url.CategoryCode, url.CountryCode,
+			sess, url.URL, url.CategoryCode, url.CountryCode,
 		)
 		if err != nil {
 			log.Error("failed to add to the URL table")

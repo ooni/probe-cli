@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"upper.io/db.v3/lib/sqlbuilder"
+	"github.com/upper/db/v4"
 )
 
 // ResultNetwork is used to represent the structure made from the JOIN
@@ -98,7 +98,7 @@ type PerformanceTestKeys struct {
 }
 
 // Finished marks the result as done and sets the runtime
-func (r *Result) Finished(sess sqlbuilder.Database) error {
+func (r *Result) Finished(sess db.Session) error {
 	if r.IsDone == true || r.Runtime != 0 {
 		return errors.New("Result is already finished")
 	}
@@ -113,7 +113,7 @@ func (r *Result) Finished(sess sqlbuilder.Database) error {
 }
 
 // Failed writes the error string to the measurement
-func (m *Measurement) Failed(sess sqlbuilder.Database, failure string) error {
+func (m *Measurement) Failed(sess db.Session, failure string) error {
 	m.FailureMsg = sql.NullString{String: failure, Valid: true}
 	m.IsFailed = true
 	err := sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
@@ -124,7 +124,7 @@ func (m *Measurement) Failed(sess sqlbuilder.Database, failure string) error {
 }
 
 // Done marks the measurement as completed
-func (m *Measurement) Done(sess sqlbuilder.Database) error {
+func (m *Measurement) Done(sess db.Session) error {
 	runtime := time.Now().UTC().Sub(m.StartTime)
 	m.Runtime = runtime.Seconds()
 	m.IsDone = true
@@ -137,7 +137,7 @@ func (m *Measurement) Done(sess sqlbuilder.Database) error {
 }
 
 // UploadFailed writes the error string for the upload failure to the measurement
-func (m *Measurement) UploadFailed(sess sqlbuilder.Database, failure string) error {
+func (m *Measurement) UploadFailed(sess db.Session, failure string) error {
 	m.UploadFailureMsg = sql.NullString{String: failure, Valid: true}
 	m.IsUploaded = false
 
@@ -149,7 +149,7 @@ func (m *Measurement) UploadFailed(sess sqlbuilder.Database, failure string) err
 }
 
 // UploadSucceeded writes the error string for the upload failure to the measurement
-func (m *Measurement) UploadSucceeded(sess sqlbuilder.Database) error {
+func (m *Measurement) UploadSucceeded(sess db.Session) error {
 	m.IsUploaded = true
 
 	err := sess.Collection("measurements").Find("measurement_id", m.ID).Update(m)
