@@ -142,6 +142,12 @@ func (c *apiClient) newRequestWithJSONBody(
 	return request, nil
 }
 
+// joinURLPath joins the BaseURL and the URLPath, allows httpx to access the URL
+func (c *apiClient) joinURLPath(URLPath string) string {
+	accessURL := c.BaseURL + URLPath
+	return accessURL
+}
+
 // newRequest creates a new request.
 func (c *apiClient) newRequest(ctx context.Context, method, resourcePath string,
 	query url.Values, body io.Reader) (*http.Request, error) {
