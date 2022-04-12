@@ -33,7 +33,7 @@ require (
 	github.com/montanaflynn/stats v0.6.6
 	github.com/ooni/go-libtor v1.1.4
 	github.com/ooni/oohttp v0.0.0-20220118112935-940b7f7db71e
-	github.com/ooni/probe-assets v0.7.0
+	github.com/ooni/probe-assets v0.8.0
 	github.com/ooni/psiphon/tunnel-core v0.0.0-20220121102537-7fc0bcd97c5f
 	github.com/oschwald/geoip2-golang v1.5.0
 	github.com/pborman/getopt/v2 v2.1.0
@@ -56,5 +56,6 @@ require (
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/tools v0.1.8 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
+	gopkg.in/yaml.v2 v2.4.0
 	upper.io/db.v3 v3.8.0+incompatible
 )
