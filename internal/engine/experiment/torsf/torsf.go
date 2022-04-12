@@ -42,6 +42,9 @@ type TestKeys struct {
 	// BootstrapTime contains the bootstrap time on success.
 	BootstrapTime float64 `json:"bootstrap_time"`
 
+	// DefaultTimeout contains the default timeout for torsf
+	DefaultTimeout float64 `json:"default_timeout"`
+
 	// Failure contains the failure string or nil.
 	Failure *string `json:"failure"`
 
@@ -113,7 +116,7 @@ func (m *Measurer) Run(
 	tkch := make(chan *TestKeys)
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
-	go m.bootstrap(ctx, sess, tkch, ptl, sfdialer)
+	go m.bootstrap(ctx, maxRuntime, sess, tkch, ptl, sfdialer)
 	for {
 		select {
 		case tk := <-tkch:
@@ -159,10 +162,11 @@ func (m *Measurer) setup(ctx context.Context,
 }
 
 // bootstrap runs the bootstrap.
-func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
+func (m *Measurer) bootstrap(ctx context.Context, timeout time.Duration, sess model.ExperimentSession,
 	out chan<- *TestKeys, ptl *ptx.Listener, sfdialer *ptx.SnowflakeDialer) {
 	tk := &TestKeys{
 		BootstrapTime:     0,
+		DefaultTimeout:    timeout.Seconds(),
 		Failure:           nil,
 		PersistentDatadir: !m.config.DisablePersistentDatadir,
 		RendezvousMethod:  sfdialer.RendezvousMethod.Name(),
