@@ -11,7 +11,9 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        go: [ "1.17.8" ]
+        go:
+          - "1.17.8"
+          - "1.18"
     steps:
       - uses: actions/setup-go@v1
         with:
