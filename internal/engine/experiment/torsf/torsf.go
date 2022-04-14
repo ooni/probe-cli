@@ -198,7 +198,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 //
 // See https://regex101.com/r/3YfIed/1.
 var torProgressRegexp = regexp.MustCompile(
-	`^[A-Za-z0-9.: ]+ \[notice\] Bootstrapped [0-9]+% \([a-zA-z]+\): [A-Za-z0-9 ]+$`)
+	`^[A-Za-z0-9.: ]+ \[notice\] Bootstrapped [0-9]+% \([A-Za-z_]+\): [A-Za-z0-9 ]+$`)
 
 // readTorLogs attempts to read and include the tor logs into
 // the test keys if this operation is possible.
