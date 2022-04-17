@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -307,13 +308,28 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 }
 
 // NewTLSHandshakesList creates a new TLSHandshakesList
-func NewTLSHandshakesList(begin time.Time, events []trace.Event) []TLSHandshake {
+func NewTLSHandshakesList(begin time.Time, target string, events []trace.Event) []TLSHandshake {
+	// add ip address to TLSHandshakesList
+	// check here: https://github.com/ooni/probe/issues/2065
+	var address string
+	targetURL, err := url.Parse(target)
+	if err == nil {
+		address = targetURL.Hostname()
+		if net.ParseIP(address) == nil {
+			addrs, err := net.LookupHost(address)
+			if err == nil && len(addrs) > 0 {
+				address = addrs[0]
+			}
+		}
+	}
+
 	var out []TLSHandshake
 	for _, ev := range events {
 		if !strings.Contains(ev.Name, "_handshake_done") {
 			continue
 		}
 		out = append(out, TLSHandshake{
+			Address:            address,
 			CipherSuite:        ev.TLSCipherSuite,
 			Failure:            NewFailure(ev.Err),
 			NegotiatedProtocol: ev.TLSNegotiatedProto,

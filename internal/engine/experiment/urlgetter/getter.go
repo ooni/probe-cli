@@ -77,7 +77,7 @@ func (g Getter) Get(ctx context.Context) (TestKeys, error) {
 		tk.TCPConnect, archival.NewTCPConnectList(g.Begin, events)...,
 	)
 	tk.TLSHandshakes = append(
-		tk.TLSHandshakes, archival.NewTLSHandshakesList(g.Begin, events)...,
+		tk.TLSHandshakes, archival.NewTLSHandshakesList(g.Begin, g.Target, events)...,
 	)
 	return tk, err
 }
