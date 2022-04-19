@@ -545,7 +545,7 @@ func TestNewTLSHandshakesList(t *testing.T) {
 			}},
 		},
 		want: []archival.TLSHandshake{{
-			Address:            "131.252.210.176",
+			Address:            "131.252.210.176:443",
 			CipherSuite:        "SUITE",
 			Failure:            archival.NewFailure(io.EOF),
 			NegotiatedProtocol: "h2",
