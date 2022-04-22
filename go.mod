@@ -25,7 +25,7 @@ require (
 	github.com/miekg/dns v1.1.48
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.6.6
-	github.com/ooni/go-libtor v1.1.4
+	github.com/ooni/go-libtor v1.1.5
 	github.com/ooni/oohttp v0.0.0-20220412070944-b683bc0f8d53
 	github.com/ooni/probe-assets v0.8.0
 	github.com/ooni/psiphon/tunnel-core v0.0.0-20220412085408-7a0d17ea91f8
@@ -39,8 +39,7 @@ require (
 	gitlab.com/yawning/utls.git v0.0.12-1
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
-	golang.org/x/sys v0.0.0-20220412071739-889880a91fd5
-	gopkg.in/yaml.v2 v2.4.0
+	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150
 	upper.io/db.v3 v3.8.0+incompatible
 )
 
