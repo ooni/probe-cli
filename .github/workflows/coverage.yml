@@ -12,8 +12,8 @@ jobs:
     strategy:
       matrix:
         go:
-          - "1.17.8"
-          - "1.18"
+          - "1.17.9"
+          - "1.18.1"
     steps:
       - uses: actions/setup-go@v1
         with:
