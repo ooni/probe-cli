@@ -504,7 +504,6 @@ func TestNewTLSHandshakesList(t *testing.T) {
 	begin := time.Now()
 	type args struct {
 		begin  time.Time
-		target string
 		events []trace.Event
 	}
 	tests := []struct {
@@ -515,20 +514,19 @@ func TestNewTLSHandshakesList(t *testing.T) {
 		name: "empty run",
 		args: args{
 			begin:  begin,
-			target: "tlshandshake://0.0.0.0:443",
 			events: nil,
 		},
 		want: nil,
 	}, {
 		name: "realistic run",
 		args: args{
-			begin:  begin,
-			target: "tlshandshake://131.252.210.176:443",
+			begin: begin,
 			events: []trace.Event{{
 				Name: netxlite.CloseOperation,
 				Err:  websocket.ErrReadLimit,
 				Time: begin.Add(17 * time.Millisecond),
 			}, {
+				Address:            "131.252.210.176:443",
 				Name:               "tls_handshake_done",
 				Err:                io.EOF,
 				NoTLSVerify:        false,
@@ -562,7 +560,7 @@ func TestNewTLSHandshakesList(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := archival.NewTLSHandshakesList(tt.args.begin, tt.args.target, tt.args.events); !reflect.DeepEqual(got, tt.want) {
+			if got := archival.NewTLSHandshakesList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
 				t.Error(cmp.Diff(got, tt.want))
 			}
 		})

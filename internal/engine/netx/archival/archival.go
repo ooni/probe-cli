@@ -8,7 +8,6 @@ import (
 	"errors"
 	"net"
 	"net/http"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -308,27 +307,14 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 }
 
 // NewTLSHandshakesList creates a new TLSHandshakesList
-func NewTLSHandshakesList(begin time.Time, target string, events []trace.Event) []TLSHandshake {
-	// setting a default value if the handshake is performed
-	// without a connect operation
-	// This requires target to be an IP which may not always be the case
-	address := target
-	targetURL, err := url.Parse(target)
-	if err == nil {
-		address = targetURL.Host
-	}
+func NewTLSHandshakesList(begin time.Time, events []trace.Event) []TLSHandshake {
 	var out []TLSHandshake
 	for _, ev := range events {
-		// check for a tcp connect event before the handshake
-		// and extract the IP address here
-		if ev.Name == netxlite.ConnectOperation {
-			address = ev.Address
-		}
 		if !strings.Contains(ev.Name, "_handshake_done") {
 			continue
 		}
 		out = append(out, TLSHandshake{
-			Address:            address,
+			Address:            ev.Address,
 			CipherSuite:        ev.TLSCipherSuite,
 			Failure:            NewFailure(ev.Err),
 			NegotiatedProtocol: ev.TLSNegotiatedProto,
