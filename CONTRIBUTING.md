@@ -10,7 +10,7 @@ reviewer is satisfied, they will merge the pull request.
 Please, make sure you read [OONI Software Development Guidelines](
 https://ooni.org/post/ooni-software-development-guidelines/). We try in
 general to follow these guidelines when working on ooni/probe-cli. In
-the unlikely care where those guidelines conflict with this document, this
+the unlikely case where those guidelines conflict with this document, this
 document will take precedence.
 
 ## Golang Resources
