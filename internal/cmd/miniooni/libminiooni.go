@@ -412,7 +412,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 
 	inputLoader := &engine.InputLoader{
 		CheckInConfig: &model.OOAPICheckInConfig{
-			RunType:  "manual",
+			RunType:  model.RunTypeManual,
 			OnWiFi:   true, // meaning: not on 4G
 			Charging: true,
 		},

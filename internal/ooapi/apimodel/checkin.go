@@ -1,5 +1,7 @@
 package apimodel
 
+import "github.com/ooni/probe-cli/v3/internal/model"
+
 // CheckInRequestWebConnectivity contains WebConnectivity
 // specific parameters to include into CheckInRequest
 type CheckInRequestWebConnectivity struct {
@@ -13,7 +15,7 @@ type CheckInRequest struct {
 	Platform        string                        `json:"platform"`
 	ProbeASN        string                        `json:"probe_asn"`
 	ProbeCC         string                        `json:"probe_cc"`
-	RunType         string                        `json:"run_type"`
+	RunType         model.RunType                 `json:"run_type"`
 	SoftwareName    string                        `json:"software_name"`
 	SoftwareVersion string                        `json:"software_version"`
 	WebConnectivity CheckInRequestWebConnectivity `json:"web_connectivity"`

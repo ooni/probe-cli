@@ -16,7 +16,7 @@ type OOAPICheckInConfig struct {
 	Platform        string                            `json:"platform"`         // Platform of the probe
 	ProbeASN        string                            `json:"probe_asn"`        // ProbeASN is the probe country code
 	ProbeCC         string                            `json:"probe_cc"`         // ProbeCC is the probe country code
-	RunType         string                            `json:"run_type"`         // RunType
+	RunType         RunType                           `json:"run_type"`         // RunType
 	SoftwareName    string                            `json:"software_name"`    // SoftwareName of the probe
 	SoftwareVersion string                            `json:"software_version"` // SoftwareVersion of the probe
 	WebConnectivity OOAPICheckInConfigWebConnectivity `json:"web_connectivity"` // WebConnectivity class contain an array of categories

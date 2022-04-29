@@ -55,8 +55,8 @@ type Controller struct {
 	Inputs []string
 
 	// RunType contains the run_type hint for the CheckIn API. If
-	// not set, the underlying code defaults to "timed".
-	RunType string
+	// not set, the underlying code defaults to model.RunTypeTimed.
+	RunType model.RunType
 
 	// numInputs is the total number of inputs
 	numInputs int
@@ -154,7 +154,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 	}
 
 	maxRuntime := time.Duration(c.Probe.Config().Nettests.WebsitesMaxRuntime) * time.Second
-	if c.RunType == "timed" && maxRuntime > 0 {
+	if c.RunType == model.RunTypeTimed && maxRuntime > 0 {
 		log.Debug("disabling maxRuntime when running in the background")
 		maxRuntime = 0
 	}
@@ -267,7 +267,7 @@ func (c *Controller) OnProgress(perc float64, msg string) {
 	maxRuntime := time.Duration(c.Probe.Config().Nettests.WebsitesMaxRuntime) * time.Second
 	_, isWebConnectivity := c.nt.(WebConnectivity)
 	userProvidedInput := len(c.Inputs) > 0 || len(c.InputFiles) > 0
-	if c.RunType == "manual" && maxRuntime > 0 && isWebConnectivity && !userProvidedInput {
+	if c.RunType == model.RunTypeManual && maxRuntime > 0 && isWebConnectivity && !userProvidedInput {
 		elapsed := time.Since(c.ntStartTime)
 		perc = float64(elapsed) / float64(maxRuntime)
 		eta := maxRuntime.Seconds() - elapsed.Seconds()

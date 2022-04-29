@@ -364,9 +364,9 @@ type CheckInConfig struct {
 	// Platform is the mobile platform (e.g. "android")
 	Platform string
 
-	// RunType indicates whether this is an automated ("timed") run
+	// RunType indicates whether this is an automated (model.RunTypeTimed) run
 	// or otherwise a manual run initiated by the user.
-	RunType string
+	RunType model.RunType
 
 	// SoftwareName is the name of the application.
 	SoftwareName string

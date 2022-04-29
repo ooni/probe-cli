@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/ooapi"
 	"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel"
 )
@@ -21,7 +22,7 @@ func ExampleClient() {
 		Platform:        "linux",
 		ProbeASN:        "AS30722",
 		ProbeCC:         "IT",
-		RunType:         "timed",
+		RunType:         model.RunTypeTimed,
 		SoftwareName:    "miniooni",
 		SoftwareVersion: "0.1.0-dev",
 		WebConnectivity: apimodel.CheckInRequestWebConnectivity{
