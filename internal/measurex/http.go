@@ -96,7 +96,7 @@ func (mx *Measurer) NewHTTPTransportWithTLSConn(
 // NewHTTPTransportWithQUICSess creates and wraps an HTTPTransport that
 // does not dial and only uses the given QUIC session.
 func (mx *Measurer) NewHTTPTransportWithQUICSess(
-	logger model.Logger, db WritableDB, sess quic.EarlySession) *HTTPTransportDB {
+	logger model.Logger, db WritableDB, sess quic.EarlyConnection) *HTTPTransportDB {
 	return mx.WrapHTTPTransport(db, netxlite.NewHTTP3Transport(
 		logger, netxlite.NewSingleUseQUICDialer(sess), &tls.Config{}))
 }

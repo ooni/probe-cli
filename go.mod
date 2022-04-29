@@ -19,7 +19,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/iancoleman/strcase v0.2.0
-	github.com/lucas-clemente/quic-go v0.26.0
+	github.com/lucas-clemente/quic-go v0.27.0
 	github.com/marten-seemann/qtls-go1-17 v0.1.1
 	github.com/mattn/go-colorable v0.1.12
 	github.com/miekg/dns v1.1.48

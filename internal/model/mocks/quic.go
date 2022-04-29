@@ -25,7 +25,7 @@ func (ql *QUICListener) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
 type QUICDialer struct {
 	// MockDialContext allows mocking DialContext.
 	MockDialContext func(ctx context.Context, network, address string,
-		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error)
+		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error)
 
 	// MockCloseIdleConnections allows mocking CloseIdleConnections.
 	MockCloseIdleConnections func()
@@ -33,7 +33,7 @@ type QUICDialer struct {
 
 // DialContext calls MockDialContext.
 func (qcd *QUICDialer) DialContext(ctx context.Context, network, address string,
-	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 	return qcd.MockDialContext(ctx, network, address, tlsConfig, quicConfig)
 }
 
@@ -42,8 +42,8 @@ func (qcd *QUICDialer) CloseIdleConnections() {
 	qcd.MockCloseIdleConnections()
 }
 
-// QUICEarlySession is a mockable quic.EarlySession.
-type QUICEarlySession struct {
+// QUICEarlyConnection is a mockable quic.EarlyConnection.
+type QUICEarlyConnection struct {
 	MockAcceptStream      func(context.Context) (quic.Stream, error)
 	MockAcceptUniStream   func(context.Context) (quic.ReceiveStream, error)
 	MockOpenStream        func() (quic.Stream, error)
@@ -56,86 +56,86 @@ type QUICEarlySession struct {
 	MockContext           func() context.Context
 	MockConnectionState   func() quic.ConnectionState
 	MockHandshakeComplete func() context.Context
-	MockNextSession       func() quic.Session
+	MockNextConnection    func() quic.Connection
 	MockSendMessage       func(b []byte) error
 	MockReceiveMessage    func() ([]byte, error)
 }
 
-var _ quic.EarlySession = &QUICEarlySession{}
+var _ quic.EarlyConnection = &QUICEarlyConnection{}
 
 // AcceptStream calls MockAcceptStream.
-func (s *QUICEarlySession) AcceptStream(ctx context.Context) (quic.Stream, error) {
+func (s *QUICEarlyConnection) AcceptStream(ctx context.Context) (quic.Stream, error) {
 	return s.MockAcceptStream(ctx)
 }
 
 // AcceptUniStream calls MockAcceptUniStream.
-func (s *QUICEarlySession) AcceptUniStream(ctx context.Context) (quic.ReceiveStream, error) {
+func (s *QUICEarlyConnection) AcceptUniStream(ctx context.Context) (quic.ReceiveStream, error) {
 	return s.MockAcceptUniStream(ctx)
 }
 
 // OpenStream calls MockOpenStream.
-func (s *QUICEarlySession) OpenStream() (quic.Stream, error) {
+func (s *QUICEarlyConnection) OpenStream() (quic.Stream, error) {
 	return s.MockOpenStream()
 }
 
 // OpenStreamSync calls MockOpenStreamSync.
-func (s *QUICEarlySession) OpenStreamSync(ctx context.Context) (quic.Stream, error) {
+func (s *QUICEarlyConnection) OpenStreamSync(ctx context.Context) (quic.Stream, error) {
 	return s.MockOpenStreamSync(ctx)
 }
 
 // OpenUniStream calls MockOpenUniStream.
-func (s *QUICEarlySession) OpenUniStream() (quic.SendStream, error) {
+func (s *QUICEarlyConnection) OpenUniStream() (quic.SendStream, error) {
 	return s.MockOpenUniStream()
 }
 
 // OpenUniStreamSync calls MockOpenUniStreamSync.
-func (s *QUICEarlySession) OpenUniStreamSync(ctx context.Context) (quic.SendStream, error) {
+func (s *QUICEarlyConnection) OpenUniStreamSync(ctx context.Context) (quic.SendStream, error) {
 	return s.MockOpenUniStreamSync(ctx)
 }
 
 // LocalAddr class MockLocalAddr.
-func (c *QUICEarlySession) LocalAddr() net.Addr {
+func (c *QUICEarlyConnection) LocalAddr() net.Addr {
 	return c.MockLocalAddr()
 }
 
 // RemoteAddr calls MockRemoteAddr.
-func (c *QUICEarlySession) RemoteAddr() net.Addr {
+func (c *QUICEarlyConnection) RemoteAddr() net.Addr {
 	return c.MockRemoteAddr()
 }
 
 // CloseWithError calls MockCloseWithError.
-func (c *QUICEarlySession) CloseWithError(
+func (c *QUICEarlyConnection) CloseWithError(
 	code quic.ApplicationErrorCode, reason string) error {
 	return c.MockCloseWithError(code, reason)
 }
 
 // Context calls MockContext.
-func (s *QUICEarlySession) Context() context.Context {
+func (s *QUICEarlyConnection) Context() context.Context {
 	return s.MockContext()
 }
 
 // ConnectionState calls MockConnectionState.
-func (s *QUICEarlySession) ConnectionState() quic.ConnectionState {
+func (s *QUICEarlyConnection) ConnectionState() quic.ConnectionState {
 	return s.MockConnectionState()
 }
 
 // HandshakeComplete calls MockHandshakeComplete.
-func (s *QUICEarlySession) HandshakeComplete() context.Context {
+func (s *QUICEarlyConnection) HandshakeComplete() context.Context {
 	return s.MockHandshakeComplete()
 }
 
 // NextSession calls MockNextSession.
-func (s *QUICEarlySession) NextSession() quic.Session {
-	return s.MockNextSession()
+func (s *QUICEarlyConnection) NextConnection() quic.Connection {
+	return s.MockNextConnection()
 }
 
 // SendMessage calls MockSendMessage.
-func (s *QUICEarlySession) SendMessage(b []byte) error {
+func (s *QUICEarlyConnection) SendMessage(b []byte) error {
 	return s.MockSendMessage(b)
 }
 
 // ReceiveMessage calls MockReceiveMessage.
-func (s *QUICEarlySession) ReceiveMessage() ([]byte, error) {
+func (s *QUICEarlyConnection) ReceiveMessage() ([]byte, error) {
 	return s.MockReceiveMessage()
 }
 

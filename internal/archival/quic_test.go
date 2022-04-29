@@ -184,11 +184,11 @@ func TestSaverReadFrom(t *testing.T) {
 
 func TestSaverQUICDialContext(t *testing.T) {
 	// newQUICDialer creates a new QUICDialer for testing.
-	newQUICDialer := func(sess quic.EarlySession, err error) model.QUICDialer {
+	newQUICDialer := func(sess quic.EarlyConnection, err error) model.QUICDialer {
 		return &mocks.QUICDialer{
 			MockDialContext: func(
 				ctx context.Context, network, address string, tlsConfig *tls.Config,
-				quicConfig *quic.Config) (quic.EarlySession, error) {
+				quicConfig *quic.Config) (quic.EarlyConnection, error) {
 				time.Sleep(time.Microsecond)
 				return sess, err
 			},
@@ -196,8 +196,8 @@ func TestSaverQUICDialContext(t *testing.T) {
 	}
 
 	// newQUICSession creates a new quic.EarlySession for testing.
-	newQUICSession := func(handshakeComplete context.Context, state tls.ConnectionState) quic.EarlySession {
-		return &mocks.QUICEarlySession{
+	newQUICSession := func(handshakeComplete context.Context, state tls.ConnectionState) quic.EarlyConnection {
+		return &mocks.QUICEarlyConnection{
 			MockHandshakeComplete: func() context.Context {
 				return handshakeComplete
 			},

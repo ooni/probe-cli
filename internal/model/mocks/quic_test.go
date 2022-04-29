@@ -37,7 +37,7 @@ func TestQUICDialer(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		qcd := &QUICDialer{
-			MockDialContext: func(ctx context.Context, network string, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+			MockDialContext: func(ctx context.Context, network string, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 				return nil, expected
 			},
 		}
@@ -67,10 +67,10 @@ func TestQUICDialer(t *testing.T) {
 	})
 }
 
-func TestQUICEarlySession(t *testing.T) {
+func TestQUICEarlyConnection(t *testing.T) {
 	t.Run("AcceptStream", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockAcceptStream: func(ctx context.Context) (quic.Stream, error) {
 				return nil, expected
 			},
@@ -87,7 +87,7 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("AcceptUniStream", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockAcceptUniStream: func(ctx context.Context) (quic.ReceiveStream, error) {
 				return nil, expected
 			},
@@ -104,7 +104,7 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("OpenStream", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockOpenStream: func() (quic.Stream, error) {
 				return nil, expected
 			},
@@ -120,7 +120,7 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("OpenStreamSync", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockOpenStreamSync: func(ctx context.Context) (quic.Stream, error) {
 				return nil, expected
 			},
@@ -137,7 +137,7 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("OpenUniStream", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockOpenUniStream: func() (quic.SendStream, error) {
 				return nil, expected
 			},
@@ -153,7 +153,7 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("OpenUniStreamSync", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockOpenUniStreamSync: func(ctx context.Context) (quic.SendStream, error) {
 				return nil, expected
 			},
@@ -169,7 +169,7 @@ func TestQUICEarlySession(t *testing.T) {
 	})
 
 	t.Run("LocalAddr", func(t *testing.T) {
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockLocalAddr: func() net.Addr {
 				return &net.UDPAddr{}
 			},
@@ -181,7 +181,7 @@ func TestQUICEarlySession(t *testing.T) {
 	})
 
 	t.Run("RemoteAddr", func(t *testing.T) {
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockRemoteAddr: func() net.Addr {
 				return &net.UDPAddr{}
 			},
@@ -194,7 +194,7 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("CloseWithError", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockCloseWithError: func(
 				code quic.ApplicationErrorCode, reason string) error {
 				return expected
@@ -208,7 +208,7 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("Context", func(t *testing.T) {
 		ctx := context.Background()
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockContext: func() context.Context {
 				return ctx
 			},
@@ -221,7 +221,7 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("ConnectionState", func(t *testing.T) {
 		state := quic.ConnectionState{SupportsDatagrams: true}
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockConnectionState: func() quic.ConnectionState {
 				return state
 			},
@@ -234,7 +234,7 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("HandshakeComplete", func(t *testing.T) {
 		ctx := context.Background()
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockHandshakeComplete: func() context.Context {
 				return ctx
 			},
@@ -246,13 +246,13 @@ func TestQUICEarlySession(t *testing.T) {
 	})
 
 	t.Run("NextSession", func(t *testing.T) {
-		next := &QUICEarlySession{}
-		sess := &QUICEarlySession{
-			MockNextSession: func() quic.Session {
+		next := &QUICEarlyConnection{}
+		sess := &QUICEarlyConnection{
+			MockNextConnection: func() quic.Connection {
 				return next
 			},
 		}
-		out := sess.NextSession()
+		out := sess.NextConnection()
 		if !reflect.DeepEqual(next, out) {
 			t.Fatal("not the context we expected")
 		}
@@ -260,7 +260,7 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("SendMessage", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockSendMessage: func(b []byte) error {
 				return expected
 			},
@@ -274,7 +274,7 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("ReceiveMessage", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		sess := &QUICEarlyConnection{
 			MockReceiveMessage: func() ([]byte, error) {
 				return nil, expected
 			},

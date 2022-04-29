@@ -153,7 +153,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				QUICListener: &quicListenerStdlib{},
 				mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, host string, tlsConfig *tls.Config,
-					quicConfig *quic.Config) (quic.EarlySession, error) {
+					quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					gotTLSConfig = tlsConfig
 					return nil, expected
 				},
@@ -194,7 +194,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				QUICListener: &quicListenerStdlib{},
 				mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, host string, tlsConfig *tls.Config,
-					quicConfig *quic.Config) (quic.EarlySession, error) {
+					quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					gotTLSConfig = tlsConfig
 					return nil, expected
 				},
@@ -318,7 +318,7 @@ func TestQUICDialerResolver(t *testing.T) {
 				Resolver: NewResolverStdlib(log.Log),
 				Dialer: &mocks.QUICDialer{
 					MockDialContext: func(ctx context.Context, network, address string,
-						tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+						tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 						gotTLSConfig = tlsConfig
 						return nil, expected
 					},
@@ -387,8 +387,8 @@ func TestQUICLoggerDialer(t *testing.T) {
 				Dialer: &mocks.QUICDialer{
 					MockDialContext: func(ctx context.Context, network string,
 						address string, tlsConfig *tls.Config,
-						quicConfig *quic.Config) (quic.EarlySession, error) {
-						return &mocks.QUICEarlySession{
+						quicConfig *quic.Config) (quic.EarlyConnection, error) {
+						return &mocks.QUICEarlyConnection{
 							MockCloseWithError: func(
 								code quic.ApplicationErrorCode, reason string) error {
 								return nil
@@ -425,7 +425,7 @@ func TestQUICLoggerDialer(t *testing.T) {
 				Dialer: &mocks.QUICDialer{
 					MockDialContext: func(ctx context.Context, network string,
 						address string, tlsConfig *tls.Config,
-						quicConfig *quic.Config) (quic.EarlySession, error) {
+						quicConfig *quic.Config) (quic.EarlyConnection, error) {
 						return nil, expected
 					},
 				},
@@ -449,7 +449,7 @@ func TestQUICLoggerDialer(t *testing.T) {
 }
 
 func TestNewSingleUseQUICDialer(t *testing.T) {
-	sess := &mocks.QUICEarlySession{}
+	sess := &mocks.QUICEarlyConnection{}
 	qd := NewSingleUseQUICDialer(sess)
 	defer qd.CloseIdleConnections()
 	outsess, err := qd.DialContext(
@@ -649,10 +649,10 @@ func TestQUICDialerErrWrapper(t *testing.T) {
 
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
-			expectedSess := &mocks.QUICEarlySession{}
+			expectedSess := &mocks.QUICEarlyConnection{}
 			d := &quicDialerErrWrapper{
 				QUICDialer: &mocks.QUICDialer{
-					MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+					MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 						return expectedSess, nil
 					},
 				},
@@ -671,7 +671,7 @@ func TestQUICDialerErrWrapper(t *testing.T) {
 			expectedErr := io.EOF
 			d := &quicDialerErrWrapper{
 				QUICDialer: &mocks.QUICDialer{
-					MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+					MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 						return nil, expectedErr
 					},
 				},
