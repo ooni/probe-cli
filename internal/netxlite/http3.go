@@ -18,11 +18,12 @@ type http3Dialer struct {
 	model.QUICDialer
 }
 
-// dial is like QUICContextDialer.DialContext but without context.
-func (d *http3Dialer) dial(network, address string, tlsConfig *tls.Config,
-	quicConfig *quic.Config) (quic.EarlySession, error) {
+// dial is like QUICContextDialer.DialContext
+func (d *http3Dialer) dial(ctx context.Context, network string, address string, tlsConfig *tls.Config,
+	quicConfig *quic.Config) (quic.EarlyConnection, error) {
+	// replacing background context with the passed parameter
 	return d.QUICDialer.DialContext(
-		context.Background(), network, address, tlsConfig, quicConfig)
+		ctx, network, address, tlsConfig, quicConfig)
 }
 
 // http3RoundTripper is the abstract type of quic-go/http3.RoundTripper.

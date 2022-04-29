@@ -19,12 +19,13 @@ func TestHTTP3Dialer(t *testing.T) {
 		expected := errors.New("mocked error")
 		d := &http3Dialer{
 			QUICDialer: &mocks.QUICDialer{
-				MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+				MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					return nil, expected
 				},
 			},
 		}
-		sess, err := d.dial("", "", &tls.Config{}, &quic.Config{})
+		// passing background context
+		sess, err := d.dial(context.Background(), "", "", &tls.Config{}, &quic.Config{})
 		if !errors.Is(err, expected) {
 			t.Fatal("unexpected err", err)
 		}
