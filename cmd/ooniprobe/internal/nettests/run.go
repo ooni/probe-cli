@@ -8,6 +8,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
 )
 
@@ -17,7 +18,7 @@ type RunGroupConfig struct {
 	InputFiles []string
 	Inputs     []string
 	Probe      *ooni.Probe
-	RunType    string // hint for check-in API
+	RunType    model.RunType // hint for check-in API
 }
 
 const websitesURLLimitRemoved = `WARNING: CONFIGURATION CHANGE REQUIRED:
@@ -58,7 +59,7 @@ func RunGroup(config RunGroupConfig) error {
 		return nil
 	}
 
-	sess, err := config.Probe.NewSession(context.Background())
+	sess, err := config.Probe.NewSession(context.Background(), config.RunType)
 	if err != nil {
 		log.WithError(err).Error("Failed to create a measurement session")
 		return err

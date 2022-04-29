@@ -17,7 +17,7 @@ func TestCheckInSuccess(t *testing.T) {
 		Platform:        "android",
 		ProbeASN:        "AS12353",
 		ProbeCC:         "PT",
-		RunType:         "timed",
+		RunType:         model.RunTypeTimed,
 		SoftwareName:    "ooniprobe-android",
 		SoftwareVersion: "2.7.1",
 		WebConnectivity: model.OOAPICheckInConfigWebConnectivity{
@@ -54,7 +54,7 @@ func TestCheckInFailure(t *testing.T) {
 		Platform:        "android",
 		ProbeASN:        "AS12353",
 		ProbeCC:         "PT",
-		RunType:         "timed",
+		RunType:         model.RunTypeTimed,
 		SoftwareName:    "ooniprobe-android",
 		SoftwareVersion: "2.7.1",
 		WebConnectivity: model.OOAPICheckInConfigWebConnectivity{
