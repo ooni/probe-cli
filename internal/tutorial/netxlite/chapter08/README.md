@@ -103,7 +103,7 @@ exactly like what we've seen in chapter04.
 ```Go
 
 func dialQUIC(ctx context.Context, address string,
-	config *tls.Config) (quic.EarlySession, tls.ConnectionState, error) {
+	config *tls.Config) (quic.EarlyConnection, tls.ConnectionState, error) {
 	ql := netxlite.NewQUICListener()
 	d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
 	sess, err := d.DialContext(ctx, "udp", address, config, &quic.Config{})
