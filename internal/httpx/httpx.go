@@ -151,11 +151,10 @@ func (c *apiClient) joinURLPath(URLPath string) string {
 // newRequest creates a new request.
 func (c *apiClient) newRequest(ctx context.Context, method, resourcePath string,
 	query url.Values, body io.Reader) (*http.Request, error) {
-	URL, err := url.Parse(c.BaseURL)
+	URL, err := url.Parse(c.joinURLPath(resourcePath))
 	if err != nil {
 		return nil, err
 	}
-	URL.Path = resourcePath
 	if query != nil {
 		URL.RawQuery = query.Encode()
 	}
