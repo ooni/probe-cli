@@ -3,7 +3,7 @@
 // # Chapter I: Using QUIC
 //
 // In this chapter we will write together a `main.go` file that
-// uses netxlite to establish a new QUIC session with an UDP endpoint.
+// uses netxlite to establish a new QUIC connection with an UDP endpoint.
 //
 // Conceptually, this program is very similar to the ones presented
 // in chapters 2 and 3, except that here we use QUIC.
@@ -59,7 +59,7 @@ func main() {
 	// a function with a similar API called `dialQUIC`.
 	//
 	// ```
-	sess, state, err := dialQUIC(ctx, *address, config)
+	qconn, state, err := dialQUIC(ctx, *address, config)
 	// ```
 	//
 	// The rest of the main function is pretty much the same.
@@ -68,11 +68,11 @@ func main() {
 	if err != nil {
 		fatal(err)
 	}
-	log.Infof("Sess type          : %T", sess)
+	log.Infof("Connection type          : %T", qconn)
 	log.Infof("Cipher suite       : %s", netxlite.TLSCipherSuiteString(state.CipherSuite))
 	log.Infof("Negotiated protocol: %s", state.NegotiatedProtocol)
 	log.Infof("TLS version        : %s", netxlite.TLSVersionString(state.Version))
-	sess.CloseWithError(0, "")
+	qconn.CloseWithError(0, "")
 }
 
 // ```
@@ -94,7 +94,7 @@ func dialQUIC(ctx context.Context, address string,
 	config *tls.Config) (quic.EarlyConnection, tls.ConnectionState, error) {
 	ql := netxlite.NewQUICListener()
 	d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
-	sess, err := d.DialContext(ctx, "udp", address, config, &quic.Config{})
+	qconn, err := d.DialContext(ctx, "udp", address, config, &quic.Config{})
 	if err != nil {
 		return nil, tls.ConnectionState{}, err
 	}
@@ -105,7 +105,7 @@ func dialQUIC(ctx context.Context, address string,
 	// we returned in the previous chapters.
 	//
 	// ```Go
-	return sess, sess.ConnectionState().TLS.ConnectionState, nil
+	return qconn, qconn.ConnectionState().TLS.ConnectionState, nil
 }
 
 // ```
@@ -158,5 +158,5 @@ func fatal(err error) {
 //
 // ## Conclusions
 //
-// We have seen how to use netxlite to establish a QUIC session
+// We have seen how to use netxlite to establish a QUIC connection
 // with a remote UDP endpoint speaking QUIC.

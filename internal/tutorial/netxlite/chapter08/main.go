@@ -1,9 +1,9 @@
 // -=-=- StartHere -=-=-
 //
-// # Chapter I: HTTP GET with QUIC sess
+// # Chapter I: HTTP GET with QUIC conn
 //
 // In this chapter we will write together a `main.go` file that
-// uses netxlite to establish a QUIC session to a remote endpoint
+// uses netxlite to establish a QUIC connection to a remote endpoint
 // and then fetches a webpage from it using GET.
 //
 // This file is basically the same as the one used in chapter04
@@ -50,11 +50,11 @@ func main() {
 		NextProtos: []string{"h3"},
 		RootCAs:    netxlite.NewDefaultCertPool(),
 	}
-	sess, _, err := dialQUIC(ctx, *address, config)
+	qconn, _, err := dialQUIC(ctx, *address, config)
 	if err != nil {
 		fatal(err)
 	}
-	log.Infof("Sess type  : %T", sess)
+	log.Infof("Connection type  : %T", qconn)
 	// ```
 	//
 	// This is where things diverge. We create an HTTP client
@@ -62,13 +62,13 @@ func main() {
 	//
 	// This transport will use a "single use" QUIC dialer.
 	// What does this mean? Well, we create such a QUICDialer
-	// using the session we already established. The first
+	// using the connection we already established. The first
 	// time the HTTP code dials for QUIC, the QUICDialer will
-	// return the session we passed to its constructor
+	// return the connection we passed to its constructor
 	// immediately. Every subsequent QUIC dial attempt will fail.
 	//
 	// The result is an HTTPTransport suitable for performing
-	// a single request using the given QUIC sess.
+	// a single request using the given QUIC conn.
 	//
 	// (A similar construct allows to create an HTTPTransport that
 	// uses a cleartext TCP connection. In the previous chapter we've
@@ -76,7 +76,7 @@ func main() {
 	//
 	// ```Go
 	clnt := &http.Client{Transport: netxlite.NewHTTP3Transport(
-		log.Log, netxlite.NewSingleUseQUICDialer(sess), &tls.Config{},
+		log.Log, netxlite.NewSingleUseQUICDialer(qconn), &tls.Config{},
 	)}
 	// ```
 	//
@@ -107,11 +107,11 @@ func dialQUIC(ctx context.Context, address string,
 	config *tls.Config) (quic.EarlyConnection, tls.ConnectionState, error) {
 	ql := netxlite.NewQUICListener()
 	d := netxlite.NewQUICDialerWithoutResolver(ql, log.Log)
-	sess, err := d.DialContext(ctx, "udp", address, config, &quic.Config{})
+	qconn, err := d.DialContext(ctx, "udp", address, config, &quic.Config{})
 	if err != nil {
 		return nil, tls.ConnectionState{}, err
 	}
-	return sess, sess.ConnectionState().TLS.ConnectionState, nil
+	return qconn, qconn.ConnectionState().TLS.ConnectionState, nil
 }
 
 func fatal(err error) {
@@ -159,5 +159,5 @@ func fatal(err error) {
 //
 // ## Conclusions
 //
-// We have seen how to establish a QUIC session with a website
-// and then how to GET a webpage using such a session.
+// We have seen how to establish a QUIC connection with a website
+// and then how to GET a webpage using such a connection.
