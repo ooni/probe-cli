@@ -184,19 +184,19 @@ func TestSaverReadFrom(t *testing.T) {
 
 func TestSaverQUICDialContext(t *testing.T) {
 	// newQUICDialer creates a new QUICDialer for testing.
-	newQUICDialer := func(sess quic.EarlyConnection, err error) model.QUICDialer {
+	newQUICDialer := func(qconn quic.EarlyConnection, err error) model.QUICDialer {
 		return &mocks.QUICDialer{
 			MockDialContext: func(
 				ctx context.Context, network, address string, tlsConfig *tls.Config,
 				quicConfig *quic.Config) (quic.EarlyConnection, error) {
 				time.Sleep(time.Microsecond)
-				return sess, err
+				return qconn, err
 			},
 		}
 	}
 
-	// newQUICSession creates a new quic.EarlySession for testing.
-	newQUICSession := func(handshakeComplete context.Context, state tls.ConnectionState) quic.EarlyConnection {
+	// newQUICConnection creates a new quic.EarlyConnection for testing.
+	newQUICConnection := func(handshakeComplete context.Context, state tls.ConnectionState) quic.EarlyConnection {
 		return &mocks.QUICEarlyConnection{
 			MockHandshakeComplete: func() context.Context {
 				return handshakeComplete
@@ -245,18 +245,18 @@ func TestSaverQUICDialContext(t *testing.T) {
 			ExpectedFailure: nil,
 			Saver:           saver,
 		}
-		sess := newQUICSession(handshakeCtx, v.NewTLSConnectionState())
-		dialer := newQUICDialer(sess, nil)
+		qconn := newQUICConnection(handshakeCtx, v.NewTLSConnectionState())
+		dialer := newQUICDialer(qconn, nil)
 		ctx := context.Background()
-		sess, err := saver.QUICDialContext(ctx, dialer, expectedNetwork,
+		qconn, err := saver.QUICDialContext(ctx, dialer, expectedNetwork,
 			mockedEndpoint, v.NewTLSConfig(), v.QUICConfig)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if sess == nil {
-			t.Fatal("expected nil sess")
+		if qconn == nil {
+			t.Fatal("expected nil qconn")
 		}
-		sess.CloseWithError(0, "")
+		qconn.CloseWithError(0, "")
 		if err := v.Validate(); err != nil {
 			t.Fatal(err)
 		}
@@ -287,18 +287,18 @@ func TestSaverQUICDialContext(t *testing.T) {
 			ExpectedFailure: context.DeadlineExceeded,
 			Saver:           saver,
 		}
-		sess := newQUICSession(handshakeCtx, tls.ConnectionState{})
-		dialer := newQUICDialer(sess, nil)
+		qconn := newQUICConnection(handshakeCtx, tls.ConnectionState{})
+		dialer := newQUICDialer(qconn, nil)
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, time.Microsecond)
 		defer cancel()
-		sess, err := saver.QUICDialContext(ctx, dialer, expectedNetwork,
+		qconn, err := saver.QUICDialContext(ctx, dialer, expectedNetwork,
 			mockedEndpoint, v.NewTLSConfig(), v.QUICConfig)
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatal("unexpected error")
 		}
-		if sess != nil {
-			t.Fatal("expected nil sess")
+		if qconn != nil {
+			t.Fatal("expected nil connection")
 		}
 		if err := v.Validate(); err != nil {
 			t.Fatal(err)
@@ -330,13 +330,13 @@ func TestSaverQUICDialContext(t *testing.T) {
 		}
 		dialer := newQUICDialer(nil, mockedError)
 		ctx := context.Background()
-		sess, err := saver.QUICDialContext(ctx, dialer, expectedNetwork,
+		qconn, err := saver.QUICDialContext(ctx, dialer, expectedNetwork,
 			mockedEndpoint, v.NewTLSConfig(), v.QUICConfig)
 		if !errors.Is(err, mockedError) {
 			t.Fatal("unexpected error")
 		}
-		if sess != nil {
-			t.Fatal("expected nil sess")
+		if qconn != nil {
+			t.Fatal("expected nil connection")
 		}
 		if err := v.Validate(); err != nil {
 			t.Fatal(err)

@@ -124,7 +124,7 @@ func (s *QUICEarlyConnection) HandshakeComplete() context.Context {
 	return s.MockHandshakeComplete()
 }
 
-// NextSession calls MockNextSession.
+// NextConnection calls MockNextConnection.
 func (s *QUICEarlyConnection) NextConnection() quic.Connection {
 	return s.MockNextConnection()
 }

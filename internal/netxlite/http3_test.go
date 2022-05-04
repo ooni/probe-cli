@@ -25,11 +25,11 @@ func TestHTTP3Dialer(t *testing.T) {
 			},
 		}
 		// passing background context
-		sess, err := d.dial(context.Background(), "", "", &tls.Config{}, &quic.Config{})
+		qconn, err := d.dial(context.Background(), "", "", &tls.Config{}, &quic.Config{})
 		if !errors.Is(err, expected) {
 			t.Fatal("unexpected err", err)
 		}
-		if sess != nil {
+		if qconn != nil {
 			t.Fatal("unexpected resp")
 		}
 	})

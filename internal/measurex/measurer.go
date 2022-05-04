@@ -387,11 +387,11 @@ func (mx *Measurer) TLSConnectAndHandshakeWithDB(ctx context.Context,
 func (mx *Measurer) QUICHandshake(ctx context.Context, address string,
 	config *tls.Config) *EndpointMeasurement {
 	db := &MeasurementDB{}
-	sess, _ := mx.QUICHandshakeWithDB(ctx, db, address, config)
+	qconn, _ := mx.QUICHandshakeWithDB(ctx, db, address, config)
 	measurement := db.AsMeasurement()
-	if sess != nil {
-		// TODO(bassosimone): close session with correct message
-		sess.CloseWithError(0, "")
+	if qconn != nil {
+		// TODO(bassosimone): close connection with correct message
+		qconn.CloseWithError(0, "")
 	}
 	return &EndpointMeasurement{
 		Network:     NetworkQUIC,
@@ -413,7 +413,7 @@ func (mx *Measurer) quicHandshakeTimeout() time.Duration {
 
 // QUICHandshakeWithDB is like QUICHandshake but uses the given
 // db to store events rather than creating a temporary one and
-// use it to generate a new Measuremet.
+// use it to generate a new Measurement.
 func (mx *Measurer) QUICHandshakeWithDB(ctx context.Context, db WritableDB,
 	address string, config *tls.Config) (quic.EarlyConnection, error) {
 	timeout := mx.quicHandshakeTimeout()
@@ -423,9 +423,9 @@ func (mx *Measurer) QUICHandshakeWithDB(ctx context.Context, db WritableDB,
 	defer cancel()
 	qd := mx.NewQUICDialerWithoutResolver(db, mx.Logger)
 	defer qd.CloseIdleConnections()
-	sess, err := qd.DialContext(ctx, "udp", address, config, &quic.Config{})
+	qconn, err := qd.DialContext(ctx, "udp", address, config, &quic.Config{})
 	ol.Stop(err)
-	return sess, err
+	return qconn, err
 }
 
 // HTTPEndpointGet performs a GET request for an HTTP endpoint.
@@ -575,7 +575,7 @@ func (mx *Measurer) httpEndpointGetHTTPS(ctx context.Context,
 // httpEndpointGetQUIC specializes httpEndpointGetTCP for QUIC.
 func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
 	db WritableDB, epnt *HTTPEndpoint, jar http.CookieJar) (*http.Response, error) {
-	sess, err := mx.QUICHandshakeWithDB(ctx, db, epnt.Address, &tls.Config{
+	qconn, err := mx.QUICHandshakeWithDB(ctx, db, epnt.Address, &tls.Config{
 		ServerName: epnt.SNI,
 		NextProtos: epnt.ALPN,
 		RootCAs:    netxlite.NewDefaultCertPool(),
@@ -583,10 +583,10 @@ func (mx *Measurer) httpEndpointGetQUIC(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	// TODO(bassosimone): close session with correct message
-	defer sess.CloseWithError(0, "") // we own it
+	// TODO(bassosimone): close connection with correct message
+	defer qconn.CloseWithError(0, "") // we own it
 	clnt := NewHTTPClientWithoutRedirects(db, jar,
-		mx.NewHTTPTransportWithQUICSess(mx.Logger, db, sess))
+		mx.NewHTTPTransportWithQUICConn(mx.Logger, db, qconn))
 	defer clnt.CloseIdleConnections()
 	return mx.httpClientDo(ctx, clnt, epnt)
 }
