@@ -144,8 +144,32 @@ func (c *apiClient) newRequestWithJSONBody(
 
 // joinURLPath joins the BaseURL and the URLPath, allows httpx to access the URL
 func (c *apiClient) joinURLPath(URLPath string) string {
-	accessURL := c.BaseURL + URLPath
-	return accessURL
+
+	if c.BaseURL != "" && URLPath != "" {
+		if c.BaseURL[len(c.BaseURL)-1] != '/' && URLPath[0] != '/' {
+			c.BaseURL += "/"
+			return c.BaseURL + URLPath
+		}
+
+		if c.BaseURL[len(c.BaseURL)-1] == '/' && URLPath[0] == '/' {
+			return c.BaseURL + URLPath[1:]
+		}
+
+		if c.BaseURL[len(c.BaseURL)-1] == '/' && URLPath[0] != '/' {
+			return c.BaseURL + URLPath
+		}
+
+		if c.BaseURL[len(c.BaseURL)-1] != '/' && URLPath[0] == '/' {
+			return c.BaseURL + URLPath
+		}
+		return c.BaseURL + URLPath
+	}
+
+	if c.BaseURL != "" && URLPath == "" {
+		return c.BaseURL
+	}
+
+	return ""
 }
 
 // newRequest creates a new request.

@@ -93,6 +93,40 @@ func newAPIClient() *apiClient {
 	}
 }
 
+func TestJoinURLPath(t *testing.T) {
+	t.Run("with Base URL and path", func(t *testing.T) {
+		ac := newAPIClient()
+		ac.BaseURL = "http://example.com"
+		if got, want := ac.joinURLPath("/foo"), ""; got == want {
+			t.Fatal("expected result")
+		}
+	})
+
+	t.Run("both Base URL and URL path contains /", func(t *testing.T) {
+		ac := newAPIClient()
+		ac.BaseURL = "http://example.com/"
+		if got, want := ac.joinURLPath("/foo"), "http://example.com/foo"; got != want {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with empty URL path", func(t *testing.T) {
+		ac := newAPIClient()
+		ac.BaseURL = "http://example.com"
+		if got, want := ac.joinURLPath(""), "http://example.com"; got != want {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with no BaseURL", func(t *testing.T) {
+		ac := newAPIClient()
+		ac.BaseURL = ""
+		if got, want := ac.joinURLPath("/foo"), ""; got != want {
+			t.Fatal("unexpected result")
+		}
+	})
+}
+
 // fakeRequest is a fake request we serialize.
 type fakeRequest struct {
 	Name       string
