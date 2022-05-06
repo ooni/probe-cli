@@ -1,38 +1,16 @@
 package netxlite
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
 	"net/http"
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/lucas-clemente/quic-go"
 	"github.com/lucas-clemente/quic-go/http3"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	nlmocks "github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
-
-func TestHTTP3Dialer(t *testing.T) {
-	t.Run("Dial", func(t *testing.T) {
-		expected := errors.New("mocked error")
-		d := &http3Dialer{
-			QUICDialer: &mocks.QUICDialer{
-				MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
-					return nil, expected
-				},
-			},
-		}
-		qconn, err := d.dial(context.Background(), "", "", &tls.Config{}, &quic.Config{})
-		if !errors.Is(err, expected) {
-			t.Fatal("unexpected err", err)
-		}
-		if qconn != nil {
-			t.Fatal("unexpected resp")
-		}
-	})
-}
 
 func TestHTTP3Transport(t *testing.T) {
 	t.Run("CloseIdleConnections", func(t *testing.T) {
