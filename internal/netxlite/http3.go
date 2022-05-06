@@ -21,7 +21,6 @@ type http3Dialer struct {
 // dial is like QUICContextDialer.DialContext
 func (d *http3Dialer) dial(ctx context.Context, network string, address string, tlsConfig *tls.Config,
 	quicConfig *quic.Config) (quic.EarlyConnection, error) {
-	// replacing background context with the passed parameter
 	return d.QUICDialer.DialContext(
 		ctx, network, address, tlsConfig, quicConfig)
 }
