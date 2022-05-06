@@ -17,7 +17,7 @@ type QUICConfig struct {
 }
 
 // QUICDo performs the QUIC check.
-func QUICDo(ctx context.Context, config QUICConfig) (quic.EarlySession, error) {
+func QUICDo(ctx context.Context, config QUICConfig) (quic.EarlyConnection, error) {
 	if config.QUICDialer != nil {
 		return config.QUICDialer.DialContext(ctx, "udp", config.Endpoint, config.TLSConf, &quic.Config{})
 	}

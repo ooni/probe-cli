@@ -8,7 +8,8 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/config"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
-	"github.com/upper/db/v4"
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 // FakeOutput allows to fake the output package.
@@ -61,7 +62,7 @@ func (cli *FakeProbeCLI) TempDir() string {
 }
 
 // NewProbeEngine implements ProbeCLI.NewProbeEngine
-func (cli *FakeProbeCLI) NewProbeEngine(ctx context.Context) (ooni.ProbeEngine, error) {
+func (cli *FakeProbeCLI) NewProbeEngine(ctx context.Context, runType model.RunType) (ooni.ProbeEngine, error) {
 	return cli.FakeProbeEnginePtr, cli.FakeProbeEngineErr
 }
 

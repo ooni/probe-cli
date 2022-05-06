@@ -107,7 +107,7 @@ func TestSessionCheckInSuccessful(t *testing.T) {
 	if mockedClnt.Config.ProbeCC != "IT" {
 		t.Fatal("invalid Config.ProbeCC")
 	}
-	if mockedClnt.Config.RunType != "timed" {
+	if mockedClnt.Config.RunType != model.RunTypeTimed {
 		t.Fatal("invalid Config.RunType")
 	}
 	if mockedClnt.Config.SoftwareName != "miniooni" {

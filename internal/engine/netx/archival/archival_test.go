@@ -526,6 +526,7 @@ func TestNewTLSHandshakesList(t *testing.T) {
 				Err:  websocket.ErrReadLimit,
 				Time: begin.Add(17 * time.Millisecond),
 			}, {
+				Address:            "131.252.210.176:443",
 				Name:               "tls_handshake_done",
 				Err:                io.EOF,
 				NoTLSVerify:        false,
@@ -542,6 +543,7 @@ func TestNewTLSHandshakesList(t *testing.T) {
 			}},
 		},
 		want: []archival.TLSHandshake{{
+			Address:            "131.252.210.176:443",
 			CipherSuite:        "SUITE",
 			Failure:            archival.NewFailure(io.EOF),
 			NegotiatedProtocol: "h2",

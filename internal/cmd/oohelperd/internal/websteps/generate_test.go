@@ -32,7 +32,7 @@ type fakeQUICDialer struct {
 }
 
 func (d fakeQUICDialer) DialContext(ctx context.Context, network, address string,
-	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 	return nil, d.err
 }
 

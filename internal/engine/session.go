@@ -238,7 +238,7 @@ func (s *Session) KibiBytesSent() float64 {
 //
 // - ProbeCC: if empty, set to Session.ProbeCC();
 //
-// - RunType: if empty, set to "timed";
+// - RunType: if empty, set to model.RunTypeTimed;
 //
 // - SoftwareName: if empty, set to Session.SoftwareName();
 //
@@ -270,7 +270,7 @@ func (s *Session) CheckIn(
 		config.ProbeCC = s.ProbeCC()
 	}
 	if config.RunType == "" {
-		config.RunType = "timed" // most conservative choice
+		config.RunType = model.RunTypeTimed // most conservative choice
 	}
 	if config.SoftwareName == "" {
 		config.SoftwareName = s.SoftwareName()
