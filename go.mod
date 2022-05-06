@@ -42,7 +42,6 @@ require (
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
 	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150
 	gopkg.in/yaml.v2 v2.4.0
-	upper.io/db.v3 v3.8.0+incompatible
 )
 
 require (
