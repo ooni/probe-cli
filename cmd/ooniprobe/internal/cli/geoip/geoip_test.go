@@ -117,18 +117,18 @@ func TestMaybeLookupLocationSuccess(t *testing.T) {
 		t.Fatal("invalid log level")
 	}
 	if entry.Message != "Looked up your location" {
-		t.Fatal("invalid .Message")
+		t.Fatal("invalid Message")
 	}
 	if entry.Fields["asn"].(string) != "AS30722" {
 		t.Fatal("invalid asn")
 	}
 	if entry.Fields["country_code"].(string) != "IT" {
-		t.Fatal("invalid asn")
+		t.Fatal("invalid country code")
 	}
 	if entry.Fields["network_name"].(string) != "Vodafone Italia S.p.A." {
-		t.Fatal("invalid asn")
+		t.Fatal("invalid network name")
 	}
 	if entry.Fields["ip"].(string) != "130.25.90.216" {
-		t.Fatal("invalid asn")
+		t.Fatal("invalid ip")
 	}
 }
