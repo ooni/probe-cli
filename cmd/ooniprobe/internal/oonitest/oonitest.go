@@ -9,7 +9,7 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/config"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"upper.io/db.v3/lib/sqlbuilder"
+	"github.com/upper/db/v4"
 )
 
 // FakeOutput allows to fake the output package.
