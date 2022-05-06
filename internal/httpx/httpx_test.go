@@ -94,58 +94,58 @@ func newAPIClient() *apiClient {
 }
 
 func TestJoinURLPath(t *testing.T) {
-	t.Run("with Base URL and path", func(t *testing.T) {
+	t.Run("BaseURL and URLpath", func(t *testing.T) {
 		ac := newAPIClient()
-		ac.BaseURL = "http://example.com"
-		if got, want := ac.joinURLPath("/foo"), ""; got == want {
-			t.Fatal("expected result")
-		}
-	})
-
-	t.Run("both Base URL and URL path contains /", func(t *testing.T) {
-		ac := newAPIClient()
-		ac.BaseURL = "http://example.com/"
-		if got, want := ac.joinURLPath("/foo"), "http://example.com/foo"; got != want {
+		ac.BaseURL = "https://example.com"
+		if got, want := ac.joinURLPath(ac.BaseURL, "/foo"), "https://example.com/foo"; got != want {
 			t.Fatal("unexpected result")
 		}
 	})
 
-	t.Run("with empty URL path", func(t *testing.T) {
+	t.Run("BaseURL and URLpath contains /", func(t *testing.T) {
 		ac := newAPIClient()
-		ac.BaseURL = "http://example.com"
-		if got, want := ac.joinURLPath(""), "http://example.com"; got != want {
+		ac.BaseURL = "https://example.com/"
+		if got, want := ac.joinURLPath(ac.BaseURL, "/foo"), "https://example.com/foo"; got != want {
 			t.Fatal("unexpected result")
 		}
 	})
 
-	t.Run("with no BaseURL", func(t *testing.T) {
+	t.Run("empty URLpath", func(t *testing.T) {
+		ac := newAPIClient()
+		ac.BaseURL = "http://example.com"
+		if got, want := ac.joinURLPath(ac.BaseURL, ""), "http://example.com"; got != want {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("empty BaseURL", func(t *testing.T) {
 		ac := newAPIClient()
 		ac.BaseURL = ""
-		if got, want := ac.joinURLPath("/foo"), ""; got != want {
+		if got, want := ac.joinURLPath(ac.BaseURL, "/foo"), ""; got != want {
 			t.Fatal("unexpected result")
 		}
 	})
 
-	t.Run("URL path with the BaseURL", func(t *testing.T) {
+	t.Run("path with the BaseURL", func(t *testing.T) {
 		ac := newAPIClient()
 		ac.BaseURL = "http://example.com/foo"
-		if got, want := ac.joinURLPath("/bar"), "http://example.com/foo/bar"; got != want {
+		if got, want := ac.joinURLPath(ac.BaseURL, "/bar"), "http://example.com/foo/bar"; got != want {
 			t.Fatal("unexpected result")
 		}
 	})
 
-	t.Run("URL path with the BaseURL and slash", func(t *testing.T) {
+	t.Run("BaseURL with path and URLpath, both contains slash", func(t *testing.T) {
 		ac := newAPIClient()
 		ac.BaseURL = "http://example.com/foo/"
-		if got, want := ac.joinURLPath("/bar"), "http://example.com/foo/bar"; got != want {
+		if got, want := ac.joinURLPath(ac.BaseURL, "/bar"), "http://example.com/foo/bar"; got != want {
 			t.Fatal("unexpected result")
 		}
 	})
 
-	t.Run("with the BaseURL slash and no slash in URL path", func(t *testing.T) {
+	t.Run("BaseURL ends with slash and no slash in URLpath", func(t *testing.T) {
 		ac := newAPIClient()
 		ac.BaseURL = "http://example.com/foo/"
-		if got, want := ac.joinURLPath("bar"), "http://example.com/foo/bar"; got != want {
+		if got, want := ac.joinURLPath(ac.BaseURL, "bar"), "http://example.com/foo/bar"; got != want {
 			t.Fatal("unexpected result")
 		}
 	})

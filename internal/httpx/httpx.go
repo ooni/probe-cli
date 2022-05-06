@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -143,30 +144,21 @@ func (c *apiClient) newRequestWithJSONBody(
 }
 
 // joinURLPath joins the BaseURL and the URLPath, allows httpx to access the URL
-func (c *apiClient) joinURLPath(URLPath string) string {
+func (c *apiClient) joinURLPath(origPath string, newPath string) string {
 
-	if c.BaseURL != "" && URLPath != "" {
-		if c.BaseURL[len(c.BaseURL)-1] != '/' && URLPath[0] != '/' {
-			c.BaseURL += "/"
-			return c.BaseURL + URLPath
+	if origPath != "" && newPath != "" {
+		if !strings.HasSuffix(origPath, "/") && !strings.HasPrefix(newPath, "/") {
+			origPath += "/"
 		}
 
-		if c.BaseURL[len(c.BaseURL)-1] == '/' && URLPath[0] == '/' {
-			return c.BaseURL + URLPath[1:]
+		if strings.HasSuffix(origPath, "/") && strings.HasPrefix(newPath, "/") {
+			newPath = newPath[1:]
 		}
-
-		if c.BaseURL[len(c.BaseURL)-1] == '/' && URLPath[0] != '/' {
-			return c.BaseURL + URLPath
-		}
-
-		if c.BaseURL[len(c.BaseURL)-1] != '/' && URLPath[0] == '/' {
-			return c.BaseURL + URLPath
-		}
-		return c.BaseURL + URLPath
+		return origPath + newPath
 	}
 
-	if c.BaseURL != "" && URLPath == "" {
-		return c.BaseURL
+	if origPath != "" && newPath == "" {
+		return origPath
 	}
 
 	return ""
@@ -175,10 +167,11 @@ func (c *apiClient) joinURLPath(URLPath string) string {
 // newRequest creates a new request.
 func (c *apiClient) newRequest(ctx context.Context, method, resourcePath string,
 	query url.Values, body io.Reader) (*http.Request, error) {
-	URL, err := url.Parse(c.joinURLPath(resourcePath))
+	URL, err := url.Parse(c.BaseURL)
 	if err != nil {
 		return nil, err
 	}
+	URL.Path = c.joinURLPath(URL.Path, resourcePath)
 	if query != nil {
 		URL.RawQuery = query.Encode()
 	}
