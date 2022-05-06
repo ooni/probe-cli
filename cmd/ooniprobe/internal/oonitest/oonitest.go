@@ -9,7 +9,7 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/config"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"upper.io/db.v3/lib/sqlbuilder"
+	"github.com/upper/db/v4"
 )
 
 // FakeOutput allows to fake the output package.
@@ -28,7 +28,7 @@ func (fo *FakeOutput) SectionTitle(s string) {
 // FakeProbeCLI fakes ooni.ProbeCLI
 type FakeProbeCLI struct {
 	FakeConfig         *config.Config
-	FakeDB             sqlbuilder.Database
+	FakeDB             db.Session
 	FakeIsBatch        bool
 	FakeHome           string
 	FakeTempDir        string
@@ -42,7 +42,7 @@ func (cli *FakeProbeCLI) Config() *config.Config {
 }
 
 // DB implements ProbeCLI.DB
-func (cli *FakeProbeCLI) DB() sqlbuilder.Database {
+func (cli *FakeProbeCLI) DB() db.Session {
 	return cli.FakeDB
 }
 
