@@ -13,7 +13,7 @@ func TestQUICContextDialer(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		qcd := &QUICContextDialer{
-			MockDialContext: func(ctx context.Context, network string, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+			MockDialContext: func(ctx context.Context, network string, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 				return nil, expected
 			},
 		}

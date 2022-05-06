@@ -55,13 +55,13 @@ func TestQUICDialerQUICGo(t *testing.T) {
 			}
 			defer systemdialer.CloseIdleConnections() // just to see it running
 			ctx := context.Background()
-			sess, err := systemdialer.DialContext(
+			qconn, err := systemdialer.DialContext(
 				ctx, "udp", "a.b.c.d", tlsConfig, &quic.Config{})
 			if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
 				t.Fatal("not the error we expected", err)
 			}
-			if sess != nil {
-				t.Fatal("expected nil sess here")
+			if qconn != nil {
+				t.Fatal("expected nil connection here")
 			}
 		})
 
@@ -73,13 +73,13 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				QUICListener: &quicListenerStdlib{},
 			}
 			ctx := context.Background()
-			sess, err := systemdialer.DialContext(
+			qconn, err := systemdialer.DialContext(
 				ctx, "udp", "8.8.4.4:xyz", tlsConfig, &quic.Config{})
 			if err == nil || !strings.HasSuffix(err.Error(), "invalid syntax") {
 				t.Fatal("not the error we expected", err)
 			}
-			if sess != nil {
-				t.Fatal("expected nil sess here")
+			if qconn != nil {
+				t.Fatal("expected nil connection here")
 			}
 		})
 
@@ -91,13 +91,13 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				QUICListener: &quicListenerStdlib{},
 			}
 			ctx := context.Background()
-			sess, err := systemdialer.DialContext(
+			qconn, err := systemdialer.DialContext(
 				ctx, "udp", "a.b.c.d:0", tlsConfig, &quic.Config{})
 			if !errors.Is(err, errInvalidIP) {
 				t.Fatal("not the error we expected", err)
 			}
-			if sess != nil {
-				t.Fatal("expected nil sess here")
+			if qconn != nil {
+				t.Fatal("expected nil connection here")
 			}
 		})
 
@@ -114,13 +114,13 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				},
 			}
 			ctx := context.Background()
-			sess, err := systemdialer.DialContext(
+			qconn, err := systemdialer.DialContext(
 				ctx, "udp", "8.8.8.8:443", tlsConfig, &quic.Config{})
 			if !errors.Is(err, expected) {
 				t.Fatal("not the error we expected", err)
 			}
-			if sess != nil {
-				t.Fatal("expected nil sess here")
+			if qconn != nil {
+				t.Fatal("expected nil connection here")
 			}
 		})
 
@@ -133,13 +133,13 @@ func TestQUICDialerQUICGo(t *testing.T) {
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // fail immediately
-			sess, err := systemdialer.DialContext(
+			qconn, err := systemdialer.DialContext(
 				ctx, "udp", "8.8.8.8:443", tlsConfig, &quic.Config{})
 			if !errors.Is(err, context.Canceled) {
 				t.Fatal("not the error we expected", err)
 			}
-			if sess != nil {
-				log.Fatal("expected nil session here")
+			if qconn != nil {
+				log.Fatal("expected nil connection here")
 			}
 		})
 
@@ -153,19 +153,19 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				QUICListener: &quicListenerStdlib{},
 				mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, host string, tlsConfig *tls.Config,
-					quicConfig *quic.Config) (quic.EarlySession, error) {
+					quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					gotTLSConfig = tlsConfig
 					return nil, expected
 				},
 			}
 			ctx := context.Background()
-			sess, err := systemdialer.DialContext(
+			qconn, err := systemdialer.DialContext(
 				ctx, "udp", "8.8.8.8:443", tlsConfig, &quic.Config{})
 			if !errors.Is(err, expected) {
 				t.Fatal("not the error we expected", err)
 			}
-			if sess != nil {
-				t.Fatal("expected nil session here")
+			if qconn != nil {
+				t.Fatal("expected nil connection here")
 			}
 			if tlsConfig.RootCAs != nil {
 				t.Fatal("tlsConfig.RootCAs should not have been changed")
@@ -194,19 +194,19 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				QUICListener: &quicListenerStdlib{},
 				mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
 					remoteAddr net.Addr, host string, tlsConfig *tls.Config,
-					quicConfig *quic.Config) (quic.EarlySession, error) {
+					quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					gotTLSConfig = tlsConfig
 					return nil, expected
 				},
 			}
 			ctx := context.Background()
-			sess, err := systemdialer.DialContext(
+			qconn, err := systemdialer.DialContext(
 				ctx, "udp", "8.8.8.8:8853", tlsConfig, &quic.Config{})
 			if !errors.Is(err, expected) {
 				t.Fatal("not the error we expected", err)
 			}
-			if sess != nil {
-				t.Fatal("expected nil session here")
+			if qconn != nil {
+				t.Fatal("expected nil connection here")
 			}
 			if tlsConfig.RootCAs != nil {
 				t.Fatal("tlsConfig.RootCAs should not have been changed")
@@ -257,14 +257,14 @@ func TestQUICDialerResolver(t *testing.T) {
 			dialer := &quicDialerResolver{
 				Resolver: NewResolverStdlib(log.Log),
 				Dialer:   &quicDialerQUICGo{}}
-			sess, err := dialer.DialContext(
+			qconn, err := dialer.DialContext(
 				context.Background(), "udp", "www.google.com",
 				tlsConfig, &quic.Config{})
 			if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
 				t.Fatal("not the error we expected")
 			}
-			if sess != nil {
-				t.Fatal("expected a nil sess here")
+			if qconn != nil {
+				t.Fatal("expected a nil connection here")
 			}
 		})
 
@@ -276,14 +276,14 @@ func TestQUICDialerResolver(t *testing.T) {
 					return nil, expected
 				},
 			}}
-			sess, err := dialer.DialContext(
+			qconn, err := dialer.DialContext(
 				context.Background(), "udp", "dns.google.com:853",
 				tlsConfig, &quic.Config{})
 			if !errors.Is(err, expected) {
 				t.Fatal("not the error we expected")
 			}
-			if sess != nil {
-				t.Fatal("expected nil sess")
+			if qconn != nil {
+				t.Fatal("expected nil connection")
 			}
 		})
 
@@ -296,7 +296,7 @@ func TestQUICDialerResolver(t *testing.T) {
 				Dialer: &quicDialerQUICGo{
 					QUICListener: &quicListenerStdlib{},
 				}}
-			sess, err := dialer.DialContext(
+			qconn, err := dialer.DialContext(
 				context.Background(), "udp", "8.8.4.4:x",
 				tlsConf, &quic.Config{})
 			if err == nil {
@@ -305,8 +305,8 @@ func TestQUICDialerResolver(t *testing.T) {
 			if !strings.HasSuffix(err.Error(), "invalid syntax") {
 				t.Fatal("not the error we expected", err)
 			}
-			if sess != nil {
-				t.Fatal("expected nil sess")
+			if qconn != nil {
+				t.Fatal("expected nil connection")
 			}
 		})
 
@@ -318,19 +318,19 @@ func TestQUICDialerResolver(t *testing.T) {
 				Resolver: NewResolverStdlib(log.Log),
 				Dialer: &mocks.QUICDialer{
 					MockDialContext: func(ctx context.Context, network, address string,
-						tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+						tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 						gotTLSConfig = tlsConfig
 						return nil, expected
 					},
 				}}
-			sess, err := dialer.DialContext(
+			qconn, err := dialer.DialContext(
 				context.Background(), "udp", "8.8.4.4:443",
 				tlsConfig, &quic.Config{})
 			if !errors.Is(err, expected) {
 				t.Fatal("not the error we expected", err)
 			}
-			if sess != nil {
-				t.Fatal("expected nil session here")
+			if qconn != nil {
+				t.Fatal("expected nil connection here")
 			}
 			if tlsConfig.ServerName != "" {
 				t.Fatal("should not have changed tlsConfig.ServerName")
@@ -387,8 +387,8 @@ func TestQUICLoggerDialer(t *testing.T) {
 				Dialer: &mocks.QUICDialer{
 					MockDialContext: func(ctx context.Context, network string,
 						address string, tlsConfig *tls.Config,
-						quicConfig *quic.Config) (quic.EarlySession, error) {
-						return &mocks.QUICEarlySession{
+						quicConfig *quic.Config) (quic.EarlyConnection, error) {
+						return &mocks.QUICEarlyConnection{
 							MockCloseWithError: func(
 								code quic.ApplicationErrorCode, reason string) error {
 								return nil
@@ -401,11 +401,11 @@ func TestQUICLoggerDialer(t *testing.T) {
 			ctx := context.Background()
 			tlsConfig := &tls.Config{}
 			quicConfig := &quic.Config{}
-			sess, err := d.DialContext(ctx, "udp", "8.8.8.8:443", tlsConfig, quicConfig)
+			qconn, err := d.DialContext(ctx, "udp", "8.8.8.8:443", tlsConfig, quicConfig)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := sess.CloseWithError(0, ""); err != nil {
+			if err := qconn.CloseWithError(0, ""); err != nil {
 				t.Fatal(err)
 			}
 			if called != 2 {
@@ -425,7 +425,7 @@ func TestQUICLoggerDialer(t *testing.T) {
 				Dialer: &mocks.QUICDialer{
 					MockDialContext: func(ctx context.Context, network string,
 						address string, tlsConfig *tls.Config,
-						quicConfig *quic.Config) (quic.EarlySession, error) {
+						quicConfig *quic.Config) (quic.EarlyConnection, error) {
 						return nil, expected
 					},
 				},
@@ -434,12 +434,12 @@ func TestQUICLoggerDialer(t *testing.T) {
 			ctx := context.Background()
 			tlsConfig := &tls.Config{}
 			quicConfig := &quic.Config{}
-			sess, err := d.DialContext(ctx, "udp", "8.8.8.8:443", tlsConfig, quicConfig)
+			qconn, err := d.DialContext(ctx, "udp", "8.8.8.8:443", tlsConfig, quicConfig)
 			if !errors.Is(err, expected) {
 				t.Fatal("not the error we expected", err)
 			}
-			if sess != nil {
-				t.Fatal("expected nil session")
+			if qconn != nil {
+				t.Fatal("expected nil connection")
 			}
 			if called != 2 {
 				t.Fatal("invalid number of calls")
@@ -449,24 +449,24 @@ func TestQUICLoggerDialer(t *testing.T) {
 }
 
 func TestNewSingleUseQUICDialer(t *testing.T) {
-	sess := &mocks.QUICEarlySession{}
-	qd := NewSingleUseQUICDialer(sess)
+	qconn := &mocks.QUICEarlyConnection{}
+	qd := NewSingleUseQUICDialer(qconn)
 	defer qd.CloseIdleConnections()
-	outsess, err := qd.DialContext(
+	outconn, err := qd.DialContext(
 		context.Background(), "", "", &tls.Config{}, &quic.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if sess != outsess {
-		t.Fatal("invalid outsess")
+	if qconn != outconn {
+		t.Fatal("invalid outconn")
 	}
 	for i := 0; i < 4; i++ {
-		outsess, err = qd.DialContext(
+		outconn, err = qd.DialContext(
 			context.Background(), "", "", &tls.Config{}, &quic.Config{})
 		if !errors.Is(err, ErrNoConnReuse) {
 			t.Fatal("not the error we expected", err)
 		}
-		if outsess != nil {
+		if outconn != nil {
 			t.Fatal("expected nil outconn here")
 		}
 	}
@@ -649,21 +649,21 @@ func TestQUICDialerErrWrapper(t *testing.T) {
 
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("on success", func(t *testing.T) {
-			expectedSess := &mocks.QUICEarlySession{}
+			expectedConn := &mocks.QUICEarlyConnection{}
 			d := &quicDialerErrWrapper{
 				QUICDialer: &mocks.QUICDialer{
-					MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
-						return expectedSess, nil
+					MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+						return expectedConn, nil
 					},
 				},
 			}
 			ctx := context.Background()
-			sess, err := d.DialContext(ctx, "", "", &tls.Config{}, &quic.Config{})
+			qconn, err := d.DialContext(ctx, "", "", &tls.Config{}, &quic.Config{})
 			if err != nil {
 				t.Fatal(err)
 			}
-			if sess != expectedSess {
-				t.Fatal("unexpected sess")
+			if qconn != expectedConn {
+				t.Fatal("unexpected connection")
 			}
 		})
 
@@ -671,18 +671,18 @@ func TestQUICDialerErrWrapper(t *testing.T) {
 			expectedErr := io.EOF
 			d := &quicDialerErrWrapper{
 				QUICDialer: &mocks.QUICDialer{
-					MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+					MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 						return nil, expectedErr
 					},
 				},
 			}
 			ctx := context.Background()
-			sess, err := d.DialContext(ctx, "", "", &tls.Config{}, &quic.Config{})
+			qconn, err := d.DialContext(ctx, "", "", &tls.Config{}, &quic.Config{})
 			if err == nil || err.Error() != FailureEOFError {
 				t.Fatal("unexpected err", err)
 			}
-			if sess != nil {
-				t.Fatal("unexpected sess")
+			if qconn != nil {
+				t.Fatal("unexpected connection")
 			}
 		})
 	})

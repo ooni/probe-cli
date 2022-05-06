@@ -19,7 +19,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/iancoleman/strcase v0.2.0
-	github.com/lucas-clemente/quic-go v0.26.0
+	github.com/lucas-clemente/quic-go v0.27.0
 	github.com/marten-seemann/qtls-go1-17 v0.1.1
 	github.com/mattn/go-colorable v0.1.12
 	github.com/miekg/dns v1.1.48
@@ -40,6 +40,7 @@ require (
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
 	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150
+	gopkg.in/yaml.v2 v2.4.0
 	upper.io/db.v3 v3.8.0+incompatible
 )
 
