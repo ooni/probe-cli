@@ -1,6 +1,6 @@
 // Package tcpping is the experimental tcpping experiment.
 //
-// See XXX
+// See https://github.com/ooni/spec/blob/master/nettests/ts-032-tcpping.md.
 package tcpping
 
 import (
