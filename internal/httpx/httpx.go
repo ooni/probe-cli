@@ -71,9 +71,12 @@ const DefaultMaxBodySize = 1 << 22
 
 // APIClient is a client configured to call a given API identified
 // by a given baseURL and using a given model.HTTPClient.
+// baseURL path is appended with the resourcePath if it is
+// created using APIClientTemplate.
 type APIClient interface {
-	// GetJSON reads the JSON resource at resourcePath and unmarshals the
-	// results into output. The request is bounded by the lifetime of the
+	// GetJSON reads the JSON resource at combined path of baseURL with
+	// the resourcePath and unmarshals the results into output.
+	// The request is bounded by the lifetime of the
 	// context passed as argument. Returns the error that occurred.
 	GetJSON(ctx context.Context, resourcePath string, output interface{}) error
 
@@ -81,8 +84,9 @@ type APIClient interface {
 	GetJSONWithQuery(ctx context.Context, resourcePath string,
 		query url.Values, output interface{}) error
 
-	// PostJSON creates a JSON subresource of the resource at resourcePath
-	// using the JSON document at input and returning the result into the
+	// PostJSON creates a JSON subresource of the resource at
+	// combined path of baseURL with the resourcePath using the JSON
+	// document at input and returning the result into the
 	// JSON document at output. The request is bounded by the context's
 	// lifetime. Returns the error that occurred.
 	PostJSON(ctx context.Context, resourcePath string, input, output interface{}) error
@@ -143,7 +147,8 @@ func (c *apiClient) newRequestWithJSONBody(
 	return request, nil
 }
 
-// joinURLPath joins the BaseURL and the resource URL Path, allows httpx to access the URL
+// joinURLPath combines the path of resource URL with the baseURL,
+// and allows httpx to access the URL when it creates a new request.
 func (c *apiClient) joinURLPath(origPath string, newPath string) string {
 
 	// If the BaseURL path doesn't end with a slash, added one
