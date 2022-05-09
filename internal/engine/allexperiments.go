@@ -20,6 +20,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/stunreachability"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tcpping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/telegram"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlsping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlstool"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tor"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/torsf"
@@ -224,6 +225,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &tcpping.Config{},
+			inputPolicy: InputStrictlyRequired,
+		}
+	},
+
+	"tlsping": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, tlsping.NewExperimentMeasurer(
+					*config.(*tlsping.Config),
+				))
+			},
+			config:      &tlsping.Config{},
 			inputPolicy: InputStrictlyRequired,
 		}
 	},
