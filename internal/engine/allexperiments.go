@@ -5,6 +5,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/dash"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/dnscheck"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/dnsping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/example"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/fbmessenger"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/hhfm"
@@ -53,6 +54,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &dnscheck.Config{},
+			inputPolicy: InputOrStaticDefault,
+		}
+	},
+
+	"dnsping": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, dnsping.NewExperimentMeasurer(
+					*config.(*dnsping.Config),
+				))
+			},
+			config:      &dnsping.Config{},
 			inputPolicy: InputOrStaticDefault,
 		}
 	},

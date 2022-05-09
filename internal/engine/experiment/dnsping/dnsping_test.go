@@ -1,28 +1,24 @@
-package simplequicping
+package dnsping
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/pem"
 	"errors"
 	"log"
-	"math/big"
+	"net"
 	"net/url"
 	"testing"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
+	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func TestConfig_alpn(t *testing.T) {
+func TestConfig_domains(t *testing.T) {
 	c := Config{}
-	if c.alpn() != "h3" {
-		t.Fatal("invalid default alpn list")
+	if c.domains() != "edge-chat.instagram.com example.com" {
+		t.Fatal("invalid default domains list")
 	}
 }
 
@@ -47,11 +43,11 @@ func TestMeasurer_run(t *testing.T) {
 	// runHelper is an helper function to run this set of tests.
 	runHelper := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
 		m := NewExperimentMeasurer(Config{
-			ALPN:        "h3",
+			Domains:     "example.com",
 			Delay:       1, // millisecond
 			Repetitions: expectedPings,
 		})
-		if m.ExperimentName() != "simplequicping" {
+		if m.ExperimentName() != "dnsping" {
 			t.Fatal("invalid experiment name")
 		}
 		if m.ExperimentVersion() != "0.1.0" {
@@ -91,24 +87,24 @@ func TestMeasurer_run(t *testing.T) {
 	})
 
 	t.Run("with missing port", func(t *testing.T) {
-		_, _, err := runHelper("quichandshake://8.8.8.8")
+		_, _, err := runHelper("udp://8.8.8.8")
 		if !errors.Is(err, errMissingPort) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with local listener", func(t *testing.T) {
-		srvrURL, listener, err := startEchoServer()
+		srvrURL, dnsListener, err := startDNSServer()
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer listener.Close()
+		defer dnsListener.Close()
 		meas, m, err := runHelper(srvrURL)
 		if err != nil {
 			t.Fatal(err)
 		}
 		tk := meas.TestKeys.(*TestKeys)
-		if len(tk.Pings) != expectedPings {
+		if len(tk.Pings) != expectedPings*2 { // account for A & AAAA pings
 			t.Fatal("unexpected number of pings")
 		}
 		ask, err := m.GetSummaryKeys(meas)
@@ -122,67 +118,42 @@ func TestMeasurer_run(t *testing.T) {
 	})
 }
 
-// Start a server that echos all data on the first stream opened by the client.
-//
-// SPDX-License-Identifier: MIT
-//
-// See https://github.com/lucas-clemente/quic-go/blob/v0.27.0/example/echo/echo.go#L34
-func startEchoServer() (string, quic.Listener, error) {
-	listener, err := quic.ListenAddr("127.0.0.1:0", generateTLSConfig(), nil)
+// startDNSServer starts a local DNS server.
+func startDNSServer() (string, net.PacketConn, error) {
+	dnsListener, err := net.ListenPacket("udp", "127.0.0.1:0")
 	if err != nil {
 		return "", nil, err
 	}
-	go echoWorkerMain(listener)
+	go runDNSServer(dnsListener)
 	URL := &url.URL{
-		Scheme: "quichandshake",
-		Host:   listener.Addr().String(),
+		Scheme: "udp",
+		Host:   dnsListener.LocalAddr().String(),
 		Path:   "/",
 	}
-	return URL.String(), listener, nil
+	return URL.String(), dnsListener, nil
 }
 
-// Worker used by startEchoServer to accept a quic connection.
-//
-// SPDX-License-Identifier: MIT
-//
-// See https://github.com/lucas-clemente/quic-go/blob/v0.27.0/example/echo/echo.go#L34
-func echoWorkerMain(listener quic.Listener) {
-	for {
-		conn, err := listener.Accept(context.Background())
-		if err != nil {
-			return
-		}
-		stream, err := conn.AcceptStream(context.Background())
-		if err != nil {
-			continue
-		}
-		stream.Close()
+// runDNSServer runs the DNS server.
+func runDNSServer(dnsListener net.PacketConn) {
+	ds := &dns.Server{
+		Handler:    &dnsHandler{},
+		Net:        "udp",
+		PacketConn: dnsListener,
+	}
+	err := ds.ActivateAndServe()
+	if !errors.Is(err, net.ErrClosed) {
+		runtimex.PanicOnError(err, "ActivateAndServe failed")
 	}
 }
 
-// Setup a bare-bones TLS config for the server.
-//
-// SPDX-License-Identifier: MIT
-//
-// See https://github.com/lucas-clemente/quic-go/blob/v0.27.0/example/echo/echo.go#L91
-func generateTLSConfig() *tls.Config {
-	key, err := rsa.GenerateKey(rand.Reader, 1024)
-	if err != nil {
-		panic(err)
-	}
-	template := x509.Certificate{SerialNumber: big.NewInt(1)}
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
-	if err != nil {
-		panic(err)
-	}
-	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
-	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
-	tlsCert, err := tls.X509KeyPair(certPEM, keyPEM)
-	if err != nil {
-		panic(err)
-	}
-	return &tls.Config{
-		Certificates: []tls.Certificate{tlsCert},
-		NextProtos:   []string{"quic-echo-example"},
-	}
+// dnsHandler handles DNS requests.
+type dnsHandler struct{}
+
+// ServeDNS serves a DNS request
+func (h *dnsHandler) ServeDNS(rw dns.ResponseWriter, req *dns.Msg) {
+	m := new(dns.Msg)
+	m.Compress = true
+	m.MsgHdr.RecursionAvailable = true
+	m.SetRcode(req, dns.RcodeServerFailure)
+	rw.WriteMsg(m)
 }
