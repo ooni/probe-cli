@@ -8,7 +8,7 @@ import (
 func TestGood(t *testing.T) {
 	var expected bool
 	switch Name() {
-	case "android", "freebsd", "ios", "linux", "macos", "windows":
+	case "android", "freebsd", "openbsd", "ios", "linux", "macos", "windows":
 		expected = true
 	}
 	if !expected {
@@ -26,6 +26,9 @@ func TestName(t *testing.T) {
 	}, {
 		expected: "freebsd",
 		goos:     "freebsd",
+	}, {
+		expected: "openbsd",
+		goos:     "openbsd",
 	}, {
 		expected: "ios",
 		goos:     "ios",

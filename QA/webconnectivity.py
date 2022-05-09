@@ -7,15 +7,9 @@
     network conditions and verifies that the measurement is consistent
     with the expectations, by parsing the resulting JSONL. """
 
-import contextlib
-import json
-import os
-import shlex
 import socket
-import subprocess
 import sys
 import time
-import urllib.parse
 
 sys.path.insert(0, ".")
 import common
@@ -24,28 +18,42 @@ import common
 def execute_jafar_and_return_validated_test_keys(
     ooni_exe, outfile, experiment_args, tag, args
 ):
-    """ Executes jafar and returns the validated parsed test keys, or throws
-        an AssertionError if the result is not valid. """
+    """Executes jafar and returns the validated parsed test keys, or throws
+    an AssertionError if the result is not valid."""
     tk = common.execute_jafar_and_miniooni(
         ooni_exe, outfile, experiment_args, tag, args
     )
+    print("dns_experiment_failure", tk["dns_experiment_failure"], file=sys.stderr)
+    print("dns_consistency", tk["dns_consistency"], file=sys.stderr)
+    print("control_failure", tk["control_failure"], file=sys.stderr)
+    print("http_experiment_failure", tk["http_experiment_failure"], file=sys.stderr)
+    print("tk_body_length_match", tk["body_length_match"], file=sys.stderr)
+    print("body_proportion", tk["body_proportion"], file=sys.stderr)
+    print("status_code_match", tk["status_code_match"], file=sys.stderr)
+    print("headers_match", tk["headers_match"], file=sys.stderr)
+    print("title_match", tk["title_match"], file=sys.stderr)
+    print("blocking", tk["blocking"], file=sys.stderr)
+    print("accessible", tk["accessible"], file=sys.stderr)
+    print("x_status", tk["x_status"], file=sys.stderr)
     return tk
 
 
 def assert_status_flags_are(ooni_exe, tk, desired):
-    """ Checks whether the status flags are what we expect them to
-        be when we're running miniooni. This check only makes sense
-        with miniooni b/c status flags are a miniooni extension. """
+    """Checks whether the status flags are what we expect them to
+    be when we're running miniooni. This check only makes sense
+    with miniooni b/c status flags are a miniooni extension."""
     if "miniooni" not in ooni_exe:
         return
     assert tk["x_status"] == desired
 
 
 def webconnectivity_https_ok_with_control_failure(ooni_exe, outfile):
-    """ Successful HTTPS measurement but control failure. """
+    """Successful HTTPS measurement but control failure."""
     args = [
         "-iptables-reset-keyword",
         "wcth.ooni.io",
+        "-iptables-reset-keyword",
+        "th.ooni.org",
     ]
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
@@ -73,10 +81,12 @@ def webconnectivity_https_ok_with_control_failure(ooni_exe, outfile):
 
 
 def webconnectivity_http_ok_with_control_failure(ooni_exe, outfile):
-    """ Successful HTTP measurement but control failure. """
+    """Successful HTTP measurement but control failure."""
     args = [
         "-iptables-reset-keyword",
         "wcth.ooni.io",
+        "-iptables-reset-keyword",
+        "th.ooni.org",
     ]
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
@@ -100,7 +110,33 @@ def webconnectivity_http_ok_with_control_failure(ooni_exe, outfile):
 
 
 def webconnectivity_transparent_http_proxy(ooni_exe, outfile):
-    """ Test case where we pass through a transparent HTTP proxy """
+    """Test case where we pass through a transparent HTTP proxy"""
+    args = []
+    args.append("-iptables-hijack-http-to")
+    args.append("127.0.0.1:80")
+    tk = execute_jafar_and_return_validated_test_keys(
+        ooni_exe,
+        outfile,
+        "-i http://example.org web_connectivity",
+        "webconnectivity_transparent_http_proxy",
+        args,
+    )
+    assert tk["dns_experiment_failure"] == None
+    assert tk["dns_consistency"] == "consistent"
+    assert tk["control_failure"] == None
+    assert tk["http_experiment_failure"] == None
+    assert tk["body_length_match"] == True
+    assert tk["body_proportion"] == 1
+    assert tk["status_code_match"] == True
+    assert tk["headers_match"] == True
+    assert tk["title_match"] == True
+    assert tk["blocking"] == False
+    assert tk["accessible"] == True
+    assert_status_flags_are(ooni_exe, tk, 2)
+
+
+def webconnectivity_transparent_https_proxy(ooni_exe, outfile):
+    """Test case where we pass through a transparent HTTPS proxy"""
     args = []
     args.append("-iptables-hijack-https-to")
     args.append("127.0.0.1:443")
@@ -108,7 +144,7 @@ def webconnectivity_transparent_http_proxy(ooni_exe, outfile):
         ooni_exe,
         outfile,
         "-i https://example.org web_connectivity",
-        "webconnectivity_transparent_http_proxy",
+        "webconnectivity_transparent_https_proxy",
         args,
     )
     assert tk["dns_experiment_failure"] == None
@@ -126,7 +162,7 @@ def webconnectivity_transparent_http_proxy(ooni_exe, outfile):
 
 
 def webconnectivity_dns_hijacking(ooni_exe, outfile):
-    """ Test case where there is DNS hijacking towards a transparent proxy. """
+    """Test case where there is DNS hijacking towards a transparent proxy."""
     args = []
     args.append("-iptables-hijack-dns-to")
     args.append("127.0.0.1:53")
@@ -154,11 +190,13 @@ def webconnectivity_dns_hijacking(ooni_exe, outfile):
 
 
 def webconnectivity_control_unreachable_and_using_http(ooni_exe, outfile):
-    """ Test case where the control is unreachable and we're using the
-        plaintext HTTP protocol rather than HTTPS """
+    """Test case where the control is unreachable and we're using the
+    plaintext HTTP protocol rather than HTTPS"""
     args = []
     args.append("-iptables-reset-keyword")
     args.append("wcth.ooni.io")
+    args.append("-iptables-reset-keyword")
+    args.append("th.ooni.org")
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
         outfile,
@@ -181,7 +219,7 @@ def webconnectivity_control_unreachable_and_using_http(ooni_exe, outfile):
 
 
 def webconnectivity_nonexistent_domain(ooni_exe, outfile):
-    """ Test case where the domain does not exist """
+    """Test case where the domain does not exist"""
     args = []
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
@@ -223,7 +261,7 @@ def webconnectivity_nonexistent_domain(ooni_exe, outfile):
 
 
 def webconnectivity_tcpip_blocking_with_consistent_dns(ooni_exe, outfile):
-    """ Test case where there's TCP/IP blocking w/ consistent DNS """
+    """Test case where there's TCP/IP blocking w/ consistent DNS"""
     ip = socket.gethostbyname("nexa.polito.it")
     args = [
         "-iptables-drop-ip",
@@ -251,7 +289,7 @@ def webconnectivity_tcpip_blocking_with_consistent_dns(ooni_exe, outfile):
 
 
 def webconnectivity_tcpip_blocking_with_inconsistent_dns(ooni_exe, outfile):
-    """ Test case where there's TCP/IP blocking w/ inconsistent DNS """
+    """Test case where there's TCP/IP blocking w/ inconsistent DNS"""
 
     def runner(port):
         args = [
@@ -286,8 +324,8 @@ def webconnectivity_tcpip_blocking_with_inconsistent_dns(ooni_exe, outfile):
 
 
 def webconnectivity_http_connection_refused_with_consistent_dns(ooni_exe, outfile):
-    """ Test case where there's TCP/IP blocking w/ consistent DNS that occurs
-        while we're following the chain of redirects. """
+    """Test case where there's TCP/IP blocking w/ consistent DNS that occurs
+    while we're following the chain of redirects."""
     # We use a bit.ly link redirecting to nexa.polito.it. We block the IP address
     # used by nexa.polito.it. So the error should happen in the redirect chain.
     ip = socket.gethostbyname("nexa.polito.it")
@@ -317,8 +355,8 @@ def webconnectivity_http_connection_refused_with_consistent_dns(ooni_exe, outfil
 
 
 def webconnectivity_http_connection_reset_with_consistent_dns(ooni_exe, outfile):
-    """ Test case where there's RST-based blocking blocking w/ consistent DNS that
-        occurs while we're following the chain of redirects. """
+    """Test case where there's RST-based blocking blocking w/ consistent DNS that
+    occurs while we're following the chain of redirects."""
     # We use a bit.ly link redirecting to nexa.polito.it. We block the Host header
     # used for nexa.polito.it. So the error should happen in the redirect chain.
     args = [
@@ -347,8 +385,8 @@ def webconnectivity_http_connection_reset_with_consistent_dns(ooni_exe, outfile)
 
 
 def webconnectivity_http_nxdomain_with_consistent_dns(ooni_exe, outfile):
-    """ Test case where there's a redirection and the redirected request cannot
-        continue because a NXDOMAIN error occurs. """
+    """Test case where there's a redirection and the redirected request cannot
+    continue because a NXDOMAIN error occurs."""
     # We use a bit.ly link redirecting to nexa.polito.it. We block the DNS request
     # for nexa.polito.it. So the error should happen in the redirect chain.
     args = [
@@ -382,8 +420,8 @@ def webconnectivity_http_nxdomain_with_consistent_dns(ooni_exe, outfile):
 
 
 def webconnectivity_http_eof_error_with_consistent_dns(ooni_exe, outfile):
-    """ Test case where there's a redirection and the redirected request cannot
-        continue because an eof_error error occurs. """
+    """Test case where there's a redirection and the redirected request cannot
+    continue because an eof_error error occurs."""
     # We use a bit.ly link redirecting to nexa.polito.it. We block the HTTP request
     # for nexa.polito.it using the cleartext bad proxy. So the error should happen in
     # the redirect chain and should be EOF.
@@ -417,8 +455,8 @@ def webconnectivity_http_eof_error_with_consistent_dns(ooni_exe, outfile):
 
 
 def webconnectivity_http_generic_timeout_error_with_consistent_dns(ooni_exe, outfile):
-    """ Test case where there's a redirection and the redirected request cannot
-        continue because a generic_timeout_error error occurs. """
+    """Test case where there's a redirection and the redirected request cannot
+    continue because a generic_timeout_error error occurs."""
     # We use a bit.ly link redirecting to nexa.polito.it. We block the HTTP request
     # for nexa.polito.it by dropping packets using DPI. So the error should happen in
     # the redirect chain and should be timeout.
@@ -452,8 +490,8 @@ def webconnectivity_http_generic_timeout_error_with_consistent_dns(ooni_exe, out
 
 
 def webconnectivity_http_connection_reset_with_inconsistent_dns(ooni_exe, outfile):
-    """ Test case where there's inconsistent DNS and the connection is RST when
-        we're executing HTTP code. """
+    """Test case where there's inconsistent DNS and the connection is RST when
+    we're executing HTTP code."""
     args = [
         "-iptables-reset-keyword",
         "nexa.polito.it",
@@ -484,7 +522,7 @@ def webconnectivity_http_connection_reset_with_inconsistent_dns(ooni_exe, outfil
 
 
 def webconnectivity_http_successful_website(ooni_exe, outfile):
-    """ Test case where we succeed with an HTTP only webpage """
+    """Test case where we succeed with an HTTP only webpage"""
     args = []
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
@@ -508,7 +546,7 @@ def webconnectivity_http_successful_website(ooni_exe, outfile):
 
 
 def webconnectivity_https_successful_website(ooni_exe, outfile):
-    """ Test case where we succeed with an HTTPS only webpage """
+    """Test case where we succeed with an HTTPS only webpage"""
     args = []
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
@@ -532,7 +570,7 @@ def webconnectivity_https_successful_website(ooni_exe, outfile):
 
 
 def webconnectivity_http_diff_with_inconsistent_dns(ooni_exe, outfile):
-    """ Test case where we get an http-diff and the DNS is inconsistent """
+    """Test case where we get an http-diff and the DNS is inconsistent"""
     args = [
         "-iptables-hijack-dns-to",
         "127.0.0.1:53",
@@ -555,7 +593,7 @@ def webconnectivity_http_diff_with_inconsistent_dns(ooni_exe, outfile):
     assert tk["body_length_match"] == False
     assert tk["body_proportion"] < 1
     assert tk["status_code_match"] == False
-    assert tk["headers_match"] == False
+    assert tk["headers_match"] == True
     assert tk["title_match"] == False
     assert tk["blocking"] == "dns"
     assert tk["accessible"] == False
@@ -563,7 +601,7 @@ def webconnectivity_http_diff_with_inconsistent_dns(ooni_exe, outfile):
 
 
 def webconnectivity_http_diff_with_consistent_dns(ooni_exe, outfile):
-    """ Test case where we get an http-diff and the DNS is consistent """
+    """Test case where we get an http-diff and the DNS is consistent"""
     args = [
         "-iptables-hijack-http-to",
         "127.0.0.1:80",
@@ -584,7 +622,7 @@ def webconnectivity_http_diff_with_consistent_dns(ooni_exe, outfile):
     assert tk["body_length_match"] == False
     assert tk["body_proportion"] < 1
     assert tk["status_code_match"] == False
-    assert tk["headers_match"] == False
+    assert tk["headers_match"] == True
     assert tk["title_match"] == False
     assert tk["blocking"] == "http-diff"
     assert tk["accessible"] == False
@@ -592,7 +630,7 @@ def webconnectivity_http_diff_with_consistent_dns(ooni_exe, outfile):
 
 
 def webconnectivity_https_expired_certificate(ooni_exe, outfile):
-    """ Test case where the domain's certificate is expired """
+    """Test case where the domain's certificate is expired"""
     args = []
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
@@ -629,7 +667,7 @@ def webconnectivity_https_expired_certificate(ooni_exe, outfile):
 
 
 def webconnectivity_https_wrong_host(ooni_exe, outfile):
-    """ Test case where the hostname is wrong for the certificate """
+    """Test case where the hostname is wrong for the certificate"""
     args = []
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
@@ -666,7 +704,7 @@ def webconnectivity_https_wrong_host(ooni_exe, outfile):
 
 
 def webconnectivity_https_self_signed(ooni_exe, outfile):
-    """ Test case where the certificate is self signed """
+    """Test case where the certificate is self signed"""
     args = []
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
@@ -703,7 +741,7 @@ def webconnectivity_https_self_signed(ooni_exe, outfile):
 
 
 def webconnectivity_https_untrusted_root(ooni_exe, outfile):
-    """ Test case where the certificate has an untrusted root """
+    """Test case where the certificate has an untrusted root"""
     args = []
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
@@ -740,7 +778,7 @@ def webconnectivity_https_untrusted_root(ooni_exe, outfile):
 
 
 def webconnectivity_dns_blocking_nxdomain(ooni_exe, outfile):
-    """ Test case where there is blocking using NXDOMAIN """
+    """Test case where there is blocking using NXDOMAIN"""
     args = [
         "-iptables-hijack-dns-to",
         "127.0.0.1:53",
@@ -779,8 +817,8 @@ def webconnectivity_dns_blocking_nxdomain(ooni_exe, outfile):
 
 
 def webconnectivity_https_unknown_authority_with_inconsistent_dns(ooni_exe, outfile):
-    """ Test case where the DNS is sending us towards a website where
-        we're served an invalid certificate """
+    """Test case where the DNS is sending us towards a website where
+    we're served an invalid certificate"""
     args = [
         "-iptables-hijack-dns-to",
         "127.0.0.1:53",
@@ -824,6 +862,7 @@ def main():
         webconnectivity_https_ok_with_control_failure,
         webconnectivity_http_ok_with_control_failure,
         webconnectivity_transparent_http_proxy,
+        webconnectivity_transparent_https_proxy,
         webconnectivity_dns_hijacking,
         webconnectivity_control_unreachable_and_using_http,
         webconnectivity_nonexistent_domain,

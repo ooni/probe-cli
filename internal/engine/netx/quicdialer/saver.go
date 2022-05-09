@@ -19,7 +19,7 @@ type HandshakeSaver struct {
 
 // DialContext implements ContextDialer.DialContext
 func (h HandshakeSaver) DialContext(ctx context.Context, network string,
-	host string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
+	host string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
 	start := time.Now()
 	// TODO(bassosimone): in the future we probably want to also save
 	// information about what versions we're willing to accept.

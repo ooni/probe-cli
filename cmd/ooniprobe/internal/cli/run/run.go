@@ -8,6 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/nettests"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func init() {
@@ -32,7 +33,7 @@ func init() {
 		return nil
 	})
 
-	functionalRun := func(runType string, pred func(name string, gr nettests.Group) bool) error {
+	functionalRun := func(runType model.RunType, pred func(name string, gr nettests.Group) bool) error {
 		for name, group := range nettests.All {
 			if !pred(name, group) {
 				continue
@@ -52,7 +53,7 @@ func init() {
 
 	genRunWithGroupName := func(targetName string) func(*kingpin.ParseContext) error {
 		return func(*kingpin.ParseContext) error {
-			return functionalRun("manual", func(groupName string, gr nettests.Group) bool {
+			return functionalRun(model.RunTypeManual, func(groupName string, gr nettests.Group) bool {
 				return groupName == targetName
 			})
 		}
@@ -68,7 +69,7 @@ func init() {
 			Probe:      probe,
 			InputFiles: *inputFile,
 			Inputs:     *input,
-			RunType:    "manual",
+			RunType:    model.RunTypeManual,
 		})
 	})
 
@@ -80,14 +81,14 @@ func init() {
 
 	unattendedCmd := cmd.Command("unattended", "")
 	unattendedCmd.Action(func(_ *kingpin.ParseContext) error {
-		return functionalRun("timed", func(name string, gr nettests.Group) bool {
+		return functionalRun(model.RunTypeTimed, func(name string, gr nettests.Group) bool {
 			return gr.UnattendedOK
 		})
 	})
 
 	allCmd := cmd.Command("all", "").Default()
 	allCmd.Action(func(_ *kingpin.ParseContext) error {
-		return functionalRun("manual", func(name string, gr nettests.Group) bool {
+		return functionalRun(model.RunTypeManual, func(name string, gr nettests.Group) bool {
 			return true
 		})
 	})

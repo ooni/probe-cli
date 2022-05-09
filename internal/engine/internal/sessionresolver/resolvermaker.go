@@ -30,6 +30,8 @@ var allmakers = []*resolvermaker{{
 }, {
 	url: "https://dns.google/dns-query",
 }, {
+	url: "http3://dns.google/dns-query",
+}, {
 	url: "https://dns.quad9.net/dns-query",
 }, {
 	url: "https://doh.powerdns.org/",

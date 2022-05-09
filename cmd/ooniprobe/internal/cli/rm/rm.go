@@ -9,11 +9,10 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
-	db "upper.io/db.v3"
-	"upper.io/db.v3/lib/sqlbuilder"
+	"github.com/upper/db/v4"
 )
 
-func deleteAll(sess sqlbuilder.Database, skipInteractive bool) error {
+func deleteAll(sess db.Session, skipInteractive bool) error {
 	if skipInteractive == false {
 		answer := ""
 		confirm := &survey.Select{

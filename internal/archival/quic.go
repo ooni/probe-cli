@@ -59,7 +59,7 @@ func (s *Saver) safeAddrString(addr net.Addr) (out string) {
 // QUICDialContext dials a QUIC session using the given dialer
 // and saves the results inside of the saver.
 func (s *Saver) QUICDialContext(ctx context.Context, dialer model.QUICDialer,
-	network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+	network, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 	started := time.Now()
 	var state tls.ConnectionState
 	sess, err := dialer.DialContext(ctx, network, address, tlsConfig, quicConfig)

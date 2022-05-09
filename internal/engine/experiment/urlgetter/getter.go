@@ -111,7 +111,7 @@ func (g Getter) get(ctx context.Context, saver *trace.Saver) (TestKeys, error) {
 		if err != nil {
 			return tk, err
 		}
-		tun, err := tunnel.Start(ctx, &tunnel.Config{
+		tun, _, err := tunnel.Start(ctx, &tunnel.Config{
 			Name:      g.Config.Tunnel,
 			Session:   g.Session,
 			TorArgs:   g.Session.TorArgs(),

@@ -13,12 +13,16 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/httphostheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/ndt7"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/psiphon"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/quicping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/run"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/signal"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/simplequicping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/sniblocking"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/stunreachability"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tcpping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/telegram"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlsping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlstool"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tor"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/torsf"
@@ -155,6 +159,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
+	"quicping": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, quicping.NewExperimentMeasurer(
+					*config.(*quicping.Config),
+				))
+			},
+			config:      &quicping.Config{},
+			inputPolicy: InputStrictlyRequired,
+		}
+	},
+
 	"riseupvpn": func(session *Session) *ExperimentBuilder {
 		return &ExperimentBuilder{
 			build: func(config interface{}) *Experiment {
@@ -175,6 +191,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &run.Config{},
+			inputPolicy: InputStrictlyRequired,
+		}
+	},
+
+	"simplequicping": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, simplequicping.NewExperimentMeasurer(
+					*config.(*simplequicping.Config),
+				))
+			},
+			config:      &simplequicping.Config{},
 			inputPolicy: InputStrictlyRequired,
 		}
 	},
@@ -212,6 +240,30 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 			},
 			config:      &stunreachability.Config{},
 			inputPolicy: InputOrStaticDefault,
+		}
+	},
+
+	"tcpping": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, tcpping.NewExperimentMeasurer(
+					*config.(*tcpping.Config),
+				))
+			},
+			config:      &tcpping.Config{},
+			inputPolicy: InputStrictlyRequired,
+		}
+	},
+
+	"tlsping": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, tlsping.NewExperimentMeasurer(
+					*config.(*tlsping.Config),
+				))
+			},
+			config:      &tlsping.Config{},
+			inputPolicy: InputStrictlyRequired,
 		}
 	},
 

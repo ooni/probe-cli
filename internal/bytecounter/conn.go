@@ -24,3 +24,16 @@ func (c *Conn) Write(p []byte) (int, error) {
 	c.Counter.CountBytesSent(count)
 	return count, err
 }
+
+// Wrap returns a new conn that uses the given counter.
+func Wrap(conn net.Conn, counter *Counter) net.Conn {
+	return &Conn{Conn: conn, Counter: counter}
+}
+
+// MaybeWrap is like wrap if counter is not nil, otherwise it's a no-op.
+func MaybeWrap(conn net.Conn, counter *Counter) net.Conn {
+	if counter == nil {
+		return conn
+	}
+	return Wrap(conn, counter)
+}

@@ -95,6 +95,9 @@ type Session struct {
 	// may need to pass to urlgetter when it uses a tor tunnel.
 	torBinary string
 
+	// tunnelDir is the directory used by tunnels.
+	tunnelDir string
+
 	// tunnel is the optional tunnel that we may be using. It is created
 	// by NewSession and it is cleaned up by Close.
 	tunnel tunnel.Tunnel
@@ -163,6 +166,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		tempDir:                 tempDir,
 		torArgs:                 config.TorArgs,
 		torBinary:               config.TorBinary,
+		tunnelDir:               config.TunnelDir,
 	}
 	proxyURL := config.ProxyURL
 	if proxyURL != nil {
@@ -170,7 +174,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		case "psiphon", "tor", "fake":
 			config.Logger.Infof(
 				"starting '%s' tunnel; please be patient...", proxyURL.Scheme)
-			tunnel, err := tunnel.Start(ctx, &tunnel.Config{
+			tunnel, _, err := tunnel.Start(ctx, &tunnel.Config{
 				Logger:    config.Logger,
 				Name:      proxyURL.Scheme,
 				Session:   &sessionTunnelEarlySession{},
@@ -204,6 +208,11 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	return sess, nil
 }
 
+// TunnelDir returns the persistent directory used by tunnels.
+func (s *Session) TunnelDir() string {
+	return s.tunnelDir
+}
+
 // KibiBytesReceived accounts for the KibiBytes received by the HTTP clients
 // managed by this session so far, including experiments.
 func (s *Session) KibiBytesReceived() float64 {
@@ -229,7 +238,7 @@ func (s *Session) KibiBytesSent() float64 {
 //
 // - ProbeCC: if empty, set to Session.ProbeCC();
 //
-// - RunType: if empty, set to "timed";
+// - RunType: if empty, set to model.RunTypeTimed;
 //
 // - SoftwareName: if empty, set to Session.SoftwareName();
 //
@@ -261,7 +270,7 @@ func (s *Session) CheckIn(
 		config.ProbeCC = s.ProbeCC()
 	}
 	if config.RunType == "" {
-		config.RunType = "timed" // most conservative choice
+		config.RunType = model.RunTypeTimed // most conservative choice
 	}
 	if config.SoftwareName == "" {
 		config.SoftwareName = s.SoftwareName()

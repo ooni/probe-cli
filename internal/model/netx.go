@@ -152,7 +152,7 @@ type QUICDialer interface {
 	//
 	// Typically, you want to pass `&quic.Config{}` as quicConfig.
 	DialContext(ctx context.Context, network, address string,
-		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error)
+		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error)
 
 	// CloseIdleConnections closes idle connections, if any.
 	CloseIdleConnections()

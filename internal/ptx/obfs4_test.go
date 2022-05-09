@@ -74,7 +74,8 @@ func TestOBFS4DialerFailsWithConnectionErrorAndContextExpiration(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	o4d.UnderlyingDialer = &mocks.Dialer{
-		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+		MockDialContext: func(
+			ctx context.Context, network string, address string) (net.Conn, error) {
 			cancel()
 			<-sigch
 			wg.Done()
@@ -114,8 +115,9 @@ func TestOBFS4DialerWorksWithContextExpiration(t *testing.T) {
 	called := &atomicx.Int64{}
 	o4d := DefaultTestingOBFS4Bridge()
 	o4d.UnderlyingDialer = &mocks.Dialer{
-		MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-			// We cancel the context before returning the error, which makes
+		MockDialContext: func(
+			ctx context.Context, network string, address string) (net.Conn, error) {
+			// We cancel the context before returning the conn, which makes
 			// the context cancellation happen before us returning.
 			cancel()
 			conn, err := net.Dial(network, address)

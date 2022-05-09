@@ -7,6 +7,6 @@ import (
 )
 
 // connectionState returns the ConnectionState of a QUIC Session.
-func connectionState(sess quic.EarlySession) tls.ConnectionState {
+func connectionState(sess quic.EarlyConnection) tls.ConnectionState {
 	return sess.ConnectionState().TLS.ConnectionState
 }

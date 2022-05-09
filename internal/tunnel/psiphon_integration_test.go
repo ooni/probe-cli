@@ -28,7 +28,7 @@ func TestPsiphonStartStop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tunnel, err := tunnel.Start(context.Background(), &tunnel.Config{
+	tunnel, _, err := tunnel.Start(context.Background(), &tunnel.Config{
 		Name:      "psiphon",
 		Session:   sess,
 		TunnelDir: tunnelDir,

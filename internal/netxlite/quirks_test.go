@@ -10,7 +10,7 @@ import (
 func TestQuirkReduceErrors(t *testing.T) {
 	t.Run("no errors", func(t *testing.T) {
 		result := quirkReduceErrors(nil)
-		if result != nil {
+		if !errors.Is(result, errReduceErrorsEmptyList) {
 			t.Fatal("wrong result")
 		}
 	})

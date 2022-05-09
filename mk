@@ -64,7 +64,7 @@ GOLANG_EXTRA_FLAGS =
 
 #help:
 #help: * GOLANG_VERSION_NUMBER : the expected version number for golang.
-GOLANG_VERSION_NUMBER = 1.17.6
+GOLANG_VERSION_NUMBER = 1.17.9
 
 #help:
 #help: * MINGW_W64_VERSION     : the expected mingw-w64 version.
@@ -72,7 +72,7 @@ MINGW_W64_VERSION = 10.3.1
 
 #help:
 #help: * OONIGO_BRANCH         : the github.com/ooni/go branch to use.
-OONIGO_BRANCH = oonigo1.17.6
+OONIGO_BRANCH = oonigo1.17.9
 
 #help:
 #help: * OONI_PSIPHON_TAGS     : build tags for `go build -tags ...` that cause

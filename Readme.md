@@ -16,7 +16,20 @@ This repository contains core OONI tools written in Go:
 
 - and all the related support packages (inside [internal](internal)).
 
-Every top-level directory in this repository contains an explanatory README file.
+Every top-level directory in this repository contains an explanatory README file. You
+may also notice that some internal packages live under [internal/engine](internal/engine)
+while most others are top-level. This is part of a long-standing refactoring started
+when we merged https://github.com/ooni/probe-engine into this repository. We'll slowly
+ensure that all packages inside `engine` are moved out of it and inside `internal`.
+
+## Semantic versioning policy
+
+The mobile library is a public package for technical reasons. Go mobile tools require
+a public package to build from. Yet, we don't consider API breakages happening in
+such a package to be sufficient to bump our major version number. For us, the mobile
+library is just a mean to implement OONI Probe Android and OONI Probe iOS. We'll
+only bump the major version number if we implement any set of breaking changes of
+the `./cmd/ooniprobe`'s CLI.
 
 ## License
 

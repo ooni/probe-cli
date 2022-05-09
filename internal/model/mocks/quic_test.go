@@ -37,19 +37,19 @@ func TestQUICDialer(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		qcd := &QUICDialer{
-			MockDialContext: func(ctx context.Context, network string, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+			MockDialContext: func(ctx context.Context, network string, address string, tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 				return nil, expected
 			},
 		}
 		ctx := context.Background()
 		tlsConfig := &tls.Config{}
 		quicConfig := &quic.Config{}
-		sess, err := qcd.DialContext(ctx, "udp", "dns.google:443", tlsConfig, quicConfig)
+		qconn, err := qcd.DialContext(ctx, "udp", "dns.google:443", tlsConfig, quicConfig)
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected")
 		}
-		if sess != nil {
-			t.Fatal("expected nil session")
+		if qconn != nil {
+			t.Fatal("expected nil connection")
 		}
 	})
 
@@ -67,16 +67,16 @@ func TestQUICDialer(t *testing.T) {
 	})
 }
 
-func TestQUICEarlySession(t *testing.T) {
+func TestQUICEarlyConnection(t *testing.T) {
 	t.Run("AcceptStream", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockAcceptStream: func(ctx context.Context) (quic.Stream, error) {
 				return nil, expected
 			},
 		}
 		ctx := context.Background()
-		stream, err := sess.AcceptStream(ctx)
+		stream, err := qconn.AcceptStream(ctx)
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
@@ -87,13 +87,13 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("AcceptUniStream", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockAcceptUniStream: func(ctx context.Context) (quic.ReceiveStream, error) {
 				return nil, expected
 			},
 		}
 		ctx := context.Background()
-		stream, err := sess.AcceptUniStream(ctx)
+		stream, err := qconn.AcceptUniStream(ctx)
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
@@ -104,12 +104,12 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("OpenStream", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockOpenStream: func() (quic.Stream, error) {
 				return nil, expected
 			},
 		}
-		stream, err := sess.OpenStream()
+		stream, err := qconn.OpenStream()
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
@@ -120,13 +120,13 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("OpenStreamSync", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockOpenStreamSync: func(ctx context.Context) (quic.Stream, error) {
 				return nil, expected
 			},
 		}
 		ctx := context.Background()
-		stream, err := sess.OpenStreamSync(ctx)
+		stream, err := qconn.OpenStreamSync(ctx)
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
@@ -137,12 +137,12 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("OpenUniStream", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockOpenUniStream: func() (quic.SendStream, error) {
 				return nil, expected
 			},
 		}
-		stream, err := sess.OpenUniStream()
+		stream, err := qconn.OpenUniStream()
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
@@ -153,13 +153,13 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("OpenUniStreamSync", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockOpenUniStreamSync: func(ctx context.Context) (quic.SendStream, error) {
 				return nil, expected
 			},
 		}
 		ctx := context.Background()
-		stream, err := sess.OpenUniStreamSync(ctx)
+		stream, err := qconn.OpenUniStreamSync(ctx)
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
@@ -169,24 +169,24 @@ func TestQUICEarlySession(t *testing.T) {
 	})
 
 	t.Run("LocalAddr", func(t *testing.T) {
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockLocalAddr: func() net.Addr {
 				return &net.UDPAddr{}
 			},
 		}
-		addr := sess.LocalAddr()
+		addr := qconn.LocalAddr()
 		if !reflect.ValueOf(addr).Elem().IsZero() {
 			t.Fatal("expected a zero address here")
 		}
 	})
 
 	t.Run("RemoteAddr", func(t *testing.T) {
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockRemoteAddr: func() net.Addr {
 				return &net.UDPAddr{}
 			},
 		}
-		addr := sess.RemoteAddr()
+		addr := qconn.RemoteAddr()
 		if !reflect.ValueOf(addr).Elem().IsZero() {
 			t.Fatal("expected a zero address here")
 		}
@@ -194,13 +194,13 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("CloseWithError", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockCloseWithError: func(
 				code quic.ApplicationErrorCode, reason string) error {
 				return expected
 			},
 		}
-		err := sess.CloseWithError(0, "")
+		err := qconn.CloseWithError(0, "")
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
@@ -208,12 +208,12 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("Context", func(t *testing.T) {
 		ctx := context.Background()
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockContext: func() context.Context {
 				return ctx
 			},
 		}
-		out := sess.Context()
+		out := qconn.Context()
 		if !reflect.DeepEqual(ctx, out) {
 			t.Fatal("not the context we expected")
 		}
@@ -221,12 +221,12 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("ConnectionState", func(t *testing.T) {
 		state := quic.ConnectionState{SupportsDatagrams: true}
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockConnectionState: func() quic.ConnectionState {
 				return state
 			},
 		}
-		out := sess.ConnectionState()
+		out := qconn.ConnectionState()
 		if !reflect.DeepEqual(state, out) {
 			t.Fatal("not the context we expected")
 		}
@@ -234,25 +234,25 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("HandshakeComplete", func(t *testing.T) {
 		ctx := context.Background()
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockHandshakeComplete: func() context.Context {
 				return ctx
 			},
 		}
-		out := sess.HandshakeComplete()
+		out := qconn.HandshakeComplete()
 		if !reflect.DeepEqual(ctx, out) {
 			t.Fatal("not the context we expected")
 		}
 	})
 
-	t.Run("NextSession", func(t *testing.T) {
-		next := &QUICEarlySession{}
-		sess := &QUICEarlySession{
-			MockNextSession: func() quic.Session {
+	t.Run("NextConnection", func(t *testing.T) {
+		next := &QUICEarlyConnection{}
+		qconn := &QUICEarlyConnection{
+			MockNextConnection: func() quic.Connection {
 				return next
 			},
 		}
-		out := sess.NextSession()
+		out := qconn.NextConnection()
 		if !reflect.DeepEqual(next, out) {
 			t.Fatal("not the context we expected")
 		}
@@ -260,13 +260,13 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("SendMessage", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockSendMessage: func(b []byte) error {
 				return expected
 			},
 		}
 		b := make([]byte, 17)
-		err := sess.SendMessage(b)
+		err := qconn.SendMessage(b)
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}
@@ -274,12 +274,12 @@ func TestQUICEarlySession(t *testing.T) {
 
 	t.Run("ReceiveMessage", func(t *testing.T) {
 		expected := errors.New("mocked error")
-		sess := &QUICEarlySession{
+		qconn := &QUICEarlyConnection{
 			MockReceiveMessage: func() ([]byte, error) {
 				return nil, expected
 			},
 		}
-		b, err := sess.ReceiveMessage()
+		b, err := qconn.ReceiveMessage()
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}

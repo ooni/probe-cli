@@ -272,7 +272,7 @@ func Collect(ctx context.Context, multi urlgetter.Multi, inputs []urlgetter.Mult
 			count++
 			percentage := float64(count) / float64(expect)
 			callbacks.OnProgress(percentage, fmt.Sprintf(
-				"dnscheck: measure %s: %+v", entry.Input.Config.ResolverURL, entry.Err,
+				"dnscheck: measure %s: %+v", entry.Input.Config.ResolverURL, model.ErrorToStringOrOK(entry.Err),
 			))
 			outputch <- entry
 		}
@@ -317,7 +317,7 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 
 // SummaryKeys contains summary keys for this experiment.
 //
-// Note that this structure is part of the ABI contract with probe-cli
+// Note that this structure is part of the ABI contract with ooniprobe
 // therefore we should be careful when changing it.
 type SummaryKeys struct {
 	IsAnomaly bool `json:"-"`

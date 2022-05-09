@@ -513,14 +513,7 @@ func TestNewWithSaver(t *testing.T) {
 	if stxptxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	sptxp, ok := stxptxp.HTTPTransport.(httptransport.SaverPerformanceHTTPTransport)
-	if !ok {
-		t.Fatal("not the transport we expected")
-	}
-	if sptxp.Saver != saver {
-		t.Fatal("not the logger we expected")
-	}
-	sbtxp, ok := sptxp.HTTPTransport.(httptransport.SaverBodyHTTPTransport)
+	sbtxp, ok := stxptxp.HTTPTransport.(httptransport.SaverBodyHTTPTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}

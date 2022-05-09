@@ -131,7 +131,7 @@ func (m Measurer) Run(
 		tk.Tampering = (tk.Tampering || result.Tampering)
 		completed++
 		percentage := (float64(completed)/float64(len(m.Methods)))*0.5 + 0.5
-		callbacks.OnProgress(percentage, fmt.Sprintf("%s... %+v", result.Name, result.Err))
+		callbacks.OnProgress(percentage, fmt.Sprintf("%s... %+v", result.Name, model.ErrorToStringOrOK(result.Err)))
 		if completed >= len(m.Methods) {
 			break
 		}
@@ -305,7 +305,7 @@ func RunMethod(ctx context.Context, config RunMethodConfig) {
 
 // SummaryKeys contains summary keys for this experiment.
 //
-// Note that this structure is part of the ABI contract with probe-cli
+// Note that this structure is part of the ABI contract with ooniprobe
 // therefore we should be careful when changing it.
 type SummaryKeys struct {
 	IsAnomaly bool `json:"-"`

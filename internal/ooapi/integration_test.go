@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/ooapi"
 	"github.com/ooni/probe-cli/v3/internal/ooapi/apimodel"
 )
@@ -19,7 +20,7 @@ func TestWithRealServerDoCheckIn(t *testing.T) {
 		Platform:        "android",
 		ProbeASN:        "AS12353",
 		ProbeCC:         "IT",
-		RunType:         "timed",
+		RunType:         model.RunTypeTimed,
 		SoftwareName:    "ooniprobe-android",
 		SoftwareVersion: "2.7.1",
 		WebConnectivity: apimodel.CheckInRequestWebConnectivity{

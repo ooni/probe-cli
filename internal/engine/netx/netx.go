@@ -213,8 +213,6 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 			HTTPTransport: txp, Saver: config.HTTPSaver}
 		txp = httptransport.SaverBodyHTTPTransport{
 			HTTPTransport: txp, Saver: config.HTTPSaver}
-		txp = httptransport.SaverPerformanceHTTPTransport{
-			HTTPTransport: txp, Saver: config.HTTPSaver}
 		txp = httptransport.SaverTransactionHTTPTransport{
 			HTTPTransport: txp, Saver: config.HTTPSaver}
 	}

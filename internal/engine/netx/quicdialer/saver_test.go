@@ -18,12 +18,12 @@ import (
 
 type MockDialer struct {
 	Dialer model.QUICDialer
-	Sess   quic.EarlySession
+	Sess   quic.EarlyConnection
 	Err    error
 }
 
 func (d MockDialer) DialContext(ctx context.Context, network, host string,
-	tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
+	tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
 	if d.Dialer != nil {
 		return d.Dialer.DialContext(ctx, network, host, tlsCfg, cfg)
 	}

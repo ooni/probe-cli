@@ -173,7 +173,7 @@ var Specs = []*ErrorSpec{
 // of the related golang.org/x/sys/$name library.
 func mapSystemToLibrary(system string) string {
 	switch system {
-	case "darwin", "freebsd", "linux":
+	case "darwin", "freebsd", "openbsd", "linux":
 		return "unix"
 	case "windows":
 		return "windows"
@@ -364,6 +364,7 @@ func writeSystemSpecificTestFile(system string) {
 var SupportedSystems = []string{
 	"darwin",
 	"freebsd",
+	"openbsd",
 	"linux",
 	"windows",
 }

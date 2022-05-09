@@ -83,7 +83,7 @@ type quicDialerQUICGo struct {
 	// mockDialEarlyContext allows to mock quic.DialEarlyContext.
 	mockDialEarlyContext func(ctx context.Context, pconn net.PacketConn,
 		remoteAddr net.Addr, host string, tlsConfig *tls.Config,
-		quicConfig *quic.Config) (quic.EarlySession, error)
+		quicConfig *quic.Config) (quic.EarlyConnection, error)
 }
 
 var _ model.QUICDialer = &quicDialerQUICGo{}
@@ -101,7 +101,7 @@ var errInvalidIP = errors.New("netxlite: invalid IP")
 // then we configure, respectively, "h3" and "dq".
 func (d *quicDialerQUICGo) DialContext(ctx context.Context, network string,
 	address string, tlsConfig *tls.Config, quicConfig *quic.Config) (
-	quic.EarlySession, error) {
+	quic.EarlyConnection, error) {
 	onlyhost, onlyport, err := net.SplitHostPort(address)
 	if err != nil {
 		return nil, err
@@ -120,18 +120,18 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context, network string,
 	}
 	udpAddr := &net.UDPAddr{IP: ip, Port: port, Zone: ""}
 	tlsConfig = d.maybeApplyTLSDefaults(tlsConfig, port)
-	sess, err := d.dialEarlyContext(
+	qconn, err := d.dialEarlyContext(
 		ctx, pconn, udpAddr, address, tlsConfig, quicConfig)
 	if err != nil {
 		pconn.Close() // we own it on failure
 		return nil, err
 	}
-	return &quicSessionOwnsConn{EarlySession: sess, conn: pconn}, nil
+	return &quicConnectionOwnsConn{EarlyConnection: qconn, conn: pconn}, nil
 }
 
 func (d *quicDialerQUICGo) dialEarlyContext(ctx context.Context,
 	pconn net.PacketConn, remoteAddr net.Addr, address string,
-	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 	if d.mockDialEarlyContext != nil {
 		return d.mockDialEarlyContext(
 			ctx, pconn, remoteAddr, address, tlsConfig, quicConfig)
@@ -164,20 +164,20 @@ func (d *quicDialerQUICGo) CloseIdleConnections() {
 	// nothing to do
 }
 
-// quicSessionOwnsConn ensures that we close the UDPLikeConn.
-type quicSessionOwnsConn struct {
-	// EarlySession is the embedded early session
-	quic.EarlySession
+// quicConnectionOwnsConn ensures that we close the UDPLikeConn.
+type quicConnectionOwnsConn struct {
+	// EarlyConnection is the embedded early connection
+	quic.EarlyConnection
 
 	// conn is the connection we own
 	conn model.UDPLikeConn
 }
 
-// CloseWithError implements quic.EarlySession.CloseWithError.
-func (sess *quicSessionOwnsConn) CloseWithError(
+// CloseWithError implements quic.EarlyConnection.CloseWithError.
+func (qconn *quicConnectionOwnsConn) CloseWithError(
 	code quic.ApplicationErrorCode, reason string) error {
-	err := sess.EarlySession.CloseWithError(code, reason)
-	sess.conn.Close()
+	err := qconn.EarlyConnection.CloseWithError(code, reason)
+	qconn.conn.Close()
 	return err
 }
 
@@ -200,7 +200,7 @@ var _ model.QUICDialer = &quicDialerResolver{}
 // contained inside of the `address` endpoint.
 func (d *quicDialerResolver) DialContext(
 	ctx context.Context, network, address string,
-	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 	onlyhost, onlyport, err := net.SplitHostPort(address)
 	if err != nil {
 		return nil, err
@@ -217,10 +217,10 @@ func (d *quicDialerResolver) DialContext(
 	var errorslist []error
 	for _, addr := range addrs {
 		target := net.JoinHostPort(addr, onlyport)
-		sess, err := d.Dialer.DialContext(
+		qconn, err := d.Dialer.DialContext(
 			ctx, network, target, tlsConfig, quicConfig)
 		if err == nil {
-			return sess, nil
+			return qconn, nil
 		}
 		errorslist = append(errorslist, err)
 	}
@@ -272,16 +272,16 @@ var _ model.QUICDialer = &quicDialerLogger{}
 // DialContext implements QUICContextDialer.DialContext.
 func (d *quicDialerLogger) DialContext(
 	ctx context.Context, network, address string,
-	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlySession, error) {
+	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 	d.Logger.Debugf("quic_dial%s %s/%s...", d.operationSuffix, address, network)
-	sess, err := d.Dialer.DialContext(ctx, network, address, tlsConfig, quicConfig)
+	qconn, err := d.Dialer.DialContext(ctx, network, address, tlsConfig, quicConfig)
 	if err != nil {
 		d.Logger.Debugf("quic_dial%s %s/%s... %s", d.operationSuffix,
 			address, network, err)
 		return nil, err
 	}
 	d.Logger.Debugf("quic_dial%s %s/%s... ok", d.operationSuffix, address, network)
-	return sess, nil
+	return qconn, nil
 }
 
 // CloseIdleConnections implements QUICDialer.CloseIdleConnections.
@@ -290,14 +290,14 @@ func (d *quicDialerLogger) CloseIdleConnections() {
 }
 
 // NewSingleUseQUICDialer is like NewSingleUseDialer but for QUIC.
-func NewSingleUseQUICDialer(sess quic.EarlySession) model.QUICDialer {
-	return &quicDialerSingleUse{sess: sess}
+func NewSingleUseQUICDialer(qconn quic.EarlyConnection) model.QUICDialer {
+	return &quicDialerSingleUse{qconn: qconn}
 }
 
 // quicDialerSingleUse is the QUICDialer returned by NewSingleQUICDialer.
 type quicDialerSingleUse struct {
 	sync.Mutex
-	sess quic.EarlySession
+	qconn quic.EarlyConnection
 }
 
 var _ model.QUICDialer = &quicDialerSingleUse{}
@@ -305,15 +305,15 @@ var _ model.QUICDialer = &quicDialerSingleUse{}
 // DialContext implements QUICDialer.DialContext.
 func (s *quicDialerSingleUse) DialContext(
 	ctx context.Context, network, addr string, tlsCfg *tls.Config,
-	cfg *quic.Config) (quic.EarlySession, error) {
-	var sess quic.EarlySession
+	cfg *quic.Config) (quic.EarlyConnection, error) {
+	var qconn quic.EarlyConnection
 	defer s.Unlock()
 	s.Lock()
-	if s.sess == nil {
+	if s.qconn == nil {
 		return nil, ErrNoConnReuse
 	}
-	sess, s.sess = s.sess, nil
-	return sess, nil
+	qconn, s.qconn = s.qconn, nil
+	return qconn, nil
 }
 
 // CloseIdleConnections closes idle connections.
@@ -381,11 +381,11 @@ type quicDialerErrWrapper struct {
 // DialContext implements ContextDialer.DialContext
 func (d *quicDialerErrWrapper) DialContext(
 	ctx context.Context, network string, host string,
-	tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
-	sess, err := d.QUICDialer.DialContext(ctx, network, host, tlsCfg, cfg)
+	tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
+	qconn, err := d.QUICDialer.DialContext(ctx, network, host, tlsCfg, cfg)
 	if err != nil {
 		return nil, NewErrWrapper(
 			classifyQUICHandshakeError, QUICHandshakeOperation, err)
 	}
-	return sess, nil
+	return qconn, nil
 }

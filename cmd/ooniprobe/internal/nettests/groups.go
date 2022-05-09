@@ -22,6 +22,8 @@ var All = map[string]Group{
 			Dash{},
 			NDT{},
 		},
+		// unattendedOK is explicitly set to false, since there is no need for consumption of excessive amounts of data with background tests
+		UnattendedOK: false,
 	},
 	"middlebox": {
 		Label: "Middleboxes",
@@ -45,7 +47,6 @@ var All = map[string]Group{
 		Label: "Circumvention Tools",
 		Nettests: []Nettest{
 			Psiphon{},
-			RiseupVPN{},
 			Tor{},
 		},
 		UnattendedOK: true,
@@ -57,5 +58,6 @@ var All = map[string]Group{
 			STUNReachability{},
 			TorSf{},
 		},
+		UnattendedOK: true,
 	},
 }

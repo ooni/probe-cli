@@ -17,18 +17,22 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pkg/errors"
-	"upper.io/db.v3/lib/sqlbuilder"
+	"github.com/upper/db/v4"
 )
+
+// DefaultSoftwareName is the default software name.
+const DefaultSoftwareName = "ooniprobe-cli"
 
 // ProbeCLI is the OONI Probe CLI context.
 type ProbeCLI interface {
 	Config() *config.Config
-	DB() sqlbuilder.Database
+	DB() db.Session
 	IsBatch() bool
 	Home() string
 	TempDir() string
-	NewProbeEngine(ctx context.Context) (ProbeEngine, error)
+	NewProbeEngine(ctx context.Context, runType model.RunType) (ProbeEngine, error)
 }
 
 // ProbeEngine is an instance of the OONI Probe engine.
@@ -44,7 +48,7 @@ type ProbeEngine interface {
 // Probe contains the ooniprobe CLI context.
 type Probe struct {
 	config  *config.Config
-	db      sqlbuilder.Database
+	db      db.Session
 	isBatch bool
 
 	home      string
@@ -76,7 +80,7 @@ func (p *Probe) Config() *config.Config {
 }
 
 // DB returns the database we're using
-func (p *Probe) DB() sqlbuilder.Database {
+func (p *Probe) DB() db.Session {
 	return p.db
 }
 
@@ -189,6 +193,7 @@ func (p *Probe) Init(softwareName, softwareVersion string) error {
 		return errors.Wrap(err, "creating TempDir")
 	}
 	p.tempDir = tempDir
+	p.tunnelDir = utils.TunnelDir(p.home)
 
 	p.softwareName = softwareName
 	p.softwareVersion = softwareVersion
@@ -198,20 +203,28 @@ func (p *Probe) Init(softwareName, softwareVersion string) error {
 // NewSession creates a new ooni/probe-engine session using the
 // current configuration inside the context. The caller must close
 // the session when done using it, by calling sess.Close().
-func (p *Probe) NewSession(ctx context.Context) (*engine.Session, error) {
+func (p *Probe) NewSession(ctx context.Context, runType model.RunType) (*engine.Session, error) {
 	kvstore, err := kvstore.NewFS(
 		utils.EngineDir(p.home),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating engine's kvstore")
 	}
-	if err := os.MkdirAll(utils.TunnelDir(p.home), 0700); err != nil {
+	if err := os.MkdirAll(p.tunnelDir, 0700); err != nil {
 		return nil, errors.Wrap(err, "creating tunnel dir")
+	}
+	// When the software name is the default software name and we're running
+	// in unattended mode, adjust the software name accordingly.
+	//
+	// See https://github.com/ooni/probe/issues/2081.
+	softwareName := p.softwareName
+	if runType == model.RunTypeTimed && softwareName == DefaultSoftwareName {
+		softwareName = DefaultSoftwareName + "-unattended"
 	}
 	return engine.NewSession(ctx, engine.SessionConfig{
 		KVStore:         kvstore,
 		Logger:          enginex.Logger,
-		SoftwareName:    p.softwareName,
+		SoftwareName:    softwareName,
 		SoftwareVersion: p.softwareVersion,
 		TempDir:         p.tempDir,
 		TunnelDir:       p.tunnelDir,
@@ -219,8 +232,8 @@ func (p *Probe) NewSession(ctx context.Context) (*engine.Session, error) {
 }
 
 // NewProbeEngine creates a new ProbeEngine instance.
-func (p *Probe) NewProbeEngine(ctx context.Context) (ProbeEngine, error) {
-	sess, err := p.NewSession(ctx)
+func (p *Probe) NewProbeEngine(ctx context.Context, runType model.RunType) (ProbeEngine, error) {
+	sess, err := p.NewSession(ctx, runType)
 	if err != nil {
 		return nil, err
 	}

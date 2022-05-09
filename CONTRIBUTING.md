@@ -10,8 +10,16 @@ reviewer is satisfied, they will merge the pull request.
 Please, make sure you read [OONI Software Development Guidelines](
 https://ooni.org/post/ooni-software-development-guidelines/). We try in
 general to follow these guidelines when working on ooni/probe-cli. In
-the unlikely care where those guidelines conflict with this document, this
+the unlikely case where those guidelines conflict with this document, this
 document will take precedence.
+
+## Golang Resources
+
+We use golang as our primary language for the development of OONI Probe CLI and do check out the resources below, quite useful to read before contributing.
+
+- [Effective Go](https://go.dev/doc/effective_go)
+- [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
+- [Concurrency](https://go.dev/blog/pipelines) and [Data races](https://go.dev/ref/mem)
 
 ## Opening issues
 
@@ -68,10 +76,16 @@ run `go mod tidy` to minimize such changes.
 - use `./internal/netxlite.ReadAllContext` instead of `io.ReadAll`
 and `./internal/netxlite.CopyContext` instead of `io.Copy`
 
+- use `./internal/model.ErrorToStringOrOK` when 
+an experiment logs intermediate results
+
 ## Code testing requirements
 
 Make sure all tests pass with `go test -race ./...` run from the
-top-level directory of this repository.
+top-level directory of this repository. (Integration tests may be
+flaky, so there may be some failures here and and there; we know
+in particular that `./internal/cmd/jafar` is one of the usual
+suspects and that it's not super pleasant to test it under Linux.)
 
 ## Writing a new OONI experiment
 
@@ -127,3 +141,7 @@ the `alpha` version used by `master`.
 
 We build binary packages for each tagged release. We will use external
 tools for publishing binaries to our Debian repository, Maven Central, etc.
+
+## Community Channels
+
+Stuck somewhere or Have any questions? please join our [Slack Channels](https://slack.ooni.org/) or [IRC](ircs://irc.oftc.net:6697/#ooni). We're here to help and always available to discuss. 

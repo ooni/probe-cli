@@ -23,6 +23,7 @@ type ExperimentSession interface {
 	TempDir() string
 	TorArgs() []string
 	TorBinary() string
+	TunnelDir() string
 	UserAgent() string
 }
 
