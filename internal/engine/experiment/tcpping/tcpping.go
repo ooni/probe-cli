@@ -115,7 +115,7 @@ func (m *Measurer) Run(
 	return nil // return nil so we always submit the measurement
 }
 
-// tcpPingLoop sends all the ping requests and collects responses.
+// tcpPingLoop sends all the ping requests and emits the results onto the out channel.
 func (m *Measurer) tcpPingLoop(ctx context.Context, mxmx *measurex.Measurer,
 	address string, out chan<- *measurex.EndpointMeasurement) {
 	ticker := time.NewTicker(m.config.delay())
@@ -147,7 +147,7 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 
 // SummaryKeys contains summary keys for this experiment.
 //
-// Note that this structure is part of the ABI contract with probe-cli
+// Note that this structure is part of the ABI contract with ooniprobe
 // therefore we should be careful when changing it.
 type SummaryKeys struct {
 	IsAnomaly bool `json:"-"`

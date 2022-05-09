@@ -13,50 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-func TestWorksWithLocalListener(t *testing.T) {
-	srvr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-	}))
-	URL, err := url.Parse(srvr.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	URL.Scheme = "tcpconnect"
-	const expectedPings = 4
-	m := NewExperimentMeasurer(Config{
-		Delay:       1,
-		Repetitions: expectedPings,
-	})
-	if m.ExperimentName() != "tcpping" {
-		t.Fatal("invalid experiment name")
-	}
-	if m.ExperimentVersion() != "0.1.0" {
-		t.Fatal("invalid experiment version")
-	}
-	ctx := context.Background()
-	meas := &model.Measurement{
-		Input: model.MeasurementTarget(URL.String()),
-	}
-	sess := &mockable.Session{}
-	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
-	err = m.Run(ctx, sess, meas, callbacks)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tk := meas.TestKeys.(*TestKeys)
-	if len(tk.Pings) != expectedPings {
-		t.Fatal("unexpected number of pings")
-	}
-	ask, err := m.GetSummaryKeys(meas)
-	if err != nil {
-		t.Fatal("cannot obtain summary")
-	}
-	summary := ask.(SummaryKeys)
-	if summary.IsAnomaly {
-		t.Fatal("expected no anomaly")
-	}
-}
-
 func TestConfig_repetitions(t *testing.T) {
 	c := Config{}
 	if c.repetitions() != 10 {
