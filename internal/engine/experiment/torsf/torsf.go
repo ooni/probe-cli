@@ -42,6 +42,9 @@ type TestKeys struct {
 	// BootstrapTime contains the bootstrap time on success.
 	BootstrapTime float64 `json:"bootstrap_time"`
 
+	// DefaultTimeout contains the default timeout for torsf
+	DefaultTimeout float64 `json:"default_timeout"`
+
 	// Failure contains the failure string or nil.
 	Failure *string `json:"failure"`
 
@@ -113,7 +116,7 @@ func (m *Measurer) Run(
 	tkch := make(chan *TestKeys)
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
-	go m.bootstrap(ctx, sess, tkch, ptl, sfdialer)
+	go m.bootstrap(ctx, maxRuntime, sess, tkch, ptl, sfdialer)
 	for {
 		select {
 		case tk := <-tkch:
@@ -159,10 +162,11 @@ func (m *Measurer) setup(ctx context.Context,
 }
 
 // bootstrap runs the bootstrap.
-func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
+func (m *Measurer) bootstrap(ctx context.Context, timeout time.Duration, sess model.ExperimentSession,
 	out chan<- *TestKeys, ptl *ptx.Listener, sfdialer *ptx.SnowflakeDialer) {
 	tk := &TestKeys{
 		BootstrapTime:     0,
+		DefaultTimeout:    timeout.Seconds(),
 		Failure:           nil,
 		PersistentDatadir: !m.config.DisablePersistentDatadir,
 		RendezvousMethod:  sfdialer.RendezvousMethod.Name(),
@@ -196,9 +200,9 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 
 // torProgressRegexp helps to extract progress info from logs.
 //
-// See https://regex101.com/r/3YfIed/1.
+// See https://regex101.com/r/cer3lm/1.
 var torProgressRegexp = regexp.MustCompile(
-	`^[A-Za-z0-9.: ]+ \[notice\] Bootstrapped [0-9]+% \([a-zA-z]+\): [A-Za-z0-9 ]+$`)
+	`^[A-Za-z0-9.: ]+ \[notice\] Bootstrapped [0-9]+% \([A-Za-z_]+\): [A-Za-z0-9 ]+$`)
 
 // readTorLogs attempts to read and include the tor logs into
 // the test keys if this operation is possible.

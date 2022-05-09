@@ -59,12 +59,12 @@ func NewQUICDialerResolver(resolver model.Resolver) model.QUICDialer {
 }
 
 // NewSingleH3Transport creates an http3.RoundTripper.
-func NewSingleH3Transport(qsess quic.EarlySession, tlscfg *tls.Config, qcfg *quic.Config) http.RoundTripper {
+func NewSingleH3Transport(qconn quic.EarlyConnection, tlscfg *tls.Config, qcfg *quic.Config) http.RoundTripper {
 	transport := &http3.RoundTripper{
 		DisableCompression: true,
 		TLSClientConfig:    tlscfg,
 		QuicConfig:         qcfg,
-		Dial:               (&SingleDialerH3{qsess: &qsess}).Dial,
+		Dial:               (&SingleDialerH3{qconn: &qconn}).Dial,
 	}
 	return transport
 }
@@ -117,16 +117,16 @@ func (s *SingleDialer) DialContext(ctx context.Context, network string, addr str
 
 type SingleDialerH3 struct {
 	sync.Mutex
-	qsess *quic.EarlySession
+	qconn *quic.EarlyConnection
 }
 
-func (s *SingleDialerH3) Dial(network, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlySession, error) {
+func (s *SingleDialerH3) Dial(ctx context.Context, network, addr string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
 	s.Lock()
 	defer s.Unlock()
-	if s.qsess == nil {
+	if s.qconn == nil {
 		return nil, ErrNoConnReuse
 	}
-	qs := s.qsess
-	s.qsess = nil
+	qs := s.qconn
+	s.qconn = nil
 	return *qs, nil
 }

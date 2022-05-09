@@ -8,6 +8,7 @@ import (
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/cli/root"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/output"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func init() {
@@ -36,7 +37,7 @@ func dogeoip(config dogeoipconfig) error {
 		return err
 	}
 
-	engine, err := probeCLI.NewProbeEngine(context.Background())
+	engine, err := probeCLI.NewProbeEngine(context.Background(), model.RunTypeManual)
 	if err != nil {
 		return err
 	}

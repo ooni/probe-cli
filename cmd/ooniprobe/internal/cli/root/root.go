@@ -40,7 +40,7 @@ func init() {
 
 	softwareName := Cmd.Flag(
 		"software-name", "Override application name",
-	).Default("ooniprobe-cli").String()
+	).Default(ooni.DefaultSoftwareName).String()
 	softwareVersion := Cmd.Flag(
 		"software-version", "Override the application version",
 	).Default(version.Version).String()

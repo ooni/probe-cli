@@ -18,7 +18,9 @@ import "runtime"
 //
 // 5. "freebsd"
 //
-// 6. "unknown"
+// 6. "openbsd"
+//
+// 7. "unknown"
 //
 // You should use this name to annotate measurements.
 func Name() string {
@@ -32,7 +34,7 @@ func name(goos string) string {
 	//
 	// See https://golang.org/doc/go1.16#darwin
 	switch goos {
-	case "android", "freebsd", "ios", "linux", "windows":
+	case "android", "freebsd", "openbsd", "ios", "linux", "windows":
 		return goos
 	case "darwin":
 		return "macos"
