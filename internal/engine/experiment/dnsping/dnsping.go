@@ -1,10 +1,14 @@
 // Package dnsping is the experimental dnsping experiment.
+//
+// See XXX
 package dnsping
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurex"
@@ -18,11 +22,21 @@ const (
 
 // Config contains the experiment configuration.
 type Config struct {
+	// Delay is the delay between each repetition (in milliseconds).
+	Delay int64 `ooni:"number of milliseconds to wait before sending each ping"`
+
+	// Domains is the space-separated list of domains to measure.
+	Domains string `ooni:"space-separated list of domains to measure"`
+
 	// Repetitions is the number of repetitions for each ping.
 	Repetitions int64 `ooni:"number of times to repeat the measurement"`
+}
 
-	// Domain is the domain to test.
-	Domain string `ooni:"domain is the domain to test"`
+func (c *Config) delay() time.Duration {
+	if c.Delay > 0 {
+		return time.Duration(c.Delay) * time.Millisecond
+	}
+	return time.Second
 }
 
 func (c Config) repetitions() int64 {
@@ -32,11 +46,11 @@ func (c Config) repetitions() int64 {
 	return 10
 }
 
-func (c Config) domain() string {
-	if c.Domain != "" {
-		return c.Domain
+func (c Config) domains() string {
+	if c.Domains != "" {
+		return c.Domains
 	}
-	return "edge-chat.instagram.com"
+	return "edge-chat.instagram.com example.com"
 }
 
 // TestKeys contains the experiment results.
@@ -44,11 +58,14 @@ type TestKeys struct {
 	Pings []*SinglePing `json:"pings"`
 }
 
+// TODO(bassosimone): save more data once the dnsping improvements at
+// github.com/bassosimone/websteps-illustrated contains have been merged
+// into this repository. When this happens, we'll able to save raw
+// queries and network events of each individual query.
+
 // SinglePing contains the results of a single ping.
 type SinglePing struct {
-	DNSRoundTrips []*measurex.ArchivalDNSRoundTripEvent `json:"dns_round_trips"`
-	Queries       []*measurex.ArchivalDNSLookupEvent    `json:"queries"`
-	NetworkEvents []*measurex.ArchivalNetworkEvent      `json:"network_events"`
+	Queries []*measurex.ArchivalDNSLookupEvent `json:"queries"`
 }
 
 // Measurer performs the measurement.
@@ -66,6 +83,20 @@ func (m *Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
+var (
+	// errNoInputProvided indicates you didn't provide any input
+	errNoInputProvided = errors.New("not input provided")
+
+	// errInputIsNotAnURL indicates that input is not an URL
+	errInputIsNotAnURL = errors.New("input is not an URL")
+
+	// errInvalidScheme indicates that the scheme is invalid
+	errInvalidScheme = errors.New("scheme must be udp")
+
+	// errMissingPort indicates that there is no port.
+	errMissingPort = errors.New("the URL must include a port")
+)
+
 // Run implements ExperimentMeasurer.Run.
 func (m *Measurer) Run(
 	ctx context.Context,
@@ -74,30 +105,79 @@ func (m *Measurer) Run(
 	callbacks model.ExperimentCallbacks,
 ) error {
 	if measurement.Input == "" {
-		return errors.New("no input provided")
+		return errNoInputProvided
 	}
 	parsed, err := url.Parse(string(measurement.Input))
 	if err != nil {
-		return errors.New("input is not an URL")
+		return fmt.Errorf("%w: %s", errInputIsNotAnURL, err.Error())
 	}
 	if parsed.Scheme != "udp" {
-		return errors.New("we only support udp://<host>:<port> for now")
+		return errInvalidScheme
+	}
+	if parsed.Port() == "" {
+		return errMissingPort
 	}
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-	mx := measurex.NewMeasurerWithDefaultSettings()
-	for i := int64(0); i < m.config.repetitions(); i++ {
-		meas := mx.LookupHostUDP(ctx, m.config.domain(), parsed.Host)
-		tk.Pings = append(tk.Pings, &SinglePing{
-			DNSRoundTrips: measurex.NewArchivalDNSRoundTripEventList(meas.DNSRoundTrip),
-			Queries:       measurex.NewArchivalDNSLookupEventList(meas.LookupHost),
-			NetworkEvents: measurex.NewArchivalNetworkEventList(meas.ReadWrite),
-		})
-		<-ticker.C
+	mxmx := measurex.NewMeasurerWithDefaultSettings()
+	out := make(chan *measurex.DNSMeasurement)
+	domains := strings.Split(m.config.domains(), " ")
+	for _, domain := range domains {
+		go m.dnsPingLoop(ctx, mxmx, parsed.Host, domain, out)
+	}
+	// The following multiplication could overflow but we're always using small
+	// numbers so it's fine for us not to bother with checking for that
+	numResults := int(m.config.repetitions()) * len(domains) * 2
+	for len(tk.Pings) < numResults {
+		meas := <-out
+		// TODO(bassosimone): when we merge the improvements at
+		// https://github.com/bassosimone/websteps-illustrated it
+		// will become unnecessary to split with query type
+		// as we're doing below.
+		queries := measurex.NewArchivalDNSLookupEventList(meas.LookupHost)
+		tk.Pings = append(tk.Pings, m.onlyQueryWithType(queries, "A")...)
+		tk.Pings = append(tk.Pings, m.onlyQueryWithType(queries, "AAAA")...)
 	}
 	return nil // return nil so we always submit the measurement
+}
+
+// onlyQueryWithType returns only the queries with the given type.
+func (m *Measurer) onlyQueryWithType(
+	in []*measurex.ArchivalDNSLookupEvent, kind string) (out []*SinglePing) {
+	for _, query := range in {
+		if query.QueryType == kind {
+			out = append(out, &SinglePing{
+				Queries: []*measurex.ArchivalDNSLookupEvent{query},
+			})
+		}
+	}
+	return
+}
+
+// dnsPingLoop sends all the ping requests and emits the results onto the out channel.
+func (m *Measurer) dnsPingLoop(ctx context.Context, mxmx *measurex.Measurer,
+	address string, domain string, out chan<- *measurex.DNSMeasurement) {
+	ticker := time.NewTicker(m.config.delay())
+	defer ticker.Stop()
+	for i := int64(0); i < m.config.repetitions(); i++ {
+		go m.dnsPingAsync(ctx, mxmx, address, domain, out)
+		<-ticker.C
+	}
+}
+
+// dnsPingAsync performs a DNS ping and emits the result onto the out channel.
+func (m *Measurer) dnsPingAsync(ctx context.Context, mxmx *measurex.Measurer,
+	address string, domain string, out chan<- *measurex.DNSMeasurement) {
+	out <- m.dnsRoundTrip(ctx, mxmx, address, domain)
+}
+
+// dnsRoundTrip performs a round trip and returns the results to the caller.
+func (m *Measurer) dnsRoundTrip(ctx context.Context, mxmx *measurex.Measurer,
+	address string, domain string) *measurex.DNSMeasurement {
+	// TODO(bassosimone): make the timeout user-configurable
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	return mxmx.LookupHostUDP(ctx, domain, address)
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
