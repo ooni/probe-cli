@@ -154,7 +154,7 @@ func echoWorkerMain(listener quic.Listener) {
 		}
 		stream, err := conn.AcceptStream(context.Background())
 		if err != nil {
-			return
+			continue
 		}
 		stream.Close()
 	}
