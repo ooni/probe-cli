@@ -1,6 +1,6 @@
 // Package dnsping is the experimental dnsping experiment.
 //
-// See XXX
+// See https://github.com/ooni/spec/blob/master/nettests/ts-035-dnsping.md.
 package dnsping
 
 import (
