@@ -1,9 +1,12 @@
 // Package tcpping is the experimental tcpping experiment.
+//
+// See XXX
 package tcpping
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"time"
 
@@ -18,11 +21,21 @@ const (
 
 // Config contains the experiment configuration.
 type Config struct {
+	// Delay is the delay between each repetition (in milliseconds).
+	Delay int64 `ooni:"number of milliseconds to wait before sending each ping"`
+
 	// Repetitions is the number of repetitions for each ping.
 	Repetitions int64 `ooni:"number of times to repeat the measurement"`
 }
 
-func (c Config) repetitions() int64 {
+func (c *Config) delay() time.Duration {
+	if c.Delay > 0 {
+		return time.Duration(c.Delay) * time.Millisecond
+	}
+	return time.Second
+}
+
+func (c *Config) repetitions() int64 {
 	if c.Repetitions > 0 {
 		return c.Repetitions
 	}
@@ -54,6 +67,20 @@ func (m *Measurer) ExperimentVersion() string {
 	return testVersion
 }
 
+var (
+	// errNoInputProvided indicates you didn't provide any input
+	errNoInputProvided = errors.New("not input provided")
+
+	// errInputIsNotAnURL indicates that input is not an URL
+	errInputIsNotAnURL = errors.New("input is not an URL")
+
+	// errInvalidScheme indicates that the scheme is invalid
+	errInvalidScheme = errors.New("scheme must be tcpconnect")
+
+	// errMissingPort indicates that there is no port.
+	errMissingPort = errors.New("the URL must include a port")
+)
+
 // Run implements ExperimentMeasurer.Run.
 func (m *Measurer) Run(
 	ctx context.Context,
@@ -62,34 +89,55 @@ func (m *Measurer) Run(
 	callbacks model.ExperimentCallbacks,
 ) error {
 	if measurement.Input == "" {
-		return errors.New("no input provided")
+		return errNoInputProvided
 	}
 	parsed, err := url.Parse(string(measurement.Input))
 	if err != nil {
-		return errors.New("input is not an URL")
+		return fmt.Errorf("%w: %s", errInputIsNotAnURL, err.Error())
 	}
 	if parsed.Scheme != "tcpconnect" {
-		return errors.New("we only support tcpconnect://<host>:<port> for now")
+		return errInvalidScheme
+	}
+	if parsed.Port() == "" {
+		return errMissingPort
 	}
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-	for i := int64(0); i < m.config.repetitions(); i++ {
-		meas := m.tcpConnect(ctx, parsed.Host)
+	out := make(chan *measurex.EndpointMeasurement)
+	mxmx := measurex.NewMeasurerWithDefaultSettings()
+	go m.tcpPingLoop(ctx, mxmx, parsed.Host, out)
+	for len(tk.Pings) < int(m.config.repetitions()) {
+		meas := <-out
 		tk.Pings = append(tk.Pings, &SinglePing{
 			TCPConnect: measurex.NewArchivalTCPConnectList(meas.Connect),
 		})
-		<-ticker.C
 	}
 	return nil // return nil so we always submit the measurement
 }
 
-func (m *Measurer) tcpConnect(ctx context.Context, address string) *measurex.EndpointMeasurement {
+// tcpPingLoop sends all the ping requests and collects responses.
+func (m *Measurer) tcpPingLoop(ctx context.Context, mxmx *measurex.Measurer,
+	address string, out chan<- *measurex.EndpointMeasurement) {
+	ticker := time.NewTicker(m.config.delay())
+	defer ticker.Stop()
+	for i := int64(0); i < m.config.repetitions(); i++ {
+		go m.tcpPingAsync(ctx, mxmx, address, out)
+		<-ticker.C
+	}
+}
+
+// tcpPingAsync performs a TCP ping and emits the result onto the out channel.
+func (m *Measurer) tcpPingAsync(ctx context.Context, mxmx *measurex.Measurer,
+	address string, out chan<- *measurex.EndpointMeasurement) {
+	out <- m.tcpConnect(ctx, mxmx, address)
+}
+
+// tcpConnect performs a TCP connect and returns the result to the caller.
+func (m *Measurer) tcpConnect(ctx context.Context, mxmx *measurex.Measurer,
+	address string) *measurex.EndpointMeasurement {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	mx := measurex.NewMeasurerWithDefaultSettings()
-	return mx.TCPConnect(ctx, address)
+	return mxmx.TCPConnect(ctx, address)
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
