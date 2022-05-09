@@ -74,9 +74,9 @@ const DefaultMaxBodySize = 1 << 22
 // baseURL path is appended with the resourcePath if it is
 // created using APIClientTemplate.
 type APIClient interface {
-	// GetJSON reads the JSON resource at combined path of baseURL with
-	// the resourcePath and unmarshals the results into output.
-	// The request is bounded by the lifetime of the
+	// GetJSON reads the JSON resource whose path is obtained concatenating
+	// the baseURL's path with `resourcePath` and unmarshals the results
+	// into `output`. The request is bounded by the lifetime of the
 	// context passed as argument. Returns the error that occurred.
 	GetJSON(ctx context.Context, resourcePath string, output interface{}) error
 
