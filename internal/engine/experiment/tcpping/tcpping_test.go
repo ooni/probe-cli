@@ -34,15 +34,9 @@ func TestMeasurer_run(t *testing.T) {
 	// runHelper is an helper function to run this set of tests.
 	runHelper := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
 		m := NewExperimentMeasurer(Config{
-			Delay:       1,
+			Delay:       1, // millisecond
 			Repetitions: expectedPings,
 		})
-		if m.ExperimentName() != "tcpping" {
-			t.Fatal("invalid experiment name")
-		}
-		if m.ExperimentVersion() != "0.1.0" {
-			t.Fatal("invalid experiment version")
-		}
 		if m.ExperimentName() != "tcpping" {
 			t.Fatal("invalid experiment name")
 		}
@@ -80,7 +74,7 @@ func TestMeasurer_run(t *testing.T) {
 		}
 	})
 
-	t.Run("with invalid port", func(t *testing.T) {
+	t.Run("with missing port", func(t *testing.T) {
 		_, _, err := runHelper("tcpconnect://8.8.8.8")
 		if !errors.Is(err, errMissingPort) {
 			t.Fatal("unexpected error", err)
@@ -91,6 +85,7 @@ func TestMeasurer_run(t *testing.T) {
 		srvr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(200)
 		}))
+		defer srvr.Close()
 		URL, err := url.Parse(srvr.URL)
 		if err != nil {
 			t.Fatal(err)
