@@ -27,7 +27,14 @@ func (mx *Measurer) WrapDialer(db WritableDB, dialer model.Dialer) model.Dialer 
 
 // WrapDialer wraps a dialer.
 func WrapDialer(begin time.Time, db WritableDB, dialer model.Dialer) model.Dialer {
-	return &dialerDB{Dialer: dialer, db: db, begin: begin}
+	return &dialerDB{Dialer: dialer, db: db, begin: begin, wrapConn: true}
+}
+
+// WrapDialerWithoutConnWrapping wraps a dialer but does not
+// perform wrapping of the underlying connection.
+func WrapDialerWithoutConnWrapping(
+	begin time.Time, db WritableDB, dialer model.Dialer) model.Dialer {
+	return &dialerDB{Dialer: dialer, db: db, begin: begin, wrapConn: false}
 }
 
 // NewDialerWithSystemResolver creates a
@@ -45,8 +52,9 @@ func (mx *Measurer) NewDialerWithoutResolver(db WritableDB, logger model.Logger)
 
 type dialerDB struct {
 	model.Dialer
-	begin time.Time
-	db    WritableDB
+	begin    time.Time
+	db       WritableDB
+	wrapConn bool
 }
 
 // NetworkEvent contains a network event. This kind of events
@@ -80,13 +88,16 @@ func (d *dialerDB) DialContext(
 	if err != nil {
 		return nil, err
 	}
-	return &connDB{
-		Conn:       conn,
-		begin:      d.begin,
-		db:         d.db,
-		network:    network,
-		remoteAddr: address,
-	}, nil
+	if d.wrapConn {
+		conn = &connDB{
+			Conn:       conn,
+			begin:      d.begin,
+			db:         d.db,
+			network:    network,
+			remoteAddr: address,
+		}
+	}
+	return conn, nil
 }
 
 func (c *dialerDB) computeOddity(err error) Oddity {

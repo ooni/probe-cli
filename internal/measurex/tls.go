@@ -20,8 +20,14 @@ import (
 
 // WrapTLSHandshaker wraps a netxlite.TLSHandshaker to return a new
 // instance of TLSHandshaker that saves events into the DB.
+func WrapTLSHandshaker(begin time.Time, db WritableDB, thx model.TLSHandshaker) model.TLSHandshaker {
+	return &tlsHandshakerDB{TLSHandshaker: thx, db: db, begin: begin}
+}
+
+// WrapTLSHandshaker wraps a netxlite.TLSHandshaker to return a new
+// instance of TLSHandshaker that saves events into the DB.
 func (mx *Measurer) WrapTLSHandshaker(db WritableDB, thx model.TLSHandshaker) model.TLSHandshaker {
-	return &tlsHandshakerDB{TLSHandshaker: thx, db: db, begin: mx.Begin}
+	return WrapTLSHandshaker(mx.Begin, db, thx)
 }
 
 // NewTLSHandshakerStdlib creates a new TLS handshaker that
