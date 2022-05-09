@@ -67,7 +67,7 @@ type TestKeys struct {
 type SinglePing struct {
 	NetworkEvents []*measurex.ArchivalNetworkEvent          `json:"network_events"`
 	TCPConnect    []*measurex.ArchivalTCPConnect            `json:"tcp_connect"`
-	TLSHandshake  []*measurex.ArchivalQUICTLSHandshakeEvent `json:"tls_handshakes"`
+	TLSHandshakes []*measurex.ArchivalQUICTLSHandshakeEvent `json:"tls_handshakes"`
 }
 
 // Measurer performs the measurement.
@@ -132,7 +132,7 @@ func (m *Measurer) Run(
 		tk.Pings = append(tk.Pings, &SinglePing{
 			NetworkEvents: measurex.NewArchivalNetworkEventList(meas.ReadWrite),
 			TCPConnect:    measurex.NewArchivalTCPConnectList(meas.Connect),
-			TLSHandshake:  measurex.NewArchivalQUICTLSHandshakeEventList(meas.TLSHandshake),
+			TLSHandshakes: measurex.NewArchivalQUICTLSHandshakeEventList(meas.TLSHandshake),
 		})
 	}
 	return nil // return nil so we always submit the measurement

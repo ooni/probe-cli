@@ -65,8 +65,8 @@ type TestKeys struct {
 
 // SinglePing contains the results of a single ping.
 type SinglePing struct {
-	NetworkEvents []*measurex.ArchivalNetworkEvent          `json:"network_events"`
-	QUICHandshake []*measurex.ArchivalQUICTLSHandshakeEvent `json:"quic_handshakes"`
+	NetworkEvents  []*measurex.ArchivalNetworkEvent          `json:"network_events"`
+	QUICHandshakes []*measurex.ArchivalQUICTLSHandshakeEvent `json:"quic_handshakes"`
 }
 
 // Measurer performs the measurement.
@@ -129,8 +129,8 @@ func (m *Measurer) Run(
 	for len(tk.Pings) < int(m.config.repetitions()) {
 		meas := <-out
 		tk.Pings = append(tk.Pings, &SinglePing{
-			NetworkEvents: measurex.NewArchivalNetworkEventList(meas.ReadWrite),
-			QUICHandshake: measurex.NewArchivalQUICTLSHandshakeEventList(meas.QUICHandshake),
+			NetworkEvents:  measurex.NewArchivalNetworkEventList(meas.ReadWrite),
+			QUICHandshakes: measurex.NewArchivalQUICTLSHandshakeEventList(meas.QUICHandshake),
 		})
 	}
 	return nil // return nil so we always submit the measurement
