@@ -143,25 +143,20 @@ func (c *apiClient) newRequestWithJSONBody(
 	return request, nil
 }
 
-// joinURLPath joins the BaseURL and the URLPath, allows httpx to access the URL
+// joinURLPath joins the BaseURL and the resource URL Path, allows httpx to access the URL
 func (c *apiClient) joinURLPath(origPath string, newPath string) string {
 
-	if origPath != "" && newPath != "" {
-		if !strings.HasSuffix(origPath, "/") && !strings.HasPrefix(newPath, "/") {
-			origPath += "/"
-		}
-
-		if strings.HasSuffix(origPath, "/") && strings.HasPrefix(newPath, "/") {
-			newPath = newPath[1:]
-		}
-		return origPath + newPath
+	// If the BaseURL path doesn't end with a slash, added one
+	if !strings.HasSuffix(origPath, "/") {
+		origPath += "/"
 	}
 
-	if origPath != "" && newPath == "" {
-		return origPath
+	// If the resourceURL path has a leading slash, it is removed
+	if strings.HasPrefix(newPath, "/") {
+		newPath = newPath[1:]
 	}
 
-	return ""
+	return origPath + newPath
 }
 
 // newRequest creates a new request.
@@ -171,6 +166,7 @@ func (c *apiClient) newRequest(ctx context.Context, method, resourcePath string,
 	if err != nil {
 		return nil, err
 	}
+	// BaseURL and resource URL is joined if they have a path
 	URL.Path = c.joinURLPath(URL.Path, resourcePath)
 	if query != nil {
 		URL.RawQuery = query.Encode()
