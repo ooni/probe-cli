@@ -289,7 +289,7 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 
 // SummaryKeys contains summary keys for this experiment.
 //
-// Note that this structure is part of the ABI contract with probe-cli
+// Note that this structure is part of the ABI contract with ooniprobe
 // therefore we should be careful when changing it.
 type SummaryKeys struct {
 	Latency   float64 `json:"connect_latency"`

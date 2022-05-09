@@ -18,6 +18,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/signal"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/sniblocking"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/stunreachability"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tcpping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/telegram"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlstool"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tor"
@@ -212,6 +213,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 			},
 			config:      &stunreachability.Config{},
 			inputPolicy: InputOrStaticDefault,
+		}
+	},
+
+	"tcpping": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, tcpping.NewExperimentMeasurer(
+					*config.(*tcpping.Config),
+				))
+			},
+			config:      &tcpping.Config{},
+			inputPolicy: InputStrictlyRequired,
 		}
 	},
 
