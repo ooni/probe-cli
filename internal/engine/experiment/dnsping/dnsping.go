@@ -126,7 +126,9 @@ func (m *Measurer) Run(
 		go m.dnsPingLoop(ctx, mxmx, parsed.Host, domain, out)
 	}
 	// The following multiplication could overflow but we're always using small
-	// numbers so it's fine for us not to bother with checking for that
+	// numbers so it's fine for us not to bother with checking for that.
+	//
+	// We emit two results (A and AAAA) for each domain and repetition.
 	numResults := int(m.config.repetitions()) * len(domains) * 2
 	for len(tk.Pings) < numResults {
 		meas := <-out
