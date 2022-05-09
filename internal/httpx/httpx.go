@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -70,9 +71,13 @@ const DefaultMaxBodySize = 1 << 22
 
 // APIClient is a client configured to call a given API identified
 // by a given baseURL and using a given model.HTTPClient.
+//
+// The resource path argument passed to APIClient methods is appended
+// to the base URL's path for determining the full URL's path.
 type APIClient interface {
-	// GetJSON reads the JSON resource at resourcePath and unmarshals the
-	// results into output. The request is bounded by the lifetime of the
+	// GetJSON reads the JSON resource whose path is obtained concatenating
+	// the baseURL's path with `resourcePath` and unmarshals the results
+	// into `output`. The request is bounded by the lifetime of the
 	// context passed as argument. Returns the error that occurred.
 	GetJSON(ctx context.Context, resourcePath string, output interface{}) error
 
@@ -80,8 +85,9 @@ type APIClient interface {
 	GetJSONWithQuery(ctx context.Context, resourcePath string,
 		query url.Values, output interface{}) error
 
-	// PostJSON creates a JSON subresource of the resource at resourcePath
-	// using the JSON document at input and returning the result into the
+	// PostJSON creates a JSON subresource of the resource whose
+	// path is obtained concatenating the baseURL'spath with `resourcePath` using
+	// the JSON document at `input` as value and returning the result into the
 	// JSON document at output. The request is bounded by the context's
 	// lifetime. Returns the error that occurred.
 	PostJSON(ctx context.Context, resourcePath string, input, output interface{}) error
@@ -142,6 +148,23 @@ func (c *apiClient) newRequestWithJSONBody(
 	return request, nil
 }
 
+// joinURLPath appends the path of resource URL to the baseURL taking
+// care of multiple forward slashes gracefully.
+func (c *apiClient) joinURLPath(origPath string, newPath string) string {
+
+	// If the BaseURL path doesn't end with a slash, added one
+	if !strings.HasSuffix(origPath, "/") {
+		origPath += "/"
+	}
+
+	// If the resourceURL path has a leading slash, it is removed
+	if strings.HasPrefix(newPath, "/") {
+		newPath = newPath[1:]
+	}
+
+	return origPath + newPath
+}
+
 // newRequest creates a new request.
 func (c *apiClient) newRequest(ctx context.Context, method, resourcePath string,
 	query url.Values, body io.Reader) (*http.Request, error) {
@@ -149,7 +172,8 @@ func (c *apiClient) newRequest(ctx context.Context, method, resourcePath string,
 	if err != nil {
 		return nil, err
 	}
-	URL.Path = resourcePath
+	// BaseURL and resource URL is joined if they have a path
+	URL.Path = c.joinURLPath(URL.Path, resourcePath)
 	if query != nil {
 		URL.RawQuery = query.Encode()
 	}
