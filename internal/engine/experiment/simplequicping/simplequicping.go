@@ -1,7 +1,7 @@
-// Package tlsping is the experimental tlsping experiment.
+// Package simplequicping is the experimental simplequicping experiment.
 //
-// See https://github.com/ooni/spec/blob/master/nettests/ts-033-tlsping.md.
-package tlsping
+// See https://github.com/ooni/spec/blob/master/nettests/ts-034-simplequicping.md.
+package simplequicping
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	testName    = "tlsping"
+	testName    = "simplequicping"
 	testVersion = "0.1.0"
 )
 
@@ -41,7 +41,7 @@ func (c *Config) alpn() string {
 	if c.ALPN != "" {
 		return c.ALPN
 	}
-	return "h2 http/1.1"
+	return "h3"
 }
 
 func (c *Config) delay() time.Duration {
@@ -65,9 +65,8 @@ type TestKeys struct {
 
 // SinglePing contains the results of a single ping.
 type SinglePing struct {
-	NetworkEvents []*measurex.ArchivalNetworkEvent          `json:"network_events"`
-	TCPConnect    []*measurex.ArchivalTCPConnect            `json:"tcp_connect"`
-	TLSHandshakes []*measurex.ArchivalQUICTLSHandshakeEvent `json:"tls_handshakes"`
+	NetworkEvents  []*measurex.ArchivalNetworkEvent          `json:"network_events"`
+	QUICHandshakes []*measurex.ArchivalQUICTLSHandshakeEvent `json:"quic_handshakes"`
 }
 
 // Measurer performs the measurement.
@@ -93,7 +92,7 @@ var (
 	errInputIsNotAnURL = errors.New("input is not an URL")
 
 	// errInvalidScheme indicates that the scheme is invalid
-	errInvalidScheme = errors.New("scheme must be tlshandshake")
+	errInvalidScheme = errors.New("scheme must be quichandshake")
 
 	// errMissingPort indicates that there is no port.
 	errMissingPort = errors.New("the URL must include a port")
@@ -113,7 +112,7 @@ func (m *Measurer) Run(
 	if err != nil {
 		return fmt.Errorf("%w: %s", errInputIsNotAnURL, err.Error())
 	}
-	if parsed.Scheme != "tlshandshake" {
+	if parsed.Scheme != "quichandshake" {
 		return errInvalidScheme
 	}
 	if parsed.Port() == "" {
@@ -126,43 +125,41 @@ func (m *Measurer) Run(
 	measurement.TestKeys = tk
 	out := make(chan *measurex.EndpointMeasurement)
 	mxmx := measurex.NewMeasurerWithDefaultSettings()
-	go m.tlsPingLoop(ctx, mxmx, parsed.Host, out)
+	go m.simpleQUICPingLoop(ctx, mxmx, parsed.Host, out)
 	for len(tk.Pings) < int(m.config.repetitions()) {
 		meas := <-out
 		tk.Pings = append(tk.Pings, &SinglePing{
-			NetworkEvents: measurex.NewArchivalNetworkEventList(meas.ReadWrite),
-			TCPConnect:    measurex.NewArchivalTCPConnectList(meas.Connect),
-			TLSHandshakes: measurex.NewArchivalQUICTLSHandshakeEventList(meas.TLSHandshake),
+			NetworkEvents:  measurex.NewArchivalNetworkEventList(meas.ReadWrite),
+			QUICHandshakes: measurex.NewArchivalQUICTLSHandshakeEventList(meas.QUICHandshake),
 		})
 	}
 	return nil // return nil so we always submit the measurement
 }
 
-// tlsPingLoop sends all the ping requests and emits the results onto the out channel.
-func (m *Measurer) tlsPingLoop(ctx context.Context, mxmx *measurex.Measurer,
+// simpleQUICPingLoop sends all the ping requests and emits the results onto the out channel.
+func (m *Measurer) simpleQUICPingLoop(ctx context.Context, mxmx *measurex.Measurer,
 	address string, out chan<- *measurex.EndpointMeasurement) {
 	ticker := time.NewTicker(m.config.delay())
 	defer ticker.Stop()
 	for i := int64(0); i < m.config.repetitions(); i++ {
-		go m.tlsPingAsync(ctx, mxmx, address, out)
+		go m.simpleQUICPingAsync(ctx, mxmx, address, out)
 		<-ticker.C
 	}
 }
 
-// tlsPingAsync performs a TLS ping and emits the result onto the out channel.
-func (m *Measurer) tlsPingAsync(ctx context.Context, mxmx *measurex.Measurer,
+// simpleQUICPingAsync performs a QUIC ping and emits the result onto the out channel.
+func (m *Measurer) simpleQUICPingAsync(ctx context.Context, mxmx *measurex.Measurer,
 	address string, out chan<- *measurex.EndpointMeasurement) {
-	out <- m.tlsConnectAndHandshake(ctx, mxmx, address)
+	out <- m.quicHandshake(ctx, mxmx, address)
 }
 
-// tlsConnectAndHandshake performs a TCP connect followed by a TLS handshake
-// and returns the results of these operations to the caller.
-func (m *Measurer) tlsConnectAndHandshake(ctx context.Context, mxmx *measurex.Measurer,
+// quicHandshake performs a QUIC handshake and returns the results of these operations to the caller.
+func (m *Measurer) quicHandshake(ctx context.Context, mxmx *measurex.Measurer,
 	address string) *measurex.EndpointMeasurement {
 	// TODO(bassosimone): make the timeout user-configurable
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	return mxmx.TLSConnectAndHandshake(ctx, address, &tls.Config{
+	return mxmx.QUICHandshake(ctx, address, &tls.Config{
 		NextProtos: strings.Split(m.config.alpn(), " "),
 		RootCAs:    netxlite.NewDefaultCertPool(),
 		ServerName: m.config.SNI,
