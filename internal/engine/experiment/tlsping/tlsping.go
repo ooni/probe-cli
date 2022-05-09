@@ -1,31 +1,47 @@
-// Package tcpping is the experimental tcpping experiment.
+// Package tlsping is the experimental tlsping experiment.
 //
-// See https://github.com/ooni/spec/blob/master/nettests/ts-032-tcpping.md.
-package tcpping
+// See https://github.com/ooni/spec/blob/master/nettests/ts-033-tlsping.md.
+package tlsping
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
-	testName    = "tcpping"
+	testName    = "tlsping"
 	testVersion = "0.1.0"
 )
 
 // Config contains the experiment configuration.
 type Config struct {
+	// ALPN allows to specify which ALPN or ALPNs to send.
+	ALPN string `ooni:"space separated list of ALPNs to use"`
+
 	// Delay is the delay between each repetition (in milliseconds).
 	Delay int64 `ooni:"number of milliseconds to wait before sending each ping"`
 
 	// Repetitions is the number of repetitions for each ping.
 	Repetitions int64 `ooni:"number of times to repeat the measurement"`
+
+	// SNI is the SNI value to use.
+	SNI string `ooni:"the SNI value to use"`
+}
+
+func (c *Config) alpn() string {
+	if c.ALPN != "" {
+		return c.ALPN
+	}
+	return "h2 http/1.1"
 }
 
 func (c *Config) delay() time.Duration {
@@ -49,7 +65,9 @@ type TestKeys struct {
 
 // SinglePing contains the results of a single ping.
 type SinglePing struct {
-	TCPConnect []*measurex.ArchivalTCPConnect `json:"tcp_connect"`
+	NetworkEvents []*measurex.ArchivalNetworkEvent          `json:"network_events"`
+	TCPConnect    []*measurex.ArchivalTCPConnect            `json:"tcp_connect"`
+	TLSHandshake  []*measurex.ArchivalQUICTLSHandshakeEvent `json:"tls_handshakes"`
 }
 
 // Measurer performs the measurement.
@@ -75,7 +93,7 @@ var (
 	errInputIsNotAnURL = errors.New("input is not an URL")
 
 	// errInvalidScheme indicates that the scheme is invalid
-	errInvalidScheme = errors.New("scheme must be tcpconnect")
+	errInvalidScheme = errors.New("scheme must be tlshandshake")
 
 	// errMissingPort indicates that there is no port.
 	errMissingPort = errors.New("the URL must include a port")
@@ -95,50 +113,60 @@ func (m *Measurer) Run(
 	if err != nil {
 		return fmt.Errorf("%w: %s", errInputIsNotAnURL, err.Error())
 	}
-	if parsed.Scheme != "tcpconnect" {
+	if parsed.Scheme != "tlshandshake" {
 		return errInvalidScheme
 	}
 	if parsed.Port() == "" {
 		return errMissingPort
 	}
+	if m.config.SNI == "" {
+		sess.Logger().Warn("no -O SNI=<SNI> specified from command line")
+	}
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
 	out := make(chan *measurex.EndpointMeasurement)
 	mxmx := measurex.NewMeasurerWithDefaultSettings()
-	go m.tcpPingLoop(ctx, mxmx, parsed.Host, out)
+	go m.tlsPingLoop(ctx, mxmx, parsed.Host, out)
 	for len(tk.Pings) < int(m.config.repetitions()) {
 		meas := <-out
 		tk.Pings = append(tk.Pings, &SinglePing{
-			TCPConnect: measurex.NewArchivalTCPConnectList(meas.Connect),
+			NetworkEvents: measurex.NewArchivalNetworkEventList(meas.ReadWrite),
+			TCPConnect:    measurex.NewArchivalTCPConnectList(meas.Connect),
+			TLSHandshake:  measurex.NewArchivalQUICTLSHandshakeEventList(meas.TLSHandshake),
 		})
 	}
 	return nil // return nil so we always submit the measurement
 }
 
-// tcpPingLoop sends all the ping requests and emits the results onto the out channel.
-func (m *Measurer) tcpPingLoop(ctx context.Context, mxmx *measurex.Measurer,
+// tlsPingLoop sends all the ping requests and emits the results onto the out channel.
+func (m *Measurer) tlsPingLoop(ctx context.Context, mxmx *measurex.Measurer,
 	address string, out chan<- *measurex.EndpointMeasurement) {
 	ticker := time.NewTicker(m.config.delay())
 	defer ticker.Stop()
 	for i := int64(0); i < m.config.repetitions(); i++ {
-		go m.tcpPingAsync(ctx, mxmx, address, out)
+		go m.tlsPingAsync(ctx, mxmx, address, out)
 		<-ticker.C
 	}
 }
 
-// tcpPingAsync performs a TCP ping and emits the result onto the out channel.
-func (m *Measurer) tcpPingAsync(ctx context.Context, mxmx *measurex.Measurer,
+// tlsPingAsync performs a TLS ping and emits the result onto the out channel.
+func (m *Measurer) tlsPingAsync(ctx context.Context, mxmx *measurex.Measurer,
 	address string, out chan<- *measurex.EndpointMeasurement) {
-	out <- m.tcpConnect(ctx, mxmx, address)
+	out <- m.tlsConnectAndHandshake(ctx, mxmx, address)
 }
 
-// tcpConnect performs a TCP connect and returns the result to the caller.
-func (m *Measurer) tcpConnect(ctx context.Context, mxmx *measurex.Measurer,
+// tlsConnectAndHandshake performs a TCP connect followed by a TLS handshake
+// and returns the results of these operations to the caller.
+func (m *Measurer) tlsConnectAndHandshake(ctx context.Context, mxmx *measurex.Measurer,
 	address string) *measurex.EndpointMeasurement {
 	// TODO(bassosimone): make the timeout user-configurable
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	return mxmx.TCPConnect(ctx, address)
+	return mxmx.TLSConnectAndHandshake(ctx, address, &tls.Config{
+		NextProtos: strings.Split(m.config.alpn(), " "),
+		RootCAs:    netxlite.NewDefaultCertPool(),
+		ServerName: m.config.SNI,
+	})
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
