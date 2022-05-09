@@ -120,7 +120,7 @@ func (m *Measurer) Run(
 		return errMissingPort
 	}
 	if m.config.SNI == "" {
-		sess.Logger().Warnf("no -O SNI=<SNI> specified from command line")
+		sess.Logger().Warn("no -O SNI=<SNI> specified from command line")
 	}
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
