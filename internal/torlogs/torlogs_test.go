@@ -112,7 +112,6 @@ func TestParseBootstrapLogLine(t *testing.T) {
 			got, err := ParseBootstrapLogLine(tt.args.logLine)
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatal("unexpected err", err)
-				return
 			}
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Fatal(diff)
