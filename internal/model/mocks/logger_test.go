@@ -28,4 +28,56 @@ func TestLogger(t *testing.T) {
 			t.Fatal("not called")
 		}
 	})
+
+	t.Run("Info", func(t *testing.T) {
+		var called bool
+		lo := &Logger{
+			MockInfo: func(message string) {
+				called = true
+			},
+		}
+		lo.Info("antani")
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+
+	t.Run("Infof", func(t *testing.T) {
+		var called bool
+		lo := &Logger{
+			MockInfof: func(message string, v ...interface{}) {
+				called = true
+			},
+		}
+		lo.Infof("antani", 1, 2, 3, 4)
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+
+	t.Run("Warn", func(t *testing.T) {
+		var called bool
+		lo := &Logger{
+			MockWarn: func(message string) {
+				called = true
+			},
+		}
+		lo.Warn("antani")
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+
+	t.Run("Warnf", func(t *testing.T) {
+		var called bool
+		lo := &Logger{
+			MockWarnf: func(message string, v ...interface{}) {
+				called = true
+			},
+		}
+		lo.Warnf("antani", 1, 2, 3, 4)
+		if !called {
+			t.Fatal("not called")
+		}
+	})
 }
