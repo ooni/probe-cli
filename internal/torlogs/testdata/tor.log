@@ -1,0 +1,31 @@
+Feb 04 15:04:29.000 [notice] Tor 0.4.6.9 opening new log file.
+Feb 04 15:04:29.360 [notice] We compiled with OpenSSL 101010cf: OpenSSL 1.1.1l  FIPS 24 Aug 2021 and we are running with OpenSSL 101010cf: 1.1.1l. These two versions should be binary compatible.
+Feb 04 15:04:29.363 [notice] Tor 0.4.6.9 running on Linux with Libevent 2.1.12-stable, OpenSSL 1.1.1l, Zlib 1.2.11, Liblzma 5.2.5, Libzstd 1.5.2 and Glibc 2.34 as libc.
+Feb 04 15:04:29.363 [notice] Tor can't help you if you use it wrong! Learn how to be safe at https://www.torproject.org/download/download#warning
+Feb 04 15:04:29.363 [warn] Tor was compiled with zstd 1.5.1, but is running with zstd 1.5.2. For safety, we'll avoid using advanced zstd functionality.
+Feb 04 15:04:29.363 [notice] Read configuration file "/home/sbs/.miniooni/tunnel/torsf/tor/torrc-2981077975".
+Feb 04 15:04:29.366 [notice] Opening Control listener on 127.0.0.1:0
+Feb 04 15:04:29.367 [notice] Control listener listening on port 41423.
+Feb 04 15:04:29.367 [notice] Opened Control listener connection (ready) on 127.0.0.1:41423
+Feb 04 15:04:29.367 [notice] DisableNetwork is set. Tor will not make or accept non-control network connections. Shutting down all existing connections.
+Feb 04 15:04:29.000 [notice] Parsing GEOIP IPv4 file /usr/share/tor/geoip.
+Feb 04 15:04:29.000 [notice] Parsing GEOIP IPv6 file /usr/share/tor/geoip6.
+Feb 04 15:04:29.000 [notice] Bootstrapped 0% (starting): Starting
+Feb 04 15:04:29.000 [notice] Starting with guard context "bridges"
+Feb 04 15:04:29.000 [notice] new bridge descriptor 'flakey4' (cached): $2B280B23E1107BB62ABFC40DDCC8824814F80A72~flakey4 [1zOHpg+FxqQfi/6jDLtCpHHqBTH8gjYmCKXkus1D5Ko] at 192.0.2.3
+Feb 04 15:04:29.000 [notice] Delaying directory fetches: DisableNetwork is set.
+Feb 04 15:04:29.000 [notice] New control connection opened from 127.0.0.1.
+Feb 04 15:04:29.000 [notice] Opening Socks listener on 127.0.0.1:0
+Feb 04 15:04:29.000 [notice] Socks listener listening on port 42089.
+Feb 04 15:04:29.000 [notice] Opened Socks listener connection (ready) on 127.0.0.1:42089
+Feb 04 15:04:29.000 [notice] Tor 0.4.6.9 opening log file.
+Feb 04 15:04:29.000 [notice] Bootstrapped 1% (conn_pt): Connecting to pluggable transport
+Feb 04 15:04:30.000 [notice] Bootstrapped 2% (conn_done_pt): Connected to pluggable transport
+Feb 04 15:04:30.000 [notice] Bootstrapped 10% (conn_done): Connected to a relay
+Feb 04 15:06:20.000 [notice] Bootstrapped 14% (handshake): Handshaking with a relay
+Feb 04 15:06:24.000 [notice] Bootstrapped 15% (handshake_done): Handshake with a relay done
+Feb 04 15:06:24.000 [notice] Bootstrapped 75% (enough_dirinfo): Loaded enough directory info to build circuits
+Feb 04 15:06:24.000 [notice] Bootstrapped 95% (circuit_create): Establishing a Tor circuit
+Feb 04 15:06:26.000 [notice] new bridge descriptor 'flakey4' (fresh): $2B280B23E1107BB62ABFC40DDCC8824814F80A72~flakey4 [1zOHpg+FxqQfi/6jDLtCpHHqBTH8gjYmCKXkus1D5Ko] at 192.0.2.3
+Feb 04 15:06:39.000 [notice] Bootstrapped 100% (done): Done
+Feb 04 15:06:39.000 [notice] Catching signal TERM, exiting cleanly.

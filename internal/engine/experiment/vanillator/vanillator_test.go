@@ -1,4 +1,4 @@
-package torsf
+package vanillator
 
 import (
 	"context"
@@ -10,71 +10,22 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/ptx"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/tunnel/mocks"
 )
 
 // Implementation note: this file is written with easy diffing with respect
-// to internal/engine/experiment/vanillator/vanillator_test.go in mind.
+// to internal/engine/experiment/torsf/torsf_test.go in mind.
 //
 // We may want to have a single implementation for both nettests in the future.
 
 func TestExperimentNameAndVersion(t *testing.T) {
 	m := NewExperimentMeasurer(Config{})
-	if m.ExperimentName() != "torsf" {
+	if m.ExperimentName() != "vanilla_tor" {
 		t.Fatal("invalid experiment name")
 	}
-	if m.ExperimentVersion() != "0.3.0" {
+	if m.ExperimentVersion() != "0.2.0" {
 		t.Fatal("invalid experiment version")
-	}
-}
-
-func TestFailureWithInvalidRendezvousMethod(t *testing.T) {
-	m := &Measurer{
-		config: Config{
-			DisablePersistentDatadir: false,
-			DisableProgress:          false,
-			RendezvousMethod:         "antani",
-		},
-		mockStartTunnel: nil,
-	}
-	ctx := context.Background()
-	measurement := &model.Measurement{}
-	sess := &mockable.Session{
-		MockableLogger: model.DiscardLogger,
-	}
-	callbacks := &model.PrinterCallbacks{
-		Logger: model.DiscardLogger,
-	}
-	err := m.Run(ctx, sess, measurement, callbacks)
-	if !errors.Is(err, ptx.ErrSnowflakeNoSuchRendezvousMethod) {
-		t.Fatal("unexpected error", err)
-	}
-	if measurement.TestKeys != nil {
-		t.Fatal("expected nil test keys")
-	}
-}
-
-func TestFailureToStartPTXListener(t *testing.T) {
-	expected := errors.New("mocked error")
-	m := &Measurer{
-		config: Config{},
-		mockStartListener: func() error {
-			return expected
-		},
-	}
-	ctx := context.Background()
-	measurement := &model.Measurement{}
-	sess := &mockable.Session{}
-	callbacks := &model.PrinterCallbacks{
-		Logger: model.DiscardLogger,
-	}
-	if err := m.Run(ctx, sess, measurement, callbacks); !errors.Is(err, expected) {
-		t.Fatal("not the error we expected", err)
-	}
-	if tk := measurement.TestKeys; tk != nil {
-		t.Fatal("expected nil bootstrap time here")
 	}
 }
 
@@ -124,12 +75,6 @@ func TestSuccessWithMockedTunnelStart(t *testing.T) {
 	if tk.Failure != nil {
 		t.Fatal("unexpected failure")
 	}
-	if !tk.PersistentDatadir {
-		t.Fatal("unexpected persistent data dir")
-	}
-	if tk.RendezvousMethod != "domain_fronting" {
-		t.Fatal("unexpected rendezvous method")
-	}
 	if !tk.Success {
 		t.Fatal("unexpected success value")
 	}
@@ -148,7 +93,7 @@ func TestSuccessWithMockedTunnelStart(t *testing.T) {
 	if tk.TorProgressSummary != "Done" {
 		t.Fatal("unexpected tor progress tag")
 	}
-	if tk.TransportName != "snowflake" {
+	if tk.TransportName != "vanilla" {
 		t.Fatal("invalid transport name")
 	}
 }
@@ -181,12 +126,6 @@ func TestWithCancelledContext(t *testing.T) {
 	if *tk.Failure != "interrupted" {
 		t.Fatal("unexpected failure")
 	}
-	if !tk.PersistentDatadir {
-		t.Fatal("unexpected persistent data dir")
-	}
-	if tk.RendezvousMethod != "domain_fronting" {
-		t.Fatal("unexpected rendezvous method")
-	}
 	if tk.Success {
 		t.Fatal("unexpected success value")
 	}
@@ -205,7 +144,7 @@ func TestWithCancelledContext(t *testing.T) {
 	if tk.TorProgressSummary != "" {
 		t.Fatal("unexpected tor progress tag")
 	}
-	if tk.TransportName != "snowflake" {
+	if tk.TransportName != "vanilla" {
 		t.Fatal("invalid transport name")
 	}
 }
@@ -247,12 +186,6 @@ func TestFailureToStartTunnel(t *testing.T) {
 	if *tk.Failure != "generic_timeout_error" {
 		t.Fatal("unexpected failure string", *tk.Failure)
 	}
-	if !tk.PersistentDatadir {
-		t.Fatal("unexpected persistent datadir")
-	}
-	if tk.RendezvousMethod != "domain_fronting" {
-		t.Fatal("unexpected rendezvous method")
-	}
 	if tk.Success {
 		t.Fatal("unexpected success value")
 	}
@@ -271,43 +204,9 @@ func TestFailureToStartTunnel(t *testing.T) {
 	if tk.TorProgressSummary != "Handshake with a relay done" {
 		t.Fatal("unexpected tor progress tag")
 	}
-	if tk.TransportName != "snowflake" {
+	if tk.TransportName != "vanilla" {
 		t.Fatal("invalid transport name")
 	}
-}
-
-func TestBaseTunnelDir(t *testing.T) {
-	t.Run("without persistent data dir", func(t *testing.T) {
-		m := &Measurer{
-			config: Config{
-				DisablePersistentDatadir: true,
-			},
-		}
-		sess := &mockable.Session{
-			MockableTunnelDir: "a",
-			MockableTempDir:   "b",
-		}
-		dir := m.baseTunnelDir(sess)
-		if dir != "b" {
-			t.Fatal("unexpected base tunnel dir", dir)
-		}
-	})
-
-	t.Run("with persistent data dir", func(t *testing.T) {
-		m := &Measurer{
-			config: Config{
-				DisablePersistentDatadir: false,
-			},
-		}
-		sess := &mockable.Session{
-			MockableTunnelDir: "a",
-			MockableTempDir:   "b",
-		}
-		dir := m.baseTunnelDir(sess)
-		if dir != "a" {
-			t.Fatal("unexpected base tunnel dir", dir)
-		}
-	})
 }
 
 func TestGetSummaryKeys(t *testing.T) {

@@ -27,6 +27,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tor"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/torsf"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/vanillator"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webstepsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/whatsapp"
@@ -324,6 +325,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 			},
 			config:      &urlgetter.Config{},
 			inputPolicy: InputStrictlyRequired,
+		}
+	},
+
+	"vanilla_tor": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, vanillator.NewExperimentMeasurer(
+					*config.(*vanillator.Config),
+				))
+			},
+			config:      &vanillator.Config{},
+			inputPolicy: InputNone,
 		}
 	},
 

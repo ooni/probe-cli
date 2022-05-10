@@ -1,7 +1,7 @@
-// Package torsf contains the torsf experiment.
+// Package vanillator contains the vanilla_tor experiment.
 //
-// See https://github.com/ooni/spec/blob/master/nettests/ts-030-torsf.md
-package torsf
+// See https://github.com/ooni/spec/blob/master/nettests/ts-016-vanilla-tor.md
+package vanillator
 
 import (
 	"context"
@@ -10,33 +10,25 @@ import (
 	"path"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/ptx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/torlogs"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 )
 
 // Implementation note: this file is written with easy diffing with respect
-// to internal/engine/experiment/vanillator/vanillator.go in mind.
+// to internal/engine/experiment/torsf/torsf.go in mind.
 //
 // We may want to have a single implementation for both nettests in the future.
 
 // testVersion is the experiment version.
-const testVersion = "0.3.0"
+const testVersion = "0.2.0"
 
 // Config contains the experiment config.
 type Config struct {
-	// DisablePersistentDatadir disables using a persistent datadir.
-	DisablePersistentDatadir bool `ooni:"Disable using a persistent tor datadir"`
-
 	// DisableProgress disables printing progress messages.
 	DisableProgress bool `ooni:"Disable printing progress messages"`
-
-	// RendezvousMethod allows to choose the method with which to rendezvous.
-	RendezvousMethod string `ooni:"Choose the method with which to rendezvous. Must be one of amp and domain_fronting. Leaving this field empty means we should use the default."`
 }
 
 // TestKeys contains the experiment's result.
@@ -56,12 +48,6 @@ type TestKeys struct {
 	// backward compatibility with the previous `vanilla_tor` implementation).
 	Success bool `json:"success"`
 
-	// PersistentDatadir indicates whether we're using a persistent tor datadir.
-	PersistentDatadir bool `json:"persistent_datadir"`
-
-	// RendezvousMethod contains the method used to perform the rendezvous.
-	RendezvousMethod string `json:"rendezvous_method"`
-
 	// Timeout contains the default timeout for this experiment
 	Timeout float64 `json:"timeout"`
 
@@ -80,7 +66,7 @@ type TestKeys struct {
 	// TorVersion contains the version of tor (if it's possible to obtain it).
 	TorVersion string `json:"tor_version"`
 
-	// TransportName is always set to "snowflake" for this experiment.
+	// TransportName is always set to "vanilla" for this experiment.
 	TransportName string `json:"transport_name"`
 }
 
@@ -88,10 +74,6 @@ type TestKeys struct {
 type Measurer struct {
 	// config contains the experiment settings.
 	config Config
-
-	// mockStartListener is an optional function that allows us to override
-	// the function we actually use to start the ptx listener.
-	mockStartListener func() error
 
 	// mockStartTunnel is an optional function that allows us to override the
 	// default tunnel.Start function used to start a tunnel.
@@ -101,7 +83,7 @@ type Measurer struct {
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
 func (m *Measurer) ExperimentName() string {
-	return "torsf"
+	return "vanilla_tor"
 }
 
 // ExperimentVersion implements model.ExperimentMeasurer.ExperimentVersion.
@@ -115,7 +97,7 @@ func (m *Measurer) registerExtensions(measurement *model.Measurement) {
 }
 
 // maxRuntime is the maximum runtime for this experiment
-const maxRuntime = 600 * time.Second
+const maxRuntime = 200 * time.Second
 
 // Run runs the experiment with the specified context, session,
 // measurement, and experiment calbacks. This method should only
@@ -128,12 +110,6 @@ func (m *Measurer) Run(
 	ctx context.Context, sess model.ExperimentSession,
 	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
 ) error {
-	ptl, sfdialer, err := m.setup(ctx, sess.Logger())
-	if err != nil {
-		// we cannot setup the experiment
-		return err
-	}
-	defer ptl.Stop()
 	m.registerExtensions(measurement)
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, maxRuntime)
@@ -141,49 +117,23 @@ func (m *Measurer) Run(
 	tkch := make(chan *TestKeys)
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
-	go m.bootstrap(ctx, maxRuntime, sess, tkch, ptl, sfdialer)
+	go m.bootstrap(ctx, maxRuntime, sess, tkch)
 	for {
 		select {
 		case tk := <-tkch:
 			measurement.TestKeys = tk
-			callbacks.OnProgress(1.0, "torsf experiment is finished")
+			callbacks.OnProgress(1.0, "vanilla_tor experiment is finished")
 			return nil
 		case <-ticker.C:
 			if !m.config.DisableProgress {
 				elapsedTime := time.Since(start)
 				progress := elapsedTime.Seconds() / maxRuntime.Seconds()
 				callbacks.OnProgress(progress, fmt.Sprintf(
-					"torsf: elapsedTime: %.0f s; maxRuntime: %.0f s",
+					"vanilla_tor: elapsedTime: %.0f s; maxRuntime: %.0f s",
 					elapsedTime.Seconds(), maxRuntime.Seconds()))
 			}
 		}
 	}
-}
-
-// setup prepares for running the torsf experiment. Returns a valid ptx listener
-// and snowflake dialer on success. Returns an error on failure. On success,
-// remember to Stop the ptx listener when you're done.
-func (m *Measurer) setup(ctx context.Context,
-	logger model.Logger) (*ptx.Listener, *ptx.SnowflakeDialer, error) {
-	rm, err := ptx.NewSnowflakeRendezvousMethod(m.config.RendezvousMethod)
-	if err != nil {
-		// cannot run the experiment with unknown rendezvous method
-		return nil, nil, err
-	}
-	sfdialer := ptx.NewSnowflakeDialerWithRendezvousMethod(rm)
-	ptl := &ptx.Listener{
-		ExperimentByteCounter: bytecounter.ContextExperimentByteCounter(ctx),
-		Logger:                logger,
-		PTDialer:              sfdialer,
-		SessionByteCounter:    bytecounter.ContextSessionByteCounter(ctx),
-	}
-	if err := m.startListener(ptl.Start); err != nil {
-		// This error condition mostly means "I could not open a local
-		// listening port", which strikes as fundamental failure.
-		return nil, nil, err
-	}
-	logger.Infof("torsf: rendezvous method: '%s'", m.config.RendezvousMethod)
-	return ptl, sfdialer, nil
 }
 
 // values for the backward compatible error field.
@@ -193,8 +143,8 @@ var (
 )
 
 // bootstrap runs the bootstrap.
-func (m *Measurer) bootstrap(ctx context.Context, timeout time.Duration, sess model.ExperimentSession,
-	out chan<- *TestKeys, ptl *ptx.Listener, sfdialer *ptx.SnowflakeDialer) {
+func (m *Measurer) bootstrap(ctx context.Context, timeout time.Duration,
+	sess model.ExperimentSession, out chan<- *TestKeys) {
 	tk := &TestKeys{
 		// initialized later
 		BootstrapTime:      0,
@@ -207,27 +157,17 @@ func (m *Measurer) bootstrap(ctx context.Context, timeout time.Duration, sess mo
 		TorProgressSummary: "",
 		TorVersion:         "",
 		// initialized now
-		PersistentDatadir: !m.config.DisablePersistentDatadir,
-		RendezvousMethod:  sfdialer.RendezvousMethod.Name(),
-		//
 		Timeout:       timeout.Seconds(),
-		TransportName: "snowflake",
+		TransportName: "vanilla",
 	}
-	sess.Logger().Infof(
-		"torsf: disable persistent datadir: %+v", m.config.DisablePersistentDatadir)
 	defer func() {
 		out <- tk
 	}()
 	tun, debugInfo, err := m.startTunnel()(ctx, &tunnel.Config{
 		Name:      "tor",
 		Session:   sess,
-		TunnelDir: path.Join(m.baseTunnelDir(sess), "torsf"),
+		TunnelDir: path.Join(m.baseTunnelDir(sess), "vanillator"),
 		Logger:    sess.Logger(),
-		TorArgs: []string{
-			"UseBridges", "1",
-			"ClientTransportPlugin", ptl.AsClientTransportPluginArgument(),
-			"Bridge", sfdialer.AsBridgeArgument(),
-		},
 	})
 	tk.TorVersion = debugInfo.Version
 	m.readTorLogs(sess.Logger(), tk, debugInfo.LogFilePath)
@@ -266,19 +206,7 @@ func (m *Measurer) readTorLogs(logger model.Logger, tk *TestKeys, logFilePath st
 
 // baseTunnelDir returns the base directory to use for tunnelling
 func (m *Measurer) baseTunnelDir(sess model.ExperimentSession) string {
-	if m.config.DisablePersistentDatadir {
-		return sess.TempDir()
-	}
-	return sess.TunnelDir()
-}
-
-// startListener either calls f or mockStartListener depending
-// on whether mockStartListener is nil or not.
-func (m *Measurer) startListener(f func() error) error {
-	if m.mockStartListener != nil {
-		return m.mockStartListener()
-	}
-	return f()
+	return sess.TempDir()
 }
 
 // startTunnel returns the proper function to start a tunnel.
@@ -305,10 +233,10 @@ type SummaryKeys struct {
 
 var (
 	// errInvalidTestKeysType indicates the test keys type is invalid.
-	errInvalidTestKeysType = errors.New("torsf: invalid test keys type")
+	errInvalidTestKeysType = errors.New("vanilla_tor: invalid test keys type")
 
 	//errNilTestKeys indicates that the test keys are nil.
-	errNilTestKeys = errors.New("torsf: nil test keys")
+	errNilTestKeys = errors.New("vanilla_tor: nil test keys")
 )
 
 // GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
