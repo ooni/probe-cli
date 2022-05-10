@@ -28,7 +28,7 @@ var (
 
 // torBootstrapRegexp helps to extract progress info from logs.
 //
-// See https://regex101.com/r/cer3lm/1.
+// See https://regex101.com/r/Do07qd/1.
 var torBootstrapRegexp = regexp.MustCompile(
 	`^[A-Za-z0-9.: ]+ \[notice\] Bootstrapped ([0-9]+)% \(([A-Za-z_]+)\): ([A-Za-z0-9 ]+)$`)
 
