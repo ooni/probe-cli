@@ -328,7 +328,7 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"vanillator": func(session *Session) *ExperimentBuilder {
+	"vanilla_tor": func(session *Session) *ExperimentBuilder {
 		return &ExperimentBuilder{
 			build: func(config interface{}) *Experiment {
 				return NewExperiment(session, vanillator.NewExperimentMeasurer(
