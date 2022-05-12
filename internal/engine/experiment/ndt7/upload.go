@@ -52,6 +52,15 @@ func (mgr uploadManager) run(ctx context.Context) error {
 	}
 	ticker := time.NewTicker(mgr.measureInterval)
 	defer ticker.Stop()
+	// goroutine that just reads and discards all incoming websockets messages
+	go func() {
+		for {
+			_, _, err := mgr.conn.NextReader()
+			if err != nil {
+				return
+			}
+		}
+	}()
 	for ctx.Err() == nil {
 		if err := mgr.conn.WritePreparedMessage(message); err != nil {
 			return err
