@@ -15,7 +15,8 @@ import (
 // ParallelResolver uses a transport and performs a LookupHost
 // operation in a parallel fashion, hence its name.
 //
-// You should probably use NewUnwrappedParallel to create a new instance.
+// You should probably use NewUnwrappedParallelResolver to
+// create a new instance of this type.
 type ParallelResolver struct {
 	// Encoder is the MANDATORY encoder to use.
 	Encoder model.DNSEncoder
