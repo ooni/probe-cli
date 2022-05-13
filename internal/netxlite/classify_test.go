@@ -269,6 +269,12 @@ func TestClassifyResolverError(t *testing.T) {
 		}
 	})
 
+	t.Run("for servfail", func(t *testing.T) {
+		if classifyResolverError(ErrOODNSServfail) != FailureDNSServfailError {
+			t.Fatal("unexpected result")
+		}
+	})
+
 	t.Run("for another kind of error", func(t *testing.T) {
 		if classifyResolverError(io.EOF) != FailureEOFError {
 			t.Fatal("unexpected result")

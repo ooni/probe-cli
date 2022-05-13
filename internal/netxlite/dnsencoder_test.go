@@ -8,7 +8,6 @@ import (
 )
 
 func TestDNSEncoder(t *testing.T) {
-
 	t.Run("encode A", func(t *testing.T) {
 		e := &DNSEncoderMiekg{}
 		data, err := e.Encode("x.org", dns.TypeA, false)
