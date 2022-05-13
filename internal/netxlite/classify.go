@@ -248,9 +248,15 @@ const (
 // unexported errors used by the Go standard library.
 var (
 	ErrOODNSNoSuchHost  = fmt.Errorf("ooniresolver: %s", DNSNoSuchHostSuffix)
-	ErrOODNSRefused     = errors.New("ooniresolver: refused")
 	ErrOODNSMisbehaving = fmt.Errorf("ooniresolver: %s", DNSServerMisbehavingSuffix)
 	ErrOODNSNoAnswer    = fmt.Errorf("ooniresolver: %s", DNSNoAnswerSuffix)
+)
+
+// These errors are not part of the Go standard library but we can
+// return them in our custom resolvers.
+var (
+	ErrOODNSRefused  = errors.New("ooniresolver: refused")
+	ErrOODNSServfail = errors.New("ooniresolver: servfail")
 )
 
 // classifyResolverError maps DNS resolution errors to
@@ -277,6 +283,9 @@ func classifyResolverError(err error) string {
 	// string of the stdlib in the generic classifier.
 	if errors.Is(err, ErrOODNSRefused) {
 		return FailureDNSRefusedError // not in MK
+	}
+	if errors.Is(err, ErrOODNSServfail) {
+		return FailureDNSServfailError
 	}
 	return classifyGenericError(err)
 }

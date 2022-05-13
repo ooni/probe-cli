@@ -47,6 +47,18 @@ func TestDNSDecoder(t *testing.T) {
 			}
 		})
 
+		t.Run("Servfail", func(t *testing.T) {
+			d := &DNSDecoderMiekg{}
+			data, err := d.DecodeLookupHost(
+				dns.TypeA, dnsGenReplyWithError(t, dns.TypeA, dns.RcodeServerFailure))
+			if !errors.Is(err, ErrOODNSServfail) {
+				t.Fatal("not the error we expected", err)
+			}
+			if data != nil {
+				t.Fatal("expected nil data here")
+			}
+		})
+
 		t.Run("no address", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
 			data, err := d.DecodeLookupHost(dns.TypeA, dnsGenLookupHostReplySuccess(t, dns.TypeA))

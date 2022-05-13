@@ -22,6 +22,8 @@ func (d *DNSDecoderMiekg) parseReply(data []byte) (*dns.Msg, error) {
 		return nil, ErrOODNSNoSuchHost
 	case dns.RcodeRefused:
 		return nil, ErrOODNSRefused
+	case dns.RcodeServerFailure:
+		return nil, ErrOODNSServfail
 	default:
 		return nil, ErrOODNSMisbehaving
 	}
