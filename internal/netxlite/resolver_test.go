@@ -440,6 +440,94 @@ func TestResolverShortCircuitIPAddr(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("LookupHTTPS", func(t *testing.T) {
+		t.Run("with IPv4 addr", func(t *testing.T) {
+			r := &resolverShortCircuitIPAddr{
+				Resolver: &mocks.Resolver{
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+						return nil, errors.New("mocked error")
+					},
+				},
+			}
+			ctx := context.Background()
+			https, err := r.LookupHTTPS(ctx, "8.8.8.8")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(https.IPv4) != 1 || https.IPv4[0] != "8.8.8.8" {
+				t.Fatal("invalid result")
+			}
+		})
+
+		t.Run("with IPv6 addr", func(t *testing.T) {
+			r := &resolverShortCircuitIPAddr{
+				Resolver: &mocks.Resolver{
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+						return nil, errors.New("mocked error")
+					},
+				},
+			}
+			ctx := context.Background()
+			https, err := r.LookupHTTPS(ctx, "::1")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(https.IPv6) != 1 || https.IPv6[0] != "::1" {
+				t.Fatal("invalid result")
+			}
+		})
+
+		t.Run("with domain", func(t *testing.T) {
+			r := &resolverShortCircuitIPAddr{
+				Resolver: &mocks.Resolver{
+					MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+						return nil, errors.New("mocked error")
+					},
+				},
+			}
+			ctx := context.Background()
+			https, err := r.LookupHTTPS(ctx, "dns.google")
+			if err == nil || err.Error() != "mocked error" {
+				t.Fatal("not the error we expected", err)
+			}
+			if https != nil {
+				t.Fatal("invalid result")
+			}
+		})
+	})
+}
+
+func TestIsIPv6(t *testing.T) {
+	t.Run("with neither IPv4 nor IPv6 as input", func(t *testing.T) {
+		ipv6, err := IsIPv6("example.com")
+		if !errors.Is(err, ErrInvalidIP) {
+			t.Fatal("not the error we expected", err)
+		}
+		if ipv6 {
+			t.Fatal("expected false")
+		}
+	})
+
+	t.Run("with IPv4 as input", func(t *testing.T) {
+		ipv6, err := IsIPv6("1.2.3.4")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ipv6 {
+			t.Fatal("expected false")
+		}
+	})
+
+	t.Run("with IPv6 as input", func(t *testing.T) {
+		ipv6, err := IsIPv6("::1")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !ipv6 {
+			t.Fatal("expected true")
+		}
+	})
 }
 
 func TestNullResolver(t *testing.T) {
