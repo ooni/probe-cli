@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Serial resolver implementation
+//
+
 import (
 	"context"
 	"errors"
@@ -10,11 +14,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// SerialResolver uses a transport and sends performs a LookupHost
+// SerialResolver uses a transport and performs a LookupHost
 // operation in a serial fashion (query for A first, wait for response,
 // then query for AAAA, and wait for response), hence its name.
 //
 // You should probably use NewSerialResolver to create a new instance.
+//
+// Deprecated: please use ParallelResolver in new code.
 type SerialResolver struct {
 	// Encoder is the MANDATORY encoder to use.
 	Encoder model.DNSEncoder
@@ -25,7 +31,7 @@ type SerialResolver struct {
 	// NumTimeouts is MANDATORY and counts the number of timeouts.
 	NumTimeouts *atomicx.Int64
 
-	// Txp is the underlying DNS transport.
+	// Txp is the MANDATORY underlying DNS transport.
 	Txp model.DNSTransport
 }
 
