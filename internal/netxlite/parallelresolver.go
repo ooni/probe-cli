@@ -27,7 +27,7 @@ type ParallelResolver struct {
 	// NumTimeouts is MANDATORY and counts the number of timeouts.
 	NumTimeouts *atomicx.Int64
 
-	// Txp is the underlying DNS transport.
+	// Txp is the MANDATORY underlying DNS transport.
 	Txp model.DNSTransport
 }
 
