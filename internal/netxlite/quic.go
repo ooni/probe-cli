@@ -88,8 +88,8 @@ type quicDialerQUICGo struct {
 
 var _ model.QUICDialer = &quicDialerQUICGo{}
 
-// errInvalidIP indicates that a string is not a valid IP.
-var errInvalidIP = errors.New("netxlite: invalid IP")
+// ErrInvalidIP indicates that a string is not a valid IP.
+var ErrInvalidIP = errors.New("netxlite: invalid IP")
 
 // DialContext implements QUICDialer.DialContext. This function will
 // apply the following TLS defaults:
@@ -112,7 +112,7 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context, network string,
 	}
 	ip := net.ParseIP(onlyhost)
 	if ip == nil {
-		return nil, errInvalidIP
+		return nil, ErrInvalidIP
 	}
 	pconn, err := d.QUICListener.Listen(&net.UDPAddr{IP: net.IPv4zero, Port: 0})
 	if err != nil {
