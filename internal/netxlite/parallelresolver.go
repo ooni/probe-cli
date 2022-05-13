@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Parallel resolver implementation
+//
+
 import (
 	"context"
 
@@ -8,7 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// ParallelResolver uses a transport and sends performs a LookupHost
+// ParallelResolver uses a transport and performs a LookupHost
 // operation in a parallel fashion, hence its name.
 //
 // You should probably use NewUnwrappedParallel to create a new instance.

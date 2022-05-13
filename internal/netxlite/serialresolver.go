@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Serial resolver implementation
+//
+
 import (
 	"context"
 	"errors"
@@ -10,7 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// SerialResolver uses a transport and sends performs a LookupHost
+// SerialResolver uses a transport and performs a LookupHost
 // operation in a serial fashion (query for A first, wait for response,
 // then query for AAAA, and wait for response), hence its name.
 //
