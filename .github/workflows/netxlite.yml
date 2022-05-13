@@ -6,15 +6,16 @@ on:
     branches:
       - "master"
 jobs:
-  test:
+  test_netxlite_package:
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
         go: [ "1.17.9" ]
         os: [ "ubuntu-20.04", "windows-2019", "macos-10.15" ]
     steps:
-      - uses: actions/setup-go@v1
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ matrix.go }}"
+          cache-key-suffix: "-coverage-${{ matrix.go }}"
       - uses: actions/checkout@v2
       - run: go test -race ./internal/netxlite/...
