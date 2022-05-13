@@ -15,6 +15,8 @@ import (
 // then query for AAAA, and wait for response), hence its name.
 //
 // You should probably use NewSerialResolver to create a new instance.
+//
+// Deprecated: please use ParallelResolver in new code.
 type SerialResolver struct {
 	// Encoder is the MANDATORY encoder to use.
 	Encoder model.DNSEncoder
