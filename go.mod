@@ -21,6 +21,7 @@ require (
 	github.com/iancoleman/strcase v0.2.0
 	github.com/lucas-clemente/quic-go v0.27.0
 	github.com/marten-seemann/qtls-go1-17 v0.1.1
+	github.com/marten-seemann/qtls-go1-18 v0.1.1
 	github.com/mattn/go-colorable v0.1.12
 	github.com/miekg/dns v1.1.48
 	github.com/mitchellh/go-wordwrap v1.0.1
@@ -41,7 +42,6 @@ require (
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
 	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150
-	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
@@ -72,7 +72,6 @@ require (
 	github.com/klauspost/reedsolomon v1.9.16 // indirect
 	github.com/marten-seemann/qpack v0.2.1 // indirect
 	github.com/marten-seemann/qtls-go1-16 v0.1.5 // indirect
-	github.com/marten-seemann/qtls-go1-18 v0.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-sqlite3 v1.14.12 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect

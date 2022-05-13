@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"time"
+	"os"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
@@ -111,6 +112,17 @@ func RunGroup(config RunGroupConfig) error {
 		if err = nt.Run(ctl); err != nil {
 			log.WithError(err).Errorf("Failed to run %s", group.Label)
 		}
+	}
+
+	dir, err := os.Open(result.MeasurementDir)
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+	// Remove the directory if it's emtpy
+	_, err = dir.Readdirnames(1)
+	if err != nil {
+		os.Remove(result.MeasurementDir)
 	}
 
 	if err = result.Finished(config.Probe.DB()); err != nil {
