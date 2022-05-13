@@ -7,7 +7,8 @@ on:
       - "master"
       - "release/**"
 jobs:
-  test:
+
+  measure_coverage:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -15,16 +16,18 @@ jobs:
           - "1.17.9"
           - "1.18.1"
     steps:
-      - uses: actions/setup-go@v1
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ matrix.go }}"
+          cache-key-suffix: "-coverage-${{ matrix.go }}"
       - uses: actions/checkout@v2
       - run: go test -short -race -tags shaping -coverprofile=probe-cli.cov ./...
       - uses: shogo82148/actions-goveralls@v1
         with:
           path-to-profile: probe-cli.cov
           parallel: true
-  finish:
+
+  finish_measuring_coverage:
     needs: test
     runs-on: ubuntu-latest
     steps:
