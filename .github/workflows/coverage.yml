@@ -28,7 +28,7 @@ jobs:
           parallel: true
 
   finish_measuring_coverage:
-    needs: test
+    needs: measure_coverage
     runs-on: ubuntu-latest
     steps:
       - uses: shogo82148/actions-goveralls@v1
