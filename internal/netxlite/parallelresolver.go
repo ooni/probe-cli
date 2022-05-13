@@ -62,7 +62,7 @@ func (r *ParallelResolver) CloseIdleConnections() {
 	r.Txp.CloseIdleConnections()
 }
 
-// LookupHost performs an A lookup followed by an AAAA lookup for hostname.
+// LookupHost performs an A lookup in parallel with an AAAA lookup.
 func (r *ParallelResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	ach := make(chan *parallelResolverResult)
 	go r.lookupHost(ctx, hostname, dns.TypeA, ach)
@@ -97,11 +97,11 @@ func (r *ParallelResolver) LookupHTTPS(
 	return r.Decoder.DecodeHTTPS(replydata)
 }
 
-// parallelResolverResult is the internal representation of a lookup result.
+// parallelResolverResult is the internal representation of a
+// lookup using either the A or the AAAA query type.
 type parallelResolverResult struct {
 	addrs []string
 	err   error
-	qtype uint16
 }
 
 // lookupHost issues a lookup host query for the specified qtype (e.g., dns.A).
@@ -112,7 +112,6 @@ func (r *ParallelResolver) lookupHost(ctx context.Context, hostname string,
 		out <- &parallelResolverResult{
 			addrs: []string{},
 			err:   err,
-			qtype: qtype,
 		}
 		return
 	}
@@ -121,7 +120,6 @@ func (r *ParallelResolver) lookupHost(ctx context.Context, hostname string,
 		out <- &parallelResolverResult{
 			addrs: []string{},
 			err:   err,
-			qtype: qtype,
 		}
 		return
 	}
@@ -129,6 +127,5 @@ func (r *ParallelResolver) lookupHost(ctx context.Context, hostname string,
 	out <- &parallelResolverResult{
 		addrs: addrs,
 		err:   err,
-		qtype: qtype,
 	}
 }
