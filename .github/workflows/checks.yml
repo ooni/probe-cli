@@ -1,4 +1,4 @@
-# checks performs several code quality checks
+# performs several code quality checks
 name: checks
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
     branches:
       - "master"
 jobs:
-  test:
+  perform_code_quality_checks:
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
