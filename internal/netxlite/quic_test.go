@@ -93,7 +93,7 @@ func TestQUICDialerQUICGo(t *testing.T) {
 			ctx := context.Background()
 			qconn, err := systemdialer.DialContext(
 				ctx, "udp", "a.b.c.d:0", tlsConfig, &quic.Config{})
-			if !errors.Is(err, errInvalidIP) {
+			if !errors.Is(err, ErrInvalidIP) {
 				t.Fatal("not the error we expected", err)
 			}
 			if qconn != nil {
