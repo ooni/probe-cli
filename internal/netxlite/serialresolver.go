@@ -84,7 +84,7 @@ func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]str
 // LookupHTTPS implements Resolver.LookupHTTPS.
 func (r *SerialResolver) LookupHTTPS(
 	ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
-	querydata, err := r.Encoder.Encode(
+	querydata, queryID, err := r.Encoder.Encode(
 		hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func (r *SerialResolver) LookupHTTPS(
 	if err != nil {
 		return nil, err
 	}
-	return r.Decoder.DecodeHTTPS(replydata)
+	return r.Decoder.DecodeHTTPS(replydata, queryID)
 }
 
 func (r *SerialResolver) lookupHostWithRetry(
@@ -126,7 +126,7 @@ func (r *SerialResolver) lookupHostWithRetry(
 // qtype (dns.A or dns.AAAA) without retrying on failure.
 func (r *SerialResolver) lookupHostWithoutRetry(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
-	querydata, err := r.Encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
+	querydata, queryID, err := r.Encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
 	if err != nil {
 		return nil, err
 	}
@@ -134,5 +134,5 @@ func (r *SerialResolver) lookupHostWithoutRetry(
 	if err != nil {
 		return nil, err
 	}
-	return r.Decoder.DecodeLookupHost(qtype, replydata)
+	return r.Decoder.DecodeLookupHost(qtype, replydata, queryID)
 }

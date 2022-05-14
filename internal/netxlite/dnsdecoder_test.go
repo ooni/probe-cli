@@ -8,15 +8,32 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestDNSDecoder(t *testing.T) {
 	t.Run("LookupHost", func(t *testing.T) {
 		t.Run("UnpackError", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
-			data, err := d.DecodeLookupHost(dns.TypeA, nil)
-			if err == nil {
-				t.Fatal("expected an error here")
+			data, err := d.DecodeLookupHost(dns.TypeA, nil, 0)
+			if err == nil || err.Error() != "dns: overflow unpacking uint16" {
+				t.Fatal("unexpected error", err)
+			}
+			if data != nil {
+				t.Fatal("expected nil data here")
+			}
+		})
+
+		t.Run("wrong query ID", func(t *testing.T) {
+			d := &DNSDecoderMiekg{}
+			const (
+				queryID     = 17
+				unrelatedID = 14
+			)
+			reply := dnsGenLookupHostReplySuccess(dnsGenQuery(dns.TypeA, queryID))
+			data, err := d.DecodeLookupHost(dns.TypeA, reply, unrelatedID)
+			if !errors.Is(err, ErrDNSReplyWithWrongQueryID) {
+				t.Fatal("unexpected error", err)
 			}
 			if data != nil {
 				t.Fatal("expected nil data here")
@@ -25,8 +42,9 @@ func TestDNSDecoder(t *testing.T) {
 
 		t.Run("NXDOMAIN", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
-			data, err := d.DecodeLookupHost(
-				dns.TypeA, dnsGenReplyWithError(t, dns.TypeA, dns.RcodeNameError))
+			queryID := dns.Id()
+			data, err := d.DecodeLookupHost(dns.TypeA, dnsGenReplyWithError(
+				dnsGenQuery(dns.TypeA, queryID), dns.RcodeNameError), queryID)
 			if err == nil || !strings.HasSuffix(err.Error(), "no such host") {
 				t.Fatal("not the error we expected", err)
 			}
@@ -37,8 +55,9 @@ func TestDNSDecoder(t *testing.T) {
 
 		t.Run("Refused", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
-			data, err := d.DecodeLookupHost(
-				dns.TypeA, dnsGenReplyWithError(t, dns.TypeA, dns.RcodeRefused))
+			queryID := dns.Id()
+			data, err := d.DecodeLookupHost(dns.TypeA, dnsGenReplyWithError(
+				dnsGenQuery(dns.TypeA, queryID), dns.RcodeRefused), queryID)
 			if !errors.Is(err, ErrOODNSRefused) {
 				t.Fatal("not the error we expected", err)
 			}
@@ -49,8 +68,9 @@ func TestDNSDecoder(t *testing.T) {
 
 		t.Run("Servfail", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
-			data, err := d.DecodeLookupHost(
-				dns.TypeA, dnsGenReplyWithError(t, dns.TypeA, dns.RcodeServerFailure))
+			queryID := dns.Id()
+			data, err := d.DecodeLookupHost(dns.TypeA, dnsGenReplyWithError(
+				dnsGenQuery(dns.TypeA, queryID), dns.RcodeServerFailure), queryID)
 			if !errors.Is(err, ErrOODNSServfail) {
 				t.Fatal("not the error we expected", err)
 			}
@@ -61,7 +81,9 @@ func TestDNSDecoder(t *testing.T) {
 
 		t.Run("no address", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
-			data, err := d.DecodeLookupHost(dns.TypeA, dnsGenLookupHostReplySuccess(t, dns.TypeA))
+			queryID := dns.Id()
+			data, err := d.DecodeLookupHost(dns.TypeA, dnsGenLookupHostReplySuccess(
+				dnsGenQuery(dns.TypeA, queryID)), queryID)
 			if !errors.Is(err, ErrOODNSNoAnswer) {
 				t.Fatal("not the error we expected", err)
 			}
@@ -72,8 +94,9 @@ func TestDNSDecoder(t *testing.T) {
 
 		t.Run("decode A", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
-			data, err := d.DecodeLookupHost(
-				dns.TypeA, dnsGenLookupHostReplySuccess(t, dns.TypeA, "1.1.1.1", "8.8.8.8"))
+			queryID := dns.Id()
+			data, err := d.DecodeLookupHost(dns.TypeA, dnsGenLookupHostReplySuccess(
+				dnsGenQuery(dns.TypeA, queryID), "1.1.1.1", "8.8.8.8"), queryID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -90,8 +113,9 @@ func TestDNSDecoder(t *testing.T) {
 
 		t.Run("decode AAAA", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
-			data, err := d.DecodeLookupHost(
-				dns.TypeAAAA, dnsGenLookupHostReplySuccess(t, dns.TypeAAAA, "::1", "fe80::1"))
+			queryID := dns.Id()
+			data, err := d.DecodeLookupHost(dns.TypeAAAA, dnsGenLookupHostReplySuccess(
+				dnsGenQuery(dns.TypeAAAA, queryID), "::1", "fe80::1"), queryID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -108,8 +132,9 @@ func TestDNSDecoder(t *testing.T) {
 
 		t.Run("unexpected A reply", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
-			data, err := d.DecodeLookupHost(
-				dns.TypeA, dnsGenLookupHostReplySuccess(t, dns.TypeAAAA, "::1", "fe80::1"))
+			queryID := dns.Id()
+			data, err := d.DecodeLookupHost(dns.TypeA, dnsGenLookupHostReplySuccess(
+				dnsGenQuery(dns.TypeAAAA, queryID), "::1", "fe80::1"), queryID)
 			if !errors.Is(err, ErrOODNSNoAnswer) {
 				t.Fatal("not the error we expected", err)
 			}
@@ -120,8 +145,9 @@ func TestDNSDecoder(t *testing.T) {
 
 		t.Run("unexpected AAAA reply", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
-			data, err := d.DecodeLookupHost(
-				dns.TypeAAAA, dnsGenLookupHostReplySuccess(t, dns.TypeA, "1.1.1.1", "8.8.4.4."))
+			queryID := dns.Id()
+			data, err := d.DecodeLookupHost(dns.TypeAAAA, dnsGenLookupHostReplySuccess(
+				dnsGenQuery(dns.TypeA, queryID), "1.1.1.1", "8.8.4.4"), queryID)
 			if !errors.Is(err, ErrOODNSNoAnswer) {
 				t.Fatal("not the error we expected", err)
 			}
@@ -139,7 +165,7 @@ func TestDNSDecoder(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		reply, err := d.parseReply(data)
+		reply, err := d.parseReply(data, 0)
 		if !errors.Is(err, ErrOODNSMisbehaving) { // catch all error
 			t.Fatal("not the error we expected", err)
 		}
@@ -151,7 +177,7 @@ func TestDNSDecoder(t *testing.T) {
 	t.Run("DecodeHTTPS", func(t *testing.T) {
 		t.Run("with nil data", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
-			reply, err := d.DecodeHTTPS(nil)
+			reply, err := d.DecodeHTTPS(nil, 0)
 			if err == nil || err.Error() != "dns: overflow unpacking uint16" {
 				t.Fatal("not the error we expected", err)
 			}
@@ -160,10 +186,28 @@ func TestDNSDecoder(t *testing.T) {
 			}
 		})
 
-		t.Run("with empty answer", func(t *testing.T) {
-			data := dnsGenHTTPSReplySuccess(t, nil, nil, nil)
+		t.Run("wrong query ID", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
-			reply, err := d.DecodeHTTPS(data)
+			const (
+				queryID     = 17
+				unrelatedID = 14
+			)
+			reply := dnsGenHTTPSReplySuccess(dnsGenQuery(dns.TypeA, queryID), nil, nil, nil)
+			data, err := d.DecodeLookupHost(dns.TypeA, reply, unrelatedID)
+			if !errors.Is(err, ErrDNSReplyWithWrongQueryID) {
+				t.Fatal("unexpected error", err)
+			}
+			if data != nil {
+				t.Fatal("expected nil data here")
+			}
+		})
+
+		t.Run("with empty answer", func(t *testing.T) {
+			queryID := dns.Id()
+			data := dnsGenHTTPSReplySuccess(
+				dnsGenQuery(dns.TypeHTTPS, queryID), nil, nil, nil)
+			d := &DNSDecoderMiekg{}
+			reply, err := d.DecodeHTTPS(data, queryID)
 			if !errors.Is(err, ErrOODNSNoAnswer) {
 				t.Fatal("unexpected err", err)
 			}
@@ -173,12 +217,14 @@ func TestDNSDecoder(t *testing.T) {
 		})
 
 		t.Run("with full answer", func(t *testing.T) {
+			queryID := dns.Id()
 			alpn := []string{"h3"}
 			v4 := []string{"1.1.1.1"}
 			v6 := []string{"::1"}
-			data := dnsGenHTTPSReplySuccess(t, alpn, v4, v6)
+			data := dnsGenHTTPSReplySuccess(
+				dnsGenQuery(dns.TypeHTTPS, queryID), alpn, v4, v6)
 			d := &DNSDecoderMiekg{}
-			reply, err := d.DecodeHTTPS(data)
+			reply, err := d.DecodeHTTPS(data, queryID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -195,64 +241,73 @@ func TestDNSDecoder(t *testing.T) {
 	})
 }
 
-// dnsGenReplyWithError generates a DNS reply for the given
-// query type (e.g., dns.TypeA) using code as the Rcode.
-func dnsGenReplyWithError(t *testing.T, qtype uint16, code int) []byte {
+// dnsGenQuery generates a query suitable to be used with testing.
+func dnsGenQuery(qtype uint16, queryID uint16) []byte {
 	question := dns.Question{
 		Name:   dns.Fqdn("x.org"),
 		Qtype:  qtype,
 		Qclass: dns.ClassINET,
 	}
 	query := new(dns.Msg)
-	query.Id = dns.Id()
+	query.Id = queryID
 	query.RecursionDesired = true
 	query.Question = make([]dns.Question, 1)
 	query.Question[0] = question
+	data, err := query.Pack()
+	runtimex.PanicOnError(err, "query.Pack failed")
+	return data
+}
+
+// dnsGenReplyWithError generates a DNS reply for the given
+// query type (e.g., dns.TypeA) using code as the Rcode.
+func dnsGenReplyWithError(rawQuery []byte, code int) []byte {
+	query := new(dns.Msg)
+	err := query.Unpack(rawQuery)
+	runtimex.PanicOnError(err, "query.Unpack failed")
 	reply := new(dns.Msg)
 	reply.Compress = true
 	reply.MsgHdr.RecursionAvailable = true
 	reply.SetRcode(query, code)
 	data, err := reply.Pack()
-	if err != nil {
-		t.Fatal(err)
-	}
+	runtimex.PanicOnError(err, "reply.Pack failed")
 	return data
 }
 
 // dnsGenLookupHostReplySuccess generates a successful DNS reply for the given
 // qtype (e.g., dns.TypeA) containing the given ips... in the answer.
-func dnsGenLookupHostReplySuccess(t *testing.T, qtype uint16, ips ...string) []byte {
-	question := dns.Question{
-		Name:   dns.Fqdn("x.org"),
-		Qtype:  qtype,
-		Qclass: dns.ClassINET,
-	}
+func dnsGenLookupHostReplySuccess(rawQuery []byte, ips ...string) []byte {
 	query := new(dns.Msg)
-	query.Id = dns.Id()
-	query.RecursionDesired = true
-	query.Question = make([]dns.Question, 1)
-	query.Question[0] = question
+	err := query.Unpack(rawQuery)
+	runtimex.PanicOnError(err, "query.Unpack failed")
+	runtimex.PanicIfFalse(len(query.Question) == 1, "more than one question")
+	question := query.Question[0]
 	reply := new(dns.Msg)
 	reply.Compress = true
 	reply.MsgHdr.RecursionAvailable = true
 	reply.SetReply(query)
 	for _, ip := range ips {
-		switch qtype {
+		switch question.Qtype {
 		case dns.TypeA:
+			if isIPv6(ip) {
+				continue
+			}
 			reply.Answer = append(reply.Answer, &dns.A{
 				Hdr: dns.RR_Header{
 					Name:   dns.Fqdn("x.org"),
-					Rrtype: qtype,
+					Rrtype: question.Qtype,
 					Class:  dns.ClassINET,
 					Ttl:    0,
 				},
 				A: net.ParseIP(ip),
 			})
 		case dns.TypeAAAA:
+			if !isIPv6(ip) {
+				continue
+			}
 			reply.Answer = append(reply.Answer, &dns.AAAA{
 				Hdr: dns.RR_Header{
 					Name:   dns.Fqdn("x.org"),
-					Rrtype: qtype,
+					Rrtype: question.Qtype,
 					Class:  dns.ClassINET,
 					Ttl:    0,
 				},
@@ -261,25 +316,16 @@ func dnsGenLookupHostReplySuccess(t *testing.T, qtype uint16, ips ...string) []b
 		}
 	}
 	data, err := reply.Pack()
-	if err != nil {
-		t.Fatal(err)
-	}
+	runtimex.PanicOnError(err, "reply.Pack failed")
 	return data
 }
 
 // dnsGenHTTPSReplySuccess generates a successful HTTPS response containing
 // the given (possibly nil) alpns, ipv4s, and ipv6s.
-func dnsGenHTTPSReplySuccess(t *testing.T, alpns, ipv4s, ipv6s []string) []byte {
-	question := dns.Question{
-		Name:   dns.Fqdn("x.org"),
-		Qtype:  dns.TypeHTTPS,
-		Qclass: dns.ClassINET,
-	}
+func dnsGenHTTPSReplySuccess(rawQuery []byte, alpns, ipv4s, ipv6s []string) []byte {
 	query := new(dns.Msg)
-	query.Id = dns.Id()
-	query.RecursionDesired = true
-	query.Question = make([]dns.Question, 1)
-	query.Question[0] = question
+	err := query.Unpack(rawQuery)
+	runtimex.PanicOnError(err, "query.Unpack failed")
 	reply := new(dns.Msg)
 	reply.Compress = true
 	reply.MsgHdr.RecursionAvailable = true
@@ -315,8 +361,6 @@ func dnsGenHTTPSReplySuccess(t *testing.T, alpns, ipv4s, ipv6s []string) []byte 
 		answer.Value = append(answer.Value, &dns.SVCBIPv6Hint{Hint: addrs})
 	}
 	data, err := reply.Pack()
-	if err != nil {
-		t.Fatal(err)
-	}
+	runtimex.PanicOnError(err, "reply.Pack failed")
 	return data
 }

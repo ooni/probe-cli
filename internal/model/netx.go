@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
+	"github.com/miekg/dns"
 )
 
 //
@@ -25,6 +26,8 @@ type DNSDecoder interface {
 	//
 	// - data contains the reply bytes read from a DNSTransport
 	//
+	// - queryID is the original query ID
+	//
 	// Returns:
 	//
 	// - on success, a list of IP addrs inside the reply and a nil error
@@ -33,9 +36,9 @@ type DNSDecoder interface {
 	//
 	// Note that this function will return an error if there is no
 	// IP address inside of the reply.
-	DecodeLookupHost(qtype uint16, data []byte) ([]string, error)
+	DecodeLookupHost(qtype uint16, data []byte, queryID uint16) ([]string, error)
 
-	// DecodeHTTPS decodes an HTTPS reply.
+	// DecodeHTTPS is like DecodeLookupHost but decodes an HTTPS reply.
 	//
 	// The argument is the reply as read by the DNSTransport.
 	//
@@ -46,7 +49,22 @@ type DNSDecoder interface {
 	// This function will return an error if the HTTPS reply does not
 	// contain at least a valid ALPN entry. It will not return
 	// an error, though, when there are no IPv4/IPv6 hints in the reply.
-	DecodeHTTPS(data []byte) (*HTTPSSvc, error)
+	DecodeHTTPS(data []byte, queryID uint16) (*HTTPSSvc, error)
+
+	// DecodeReply decodes a DNS reply message.
+	//
+	// Arguments:
+	//
+	// - data is the raw reply
+	//
+	// If you use this function, remember that:
+	//
+	// 1. the Rcode MAY be nonzero;
+	//
+	// 2. the replyID MAY NOT match the original query ID.
+	//
+	// That is, this is a very basic parsing method.
+	DecodeReply(data []byte) (*dns.Msg, error)
 }
 
 // The DNSEncoder encodes DNS queries to bytes
@@ -61,9 +79,10 @@ type DNSEncoder interface {
 	//
 	// - padding is whether to add padding to the query.
 	//
-	// On success, this function returns a valid byte array and
-	// a nil error. On failure, we have an error and the byte array is nil.
-	Encode(domain string, qtype uint16, padding bool) ([]byte, error)
+	// On success, this function returns a valid byte array, the queryID, and
+	// a nil error. On failure, we have a non-nil error, a nil arrary and a zero
+	// query ID.
+	Encode(domain string, qtype uint16, padding bool) ([]byte, uint16, error)
 }
 
 // DNSTransport represents an abstract DNS transport.

@@ -9,6 +9,18 @@ import (
 )
 
 func TestHTTPTransport(t *testing.T) {
+	t.Run("Network", func(t *testing.T) {
+		expected := "quic"
+		txp := &HTTPTransport{
+			MockNetwork: func() string {
+				return expected
+			},
+		}
+		if txp.Network() != expected {
+			t.Fatal("unexpected network value")
+		}
+	})
+
 	t.Run("RoundTrip", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		txp := &HTTPTransport{

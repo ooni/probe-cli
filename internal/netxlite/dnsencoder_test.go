@@ -10,7 +10,7 @@ import (
 func TestDNSEncoder(t *testing.T) {
 	t.Run("encode A", func(t *testing.T) {
 		e := &DNSEncoderMiekg{}
-		data, err := e.Encode("x.org", dns.TypeA, false)
+		data, _, err := e.Encode("x.org", dns.TypeA, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -19,7 +19,7 @@ func TestDNSEncoder(t *testing.T) {
 
 	t.Run("encode AAAA", func(t *testing.T) {
 		e := &DNSEncoderMiekg{}
-		data, err := e.Encode("x.org", dns.TypeAAAA, false)
+		data, _, err := e.Encode("x.org", dns.TypeAAAA, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -31,7 +31,7 @@ func TestDNSEncoder(t *testing.T) {
 		// array of values we obtain the right query size.
 		getquerylen := func(domainlen int, padding bool) int {
 			e := &DNSEncoderMiekg{}
-			data, err := e.Encode(
+			data, _, err := e.Encode(
 				// This is not a valid name because it ends up being way
 				// longer than 255 octets. However, the library is allowing
 				// us to generate such name and we are not going to send
