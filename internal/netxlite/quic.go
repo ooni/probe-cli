@@ -55,9 +55,12 @@ func NewQUICDialerWithResolver(listener model.QUICListener,
 		Dialer: &quicDialerResolver{
 			Dialer: &quicDialerLogger{
 				Dialer: &quicDialerErrWrapper{
-					QUICDialer: &quicDialerQUICGo{
-						QUICListener: listener,
-					}},
+					QUICDialer: &quicDialerHandshakeCompleter{
+						Dialer: &quicDialerQUICGo{
+							QUICListener: listener,
+						},
+					},
+				},
 				Logger:          logger,
 				operationSuffix: "_address",
 			},
@@ -162,6 +165,33 @@ func (d *quicDialerQUICGo) maybeApplyTLSDefaults(config *tls.Config, port int) *
 // CloseIdleConnections closes idle connections.
 func (d *quicDialerQUICGo) CloseIdleConnections() {
 	// nothing to do
+}
+
+// quicDialerHandshakeCompleter ensures we complete the handshake.
+type quicDialerHandshakeCompleter struct {
+	Dialer model.QUICDialer
+}
+
+// DialContext implements model.QUICDialer.DialContext.
+func (d *quicDialerHandshakeCompleter) DialContext(
+	ctx context.Context, network, address string,
+	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+	conn, err := d.Dialer.DialContext(ctx, network, address, tlsConfig, quicConfig)
+	if err != nil {
+		return nil, err
+	}
+	select {
+	case <-conn.HandshakeComplete().Done():
+		return conn, nil
+	case <-ctx.Done():
+		conn.CloseWithError(0, "") // we own the conn
+		return nil, ctx.Err()
+	}
+}
+
+// CloseIdleConnections implements model.QUICDialer.CloseIdleConnections.
+func (d *quicDialerHandshakeCompleter) CloseIdleConnections() {
+	d.Dialer.CloseIdleConnections()
 }
 
 // quicConnectionOwnsConn ensures that we close the UDPLikeConn.

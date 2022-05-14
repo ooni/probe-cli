@@ -264,49 +264,6 @@ func TestSaverQUICDialContext(t *testing.T) {
 		}
 	})
 
-	t.Run("on handshake timeout", func(t *testing.T) {
-		handshakeCtx := context.Background()
-		handshakeCtx, handshakeCancel := context.WithCancel(handshakeCtx)
-		defer handshakeCancel()
-		const expectedNetwork = "udp"
-		const mockedEndpoint = "8.8.4.4:443"
-		saver := NewSaver()
-		v := &SingleQUICTLSHandshakeValidator{
-			ExpectedALPN:       []string{"h3"},
-			ExpectedSNI:        "dns.google",
-			ExpectedSkipVerify: true,
-			//
-			ExpectedCipherSuite:        0,
-			ExpectedNegotiatedProtocol: "",
-			ExpectedPeerCerts:          nil,
-			ExpectedVersion:            0,
-			//
-			ExpectedNetwork:    "quic",
-			ExpectedRemoteAddr: mockedEndpoint,
-			//
-			QUICConfig: &quic.Config{},
-			//
-			ExpectedFailure: context.DeadlineExceeded,
-			Saver:           saver,
-		}
-		qconn := newQUICConnection(handshakeCtx, tls.ConnectionState{})
-		dialer := newQUICDialer(qconn, nil)
-		ctx := context.Background()
-		ctx, cancel := context.WithTimeout(ctx, time.Microsecond)
-		defer cancel()
-		qconn, err := saver.QUICDialContext(ctx, dialer, expectedNetwork,
-			mockedEndpoint, v.NewTLSConfig(), v.QUICConfig)
-		if !errors.Is(err, context.DeadlineExceeded) {
-			t.Fatal("unexpected error")
-		}
-		if qconn != nil {
-			t.Fatal("expected nil connection")
-		}
-		if err := v.Validate(); err != nil {
-			t.Fatal(err)
-		}
-	})
-
 	t.Run("on other error", func(t *testing.T) {
 		mockedError := netxlite.NewTopLevelGenericErrWrapper(io.EOF)
 		const expectedNetwork = "udp"
