@@ -44,11 +44,11 @@ func TestDNSDecoder(t *testing.T) {
 	t.Run("DecodeReply", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		e := &DNSDecoder{
-			MockDecodeReply: func(reply []byte, queryID uint16) (*dns.Msg, error) {
+			MockDecodeReply: func(reply []byte) (*dns.Msg, error) {
 				return nil, expected
 			},
 		}
-		out, err := e.DecodeReply(make([]byte, 17), dns.Id())
+		out, err := e.DecodeReply(make([]byte, 17))
 		if !errors.Is(err, expected) {
 			t.Fatal("unexpected err", err)
 		}

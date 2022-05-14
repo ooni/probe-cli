@@ -11,7 +11,7 @@ type DNSDecoder struct {
 
 	MockDecodeHTTPS func(reply []byte, queryID uint16) (*model.HTTPSSvc, error)
 
-	MockDecodeReply func(reply []byte, queryID uint16) (*dns.Msg, error)
+	MockDecodeReply func(reply []byte) (*dns.Msg, error)
 }
 
 // DecodeLookupHost calls MockDecodeLookupHost.
@@ -25,6 +25,6 @@ func (e *DNSDecoder) DecodeHTTPS(reply []byte, queryID uint16) (*model.HTTPSSvc,
 }
 
 // DecodeReply calls MockDecodeReply.
-func (e *DNSDecoder) DecodeReply(reply []byte, queryID uint16) (*dns.Msg, error) {
-	return e.MockDecodeReply(reply, queryID)
+func (e *DNSDecoder) DecodeReply(reply []byte) (*dns.Msg, error) {
+	return e.MockDecodeReply(reply)
 }

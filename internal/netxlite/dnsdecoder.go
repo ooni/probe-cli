@@ -14,21 +14,21 @@ type DNSDecoderMiekg struct{}
 var ErrDNSReplyWithWrongQueryID = errors.New(FailureDNSReplyWithWrongQueryID)
 
 // DecodeReply implements model.DNSDecoder.DecodeReply
-func (d *DNSDecoderMiekg) DecodeReply(data []byte, queryID uint16) (*dns.Msg, error) {
+func (d *DNSDecoderMiekg) DecodeReply(data []byte) (*dns.Msg, error) {
 	reply := new(dns.Msg)
 	if err := reply.Unpack(data); err != nil {
 		return nil, err
-	}
-	if reply.Id != queryID {
-		return nil, ErrDNSReplyWithWrongQueryID
 	}
 	return reply, nil
 }
 
 func (d *DNSDecoderMiekg) parseReply(data []byte, queryID uint16) (*dns.Msg, error) {
-	reply, err := d.DecodeReply(data, queryID)
+	reply, err := d.DecodeReply(data)
 	if err != nil {
 		return nil, err
+	}
+	if reply.Id != queryID {
+		return nil, ErrDNSReplyWithWrongQueryID
 	}
 	// TODO(bassosimone): map more errors to net.DNSError names
 	// TODO(bassosimone): add support for lame referral.

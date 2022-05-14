@@ -59,10 +59,14 @@ type DNSDecoder interface {
 	//
 	// - queryID is the original queryID
 	//
-	// If you use this function, remember that the reply could contain an
-	// Rcode different from zero (i.e., a DNS error). That is, this method
-	// WILL NOT return an error in case the reply contains a DNS error.
-	DecodeReply(data []byte, queryID uint16) (*dns.Msg, error)
+	// If you use this function, remember that:
+	//
+	// 1. the Rcode MAY be nonzero;
+	//
+	// 2. the replyID MAY NOT match the original query ID.
+	//
+	// That is, this is a very basic parsing method.
+	DecodeReply(data []byte) (*dns.Msg, error)
 }
 
 // The DNSEncoder encodes DNS queries to bytes
