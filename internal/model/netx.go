@@ -51,7 +51,7 @@ type DNSDecoder interface {
 	// an error, though, when there are no IPv4/IPv6 hints in the reply.
 	DecodeHTTPS(data []byte, queryID uint16) (*HTTPSSvc, error)
 
-	// Decode decodes a DNS reply message.
+	// DecodeReply decodes a DNS reply message.
 	//
 	// Arguments:
 	//
