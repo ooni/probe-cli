@@ -14,25 +14,25 @@ import (
 // DialContextFunc is the type of net.Dialer.DialContext.
 type DialContextFunc func(context.Context, string, string) (net.Conn, error)
 
-// DNSOverTCP is a DNS-over-{TCP,TLS} DNSTransport.
+// DNSOverTCPTransport is a DNS-over-{TCP,TLS} DNSTransport.
 //
 // Bug: this implementation always creates a new connection for each query.
-type DNSOverTCP struct {
+type DNSOverTCPTransport struct {
 	dial            DialContextFunc
 	address         string
 	network         string
 	requiresPadding bool
 }
 
-// NewDNSOverTCP creates a new DNSOverTCP transport.
+// NewDNSOverTCPTransport creates a new DNSOverTCPTransport.
 //
 // Arguments:
 //
 // - dial is a function with the net.Dialer.DialContext's signature;
 //
 // - address is the endpoint address (e.g., 8.8.8.8:53).
-func NewDNSOverTCP(dial DialContextFunc, address string) *DNSOverTCP {
-	return &DNSOverTCP{
+func NewDNSOverTCPTransport(dial DialContextFunc, address string) *DNSOverTCPTransport {
+	return &DNSOverTCPTransport{
 		dial:            dial,
 		address:         address,
 		network:         "tcp",
@@ -47,8 +47,8 @@ func NewDNSOverTCP(dial DialContextFunc, address string) *DNSOverTCP {
 // - dial is a function with the net.Dialer.DialContext's signature;
 //
 // - address is the endpoint address (e.g., 8.8.8.8:853).
-func NewDNSOverTLS(dial DialContextFunc, address string) *DNSOverTCP {
-	return &DNSOverTCP{
+func NewDNSOverTLS(dial DialContextFunc, address string) *DNSOverTCPTransport {
+	return &DNSOverTCPTransport{
 		dial:            dial,
 		address:         address,
 		network:         "dot",
@@ -57,7 +57,7 @@ func NewDNSOverTLS(dial DialContextFunc, address string) *DNSOverTCP {
 }
 
 // RoundTrip sends a query and receives a reply.
-func (t *DNSOverTCP) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
+func (t *DNSOverTCPTransport) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
 	if len(query) > math.MaxUint16 {
 		return nil, errors.New("query too long")
 	}
@@ -91,23 +91,23 @@ func (t *DNSOverTCP) RoundTrip(ctx context.Context, query []byte) ([]byte, error
 
 // RequiresPadding returns true for DoT and false for TCP
 // according to RFC8467.
-func (t *DNSOverTCP) RequiresPadding() bool {
+func (t *DNSOverTCPTransport) RequiresPadding() bool {
 	return t.requiresPadding
 }
 
 // Network returns the transport network, i.e., "dot" or "tcp".
-func (t *DNSOverTCP) Network() string {
+func (t *DNSOverTCPTransport) Network() string {
 	return t.network
 }
 
 // Address returns the upstream server endpoint (e.g., "1.1.1.1:853").
-func (t *DNSOverTCP) Address() string {
+func (t *DNSOverTCPTransport) Address() string {
 	return t.address
 }
 
 // CloseIdleConnections closes idle connections, if any.
-func (t *DNSOverTCP) CloseIdleConnections() {
+func (t *DNSOverTCPTransport) CloseIdleConnections() {
 	// nothing to do
 }
 
-var _ model.DNSTransport = &DNSOverTCP{}
+var _ model.DNSTransport = &DNSOverTCPTransport{}

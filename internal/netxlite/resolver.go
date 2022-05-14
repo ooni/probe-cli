@@ -13,7 +13,7 @@ import (
 )
 
 // ErrNoDNSTransport is the error returned when you attempt to perform
-// a DNS operation that requires a custom DNSTransport (e.g., DNSOverHTTPS)
+// a DNS operation that requires a custom DNSTransport (e.g., DNSOverHTTPSTransport)
 // but you are using the "system" resolver instead.
 var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
@@ -34,7 +34,7 @@ func NewResolverStdlib(logger model.DebugLogger) model.Resolver {
 // - address is the server address (e.g., 1.1.1.1:53)
 func NewResolverUDP(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
 	return WrapResolver(logger, NewSerialResolver(
-		NewDNSOverUDP(dialer, address),
+		NewDNSOverUDPTransport(dialer, address),
 	))
 }
 

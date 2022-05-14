@@ -71,28 +71,28 @@ func TestNewResolverSystem(t *testing.T) {
 
 func TestNewResolverUDPAddress(t *testing.T) {
 	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverUDP(netxlite.DefaultDialer, "8.8.8.8:53"))
+		netxlite.NewDNSOverUDPTransport(netxlite.DefaultDialer, "8.8.8.8:53"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverUDPDomain(t *testing.T) {
 	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverUDP(netxlite.DefaultDialer, "dns.google.com:53"))
+		netxlite.NewDNSOverUDPTransport(netxlite.DefaultDialer, "dns.google.com:53"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverTCPAddress(t *testing.T) {
 	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverTCP(new(net.Dialer).DialContext, "8.8.8.8:53"))
+		netxlite.NewDNSOverTCPTransport(new(net.Dialer).DialContext, "8.8.8.8:53"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverTCPDomain(t *testing.T) {
 	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverTCP(new(net.Dialer).DialContext, "dns.google.com:53"))
+		netxlite.NewDNSOverTCPTransport(new(net.Dialer).DialContext, "dns.google.com:53"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
@@ -113,7 +113,7 @@ func TestNewResolverDoTDomain(t *testing.T) {
 
 func TestNewResolverDoH(t *testing.T) {
 	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverHTTPS(http.DefaultClient, "https://cloudflare-dns.com/dns-query"))
+		netxlite.NewDNSOverHTTPSTransport(http.DefaultClient, "https://cloudflare-dns.com/dns-query"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }

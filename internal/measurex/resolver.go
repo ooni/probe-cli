@@ -44,7 +44,7 @@ func (mx *Measurer) NewResolverSystem(db WritableDB, logger model.Logger) model.
 func (mx *Measurer) NewResolverUDP(db WritableDB, logger model.Logger, address string) model.Resolver {
 	return mx.WrapResolver(db, netxlite.WrapResolver(
 		logger, netxlite.NewSerialResolver(
-			mx.WrapDNSXRoundTripper(db, netxlite.NewDNSOverUDP(
+			mx.WrapDNSXRoundTripper(db, netxlite.NewDNSOverUDPTransport(
 				mx.NewDialerWithSystemResolver(db, logger),
 				address,
 			)))),

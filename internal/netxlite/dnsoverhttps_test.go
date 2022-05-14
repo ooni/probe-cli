@@ -13,11 +13,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-func TestDNSOverHTTPS(t *testing.T) {
+func TestDNSOverHTTPSTransport(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		t.Run("NewRequestFailure", func(t *testing.T) {
 			const invalidURL = "\t"
-			txp := NewDNSOverHTTPS(http.DefaultClient, invalidURL)
+			txp := NewDNSOverHTTPSTransport(http.DefaultClient, invalidURL)
 			data, err := txp.RoundTrip(context.Background(), nil)
 			if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 				t.Fatal("expected an error here")
@@ -29,7 +29,7 @@ func TestDNSOverHTTPS(t *testing.T) {
 
 		t.Run("client.Do failure", func(t *testing.T) {
 			expected := errors.New("mocked error")
-			txp := &DNSOverHTTPS{
+			txp := &DNSOverHTTPSTransport{
 				Client: &mocks.HTTPClient{
 					MockDo: func(*http.Request) (*http.Response, error) {
 						return nil, expected
@@ -47,7 +47,7 @@ func TestDNSOverHTTPS(t *testing.T) {
 		})
 
 		t.Run("server returns 500", func(t *testing.T) {
-			txp := &DNSOverHTTPS{
+			txp := &DNSOverHTTPSTransport{
 				Client: &mocks.HTTPClient{
 					MockDo: func(*http.Request) (*http.Response, error) {
 						return &http.Response{
@@ -68,7 +68,7 @@ func TestDNSOverHTTPS(t *testing.T) {
 		})
 
 		t.Run("missing content type", func(t *testing.T) {
-			txp := &DNSOverHTTPS{
+			txp := &DNSOverHTTPSTransport{
 				Client: &mocks.HTTPClient{
 					MockDo: func(*http.Request) (*http.Response, error) {
 						return &http.Response{
@@ -90,7 +90,7 @@ func TestDNSOverHTTPS(t *testing.T) {
 
 		t.Run("success", func(t *testing.T) {
 			body := []byte("AAA")
-			txp := &DNSOverHTTPS{
+			txp := &DNSOverHTTPSTransport{
 				Client: &mocks.HTTPClient{
 					MockDo: func(*http.Request) (*http.Response, error) {
 						return &http.Response{
@@ -116,7 +116,7 @@ func TestDNSOverHTTPS(t *testing.T) {
 		t.Run("sets the correct user-agent", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			var correct bool
-			txp := &DNSOverHTTPS{
+			txp := &DNSOverHTTPSTransport{
 				Client: &mocks.HTTPClient{
 					MockDo: func(req *http.Request) (*http.Response, error) {
 						correct = req.Header.Get("User-Agent") == httpheader.UserAgent()
@@ -141,7 +141,7 @@ func TestDNSOverHTTPS(t *testing.T) {
 			var correct bool
 			expected := errors.New("mocked error")
 			hostOverride := "test.com"
-			txp := &DNSOverHTTPS{
+			txp := &DNSOverHTTPSTransport{
 				Client: &mocks.HTTPClient{
 					MockDo: func(req *http.Request) (*http.Response, error) {
 						correct = req.Host == hostOverride
@@ -167,7 +167,7 @@ func TestDNSOverHTTPS(t *testing.T) {
 
 	t.Run("other functions behave correctly", func(t *testing.T) {
 		const queryURL = "https://cloudflare-dns.com/dns-query"
-		txp := NewDNSOverHTTPS(http.DefaultClient, queryURL)
+		txp := NewDNSOverHTTPSTransport(http.DefaultClient, queryURL)
 		if txp.Network() != "doh" {
 			t.Fatal("invalid network")
 		}
@@ -181,7 +181,7 @@ func TestDNSOverHTTPS(t *testing.T) {
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
 		var called bool
-		doh := &DNSOverHTTPS{
+		doh := &DNSOverHTTPSTransport{
 			Client: &mocks.HTTPClient{
 				MockCloseIdleConnections: func() {
 					called = true
