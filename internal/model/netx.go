@@ -57,8 +57,6 @@ type DNSDecoder interface {
 	//
 	// - data is the raw reply
 	//
-	// - queryID is the original queryID
-	//
 	// If you use this function, remember that:
 	//
 	// 1. the Rcode MAY be nonzero;
