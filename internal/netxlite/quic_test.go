@@ -45,6 +45,54 @@ func TestNewQUICDialer(t *testing.T) {
 	}
 }
 
+func TestParseUDPAddr(t *testing.T) {
+	t.Run("cannot split host and port", func(t *testing.T) {
+		addr, err := ParseUDPAddr("1.2.3.4")
+		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
+			t.Fatal("unexpected error", err)
+		}
+		if addr != nil {
+			t.Fatal("expected nil addr")
+		}
+	})
+
+	t.Run("with invalid IP addr", func(t *testing.T) {
+		addr, err := ParseUDPAddr("www.google.com:80")
+		if !errors.Is(err, ErrInvalidIP) {
+			t.Fatal("unexpected error", err)
+		}
+		if addr != nil {
+			t.Fatal("expected nil addr")
+		}
+	})
+
+	t.Run("with invalid port", func(t *testing.T) {
+		addr, err := ParseUDPAddr("8.8.8.8:www")
+		if err == nil || !strings.HasSuffix(err.Error(), "invalid syntax") {
+			t.Fatal("unexpected error", err)
+		}
+		if addr != nil {
+			t.Fatal("expected nil addr")
+		}
+	})
+
+	t.Run("with valid input", func(t *testing.T) {
+		addr, err := ParseUDPAddr("8.8.8.8:80")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if addr.IP.String() != "8.8.8.8" {
+			t.Fatal("invalid IP")
+		}
+		if addr.Port != 80 {
+			t.Fatal("invalid port")
+		}
+		if addr.Zone != "" {
+			t.Fatal("invalid zone")
+		}
+	})
+}
+
 func TestQUICDialerQUICGo(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("cannot split host port", func(t *testing.T) {
