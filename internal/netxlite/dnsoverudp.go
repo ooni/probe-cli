@@ -7,25 +7,25 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// DNSOverUDP is a DNS-over-UDP DNSTransport.
-type DNSOverUDP struct {
+// DNSOverUDPTransport is a DNS-over-UDP DNSTransport.
+type DNSOverUDPTransport struct {
 	dialer  model.Dialer
 	address string
 }
 
-// NewDNSOverUDP creates a DNSOverUDP instance.
+// NewDNSOverUDPTransport creates a DNSOverUDPTransport instance.
 //
 // Arguments:
 //
 // - dialer is any type that implements the Dialer interface;
 //
 // - address is the endpoint address (e.g., 8.8.8.8:53).
-func NewDNSOverUDP(dialer model.Dialer, address string) *DNSOverUDP {
-	return &DNSOverUDP{dialer: dialer, address: address}
+func NewDNSOverUDPTransport(dialer model.Dialer, address string) *DNSOverUDPTransport {
+	return &DNSOverUDPTransport{dialer: dialer, address: address}
 }
 
 // RoundTrip sends a query and receives a reply.
-func (t *DNSOverUDP) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
+func (t *DNSOverUDPTransport) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
 	conn, err := t.dialer.DialContext(ctx, "udp", t.address)
 	if err != nil {
 		return nil, err
@@ -49,23 +49,23 @@ func (t *DNSOverUDP) RoundTrip(ctx context.Context, query []byte) ([]byte, error
 }
 
 // RequiresPadding returns false for UDP according to RFC8467.
-func (t *DNSOverUDP) RequiresPadding() bool {
+func (t *DNSOverUDPTransport) RequiresPadding() bool {
 	return false
 }
 
 // Network returns the transport network, i.e., "udp".
-func (t *DNSOverUDP) Network() string {
+func (t *DNSOverUDPTransport) Network() string {
 	return "udp"
 }
 
 // Address returns the upstream server address.
-func (t *DNSOverUDP) Address() string {
+func (t *DNSOverUDPTransport) Address() string {
 	return t.address
 }
 
 // CloseIdleConnections closes idle connections, if any.
-func (t *DNSOverUDP) CloseIdleConnections() {
+func (t *DNSOverUDPTransport) CloseIdleConnections() {
 	// nothing to do
 }
 
-var _ model.DNSTransport = &DNSOverUDP{}
+var _ model.DNSTransport = &DNSOverUDPTransport{}

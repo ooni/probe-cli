@@ -38,7 +38,7 @@ func TestNewResolverUDP(t *testing.T) {
 	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
 	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
 	serio := errWrapper.Resolver.(*SerialResolver)
-	txp := serio.Transport().(*DNSOverUDP)
+	txp := serio.Transport().(*DNSOverUDPTransport)
 	if txp.Address() != "1.1.1.1:53" {
 		t.Fatal("invalid address")
 	}

@@ -11,8 +11,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// DNSOverHTTPS is a DNS-over-HTTPS DNSTransport.
-type DNSOverHTTPS struct {
+// DNSOverHTTPSTransport is a DNS-over-HTTPS DNSTransport.
+type DNSOverHTTPSTransport struct {
 	// Client is the MANDATORY http client to use.
 	Client model.HTTPClient
 
@@ -24,26 +24,26 @@ type DNSOverHTTPS struct {
 	HostOverride string
 }
 
-// NewDNSOverHTTPS creates a new DNSOverHTTPS instance.
+// NewDNSOverHTTPSTransport creates a new DNSOverHTTPSTransport instance.
 //
 // Arguments:
 //
 // - client in http.Client-like type (e.g., http.DefaultClient);
 //
 // - URL is the DoH resolver URL (e.g., https://1.1.1.1/dns-query).
-func NewDNSOverHTTPS(client model.HTTPClient, URL string) *DNSOverHTTPS {
-	return NewDNSOverHTTPSWithHostOverride(client, URL, "")
+func NewDNSOverHTTPSTransport(client model.HTTPClient, URL string) *DNSOverHTTPSTransport {
+	return NewDNSOverHTTPSTransportWithHostOverride(client, URL, "")
 }
 
-// NewDNSOverHTTPSWithHostOverride creates a new DNSOverHTTPS
+// NewDNSOverHTTPSTransportWithHostOverride creates a new DNSOverHTTPSTransport
 // with the given Host header override.
-func NewDNSOverHTTPSWithHostOverride(
-	client model.HTTPClient, URL, hostOverride string) *DNSOverHTTPS {
-	return &DNSOverHTTPS{Client: client, URL: URL, HostOverride: hostOverride}
+func NewDNSOverHTTPSTransportWithHostOverride(
+	client model.HTTPClient, URL, hostOverride string) *DNSOverHTTPSTransport {
+	return &DNSOverHTTPSTransport{Client: client, URL: URL, HostOverride: hostOverride}
 }
 
 // RoundTrip sends a query and receives a reply.
-func (t *DNSOverHTTPS) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
+func (t *DNSOverHTTPSTransport) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
 	req, err := http.NewRequest("POST", t.URL, bytes.NewReader(query))
@@ -71,23 +71,23 @@ func (t *DNSOverHTTPS) RoundTrip(ctx context.Context, query []byte) ([]byte, err
 }
 
 // RequiresPadding returns true for DoH according to RFC8467.
-func (t *DNSOverHTTPS) RequiresPadding() bool {
+func (t *DNSOverHTTPSTransport) RequiresPadding() bool {
 	return true
 }
 
 // Network returns the transport network, i.e., "doh".
-func (t *DNSOverHTTPS) Network() string {
+func (t *DNSOverHTTPSTransport) Network() string {
 	return "doh"
 }
 
 // Address returns the URL we're using for the DoH server.
-func (t *DNSOverHTTPS) Address() string {
+func (t *DNSOverHTTPSTransport) Address() string {
 	return t.URL
 }
 
 // CloseIdleConnections closes idle connections, if any.
-func (t *DNSOverHTTPS) CloseIdleConnections() {
+func (t *DNSOverHTTPSTransport) CloseIdleConnections() {
 	t.Client.CloseIdleConnections()
 }
 
-var _ model.DNSTransport = &DNSOverHTTPS{}
+var _ model.DNSTransport = &DNSOverHTTPSTransport{}

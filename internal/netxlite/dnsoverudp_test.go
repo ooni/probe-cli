@@ -12,12 +12,12 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-func TestDNSOverUDP(t *testing.T) {
+func TestDNSOverUDPTransport(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		t.Run("dial failure", func(t *testing.T) {
 			mocked := errors.New("mocked error")
 			const address = "9.9.9.9:53"
-			txp := NewDNSOverUDP(&mocks.Dialer{
+			txp := NewDNSOverUDPTransport(&mocks.Dialer{
 				MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 					return nil, mocked
 				},
@@ -33,7 +33,7 @@ func TestDNSOverUDP(t *testing.T) {
 
 		t.Run("SetDeadline failure", func(t *testing.T) {
 			mocked := errors.New("mocked error")
-			txp := NewDNSOverUDP(
+			txp := NewDNSOverUDPTransport(
 				&mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 						return &mocks.Conn{
@@ -58,7 +58,7 @@ func TestDNSOverUDP(t *testing.T) {
 
 		t.Run("Write failure", func(t *testing.T) {
 			mocked := errors.New("mocked error")
-			txp := NewDNSOverUDP(
+			txp := NewDNSOverUDPTransport(
 				&mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 						return &mocks.Conn{
@@ -86,7 +86,7 @@ func TestDNSOverUDP(t *testing.T) {
 
 		t.Run("Read failure", func(t *testing.T) {
 			mocked := errors.New("mocked error")
-			txp := NewDNSOverUDP(
+			txp := NewDNSOverUDPTransport(
 				&mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 						return &mocks.Conn{
@@ -118,7 +118,7 @@ func TestDNSOverUDP(t *testing.T) {
 		t.Run("read success", func(t *testing.T) {
 			const expected = 17
 			input := bytes.NewReader(make([]byte, expected))
-			txp := NewDNSOverUDP(
+			txp := NewDNSOverUDPTransport(
 				&mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 						return &mocks.Conn{
@@ -148,7 +148,7 @@ func TestDNSOverUDP(t *testing.T) {
 
 	t.Run("other functions okay", func(t *testing.T) {
 		const address = "9.9.9.9:53"
-		txp := NewDNSOverUDP(NewDialerWithoutResolver(log.Log), address)
+		txp := NewDNSOverUDPTransport(NewDialerWithoutResolver(log.Log), address)
 		if txp.RequiresPadding() != false {
 			t.Fatal("invalid RequiresPadding")
 		}

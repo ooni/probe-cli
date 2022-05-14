@@ -368,5 +368,5 @@ const thResolverURL = "https://dns.google/dns-query"
 // Here we're using github.com/apex/log as the logger, which
 // is fine because this is backend only code.
 var thResolver = netxlite.WrapResolver(log.Log, netxlite.NewSerialResolver(
-	netxlite.NewDNSOverHTTPS(http.DefaultClient, thResolverURL),
+	netxlite.NewDNSOverHTTPSTransport(http.DefaultClient, thResolverURL),
 ))

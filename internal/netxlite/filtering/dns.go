@@ -242,5 +242,5 @@ func (p *DNSProxy) dnstransport() DNSTransport {
 		return p.Upstream
 	}
 	const URL = "https://1.1.1.1/dns-query"
-	return netxlite.NewDNSOverHTTPS(http.DefaultClient, URL)
+	return netxlite.NewDNSOverHTTPSTransport(http.DefaultClient, URL)
 }

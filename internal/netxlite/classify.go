@@ -244,7 +244,7 @@ const (
 )
 
 // These errors are returned by custom DNSTransport instances (e.g.,
-// DNSOverHTTPS and DNSOverUDP). Their suffix matches the equivalent
+// DNSOverHTTPSTransport and DNSOverUDPTransport). Their suffix matches the equivalent
 // unexported errors used by the Go standard library.
 var (
 	ErrOODNSNoSuchHost  = fmt.Errorf("ooniresolver: %s", DNSNoSuchHostSuffix)
