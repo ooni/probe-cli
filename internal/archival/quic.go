@@ -64,12 +64,8 @@ func (s *Saver) QUICDialContext(ctx context.Context, dialer model.QUICDialer,
 	var state tls.ConnectionState
 	sess, err := dialer.DialContext(ctx, network, address, tlsConfig, quicConfig)
 	if err == nil {
-		select {
-		case <-sess.HandshakeComplete().Done():
-			state = sess.ConnectionState().TLS.ConnectionState
-		case <-ctx.Done():
-			sess, err = nil, ctx.Err()
-		}
+		<-sess.HandshakeComplete().Done() // robustness (the dialer already does that)
+		state = sess.ConnectionState().TLS.ConnectionState
 	}
 	s.appendQUICHandshake(&QUICTLSHandshakeEvent{
 		ALPN:            tlsConfig.NextProtos,
