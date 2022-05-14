@@ -7,7 +7,6 @@ import (
 	"net"
 	"testing"
 
-	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
@@ -51,8 +50,8 @@ func TestSerialResolver(t *testing.T) {
 			txp := NewDNSOverTLS((&tls.Dialer{}).DialContext, "8.8.8.8:853")
 			r := SerialResolver{
 				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
-						return nil, mocked
+					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
+						return nil, 0, mocked
 					},
 				},
 				Txp: txp,
@@ -89,7 +88,7 @@ func TestSerialResolver(t *testing.T) {
 		t.Run("empty reply", func(t *testing.T) {
 			txp := &mocks.DNSTransport{
 				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-					return dnsGenLookupHostReplySuccess(t, dns.TypeA), nil
+					return dnsGenLookupHostReplySuccess(query), nil
 				},
 				MockRequiresPadding: func() bool {
 					return true
@@ -108,7 +107,7 @@ func TestSerialResolver(t *testing.T) {
 		t.Run("with A reply", func(t *testing.T) {
 			txp := &mocks.DNSTransport{
 				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-					return dnsGenLookupHostReplySuccess(t, dns.TypeA, "8.8.8.8"), nil
+					return dnsGenLookupHostReplySuccess(query, "8.8.8.8"), nil
 				},
 				MockRequiresPadding: func() bool {
 					return true
@@ -127,7 +126,7 @@ func TestSerialResolver(t *testing.T) {
 		t.Run("with AAAA reply", func(t *testing.T) {
 			txp := &mocks.DNSTransport{
 				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-					return dnsGenLookupHostReplySuccess(t, dns.TypeAAAA, "::1"), nil
+					return dnsGenLookupHostReplySuccess(query, "::1"), nil
 				},
 				MockRequiresPadding: func() bool {
 					return true
@@ -189,8 +188,8 @@ func TestSerialResolver(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &SerialResolver{
 				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
-						return nil, expected
+					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
+						return nil, 0, expected
 					},
 				},
 				Decoder:     nil,
@@ -215,8 +214,8 @@ func TestSerialResolver(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &SerialResolver{
 				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
-						return make([]byte, 64), nil
+					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
+						return make([]byte, 64), 0, nil
 					},
 				},
 				Decoder:     nil,
@@ -244,12 +243,12 @@ func TestSerialResolver(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &SerialResolver{
 				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
-						return make([]byte, 64), nil
+					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
+						return make([]byte, 64), 0, nil
 					},
 				},
 				Decoder: &mocks.DNSDecoder{
-					MockDecodeHTTPS: func(reply []byte) (*model.HTTPSSvc, error) {
+					MockDecodeHTTPS: func(reply []byte, queryID uint16) (*model.HTTPSSvc, error) {
 						return nil, expected
 					},
 				},

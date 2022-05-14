@@ -34,8 +34,8 @@ func TestParallelResolver(t *testing.T) {
 			txp := NewDNSOverTLS((&tls.Dialer{}).DialContext, "8.8.8.8:853")
 			r := ParallelResolver{
 				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
-						return nil, mocked
+					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
+						return nil, 0, mocked
 					},
 				},
 				Txp: txp,
@@ -72,7 +72,7 @@ func TestParallelResolver(t *testing.T) {
 		t.Run("empty reply", func(t *testing.T) {
 			txp := &mocks.DNSTransport{
 				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-					return dnsGenLookupHostReplySuccess(t, dns.TypeA), nil
+					return dnsGenLookupHostReplySuccess(query), nil
 				},
 				MockRequiresPadding: func() bool {
 					return true
@@ -91,7 +91,7 @@ func TestParallelResolver(t *testing.T) {
 		t.Run("with A reply", func(t *testing.T) {
 			txp := &mocks.DNSTransport{
 				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-					return dnsGenLookupHostReplySuccess(t, dns.TypeA, "8.8.8.8"), nil
+					return dnsGenLookupHostReplySuccess(query, "8.8.8.8"), nil
 				},
 				MockRequiresPadding: func() bool {
 					return true
@@ -103,14 +103,14 @@ func TestParallelResolver(t *testing.T) {
 				t.Fatal(err)
 			}
 			if len(addrs) != 1 || addrs[0] != "8.8.8.8" {
-				t.Fatal("not the result we expected")
+				t.Fatal("not the result we expected", addrs)
 			}
 		})
 
 		t.Run("with AAAA reply", func(t *testing.T) {
 			txp := &mocks.DNSTransport{
 				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-					return dnsGenLookupHostReplySuccess(t, dns.TypeAAAA, "::1"), nil
+					return dnsGenLookupHostReplySuccess(query, "::1"), nil
 				},
 				MockRequiresPadding: func() bool {
 					return true
@@ -122,7 +122,7 @@ func TestParallelResolver(t *testing.T) {
 				t.Fatal(err)
 			}
 			if len(addrs) != 1 || addrs[0] != "::1" {
-				t.Fatal("not the result we expected")
+				t.Fatal("not the result we expected", addrs)
 			}
 		})
 
@@ -182,8 +182,8 @@ func TestParallelResolver(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &ParallelResolver{
 				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
-						return nil, expected
+					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
+						return nil, 0, expected
 					},
 				},
 				Decoder:     nil,
@@ -208,8 +208,8 @@ func TestParallelResolver(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &ParallelResolver{
 				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
-						return make([]byte, 64), nil
+					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
+						return make([]byte, 64), 0, nil
 					},
 				},
 				Decoder:     nil,
@@ -237,12 +237,12 @@ func TestParallelResolver(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &ParallelResolver{
 				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, error) {
-						return make([]byte, 64), nil
+					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
+						return make([]byte, 64), 0, nil
 					},
 				},
 				Decoder: &mocks.DNSDecoder{
-					MockDecodeHTTPS: func(reply []byte) (*model.HTTPSSvc, error) {
+					MockDecodeHTTPS: func(reply []byte, queryID uint16) (*model.HTTPSSvc, error) {
 						return nil, expected
 					},
 				},

@@ -287,6 +287,9 @@ func classifyResolverError(err error) string {
 	if errors.Is(err, ErrOODNSServfail) {
 		return FailureDNSServfailError
 	}
+	if errors.Is(err, ErrDNSReplyWithWrongQueryID) {
+		return FailureDNSReplyWithWrongQueryID
+	}
 	return classifyGenericError(err)
 }
 

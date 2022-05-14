@@ -1,6 +1,8 @@
 package netxlite
 
 import (
+	"errors"
+
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -8,9 +10,24 @@ import (
 // DNSDecoderMiekg uses github.com/miekg/dns to implement the Decoder.
 type DNSDecoderMiekg struct{}
 
-func (d *DNSDecoderMiekg) parseReply(data []byte) (*dns.Msg, error) {
+// ErrDNSReplyWithWrongQueryID indicates we have got a DNS reply with the wrong queryID.
+var ErrDNSReplyWithWrongQueryID = errors.New(FailureDNSReplyWithWrongQueryID)
+
+// DecodeReply implements model.DNSDecoder.DecodeReply
+func (d *DNSDecoderMiekg) DecodeReply(data []byte, queryID uint16) (*dns.Msg, error) {
 	reply := new(dns.Msg)
 	if err := reply.Unpack(data); err != nil {
+		return nil, err
+	}
+	if reply.Id != queryID {
+		return nil, ErrDNSReplyWithWrongQueryID
+	}
+	return reply, nil
+}
+
+func (d *DNSDecoderMiekg) parseReply(data []byte, queryID uint16) (*dns.Msg, error) {
+	reply, err := d.DecodeReply(data, queryID)
+	if err != nil {
 		return nil, err
 	}
 	// TODO(bassosimone): map more errors to net.DNSError names
@@ -29,8 +46,8 @@ func (d *DNSDecoderMiekg) parseReply(data []byte) (*dns.Msg, error) {
 	}
 }
 
-func (d *DNSDecoderMiekg) DecodeHTTPS(data []byte) (*model.HTTPSSvc, error) {
-	reply, err := d.parseReply(data)
+func (d *DNSDecoderMiekg) DecodeHTTPS(data []byte, queryID uint16) (*model.HTTPSSvc, error) {
+	reply, err := d.parseReply(data, queryID)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +81,8 @@ func (d *DNSDecoderMiekg) DecodeHTTPS(data []byte) (*model.HTTPSSvc, error) {
 	return out, nil
 }
 
-func (d *DNSDecoderMiekg) DecodeLookupHost(qtype uint16, data []byte) ([]string, error) {
-	reply, err := d.parseReply(data)
+func (d *DNSDecoderMiekg) DecodeLookupHost(qtype uint16, data []byte, queryID uint16) ([]string, error) {
+	reply, err := d.parseReply(data, queryID)
 	if err != nil {
 		return nil, err
 	}
