@@ -94,6 +94,29 @@ var _ model.QUICDialer = &quicDialerQUICGo{}
 // ErrInvalidIP indicates that a string is not a valid IP.
 var ErrInvalidIP = errors.New("netxlite: invalid IP")
 
+// ParseUDPAddr maps the string representation of an UDP endpoint to the
+// corresponding *net.UDPAddr representation.
+func ParseUDPAddr(address string) (*net.UDPAddr, error) {
+	addr, port, err := net.SplitHostPort(address)
+	if err != nil {
+		return nil, err
+	}
+	ipAddr := net.ParseIP(addr)
+	if ipAddr == nil {
+		return nil, ErrInvalidIP
+	}
+	dport, err := strconv.Atoi(port)
+	if err != nil {
+		return nil, err
+	}
+	udpAddr := &net.UDPAddr{
+		IP:   ipAddr,
+		Port: dport,
+		Zone: "",
+	}
+	return udpAddr, nil
+}
+
 // DialContext implements QUICDialer.DialContext. This function will
 // apply the following TLS defaults:
 //
@@ -105,24 +128,15 @@ var ErrInvalidIP = errors.New("netxlite: invalid IP")
 func (d *quicDialerQUICGo) DialContext(ctx context.Context, network string,
 	address string, tlsConfig *tls.Config, quicConfig *quic.Config) (
 	quic.EarlyConnection, error) {
-	onlyhost, onlyport, err := net.SplitHostPort(address)
+	udpAddr, err := ParseUDPAddr(address)
 	if err != nil {
 		return nil, err
 	}
-	port, err := strconv.Atoi(onlyport)
+	pconn, err := d.QUICListener.Listen(&net.UDPAddr{IP: net.IPv4zero, Port: 0, Zone: ""})
 	if err != nil {
 		return nil, err
 	}
-	ip := net.ParseIP(onlyhost)
-	if ip == nil {
-		return nil, ErrInvalidIP
-	}
-	pconn, err := d.QUICListener.Listen(&net.UDPAddr{IP: net.IPv4zero, Port: 0})
-	if err != nil {
-		return nil, err
-	}
-	udpAddr := &net.UDPAddr{IP: ip, Port: port, Zone: ""}
-	tlsConfig = d.maybeApplyTLSDefaults(tlsConfig, port)
+	tlsConfig = d.maybeApplyTLSDefaults(tlsConfig, udpAddr.Port)
 	qconn, err := d.dialEarlyContext(
 		ctx, pconn, udpAddr, address, tlsConfig, quicConfig)
 	if err != nil {
