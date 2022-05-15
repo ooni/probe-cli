@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Code to use yawning/utls or refraction-networking/utls
+//
+
 import (
 	"context"
 	"crypto/tls"

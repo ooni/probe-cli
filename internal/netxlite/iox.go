@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// I/O extensions
+//
+
 import (
 	"context"
 	"errors"

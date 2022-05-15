@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// TLS implementation
+//
+
 import (
 	"context"
 	"crypto/tls"
@@ -11,7 +15,11 @@ import (
 
 	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
+
+// TODO(bassosimone): check whether there's now equivalent functionality
+// inside the standard library allowing us to map numbers to names.
 
 var (
 	tlsVersionString = map[uint16]string{
@@ -81,7 +89,8 @@ func NewDefaultCertPool() *x509.CertPool {
 	pool := x509.NewCertPool()
 	// Assumption: AppendCertsFromPEM cannot fail because we
 	// have a test in certify_test.go that guarantees that
-	pool.AppendCertsFromPEM([]byte(pemcerts))
+	ok := pool.AppendCertsFromPEM([]byte(pemcerts))
+	runtimex.PanicIfFalse(ok, "pool.AppendCertsFromPEM failed")
 	return pool
 }
 
@@ -201,8 +210,8 @@ var defaultTLSHandshaker = &tlsHandshakerConfigurable{}
 
 // tlsHandshakerLogger is a TLSHandshaker with logging.
 type tlsHandshakerLogger struct {
-	model.TLSHandshaker
-	model.DebugLogger
+	TLSHandshaker model.TLSHandshaker
+	DebugLogger   model.DebugLogger
 }
 
 var _ model.TLSHandshaker = &tlsHandshakerLogger{}
@@ -313,7 +322,7 @@ func NewSingleUseTLSDialer(conn TLSConn) model.TLSDialer {
 // tlsDialerSingleUseAdapter adapts dialerSingleUse to
 // be a TLSDialer type rather than a Dialer type.
 type tlsDialerSingleUseAdapter struct {
-	model.Dialer
+	Dialer model.Dialer
 }
 
 var _ model.TLSDialer = &tlsDialerSingleUseAdapter{}
@@ -323,9 +332,13 @@ func (d *tlsDialerSingleUseAdapter) DialTLSContext(ctx context.Context, network,
 	return d.Dialer.DialContext(ctx, network, address)
 }
 
+func (d *tlsDialerSingleUseAdapter) CloseIdleConnections() {
+	d.Dialer.CloseIdleConnections()
+}
+
 // tlsHandshakerErrWrapper wraps the returned error to be an OONI error
 type tlsHandshakerErrWrapper struct {
-	model.TLSHandshaker
+	TLSHandshaker model.TLSHandshaker
 }
 
 // Handshake implements TLSHandshaker.Handshake
@@ -334,7 +347,7 @@ func (h *tlsHandshakerErrWrapper) Handshake(
 ) (net.Conn, tls.ConnectionState, error) {
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	if err != nil {
-		return nil, tls.ConnectionState{}, NewErrWrapper(
+		return nil, tls.ConnectionState{}, newErrWrapper(
 			classifyTLSHandshakeError, TLSHandshakeOperation, err)
 	}
 	return tlsconn, state, nil

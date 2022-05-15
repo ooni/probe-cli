@@ -3,7 +3,7 @@
 // This package is the basic networking building block that you
 // should be using every time you need networking.
 //
-// It implements interfaces defined in the internal/model package.
+// It implements interfaces defined in internal/model/netx.go.
 //
 // You should consider checking the tutorial explaining how to use this package
 // for network measurements: https://github.com/ooni/probe-cli/tree/master/internal/tutorial/netxlite.

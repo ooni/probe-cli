@@ -18,7 +18,7 @@ import (
 // function a non-IP address causes it to return true.
 func IsBogon(address string) bool {
 	ip := net.ParseIP(address)
-	return ip == nil || isPrivate(address, ip)
+	return ip == nil || isBogon(address, ip)
 }
 
 // IsLoopback returns whether an IP address is loopback. Passing to this
@@ -33,7 +33,7 @@ var (
 	bogons6 []*net.IPNet
 )
 
-func expandbogons(cidrs []string) (out []*net.IPNet) {
+func expandBogons(cidrs []string) (out []*net.IPNet) {
 	for _, cidr := range cidrs {
 		_, block, err := net.ParseCIDR(cidr)
 		runtimex.PanicOnError(err, "net.ParseCIDR failed")
@@ -43,7 +43,7 @@ func expandbogons(cidrs []string) (out []*net.IPNet) {
 }
 
 func init() {
-	bogons4 = append(bogons4, expandbogons([]string{
+	bogons4 = append(bogons4, expandBogons([]string{
 		//
 		// List extracted from https://ipinfo.io/bogon
 		//
@@ -64,7 +64,7 @@ func init() {
 		"240.0.0.0/4",        // Reserved for future use
 		"255.255.255.255/32", // Limited broadcast
 	})...)
-	bogons6 = append(bogons6, expandbogons([]string{
+	bogons6 = append(bogons6, expandBogons([]string{
 		//
 		// List extracted from https://ipinfo.io/bogon
 		//
@@ -110,7 +110,10 @@ func init() {
 	})...)
 }
 
-func isPrivate(address string, ip net.IP) bool {
+// isBogon implements IsBogon
+func isBogon(address string, ip net.IP) bool {
+	// TODO(bassosimone): the following check is probably redundant given that these
+	// three checks are already included into the list of bogons.
 	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
 		return true
 	}

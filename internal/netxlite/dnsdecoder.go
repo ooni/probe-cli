@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Decode byte arrays to DNS messages
+//
+
 import (
 	"errors"
 

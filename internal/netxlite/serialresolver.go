@@ -1,7 +1,7 @@
 package netxlite
 
 //
-// Serial resolver implementation
+// Serial DNS resolver implementation
 //
 
 import (
@@ -20,7 +20,11 @@ import (
 //
 // You should probably use NewSerialResolver to create a new instance.
 //
-// Deprecated: please use ParallelResolver in new code.
+// Deprecated: please use ParallelResolver in new code. We cannot
+// remove this code as long as we use tracing for measuring.
+//
+// QUIRK: unlike the ParallelResolver, this resolver retries each
+// query three times for soft errors.
 type SerialResolver struct {
 	// Encoder is the MANDATORY encoder to use.
 	Encoder model.DNSEncoder
@@ -98,6 +102,8 @@ func (r *SerialResolver) LookupHTTPS(
 
 func (r *SerialResolver) lookupHostWithRetry(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
+	// QUIRK: retrying has been there since the beginning so we need to
+	// keep it as long as we're using tracing for measuring.
 	var errorslist []error
 	for i := 0; i < 3; i++ {
 		replies, err := r.lookupHostWithoutRetry(ctx, hostname, qtype)
@@ -116,9 +122,9 @@ func (r *SerialResolver) lookupHostWithRetry(
 		}
 		r.NumTimeouts.Add(1)
 	}
-	// bugfix: we MUST return one of the errors otherwise we confuse the
+	// QUIRK: we MUST return one of the errors otherwise we confuse the
 	// mechanism in errwrap that classifies the root cause operation, since
-	// it would not be able to find a child with a major operation error
+	// it would not be able to find a child with a major operation error.
 	return nil, errorslist[0]
 }
 

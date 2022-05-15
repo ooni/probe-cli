@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Encode DNS queries to byte arrays
+//
+
 import (
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"

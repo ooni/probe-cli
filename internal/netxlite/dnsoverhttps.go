@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// DNS-over-HTTPS transport
+//
+
 import (
 	"bytes"
 	"context"

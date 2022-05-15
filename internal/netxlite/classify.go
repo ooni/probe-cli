@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Mapping Go errors to OONI errors
+//
+
 import (
 	"context"
 	"crypto/x509"
@@ -38,8 +42,7 @@ func classifyGenericError(err error) string {
 	// The list returned here matches the values used by MK unless
 	// explicitly noted otherwise with a comment.
 
-	// QUIRK: we cannot remove this check as long as this function
-	// is exported and used independently from NewErrWrapper.
+	// Robustness: handle the case where we're passed a wrapped error.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
@@ -146,8 +149,7 @@ const (
 // and returns to the caller its return value.
 func classifyQUICHandshakeError(err error) string {
 
-	// QUIRK: we cannot remove this check as long as this function
-	// is exported and used independently from NewErrWrapper.
+	// Robustness: handle the case where we're passed a wrapped error.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
@@ -269,8 +271,7 @@ var (
 // returns to the caller its return value.
 func classifyResolverError(err error) string {
 
-	// QUIRK: we cannot remove this check as long as this function
-	// is exported and used independently from NewErrWrapper.
+	// Robustness: handle the case where we're passed a wrapped error.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
@@ -303,8 +304,7 @@ func classifyResolverError(err error) string {
 // returns to the caller its return value.
 func classifyTLSHandshakeError(err error) string {
 
-	// QUIRK: we cannot remove this check as long as this function
-	// is exported and used independently from NewErrWrapper.
+	// Robustness: handle the case where we're passed a wrapped error.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it

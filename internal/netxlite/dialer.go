@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Code for dialing TCP or UDP net.Conn-like connections
+//
+
 import (
 	"context"
 	"errors"
@@ -96,8 +100,8 @@ func (d *dialerSystem) CloseIdleConnections() {
 
 // dialerResolver combines dialing with domain name resolution.
 type dialerResolver struct {
-	model.Dialer
-	model.Resolver
+	Dialer   model.Dialer
+	Resolver model.Resolver
 }
 
 var _ model.Dialer = &dialerResolver{}
@@ -144,10 +148,10 @@ func (d *dialerResolver) CloseIdleConnections() {
 // dialerLogger is a Dialer with logging.
 type dialerLogger struct {
 	// Dialer is the underlying dialer.
-	model.Dialer
+	Dialer model.Dialer
 
-	// Logger is the underlying logger.
-	model.DebugLogger
+	// DebugLogger is the underlying logger.
+	DebugLogger model.DebugLogger
 
 	// operationSuffix is appended to the operation name.
 	//
@@ -194,15 +198,15 @@ func NewSingleUseDialer(conn net.Conn) model.Dialer {
 
 // dialerSingleUse is the Dialer returned by NewSingleDialer.
 type dialerSingleUse struct {
-	sync.Mutex
+	mu   sync.Mutex
 	conn net.Conn
 }
 
 var _ model.Dialer = &dialerSingleUse{}
 
 func (s *dialerSingleUse) DialContext(ctx context.Context, network string, addr string) (net.Conn, error) {
-	defer s.Unlock()
-	s.Lock()
+	defer s.mu.Unlock()
+	s.mu.Lock()
 	if s.conn == nil {
 		return nil, ErrNoConnReuse
 	}
@@ -218,7 +222,7 @@ func (s *dialerSingleUse) CloseIdleConnections() {
 // dialerErrWrapper is a dialer that performs error wrapping. The connection
 // returned by the DialContext function will also perform error wrapping.
 type dialerErrWrapper struct {
-	model.Dialer
+	Dialer model.Dialer
 }
 
 var _ model.Dialer = &dialerErrWrapper{}
@@ -226,9 +230,13 @@ var _ model.Dialer = &dialerErrWrapper{}
 func (d *dialerErrWrapper) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
-		return nil, NewErrWrapper(classifyGenericError, ConnectOperation, err)
+		return nil, newErrWrapper(classifyGenericError, ConnectOperation, err)
 	}
 	return &dialerErrWrapperConn{Conn: conn}, nil
+}
+
+func (d *dialerErrWrapper) CloseIdleConnections() {
+	d.Dialer.CloseIdleConnections()
 }
 
 // dialerErrWrapperConn is a net.Conn that performs error wrapping.
@@ -241,7 +249,7 @@ var _ net.Conn = &dialerErrWrapperConn{}
 func (c *dialerErrWrapperConn) Read(b []byte) (int, error) {
 	count, err := c.Conn.Read(b)
 	if err != nil {
-		return 0, NewErrWrapper(classifyGenericError, ReadOperation, err)
+		return 0, newErrWrapper(classifyGenericError, ReadOperation, err)
 	}
 	return count, nil
 }
@@ -249,7 +257,7 @@ func (c *dialerErrWrapperConn) Read(b []byte) (int, error) {
 func (c *dialerErrWrapperConn) Write(b []byte) (int, error) {
 	count, err := c.Conn.Write(b)
 	if err != nil {
-		return 0, NewErrWrapper(classifyGenericError, WriteOperation, err)
+		return 0, newErrWrapper(classifyGenericError, WriteOperation, err)
 	}
 	return count, nil
 }
@@ -257,7 +265,7 @@ func (c *dialerErrWrapperConn) Write(b []byte) (int, error) {
 func (c *dialerErrWrapperConn) Close() error {
 	err := c.Conn.Close()
 	if err != nil {
-		return NewErrWrapper(classifyGenericError, CloseOperation, err)
+		return newErrWrapper(classifyGenericError, CloseOperation, err)
 	}
 	return nil
 }

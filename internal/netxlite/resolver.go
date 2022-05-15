@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// DNS resolver
+//
+
 import (
 	"context"
 	"errors"
@@ -134,8 +138,8 @@ func (r *resolverSystem) LookupHTTPS(
 
 // resolverLogger is a resolver that emits events
 type resolverLogger struct {
-	model.Resolver
-	Logger model.DebugLogger
+	Resolver model.Resolver
+	Logger   model.DebugLogger
 }
 
 var _ model.Resolver = &resolverLogger{}
@@ -172,12 +176,26 @@ func (r *resolverLogger) LookupHTTPS(
 	return https, nil
 }
 
+func (r *resolverLogger) Address() string {
+	return r.Resolver.Address()
+}
+
+func (r *resolverLogger) Network() string {
+	return r.Resolver.Network()
+}
+
+func (r *resolverLogger) CloseIdleConnections() {
+	r.Resolver.CloseIdleConnections()
+}
+
 // resolverIDNA supports resolving Internationalized Domain Names.
 //
 // See RFC3492 for more information.
 type resolverIDNA struct {
-	model.Resolver
+	Resolver model.Resolver
 }
+
+var _ model.Resolver = &resolverIDNA{}
 
 func (r *resolverIDNA) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	host, err := idna.ToASCII(hostname)
@@ -196,11 +214,25 @@ func (r *resolverIDNA) LookupHTTPS(
 	return r.Resolver.LookupHTTPS(ctx, host)
 }
 
+func (r *resolverIDNA) Network() string {
+	return r.Resolver.Network()
+}
+
+func (r *resolverIDNA) Address() string {
+	return r.Resolver.Address()
+}
+
+func (r *resolverIDNA) CloseIdleConnections() {
+	r.Resolver.CloseIdleConnections()
+}
+
 // resolverShortCircuitIPAddr recognizes when the input hostname is an
 // IP address and returns it immediately to the caller.
 type resolverShortCircuitIPAddr struct {
-	model.Resolver
+	Resolver model.Resolver
 }
+
+var _ model.Resolver = &resolverShortCircuitIPAddr{}
 
 func (r *resolverShortCircuitIPAddr) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	if net.ParseIP(hostname) != nil {
@@ -220,6 +252,18 @@ func (r *resolverShortCircuitIPAddr) LookupHTTPS(ctx context.Context, hostname s
 		return https, nil
 	}
 	return r.Resolver.LookupHTTPS(ctx, hostname)
+}
+
+func (r *resolverShortCircuitIPAddr) Network() string {
+	return r.Resolver.Network()
+}
+
+func (r *resolverShortCircuitIPAddr) Address() string {
+	return r.Resolver.Address()
+}
+
+func (r *resolverShortCircuitIPAddr) CloseIdleConnections() {
+	r.Resolver.CloseIdleConnections()
 }
 
 // IsIPv6 returns true if the given candidate is a valid IP address
@@ -271,7 +315,7 @@ func (r *nullResolver) LookupHTTPS(
 
 // resolverErrWrapper is a Resolver that knows about wrapping errors.
 type resolverErrWrapper struct {
-	model.Resolver
+	Resolver model.Resolver
 }
 
 var _ model.Resolver = &resolverErrWrapper{}
@@ -279,7 +323,7 @@ var _ model.Resolver = &resolverErrWrapper{}
 func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	if err != nil {
-		return nil, NewErrWrapper(classifyResolverError, ResolveOperation, err)
+		return nil, newErrWrapper(classifyResolverError, ResolveOperation, err)
 	}
 	return addrs, nil
 }
@@ -288,7 +332,19 @@ func (r *resolverErrWrapper) LookupHTTPS(
 	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	out, err := r.Resolver.LookupHTTPS(ctx, domain)
 	if err != nil {
-		return nil, NewErrWrapper(classifyResolverError, ResolveOperation, err)
+		return nil, newErrWrapper(classifyResolverError, ResolveOperation, err)
 	}
 	return out, nil
+}
+
+func (r *resolverErrWrapper) Network() string {
+	return r.Resolver.Network()
+}
+
+func (r *resolverErrWrapper) Address() string {
+	return r.Resolver.Address()
+}
+
+func (r *resolverErrWrapper) CloseIdleConnections() {
+	r.Resolver.CloseIdleConnections()
 }

@@ -253,7 +253,7 @@ func TestDialerResolver(t *testing.T) {
 			mu := &sync.Mutex{}
 			errorsList := []error{
 				errors.New("a mocked error"),
-				NewErrWrapper(
+				newErrWrapper(
 					classifyGenericError,
 					CloseOperation,
 					io.EOF,
@@ -295,7 +295,7 @@ func TestDialerResolver(t *testing.T) {
 			mu := &sync.Mutex{}
 			errorsList := []error{
 				errors.New("a mocked error"),
-				NewErrWrapper(
+				newErrWrapper(
 					classifyGenericError,
 					CloseOperation,
 					errors.New("antani"),

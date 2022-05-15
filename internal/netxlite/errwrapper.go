@@ -66,12 +66,12 @@ func (e *ErrWrapper) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.Failure)
 }
 
-// Classifier is the type of the function that maps a Go error
+// classifier is the type of the function that maps a Go error
 // to a OONI failure string defined at
 // https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md.
-type Classifier func(err error) string
+type classifier func(err error) string
 
-// NewErrWrapper creates a new ErrWrapper using the given
+// newErrWrapper creates a new ErrWrapper using the given
 // classifier, operation name, and underlying error.
 //
 // This function panics if classifier is nil, or operation
@@ -81,7 +81,7 @@ type Classifier func(err error) string
 // error wrapper will use the same classification string and
 // will determine whether to keep the major operation as documented
 // in the ErrWrapper.Operation documentation.
-func NewErrWrapper(c Classifier, op string, err error) *ErrWrapper {
+func newErrWrapper(c classifier, op string, err error) *ErrWrapper {
 	var wrapper *ErrWrapper
 	if errors.As(err, &wrapper) {
 		return &ErrWrapper{
@@ -107,13 +107,15 @@ func NewErrWrapper(c Classifier, op string, err error) *ErrWrapper {
 }
 
 // NewTopLevelGenericErrWrapper wraps an error occurring at top
-// level using ClassifyGenericError as classifier.
+// level using a generic classifier as classifier. This is the
+// function you should call when you suspect a given error hasn't
+// already been wrapped. This function panics if err is nil.
 //
 // If the err argument has already been classified, the returned
 // error wrapper will use the same classification string and
 // failed operation of the original error.
 func NewTopLevelGenericErrWrapper(err error) *ErrWrapper {
-	return NewErrWrapper(classifyGenericError, TopLevelOperation, err)
+	return newErrWrapper(classifyGenericError, TopLevelOperation, err)
 }
 
 func classifyOperation(ew *ErrWrapper, operation string) string {
