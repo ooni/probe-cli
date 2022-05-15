@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Transparent proxy (for integration testing)
+//
+
 import (
 	"context"
 	"net"

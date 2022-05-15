@@ -252,19 +252,19 @@ func TestNewHTTPTransport(t *testing.T) {
 			t.Fatal("invalid tls dialer")
 		}
 		stdlib := connectionsCloser.HTTPTransport.(*stdlibTransport)
-		if !stdlib.Transport.ForceAttemptHTTP2 {
+		if !stdlib.StdlibTransport.ForceAttemptHTTP2 {
 			t.Fatal("invalid ForceAttemptHTTP2")
 		}
-		if !stdlib.Transport.DisableCompression {
+		if !stdlib.StdlibTransport.DisableCompression {
 			t.Fatal("invalid DisableCompression")
 		}
-		if stdlib.Transport.MaxConnsPerHost != 1 {
+		if stdlib.StdlibTransport.MaxConnsPerHost != 1 {
 			t.Fatal("invalid MaxConnPerHost")
 		}
-		if stdlib.Transport.DialTLSContext == nil {
+		if stdlib.StdlibTransport.DialTLSContext == nil {
 			t.Fatal("invalid DialTLSContext")
 		}
-		if stdlib.Transport.DialContext == nil {
+		if stdlib.StdlibTransport.DialContext == nil {
 			t.Fatal("invalid DialContext")
 		}
 	})
@@ -499,6 +499,20 @@ func TestHTTPClientErrWrapper(t *testing.T) {
 				t.Fatal("not the expected response")
 			}
 		})
+	})
+
+	t.Run("CloseIdleConnections", func(t *testing.T) {
+		var called bool
+		child := &mocks.HTTPClient{
+			MockCloseIdleConnections: func() {
+				called = true
+			},
+		}
+		clnt := &httpClientErrWrapper{child}
+		clnt.CloseIdleConnections()
+		if !called {
+			t.Fatal("not called")
+		}
 	})
 }
 

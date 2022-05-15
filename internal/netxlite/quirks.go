@@ -1,14 +1,16 @@
 package netxlite
 
+//
+// This file contains weird stuff that we carried over from
+// the original netx implementation and that we cannot remove
+// or change without thinking about the consequences.
+//
+
 import (
 	"errors"
 	"net"
 	"strings"
 )
-
-// This file contains weird stuff that we carried over from
-// the original netx implementation and that we cannot remove
-// or change without thinking about the consequences.
 
 // See https://github.com/ooni/probe/issues/1985
 var errReduceErrorsEmptyList = errors.New("bug: reduceErrors given an empty list")

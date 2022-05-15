@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// DNS-over-{TCP,TLS} transport
+//
+
 import (
 	"context"
 	"errors"

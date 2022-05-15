@@ -1,7 +1,7 @@
 package netxlite
 
 //
-// Parallel resolver implementation
+// Parallel DNS resolver implementation
 //
 
 import (

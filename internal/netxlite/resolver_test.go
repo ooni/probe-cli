@@ -400,6 +400,30 @@ func TestResolverIDNA(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("Network", func(t *testing.T) {
+		child := &mocks.Resolver{
+			MockNetwork: func() string {
+				return "x"
+			},
+		}
+		r := &resolverIDNA{child}
+		if r.Network() != "x" {
+			t.Fatal("invalid network")
+		}
+	})
+
+	t.Run("Address", func(t *testing.T) {
+		child := &mocks.Resolver{
+			MockAddress: func() string {
+				return "x"
+			},
+		}
+		r := &resolverIDNA{child}
+		if r.Address() != "x" {
+			t.Fatal("invalid address")
+		}
+	})
 }
 
 func TestResolverShortCircuitIPAddr(t *testing.T) {

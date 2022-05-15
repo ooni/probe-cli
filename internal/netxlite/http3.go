@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// HTTP3 code
+//
+
 import (
 	"crypto/tls"
 	"io"

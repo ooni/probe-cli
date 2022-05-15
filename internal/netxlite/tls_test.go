@@ -487,6 +487,7 @@ func TestTLSDialer(t *testing.T) {
 func TestNewSingleUseTLSDialer(t *testing.T) {
 	conn := &mocks.TLSConn{}
 	d := NewSingleUseTLSDialer(conn)
+	defer d.CloseIdleConnections()
 	outconn, err := d.DialTLSContext(context.Background(), "", "")
 	if err != nil {
 		t.Fatal(err)

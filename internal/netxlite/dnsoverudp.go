@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// DNS-over-UDP transport
+//
+
 import (
 	"context"
 	"time"
