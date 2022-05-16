@@ -192,8 +192,8 @@ func TestDNSDecoder(t *testing.T) {
 				queryID     = 17
 				unrelatedID = 14
 			)
-			reply := dnsGenHTTPSReplySuccess(dnsGenQuery(dns.TypeA, queryID), nil, nil, nil)
-			data, err := d.DecodeLookupHost(dns.TypeA, reply, unrelatedID)
+			reply := dnsGenHTTPSReplySuccess(dnsGenQuery(dns.TypeHTTPS, queryID), nil, nil, nil)
+			data, err := d.DecodeHTTPS(reply, unrelatedID)
 			if !errors.Is(err, ErrDNSReplyWithWrongQueryID) {
 				t.Fatal("unexpected error", err)
 			}
@@ -239,6 +239,64 @@ func TestDNSDecoder(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("DecodeNS", func(t *testing.T) {
+		t.Run("with nil data", func(t *testing.T) {
+			d := &DNSDecoderMiekg{}
+			reply, err := d.DecodeNS(nil, 0)
+			if err == nil || err.Error() != "dns: overflow unpacking uint16" {
+				t.Fatal("not the error we expected", err)
+			}
+			if reply != nil {
+				t.Fatal("expected nil reply")
+			}
+		})
+
+		t.Run("wrong query ID", func(t *testing.T) {
+			d := &DNSDecoderMiekg{}
+			const (
+				queryID     = 17
+				unrelatedID = 14
+			)
+			reply := dnsGenNSReplySuccess(dnsGenQuery(dns.TypeNS, queryID))
+			data, err := d.DecodeNS(reply, unrelatedID)
+			if !errors.Is(err, ErrDNSReplyWithWrongQueryID) {
+				t.Fatal("unexpected error", err)
+			}
+			if data != nil {
+				t.Fatal("expected nil data here")
+			}
+		})
+
+		t.Run("with empty answer", func(t *testing.T) {
+			queryID := dns.Id()
+			data := dnsGenNSReplySuccess(dnsGenQuery(dns.TypeNS, queryID))
+			d := &DNSDecoderMiekg{}
+			reply, err := d.DecodeNS(data, queryID)
+			if !errors.Is(err, ErrOODNSNoAnswer) {
+				t.Fatal("unexpected err", err)
+			}
+			if reply != nil {
+				t.Fatal("expected nil reply")
+			}
+		})
+
+		t.Run("with full answer", func(t *testing.T) {
+			queryID := dns.Id()
+			data := dnsGenNSReplySuccess(dnsGenQuery(dns.TypeNS, queryID), "ns1.zdns.google.")
+			d := &DNSDecoderMiekg{}
+			reply, err := d.DecodeNS(data, queryID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(reply) != 1 {
+				t.Fatal("unexpected reply length")
+			}
+			if reply[0].Host != "ns1.zdns.google." {
+				t.Fatal("unexpected reply host")
+			}
+		})
+	})
 }
 
 // dnsGenQuery generates a query suitable to be used with testing.
@@ -281,6 +339,10 @@ func dnsGenLookupHostReplySuccess(rawQuery []byte, ips ...string) []byte {
 	runtimex.PanicOnError(err, "query.Unpack failed")
 	runtimex.PanicIfFalse(len(query.Question) == 1, "more than one question")
 	question := query.Question[0]
+	runtimex.PanicIfFalse(
+		question.Qtype == dns.TypeA || question.Qtype == dns.TypeAAAA,
+		"invalid query type (expected A or AAAA)",
+	)
 	reply := new(dns.Msg)
 	reply.Compress = true
 	reply.MsgHdr.RecursionAvailable = true
@@ -326,6 +388,9 @@ func dnsGenHTTPSReplySuccess(rawQuery []byte, alpns, ipv4s, ipv6s []string) []by
 	query := new(dns.Msg)
 	err := query.Unpack(rawQuery)
 	runtimex.PanicOnError(err, "query.Unpack failed")
+	runtimex.PanicIfFalse(len(query.Question) == 1, "expected just a single question")
+	question := query.Question[0]
+	runtimex.PanicIfFalse(question.Qtype == dns.TypeHTTPS, "expected HTTPS query")
 	reply := new(dns.Msg)
 	reply.Compress = true
 	reply.MsgHdr.RecursionAvailable = true
@@ -359,6 +424,34 @@ func dnsGenHTTPSReplySuccess(rawQuery []byte, alpns, ipv4s, ipv6s []string) []by
 			addrs = append(addrs, net.ParseIP(addr))
 		}
 		answer.Value = append(answer.Value, &dns.SVCBIPv6Hint{Hint: addrs})
+	}
+	data, err := reply.Pack()
+	runtimex.PanicOnError(err, "reply.Pack failed")
+	return data
+}
+
+// dnsGenNSReplySuccess generates a successful NS reply using the given names.
+func dnsGenNSReplySuccess(rawQuery []byte, names ...string) []byte {
+	query := new(dns.Msg)
+	err := query.Unpack(rawQuery)
+	runtimex.PanicOnError(err, "query.Unpack failed")
+	runtimex.PanicIfFalse(len(query.Question) == 1, "more than one question")
+	question := query.Question[0]
+	runtimex.PanicIfFalse(question.Qtype == dns.TypeNS, "expected NS query")
+	reply := new(dns.Msg)
+	reply.Compress = true
+	reply.MsgHdr.RecursionAvailable = true
+	reply.SetReply(query)
+	for _, name := range names {
+		reply.Answer = append(reply.Answer, &dns.NS{
+			Hdr: dns.RR_Header{
+				Name:   dns.Fqdn("x.org"),
+				Rrtype: question.Qtype,
+				Class:  dns.ClassINET,
+				Ttl:    0,
+			},
+			Ns: name,
+		})
 	}
 	data, err := reply.Pack()
 	runtimex.PanicOnError(err, "reply.Pack failed")

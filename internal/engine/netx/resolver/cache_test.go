@@ -6,14 +6,11 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestCacheFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	var r model.Resolver = resolver.FakeResolver{
-		Err: expected,
-	}
+	r := resolver.NewFakeResolverWithExplicitError(expected)
 	cache := &resolver.CacheResolver{Resolver: r}
 	addrs, err := cache.LookupHost(context.Background(), "www.google.com")
 	if !errors.Is(err, expected) {
@@ -28,9 +25,8 @@ func TestCacheFailure(t *testing.T) {
 }
 
 func TestCacheHitSuccess(t *testing.T) {
-	var r model.Resolver = resolver.FakeResolver{
-		Err: errors.New("mocked error"),
-	}
+	expected := errors.New("mocked error")
+	r := resolver.NewFakeResolverWithExplicitError(expected)
 	cache := &resolver.CacheResolver{Resolver: r}
 	cache.Set("dns.google.com", []string{"8.8.8.8"})
 	addrs, err := cache.LookupHost(context.Background(), "dns.google.com")
@@ -43,9 +39,7 @@ func TestCacheHitSuccess(t *testing.T) {
 }
 
 func TestCacheMissSuccess(t *testing.T) {
-	var r model.Resolver = resolver.FakeResolver{
-		Result: []string{"8.8.8.8"},
-	}
+	r := resolver.NewFakeResolverWithResult([]string{"8.8.8.8"})
 	cache := &resolver.CacheResolver{Resolver: r}
 	addrs, err := cache.LookupHost(context.Background(), "dns.google.com")
 	if err != nil {
@@ -60,9 +54,7 @@ func TestCacheMissSuccess(t *testing.T) {
 }
 
 func TestCacheReadonlySuccess(t *testing.T) {
-	var r model.Resolver = resolver.FakeResolver{
-		Result: []string{"8.8.8.8"},
-	}
+	r := resolver.NewFakeResolverWithResult([]string{"8.8.8.8"})
 	cache := &resolver.CacheResolver{Resolver: r, ReadOnly: true}
 	addrs, err := cache.LookupHost(context.Background(), "dns.google.com")
 	if err != nil {

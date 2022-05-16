@@ -51,6 +51,9 @@ type DNSDecoder interface {
 	// an error, though, when there are no IPv4/IPv6 hints in the reply.
 	DecodeHTTPS(data []byte, queryID uint16) (*HTTPSSvc, error)
 
+	// DecodeNS is like DecodeHTTPS but for NS queries.
+	DecodeNS(data []byte, queryID uint16) ([]*net.NS, error)
+
 	// DecodeReply decodes a DNS reply message.
 	//
 	// Arguments:
@@ -194,6 +197,9 @@ type Resolver interface {
 	// LookupHTTPS issues an HTTPS query for a domain.
 	LookupHTTPS(
 		ctx context.Context, domain string) (*HTTPSSvc, error)
+
+	// LookupNS issues a NS query for a domain.
+	LookupNS(ctx context.Context, domain string) ([]*net.NS, error)
 }
 
 // TLSDialer is a Dialer dialing TLS connections.

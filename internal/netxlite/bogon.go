@@ -6,8 +6,6 @@ package netxlite
 // This file helps us to decide if an IPAddr is a bogon.
 //
 
-// TODO(bassosimone): code in engine/netx should use this file.
-
 import (
 	"net"
 

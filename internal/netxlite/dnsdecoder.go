@@ -6,6 +6,7 @@ package netxlite
 
 import (
 	"errors"
+	"net"
 
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -109,6 +110,24 @@ func (d *DNSDecoderMiekg) DecodeLookupHost(qtype uint16, data []byte, queryID ui
 		return nil, ErrOODNSNoAnswer
 	}
 	return addrs, nil
+}
+
+func (d *DNSDecoderMiekg) DecodeNS(data []byte, queryID uint16) ([]*net.NS, error) {
+	reply, err := d.parseReply(data, queryID)
+	if err != nil {
+		return nil, err
+	}
+	out := []*net.NS{}
+	for _, answer := range reply.Answer {
+		switch avalue := answer.(type) {
+		case *dns.NS:
+			out = append(out, &net.NS{Host: avalue.Ns})
+		}
+	}
+	if len(out) < 1 {
+		return nil, ErrOODNSNoAnswer
+	}
+	return out, nil
 }
 
 var _ model.DNSDecoder = &DNSDecoderMiekg{}

@@ -46,6 +46,7 @@ func TestWithRealServerDoCheckIn(t *testing.T) {
 }
 
 func TestWithRealServerDoCheckReportID(t *testing.T) {
+	t.Skip("see https://github.com/ooni/probe/issues/2098")
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}

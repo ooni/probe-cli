@@ -25,7 +25,7 @@ func (r *CacheResolver) LookupHost(
 	if err != nil {
 		return nil, err
 	}
-	if r.ReadOnly == false {
+	if !r.ReadOnly {
 		r.Set(hostname, entry)
 	}
 	return entry, nil
