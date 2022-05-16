@@ -39,6 +39,9 @@ type ExperimentAsyncTestKeys struct {
 	// MeasurementRuntime is the total measurement runtime.
 	MeasurementRuntime float64
 
+	// TestHelpers contains the test helpers used in the experiment
+	TestHelpers map[string]interface{}
+
 	// TestKeys contains the actual test keys.
 	TestKeys interface{}
 }
