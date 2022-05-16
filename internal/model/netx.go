@@ -60,6 +60,9 @@ type DNSDecoder interface {
 	//
 	// - data is the raw reply
 	//
+	// This function fails if we cannot parse data as a DNS
+	// message or the message is not a reply.
+	//
 	// If you use this function, remember that:
 	//
 	// 1. the Rcode MAY be nonzero;
