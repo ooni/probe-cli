@@ -24,6 +24,19 @@ func TestDNSDecoder(t *testing.T) {
 			}
 		})
 
+		t.Run("with bytes containing a query", func(t *testing.T) {
+			d := &DNSDecoderMiekg{}
+			queryID := dns.Id()
+			rawQuery := dnsGenQuery(dns.TypeA, queryID)
+			addrs, err := d.DecodeLookupHost(dns.TypeA, rawQuery, queryID)
+			if !errors.Is(err, ErrDNSIsQuery) {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) > 0 {
+				t.Fatal("expected no addrs")
+			}
+		})
+
 		t.Run("wrong query ID", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
 			const (
@@ -157,15 +170,16 @@ func TestDNSDecoder(t *testing.T) {
 		})
 	})
 
-	t.Run("parseReply", func(t *testing.T) {
+	t.Run("decodeSuccessfulReply", func(t *testing.T) {
 		d := &DNSDecoderMiekg{}
 		msg := &dns.Msg{}
 		msg.Rcode = dns.RcodeFormatError // an rcode we don't handle
+		msg.Response = true
 		data, err := msg.Pack()
 		if err != nil {
 			t.Fatal(err)
 		}
-		reply, err := d.parseReply(data, 0)
+		reply, err := d.decodeSuccessfulReply(data, 0)
 		if !errors.Is(err, ErrOODNSMisbehaving) { // catch all error
 			t.Fatal("not the error we expected", err)
 		}
@@ -183,6 +197,19 @@ func TestDNSDecoder(t *testing.T) {
 			}
 			if reply != nil {
 				t.Fatal("expected nil reply")
+			}
+		})
+
+		t.Run("with bytes containing a query", func(t *testing.T) {
+			d := &DNSDecoderMiekg{}
+			queryID := dns.Id()
+			rawQuery := dnsGenQuery(dns.TypeHTTPS, queryID)
+			https, err := d.DecodeHTTPS(rawQuery, queryID)
+			if !errors.Is(err, ErrDNSIsQuery) {
+				t.Fatal("unexpected err", err)
+			}
+			if https != nil {
+				t.Fatal("expected nil https")
 			}
 		})
 
@@ -249,6 +276,19 @@ func TestDNSDecoder(t *testing.T) {
 			}
 			if reply != nil {
 				t.Fatal("expected nil reply")
+			}
+		})
+
+		t.Run("with bytes containing a query", func(t *testing.T) {
+			d := &DNSDecoderMiekg{}
+			queryID := dns.Id()
+			rawQuery := dnsGenQuery(dns.TypeNS, queryID)
+			ns, err := d.DecodeNS(rawQuery, queryID)
+			if !errors.Is(err, ErrDNSIsQuery) {
+				t.Fatal("unexpected err", err)
+			}
+			if len(ns) > 0 {
+				t.Fatal("expected no result")
 			}
 		})
 

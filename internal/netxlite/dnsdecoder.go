@@ -18,16 +18,32 @@ type DNSDecoderMiekg struct{}
 // ErrDNSReplyWithWrongQueryID indicates we have got a DNS reply with the wrong queryID.
 var ErrDNSReplyWithWrongQueryID = errors.New(FailureDNSReplyWithWrongQueryID)
 
+// ErrDNSIsQuery indicates that we were passed a DNS query.
+var ErrDNSIsQuery = errors.New("ooresolver: expected response but received query")
+
 // DecodeReply implements model.DNSDecoder.DecodeReply
 func (d *DNSDecoderMiekg) DecodeReply(data []byte) (*dns.Msg, error) {
-	reply := new(dns.Msg)
+	reply := &dns.Msg{}
 	if err := reply.Unpack(data); err != nil {
 		return nil, err
+	}
+	if !reply.Response {
+		return nil, ErrDNSIsQuery
 	}
 	return reply, nil
 }
 
-func (d *DNSDecoderMiekg) parseReply(data []byte, queryID uint16) (*dns.Msg, error) {
+// decodeSuccessfulReply decodes the bytes in data as a successful reply for the
+// given queryID. This function returns an error if:
+//
+// 1. we cannot decode data
+//
+// 2. the decoded message is not a reply
+//
+// 3. the query ID does not match
+//
+// 4. the Rcode is not zero.
+func (d *DNSDecoderMiekg) decodeSuccessfulReply(data []byte, queryID uint16) (*dns.Msg, error) {
 	reply, err := d.DecodeReply(data)
 	if err != nil {
 		return nil, err
@@ -52,7 +68,7 @@ func (d *DNSDecoderMiekg) parseReply(data []byte, queryID uint16) (*dns.Msg, err
 }
 
 func (d *DNSDecoderMiekg) DecodeHTTPS(data []byte, queryID uint16) (*model.HTTPSSvc, error) {
-	reply, err := d.parseReply(data, queryID)
+	reply, err := d.decodeSuccessfulReply(data, queryID)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +103,7 @@ func (d *DNSDecoderMiekg) DecodeHTTPS(data []byte, queryID uint16) (*model.HTTPS
 }
 
 func (d *DNSDecoderMiekg) DecodeLookupHost(qtype uint16, data []byte, queryID uint16) ([]string, error) {
-	reply, err := d.parseReply(data, queryID)
+	reply, err := d.decodeSuccessfulReply(data, queryID)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +129,7 @@ func (d *DNSDecoderMiekg) DecodeLookupHost(qtype uint16, data []byte, queryID ui
 }
 
 func (d *DNSDecoderMiekg) DecodeNS(data []byte, queryID uint16) ([]*net.NS, error) {
-	reply, err := d.parseReply(data, queryID)
+	reply, err := d.decodeSuccessfulReply(data, queryID)
 	if err != nil {
 		return nil, err
 	}
