@@ -16,10 +16,8 @@ func TestSaverResolverFailure(t *testing.T) {
 	expected := errors.New("no such host")
 	saver := &trace.Saver{}
 	reso := resolver.SaverResolver{
-		Resolver: resolver.FakeResolver{
-			Err: expected,
-		},
-		Saver: saver,
+		Resolver: resolver.NewFakeResolverWithExplicitError(expected),
+		Saver:    saver,
 	}
 	addrs, err := reso.LookupHost(context.Background(), "www.google.com")
 	if !errors.Is(err, expected) {
@@ -65,10 +63,8 @@ func TestSaverResolverSuccess(t *testing.T) {
 	expected := []string{"8.8.8.8", "8.8.4.4"}
 	saver := &trace.Saver{}
 	reso := resolver.SaverResolver{
-		Resolver: resolver.FakeResolver{
-			Result: expected,
-		},
-		Saver: saver,
+		Resolver: resolver.NewFakeResolverWithResult(expected),
+		Saver:    saver,
 	}
 	addrs, err := reso.LookupHost(context.Background(), "www.google.com")
 	if err != nil {

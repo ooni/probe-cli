@@ -6,6 +6,7 @@ package netxlite
 
 import (
 	"context"
+	"net"
 
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
@@ -128,4 +129,19 @@ func (r *ParallelResolver) lookupHost(ctx context.Context, hostname string,
 		addrs: addrs,
 		err:   err,
 	}
+}
+
+// LookupNS implements Resolver.LookupNS.
+func (r *ParallelResolver) LookupNS(
+	ctx context.Context, hostname string) ([]*net.NS, error) {
+	querydata, queryID, err := r.Encoder.Encode(
+		hostname, dns.TypeNS, r.Txp.RequiresPadding())
+	if err != nil {
+		return nil, err
+	}
+	replydata, err := r.Txp.RoundTrip(ctx, querydata)
+	if err != nil {
+		return nil, err
+	}
+	return r.Decoder.DecodeNS(replydata, queryID)
 }

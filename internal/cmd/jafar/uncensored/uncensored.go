@@ -67,6 +67,11 @@ func (c *Client) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSv
 	return nil, errors.New("not implemented")
 }
 
+// LookupNS implements model.Resolver.LookupNS.
+func (c *Client) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
+	return nil, errors.New("not implemented")
+}
+
 // Network implements Resolver.Network
 func (c *Client) Network() string {
 	return c.dnsClient.Network()

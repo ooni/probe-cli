@@ -3,6 +3,7 @@ package mocks
 import (
 	"context"
 	"errors"
+	"net"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -74,6 +75,23 @@ func TestResolver(t *testing.T) {
 			t.Fatal("unexpected error", err)
 		}
 		if https != nil {
+			t.Fatal("expected nil addr")
+		}
+	})
+
+	t.Run("LookupNS", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		r := &Resolver{
+			MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
+				return nil, expected
+			},
+		}
+		ctx := context.Background()
+		ns, err := r.LookupNS(ctx, "dns.google")
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected error", err)
+		}
+		if ns != nil {
 			t.Fatal("expected nil addr")
 		}
 	})

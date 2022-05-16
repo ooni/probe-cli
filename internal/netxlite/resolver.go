@@ -136,6 +136,16 @@ func (r *resolverSystem) LookupHTTPS(
 	return nil, ErrNoDNSTransport
 }
 
+func (r *resolverSystem) LookupNS(
+	ctx context.Context, domain string) ([]*net.NS, error) {
+	// TODO(bassosimone): figure out in which context it makes sense
+	// to issue this query. How is this implemented under the hood by
+	// the stdlib? Is it using /etc/resolve.conf on Unix? Until we
+	// known all these details, let's pretend this functionality does
+	// not exist in the stdlib and focus on custom resolvers.
+	return nil, ErrNoDNSTransport
+}
+
 // resolverLogger is a resolver that emits events
 type resolverLogger struct {
 	Resolver model.Resolver
@@ -188,6 +198,21 @@ func (r *resolverLogger) CloseIdleConnections() {
 	r.Resolver.CloseIdleConnections()
 }
 
+func (r *resolverLogger) LookupNS(
+	ctx context.Context, domain string) ([]*net.NS, error) {
+	prefix := fmt.Sprintf("resolve[NS] %s with %s (%s)", domain, r.Network(), r.Address())
+	r.Logger.Debugf("%s...", prefix)
+	start := time.Now()
+	ns, err := r.Resolver.LookupNS(ctx, domain)
+	elapsed := time.Since(start)
+	if err != nil {
+		r.Logger.Debugf("%s... %s in %s", prefix, err, elapsed)
+		return nil, err
+	}
+	r.Logger.Debugf("%s... %+v in %s", prefix, ns, elapsed)
+	return ns, nil
+}
+
 // resolverIDNA supports resolving Internationalized Domain Names.
 //
 // See RFC3492 for more information.
@@ -224,6 +249,15 @@ func (r *resolverIDNA) Address() string {
 
 func (r *resolverIDNA) CloseIdleConnections() {
 	r.Resolver.CloseIdleConnections()
+}
+
+func (r *resolverIDNA) LookupNS(
+	ctx context.Context, domain string) ([]*net.NS, error) {
+	host, err := idna.ToASCII(domain)
+	if err != nil {
+		return nil, err
+	}
+	return r.Resolver.LookupNS(ctx, host)
 }
 
 // resolverShortCircuitIPAddr recognizes when the input hostname is an
@@ -264,6 +298,18 @@ func (r *resolverShortCircuitIPAddr) Address() string {
 
 func (r *resolverShortCircuitIPAddr) CloseIdleConnections() {
 	r.Resolver.CloseIdleConnections()
+}
+
+// ErrDNSIPAddress indicates that you passed an IP address to a DNS
+// function that only works with domain names.
+var ErrDNSIPAddress = errors.New("ooresolver: expected domain, found IP address")
+
+func (r *resolverShortCircuitIPAddr) LookupNS(
+	ctx context.Context, hostname string) ([]*net.NS, error) {
+	if net.ParseIP(hostname) != nil {
+		return nil, ErrDNSIPAddress
+	}
+	return r.Resolver.LookupNS(ctx, hostname)
 }
 
 // IsIPv6 returns true if the given candidate is a valid IP address
@@ -313,6 +359,11 @@ func (r *nullResolver) LookupHTTPS(
 	return nil, ErrNoResolver
 }
 
+func (r *nullResolver) LookupNS(
+	ctx context.Context, domain string) ([]*net.NS, error) {
+	return nil, ErrNoResolver
+}
+
 // resolverErrWrapper is a Resolver that knows about wrapping errors.
 type resolverErrWrapper struct {
 	Resolver model.Resolver
@@ -347,4 +398,13 @@ func (r *resolverErrWrapper) Address() string {
 
 func (r *resolverErrWrapper) CloseIdleConnections() {
 	r.Resolver.CloseIdleConnections()
+}
+
+func (r *resolverErrWrapper) LookupNS(
+	ctx context.Context, domain string) ([]*net.NS, error) {
+	out, err := r.Resolver.LookupNS(ctx, domain)
+	if err != nil {
+		return nil, newErrWrapper(classifyResolverError, ResolveOperation, err)
+	}
+	return out, nil
 }

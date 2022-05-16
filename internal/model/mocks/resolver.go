@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"net"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -13,6 +14,7 @@ type Resolver struct {
 	MockAddress              func() string
 	MockCloseIdleConnections func()
 	MockLookupHTTPS          func(ctx context.Context, domain string) (*model.HTTPSSvc, error)
+	MockLookupNS             func(ctx context.Context, domain string) ([]*net.NS, error)
 }
 
 // LookupHost calls MockLookupHost.
@@ -38,4 +40,9 @@ func (r *Resolver) CloseIdleConnections() {
 // LookupHTTPS calls MockLookupHTTPS.
 func (r *Resolver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	return r.MockLookupHTTPS(ctx, domain)
+}
+
+// LookupNS calls MockLookupNS.
+func (r *Resolver) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
+	return r.MockLookupNS(ctx, domain)
 }

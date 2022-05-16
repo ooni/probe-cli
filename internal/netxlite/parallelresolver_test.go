@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"net"
 	"testing"
 
 	"github.com/miekg/dns"
@@ -258,6 +259,96 @@ func TestParallelResolver(t *testing.T) {
 			}
 			ctx := context.Background()
 			https, err := r.LookupHTTPS(ctx, "example.com")
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
+			}
+			if https != nil {
+				t.Fatal("unexpected result")
+			}
+		})
+	})
+
+	t.Run("LookupNS", func(t *testing.T) {
+		t.Run("for encoding error", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			r := &ParallelResolver{
+				Encoder: &mocks.DNSEncoder{
+					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
+						return nil, 0, expected
+					},
+				},
+				Decoder:     nil,
+				NumTimeouts: &atomicx.Int64{},
+				Txp: &mocks.DNSTransport{
+					MockRequiresPadding: func() bool {
+						return false
+					},
+				},
+			}
+			ctx := context.Background()
+			ns, err := r.LookupNS(ctx, "example.com")
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
+			}
+			if ns != nil {
+				t.Fatal("unexpected result")
+			}
+		})
+
+		t.Run("for round-trip error", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			r := &ParallelResolver{
+				Encoder: &mocks.DNSEncoder{
+					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
+						return make([]byte, 64), 0, nil
+					},
+				},
+				Decoder:     nil,
+				NumTimeouts: &atomicx.Int64{},
+				Txp: &mocks.DNSTransport{
+					MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+						return nil, expected
+					},
+					MockRequiresPadding: func() bool {
+						return false
+					},
+				},
+			}
+			ctx := context.Background()
+			ns, err := r.LookupNS(ctx, "example.com")
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
+			}
+			if ns != nil {
+				t.Fatal("unexpected result")
+			}
+		})
+
+		t.Run("for decode error", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			r := &ParallelResolver{
+				Encoder: &mocks.DNSEncoder{
+					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
+						return make([]byte, 64), 0, nil
+					},
+				},
+				Decoder: &mocks.DNSDecoder{
+					MockDecodeNS: func(reply []byte, queryID uint16) ([]*net.NS, error) {
+						return nil, expected
+					},
+				},
+				NumTimeouts: &atomicx.Int64{},
+				Txp: &mocks.DNSTransport{
+					MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+						return make([]byte, 128), nil
+					},
+					MockRequiresPadding: func() bool {
+						return false
+					},
+				},
+			}
+			ctx := context.Background()
+			https, err := r.LookupNS(ctx, "example.com")
 			if !errors.Is(err, expected) {
 				t.Fatal("unexpected err", err)
 			}
