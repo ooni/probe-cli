@@ -11,7 +11,6 @@ func init() {
 }
 
 func TestCheck(t *testing.T) {
-	t.Skip("see https://github.com/ooni/probe/issues/2098")
 	*mode = "check"
 	main()
 }
