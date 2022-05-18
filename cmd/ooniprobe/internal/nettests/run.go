@@ -2,6 +2,7 @@ package nettests
 
 import (
 	"context"
+	"os"
 	"sync"
 	"time"
 
@@ -111,6 +112,18 @@ func RunGroup(config RunGroupConfig) error {
 		if err = nt.Run(ctl); err != nil {
 			log.WithError(err).Errorf("Failed to run %s", group.Label)
 		}
+	}
+
+	// Remove the directory if it's emtpy, which happens when the corresponding
+	// measurements have been submitted (see https://github.com/ooni/probe/issues/2090)
+	dir, err := os.Open(result.MeasurementDir)
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+	_, err = dir.Readdirnames(1)
+	if err != nil {
+		os.Remove(result.MeasurementDir)
 	}
 
 	if err = result.Finished(config.Probe.DB()); err != nil {
