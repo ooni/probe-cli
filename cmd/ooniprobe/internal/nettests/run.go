@@ -2,9 +2,9 @@ package nettests
 
 import (
 	"context"
+	"os"
 	"sync"
 	"time"
-	"os"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
@@ -114,12 +114,13 @@ func RunGroup(config RunGroupConfig) error {
 		}
 	}
 
+	// Remove the directory if it's emtpy, which happens when the corresponding
+	// measurements have been submitted (see https://github.com/ooni/probe/issues/2090)
 	dir, err := os.Open(result.MeasurementDir)
 	if err != nil {
 		return err
 	}
 	defer dir.Close()
-	// Remove the directory if it's emtpy
 	_, err = dir.Readdirnames(1)
 	if err != nil {
 		os.Remove(result.MeasurementDir)
