@@ -137,6 +137,6 @@ func logMeasurementJSON(w io.Writer, f log.Fields) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(w, string(json))
+	fmt.Fprintf(w, "%s", string(json))
 	return nil
 }
