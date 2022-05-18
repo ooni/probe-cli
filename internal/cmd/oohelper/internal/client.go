@@ -94,6 +94,9 @@ func (oo OOClient) Do(ctx context.Context, config OOConfig) (*CtrlResponse, erro
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrInvalidURL, err.Error())
 	}
+	if net.ParseIP(targetURL.Hostname()) != nil && netxlite.IsBogon(targetURL.Hostname()) {
+		return nil, ErrHTTPStatusCode
+	}
 	addrs, err := oo.Resolver.LookupHost(ctx, targetURL.Hostname())
 	endpoints := []string{}
 	if err == nil {
