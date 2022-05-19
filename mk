@@ -31,11 +31,11 @@ help:
 #help: * ANDROID_CLI_SHA256    : the SHA256 of the Android CLI tools file. We always
 #help:                           download the Linux version, which seems to work
 #help:                           also on macOS (thank you, Java! :pray:).
-ANDROID_CLI_SHA256 = 124f2d5115eee365df6cf3228ffbca6fc3911d16f8025bebd5b1c6e2fcfa7faf
+ANDROID_CLI_SHA256 = 5e7bf2dd563d34917d32f3c5920a85562a795c93
 
 #help:
 #help: * ANDROID_CLI_VERSION   : the version of the Android CLI tools.
-ANDROID_CLI_VERSION = 7583922
+ANDROID_CLI_VERSION = 8512546
 
 #help:
 #help: * ANDROID_INSTALL_EXTRA : contains the android tools we install in addition
@@ -44,7 +44,7 @@ ANDROID_INSTALL_EXTRA = 'build-tools;32.0.0' 'platforms;android-31'
 
 #help:
 #help: * ANDROID_NDK_VERSION   : Android NDK version.
-ANDROID_NDK_VERSION = 23.1.7779620
+ANDROID_NDK_VERSION = 24.0.8215888
 
 #help:
 #help: * GIT_CLONE_DIR         : directory where to clone repositories, by default
@@ -95,7 +95,7 @@ OONI_ANDROID_HOME = $(HOME)/.ooniprobe-build/sdk/android
 
 #help:
 #help: * XCODE_VERSION         : the version of Xcode we expect.
-XCODE_VERSION = 13.1
+XCODE_VERSION = 13.3.1
 
 #quickhelp:
 #quickhelp: The `./mk show-config` command shows the current value of the
