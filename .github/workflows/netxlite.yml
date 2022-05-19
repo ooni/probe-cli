@@ -10,7 +10,7 @@ jobs:
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
-        go: [ "1.17.9" ]
+        go: [ "1.17.10" ]
         os: [ "ubuntu-20.04", "windows-2019", "macos-10.15" ]
     steps:
       - uses: magnetikonline/action-golang-cache@v2
