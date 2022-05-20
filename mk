@@ -44,7 +44,7 @@ ANDROID_INSTALL_EXTRA = 'build-tools;32.0.0' 'platforms;android-31'
 
 #help:
 #help: * ANDROID_NDK_VERSION   : Android NDK version.
-ANDROID_NDK_VERSION = 24.0.8215888
+ANDROID_NDK_VERSION = 23.1.7779620
 
 #help:
 #help: * GIT_CLONE_DIR         : directory where to clone repositories, by default
