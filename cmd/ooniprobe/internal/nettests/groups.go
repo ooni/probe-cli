@@ -57,6 +57,7 @@ var All = map[string]Group{
 			DNSCheck{},
 			STUNReachability{},
 			TorSf{},
+			VanillaTor{},
 		},
 		UnattendedOK: true,
 	},
