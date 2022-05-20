@@ -37,20 +37,8 @@ type method struct {
 var (
 	methods = []method{
 		{
-			name: "avast",
-			fn:   avastIPLookup,
-		},
-		{
 			name: "cloudflare",
 			fn:   cloudflareIPLookup,
-		},
-		{
-			name: "ipconfig",
-			fn:   ipConfigIPLookup,
-		},
-		{
-			name: "ipinfo",
-			fn:   ipInfoIPLookup,
 		},
 		{
 			name: "stun_ekiga",
