@@ -103,6 +103,12 @@ func RunGroup(config RunGroupConfig) error {
 			log.Debugf("context is terminated, stopping group.Nettests early")
 			break
 		}
+		if config.RunType != model.RunTypeTimed {
+			if _, background := nt.(onlyBackground); background {
+				log.Debug("we only run this nettest in background mode")
+				continue
+			}
+		}
 		log.Debugf("Running test %T", nt)
 		ctl := NewController(nt, config.Probe, result, sess)
 		ctl.InputFiles = config.InputFiles
@@ -130,4 +136,16 @@ func RunGroup(config RunGroupConfig) error {
 		return err
 	}
 	return nil
+}
+
+// onlyBackground is the interface implements by nettests that we don't
+// want to run in manual mode because they take too much runtime
+//
+// See:
+//
+// - https://github.com/ooni/probe/issues/2101
+//
+// - https://github.com/ooni/probe/issues/2057
+type onlyBackground interface {
+	onlyBackground()
 }
