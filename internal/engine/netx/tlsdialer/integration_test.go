@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
+	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -19,9 +20,11 @@ func TestTLSDialerSuccess(t *testing.T) {
 			DebugLogger:   log.Log,
 		},
 	}
-	txp := &http.Transport{
-		DialTLSContext:    dialer.DialTLSContext,
-		ForceAttemptHTTP2: true,
+	txp := &oohttp.StdlibTransport{
+		Transport: &oohttp.Transport{
+			DialTLSContext:    dialer.DialTLSContext,
+			ForceAttemptHTTP2: true,
+		},
 	}
 	client := &http.Client{Transport: txp}
 	resp, err := client.Get("https://www.google.com")
