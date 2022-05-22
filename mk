@@ -71,10 +71,6 @@ GOLANG_VERSION_NUMBER = 1.18.2
 MINGW_W64_VERSION = 10.3.1
 
 #help:
-#help: * OONIGO_BRANCH         : the github.com/ooni/go branch to use.
-OONIGO_BRANCH = oonigo1.18.2
-
-#help:
 #help: * OONI_PSIPHON_TAGS     : build tags for `go build -tags ...` that cause
 #help:                           the build to embed a psiphon configuration file
 #help:                           into the generated binaries. This build tag
@@ -199,8 +195,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 
 #help:
 #help: The `./mk ./CLI/ooniprobe-darwin` command builds the ooniprobe official
-#help: command line client for darwin/amd64 and darwin/arm64. This process
-#help: entails building ooniprobe and then GPG-signing the binaries.
+#help: command line client for darwin/amd64 and darwin/arm64.
 #help:
 #help: You can also build the following subtargets:
 .PHONY: ./CLI/ooniprobe-darwin
@@ -264,8 +259,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 
 #help:
 #help: The `./mk ./CLI/ooniprobe-windows` command builds the ooniprobe official
-#help: command line client for windows/386 and windows/amd64. This entails
-#help: building and PGP signing the executables.
+#help: command line client for windows/386 and windows/amd64.
 #help:
 #help: You can also build the following subtargets:
 .PHONY: ./CLI/ooniprobe-windows
@@ -298,19 +292,15 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 ./MOBILE/android/oonimkall.pom:
 	cat ./MOBILE/android/template.pom | sed -e "s/@VERSION@/$(OONIMKALL_V)/g" > ./MOBILE/android/oonimkall.pom
 
-#help:
-#help: * `./mk ./MOBILE/android/oonimkall.aar`: the AAR
-.PHONY:   ./MOBILE/android/oonimkall.aar
-./MOBILE/android/oonimkall.aar: android/sdk ooni/go maybe/copypsiphon
-	PATH=$(OONIGODIR)/bin:$$PATH $(MAKE) -f mk __android_build_with_ooni_go
-
 # GOMOBILE is the full path location to the gomobile binary. We want to
 # execute this command every time, because its output may depend on context,
 # for this reason WE ARE NOT using `:=`.
 GOMOBILE = $(shell go env GOPATH)/bin/gomobile
 
-# Here we use ooni/go to work around https://github.com/ooni/probe/issues/1444
-__android_build_with_ooni_go: search/for/go
+#help:
+#help: * `./mk ./MOBILE/android/oonimkall.aar`: the AAR
+.PHONY:   ./MOBILE/android/oonimkall.aar
+./MOBILE/android/oonimkall.aar: android/sdk maybe/copypsiphon
 	go get -u golang.org/x/mobile/cmd/gomobile
 	$(GOMOBILE) init
 	PATH=$(shell go env GOPATH)/bin:$$PATH ANDROID_HOME=$(OONI_ANDROID_HOME) ANDROID_NDK_HOME=$(OONI_ANDROID_HOME)/ndk/$(ANDROID_NDK_VERSION) $(GOMOBILE) bind -x -target android -o ./MOBILE/android/oonimkall.aar -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
@@ -491,20 +481,6 @@ OONIPRIVATE_REPO = git@github.com:ooni/probe-private
 $(OONIPRIVATE): search/for/git $(GIT_CLONE_DIR)
 	rm -rf $(OONIPRIVATE)
 	git clone $(OONIPRIVATE_REPO) $(OONIPRIVATE)
-
-#help:
-#help: The `./mk ooni/go` command builds the latest version of ooni/go.
-.PHONY: ooni/go
-ooni/go: search/for/bash search/for/git search/for/go $(OONIGODIR)
-	rm -rf $(OONIGODIR)
-	git clone -b $(OONIGO_BRANCH) --single-branch --depth 8 $(OONIGO_REPO) $(OONIGODIR)
-	cd $(OONIGODIR)/src && ./make.bash
-
-# OONIGODIR is the directory in which we clone ooni/go
-OONIGODIR = $(GIT_CLONE_DIR)/github.com/ooni/go
-
-# OONIGO_REPO is the repository for ooni/go
-OONIGO_REPO = https://github.com/ooni/go
 
 #help:
 #help: The `./mk android/sdk` command ensures we are using the
