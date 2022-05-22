@@ -1,5 +1,3 @@
-//go:build !go1.18
-
 package archival
 
 import (
@@ -14,7 +12,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
-	"github.com/marten-seemann/qtls-go1-17" // it's annoying to depend on that
+	"github.com/marten-seemann/qtls-go1-18" // it's annoying to depend on that
 	"github.com/ooni/probe-cli/v3/internal/fakefill"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
