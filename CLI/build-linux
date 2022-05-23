@@ -23,4 +23,7 @@ if [ "$GOARCH" = "arm" -a "$GOARM" = "7" ]; then
 elif [ "$GOARCH" = "arm" -a "$GOARM" = "6" ]; then
 	archname="armv6"
 fi
-go build -o "./CLI/ooniprobe-linux-$archname" -ldflags='-s -w -extldflags "-static"' "$@" ./cmd/ooniprobe
+# Tell git it's safe to operate on a repository owned
+# by someone else (is there a better way?)
+git config --global --add safe.directory /ooni
+go build -v -o "./CLI/ooniprobe-linux-$archname" -ldflags='-s -w -extldflags "-static"' "$@" ./cmd/ooniprobe

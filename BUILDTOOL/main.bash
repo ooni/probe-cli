@@ -76,7 +76,7 @@ run() {
 		fi
 		source $name
 	else
-		echo "🚧🐙 $@" 1>&2
+		echo "🚧🐙 <#$BASHPID> $@" 1>&2
 		"$@"
 	fi
 }
