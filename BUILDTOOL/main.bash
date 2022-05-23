@@ -19,6 +19,15 @@ set -euo pipefail
 #help: The fifth form of the command runs the given target.
 #help:
 
+golang_core_packages() {
+	for dirname in $(ls ./internal | grep -v cmd | grep -v tutorial); do
+		if [[ ! -d ./internal/$dirname ]]; then
+			continue
+		fi
+		printf "./internal/$dirname/... "
+	done
+}
+
 #config: ANDROID_BUILDTOOLS_VERSION
 ANDROID_BUILDTOOLS_VERSION=32.0.0
 
@@ -48,6 +57,9 @@ ANDROID_SDK_DIR=$SDK_BASE_DIR/ooni-android
 
 #config: COVERAGE_REPORT_FILE
 COVERAGE_REPORT_FILE=probe-cli.cov
+
+#config: GOLANG_CORE_PACKAGES
+GOLANG_CORE_PACKAGES="$(golang_core_packages)"
 
 fatal() {
 	echo "🚨 $@" 1>&2
