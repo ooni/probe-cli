@@ -20,5 +20,7 @@ export GOARCH=$GOARCH
 archname=$GOARCH
 if [ "$GOARCH" = "arm" -a "$GOARM" = "7" ]; then
 	archname="armv7"
+elif [ "$GOARCH" = "arm" -a "$GOARM" = "6" ]; then
+	archname="armv6"
 fi
 go build -o "./CLI/ooniprobe-linux-$archname" -ldflags='-s -w -extldflags "-static"' "$@" ./cmd/ooniprobe
