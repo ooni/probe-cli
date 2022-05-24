@@ -18,11 +18,7 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 		ProxyURL:            &url.URL{},
 		ReadWriteSaver:      saver,
 	}, netxlite.DefaultResolver)
-	shd, ok := dlr.(*shapingDialer)
-	if !ok {
-		t.Fatal("not a shapingDialer")
-	}
-	bcd, ok := shd.Dialer.(*byteCounterDialer)
+	bcd, ok := dlr.(*byteCounterDialer)
 	if !ok {
 		t.Fatal("not a byteCounterDialer")
 	}

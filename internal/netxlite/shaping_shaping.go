@@ -1,7 +1,6 @@
 //go:build shaping
-// +build shaping
 
-package dialer
+package netxlite
 
 import (
 	"context"
@@ -11,9 +10,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// shapingDialer ensures we don't use too much bandwidth
-// when using integration tests at GitHub. To select
-// the implementation with shaping use `-tags shaping`.
+func newMaybeShapingDialer(dialer model.Dialer) model.Dialer {
+	return &shapingDialer{dialer}
+}
+
 type shapingDialer struct {
 	model.Dialer
 }
