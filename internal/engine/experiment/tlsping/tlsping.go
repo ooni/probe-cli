@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"strings"
 	"time"
@@ -56,6 +57,17 @@ func (c *Config) repetitions() int64 {
 		return c.Repetitions
 	}
 	return 10
+}
+
+func (c *Config) sni(address string) string {
+	if c.SNI != "" {
+		return c.SNI
+	}
+	addr, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return ""
+	}
+	return addr
 }
 
 // TestKeys contains the experiment results.
@@ -119,9 +131,6 @@ func (m *Measurer) Run(
 	if parsed.Port() == "" {
 		return errMissingPort
 	}
-	if m.config.SNI == "" {
-		sess.Logger().Warn("no -O SNI=<SNI> specified from command line")
-	}
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
 	out := make(chan *measurex.EndpointMeasurement)
@@ -165,7 +174,7 @@ func (m *Measurer) tlsConnectAndHandshake(ctx context.Context, mxmx *measurex.Me
 	return mxmx.TLSConnectAndHandshake(ctx, address, &tls.Config{
 		NextProtos: strings.Split(m.config.alpn(), " "),
 		RootCAs:    netxlite.NewDefaultCertPool(),
-		ServerName: m.config.SNI,
+		ServerName: m.config.sni(address),
 	})
 }
 
