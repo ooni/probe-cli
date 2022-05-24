@@ -49,7 +49,7 @@ func TestListenError(t *testing.T) {
 	}
 }
 
-func TestStarTLS(t *testing.T) {
+func TestStartTLS(t *testing.T) {
 	expected := errors.New("mocked error")
 
 	t.Run("when we cannot create a new authority", func(t *testing.T) {

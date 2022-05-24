@@ -16,6 +16,9 @@ import (
 )
 
 func TestDNSProxy(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	newProxyWithCache := func(action DNSAction, cache map[string][]string) (DNSListener, <-chan interface{}, error) {
 		p := &DNSProxy{
 			Cache: cache,

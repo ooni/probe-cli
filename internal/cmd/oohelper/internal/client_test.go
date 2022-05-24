@@ -98,6 +98,9 @@ func TestOOClientDoWithInvalidTargetURL(t *testing.T) {
 }
 
 func TestOOClientDoWithResolverFailure(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	ctx := context.Background()
 	config := internal.OOConfig{
 		TargetURL: "http://www.example.com",

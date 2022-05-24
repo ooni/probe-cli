@@ -28,6 +28,9 @@ func TestNewExperimentMeasurer(t *testing.T) {
 }
 
 func TestSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	measurer := whatsapp.NewExperimentMeasurer(whatsapp.Config{})
 	ctx := context.Background()
 	sess := &mockable.Session{MockableLogger: log.Log}
@@ -555,6 +558,9 @@ func TestTestKeysOnlyWebHTTPFailureTooManyURLs(t *testing.T) {
 }
 
 func TestWeConfigureWebChecksCorrectly(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	called := &atomicx.Int64{}
 	emptyConfig := urlgetter.Config{}
 	configWithFailOnHTTPError := urlgetter.Config{FailOnHTTPError: true}
