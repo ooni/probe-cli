@@ -1,10 +1,10 @@
 # netxlite runs unit and integration tests on our fundamental net library
 name: netxlite
 on:
-  pull_request:
   push:
     branches:
       - "master"
+      - "release/**"
 jobs:
   test_netxlite_package:
     runs-on: "${{ matrix.os }}"
