@@ -16,6 +16,9 @@ func ensureWeStartOverWithIPTables() {
 }
 
 func TestNoCommand(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	if runtime.GOOS != "linux" {
 		t.Skip("skip test on non Linux systems")
 	}
@@ -30,6 +33,9 @@ func TestNoCommand(t *testing.T) {
 }
 
 func TestWithCommand(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	if runtime.GOOS != "linux" {
 		t.Skip("skip test on non Linux systems")
 	}
@@ -54,6 +60,7 @@ func TestMustx(t *testing.T) {
 			t.Fatal("should not happen")
 		}
 	})
+
 	t.Run("with non-exit-code error", func(t *testing.T) {
 		var (
 			called   int
@@ -70,6 +77,7 @@ func TestMustx(t *testing.T) {
 			t.Fatal("unexpected exitcode value")
 		}
 	})
+
 	t.Run("with exit-code error", func(t *testing.T) {
 		var (
 			called   int
