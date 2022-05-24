@@ -42,6 +42,9 @@ func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*
 		Logger:              mgr.logger,
 		ProxyURL:            mgr.proxyURL,
 	}, reso)
+	// Implements shaping if the user builds using `-tags shaping`
+	// See https://github.com/ooni/probe/issues/2112
+	dlr = netxlite.NewMaybeShapingDialer(dlr)
 	// We force using our bundled CA pool, which should fix
 	// https://github.com/ooni/probe/issues/2031
 	tlsConfig := &tls.Config{

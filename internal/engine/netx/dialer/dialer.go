@@ -67,6 +67,5 @@ func New(config *Config, resolver model.Resolver) model.Dialer {
 	if config.ContextByteCounting {
 		d = &byteCounterDialer{Dialer: d}
 	}
-	d = &shapingDialer{Dialer: d}
 	return d
 }
