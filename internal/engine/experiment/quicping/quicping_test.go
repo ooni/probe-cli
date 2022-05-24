@@ -104,6 +104,9 @@ func TestInvalidHost(t *testing.T) {
 }
 
 func TestURLInput(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	measurer := NewExperimentMeasurer(Config{
 		Repetitions: 1,
 	})
@@ -123,6 +126,9 @@ func TestURLInput(t *testing.T) {
 }
 
 func TestSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	measurer := NewExperimentMeasurer(Config{})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("google.com")
@@ -201,6 +207,9 @@ func TestListenFails(t *testing.T) {
 }
 
 func TestWriteFails(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	expected := errors.New("expected")
 	measurer := NewExperimentMeasurer(Config{
 		networkLib:  &FailStdLib{err: nil, readErr: nil, writeErr: expected},
@@ -229,6 +238,9 @@ func TestWriteFails(t *testing.T) {
 }
 
 func TestReadFails(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	expected := errors.New("expected")
 	measurer := NewExperimentMeasurer(Config{
 		networkLib:  &FailStdLib{err: nil, readErr: expected, writeErr: nil},
@@ -254,6 +266,9 @@ func TestReadFails(t *testing.T) {
 }
 
 func TestNoResponse(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	measurer := NewExperimentMeasurer(Config{
 		Repetitions: 1,
 	})

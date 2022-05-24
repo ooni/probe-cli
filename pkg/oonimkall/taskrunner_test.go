@@ -30,6 +30,9 @@ func TestMeasurementSubmissionFailure(t *testing.T) {
 }
 
 func TestTaskRunnerRun(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 
 	// newRunnerForTesting is a factory for creating a new
 	// runner that wraps newRunner and also sets a specific

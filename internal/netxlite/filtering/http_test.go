@@ -16,6 +16,9 @@ import (
 )
 
 func TestHTTPProxy(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	newproxy := func(action HTTPAction) (net.Listener, error) {
 		p := &HTTPProxy{
 			OnIncomingHost: func(host string) HTTPAction {

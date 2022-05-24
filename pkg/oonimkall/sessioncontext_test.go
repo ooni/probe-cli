@@ -26,6 +26,9 @@ func TestClampTimeout(t *testing.T) {
 }
 
 func TestNewContextWithZeroTimeout(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	here := &atomicx.Int64{}
 	ctx, cancel := newContext(0)
 	defer cancel()
@@ -41,6 +44,9 @@ func TestNewContextWithZeroTimeout(t *testing.T) {
 }
 
 func TestNewContextWithNegativeTimeout(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	here := &atomicx.Int64{}
 	ctx, cancel := newContext(-1)
 	defer cancel()
@@ -56,6 +62,9 @@ func TestNewContextWithNegativeTimeout(t *testing.T) {
 }
 
 func TestNewContextWithHugeTimeout(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	here := &atomicx.Int64{}
 	ctx, cancel := newContext(maxTimeout + 1)
 	defer cancel()
@@ -71,6 +80,9 @@ func TestNewContextWithHugeTimeout(t *testing.T) {
 }
 
 func TestNewContextWithReasonableTimeout(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	here := &atomicx.Int64{}
 	ctx, cancel := newContext(1)
 	defer cancel()
@@ -86,6 +98,9 @@ func TestNewContextWithReasonableTimeout(t *testing.T) {
 }
 
 func TestNewContextWithArtificiallyLowMaxTimeout(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	here := &atomicx.Int64{}
 	const maxTimeout = 2
 	ctx, cancel := newContextEx(maxTimeout+1, maxTimeout)
