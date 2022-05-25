@@ -10,7 +10,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webstepsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -58,7 +57,6 @@ func main() {
 
 func testableMain() {
 	mux := http.NewServeMux()
-	mux.Handle("/api/v1/websteps", &webstepsx.THHandler{})
 	mux.Handle("/", webconnectivity.Handler{
 		Client:            httpx,
 		Dialer:            dialer,
