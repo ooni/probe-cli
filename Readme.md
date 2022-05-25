@@ -1,6 +1,6 @@
 # OONI Probe Client Library and CLI
 
-[![GoDoc](https://godoc.org/github.com/ooni/probe-cli?status.svg)](https://godoc.org/github.com/ooni/probe-cli) [![Short Tests Status](https://github.com/ooni/probe-cli/workflows/shorttests/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Ashorttests) [![Coverage Status](https://coveralls.io/repos/github/ooni/probe-cli/badge.svg?branch=master)](https://coveralls.io/github/ooni/probe-cli?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/ooni/probe-cli)](https://goreportcard.com/report/github.com/ooni/probe-cli) [![linux-debian-packages](https://github.com/ooni/probe-cli/workflows/linux-debian-packages/badge.svg)](https://github.com/ooni/probe-cli/actions?query=workflow%3Alinux-debian-packages)
+[![GoDoc](https://godoc.org/github.com/ooni/probe-cli?status.svg)](https://godoc.org/github.com/ooni/probe-cli) [![Coverage Status](https://coveralls.io/repos/github/ooni/probe-cli/badge.svg?branch=master)](https://coveralls.io/github/ooni/probe-cli?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/ooni/probe-cli)](https://goreportcard.com/report/github.com/ooni/probe-cli)
 
 The [Open Observatory of Network Interference](https://ooni.org) (OONI) is a non-profit free software project
 that aims to empower decentralized efforts in documenting
@@ -28,8 +28,7 @@ The mobile library is a public package for technical reasons. Go mobile tools re
 a public package to build from. Yet, we don't consider API breakages happening in
 such a package to be sufficient to bump our major version number. For us, the mobile
 library is just a mean to implement OONI Probe Android and OONI Probe iOS. We'll
-only bump the major version number if we implement any set of breaking changes of
-the `./cmd/ooniprobe`'s CLI.
+only bump the major version number if we change `./cmd/ooniprobe`'s CLI.
 
 ## License
 
@@ -67,7 +66,7 @@ This will generate a binary called `ooniprobe` in the current directory.
 Make sure you have GNU make installed, then run:
 
 ```bash
-./mk android
+./mk ./MOBILE/android
 ```
 
 to build bindings for Android. (Add `OONI_PSIPHON_TAGS=""` if you
@@ -82,7 +81,7 @@ are published along with the release notes.
 Make sure you have GNU make installed, then run:
 
 ```bash
-./mk ios
+./mk ./MOBILE/ios
 ```
 
 to build bindings for iOS. (Add `OONI_PSIPHON_TAGS=""` if you
@@ -114,7 +113,7 @@ This will generate a binary called `oohelperd` in the current directory.
 ## Specifications
 
 Every nettest (aka experiment) implemented in this repository has a companion
-spec in the [ooni/spec](https://github.com/ooni/spec) repository.
+spec in [ooni/spec](https://github.com/ooni/spec).
 
 ## Contributing
 
@@ -123,7 +122,7 @@ Please, see [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Updating dependencies
 
 ```bash
-go get -u -v ./... && go mod tidy
+go get -u -v -d ./... && go mod tidy
 ```
 
 ## Releasing
