@@ -284,7 +284,7 @@ func TestDNSOverTCPTransport(t *testing.T) {
 
 	t.Run("other functions okay with TLS", func(t *testing.T) {
 		const address = "9.9.9.9:853"
-		txp := NewDNSOverTLS((&tls.Dialer{}).DialContext, address)
+		txp := NewDNSOverTLSTransport((&tls.Dialer{}).DialContext, address)
 		if txp.RequiresPadding() != true {
 			t.Fatal("invalid RequiresPadding")
 		}

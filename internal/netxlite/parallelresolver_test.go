@@ -14,7 +14,7 @@ import (
 
 func TestParallelResolver(t *testing.T) {
 	t.Run("transport okay", func(t *testing.T) {
-		txp := NewDNSOverTLS((&tls.Dialer{}).DialContext, "8.8.8.8:853")
+		txp := NewDNSOverTLSTransport((&tls.Dialer{}).DialContext, "8.8.8.8:853")
 		r := NewUnwrappedParallelResolver(txp)
 		rtx := r.Transport()
 		if rtx.Network() != "dot" || rtx.Address() != "8.8.8.8:853" {

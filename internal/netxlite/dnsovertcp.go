@@ -39,29 +39,29 @@ type DNSOverTCPTransport struct {
 //
 // - address is the endpoint address (e.g., 8.8.8.8:53).
 func NewDNSOverTCPTransport(dial DialContextFunc, address string) *DNSOverTCPTransport {
-	return &DNSOverTCPTransport{
-		dial:            dial,
-		decoder:         &DNSDecoderMiekg{},
-		address:         address,
-		network:         "tcp",
-		requiresPadding: false,
-	}
+	return newDNSOverTCPOrTLSTransport(dial, "tcp", address, false)
 }
 
-// NewDNSOverTLS creates a new DNSOverTLS transport.
+// NewDNSOverTLSTransport creates a new DNSOverTLS transport.
 //
 // Arguments:
 //
 // - dial is a function with the net.Dialer.DialContext's signature;
 //
 // - address is the endpoint address (e.g., 8.8.8.8:853).
-func NewDNSOverTLS(dial DialContextFunc, address string) *DNSOverTCPTransport {
+func NewDNSOverTLSTransport(dial DialContextFunc, address string) *DNSOverTCPTransport {
+	return newDNSOverTCPOrTLSTransport(dial, "dot", address, true)
+}
+
+// newDNSOverTCPOrTLSTransport is the common factory for creating a transport
+func newDNSOverTCPOrTLSTransport(
+	dial DialContextFunc, network, address string, padding bool) *DNSOverTCPTransport {
 	return &DNSOverTCPTransport{
 		dial:            dial,
 		decoder:         &DNSDecoderMiekg{},
 		address:         address,
-		network:         "dot",
-		requiresPadding: true,
+		network:         network,
+		requiresPadding: padding,
 	}
 }
 
