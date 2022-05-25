@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 var (
@@ -86,10 +86,11 @@ func (c ipLookupClient) doWithCustomFunc(
 	// Implementation note: we MUST use an HTTP client that we're
 	// sure IS NOT using any proxy. To this end, we construct a
 	// client ourself that we know is not proxied.
-	clnt := &http.Client{Transport: netx.NewHTTPTransport(netx.Config{
-		Logger:       c.Logger,
-		FullResolver: c.Resolver,
-	})}
+	dialer := netxlite.NewDialerWithResolver(c.Logger, c.Resolver)
+	handshaker := netxlite.NewTLSHandshakerStdlib(c.Logger)
+	tlsDialer := netxlite.NewTLSDialer(dialer, handshaker)
+	txp := netxlite.NewHTTPTransport(c.Logger, dialer, tlsDialer)
+	clnt := &http.Client{Transport: txp}
 	defer clnt.CloseIdleConnections()
 	ip, err := fn(ctx, clnt, c.Logger, c.UserAgent)
 	if err != nil {
