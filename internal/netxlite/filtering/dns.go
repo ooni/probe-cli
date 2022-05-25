@@ -226,8 +226,10 @@ func (p *DNSProxy) proxy(origQuery *dns.Msg) (*dns.Msg, error) {
 	if err != nil {
 		return nil, err
 	}
-	_ = response    // FIXME
-	return nil, nil // FIXME
+	outResp := &dns.Msg{}
+	err = outResp.Unpack(response.Bytes())
+	runtimex.PanicOnError(err, "outResp.Unpack should not fail")
+	return outResp, nil
 }
 
 func (p *DNSProxy) cache(name string, query *dns.Msg) *dns.Msg {

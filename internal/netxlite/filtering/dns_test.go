@@ -283,9 +283,7 @@ func TestDNSProxy(t *testing.T) {
 					if len(p) < len(data) {
 						panic("buffer too small")
 					}
-					for i := 0; i < len(data); i++ {
-						p[i] = data[i]
-					}
+					copy(p, data)
 					return len(data), &net.UDPAddr{}, nil
 				},
 			}
@@ -314,9 +312,7 @@ func TestDNSProxy(t *testing.T) {
 					if len(p) < len(data) {
 						panic("buffer too small")
 					}
-					for i := 0; i < len(data); i++ {
-						p[i] = data[i]
-					}
+					copy(p, data)
 					return len(data), &net.UDPAddr{}, nil
 				},
 			}
@@ -345,7 +341,7 @@ func TestDNSProxy(t *testing.T) {
 			expected := errors.New("mocked error")
 			p := &DNSProxy{
 				Upstream: &mocks.DNSTransport{
-					MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 						return nil, expected
 					},
 					MockCloseIdleConnections: func() {},
@@ -353,24 +349,6 @@ func TestDNSProxy(t *testing.T) {
 			}
 			reply, err := p.proxy(&dns.Msg{})
 			if !errors.Is(err, expected) {
-				t.Fatal("unexpected err", err)
-			}
-			if reply != nil {
-				t.Fatal("expected nil reply here")
-			}
-		})
-
-		t.Run("Unpack fails", func(t *testing.T) {
-			p := &DNSProxy{
-				Upstream: &mocks.DNSTransport{
-					MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-						return make([]byte, 1), nil
-					},
-					MockCloseIdleConnections: func() {},
-				},
-			}
-			reply, err := p.proxy(&dns.Msg{})
-			if err == nil || !strings.HasSuffix(err.Error(), "overflow unpacking uint16") {
 				t.Fatal("unexpected err", err)
 			}
 			if reply != nil {

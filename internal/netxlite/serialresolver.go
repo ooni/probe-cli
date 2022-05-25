@@ -26,9 +26,6 @@ import (
 // QUIRK: unlike the ParallelResolver, this resolver's LookupHost retries
 // each query three times for soft errors.
 type SerialResolver struct {
-	// Encoder is the MANDATORY encoder to use.
-	Encoder model.DNSEncoder
-
 	// NumTimeouts is MANDATORY and counts the number of timeouts.
 	NumTimeouts *atomicx.Int64
 
@@ -39,7 +36,6 @@ type SerialResolver struct {
 // NewSerialResolver creates a new SerialResolver instance.
 func NewSerialResolver(t model.DNSTransport) *SerialResolver {
 	return &SerialResolver{
-		Encoder:     &DNSEncoderMiekg{},
 		NumTimeouts: &atomicx.Int64{},
 		Txp:         t,
 	}
@@ -78,13 +74,17 @@ func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]str
 	}
 	addrs = append(addrs, addrsA...)
 	addrs = append(addrs, addrsAAAA...)
+	if len(addrs) < 1 {
+		return nil, ErrOODNSNoAnswer
+	}
 	return addrs, nil
 }
 
 // LookupHTTPS implements Resolver.LookupHTTPS.
 func (r *SerialResolver) LookupHTTPS(
 	ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
-	query := r.Encoder.Encode(hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
 	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,8 @@ func (r *SerialResolver) lookupHostWithRetry(
 // qtype (dns.A or dns.AAAA) without retrying on failure.
 func (r *SerialResolver) lookupHostWithoutRetry(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
-	query := r.Encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
 	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
@@ -135,7 +136,8 @@ func (r *SerialResolver) lookupHostWithoutRetry(
 // LookupNS implements Resolver.LookupNS.
 func (r *SerialResolver) LookupNS(
 	ctx context.Context, hostname string) ([]*net.NS, error) {
-	query := r.Encoder.Encode(hostname, dns.TypeNS, r.Txp.RequiresPadding())
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, dns.TypeNS, r.Txp.RequiresPadding())
 	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err

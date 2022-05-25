@@ -9,7 +9,6 @@ import (
 	"net"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -19,12 +18,6 @@ import (
 // You should probably use NewUnwrappedParallelResolver to
 // create a new instance of this type.
 type ParallelResolver struct {
-	// Encoder is the MANDATORY encoder to use.
-	Encoder model.DNSEncoder
-
-	// NumTimeouts is MANDATORY and counts the number of timeouts.
-	NumTimeouts *atomicx.Int64
-
 	// Txp is the MANDATORY underlying DNS transport.
 	Txp model.DNSTransport
 }
@@ -33,9 +26,7 @@ type ParallelResolver struct {
 // not wrapped and you should wrap if before using it.
 func NewUnwrappedParallelResolver(t model.DNSTransport) *ParallelResolver {
 	return &ParallelResolver{
-		Encoder:     &DNSEncoderMiekg{},
-		NumTimeouts: &atomicx.Int64{},
-		Txp:         t,
+		Txp: t,
 	}
 }
 
@@ -76,13 +67,17 @@ func (r *ParallelResolver) LookupHost(ctx context.Context, hostname string) ([]s
 	var addrs []string
 	addrs = append(addrs, ares.addrs...)
 	addrs = append(addrs, aaaares.addrs...)
+	if len(addrs) < 1 {
+		return nil, ErrOODNSNoAnswer
+	}
 	return addrs, nil
 }
 
 // LookupHTTPS implements Resolver.LookupHTTPS.
 func (r *ParallelResolver) LookupHTTPS(
 	ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
-	query := r.Encoder.Encode(hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
 	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
@@ -100,7 +95,8 @@ type parallelResolverResult struct {
 // lookupHost issues a lookup host query for the specified qtype (e.g., dns.A).
 func (r *ParallelResolver) lookupHost(ctx context.Context, hostname string,
 	qtype uint16, out chan<- *parallelResolverResult) {
-	query := r.Encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
 	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		out <- &parallelResolverResult{
@@ -119,7 +115,8 @@ func (r *ParallelResolver) lookupHost(ctx context.Context, hostname string,
 // LookupNS implements Resolver.LookupNS.
 func (r *ParallelResolver) LookupNS(
 	ctx context.Context, hostname string) ([]*net.NS, error) {
-	query := r.Encoder.Encode(hostname, dns.TypeNS, r.Txp.RequiresPadding())
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, dns.TypeNS, r.Txp.RequiresPadding())
 	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
