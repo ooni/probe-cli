@@ -1,9 +1,10 @@
 package model
 
 //
-// Common HTTP definitions and errors.
+// Common HTTP definitions.
 //
 
+// Headers we use for measuring.
 const (
 	// HTTPHeaderAccept is the Accept header used for measuring.
 	HTTPHeaderAccept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
@@ -11,10 +12,16 @@ const (
 	// HTTPHeaderAcceptLanguage is the Accept-Language header used for measuring.
 	HTTPHeaderAcceptLanguage = "en-US,en;q=0.9"
 
-	// HTTPHeaderUserAgent is the User-Agent header used for measuring.
+	// HTTPHeaderUserAgent is the User-Agent header used for measuring. The current header
+	// is 13.7% of the browser population as of May 20, 2022 according to the
+	// https://techblog.willshouse.com/2012/01/03/most-common-user-agents/ webpage.
 	HTTPHeaderUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"
 )
 
+// Additional strings used to report HTTP errors. They're currently only used by
+// experiment/whatsapp but may be used by more experiments in the future. They must
+// be addressable (i.e., var and not const) because experiments typically want to
+// take their addresses to fill fields with `string|null` type.
 var (
 	// HTTPUnexpectedStatusCode indicates that we re not getting
 	// the expected (range of) HTTP status code(s).
