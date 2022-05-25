@@ -14,7 +14,9 @@ import (
 )
 
 func TestCheckReportIDWorkingAsIntended(t *testing.T) {
-	t.Skip("see https://github.com/ooni/probe/issues/2098")
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	client := probeservices.Client{
 		APIClientTemplate: httpx.APIClientTemplate{
 			BaseURL:    "https://ams-pg.ooni.org/",

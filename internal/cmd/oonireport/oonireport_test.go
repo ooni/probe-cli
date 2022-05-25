@@ -23,6 +23,9 @@ func TestReadLines(t *testing.T) {
 }
 
 func TestNewSessionAndSubmitter(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	ctx := context.Background()
 	sess := newSession(ctx)
 	if sess == nil {
@@ -57,6 +60,9 @@ func TestMainMissingFile(t *testing.T) {
 }
 
 func TestMainEmptyFile(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	defer func() {
 		var s interface{}
 		if s = recover(); s != nil {
@@ -67,6 +73,9 @@ func TestMainEmptyFile(t *testing.T) {
 }
 
 func TestSubmitAllFails(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	ctx := context.Background()
 	sess := newSession(ctx)
 	subm := newSubmitter(sess, ctx)

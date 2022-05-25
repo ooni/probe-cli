@@ -389,6 +389,9 @@ func TestTProxyOnIncomingHost(t *testing.T) {
 }
 
 func TestTProxyDial(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	t.Run("with drop SYN", func(t *testing.T) {
 		config := &TProxyConfig{
 			Endpoints: map[string]TProxyPolicy{

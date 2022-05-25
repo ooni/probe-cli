@@ -13,6 +13,7 @@ import (
 	"net"
 	"time"
 
+	ootls "github.com/ooni/oocrypto/tls"
 	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -161,7 +162,7 @@ func newTLSHandshaker(th model.TLSHandshaker, logger model.DebugLogger) model.TL
 type tlsHandshakerConfigurable struct {
 	// NewConn is the OPTIONAL factory for creating a new connection. If
 	// this factory is not set, we'll use the stdlib.
-	NewConn func(conn net.Conn, config *tls.Config) TLSConn
+	NewConn func(conn net.Conn, config *tls.Config) (TLSConn, error)
 
 	// Timeout is the OPTIONAL timeout imposed on the TLS handshake. If zero
 	// or negative, we will use default timeout of 10 seconds.
@@ -190,7 +191,10 @@ func (h *tlsHandshakerConfigurable) Handshake(
 		config = config.Clone()
 		config.RootCAs = defaultCertPool
 	}
-	tlsconn := h.newConn(conn, config)
+	tlsconn, err := h.newConn(conn, config)
+	if err != nil {
+		return nil, tls.ConnectionState{}, err
+	}
 	if err := tlsconn.HandshakeContext(ctx); err != nil {
 		return nil, tls.ConnectionState{}, err
 	}
@@ -198,11 +202,11 @@ func (h *tlsHandshakerConfigurable) Handshake(
 }
 
 // newConn creates a new TLSConn.
-func (h *tlsHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) TLSConn {
+func (h *tlsHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) (TLSConn, error) {
 	if h.NewConn != nil {
 		return h.NewConn(conn, config)
 	}
-	return tls.Client(conn, config)
+	return ootls.NewClientConnStdlib(conn, config)
 }
 
 // defaultTLSHandshaker is the default TLS handshaker.

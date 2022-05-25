@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
@@ -237,7 +236,7 @@ func TestDNSOverHTTPSTransport(t *testing.T) {
 			txp := &DNSOverHTTPSTransport{
 				Client: &mocks.HTTPClient{
 					MockDo: func(req *http.Request) (*http.Response, error) {
-						correct = req.Header.Get("User-Agent") == httpheader.UserAgent()
+						correct = req.Header.Get("User-Agent") == model.HTTPHeaderUserAgent
 						return nil, expected
 					},
 				},

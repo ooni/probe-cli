@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestUbuntuParseError(t *testing.T) {
@@ -22,7 +22,7 @@ func TestUbuntuParseError(t *testing.T) {
 			},
 		}},
 		log.Log,
-		httpheader.UserAgent(),
+		model.HTTPHeaderUserAgent,
 	)
 	if err == nil || !strings.HasPrefix(err.Error(), "XML syntax error") {
 		t.Fatalf("not the error we expected: %+v", err)
@@ -37,7 +37,7 @@ func TestIPLookupWorksUsingUbuntu(t *testing.T) {
 		context.Background(),
 		http.DefaultClient,
 		log.Log,
-		httpheader.UserAgent(),
+		model.HTTPHeaderUserAgent,
 	)
 	if err != nil {
 		t.Fatal(err)

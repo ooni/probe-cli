@@ -45,6 +45,9 @@ func TestCreateContext(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	probe := newOONIProbe(t)
 	sess, err := probe.NewSession(context.Background(), model.RunTypeManual)
 	if err != nil {

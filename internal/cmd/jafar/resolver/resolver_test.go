@@ -27,6 +27,9 @@ func TestRedirect(t *testing.T) {
 }
 
 func TestIgnore(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	server := newresolver(t, nil, nil, []string{"ooni.nu"})
 	iotimeout := "i/o timeout"
 	checkrequest(t, server, "hkgmetadb.ooni.nu", "hijacked", &iotimeout)

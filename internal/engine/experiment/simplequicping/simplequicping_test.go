@@ -186,3 +186,51 @@ func generateTLSConfig() *tls.Config {
 		NextProtos:   []string{"quic-echo-example"},
 	}
 }
+
+func TestConfig_sni(t *testing.T) {
+	type fields struct {
+		SNI string
+	}
+	type args struct {
+		address string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{{
+		name: "with config.SNI being set",
+		fields: fields{
+			SNI: "x.org",
+		},
+		args: args{
+			address: "google.com:443",
+		},
+		want: "x.org",
+	}, {
+		name:   "with invalid endpoint",
+		fields: fields{},
+		args: args{
+			address: "google.com",
+		},
+		want: "",
+	}, {
+		name:   "with valid endpoint",
+		fields: fields{},
+		args: args{
+			address: "google.com:443",
+		},
+		want: "google.com",
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Config{
+				SNI: tt.fields.SNI,
+			}
+			if got := c.sni(tt.args.address); got != tt.want {
+				t.Fatalf("Config.sni() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

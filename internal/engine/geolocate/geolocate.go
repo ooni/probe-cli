@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -114,8 +114,7 @@ func NewTask(config Config) *Task {
 		config.UserAgent = fmt.Sprintf("ooniprobe-engine/%s", version.Version)
 	}
 	if config.Resolver == nil {
-		config.Resolver = netx.NewResolver(
-			netx.Config{Logger: config.Logger})
+		config.Resolver = netxlite.NewResolverStdlib(config.Logger)
 	}
 	return &Task{
 		countryLookupper:     mmdbLookupper{},

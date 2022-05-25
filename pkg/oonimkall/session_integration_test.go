@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
@@ -33,9 +32,6 @@ func NewSessionForTesting() (*oonimkall.Session, error) {
 }
 
 func TestNewSessionWithInvalidStateDir(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
 	sess, err := oonimkall.NewSession(&oonimkall.SessionConfig{
 		StateDir: "",
 	})
@@ -44,29 +40,6 @@ func TestNewSessionWithInvalidStateDir(t *testing.T) {
 	}
 	if sess != nil {
 		t.Fatal("expected a nil Session here")
-	}
-}
-
-func TestMaybeUpdateResourcesWithCancelledContext(t *testing.T) {
-	// Note that MaybeUpdateResources is now a deprecated stub that
-	// does nothing. We will remove it when we bump major.
-	dir, err := ioutil.TempDir("", "xx")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-	sess, err := NewSessionForTestingWithAssetsDir(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx := sess.NewContext()
-	ctx.Cancel() // cause immediate failure
-	err = sess.MaybeUpdateResources(ctx)
-	// Explanation: we embed resources. We should change the API
-	// and remove the context. Until we do that, let us just assert
-	// that we have embedding and the context does not matter.
-	if err != nil {
-		t.Fatal(err)
 	}
 }
 
@@ -250,6 +223,9 @@ func TestSubmitCancelContextAfterFirstSubmission(t *testing.T) {
 }
 
 func TestCheckInSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
@@ -259,7 +235,7 @@ func TestCheckInSuccess(t *testing.T) {
 		Charging:        true,
 		OnWiFi:          true,
 		Platform:        "android",
-		RunType:         model.RunTypeTimed,
+		RunType:         string(model.RunTypeTimed),
 		SoftwareName:    "ooniprobe-android",
 		SoftwareVersion: "2.7.1",
 		WebConnectivity: &oonimkall.CheckInConfigWebConnectivity{},
@@ -298,6 +274,9 @@ func TestCheckInSuccess(t *testing.T) {
 }
 
 func TestCheckInLookupLocationFailure(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
@@ -307,7 +286,7 @@ func TestCheckInLookupLocationFailure(t *testing.T) {
 		Charging:        true,
 		OnWiFi:          true,
 		Platform:        "android",
-		RunType:         model.RunTypeTimed,
+		RunType:         string(model.RunTypeTimed),
 		SoftwareName:    "ooniprobe-android",
 		SoftwareVersion: "2.7.1",
 		WebConnectivity: &oonimkall.CheckInConfigWebConnectivity{},
@@ -325,6 +304,9 @@ func TestCheckInLookupLocationFailure(t *testing.T) {
 }
 
 func TestCheckInNewProbeServicesFailure(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
@@ -337,7 +319,7 @@ func TestCheckInNewProbeServicesFailure(t *testing.T) {
 		Charging:        true,
 		OnWiFi:          true,
 		Platform:        "android",
-		RunType:         model.RunTypeTimed,
+		RunType:         string(model.RunTypeTimed),
 		SoftwareName:    "ooniprobe-android",
 		SoftwareVersion: "2.7.1",
 		WebConnectivity: &oonimkall.CheckInConfigWebConnectivity{},
@@ -354,6 +336,9 @@ func TestCheckInNewProbeServicesFailure(t *testing.T) {
 }
 
 func TestCheckInCheckInFailure(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
@@ -366,7 +351,7 @@ func TestCheckInCheckInFailure(t *testing.T) {
 		Charging:        true,
 		OnWiFi:          true,
 		Platform:        "android",
-		RunType:         model.RunTypeTimed,
+		RunType:         string(model.RunTypeTimed),
 		SoftwareName:    "ooniprobe-android",
 		SoftwareVersion: "2.7.1",
 		WebConnectivity: &oonimkall.CheckInConfigWebConnectivity{},
@@ -383,6 +368,9 @@ func TestCheckInCheckInFailure(t *testing.T) {
 }
 
 func TestCheckInNoParams(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)
@@ -392,7 +380,7 @@ func TestCheckInNoParams(t *testing.T) {
 		Charging:        true,
 		OnWiFi:          true,
 		Platform:        "android",
-		RunType:         model.RunTypeTimed,
+		RunType:         string(model.RunTypeTimed),
 		SoftwareName:    "ooniprobe-android",
 		SoftwareVersion: "2.7.1",
 	}
@@ -441,6 +429,9 @@ func TestFetchURLListSuccess(t *testing.T) {
 }
 
 func TestFetchURLListWithCC(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	sess, err := NewSessionForTesting()
 	if err != nil {
 		t.Fatal(err)

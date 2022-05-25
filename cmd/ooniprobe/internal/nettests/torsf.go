@@ -12,3 +12,5 @@ func (h TorSf) Run(ctl *Controller) error {
 	}
 	return ctl.Run(builder, []string{""})
 }
+
+func (h TorSf) onlyBackground() {}

@@ -11,17 +11,25 @@ func init() {
 }
 
 func TestCheck(t *testing.T) {
-	t.Skip("see https://github.com/ooni/probe/issues/2098")
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	*mode = "check"
 	main()
 }
 
 func TestRaw(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	*mode = "raw"
 	main()
 }
 
 func TestMeta(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	*mode = "meta"
 	main()
 }

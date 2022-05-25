@@ -259,8 +259,14 @@ func (m Measurer) Run(
 	httpClient := &http.Client{
 		Transport: netx.NewHTTPTransport(netx.Config{
 			ContextByteCounting: true,
-			DialSaver:           saver,
-			Logger:              sess.Logger(),
+			// Implements shaping if the user builds using `-tags shaping`
+			// See https://github.com/ooni/probe/issues/2112
+			Dialer: netxlite.NewMaybeShapingDialer(netx.NewDialer(netx.Config{
+				ContextByteCounting: true,
+				DialSaver:           saver,
+				Logger:              sess.Logger(),
+			})),
+			Logger: sess.Logger(),
 		}),
 	}
 	defer httpClient.CloseIdleConnections()

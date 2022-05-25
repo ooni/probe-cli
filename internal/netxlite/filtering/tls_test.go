@@ -14,6 +14,9 @@ import (
 )
 
 func TestTLSProxy(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	newproxy := func(action TLSAction) (net.Listener, <-chan interface{}, error) {
 		p := &TLSProxy{
 			OnIncomingSNI: func(sni string) TLSAction {

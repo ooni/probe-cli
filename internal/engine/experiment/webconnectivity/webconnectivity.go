@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity/internal"
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -174,9 +173,9 @@ func (m Measurer) Run(
 	tk.Control, err = Control(ctx, sess, testhelper.Address, ControlRequest{
 		HTTPRequest: URL.String(),
 		HTTPRequestHeaders: map[string][]string{
-			"Accept":          {httpheader.Accept()},
-			"Accept-Language": {httpheader.AcceptLanguage()},
-			"User-Agent":      {httpheader.UserAgent()},
+			"Accept":          {model.HTTPHeaderAccept},
+			"Accept-Language": {model.HTTPHeaderAcceptLanguage},
+			"User-Agent":      {model.HTTPHeaderUserAgent},
 		},
 		TCPConnect: epnts.Endpoints(),
 	})
