@@ -317,7 +317,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		if err != nil {
 			return nil, err
 		}
-		var txp model.DNSTransport = netxlite.NewDNSOverTLS(
+		var txp model.DNSTransport = netxlite.NewDNSOverTLSTransport(
 			tlsDialer.DialTLSContext, endpoint)
 		if config.ResolveSaver != nil {
 			txp = resolver.SaverDNSTransport{

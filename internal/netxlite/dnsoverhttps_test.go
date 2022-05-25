@@ -15,14 +15,36 @@ import (
 
 func TestDNSOverHTTPSTransport(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
+		t.Run("query serialization failure", func(t *testing.T) {
+			txp := NewDNSOverHTTPSTransport(http.DefaultClient, "https://1.1.1.1/dns-query")
+			expected := errors.New("mocked error")
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return nil, expected
+				},
+			}
+			resp, err := txp.RoundTrip(context.Background(), query)
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
+			}
+			if resp != nil {
+				t.Fatal("expected no response here")
+			}
+		})
+
 		t.Run("NewRequestFailure", func(t *testing.T) {
 			const invalidURL = "\t"
 			txp := NewDNSOverHTTPSTransport(http.DefaultClient, invalidURL)
-			data, err := txp.RoundTrip(context.Background(), nil)
-			if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
-				t.Fatal("expected an error here")
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 17), nil
+				},
 			}
-			if data != nil {
+			resp, err := txp.RoundTrip(context.Background(), query)
+			if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
+				t.Fatal("unexpected err", err)
+			}
+			if resp != nil {
 				t.Fatal("expected no response here")
 			}
 		})
@@ -37,11 +59,16 @@ func TestDNSOverHTTPSTransport(t *testing.T) {
 				},
 				URL: "https://cloudflare-dns.com/dns-query",
 			}
-			data, err := txp.RoundTrip(context.Background(), nil)
-			if !errors.Is(err, expected) {
-				t.Fatal("expected an error here")
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 17), nil
+				},
 			}
-			if data != nil {
+			resp, err := txp.RoundTrip(context.Background(), query)
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
+			}
+			if resp != nil {
 				t.Fatal("expected no response here")
 			}
 		})
@@ -58,11 +85,16 @@ func TestDNSOverHTTPSTransport(t *testing.T) {
 				},
 				URL: "https://cloudflare-dns.com/dns-query",
 			}
-			data, err := txp.RoundTrip(context.Background(), nil)
-			if err == nil || err.Error() != "doh: server returned error" {
-				t.Fatal("expected an error here")
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 17), nil
+				},
 			}
-			if data != nil {
+			resp, err := txp.RoundTrip(context.Background(), query)
+			if err == nil || err.Error() != "doh: server returned error" {
+				t.Fatal("unexpected err", err)
+			}
+			if resp != nil {
 				t.Fatal("expected no response here")
 			}
 		})
@@ -79,11 +111,86 @@ func TestDNSOverHTTPSTransport(t *testing.T) {
 				},
 				URL: "https://cloudflare-dns.com/dns-query",
 			}
-			data, err := txp.RoundTrip(context.Background(), nil)
-			if err == nil || err.Error() != "doh: invalid content-type" {
-				t.Fatal("expected an error here")
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 17), nil
+				},
 			}
-			if data != nil {
+			resp, err := txp.RoundTrip(context.Background(), query)
+			if err == nil || err.Error() != "doh: invalid content-type" {
+				t.Fatal("unexpected err", err)
+			}
+			if resp != nil {
+				t.Fatal("expected no response here")
+			}
+		})
+
+		t.Run("ReadAllContext fails", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			txp := &DNSOverHTTPSTransport{
+				Client: &mocks.HTTPClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body: io.NopCloser(&mocks.Reader{
+								MockRead: func(b []byte) (int, error) {
+									return 0, expected
+								},
+							}),
+							Header: http.Header{
+								"Content-Type": []string{"application/dns-message"},
+							},
+						}, nil
+					},
+				},
+				URL: "https://cloudflare-dns.com/dns-query",
+			}
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 17), nil
+				},
+			}
+			resp, err := txp.RoundTrip(context.Background(), query)
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
+			}
+			if resp != nil {
+				t.Fatal("expected no response here")
+			}
+		})
+
+		t.Run("decode response failure", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			body := []byte("AAA")
+			txp := &DNSOverHTTPSTransport{
+				Client: &mocks.HTTPClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       io.NopCloser(bytes.NewReader(body)),
+							Header: http.Header{
+								"Content-Type": []string{"application/dns-message"},
+							},
+						}, nil
+					},
+				},
+				URL: "https://cloudflare-dns.com/dns-query",
+				Decoder: &mocks.DNSDecoder{
+					MockDecodeResponse: func(data []byte, query model.DNSQuery) (model.DNSResponse, error) {
+						return nil, expected
+					},
+				},
+			}
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 17), nil
+				},
+			}
+			resp, err := txp.RoundTrip(context.Background(), query)
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
+			}
+			if resp != nil {
 				t.Fatal("expected no response here")
 			}
 		})
@@ -103,13 +210,23 @@ func TestDNSOverHTTPSTransport(t *testing.T) {
 					},
 				},
 				URL: "https://cloudflare-dns.com/dns-query",
+				Decoder: &mocks.DNSDecoder{
+					MockDecodeResponse: func(data []byte, query model.DNSQuery) (model.DNSResponse, error) {
+						return &mocks.DNSResponse{}, nil
+					},
+				},
 			}
-			data, err := txp.RoundTrip(context.Background(), nil)
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 17), nil
+				},
+			}
+			resp, err := txp.RoundTrip(context.Background(), query)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(data, body) {
-				t.Fatal("not the response we expected")
+			if resp == nil {
+				t.Fatal("expected non-nil resp here")
 			}
 		})
 
@@ -125,7 +242,12 @@ func TestDNSOverHTTPSTransport(t *testing.T) {
 				},
 				URL: "https://cloudflare-dns.com/dns-query",
 			}
-			data, err := txp.RoundTrip(context.Background(), nil)
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 17), nil
+				},
+			}
+			data, err := txp.RoundTrip(context.Background(), query)
 			if !errors.Is(err, expected) {
 				t.Fatal("expected an error here")
 			}
@@ -151,18 +273,22 @@ func TestDNSOverHTTPSTransport(t *testing.T) {
 				URL:          "https://cloudflare-dns.com/dns-query",
 				HostOverride: hostOverride,
 			}
-			data, err := txp.RoundTrip(context.Background(), nil)
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 17), nil
+				},
+			}
+			resp, err := txp.RoundTrip(context.Background(), query)
 			if !errors.Is(err, expected) {
 				t.Fatal("expected an error here")
 			}
-			if data != nil {
+			if resp != nil {
 				t.Fatal("expected no response here")
 			}
 			if !correct {
 				t.Fatal("did not see correct host override")
 			}
 		})
-
 	})
 
 	t.Run("other functions behave correctly", func(t *testing.T) {

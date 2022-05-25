@@ -17,7 +17,6 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
-	github.com/hexops/gotextdiff v1.0.3
 	github.com/iancoleman/strcase v0.2.0
 	github.com/lucas-clemente/quic-go v0.27.0
 	github.com/mattn/go-colorable v0.1.12

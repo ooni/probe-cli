@@ -14,6 +14,7 @@ import (
 // DNSOverUDPTransport is a DNS-over-UDP DNSTransport.
 type DNSOverUDPTransport struct {
 	dialer  model.Dialer
+	decoder model.DNSDecoder
 	address string
 }
 
@@ -25,11 +26,20 @@ type DNSOverUDPTransport struct {
 //
 // - address is the endpoint address (e.g., 8.8.8.8:53).
 func NewDNSOverUDPTransport(dialer model.Dialer, address string) *DNSOverUDPTransport {
-	return &DNSOverUDPTransport{dialer: dialer, address: address}
+	return &DNSOverUDPTransport{
+		dialer:  dialer,
+		decoder: &DNSDecoderMiekg{},
+		address: address,
+	}
 }
 
 // RoundTrip sends a query and receives a reply.
-func (t *DNSOverUDPTransport) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
+func (t *DNSOverUDPTransport) RoundTrip(
+	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+	rawQuery, err := query.Bytes()
+	if err != nil {
+		return nil, err
+	}
 	conn, err := t.dialer.DialContext(ctx, "udp", t.address)
 	if err != nil {
 		return nil, err
@@ -37,19 +47,19 @@ func (t *DNSOverUDPTransport) RoundTrip(ctx context.Context, query []byte) ([]by
 	defer conn.Close()
 	// Use five seconds timeout like Bionic does. See
 	// https://labs.ripe.net/Members/baptiste_jonglez_1/persistent-dns-connections-for-reliability-and-performance
-	if err = conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
+	const iotimeout = 5 * time.Second
+	conn.SetDeadline(time.Now().Add(iotimeout))
+	if _, err = conn.Write(rawQuery); err != nil {
 		return nil, err
 	}
-	if _, err = conn.Write(query); err != nil {
-		return nil, err
-	}
-	reply := make([]byte, 1<<17)
-	var n int
-	n, err = conn.Read(reply)
+	const maxmessagesize = 1 << 17
+	rawResponse := make([]byte, maxmessagesize)
+	count, err := conn.Read(rawResponse)
 	if err != nil {
 		return nil, err
 	}
-	return reply[:n], nil
+	rawResponse = rawResponse[:count]
+	return t.decoder.DecodeResponse(rawResponse, query)
 }
 
 // RequiresPadding returns false for UDP according to RFC8467.

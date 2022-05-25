@@ -99,14 +99,14 @@ func TestNewResolverTCPDomain(t *testing.T) {
 
 func TestNewResolverDoTAddress(t *testing.T) {
 	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverTLS(new(tls.Dialer).DialContext, "8.8.8.8:853"))
+		netxlite.NewDNSOverTLSTransport(new(tls.Dialer).DialContext, "8.8.8.8:853"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverDoTDomain(t *testing.T) {
 	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverTLS(new(tls.Dialer).DialContext, "dns.google.com:853"))
+		netxlite.NewDNSOverTLSTransport(new(tls.Dialer).DialContext, "dns.google.com:853"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }

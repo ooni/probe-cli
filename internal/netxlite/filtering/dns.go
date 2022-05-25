@@ -1,15 +1,12 @@
 package filtering
 
 import (
-	"context"
 	"errors"
 	"io"
 	"net"
-	"net/http"
 	"strings"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -51,17 +48,11 @@ type DNSProxy struct {
 	// receive a query for the given domain.
 	OnQuery func(domain string) DNSAction
 
-	// Upstream is the OPTIONAL upstream transport.
-	Upstream DNSTransport
+	// UpstreamEndpoint is the OPTIONAL upstream transport endpoint.
+	UpstreamEndpoint string
 
 	// mockableReply allows to mock DNSProxy.reply in tests.
 	mockableReply func(query *dns.Msg) (*dns.Msg, error)
-}
-
-// DNSTransport is the type we expect from an upstream DNS transport.
-type DNSTransport interface {
-	RoundTrip(ctx context.Context, query []byte) ([]byte, error)
-	CloseIdleConnections()
 }
 
 // DNSListener is the interface returned by DNSProxy.Start
@@ -204,23 +195,24 @@ func (p *DNSProxy) compose(query *dns.Msg, ips ...net.IP) *dns.Msg {
 	return reply
 }
 
+var (
+	// errDNSExpectedSingleQuestion means we expected to see a single question
+	errDNSExpectedSingleQuestion = errors.New("filtering: expected single DNS question")
+
+	// errDNSExpectedQueryNotResponse means we expected to see a query.
+	errDNSExpectedQueryNotResponse = errors.New("filtering: expected query not response")
+)
+
 func (p *DNSProxy) proxy(query *dns.Msg) (*dns.Msg, error) {
-	queryBytes, err := query.Pack()
-	if err != nil {
-		return nil, err
+	if query.Response {
+		return nil, errDNSExpectedQueryNotResponse
 	}
-	txp := p.dnstransport()
-	defer txp.CloseIdleConnections()
-	ctx := context.Background()
-	replyBytes, err := txp.RoundTrip(ctx, queryBytes)
-	if err != nil {
-		return nil, err
+	if len(query.Question) != 1 {
+		return nil, errDNSExpectedSingleQuestion
 	}
-	reply := &dns.Msg{}
-	if err := reply.Unpack(replyBytes); err != nil {
-		return nil, err
-	}
-	return reply, nil
+	clnt := &dns.Client{}
+	resp, _, err := clnt.Exchange(query, p.upstreamEndpoint())
+	return resp, err
 }
 
 func (p *DNSProxy) cache(name string, query *dns.Msg) *dns.Msg {
@@ -237,10 +229,9 @@ func (p *DNSProxy) cache(name string, query *dns.Msg) *dns.Msg {
 	return p.compose(query, ipAddrs...)
 }
 
-func (p *DNSProxy) dnstransport() DNSTransport {
-	if p.Upstream != nil {
-		return p.Upstream
+func (p *DNSProxy) upstreamEndpoint() string {
+	if p.UpstreamEndpoint != "" {
+		return p.UpstreamEndpoint
 	}
-	const URL = "https://1.1.1.1/dns-query"
-	return netxlite.NewDNSOverHTTPSTransport(http.DefaultClient, URL)
+	return "8.8.8.8:53"
 }

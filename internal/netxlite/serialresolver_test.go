@@ -7,6 +7,7 @@ import (
 	"net"
 	"testing"
 
+	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
@@ -30,7 +31,7 @@ func (err *errorWithTimeout) Unwrap() error {
 
 func TestSerialResolver(t *testing.T) {
 	t.Run("transport okay", func(t *testing.T) {
-		txp := NewDNSOverTLS((&tls.Dialer{}).DialContext, "8.8.8.8:853")
+		txp := NewDNSOverTLSTransport((&tls.Dialer{}).DialContext, "8.8.8.8:853")
 		r := NewSerialResolver(txp)
 		rtx := r.Transport()
 		if rtx.Network() != "dot" || rtx.Address() != "8.8.8.8:853" {
@@ -45,30 +46,10 @@ func TestSerialResolver(t *testing.T) {
 	})
 
 	t.Run("LookupHost", func(t *testing.T) {
-		t.Run("Encode error", func(t *testing.T) {
-			mocked := errors.New("mocked error")
-			txp := NewDNSOverTLS((&tls.Dialer{}).DialContext, "8.8.8.8:853")
-			r := SerialResolver{
-				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
-						return nil, 0, mocked
-					},
-				},
-				Txp: txp,
-			}
-			addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
-			if !errors.Is(err, mocked) {
-				t.Fatal("not the error we expected")
-			}
-			if addrs != nil {
-				t.Fatal("expected nil address here")
-			}
-		})
-
 		t.Run("RoundTrip error", func(t *testing.T) {
 			mocked := errors.New("mocked error")
 			txp := &mocks.DNSTransport{
-				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+				MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 					return nil, mocked
 				},
 				MockRequiresPadding: func() bool {
@@ -87,8 +68,13 @@ func TestSerialResolver(t *testing.T) {
 
 		t.Run("empty reply", func(t *testing.T) {
 			txp := &mocks.DNSTransport{
-				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-					return dnsGenLookupHostReplySuccess(query), nil
+				MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+					response := &mocks.DNSResponse{
+						MockDecodeLookupHost: func() ([]string, error) {
+							return nil, nil
+						},
+					}
+					return response, nil
 				},
 				MockRequiresPadding: func() bool {
 					return true
@@ -106,8 +92,16 @@ func TestSerialResolver(t *testing.T) {
 
 		t.Run("with A reply", func(t *testing.T) {
 			txp := &mocks.DNSTransport{
-				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-					return dnsGenLookupHostReplySuccess(query, "8.8.8.8"), nil
+				MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+					response := &mocks.DNSResponse{
+						MockDecodeLookupHost: func() ([]string, error) {
+							if query.Type() != dns.TypeA {
+								return nil, nil
+							}
+							return []string{"8.8.8.8"}, nil
+						},
+					}
+					return response, nil
 				},
 				MockRequiresPadding: func() bool {
 					return true
@@ -125,8 +119,16 @@ func TestSerialResolver(t *testing.T) {
 
 		t.Run("with AAAA reply", func(t *testing.T) {
 			txp := &mocks.DNSTransport{
-				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-					return dnsGenLookupHostReplySuccess(query, "::1"), nil
+				MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+					response := &mocks.DNSResponse{
+						MockDecodeLookupHost: func() ([]string, error) {
+							if query.Type() != dns.TypeAAAA {
+								return nil, nil
+							}
+							return []string{"::1"}, nil
+						},
+					}
+					return response, nil
 				},
 				MockRequiresPadding: func() bool {
 					return true
@@ -144,11 +146,12 @@ func TestSerialResolver(t *testing.T) {
 
 		t.Run("with timeout", func(t *testing.T) {
 			txp := &mocks.DNSTransport{
-				MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-					return nil, &net.OpError{
+				MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+					err := &net.OpError{
 						Err: &errorWithTimeout{ETIMEDOUT},
 						Op:  "dial",
 					}
+					return nil, err
 				},
 				MockRequiresPadding: func() bool {
 					return true
@@ -184,44 +187,12 @@ func TestSerialResolver(t *testing.T) {
 	})
 
 	t.Run("LookupHTTPS", func(t *testing.T) {
-		t.Run("for encoding error", func(t *testing.T) {
-			expected := errors.New("mocked error")
-			r := &SerialResolver{
-				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
-						return nil, 0, expected
-					},
-				},
-				Decoder:     nil,
-				NumTimeouts: &atomicx.Int64{},
-				Txp: &mocks.DNSTransport{
-					MockRequiresPadding: func() bool {
-						return false
-					},
-				},
-			}
-			ctx := context.Background()
-			https, err := r.LookupHTTPS(ctx, "example.com")
-			if !errors.Is(err, expected) {
-				t.Fatal("unexpected err", err)
-			}
-			if https != nil {
-				t.Fatal("unexpected result")
-			}
-		})
-
 		t.Run("for round-trip error", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &SerialResolver{
-				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
-						return make([]byte, 64), 0, nil
-					},
-				},
-				Decoder:     nil,
 				NumTimeouts: &atomicx.Int64{},
 				Txp: &mocks.DNSTransport{
-					MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 						return nil, expected
 					},
 					MockRequiresPadding: func() bool {
@@ -242,20 +213,15 @@ func TestSerialResolver(t *testing.T) {
 		t.Run("for decode error", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &SerialResolver{
-				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
-						return make([]byte, 64), 0, nil
-					},
-				},
-				Decoder: &mocks.DNSDecoder{
-					MockDecodeHTTPS: func(reply []byte, queryID uint16) (*model.HTTPSSvc, error) {
-						return nil, expected
-					},
-				},
 				NumTimeouts: &atomicx.Int64{},
 				Txp: &mocks.DNSTransport{
-					MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-						return make([]byte, 128), nil
+					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+						response := &mocks.DNSResponse{
+							MockDecodeHTTPS: func() (*model.HTTPSSvc, error) {
+								return nil, expected
+							},
+						}
+						return response, nil
 					},
 					MockRequiresPadding: func() bool {
 						return false
@@ -274,44 +240,12 @@ func TestSerialResolver(t *testing.T) {
 	})
 
 	t.Run("LookupNS", func(t *testing.T) {
-		t.Run("for encoding error", func(t *testing.T) {
-			expected := errors.New("mocked error")
-			r := &SerialResolver{
-				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
-						return nil, 0, expected
-					},
-				},
-				Decoder:     nil,
-				NumTimeouts: &atomicx.Int64{},
-				Txp: &mocks.DNSTransport{
-					MockRequiresPadding: func() bool {
-						return false
-					},
-				},
-			}
-			ctx := context.Background()
-			ns, err := r.LookupNS(ctx, "example.com")
-			if !errors.Is(err, expected) {
-				t.Fatal("unexpected err", err)
-			}
-			if ns != nil {
-				t.Fatal("unexpected result")
-			}
-		})
-
 		t.Run("for round-trip error", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &SerialResolver{
-				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
-						return make([]byte, 64), 0, nil
-					},
-				},
-				Decoder:     nil,
 				NumTimeouts: &atomicx.Int64{},
 				Txp: &mocks.DNSTransport{
-					MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
+					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 						return nil, expected
 					},
 					MockRequiresPadding: func() bool {
@@ -332,20 +266,15 @@ func TestSerialResolver(t *testing.T) {
 		t.Run("for decode error", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			r := &SerialResolver{
-				Encoder: &mocks.DNSEncoder{
-					MockEncode: func(domain string, qtype uint16, padding bool) ([]byte, uint16, error) {
-						return make([]byte, 64), 0, nil
-					},
-				},
-				Decoder: &mocks.DNSDecoder{
-					MockDecodeNS: func(reply []byte, queryID uint16) ([]*net.NS, error) {
-						return nil, expected
-					},
-				},
 				NumTimeouts: &atomicx.Int64{},
 				Txp: &mocks.DNSTransport{
-					MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-						return make([]byte, 128), nil
+					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+						response := &mocks.DNSResponse{
+							MockDecodeNS: func() ([]*net.NS, error) {
+								return nil, expected
+							},
+						}
+						return response, nil
 					},
 					MockRequiresPadding: func() bool {
 						return false

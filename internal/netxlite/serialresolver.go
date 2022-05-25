@@ -26,12 +26,6 @@ import (
 // QUIRK: unlike the ParallelResolver, this resolver's LookupHost retries
 // each query three times for soft errors.
 type SerialResolver struct {
-	// Encoder is the MANDATORY encoder to use.
-	Encoder model.DNSEncoder
-
-	// Decoder is the MANDATORY decoder to use.
-	Decoder model.DNSDecoder
-
 	// NumTimeouts is MANDATORY and counts the number of timeouts.
 	NumTimeouts *atomicx.Int64
 
@@ -42,8 +36,6 @@ type SerialResolver struct {
 // NewSerialResolver creates a new SerialResolver instance.
 func NewSerialResolver(t model.DNSTransport) *SerialResolver {
 	return &SerialResolver{
-		Encoder:     &DNSEncoderMiekg{},
-		Decoder:     &DNSDecoderMiekg{},
 		NumTimeouts: &atomicx.Int64{},
 		Txp:         t,
 	}
@@ -82,22 +74,22 @@ func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]str
 	}
 	addrs = append(addrs, addrsA...)
 	addrs = append(addrs, addrsAAAA...)
+	if len(addrs) < 1 {
+		return nil, ErrOODNSNoAnswer
+	}
 	return addrs, nil
 }
 
 // LookupHTTPS implements Resolver.LookupHTTPS.
 func (r *SerialResolver) LookupHTTPS(
 	ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
-	querydata, queryID, err := r.Encoder.Encode(
-		hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
+	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	replydata, err := r.Txp.RoundTrip(ctx, querydata)
-	if err != nil {
-		return nil, err
-	}
-	return r.Decoder.DecodeHTTPS(replydata, queryID)
+	return response.DecodeHTTPS()
 }
 
 func (r *SerialResolver) lookupHostWithRetry(
@@ -132,28 +124,23 @@ func (r *SerialResolver) lookupHostWithRetry(
 // qtype (dns.A or dns.AAAA) without retrying on failure.
 func (r *SerialResolver) lookupHostWithoutRetry(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
-	querydata, queryID, err := r.Encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
+	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	replydata, err := r.Txp.RoundTrip(ctx, querydata)
-	if err != nil {
-		return nil, err
-	}
-	return r.Decoder.DecodeLookupHost(qtype, replydata, queryID)
+	return response.DecodeLookupHost()
 }
 
 // LookupNS implements Resolver.LookupNS.
 func (r *SerialResolver) LookupNS(
 	ctx context.Context, hostname string) ([]*net.NS, error) {
-	querydata, queryID, err := r.Encoder.Encode(
-		hostname, dns.TypeNS, r.Txp.RequiresPadding())
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, dns.TypeNS, r.Txp.RequiresPadding())
+	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	replydata, err := r.Txp.RoundTrip(ctx, querydata)
-	if err != nil {
-		return nil, err
-	}
-	return r.Decoder.DecodeNS(replydata, queryID)
+	return response.DecodeNS()
 }
