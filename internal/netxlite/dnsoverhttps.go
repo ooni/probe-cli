@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"time"
 
@@ -19,6 +20,9 @@ import (
 type DNSOverHTTPSTransport struct {
 	// Client is the MANDATORY http client to use.
 	Client model.HTTPClient
+
+	// Decoder is the MANDATORY DNS decoder.
+	Decoder model.DNSDecoder
 
 	// URL is the MANDATORY URL of the DNS-over-HTTPS server.
 	URL string
@@ -32,9 +36,9 @@ type DNSOverHTTPSTransport struct {
 //
 // Arguments:
 //
-// - client in http.Client-like type (e.g., http.DefaultClient);
+// - client is a model.HTTPClient type;
 //
-// - URL is the DoH resolver URL (e.g., https://1.1.1.1/dns-query).
+// - URL is the DoH resolver URL (e.g., https://dns.google/dns-query).
 func NewDNSOverHTTPSTransport(client model.HTTPClient, URL string) *DNSOverHTTPSTransport {
 	return NewDNSOverHTTPSTransportWithHostOverride(client, URL, "")
 }
@@ -43,22 +47,31 @@ func NewDNSOverHTTPSTransport(client model.HTTPClient, URL string) *DNSOverHTTPS
 // with the given Host header override.
 func NewDNSOverHTTPSTransportWithHostOverride(
 	client model.HTTPClient, URL, hostOverride string) *DNSOverHTTPSTransport {
-	return &DNSOverHTTPSTransport{Client: client, URL: URL, HostOverride: hostOverride}
+	return &DNSOverHTTPSTransport{
+		Client:       client,
+		Decoder:      &DNSDecoderMiekg{},
+		URL:          URL,
+		HostOverride: hostOverride,
+	}
 }
 
 // RoundTrip sends a query and receives a reply.
-func (t *DNSOverHTTPSTransport) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
+func (t *DNSOverHTTPSTransport) RoundTrip(
+	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+	rawQuery, err := query.Bytes()
+	if err != nil {
+		return nil, err
+	}
 	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
-	req, err := http.NewRequest("POST", t.URL, bytes.NewReader(query))
+	req, err := http.NewRequest("POST", t.URL, bytes.NewReader(rawQuery))
 	if err != nil {
 		return nil, err
 	}
 	req.Host = t.HostOverride
 	req.Header.Set("user-agent", httpheader.UserAgent())
 	req.Header.Set("content-type", "application/dns-message")
-	var resp *http.Response
-	resp, err = t.Client.Do(req.WithContext(ctx))
+	resp, err := t.Client.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +84,13 @@ func (t *DNSOverHTTPSTransport) RoundTrip(ctx context.Context, query []byte) ([]
 	if resp.Header.Get("content-type") != "application/dns-message" {
 		return nil, errors.New("doh: invalid content-type")
 	}
-	return ReadAllContext(ctx, resp.Body)
+	const maxresponsesize = 1 << 20
+	limitReader := io.LimitReader(resp.Body, maxresponsesize)
+	rawResponse, err := ReadAllContext(ctx, limitReader)
+	if err != nil {
+		return nil, err
+	}
+	return t.Decoder.DecodeResponse(rawResponse, query)
 }
 
 // RequiresPadding returns true for DoH according to RFC8467.

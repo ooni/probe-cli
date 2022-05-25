@@ -1,18 +1,6 @@
 package netxlite
 
-import (
-	"context"
-	"crypto/tls"
-	"errors"
-	"net"
-	"testing"
-
-	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
-)
-
+/*
 func TestParallelResolver(t *testing.T) {
 	t.Run("transport okay", func(t *testing.T) {
 		txp := NewDNSOverTLS((&tls.Dialer{}).DialContext, "8.8.8.8:853")
@@ -358,3 +346,4 @@ func TestParallelResolver(t *testing.T) {
 		})
 	})
 }
+*/

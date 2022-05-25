@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -52,16 +53,10 @@ type DNSProxy struct {
 	OnQuery func(domain string) DNSAction
 
 	// Upstream is the OPTIONAL upstream transport.
-	Upstream DNSTransport
+	Upstream model.DNSTransport
 
 	// mockableReply allows to mock DNSProxy.reply in tests.
 	mockableReply func(query *dns.Msg) (*dns.Msg, error)
-}
-
-// DNSTransport is the type we expect from an upstream DNS transport.
-type DNSTransport interface {
-	RoundTrip(ctx context.Context, query []byte) ([]byte, error)
-	CloseIdleConnections()
 }
 
 // DNSListener is the interface returned by DNSProxy.Start
@@ -204,23 +199,34 @@ func (p *DNSProxy) compose(query *dns.Msg, ips ...net.IP) *dns.Msg {
 	return reply
 }
 
-func (p *DNSProxy) proxy(query *dns.Msg) (*dns.Msg, error) {
-	queryBytes, err := query.Pack()
-	if err != nil {
-		return nil, err
+var (
+	// errDNSExpectedSingleQuestion means we expected to see a single question
+	errDNSExpectedSingleQuestion = errors.New("filtering: expected single DNS question")
+
+	// errDNSExpectedQueryNotResponse means we expected to see a query.
+	errDNSExpectedQueryNotResponse = errors.New("filtering: expected query not response")
+)
+
+func (p *DNSProxy) proxy(origQuery *dns.Msg) (*dns.Msg, error) {
+	if origQuery.Response {
+		return nil, errDNSExpectedQueryNotResponse
 	}
+	if len(origQuery.Question) != 1 {
+		return nil, errDNSExpectedSingleQuestion
+	}
+	question := origQuery.Question[0]
+	domain := question.Name
+	queryType := question.Qtype
+	encoder := &netxlite.DNSEncoderMiekg{}
 	txp := p.dnstransport()
+	query := encoder.Encode(domain, queryType, txp.RequiresPadding())
 	defer txp.CloseIdleConnections()
 	ctx := context.Background()
-	replyBytes, err := txp.RoundTrip(ctx, queryBytes)
+	response, err := txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	reply := &dns.Msg{}
-	if err := reply.Unpack(replyBytes); err != nil {
-		return nil, err
-	}
-	return reply, nil
+	return response.Message(), nil
 }
 
 func (p *DNSProxy) cache(name string, query *dns.Msg) *dns.Msg {
@@ -237,7 +243,7 @@ func (p *DNSProxy) cache(name string, query *dns.Msg) *dns.Msg {
 	return p.compose(query, ipAddrs...)
 }
 
-func (p *DNSProxy) dnstransport() DNSTransport {
+func (p *DNSProxy) dnstransport() model.DNSTransport {
 	if p.Upstream != nil {
 		return p.Upstream
 	}

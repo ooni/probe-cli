@@ -16,66 +16,76 @@ import (
 // Network extensions
 //
 
+// DNSResponse is a parsed DNS response ready for further processing.
+type DNSResponse interface {
+	// Query is the query associated with this response.
+	Query() DNSQuery
+
+	// Message returns the underlying DNS message.
+	Message() *dns.Msg
+
+	// Bytes returns the bytes from which we parsed the query.
+	Bytes() []byte
+
+	// Rcode returns the response's Rcode.
+	Rcode() int
+
+	// DecodeHTTPS returns information gathered from all the HTTPS
+	// records found inside of this response.
+	DecodeHTTPS() (*HTTPSSvc, error)
+
+	// DecodeLookupHost returns the addresses in the response matching
+	// the original query type (one of A and AAAA).
+	DecodeLookupHost() ([]string, error)
+
+	// DecodeNS returns all the NS entries in this response.
+	DecodeNS() ([]*net.NS, error)
+}
+
 // The DNSDecoder decodes DNS replies.
 type DNSDecoder interface {
-	// DecodeLookupHost decodes an A or AAAA reply.
-	//
-	// Arguments:
-	//
-	// - qtype is the query type (e.g., dns.TypeAAAA)
-	//
-	// - data contains the reply bytes read from a DNSTransport
-	//
-	// - queryID is the original query ID
-	//
-	// Returns:
-	//
-	// - on success, a list of IP addrs inside the reply and a nil error
-	//
-	// - on failure, a nil list and an error.
-	//
-	// Note that this function will return an error if there is no
-	// IP address inside of the reply.
-	DecodeLookupHost(qtype uint16, data []byte, queryID uint16) ([]string, error)
-
-	// DecodeHTTPS is like DecodeLookupHost but decodes an HTTPS reply.
-	//
-	// The argument is the reply as read by the DNSTransport.
-	//
-	// On success, this function returns an HTTPSSvc structure and
-	// a nil error. On failure, the HTTPSSvc pointer is nil and
-	// the error points to the error that occurred.
-	//
-	// This function will return an error if the HTTPS reply does not
-	// contain at least a valid ALPN entry. It will not return
-	// an error, though, when there are no IPv4/IPv6 hints in the reply.
-	DecodeHTTPS(data []byte, queryID uint16) (*HTTPSSvc, error)
-
-	// DecodeNS is like DecodeHTTPS but for NS queries.
-	DecodeNS(data []byte, queryID uint16) ([]*net.NS, error)
-
-	// DecodeReply decodes a DNS reply message.
+	// DecodeResponse decodes a DNS response message.
 	//
 	// Arguments:
 	//
 	// - data is the raw reply
 	//
 	// This function fails if we cannot parse data as a DNS
-	// message or the message is not a reply.
+	// message or the message is not a response.
 	//
-	// If you use this function, remember that:
+	// Regarding the returned response, remember that the Rcode
+	// MAY still be nonzero (this method does not treat a nonzero
+	// Rcode as an error when parsing the response).
+	DecodeResponse(data []byte, query DNSQuery) (DNSResponse, error)
+}
+
+// DNSQuery is an encoded DNS query ready to be sent using a DNSTransport.
+type DNSQuery interface {
+	// Domain is the domain we're querying for.
+	Domain() string
+
+	// Type is the query type.
+	Type() uint16
+
+	// Bytes serializes the query to bytes. This function may fail if we're not
+	// able to correctly encode the domain into a query message.
 	//
-	// 1. the Rcode MAY be nonzero;
+	// The value returned by this function MAY be memoized after the first call.
 	//
-	// 2. the replyID MAY NOT match the original query ID.
-	//
-	// That is, this is a very basic parsing method.
-	DecodeReply(data []byte) (*dns.Msg, error)
+	// Note: every time you serialize this query you ALWAYS obtain the same
+	// query ID and, in general, you SHOULD NOT reuse IDs.
+	Bytes() ([]byte, error)
+
+	// ID returns the query ID.
+	ID() uint16
 }
 
 // The DNSEncoder encodes DNS queries to bytes
 type DNSEncoder interface {
 	// Encode transforms its arguments into a serialized DNS query.
+	//
+	// Note: every Encode operation generates a new query ID. So reusing
+	// the same DNSQuery SHOULD NOT be done.
 	//
 	// Arguments:
 	//
@@ -85,16 +95,15 @@ type DNSEncoder interface {
 	//
 	// - padding is whether to add padding to the query.
 	//
-	// On success, this function returns a valid byte array, the queryID, and
-	// a nil error. On failure, we have a non-nil error, a nil arrary and a zero
-	// query ID.
-	Encode(domain string, qtype uint16, padding bool) ([]byte, uint16, error)
+	// This function will transform the domain into an FQDN is it's not
+	// already expressed in the FQDN format.
+	Encode(domain string, qtype uint16, padding bool) DNSQuery
 }
 
 // DNSTransport represents an abstract DNS transport.
 type DNSTransport interface {
 	// RoundTrip sends a DNS query and receives the reply.
-	RoundTrip(ctx context.Context, query []byte) (reply []byte, err error)
+	RoundTrip(ctx context.Context, query DNSQuery) (DNSResponse, error)
 
 	// RequiresPadding returns whether this transport needs padding.
 	RequiresPadding() bool

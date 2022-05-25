@@ -101,19 +101,32 @@ type DNSRoundTripEvent struct {
 }
 
 // DNSRoundTrip implements ArchivalSaver.DNSRoundTrip.
-func (s *Saver) DNSRoundTrip(ctx context.Context, txp model.DNSTransport, query []byte) ([]byte, error) {
+func (s *Saver) DNSRoundTrip(
+	ctx context.Context, txp model.DNSTransport, query model.DNSQuery) (model.DNSResponse, error) {
 	started := time.Now()
-	reply, err := txp.RoundTrip(ctx, query)
+	response, err := txp.RoundTrip(ctx, query)
 	s.appendDNSRoundTripEvent(&DNSRoundTripEvent{
 		Address:  txp.Address(),
 		Failure:  err,
 		Finished: time.Now(),
 		Network:  txp.Network(),
-		Query:    query,
-		Reply:    reply,
+		Query:    s.maybeQueryBytes(query),
+		Reply:    s.maybeResponseBytes(response),
 		Started:  started,
 	})
-	return reply, err
+	return response, err
+}
+
+func (s *Saver) maybeQueryBytes(query model.DNSQuery) []byte {
+	data, _ := query.Bytes()
+	return data
+}
+
+func (s *Saver) maybeResponseBytes(response model.DNSResponse) []byte {
+	if response == nil {
+		return nil
+	}
+	return response.Bytes()
 }
 
 func (s *Saver) appendDNSRoundTripEvent(ev *DNSRoundTripEvent) {

@@ -140,8 +140,8 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(data) != expected {
-				t.Fatal("expected non nil data")
+			if data != nil {
+				t.Fatal("expected non nil data") // most likely broken
 			}
 		})
 	})

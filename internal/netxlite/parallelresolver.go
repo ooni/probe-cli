@@ -22,9 +22,6 @@ type ParallelResolver struct {
 	// Encoder is the MANDATORY encoder to use.
 	Encoder model.DNSEncoder
 
-	// Decoder is the MANDATORY decoder to use.
-	Decoder model.DNSDecoder
-
 	// NumTimeouts is MANDATORY and counts the number of timeouts.
 	NumTimeouts *atomicx.Int64
 
@@ -37,7 +34,6 @@ type ParallelResolver struct {
 func NewUnwrappedParallelResolver(t model.DNSTransport) *ParallelResolver {
 	return &ParallelResolver{
 		Encoder:     &DNSEncoderMiekg{},
-		Decoder:     &DNSDecoderMiekg{},
 		NumTimeouts: &atomicx.Int64{},
 		Txp:         t,
 	}
@@ -86,16 +82,12 @@ func (r *ParallelResolver) LookupHost(ctx context.Context, hostname string) ([]s
 // LookupHTTPS implements Resolver.LookupHTTPS.
 func (r *ParallelResolver) LookupHTTPS(
 	ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
-	querydata, queryID, err := r.Encoder.Encode(
-		hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
+	query := r.Encoder.Encode(hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
+	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	replydata, err := r.Txp.RoundTrip(ctx, querydata)
-	if err != nil {
-		return nil, err
-	}
-	return r.Decoder.DecodeHTTPS(replydata, queryID)
+	return response.DecodeHTTPS()
 }
 
 // parallelResolverResult is the internal representation of a
@@ -108,7 +100,8 @@ type parallelResolverResult struct {
 // lookupHost issues a lookup host query for the specified qtype (e.g., dns.A).
 func (r *ParallelResolver) lookupHost(ctx context.Context, hostname string,
 	qtype uint16, out chan<- *parallelResolverResult) {
-	querydata, queryID, err := r.Encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
+	query := r.Encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
+	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		out <- &parallelResolverResult{
 			addrs: []string{},
@@ -116,15 +109,7 @@ func (r *ParallelResolver) lookupHost(ctx context.Context, hostname string,
 		}
 		return
 	}
-	replydata, err := r.Txp.RoundTrip(ctx, querydata)
-	if err != nil {
-		out <- &parallelResolverResult{
-			addrs: []string{},
-			err:   err,
-		}
-		return
-	}
-	addrs, err := r.Decoder.DecodeLookupHost(qtype, replydata, queryID)
+	addrs, err := response.DecodeLookupHost()
 	out <- &parallelResolverResult{
 		addrs: addrs,
 		err:   err,
@@ -134,14 +119,10 @@ func (r *ParallelResolver) lookupHost(ctx context.Context, hostname string,
 // LookupNS implements Resolver.LookupNS.
 func (r *ParallelResolver) LookupNS(
 	ctx context.Context, hostname string) ([]*net.NS, error) {
-	querydata, queryID, err := r.Encoder.Encode(
-		hostname, dns.TypeNS, r.Txp.RequiresPadding())
+	query := r.Encoder.Encode(hostname, dns.TypeNS, r.Txp.RequiresPadding())
+	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	replydata, err := r.Txp.RoundTrip(ctx, querydata)
-	if err != nil {
-		return nil, err
-	}
-	return r.Decoder.DecodeNS(replydata, queryID)
+	return response.DecodeNS()
 }
