@@ -11,9 +11,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/cmd/oohelper/internal"
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webstepsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -25,7 +23,6 @@ var (
 	resolver    model.Resolver
 	server      = flag.String("server", "", "URL of the test helper")
 	target      = flag.String("target", "", "Target URL for the test helper")
-	fwebsteps   = flag.Bool("websteps", false, "Use the websteps TH")
 )
 
 func newhttpclient() *http.Client {
@@ -54,32 +51,10 @@ func main() {
 	}
 	flag.Parse()
 	log.SetLevel(logmap[*debug])
-	apimap := map[bool]func() interface{}{
-		false: wcth,
-		true:  webstepsth,
-	}
-	cresp := apimap[*fwebsteps]()
+	cresp := wcth()
 	data, err := json.MarshalIndent(cresp, "", "    ")
 	runtimex.PanicOnError(err, "json.MarshalIndent failed")
 	fmt.Printf("%s\n", string(data))
-}
-
-func webstepsth() interface{} {
-	serverURL := *server
-	if serverURL == "" {
-		serverURL = "https://1.th.ooni.org/api/v1/websteps"
-	}
-	clnt := &webstepsx.THClient{
-		DNServers: []*measurex.ResolverInfo{{
-			Network: "udp",
-			Address: "8.8.4.4:53",
-		}},
-		HTTPClient: httpClient,
-		ServerURL:  serverURL,
-	}
-	cresp, err := clnt.Run(ctx, *target)
-	runtimex.PanicOnError(err, "client.Run failed")
-	return cresp
 }
 
 func wcth() interface{} {
