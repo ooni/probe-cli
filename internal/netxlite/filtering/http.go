@@ -9,6 +9,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+// TODO(bassosimone): remove HTTPActionPass since we want integration tests
+// to only run locally to make them much more predictable.
+
 // HTTPAction is an HTTP filtering action that this proxy should take.
 type HTTPAction string
 
