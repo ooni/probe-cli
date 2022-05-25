@@ -1,5 +1,9 @@
 package model
 
+//
+// Network extensions
+//
+
 import (
 	"context"
 	"crypto/tls"
@@ -11,10 +15,6 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/miekg/dns"
 )
-
-//
-// Network extensions
-//
 
 // DNSResponse is a parsed DNS response ready for further processing.
 type DNSResponse interface {
@@ -42,7 +42,7 @@ type DNSResponse interface {
 	DecodeNS() ([]*net.NS, error)
 }
 
-// The DNSDecoder decodes DNS replies.
+// The DNSDecoder decodes DNS responses.
 type DNSDecoder interface {
 	// DecodeResponse decodes a DNS response message.
 	//
@@ -84,8 +84,15 @@ type DNSQuery interface {
 type DNSEncoder interface {
 	// Encode transforms its arguments into a serialized DNS query.
 	//
-	// Note: every Encode operation generates a new query ID. So reusing
-	// the same DNSQuery SHOULD NOT be done.
+	// Every time you call Encode, you get a new DNSQuery value
+	// using a query ID selected at random.
+	//
+	// Serialization to bytes is lazy to acommodate DNS transports that
+	// do not need to serialize and send bytes, e.g., getaddrinfo.
+	//
+	// You serialized to bytes using DNSQuery.Bytes. This operation MAY fail
+	// if the domain name cannot be packed into a DNS message (e.g., it is
+	// too long to fit into the message).
 	//
 	// Arguments:
 	//
