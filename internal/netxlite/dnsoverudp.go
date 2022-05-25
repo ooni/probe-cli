@@ -48,9 +48,7 @@ func (t *DNSOverUDPTransport) RoundTrip(
 	// Use five seconds timeout like Bionic does. See
 	// https://labs.ripe.net/Members/baptiste_jonglez_1/persistent-dns-connections-for-reliability-and-performance
 	const iotimeout = 5 * time.Second
-	if err = conn.SetDeadline(time.Now().Add(iotimeout)); err != nil {
-		return nil, err
-	}
+	conn.SetDeadline(time.Now().Add(iotimeout))
 	if _, err = conn.Write(rawQuery); err != nil {
 		return nil, err
 	}

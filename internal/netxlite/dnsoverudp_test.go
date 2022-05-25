@@ -9,11 +9,30 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestDNSOverUDPTransport(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
+		t.Run("cannot encode query", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			const address = "9.9.9.9:53"
+			txp := NewDNSOverUDPTransport(nil, address)
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return nil, expected
+				},
+			}
+			resp, err := txp.RoundTrip(context.Background(), query)
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
+			}
+			if resp != nil {
+				t.Fatal("expected nil response here")
+			}
+		})
+
 		t.Run("dial failure", func(t *testing.T) {
 			mocked := errors.New("mocked error")
 			const address = "9.9.9.9:53"
@@ -22,36 +41,16 @@ func TestDNSOverUDPTransport(t *testing.T) {
 					return nil, mocked
 				},
 			}, address)
-			data, err := txp.RoundTrip(context.Background(), nil)
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 128), nil
+				},
+			}
+			resp, err := txp.RoundTrip(context.Background(), query)
 			if !errors.Is(err, mocked) {
 				t.Fatal("not the error we expected")
 			}
-			if data != nil {
-				t.Fatal("expected no response here")
-			}
-		})
-
-		t.Run("SetDeadline failure", func(t *testing.T) {
-			mocked := errors.New("mocked error")
-			txp := NewDNSOverUDPTransport(
-				&mocks.Dialer{
-					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-						return &mocks.Conn{
-							MockSetDeadline: func(t time.Time) error {
-								return mocked
-							},
-							MockClose: func() error {
-								return nil
-							},
-						}, nil
-					},
-				}, "9.9.9.9:53",
-			)
-			data, err := txp.RoundTrip(context.Background(), nil)
-			if !errors.Is(err, mocked) {
-				t.Fatal("not the error we expected")
-			}
-			if data != nil {
+			if resp != nil {
 				t.Fatal("expected no response here")
 			}
 		})
@@ -75,11 +74,16 @@ func TestDNSOverUDPTransport(t *testing.T) {
 					},
 				}, "9.9.9.9:53",
 			)
-			data, err := txp.RoundTrip(context.Background(), nil)
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 128), nil
+				},
+			}
+			resp, err := txp.RoundTrip(context.Background(), query)
 			if !errors.Is(err, mocked) {
 				t.Fatal("not the error we expected")
 			}
-			if data != nil {
+			if resp != nil {
 				t.Fatal("expected no response here")
 			}
 		})
@@ -106,12 +110,58 @@ func TestDNSOverUDPTransport(t *testing.T) {
 					},
 				}, "9.9.9.9:53",
 			)
-			data, err := txp.RoundTrip(context.Background(), nil)
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 128), nil
+				},
+			}
+			resp, err := txp.RoundTrip(context.Background(), query)
 			if !errors.Is(err, mocked) {
 				t.Fatal("not the error we expected")
 			}
-			if data != nil {
+			if resp != nil {
 				t.Fatal("expected no response here")
+			}
+		})
+
+		t.Run("decode failure", func(t *testing.T) {
+			const expected = 17
+			input := bytes.NewReader(make([]byte, expected))
+			txp := NewDNSOverUDPTransport(
+				&mocks.Dialer{
+					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+						return &mocks.Conn{
+							MockSetDeadline: func(t time.Time) error {
+								return nil
+							},
+							MockWrite: func(b []byte) (int, error) {
+								return len(b), nil
+							},
+							MockRead: input.Read,
+							MockClose: func() error {
+								return nil
+							},
+						}, nil
+					},
+				}, "9.9.9.9:53",
+			)
+			expectedErr := errors.New("mocked error")
+			txp.decoder = &mocks.DNSDecoder{
+				MockDecodeResponse: func(data []byte, query model.DNSQuery) (model.DNSResponse, error) {
+					return nil, expectedErr
+				},
+			}
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 128), nil
+				},
+			}
+			resp, err := txp.RoundTrip(context.Background(), query)
+			if !errors.Is(err, expectedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if resp != nil {
+				t.Fatal("expected nil resp")
 			}
 		})
 
@@ -136,12 +186,23 @@ func TestDNSOverUDPTransport(t *testing.T) {
 					},
 				}, "9.9.9.9:53",
 			)
-			data, err := txp.RoundTrip(context.Background(), nil)
+			expectedResp := &mocks.DNSResponse{}
+			txp.decoder = &mocks.DNSDecoder{
+				MockDecodeResponse: func(data []byte, query model.DNSQuery) (model.DNSResponse, error) {
+					return expectedResp, nil
+				},
+			}
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return make([]byte, 128), nil
+				},
+			}
+			resp, err := txp.RoundTrip(context.Background(), query)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if data != nil {
-				t.Fatal("expected non nil data") // most likely broken
+			if resp != expectedResp {
+				t.Fatal("unexpected resp")
 			}
 		})
 	})
