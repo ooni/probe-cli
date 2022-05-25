@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpfailure"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -109,11 +108,11 @@ func (tk *TestKeys) Update(v urlgetter.MultiOutput) {
 		if failure != nil {
 			// nothing to do here
 		} else if v.TestKeys.HTTPResponseStatus != 302 {
-			failure = &httpfailure.UnexpectedStatusCode
+			failure = &model.HTTPUnexpectedStatusCode
 		} else if len(v.TestKeys.HTTPResponseLocations) != 1 {
-			failure = &httpfailure.UnexpectedRedirectURL
+			failure = &model.HTTPUnexpectedRedirectURL
 		} else if v.TestKeys.HTTPResponseLocations[0] != WebHTTPSURL {
-			failure = &httpfailure.UnexpectedRedirectURL
+			failure = &model.HTTPUnexpectedRedirectURL
 		}
 		tk.WhatsappHTTPFailure = failure
 	}

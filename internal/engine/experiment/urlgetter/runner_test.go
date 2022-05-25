@@ -10,7 +10,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestRunnerWithInvalidURLScheme(t *testing.T) {
@@ -260,7 +260,7 @@ func TestRunnerWeCanForceUserAgent(t *testing.T) {
 }
 
 func TestRunnerDefaultUserAgent(t *testing.T) {
-	expected := httpheader.UserAgent()
+	expected := model.HTTPHeaderUserAgent
 	found := &atomicx.Int64{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("User-Agent") == expected {
