@@ -70,10 +70,8 @@ type DNSQuery interface {
 	// Bytes serializes the query to bytes. This function may fail if we're not
 	// able to correctly encode the domain into a query message.
 	//
-	// The value returned by this function MAY be memoized after the first call.
-	//
-	// Note: every time you serialize this query you ALWAYS obtain the same
-	// query ID and, in general, you SHOULD NOT reuse IDs.
+	// The value returned by this function WILL be memoized after the first call,
+	// so you SHOULD create a new DNSQuery if you need to retry a query.
 	Bytes() ([]byte, error)
 
 	// ID returns the query ID.
