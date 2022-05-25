@@ -1,10 +1,14 @@
 package mocks
 
-import "context"
+import (
+	"context"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
 
 // DNSTransport allows mocking dnsx.DNSTransport.
 type DNSTransport struct {
-	MockRoundTrip func(ctx context.Context, query []byte) ([]byte, error)
+	MockRoundTrip func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error)
 
 	MockRequiresPadding func() bool
 
@@ -15,8 +19,10 @@ type DNSTransport struct {
 	MockCloseIdleConnections func()
 }
 
+var _ model.DNSTransport = &DNSTransport{}
+
 // RoundTrip calls MockRoundTrip.
-func (txp *DNSTransport) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
+func (txp *DNSTransport) RoundTrip(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 	return txp.MockRoundTrip(ctx, query)
 }
 

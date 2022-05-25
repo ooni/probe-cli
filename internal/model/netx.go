@@ -13,16 +13,12 @@ import (
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/miekg/dns"
 )
 
 // DNSResponse is a parsed DNS response ready for further processing.
 type DNSResponse interface {
 	// Query is the query associated with this response.
 	Query() DNSQuery
-
-	// Message returns the underlying DNS message.
-	Message() *dns.Msg
 
 	// Bytes returns the bytes from which we parsed the query.
 	Bytes() []byte

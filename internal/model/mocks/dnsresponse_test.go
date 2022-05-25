@@ -29,20 +29,6 @@ func TestDNSResponse(t *testing.T) {
 		}
 	})
 
-	t.Run("Message", func(t *testing.T) {
-		msg := &dns.Msg{}
-		msg.Id = dns.Id()
-		resp := &DNSResponse{
-			MockMessage: func() *dns.Msg {
-				return msg
-			},
-		}
-		out := resp.Message()
-		if out.Id != msg.Id {
-			t.Fatal("invalid message")
-		}
-	})
-
 	t.Run("Bytes", func(t *testing.T) {
 		expected := []byte{0xde, 0xea, 0xad, 0xbe, 0xef}
 		resp := &DNSResponse{

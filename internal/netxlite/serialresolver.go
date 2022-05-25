@@ -29,9 +29,6 @@ type SerialResolver struct {
 	// Encoder is the MANDATORY encoder to use.
 	Encoder model.DNSEncoder
 
-	// Decoder is the MANDATORY decoder to use.
-	Decoder model.DNSDecoder
-
 	// NumTimeouts is MANDATORY and counts the number of timeouts.
 	NumTimeouts *atomicx.Int64
 
@@ -43,7 +40,6 @@ type SerialResolver struct {
 func NewSerialResolver(t model.DNSTransport) *SerialResolver {
 	return &SerialResolver{
 		Encoder:     &DNSEncoderMiekg{},
-		Decoder:     &DNSDecoderMiekg{},
 		NumTimeouts: &atomicx.Int64{},
 		Txp:         t,
 	}

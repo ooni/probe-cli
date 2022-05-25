@@ -20,7 +20,7 @@ type DNSOverHTTPSTransport struct {
 	// Client is the MANDATORY http client to use.
 	Client model.HTTPClient
 
-	// Decoder is the MANDATORY DNS decoder.
+	// Decoder is the MANDATORY DNSDecoder.
 	Decoder model.DNSDecoder
 
 	// URL is the MANDATORY URL of the DNS-over-HTTPS server.

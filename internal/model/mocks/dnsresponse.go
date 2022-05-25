@@ -7,14 +7,12 @@ package mocks
 import (
 	"net"
 
-	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // DNSResponse allows mocking model.DNSResponse.
 type DNSResponse struct {
 	MockQuery            func() model.DNSQuery
-	MockMessage          func() *dns.Msg
 	MockBytes            func() []byte
 	MockRcode            func() int
 	MockDecodeHTTPS      func() (*model.HTTPSSvc, error)
@@ -26,10 +24,6 @@ var _ model.DNSResponse = &DNSResponse{}
 
 func (r *DNSResponse) Query() model.DNSQuery {
 	return r.MockQuery()
-}
-
-func (r *DNSResponse) Message() *dns.Msg {
-	return r.MockMessage()
 }
 
 func (r *DNSResponse) Bytes() []byte {

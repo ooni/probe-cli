@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/fakefill"
+	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -226,22 +227,54 @@ func (v *SingleDNSLookupValidator) Validate() error {
 }
 
 func TestSaverDNSRoundTrip(t *testing.T) {
-	// generateQueryAndReply generates a fake query and reply.
-	generateQueryAndReply := func() (query, reply []byte, err error) {
-		ff := &fakefill.Filler{}
-		ff.Fill(&query)
-		ff.Fill(&reply)
-		if len(query) < 1 || len(reply) < 1 {
-			return nil, nil, errors.New("did not generate query or reply")
+	// generateQueryAndResponse generates a fake query and reply.
+	generateQueryAndResponse := func() (*mocks.DNSQuery, *mocks.DNSResponse) {
+		queryID := dns.Id()
+		query := &mocks.DNSQuery{
+			MockDomain: func() string {
+				return "x.org"
+			},
+			MockType: func() uint16 {
+				return dns.TypeA
+			},
+			MockBytes: func() ([]byte, error) {
+				return []byte{0xde, 0xad, 0xbe, 0xff}, nil
+			},
+			MockID: func() uint16 {
+				return queryID
+			},
 		}
-		return query, reply, nil
+		response := &mocks.DNSResponse{
+			MockQuery: func() model.DNSQuery {
+				return query
+			},
+			MockBytes: func() []byte {
+				return []byte{0xff, 0xbe, 0xad, 0xde}
+			},
+			MockRcode: func() int {
+				return 0
+			},
+			MockDecodeHTTPS: func() (*model.HTTPSSvc, error) {
+				return nil, netxlite.ErrOODNSNoAnswer
+			},
+			MockDecodeLookupHost: func() ([]string, error) {
+				return nil, netxlite.ErrOODNSNoAnswer
+			},
+			MockDecodeNS: func() ([]*net.NS, error) {
+				return nil, netxlite.ErrOODNSNoAnswer
+			},
+		}
+		return query, response
 	}
 
 	// newDNSTransport creates a suitable DNSTransport.
-	newDNSTransport := func(reply []byte, err error) model.DNSTransport {
+	newDNSTransport := func(reply *mocks.DNSResponse, err error) model.DNSTransport {
 		return &mocks.DNSTransport{
-			MockRoundTrip: func(ctx context.Context, query []byte) ([]byte, error) {
-				return reply, err
+			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+				if err != nil {
+					return nil, err
+				}
+				return reply, nil
 			},
 			MockNetwork: func() string {
 				return "udp"
@@ -253,27 +286,24 @@ func TestSaverDNSRoundTrip(t *testing.T) {
 	}
 
 	t.Run("on success", func(t *testing.T) {
-		query, expectedReply, err := generateQueryAndReply()
-		if err != nil {
-			t.Fatal(err)
-		}
+		query, expectedResponse := generateQueryAndResponse()
 		saver := NewSaver()
 		v := &SingleDNSRoundTripValidator{
-			ExpectAddress: "8.8.8.8:53",
-			ExpectFailure: nil,
-			ExpectNetwork: "udp",
-			ExpectQuery:   query,
-			ExpectReply:   expectedReply,
-			Saver:         saver,
+			ExpectAddress:  "8.8.8.8:53",
+			ExpectFailure:  nil,
+			ExpectNetwork:  "udp",
+			ExpectQuery:    query,
+			ExpectResponse: expectedResponse,
+			Saver:          saver,
 		}
 		ctx := context.Background()
-		txp := newDNSTransport(expectedReply, nil)
-		reply, err := saver.DNSRoundTrip(ctx, txp, query)
+		txp := newDNSTransport(expectedResponse, nil)
+		response, err := saver.DNSRoundTrip(ctx, txp, query)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if diff := cmp.Diff(expectedReply, reply); diff != "" {
-			t.Fatal(diff)
+		if response == nil {
+			t.Fatal("expected non nil response")
 		}
 		if err := v.Validate(); err != nil {
 			t.Fatal(err)
@@ -282,26 +312,23 @@ func TestSaverDNSRoundTrip(t *testing.T) {
 
 	t.Run("on failure", func(t *testing.T) {
 		mockedError := netxlite.NewTopLevelGenericErrWrapper(io.EOF)
-		query, _, err := generateQueryAndReply()
-		if err != nil {
-			t.Fatal(err)
-		}
+		query, _ := generateQueryAndResponse()
 		saver := NewSaver()
 		v := &SingleDNSRoundTripValidator{
-			ExpectAddress: "8.8.8.8:53",
-			ExpectFailure: mockedError,
-			ExpectNetwork: "udp",
-			ExpectQuery:   query,
-			ExpectReply:   nil,
-			Saver:         saver,
+			ExpectAddress:  "8.8.8.8:53",
+			ExpectFailure:  mockedError,
+			ExpectNetwork:  "udp",
+			ExpectQuery:    query,
+			ExpectResponse: nil,
+			Saver:          saver,
 		}
 		ctx := context.Background()
 		txp := newDNSTransport(nil, mockedError)
-		reply, err := saver.DNSRoundTrip(ctx, txp, query)
+		response, err := saver.DNSRoundTrip(ctx, txp, query)
 		if !errors.Is(err, mockedError) {
 			t.Fatal(err)
 		}
-		if len(reply) != 0 {
+		if response != nil {
 			t.Fatal("unexpected reply")
 		}
 		if err := v.Validate(); err != nil {
@@ -311,12 +338,12 @@ func TestSaverDNSRoundTrip(t *testing.T) {
 }
 
 type SingleDNSRoundTripValidator struct {
-	ExpectAddress string
-	ExpectFailure error
-	ExpectNetwork string
-	ExpectQuery   []byte
-	ExpectReply   []byte
-	Saver         *Saver
+	ExpectAddress  string
+	ExpectFailure  error
+	ExpectNetwork  string
+	ExpectQuery    model.DNSQuery
+	ExpectResponse model.DNSResponse
+	Saver          *Saver
 }
 
 func (v *SingleDNSRoundTripValidator) Validate() error {
@@ -337,10 +364,20 @@ func (v *SingleDNSRoundTripValidator) Validate() error {
 	if v.ExpectNetwork != entry.Network {
 		return errors.New("invalid .Network value")
 	}
-	if diff := cmp.Diff(v.ExpectQuery, entry.Query); diff != "" {
+	rawQuery, err := v.ExpectQuery.Bytes()
+	if err != nil {
+		return err
+	}
+	if diff := cmp.Diff(rawQuery, entry.Query); diff != "" {
 		return errors.New(diff)
 	}
-	if diff := cmp.Diff(v.ExpectReply, entry.Reply); diff != "" {
+	if v.ExpectResponse == nil {
+		if entry.Reply != nil {
+			return errors.New("reply is not nil")
+		}
+		return nil
+	}
+	if diff := cmp.Diff(v.ExpectResponse.Bytes(), entry.Reply); diff != "" {
 		return errors.New(diff)
 	}
 	return nil
