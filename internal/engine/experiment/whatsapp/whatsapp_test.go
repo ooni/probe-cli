@@ -12,7 +12,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/whatsapp"
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/httpfailure"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -414,7 +413,7 @@ func TestTestKeysOnlyWebHTTPFailureNo302(t *testing.T) {
 	if tk.WhatsappEndpointsStatus != "ok" {
 		t.Fatal("invalid WhatsappEndpointsStatus")
 	}
-	if *tk.WhatsappWebFailure != httpfailure.UnexpectedStatusCode {
+	if *tk.WhatsappWebFailure != model.HTTPUnexpectedStatusCode {
 		t.Fatal("invalid WhatsappWebFailure")
 	}
 	if tk.WhatsappWebStatus != "blocked" {
@@ -459,7 +458,7 @@ func TestTestKeysOnlyWebHTTPFailureNoLocations(t *testing.T) {
 	if tk.WhatsappEndpointsStatus != "ok" {
 		t.Fatal("invalid WhatsappEndpointsStatus")
 	}
-	if *tk.WhatsappWebFailure != httpfailure.UnexpectedRedirectURL {
+	if *tk.WhatsappWebFailure != model.HTTPUnexpectedRedirectURL {
 		t.Fatal("invalid WhatsappWebFailure")
 	}
 	if tk.WhatsappWebStatus != "blocked" {
@@ -504,7 +503,7 @@ func TestTestKeysOnlyWebHTTPFailureNotExpectedURL(t *testing.T) {
 	if tk.WhatsappEndpointsStatus != "ok" {
 		t.Fatal("invalid WhatsappEndpointsStatus")
 	}
-	if *tk.WhatsappWebFailure != httpfailure.UnexpectedRedirectURL {
+	if *tk.WhatsappWebFailure != model.HTTPUnexpectedRedirectURL {
 		t.Fatal("invalid WhatsappWebFailure")
 	}
 	if tk.WhatsappWebStatus != "blocked" {
@@ -549,7 +548,7 @@ func TestTestKeysOnlyWebHTTPFailureTooManyURLs(t *testing.T) {
 	if tk.WhatsappEndpointsStatus != "ok" {
 		t.Fatal("invalid WhatsappEndpointsStatus")
 	}
-	if *tk.WhatsappWebFailure != httpfailure.UnexpectedRedirectURL {
+	if *tk.WhatsappWebFailure != model.HTTPUnexpectedRedirectURL {
 		t.Fatal("invalid WhatsappWebFailure")
 	}
 	if tk.WhatsappWebStatus != "blocked" {

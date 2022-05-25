@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/pion/stun"
 )
 
@@ -128,7 +128,7 @@ func TestIPLookupWorksUsingSTUNEkiga(t *testing.T) {
 		context.Background(),
 		http.DefaultClient,
 		log.Log,
-		httpheader.UserAgent(),
+		model.HTTPHeaderUserAgent,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -143,7 +143,7 @@ func TestIPLookupWorksUsingSTUNGoogle(t *testing.T) {
 		context.Background(),
 		http.DefaultClient,
 		log.Log,
-		httpheader.UserAgent(),
+		model.HTTPHeaderUserAgent,
 	)
 	if err != nil {
 		t.Fatal(err)

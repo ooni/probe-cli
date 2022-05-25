@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestIPLookupWorksUsingcloudlflare(t *testing.T) {
@@ -15,7 +15,7 @@ func TestIPLookupWorksUsingcloudlflare(t *testing.T) {
 		context.Background(),
 		http.DefaultClient,
 		log.Log,
-		httpheader.UserAgent(),
+		model.HTTPHeaderUserAgent,
 	)
 	if err != nil {
 		t.Fatal(err)

@@ -9,8 +9,8 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -55,7 +55,7 @@ func (r Runner) Run(ctx context.Context) error {
 // returns httpheader.RandomUserAgent().
 func MaybeUserAgent(ua string) string {
 	if ua == "" {
-		ua = httpheader.UserAgent()
+		ua = model.HTTPHeaderUserAgent
 	}
 	return ua
 }
@@ -65,8 +65,8 @@ func (r Runner) httpGet(ctx context.Context, url string) error {
 	req, err := http.NewRequest(r.Config.Method, url, nil)
 	runtimex.PanicOnError(err, "http.NewRequest failed")
 	req = req.WithContext(ctx)
-	req.Header.Set("Accept", httpheader.Accept())
-	req.Header.Set("Accept-Language", httpheader.AcceptLanguage())
+	req.Header.Set("Accept", model.HTTPHeaderAccept)
+	req.Header.Set("Accept-Language", model.HTTPHeaderAcceptLanguage)
 	req.Header.Set("User-Agent", MaybeUserAgent(r.Config.UserAgent))
 	if r.Config.HTTPHost != "" {
 		req.Host = r.Config.HTTPHost

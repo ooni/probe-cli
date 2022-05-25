@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -21,7 +20,7 @@ func cloudflareIPLookup(
 		BaseURL:    "https://www.cloudflare.com",
 		HTTPClient: httpClient,
 		Logger:     logger,
-		UserAgent:  httpheader.CLIUserAgent(),
+		UserAgent:  model.HTTPHeaderUserAgent,
 	}).WithBodyLogging().Build().FetchResource(ctx, "/cdn-cgi/trace")
 	if err != nil {
 		return DefaultProbeIP, err

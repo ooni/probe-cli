@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -121,12 +120,12 @@ func (m Measurer) Run(
 		return err
 	}
 	headers := map[string]string{
-		randx.ChangeCapitalization("Accept"):          httpheader.Accept(),
+		randx.ChangeCapitalization("Accept"):          model.HTTPHeaderAccept,
 		randx.ChangeCapitalization("Accept-Charset"):  "ISO-8859-1,utf-8;q=0.7,*;q=0.3",
 		randx.ChangeCapitalization("Accept-Encoding"): "gzip,deflate,sdch",
-		randx.ChangeCapitalization("Accept-Language"): httpheader.AcceptLanguage(),
+		randx.ChangeCapitalization("Accept-Language"): model.HTTPHeaderAcceptLanguage,
 		randx.ChangeCapitalization("Host"):            randx.Letters(15) + ".com",
-		randx.ChangeCapitalization("User-Agent"):      httpheader.UserAgent(),
+		randx.ChangeCapitalization("User-Agent"):      model.HTTPHeaderUserAgent,
 	}
 	for key, value := range headers {
 		// Implementation note: Golang will normalize the header names. We will use

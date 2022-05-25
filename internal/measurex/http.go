@@ -26,7 +26,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/lucas-clemente/quic-go"
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -289,9 +288,9 @@ func NewCookieJar() http.CookieJar {
 // the headers are the ones we use for measuring.
 func NewHTTPRequestHeaderForMeasuring() http.Header {
 	h := http.Header{}
-	h.Set("Accept", httpheader.Accept())
-	h.Set("Accept-Language", httpheader.AcceptLanguage())
-	h.Set("User-Agent", httpheader.UserAgent())
+	h.Set("Accept", model.HTTPHeaderAccept)
+	h.Set("Accept-Language", model.HTTPHeaderAcceptLanguage)
+	h.Set("User-Agent", model.HTTPHeaderUserAgent)
 	return h
 }
 

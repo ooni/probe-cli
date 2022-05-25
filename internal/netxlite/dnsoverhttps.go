@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -55,7 +54,7 @@ func (t *DNSOverHTTPSTransport) RoundTrip(ctx context.Context, query []byte) ([]
 		return nil, err
 	}
 	req.Host = t.HostOverride
-	req.Header.Set("user-agent", httpheader.UserAgent())
+	req.Header.Set("user-agent", model.HTTPHeaderUserAgent)
 	req.Header.Set("content-type", "application/dns-message")
 	var resp *http.Response
 	resp, err = t.Client.Do(req.WithContext(ctx))
