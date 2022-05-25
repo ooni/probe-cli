@@ -58,6 +58,7 @@ func NewDNSOverTCPTransport(dial DialContextFunc, address string) *DNSOverTCPTra
 func NewDNSOverTLS(dial DialContextFunc, address string) *DNSOverTCPTransport {
 	return &DNSOverTCPTransport{
 		dial:            dial,
+		decoder:         &DNSDecoderMiekg{},
 		address:         address,
 		network:         "dot",
 		requiresPadding: true,
