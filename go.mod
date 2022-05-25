@@ -20,7 +20,6 @@ require (
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/iancoleman/strcase v0.2.0
 	github.com/lucas-clemente/quic-go v0.27.0
-	github.com/marten-seemann/qtls-go1-18 v0.1.1
 	github.com/mattn/go-colorable v0.1.12
 	github.com/miekg/dns v1.1.49
 	github.com/mitchellh/go-wordwrap v1.0.1
@@ -73,6 +72,7 @@ require (
 	github.com/marten-seemann/qpack v0.2.1 // indirect
 	github.com/marten-seemann/qtls-go1-16 v0.1.5 // indirect
 	github.com/marten-seemann/qtls-go1-17 v0.1.1 // indirect
+	github.com/marten-seemann/qtls-go1-18 v0.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-sqlite3 v1.14.13 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
