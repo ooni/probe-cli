@@ -64,6 +64,9 @@ func NewDNSOverTLS(dial DialContextFunc, address string) *DNSOverTCPTransport {
 	}
 }
 
+// errQueryTooLarge indicates the query is too large for the transport.
+var errQueryTooLarge = errors.New("oodns: query too large for this transport")
+
 // RoundTrip sends a query and receives a reply.
 func (t *DNSOverTCPTransport) RoundTrip(
 	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
@@ -74,7 +77,7 @@ func (t *DNSOverTCPTransport) RoundTrip(
 		return nil, err
 	}
 	if len(rawQuery) > math.MaxUint16 {
-		return nil, errors.New("query too long")
+		return nil, errQueryTooLarge
 	}
 	conn, err := t.dial(ctx, "tcp", t.address)
 	if err != nil {
@@ -82,9 +85,7 @@ func (t *DNSOverTCPTransport) RoundTrip(
 	}
 	defer conn.Close()
 	const iotimeout = 10 * time.Second
-	if err = conn.SetDeadline(time.Now().Add(iotimeout)); err != nil {
-		return nil, err
-	}
+	conn.SetDeadline(time.Now().Add(iotimeout))
 	// Write request
 	buf := []byte{byte(len(rawQuery) >> 8)}
 	buf = append(buf, byte(len(rawQuery)))

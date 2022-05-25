@@ -96,25 +96,6 @@ func TestDNSDecoderMiekg(t *testing.T) {
 			}
 		})
 
-		t.Run("dnsResponse.Message", func(t *testing.T) {
-			d := &DNSDecoderMiekg{}
-			queryID := dns.Id()
-			rawQuery := dnsGenQuery(dns.TypeA, queryID)
-			rawResponse := dnsGenLookupHostReplySuccess(rawQuery)
-			query := &mocks.DNSQuery{
-				MockID: func() uint16 {
-					return queryID
-				},
-			}
-			resp, err := d.DecodeResponse(rawResponse, query)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if resp.Message().Id != query.ID() {
-				t.Fatal("invalid message")
-			}
-		})
-
 		t.Run("dnsResponse.Rcode", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
 			queryID := dns.Id()

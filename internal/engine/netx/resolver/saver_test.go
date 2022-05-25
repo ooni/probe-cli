@@ -117,10 +117,10 @@ func TestSaverDNSTransportFailure(t *testing.T) {
 				return nil, expected
 			},
 			MockNetwork: func() string {
-				return ""
+				return "fake"
 			},
 			MockAddress: func() string {
-				return "fake"
+				return ""
 			},
 		},
 		Saver: saver,
@@ -185,10 +185,10 @@ func TestSaverDNSTransportSuccess(t *testing.T) {
 				return response, nil
 			},
 			MockNetwork: func() string {
-				return ""
+				return "fake"
 			},
 			MockAddress: func() string {
-				return "fake"
+				return ""
 			},
 		},
 		Saver: saver,

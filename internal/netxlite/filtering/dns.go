@@ -226,7 +226,8 @@ func (p *DNSProxy) proxy(origQuery *dns.Msg) (*dns.Msg, error) {
 	if err != nil {
 		return nil, err
 	}
-	return response.Message(), nil
+	_ = response    // FIXME
+	return nil, nil // FIXME
 }
 
 func (p *DNSProxy) cache(name string, query *dns.Msg) *dns.Msg {

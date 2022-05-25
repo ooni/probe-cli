@@ -65,11 +65,6 @@ func (r *dnsResponse) Bytes() []byte {
 	return r.bytes
 }
 
-// Message implements model.DNSResponse.Message.
-func (r *dnsResponse) Message() *dns.Msg {
-	return r.msg
-}
-
 // Rcode implements model.DNSResponse.Rcode.
 func (r *dnsResponse) Rcode() int {
 	return r.msg.Rcode

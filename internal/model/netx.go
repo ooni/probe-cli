@@ -84,7 +84,7 @@ type DNSEncoder interface {
 	// Serialization to bytes is lazy to acommodate DNS transports that
 	// do not need to serialize and send bytes, e.g., getaddrinfo.
 	//
-	// You serialized to bytes using DNSQuery.Bytes. This operation MAY fail
+	// You serialize to bytes using DNSQuery.Bytes. This operation MAY fail
 	// if the domain name cannot be packed into a DNS message (e.g., it is
 	// too long to fit into the message).
 	//
