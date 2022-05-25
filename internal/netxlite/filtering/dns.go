@@ -1,16 +1,12 @@
 package filtering
 
 import (
-	"context"
 	"errors"
 	"io"
 	"net"
-	"net/http"
 	"strings"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -52,8 +48,8 @@ type DNSProxy struct {
 	// receive a query for the given domain.
 	OnQuery func(domain string) DNSAction
 
-	// Upstream is the OPTIONAL upstream transport.
-	Upstream model.DNSTransport
+	// UpstreamEndpoint is the OPTIONAL upstream transport endpoint.
+	UpstreamEndpoint string
 
 	// mockableReply allows to mock DNSProxy.reply in tests.
 	mockableReply func(query *dns.Msg) (*dns.Msg, error)
@@ -207,29 +203,16 @@ var (
 	errDNSExpectedQueryNotResponse = errors.New("filtering: expected query not response")
 )
 
-func (p *DNSProxy) proxy(origQuery *dns.Msg) (*dns.Msg, error) {
-	if origQuery.Response {
+func (p *DNSProxy) proxy(query *dns.Msg) (*dns.Msg, error) {
+	if query.Response {
 		return nil, errDNSExpectedQueryNotResponse
 	}
-	if len(origQuery.Question) != 1 {
+	if len(query.Question) != 1 {
 		return nil, errDNSExpectedSingleQuestion
 	}
-	question := origQuery.Question[0]
-	domain := question.Name
-	queryType := question.Qtype
-	encoder := &netxlite.DNSEncoderMiekg{}
-	txp := p.dnstransport()
-	query := encoder.Encode(domain, queryType, txp.RequiresPadding())
-	defer txp.CloseIdleConnections()
-	ctx := context.Background()
-	response, err := txp.RoundTrip(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	outResp := &dns.Msg{}
-	err = outResp.Unpack(response.Bytes())
-	runtimex.PanicOnError(err, "outResp.Unpack should not fail")
-	return outResp, nil
+	clnt := &dns.Client{}
+	resp, _, err := clnt.Exchange(query, p.upstreamEndpoint())
+	return resp, err
 }
 
 func (p *DNSProxy) cache(name string, query *dns.Msg) *dns.Msg {
@@ -246,10 +229,9 @@ func (p *DNSProxy) cache(name string, query *dns.Msg) *dns.Msg {
 	return p.compose(query, ipAddrs...)
 }
 
-func (p *DNSProxy) dnstransport() model.DNSTransport {
-	if p.Upstream != nil {
-		return p.Upstream
+func (p *DNSProxy) upstreamEndpoint() string {
+	if p.UpstreamEndpoint != "" {
+		return p.UpstreamEndpoint
 	}
-	const URL = "https://1.1.1.1/dns-query"
-	return netxlite.NewDNSOverHTTPSTransport(http.DefaultClient, URL)
+	return "8.8.8.8:53"
 }

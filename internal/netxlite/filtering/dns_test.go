@@ -324,12 +324,24 @@ func TestDNSProxy(t *testing.T) {
 	})
 
 	t.Run("proxy", func(t *testing.T) {
-		t.Run("Pack fails", func(t *testing.T) {
+		t.Run("with response", func(t *testing.T) {
 			p := &DNSProxy{}
 			query := &dns.Msg{}
-			query.Rcode = -1 // causes Pack to fail
+			query.Response = true
 			reply, err := p.proxy(query)
-			if err == nil || !strings.HasSuffix(err.Error(), "bad rcode") {
+			if !errors.Is(err, errDNSExpectedQueryNotResponse) {
+				t.Fatal("unexpected err", err)
+			}
+			if reply != nil {
+				t.Fatal("expected nil reply")
+			}
+		})
+
+		t.Run("with no questions", func(t *testing.T) {
+			p := &DNSProxy{}
+			query := &dns.Msg{}
+			reply, err := p.proxy(query)
+			if !errors.Is(err, errDNSExpectedSingleQuestion) {
 				t.Fatal("unexpected err", err)
 			}
 			if reply != nil {
@@ -338,17 +350,13 @@ func TestDNSProxy(t *testing.T) {
 		})
 
 		t.Run("round trip fails", func(t *testing.T) {
-			expected := errors.New("mocked error")
 			p := &DNSProxy{
-				Upstream: &mocks.DNSTransport{
-					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
-						return nil, expected
-					},
-					MockCloseIdleConnections: func() {},
-				},
+				UpstreamEndpoint: "antani",
 			}
-			reply, err := p.proxy(&dns.Msg{})
-			if !errors.Is(err, expected) {
+			query := &dns.Msg{}
+			query.Question = append(query.Question, dns.Question{})
+			reply, err := p.proxy(query)
+			if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
 				t.Fatal("unexpected err", err)
 			}
 			if reply != nil {
