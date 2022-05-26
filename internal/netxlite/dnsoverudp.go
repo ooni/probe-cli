@@ -123,6 +123,9 @@ type DNSOverUDPResponse struct {
 	// LocalAddr is the local UDP address we're using.
 	LocalAddr string
 
+	// Operation is the operation that failed.
+	Operation string
+
 	// Query is the related DNS query.
 	Query model.DNSQuery
 
@@ -135,10 +138,11 @@ type DNSOverUDPResponse struct {
 
 // newDNSOverUDPResponse creates a new DNSOverUDPResponse instance.
 func (t *DNSOverUDPTransport) newDNSOverUDPResponse(localAddr string, err error,
-	query model.DNSQuery, resp model.DNSResponse) *DNSOverUDPResponse {
+	query model.DNSQuery, resp model.DNSResponse, operation string) *DNSOverUDPResponse {
 	return &DNSOverUDPResponse{
 		Err:        err,
 		LocalAddr:  localAddr,
+		Operation:  operation,
 		Query:      query,
 		RemoteAddr: t.Endpoint, // The common case is to have an IP:port here (domains are discouraged)
 		Response:   resp,
@@ -235,7 +239,8 @@ func (t *DNSOverUDPTransport) roundTripLoop(
 	defer close(joinedch) // as documented
 	rawQuery, err := query.Bytes()
 	if err != nil {
-		outch <- t.newDNSOverUDPResponse("", err, query, nil) // one-sized buffer, can't block
+		outch <- t.newDNSOverUDPResponse(
+			"", err, query, nil, "serialize_query") // one-sized buffer, can't block
 		return
 	}
 	// While dial operations return immediately for UDP, we MAY be calling the
@@ -246,20 +251,22 @@ func (t *DNSOverUDPTransport) roundTripLoop(
 	defer cancel()
 	conn, err := t.Dialer.DialContext(ctx, "udp", t.Endpoint)
 	if err != nil {
-		outch <- t.newDNSOverUDPResponse("", err, query, nil) // one-sized buffer, can't block
+		outch <- t.newDNSOverUDPResponse(
+			"", err, query, nil, ConnectOperation) // one-sized buffer, can't block
 		return
 	}
 	defer conn.Close() // we own the conn
 	conn.SetDeadline(deadline)
 	localAddr := conn.LocalAddr().String()
 	if _, err = conn.Write(rawQuery); err != nil {
-		outch <- t.newDNSOverUDPResponse(localAddr, err, query, nil) // one-sized buffer, can't block
+		outch <- t.newDNSOverUDPResponse(
+			localAddr, err, query, nil, WriteOperation) // one-sized buffer, can't block
 		return
 	}
 	for {
 		resp, err := t.recv(query, conn)
 		select {
-		case outch <- t.newDNSOverUDPResponse(localAddr, err, query, resp):
+		case outch <- t.newDNSOverUDPResponse(localAddr, err, query, resp, ReadOperation):
 		default:
 			return // no-one is reading the channel -- so long...
 		}

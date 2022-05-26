@@ -391,6 +391,32 @@ func TestDNSOverUDPTransport(t *testing.T) {
 				t.Fatal(diff)
 			}
 		})
+
+		t.Run("correct behavior when read times out", func(t *testing.T) {
+			srvr := &filtering.DNSServer{
+				OnQuery: func(domain string) filtering.DNSAction {
+					return filtering.DNSActionTimeout
+				},
+			}
+			listener, err := srvr.Start("127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer listener.Close()
+			dialer := NewDialerWithoutResolver(model.DiscardLogger)
+			txp := NewDNSOverUDPTransport(dialer, listener.LocalAddr().String())
+			txp.IOTimeout = 30 * time.Millisecond // short timeout to have a fast test
+			encoder := &DNSEncoderMiekg{}
+			query := encoder.Encode("dns.google.", dns.TypeA, false)
+			rch := txp.AsyncRoundTrip(query, 1)
+			result := <-rch.Response
+			if result.Err == nil || result.Err.Error() != "generic_timeout_error" {
+				t.Fatal("unexpected error", result.Err)
+			}
+			if result.Operation != ReadOperation {
+				t.Fatal("unexpected failed operation", result.Operation)
+			}
+		})
 	})
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
