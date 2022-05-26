@@ -10,7 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// DNSAction is a DNS filtering action that this proxy should take.
+// DNSAction is a DNS filtering action that a DNSServer should take.
 type DNSAction string
 
 const (
@@ -29,7 +29,7 @@ const (
 	// DNSActionTimeout never replies to the query.
 	DNSActionTimeout = DNSAction("timeout")
 
-	// DNSActionCache causes the proxy to check the cache. If there
+	// DNSActionCache causes the server to check the cache. If there
 	// are entries, they are returned. Otherwise, NXDOMAIN is returned.
 	DNSActionCache = DNSAction("cache")
 
@@ -49,18 +49,21 @@ type DNSServer struct {
 	// receive a query for the given domain.
 	OnQuery func(domain string) DNSAction
 
-	// onTimeout is OPTIONAL and called whenever we encounter
-	// and action that causes a client side timeout.
-	onTimeout func()
+	// onTimeout is the OPTIONAL channel where we emit a true
+	// value each time there's a timeout. If you set this value
+	// to a non-nil channel, then you MUST drain the channel
+	// for each expected timeout. Otherwise, the code will just
+	// ignore this field and nothing will be emitted.
+	onTimeout chan bool
 }
 
-// DNSListener is the interface returned by DNSProxy.Start.
+// DNSListener is the interface returned by DNSServer.Start.
 type DNSListener interface {
 	io.Closer
 	LocalAddr() net.Addr
 }
 
-// Start starts the proxy.
+// Start starts this server.
 func (p *DNSServer) Start(address string) (DNSListener, error) {
 	pconn, _, err := p.start(address)
 	return pconn, err
@@ -124,7 +127,7 @@ func (p *DNSServer) serveAsync(pconn net.PacketConn, addr net.Addr, buffer []byt
 		p.emit(pconn, addr, p.empty(query))
 	case DNSActionTimeout:
 		if p.onTimeout != nil {
-			p.onTimeout()
+			p.onTimeout <- true
 		}
 	case DNSActionCache:
 		p.emit(pconn, addr, p.cache(name, query))

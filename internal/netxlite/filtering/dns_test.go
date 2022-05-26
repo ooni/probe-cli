@@ -19,6 +19,7 @@ func TestDNSServer(t *testing.T) {
 			OnQuery: func(domain string) DNSAction {
 				return action
 			},
+			onTimeout: make(chan bool),
 		}
 		listener, done, err := p.start("127.0.0.1:0")
 		return p, listener, done, err
@@ -131,9 +132,10 @@ func TestDNSServer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		srvr.onTimeout = func() {
-			conn.Close() // forces the exchange to interrupt ~immediately
-		}
+		go func() {
+			<-srvr.onTimeout
+			conn.Close()
+		}()
 		reply, _, err := c.ExchangeWithConn(newQuery(dns.TypeA), conn)
 		if !errors.Is(err, net.ErrClosed) {
 			t.Fatal("unexpected err", err)
