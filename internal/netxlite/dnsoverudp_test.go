@@ -283,60 +283,65 @@ func TestDNSOverUDPTransport(t *testing.T) {
 
 	t.Run("AsyncRoundTrip", func(t *testing.T) {
 		t.Run("calling Next with cancelled context", func(t *testing.T) {
-			blocker := make(chan interface{})
-			const expected = 17
-			input := bytes.NewReader(make([]byte, expected))
-			txp := NewDNSOverUDPTransport(
-				&mocks.Dialer{
-					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-						<-blocker // block here until Next returns because of expired context
-						return &mocks.Conn{
-							MockSetDeadline: func(t time.Time) error {
-								return nil
-							},
-							MockWrite: func(b []byte) (int, error) {
-								return len(b), nil
-							},
-							MockRead: input.Read,
-							MockClose: func() error {
-								return nil
-							},
-							MockLocalAddr: func() net.Addr {
-								return &mocks.Addr{
-									MockNetwork: func() string {
-										return "udp"
-									},
-									MockString: func() string {
-										return "127.0.0.1:1345"
-									},
-								}
-							},
-						}, nil
-					},
-				}, "9.9.9.9:53",
-			)
-			expectedResp := &mocks.DNSResponse{}
-			txp.Decoder = &mocks.DNSDecoder{
-				MockDecodeResponse: func(data []byte, query model.DNSQuery) (model.DNSResponse, error) {
-					return expectedResp, nil
+			srvr := &filtering.DNSServer{
+				OnQuery: func(domain string) filtering.DNSAction {
+					return filtering.DNSActionCache
+				},
+				Cache: map[string][]string{
+					"dns.google.": {"8.8.8.8"},
 				},
 			}
-			query := &mocks.DNSQuery{
-				MockBytes: func() ([]byte, error) {
-					return make([]byte, 128), nil
-				},
+			listener, err := srvr.Start("127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
 			}
-			out := txp.AsyncRoundTrip(query, 1)
-			ctx, cancel := context.WithCancel(context.Background())
-			cancel() // immediately cancel
-			resp, err := out.Next(ctx)
+			defer listener.Close()
+			dialer := NewDialerWithoutResolver(model.DiscardLogger)
+			txp := NewDNSOverUDPTransport(dialer, listener.LocalAddr().String())
+			encoder := &DNSEncoderMiekg{}
+			query := encoder.Encode("dns.google.", dns.TypeA, false)
+			ctx := context.Background()
+			rch, err := txp.AsyncRoundTrip(ctx, query, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rch.Close()
+			ctx, cancel := context.WithCancel(ctx)
+			cancel() // fail immediately
+			resp, err := rch.Next(ctx)
 			if !errors.Is(err, context.Canceled) {
 				t.Fatal("unexpected err", err)
 			}
 			if resp != nil {
 				t.Fatal("unexpected resp")
 			}
-			close(blocker) // unblock the background goroutine
+		})
+
+		t.Run("no-one is reading the channel", func(t *testing.T) {
+			srvr := &filtering.DNSServer{
+				OnQuery: func(domain string) filtering.DNSAction {
+					return filtering.DNSActionLocalHostPlusCache // i.e., two responses
+				},
+				Cache: map[string][]string{
+					"dns.google.": {"8.8.8.8"},
+				},
+			}
+			listener, err := srvr.Start("127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer listener.Close()
+			dialer := NewDialerWithoutResolver(model.DiscardLogger)
+			txp := NewDNSOverUDPTransport(dialer, listener.LocalAddr().String())
+			encoder := &DNSEncoderMiekg{}
+			query := encoder.Encode("dns.google.", dns.TypeA, false)
+			ctx := context.Background()
+			rch, err := txp.AsyncRoundTrip(ctx, query, 1) // but just one place
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rch.Close()
+			<-rch.Joined // should see no-one is reading and stop
 		})
 
 		t.Run("typical usage to obtain late responses", func(t *testing.T) {
@@ -357,7 +362,11 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			txp := NewDNSOverUDPTransport(dialer, listener.LocalAddr().String())
 			encoder := &DNSEncoderMiekg{}
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
-			rch := txp.AsyncRoundTrip(query, 1)
+			rch, err := txp.AsyncRoundTrip(context.Background(), query, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rch.Close()
 			resp, err := rch.Next(context.Background())
 			if err != nil {
 				t.Fatal(err)
@@ -408,7 +417,11 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			txp.IOTimeout = 30 * time.Millisecond // short timeout to have a fast test
 			encoder := &DNSEncoderMiekg{}
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
-			rch := txp.AsyncRoundTrip(query, 1)
+			rch, err := txp.AsyncRoundTrip(context.Background(), query, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer rch.Close()
 			result := <-rch.Response
 			if result.Err == nil || result.Err.Error() != "generic_timeout_error" {
 				t.Fatal("unexpected error", result.Err)
