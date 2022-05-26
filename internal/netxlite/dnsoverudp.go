@@ -34,11 +34,8 @@ import (
 // Being able to observe some ICMP errors is good because it could possibly
 // make this code suitable to implement parasitic traceroute.
 //
-// This transport is capable of collecting additional responses after the
-// first response. To see these responses, you need to use the AsyncRoundTrip
-// method, which returns a buffered channel wrapper where we post any response
-// we read from the socket up until a deadline. Using a channel with just
-// a single place in the buffer is equivalent to calling RoundTrip.
+// This transport is capable of collecting additional responses after the first
+// response. To see these responses, use the AsyncRoundTrip method.
 type DNSOverUDPTransport struct {
 	// Decoder is the MANDATORY DNSDecoder to use.
 	Decoder model.DNSDecoder
@@ -79,10 +76,11 @@ func NewDNSOverUDPTransport(dialer model.Dialer, address string) *DNSOverUDPTran
 // RoundTrip sends a query and receives a response.
 func (t *DNSOverUDPTransport) RoundTrip(
 	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
-	// QUIRK: the original code had a five seconds timeout, which was
+	// QUIRK: the original code had a five seconds timeout, which is
 	// consistent with the Bionic implementation. Let's enforce such a
 	// timeout using the context in the outer operation because we
-	// need to run for more seconds in the background to catch duplicates.
+	// need to run for more seconds in the background to catch as many
+	// duplicate replies as possible.
 	//
 	// See https://labs.ripe.net/Members/baptiste_jonglez_1/persistent-dns-connections-for-reliability-and-performance
 	const opTimeout = 5 * time.Second
@@ -116,22 +114,22 @@ func (t *DNSOverUDPTransport) CloseIdleConnections() {
 
 var _ model.DNSTransport = &DNSOverUDPTransport{}
 
-// DNSOverUDPResponse is a response received by a DNSOverPacketConnTransport
-// when you use its AsyncRoundTrip method as opposed to using RoundTrip.
+// DNSOverUDPResponse is a response received by a DNSOverUDPTransport when you
+// use its AsyncRoundTrip method as opposed to using RoundTrip.
 type DNSOverUDPResponse struct {
-	// LocalAddr is the local UDP address we're using.
-	LocalAddr string
-
 	// Err is the error that occurred (nil in case of success).
 	Err error
 
-	// Query is the query for which we received this reponse.
+	// LocalAddr is the local UDP address we're using.
+	LocalAddr string
+
+	// Query is the related DNS query.
 	Query model.DNSQuery
 
-	// RemoteAddr is the remote address we're using.
+	// RemoteAddr is the remote server address.
 	RemoteAddr string
 
-	// Response is the response (nil if error is not nil).
+	// Response is the response (nil iff error is not nil).
 	Response model.DNSResponse
 }
 
@@ -139,25 +137,27 @@ type DNSOverUDPResponse struct {
 func (t *DNSOverUDPTransport) newDNSOverUDPResponse(localAddr string, err error,
 	query model.DNSQuery, resp model.DNSResponse) *DNSOverUDPResponse {
 	return &DNSOverUDPResponse{
-		LocalAddr:  localAddr,
 		Err:        err,
+		LocalAddr:  localAddr,
 		Query:      query,
-		RemoteAddr: t.Endpoint,
+		RemoteAddr: t.Endpoint, // The common case is to have an IP:port here (domains are discouraged)
 		Response:   resp,
 	}
 }
 
 // DNSOverUDPChannel is a wrapper around a channel for reading zero
-// or more *DNSOverUDPResponse that makes interacting with this channel
-// more user friendly than it would normally be. You are otherwise
-// welcome to use the underlying channels directly.
+// or more *DNSOverUDPResponse that makes extracting information from
+// the underlying channels more user friendly than interacting with
+// the channels directly, thanks to useful wrapper methods implementing
+// common access patterns. You can still use the channels directly if
+// there's no convenience method for your specific access pattern.
 type DNSOverUDPChannel struct {
 	// Response is the channel where we'll post responses. This channel
 	// WON'T be closed when the background goroutine terminates.
 	Response <-chan *DNSOverUDPResponse
 
-	// Joined is a channel that is closed when the background
-	// goroutine performing this round trip terminates.
+	// Joined is a channel that IS CLOSED when the background
+	// goroutine performing this round trip TERMINATES.
 	Joined <-chan bool
 }
 
@@ -177,12 +177,14 @@ func (ch *DNSOverUDPChannel) Next(ctx context.Context) (model.DNSResponse, error
 }
 
 // TryNextResponses attempts to read all the buffered messages inside of the "Response"
-// channel that contains successful DNS responses. The use case for this function is
-// to obtain all the subsequent response messages we received on a censored environment.
+// channel that contains successful DNS responses. That is, this function will silently skip
+// any possible DNSOverUDPResponse with its Err != nil. The use case for this function is
+// to obtain all the subsequent response messages we received while we were performing
+// other operations (e.g., contacting the test helper of fetching a webpage).
 func (ch *DNSOverUDPChannel) TryNextResponses() (out []model.DNSResponse) {
 	for {
 		select {
-		case r := <-ch.Response:
+		case r := <-ch.Response: // Note: AsyncRoundTrip WILL NOT close the channel or emit a nil
 			if r.Err == nil && r.Response != nil {
 				out = append(out, r.Response)
 			}
@@ -193,17 +195,24 @@ func (ch *DNSOverUDPChannel) TryNextResponses() (out []model.DNSResponse) {
 }
 
 // AsyncRoundTrip performs an async DNS round trip. The "buffer" argument
-// controls how many buffer slots the returned channel should have. A zero
-// or negative "buffer" implies to create a channel with a single place
-// for buffering. We will stop reading and terminate the background goroutine
-// when (1) the IOTimeout expires for the connection we're using or (2) we
-// cannot write on the channel. Note that the background goroutine WILL NOT
-// close the channel to signal its completion. Hence, who reads the returned
+// controls how many buffer slots the returned DNSOverUDPChannel's Response
+// channel should have. A zero or negative value causes this function to
+// create a channel having a single-slot buffer.
+//
+// The real round trip runs in a background goroutine. We will terminate the background
+// goroutine when (1) the IOTimeout expires for the connection we're using or (2) we
+// cannot write on the "Response" channel. Note that the background goroutine WILL NOT
+// close the "Response" channel to signal its completion. Hence, who reads such a
 // channel MUST be prepared for read operations to block forever and use a
-// select for draining the channel in a deadlock-safe way. Also, we WILL NOT
-// ever emit a nil message over the channel. If you are using the Next or Drain
-// methods of the DNSOverUDPChannel type, you don't need to worry about these
-// low level details because they will take care of them.
+// select for draining the channel in a deadlock-safe way. Also, we WILL NOT ever
+// emit a nil message over the "Response" channel.
+//
+// The returned DNSOverUDPChannel contains another channel called Joined that is
+// closed when the background goroutine terminates, so you can use this channel
+// should you need to synchronize with such goroutine's termination.
+//
+// If you are using the Next or TryNextResponses methods of the DNSOverUDPChannel type,
+// you don't need to worry about these low level details though.
 func (t *DNSOverUDPTransport) AsyncRoundTrip(query model.DNSQuery, buffer int) *DNSOverUDPChannel {
 	if buffer < 2 {
 		buffer = 1 // as documented
@@ -223,7 +232,7 @@ func (t *DNSOverUDPTransport) AsyncRoundTrip(query model.DNSQuery, buffer int) *
 // the "joinedch" channel and WILL CLOSE it when done.
 func (t *DNSOverUDPTransport) roundTripLoop(
 	query model.DNSQuery, outch chan<- *DNSOverUDPResponse, joinedch chan<- bool) {
-	defer close(joinedch)
+	defer close(joinedch) // as documented
 	rawQuery, err := query.Bytes()
 	if err != nil {
 		outch <- t.newDNSOverUDPResponse("", err, query, nil) // one-sized buffer, can't block

@@ -239,7 +239,10 @@ func (p *TLSProxy) connectingToMyself(conn net.Conn) bool {
 func (p *TLSProxy) forward(wg *sync.WaitGroup, left net.Conn, right net.Conn) {
 	defer wg.Done()
 	// We cannot use netxlite.CopyContext here because we want netxlite to
-	// use filtering inside its test suite. We've added an exception for using
-	// io.Copy inside this file, so tests should continue to pass.
+	// use filtering inside its test suite, so this package cannot depend on
+	// netxlite. In general, we don't want to use io.Copy or io.ReadAll
+	// directly because they may cause the code to block as documented in
+	// internal/netxlite/iox.go. However, this package is only used for
+	// testing, so it's completely okay to make an exception here.
 	io.Copy(left, right)
 }

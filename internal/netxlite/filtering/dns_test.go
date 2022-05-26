@@ -80,7 +80,6 @@ func TestDNSServer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer listener.Close()
 		reply, err := dns.Exchange(newQuery(dns.TypeA), listener.LocalAddr().String())
 		if err != nil {
 			t.Fatal(err)
@@ -107,7 +106,6 @@ func TestDNSServer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer listener.Close()
 		reply, err := dns.Exchange(newQuery(dns.TypeA), listener.LocalAddr().String())
 		if err != nil {
 			t.Fatal(err)
@@ -134,7 +132,7 @@ func TestDNSServer(t *testing.T) {
 		}
 		go func() {
 			<-srvr.onTimeout
-			conn.Close()
+			conn.Close() // close as soon as the server times out, so this test is fast
 		}()
 		reply, _, err := c.ExchangeWithConn(newQuery(dns.TypeA), conn)
 		if !errors.Is(err, net.ErrClosed) {
@@ -152,7 +150,6 @@ func TestDNSServer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer listener.Close()
 		reply, err := dns.Exchange(newQuery(dns.TypeA), listener.LocalAddr().String())
 		if err != nil {
 			t.Fatal(err)
@@ -172,7 +169,6 @@ func TestDNSServer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer listener.Close()
 		reply, err := dns.Exchange(newQuery(dns.TypeA), listener.LocalAddr().String())
 		if err != nil {
 			t.Fatal(err)
@@ -202,7 +198,6 @@ func TestDNSServer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer listener.Close()
 		reply, err := dns.Exchange(newQuery(dns.TypeAAAA), listener.LocalAddr().String())
 		if err != nil {
 			t.Fatal(err)
@@ -232,7 +227,6 @@ func TestDNSServer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer listener.Close()
 		reply, err := dns.Exchange(newQuery(dns.TypeAAAA), listener.LocalAddr().String())
 		if err != nil {
 			t.Fatal(err)

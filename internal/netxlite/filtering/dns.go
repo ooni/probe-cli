@@ -104,7 +104,7 @@ func (p *DNSServer) emit(pconn net.PacketConn, addr net.Addr, reply ...*dns.Msg)
 			continue
 		}
 		pconn.WriteTo(replyBytes, addr)
-		success++
+		success++ // we use this value in tests
 	}
 	return
 }
