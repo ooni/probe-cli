@@ -1,22 +1,19 @@
 package filtering
 
 import (
-	"errors"
 	"io"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// DNSAction is a DNS filtering action that this proxy should take.
+// DNSAction is a DNS filtering action that a DNSServer should take.
 type DNSAction string
 
 const (
-	// DNSActionPass passes the traffic to the upstream server.
-	DNSActionPass = DNSAction("pass")
-
 	// DNSActionNXDOMAIN replies with NXDOMAIN.
 	DNSActionNXDOMAIN = DNSAction("nxdomain")
 
@@ -32,15 +29,19 @@ const (
 	// DNSActionTimeout never replies to the query.
 	DNSActionTimeout = DNSAction("timeout")
 
-	// DNSActionCache causes the proxy to check the cache. If there
+	// DNSActionCache causes the server to check the cache. If there
 	// are entries, they are returned. Otherwise, NXDOMAIN is returned.
 	DNSActionCache = DNSAction("cache")
+
+	// DNSActionLocalHostPlusCache combines the LocalHost and
+	// Cache actions returning first a localhost response followed
+	// by a subsequent response obtained using the cache.
+	DNSActionLocalHostPlusCache = DNSAction("localhost+cache")
 )
 
-// DNSProxy is a DNS proxy that routes traffic to an upstream
-// resolver and may implement filtering policies.
-type DNSProxy struct {
-	// Cache is the DNS cache. Note that the keys of the map
+// DNSServer is a DNS server implementing filtering policies.
+type DNSServer struct {
+	// Cache is the OPTIONAL DNS cache. Note that the keys of the map
 	// must be FQDNs (i.e., including the final `.`).
 	Cache map[string][]string
 
@@ -48,26 +49,27 @@ type DNSProxy struct {
 	// receive a query for the given domain.
 	OnQuery func(domain string) DNSAction
 
-	// UpstreamEndpoint is the OPTIONAL upstream transport endpoint.
-	UpstreamEndpoint string
-
-	// mockableReply allows to mock DNSProxy.reply in tests.
-	mockableReply func(query *dns.Msg) (*dns.Msg, error)
+	// onTimeout is the OPTIONAL channel where we emit a true
+	// value each time there's a timeout. If you set this value
+	// to a non-nil channel, then you MUST drain the channel
+	// for each expected timeout. Otherwise, the code will just
+	// ignore this field and nothing will be emitted.
+	onTimeout chan bool
 }
 
-// DNSListener is the interface returned by DNSProxy.Start
+// DNSListener is the interface returned by DNSServer.Start.
 type DNSListener interface {
 	io.Closer
 	LocalAddr() net.Addr
 }
 
-// Start starts the proxy.
-func (p *DNSProxy) Start(address string) (DNSListener, error) {
+// Start starts this server.
+func (p *DNSServer) Start(address string) (DNSListener, error) {
 	pconn, _, err := p.start(address)
 	return pconn, err
 }
 
-func (p *DNSProxy) start(address string) (DNSListener, <-chan interface{}, error) {
+func (p *DNSServer) start(address string) (DNSListener, <-chan interface{}, error) {
 	pconn, err := net.ListenPacket("udp", address)
 	if err != nil {
 		return nil, nil, err
@@ -77,15 +79,15 @@ func (p *DNSProxy) start(address string) (DNSListener, <-chan interface{}, error
 	return pconn, done, nil
 }
 
-func (p *DNSProxy) mainloop(pconn net.PacketConn, done chan<- interface{}) {
+func (p *DNSServer) mainloop(pconn net.PacketConn, done chan<- interface{}) {
 	defer close(done)
 	for p.oneloop(pconn) {
 		// nothing
 	}
 }
 
-func (p *DNSProxy) oneloop(pconn net.PacketConn) bool {
-	buffer := make([]byte, 1<<12)
+func (p *DNSServer) oneloop(pconn net.PacketConn) bool {
+	buffer := make([]byte, 1<<17)
 	count, addr, err := pconn.ReadFrom(buffer)
 	if err != nil {
 		return !strings.HasSuffix(err.Error(), "use of closed network connection")
@@ -95,73 +97,70 @@ func (p *DNSProxy) oneloop(pconn net.PacketConn) bool {
 	return true
 }
 
-func (p *DNSProxy) serveAsync(pconn net.PacketConn, addr net.Addr, buffer []byte) {
+func (p *DNSServer) emit(pconn net.PacketConn, addr net.Addr, reply ...*dns.Msg) (success int) {
+	for _, entry := range reply {
+		replyBytes, err := entry.Pack()
+		if err != nil {
+			continue
+		}
+		pconn.WriteTo(replyBytes, addr)
+		success++ // we use this value in tests
+	}
+	return
+}
+
+func (p *DNSServer) serveAsync(pconn net.PacketConn, addr net.Addr, buffer []byte) {
 	query := &dns.Msg{}
 	if err := query.Unpack(buffer); err != nil {
 		return
 	}
-	reply, err := p.reply(query)
-	if err != nil {
-		return
-	}
-	replyBytes, err := reply.Pack()
-	if err != nil {
-		return
-	}
-	pconn.WriteTo(replyBytes, addr)
-}
-
-func (p *DNSProxy) reply(query *dns.Msg) (*dns.Msg, error) {
-	if p.mockableReply != nil {
-		return p.mockableReply(query)
-	}
-	return p.replyDefault(query)
-}
-
-func (p *DNSProxy) replyDefault(query *dns.Msg) (*dns.Msg, error) {
-	if len(query.Question) != 1 {
-		return nil, errors.New("unhandled message")
+	if len(query.Question) < 1 {
+		return // just discard the query
 	}
 	name := query.Question[0].Name
 	switch p.OnQuery(name) {
-	case DNSActionPass:
-		return p.proxy(query)
 	case DNSActionNXDOMAIN:
-		return p.nxdomain(query), nil
+		p.emit(pconn, addr, p.nxdomain(query))
 	case DNSActionLocalHost:
-		return p.localHost(query), nil
+		p.emit(pconn, addr, p.localHost(query))
 	case DNSActionNoAnswer:
-		return p.empty(query), nil
+		p.emit(pconn, addr, p.empty(query))
 	case DNSActionTimeout:
-		return nil, errors.New("let's ignore this query")
+		if p.onTimeout != nil {
+			p.onTimeout <- true
+		}
 	case DNSActionCache:
-		return p.cache(name, query), nil
+		p.emit(pconn, addr, p.cache(name, query))
+	case DNSActionLocalHostPlusCache:
+		p.emit(pconn, addr, p.localHost(query))
+		time.Sleep(10 * time.Millisecond)
+		p.emit(pconn, addr, p.cache(name, query))
 	default:
-		return p.refused(query), nil
+		p.emit(pconn, addr, p.refused(query))
 	}
 }
 
-func (p *DNSProxy) refused(query *dns.Msg) *dns.Msg {
+func (p *DNSServer) refused(query *dns.Msg) *dns.Msg {
 	m := new(dns.Msg)
 	m.SetRcode(query, dns.RcodeRefused)
 	return m
 }
 
-func (p *DNSProxy) nxdomain(query *dns.Msg) *dns.Msg {
+func (p *DNSServer) nxdomain(query *dns.Msg) *dns.Msg {
 	m := new(dns.Msg)
 	m.SetRcode(query, dns.RcodeNameError)
 	return m
 }
 
-func (p *DNSProxy) localHost(query *dns.Msg) *dns.Msg {
+func (p *DNSServer) localHost(query *dns.Msg) *dns.Msg {
 	return p.compose(query, net.IPv6loopback, net.IPv4(127, 0, 0, 1))
 }
 
-func (p *DNSProxy) empty(query *dns.Msg) *dns.Msg {
+func (p *DNSServer) empty(query *dns.Msg) *dns.Msg {
 	return p.compose(query)
 }
 
-func (p *DNSProxy) compose(query *dns.Msg, ips ...net.IP) *dns.Msg {
+func (p *DNSServer) compose(query *dns.Msg, ips ...net.IP) *dns.Msg {
 	runtimex.PanicIfTrue(len(query.Question) != 1, "expecting a single question")
 	question := query.Question[0]
 	reply := new(dns.Msg)
@@ -195,27 +194,7 @@ func (p *DNSProxy) compose(query *dns.Msg, ips ...net.IP) *dns.Msg {
 	return reply
 }
 
-var (
-	// errDNSExpectedSingleQuestion means we expected to see a single question
-	errDNSExpectedSingleQuestion = errors.New("filtering: expected single DNS question")
-
-	// errDNSExpectedQueryNotResponse means we expected to see a query.
-	errDNSExpectedQueryNotResponse = errors.New("filtering: expected query not response")
-)
-
-func (p *DNSProxy) proxy(query *dns.Msg) (*dns.Msg, error) {
-	if query.Response {
-		return nil, errDNSExpectedQueryNotResponse
-	}
-	if len(query.Question) != 1 {
-		return nil, errDNSExpectedSingleQuestion
-	}
-	clnt := &dns.Client{}
-	resp, _, err := clnt.Exchange(query, p.upstreamEndpoint())
-	return resp, err
-}
-
-func (p *DNSProxy) cache(name string, query *dns.Msg) *dns.Msg {
+func (p *DNSServer) cache(name string, query *dns.Msg) *dns.Msg {
 	addrs := p.Cache[name]
 	var ipAddrs []net.IP
 	for _, addr := range addrs {
@@ -227,11 +206,4 @@ func (p *DNSProxy) cache(name string, query *dns.Msg) *dns.Msg {
 		return p.nxdomain(query)
 	}
 	return p.compose(query, ipAddrs...)
-}
-
-func (p *DNSProxy) upstreamEndpoint() string {
-	if p.UpstreamEndpoint != "" {
-		return p.UpstreamEndpoint
-	}
-	return "8.8.8.8:53"
 }

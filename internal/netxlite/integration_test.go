@@ -113,7 +113,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	})
 
 	t.Run("for nxdomain", func(t *testing.T) {
-		proxy := &filtering.DNSProxy{
+		proxy := &filtering.DNSServer{
 			OnQuery: func(domain string) filtering.DNSAction {
 				return filtering.DNSActionNXDOMAIN
 			},
@@ -137,7 +137,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	})
 
 	t.Run("for refused", func(t *testing.T) {
-		proxy := &filtering.DNSProxy{
+		proxy := &filtering.DNSServer{
 			OnQuery: func(domain string) filtering.DNSAction {
 				return filtering.DNSActionRefused
 			},
@@ -161,7 +161,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	})
 
 	t.Run("for timeout", func(t *testing.T) {
-		proxy := &filtering.DNSProxy{
+		proxy := &filtering.DNSServer{
 			OnQuery: func(domain string) filtering.DNSAction {
 				return filtering.DNSActionTimeout
 			},

@@ -1,15 +1,16 @@
 package filtering
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
+	"io"
 	"net"
 	"strings"
 	"sync"
-
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
+
+// TODO(bassosimone): remove TLSActionPass since we want integration tests
+// to only run locally to make them much more predictable.
 
 // TLSAction is a TLS filtering action that this proxy should take.
 type TLSAction string
@@ -237,5 +238,11 @@ func (p *TLSProxy) connectingToMyself(conn net.Conn) bool {
 // forward will forward the traffic.
 func (p *TLSProxy) forward(wg *sync.WaitGroup, left net.Conn, right net.Conn) {
 	defer wg.Done()
-	netxlite.CopyContext(context.Background(), left, right)
+	// We cannot use netxlite.CopyContext here because we want netxlite to
+	// use filtering inside its test suite, so this package cannot depend on
+	// netxlite. In general, we don't want to use io.Copy or io.ReadAll
+	// directly because they may cause the code to block as documented in
+	// internal/netxlite/iox.go. However, this package is only used for
+	// testing, so it's completely okay to make an exception here.
+	io.Copy(left, right)
 }
