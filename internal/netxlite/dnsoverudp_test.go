@@ -336,7 +336,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			encoder := &DNSEncoderMiekg{}
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
 			ctx := context.Background()
-			rch, err := txp.AsyncRoundTrip(ctx, query, 1)
+			rch, err := txp.AsyncRoundTrip(ctx, query, 1) // but just one place
 			if err != nil {
 				t.Fatal(err)
 			}
