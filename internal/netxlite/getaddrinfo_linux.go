@@ -12,7 +12,6 @@ package netxlite
 import "C"
 
 import (
-	"errors"
 	"syscall"
 )
 
@@ -23,6 +22,13 @@ import (
 // getaddrinfo to return the wrong canonical name on Linux.
 // So definitely leave it out.
 const getaddrinfoAIFlags = C.AI_CANONNAME | C.AI_V4MAPPED | C.AI_ALL
+
+// Making constants available to Go code so we can run tests
+const (
+	eaiSystem   = C.EAI_SYSTEM
+	eaiNoName   = C.EAI_NONAME
+	eaiBadFlags = C.EAI_BADFLAGS
+)
 
 // toError is the function that converts the return value from
 // the getaddrinfo function into a proper Go error.
@@ -46,10 +52,10 @@ func (state *getaddrinfoState) toError(code int64, err error) error {
 		}
 		return newErrGetaddrinfo(code, err)
 	case C.EAI_NONAME:
-		err = errors.New(DNSNoSuchHostSuffix) // so it becomes FailureDNSNXDOMAIN
+		err = ErrOODNSNoSuchHost // so it becomes FailureDNSNXDOMAIN
 		return newErrGetaddrinfo(code, err)
 	default:
-		err = errors.New(DNSServerMisbehavingSuffix) // so it becomes FailureDNSServerMisbehaving
+		err = ErrOODNSMisbehaving // so it becomes FailureDNSServerMisbehaving
 		return newErrGetaddrinfo(code, err)
 	}
 }
