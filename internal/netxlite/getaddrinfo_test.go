@@ -1,10 +1,21 @@
 package netxlite
 
 import (
+	"context"
 	"errors"
 	"io"
 	"testing"
 )
+
+func TestGetaddrinfoLookupHost(t *testing.T) {
+	addrs, err := getaddrinfoLookupHost(context.Background(), "127.0.0.1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(addrs) != 1 || addrs[0] != "127.0.0.1" {
+		t.Fatal("unexpected addrs", addrs)
+	}
+}
 
 func TestErrorToGetaddrinfoRetval(t *testing.T) {
 	type args struct {
