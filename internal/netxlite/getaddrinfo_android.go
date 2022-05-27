@@ -23,7 +23,7 @@ const getaddrinfoAIFlags = C.AI_CANONNAME
 // https://github.com/golang/go/blob/go1.17.6/src/net/cgo_unix.go#L145
 //
 // SPDX-License-Identifier: BSD-3-Clause.
-func (state *getaddrinfoState) toError(code C.int, err error) ([]string, string, error) {
+func (state *getaddrinfoState) toError(code int64, err error) error {
 	switch code {
 	case C.EAI_SYSTEM:
 		if err == nil {
@@ -36,7 +36,7 @@ func (state *getaddrinfoState) toError(code C.int, err error) ([]string, string,
 			// comes up again. golang.org/issue/6232.
 			err = syscall.EMFILE
 		}
-		return nil, "", newErrGetaddrinfo(int64(code), err)
+		return newErrGetaddrinfo(code, err)
 	case C.EAI_NONAME, C.EAI_NODATA:
 		// We have seen that on Android systems NXDOMAIN maps to
 		// EAI_NODATA and it's unclear whether this is the case for
@@ -51,9 +51,9 @@ func (state *getaddrinfoState) toError(code C.int, err error) ([]string, string,
 		// See https://github.com/ooni/probe/issues/2029 for the
 		// investigation on Android's getaddrinfo.
 		err = errors.New(DNSNoSuchHostSuffix) // so it becomes FailureDNSNXDOMAINError
-		return nil, "", newErrGetaddrinfo(int64(code), err)
+		return newErrGetaddrinfo(code, err)
 	default:
 		err = errors.New(DNSServerMisbehavingSuffix) // so it becomes FailureDNSServerMisbehaving
-		return nil, "", newErrGetaddrinfo(int64(code), err)
+		return newErrGetaddrinfo(code, err)
 	}
 }

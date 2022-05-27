@@ -11,11 +11,17 @@ package netxlite
 */
 import "C"
 import (
-	"errors"
 	"syscall"
 )
 
 const getaddrinfoAIFlags = (C.AI_CANONNAME | C.AI_V4MAPPED | C.AI_ALL) & C.AI_MASK
+
+// Making constants available to Go code so we can run tests
+const (
+	eaiSystem   = C.EAI_SYSTEM
+	eaiNoName   = C.EAI_NONAME
+	eaiBadFlags = C.EAI_BADFLAGS
+)
 
 // toError is the function that converts the return value from
 // the getaddrinfo function into a proper Go error.
@@ -24,7 +30,7 @@ const getaddrinfoAIFlags = (C.AI_CANONNAME | C.AI_V4MAPPED | C.AI_ALL) & C.AI_MA
 // https://github.com/golang/go/blob/go1.17.6/src/net/cgo_unix.go#L145
 //
 // SPDX-License-Identifier: BSD-3-Clause.
-func (state *getaddrinfoState) toError(code C.int, err error) ([]string, string, error) {
+func (state *getaddrinfoState) toError(code int64, err error) error {
 	switch code {
 	case C.EAI_SYSTEM:
 		if err == nil {
@@ -37,12 +43,12 @@ func (state *getaddrinfoState) toError(code C.int, err error) ([]string, string,
 			// comes up again. golang.org/issue/6232.
 			err = syscall.EMFILE
 		}
-		return nil, "", newErrGetaddrinfo(int64(code), err)
+		return newErrGetaddrinfo(code, err)
 	case C.EAI_NONAME:
-		err = errors.New(DNSNoSuchHostSuffix) // so it becomes FailureDNSNXDOMAIN
-		return nil, "", newErrGetaddrinfo(int64(code), err)
+		err = ErrOODNSNoSuchHost // so it becomes FailureDNSNXDOMAIN
+		return newErrGetaddrinfo(code, err)
 	default:
-		err = errors.New(DNSServerMisbehavingSuffix) // so it becomes FailureDNSServerMisbehaving
-		return nil, "", newErrGetaddrinfo(int64(code), err)
+		err = ErrOODNSMisbehaving // so it becomes FailureDNSServerMisbehaving
+		return newErrGetaddrinfo(code, err)
 	}
 }

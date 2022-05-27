@@ -29,7 +29,7 @@ func getaddrinfoLookupANY(ctx context.Context, domain string) ([]string, string,
 }
 
 // getaddrinfoSingleton is the getaddrinfo singleton.
-var getaddrinfoSingleton = newGetaddrinfoState()
+var getaddrinfoSingleton = newGetaddrinfoState(getaddrinfoNumSlots)
 
 // getaddrinfoSlot is a slot for calling getaddrinfo. The Go standard lib
 // limits the maximum number of parallel calls to getaddrinfo. They do that
@@ -56,9 +56,9 @@ type getaddrinfoState struct {
 const getaddrinfoNumSlots = 8
 
 // newGetaddrinfoState creates the getaddrinfo state.
-func newGetaddrinfoState() *getaddrinfoState {
+func newGetaddrinfoState(numSlots int) *getaddrinfoState {
 	state := &getaddrinfoState{
-		sema:      make(chan *getaddrinfoSlot, getaddrinfoNumSlots),
+		sema:      make(chan *getaddrinfoSlot, numSlots),
 		lookupANY: nil,
 	}
 	state.lookupANY = state.doLookupANY
@@ -116,12 +116,7 @@ func (state *getaddrinfoState) doLookupANY(domain string) ([]string, string, err
 	// C errno variable as an error"
 	code, err := C.getaddrinfo((*C.char)(unsafe.Pointer(&h[0])), nil, &hints, &res)
 	if code != 0 {
-		// TODO(bassosimone): as long as we're testing this new functionality
-		// we will keep a bit more logging to help in diagnosing errors. (Note
-		// that here err _may_ be nil if we only have a getaddrinfo failure and
-		// there was no actual syscall error, hence we use "%+v".)
-		log.Printf("getaddrinfo: code=%d err=%+v", code, err)
-		return state.toError(code, err)
+		return nil, "", state.toError(int64(code), err)
 	}
 	defer C.freeaddrinfo(res)
 	return state.toAddressList(res)
@@ -156,8 +151,7 @@ func (state *getaddrinfoState) toAddressList(res *C.struct_addrinfo) ([]string, 
 		addrs = append(addrs, addr)
 	}
 	if len(addrs) < 1 {
-		log.Printf("getaddrinfo: no address after ainfo loop")
-		return nil, canonname, errors.New(DNSNoAnswerSuffix)
+		return nil, canonname, ErrOODNSNoAnswer
 	}
 	return addrs, canonname, nil
 }
@@ -190,6 +184,23 @@ func (state *getaddrinfoState) addrinfoToString(r *C.struct_addrinfo) (string, e
 	}
 }
 
+// staticAddrinfoWithInvalidFamily is an helper to construct an addrinfo struct
+// that we use in testing. (We cannot call CGO directly from tests.)
+func staticAddrinfoWithInvalidFamily() *C.struct_addrinfo {
+	var value C.struct_addrinfo       // zeroed by Go
+	value.ai_socktype = C.SOCK_STREAM // this is what the code expects
+	value.ai_family = 0               // but 0 is not AF_INET{,6}
+	return &value
+}
+
+// staticAddrinfoWithInvalidSocketType is an helper to construct an addrinfo struct
+// that we use in testing. (We cannot call CGO directly from tests.)
+func staticAddrinfoWithInvalidSocketType() *C.struct_addrinfo {
+	var value C.struct_addrinfo      // zeroed by Go
+	value.ai_socktype = C.SOCK_DGRAM // not SOCK_STREAM
+	return &value
+}
+
 // copyIP copies an net.IP.
 //
 // This function is adapted from copyIP
@@ -214,7 +225,6 @@ func (state *getaddrinfoState) copyIP(x net.IP) net.IP {
 func (state *getaddrinfoState) ifnametoindex(idx int) string {
 	iface, err := net.InterfaceByIndex(idx) // internally uses caching
 	if err != nil {
-		log.Printf("getaddrinfo: InterfaceByIndex: %s", err.Error())
 		return ""
 	}
 	return iface.Name
