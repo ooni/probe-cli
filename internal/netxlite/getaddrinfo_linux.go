@@ -149,15 +149,12 @@ func (state *getaddrinfoState) toError(code int64, err error, goos string) error
 // EAI_NONAME error. However, this mapping seems very inaccurate. Any error inside
 // the DNS proxy could cause EAI_NODATA (_unless_ we're "lucky" for some reason
 // and the original NetBSD code runs). Therefore, the sanest choice is to introduce
-// a new OONI error describing this error condition on Android and ensure that we
-// handle this error specially whenever we check for NXDOMAIN.
+// a new OONI error describing this error condition `android_dns_cache_no_data`
+// and handle this error as a special case when checking for NXDOMAIN.
 func (state *getaddrinfoState) toErrorNODATA(err error, goos string) error {
 	switch goos {
 	case "android":
-		// TODO(bassosimone): Mapping to NXDOMAIN is completely inaccurate
-		// because of the above explanation and we SHOULD introduce an Android
-		// specific error to correctly handle this case.
-		return newErrGetaddrinfo(C.EAI_NODATA, ErrOODNSNoSuchHost)
+		return newErrGetaddrinfo(C.EAI_NODATA, ErrAndroidDNSCacheNoData)
 	default:
 		return newErrGetaddrinfo(C.EAI_NODATA, ErrOODNSNoAnswer)
 	}

@@ -139,9 +139,9 @@ func TestGetaddrinfoStateToError(t *testing.T) {
 			goos: "android",
 		},
 		expects: expects{
-			message: ErrOODNSNoSuchHost.Error(),
+			message: ErrAndroidDNSCacheNoData.Error(),
 			code:    eaiNoData,
-			err:     ErrOODNSNoSuchHost,
+			err:     ErrAndroidDNSCacheNoData,
 		},
 	}, {
 		name: "with an unhandled error",

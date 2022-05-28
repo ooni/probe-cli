@@ -249,17 +249,33 @@ const (
 // DNSOverHTTPSTransport and DNSOverUDPTransport). Their suffix matches the equivalent
 // unexported errors used by the Go standard library.
 var (
-	ErrOODNSNoSuchHost  = fmt.Errorf("ooniresolver: %s", DNSNoSuchHostSuffix)
+	// ErrOODNSNoSuchHost means NXDOMAIN.
+	ErrOODNSNoSuchHost = fmt.Errorf("ooniresolver: %s", DNSNoSuchHostSuffix)
+
+	// ErrOODNSMisbehaving is the error typically returned by the `netgo`resolver
+	// when it cannot really make sense of the error.
 	ErrOODNSMisbehaving = fmt.Errorf("ooniresolver: %s", DNSServerMisbehavingSuffix)
-	ErrOODNSNoAnswer    = fmt.Errorf("ooniresolver: %s", DNSNoAnswerSuffix)
+
+	// ErrOODNSNoAnswer means that we've got a valid DNS response that
+	// did not contain any answer for the original query. This could happen
+	// when we query for AAAA and the domain only has A records.
+	ErrOODNSNoAnswer = fmt.Errorf("ooniresolver: %s", DNSNoAnswerSuffix)
 )
 
 // These errors are not part of the Go standard library but we can
 // return them in our custom resolvers.
 var (
-	ErrOODNSRefused  = errors.New("ooniresolver: refused")
+	// ErrOODNSRefused indicates that the response's Rcode was "refused"
+	ErrOODNSRefused = errors.New("ooniresolver: refused")
+
+	// ErrOODNSServfail indicates that the response's Rcode was "servfail"
 	ErrOODNSServfail = errors.New("ooniresolver: servfail")
 )
+
+// ErrAndroidDNSCacheNoData is the kind of error returned by our getaddrinfo
+// code on Android when we see EAI_NODATA, an error condition that could mean
+// anything as explained in getaddrinfo_linux.go.
+var ErrAndroidDNSCacheNoData = errors.New(FailureAndroidDNSCacheNoData)
 
 // classifyResolverError maps DNS resolution errors to
 // OONI failure strings.
@@ -290,6 +306,9 @@ func classifyResolverError(err error) string {
 	}
 	if errors.Is(err, ErrDNSReplyWithWrongQueryID) {
 		return FailureDNSReplyWithWrongQueryID
+	}
+	if errors.Is(err, ErrAndroidDNSCacheNoData) {
+		return FailureAndroidDNSCacheNoData
 	}
 	return classifyGenericError(err)
 }
