@@ -68,7 +68,7 @@ func (tk *TestKeys) classify() string {
 		return classAnomalyTestHelperUnreachable
 	case netxlite.FailureConnectionReset:
 		return classInterferenceReset
-	case netxlite.FailureDNSNXDOMAINError:
+	case netxlite.FailureDNSNXDOMAINError, netxlite.FailureAndroidDNSCacheNoData:
 		return classAnomalyTestHelperUnreachable
 	case netxlite.FailureEOFError:
 		return classInterferenceClosed
@@ -294,7 +294,7 @@ func asString(failure *string) (result string) {
 
 // SummaryKeys contains summary keys for this experiment.
 //
-// Note that this structure is part of the ABI contract with probe-cli
+// Note that this structure is part of the ABI contract with ooniprobe
 // therefore we should be careful when changing it.
 type SummaryKeys struct {
 	IsAnomaly bool `json:"-"`

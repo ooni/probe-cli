@@ -202,13 +202,13 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 			expected := errors.New("mocked error")
 			var gotTLSConfig *tls.Config
 			handshaker := &tlsHandshakerConfigurable{
-				NewConn: func(conn net.Conn, config *tls.Config) TLSConn {
+				NewConn: func(conn net.Conn, config *tls.Config) (TLSConn, error) {
 					gotTLSConfig = config
 					return &mocks.TLSConn{
 						MockHandshakeContext: func(ctx context.Context) error {
 							return expected
 						},
-					}
+					}, nil
 				},
 			}
 			ctx := context.Background()
@@ -233,6 +233,32 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 			}
 			if gotTLSConfig.RootCAs != defaultCertPool {
 				t.Fatal("gotTLSConfig.RootCAs has not been correctly set")
+			}
+		})
+
+		t.Run("we cannot create a new conn", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			handshaker := &tlsHandshakerConfigurable{
+				NewConn: func(conn net.Conn, config *tls.Config) (TLSConn, error) {
+					return nil, expected
+				},
+			}
+			ctx := context.Background()
+			config := &tls.Config{}
+			conn := &mocks.Conn{
+				MockSetDeadline: func(t time.Time) error {
+					return nil
+				},
+			}
+			tlsConn, connState, err := handshaker.Handshake(ctx, conn, config)
+			if !errors.Is(err, expected) {
+				t.Fatal("not the error we expected", err)
+			}
+			if !reflect.ValueOf(connState).IsZero() {
+				t.Fatal("expected zero connState here")
+			}
+			if tlsConn != nil {
+				t.Fatal("expected nil tlsConn here")
 			}
 		})
 	})
@@ -487,6 +513,7 @@ func TestTLSDialer(t *testing.T) {
 func TestNewSingleUseTLSDialer(t *testing.T) {
 	conn := &mocks.TLSConn{}
 	d := NewSingleUseTLSDialer(conn)
+	defer d.CloseIdleConnections()
 	outconn, err := d.DialTLSContext(context.Background(), "", "")
 	if err != nil {
 		t.Fatal(err)

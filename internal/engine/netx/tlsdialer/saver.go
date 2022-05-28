@@ -29,9 +29,11 @@ func (h SaverTLSHandshaker) Handshake(
 		TLSServerName: config.ServerName,
 		Time:          start,
 	})
+	remoteAddr := conn.RemoteAddr().String()
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	stop := time.Now()
 	h.Saver.Write(trace.Event{
+		Address:            remoteAddr,
 		Duration:           stop.Sub(start),
 		Err:                err,
 		Name:               "tls_handshake_done",

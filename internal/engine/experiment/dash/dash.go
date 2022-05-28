@@ -259,8 +259,14 @@ func (m Measurer) Run(
 	httpClient := &http.Client{
 		Transport: netx.NewHTTPTransport(netx.Config{
 			ContextByteCounting: true,
-			DialSaver:           saver,
-			Logger:              sess.Logger(),
+			// Implements shaping if the user builds using `-tags shaping`
+			// See https://github.com/ooni/probe/issues/2112
+			Dialer: netxlite.NewMaybeShapingDialer(netx.NewDialer(netx.Config{
+				ContextByteCounting: true,
+				DialSaver:           saver,
+				Logger:              sess.Logger(),
+			})),
+			Logger: sess.Logger(),
 		}),
 	}
 	defer httpClient.CloseIdleConnections()
@@ -289,7 +295,7 @@ func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
 
 // SummaryKeys contains summary keys for this experiment.
 //
-// Note that this structure is part of the ABI contract with probe-cli
+// Note that this structure is part of the ABI contract with ooniprobe
 // therefore we should be careful when changing it.
 type SummaryKeys struct {
 	Latency   float64 `json:"connect_latency"`

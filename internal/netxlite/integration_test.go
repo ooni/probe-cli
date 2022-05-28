@@ -17,6 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	utls "gitlab.com/yawning/utls.git"
 )
@@ -71,7 +72,10 @@ func TestMeasureWithSystemResolver(t *testing.T) {
 		const timeout = time.Nanosecond
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		addrs, err := r.LookupHost(ctx, "ooni.org")
+		// Implementation note: Windows' resolver has caching so back to back tests
+		// will fail unless we query for something that could bypass the cache itself
+		// e.g. a domain containing a few random letters
+		addrs, err := r.LookupHost(ctx, randx.Letters(7)+".ooni.org")
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
 			t.Fatal("not the error we expected", err)
 		}
@@ -113,7 +117,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	})
 
 	t.Run("for nxdomain", func(t *testing.T) {
-		proxy := &filtering.DNSProxy{
+		proxy := &filtering.DNSServer{
 			OnQuery: func(domain string) filtering.DNSAction {
 				return filtering.DNSActionNXDOMAIN
 			},
@@ -137,7 +141,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	})
 
 	t.Run("for refused", func(t *testing.T) {
-		proxy := &filtering.DNSProxy{
+		proxy := &filtering.DNSServer{
 			OnQuery: func(domain string) filtering.DNSAction {
 				return filtering.DNSActionRefused
 			},
@@ -161,7 +165,7 @@ func TestMeasureWithUDPResolver(t *testing.T) {
 	})
 
 	t.Run("for timeout", func(t *testing.T) {
-		proxy := &filtering.DNSProxy{
+		proxy := &filtering.DNSServer{
 			OnQuery: func(domain string) filtering.DNSAction {
 				return filtering.DNSActionTimeout
 			},

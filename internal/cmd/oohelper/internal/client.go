@@ -12,7 +12,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -105,9 +105,9 @@ func (oo OOClient) Do(ctx context.Context, config OOConfig) (*CtrlResponse, erro
 	creq := ctrlRequest{
 		HTTPRequest: config.TargetURL,
 		HTTPRequestHeaders: map[string][]string{
-			"Accept":          {httpheader.Accept()},
-			"Accept-Language": {httpheader.AcceptLanguage()},
-			"User-Agent":      {httpheader.UserAgent()},
+			"Accept":          {model.HTTPHeaderAccept},
+			"Accept-Language": {model.HTTPHeaderAcceptLanguage},
+			"User-Agent":      {model.HTTPHeaderUserAgent},
 		},
 		TCPConnect: endpoints,
 	}

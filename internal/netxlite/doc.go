@@ -3,7 +3,7 @@
 // This package is the basic networking building block that you
 // should be using every time you need networking.
 //
-// It implements interfaces defined in the internal/model package.
+// It implements interfaces defined in internal/model/netx.go.
 //
 // You should consider checking the tutorial explaining how to use this package
 // for network measurements: https://github.com/ooni/probe-cli/tree/master/internal/tutorial/netxlite.
@@ -54,4 +54,21 @@
 //
 // Operations 1, 2, 3, and 4 are used when we perform measurements,
 // while 5 and 6 are mostly used when speaking with our backend.
+//
+// Getaddrinfo usage
+//
+// When compiled with CGO_ENABLED=1, this package will link with libc
+// and call getaddrinfo directly. While this design choice means we will
+// need to maintain more code, it also allows us to save the correct
+// getaddrinfo return value, which is hidden by the Go resolver. Also,
+// this strategy allows us to deal with the Android EAI_NODATA implementation
+// quirk (see https://github.com/ooni/probe/issues/2029).
+//
+// We currently use net.Resolver when CGO_ENABLED=0. A future version of
+// netxlite MIGHT change this and use a custom UDP resolver in such a
+// case, to avoid depending on the assumption that /etc/resolver.conf is
+// present on the target system. See https://github.com/ooni/probe/issues/2118
+// for more details regarding ongoing plans to bypass net.Resolver when
+// CGO_ENABLED=0. (If you're reading this piece of documentation and notice
+// it's not updated, please submit a pull request to update it :-).
 package netxlite

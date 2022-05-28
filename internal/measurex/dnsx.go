@@ -36,18 +36,31 @@ type DNSRoundTripEvent struct {
 	Reply    []byte
 }
 
-func (txp *dnsxRoundTripperDB) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
+func (txp *dnsxRoundTripperDB) RoundTrip(
+	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 	started := time.Since(txp.begin).Seconds()
-	reply, err := txp.DNSTransport.RoundTrip(ctx, query)
+	response, err := txp.DNSTransport.RoundTrip(ctx, query)
 	finished := time.Since(txp.begin).Seconds()
 	txp.db.InsertIntoDNSRoundTrip(&DNSRoundTripEvent{
 		Network:  txp.DNSTransport.Network(),
 		Address:  txp.DNSTransport.Address(),
-		Query:    query,
+		Query:    txp.maybeQueryBytes(query),
 		Started:  started,
 		Finished: finished,
 		Failure:  NewFailure(err),
-		Reply:    reply,
+		Reply:    txp.maybeResponseBytes(response),
 	})
-	return reply, err
+	return response, err
+}
+
+func (txp *dnsxRoundTripperDB) maybeQueryBytes(query model.DNSQuery) []byte {
+	data, _ := query.Bytes()
+	return data
+}
+
+func (txp *dnsxRoundTripperDB) maybeResponseBytes(response model.DNSResponse) []byte {
+	if response == nil {
+		return nil
+	}
+	return response.Bytes()
 }

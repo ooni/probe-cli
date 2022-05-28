@@ -4,35 +4,18 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestDNSDecoder(t *testing.T) {
-	t.Run("DecodeLookupHost", func(t *testing.T) {
+	t.Run("DecodeResponse", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		e := &DNSDecoder{
-			MockDecodeLookupHost: func(qtype uint16, reply []byte) ([]string, error) {
+			MockDecodeResponse: func(reply []byte, query model.DNSQuery) (model.DNSResponse, error) {
 				return nil, expected
 			},
 		}
-		out, err := e.DecodeLookupHost(dns.TypeA, make([]byte, 17))
-		if !errors.Is(err, expected) {
-			t.Fatal("unexpected err", err)
-		}
-		if out != nil {
-			t.Fatal("unexpected out")
-		}
-	})
-
-	t.Run("DecodeHTTPS", func(t *testing.T) {
-		expected := errors.New("mocked error")
-		e := &DNSDecoder{
-			MockDecodeHTTPS: func(reply []byte) (*model.HTTPSSvc, error) {
-				return nil, expected
-			},
-		}
-		out, err := e.DecodeHTTPS(make([]byte, 17))
+		out, err := e.DecodeResponse(make([]byte, 17), &DNSQuery{})
 		if !errors.Is(err, expected) {
 			t.Fatal("unexpected err", err)
 		}

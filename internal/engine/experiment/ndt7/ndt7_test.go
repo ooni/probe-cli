@@ -187,6 +187,9 @@ func TestFailUpload(t *testing.T) {
 }
 
 func TestDownloadJSONUnmarshalFail(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	measurer := NewExperimentMeasurer(Config{noUpload: true}).(*Measurer)
 	var seenError bool
 	expected := errors.New("expected error")

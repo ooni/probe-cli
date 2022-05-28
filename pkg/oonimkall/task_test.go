@@ -14,6 +14,9 @@ type eventlike struct {
 }
 
 func TestStartTaskGood(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	task, err := StartTask(`{
 		"log_level": "DEBUG",
 		"name": "Example",
@@ -63,6 +66,9 @@ func TestStartTaskInvalidJSON(t *testing.T) {
 }
 
 func TestStartTaskCountBytesForExample(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	task, err := StartTask(`{
 		"name": "Example",
 		"options": {
@@ -142,6 +148,9 @@ func TestPrivacyAndScrubbing(t *testing.T) {
 }
 
 func TestNonblockWithFewEvents(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	// This test tests whether we won't block for a small
 	// number of events emitted by the task
 	task, err := StartTask(`{

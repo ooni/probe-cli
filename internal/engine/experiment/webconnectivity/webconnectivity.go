@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity/internal"
-	"github.com/ooni/probe-cli/v3/internal/engine/httpheader"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -174,9 +173,9 @@ func (m Measurer) Run(
 	tk.Control, err = Control(ctx, sess, testhelper.Address, ControlRequest{
 		HTTPRequest: URL.String(),
 		HTTPRequestHeaders: map[string][]string{
-			"Accept":          {httpheader.Accept()},
-			"Accept-Language": {httpheader.AcceptLanguage()},
-			"User-Agent":      {httpheader.UserAgent()},
+			"Accept":          {model.HTTPHeaderAccept},
+			"Accept-Language": {model.HTTPHeaderAcceptLanguage},
+			"User-Agent":      {model.HTTPHeaderUserAgent},
 		},
 		TCPConnect: epnts.Endpoints(),
 	})
@@ -257,7 +256,7 @@ func ComputeTCPBlocking(measurement []archival.TCPConnectEntry,
 
 // SummaryKeys contains summary keys for this experiment.
 //
-// Note that this structure is part of the ABI contract with probe-cli
+// Note that this structure is part of the ABI contract with ooniprobe
 // therefore we should be careful when changing it.
 type SummaryKeys struct {
 	Accessible bool   `json:"accessible"`

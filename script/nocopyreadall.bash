@@ -7,6 +7,12 @@ for file in $(find . -type f -name \*.go); do
 		# implement safer wrappers for these functions.
 		continue
 	fi
+	if [ "$file" = "./internal/netxlite/filtering/tls.go" ]; then
+		# We're allowed to use ReadAll and Copy in this file to
+		# avoid depending on netxlite, so we can use filtering
+		# inside of netxlite's own test suite.
+		continue
+	fi
 	if grep -q 'io\.ReadAll' $file; then
 		echo "in $file: do not use io.ReadAll, use netxlite.ReadAllContext" 1>&2
 		exitcode=1

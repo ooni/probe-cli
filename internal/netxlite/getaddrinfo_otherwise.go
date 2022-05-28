@@ -7,6 +7,6 @@ import (
 	"net"
 )
 
-func getaddrinfoDoLookupHost(ctx context.Context, domain string) ([]string, error) {
+func getaddrinfoLookupANY(ctx context.Context, domain string) ([]string, string, error) {
 	return net.DefaultResolver.LookupHost(ctx, domain)
 }

@@ -343,3 +343,27 @@ func TestShouldSkipWithProxyWorks(t *testing.T) {
 		}
 	}
 }
+
+func TestUnimplementedFunctions(t *testing.T) {
+	t.Run("LookupHTTPS", func(t *testing.T) {
+		r := &Resolver{}
+		https, err := r.LookupHTTPS(context.Background(), "dns.google")
+		if !errors.Is(err, errNotImplemented) {
+			t.Fatal("unexpected error", err)
+		}
+		if https != nil {
+			t.Fatal("expected nil result")
+		}
+	})
+
+	t.Run("LookupNS", func(t *testing.T) {
+		r := &Resolver{}
+		ns, err := r.LookupNS(context.Background(), "dns.google")
+		if !errors.Is(err, errNotImplemented) {
+			t.Fatal("unexpected error", err)
+		}
+		if len(ns) > 0 {
+			t.Fatal("expected empty result")
+		}
+	})
+}

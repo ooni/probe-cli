@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Serial DNS resolver implementation
+//
+
 import (
 	"context"
 	"errors"
@@ -10,30 +14,28 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// SerialResolver uses a transport and sends performs a LookupHost
+// SerialResolver uses a transport and performs a LookupHost
 // operation in a serial fashion (query for A first, wait for response,
 // then query for AAAA, and wait for response), hence its name.
 //
 // You should probably use NewSerialResolver to create a new instance.
+//
+// Deprecated: please use ParallelResolver in new code. We cannot
+// remove this code as long as we use tracing for measuring.
+//
+// QUIRK: unlike the ParallelResolver, this resolver's LookupHost retries
+// each query three times for soft errors.
 type SerialResolver struct {
-	// Encoder is the MANDATORY encoder to use.
-	Encoder model.DNSEncoder
-
-	// Decoder is the MANDATORY decoder to use.
-	Decoder model.DNSDecoder
-
 	// NumTimeouts is MANDATORY and counts the number of timeouts.
 	NumTimeouts *atomicx.Int64
 
-	// Txp is the underlying DNS transport.
+	// Txp is the MANDATORY underlying DNS transport.
 	Txp model.DNSTransport
 }
 
 // NewSerialResolver creates a new SerialResolver instance.
 func NewSerialResolver(t model.DNSTransport) *SerialResolver {
 	return &SerialResolver{
-		Encoder:     &DNSEncoderMiekg{},
-		Decoder:     &DNSDecoderMiekg{},
 		NumTimeouts: &atomicx.Int64{},
 		Txp:         t,
 	}
@@ -72,26 +74,28 @@ func (r *SerialResolver) LookupHost(ctx context.Context, hostname string) ([]str
 	}
 	addrs = append(addrs, addrsA...)
 	addrs = append(addrs, addrsAAAA...)
+	if len(addrs) < 1 {
+		return nil, ErrOODNSNoAnswer
+	}
 	return addrs, nil
 }
 
 // LookupHTTPS implements Resolver.LookupHTTPS.
 func (r *SerialResolver) LookupHTTPS(
 	ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
-	querydata, err := r.Encoder.Encode(
-		hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, dns.TypeHTTPS, r.Txp.RequiresPadding())
+	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	replydata, err := r.Txp.RoundTrip(ctx, querydata)
-	if err != nil {
-		return nil, err
-	}
-	return r.Decoder.DecodeHTTPS(replydata)
+	return response.DecodeHTTPS()
 }
 
 func (r *SerialResolver) lookupHostWithRetry(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
+	// QUIRK: retrying has been there since the beginning so we need to
+	// keep it as long as we're using tracing for measuring.
 	var errorslist []error
 	for i := 0; i < 3; i++ {
 		replies, err := r.lookupHostWithoutRetry(ctx, hostname, qtype)
@@ -110,9 +114,9 @@ func (r *SerialResolver) lookupHostWithRetry(
 		}
 		r.NumTimeouts.Add(1)
 	}
-	// bugfix: we MUST return one of the errors otherwise we confuse the
+	// QUIRK: we MUST return one of the errors otherwise we confuse the
 	// mechanism in errwrap that classifies the root cause operation, since
-	// it would not be able to find a child with a major operation error
+	// it would not be able to find a child with a major operation error.
 	return nil, errorslist[0]
 }
 
@@ -120,13 +124,23 @@ func (r *SerialResolver) lookupHostWithRetry(
 // qtype (dns.A or dns.AAAA) without retrying on failure.
 func (r *SerialResolver) lookupHostWithoutRetry(
 	ctx context.Context, hostname string, qtype uint16) ([]string, error) {
-	querydata, err := r.Encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
+	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	replydata, err := r.Txp.RoundTrip(ctx, querydata)
+	return response.DecodeLookupHost()
+}
+
+// LookupNS implements Resolver.LookupNS.
+func (r *SerialResolver) LookupNS(
+	ctx context.Context, hostname string) ([]*net.NS, error) {
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, dns.TypeNS, r.Txp.RequiresPadding())
+	response, err := r.Txp.RoundTrip(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	return r.Decoder.DecodeLookupHost(qtype, replydata)
+	return response.DecodeNS()
 }

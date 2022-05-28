@@ -1,13 +1,16 @@
 package netxlite
 
-import (
-	"errors"
-	"strings"
-)
-
+//
 // This file contains weird stuff that we carried over from
 // the original netx implementation and that we cannot remove
 // or change without thinking about the consequences.
+//
+
+import (
+	"errors"
+	"net"
+	"strings"
+)
 
 // See https://github.com/ooni/probe/issues/1985
 var errReduceErrorsEmptyList = errors.New("bug: reduceErrors given an empty list")
@@ -52,26 +55,21 @@ func quirkReduceErrors(errorslist []error) error {
 // before IPv6. Dialers SHOULD call this code.
 //
 // It saddens me to have this quirk, but it is here to pair
-// with quirkReduceErrors, which assumes that <facepalm>.
+// with quirkReduceErrors, which assumes that IPv4 addrs
+// appear before IPv6 addrs <facepalm>.
+//
+// Note: this function will skip any input that is not not
+// a valid IPv4 or IPv6 address.
 //
 // See TODO(https://github.com/ooni/probe/issues/1779).
 func quirkSortIPAddrs(addrs []string) (out []string) {
-	isIPv6 := func(x string) bool {
-		// This check for identifying IPv6 is discussed
-		// at https://stackoverflow.com/questions/22751035
-		// and seems good-enough for our purposes.
-		return strings.Contains(x, ":")
-	}
-	isIPv4 := func(x string) bool {
-		return !isIPv6(x)
-	}
 	for _, addr := range addrs {
-		if isIPv4(addr) {
+		if net.ParseIP(addr) != nil && !isIPv6(addr) {
 			out = append(out, addr)
 		}
 	}
 	for _, addr := range addrs {
-		if isIPv6(addr) {
+		if net.ParseIP(addr) != nil && isIPv6(addr) {
 			out = append(out, addr)
 		}
 	}

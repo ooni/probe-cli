@@ -159,6 +159,8 @@ var Specs = []*ErrorSpec{
 	NewLibraryError("DNS_refused_error"),
 	NewLibraryError("DNS_server_misbehaving"),
 	NewLibraryError("DNS_no_answer"),
+	NewLibraryError("DNS_servfail_error"),
+	NewLibraryError("DNS_reply_with_wrong_query_ID"),
 	NewLibraryError("EOF_error"),
 	NewLibraryError("generic_timeout_error"),
 	NewLibraryError("QUIC_incompatible_version"),
@@ -168,13 +170,17 @@ var Specs = []*ErrorSpec{
 	NewLibraryError("SSL_invalid_certificate"),
 	NewLibraryError("JSON_parse_error"),
 	NewLibraryError("connection_already_closed"),
+
+	// QUIRKS: the following errors exist to clearly flag strange
+	// underlying behavior implemented by platforms.
+	NewLibraryError("Android_DNS_cache_no_data"),
 }
 
 // mapSystemToLibrary maps the operating system name to the name
 // of the related golang.org/x/sys/$name library.
 func mapSystemToLibrary(system string) string {
 	switch system {
-	case "darwin", "freebsd", "linux":
+	case "darwin", "freebsd", "openbsd", "linux":
 		return "unix"
 	case "windows":
 		return "windows"
@@ -365,6 +371,7 @@ func writeSystemSpecificTestFile(system string) {
 var SupportedSystems = []string{
 	"darwin",
 	"freebsd",
+	"openbsd",
 	"linux",
 	"windows",
 }

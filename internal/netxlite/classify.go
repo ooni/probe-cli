@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Mapping Go errors to OONI errors
+//
+
 import (
 	"context"
 	"crypto/x509"
@@ -38,8 +42,7 @@ func classifyGenericError(err error) string {
 	// The list returned here matches the values used by MK unless
 	// explicitly noted otherwise with a comment.
 
-	// QUIRK: we cannot remove this check as long as this function
-	// is exported and used independently from NewErrWrapper.
+	// Robustness: handle the case where we're passed a wrapped error.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
@@ -146,8 +149,7 @@ const (
 // and returns to the caller its return value.
 func classifyQUICHandshakeError(err error) string {
 
-	// QUIRK: we cannot remove this check as long as this function
-	// is exported and used independently from NewErrWrapper.
+	// Robustness: handle the case where we're passed a wrapped error.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
@@ -244,14 +246,36 @@ const (
 )
 
 // These errors are returned by custom DNSTransport instances (e.g.,
-// DNSOverHTTPS and DNSOverUDP). Their suffix matches the equivalent
+// DNSOverHTTPSTransport and DNSOverUDPTransport). Their suffix matches the equivalent
 // unexported errors used by the Go standard library.
 var (
-	ErrOODNSNoSuchHost  = fmt.Errorf("ooniresolver: %s", DNSNoSuchHostSuffix)
-	ErrOODNSRefused     = errors.New("ooniresolver: refused")
+	// ErrOODNSNoSuchHost means NXDOMAIN.
+	ErrOODNSNoSuchHost = fmt.Errorf("ooniresolver: %s", DNSNoSuchHostSuffix)
+
+	// ErrOODNSMisbehaving is the error typically returned by the `netgo`resolver
+	// when it cannot really make sense of the error.
 	ErrOODNSMisbehaving = fmt.Errorf("ooniresolver: %s", DNSServerMisbehavingSuffix)
-	ErrOODNSNoAnswer    = fmt.Errorf("ooniresolver: %s", DNSNoAnswerSuffix)
+
+	// ErrOODNSNoAnswer means that we've got a valid DNS response that
+	// did not contain any answer for the original query. This could happen
+	// when we query for AAAA and the domain only has A records.
+	ErrOODNSNoAnswer = fmt.Errorf("ooniresolver: %s", DNSNoAnswerSuffix)
 )
+
+// These errors are not part of the Go standard library but we can
+// return them in our custom resolvers.
+var (
+	// ErrOODNSRefused indicates that the response's Rcode was "refused"
+	ErrOODNSRefused = errors.New("ooniresolver: refused")
+
+	// ErrOODNSServfail indicates that the response's Rcode was "servfail"
+	ErrOODNSServfail = errors.New("ooniresolver: servfail")
+)
+
+// ErrAndroidDNSCacheNoData is the kind of error returned by our getaddrinfo
+// code on Android when we see EAI_NODATA, an error condition that could mean
+// anything as explained in getaddrinfo_linux.go.
+var ErrAndroidDNSCacheNoData = errors.New(FailureAndroidDNSCacheNoData)
 
 // classifyResolverError maps DNS resolution errors to
 // OONI failure strings.
@@ -263,8 +287,7 @@ var (
 // returns to the caller its return value.
 func classifyResolverError(err error) string {
 
-	// QUIRK: we cannot remove this check as long as this function
-	// is exported and used independently from NewErrWrapper.
+	// Robustness: handle the case where we're passed a wrapped error.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it
@@ -277,6 +300,15 @@ func classifyResolverError(err error) string {
 	// string of the stdlib in the generic classifier.
 	if errors.Is(err, ErrOODNSRefused) {
 		return FailureDNSRefusedError // not in MK
+	}
+	if errors.Is(err, ErrOODNSServfail) {
+		return FailureDNSServfailError
+	}
+	if errors.Is(err, ErrDNSReplyWithWrongQueryID) {
+		return FailureDNSReplyWithWrongQueryID
+	}
+	if errors.Is(err, ErrAndroidDNSCacheNoData) {
+		return FailureAndroidDNSCacheNoData
 	}
 	return classifyGenericError(err)
 }
@@ -291,8 +323,7 @@ func classifyResolverError(err error) string {
 // returns to the caller its return value.
 func classifyTLSHandshakeError(err error) string {
 
-	// QUIRK: we cannot remove this check as long as this function
-	// is exported and used independently from NewErrWrapper.
+	// Robustness: handle the case where we're passed a wrapped error.
 	var errwrapper *ErrWrapper
 	if errors.As(err, &errwrapper) {
 		return errwrapper.Error() // we've already wrapped it

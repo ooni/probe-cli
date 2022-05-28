@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	db "upper.io/db.v3"
+	"github.com/upper/db/v4"
 )
 
 type locationInfo struct {

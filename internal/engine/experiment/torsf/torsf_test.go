@@ -15,12 +15,17 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/tunnel/mocks"
 )
 
+// Implementation note: this file is written with easy diffing with respect
+// to internal/engine/experiment/vanillator/vanillator_test.go in mind.
+//
+// We may want to have a single implementation for both nettests in the future.
+
 func TestExperimentNameAndVersion(t *testing.T) {
 	m := NewExperimentMeasurer(Config{})
 	if m.ExperimentName() != "torsf" {
 		t.Fatal("invalid experiment name")
 	}
-	if m.ExperimentVersion() != "0.2.0" {
+	if m.ExperimentVersion() != "0.3.0" {
 		t.Fatal("invalid experiment version")
 	}
 }
@@ -113,6 +118,9 @@ func TestSuccessWithMockedTunnelStart(t *testing.T) {
 	if tk.BootstrapTime != bootstrapTime.Seconds() {
 		t.Fatal("unexpected bootstrap time")
 	}
+	if tk.Error != nil {
+		t.Fatal("unexpected error")
+	}
 	if tk.Failure != nil {
 		t.Fatal("unexpected failure")
 	}
@@ -122,8 +130,26 @@ func TestSuccessWithMockedTunnelStart(t *testing.T) {
 	if tk.RendezvousMethod != "domain_fronting" {
 		t.Fatal("unexpected rendezvous method")
 	}
+	if !tk.Success {
+		t.Fatal("unexpected success value")
+	}
+	if tk.Timeout != maxRuntime.Seconds() {
+		t.Fatal("unexpected timeout")
+	}
 	if count := len(tk.TorLogs); count != 9 {
 		t.Fatal("unexpected length of tor logs", count)
+	}
+	if tk.TorProgress != 100 {
+		t.Fatal("unexpected tor progress")
+	}
+	if tk.TorProgressTag != "done" {
+		t.Fatal("unexpected tor progress tag")
+	}
+	if tk.TorProgressSummary != "Done" {
+		t.Fatal("unexpected tor progress tag")
+	}
+	if tk.TransportName != "snowflake" {
+		t.Fatal("invalid transport name")
 	}
 }
 
@@ -149,6 +175,9 @@ func TestWithCancelledContext(t *testing.T) {
 	if tk.BootstrapTime != 0 {
 		t.Fatal("unexpected bootstrap time")
 	}
+	if tk.Error == nil || *tk.Error != "unknown-error" {
+		t.Fatal("unexpected error")
+	}
 	if *tk.Failure != "interrupted" {
 		t.Fatal("unexpected failure")
 	}
@@ -158,13 +187,31 @@ func TestWithCancelledContext(t *testing.T) {
 	if tk.RendezvousMethod != "domain_fronting" {
 		t.Fatal("unexpected rendezvous method")
 	}
+	if tk.Success {
+		t.Fatal("unexpected success value")
+	}
+	if tk.Timeout != maxRuntime.Seconds() {
+		t.Fatal("unexpected timeout")
+	}
 	if len(tk.TorLogs) != 0 {
 		t.Fatal("unexpected length of tor logs")
+	}
+	if tk.TorProgress != 0 {
+		t.Fatal("unexpected tor progress")
+	}
+	if tk.TorProgressTag != "" {
+		t.Fatal("unexpected tor progress tag")
+	}
+	if tk.TorProgressSummary != "" {
+		t.Fatal("unexpected tor progress tag")
+	}
+	if tk.TransportName != "snowflake" {
+		t.Fatal("invalid transport name")
 	}
 }
 
 func TestFailureToStartTunnel(t *testing.T) {
-	expected := errors.New("mocked error")
+	expected := context.DeadlineExceeded // error occurring on bootstrap timeout
 	m := &Measurer{
 		config: Config{},
 		mockStartTunnel: func(
@@ -172,7 +219,7 @@ func TestFailureToStartTunnel(t *testing.T) {
 			return nil,
 				tunnel.DebugInfo{
 					Name:        "tor",
-					LogFilePath: filepath.Join("testdata", "tor.log"),
+					LogFilePath: filepath.Join("testdata", "partial.log"),
 				}, expected
 		},
 	}
@@ -191,10 +238,13 @@ func TestFailureToStartTunnel(t *testing.T) {
 	if tk.BootstrapTime != 0 {
 		t.Fatal("unexpected bootstrap time")
 	}
+	if tk.Error == nil || *tk.Error != "timeout-reached" {
+		t.Fatal("unexpected error")
+	}
 	if tk.Failure == nil {
 		t.Fatal("unexpectedly nil failure string")
 	}
-	if *tk.Failure != "unknown_failure: mocked error" {
+	if *tk.Failure != "generic_timeout_error" {
 		t.Fatal("unexpected failure string", *tk.Failure)
 	}
 	if !tk.PersistentDatadir {
@@ -203,8 +253,26 @@ func TestFailureToStartTunnel(t *testing.T) {
 	if tk.RendezvousMethod != "domain_fronting" {
 		t.Fatal("unexpected rendezvous method")
 	}
-	if count := len(tk.TorLogs); count != 9 {
+	if tk.Success {
+		t.Fatal("unexpected success value")
+	}
+	if tk.Timeout != maxRuntime.Seconds() {
+		t.Fatal("unexpected timeout")
+	}
+	if count := len(tk.TorLogs); count != 6 {
 		t.Fatal("unexpected length of tor logs", count)
+	}
+	if tk.TorProgress != 15 {
+		t.Fatal("unexpected tor progress")
+	}
+	if tk.TorProgressTag != "handshake_done" {
+		t.Fatal("unexpected tor progress tag")
+	}
+	if tk.TorProgressSummary != "Handshake with a relay done" {
+		t.Fatal("unexpected tor progress tag")
+	}
+	if tk.TransportName != "snowflake" {
+		t.Fatal("invalid transport name")
 	}
 }
 
@@ -238,38 +306,6 @@ func TestBaseTunnelDir(t *testing.T) {
 		dir := m.baseTunnelDir(sess)
 		if dir != "a" {
 			t.Fatal("unexpected base tunnel dir", dir)
-		}
-	})
-}
-
-func TestReadTorLogs(t *testing.T) {
-	t.Run("with empty file path", func(t *testing.T) {
-		m := &Measurer{}
-		logger := model.DiscardLogger
-		tk := &TestKeys{}
-		m.readTorLogs(logger, tk, "")
-		if len(tk.TorLogs) != 0 {
-			t.Fatal("expected no tor logs")
-		}
-	})
-
-	t.Run("with nonexistent file path", func(t *testing.T) {
-		m := &Measurer{}
-		logger := model.DiscardLogger
-		tk := &TestKeys{}
-		m.readTorLogs(logger, tk, filepath.Join("testdata", "nonexistent"))
-		if len(tk.TorLogs) != 0 {
-			t.Fatal("expected no tor logs")
-		}
-	})
-
-	t.Run("with existing file path", func(t *testing.T) {
-		m := &Measurer{}
-		logger := model.DiscardLogger
-		tk := &TestKeys{}
-		m.readTorLogs(logger, tk, filepath.Join("testdata", "tor.log"))
-		if count := len(tk.TorLogs); count != 9 {
-			t.Fatal("unexpected number of tor logs", count)
 		}
 	})
 }

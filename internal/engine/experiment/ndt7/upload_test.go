@@ -73,6 +73,9 @@ func TestUploadWritePreparedMessageSubsequentFailure(t *testing.T) {
 }
 
 func TestUploadLoop(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	mgr := newUploadManager(
 		&mockableConnMock{},
 		defaultCallbackPerformance,

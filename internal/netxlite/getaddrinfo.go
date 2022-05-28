@@ -13,7 +13,8 @@ import (
 // ErrGetaddrinfo error. This error will contain the specific
 // code returned by getaddrinfo in its .Code field.
 func getaddrinfoLookupHost(ctx context.Context, domain string) ([]string, error) {
-	return getaddrinfoDoLookupHost(ctx, domain)
+	addrs, _, err := getaddrinfoLookupANY(ctx, domain)
+	return addrs, err
 }
 
 // ErrGetaddrinfo represents a getaddrinfo failure.

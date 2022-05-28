@@ -34,12 +34,12 @@ func TestQuirkReduceErrors(t *testing.T) {
 
 	t.Run("multiple errors with meaningful ones", func(t *testing.T) {
 		err1 := errors.New("mocked error #1")
-		err2 := NewErrWrapper(
+		err2 := newErrWrapper(
 			classifyGenericError,
 			CloseOperation,
 			errors.New("antani"),
 		)
-		err3 := NewErrWrapper(
+		err3 := newErrWrapper(
 			classifyGenericError,
 			CloseOperation,
 			ECONNREFUSED,
@@ -57,7 +57,9 @@ func TestQuirkSortIPAddrs(t *testing.T) {
 		addrs := []string{
 			"::1",
 			"192.168.1.2",
+			"x.org", // ensure we skip non IP addrs
 			"2a00:1450:4002:404::2004",
+			"example.com", // ensure we skip non IP addrs
 			"142.250.184.36",
 			"2604:8800:5000:82:466:38ff:fecb:d46e",
 			"198.145.29.83",
@@ -80,6 +82,16 @@ func TestQuirkSortIPAddrs(t *testing.T) {
 
 	t.Run("with an empty list", func(t *testing.T) {
 		if quirkSortIPAddrs(nil) != nil {
+			t.Fatal("expected nil output")
+		}
+	})
+
+	t.Run("with non-IP addrs", func(t *testing.T) {
+		addrs := []string{
+			"example.com",
+			"x.org",
+		}
+		if quirkSortIPAddrs(addrs) != nil {
 			t.Fatal("expected nil output")
 		}
 	})

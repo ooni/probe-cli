@@ -29,6 +29,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"net/url"
 	"sync"
 	"time"
@@ -110,9 +111,16 @@ func (r *Resolver) Stats() string {
 	return fmt.Sprintf("sessionresolver: %s", string(data))
 }
 
+var errNotImplemented = errors.New("not implemented")
+
 // LookupHTTPS implements Resolver.LookupHTTPS.
 func (r *Resolver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
-	return nil, errors.New("not implemented")
+	return nil, errNotImplemented
+}
+
+// LookupNS implements Resolver.LookupNS.
+func (r *Resolver) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
+	return nil, errNotImplemented
 }
 
 // ErrLookupHost indicates that LookupHost failed.
@@ -163,7 +171,7 @@ func (r *Resolver) lookupHost(ctx context.Context, ri *resolverinfo, hostname st
 	}
 	addrs, err := r.timeLimitedLookup(ctx, re, hostname)
 	if err == nil {
-		r.logger().Infof("sessionresolver: %s... %v", ri.URL, nil)
+		r.logger().Infof("sessionresolver: %s... %v", ri.URL, model.ErrorToStringOrOK(nil))
 		ri.Score = ewma*1.0 + (1-ewma)*ri.Score // increase score
 		return addrs, nil
 	}

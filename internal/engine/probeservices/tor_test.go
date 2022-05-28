@@ -10,6 +10,9 @@ import (
 )
 
 func TestFetchTorTargets(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	clnt := newclient()
 	if err := clnt.MaybeRegister(context.Background(), testorchestra.MetadataFixture()); err != nil {
 		t.Fatal(err)

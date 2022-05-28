@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// TLS implementation
+//
+
 import (
 	"context"
 	"crypto/tls"
@@ -9,9 +13,14 @@ import (
 	"net"
 	"time"
 
+	ootls "github.com/ooni/oocrypto/tls"
 	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
+
+// TODO(bassosimone): check whether there's now equivalent functionality
+// inside the standard library allowing us to map numbers to names.
 
 var (
 	tlsVersionString = map[uint16]string{
@@ -81,7 +90,8 @@ func NewDefaultCertPool() *x509.CertPool {
 	pool := x509.NewCertPool()
 	// Assumption: AppendCertsFromPEM cannot fail because we
 	// have a test in certify_test.go that guarantees that
-	pool.AppendCertsFromPEM([]byte(pemcerts))
+	ok := pool.AppendCertsFromPEM([]byte(pemcerts))
+	runtimex.PanicIfFalse(ok, "pool.AppendCertsFromPEM failed")
 	return pool
 }
 
@@ -152,7 +162,7 @@ func newTLSHandshaker(th model.TLSHandshaker, logger model.DebugLogger) model.TL
 type tlsHandshakerConfigurable struct {
 	// NewConn is the OPTIONAL factory for creating a new connection. If
 	// this factory is not set, we'll use the stdlib.
-	NewConn func(conn net.Conn, config *tls.Config) TLSConn
+	NewConn func(conn net.Conn, config *tls.Config) (TLSConn, error)
 
 	// Timeout is the OPTIONAL timeout imposed on the TLS handshake. If zero
 	// or negative, we will use default timeout of 10 seconds.
@@ -181,7 +191,10 @@ func (h *tlsHandshakerConfigurable) Handshake(
 		config = config.Clone()
 		config.RootCAs = defaultCertPool
 	}
-	tlsconn := h.newConn(conn, config)
+	tlsconn, err := h.newConn(conn, config)
+	if err != nil {
+		return nil, tls.ConnectionState{}, err
+	}
 	if err := tlsconn.HandshakeContext(ctx); err != nil {
 		return nil, tls.ConnectionState{}, err
 	}
@@ -189,11 +202,11 @@ func (h *tlsHandshakerConfigurable) Handshake(
 }
 
 // newConn creates a new TLSConn.
-func (h *tlsHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) TLSConn {
+func (h *tlsHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) (TLSConn, error) {
 	if h.NewConn != nil {
 		return h.NewConn(conn, config)
 	}
-	return tls.Client(conn, config)
+	return ootls.NewClientConnStdlib(conn, config)
 }
 
 // defaultTLSHandshaker is the default TLS handshaker.
@@ -201,8 +214,8 @@ var defaultTLSHandshaker = &tlsHandshakerConfigurable{}
 
 // tlsHandshakerLogger is a TLSHandshaker with logging.
 type tlsHandshakerLogger struct {
-	model.TLSHandshaker
-	model.DebugLogger
+	TLSHandshaker model.TLSHandshaker
+	DebugLogger   model.DebugLogger
 }
 
 var _ model.TLSHandshaker = &tlsHandshakerLogger{}
@@ -313,7 +326,7 @@ func NewSingleUseTLSDialer(conn TLSConn) model.TLSDialer {
 // tlsDialerSingleUseAdapter adapts dialerSingleUse to
 // be a TLSDialer type rather than a Dialer type.
 type tlsDialerSingleUseAdapter struct {
-	model.Dialer
+	Dialer model.Dialer
 }
 
 var _ model.TLSDialer = &tlsDialerSingleUseAdapter{}
@@ -323,9 +336,13 @@ func (d *tlsDialerSingleUseAdapter) DialTLSContext(ctx context.Context, network,
 	return d.Dialer.DialContext(ctx, network, address)
 }
 
+func (d *tlsDialerSingleUseAdapter) CloseIdleConnections() {
+	d.Dialer.CloseIdleConnections()
+}
+
 // tlsHandshakerErrWrapper wraps the returned error to be an OONI error
 type tlsHandshakerErrWrapper struct {
-	model.TLSHandshaker
+	TLSHandshaker model.TLSHandshaker
 }
 
 // Handshake implements TLSHandshaker.Handshake
@@ -334,7 +351,7 @@ func (h *tlsHandshakerErrWrapper) Handshake(
 ) (net.Conn, tls.ConnectionState, error) {
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	if err != nil {
-		return nil, tls.ConnectionState{}, NewErrWrapper(
+		return nil, tls.ConnectionState{}, newErrWrapper(
 			classifyTLSHandshakeError, TLSHandshakeOperation, err)
 	}
 	return tlsconn, state, nil

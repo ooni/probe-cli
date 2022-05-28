@@ -6,17 +6,18 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestDNSTransport(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		expected := errors.New("mocked error")
 		txp := &DNSTransport{
-			MockRoundTrip: func(ctx context.Context, query []byte) ([]byte, error) {
+			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 				return nil, expected
 			},
 		}
-		resp, err := txp.RoundTrip(context.Background(), make([]byte, 16))
+		resp, err := txp.RoundTrip(context.Background(), &DNSQuery{})
 		if !errors.Is(err, expected) {
 			t.Fatal("not the error we expected", err)
 		}

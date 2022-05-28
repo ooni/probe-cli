@@ -131,6 +131,7 @@ func (eaw *experimentAsyncWrapper) RunAsync(
 			Input:              measurement.Input,
 			MeasurementRuntime: stop.Sub(start).Seconds(),
 			TestKeys:           measurement.TestKeys,
+			TestHelpers:        measurement.TestHelpers,
 		}
 	}()
 	return out, nil
@@ -180,6 +181,7 @@ func (e *Experiment) MeasureAsync(
 			measurement.Extensions = tk.Extensions
 			measurement.Input = tk.Input
 			measurement.MeasurementRuntime = tk.MeasurementRuntime
+			measurement.TestHelpers = tk.TestHelpers
 			measurement.TestKeys = tk.TestKeys
 			if err := measurement.Scrub(e.session.ProbeIP()); err != nil {
 				// If we fail to scrub the measurement then we are not going to

@@ -106,7 +106,7 @@ func (m Multi) collect(expect int, overallStartIndex int, overallCount int, pref
 		count++
 		percentage := float64(count) / float64(overallCount)
 		callbacks.OnProgress(percentage, fmt.Sprintf(
-			"%s: measure %s: %+v", prefix, entry.Input.Target, entry.Err,
+			"%s: measure %s: %+v", prefix, entry.Input.Target, model.ErrorToStringOrOK(entry.Err),
 		))
 		outputch <- entry
 	}

@@ -64,7 +64,7 @@ func Control(
 	if err != nil {
 		err = netxlite.NewTopLevelGenericErrWrapper(err)
 	}
-	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, err)
+	sess.Logger().Infof("control for %s... %+v", creq.HTTPRequest, model.ErrorToStringOrOK(err))
 	(&out.DNS).FillASNs(sess)
 	return
 }

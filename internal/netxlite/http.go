@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// HTTP/1.1 and HTTP2 code
+//
+
 import (
 	"context"
 	"errors"
@@ -13,8 +17,10 @@ import (
 
 // httpTransportErrWrapper is an HTTPTransport with error wrapping.
 type httpTransportErrWrapper struct {
-	model.HTTPTransport
+	HTTPTransport model.HTTPTransport
 }
+
+var _ model.HTTPTransport = &httpTransportErrWrapper{}
 
 func (txp *httpTransportErrWrapper) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp, err := txp.HTTPTransport.RoundTrip(req)
@@ -24,10 +30,18 @@ func (txp *httpTransportErrWrapper) RoundTrip(req *http.Request) (*http.Response
 	return resp, nil
 }
 
+func (txp *httpTransportErrWrapper) CloseIdleConnections() {
+	txp.HTTPTransport.CloseIdleConnections()
+}
+
+func (txp *httpTransportErrWrapper) Network() string {
+	return txp.HTTPTransport.Network()
+}
+
 // httpTransportLogger is an HTTPTransport with logging.
 type httpTransportLogger struct {
 	// HTTPTransport is the underlying HTTP transport.
-	model.HTTPTransport
+	HTTPTransport model.HTTPTransport
 
 	// Logger is the underlying logger.
 	Logger model.DebugLogger
@@ -62,12 +76,26 @@ func (txp *httpTransportLogger) CloseIdleConnections() {
 	txp.HTTPTransport.CloseIdleConnections()
 }
 
+func (txp *httpTransportLogger) Network() string {
+	return txp.HTTPTransport.Network()
+}
+
 // httpTransportConnectionsCloser is an HTTPTransport that
 // correctly forwards CloseIdleConnections calls.
 type httpTransportConnectionsCloser struct {
-	model.HTTPTransport
-	model.Dialer
-	model.TLSDialer
+	HTTPTransport model.HTTPTransport
+	Dialer        model.Dialer
+	TLSDialer     model.TLSDialer
+}
+
+var _ model.HTTPTransport = &httpTransportConnectionsCloser{}
+
+func (txp *httpTransportConnectionsCloser) RoundTrip(req *http.Request) (*http.Response, error) {
+	return txp.HTTPTransport.RoundTrip(req)
+}
+
+func (txp *httpTransportConnectionsCloser) Network() string {
+	return txp.HTTPTransport.Network()
 }
 
 // CloseIdleConnections forwards the CloseIdleConnections calls.
@@ -148,7 +176,17 @@ func NewOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) mode
 
 // stdlibTransport wraps oohttp.StdlibTransport to add .Network()
 type stdlibTransport struct {
-	*oohttp.StdlibTransport
+	StdlibTransport *oohttp.StdlibTransport
+}
+
+var _ model.HTTPTransport = &stdlibTransport{}
+
+func (txp *stdlibTransport) CloseIdleConnections() {
+	txp.StdlibTransport.CloseIdleConnections()
+}
+
+func (txp *stdlibTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return txp.StdlibTransport.RoundTrip(req)
 }
 
 // Network implements HTTPTransport.Network.
@@ -170,7 +208,13 @@ func WrapHTTPTransport(logger model.DebugLogger, txp model.HTTPTransport) model.
 // httpDialerWithReadTimeout enforces a read timeout for all HTTP
 // connections. See https://github.com/ooni/probe/issues/1609.
 type httpDialerWithReadTimeout struct {
-	model.Dialer
+	Dialer model.Dialer
+}
+
+var _ model.Dialer = &httpDialerWithReadTimeout{}
+
+func (d *httpDialerWithReadTimeout) CloseIdleConnections() {
+	d.Dialer.CloseIdleConnections()
 }
 
 // DialContext implements Dialer.DialContext.
@@ -186,7 +230,13 @@ func (d *httpDialerWithReadTimeout) DialContext(
 // httpTLSDialerWithReadTimeout enforces a read timeout for all HTTP
 // connections. See https://github.com/ooni/probe/issues/1609.
 type httpTLSDialerWithReadTimeout struct {
-	model.TLSDialer
+	TLSDialer model.TLSDialer
+}
+
+var _ model.TLSDialer = &httpTLSDialerWithReadTimeout{}
+
+func (d *httpTLSDialerWithReadTimeout) CloseIdleConnections() {
+	d.TLSDialer.CloseIdleConnections()
 }
 
 // ErrNotTLSConn occur when an interface accepts a net.Conn but
@@ -280,7 +330,7 @@ func WrapHTTPClient(clnt model.HTTPClient) model.HTTPClient {
 }
 
 type httpClientErrWrapper struct {
-	model.HTTPClient
+	HTTPClient model.HTTPClient
 }
 
 func (c *httpClientErrWrapper) Do(req *http.Request) (*http.Response, error) {
@@ -289,4 +339,8 @@ func (c *httpClientErrWrapper) Do(req *http.Request) (*http.Response, error) {
 		return nil, NewTopLevelGenericErrWrapper(err)
 	}
 	return resp, nil
+}
+
+func (c *httpClientErrWrapper) CloseIdleConnections() {
+	c.HTTPClient.CloseIdleConnections()
 }

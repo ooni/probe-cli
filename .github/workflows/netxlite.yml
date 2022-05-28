@@ -1,20 +1,24 @@
-# netxlite runs unit and integration tests on our fundamental net library
+# Runs unit and integration tests for our fundamental networking library.
 name: netxlite
 on:
+  # Because we link libc explicitly for getaddrinfo, we SHOULD run
+  # these checks for every PR to ensure we still compile.
   pull_request:
   push:
     branches:
       - "master"
+      - "release/**"
 jobs:
-  test:
+  test_netxlite_package:
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
-        go: [ "1.17.6" ]
+        go: [ "1.18.2" ]
         os: [ "ubuntu-20.04", "windows-2019", "macos-10.15" ]
     steps:
-      - uses: actions/setup-go@v1
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ matrix.go }}"
+          cache-key-suffix: "-coverage-${{ matrix.go }}"
       - uses: actions/checkout@v2
       - run: go test -race ./internal/netxlite/...

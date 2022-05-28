@@ -7,8 +7,10 @@ import (
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 type FakeDialer struct {
@@ -74,82 +76,53 @@ func (c *FakeConn) SetWriteDeadline(t time.Time) (err error) {
 	return c.SetWriteDeadlineError
 }
 
-type FakeTransport struct {
-	Data []byte
-	Err  error
+func NewFakeResolverThatFails() model.Resolver {
+	return NewFakeResolverWithExplicitError(netxlite.ErrOODNSNoSuchHost)
 }
 
-func (ft FakeTransport) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
-	return ft.Data, ft.Err
-}
-
-func (ft FakeTransport) RequiresPadding() bool {
-	return false
-}
-
-func (ft FakeTransport) Address() string {
-	return ""
-}
-
-func (ft FakeTransport) Network() string {
-	return "fake"
-}
-
-func (fk FakeTransport) CloseIdleConnections() {
-	// nothing to do
-}
-
-type FakeEncoder struct {
-	Data []byte
-	Err  error
-}
-
-func (fe FakeEncoder) Encode(domain string, qtype uint16, padding bool) ([]byte, error) {
-	return fe.Data, fe.Err
-}
-
-type FakeResolver struct {
-	NumFailures *atomicx.Int64
-	Err         error
-	Result      []string
-}
-
-func NewFakeResolverThatFails() FakeResolver {
-	return FakeResolver{NumFailures: &atomicx.Int64{}, Err: errNotFound}
-}
-
-func NewFakeResolverWithResult(r []string) FakeResolver {
-	return FakeResolver{NumFailures: &atomicx.Int64{}, Result: r}
-}
-
-var errNotFound = &net.DNSError{
-	Err: "no such host",
-}
-
-func (c FakeResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
-	time.Sleep(10 * time.Microsecond)
-	if c.Err != nil {
-		if c.NumFailures != nil {
-			c.NumFailures.Add(1)
-		}
-		return nil, c.Err
+func NewFakeResolverWithExplicitError(err error) model.Resolver {
+	runtimex.PanicIfNil(err, "passed nil error")
+	return &mocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return nil, err
+		},
+		MockNetwork: func() string {
+			return "fake"
+		},
+		MockAddress: func() string {
+			return ""
+		},
+		MockCloseIdleConnections: func() {
+			// nothing
+		},
+		MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+			return nil, errors.New("not implemented")
+		},
+		MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
+			return nil, errors.New("not implemented")
+		},
 	}
-	return c.Result, nil
 }
 
-func (c FakeResolver) Network() string {
-	return "fake"
+func NewFakeResolverWithResult(r []string) model.Resolver {
+	return &mocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return r, nil
+		},
+		MockNetwork: func() string {
+			return "fake"
+		},
+		MockAddress: func() string {
+			return ""
+		},
+		MockCloseIdleConnections: func() {
+			// nothing
+		},
+		MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+			return nil, errors.New("not implemented")
+		},
+		MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
+			return nil, errors.New("not implemented")
+		},
+	}
 }
-
-func (c FakeResolver) Address() string {
-	return ""
-}
-
-func (c FakeResolver) CloseIdleConnections() {}
-
-func (c FakeResolver) LookupHTTPS(
-	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
-	return nil, errors.New("not implemented")
-}
-
-var _ model.Resolver = FakeResolver{}

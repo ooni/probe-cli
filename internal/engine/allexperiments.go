@@ -5,6 +5,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/dash"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/dnscheck"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/dnsping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/example"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/fbmessenger"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/hhfm"
@@ -16,15 +17,18 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/run"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/signal"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/simplequicping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/sniblocking"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/stunreachability"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tcpping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/telegram"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlsping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlstool"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tor"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/torsf"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/vanillator"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webstepsx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/whatsapp"
 )
 
@@ -50,6 +54,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &dnscheck.Config{},
+			inputPolicy: InputOrStaticDefault,
+		}
+	},
+
+	"dnsping": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, dnsping.NewExperimentMeasurer(
+					*config.(*dnsping.Config),
+				))
+			},
+			config:      &dnsping.Config{},
 			inputPolicy: InputOrStaticDefault,
 		}
 	},
@@ -179,6 +195,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
+	"simplequicping": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, simplequicping.NewExperimentMeasurer(
+					*config.(*simplequicping.Config),
+				))
+			},
+			config:      &simplequicping.Config{},
+			inputPolicy: InputStrictlyRequired,
+		}
+	},
+
 	"signal": func(session *Session) *ExperimentBuilder {
 		return &ExperimentBuilder{
 			build: func(config interface{}) *Experiment {
@@ -212,6 +240,30 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 			},
 			config:      &stunreachability.Config{},
 			inputPolicy: InputOrStaticDefault,
+		}
+	},
+
+	"tcpping": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, tcpping.NewExperimentMeasurer(
+					*config.(*tcpping.Config),
+				))
+			},
+			config:      &tcpping.Config{},
+			inputPolicy: InputStrictlyRequired,
+		}
+	},
+
+	"tlsping": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, tlsping.NewExperimentMeasurer(
+					*config.(*tlsping.Config),
+				))
+			},
+			config:      &tlsping.Config{},
+			inputPolicy: InputStrictlyRequired,
 		}
 	},
 
@@ -275,6 +327,18 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
+	"vanilla_tor": func(session *Session) *ExperimentBuilder {
+		return &ExperimentBuilder{
+			build: func(config interface{}) *Experiment {
+				return NewExperiment(session, vanillator.NewExperimentMeasurer(
+					*config.(*vanillator.Config),
+				))
+			},
+			config:      &vanillator.Config{},
+			inputPolicy: InputNone,
+		}
+	},
+
 	"web_connectivity": func(session *Session) *ExperimentBuilder {
 		return &ExperimentBuilder{
 			build: func(config interface{}) *Experiment {
@@ -283,18 +347,6 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 				))
 			},
 			config:      &webconnectivity.Config{},
-			inputPolicy: InputOrQueryBackend,
-		}
-	},
-
-	"websteps": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, webstepsx.NewExperimentMeasurer(
-					*config.(*webstepsx.Config),
-				))
-			},
-			config:      &webstepsx.Config{},
 			inputPolicy: InputOrQueryBackend,
 		}
 	},

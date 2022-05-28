@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Names of operations
+//
+
 // Operations that we measure. They are the possible values of
 // the ErrWrapper.Operation field.
 const (

@@ -286,7 +286,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 	case "https":
 		config.TLSConfig.NextProtos = []string{"h2", "http/1.1"}
 		httpClient := &http.Client{Transport: NewHTTPTransport(config)}
-		var txp model.DNSTransport = netxlite.NewDNSOverHTTPSWithHostOverride(
+		var txp model.DNSTransport = netxlite.NewDNSOverHTTPSTransportWithHostOverride(
 			httpClient, URL, hostOverride)
 		if config.ResolveSaver != nil {
 			txp = resolver.SaverDNSTransport{
@@ -301,7 +301,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		if err != nil {
 			return nil, err
 		}
-		var txp model.DNSTransport = netxlite.NewDNSOverUDP(
+		var txp model.DNSTransport = netxlite.NewDNSOverUDPTransport(
 			dialer, endpoint)
 		if config.ResolveSaver != nil {
 			txp = resolver.SaverDNSTransport{
@@ -317,7 +317,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		if err != nil {
 			return nil, err
 		}
-		var txp model.DNSTransport = netxlite.NewDNSOverTLS(
+		var txp model.DNSTransport = netxlite.NewDNSOverTLSTransport(
 			tlsDialer.DialTLSContext, endpoint)
 		if config.ResolveSaver != nil {
 			txp = resolver.SaverDNSTransport{
@@ -332,7 +332,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		if err != nil {
 			return nil, err
 		}
-		var txp model.DNSTransport = netxlite.NewDNSOverTCP(
+		var txp model.DNSTransport = netxlite.NewDNSOverTCPTransport(
 			dialer.DialContext, endpoint)
 		if config.ResolveSaver != nil {
 			txp = resolver.SaverDNSTransport{

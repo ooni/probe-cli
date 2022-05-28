@@ -62,8 +62,8 @@ func TestDialerSystem(t *testing.T) {
 			d := &dialerSystem{}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately!
-			conn, err := d.DialContext(ctx, "tcp", "dns.google:443")
-			if err == nil || err.Error() != "dial tcp: operation was canceled" {
+			conn, err := d.DialContext(ctx, "tcp", "8.8.8.8:443")
+			if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
 				t.Fatal("unexpected err", err)
 			}
 			if conn != nil {
@@ -253,7 +253,7 @@ func TestDialerResolver(t *testing.T) {
 			mu := &sync.Mutex{}
 			errorsList := []error{
 				errors.New("a mocked error"),
-				NewErrWrapper(
+				newErrWrapper(
 					classifyGenericError,
 					CloseOperation,
 					io.EOF,
@@ -295,7 +295,7 @@ func TestDialerResolver(t *testing.T) {
 			mu := &sync.Mutex{}
 			errorsList := []error{
 				errors.New("a mocked error"),
-				NewErrWrapper(
+				newErrWrapper(
 					classifyGenericError,
 					CloseOperation,
 					errors.New("antani"),

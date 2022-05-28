@@ -1,119 +1,98 @@
 package filtering
 
 import (
-	"context"
 	"errors"
 	"net"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/apex/log"
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
-func TestDNSProxy(t *testing.T) {
-	newProxyWithCache := func(action DNSAction, cache map[string][]string) (DNSListener, <-chan interface{}, error) {
-		p := &DNSProxy{
+func TestDNSServer(t *testing.T) {
+	newServerWithCache := func(action DNSAction, cache map[string][]string) (
+		*DNSServer, DNSListener, <-chan interface{}, error) {
+		p := &DNSServer{
 			Cache: cache,
 			OnQuery: func(domain string) DNSAction {
 				return action
 			},
+			onTimeout: make(chan bool),
 		}
-		return p.start("127.0.0.1:0")
+		listener, done, err := p.start("127.0.0.1:0")
+		return p, listener, done, err
 	}
 
-	newProxy := func(action DNSAction) (DNSListener, <-chan interface{}, error) {
-		return newProxyWithCache(action, nil)
+	newServer := func(action DNSAction) (*DNSServer, DNSListener, <-chan interface{}, error) {
+		return newServerWithCache(action, nil)
 	}
 
-	newresolver := func(listener DNSListener) model.Resolver {
-		dlr := netxlite.NewDialerWithoutResolver(log.Log)
-		r := netxlite.NewResolverUDP(log.Log, dlr, listener.LocalAddr().String())
-		return r
+	newQuery := func(qtype uint16) *dns.Msg {
+		question := dns.Question{
+			Name:   dns.Fqdn("dns.google"),
+			Qtype:  qtype,
+			Qclass: dns.ClassINET,
+		}
+		query := new(dns.Msg)
+		query.Id = dns.Id()
+		query.RecursionDesired = true
+		query.Question = make([]dns.Question, 1)
+		query.Question[0] = question
+		return query
 	}
-
-	t.Run("DNSActionPass", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newProxy(DNSActionPass)
-		if err != nil {
-			t.Fatal(err)
-		}
-		r := newresolver(listener)
-		addrs, err := r.LookupHost(ctx, "dns.google")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if addrs == nil {
-			t.Fatal("unexpected empty addrs")
-		}
-		var found bool
-		for _, addr := range addrs {
-			found = found || addr == "8.8.8.8"
-		}
-		if !found {
-			t.Fatal("did not find 8.8.8.8")
-		}
-		listener.Close()
-		<-done // wait for background goroutine to exit
-	})
 
 	t.Run("DNSActionNXDOMAIN", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newProxy(DNSActionNXDOMAIN)
+		_, listener, done, err := newServer(DNSActionNXDOMAIN)
 		if err != nil {
 			t.Fatal(err)
 		}
-		r := newresolver(listener)
-		addrs, err := r.LookupHost(ctx, "dns.google")
-		if err == nil || err.Error() != netxlite.FailureDNSNXDOMAINError {
-			t.Fatal("unexpected err", err)
+		reply, err := dns.Exchange(newQuery(dns.TypeA), listener.LocalAddr().String())
+		if err != nil {
+			t.Fatal(err)
 		}
-		if addrs != nil {
-			t.Fatal("expected empty addrs")
+		if reply.Rcode != dns.RcodeNameError {
+			t.Fatal("unexpected rcode")
 		}
 		listener.Close()
 		<-done // wait for background goroutine to exit
 	})
 
 	t.Run("DNSActionRefused", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newProxy(DNSActionRefused)
+		_, listener, done, err := newServer(DNSActionRefused)
 		if err != nil {
 			t.Fatal(err)
 		}
-		r := newresolver(listener)
-		addrs, err := r.LookupHost(ctx, "dns.google")
-		if err == nil || err.Error() != netxlite.FailureDNSRefusedError {
-			t.Fatal("unexpected err", err)
+		reply, err := dns.Exchange(newQuery(dns.TypeA), listener.LocalAddr().String())
+		if err != nil {
+			t.Fatal(err)
 		}
-		if addrs != nil {
-			t.Fatal("expected empty addrs")
+		if reply.Rcode != dns.RcodeRefused {
+			t.Fatal("unexpected rcode")
 		}
 		listener.Close()
 		<-done // wait for background goroutine to exit
 	})
 
 	t.Run("DNSActionLocalHost", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newProxy(DNSActionLocalHost)
+		_, listener, done, err := newServer(DNSActionLocalHost)
 		if err != nil {
 			t.Fatal(err)
 		}
-		r := newresolver(listener)
-		addrs, err := r.LookupHost(ctx, "dns.google")
+		reply, err := dns.Exchange(newQuery(dns.TypeA), listener.LocalAddr().String())
 		if err != nil {
 			t.Fatal(err)
 		}
-		if addrs == nil {
-			t.Fatal("expected non-empty addrs")
+		if reply.Rcode != dns.RcodeSuccess {
+			t.Fatal("unexpected rcode")
 		}
 		var found bool
-		for _, addr := range addrs {
-			found = found || addr == "127.0.0.1"
+		for _, ans := range reply.Answer {
+			switch v := ans.(type) {
+			case *dns.A:
+				found = found || v.A.String() == "127.0.0.1"
+			}
 		}
 		if !found {
 			t.Fatal("did not find 127.0.0.1")
@@ -123,94 +102,154 @@ func TestDNSProxy(t *testing.T) {
 	})
 
 	t.Run("DNSActionEmpty", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newProxy(DNSActionNoAnswer)
+		_, listener, done, err := newServer(DNSActionNoAnswer)
 		if err != nil {
 			t.Fatal(err)
 		}
-		r := newresolver(listener)
-		addrs, err := r.LookupHost(ctx, "dns.google")
-		if err == nil || err.Error() != netxlite.FailureDNSNoAnswer {
-			t.Fatal("unexpected err", err)
+		reply, err := dns.Exchange(newQuery(dns.TypeA), listener.LocalAddr().String())
+		if err != nil {
+			t.Fatal(err)
 		}
-		if addrs != nil {
-			t.Fatal("expected empty addrs")
+		if reply.Rcode != dns.RcodeSuccess {
+			t.Fatal("unexpected rcode")
+		}
+		if len(reply.Answer) != 0 {
+			t.Fatal("expected no answers")
 		}
 		listener.Close()
 		<-done // wait for background goroutine to exit
 	})
 
 	t.Run("DNSActionTimeout", func(t *testing.T) {
-		// Implementation note: if you see this test running for more
-		// than one second, then it means we're not checking the context
-		// immediately. We should be improving there but we need to be
-		// careful because lots of legacy code uses SerialResolver.
-		const timeout = time.Second
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		defer cancel()
-		listener, done, err := newProxy(DNSActionTimeout)
+		srvr, listener, done, err := newServer(DNSActionTimeout)
 		if err != nil {
 			t.Fatal(err)
 		}
-		r := newresolver(listener)
-		addrs, err := r.LookupHost(ctx, "dns.google")
-		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
+		c := &dns.Client{}
+		conn, err := c.Dial(listener.LocalAddr().String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		go func() {
+			<-srvr.onTimeout
+			conn.Close() // close as soon as the server times out, so this test is fast
+		}()
+		reply, _, err := c.ExchangeWithConn(newQuery(dns.TypeA), conn)
+		if !errors.Is(err, net.ErrClosed) {
 			t.Fatal("unexpected err", err)
 		}
-		if addrs != nil {
-			t.Fatal("expected empty addrs")
+		if reply != nil {
+			t.Fatal("expected nil reply here")
 		}
 		listener.Close()
 		<-done // wait for background goroutine to exit
 	})
 
 	t.Run("DNSActionCache without entries", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newProxyWithCache(DNSActionCache, nil)
+		_, listener, done, err := newServerWithCache(DNSActionCache, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		r := newresolver(listener)
-		addrs, err := r.LookupHost(ctx, "dns.google")
-		if err == nil || err.Error() != netxlite.FailureDNSNXDOMAINError {
-			t.Fatal("unexpected err", err)
+		reply, err := dns.Exchange(newQuery(dns.TypeA), listener.LocalAddr().String())
+		if err != nil {
+			t.Fatal(err)
 		}
-		if addrs != nil {
-			t.Fatal("expected empty addrs")
+		if reply.Rcode != dns.RcodeNameError {
+			t.Fatal("unexpected rcode")
 		}
 		listener.Close()
 		<-done // wait for background goroutine to exit
 	})
 
-	t.Run("DNSActionCache with entries", func(t *testing.T) {
-		ctx := context.Background()
+	t.Run("DNSActionCache with IPv4 entry", func(t *testing.T) {
 		cache := map[string][]string{
-			"dns.google.": {"8.8.8.8", "8.8.4.4"},
+			"dns.google.": {"8.8.8.8"},
 		}
-		listener, done, err := newProxyWithCache(DNSActionCache, cache)
+		_, listener, done, err := newServerWithCache(DNSActionCache, cache)
 		if err != nil {
 			t.Fatal(err)
 		}
-		r := newresolver(listener)
-		addrs, err := r.LookupHost(ctx, "dns.google")
+		reply, err := dns.Exchange(newQuery(dns.TypeA), listener.LocalAddr().String())
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(addrs) != 2 {
-			t.Fatal("expected two entries")
+		if reply.Rcode != dns.RcodeSuccess {
+			t.Fatal("unexpected rcode")
 		}
-		if addrs[0] != "8.8.8.8" {
-			t.Fatal("invalid first entry")
+		var found bool
+		for _, ans := range reply.Answer {
+			switch v := ans.(type) {
+			case *dns.A:
+				found = found || v.A.String() == "8.8.8.8"
+			}
 		}
-		if addrs[1] != "8.8.4.4" {
-			t.Fatal("invalid second entry")
+		if !found {
+			t.Fatal("did not find 8.8.8.8")
+		}
+		listener.Close()
+		<-done // wait for background goroutine to exit
+	})
+
+	t.Run("DNSActionCache with IPv6 entry", func(t *testing.T) {
+		cache := map[string][]string{
+			"dns.google.": {"2001:4860:4860::8888"},
+		}
+		_, listener, done, err := newServerWithCache(DNSActionCache, cache)
+		if err != nil {
+			t.Fatal(err)
+		}
+		reply, err := dns.Exchange(newQuery(dns.TypeAAAA), listener.LocalAddr().String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if reply.Rcode != dns.RcodeSuccess {
+			t.Fatal("unexpected rcode")
+		}
+		var found bool
+		for _, ans := range reply.Answer {
+			switch v := ans.(type) {
+			case *dns.AAAA:
+				found = found || v.AAAA.String() == "2001:4860:4860::8888"
+			}
+		}
+		if !found {
+			t.Fatal("did not find 2001:4860:4860::8888")
+		}
+		listener.Close()
+		<-done // wait for background goroutine to exit
+	})
+
+	t.Run("DNSActionLocalHostPlusCache", func(t *testing.T) {
+		cache := map[string][]string{
+			"dns.google.": {"2001:4860:4860::8888"},
+		}
+		_, listener, done, err := newServerWithCache(DNSActionLocalHostPlusCache, cache)
+		if err != nil {
+			t.Fatal(err)
+		}
+		reply, err := dns.Exchange(newQuery(dns.TypeAAAA), listener.LocalAddr().String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if reply.Rcode != dns.RcodeSuccess {
+			t.Fatal("unexpected rcode")
+		}
+		var found bool
+		for _, ans := range reply.Answer {
+			switch v := ans.(type) {
+			case *dns.AAAA:
+				found = found || v.AAAA.String() == "::1"
+			}
+		}
+		if !found {
+			t.Fatal("did not find ::1")
 		}
 		listener.Close()
 		<-done // wait for background goroutine to exit
 	})
 
 	t.Run("Start with invalid address", func(t *testing.T) {
-		p := &DNSProxy{}
+		p := &DNSServer{}
 		listener, err := p.Start("127.0.0.1")
 		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
 			t.Fatal("unexpected err", err)
@@ -223,7 +262,7 @@ func TestDNSProxy(t *testing.T) {
 	t.Run("oneloop", func(t *testing.T) {
 		t.Run("ReadFrom failure after which we should continue", func(t *testing.T) {
 			expected := errors.New("mocked error")
-			p := &DNSProxy{}
+			p := &DNSServer{}
 			conn := &mocks.UDPLikeConn{
 				MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
 					return 0, nil, expected
@@ -237,7 +276,7 @@ func TestDNSProxy(t *testing.T) {
 
 		t.Run("ReadFrom the connection is closed", func(t *testing.T) {
 			expected := errors.New("use of closed network connection")
-			p := &DNSProxy{}
+			p := &DNSServer{}
 			conn := &mocks.UDPLikeConn{
 				MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
 					return 0, nil, expected
@@ -250,7 +289,7 @@ func TestDNSProxy(t *testing.T) {
 		})
 
 		t.Run("Unpack fails", func(t *testing.T) {
-			p := &DNSProxy{}
+			p := &DNSServer{}
 			conn := &mocks.UDPLikeConn{
 				MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
 					if len(p) < 4 {
@@ -266,54 +305,20 @@ func TestDNSProxy(t *testing.T) {
 			}
 		})
 
-		t.Run("reply fails", func(t *testing.T) {
-			p := &DNSProxy{}
+		t.Run("no questions", func(t *testing.T) {
+			query := newQuery(dns.TypeA)
+			query.Question = nil // remove the question
+			data, err := query.Pack()
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := &DNSServer{}
 			conn := &mocks.UDPLikeConn{
 				MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
-					query := &dns.Msg{}
-					query.Question = append(query.Question, dns.Question{})
-					query.Question = append(query.Question, dns.Question{})
-					data, err := query.Pack()
-					if err != nil {
-						panic(err)
-					}
 					if len(p) < len(data) {
 						panic("buffer too small")
 					}
-					for i := 0; i < len(data); i++ {
-						p[i] = data[i]
-					}
-					return len(data), &net.UDPAddr{}, nil
-				},
-			}
-			okay := p.oneloop(conn)
-			if !okay {
-				t.Fatal("we should be okay after this error")
-			}
-		})
-
-		t.Run("pack fails", func(t *testing.T) {
-			p := &DNSProxy{
-				mockableReply: func(query *dns.Msg) (*dns.Msg, error) {
-					reply := &dns.Msg{}
-					reply.MsgHdr.Rcode = -1 // causes pack to fail
-					return reply, nil
-				},
-			}
-			conn := &mocks.UDPLikeConn{
-				MockReadFrom: func(p []byte) (n int, addr net.Addr, err error) {
-					query := &dns.Msg{}
-					query.Question = append(query.Question, dns.Question{})
-					data, err := query.Pack()
-					if err != nil {
-						panic(err)
-					}
-					if len(p) < len(data) {
-						panic("buffer too small")
-					}
-					for i := 0; i < len(data); i++ {
-						p[i] = data[i]
-					}
+					copy(p, data)
 					return len(data), &net.UDPAddr{}, nil
 				},
 			}
@@ -324,55 +329,13 @@ func TestDNSProxy(t *testing.T) {
 		})
 	})
 
-	t.Run("proxy", func(t *testing.T) {
-		t.Run("Pack fails", func(t *testing.T) {
-			p := &DNSProxy{}
-			query := &dns.Msg{}
-			query.Rcode = -1 // causes Pack to fail
-			reply, err := p.proxy(query)
-			if err == nil || !strings.HasSuffix(err.Error(), "bad rcode") {
-				t.Fatal("unexpected err", err)
-			}
-			if reply != nil {
-				t.Fatal("expected nil reply")
-			}
-		})
-
-		t.Run("round trip fails", func(t *testing.T) {
-			expected := errors.New("mocked error")
-			p := &DNSProxy{
-				Upstream: &mocks.DNSTransport{
-					MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-						return nil, expected
-					},
-					MockCloseIdleConnections: func() {},
-				},
-			}
-			reply, err := p.proxy(&dns.Msg{})
-			if !errors.Is(err, expected) {
-				t.Fatal("unexpected err", err)
-			}
-			if reply != nil {
-				t.Fatal("expected nil reply here")
-			}
-		})
-
-		t.Run("Unpack fails", func(t *testing.T) {
-			p := &DNSProxy{
-				Upstream: &mocks.DNSTransport{
-					MockRoundTrip: func(ctx context.Context, query []byte) (reply []byte, err error) {
-						return make([]byte, 1), nil
-					},
-					MockCloseIdleConnections: func() {},
-				},
-			}
-			reply, err := p.proxy(&dns.Msg{})
-			if err == nil || !strings.HasSuffix(err.Error(), "overflow unpacking uint16") {
-				t.Fatal("unexpected err", err)
-			}
-			if reply != nil {
-				t.Fatal("expected nil reply here")
-			}
-		})
+	t.Run("pack fails", func(t *testing.T) {
+		query := newQuery(dns.TypeA)
+		query.Question[0].Name = randx.Letters(1024) // should be too large
+		p := &DNSServer{}
+		count := p.emit(&mocks.UDPLikeConn{}, &mocks.Addr{}, query)
+		if count != 0 {
+			t.Fatal("expected to see zero here")
+		}
 	})
 }

@@ -1,10 +1,16 @@
 package netxlite
 
+//
+// Code to use yawning/utls or refraction-networking/utls
+//
+
 import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
+	"reflect"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	utls "gitlab.com/yawning/utls.git"
@@ -38,18 +44,48 @@ type utlsConn struct {
 var _ TLSConn = &utlsConn{}
 
 // newConnUTLS returns a NewConn function for creating utlsConn instances.
-func newConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tls.Config) TLSConn {
-	return func(conn net.Conn, config *tls.Config) TLSConn {
-		uConfig := &utls.Config{
-			RootCAs:                     config.RootCAs,
-			NextProtos:                  config.NextProtos,
-			ServerName:                  config.ServerName,
-			InsecureSkipVerify:          config.InsecureSkipVerify,
-			DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
-		}
-		tlsConn := utls.UClient(conn, uConfig, *clientHello)
-		return &utlsConn{UConn: tlsConn}
+func newConnUTLS(clientHello *utls.ClientHelloID) func(conn net.Conn, config *tls.Config) (TLSConn, error) {
+	return func(conn net.Conn, config *tls.Config) (TLSConn, error) {
+		return newConnUTLSWithHelloID(conn, config, clientHello)
 	}
+}
+
+// errUTLSIncompatibleStdlibConfig indicates that the stdlib config you passed to
+// newConnUTLSWithHelloID contains some fields we don't support.
+var errUTLSIncompatibleStdlibConfig = errors.New("utls: incompatible stdlib config")
+
+// newConnUTLSWithHelloID creates a new connection with the given client hello ID.
+func newConnUTLSWithHelloID(conn net.Conn, config *tls.Config, cid *utls.ClientHelloID) (TLSConn, error) {
+	supportedFields := map[string]bool{
+		"DynamicRecordSizingDisabled": true,
+		"InsecureSkipVerify":          true,
+		"NextProtos":                  true,
+		"RootCAs":                     true,
+		"ServerName":                  true,
+	}
+	value := reflect.ValueOf(config).Elem()
+	kind := value.Type()
+	for idx := 0; idx < value.NumField(); idx++ {
+		field := value.Field(idx)
+		if field.IsZero() {
+			continue
+		}
+		fieldKind := kind.Field(idx)
+		if supportedFields[fieldKind.Name] {
+			continue
+		}
+		err := fmt.Errorf("%w: field %s is nonzero", errUTLSIncompatibleStdlibConfig, fieldKind.Name)
+		return nil, err
+	}
+	uConfig := &utls.Config{
+		DynamicRecordSizingDisabled: config.DynamicRecordSizingDisabled,
+		InsecureSkipVerify:          config.InsecureSkipVerify,
+		RootCAs:                     config.RootCAs,
+		NextProtos:                  config.NextProtos,
+		ServerName:                  config.ServerName,
+	}
+	tlsConn := utls.UClient(conn, uConfig, *cid)
+	return &utlsConn{UConn: tlsConn}, nil
 }
 
 // ErrUTLSHandshakePanic indicates that there was panic handshaking

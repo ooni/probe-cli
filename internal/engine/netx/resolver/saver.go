@@ -48,28 +48,41 @@ type SaverDNSTransport struct {
 }
 
 // RoundTrip implements RoundTripper.RoundTrip
-func (txp SaverDNSTransport) RoundTrip(ctx context.Context, query []byte) ([]byte, error) {
+func (txp SaverDNSTransport) RoundTrip(
+	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 	start := time.Now()
 	txp.Saver.Write(trace.Event{
 		Address:  txp.Address(),
-		DNSQuery: query,
+		DNSQuery: txp.maybeQueryBytes(query),
 		Name:     "dns_round_trip_start",
 		Proto:    txp.Network(),
 		Time:     start,
 	})
-	reply, err := txp.DNSTransport.RoundTrip(ctx, query)
+	response, err := txp.DNSTransport.RoundTrip(ctx, query)
 	stop := time.Now()
 	txp.Saver.Write(trace.Event{
 		Address:  txp.Address(),
-		DNSQuery: query,
-		DNSReply: reply,
+		DNSQuery: txp.maybeQueryBytes(query),
+		DNSReply: txp.maybeResponseBytes(response),
 		Duration: stop.Sub(start),
 		Err:      err,
 		Name:     "dns_round_trip_done",
 		Proto:    txp.Network(),
 		Time:     stop,
 	})
-	return reply, err
+	return response, err
+}
+
+func (txp SaverDNSTransport) maybeQueryBytes(query model.DNSQuery) []byte {
+	data, _ := query.Bytes()
+	return data
+}
+
+func (txp SaverDNSTransport) maybeResponseBytes(response model.DNSResponse) []byte {
+	if response == nil {
+		return nil
+	}
+	return response.Bytes()
 }
 
 var _ model.Resolver = SaverResolver{}

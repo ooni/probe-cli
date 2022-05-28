@@ -10,9 +10,9 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/engine/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -364,7 +364,7 @@ type CheckInConfig struct {
 	// Platform is the mobile platform (e.g. "android")
 	Platform string
 
-	// RunType indicates whether this is an automated ("timed") run
+	// RunType indicates whether this is an automated (model.RunTypeTimed) run
 	// or otherwise a manual run initiated by the user.
 	RunType string
 
@@ -472,7 +472,7 @@ func (sess *Session) CheckIn(ctx *Context, config *CheckInConfig) (*CheckInInfo,
 		Platform:        config.Platform,
 		ProbeASN:        info.ASNString(),
 		ProbeCC:         info.CountryCode,
-		RunType:         config.RunType,
+		RunType:         model.RunType(config.RunType),
 		SoftwareVersion: config.SoftwareVersion,
 		WebConnectivity: config.WebConnectivity.toModel(),
 	}

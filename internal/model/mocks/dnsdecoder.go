@@ -1,20 +1,20 @@
 package mocks
 
-import "github.com/ooni/probe-cli/v3/internal/model"
+//
+// Mocks for model.DNSDecoder
+//
 
-// DNSDecoder allows mocking dnsx.DNSDecoder.
+import (
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
+
+// DNSDecoder allows mocking model.DNSDecoder.
 type DNSDecoder struct {
-	MockDecodeLookupHost func(qtype uint16, reply []byte) ([]string, error)
-
-	MockDecodeHTTPS func(reply []byte) (*model.HTTPSSvc, error)
+	MockDecodeResponse func(data []byte, query model.DNSQuery) (model.DNSResponse, error)
 }
 
-// DecodeLookupHost calls MockDecodeLookupHost.
-func (e *DNSDecoder) DecodeLookupHost(qtype uint16, reply []byte) ([]string, error) {
-	return e.MockDecodeLookupHost(qtype, reply)
-}
+var _ model.DNSDecoder = &DNSDecoder{}
 
-// DecodeHTTPS calls MockDecodeHTTPS.
-func (e *DNSDecoder) DecodeHTTPS(reply []byte) (*model.HTTPSSvc, error) {
-	return e.MockDecodeHTTPS(reply)
+func (e *DNSDecoder) DecodeResponse(data []byte, query model.DNSQuery) (model.DNSResponse, error) {
+	return e.MockDecodeResponse(data, query)
 }

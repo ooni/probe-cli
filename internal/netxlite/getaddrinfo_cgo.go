@@ -18,18 +18,18 @@ import "C"
 import (
 	"context"
 	"errors"
-	"log"
 	"net"
+	"runtime"
 	"syscall"
 	"unsafe"
 )
 
-func getaddrinfoDoLookupHost(ctx context.Context, domain string) ([]string, error) {
-	return getaddrinfoSingleton.Do(ctx, domain)
+func getaddrinfoLookupANY(ctx context.Context, domain string) ([]string, string, error) {
+	return getaddrinfoSingleton.LookupANY(ctx, domain)
 }
 
 // getaddrinfoSingleton is the getaddrinfo singleton.
-var getaddrinfoSingleton = newGetaddrinfoState()
+var getaddrinfoSingleton = newGetaddrinfoState(getaddrinfoNumSlots)
 
 // getaddrinfoSlot is a slot for calling getaddrinfo. The Go standard lib
 // limits the maximum number of parallel calls to getaddrinfo. They do that
@@ -45,6 +45,10 @@ type getaddrinfoState struct {
 	// sema is the semaphore that only allows a maximum number of
 	// getaddrinfo slots to be active at any given time.
 	sema chan *getaddrinfoSlot
+
+	// lookupANY is the function that actually implements
+	// the lookup ANY lookup using getaddrinfo.
+	lookupANY func(domain string) ([]string, string, error)
 }
 
 // getaddrinfoNumSlots is the maximum number of parallel calls
@@ -52,19 +56,22 @@ type getaddrinfoState struct {
 const getaddrinfoNumSlots = 8
 
 // newGetaddrinfoState creates the getaddrinfo state.
-func newGetaddrinfoState() *getaddrinfoState {
-	return &getaddrinfoState{
-		sema: make(chan *getaddrinfoSlot, getaddrinfoNumSlots),
+func newGetaddrinfoState(numSlots int) *getaddrinfoState {
+	state := &getaddrinfoState{
+		sema:      make(chan *getaddrinfoSlot, numSlots),
+		lookupANY: nil,
 	}
+	state.lookupANY = state.doLookupANY
+	return state
 }
 
-// Do invokes getaddrinfo and returns the results.
-func (state *getaddrinfoState) Do(ctx context.Context, domain string) ([]string, error) {
+// lookupANY invokes getaddrinfo and returns the results.
+func (state *getaddrinfoState) LookupANY(ctx context.Context, domain string) ([]string, string, error) {
 	if err := state.grabSlot(ctx); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer state.releaseSlot()
-	return state.do(domain)
+	return state.doLookupANY(domain)
 }
 
 // grabSlot grabs a slot for calling getaddrinfo. This function may block until
@@ -72,7 +79,7 @@ func (state *getaddrinfoState) Do(ctx context.Context, domain string) ([]string,
 func (state *getaddrinfoState) grabSlot(ctx context.Context) error {
 	// Implementation note: the channel has getaddrinfoNumSlots capacity, hence
 	// the first getaddrinfoNumSlots channel writes will succeed and all the
-	// subsequent onces will block. To unblock a pending request, we release a
+	// subsequent ones will block. To unblock a pending request, we release a
 	// slot by reading from the channel.
 	select {
 	case state.sema <- &getaddrinfoSlot{}:
@@ -87,14 +94,14 @@ func (state *getaddrinfoState) releaseSlot() {
 	<-state.sema
 }
 
-// do calls getaddrinfo. We assume that you've already grabbed a
+// doLookupANY calls getaddrinfo. We assume that you've already grabbed a
 // slot and you're defer-releasing it when you're done.
 //
 // This function is adapted from cgoLookupIPCNAME
 // https://github.com/golang/go/blob/go1.17.6/src/net/cgo_unix.go#L145
 //
 // SPDX-License-Identifier: BSD-3-Clause.
-func (state *getaddrinfoState) do(domain string) ([]string, error) {
+func (state *getaddrinfoState) doLookupANY(domain string) ([]string, string, error) {
 	var hints C.struct_addrinfo // zero-initialized by Go
 	hints.ai_flags = getaddrinfoAIFlags
 	hints.ai_socktype = C.SOCK_STREAM
@@ -109,12 +116,7 @@ func (state *getaddrinfoState) do(domain string) ([]string, error) {
 	// C errno variable as an error"
 	code, err := C.getaddrinfo((*C.char)(unsafe.Pointer(&h[0])), nil, &hints, &res)
 	if code != 0 {
-		// TODO(bassosimone): as long as we're testing this new functionality
-		// we will keep a bit more logging to help in diagnosing errors. (Note
-		// that here err _may_ be nil if we only have a getaddrinfo failure and
-		// there was no actual syscall error, hence we use "%+v".)
-		log.Printf("getaddrinfo: code=%d err=%+v", code, err)
-		return state.toError(code, err)
+		return nil, "", state.toError(int64(code), err, runtime.GOOS)
 	}
 	defer C.freeaddrinfo(res)
 	return state.toAddressList(res)
@@ -127,26 +129,29 @@ func (state *getaddrinfoState) do(domain string) ([]string, error) {
 // https://github.com/golang/go/blob/go1.17.6/src/net/cgo_unix.go#L145
 //
 // SPDX-License-Identifier: BSD-3-Clause.
-func (state *getaddrinfoState) toAddressList(res *C.struct_addrinfo) ([]string, error) {
-	var addrs []string
+func (state *getaddrinfoState) toAddressList(res *C.struct_addrinfo) ([]string, string, error) {
+	var (
+		addrs     []string
+		canonname string
+	)
 	for r := res; r != nil; r = r.ai_next {
+		if r.ai_canonname != nil {
+			canonname = C.GoString(r.ai_canonname)
+		}
 		// We only asked for SOCK_STREAM, but check anyhow.
 		if r.ai_socktype != C.SOCK_STREAM {
 			continue
 		}
 		addr, err := state.addrinfoToString(r)
 		if err != nil {
-			log.Printf("addrinfoToString: %s", err.Error())
 			continue
 		}
-		log.Printf("getaddrinfo: resolved %s", addr)
 		addrs = append(addrs, addr)
 	}
 	if len(addrs) < 1 {
-		log.Printf("getaddrinfo: no address after ainfo loop")
-		return nil, errors.New(DNSNoAnswerSuffix)
+		return nil, canonname, ErrOODNSNoAnswer
 	}
-	return addrs, nil
+	return addrs, canonname, nil
 }
 
 // errGetaddrinfoUnknownFamily indicates we don't know the address family.
@@ -177,7 +182,24 @@ func (state *getaddrinfoState) addrinfoToString(r *C.struct_addrinfo) (string, e
 	}
 }
 
-// copyIP copies an net.IP.
+// staticAddrinfoWithInvalidFamily is an helper to construct an addrinfo struct
+// that we use in testing. (We cannot call CGO directly from tests.)
+func staticAddrinfoWithInvalidFamily() *C.struct_addrinfo {
+	var value C.struct_addrinfo       // zeroed by Go
+	value.ai_socktype = C.SOCK_STREAM // this is what the code expects
+	value.ai_family = 0               // but 0 is not AF_INET{,6}
+	return &value
+}
+
+// staticAddrinfoWithInvalidSocketType is an helper to construct an addrinfo struct
+// that we use in testing. (We cannot call CGO directly from tests.)
+func staticAddrinfoWithInvalidSocketType() *C.struct_addrinfo {
+	var value C.struct_addrinfo      // zeroed by Go
+	value.ai_socktype = C.SOCK_DGRAM // not SOCK_STREAM
+	return &value
+}
+
+// copyIP copies a net.IP.
 //
 // This function is adapted from copyIP
 // https://github.com/golang/go/blob/go1.17.6/src/net/cgo_unix.go#L344
@@ -201,7 +223,6 @@ func (state *getaddrinfoState) copyIP(x net.IP) net.IP {
 func (state *getaddrinfoState) ifnametoindex(idx int) string {
 	iface, err := net.InterfaceByIndex(idx) // internally uses caching
 	if err != nil {
-		log.Printf("getadderinfo: InterfaceByIndex: %s", err.Error())
 		return ""
 	}
 	return iface.Name

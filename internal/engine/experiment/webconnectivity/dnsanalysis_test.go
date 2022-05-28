@@ -14,6 +14,7 @@ func TestDNSAnalysis(t *testing.T) {
 	measurementFailure := netxlite.FailureDNSNXDOMAINError
 	controlFailure := webconnectivity.DNSNameError
 	eofFailure := io.EOF.Error()
+	androidEaiNoData := netxlite.FailureAndroidDNSCacheNoData
 	type args struct {
 		URL         *url.URL
 		measurement webconnectivity.DNSLookupResult
@@ -57,13 +58,31 @@ func TestDNSAnalysis(t *testing.T) {
 			DNSConsistency: &webconnectivity.DNSInconsistent,
 		},
 	}, {
-		name: "when the failures are compatible",
+		name: "when the failures are compatible (NXDOMAIN case)",
 		args: args{
 			URL: &url.URL{
 				Host: "www.kerneltrap.org",
 			},
 			measurement: webconnectivity.DNSLookupResult{
 				Failure: &measurementFailure,
+			},
+			control: webconnectivity.ControlResponse{
+				DNS: webconnectivity.ControlDNSResult{
+					Failure: &controlFailure,
+				},
+			},
+		},
+		wantOut: webconnectivity.DNSAnalysisResult{
+			DNSConsistency: &webconnectivity.DNSConsistent,
+		},
+	}, {
+		name: "when the failures are compatible (Android EAI_NODATA case)",
+		args: args{
+			URL: &url.URL{
+				Host: "www.kerneltrap.org",
+			},
+			measurement: webconnectivity.DNSLookupResult{
+				Failure: &androidEaiNoData,
 			},
 			control: webconnectivity.ControlResponse{
 				DNS: webconnectivity.ControlDNSResult{

@@ -63,7 +63,7 @@ func HTTPGet(ctx context.Context, config HTTPGetConfig) (out HTTPGetResult) {
 		Session: config.Session,
 		Target:  target,
 	}.Get(ctx)
-	config.Session.Logger().Infof("GET %s... %+v", target, err)
+	config.Session.Logger().Infof("GET %s... %+v", target, model.ErrorToStringOrOK(err))
 	out.Failure = result.Failure
 	out.TestKeys = result
 	return

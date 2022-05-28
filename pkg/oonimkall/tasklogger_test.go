@@ -1,14 +1,14 @@
 package oonimkall
 
+//
+// This file contains tests for the taskLogger type.
+//
+
 import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
-
-//
-// This file contains tests for the taskLogger type.
-//
 
 func TestTaskLogger(t *testing.T) {
 	// debugMessage is the debug message we expect to see.

@@ -117,6 +117,9 @@ func (r *invalidJSONReader) Read(p []byte) (int, error) {
 }
 
 func TestDownloadOnJSONLoop(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	mgr := newDownloadManager(
 		&mockableConnMock{
 			NextReaderMsgType: websocket.TextMessage,

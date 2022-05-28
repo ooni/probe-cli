@@ -9,6 +9,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/database"
 	"github.com/ooni/probe-cli/v3/cmd/ooniprobe/internal/ooni"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func copyfile(source, dest string) error {
@@ -44,8 +45,11 @@ func TestCreateContext(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
 	probe := newOONIProbe(t)
-	sess, err := probe.NewSession(context.Background())
+	sess, err := probe.NewSession(context.Background(), model.RunTypeManual)
 	if err != nil {
 		t.Fatal(err)
 	}

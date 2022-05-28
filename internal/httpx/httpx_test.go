@@ -93,6 +93,62 @@ func newAPIClient() *apiClient {
 	}
 }
 
+func TestJoinURLPath(t *testing.T) {
+	t.Run("empty baseURL path and slash-prefixed resource path", func(t *testing.T) {
+		ac := newAPIClient()
+		ac.BaseURL = "https://example.com"
+		req, err := ac.newRequest(context.Background(), "GET", "/foo", nil, nil)
+		if req.URL.String() != "https://example.com/foo" {
+			t.Fatal("unexpected result", err)
+		}
+	})
+
+	t.Run("root baseURL path and slash-prefixed resource path", func(t *testing.T) {
+		ac := newAPIClient()
+		ac.BaseURL = "https://example.com/"
+		req, err := ac.newRequest(context.Background(), "GET", "/foo", nil, nil)
+		if req.URL.String() != "https://example.com/foo" {
+			t.Fatal("unexpected result", err)
+		}
+	})
+
+	t.Run("empty baseURL path and empty resource path", func(t *testing.T) {
+		ac := newAPIClient()
+		ac.BaseURL = "https://example.com"
+		req, err := ac.newRequest(context.Background(), "GET", "", nil, nil)
+		if req.URL.String() != "https://example.com/" {
+			t.Fatal("unexpected result", err)
+		}
+	})
+
+	t.Run("non-slash-terminated baseURL path and slash-prefixed resource path", func(t *testing.T) {
+		ac := newAPIClient()
+		ac.BaseURL = "http://example.com/foo"
+		req, err := ac.newRequest(context.Background(), "GET", "/bar", nil, nil)
+		if req.URL.String() != "http://example.com/foo/bar" {
+			t.Fatal("unexpected result", err)
+		}
+	})
+
+	t.Run("slash-terminated baseURL path and slash-prefixed resource path", func(t *testing.T) {
+		ac := newAPIClient()
+		ac.BaseURL = "http://example.com/foo/"
+		req, err := ac.newRequest(context.Background(), "GET", "/bar", nil, nil)
+		if req.URL.String() != "http://example.com/foo/bar" {
+			t.Fatal("unexpected result", err)
+		}
+	})
+
+	t.Run("slash-terminated baseURL path and non-slash-prefixed resource path", func(t *testing.T) {
+		ac := newAPIClient()
+		ac.BaseURL = "http://example.com/foo/"
+		req, err := ac.newRequest(context.Background(), "GET", "bar", nil, nil)
+		if req.URL.String() != "http://example.com/foo/bar" {
+			t.Fatal("unexpected result", err)
+		}
+	})
+}
+
 // fakeRequest is a fake request we serialize.
 type fakeRequest struct {
 	Name       string

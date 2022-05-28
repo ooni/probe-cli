@@ -1,30 +1,103 @@
 package netxlite
 
 import (
+	"bytes"
+	"encoding/binary"
 	"strings"
 	"testing"
 
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/randx"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func TestDNSEncoder(t *testing.T) {
+func TestDNSEncoderMiekg(t *testing.T) {
+	t.Run("we can fail to encode a domain name to bytes", func(t *testing.T) {
+		e := &DNSEncoderMiekg{}
+		domain := randx.LettersUppercase(512)
+		query := e.Encode(domain, dns.TypeA, false)
+		data, err := query.Bytes()
+		if err == nil || !strings.HasSuffix(err.Error(), "bad rdata") {
+			t.Fatal("unexpected err", err)
+		}
+		if data != nil {
+			t.Fatal("expected nil data here")
+		}
+	})
+
+	t.Run("calls to bytes are memoized", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			e := &DNSEncoderMiekg{}
+			query := e.Encode("x.org", dns.TypeA, false)
+			checkResult := func(data []byte, err error) {
+				if err != nil {
+					t.Fatal("unexpected err", err)
+				}
+				dnsValidateEncodedQueryBytes(t, data, byte(dns.TypeA), query.ID())
+			}
+			const repeat = 3
+			for idx := 0; idx < repeat; idx++ {
+				checkResult(query.Bytes())
+			}
+			// The following cast will always work in this configuration
+			if query.(*dnsQuery).bytesCalls.Load() != 1 {
+				t.Fatal("invalid number of calls")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			e := &DNSEncoderMiekg{}
+			domain := randx.LettersUppercase(512)
+			query := e.Encode(domain, dns.TypeA, false)
+			checkResult := func(data []byte, err error) {
+				if err == nil || !strings.HasSuffix(err.Error(), "bad rdata") {
+					t.Fatal("unexpected err", err)
+				}
+				if data != nil {
+					t.Fatal("expected nil data here")
+				}
+			}
+			const repeat = 3
+			for idx := 0; idx < repeat; idx++ {
+				checkResult(query.Bytes())
+			}
+			// The following cast will always work in this configuration
+			if query.(*dnsQuery).bytesCalls.Load() != repeat {
+				t.Fatal("invalid number of calls")
+			}
+		})
+	})
 
 	t.Run("encode A", func(t *testing.T) {
 		e := &DNSEncoderMiekg{}
-		data, err := e.Encode("x.org", dns.TypeA, false)
+		query := e.Encode("x.org", dns.TypeA, false)
+		if query.Domain() != "x.org" {
+			t.Fatal("invalid domain")
+		}
+		if query.Type() != dns.TypeA {
+			t.Fatal("invalid type")
+		}
+		data, err := query.Bytes()
 		if err != nil {
 			t.Fatal(err)
 		}
-		dnsValidateEncodedQueryBytes(t, data, byte(dns.TypeA))
+		dnsValidateEncodedQueryBytes(t, data, byte(dns.TypeA), query.ID())
 	})
 
 	t.Run("encode AAAA", func(t *testing.T) {
 		e := &DNSEncoderMiekg{}
-		data, err := e.Encode("x.org", dns.TypeAAAA, false)
+		query := e.Encode("x.org", dns.TypeAAAA, false)
+		if query.Domain() != "x.org" {
+			t.Fatal("invalid domain")
+		}
+		if query.Type() != dns.TypeAAAA {
+			t.Fatal("invalid type")
+		}
+		data, err := query.Bytes()
 		if err != nil {
 			t.Fatal(err)
 		}
-		dnsValidateEncodedQueryBytes(t, data, byte(dns.TypeA))
+		dnsValidateEncodedQueryBytes(t, data, byte(dns.TypeA), query.ID())
 	})
 
 	t.Run("encode padding", func(t *testing.T) {
@@ -32,7 +105,7 @@ func TestDNSEncoder(t *testing.T) {
 		// array of values we obtain the right query size.
 		getquerylen := func(domainlen int, padding bool) int {
 			e := &DNSEncoderMiekg{}
-			data, err := e.Encode(
+			query := e.Encode(
 				// This is not a valid name because it ends up being way
 				// longer than 255 octets. However, the library is allowing
 				// us to generate such name and we are not going to send
@@ -41,6 +114,7 @@ func TestDNSEncoder(t *testing.T) {
 				dns.Fqdn(strings.Repeat("x.", domainlen)),
 				dns.TypeA, padding,
 			)
+			data, err := query.Bytes()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -64,8 +138,13 @@ func TestDNSEncoder(t *testing.T) {
 
 // dnsValidateEncodedQueryBytes validates the query serialized in data
 // for the given query type qtype (e.g., dns.TypeAAAA).
-func dnsValidateEncodedQueryBytes(t *testing.T, data []byte, qtype byte) {
-	// skipping over the query ID
+func dnsValidateEncodedQueryBytes(t *testing.T, data []byte, qtype byte, qid uint16) {
+	var wirequery uint16
+	err := binary.Read(bytes.NewReader(data), binary.BigEndian, &wirequery)
+	runtimex.PanicOnError(err, "binary.Read failed unexpectedly")
+	if wirequery != qid {
+		t.Fatal("invalid query ID")
+	}
 	if data[2] != 1 {
 		t.Fatal("FLAGS should only have RD set")
 	}

@@ -315,6 +315,7 @@ func NewTLSHandshakesList(begin time.Time, events []trace.Event) []TLSHandshake 
 			continue
 		}
 		out = append(out, TLSHandshake{
+			Address:            ev.Address,
 			CipherSuite:        ev.TLSCipherSuite,
 			Failure:            NewFailure(ev.Err),
 			NegotiatedProtocol: ev.TLSNegotiatedProto,
