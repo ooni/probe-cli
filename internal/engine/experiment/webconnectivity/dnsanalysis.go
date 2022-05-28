@@ -44,7 +44,13 @@ func DNSAnalysis(URL *url.URL, measurement DNSLookupResult,
 		switch *control.DNS.Failure {
 		case DNSNameError: // the control returns this on NXDOMAIN error
 			switch *measurement.Failure {
-			case netxlite.FailureDNSNXDOMAINError:
+			// When the Android getaddrinfo cache says "no data" (meaning basically
+			// "I don't know, mate") _and_ the test helper says NXDOMAIN, we can
+			// be ~confident that there's also NXDOMAIN on the Android side.
+			//
+			// See also https://github.com/ooni/probe/issues/2029.
+			case netxlite.FailureDNSNXDOMAINError,
+				netxlite.FailureAndroidDNSCacheNoData:
 				out.DNSConsistency = &DNSConsistent
 			}
 		}

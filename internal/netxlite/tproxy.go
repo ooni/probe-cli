@@ -30,7 +30,12 @@ func (*TProxyStdlib) ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLik
 
 // LookupHost calls net.DefaultResolver.LookupHost.
 func (*TProxyStdlib) LookupHost(ctx context.Context, domain string) ([]string, error) {
-	return net.DefaultResolver.LookupHost(ctx, domain)
+	// Implementation note: if possible, we try to call getaddrinfo
+	// directly, which allows us to gather the underlying error. The
+	// specifics of whether "it's possible" depend on whether we've
+	// been compiled linking to libc as well as whether we think that
+	// a platform is ready for using getaddrinfo directly.
+	return getaddrinfoLookupHost(ctx, domain)
 }
 
 // NewSimpleDialer returns a &net.Dialer{Timeout: timeout} instance.

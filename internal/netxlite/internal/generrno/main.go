@@ -149,6 +149,7 @@ var Specs = []*ErrorSpec{
 	NewWindowsError("NO_DATA", "DNS_no_answer"),                   // [ ] WSANO_DATA
 	NewWindowsError("NO_RECOVERY", "DNS_non_recoverable_failure"), // [*] WSANO_RECOVERY
 	NewWindowsError("TRY_AGAIN", "DNS_temporary_failure"),         // [*] WSATRY_AGAIN
+	NewWindowsError("HOST_NOT_FOUND", "DNS_NXDOMAIN_error"),       // [*] WSAHOST_NOT_FOUND
 
 	// Implementation note: we need to specify acronyms we
 	// want to be upper case in uppercase here. For example,
@@ -169,6 +170,10 @@ var Specs = []*ErrorSpec{
 	NewLibraryError("SSL_invalid_certificate"),
 	NewLibraryError("JSON_parse_error"),
 	NewLibraryError("connection_already_closed"),
+
+	// QUIRKS: the following errors exist to clearly flag strange
+	// underlying behavior implemented by platforms.
+	NewLibraryError("Android_DNS_cache_no_data"),
 }
 
 // mapSystemToLibrary maps the operating system name to the name

@@ -125,9 +125,14 @@ func Summarize(tk *TestKeys) (out Summary) {
 		return
 	}
 	// If DNS failed with NXDOMAIN and the control DNS is consistent, then it
-	// means this website does not exist anymore.
+	// means this website does not exist anymore. We need to include the weird
+	// cache failure on Android into this analysis because that failure means
+	// NXDOMAIN (well, most likely) if the TH reported NXDOMAIN.
+	//
+	// See https://github.com/ooni/probe/issues/2029 for the Android issue.
 	if tk.DNSExperimentFailure != nil &&
-		*tk.DNSExperimentFailure == netxlite.FailureDNSNXDOMAINError &&
+		(*tk.DNSExperimentFailure == netxlite.FailureDNSNXDOMAINError ||
+			*tk.DNSExperimentFailure == netxlite.FailureAndroidDNSCacheNoData) &&
 		tk.DNSConsistency != nil && *tk.DNSConsistency == DNSConsistent {
 		// TODO(bassosimone): MK flags this as accessible. This result is debatable. We
 		// are doing what MK does. But we most likely want to make it better later.

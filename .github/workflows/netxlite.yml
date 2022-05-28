@@ -1,6 +1,9 @@
-# netxlite runs unit and integration tests on our fundamental net library
+# Runs unit and integration tests for our fundamental networking library.
 name: netxlite
 on:
+  # Because we link libc explicitly for getaddrinfo, we SHOULD run
+  # these checks for every PR to ensure we still compile.
+  pull_request:
   push:
     branches:
       - "master"

@@ -68,7 +68,7 @@ func (tk *TestKeys) classify() string {
 		return classAnomalyTestHelperUnreachable
 	case netxlite.FailureConnectionReset:
 		return classInterferenceReset
-	case netxlite.FailureDNSNXDOMAINError:
+	case netxlite.FailureDNSNXDOMAINError, netxlite.FailureAndroidDNSCacheNoData:
 		return classAnomalyTestHelperUnreachable
 	case netxlite.FailureEOFError:
 		return classInterferenceClosed
