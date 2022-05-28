@@ -10,7 +10,7 @@ package netxlite
 // Both glibc and musl expose the EAI_NODATA error if we
 // ask them to expose it through this define. See below for
 // more details on how each of the supported libcs hides
-// (or not hides) the EAI_NODATA define.
+// (or does not hide) the EAI_NODATA define.
 #cgo CFLAGS: -D_GNU_SOURCE
 #include <netdb.h>
 */

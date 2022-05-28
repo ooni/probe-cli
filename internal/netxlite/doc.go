@@ -64,12 +64,11 @@
 // this strategy allows us to deal with the Android EAI_NODATA implementation
 // quirk (see https://github.com/ooni/probe/issues/2029).
 //
-// We currently use net.Resolver with CGO_ENABLED=0. A future version of
+// We currently use net.Resolver when CGO_ENABLED=0. A future version of
 // netxlite MIGHT change this and use a custom UDP resolver in such a
 // case, to avoid depending on the assumption that /etc/resolver.conf is
 // present on the target system. See https://github.com/ooni/probe/issues/2118
-// for more details regarding ongoing plans to bypass net.Resolver with
+// for more details regarding ongoing plans to bypass net.Resolver when
 // CGO_ENABLED=0. (If you're reading this piece of documentation and notice
 // it's not updated, please submit a pull request to update it :-).
-//
 package netxlite

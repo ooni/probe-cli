@@ -18,7 +18,6 @@ import "C"
 import (
 	"context"
 	"errors"
-	"log"
 	"net"
 	"runtime"
 	"syscall"
@@ -80,7 +79,7 @@ func (state *getaddrinfoState) LookupANY(ctx context.Context, domain string) ([]
 func (state *getaddrinfoState) grabSlot(ctx context.Context) error {
 	// Implementation note: the channel has getaddrinfoNumSlots capacity, hence
 	// the first getaddrinfoNumSlots channel writes will succeed and all the
-	// subsequent onces will block. To unblock a pending request, we release a
+	// subsequent ones will block. To unblock a pending request, we release a
 	// slot by reading from the channel.
 	select {
 	case state.sema <- &getaddrinfoSlot{}:
@@ -145,10 +144,8 @@ func (state *getaddrinfoState) toAddressList(res *C.struct_addrinfo) ([]string, 
 		}
 		addr, err := state.addrinfoToString(r)
 		if err != nil {
-			log.Printf("addrinfoToString: %s", err.Error())
 			continue
 		}
-		log.Printf("getaddrinfo: resolved %s", addr)
 		addrs = append(addrs, addr)
 	}
 	if len(addrs) < 1 {
@@ -202,7 +199,7 @@ func staticAddrinfoWithInvalidSocketType() *C.struct_addrinfo {
 	return &value
 }
 
-// copyIP copies an net.IP.
+// copyIP copies a net.IP.
 //
 // This function is adapted from copyIP
 // https://github.com/golang/go/blob/go1.17.6/src/net/cgo_unix.go#L344
