@@ -12,11 +12,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-const (
-	softwareName    = "ooniprobe-example"
-	softwareVersion = "0.0.1"
-)
-
 func TestTestKeysClassify(t *testing.T) {
 	asStringPtr := func(s string) *string {
 		return &s
@@ -37,6 +32,13 @@ func TestTestKeysClassify(t *testing.T) {
 	t.Run("with tk.Target.Failure == dns_nxdomain_error", func(t *testing.T) {
 		tk := new(TestKeys)
 		tk.Target.Failure = asStringPtr(netxlite.FailureDNSNXDOMAINError)
+		if tk.classify() != classAnomalyTestHelperUnreachable {
+			t.Fatal("unexpected result")
+		}
+	})
+	t.Run("with tk.Target.Failure == android_dns_cache_no_data", func(t *testing.T) {
+		tk := new(TestKeys)
+		tk.Target.Failure = asStringPtr(netxlite.FailureAndroidDNSCacheNoData)
 		if tk.classify() != classAnomalyTestHelperUnreachable {
 			t.Fatal("unexpected result")
 		}

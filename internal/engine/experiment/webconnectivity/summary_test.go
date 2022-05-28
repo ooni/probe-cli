@@ -26,6 +26,7 @@ func TestSummarize(t *testing.T) {
 		probeSSLInvalidHost    = netxlite.FailureSSLInvalidHostname
 		probeSSLInvalidCert    = netxlite.FailureSSLInvalidCertificate
 		probeSSLUnknownAuth    = netxlite.FailureSSLUnknownAuthority
+		probeAndroidEaiNoData  = netxlite.FailureAndroidDNSCacheNoData
 		tcpIP                  = "tcp_ip"
 		trueValue              = true
 	)
@@ -68,10 +69,27 @@ func TestSummarize(t *testing.T) {
 			Status:         webconnectivity.StatusAnomalyControlUnreachable,
 		},
 	}, {
-		name: "with non-existing website",
+		name: "with non-existing website (NXDOMAIN case)",
 		args: args{
 			tk: &webconnectivity.TestKeys{
 				DNSExperimentFailure: &probeNXDOMAIN,
+				DNSAnalysisResult: webconnectivity.DNSAnalysisResult{
+					DNSConsistency: &webconnectivity.DNSConsistent,
+				},
+			},
+		},
+		wantOut: webconnectivity.Summary{
+			BlockingReason: nil,
+			Blocking:       false,
+			Accessible:     &trueValue,
+			Status: webconnectivity.StatusSuccessNXDOMAIN |
+				webconnectivity.StatusExperimentDNS,
+		},
+	}, {
+		name: "with non-existing website (Android EAI_NODATA case)",
+		args: args{
+			tk: &webconnectivity.TestKeys{
+				DNSExperimentFailure: &probeAndroidEaiNoData,
 				DNSAnalysisResult: webconnectivity.DNSAnalysisResult{
 					DNSConsistency: &webconnectivity.DNSConsistent,
 				},
