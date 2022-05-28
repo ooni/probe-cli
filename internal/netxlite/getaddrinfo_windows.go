@@ -18,5 +18,5 @@ func (state *getaddrinfoState) toError(code int64, err error) error {
 		// is no other error, just cast code to a syscall err.
 		err = syscall.Errno(code)
 	}
-	return nil, "", newErrGetaddrinfo(int64(code), err)
+	return newErrGetaddrinfo(int64(code), err)
 }
