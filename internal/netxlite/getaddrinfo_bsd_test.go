@@ -12,6 +12,7 @@ func TestGetaddrinfoStateToError(t *testing.T) {
 	type args struct {
 		code int64
 		err  error
+		goos string
 	}
 	type expects struct {
 		message string // message obtained using .Error
@@ -27,6 +28,7 @@ func TestGetaddrinfoStateToError(t *testing.T) {
 		args: args{
 			code: eaiSystem,
 			err:  syscall.EAGAIN,
+			goos: "darwin",
 		},
 		expects: expects{
 			message: syscall.EAGAIN.Error(),
@@ -38,6 +40,7 @@ func TestGetaddrinfoStateToError(t *testing.T) {
 		args: args{
 			code: eaiSystem,
 			err:  nil,
+			goos: "darwin",
 		},
 		expects: expects{
 			message: syscall.EMFILE.Error(),
@@ -49,6 +52,7 @@ func TestGetaddrinfoStateToError(t *testing.T) {
 		args: args{
 			code: eaiNoName,
 			err:  nil,
+			goos: "darwin",
 		},
 		expects: expects{
 			message: ErrOODNSNoSuchHost.Error(),
@@ -60,6 +64,7 @@ func TestGetaddrinfoStateToError(t *testing.T) {
 		args: args{
 			code: eaiBadFlags,
 			err:  nil,
+			goos: "darwin",
 		},
 		expects: expects{
 			message: ErrOODNSMisbehaving.Error(),
@@ -70,7 +75,7 @@ func TestGetaddrinfoStateToError(t *testing.T) {
 	for _, input := range inputs {
 		t.Run(input.name, func(t *testing.T) {
 			state := newGetaddrinfoState(getaddrinfoNumSlots)
-			err := state.toError(input.args.code, input.args.err)
+			err := state.toError(input.args.code, input.args.err, input.args.goos)
 			if err == nil {
 				t.Fatal("expected non-nil error here")
 			}

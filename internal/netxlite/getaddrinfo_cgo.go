@@ -20,6 +20,7 @@ import (
 	"errors"
 	"log"
 	"net"
+	"runtime"
 	"syscall"
 	"unsafe"
 )
@@ -116,7 +117,7 @@ func (state *getaddrinfoState) doLookupANY(domain string) ([]string, string, err
 	// C errno variable as an error"
 	code, err := C.getaddrinfo((*C.char)(unsafe.Pointer(&h[0])), nil, &hints, &res)
 	if code != 0 {
-		return nil, "", state.toError(int64(code), err)
+		return nil, "", state.toError(int64(code), err, runtime.GOOS)
 	}
 	defer C.freeaddrinfo(res)
 	return state.toAddressList(res)

@@ -63,7 +63,7 @@ const (
 // https://github.com/golang/go/blob/go1.17.6/src/net/cgo_unix.go#L145
 //
 // SPDX-License-Identifier: BSD-3-Clause.
-func (state *getaddrinfoState) toError(code int64, err error) error {
+func (state *getaddrinfoState) toError(code int64, err error, goos string) error {
 	switch code {
 	case C.EAI_SYSTEM:
 		if err == nil {
@@ -80,7 +80,7 @@ func (state *getaddrinfoState) toError(code int64, err error) error {
 	case C.EAI_NONAME:
 		return newErrGetaddrinfo(code, ErrOODNSNoSuchHost)
 	case C.EAI_NODATA:
-		return state.toErrorNODATA(err, runtime.GOOS)
+		return state.toErrorNODATA(err, goos)
 	default:
 		return newErrGetaddrinfo(code, ErrOODNSMisbehaving)
 	}

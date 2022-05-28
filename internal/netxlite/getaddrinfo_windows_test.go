@@ -12,6 +12,7 @@ func TestGetaddrinfoStateToError(t *testing.T) {
 	type args struct {
 		code int64
 		err  error
+		goos string
 	}
 	type expects struct {
 		message string // message obtained using .Error
@@ -27,6 +28,7 @@ func TestGetaddrinfoStateToError(t *testing.T) {
 		args: args{
 			code: int64(WSAHOST_NOT_FOUND),
 			err:  syscall.EAGAIN,
+			goos: "windows",
 		},
 		expects: expects{
 			message: syscall.EAGAIN.Error(),
@@ -38,6 +40,7 @@ func TestGetaddrinfoStateToError(t *testing.T) {
 		args: args{
 			code: int64(WSAHOST_NOT_FOUND),
 			err:  nil,
+			goos: "windows",
 		},
 		expects: expects{
 			message: WSAHOST_NOT_FOUND.Error(),
@@ -48,7 +51,7 @@ func TestGetaddrinfoStateToError(t *testing.T) {
 	for _, input := range inputs {
 		t.Run(input.name, func(t *testing.T) {
 			state := newGetaddrinfoState(getaddrinfoNumSlots)
-			err := state.toError(input.args.code, input.args.err)
+			err := state.toError(input.args.code, input.args.err, input.args.goos)
 			if err == nil {
 				t.Fatal("expected non-nil error here")
 			}
