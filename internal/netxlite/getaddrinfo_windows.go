@@ -9,6 +9,12 @@ import "syscall"
 
 const getaddrinfoAIFlags = C.AI_CANONNAME
 
+// Making constants available to Go code so we can run tests (it seems
+// it's not possible to import C directly in tests, sadly).
+const (
+	aiCanonname = C.AI_CANONNAME
+)
+
 // toError is the function that converts the return value from
 // the getaddrinfo function into a proper Go error.
 func (state *getaddrinfoState) toError(code int64, err error, goos string) error {

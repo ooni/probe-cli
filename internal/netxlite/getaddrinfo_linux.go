@@ -26,14 +26,14 @@ import (
 // operating system and increase our confidence that the behavior will be the
 // one we'd like to see on Android systems.
 
-var getaddrinfoAIFlags = getaddrinfoGetPlatformSpecificAIFlags()
+var getaddrinfoAIFlags = getaddrinfoGetPlatformSpecificAIFlags(runtime.GOOS)
 
 // This function returns the platforms-specific AI flags that go1.17.6
 // used to set when we merged resolver's code into ooni/probe-cli
 //
 // SPDX-License-Identifier: BSD-3-Clause.
-func getaddrinfoGetPlatformSpecificAIFlags() C.int {
-	switch runtime.GOOS {
+func getaddrinfoGetPlatformSpecificAIFlags(goos string) C.int {
+	switch goos {
 	case "android":
 		return C.AI_CANONNAME
 	default:
@@ -50,6 +50,9 @@ func getaddrinfoGetPlatformSpecificAIFlags() C.int {
 // Making constants available to Go code so we can run tests (it seems
 // it's not possible to import C directly in tests, sadly).
 const (
+	aiCanonname = C.AI_CANONNAME
+	aiV4Mapped  = C.AI_V4MAPPED
+	aiAll       = C.AI_ALL
 	eaiSystem   = C.EAI_SYSTEM
 	eaiNoName   = C.EAI_NONAME
 	eaiBadFlags = C.EAI_BADFLAGS

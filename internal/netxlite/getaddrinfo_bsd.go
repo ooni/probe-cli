@@ -18,6 +18,10 @@ const getaddrinfoAIFlags = (C.AI_CANONNAME | C.AI_V4MAPPED | C.AI_ALL) & C.AI_MA
 
 // Making constants available to Go code so we can run tests
 const (
+	aiCanonname = C.AI_CANONNAME
+	aiV4Mapped  = C.AI_V4MAPPED
+	aiAll       = C.AI_ALL
+	aiMask      = C.AI_MASK
 	eaiSystem   = C.EAI_SYSTEM
 	eaiNoName   = C.EAI_NONAME
 	eaiBadFlags = C.EAI_BADFLAGS

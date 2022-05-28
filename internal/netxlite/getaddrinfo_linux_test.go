@@ -4,9 +4,69 @@ package netxlite
 
 import (
 	"errors"
+	"runtime"
 	"syscall"
 	"testing"
 )
+
+func TestGetaddrinfoAIFlags(t *testing.T) {
+	var wrong bool
+	switch runtime.GOOS {
+	case "android":
+		wrong = getaddrinfoAIFlags != aiCanonname
+	default:
+		wrong = getaddrinfoAIFlags != (aiCanonname | aiV4Mapped | aiAll)
+	}
+	if wrong {
+		t.Fatal("wrong flags for platform")
+	}
+}
+
+func TestGetaddrinfoGetPlatformSpecificAiFlags(t *testing.T) {
+	type args struct {
+		goos string
+	}
+	type expects struct {
+		flags int64
+	}
+	var inputs = []struct {
+		name    string
+		args    args
+		expects expects
+	}{{
+		name: "using the Android platform",
+		args: args{
+			goos: "android",
+		},
+		expects: expects{
+			flags: aiCanonname,
+		},
+	}, {
+		name: "using Linux",
+		args: args{
+			goos: "linux",
+		},
+		expects: expects{
+			flags: aiCanonname | aiV4Mapped | aiAll,
+		},
+	}, {
+		name: "when the platform name is empty",
+		args: args{
+			goos: "",
+		},
+		expects: expects{
+			flags: aiCanonname | aiV4Mapped | aiAll,
+		},
+	}}
+	for _, input := range inputs {
+		t.Run(input.name, func(t *testing.T) {
+			flags := getaddrinfoGetPlatformSpecificAIFlags(input.args.goos)
+			if int64(flags) != input.expects.flags {
+				t.Fatal("invalid flags")
+			}
+		})
+	}
+}
 
 func TestGetaddrinfoStateToError(t *testing.T) {
 	type args struct {
@@ -57,6 +117,30 @@ func TestGetaddrinfoStateToError(t *testing.T) {
 		expects: expects{
 			message: ErrOODNSNoSuchHost.Error(),
 			code:    eaiNoName,
+			err:     ErrOODNSNoSuchHost,
+		},
+	}, {
+		name: "with C.EAI_NODATA on Linux",
+		args: args{
+			code: eaiNoData,
+			err:  nil,
+			goos: "linux",
+		},
+		expects: expects{
+			message: ErrOODNSNoAnswer.Error(),
+			code:    eaiNoData,
+			err:     ErrOODNSNoAnswer,
+		},
+	}, {
+		name: "with C.EAI_NODATA on Android",
+		args: args{
+			code: eaiNoData,
+			err:  nil,
+			goos: "android",
+		},
+		expects: expects{
+			message: ErrOODNSNoSuchHost.Error(),
+			code:    eaiNoData,
 			err:     ErrOODNSNoSuchHost,
 		},
 	}, {
