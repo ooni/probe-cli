@@ -9,8 +9,7 @@ import (
 )
 
 func TestGetaddrinfoAIFlags(t *testing.T) {
-	var wrong bool
-	wrong = getaddrinfoAIFlags != aiCanonname
+	wrong := getaddrinfoAIFlags != aiCanonname
 	if wrong {
 		t.Fatal("wrong flags for platform")
 	}

@@ -116,11 +116,11 @@ func (r *resolverSystem) lookupHost() func(ctx context.Context, domain string) (
 	if r.testableLookupHost != nil {
 		return r.testableLookupHost
 	}
-	return TProxy.LookupHost
+	return TProxy.DefaultResolver().LookupHost
 }
 
 func (r *resolverSystem) Network() string {
-	return "system"
+	return TProxy.DefaultResolver().Network()
 }
 
 func (r *resolverSystem) Address() string {
