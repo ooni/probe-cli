@@ -22,7 +22,8 @@ import (
 // received when submitting a measurement. Such bytes are specifically not
 // seen by the experiment specific byte counter.
 //
-// For this reason, this implementation may be heavily changed/removed.
+// For this reason, this implementation may be heavily changed/removed
+// in the future (<- this message is now ~two years old, though).
 type ContextAwareDialer struct {
 	Dialer model.Dialer
 }
