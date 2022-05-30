@@ -201,10 +201,11 @@ type SimpleResolver interface {
 
 	// Network returns the resolver type. It should be one of:
 	//
-	// - netgo: means we're using golang's "netgo" UDP resolver, which
-	// reads /etc/resolv.conf and only works on Unix systems;
+	// - go: means we're using whatever resolver the Go stdlib uses
+	// depending on the current build configuration;
 	//
-	// - system: means we're calling getaddrinfo;
+	// - system: means we've been compiled with `CGO_ENABLED=1`
+	// so we can bypass the go resolver and call getaddrinfo directly;
 	//
 	// - udp: is a custom DNS-over-UDP resolver;
 	//
@@ -215,6 +216,10 @@ type SimpleResolver interface {
 	// - doh: is a custom DNS-over-HTTPS resolver;
 	//
 	// - doh3: is a custom DNS-over-HTTP3 resolver.
+	//
+	// See https://github.com/ooni/probe/issues/2029#issuecomment-1140805266
+	// for an explanation of why it would not be proper to call "netgo" the
+	// resolver we get by default from the standard library.
 	Network() string
 }
 
