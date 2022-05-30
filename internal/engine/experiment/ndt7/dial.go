@@ -4,10 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
-	"net/url"
 
 	"github.com/gorilla/websocket"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -15,7 +14,6 @@ import (
 type dialManager struct {
 	ndt7URL         string
 	logger          model.Logger
-	proxyURL        *url.URL
 	readBufferSize  int
 	userAgent       string
 	writeBufferSize int
@@ -32,16 +30,9 @@ func newDialManager(ndt7URL string, logger model.Logger, userAgent string) dialM
 }
 
 func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*websocket.Conn, error) {
-	var reso model.Resolver = &netxlite.ResolverSystem{}
-	reso = &netxlite.ResolverLogger{
-		Resolver: reso,
-		Logger:   mgr.logger,
-	}
-	dlr := dialer.New(&dialer.Config{
-		ContextByteCounting: true,
-		Logger:              mgr.logger,
-		ProxyURL:            mgr.proxyURL,
-	}, reso)
+	reso := netxlite.NewResolverStdlib(mgr.logger)
+	dlr := netxlite.NewDialerWithResolver(mgr.logger, reso)
+	dlr = bytecounter.NewContextAwareDialer(dlr)
 	// Implements shaping if the user builds using `-tags shaping`
 	// See https://github.com/ooni/probe/issues/2112
 	dlr = netxlite.NewMaybeShapingDialer(dlr)

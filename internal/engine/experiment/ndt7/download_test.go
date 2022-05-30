@@ -12,10 +12,17 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+func defaultCallbackJSON(data []byte) error {
+	return nil
+}
+
+func defaultCallbackPerformance(elapsed time.Duration, count int64) {
+}
+
 func TestDownloadSetReadDeadlineFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	mgr := newDownloadManager(
-		&mockableConnMock{
+		&mockableWSConn{
 			ReadDeadlineErr: expected,
 		},
 		defaultCallbackPerformance,
@@ -30,7 +37,7 @@ func TestDownloadSetReadDeadlineFailure(t *testing.T) {
 func TestDownloadNextReaderFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	mgr := newDownloadManager(
-		&mockableConnMock{
+		&mockableWSConn{
 			NextReaderErr: expected,
 		},
 		defaultCallbackPerformance,
@@ -45,7 +52,7 @@ func TestDownloadNextReaderFailure(t *testing.T) {
 func TestDownloadTextMessageReadAllFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	mgr := newDownloadManager(
-		&mockableConnMock{
+		&mockableWSConn{
 			NextReaderMsgType: websocket.TextMessage,
 			NextReaderReader: func() io.Reader {
 				return &alwaysFailingReader{
@@ -73,7 +80,7 @@ func (r *alwaysFailingReader) Read(p []byte) (int, error) {
 func TestDownloadBinaryMessageReadAllFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	mgr := newDownloadManager(
-		&mockableConnMock{
+		&mockableWSConn{
 			NextReaderMsgType: websocket.BinaryMessage,
 			NextReaderReader: func() io.Reader {
 				return &alwaysFailingReader{
@@ -92,7 +99,7 @@ func TestDownloadBinaryMessageReadAllFailure(t *testing.T) {
 
 func TestDownloadOnJSONCallbackError(t *testing.T) {
 	mgr := newDownloadManager(
-		&mockableConnMock{
+		&mockableWSConn{
 			NextReaderMsgType: websocket.TextMessage,
 			NextReaderReader: func() io.Reader {
 				return &invalidJSONReader{}
@@ -121,7 +128,7 @@ func TestDownloadOnJSONLoop(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	mgr := newDownloadManager(
-		&mockableConnMock{
+		&mockableWSConn{
 			NextReaderMsgType: websocket.TextMessage,
 			NextReaderReader: func() io.Reader {
 				return &goodJSONReader{}

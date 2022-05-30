@@ -12,7 +12,7 @@ func newMessage(n int) (*websocket.PreparedMessage, error) {
 }
 
 type uploadManager struct {
-	conn                 mockableConn
+	conn                 wsConn
 	fractionForScaling   int64
 	maxRuntime           time.Duration
 	maxMessageSize       int
@@ -24,7 +24,7 @@ type uploadManager struct {
 }
 
 func newUploadManager(
-	conn mockableConn, onPerformance callbackPerformance,
+	conn wsConn, onPerformance callbackPerformance,
 ) uploadManager {
 	return uploadManager{
 		conn:                 conn,

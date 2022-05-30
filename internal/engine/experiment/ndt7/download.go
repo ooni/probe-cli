@@ -11,7 +11,7 @@ import (
 )
 
 type downloadManager struct {
-	conn            mockableConn
+	conn            wsConn
 	maxMessageSize  int64
 	maxRuntime      time.Duration
 	measureInterval time.Duration
@@ -20,7 +20,7 @@ type downloadManager struct {
 }
 
 func newDownloadManager(
-	conn mockableConn, onPerformance callbackPerformance,
+	conn wsConn, onPerformance callbackPerformance,
 	onJSON callbackJSON,
 ) downloadManager {
 	return downloadManager{
