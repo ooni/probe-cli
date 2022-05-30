@@ -23,7 +23,7 @@ type FailStdLib struct {
 	readErr  error
 }
 
-// ListenUDP implements UnderlyingNetworkLibrary.ListenUDP.
+// ListenUDP implements model.UnderlyingNetworkLibrary.ListenUDP.
 func (f *FailStdLib) ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
 	conn, _ := net.ListenUDP(network, laddr)
 	f.conn = model.UDPLikeConn(conn)
@@ -65,9 +65,19 @@ func (f *FailStdLib) ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLik
 	return &mocks.UDPLikeConn{}, nil
 }
 
-// LookupHost implements UnderlyingNetworkLibrary.LookupHost.
+// DefaultResolver implements model.UnderlyingNetworkLibrary.DefaultResolver.
+func (f *FailStdLib) DefaultResolver() model.SimpleResolver {
+	return f
+}
+
+// LookupHost implements model.SimpleResolver.LookupHost.
 func (f *FailStdLib) LookupHost(ctx context.Context, domain string) ([]string, error) {
 	return nil, f.err
+}
+
+// Network implements model.SimpleResolver.Network.
+func (f *FailStdLib) Network() string {
+	return "fail_stdlib"
 }
 
 // NewSimpleDialer implements UnderlyingNetworkLibrary.NewSimpleDialer.

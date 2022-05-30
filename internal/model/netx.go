@@ -193,13 +193,35 @@ type QUICDialer interface {
 	CloseIdleConnections()
 }
 
-// Resolver performs domain name resolutions.
-type Resolver interface {
+// SimpleResolver is a simplified resolver that only allows to perform
+// an ordinary lookup operation and to know the resolver's name.
+type SimpleResolver interface {
 	// LookupHost behaves like net.Resolver.LookupHost.
 	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
 
-	// Network returns the resolver type (e.g., system, dot, doh).
+	// Network returns the resolver type. It should be one of:
+	//
+	// - netgo: means we're using golang's "netgo" UDP resolver, which
+	// reads /etc/resolv.conf and only works on Unix systems;
+	//
+	// - system: means we're calling getaddrinfo;
+	//
+	// - udp: is a custom DNS-over-UDP resolver;
+	//
+	// - tcp: is a custom DNS-over-TCP resolver;
+	//
+	// - dot: is a custom DNS-over-TLS resolver;
+	//
+	// - doh: is a custom DNS-over-HTTPS resolver;
+	//
+	// - doh3: is a custom DNS-over-HTTP3 resolver.
 	Network() string
+}
+
+// Resolver performs domain name resolutions.
+type Resolver interface {
+	// A Resolver is also a SimpleResolver.
+	SimpleResolver
 
 	// Address returns the resolver address (e.g., 8.8.8.8:53).
 	Address() string
@@ -283,8 +305,8 @@ type UnderlyingNetworkLibrary interface {
 	// ListenUDP creates a new model.UDPLikeConn conn.
 	ListenUDP(network string, laddr *net.UDPAddr) (UDPLikeConn, error)
 
-	// LookupHost lookups a domain using the stdlib resolver.
-	LookupHost(ctx context.Context, domain string) ([]string, error)
+	// DefaultResolver returns the default resolver.
+	DefaultResolver() SimpleResolver
 
 	// NewSimpleDialer returns a new SimpleDialer.
 	NewSimpleDialer(timeout time.Duration) SimpleDialer

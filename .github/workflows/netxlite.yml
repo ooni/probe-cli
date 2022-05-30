@@ -21,4 +21,11 @@ jobs:
           go-version: "${{ matrix.go }}"
           cache-key-suffix: "-coverage-${{ matrix.go }}"
       - uses: actions/checkout@v2
+
+      # The first test compiles and links against libc and uses getaddrinfo
       - run: go test -race ./internal/netxlite/...
+
+      # The second test instead uses netgo (we can't use -race with CGO_ENABLED=0)
+      - run: go test ./internal/netxlite/...
+        env:
+          CGO_ENABLED: 0

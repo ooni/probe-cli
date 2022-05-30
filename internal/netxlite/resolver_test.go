@@ -48,7 +48,7 @@ func TestNewResolverUDP(t *testing.T) {
 func TestResolverSystem(t *testing.T) {
 	t.Run("Network and Address", func(t *testing.T) {
 		r := &resolverSystem{}
-		if r.Network() != "system" {
+		if r.Network() != getaddrinfoResolverNetwork() {
 			t.Fatal("invalid Network")
 		}
 		if r.Address() != "" {

@@ -24,12 +24,37 @@ import (
 	"unsafe"
 )
 
+// getaddrinfoResolverNetwork returns the "network" that is actually
+// been used to implement the getaddrinfo resolver.
+//
+// This is the CGO_ENABLED=1 implementation of this function, which
+// always returns the string "system", because in this scenario
+// we are actually calling the getaddrinfo libc function.
+func getaddrinfoResolverNetwork() string {
+	return "system"
+}
+
+// getaddrinfoLookupANY attempts to perform an ANY lookup using getaddrinfo.
+//
+// This is the CGO_ENABLED=1 implementation of this function.
+//
+// Arguments:
+//
+// - ctx is the context for deadline/timeout/cancellation
+//
+// - domain is the domain to lookup
+//
+// This function returns the list of looked up addresses, the CNAME, and
+// the error that occurred. On error, the list of addresses is empty. The
+// CNAME may be empty on success, if there's no CNAME, but may also be
+// non-empty on failure, if the lookup result included a CNAME answer but
+// did not include any A or AAAA answers.
 func getaddrinfoLookupANY(ctx context.Context, domain string) ([]string, string, error) {
-	return getaddrinfoSingleton.LookupANY(ctx, domain)
+	return getaddrinfoStateSingleton.LookupANY(ctx, domain)
 }
 
 // getaddrinfoSingleton is the getaddrinfo singleton.
-var getaddrinfoSingleton = newGetaddrinfoState(getaddrinfoNumSlots)
+var getaddrinfoStateSingleton = newGetaddrinfoState(getaddrinfoNumSlots)
 
 // getaddrinfoSlot is a slot for calling getaddrinfo. The Go standard lib
 // limits the maximum number of parallel calls to getaddrinfo. They do that
@@ -168,13 +193,13 @@ func (state *getaddrinfoState) addrinfoToString(r *C.struct_addrinfo) (string, e
 	switch r.ai_family {
 	case C.AF_INET:
 		sa := (*syscall.RawSockaddrInet4)(unsafe.Pointer(r.ai_addr))
-		addr := net.IPAddr{IP: state.copyIP(sa.Addr[:])}
+		addr := net.IPAddr{IP: getaddrinfoCopyIP(sa.Addr[:])}
 		return addr.String(), nil
 	case C.AF_INET6:
 		sa := (*syscall.RawSockaddrInet6)(unsafe.Pointer(r.ai_addr))
 		addr := net.IPAddr{
-			IP:   state.copyIP(sa.Addr[:]),
-			Zone: state.ifnametoindex(int(sa.Scope_id)),
+			IP:   getaddrinfoCopyIP(sa.Addr[:]),
+			Zone: getaddrinfoIfNametoindex(int(sa.Scope_id)),
 		}
 		return addr.String(), nil
 	default:
@@ -199,13 +224,13 @@ func staticAddrinfoWithInvalidSocketType() *C.struct_addrinfo {
 	return &value
 }
 
-// copyIP copies a net.IP.
+// getaddrinfoCopyIP copies a net.IP.
 //
 // This function is adapted from copyIP
 // https://github.com/golang/go/blob/go1.17.6/src/net/cgo_unix.go#L344
 //
 // SPDX-License-Identifier: BSD-3-Clause.
-func (state *getaddrinfoState) copyIP(x net.IP) net.IP {
+func getaddrinfoCopyIP(x net.IP) net.IP {
 	if len(x) < 16 {
 		return x.To16()
 	}
@@ -214,13 +239,13 @@ func (state *getaddrinfoState) copyIP(x net.IP) net.IP {
 	return y
 }
 
-// ifnametoindex converts an IPv6 scope index into an interface name.
+// getaddrinfoIfNametotindex converts an IPv6 scope index into an interface name.
 //
 // This function is adapted from ipv6ZoneCache.update
 // https://github.com/golang/go/blob/go1.17.6/src/net/interface.go#L194
 //
 // SPDX-License-Identifier: BSD-3-Clause.
-func (state *getaddrinfoState) ifnametoindex(idx int) string {
+func getaddrinfoIfNametoindex(idx int) string {
 	iface, err := net.InterfaceByIndex(idx) // internally uses caching
 	if err != nil {
 		return ""

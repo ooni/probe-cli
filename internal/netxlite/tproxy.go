@@ -28,17 +28,25 @@ func (*TProxyStdlib) ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLik
 	return net.ListenUDP(network, laddr)
 }
 
-// LookupHost calls net.DefaultResolver.LookupHost.
-func (*TProxyStdlib) LookupHost(ctx context.Context, domain string) ([]string, error) {
-	// Implementation note: if possible, we try to call getaddrinfo
-	// directly, which allows us to gather the underlying error. The
-	// specifics of whether "it's possible" depend on whether we've
-	// been compiled linking to libc as well as whether we think that
-	// a platform is ready for using getaddrinfo directly.
-	return getaddrinfoLookupHost(ctx, domain)
+// DefaultResolver returns the default resolver.
+func (*TProxyStdlib) DefaultResolver() model.SimpleResolver {
+	return &tproxyDefaultResolver{}
 }
 
 // NewSimpleDialer returns a &net.Dialer{Timeout: timeout} instance.
 func (*TProxyStdlib) NewSimpleDialer(timeout time.Duration) model.SimpleDialer {
 	return &net.Dialer{Timeout: timeout}
+}
+
+// tproxyDefaultResolver is the resolver we use by default.
+type tproxyDefaultResolver struct{}
+
+// LookupHost implements model.SimpleResolver.LookupHost.
+func (r *tproxyDefaultResolver) LookupHost(ctx context.Context, domain string) ([]string, error) {
+	return getaddrinfoLookupHost(ctx, domain)
+}
+
+// Network implements model.SimpleResolver.Network.
+func (r *tproxyDefaultResolver) Network() string {
+	return getaddrinfoResolverNetwork()
 }
