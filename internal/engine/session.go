@@ -14,10 +14,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/internal/sessionresolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/platform"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -191,20 +191,19 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		}
 	}
 	sess.proxyURL = proxyURL
-	httpConfig := netx.Config{
-		ByteCounter:  sess.byteCounter,
-		BogonIsError: true,
-		Logger:       sess.logger,
-		ProxyURL:     proxyURL,
-	}
 	sess.resolver = &sessionresolver.Resolver{
 		ByteCounter: sess.byteCounter,
 		KVStore:     config.KVStore,
 		Logger:      sess.logger,
 		ProxyURL:    proxyURL,
 	}
-	httpConfig.FullResolver = sess.resolver
-	sess.httpDefaultTransport = netx.NewHTTPTransport(httpConfig)
+	dialer := netxlite.NewDialerWithResolver(sess.logger, sess.resolver)
+	dialer = netxlite.NewMaybeProxyDialer(dialer, proxyURL)
+	handshaker := netxlite.NewTLSHandshakerStdlib(sess.logger)
+	tlsDialer := netxlite.NewTLSDialer(dialer, handshaker)
+	txp := netxlite.NewHTTPTransport(sess.logger, dialer, tlsDialer)
+	txp = bytecounter.NewHTTPTransport(txp, sess.byteCounter)
+	sess.httpDefaultTransport = txp
 	return sess, nil
 }
 

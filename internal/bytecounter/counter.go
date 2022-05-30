@@ -1,6 +1,8 @@
-// Package bytecounter contains code to track the number of
-// bytes sent and received by a probe.
 package bytecounter
+
+//
+// Implementation of Counter
+//
 
 import "github.com/ooni/probe-cli/v3/internal/atomicx"
 

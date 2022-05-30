@@ -473,7 +473,7 @@ func TestNewWithByteCounter(t *testing.T) {
 	txp := netx.NewHTTPTransport(netx.Config{
 		ByteCounter: counter,
 	})
-	bctxp, ok := txp.(httptransport.ByteCountingTransport)
+	bctxp, ok := txp.(*httptransport.ByteCountingTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}

@@ -1,5 +1,9 @@
 package bytecounter
 
+//
+// Code to wrap a net.Conn
+//
+
 import "net"
 
 // Conn wraps a network connection and counts bytes.

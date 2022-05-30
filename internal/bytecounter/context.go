@@ -1,5 +1,9 @@
 package bytecounter
 
+//
+// Implicit byte counting based on context
+//
+
 import (
 	"context"
 	"net"
