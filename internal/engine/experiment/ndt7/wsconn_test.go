@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type mockableConnMock struct {
+type mockableWSConn struct {
 	NextReaderMsgType       int
 	NextReaderErr           error
 	NextReaderReader        func() io.Reader
@@ -16,7 +16,7 @@ type mockableConnMock struct {
 	WritePreparedMessageErr error
 }
 
-func (c *mockableConnMock) NextReader() (int, io.Reader, error) {
+func (c *mockableWSConn) NextReader() (int, io.Reader, error) {
 	var reader io.Reader
 	if c.NextReaderReader != nil {
 		reader = c.NextReaderReader()
@@ -24,16 +24,16 @@ func (c *mockableConnMock) NextReader() (int, io.Reader, error) {
 	return c.NextReaderMsgType, reader, c.NextReaderErr
 }
 
-func (c *mockableConnMock) SetReadDeadline(time.Time) error {
+func (c *mockableWSConn) SetReadDeadline(time.Time) error {
 	return c.ReadDeadlineErr
 }
 
-func (c *mockableConnMock) SetReadLimit(int64) {}
+func (c *mockableWSConn) SetReadLimit(int64) {}
 
-func (c *mockableConnMock) SetWriteDeadline(time.Time) error {
+func (c *mockableWSConn) SetWriteDeadline(time.Time) error {
 	return c.WriteDeadlineErr
 }
 
-func (c *mockableConnMock) WritePreparedMessage(*websocket.PreparedMessage) error {
+func (c *mockableWSConn) WritePreparedMessage(*websocket.PreparedMessage) error {
 	return c.WritePreparedMessageErr
 }

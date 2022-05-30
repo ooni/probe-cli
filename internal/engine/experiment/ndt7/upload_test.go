@@ -12,7 +12,7 @@ import (
 func TestUploadSetWriteDeadlineFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	mgr := newUploadManager(
-		&mockableConnMock{
+		&mockableWSConn{
 			WriteDeadlineErr: expected,
 		},
 		defaultCallbackPerformance,
@@ -26,7 +26,7 @@ func TestUploadSetWriteDeadlineFailure(t *testing.T) {
 func TestUploadNewMessageFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	mgr := newUploadManager(
-		&mockableConnMock{},
+		&mockableWSConn{},
 		defaultCallbackPerformance,
 	)
 	mgr.newMessage = func(int) (*websocket.PreparedMessage, error) {
@@ -41,7 +41,7 @@ func TestUploadNewMessageFailure(t *testing.T) {
 func TestUploadWritePreparedMessageFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	mgr := newUploadManager(
-		&mockableConnMock{
+		&mockableWSConn{
 			WritePreparedMessageErr: expected,
 		},
 		defaultCallbackPerformance,
@@ -55,7 +55,7 @@ func TestUploadWritePreparedMessageFailure(t *testing.T) {
 func TestUploadWritePreparedMessageSubsequentFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	mgr := newUploadManager(
-		&mockableConnMock{},
+		&mockableWSConn{},
 		defaultCallbackPerformance,
 	)
 	var already bool
@@ -77,7 +77,7 @@ func TestUploadLoop(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	mgr := newUploadManager(
-		&mockableConnMock{},
+		&mockableWSConn{},
 		defaultCallbackPerformance,
 	)
 	mgr.newMessage = func(int) (*websocket.PreparedMessage, error) {
