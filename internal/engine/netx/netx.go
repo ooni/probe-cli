@@ -202,7 +202,7 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 		TLSConfig: config.TLSConfig})
 
 	if config.ByteCounter != nil {
-		txp = httptransport.ByteCountingTransport{
+		txp = &httptransport.ByteCountingTransport{
 			Counter: config.ByteCounter, HTTPTransport: txp}
 	}
 	if config.Logger != nil {
