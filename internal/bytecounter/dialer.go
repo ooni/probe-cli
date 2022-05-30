@@ -1,5 +1,9 @@
 package bytecounter
 
+//
+// model.Dialer wrappers
+//
+
 import (
 	"context"
 	"net"
@@ -7,7 +11,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// ContextAwareDialer is a model.Dialer that attempts to counts bytes using
+// ContextAwareDialer is a model.Dialer that attempts to count bytes using
 // the MaybeWrapWithContextByteCounters function.
 //
 // Bug
