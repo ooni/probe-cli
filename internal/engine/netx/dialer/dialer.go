@@ -1,8 +1,12 @@
+// Package dialer allows you to create a net.Dialer-compatible
+// DialContext-enabled dialer with error wrapping, optional logging,
+// optional network-events saving, and optional proxying.
 package dialer
 
 import (
 	"net/url"
 
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -63,9 +67,9 @@ func New(config *Config, resolver model.Resolver) model.Dialer {
 		Resolver: resolver,
 		Dialer:   d,
 	}
-	d = &proxyDialer{ProxyURL: config.ProxyURL, Dialer: d}
+	d = &netxlite.MaybeProxyDialer{ProxyURL: config.ProxyURL, Dialer: d}
 	if config.ContextByteCounting {
-		d = &byteCounterDialer{Dialer: d}
+		d = &bytecounter.ContextAwareDialer{Dialer: d}
 	}
 	return d
 }

@@ -61,3 +61,8 @@ func (h HandshakeSaver) DialContext(ctx context.Context, network string,
 	})
 	return sess, nil
 }
+
+// connectionState returns the ConnectionState of a QUIC Session.
+func connectionState(sess quic.EarlyConnection) tls.ConnectionState {
+	return sess.ConnectionState().TLS.ConnectionState
+}

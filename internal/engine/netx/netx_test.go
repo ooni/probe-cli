@@ -42,7 +42,7 @@ func TestNewResolverVanilla(t *testing.T) {
 
 func TestNewResolverSpecificResolver(t *testing.T) {
 	r := netx.NewResolver(netx.Config{
-		BaseResolver: resolver.BogonResolver{
+		BaseResolver: &netxlite.BogonResolver{
 			// not initialized because it doesn't matter in this context
 		},
 	})
@@ -58,7 +58,7 @@ func TestNewResolverSpecificResolver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(resolver.BogonResolver)
+	_, ok = ar.Resolver.(*netxlite.BogonResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -76,7 +76,7 @@ func TestNewResolverWithBogonFilter(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	br, ok := ewr.Resolver.(resolver.BogonResolver)
+	br, ok := ewr.Resolver.(*netxlite.BogonResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -420,7 +420,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 
 func TestNewVanilla(t *testing.T) {
 	txp := netx.NewHTTPTransport(netx.Config{})
-	if _, ok := txp.(*httptransport.SystemTransportWrapper); !ok {
+	if _, ok := txp.(*netxlite.HTTPTransportWrapper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -473,14 +473,14 @@ func TestNewWithByteCounter(t *testing.T) {
 	txp := netx.NewHTTPTransport(netx.Config{
 		ByteCounter: counter,
 	})
-	bctxp, ok := txp.(*httptransport.ByteCountingTransport)
+	bctxp, ok := txp.(*bytecounter.HTTPTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
 	if bctxp.Counter != counter {
 		t.Fatal("not the byte counter we expected")
 	}
-	if _, ok := bctxp.HTTPTransport.(*httptransport.SystemTransportWrapper); !ok {
+	if _, ok := bctxp.HTTPTransport.(*netxlite.HTTPTransportWrapper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -496,7 +496,7 @@ func TestNewWithLogger(t *testing.T) {
 	if ltxp.Logger != log.Log {
 		t.Fatal("not the logger we expected")
 	}
-	if _, ok := ltxp.HTTPTransport.(*httptransport.SystemTransportWrapper); !ok {
+	if _, ok := ltxp.HTTPTransport.(*netxlite.HTTPTransportWrapper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
@@ -527,7 +527,7 @@ func TestNewWithSaver(t *testing.T) {
 	if smtxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	if _, ok := smtxp.HTTPTransport.(*httptransport.SystemTransportWrapper); !ok {
+	if _, ok := smtxp.HTTPTransport.(*netxlite.HTTPTransportWrapper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
