@@ -24,34 +24,12 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 	if !ok {
 		t.Fatal("not a byteCounterDialer")
 	}
-	pd, ok := bcd.Dialer.(*netxlite.MaybeProxyDialer)
+	_, ok = bcd.Dialer.(*netxlite.MaybeProxyDialer)
 	if !ok {
 		t.Fatal("not a proxyDialer")
 	}
-	dnsd, ok := pd.Dialer.(*netxlite.DialerResolver)
-	if !ok {
-		t.Fatal("not a dnsDialer")
-	}
-	scd, ok := dnsd.Dialer.(*saverConnDialer)
-	if !ok {
-		t.Fatal("not a saverConnDialer")
-	}
-	sd, ok := scd.Dialer.(*saverDialer)
-	if !ok {
-		t.Fatal("not a saverDialer")
-	}
-	ld, ok := sd.Dialer.(*netxlite.DialerLogger)
-	if !ok {
-		t.Fatal("not a loggingDialer")
-	}
-	ewd, ok := ld.Dialer.(*netxlite.ErrorWrapperDialer)
-	if !ok {
-		t.Fatal("not an errorWrappingDialer")
-	}
-	_, ok = ewd.Dialer.(*netxlite.DialerSystem)
-	if !ok {
-		t.Fatal("not a DialerSystem")
-	}
+	// We can safely stop here: the rest is tested by
+	// the internal/netxlite package
 }
 
 func TestDialerNewSuccess(t *testing.T) {

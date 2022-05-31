@@ -30,7 +30,7 @@ func TestNewQUICDialer(t *testing.T) {
 		t.Fatal("invalid logger")
 	}
 	resolver := logger.Dialer.(*quicDialerResolver)
-	if _, okay := resolver.Resolver.(*nullResolver); !okay {
+	if _, okay := resolver.Resolver.(*NullResolver); !okay {
 		t.Fatal("invalid resolver type")
 	}
 	logger = resolver.Dialer.(*quicDialerLogger)

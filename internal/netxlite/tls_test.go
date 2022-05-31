@@ -392,7 +392,7 @@ func TestTLSDialer(t *testing.T) {
 		t.Run("failure dialing", func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately fail
-			dialer := tlsDialer{Dialer: &dialerSystem{}}
+			dialer := tlsDialer{Dialer: &DialerSystem{}}
 			conn, err := dialer.DialTLSContext(ctx, "tcp", "www.google.com:443")
 			if err == nil || !strings.HasSuffix(err.Error(), "operation was canceled") {
 				t.Fatal("not the error we expected", err)

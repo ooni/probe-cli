@@ -8,7 +8,7 @@ package netxlite
 //
 // Deprecated: do not use these names in new code.
 var (
-	DefaultDialer        = &dialerSystem{}
+	DefaultDialer        = &DialerSystem{}
 	DefaultTLSHandshaker = defaultTLSHandshaker
 	NewConnUTLS          = newConnUTLS
 	DefaultResolver      = &resolverSystem{}
@@ -36,7 +36,6 @@ type (
 	ResolverIDNA              = resolverIDNA
 	TLSHandshakerConfigurable = tlsHandshakerConfigurable
 	TLSHandshakerLogger       = tlsHandshakerLogger
-	DialerSystem              = dialerSystem
 	TLSDialerLegacy           = tlsDialer
 	AddressResolver           = resolverShortCircuitIPAddr
 )

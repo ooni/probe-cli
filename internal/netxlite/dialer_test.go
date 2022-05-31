@@ -11,32 +11,51 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
+type extensionDialerFirst struct {
+	model.Dialer
+}
+
+type extensionDialerSecond struct {
+	model.Dialer
+}
+
 func TestNewDialer(t *testing.T) {
 	t.Run("produces a chain with the expected types", func(t *testing.T) {
-		d := NewDialerWithoutResolver(log.Log)
+		modifiers := []DialerWrapper{
+			func(dialer model.Dialer) model.Dialer {
+				return &extensionDialerFirst{dialer}
+			},
+			func(dialer model.Dialer) model.Dialer {
+				return &extensionDialerSecond{dialer}
+			},
+		}
+		d := NewDialerWithoutResolver(log.Log, modifiers...)
 		logger := d.(*dialerLogger)
 		if logger.DebugLogger != log.Log {
 			t.Fatal("invalid logger")
 		}
 		reso := logger.Dialer.(*dialerResolver)
-		if _, okay := reso.Resolver.(*nullResolver); !okay {
+		if _, okay := reso.Resolver.(*NullResolver); !okay {
 			t.Fatal("invalid Resolver type")
 		}
 		logger = reso.Dialer.(*dialerLogger)
 		if logger.DebugLogger != log.Log {
 			t.Fatal("invalid logger")
 		}
-		errWrapper := logger.Dialer.(*dialerErrWrapper)
-		_ = errWrapper.Dialer.(*dialerSystem)
+		ext2 := logger.Dialer.(*extensionDialerSecond)
+		ext1 := ext2.Dialer.(*extensionDialerFirst)
+		errWrapper := ext1.Dialer.(*dialerErrWrapper)
+		_ = errWrapper.Dialer.(*DialerSystem)
 	})
 }
 
 func TestDialerSystem(t *testing.T) {
 	t.Run("has a default timeout", func(t *testing.T) {
-		d := &dialerSystem{}
+		d := &DialerSystem{}
 		ud := d.newUnderlyingDialer()
 		if ud.(*net.Dialer).Timeout != dialerDefaultTimeout {
 			t.Fatal("unexpected default timeout")
@@ -45,7 +64,7 @@ func TestDialerSystem(t *testing.T) {
 
 	t.Run("we can change the timeout for testing", func(t *testing.T) {
 		const smaller = 1 * time.Second
-		d := &dialerSystem{timeout: smaller}
+		d := &DialerSystem{timeout: smaller}
 		ud := d.newUnderlyingDialer()
 		if ud.(*net.Dialer).Timeout != smaller {
 			t.Fatal("unexpected timeout")
@@ -53,13 +72,13 @@ func TestDialerSystem(t *testing.T) {
 	})
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
-		d := &dialerSystem{}
+		d := &DialerSystem{}
 		d.CloseIdleConnections() // to avoid missing coverage
 	})
 
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("with canceled context", func(t *testing.T) {
-			d := &dialerSystem{}
+			d := &DialerSystem{}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // immediately!
 			conn, err := d.DialContext(ctx, "tcp", "8.8.8.8:443")
@@ -73,7 +92,7 @@ func TestDialerSystem(t *testing.T) {
 
 		t.Run("enforces the configured timeout", func(t *testing.T) {
 			const timeout = 1 * time.Nanosecond
-			d := &dialerSystem{timeout: timeout}
+			d := &DialerSystem{timeout: timeout}
 			ctx := context.Background()
 			start := time.Now()
 			conn, err := d.DialContext(ctx, "tcp", "dns.google:443")
@@ -95,7 +114,7 @@ func TestDialerResolver(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("fails without a port", func(t *testing.T) {
 			d := &dialerResolver{
-				Dialer:   &dialerSystem{},
+				Dialer:   &DialerSystem{},
 				Resolver: &resolverSystem{},
 			}
 			const missingPort = "ooni.nu"
@@ -115,7 +134,7 @@ func TestDialerResolver(t *testing.T) {
 						return nil, io.EOF
 					},
 				},
-				Resolver: &nullResolver{},
+				Resolver: &NullResolver{},
 			}
 			conn, err := d.DialContext(context.Background(), "tcp", "1.1.1.1:853")
 			if !errors.Is(err, io.EOF) {
@@ -335,8 +354,8 @@ func TestDialerResolver(t *testing.T) {
 	t.Run("lookupHost", func(t *testing.T) {
 		t.Run("handles addresses correctly", func(t *testing.T) {
 			dialer := &dialerResolver{
-				Dialer:   &dialerSystem{},
-				Resolver: &nullResolver{},
+				Dialer:   &DialerSystem{},
+				Resolver: &NullResolver{},
 			}
 			addrs, err := dialer.lookupHost(context.Background(), "1.1.1.1")
 			if err != nil {
@@ -349,8 +368,8 @@ func TestDialerResolver(t *testing.T) {
 
 		t.Run("fails correctly on lookup error", func(t *testing.T) {
 			dialer := &dialerResolver{
-				Dialer:   &dialerSystem{},
-				Resolver: &nullResolver{},
+				Dialer:   &DialerSystem{},
+				Resolver: &NullResolver{},
 			}
 			ctx := context.Background()
 			conn, err := dialer.DialContext(ctx, "tcp", "dns.google.com:853")
