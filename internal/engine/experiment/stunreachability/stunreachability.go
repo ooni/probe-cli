@@ -12,8 +12,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/pion/stun"
@@ -32,15 +31,15 @@ type Config struct {
 
 // TestKeys contains the experiment's result.
 type TestKeys struct {
-	Endpoint      string                   `json:"endpoint"`
-	Failure       *string                  `json:"failure"`
-	NetworkEvents []archival.NetworkEvent  `json:"network_events"`
-	Queries       []archival.DNSQueryEntry `json:"queries"`
+	Endpoint      string                 `json:"endpoint"`
+	Failure       *string                `json:"failure"`
+	NetworkEvents []tracex.NetworkEvent  `json:"network_events"`
+	Queries       []tracex.DNSQueryEntry `json:"queries"`
 }
 
 func registerExtensions(m *model.Measurement) {
-	archival.ExtDNS.AddTo(m)
-	archival.ExtNetevents.AddTo(m)
+	tracex.ExtDNS.AddTo(m)
+	tracex.ExtNetevents.AddTo(m)
 }
 
 // Measurer performs the measurement.
@@ -113,7 +112,7 @@ func (tk *TestKeys) run(
 	defer callbacks.OnProgress(
 		1, fmt.Sprintf("stunreachability: measuring: %s... done", endpoint))
 	tk.Endpoint = endpoint
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	begin := time.Now()
 	err := tk.do(ctx, config, netx.NewDialer(netx.Config{
 		ContextByteCounting: true,
@@ -124,10 +123,10 @@ func (tk *TestKeys) run(
 	}), endpoint)
 	events := saver.Read()
 	tk.NetworkEvents = append(
-		tk.NetworkEvents, archival.NewNetworkEventsList(begin, events)...,
+		tk.NetworkEvents, tracex.NewNetworkEventsList(begin, events)...,
 	)
 	tk.Queries = append(
-		tk.Queries, archival.NewDNSQueriesList(begin, events)...,
+		tk.Queries, tracex.NewDNSQueriesList(begin, events)...,
 	)
 	return err
 }

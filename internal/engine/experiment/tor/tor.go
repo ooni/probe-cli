@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -62,11 +62,11 @@ type TargetResults struct {
 }
 
 func registerExtensions(m *model.Measurement) {
-	archival.ExtHTTP.AddTo(m)
-	archival.ExtNetevents.AddTo(m)
-	archival.ExtDNS.AddTo(m)
-	archival.ExtTCPConnect.AddTo(m)
-	archival.ExtTLSHandshake.AddTo(m)
+	tracex.ExtHTTP.AddTo(m)
+	tracex.ExtNetevents.AddTo(m)
+	tracex.ExtDNS.AddTo(m)
+	tracex.ExtTCPConnect.AddTo(m)
+	tracex.ExtTLSHandshake.AddTo(m)
 }
 
 // fillSummary fills the Summary field used by the UI.

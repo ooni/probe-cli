@@ -1,4 +1,4 @@
-package httptransport_test
+package tracex
 
 import (
 	"context"
@@ -11,8 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -21,8 +19,8 @@ func TestSaverMetadataSuccess(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	saver := &trace.Saver{}
-	txp := httptransport.SaverMetadataHTTPTransport{
+	saver := &Saver{}
+	txp := SaverMetadataHTTPTransport{
 		HTTPTransport: netxlite.NewHTTPTransportStdlib(model.DiscardLogger),
 		Saver:         saver,
 	}
@@ -75,8 +73,8 @@ func TestSaverMetadataSuccess(t *testing.T) {
 
 func TestSaverMetadataFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	saver := &trace.Saver{}
-	txp := httptransport.SaverMetadataHTTPTransport{
+	saver := &Saver{}
+	txp := SaverMetadataHTTPTransport{
 		HTTPTransport: FakeTransport{
 			Err: expected,
 		},
@@ -119,8 +117,8 @@ func TestSaverTransactionSuccess(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	saver := &trace.Saver{}
-	txp := httptransport.SaverTransactionHTTPTransport{
+	saver := &Saver{}
+	txp := SaverTransactionHTTPTransport{
 		HTTPTransport: netxlite.NewHTTPTransportStdlib(model.DiscardLogger),
 		Saver:         saver,
 	}
@@ -160,8 +158,8 @@ func TestSaverTransactionSuccess(t *testing.T) {
 
 func TestSaverTransactionFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	saver := &trace.Saver{}
-	txp := httptransport.SaverTransactionHTTPTransport{
+	saver := &Saver{}
+	txp := SaverTransactionHTTPTransport{
 		HTTPTransport: FakeTransport{
 			Err: expected,
 		},
@@ -200,8 +198,8 @@ func TestSaverTransactionFailure(t *testing.T) {
 }
 
 func TestSaverBodySuccess(t *testing.T) {
-	saver := new(trace.Saver)
-	txp := httptransport.SaverBodyHTTPTransport{
+	saver := new(Saver)
+	txp := SaverBodyHTTPTransport{
 		HTTPTransport: FakeTransport{
 			Func: func(req *http.Request) (*http.Response, error) {
 				data, err := netxlite.ReadAllContext(context.Background(), req.Body)
@@ -271,8 +269,8 @@ func TestSaverBodySuccess(t *testing.T) {
 }
 
 func TestSaverBodyRequestReadError(t *testing.T) {
-	saver := new(trace.Saver)
-	txp := httptransport.SaverBodyHTTPTransport{
+	saver := new(Saver)
+	txp := SaverBodyHTTPTransport{
 		HTTPTransport: FakeTransport{
 			Func: func(req *http.Request) (*http.Response, error) {
 				panic("should not be called")
@@ -301,9 +299,9 @@ func TestSaverBodyRequestReadError(t *testing.T) {
 }
 
 func TestSaverBodyRoundTripError(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(Saver)
 	expected := errors.New("mocked error")
-	txp := httptransport.SaverBodyHTTPTransport{
+	txp := SaverBodyHTTPTransport{
 		HTTPTransport: FakeTransport{
 			Err: expected,
 		},
@@ -341,9 +339,9 @@ func TestSaverBodyRoundTripError(t *testing.T) {
 }
 
 func TestSaverBodyResponseReadError(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(Saver)
 	expected := errors.New("mocked error")
-	txp := httptransport.SaverBodyHTTPTransport{
+	txp := SaverBodyHTTPTransport{
 		HTTPTransport: FakeTransport{
 			Func: func(req *http.Request) (*http.Response, error) {
 				return &http.Response{
@@ -396,7 +394,7 @@ func TestCloneHeaders(t *testing.T) {
 			},
 			Header: http.Header{},
 		}
-		txp := httptransport.SaverMetadataHTTPTransport{}
+		txp := SaverMetadataHTTPTransport{}
 		header := txp.CloneHeaders(req)
 		if header.Get("Host") != "www.example.com" {
 			t.Fatal("did not set Host header correctly")
@@ -411,7 +409,7 @@ func TestCloneHeaders(t *testing.T) {
 			},
 			Header: http.Header{},
 		}
-		txp := httptransport.SaverMetadataHTTPTransport{}
+		txp := SaverMetadataHTTPTransport{}
 		header := txp.CloneHeaders(req)
 		if header.Get("Host") != "www.kernel.org" {
 			t.Fatal("did not set Host header correctly")

@@ -9,13 +9,12 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestConfigurerNewConfigurationVanilla(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Logger: log.Log,
 		Saver:  saver,
@@ -73,7 +72,7 @@ func TestConfigurerNewConfigurationVanilla(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationResolverDNSOverHTTPSPowerdns(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			ResolverURL: "doh://google",
@@ -120,7 +119,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSPowerdns(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	stxp, ok := sr.Txp.(resolver.SaverDNSTransport)
+	stxp, ok := sr.Txp.(tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -149,7 +148,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSPowerdns(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationResolverDNSOverHTTPSGoogle(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			ResolverURL: "doh://google",
@@ -196,7 +195,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSGoogle(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	stxp, ok := sr.Txp.(resolver.SaverDNSTransport)
+	stxp, ok := sr.Txp.(tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -225,7 +224,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSGoogle(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationResolverDNSOverHTTPSCloudflare(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			ResolverURL: "doh://cloudflare",
@@ -272,7 +271,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSCloudflare(t *testing.T) 
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	stxp, ok := sr.Txp.(resolver.SaverDNSTransport)
+	stxp, ok := sr.Txp.(tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -301,7 +300,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSCloudflare(t *testing.T) 
 }
 
 func TestConfigurerNewConfigurationResolverUDP(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			ResolverURL: "udp://8.8.8.8:53",
@@ -348,7 +347,7 @@ func TestConfigurerNewConfigurationResolverUDP(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	stxp, ok := sr.Txp.(resolver.SaverDNSTransport)
+	stxp, ok := sr.Txp.(tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -377,7 +376,7 @@ func TestConfigurerNewConfigurationResolverUDP(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationDNSCacheInvalidString(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			DNSCache: "a",
@@ -392,7 +391,7 @@ func TestConfigurerNewConfigurationDNSCacheInvalidString(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationDNSCacheNotDomain(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			DNSCache: "b b",
@@ -407,7 +406,7 @@ func TestConfigurerNewConfigurationDNSCacheNotDomain(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationDNSCacheNotIP(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			DNSCache: "x.org b",
@@ -422,7 +421,7 @@ func TestConfigurerNewConfigurationDNSCacheNotIP(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationDNSCacheGood(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			DNSCache: "dns.google.com 8.8.8.8 8.8.4.4",
@@ -449,7 +448,7 @@ func TestConfigurerNewConfigurationDNSCacheGood(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationResolverInvalidURL(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			ResolverURL: "\t",
@@ -464,7 +463,7 @@ func TestConfigurerNewConfigurationResolverInvalidURL(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationResolverInvalidURLScheme(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			ResolverURL: "antani://8.8.8.8:53",
@@ -479,7 +478,7 @@ func TestConfigurerNewConfigurationResolverInvalidURLScheme(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationTLSServerName(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			TLSServerName: "www.x.org",
@@ -506,7 +505,7 @@ func TestConfigurerNewConfigurationTLSServerName(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationNoTLSVerify(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			NoTLSVerify: true,
@@ -524,7 +523,7 @@ func TestConfigurerNewConfigurationNoTLSVerify(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationTLSv1(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			TLSVersion: "TLSv1",
@@ -554,7 +553,7 @@ func TestConfigurerNewConfigurationTLSv1(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationTLSv1dot0(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			TLSVersion: "TLSv1.0",
@@ -584,7 +583,7 @@ func TestConfigurerNewConfigurationTLSv1dot0(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationTLSv1dot1(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			TLSVersion: "TLSv1.1",
@@ -614,7 +613,7 @@ func TestConfigurerNewConfigurationTLSv1dot1(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationTLSv1dot2(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			TLSVersion: "TLSv1.2",
@@ -644,7 +643,7 @@ func TestConfigurerNewConfigurationTLSv1dot2(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationTLSv1dot3(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			TLSVersion: "TLSv1.3",
@@ -674,7 +673,7 @@ func TestConfigurerNewConfigurationTLSv1dot3(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationTLSvDefault(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{},
 		Logger: log.Log,
@@ -702,7 +701,7 @@ func TestConfigurerNewConfigurationTLSvDefault(t *testing.T) {
 }
 
 func TestConfigurerNewConfigurationTLSvInvalid(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Config: urlgetter.Config{
 			TLSVersion: "SSLv3",
@@ -718,7 +717,7 @@ func TestConfigurerNewConfigurationTLSvInvalid(t *testing.T) {
 
 func TestConfigurerNewConfigurationProxyURL(t *testing.T) {
 	URL, _ := url.Parse("socks5://127.0.0.1:9050")
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	configurer := urlgetter.Configurer{
 		Logger:   log.Log,
 		Saver:    saver,

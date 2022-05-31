@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -20,7 +20,7 @@ type Configurer struct {
 	Config   Config
 	Logger   model.Logger
 	ProxyURL *url.URL
-	Saver    *trace.Saver
+	Saver    *tracex.Saver
 }
 
 // The Configuration is the configuration for running a measurement.

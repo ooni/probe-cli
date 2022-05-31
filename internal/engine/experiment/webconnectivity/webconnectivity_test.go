@@ -11,7 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	engine "github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -232,33 +232,33 @@ func TestComputeTCPBlocking(t *testing.T) {
 	failure := io.EOF.Error()
 	anotherFailure := "unknown_error"
 	type args struct {
-		measurement []archival.TCPConnectEntry
+		measurement []tracex.TCPConnectEntry
 		control     map[string]webconnectivity.ControlTCPConnectResult
 	}
 	tests := []struct {
 		name string
 		args args
-		want []archival.TCPConnectEntry
+		want []tracex.TCPConnectEntry
 	}{{
 		name: "with all empty",
 		args: args{},
-		want: []archival.TCPConnectEntry{},
+		want: []tracex.TCPConnectEntry{},
 	}, {
 		name: "with control failure",
 		args: args{
-			measurement: []archival.TCPConnectEntry{{
+			measurement: []tracex.TCPConnectEntry{{
 				IP:   "1.1.1.1",
 				Port: 853,
-				Status: archival.TCPConnectStatus{
+				Status: tracex.TCPConnectStatus{
 					Failure: &failure,
 					Success: false,
 				},
 			}},
 		},
-		want: []archival.TCPConnectEntry{{
+		want: []tracex.TCPConnectEntry{{
 			IP:   "1.1.1.1",
 			Port: 853,
-			Status: archival.TCPConnectStatus{
+			Status: tracex.TCPConnectStatus{
 				Failure: &failure,
 				Success: false,
 			},
@@ -266,10 +266,10 @@ func TestComputeTCPBlocking(t *testing.T) {
 	}, {
 		name: "with failures on both ends",
 		args: args{
-			measurement: []archival.TCPConnectEntry{{
+			measurement: []tracex.TCPConnectEntry{{
 				IP:   "1.1.1.1",
 				Port: 853,
-				Status: archival.TCPConnectStatus{
+				Status: tracex.TCPConnectStatus{
 					Failure: &failure,
 					Success: false,
 				},
@@ -281,10 +281,10 @@ func TestComputeTCPBlocking(t *testing.T) {
 				},
 			},
 		},
-		want: []archival.TCPConnectEntry{{
+		want: []tracex.TCPConnectEntry{{
 			IP:   "1.1.1.1",
 			Port: 853,
-			Status: archival.TCPConnectStatus{
+			Status: tracex.TCPConnectStatus{
 				Blocked: &falseValue,
 				Failure: &failure,
 				Success: false,
@@ -293,10 +293,10 @@ func TestComputeTCPBlocking(t *testing.T) {
 	}, {
 		name: "with failure on the probe side",
 		args: args{
-			measurement: []archival.TCPConnectEntry{{
+			measurement: []tracex.TCPConnectEntry{{
 				IP:   "1.1.1.1",
 				Port: 853,
-				Status: archival.TCPConnectStatus{
+				Status: tracex.TCPConnectStatus{
 					Failure: &failure,
 					Success: false,
 				},
@@ -308,10 +308,10 @@ func TestComputeTCPBlocking(t *testing.T) {
 				},
 			},
 		},
-		want: []archival.TCPConnectEntry{{
+		want: []tracex.TCPConnectEntry{{
 			IP:   "1.1.1.1",
 			Port: 853,
-			Status: archival.TCPConnectStatus{
+			Status: tracex.TCPConnectStatus{
 				Blocked: &trueValue,
 				Failure: &failure,
 				Success: false,
@@ -320,10 +320,10 @@ func TestComputeTCPBlocking(t *testing.T) {
 	}, {
 		name: "with failure on the control side",
 		args: args{
-			measurement: []archival.TCPConnectEntry{{
+			measurement: []tracex.TCPConnectEntry{{
 				IP:   "1.1.1.1",
 				Port: 853,
-				Status: archival.TCPConnectStatus{
+				Status: tracex.TCPConnectStatus{
 					Failure: nil,
 					Success: true,
 				},
@@ -335,10 +335,10 @@ func TestComputeTCPBlocking(t *testing.T) {
 				},
 			},
 		},
-		want: []archival.TCPConnectEntry{{
+		want: []tracex.TCPConnectEntry{{
 			IP:   "1.1.1.1",
 			Port: 853,
-			Status: archival.TCPConnectStatus{
+			Status: tracex.TCPConnectStatus{
 				Blocked: &falseValue,
 				Failure: nil,
 				Success: true,

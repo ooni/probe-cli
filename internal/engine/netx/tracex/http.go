@@ -1,4 +1,4 @@
-package httptransport
+package tracex
 
 import (
 	"bytes"
@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -16,12 +15,12 @@ import (
 // events related to HTTP request and response metadata
 type SaverMetadataHTTPTransport struct {
 	model.HTTPTransport
-	Saver *trace.Saver
+	Saver *Saver
 }
 
 // RoundTrip implements RoundTripper.RoundTrip
 func (txp SaverMetadataHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	txp.Saver.Write(trace.Event{
+	txp.Saver.Write(Event{
 		HTTPHeaders: txp.CloneHeaders(req),
 		HTTPMethod:  req.Method,
 		HTTPURL:     req.URL.String(),
@@ -33,7 +32,7 @@ func (txp SaverMetadataHTTPTransport) RoundTrip(req *http.Request) (*http.Respon
 	if err != nil {
 		return nil, err
 	}
-	txp.Saver.Write(trace.Event{
+	txp.Saver.Write(Event{
 		HTTPHeaders:    resp.Header,
 		HTTPStatusCode: resp.StatusCode,
 		Name:           "http_response_metadata",
@@ -59,17 +58,17 @@ func (txp SaverMetadataHTTPTransport) CloneHeaders(req *http.Request) http.Heade
 // events related to the HTTP transaction
 type SaverTransactionHTTPTransport struct {
 	model.HTTPTransport
-	Saver *trace.Saver
+	Saver *Saver
 }
 
 // RoundTrip implements RoundTripper.RoundTrip
 func (txp SaverTransactionHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	txp.Saver.Write(trace.Event{
+	txp.Saver.Write(Event{
 		Name: "http_transaction_start",
 		Time: time.Now(),
 	})
 	resp, err := txp.HTTPTransport.RoundTrip(req)
-	txp.Saver.Write(trace.Event{
+	txp.Saver.Write(Event{
 		Err:  err,
 		Name: "http_transaction_done",
 		Time: time.Now(),
@@ -81,7 +80,7 @@ func (txp SaverTransactionHTTPTransport) RoundTrip(req *http.Request) (*http.Res
 // body events occurring during the round trip
 type SaverBodyHTTPTransport struct {
 	model.HTTPTransport
-	Saver        *trace.Saver
+	Saver        *Saver
 	SnapshotSize int
 }
 
@@ -98,7 +97,7 @@ func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, 
 			return nil, err
 		}
 		req.Body = saverCompose(data, req.Body)
-		txp.Saver.Write(trace.Event{
+		txp.Saver.Write(Event{
 			DataIsTruncated: len(data) >= snapsize,
 			Data:            data,
 			Name:            "http_request_body_snapshot",
@@ -115,7 +114,7 @@ func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, 
 		return nil, err
 	}
 	resp.Body = saverCompose(data, resp.Body)
-	txp.Saver.Write(trace.Event{
+	txp.Saver.Write(Event{
 		DataIsTruncated: len(data) >= snapsize,
 		Data:            data,
 		Name:            "http_response_body_snapshot",

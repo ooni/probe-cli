@@ -15,7 +15,7 @@ import (
 
 	"github.com/montanaflynn/stats"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -64,7 +64,7 @@ type TestKeys struct {
 type runner struct {
 	callbacks  model.ExperimentCallbacks
 	httpClient *http.Client
-	saver      *trace.Saver
+	saver      *tracex.Saver
 	sess       model.ExperimentSession
 	tk         *TestKeys
 }
@@ -255,7 +255,7 @@ func (m Measurer) Run(
 ) error {
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
-	saver := &trace.Saver{}
+	saver := &tracex.Saver{}
 	httpClient := &http.Client{
 		Transport: netx.NewHTTPTransport(netx.Config{
 			ContextByteCounting: true,

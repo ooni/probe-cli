@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/ptx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -232,8 +232,8 @@ func (m *Measurer) bootstrap(ctx context.Context, timeout time.Duration, sess mo
 	tk.TorVersion = debugInfo.Version
 	m.readTorLogs(sess.Logger(), tk, debugInfo.LogFilePath)
 	if err != nil {
-		// Note: archival.NewFailure scrubs IP addresses
-		tk.Failure = archival.NewFailure(err)
+		// Note: tracex.NewFailure scrubs IP addresses
+		tk.Failure = tracex.NewFailure(err)
 		if errors.Is(err, context.DeadlineExceeded) {
 			tk.Error = &timeoutReachedError
 		} else {

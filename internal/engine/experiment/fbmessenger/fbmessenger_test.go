@@ -10,7 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/fbmessenger"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -169,8 +169,8 @@ func TestComputeEndpointStatsTCPBlocking(t *testing.T) {
 		TestKeys: urlgetter.TestKeys{
 			Failure:         &failure,
 			FailedOperation: &operation,
-			Queries: []archival.DNSQueryEntry{{
-				Answers: []archival.DNSAnswerEntry{{
+			Queries: []tracex.DNSQueryEntry{{
+				Answers: []tracex.DNSAnswerEntry{{
 					ASN: fbmessenger.FacebookASN,
 				}},
 			}},
@@ -199,8 +199,8 @@ func TestComputeEndpointStatsDNSIsLying(t *testing.T) {
 		TestKeys: urlgetter.TestKeys{
 			Failure:         &failure,
 			FailedOperation: &operation,
-			Queries: []archival.DNSQueryEntry{{
-				Answers: []archival.DNSAnswerEntry{{
+			Queries: []tracex.DNSQueryEntry{{
+				Answers: []tracex.DNSAnswerEntry{{
 					ASN: 0,
 				}},
 			}},

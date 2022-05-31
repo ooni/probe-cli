@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -132,7 +132,7 @@ func (tk *TestKeys) updateTransportStatus(openvpnGatewayCount, obfs4GatewayCount
 }
 
 func newGatewayConnection(
-	tcpConnect archival.TCPConnectEntry, transportType string) *GatewayConnection {
+	tcpConnect tracex.TCPConnectEntry, transportType string) *GatewayConnection {
 	return &GatewayConnection{
 		IP:            tcpConnect.IP,
 		Port:          tcpConnect.Port,

@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -81,7 +81,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) {
 // See https://github.com/ooni/backend/blob/6ec4fda5b18/oonib/testhelpers/http_helpers.py#L361
 func httpMapFailure(err error) *string {
 	failure := newfailure(err)
-	failedOperation := archival.NewFailedOperation(err)
+	failedOperation := tracex.NewFailedOperation(err)
 	switch failure {
 	case nil:
 		return nil

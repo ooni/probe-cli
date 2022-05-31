@@ -1,27 +1,26 @@
-package dialer
+package tracex
 
 import (
 	"context"
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// saverDialer saves events occurring during the dial
-type saverDialer struct {
+// SaverDialer saves events occurring during the dial
+type SaverDialer struct {
 	model.Dialer
-	Saver *trace.Saver
+	Saver *Saver
 }
 
 // DialContext implements Dialer.DialContext
-func (d *saverDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *SaverDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	start := time.Now()
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	stop := time.Now()
-	d.Saver.Write(trace.Event{
+	d.Saver.Write(Event{
 		Address:  address,
 		Duration: stop.Sub(start),
 		Err:      err,
@@ -32,15 +31,15 @@ func (d *saverDialer) DialContext(ctx context.Context, network, address string) 
 	return conn, err
 }
 
-// saverConnDialer wraps the returned connection such that we
+// SaverConnDialer wraps the returned connection such that we
 // collect all the read/write events that occur.
-type saverConnDialer struct {
+type SaverConnDialer struct {
 	model.Dialer
-	Saver *trace.Saver
+	Saver *Saver
 }
 
 // DialContext implements Dialer.DialContext
-func (d *saverConnDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *SaverConnDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
 		return nil, err
@@ -50,14 +49,14 @@ func (d *saverConnDialer) DialContext(ctx context.Context, network, address stri
 
 type saverConn struct {
 	net.Conn
-	saver *trace.Saver
+	saver *Saver
 }
 
 func (c *saverConn) Read(p []byte) (int, error) {
 	start := time.Now()
 	count, err := c.Conn.Read(p)
 	stop := time.Now()
-	c.saver.Write(trace.Event{
+	c.saver.Write(Event{
 		Data:     p[:count],
 		Duration: stop.Sub(start),
 		Err:      err,
@@ -72,7 +71,7 @@ func (c *saverConn) Write(p []byte) (int, error) {
 	start := time.Now()
 	count, err := c.Conn.Write(p)
 	stop := time.Now()
-	c.saver.Write(trace.Event{
+	c.saver.Write(Event{
 		Data:     p[:count],
 		Duration: stop.Sub(start),
 		Err:      err,
@@ -83,6 +82,6 @@ func (c *saverConn) Write(p []byte) (int, error) {
 	return count, err
 }
 
-var _ model.Dialer = &saverDialer{}
-var _ model.Dialer = &saverConnDialer{}
+var _ model.Dialer = &SaverDialer{}
+var _ model.Dialer = &SaverConnDialer{}
 var _ net.Conn = &saverConn{}

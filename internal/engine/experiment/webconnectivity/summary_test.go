@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -41,8 +41,8 @@ func TestSummarize(t *testing.T) {
 		name: "with an HTTPS request with no failure",
 		args: args{
 			tk: &webconnectivity.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Request: archival.HTTPRequest{
+				Requests: []tracex.RequestEntry{{
+					Request: tracex.HTTPRequest{
 						URL: "https://www.kernel.org/",
 					},
 					Failure: nil,
@@ -210,7 +210,7 @@ func TestSummarize(t *testing.T) {
 		name: "with connection refused",
 		args: args{
 			tk: &webconnectivity.TestKeys{
-				Requests: []archival.RequestEntry{{
+				Requests: []tracex.RequestEntry{{
 					Failure: &probeConnectionRefused,
 				}},
 			},
@@ -226,7 +226,7 @@ func TestSummarize(t *testing.T) {
 		name: "with connection reset",
 		args: args{
 			tk: &webconnectivity.TestKeys{
-				Requests: []archival.RequestEntry{{
+				Requests: []tracex.RequestEntry{{
 					Failure: &probeConnectionReset,
 				}},
 			},
@@ -242,7 +242,7 @@ func TestSummarize(t *testing.T) {
 		name: "with NXDOMAIN",
 		args: args{
 			tk: &webconnectivity.TestKeys{
-				Requests: []archival.RequestEntry{{
+				Requests: []tracex.RequestEntry{{
 					Failure: &probeNXDOMAIN,
 				}},
 			},
@@ -258,7 +258,7 @@ func TestSummarize(t *testing.T) {
 		name: "with EOF",
 		args: args{
 			tk: &webconnectivity.TestKeys{
-				Requests: []archival.RequestEntry{{
+				Requests: []tracex.RequestEntry{{
 					Failure: &probeEOFError,
 				}},
 			},
@@ -274,7 +274,7 @@ func TestSummarize(t *testing.T) {
 		name: "with timeout",
 		args: args{
 			tk: &webconnectivity.TestKeys{
-				Requests: []archival.RequestEntry{{
+				Requests: []tracex.RequestEntry{{
 					Failure: &probeTimeout,
 				}},
 			},
@@ -290,7 +290,7 @@ func TestSummarize(t *testing.T) {
 		name: "with SSL invalid hostname",
 		args: args{
 			tk: &webconnectivity.TestKeys{
-				Requests: []archival.RequestEntry{{
+				Requests: []tracex.RequestEntry{{
 					Failure: &probeSSLInvalidHost,
 				}},
 			},
@@ -306,7 +306,7 @@ func TestSummarize(t *testing.T) {
 		name: "with SSL invalid cert",
 		args: args{
 			tk: &webconnectivity.TestKeys{
-				Requests: []archival.RequestEntry{{
+				Requests: []tracex.RequestEntry{{
 					Failure: &probeSSLInvalidCert,
 				}},
 			},
@@ -322,7 +322,7 @@ func TestSummarize(t *testing.T) {
 		name: "with SSL unknown auth",
 		args: args{
 			tk: &webconnectivity.TestKeys{
-				Requests: []archival.RequestEntry{{
+				Requests: []tracex.RequestEntry{{
 					Failure: &probeSSLUnknownAuth,
 				}},
 			},
@@ -341,7 +341,7 @@ func TestSummarize(t *testing.T) {
 				DNSAnalysisResult: webconnectivity.DNSAnalysisResult{
 					DNSConsistency: &webconnectivity.DNSInconsistent,
 				},
-				Requests: []archival.RequestEntry{{
+				Requests: []tracex.RequestEntry{{
 					Failure: &probeSSLUnknownAuth,
 				}},
 			},
@@ -361,7 +361,7 @@ func TestSummarize(t *testing.T) {
 				DNSAnalysisResult: webconnectivity.DNSAnalysisResult{
 					DNSConsistency: &webconnectivity.DNSInconsistent,
 				},
-				Requests: []archival.RequestEntry{{
+				Requests: []tracex.RequestEntry{{
 					Failure: &probeSSLUnknownAuth,
 				}, {}},
 			},
@@ -381,7 +381,7 @@ func TestSummarize(t *testing.T) {
 					StatusCodeMatch: &trueValue,
 					BodyLengthMatch: &trueValue,
 				},
-				Requests: []archival.RequestEntry{{}},
+				Requests: []tracex.RequestEntry{{}},
 			},
 		},
 		wantOut: webconnectivity.Summary{
@@ -398,7 +398,7 @@ func TestSummarize(t *testing.T) {
 					StatusCodeMatch: &trueValue,
 					HeadersMatch:    &trueValue,
 				},
-				Requests: []archival.RequestEntry{{}},
+				Requests: []tracex.RequestEntry{{}},
 			},
 		},
 		wantOut: webconnectivity.Summary{
@@ -415,7 +415,7 @@ func TestSummarize(t *testing.T) {
 					StatusCodeMatch: &trueValue,
 					TitleMatch:      &trueValue,
 				},
-				Requests: []archival.RequestEntry{{}},
+				Requests: []tracex.RequestEntry{{}},
 			},
 		},
 		wantOut: webconnectivity.Summary{
@@ -432,7 +432,7 @@ func TestSummarize(t *testing.T) {
 					StatusCodeMatch: &falseValue,
 					TitleMatch:      &trueValue,
 				},
-				Requests: []archival.RequestEntry{{}},
+				Requests: []tracex.RequestEntry{{}},
 				DNSAnalysisResult: webconnectivity.DNSAnalysisResult{
 					DNSConsistency: &webconnectivity.DNSInconsistent,
 				},
@@ -453,7 +453,7 @@ func TestSummarize(t *testing.T) {
 					StatusCodeMatch: &falseValue,
 					TitleMatch:      &trueValue,
 				},
-				Requests: []archival.RequestEntry{{}},
+				Requests: []tracex.RequestEntry{{}},
 				DNSAnalysisResult: webconnectivity.DNSAnalysisResult{
 					DNSConsistency: &webconnectivity.DNSConsistent,
 				},

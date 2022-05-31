@@ -1,4 +1,4 @@
-package tlsdialer
+package tracex
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -14,7 +13,7 @@ import (
 // SaverTLSHandshaker saves events occurring during the handshake
 type SaverTLSHandshaker struct {
 	model.TLSHandshaker
-	Saver *trace.Saver
+	Saver *Saver
 }
 
 // Handshake implements TLSHandshaker.Handshake
@@ -22,7 +21,7 @@ func (h SaverTLSHandshaker) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {
 	start := time.Now()
-	h.Saver.Write(trace.Event{
+	h.Saver.Write(Event{
 		Name:          "tls_handshake_start",
 		NoTLSVerify:   config.InsecureSkipVerify,
 		TLSNextProtos: config.NextProtos,
@@ -32,7 +31,7 @@ func (h SaverTLSHandshaker) Handshake(
 	remoteAddr := conn.RemoteAddr().String()
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	stop := time.Now()
-	h.Saver.Write(trace.Event{
+	h.Saver.Write(Event{
 		Address:            remoteAddr,
 		Duration:           stop.Sub(start),
 		Err:                err,
@@ -41,7 +40,7 @@ func (h SaverTLSHandshaker) Handshake(
 		TLSCipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		TLSNegotiatedProto: state.NegotiatedProtocol,
 		TLSNextProtos:      config.NextProtos,
-		TLSPeerCerts:       trace.PeerCerts(state, err),
+		TLSPeerCerts:       PeerCerts(state, err),
 		TLSServerName:      config.ServerName,
 		TLSVersion:         netxlite.TLSVersionString(state.Version),
 		Time:               stop,

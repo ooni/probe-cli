@@ -7,7 +7,7 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -35,7 +35,7 @@ type Config struct {
 
 	// DialSaver is the optional saver for dialing events. If not
 	// set, we will not save any dialing event.
-	DialSaver *trace.Saver
+	DialSaver *tracex.Saver
 
 	// Logger is the optional logger. If not set, there
 	// will be no logging from the new dialer.
@@ -45,7 +45,7 @@ type Config struct {
 	ProxyURL *url.URL
 
 	// ReadWriteSaver is like DialSaver but for I/O events.
-	ReadWriteSaver *trace.Saver
+	ReadWriteSaver *tracex.Saver
 }
 
 // New creates a new Dialer from the specified config and resolver.
@@ -57,13 +57,13 @@ func New(config *Config, resolver model.Resolver) model.Dialer {
 	modifiers := []netxlite.DialerWrapper{
 		func(dialer model.Dialer) model.Dialer {
 			if config.DialSaver != nil {
-				dialer = &saverDialer{Dialer: dialer, Saver: config.DialSaver}
+				dialer = &tracex.SaverDialer{Dialer: dialer, Saver: config.DialSaver}
 			}
 			return dialer
 		},
 		func(dialer model.Dialer) model.Dialer {
 			if config.ReadWriteSaver != nil {
-				dialer = &saverConnDialer{Dialer: dialer, Saver: config.ReadWriteSaver}
+				dialer = &tracex.SaverConnDialer{Dialer: dialer, Saver: config.ReadWriteSaver}
 			}
 			return dialer
 		},

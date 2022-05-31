@@ -1,4 +1,4 @@
-package tlsdialer_test
+package tracex
 
 import (
 	"context"
@@ -7,9 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -19,11 +17,20 @@ func TestSaverTLSHandshakerSuccessWithReadWrite(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	nextprotos := []string{"h2"}
-	saver := &trace.Saver{}
+	saver := &Saver{}
 	tlsdlr := &netxlite.TLSDialerLegacy{
 		Config: &tls.Config{NextProtos: nextprotos},
-		Dialer: dialer.New(&dialer.Config{ReadWriteSaver: saver}, netxlite.DefaultResolver),
-		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
+		Dialer: netxlite.NewDialerWithResolver(
+			model.DiscardLogger,
+			netxlite.NewResolverStdlib(model.DiscardLogger),
+			func(dialer model.Dialer) model.Dialer {
+				return &SaverConnDialer{
+					Dialer: dialer,
+					Saver:  saver,
+				}
+			},
+		),
+		TLSHandshaker: SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,
 		},
@@ -112,11 +119,11 @@ func TestSaverTLSHandshakerSuccess(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	nextprotos := []string{"h2"}
-	saver := &trace.Saver{}
+	saver := &Saver{}
 	tlsdlr := &netxlite.TLSDialerLegacy{
 		Config: &tls.Config{NextProtos: nextprotos},
 		Dialer: netxlite.DefaultDialer,
-		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
+		TLSHandshaker: SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,
 		},
@@ -178,10 +185,10 @@ func TestSaverTLSHandshakerHostnameError(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	saver := &trace.Saver{}
+	saver := &Saver{}
 	tlsdlr := &netxlite.TLSDialerLegacy{
 		Dialer: netxlite.DefaultDialer,
-		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
+		TLSHandshaker: SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,
 		},
@@ -211,10 +218,10 @@ func TestSaverTLSHandshakerInvalidCertError(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	saver := &trace.Saver{}
+	saver := &Saver{}
 	tlsdlr := &netxlite.TLSDialerLegacy{
 		Dialer: netxlite.DefaultDialer,
-		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
+		TLSHandshaker: SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,
 		},
@@ -244,10 +251,10 @@ func TestSaverTLSHandshakerAuthorityError(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	saver := &trace.Saver{}
+	saver := &Saver{}
 	tlsdlr := &netxlite.TLSDialerLegacy{
 		Dialer: netxlite.DefaultDialer,
-		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
+		TLSHandshaker: SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,
 		},
@@ -277,11 +284,11 @@ func TestSaverTLSHandshakerNoTLSVerify(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
-	saver := &trace.Saver{}
+	saver := &Saver{}
 	tlsdlr := &netxlite.TLSDialerLegacy{
 		Config: &tls.Config{InsecureSkipVerify: true},
 		Dialer: netxlite.DefaultDialer,
-		TLSHandshaker: tlsdialer.SaverTLSHandshaker{
+		TLSHandshaker: SaverTLSHandshaker{
 			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 			Saver:         saver,
 		},

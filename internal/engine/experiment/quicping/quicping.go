@@ -17,7 +17,7 @@ import (
 
 	_ "crypto/sha256"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -102,7 +102,7 @@ func makeResponse(resp *responseInfo) *SinglePingResponse {
 	}
 	return &SinglePingResponse{
 		Data:              data,
-		Failure:           archival.NewFailure(resp.err),
+		Failure:           tracex.NewFailure(resp.err),
 		T:                 resp.t,
 		SupportedVersions: resp.versions,
 	}
@@ -273,7 +273,7 @@ L:
 				tk.Pings = append(tk.Pings, &SinglePing{
 					ConnIdDst: req.dstID,
 					ConnIdSrc: req.srcID,
-					Failure:   archival.NewFailure(req.err),
+					Failure:   tracex.NewFailure(req.err),
 					Request:   &model.ArchivalMaybeBinaryData{Value: string(req.raw)},
 					T:         req.t,
 				})
@@ -313,7 +313,7 @@ L:
 			tk.Pings = append(tk.Pings, &SinglePing{
 				ConnIdDst: ping.request.dstID,
 				ConnIdSrc: ping.request.srcID,
-				Failure:   archival.NewFailure(timeoutErr),
+				Failure:   tracex.NewFailure(timeoutErr),
 				Request:   &model.ArchivalMaybeBinaryData{Value: string(ping.request.raw)},
 				T:         ping.request.t,
 			})

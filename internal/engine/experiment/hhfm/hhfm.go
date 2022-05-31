@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/randx"
@@ -34,11 +34,11 @@ type Config struct{}
 // Here we are emitting for the same set of test keys that are
 // produced by the MK implementation.
 type TestKeys struct {
-	Agent      string                  `json:"agent"`
-	Failure    *string                 `json:"failure"`
-	Requests   []archival.RequestEntry `json:"requests"`
-	SOCKSProxy *string                 `json:"socksproxy"`
-	Tampering  Tampering               `json:"tampering"`
+	Agent      string                `json:"agent"`
+	Failure    *string               `json:"failure"`
+	Requests   []tracex.RequestEntry `json:"requests"`
+	SOCKSProxy *string               `json:"socksproxy"`
+	Tampering  Tampering             `json:"tampering"`
 }
 
 // Tampering describes the detected forms of tampering.
@@ -151,7 +151,7 @@ func (m Measurer) Run(
 	// from that and then see to improve the robustness in the future.
 	resp, data, err := Transact(txp, req.WithContext(ctx), callbacks)
 	if err != nil {
-		tk.Failure = archival.NewFailure(err)
+		tk.Failure = tracex.NewFailure(err)
 		tk.Requests[0].Failure = tk.Failure
 		tk.Tampering.Total = true
 		return nil // measurement did not fail, we measured tampering
@@ -246,23 +246,23 @@ func (tk *TestKeys) FillTampering(
 	}
 }
 
-// NewRequestEntryList creates a new []archival.RequestEntry given a
+// NewRequestEntryList creates a new []tracex.RequestEntry given a
 // specific *http.Request and headers with random case.
-func NewRequestEntryList(req *http.Request, headers map[string]string) (out []archival.RequestEntry) {
-	out = []archival.RequestEntry{{
-		Request: archival.HTTPRequest{
-			Headers:     make(map[string]archival.MaybeBinaryValue),
-			HeadersList: []archival.HTTPHeader{},
+func NewRequestEntryList(req *http.Request, headers map[string]string) (out []tracex.RequestEntry) {
+	out = []tracex.RequestEntry{{
+		Request: tracex.HTTPRequest{
+			Headers:     make(map[string]tracex.MaybeBinaryValue),
+			HeadersList: []tracex.HTTPHeader{},
 			Method:      req.Method,
 			URL:         req.URL.String(),
 		},
 	}}
 	for key, value := range headers {
 		// Using the random capitalization headers here
-		mbv := archival.MaybeBinaryValue{Value: value}
+		mbv := tracex.MaybeBinaryValue{Value: value}
 		out[0].Request.Headers[key] = mbv
 		out[0].Request.HeadersList = append(out[0].Request.HeadersList,
-			archival.HTTPHeader{Key: key, Value: mbv})
+			tracex.HTTPHeader{Key: key, Value: mbv})
 	}
 	sort.Slice(out[0].Request.HeadersList, func(i, j int) bool {
 		return out[0].Request.HeadersList[i].Key < out[0].Request.HeadersList[j].Key
@@ -270,19 +270,19 @@ func NewRequestEntryList(req *http.Request, headers map[string]string) (out []ar
 	return
 }
 
-// NewHTTPResponse creates a new archival.HTTPResponse given a
+// NewHTTPResponse creates a new tracex.HTTPResponse given a
 // specific *http.Response instance and its body.
-func NewHTTPResponse(resp *http.Response, data []byte) (out archival.HTTPResponse) {
-	out = archival.HTTPResponse{
-		Body:        archival.HTTPBody{Value: string(data)},
+func NewHTTPResponse(resp *http.Response, data []byte) (out tracex.HTTPResponse) {
+	out = tracex.HTTPResponse{
+		Body:        tracex.HTTPBody{Value: string(data)},
 		Code:        int64(resp.StatusCode),
-		Headers:     make(map[string]archival.MaybeBinaryValue),
-		HeadersList: []archival.HTTPHeader{},
+		Headers:     make(map[string]tracex.MaybeBinaryValue),
+		HeadersList: []tracex.HTTPHeader{},
 	}
 	for key := range resp.Header {
-		mbv := archival.MaybeBinaryValue{Value: resp.Header.Get(key)}
+		mbv := tracex.MaybeBinaryValue{Value: resp.Header.Get(key)}
 		out.Headers[key] = mbv
-		out.HeadersList = append(out.HeadersList, archival.HTTPHeader{Key: key, Value: mbv})
+		out.HeadersList = append(out.HeadersList, tracex.HTTPHeader{Key: key, Value: mbv})
 	}
 	sort.Slice(out.HeadersList, func(i, j int) bool {
 		return out.HeadersList[i].Key < out.HeadersList[j].Key

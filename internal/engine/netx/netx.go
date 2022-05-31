@@ -33,10 +33,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/quicdialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -54,20 +52,20 @@ type Config struct {
 	CertPool            *x509.CertPool       // default: use vendored gocertifi
 	ContextByteCounting bool                 // default: no implicit byte counting
 	DNSCache            map[string][]string  // default: cache is empty
-	DialSaver           *trace.Saver         // default: not saving dials
+	DialSaver           *tracex.Saver        // default: not saving dials
 	Dialer              model.Dialer         // default: dialer.DNSDialer
 	FullResolver        model.Resolver       // default: base resolver + goodies
 	QUICDialer          model.QUICDialer     // default: quicdialer.DNSDialer
 	HTTP3Enabled        bool                 // default: disabled
-	HTTPSaver           *trace.Saver         // default: not saving HTTP
+	HTTPSaver           *tracex.Saver        // default: not saving HTTP
 	Logger              model.DebugLogger    // default: no logging
 	NoTLSVerify         bool                 // default: perform TLS verify
 	ProxyURL            *url.URL             // default: no proxy
-	ReadWriteSaver      *trace.Saver         // default: not saving read/write
-	ResolveSaver        *trace.Saver         // default: not saving resolves
+	ReadWriteSaver      *tracex.Saver        // default: not saving read/write
+	ResolveSaver        *tracex.Saver        // default: not saving resolves
 	TLSConfig           *tls.Config          // default: attempt using h2
 	TLSDialer           model.TLSDialer      // default: dialer.TLSDialer
-	TLSSaver            *trace.Saver         // default: not saving TLS
+	TLSSaver            *tracex.Saver        // default: not saving TLS
 }
 
 type tlsHandshaker interface {
@@ -107,7 +105,7 @@ func NewResolver(config Config) model.Resolver {
 		}
 	}
 	if config.ResolveSaver != nil {
-		r = resolver.SaverResolver{Resolver: r, Saver: config.ResolveSaver}
+		r = tracex.SaverResolver{Resolver: r, Saver: config.ResolveSaver}
 	}
 	return &netxlite.ResolverIDNA{Resolver: r}
 }
@@ -133,7 +131,7 @@ func NewQUICDialer(config Config) model.QUICDialer {
 	}
 	ql := netxlite.NewQUICListener()
 	if config.ReadWriteSaver != nil {
-		ql = &quicdialer.QUICListenerSaver{
+		ql = &tracex.QUICListenerSaver{
 			QUICListener: ql,
 			Saver:        config.ReadWriteSaver,
 		}
@@ -145,7 +143,7 @@ func NewQUICDialer(config Config) model.QUICDialer {
 	extensions := []netxlite.QUICDialerWrapper{
 		func(dialer model.QUICDialer) model.QUICDialer {
 			if config.TLSSaver != nil {
-				dialer = quicdialer.HandshakeSaver{Saver: config.TLSSaver, QUICDialer: dialer}
+				dialer = tracex.QUICHandshakeSaver{Saver: config.TLSSaver, QUICDialer: dialer}
 			}
 			return dialer
 		},
@@ -164,7 +162,7 @@ func NewTLSDialer(config Config) model.TLSDialer {
 		h = &netxlite.TLSHandshakerLogger{DebugLogger: config.Logger, TLSHandshaker: h}
 	}
 	if config.TLSSaver != nil {
-		h = tlsdialer.SaverTLSHandshaker{TLSHandshaker: h, Saver: config.TLSSaver}
+		h = tracex.SaverTLSHandshaker{TLSHandshaker: h, Saver: config.TLSSaver}
 	}
 	if config.TLSConfig == nil {
 		config.TLSConfig = &tls.Config{NextProtos: []string{"h2", "http/1.1"}}
@@ -207,11 +205,11 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 		txp = &netxlite.HTTPTransportLogger{Logger: config.Logger, HTTPTransport: txp}
 	}
 	if config.HTTPSaver != nil {
-		txp = httptransport.SaverMetadataHTTPTransport{
+		txp = tracex.SaverMetadataHTTPTransport{
 			HTTPTransport: txp, Saver: config.HTTPSaver}
-		txp = httptransport.SaverBodyHTTPTransport{
+		txp = tracex.SaverBodyHTTPTransport{
 			HTTPTransport: txp, Saver: config.HTTPSaver}
-		txp = httptransport.SaverTransactionHTTPTransport{
+		txp = tracex.SaverTransactionHTTPTransport{
 			HTTPTransport: txp, Saver: config.HTTPSaver}
 	}
 	return txp
@@ -287,7 +285,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		var txp model.DNSTransport = netxlite.NewDNSOverHTTPSTransportWithHostOverride(
 			httpClient, URL, hostOverride)
 		if config.ResolveSaver != nil {
-			txp = resolver.SaverDNSTransport{
+			txp = tracex.SaverDNSTransport{
 				DNSTransport: txp,
 				Saver:        config.ResolveSaver,
 			}
@@ -302,7 +300,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		var txp model.DNSTransport = netxlite.NewDNSOverUDPTransport(
 			dialer, endpoint)
 		if config.ResolveSaver != nil {
-			txp = resolver.SaverDNSTransport{
+			txp = tracex.SaverDNSTransport{
 				DNSTransport: txp,
 				Saver:        config.ResolveSaver,
 			}
@@ -318,7 +316,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		var txp model.DNSTransport = netxlite.NewDNSOverTLSTransport(
 			tlsDialer.DialTLSContext, endpoint)
 		if config.ResolveSaver != nil {
-			txp = resolver.SaverDNSTransport{
+			txp = tracex.SaverDNSTransport{
 				DNSTransport: txp,
 				Saver:        config.ResolveSaver,
 			}
@@ -333,7 +331,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		var txp model.DNSTransport = netxlite.NewDNSOverTCPTransport(
 			dialer.DialContext, endpoint)
 		if config.ResolveSaver != nil {
-			txp = resolver.SaverDNSTransport{
+			txp = tracex.SaverDNSTransport{
 				DNSTransport: txp,
 				Saver:        config.ResolveSaver,
 			}

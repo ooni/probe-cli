@@ -1,4 +1,4 @@
-package dialer
+package tracex
 
 import (
 	"context"
@@ -8,15 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestSaverDialerFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	saver := &trace.Saver{}
-	dlr := &saverDialer{
+	saver := &Saver{}
+	dlr := &SaverDialer{
 		Dialer: &mocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, expected
@@ -57,8 +56,8 @@ func TestSaverDialerFailure(t *testing.T) {
 
 func TestSaverConnDialerFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	saver := &trace.Saver{}
-	dlr := &saverConnDialer{
+	saver := &Saver{}
+	dlr := &SaverConnDialer{
 		Dialer: &mocks.Dialer{
 			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 				return nil, expected
@@ -76,9 +75,9 @@ func TestSaverConnDialerFailure(t *testing.T) {
 }
 
 func TestSaverConnDialerSuccess(t *testing.T) {
-	saver := &trace.Saver{}
-	dlr := &saverConnDialer{
-		Dialer: &saverDialer{
+	saver := &Saver{}
+	dlr := &SaverConnDialer{
+		Dialer: &SaverDialer{
 			Dialer: &mocks.Dialer{
 				MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 					return &mocks.Conn{
@@ -126,14 +125,14 @@ func TestSaverConnDialerSuccess(t *testing.T) {
 	saverCheckWriteEvent(t, &events[2])
 }
 
-func saverCheckConnectEvent(t *testing.T, ev *trace.Event) {
+func saverCheckConnectEvent(t *testing.T, ev *Event) {
 	// TODO(bassosimone): implement
 }
 
-func saverCheckReadEvent(t *testing.T, ev *trace.Event) {
+func saverCheckReadEvent(t *testing.T, ev *Event) {
 	// TODO(bassosimone): implement
 }
 
-func saverCheckWriteEvent(t *testing.T, ev *trace.Event) {
+func saverCheckWriteEvent(t *testing.T, ev *Event) {
 	// TODO(bassosimone): implement
 }

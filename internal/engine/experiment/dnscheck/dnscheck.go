@@ -16,8 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -168,15 +167,15 @@ func (m *Measurer) Run(
 	// with IP addresses successfully, we just get back the IPs when we are
 	// passing as input an IP address rather than a domain name.
 	begin := measurement.MeasurementStartTimeSaved
-	evsaver := new(trace.Saver)
+	evsaver := new(tracex.Saver)
 	resolver := netx.NewResolver(netx.Config{
 		BogonIsError: true,
 		Logger:       sess.Logger(),
 		ResolveSaver: evsaver,
 	})
 	addrs, err := m.lookupHost(ctx, URL.Hostname(), resolver)
-	queries := archival.NewDNSQueriesList(begin, evsaver.Read())
-	tk.BootstrapFailure = archival.NewFailure(err)
+	queries := tracex.NewDNSQueriesList(begin, evsaver.Read())
+	tk.BootstrapFailure = tracex.NewFailure(err)
 	if len(queries) > 0 {
 		// We get no queries in case we are resolving an IP address, since
 		// the address resolver doesn't generate events

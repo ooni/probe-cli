@@ -1,20 +1,18 @@
-package trace_test
+package tracex
 
 import (
 	"sync"
 	"testing"
-
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 )
 
 func TestGood(t *testing.T) {
-	saver := trace.Saver{}
+	saver := Saver{}
 	var wg sync.WaitGroup
 	const parallel = 10
 	wg.Add(parallel)
 	for idx := 0; idx < parallel; idx++ {
 		go func() {
-			saver.Write(trace.Event{})
+			saver.Write(Event{})
 			wg.Done()
 		}()
 	}

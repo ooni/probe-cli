@@ -12,7 +12,7 @@ import (
 	"github.com/apex/log"
 	"github.com/montanaflynn/stats"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -26,7 +26,7 @@ func TestRunnerLoopLocateFailure(t *testing.T) {
 				err: expected,
 			},
 		},
-		saver: new(trace.Saver),
+		saver: new(tracex.Saver),
 		sess: &mockable.Session{
 			MockableLogger: log.Log,
 		},
@@ -56,7 +56,7 @@ func TestRunnerLoopNegotiateFailure(t *testing.T) {
 				},
 			},
 		},
-		saver: new(trace.Saver),
+		saver: new(tracex.Saver),
 		sess: &mockable.Session{
 			MockableLogger: log.Log,
 		},
@@ -93,7 +93,7 @@ func TestRunnerLoopMeasureFailure(t *testing.T) {
 				},
 			},
 		},
-		saver: new(trace.Saver),
+		saver: new(tracex.Saver),
 		sess: &mockable.Session{
 			MockableLogger: log.Log,
 		},
@@ -107,8 +107,8 @@ func TestRunnerLoopMeasureFailure(t *testing.T) {
 
 func TestRunnerLoopCollectFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	saver := new(trace.Saver)
-	saver.Write(trace.Event{Name: netxlite.ConnectOperation, Duration: 150 * time.Millisecond})
+	saver := new(tracex.Saver)
+	saver.Write(tracex.Event{Name: netxlite.ConnectOperation, Duration: 150 * time.Millisecond})
 	r := runner{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 		httpClient: &http.Client{
@@ -151,8 +151,8 @@ func TestRunnerLoopCollectFailure(t *testing.T) {
 }
 
 func TestRunnerLoopSuccess(t *testing.T) {
-	saver := new(trace.Saver)
-	saver.Write(trace.Event{Name: netxlite.ConnectOperation, Duration: 150 * time.Millisecond})
+	saver := new(tracex.Saver)
+	saver.Write(tracex.Event{Name: netxlite.ConnectOperation, Duration: 150 * time.Millisecond})
 	r := runner{
 		callbacks: model.NewPrinterCallbacks(log.Log),
 		httpClient: &http.Client{

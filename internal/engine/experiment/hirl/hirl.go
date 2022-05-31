@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/randx"
@@ -29,11 +29,11 @@ type Config struct{}
 
 // TestKeys contains the experiment test keys.
 type TestKeys struct {
-	FailureList   []*string                   `json:"failure_list"`
-	Received      []archival.MaybeBinaryValue `json:"received"`
-	Sent          []string                    `json:"sent"`
-	TamperingList []bool                      `json:"tampering_list"`
-	Tampering     bool                        `json:"tampering"`
+	FailureList   []*string                 `json:"failure_list"`
+	Received      []tracex.MaybeBinaryValue `json:"received"`
+	Sent          []string                  `json:"sent"`
+	TamperingList []bool                    `json:"tampering_list"`
+	Tampering     bool                      `json:"tampering"`
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
@@ -123,7 +123,7 @@ func (m Measurer) Run(
 			}
 			continue
 		}
-		failure := archival.NewFailure(result.Err)
+		failure := tracex.NewFailure(result.Err)
 		tk.FailureList = append(tk.FailureList, failure)
 		tk.Received = append(tk.Received, result.Received)
 		tk.Sent = append(tk.Sent, result.Sent)
@@ -150,7 +150,7 @@ type MethodConfig struct {
 type MethodResult struct {
 	Err       error
 	Name      string
-	Received  archival.MaybeBinaryValue
+	Received  tracex.MaybeBinaryValue
 	Sent      string
 	Tampering bool
 }
