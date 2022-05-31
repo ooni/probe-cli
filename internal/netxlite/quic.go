@@ -32,39 +32,32 @@ func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, err
 	return TProxy.ListenUDP("udp", addr)
 }
 
-// NewQUICDialerWithResolver returns a QUICDialer using the given
-// QUICListener to create listening connections and the given Resolver
-// to resolve domain names (if needed).
+// QUICDialerWrapper is a function that allows you to customize the kind of QUICDialer
+// returned by NewQUICDialerWithResolver and NewQUICDialerWithoutResolver.
+type QUICDialerWrapper func(dialer model.QUICDialer) model.QUICDialer
+
+// NewQUICDialerWithResolver is the WrapDialer equivalent for QUIC where
+// we return a composed QUICDialer modified by optional wrappers.
 //
-// Properties of the dialer:
-//
-// 1. logs events using the given logger;
-//
-// 2. resolves domain names using the givern resolver;
-//
-// 3. when using a resolver, _may_ attempt multiple dials
-// in parallel (happy eyeballs) and _may_ return an aggregate
-// error to the caller;
-//
-// 4. wraps errors;
-//
-// 5. has a configured connect timeout;
-//
-// 6. if a dialer wraps a resolver, the dialer will forward
-// the CloseIdleConnection call to its resolver (which is
-// instrumental to manage a DoH resolver connections properly).
-func NewQUICDialerWithResolver(listener model.QUICListener,
-	logger model.DebugLogger, resolver model.Resolver) model.QUICDialer {
+// Unlike the dialer returned by WrapDialer, this dialer MAY attempt
+// happy eyeballs, perform parallel dial attempts, and return an error
+// that aggregates all the errors that occurred.
+func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLogger,
+	resolver model.Resolver, wrappers ...QUICDialerWrapper) (outDialer model.QUICDialer) {
+	outDialer = &quicDialerErrWrapper{
+		QUICDialer: &quicDialerHandshakeCompleter{
+			Dialer: &quicDialerQUICGo{
+				QUICListener: listener,
+			},
+		},
+	}
+	for _, wrapper := range wrappers {
+		outDialer = wrapper(outDialer) // extend with user-supplied constructors
+	}
 	return &quicDialerLogger{
 		Dialer: &quicDialerResolver{
 			Dialer: &quicDialerLogger{
-				Dialer: &quicDialerErrWrapper{
-					QUICDialer: &quicDialerHandshakeCompleter{
-						Dialer: &quicDialerQUICGo{
-							QUICListener: listener,
-						},
-					},
-				},
+				Dialer:          outDialer,
 				Logger:          logger,
 				operationSuffix: "_address",
 			},
@@ -74,12 +67,11 @@ func NewQUICDialerWithResolver(listener model.QUICListener,
 	}
 }
 
-// NewQUICDialerWithoutResolver is like NewQUICDialerWithResolver
-// except that there is no configured resolver. So, if you pass in
-// an address containing a domain name, the dial will fail with
-// the ErrNoResolver failure.
-func NewQUICDialerWithoutResolver(listener model.QUICListener, logger model.DebugLogger) model.QUICDialer {
-	return NewQUICDialerWithResolver(listener, logger, &NullResolver{})
+// NewQUICDialerWithoutResolver is equivalent to calling NewQUICDialerWithResolver
+// with the resolver argument set to &NullResolver{}.
+func NewQUICDialerWithoutResolver(listener model.QUICListener,
+	logger model.DebugLogger, wrappers ...QUICDialerWrapper) model.QUICDialer {
+	return NewQUICDialerWithResolver(listener, logger, &NullResolver{}, wrappers...)
 }
 
 // quicDialerQUICGo dials using the lucas-clemente/quic-go library.
