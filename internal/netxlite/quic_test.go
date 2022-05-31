@@ -22,9 +22,25 @@ func TestNewQUICListener(t *testing.T) {
 	_ = qew.QUICListener.(*quicListenerStdlib)
 }
 
+type extensionQUICDialerFirst struct {
+	model.QUICDialer
+}
+
+type extensionQUICDialerSecond struct {
+	model.QUICDialer
+}
+
 func TestNewQUICDialer(t *testing.T) {
 	ql := NewQUICListener()
-	dlr := NewQUICDialerWithoutResolver(ql, log.Log)
+	extensions := []QUICDialerWrapper{
+		func(dialer model.QUICDialer) model.QUICDialer {
+			return &extensionQUICDialerFirst{dialer}
+		},
+		func(dialer model.QUICDialer) model.QUICDialer {
+			return &extensionQUICDialerSecond{dialer}
+		},
+	}
+	dlr := NewQUICDialerWithoutResolver(ql, log.Log, extensions...)
 	logger := dlr.(*quicDialerLogger)
 	if logger.Logger != log.Log {
 		t.Fatal("invalid logger")
@@ -37,7 +53,9 @@ func TestNewQUICDialer(t *testing.T) {
 	if logger.Logger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	errWrapper := logger.Dialer.(*quicDialerErrWrapper)
+	ext2 := logger.Dialer.(*extensionQUICDialerSecond)
+	ext1 := ext2.QUICDialer.(*extensionQUICDialerFirst)
+	errWrapper := ext1.QUICDialer.(*quicDialerErrWrapper)
 	handshakeCompleter := errWrapper.QUICDialer.(*quicDialerHandshakeCompleter)
 	base := handshakeCompleter.Dialer.(*quicDialerQUICGo)
 	if base.QUICListener != ql {

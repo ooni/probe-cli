@@ -131,28 +131,26 @@ func NewQUICDialer(config Config) model.QUICDialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	var ql model.QUICListener = &netxlite.QUICListenerStdlib{}
-	ql = &netxlite.ErrorWrapperQUICListener{QUICListener: ql}
+	ql := netxlite.NewQUICListener()
 	if config.ReadWriteSaver != nil {
 		ql = &quicdialer.QUICListenerSaver{
 			QUICListener: ql,
 			Saver:        config.ReadWriteSaver,
 		}
 	}
-	var d model.QUICDialer = &netxlite.QUICDialerQUICGo{
-		QUICListener: ql,
+	var logger model.DebugLogger = model.DiscardLogger
+	if config.Logger != nil {
+		logger = config.Logger
 	}
-	d = &netxlite.ErrorWrapperQUICDialer{
-		QUICDialer: d,
+	extensions := []netxlite.QUICDialerWrapper{
+		func(dialer model.QUICDialer) model.QUICDialer {
+			if config.TLSSaver != nil {
+				dialer = quicdialer.HandshakeSaver{Saver: config.TLSSaver, QUICDialer: dialer}
+			}
+			return dialer
+		},
 	}
-	if config.TLSSaver != nil {
-		d = quicdialer.HandshakeSaver{Saver: config.TLSSaver, QUICDialer: d}
-	}
-	d = &netxlite.QUICDialerResolver{
-		Resolver: config.FullResolver,
-		Dialer:   d,
-	}
-	return d
+	return netxlite.NewQUICDialerWithResolver(ql, logger, config.FullResolver, extensions...)
 }
 
 // NewTLSDialer creates a new TLSDialer from the specified config
