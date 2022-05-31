@@ -807,7 +807,7 @@ func TestIsIPv6(t *testing.T) {
 
 func TestNullResolver(t *testing.T) {
 	t.Run("LookupHost", func(t *testing.T) {
-		r := &nullResolver{}
+		r := &NullResolver{}
 		ctx := context.Background()
 		addrs, err := r.LookupHost(ctx, "dns.google")
 		if !errors.Is(err, ErrNoResolver) {
@@ -826,7 +826,7 @@ func TestNullResolver(t *testing.T) {
 	})
 
 	t.Run("LookupHTTPS", func(t *testing.T) {
-		r := &nullResolver{}
+		r := &NullResolver{}
 		ctx := context.Background()
 		addrs, err := r.LookupHTTPS(ctx, "dns.google")
 		if !errors.Is(err, ErrNoResolver) {
@@ -845,7 +845,7 @@ func TestNullResolver(t *testing.T) {
 	})
 
 	t.Run("LookupNS", func(t *testing.T) {
-		r := &nullResolver{}
+		r := &NullResolver{}
 		ctx := context.Background()
 		ns, err := r.LookupNS(ctx, "dns.google")
 		if !errors.Is(err, ErrNoResolver) {

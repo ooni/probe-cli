@@ -79,7 +79,7 @@ func NewQUICDialerWithResolver(listener model.QUICListener,
 // an address containing a domain name, the dial will fail with
 // the ErrNoResolver failure.
 func NewQUICDialerWithoutResolver(listener model.QUICListener, logger model.DebugLogger) model.QUICDialer {
-	return NewQUICDialerWithResolver(listener, logger, &nullResolver{})
+	return NewQUICDialerWithResolver(listener, logger, &NullResolver{})
 }
 
 // quicDialerQUICGo dials using the lucas-clemente/quic-go library.

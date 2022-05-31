@@ -334,32 +334,32 @@ func isIPv6(candidate string) bool {
 // since they can only dial for endpoints containing IP addresses.
 var ErrNoResolver = errors.New("no configured resolver")
 
-// nullResolver is a resolver that is not capable of resolving
+// NullResolver is a resolver that is not capable of resolving
 // domain names to IP addresses and always returns ErrNoResolver.
-type nullResolver struct{}
+type NullResolver struct{}
 
-func (r *nullResolver) LookupHost(ctx context.Context, hostname string) (addrs []string, err error) {
+func (r *NullResolver) LookupHost(ctx context.Context, hostname string) (addrs []string, err error) {
 	return nil, ErrNoResolver
 }
 
-func (r *nullResolver) Network() string {
+func (r *NullResolver) Network() string {
 	return "null"
 }
 
-func (r *nullResolver) Address() string {
+func (r *NullResolver) Address() string {
 	return ""
 }
 
-func (r *nullResolver) CloseIdleConnections() {
+func (r *NullResolver) CloseIdleConnections() {
 	// nothing to do
 }
 
-func (r *nullResolver) LookupHTTPS(
+func (r *NullResolver) LookupHTTPS(
 	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	return nil, ErrNoResolver
 }
 
-func (r *nullResolver) LookupNS(
+func (r *NullResolver) LookupNS(
 	ctx context.Context, domain string) ([]*net.NS, error) {
 	return nil, ErrNoResolver
 }

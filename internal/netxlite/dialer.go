@@ -14,47 +14,112 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// NewDialerWithResolver calls WrapDialer for the stdlib dialer.
-func NewDialerWithResolver(logger model.DebugLogger, resolver model.Resolver) model.Dialer {
-	return WrapDialer(logger, resolver, &dialerSystem{})
+// DialerWrapper is a function that allows you to customize the kind of Dialer returned
+// by WrapDialer, NewDialerWithResolver, and NewDialerWithoutResolver.
+type DialerWrapper func(dialer model.Dialer) model.Dialer
+
+// NewDialerWithResolver is equivalent to calling WrapDialer with
+// the dialer argument being equal to &DialerSystem{}.
+func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...DialerWrapper) model.Dialer {
+	return WrapDialer(dl, r, &DialerSystem{}, w...)
 }
 
-// WrapDialer creates a new Dialer that wraps the given
-// Dialer. The returned Dialer has the following properties:
+// WrapDialer wraps an existing Dialer to add extra functionality
+// such as separting DNS lookup and connecting, error wrapping, logging, etc.
 //
-// 1. logs events using the given logger;
+// When possible use NewDialerWithResolver or NewDialerWithoutResolver
+// instead of using this rather low-level function.
 //
-// 2. resolves domain names using the givern resolver;
+// Arguments
 //
-// 3. when the resolver is not a "null" resolver,
-// each available enpoint is tried
-// sequentially. On error, the code will return what it believes
-// to be the most representative error in the pack. Most often,
-// the first error that occurred. Choosing the
-// error to return using this logic is a QUIRK that we owe
-// to the original implementation of netx. We cannot change
-// this behavior until we refactor legacy code using it.
+// 1. logger is used to emit debug messages (MUST NOT be nil);
 //
-// Removing this quirk from the codebase is documented as
-// TODO(https://github.com/ooni/probe/issues/1779).
+// 2. resolver is the resolver to use when dialing for endpoint
+// addresses containing domain names (MUST NOT be nil);
 //
-// 4. wraps errors;
+// 3. baseDialer is the dialer to wrap (MUST NOT be nil);
 //
-// 5. has a configured connect timeout;
+// 4. wrappers is a list of zero or more functions allowing you to
+// modify the behavior of the returned dialer (see below).
 //
-// 6. if a dialer wraps a resolver, the dialer will forward
-// the CloseIdleConnection call to its resolver (which is
-// instrumental to manage a DoH resolver connections properly).
+// Return value
 //
-// In general, do not use WrapDialer directly but try to use
-// more high-level factories, e.g., NewDialerWithResolver.
-func WrapDialer(logger model.DebugLogger, resolver model.Resolver, dialer model.Dialer) model.Dialer {
+// The returned dialer is an opaque type consisting of the composition of
+// several simple dialers. The following pseudo code illustrates the general
+// behavior of the returned composed dialer:
+//
+//     addrs, err := dnslookup()
+//     if err != nil {
+//       return nil, err
+//     }
+//     errors := []error{}
+//     for _, a := range addrs {
+//       conn, err := tcpconnect(a)
+//       if err != nil {
+//         errors = append(errors, err)
+//         continue
+//       }
+//       return conn, nil
+//     }
+//     return nil, errors[0]
+//
+//
+// The following table describes the structure of the returned dialer:
+//
+//     +-------+-----------------+------------------------------------------+
+//     | Index | Name            | Description                              |
+//     +-------+-----------------+------------------------------------------+
+//     | 0     | base            | the baseDialer argument                  |
+//     +-------+-----------------+------------------------------------------+
+//     | 1     | errWrapper      | wraps Go errors to be consistent with    |
+//     |       |                 | OONI df-007-errors spec                  |
+//     +-------+-----------------+------------------------------------------+
+//     | 2     | ???             | if there are wrappers, result of calling |
+//     |       |                 | the first one on the errWrapper dialer   |
+//     +-------+-----------------+------------------------------------------+
+//     | ...   | ...             | ...                                      |
+//     +-------+-----------------+------------------------------------------+
+//     | N     | ???             | if there are wrappers, result of calling |
+//     |       |                 | the last one on the N-1 dialer           |
+//     +-------+-----------------+------------------------------------------+
+//     | N+1   | logger (inner)  | logs TCP connect operations              |
+//     +-------+-----------------+------------------------------------------+
+//     | N+2   | resolver        | DNS lookup and try connect each IP in    |
+//     |       |                 | sequence until one of them succeeds      |
+//     +-------+-----------------+------------------------------------------+
+//     | N+3   | logger (outer)  | logs the overall dial operation          |
+//     +-------+-----------------+------------------------------------------+
+//
+// The list of wrappers allows to insert modified dialers in the correct
+// place for observing and saving I/O events (connect, read, etc.).
+//
+// Remarks
+//
+// When the resolver is &NullResolver{} any attempt to perform DNS resolutions
+// in the dialer at index N+2 will fail with ErrNoResolver.
+//
+// Otherwise, the dialer at index N+2 will try each resolver IP address
+// sequentially. In case of failure, such a resolver will return the first
+// error that occurred. This implementation strategy is a QUIRK that is
+// documented at TODO(https://github.com/ooni/probe/issues/1779).
+//
+// If the baseDialer is &DialerSystem{}, there will be a fixed TCP connect
+// timeout for each connect operation. Because there may be multiple IP
+// addresses per dial, the overall timeout would be a multiple of the timeout
+// of a single connect operation. You may want to use the context to reduce
+// the overall time spent trying all addresses and timing out.
+func WrapDialer(logger model.DebugLogger, resolver model.Resolver,
+	baseDialer model.Dialer, wrappers ...DialerWrapper) (outDialer model.Dialer) {
+	outDialer = &dialerErrWrapper{
+		Dialer: baseDialer,
+	}
+	for _, wrapper := range wrappers {
+		outDialer = wrapper(outDialer) // extend with user-supplied constructors
+	}
 	return &dialerLogger{
 		Dialer: &dialerResolver{
 			Dialer: &dialerLogger{
-				Dialer: &dialerErrWrapper{
-					Dialer: dialer,
-				},
+				Dialer:          outDialer,
 				DebugLogger:     logger,
 				operationSuffix: "_address",
 			},
@@ -64,25 +129,25 @@ func WrapDialer(logger model.DebugLogger, resolver model.Resolver, dialer model.
 	}
 }
 
-// NewDialerWithoutResolver calls NewDialerWithResolver with a "null" resolver.
-//
-// The returned dialer fails with ErrNoResolver if passed a domain name.
-func NewDialerWithoutResolver(logger model.DebugLogger) model.Dialer {
-	return NewDialerWithResolver(logger, &nullResolver{})
+// NewDialerWithoutResolver is equivalent to calling NewDialerWithResolver
+// with the resolver argument being &NullResolver{}.
+func NewDialerWithoutResolver(dl model.DebugLogger, w ...DialerWrapper) model.Dialer {
+	return NewDialerWithResolver(dl, &NullResolver{}, w...)
 }
 
-// dialerSystem uses system facilities to perform domain name
-// resolution and guarantees we have a dialer timeout.
-type dialerSystem struct {
-	// timeout is the OPTIONAL timeout used for testing.
+// DialerSystem is a model.Dialer that users TProxy.NewSimplerDialer
+// to construct the new SimpleDialer used for dialing. This dialer has
+// a fixed timeout for each connect operation equal to 15 seconds.
+type DialerSystem struct {
+	// timeout is the OPTIONAL timeout (for testing).
 	timeout time.Duration
 }
 
-var _ model.Dialer = &dialerSystem{}
+var _ model.Dialer = &DialerSystem{}
 
 const dialerDefaultTimeout = 15 * time.Second
 
-func (d *dialerSystem) newUnderlyingDialer() model.SimpleDialer {
+func (d *DialerSystem) newUnderlyingDialer() model.SimpleDialer {
 	t := d.timeout
 	if t <= 0 {
 		t = dialerDefaultTimeout
@@ -90,11 +155,11 @@ func (d *dialerSystem) newUnderlyingDialer() model.SimpleDialer {
 	return TProxy.NewSimpleDialer(t)
 }
 
-func (d *dialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *DialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return d.newUnderlyingDialer().DialContext(ctx, network, address)
 }
 
-func (d *dialerSystem) CloseIdleConnections() {
+func (d *DialerSystem) CloseIdleConnections() {
 	// nothing to do here
 }
 

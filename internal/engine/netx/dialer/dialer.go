@@ -50,23 +50,25 @@ type Config struct {
 
 // New creates a new Dialer from the specified config and resolver.
 func New(config *Config, resolver model.Resolver) model.Dialer {
-	var d model.Dialer = &netxlite.ErrorWrapperDialer{Dialer: netxlite.DefaultDialer}
+	var logger model.DebugLogger = model.DiscardLogger
 	if config.Logger != nil {
-		d = &netxlite.DialerLogger{
-			Dialer:      d,
-			DebugLogger: config.Logger,
-		}
+		logger = config.Logger
 	}
-	if config.DialSaver != nil {
-		d = &saverDialer{Dialer: d, Saver: config.DialSaver}
+	modifiers := []netxlite.DialerWrapper{
+		func(dialer model.Dialer) model.Dialer {
+			if config.DialSaver != nil {
+				dialer = &saverDialer{Dialer: dialer, Saver: config.DialSaver}
+			}
+			return dialer
+		},
+		func(dialer model.Dialer) model.Dialer {
+			if config.ReadWriteSaver != nil {
+				dialer = &saverConnDialer{Dialer: dialer, Saver: config.ReadWriteSaver}
+			}
+			return dialer
+		},
 	}
-	if config.ReadWriteSaver != nil {
-		d = &saverConnDialer{Dialer: d, Saver: config.ReadWriteSaver}
-	}
-	d = &netxlite.DialerResolver{
-		Resolver: resolver,
-		Dialer:   d,
-	}
+	d := netxlite.NewDialerWithResolver(logger, resolver, modifiers...)
 	d = &netxlite.MaybeProxyDialer{ProxyURL: config.ProxyURL, Dialer: d}
 	if config.ContextByteCounting {
 		d = &bytecounter.ContextAwareDialer{Dialer: d}
