@@ -112,15 +112,16 @@ func (hb *ArchivalMaybeBinaryData) UnmarshalJSON(d []byte) error {
 //
 // See https://github.com/ooni/spec/blob/master/data-formats/df-002-dnst.md.
 type ArchivalDNSLookupResult struct {
-	Answers          []ArchivalDNSAnswer `json:"answers"`
-	Engine           string              `json:"engine"`
-	Failure          *string             `json:"failure"`
-	Hostname         string              `json:"hostname"`
-	QueryType        string              `json:"query_type"`
-	ResolverHostname *string             `json:"resolver_hostname"`
-	ResolverPort     *string             `json:"resolver_port"`
-	ResolverAddress  string              `json:"resolver_address"`
-	T                float64             `json:"t"`
+	Answers           []ArchivalDNSAnswer `json:"answers"`
+	Engine            string              `json:"engine"`
+	Failure           *string             `json:"failure"`
+	GetaddrinfoRetval int64               `json:"getaddrinfo_retval"`
+	Hostname          string              `json:"hostname"`
+	QueryType         string              `json:"query_type"`
+	ResolverHostname  *string             `json:"resolver_hostname"`
+	ResolverPort      *string             `json:"resolver_port"`
+	ResolverAddress   string              `json:"resolver_address"`
+	T                 float64             `json:"t"`
 }
 
 // ArchivalDNSAnswer is a DNS answer.

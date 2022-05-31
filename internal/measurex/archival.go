@@ -313,8 +313,9 @@ type ArchivalDNSLookupEvent struct {
 	Finished  float64                   `json:"t"`
 
 	// Names not part of the spec.
-	Started float64 `json:"started"`
-	Oddity  Oddity  `json:"oddity"`
+	Started           float64 `json:"started"`
+	Oddity            Oddity  `json:"oddity"`
+	GetaddrinfoRetval int64   `json:"getaddrinfo_retval"`
 }
 
 // NewArchivalDNSLookupAnswers creates a list of ArchivalDNSLookupAnswer.
@@ -344,15 +345,16 @@ func NewArchivalDNSLookupAnswers(in *DNSLookupEvent) (out []ArchivalDNSLookupAns
 // to its archival representation.
 func NewArchivalDNSLookupEvent(in *DNSLookupEvent) *ArchivalDNSLookupEvent {
 	return &ArchivalDNSLookupEvent{
-		Answers:   NewArchivalDNSLookupAnswers(in),
-		Network:   in.Network,
-		Failure:   in.Failure,
-		Domain:    in.Domain,
-		QueryType: in.QueryType,
-		Address:   in.Address,
-		Finished:  in.Finished,
-		Started:   in.Started,
-		Oddity:    in.Oddity,
+		Answers:           NewArchivalDNSLookupAnswers(in),
+		Network:           in.Network,
+		Failure:           in.Failure,
+		Domain:            in.Domain,
+		QueryType:         in.QueryType,
+		Address:           in.Address,
+		Finished:          in.Finished,
+		Started:           in.Started,
+		Oddity:            in.Oddity,
+		GetaddrinfoRetval: in.GetaddrinfoRetval,
 	}
 }
 
