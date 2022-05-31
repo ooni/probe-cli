@@ -1,10 +1,12 @@
 package dialer
 
 import (
+	"net/http"
 	"net/url"
 	"testing"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -18,11 +20,11 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 		ProxyURL:            &url.URL{},
 		ReadWriteSaver:      saver,
 	}, netxlite.DefaultResolver)
-	bcd, ok := dlr.(*byteCounterDialer)
+	bcd, ok := dlr.(*bytecounter.ContextAwareDialer)
 	if !ok {
 		t.Fatal("not a byteCounterDialer")
 	}
-	pd, ok := bcd.Dialer.(*proxyDialer)
+	pd, ok := bcd.Dialer.(*netxlite.MaybeProxyDialer)
 	if !ok {
 		t.Fatal("not a proxyDialer")
 	}
@@ -50,4 +52,19 @@ func TestNewCreatesTheExpectedChain(t *testing.T) {
 	if !ok {
 		t.Fatal("not a DialerSystem")
 	}
+}
+
+func TestDialerNewSuccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip test in short mode")
+	}
+	log.SetLevel(log.DebugLevel)
+	d := New(&Config{Logger: log.Log}, netxlite.DefaultResolver)
+	txp := &http.Transport{DialContext: d.DialContext}
+	client := &http.Client{Transport: txp}
+	resp, err := client.Get("http://www.google.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
 }

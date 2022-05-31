@@ -7,10 +7,61 @@ package netxlite
 //
 
 import (
+	"context"
 	"net"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
+
+// BogonResolver is a bogon aware resolver. When a bogon is encountered in
+// a reply, this resolver will return ErrDNSBogon.
+type BogonResolver struct {
+	Resolver model.Resolver
+}
+
+var _ model.Resolver = &BogonResolver{}
+
+// LookupHost implements Resolver.LookupHost
+func (r *BogonResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+	addrs, err := r.Resolver.LookupHost(ctx, hostname)
+	if err != nil {
+		return nil, err
+	}
+	for _, addr := range addrs {
+		if IsBogon(addr) {
+			return nil, ErrDNSBogon
+		}
+	}
+	return addrs, nil
+}
+
+// LookupHTTPS implements Resolver.LookupHTTPS
+func (r *BogonResolver) LookupHTTPS(ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
+	// TODO(bassosimone): decide whether we want to implement this method or not
+	return nil, ErrNoDNSTransport
+}
+
+// LookupNS implements Resolver.LookupNS
+func (r *BogonResolver) LookupNS(ctx context.Context, hostname string) ([]*net.NS, error) {
+	// TODO(bassosimone): decide whether we want to implement this method or not
+	return nil, ErrNoDNSTransport
+}
+
+// Network implements Resolver.Network
+func (r *BogonResolver) Network() string {
+	return r.Resolver.Network()
+}
+
+// Address implements Resolver.Address
+func (r *BogonResolver) Address() string {
+	return r.Resolver.Address()
+}
+
+// CloseIdleConnections implements Resolver.CloseIdleConnections
+func (r *BogonResolver) CloseIdleConnections() {
+	r.Resolver.CloseIdleConnections()
+}
 
 // IsBogon returns whether an IP address is bogon. Passing to this
 // function a non-IP address causes it to return true.

@@ -20,6 +20,7 @@ var (
 type (
 	DialerResolver            = dialerResolver
 	DialerLogger              = dialerLogger
+	HTTPTransportWrapper      = httpTransportConnectionsCloser
 	HTTPTransportLogger       = httpTransportLogger
 	ErrorWrapperDialer        = dialerErrWrapper
 	ErrorWrapperQUICListener  = quicListenerErrWrapper

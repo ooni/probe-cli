@@ -11,7 +11,6 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -286,7 +285,7 @@ func (e *Experiment) OpenReportContext(ctx context.Context) error {
 	}
 	// use custom client to have proper byte accounting
 	httpClient := &http.Client{
-		Transport: &httptransport.ByteCountingTransport{
+		Transport: &bytecounter.HTTPTransport{
 			HTTPTransport: e.session.httpDefaultTransport, // proxy is OK
 			Counter:       e.byteCounter,
 		},

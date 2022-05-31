@@ -97,7 +97,7 @@ func NewResolver(config Config) model.Resolver {
 		r = cache
 	}
 	if config.BogonIsError {
-		r = resolver.BogonResolver{Resolver: r}
+		r = &netxlite.BogonResolver{Resolver: r}
 	}
 	r = &netxlite.ErrorWrapperResolver{Resolver: r}
 	if config.Logger != nil {
@@ -202,7 +202,7 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 		TLSConfig: config.TLSConfig})
 
 	if config.ByteCounter != nil {
-		txp = &httptransport.ByteCountingTransport{
+		txp = &bytecounter.HTTPTransport{
 			Counter: config.ByteCounter, HTTPTransport: txp}
 	}
 	if config.Logger != nil {

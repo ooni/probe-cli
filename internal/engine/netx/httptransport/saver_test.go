@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -76,7 +77,7 @@ func TestSaverMetadataFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := &trace.Saver{}
 	txp := httptransport.SaverMetadataHTTPTransport{
-		HTTPTransport: httptransport.FakeTransport{
+		HTTPTransport: FakeTransport{
 			Err: expected,
 		},
 		Saver: saver,
@@ -161,7 +162,7 @@ func TestSaverTransactionFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	saver := &trace.Saver{}
 	txp := httptransport.SaverTransactionHTTPTransport{
-		HTTPTransport: httptransport.FakeTransport{
+		HTTPTransport: FakeTransport{
 			Err: expected,
 		},
 		Saver: saver,
@@ -201,7 +202,7 @@ func TestSaverTransactionFailure(t *testing.T) {
 func TestSaverBodySuccess(t *testing.T) {
 	saver := new(trace.Saver)
 	txp := httptransport.SaverBodyHTTPTransport{
-		HTTPTransport: httptransport.FakeTransport{
+		HTTPTransport: FakeTransport{
 			Func: func(req *http.Request) (*http.Response, error) {
 				data, err := netxlite.ReadAllContext(context.Background(), req.Body)
 				if err != nil {
@@ -272,7 +273,7 @@ func TestSaverBodySuccess(t *testing.T) {
 func TestSaverBodyRequestReadError(t *testing.T) {
 	saver := new(trace.Saver)
 	txp := httptransport.SaverBodyHTTPTransport{
-		HTTPTransport: httptransport.FakeTransport{
+		HTTPTransport: FakeTransport{
 			Func: func(req *http.Request) (*http.Response, error) {
 				panic("should not be called")
 			},
@@ -281,7 +282,7 @@ func TestSaverBodyRequestReadError(t *testing.T) {
 		Saver:        saver,
 	}
 	expected := errors.New("mocked error")
-	body := httptransport.FakeBody{Err: expected}
+	body := FakeBody{Err: expected}
 	req, err := http.NewRequest("POST", "http://x.org/y", body)
 	if err != nil {
 		t.Fatal(err)
@@ -303,7 +304,7 @@ func TestSaverBodyRoundTripError(t *testing.T) {
 	saver := new(trace.Saver)
 	expected := errors.New("mocked error")
 	txp := httptransport.SaverBodyHTTPTransport{
-		HTTPTransport: httptransport.FakeTransport{
+		HTTPTransport: FakeTransport{
 			Err: expected,
 		},
 		SnapshotSize: 4,
@@ -343,11 +344,11 @@ func TestSaverBodyResponseReadError(t *testing.T) {
 	saver := new(trace.Saver)
 	expected := errors.New("mocked error")
 	txp := httptransport.SaverBodyHTTPTransport{
-		HTTPTransport: httptransport.FakeTransport{
+		HTTPTransport: FakeTransport{
 			Func: func(req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: 200,
-					Body: httptransport.FakeBody{
+					Body: FakeBody{
 						Err: expected,
 					},
 				}, nil
@@ -416,4 +417,56 @@ func TestCloneHeaders(t *testing.T) {
 			t.Fatal("did not set Host header correctly")
 		}
 	})
+}
+
+type FakeDialer struct {
+	Conn net.Conn
+	Err  error
+}
+
+func (d FakeDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	time.Sleep(10 * time.Microsecond)
+	return d.Conn, d.Err
+}
+
+type FakeTransport struct {
+	Name string
+	Err  error
+	Func func(*http.Request) (*http.Response, error)
+	Resp *http.Response
+}
+
+func (txp FakeTransport) Network() string {
+	return txp.Name
+}
+
+func (txp FakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	time.Sleep(10 * time.Microsecond)
+	if txp.Func != nil {
+		return txp.Func(req)
+	}
+	if req.Body != nil {
+		netxlite.ReadAllContext(req.Context(), req.Body)
+		req.Body.Close()
+	}
+	if txp.Err != nil {
+		return nil, txp.Err
+	}
+	txp.Resp.Request = req // non thread safe but it doesn't matter
+	return txp.Resp, nil
+}
+
+func (txp FakeTransport) CloseIdleConnections() {}
+
+type FakeBody struct {
+	Err error
+}
+
+func (fb FakeBody) Read(p []byte) (int, error) {
+	time.Sleep(10 * time.Microsecond)
+	return 0, fb.Err
+}
+
+func (fb FakeBody) Close() error {
+	return nil
 }
