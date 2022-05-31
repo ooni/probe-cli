@@ -5,13 +5,13 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // newfailure is a convenience shortcut to save typing
-var newfailure = archival.NewFailure
+var newfailure = tracex.NewFailure
 
 // CtrlDNSResult is the result of the DNS check performed by
 // the Web Connectivity test helper.

@@ -1,4 +1,4 @@
-package archival_test
+package tracex
 
 import (
 	"context"
@@ -12,21 +12,57 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/gorilla/websocket"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
+
+func TestDNSQueryIPOfType(t *testing.T) {
+	type expectation struct {
+		qtype  dnsQueryType
+		ip     string
+		output bool
+	}
+	var expectations = []expectation{{
+		qtype:  "A",
+		ip:     "8.8.8.8",
+		output: true,
+	}, {
+		qtype:  "A",
+		ip:     "2a00:1450:4002:801::2004",
+		output: false,
+	}, {
+		qtype:  "AAAA",
+		ip:     "8.8.8.8",
+		output: false,
+	}, {
+		qtype:  "AAAA",
+		ip:     "2a00:1450:4002:801::2004",
+		output: true,
+	}, {
+		qtype:  "ANTANI",
+		ip:     "2a00:1450:4002:801::2004",
+		output: false,
+	}, {
+		qtype:  "ANTANI",
+		ip:     "8.8.8.8",
+		output: false,
+	}}
+	for _, exp := range expectations {
+		if exp.qtype.ipoftype(exp.ip) != exp.output {
+			t.Fatalf("failure for %+v", exp)
+		}
+	}
+}
 
 func TestNewTCPConnectList(t *testing.T) {
 	begin := time.Now()
 	type args struct {
 		begin  time.Time
-		events []trace.Event
+		events []Event
 	}
 	tests := []struct {
 		name string
 		args args
-		want []archival.TCPConnectEntry
+		want []TCPConnectEntry
 	}{{
 		name: "empty run",
 		args: args{
@@ -38,7 +74,7 @@ func TestNewTCPConnectList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
-			events: []trace.Event{{
+			events: []Event{{
 				Addresses: []string{"8.8.8.8", "8.8.4.4"},
 				Hostname:  "dns.google.com",
 				Name:      "resolve_done",
@@ -64,18 +100,18 @@ func TestNewTCPConnectList(t *testing.T) {
 				Time:     begin.Add(180 * time.Millisecond),
 			}},
 		},
-		want: []archival.TCPConnectEntry{{
+		want: []TCPConnectEntry{{
 			IP:   "8.8.8.8",
 			Port: 853,
-			Status: archival.TCPConnectStatus{
+			Status: TCPConnectStatus{
 				Success: true,
 			},
 			T: 0.13,
 		}, {
 			IP:   "8.8.4.4",
 			Port: 53,
-			Status: archival.TCPConnectStatus{
-				Failure: archival.NewFailure(io.EOF),
+			Status: TCPConnectStatus{
+				Failure: NewFailure(io.EOF),
 				Success: false,
 			},
 			T: 0.18,
@@ -83,7 +119,7 @@ func TestNewTCPConnectList(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := archival.NewTCPConnectList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
+			if got := NewTCPConnectList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
 				t.Error(cmp.Diff(got, tt.want))
 			}
 		})
@@ -94,12 +130,12 @@ func TestNewRequestList(t *testing.T) {
 	begin := time.Now()
 	type args struct {
 		begin  time.Time
-		events []trace.Event
+		events []Event
 	}
 	tests := []struct {
 		name string
 		args args
-		want []archival.RequestEntry
+		want []RequestEntry
 	}{{
 		name: "empty run",
 		args: args{
@@ -111,7 +147,7 @@ func TestNewRequestList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
-			events: []trace.Event{{
+			events: []Event{{
 				Name: "http_transaction_start",
 				Time: begin.Add(10 * time.Millisecond),
 			}, {
@@ -152,16 +188,16 @@ func TestNewRequestList(t *testing.T) {
 				Err:  io.EOF,
 			}},
 		},
-		want: []archival.RequestEntry{{
-			Failure: archival.NewFailure(io.EOF),
-			Request: archival.HTTPRequest{
-				HeadersList: []archival.HTTPHeader{{
+		want: []RequestEntry{{
+			Failure: NewFailure(io.EOF),
+			Request: HTTPRequest{
+				HeadersList: []HTTPHeader{{
 					Key: "User-Agent",
-					Value: archival.MaybeBinaryValue{
+					Value: MaybeBinaryValue{
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]archival.MaybeBinaryValue{
+				Headers: map[string]MaybeBinaryValue{
 					"User-Agent": {Value: "miniooni/0.1.0-dev"},
 				},
 				Method: "GET",
@@ -169,34 +205,34 @@ func TestNewRequestList(t *testing.T) {
 			},
 			T: 0.02,
 		}, {
-			Request: archival.HTTPRequest{
-				Body: archival.MaybeBinaryValue{
+			Request: HTTPRequest{
+				Body: MaybeBinaryValue{
 					Value: "deadbeef",
 				},
-				HeadersList: []archival.HTTPHeader{{
+				HeadersList: []HTTPHeader{{
 					Key: "User-Agent",
-					Value: archival.MaybeBinaryValue{
+					Value: MaybeBinaryValue{
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]archival.MaybeBinaryValue{
+				Headers: map[string]MaybeBinaryValue{
 					"User-Agent": {Value: "miniooni/0.1.0-dev"},
 				},
 				Method: "POST",
 				URL:    "https://www.example.com/submit",
 			},
-			Response: archival.HTTPResponse{
-				Body: archival.MaybeBinaryValue{
+			Response: HTTPResponse{
+				Body: MaybeBinaryValue{
 					Value: "{}",
 				},
 				Code: 200,
-				HeadersList: []archival.HTTPHeader{{
+				HeadersList: []HTTPHeader{{
 					Key: "Server",
-					Value: archival.MaybeBinaryValue{
+					Value: MaybeBinaryValue{
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]archival.MaybeBinaryValue{
+				Headers: map[string]MaybeBinaryValue{
 					"Server": {Value: "miniooni/0.1.0-dev"},
 				},
 				Locations: nil,
@@ -209,7 +245,7 @@ func TestNewRequestList(t *testing.T) {
 		name: "run with redirect and headers to sort",
 		args: args{
 			begin: begin,
-			events: []trace.Event{{
+			events: []Event{{
 				Name: "http_transaction_start",
 				Time: begin.Add(10 * time.Millisecond),
 			}, {
@@ -230,39 +266,39 @@ func TestNewRequestList(t *testing.T) {
 				Name: "http_transaction_done",
 			}},
 		},
-		want: []archival.RequestEntry{{
-			Request: archival.HTTPRequest{
-				HeadersList: []archival.HTTPHeader{{
+		want: []RequestEntry{{
+			Request: HTTPRequest{
+				HeadersList: []HTTPHeader{{
 					Key: "User-Agent",
-					Value: archival.MaybeBinaryValue{
+					Value: MaybeBinaryValue{
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]archival.MaybeBinaryValue{
+				Headers: map[string]MaybeBinaryValue{
 					"User-Agent": {Value: "miniooni/0.1.0-dev"},
 				},
 				Method: "GET",
 				URL:    "https://www.example.com/",
 			},
-			Response: archival.HTTPResponse{
+			Response: HTTPResponse{
 				Code: 302,
-				HeadersList: []archival.HTTPHeader{{
+				HeadersList: []HTTPHeader{{
 					Key: "Location",
-					Value: archival.MaybeBinaryValue{
+					Value: MaybeBinaryValue{
 						Value: "https://x.example.com",
 					},
 				}, {
 					Key: "Location",
-					Value: archival.MaybeBinaryValue{
+					Value: MaybeBinaryValue{
 						Value: "https://y.example.com",
 					},
 				}, {
 					Key: "Server",
-					Value: archival.MaybeBinaryValue{
+					Value: MaybeBinaryValue{
 						Value: "miniooni/0.1.0-dev",
 					},
 				}},
-				Headers: map[string]archival.MaybeBinaryValue{
+				Headers: map[string]MaybeBinaryValue{
 					"Server":   {Value: "miniooni/0.1.0-dev"},
 					"Location": {Value: "https://x.example.com"},
 				},
@@ -275,7 +311,7 @@ func TestNewRequestList(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := archival.NewRequestList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
+			if got := NewRequestList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
 				t.Error(cmp.Diff(got, tt.want))
 			}
 		})
@@ -286,12 +322,12 @@ func TestNewDNSQueriesList(t *testing.T) {
 	begin := time.Now()
 	type args struct {
 		begin  time.Time
-		events []trace.Event
+		events []Event
 	}
 	tests := []struct {
 		name string
 		args args
-		want []archival.DNSQueryEntry
+		want []DNSQueryEntry
 	}{{
 		name: "empty run",
 		args: args{
@@ -303,7 +339,7 @@ func TestNewDNSQueriesList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
-			events: []trace.Event{{
+			events: []Event{{
 				Address:   "1.1.1.1:853",
 				Addresses: []string{"8.8.8.8", "8.8.4.4"},
 				Hostname:  "dns.google.com",
@@ -325,8 +361,8 @@ func TestNewDNSQueriesList(t *testing.T) {
 				Time:     begin.Add(180 * time.Millisecond),
 			}},
 		},
-		want: []archival.DNSQueryEntry{{
-			Answers: []archival.DNSAnswerEntry{{
+		want: []DNSQueryEntry{{
+			Answers: []DNSAnswerEntry{{
 				ASN:        15169,
 				ASOrgName:  "Google LLC",
 				AnswerType: "A",
@@ -347,15 +383,15 @@ func TestNewDNSQueriesList(t *testing.T) {
 		name: "run with IPv6 results",
 		args: args{
 			begin: begin,
-			events: []trace.Event{{
+			events: []Event{{
 				Addresses: []string{"2001:4860:4860::8888"},
 				Hostname:  "dns.google.com",
 				Name:      "resolve_done",
 				Time:      begin.Add(200 * time.Millisecond),
 			}},
 		},
-		want: []archival.DNSQueryEntry{{
-			Answers: []archival.DNSAnswerEntry{{
+		want: []DNSQueryEntry{{
+			Answers: []DNSAnswerEntry{{
 				ASN:        15169,
 				ASOrgName:  "Google LLC",
 				AnswerType: "AAAA",
@@ -369,23 +405,23 @@ func TestNewDNSQueriesList(t *testing.T) {
 		name: "run with errors",
 		args: args{
 			begin: begin,
-			events: []trace.Event{{
+			events: []Event{{
 				Err:      &netxlite.ErrWrapper{Failure: netxlite.FailureDNSNXDOMAINError},
 				Hostname: "dns.google.com",
 				Name:     "resolve_done",
 				Time:     begin.Add(200 * time.Millisecond),
 			}},
 		},
-		want: []archival.DNSQueryEntry{{
+		want: []DNSQueryEntry{{
 			Answers: nil,
-			Failure: archival.NewFailure(
+			Failure: NewFailure(
 				&netxlite.ErrWrapper{Failure: netxlite.FailureDNSNXDOMAINError}),
 			Hostname:  "dns.google.com",
 			QueryType: "A",
 			T:         0.2,
 		}, {
 			Answers: nil,
-			Failure: archival.NewFailure(
+			Failure: NewFailure(
 				&netxlite.ErrWrapper{Failure: netxlite.FailureDNSNXDOMAINError}),
 			Hostname:  "dns.google.com",
 			QueryType: "AAAA",
@@ -394,7 +430,7 @@ func TestNewDNSQueriesList(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := archival.NewDNSQueriesList(tt.args.begin, tt.args.events)
+			got := NewDNSQueriesList(tt.args.begin, tt.args.events)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Fatal(diff)
 			}
@@ -406,12 +442,12 @@ func TestNewNetworkEventsList(t *testing.T) {
 	begin := time.Now()
 	type args struct {
 		begin  time.Time
-		events []trace.Event
+		events []Event
 	}
 	tests := []struct {
 		name string
 		args args
-		want []archival.NetworkEvent
+		want []NetworkEvent
 	}{{
 		name: "empty run",
 		args: args{
@@ -423,7 +459,7 @@ func TestNewNetworkEventsList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
-			events: []trace.Event{{
+			events: []Event{{
 				Name:    netxlite.ConnectOperation,
 				Address: "8.8.8.8:853",
 				Err:     io.EOF,
@@ -457,43 +493,43 @@ func TestNewNetworkEventsList(t *testing.T) {
 				Time: begin.Add(17 * time.Millisecond),
 			}},
 		},
-		want: []archival.NetworkEvent{{
+		want: []NetworkEvent{{
 			Address:   "8.8.8.8:853",
-			Failure:   archival.NewFailure(io.EOF),
+			Failure:   NewFailure(io.EOF),
 			Operation: netxlite.ConnectOperation,
 			Proto:     "tcp",
 			T:         0.007,
 		}, {
-			Failure:   archival.NewFailure(context.Canceled),
+			Failure:   NewFailure(context.Canceled),
 			NumBytes:  7117,
 			Operation: netxlite.ReadOperation,
 			T:         0.011,
 		}, {
 			Address:   "8.8.8.8:853",
-			Failure:   archival.NewFailure(context.Canceled),
+			Failure:   NewFailure(context.Canceled),
 			NumBytes:  7117,
 			Operation: netxlite.ReadFromOperation,
 			T:         0.011,
 		}, {
-			Failure:   archival.NewFailure(websocket.ErrBadHandshake),
+			Failure:   NewFailure(websocket.ErrBadHandshake),
 			NumBytes:  4114,
 			Operation: netxlite.WriteOperation,
 			T:         0.014,
 		}, {
 			Address:   "8.8.8.8:853",
-			Failure:   archival.NewFailure(websocket.ErrBadHandshake),
+			Failure:   NewFailure(websocket.ErrBadHandshake),
 			NumBytes:  4114,
 			Operation: netxlite.WriteToOperation,
 			T:         0.014,
 		}, {
-			Failure:   archival.NewFailure(websocket.ErrReadLimit),
+			Failure:   NewFailure(websocket.ErrReadLimit),
 			Operation: netxlite.CloseOperation,
 			T:         0.017,
 		}},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := archival.NewNetworkEventsList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
+			if got := NewNetworkEventsList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
 				t.Error(cmp.Diff(got, tt.want))
 			}
 		})
@@ -504,12 +540,12 @@ func TestNewTLSHandshakesList(t *testing.T) {
 	begin := time.Now()
 	type args struct {
 		begin  time.Time
-		events []trace.Event
+		events []Event
 	}
 	tests := []struct {
 		name string
 		args args
-		want []archival.TLSHandshake
+		want []TLSHandshake
 	}{{
 		name: "empty run",
 		args: args{
@@ -521,7 +557,7 @@ func TestNewTLSHandshakesList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
-			events: []trace.Event{{
+			events: []Event{{
 				Name: netxlite.CloseOperation,
 				Err:  websocket.ErrReadLimit,
 				Time: begin.Add(17 * time.Millisecond),
@@ -542,13 +578,13 @@ func TestNewTLSHandshakesList(t *testing.T) {
 				Time:          begin.Add(55 * time.Millisecond),
 			}},
 		},
-		want: []archival.TLSHandshake{{
+		want: []TLSHandshake{{
 			Address:            "131.252.210.176:443",
 			CipherSuite:        "SUITE",
-			Failure:            archival.NewFailure(io.EOF),
+			Failure:            NewFailure(io.EOF),
 			NegotiatedProtocol: "h2",
 			NoTLSVerify:        false,
-			PeerCertificates: []archival.MaybeBinaryValue{{
+			PeerCertificates: []MaybeBinaryValue{{
 				Value: "deadbeef",
 			}, {
 				Value: "abad1dea",
@@ -560,7 +596,7 @@ func TestNewTLSHandshakesList(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := archival.NewTLSHandshakesList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
+			if got := NewTLSHandshakesList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
 				t.Error(cmp.Diff(got, tt.want))
 			}
 		})
@@ -620,7 +656,7 @@ func TestNewFailure(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := archival.NewFailure(tt.args.err)
+			got := NewFailure(tt.args.err)
 			if tt.want == nil && got == nil {
 				return
 			}
@@ -689,7 +725,7 @@ func TestNewFailedOperation(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := archival.NewFailedOperation(tt.args.err)
+			got := NewFailedOperation(tt.args.err)
 			if got == nil && tt.want == nil {
 				return
 			}

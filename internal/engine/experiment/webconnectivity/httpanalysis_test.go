@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/randx"
 )
 
@@ -42,8 +42,8 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 		name: "response body is truncated",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						BodyIsTruncated: true,
 					},
 				}},
@@ -59,8 +59,8 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 		name: "response body length is zero",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{},
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{},
 				}},
 			},
 			ctrl: webconnectivity.ControlResponse{
@@ -74,9 +74,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 		name: "control length is negative",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Body: archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Body: tracex.MaybeBinaryValue{
 							Value: randx.Letters(768),
 						},
 					},
@@ -93,9 +93,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 		name: "match with bigger control",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Body: archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Body: tracex.MaybeBinaryValue{
 							Value: randx.Letters(768),
 						},
 					},
@@ -113,9 +113,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 		name: "match with bigger measurement",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Body: archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Body: tracex.MaybeBinaryValue{
 							Value: randx.Letters(1024),
 						},
 					},
@@ -133,9 +133,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 		name: "not match with bigger control",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Body: archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Body: tracex.MaybeBinaryValue{
 							Value: randx.Letters(8),
 						},
 					},
@@ -153,9 +153,9 @@ func TestHTTPBodyLengthChecks(t *testing.T) {
 		name: "match with bigger measurement",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Body: archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Body: tracex.MaybeBinaryValue{
 							Value: randx.Letters(16),
 						},
 					},
@@ -203,15 +203,15 @@ func TestStatusCodeMatch(t *testing.T) {
 		name: "with a request but zero status codes",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{}},
+				Requests: []tracex.RequestEntry{{}},
 			},
 		},
 	}, {
 		name: "with equal status codes including 5xx",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 501,
 					},
 				}},
@@ -227,8 +227,8 @@ func TestStatusCodeMatch(t *testing.T) {
 		name: "with different status codes and the control being 5xx",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 407,
 					},
 				}},
@@ -244,8 +244,8 @@ func TestStatusCodeMatch(t *testing.T) {
 		name: "with different status codes and the control being not 5xx",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 407,
 					},
 				}},
@@ -261,8 +261,8 @@ func TestStatusCodeMatch(t *testing.T) {
 		name: "with only response status code and no control status code",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 200,
 					},
 				}},
@@ -272,8 +272,8 @@ func TestStatusCodeMatch(t *testing.T) {
 		name: "with response status code and -1 as control status code",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 200,
 					},
 				}},
@@ -288,8 +288,8 @@ func TestStatusCodeMatch(t *testing.T) {
 		name: "with only control status code and no response status code",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 0,
 					},
 				}},
@@ -346,7 +346,7 @@ func TestHeadersMatch(t *testing.T) {
 		name: "with request and no response status code",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{}},
+				Requests: []tracex.RequestEntry{{}},
 			},
 			ctrl: webconnectivity.ControlResponse{
 				HTTPRequest: webconnectivity.ControlHTTPRequestResult{
@@ -363,9 +363,9 @@ func TestHeadersMatch(t *testing.T) {
 		name: "with no control status code",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Headers: map[string]archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Headers: map[string]tracex.MaybeBinaryValue{
 							"Date": {Value: "Mon Jul 13 21:10:08 CEST 2020"},
 						},
 						Code: 200,
@@ -379,9 +379,9 @@ func TestHeadersMatch(t *testing.T) {
 		name: "with negative control status code",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Headers: map[string]archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Headers: map[string]tracex.MaybeBinaryValue{
 							"Date": {Value: "Mon Jul 13 21:10:08 CEST 2020"},
 						},
 						Code: 200,
@@ -399,9 +399,9 @@ func TestHeadersMatch(t *testing.T) {
 		name: "with no uncommon headers",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Headers: map[string]archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Headers: map[string]tracex.MaybeBinaryValue{
 							"Date": {Value: "Mon Jul 13 21:10:08 CEST 2020"},
 						},
 						Code: 200,
@@ -422,9 +422,9 @@ func TestHeadersMatch(t *testing.T) {
 		name: "with equal uncommon headers",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Headers: map[string]archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Headers: map[string]tracex.MaybeBinaryValue{
 							"Date":   {Value: "Mon Jul 13 21:10:08 CEST 2020"},
 							"Antani": {Value: "MASCETTI"},
 						},
@@ -447,9 +447,9 @@ func TestHeadersMatch(t *testing.T) {
 		name: "with different uncommon headers",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Headers: map[string]archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Headers: map[string]tracex.MaybeBinaryValue{
 							"Date":   {Value: "Mon Jul 13 21:10:08 CEST 2020"},
 							"Antani": {Value: "MASCETTI"},
 						},
@@ -472,9 +472,9 @@ func TestHeadersMatch(t *testing.T) {
 		name: "with small uncommon intersection (X-Cache)",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Headers: map[string]archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Headers: map[string]tracex.MaybeBinaryValue{
 							"Accept-Ranges":  {Value: "bytes"},
 							"Age":            {Value: "404727"},
 							"Cache-Control":  {Value: "max-age=604800"},
@@ -519,9 +519,9 @@ func TestHeadersMatch(t *testing.T) {
 		name: "with no uncommon intersection",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Headers: map[string]archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Headers: map[string]tracex.MaybeBinaryValue{
 							"Accept-Ranges":  {Value: "bytes"},
 							"Age":            {Value: "404727"},
 							"Cache-Control":  {Value: "max-age=604800"},
@@ -564,9 +564,9 @@ func TestHeadersMatch(t *testing.T) {
 		name: "with exactly equal headers",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Headers: map[string]archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Headers: map[string]tracex.MaybeBinaryValue{
 							"Accept-Ranges": {Value: "bytes"},
 							"Age":           {Value: "404727"},
 							"Cache-Control": {Value: "max-age=604800"},
@@ -605,9 +605,9 @@ func TestHeadersMatch(t *testing.T) {
 		name: "with equal headers except for the case",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
-						Headers: map[string]archival.MaybeBinaryValue{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
+						Headers: map[string]tracex.MaybeBinaryValue{
 							"accept-ranges": {Value: "bytes"},
 							"AGE":           {Value: "404727"},
 							"cache-Control": {Value: "max-age=604800"},
@@ -674,7 +674,7 @@ func TestTitleMatch(t *testing.T) {
 		name: "with a request and no response",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{}},
+				Requests: []tracex.RequestEntry{{}},
 			},
 		},
 		wantOut: nil,
@@ -682,8 +682,8 @@ func TestTitleMatch(t *testing.T) {
 		name: "with a response with truncated body",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code:            200,
 						BodyIsTruncated: true,
 					},
@@ -695,10 +695,10 @@ func TestTitleMatch(t *testing.T) {
 		name: "with a response with good body",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: archival.MaybeBinaryValue{Value: "<HTML/>"},
+						Body: tracex.MaybeBinaryValue{Value: "<HTML/>"},
 					},
 				}},
 			},
@@ -708,10 +708,10 @@ func TestTitleMatch(t *testing.T) {
 		name: "with all good but no titles",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: archival.MaybeBinaryValue{Value: "<HTML/>"},
+						Body: tracex.MaybeBinaryValue{Value: "<HTML/>"},
 					},
 				}},
 			},
@@ -727,10 +727,10 @@ func TestTitleMatch(t *testing.T) {
 		name: "reasonably common case where it succeeds",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: archival.MaybeBinaryValue{
+						Body: tracex.MaybeBinaryValue{
 							Value: "<HTML><TITLE>La community di MSN</TITLE></HTML>"},
 					},
 				}},
@@ -747,10 +747,10 @@ func TestTitleMatch(t *testing.T) {
 		name: "reasonably common case where it fails",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: archival.MaybeBinaryValue{
+						Body: tracex.MaybeBinaryValue{
 							Value: "<HTML><TITLE>La communità di MSN</TITLE></HTML>"},
 					},
 				}},
@@ -767,10 +767,10 @@ func TestTitleMatch(t *testing.T) {
 		name: "when the title is too long",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: archival.MaybeBinaryValue{
+						Body: tracex.MaybeBinaryValue{
 							Value: "<HTML><TITLE>" + randx.Letters(1024) + "</TITLE></HTML>"},
 					},
 				}},
@@ -787,10 +787,10 @@ func TestTitleMatch(t *testing.T) {
 		name: "reasonably common case where it succeeds with case variations",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: archival.MaybeBinaryValue{
+						Body: tracex.MaybeBinaryValue{
 							Value: "<HTML><TiTLe>La commUNity di MSN</tITLE></HTML>"},
 					},
 				}},
@@ -807,10 +807,10 @@ func TestTitleMatch(t *testing.T) {
 		name: "when the control status code is negative",
 		args: args{
 			tk: urlgetter.TestKeys{
-				Requests: []archival.RequestEntry{{
-					Response: archival.HTTPResponse{
+				Requests: []tracex.RequestEntry{{
+					Response: tracex.HTTPResponse{
 						Code: 200,
-						Body: archival.MaybeBinaryValue{
+						Body: tracex.MaybeBinaryValue{
 							Value: "<HTML><TiTLe>La commUNity di MSN</tITLE></HTML>"},
 					},
 				}},

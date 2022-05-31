@@ -17,7 +17,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlstool/internal"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -101,7 +101,7 @@ func (m Measurer) Run(
 		percent := float64(idx) / float64(len(allMethods))
 		callbacks.OnProgress(percent, fmt.Sprintf("%s: %+v", meth.name, err))
 		tk.Experiment[meth.name] = &ExperimentKeys{
-			Failure: archival.NewFailure(err),
+			Failure: tracex.NewFailure(err),
 		}
 	}
 	return nil // return nil so we always submit the measurement

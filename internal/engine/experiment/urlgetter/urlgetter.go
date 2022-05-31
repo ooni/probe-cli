@@ -8,7 +8,7 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -45,18 +45,18 @@ type Config struct {
 // TestKeys contains the experiment's result.
 type TestKeys struct {
 	// The following fields are part of the typical JSON emitted by OONI.
-	Agent           string                     `json:"agent"`
-	BootstrapTime   float64                    `json:"bootstrap_time,omitempty"`
-	DNSCache        []string                   `json:"dns_cache,omitempty"`
-	FailedOperation *string                    `json:"failed_operation"`
-	Failure         *string                    `json:"failure"`
-	NetworkEvents   []archival.NetworkEvent    `json:"network_events"`
-	Queries         []archival.DNSQueryEntry   `json:"queries"`
-	Requests        []archival.RequestEntry    `json:"requests"`
-	SOCKSProxy      string                     `json:"socksproxy,omitempty"`
-	TCPConnect      []archival.TCPConnectEntry `json:"tcp_connect"`
-	TLSHandshakes   []archival.TLSHandshake    `json:"tls_handshakes"`
-	Tunnel          string                     `json:"tunnel,omitempty"`
+	Agent           string                   `json:"agent"`
+	BootstrapTime   float64                  `json:"bootstrap_time,omitempty"`
+	DNSCache        []string                 `json:"dns_cache,omitempty"`
+	FailedOperation *string                  `json:"failed_operation"`
+	Failure         *string                  `json:"failure"`
+	NetworkEvents   []tracex.NetworkEvent    `json:"network_events"`
+	Queries         []tracex.DNSQueryEntry   `json:"queries"`
+	Requests        []tracex.RequestEntry    `json:"requests"`
+	SOCKSProxy      string                   `json:"socksproxy,omitempty"`
+	TCPConnect      []tracex.TCPConnectEntry `json:"tcp_connect"`
+	TLSHandshakes   []tracex.TLSHandshake    `json:"tls_handshakes"`
+	Tunnel          string                   `json:"tunnel,omitempty"`
 
 	// The following fields are not serialised but are useful to simplify
 	// analysing the measurements in telegram, whatsapp, etc.
@@ -68,12 +68,12 @@ type TestKeys struct {
 // RegisterExtensions registers the extensions used by the urlgetter
 // experiment into the provided measurement.
 func RegisterExtensions(m *model.Measurement) {
-	archival.ExtHTTP.AddTo(m)
-	archival.ExtDNS.AddTo(m)
-	archival.ExtNetevents.AddTo(m)
-	archival.ExtTCPConnect.AddTo(m)
-	archival.ExtTLSHandshake.AddTo(m)
-	archival.ExtTunnel.AddTo(m)
+	tracex.ExtHTTP.AddTo(m)
+	tracex.ExtDNS.AddTo(m)
+	tracex.ExtNetevents.AddTo(m)
+	tracex.ExtTCPConnect.AddTo(m)
+	tracex.ExtTLSHandshake.AddTo(m)
+	tracex.ExtTunnel.AddTo(m)
 }
 
 // Measurer performs the measurement.

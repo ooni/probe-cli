@@ -9,7 +9,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -24,12 +24,12 @@ func TestSuccess(t *testing.T) {
 		ByteCounter:         counter,
 		CacheResolutions:    true,
 		ContextByteCounting: true,
-		DialSaver:           &trace.Saver{},
-		HTTPSaver:           &trace.Saver{},
+		DialSaver:           &tracex.Saver{},
+		HTTPSaver:           &tracex.Saver{},
 		Logger:              log.Log,
-		ReadWriteSaver:      &trace.Saver{},
-		ResolveSaver:        &trace.Saver{},
-		TLSSaver:            &trace.Saver{},
+		ReadWriteSaver:      &tracex.Saver{},
+		ResolveSaver:        &tracex.Saver{},
+		TLSSaver:            &tracex.Saver{},
 	}
 	txp := netx.NewHTTPTransport(config)
 	client := &http.Client{Transport: txp}
@@ -67,7 +67,7 @@ func TestSuccess(t *testing.T) {
 }
 
 func TestBogonResolutionNotBroken(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	r := netx.NewResolver(netx.Config{
 		BogonIsError: true,
 		DNSCache: map[string][]string{

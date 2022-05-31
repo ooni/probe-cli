@@ -15,7 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/riseupvpn"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -735,11 +735,11 @@ func generateMockGetter(requestResponse map[string]string, responseStatus map[st
 			responseStatus = 0
 		}
 
-		tcpConnect := archival.TCPConnectEntry{
+		tcpConnect := tracex.TCPConnectEntry{
 			// use some dummy IP/Port combination for URLs, we don't do DNS resolution
 			IP:   "123.456.234.123",
 			Port: 443,
-			Status: archival.TCPConnectStatus{
+			Status: tracex.TCPConnectStatus{
 				Success: isSuccessStatus,
 				Blocked: &isBlocked,
 				Failure: failure,
@@ -759,21 +759,21 @@ func generateMockGetter(requestResponse map[string]string, responseStatus map[st
 			FailedOperation:    failedOperation,
 			HTTPResponseStatus: responseStatus,
 			HTTPResponseBody:   responseBody,
-			Requests: []archival.RequestEntry{{
+			Requests: []tracex.RequestEntry{{
 				Failure: failure,
-				Request: archival.HTTPRequest{
+				Request: tracex.HTTPRequest{
 					URL:             url,
-					Body:            archival.MaybeBinaryValue{},
+					Body:            tracex.MaybeBinaryValue{},
 					BodyIsTruncated: false,
 				},
-				Response: archival.HTTPResponse{
-					Body: archival.HTTPBody{
+				Response: tracex.HTTPResponse{
+					Body: tracex.HTTPBody{
 						Value: responseBody,
 					},
 					BodyIsTruncated: false,
 				}},
 			},
-			TCPConnect: []archival.TCPConnectEntry{tcpConnect},
+			TCPConnect: []tracex.TCPConnectEntry{tcpConnect},
 		}
 		return tk, nil
 	}

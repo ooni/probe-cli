@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity/internal"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -34,12 +34,12 @@ type TestKeys struct {
 	// is rather obvious where they come from.
 	//
 	// See https://github.com/ooni/probe/issues/1413.
-	NetworkEvents []archival.NetworkEvent `json:"network_events"`
-	TLSHandshakes []archival.TLSHandshake `json:"tls_handshakes"`
+	NetworkEvents []tracex.NetworkEvent `json:"network_events"`
+	TLSHandshakes []tracex.TLSHandshake `json:"tls_handshakes"`
 
 	// DNS experiment
-	Queries              []archival.DNSQueryEntry `json:"queries"`
-	DNSExperimentFailure *string                  `json:"dns_experiment_failure"`
+	Queries              []tracex.DNSQueryEntry `json:"queries"`
+	DNSExperimentFailure *string                `json:"dns_experiment_failure"`
 	DNSAnalysisResult
 
 	// Control experiment
@@ -48,13 +48,13 @@ type TestKeys struct {
 	Control        ControlResponse `json:"control"`
 
 	// TCP/TLS "connect" experiment
-	TCPConnect          []archival.TCPConnectEntry `json:"tcp_connect"`
-	TCPConnectSuccesses int                        `json:"-"`
-	TCPConnectAttempts  int                        `json:"-"`
+	TCPConnect          []tracex.TCPConnectEntry `json:"tcp_connect"`
+	TCPConnectSuccesses int                      `json:"-"`
+	TCPConnectAttempts  int                      `json:"-"`
 
 	// HTTP experiment
-	Requests              []archival.RequestEntry `json:"requests"`
-	HTTPExperimentFailure *string                 `json:"http_experiment_failure"`
+	Requests              []tracex.RequestEntry `json:"requests"`
+	HTTPExperimentFailure *string               `json:"http_experiment_failure"`
 	HTTPAnalysisResult
 
 	// Top-level analysis
@@ -180,7 +180,7 @@ func (m Measurer) Run(
 		TCPConnect: epnts.Endpoints(),
 	})
 	tk.THRuntime = time.Since(thBegin)
-	tk.ControlFailure = archival.NewFailure(err)
+	tk.ControlFailure = tracex.NewFailure(err)
 	// 4. analyze DNS results
 	if tk.ControlFailure == nil {
 		tk.DNSAnalysisResult = DNSAnalysis(URL, dnsResult, tk.Control)
@@ -240,9 +240,9 @@ func (m Measurer) Run(
 
 // ComputeTCPBlocking will return a copy of the input TCPConnect structure
 // where we set the Blocking value depending on the control results.
-func ComputeTCPBlocking(measurement []archival.TCPConnectEntry,
-	control map[string]ControlTCPConnectResult) (out []archival.TCPConnectEntry) {
-	out = []archival.TCPConnectEntry{}
+func ComputeTCPBlocking(measurement []tracex.TCPConnectEntry,
+	control map[string]ControlTCPConnectResult) (out []tracex.TCPConnectEntry) {
+	out = []tracex.TCPConnectEntry{}
 	for _, me := range measurement {
 		epnt := net.JoinHostPort(me.IP, strconv.Itoa(me.Port))
 		if ce, ok := control[epnt]; ok {

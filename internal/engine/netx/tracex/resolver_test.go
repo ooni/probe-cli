@@ -1,24 +1,24 @@
-package resolver_test
+package tracex
 
 import (
 	"bytes"
 	"context"
 	"errors"
+	"net"
 	"reflect"
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestSaverResolverFailure(t *testing.T) {
 	expected := errors.New("no such host")
-	saver := &trace.Saver{}
-	reso := resolver.SaverResolver{
-		Resolver: resolver.NewFakeResolverWithExplicitError(expected),
+	saver := &Saver{}
+	reso := SaverResolver{
+		Resolver: NewFakeResolverWithExplicitError(expected),
 		Saver:    saver,
 	}
 	addrs, err := reso.LookupHost(context.Background(), "www.google.com")
@@ -63,9 +63,9 @@ func TestSaverResolverFailure(t *testing.T) {
 
 func TestSaverResolverSuccess(t *testing.T) {
 	expected := []string{"8.8.8.8", "8.8.4.4"}
-	saver := &trace.Saver{}
-	reso := resolver.SaverResolver{
-		Resolver: resolver.NewFakeResolverWithResult(expected),
+	saver := &Saver{}
+	reso := SaverResolver{
+		Resolver: NewFakeResolverWithResult(expected),
 		Saver:    saver,
 	}
 	addrs, err := reso.LookupHost(context.Background(), "www.google.com")
@@ -110,8 +110,8 @@ func TestSaverResolverSuccess(t *testing.T) {
 
 func TestSaverDNSTransportFailure(t *testing.T) {
 	expected := errors.New("no such host")
-	saver := &trace.Saver{}
-	txp := resolver.SaverDNSTransport{
+	saver := &Saver{}
+	txp := SaverDNSTransport{
 		DNSTransport: &mocks.DNSTransport{
 			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 				return nil, expected
@@ -173,13 +173,13 @@ func TestSaverDNSTransportFailure(t *testing.T) {
 
 func TestSaverDNSTransportSuccess(t *testing.T) {
 	expected := []byte{0xef, 0xbe, 0xad, 0xde}
-	saver := &trace.Saver{}
+	saver := &Saver{}
 	response := &mocks.DNSResponse{
 		MockBytes: func() []byte {
 			return expected
 		},
 	}
-	txp := resolver.SaverDNSTransport{
+	txp := SaverDNSTransport{
 		DNSTransport: &mocks.DNSTransport{
 			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 				return response, nil
@@ -236,5 +236,52 @@ func TestSaverDNSTransportSuccess(t *testing.T) {
 	}
 	if !ev[1].Time.After(ev[0].Time) {
 		t.Fatal("the saved time is wrong")
+	}
+}
+
+func NewFakeResolverWithExplicitError(err error) model.Resolver {
+	runtimex.PanicIfNil(err, "passed nil error")
+	return &mocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return nil, err
+		},
+		MockNetwork: func() string {
+			return "fake"
+		},
+		MockAddress: func() string {
+			return ""
+		},
+		MockCloseIdleConnections: func() {
+			// nothing
+		},
+		MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+			return nil, errors.New("not implemented")
+		},
+		MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
+			return nil, errors.New("not implemented")
+		},
+	}
+}
+
+func NewFakeResolverWithResult(r []string) model.Resolver {
+	return &mocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return r, nil
+		},
+		MockNetwork: func() string {
+			return "fake"
+		},
+		MockAddress: func() string {
+			return ""
+		},
+		MockCloseIdleConnections: func() {
+			// nothing
+		},
+		MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+			return nil, errors.New("not implemented")
+		},
+		MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
+			return nil, errors.New("not implemented")
+		},
 	}
 }

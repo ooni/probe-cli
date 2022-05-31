@@ -1,23 +1,22 @@
-package resolver
+package tracex
 
 import (
 	"context"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // SaverResolver is a resolver that saves events
 type SaverResolver struct {
 	model.Resolver
-	Saver *trace.Saver
+	Saver *Saver
 }
 
 // LookupHost implements Resolver.LookupHost
 func (r SaverResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	start := time.Now()
-	r.Saver.Write(trace.Event{
+	r.Saver.Write(Event{
 		Address:  r.Resolver.Address(),
 		Hostname: hostname,
 		Name:     "resolve_start",
@@ -26,7 +25,7 @@ func (r SaverResolver) LookupHost(ctx context.Context, hostname string) ([]strin
 	})
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	stop := time.Now()
-	r.Saver.Write(trace.Event{
+	r.Saver.Write(Event{
 		Addresses: addrs,
 		Address:   r.Resolver.Address(),
 		Duration:  stop.Sub(start),
@@ -42,14 +41,14 @@ func (r SaverResolver) LookupHost(ctx context.Context, hostname string) ([]strin
 // SaverDNSTransport is a DNS transport that saves events
 type SaverDNSTransport struct {
 	model.DNSTransport
-	Saver *trace.Saver
+	Saver *Saver
 }
 
 // RoundTrip implements RoundTripper.RoundTrip
 func (txp SaverDNSTransport) RoundTrip(
 	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 	start := time.Now()
-	txp.Saver.Write(trace.Event{
+	txp.Saver.Write(Event{
 		Address:  txp.Address(),
 		DNSQuery: txp.maybeQueryBytes(query),
 		Name:     "dns_round_trip_start",
@@ -58,7 +57,7 @@ func (txp SaverDNSTransport) RoundTrip(
 	})
 	response, err := txp.DNSTransport.RoundTrip(ctx, query)
 	stop := time.Now()
-	txp.Saver.Write(trace.Event{
+	txp.Saver.Write(Event{
 		Address:  txp.Address(),
 		DNSQuery: txp.maybeQueryBytes(query),
 		DNSReply: txp.maybeResponseBytes(response),

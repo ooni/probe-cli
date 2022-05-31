@@ -34,11 +34,11 @@ generic data model used by all experiments.
 
 ```
 
-The `archival` package contains code used to format internal
+The `tracex` package contains code used to format internal
 measurements representations to the OONI data format.
 
 ```Go
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 
 ```
 
@@ -104,7 +104,7 @@ starting the experiment. Therefore, it's consistent with the
 
 ```Go
 	if err := ptl.Start(); err != nil {
-		testkeys.Failure = archival.NewFailure(err)
+		testkeys.Failure = tracex.NewFailure(err)
 		errch <- err
 		return
 	}
@@ -116,7 +116,7 @@ pass specific `TorArgs` that cause `tor` to know about the
 pluggable transport created by `ptl` and `sfdialer`.
 
 ```Go
-	tun, err := tunnel.Start(ctx, &tunnel.Config{
+	tun, _, err := tunnel.Start(ctx, &tunnel.Config{
 		Name:      "tor",
 		Session:   sess,
 		TunnelDir: path.Join(sess.TempDir(), "torsf"),
@@ -130,7 +130,7 @@ pluggable transport created by `ptl` and `sfdialer`.
 ```
 
 In case of error, we convert `err` to a OONI failure using
-the `NewFailure` function of `archival`. This function reduces
+the `NewFailure` function of `tracex`. This function reduces
 Go error strings to the error strings used by OONI. You can
 read the [errors spec](https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md)
 at the [github.com/ooni/spec repo](https://github.com/ooni/spec).
@@ -141,7 +141,7 @@ experiment, but rather a possibly interesting anomaly.
 
 ```Go
 	if err != nil {
-		testkeys.Failure = archival.NewFailure(err)
+		testkeys.Failure = tracex.NewFailure(err)
 		errch <- nil
 		return
 	}

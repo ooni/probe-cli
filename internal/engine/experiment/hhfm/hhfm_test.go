@@ -16,7 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/hhfm"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -554,7 +554,7 @@ func TestTestKeys_FillTampering(t *testing.T) {
 	type fields struct {
 		Agent      string
 		Failure    *string
-		Requests   []archival.RequestEntry
+		Requests   []tracex.RequestEntry
 		SOCKSProxy *string
 		Tampering  hhfm.Tampering
 	}
@@ -689,7 +689,7 @@ func TestNewRequestEntryList(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		wantOut []archival.RequestEntry
+		wantOut []tracex.RequestEntry
 	}{{
 		name: "common case",
 		args: args{
@@ -706,16 +706,16 @@ func TestNewRequestEntryList(t *testing.T) {
 				"User-aGENT":   "foo/1.0",
 			},
 		},
-		wantOut: []archival.RequestEntry{{
-			Request: archival.HTTPRequest{
-				HeadersList: []archival.HTTPHeader{{
+		wantOut: []tracex.RequestEntry{{
+			Request: tracex.HTTPRequest{
+				HeadersList: []tracex.HTTPHeader{{
 					Key:   "ContENt-tYPE",
-					Value: archival.MaybeBinaryValue{Value: "text/plain"},
+					Value: tracex.MaybeBinaryValue{Value: "text/plain"},
 				}, {
 					Key:   "User-aGENT",
-					Value: archival.MaybeBinaryValue{Value: "foo/1.0"},
+					Value: tracex.MaybeBinaryValue{Value: "foo/1.0"},
 				}},
-				Headers: map[string]archival.MaybeBinaryValue{
+				Headers: map[string]tracex.MaybeBinaryValue{
 					"ContENt-tYPE": {Value: "text/plain"},
 					"User-aGENT":   {Value: "foo/1.0"},
 				},
@@ -735,11 +735,11 @@ func TestNewRequestEntryList(t *testing.T) {
 				},
 			},
 		},
-		wantOut: []archival.RequestEntry{{
-			Request: archival.HTTPRequest{
+		wantOut: []tracex.RequestEntry{{
+			Request: tracex.HTTPRequest{
 				Method:      "GeT",
-				Headers:     make(map[string]archival.MaybeBinaryValue),
-				HeadersList: []archival.HTTPHeader{},
+				Headers:     make(map[string]tracex.MaybeBinaryValue),
+				HeadersList: []tracex.HTTPHeader{},
 				URL:         "http://10.0.0.1/",
 			},
 		}},
@@ -762,7 +762,7 @@ func TestNewHTTPResponse(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		wantOut archival.HTTPResponse
+		wantOut tracex.HTTPResponse
 	}{{
 		name: "common case",
 		args: args{
@@ -775,17 +775,17 @@ func TestNewHTTPResponse(t *testing.T) {
 			},
 			data: []byte("deadbeef"),
 		},
-		wantOut: archival.HTTPResponse{
-			Body: archival.MaybeBinaryValue{Value: "deadbeef"},
+		wantOut: tracex.HTTPResponse{
+			Body: tracex.MaybeBinaryValue{Value: "deadbeef"},
 			Code: 200,
-			HeadersList: []archival.HTTPHeader{{
+			HeadersList: []tracex.HTTPHeader{{
 				Key:   "Content-Type",
-				Value: archival.MaybeBinaryValue{Value: "text/plain"},
+				Value: tracex.MaybeBinaryValue{Value: "text/plain"},
 			}, {
 				Key:   "User-Agent",
-				Value: archival.MaybeBinaryValue{Value: "foo/1.0"},
+				Value: tracex.MaybeBinaryValue{Value: "foo/1.0"},
 			}},
-			Headers: map[string]archival.MaybeBinaryValue{
+			Headers: map[string]tracex.MaybeBinaryValue{
 				"Content-Type": {Value: "text/plain"},
 				"User-Agent":   {Value: "foo/1.0"},
 			},
@@ -795,11 +795,11 @@ func TestNewHTTPResponse(t *testing.T) {
 		args: args{
 			resp: &http.Response{StatusCode: 200},
 		},
-		wantOut: archival.HTTPResponse{
-			Body:        archival.MaybeBinaryValue{Value: ""},
+		wantOut: tracex.HTTPResponse{
+			Body:        tracex.MaybeBinaryValue{Value: ""},
 			Code:        200,
-			HeadersList: []archival.HTTPHeader{},
-			Headers:     map[string]archival.MaybeBinaryValue{},
+			HeadersList: []tracex.HTTPHeader{},
+			Headers:     map[string]tracex.MaybeBinaryValue{},
 		},
 	}}
 	for _, tt := range tests {

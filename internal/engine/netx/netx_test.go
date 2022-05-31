@@ -12,10 +12,8 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tlsdialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -120,7 +118,7 @@ func TestNewResolverWithLogging(t *testing.T) {
 }
 
 func TestNewResolverWithSaver(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	r := netx.NewResolver(netx.Config{
 		ResolveSaver: saver,
 	})
@@ -128,7 +126,7 @@ func TestNewResolverWithSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	sr, ok := ir.Resolver.(resolver.SaverResolver)
+	sr, ok := ir.Resolver.(tracex.SaverResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -311,7 +309,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 }
 
 func TestNewTLSDialerWithSaver(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	td := netx.NewTLSDialer(netx.Config{
 		TLSSaver: saver,
 	})
@@ -334,7 +332,7 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	sth, ok := rtd.TLSHandshaker.(tlsdialer.SaverTLSHandshaker)
+	sth, ok := rtd.TLSHandshaker.(tracex.SaverTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
@@ -502,25 +500,25 @@ func TestNewWithLogger(t *testing.T) {
 }
 
 func TestNewWithSaver(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	txp := netx.NewHTTPTransport(netx.Config{
 		HTTPSaver: saver,
 	})
-	stxptxp, ok := txp.(httptransport.SaverTransactionHTTPTransport)
+	stxptxp, ok := txp.(tracex.SaverTransactionHTTPTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
 	if stxptxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	sbtxp, ok := stxptxp.HTTPTransport.(httptransport.SaverBodyHTTPTransport)
+	sbtxp, ok := stxptxp.HTTPTransport.(tracex.SaverBodyHTTPTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
 	if sbtxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	smtxp, ok := sbtxp.HTTPTransport.(httptransport.SaverMetadataHTTPTransport)
+	smtxp, ok := sbtxp.HTTPTransport.(tracex.SaverMetadataHTTPTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -625,7 +623,7 @@ func TestNewDNSClientCloudflareDoH(t *testing.T) {
 }
 
 func TestNewDNSClientCloudflareDoHSaver(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	dnsclient, err := netx.NewDNSClient(
 		netx.Config{ResolveSaver: saver}, "doh://cloudflare")
 	if err != nil {
@@ -635,7 +633,7 @@ func TestNewDNSClientCloudflareDoHSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	txp, ok := r.Transport().(resolver.SaverDNSTransport)
+	txp, ok := r.Transport().(tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -662,7 +660,7 @@ func TestNewDNSClientUDP(t *testing.T) {
 }
 
 func TestNewDNSClientUDPDNSSaver(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	dnsclient, err := netx.NewDNSClient(
 		netx.Config{ResolveSaver: saver}, "udp://8.8.8.8:53")
 	if err != nil {
@@ -672,7 +670,7 @@ func TestNewDNSClientUDPDNSSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	txp, ok := r.Transport().(resolver.SaverDNSTransport)
+	txp, ok := r.Transport().(tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -703,7 +701,7 @@ func TestNewDNSClientTCP(t *testing.T) {
 }
 
 func TestNewDNSClientTCPDNSSaver(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	dnsclient, err := netx.NewDNSClient(
 		netx.Config{ResolveSaver: saver}, "tcp://8.8.8.8:53")
 	if err != nil {
@@ -713,7 +711,7 @@ func TestNewDNSClientTCPDNSSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	txp, ok := r.Transport().(resolver.SaverDNSTransport)
+	txp, ok := r.Transport().(tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -748,7 +746,7 @@ func TestNewDNSClientDoT(t *testing.T) {
 }
 
 func TestNewDNSClientDoTDNSSaver(t *testing.T) {
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	dnsclient, err := netx.NewDNSClient(
 		netx.Config{ResolveSaver: saver}, "dot://8.8.8.8:53")
 	if err != nil {
@@ -758,7 +756,7 @@ func TestNewDNSClientDoTDNSSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	txp, ok := r.Transport().(resolver.SaverDNSTransport)
+	txp, ok := r.Transport().(tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}

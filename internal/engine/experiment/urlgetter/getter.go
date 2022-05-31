@@ -6,8 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
@@ -50,22 +49,22 @@ func (g Getter) Get(ctx context.Context) (TestKeys, error) {
 	if g.Begin.IsZero() {
 		g.Begin = time.Now()
 	}
-	saver := new(trace.Saver)
+	saver := new(tracex.Saver)
 	tk, err := g.get(ctx, saver)
 	// Make sure we have an operation in cases where we fail before
 	// hitting our httptransport that does error wrapping.
 	if err != nil {
 		err = netxlite.NewTopLevelGenericErrWrapper(err)
 	}
-	tk.FailedOperation = archival.NewFailedOperation(err)
-	tk.Failure = archival.NewFailure(err)
+	tk.FailedOperation = tracex.NewFailedOperation(err)
+	tk.Failure = tracex.NewFailure(err)
 	events := saver.Read()
-	tk.Queries = append(tk.Queries, archival.NewDNSQueriesList(g.Begin, events)...)
+	tk.Queries = append(tk.Queries, tracex.NewDNSQueriesList(g.Begin, events)...)
 	tk.NetworkEvents = append(
-		tk.NetworkEvents, archival.NewNetworkEventsList(g.Begin, events)...,
+		tk.NetworkEvents, tracex.NewNetworkEventsList(g.Begin, events)...,
 	)
 	tk.Requests = append(
-		tk.Requests, archival.NewRequestList(g.Begin, events)...,
+		tk.Requests, tracex.NewRequestList(g.Begin, events)...,
 	)
 	if len(tk.Requests) > 0 {
 		// OONI's convention is that the last request appears first
@@ -74,10 +73,10 @@ func (g Getter) Get(ctx context.Context) (TestKeys, error) {
 		tk.HTTPResponseLocations = tk.Requests[0].Response.Locations
 	}
 	tk.TCPConnect = append(
-		tk.TCPConnect, archival.NewTCPConnectList(g.Begin, events)...,
+		tk.TCPConnect, tracex.NewTCPConnectList(g.Begin, events)...,
 	)
 	tk.TLSHandshakes = append(
-		tk.TLSHandshakes, archival.NewTLSHandshakesList(g.Begin, events)...,
+		tk.TLSHandshakes, tracex.NewTLSHandshakesList(g.Begin, events)...,
 	)
 	return tk, err
 }
@@ -90,7 +89,7 @@ func (g Getter) ioutilTempDir(dir, pattern string) (string, error) {
 	return ioutil.TempDir(dir, pattern)
 }
 
-func (g Getter) get(ctx context.Context, saver *trace.Saver) (TestKeys, error) {
+func (g Getter) get(ctx context.Context, saver *tracex.Saver) (TestKeys, error) {
 	tk := TestKeys{
 		Agent:  "redirect",
 		Tunnel: g.Config.Tunnel,

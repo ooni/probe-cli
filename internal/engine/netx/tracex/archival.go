@@ -1,7 +1,4 @@
-// Package archival contains data formats used for archival.
-//
-// See https://github.com/ooni/spec.
-package archival
+package tracex
 
 import (
 	"crypto/x509"
@@ -14,7 +11,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/trace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -47,7 +43,7 @@ var (
 )
 
 // NewTCPConnectList creates a new TCPConnectList
-func NewTCPConnectList(begin time.Time, events []trace.Event) []TCPConnectEntry {
+func NewTCPConnectList(begin time.Time, events []Event) []TCPConnectEntry {
 	var out []TCPConnectEntry
 	for _, event := range events {
 		if event.Name != netxlite.ConnectOperation {
@@ -129,7 +125,7 @@ func addheaders(
 }
 
 // NewRequestList returns the list for "requests"
-func NewRequestList(begin time.Time, events []trace.Event) []RequestEntry {
+func NewRequestList(begin time.Time, events []Event) []RequestEntry {
 	// OONI wants the last request to appear first
 	var out []RequestEntry
 	tmp := newRequestList(begin, events)
@@ -139,7 +135,7 @@ func NewRequestList(begin time.Time, events []trace.Event) []RequestEntry {
 	return out
 }
 
-func newRequestList(begin time.Time, events []trace.Event) []RequestEntry {
+func newRequestList(begin time.Time, events []Event) []RequestEntry {
 	var (
 		out   []RequestEntry
 		entry RequestEntry
@@ -179,7 +175,7 @@ func newRequestList(begin time.Time, events []trace.Event) []RequestEntry {
 type dnsQueryType string
 
 // NewDNSQueriesList returns a list of DNS queries.
-func NewDNSQueriesList(begin time.Time, events []trace.Event) []DNSQueryEntry {
+func NewDNSQueriesList(begin time.Time, events []Event) []DNSQueryEntry {
 	// TODO(bassosimone): add support for CNAME lookups.
 	var out []DNSQueryEntry
 	for _, ev := range events {
@@ -234,7 +230,7 @@ func (qtype dnsQueryType) makeanswerentry(addr string) DNSAnswerEntry {
 	return answer
 }
 
-func (qtype dnsQueryType) makequeryentry(begin time.Time, ev trace.Event) DNSQueryEntry {
+func (qtype dnsQueryType) makequeryentry(begin time.Time, ev Event) DNSQueryEntry {
 	return DNSQueryEntry{
 		Engine:          ev.Proto,
 		Failure:         NewFailure(ev.Err),
@@ -246,7 +242,7 @@ func (qtype dnsQueryType) makequeryentry(begin time.Time, ev trace.Event) DNSQue
 }
 
 // NewNetworkEventsList returns a list of DNS queries.
-func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent {
+func NewNetworkEventsList(begin time.Time, events []Event) []NetworkEvent {
 	var out []NetworkEvent
 	for _, ev := range events {
 		if ev.Name == netxlite.ConnectOperation {
@@ -307,7 +303,7 @@ func NewNetworkEventsList(begin time.Time, events []trace.Event) []NetworkEvent 
 }
 
 // NewTLSHandshakesList creates a new TLSHandshakesList
-func NewTLSHandshakesList(begin time.Time, events []trace.Event) []TLSHandshake {
+func NewTLSHandshakesList(begin time.Time, events []Event) []TLSHandshake {
 	var out []TLSHandshake
 	for _, ev := range events {
 		if !strings.Contains(ev.Name, "_handshake_done") {

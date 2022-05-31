@@ -10,7 +10,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/hirl"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/archival"
+	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -149,7 +149,7 @@ func (FakeMethodSuccessful) Name() string {
 func (meth FakeMethodSuccessful) Run(ctx context.Context, config hirl.MethodConfig) {
 	config.Out <- hirl.MethodResult{
 		Name:      meth.Name(),
-		Received:  archival.MaybeBinaryValue{Value: "antani"},
+		Received:  tracex.MaybeBinaryValue{Value: "antani"},
 		Sent:      "antani",
 		Tampering: false,
 	}
@@ -164,7 +164,7 @@ func (FakeMethodFailure) Name() string {
 func (meth FakeMethodFailure) Run(ctx context.Context, config hirl.MethodConfig) {
 	config.Out <- hirl.MethodResult{
 		Name:      meth.Name(),
-		Received:  archival.MaybeBinaryValue{Value: "antani"},
+		Received:  tracex.MaybeBinaryValue{Value: "antani"},
 		Sent:      "melandri",
 		Tampering: true,
 	}
