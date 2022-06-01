@@ -54,21 +54,10 @@ func New(config *Config, resolver model.Resolver) model.Dialer {
 	if config.Logger != nil {
 		logger = config.Logger
 	}
-	modifiers := []netxlite.DialerWrapper{
-		func(dialer model.Dialer) model.Dialer {
-			if config.DialSaver != nil {
-				dialer = &tracex.SaverDialer{Dialer: dialer, Saver: config.DialSaver}
-			}
-			return dialer
-		},
-		func(dialer model.Dialer) model.Dialer {
-			if config.ReadWriteSaver != nil {
-				dialer = &tracex.SaverConnDialer{Dialer: dialer, Saver: config.ReadWriteSaver}
-			}
-			return dialer
-		},
-	}
-	d := netxlite.NewDialerWithResolver(logger, resolver, modifiers...)
+	d := netxlite.NewDialerWithResolver(
+		logger, resolver, config.DialSaver.NewConnectObserver(),
+		config.ReadWriteSaver.NewReadWriteObserver(),
+	)
 	d = &netxlite.MaybeProxyDialer{ProxyURL: config.ProxyURL, Dialer: d}
 	if config.ContextByteCounting {
 		d = &bytecounter.ContextAwareDialer{Dialer: d}

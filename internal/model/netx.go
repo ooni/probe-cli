@@ -119,6 +119,12 @@ type DNSTransport interface {
 	CloseIdleConnections()
 }
 
+// DialerWrapper is a type that takes in input a Dialer
+// and returns in output a wrapped Dialer.
+type DialerWrapper interface {
+	WrapDialer(d Dialer) Dialer
+}
+
 // SimpleDialer establishes network connections.
 type SimpleDialer interface {
 	// DialContext behaves like net.Dialer.DialContext.
@@ -169,6 +175,12 @@ type HTTPSSvc struct {
 type QUICListener interface {
 	// Listen creates a new listening UDPLikeConn.
 	Listen(addr *net.UDPAddr) (UDPLikeConn, error)
+}
+
+// QUICDialerWrapper is a type that takes in input a QUICDialer
+// and returns in output a wrapped QUICDialer.
+type QUICDialerWrapper interface {
+	WrapQUICDialer(qd QUICDialer) QUICDialer
 }
 
 // QUICDialer dials QUIC sessions.

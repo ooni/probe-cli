@@ -7,7 +7,7 @@ package tracex
 import "sync"
 
 // The Saver saves a trace. The zero value of this type
-// is valid and can be used without initializtion.
+// is valid and can be used without initialization.
 type Saver struct {
 	// ops contains the saved events.
 	ops []Event

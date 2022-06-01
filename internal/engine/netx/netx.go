@@ -132,12 +132,7 @@ func NewQUICDialer(config Config) model.QUICDialer {
 	if config.Logger != nil {
 		logger = config.Logger
 	}
-	extensions := []netxlite.QUICDialerWrapper{
-		func(dialer model.QUICDialer) model.QUICDialer {
-			return config.TLSSaver.WrapQUICDialer(dialer) // robust to nil TLSSaver
-		},
-	}
-	return netxlite.NewQUICDialerWithResolver(ql, logger, config.FullResolver, extensions...)
+	return netxlite.NewQUICDialerWithResolver(ql, logger, config.FullResolver, config.TLSSaver)
 }
 
 // NewTLSDialer creates a new TLSDialer from the specified config

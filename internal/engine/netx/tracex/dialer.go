@@ -22,6 +22,31 @@ type SaverDialer struct {
 	Saver *Saver
 }
 
+// NewConnectObserver returns a DialerWrapper that observes the
+// connect event. This function will return nil, which is a valid
+// DialerWrapper for netxlite.WrapDialer, if Saver is nil.
+func (s *Saver) NewConnectObserver() model.DialerWrapper {
+	if s == nil {
+		return nil // valid DialerWrapper according to netxlite's docs
+	}
+	return &saverDialerWrapper{
+		saver: s,
+	}
+}
+
+type saverDialerWrapper struct {
+	saver *Saver
+}
+
+var _ model.DialerWrapper = &saverDialerWrapper{}
+
+func (w *saverDialerWrapper) WrapDialer(d model.Dialer) model.Dialer {
+	return &SaverDialer{
+		Dialer: d,
+		Saver:  w.saver,
+	}
+}
+
 // DialContext implements Dialer.DialContext
 func (d *SaverDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	start := time.Now()
@@ -50,6 +75,31 @@ type SaverConnDialer struct {
 
 	// Saver saves events
 	Saver *Saver
+}
+
+// NewReadWriteObserver returns a DialerWrapper that observes the
+// I/O events. This function will return nil, which is a valid
+// DialerWrapper for netxlite.WrapDialer, if Saver is nil.
+func (s *Saver) NewReadWriteObserver() model.DialerWrapper {
+	if s == nil {
+		return nil // valid DialerWrapper according to netxlite's docs
+	}
+	return &saverReadWriteWrapper{
+		saver: s,
+	}
+}
+
+type saverReadWriteWrapper struct {
+	saver *Saver
+}
+
+var _ model.DialerWrapper = &saverReadWriteWrapper{}
+
+func (w *saverReadWriteWrapper) WrapDialer(d model.Dialer) model.Dialer {
+	return &SaverConnDialer{
+		Dialer: d,
+		Saver:  w.saver,
+	}
 }
 
 // DialContext implements Dialer.DialContext

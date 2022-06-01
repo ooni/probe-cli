@@ -23,12 +23,7 @@ func TestSaverTLSHandshakerSuccessWithReadWrite(t *testing.T) {
 		Dialer: netxlite.NewDialerWithResolver(
 			model.DiscardLogger,
 			netxlite.NewResolverStdlib(model.DiscardLogger),
-			func(dialer model.Dialer) model.Dialer {
-				return &SaverConnDialer{
-					Dialer: dialer,
-					Saver:  saver,
-				}
-			},
+			saver.NewReadWriteObserver(),
 		),
 		TLSHandshaker: saver.WrapTLSHandshaker(&netxlite.TLSHandshakerConfigurable{}),
 	}
