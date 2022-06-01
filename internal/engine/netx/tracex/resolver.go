@@ -39,25 +39,23 @@ func (s *Saver) WrapResolver(r model.Resolver) model.Resolver {
 // LookupHost implements Resolver.LookupHost
 func (r *SaverResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	start := time.Now()
-	r.Saver.Write(Event{
+	r.Saver.Write(&EventResolveStart{&EventValue{
 		Address:  r.Resolver.Address(),
 		Hostname: hostname,
-		Name:     "resolve_start",
 		Proto:    r.Resolver.Network(),
 		Time:     start,
-	})
+	}})
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	stop := time.Now()
-	r.Saver.Write(Event{
+	r.Saver.Write(&EventResolveDone{&EventValue{
 		Addresses: addrs,
 		Address:   r.Resolver.Address(),
 		Duration:  stop.Sub(start),
 		Err:       err,
 		Hostname:  hostname,
-		Name:      "resolve_done",
 		Proto:     r.Resolver.Network(),
 		Time:      stop,
-	})
+	}})
 	return addrs, err
 }
 
@@ -111,25 +109,23 @@ func (s *Saver) WrapDNSTransport(txp model.DNSTransport) model.DNSTransport {
 func (txp *SaverDNSTransport) RoundTrip(
 	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 	start := time.Now()
-	txp.Saver.Write(Event{
+	txp.Saver.Write(&EventDNSRoundTripStart{&EventValue{
 		Address:  txp.DNSTransport.Address(),
 		DNSQuery: dnsMaybeQueryBytes(query),
-		Name:     "dns_round_trip_start",
 		Proto:    txp.DNSTransport.Network(),
 		Time:     start,
-	})
+	}})
 	response, err := txp.DNSTransport.RoundTrip(ctx, query)
 	stop := time.Now()
-	txp.Saver.Write(Event{
+	txp.Saver.Write(&EventDNSRoundTripDone{&EventValue{
 		Address:  txp.DNSTransport.Address(),
 		DNSQuery: dnsMaybeQueryBytes(query),
 		DNSReply: dnsMaybeResponseBytes(response),
 		Duration: stop.Sub(start),
 		Err:      err,
-		Name:     "dns_round_trip_done",
 		Proto:    txp.DNSTransport.Network(),
 		Time:     stop,
-	})
+	}})
 	return response, err
 }
 

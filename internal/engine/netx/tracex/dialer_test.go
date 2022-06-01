@@ -34,22 +34,22 @@ func TestSaverDialerFailure(t *testing.T) {
 	if len(ev) != 1 {
 		t.Fatal("expected a single event here")
 	}
-	if ev[0].Address != "www.google.com:443" {
+	if ev[0].Value().Address != "www.google.com:443" {
 		t.Fatal("unexpected Address")
 	}
-	if ev[0].Duration <= 0 {
+	if ev[0].Value().Duration <= 0 {
 		t.Fatal("unexpected Duration")
 	}
-	if !errors.Is(ev[0].Err, expected) {
+	if !errors.Is(ev[0].Value().Err, expected) {
 		t.Fatal("unexpected Err")
 	}
-	if ev[0].Name != netxlite.ConnectOperation {
+	if ev[0].Name() != netxlite.ConnectOperation {
 		t.Fatal("unexpected Name")
 	}
-	if ev[0].Proto != "tcp" {
+	if ev[0].Value().Proto != "tcp" {
 		t.Fatal("unexpected Proto")
 	}
-	if !ev[0].Time.Before(time.Now()) {
+	if !ev[0].Value().Time.Before(time.Now()) {
 		t.Fatal("unexpected Time")
 	}
 }
@@ -111,15 +111,15 @@ func TestSaverConnDialerSuccess(t *testing.T) {
 	if len(events) != 3 {
 		t.Fatal("unexpected number of events saved", len(events))
 	}
-	if events[0].Name != "connect" {
+	if events[0].Name() != "connect" {
 		t.Fatal("expected a connect event")
 	}
 	saverCheckConnectEvent(t, &events[0])
-	if events[1].Name != "read" {
+	if events[1].Name() != "read" {
 		t.Fatal("expected a read event")
 	}
 	saverCheckReadEvent(t, &events[1])
-	if events[2].Name != "write" {
+	if events[2].Name() != "write" {
 		t.Fatal("expected a write event")
 	}
 	saverCheckWriteEvent(t, &events[2])

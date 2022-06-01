@@ -41,32 +41,32 @@ func TestSaverMetadataSuccess(t *testing.T) {
 		t.Fatal("expected two events")
 	}
 	//
-	if ev[0].HTTPMethod != "GET" {
+	if ev[0].Value().HTTPMethod != "GET" {
 		t.Fatal("unexpected Method")
 	}
-	if len(ev[0].HTTPHeaders) <= 0 {
+	if len(ev[0].Value().HTTPHeaders) <= 0 {
 		t.Fatal("unexpected Headers")
 	}
-	if ev[0].HTTPURL != "https://www.google.com" {
+	if ev[0].Value().HTTPURL != "https://www.google.com" {
 		t.Fatal("unexpected URL")
 	}
-	if ev[0].Name != "http_request_metadata" {
+	if ev[0].Name() != "http_request_metadata" {
 		t.Fatal("unexpected Name")
 	}
-	if !ev[0].Time.Before(time.Now()) {
+	if !ev[0].Value().Time.Before(time.Now()) {
 		t.Fatal("unexpected Time")
 	}
 	//
-	if ev[1].HTTPStatusCode != 200 {
+	if ev[1].Value().HTTPStatusCode != 200 {
 		t.Fatal("unexpected StatusCode")
 	}
-	if len(ev[1].HTTPHeaders) <= 0 {
+	if len(ev[1].Value().HTTPHeaders) <= 0 {
 		t.Fatal("unexpected Headers")
 	}
-	if ev[1].Name != "http_response_metadata" {
+	if ev[1].Name() != "http_response_metadata" {
 		t.Fatal("unexpected Name")
 	}
-	if !ev[1].Time.After(ev[0].Time) {
+	if !ev[1].Value().Time.After(ev[0].Value().Time) {
 		t.Fatal("unexpected Time")
 	}
 }
@@ -96,19 +96,19 @@ func TestSaverMetadataFailure(t *testing.T) {
 	if len(ev) != 1 {
 		t.Fatal("expected one event")
 	}
-	if ev[0].HTTPMethod != "GET" {
+	if ev[0].Value().HTTPMethod != "GET" {
 		t.Fatal("unexpected Method")
 	}
-	if len(ev[0].HTTPHeaders) <= 0 {
+	if len(ev[0].Value().HTTPHeaders) <= 0 {
 		t.Fatal("unexpected Headers")
 	}
-	if ev[0].HTTPURL != "http://www.google.com" {
+	if ev[0].Value().HTTPURL != "http://www.google.com" {
 		t.Fatal("unexpected URL")
 	}
-	if ev[0].Name != "http_request_metadata" {
+	if ev[0].Name() != "http_request_metadata" {
 		t.Fatal("unexpected Name")
 	}
-	if !ev[0].Time.Before(time.Now()) {
+	if !ev[0].Value().Time.Before(time.Now()) {
 		t.Fatal("unexpected Time")
 	}
 }
@@ -138,20 +138,20 @@ func TestSaverTransactionSuccess(t *testing.T) {
 		t.Fatal("expected two events")
 	}
 	//
-	if ev[0].Name != "http_transaction_start" {
+	if ev[0].Name() != "http_transaction_start" {
 		t.Fatal("unexpected Name")
 	}
-	if !ev[0].Time.Before(time.Now()) {
+	if !ev[0].Value().Time.Before(time.Now()) {
 		t.Fatal("unexpected Time")
 	}
 	//
-	if ev[1].Err != nil {
+	if ev[1].Value().Err != nil {
 		t.Fatal("unexpected Err")
 	}
-	if ev[1].Name != "http_transaction_done" {
+	if ev[1].Name() != "http_transaction_done" {
 		t.Fatal("unexpected Name")
 	}
-	if !ev[1].Time.After(ev[0].Time) {
+	if !ev[1].Value().Time.After(ev[0].Value().Time) {
 		t.Fatal("unexpected Time")
 	}
 }
@@ -180,19 +180,19 @@ func TestSaverTransactionFailure(t *testing.T) {
 	if len(ev) != 2 {
 		t.Fatal("expected two events")
 	}
-	if ev[0].Name != "http_transaction_start" {
+	if ev[0].Name() != "http_transaction_start" {
 		t.Fatal("unexpected Name")
 	}
-	if !ev[0].Time.Before(time.Now()) {
+	if !ev[0].Value().Time.Before(time.Now()) {
 		t.Fatal("unexpected Time")
 	}
-	if ev[1].Name != "http_transaction_done" {
+	if ev[1].Name() != "http_transaction_done" {
 		t.Fatal("unexpected Name")
 	}
-	if !errors.Is(ev[1].Err, expected) {
+	if !errors.Is(ev[1].Value().Err, expected) {
 		t.Fatal("unexpected Err")
 	}
-	if !ev[1].Time.After(ev[0].Time) {
+	if !ev[1].Value().Time.After(ev[0].Value().Time) {
 		t.Fatal("unexpected Time")
 	}
 }
@@ -242,28 +242,28 @@ func TestSaverBodySuccess(t *testing.T) {
 	if len(ev) != 2 {
 		t.Fatal("unexpected number of events")
 	}
-	if string(ev[0].Data) != "dead" {
+	if string(ev[0].Value().Data) != "dead" {
 		t.Fatal("invalid Data")
 	}
-	if ev[0].DataIsTruncated != true {
+	if ev[0].Value().DataIsTruncated != true {
 		t.Fatal("invalid DataIsTruncated")
 	}
-	if ev[0].Name != "http_request_body_snapshot" {
+	if ev[0].Name() != "http_request_body_snapshot" {
 		t.Fatal("invalid Name")
 	}
-	if ev[0].Time.After(time.Now()) {
+	if ev[0].Value().Time.After(time.Now()) {
 		t.Fatal("invalid Time")
 	}
-	if string(ev[1].Data) != "abad" {
+	if string(ev[1].Value().Data) != "abad" {
 		t.Fatal("invalid Data")
 	}
-	if ev[1].DataIsTruncated != true {
+	if ev[1].Value().DataIsTruncated != true {
 		t.Fatal("invalid DataIsTruncated")
 	}
-	if ev[1].Name != "http_response_body_snapshot" {
+	if ev[1].Name() != "http_response_body_snapshot" {
 		t.Fatal("invalid Name")
 	}
-	if ev[1].Time.Before(ev[0].Time) {
+	if ev[1].Value().Time.Before(ev[0].Value().Time) {
 		t.Fatal("invalid Time")
 	}
 }
@@ -324,16 +324,16 @@ func TestSaverBodyRoundTripError(t *testing.T) {
 	if len(ev) != 1 {
 		t.Fatal("unexpected number of events")
 	}
-	if string(ev[0].Data) != "dead" {
+	if string(ev[0].Value().Data) != "dead" {
 		t.Fatal("invalid Data")
 	}
-	if ev[0].DataIsTruncated != true {
+	if ev[0].Value().DataIsTruncated != true {
 		t.Fatal("invalid DataIsTruncated")
 	}
-	if ev[0].Name != "http_request_body_snapshot" {
+	if ev[0].Name() != "http_request_body_snapshot" {
 		t.Fatal("invalid Name")
 	}
-	if ev[0].Time.After(time.Now()) {
+	if ev[0].Value().Time.After(time.Now()) {
 		t.Fatal("invalid Time")
 	}
 }
@@ -371,16 +371,16 @@ func TestSaverBodyResponseReadError(t *testing.T) {
 	if len(ev) != 1 {
 		t.Fatal("unexpected number of events")
 	}
-	if string(ev[0].Data) != "dead" {
+	if string(ev[0].Value().Data) != "dead" {
 		t.Fatal("invalid Data")
 	}
-	if ev[0].DataIsTruncated != true {
+	if ev[0].Value().DataIsTruncated != true {
 		t.Fatal("invalid DataIsTruncated")
 	}
-	if ev[0].Name != "http_request_body_snapshot" {
+	if ev[0].Name() != "http_request_body_snapshot" {
 		t.Fatal("invalid Name")
 	}
-	if ev[0].Time.After(time.Now()) {
+	if ev[0].Value().Time.After(time.Now()) {
 		t.Fatal("invalid Time")
 	}
 }

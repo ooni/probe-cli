@@ -45,10 +45,11 @@ var (
 // NewTCPConnectList creates a new TCPConnectList
 func NewTCPConnectList(begin time.Time, events []Event) []TCPConnectEntry {
 	var out []TCPConnectEntry
-	for _, event := range events {
-		if event.Name != netxlite.ConnectOperation {
+	for _, wrapper := range events {
+		if _, ok := wrapper.(*EventConnectOperation); !ok {
 			continue
 		}
+		event := wrapper.Value()
 		if event.Proto != "tcp" {
 			continue
 		}
@@ -140,31 +141,32 @@ func newRequestList(begin time.Time, events []Event) []RequestEntry {
 		out   []RequestEntry
 		entry RequestEntry
 	)
-	for _, ev := range events {
-		switch ev.Name {
-		case "http_transaction_start":
+	for _, wrapper := range events {
+		ev := wrapper.Value()
+		switch wrapper.(type) {
+		case *EventHTTPTransactionStart:
 			entry = RequestEntry{}
 			entry.T = ev.Time.Sub(begin).Seconds()
-		case "http_request_body_snapshot":
+		case *EventHTTPRequestBodySnapshot:
 			entry.Request.Body.Value = string(ev.Data)
 			entry.Request.BodyIsTruncated = ev.DataIsTruncated
-		case "http_request_metadata":
+		case *EventHTTPRequestMetadata:
 			entry.Request.Headers = make(map[string]MaybeBinaryValue)
 			httpAddHeaders(
 				ev.HTTPHeaders, &entry.Request.HeadersList, &entry.Request.Headers)
 			entry.Request.Method = ev.HTTPMethod
 			entry.Request.URL = ev.HTTPURL
 			entry.Request.Transport = ev.Transport
-		case "http_response_metadata":
+		case *EventHTTPResponseMetadata:
 			entry.Response.Headers = make(map[string]MaybeBinaryValue)
 			httpAddHeaders(
 				ev.HTTPHeaders, &entry.Response.HeadersList, &entry.Response.Headers)
 			entry.Response.Code = int64(ev.HTTPStatusCode)
 			entry.Response.Locations = ev.HTTPHeaders.Values("Location")
-		case "http_response_body_snapshot":
+		case *EventHTTPResponseBodySnapshot:
 			entry.Response.Body.Value = string(ev.Data)
 			entry.Response.BodyIsTruncated = ev.DataIsTruncated
-		case "http_transaction_done":
+		case *EventHTTPTransactionDone:
 			entry.Failure = NewFailure(ev.Err)
 			out = append(out, entry)
 		}
@@ -178,10 +180,11 @@ type dnsQueryType string
 func NewDNSQueriesList(begin time.Time, events []Event) []DNSQueryEntry {
 	// TODO(bassosimone): add support for CNAME lookups.
 	var out []DNSQueryEntry
-	for _, ev := range events {
-		if ev.Name != "resolve_done" {
+	for _, wrapper := range events {
+		if _, ok := wrapper.(*EventResolveDone); !ok {
 			continue
 		}
+		ev := wrapper.Value()
 		for _, qtype := range []dnsQueryType{"A", "AAAA"} {
 			entry := qtype.makeQueryEntry(begin, ev)
 			for _, addr := range ev.Addresses {
@@ -230,7 +233,7 @@ func (qtype dnsQueryType) makeAnswerEntry(addr string) DNSAnswerEntry {
 	return answer
 }
 
-func (qtype dnsQueryType) makeQueryEntry(begin time.Time, ev Event) DNSQueryEntry {
+func (qtype dnsQueryType) makeQueryEntry(begin time.Time, ev *EventValue) DNSQueryEntry {
 	return DNSQueryEntry{
 		Engine:          ev.Proto,
 		Failure:         NewFailure(ev.Err),
@@ -244,60 +247,54 @@ func (qtype dnsQueryType) makeQueryEntry(begin time.Time, ev Event) DNSQueryEntr
 // NewNetworkEventsList returns a list of DNS queries.
 func NewNetworkEventsList(begin time.Time, events []Event) []NetworkEvent {
 	var out []NetworkEvent
-	for _, ev := range events {
-		if ev.Name == netxlite.ConnectOperation {
+	for _, wrapper := range events {
+		ev := wrapper.Value()
+		switch wrapper.(type) {
+		case *EventConnectOperation:
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
 				Failure:   NewFailure(ev.Err),
-				Operation: ev.Name,
+				Operation: wrapper.Name(),
 				Proto:     ev.Proto,
 				T:         ev.Time.Sub(begin).Seconds(),
 			})
-			continue
-		}
-		if ev.Name == netxlite.ReadOperation {
+		case *EventReadOperation:
 			out = append(out, NetworkEvent{
 				Failure:   NewFailure(ev.Err),
-				Operation: ev.Name,
+				Operation: wrapper.Name(),
 				NumBytes:  int64(ev.NumBytes),
 				T:         ev.Time.Sub(begin).Seconds(),
 			})
-			continue
-		}
-		if ev.Name == netxlite.WriteOperation {
+		case *EventWriteOperation:
 			out = append(out, NetworkEvent{
 				Failure:   NewFailure(ev.Err),
-				Operation: ev.Name,
+				Operation: wrapper.Name(),
 				NumBytes:  int64(ev.NumBytes),
 				T:         ev.Time.Sub(begin).Seconds(),
 			})
-			continue
-		}
-		if ev.Name == netxlite.ReadFromOperation {
+		case *EventReadFromOperation:
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
 				Failure:   NewFailure(ev.Err),
-				Operation: ev.Name,
+				Operation: wrapper.Name(),
 				NumBytes:  int64(ev.NumBytes),
 				T:         ev.Time.Sub(begin).Seconds(),
 			})
-			continue
-		}
-		if ev.Name == netxlite.WriteToOperation {
+		case *EventWriteToOperation:
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
 				Failure:   NewFailure(ev.Err),
-				Operation: ev.Name,
+				Operation: wrapper.Name(),
 				NumBytes:  int64(ev.NumBytes),
 				T:         ev.Time.Sub(begin).Seconds(),
 			})
-			continue
+		default:
+			out = append(out, NetworkEvent{
+				Failure:   NewFailure(ev.Err),
+				Operation: wrapper.Name(),
+				T:         ev.Time.Sub(begin).Seconds(),
+			})
 		}
-		out = append(out, NetworkEvent{
-			Failure:   NewFailure(ev.Err),
-			Operation: ev.Name,
-			T:         ev.Time.Sub(begin).Seconds(),
-		})
 	}
 	return out
 }
@@ -305,10 +302,13 @@ func NewNetworkEventsList(begin time.Time, events []Event) []NetworkEvent {
 // NewTLSHandshakesList creates a new TLSHandshakesList
 func NewTLSHandshakesList(begin time.Time, events []Event) []TLSHandshake {
 	var out []TLSHandshake
-	for _, ev := range events {
-		if !strings.Contains(ev.Name, "_handshake_done") {
-			continue
+	for _, wrapper := range events {
+		switch wrapper.(type) {
+		case *EventQUICHandshakeDone, *EventTLSHandshakeDone: // ok
+		default:
+			continue // not interested
 		}
+		ev := wrapper.Value()
 		out = append(out, TLSHandshake{
 			Address:            ev.Address,
 			CipherSuite:        ev.TLSCipherSuite,

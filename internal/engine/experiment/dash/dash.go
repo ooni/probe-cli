@@ -171,8 +171,8 @@ func (r runner) measure(
 		// of the latest connect time. We should have one sample in most
 		// cases, because the connection should be persistent.
 		for _, ev := range r.saver.Read() {
-			if ev.Name == netxlite.ConnectOperation {
-				connectTime = ev.Duration.Seconds()
+			if _, ok := ev.(*tracex.EventConnectOperation); ok {
+				connectTime = ev.Value().Duration.Seconds()
 			}
 		}
 		current.ConnectTime = connectTime

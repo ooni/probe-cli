@@ -54,34 +54,34 @@ func TestHandshakeSaverSuccess(t *testing.T) {
 	if len(ev) != 2 {
 		t.Fatal("unexpected number of events")
 	}
-	if ev[0].Name != "quic_handshake_start" {
+	if ev[0].Name() != "quic_handshake_start" {
 		t.Fatal("unexpected Name")
 	}
-	if ev[0].TLSServerName != quictesting.Domain {
+	if ev[0].Value().TLSServerName != quictesting.Domain {
 		t.Fatal("unexpected TLSServerName")
 	}
-	if !reflect.DeepEqual(ev[0].TLSNextProtos, nextprotos) {
+	if !reflect.DeepEqual(ev[0].Value().TLSNextProtos, nextprotos) {
 		t.Fatal("unexpected TLSNextProtos")
 	}
-	if ev[0].Time.After(time.Now()) {
+	if ev[0].Value().Time.After(time.Now()) {
 		t.Fatal("unexpected Time")
 	}
-	if ev[1].Duration <= 0 {
+	if ev[1].Value().Duration <= 0 {
 		t.Fatal("unexpected Duration")
 	}
-	if ev[1].Err != nil {
-		t.Fatal("unexpected Err", ev[1].Err)
+	if ev[1].Value().Err != nil {
+		t.Fatal("unexpected Err", ev[1].Value().Err)
 	}
-	if ev[1].Name != "quic_handshake_done" {
+	if ev[1].Name() != "quic_handshake_done" {
 		t.Fatal("unexpected Name")
 	}
-	if !reflect.DeepEqual(ev[1].TLSNextProtos, nextprotos) {
+	if !reflect.DeepEqual(ev[1].Value().TLSNextProtos, nextprotos) {
 		t.Fatal("unexpected TLSNextProtos")
 	}
-	if ev[1].TLSServerName != quictesting.Domain {
+	if ev[1].Value().TLSServerName != quictesting.Domain {
 		t.Fatal("unexpected TLSServerName")
 	}
-	if ev[1].Time.Before(ev[0].Time) {
+	if ev[1].Value().Time.Before(ev[0].Value().Time) {
 		t.Fatal("unexpected Time")
 	}
 }
@@ -106,14 +106,14 @@ func TestHandshakeSaverHostNameError(t *testing.T) {
 		t.Fatal("expected nil sess here")
 	}
 	for _, ev := range saver.Read() {
-		if ev.Name != "quic_handshake_done" {
+		if ev.Name() != "quic_handshake_done" {
 			continue
 		}
-		if ev.NoTLSVerify == true {
+		if ev.Value().NoTLSVerify == true {
 			t.Fatal("expected NoTLSVerify to be false")
 		}
-		if !strings.HasSuffix(ev.Err.Error(), "tls: handshake failure") {
-			t.Fatal("unexpected error", ev.Err)
+		if !strings.HasSuffix(ev.Value().Err.Error(), "tls: handshake failure") {
+			t.Fatal("unexpected error", ev.Value().Err)
 		}
 	}
 }
@@ -160,25 +160,25 @@ func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
 	}
 	last := len(ev) - 1
 	for idx := 1; idx < last; idx++ {
-		if ev[idx].Data == nil {
+		if ev[idx].Value().Data == nil {
 			t.Fatal("unexpected Data")
 		}
-		if ev[idx].Duration <= 0 {
+		if ev[idx].Value().Duration <= 0 {
 			t.Fatal("unexpected Duration")
 		}
-		if ev[idx].Err != nil {
+		if ev[idx].Value().Err != nil {
 			t.Fatal("unexpected Err")
 		}
-		if ev[idx].NumBytes <= 0 {
+		if ev[idx].Value().NumBytes <= 0 {
 			t.Fatal("unexpected NumBytes")
 		}
-		switch ev[idx].Name {
+		switch ev[idx].Name() {
 		case netxlite.ReadFromOperation, netxlite.WriteToOperation:
 		default:
 			t.Fatal("unexpected Name")
 		}
-		if ev[idx].Time.Before(ev[idx-1].Time) {
-			t.Fatal("unexpected Time", ev[idx].Time, ev[idx-1].Time)
+		if ev[idx].Value().Time.Before(ev[idx-1].Value().Time) {
+			t.Fatal("unexpected Time", ev[idx].Value().Time, ev[idx-1].Value().Time)
 		}
 	}
 }

@@ -12,7 +12,7 @@ func TestSaver(t *testing.T) {
 	wg.Add(parallel)
 	for idx := 0; idx < parallel; idx++ {
 		go func() {
-			saver.Write(Event{})
+			saver.Write(&EventReadFromOperation{&EventValue{}})
 			wg.Done()
 		}()
 	}
