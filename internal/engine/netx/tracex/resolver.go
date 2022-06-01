@@ -12,8 +12,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// SaverResolver is a resolver that saves events.
-type SaverResolver struct {
+// ResolverSaver is a resolver that saves events.
+type ResolverSaver struct {
 	// Resolver is the underlying resolver.
 	Resolver model.Resolver
 
@@ -30,14 +30,14 @@ func (s *Saver) WrapResolver(r model.Resolver) model.Resolver {
 	if s == nil {
 		return r
 	}
-	return &SaverResolver{
+	return &ResolverSaver{
 		Resolver: r,
 		Saver:    s,
 	}
 }
 
 // LookupHost implements Resolver.LookupHost
-func (r *SaverResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+func (r *ResolverSaver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	start := time.Now()
 	r.Saver.Write(&EventResolveStart{&EventValue{
 		Address:  r.Resolver.Address(),
@@ -59,30 +59,30 @@ func (r *SaverResolver) LookupHost(ctx context.Context, hostname string) ([]stri
 	return addrs, err
 }
 
-func (r *SaverResolver) Network() string {
+func (r *ResolverSaver) Network() string {
 	return r.Resolver.Network()
 }
 
-func (r *SaverResolver) Address() string {
+func (r *ResolverSaver) Address() string {
 	return r.Resolver.Address()
 }
 
-func (r *SaverResolver) CloseIdleConnections() {
+func (r *ResolverSaver) CloseIdleConnections() {
 	r.Resolver.CloseIdleConnections()
 }
 
-func (r *SaverResolver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+func (r *ResolverSaver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	// TODO(bassosimone): we should probably implement this method
 	return r.Resolver.LookupHTTPS(ctx, domain)
 }
 
-func (r *SaverResolver) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
+func (r *ResolverSaver) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
 	// TODO(bassosimone): we should probably implement this method
 	return r.Resolver.LookupNS(ctx, domain)
 }
 
-// SaverDNSTransport is a DNS transport that saves events.
-type SaverDNSTransport struct {
+// DNSTransportSaver is a DNS transport that saves events.
+type DNSTransportSaver struct {
 	// DNSTransport is the underlying DNS transport.
 	DNSTransport model.DNSTransport
 
@@ -99,14 +99,14 @@ func (s *Saver) WrapDNSTransport(txp model.DNSTransport) model.DNSTransport {
 	if s == nil {
 		return txp
 	}
-	return &SaverDNSTransport{
+	return &DNSTransportSaver{
 		DNSTransport: txp,
 		Saver:        s,
 	}
 }
 
 // RoundTrip implements RoundTripper.RoundTrip
-func (txp *SaverDNSTransport) RoundTrip(
+func (txp *DNSTransportSaver) RoundTrip(
 	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 	start := time.Now()
 	txp.Saver.Write(&EventDNSRoundTripStart{&EventValue{
@@ -129,19 +129,19 @@ func (txp *SaverDNSTransport) RoundTrip(
 	return response, err
 }
 
-func (txp *SaverDNSTransport) Network() string {
+func (txp *DNSTransportSaver) Network() string {
 	return txp.DNSTransport.Network()
 }
 
-func (txp *SaverDNSTransport) Address() string {
+func (txp *DNSTransportSaver) Address() string {
 	return txp.DNSTransport.Address()
 }
 
-func (txp *SaverDNSTransport) CloseIdleConnections() {
+func (txp *DNSTransportSaver) CloseIdleConnections() {
 	txp.DNSTransport.CloseIdleConnections()
 }
 
-func (txp *SaverDNSTransport) RequiresPadding() bool {
+func (txp *DNSTransportSaver) RequiresPadding() bool {
 	return txp.DNSTransport.RequiresPadding()
 }
 
@@ -157,5 +157,5 @@ func dnsMaybeResponseBytes(response model.DNSResponse) []byte {
 	return response.Bytes()
 }
 
-var _ model.Resolver = &SaverResolver{}
-var _ model.DNSTransport = &SaverDNSTransport{}
+var _ model.Resolver = &ResolverSaver{}
+var _ model.DNSTransport = &DNSTransportSaver{}

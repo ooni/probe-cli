@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"reflect"
 	"testing"
 	"time"
 
@@ -15,42 +14,44 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-func TestDNSQueryIPOfType(t *testing.T) {
-	type expectation struct {
-		qtype  dnsQueryType
-		ip     string
-		output bool
-	}
-	var expectations = []expectation{{
-		qtype:  "A",
-		ip:     "8.8.8.8",
-		output: true,
-	}, {
-		qtype:  "A",
-		ip:     "2a00:1450:4002:801::2004",
-		output: false,
-	}, {
-		qtype:  "AAAA",
-		ip:     "8.8.8.8",
-		output: false,
-	}, {
-		qtype:  "AAAA",
-		ip:     "2a00:1450:4002:801::2004",
-		output: true,
-	}, {
-		qtype:  "ANTANI",
-		ip:     "2a00:1450:4002:801::2004",
-		output: false,
-	}, {
-		qtype:  "ANTANI",
-		ip:     "8.8.8.8",
-		output: false,
-	}}
-	for _, exp := range expectations {
-		if exp.qtype.ipOfType(exp.ip) != exp.output {
-			t.Fatalf("failure for %+v", exp)
+func TestDNSQueryType(t *testing.T) {
+	t.Run("ipOfType", func(t *testing.T) {
+		type expectation struct {
+			qtype  dnsQueryType
+			ip     string
+			output bool
 		}
-	}
+		var expectations = []expectation{{
+			qtype:  "A",
+			ip:     "8.8.8.8",
+			output: true,
+		}, {
+			qtype:  "A",
+			ip:     "2a00:1450:4002:801::2004",
+			output: false,
+		}, {
+			qtype:  "AAAA",
+			ip:     "8.8.8.8",
+			output: false,
+		}, {
+			qtype:  "AAAA",
+			ip:     "2a00:1450:4002:801::2004",
+			output: true,
+		}, {
+			qtype:  "ANTANI",
+			ip:     "2a00:1450:4002:801::2004",
+			output: false,
+		}, {
+			qtype:  "ANTANI",
+			ip:     "8.8.8.8",
+			output: false,
+		}}
+		for _, exp := range expectations {
+			if exp.qtype.ipOfType(exp.ip) != exp.output {
+				t.Fatalf("failure for %+v", exp)
+			}
+		}
+	})
 }
 
 func TestNewTCPConnectList(t *testing.T) {
@@ -74,7 +75,7 @@ func TestNewTCPConnectList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
-			events: []Event{&EventResolveDone{&EventValue{
+			events: []Event{&EventResolveDone{&EventValue{ // skipped because not relevant
 				Addresses: []string{"8.8.8.8", "8.8.4.4"},
 				Hostname:  "dns.google.com",
 				Time:      begin.Add(100 * time.Millisecond),
@@ -86,7 +87,7 @@ func TestNewTCPConnectList(t *testing.T) {
 			}}, &EventConnectOperation{&EventValue{
 				Address:  "8.8.8.8:853",
 				Duration: 55 * time.Millisecond,
-				Proto:    "udp",
+				Proto:    "udp", // this one should be skipped because it's UDP
 				Time:     begin.Add(130 * time.Millisecond),
 			}}, &EventConnectOperation{&EventValue{
 				Address:  "8.8.4.4:53",
@@ -115,8 +116,9 @@ func TestNewTCPConnectList(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewTCPConnectList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
-				t.Error(cmp.Diff(got, tt.want))
+			got := NewTCPConnectList(tt.args.begin, tt.args.events)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	}
@@ -143,6 +145,7 @@ func TestNewRequestList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
+			// Two round trips so we can test the sorting expected by OONI
 			events: []Event{&EventHTTPTransactionDone{&EventValue{
 				HTTPRequestHeaders: http.Header{
 					"User-Agent": []string{"miniooni/0.1.0-dev"},
@@ -286,8 +289,9 @@ func TestNewRequestList(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewRequestList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
-				t.Error(cmp.Diff(tt.want, got))
+			got := NewRequestList(tt.args.begin, tt.args.events)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	}
@@ -320,12 +324,12 @@ func TestNewDNSQueriesList(t *testing.T) {
 				Hostname:  "dns.google.com",
 				Proto:     "dot",
 				Time:      begin.Add(100 * time.Millisecond),
-			}}, &EventConnectOperation{&EventValue{
+			}}, &EventConnectOperation{&EventValue{ // skipped because not relevant
 				Address:  "8.8.8.8:853",
 				Duration: 30 * time.Millisecond,
 				Proto:    "tcp",
 				Time:     begin.Add(130 * time.Millisecond),
-			}}, &EventConnectOperation{&EventValue{
+			}}, &EventConnectOperation{&EventValue{ // skipped because not relevant
 				Address:  "8.8.4.4:53",
 				Duration: 50 * time.Millisecond,
 				Err:      io.EOF,
@@ -452,6 +456,10 @@ func TestNewNetworkEventsList(t *testing.T) {
 				Err:      websocket.ErrBadHandshake,
 				NumBytes: 4114,
 				Time:     begin.Add(14 * time.Millisecond),
+			}}, &EventResolveStart{&EventValue{
+				// We expect this event to be logged event though it's not a typical I/O
+				// event (it seems these extra events are useful for debugging)
+				Time: begin.Add(15 * time.Millisecond),
 			}}},
 		},
 		want: []NetworkEvent{{
@@ -482,12 +490,16 @@ func TestNewNetworkEventsList(t *testing.T) {
 			NumBytes:  4114,
 			Operation: netxlite.WriteToOperation,
 			T:         0.014,
+		}, {
+			Operation: "resolve_start",
+			T:         0.015,
 		}},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewNetworkEventsList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
-				t.Error(cmp.Diff(got, tt.want))
+			got := NewNetworkEventsList(tt.args.begin, tt.args.events)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	}
@@ -511,13 +523,14 @@ func TestNewTLSHandshakesList(t *testing.T) {
 		},
 		want: nil,
 	}, {
-		name: "realistic run",
+		name: "realistic run with TLS",
 		args: args{
 			begin: begin,
 			events: []Event{&EventTLSHandshakeDone{&EventValue{
 				Address:            "131.252.210.176:443",
 				Err:                io.EOF,
 				NoTLSVerify:        false,
+				Proto:              "tcp",
 				TLSCipherSuite:     "SUITE",
 				TLSNegotiatedProto: "h2",
 				TLSPeerCerts: []*x509.Certificate{{
@@ -545,11 +558,57 @@ func TestNewTLSHandshakesList(t *testing.T) {
 			T:          0.055,
 			TLSVersion: "TLSv1.3",
 		}},
+	}, {
+		name: "realistic run with QUIC",
+		args: args{
+			begin: begin,
+			events: []Event{&EventQUICHandshakeDone{&EventValue{
+				Address:            "131.252.210.176:443",
+				Err:                io.EOF,
+				NoTLSVerify:        false,
+				Proto:              "quic",
+				TLSCipherSuite:     "SUITE",
+				TLSNegotiatedProto: "h3",
+				TLSPeerCerts: []*x509.Certificate{{
+					Raw: []byte("deadbeef"),
+				}, {
+					Raw: []byte("abad1dea"),
+				}},
+				TLSServerName: "x.org",
+				TLSVersion:    "TLSv1.3",
+				Time:          begin.Add(55 * time.Millisecond),
+			}}},
+		},
+		want: []TLSHandshake{{
+			Address:            "131.252.210.176:443",
+			CipherSuite:        "SUITE",
+			Failure:            NewFailure(io.EOF),
+			NegotiatedProtocol: "h3",
+			NoTLSVerify:        false,
+			PeerCertificates: []MaybeBinaryValue{{
+				Value: "deadbeef",
+			}, {
+				Value: "abad1dea",
+			}},
+			ServerName: "x.org",
+			T:          0.055,
+			TLSVersion: "TLSv1.3",
+		}},
+	}, {
+		name: "realistic run with no suitable events",
+		args: args{
+			begin: begin,
+			events: []Event{&EventResolveStart{&EventValue{
+				Time: begin.Add(55 * time.Millisecond),
+			}}},
+		},
+		want: nil,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewTLSHandshakesList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
-				t.Error(cmp.Diff(got, tt.want))
+			got := NewTLSHandshakesList(tt.args.begin, tt.args.events)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	}

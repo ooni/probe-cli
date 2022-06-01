@@ -1,5 +1,9 @@
 package tracex
 
+//
+// All the possible events
+//
+
 import (
 	"crypto/x509"
 	"net/http"

@@ -15,8 +15,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// QUICHandshakeSaver saves events occurring during the QUIC handshake.
-type QUICHandshakeSaver struct {
+// QUICDialerSaver saves events occurring during the QUIC handshake.
+type QUICDialerSaver struct {
 	// QUICDialer is the wrapped dialer
 	QUICDialer model.QUICDialer
 
@@ -33,14 +33,14 @@ func (s *Saver) WrapQUICDialer(qd model.QUICDialer) model.QUICDialer {
 	if s == nil {
 		return qd
 	}
-	return &QUICHandshakeSaver{
+	return &QUICDialerSaver{
 		QUICDialer: qd,
 		Saver:      s,
 	}
 }
 
 // DialContext implements QUICDialer.DialContext
-func (h *QUICHandshakeSaver) DialContext(ctx context.Context, network string,
+func (h *QUICDialerSaver) DialContext(ctx context.Context, network string,
 	host string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
 	start := time.Now()
 	// TODO(bassosimone): in the future we probably want to also save
@@ -58,9 +58,11 @@ func (h *QUICHandshakeSaver) DialContext(ctx context.Context, network string,
 	if err != nil {
 		// TODO(bassosimone): here we should save the peer certs
 		h.Saver.Write(&EventQUICHandshakeDone{&EventValue{
+			Address:       host,
 			Duration:      stop.Sub(start),
 			Err:           err,
 			NoTLSVerify:   tlsCfg.InsecureSkipVerify,
+			Proto:         network,
 			TLSNextProtos: tlsCfg.NextProtos,
 			TLSServerName: tlsCfg.ServerName,
 			Time:          stop,
@@ -69,8 +71,10 @@ func (h *QUICHandshakeSaver) DialContext(ctx context.Context, network string,
 	}
 	state := quicConnectionState(sess)
 	h.Saver.Write(&EventQUICHandshakeDone{&EventValue{
+		Address:            host,
 		Duration:           stop.Sub(start),
 		NoTLSVerify:        tlsCfg.InsecureSkipVerify,
+		Proto:              network,
 		TLSCipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		TLSNegotiatedProto: state.NegotiatedProtocol,
 		TLSNextProtos:      tlsCfg.NextProtos,
@@ -82,7 +86,7 @@ func (h *QUICHandshakeSaver) DialContext(ctx context.Context, network string,
 	return sess, nil
 }
 
-func (h *QUICHandshakeSaver) CloseIdleConnections() {
+func (h *QUICDialerSaver) CloseIdleConnections() {
 	h.QUICDialer.CloseIdleConnections()
 }
 
@@ -121,15 +125,15 @@ func (qls *QUICListenerSaver) Listen(addr *net.UDPAddr) (model.UDPLikeConn, erro
 	if err != nil {
 		return nil, err
 	}
-	pconn = &udpLikeConnSaver{
+	pconn = &quicPacketConnWrapper{
 		UDPLikeConn: pconn,
 		saver:       qls.Saver,
 	}
 	return pconn, nil
 }
 
-// udpLikeConnSaver saves I/O events
-type udpLikeConnSaver struct {
+// quicPacketConnWrapper saves I/O events
+type quicPacketConnWrapper struct {
 	// UDPLikeConn is the wrapped underlying conn
 	model.UDPLikeConn
 
@@ -137,7 +141,7 @@ type udpLikeConnSaver struct {
 	saver *Saver
 }
 
-func (c *udpLikeConnSaver) WriteTo(p []byte, addr net.Addr) (int, error) {
+func (c *quicPacketConnWrapper) WriteTo(p []byte, addr net.Addr) (int, error) {
 	start := time.Now()
 	count, err := c.UDPLikeConn.WriteTo(p, addr)
 	stop := time.Now()
@@ -152,7 +156,7 @@ func (c *udpLikeConnSaver) WriteTo(p []byte, addr net.Addr) (int, error) {
 	return count, err
 }
 
-func (c *udpLikeConnSaver) ReadFrom(b []byte) (int, net.Addr, error) {
+func (c *quicPacketConnWrapper) ReadFrom(b []byte) (int, net.Addr, error) {
 	start := time.Now()
 	n, addr, err := c.UDPLikeConn.ReadFrom(b)
 	stop := time.Now()
@@ -171,13 +175,13 @@ func (c *udpLikeConnSaver) ReadFrom(b []byte) (int, net.Addr, error) {
 	return n, addr, err
 }
 
-func (c *udpLikeConnSaver) safeAddrString(addr net.Addr) (out string) {
+func (c *quicPacketConnWrapper) safeAddrString(addr net.Addr) (out string) {
 	if addr != nil {
 		out = addr.String()
 	}
 	return
 }
 
-var _ model.QUICDialer = &QUICHandshakeSaver{}
+var _ model.QUICDialer = &QUICDialerSaver{}
 var _ model.QUICListener = &QUICListenerSaver{}
-var _ model.UDPLikeConn = &udpLikeConnSaver{}
+var _ model.UDPLikeConn = &quicPacketConnWrapper{}
