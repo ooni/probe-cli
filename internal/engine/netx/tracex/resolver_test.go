@@ -29,31 +29,31 @@ func TestSaverResolverFailure(t *testing.T) {
 	if len(ev) != 2 {
 		t.Fatal("expected number of events")
 	}
-	if ev[0].Hostname != "www.google.com" {
+	if ev[0].Value().Hostname != "www.google.com" {
 		t.Fatal("unexpected Hostname")
 	}
-	if ev[0].Name != "resolve_start" {
+	if ev[0].Name() != "resolve_start" {
 		t.Fatal("unexpected name")
 	}
-	if !ev[0].Time.Before(time.Now()) {
+	if !ev[0].Value().Time.Before(time.Now()) {
 		t.Fatal("the saved time is wrong")
 	}
-	if ev[1].Addresses != nil {
+	if ev[1].Value().Addresses != nil {
 		t.Fatal("unexpected Addresses")
 	}
-	if ev[1].Duration <= 0 {
+	if ev[1].Value().Duration <= 0 {
 		t.Fatal("unexpected Duration")
 	}
-	if !errors.Is(ev[1].Err, expected) {
+	if !errors.Is(ev[1].Value().Err, expected) {
 		t.Fatal("unexpected Err")
 	}
-	if ev[1].Hostname != "www.google.com" {
+	if ev[1].Value().Hostname != "www.google.com" {
 		t.Fatal("unexpected Hostname")
 	}
-	if ev[1].Name != "resolve_done" {
+	if ev[1].Name() != "resolve_done" {
 		t.Fatal("unexpected name")
 	}
-	if !ev[1].Time.After(ev[0].Time) {
+	if !ev[1].Value().Time.After(ev[0].Value().Time) {
 		t.Fatal("the saved time is wrong")
 	}
 }
@@ -73,31 +73,31 @@ func TestSaverResolverSuccess(t *testing.T) {
 	if len(ev) != 2 {
 		t.Fatal("expected number of events")
 	}
-	if ev[0].Hostname != "www.google.com" {
+	if ev[0].Value().Hostname != "www.google.com" {
 		t.Fatal("unexpected Hostname")
 	}
-	if ev[0].Name != "resolve_start" {
+	if ev[0].Name() != "resolve_start" {
 		t.Fatal("unexpected name")
 	}
-	if !ev[0].Time.Before(time.Now()) {
+	if !ev[0].Value().Time.Before(time.Now()) {
 		t.Fatal("the saved time is wrong")
 	}
-	if !reflect.DeepEqual(ev[1].Addresses, expected) {
+	if !reflect.DeepEqual(ev[1].Value().Addresses, expected) {
 		t.Fatal("unexpected Addresses")
 	}
-	if ev[1].Duration <= 0 {
+	if ev[1].Value().Duration <= 0 {
 		t.Fatal("unexpected Duration")
 	}
-	if ev[1].Err != nil {
+	if ev[1].Value().Err != nil {
 		t.Fatal("unexpected Err")
 	}
-	if ev[1].Hostname != "www.google.com" {
+	if ev[1].Value().Hostname != "www.google.com" {
 		t.Fatal("unexpected Hostname")
 	}
-	if ev[1].Name != "resolve_done" {
+	if ev[1].Name() != "resolve_done" {
 		t.Fatal("unexpected name")
 	}
-	if !ev[1].Time.After(ev[0].Time) {
+	if !ev[1].Value().Time.After(ev[0].Value().Time) {
 		t.Fatal("the saved time is wrong")
 	}
 }
@@ -133,31 +133,31 @@ func TestSaverDNSTransportFailure(t *testing.T) {
 	if len(ev) != 2 {
 		t.Fatal("expected number of events")
 	}
-	if !bytes.Equal(ev[0].DNSQuery, rawQuery) {
+	if !bytes.Equal(ev[0].Value().DNSQuery, rawQuery) {
 		t.Fatal("unexpected DNSQuery")
 	}
-	if ev[0].Name != "dns_round_trip_start" {
+	if ev[0].Name() != "dns_round_trip_start" {
 		t.Fatal("unexpected name")
 	}
-	if !ev[0].Time.Before(time.Now()) {
+	if !ev[0].Value().Time.Before(time.Now()) {
 		t.Fatal("the saved time is wrong")
 	}
-	if !bytes.Equal(ev[1].DNSQuery, rawQuery) {
+	if !bytes.Equal(ev[1].Value().DNSQuery, rawQuery) {
 		t.Fatal("unexpected DNSQuery")
 	}
-	if ev[1].DNSReply != nil {
+	if ev[1].Value().DNSReply != nil {
 		t.Fatal("unexpected DNSReply")
 	}
-	if ev[1].Duration <= 0 {
+	if ev[1].Value().Duration <= 0 {
 		t.Fatal("unexpected Duration")
 	}
-	if !errors.Is(ev[1].Err, expected) {
+	if !errors.Is(ev[1].Value().Err, expected) {
 		t.Fatal("unexpected Err")
 	}
-	if ev[1].Name != "dns_round_trip_done" {
+	if ev[1].Name() != "dns_round_trip_done" {
 		t.Fatal("unexpected name")
 	}
-	if !ev[1].Time.After(ev[0].Time) {
+	if !ev[1].Value().Time.After(ev[0].Value().Time) {
 		t.Fatal("the saved time is wrong")
 	}
 }
@@ -198,31 +198,31 @@ func TestSaverDNSTransportSuccess(t *testing.T) {
 	if len(ev) != 2 {
 		t.Fatal("expected number of events")
 	}
-	if !bytes.Equal(ev[0].DNSQuery, rawQuery) {
+	if !bytes.Equal(ev[0].Value().DNSQuery, rawQuery) {
 		t.Fatal("unexpected DNSQuery")
 	}
-	if ev[0].Name != "dns_round_trip_start" {
+	if ev[0].Name() != "dns_round_trip_start" {
 		t.Fatal("unexpected name")
 	}
-	if !ev[0].Time.Before(time.Now()) {
+	if !ev[0].Value().Time.Before(time.Now()) {
 		t.Fatal("the saved time is wrong")
 	}
-	if !bytes.Equal(ev[1].DNSQuery, rawQuery) {
+	if !bytes.Equal(ev[1].Value().DNSQuery, rawQuery) {
 		t.Fatal("unexpected DNSQuery")
 	}
-	if !bytes.Equal(ev[1].DNSReply, expected) {
+	if !bytes.Equal(ev[1].Value().DNSReply, expected) {
 		t.Fatal("unexpected DNSReply")
 	}
-	if ev[1].Duration <= 0 {
+	if ev[1].Value().Duration <= 0 {
 		t.Fatal("unexpected Duration")
 	}
-	if ev[1].Err != nil {
+	if ev[1].Value().Err != nil {
 		t.Fatal("unexpected Err")
 	}
-	if ev[1].Name != "dns_round_trip_done" {
+	if ev[1].Name() != "dns_round_trip_done" {
 		t.Fatal("unexpected name")
 	}
-	if !ev[1].Time.After(ev[0].Time) {
+	if !ev[1].Value().Time.After(ev[0].Value().Time) {
 		t.Fatal("the saved time is wrong")
 	}
 }

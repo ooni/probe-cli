@@ -39,69 +39,69 @@ func TestSaverTLSHandshakerSuccessWithReadWrite(t *testing.T) {
 		// events because network conditions may influence that
 		t.Fatal("unexpected number of events")
 	}
-	if ev[0].Name != "tls_handshake_start" {
+	if ev[0].Name() != "tls_handshake_start" {
 		t.Fatal("unexpected Name")
 	}
-	if ev[0].TLSServerName != "www.google.com" {
+	if ev[0].Value().TLSServerName != "www.google.com" {
 		t.Fatal("unexpected TLSServerName")
 	}
-	if !reflect.DeepEqual(ev[0].TLSNextProtos, nextprotos) {
+	if !reflect.DeepEqual(ev[0].Value().TLSNextProtos, nextprotos) {
 		t.Fatal("unexpected TLSNextProtos")
 	}
-	if ev[0].Time.After(time.Now()) {
+	if ev[0].Value().Time.After(time.Now()) {
 		t.Fatal("unexpected Time")
 	}
 	last := len(ev) - 1
 	for idx := 1; idx < last; idx++ {
-		if ev[idx].Data == nil {
+		if ev[idx].Value().Data == nil {
 			t.Fatal("unexpected Data")
 		}
-		if ev[idx].Duration <= 0 {
+		if ev[idx].Value().Duration <= 0 {
 			t.Fatal("unexpected Duration")
 		}
-		if ev[idx].Err != nil {
+		if ev[idx].Value().Err != nil {
 			t.Fatal("unexpected Err")
 		}
-		if ev[idx].NumBytes <= 0 {
+		if ev[idx].Value().NumBytes <= 0 {
 			t.Fatal("unexpected NumBytes")
 		}
-		switch ev[idx].Name {
+		switch ev[idx].Name() {
 		case netxlite.ReadOperation, netxlite.WriteOperation:
 		default:
 			t.Fatal("unexpected Name")
 		}
-		if ev[idx].Time.Before(ev[idx-1].Time) {
+		if ev[idx].Value().Time.Before(ev[idx-1].Value().Time) {
 			t.Fatal("unexpected Time")
 		}
 	}
-	if ev[last].Duration <= 0 {
+	if ev[last].Value().Duration <= 0 {
 		t.Fatal("unexpected Duration")
 	}
-	if ev[last].Err != nil {
+	if ev[last].Value().Err != nil {
 		t.Fatal("unexpected Err")
 	}
-	if ev[last].Name != "tls_handshake_done" {
+	if ev[last].Name() != "tls_handshake_done" {
 		t.Fatal("unexpected Name")
 	}
-	if ev[last].TLSCipherSuite == "" {
+	if ev[last].Value().TLSCipherSuite == "" {
 		t.Fatal("unexpected TLSCipherSuite")
 	}
-	if ev[last].TLSNegotiatedProto != "h2" {
+	if ev[last].Value().TLSNegotiatedProto != "h2" {
 		t.Fatal("unexpected TLSNegotiatedProto")
 	}
-	if !reflect.DeepEqual(ev[last].TLSNextProtos, nextprotos) {
+	if !reflect.DeepEqual(ev[last].Value().TLSNextProtos, nextprotos) {
 		t.Fatal("unexpected TLSNextProtos")
 	}
-	if ev[last].TLSPeerCerts == nil {
+	if ev[last].Value().TLSPeerCerts == nil {
 		t.Fatal("unexpected TLSPeerCerts")
 	}
-	if ev[last].TLSServerName != "www.google.com" {
+	if ev[last].Value().TLSServerName != "www.google.com" {
 		t.Fatal("unexpected TLSServerName")
 	}
-	if ev[last].TLSVersion == "" {
+	if ev[last].Value().TLSVersion == "" {
 		t.Fatal("unexpected TLSVersion")
 	}
-	if ev[last].Time.Before(ev[last-1].Time) {
+	if ev[last].Value().Time.Before(ev[last-1].Value().Time) {
 		t.Fatal("unexpected Time")
 	}
 }
@@ -126,46 +126,46 @@ func TestSaverTLSHandshakerSuccess(t *testing.T) {
 	if len(ev) != 2 {
 		t.Fatal("unexpected number of events")
 	}
-	if ev[0].Name != "tls_handshake_start" {
+	if ev[0].Name() != "tls_handshake_start" {
 		t.Fatal("unexpected Name")
 	}
-	if ev[0].TLSServerName != "www.google.com" {
+	if ev[0].Value().TLSServerName != "www.google.com" {
 		t.Fatal("unexpected TLSServerName")
 	}
-	if !reflect.DeepEqual(ev[0].TLSNextProtos, nextprotos) {
+	if !reflect.DeepEqual(ev[0].Value().TLSNextProtos, nextprotos) {
 		t.Fatal("unexpected TLSNextProtos")
 	}
-	if ev[0].Time.After(time.Now()) {
+	if ev[0].Value().Time.After(time.Now()) {
 		t.Fatal("unexpected Time")
 	}
-	if ev[1].Duration <= 0 {
+	if ev[1].Value().Duration <= 0 {
 		t.Fatal("unexpected Duration")
 	}
-	if ev[1].Err != nil {
+	if ev[1].Value().Err != nil {
 		t.Fatal("unexpected Err")
 	}
-	if ev[1].Name != "tls_handshake_done" {
+	if ev[1].Name() != "tls_handshake_done" {
 		t.Fatal("unexpected Name")
 	}
-	if ev[1].TLSCipherSuite == "" {
+	if ev[1].Value().TLSCipherSuite == "" {
 		t.Fatal("unexpected TLSCipherSuite")
 	}
-	if ev[1].TLSNegotiatedProto != "h2" {
+	if ev[1].Value().TLSNegotiatedProto != "h2" {
 		t.Fatal("unexpected TLSNegotiatedProto")
 	}
-	if !reflect.DeepEqual(ev[1].TLSNextProtos, nextprotos) {
+	if !reflect.DeepEqual(ev[1].Value().TLSNextProtos, nextprotos) {
 		t.Fatal("unexpected TLSNextProtos")
 	}
-	if ev[1].TLSPeerCerts == nil {
+	if ev[1].Value().TLSPeerCerts == nil {
 		t.Fatal("unexpected TLSPeerCerts")
 	}
-	if ev[1].TLSServerName != "www.google.com" {
+	if ev[1].Value().TLSServerName != "www.google.com" {
 		t.Fatal("unexpected TLSServerName")
 	}
-	if ev[1].TLSVersion == "" {
+	if ev[1].Value().TLSVersion == "" {
 		t.Fatal("unexpected TLSVersion")
 	}
-	if ev[1].Time.Before(ev[0].Time) {
+	if ev[1].Value().Time.Before(ev[0].Value().Time) {
 		t.Fatal("unexpected Time")
 	}
 }
@@ -188,13 +188,13 @@ func TestSaverTLSHandshakerHostnameError(t *testing.T) {
 		t.Fatal("expected nil conn here")
 	}
 	for _, ev := range saver.Read() {
-		if ev.Name != "tls_handshake_done" {
+		if ev.Name() != "tls_handshake_done" {
 			continue
 		}
-		if ev.NoTLSVerify == true {
+		if ev.Value().NoTLSVerify == true {
 			t.Fatal("expected NoTLSVerify to be false")
 		}
-		if len(ev.TLSPeerCerts) < 1 {
+		if len(ev.Value().TLSPeerCerts) < 1 {
 			t.Fatal("expected at least a certificate here")
 		}
 	}
@@ -218,13 +218,13 @@ func TestSaverTLSHandshakerInvalidCertError(t *testing.T) {
 		t.Fatal("expected nil conn here")
 	}
 	for _, ev := range saver.Read() {
-		if ev.Name != "tls_handshake_done" {
+		if ev.Name() != "tls_handshake_done" {
 			continue
 		}
-		if ev.NoTLSVerify == true {
+		if ev.Value().NoTLSVerify == true {
 			t.Fatal("expected NoTLSVerify to be false")
 		}
-		if len(ev.TLSPeerCerts) < 1 {
+		if len(ev.Value().TLSPeerCerts) < 1 {
 			t.Fatal("expected at least a certificate here")
 		}
 	}
@@ -248,13 +248,13 @@ func TestSaverTLSHandshakerAuthorityError(t *testing.T) {
 		t.Fatal("expected nil conn here")
 	}
 	for _, ev := range saver.Read() {
-		if ev.Name != "tls_handshake_done" {
+		if ev.Name() != "tls_handshake_done" {
 			continue
 		}
-		if ev.NoTLSVerify == true {
+		if ev.Value().NoTLSVerify == true {
 			t.Fatal("expected NoTLSVerify to be false")
 		}
-		if len(ev.TLSPeerCerts) < 1 {
+		if len(ev.Value().TLSPeerCerts) < 1 {
 			t.Fatal("expected at least a certificate here")
 		}
 	}
@@ -280,13 +280,13 @@ func TestSaverTLSHandshakerNoTLSVerify(t *testing.T) {
 	}
 	conn.Close()
 	for _, ev := range saver.Read() {
-		if ev.Name != "tls_handshake_done" {
+		if ev.Name() != "tls_handshake_done" {
 			continue
 		}
-		if ev.NoTLSVerify != true {
+		if ev.Value().NoTLSVerify != true {
 			t.Fatal("expected NoTLSVerify to be true")
 		}
-		if len(ev.TLSPeerCerts) < 1 {
+		if len(ev.Value().TLSPeerCerts) < 1 {
 			t.Fatal("expected at least a certificate here")
 		}
 	}

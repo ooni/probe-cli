@@ -74,31 +74,27 @@ func TestNewTCPConnectList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
-			events: []Event{{
+			events: []Event{&EventResolveDone{&EventValue{
 				Addresses: []string{"8.8.8.8", "8.8.4.4"},
 				Hostname:  "dns.google.com",
-				Name:      "resolve_done",
 				Time:      begin.Add(100 * time.Millisecond),
-			}, {
+			}}, &EventConnectOperation{&EventValue{
 				Address:  "8.8.8.8:853",
 				Duration: 30 * time.Millisecond,
-				Name:     netxlite.ConnectOperation,
 				Proto:    "tcp",
 				Time:     begin.Add(130 * time.Millisecond),
-			}, {
+			}}, &EventConnectOperation{&EventValue{
 				Address:  "8.8.8.8:853",
 				Duration: 55 * time.Millisecond,
-				Name:     netxlite.ConnectOperation,
 				Proto:    "udp",
 				Time:     begin.Add(130 * time.Millisecond),
-			}, {
+			}}, &EventConnectOperation{&EventValue{
 				Address:  "8.8.4.4:53",
 				Duration: 50 * time.Millisecond,
 				Err:      io.EOF,
-				Name:     netxlite.ConnectOperation,
 				Proto:    "tcp",
 				Time:     begin.Add(180 * time.Millisecond),
-			}},
+			}}},
 		},
 		want: []TCPConnectEntry{{
 			IP:   "8.8.8.8",
@@ -147,46 +143,36 @@ func TestNewRequestList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
-			events: []Event{{
-				Name: "http_transaction_start",
+			events: []Event{&EventHTTPTransactionStart{&EventValue{
 				Time: begin.Add(10 * time.Millisecond),
-			}, {
-				Name:            "http_request_body_snapshot",
+			}}, &EventHTTPRequestBodySnapshot{&EventValue{
 				Data:            []byte("deadbeef"),
 				DataIsTruncated: false,
-			}, {
-				Name: "http_request_metadata",
+			}}, &EventHTTPRequestMetadata{&EventValue{
 				HTTPHeaders: http.Header{
 					"User-Agent": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPMethod: "POST",
 				HTTPURL:    "https://www.example.com/submit",
-			}, {
-				Name: "http_response_metadata",
+			}}, &EventHTTPResponseMetadata{&EventValue{
 				HTTPHeaders: http.Header{
 					"Server": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPStatusCode: 200,
-			}, {
-				Name:            "http_response_body_snapshot",
+			}}, &EventHTTPResponseBodySnapshot{&EventValue{
 				Data:            []byte("{}"),
 				DataIsTruncated: false,
-			}, {
-				Name: "http_transaction_done",
-			}, {
-				Name: "http_transaction_start",
+			}}, &EventHTTPTransactionDone{&EventValue{}}, &EventHTTPTransactionStart{&EventValue{
 				Time: begin.Add(20 * time.Millisecond),
-			}, {
-				Name: "http_request_metadata",
+			}}, &EventHTTPRequestMetadata{&EventValue{
 				HTTPHeaders: http.Header{
 					"User-Agent": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPMethod: "GET",
 				HTTPURL:    "https://www.example.com/result",
-			}, {
-				Name: "http_transaction_done",
-				Err:  io.EOF,
-			}},
+			}}, &EventHTTPTransactionDone{&EventValue{
+				Err: io.EOF,
+			}}},
 		},
 		want: []RequestEntry{{
 			Failure: NewFailure(io.EOF),
@@ -245,26 +231,21 @@ func TestNewRequestList(t *testing.T) {
 		name: "run with redirect and headers to sort",
 		args: args{
 			begin: begin,
-			events: []Event{{
-				Name: "http_transaction_start",
+			events: []Event{&EventHTTPTransactionStart{&EventValue{
 				Time: begin.Add(10 * time.Millisecond),
-			}, {
-				Name: "http_request_metadata",
+			}}, &EventHTTPRequestMetadata{&EventValue{
 				HTTPHeaders: http.Header{
 					"User-Agent": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPMethod: "GET",
 				HTTPURL:    "https://www.example.com/",
-			}, {
-				Name: "http_response_metadata",
+			}}, &EventHTTPResponseMetadata{&EventValue{
 				HTTPHeaders: http.Header{
 					"Server":   []string{"miniooni/0.1.0-dev"},
 					"Location": []string{"https://x.example.com", "https://y.example.com"},
 				},
 				HTTPStatusCode: 302,
-			}, {
-				Name: "http_transaction_done",
-			}},
+			}}, &EventHTTPTransactionDone{&EventValue{}}},
 		},
 		want: []RequestEntry{{
 			Request: HTTPRequest{
@@ -339,27 +320,24 @@ func TestNewDNSQueriesList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
-			events: []Event{{
+			events: []Event{&EventResolveDone{&EventValue{
 				Address:   "1.1.1.1:853",
 				Addresses: []string{"8.8.8.8", "8.8.4.4"},
 				Hostname:  "dns.google.com",
-				Name:      "resolve_done",
 				Proto:     "dot",
 				Time:      begin.Add(100 * time.Millisecond),
-			}, {
+			}}, &EventConnectOperation{&EventValue{
 				Address:  "8.8.8.8:853",
 				Duration: 30 * time.Millisecond,
-				Name:     netxlite.ConnectOperation,
 				Proto:    "tcp",
 				Time:     begin.Add(130 * time.Millisecond),
-			}, {
+			}}, &EventConnectOperation{&EventValue{
 				Address:  "8.8.4.4:53",
 				Duration: 50 * time.Millisecond,
 				Err:      io.EOF,
-				Name:     netxlite.ConnectOperation,
 				Proto:    "tcp",
 				Time:     begin.Add(180 * time.Millisecond),
-			}},
+			}}},
 		},
 		want: []DNSQueryEntry{{
 			Answers: []DNSAnswerEntry{{
@@ -383,12 +361,11 @@ func TestNewDNSQueriesList(t *testing.T) {
 		name: "run with IPv6 results",
 		args: args{
 			begin: begin,
-			events: []Event{{
+			events: []Event{&EventResolveDone{&EventValue{
 				Addresses: []string{"2001:4860:4860::8888"},
 				Hostname:  "dns.google.com",
-				Name:      "resolve_done",
 				Time:      begin.Add(200 * time.Millisecond),
-			}},
+			}}},
 		},
 		want: []DNSQueryEntry{{
 			Answers: []DNSAnswerEntry{{
@@ -405,12 +382,11 @@ func TestNewDNSQueriesList(t *testing.T) {
 		name: "run with errors",
 		args: args{
 			begin: begin,
-			events: []Event{{
+			events: []Event{&EventResolveDone{&EventValue{
 				Err:      &netxlite.ErrWrapper{Failure: netxlite.FailureDNSNXDOMAINError},
 				Hostname: "dns.google.com",
-				Name:     "resolve_done",
 				Time:     begin.Add(200 * time.Millisecond),
-			}},
+			}}},
 		},
 		want: []DNSQueryEntry{{
 			Answers: nil,
@@ -459,39 +435,30 @@ func TestNewNetworkEventsList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
-			events: []Event{{
-				Name:    netxlite.ConnectOperation,
+			events: []Event{&EventConnectOperation{&EventValue{
 				Address: "8.8.8.8:853",
 				Err:     io.EOF,
 				Proto:   "tcp",
 				Time:    begin.Add(7 * time.Millisecond),
-			}, {
-				Name:     netxlite.ReadOperation,
+			}}, &EventReadOperation{&EventValue{
 				Err:      context.Canceled,
 				NumBytes: 7117,
 				Time:     begin.Add(11 * time.Millisecond),
-			}, {
+			}}, &EventReadFromOperation{&EventValue{
 				Address:  "8.8.8.8:853",
-				Name:     netxlite.ReadFromOperation,
 				Err:      context.Canceled,
 				NumBytes: 7117,
 				Time:     begin.Add(11 * time.Millisecond),
-			}, {
-				Name:     netxlite.WriteOperation,
+			}}, &EventWriteOperation{&EventValue{
 				Err:      websocket.ErrBadHandshake,
 				NumBytes: 4114,
 				Time:     begin.Add(14 * time.Millisecond),
-			}, {
+			}}, &EventWriteToOperation{&EventValue{
 				Address:  "8.8.8.8:853",
-				Name:     netxlite.WriteToOperation,
 				Err:      websocket.ErrBadHandshake,
 				NumBytes: 4114,
 				Time:     begin.Add(14 * time.Millisecond),
-			}, {
-				Name: netxlite.CloseOperation,
-				Err:  websocket.ErrReadLimit,
-				Time: begin.Add(17 * time.Millisecond),
-			}},
+			}}},
 		},
 		want: []NetworkEvent{{
 			Address:   "8.8.8.8:853",
@@ -521,10 +488,6 @@ func TestNewNetworkEventsList(t *testing.T) {
 			NumBytes:  4114,
 			Operation: netxlite.WriteToOperation,
 			T:         0.014,
-		}, {
-			Failure:   NewFailure(websocket.ErrReadLimit),
-			Operation: netxlite.CloseOperation,
-			T:         0.017,
 		}},
 	}}
 	for _, tt := range tests {
@@ -557,13 +520,8 @@ func TestNewTLSHandshakesList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
-			events: []Event{{
-				Name: netxlite.CloseOperation,
-				Err:  websocket.ErrReadLimit,
-				Time: begin.Add(17 * time.Millisecond),
-			}, {
+			events: []Event{&EventTLSHandshakeDone{&EventValue{
 				Address:            "131.252.210.176:443",
-				Name:               "tls_handshake_done",
 				Err:                io.EOF,
 				NoTLSVerify:        false,
 				TLSCipherSuite:     "SUITE",
@@ -576,7 +534,7 @@ func TestNewTLSHandshakesList(t *testing.T) {
 				TLSServerName: "x.org",
 				TLSVersion:    "TLSv1.3",
 				Time:          begin.Add(55 * time.Millisecond),
-			}},
+			}}},
 		},
 		want: []TLSHandshake{{
 			Address:            "131.252.210.176:443",

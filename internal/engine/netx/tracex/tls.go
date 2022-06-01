@@ -44,21 +44,19 @@ func (s *Saver) WrapTLSHandshaker(thx model.TLSHandshaker) model.TLSHandshaker {
 func (h *SaverTLSHandshaker) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 	start := time.Now()
-	h.Saver.Write(Event{
-		Name:          "tls_handshake_start",
+	h.Saver.Write(&EventTLSHandshakeStart{&EventValue{
 		NoTLSVerify:   config.InsecureSkipVerify,
 		TLSNextProtos: config.NextProtos,
 		TLSServerName: config.ServerName,
 		Time:          start,
-	})
+	}})
 	remoteAddr := conn.RemoteAddr().String()
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	stop := time.Now()
-	h.Saver.Write(Event{
+	h.Saver.Write(&EventTLSHandshakeDone{&EventValue{
 		Address:            remoteAddr,
 		Duration:           stop.Sub(start),
 		Err:                err,
-		Name:               "tls_handshake_done",
 		NoTLSVerify:        config.InsecureSkipVerify,
 		TLSCipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		TLSNegotiatedProto: state.NegotiatedProtocol,
@@ -67,7 +65,7 @@ func (h *SaverTLSHandshaker) Handshake(
 		TLSServerName:      config.ServerName,
 		TLSVersion:         netxlite.TLSVersionString(state.Version),
 		Time:               stop,
-	})
+	}})
 	return tlsconn, state, err
 }
 

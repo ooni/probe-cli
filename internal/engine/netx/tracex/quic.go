@@ -45,34 +45,31 @@ func (h *QUICHandshakeSaver) DialContext(ctx context.Context, network string,
 	start := time.Now()
 	// TODO(bassosimone): in the future we probably want to also save
 	// information about what versions we're willing to accept.
-	h.Saver.Write(Event{
+	h.Saver.Write(&EventQUICHandshakeStart{&EventValue{
 		Address:       host,
-		Name:          "quic_handshake_start",
 		NoTLSVerify:   tlsCfg.InsecureSkipVerify,
 		Proto:         network,
 		TLSNextProtos: tlsCfg.NextProtos,
 		TLSServerName: tlsCfg.ServerName,
 		Time:          start,
-	})
+	}})
 	sess, err := h.QUICDialer.DialContext(ctx, network, host, tlsCfg, cfg)
 	stop := time.Now()
 	if err != nil {
 		// TODO(bassosimone): here we should save the peer certs
-		h.Saver.Write(Event{
+		h.Saver.Write(&EventQUICHandshakeDone{&EventValue{
 			Duration:      stop.Sub(start),
 			Err:           err,
-			Name:          "quic_handshake_done",
 			NoTLSVerify:   tlsCfg.InsecureSkipVerify,
 			TLSNextProtos: tlsCfg.NextProtos,
 			TLSServerName: tlsCfg.ServerName,
 			Time:          stop,
-		})
+		}})
 		return nil, err
 	}
 	state := quicConnectionState(sess)
-	h.Saver.Write(Event{
+	h.Saver.Write(&EventQUICHandshakeDone{&EventValue{
 		Duration:           stop.Sub(start),
-		Name:               "quic_handshake_done",
 		NoTLSVerify:        tlsCfg.InsecureSkipVerify,
 		TLSCipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		TLSNegotiatedProto: state.NegotiatedProtocol,
@@ -81,7 +78,7 @@ func (h *QUICHandshakeSaver) DialContext(ctx context.Context, network string,
 		TLSServerName:      tlsCfg.ServerName,
 		TLSVersion:         netxlite.TLSVersionString(state.Version),
 		Time:               stop,
-	})
+	}})
 	return sess, nil
 }
 
@@ -144,15 +141,14 @@ func (c *udpLikeConnSaver) WriteTo(p []byte, addr net.Addr) (int, error) {
 	start := time.Now()
 	count, err := c.UDPLikeConn.WriteTo(p, addr)
 	stop := time.Now()
-	c.saver.Write(Event{
+	c.saver.Write(&EventWriteToOperation{&EventValue{
 		Address:  addr.String(),
 		Data:     p[:count],
 		Duration: stop.Sub(start),
 		Err:      err,
 		NumBytes: count,
-		Name:     netxlite.WriteToOperation,
 		Time:     stop,
-	})
+	}})
 	return count, err
 }
 
@@ -164,15 +160,14 @@ func (c *udpLikeConnSaver) ReadFrom(b []byte) (int, net.Addr, error) {
 	if n > 0 {
 		data = b[:n]
 	}
-	c.saver.Write(Event{
+	c.saver.Write(&EventReadFromOperation{&EventValue{
 		Address:  c.safeAddrString(addr),
 		Data:     data,
 		Duration: stop.Sub(start),
 		Err:      err,
 		NumBytes: n,
-		Name:     netxlite.ReadFromOperation,
 		Time:     stop,
-	})
+	}})
 	return n, addr, err
 }
 

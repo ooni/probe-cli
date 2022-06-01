@@ -24,24 +24,22 @@ type SaverMetadataHTTPTransport struct {
 
 // RoundTrip implements RoundTripper.RoundTrip
 func (txp SaverMetadataHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	txp.Saver.Write(Event{
+	txp.Saver.Write(&EventHTTPRequestMetadata{&EventValue{
 		HTTPHeaders: httpCloneHeaders(req),
 		HTTPMethod:  req.Method,
 		HTTPURL:     req.URL.String(),
 		Transport:   txp.HTTPTransport.Network(),
-		Name:        "http_request_metadata",
 		Time:        time.Now(),
-	})
+	}})
 	resp, err := txp.HTTPTransport.RoundTrip(req)
 	if err != nil {
 		return nil, err
 	}
-	txp.Saver.Write(Event{
+	txp.Saver.Write(&EventHTTPResponseMetadata{&EventValue{
 		HTTPHeaders:    resp.Header,
 		HTTPStatusCode: resp.StatusCode,
-		Name:           "http_response_metadata",
 		Time:           time.Now(),
-	})
+	}})
 	return resp, err
 }
 
@@ -67,16 +65,14 @@ type SaverTransactionHTTPTransport struct {
 
 // RoundTrip implements RoundTripper.RoundTrip
 func (txp SaverTransactionHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	txp.Saver.Write(Event{
-		Name: "http_transaction_start",
+	txp.Saver.Write(&EventHTTPTransactionStart{&EventValue{
 		Time: time.Now(),
-	})
+	}})
 	resp, err := txp.HTTPTransport.RoundTrip(req)
-	txp.Saver.Write(Event{
+	txp.Saver.Write(&EventHTTPTransactionDone{&EventValue{
 		Err:  err,
-		Name: "http_transaction_done",
 		Time: time.Now(),
-	})
+	}})
 	return resp, err
 }
 
@@ -101,12 +97,11 @@ func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, 
 			return nil, err
 		}
 		req.Body = httpSaverCompose(data, req.Body)
-		txp.Saver.Write(Event{
+		txp.Saver.Write(&EventHTTPRequestBodySnapshot{&EventValue{
 			DataIsTruncated: len(data) >= snapsize,
 			Data:            data,
-			Name:            "http_request_body_snapshot",
 			Time:            time.Now(),
-		})
+		}})
 	}
 	resp, err := txp.HTTPTransport.RoundTrip(req)
 	if err != nil {
@@ -118,12 +113,11 @@ func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, 
 		return nil, err
 	}
 	resp.Body = httpSaverCompose(data, resp.Body)
-	txp.Saver.Write(Event{
+	txp.Saver.Write(&EventHTTPResponseBodySnapshot{&EventValue{
 		DataIsTruncated: len(data) >= snapsize,
 		Data:            data,
-		Name:            "http_response_body_snapshot",
 		Time:            time.Now(),
-	})
+	}})
 	return resp, nil
 }
 
