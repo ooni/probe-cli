@@ -13,6 +13,9 @@ const (
 	// ConnectOperation is the operation where we do a TCP connect.
 	ConnectOperation = "connect"
 
+	// DNSRoundTripOperation is the DNS round trip.
+	DNSRoundTripOperation = "dns_round_trip"
+
 	// TLSHandshakeOperation is the TLS handshake.
 	TLSHandshakeOperation = "tls_handshake"
 

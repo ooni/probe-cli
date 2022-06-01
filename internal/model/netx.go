@@ -101,6 +101,12 @@ type DNSEncoder interface {
 	Encode(domain string, qtype uint16, padding bool) DNSQuery
 }
 
+// DNSTransportWrapper is a type that takes in input a DNSTransport
+// and returns in output a wrapped DNSTransport.
+type DNSTransportWrapper interface {
+	WrapDNSTransport(txp DNSTransport) DNSTransport
+}
+
 // DNSTransport represents an abstract DNS transport.
 type DNSTransport interface {
 	// RoundTrip sends a DNS query and receives the reply.

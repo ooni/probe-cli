@@ -51,7 +51,8 @@ type DNSOverUDPTransport struct {
 	IOTimeout time.Duration
 }
 
-// NewDNSOverUDPTransport creates a DNSOverUDPTransport instance.
+// NewUnwrappedDNSOverUDPTransport creates a DNSOverUDPTransport instance
+// that has not been wrapped yet.
 //
 // Arguments:
 //
@@ -64,7 +65,7 @@ type DNSOverUDPTransport struct {
 // IP addresses returned by the underlying DNS lookup performed using
 // the dialer. This usage pattern is NOT RECOMMENDED because we'll
 // have less control over which IP address is being used.
-func NewDNSOverUDPTransport(dialer model.Dialer, address string) *DNSOverUDPTransport {
+func NewUnwrappedDNSOverUDPTransport(dialer model.Dialer, address string) *DNSOverUDPTransport {
 	return &DNSOverUDPTransport{
 		Decoder:   &DNSDecoderMiekg{},
 		Dialer:    dialer,

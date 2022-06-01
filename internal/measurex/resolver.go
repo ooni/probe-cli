@@ -43,8 +43,8 @@ func (mx *Measurer) NewResolverSystem(db WritableDB, logger model.Logger) model.
 // - address is the resolver address (e.g., "1.1.1.1:53").
 func (mx *Measurer) NewResolverUDP(db WritableDB, logger model.Logger, address string) model.Resolver {
 	return mx.WrapResolver(db, netxlite.WrapResolver(
-		logger, netxlite.NewSerialResolver(
-			mx.WrapDNSXRoundTripper(db, netxlite.NewDNSOverUDPTransport(
+		logger, netxlite.NewUnwrappedSerialResolver(
+			mx.WrapDNSXRoundTripper(db, netxlite.NewUnwrappedDNSOverUDPTransport(
 				mx.NewDialerWithSystemResolver(db, logger),
 				address,
 			)))),

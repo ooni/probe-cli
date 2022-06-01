@@ -33,8 +33,8 @@ type SerialResolver struct {
 	Txp model.DNSTransport
 }
 
-// NewSerialResolver creates a new SerialResolver instance.
-func NewSerialResolver(t model.DNSTransport) *SerialResolver {
+// NewUnwrappedSerialResolver creates a new, and unwrapped, SerialResolver instance.
+func NewUnwrappedSerialResolver(t model.DNSTransport) *SerialResolver {
 	return &SerialResolver{
 		NumTimeouts: &atomicx.Int64{},
 		Txp:         t,

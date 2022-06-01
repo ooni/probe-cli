@@ -20,7 +20,7 @@ func TestDNSOverTCPTransport(t *testing.T) {
 		t.Run("cannot encode query", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			const address = "9.9.9.9:53"
-			txp := NewDNSOverTCPTransport(new(net.Dialer).DialContext, address)
+			txp := NewUnwrappedDNSOverTCPTransport(new(net.Dialer).DialContext, address)
 			query := &mocks.DNSQuery{
 				MockBytes: func() ([]byte, error) {
 					return nil, expected
@@ -37,7 +37,7 @@ func TestDNSOverTCPTransport(t *testing.T) {
 
 		t.Run("query too large", func(t *testing.T) {
 			const address = "9.9.9.9:53"
-			txp := NewDNSOverTCPTransport(new(net.Dialer).DialContext, address)
+			txp := NewUnwrappedDNSOverTCPTransport(new(net.Dialer).DialContext, address)
 			query := &mocks.DNSQuery{
 				MockBytes: func() ([]byte, error) {
 					return make([]byte, math.MaxUint16+1), nil
@@ -65,7 +65,7 @@ func TestDNSOverTCPTransport(t *testing.T) {
 					return nil, mocked
 				},
 			}
-			txp := NewDNSOverTCPTransport(fakedialer.DialContext, address)
+			txp := NewUnwrappedDNSOverTCPTransport(fakedialer.DialContext, address)
 			resp, err := txp.RoundTrip(context.Background(), query)
 			if !errors.Is(err, mocked) {
 				t.Fatal("not the error we expected")
@@ -98,7 +98,7 @@ func TestDNSOverTCPTransport(t *testing.T) {
 					}, nil
 				},
 			}
-			txp := NewDNSOverTCPTransport(fakedialer.DialContext, address)
+			txp := NewUnwrappedDNSOverTCPTransport(fakedialer.DialContext, address)
 			resp, err := txp.RoundTrip(context.Background(), query)
 			if !errors.Is(err, mocked) {
 				t.Fatal("not the error we expected")
@@ -134,7 +134,7 @@ func TestDNSOverTCPTransport(t *testing.T) {
 					}, nil
 				},
 			}
-			txp := NewDNSOverTCPTransport(fakedialer.DialContext, address)
+			txp := NewUnwrappedDNSOverTCPTransport(fakedialer.DialContext, address)
 			resp, err := txp.RoundTrip(context.Background(), query)
 			if !errors.Is(err, mocked) {
 				t.Fatal("not the error we expected")
@@ -176,7 +176,7 @@ func TestDNSOverTCPTransport(t *testing.T) {
 					}, nil
 				},
 			}
-			txp := NewDNSOverTCPTransport(fakedialer.DialContext, address)
+			txp := NewUnwrappedDNSOverTCPTransport(fakedialer.DialContext, address)
 			resp, err := txp.RoundTrip(context.Background(), query)
 			if !errors.Is(err, mocked) {
 				t.Fatal("not the error we expected")
@@ -211,7 +211,7 @@ func TestDNSOverTCPTransport(t *testing.T) {
 					}, nil
 				},
 			}
-			txp := NewDNSOverTCPTransport(fakedialer.DialContext, address)
+			txp := NewUnwrappedDNSOverTCPTransport(fakedialer.DialContext, address)
 			txp.decoder = &mocks.DNSDecoder{
 				MockDecodeResponse: func(data []byte, query model.DNSQuery) (model.DNSResponse, error) {
 					return nil, mocked
@@ -250,7 +250,7 @@ func TestDNSOverTCPTransport(t *testing.T) {
 					}, nil
 				},
 			}
-			txp := NewDNSOverTCPTransport(fakedialer.DialContext, address)
+			txp := NewUnwrappedDNSOverTCPTransport(fakedialer.DialContext, address)
 			expectedResp := &mocks.DNSResponse{}
 			txp.decoder = &mocks.DNSDecoder{
 				MockDecodeResponse: func(data []byte, query model.DNSQuery) (model.DNSResponse, error) {
@@ -269,7 +269,7 @@ func TestDNSOverTCPTransport(t *testing.T) {
 
 	t.Run("other functions okay with TCP", func(t *testing.T) {
 		const address = "9.9.9.9:53"
-		txp := NewDNSOverTCPTransport(new(net.Dialer).DialContext, address)
+		txp := NewUnwrappedDNSOverTCPTransport(new(net.Dialer).DialContext, address)
 		if txp.RequiresPadding() != false {
 			t.Fatal("invalid RequiresPadding")
 		}
@@ -284,7 +284,7 @@ func TestDNSOverTCPTransport(t *testing.T) {
 
 	t.Run("other functions okay with TLS", func(t *testing.T) {
 		const address = "9.9.9.9:853"
-		txp := NewDNSOverTLSTransport((&tls.Dialer{}).DialContext, address)
+		txp := NewUnwrappedDNSOverTLSTransport((&tls.Dialer{}).DialContext, address)
 		if txp.RequiresPadding() != true {
 			t.Fatal("invalid RequiresPadding")
 		}
