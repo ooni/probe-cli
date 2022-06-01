@@ -1,391 +1,246 @@
 package tracex
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 )
 
-func TestSaverMetadataSuccess(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	saver := &Saver{}
-	txp := SaverMetadataHTTPTransport{
-		HTTPTransport: netxlite.NewHTTPTransportStdlib(model.DiscardLogger),
-		Saver:         saver,
-	}
-	req, err := http.NewRequest("GET", "https://www.google.com", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Add("User-Agent", "miniooni/0.1.0-dev")
-	resp, err := txp.RoundTrip(req)
-	if err != nil {
-		t.Fatal("not the error we expected")
-	}
-	if resp == nil {
-		t.Fatal("expected non nil response here")
-	}
-	ev := saver.Read()
-	if len(ev) != 2 {
-		t.Fatal("expected two events")
-	}
-	//
-	if ev[0].Value().HTTPMethod != "GET" {
-		t.Fatal("unexpected Method")
-	}
-	if len(ev[0].Value().HTTPRequestHeaders) <= 0 {
-		t.Fatal("unexpected Headers")
-	}
-	if ev[0].Value().HTTPURL != "https://www.google.com" {
-		t.Fatal("unexpected URL")
-	}
-	if ev[0].Name() != "http_request_metadata" {
-		t.Fatal("unexpected Name")
-	}
-	if !ev[0].Value().Time.Before(time.Now()) {
-		t.Fatal("unexpected Time")
-	}
-	//
-	if ev[1].Value().HTTPStatusCode != 200 {
-		t.Fatal("unexpected StatusCode")
-	}
-	if len(ev[1].Value().HTTPResponseHeaders) <= 0 {
-		t.Fatal("unexpected Headers")
-	}
-	if ev[1].Name() != "http_response_metadata" {
-		t.Fatal("unexpected Name")
-	}
-	if !ev[1].Value().Time.After(ev[0].Value().Time) {
-		t.Fatal("unexpected Time")
-	}
-}
+func TestSaverTransactionHTTPTransport(t *testing.T) {
 
-func TestSaverMetadataFailure(t *testing.T) {
-	expected := errors.New("mocked error")
-	saver := &Saver{}
-	txp := SaverMetadataHTTPTransport{
-		HTTPTransport: FakeTransport{
-			Err: expected,
-		},
-		Saver: saver,
-	}
-	req, err := http.NewRequest("GET", "http://www.google.com", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Add("User-Agent", "miniooni/0.1.0-dev")
-	resp, err := txp.RoundTrip(req)
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
-	}
-	if resp != nil {
-		t.Fatal("expected nil response here")
-	}
-	ev := saver.Read()
-	if len(ev) != 1 {
-		t.Fatal("expected one event")
-	}
-	if ev[0].Value().HTTPMethod != "GET" {
-		t.Fatal("unexpected Method")
-	}
-	if len(ev[0].Value().HTTPRequestHeaders) <= 0 {
-		t.Fatal("unexpected Headers")
-	}
-	if ev[0].Value().HTTPURL != "http://www.google.com" {
-		t.Fatal("unexpected URL")
-	}
-	if ev[0].Name() != "http_request_metadata" {
-		t.Fatal("unexpected Name")
-	}
-	if !ev[0].Value().Time.Before(time.Now()) {
-		t.Fatal("unexpected Time")
-	}
-}
-
-func TestSaverTransactionSuccess(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	saver := &Saver{}
-	txp := SaverTransactionHTTPTransport{
-		HTTPTransport: netxlite.NewHTTPTransportStdlib(model.DiscardLogger),
-		Saver:         saver,
-	}
-	req, err := http.NewRequest("GET", "https://www.google.com", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := txp.RoundTrip(req)
-	if err != nil {
-		t.Fatal("not the error we expected")
-	}
-	if resp == nil {
-		t.Fatal("expected non nil response here")
-	}
-	ev := saver.Read()
-	if len(ev) != 2 {
-		t.Fatal("expected two events")
-	}
-	//
-	if ev[0].Name() != "http_transaction_start" {
-		t.Fatal("unexpected Name")
-	}
-	if !ev[0].Value().Time.Before(time.Now()) {
-		t.Fatal("unexpected Time")
-	}
-	//
-	if ev[1].Value().Err != nil {
-		t.Fatal("unexpected Err")
-	}
-	if ev[1].Name() != "http_transaction_done" {
-		t.Fatal("unexpected Name")
-	}
-	if !ev[1].Value().Time.After(ev[0].Value().Time) {
-		t.Fatal("unexpected Time")
-	}
-}
-
-func TestSaverTransactionFailure(t *testing.T) {
-	expected := errors.New("mocked error")
-	saver := &Saver{}
-	txp := SaverTransactionHTTPTransport{
-		HTTPTransport: FakeTransport{
-			Err: expected,
-		},
-		Saver: saver,
-	}
-	req, err := http.NewRequest("GET", "http://www.google.com", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := txp.RoundTrip(req)
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
-	}
-	if resp != nil {
-		t.Fatal("expected nil response here")
-	}
-	ev := saver.Read()
-	if len(ev) != 2 {
-		t.Fatal("expected two events")
-	}
-	if ev[0].Name() != "http_transaction_start" {
-		t.Fatal("unexpected Name")
-	}
-	if !ev[0].Value().Time.Before(time.Now()) {
-		t.Fatal("unexpected Time")
-	}
-	if ev[1].Name() != "http_transaction_done" {
-		t.Fatal("unexpected Name")
-	}
-	if !errors.Is(ev[1].Value().Err, expected) {
-		t.Fatal("unexpected Err")
-	}
-	if !ev[1].Value().Time.After(ev[0].Value().Time) {
-		t.Fatal("unexpected Time")
-	}
-}
-
-func TestSaverBodySuccess(t *testing.T) {
-	saver := new(Saver)
-	txp := SaverBodyHTTPTransport{
-		HTTPTransport: FakeTransport{
-			Func: func(req *http.Request) (*http.Response, error) {
-				data, err := netxlite.ReadAllContext(context.Background(), req.Body)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if string(data) != "deadbeef" {
-					t.Fatal("invalid data")
-				}
-				return &http.Response{
-					StatusCode: 501,
-					Body:       io.NopCloser(strings.NewReader("abad1dea")),
-				}, nil
+	startServer := func(t *testing.T, action filtering.HTTPAction) (net.Listener, *url.URL) {
+		server := &filtering.HTTPProxy{
+			OnIncomingHost: func(host string) filtering.HTTPAction {
+				return action
 			},
-		},
-		SnapshotSize: 4,
-		Saver:        saver,
+		}
+		listener, err := server.Start("127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		URL := &url.URL{
+			Scheme: "http",
+			Host:   listener.Addr().String(),
+			Path:   "/",
+		}
+		return listener, URL
 	}
-	body := strings.NewReader("deadbeef")
-	req, err := http.NewRequest("POST", "http://x.org/y", body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := txp.RoundTrip(req)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if resp.StatusCode != 501 {
-		t.Fatal("unexpected status code")
-	}
-	defer resp.Body.Close()
-	data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(data) != "abad1dea" {
-		t.Fatal("unexpected body")
-	}
-	ev := saver.Read()
-	if len(ev) != 2 {
-		t.Fatal("unexpected number of events")
-	}
-	if string(ev[0].Value().Data) != "dead" {
-		t.Fatal("invalid Data")
-	}
-	if ev[0].Value().DataIsTruncated != true {
-		t.Fatal("invalid DataIsTruncated")
-	}
-	if ev[0].Name() != "http_request_body_snapshot" {
-		t.Fatal("invalid Name")
-	}
-	if ev[0].Value().Time.After(time.Now()) {
-		t.Fatal("invalid Time")
-	}
-	if string(ev[1].Value().Data) != "abad" {
-		t.Fatal("invalid Data")
-	}
-	if ev[1].Value().DataIsTruncated != true {
-		t.Fatal("invalid DataIsTruncated")
-	}
-	if ev[1].Name() != "http_response_body_snapshot" {
-		t.Fatal("invalid Name")
-	}
-	if ev[1].Value().Time.Before(ev[0].Value().Time) {
-		t.Fatal("invalid Time")
-	}
-}
 
-func TestSaverBodyRequestReadError(t *testing.T) {
-	saver := new(Saver)
-	txp := SaverBodyHTTPTransport{
-		HTTPTransport: FakeTransport{
-			Func: func(req *http.Request) (*http.Response, error) {
-				panic("should not be called")
+	measureHTTP := func(t *testing.T, URL *url.URL) (*http.Response, *Saver, error) {
+		saver := &Saver{}
+		txp := &SaverTransactionHTTPTransport{
+			HTTPTransport: netxlite.NewHTTPTransportStdlib(model.DiscardLogger),
+			Saver:         saver,
+		}
+		req, err := http.NewRequest("GET", URL.String(), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Add("User-Agent", "miniooni")
+		resp, err := txp.RoundTrip(req)
+		return resp, saver, err
+	}
+
+	validateRequestFields := func(t *testing.T, value *EventValue, URL *url.URL) {
+		if value.HTTPMethod != "GET" {
+			t.Fatal("invalid method")
+		}
+		if value.HTTPRequestHeaders.Get("Host") != URL.Host {
+			t.Fatal("invalid Host header")
+		}
+		if value.HTTPRequestHeaders.Get("User-Agent") != "miniooni" {
+			t.Fatal("invalid User-Agent header")
+		}
+		if value.HTTPURL != URL.String() {
+			t.Fatal("invalid URL")
+		}
+		if value.Time.IsZero() {
+			t.Fatal("expected nonzero Time")
+		}
+		if value.Transport != "tcp" {
+			t.Fatal("expected Transport to be tcp")
+		}
+	}
+
+	validateRequest := func(t *testing.T, ev Event, URL *url.URL) {
+		if _, good := ev.(*EventHTTPTransactionStart); !good {
+			t.Fatal("invalid event type")
+		}
+		if ev.Name() != "http_transaction_start" {
+			t.Fatal("invalid event name")
+		}
+		value := ev.Value()
+		validateRequestFields(t, value, URL)
+	}
+
+	validateResponseSuccess := func(t *testing.T, ev Event, URL *url.URL) {
+		if _, good := ev.(*EventHTTPTransactionDone); !good {
+			t.Fatal("invalid event type")
+		}
+		if ev.Name() != "http_transaction_done" {
+			t.Fatal("invalid event name")
+		}
+		value := ev.Value()
+		validateRequestFields(t, value, URL)
+		if value.Duration <= 0 {
+			t.Fatal("expected nonzero duration")
+		}
+		if len(value.HTTPResponseHeaders) <= 0 {
+			t.Fatal("expected at least one response header")
+		}
+		if !bytes.Equal(value.HTTPResponseBody, filtering.HTTPBlockpage451) {
+			t.Fatal("unexpected value for response body")
+		}
+		if value.HTTPStatusCode != 451 {
+			t.Fatal("unexpected status code")
+		}
+	}
+
+	t.Run("on success", func(t *testing.T) {
+		listener, URL := startServer(t, filtering.HTTPAction451)
+		defer listener.Close()
+		resp, saver, err := measureHTTP(t, URL)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 451 {
+			t.Fatal("unexpected status code", resp.StatusCode)
+		}
+		events := saver.Read()
+		if len(events) != 2 {
+			t.Fatal("unexpected number of events")
+		}
+		validateRequest(t, events[0], URL)
+		validateResponseSuccess(t, events[1], URL)
+		data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(data, filtering.HTTPBlockpage451) {
+			t.Fatal("we cannot re-read the same body")
+		}
+	})
+
+	validateResponseFailure := func(t *testing.T, ev Event, URL *url.URL) {
+		if _, good := ev.(*EventHTTPTransactionDone); !good {
+			t.Fatal("invalid event type")
+		}
+		if ev.Name() != "http_transaction_done" {
+			t.Fatal("invalid event name")
+		}
+		value := ev.Value()
+		validateRequestFields(t, value, URL)
+		if value.Duration <= 0 {
+			t.Fatal("expected nonzero duration")
+		}
+		if value.Err.Error() != "connection_reset" {
+			t.Fatal("unexpected Err value")
+		}
+		if len(value.HTTPResponseHeaders) > 0 {
+			t.Fatal("expected zero response headers")
+		}
+		if !bytes.Equal(value.HTTPResponseBody, nil) {
+			t.Fatal("unexpected value for response body")
+		}
+		if value.HTTPStatusCode != 0 {
+			t.Fatal("unexpected status code")
+		}
+	}
+
+	t.Run("on round trip failure", func(t *testing.T) {
+		listener, URL := startServer(t, filtering.HTTPActionReset)
+		defer listener.Close()
+		resp, saver, err := measureHTTP(t, URL)
+		if err == nil || err.Error() != "connection_reset" {
+			t.Fatal("unexpected err", err)
+		}
+		if resp != nil {
+			t.Fatal("expected nil response")
+		}
+		events := saver.Read()
+		if len(events) != 2 {
+			t.Fatal("unexpected number of events")
+		}
+		validateRequest(t, events[0], URL)
+		validateResponseFailure(t, events[1], URL)
+	})
+
+	// Sometimes useful for testing
+	/*
+		dumplog := func(t *testing.T, ev Event) {
+			data, _ := json.MarshalIndent(ev.Value(), " ", " ")
+			t.Log(string(data))
+			t.FailNow()
+		}
+	*/
+
+	t.Run("on error reading the response body", func(t *testing.T) {
+		saver := &Saver{}
+		expected := errors.New("mocked error")
+		txp := SaverTransactionHTTPTransport{
+			HTTPTransport: &mocks.HTTPTransport{
+				MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+					return &http.Response{
+						Header: http.Header{
+							"Server": {"antani"},
+						},
+						StatusCode: 200,
+						Body: io.NopCloser(&mocks.Reader{
+							MockRead: func(b []byte) (int, error) {
+								return 0, expected
+							},
+						}),
+					}, nil
+				},
+				MockNetwork: func() string {
+					return "tcp"
+				},
 			},
-		},
-		SnapshotSize: 4,
-		Saver:        saver,
-	}
-	expected := errors.New("mocked error")
-	body := FakeBody{Err: expected}
-	req, err := http.NewRequest("POST", "http://x.org/y", body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := txp.RoundTrip(req)
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
-	}
-	if resp != nil {
-		t.Fatal("expected nil response")
-	}
-	ev := saver.Read()
-	if len(ev) != 0 {
-		t.Fatal("unexpected number of events")
-	}
+			SnapshotSize: 4,
+			Saver:        saver,
+		}
+		URL := &url.URL{
+			Scheme: "http",
+			Host:   "127.0.0.1:9050",
+		}
+		req, err := http.NewRequest("GET", URL.String(), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Add("User-Agent", "miniooni")
+		resp, err := txp.RoundTrip(req)
+		if !errors.Is(err, expected) {
+			t.Fatal("not the error we expected")
+		}
+		if resp != nil {
+			t.Fatal("expected nil response")
+		}
+		ev := saver.Read()
+		validateRequest(t, ev[0], URL)
+		if ev[1].Value().HTTPStatusCode != 200 {
+			t.Fatal("invalid status code")
+		}
+		if ev[1].Value().HTTPResponseHeaders.Get("Server") != "antani" {
+			t.Fatal("invalid Server header")
+		}
+		if ev[1].Value().Err.Error() != "unknown_failure: mocked error" {
+			t.Fatal("invalid error")
+		}
+	})
 }
 
-func TestSaverBodyRoundTripError(t *testing.T) {
-	saver := new(Saver)
-	expected := errors.New("mocked error")
-	txp := SaverBodyHTTPTransport{
-		HTTPTransport: FakeTransport{
-			Err: expected,
-		},
-		SnapshotSize: 4,
-		Saver:        saver,
-	}
-	body := strings.NewReader("deadbeef")
-	req, err := http.NewRequest("POST", "http://x.org/y", body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := txp.RoundTrip(req)
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
-	}
-	if resp != nil {
-		t.Fatal("expected nil response")
-	}
-	ev := saver.Read()
-	if len(ev) != 1 {
-		t.Fatal("unexpected number of events")
-	}
-	if string(ev[0].Value().Data) != "dead" {
-		t.Fatal("invalid Data")
-	}
-	if ev[0].Value().DataIsTruncated != true {
-		t.Fatal("invalid DataIsTruncated")
-	}
-	if ev[0].Name() != "http_request_body_snapshot" {
-		t.Fatal("invalid Name")
-	}
-	if ev[0].Value().Time.After(time.Now()) {
-		t.Fatal("invalid Time")
-	}
-}
-
-func TestSaverBodyResponseReadError(t *testing.T) {
-	saver := new(Saver)
-	expected := errors.New("mocked error")
-	txp := SaverBodyHTTPTransport{
-		HTTPTransport: FakeTransport{
-			Func: func(req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: 200,
-					Body: FakeBody{
-						Err: expected,
-					},
-				}, nil
-			},
-		},
-		SnapshotSize: 4,
-		Saver:        saver,
-	}
-	body := strings.NewReader("deadbeef")
-	req, err := http.NewRequest("POST", "http://x.org/y", body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := txp.RoundTrip(req)
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
-	}
-	if resp != nil {
-		t.Fatal("expected nil response")
-	}
-	ev := saver.Read()
-	if len(ev) != 1 {
-		t.Fatal("unexpected number of events")
-	}
-	if string(ev[0].Value().Data) != "dead" {
-		t.Fatal("invalid Data")
-	}
-	if ev[0].Value().DataIsTruncated != true {
-		t.Fatal("invalid DataIsTruncated")
-	}
-	if ev[0].Name() != "http_request_body_snapshot" {
-		t.Fatal("invalid Name")
-	}
-	if ev[0].Value().Time.After(time.Now()) {
-		t.Fatal("invalid Time")
-	}
-}
-
-func TestCloneHeaders(t *testing.T) {
+func TestHTTPCloneRequestHeaders(t *testing.T) {
 	t.Run("with req.Host set", func(t *testing.T) {
 		req := &http.Request{
 			Host: "www.example.com",
@@ -413,56 +268,4 @@ func TestCloneHeaders(t *testing.T) {
 			t.Fatal("did not set Host header correctly")
 		}
 	})
-}
-
-type FakeDialer struct {
-	Conn net.Conn
-	Err  error
-}
-
-func (d FakeDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	time.Sleep(10 * time.Microsecond)
-	return d.Conn, d.Err
-}
-
-type FakeTransport struct {
-	Name string
-	Err  error
-	Func func(*http.Request) (*http.Response, error)
-	Resp *http.Response
-}
-
-func (txp FakeTransport) Network() string {
-	return txp.Name
-}
-
-func (txp FakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	time.Sleep(10 * time.Microsecond)
-	if txp.Func != nil {
-		return txp.Func(req)
-	}
-	if req.Body != nil {
-		netxlite.ReadAllContext(req.Context(), req.Body)
-		req.Body.Close()
-	}
-	if txp.Err != nil {
-		return nil, txp.Err
-	}
-	txp.Resp.Request = req // non thread safe but it doesn't matter
-	return txp.Resp, nil
-}
-
-func (txp FakeTransport) CloseIdleConnections() {}
-
-type FakeBody struct {
-	Err error
-}
-
-func (fb FakeBody) Read(p []byte) (int, error) {
-	time.Sleep(10 * time.Microsecond)
-	return 0, fb.Err
-}
-
-func (fb FakeBody) Close() error {
-	return nil
 }

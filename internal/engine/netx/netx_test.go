@@ -511,21 +511,10 @@ func TestNewWithSaver(t *testing.T) {
 	if stxptxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	sbtxp, ok := stxptxp.HTTPTransport.(*tracex.SaverBodyHTTPTransport)
-	if !ok {
-		t.Fatal("not the transport we expected")
-	}
-	if sbtxp.Saver != saver {
+	if stxptxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	smtxp, ok := sbtxp.HTTPTransport.(*tracex.SaverMetadataHTTPTransport)
-	if !ok {
-		t.Fatal("not the transport we expected")
-	}
-	if smtxp.Saver != saver {
-		t.Fatal("not the logger we expected")
-	}
-	if _, ok := smtxp.HTTPTransport.(*netxlite.HTTPTransportWrapper); !ok {
+	if _, ok := stxptxp.HTTPTransport.(*netxlite.HTTPTransportWrapper); !ok {
 		t.Fatal("not the transport we expected")
 	}
 }
