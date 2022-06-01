@@ -49,7 +49,7 @@ func newResolverSystem(wrappers ...model.DNSTransportWrapper) *resolverSystem {
 //
 // - address is the server address (e.g., 1.1.1.1:53)
 //
-// - wrappers is the optional list of wrappers to wrap the undelrying
+// - wrappers is the optional list of wrappers to wrap the underlying
 // transport.  Any nil wrapper will be silently ignored.
 func NewSerialResolverUDP(logger model.DebugLogger, dialer model.Dialer,
 	address string, wrappers ...model.DNSTransportWrapper) model.Resolver {
@@ -69,7 +69,7 @@ func NewSerialResolverUDP(logger model.DebugLogger, dialer model.Dialer,
 //
 // - address is the server address (e.g., 1.1.1.1:53)
 //
-// - wrappers is the optional list of wrappers to wrap the undelrying
+// - wrappers is the optional list of wrappers to wrap the underlying
 // transport.  Any nil wrapper will be silently ignored.
 func NewParallelResolverUDP(logger model.DebugLogger, dialer model.Dialer,
 	address string, wrappers ...model.DNSTransportWrapper) model.Resolver {
