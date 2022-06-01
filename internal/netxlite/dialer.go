@@ -14,13 +14,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// DialerWrapper is a function that allows you to customize the kind of Dialer returned
-// by WrapDialer, NewDialerWithResolver, and NewDialerWithoutResolver.
-type DialerWrapper func(dialer model.Dialer) model.Dialer
-
 // NewDialerWithResolver is equivalent to calling WrapDialer with
 // the dialer argument being equal to &DialerSystem{}.
-func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...DialerWrapper) model.Dialer {
+func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {
 	return WrapDialer(dl, r, &DialerSystem{}, w...)
 }
 
@@ -40,7 +36,8 @@ func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...DialerWr
 // 3. baseDialer is the dialer to wrap (MUST NOT be nil);
 //
 // 4. wrappers is a list of zero or more functions allowing you to
-// modify the behavior of the returned dialer (see below).
+// modify the behavior of the returned dialer (see below). Please note
+// that this function will just ignore any nil wrapper.
 //
 // Return value
 //
@@ -109,12 +106,15 @@ func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...DialerWr
 // of a single connect operation. You may want to use the context to reduce
 // the overall time spent trying all addresses and timing out.
 func WrapDialer(logger model.DebugLogger, resolver model.Resolver,
-	baseDialer model.Dialer, wrappers ...DialerWrapper) (outDialer model.Dialer) {
+	baseDialer model.Dialer, wrappers ...model.DialerWrapper) (outDialer model.Dialer) {
 	outDialer = &dialerErrWrapper{
 		Dialer: baseDialer,
 	}
 	for _, wrapper := range wrappers {
-		outDialer = wrapper(outDialer) // extend with user-supplied constructors
+		if wrapper == nil {
+			continue // ignore as documented
+		}
+		outDialer = wrapper.WrapDialer(outDialer) // extend with user-supplied constructors
 	}
 	return &dialerLogger{
 		Dialer: &dialerResolver{
@@ -131,7 +131,7 @@ func WrapDialer(logger model.DebugLogger, resolver model.Resolver,
 
 // NewDialerWithoutResolver is equivalent to calling NewDialerWithResolver
 // with the resolver argument being &NullResolver{}.
-func NewDialerWithoutResolver(dl model.DebugLogger, w ...DialerWrapper) model.Dialer {
+func NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) model.Dialer {
 	return NewDialerWithResolver(dl, &NullResolver{}, w...)
 }
 

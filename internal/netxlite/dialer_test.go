@@ -19,19 +19,27 @@ type extensionDialerFirst struct {
 	model.Dialer
 }
 
+type dialerWrapperFirst struct{}
+
+func (*dialerWrapperFirst) WrapDialer(d model.Dialer) model.Dialer {
+	return &extensionDialerFirst{d}
+}
+
 type extensionDialerSecond struct {
 	model.Dialer
 }
 
+type dialerWrapperSecond struct{}
+
+func (*dialerWrapperSecond) WrapDialer(d model.Dialer) model.Dialer {
+	return &extensionDialerSecond{d}
+}
 func TestNewDialer(t *testing.T) {
 	t.Run("produces a chain with the expected types", func(t *testing.T) {
-		modifiers := []DialerWrapper{
-			func(dialer model.Dialer) model.Dialer {
-				return &extensionDialerFirst{dialer}
-			},
-			func(dialer model.Dialer) model.Dialer {
-				return &extensionDialerSecond{dialer}
-			},
+		modifiers := []model.DialerWrapper{
+			&dialerWrapperFirst{},
+			nil, // explicitly test for this documented case
+			&dialerWrapperSecond{},
 		}
 		d := NewDialerWithoutResolver(log.Log, modifiers...)
 		logger := d.(*dialerLogger)

@@ -32,18 +32,16 @@ func (qls *quicListenerStdlib) Listen(addr *net.UDPAddr) (model.UDPLikeConn, err
 	return TProxy.ListenUDP("udp", addr)
 }
 
-// QUICDialerWrapper is a function that allows you to customize the kind of QUICDialer
-// returned by NewQUICDialerWithResolver and NewQUICDialerWithoutResolver.
-type QUICDialerWrapper func(dialer model.QUICDialer) model.QUICDialer
-
 // NewQUICDialerWithResolver is the WrapDialer equivalent for QUIC where
 // we return a composed QUICDialer modified by optional wrappers.
+//
+// Please, note that this fuunction will just ignore any nil wrapper.
 //
 // Unlike the dialer returned by WrapDialer, this dialer MAY attempt
 // happy eyeballs, perform parallel dial attempts, and return an error
 // that aggregates all the errors that occurred.
 func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLogger,
-	resolver model.Resolver, wrappers ...QUICDialerWrapper) (outDialer model.QUICDialer) {
+	resolver model.Resolver, wrappers ...model.QUICDialerWrapper) (outDialer model.QUICDialer) {
 	outDialer = &quicDialerErrWrapper{
 		QUICDialer: &quicDialerHandshakeCompleter{
 			Dialer: &quicDialerQUICGo{
@@ -52,7 +50,10 @@ func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLo
 		},
 	}
 	for _, wrapper := range wrappers {
-		outDialer = wrapper(outDialer) // extend with user-supplied constructors
+		if wrapper == nil {
+			continue // ignore as documented
+		}
+		outDialer = wrapper.WrapQUICDialer(outDialer) // extend with user-supplied constructors
 	}
 	return &quicDialerLogger{
 		Dialer: &quicDialerResolver{
@@ -70,7 +71,7 @@ func NewQUICDialerWithResolver(listener model.QUICListener, logger model.DebugLo
 // NewQUICDialerWithoutResolver is equivalent to calling NewQUICDialerWithResolver
 // with the resolver argument set to &NullResolver{}.
 func NewQUICDialerWithoutResolver(listener model.QUICListener,
-	logger model.DebugLogger, wrappers ...QUICDialerWrapper) model.QUICDialer {
+	logger model.DebugLogger, wrappers ...model.QUICDialerWrapper) model.QUICDialer {
 	return NewQUICDialerWithResolver(listener, logger, &NullResolver{}, wrappers...)
 }
 

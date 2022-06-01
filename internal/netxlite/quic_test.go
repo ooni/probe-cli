@@ -26,19 +26,30 @@ type extensionQUICDialerFirst struct {
 	model.QUICDialer
 }
 
+type quicDialerWrapperFirst struct{}
+
+func (*quicDialerWrapperFirst) WrapQUICDialer(qd model.QUICDialer) model.QUICDialer {
+	return &extensionQUICDialerFirst{qd}
+}
+
 type extensionQUICDialerSecond struct {
 	model.QUICDialer
 }
 
+type quicDialerWrapperSecond struct {
+	model.QUICDialer
+}
+
+func (*quicDialerWrapperSecond) WrapQUICDialer(qd model.QUICDialer) model.QUICDialer {
+	return &extensionQUICDialerSecond{qd}
+}
+
 func TestNewQUICDialer(t *testing.T) {
 	ql := NewQUICListener()
-	extensions := []QUICDialerWrapper{
-		func(dialer model.QUICDialer) model.QUICDialer {
-			return &extensionQUICDialerFirst{dialer}
-		},
-		func(dialer model.QUICDialer) model.QUICDialer {
-			return &extensionQUICDialerSecond{dialer}
-		},
+	extensions := []model.QUICDialerWrapper{
+		&quicDialerWrapperFirst{},
+		nil, // explicitly test for this documented case
+		&quicDialerWrapperSecond{},
 	}
 	dlr := NewQUICDialerWithoutResolver(ql, log.Log, extensions...)
 	logger := dlr.(*quicDialerLogger)
