@@ -25,9 +25,13 @@ var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 // NewResolverStdlib creates a new Resolver by combining WrapResolver
 // with an internal "system" resolver type.
 func NewResolverStdlib(logger model.DebugLogger) model.Resolver {
-	return WrapResolver(logger, &resolverSystem{
+	return WrapResolver(logger, newResolverSystem())
+}
+
+func newResolverSystem() *resolverSystem {
+	return &resolverSystem{
 		t: &dnsOverGetaddrinfoTransport{},
-	})
+	}
 }
 
 // NewResolverUDP creates a new Resolver using DNS-over-UDP.

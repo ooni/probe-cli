@@ -1,5 +1,10 @@
 package netxlite
 
+//
+// DNS over getaddrinfo: fake transport to allow us to observe
+// lookups using getaddrinfo as a DNSTransport.
+//
+
 import (
 	"context"
 	"net"

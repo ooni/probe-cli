@@ -11,7 +11,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-func TestDNSOverGetadddrinfo(t *testing.T) {
+func TestDNSOverGetaddrinfo(t *testing.T) {
 	t.Run("RequiresPadding", func(t *testing.T) {
 		txp := &dnsOverGetaddrinfoTransport{}
 		if txp.RequiresPadding() {
@@ -185,6 +185,5 @@ func TestDNSOverGetadddrinfo(t *testing.T) {
 				t.Fatal("invalid resp")
 			}
 		})
-
 	})
 }
