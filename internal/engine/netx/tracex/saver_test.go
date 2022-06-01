@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGood(t *testing.T) {
+func TestSaver(t *testing.T) {
 	saver := Saver{}
 	var wg sync.WaitGroup
 	const parallel = 10

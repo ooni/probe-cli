@@ -47,7 +47,7 @@ func TestDNSQueryIPOfType(t *testing.T) {
 		output: false,
 	}}
 	for _, exp := range expectations {
-		if exp.qtype.ipoftype(exp.ip) != exp.output {
+		if exp.qtype.ipOfType(exp.ip) != exp.output {
 			t.Fatalf("failure for %+v", exp)
 		}
 	}

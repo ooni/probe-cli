@@ -119,7 +119,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSPowerdns(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	stxp, ok := sr.Txp.(tracex.SaverDNSTransport)
+	stxp, ok := sr.Txp.(*tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -195,7 +195,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSGoogle(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	stxp, ok := sr.Txp.(tracex.SaverDNSTransport)
+	stxp, ok := sr.Txp.(*tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -271,7 +271,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSCloudflare(t *testing.T) 
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	stxp, ok := sr.Txp.(tracex.SaverDNSTransport)
+	stxp, ok := sr.Txp.(*tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}
@@ -347,7 +347,7 @@ func TestConfigurerNewConfigurationResolverUDP(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	stxp, ok := sr.Txp.(tracex.SaverDNSTransport)
+	stxp, ok := sr.Txp.(*tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the DNS transport we expected")
 	}

@@ -1,5 +1,9 @@
 package tracex
 
+//
+// TCP and connected UDP sockets
+//
+
 import (
 	"context"
 	"net"
@@ -11,7 +15,10 @@ import (
 
 // SaverDialer saves events occurring during the dial
 type SaverDialer struct {
-	model.Dialer
+	// Dialer is the underlying dialer,
+	Dialer model.Dialer
+
+	// Saver saves events.
 	Saver *Saver
 }
 
@@ -31,10 +38,17 @@ func (d *SaverDialer) DialContext(ctx context.Context, network, address string) 
 	return conn, err
 }
 
+func (d *SaverDialer) CloseIdleConnections() {
+	d.Dialer.CloseIdleConnections()
+}
+
 // SaverConnDialer wraps the returned connection such that we
 // collect all the read/write events that occur.
 type SaverConnDialer struct {
-	model.Dialer
+	// Dialer is the underlying dialer
+	Dialer model.Dialer
+
+	// Saver saves events
 	Saver *Saver
 }
 
@@ -45,6 +59,10 @@ func (d *SaverConnDialer) DialContext(ctx context.Context, network, address stri
 		return nil, err
 	}
 	return &saverConn{saver: d.Saver, Conn: conn}, nil
+}
+
+func (d *SaverConnDialer) CloseIdleConnections() {
+	d.Dialer.CloseIdleConnections()
 }
 
 type saverConn struct {

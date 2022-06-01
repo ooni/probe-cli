@@ -30,10 +30,7 @@ func TestSaverTLSHandshakerSuccessWithReadWrite(t *testing.T) {
 				}
 			},
 		),
-		TLSHandshaker: SaverTLSHandshaker{
-			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
-			Saver:         saver,
-		},
+		TLSHandshaker: saver.WrapTLSHandshaker(&netxlite.TLSHandshakerConfigurable{}),
 	}
 	// Implementation note: we don't close the connection here because it is
 	// very handy to have the last event being the end of the handshake
@@ -121,12 +118,9 @@ func TestSaverTLSHandshakerSuccess(t *testing.T) {
 	nextprotos := []string{"h2"}
 	saver := &Saver{}
 	tlsdlr := &netxlite.TLSDialerLegacy{
-		Config: &tls.Config{NextProtos: nextprotos},
-		Dialer: netxlite.DefaultDialer,
-		TLSHandshaker: SaverTLSHandshaker{
-			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
-			Saver:         saver,
-		},
+		Config:        &tls.Config{NextProtos: nextprotos},
+		Dialer:        &netxlite.DialerSystem{},
+		TLSHandshaker: saver.WrapTLSHandshaker(&netxlite.TLSHandshakerConfigurable{}),
 	}
 	conn, err := tlsdlr.DialTLSContext(context.Background(), "tcp", "www.google.com:443")
 	if err != nil {
@@ -187,11 +181,8 @@ func TestSaverTLSHandshakerHostnameError(t *testing.T) {
 	}
 	saver := &Saver{}
 	tlsdlr := &netxlite.TLSDialerLegacy{
-		Dialer: netxlite.DefaultDialer,
-		TLSHandshaker: SaverTLSHandshaker{
-			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
-			Saver:         saver,
-		},
+		Dialer:        &netxlite.DialerSystem{},
+		TLSHandshaker: saver.WrapTLSHandshaker(&netxlite.TLSHandshakerConfigurable{}),
 	}
 	conn, err := tlsdlr.DialTLSContext(
 		context.Background(), "tcp", "wrong.host.badssl.com:443")
@@ -220,11 +211,8 @@ func TestSaverTLSHandshakerInvalidCertError(t *testing.T) {
 	}
 	saver := &Saver{}
 	tlsdlr := &netxlite.TLSDialerLegacy{
-		Dialer: netxlite.DefaultDialer,
-		TLSHandshaker: SaverTLSHandshaker{
-			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
-			Saver:         saver,
-		},
+		Dialer:        &netxlite.DialerSystem{},
+		TLSHandshaker: saver.WrapTLSHandshaker(&netxlite.TLSHandshakerConfigurable{}),
 	}
 	conn, err := tlsdlr.DialTLSContext(
 		context.Background(), "tcp", "expired.badssl.com:443")
@@ -253,11 +241,8 @@ func TestSaverTLSHandshakerAuthorityError(t *testing.T) {
 	}
 	saver := &Saver{}
 	tlsdlr := &netxlite.TLSDialerLegacy{
-		Dialer: netxlite.DefaultDialer,
-		TLSHandshaker: SaverTLSHandshaker{
-			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
-			Saver:         saver,
-		},
+		Dialer:        &netxlite.DialerSystem{},
+		TLSHandshaker: saver.WrapTLSHandshaker(&netxlite.TLSHandshakerConfigurable{}),
 	}
 	conn, err := tlsdlr.DialTLSContext(
 		context.Background(), "tcp", "self-signed.badssl.com:443")
@@ -286,12 +271,9 @@ func TestSaverTLSHandshakerNoTLSVerify(t *testing.T) {
 	}
 	saver := &Saver{}
 	tlsdlr := &netxlite.TLSDialerLegacy{
-		Config: &tls.Config{InsecureSkipVerify: true},
-		Dialer: netxlite.DefaultDialer,
-		TLSHandshaker: SaverTLSHandshaker{
-			TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
-			Saver:         saver,
-		},
+		Config:        &tls.Config{InsecureSkipVerify: true},
+		Dialer:        &netxlite.DialerSystem{},
+		TLSHandshaker: saver.WrapTLSHandshaker(&netxlite.TLSHandshakerConfigurable{}),
 	}
 	conn, err := tlsdlr.DialTLSContext(
 		context.Background(), "tcp", "self-signed.badssl.com:443")

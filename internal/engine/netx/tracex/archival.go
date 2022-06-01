@@ -15,7 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// Compatibility types
+// Compatibility types. Most experiments still use these names.
 type (
 	ExtSpec          = model.ArchivalExtSpec
 	TCPConnectEntry  = model.ArchivalTCPConnectResult
@@ -32,7 +32,7 @@ type (
 	NetworkEvent     = model.ArchivalNetworkEvent
 )
 
-// Compatibility variables
+// Compatibility variables. Most experiments still use these names.
 var (
 	ExtDNS          = model.ArchivalExtDNS
 	ExtNetevents    = model.ArchivalExtNetevents
@@ -100,7 +100,7 @@ func NewFailedOperation(err error) *string {
 	return &s
 }
 
-func addheaders(
+func httpAddHeaders(
 	source http.Header,
 	destList *[]HTTPHeader,
 	destMap *map[string]MaybeBinaryValue,
@@ -150,14 +150,14 @@ func newRequestList(begin time.Time, events []Event) []RequestEntry {
 			entry.Request.BodyIsTruncated = ev.DataIsTruncated
 		case "http_request_metadata":
 			entry.Request.Headers = make(map[string]MaybeBinaryValue)
-			addheaders(
+			httpAddHeaders(
 				ev.HTTPHeaders, &entry.Request.HeadersList, &entry.Request.Headers)
 			entry.Request.Method = ev.HTTPMethod
 			entry.Request.URL = ev.HTTPURL
 			entry.Request.Transport = ev.Transport
 		case "http_response_metadata":
 			entry.Response.Headers = make(map[string]MaybeBinaryValue)
-			addheaders(
+			httpAddHeaders(
 				ev.HTTPHeaders, &entry.Response.HeadersList, &entry.Response.Headers)
 			entry.Response.Code = int64(ev.HTTPStatusCode)
 			entry.Response.Locations = ev.HTTPHeaders.Values("Location")
@@ -183,11 +183,11 @@ func NewDNSQueriesList(begin time.Time, events []Event) []DNSQueryEntry {
 			continue
 		}
 		for _, qtype := range []dnsQueryType{"A", "AAAA"} {
-			entry := qtype.makequeryentry(begin, ev)
+			entry := qtype.makeQueryEntry(begin, ev)
 			for _, addr := range ev.Addresses {
-				if qtype.ipoftype(addr) {
+				if qtype.ipOfType(addr) {
 					entry.Answers = append(
-						entry.Answers, qtype.makeanswerentry(addr))
+						entry.Answers, qtype.makeAnswerEntry(addr))
 				}
 			}
 			if len(entry.Answers) <= 0 && ev.Err == nil {
@@ -206,7 +206,7 @@ func NewDNSQueriesList(begin time.Time, events []Event) []DNSQueryEntry {
 	return out
 }
 
-func (qtype dnsQueryType) ipoftype(addr string) bool {
+func (qtype dnsQueryType) ipOfType(addr string) bool {
 	switch qtype {
 	case "A":
 		return !strings.Contains(addr, ":")
@@ -216,7 +216,7 @@ func (qtype dnsQueryType) ipoftype(addr string) bool {
 	return false
 }
 
-func (qtype dnsQueryType) makeanswerentry(addr string) DNSAnswerEntry {
+func (qtype dnsQueryType) makeAnswerEntry(addr string) DNSAnswerEntry {
 	answer := DNSAnswerEntry{AnswerType: string(qtype)}
 	asn, org, _ := geolocate.LookupASN(addr)
 	answer.ASN = int64(asn)
@@ -230,7 +230,7 @@ func (qtype dnsQueryType) makeanswerentry(addr string) DNSAnswerEntry {
 	return answer
 }
 
-func (qtype dnsQueryType) makequeryentry(begin time.Time, ev Event) DNSQueryEntry {
+func (qtype dnsQueryType) makeQueryEntry(begin time.Time, ev Event) DNSQueryEntry {
 	return DNSQueryEntry{
 		Engine:          ev.Proto,
 		Failure:         NewFailure(ev.Err),
@@ -315,7 +315,7 @@ func NewTLSHandshakesList(begin time.Time, events []Event) []TLSHandshake {
 			Failure:            NewFailure(ev.Err),
 			NegotiatedProtocol: ev.TLSNegotiatedProto,
 			NoTLSVerify:        ev.NoTLSVerify,
-			PeerCertificates:   makePeerCerts(ev.TLSPeerCerts),
+			PeerCertificates:   tlsMakePeerCerts(ev.TLSPeerCerts),
 			ServerName:         ev.TLSServerName,
 			T:                  ev.Time.Sub(begin).Seconds(),
 			TLSVersion:         ev.TLSVersion,
@@ -324,7 +324,7 @@ func NewTLSHandshakesList(begin time.Time, events []Event) []TLSHandshake {
 	return out
 }
 
-func makePeerCerts(in []*x509.Certificate) (out []MaybeBinaryValue) {
+func tlsMakePeerCerts(in []*x509.Certificate) (out []MaybeBinaryValue) {
 	for _, e := range in {
 		out = append(out, MaybeBinaryValue{Value: string(e.Raw)})
 	}

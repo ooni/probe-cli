@@ -1,5 +1,9 @@
 package tracex
 
+//
+// HTTP
+//
+
 import (
 	"bytes"
 	"context"
@@ -21,7 +25,7 @@ type SaverMetadataHTTPTransport struct {
 // RoundTrip implements RoundTripper.RoundTrip
 func (txp SaverMetadataHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	txp.Saver.Write(Event{
-		HTTPHeaders: txp.CloneHeaders(req),
+		HTTPHeaders: httpCloneHeaders(req),
 		HTTPMethod:  req.Method,
 		HTTPURL:     req.URL.String(),
 		Transport:   txp.HTTPTransport.Network(),
@@ -41,10 +45,10 @@ func (txp SaverMetadataHTTPTransport) RoundTrip(req *http.Request) (*http.Respon
 	return resp, err
 }
 
-// CloneHeaders returns a clone of the headers where we have
+// httpCCloneHeaders returns a clone of the headers where we have
 // also set the host header, which normally is not set by
 // golang until it serializes the request itself.
-func (txp SaverMetadataHTTPTransport) CloneHeaders(req *http.Request) http.Header {
+func httpCloneHeaders(req *http.Request) http.Header {
 	header := req.Header.Clone()
 	if req.Host != "" {
 		header.Set("Host", req.Host)
@@ -92,11 +96,11 @@ func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, 
 		snapsize = txp.SnapshotSize
 	}
 	if req.Body != nil {
-		data, err := saverSnapRead(req.Context(), req.Body, snapsize)
+		data, err := httpSaverSnapRead(req.Context(), req.Body, snapsize)
 		if err != nil {
 			return nil, err
 		}
-		req.Body = saverCompose(data, req.Body)
+		req.Body = httpSaverCompose(data, req.Body)
 		txp.Saver.Write(Event{
 			DataIsTruncated: len(data) >= snapsize,
 			Data:            data,
@@ -108,12 +112,12 @@ func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, 
 	if err != nil {
 		return nil, err
 	}
-	data, err := saverSnapRead(req.Context(), resp.Body, snapsize)
+	data, err := httpSaverSnapRead(req.Context(), resp.Body, snapsize)
 	if err != nil {
 		resp.Body.Close()
 		return nil, err
 	}
-	resp.Body = saverCompose(data, resp.Body)
+	resp.Body = httpSaverCompose(data, resp.Body)
 	txp.Saver.Write(Event{
 		DataIsTruncated: len(data) >= snapsize,
 		Data:            data,
@@ -123,15 +127,15 @@ func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, 
 	return resp, nil
 }
 
-func saverSnapRead(ctx context.Context, r io.ReadCloser, snapsize int) ([]byte, error) {
+func httpSaverSnapRead(ctx context.Context, r io.ReadCloser, snapsize int) ([]byte, error) {
 	return netxlite.ReadAllContext(ctx, io.LimitReader(r, int64(snapsize)))
 }
 
-func saverCompose(data []byte, r io.ReadCloser) io.ReadCloser {
-	return saverReadCloser{Closer: r, Reader: io.MultiReader(bytes.NewReader(data), r)}
+func httpSaverCompose(data []byte, r io.ReadCloser) io.ReadCloser {
+	return httpSaverReadCloser{Closer: r, Reader: io.MultiReader(bytes.NewReader(data), r)}
 }
 
-type saverReadCloser struct {
+type httpSaverReadCloser struct {
 	io.Closer
 	io.Reader
 }

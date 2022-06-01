@@ -394,8 +394,7 @@ func TestCloneHeaders(t *testing.T) {
 			},
 			Header: http.Header{},
 		}
-		txp := SaverMetadataHTTPTransport{}
-		header := txp.CloneHeaders(req)
+		header := httpCloneHeaders(req)
 		if header.Get("Host") != "www.example.com" {
 			t.Fatal("did not set Host header correctly")
 		}
@@ -409,8 +408,7 @@ func TestCloneHeaders(t *testing.T) {
 			},
 			Header: http.Header{},
 		}
-		txp := SaverMetadataHTTPTransport{}
-		header := txp.CloneHeaders(req)
+		header := httpCloneHeaders(req)
 		if header.Get("Host") != "www.kernel.org" {
 			t.Fatal("did not set Host header correctly")
 		}
