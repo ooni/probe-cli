@@ -53,7 +53,7 @@ creating a system resolver, except that we also need to specify the
 UDP endpoint address at which the server is listening.
 
 ```Go
-	reso := netxlite.NewResolverUDP(log.Log, dialer, *serverAddr)
+	reso := netxlite.NewParallelResolverUDP(log.Log, dialer, *serverAddr)
 ```
 
 The API we invoke is the same as in the previous chapter, though,
