@@ -12,8 +12,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// SaverDialer saves events occurring during the dial
-type SaverDialer struct {
+// DialerSaver saves events occurring during the dial
+type DialerSaver struct {
 	// Dialer is the underlying dialer,
 	Dialer model.Dialer
 
@@ -28,26 +28,26 @@ func (s *Saver) NewConnectObserver() model.DialerWrapper {
 	if s == nil {
 		return nil // valid DialerWrapper according to netxlite's docs
 	}
-	return &saverDialerWrapper{
+	return &dialerConnectObserver{
 		saver: s,
 	}
 }
 
-type saverDialerWrapper struct {
+type dialerConnectObserver struct {
 	saver *Saver
 }
 
-var _ model.DialerWrapper = &saverDialerWrapper{}
+var _ model.DialerWrapper = &dialerConnectObserver{}
 
-func (w *saverDialerWrapper) WrapDialer(d model.Dialer) model.Dialer {
-	return &SaverDialer{
+func (w *dialerConnectObserver) WrapDialer(d model.Dialer) model.Dialer {
+	return &DialerSaver{
 		Dialer: d,
 		Saver:  w.saver,
 	}
 }
 
 // DialContext implements Dialer.DialContext
-func (d *SaverDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *DialerSaver) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	start := time.Now()
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	stop := time.Now()
@@ -61,13 +61,13 @@ func (d *SaverDialer) DialContext(ctx context.Context, network, address string) 
 	return conn, err
 }
 
-func (d *SaverDialer) CloseIdleConnections() {
+func (d *DialerSaver) CloseIdleConnections() {
 	d.Dialer.CloseIdleConnections()
 }
 
-// SaverConnDialer wraps the returned connection such that we
+// DialerConnSaver wraps the returned connection such that we
 // collect all the read/write events that occur.
-type SaverConnDialer struct {
+type DialerConnSaver struct {
 	// Dialer is the underlying dialer
 	Dialer model.Dialer
 
@@ -82,70 +82,78 @@ func (s *Saver) NewReadWriteObserver() model.DialerWrapper {
 	if s == nil {
 		return nil // valid DialerWrapper according to netxlite's docs
 	}
-	return &saverReadWriteWrapper{
+	return &dialerReadWriteObserver{
 		saver: s,
 	}
 }
 
-type saverReadWriteWrapper struct {
+type dialerReadWriteObserver struct {
 	saver *Saver
 }
 
-var _ model.DialerWrapper = &saverReadWriteWrapper{}
+var _ model.DialerWrapper = &dialerReadWriteObserver{}
 
-func (w *saverReadWriteWrapper) WrapDialer(d model.Dialer) model.Dialer {
-	return &SaverConnDialer{
+func (w *dialerReadWriteObserver) WrapDialer(d model.Dialer) model.Dialer {
+	return &DialerConnSaver{
 		Dialer: d,
 		Saver:  w.saver,
 	}
 }
 
 // DialContext implements Dialer.DialContext
-func (d *SaverConnDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *DialerConnSaver) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
 		return nil, err
 	}
-	return &saverConn{saver: d.Saver, Conn: conn}, nil
+	return &dialerConnWrapper{saver: d.Saver, Conn: conn}, nil
 }
 
-func (d *SaverConnDialer) CloseIdleConnections() {
+func (d *DialerConnSaver) CloseIdleConnections() {
 	d.Dialer.CloseIdleConnections()
 }
 
-type saverConn struct {
+type dialerConnWrapper struct {
 	net.Conn
 	saver *Saver
 }
 
-func (c *saverConn) Read(p []byte) (int, error) {
+func (c *dialerConnWrapper) Read(p []byte) (int, error) {
+	proto := c.Conn.RemoteAddr().Network()
+	remoteAddr := c.Conn.RemoteAddr().String()
 	start := time.Now()
 	count, err := c.Conn.Read(p)
 	stop := time.Now()
 	c.saver.Write(&EventReadOperation{&EventValue{
+		Address:  remoteAddr,
 		Data:     p[:count],
 		Duration: stop.Sub(start),
 		Err:      err,
 		NumBytes: count,
+		Proto:    proto,
 		Time:     stop,
 	}})
 	return count, err
 }
 
-func (c *saverConn) Write(p []byte) (int, error) {
+func (c *dialerConnWrapper) Write(p []byte) (int, error) {
+	proto := c.Conn.RemoteAddr().Network()
+	remoteAddr := c.Conn.RemoteAddr().String()
 	start := time.Now()
 	count, err := c.Conn.Write(p)
 	stop := time.Now()
 	c.saver.Write(&EventWriteOperation{&EventValue{
+		Address:  remoteAddr,
 		Data:     p[:count],
 		Duration: stop.Sub(start),
 		Err:      err,
 		NumBytes: count,
+		Proto:    proto,
 		Time:     stop,
 	}})
 	return count, err
 }
 
-var _ model.Dialer = &SaverDialer{}
-var _ model.Dialer = &SaverConnDialer{}
-var _ net.Conn = &saverConn{}
+var _ model.Dialer = &DialerSaver{}
+var _ model.Dialer = &DialerConnSaver{}
+var _ net.Conn = &dialerConnWrapper{}

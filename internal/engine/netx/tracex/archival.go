@@ -1,5 +1,9 @@
 package tracex
 
+//
+// Code to generate the OONI archival data format from events
+//
+
 import (
 	"crypto/x509"
 	"errors"
@@ -43,8 +47,7 @@ var (
 )
 
 // NewTCPConnectList creates a new TCPConnectList
-func NewTCPConnectList(begin time.Time, events []Event) []TCPConnectEntry {
-	var out []TCPConnectEntry
+func NewTCPConnectList(begin time.Time, events []Event) (out []TCPConnectEntry) {
 	for _, wrapper := range events {
 		if _, ok := wrapper.(*EventConnectOperation); !ok {
 			continue
@@ -60,13 +63,14 @@ func NewTCPConnectList(begin time.Time, events []Event) []TCPConnectEntry {
 			IP:   ip,
 			Port: iport,
 			Status: TCPConnectStatus{
+				Blocked: nil, // only used by Web Connectivity
 				Failure: NewFailure(event.Err),
 				Success: event.Err == nil,
 			},
 			T: event.Time.Sub(begin).Seconds(),
 		})
 	}
-	return out
+	return
 }
 
 // NewFailure creates a failure nullable string from the given error
@@ -101,11 +105,9 @@ func NewFailedOperation(err error) *string {
 	return &s
 }
 
-func httpAddHeaders(
-	source http.Header,
-	destList *[]HTTPHeader,
-	destMap *map[string]MaybeBinaryValue,
-) {
+// httpAddHeaders adds the headers inside source into destList and destMap.
+func httpAddHeaders(source http.Header, destList *[]HTTPHeader,
+	destMap *map[string]MaybeBinaryValue) {
 	*destList = []HTTPHeader{}
 	*destMap = make(map[string]model.ArchivalMaybeBinaryData)
 	for key, values := range source {
@@ -122,32 +124,28 @@ func httpAddHeaders(
 			})
 		}
 	}
+	// Sorting helps with unit testing (map keys are unordered)
 	sort.Slice(*destList, func(i, j int) bool {
 		return (*destList)[i].Key < (*destList)[j].Key
 	})
 }
 
 // NewRequestList returns the list for "requests"
-func NewRequestList(begin time.Time, events []Event) []RequestEntry {
+func NewRequestList(begin time.Time, events []Event) (out []RequestEntry) {
 	// OONI wants the last request to appear first
-	var out []RequestEntry
 	tmp := newRequestList(begin, events)
 	for i := len(tmp) - 1; i >= 0; i-- {
 		out = append(out, tmp[i])
 	}
-	return out
+	return
 }
 
-func newRequestList(begin time.Time, events []Event) []RequestEntry {
-	var (
-		out   []RequestEntry
-		entry RequestEntry
-	)
+func newRequestList(begin time.Time, events []Event) (out []RequestEntry) {
 	for _, wrapper := range events {
 		ev := wrapper.Value()
 		switch wrapper.(type) {
 		case *EventHTTPTransactionDone:
-			entry = RequestEntry{}
+			entry := RequestEntry{}
 			entry.T = ev.Time.Sub(begin).Seconds()
 			httpAddHeaders(
 				ev.HTTPRequestHeaders, &entry.Request.HeadersList, &entry.Request.Headers)
@@ -164,15 +162,14 @@ func newRequestList(begin time.Time, events []Event) []RequestEntry {
 			out = append(out, entry)
 		}
 	}
-	return out
+	return
 }
 
 type dnsQueryType string
 
 // NewDNSQueriesList returns a list of DNS queries.
-func NewDNSQueriesList(begin time.Time, events []Event) []DNSQueryEntry {
+func NewDNSQueriesList(begin time.Time, events []Event) (out []DNSQueryEntry) {
 	// TODO(bassosimone): add support for CNAME lookups.
-	var out []DNSQueryEntry
 	for _, wrapper := range events {
 		if _, ok := wrapper.(*EventResolveDone); !ok {
 			continue
@@ -199,7 +196,7 @@ func NewDNSQueriesList(begin time.Time, events []Event) []DNSQueryEntry {
 			out = append(out, entry)
 		}
 	}
-	return out
+	return
 }
 
 func (qtype dnsQueryType) ipOfType(addr string) bool {
@@ -214,6 +211,8 @@ func (qtype dnsQueryType) ipOfType(addr string) bool {
 
 func (qtype dnsQueryType) makeAnswerEntry(addr string) DNSAnswerEntry {
 	answer := DNSAnswerEntry{AnswerType: string(qtype)}
+	// Figuring out the ASN and the org here is not just a service to whoever
+	// is reading a JSON: Web Connectivity also depends on it!
 	asn, org, _ := geolocate.LookupASN(addr)
 	answer.ASN = int64(asn)
 	answer.ASOrgName = org
@@ -237,9 +236,8 @@ func (qtype dnsQueryType) makeQueryEntry(begin time.Time, ev *EventValue) DNSQue
 	}
 }
 
-// NewNetworkEventsList returns a list of DNS queries.
-func NewNetworkEventsList(begin time.Time, events []Event) []NetworkEvent {
-	var out []NetworkEvent
+// NewNetworkEventsList returns a list of network events.
+func NewNetworkEventsList(begin time.Time, events []Event) (out []NetworkEvent) {
 	for _, wrapper := range events {
 		ev := wrapper.Value()
 		switch wrapper.(type) {
@@ -281,7 +279,7 @@ func NewNetworkEventsList(begin time.Time, events []Event) []NetworkEvent {
 				NumBytes:  int64(ev.NumBytes),
 				T:         ev.Time.Sub(begin).Seconds(),
 			})
-		default:
+		default: // For example, "tls_handshake_done" (used in data analysis!)
 			out = append(out, NetworkEvent{
 				Failure:   NewFailure(ev.Err),
 				Operation: wrapper.Name(),
@@ -289,15 +287,14 @@ func NewNetworkEventsList(begin time.Time, events []Event) []NetworkEvent {
 			})
 		}
 	}
-	return out
+	return
 }
 
 // NewTLSHandshakesList creates a new TLSHandshakesList
-func NewTLSHandshakesList(begin time.Time, events []Event) []TLSHandshake {
-	var out []TLSHandshake
+func NewTLSHandshakesList(begin time.Time, events []Event) (out []TLSHandshake) {
 	for _, wrapper := range events {
 		switch wrapper.(type) {
-		case *EventQUICHandshakeDone, *EventTLSHandshakeDone: // ok
+		case *EventQUICHandshakeDone, *EventTLSHandshakeDone: // interested
 		default:
 			continue // not interested
 		}
@@ -314,12 +311,12 @@ func NewTLSHandshakesList(begin time.Time, events []Event) []TLSHandshake {
 			TLSVersion:         ev.TLSVersion,
 		})
 	}
-	return out
+	return
 }
 
 func tlsMakePeerCerts(in []*x509.Certificate) (out []MaybeBinaryValue) {
-	for _, e := range in {
-		out = append(out, MaybeBinaryValue{Value: string(e.Raw)})
+	for _, entry := range in {
+		out = append(out, MaybeBinaryValue{Value: string(entry.Raw)})
 	}
 	return
 }

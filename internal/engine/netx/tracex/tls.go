@@ -16,8 +16,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// SaverTLSHandshaker saves events occurring during the TLS handshake.
-type SaverTLSHandshaker struct {
+// TLSHandshakerSaver saves events occurring during the TLS handshake.
+type TLSHandshakerSaver struct {
 	// TLSHandshaker is the underlying TLS handshaker.
 	TLSHandshaker model.TLSHandshaker
 
@@ -34,23 +34,26 @@ func (s *Saver) WrapTLSHandshaker(thx model.TLSHandshaker) model.TLSHandshaker {
 	if s == nil {
 		return thx
 	}
-	return &SaverTLSHandshaker{
+	return &TLSHandshakerSaver{
 		TLSHandshaker: thx,
 		Saver:         s,
 	}
 }
 
 // Handshake implements model.TLSHandshaker.Handshake
-func (h *SaverTLSHandshaker) Handshake(
+func (h *TLSHandshakerSaver) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+	proto := conn.RemoteAddr().Network()
+	remoteAddr := conn.RemoteAddr().String()
 	start := time.Now()
 	h.Saver.Write(&EventTLSHandshakeStart{&EventValue{
+		Address:       remoteAddr,
 		NoTLSVerify:   config.InsecureSkipVerify,
+		Proto:         proto,
 		TLSNextProtos: config.NextProtos,
 		TLSServerName: config.ServerName,
 		Time:          start,
 	}})
-	remoteAddr := conn.RemoteAddr().String()
 	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
 	stop := time.Now()
 	h.Saver.Write(&EventTLSHandshakeDone{&EventValue{
@@ -58,6 +61,7 @@ func (h *SaverTLSHandshaker) Handshake(
 		Duration:           stop.Sub(start),
 		Err:                err,
 		NoTLSVerify:        config.InsecureSkipVerify,
+		Proto:              proto,
 		TLSCipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		TLSNegotiatedProto: state.NegotiatedProtocol,
 		TLSNextProtos:      config.NextProtos,
@@ -69,7 +73,7 @@ func (h *SaverTLSHandshaker) Handshake(
 	return tlsconn, state, err
 }
 
-var _ model.TLSHandshaker = &SaverTLSHandshaker{}
+var _ model.TLSHandshaker = &TLSHandshakerSaver{}
 
 // tlsPeerCerts returns the certificates presented by the peer regardless
 // of whether the TLS handshake was successful

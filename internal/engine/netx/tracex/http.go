@@ -27,11 +27,17 @@ func httpCloneRequestHeaders(req *http.Request) http.Header {
 	return header
 }
 
-// SaverTransactionHTTPTransport is a RoundTripper that saves
+// HTTPTransportSaver is a RoundTripper that saves
 // events related to the HTTP transaction
-type SaverTransactionHTTPTransport struct {
-	model.HTTPTransport
-	Saver        *Saver
+type HTTPTransportSaver struct {
+	// HTTPTransport is the MANDATORY underlying HTTP transport.
+	HTTPTransport model.HTTPTransport
+
+	// Saver is the MANDATORY saver to use.
+	Saver *Saver
+
+	// SnapshotSize is the OPTIONAL maximum body snapshot size (if not set, we'll
+	// use 1<<17, which we've been using since the ooni/netx days)
 	SnapshotSize int64
 }
 
@@ -40,7 +46,11 @@ type SaverTransactionHTTPTransport struct {
 //
 // The maxBodySnapshotSize argument controls the maximum size of the
 // body snapshot that we collect along with the HTTP round trip.
-func (txp *SaverTransactionHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (txp *HTTPTransportSaver) RoundTrip(req *http.Request) (*http.Response, error) {
+
+	// TODO(bassosimone): we're currently using the started time for
+	// the transaction done event, which contrasts with what we do for
+	// every other event. What does the spec say?
 
 	started := time.Now()
 	txp.Saver.Write(&EventHTTPTransactionStart{&EventValue{
@@ -92,7 +102,15 @@ func (txp *SaverTransactionHTTPTransport) RoundTrip(req *http.Request) (*http.Re
 	return resp, nil
 }
 
-func (txp *SaverTransactionHTTPTransport) snapshotSize() int64 {
+func (txp *HTTPTransportSaver) CloseIdleConnections() {
+	txp.HTTPTransport.CloseIdleConnections()
+}
+
+func (txp *HTTPTransportSaver) Network() string {
+	return txp.HTTPTransport.Network()
+}
+
+func (txp *HTTPTransportSaver) snapshotSize() int64 {
 	if txp.SnapshotSize > 0 {
 		return txp.SnapshotSize
 	}
@@ -104,4 +122,4 @@ type httpReadableAgainBody struct {
 	io.Closer
 }
 
-var _ model.HTTPTransport = &SaverTransactionHTTPTransport{}
+var _ model.HTTPTransport = &HTTPTransportSaver{}

@@ -3,182 +3,446 @@ package tracex
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"net"
-	"reflect"
-	"strings"
 	"testing"
-	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/quictesting"
 )
 
-type MockDialer struct {
-	Dialer model.QUICDialer
-	Sess   quic.EarlyConnection
-	Err    error
-}
+func TestQUICDialerSaver(t *testing.T) {
+	t.Run("DialContext", func(t *testing.T) {
 
-func (d MockDialer) DialContext(ctx context.Context, network, host string,
-	tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
-	if d.Dialer != nil {
-		return d.Dialer.DialContext(ctx, network, host, tlsCfg, cfg)
-	}
-	return d.Sess, d.Err
-}
+		checkStartEventFields := func(t *testing.T, value *EventValue) {
+			if value.Address != "8.8.8.8:443" {
+				t.Fatal("invalid Address")
+			}
+			if !value.NoTLSVerify {
+				t.Fatal("expected NoTLSVerify to be true")
+			}
+			if value.Proto != "udp" {
+				t.Fatal("wrong protocol")
+			}
+			if diff := cmp.Diff(value.TLSNextProtos, []string{"h3"}); diff != "" {
+				t.Fatal(diff)
+			}
+			if value.TLSServerName != "dns.google" {
+				t.Fatal("invalid TLSServerName")
+			}
+			if value.Time.IsZero() {
+				t.Fatal("expected non zero time")
+			}
+		}
 
-func TestHandshakeSaverSuccess(t *testing.T) {
-	nextprotos := []string{"h3"}
-	servername := quictesting.Domain
-	tlsConf := &tls.Config{
-		NextProtos: nextprotos,
-		ServerName: servername,
-	}
-	saver := &Saver{}
-	dlr := saver.WrapQUICDialer(&netxlite.QUICDialerQUICGo{
-		QUICListener: &netxlite.QUICListenerStdlib{},
+		checkStartedEvent := func(t *testing.T, ev Event) {
+			if _, good := ev.(*EventQUICHandshakeStart); !good {
+				t.Fatal("invalid event type")
+			}
+			value := ev.Value()
+			checkStartEventFields(t, value)
+		}
+
+		checkDoneEventFieldsSuccess := func(t *testing.T, value *EventValue) {
+			if value.Duration <= 0 {
+				t.Fatal("expected non-zero duration")
+			}
+			if value.Err != nil {
+				t.Fatal("expected no error here")
+			}
+			if value.TLSCipherSuite != "TLS_RSA_WITH_RC4_128_SHA" {
+				t.Fatal("invalid cipher suite")
+			}
+			if value.TLSNegotiatedProto != "h3" {
+				t.Fatal("invalid negotiated protocol")
+			}
+			if diff := cmp.Diff(value.TLSPeerCerts, []*x509.Certificate{}); diff != "" {
+				t.Fatal(diff)
+			}
+			if value.TLSVersion != "TLSv1.3" {
+				t.Fatal("invalid TLS version")
+			}
+		}
+
+		checkDoneEvent := func(t *testing.T, ev Event, fun func(t *testing.T, value *EventValue)) {
+			if _, good := ev.(*EventQUICHandshakeDone); !good {
+				t.Fatal("invalid event type")
+			}
+			value := ev.Value()
+			checkStartEventFields(t, value)
+			fun(t, value)
+		}
+
+		t.Run("on success", func(t *testing.T) {
+			saver := &Saver{}
+			returnedConn := &mocks.QUICEarlyConnection{
+				MockConnectionState: func() quic.ConnectionState {
+					cs := quic.ConnectionState{}
+					cs.TLS.ConnectionState.CipherSuite = tls.TLS_RSA_WITH_RC4_128_SHA
+					cs.TLS.NegotiatedProtocol = "h3"
+					cs.TLS.PeerCertificates = []*x509.Certificate{}
+					cs.TLS.Version = tls.VersionTLS13
+					return cs
+				},
+			}
+			dialer := saver.WrapQUICDialer(&mocks.QUICDialer{
+				MockDialContext: func(ctx context.Context, network, address string,
+					tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+					return returnedConn, nil
+				},
+			})
+			ctx := context.Background()
+			tlsConfig := &tls.Config{
+				InsecureSkipVerify: true,
+				NextProtos:         []string{"h3"},
+				ServerName:         "dns.google",
+			}
+			quicConfig := &quic.Config{}
+			conn, err := dialer.DialContext(ctx, "udp", "8.8.8.8:443", tlsConfig, quicConfig)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if conn == nil {
+				t.Fatal("expected non-nil conn")
+			}
+			events := saver.Read()
+			if len(events) != 2 {
+				t.Fatal("expected two events")
+			}
+			checkStartedEvent(t, events[0])
+			checkDoneEvent(t, events[1], checkDoneEventFieldsSuccess)
+		})
+
+		checkDoneEventFieldsFailure := func(t *testing.T, value *EventValue) {
+			if value.Duration <= 0 {
+				t.Fatal("expected non-zero duration")
+			}
+			if value.Err == nil {
+				t.Fatal("expected non-nil error here")
+			}
+		}
+
+		t.Run("on failure", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			saver := &Saver{}
+			dialer := saver.WrapQUICDialer(&mocks.QUICDialer{
+				MockDialContext: func(ctx context.Context, network, address string,
+					tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+					return nil, expected
+				},
+			})
+			ctx := context.Background()
+			tlsConfig := &tls.Config{
+				InsecureSkipVerify: true,
+				NextProtos:         []string{"h3"},
+				ServerName:         "dns.google",
+			}
+			quicConfig := &quic.Config{}
+			conn, err := dialer.DialContext(ctx, "udp", "8.8.8.8:443", tlsConfig, quicConfig)
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
+			}
+			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
+			events := saver.Read()
+			if len(events) != 2 {
+				t.Fatal("expected two events")
+			}
+			checkStartedEvent(t, events[0])
+			checkDoneEvent(t, events[1], checkDoneEventFieldsFailure)
+		})
 	})
-	sess, err := dlr.DialContext(context.Background(), "udp",
-		quictesting.Endpoint("443"), tlsConf, &quic.Config{})
-	if err != nil {
-		t.Fatal("unexpected error", err)
-	}
-	if sess == nil {
-		t.Fatal("unexpected nil sess")
-	}
-	ev := saver.Read()
-	if len(ev) != 2 {
-		t.Fatal("unexpected number of events")
-	}
-	if ev[0].Name() != "quic_handshake_start" {
-		t.Fatal("unexpected Name")
-	}
-	if ev[0].Value().TLSServerName != quictesting.Domain {
-		t.Fatal("unexpected TLSServerName")
-	}
-	if !reflect.DeepEqual(ev[0].Value().TLSNextProtos, nextprotos) {
-		t.Fatal("unexpected TLSNextProtos")
-	}
-	if ev[0].Value().Time.After(time.Now()) {
-		t.Fatal("unexpected Time")
-	}
-	if ev[1].Value().Duration <= 0 {
-		t.Fatal("unexpected Duration")
-	}
-	if ev[1].Value().Err != nil {
-		t.Fatal("unexpected Err", ev[1].Value().Err)
-	}
-	if ev[1].Name() != "quic_handshake_done" {
-		t.Fatal("unexpected Name")
-	}
-	if !reflect.DeepEqual(ev[1].Value().TLSNextProtos, nextprotos) {
-		t.Fatal("unexpected TLSNextProtos")
-	}
-	if ev[1].Value().TLSServerName != quictesting.Domain {
-		t.Fatal("unexpected TLSServerName")
-	}
-	if ev[1].Value().Time.Before(ev[0].Value().Time) {
-		t.Fatal("unexpected Time")
-	}
+
+	t.Run("CloseIdleConnections", func(t *testing.T) {
+		var called bool
+		child := &mocks.QUICDialer{
+			MockCloseIdleConnections: func() {
+				called = true
+			},
+		}
+		dialer := &QUICDialerSaver{
+			QUICDialer: child,
+			Saver:      &Saver{},
+		}
+		dialer.CloseIdleConnections()
+		if !called {
+			t.Fatal("not called")
+		}
+	})
 }
 
-func TestHandshakeSaverHostNameError(t *testing.T) {
-	nextprotos := []string{"h3"}
-	servername := "example.com"
-	tlsConf := &tls.Config{
-		NextProtos: nextprotos,
-		ServerName: servername,
-	}
-	saver := &Saver{}
-	dlr := saver.WrapQUICDialer(&netxlite.QUICDialerQUICGo{
-		QUICListener: &netxlite.QUICListenerStdlib{},
+func TestQUICListenerSaver(t *testing.T) {
+	t.Run("on failure", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		saver := &Saver{}
+		qls := saver.WrapQUICListener(&mocks.QUICListener{
+			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+				return nil, expected
+			},
+		})
+		pconn, err := qls.Listen(&net.UDPAddr{
+			IP:   []byte{},
+			Port: 8080,
+			Zone: "",
+		})
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected error", err)
+		}
+		if pconn != nil {
+			t.Fatal("expected nil pconn here")
+		}
 	})
-	sess, err := dlr.DialContext(context.Background(), "udp",
-		quictesting.Endpoint("443"), tlsConf, &quic.Config{})
-	if err == nil {
-		t.Fatal("expected an error here")
-	}
-	if sess != nil {
-		t.Fatal("expected nil sess here")
-	}
-	for _, ev := range saver.Read() {
-		if ev.Name() != "quic_handshake_done" {
-			continue
+
+	t.Run("on success", func(t *testing.T) {
+		saver := &Saver{}
+		returnedConn := &mocks.UDPLikeConn{}
+		qls := saver.WrapQUICListener(&mocks.QUICListener{
+			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+				return returnedConn, nil
+			},
+		})
+		pconn, err := qls.Listen(&net.UDPAddr{
+			IP:   []byte{},
+			Port: 8080,
+			Zone: "",
+		})
+		if err != nil {
+			t.Fatal(err)
 		}
-		if ev.Value().NoTLSVerify == true {
-			t.Fatal("expected NoTLSVerify to be false")
+		wconn := pconn.(*quicPacketConnWrapper)
+		if wconn.UDPLikeConn != returnedConn {
+			t.Fatal("invalid underlying connection")
 		}
-		if !strings.HasSuffix(ev.Value().Err.Error(), "tls: handshake failure") {
-			t.Fatal("unexpected error", ev.Value().Err)
+		if wconn.saver != saver {
+			t.Fatal("invalid saver")
 		}
-	}
+	})
 }
 
-func TestQUICListenerSaverCannotListen(t *testing.T) {
-	expected := errors.New("mocked error")
-	saver := &Saver{}
-	qls := saver.WrapQUICListener(&mocks.QUICListener{
-		MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-			return nil, expected
-		},
-	})
-	pconn, err := qls.Listen(&net.UDPAddr{
-		IP:   []byte{},
-		Port: 8080,
-		Zone: "",
-	})
-	if !errors.Is(err, expected) {
-		t.Fatal("unexpected error", err)
-	}
-	if pconn != nil {
-		t.Fatal("expected nil pconn here")
-	}
-}
+func TestQUICPacketConnWrapper(t *testing.T) {
+	t.Run("ReadFrom", func(t *testing.T) {
 
-func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
-	// This is the most common use case for collecting reads, writes
-	tlsConf := &tls.Config{
-		NextProtos: []string{"h3"},
-		ServerName: quictesting.Domain,
-	}
-	saver := &Saver{}
-	systemdialer := &netxlite.QUICDialerQUICGo{
-		QUICListener: saver.WrapQUICListener(&netxlite.QUICListenerStdlib{}),
-	}
-	_, err := systemdialer.DialContext(context.Background(), "udp",
-		quictesting.Endpoint("443"), tlsConf, &quic.Config{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	ev := saver.Read()
-	if len(ev) < 2 {
-		t.Fatal("unexpected number of events")
-	}
-	last := len(ev) - 1
-	for idx := 1; idx < last; idx++ {
-		if ev[idx].Value().Data == nil {
-			t.Fatal("unexpected Data")
-		}
-		if ev[idx].Value().Duration <= 0 {
-			t.Fatal("unexpected Duration")
-		}
-		if ev[idx].Value().Err != nil {
-			t.Fatal("unexpected Err")
-		}
-		if ev[idx].Value().NumBytes <= 0 {
-			t.Fatal("unexpected NumBytes")
-		}
-		switch ev[idx].Name() {
-		case netxlite.ReadFromOperation, netxlite.WriteToOperation:
-		default:
-			t.Fatal("unexpected Name")
-		}
-		if ev[idx].Value().Time.Before(ev[idx-1].Value().Time) {
-			t.Fatal("unexpected Time", ev[idx].Value().Time, ev[idx-1].Value().Time)
-		}
-	}
+		t.Run("on failure", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			saver := &Saver{}
+			conn := &quicPacketConnWrapper{
+				UDPLikeConn: &mocks.UDPLikeConn{
+					MockReadFrom: func(p []byte) (int, net.Addr, error) {
+						return 0, nil, expected
+					},
+				},
+				saver: saver,
+			}
+			buf := make([]byte, 1<<17)
+			count, addr, err := conn.ReadFrom(buf)
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
+			}
+			if count != 0 {
+				t.Fatal("invalid count")
+			}
+			if addr != nil {
+				t.Fatal("invalid addr")
+			}
+			events := saver.Read()
+			if len(events) != 1 {
+				t.Fatal("invalid number of events")
+			}
+			ev0 := events[0]
+			if _, good := ev0.(*EventReadFromOperation); !good {
+				t.Fatal("invalid event type")
+			}
+			value := ev0.Value()
+			if value.Address != "" {
+				t.Fatal("invalid Address")
+			}
+			if len(value.Data) != 0 {
+				t.Fatal("invalid Data")
+			}
+			if value.Duration <= 0 {
+				t.Fatal("expected nonzero duration")
+			}
+			if !errors.Is(value.Err, expected) {
+				t.Fatal("unexpected value.Err", value.Err)
+			}
+			if value.NumBytes != 0 {
+				t.Fatal("expected NumBytes")
+			}
+			if value.Time.IsZero() {
+				t.Fatal("expected nonzero Time")
+			}
+		})
+
+		t.Run("on success", func(t *testing.T) {
+			expected := []byte{1, 2, 3, 4}
+			saver := &Saver{}
+			expectedAddr := &mocks.Addr{
+				MockString: func() string {
+					return "8.8.8.8:443"
+				},
+				MockNetwork: func() string {
+					return "udp"
+				},
+			}
+			conn := &quicPacketConnWrapper{
+				UDPLikeConn: &mocks.UDPLikeConn{
+					MockReadFrom: func(p []byte) (int, net.Addr, error) {
+						copy(p, expected)
+						return len(expected), expectedAddr, nil
+					},
+				},
+				saver: saver,
+			}
+			buf := make([]byte, 1<<17)
+			count, addr, err := conn.ReadFrom(buf)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if count != 4 {
+				t.Fatal("invalid count")
+			}
+			if addr != expectedAddr {
+				t.Fatal("invalid addr")
+			}
+			events := saver.Read()
+			if len(events) != 1 {
+				t.Fatal("invalid number of events")
+			}
+			ev0 := events[0]
+			if _, good := ev0.(*EventReadFromOperation); !good {
+				t.Fatal("invalid event type")
+			}
+			value := ev0.Value()
+			if value.Address != "8.8.8.8:443" {
+				t.Fatal("invalid Address")
+			}
+			if len(value.Data) != 4 {
+				t.Fatal("invalid Data")
+			}
+			if value.Duration <= 0 {
+				t.Fatal("expected nonzero duration")
+			}
+			if value.Err != nil {
+				t.Fatal("unexpected value.Err", value.Err)
+			}
+			if value.NumBytes != 4 {
+				t.Fatal("expected NumBytes")
+			}
+			if value.Time.IsZero() {
+				t.Fatal("expected nonzero Time")
+			}
+		})
+	})
+
+	t.Run("WriteTo", func(t *testing.T) {
+
+		t.Run("on failure", func(t *testing.T) {
+			expected := errors.New("mocked error")
+			saver := &Saver{}
+			conn := &quicPacketConnWrapper{
+				UDPLikeConn: &mocks.UDPLikeConn{
+					MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+						return 0, expected
+					},
+				},
+				saver: saver,
+			}
+			destAddr := &mocks.Addr{
+				MockString: func() string {
+					return "8.8.8.8:443"
+				},
+			}
+			buf := make([]byte, 7)
+			count, err := conn.WriteTo(buf, destAddr)
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
+			}
+			if count != 0 {
+				t.Fatal("invalid count")
+			}
+			events := saver.Read()
+			if len(events) != 1 {
+				t.Fatal("invalid number of events")
+			}
+			ev0 := events[0]
+			if _, good := ev0.(*EventWriteToOperation); !good {
+				t.Fatal("invalid event type")
+			}
+			value := ev0.Value()
+			if value.Address != "8.8.8.8:443" {
+				t.Fatal("invalid Address")
+			}
+			if len(value.Data) != 0 {
+				t.Fatal("invalid Data")
+			}
+			if value.Duration <= 0 {
+				t.Fatal("expected nonzero duration")
+			}
+			if !errors.Is(value.Err, expected) {
+				t.Fatal("unexpected value.Err", value.Err)
+			}
+			if value.NumBytes != 0 {
+				t.Fatal("expected NumBytes")
+			}
+			if value.Time.IsZero() {
+				t.Fatal("expected nonzero Time")
+			}
+		})
+
+		t.Run("on success", func(t *testing.T) {
+			saver := &Saver{}
+			conn := &quicPacketConnWrapper{
+				UDPLikeConn: &mocks.UDPLikeConn{
+					MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+						return 1, nil
+					},
+				},
+				saver: saver,
+			}
+			destAddr := &mocks.Addr{
+				MockString: func() string {
+					return "8.8.8.8:443"
+				},
+			}
+			buf := make([]byte, 7)
+			count, err := conn.WriteTo(buf, destAddr)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if count != 1 {
+				t.Fatal("invalid count")
+			}
+			events := saver.Read()
+			if len(events) != 1 {
+				t.Fatal("invalid number of events")
+			}
+			ev0 := events[0]
+			if _, good := ev0.(*EventWriteToOperation); !good {
+				t.Fatal("invalid event type")
+			}
+			value := ev0.Value()
+			if value.Address != "8.8.8.8:443" {
+				t.Fatal("invalid Address")
+			}
+			if len(value.Data) != 1 {
+				t.Fatal("invalid Data")
+			}
+			if value.Duration <= 0 {
+				t.Fatal("expected nonzero duration")
+			}
+			if value.Err != nil {
+				t.Fatal("unexpected value.Err", value.Err)
+			}
+			if value.NumBytes != 1 {
+				t.Fatal("expected NumBytes")
+			}
+			if value.Time.IsZero() {
+				t.Fatal("expected nonzero Time")
+			}
+		})
+	})
 }
