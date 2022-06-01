@@ -145,7 +145,7 @@ func TestSaverDNSTransportFailure(t *testing.T) {
 	if !bytes.Equal(ev[1].Value().DNSQuery, rawQuery) {
 		t.Fatal("unexpected DNSQuery")
 	}
-	if ev[1].Value().DNSReply != nil {
+	if ev[1].Value().DNSResponse != nil {
 		t.Fatal("unexpected DNSReply")
 	}
 	if ev[1].Value().Duration <= 0 {
@@ -210,7 +210,7 @@ func TestSaverDNSTransportSuccess(t *testing.T) {
 	if !bytes.Equal(ev[1].Value().DNSQuery, rawQuery) {
 		t.Fatal("unexpected DNSQuery")
 	}
-	if !bytes.Equal(ev[1].Value().DNSReply, expected) {
+	if !bytes.Equal(ev[1].Value().DNSResponse, expected) {
 		t.Fatal("unexpected DNSReply")
 	}
 	if ev[1].Value().Duration <= 0 {

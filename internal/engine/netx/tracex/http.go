@@ -23,30 +23,30 @@ type SaverMetadataHTTPTransport struct {
 }
 
 // RoundTrip implements RoundTripper.RoundTrip
-func (txp SaverMetadataHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (txp *SaverMetadataHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	txp.Saver.Write(&EventHTTPRequestMetadata{&EventValue{
-		HTTPHeaders: httpCloneHeaders(req),
-		HTTPMethod:  req.Method,
-		HTTPURL:     req.URL.String(),
-		Transport:   txp.HTTPTransport.Network(),
-		Time:        time.Now(),
+		HTTPRequestHeaders: httpCloneRequestHeaders(req),
+		HTTPMethod:         req.Method,
+		HTTPURL:            req.URL.String(),
+		Transport:          txp.HTTPTransport.Network(),
+		Time:               time.Now(),
 	}})
 	resp, err := txp.HTTPTransport.RoundTrip(req)
 	if err != nil {
 		return nil, err
 	}
 	txp.Saver.Write(&EventHTTPResponseMetadata{&EventValue{
-		HTTPHeaders:    resp.Header,
-		HTTPStatusCode: resp.StatusCode,
-		Time:           time.Now(),
+		HTTPResponseHeaders: resp.Header,
+		HTTPStatusCode:      resp.StatusCode,
+		Time:                time.Now(),
 	}})
 	return resp, err
 }
 
-// httpCCloneHeaders returns a clone of the headers where we have
+// httpCloneRequestHeaders returns a clone of the headers where we have
 // also set the host header, which normally is not set by
 // golang until it serializes the request itself.
-func httpCloneHeaders(req *http.Request) http.Header {
+func httpCloneRequestHeaders(req *http.Request) http.Header {
 	header := req.Header.Clone()
 	if req.Host != "" {
 		header.Set("Host", req.Host)
@@ -64,7 +64,7 @@ type SaverTransactionHTTPTransport struct {
 }
 
 // RoundTrip implements RoundTripper.RoundTrip
-func (txp SaverTransactionHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (txp *SaverTransactionHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	txp.Saver.Write(&EventHTTPTransactionStart{&EventValue{
 		Time: time.Now(),
 	}})
@@ -85,7 +85,7 @@ type SaverBodyHTTPTransport struct {
 }
 
 // RoundTrip implements RoundTripper.RoundTrip
-func (txp SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (txp *SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	const defaultSnapSize = 1 << 17
 	snapsize := defaultSnapSize
 	if txp.SnapshotSize != 0 {
@@ -134,6 +134,6 @@ type httpSaverReadCloser struct {
 	io.Reader
 }
 
-var _ model.HTTPTransport = SaverMetadataHTTPTransport{}
-var _ model.HTTPTransport = SaverBodyHTTPTransport{}
-var _ model.HTTPTransport = SaverTransactionHTTPTransport{}
+var _ model.HTTPTransport = &SaverMetadataHTTPTransport{}
+var _ model.HTTPTransport = &SaverBodyHTTPTransport{}
+var _ model.HTTPTransport = &SaverTransactionHTTPTransport{}
