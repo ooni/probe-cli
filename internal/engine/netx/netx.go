@@ -78,7 +78,7 @@ var defaultCertPool *x509.CertPool = netxlite.NewDefaultCertPool()
 // NewResolver creates a new resolver from the specified config
 func NewResolver(config Config) model.Resolver {
 	if config.BaseResolver == nil {
-		config.BaseResolver = &netxlite.ResolverSystem{}
+		config.BaseResolver = netxlite.NewResolverSystem()
 	}
 	var r model.Resolver = config.BaseResolver
 	r = &netxlite.AddressResolver{
@@ -260,7 +260,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 	}
 	switch resolverURL.Scheme {
 	case "system":
-		return &netxlite.ResolverSystem{}, nil
+		return netxlite.NewResolverSystem(), nil
 	case "https":
 		config.TLSConfig.NextProtos = []string{"h2", "http/1.1"}
 		httpClient := &http.Client{Transport: NewHTTPTransport(config)}

@@ -64,7 +64,7 @@ func testresolverquickidna(t *testing.T, reso model.Resolver) {
 }
 
 func TestNewResolverSystem(t *testing.T) {
-	reso := &netxlite.ResolverSystem{}
+	reso := netxlite.NewResolverSystem()
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }

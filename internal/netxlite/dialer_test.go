@@ -123,7 +123,7 @@ func TestDialerResolver(t *testing.T) {
 		t.Run("fails without a port", func(t *testing.T) {
 			d := &dialerResolver{
 				Dialer:   &DialerSystem{},
-				Resolver: &resolverSystem{},
+				Resolver: newResolverSystem(),
 			}
 			const missingPort = "ooni.nu"
 			conn, err := d.DialContext(context.Background(), "tcp", missingPort)

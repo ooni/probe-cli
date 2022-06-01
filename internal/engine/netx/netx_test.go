@@ -32,7 +32,7 @@ func TestNewResolverVanilla(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystemDoNotInstantiate)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -82,7 +82,7 @@ func TestNewResolverWithBogonFilter(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystemDoNotInstantiate)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -111,7 +111,7 @@ func TestNewResolverWithLogging(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystemDoNotInstantiate)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -141,7 +141,7 @@ func TestNewResolverWithSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystemDoNotInstantiate)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -170,7 +170,7 @@ func TestNewResolverWithReadWriteCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystemDoNotInstantiate)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -204,7 +204,7 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	_, ok = ar.Resolver.(*netxlite.ResolverSystem)
+	_, ok = ar.Resolver.(*netxlite.ResolverSystemDoNotInstantiate)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -556,7 +556,7 @@ func TestNewDNSClientSystemResolver(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := dnsclient.(*netxlite.ResolverSystem); !ok {
+	if _, ok := dnsclient.(*netxlite.ResolverSystemDoNotInstantiate); !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	dnsclient.CloseIdleConnections()
@@ -568,7 +568,7 @@ func TestNewDNSClientEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := dnsclient.(*netxlite.ResolverSystem); !ok {
+	if _, ok := dnsclient.(*netxlite.ResolverSystemDoNotInstantiate); !ok {
 		t.Fatal("not the resolver we expected")
 	}
 	dnsclient.CloseIdleConnections()

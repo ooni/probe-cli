@@ -6,12 +6,11 @@ import (
 	"io"
 	"net"
 	"strings"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
@@ -25,7 +24,8 @@ func TestNewResolverSystem(t *testing.T) {
 	}
 	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
 	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
-	_ = errWrapper.Resolver.(*resolverSystem)
+	reso := errWrapper.Resolver.(*resolverSystem)
+	_ = reso.t.(*dnsOverGetaddrinfoTransport)
 }
 
 func TestNewResolverUDP(t *testing.T) {
@@ -46,112 +46,95 @@ func TestNewResolverUDP(t *testing.T) {
 }
 
 func TestResolverSystem(t *testing.T) {
-	t.Run("Network and Address", func(t *testing.T) {
-		r := &resolverSystem{}
-		if r.Network() != getaddrinfoResolverNetwork() {
+	t.Run("Network", func(t *testing.T) {
+		expected := "antani"
+		r := &resolverSystem{
+			t: &mocks.DNSTransport{
+				MockNetwork: func() string {
+					return expected
+				},
+			},
+		}
+		if r.Network() != expected {
 			t.Fatal("invalid Network")
 		}
-		if r.Address() != "" {
+	})
+
+	t.Run("Address", func(t *testing.T) {
+		expected := "address"
+		r := &resolverSystem{
+			t: &mocks.DNSTransport{
+				MockAddress: func() string {
+					return expected
+				},
+			},
+		}
+		if r.Address() != expected {
 			t.Fatal("invalid Address")
 		}
 	})
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
-		r := &resolverSystem{}
-		r.CloseIdleConnections() // to cover it
-	})
-
-	t.Run("check default timeout", func(t *testing.T) {
-		r := &resolverSystem{}
-		if r.timeout() != 15*time.Second {
-			t.Fatal("unexpected default timeout")
+		var called bool
+		r := &resolverSystem{
+			t: &mocks.DNSTransport{
+				MockCloseIdleConnections: func() {
+					called = true
+				},
+			},
 		}
-	})
-
-	t.Run("check default lookup host func not nil", func(t *testing.T) {
-		r := &resolverSystem{}
-		if r.lookupHost() == nil {
-			t.Fatal("expected non-nil func here")
+		r.CloseIdleConnections()
+		if !called {
+			t.Fatal("not called")
 		}
 	})
 
 	t.Run("LookupHost", func(t *testing.T) {
 		t.Run("with success", func(t *testing.T) {
+			expected := []string{"8.8.8.8", "8.8.4.4"}
 			r := &resolverSystem{
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return []string{"8.8.8.8"}, nil
+				t: &mocks.DNSTransport{
+					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+						if query.Type() != dns.TypeANY {
+							return nil, errors.New("unexpected lookup type")
+						}
+						resp := &mocks.DNSResponse{
+							MockDecodeLookupHost: func() ([]string, error) {
+								return expected, nil
+							},
+						}
+						return resp, nil
+					},
 				},
 			}
 			ctx := context.Background()
-			addrs, err := r.LookupHost(ctx, "example.antani")
+			addrs, err := r.LookupHost(ctx, "dns.google")
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(addrs) != 1 || addrs[0] != "8.8.8.8" {
-				t.Fatal("invalid addrs")
+			if diff := cmp.Diff(expected, addrs); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 
-		t.Run("with timeout and success", func(t *testing.T) {
-			wg := &sync.WaitGroup{}
-			wg.Add(1)
-			done := make(chan interface{})
+		t.Run("with failure", func(t *testing.T) {
+			expected := errors.New("mocked")
 			r := &resolverSystem{
-				testableTimeout: 1 * time.Microsecond,
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					defer wg.Done()
-					<-done
-					return []string{"8.8.8.8"}, nil
+				t: &mocks.DNSTransport{
+					MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+						if query.Type() != dns.TypeANY {
+							return nil, errors.New("unexpected lookup type")
+						}
+						return nil, expected
+					},
 				},
 			}
 			ctx := context.Background()
-			addrs, err := r.LookupHost(ctx, "example.antani")
-			if !errors.Is(err, context.DeadlineExceeded) {
-				t.Fatal("not the error we expected", err)
+			addrs, err := r.LookupHost(ctx, "dns.google")
+			if !errors.Is(err, expected) {
+				t.Fatal("unexpected err", err)
 			}
-			if addrs != nil {
-				t.Fatal("invalid addrs")
-			}
-			close(done)
-			wg.Wait()
-		})
-
-		t.Run("with timeout and failure", func(t *testing.T) {
-			wg := &sync.WaitGroup{}
-			wg.Add(1)
-			done := make(chan interface{})
-			r := &resolverSystem{
-				testableTimeout: 1 * time.Microsecond,
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					defer wg.Done()
-					<-done
-					return nil, errors.New("no such host")
-				},
-			}
-			ctx := context.Background()
-			addrs, err := r.LookupHost(ctx, "example.antani")
-			if !errors.Is(err, context.DeadlineExceeded) {
-				t.Fatal("not the error we expected", err)
-			}
-			if addrs != nil {
-				t.Fatal("invalid addrs")
-			}
-			close(done)
-			wg.Wait()
-		})
-
-		t.Run("with NXDOMAIN", func(t *testing.T) {
-			r := &resolverSystem{
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return nil, errors.New("no such host")
-				},
-			}
-			ctx := context.Background()
-			addrs, err := r.LookupHost(ctx, "example.antani")
-			if err == nil || !strings.HasSuffix(err.Error(), "no such host") {
-				t.Fatal("not the error we expected", err)
-			}
-			if addrs != nil {
+			if len(addrs) != 0 {
 				t.Fatal("invalid addrs")
 			}
 		})
@@ -174,8 +157,8 @@ func TestResolverSystem(t *testing.T) {
 		if !errors.Is(err, ErrNoDNSTransport) {
 			t.Fatal("not the error we expected")
 		}
-		if ns != nil {
-			t.Fatal("expected nil result")
+		if len(ns) != 0 {
+			t.Fatal("expected no results")
 		}
 	})
 }

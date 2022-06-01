@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"golang.org/x/net/idna"
 )
@@ -24,7 +25,13 @@ var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 // NewResolverStdlib creates a new Resolver by combining WrapResolver
 // with an internal "system" resolver type.
 func NewResolverStdlib(logger model.DebugLogger) model.Resolver {
-	return WrapResolver(logger, &resolverSystem{})
+	return WrapResolver(logger, newResolverSystem())
+}
+
+func newResolverSystem() *resolverSystem {
+	return &resolverSystem{
+		t: &dnsOverGetaddrinfoTransport{},
+	}
 }
 
 // NewResolverUDP creates a new Resolver using DNS-over-UDP.
@@ -73,62 +80,31 @@ func WrapResolver(logger model.DebugLogger, resolver model.Resolver) model.Resol
 
 // resolverSystem is the system resolver.
 type resolverSystem struct {
-	testableTimeout    time.Duration
-	testableLookupHost func(ctx context.Context, domain string) ([]string, error)
+	t model.DNSTransport
 }
 
 var _ model.Resolver = &resolverSystem{}
 
 func (r *resolverSystem) LookupHost(ctx context.Context, hostname string) ([]string, error) {
-	// This code forces adding a shorter timeout to the domain name
-	// resolutions when using the system resolver. We have seen cases
-	// in which such a timeout becomes too large. One such case is
-	// described in https://github.com/ooni/probe/issues/1726.
-	addrsch, errch := make(chan []string, 1), make(chan error, 1)
-	ctx, cancel := context.WithTimeout(ctx, r.timeout())
-	defer cancel()
-	go func() {
-		addrs, err := r.lookupHost()(ctx, hostname)
-		if err != nil {
-			errch <- err
-			return
-		}
-		addrsch <- addrs
-	}()
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case addrs := <-addrsch:
-		return addrs, nil
-	case err := <-errch:
+	encoder := &DNSEncoderMiekg{}
+	query := encoder.Encode(hostname, dns.TypeANY, false)
+	resp, err := r.t.RoundTrip(ctx, query)
+	if err != nil {
 		return nil, err
 	}
-}
-
-func (r *resolverSystem) timeout() time.Duration {
-	if r.testableTimeout > 0 {
-		return r.testableTimeout
-	}
-	return 15 * time.Second
-}
-
-func (r *resolverSystem) lookupHost() func(ctx context.Context, domain string) ([]string, error) {
-	if r.testableLookupHost != nil {
-		return r.testableLookupHost
-	}
-	return TProxy.DefaultResolver().LookupHost
+	return resp.DecodeLookupHost()
 }
 
 func (r *resolverSystem) Network() string {
-	return TProxy.DefaultResolver().Network()
+	return r.t.Network()
 }
 
 func (r *resolverSystem) Address() string {
-	return ""
+	return r.t.Address()
 }
 
 func (r *resolverSystem) CloseIdleConnections() {
-	// nothing to do
+	r.t.CloseIdleConnections()
 }
 
 func (r *resolverSystem) LookupHTTPS(
@@ -138,11 +114,6 @@ func (r *resolverSystem) LookupHTTPS(
 
 func (r *resolverSystem) LookupNS(
 	ctx context.Context, domain string) ([]*net.NS, error) {
-	// TODO(bassosimone): figure out in which context it makes sense
-	// to issue this query. How is this implemented under the hood by
-	// the stdlib? Is it using /etc/resolve.conf on Unix? Until we
-	// known all these details, let's pretend this functionality does
-	// not exist in the stdlib and focus on custom resolvers.
 	return nil, ErrNoDNSTransport
 }
 
