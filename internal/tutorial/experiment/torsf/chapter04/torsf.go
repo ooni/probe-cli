@@ -41,7 +41,7 @@ import (
 	// measurements representations to the OONI data format.
 	//
 	// ```Go
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
+	"github.com/ooni/probe-cli/v3/internal/tracex"
 
 	// ```
 	//
