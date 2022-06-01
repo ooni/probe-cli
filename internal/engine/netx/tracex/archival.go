@@ -153,16 +153,16 @@ func newRequestList(begin time.Time, events []Event) []RequestEntry {
 		case *EventHTTPRequestMetadata:
 			entry.Request.Headers = make(map[string]MaybeBinaryValue)
 			httpAddHeaders(
-				ev.HTTPHeaders, &entry.Request.HeadersList, &entry.Request.Headers)
+				ev.HTTPRequestHeaders, &entry.Request.HeadersList, &entry.Request.Headers)
 			entry.Request.Method = ev.HTTPMethod
 			entry.Request.URL = ev.HTTPURL
 			entry.Request.Transport = ev.Transport
 		case *EventHTTPResponseMetadata:
 			entry.Response.Headers = make(map[string]MaybeBinaryValue)
 			httpAddHeaders(
-				ev.HTTPHeaders, &entry.Response.HeadersList, &entry.Response.Headers)
+				ev.HTTPResponseHeaders, &entry.Response.HeadersList, &entry.Response.Headers)
 			entry.Response.Code = int64(ev.HTTPStatusCode)
-			entry.Response.Locations = ev.HTTPHeaders.Values("Location")
+			entry.Response.Locations = ev.HTTPResponseHeaders.Values("Location")
 		case *EventHTTPResponseBodySnapshot:
 			entry.Response.Body.Value = string(ev.Data)
 			entry.Response.BodyIsTruncated = ev.DataIsTruncated

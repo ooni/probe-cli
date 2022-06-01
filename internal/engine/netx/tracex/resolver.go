@@ -118,13 +118,13 @@ func (txp *SaverDNSTransport) RoundTrip(
 	response, err := txp.DNSTransport.RoundTrip(ctx, query)
 	stop := time.Now()
 	txp.Saver.Write(&EventDNSRoundTripDone{&EventValue{
-		Address:  txp.DNSTransport.Address(),
-		DNSQuery: dnsMaybeQueryBytes(query),
-		DNSReply: dnsMaybeResponseBytes(response),
-		Duration: stop.Sub(start),
-		Err:      err,
-		Proto:    txp.DNSTransport.Network(),
-		Time:     stop,
+		Address:     txp.DNSTransport.Address(),
+		DNSQuery:    dnsMaybeQueryBytes(query),
+		DNSResponse: dnsMaybeResponseBytes(response),
+		Duration:    stop.Sub(start),
+		Err:         err,
+		Proto:       txp.DNSTransport.Network(),
+		Time:        stop,
 	}})
 	return response, err
 }

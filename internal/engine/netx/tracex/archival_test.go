@@ -149,13 +149,13 @@ func TestNewRequestList(t *testing.T) {
 				Data:            []byte("deadbeef"),
 				DataIsTruncated: false,
 			}}, &EventHTTPRequestMetadata{&EventValue{
-				HTTPHeaders: http.Header{
+				HTTPRequestHeaders: http.Header{
 					"User-Agent": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPMethod: "POST",
 				HTTPURL:    "https://www.example.com/submit",
 			}}, &EventHTTPResponseMetadata{&EventValue{
-				HTTPHeaders: http.Header{
+				HTTPResponseHeaders: http.Header{
 					"Server": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPStatusCode: 200,
@@ -165,7 +165,7 @@ func TestNewRequestList(t *testing.T) {
 			}}, &EventHTTPTransactionDone{&EventValue{}}, &EventHTTPTransactionStart{&EventValue{
 				Time: begin.Add(20 * time.Millisecond),
 			}}, &EventHTTPRequestMetadata{&EventValue{
-				HTTPHeaders: http.Header{
+				HTTPRequestHeaders: http.Header{
 					"User-Agent": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPMethod: "GET",
@@ -234,13 +234,13 @@ func TestNewRequestList(t *testing.T) {
 			events: []Event{&EventHTTPTransactionStart{&EventValue{
 				Time: begin.Add(10 * time.Millisecond),
 			}}, &EventHTTPRequestMetadata{&EventValue{
-				HTTPHeaders: http.Header{
+				HTTPRequestHeaders: http.Header{
 					"User-Agent": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPMethod: "GET",
 				HTTPURL:    "https://www.example.com/",
 			}}, &EventHTTPResponseMetadata{&EventValue{
-				HTTPHeaders: http.Header{
+				HTTPResponseHeaders: http.Header{
 					"Server":   []string{"miniooni/0.1.0-dev"},
 					"Location": []string{"https://x.example.com", "https://y.example.com"},
 				},

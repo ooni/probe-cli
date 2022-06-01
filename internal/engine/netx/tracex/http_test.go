@@ -44,7 +44,7 @@ func TestSaverMetadataSuccess(t *testing.T) {
 	if ev[0].Value().HTTPMethod != "GET" {
 		t.Fatal("unexpected Method")
 	}
-	if len(ev[0].Value().HTTPHeaders) <= 0 {
+	if len(ev[0].Value().HTTPRequestHeaders) <= 0 {
 		t.Fatal("unexpected Headers")
 	}
 	if ev[0].Value().HTTPURL != "https://www.google.com" {
@@ -60,7 +60,7 @@ func TestSaverMetadataSuccess(t *testing.T) {
 	if ev[1].Value().HTTPStatusCode != 200 {
 		t.Fatal("unexpected StatusCode")
 	}
-	if len(ev[1].Value().HTTPHeaders) <= 0 {
+	if len(ev[1].Value().HTTPResponseHeaders) <= 0 {
 		t.Fatal("unexpected Headers")
 	}
 	if ev[1].Name() != "http_response_metadata" {
@@ -99,7 +99,7 @@ func TestSaverMetadataFailure(t *testing.T) {
 	if ev[0].Value().HTTPMethod != "GET" {
 		t.Fatal("unexpected Method")
 	}
-	if len(ev[0].Value().HTTPHeaders) <= 0 {
+	if len(ev[0].Value().HTTPRequestHeaders) <= 0 {
 		t.Fatal("unexpected Headers")
 	}
 	if ev[0].Value().HTTPURL != "http://www.google.com" {
@@ -394,7 +394,7 @@ func TestCloneHeaders(t *testing.T) {
 			},
 			Header: http.Header{},
 		}
-		header := httpCloneHeaders(req)
+		header := httpCloneRequestHeaders(req)
 		if header.Get("Host") != "www.example.com" {
 			t.Fatal("did not set Host header correctly")
 		}
@@ -408,7 +408,7 @@ func TestCloneHeaders(t *testing.T) {
 			},
 			Header: http.Header{},
 		}
-		header := httpCloneHeaders(req)
+		header := httpCloneRequestHeaders(req)
 		if header.Get("Host") != "www.kernel.org" {
 			t.Fatal("did not set Host header correctly")
 		}
