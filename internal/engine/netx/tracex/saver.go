@@ -1,11 +1,19 @@
 package tracex
 
+//
+// Saver implementation
+//
+
 import "sync"
 
-// The Saver saves a trace
+// The Saver saves a trace. The zero value of this type
+// is valid and can be used without initializtion.
 type Saver struct {
+	// ops contains the saved events.
 	ops []Event
-	mu  sync.Mutex
+
+	// mu provides mutual exclusion.
+	mu sync.Mutex
 }
 
 // Read reads and returns events inside the trace. It advances

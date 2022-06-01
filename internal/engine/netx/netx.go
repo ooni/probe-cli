@@ -104,9 +104,7 @@ func NewResolver(config Config) model.Resolver {
 			Resolver: r,
 		}
 	}
-	if config.ResolveSaver != nil {
-		r = tracex.SaverResolver{Resolver: r, Saver: config.ResolveSaver}
-	}
+	r = config.ResolveSaver.WrapResolver(r) // WAI when config.ResolveSaver==nil
 	return &netxlite.ResolverIDNA{Resolver: r}
 }
 
@@ -129,23 +127,14 @@ func NewQUICDialer(config Config) model.QUICDialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	ql := netxlite.NewQUICListener()
-	if config.ReadWriteSaver != nil {
-		ql = &tracex.QUICListenerSaver{
-			QUICListener: ql,
-			Saver:        config.ReadWriteSaver,
-		}
-	}
+	ql := config.ReadWriteSaver.WrapQUICListener(netxlite.NewQUICListener())
 	var logger model.DebugLogger = model.DiscardLogger
 	if config.Logger != nil {
 		logger = config.Logger
 	}
 	extensions := []netxlite.QUICDialerWrapper{
 		func(dialer model.QUICDialer) model.QUICDialer {
-			if config.TLSSaver != nil {
-				dialer = tracex.QUICHandshakeSaver{Saver: config.TLSSaver, QUICDialer: dialer}
-			}
-			return dialer
+			return config.TLSSaver.WrapQUICDialer(dialer) // robust to nil TLSSaver
 		},
 	}
 	return netxlite.NewQUICDialerWithResolver(ql, logger, config.FullResolver, extensions...)
@@ -161,9 +150,7 @@ func NewTLSDialer(config Config) model.TLSDialer {
 	if config.Logger != nil {
 		h = &netxlite.TLSHandshakerLogger{DebugLogger: config.Logger, TLSHandshaker: h}
 	}
-	if config.TLSSaver != nil {
-		h = tracex.SaverTLSHandshaker{TLSHandshaker: h, Saver: config.TLSSaver}
-	}
+	h = config.TLSSaver.WrapTLSHandshaker(h) // behaves with nil TLSSaver
 	if config.TLSConfig == nil {
 		config.TLSConfig = &tls.Config{NextProtos: []string{"h2", "http/1.1"}}
 	}
@@ -284,12 +271,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		httpClient := &http.Client{Transport: NewHTTPTransport(config)}
 		var txp model.DNSTransport = netxlite.NewDNSOverHTTPSTransportWithHostOverride(
 			httpClient, URL, hostOverride)
-		if config.ResolveSaver != nil {
-			txp = tracex.SaverDNSTransport{
-				DNSTransport: txp,
-				Saver:        config.ResolveSaver,
-			}
-		}
+		txp = config.ResolveSaver.WrapDNSTransport(txp) // safe when config.ResolveSaver == nil
 		return netxlite.NewSerialResolver(txp), nil
 	case "udp":
 		dialer := NewDialer(config)
@@ -299,12 +281,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		}
 		var txp model.DNSTransport = netxlite.NewDNSOverUDPTransport(
 			dialer, endpoint)
-		if config.ResolveSaver != nil {
-			txp = tracex.SaverDNSTransport{
-				DNSTransport: txp,
-				Saver:        config.ResolveSaver,
-			}
-		}
+		txp = config.ResolveSaver.WrapDNSTransport(txp) // safe when config.ResolveSaver == nil
 		return netxlite.NewSerialResolver(txp), nil
 	case "dot":
 		config.TLSConfig.NextProtos = []string{"dot"}
@@ -315,12 +292,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		}
 		var txp model.DNSTransport = netxlite.NewDNSOverTLSTransport(
 			tlsDialer.DialTLSContext, endpoint)
-		if config.ResolveSaver != nil {
-			txp = tracex.SaverDNSTransport{
-				DNSTransport: txp,
-				Saver:        config.ResolveSaver,
-			}
-		}
+		txp = config.ResolveSaver.WrapDNSTransport(txp) // safe when config.ResolveSaver == nil
 		return netxlite.NewSerialResolver(txp), nil
 	case "tcp":
 		dialer := NewDialer(config)
@@ -330,12 +302,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		}
 		var txp model.DNSTransport = netxlite.NewDNSOverTCPTransport(
 			dialer.DialContext, endpoint)
-		if config.ResolveSaver != nil {
-			txp = tracex.SaverDNSTransport{
-				DNSTransport: txp,
-				Saver:        config.ResolveSaver,
-			}
-		}
+		txp = config.ResolveSaver.WrapDNSTransport(txp) // safe when config.ResolveSaver == nil
 		return netxlite.NewSerialResolver(txp), nil
 	default:
 		return nil, errors.New("unsupported resolver scheme")

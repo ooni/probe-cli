@@ -126,7 +126,7 @@ func TestNewResolverWithSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	sr, ok := ir.Resolver.(tracex.SaverResolver)
+	sr, ok := ir.Resolver.(*tracex.SaverResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -332,7 +332,7 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	if rtd.TLSHandshaker == nil {
 		t.Fatal("invalid TLSHandshaker")
 	}
-	sth, ok := rtd.TLSHandshaker.(tracex.SaverTLSHandshaker)
+	sth, ok := rtd.TLSHandshaker.(*tracex.SaverTLSHandshaker)
 	if !ok {
 		t.Fatal("not the TLSHandshaker we expected")
 	}
@@ -633,7 +633,7 @@ func TestNewDNSClientCloudflareDoHSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	txp, ok := r.Transport().(tracex.SaverDNSTransport)
+	txp, ok := r.Transport().(*tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -670,7 +670,7 @@ func TestNewDNSClientUDPDNSSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	txp, ok := r.Transport().(tracex.SaverDNSTransport)
+	txp, ok := r.Transport().(*tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -711,7 +711,7 @@ func TestNewDNSClientTCPDNSSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	txp, ok := r.Transport().(tracex.SaverDNSTransport)
+	txp, ok := r.Transport().(*tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -756,7 +756,7 @@ func TestNewDNSClientDoTDNSSaver(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	txp, ok := r.Transport().(tracex.SaverDNSTransport)
+	txp, ok := r.Transport().(*tracex.SaverDNSTransport)
 	if !ok {
 		t.Fatal("not the transport we expected")
 	}

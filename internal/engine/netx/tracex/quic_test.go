@@ -39,12 +39,9 @@ func TestHandshakeSaverSuccess(t *testing.T) {
 		ServerName: servername,
 	}
 	saver := &Saver{}
-	dlr := QUICHandshakeSaver{
-		QUICDialer: &netxlite.QUICDialerQUICGo{
-			QUICListener: &netxlite.QUICListenerStdlib{},
-		},
-		Saver: saver,
-	}
+	dlr := saver.WrapQUICDialer(&netxlite.QUICDialerQUICGo{
+		QUICListener: &netxlite.QUICListenerStdlib{},
+	})
 	sess, err := dlr.DialContext(context.Background(), "udp",
 		quictesting.Endpoint("443"), tlsConf, &quic.Config{})
 	if err != nil {
@@ -97,12 +94,9 @@ func TestHandshakeSaverHostNameError(t *testing.T) {
 		ServerName: servername,
 	}
 	saver := &Saver{}
-	dlr := QUICHandshakeSaver{
-		QUICDialer: &netxlite.QUICDialerQUICGo{
-			QUICListener: &netxlite.QUICListenerStdlib{},
-		},
-		Saver: saver,
-	}
+	dlr := saver.WrapQUICDialer(&netxlite.QUICDialerQUICGo{
+		QUICListener: &netxlite.QUICListenerStdlib{},
+	})
 	sess, err := dlr.DialContext(context.Background(), "udp",
 		quictesting.Endpoint("443"), tlsConf, &quic.Config{})
 	if err == nil {
@@ -126,14 +120,12 @@ func TestHandshakeSaverHostNameError(t *testing.T) {
 
 func TestQUICListenerSaverCannotListen(t *testing.T) {
 	expected := errors.New("mocked error")
-	qls := &QUICListenerSaver{
-		QUICListener: &mocks.QUICListener{
-			MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-				return nil, expected
-			},
+	saver := &Saver{}
+	qls := saver.WrapQUICListener(&mocks.QUICListener{
+		MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+			return nil, expected
 		},
-		Saver: &Saver{},
-	}
+	})
 	pconn, err := qls.Listen(&net.UDPAddr{
 		IP:   []byte{},
 		Port: 8080,
@@ -155,10 +147,7 @@ func TestSystemDialerSuccessWithReadWrite(t *testing.T) {
 	}
 	saver := &Saver{}
 	systemdialer := &netxlite.QUICDialerQUICGo{
-		QUICListener: &QUICListenerSaver{
-			QUICListener: &netxlite.QUICListenerStdlib{},
-			Saver:        saver,
-		},
+		QUICListener: saver.WrapQUICListener(&netxlite.QUICListenerStdlib{}),
 	}
 	_, err := systemdialer.DialContext(context.Background(), "udp",
 		quictesting.Endpoint("443"), tlsConf, &quic.Config{})

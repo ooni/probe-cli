@@ -17,10 +17,7 @@ import (
 func TestSaverResolverFailure(t *testing.T) {
 	expected := errors.New("no such host")
 	saver := &Saver{}
-	reso := SaverResolver{
-		Resolver: NewFakeResolverWithExplicitError(expected),
-		Saver:    saver,
-	}
+	reso := saver.WrapResolver(NewFakeResolverWithExplicitError(expected))
 	addrs, err := reso.LookupHost(context.Background(), "www.google.com")
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
@@ -64,10 +61,7 @@ func TestSaverResolverFailure(t *testing.T) {
 func TestSaverResolverSuccess(t *testing.T) {
 	expected := []string{"8.8.8.8", "8.8.4.4"}
 	saver := &Saver{}
-	reso := SaverResolver{
-		Resolver: NewFakeResolverWithResult(expected),
-		Saver:    saver,
-	}
+	reso := saver.WrapResolver(NewFakeResolverWithResult(expected))
 	addrs, err := reso.LookupHost(context.Background(), "www.google.com")
 	if err != nil {
 		t.Fatal("expected nil error here")
@@ -111,20 +105,17 @@ func TestSaverResolverSuccess(t *testing.T) {
 func TestSaverDNSTransportFailure(t *testing.T) {
 	expected := errors.New("no such host")
 	saver := &Saver{}
-	txp := SaverDNSTransport{
-		DNSTransport: &mocks.DNSTransport{
-			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
-				return nil, expected
-			},
-			MockNetwork: func() string {
-				return "fake"
-			},
-			MockAddress: func() string {
-				return ""
-			},
+	txp := saver.WrapDNSTransport(&mocks.DNSTransport{
+		MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+			return nil, expected
 		},
-		Saver: saver,
-	}
+		MockNetwork: func() string {
+			return "fake"
+		},
+		MockAddress: func() string {
+			return ""
+		},
+	})
 	rawQuery := []byte{0xde, 0xad, 0xbe, 0xef}
 	query := &mocks.DNSQuery{
 		MockBytes: func() ([]byte, error) {
@@ -179,20 +170,17 @@ func TestSaverDNSTransportSuccess(t *testing.T) {
 			return expected
 		},
 	}
-	txp := SaverDNSTransport{
-		DNSTransport: &mocks.DNSTransport{
-			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
-				return response, nil
-			},
-			MockNetwork: func() string {
-				return "fake"
-			},
-			MockAddress: func() string {
-				return ""
-			},
+	txp := saver.WrapDNSTransport(&mocks.DNSTransport{
+		MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+			return response, nil
 		},
-		Saver: saver,
-	}
+		MockNetwork: func() string {
+			return "fake"
+		},
+		MockAddress: func() string {
+			return ""
+		},
+	})
 	rawQuery := []byte{0xde, 0xad, 0xbe, 0xef}
 	query := &mocks.DNSQuery{
 		MockBytes: func() ([]byte, error) {
