@@ -187,10 +187,6 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 		txp = &netxlite.HTTPTransportLogger{Logger: config.Logger, HTTPTransport: txp}
 	}
 	if config.HTTPSaver != nil {
-		txp = &tracex.SaverMetadataHTTPTransport{
-			HTTPTransport: txp, Saver: config.HTTPSaver}
-		txp = &tracex.SaverBodyHTTPTransport{
-			HTTPTransport: txp, Saver: config.HTTPSaver}
 		txp = &tracex.SaverTransactionHTTPTransport{
 			HTTPTransport: txp, Saver: config.HTTPSaver}
 	}

@@ -6,7 +6,6 @@ package tracex
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"net/http"
 	"time"
@@ -14,34 +13,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
-
-// SaverMetadataHTTPTransport is a RoundTripper that saves
-// events related to HTTP request and response metadata
-type SaverMetadataHTTPTransport struct {
-	model.HTTPTransport
-	Saver *Saver
-}
-
-// RoundTrip implements RoundTripper.RoundTrip
-func (txp *SaverMetadataHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	txp.Saver.Write(&EventHTTPRequestMetadata{&EventValue{
-		HTTPRequestHeaders: httpCloneRequestHeaders(req),
-		HTTPMethod:         req.Method,
-		HTTPURL:            req.URL.String(),
-		Transport:          txp.HTTPTransport.Network(),
-		Time:               time.Now(),
-	}})
-	resp, err := txp.HTTPTransport.RoundTrip(req)
-	if err != nil {
-		return nil, err
-	}
-	txp.Saver.Write(&EventHTTPResponseMetadata{&EventValue{
-		HTTPResponseHeaders: resp.Header,
-		HTTPStatusCode:      resp.StatusCode,
-		Time:                time.Now(),
-	}})
-	return resp, err
-}
 
 // httpCloneRequestHeaders returns a clone of the headers where we have
 // also set the host header, which normally is not set by
@@ -60,80 +31,77 @@ func httpCloneRequestHeaders(req *http.Request) http.Header {
 // events related to the HTTP transaction
 type SaverTransactionHTTPTransport struct {
 	model.HTTPTransport
-	Saver *Saver
-}
-
-// RoundTrip implements RoundTripper.RoundTrip
-func (txp *SaverTransactionHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	txp.Saver.Write(&EventHTTPTransactionStart{&EventValue{
-		Time: time.Now(),
-	}})
-	resp, err := txp.HTTPTransport.RoundTrip(req)
-	txp.Saver.Write(&EventHTTPTransactionDone{&EventValue{
-		Err:  err,
-		Time: time.Now(),
-	}})
-	return resp, err
-}
-
-// SaverBodyHTTPTransport is a RoundTripper that saves
-// body events occurring during the round trip
-type SaverBodyHTTPTransport struct {
-	model.HTTPTransport
 	Saver        *Saver
-	SnapshotSize int
+	SnapshotSize int64
 }
 
-// RoundTrip implements RoundTripper.RoundTrip
-func (txp *SaverBodyHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	const defaultSnapSize = 1 << 17
-	snapsize := defaultSnapSize
-	if txp.SnapshotSize != 0 {
-		snapsize = txp.SnapshotSize
-	}
-	if req.Body != nil {
-		data, err := httpSaverSnapRead(req.Context(), req.Body, snapsize)
-		if err != nil {
-			return nil, err
-		}
-		req.Body = httpSaverCompose(data, req.Body)
-		txp.Saver.Write(&EventHTTPRequestBodySnapshot{&EventValue{
-			DataIsTruncated: len(data) >= snapsize,
-			Data:            data,
-			Time:            time.Now(),
-		}})
-	}
-	resp, err := txp.HTTPTransport.RoundTrip(req)
-	if err != nil {
-		return nil, err
-	}
-	data, err := httpSaverSnapRead(req.Context(), resp.Body, snapsize)
-	if err != nil {
-		resp.Body.Close()
-		return nil, err
-	}
-	resp.Body = httpSaverCompose(data, resp.Body)
-	txp.Saver.Write(&EventHTTPResponseBodySnapshot{&EventValue{
-		DataIsTruncated: len(data) >= snapsize,
-		Data:            data,
-		Time:            time.Now(),
+// HTTPRoundTrip performs the round trip with the given transport and
+// the given arguments and saves the results into the saver.
+//
+// The maxBodySnapshotSize argument controls the maximum size of the
+// body snapshot that we collect along with the HTTP round trip.
+func (txp *SaverTransactionHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+
+	started := time.Now()
+	txp.Saver.Write(&EventHTTPTransactionStart{&EventValue{
+		HTTPRequestHeaders: httpCloneRequestHeaders(req),
+		HTTPMethod:         req.Method,
+		HTTPURL:            req.URL.String(),
+		Transport:          txp.HTTPTransport.Network(),
+		Time:               started,
 	}})
+	ev := &EventValue{
+		HTTPRequestHeaders: httpCloneRequestHeaders(req),
+		HTTPMethod:         req.Method,
+		HTTPURL:            req.URL.String(),
+		Transport:          txp.HTTPTransport.Network(),
+		Time:               started,
+	}
+	defer txp.Saver.Write(&EventHTTPTransactionDone{ev})
+
+	resp, err := txp.HTTPTransport.RoundTrip(req)
+
+	if err != nil {
+		ev.Duration = time.Since(started)
+		ev.Err = err
+		return nil, err
+	}
+
+	ev.HTTPStatusCode = resp.StatusCode
+	ev.HTTPResponseHeaders = resp.Header.Clone()
+
+	maxBodySnapshotSize := txp.snapshotSize()
+	r := io.LimitReader(resp.Body, maxBodySnapshotSize)
+	body, err := netxlite.ReadAllContext(req.Context(), r)
+
+	if err != nil {
+		ev.Duration = time.Since(started)
+		ev.Err = err
+		return nil, err
+	}
+
+	resp.Body = &httpReadableAgainBody{ // allow for reading again the whole body
+		Reader: io.MultiReader(bytes.NewReader(body), resp.Body),
+		Closer: resp.Body,
+	}
+
+	ev.Duration = time.Since(started)
+	ev.HTTPResponseBody = body
+	ev.HTTPResponseBodyIsTruncated = int64(len(body)) >= maxBodySnapshotSize
+
 	return resp, nil
 }
 
-func httpSaverSnapRead(ctx context.Context, r io.ReadCloser, snapsize int) ([]byte, error) {
-	return netxlite.ReadAllContext(ctx, io.LimitReader(r, int64(snapsize)))
+func (txp *SaverTransactionHTTPTransport) snapshotSize() int64 {
+	if txp.SnapshotSize > 0 {
+		return txp.SnapshotSize
+	}
+	return 1 << 17
 }
 
-func httpSaverCompose(data []byte, r io.ReadCloser) io.ReadCloser {
-	return httpSaverReadCloser{Closer: r, Reader: io.MultiReader(bytes.NewReader(data), r)}
-}
-
-type httpSaverReadCloser struct {
-	io.Closer
+type httpReadableAgainBody struct {
 	io.Reader
+	io.Closer
 }
 
-var _ model.HTTPTransport = &SaverMetadataHTTPTransport{}
-var _ model.HTTPTransport = &SaverBodyHTTPTransport{}
 var _ model.HTTPTransport = &SaverTransactionHTTPTransport{}

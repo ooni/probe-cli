@@ -106,6 +106,8 @@ func httpAddHeaders(
 	destList *[]HTTPHeader,
 	destMap *map[string]MaybeBinaryValue,
 ) {
+	*destList = []HTTPHeader{}
+	*destMap = make(map[string]model.ArchivalMaybeBinaryData)
 	for key, values := range source {
 		for index, value := range values {
 			value := MaybeBinaryValue{Value: value}
@@ -144,29 +146,20 @@ func newRequestList(begin time.Time, events []Event) []RequestEntry {
 	for _, wrapper := range events {
 		ev := wrapper.Value()
 		switch wrapper.(type) {
-		case *EventHTTPTransactionStart:
+		case *EventHTTPTransactionDone:
 			entry = RequestEntry{}
 			entry.T = ev.Time.Sub(begin).Seconds()
-		case *EventHTTPRequestBodySnapshot:
-			entry.Request.Body.Value = string(ev.Data)
-			entry.Request.BodyIsTruncated = ev.DataIsTruncated
-		case *EventHTTPRequestMetadata:
-			entry.Request.Headers = make(map[string]MaybeBinaryValue)
 			httpAddHeaders(
 				ev.HTTPRequestHeaders, &entry.Request.HeadersList, &entry.Request.Headers)
 			entry.Request.Method = ev.HTTPMethod
 			entry.Request.URL = ev.HTTPURL
 			entry.Request.Transport = ev.Transport
-		case *EventHTTPResponseMetadata:
-			entry.Response.Headers = make(map[string]MaybeBinaryValue)
 			httpAddHeaders(
 				ev.HTTPResponseHeaders, &entry.Response.HeadersList, &entry.Response.Headers)
 			entry.Response.Code = int64(ev.HTTPStatusCode)
 			entry.Response.Locations = ev.HTTPResponseHeaders.Values("Location")
-		case *EventHTTPResponseBodySnapshot:
-			entry.Response.Body.Value = string(ev.Data)
-			entry.Response.BodyIsTruncated = ev.DataIsTruncated
-		case *EventHTTPTransactionDone:
+			entry.Response.Body.Value = string(ev.HTTPResponseBody)
+			entry.Response.BodyIsTruncated = ev.HTTPResponseBodyIsTruncated
 			entry.Failure = NewFailure(ev.Err)
 			out = append(out, entry)
 		}

@@ -147,32 +147,6 @@ func (ev *EventReadFromOperation) Name() string {
 	return netxlite.ReadFromOperation
 }
 
-// EventHTTPRequestMetadata contains HTTP request metadata.
-type EventHTTPRequestMetadata struct {
-	V *EventValue
-}
-
-func (ev *EventHTTPRequestMetadata) Value() *EventValue {
-	return ev.V
-}
-
-func (ev *EventHTTPRequestMetadata) Name() string {
-	return "http_request_metadata"
-}
-
-// EventHTTPResponseMetadata contains HTTP response metadata.
-type EventHTTPResponseMetadata struct {
-	V *EventValue
-}
-
-func (ev *EventHTTPResponseMetadata) Value() *EventValue {
-	return ev.V
-}
-
-func (ev *EventHTTPResponseMetadata) Name() string {
-	return "http_response_metadata"
-}
-
 // EventHTTPTransactionStart is the beginning of an HTTP transaction.
 type EventHTTPTransactionStart struct {
 	V *EventValue
@@ -197,32 +171,6 @@ func (ev *EventHTTPTransactionDone) Value() *EventValue {
 
 func (ev *EventHTTPTransactionDone) Name() string {
 	return "http_transaction_done"
-}
-
-// EventHTTPRequestBodySnapshot contains a snapshot of the request body.
-type EventHTTPRequestBodySnapshot struct {
-	V *EventValue
-}
-
-func (ev *EventHTTPRequestBodySnapshot) Value() *EventValue {
-	return ev.V
-}
-
-func (ev *EventHTTPRequestBodySnapshot) Name() string {
-	return "http_request_body_snapshot"
-}
-
-// EventHTTPResponseBodySnapshot contains a snapshot of the response body.
-type EventHTTPResponseBodySnapshot struct {
-	V *EventValue
-}
-
-func (ev *EventHTTPResponseBodySnapshot) Value() *EventValue {
-	return ev.V
-}
-
-func (ev *EventHTTPResponseBodySnapshot) Name() string {
-	return "http_response_body_snapshot"
 }
 
 // EventConnectOperation contains information about the connect operation.
@@ -266,29 +214,30 @@ func (ev *EventWriteOperation) Name() string {
 
 // Event is one of the events within a trace
 type EventValue struct {
-	Addresses           []string            `json:",omitempty"`
-	Address             string              `json:",omitempty"`
-	DNSQuery            []byte              `json:",omitempty"`
-	DNSResponse         []byte              `json:",omitempty"`
-	DataIsTruncated     bool                `json:",omitempty"`
-	Data                []byte              `json:",omitempty"`
-	Duration            time.Duration       `json:",omitempty"`
-	Err                 error               `json:",omitempty"`
-	HTTPMethod          string              `json:",omitempty"`
-	HTTPRequestHeaders  http.Header         `json:",omitempty"`
-	HTTPResponseHeaders http.Header         `json:",omitempty"`
-	HTTPStatusCode      int                 `json:",omitempty"`
-	HTTPURL             string              `json:",omitempty"`
-	Hostname            string              `json:",omitempty"`
-	NoTLSVerify         bool                `json:",omitempty"`
-	NumBytes            int                 `json:",omitempty"`
-	Proto               string              `json:",omitempty"`
-	TLSServerName       string              `json:",omitempty"`
-	TLSCipherSuite      string              `json:",omitempty"`
-	TLSNegotiatedProto  string              `json:",omitempty"`
-	TLSNextProtos       []string            `json:",omitempty"`
-	TLSPeerCerts        []*x509.Certificate `json:",omitempty"`
-	TLSVersion          string              `json:",omitempty"`
-	Time                time.Time           `json:",omitempty"`
-	Transport           string              `json:",omitempty"`
+	Addresses                   []string            `json:",omitempty"`
+	Address                     string              `json:",omitempty"`
+	DNSQuery                    []byte              `json:",omitempty"`
+	DNSResponse                 []byte              `json:",omitempty"`
+	Data                        []byte              `json:",omitempty"`
+	Duration                    time.Duration       `json:",omitempty"`
+	Err                         error               `json:",omitempty"`
+	HTTPMethod                  string              `json:",omitempty"`
+	HTTPRequestHeaders          http.Header         `json:",omitempty"`
+	HTTPResponseHeaders         http.Header         `json:",omitempty"`
+	HTTPResponseBody            []byte              `json:",omitempty"`
+	HTTPResponseBodyIsTruncated bool                `json:",omitempty"`
+	HTTPStatusCode              int                 `json:",omitempty"`
+	HTTPURL                     string              `json:",omitempty"`
+	Hostname                    string              `json:",omitempty"`
+	NoTLSVerify                 bool                `json:",omitempty"`
+	NumBytes                    int                 `json:",omitempty"`
+	Proto                       string              `json:",omitempty"`
+	TLSServerName               string              `json:",omitempty"`
+	TLSCipherSuite              string              `json:",omitempty"`
+	TLSNegotiatedProto          string              `json:",omitempty"`
+	TLSNextProtos               []string            `json:",omitempty"`
+	TLSPeerCerts                []*x509.Certificate `json:",omitempty"`
+	TLSVersion                  string              `json:",omitempty"`
+	Time                        time.Time           `json:",omitempty"`
+	Transport                   string              `json:",omitempty"`
 }

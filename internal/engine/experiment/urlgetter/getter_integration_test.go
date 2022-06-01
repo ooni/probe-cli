@@ -37,17 +37,14 @@ func TestGetterWithVeryShortTimeout(t *testing.T) {
 	if tk.Failure == nil || *tk.Failure != "generic_timeout_error" {
 		t.Fatal("not the Failure we expected")
 	}
-	if len(tk.NetworkEvents) != 3 {
+	if len(tk.NetworkEvents) != 2 {
 		t.Fatal("not the NetworkEvents we expected")
 	}
 	if tk.NetworkEvents[0].Operation != "http_transaction_start" {
 		t.Fatal("not the NetworkEvents[0].Operation we expected")
 	}
-	if tk.NetworkEvents[1].Operation != "http_request_metadata" {
+	if tk.NetworkEvents[1].Operation != "http_transaction_done" {
 		t.Fatal("not the NetworkEvents[1].Operation we expected")
-	}
-	if tk.NetworkEvents[2].Operation != "http_transaction_done" {
-		t.Fatal("not the NetworkEvents[2].Operation we expected")
 	}
 	if len(tk.Queries) != 0 {
 		t.Fatal("not the Queries we expected")
@@ -104,17 +101,14 @@ func TestGetterWithCancelledContextVanilla(t *testing.T) {
 	if tk.Failure == nil || !strings.HasSuffix(*tk.Failure, "interrupted") {
 		t.Fatal("not the Failure we expected")
 	}
-	if len(tk.NetworkEvents) != 3 {
+	if len(tk.NetworkEvents) != 2 {
 		t.Fatal("not the NetworkEvents we expected")
 	}
 	if tk.NetworkEvents[0].Operation != "http_transaction_start" {
 		t.Fatal("not the NetworkEvents[0].Operation we expected")
 	}
-	if tk.NetworkEvents[1].Operation != "http_request_metadata" {
+	if tk.NetworkEvents[1].Operation != "http_transaction_done" {
 		t.Fatal("not the NetworkEvents[1].Operation we expected")
-	}
-	if tk.NetworkEvents[2].Operation != "http_transaction_done" {
-		t.Fatal("not the NetworkEvents[2].Operation we expected")
 	}
 	if len(tk.Queries) != 0 {
 		t.Fatal("not the Queries we expected")
@@ -172,17 +166,14 @@ func TestGetterWithCancelledContextAndMethod(t *testing.T) {
 	if tk.Failure == nil || !strings.HasSuffix(*tk.Failure, "interrupted") {
 		t.Fatal("not the Failure we expected")
 	}
-	if len(tk.NetworkEvents) != 3 {
+	if len(tk.NetworkEvents) != 2 {
 		t.Fatal("not the NetworkEvents we expected")
 	}
 	if tk.NetworkEvents[0].Operation != "http_transaction_start" {
 		t.Fatal("not the NetworkEvents[0].Operation we expected")
 	}
-	if tk.NetworkEvents[1].Operation != "http_request_metadata" {
+	if tk.NetworkEvents[1].Operation != "http_transaction_done" {
 		t.Fatal("not the NetworkEvents[1].Operation we expected")
-	}
-	if tk.NetworkEvents[2].Operation != "http_transaction_done" {
-		t.Fatal("not the NetworkEvents[2].Operation we expected")
 	}
 	if len(tk.Queries) != 0 {
 		t.Fatal("not the Queries we expected")
@@ -242,16 +233,13 @@ func TestGetterWithCancelledContextNoFollowRedirects(t *testing.T) {
 	if tk.Failure == nil || !strings.HasSuffix(*tk.Failure, "interrupted") {
 		t.Fatal("not the Failure we expected")
 	}
-	if len(tk.NetworkEvents) != 3 {
+	if len(tk.NetworkEvents) != 2 {
 		t.Fatal("not the NetworkEvents we expected")
 	}
 	if tk.NetworkEvents[0].Operation != "http_transaction_start" {
 		t.Fatal("not the NetworkEvents[0].Operation we expected")
 	}
-	if tk.NetworkEvents[1].Operation != "http_request_metadata" {
-		t.Fatal("not the NetworkEvents[1].Operation we expected")
-	}
-	if tk.NetworkEvents[2].Operation != "http_transaction_done" {
+	if tk.NetworkEvents[1].Operation != "http_transaction_done" {
 		t.Fatal("not the NetworkEvents[2].Operation we expected")
 	}
 	if len(tk.Queries) != 0 {
@@ -422,23 +410,18 @@ func TestGetterIntegrationHTTPS(t *testing.T) {
 		t.Fatal("not the Failure we expected")
 	}
 	var (
-		httpTransactionStart     bool
-		httpRequestMetadata      bool
-		resolveStart             bool
-		resolveDone              bool
-		connect                  bool
-		tlsHandshakeStart        bool
-		tlsHandshakeDone         bool
-		httpResponseMetadata     bool
-		httpResponseBodySnapshot bool
-		httpTransactionDone      bool
+		httpTransactionStart bool
+		resolveStart         bool
+		resolveDone          bool
+		connect              bool
+		tlsHandshakeStart    bool
+		tlsHandshakeDone     bool
+		httpTransactionDone  bool
 	)
 	for _, ev := range tk.NetworkEvents {
 		switch ev.Operation {
 		case "http_transaction_start":
 			httpTransactionStart = true
-		case "http_request_metadata":
-			httpRequestMetadata = true
 		case "resolve_start":
 			resolveStart = true
 		case "resolve_done":
@@ -449,24 +432,17 @@ func TestGetterIntegrationHTTPS(t *testing.T) {
 			tlsHandshakeStart = true
 		case "tls_handshake_done":
 			tlsHandshakeDone = true
-		case "http_response_metadata":
-			httpResponseMetadata = true
-		case "http_response_body_snapshot":
-			httpResponseBodySnapshot = true
 		case "http_transaction_done":
 			httpTransactionDone = true
 		}
 	}
 	ok := true
 	ok = ok && httpTransactionStart
-	ok = ok && httpRequestMetadata
 	ok = ok && resolveStart
 	ok = ok && resolveDone
 	ok = ok && connect
 	ok = ok && tlsHandshakeStart
 	ok = ok && tlsHandshakeDone
-	ok = ok && httpResponseMetadata
-	ok = ok && httpResponseBodySnapshot
 	ok = ok && httpTransactionDone
 	if !ok {
 		t.Fatal("not the NetworkEvents we expected")
@@ -657,23 +633,18 @@ func TestGetterHTTPSWithTunnel(t *testing.T) {
 		t.Fatal("not the Failure we expected")
 	}
 	var (
-		httpTransactionStart     bool
-		httpRequestMetadata      bool
-		resolveStart             bool
-		resolveDone              bool
-		connect                  bool
-		tlsHandshakeStart        bool
-		tlsHandshakeDone         bool
-		httpResponseMetadata     bool
-		httpResponseBodySnapshot bool
-		httpTransactionDone      bool
+		httpTransactionStart bool
+		resolveStart         bool
+		resolveDone          bool
+		connect              bool
+		tlsHandshakeStart    bool
+		tlsHandshakeDone     bool
+		httpTransactionDone  bool
 	)
 	for _, ev := range tk.NetworkEvents {
 		switch ev.Operation {
 		case "http_transaction_start":
 			httpTransactionStart = true
-		case "http_request_metadata":
-			httpRequestMetadata = true
 		case "resolve_start":
 			resolveStart = true
 		case "resolve_done":
@@ -684,24 +655,17 @@ func TestGetterHTTPSWithTunnel(t *testing.T) {
 			tlsHandshakeStart = true
 		case "tls_handshake_done":
 			tlsHandshakeDone = true
-		case "http_response_metadata":
-			httpResponseMetadata = true
-		case "http_response_body_snapshot":
-			httpResponseBodySnapshot = true
 		case "http_transaction_done":
 			httpTransactionDone = true
 		}
 	}
 	ok := true
 	ok = ok && httpTransactionStart
-	ok = ok && httpRequestMetadata
 	ok = ok && resolveStart == false
 	ok = ok && resolveDone == false
 	ok = ok && connect
 	ok = ok && tlsHandshakeStart
 	ok = ok && tlsHandshakeDone
-	ok = ok && httpResponseMetadata
-	ok = ok && httpResponseBodySnapshot
 	ok = ok && httpTransactionDone
 	if !ok {
 		t.Fatalf("not the NetworkEvents we expected: %+v", tk.NetworkEvents)

@@ -51,7 +51,8 @@ func (p *HTTPProxy) Start(address string) (net.Listener, error) {
 	return listener, nil
 }
 
-var httpBlockpage451 = []byte(`<html><head>
+// HTTPBlockPage451 is the block page returned along with status 451
+var HTTPBlockpage451 = []byte(`<html><head>
   <title>451 Unavailable For Legal Reasons</title>
 </head><body>
   <center><h1>451 Unavailable For Legal Reasons</h1></center>
@@ -80,7 +81,7 @@ func (p *HTTPProxy) handle(w http.ResponseWriter, r *http.Request) {
 		p.hijack(w, r, policy)
 	case HTTPAction451:
 		w.WriteHeader(http.StatusUnavailableForLegalReasons)
-		w.Write(httpBlockpage451)
+		w.Write(HTTPBlockpage451)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}

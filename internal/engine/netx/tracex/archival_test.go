@@ -143,35 +143,27 @@ func TestNewRequestList(t *testing.T) {
 		name: "realistic run",
 		args: args{
 			begin: begin,
-			events: []Event{&EventHTTPTransactionStart{&EventValue{
-				Time: begin.Add(10 * time.Millisecond),
-			}}, &EventHTTPRequestBodySnapshot{&EventValue{
-				Data:            []byte("deadbeef"),
-				DataIsTruncated: false,
-			}}, &EventHTTPRequestMetadata{&EventValue{
+			events: []Event{&EventHTTPTransactionDone{&EventValue{
 				HTTPRequestHeaders: http.Header{
 					"User-Agent": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPMethod: "POST",
 				HTTPURL:    "https://www.example.com/submit",
-			}}, &EventHTTPResponseMetadata{&EventValue{
 				HTTPResponseHeaders: http.Header{
 					"Server": []string{"miniooni/0.1.0-dev"},
 				},
-				HTTPStatusCode: 200,
-			}}, &EventHTTPResponseBodySnapshot{&EventValue{
-				Data:            []byte("{}"),
-				DataIsTruncated: false,
-			}}, &EventHTTPTransactionDone{&EventValue{}}, &EventHTTPTransactionStart{&EventValue{
-				Time: begin.Add(20 * time.Millisecond),
-			}}, &EventHTTPRequestMetadata{&EventValue{
+				HTTPStatusCode:              200,
+				HTTPResponseBody:            []byte("{}"),
+				HTTPResponseBodyIsTruncated: false,
+				Time:                        begin.Add(10 * time.Millisecond),
+			}}, &EventHTTPTransactionDone{&EventValue{
 				HTTPRequestHeaders: http.Header{
 					"User-Agent": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPMethod: "GET",
 				HTTPURL:    "https://www.example.com/result",
-			}}, &EventHTTPTransactionDone{&EventValue{
-				Err: io.EOF,
+				Err:        io.EOF,
+				Time:       begin.Add(20 * time.Millisecond),
 			}}},
 		},
 		want: []RequestEntry{{
@@ -189,11 +181,15 @@ func TestNewRequestList(t *testing.T) {
 				Method: "GET",
 				URL:    "https://www.example.com/result",
 			},
+			Response: HTTPResponse{
+				HeadersList: []HTTPHeader{},
+				Headers:     make(map[string]MaybeBinaryValue),
+			},
 			T: 0.02,
 		}, {
 			Request: HTTPRequest{
 				Body: MaybeBinaryValue{
-					Value: "deadbeef",
+					Value: "",
 				},
 				HeadersList: []HTTPHeader{{
 					Key: "User-Agent",
@@ -231,21 +227,19 @@ func TestNewRequestList(t *testing.T) {
 		name: "run with redirect and headers to sort",
 		args: args{
 			begin: begin,
-			events: []Event{&EventHTTPTransactionStart{&EventValue{
-				Time: begin.Add(10 * time.Millisecond),
-			}}, &EventHTTPRequestMetadata{&EventValue{
+			events: []Event{&EventHTTPTransactionDone{&EventValue{
 				HTTPRequestHeaders: http.Header{
 					"User-Agent": []string{"miniooni/0.1.0-dev"},
 				},
 				HTTPMethod: "GET",
 				HTTPURL:    "https://www.example.com/",
-			}}, &EventHTTPResponseMetadata{&EventValue{
 				HTTPResponseHeaders: http.Header{
 					"Server":   []string{"miniooni/0.1.0-dev"},
 					"Location": []string{"https://x.example.com", "https://y.example.com"},
 				},
 				HTTPStatusCode: 302,
-			}}, &EventHTTPTransactionDone{&EventValue{}}},
+				Time:           begin.Add(10 * time.Millisecond),
+			}}},
 		},
 		want: []RequestEntry{{
 			Request: HTTPRequest{
@@ -293,7 +287,7 @@ func TestNewRequestList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := NewRequestList(tt.args.begin, tt.args.events); !reflect.DeepEqual(got, tt.want) {
-				t.Error(cmp.Diff(got, tt.want))
+				t.Error(cmp.Diff(tt.want, got))
 			}
 		})
 	}
