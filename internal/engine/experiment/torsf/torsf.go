@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
+	"github.com/ooni/probe-cli/v3/internal/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/ptx"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"

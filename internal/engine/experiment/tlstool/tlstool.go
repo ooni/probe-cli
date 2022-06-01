@@ -17,7 +17,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlstool/internal"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
+	"github.com/ooni/probe-cli/v3/internal/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )

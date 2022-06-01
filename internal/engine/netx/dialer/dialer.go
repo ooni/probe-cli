@@ -7,7 +7,7 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
+	"github.com/ooni/probe-cli/v3/internal/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )

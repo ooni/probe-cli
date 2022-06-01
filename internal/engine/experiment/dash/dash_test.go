@@ -12,7 +12,7 @@ import (
 	"github.com/apex/log"
 	"github.com/montanaflynn/stats"
 	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/tracex"
+	"github.com/ooni/probe-cli/v3/internal/tracex"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
