@@ -264,20 +264,20 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 	case "https":
 		config.TLSConfig.NextProtos = []string{"h2", "http/1.1"}
 		httpClient := &http.Client{Transport: NewHTTPTransport(config)}
-		var txp model.DNSTransport = netxlite.NewDNSOverHTTPSTransportWithHostOverride(
+		var txp model.DNSTransport = netxlite.NewUnwrappedDNSOverHTTPSTransportWithHostOverride(
 			httpClient, URL, hostOverride)
 		txp = config.ResolveSaver.WrapDNSTransport(txp) // safe when config.ResolveSaver == nil
-		return netxlite.NewSerialResolver(txp), nil
+		return netxlite.NewUnwrappedSerialResolver(txp), nil
 	case "udp":
 		dialer := NewDialer(config)
 		endpoint, err := makeValidEndpoint(resolverURL)
 		if err != nil {
 			return nil, err
 		}
-		var txp model.DNSTransport = netxlite.NewDNSOverUDPTransport(
+		var txp model.DNSTransport = netxlite.NewUnwrappedDNSOverUDPTransport(
 			dialer, endpoint)
 		txp = config.ResolveSaver.WrapDNSTransport(txp) // safe when config.ResolveSaver == nil
-		return netxlite.NewSerialResolver(txp), nil
+		return netxlite.NewUnwrappedSerialResolver(txp), nil
 	case "dot":
 		config.TLSConfig.NextProtos = []string{"dot"}
 		tlsDialer := NewTLSDialer(config)
@@ -285,20 +285,20 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		if err != nil {
 			return nil, err
 		}
-		var txp model.DNSTransport = netxlite.NewDNSOverTLSTransport(
+		var txp model.DNSTransport = netxlite.NewUnwrappedDNSOverTLSTransport(
 			tlsDialer.DialTLSContext, endpoint)
 		txp = config.ResolveSaver.WrapDNSTransport(txp) // safe when config.ResolveSaver == nil
-		return netxlite.NewSerialResolver(txp), nil
+		return netxlite.NewUnwrappedSerialResolver(txp), nil
 	case "tcp":
 		dialer := NewDialer(config)
 		endpoint, err := makeValidEndpoint(resolverURL)
 		if err != nil {
 			return nil, err
 		}
-		var txp model.DNSTransport = netxlite.NewDNSOverTCPTransport(
+		var txp model.DNSTransport = netxlite.NewUnwrappedDNSOverTCPTransport(
 			dialer.DialContext, endpoint)
 		txp = config.ResolveSaver.WrapDNSTransport(txp) // safe when config.ResolveSaver == nil
-		return netxlite.NewSerialResolver(txp), nil
+		return netxlite.NewUnwrappedSerialResolver(txp), nil
 	default:
 		return nil, errors.New("unsupported resolver scheme")
 	}

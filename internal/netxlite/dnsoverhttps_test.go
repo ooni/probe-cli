@@ -16,7 +16,7 @@ import (
 func TestDNSOverHTTPSTransport(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		t.Run("query serialization failure", func(t *testing.T) {
-			txp := NewDNSOverHTTPSTransport(http.DefaultClient, "https://1.1.1.1/dns-query")
+			txp := NewUnwrappedDNSOverHTTPSTransport(http.DefaultClient, "https://1.1.1.1/dns-query")
 			expected := errors.New("mocked error")
 			query := &mocks.DNSQuery{
 				MockBytes: func() ([]byte, error) {
@@ -34,7 +34,7 @@ func TestDNSOverHTTPSTransport(t *testing.T) {
 
 		t.Run("NewRequestFailure", func(t *testing.T) {
 			const invalidURL = "\t"
-			txp := NewDNSOverHTTPSTransport(http.DefaultClient, invalidURL)
+			txp := NewUnwrappedDNSOverHTTPSTransport(http.DefaultClient, invalidURL)
 			query := &mocks.DNSQuery{
 				MockBytes: func() ([]byte, error) {
 					return make([]byte, 17), nil
@@ -293,7 +293,7 @@ func TestDNSOverHTTPSTransport(t *testing.T) {
 
 	t.Run("other functions behave correctly", func(t *testing.T) {
 		const queryURL = "https://cloudflare-dns.com/dns-query"
-		txp := NewDNSOverHTTPSTransport(http.DefaultClient, queryURL)
+		txp := NewUnwrappedDNSOverHTTPSTransport(http.DefaultClient, queryURL)
 		if txp.Network() != "doh" {
 			t.Fatal("invalid network")
 		}

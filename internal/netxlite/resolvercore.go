@@ -23,18 +23,23 @@ import (
 var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
 // NewResolverStdlib creates a new Resolver by combining WrapResolver
-// with an internal "system" resolver type.
-func NewResolverStdlib(logger model.DebugLogger) model.Resolver {
-	return WrapResolver(logger, newResolverSystem())
+// with an internal "system" resolver type. The list of optional wrappers
+// allow to wrap the underlying getaddrinfo transport. Any nil wrapper
+// will be silently ignored by the code that performs the wrapping.
+func NewResolverStdlib(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
+	return WrapResolver(logger, newResolverSystem(wrappers...))
 }
 
-func newResolverSystem() *resolverSystem {
+func newResolverSystem(wrappers ...model.DNSTransportWrapper) *resolverSystem {
 	return &resolverSystem{
-		t: &dnsOverGetaddrinfoTransport{},
+		t: WrapDNSTransport(&dnsOverGetaddrinfoTransport{}, wrappers...),
 	}
 }
 
-// NewResolverUDP creates a new Resolver using DNS-over-UDP.
+// NewSerialResolverUDP creates a new Resolver using DNS-over-UDP
+// that performs serial A/AAAA lookups during LookupHost.
+//
+// Deprecated: use NewParallelResolverUDP.
 //
 // Arguments:
 //
@@ -43,9 +48,33 @@ func newResolverSystem() *resolverSystem {
 // - dialer is the dialer to create and connect UDP conns
 //
 // - address is the server address (e.g., 1.1.1.1:53)
-func NewResolverUDP(logger model.DebugLogger, dialer model.Dialer, address string) model.Resolver {
-	return WrapResolver(logger, NewSerialResolver(
-		NewDNSOverUDPTransport(dialer, address),
+//
+// - wrappers is the optional list of wrappers to wrap the underlying
+// transport.  Any nil wrapper will be silently ignored.
+func NewSerialResolverUDP(logger model.DebugLogger, dialer model.Dialer,
+	address string, wrappers ...model.DNSTransportWrapper) model.Resolver {
+	return WrapResolver(logger, NewUnwrappedSerialResolver(
+		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address), wrappers...),
+	))
+}
+
+// NewParallelResolverUDP creates a new Resolver using DNS-over-UDP
+// that performs parallel A/AAAA lookups during LookupHost.
+//
+// Arguments:
+//
+// - logger is the logger to use
+//
+// - dialer is the dialer to create and connect UDP conns
+//
+// - address is the server address (e.g., 1.1.1.1:53)
+//
+// - wrappers is the optional list of wrappers to wrap the underlying
+// transport.  Any nil wrapper will be silently ignored.
+func NewParallelResolverUDP(logger model.DebugLogger, dialer model.Dialer,
+	address string, wrappers ...model.DNSTransportWrapper) model.Resolver {
+	return WrapResolver(logger, NewUnwrappedParallelResolver(
+		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address), wrappers...),
 	))
 }
 

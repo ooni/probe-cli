@@ -70,50 +70,50 @@ func TestNewResolverSystem(t *testing.T) {
 }
 
 func TestNewResolverUDPAddress(t *testing.T) {
-	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverUDPTransport(netxlite.DefaultDialer, "8.8.8.8:53"))
+	reso := netxlite.NewUnwrappedSerialResolver(
+		netxlite.NewUnwrappedDNSOverUDPTransport(netxlite.DefaultDialer, "8.8.8.8:53"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverUDPDomain(t *testing.T) {
-	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverUDPTransport(netxlite.DefaultDialer, "dns.google.com:53"))
+	reso := netxlite.NewUnwrappedSerialResolver(
+		netxlite.NewUnwrappedDNSOverUDPTransport(netxlite.DefaultDialer, "dns.google.com:53"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverTCPAddress(t *testing.T) {
-	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverTCPTransport(new(net.Dialer).DialContext, "8.8.8.8:53"))
+	reso := netxlite.NewUnwrappedSerialResolver(
+		netxlite.NewUnwrappedDNSOverTCPTransport(new(net.Dialer).DialContext, "8.8.8.8:53"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverTCPDomain(t *testing.T) {
-	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverTCPTransport(new(net.Dialer).DialContext, "dns.google.com:53"))
+	reso := netxlite.NewUnwrappedSerialResolver(
+		netxlite.NewUnwrappedDNSOverTCPTransport(new(net.Dialer).DialContext, "dns.google.com:53"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverDoTAddress(t *testing.T) {
-	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverTLSTransport(new(tls.Dialer).DialContext, "8.8.8.8:853"))
+	reso := netxlite.NewUnwrappedSerialResolver(
+		netxlite.NewUnwrappedDNSOverTLSTransport(new(tls.Dialer).DialContext, "8.8.8.8:853"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverDoTDomain(t *testing.T) {
-	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverTLSTransport(new(tls.Dialer).DialContext, "dns.google.com:853"))
+	reso := netxlite.NewUnwrappedSerialResolver(
+		netxlite.NewUnwrappedDNSOverTLSTransport(new(tls.Dialer).DialContext, "dns.google.com:853"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }
 
 func TestNewResolverDoH(t *testing.T) {
-	reso := netxlite.NewSerialResolver(
-		netxlite.NewDNSOverHTTPSTransport(http.DefaultClient, "https://cloudflare-dns.com/dns-query"))
+	reso := netxlite.NewUnwrappedSerialResolver(
+		netxlite.NewUnwrappedDNSOverHTTPSTransport(http.DefaultClient, "https://cloudflare-dns.com/dns-query"))
 	testresolverquick(t, reso)
 	testresolverquickidna(t, reso)
 }

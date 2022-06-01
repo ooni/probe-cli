@@ -31,20 +31,21 @@ type DNSOverHTTPSTransport struct {
 	HostOverride string
 }
 
-// NewDNSOverHTTPSTransport creates a new DNSOverHTTPSTransport instance.
+// NewUnwrappedDNSOverHTTPSTransport creates a new DNSOverHTTPSTransport
+// instance that has not been wrapped yet.
 //
 // Arguments:
 //
 // - client is a model.HTTPClient type;
 //
 // - URL is the DoH resolver URL (e.g., https://dns.google/dns-query).
-func NewDNSOverHTTPSTransport(client model.HTTPClient, URL string) *DNSOverHTTPSTransport {
-	return NewDNSOverHTTPSTransportWithHostOverride(client, URL, "")
+func NewUnwrappedDNSOverHTTPSTransport(client model.HTTPClient, URL string) *DNSOverHTTPSTransport {
+	return NewUnwrappedDNSOverHTTPSTransportWithHostOverride(client, URL, "")
 }
 
-// NewDNSOverHTTPSTransportWithHostOverride creates a new DNSOverHTTPSTransport
-// with the given Host header override.
-func NewDNSOverHTTPSTransportWithHostOverride(
+// NewUnwrappedDNSOverHTTPSTransportWithHostOverride creates a new DNSOverHTTPSTransport
+// with the given Host header override. This instance has not been wrapped yet.
+func NewUnwrappedDNSOverHTTPSTransportWithHostOverride(
 	client model.HTTPClient, URL, hostOverride string) *DNSOverHTTPSTransport {
 	return &DNSOverHTTPSTransport{
 		Client:       client,

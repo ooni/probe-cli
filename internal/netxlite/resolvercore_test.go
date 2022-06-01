@@ -25,12 +25,13 @@ func TestNewResolverSystem(t *testing.T) {
 	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
 	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
 	reso := errWrapper.Resolver.(*resolverSystem)
-	_ = reso.t.(*dnsOverGetaddrinfoTransport)
+	txpErrWrapper := reso.t.(*dnsTransportErrWrapper)
+	_ = txpErrWrapper.DNSTransport.(*dnsOverGetaddrinfoTransport)
 }
 
-func TestNewResolverUDP(t *testing.T) {
+func TestNewSerialResolverUDP(t *testing.T) {
 	d := NewDialerWithoutResolver(log.Log)
-	resolver := NewResolverUDP(log.Log, d, "1.1.1.1:53")
+	resolver := NewSerialResolverUDP(log.Log, d, "1.1.1.1:53")
 	idna := resolver.(*resolverIDNA)
 	logger := idna.Resolver.(*resolverLogger)
 	if logger.Logger != log.Log {
@@ -39,8 +40,27 @@ func TestNewResolverUDP(t *testing.T) {
 	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
 	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
 	serio := errWrapper.Resolver.(*SerialResolver)
-	txp := serio.Transport().(*DNSOverUDPTransport)
-	if txp.Address() != "1.1.1.1:53" {
+	txp := serio.Transport().(*dnsTransportErrWrapper)
+	dnsTxp := txp.DNSTransport.(*DNSOverUDPTransport)
+	if dnsTxp.Address() != "1.1.1.1:53" {
+		t.Fatal("invalid address")
+	}
+}
+
+func TestNewParallelResolverUDP(t *testing.T) {
+	d := NewDialerWithoutResolver(log.Log)
+	resolver := NewParallelResolverUDP(log.Log, d, "1.1.1.1:53")
+	idna := resolver.(*resolverIDNA)
+	logger := idna.Resolver.(*resolverLogger)
+	if logger.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
+	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
+	para := errWrapper.Resolver.(*ParallelResolver)
+	txp := para.Transport().(*dnsTransportErrWrapper)
+	dnsTxp := txp.DNSTransport.(*DNSOverUDPTransport)
+	if dnsTxp.Address() != "1.1.1.1:53" {
 		t.Fatal("invalid address")
 	}
 }

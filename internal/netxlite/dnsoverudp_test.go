@@ -21,7 +21,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 		t.Run("cannot encode query", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			const address = "9.9.9.9:53"
-			txp := NewDNSOverUDPTransport(nil, address)
+			txp := NewUnwrappedDNSOverUDPTransport(nil, address)
 			query := &mocks.DNSQuery{
 				MockBytes: func() ([]byte, error) {
 					return nil, expected
@@ -39,7 +39,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 		t.Run("dial failure", func(t *testing.T) {
 			mocked := errors.New("mocked error")
 			const address = "9.9.9.9:53"
-			txp := NewDNSOverUDPTransport(&mocks.Dialer{
+			txp := NewUnwrappedDNSOverUDPTransport(&mocks.Dialer{
 				MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 					return nil, mocked
 				},
@@ -60,7 +60,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 
 		t.Run("Write failure", func(t *testing.T) {
 			mocked := errors.New("mocked error")
-			txp := NewDNSOverUDPTransport(
+			txp := NewUnwrappedDNSOverUDPTransport(
 				&mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 						return &mocks.Conn{
@@ -103,7 +103,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 
 		t.Run("Read failure", func(t *testing.T) {
 			mocked := errors.New("mocked error")
-			txp := NewDNSOverUDPTransport(
+			txp := NewUnwrappedDNSOverUDPTransport(
 				&mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 						return &mocks.Conn{
@@ -150,7 +150,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 		t.Run("decode failure", func(t *testing.T) {
 			const expected = 17
 			input := bytes.NewReader(make([]byte, expected))
-			txp := NewDNSOverUDPTransport(
+			txp := NewUnwrappedDNSOverUDPTransport(
 				&mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 						return &mocks.Conn{
@@ -201,7 +201,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 		t.Run("decode success", func(t *testing.T) {
 			const expected = 17
 			input := bytes.NewReader(make([]byte, expected))
-			txp := NewDNSOverUDPTransport(
+			txp := NewUnwrappedDNSOverUDPTransport(
 				&mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 						return &mocks.Conn{
@@ -264,7 +264,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			}
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
-			txp := NewDNSOverUDPTransport(dialer, listener.LocalAddr().String())
+			txp := NewUnwrappedDNSOverUDPTransport(dialer, listener.LocalAddr().String())
 			encoder := &DNSEncoderMiekg{}
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
 			resp, err := txp.RoundTrip(context.Background(), query)
@@ -297,7 +297,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			}
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
-			txp := NewDNSOverUDPTransport(dialer, listener.LocalAddr().String())
+			txp := NewUnwrappedDNSOverUDPTransport(dialer, listener.LocalAddr().String())
 			encoder := &DNSEncoderMiekg{}
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
 			ctx := context.Background()
@@ -332,7 +332,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			}
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
-			txp := NewDNSOverUDPTransport(dialer, listener.LocalAddr().String())
+			txp := NewUnwrappedDNSOverUDPTransport(dialer, listener.LocalAddr().String())
 			encoder := &DNSEncoderMiekg{}
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
 			ctx := context.Background()
@@ -359,7 +359,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			}
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
-			txp := NewDNSOverUDPTransport(dialer, listener.LocalAddr().String())
+			txp := NewUnwrappedDNSOverUDPTransport(dialer, listener.LocalAddr().String())
 			encoder := &DNSEncoderMiekg{}
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
 			rch, err := txp.AsyncRoundTrip(context.Background(), query, 1)
@@ -413,7 +413,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			}
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
-			txp := NewDNSOverUDPTransport(dialer, listener.LocalAddr().String())
+			txp := NewUnwrappedDNSOverUDPTransport(dialer, listener.LocalAddr().String())
 			txp.IOTimeout = 30 * time.Millisecond // short timeout to have a fast test
 			encoder := &DNSEncoderMiekg{}
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
@@ -440,7 +440,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			},
 		}
 		const address = "9.9.9.9:53"
-		txp := NewDNSOverUDPTransport(dialer, address)
+		txp := NewUnwrappedDNSOverUDPTransport(dialer, address)
 		txp.CloseIdleConnections()
 		if !called {
 			t.Fatal("not called")
@@ -449,7 +449,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 
 	t.Run("other functions okay", func(t *testing.T) {
 		const address = "9.9.9.9:53"
-		txp := NewDNSOverUDPTransport(NewDialerWithoutResolver(log.Log), address)
+		txp := NewUnwrappedDNSOverUDPTransport(NewDialerWithoutResolver(log.Log), address)
 		if txp.RequiresPadding() != false {
 			t.Fatal("invalid RequiresPadding")
 		}

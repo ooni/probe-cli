@@ -31,8 +31,8 @@ func (err *errorWithTimeout) Unwrap() error {
 
 func TestSerialResolver(t *testing.T) {
 	t.Run("transport okay", func(t *testing.T) {
-		txp := NewDNSOverTLSTransport((&tls.Dialer{}).DialContext, "8.8.8.8:853")
-		r := NewSerialResolver(txp)
+		txp := NewUnwrappedDNSOverTLSTransport((&tls.Dialer{}).DialContext, "8.8.8.8:853")
+		r := NewUnwrappedSerialResolver(txp)
 		rtx := r.Transport()
 		if rtx.Network() != "dot" || rtx.Address() != "8.8.8.8:853" {
 			t.Fatal("not the transport we expected")
@@ -56,7 +56,7 @@ func TestSerialResolver(t *testing.T) {
 					return true
 				},
 			}
-			r := NewSerialResolver(txp)
+			r := NewUnwrappedSerialResolver(txp)
 			addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
 			if !errors.Is(err, mocked) {
 				t.Fatal("not the error we expected")
@@ -80,7 +80,7 @@ func TestSerialResolver(t *testing.T) {
 					return true
 				},
 			}
-			r := NewSerialResolver(txp)
+			r := NewUnwrappedSerialResolver(txp)
 			addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
 			if !errors.Is(err, ErrOODNSNoAnswer) {
 				t.Fatal("not the error we expected", err)
@@ -107,7 +107,7 @@ func TestSerialResolver(t *testing.T) {
 					return true
 				},
 			}
-			r := NewSerialResolver(txp)
+			r := NewUnwrappedSerialResolver(txp)
 			addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
 			if err != nil {
 				t.Fatal(err)
@@ -134,7 +134,7 @@ func TestSerialResolver(t *testing.T) {
 					return true
 				},
 			}
-			r := NewSerialResolver(txp)
+			r := NewUnwrappedSerialResolver(txp)
 			addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
 			if err != nil {
 				t.Fatal(err)
@@ -157,7 +157,7 @@ func TestSerialResolver(t *testing.T) {
 					return true
 				},
 			}
-			r := NewSerialResolver(txp)
+			r := NewUnwrappedSerialResolver(txp)
 			addrs, err := r.LookupHost(context.Background(), "www.gogle.com")
 			if !errors.Is(err, ETIMEDOUT) {
 				t.Fatal("not the error we expected")

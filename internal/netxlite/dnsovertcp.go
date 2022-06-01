@@ -31,25 +31,27 @@ type DNSOverTCPTransport struct {
 	requiresPadding bool
 }
 
-// NewDNSOverTCPTransport creates a new DNSOverTCPTransport.
+// NewUnwrappedDNSOverTCPTransport creates a new DNSOverTCPTransport
+// that has not been wrapped yet.
 //
 // Arguments:
 //
 // - dial is a function with the net.Dialer.DialContext's signature;
 //
 // - address is the endpoint address (e.g., 8.8.8.8:53).
-func NewDNSOverTCPTransport(dial DialContextFunc, address string) *DNSOverTCPTransport {
+func NewUnwrappedDNSOverTCPTransport(dial DialContextFunc, address string) *DNSOverTCPTransport {
 	return newDNSOverTCPOrTLSTransport(dial, "tcp", address, false)
 }
 
-// NewDNSOverTLSTransport creates a new DNSOverTLS transport.
+// NewUnwrappedDNSOverTLSTransport creates a new DNSOverTLS transport
+// that has not been wrapped yet.
 //
 // Arguments:
 //
 // - dial is a function with the net.Dialer.DialContext's signature;
 //
 // - address is the endpoint address (e.g., 8.8.8.8:853).
-func NewDNSOverTLSTransport(dial DialContextFunc, address string) *DNSOverTCPTransport {
+func NewUnwrappedDNSOverTLSTransport(dial DialContextFunc, address string) *DNSOverTCPTransport {
 	return newDNSOverTCPOrTLSTransport(dial, "dot", address, true)
 }
 
