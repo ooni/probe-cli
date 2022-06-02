@@ -7,7 +7,6 @@ import (
 	"errors"
 	"io"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -20,7 +19,7 @@ func TestTLSServer(t *testing.T) {
 		defer srv.Close()
 		config := &tls.Config{ServerName: "dns.google"}
 		conn, err := tls.Dial("tcp", srv.Endpoint(), config)
-		if !errors.Is(err, syscall.ECONNRESET) {
+		if netxlite.NewTopLevelGenericErrWrapper(err).Error() != netxlite.FailureConnectionReset {
 			t.Fatal("unexpected err", err)
 		}
 		if conn != nil {
