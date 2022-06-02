@@ -5,7 +5,6 @@ package tracex
 //
 
 import (
-	"crypto/x509"
 	"errors"
 	"net/http"
 	"time"
@@ -275,30 +274,30 @@ func (ev *EventWriteOperation) Name() string {
 
 // Event is one of the events within a trace
 type EventValue struct {
-	Addresses                   []string            `json:",omitempty"`
-	Address                     string              `json:",omitempty"`
-	DNSQuery                    []byte              `json:",omitempty"`
-	DNSResponse                 []byte              `json:",omitempty"`
-	Data                        []byte              `json:",omitempty"`
-	Duration                    time.Duration       `json:",omitempty"`
-	Err                         FailureStr          `json:",omitempty"`
-	HTTPMethod                  string              `json:",omitempty"`
-	HTTPRequestHeaders          http.Header         `json:",omitempty"`
-	HTTPResponseHeaders         http.Header         `json:",omitempty"`
-	HTTPResponseBody            []byte              `json:",omitempty"`
-	HTTPResponseBodyIsTruncated bool                `json:",omitempty"`
-	HTTPStatusCode              int                 `json:",omitempty"`
-	HTTPURL                     string              `json:",omitempty"`
-	Hostname                    string              `json:",omitempty"`
-	NoTLSVerify                 bool                `json:",omitempty"`
-	NumBytes                    int                 `json:",omitempty"`
-	Proto                       string              `json:",omitempty"`
-	TLSServerName               string              `json:",omitempty"`
-	TLSCipherSuite              string              `json:",omitempty"`
-	TLSNegotiatedProto          string              `json:",omitempty"`
-	TLSNextProtos               []string            `json:",omitempty"`
-	TLSPeerCerts                []*x509.Certificate `json:",omitempty"`
-	TLSVersion                  string              `json:",omitempty"`
-	Time                        time.Time           `json:",omitempty"`
-	Transport                   string              `json:",omitempty"`
+	Addresses                   []string      `json:",omitempty"`
+	Address                     string        `json:",omitempty"`
+	DNSQuery                    []byte        `json:",omitempty"`
+	DNSResponse                 []byte        `json:",omitempty"`
+	Data                        []byte        `json:",omitempty"`
+	Duration                    time.Duration `json:",omitempty"`
+	Err                         FailureStr    `json:",omitempty"`
+	HTTPMethod                  string        `json:",omitempty"`
+	HTTPRequestHeaders          http.Header   `json:",omitempty"`
+	HTTPResponseHeaders         http.Header   `json:",omitempty"`
+	HTTPResponseBody            []byte        `json:",omitempty"`
+	HTTPResponseBodyIsTruncated bool          `json:",omitempty"`
+	HTTPStatusCode              int           `json:",omitempty"`
+	HTTPURL                     string        `json:",omitempty"`
+	Hostname                    string        `json:",omitempty"`
+	NoTLSVerify                 bool          `json:",omitempty"`
+	NumBytes                    int           `json:",omitempty"`
+	Proto                       string        `json:",omitempty"`
+	TLSServerName               string        `json:",omitempty"`
+	TLSCipherSuite              string        `json:",omitempty"`
+	TLSNegotiatedProto          string        `json:",omitempty"`
+	TLSNextProtos               []string      `json:",omitempty"`
+	TLSPeerCerts                [][]byte      `json:",omitempty"`
+	TLSVersion                  string        `json:",omitempty"`
+	Time                        time.Time     `json:",omitempty"`
+	Transport                   string        `json:",omitempty"`
 }

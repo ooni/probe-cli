@@ -77,22 +77,25 @@ var _ model.TLSHandshaker = &TLSHandshakerSaver{}
 
 // tlsPeerCerts returns the certificates presented by the peer regardless
 // of whether the TLS handshake was successful
-func tlsPeerCerts(state tls.ConnectionState, err error) []*x509.Certificate {
+func tlsPeerCerts(state tls.ConnectionState, err error) (out [][]byte) {
 	var x509HostnameError x509.HostnameError
 	if errors.As(err, &x509HostnameError) {
 		// Test case: https://wrong.host.badssl.com/
-		return []*x509.Certificate{x509HostnameError.Certificate}
+		return [][]byte{x509HostnameError.Certificate.Raw}
 	}
 	var x509UnknownAuthorityError x509.UnknownAuthorityError
 	if errors.As(err, &x509UnknownAuthorityError) {
 		// Test case: https://self-signed.badssl.com/. This error has
 		// never been among the ones returned by MK.
-		return []*x509.Certificate{x509UnknownAuthorityError.Cert}
+		return [][]byte{x509UnknownAuthorityError.Cert.Raw}
 	}
 	var x509CertificateInvalidError x509.CertificateInvalidError
 	if errors.As(err, &x509CertificateInvalidError) {
 		// Test case: https://expired.badssl.com/
-		return []*x509.Certificate{x509CertificateInvalidError.Cert}
+		return [][]byte{x509CertificateInvalidError.Cert.Raw}
 	}
-	return state.PeerCertificates
+	for _, cert := range state.PeerCertificates {
+		out = append(out, cert.Raw)
+	}
+	return
 }

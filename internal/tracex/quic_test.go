@@ -59,7 +59,7 @@ func TestQUICDialerSaver(t *testing.T) {
 			if value.TLSNegotiatedProto != "h3" {
 				t.Fatal("invalid negotiated protocol")
 			}
-			if diff := cmp.Diff(value.TLSPeerCerts, []*x509.Certificate{}); diff != "" {
+			if diff := cmp.Diff(value.TLSPeerCerts, [][]byte{{1, 2, 3, 4}}); diff != "" {
 				t.Fatal(diff)
 			}
 			if value.TLSVersion != "TLSv1.3" {
@@ -83,7 +83,9 @@ func TestQUICDialerSaver(t *testing.T) {
 					cs := quic.ConnectionState{}
 					cs.TLS.ConnectionState.CipherSuite = tls.TLS_RSA_WITH_RC4_128_SHA
 					cs.TLS.NegotiatedProtocol = "h3"
-					cs.TLS.PeerCertificates = []*x509.Certificate{}
+					cs.TLS.PeerCertificates = []*x509.Certificate{{
+						Raw: []byte{1, 2, 3, 4},
+					}}
 					cs.TLS.Version = tls.VersionTLS13
 					return cs
 				},

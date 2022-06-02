@@ -64,6 +64,7 @@ func (h *QUICDialerSaver) DialContext(ctx context.Context, network string,
 			NoTLSVerify:   tlsCfg.InsecureSkipVerify,
 			Proto:         network,
 			TLSNextProtos: tlsCfg.NextProtos,
+			TLSPeerCerts:  [][]byte{},
 			TLSServerName: tlsCfg.ServerName,
 			Time:          stop,
 		}})
