@@ -31,7 +31,6 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -174,7 +173,7 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 	}
 
 	tInfo := allTransportsInfo[config.HTTP3Enabled]
-	txp := tInfo.Factory(httptransport.HTTPTransportConfig{
+	txp := tInfo.Factory(httpTransportConfig{
 		Dialer: config.Dialer, QUICDialer: config.QUICDialer, TLSDialer: config.TLSDialer,
 		TLSConfig: config.TLSConfig})
 
@@ -194,17 +193,17 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 
 // httpTransportInfo contains the constructing function as well as the transport name
 type httpTransportInfo struct {
-	Factory       func(httptransport.HTTPTransportConfig) model.HTTPTransport
+	Factory       func(httpTransportConfig) model.HTTPTransport
 	TransportName string
 }
 
 var allTransportsInfo = map[bool]httpTransportInfo{
 	false: {
-		Factory:       httptransport.NewSystemTransport,
+		Factory:       newSystemTransport,
 		TransportName: "tcp",
 	},
 	true: {
-		Factory:       httptransport.NewHTTP3Transport,
+		Factory:       newHTTP3Transport,
 		TransportName: "quic",
 	},
 }
