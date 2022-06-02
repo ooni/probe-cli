@@ -20,12 +20,8 @@ type (
 	HTTPTransportWrapper           = httpTransportConnectionsCloser
 	HTTPTransportLogger            = httpTransportLogger
 	ErrorWrapperResolver           = resolverErrWrapper
-	ErrorWrapperTLSHandshaker      = tlsHandshakerErrWrapper
 	ResolverSystemDoNotInstantiate = resolverSystem // instantiate => crash w/ nil transport
 	ResolverLogger                 = resolverLogger
 	ResolverIDNA                   = resolverIDNA
-	TLSHandshakerConfigurable      = tlsHandshakerConfigurable
-	TLSHandshakerLogger            = tlsHandshakerLogger
-	TLSDialerLegacy                = tlsDialer
 	AddressResolver                = resolverShortCircuitIPAddr
 )

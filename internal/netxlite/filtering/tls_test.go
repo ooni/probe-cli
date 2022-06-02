@@ -1,297 +1,146 @@
 package filtering
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
-	"net"
+	"io"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-func TestTLSProxy(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	newproxy := func(action TLSAction) (net.Listener, <-chan interface{}, error) {
-		p := &TLSProxy{
-			OnIncomingSNI: func(sni string) TLSAction {
-				return action
-			},
-		}
-		return p.start("127.0.0.1:0")
-	}
-
-	dialTLS := func(ctx context.Context, endpoint string, sni string) (net.Conn, error) {
-		d := netxlite.NewDialerWithoutResolver(log.Log)
-		th := netxlite.NewTLSHandshakerStdlib(log.Log)
-		tdx := netxlite.NewTLSDialerWithConfig(d, th, &tls.Config{
-			ServerName: sni,
-			NextProtos: []string{"h2", "http/1.1"},
-			RootCAs:    netxlite.NewDefaultCertPool(),
-		})
-		return tdx.DialTLSContext(ctx, "tcp", endpoint)
-	}
-
-	t.Run("TLSActionPass", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionPass)
-		if err != nil {
-			t.Fatal(err)
-		}
-		conn, err := dialTLS(ctx, listener.Addr().String(), "dns.google")
-		if err != nil {
-			t.Fatal(err)
-		}
-		conn.Close()
-		listener.Close()
-		<-done // wait for background goroutine to exit
-	})
-
-	t.Run("TLSActionTimeout", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionTimeout)
-		if err != nil {
-			t.Fatal(err)
-		}
-		conn, err := dialTLS(ctx, listener.Addr().String(), "dns.google")
-		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
+func TestTLSServer(t *testing.T) {
+	t.Run("TLSActionReset", func(t *testing.T) {
+		srv := NewTLSServer(TLSActionReset)
+		defer srv.Close()
+		config := &tls.Config{ServerName: "dns.google"}
+		conn, err := tls.Dial("tcp", srv.Endpoint(), config)
+		if netxlite.NewTopLevelGenericErrWrapper(err).Error() != netxlite.FailureConnectionReset {
 			t.Fatal("unexpected err", err)
 		}
 		if conn != nil {
 			t.Fatal("expected nil conn")
 		}
-		listener.Close()
-		<-done // wait for background goroutine to exit
+	})
+
+	t.Run("TLSActionTimeout", func(t *testing.T) {
+		srv := NewTLSServer(TLSActionTimeout)
+		defer srv.Close()
+		config := &tls.Config{ServerName: "dns.google"}
+		d := &tls.Dialer{Config: config}
+		ctx, cancel := context.WithTimeout(context.Background(), 70*time.Millisecond)
+		defer cancel()
+		conn, err := d.DialContext(ctx, "tcp", srv.Endpoint())
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatal("unexpected err", err)
+		}
+		if conn != nil {
+			t.Fatal("expected nil conn")
+		}
 	})
 
 	t.Run("TLSActionAlertInternalError", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionAlertInternalError)
-		if err != nil {
-			t.Fatal(err)
-		}
-		conn, err := dialTLS(ctx, listener.Addr().String(), "dns.google")
+		srv := NewTLSServer(TLSActionAlertInternalError)
+		defer srv.Close()
+		config := &tls.Config{ServerName: "dns.google"}
+		conn, err := tls.Dial("tcp", srv.Endpoint(), config)
 		if err == nil || !strings.HasSuffix(err.Error(), "tls: internal error") {
 			t.Fatal("unexpected err", err)
 		}
 		if conn != nil {
 			t.Fatal("expected nil conn")
 		}
-		listener.Close()
-		<-done // wait for background goroutine to exit
 	})
 
 	t.Run("TLSActionAlertUnrecognizedName", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionAlertUnrecognizedName)
-		if err != nil {
-			t.Fatal(err)
-		}
-		conn, err := dialTLS(ctx, listener.Addr().String(), "dns.google")
+		srv := NewTLSServer(TLSActionAlertUnrecognizedName)
+		defer srv.Close()
+		config := &tls.Config{ServerName: "dns.google"}
+		conn, err := tls.Dial("tcp", srv.Endpoint(), config)
 		if err == nil || !strings.HasSuffix(err.Error(), "tls: unrecognized name") {
 			t.Fatal("unexpected err", err)
 		}
 		if conn != nil {
 			t.Fatal("expected nil conn")
 		}
-		listener.Close()
-		<-done // wait for background goroutine to exit
 	})
 
 	t.Run("TLSActionEOF", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionEOF)
-		if err != nil {
-			t.Fatal(err)
-		}
-		conn, err := dialTLS(ctx, listener.Addr().String(), "dns.google")
-		if err == nil || err.Error() != netxlite.FailureEOFError {
+		srv := NewTLSServer(TLSActionEOF)
+		defer srv.Close()
+		config := &tls.Config{ServerName: "dns.google"}
+		conn, err := tls.Dial("tcp", srv.Endpoint(), config)
+		if !errors.Is(err, io.EOF) {
 			t.Fatal("unexpected err", err)
 		}
 		if conn != nil {
 			t.Fatal("expected nil conn")
 		}
-		listener.Close()
-		<-done // wait for background goroutine to exit
 	})
 
-	t.Run("TLSActionReset", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionReset)
-		if err != nil {
-			t.Fatal(err)
-		}
-		conn, err := dialTLS(ctx, listener.Addr().String(), "dns.google")
-		if err == nil || err.Error() != netxlite.FailureConnectionReset {
-			t.Fatal("unexpected err", err)
-		}
-		if conn != nil {
-			t.Fatal("expected nil conn")
-		}
-		listener.Close()
-		<-done // wait for background goroutine to exit
-	})
-
-	dial := func(ctx context.Context, endpoint string) (net.Conn, error) {
-		d := netxlite.NewDialerWithoutResolver(log.Log)
-		return d.DialContext(ctx, "tcp", endpoint)
-	}
-
-	t.Run("handle cannot read ClientHello", func(t *testing.T) {
-		listener, done, err := newproxy(TLSActionPass)
-		if err != nil {
-			t.Fatal(err)
-		}
-		conn, err := dial(context.Background(), listener.Addr().String())
-		if err != nil {
-			t.Fatal(err)
-		}
-		conn.Write([]byte("GET / HTTP/1.0\r\n\r\n"))
-		buff := make([]byte, 1<<17)
-		_, err = conn.Read(buff)
-		if err == nil || err.Error() != netxlite.FailureConnectionReset {
-			t.Fatal("unexpected err", err)
-		}
-		listener.Close()
-		<-done // wait for background goroutine to exit
-	})
-
-	t.Run("TLSActionPass fails because we don't have SNI", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionPass)
-		if err != nil {
-			t.Fatal(err)
-		}
-		conn, err := dialTLS(ctx, listener.Addr().String(), "127.0.0.1")
-		if err == nil || err.Error() != netxlite.FailureConnectionReset {
-			t.Fatal("unexpected err", err)
-		}
-		if conn != nil {
-			t.Fatal("expected nil conn")
-		}
-		listener.Close()
-		<-done // wait for background goroutine to exit
-	})
-
-	t.Run("TLSActionPass fails because we can't dial", func(t *testing.T) {
-		ctx := context.Background()
-		listener, done, err := newproxy(TLSActionPass)
-		if err != nil {
-			t.Fatal(err)
-		}
-		conn, err := dialTLS(ctx, listener.Addr().String(), "antani.ooni.org")
-		if err == nil || err.Error() != netxlite.FailureConnectionReset {
-			t.Fatal("unexpected err", err)
-		}
-		if conn != nil {
-			t.Fatal("expected nil conn")
-		}
-		listener.Close()
-		<-done // wait for background goroutine to exit
-	})
-
-	t.Run("proxydial fails because it's connecting to itself", func(t *testing.T) {
-		p := &TLSProxy{}
-		conn := &mocks.Conn{
-			MockClose: func() error {
-				return nil
-			},
-		}
-		p.proxydial(conn, "ooni.org", nil, func(network, address string) (net.Conn, error) {
-			return &mocks.Conn{
-				MockClose: func() error {
-					return nil
-				},
-				MockLocalAddr: func() net.Addr {
-					return &net.TCPAddr{
-						IP: net.IPv6loopback,
-					}
-				},
-				MockRemoteAddr: func() net.Addr {
-					return &net.TCPAddr{
-						IP: net.IPv6loopback,
-					}
-				},
-			}, nil
+	t.Run("TLSActionBlockText", func(t *testing.T) {
+		t.Run("certificate error when we're validating", func(t *testing.T) {
+			srv := NewTLSServer(TLSActionBlockText)
+			defer srv.Close()
+			//     Certificate.Verify now uses platform APIs to verify certificate validity
+			//     on macOS and iOS when it is called with a nil VerifyOpts.Roots or when using
+			//     the root pool returned from SystemCertPool. "
+			//
+			//     -- https://tip.golang.org/doc/go1.18
+			//
+			// So we need to explicitly use our default cert pool otherwise we will
+			// see this test failing with a different error string here.
+			config := &tls.Config{
+				ServerName: "dns.google",
+				RootCAs:    netxlite.NewDefaultCertPool(),
+			}
+			conn, err := tls.Dial("tcp", srv.Endpoint(), config)
+			if err == nil || !strings.HasSuffix(err.Error(), "certificate signed by unknown authority") {
+				t.Fatal("unexpected err", err)
+			}
+			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
 		})
-	})
 
-	t.Run("proxydial fails because it cannot write the hello", func(t *testing.T) {
-		p := &TLSProxy{}
-		conn := &mocks.Conn{
-			MockClose: func() error {
-				return nil
-			},
-		}
-		p.proxydial(conn, "ooni.org", nil, func(network, address string) (net.Conn, error) {
-			return &mocks.Conn{
-				MockClose: func() error {
-					return nil
-				},
-				MockLocalAddr: func() net.Addr {
-					return &net.TCPAddr{
-						IP: net.IPv6loopback,
-					}
-				},
-				MockRemoteAddr: func() net.Addr {
-					return &net.TCPAddr{
-						IP: net.IPv4(10, 0, 0, 1),
-					}
-				},
-				MockWrite: func(b []byte) (int, error) {
-					return 0, errors.New("mocked error")
-				},
-			}, nil
+		t.Run("blocktext when we skip validation", func(t *testing.T) {
+			srv := NewTLSServer(TLSActionBlockText)
+			defer srv.Close()
+			config := &tls.Config{InsecureSkipVerify: true, ServerName: "dns.google"}
+			conn, err := tls.Dial("tcp", srv.Endpoint(), config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer conn.Close()
+			data, err := io.ReadAll(conn)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(HTTPBlockpage451, data) {
+				t.Fatal("unexpected block text")
+			}
 		})
-	})
 
-	t.Run("Start fails on an invalid address", func(t *testing.T) {
-		p := &TLSProxy{}
-		listener, err := p.Start("127.0.0.1")
-		if err == nil || !strings.HasSuffix(err.Error(), "missing port in address") {
-			t.Fatal("unexpected err", err)
-		}
-		if listener != nil {
-			t.Fatal("expected nil listener")
-		}
-	})
-
-	t.Run("oneloop correctly handles a listener error", func(t *testing.T) {
-		listener := &mocks.Listener{
-			MockAccept: func() (net.Conn, error) {
-				return nil, errors.New("mocked error")
-			},
-		}
-		p := &TLSProxy{}
-		if !p.oneloop(listener) {
-			t.Fatal("should return true here")
-		}
-	})
-}
-
-func TestTLSClientHelloReader(t *testing.T) {
-	t.Run("on failure", func(t *testing.T) {
-		expected := errors.New("mocked error")
-		chr := &tlsClientHelloReader{
-			Conn: &mocks.Conn{
-				MockRead: func(b []byte) (int, error) {
-					return 0, expected
-				},
-			},
-			clientHello: []byte{},
-		}
-		buf := make([]byte, 128)
-		count, err := chr.Read(buf)
-		if !errors.Is(err, expected) {
-			t.Fatal("unexpected err", err)
-		}
-		if count != 0 {
-			t.Fatal("invalid count")
-		}
+		t.Run("blocktext when we configure the cert pool", func(t *testing.T) {
+			srv := NewTLSServer(TLSActionBlockText)
+			defer srv.Close()
+			config := &tls.Config{RootCAs: srv.CertPool(), ServerName: "dns.google"}
+			conn, err := tls.Dial("tcp", srv.Endpoint(), config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer conn.Close()
+			data, err := io.ReadAll(conn)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(HTTPBlockpage451, data) {
+				t.Fatal("unexpected block text")
+			}
+		})
 	})
 }

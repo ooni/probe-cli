@@ -303,18 +303,10 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 	}
 
 	connectionResetFlow := func(th model.TLSHandshaker) error {
-		tlsProxy := &filtering.TLSProxy{
-			OnIncomingSNI: func(sni string) filtering.TLSAction {
-				return filtering.TLSActionReset
-			},
-		}
-		listener, err := tlsProxy.Start("127.0.0.1:0")
-		if err != nil {
-			return fmt.Errorf("cannot start proxy: %w", err)
-		}
-		defer listener.Close()
+		server := filtering.NewTLSServer(filtering.TLSActionReset)
+		defer server.Close()
 		ctx := context.Background()
-		conn, err := dial(ctx, listener.Addr().String())
+		conn, err := dial(ctx, server.Endpoint())
 		if err != nil {
 			return fmt.Errorf("dial failed: %w", err)
 		}
@@ -338,18 +330,10 @@ func TestMeasureWithTLSHandshaker(t *testing.T) {
 	}
 
 	timeoutFlow := func(th model.TLSHandshaker) error {
-		tlsProxy := &filtering.TLSProxy{
-			OnIncomingSNI: func(sni string) filtering.TLSAction {
-				return filtering.TLSActionTimeout
-			},
-		}
-		listener, err := tlsProxy.Start("127.0.0.1:0")
-		if err != nil {
-			return fmt.Errorf("cannot start proxy: %w", err)
-		}
-		defer listener.Close()
+		server := filtering.NewTLSServer(filtering.TLSActionTimeout)
+		defer server.Close()
 		ctx := context.Background()
-		conn, err := dial(ctx, listener.Addr().String())
+		conn, err := dial(ctx, server.Endpoint())
 		if err != nil {
 			return fmt.Errorf("dial failed: %w", err)
 		}
