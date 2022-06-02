@@ -301,6 +301,8 @@ GOMOBILE = $(shell go env GOPATH)/bin/gomobile
 #help: * `./mk ./MOBILE/android/oonimkall.aar`: the AAR
 .PHONY:   ./MOBILE/android/oonimkall.aar
 ./MOBILE/android/oonimkall.aar: android/sdk maybe/copypsiphon
+	@echo "Android build disabled - TODO(https://github.com/ooni/probe/issues/2122)"
+	@exit 1
 	go get -u golang.org/x/mobile/cmd/gomobile
 	$(GOMOBILE) init
 	PATH=$(shell go env GOPATH)/bin:$$PATH ANDROID_HOME=$(OONI_ANDROID_HOME) ANDROID_NDK_HOME=$(OONI_ANDROID_HOME)/ndk/$(ANDROID_NDK_VERSION) $(GOMOBILE) bind -x -target android -o ./MOBILE/android/oonimkall.aar -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
