@@ -1,7 +1,4 @@
-// Package dialer allows you to create a net.Dialer-compatible
-// DialContext-enabled dialer with error wrapping, optional logging,
-// optional network-events saving, and optional proxying.
-package dialer
+package netx
 
 import (
 	"net/url"
@@ -12,8 +9,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
-// Config contains the settings for New.
-type Config struct {
+// dialerConfig contains the settings for New.
+type dialerConfig struct {
 	// ContextByteCounting optionally configures context-based
 	// byte counting. By default we don't do that.
 	//
@@ -48,8 +45,8 @@ type Config struct {
 	ReadWriteSaver *tracex.Saver
 }
 
-// New creates a new Dialer from the specified config and resolver.
-func New(config *Config, resolver model.Resolver) model.Dialer {
+// newDialer creates a new Dialer from the specified config and resolver.
+func newDialer(config *dialerConfig, resolver model.Resolver) model.Dialer {
 	var logger model.DebugLogger = model.DiscardLogger
 	if config.Logger != nil {
 		logger = config.Logger

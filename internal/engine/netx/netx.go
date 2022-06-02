@@ -31,9 +31,6 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -85,10 +82,10 @@ func NewResolver(config Config) model.Resolver {
 		Resolver: r,
 	}
 	if config.CacheResolutions {
-		r = &resolver.CacheResolver{Resolver: r}
+		r = &CacheResolver{Resolver: r}
 	}
 	if config.DNSCache != nil {
-		cache := &resolver.CacheResolver{Resolver: r, ReadOnly: true}
+		cache := &CacheResolver{Resolver: r, ReadOnly: true}
 		for key, values := range config.DNSCache {
 			cache.Set(key, values)
 		}
@@ -113,7 +110,7 @@ func NewDialer(config Config) model.Dialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	return dialer.New(&dialer.Config{
+	return newDialer(&dialerConfig{
 		ContextByteCounting: config.ContextByteCounting,
 		DialSaver:           config.DialSaver,
 		Logger:              config.Logger,
@@ -175,7 +172,7 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 	}
 
 	tInfo := allTransportsInfo[config.HTTP3Enabled]
-	txp := tInfo.Factory(httptransport.Config{
+	txp := tInfo.Factory(httpTransportConfig{
 		Dialer: config.Dialer, QUICDialer: config.QUICDialer, TLSDialer: config.TLSDialer,
 		TLSConfig: config.TLSConfig})
 
@@ -195,17 +192,17 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 
 // httpTransportInfo contains the constructing function as well as the transport name
 type httpTransportInfo struct {
-	Factory       func(httptransport.Config) model.HTTPTransport
+	Factory       func(httpTransportConfig) model.HTTPTransport
 	TransportName string
 }
 
 var allTransportsInfo = map[bool]httpTransportInfo{
 	false: {
-		Factory:       httptransport.NewSystemTransport,
+		Factory:       newSystemTransport,
 		TransportName: "tcp",
 	},
 	true: {
-		Factory:       httptransport.NewHTTP3Transport,
+		Factory:       newHTTP3Transport,
 		TransportName: "quic",
 	},
 }
