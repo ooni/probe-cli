@@ -57,7 +57,7 @@ func TestTLSHandshakerSaver(t *testing.T) {
 			if value.TLSNegotiatedProto != "h2" {
 				t.Fatal("invalid negotiated protocol")
 			}
-			if diff := cmp.Diff(value.TLSPeerCerts, []*x509.Certificate{}); diff != "" {
+			if diff := cmp.Diff(value.TLSPeerCerts, [][]byte{{1, 2, 3, 4}}); diff != "" {
 				t.Fatal(diff)
 			}
 			if value.TLSVersion != "TLSv1.3" {
@@ -79,8 +79,10 @@ func TestTLSHandshakerSaver(t *testing.T) {
 			returnedConnState := tls.ConnectionState{
 				CipherSuite:        tls.TLS_RSA_WITH_RC4_128_SHA,
 				NegotiatedProtocol: "h2",
-				PeerCertificates:   []*x509.Certificate{},
-				Version:            tls.VersionTLS13,
+				PeerCertificates: []*x509.Certificate{{
+					Raw: []byte{1, 2, 3, 4},
+				}},
+				Version: tls.VersionTLS13,
 			}
 			returnedConn := &mocks.TLSConn{
 				MockConnectionState: func() tls.ConnectionState {
@@ -200,7 +202,7 @@ func Test_tlsPeerCerts(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []*x509.Certificate
+		want [][]byte
 	}{{
 		name: "no error",
 		args: args{
@@ -208,7 +210,7 @@ func Test_tlsPeerCerts(t *testing.T) {
 				PeerCertificates: []*x509.Certificate{cert0},
 			},
 		},
-		want: []*x509.Certificate{cert0},
+		want: [][]byte{cert0.Raw},
 	}, {
 		name: "all empty",
 		args: args{},
@@ -221,7 +223,7 @@ func Test_tlsPeerCerts(t *testing.T) {
 				Certificate: cert0,
 			},
 		},
-		want: []*x509.Certificate{cert0},
+		want: [][]byte{cert0.Raw},
 	}, {
 		name: "x509.UnknownAuthorityError",
 		args: args{
@@ -230,7 +232,7 @@ func Test_tlsPeerCerts(t *testing.T) {
 				Cert: cert0,
 			},
 		},
-		want: []*x509.Certificate{cert0},
+		want: [][]byte{cert0.Raw},
 	}, {
 		name: "x509.CertificateInvalidError",
 		args: args{
@@ -239,7 +241,7 @@ func Test_tlsPeerCerts(t *testing.T) {
 				Cert: cert0,
 			},
 		},
-		want: []*x509.Certificate{cert0},
+		want: [][]byte{cert0.Raw},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

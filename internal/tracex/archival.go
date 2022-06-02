@@ -5,7 +5,6 @@ package tracex
 //
 
 import (
-	"crypto/x509"
 	"errors"
 	"net"
 	"net/http"
@@ -303,9 +302,9 @@ func NewTLSHandshakesList(begin time.Time, events []Event) (out []TLSHandshake) 
 	return
 }
 
-func tlsMakePeerCerts(in []*x509.Certificate) (out []MaybeBinaryValue) {
+func tlsMakePeerCerts(in [][]byte) (out []MaybeBinaryValue) {
 	for _, entry := range in {
-		out = append(out, MaybeBinaryValue{Value: string(entry.Raw)})
+		out = append(out, MaybeBinaryValue{Value: string(entry)})
 	}
 	return
 }

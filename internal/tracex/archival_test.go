@@ -2,7 +2,6 @@ package tracex
 
 import (
 	"context"
-	"crypto/x509"
 	"errors"
 	"io"
 	"net/http"
@@ -533,11 +532,10 @@ func TestNewTLSHandshakesList(t *testing.T) {
 				Proto:              "tcp",
 				TLSCipherSuite:     "SUITE",
 				TLSNegotiatedProto: "h2",
-				TLSPeerCerts: []*x509.Certificate{{
-					Raw: []byte("deadbeef"),
-				}, {
-					Raw: []byte("abad1dea"),
-				}},
+				TLSPeerCerts: [][]byte{
+					[]byte("deadbeef"),
+					[]byte("abad1dea"),
+				},
 				TLSServerName: "x.org",
 				TLSVersion:    "TLSv1.3",
 				Time:          begin.Add(55 * time.Millisecond),
@@ -569,11 +567,10 @@ func TestNewTLSHandshakesList(t *testing.T) {
 				Proto:              "quic",
 				TLSCipherSuite:     "SUITE",
 				TLSNegotiatedProto: "h3",
-				TLSPeerCerts: []*x509.Certificate{{
-					Raw: []byte("deadbeef"),
-				}, {
-					Raw: []byte("abad1dea"),
-				}},
+				TLSPeerCerts: [][]byte{
+					[]byte("deadbeef"),
+					[]byte("abad1dea"),
+				},
 				TLSServerName: "x.org",
 				TLSVersion:    "TLSv1.3",
 				Time:          begin.Add(55 * time.Millisecond),
