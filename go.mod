@@ -5,7 +5,7 @@ go 1.18
 require (
 	filippo.io/age v1.0.0
 	git.torproject.org/pluggable-transports/goptlib.git v1.2.0
-	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.1.0
+	git.torproject.org/pluggable-transports/snowflake.git/v2 v2.2.0
 	github.com/AlecAivazis/survey/v2 v2.3.4
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/apex/log v1.9.0
@@ -19,7 +19,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/iancoleman/strcase v0.2.0
-	github.com/lucas-clemente/quic-go v0.27.0
+	github.com/lucas-clemente/quic-go v0.27.1
 	github.com/marten-seemann/qtls-go1-17 v0.1.1
 	github.com/marten-seemann/qtls-go1-18 v0.1.1
 	github.com/mattn/go-colorable v0.1.12
@@ -39,13 +39,13 @@ require (
 	github.com/upper/db/v4 v4.5.2
 	gitlab.com/yawning/obfs4.git v0.0.0-20220204003609-77af0cba934d
 	gitlab.com/yawning/utls.git v0.0.12-1
-	golang.org/x/crypto v0.0.0-20220518034528-6f7dac969898
-	golang.org/x/net v0.0.0-20220517181318-183a9ca12b87
-	golang.org/x/sys v0.0.0-20220519141025-dcacdad47464
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
+	golang.org/x/net v0.0.0-20220531201128-c960675eff93
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
 )
 
 require (
-	filippo.io/edwards25519 v1.0.0-rc.1.0.20210721174708-390f27c3be20 // indirect
+	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
@@ -90,11 +90,11 @@ require (
 	github.com/pion/rtp v1.7.13 // indirect
 	github.com/pion/sctp v1.8.2 // indirect
 	github.com/pion/sdp/v3 v3.0.5 // indirect
-	github.com/pion/srtp/v2 v2.0.7 // indirect
+	github.com/pion/srtp/v2 v2.0.9 // indirect
 	github.com/pion/transport v0.13.0 // indirect
 	github.com/pion/turn/v2 v2.0.8 // indirect
 	github.com/pion/udp v0.1.1 // indirect
-	github.com/pion/webrtc/v3 v3.1.40 // indirect
+	github.com/pion/webrtc/v3 v3.1.41 // indirect
 	github.com/refraction-networking/gotapdance v1.2.0 // indirect
 	github.com/refraction-networking/utls v1.1.0 // indirect
 	github.com/sergeyfrolov/bsbuffer v0.0.0-20180903213811-94e85abb8507 // indirect
@@ -110,7 +110,7 @@ require (
 	gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec // indirect
 	gitlab.com/yawning/edwards25519-extra.git v0.0.0-20211229043746-2f91fcc9fbdb // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/term v0.0.0-20220411215600-e5f449aeb171 // indirect
+	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.11-0.20220513221640-090b14e8501f // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
