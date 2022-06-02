@@ -171,7 +171,7 @@ func (m *Measurer) Run(
 	resolver := netx.NewResolver(netx.Config{
 		BogonIsError: true,
 		Logger:       sess.Logger(),
-		ResolveSaver: evsaver,
+		Saver:        evsaver,
 	})
 	addrs, err := m.lookupHost(ctx, URL.Hostname(), resolver)
 	queries := tracex.NewDNSQueriesList(begin, evsaver.Read())

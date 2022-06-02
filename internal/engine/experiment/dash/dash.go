@@ -263,7 +263,7 @@ func (m Measurer) Run(
 			// See https://github.com/ooni/probe/issues/2112
 			Dialer: netxlite.NewMaybeShapingDialer(netx.NewDialer(netx.Config{
 				ContextByteCounting: true,
-				DialSaver:           saver,
+				Saver:               saver,
 				Logger:              sess.Logger(),
 			})),
 			Logger: sess.Logger(),

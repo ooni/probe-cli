@@ -23,7 +23,6 @@ package netx
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"net"
 	"net/http"
@@ -45,23 +44,18 @@ type Config struct {
 	BogonIsError        bool                 // default: bogon is not error
 	ByteCounter         *bytecounter.Counter // default: no explicit byte counting
 	CacheResolutions    bool                 // default: no caching
-	CertPool            *x509.CertPool       // default: use vendored gocertifi
 	ContextByteCounting bool                 // default: no implicit byte counting
 	DNSCache            map[string][]string  // default: cache is empty
-	DialSaver           *tracex.Saver        // default: not saving dials
 	Dialer              model.Dialer         // default: dialer.DNSDialer
 	FullResolver        model.Resolver       // default: base resolver + goodies
 	QUICDialer          model.QUICDialer     // default: quicdialer.DNSDialer
 	HTTP3Enabled        bool                 // default: disabled
-	HTTPSaver           *tracex.Saver        // default: not saving HTTP
 	Logger              model.Logger         // default: no logging
-	NoTLSVerify         bool                 // default: perform TLS verify
 	ProxyURL            *url.URL             // default: no proxy
-	ReadWriteSaver      *tracex.Saver        // default: not saving read/write
-	ResolveSaver        *tracex.Saver        // default: not saving resolves
+	ReadWriteSaver      *tracex.Saver        // default: not saving I/O events
+	Saver               *tracex.Saver        // default: not saving non-I/O events
 	TLSConfig           *tls.Config          // default: attempt using h2
 	TLSDialer           model.TLSDialer      // default: dialer.TLSDialer
-	TLSSaver            *tracex.Saver        // default: not saving TLS
 }
 
 // NewResolver creates a new resolver from the specified config
@@ -93,7 +87,7 @@ func NewResolver(config Config) model.Resolver {
 			Resolver: r,
 		}
 	}
-	r = config.ResolveSaver.WrapResolver(r) // WAI when config.ResolveSaver==nil
+	r = config.Saver.WrapResolver(r) // WAI when config.Saver==nil
 	return &netxlite.ResolverIDNA{Resolver: r}
 }
 
@@ -104,7 +98,7 @@ func NewDialer(config Config) model.Dialer {
 	}
 	logger := model.ValidLoggerOrDefault(config.Logger)
 	d := netxlite.NewDialerWithResolver(
-		logger, config.FullResolver, config.DialSaver.NewConnectObserver(),
+		logger, config.FullResolver, config.Saver.NewConnectObserver(),
 		config.ReadWriteSaver.NewReadWriteObserver(),
 	)
 	d = netxlite.NewMaybeProxyDialer(d, config.ProxyURL)
@@ -122,7 +116,7 @@ func NewQUICDialer(config Config) model.QUICDialer {
 	// TODO(bassosimone): we should count the bytes consumed by this QUIC dialer
 	ql := config.ReadWriteSaver.WrapQUICListener(netxlite.NewQUICListener())
 	logger := model.ValidLoggerOrDefault(config.Logger)
-	return netxlite.NewQUICDialerWithResolver(ql, logger, config.FullResolver, config.TLSSaver)
+	return netxlite.NewQUICDialerWithResolver(ql, logger, config.FullResolver, config.Saver)
 }
 
 // NewTLSDialer creates a new TLSDialer from the specified config
@@ -132,13 +126,8 @@ func NewTLSDialer(config Config) model.TLSDialer {
 	}
 	logger := model.ValidLoggerOrDefault(config.Logger)
 	thx := netxlite.NewTLSHandshakerStdlib(logger)
-	thx = config.TLSSaver.WrapTLSHandshaker(thx) // WAI when TLSSaver is nil
+	thx = config.Saver.WrapTLSHandshaker(thx) // WAI even when config.Saver is nil
 	tlsConfig := netxlite.ClonedTLSConfigOrNewEmptyConfig(config.TLSConfig)
-	// TODO(bassosimone): we should not provide confusing options and
-	// so we should drop CertPool and NoTLSVerify in favour of encouraging
-	// the users of this library to always use a TLSConfig.
-	tlsConfig.RootCAs = config.CertPool // netxlite uses default cert pool if this is nil
-	tlsConfig.InsecureSkipVerify = config.NoTLSVerify
 	return netxlite.NewTLSDialerWithConfig(config.Dialer, thx, tlsConfig)
 }
 
@@ -165,9 +154,9 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 	if config.Logger != nil {
 		txp = &netxlite.HTTPTransportLogger{Logger: config.Logger, HTTPTransport: txp}
 	}
-	if config.HTTPSaver != nil {
+	if config.Saver != nil {
 		txp = &tracex.HTTPTransportSaver{
-			HTTPTransport: txp, Saver: config.HTTPSaver}
+			HTTPTransport: txp, Saver: config.Saver}
 	}
 	return txp
 }
@@ -241,7 +230,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		httpClient := &http.Client{Transport: NewHTTPTransport(config)}
 		var txp model.DNSTransport = netxlite.NewUnwrappedDNSOverHTTPSTransportWithHostOverride(
 			httpClient, URL, hostOverride)
-		txp = config.ResolveSaver.WrapDNSTransport(txp) // safe when config.ResolveSaver == nil
+		txp = config.Saver.WrapDNSTransport(txp) // safe when config.Saver == nil
 		return netxlite.NewUnwrappedSerialResolver(txp), nil
 	case "udp":
 		dialer := NewDialer(config)
@@ -251,7 +240,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		}
 		var txp model.DNSTransport = netxlite.NewUnwrappedDNSOverUDPTransport(
 			dialer, endpoint)
-		txp = config.ResolveSaver.WrapDNSTransport(txp) // safe when config.ResolveSaver == nil
+		txp = config.Saver.WrapDNSTransport(txp) // safe when config.Saver == nil
 		return netxlite.NewUnwrappedSerialResolver(txp), nil
 	case "dot":
 		config.TLSConfig.NextProtos = []string{"dot"}
@@ -262,7 +251,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		}
 		var txp model.DNSTransport = netxlite.NewUnwrappedDNSOverTLSTransport(
 			tlsDialer.DialTLSContext, endpoint)
-		txp = config.ResolveSaver.WrapDNSTransport(txp) // safe when config.ResolveSaver == nil
+		txp = config.Saver.WrapDNSTransport(txp) // safe when config.Saver == nil
 		return netxlite.NewUnwrappedSerialResolver(txp), nil
 	case "tcp":
 		dialer := NewDialer(config)
@@ -272,7 +261,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 		}
 		var txp model.DNSTransport = netxlite.NewUnwrappedDNSOverTCPTransport(
 			dialer.DialContext, endpoint)
-		txp = config.ResolveSaver.WrapDNSTransport(txp) // safe when config.ResolveSaver == nil
+		txp = config.Saver.WrapDNSTransport(txp) // safe when config.Saver == nil
 		return netxlite.NewUnwrappedSerialResolver(txp), nil
 	default:
 		return nil, errors.New("unsupported resolver scheme")
