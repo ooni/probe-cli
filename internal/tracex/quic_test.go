@@ -50,7 +50,7 @@ func TestQUICDialerSaver(t *testing.T) {
 			if value.Duration <= 0 {
 				t.Fatal("expected non-zero duration")
 			}
-			if value.Err != nil {
+			if value.Err.IsNotNil() {
 				t.Fatal("expected no error here")
 			}
 			if value.TLSCipherSuite != "TLS_RSA_WITH_RC4_128_SHA" {
@@ -120,7 +120,7 @@ func TestQUICDialerSaver(t *testing.T) {
 			if value.Duration <= 0 {
 				t.Fatal("expected non-zero duration")
 			}
-			if value.Err == nil {
+			if value.Err.IsNil() {
 				t.Fatal("expected non-nil error here")
 			}
 		}
@@ -266,7 +266,7 @@ func TestQUICPacketConnWrapper(t *testing.T) {
 			if value.Duration <= 0 {
 				t.Fatal("expected nonzero duration")
 			}
-			if !errors.Is(value.Err, expected) {
+			if value.Err != "unknown_failure: mocked error" {
 				t.Fatal("unexpected value.Err", value.Err)
 			}
 			if value.NumBytes != 0 {
@@ -326,7 +326,7 @@ func TestQUICPacketConnWrapper(t *testing.T) {
 			if value.Duration <= 0 {
 				t.Fatal("expected nonzero duration")
 			}
-			if value.Err != nil {
+			if value.Err.IsNotNil() {
 				t.Fatal("unexpected value.Err", value.Err)
 			}
 			if value.NumBytes != 4 {
@@ -382,7 +382,7 @@ func TestQUICPacketConnWrapper(t *testing.T) {
 			if value.Duration <= 0 {
 				t.Fatal("expected nonzero duration")
 			}
-			if !errors.Is(value.Err, expected) {
+			if value.Err != "unknown_failure: mocked error" {
 				t.Fatal("unexpected value.Err", value.Err)
 			}
 			if value.NumBytes != 0 {
@@ -434,7 +434,7 @@ func TestQUICPacketConnWrapper(t *testing.T) {
 			if value.Duration <= 0 {
 				t.Fatal("expected nonzero duration")
 			}
-			if value.Err != nil {
+			if value.Err.IsNotNil() {
 				t.Fatal("unexpected value.Err", value.Err)
 			}
 			if value.NumBytes != 1 {

@@ -59,7 +59,7 @@ func (h *TLSHandshakerSaver) Handshake(
 	h.Saver.Write(&EventTLSHandshakeDone{&EventValue{
 		Address:            remoteAddr,
 		Duration:           stop.Sub(start),
-		Err:                err,
+		Err:                NewFailureStr(err),
 		NoTLSVerify:        config.InsecureSkipVerify,
 		Proto:              proto,
 		TLSCipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),

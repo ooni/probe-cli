@@ -54,7 +54,7 @@ func (d *DialerSaver) DialContext(ctx context.Context, network, address string) 
 	d.Saver.Write(&EventConnectOperation{&EventValue{
 		Address:  address,
 		Duration: stop.Sub(start),
-		Err:      err,
+		Err:      NewFailureStr(err),
 		Proto:    network,
 		Time:     stop,
 	}})
@@ -128,7 +128,7 @@ func (c *dialerConnWrapper) Read(p []byte) (int, error) {
 		Address:  remoteAddr,
 		Data:     p[:count],
 		Duration: stop.Sub(start),
-		Err:      err,
+		Err:      NewFailureStr(err),
 		NumBytes: count,
 		Proto:    proto,
 		Time:     stop,
@@ -146,7 +146,7 @@ func (c *dialerConnWrapper) Write(p []byte) (int, error) {
 		Address:  remoteAddr,
 		Data:     p[:count],
 		Duration: stop.Sub(start),
-		Err:      err,
+		Err:      NewFailureStr(err),
 		NumBytes: count,
 		Proto:    proto,
 		Time:     stop,

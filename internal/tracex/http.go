@@ -73,7 +73,7 @@ func (txp *HTTPTransportSaver) RoundTrip(req *http.Request) (*http.Response, err
 
 	if err != nil {
 		ev.Duration = time.Since(started)
-		ev.Err = err
+		ev.Err = NewFailureStr(err)
 		return nil, err
 	}
 
@@ -86,7 +86,7 @@ func (txp *HTTPTransportSaver) RoundTrip(req *http.Request) (*http.Response, err
 
 	if err != nil {
 		ev.Duration = time.Since(started)
-		ev.Err = err
+		ev.Err = NewFailureStr(err)
 		return nil, err
 	}
 

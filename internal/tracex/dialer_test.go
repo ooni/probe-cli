@@ -57,7 +57,7 @@ func TestDialerSaver(t *testing.T) {
 		if ev[0].Value().Duration <= 0 {
 			t.Fatal("unexpected Duration")
 		}
-		if !errors.Is(ev[0].Value().Err, expected) {
+		if ev[0].Value().Err != "unknown_failure: mocked error" {
 			t.Fatal("unexpected Err")
 		}
 		if ev[0].Name() != netxlite.ConnectOperation {
@@ -210,7 +210,7 @@ func TestDialerConnWrapper(t *testing.T) {
 		if ev[0].Value().Duration <= 0 {
 			t.Fatal("unexpected Duration")
 		}
-		if !errors.Is(ev[0].Value().Err, io.EOF) {
+		if ev[0].Value().Err != netxlite.FailureEOFError {
 			t.Fatal("unexpected Err")
 		}
 		if ev[0].Name() != netxlite.ReadOperation {
@@ -263,7 +263,7 @@ func TestDialerConnWrapper(t *testing.T) {
 		if ev[0].Value().Duration <= 0 {
 			t.Fatal("unexpected Duration")
 		}
-		if !errors.Is(ev[0].Value().Err, io.EOF) {
+		if ev[0].Value().Err != netxlite.FailureEOFError {
 			t.Fatal("unexpected Err")
 		}
 		if ev[0].Name() != netxlite.WriteOperation {
