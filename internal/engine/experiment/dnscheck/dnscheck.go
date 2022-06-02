@@ -226,7 +226,7 @@ func (m *Measurer) Run(
 	}
 
 	// 8. perform all the required resolutions
-	for output := range Collect(ctx, multi, inputs, callbacks) {
+	for output := range Collect(ctx, multi, inputs, sess.Logger()) {
 		resolverURL := output.Input.Config.ResolverURL
 		tk.Lookups[resolverURL] = output.TestKeys
 		m.Endpoints.maybeRegister(resolverURL)
@@ -260,7 +260,7 @@ func (m *Measurer) tlsServerName(tlsServerName string) string {
 // Collect prints on the output channel the result of running dnscheck
 // on every provided input. It closes the output channel when done.
 func Collect(ctx context.Context, multi urlgetter.Multi, inputs []urlgetter.MultiInput,
-	callbacks model.ExperimentCallbacks) <-chan urlgetter.MultiOutput {
+	logger model.Logger) <-chan urlgetter.MultiOutput {
 	outputch := make(chan urlgetter.MultiOutput)
 	expect := len(inputs)
 	inputch := multi.Run(ctx, inputs)
@@ -270,10 +270,8 @@ func Collect(ctx context.Context, multi urlgetter.Multi, inputs []urlgetter.Mult
 		for count < expect {
 			entry := <-inputch
 			count++
-			percentage := float64(count) / float64(expect)
-			callbacks.OnProgress(percentage, fmt.Sprintf(
-				"dnscheck: measure %s: %+v", entry.Input.Config.ResolverURL, model.ErrorToStringOrOK(entry.Err),
-			))
+			logger.Infof("dnscheck: measure %s: %+v", entry.Input.Config.ResolverURL,
+				model.ErrorToStringOrOK(entry.Err))
 			outputch <- entry
 		}
 	}()
