@@ -31,7 +31,6 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/dialer"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/httptransport"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -113,7 +112,7 @@ func NewDialer(config Config) model.Dialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	return dialer.New(&dialer.Config{
+	return newDialer(&dialerConfig{
 		ContextByteCounting: config.ContextByteCounting,
 		DialSaver:           config.DialSaver,
 		Logger:              config.Logger,
@@ -175,7 +174,7 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 	}
 
 	tInfo := allTransportsInfo[config.HTTP3Enabled]
-	txp := tInfo.Factory(httptransport.Config{
+	txp := tInfo.Factory(httptransport.HTTPTransportConfig{
 		Dialer: config.Dialer, QUICDialer: config.QUICDialer, TLSDialer: config.TLSDialer,
 		TLSConfig: config.TLSConfig})
 
@@ -195,7 +194,7 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 
 // httpTransportInfo contains the constructing function as well as the transport name
 type httpTransportInfo struct {
-	Factory       func(httptransport.Config) model.HTTPTransport
+	Factory       func(httptransport.HTTPTransportConfig) model.HTTPTransport
 	TransportName string
 }
 

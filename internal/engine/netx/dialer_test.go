@@ -1,4 +1,4 @@
-package dialer
+package netx
 
 import (
 	"net/http"
@@ -13,7 +13,7 @@ import (
 
 func TestNewCreatesTheExpectedChain(t *testing.T) {
 	saver := &tracex.Saver{}
-	dlr := New(&Config{
+	dlr := newDialer(&dialerConfig{
 		ContextByteCounting: true,
 		DialSaver:           saver,
 		Logger:              log.Log,
@@ -37,7 +37,7 @@ func TestDialerNewSuccess(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	log.SetLevel(log.DebugLevel)
-	d := New(&Config{Logger: log.Log}, netxlite.DefaultResolver)
+	d := newDialer(&dialerConfig{Logger: log.Log}, netxlite.DefaultResolver)
 	txp := &http.Transport{DialContext: d.DialContext}
 	client := &http.Client{Transport: txp}
 	resp, err := client.Get("http://www.google.com")

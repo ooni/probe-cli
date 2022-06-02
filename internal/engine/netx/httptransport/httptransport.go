@@ -8,8 +8,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// Config contains the configuration required for constructing an HTTP transport
-type Config struct {
+// HTTPTransportConfig contains the configuration required for constructing an HTTP transport
+type HTTPTransportConfig struct {
 	Dialer     model.Dialer
 	QUICDialer model.QUICDialer
 	TLSDialer  model.TLSDialer
@@ -21,7 +21,7 @@ type Config struct {
 // Deprecation warning
 //
 // New code should use netxlite.NewHTTP3Transport instead.
-func NewHTTP3Transport(config Config) model.HTTPTransport {
+func NewHTTP3Transport(config HTTPTransportConfig) model.HTTPTransport {
 	// Rationale for using NoLogger here: previously this code did
 	// not use a logger as well, so it's fine to keep it as is.
 	return netxlite.NewHTTP3Transport(model.DiscardLogger,
@@ -34,6 +34,6 @@ func NewHTTP3Transport(config Config) model.HTTPTransport {
 // Deprecation warning
 //
 // New code should use netxlite.NewHTTPTransport instead.
-func NewSystemTransport(config Config) model.HTTPTransport {
+func NewSystemTransport(config HTTPTransportConfig) model.HTTPTransport {
 	return netxlite.NewOOHTTPBaseTransport(config.Dialer, config.TLSDialer)
 }
