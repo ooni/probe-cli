@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestTLSServer(t *testing.T) {
@@ -85,9 +87,13 @@ func TestTLSServer(t *testing.T) {
 		t.Run("certificate error when we're validating", func(t *testing.T) {
 			srv := NewTLSServer(TLSActionBlockText)
 			defer srv.Close()
-			config := &tls.Config{ServerName: "dns.google"}
+			// XXX EXPLAIN WHY WE'RE DOING THIS HERE...
+			config := &tls.Config{
+				ServerName: "dns.google",
+				RootCAs:    netxlite.NewDefaultCertPool(),
+			}
 			conn, err := tls.Dial("tcp", srv.Endpoint(), config)
-			if err == nil || !strings.HasSuffix(err.Error(), "certificate is not trusted") {
+			if err == nil || !strings.HasSuffix(err.Error(), "certificate signed by unknown authority") {
 				t.Fatal("unexpected err", err)
 			}
 			if conn != nil {
