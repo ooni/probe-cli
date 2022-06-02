@@ -1,4 +1,4 @@
-package resolver
+package netx
 
 import (
 	"context"

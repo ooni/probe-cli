@@ -31,7 +31,6 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -83,10 +82,10 @@ func NewResolver(config Config) model.Resolver {
 		Resolver: r,
 	}
 	if config.CacheResolutions {
-		r = &resolver.CacheResolver{Resolver: r}
+		r = &CacheResolver{Resolver: r}
 	}
 	if config.DNSCache != nil {
-		cache := &resolver.CacheResolver{Resolver: r, ReadOnly: true}
+		cache := &CacheResolver{Resolver: r, ReadOnly: true}
 		for key, values := range config.DNSCache {
 			cache.Set(key, values)
 		}

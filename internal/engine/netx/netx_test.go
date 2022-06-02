@@ -11,7 +11,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -158,7 +157,7 @@ func TestNewResolverWithReadWriteCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	cr, ok := ewr.Resolver.(*resolver.CacheResolver)
+	cr, ok := ewr.Resolver.(*CacheResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
@@ -189,7 +188,7 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
-	cr, ok := ewr.Resolver.(*resolver.CacheResolver)
+	cr, ok := ewr.Resolver.(*CacheResolver)
 	if !ok {
 		t.Fatal("not the resolver we expected")
 	}
