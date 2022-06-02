@@ -22,7 +22,6 @@
 package netx
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -55,7 +54,7 @@ type Config struct {
 	QUICDialer          model.QUICDialer     // default: quicdialer.DNSDialer
 	HTTP3Enabled        bool                 // default: disabled
 	HTTPSaver           *tracex.Saver        // default: not saving HTTP
-	Logger              model.DebugLogger    // default: no logging
+	Logger              model.Logger         // default: no logging
 	NoTLSVerify         bool                 // default: perform TLS verify
 	ProxyURL            *url.URL             // default: no proxy
 	ReadWriteSaver      *tracex.Saver        // default: not saving read/write
@@ -63,11 +62,6 @@ type Config struct {
 	TLSConfig           *tls.Config          // default: attempt using h2
 	TLSDialer           model.TLSDialer      // default: dialer.TLSDialer
 	TLSSaver            *tracex.Saver        // default: not saving TLS
-}
-
-type tlsHandshaker interface {
-	Handshake(ctx context.Context, conn net.Conn, config *tls.Config) (
-		net.Conn, tls.ConnectionState, error)
 }
 
 var defaultCertPool *x509.CertPool = netxlite.NewDefaultCertPool()
@@ -110,13 +104,16 @@ func NewDialer(config Config) model.Dialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	return newDialer(&dialerConfig{
-		ContextByteCounting: config.ContextByteCounting,
-		DialSaver:           config.DialSaver,
-		Logger:              config.Logger,
-		ProxyURL:            config.ProxyURL,
-		ReadWriteSaver:      config.ReadWriteSaver,
-	}, config.FullResolver)
+	logger := model.ValidLoggerOrDefault(config.Logger)
+	d := netxlite.NewDialerWithResolver(
+		logger, config.FullResolver, config.DialSaver.NewConnectObserver(),
+		config.ReadWriteSaver.NewReadWriteObserver(),
+	)
+	d = netxlite.NewMaybeProxyDialer(d, config.ProxyURL)
+	if config.ContextByteCounting {
+		d = &bytecounter.ContextAwareDialer{Dialer: d}
+	}
+	return d
 }
 
 // NewQUICDialer creates a new DNS Dialer for QUIC, with the resolver from the specified config
@@ -124,11 +121,9 @@ func NewQUICDialer(config Config) model.QUICDialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
+	// TODO(bassosimone): we should count the bytes consumed by this QUIC dialer
 	ql := config.ReadWriteSaver.WrapQUICListener(netxlite.NewQUICListener())
-	var logger model.DebugLogger = model.DiscardLogger
-	if config.Logger != nil {
-		logger = config.Logger
-	}
+	logger := model.ValidLoggerOrDefault(config.Logger)
 	return netxlite.NewQUICDialerWithResolver(ql, logger, config.FullResolver, config.TLSSaver)
 }
 
@@ -137,7 +132,7 @@ func NewTLSDialer(config Config) model.TLSDialer {
 	if config.Dialer == nil {
 		config.Dialer = NewDialer(config)
 	}
-	var h tlsHandshaker = &netxlite.TLSHandshakerConfigurable{}
+	var h model.TLSHandshaker = &netxlite.TLSHandshakerConfigurable{}
 	h = &netxlite.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
 	if config.Logger != nil {
 		h = &netxlite.TLSHandshakerLogger{DebugLogger: config.Logger, TLSHandshaker: h}
@@ -170,12 +165,10 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 	if config.QUICDialer == nil {
 		config.QUICDialer = NewQUICDialer(config)
 	}
-
 	tInfo := allTransportsInfo[config.HTTP3Enabled]
 	txp := tInfo.Factory(httpTransportConfig{
 		Dialer: config.Dialer, QUICDialer: config.QUICDialer, TLSDialer: config.TLSDialer,
 		TLSConfig: config.TLSConfig})
-
 	if config.ByteCounter != nil {
 		txp = &bytecounter.HTTPTransport{
 			Counter: config.ByteCounter, HTTPTransport: txp}

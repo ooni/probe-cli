@@ -215,9 +215,6 @@ func (h *tlsHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) (
 	return tls.Client(conn, config), nil
 }
 
-// defaultTLSHandshaker is the default TLS handshaker.
-var defaultTLSHandshaker = &tlsHandshakerConfigurable{}
-
 // tlsHandshakerLogger is a TLSHandshaker with logging.
 type tlsHandshakerLogger struct {
 	TLSHandshaker model.TLSHandshaker

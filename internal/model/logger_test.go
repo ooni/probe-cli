@@ -31,3 +31,19 @@ func TestErrorToStringOrOK(t *testing.T) {
 		}
 	})
 }
+
+func TestValidLoggerOrDefault(t *testing.T) {
+	t.Run("with nil argument", func(t *testing.T) {
+		out := ValidLoggerOrDefault(nil)
+		if out != DiscardLogger {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("with non-nil argument", func(t *testing.T) {
+		in := &logDiscarder{}
+		if ValidLoggerOrDefault(in) != in {
+			t.Fatal("unexpected result")
+		}
+	})
+}
