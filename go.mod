@@ -28,7 +28,7 @@ require (
 	github.com/montanaflynn/stats v0.6.6
 	github.com/ooni/go-libtor v1.1.5
 	github.com/ooni/oohttp v0.0.0-20220519121528-b149a1255625
-	github.com/ooni/probe-assets v0.9.0
+	github.com/ooni/probe-assets v0.10.0
 	github.com/ooni/psiphon/tunnel-core v0.0.0-20220519122549-9c044eb6bd83
 	github.com/oschwald/geoip2-golang v1.7.0
 	github.com/pborman/getopt/v2 v2.1.0
