@@ -134,6 +134,9 @@ func NewTLSDialer(config Config) model.TLSDialer {
 	thx := netxlite.NewTLSHandshakerStdlib(logger)
 	thx = config.TLSSaver.WrapTLSHandshaker(thx) // WAI when TLSSaver is nil
 	tlsConfig := netxlite.ClonedTLSConfigOrNewEmptyConfig(config.TLSConfig)
+	// TODO(bassosimone): we should not provide confusing options and
+	// so we should drop CertPool and NoTLSVerify in favour of encouraging
+	// the users of this library to always use a TLSConfig.
 	tlsConfig.RootCAs = config.CertPool // netxlite uses default cert pool if this is nil
 	tlsConfig.InsecureSkipVerify = config.NoTLSVerify
 	return netxlite.NewTLSDialerWithConfig(config.Dialer, thx, tlsConfig)

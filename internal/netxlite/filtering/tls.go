@@ -124,7 +124,7 @@ func (p *TLSServer) oneloop(ctx context.Context) bool {
 	if err != nil {
 		return !errors.Is(err, net.ErrClosed)
 	}
-	go p.handle(conn)
+	go p.handle(ctx, conn)
 	return true // we can continue running
 }
 
@@ -133,14 +133,19 @@ const (
 	tlsAlertUnrecognizedName = byte(112)
 )
 
-func (p *TLSServer) handle(tcpConn net.Conn) {
+func (p *TLSServer) handle(ctx context.Context, tcpConn net.Conn) {
 	defer tcpConn.Close()
 	tlsConn := tls.Server(tcpConn, &tls.Config{
 		GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			switch p.action {
 			case TLSActionTimeout:
-				<-time.After(300 * time.Second)
-				return nil, errors.New("timing out the connection")
+				select {
+				case <-time.After(300 * time.Second):
+					return nil, errors.New("timing out the connection")
+				case <-ctx.Done():
+					p.reset(tcpConn)
+					return nil, ctx.Err()
+				}
 			case TLSActionAlertInternalError:
 				p.alert(tcpConn, tlsAlertInternalError)
 				return nil, errors.New("already sent alert")
