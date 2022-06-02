@@ -92,7 +92,7 @@ func TestNewTCPConnectList(t *testing.T) {
 			}}, &EventConnectOperation{&EventValue{
 				Address:  "8.8.4.4:53",
 				Duration: 50 * time.Millisecond,
-				Err:      io.EOF,
+				Err:      netxlite.FailureEOFError,
 				Proto:    "tcp",
 				Time:     begin.Add(180 * time.Millisecond),
 			}}},
@@ -165,7 +165,7 @@ func TestNewRequestList(t *testing.T) {
 				},
 				HTTPMethod: "GET",
 				HTTPURL:    "https://www.example.com/result",
-				Err:        io.EOF,
+				Err:        netxlite.FailureEOFError,
 				Time:       begin.Add(20 * time.Millisecond),
 			}}},
 		},
@@ -332,7 +332,7 @@ func TestNewDNSQueriesList(t *testing.T) {
 			}}, &EventConnectOperation{&EventValue{ // skipped because not relevant
 				Address:  "8.8.4.4:53",
 				Duration: 50 * time.Millisecond,
-				Err:      io.EOF,
+				Err:      netxlite.FailureEOFError,
 				Proto:    "tcp",
 				Time:     begin.Add(180 * time.Millisecond),
 			}}},
@@ -381,7 +381,7 @@ func TestNewDNSQueriesList(t *testing.T) {
 		args: args{
 			begin: begin,
 			events: []Event{&EventResolveDone{&EventValue{
-				Err:      &netxlite.ErrWrapper{Failure: netxlite.FailureDNSNXDOMAINError},
+				Err:      netxlite.FailureDNSNXDOMAINError,
 				Hostname: "dns.google.com",
 				Time:     begin.Add(200 * time.Millisecond),
 			}}},
@@ -435,25 +435,25 @@ func TestNewNetworkEventsList(t *testing.T) {
 			begin: begin,
 			events: []Event{&EventConnectOperation{&EventValue{
 				Address: "8.8.8.8:853",
-				Err:     io.EOF,
+				Err:     netxlite.FailureEOFError,
 				Proto:   "tcp",
 				Time:    begin.Add(7 * time.Millisecond),
 			}}, &EventReadOperation{&EventValue{
-				Err:      context.Canceled,
+				Err:      netxlite.FailureInterrupted,
 				NumBytes: 7117,
 				Time:     begin.Add(11 * time.Millisecond),
 			}}, &EventReadFromOperation{&EventValue{
 				Address:  "8.8.8.8:853",
-				Err:      context.Canceled,
+				Err:      netxlite.FailureInterrupted,
 				NumBytes: 7117,
 				Time:     begin.Add(11 * time.Millisecond),
 			}}, &EventWriteOperation{&EventValue{
-				Err:      websocket.ErrBadHandshake,
+				Err:      NewFailureStr(websocket.ErrBadHandshake),
 				NumBytes: 4114,
 				Time:     begin.Add(14 * time.Millisecond),
 			}}, &EventWriteToOperation{&EventValue{
 				Address:  "8.8.8.8:853",
-				Err:      websocket.ErrBadHandshake,
+				Err:      NewFailureStr(websocket.ErrBadHandshake),
 				NumBytes: 4114,
 				Time:     begin.Add(14 * time.Millisecond),
 			}}, &EventResolveStart{&EventValue{
@@ -528,7 +528,7 @@ func TestNewTLSHandshakesList(t *testing.T) {
 			begin: begin,
 			events: []Event{&EventTLSHandshakeDone{&EventValue{
 				Address:            "131.252.210.176:443",
-				Err:                io.EOF,
+				Err:                netxlite.FailureEOFError,
 				NoTLSVerify:        false,
 				Proto:              "tcp",
 				TLSCipherSuite:     "SUITE",
@@ -564,7 +564,7 @@ func TestNewTLSHandshakesList(t *testing.T) {
 			begin: begin,
 			events: []Event{&EventQUICHandshakeDone{&EventValue{
 				Address:            "131.252.210.176:443",
-				Err:                io.EOF,
+				Err:                netxlite.FailureEOFError,
 				NoTLSVerify:        false,
 				Proto:              "quic",
 				TLSCipherSuite:     "SUITE",

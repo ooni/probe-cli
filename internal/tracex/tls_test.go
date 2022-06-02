@@ -48,7 +48,7 @@ func TestTLSHandshakerSaver(t *testing.T) {
 			if value.Duration <= 0 {
 				t.Fatal("expected non-zero duration")
 			}
-			if value.Err != nil {
+			if value.Err.IsNotNil() {
 				t.Fatal("expected no error here")
 			}
 			if value.TLSCipherSuite != "TLS_RSA_WITH_RC4_128_SHA" {
@@ -130,7 +130,7 @@ func TestTLSHandshakerSaver(t *testing.T) {
 			if value.Duration <= 0 {
 				t.Fatal("expected non-zero duration")
 			}
-			if value.Err == nil {
+			if value.Err.IsNil() {
 				t.Fatal("expected non-nil error here")
 			}
 			if value.TLSCipherSuite != "" {

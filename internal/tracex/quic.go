@@ -60,7 +60,7 @@ func (h *QUICDialerSaver) DialContext(ctx context.Context, network string,
 		h.Saver.Write(&EventQUICHandshakeDone{&EventValue{
 			Address:       host,
 			Duration:      stop.Sub(start),
-			Err:           err,
+			Err:           NewFailureStr(err),
 			NoTLSVerify:   tlsCfg.InsecureSkipVerify,
 			Proto:         network,
 			TLSNextProtos: tlsCfg.NextProtos,
@@ -149,7 +149,7 @@ func (c *quicPacketConnWrapper) WriteTo(p []byte, addr net.Addr) (int, error) {
 		Address:  addr.String(),
 		Data:     p[:count],
 		Duration: stop.Sub(start),
-		Err:      err,
+		Err:      NewFailureStr(err),
 		NumBytes: count,
 		Time:     stop,
 	}})
@@ -168,7 +168,7 @@ func (c *quicPacketConnWrapper) ReadFrom(b []byte) (int, net.Addr, error) {
 		Address:  c.safeAddrString(addr),
 		Data:     data,
 		Duration: stop.Sub(start),
-		Err:      err,
+		Err:      NewFailureStr(err),
 		NumBytes: n,
 		Time:     stop,
 	}})

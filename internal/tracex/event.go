@@ -6,11 +6,68 @@ package tracex
 
 import (
 	"crypto/x509"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
+
+// FailureStr is the string representation of an error. The empty
+// string represents the absence of any error.
+type FailureStr string
+
+// NewFailureStr creates a FailureStr from an error. If the error is not
+// already an ErrWrapper, it's converted to an ErrWrapper. If the ErrWrapper's
+// Failure is not empty, we return that. Otherwise we return a string
+// indicating that an ErrWrapper has an empty failure (should not happen).
+func NewFailureStr(err error) FailureStr {
+	if err == nil {
+		return ""
+	}
+	// The following code guarantees that the error is always wrapped even
+	// when we could not actually hit our code that does the wrapping. A case
+	// in which this could happen is with context deadline for HTTP when you
+	// have wrapped the underlying dialers but not the Transport.
+	var errWrapper *netxlite.ErrWrapper
+	if !errors.As(err, &errWrapper) {
+		err := netxlite.NewTopLevelGenericErrWrapper(err)
+		couldConvert := errors.As(err, &errWrapper)
+		runtimex.PanicIfFalse(couldConvert, "we should have an ErrWrapper here")
+	}
+	s := errWrapper.Failure
+	if s == "" {
+		s = "unknown_failure: errWrapper.Failure is empty"
+	}
+	return FailureStr(s)
+}
+
+// IsNil returns whether this FailureStr is nil. Technically speaking, the
+// failure cannot be nil, but an empty string is equivalent to nil after
+// we convert using ToFailure(). Also, this type is often called Err, Error,
+// or Failure. So, the resulting code actually reads correct.
+func (fs FailureStr) IsNil() bool {
+	return fs == ""
+}
+
+// IsNotNil is the opposite of IsNil. Technically speaking, the
+// failure cannot be nil, but an empty string is equivalent to nil after
+// we convert using ToFailure(). Also, this type is often called Err, Error,
+// or Failure. So, the resulting code actually reads correct.
+func (fs FailureStr) IsNotNil() bool {
+	return !fs.IsNil()
+}
+
+// ToFailure converts a FailureStr to a OONI failure (i.e., a string
+// on error and nil in case of success).
+func (fs FailureStr) ToFailure() (out *string) {
+	if fs != "" {
+		s := string(fs)
+		out = &s
+	}
+	return
+}
 
 // Event is one of the events within a trace.
 type Event interface {
@@ -224,7 +281,7 @@ type EventValue struct {
 	DNSResponse                 []byte              `json:",omitempty"`
 	Data                        []byte              `json:",omitempty"`
 	Duration                    time.Duration       `json:",omitempty"`
-	Err                         error               `json:",omitempty"`
+	Err                         FailureStr          `json:",omitempty"`
 	HTTPMethod                  string              `json:",omitempty"`
 	HTTPRequestHeaders          http.Header         `json:",omitempty"`
 	HTTPResponseHeaders         http.Header         `json:",omitempty"`

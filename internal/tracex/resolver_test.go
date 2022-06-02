@@ -11,12 +11,13 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 func TestResolverSaver(t *testing.T) {
 	t.Run("on failure", func(t *testing.T) {
-		expected := errors.New("no such host")
+		expected := netxlite.ErrOODNSNoSuchHost
 		saver := &Saver{}
 		reso := saver.WrapResolver(newFakeResolverWithExplicitError(expected))
 		addrs, err := reso.LookupHost(context.Background(), "www.google.com")
@@ -45,7 +46,7 @@ func TestResolverSaver(t *testing.T) {
 		if ev[1].Value().Duration <= 0 {
 			t.Fatal("unexpected Duration")
 		}
-		if !errors.Is(ev[1].Value().Err, expected) {
+		if ev[1].Value().Err != netxlite.FailureDNSNXDOMAINError {
 			t.Fatal("unexpected Err")
 		}
 		if ev[1].Value().Hostname != "www.google.com" {
@@ -89,7 +90,7 @@ func TestResolverSaver(t *testing.T) {
 		if ev[1].Value().Duration <= 0 {
 			t.Fatal("unexpected Duration")
 		}
-		if ev[1].Value().Err != nil {
+		if ev[1].Value().Err.IsNotNil() {
 			t.Fatal("unexpected Err")
 		}
 		if ev[1].Value().Hostname != "www.google.com" {
@@ -106,7 +107,7 @@ func TestResolverSaver(t *testing.T) {
 
 func TestDNSTransportSaver(t *testing.T) {
 	t.Run("on failure", func(t *testing.T) {
-		expected := errors.New("no such host")
+		expected := netxlite.ErrOODNSNoSuchHost
 		saver := &Saver{}
 		txp := saver.WrapDNSTransport(&mocks.DNSTransport{
 			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
@@ -154,7 +155,7 @@ func TestDNSTransportSaver(t *testing.T) {
 		if ev[1].Value().Duration <= 0 {
 			t.Fatal("unexpected Duration")
 		}
-		if !errors.Is(ev[1].Value().Err, expected) {
+		if ev[1].Value().Err != netxlite.FailureDNSNXDOMAINError {
 			t.Fatal("unexpected Err")
 		}
 		if ev[1].Name() != "dns_round_trip_done" {
@@ -219,7 +220,7 @@ func TestDNSTransportSaver(t *testing.T) {
 		if ev[1].Value().Duration <= 0 {
 			t.Fatal("unexpected Duration")
 		}
-		if ev[1].Value().Err != nil {
+		if ev[1].Value().Err.IsNotNil() {
 			t.Fatal("unexpected Err")
 		}
 		if ev[1].Name() != "dns_round_trip_done" {

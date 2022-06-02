@@ -51,7 +51,7 @@ func (r *ResolverSaver) LookupHost(ctx context.Context, hostname string) ([]stri
 		Addresses: addrs,
 		Address:   r.Resolver.Address(),
 		Duration:  stop.Sub(start),
-		Err:       err,
+		Err:       NewFailureStr(err),
 		Hostname:  hostname,
 		Proto:     r.Resolver.Network(),
 		Time:      stop,
@@ -122,7 +122,7 @@ func (txp *DNSTransportSaver) RoundTrip(
 		DNSQuery:    dnsMaybeQueryBytes(query),
 		DNSResponse: dnsMaybeResponseBytes(response),
 		Duration:    stop.Sub(start),
-		Err:         err,
+		Err:         NewFailureStr(err),
 		Proto:       txp.DNSTransport.Network(),
 		Time:        stop,
 	}})

@@ -178,7 +178,7 @@ func TestHTTPTransportSaver(t *testing.T) {
 			if value.Duration <= 0 {
 				t.Fatal("expected nonzero duration")
 			}
-			if value.Err.Error() != "connection_reset" {
+			if value.Err != netxlite.FailureConnectionReset {
 				t.Fatal("unexpected Err value")
 			}
 			if len(value.HTTPResponseHeaders) > 0 {
@@ -268,7 +268,7 @@ func TestHTTPTransportSaver(t *testing.T) {
 			if ev[1].Value().HTTPResponseHeaders.Get("Server") != "antani" {
 				t.Fatal("invalid Server header")
 			}
-			if ev[1].Value().Err.Error() != "unknown_failure: mocked error" {
+			if ev[1].Value().Err != "unknown_failure: mocked error" {
 				t.Fatal("invalid error")
 			}
 		})

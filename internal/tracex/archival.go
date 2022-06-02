@@ -64,8 +64,8 @@ func NewTCPConnectList(begin time.Time, events []Event) (out []TCPConnectEntry) 
 			Port: iport,
 			Status: TCPConnectStatus{
 				Blocked: nil, // only used by Web Connectivity
-				Failure: NewFailure(event.Err),
-				Success: event.Err == nil,
+				Failure: event.Err.ToFailure(),
+				Success: event.Err.IsNil(),
 			},
 			T: event.Time.Sub(begin).Seconds(),
 		})
@@ -73,21 +73,10 @@ func NewTCPConnectList(begin time.Time, events []Event) (out []TCPConnectEntry) 
 	return
 }
 
-// NewFailure creates a failure nullable string from the given error
+// NewFailure creates a failure nullable string from the given error. This function
+// is equivalent to NewFailureStr(err).ToFailure().
 func NewFailure(err error) *string {
-	if err == nil {
-		return nil
-	}
-	// The following code guarantees that the error is always wrapped even
-	// when we could not actually hit our code that does the wrapping. A case
-	// in which this happen is with context deadline for HTTP.
-	err = netxlite.NewTopLevelGenericErrWrapper(err)
-	errWrapper := err.(*netxlite.ErrWrapper)
-	s := errWrapper.Failure
-	if s == "" {
-		s = "unknown_failure: errWrapper.Failure is empty"
-	}
-	return &s
+	return NewFailureStr(err).ToFailure()
 }
 
 // NewFailedOperation creates a failed operation string from the given error.
@@ -158,7 +147,7 @@ func newRequestList(begin time.Time, events []Event) (out []RequestEntry) {
 			entry.Response.Locations = ev.HTTPResponseHeaders.Values("Location")
 			entry.Response.Body.Value = string(ev.HTTPResponseBody)
 			entry.Response.BodyIsTruncated = ev.HTTPResponseBodyIsTruncated
-			entry.Failure = NewFailure(ev.Err)
+			entry.Failure = ev.Err.ToFailure()
 			out = append(out, entry)
 		}
 	}
@@ -183,7 +172,7 @@ func NewDNSQueriesList(begin time.Time, events []Event) (out []DNSQueryEntry) {
 						entry.Answers, qtype.makeAnswerEntry(addr))
 				}
 			}
-			if len(entry.Answers) <= 0 && ev.Err == nil {
+			if len(entry.Answers) <= 0 && ev.Err.IsNil() {
 				// This allows us to skip cases where the server does not have
 				// an IPv6 address but has an IPv4 address. Instead, when we
 				// receive an error, we want to track its existence. The main
@@ -228,7 +217,7 @@ func (qtype dnsQueryType) makeAnswerEntry(addr string) DNSAnswerEntry {
 func (qtype dnsQueryType) makeQueryEntry(begin time.Time, ev *EventValue) DNSQueryEntry {
 	return DNSQueryEntry{
 		Engine:          ev.Proto,
-		Failure:         NewFailure(ev.Err),
+		Failure:         ev.Err.ToFailure(),
 		Hostname:        ev.Hostname,
 		QueryType:       string(qtype),
 		ResolverAddress: ev.Address,
@@ -244,21 +233,21 @@ func NewNetworkEventsList(begin time.Time, events []Event) (out []NetworkEvent) 
 		case *EventConnectOperation:
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
-				Failure:   NewFailure(ev.Err),
+				Failure:   ev.Err.ToFailure(),
 				Operation: wrapper.Name(),
 				Proto:     ev.Proto,
 				T:         ev.Time.Sub(begin).Seconds(),
 			})
 		case *EventReadOperation:
 			out = append(out, NetworkEvent{
-				Failure:   NewFailure(ev.Err),
+				Failure:   ev.Err.ToFailure(),
 				Operation: wrapper.Name(),
 				NumBytes:  int64(ev.NumBytes),
 				T:         ev.Time.Sub(begin).Seconds(),
 			})
 		case *EventWriteOperation:
 			out = append(out, NetworkEvent{
-				Failure:   NewFailure(ev.Err),
+				Failure:   ev.Err.ToFailure(),
 				Operation: wrapper.Name(),
 				NumBytes:  int64(ev.NumBytes),
 				T:         ev.Time.Sub(begin).Seconds(),
@@ -266,7 +255,7 @@ func NewNetworkEventsList(begin time.Time, events []Event) (out []NetworkEvent) 
 		case *EventReadFromOperation:
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
-				Failure:   NewFailure(ev.Err),
+				Failure:   ev.Err.ToFailure(),
 				Operation: wrapper.Name(),
 				NumBytes:  int64(ev.NumBytes),
 				T:         ev.Time.Sub(begin).Seconds(),
@@ -274,14 +263,14 @@ func NewNetworkEventsList(begin time.Time, events []Event) (out []NetworkEvent) 
 		case *EventWriteToOperation:
 			out = append(out, NetworkEvent{
 				Address:   ev.Address,
-				Failure:   NewFailure(ev.Err),
+				Failure:   ev.Err.ToFailure(),
 				Operation: wrapper.Name(),
 				NumBytes:  int64(ev.NumBytes),
 				T:         ev.Time.Sub(begin).Seconds(),
 			})
 		default: // For example, "tls_handshake_done" (used in data analysis!)
 			out = append(out, NetworkEvent{
-				Failure:   NewFailure(ev.Err),
+				Failure:   ev.Err.ToFailure(),
 				Operation: wrapper.Name(),
 				T:         ev.Time.Sub(begin).Seconds(),
 			})
@@ -302,7 +291,7 @@ func NewTLSHandshakesList(begin time.Time, events []Event) (out []TLSHandshake) 
 		out = append(out, TLSHandshake{
 			Address:            ev.Address,
 			CipherSuite:        ev.TLSCipherSuite,
-			Failure:            NewFailure(ev.Err),
+			Failure:            ev.Err.ToFailure(),
 			NegotiatedProtocol: ev.TLSNegotiatedProto,
 			NoTLSVerify:        ev.NoTLSVerify,
 			PeerCertificates:   tlsMakePeerCerts(ev.TLSPeerCerts),
