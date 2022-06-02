@@ -4,13 +4,13 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
 
 	"github.com/google/martian/v3/mitm"
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -134,7 +134,7 @@ func (p *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnavailableForLegalReasons)
 		w.Write(HTTPBlockpage451)
 	case HTTPActionDoH:
-		p.doh(w, r)
+		httpServeDNSOverHTTPS(w, r)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}
@@ -162,26 +162,22 @@ func (p *HTTPServer) hijack(w http.ResponseWriter, r *http.Request, policy HTTPA
 	}
 }
 
-func (p *HTTPServer) doh(w http.ResponseWriter, r *http.Request) {
-	rawQuery, err := netxlite.ReadAllContext(r.Context(), r.Body)
-	if err != nil {
-		w.WriteHeader(400)
-		return
-	}
-	query := &dns.Msg{}
-	if err := query.Unpack(rawQuery); err != nil {
-		w.WriteHeader(400)
-		return
-	}
-	if query.Response {
-		w.WriteHeader(400)
-		return
-	}
-	response := dnsCompose(query, net.IPv4(8, 8, 8, 8), net.IPv4(8, 8, 4, 4))
-	rawResponse, err := response.Pack()
-	if err != nil {
+func httpPanicToInternalServerError(w http.ResponseWriter) {
+	if r := recover(); r != nil {
 		w.WriteHeader(500)
-		return
 	}
+}
+
+func httpServeDNSOverHTTPS(w http.ResponseWriter, r *http.Request) {
+	defer httpPanicToInternalServerError(w)
+	rawQuery, err := io.ReadAll(r.Body)
+	runtimex.PanicOnError(err, "io.ReadAll failed")
+	query := &dns.Msg{}
+	err = query.Unpack(rawQuery)
+	runtimex.PanicOnError(err, "query.Unpack failed")
+	runtimex.PanicIfTrue(query.Response, "is a response")
+	response := dnsComposeResponse(query, net.IPv4(8, 8, 8, 8), net.IPv4(8, 8, 4, 4))
+	rawResponse, err := response.Pack()
+	runtimex.PanicOnError(err, "response.Pack failed")
 	w.Write(rawResponse)
 }

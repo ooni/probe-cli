@@ -10,16 +10,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-func TestGood(t *testing.T) {
-	client, err := NewClient("dot://1.1.1.1:853")
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestNewClient(t *testing.T) {
+	client := NewClient("https://1.1.1.1/dns-query")
 	defer client.CloseIdleConnections()
-	if client.Address() != "1.1.1.1:853" {
+	if client.Address() != "https://1.1.1.1/dns-query" {
 		t.Fatal("invalid address")
 	}
-	if client.Network() != "dot" {
+	if client.Network() != "doh" {
 		t.Fatal("invalid network")
 	}
 	ctx := context.Background()
@@ -62,15 +59,5 @@ func TestGood(t *testing.T) {
 	}
 	if !bytes.HasPrefix(data, []byte("Google is built by a large team")) {
 		t.Fatal("not the expected body")
-	}
-}
-
-func TestNewClientFailure(t *testing.T) {
-	clnt, err := NewClient("antani:///")
-	if err == nil {
-		t.Fatal("expected an error here")
-	}
-	if clnt != nil {
-		t.Fatal("expected nil client here")
 	}
 }

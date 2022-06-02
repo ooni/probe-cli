@@ -116,7 +116,7 @@ func TestTLSServer(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer conn.Close()
-			data, err := io.ReadAll(conn)
+			data, err := netxlite.ReadAllContext(context.Background(), conn)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -134,7 +134,7 @@ func TestTLSServer(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer conn.Close()
-			data, err := io.ReadAll(conn)
+			data, err := netxlite.ReadAllContext(context.Background(), conn)
 			if err != nil {
 				t.Fatal(err)
 			}

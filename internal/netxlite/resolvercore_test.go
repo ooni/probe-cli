@@ -65,6 +65,23 @@ func TestNewParallelResolverUDP(t *testing.T) {
 	}
 }
 
+func TestNewParallelDNSOverHTTPSResolver(t *testing.T) {
+	resolver := NewParallelDNSOverHTTPSResolver(log.Log, "https://1.1.1.1/dns-query")
+	idna := resolver.(*resolverIDNA)
+	logger := idna.Resolver.(*resolverLogger)
+	if logger.Logger != log.Log {
+		t.Fatal("invalid logger")
+	}
+	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
+	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
+	para := errWrapper.Resolver.(*ParallelResolver)
+	txp := para.Transport().(*dnsTransportErrWrapper)
+	dnsTxp := txp.DNSTransport.(*DNSOverHTTPSTransport)
+	if dnsTxp.Address() != "https://1.1.1.1/dns-query" {
+		t.Fatal("invalid address")
+	}
+}
+
 func TestResolverSystem(t *testing.T) {
 	t.Run("Network", func(t *testing.T) {
 		expected := "antani"

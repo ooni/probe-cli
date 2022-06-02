@@ -8,31 +8,28 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func TestHTTPProxy(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
+func TestHTTPServer(t *testing.T) {
 
-	httpGET := func(ctx context.Context, URL *url.URL, host string, config *tls.Config) (*http.Response, error) {
-		reso := netxlite.NewResolverStdlib(log.Log)
-		dialer := netxlite.NewDialerWithResolver(log.Log, reso)
-		thx := netxlite.NewTLSHandshakerStdlib(log.Log)
-		config = netxlite.ClonedTLSConfigOrNewEmptyConfig(config)
-		config.ServerName = host
-		tlsDialer := netxlite.NewTLSDialerWithConfig(dialer, thx, config)
-		txp := netxlite.NewHTTPTransport(log.Log, dialer, tlsDialer)
+	httpGET := func(ctx context.Context, method string, URL *url.URL, host string,
+		config *tls.Config, requestBody []byte) (*http.Response, error) {
+		txp := &http.Transport{
+			TLSClientConfig: config,
+		}
+		if config != nil {
+			config.ServerName = host
+		}
 		clnt := &http.Client{Transport: txp}
-		req, err := http.NewRequestWithContext(ctx, "GET", URL.String(), nil)
+		req, err := http.NewRequestWithContext(
+			ctx, method, URL.String(), bytes.NewReader(requestBody))
 		runtimex.PanicOnError(err, "http.NewRequest failed")
 		req.Host = host
 		return clnt.Do(req)
@@ -41,8 +38,8 @@ func TestHTTPProxy(t *testing.T) {
 	t.Run("HTTPActionReset", func(t *testing.T) {
 		ctx := context.Background()
 		srvr := NewHTTPServerCleartext(HTTPActionReset)
-		resp, err := httpGET(ctx, srvr.URL(), "nexa.polito.it", srvr.TLSConfig())
-		if err == nil || !strings.HasSuffix(err.Error(), netxlite.FailureConnectionReset) {
+		resp, err := httpGET(ctx, "GET", srvr.URL(), "nexa.polito.it", srvr.TLSConfig(), nil)
+		if netxlite.NewTopLevelGenericErrWrapper(err).Error() != netxlite.FailureConnectionReset {
 			t.Fatal("unexpected err", err)
 		}
 		if resp != nil {
@@ -56,7 +53,7 @@ func TestHTTPProxy(t *testing.T) {
 		ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
 		defer cancel()
 		srvr := NewHTTPServerCleartext(HTTPActionTimeout)
-		resp, err := httpGET(ctx, srvr.URL(), "nexa.polito.it", srvr.TLSConfig())
+		resp, err := httpGET(ctx, "GET", srvr.URL(), "nexa.polito.it", srvr.TLSConfig(), nil)
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatal("unexpected err", err)
 		}
@@ -69,8 +66,8 @@ func TestHTTPProxy(t *testing.T) {
 	t.Run("HTTPActionEOF", func(t *testing.T) {
 		ctx := context.Background()
 		srvr := NewHTTPServerCleartext(HTTPActionEOF)
-		resp, err := httpGET(ctx, srvr.URL(), "nexa.polito.it", srvr.TLSConfig())
-		if err == nil || !strings.HasSuffix(err.Error(), netxlite.FailureEOFError) {
+		resp, err := httpGET(ctx, "GET", srvr.URL(), "nexa.polito.it", srvr.TLSConfig(), nil)
+		if !errors.Is(err, io.EOF) {
 			t.Fatal("unexpected err", err)
 		}
 		if resp != nil {
@@ -82,14 +79,14 @@ func TestHTTPProxy(t *testing.T) {
 	t.Run("HTTPAction451", func(t *testing.T) {
 		ctx := context.Background()
 		srvr := NewHTTPServerCleartext(HTTPAction451)
-		resp, err := httpGET(ctx, srvr.URL(), "nexa.polito.it", srvr.TLSConfig())
+		resp, err := httpGET(ctx, "GET", srvr.URL(), "nexa.polito.it", srvr.TLSConfig(), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if resp.StatusCode != 451 {
 			t.Fatal("unexpected status code", resp.StatusCode)
 		}
-		data, err := io.ReadAll(resp.Body)
+		data, err := netxlite.ReadAllContext(ctx, resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -102,8 +99,13 @@ func TestHTTPProxy(t *testing.T) {
 
 	t.Run("HTTPActionDoH", func(t *testing.T) {
 		ctx := context.Background()
-		srvr := NewHTTPServerCleartext(HTTPAction451)
-		resp, err := httpGET(ctx, srvr.URL(), "dns.google", srvr.TLSConfig())
+		srvr := NewHTTPServerTLS(HTTPActionDoH)
+		query := dnsComposeQuery("nexa.polito.it", dns.TypeA)
+		rawQuery, err := query.Pack()
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := httpGET(ctx, "POST", srvr.URL(), "dns.google", srvr.TLSConfig(), rawQuery)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -126,7 +128,7 @@ func TestHTTPProxy(t *testing.T) {
 	t.Run("unknown action", func(t *testing.T) {
 		ctx := context.Background()
 		srvr := NewHTTPServerCleartext("")
-		resp, err := httpGET(ctx, srvr.URL(), "nexa.polito.it", srvr.TLSConfig())
+		resp, err := httpGET(ctx, "GET", srvr.URL(), "nexa.polito.it", srvr.TLSConfig(), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -136,4 +138,28 @@ func TestHTTPProxy(t *testing.T) {
 		resp.Body.Close()
 		srvr.Close()
 	})
+}
+
+type httpResponseWriter struct {
+	http.ResponseWriter
+	code int
+}
+
+func (w *httpResponseWriter) WriteHeader(statusCode int) {
+	w.code = statusCode
+}
+
+func TestHTTPServeDNSOverHTTPSPanic(t *testing.T) {
+	w := &httpResponseWriter{}
+	req := &http.Request{
+		Body: io.NopCloser(&mocks.Reader{
+			MockRead: func(b []byte) (int, error) {
+				return 0, io.ErrUnexpectedEOF
+			},
+		}),
+	}
+	httpServeDNSOverHTTPS(w, req)
+	if w.code != 500 {
+		t.Fatal("did not intercept the panic")
+	}
 }

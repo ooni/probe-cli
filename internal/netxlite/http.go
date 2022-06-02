@@ -105,6 +105,15 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 	txp.TLSDialer.CloseIdleConnections()
 }
 
+// NewHTTPTransportWithResolver creates a new HTTP transport using
+// the stdlib for everything but the given resolver.
+func NewHTTPTransportWithResolver(logger model.DebugLogger, reso model.Resolver) model.HTTPTransport {
+	dialer := NewDialerWithResolver(logger, reso)
+	thx := NewTLSHandshakerStdlib(logger)
+	tlsDialer := NewTLSDialer(dialer, thx)
+	return NewHTTPTransport(logger, dialer, tlsDialer)
+}
+
 // NewHTTPTransport combines NewOOHTTPBaseTransport and WrapHTTPTransport.
 //
 // This factory and NewHTTPTransportStdlib are the recommended

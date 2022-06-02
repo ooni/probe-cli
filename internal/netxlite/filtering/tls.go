@@ -144,13 +144,8 @@ func (p *TLSServer) handle(ctx context.Context, tcpConn net.Conn) {
 		GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			switch p.action {
 			case TLSActionTimeout:
-				select {
-				case <-time.After(300 * time.Second):
-					return nil, errors.New("timing out the connection")
-				case <-ctx.Done():
-					p.reset(tcpConn)
-					return nil, ctx.Err()
-				}
+				err := p.timeout(ctx, tcpConn)
+				return nil, err
 			case TLSActionAlertInternalError:
 				p.alert(tcpConn, tlsAlertInternalError)
 				return nil, errors.New("already sent alert")
@@ -173,6 +168,14 @@ func (p *TLSServer) handle(ctx context.Context, tcpConn net.Conn) {
 	}
 	p.blockText(tlsConn)
 	tlsConn.Close()
+}
+
+func (p *TLSServer) timeout(ctx context.Context, tcpConn net.Conn) error {
+	ctx, cancel := context.WithTimeout(ctx, 300*time.Second)
+	defer cancel()
+	<-ctx.Done()
+	p.reset(tcpConn)
+	return ctx.Err()
 }
 
 func (p *TLSServer) reset(conn net.Conn) {

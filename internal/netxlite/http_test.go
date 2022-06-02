@@ -16,6 +16,27 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
+func TestNewHTTPTransportWithResolver(t *testing.T) {
+	expected := errors.New("mocked error")
+	reso := &mocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return nil, expected
+		},
+	}
+	txp := NewHTTPTransportWithResolver(model.DiscardLogger, reso)
+	req, err := http.NewRequest("GET", "http://x.org", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := txp.RoundTrip(req)
+	if !errors.Is(err, expected) {
+		t.Fatal("unexpected err")
+	}
+	if resp != nil {
+		t.Fatal("expected nil resp")
+	}
+}
+
 func TestHTTPTransportErrWrapper(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		t.Run("with failure", func(t *testing.T) {

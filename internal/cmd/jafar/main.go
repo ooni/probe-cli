@@ -234,9 +234,7 @@ func tlsProxyStart(uncensored *uncensored.Client) net.Listener {
 }
 
 func newUncensoredClient() *uncensored.Client {
-	clnt, err := uncensored.NewClient(*uncensoredResolverDoH)
-	runtimex.PanicOnError(err, "uncensored.NewClient failed")
-	return clnt
+	return uncensored.NewClient(*uncensoredResolverDoH)
 }
 
 func mustx(err error, message string, osExit func(int)) {

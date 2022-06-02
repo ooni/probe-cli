@@ -153,14 +153,28 @@ func (p *DNSServer) nxdomain(query *dns.Msg) *dns.Msg {
 }
 
 func (p *DNSServer) localHost(query *dns.Msg) *dns.Msg {
-	return dnsCompose(query, net.IPv6loopback, net.IPv4(127, 0, 0, 1))
+	return dnsComposeResponse(query, net.IPv6loopback, net.IPv4(127, 0, 0, 1))
 }
 
 func (p *DNSServer) empty(query *dns.Msg) *dns.Msg {
-	return dnsCompose(query)
+	return dnsComposeResponse(query)
 }
 
-func dnsCompose(query *dns.Msg, ips ...net.IP) *dns.Msg {
+func dnsComposeQuery(domain string, qtype uint16) *dns.Msg {
+	question := dns.Question{
+		Name:   dns.Fqdn(domain),
+		Qtype:  qtype,
+		Qclass: dns.ClassINET,
+	}
+	query := &dns.Msg{}
+	query.RecursionDesired = true
+	query.Question = make([]dns.Question, 1)
+	query.Question[0] = question
+	query.Id = dns.Id()
+	return query
+}
+
+func dnsComposeResponse(query *dns.Msg, ips ...net.IP) *dns.Msg {
 	runtimex.PanicIfTrue(len(query.Question) != 1, "expecting a single question")
 	question := query.Question[0]
 	reply := new(dns.Msg)
@@ -205,5 +219,5 @@ func (p *DNSServer) cache(name string, query *dns.Msg) *dns.Msg {
 	if len(ipAddrs) <= 0 {
 		return p.nxdomain(query)
 	}
-	return dnsCompose(query, ipAddrs...)
+	return dnsComposeResponse(query, ipAddrs...)
 }
