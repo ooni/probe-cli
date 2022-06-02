@@ -240,7 +240,7 @@ func TestHijackDNS(t *testing.T) {
 	}
 	resolver := resolver.NewCensoringResolver(
 		[]string{"ooni.io"}, nil, nil,
-		uncensored.Must(uncensored.NewClient("dot://1.1.1.1:853")),
+		uncensored.NewClient("https://1.1.1.1/dns-query"),
 	)
 	server, err := resolver.Start("127.0.0.1:0")
 	if err != nil {
