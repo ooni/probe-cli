@@ -1,4 +1,4 @@
-package netx_test
+package netx
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -19,7 +18,7 @@ import (
 )
 
 func TestNewResolverVanilla(t *testing.T) {
-	r := netx.NewResolver(netx.Config{})
+	r := NewResolver(Config{})
 	ir, ok := r.(*netxlite.ResolverIDNA)
 	if !ok {
 		t.Fatal("not the resolver we expected")
@@ -39,7 +38,7 @@ func TestNewResolverVanilla(t *testing.T) {
 }
 
 func TestNewResolverSpecificResolver(t *testing.T) {
-	r := netx.NewResolver(netx.Config{
+	r := NewResolver(Config{
 		BaseResolver: &netxlite.BogonResolver{
 			// not initialized because it doesn't matter in this context
 		},
@@ -63,7 +62,7 @@ func TestNewResolverSpecificResolver(t *testing.T) {
 }
 
 func TestNewResolverWithBogonFilter(t *testing.T) {
-	r := netx.NewResolver(netx.Config{
+	r := NewResolver(Config{
 		BogonIsError: true,
 	})
 	ir, ok := r.(*netxlite.ResolverIDNA)
@@ -89,7 +88,7 @@ func TestNewResolverWithBogonFilter(t *testing.T) {
 }
 
 func TestNewResolverWithLogging(t *testing.T) {
-	r := netx.NewResolver(netx.Config{
+	r := NewResolver(Config{
 		Logger: log.Log,
 	})
 	ir, ok := r.(*netxlite.ResolverIDNA)
@@ -119,7 +118,7 @@ func TestNewResolverWithLogging(t *testing.T) {
 
 func TestNewResolverWithSaver(t *testing.T) {
 	saver := new(tracex.Saver)
-	r := netx.NewResolver(netx.Config{
+	r := NewResolver(Config{
 		ResolveSaver: saver,
 	})
 	ir, ok := r.(*netxlite.ResolverIDNA)
@@ -148,7 +147,7 @@ func TestNewResolverWithSaver(t *testing.T) {
 }
 
 func TestNewResolverWithReadWriteCache(t *testing.T) {
-	r := netx.NewResolver(netx.Config{
+	r := NewResolver(Config{
 		CacheResolutions: true,
 	})
 	ir, ok := r.(*netxlite.ResolverIDNA)
@@ -177,7 +176,7 @@ func TestNewResolverWithReadWriteCache(t *testing.T) {
 }
 
 func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
-	r := netx.NewResolver(netx.Config{
+	r := NewResolver(Config{
 		DNSCache: map[string][]string{
 			"dns.google.com": {"8.8.8.8"},
 		},
@@ -211,7 +210,7 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 }
 
 func TestNewTLSDialerVanilla(t *testing.T) {
-	td := netx.NewTLSDialer(netx.Config{})
+	td := NewTLSDialer(Config{})
 	rtd, ok := td.(*netxlite.TLSDialerLegacy)
 	if !ok {
 		t.Fatal("not the TLSDialer we expected")
@@ -222,7 +221,7 @@ func TestNewTLSDialerVanilla(t *testing.T) {
 	if rtd.Config.NextProtos[0] != "h2" || rtd.Config.NextProtos[1] != "http/1.1" {
 		t.Fatal("invalid Config.NextProtos")
 	}
-	if rtd.Config.RootCAs != netx.DefaultCertPool() {
+	if rtd.Config.RootCAs != defaultCertPool {
 		t.Fatal("invalid Config.RootCAs")
 	}
 	if rtd.Dialer == nil {
@@ -241,7 +240,7 @@ func TestNewTLSDialerVanilla(t *testing.T) {
 }
 
 func TestNewTLSDialerWithConfig(t *testing.T) {
-	td := netx.NewTLSDialer(netx.Config{
+	td := NewTLSDialer(Config{
 		TLSConfig: new(tls.Config),
 	})
 	rtd, ok := td.(*netxlite.TLSDialerLegacy)
@@ -251,7 +250,7 @@ func TestNewTLSDialerWithConfig(t *testing.T) {
 	if len(rtd.Config.NextProtos) != 0 {
 		t.Fatal("invalid len(config.NextProtos)")
 	}
-	if rtd.Config.RootCAs != netx.DefaultCertPool() {
+	if rtd.Config.RootCAs != defaultCertPool {
 		t.Fatal("invalid Config.RootCAs")
 	}
 	if rtd.Dialer == nil {
@@ -270,7 +269,7 @@ func TestNewTLSDialerWithConfig(t *testing.T) {
 }
 
 func TestNewTLSDialerWithLogging(t *testing.T) {
-	td := netx.NewTLSDialer(netx.Config{
+	td := NewTLSDialer(Config{
 		Logger: log.Log,
 	})
 	rtd, ok := td.(*netxlite.TLSDialerLegacy)
@@ -283,7 +282,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 	if rtd.Config.NextProtos[0] != "h2" || rtd.Config.NextProtos[1] != "http/1.1" {
 		t.Fatal("invalid Config.NextProtos")
 	}
-	if rtd.Config.RootCAs != netx.DefaultCertPool() {
+	if rtd.Config.RootCAs != defaultCertPool {
 		t.Fatal("invalid Config.RootCAs")
 	}
 	if rtd.Dialer == nil {
@@ -310,7 +309,7 @@ func TestNewTLSDialerWithLogging(t *testing.T) {
 
 func TestNewTLSDialerWithSaver(t *testing.T) {
 	saver := new(tracex.Saver)
-	td := netx.NewTLSDialer(netx.Config{
+	td := NewTLSDialer(Config{
 		TLSSaver: saver,
 	})
 	rtd, ok := td.(*netxlite.TLSDialerLegacy)
@@ -323,7 +322,7 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 	if rtd.Config.NextProtos[0] != "h2" || rtd.Config.NextProtos[1] != "http/1.1" {
 		t.Fatal("invalid Config.NextProtos")
 	}
-	if rtd.Config.RootCAs != netx.DefaultCertPool() {
+	if rtd.Config.RootCAs != defaultCertPool {
 		t.Fatal("invalid Config.RootCAs")
 	}
 	if rtd.Dialer == nil {
@@ -349,7 +348,7 @@ func TestNewTLSDialerWithSaver(t *testing.T) {
 }
 
 func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
-	td := netx.NewTLSDialer(netx.Config{
+	td := NewTLSDialer(Config{
 		TLSConfig:   new(tls.Config),
 		NoTLSVerify: true,
 	})
@@ -363,7 +362,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
 	if rtd.Config.InsecureSkipVerify != true {
 		t.Fatal("expected true InsecureSkipVerify")
 	}
-	if rtd.Config.RootCAs != netx.DefaultCertPool() {
+	if rtd.Config.RootCAs != defaultCertPool {
 		t.Fatal("invalid Config.RootCAs")
 	}
 	if rtd.Dialer == nil {
@@ -382,7 +381,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
 }
 
 func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
-	td := netx.NewTLSDialer(netx.Config{
+	td := NewTLSDialer(Config{
 		NoTLSVerify: true,
 	})
 	rtd, ok := td.(*netxlite.TLSDialerLegacy)
@@ -398,7 +397,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 	if rtd.Config.InsecureSkipVerify != true {
 		t.Fatal("expected true InsecureSkipVerify")
 	}
-	if rtd.Config.RootCAs != netx.DefaultCertPool() {
+	if rtd.Config.RootCAs != defaultCertPool {
 		t.Fatal("invalid Config.RootCAs")
 	}
 	if rtd.Dialer == nil {
@@ -417,7 +416,7 @@ func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
 }
 
 func TestNewVanilla(t *testing.T) {
-	txp := netx.NewHTTPTransport(netx.Config{})
+	txp := NewHTTPTransport(Config{})
 	if _, ok := txp.(*netxlite.HTTPTransportWrapper); !ok {
 		t.Fatal("not the transport we expected")
 	}
@@ -425,8 +424,8 @@ func TestNewVanilla(t *testing.T) {
 
 func TestNewWithDialer(t *testing.T) {
 	expected := errors.New("mocked error")
-	dialer := netx.FakeDialer{Err: expected}
-	txp := netx.NewHTTPTransport(netx.Config{
+	dialer := FakeDialer{Err: expected}
+	txp := NewHTTPTransport(Config{
 		Dialer: dialer,
 	})
 	client := &http.Client{Transport: txp}
@@ -453,7 +452,7 @@ func TestNewWithTLSDialer(t *testing.T) {
 		},
 		TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
 	}
-	txp := netx.NewHTTPTransport(netx.Config{
+	txp := NewHTTPTransport(Config{
 		TLSDialer: tlsDialer,
 	})
 	client := &http.Client{Transport: txp}
@@ -468,7 +467,7 @@ func TestNewWithTLSDialer(t *testing.T) {
 
 func TestNewWithByteCounter(t *testing.T) {
 	counter := bytecounter.New()
-	txp := netx.NewHTTPTransport(netx.Config{
+	txp := NewHTTPTransport(Config{
 		ByteCounter: counter,
 	})
 	bctxp, ok := txp.(*bytecounter.HTTPTransport)
@@ -484,7 +483,7 @@ func TestNewWithByteCounter(t *testing.T) {
 }
 
 func TestNewWithLogger(t *testing.T) {
-	txp := netx.NewHTTPTransport(netx.Config{
+	txp := NewHTTPTransport(Config{
 		Logger: log.Log,
 	})
 	ltxp, ok := txp.(*netxlite.HTTPTransportLogger)
@@ -501,7 +500,7 @@ func TestNewWithLogger(t *testing.T) {
 
 func TestNewWithSaver(t *testing.T) {
 	saver := new(tracex.Saver)
-	txp := netx.NewHTTPTransport(netx.Config{
+	txp := NewHTTPTransport(Config{
 		HTTPSaver: saver,
 	})
 	stxptxp, ok := txp.(*tracex.HTTPTransportSaver)
@@ -520,7 +519,7 @@ func TestNewWithSaver(t *testing.T) {
 }
 
 func TestNewDNSClientInvalidURL(t *testing.T) {
-	dnsclient, err := netx.NewDNSClient(netx.Config{}, "\t\t\t")
+	dnsclient, err := NewDNSClient(Config{}, "\t\t\t")
 	if err == nil || !strings.HasSuffix(err.Error(), "invalid control character in URL") {
 		t.Fatal("not the error we expected")
 	}
@@ -530,7 +529,7 @@ func TestNewDNSClientInvalidURL(t *testing.T) {
 }
 
 func TestNewDNSClientUnsupportedScheme(t *testing.T) {
-	dnsclient, err := netx.NewDNSClient(netx.Config{}, "antani:///")
+	dnsclient, err := NewDNSClient(Config{}, "antani:///")
 	if err == nil || err.Error() != "unsupported resolver scheme" {
 		t.Fatal("not the error we expected")
 	}
@@ -540,8 +539,8 @@ func TestNewDNSClientUnsupportedScheme(t *testing.T) {
 }
 
 func TestNewDNSClientSystemResolver(t *testing.T) {
-	dnsclient, err := netx.NewDNSClient(
-		netx.Config{}, "system:///")
+	dnsclient, err := NewDNSClient(
+		Config{}, "system:///")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -552,8 +551,8 @@ func TestNewDNSClientSystemResolver(t *testing.T) {
 }
 
 func TestNewDNSClientEmpty(t *testing.T) {
-	dnsclient, err := netx.NewDNSClient(
-		netx.Config{}, "")
+	dnsclient, err := NewDNSClient(
+		Config{}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -564,8 +563,8 @@ func TestNewDNSClientEmpty(t *testing.T) {
 }
 
 func TestNewDNSClientPowerdnsDoH(t *testing.T) {
-	dnsclient, err := netx.NewDNSClient(
-		netx.Config{}, "doh://powerdns")
+	dnsclient, err := NewDNSClient(
+		Config{}, "doh://powerdns")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -580,8 +579,8 @@ func TestNewDNSClientPowerdnsDoH(t *testing.T) {
 }
 
 func TestNewDNSClientGoogleDoH(t *testing.T) {
-	dnsclient, err := netx.NewDNSClient(
-		netx.Config{}, "doh://google")
+	dnsclient, err := NewDNSClient(
+		Config{}, "doh://google")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -596,8 +595,8 @@ func TestNewDNSClientGoogleDoH(t *testing.T) {
 }
 
 func TestNewDNSClientCloudflareDoH(t *testing.T) {
-	dnsclient, err := netx.NewDNSClient(
-		netx.Config{}, "doh://cloudflare")
+	dnsclient, err := NewDNSClient(
+		Config{}, "doh://cloudflare")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -613,8 +612,8 @@ func TestNewDNSClientCloudflareDoH(t *testing.T) {
 
 func TestNewDNSClientCloudflareDoHSaver(t *testing.T) {
 	saver := new(tracex.Saver)
-	dnsclient, err := netx.NewDNSClient(
-		netx.Config{ResolveSaver: saver}, "doh://cloudflare")
+	dnsclient, err := NewDNSClient(
+		Config{ResolveSaver: saver}, "doh://cloudflare")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -633,8 +632,8 @@ func TestNewDNSClientCloudflareDoHSaver(t *testing.T) {
 }
 
 func TestNewDNSClientUDP(t *testing.T) {
-	dnsclient, err := netx.NewDNSClient(
-		netx.Config{}, "udp://8.8.8.8:53")
+	dnsclient, err := NewDNSClient(
+		Config{}, "udp://8.8.8.8:53")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -650,8 +649,8 @@ func TestNewDNSClientUDP(t *testing.T) {
 
 func TestNewDNSClientUDPDNSSaver(t *testing.T) {
 	saver := new(tracex.Saver)
-	dnsclient, err := netx.NewDNSClient(
-		netx.Config{ResolveSaver: saver}, "udp://8.8.8.8:53")
+	dnsclient, err := NewDNSClient(
+		Config{ResolveSaver: saver}, "udp://8.8.8.8:53")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -670,8 +669,8 @@ func TestNewDNSClientUDPDNSSaver(t *testing.T) {
 }
 
 func TestNewDNSClientTCP(t *testing.T) {
-	dnsclient, err := netx.NewDNSClient(
-		netx.Config{}, "tcp://8.8.8.8:53")
+	dnsclient, err := NewDNSClient(
+		Config{}, "tcp://8.8.8.8:53")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -691,8 +690,8 @@ func TestNewDNSClientTCP(t *testing.T) {
 
 func TestNewDNSClientTCPDNSSaver(t *testing.T) {
 	saver := new(tracex.Saver)
-	dnsclient, err := netx.NewDNSClient(
-		netx.Config{ResolveSaver: saver}, "tcp://8.8.8.8:53")
+	dnsclient, err := NewDNSClient(
+		Config{ResolveSaver: saver}, "tcp://8.8.8.8:53")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -715,8 +714,8 @@ func TestNewDNSClientTCPDNSSaver(t *testing.T) {
 }
 
 func TestNewDNSClientDoT(t *testing.T) {
-	dnsclient, err := netx.NewDNSClient(
-		netx.Config{}, "dot://8.8.8.8:53")
+	dnsclient, err := NewDNSClient(
+		Config{}, "dot://8.8.8.8:53")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -736,8 +735,8 @@ func TestNewDNSClientDoT(t *testing.T) {
 
 func TestNewDNSClientDoTDNSSaver(t *testing.T) {
 	saver := new(tracex.Saver)
-	dnsclient, err := netx.NewDNSClient(
-		netx.Config{ResolveSaver: saver}, "dot://8.8.8.8:53")
+	dnsclient, err := NewDNSClient(
+		Config{ResolveSaver: saver}, "dot://8.8.8.8:53")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -760,8 +759,8 @@ func TestNewDNSClientDoTDNSSaver(t *testing.T) {
 }
 
 func TestNewDNSCLientDoTWithoutPort(t *testing.T) {
-	c, err := netx.NewDNSClientWithOverrides(
-		netx.Config{}, "dot://8.8.8.8", "", "8.8.8.8", "")
+	c, err := NewDNSClientWithOverrides(
+		Config{}, "dot://8.8.8.8", "", "8.8.8.8", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -771,8 +770,8 @@ func TestNewDNSCLientDoTWithoutPort(t *testing.T) {
 }
 
 func TestNewDNSCLientTCPWithoutPort(t *testing.T) {
-	c, err := netx.NewDNSClientWithOverrides(
-		netx.Config{}, "tcp://8.8.8.8", "", "8.8.8.8", "")
+	c, err := NewDNSClientWithOverrides(
+		Config{}, "tcp://8.8.8.8", "", "8.8.8.8", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -782,8 +781,8 @@ func TestNewDNSCLientTCPWithoutPort(t *testing.T) {
 }
 
 func TestNewDNSCLientUDPWithoutPort(t *testing.T) {
-	c, err := netx.NewDNSClientWithOverrides(
-		netx.Config{}, "udp://8.8.8.8", "", "8.8.8.8", "")
+	c, err := NewDNSClientWithOverrides(
+		Config{}, "udp://8.8.8.8", "", "8.8.8.8", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -793,32 +792,32 @@ func TestNewDNSCLientUDPWithoutPort(t *testing.T) {
 }
 
 func TestNewDNSClientBadDoTEndpoint(t *testing.T) {
-	_, err := netx.NewDNSClient(
-		netx.Config{}, "dot://bad:endpoint:53")
+	_, err := NewDNSClient(
+		Config{}, "dot://bad:endpoint:53")
 	if err == nil || !strings.Contains(err.Error(), "too many colons in address") {
 		t.Fatal("expected error with bad endpoint")
 	}
 }
 
 func TestNewDNSClientBadTCPEndpoint(t *testing.T) {
-	_, err := netx.NewDNSClient(
-		netx.Config{}, "tcp://bad:endpoint:853")
+	_, err := NewDNSClient(
+		Config{}, "tcp://bad:endpoint:853")
 	if err == nil || !strings.Contains(err.Error(), "too many colons in address") {
 		t.Fatal("expected error with bad endpoint")
 	}
 }
 
 func TestNewDNSClientBadUDPEndpoint(t *testing.T) {
-	_, err := netx.NewDNSClient(
-		netx.Config{}, "udp://bad:endpoint:853")
+	_, err := NewDNSClient(
+		Config{}, "udp://bad:endpoint:853")
 	if err == nil || !strings.Contains(err.Error(), "too many colons in address") {
 		t.Fatal("expected error with bad endpoint")
 	}
 }
 
 func TestNewDNSCLientWithInvalidTLSVersion(t *testing.T) {
-	_, err := netx.NewDNSClientWithOverrides(
-		netx.Config{}, "dot://8.8.8.8", "", "", "TLSv999")
+	_, err := NewDNSClientWithOverrides(
+		Config{}, "dot://8.8.8.8", "", "", "TLSv999")
 	if !errors.Is(err, netxlite.ErrInvalidTLSVersion) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
