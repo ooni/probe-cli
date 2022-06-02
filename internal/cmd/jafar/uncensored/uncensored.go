@@ -9,10 +9,8 @@ import (
 	"net/http"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/urlgetter"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Client is DNS, HTTP, and TCP client.
@@ -23,34 +21,14 @@ type Client struct {
 }
 
 // NewClient creates a new Client.
-func NewClient(resolverURL string) (*Client, error) {
-	configuration, err := urlgetter.Configurer{
-		Config: urlgetter.Config{
-			ResolverURL: resolverURL,
-		},
-		Logger: log.Log,
-	}.NewConfiguration()
-	if err != nil {
-		return nil, err
-	}
+func NewClient(resolverURL string) *Client {
+	dnsClient := netxlite.NewParallelDNSOverHTTPSResolver(log.Log, resolverURL)
 	return &Client{
-		dnsClient:     configuration.DNSClient,
-		httpTransport: netx.NewHTTPTransport(configuration.HTTPConfig),
-		dialer:        netx.NewDialer(configuration.HTTPConfig),
-	}, nil
+		dnsClient:     dnsClient,
+		httpTransport: netxlite.NewHTTPTransportWithResolver(log.Log, dnsClient),
+		dialer:        netxlite.NewDialerWithResolver(log.Log, dnsClient),
+	}
 }
-
-// Must panics if it's not possible to create a Client. Usually you should
-// use it like `uncensored.Must(uncensored.NewClient(URL))`.
-func Must(client *Client, err error) *Client {
-	runtimex.PanicOnError(err, "cannot create uncensored client")
-	return client
-}
-
-// DefaultClient is the default client for DNS, HTTP, and TCP.
-var DefaultClient = Must(NewClient(""))
-
-var _ model.Resolver = DefaultClient
 
 // Address implements Resolver.Address
 func (c *Client) Address() string {
@@ -77,14 +55,10 @@ func (c *Client) Network() string {
 	return c.dnsClient.Network()
 }
 
-var _ model.Dialer = DefaultClient
-
 // DialContext implements Dialer.DialContext
 func (c *Client) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return c.dialer.DialContext(ctx, network, address)
 }
-
-var _ model.HTTPTransport = DefaultClient
 
 // CloseIdleConnections implement HTTPRoundTripper.CloseIdleConnections
 func (c *Client) CloseIdleConnections() {

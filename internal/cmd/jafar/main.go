@@ -61,7 +61,7 @@ var (
 	tlsProxyAddress *string
 	tlsProxyBlock   flagx.StringArray
 
-	uncensoredResolverURL *string
+	uncensoredResolverDoH *string
 )
 
 func init() {
@@ -167,9 +167,9 @@ func init() {
 	)
 
 	// uncensored
-	uncensoredResolverURL = flag.String(
-		"uncensored-resolver-url", "dot://1.1.1.1:853",
-		"URL of an hopefully uncensored resolver",
+	uncensoredResolverDoH = flag.String(
+		"uncensored-resolver-doh", "https://1.1.1.1/dns-query",
+		"URL of an hopefully uncensored DoH resolver",
 	)
 }
 
@@ -234,7 +234,7 @@ func tlsProxyStart(uncensored *uncensored.Client) net.Listener {
 }
 
 func newUncensoredClient() *uncensored.Client {
-	clnt, err := uncensored.NewClient(*uncensoredResolverURL)
+	clnt, err := uncensored.NewClient(*uncensoredResolverDoH)
 	runtimex.PanicOnError(err, "uncensored.NewClient failed")
 	return clnt
 }

@@ -8,7 +8,7 @@ any system but it really only works on Linux.
 
 ## Building
 
-We use Go >= 1.16. Jafar also needs the C library headers,
+We use Go >= 1.18. Jafar also needs the C library headers,
 iptables installed, and root permissions.
 
 With Linux Alpine edge, you can compile Jafar with:
@@ -198,24 +198,21 @@ the client Hello message will cause the TLS handshake to fail.
 ### uncensored
 
 ```bash
-  -uncensored-resolver-url string
-    	URL of an hopefully uncensored resolver (default "dot://1.1.1.1:853")
+  -uncensored-resolver-doh string
+     URL of an hopefully uncensored DoH resolver (default "https://1.1.1.1/dns-query")
 ```
 
 The HTTP, DNS, and TLS proxies need to resolve domain names. If you setup DNS
 censorship, they may be affected as well. To avoid this issue, we use a different
-resolver for them, which by default is `dot://1.1.1.1:853`. You can change such
-default by using the `-uncensored-resolver-url` command line flag. The input
-URL is `<transport>://<domain>[:<port>][/<path>]`. Here are some examples:
+resolver for them, which by default is the one shown above. You can change such
+default by using the `-uncensored-resolver-doh` command line flag. The input
+URL is an HTTPS URL pointing to a DoH server. Here are some examples:
 
-* `system:///` uses the system resolver (i.e. `getaddrinfo`)
-* `udp://8.8.8.8:53` uses DNS over UDP
-* `tcp://8.8.8.8:53` used DNS over TCP
-* `dot://8.8.8.8:853` uses DNS over TLS
-* `https://dns.google/dns-query` uses DNS over HTTPS
+* `https://dns.google/dns-query`
+* `https://dns.quad9.net/dns-query`
 
-So, for example, if you are using Jafar to censor `1.1.1.1:853`, then you
-most likely want to use `-uncensored-resolver-url`.
+So, for example, if you are using Jafar to censor `1.1.1.1:443`, then you
+most likely want to use `-uncensored-resolver-doh`.
 
 ## Examples
 

@@ -153,14 +153,14 @@ func (p *DNSServer) nxdomain(query *dns.Msg) *dns.Msg {
 }
 
 func (p *DNSServer) localHost(query *dns.Msg) *dns.Msg {
-	return p.compose(query, net.IPv6loopback, net.IPv4(127, 0, 0, 1))
+	return dnsCompose(query, net.IPv6loopback, net.IPv4(127, 0, 0, 1))
 }
 
 func (p *DNSServer) empty(query *dns.Msg) *dns.Msg {
-	return p.compose(query)
+	return dnsCompose(query)
 }
 
-func (p *DNSServer) compose(query *dns.Msg, ips ...net.IP) *dns.Msg {
+func dnsCompose(query *dns.Msg, ips ...net.IP) *dns.Msg {
 	runtimex.PanicIfTrue(len(query.Question) != 1, "expecting a single question")
 	question := query.Question[0]
 	reply := new(dns.Msg)
@@ -205,5 +205,5 @@ func (p *DNSServer) cache(name string, query *dns.Msg) *dns.Msg {
 	if len(ipAddrs) <= 0 {
 		return p.nxdomain(query)
 	}
-	return p.compose(query, ipAddrs...)
+	return dnsCompose(query, ipAddrs...)
 }

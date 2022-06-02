@@ -1,24 +1,23 @@
 package filtering
 
 import (
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 
+	"github.com/google/martian/v3/mitm"
+	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// TODO(bassosimone): remove HTTPActionPass since we want integration tests
-// to only run locally to make them much more predictable.
-
-// HTTPAction is an HTTP filtering action that this proxy should take.
+// HTTPAction is an HTTP filtering action that this server should take.
 type HTTPAction string
 
 const (
-	// HTTPActionPass passes the traffic to the destination.
-	HTTPActionPass = HTTPAction("pass")
-
 	// HTTPActionReset resets the connection.
 	HTTPActionReset = HTTPAction("reset")
 
@@ -30,25 +29,91 @@ const (
 
 	// HTTPAction451 causes the proxy to return a 451 error.
 	HTTPAction451 = HTTPAction("451")
+
+	// HTTPActionDoH causes the proxy to return a sensible reply
+	// with static IP addresses if the request is DoH.
+	HTTPActionDoH = HTTPAction("doh")
 )
 
-// HTTPProxy is a proxy that routes traffic depending on the
-// host header and may implement filtering policies.
-type HTTPProxy struct {
-	// OnIncomingHost is the MANDATORY hook called whenever we have
-	// successfully received an HTTP request.
-	OnIncomingHost func(host string) HTTPAction
+// HTTPServer is a server that implements filtering policies.
+type HTTPServer struct {
+	// action is the action to implement.
+	action HTTPAction
+
+	// cert is the fake CA certificate.
+	cert *x509.Certificate
+
+	// config is the config to generate certificates on the fly.
+	config *mitm.Config
+
+	// privkey is the private key that signed the cert.
+	privkey *rsa.PrivateKey
+
+	// server is the underlying server.
+	server *http.Server
+
+	// url contains the server URL
+	url *url.URL
 }
 
-// Start starts the proxy.
-func (p *HTTPProxy) Start(address string) (net.Listener, error) {
-	listener, err := net.Listen("tcp", address)
-	if err != nil {
-		return nil, err
+// NewHTTPServerCleartext creates a new HTTPServer using cleartext HTTP.
+func NewHTTPServerCleartext(action HTTPAction) *HTTPServer {
+	return newHTTPOrHTTPSServer(action, false)
+}
+
+// NewHTTPServerTLS creates a new HTTP server using HTTPS.
+func NewHTTPServerTLS(action HTTPAction) *HTTPServer {
+	return newHTTPOrHTTPSServer(action, true)
+}
+
+// Close closes the server ASAP.
+func (p *HTTPServer) Close() error {
+	return p.server.Close()
+}
+
+// URL returns the server's URL
+func (p *HTTPServer) URL() *url.URL {
+	return p.url
+}
+
+// TLSConfig returns a suitable base TLS config for the client.
+func (p *HTTPServer) TLSConfig() *tls.Config {
+	config := &tls.Config{}
+	if p.cert != nil {
+		o := x509.NewCertPool()
+		o.AddCert(p.cert)
+		config.RootCAs = o
 	}
-	server := &http.Server{Handler: p}
-	go server.Serve(listener)
-	return listener, nil
+	return config
+}
+
+// newHTTPOrHTTPSServer is an internal factory for creating a new instance.
+func newHTTPOrHTTPSServer(action HTTPAction, enableTLS bool) *HTTPServer {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	runtimex.PanicOnError(err, "net.Listen failed")
+	srv := &HTTPServer{
+		action:  action,
+		cert:    nil,
+		config:  nil,
+		privkey: nil,
+		server:  nil,
+		url: &url.URL{
+			Scheme: "",
+			Host:   listener.Addr().String(),
+		},
+	}
+	srv.server = &http.Server{Handler: srv}
+	switch enableTLS {
+	case false:
+		srv.url.Scheme = "http"
+		go srv.server.Serve(listener)
+	case true:
+		srv.url.Scheme = "https"
+		srv.cert, srv.privkey, srv.config = tlsConfigMITM()
+		srv.server.TLSConfig = srv.config.TLS()
+		go srv.server.ServeTLS(listener, "", "") // using server.TLSConfig
+	}
+	return srv
 }
 
 // HTTPBlockPage451 is the block page returned along with status 451
@@ -60,34 +125,22 @@ var HTTPBlockpage451 = []byte(`<html><head>
 </body></html>
 `)
 
-const httpProxyProduct = "jafar/0.1.0"
-
 // ServeHTTP serves HTTP requests
-func (p *HTTPProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Implementation note: use Via header to detect in a loose way
-	// requests originated by us and directed to us.
-	if r.Header.Get("Via") == httpProxyProduct || r.Host == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	p.handle(w, r)
-}
-
-func (p *HTTPProxy) handle(w http.ResponseWriter, r *http.Request) {
-	switch policy := p.OnIncomingHost(r.Host); policy {
-	case HTTPActionPass:
-		p.proxy(w, r)
+func (p *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch p.action {
 	case HTTPActionReset, HTTPActionTimeout, HTTPActionEOF:
-		p.hijack(w, r, policy)
+		p.hijack(w, r, p.action)
 	case HTTPAction451:
 		w.WriteHeader(http.StatusUnavailableForLegalReasons)
 		w.Write(HTTPBlockpage451)
+	case HTTPActionDoH:
+		p.doh(w, r)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
-func (p *HTTPProxy) hijack(w http.ResponseWriter, r *http.Request, policy HTTPAction) {
+func (p *HTTPServer) hijack(w http.ResponseWriter, r *http.Request, policy HTTPAction) {
 	// Note:
 	//
 	// 1. we assume we can hihack the connection
@@ -109,12 +162,26 @@ func (p *HTTPProxy) hijack(w http.ResponseWriter, r *http.Request, policy HTTPAc
 	}
 }
 
-func (p *HTTPProxy) proxy(w http.ResponseWriter, r *http.Request) {
-	r.Header.Add("Via", httpProxyProduct) // see ServeHTTP
-	proxy := httputil.NewSingleHostReverseProxy(&url.URL{
-		Host:   r.Host,
-		Scheme: "http",
-	})
-	proxy.Transport = http.DefaultTransport
-	proxy.ServeHTTP(w, r)
+func (p *HTTPServer) doh(w http.ResponseWriter, r *http.Request) {
+	rawQuery, err := netxlite.ReadAllContext(r.Context(), r.Body)
+	if err != nil {
+		w.WriteHeader(400)
+		return
+	}
+	query := &dns.Msg{}
+	if err := query.Unpack(rawQuery); err != nil {
+		w.WriteHeader(400)
+		return
+	}
+	if query.Response {
+		w.WriteHeader(400)
+		return
+	}
+	response := dnsCompose(query, net.IPv4(8, 8, 8, 8), net.IPv4(8, 8, 4, 4))
+	rawResponse, err := response.Pack()
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+	w.Write(rawResponse)
 }
