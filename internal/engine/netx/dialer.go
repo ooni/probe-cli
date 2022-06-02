@@ -45,7 +45,7 @@ type dialerConfig struct {
 	ReadWriteSaver *tracex.Saver
 }
 
-// NewDialer creates a new Dialer from the specified config and resolver.
+// newDialer creates a new Dialer from the specified config and resolver.
 func newDialer(config *dialerConfig, resolver model.Resolver) model.Dialer {
 	var logger model.DebugLogger = model.DiscardLogger
 	if config.Logger != nil {
