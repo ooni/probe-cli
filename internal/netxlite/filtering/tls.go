@@ -66,14 +66,19 @@ type TLSServer struct {
 	privkey *rsa.PrivateKey
 }
 
-// NewTLSServer creates and starts a new TLSServer that executes
-// the given action during the TLS handshake.
-func NewTLSServer(action TLSAction) *TLSServer {
-	done := make(chan bool)
+func tlsConfigMITM() (*x509.Certificate, *rsa.PrivateKey, *mitm.Config) {
 	cert, privkey, err := mitm.NewAuthority("jafar", "OONI", 24*time.Hour)
 	runtimex.PanicOnError(err, "mitm.NewAuthority failed")
 	config, err := mitm.NewConfig(cert, privkey)
 	runtimex.PanicOnError(err, "mitm.NewConfig failed")
+	return cert, privkey, config
+}
+
+// NewTLSServer creates and starts a new TLSServer that executes
+// the given action during the TLS handshake.
+func NewTLSServer(action TLSAction) *TLSServer {
+	done := make(chan bool)
+	cert, privkey, config := tlsConfigMITM()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	runtimex.PanicOnError(err, "net.Listen failed")
 	ctx, cancel := context.WithCancel(context.Background())
@@ -139,13 +144,8 @@ func (p *TLSServer) handle(ctx context.Context, tcpConn net.Conn) {
 		GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			switch p.action {
 			case TLSActionTimeout:
-				select {
-				case <-time.After(300 * time.Second):
-					return nil, errors.New("timing out the connection")
-				case <-ctx.Done():
-					p.reset(tcpConn)
-					return nil, ctx.Err()
-				}
+				err := p.timeout(ctx, tcpConn)
+				return nil, err
 			case TLSActionAlertInternalError:
 				p.alert(tcpConn, tlsAlertInternalError)
 				return nil, errors.New("already sent alert")
@@ -168,6 +168,14 @@ func (p *TLSServer) handle(ctx context.Context, tcpConn net.Conn) {
 	}
 	p.blockText(tlsConn)
 	tlsConn.Close()
+}
+
+func (p *TLSServer) timeout(ctx context.Context, tcpConn net.Conn) error {
+	ctx, cancel := context.WithTimeout(ctx, 300*time.Second)
+	defer cancel()
+	<-ctx.Done()
+	p.reset(tcpConn)
+	return ctx.Err()
 }
 
 func (p *TLSServer) reset(conn net.Conn) {

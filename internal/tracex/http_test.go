@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"testing"
@@ -52,23 +51,6 @@ func TestHTTPTransportSaver(t *testing.T) {
 	})
 
 	t.Run("RoundTrip", func(t *testing.T) {
-		startServer := func(t *testing.T, action filtering.HTTPAction) (net.Listener, *url.URL) {
-			server := &filtering.HTTPProxy{
-				OnIncomingHost: func(host string) filtering.HTTPAction {
-					return action
-				},
-			}
-			listener, err := server.Start("127.0.0.1:0")
-			if err != nil {
-				t.Fatal(err)
-			}
-			URL := &url.URL{
-				Scheme: "http",
-				Host:   listener.Addr().String(),
-				Path:   "/",
-			}
-			return listener, URL
-		}
 
 		measureHTTP := func(t *testing.T, URL *url.URL) (*http.Response, *Saver, error) {
 			saver := &Saver{}
@@ -141,9 +123,9 @@ func TestHTTPTransportSaver(t *testing.T) {
 		}
 
 		t.Run("on success", func(t *testing.T) {
-			listener, URL := startServer(t, filtering.HTTPAction451)
-			defer listener.Close()
-			resp, saver, err := measureHTTP(t, URL)
+			server := filtering.NewHTTPServerCleartext(filtering.HTTPAction451)
+			defer server.Close()
+			resp, saver, err := measureHTTP(t, server.URL())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -155,8 +137,8 @@ func TestHTTPTransportSaver(t *testing.T) {
 			if len(events) != 2 {
 				t.Fatal("unexpected number of events")
 			}
-			validateRequest(t, events[0], URL)
-			validateResponseSuccess(t, events[1], URL)
+			validateRequest(t, events[0], server.URL())
+			validateResponseSuccess(t, events[1], server.URL())
 			data, err := netxlite.ReadAllContext(context.Background(), resp.Body)
 			if err != nil {
 				t.Fatal(err)
@@ -193,9 +175,9 @@ func TestHTTPTransportSaver(t *testing.T) {
 		}
 
 		t.Run("on round trip failure", func(t *testing.T) {
-			listener, URL := startServer(t, filtering.HTTPActionReset)
-			defer listener.Close()
-			resp, saver, err := measureHTTP(t, URL)
+			server := filtering.NewHTTPServerCleartext(filtering.HTTPActionReset)
+			defer server.Close()
+			resp, saver, err := measureHTTP(t, server.URL())
 			if err == nil || err.Error() != "connection_reset" {
 				t.Fatal("unexpected err", err)
 			}
@@ -206,8 +188,8 @@ func TestHTTPTransportSaver(t *testing.T) {
 			if len(events) != 2 {
 				t.Fatal("unexpected number of events")
 			}
-			validateRequest(t, events[0], URL)
-			validateResponseFailure(t, events[1], URL)
+			validateRequest(t, events[0], server.URL())
+			validateResponseFailure(t, events[1], server.URL())
 		})
 
 		// Sometimes useful for testing

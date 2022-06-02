@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"strings"
 	"time"
 
@@ -28,6 +29,15 @@ var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 // will be silently ignored by the code that performs the wrapping.
 func NewResolverStdlib(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
 	return WrapResolver(logger, newResolverSystem(wrappers...))
+}
+
+// NewParallelDNSOverHTTPSResolver creates a new DNS over HTTPS resolver
+// that uses the standard library for all operations. This function constructs
+// all the building blocks and calls WrapResolver on the returned resolver.
+func NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model.Resolver {
+	client := &http.Client{Transport: NewHTTPTransportStdlib(logger)}
+	txp := WrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(client, URL))
+	return WrapResolver(logger, NewUnwrappedParallelResolver(txp))
 }
 
 func newResolverSystem(wrappers ...model.DNSTransportWrapper) *resolverSystem {

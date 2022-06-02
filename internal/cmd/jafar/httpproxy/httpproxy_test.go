@@ -42,7 +42,7 @@ func TestLoop(t *testing.T) {
 }
 
 func TestListenError(t *testing.T) {
-	proxy := NewCensoringProxy([]string{""}, uncensored.DefaultClient)
+	proxy := NewCensoringProxy([]string{""}, uncensored.NewClient("https://1.1.1.1/dns-query"))
 	server, addr, err := proxy.Start("8.8.8.8:80")
 	if err == nil {
 		t.Fatal("expected an error here")
@@ -56,7 +56,7 @@ func TestListenError(t *testing.T) {
 }
 
 func newproxy(t *testing.T, blocked string) (*http.Server, net.Addr) {
-	proxy := NewCensoringProxy([]string{blocked}, uncensored.DefaultClient)
+	proxy := NewCensoringProxy([]string{blocked}, uncensored.NewClient("https://1.1.1.1/dns-query"))
 	server, addr, err := proxy.Start("127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)

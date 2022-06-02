@@ -45,14 +45,14 @@ func TestLookupFailure(t *testing.T) {
 
 func TestFailureNoQuestion(t *testing.T) {
 	resolver := NewCensoringResolver(
-		nil, nil, nil, uncensored.DefaultClient,
+		nil, nil, nil, uncensored.NewClient("https://1.1.1.1/dns-query"),
 	)
 	resolver.ServeDNS(&fakeResponseWriter{t: t}, new(dns.Msg))
 }
 
 func TestListenFailure(t *testing.T) {
 	resolver := NewCensoringResolver(
-		nil, nil, nil, uncensored.DefaultClient,
+		nil, nil, nil, uncensored.NewClient("https://1.1.1.1/dns-query"),
 	)
 	server, err := resolver.Start("8.8.8.8:53")
 	if err == nil {
@@ -66,9 +66,7 @@ func TestListenFailure(t *testing.T) {
 func newresolver(t *testing.T, blocked, hijacked, ignored []string) *dns.Server {
 	resolver := NewCensoringResolver(
 		blocked, hijacked, ignored,
-		// using faster dns because dot here causes miekg/dns's
-		// dns.Exchange to timeout and I don't want more complexity
-		uncensored.Must(uncensored.NewClient("system:///")),
+		uncensored.NewClient("https://1.1.1.1/dns-query"),
 	)
 	server, err := resolver.Start("127.0.0.1:0")
 	if err != nil {
