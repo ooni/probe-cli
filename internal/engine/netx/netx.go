@@ -110,13 +110,19 @@ func NewDialer(config Config) model.Dialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	return newDialer(&dialerConfig{
-		ContextByteCounting: config.ContextByteCounting,
-		DialSaver:           config.DialSaver,
-		Logger:              config.Logger,
-		ProxyURL:            config.ProxyURL,
-		ReadWriteSaver:      config.ReadWriteSaver,
-	}, config.FullResolver)
+	var logger model.DebugLogger = model.DiscardLogger
+	if config.Logger != nil {
+		logger = config.Logger
+	}
+	d := netxlite.NewDialerWithResolver(
+		logger, config.FullResolver, config.DialSaver.NewConnectObserver(),
+		config.ReadWriteSaver.NewReadWriteObserver(),
+	)
+	d = &netxlite.MaybeProxyDialer{ProxyURL: config.ProxyURL, Dialer: d}
+	if config.ContextByteCounting {
+		d = &bytecounter.ContextAwareDialer{Dialer: d}
+	}
+	return d
 }
 
 // NewQUICDialer creates a new DNS Dialer for QUIC, with the resolver from the specified config
