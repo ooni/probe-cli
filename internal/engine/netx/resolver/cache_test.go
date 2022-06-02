@@ -1,17 +1,21 @@
-package resolver_test
+package resolver
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/netx/resolver"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-func TestCacheFailure(t *testing.T) {
+func TestCacheResolverFailure(t *testing.T) {
 	expected := errors.New("mocked error")
-	r := resolver.NewFakeResolverWithExplicitError(expected)
-	cache := &resolver.CacheResolver{Resolver: r}
+	r := &mocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return nil, expected
+		},
+	}
+	cache := &CacheResolver{Resolver: r}
 	addrs, err := cache.LookupHost(context.Background(), "www.google.com")
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
@@ -24,10 +28,14 @@ func TestCacheFailure(t *testing.T) {
 	}
 }
 
-func TestCacheHitSuccess(t *testing.T) {
+func TestCacheResolverHitSuccess(t *testing.T) {
 	expected := errors.New("mocked error")
-	r := resolver.NewFakeResolverWithExplicitError(expected)
-	cache := &resolver.CacheResolver{Resolver: r}
+	r := &mocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return nil, expected
+		},
+	}
+	cache := &CacheResolver{Resolver: r}
 	cache.Set("dns.google.com", []string{"8.8.8.8"})
 	addrs, err := cache.LookupHost(context.Background(), "dns.google.com")
 	if err != nil {
@@ -38,9 +46,13 @@ func TestCacheHitSuccess(t *testing.T) {
 	}
 }
 
-func TestCacheMissSuccess(t *testing.T) {
-	r := resolver.NewFakeResolverWithResult([]string{"8.8.8.8"})
-	cache := &resolver.CacheResolver{Resolver: r}
+func TestCacheResolverMissSuccess(t *testing.T) {
+	r := &mocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return []string{"8.8.8.8"}, nil
+		},
+	}
+	cache := &CacheResolver{Resolver: r}
 	addrs, err := cache.LookupHost(context.Background(), "dns.google.com")
 	if err != nil {
 		t.Fatal(err)
@@ -53,9 +65,13 @@ func TestCacheMissSuccess(t *testing.T) {
 	}
 }
 
-func TestCacheReadonlySuccess(t *testing.T) {
-	r := resolver.NewFakeResolverWithResult([]string{"8.8.8.8"})
-	cache := &resolver.CacheResolver{Resolver: r, ReadOnly: true}
+func TestCacheResolverReadonlySuccess(t *testing.T) {
+	r := &mocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return []string{"8.8.8.8"}, nil
+		},
+	}
+	cache := &CacheResolver{Resolver: r, ReadOnly: true}
 	addrs, err := cache.LookupHost(context.Background(), "dns.google.com")
 	if err != nil {
 		t.Fatal(err)
