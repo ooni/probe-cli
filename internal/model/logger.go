@@ -69,3 +69,12 @@ func ErrorToStringOrOK(err error) string {
 	}
 	return "ok"
 }
+
+// ValidLoggerOrDefault is a factory that either returns the logger
+// provided as argument, if not nil, or DiscardLogger.
+func ValidLoggerOrDefault(logger Logger) Logger {
+	if logger != nil {
+		return logger
+	}
+	return DiscardLogger
+}
