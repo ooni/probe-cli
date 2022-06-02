@@ -424,7 +424,11 @@ func TestNewVanilla(t *testing.T) {
 
 func TestNewWithDialer(t *testing.T) {
 	expected := errors.New("mocked error")
-	dialer := FakeDialer{Err: expected}
+	dialer := &mocks.Dialer{
+		MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+			return nil, expected
+		},
+	}
 	txp := NewHTTPTransport(Config{
 		Dialer: dialer,
 	})
