@@ -86,13 +86,13 @@ func TestTLSServer(t *testing.T) {
 		t.Run("certificate error when we're validating", func(t *testing.T) {
 			srv := NewTLSServer(TLSActionBlockText)
 			defer srv.Close()
-			//     Certificate.Verify now uses platform APIs to verify certificate validity
+			//     "Certificate.Verify now uses platform APIs to verify certificate validity
 			//     on macOS and iOS when it is called with a nil VerifyOpts.Roots or when using
-			//     the root pool returned from SystemCertPool. "
+			//     the root pool returned from SystemCertPool."
 			//
 			//     -- https://tip.golang.org/doc/go1.18
 			//
-			// So we need to explicitly use our default cert pool otherwise we will
+			// Thus, we need to explicitly use our default cert pool otherwise we will
 			// see this test failing with a different error string here.
 			config := &tls.Config{
 				ServerName: "dns.google",

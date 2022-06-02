@@ -33,23 +33,14 @@ func TestConfigurerNewConfigurationVanilla(t *testing.T) {
 	if configuration.HTTPConfig.ContextByteCounting != true {
 		t.Fatal("not the ContextByteCounting we expected")
 	}
-	if configuration.HTTPConfig.DialSaver != saver {
-		t.Fatal("not the DialSaver we expected")
-	}
-	if configuration.HTTPConfig.HTTPSaver != saver {
-		t.Fatal("not the HTTPSaver we expected")
-	}
 	if configuration.HTTPConfig.Logger != log.Log {
 		t.Fatal("not the Logger we expected")
 	}
 	if configuration.HTTPConfig.ReadWriteSaver != saver {
 		t.Fatal("not the ReadWriteSaver we expected")
 	}
-	if configuration.HTTPConfig.ResolveSaver != saver {
-		t.Fatal("not the ResolveSaver we expected")
-	}
-	if configuration.HTTPConfig.TLSSaver != saver {
-		t.Fatal("not the TLSSaver we expected")
+	if configuration.HTTPConfig.Saver != saver {
+		t.Fatal("not the Saver we expected")
 	}
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
@@ -63,7 +54,7 @@ func TestConfigurerNewConfigurationVanilla(t *testing.T) {
 	if configuration.HTTPConfig.TLSConfig.NextProtos[1] != "http/1.1" {
 		t.Fatal("not the TLSConfig we expected")
 	}
-	if configuration.HTTPConfig.NoTLSVerify == true {
+	if configuration.HTTPConfig.TLSConfig.InsecureSkipVerify == true {
 		t.Fatal("not the NoTLSVerify we expected")
 	}
 	if configuration.HTTPConfig.ProxyURL != nil {
@@ -94,23 +85,14 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSPowerdns(t *testing.T) {
 	if configuration.HTTPConfig.ContextByteCounting != true {
 		t.Fatal("not the ContextByteCounting we expected")
 	}
-	if configuration.HTTPConfig.DialSaver != saver {
-		t.Fatal("not the DialSaver we expected")
-	}
-	if configuration.HTTPConfig.HTTPSaver != saver {
-		t.Fatal("not the HTTPSaver we expected")
-	}
 	if configuration.HTTPConfig.Logger != log.Log {
 		t.Fatal("not the Logger we expected")
 	}
 	if configuration.HTTPConfig.ReadWriteSaver != saver {
 		t.Fatal("not the ReadWriteSaver we expected")
 	}
-	if configuration.HTTPConfig.ResolveSaver != saver {
-		t.Fatal("not the ResolveSaver we expected")
-	}
-	if configuration.HTTPConfig.TLSSaver != saver {
-		t.Fatal("not the TLSSaver we expected")
+	if configuration.HTTPConfig.Saver != saver {
+		t.Fatal("not the Saver we expected")
 	}
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
@@ -139,7 +121,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSPowerdns(t *testing.T) {
 	if configuration.HTTPConfig.TLSConfig.NextProtos[1] != "http/1.1" {
 		t.Fatal("not the TLSConfig we expected")
 	}
-	if configuration.HTTPConfig.NoTLSVerify == true {
+	if configuration.HTTPConfig.TLSConfig.InsecureSkipVerify == true {
 		t.Fatal("not the NoTLSVerify we expected")
 	}
 	if configuration.HTTPConfig.ProxyURL != nil {
@@ -170,23 +152,14 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSGoogle(t *testing.T) {
 	if configuration.HTTPConfig.ContextByteCounting != true {
 		t.Fatal("not the ContextByteCounting we expected")
 	}
-	if configuration.HTTPConfig.DialSaver != saver {
-		t.Fatal("not the DialSaver we expected")
-	}
-	if configuration.HTTPConfig.HTTPSaver != saver {
-		t.Fatal("not the HTTPSaver we expected")
-	}
 	if configuration.HTTPConfig.Logger != log.Log {
 		t.Fatal("not the Logger we expected")
 	}
 	if configuration.HTTPConfig.ReadWriteSaver != saver {
 		t.Fatal("not the ReadWriteSaver we expected")
 	}
-	if configuration.HTTPConfig.ResolveSaver != saver {
-		t.Fatal("not the ResolveSaver we expected")
-	}
-	if configuration.HTTPConfig.TLSSaver != saver {
-		t.Fatal("not the TLSSaver we expected")
+	if configuration.HTTPConfig.Saver != saver {
+		t.Fatal("not the Saver we expected")
 	}
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
@@ -215,7 +188,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSGoogle(t *testing.T) {
 	if configuration.HTTPConfig.TLSConfig.NextProtos[1] != "http/1.1" {
 		t.Fatal("not the TLSConfig we expected")
 	}
-	if configuration.HTTPConfig.NoTLSVerify == true {
+	if configuration.HTTPConfig.TLSConfig.InsecureSkipVerify == true {
 		t.Fatal("not the NoTLSVerify we expected")
 	}
 	if configuration.HTTPConfig.ProxyURL != nil {
@@ -246,23 +219,14 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSCloudflare(t *testing.T) 
 	if configuration.HTTPConfig.ContextByteCounting != true {
 		t.Fatal("not the ContextByteCounting we expected")
 	}
-	if configuration.HTTPConfig.DialSaver != saver {
-		t.Fatal("not the DialSaver we expected")
-	}
-	if configuration.HTTPConfig.HTTPSaver != saver {
-		t.Fatal("not the HTTPSaver we expected")
-	}
 	if configuration.HTTPConfig.Logger != log.Log {
 		t.Fatal("not the Logger we expected")
 	}
 	if configuration.HTTPConfig.ReadWriteSaver != saver {
 		t.Fatal("not the ReadWriteSaver we expected")
 	}
-	if configuration.HTTPConfig.ResolveSaver != saver {
-		t.Fatal("not the ResolveSaver we expected")
-	}
-	if configuration.HTTPConfig.TLSSaver != saver {
-		t.Fatal("not the TLSSaver we expected")
+	if configuration.HTTPConfig.Saver != saver {
+		t.Fatal("not the Saver we expected")
 	}
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
@@ -291,7 +255,7 @@ func TestConfigurerNewConfigurationResolverDNSOverHTTPSCloudflare(t *testing.T) 
 	if configuration.HTTPConfig.TLSConfig.NextProtos[1] != "http/1.1" {
 		t.Fatal("not the TLSConfig we expected")
 	}
-	if configuration.HTTPConfig.NoTLSVerify == true {
+	if configuration.HTTPConfig.TLSConfig.InsecureSkipVerify == true {
 		t.Fatal("not the NoTLSVerify we expected")
 	}
 	if configuration.HTTPConfig.ProxyURL != nil {
@@ -322,23 +286,14 @@ func TestConfigurerNewConfigurationResolverUDP(t *testing.T) {
 	if configuration.HTTPConfig.ContextByteCounting != true {
 		t.Fatal("not the ContextByteCounting we expected")
 	}
-	if configuration.HTTPConfig.DialSaver != saver {
-		t.Fatal("not the DialSaver we expected")
-	}
-	if configuration.HTTPConfig.HTTPSaver != saver {
-		t.Fatal("not the HTTPSaver we expected")
-	}
 	if configuration.HTTPConfig.Logger != log.Log {
 		t.Fatal("not the Logger we expected")
 	}
 	if configuration.HTTPConfig.ReadWriteSaver != saver {
 		t.Fatal("not the ReadWriteSaver we expected")
 	}
-	if configuration.HTTPConfig.ResolveSaver != saver {
-		t.Fatal("not the ResolveSaver we expected")
-	}
-	if configuration.HTTPConfig.TLSSaver != saver {
-		t.Fatal("not the TLSSaver we expected")
+	if configuration.HTTPConfig.Saver != saver {
+		t.Fatal("not the Saver we expected")
 	}
 	if configuration.HTTPConfig.BaseResolver == nil {
 		t.Fatal("not the BaseResolver we expected")
@@ -367,7 +322,7 @@ func TestConfigurerNewConfigurationResolverUDP(t *testing.T) {
 	if configuration.HTTPConfig.TLSConfig.NextProtos[1] != "http/1.1" {
 		t.Fatal("not the TLSConfig we expected")
 	}
-	if configuration.HTTPConfig.NoTLSVerify == true {
+	if configuration.HTTPConfig.TLSConfig.InsecureSkipVerify == true {
 		t.Fatal("not the NoTLSVerify we expected")
 	}
 	if configuration.HTTPConfig.ProxyURL != nil {
@@ -517,7 +472,7 @@ func TestConfigurerNewConfigurationNoTLSVerify(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if configuration.HTTPConfig.NoTLSVerify != true {
+	if configuration.HTTPConfig.TLSConfig.InsecureSkipVerify != true {
 		t.Fatal("not the NoTLSVerify we expected")
 	}
 }

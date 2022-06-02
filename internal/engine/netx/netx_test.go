@@ -119,7 +119,7 @@ func TestNewResolverWithLogging(t *testing.T) {
 func TestNewResolverWithSaver(t *testing.T) {
 	saver := new(tracex.Saver)
 	r := NewResolver(Config{
-		ResolveSaver: saver,
+		Saver: saver,
 	})
 	ir, ok := r.(*netxlite.ResolverIDNA)
 	if !ok {
@@ -223,50 +223,12 @@ func TestNewTLSDialer(t *testing.T) {
 		}
 	})
 
-	t.Run("we can collect TLS measurements", func(t *testing.T) {
+	t.Run("we can collect measurements", func(t *testing.T) {
 		server := filtering.NewTLSServer(filtering.TLSActionReset)
 		defer server.Close()
 		saver := &tracex.Saver{}
 		tdx := NewTLSDialer(Config{
-			TLSSaver: saver,
-		})
-		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
-		if err == nil || err.Error() != netxlite.FailureConnectionReset {
-			t.Fatal("unexpected err", err)
-		}
-		if conn != nil {
-			t.Fatal("expected nil conn")
-		}
-		if len(saver.Read()) <= 0 {
-			t.Fatal("did not read any event")
-		}
-	})
-
-	t.Run("we can collect dial measurements", func(t *testing.T) {
-		server := filtering.NewTLSServer(filtering.TLSActionReset)
-		defer server.Close()
-		saver := &tracex.Saver{}
-		tdx := NewTLSDialer(Config{
-			DialSaver: saver,
-		})
-		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
-		if err == nil || err.Error() != netxlite.FailureConnectionReset {
-			t.Fatal("unexpected err", err)
-		}
-		if conn != nil {
-			t.Fatal("expected nil conn")
-		}
-		if len(saver.Read()) <= 0 {
-			t.Fatal("did not read any event")
-		}
-	})
-
-	t.Run("we can collect I/O measurements", func(t *testing.T) {
-		server := filtering.NewTLSServer(filtering.TLSActionReset)
-		defer server.Close()
-		saver := &tracex.Saver{}
-		tdx := NewTLSDialer(Config{
-			ReadWriteSaver: saver,
+			Saver: saver,
 		})
 		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
 		if err == nil || err.Error() != netxlite.FailureConnectionReset {
@@ -283,7 +245,9 @@ func TestNewTLSDialer(t *testing.T) {
 	t.Run("we can skip TLS verification", func(t *testing.T) {
 		server := filtering.NewTLSServer(filtering.TLSActionBlockText)
 		defer server.Close()
-		tdx := NewTLSDialer(Config{NoTLSVerify: true})
+		tdx := NewTLSDialer(Config{TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		}})
 		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
 		if err != nil {
 			t.Fatal(err.(*netxlite.ErrWrapper).WrappedErr)
@@ -295,8 +259,8 @@ func TestNewTLSDialer(t *testing.T) {
 		server := filtering.NewTLSServer(filtering.TLSActionBlockText)
 		defer server.Close()
 		tdx := NewTLSDialer(Config{
-			CertPool: server.CertPool(),
 			TLSConfig: &tls.Config{
+				RootCAs:    server.CertPool(),
 				ServerName: "dns.google",
 			},
 		})
@@ -371,7 +335,7 @@ func TestNewWithLogger(t *testing.T) {
 func TestNewWithSaver(t *testing.T) {
 	saver := new(tracex.Saver)
 	txp := NewHTTPTransport(Config{
-		HTTPSaver: saver,
+		Saver: saver,
 	})
 	stxptxp, ok := txp.(*tracex.HTTPTransportSaver)
 	if !ok {
@@ -483,7 +447,7 @@ func TestNewDNSClientCloudflareDoH(t *testing.T) {
 func TestNewDNSClientCloudflareDoHSaver(t *testing.T) {
 	saver := new(tracex.Saver)
 	dnsclient, err := NewDNSClient(
-		Config{ResolveSaver: saver}, "doh://cloudflare")
+		Config{Saver: saver}, "doh://cloudflare")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -520,7 +484,7 @@ func TestNewDNSClientUDP(t *testing.T) {
 func TestNewDNSClientUDPDNSSaver(t *testing.T) {
 	saver := new(tracex.Saver)
 	dnsclient, err := NewDNSClient(
-		Config{ResolveSaver: saver}, "udp://8.8.8.8:53")
+		Config{Saver: saver}, "udp://8.8.8.8:53")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -561,7 +525,7 @@ func TestNewDNSClientTCP(t *testing.T) {
 func TestNewDNSClientTCPDNSSaver(t *testing.T) {
 	saver := new(tracex.Saver)
 	dnsclient, err := NewDNSClient(
-		Config{ResolveSaver: saver}, "tcp://8.8.8.8:53")
+		Config{Saver: saver}, "tcp://8.8.8.8:53")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -606,7 +570,7 @@ func TestNewDNSClientDoT(t *testing.T) {
 func TestNewDNSClientDoTDNSSaver(t *testing.T) {
 	saver := new(tracex.Saver)
 	dnsclient, err := NewDNSClient(
-		Config{ResolveSaver: saver}, "dot://8.8.8.8:53")
+		Config{Saver: saver}, "dot://8.8.8.8:53")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -704,12 +668,9 @@ func TestSuccess(t *testing.T) {
 		ByteCounter:         counter,
 		CacheResolutions:    true,
 		ContextByteCounting: true,
-		DialSaver:           &tracex.Saver{},
-		HTTPSaver:           &tracex.Saver{},
 		Logger:              log.Log,
 		ReadWriteSaver:      &tracex.Saver{},
-		ResolveSaver:        &tracex.Saver{},
-		TLSSaver:            &tracex.Saver{},
+		Saver:               &tracex.Saver{},
 	}
 	txp := NewHTTPTransport(config)
 	client := &http.Client{Transport: txp}
@@ -729,20 +690,11 @@ func TestSuccess(t *testing.T) {
 	if counter.Received.Load() <= 0 {
 		t.Fatal("no bytes received?!")
 	}
-	if ev := config.DialSaver.Read(); len(ev) <= 0 {
-		t.Fatal("no dial events?!")
-	}
-	if ev := config.HTTPSaver.Read(); len(ev) <= 0 {
-		t.Fatal("no HTTP events?!")
-	}
 	if ev := config.ReadWriteSaver.Read(); len(ev) <= 0 {
 		t.Fatal("no R/W events?!")
 	}
-	if ev := config.ResolveSaver.Read(); len(ev) <= 0 {
-		t.Fatal("no resolver events?!")
-	}
-	if ev := config.TLSSaver.Read(); len(ev) <= 0 {
-		t.Fatal("no TLS events?!")
+	if ev := config.Saver.Read(); len(ev) <= 0 {
+		t.Fatal("no non-I/O events?!")
 	}
 }
 
@@ -753,8 +705,8 @@ func TestBogonResolutionNotBroken(t *testing.T) {
 		DNSCache: map[string][]string{
 			"www.google.com": {"127.0.0.1"},
 		},
-		ResolveSaver: saver,
-		Logger:       log.Log,
+		Saver:  saver,
+		Logger: log.Log,
 	})
 	addrs, err := r.LookupHost(context.Background(), "www.google.com")
 	if !errors.Is(err, netxlite.ErrDNSBogon) {

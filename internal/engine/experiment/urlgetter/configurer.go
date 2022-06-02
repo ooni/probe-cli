@@ -41,15 +41,11 @@ func (c Configurer) NewConfiguration() (Configuration, error) {
 		HTTPConfig: netx.Config{
 			BogonIsError:        c.Config.RejectDNSBogons,
 			CacheResolutions:    true,
-			CertPool:            c.Config.CertPool,
 			ContextByteCounting: true,
-			DialSaver:           c.Saver,
 			HTTP3Enabled:        c.Config.HTTP3Enabled,
-			HTTPSaver:           c.Saver,
 			Logger:              c.Logger,
 			ReadWriteSaver:      c.Saver,
-			ResolveSaver:        c.Saver,
-			TLSSaver:            c.Saver,
+			Saver:               c.Saver,
 		},
 	}
 	// fill DNS cache
@@ -96,7 +92,8 @@ func (c Configurer) NewConfiguration() (Configuration, error) {
 	if err != nil {
 		return configuration, err
 	}
-	configuration.HTTPConfig.NoTLSVerify = c.Config.NoTLSVerify
+	configuration.HTTPConfig.TLSConfig.InsecureSkipVerify = c.Config.NoTLSVerify
+	configuration.HTTPConfig.TLSConfig.RootCAs = c.Config.CertPool
 	// configure proxy
 	configuration.HTTPConfig.ProxyURL = c.ProxyURL
 	return configuration, nil

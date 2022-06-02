@@ -116,10 +116,9 @@ func (tk *TestKeys) run(
 	begin := time.Now()
 	err := tk.do(ctx, config, netx.NewDialer(netx.Config{
 		ContextByteCounting: true,
-		DialSaver:           saver,
 		Logger:              sess.Logger(),
 		ReadWriteSaver:      saver,
-		ResolveSaver:        saver,
+		Saver:               saver,
 	}), endpoint)
 	events := saver.Read()
 	tk.NetworkEvents = append(
