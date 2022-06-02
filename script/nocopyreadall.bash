@@ -7,7 +7,7 @@ for file in $(find . -type f -name \*.go); do
 		# implement safer wrappers for these functions.
 		continue
 	fi
-	if [ "$file" = "./internal/netxlite/filtering/tls.go" ]; then
+	if [ "$file" = "./internal/netxlite/filtering/tls_test.go" ]; then
 		# We're allowed to use ReadAll and Copy in this file to
 		# avoid depending on netxlite, so we can use filtering
 		# inside of netxlite's own test suite.

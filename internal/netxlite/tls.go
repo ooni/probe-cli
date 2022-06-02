@@ -60,6 +60,15 @@ var (
 	}
 )
 
+// ClonedTLSConfigOrNewEmptyConfig returns a clone of the provided config,
+// if not nil, or a fresh and completely empty *tls.Config.
+func ClonedTLSConfigOrNewEmptyConfig(config *tls.Config) *tls.Config {
+	if config != nil {
+		return config.Clone()
+	}
+	return &tls.Config{}
+}
+
 // TLSVersionString returns a TLS version string. If value is zero, we
 // return the empty string. If the value is unknown, we return
 // `TLS_VERSION_UNKNOWN_ddd` where `ddd` is the numeric value passed

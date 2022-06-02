@@ -64,8 +64,6 @@ type Config struct {
 	TLSSaver            *tracex.Saver        // default: not saving TLS
 }
 
-var defaultCertPool *x509.CertPool = netxlite.NewDefaultCertPool()
-
 // NewResolver creates a new resolver from the specified config
 func NewResolver(config Config) model.Resolver {
 	if config.BaseResolver == nil {
@@ -132,25 +130,13 @@ func NewTLSDialer(config Config) model.TLSDialer {
 	if config.Dialer == nil {
 		config.Dialer = NewDialer(config)
 	}
-	var h model.TLSHandshaker = &netxlite.TLSHandshakerConfigurable{}
-	h = &netxlite.ErrorWrapperTLSHandshaker{TLSHandshaker: h}
-	if config.Logger != nil {
-		h = &netxlite.TLSHandshakerLogger{DebugLogger: config.Logger, TLSHandshaker: h}
-	}
-	h = config.TLSSaver.WrapTLSHandshaker(h) // behaves with nil TLSSaver
-	if config.TLSConfig == nil {
-		config.TLSConfig = &tls.Config{NextProtos: []string{"h2", "http/1.1"}}
-	}
-	if config.CertPool == nil {
-		config.CertPool = defaultCertPool
-	}
-	config.TLSConfig.RootCAs = config.CertPool
-	config.TLSConfig.InsecureSkipVerify = config.NoTLSVerify
-	return &netxlite.TLSDialerLegacy{
-		Config:        config.TLSConfig,
-		Dialer:        config.Dialer,
-		TLSHandshaker: h,
-	}
+	logger := model.ValidLoggerOrDefault(config.Logger)
+	thx := netxlite.NewTLSHandshakerStdlib(logger)
+	thx = config.TLSSaver.WrapTLSHandshaker(thx) // WAI when TLSSaver is nil
+	tlsConfig := netxlite.ClonedTLSConfigOrNewEmptyConfig(config.TLSConfig)
+	tlsConfig.RootCAs = config.CertPool // netxlite uses default cert pool if this is nil
+	tlsConfig.InsecureSkipVerify = config.NoTLSVerify
+	return netxlite.NewTLSDialerWithConfig(config.Dialer, thx, tlsConfig)
 }
 
 // NewHTTPTransport creates a new HTTPRoundTripper. You can further extend the returned

@@ -13,6 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
@@ -208,210 +209,103 @@ func TestNewResolverWithPrefilledReadonlyCache(t *testing.T) {
 	}
 }
 
-func TestNewTLSDialerVanilla(t *testing.T) {
-	td := NewTLSDialer(Config{})
-	rtd, ok := td.(*netxlite.TLSDialerLegacy)
-	if !ok {
-		t.Fatal("not the TLSDialer we expected")
-	}
-	if len(rtd.Config.NextProtos) != 2 {
-		t.Fatal("invalid len(config.NextProtos)")
-	}
-	if rtd.Config.NextProtos[0] != "h2" || rtd.Config.NextProtos[1] != "http/1.1" {
-		t.Fatal("invalid Config.NextProtos")
-	}
-	if rtd.Config.RootCAs != defaultCertPool {
-		t.Fatal("invalid Config.RootCAs")
-	}
-	if rtd.Dialer == nil {
-		t.Fatal("invalid Dialer")
-	}
-	if rtd.TLSHandshaker == nil {
-		t.Fatal("invalid TLSHandshaker")
-	}
-	ewth, ok := rtd.TLSHandshaker.(*netxlite.ErrorWrapperTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-}
-
-func TestNewTLSDialerWithConfig(t *testing.T) {
-	td := NewTLSDialer(Config{
-		TLSConfig: new(tls.Config),
+func TestNewTLSDialer(t *testing.T) {
+	t.Run("we always have error wrapping", func(t *testing.T) {
+		server := filtering.NewTLSServer(filtering.TLSActionReset)
+		defer server.Close()
+		tdx := NewTLSDialer(Config{})
+		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
+		if err == nil || err.Error() != netxlite.FailureConnectionReset {
+			t.Fatal("unexpected err", err)
+		}
+		if conn != nil {
+			t.Fatal("expected nil conn")
+		}
 	})
-	rtd, ok := td.(*netxlite.TLSDialerLegacy)
-	if !ok {
-		t.Fatal("not the TLSDialer we expected")
-	}
-	if len(rtd.Config.NextProtos) != 0 {
-		t.Fatal("invalid len(config.NextProtos)")
-	}
-	if rtd.Config.RootCAs != defaultCertPool {
-		t.Fatal("invalid Config.RootCAs")
-	}
-	if rtd.Dialer == nil {
-		t.Fatal("invalid Dialer")
-	}
-	if rtd.TLSHandshaker == nil {
-		t.Fatal("invalid TLSHandshaker")
-	}
-	ewth, ok := rtd.TLSHandshaker.(*netxlite.ErrorWrapperTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-}
 
-func TestNewTLSDialerWithLogging(t *testing.T) {
-	td := NewTLSDialer(Config{
-		Logger: log.Log,
+	t.Run("we can collect TLS measurements", func(t *testing.T) {
+		server := filtering.NewTLSServer(filtering.TLSActionReset)
+		defer server.Close()
+		saver := &tracex.Saver{}
+		tdx := NewTLSDialer(Config{
+			TLSSaver: saver,
+		})
+		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
+		if err == nil || err.Error() != netxlite.FailureConnectionReset {
+			t.Fatal("unexpected err", err)
+		}
+		if conn != nil {
+			t.Fatal("expected nil conn")
+		}
+		if len(saver.Read()) <= 0 {
+			t.Fatal("did not read any event")
+		}
 	})
-	rtd, ok := td.(*netxlite.TLSDialerLegacy)
-	if !ok {
-		t.Fatal("not the TLSDialer we expected")
-	}
-	if len(rtd.Config.NextProtos) != 2 {
-		t.Fatal("invalid len(config.NextProtos)")
-	}
-	if rtd.Config.NextProtos[0] != "h2" || rtd.Config.NextProtos[1] != "http/1.1" {
-		t.Fatal("invalid Config.NextProtos")
-	}
-	if rtd.Config.RootCAs != defaultCertPool {
-		t.Fatal("invalid Config.RootCAs")
-	}
-	if rtd.Dialer == nil {
-		t.Fatal("invalid Dialer")
-	}
-	if rtd.TLSHandshaker == nil {
-		t.Fatal("invalid TLSHandshaker")
-	}
-	lth, ok := rtd.TLSHandshaker.(*netxlite.TLSHandshakerLogger)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if lth.DebugLogger != log.Log {
-		t.Fatal("not the Logger we expected")
-	}
-	ewth, ok := lth.TLSHandshaker.(*netxlite.ErrorWrapperTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-}
 
-func TestNewTLSDialerWithSaver(t *testing.T) {
-	saver := new(tracex.Saver)
-	td := NewTLSDialer(Config{
-		TLSSaver: saver,
+	t.Run("we can collect dial measurements", func(t *testing.T) {
+		server := filtering.NewTLSServer(filtering.TLSActionReset)
+		defer server.Close()
+		saver := &tracex.Saver{}
+		tdx := NewTLSDialer(Config{
+			DialSaver: saver,
+		})
+		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
+		if err == nil || err.Error() != netxlite.FailureConnectionReset {
+			t.Fatal("unexpected err", err)
+		}
+		if conn != nil {
+			t.Fatal("expected nil conn")
+		}
+		if len(saver.Read()) <= 0 {
+			t.Fatal("did not read any event")
+		}
 	})
-	rtd, ok := td.(*netxlite.TLSDialerLegacy)
-	if !ok {
-		t.Fatal("not the TLSDialer we expected")
-	}
-	if len(rtd.Config.NextProtos) != 2 {
-		t.Fatal("invalid len(config.NextProtos)")
-	}
-	if rtd.Config.NextProtos[0] != "h2" || rtd.Config.NextProtos[1] != "http/1.1" {
-		t.Fatal("invalid Config.NextProtos")
-	}
-	if rtd.Config.RootCAs != defaultCertPool {
-		t.Fatal("invalid Config.RootCAs")
-	}
-	if rtd.Dialer == nil {
-		t.Fatal("invalid Dialer")
-	}
-	if rtd.TLSHandshaker == nil {
-		t.Fatal("invalid TLSHandshaker")
-	}
-	sth, ok := rtd.TLSHandshaker.(*tracex.TLSHandshakerSaver)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if sth.Saver != saver {
-		t.Fatal("not the Logger we expected")
-	}
-	ewth, ok := sth.TLSHandshaker.(*netxlite.ErrorWrapperTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-}
 
-func TestNewTLSDialerWithNoTLSVerifyAndConfig(t *testing.T) {
-	td := NewTLSDialer(Config{
-		TLSConfig:   new(tls.Config),
-		NoTLSVerify: true,
+	t.Run("we can collect I/O measurements", func(t *testing.T) {
+		server := filtering.NewTLSServer(filtering.TLSActionReset)
+		defer server.Close()
+		saver := &tracex.Saver{}
+		tdx := NewTLSDialer(Config{
+			ReadWriteSaver: saver,
+		})
+		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
+		if err == nil || err.Error() != netxlite.FailureConnectionReset {
+			t.Fatal("unexpected err", err)
+		}
+		if conn != nil {
+			t.Fatal("expected nil conn")
+		}
+		if len(saver.Read()) <= 0 {
+			t.Fatal("did not read any event")
+		}
 	})
-	rtd, ok := td.(*netxlite.TLSDialerLegacy)
-	if !ok {
-		t.Fatal("not the TLSDialer we expected")
-	}
-	if len(rtd.Config.NextProtos) != 0 {
-		t.Fatal("invalid len(config.NextProtos)")
-	}
-	if rtd.Config.InsecureSkipVerify != true {
-		t.Fatal("expected true InsecureSkipVerify")
-	}
-	if rtd.Config.RootCAs != defaultCertPool {
-		t.Fatal("invalid Config.RootCAs")
-	}
-	if rtd.Dialer == nil {
-		t.Fatal("invalid Dialer")
-	}
-	if rtd.TLSHandshaker == nil {
-		t.Fatal("invalid TLSHandshaker")
-	}
-	ewth, ok := rtd.TLSHandshaker.(*netxlite.ErrorWrapperTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-}
 
-func TestNewTLSDialerWithNoTLSVerifyAndNoConfig(t *testing.T) {
-	td := NewTLSDialer(Config{
-		NoTLSVerify: true,
+	t.Run("we can skip TLS verification", func(t *testing.T) {
+		server := filtering.NewTLSServer(filtering.TLSActionBlockText)
+		defer server.Close()
+		tdx := NewTLSDialer(Config{NoTLSVerify: true})
+		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
+		if err != nil {
+			t.Fatal(err.(*netxlite.ErrWrapper).WrappedErr)
+		}
+		conn.Close()
 	})
-	rtd, ok := td.(*netxlite.TLSDialerLegacy)
-	if !ok {
-		t.Fatal("not the TLSDialer we expected")
-	}
-	if len(rtd.Config.NextProtos) != 2 {
-		t.Fatal("invalid len(config.NextProtos)")
-	}
-	if rtd.Config.NextProtos[0] != "h2" || rtd.Config.NextProtos[1] != "http/1.1" {
-		t.Fatal("invalid Config.NextProtos")
-	}
-	if rtd.Config.InsecureSkipVerify != true {
-		t.Fatal("expected true InsecureSkipVerify")
-	}
-	if rtd.Config.RootCAs != defaultCertPool {
-		t.Fatal("invalid Config.RootCAs")
-	}
-	if rtd.Dialer == nil {
-		t.Fatal("invalid Dialer")
-	}
-	if rtd.TLSHandshaker == nil {
-		t.Fatal("invalid TLSHandshaker")
-	}
-	ewth, ok := rtd.TLSHandshaker.(*netxlite.ErrorWrapperTLSHandshaker)
-	if !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
-	if _, ok := ewth.TLSHandshaker.(*netxlite.TLSHandshakerConfigurable); !ok {
-		t.Fatal("not the TLSHandshaker we expected")
-	}
+
+	t.Run("we can set the cert pool", func(t *testing.T) {
+		server := filtering.NewTLSServer(filtering.TLSActionBlockText)
+		defer server.Close()
+		tdx := NewTLSDialer(Config{
+			CertPool: server.CertPool(),
+			TLSConfig: &tls.Config{
+				ServerName: "dns.google",
+			},
+		})
+		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
+		if err != nil {
+			t.Fatal(err)
+		}
+		conn.Close()
+	})
 }
 
 func TestNewVanilla(t *testing.T) {
@@ -433,33 +327,6 @@ func TestNewWithDialer(t *testing.T) {
 	})
 	client := &http.Client{Transport: txp}
 	resp, err := client.Get("http://www.google.com")
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
-	}
-	if resp != nil {
-		t.Fatal("not the response we expected")
-	}
-}
-
-func TestNewWithTLSDialer(t *testing.T) {
-	expected := errors.New("mocked error")
-	tlsDialer := &netxlite.TLSDialerLegacy{
-		Config: new(tls.Config),
-		Dialer: &mocks.Dialer{
-			MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
-				return nil, expected
-			},
-			MockCloseIdleConnections: func() {
-				// nothing
-			},
-		},
-		TLSHandshaker: &netxlite.TLSHandshakerConfigurable{},
-	}
-	txp := NewHTTPTransport(Config{
-		TLSDialer: tlsDialer,
-	})
-	client := &http.Client{Transport: txp}
-	resp, err := client.Get("https://www.google.com")
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}

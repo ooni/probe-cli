@@ -591,3 +591,30 @@ func TestNewNullTLSDialer(t *testing.T) {
 	}
 	dialer.CloseIdleConnections() // does not crash
 }
+
+func TestClonedTLSConfigOrNewEmptyConfig(t *testing.T) {
+	t.Run("with nil config", func(t *testing.T) {
+		var input *tls.Config
+		output := ClonedTLSConfigOrNewEmptyConfig(input)
+		if output == nil {
+			t.Fatal("expected non-nil result")
+		}
+		v := reflect.ValueOf(*output)
+		if !v.IsZero() {
+			t.Fatal("expected zero config")
+		}
+	})
+
+	t.Run("", func(t *testing.T) {
+		input := &tls.Config{
+			ServerName: "dns.google",
+		}
+		output := ClonedTLSConfigOrNewEmptyConfig(input)
+		if output == input {
+			t.Fatal("expected two distinct objects")
+		}
+		if !reflect.DeepEqual(input, output) {
+			t.Fatal("apparently the two objects have different values")
+		}
+	})
+}

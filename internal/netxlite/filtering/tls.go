@@ -1,24 +1,22 @@
 package filtering
 
 import (
+	"context"
+	"crypto/rsa"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
-	"io"
 	"net"
-	"strings"
-	"sync"
-)
+	"time"
 
-// TODO(bassosimone): remove TLSActionPass since we want integration tests
-// to only run locally to make them much more predictable.
+	"github.com/google/martian/v3/mitm"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
+)
 
 // TLSAction is a TLS filtering action that this proxy should take.
 type TLSAction string
 
 const (
-	// TLSActionPass passes the traffic to the destination.
-	TLSActionPass = TLSAction("pass")
-
 	// TLSActionReset resets the connection.
 	TLSActionReset = TLSAction("reset")
 
@@ -35,46 +33,96 @@ const (
 	// TLSActionAlertUnrecognizedName tells the client that
 	// it's handshaking with an unknown SNI.
 	TLSActionAlertUnrecognizedName = TLSAction("alert-unrecognized-name")
+
+	// TLSActionBlockText returns a static piece of text
+	// to the client saying this website is blocked.
+	TLSActionBlockText = TLSAction("block-text")
 )
 
-// TLSProxy is a TLS proxy that routes the traffic depending
-// on the SNI value and may implement filtering policies.
-type TLSProxy struct {
-	// OnIncomingSNI is the MANDATORY hook called whenever we have
-	// successfully received a ClientHello message.
-	OnIncomingSNI func(sni string) TLSAction
+// TLSServer is a TLS server implementing filtering policies.
+type TLSServer struct {
+	// action is the action to perform.
+	action TLSAction
+
+	// cancel allows to cancel background operations.
+	cancel context.CancelFunc
+
+	// cert is the fake CA certificate.
+	cert *x509.Certificate
+
+	// config is the config to generate certificates on the fly.
+	config *mitm.Config
+
+	// done is closed when the background goroutine has terminated.
+	done chan bool
+
+	// endpoint is the endpoint where we're listening.
+	endpoint string
+
+	// listener is the TCP listener.
+	listener net.Listener
+
+	// privkey is the private key that signed the cert.
+	privkey *rsa.PrivateKey
 }
 
-// Start starts the proxy.
-func (p *TLSProxy) Start(address string) (net.Listener, error) {
-	listener, _, err := p.start(address)
-	return listener, err
-}
-
-func (p *TLSProxy) start(address string) (net.Listener, <-chan interface{}, error) {
-	listener, err := net.Listen("tcp", address)
-	if err != nil {
-		return nil, nil, err
+// NewTLSServer creates and starts a new TLSServer that executes
+// the given action during the TLS handshake.
+func NewTLSServer(action TLSAction) *TLSServer {
+	done := make(chan bool)
+	cert, privkey, err := mitm.NewAuthority("jafar", "OONI", 24*time.Hour)
+	runtimex.PanicOnError(err, "mitm.NewAuthority failed")
+	config, err := mitm.NewConfig(cert, privkey)
+	runtimex.PanicOnError(err, "mitm.NewConfig failed")
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	runtimex.PanicOnError(err, "net.Listen failed")
+	ctx, cancel := context.WithCancel(context.Background())
+	endpoint := listener.Addr().String()
+	server := &TLSServer{
+		action:   action,
+		cancel:   cancel,
+		cert:     cert,
+		config:   config,
+		done:     done,
+		endpoint: endpoint,
+		listener: listener,
+		privkey:  privkey,
 	}
-	done := make(chan interface{})
-	go p.mainloop(listener, done)
-	return listener, done, nil
+	go server.mainloop(ctx)
+	return server
 }
 
-func (p *TLSProxy) mainloop(listener net.Listener, done chan<- interface{}) {
-	defer close(done)
-	for p.oneloop(listener) {
+// CertPool returns the internal CA as a cert pool.
+func (p *TLSServer) CertPool() *x509.CertPool {
+	o := x509.NewCertPool()
+	o.AddCert(p.cert)
+	return o
+}
+
+// Endpoint returns the endpoint where the server is listening.
+func (p *TLSServer) Endpoint() string {
+	return p.endpoint
+}
+
+// Close closes this server as soon as possible.
+func (p *TLSServer) Close() error {
+	p.cancel()
+	err := p.listener.Close()
+	<-p.done
+	return err
+}
+
+func (p *TLSServer) mainloop(ctx context.Context) {
+	defer close(p.done)
+	for p.oneloop(ctx) {
 		// nothing
 	}
 }
 
-func (p *TLSProxy) oneloop(listener net.Listener) bool {
-	conn, err := listener.Accept()
-	if err != nil && strings.HasSuffix(err.Error(), "use of closed network connection") {
-		return false // we need to stop
-	}
+func (p *TLSServer) oneloop(ctx context.Context) bool {
+	conn, err := p.listener.Accept()
 	if err != nil {
-		return true // we can continue running
+		return !errors.Is(err, net.ErrClosed)
 	}
 	go p.handle(conn)
 	return true // we can continue running
@@ -85,102 +133,50 @@ const (
 	tlsAlertUnrecognizedName = byte(112)
 )
 
-func (p *TLSProxy) handle(conn net.Conn) {
-	defer conn.Close()
-	sni, hello, err := p.readClientHello(conn)
-	if err != nil {
-		p.reset(conn)
+func (p *TLSServer) handle(tcpConn net.Conn) {
+	defer tcpConn.Close()
+	tlsConn := tls.Server(tcpConn, &tls.Config{
+		GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			switch p.action {
+			case TLSActionTimeout:
+				<-time.After(300 * time.Second)
+				return nil, errors.New("timing out the connection")
+			case TLSActionAlertInternalError:
+				p.alert(tcpConn, tlsAlertInternalError)
+				return nil, errors.New("already sent alert")
+			case TLSActionAlertUnrecognizedName:
+				p.alert(tcpConn, tlsAlertUnrecognizedName)
+				return nil, errors.New("already sent alert")
+			case TLSActionEOF:
+				p.eof(tcpConn)
+				return nil, errors.New("already closed the connection")
+			case TLSActionBlockText:
+				return p.config.TLSForHost(info.ServerName).GetCertificate(info)
+			default:
+				p.reset(tcpConn)
+				return nil, errors.New("already RST the connection")
+			}
+		},
+	})
+	if err := tlsConn.Handshake(); err != nil {
 		return
 	}
-	switch p.OnIncomingSNI(sni) {
-	case TLSActionPass:
-		p.proxy(conn, sni, hello)
-	case TLSActionTimeout:
-		p.timeout(conn)
-	case TLSActionAlertInternalError:
-		p.alert(conn, tlsAlertInternalError)
-	case TLSActionAlertUnrecognizedName:
-		p.alert(conn, tlsAlertUnrecognizedName)
-	case TLSActionEOF:
-		p.eof(conn)
-	default:
-		p.reset(conn)
-	}
+	p.blockText(tlsConn)
+	tlsConn.Close()
 }
 
-// readClientHello reads the incoming ClientHello message.
-//
-// Arguments:
-//
-// - conn is the connection from which to read the ClientHello.
-//
-// Returns:
-//
-// - a string containing the SNI (empty on error);
-//
-// - bytes from the original ClientHello (nil on error);
-//
-// - an error (nil on success).
-func (p *TLSProxy) readClientHello(conn net.Conn) (string, []byte, error) {
-	connWrapper := &tlsClientHelloReader{Conn: conn}
-	var (
-		expectedErr = errors.New("cannot continue handhake")
-		sni         string
-		mutex       sync.Mutex // just for safety
-	)
-	err := tls.Server(connWrapper, &tls.Config{
-		GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
-			mutex.Lock()
-			sni = info.ServerName
-			mutex.Unlock()
-			return nil, expectedErr
-		},
-	}).Handshake()
-	if !errors.Is(err, expectedErr) {
-		return "", nil, err
-	}
-	return sni, connWrapper.clientHello, nil
-}
-
-// tlsClientHelloReader wraps a net.Conn for the purpose of
-// saving the bytes of the ClientHello message.
-type tlsClientHelloReader struct {
-	net.Conn
-	clientHello []byte
-}
-
-func (c *tlsClientHelloReader) Read(b []byte) (int, error) {
-	count, err := c.Conn.Read(b)
-	if err != nil {
-		return 0, err
-	}
-	c.clientHello = append(c.clientHello, b[:count]...)
-	return count, nil
-}
-
-// Write prevents writing on the real connection
-func (c *tlsClientHelloReader) Write(b []byte) (int, error) {
-	return 0, errors.New("cannot write on this connection")
-}
-
-func (p *TLSProxy) reset(conn net.Conn) {
-	if tc, ok := conn.(*net.TCPConn); ok {
+func (p *TLSServer) reset(conn net.Conn) {
+	if tc, good := conn.(*net.TCPConn); good {
 		tc.SetLinger(0)
 	}
 	conn.Close()
 }
 
-func (p *TLSProxy) timeout(conn net.Conn) {
-	buffer := make([]byte, 1<<14)
-	conn.Read(buffer)
+func (p *TLSServer) eof(conn net.Conn) {
 	conn.Close()
 }
 
-func (p *TLSProxy) eof(conn net.Conn) {
-	conn.Close()
-}
-
-func (p *TLSProxy) alert(conn net.Conn, code byte) {
+func (p *TLSServer) alert(conn net.Conn, code byte) {
 	alertdata := []byte{
 		21, // alert
 		3,  // version[0]
@@ -194,55 +190,6 @@ func (p *TLSProxy) alert(conn net.Conn, code byte) {
 	conn.Close()
 }
 
-func (p *TLSProxy) proxy(conn net.Conn, sni string, hello []byte) {
-	p.proxydial(conn, sni, hello, net.Dial)
-}
-
-func (p *TLSProxy) proxydial(conn net.Conn, sni string, hello []byte,
-	dial func(network, address string) (net.Conn, error)) {
-	if sni == "" { // don't know the destination host
-		p.reset(conn)
-		return
-	}
-	serverconn, err := dial("tcp", net.JoinHostPort(sni, "443"))
-	if err != nil {
-		p.reset(conn)
-		return
-	}
-	if p.connectingToMyself(serverconn) {
-		p.reset(conn)
-		return
-	}
-	if _, err := serverconn.Write(hello); err != nil {
-		p.reset(conn)
-		return
-	}
-	defer serverconn.Close() // conn is owned by the caller
-	wg := &sync.WaitGroup{}
-	wg.Add(2)
-	go p.forward(wg, conn, serverconn)
-	go p.forward(wg, serverconn, conn)
-	wg.Wait()
-}
-
-// connectingToMyself returns true when the proxy has been somehow
-// forced to create a connection to itself.
-func (p *TLSProxy) connectingToMyself(conn net.Conn) bool {
-	local := conn.LocalAddr().String()
-	localAddr, _, localErr := net.SplitHostPort(local)
-	remote := conn.RemoteAddr().String()
-	remoteAddr, _, remoteErr := net.SplitHostPort(remote)
-	return localErr != nil || remoteErr != nil || localAddr == remoteAddr
-}
-
-// forward will forward the traffic.
-func (p *TLSProxy) forward(wg *sync.WaitGroup, left net.Conn, right net.Conn) {
-	defer wg.Done()
-	// We cannot use netxlite.CopyContext here because we want netxlite to
-	// use filtering inside its test suite, so this package cannot depend on
-	// netxlite. In general, we don't want to use io.Copy or io.ReadAll
-	// directly because they may cause the code to block as documented in
-	// internal/netxlite/iox.go. However, this package is only used for
-	// testing, so it's completely okay to make an exception here.
-	io.Copy(left, right)
+func (p *TLSServer) blockText(tlsConn net.Conn) {
+	tlsConn.Write(HTTPBlockpage451)
 }
