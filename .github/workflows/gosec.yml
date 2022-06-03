@@ -1,7 +1,6 @@
 # runs gosec security scanner
 name: gosec
 on:
-  pull_request:
   push:
     branches:
       - "master"
