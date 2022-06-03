@@ -1,0 +1,26 @@
+# runs gosec security scanner
+name: gosec
+on:
+  pull_request:
+  push:
+    branches:
+      - "master"
+      - "release/**"
+jobs:
+
+  gosec:
+    runs-on: ubuntu-20.04
+    env:
+        GO111MODULE: on
+    strategy:
+      matrix:
+        go:
+          - "1.18.2"
+    steps:
+    - name: Checkout Source
+      uses: actions/checkout@v2
+    - name: Run Gosec security scanner
+      continue-on-error: true
+      uses: securego/gosec@master
+      with:
+        args: ./...
