@@ -207,23 +207,6 @@ func (state *getaddrinfoState) addrinfoToString(r *C.struct_addrinfo) (string, e
 	}
 }
 
-// staticAddrinfoWithInvalidFamily is an helper to construct an addrinfo struct
-// that we use in testing. (We cannot call CGO directly from tests.)
-func staticAddrinfoWithInvalidFamily() *C.struct_addrinfo {
-	var value C.struct_addrinfo       // zeroed by Go
-	value.ai_socktype = C.SOCK_STREAM // this is what the code expects
-	value.ai_family = 0               // but 0 is not AF_INET{,6}
-	return &value
-}
-
-// staticAddrinfoWithInvalidSocketType is an helper to construct an addrinfo struct
-// that we use in testing. (We cannot call CGO directly from tests.)
-func staticAddrinfoWithInvalidSocketType() *C.struct_addrinfo {
-	var value C.struct_addrinfo      // zeroed by Go
-	value.ai_socktype = C.SOCK_DGRAM // not SOCK_STREAM
-	return &value
-}
-
 // getaddrinfoCopyIP copies a net.IP.
 //
 // This function is adapted from copyIP

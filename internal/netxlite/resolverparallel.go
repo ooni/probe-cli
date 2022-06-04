@@ -22,6 +22,8 @@ type ParallelResolver struct {
 	Txp model.DNSTransport
 }
 
+var _ model.Resolver = &ParallelResolver{}
+
 // UnwrappedParallelResolver creates a new ParallelResolver instance. This instance is
 // not wrapped and you should wrap if before using it.
 func NewUnwrappedParallelResolver(t model.DNSTransport) *ParallelResolver {

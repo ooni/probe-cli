@@ -302,6 +302,31 @@ func TestQUICDialerQUICGo(t *testing.T) {
 				t.Fatal("the ServerName field must match")
 			}
 		})
+
+		t.Run("returns a quicDialerOwnConn in case of success", func(t *testing.T) {
+			tlsConfig := &tls.Config{
+				ServerName: "dns.google",
+			}
+			fakeconn := &mocks.QUICEarlyConnection{}
+			systemdialer := quicDialerQUICGo{
+				QUICListener: &quicListenerStdlib{},
+				mockDialEarlyContext: func(ctx context.Context, pconn net.PacketConn,
+					remoteAddr net.Addr, host string, tlsConfig *tls.Config,
+					quicConfig *quic.Config) (quic.EarlyConnection, error) {
+					return fakeconn, nil
+				},
+			}
+			ctx := context.Background()
+			qconn, err := systemdialer.DialContext(
+				ctx, "udp", "8.8.8.8:443", tlsConfig, &quic.Config{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			connOwner := qconn.(*quicConnectionOwnsConn)
+			if connOwner.EarlyConnection != fakeconn {
+				t.Fatal("invalid underlying conn")
+			}
+		})
 	})
 }
 
@@ -404,6 +429,33 @@ func TestQUICDialerHandshakeCompleter(t *testing.T) {
 			t.Fatal("not called")
 		}
 	})
+}
+
+func TestQUICConnectionOwnsConn(t *testing.T) {
+	var (
+		quicClose bool
+		udpClose  bool
+	)
+	qconn := &mocks.QUICEarlyConnection{
+		MockCloseWithError: func(code quic.ApplicationErrorCode, reason string) error {
+			quicClose = true
+			return nil
+		},
+	}
+	pconn := &mocks.UDPLikeConn{
+		MockClose: func() error {
+			udpClose = true
+			return nil
+		},
+	}
+	conn := newQUICConnectionOwnsConn(qconn, pconn)
+	conn.CloseWithError(0, "")
+	if !quicClose {
+		t.Fatal("did not call qconn.CloseWithError")
+	}
+	if !udpClose {
+		t.Fatal("did not call pconn.Close")
+	}
 }
 
 func TestQUICDialerResolver(t *testing.T) {
@@ -516,6 +568,27 @@ func TestQUICDialerResolver(t *testing.T) {
 			}
 			if gotTLSConfig.ServerName != "8.8.4.4" {
 				t.Fatal("gotTLSConfig.ServerName has not been set")
+			}
+		})
+
+		t.Run("on success", func(t *testing.T) {
+			expectedQConn := &mocks.QUICEarlyConnection{}
+			dialer := &quicDialerResolver{
+				Resolver: NewResolverStdlib(log.Log),
+				Dialer: &mocks.QUICDialer{
+					MockDialContext: func(ctx context.Context, network, address string,
+						tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+						return expectedQConn, nil
+					},
+				}}
+			qconn, err := dialer.DialContext(
+				context.Background(), "udp", "8.8.4.4:443",
+				&tls.Config{}, &quic.Config{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if qconn != expectedQConn {
+				t.Fatal("unexpected underlying qconn")
 			}
 		})
 	})

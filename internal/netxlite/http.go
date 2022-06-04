@@ -177,29 +177,29 @@ func NewOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) mode
 
 	// Ensure we correctly forward CloseIdleConnections.
 	return &httpTransportConnectionsCloser{
-		HTTPTransport: &stdlibTransport{&oohttp.StdlibTransport{Transport: txp}},
+		HTTPTransport: &httpTransportStdlib{&oohttp.StdlibTransport{Transport: txp}},
 		Dialer:        dialer,
 		TLSDialer:     tlsDialer,
 	}
 }
 
 // stdlibTransport wraps oohttp.StdlibTransport to add .Network()
-type stdlibTransport struct {
+type httpTransportStdlib struct {
 	StdlibTransport *oohttp.StdlibTransport
 }
 
-var _ model.HTTPTransport = &stdlibTransport{}
+var _ model.HTTPTransport = &httpTransportStdlib{}
 
-func (txp *stdlibTransport) CloseIdleConnections() {
+func (txp *httpTransportStdlib) CloseIdleConnections() {
 	txp.StdlibTransport.CloseIdleConnections()
 }
 
-func (txp *stdlibTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (txp *httpTransportStdlib) RoundTrip(req *http.Request) (*http.Response, error) {
 	return txp.StdlibTransport.RoundTrip(req)
 }
 
 // Network implements HTTPTransport.Network.
-func (txp *stdlibTransport) Network() string {
+func (txp *httpTransportStdlib) Network() string {
 	return "tcp"
 }
 

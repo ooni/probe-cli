@@ -33,6 +33,8 @@ type SerialResolver struct {
 	Txp model.DNSTransport
 }
 
+var _ model.Resolver = &SerialResolver{}
+
 // NewUnwrappedSerialResolver creates a new, and unwrapped, SerialResolver instance.
 func NewUnwrappedSerialResolver(t model.DNSTransport) *SerialResolver {
 	return &SerialResolver{

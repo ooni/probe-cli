@@ -140,7 +140,7 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context, network string,
 		pconn.Close() // we own it on failure
 		return nil, err
 	}
-	return &quicConnectionOwnsConn{EarlyConnection: qconn, conn: pconn}, nil
+	return newQUICConnectionOwnsConn(qconn, pconn), nil
 }
 
 func (d *quicDialerQUICGo) dialEarlyContext(ctx context.Context,
@@ -183,6 +183,8 @@ type quicDialerHandshakeCompleter struct {
 	Dialer model.QUICDialer
 }
 
+var _ model.QUICDialer = &quicDialerHandshakeCompleter{}
+
 // DialContext implements model.QUICDialer.DialContext.
 func (d *quicDialerHandshakeCompleter) DialContext(
 	ctx context.Context, network, address string,
@@ -212,6 +214,10 @@ type quicConnectionOwnsConn struct {
 
 	// conn is the connection we own
 	conn model.UDPLikeConn
+}
+
+func newQUICConnectionOwnsConn(qconn quic.EarlyConnection, pconn model.UDPLikeConn) *quicConnectionOwnsConn {
+	return &quicConnectionOwnsConn{EarlyConnection: qconn, conn: pconn}
 }
 
 // CloseWithError implements quic.EarlyConnection.CloseWithError.
