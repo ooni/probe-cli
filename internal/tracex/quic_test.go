@@ -177,6 +177,14 @@ func TestQUICDialerSaver(t *testing.T) {
 	})
 }
 
+func TestWrapQUICListener(t *testing.T) {
+	var saver *Saver
+	ql := &mocks.QUICListener{}
+	if saver.WrapQUICListener(ql) != ql {
+		t.Fatal("unexpected result")
+	}
+}
+
 func TestQUICListenerSaver(t *testing.T) {
 	t.Run("on failure", func(t *testing.T) {
 		expected := errors.New("mocked error")

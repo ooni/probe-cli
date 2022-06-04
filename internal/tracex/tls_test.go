@@ -12,6 +12,14 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
+func TestWrapTLSHandshaker(t *testing.T) {
+	var saver *Saver
+	thx := &mocks.TLSHandshaker{}
+	if saver.WrapTLSHandshaker(thx) != thx {
+		t.Fatal("unexpected result")
+	}
+}
+
 func TestTLSHandshakerSaver(t *testing.T) {
 
 	t.Run("Handshake", func(t *testing.T) {
