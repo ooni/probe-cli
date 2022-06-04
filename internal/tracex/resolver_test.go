@@ -343,13 +343,13 @@ func TestDNSTransportSaver(t *testing.T) {
 
 	t.Run("Address", func(t *testing.T) {
 		saver := &Saver{}
-		txp := &mocks.DNSTransport{
+		child := &mocks.DNSTransport{
 			MockAddress: func() string {
 				return "x"
 			},
 		}
-		reso := saver.WrapDNSTransport(txp)
-		if reso.Address() != "x" {
+		txp := saver.WrapDNSTransport(child)
+		if txp.Address() != "x" {
 			t.Fatal("unexpected result")
 		}
 	})

@@ -4,7 +4,7 @@ import "testing"
 
 func TestUnusedEventsNames(t *testing.T) {
 	// Tests that we don't break the names of events we're currently
-	// not getting the name of directory even if they're saved.
+	// not getting the name of directly even if they're saved.
 
 	t.Run("EventQUICHandshakeStart", func(t *testing.T) {
 		ev := &EventQUICHandshakeStart{}
