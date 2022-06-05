@@ -67,8 +67,8 @@ func NewResolver(config Config) model.Resolver {
 		model.ValidLoggerOrDefault(config.Logger),
 		config.BaseResolver,
 	)
-	r = MaybeWrapWithCachingResolver(config.CacheResolutions, r)
-	r = MaybeWrapWithStaticDNSCache(config.DNSCache, r)
+	r = netxlite.MaybeWrapWithCachingResolver(config.CacheResolutions, r)
+	r = netxlite.MaybeWrapWithStaticDNSCache(config.DNSCache, r)
 	r = netxlite.MaybeWrapWithBogonResolver(config.BogonIsError, r)
 	return config.Saver.WrapResolver(r) // WAI when config.Saver==nil
 }
