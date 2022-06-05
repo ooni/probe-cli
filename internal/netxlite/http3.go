@@ -48,19 +48,16 @@ func (txp *http3Transport) CloseIdleConnections() {
 // then the code will use the default TLS configuration.
 func NewHTTP3Transport(
 	logger model.DebugLogger, dialer model.QUICDialer, tlsConfig *tls.Config) model.HTTPTransport {
-	return &httpTransportLogger{
-		HTTPTransport: &http3Transport{
-			child: &http3.RoundTripper{
-				Dial: dialer.DialContext,
-				// The following (1) reduces the number of headers that Go will
-				// automatically send for us and (2) ensures that we always receive
-				// back the true headers, such as Content-Length. This change is
-				// functional to OONI's goal of observing the network.
-				DisableCompression: true,
-				TLSClientConfig:    tlsConfig,
-			},
-			dialer: dialer,
+	return WrapHTTPTransport(logger, &http3Transport{
+		child: &http3.RoundTripper{
+			Dial: dialer.DialContext,
+			// The following (1) reduces the number of headers that Go will
+			// automatically send for us and (2) ensures that we always receive
+			// back the true headers, such as Content-Length. This change is
+			// functional to OONI's goal of observing the network.
+			DisableCompression: true,
+			TLSClientConfig:    tlsConfig,
 		},
-		Logger: logger,
-	}
+		dialer: dialer,
+	})
 }

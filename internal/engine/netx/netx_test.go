@@ -272,13 +272,6 @@ func TestNewTLSDialer(t *testing.T) {
 	})
 }
 
-func TestNewVanilla(t *testing.T) {
-	txp := NewHTTPTransport(Config{})
-	if _, ok := txp.(*netxlite.HTTPTransportWrapper); !ok {
-		t.Fatal("not the transport we expected")
-	}
-}
-
 func TestNewWithDialer(t *testing.T) {
 	expected := errors.New("mocked error")
 	dialer := &mocks.Dialer{
@@ -311,25 +304,7 @@ func TestNewWithByteCounter(t *testing.T) {
 	if bctxp.Counter != counter {
 		t.Fatal("not the byte counter we expected")
 	}
-	if _, ok := bctxp.HTTPTransport.(*netxlite.HTTPTransportWrapper); !ok {
-		t.Fatal("not the transport we expected")
-	}
-}
-
-func TestNewWithLogger(t *testing.T) {
-	txp := NewHTTPTransport(Config{
-		Logger: log.Log,
-	})
-	ltxp, ok := txp.(*netxlite.HTTPTransportLogger)
-	if !ok {
-		t.Fatal("not the transport we expected")
-	}
-	if ltxp.Logger != log.Log {
-		t.Fatal("not the logger we expected")
-	}
-	if _, ok := ltxp.HTTPTransport.(*netxlite.HTTPTransportWrapper); !ok {
-		t.Fatal("not the transport we expected")
-	}
+	// We are going to trust the underlying transport returned by netxlite
 }
 
 func TestNewWithSaver(t *testing.T) {
@@ -347,9 +322,7 @@ func TestNewWithSaver(t *testing.T) {
 	if stxptxp.Saver != saver {
 		t.Fatal("not the logger we expected")
 	}
-	if _, ok := stxptxp.HTTPTransport.(*netxlite.HTTPTransportWrapper); !ok {
-		t.Fatal("not the transport we expected")
-	}
+	// We are going to trust the underlying type returned by netxlite
 }
 
 func TestNewDNSClientInvalidURL(t *testing.T) {
