@@ -63,10 +63,10 @@ func NewResolver(config Config) model.Resolver {
 	if config.BaseResolver == nil {
 		config.BaseResolver = netxlite.NewResolverSystem()
 	}
-	var r model.Resolver = config.BaseResolver
-	r = &netxlite.AddressResolver{
-		Resolver: r,
-	}
+	r := netxlite.WrapResolver(
+		model.ValidLoggerOrDefault(config.Logger),
+		config.BaseResolver,
+	)
 	if config.CacheResolutions {
 		r = &CacheResolver{Resolver: r}
 	}
@@ -80,15 +80,7 @@ func NewResolver(config Config) model.Resolver {
 	if config.BogonIsError {
 		r = &netxlite.BogonResolver{Resolver: r}
 	}
-	r = &netxlite.ErrorWrapperResolver{Resolver: r}
-	if config.Logger != nil {
-		r = &netxlite.ResolverLogger{
-			Logger:   config.Logger,
-			Resolver: r,
-		}
-	}
-	r = config.Saver.WrapResolver(r) // WAI when config.Saver==nil
-	return &netxlite.ResolverIDNA{Resolver: r}
+	return config.Saver.WrapResolver(r) // WAI when config.Saver==nil
 }
 
 // NewDialer creates a new Dialer from the specified config
