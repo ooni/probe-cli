@@ -3,7 +3,8 @@ package netxlite
 //
 // Bogon
 //
-// This file helps us to decide if an IPAddr is a bogon.
+// This file helps us to decide if an IPAddr is a bogon as well as
+// a way to create a resolver that fails when resolving bogons.
 //
 
 import (
@@ -17,29 +18,28 @@ import (
 // MaybeWrapWithBogonResolver wraps the given resolver with a BogonResolver
 // iff the provided boolean flag is true. Otherwise, this factory just returns
 // the provided resolver to the caller without any wrapping.
+//
+// The returned resolver returns a wrapped ErrDNSBogon if there's a bogon error.
+//
+// BUG: This resolver currently only implements LookupHost. All the other
+// lookup methods will always return ErrNoDNSTransport.
 func MaybeWrapWithBogonResolver(enabled bool, reso model.Resolver) model.Resolver {
 	if enabled {
-		reso = &BogonResolver{Resolver: reso}
+		reso = &bogonResolver{Resolver: reso}
 	}
 	return reso
 }
 
-// BogonResolver is a bogon aware resolver. When a bogon is encountered in
+// bogonResolver is a bogon aware resolver. When a bogon is encountered in
 // a reply, this resolver will return ErrDNSBogon.
-//
-// This resolver is not part of the default chain created by WrapResolver
-// therefore it returns errors that have already been wrapped.
-//
-// BUG: This resolver currently only implements LookupHost. All the other
-// lookup methods will always return ErrNoDNSTransport.
-type BogonResolver struct {
+type bogonResolver struct {
 	Resolver model.Resolver
 }
 
-var _ model.Resolver = &BogonResolver{}
+var _ model.Resolver = &bogonResolver{}
 
 // LookupHost implements Resolver.LookupHost
-func (r *BogonResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+func (r *bogonResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	if err != nil {
 		return nil, err // not our responsibility to wrap this error
@@ -54,29 +54,29 @@ func (r *BogonResolver) LookupHost(ctx context.Context, hostname string) ([]stri
 }
 
 // LookupHTTPS implements Resolver.LookupHTTPS
-func (r *BogonResolver) LookupHTTPS(ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
+func (r *bogonResolver) LookupHTTPS(ctx context.Context, hostname string) (*model.HTTPSSvc, error) {
 	// TODO(bassosimone): decide whether we want to implement this method or not
 	return nil, ErrNoDNSTransport
 }
 
 // LookupNS implements Resolver.LookupNS
-func (r *BogonResolver) LookupNS(ctx context.Context, hostname string) ([]*net.NS, error) {
+func (r *bogonResolver) LookupNS(ctx context.Context, hostname string) ([]*net.NS, error) {
 	// TODO(bassosimone): decide whether we want to implement this method or not
 	return nil, ErrNoDNSTransport
 }
 
 // Network implements Resolver.Network
-func (r *BogonResolver) Network() string {
+func (r *bogonResolver) Network() string {
 	return r.Resolver.Network()
 }
 
 // Address implements Resolver.Address
-func (r *BogonResolver) Address() string {
+func (r *bogonResolver) Address() string {
 	return r.Resolver.Address()
 }
 
 // CloseIdleConnections implements Resolver.CloseIdleConnections
-func (r *BogonResolver) CloseIdleConnections() {
+func (r *bogonResolver) CloseIdleConnections() {
 	r.Resolver.CloseIdleConnections()
 }
 

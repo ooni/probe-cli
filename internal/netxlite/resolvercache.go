@@ -1,4 +1,4 @@
-package netx
+package netxlite
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // MaybeWrapWithCachingResolver wraps the provided resolver with a resolver
@@ -111,10 +110,10 @@ func (r *cacheResolver) CloseIdleConnections() {
 
 // LookupHTTPS implements model.Resolver.LookupHTTPS.
 func (r *cacheResolver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
-	return nil, netxlite.ErrNoDNSTransport
+	return nil, ErrNoDNSTransport
 }
 
 // LookupNS implements model.Resolver.LookupNS.
 func (r *cacheResolver) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
-	return nil, netxlite.ErrNoDNSTransport
+	return nil, ErrNoDNSTransport
 }

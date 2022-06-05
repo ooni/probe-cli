@@ -1,4 +1,4 @@
-package netx
+package netxlite
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestMaybeWrapWithCachingResolver(t *testing.T) {
@@ -184,7 +183,7 @@ func TestCacheResolver(t *testing.T) {
 		t.Run("LookupHTTPS", func(t *testing.T) {
 			reso := &cacheResolver{}
 			https, err := reso.LookupHTTPS(context.Background(), "dns.google")
-			if !errors.Is(err, netxlite.ErrNoDNSTransport) {
+			if !errors.Is(err, ErrNoDNSTransport) {
 				t.Fatal("unexpected err", err)
 			}
 			if https != nil {
@@ -195,7 +194,7 @@ func TestCacheResolver(t *testing.T) {
 		t.Run("LookupNS", func(t *testing.T) {
 			reso := &cacheResolver{}
 			ns, err := reso.LookupNS(context.Background(), "dns.google")
-			if !errors.Is(err, netxlite.ErrNoDNSTransport) {
+			if !errors.Is(err, ErrNoDNSTransport) {
 				t.Fatal("unexpected err", err)
 			}
 			if len(ns) != 0 {

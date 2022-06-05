@@ -13,7 +13,7 @@ func TestMaybeWrapWithBogonResolver(t *testing.T) {
 	t.Run("with enabled equal to true", func(t *testing.T) {
 		underlying := &mocks.Resolver{}
 		reso := MaybeWrapWithBogonResolver(true, underlying)
-		bogoreso := reso.(*BogonResolver)
+		bogoreso := reso.(*bogonResolver)
 		if bogoreso.Resolver != underlying {
 			t.Fatal("did not wrap")
 		}
@@ -32,7 +32,7 @@ func TestBogonResolver(t *testing.T) {
 	t.Run("LookupHost", func(t *testing.T) {
 		t.Run("with failure", func(t *testing.T) {
 			expected := errors.New("mocked")
-			reso := &BogonResolver{
+			reso := &bogonResolver{
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 						return nil, expected
@@ -51,7 +51,7 @@ func TestBogonResolver(t *testing.T) {
 
 		t.Run("with success and no bogon", func(t *testing.T) {
 			expected := []string{"8.8.8.8", "149.112.112.112"}
-			reso := &BogonResolver{
+			reso := &bogonResolver{
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 						return expected, nil
@@ -69,7 +69,7 @@ func TestBogonResolver(t *testing.T) {
 		})
 
 		t.Run("with success and bogon", func(t *testing.T) {
-			reso := &BogonResolver{
+			reso := &bogonResolver{
 				Resolver: &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 						return []string{"8.8.8.8", "10.34.34.35", "149.112.112.112"}, nil
@@ -93,7 +93,7 @@ func TestBogonResolver(t *testing.T) {
 
 	t.Run("LookupHTTPS", func(t *testing.T) {
 		ctx := context.Background()
-		reso := &BogonResolver{}
+		reso := &bogonResolver{}
 		https, err := reso.LookupHTTPS(ctx, "dns.google")
 		if !errors.Is(err, ErrNoDNSTransport) {
 			t.Fatal("unexpected err", err)
@@ -105,7 +105,7 @@ func TestBogonResolver(t *testing.T) {
 
 	t.Run("LookupNS", func(t *testing.T) {
 		ctx := context.Background()
-		reso := &BogonResolver{}
+		reso := &bogonResolver{}
 		ns, err := reso.LookupNS(ctx, "dns.google")
 		if !errors.Is(err, ErrNoDNSTransport) {
 			t.Fatal("unexpected err", err)
@@ -117,7 +117,7 @@ func TestBogonResolver(t *testing.T) {
 
 	t.Run("Network", func(t *testing.T) {
 		expected := "antani"
-		reso := &BogonResolver{
+		reso := &bogonResolver{
 			Resolver: &mocks.Resolver{
 				MockNetwork: func() string {
 					return expected
@@ -131,7 +131,7 @@ func TestBogonResolver(t *testing.T) {
 
 	t.Run("Address", func(t *testing.T) {
 		expected := "antani"
-		reso := &BogonResolver{
+		reso := &bogonResolver{
 			Resolver: &mocks.Resolver{
 				MockAddress: func() string {
 					return expected
@@ -145,7 +145,7 @@ func TestBogonResolver(t *testing.T) {
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {
 		var called bool
-		reso := &BogonResolver{
+		reso := &bogonResolver{
 			Resolver: &mocks.Resolver{
 				MockCloseIdleConnections: func() {
 					called = true
