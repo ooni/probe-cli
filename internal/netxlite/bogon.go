@@ -16,6 +16,12 @@ import (
 
 // BogonResolver is a bogon aware resolver. When a bogon is encountered in
 // a reply, this resolver will return ErrDNSBogon.
+//
+// This resolver is not part of the default chain created by WrapResolver
+// therefore it returns errors that have already been wrapped.
+//
+// BUG: This resolver currently only implements LookupHost. All the other
+// lookup methods will always return ErrNoDNSTransport.
 type BogonResolver struct {
 	Resolver model.Resolver
 }
@@ -26,11 +32,12 @@ var _ model.Resolver = &BogonResolver{}
 func (r *BogonResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	if err != nil {
-		return nil, err
+		return nil, err // not our responsibility to wrap this error
 	}
 	for _, addr := range addrs {
 		if IsBogon(addr) {
-			return nil, ErrDNSBogon
+			// wrap ErrDNSBogon as documented
+			return nil, newErrWrapper(classifyResolverError, ResolveOperation, ErrDNSBogon)
 		}
 	}
 	return addrs, nil

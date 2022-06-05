@@ -62,6 +62,10 @@ func TestBogonResolver(t *testing.T) {
 			if !errors.Is(err, ErrDNSBogon) {
 				t.Fatal("unexpected err", err)
 			}
+			var ew *ErrWrapper
+			if !errors.As(err, &ew) {
+				t.Fatal("error has not been wrapped")
+			}
 			if len(addrs) > 0 {
 				t.Fatal("expected no addrs")
 			}
