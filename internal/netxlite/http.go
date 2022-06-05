@@ -114,15 +114,8 @@ func NewHTTPTransportWithResolver(logger model.DebugLogger, reso model.Resolver)
 	return NewHTTPTransport(logger, dialer, tlsDialer)
 }
 
-// NewHTTPTransport combines NewOOHTTPBaseTransport and WrapHTTPTransport.
-//
-// This factory and NewHTTPTransportStdlib are the recommended
-// ways of creating a new HTTPTransport.
-func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer model.TLSDialer) model.HTTPTransport {
-	return WrapHTTPTransport(logger, NewOOHTTPBaseTransport(dialer, tlsDialer))
-}
-
-// NewOOHTTPBaseTransport creates an HTTPTransport using the given dialers.
+// NewHTTPTransport returns a wrapped HTTP transport for HTTP2 and HTTP/1.1
+// using the given dialer and logger.
 //
 // The returned transport will gracefully handle TLS connections
 // created using gitlab.com/yawning/utls.git, if the TLS dialer
@@ -131,7 +124,7 @@ func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer m
 // The returned transport will not have a configured proxy, not
 // even the proxy configurable from the environment.
 //
-// The returned transport will disable transparent decompression
+// QUIRK: the returned transport will disable transparent decompression
 // of compressed response bodies (and will not automatically
 // ask for such compression, though you can always do that manually).
 //
@@ -139,14 +132,23 @@ func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer m
 // created using its dialer and TLS dialer to always have a
 // read watchdog timeout to address https://github.com/ooni/probe/issues/1609.
 //
-// The returned transport will always enforce 1 connection per host
+// QUIRK: the returned transport will always enforce 1 connection per host
 // and we cannot get rid of this QUIRK requirement because it is
 // necessary to perform sane measurements with tracing. We will be
 // able to possibly relax this requirement after we change the
 // way in which we perform measurements.
 //
-// This is a low level factory. Consider not using it directly.
-func NewOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) model.HTTPTransport {
+// This factory and NewHTTPTransportStdlib are the recommended
+// ways of creating a new HTTPTransport.
+func NewHTTPTransport(logger model.DebugLogger, dialer model.Dialer, tlsDialer model.TLSDialer) model.HTTPTransport {
+	return WrapHTTPTransport(logger, newOOHTTPBaseTransport(dialer, tlsDialer))
+}
+
+// newOOHTTPBaseTransport is the low-level factory used by NewHTTPTransport
+// to create a new, suitable HTTPTransport for HTTP2 and HTTP/1.1.
+//
+// This factory uses github.com/ooni/oohttp, hence its name.
+func newOOHTTPBaseTransport(dialer model.Dialer, tlsDialer model.TLSDialer) model.HTTPTransport {
 	// Using oohttp to support any TLS library.
 	txp := oohttp.DefaultTransport.(*oohttp.Transport).Clone()
 

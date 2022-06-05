@@ -17,8 +17,6 @@ var (
 //
 // Deprecated: do not use these names in new code.
 type (
-	HTTPTransportWrapper           = httpTransportConnectionsCloser
-	HTTPTransportLogger            = httpTransportLogger
 	ErrorWrapperResolver           = resolverErrWrapper
 	ResolverSystemDoNotInstantiate = resolverSystem // instantiate => crash w/ nil transport
 	ResolverLogger                 = resolverLogger

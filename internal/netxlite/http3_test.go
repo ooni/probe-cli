@@ -72,7 +72,8 @@ func TestNewHTTP3Transport(t *testing.T) {
 		if logger.Logger != log.Log {
 			t.Fatal("invalid logger")
 		}
-		h3txp := logger.HTTPTransport.(*http3Transport)
+		ew := logger.HTTPTransport.(*httpTransportErrWrapper)
+		h3txp := ew.HTTPTransport.(*http3Transport)
 		if h3txp.dialer != qd {
 			t.Fatal("invalid dialer")
 		}

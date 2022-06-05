@@ -145,14 +145,15 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 	}
 	tInfo := allTransportsInfo[config.HTTP3Enabled]
 	txp := tInfo.Factory(httpTransportConfig{
-		Dialer: config.Dialer, QUICDialer: config.QUICDialer, TLSDialer: config.TLSDialer,
-		TLSConfig: config.TLSConfig})
+		Dialer:     config.Dialer,
+		Logger:     model.ValidLoggerOrDefault(config.Logger),
+		QUICDialer: config.QUICDialer,
+		TLSDialer:  config.TLSDialer,
+		TLSConfig:  config.TLSConfig,
+	})
 	if config.ByteCounter != nil {
 		txp = &bytecounter.HTTPTransport{
 			Counter: config.ByteCounter, HTTPTransport: txp}
-	}
-	if config.Logger != nil {
-		txp = &netxlite.HTTPTransportLogger{Logger: config.Logger, HTTPTransport: txp}
 	}
 	if config.Saver != nil {
 		txp = &tracex.HTTPTransportSaver{
