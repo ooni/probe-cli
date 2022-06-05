@@ -163,8 +163,8 @@ func (lst *Listener) handleSocksConn(ctx context.Context, socksConn ptxSocksConn
 	// We _must_ wrap the ptConn. Wrapping the socks conn leads us to
 	// count the sent bytes as received and the received bytes as sent:
 	// bytes flow in the opposite direction there for the socks conn.
-	ptConn = bytecounter.MaybeWrap(ptConn, lst.SessionByteCounter)
-	ptConn = bytecounter.MaybeWrap(ptConn, lst.ExperimentByteCounter)
+	ptConn = bytecounter.MaybeWrapConn(ptConn, lst.SessionByteCounter)
+	ptConn = bytecounter.MaybeWrapConn(ptConn, lst.ExperimentByteCounter)
 	lst.forwardWithContext(ctx, socksConn, ptConn) // transfer ownership
 	return nil                                     // used for testing
 }

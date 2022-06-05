@@ -7,29 +7,39 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// HTTPTransport is a model.HTTPTransport that counts bytes.
-type HTTPTransport struct {
+// MaybeWrapHTTPTransport takes in input an HTTPTransport and either wraps it
+// to perform byte counting, if this counter is not nil, or just returns to the
+// caller the original transport, when the counter is nil.
+func (c *Counter) MaybeWrapHTTPTransport(txp model.HTTPTransport) model.HTTPTransport {
+	if c != nil {
+		txp = WrapHTTPTransport(txp, c)
+	}
+	return txp
+}
+
+// httpTransport is a model.HTTPTransport that counts bytes.
+type httpTransport struct {
 	HTTPTransport model.HTTPTransport
 	Counter       *Counter
 }
 
-// NewHTTPTransport creates a new byte-counting-aware HTTP transport.
-func NewHTTPTransport(txp model.HTTPTransport, counter *Counter) model.HTTPTransport {
-	return &HTTPTransport{
+// WrapHTTPTransport creates a new byte-counting-aware HTTP transport.
+func WrapHTTPTransport(txp model.HTTPTransport, counter *Counter) model.HTTPTransport {
+	return &httpTransport{
 		HTTPTransport: txp,
 		Counter:       counter,
 	}
 }
 
-var _ model.HTTPTransport = &HTTPTransport{}
+var _ model.HTTPTransport = &httpTransport{}
 
 // CloseIdleConnections implements model.HTTPTransport.CloseIdleConnections.
-func (txp *HTTPTransport) CloseIdleConnections() {
+func (txp *httpTransport) CloseIdleConnections() {
 	txp.HTTPTransport.CloseIdleConnections()
 }
 
 // RoundTrip implements model.HTTPTRansport.RoundTrip
-func (txp *HTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (txp *httpTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if req.Body != nil {
 		req.Body = &httpBodyWrapper{
 			account: txp.Counter.CountBytesSent,
@@ -50,11 +60,11 @@ func (txp *HTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 // Network implements model.HTTPTransport.Network.
-func (txp *HTTPTransport) Network() string {
+func (txp *httpTransport) Network() string {
 	return txp.HTTPTransport.Network()
 }
 
-func (txp *HTTPTransport) estimateRequestMetadata(req *http.Request) {
+func (txp *httpTransport) estimateRequestMetadata(req *http.Request) {
 	txp.Counter.CountBytesSent(len(req.Method))
 	txp.Counter.CountBytesSent(len(req.URL.String()))
 	for key, values := range req.Header {
@@ -68,7 +78,7 @@ func (txp *HTTPTransport) estimateRequestMetadata(req *http.Request) {
 	txp.Counter.CountBytesSent(len("\r\n"))
 }
 
-func (txp *HTTPTransport) estimateResponseMetadata(resp *http.Response) {
+func (txp *httpTransport) estimateResponseMetadata(resp *http.Response) {
 	txp.Counter.CountBytesReceived(len(resp.Status))
 	for key, values := range resp.Header {
 		for _, value := range values {

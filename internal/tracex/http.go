@@ -14,6 +14,20 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+// MaybeWrapHTTPTransport wraps the HTTPTransport to save events if this Saver
+// is not nil and otherwise just returns the given HTTPTransport. The snapshotSize
+// argument is the maximum response body snapshot size to save per response.
+func (s *Saver) MaybeWrapHTTPTransport(txp model.HTTPTransport, snapshotSize int64) model.HTTPTransport {
+	if s != nil {
+		txp = &HTTPTransportSaver{
+			HTTPTransport: txp,
+			Saver:         s,
+			SnapshotSize:  snapshotSize,
+		}
+	}
+	return txp
+}
+
 // httpCloneRequestHeaders returns a clone of the headers where we have
 // also set the host header, which normally is not set by
 // golang until it serializes the request itself.

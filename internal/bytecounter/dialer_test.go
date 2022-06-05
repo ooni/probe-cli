@@ -10,6 +10,25 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
+func TestMaybeWrapWithContextAwareDialer(t *testing.T) {
+	t.Run("when enabled is true", func(t *testing.T) {
+		underlying := &mocks.Dialer{}
+		dialer := MaybeWrapWithContextAwareDialer(true, underlying)
+		realDialer := dialer.(*contextAwareDialer)
+		if realDialer.Dialer != underlying {
+			t.Fatal("did not wrap correctly")
+		}
+	})
+
+	t.Run("when enabled is false", func(t *testing.T) {
+		underlying := &mocks.Dialer{}
+		dialer := MaybeWrapWithContextAwareDialer(false, underlying)
+		if dialer != underlying {
+			t.Fatal("unexpected result")
+		}
+	})
+}
+
 func TestContextAwareDialer(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		dialAndUseConn := func(ctx context.Context, bufsiz int) error {
@@ -26,7 +45,7 @@ func TestContextAwareDialer(t *testing.T) {
 					return childConn, nil
 				},
 			}
-			dialer := NewContextAwareDialer(child)
+			dialer := WrapWithContextAwareDialer(child)
 			conn, err := dialer.DialContext(ctx, "tcp", "10.0.0.1:443")
 			if err != nil {
 				return err
@@ -68,7 +87,7 @@ func TestContextAwareDialer(t *testing.T) {
 		})
 
 		t.Run("failure", func(t *testing.T) {
-			dialer := &ContextAwareDialer{
+			dialer := &contextAwareDialer{
 				Dialer: &mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 						return nil, io.EOF
@@ -92,7 +111,7 @@ func TestContextAwareDialer(t *testing.T) {
 				called = true
 			},
 		}
-		dialer := NewContextAwareDialer(child)
+		dialer := WrapWithContextAwareDialer(child)
 		dialer.CloseIdleConnections()
 		if !called {
 			t.Fatal("not called")

@@ -32,7 +32,7 @@ func newDialManager(ndt7URL string, logger model.Logger, userAgent string) dialM
 func (mgr dialManager) dialWithTestName(ctx context.Context, testName string) (*websocket.Conn, error) {
 	reso := netxlite.NewResolverStdlib(mgr.logger)
 	dlr := netxlite.NewDialerWithResolver(mgr.logger, reso)
-	dlr = bytecounter.NewContextAwareDialer(dlr)
+	dlr = bytecounter.WrapWithContextAwareDialer(dlr)
 	// Implements shaping if the user builds using `-tags shaping`
 	// See https://github.com/ooni/probe/issues/2112
 	dlr = netxlite.NewMaybeShapingDialer(dlr)

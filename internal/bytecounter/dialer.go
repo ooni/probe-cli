@@ -11,8 +11,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// ContextAwareDialer is a model.Dialer that attempts to count bytes using
-// the MaybeWrapWithContextByteCounters function.
+// MaybeWrapWithContextAwareDialer wraps the given dialer with a ContextAwareDialer
+// if the enabled argument is true and otherwise just returns the given dialer.
 //
 // Bug
 //
@@ -24,19 +24,29 @@ import (
 //
 // For this reason, this implementation may be heavily changed/removed
 // in the future (<- this message is now ~two years old, though).
-type ContextAwareDialer struct {
+func MaybeWrapWithContextAwareDialer(enabled bool, dialer model.Dialer) model.Dialer {
+	if !enabled {
+		return dialer
+	}
+	return WrapWithContextAwareDialer(dialer)
+}
+
+// contextAwareDialer is a model.Dialer that attempts to count bytes using
+// the MaybeWrapWithContextByteCounters function.
+type contextAwareDialer struct {
 	Dialer model.Dialer
 }
 
-// NewContextAwareDialer creates a new ContextAwareDialer.
-func NewContextAwareDialer(dialer model.Dialer) *ContextAwareDialer {
-	return &ContextAwareDialer{Dialer: dialer}
+// WrapWithContextAwareDialer creates a new ContextAwareDialer. See the docs
+// of MaybeWrapWithContextAwareDialer for a list of caveats.
+func WrapWithContextAwareDialer(dialer model.Dialer) *contextAwareDialer {
+	return &contextAwareDialer{Dialer: dialer}
 }
 
-var _ model.Dialer = &ContextAwareDialer{}
+var _ model.Dialer = &contextAwareDialer{}
 
 // DialContext implements Dialer.DialContext
-func (d *ContextAwareDialer) DialContext(
+func (d *contextAwareDialer) DialContext(
 	ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
@@ -47,6 +57,6 @@ func (d *ContextAwareDialer) DialContext(
 }
 
 // CloseIdleConnections implements Dialer.CloseIdleConnections.
-func (d *ContextAwareDialer) CloseIdleConnections() {
+func (d *contextAwareDialer) CloseIdleConnections() {
 	d.Dialer.CloseIdleConnections()
 }
