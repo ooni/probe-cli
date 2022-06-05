@@ -14,6 +14,14 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
+// NewDialerWithStdlibResolver is equivalent to creating a system resolver
+// using NewResolverStdlib and then a dialer using NewDialerWithResolver where
+// the resolver argument is the previously created resolver.
+func NewDialerWithStdlibResolver(dl model.DebugLogger) model.Dialer {
+	reso := NewResolverStdlib(dl)
+	return NewDialerWithResolver(dl, reso)
+}
+
 // NewDialerWithResolver is equivalent to calling WrapDialer with
 // the dialer argument being equal to &DialerSystem{}.
 func NewDialerWithResolver(dl model.DebugLogger, r model.Resolver, w ...model.DialerWrapper) model.Dialer {

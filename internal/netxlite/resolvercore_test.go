@@ -15,18 +15,22 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-func TestNewResolverSystem(t *testing.T) {
-	resolver := NewResolverStdlib(log.Log)
+func typecheckForSystemResolver(t *testing.T, resolver model.Resolver, logger model.DebugLogger) {
 	idna := resolver.(*resolverIDNA)
-	logger := idna.Resolver.(*resolverLogger)
-	if logger.Logger != log.Log {
+	loggerReso := idna.Resolver.(*resolverLogger)
+	if loggerReso.Logger != logger {
 		t.Fatal("invalid logger")
 	}
-	shortCircuit := logger.Resolver.(*resolverShortCircuitIPAddr)
+	shortCircuit := loggerReso.Resolver.(*resolverShortCircuitIPAddr)
 	errWrapper := shortCircuit.Resolver.(*resolverErrWrapper)
 	reso := errWrapper.Resolver.(*resolverSystem)
 	txpErrWrapper := reso.t.(*dnsTransportErrWrapper)
 	_ = txpErrWrapper.DNSTransport.(*dnsOverGetaddrinfoTransport)
+}
+
+func TestNewResolverSystem(t *testing.T) {
+	resolver := NewResolverStdlib(model.DiscardLogger)
+	typecheckForSystemResolver(t, resolver, model.DiscardLogger)
 }
 
 func TestNewSerialResolverUDP(t *testing.T) {

@@ -15,6 +15,24 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
+func TestNewDialerWithStdlibResolver(t *testing.T) {
+	dialer := NewDialerWithStdlibResolver(model.DiscardLogger)
+	logger := dialer.(*dialerLogger)
+	if logger.DebugLogger != model.DiscardLogger {
+		t.Fatal("invalid logger")
+	}
+	// typecheck the resolver
+	reso := logger.Dialer.(*dialerResolver)
+	typecheckForSystemResolver(t, reso.Resolver, model.DiscardLogger)
+	// typecheck the dialer
+	logger = reso.Dialer.(*dialerLogger)
+	if logger.DebugLogger != model.DiscardLogger {
+		t.Fatal("invalid logger")
+	}
+	errWrapper := logger.Dialer.(*dialerErrWrapper)
+	_ = errWrapper.Dialer.(*DialerSystem)
+}
+
 type extensionDialerFirst struct {
 	model.Dialer
 }
