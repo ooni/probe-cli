@@ -8,7 +8,6 @@ package netxlite
 //
 // Deprecated: do not use these names in new code.
 var (
-	DefaultDialer     = &DialerSystem{}
 	NewResolverSystem = newResolverSystem
 	DefaultResolver   = newResolverSystem()
 )

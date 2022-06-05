@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -51,7 +52,7 @@ const requestWithoutDomainName = `{
 func TestWorkingAsIntended(t *testing.T) {
 	handler := Handler{
 		Client:            http.DefaultClient,
-		Dialer:            netxlite.DefaultDialer,
+		Dialer:            netxlite.NewDialerWithStdlibResolver(model.DiscardLogger),
 		MaxAcceptableBody: 1 << 24,
 		Resolver:          netxlite.NewResolverSystem(),
 	}
