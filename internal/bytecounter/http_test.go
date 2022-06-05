@@ -12,11 +12,32 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+func TestMaybeWrapHTTPTransport(t *testing.T) {
+	t.Run("when counter is not nil", func(t *testing.T) {
+		underlying := &mocks.HTTPTransport{}
+		counter := &Counter{}
+		txp := counter.MaybeWrapHTTPTransport(underlying)
+		realTxp := txp.(*httpTransport)
+		if realTxp.HTTPTransport != underlying {
+			t.Fatal("did not wrap correctly")
+		}
+	})
+
+	t.Run("when counter is nil", func(t *testing.T) {
+		underlying := &mocks.HTTPTransport{}
+		var counter *Counter
+		txp := counter.MaybeWrapHTTPTransport(underlying)
+		if txp != underlying {
+			t.Fatal("unexpected result")
+		}
+	})
+}
+
 func TestHTTPTransport(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		t.Run("failure", func(t *testing.T) {
 			counter := New()
-			txp := &HTTPTransport{
+			txp := &httpTransport{
 				Counter: counter,
 				HTTPTransport: &mocks.HTTPTransport{
 					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
@@ -47,7 +68,7 @@ func TestHTTPTransport(t *testing.T) {
 
 		t.Run("success", func(t *testing.T) {
 			counter := New()
-			txp := &HTTPTransport{
+			txp := &httpTransport{
 				Counter: counter,
 				HTTPTransport: &mocks.HTTPTransport{
 					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
@@ -91,7 +112,7 @@ func TestHTTPTransport(t *testing.T) {
 
 		t.Run("success with EOF", func(t *testing.T) {
 			counter := New()
-			txp := &HTTPTransport{
+			txp := &httpTransport{
 				Counter: counter,
 				HTTPTransport: &mocks.HTTPTransport{
 					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
@@ -139,7 +160,7 @@ func TestHTTPTransport(t *testing.T) {
 			},
 		}
 		counter := New()
-		txp := NewHTTPTransport(child, counter)
+		txp := WrapHTTPTransport(child, counter)
 		txp.CloseIdleConnections()
 		if !called {
 			t.Fatal("not called")
@@ -154,7 +175,7 @@ func TestHTTPTransport(t *testing.T) {
 			},
 		}
 		counter := New()
-		txp := NewHTTPTransport(child, counter)
+		txp := WrapHTTPTransport(child, counter)
 		if network := txp.Network(); network != expected {
 			t.Fatal("unexpected network", network)
 		}

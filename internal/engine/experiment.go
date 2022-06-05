@@ -285,10 +285,10 @@ func (e *Experiment) OpenReportContext(ctx context.Context) error {
 	}
 	// use custom client to have proper byte accounting
 	httpClient := &http.Client{
-		Transport: &bytecounter.HTTPTransport{
-			HTTPTransport: e.session.httpDefaultTransport, // proxy is OK
-			Counter:       e.byteCounter,
-		},
+		Transport: bytecounter.WrapHTTPTransport(
+			e.session.httpDefaultTransport, // proxy is OK
+			e.byteCounter,
+		),
 	}
 	client, err := e.session.NewProbeServicesClient(ctx)
 	if err != nil {

@@ -100,21 +100,6 @@ func TestNewWithDialer(t *testing.T) {
 	}
 }
 
-func TestNewWithByteCounter(t *testing.T) {
-	counter := bytecounter.New()
-	txp := NewHTTPTransport(Config{
-		ByteCounter: counter,
-	})
-	bctxp, ok := txp.(*bytecounter.HTTPTransport)
-	if !ok {
-		t.Fatal("not the transport we expected")
-	}
-	if bctxp.Counter != counter {
-		t.Fatal("not the byte counter we expected")
-	}
-	// We are going to trust the underlying transport returned by netxlite
-}
-
 func TestNewWithSaver(t *testing.T) {
 	saver := new(tracex.Saver)
 	txp := NewHTTPTransport(Config{

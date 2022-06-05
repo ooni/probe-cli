@@ -38,7 +38,7 @@ func WithExperimentByteCounter(ctx context.Context, counter *Counter) context.Co
 // MaybeWrapWithContextByteCounters wraps a conn with the byte counters
 // that have previosuly been configured into a context.
 func MaybeWrapWithContextByteCounters(ctx context.Context, conn net.Conn) net.Conn {
-	conn = MaybeWrap(conn, ContextExperimentByteCounter(ctx))
-	conn = MaybeWrap(conn, ContextSessionByteCounter(ctx))
+	conn = MaybeWrapConn(conn, ContextExperimentByteCounter(ctx))
+	conn = MaybeWrapConn(conn, ContextSessionByteCounter(ctx))
 	return conn
 }

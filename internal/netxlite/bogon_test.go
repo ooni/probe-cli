@@ -9,6 +9,25 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
+func TestMaybeWrapWithBogonResolver(t *testing.T) {
+	t.Run("with enabled equal to true", func(t *testing.T) {
+		underlying := &mocks.Resolver{}
+		reso := MaybeWrapWithBogonResolver(true, underlying)
+		bogoreso := reso.(*BogonResolver)
+		if bogoreso.Resolver != underlying {
+			t.Fatal("did not wrap")
+		}
+	})
+
+	t.Run("with enabled equal to false", func(t *testing.T) {
+		underlying := &mocks.Resolver{}
+		reso := MaybeWrapWithBogonResolver(false, underlying)
+		if reso != underlying {
+			t.Fatal("expected unmodified resolver")
+		}
+	})
+}
+
 func TestBogonResolver(t *testing.T) {
 	t.Run("LookupHost", func(t *testing.T) {
 		t.Run("with failure", func(t *testing.T) {

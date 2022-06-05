@@ -14,6 +14,16 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+// MaybeWrapWithBogonResolver wraps the given resolver with a BogonResolver
+// iff the provided boolean flag is true. Otherwise, this factory just returns
+// the provided resolver to the caller without any wrapping.
+func MaybeWrapWithBogonResolver(enabled bool, reso model.Resolver) model.Resolver {
+	if enabled {
+		reso = &BogonResolver{Resolver: reso}
+	}
+	return reso
+}
+
 // BogonResolver is a bogon aware resolver. When a bogon is encountered in
 // a reply, this resolver will return ErrDNSBogon.
 //

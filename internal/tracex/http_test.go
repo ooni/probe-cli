@@ -15,6 +15,32 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 )
 
+func TestMaybeWrapHTTPTransport(t *testing.T) {
+	const snapshotSize = 1024
+
+	t.Run("with non-nil saver", func(t *testing.T) {
+		saver := &Saver{}
+		underlying := &mocks.HTTPTransport{}
+		txp := saver.MaybeWrapHTTPTransport(underlying, snapshotSize)
+		realTxp := txp.(*HTTPTransportSaver)
+		if realTxp.HTTPTransport != underlying {
+			t.Fatal("unexpected result")
+		}
+		if realTxp.SnapshotSize != snapshotSize {
+			t.Fatal("did not set snapshotSize correctly")
+		}
+	})
+
+	t.Run("with nil saver", func(t *testing.T) {
+		var saver *Saver
+		underlying := &mocks.HTTPTransport{}
+		txp := saver.MaybeWrapHTTPTransport(underlying, snapshotSize)
+		if txp != underlying {
+			t.Fatal("unexpected result")
+		}
+	})
+}
+
 func TestHTTPTransportSaver(t *testing.T) {
 
 	t.Run("CloseIdleConnections", func(t *testing.T) {

@@ -67,19 +67,9 @@ func NewResolver(config Config) model.Resolver {
 		model.ValidLoggerOrDefault(config.Logger),
 		config.BaseResolver,
 	)
-	if config.CacheResolutions {
-		r = &CacheResolver{Resolver: r}
-	}
-	if config.DNSCache != nil {
-		cache := &CacheResolver{Resolver: r, ReadOnly: true}
-		for key, values := range config.DNSCache {
-			cache.Set(key, values)
-		}
-		r = cache
-	}
-	if config.BogonIsError {
-		r = &netxlite.BogonResolver{Resolver: r}
-	}
+	r = MaybeWrapWithCachingResolver(config.CacheResolutions, r)
+	r = MaybeWrapWithStaticDNSCache(config.DNSCache, r)
+	r = netxlite.MaybeWrapWithBogonResolver(config.BogonIsError, r)
 	return config.Saver.WrapResolver(r) // WAI when config.Saver==nil
 }
 
@@ -94,9 +84,7 @@ func NewDialer(config Config) model.Dialer {
 		config.ReadWriteSaver.NewReadWriteObserver(),
 	)
 	d = netxlite.NewMaybeProxyDialer(d, config.ProxyURL)
-	if config.ContextByteCounting {
-		d = &bytecounter.ContextAwareDialer{Dialer: d}
-	}
+	d = bytecounter.MaybeWrapWithContextAwareDialer(config.ContextByteCounting, d)
 	return d
 }
 
@@ -143,15 +131,12 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 		TLSDialer:  config.TLSDialer,
 		TLSConfig:  config.TLSConfig,
 	})
-	if config.ByteCounter != nil {
-		txp = &bytecounter.HTTPTransport{
-			Counter: config.ByteCounter, HTTPTransport: txp}
-	}
-	if config.Saver != nil {
-		txp = &tracex.HTTPTransportSaver{
-			HTTPTransport: txp, Saver: config.Saver}
-	}
-	return txp
+	// TODO(bassosimone): I am not super convinced by this code because it
+	// seems we're currently counting bytes twice in some cases. I think we
+	// should review how we're counting bytes and using netx currently.
+	txp = config.ByteCounter.MaybeWrapHTTPTransport(txp)                 // WAI with ByteCounter == nil
+	const defaultSnapshotSize = 0                                        // means: use the default snapsize
+	return config.Saver.MaybeWrapHTTPTransport(txp, defaultSnapshotSize) // WAI with Saver == nil
 }
 
 // httpTransportInfo contains the constructing function as well as the transport name

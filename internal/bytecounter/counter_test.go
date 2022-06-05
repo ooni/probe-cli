@@ -2,7 +2,7 @@ package bytecounter
 
 import "testing"
 
-func TestGood(t *testing.T) {
+func TestCounter(t *testing.T) {
 	counter := New()
 	counter.CountBytesReceived(16384)
 	counter.CountKibiBytesReceived(10)

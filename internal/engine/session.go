@@ -202,7 +202,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 	handshaker := netxlite.NewTLSHandshakerStdlib(sess.logger)
 	tlsDialer := netxlite.NewTLSDialer(dialer, handshaker)
 	txp := netxlite.NewHTTPTransport(sess.logger, dialer, tlsDialer)
-	txp = bytecounter.NewHTTPTransport(txp, sess.byteCounter)
+	txp = bytecounter.WrapHTTPTransport(txp, sess.byteCounter)
 	sess.httpDefaultTransport = txp
 	return sess, nil
 }

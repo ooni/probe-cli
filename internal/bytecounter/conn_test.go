@@ -7,7 +7,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-func TestConnWorksOnSuccess(t *testing.T) {
+func TestWrappedConnWorksOnSuccess(t *testing.T) {
 	counter := New()
 	underlying := &mocks.Conn{
 		MockRead: func(b []byte) (int, error) {
@@ -17,7 +17,7 @@ func TestConnWorksOnSuccess(t *testing.T) {
 			return 4, nil
 		},
 	}
-	conn := &Conn{
+	conn := &wrappedConn{
 		Conn:    underlying,
 		Counter: counter,
 	}
@@ -35,7 +35,7 @@ func TestConnWorksOnSuccess(t *testing.T) {
 	}
 }
 
-func TestConnWorksOnFailure(t *testing.T) {
+func TestWrappedConnWorksOnFailure(t *testing.T) {
 	readError := errors.New("read error")
 	writeError := errors.New("write error")
 	counter := New()
@@ -47,7 +47,7 @@ func TestConnWorksOnFailure(t *testing.T) {
 			return 0, writeError
 		},
 	}
-	conn := &Conn{
+	conn := &wrappedConn{
 		Conn:    underlying,
 		Counter: counter,
 	}
@@ -65,20 +65,20 @@ func TestConnWorksOnFailure(t *testing.T) {
 	}
 }
 
-func TestWrap(t *testing.T) {
+func TestWrapConn(t *testing.T) {
 	conn := &mocks.Conn{}
 	counter := New()
-	nconn := Wrap(conn, counter)
-	_, good := nconn.(*Conn)
+	nconn := WrapConn(conn, counter)
+	_, good := nconn.(*wrappedConn)
 	if !good {
 		t.Fatal("did not wrap")
 	}
 }
 
-func TestMaybeWrap(t *testing.T) {
+func TestMaybeWrapConn(t *testing.T) {
 	t.Run("with nil counter", func(t *testing.T) {
 		conn := &mocks.Conn{}
-		nconn := MaybeWrap(conn, nil)
+		nconn := MaybeWrapConn(conn, nil)
 		_, good := nconn.(*mocks.Conn)
 		if !good {
 			t.Fatal("did not wrap")
@@ -88,8 +88,8 @@ func TestMaybeWrap(t *testing.T) {
 	t.Run("with legit counter", func(t *testing.T) {
 		conn := &mocks.Conn{}
 		counter := New()
-		nconn := MaybeWrap(conn, counter)
-		_, good := nconn.(*Conn)
+		nconn := MaybeWrapConn(conn, counter)
+		_, good := nconn.(*wrappedConn)
 		if !good {
 			t.Fatal("did not wrap")
 		}
