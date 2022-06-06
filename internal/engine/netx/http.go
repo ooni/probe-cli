@@ -14,12 +14,15 @@ import (
 // NewHTTPTransport creates a new HTTPRoundTripper from the given Config.
 func NewHTTPTransport(config Config) model.HTTPTransport {
 	if config.Dialer == nil {
+		// TODO(https://github.com/ooni/probe/issues/2121#issuecomment-1147424810)
 		config.Dialer = NewDialer(config)
 	}
 	if config.TLSDialer == nil {
+		// TODO(https://github.com/ooni/probe/issues/2121#issuecomment-1147424810)
 		config.TLSDialer = NewTLSDialer(config)
 	}
 	if config.QUICDialer == nil {
+		// TODO(https://github.com/ooni/probe/issues/2121#issuecomment-1147424810)
 		config.QUICDialer = NewQUICDialer(config)
 	}
 	tInfo := allTransportsInfo[config.HTTP3Enabled]
@@ -30,7 +33,8 @@ func NewHTTPTransport(config Config) model.HTTPTransport {
 		TLSDialer:  config.TLSDialer,
 		TLSConfig:  config.TLSConfig,
 	})
-	// TODO(bassosimone): I am not super convinced by this code because it
+	// TODO(https://github.com/ooni/probe/issues/2121#issuecomment-1147424810): I am
+	// not super convinced by this code because it
 	// seems we're currently counting bytes twice in some cases. I think we
 	// should review how we're counting bytes and using netx currently.
 	txp = config.ByteCounter.MaybeWrapHTTPTransport(txp)                 // WAI with ByteCounter == nil
@@ -46,7 +50,7 @@ type httpTransportInfo struct {
 
 var allTransportsInfo = map[bool]httpTransportInfo{
 	false: {
-		Factory:       newSystemTransport,
+		Factory:       newHTTPTransport,
 		TransportName: "tcp",
 	},
 	true: {
@@ -56,6 +60,8 @@ var allTransportsInfo = map[bool]httpTransportInfo{
 }
 
 // httpTransportConfig contains configuration for constructing an HTTPTransport.
+//
+// All the fields in this structure MUST be initialized.
 type httpTransportConfig struct {
 	Dialer     model.Dialer
 	Logger     model.Logger
@@ -66,13 +72,10 @@ type httpTransportConfig struct {
 
 // newHTTP3Transport creates a new HTTP3Transport instance.
 func newHTTP3Transport(config httpTransportConfig) model.HTTPTransport {
-	// Rationale for using NoLogger here: previously this code did
-	// not use a logger as well, so it's fine to keep it as is.
 	return netxlite.NewHTTP3Transport(config.Logger, config.QUICDialer, config.TLSConfig)
 }
 
-// newSystemTransport creates a new "system" HTTP transport. That is a transport
-// using the Go standard library with custom dialer and TLS dialer.
-func newSystemTransport(config httpTransportConfig) model.HTTPTransport {
+// newHTTPTransport creates a new "system" HTTP transport.
+func newHTTPTransport(config httpTransportConfig) model.HTTPTransport {
 	return netxlite.NewHTTPTransport(config.Logger, config.Dialer, config.TLSDialer)
 }

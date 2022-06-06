@@ -14,7 +14,8 @@ func NewQUICDialer(config Config) model.QUICDialer {
 	if config.FullResolver == nil {
 		config.FullResolver = NewResolver(config)
 	}
-	// TODO(bassosimone): we should count the bytes consumed by this QUIC dialer
+	// TODO(https://github.com/ooni/probe/issues/2121#issuecomment-1147424810): we
+	// should count the bytes consumed by this QUIC dialer
 	ql := config.ReadWriteSaver.WrapQUICListener(netxlite.NewQUICListener())
 	logger := model.ValidLoggerOrDefault(config.Logger)
 	return netxlite.NewQUICDialerWithResolver(ql, logger, config.FullResolver, config.Saver)

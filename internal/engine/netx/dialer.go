@@ -13,6 +13,7 @@ import (
 // NewDialer creates a new Dialer from the specified config.
 func NewDialer(config Config) model.Dialer {
 	if config.FullResolver == nil {
+		// TODO(https://github.com/ooni/probe/issues/2121#issuecomment-1147424810)
 		config.FullResolver = NewResolver(config)
 	}
 	logger := model.ValidLoggerOrDefault(config.Logger)

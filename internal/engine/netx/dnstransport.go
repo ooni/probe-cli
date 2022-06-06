@@ -6,6 +6,7 @@ package netx
 // TODO(bassosimone): this code should be refactored to return
 // a DNSTransport rather than a model.Resolver. With this in mind,
 // I've named this file dnstransport.go.
+// TODO(https://github.com/ooni/probe/issues/2121#issuecomment-1147424810)
 //
 
 import (
@@ -45,6 +46,8 @@ func NewDNSClient(config Config, URL string) (model.Resolver, error) {
 // with the option to override the default Hostname and SNI.
 func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 	TLSVersion string) (model.Resolver, error) {
+	// We should split this function in smaller and testable units
+	// TODO(https://github.com/ooni/probe/issues/2121#issuecomment-1147424810)
 	switch URL {
 	case "doh://powerdns":
 		URL = "https://doh.powerdns.org/"
@@ -132,6 +135,10 @@ func makeValidEndpoint(URL *url.URL) (string, error) {
 	if _, _, err := net.SplitHostPort(URL.Host); err == nil {
 		return URL.Host, nil
 	}
+
+	// Here we should add a test case for when the host is empty
+	// TODO(https://github.com/ooni/probe/issues/2121#issuecomment-1147424810)
+
 	// The second step is to assume that appending the default port
 	// to a host parsed by url.Parse should be giving us a valid
 	// endpoint. The possibilities in fact are:
