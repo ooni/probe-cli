@@ -15,10 +15,10 @@ import (
 )
 
 // NewDialerWithStdlibResolver is equivalent to creating a system resolver
-// using NewResolverStdlib and then a dialer using NewDialerWithResolver where
+// using NewStdlibResolver and then a dialer using NewDialerWithResolver where
 // the resolver argument is the previously created resolver.
 func NewDialerWithStdlibResolver(dl model.DebugLogger) model.Dialer {
-	reso := NewResolverStdlib(dl)
+	reso := NewStdlibResolver(dl)
 	return NewDialerWithResolver(dl, reso)
 }
 

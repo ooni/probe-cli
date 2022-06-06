@@ -29,7 +29,7 @@ func typecheckForSystemResolver(t *testing.T, resolver model.Resolver, logger mo
 }
 
 func TestNewResolverSystem(t *testing.T) {
-	resolver := NewResolverStdlib(model.DiscardLogger)
+	resolver := NewStdlibResolver(model.DiscardLogger)
 	typecheckForSystemResolver(t, resolver, model.DiscardLogger)
 }
 

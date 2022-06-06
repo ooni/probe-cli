@@ -65,7 +65,7 @@ func NewDNSClientWithOverrides(config Config, URL, hostOverride, SNIOverride,
 	}
 	switch resolverURL.Scheme {
 	case "system":
-		return netxlite.NewResolverSystem(), nil
+		return netxlite.NewUnwrappedStdlibResolver(), nil
 	case "https":
 		config.TLSConfig.NextProtos = []string{"h2", "http/1.1"}
 		httpClient := &http.Client{Transport: NewHTTPTransport(config)}

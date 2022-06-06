@@ -12,7 +12,7 @@ import (
 // NewResolver creates a new resolver from the specified config.
 func NewResolver(config Config) model.Resolver {
 	if config.BaseResolver == nil {
-		config.BaseResolver = netxlite.NewResolverSystem()
+		config.BaseResolver = netxlite.NewUnwrappedStdlibResolver()
 	}
 	r := netxlite.WrapResolver(
 		model.ValidLoggerOrDefault(config.Logger),

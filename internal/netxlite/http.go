@@ -323,7 +323,7 @@ func (c *httpTLSConnWithReadTimeout) Read(b []byte) (int, error) {
 // This factory and NewHTTPTransport are the recommended
 // ways of creating a new HTTPTransport.
 func NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
-	dialer := NewDialerWithResolver(logger, NewResolverStdlib(logger))
+	dialer := NewDialerWithResolver(logger, NewStdlibResolver(logger))
 	tlsDialer := NewTLSDialer(dialer, NewTLSHandshakerStdlib(logger))
 	return NewHTTPTransport(logger, dialer, tlsDialer)
 }
