@@ -212,7 +212,6 @@ var dnsCheckDefaultInput = []string{
 	"dot://doh.appliedprivacy.ne/dns-query",
 	"https://dnsnl.alekberg.net/dns-query",
 	"https://query.hdns.io/dns-query",
-	"dot://query.hdns.io/dns-query",
 	"https://jp.tiar.app/dns-query",
 	"dot://jp.tiar.app/dns-query",
 	"https://dns.dnshome.de/dns-query",
