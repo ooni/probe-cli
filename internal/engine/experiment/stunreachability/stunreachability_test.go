@@ -94,7 +94,9 @@ func TestRunWithInput(t *testing.T) {
 	measurement.Input = model.MeasurementTarget(defaultInput)
 	err := measurer.Run(
 		context.Background(),
-		&mockable.Session{},
+		&mockable.Session{
+			MockableLogger: model.DiscardLogger,
+		},
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
@@ -124,7 +126,9 @@ func TestCancelledContext(t *testing.T) {
 	measurement.Input = model.MeasurementTarget(defaultInput)
 	err := measurer.Run(
 		ctx,
-		&mockable.Session{},
+		&mockable.Session{
+			MockableLogger: model.DiscardLogger,
+		},
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
@@ -164,7 +168,9 @@ func TestNewClientFailure(t *testing.T) {
 	measurement.Input = model.MeasurementTarget(defaultInput)
 	err := measurer.Run(
 		context.Background(),
-		&mockable.Session{},
+		&mockable.Session{
+			MockableLogger: model.DiscardLogger,
+		},
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
@@ -198,7 +204,9 @@ func TestStartFailure(t *testing.T) {
 	measurement.Input = model.MeasurementTarget(defaultInput)
 	err := measurer.Run(
 		context.Background(),
-		&mockable.Session{},
+		&mockable.Session{
+			MockableLogger: model.DiscardLogger,
+		},
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
@@ -236,7 +244,9 @@ func TestReadFailure(t *testing.T) {
 	measurement.Input = model.MeasurementTarget(defaultInput)
 	err := measurer.Run(
 		context.Background(),
-		&mockable.Session{},
+		&mockable.Session{
+			MockableLogger: model.DiscardLogger,
+		},
 		measurement,
 		model.NewPrinterCallbacks(log.Log),
 	)
