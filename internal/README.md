@@ -13,7 +13,7 @@ where `$package` is the name of the package.
 
 ## Tutorials
 
-The [tutorial](tutorial) contains tutorials on writing new experiments,
+The [tutorial](tutorial) package contains tutorials on writing new experiments,
 using measurements libraries, and networking code.
 
 ## Network extensions
