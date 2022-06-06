@@ -14,7 +14,7 @@ import (
 func TestIPLookupGood(t *testing.T) {
 	ip, err := (ipLookupClient{
 		Logger:    log.Log,
-		Resolver:  netxlite.NewResolverStdlib(model.DiscardLogger),
+		Resolver:  netxlite.NewStdlibResolver(model.DiscardLogger),
 		UserAgent: "ooniprobe-engine/0.1.0",
 	}).LookupProbeIP(context.Background())
 	if err != nil {
@@ -30,7 +30,7 @@ func TestIPLookupAllFailed(t *testing.T) {
 	cancel() // immediately cancel to cause Do() to fail
 	ip, err := (ipLookupClient{
 		Logger:    log.Log,
-		Resolver:  netxlite.NewResolverStdlib(model.DiscardLogger),
+		Resolver:  netxlite.NewStdlibResolver(model.DiscardLogger),
 		UserAgent: "ooniprobe-engine/0.1.0",
 	}).LookupProbeIP(ctx)
 	if !errors.Is(err, context.Canceled) {
@@ -45,7 +45,7 @@ func TestIPLookupInvalidIP(t *testing.T) {
 	ctx := context.Background()
 	ip, err := (ipLookupClient{
 		Logger:    log.Log,
-		Resolver:  netxlite.NewResolverStdlib(model.DiscardLogger),
+		Resolver:  netxlite.NewStdlibResolver(model.DiscardLogger),
 		UserAgent: "ooniprobe-engine/0.1.0",
 	}).doWithCustomFunc(ctx, invalidIPLookup)
 	if !errors.Is(err, ErrInvalidIPAddress) {

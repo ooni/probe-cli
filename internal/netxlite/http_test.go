@@ -236,7 +236,7 @@ func TestNewHTTPTransport(t *testing.T) {
 					called.Add(1)
 				},
 			},
-			Resolver: NewResolverStdlib(log.Log),
+			Resolver: NewStdlibResolver(log.Log),
 		}
 		td := NewTLSDialer(d, NewTLSHandshakerStdlib(log.Log))
 		txp := NewHTTPTransport(log.Log, d, td)

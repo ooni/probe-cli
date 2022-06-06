@@ -23,12 +23,12 @@ import (
 // but you are using the "system" resolver instead.
 var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
-// NewResolverStdlib creates a new Resolver by combining WrapResolver
+// NewStdlibResolver creates a new Resolver by combining WrapResolver
 // with an internal "system" resolver type. The list of optional wrappers
 // allow to wrap the underlying getaddrinfo transport. Any nil wrapper
 // will be silently ignored by the code that performs the wrapping.
-func NewResolverStdlib(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
-	return WrapResolver(logger, newResolverSystem(wrappers...))
+func NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
+	return WrapResolver(logger, NewUnwrappedStdlibResolver(wrappers...))
 }
 
 // NewParallelDNSOverHTTPSResolver creates a new DNS over HTTPS resolver
@@ -40,7 +40,10 @@ func NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model
 	return WrapResolver(logger, NewUnwrappedParallelResolver(txp))
 }
 
-func newResolverSystem(wrappers ...model.DNSTransportWrapper) *resolverSystem {
+// NewUnwrappedStdlibResolver returns a new, unwrapped resolver using the standard
+// library (i.e., getaddrinfo if possible and &net.Resolver{} otherwise). As the name
+// implies, this function returns an unwrapped resolver.
+func NewUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Resolver {
 	return &resolverSystem{
 		t: WrapDNSTransport(&dnsOverGetaddrinfoTransport{}, wrappers...),
 	}

@@ -54,7 +54,7 @@ func NewTracingHTTPTransport(logger model.Logger, begin time.Time, db WritableDB
 func NewTracingHTTPTransportWithDefaultSettings(
 	begin time.Time, logger model.Logger, db WritableDB) *HTTPTransportDB {
 	return NewTracingHTTPTransport(logger, begin, db,
-		netxlite.NewResolverStdlib(logger),
+		netxlite.NewStdlibResolver(logger),
 		netxlite.NewDialerWithoutResolver(logger),
 		netxlite.NewTLSHandshakerStdlib(logger),
 		DefaultHTTPMaxBodySnapshotSize)
