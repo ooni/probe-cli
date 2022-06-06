@@ -1,122 +1,13 @@
 package netx
 
 import (
-	"context"
-	"crypto/tls"
 	"errors"
-	"net"
-	"net/http"
 	"strings"
 	"testing"
 
-	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
-	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
-
-func TestNewTLSDialer(t *testing.T) {
-	t.Run("we always have error wrapping", func(t *testing.T) {
-		server := filtering.NewTLSServer(filtering.TLSActionReset)
-		defer server.Close()
-		tdx := NewTLSDialer(Config{})
-		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
-		if err == nil || err.Error() != netxlite.FailureConnectionReset {
-			t.Fatal("unexpected err", err)
-		}
-		if conn != nil {
-			t.Fatal("expected nil conn")
-		}
-	})
-
-	t.Run("we can collect measurements", func(t *testing.T) {
-		server := filtering.NewTLSServer(filtering.TLSActionReset)
-		defer server.Close()
-		saver := &tracex.Saver{}
-		tdx := NewTLSDialer(Config{
-			Saver: saver,
-		})
-		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
-		if err == nil || err.Error() != netxlite.FailureConnectionReset {
-			t.Fatal("unexpected err", err)
-		}
-		if conn != nil {
-			t.Fatal("expected nil conn")
-		}
-		if len(saver.Read()) <= 0 {
-			t.Fatal("did not read any event")
-		}
-	})
-
-	t.Run("we can skip TLS verification", func(t *testing.T) {
-		server := filtering.NewTLSServer(filtering.TLSActionBlockText)
-		defer server.Close()
-		tdx := NewTLSDialer(Config{TLSConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		}})
-		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
-		if err != nil {
-			t.Fatal(err.(*netxlite.ErrWrapper).WrappedErr)
-		}
-		conn.Close()
-	})
-
-	t.Run("we can set the cert pool", func(t *testing.T) {
-		server := filtering.NewTLSServer(filtering.TLSActionBlockText)
-		defer server.Close()
-		tdx := NewTLSDialer(Config{
-			TLSConfig: &tls.Config{
-				RootCAs:    server.CertPool(),
-				ServerName: "dns.google",
-			},
-		})
-		conn, err := tdx.DialTLSContext(context.Background(), "tcp", server.Endpoint())
-		if err != nil {
-			t.Fatal(err)
-		}
-		conn.Close()
-	})
-}
-
-func TestNewWithDialer(t *testing.T) {
-	expected := errors.New("mocked error")
-	dialer := &mocks.Dialer{
-		MockDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
-			return nil, expected
-		},
-	}
-	txp := NewHTTPTransport(Config{
-		Dialer: dialer,
-	})
-	client := &http.Client{Transport: txp}
-	resp, err := client.Get("http://www.google.com")
-	if !errors.Is(err, expected) {
-		t.Fatal("not the error we expected")
-	}
-	if resp != nil {
-		t.Fatal("not the response we expected")
-	}
-}
-
-func TestNewWithSaver(t *testing.T) {
-	saver := new(tracex.Saver)
-	txp := NewHTTPTransport(Config{
-		Saver: saver,
-	})
-	stxptxp, ok := txp.(*tracex.HTTPTransportSaver)
-	if !ok {
-		t.Fatal("not the transport we expected")
-	}
-	if stxptxp.Saver != saver {
-		t.Fatal("not the logger we expected")
-	}
-	if stxptxp.Saver != saver {
-		t.Fatal("not the logger we expected")
-	}
-	// We are going to trust the underlying type returned by netxlite
-}
 
 func TestNewDNSClientInvalidURL(t *testing.T) {
 	dnsclient, err := NewDNSClient(Config{}, "\t\t\t")
@@ -396,68 +287,5 @@ func TestNewDNSCLientWithInvalidTLSVersion(t *testing.T) {
 		Config{}, "dot://8.8.8.8", "", "", "TLSv999")
 	if !errors.Is(err, netxlite.ErrInvalidTLSVersion) {
 		t.Fatalf("not the error we expected: %+v", err)
-	}
-}
-
-func TestSuccess(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	log.SetLevel(log.DebugLevel)
-	counter := bytecounter.New()
-	config := Config{
-		BogonIsError:        true,
-		ByteCounter:         counter,
-		CacheResolutions:    true,
-		ContextByteCounting: true,
-		Logger:              log.Log,
-		ReadWriteSaver:      &tracex.Saver{},
-		Saver:               &tracex.Saver{},
-	}
-	txp := NewHTTPTransport(config)
-	client := &http.Client{Transport: txp}
-	resp, err := client.Get("https://www.google.com")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err = netxlite.ReadAllContext(context.Background(), resp.Body); err != nil {
-		t.Fatal(err)
-	}
-	if err = resp.Body.Close(); err != nil {
-		t.Fatal(err)
-	}
-	if counter.Sent.Load() <= 0 {
-		t.Fatal("no bytes sent?!")
-	}
-	if counter.Received.Load() <= 0 {
-		t.Fatal("no bytes received?!")
-	}
-	if ev := config.ReadWriteSaver.Read(); len(ev) <= 0 {
-		t.Fatal("no R/W events?!")
-	}
-	if ev := config.Saver.Read(); len(ev) <= 0 {
-		t.Fatal("no non-I/O events?!")
-	}
-}
-
-func TestBogonResolutionNotBroken(t *testing.T) {
-	saver := new(tracex.Saver)
-	r := NewResolver(Config{
-		BogonIsError: true,
-		DNSCache: map[string][]string{
-			"www.google.com": {"127.0.0.1"},
-		},
-		Saver:  saver,
-		Logger: log.Log,
-	})
-	addrs, err := r.LookupHost(context.Background(), "www.google.com")
-	if !errors.Is(err, netxlite.ErrDNSBogon) {
-		t.Fatal("not the error we expected")
-	}
-	if err.Error() != netxlite.FailureDNSBogonError {
-		t.Fatal("error not correctly wrapped")
-	}
-	if len(addrs) > 0 {
-		t.Fatal("expected no addresses here")
 	}
 }
