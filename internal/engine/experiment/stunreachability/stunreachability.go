@@ -6,7 +6,6 @@ package stunreachability
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/url"
 	"time"
@@ -109,9 +108,6 @@ func (tk *TestKeys) run(
 	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
 	endpoint string,
 ) error {
-	callbacks.OnProgress(0, fmt.Sprintf("stunreachability: measuring: %s...", endpoint))
-	defer callbacks.OnProgress(
-		1, fmt.Sprintf("stunreachability: measuring: %s... done", endpoint))
 	tk.Endpoint = endpoint
 	saver := new(trace.Saver)
 	begin := time.Now()
@@ -122,6 +118,7 @@ func (tk *TestKeys) run(
 		ReadWriteSaver:      saver,
 		ResolveSaver:        saver,
 	}), endpoint)
+	sess.Logger().Infof("stunreachability: measuring: %s... %s", endpoint, model.ErrorToStringOrOK(err))
 	events := saver.Read()
 	tk.NetworkEvents = append(
 		tk.NetworkEvents, archival.NewNetworkEventsList(begin, events)...,
