@@ -77,7 +77,7 @@ func TestHTTP3Transport(t *testing.T) {
 // see this value as the QUIC dialer, otherwise we will check the
 // type chain of the real dialer;
 //
-// - config is the OPTIONAL TLS config: we'll always check
+// - config is the MANDATORY TLS config: we'll always check
 // whether the TLSClientConfig is equal to this value: passing
 // nil here means we expect to see nil in the object;
 //
