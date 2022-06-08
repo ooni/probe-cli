@@ -1,5 +1,9 @@
 package netxlite
 
+//
+// Optional proxy support
+//
+
 import (
 	"context"
 	"errors"
@@ -10,38 +14,37 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-// MaybeProxyDialer is a dialer that may use a proxy. If the ProxyURL is not configured,
-// this dialer is a passthrough for the next Dialer in chain. Otherwise, it will internally
-// create a SOCKS5 dialer that will connect to the proxy using the underlying Dialer.
-type MaybeProxyDialer struct {
+// proxyDialer is a dialer using a proxy.
+type proxyDialer struct {
 	Dialer   model.Dialer
 	ProxyURL *url.URL
 }
 
-// NewMaybeProxyDialer creates a new NewMaybeProxyDialer.
-func NewMaybeProxyDialer(dialer model.Dialer, proxyURL *url.URL) *MaybeProxyDialer {
-	return &MaybeProxyDialer{
+// MaybeWrapWithProxyDialer returns the original dialer if the proxyURL is nil
+// and otherwise returns a wrapped dialer that implements proxying.
+func MaybeWrapWithProxyDialer(dialer model.Dialer, proxyURL *url.URL) model.Dialer {
+	if proxyURL == nil {
+		return dialer
+	}
+	return &proxyDialer{
 		Dialer:   dialer,
 		ProxyURL: proxyURL,
 	}
 }
 
-var _ model.Dialer = &MaybeProxyDialer{}
+var _ model.Dialer = &proxyDialer{}
 
 // CloseIdleConnections implements Dialer.CloseIdleConnections.
-func (d *MaybeProxyDialer) CloseIdleConnections() {
+func (d *proxyDialer) CloseIdleConnections() {
 	d.Dialer.CloseIdleConnections()
 }
 
-// ErrProxyUnsupportedScheme indicates we don't support a protocol scheme.
+// ErrProxyUnsupportedScheme indicates we don't support the proxy scheme.
 var ErrProxyUnsupportedScheme = errors.New("proxy: unsupported scheme")
 
 // DialContext implements Dialer.DialContext.
-func (d *MaybeProxyDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+func (d *proxyDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	url := d.ProxyURL
-	if url == nil {
-		return d.Dialer.DialContext(ctx, network, address)
-	}
 	if url.Scheme != "socks5" {
 		return nil, ErrProxyUnsupportedScheme
 	}
@@ -50,7 +53,7 @@ func (d *MaybeProxyDialer) DialContext(ctx context.Context, network, address str
 	return d.dial(ctx, child, network, address)
 }
 
-func (d *MaybeProxyDialer) dial(
+func (d *proxyDialer) dial(
 	ctx context.Context, child proxy.Dialer, network, address string) (net.Conn, error) {
 	cd := child.(proxy.ContextDialer) // will work
 	return cd.DialContext(ctx, network, address)

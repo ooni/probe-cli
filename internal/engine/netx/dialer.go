@@ -21,7 +21,7 @@ func NewDialer(config Config) model.Dialer {
 		logger, config.FullResolver, config.Saver.NewConnectObserver(),
 		config.ReadWriteSaver.NewReadWriteObserver(),
 	)
-	d = netxlite.NewMaybeProxyDialer(d, config.ProxyURL)
+	d = netxlite.MaybeWrapWithProxyDialer(d, config.ProxyURL)
 	d = bytecounter.MaybeWrapWithContextAwareDialer(config.ContextByteCounting, d)
 	return d
 }
