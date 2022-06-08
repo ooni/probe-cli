@@ -61,3 +61,12 @@ func NewHTTP3Transport(
 		dialer: dialer,
 	})
 }
+
+// NewHTTP3TransportStdlib creates a new HTTPTransport using http3 that
+// uses standard functionality for everything but the logger.
+func NewHTTP3TransportStdlib(logger model.DebugLogger) model.HTTPTransport {
+	ql := NewQUICListener()
+	reso := NewStdlibResolver(logger)
+	qd := NewQUICDialerWithResolver(ql, logger, reso)
+	return NewHTTP3Transport(logger, qd, nil)
+}

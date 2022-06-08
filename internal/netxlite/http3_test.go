@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/apex/log"
 	"github.com/lucas-clemente/quic-go/http3"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	nlmocks "github.com/ooni/probe-cli/v3/internal/netxlite/mocks"
 )
@@ -63,29 +63,41 @@ func TestHTTP3Transport(t *testing.T) {
 	})
 }
 
+func verifyTypeChainForHTTP3(t *testing.T, txp model.HTTPTransport,
+	underlyingLogger model.DebugLogger, qd model.QUICDialer, config *tls.Config) {
+	logger := txp.(*httpTransportLogger)
+	if logger.Logger != underlyingLogger {
+		t.Fatal("invalid logger")
+	}
+	ew := logger.HTTPTransport.(*httpTransportErrWrapper)
+	h3txp := ew.HTTPTransport.(*http3Transport)
+	if qd != nil && h3txp.dialer != qd {
+		t.Fatal("invalid dialer")
+	}
+	h3 := h3txp.child.(*http3.RoundTripper)
+	if h3.Dial == nil {
+		t.Fatal("invalid Dial")
+	}
+	if !h3.DisableCompression {
+		t.Fatal("invalid DisableCompression")
+	}
+	if h3.TLSClientConfig != config {
+		t.Fatal("invalid TLSClientConfig")
+	}
+}
+
 func TestNewHTTP3Transport(t *testing.T) {
 	t.Run("creates the correct type chain", func(t *testing.T) {
 		qd := &mocks.QUICDialer{}
 		config := &tls.Config{}
-		txp := NewHTTP3Transport(log.Log, qd, config)
-		logger := txp.(*httpTransportLogger)
-		if logger.Logger != log.Log {
-			t.Fatal("invalid logger")
-		}
-		ew := logger.HTTPTransport.(*httpTransportErrWrapper)
-		h3txp := ew.HTTPTransport.(*http3Transport)
-		if h3txp.dialer != qd {
-			t.Fatal("invalid dialer")
-		}
-		h3 := h3txp.child.(*http3.RoundTripper)
-		if h3.Dial == nil {
-			t.Fatal("invalid Dial")
-		}
-		if !h3.DisableCompression {
-			t.Fatal("invalid DisableCompression")
-		}
-		if h3.TLSClientConfig != config {
-			t.Fatal("invalid TLSClientConfig")
-		}
+		txp := NewHTTP3Transport(model.DiscardLogger, qd, config)
+		verifyTypeChainForHTTP3(t, txp, model.DiscardLogger, qd, config)
+	})
+}
+
+func TestNewHTTP3TransportStdlib(t *testing.T) {
+	t.Run("creates the correct type chain", func(t *testing.T) {
+		txp := NewHTTP3TransportStdlib(model.DiscardLogger)
+		verifyTypeChainForHTTP3(t, txp, model.DiscardLogger, nil, nil)
 	})
 }
