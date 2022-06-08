@@ -3,7 +3,6 @@ package webconnectivity
 import (
 	"context"
 	"net"
-	"net/http"
 	"net/url"
 	"sync"
 
@@ -21,7 +20,7 @@ type (
 
 // MeasureConfig contains configuration for Measure.
 type MeasureConfig struct {
-	Client            *http.Client
+	Client            model.HTTPClient
 	Dialer            model.Dialer
 	MaxAcceptableBody int64
 	Resolver          model.Resolver

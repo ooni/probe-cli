@@ -10,32 +10,33 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const maxAcceptableBody = 1 << 24
 
 var (
-	dialer    model.Dialer
-	endpoint  = flag.String("endpoint", ":8080", "Endpoint where to listen")
-	httpx     *http.Client
-	resolver  model.Resolver
-	srvcancel context.CancelFunc
-	srvctx    context.Context
-	srvwg     = new(sync.WaitGroup)
+	dialer     model.Dialer
+	endpoint   = flag.String("endpoint", ":8080", "Endpoint where to listen")
+	httpClient model.HTTPClient
+	resolver   model.Resolver
+	srvcancel  context.CancelFunc
+	srvctx     context.Context
+	srvwg      = new(sync.WaitGroup)
 )
 
 func init() {
 	srvctx, srvcancel = context.WithCancel(context.Background())
-	dialer = netx.NewDialer(netx.Config{Logger: log.Log})
-	txp := netx.NewHTTPTransport(netx.Config{Logger: log.Log})
-	httpx = &http.Client{Transport: txp}
-	// fix: use 8.8.8.8:53/udp so we pin to a specific resolver.
-	var err error
-	resolver, err = netx.NewDNSClient(netx.Config{Logger: log.Log}, "udp://8.8.8.8:53")
-	runtimex.PanicOnError(err, "NewDNSClient failed")
+	// Implementation note: pin to a specific resolver so we don't depend upon the
+	// default resolver configured by the box. Also, use an encrypted transport thus
+	// we're less vulnerable to any policy implemented by the box's provider.
+	resolver = netxlite.NewParallelDNSOverHTTPSResolver(log.Log, "https://8.8.8.8/dns-query")
+	thx := netxlite.NewTLSHandshakerStdlib(log.Log)
+	dialer = netxlite.NewDialerWithResolver(log.Log, resolver)
+	tlsDialer := netxlite.NewTLSDialer(dialer, thx)
+	txp := netxlite.NewHTTPTransport(log.Log, dialer, tlsDialer)
+	httpClient = netxlite.NewHTTPClient(txp)
 }
 
 func shutdown(srv *http.Server) {
@@ -58,7 +59,7 @@ func main() {
 func testableMain() {
 	mux := http.NewServeMux()
 	mux.Handle("/", webconnectivity.Handler{
-		Client:            httpx,
+		Client:            httpClient,
 		Dialer:            dialer,
 		MaxAcceptableBody: maxAcceptableBody,
 		Resolver:          resolver,

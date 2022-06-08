@@ -14,7 +14,7 @@ import (
 
 // Handler implements the Web Connectivity test helper HTTP API.
 type Handler struct {
-	Client            *http.Client
+	Client            model.HTTPClient
 	Dialer            model.Dialer
 	MaxAcceptableBody int64
 	Resolver          model.Resolver
