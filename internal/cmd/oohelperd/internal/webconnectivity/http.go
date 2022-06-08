@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
@@ -18,7 +19,7 @@ type CtrlHTTPResponse = webconnectivity.ControlHTTPRequestResult
 
 // HTTPConfig configures the HTTP check.
 type HTTPConfig struct {
-	Client            *http.Client
+	Client            model.HTTPClient
 	Headers           map[string][]string
 	MaxAcceptableBody int64
 	Out               chan CtrlHTTPResponse
