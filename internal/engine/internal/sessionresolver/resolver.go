@@ -1,27 +1,8 @@
-// Package sessionresolver contains the resolver used by the session. This
-// resolver will try to figure out which is the best service for running
-// domain name resolutions and will consistently use it.
-//
-// Occasionally this code will also swap the best resolver with other
-// ~good resolvers to give them a chance to perform.
-//
-// The penalty/reward mechanism is strongly derivative, so the code should
-// adapt ~quickly to changing network conditions. Occasionally, we will
-// have longer resolutions when trying out other resolvers.
-//
-// At the beginning we randomize the known resolvers so that we do not
-// have any preferential ordering. The initial resolutions may be slower
-// if there are many issues with resolvers.
-//
-// The system resolver is given the lowest priority at the beginning
-// but it will of course be the most popular resolver if anything else
-// is failing us. (We will still occasionally probe for other working
-// resolvers and increase their score on success.)
-//
-// We also support a socks5 proxy. When such a proxy is configured,
-// the code WILL skip http3 resolvers AS WELL AS the system
-// resolver, in an attempt to avoid leaking your queries.
 package sessionresolver
+
+//
+// Implementation of Resolver
+//
 
 import (
 	"context"
@@ -52,11 +33,8 @@ import (
 //
 // You MUST NOT modify public fields of this structure once it
 // has been created, because that MAY lead to data races.
-//
-// You should create an instance of this structure and use
-// it in internal/engine/session.go.
 type Resolver struct {
-	// ByteCounter is the optional byte counter. It will count
+	// ByteCounter is the OPTIONAL byte counter. It will count
 	// the bytes used by any child resolver except for the
 	// system resolver, whose bytes ARE NOT counted. If this
 	// field is not set, then we won't count the bytes.
@@ -67,21 +45,21 @@ type Resolver struct {
 	// working better in your network.
 	KVStore model.KeyValueStore
 
-	// Logger is the optional logger you want us to use
+	// Logger is the OPTIONAL logger you want us to use
 	// to emit log messages.
 	Logger model.Logger
 
-	// ProxyURL is the optional URL of the socks5 proxy
+	// ProxyURL is the OPTIONAL URL of the socks5 proxy
 	// we should be using. If not set, then we WON'T use
 	// any proxy. If set, then we WON'T use any http3
 	// based resolvers and we WON'T use the system resolver.
 	ProxyURL *url.URL
 
-	// codec is the optional codec to use. If not set, we
-	// will construct a default codec.
-	codec codec
+	// jsonCodec is the OPTIONAL JSON Codec to use. If not set,
+	// we will construct a default codec.
+	jsonCodec jsonCodec
 
-	// dnsClientMaker is the optional dnsclientmaker to
+	// dnsClientMaker is the OPTIONAL dnsclientmaker to
 	// use. If not set, we will use the default.
 	dnsClientMaker dnsclientmaker
 
@@ -111,16 +89,17 @@ func (r *Resolver) Stats() string {
 	return fmt.Sprintf("sessionresolver: %s", string(data))
 }
 
-var errNotImplemented = errors.New("not implemented")
+// errLookupNotImplemented indicates a given lookup type is not implemented.
+var errLookupNotImplemented = errors.New("sessionresolver: lookup not implemented")
 
 // LookupHTTPS implements Resolver.LookupHTTPS.
 func (r *Resolver) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
-	return nil, errNotImplemented
+	return nil, errLookupNotImplemented
 }
 
 // LookupNS implements Resolver.LookupNS.
 func (r *Resolver) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
-	return nil, errNotImplemented
+	return nil, errLookupNotImplemented
 }
 
 // ErrLookupHost indicates that LookupHost failed.
@@ -143,7 +122,7 @@ func (r *Resolver) LookupHost(ctx context.Context, hostname string) ([]string, e
 		if err == nil {
 			return addrs, nil
 		}
-		me.Add(&errwrapper{error: err, URL: e.URL})
+		me.Add(newErrWrapper(err, e.URL))
 	}
 	return nil, me
 }

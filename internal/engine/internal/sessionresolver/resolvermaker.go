@@ -1,5 +1,9 @@
 package sessionresolver
 
+//
+// Code for creating a new child resolver
+//
+
 import (
 	"math/rand"
 	"strings"

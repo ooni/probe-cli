@@ -32,8 +32,8 @@ func TestReadStateNothingInKVStore(t *testing.T) {
 func TestReadStateDecodeError(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	reso := &Resolver{
-		KVStore: &kvstore.Memory{},
-		codec:   &FakeCodec{DecodeErr: errMocked},
+		KVStore:   &kvstore.Memory{},
+		jsonCodec: &jsonCodecMockable{DecodeErr: errMocked},
 	}
 	if err := reso.KVStore.Set(storekey, []byte(`[]`)); err != nil {
 		t.Fatal(err)
@@ -130,7 +130,7 @@ func TestWriteStateNoKVStore(t *testing.T) {
 func TestWriteStateCannotSerialize(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	reso := &Resolver{
-		codec: &FakeCodec{
+		jsonCodec: &jsonCodecMockable{
 			EncodeErr: errMocked,
 		},
 		KVStore: &kvstore.Memory{},

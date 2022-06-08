@@ -47,14 +47,14 @@ func TestTypicalUsageWithFailure(t *testing.T) {
 		// means that we need to go down hunting what's the
 		// real error that occurred and use more verbose code.
 		{
-			var errWrapper *errwrapper
-			if !errors.As(child, &errWrapper) {
+			var ew *errWrapper
+			if !errors.As(child, &ew) {
 				t.Fatal("not an instance of errwrapper")
 			}
-			var dnsError *net.DNSError
-			if errors.As(errWrapper.error, &dnsError) {
-				if !strings.HasSuffix(dnsError.Err, "operation was canceled") {
-					t.Fatal("not the error we expected", dnsError.Err)
+			var de *net.DNSError
+			if errors.As(ew, &de) {
+				if !strings.HasSuffix(de.Err, "operation was canceled") {
+					t.Fatal("not the error we expected", de.Err)
 				}
 				continue
 			}
@@ -361,7 +361,7 @@ func TestUnimplementedFunctions(t *testing.T) {
 	t.Run("LookupHTTPS", func(t *testing.T) {
 		r := &Resolver{}
 		https, err := r.LookupHTTPS(context.Background(), "dns.google")
-		if !errors.Is(err, errNotImplemented) {
+		if !errors.Is(err, errLookupNotImplemented) {
 			t.Fatal("unexpected error", err)
 		}
 		if https != nil {
@@ -372,7 +372,7 @@ func TestUnimplementedFunctions(t *testing.T) {
 	t.Run("LookupNS", func(t *testing.T) {
 		r := &Resolver{}
 		ns, err := r.LookupNS(context.Background(), "dns.google")
-		if !errors.Is(err, errNotImplemented) {
+		if !errors.Is(err, errLookupNotImplemented) {
 			t.Fatal("unexpected error", err)
 		}
 		if len(ns) > 0 {

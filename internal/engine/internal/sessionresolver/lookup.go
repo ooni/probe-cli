@@ -1,5 +1,9 @@
 package sessionresolver
 
+//
+// Actual lookup code
+//
+
 import (
 	"context"
 	"time"
