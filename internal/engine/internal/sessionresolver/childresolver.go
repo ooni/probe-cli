@@ -22,27 +22,16 @@ func timeLimitedLookup(ctx context.Context, re model.Resolver, hostname string) 
 	return timeLimitedLookupWithTimeout(ctx, re, hostname, defaultTimeLimitedLookupTimeout)
 }
 
-// timeLimitedLookupResult is the result of a timeLimitedLookup
-type timeLimitedLookupResult struct {
-	addrs []string
-	err   error
-}
-
 // timeLimitedLookupWithTimeout is like timeLimitedLookup but with explicit timeout.
 func timeLimitedLookupWithTimeout(ctx context.Context, re model.Resolver,
 	hostname string, timeout time.Duration) ([]string, error) {
-	outch := make(chan *timeLimitedLookupResult, 1) // buffer
+	// In https://github.com/ooni/probe-cli/pull/807, I modified this code to
+	// run in a background goroutine and this resulted in a data race, see
+	// https://github.com/ooni/probe/issues/2135#issuecomment-1149840579. While
+	// I could not reproduce the data race with in a simple way, the race itself
+	// seems to happen inside the http3 package. For now, I am going to revert
+	// the change causing the race and I'll investigate later.
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	go func() {
-		out := &timeLimitedLookupResult{}
-		out.addrs, out.err = re.LookupHost(ctx, hostname)
-		outch <- out
-	}()
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case out := <-outch:
-		return out.addrs, out.err
-	}
+	return re.LookupHost(ctx, hostname)
 }
