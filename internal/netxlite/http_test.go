@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +16,48 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
+
+func TestNewHTTPTransportWithLoggerResolverAndOptionalProxyURL(t *testing.T) {
+	t.Run("without proxy URL", func(t *testing.T) {
+		logger := &mocks.Logger{}
+		resolver := &mocks.Resolver{}
+		txp := NewHTTPTransportWithLoggerResolverAndOptionalProxyURL(logger, resolver, nil)
+		txpLogger := txp.(*httpTransportLogger)
+		if txpLogger.Logger != logger {
+			t.Fatal("unexpected logger")
+		}
+		txpErrWrapper := txpLogger.HTTPTransport.(*httpTransportErrWrapper)
+		txpCc := txpErrWrapper.HTTPTransport.(*httpTransportConnectionsCloser)
+		dialer := txpCc.Dialer
+		dialerWithReadTimeout := dialer.(*httpDialerWithReadTimeout)
+		dialerLog := dialerWithReadTimeout.Dialer.(*dialerLogger)
+		dialerReso := dialerLog.Dialer.(*dialerResolver)
+		if dialerReso.Resolver != resolver {
+			t.Fatal("invalid resolver")
+		}
+	})
+
+	t.Run("with proxy URL", func(t *testing.T) {
+		URL := &url.URL{}
+		logger := &mocks.Logger{}
+		resolver := &mocks.Resolver{}
+		txp := NewHTTPTransportWithLoggerResolverAndOptionalProxyURL(logger, resolver, URL)
+		txpLogger := txp.(*httpTransportLogger)
+		if txpLogger.Logger != logger {
+			t.Fatal("unexpected logger")
+		}
+		txpErrWrapper := txpLogger.HTTPTransport.(*httpTransportErrWrapper)
+		txpCc := txpErrWrapper.HTTPTransport.(*httpTransportConnectionsCloser)
+		dialer := txpCc.Dialer
+		dialerWithReadTimeout := dialer.(*httpDialerWithReadTimeout)
+		dialerProxy := dialerWithReadTimeout.Dialer.(*proxyDialer)
+		dialerLog := dialerProxy.Dialer.(*dialerLogger)
+		dialerReso := dialerLog.Dialer.(*dialerResolver)
+		if dialerReso.Resolver != resolver {
+			t.Fatal("invalid resolver")
+		}
+	})
+}
 
 func TestNewHTTPTransportWithResolver(t *testing.T) {
 	expected := errors.New("mocked error")
@@ -550,6 +593,28 @@ func TestNewHTTPClientStdlib(t *testing.T) {
 	_, ok = ewc.HTTPClient.(*http.Client)
 	if !ok {
 		t.Fatal("expected *http.Client")
+	}
+}
+
+func TestNewHTTPClientWithResolver(t *testing.T) {
+	reso := &mocks.Resolver{}
+	clnt := NewHTTPClientWithResolver(model.DiscardLogger, reso)
+	ewc, ok := clnt.(*httpClientErrWrapper)
+	if !ok {
+		t.Fatal("expected *httpClientErrWrapper")
+	}
+	httpClnt, ok := ewc.HTTPClient.(*http.Client)
+	if !ok {
+		t.Fatal("expected *http.Client")
+	}
+	txp := httpClnt.Transport.(*httpTransportLogger)
+	txpEwrap := txp.HTTPTransport.(*httpTransportErrWrapper)
+	txpCc := txpEwrap.HTTPTransport.(*httpTransportConnectionsCloser)
+	dialer := txpCc.Dialer.(*httpDialerWithReadTimeout)
+	dialerLogger := dialer.Dialer.(*dialerLogger)
+	dialerReso := dialerLogger.Dialer.(*dialerResolver)
+	if dialerReso.Resolver != reso {
+		t.Fatal("invalid resolver")
 	}
 }
 

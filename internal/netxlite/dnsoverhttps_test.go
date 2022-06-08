@@ -13,6 +13,36 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
+func TestNewDNSOverHTTPSTransport(t *testing.T) {
+	const URL = "https://1.1.1.1/dns-query"
+	clnt := NewHTTPClientStdlib(model.DiscardLogger)
+	txp := NewDNSOverHTTPSTransport(clnt, URL)
+	ew := txp.(*dnsTransportErrWrapper)
+	https := ew.DNSTransport.(*DNSOverHTTPSTransport)
+	if https.Client != clnt {
+		t.Fatal("invalid client")
+	}
+	if https.URL != URL {
+		t.Fatal("invalid URL")
+	}
+}
+
+func TestNewDNSOverHTTPSTransportWithHTTPTransport(t *testing.T) {
+	const URL = "https://1.1.1.1/dns-query"
+	httpTxp := NewHTTPTransportStdlib(model.DiscardLogger)
+	txp := NewDNSOverHTTPSTransportWithHTTPTransport(httpTxp, URL)
+	ew := txp.(*dnsTransportErrWrapper)
+	https := ew.DNSTransport.(*DNSOverHTTPSTransport)
+	ewClient := https.Client.(*httpClientErrWrapper)
+	clnt := ewClient.HTTPClient.(*http.Client)
+	if clnt.Transport != httpTxp {
+		t.Fatal("invalid transport")
+	}
+	if https.URL != URL {
+		t.Fatal("invalid URL")
+	}
+}
+
 func TestDNSOverHTTPSTransport(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		t.Run("query serialization failure", func(t *testing.T) {

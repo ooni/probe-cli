@@ -43,6 +43,18 @@ func NewUnwrappedDNSOverHTTPSTransport(client model.HTTPClient, URL string) *DNS
 	return NewUnwrappedDNSOverHTTPSTransportWithHostOverride(client, URL, "")
 }
 
+// NewDNSOverHTTPSTransport is like NewUnwrappedDNSOverHTTPSTransport but
+// returns an already wrapped DNSTransport.
+func NewDNSOverHTTPSTransport(client model.HTTPClient, URL string) model.DNSTransport {
+	return WrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(client, URL))
+}
+
+// NewDNSOverHTTPSTransportWithHTTPTransport is like NewDNSOverHTTPSTransport
+// but takes in input an HTTPTransport rather than an HTTPClient.
+func NewDNSOverHTTPSTransportWithHTTPTransport(txp model.HTTPTransport, URL string) model.DNSTransport {
+	return WrapDNSTransport(NewUnwrappedDNSOverHTTPSTransport(NewHTTPClient(txp), URL))
+}
+
 // NewUnwrappedDNSOverHTTPSTransportWithHostOverride creates a new DNSOverHTTPSTransport
 // with the given Host header override. This instance has not been wrapped yet.
 func NewUnwrappedDNSOverHTTPSTransportWithHostOverride(
