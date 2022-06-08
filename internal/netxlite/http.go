@@ -355,6 +355,12 @@ func NewHTTPClientStdlib(logger model.DebugLogger) model.HTTPClient {
 	return NewHTTPClient(txp)
 }
 
+// NewHTTPClientWithResolver creates a new HTTPTransport using the
+// given resolver and then from that builds an HTTPClient.
+func NewHTTPClientWithResolver(logger model.Logger, reso model.Resolver) model.HTTPClient {
+	return NewHTTPClient(NewHTTPTransportWithResolver(logger, reso))
+}
+
 // NewHTTPClient creates a new, wrapped HTTPClient using the given transport.
 func NewHTTPClient(txp model.HTTPTransport) model.HTTPClient {
 	return WrapHTTPClient(&http.Client{Transport: txp})

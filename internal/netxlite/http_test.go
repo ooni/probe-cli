@@ -596,6 +596,28 @@ func TestNewHTTPClientStdlib(t *testing.T) {
 	}
 }
 
+func TestNewHTTPClientWithResolver(t *testing.T) {
+	reso := &mocks.Resolver{}
+	clnt := NewHTTPClientWithResolver(model.DiscardLogger, reso)
+	ewc, ok := clnt.(*httpClientErrWrapper)
+	if !ok {
+		t.Fatal("expected *httpClientErrWrapper")
+	}
+	httpClnt, ok := ewc.HTTPClient.(*http.Client)
+	if !ok {
+		t.Fatal("expected *http.Client")
+	}
+	txp := httpClnt.Transport.(*httpTransportLogger)
+	txpEwrap := txp.HTTPTransport.(*httpTransportErrWrapper)
+	txpCc := txpEwrap.HTTPTransport.(*httpTransportConnectionsCloser)
+	dialer := txpCc.Dialer.(*httpDialerWithReadTimeout)
+	dialerLogger := dialer.Dialer.(*dialerLogger)
+	dialerReso := dialerLogger.Dialer.(*dialerResolver)
+	if dialerReso.Resolver != reso {
+		t.Fatal("invalid resolver")
+	}
+}
+
 func TestWrapHTTPClient(t *testing.T) {
 	origClient := &http.Client{}
 	wrapped := WrapHTTPClient(origClient)
