@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -64,17 +63,23 @@ func init() {
 	}
 }
 
-// byteCounter returns the configured byteCounter or a default
-func (r *Resolver) byteCounter() *bytecounter.Counter {
-	if r.ByteCounter != nil {
-		return r.ByteCounter
-	}
-	return bytecounter.New()
-}
-
 // logger returns the configured logger or a default
 func (r *Resolver) logger() model.Logger {
 	return model.ValidLoggerOrDefault(r.Logger)
+}
+
+// newChildResolver creates a new child model.Resolver.
+func (r *Resolver) newChildResolver(h3 bool, URL string) (model.Resolver, error) {
+	if r.newChildResolverFn != nil {
+		return r.newChildResolverFn(h3, URL)
+	}
+	return netx.NewDNSClient(netx.Config{
+		BogonIsError: true,
+		ByteCounter:  r.ByteCounter, // nil is handled by netx
+		HTTP3Enabled: h3,
+		Logger:       r.logger(),
+		ProxyURL:     r.ProxyURL,
+	}, URL)
 }
 
 // newresolver creates a new resolver with the given config and URL. This is
@@ -84,13 +89,7 @@ func (r *Resolver) newresolver(URL string) (model.Resolver, error) {
 	if h3 {
 		URL = strings.Replace(URL, "http3://", "https://", 1)
 	}
-	return r.clientmaker().Make(netx.Config{
-		BogonIsError: true,
-		ByteCounter:  r.byteCounter(),
-		HTTP3Enabled: h3,
-		Logger:       r.logger(),
-		ProxyURL:     r.ProxyURL,
-	}, URL)
+	return r.newChildResolver(h3, URL)
 }
 
 // getresolver returns a resolver with the given URL. This function caches

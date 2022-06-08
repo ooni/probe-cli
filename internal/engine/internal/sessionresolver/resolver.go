@@ -59,12 +59,12 @@ type Resolver struct {
 	// we will construct a default codec.
 	jsonCodec jsonCodec
 
-	// dnsClientMaker is the OPTIONAL dnsclientmaker to
-	// use. If not set, we will use the default.
-	dnsClientMaker dnsclientmaker
-
 	// mu provides synchronisation of internal fields.
 	mu sync.Mutex
+
+	// newChildResolverFn is the OPTIONAL function to override
+	// the construction of a new resolver in unit tests
+	newChildResolverFn func(h3 bool, URL string) (model.Resolver, error)
 
 	// once ensures that CloseIdleConnection is
 	// run just once.
