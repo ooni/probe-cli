@@ -106,8 +106,8 @@ func (txp *httpTransportConnectionsCloser) CloseIdleConnections() {
 	txp.TLSDialer.CloseIdleConnections()
 }
 
-// NewHTTPTransportWithLoggerResolverAndOptionalProxyURL creates HTTP transport using the
-// given logger and resolver and an optional proxy URL.
+// NewHTTPTransportWithLoggerResolverAndOptionalProxyURL creates an HTTPTransport using
+// the given logger and resolver and an optional proxy URL.
 //
 // Arguments:
 //

@@ -63,8 +63,30 @@ func TestHTTP3Transport(t *testing.T) {
 	})
 }
 
+// verifyTypeChainForHTTP3 helps to verify type chains for HTTP3.
+//
+// Arguments:
+//
+// - t is the MANDATORY testing ref;
+//
+// - txp is the MANDATORY HTTP transport to verify;
+//
+// - underlyingLogger is the MANDATORY logger we expect to find;
+//
+// - qd is the OPTIONAL QUIC dialer: if not nil, we expect to
+// see this value as the QUIC dialer, otherwise we will check the
+// type chain of the real dialer;
+//
+// - config is the OPTIONAL TLS config: we'll always check
+// whether the TLSClientConfig is equal to this value: passing
+// nil here means we expect to see nil in the object;
+//
+// - reso is the OPTIONAL resolver: if present and the qd is
+// nil, we'll unwrap the QUIC dialer and check whether we have
+// this resolver as the underlying resolver.
 func verifyTypeChainForHTTP3(t *testing.T, txp model.HTTPTransport,
-	underlyingLogger model.DebugLogger, qd model.QUICDialer, config *tls.Config) {
+	underlyingLogger model.DebugLogger, qd model.QUICDialer,
+	config *tls.Config, reso model.Resolver) {
 	logger := txp.(*httpTransportLogger)
 	if logger.Logger != underlyingLogger {
 		t.Fatal("invalid logger")
@@ -73,6 +95,13 @@ func verifyTypeChainForHTTP3(t *testing.T, txp model.HTTPTransport,
 	h3txp := ew.HTTPTransport.(*http3Transport)
 	if qd != nil && h3txp.dialer != qd {
 		t.Fatal("invalid dialer")
+	}
+	if qd == nil {
+		qdlog := h3txp.dialer.(*quicDialerLogger)
+		qdr := qdlog.Dialer.(*quicDialerResolver)
+		if reso != nil && qdr.Resolver != reso {
+			t.Fatal("invalid resolver")
+		}
 	}
 	h3 := h3txp.child.(*http3.RoundTripper)
 	if h3.Dial == nil {
@@ -91,13 +120,21 @@ func TestNewHTTP3Transport(t *testing.T) {
 		qd := &mocks.QUICDialer{}
 		config := &tls.Config{}
 		txp := NewHTTP3Transport(model.DiscardLogger, qd, config)
-		verifyTypeChainForHTTP3(t, txp, model.DiscardLogger, qd, config)
+		verifyTypeChainForHTTP3(t, txp, model.DiscardLogger, qd, config, nil)
 	})
 }
 
 func TestNewHTTP3TransportStdlib(t *testing.T) {
 	t.Run("creates the correct type chain", func(t *testing.T) {
 		txp := NewHTTP3TransportStdlib(model.DiscardLogger)
-		verifyTypeChainForHTTP3(t, txp, model.DiscardLogger, nil, nil)
+		verifyTypeChainForHTTP3(t, txp, model.DiscardLogger, nil, nil, nil)
+	})
+}
+
+func TestNewHTTP3TransportWithResolver(t *testing.T) {
+	t.Run("creates the correct type chain", func(t *testing.T) {
+		reso := &mocks.Resolver{}
+		txp := NewHTTP3TransportWithResolver(model.DiscardLogger, reso)
+		verifyTypeChainForHTTP3(t, txp, model.DiscardLogger, nil, nil, reso)
 	})
 }
