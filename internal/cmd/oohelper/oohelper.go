@@ -7,40 +7,33 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"net/http"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/cmd/oohelper/internal"
-	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 var (
 	ctx, cancel = context.WithCancel(context.Background())
 	debug       = flag.Bool("debug", false, "Toggle debug mode")
-	httpClient  *http.Client
+	httpClient  model.HTTPClient
 	resolver    model.Resolver
 	server      = flag.String("server", "", "URL of the test helper")
 	target      = flag.String("target", "", "Target URL for the test helper")
 )
 
-func newhttpclient() *http.Client {
+func init() {
 	// Use a nonstandard resolver, which is enough to work around the
 	// puzzling https://github.com/ooni/probe/issues/1409 issue.
-	childResolver, err := netx.NewDNSClient(
-		netx.Config{Logger: log.Log}, "dot://8.8.8.8:853")
-	runtimex.PanicOnError(err, "netx.NewDNSClient should not fail here")
-	txp := netx.NewHTTPTransport(netx.Config{
-		BaseResolver: childResolver,
-		Logger:       log.Log,
-	})
-	return &http.Client{Transport: txp}
-}
-
-func init() {
-	httpClient = newhttpclient()
-	resolver = netx.NewResolver(netx.Config{Logger: log.Log})
+	const resolverURL = "https://8.8.8.8/dns-query"
+	resolver = netxlite.NewParallelDNSOverHTTPSResolver(log.Log, resolverURL)
+	thx := netxlite.NewTLSHandshakerStdlib(log.Log)
+	dialer := netxlite.NewDialerWithResolver(log.Log, resolver)
+	tlsDialer := netxlite.NewTLSDialer(dialer, thx)
+	txp := netxlite.NewHTTPTransport(log.Log, dialer, tlsDialer)
+	httpClient = netxlite.NewHTTPClient(txp)
 }
 
 func main() {
