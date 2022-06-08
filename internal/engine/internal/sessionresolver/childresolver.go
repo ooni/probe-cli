@@ -3,25 +3,46 @@ package sessionresolver
 import (
 	"context"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// childResolver is the DNS client that this package uses
-// to perform individual domain name resolutions.
-type childResolver interface {
-	// LookupHost performs a DNS lookup.
-	LookupHost(ctx context.Context, domain string) ([]string, error)
-
-	// CloseIdleConnections closes idle connections.
-	CloseIdleConnections()
-}
+// defaultTimeLimitedLookupTimeout is the default timeout the code should
+// pass to the timeLimitedLookup function.
+//
+// This algorithm is similar to Firefox using TRR2 mode. See:
+// https://wiki.mozilla.org/Trusted_Recursive_Resolver#DNS-over-HTTPS_Prefs_in_Firefox
+//
+// We use a higher timeout than Firefox's timeout (1.5s) to be on the safe side
+// and therefore see to use DoH more often.
+const defaultTimeLimitedLookupTimeout = 4 * time.Second
 
 // timeLimitedLookup performs a time-limited lookup using the given re.
-func (r *Resolver) timeLimitedLookup(ctx context.Context, re childResolver, hostname string) ([]string, error) {
-	// Algorithm similar to Firefox TRR2 mode. See:
-	// https://wiki.mozilla.org/Trusted_Recursive_Resolver#DNS-over-HTTPS_Prefs_in_Firefox
-	// We use a higher timeout than Firefox's timeout (1.5s) to be on the safe side
-	// and therefore see to use DoH more often.
-	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+func timeLimitedLookup(ctx context.Context, re model.Resolver, hostname string) ([]string, error) {
+	return timeLimitedLookupWithTimeout(ctx, re, hostname, defaultTimeLimitedLookupTimeout)
+}
+
+// timeLimitedLookupResult is the result of a timeLimitedLookup
+type timeLimitedLookupResult struct {
+	addrs []string
+	err   error
+}
+
+// timeLimitedLookupWithTimeout is like timeLimitedLookup but with explicit timeout.
+func timeLimitedLookupWithTimeout(ctx context.Context, re model.Resolver,
+	hostname string, timeout time.Duration) ([]string, error) {
+	outch := make(chan *timeLimitedLookupResult, 1) // buffer
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	return re.LookupHost(ctx, hostname)
+	go func() {
+		out := &timeLimitedLookupResult{}
+		out.addrs, out.err = re.LookupHost(ctx, hostname)
+		outch <- out
+	}()
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case out := <-outch:
+		return out.addrs, out.err
+	}
 }

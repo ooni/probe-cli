@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/multierror"
 )
 
@@ -85,7 +86,11 @@ func TestTypicalUsageWithSuccess(t *testing.T) {
 	reso := &Resolver{
 		KVStore: &kvstore.Memory{},
 		dnsClientMaker: &fakeDNSClientMaker{
-			reso: &FakeResolver{Data: expected},
+			reso: &mocks.Resolver{
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return expected, nil
+				},
+			},
 		},
 	}
 	addrs, err := reso.LookupHost(ctx, "dns.google")
@@ -117,7 +122,11 @@ func TestLittleLLookupHostWithSuccess(t *testing.T) {
 	expected := []string{"8.8.8.8", "8.8.4.4"}
 	reso := &Resolver{
 		dnsClientMaker: &fakeDNSClientMaker{
-			reso: &FakeResolver{Data: expected},
+			reso: &mocks.Resolver{
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return expected, nil
+				},
+			},
 		},
 	}
 	ctx := context.Background()
@@ -138,7 +147,11 @@ func TestLittleLLookupHostWithFailure(t *testing.T) {
 	errMocked := errors.New("mocked error")
 	reso := &Resolver{
 		dnsClientMaker: &fakeDNSClientMaker{
-			reso: &FakeResolver{Err: errMocked},
+			reso: &mocks.Resolver{
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return nil, errMocked
+				},
+			},
 		},
 	}
 	ctx := context.Background()

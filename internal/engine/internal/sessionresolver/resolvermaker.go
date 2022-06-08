@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -71,15 +70,12 @@ func (r *Resolver) byteCounter() *bytecounter.Counter {
 
 // logger returns the configured logger or a default
 func (r *Resolver) logger() model.Logger {
-	if r.Logger != nil {
-		return r.Logger
-	}
-	return log.Log
+	return model.ValidLoggerOrDefault(r.Logger)
 }
 
 // newresolver creates a new resolver with the given config and URL. This is
 // where we expand http3 to https and set the h3 options.
-func (r *Resolver) newresolver(URL string) (childResolver, error) {
+func (r *Resolver) newresolver(URL string) (model.Resolver, error) {
 	h3 := strings.HasPrefix(URL, "http3://")
 	if h3 {
 		URL = strings.Replace(URL, "http3://", "https://", 1)
@@ -95,7 +91,7 @@ func (r *Resolver) newresolver(URL string) (childResolver, error) {
 
 // getresolver returns a resolver with the given URL. This function caches
 // already allocated resolvers so we only allocate them once.
-func (r *Resolver) getresolver(URL string) (childResolver, error) {
+func (r *Resolver) getresolver(URL string) (model.Resolver, error) {
 	defer r.mu.Unlock()
 	r.mu.Lock()
 	if re, found := r.res[URL]; found {
@@ -106,7 +102,7 @@ func (r *Resolver) getresolver(URL string) (childResolver, error) {
 		return nil, err // config err?
 	}
 	if r.res == nil {
-		r.res = make(map[string]childResolver)
+		r.res = make(map[string]model.Resolver)
 	}
 	r.res[URL] = re
 	return re, nil

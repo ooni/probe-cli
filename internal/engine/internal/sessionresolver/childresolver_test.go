@@ -8,51 +8,35 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-type FakeResolver struct {
-	Closed bool
-	Data   []string
-	Err    error
-	Sleep  time.Duration
-}
-
-func (r *FakeResolver) LookupHost(ctx context.Context, hostname string) ([]string, error) {
-	select {
-	case <-time.After(r.Sleep):
-		return r.Data, r.Err
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-}
-
-func (r *FakeResolver) CloseIdleConnections() {
-	r.Closed = true
-}
-
 func TestTimeLimitedLookupSuccess(t *testing.T) {
-	reso := &Resolver{}
-	re := &FakeResolver{
-		Data: []string{"8.8.8.8", "8.8.4.4"},
+	expected := []string{"8.8.8.8", "8.8.4.4"}
+	re := &mocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return expected, nil
+		},
 	}
 	ctx := context.Background()
-	out, err := reso.timeLimitedLookup(ctx, re, "dns.google")
+	out, err := timeLimitedLookup(ctx, re, "dns.google")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(re.Data, out); diff != "" {
+	if diff := cmp.Diff(expected, out); diff != "" {
 		t.Fatal(diff)
 	}
 }
 
 func TestTimeLimitedLookupFailure(t *testing.T) {
-	reso := &Resolver{}
-	re := &FakeResolver{
-		Err: io.EOF,
+	re := &mocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			return nil, io.EOF
+		},
 	}
 	ctx := context.Background()
-	out, err := reso.timeLimitedLookup(ctx, re, "dns.google")
-	if !errors.Is(err, re.Err) {
+	out, err := timeLimitedLookup(ctx, re, "dns.google")
+	if !errors.Is(err, io.EOF) {
 		t.Fatal("not the error we expected", err)
 	}
 	if out != nil {
@@ -61,20 +45,23 @@ func TestTimeLimitedLookupFailure(t *testing.T) {
 }
 
 func TestTimeLimitedLookupWillTimeout(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	reso := &Resolver{}
-	re := &FakeResolver{
-		Err:   io.EOF,
-		Sleep: 20 * time.Second,
+	done := make(chan bool)
+	block := make(chan bool)
+	re := &mocks.Resolver{
+		MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+			defer close(done)
+			<-block
+			return nil, io.EOF
+		},
 	}
 	ctx := context.Background()
-	out, err := reso.timeLimitedLookup(ctx, re, "dns.google")
+	out, err := timeLimitedLookupWithTimeout(ctx, re, "dns.google", 10*time.Millisecond)
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal("not the error we expected", err)
 	}
 	if out != nil {
 		t.Fatal("expected nil here")
 	}
+	close(block)
+	<-done
 }
