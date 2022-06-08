@@ -32,10 +32,7 @@ func init() {
 	// default resolver configured by the box. Also, use an encrypted transport thus
 	// we're less vulnerable to any policy implemented by the box's provider.
 	resolver = netxlite.NewParallelDNSOverHTTPSResolver(log.Log, "https://8.8.8.8/dns-query")
-	thx := netxlite.NewTLSHandshakerStdlib(log.Log)
-	dialer = netxlite.NewDialerWithResolver(log.Log, resolver)
-	tlsDialer := netxlite.NewTLSDialer(dialer, thx)
-	txp := netxlite.NewHTTPTransport(log.Log, dialer, tlsDialer)
+	txp := netxlite.NewHTTPTransportWithResolver(log.Log, resolver)
 	httpClient = netxlite.NewHTTPClient(txp)
 }
 
