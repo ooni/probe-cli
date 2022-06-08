@@ -332,6 +332,11 @@ func NewHTTPTransportStdlib(logger model.DebugLogger) model.HTTPTransport {
 // standard library for TLS and DNS resolutions.
 func NewHTTPClientStdlib(logger model.DebugLogger) model.HTTPClient {
 	txp := NewHTTPTransportStdlib(logger)
+	return NewHTTPClient(txp)
+}
+
+// NewHTTPClient creates a new, wrapped HTTPClient using the given transport.
+func NewHTTPClient(txp model.HTTPTransport) model.HTTPClient {
 	return WrapHTTPClient(&http.Client{Transport: txp})
 }
 

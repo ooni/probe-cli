@@ -45,7 +45,7 @@ type Resolver interface {
 // OOClient is a client for the OONI Web Connectivity test helper.
 type OOClient struct {
 	// HTTPClient is the HTTP client to use.
-	HTTPClient *http.Client
+	HTTPClient model.HTTPClient
 
 	// Resolver is the resolver to user.
 	Resolver Resolver
