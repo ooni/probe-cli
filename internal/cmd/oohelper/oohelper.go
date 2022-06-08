@@ -29,10 +29,7 @@ func init() {
 	// puzzling https://github.com/ooni/probe/issues/1409 issue.
 	const resolverURL = "https://8.8.8.8/dns-query"
 	resolver = netxlite.NewParallelDNSOverHTTPSResolver(log.Log, resolverURL)
-	thx := netxlite.NewTLSHandshakerStdlib(log.Log)
-	dialer := netxlite.NewDialerWithResolver(log.Log, resolver)
-	tlsDialer := netxlite.NewTLSDialer(dialer, thx)
-	txp := netxlite.NewHTTPTransport(log.Log, dialer, tlsDialer)
+	txp := netxlite.NewHTTPTransportWithResolver(log.Log, resolver)
 	httpClient = netxlite.NewHTTPClient(txp)
 }
 
