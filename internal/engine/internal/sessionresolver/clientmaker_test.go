@@ -7,16 +7,17 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 type fakeDNSClientMaker struct {
-	reso        childResolver
+	reso        model.Resolver
 	err         error
 	savedConfig netx.Config
 	savedURL    string
 }
 
-func (c *fakeDNSClientMaker) Make(config netx.Config, URL string) (childResolver, error) {
+func (c *fakeDNSClientMaker) Make(config netx.Config, URL string) (model.Resolver, error) {
 	c.savedConfig = config
 	c.savedURL = URL
 	return c.reso, c.err

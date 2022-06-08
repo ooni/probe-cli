@@ -95,7 +95,7 @@ type Resolver struct {
 	// res maps a URL to a child resolver. We will
 	// construct child resolvers just once and we
 	// will track them into this field.
-	res map[string]childResolver
+	res map[string]model.Resolver
 }
 
 // CloseIdleConnections closes the idle connections, if any. This
@@ -169,7 +169,7 @@ func (r *Resolver) lookupHost(ctx context.Context, ri *resolverinfo, hostname st
 		ri.Score = 0 // this is a hard error
 		return nil, err
 	}
-	addrs, err := r.timeLimitedLookup(ctx, re, hostname)
+	addrs, err := timeLimitedLookup(ctx, re, hostname)
 	if err == nil {
 		r.logger().Infof("sessionresolver: %s... %v", ri.URL, model.ErrorToStringOrOK(nil))
 		ri.Score = ewma*1.0 + (1-ewma)*ri.Score // increase score
