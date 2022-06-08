@@ -28,7 +28,7 @@ func timeLimitedLookupWithTimeout(ctx context.Context, re model.Resolver,
 	// In https://github.com/ooni/probe-cli/pull/807, I modified this code to
 	// run in a background goroutine and this resulted in a data race, see
 	// https://github.com/ooni/probe/issues/2135#issuecomment-1149840579. While
-	// I could not reproduce the data race with in a simple way, the race itself
+	// I could not reproduce the data race in a simple way, the race itself
 	// seems to happen inside the http3 package. For now, I am going to revert
 	// the change causing the race and I'll investigate later.
 	ctx, cancel := context.WithTimeout(ctx, timeout)
