@@ -1,5 +1,9 @@
 package sessionresolver
 
+//
+// Code for mocking the creation of a client.
+//
+
 import (
 	"github.com/ooni/probe-cli/v3/internal/engine/netx"
 	"github.com/ooni/probe-cli/v3/internal/model"

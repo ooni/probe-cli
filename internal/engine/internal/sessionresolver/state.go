@@ -1,5 +1,9 @@
 package sessionresolver
 
+//
+// Persistent on-disk state
+//
+
 import (
 	"errors"
 	"sort"
@@ -31,7 +35,7 @@ func (r *Resolver) readstate() ([]*resolverinfo, error) {
 		return nil, err
 	}
 	var ri []*resolverinfo
-	if err := r.getCodec().Decode(data, &ri); err != nil {
+	if err := r.codec().Decode(data, &ri); err != nil {
 		return nil, err
 	}
 	return ri, nil
@@ -89,12 +93,12 @@ func (r *Resolver) readstatedefault() []*resolverinfo {
 	return ri
 }
 
-// writestate writes the state on the kvstore.
+// writestate writes the state to the kvstore.
 func (r *Resolver) writestate(ri []*resolverinfo) error {
 	if r.KVStore == nil {
 		return ErrNilKVStore
 	}
-	data, err := r.getCodec().Encode(ri)
+	data, err := r.codec().Encode(ri)
 	if err != nil {
 		return err
 	}
