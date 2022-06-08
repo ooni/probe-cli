@@ -198,7 +198,7 @@ func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
 		ProxyURL:    proxyURL,
 	}
 	dialer := netxlite.NewDialerWithResolver(sess.logger, sess.resolver)
-	dialer = netxlite.NewMaybeProxyDialer(dialer, proxyURL)
+	dialer = netxlite.MaybeWrapWithProxyDialer(dialer, proxyURL)
 	handshaker := netxlite.NewTLSHandshakerStdlib(sess.logger)
 	tlsDialer := netxlite.NewTLSDialer(dialer, handshaker)
 	txp := netxlite.NewHTTPTransport(sess.logger, dialer, tlsDialer)
