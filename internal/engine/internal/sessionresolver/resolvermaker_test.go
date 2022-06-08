@@ -1,7 +1,6 @@
 package sessionresolver
 
 import (
-	"errors"
 	"strings"
 	"testing"
 
@@ -9,14 +8,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
-
-func TestDefaultByteCounter(t *testing.T) {
-	reso := &Resolver{}
-	bc := reso.byteCounter()
-	if bc == nil {
-		t.Fatal("expected non-nil byte counter")
-	}
-}
 
 func TestDefaultLogger(t *testing.T) {
 	t.Run("when using a different logger", func(t *testing.T) {
@@ -46,8 +37,18 @@ func TestGetResolverHTTPSStandard(t *testing.T) {
 			closed = true
 		},
 	}
-	cmk := &fakeDNSClientMaker{reso: re}
-	reso := &Resolver{dnsClientMaker: cmk, ByteCounter: bc}
+	var (
+		savedURL string
+		savedH3  bool
+	)
+	reso := &Resolver{
+		ByteCounter: bc,
+		newChildResolverFn: func(h3 bool, URL string) (model.Resolver, error) {
+			savedURL = URL
+			savedH3 = h3
+			return re, nil
+		},
+	}
 	out, err := reso.getresolver(URL)
 	if err != nil {
 		t.Fatal(err)
@@ -66,20 +67,11 @@ func TestGetResolverHTTPSStandard(t *testing.T) {
 	if closed != true {
 		t.Fatal("was not closed")
 	}
-	if cmk.savedURL != URL {
+	if savedURL != URL {
 		t.Fatal("not the URL we expected")
 	}
-	if cmk.savedConfig.ByteCounter != bc {
-		t.Fatal("unexpected ByteCounter")
-	}
-	if cmk.savedConfig.BogonIsError != true {
-		t.Fatal("unexpected BogonIsError")
-	}
-	if cmk.savedConfig.HTTP3Enabled != false {
-		t.Fatal("unexpected HTTP3Enabled")
-	}
-	if cmk.savedConfig.Logger != model.DiscardLogger {
-		t.Fatal("unexpected Log")
+	if savedH3 {
+		t.Fatal("expected false")
 	}
 }
 
@@ -92,8 +84,18 @@ func TestGetResolverHTTP3(t *testing.T) {
 			closed = true
 		},
 	}
-	cmk := &fakeDNSClientMaker{reso: re}
-	reso := &Resolver{dnsClientMaker: cmk, ByteCounter: bc}
+	var (
+		savedURL string
+		savedH3  bool
+	)
+	reso := &Resolver{
+		ByteCounter: bc,
+		newChildResolverFn: func(h3 bool, URL string) (model.Resolver, error) {
+			savedURL = URL
+			savedH3 = h3
+			return re, nil
+		},
+	}
 	out, err := reso.getresolver(URL)
 	if err != nil {
 		t.Fatal(err)
@@ -112,34 +114,10 @@ func TestGetResolverHTTP3(t *testing.T) {
 	if closed != true {
 		t.Fatal("was not closed")
 	}
-	if cmk.savedURL != strings.Replace(URL, "http3://", "https://", 1) {
+	if savedURL != strings.Replace(URL, "http3://", "https://", 1) {
 		t.Fatal("not the URL we expected")
 	}
-	if cmk.savedConfig.ByteCounter != bc {
-		t.Fatal("unexpected ByteCounter")
-	}
-	if cmk.savedConfig.BogonIsError != true {
-		t.Fatal("unexpected BogonIsError")
-	}
-	if cmk.savedConfig.HTTP3Enabled != true {
-		t.Fatal("unexpected HTTP3Enabled")
-	}
-	if cmk.savedConfig.Logger != model.DiscardLogger {
-		t.Fatal("unexpected Log")
-	}
-}
-
-func TestGetResolverInvalidURL(t *testing.T) {
-	bc := bytecounter.New()
-	URL := "http3://dns.google"
-	errMocked := errors.New("mocked error")
-	cmk := &fakeDNSClientMaker{err: errMocked}
-	reso := &Resolver{dnsClientMaker: cmk, ByteCounter: bc}
-	out, err := reso.getresolver(URL)
-	if !errors.Is(err, errMocked) {
-		t.Fatal("not the error we expected", err)
-	}
-	if out != nil {
-		t.Fatal("not the result we expected")
+	if !savedH3 {
+		t.Fatal("expected true")
 	}
 }
