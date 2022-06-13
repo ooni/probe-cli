@@ -135,7 +135,7 @@ scope with respect to the main goal of this design document.
 
 ## measurement_kit command line client
 
-We will replace the `measurement_kit` CLI tool with a CLI tool named `miniooni`,
+We replace the `measurement_kit` CLI tool with `miniooni`,
 which will use the ~same set of CLI flags for QA reasons.
 
 ## History
