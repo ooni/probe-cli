@@ -64,61 +64,61 @@ We can likewise generate a FFI API as follows:
 package main
 
 import (
-  "C"
-  "sync"
+      "C"
+      "sync"
 
-  "github.com/ooni/probe-engine/oonimkall"
+      "github.com/ooni/probe-engine/oonimkall"
 )
 
 var (
-  idx int64 = 1
-  m         = make(map[int64]*oonimkall.Task)
-  mu        sync.Mutex
+      idx int64 = 1
+      m                         = make(map[int64]*oonimkall.Task)
+      mu                        sync.Mutex
 )
 
 //export ooni_task_start
 func ooni_task_start(settings string) int64 {
-  tp, err := oonimkall.StartTask(settings)
-  if err != nil {
-    return 0
-  }
-  mu.Lock()
-  handle := idx
-  idx++
-  m[handle] = tp
-  mu.Unlock()
-  return handle
+      tp, err := oonimkall.StartTask(settings)
+      if err != nil {
+            return 0
+      }
+      mu.Lock()
+      handle := idx
+      idx++
+      m[handle] = tp
+      mu.Unlock()
+      return handle
 }
 
 //export ooni_task_interrupt
 func ooni_task_interrupt(handle int64) {
-  mu.Lock()
-  if tp := m[handle]; tp != nil {
-    tp.Interrupt()
-  }
-  mu.Unlock()
+      mu.Lock()
+      if tp := m[handle]; tp != nil {
+            tp.Interrupt()
+      }
+      mu.Unlock()
 }
 
 //export ooni_task_is_done
 func ooni_task_is_done(handle int64) bool {
-  isdone := true
-  mu.Lock()
-  if tp := m[handle]; tp != nil {
-    isdone = tp.IsDone()
-  }
-  mu.Unlock()
-  return isdone
+      isdone := true
+      mu.Lock()
+      if tp := m[handle]; tp != nil {
+            isdone = tp.IsDone()
+      }
+      mu.Unlock()
+      return isdone
 }
 
 //export ooni_task_wait_for_next_event
 func ooni_task_wait_for_next_event(handle int64) (event string) {
-  mu.Lock()
-  tp := m[handle]
-  mu.Unlock()
-  if tp != nil {
-    event = tp.WaitForNextEvent()
-  }
-  return
+      mu.Lock()
+      tp := m[handle]
+      mu.Unlock()
+      if tp != nil {
+            event = tp.WaitForNextEvent()
+      }
+      return
 }
 
 func main() {}
