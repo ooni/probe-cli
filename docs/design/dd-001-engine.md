@@ -1,7 +1,8 @@
 # Replacing Measurement Kit
 
-| Author       | Simone Basso |
-|--------------|--------------|
+|        |  |
+|:-------------|:-------------|
+| Author | [@bassosimone](github.com/bassosimone) |
 | Last-Updated | 2020-07-09   |
 | Status       | historic     |
 
