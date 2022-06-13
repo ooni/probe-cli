@@ -9,7 +9,7 @@
 | Status       | approved     |
 | Obsoletes | [dd-002-netx.md](dd-002-netx.md) |
 
-*Abstract* The original [netx design document](dd-002-netx.md) is now two
+*Abstract.* The original [netx design document](dd-002-netx.md) is now two
 years old. Since we wrote such a document, we amended the overall design
 several times. The four major design changes where:
 
@@ -24,7 +24,7 @@ pattern [ooni/probe-engine#522](https://github.com/ooni/probe-engine/pull/522);
 4. measurex [ooni/probe-cli#528](https://github.com/ooni/probe-cli/pull/528).
 
 In this (long) design document, we will revisit the original problem proposed by
-[df-002-netx.md], in light of what we changed and of what we learned from the
+[df-002-netx.md](df-002-netx.md), in light of what we changed and of what we learned from the
 changes we applied. We will highlight the major pain points of the current
 implementation, which are these the following:
 

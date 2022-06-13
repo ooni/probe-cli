@@ -9,7 +9,7 @@
 | Obsoleted-by | [ooni/probe-engine#522](https://github.com/ooni/probe-engine/pull/522) |
 | Obsoleted-by | [dd-003-step-by-step.md](dd-003-step-by-step.md) |
 
-*Abstract* Rationale and design of [ooni/netx](https://github.com/ooni/netx),
+*Abstract.* Rationale and design of [ooni/netx](https://github.com/ooni/netx),
 which was later merged into [ooni/probe-engine](
 https://github.com/ooni/probe-engine) and
 [ooni/probe-cli](https://github.com/ooni/probe-cli).
