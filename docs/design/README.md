@@ -13,5 +13,5 @@ Most design documents are, therefore, informational and historic by
 nature, given that we do not aim to continuously update them.
 
 Rather than radically revamp a design document in case of radical direction
-changes, it is advisable to create a new design document. In such a case,
-the new design document should reference the previous document.
+changes, it is advisable to create a new design document referencing the
+previous design document and explaining what changed.
