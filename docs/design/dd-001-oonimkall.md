@@ -38,7 +38,7 @@ API that is close enough to the MK's mobile APIs.
 We define a CGO API such that `go build -buildmode=c-shared`
 yields an API reasonably close to MK's FFI API.
 
-## Running experiments
+## API for running experiments
 
 It seems the generic API for enabling running experiments both on
 mobile devices and for FFI consumers is like:
@@ -132,6 +132,11 @@ a few lines of C allow to implement an ABI-compatible replacement.
 We currently don't have plans for replacing other MK APIs. We will introduce
 new APIs specifically tailored for our OONI needs, but they will be out of
 scope with respect to the main goal of this design document.
+
+## measurement_kit command line client
+
+We will replace the `measurement_kit` CLI tool with a CLI tool named `miniooni`,
+which will use the ~same set of CLI flags for QA reasons.
 
 ## History
 
