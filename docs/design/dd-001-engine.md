@@ -45,10 +45,14 @@ mobile devices and for FFI consumers is like:
 
 ```Go
 type Task struct{ ... }
-  func StartTask(input string) (*Task, error)
-  func (t *Task) Interrupt()
-  func (t *Task) IsDone() bool
-  func (t *Task) WaitForNextEvent() string
+
+func StartTask(input string) (*Task, error)
+
+func (t *Task) Interrupt()
+
+func (t *Task) IsDone() bool
+
+func (t *Task) WaitForNextEvent() string
 ```
 
 This should be enough to generate a suitable mobile API when
