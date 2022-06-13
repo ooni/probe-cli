@@ -125,7 +125,7 @@ func main() {}
 ```
 
 This is close enough to [measurement-kit's FFI API](https://git.io/Jv4Rv) that
-a few lines of C allow to implement an ABI compatible replacement.
+a few lines of C allow to implement an ABI-compatible replacement.
 
 ## Other APIs of interest
 
