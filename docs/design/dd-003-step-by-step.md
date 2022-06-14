@@ -113,8 +113,8 @@ its return code](https://github.com/ooni/probe/issues/2029).
 When we measure HTTP, there are redirections. Each redirection may or
 may not reuse an existing TCP or QUIC connection. Each redirection has
 an HTTP request and response. (Redirections are more complex than it
-seems because of cookies; not entering into detail but worth
-mentioning.)
+seems because of cookies; not entering into details for now but still
+worth mentioning.)
 
 The [OONI data format](https://github.com/ooni/spec/tree/master/data-formats)
 defines how we archive experiment results as a set of observations.
@@ -127,7 +127,7 @@ The OONI data format also specifies [how we should represent
 errors](https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md).
 Go generates its own errors and we should *reduce* those errors to the
 set of strings specified in the OONI data format. (Orthogonally, we may
-also want to introduce new, more precise errors when possible.)
+also want to introduce better errors when possible.)
 
 We should also attribute the error to the operation that failed. In
 principle, this seems easy. Yet, depending on how we're performing
@@ -136,7 +136,9 @@ measurements, it is not. More details later when appropriate.
 A semi-orthogonal aspect is that we would also like to include in
 collected measurements the underlying raw syscall or library errors that
 occurred. That would be, e.g., getaddrinfo's return code or the Rcode of
-DNS response messages or the syscall error returned by a Read call.
+DNS response messages or the syscall error returned by a Read call. By
+adding this information, we would give who analyzes the data extra
+bits to evaluate the correctnes of a measurement.
 
 ### Go Stdlib
 
@@ -189,7 +191,7 @@ observe its results. The `crypto/tls` library is quite limited and this
 [caused TLS fingerprinting issues in the
 past](https://ooni.org/post/making-ooni-probe-android-more-resilient/).
 To overcome this issue we devised two solutions:
-[ooni/go](https://github.com/ooni/go) and
+[ooni/go](https://github.com/ooni/go) (which forks golang/go) and
 [ooni/oocrypto](https://github.com/ooni/oocrypto) (which
 is leaner, but still has
 [some issues](https://github.com/ooni/probe/issues/2122)).
@@ -223,7 +225,7 @@ round trips. The stdlib assumes we're using crypto/tls for TLS
 connections and fails to establish HTTP2 connections otherwise because
 it cannot read the ALPN array. So we [forked
 net/http](https://github.com/ooni/oocrypto) to use
-alternative TLS libs.
+alternative TLS libs (e.g., refraction-networking/utls).
 
 We could say more here. But I am trying to be brief. Because of that, I
 am glossing over HTTP3, which is not part of the standard library but is
@@ -231,7 +233,7 @@ implemented by
 [lucas-clemente/quic-go](https://github.com/lucas-clemente/quic-go).
 Apart from the stdlib and quic-go, the only other major network code
 dependency is [miekg/dns](https://github.com/miekg/dns)
-for custom DNS resolvers.
+for custom DNS resolvers (e.g., DNS-over-HTTPS).
 
 ### Network Extensions
 
@@ -307,7 +309,7 @@ become more complex than what `httptrace` could provide us with.
 I tried to adapt how this code would look like if we used it now. As
 [dd-002-netx.md](dd-002-netx.md) suggests, here I am trying to separate
 data collection and intepretation, which looked like a great idea at
-the time but has now become a bottleneck, as we'll discuss shortly.
+the time but has now become a bottleneck.
 
 ```Go
 // doWhatYouKnowBest uses stdlib-like constructs to collect data.
@@ -449,14 +451,14 @@ value as an opaque any inside of the context and there's a documented
 promise we'll use this value.
 (In fairness, however, the second implementation could be extended with wrappers
 that make it look like the first one, which should solve the clarity
-problem entailed by using a context *as a dependency injection mechanism*.)
+problem entailed by using a context *to do dependency injection*.)
 
 Debugging in particular feels clumsy. Suppose we are taking a code path
 that, for some reason, does not honor the value put inside the context.
 In such a case, we would be more puzzled than we would be when we're
 explicitly wrapping a type. I will return to discuss this topic when we
 analyze the next tactic, because the next tactic is all about reducing
-cognitive burden by avoiding to use a context.
+cognitive burden and avoiding the context.
 
 #### Issue #3: we obtain a flat trace
 
@@ -532,12 +534,12 @@ information.)
 In [probe-engine#359](https://github.com/ooni/probe-engine/issues/359), we
 started planning refactoring of `netx` to solve the issues we identified
 in our context-based tracing implementation. Because the context magic was
-a significant issue at the time, part of this refactoring effort was
-devoted to avoid using a context.  This refactoring produced the tactic
-we are currently using for most experiments, i.e., *decoration-based tracing*.
+a significant issue at the time, this refactoring focused on
+avoiding the context. After this refactoring, we obtained the tactic
+we are currently using, i.e., *decoration-based tracing*.
 
 In retrospect, it might be that we
-were using the context in a complex way and a simpler context-based
+were just using the context in a complex way and a simpler context-based
 implementation was possible. Nonetheless, re-reading my assessment at
 the time, it feels like I perceived all these problems as entangled. Hence,
 the context needed to go along with other sources of complexity.
@@ -695,9 +697,9 @@ measurement-able types using decoration.
 
 At the same time, the usage is still at `doWhatYouKnowBest`
 levels. We have a declarative way of constructing something, but then we
-use that something in a stdlib-lie way. However, the
+use that something in a stdlib-like way. However, the
 need to have a flexible experiment that we could invoke from the command
-line moved the complexity to another level (of badness?): enter the
+line moved the complexity to another level: enter the
 `urlgetter` experiment and library.
 
 #### Urlgetter and the perils of too many layers of abstraction
@@ -747,7 +749,7 @@ func ExperimentMain(ctx context.Context, URL string) {
 
 With this code the `doWhatYouKnowBest` feeling is gone forever. A
 programmer needs to learn a completely new API for implementing OONI
-measurements (unless they want to hack at a low level).
+measurements (unless they want to hack at the `netx` or `netxlite` library level).
 
 Crucially, we still have the same post processing pain we had originally
 with netx. There is always a "now we figured out what happened" step
@@ -762,7 +764,7 @@ dialer := netx.NewDialer(config)
 ```
 
 It's completely opaque to you what the dialer could or could not do. To
-understand this, you need to read the content of the config. The matter
+understand, you need to read the content of the config. The matter
 becomes even more complex if that config is not just declared in the
 codebase but is actually code generated, as happens with urlgetter, which
 generates a Config for netx.
@@ -831,16 +833,16 @@ patch syntax to show what needs to change):
 ```
 
 The above snippet allows us to collect both the TCP endpoint containing
-the IP address and the port, i.e. the variable target, and the original
-hostname passed to lookupHost, named onlyhost.
+the IP address and the port, i.e. the `target` variable, and the original
+hostname passed to lookupHost, named `onlyhost`.
 
 The key take-home message here is that the context is more flexible
 because we can jump in the middle of the implementation and observe
 exactly what we need. We are not constrained by the boundaries imposed
 by the type signatures we're wrapping. (To be fair, the context here is
-just an *opaque method to inject a dependency* called trace that
+just an *opaque method to inject a dependency* called `trace` that
 implements methods to register what happened, so the real point here is
-that smart dependency injection could overcome our construction issue.)
+that smart dependency injection could overcome our construction fatigue.)
 
 A similar problem occurs for DNS lookup when using a transport. The
 current implementation of both tracex and netx collects the messages
@@ -886,7 +888,8 @@ straightforward way. Now, instead, we need to do work to reconstruct
 what could have been the original messages basing our judgment only on
 the results of LookupHost. Likewise, the decorator approach requires us
 to wrap things, while we can collect getaddrinfo results in a way that
-almost feels embarrassing in its simplicity:
+almost feels embarrassing in its simplicity (and where we could quite
+easily get the `CNAME` and getaddrinfo's return code):
 
 ```Diff
  // In internal/netxlite/getaddrinfo_cgo.go
@@ -910,9 +913,8 @@ more messy). Yet it replaced context magic with constructor
 bureaucracies. Additionally, it did not help us to solve most of the
 issues we had with flat traces and with the distance between collection
 and interpretation. What's more, because this approach is quite rigid,
-it is more difficult to collect precise observations than it would be in
-a dependency injection scenario like the one that it's possible, e.g.,
-using context magic.
+it is more difficult to collect precise observations than it would be
+using the context to do dependency injection.
 
 Looking backwards, it has not been a bad idea to declare in `netx` docs
 that we're fine with keeping this approach but we would like new
@@ -931,13 +933,13 @@ for decomposing measurements in simple operations and he
 rightfully pointed out that tracing is great for debugging
 but complicating assigning a meaning to measurements).
 
-We also mentioned in the codebase that `netx` was discouraged as an
+We also mentioned that in the codebase we documented that `netx` was discouraged as an
 approach for new experiments. The first chance to try a different tactic
 was the development of the `websteps` prototype. We tried to implement
 step-by-step measurements, which, in its most radical form, calls for
 performing each relevant step in isolation, immediately saving a
 small trace and interpreting it, before moving onto the next step
-(if possible).
+(unless there's an error, in which case you typically stop).
 
 Looking back at the Go stdlib API, the main blocker to implementing
 this tactic is how to reconcile it with HTTP transports, which expects to
@@ -1021,7 +1023,7 @@ wrong and can very easily analyze the observations.
 Additionally, if you ask someone who knows the standard library to write
 an experiment that provides information about TCP connect, TLS handshake, and
 HTTP round trip using `netxlite`, they would probably write something
-that looks very similar to the code presented above.
+similar to the above code.
 
 #### Issue #1: no persistent connections
 
@@ -1043,7 +1045,8 @@ websteps implements HTTP redirection manually.
 
 While it may seem that discussing redirects is out of scope,
 historically I had been reluctant to switch to a step-by-step model
-because I felt manually handling redirects was hard.
+because I felt manually handling redirects was hard, so I wanted
+to avoid doing that.
 
 The bassosimone/websteps-illustrated repository contains primitives for
 easily handling redirects as part of its fork of the measurex package.
@@ -1100,11 +1103,7 @@ The hand waving now is limited to assuming we have a meas method called
 `ReadTCPConnectFromSaver` that can read the trace and only save TCP
 connect events (which seems easy to write.)
 
-One could possibly argue that we could invest more time in figuring out
-better primitives for collecting specific, rather than generic, traces
-and extract them to include them into measurements.
-
-In any case, should we use this tactic, I see a treme ndous DRY
+In any case, should we use this tactic, I see a significant DRY
 pressure. Many experiments need to perform the same operations
 repeatedly. Consider, e.g., how sending a DoH request looks like:
 
@@ -1151,8 +1150,7 @@ Now, if we do that in a single experiment, this code does not feel
 terrible at all. My main concern is about the amount of similar code
 that we'll need to write and what we'll need to do should we discover
 that we need to perform some sort of refactoring that includes changing
-the code. We will have many places to change, which could be quite
-annoying. (How likely is this if we use basic primitives, though?)
+the code. (How likely is this refactoring if we use basic primitives, though?)
 
 #### Notes on spreading complexity
 
@@ -1170,7 +1168,7 @@ support library.
 Additionally, Arturo argues that we should strive to keep the
 implementation of experiments (including the implementation of the
 primitives they use) as constant in time as possible, to ensure that we
-can always keep comparing our results. This is another good argument. By
+can always keep comparing our results. By
 spreading complexity we reduce the risk that a well-meaning refactoring
 in a support library has side effects for an experiment.
 
@@ -1200,8 +1198,8 @@ experiment right after the operation I needed to do.
 
 #### Concluding remarks
 
-We do not know for sure how to collect observations. If we have a way to
-do that, then certainly this approach has the advantage of having some
+If we have a good way to collect observations,
+then certainly this approach has the advantage of having some
 "what you already know" vibes. It is also possible that we will end up
 writing very easy to maintain code using this style.
 
@@ -1226,17 +1224,17 @@ clear what's an endpoint measurement. So, let's clarify.
 
 An endpoint measurement is one of the following operations:
 
-1. given a TCP endpoint (IP address and port), TCP connect to it
+1. given a TCP endpoint (IP address and port), TCP connect to it;
 
-2. given a TCP endpoint and a SNI, TCP connect and perform a TLS handshake
+2. given a TCP endpoint and a SNI, TCP connect and perform a TLS handshake;
 
-3. given a QUIC endpoint and a SNI, QUIC handshake with it
+3. given a QUIC endpoint and a SNI, QUIC handshake with it;
 
-4. given a TCP endpoint and an URL, TCP connect, then HTTP GET
+4. given a TCP endpoint and an URL, TCP connect, then HTTP GET;
 
-5. given a TCP endpoint, a SNI and an URL, TCP connect, TLS handshake, then HTTP GET
+5. given a TCP endpoint, a SNI and an URL, TCP connect, TLS handshake, then HTTP GET;
 
-6. given a QUIC endpoint, a SNI and an URL, QUIC handshake, then HTTP GET
+6. given a QUIC endpoint, a SNI and an URL, QUIC handshake, then HTTP GET.
 
 Since
 [dnscheck](https://github.com/ooni/spec/blob/master/nettests/ts-028-dnscheck.md),
@@ -1266,20 +1264,15 @@ completely new API*. After careful consideration, it seems preferable to
 select an API that is closer to what a typical Go programmer would
 expect.
 
-Another interesting observation, in the interest of sanity and reducing
-code duplication, is that measurex could (and most likely should) be
-implemented in terms of the existing tracex library. So, if we choose to
-keep using measurex as our mean measurement library, we should probably
-do this refactor.
-
 ## Step-by-step refactoring proposal
 
-I tried to implement telegram using a pure step-by-step approach
+I tried to reimplement the telegram experiment using a pure step-by-step approach
 ([here's the
 gist](https://gist.github.com/bassosimone/f6e680d35805174d1f150bc15ef754af)).
 It looks fine but one ends up writing a support library such as measurex
 anyway. Yet, as noted above, the API exposed by such a measurement
-library matters and an API familiar to Go developers seems preferable.
+library matters and an API familiar to Go developers seems preferable
+to the API implemented by measurex.
 
 There are two key insights I derived from my telegram PoC.
 
@@ -1459,14 +1452,14 @@ likely need to be rewritten in a pure step-by-step style, while
 experiments that just collect data could use tracing. I suppose there
 will always be some form of *limited* step-by-step, where we will always
 split DNS lookup and endpoint measurements as we already do in
-webconnectivity and dnscheck to ensure we measure \~all IP addresses.
+dnscheck to ensure we measure \~all IP addresses.
 
 Compared to measurex, I think step-by-step is \~better because it does
 not require anyone to learn more beyond how to use netxlite instead of
 the standard library. (BTW, we cannot really get rid of netxlite because
 we have measurement requirements that call for wrapping and extending
 the standard library or to provide enhancements beyond the stdlib
-functionality; for example, DNS over HTTPS.)
+functionality.)
 
 Regarding the way to implement tracing, from the above discussion it is
 clear that we should move away from the wrapping approach because it
@@ -1548,19 +1541,19 @@ func NewArchivalTLSOrQUICHandshakeResult(index int64, started time.Time,
 func (thx *tlsHandshakerConfigurable) Handshake(ctx context.Context,
 	conn net.Conn, config \*tls.Config) (net.Conn, tls.ConnectionState, error) {
 	// ...
-	remoteAddr := conn.RemoteAddr().String()              // <- added
-	trace := ContextTraceOrDefault(ctx)                   // <- added
-	started := time.Now()                                 // <- added
+	remoteAddr := conn.RemoteAddr().String()				// +++ (i.e., added line)
+	trace := ContextTraceOrDefault(ctx)						// +++
+	started := time.Now()									// +++
 	err := tlsconn.HandshakeContext(ctx)
-	finished := time.Now()                                // <- added
+	finished := time.Now()									// +++
 	if err != nil {
-		trace.OnTLSHandshake(started, remoteAddr, config, // <- added
-			tls.ConnectionState{}, err, finished)         // <- added
+		trace.OnTLSHandshake(started, remoteAddr, config,	// +++
+			tls.ConnectionState{}, err, finished)			// +++
 		return nil, tls.ConnectionState{}, err
 	}
 	state := tlsconn.connectionState()
-	trace.OnTLSHandshake(started, remoteAddr, config,     // <- added
-		state, nil, finished)                             // <- added
+	trace.OnTLSHandshake(started, remoteAddr, config,		// +++
+		state, nil, finished)								// +++
 	return tlsconn, state, nil
 }
 
@@ -1615,10 +1608,10 @@ netxlite to also include lightweight support for collecting traces. We
 originally said that we wanted to cleanly separate networking from
 measurements but it's also true that we need *some support* for
 measuring. If we cannot use wrapping efficiently, then it makes sense
-for netxlite to provide this support. In fact, netxlite would provide a
+for netxlite to provide a
 mechanism for tracing while the new measurement library would provide a
 policy for saving measurements by implementing model.Trace properly. So,
-if we do that, we should also amend the documentation of netxlite to
+we should also amend the documentation of netxlite to
 explicitly mention support for tracing as a new concern.
 
 ### Cleanups
@@ -1657,8 +1650,7 @@ We discussed the proposal that ended up in the "step-by-step refactoring
 proposal" section. Hiding the context behind an API seems cleaner and
 more robust in terms of refactoring. An API that reads the whole body
 and returns it as part of the round trip seems fine, but there\'s a weak
-preference for sticking exactly to the model employed by the stdlib
-because the refactoring to add tracing is trivial.
+preference for sticking exactly to the model employed by the stdlib.
 
 ### 2022-06-11 - Status change
 
