@@ -1292,120 +1292,127 @@ Consider for example this code extracted from my telegram
 [PoC](https://gist.github.com/bassosimone/f6e680d35805174d1f150bc15ef754af)
 where I have clearly highlighted the required refactoring changes:
 
-```Diff Go
-  const webDomain = "web.telegram.org"
+```Go
+const webDomain = "web.telegram.org"
 
-  // measureWebEndpointHTTPS measures a web.telegram.org endpoint using HTTPS
-  //
-  // Arguments:
-  //
-  // - ctx is the context that allows us to stop early;
-  //
-  // - wg is the wait group that this goroutine should signal when done;
-  //
-  // - logger is the logger to use;
-  //
-  // - zeroTime is when we started measuring;
-  //
-  // - tk contains the test keys;
-  //
-  // - address is the TCP endpoint address we should use and it should consist
-  // of an IP address and a port, separated by a colon.
-  //
-  // This method does not return any value and writes results directly inside
-  // the test keys, which have thread safe methods for that.
-  func (mx *Measurer) measureWebEndpointHTTPS(ctx context.Context, wg *sync.WaitGroup,
-  	logger model.Logger, zeroTime time.Time, tk \*TestKeys, address string) {
-  	// 0. setup
-  	const webTimeout = 7 * time.Second
-  	ctx, cancel := context.WithTimeout(ctx, webTimeout)
-  	defer cancel()
-  	defer wg.Done() // synchronize with the controller
-  	weburl := measurexlite.NewURL("https", webDomain, "", "")
-  	endpoint := net.JoinHostPort(address, "443")
-  	ol := measurexlite.NewOperationLogger(logger, \"GET %s @ %s\",
-weburl.String(), endpoint)
-  	index := tk.newIndex()
-  	tk.registerSubmeasurement(index, endpoint, "web_https")
+// measureWebEndpointHTTPS measures a web.telegram.org endpoint using HTTPS
+//
+// Arguments:
+//
+// - ctx is the context that allows us to stop early;
+//
+// - wg is the wait group that this goroutine should signal when done;
+//
+// - logger is the logger to use;
+//
+// - zeroTime is when we started measuring;
+//
+// - tk contains the test keys;
+//
+// - address is the TCP endpoint address we should use and it should consist
+// of an IP address and a port, separated by a colon.
+//
+// This method does not return any value and writes results directly inside
+// the test keys, which have thread safe methods for that.
+func (mx *Measurer) measureWebEndpointHTTPS(ctx context.Context, wg *sync.WaitGroup,
+logger model.Logger, zeroTime time.Time, tk \*TestKeys, address string) {
+	// 0. setup
+	const webTimeout = 7 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, webTimeout)
+	defer cancel()
+	defer wg.Done() // synchronize with the controller
+	weburl := measurexlite.NewURL("https", webDomain, "", "")
+	endpoint := net.JoinHostPort(address, "443")
+	ol := measurexlite.NewOperationLogger(logger, "GET %s @ %s", weburl.String(), endpoint)
+	index := tk.newIndex()
+	tk.registerSubmeasurement(index, endpoint, "web_https")
 
-  	// 1. establish a TCP connection with the endpoint
-- 	dialer := nextlite.NewDialerwithoutResolver(logger)
-+	trace := measurexlite.NewTrace(index, logger, zeroTime)
-+	dialer := trace.NewDialerWithoutResolver()
-+	defer tk.addTCPConnectResults(trace.TCPConnectResults())
-  	conn, err := dialer.DialContext(ctx, \"tcp\", endpoint)
-  	if err != nil {
-  		switch err.Error() {
-  		case netxlite.FailureHostUnreachable: // happens when IPv6 not available
-  		case netxlite.FailureNetworkUnreachable: // ditto
-  		default:
-  			tk.onWebFailure(err)
-  		}
-  		ol.Stop(err)
-  		return
-  	}
-  	defer conn.Close()
+	// 1. establish a TCP connection with the endpoint
 
-  	// 2. perform TLS handshake with the endpoint
-- 	thx := netxlite.NewTLSHandshakerStdlib(logger)
-+ 	conn = trace.WrapConn(conn)
-+ 	defer tk.addNetworkEvents(trace.NetworkEvents())
-+ 	thx := trace.NewTLSHandshakerStdlib()
-+ 	defer tk.addTLSHandshakeResult(trace.TLSHandshakeResults())
-  	config := &tls.Config{
-  		NextProtos: []string{"h2", "http/1.1"},
-  		RootCAs: netxlite.NewDefaultCertPool(),
-  		ServerName: webDomain,
-  	}
-  	tlsConn, _, err := thx.Handshake(ctx, cw, config)
-  	if err != nil {
-  		tk.onWebFailure(err)
-  		ol.Stop(err)
-  		return
-  	}
-  	defer tlsConn.Close()
+	// dialer := nextlite.NewDialerwithoutResolver(logger)    // --- (removed line)
+	trace := measurexlite.NewTrace(index, logger, zeroTime)   // +++ (added line)
+	dialer := trace.NewDialerWithoutResolver()                // +++ (...)
+	defer tk.addTCPConnectResults(trace.TCPConnectResults())  // +++ (...)
 
-  	// 3. fetch the webpage at the endpoint
-	req, err := measurexlite.NewHTTPRequestWithContext(ctx, "GET", weburl.String(), nil)
-  	runtimex.PanicOnError(err, "measurexlite.NewHTTPRequestWithContext failed unexpectedly")
-  	req.Host = webDomain
--	txp := nextlite.NewHTTPTransportWithTLSConn(tlsConn)
-+	const maxBodySnapshotSize = 1 << 17
-+	txp := trace.NewHTTPTransportWithTLSConn(tlsConn, maxBodySnapshotSize)
-+	defer tk.addHTTPRequestResult(trace.HTTPRequestResults())
-  	resp, err := txp.RoundTrip(req)
+	conn, err := dialer.DialContext(ctx, "tcp", endpoint)
 	if err != nil {
-  		tk.onWebFailure(err)
-  		ol.Stop(err)
-  		return
-  	}
-  	resp.Body.Close()
--	const maxBodySnapshotSize = 1 << 17
-  	reader := io.LimitReader(resp.Body, maxBodySnapshotSize)
-  	body, err := netxlite.ReadAllContext(ctx, reader)
-  	if err != nil {
-  		tk.onWebFailure(err)
-  		ol.Stop(err)
-  		return
-  	}
+		switch err.Error() {
+		case netxlite.FailureHostUnreachable: // happens when IPv6 not available
+		case netxlite.FailureNetworkUnreachable: // ditto
+		default:
+			tk.onWebFailure(err)
+		}
+		ol.Stop(err)
+		return
+	}
+	defer conn.Close()
 
-  	// 4. we expect to see a successful reply
-  	if resp.StatusCode != 200 {
-  		tk.onWebRequestFailed()
-  		ol.StopString(netxlite.FailureHTTPRequestFailed)
-  		return
-  	}
+	// 2. perform TLS handshake with the endpoint
 
-  	// 5. we expect to see the telegram web title
-  	if !webCheckForTitle(body) {
-  		tk.onWebMissingTitle()
-  		ol.StopString(netxlite.FailureTelegramMissingTitleError)
-  		return
-  	}
+	// thx := netxlite.NewTLSHandshakerStdlib(logger)              // ---
+	conn = trace.WrapConn(conn)                                    // +++
+	defer tk.addNetworkEvents(trace.NetworkEvents())               // +++
+	thx := trace.NewTLSHandshakerStdlib()                          // +++
+	defer tk.addTLSHandshakeResult(trace.TLSHandshakeResults())    // +++
 
-  	// 6. it seems we\'re all good
-  	ol.Stop(nil)
-  }
+	config := &tls.Config{
+		NextProtos: []string{"h2", "http/1.1"},
+		RootCAs: netxlite.NewDefaultCertPool(),
+		ServerName: webDomain,
+	}
+	tlsConn, _, err := thx.Handshake(ctx, cw, config)
+	if err != nil {
+		tk.onWebFailure(err)
+		ol.Stop(err)
+		return
+	}
+	defer tlsConn.Close()
+
+	// 3. fetch the webpage at the endpoint
+	req, err := measurexlite.NewHTTPRequestWithContext(ctx, "GET", weburl.String(), nil)
+	runtimex.PanicOnError(err, "measurexlite.NewHTTPRequestWithContext failed unexpectedly")
+	req.Host = webDomain
+
+	// txp := nextlite.NewHTTPTransportWithTLSConn(tlsConn)                  // ---
+	const maxBodySnapshotSize = 1 << 17                                      // +++
+	txp := trace.NewHTTPTransportWithTLSConn(tlsConn, maxBodySnapshotSize)   // +++
+	defer tk.addHTTPRequestResult(trace.HTTPRequestResults())                // +++
+
+	resp, err := txp.RoundTrip(req)
+	if err != nil {
+		tk.onWebFailure(err)
+		ol.Stop(err)
+		return
+	}
+	resp.Body.Close()
+
+	// const maxBodySnapshotSize = 1 << 17       // ---
+
+	reader := io.LimitReader(resp.Body, maxBodySnapshotSize)
+	body, err := netxlite.ReadAllContext(ctx, reader)
+	if err != nil {
+		tk.onWebFailure(err)
+		ol.Stop(err)
+		return
+	}
+
+	// 4. we expect to see a successful reply
+	if resp.StatusCode != 200 {
+		tk.onWebRequestFailed()
+		ol.StopString(netxlite.FailureHTTPRequestFailed)
+		return
+	}
+
+	// 5. we expect to see the telegram web title
+	if !webCheckForTitle(body) {
+		tk.onWebMissingTitle()
+		ol.StopString(netxlite.FailureTelegramMissingTitleError)
+		return
+	}
+
+	// 6. it seems we're all good
+	ol.Stop(nil)
+}
 ```
 
 I am satisfied with the above PoC because it shows how writing an
