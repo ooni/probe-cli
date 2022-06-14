@@ -9,6 +9,10 @@
 // reimplementation of the mkall API implemented by Measurement Kit
 // in, e.g., https://github.com/measurement-kit/mkall-ios.
 //
+// Design
+//
+// See docs/design/dd-001-oonimkall.md in the probe-cli repository.
+//
 // Semantic versioning policy
 //
 // This package is public for technical reasons. We cannot use `go

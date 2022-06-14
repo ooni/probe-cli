@@ -43,4 +43,7 @@
 //
 // Additionally, new code that does not need to perform measurements
 // SHOULD NOT use netx and SHOULD instead use netxlite.
+//
+// See docs/design/dd-002-nets.md in the probe-cli repository for
+// the design document describing this package.
 package netx
