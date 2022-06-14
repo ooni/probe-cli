@@ -34,6 +34,9 @@
 //
 // We want to have reasonable watchdog timeouts for each operation.
 //
+// See also the design document at docs/design/dd-003-step-by-step.md,
+// which provides an overview of netxlite's main concerns.
+//
 // Operations
 //
 // This package implements the following operations:
