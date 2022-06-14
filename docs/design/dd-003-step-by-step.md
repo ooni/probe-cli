@@ -14,7 +14,7 @@ years old. Since we wrote such a document, we amended the overall design
 several times. The four major design changes where:
 
 1. saving rather than emitting
-[ooni/probe-engine#359](https://github.com/ooni/probe-engine/issues/359)
+[ooni/probe-engine#359](https://github.com/ooni/probe-engine/issues/359);
 
 2. switching to save measurements using the decorator
 pattern [ooni/probe-engine#522](https://github.com/ooni/probe-engine/pull/522);
@@ -34,7 +34,7 @@ experiment means using slightly different constructors that deviate from the
 standard library only to meet specific measurement goals we have;
 
 2. that the decorator pattern leads to complexity in creating measurement types,
-which in turn seems to be the cause of the previous issue;
+which in turn seems to be the reason why the previous issue exists;
 
 3. that the decorator pattern does not allow us to precisely collect all the
 data that matters for events such as TCP connect and DNS round trips using
@@ -49,7 +49,17 @@ the implementation of each individual network experiment.
 
 ## Index
 
-TBD
+In [netxlite: the underlying library](#netxlite-the-underlying-network-library) we
+describe the current design of the underlying network library.
+
+In [measurement tactics](#measurement-tactics) we provide an historical perspective
+on the measurement tactics we adopted or just tried.
+
+The [step-by-step refactoring proposal](#step-by-step-refactoring-proposal)
+contains the main contribution of this design document: a proposal to refactor
+the existing codebase to address our current measurement-code problems.
+
+The [reviews](#reviews) section contains information about reviews.
 
 ## netxlite: the underlying network library
 
@@ -1282,7 +1292,7 @@ Consider for example this code extracted from my telegram
 [PoC](https://gist.github.com/bassosimone/f6e680d35805174d1f150bc15ef754af)
 where I have clearly highlighted the required refactoring changes:
 
-```Diff
+```Diff Go
   const webDomain = "web.telegram.org"
 
   // measureWebEndpointHTTPS measures a web.telegram.org endpoint using HTTPS
