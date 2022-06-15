@@ -106,6 +106,15 @@ func newErrWrapper(c classifier, op string, err error) *ErrWrapper {
 	}
 }
 
+// maybeNewErrWrapper is like newErrWrapper except that this
+// function won't panic if passed a nil error.
+func maybeNewErrWrapper(c classifier, op string, err error) error {
+	if err != nil {
+		return newErrWrapper(c, op, err)
+	}
+	return nil
+}
+
 // NewTopLevelGenericErrWrapper wraps an error occurring at top
 // level using a generic classifier as classifier. This is the
 // function you should call when you suspect a given error hasn't

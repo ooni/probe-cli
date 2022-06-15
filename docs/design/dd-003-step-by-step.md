@@ -1502,7 +1502,7 @@ type tlsHandshakerTrace { /* ... */ }
 var _ model.TLSHandshaker = &tlsHandshakerTrace{}
 
 func (thx *tlsHandshakerTrace) Handshake(ctx context.Context,
-	conn net.Conn, config \*tls.Config) (net.Conn, tls.ConnectionState, error) {
+	conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 	ctx = netxlite.ContextWithTrace(ctx, thx.Trace) // <- here we setup the context magic
 	return thx.TLSHandshaker.Handshake(ctx, conn, config)
 }
@@ -1518,7 +1518,7 @@ func (tx *Trace) OnTLSHandshake(started time.Time, remoteAddr string,
 	}
 }
 
-func (tx *Trace) TLSHandshakeResults() (out []\*model.ArchivalTLSOrQUICHandshakeResult) {
+func (tx *Trace) TLSHandshakeResults() (out []*model.ArchivalTLSOrQUICHandshakeResult) {
 	for {
 		select {
 		case ev := <-tx.TLS:
@@ -1538,21 +1538,21 @@ func NewArchivalTLSOrQUICHandshakeResult(index int64, started time.Time,
 // package internal/netxlite
 
 func (thx *tlsHandshakerConfigurable) Handshake(ctx context.Context,
-	conn net.Conn, config \*tls.Config) (net.Conn, tls.ConnectionState, error) {
+	conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
 	// ...
-	remoteAddr := conn.RemoteAddr().String()				// +++ (i.e., added line)
-	trace := ContextTraceOrDefault(ctx)						// +++
-	started := time.Now()									// +++
+	remoteAddr := conn.RemoteAddr().String()                // +++ (i.e., added line)
+	trace := ContextTraceOrDefault(ctx)                     // +++
+	started := time.Now()                                   // +++
 	err := tlsconn.HandshakeContext(ctx)
-	finished := time.Now()									// +++
+	finished := time.Now()                                  // +++
 	if err != nil {
-		trace.OnTLSHandshake(started, remoteAddr, config,	// +++
-			tls.ConnectionState{}, err, finished)			// +++
+		trace.OnTLSHandshake(started, remoteAddr, config,   // +++
+			tls.ConnectionState{}, err, finished)           // +++
 		return nil, tls.ConnectionState{}, err
 	}
 	state := tlsconn.connectionState()
-	trace.OnTLSHandshake(started, remoteAddr, config,		// +++
-		state, nil, finished)								// +++
+	trace.OnTLSHandshake(started, remoteAddr, config,       // +++
+		state, nil, finished)                               // +++
 	return tlsconn, state, nil
 }
 

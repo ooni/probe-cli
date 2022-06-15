@@ -123,8 +123,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 	if logger.DebugLogger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	errWrapper := logger.TLSHandshaker.(*tlsHandshakerErrWrapper)
-	configurable := errWrapper.TLSHandshaker.(*tlsHandshakerConfigurable)
+	configurable := logger.TLSHandshaker.(*tlsHandshakerConfigurable)
 	if configurable.NewConn != nil {
 		t.Fatal("expected nil NewConn")
 	}
@@ -143,13 +142,36 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 					times = append(times, t)
 					return nil
 				},
+				MockRemoteAddr: func() net.Addr {
+					return &mocks.Addr{
+						MockString: func() string {
+							return "1.1.1.1:443"
+						},
+						MockNetwork: func() string {
+							return "tcp"
+						},
+					}
+				},
 			}
 			ctx := context.Background()
 			conn, _, err := h.Handshake(ctx, tcpConn, &tls.Config{
 				ServerName: "x.org",
 			})
-			if err != io.EOF {
+			if !errors.Is(err, io.EOF) {
 				t.Fatal("not the error that we expected")
+			}
+			var errWrapper *ErrWrapper
+			if !errors.As(err, &errWrapper) {
+				t.Fatal("the error has not been wrapped")
+			}
+			if errWrapper.Failure != FailureEOFError {
+				t.Fatal("invalid wrapped error's failure")
+			}
+			if errWrapper.Operation != TLSHandshakeOperation {
+				t.Fatal("invalid wrapped error's operation")
+			}
+			if !errors.Is(errWrapper.WrappedErr, io.EOF) {
+				t.Fatal("invalid wrapped error's underlying error")
 			}
 			if conn != nil {
 				t.Fatal("expected nil con here")
@@ -216,6 +238,16 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 			conn := &mocks.Conn{
 				MockSetDeadline: func(t time.Time) error {
 					return nil
+				},
+				MockRemoteAddr: func() net.Addr {
+					return &mocks.Addr{
+						MockString: func() string {
+							return "1.1.1.1:443"
+						},
+						MockNetwork: func() string {
+							return "tcp"
+						},
+					}
 				},
 			}
 			tlsConn, connState, err := handshaker.Handshake(ctx, conn, config)
@@ -413,6 +445,15 @@ func TestTLSDialer(t *testing.T) {
 						return nil
 					}, MockSetDeadline: func(t time.Time) error {
 						return nil
+					}, MockRemoteAddr: func() net.Addr {
+						return &mocks.Addr{
+							MockNetwork: func() string {
+								return "1.1.1.1:443"
+							},
+							MockString: func() string {
+								return "tcp"
+							},
+						}
 					}}, nil
 				}},
 				TLSHandshaker: &tlsHandshakerConfigurable{},
@@ -530,54 +571,6 @@ func TestNewSingleUseTLSDialer(t *testing.T) {
 			t.Fatal("expected nil outconn here")
 		}
 	}
-}
-
-func TestTLSHandshakerErrWrapper(t *testing.T) {
-	t.Run("Handshake", func(t *testing.T) {
-		t.Run("on success", func(t *testing.T) {
-			expectedConn := &mocks.TLSConn{}
-			expectedState := tls.ConnectionState{
-				Version: tls.VersionTLS12,
-			}
-			th := &tlsHandshakerErrWrapper{
-				TLSHandshaker: &mocks.TLSHandshaker{
-					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-						return expectedConn, expectedState, nil
-					},
-				},
-			}
-			ctx := context.Background()
-			conn, state, err := th.Handshake(ctx, &mocks.Conn{}, &tls.Config{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if expectedState.Version != state.Version {
-				t.Fatal("unexpected state")
-			}
-			if expectedConn != conn {
-				t.Fatal("unexpected conn")
-			}
-		})
-
-		t.Run("on failure", func(t *testing.T) {
-			expectedErr := io.EOF
-			th := &tlsHandshakerErrWrapper{
-				TLSHandshaker: &mocks.TLSHandshaker{
-					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-						return nil, tls.ConnectionState{}, expectedErr
-					},
-				},
-			}
-			ctx := context.Background()
-			conn, _, err := th.Handshake(ctx, &mocks.Conn{}, &tls.Config{})
-			if err == nil || err.Error() != FailureEOFError {
-				t.Fatal("unexpected err", err)
-			}
-			if conn != nil {
-				t.Fatal("unexpected conn")
-			}
-		})
-	})
 }
 
 func TestNewNullTLSDialer(t *testing.T) {

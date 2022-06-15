@@ -292,6 +292,68 @@ type TLSHandshaker interface {
 		net.Conn, tls.ConnectionState, error)
 }
 
+// Trace allows to collect measurement traces. A trace is injected into
+// netx operations using context.WithValue. Next code retrieves the trace
+// using context.Value. See docs/design/dd-003-step-by-step.md for the
+// design document explaining why we implemented the trace.
+type Trace interface {
+	// OnConnectDone is called when connect terminates.
+	//
+	// Arguments:
+	//
+	// - started is when we called connect;
+	//
+	// - network is the network we're using (one of "tcp" and "udp");
+	//
+	// - domain is the domain for which we're calling connect. If the user called
+	// connect for an IP address and a port, then domain will be an IP address;
+	//
+	// - remoteAddr is the TCP endpoint with which we are connecting: it will
+	// consist of an IP address and a port (e.g., 8.8.8.8:443, [::1]:5421);
+	//
+	// - err is the result of connect: either an error or nil;
+	//
+	// - finished is when connect returned.
+	//
+	// The error passed to this function will always be wrapped such that the
+	// string returned by Error is an OONI error.
+	OnConnectDone(
+		started time.Time, network, domain, remoteAddr string, err error, finished time.Time)
+
+	// OnTLSHandshakeStart is called when the TLS handshake starts.
+	//
+	// Arguments:
+	//
+	// - remoteAddr is the TCP endpoint with which we are connecting: it will
+	// consist of an IP address and a port (e.g., 8.8.8.8:443, [::1]:5421);
+	//
+	// - config is the non-nil TLS config we're using;
+	OnTLSHandshakeStart(remoteAddr string, config *tls.Config)
+
+	// OnTLSHandshakeDone is called when the TLS handshake terminates.
+	//
+	// Arguments:
+	//
+	// - started is when we started the handshake;
+	//
+	// - remoteAddr is the TCP endpoint with which we are connecting: it will
+	// consist of an IP address and a port (e.g., 8.8.8.8:443, [::1]:5421);
+	//
+	// - config is the non-nil TLS config we're using;
+	//
+	// - state is the state of the TLS connection after the handshake, where all
+	// fields are zero-initialized if the handshake failed;
+	//
+	// - err is the result of the handshake: either an error or nil;
+	//
+	// - finished is right after the handshake.
+	//
+	// The error passed to this function will always be wrapped such that the
+	// string returned by Error is an OONI error.
+	OnTLSHandshakeDone(started time.Time, remoteAddr string, config *tls.Config,
+		state tls.ConnectionState, err error, finished time.Time)
+}
+
 // UDPLikeConn is a net.PacketConn with some extra functions
 // required to convince the QUIC library (lucas-clemente/quic-go)
 // to inflate the receive buffer of the connection.
