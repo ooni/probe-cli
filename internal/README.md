@@ -41,12 +41,17 @@ to bootstrap OONI probe and perform measurements;
 
 We originally implemented these functionality into a separate
 repository: [ooni/netx](https://github.com/ooni/netx). The
-original [design document](https://github.com/ooni/netx/blob/master/DESIGN.md)
+original [design document](../docs/design/dd-002-netx.md)
 still provides a good overview of the problems we wanted to solve.
+The newer [dd-002-step-by-step.md](../docs/design/dd-003-step-by-step.md)
+design document describes the current architecture (as of 2022-06-17)
+and the future trajectory for `netx`.
 
-The general idea was to provide interfaces replacing standard library
-objects that we could further wrap to perform network measurements without
-deviating from the normal APIs expected by Go programmers. For example,
+The general idea of `netx` has always been to provide interfaces replacing
+standard library objects that we could further wrap to perform network
+measurements without deviating from the normal APIs expected by Go programmers.
+
+For example,
 
 ```Go
 type Dialer interface {
@@ -106,3 +111,4 @@ and inside `netxlite` or other packages. We are currently experimenting
 with step-by-step measurements, an alternative measurement
 approach where we break down operations in simpler building blocks. This
 alternative approach may eventually make `netx` obsolete.
+
