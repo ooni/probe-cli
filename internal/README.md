@@ -2,14 +2,26 @@
 
 This directory contains private Go packages.
 
-As a reminder, you can always check the Go documentation of
-a package by using
+## Useful commands
+
+You can read the Go documentation of a package by using `go doc -all`.
+
+For example:
 
 ```bash
-go doc -all ./internal/$package
+go doc -all ./internal/netxlite
 ```
 
-where `$package` is the name of the package.
+You can get a graph of the dependencies using [kisielk/godepgraph](https://github.com/kisielk/godepgraph).
+
+For example:
+
+```bash
+godepgraph -s -novendor -p golang.org,gitlab.com ./internal/engine | dot -Tpng -o deps.png
+```
+
+You can further tweak which packages to exclude by appending
+prefixes to the list passed to the `-p` flag.
 
 ## Tutorials
 
