@@ -53,7 +53,7 @@ Please, make sure you add the `ooni/probe-cli` label.
 
 ### ooniprobe
 
-Be sure you have golang 1.18.2 and a C compiler (Mingw-w64 for Windows). You
+Be sure you have golang 1.18.3 and a C compiler (Mingw-w64 for Windows). You
 can build using:
 
 ```bash
