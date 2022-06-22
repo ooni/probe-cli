@@ -171,7 +171,7 @@ func (d *DialerSystem) CloseIdleConnections() {
 	// nothing to do here
 }
 
-// dialerResolver combines dialing with domain name resolution and
+// dialerResolverWithTracing combines dialing with domain name resolution and
 // implements hooks to trace TCP (or UDP) connect operations.
 type dialerResolverWithTracing struct {
 	Dialer   model.Dialer
