@@ -64,7 +64,7 @@ GOLANG_EXTRA_FLAGS =
 
 #help:
 #help: * GOLANG_VERSION_NUMBER : the expected version number for golang.
-GOLANG_VERSION_NUMBER = 1.18.2
+GOLANG_VERSION_NUMBER = 1.18.3
 
 #help:
 #help: * MINGW_W64_VERSION     : the expected mingw-w64 version.
