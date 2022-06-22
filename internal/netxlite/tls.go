@@ -166,7 +166,7 @@ func newTLSHandshaker(th model.TLSHandshaker, logger model.DebugLogger) model.TL
 // tlsHandshakerConfigurable is a configurable TLS handshaker that
 // uses by default the standard library's TLS implementation.
 //
-// This type also implements events error wrapping and events tracing.
+// This type also implements error wrapping and events tracing.
 type tlsHandshakerConfigurable struct {
 	// NewConn is the OPTIONAL factory for creating a new connection. If
 	// this factory is not set, we'll use the stdlib.
