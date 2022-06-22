@@ -18,8 +18,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// TODO(bassosimone): we should update the spec
-
 const (
 	testName    = "tlsping"
 	testVersion = "0.2.0"

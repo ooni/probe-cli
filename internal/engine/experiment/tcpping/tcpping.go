@@ -14,8 +14,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// TODO(bassosimone): we should update the spec
-
 const (
 	testName    = "tcpping"
 	testVersion = "0.2.0"
