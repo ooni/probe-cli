@@ -219,7 +219,7 @@ func (h *tlsHandshakerConfigurable) Handshake(
 	started := time.Now()
 	trace.OnTLSHandshakeStart(remoteAddr, config)
 	err = tlsconn.HandshakeContext(ctx)
-	err = maybeNewErrWrapper(classifyTLSHandshakeError, TLSHandshakeOperation, err)
+	err = MaybeNewErrWrapper(ClassifyTLSHandshakeError, TLSHandshakeOperation, err)
 	finished := time.Now()
 	state := tlsMaybeConnectionState(tlsconn, err)
 	trace.OnTLSHandshakeDone(started, remoteAddr, config, state, err, finished)

@@ -47,7 +47,7 @@ func (r *bogonResolver) LookupHost(ctx context.Context, hostname string) ([]stri
 	for _, addr := range addrs {
 		if IsBogon(addr) {
 			// wrap ErrDNSBogon as documented
-			return nil, newErrWrapper(classifyResolverError, ResolveOperation, ErrDNSBogon)
+			return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, ErrDNSBogon)
 		}
 	}
 	return addrs, nil

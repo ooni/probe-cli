@@ -325,8 +325,8 @@ func TestDialerResolverWithTracing(t *testing.T) {
 			mu := &sync.Mutex{}
 			errorsList := []error{
 				errors.New("a mocked error"),
-				newErrWrapper(
-					classifyGenericError,
+				NewErrWrapper(
+					ClassifyGenericError,
 					CloseOperation,
 					io.EOF,
 				),
@@ -368,8 +368,8 @@ func TestDialerResolverWithTracing(t *testing.T) {
 			mu := &sync.Mutex{}
 			errorsList := []error{
 				expectedErr,
-				newErrWrapper(
-					classifyGenericError,
+				NewErrWrapper(
+					ClassifyGenericError,
 					CloseOperation,
 					errors.New("antani"), // this is an unknown failure and we should not return it
 				),

@@ -38,7 +38,7 @@ func (t *dnsTransportErrWrapper) RoundTrip(
 	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 	resp, err := t.DNSTransport.RoundTrip(ctx, query)
 	if err != nil {
-		return nil, newErrWrapper(classifyResolverError, DNSRoundTripOperation, err)
+		return nil, NewErrWrapper(ClassifyResolverError, DNSRoundTripOperation, err)
 	}
 	return resp, nil
 }

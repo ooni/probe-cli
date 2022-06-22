@@ -53,7 +53,7 @@ func TestNewErrWrapper(t *testing.T) {
 					recovered.Add(1)
 				}
 			}()
-			newErrWrapper(nil, CloseOperation, io.EOF)
+			NewErrWrapper(nil, CloseOperation, io.EOF)
 		}()
 		if recovered.Load() != 1 {
 			t.Fatal("did not panic")
@@ -68,7 +68,7 @@ func TestNewErrWrapper(t *testing.T) {
 					recovered.Add(1)
 				}
 			}()
-			newErrWrapper(classifyGenericError, "", io.EOF)
+			NewErrWrapper(ClassifyGenericError, "", io.EOF)
 		}()
 		if recovered.Load() != 1 {
 			t.Fatal("did not panic")
@@ -83,7 +83,7 @@ func TestNewErrWrapper(t *testing.T) {
 					recovered.Add(1)
 				}
 			}()
-			newErrWrapper(classifyGenericError, CloseOperation, nil)
+			NewErrWrapper(ClassifyGenericError, CloseOperation, nil)
 		}()
 		if recovered.Load() != 1 {
 			t.Fatal("did not panic")
@@ -91,7 +91,7 @@ func TestNewErrWrapper(t *testing.T) {
 	})
 
 	t.Run("otherwise, works as intended", func(t *testing.T) {
-		ew := newErrWrapper(classifyGenericError, CloseOperation, io.EOF)
+		ew := NewErrWrapper(ClassifyGenericError, CloseOperation, io.EOF)
 		if ew.Failure != FailureEOFError {
 			t.Fatal("unexpected failure")
 		}
@@ -104,10 +104,10 @@ func TestNewErrWrapper(t *testing.T) {
 	})
 
 	t.Run("when the underlying error is already a wrapped error", func(t *testing.T) {
-		ew := newErrWrapper(classifySyscallError, ReadOperation, ECONNRESET)
+		ew := NewErrWrapper(classifySyscallError, ReadOperation, ECONNRESET)
 		var err1 error = ew
 		err2 := fmt.Errorf("cannot read: %w", err1)
-		ew2 := newErrWrapper(classifyGenericError, HTTPRoundTripOperation, err2)
+		ew2 := NewErrWrapper(ClassifyGenericError, HTTPRoundTripOperation, err2)
 		if ew2.Failure != ew.Failure {
 			t.Fatal("not the same failure")
 		}
