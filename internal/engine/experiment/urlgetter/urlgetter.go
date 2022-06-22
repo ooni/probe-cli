@@ -1,6 +1,11 @@
 // Package urlgetter implements a nettest that fetches a URL.
 //
 // See https://github.com/ooni/spec/blob/master/nettests/ts-027-urlgetter.md.
+//
+// This package is now frozen. Please, use measurexlite for new code. New
+// network experiments should not depend on this package. Please see
+// https://github.com/ooni/probe-cli/blob/master/docs/design/dd-003-step-by-step.md
+// for details about this.
 package urlgetter
 
 import (
