@@ -293,7 +293,7 @@ type TLSHandshaker interface {
 }
 
 // Trace allows to collect measurement traces. A trace is injected into
-// netx operations using context.WithValue. Next code retrieves the trace
+// netx operations using context.WithValue. Netx code retrieves the trace
 // using context.Value. See docs/design/dd-003-step-by-step.md for the
 // design document explaining why we implemented the trace.
 type Trace interface {
