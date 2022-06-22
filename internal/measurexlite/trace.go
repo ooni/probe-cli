@@ -38,6 +38,11 @@ type Trace struct {
 
 	// ZeroTime is the MANDATORY time when we started the current measurement.
 	ZeroTime time.Time
+
+	// timeTracker is the OPTIONAL TimeTracker. The zero value of this field
+	// ensures that we track time using time.Since. Override this value to
+	// a non-nil pointer to get deterministic time tracking.
+	timeTracker *timeTracker
 }
 
 const (

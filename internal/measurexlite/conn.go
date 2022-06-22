@@ -14,9 +14,9 @@ import (
 )
 
 // MaybeClose is a convenience function for closing a conn only when such a conn isn't nil.
-func MaybeClose(closer net.Conn) (err error) {
-	if closer != nil {
-		err = closer.Close()
+func MaybeClose(conn net.Conn) (err error) {
+	if conn != nil {
+		err = conn.Close()
 	}
 	return
 }
@@ -43,9 +43,9 @@ var _ net.Conn = &connTrace{}
 func (c *connTrace) Read(b []byte) (int, error) {
 	network := c.RemoteAddr().Network()
 	addr := c.RemoteAddr().String()
-	started := time.Since(c.tx.ZeroTime)
+	started := c.tx.timeTracker.Since(c.tx.ZeroTime)
 	count, err := c.Conn.Read(b)
-	finished := time.Since(c.tx.ZeroTime)
+	finished := c.tx.timeTracker.Since(c.tx.ZeroTime)
 	select {
 	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
 		c.tx.Index, started, netxlite.ReadOperation, network, addr, count, err, finished):
@@ -58,9 +58,9 @@ func (c *connTrace) Read(b []byte) (int, error) {
 func (c *connTrace) Write(b []byte) (int, error) {
 	network := c.RemoteAddr().Network()
 	addr := c.RemoteAddr().String()
-	started := time.Since(c.tx.ZeroTime)
+	started := c.tx.timeTracker.Since(c.tx.ZeroTime)
 	count, err := c.Conn.Write(b)
-	finished := time.Since(c.tx.ZeroTime)
+	finished := c.tx.timeTracker.Since(c.tx.ZeroTime)
 	select {
 	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
 		c.tx.Index, started, netxlite.WriteOperation, network, addr, count, err, finished):
