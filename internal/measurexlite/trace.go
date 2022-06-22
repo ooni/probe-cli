@@ -15,6 +15,8 @@ import (
 // The zero-value of this struct is invalid. To construct you should either
 // fill all the fields marked as MANDATORY or use NewTrace.
 //
+// Buffered channels
+//
 // NewTrace uses reasonable buffer sizes for the channels used for collecting
 // events. You should drain the channels used by this implementation after
 // each operation you perform (i.e., we expect you to peform step-by-step
@@ -27,13 +29,16 @@ type Trace struct {
 	// Index is the MANDATORY unique index of this trace within the current measurement.
 	Index int64
 
-	// NetworkEvent is MANDATORY and buffers network events.
+	// NetworkEvent is MANDATORY and buffers network events. If you create
+	// this channel manually, ensure it has some buffer.
 	NetworkEvent chan *model.ArchivalNetworkEvent
 
-	// TCPConnect is MANDATORY and buffers TCP connect observations.
+	// TCPConnect is MANDATORY and buffers TCP connect observations. If you create
+	// this channel manually, ensure it has some buffer.
 	TCPConnect chan *model.ArchivalTCPConnectResult
 
-	// TLSHandshake is MANDATORY and buffers TLS handshake observations.
+	// TLSHandshake is MANDATORY and buffers TLS handshake observations. If you create
+	// this channel manually, ensure it has some buffer.
 	TLSHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
 	// ZeroTime is the MANDATORY time when we started the current measurement.
@@ -64,6 +69,9 @@ const (
 )
 
 // NewTrace creates a new instance of Trace using default settings.
+//
+// We create buffered channels using as buffer sizes the constants that
+// are also defined by this package.
 //
 // Arguments:
 //
