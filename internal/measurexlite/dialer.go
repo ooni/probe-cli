@@ -19,9 +19,13 @@ import (
 
 // NewDialerWithoutResolver is equivalent to netxlite.NewDialerWithoutResolver
 // except that it returns a model.Dialer that uses this trace.
+//
+// Note: unlike code in netx or measurex, this factory DOES NOT return you a
+// dialer that also performs wrapping of a net.Conn in case of success. If you
+// want to wrap the conn, you need to wrap it explicitly using WrapNetConn.
 func (tx *Trace) NewDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
 	return &dialerTrace{
-		d:  netxlite.NewDialerWithoutResolver(dl),
+		d:  tx.dependencies.NewDialerWithoutResolver(dl),
 		tx: tx,
 	}
 }
@@ -51,11 +55,17 @@ func (tx *Trace) OnConnectDone(
 	case "tcp", "tcp4", "tcp6":
 		select {
 		case tx.TCPConnect <- NewArchivalTCPConnectResult(
-			tx.Index, started.Sub(tx.ZeroTime), remoteAddr, err, finished.Sub(tx.ZeroTime)):
+			tx.Index,
+			tx.timeTracker.Sub(started, tx.ZeroTime),
+			remoteAddr,
+			err,
+			tx.timeTracker.Sub(finished, tx.ZeroTime),
+		):
 		default: // buffer is full
 		}
 	default:
 		// ignore UDP connect attempts because they cannot fail
+		// in interesting ways that make sense for censorship
 	}
 }
 
@@ -76,20 +86,24 @@ func NewArchivalTCPConnectResult(index int64, started time.Duration, address str
 	}
 }
 
-// archivalSplitHostPort is like net.SplitHostPort but does not return an error.
+// archivalSplitHostPort is like net.SplitHostPort but does not return an error. This
+// function returns two empty strings in case of any failure.
 func archivalSplitHostPort(endpoint string) (string, string) {
 	addr, port, err := net.SplitHostPort(endpoint)
 	if err != nil {
 		log.Printf("BUG: archivalSplitHostPort: invalid endpoint: %s", endpoint)
+		return "", ""
 	}
 	return addr, port
 }
 
-// archivalPortToString is like strconv.Atoi but does not return an error.
+// archivalPortToString is like strconv.Atoi but does not return an error. This
+// function returns a zero port number in case of any failure.
 func archivalPortToString(sport string) int {
 	port, err := strconv.Atoi(sport)
 	if err != nil || port < 0 || port > math.MaxUint16 {
 		log.Printf("BUG: archivalStrconvAtoi: invalid port: %s", sport)
+		return 0
 	}
 	return port
 }
