@@ -44,6 +44,11 @@ type traceDefault struct{}
 
 var _ model.Trace = &traceDefault{}
 
+// Now implements model.Trace.Now
+func (*traceDefault) Now() time.Time {
+	return time.Now()
+}
+
 // OnConnectDone implements model.Trace.OnConnectDone.
 func (*traceDefault) OnConnectDone(
 	started time.Time, network, domain, remoteAddr string, err error, finished time.Time) {

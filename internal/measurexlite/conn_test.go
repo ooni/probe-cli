@@ -2,6 +2,7 @@ package measurexlite
 
 import (
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -66,8 +67,13 @@ func TestWrapNetConn(t *testing.T) {
 			},
 		}
 		zeroTime := time.Now()
+		td := &timeDeterministic{
+			counter:  0,
+			mu:       sync.Mutex{},
+			zeroTime: zeroTime,
+		}
 		trace := NewTrace(0, zeroTime)
-		trace.timeTracker = &timeTracker{} // deterministic time counting
+		trace.TimeNowFn = td.Now // deterministic time counting
 		conn := trace.WrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
@@ -149,8 +155,13 @@ func TestWrapNetConn(t *testing.T) {
 			},
 		}
 		zeroTime := time.Now()
+		td := &timeDeterministic{
+			counter:  0,
+			mu:       sync.Mutex{},
+			zeroTime: zeroTime,
+		}
 		trace := NewTrace(0, zeroTime)
-		trace.timeTracker = &timeTracker{} // deterministic time counting
+		trace.TimeNowFn = td.Now // deterministic time tracking
 		conn := trace.WrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)

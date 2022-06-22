@@ -297,6 +297,11 @@ type TLSHandshaker interface {
 // using context.Value. See docs/design/dd-003-step-by-step.md for the
 // design document explaining why we implemented the trace.
 type Trace interface {
+	// Now returns the current time. Normally, this should be the same
+	// value returned by time.Now but you we want to manipulate the time
+	// returned when testing to have deterministic tests.
+	Now() time.Time
+
 	// OnConnectDone is called when connect terminates.
 	//
 	// Arguments:

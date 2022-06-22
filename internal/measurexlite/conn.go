@@ -43,9 +43,9 @@ var _ net.Conn = &connTrace{}
 func (c *connTrace) Read(b []byte) (int, error) {
 	network := c.RemoteAddr().Network()
 	addr := c.RemoteAddr().String()
-	started := c.tx.timeTracker.Since(c.tx.ZeroTime)
+	started := c.tx.Since(c.tx.ZeroTime)
 	count, err := c.Conn.Read(b)
-	finished := c.tx.timeTracker.Since(c.tx.ZeroTime)
+	finished := c.tx.Since(c.tx.ZeroTime)
 	select {
 	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
 		c.tx.Index, started, netxlite.ReadOperation, network, addr, count, err, finished):
@@ -58,9 +58,9 @@ func (c *connTrace) Read(b []byte) (int, error) {
 func (c *connTrace) Write(b []byte) (int, error) {
 	network := c.RemoteAddr().Network()
 	addr := c.RemoteAddr().String()
-	started := c.tx.timeTracker.Since(c.tx.ZeroTime)
+	started := c.tx.Since(c.tx.ZeroTime)
 	count, err := c.Conn.Write(b)
-	finished := c.tx.timeTracker.Since(c.tx.ZeroTime)
+	finished := c.tx.Since(c.tx.ZeroTime)
 	select {
 	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
 		c.tx.Index, started, netxlite.WriteOperation, network, addr, count, err, finished):

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // Trace implements model.Trace.
@@ -33,6 +34,14 @@ type Trace struct {
 	// this channel manually, ensure it has some buffer.
 	NetworkEvent chan *model.ArchivalNetworkEvent
 
+	// NewDialerWithoutResolverFn is OPTIONAL and can be used to override
+	// calls to the netxlite.NewDialerWithoutResolver factory.
+	NewDialerWithoutResolverFn func(dl model.DebugLogger) model.Dialer
+
+	// NewTLSHandshakerStdlibFn is OPTIONAL and can be used to overide
+	// calls to the netxlite.NewTLSHandshakerStdlib factory.
+	NewTLSHandshakerStdlibFn func(dl model.DebugLogger) model.TLSHandshaker
+
 	// TCPConnect is MANDATORY and buffers TCP connect observations. If you create
 	// this channel manually, ensure it has some buffer.
 	TCPConnect chan *model.ArchivalTCPConnectResult
@@ -41,17 +50,12 @@ type Trace struct {
 	// this channel manually, ensure it has some buffer.
 	TLSHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
+	// TimeNowFn is OPTIONAL and can be used to override calls to time.Now
+	// to produce deterministic timing when testing.
+	TimeNowFn func() time.Time
+
 	// ZeroTime is the MANDATORY time when we started the current measurement.
 	ZeroTime time.Time
-
-	// dependencies is OPTIONAL and allows to mock dependencies in testing. The
-	// zero value of this field ensures we call dependencies.
-	dependencies *dependencies
-
-	// timeTracker is the OPTIONAL TimeTracker. The zero value of this field
-	// ensures that we track time using time.Since. Override this value to
-	// a non-nil pointer to get deterministic time tracking.
-	timeTracker *timeTracker
 }
 
 const (
@@ -80,12 +84,55 @@ const (
 // - zeroTime is the time when we started the current measurement.
 func NewTrace(index int64, zeroTime time.Time) *Trace {
 	return &Trace{
-		Index:        index,
-		NetworkEvent: make(chan *model.ArchivalNetworkEvent, NetworkEventBufferSize),
-		TCPConnect:   make(chan *model.ArchivalTCPConnectResult, TCPConnectBufferSize),
-		TLSHandshake: make(chan *model.ArchivalTLSOrQUICHandshakeResult, TLSHandshakeBufferSize),
-		ZeroTime:     zeroTime,
+		Index: index,
+		NetworkEvent: make(
+			chan *model.ArchivalNetworkEvent,
+			NetworkEventBufferSize,
+		),
+		NewDialerWithoutResolverFn: nil,
+		NewTLSHandshakerStdlibFn:   nil,
+		TCPConnect: make(
+			chan *model.ArchivalTCPConnectResult,
+			TCPConnectBufferSize,
+		),
+		TLSHandshake: make(
+			chan *model.ArchivalTLSOrQUICHandshakeResult,
+			TLSHandshakeBufferSize,
+		),
+		TimeNowFn: nil,
+		ZeroTime:  zeroTime,
 	}
+}
+
+// newDialerWithoutResolver indirectly calls netxlite.NewDialerWithoutResolver
+// thus allows us to mock this func for testing.
+func (tx *Trace) newDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
+	if tx.NewDialerWithoutResolverFn != nil {
+		return tx.NewDialerWithoutResolverFn(dl)
+	}
+	return netxlite.NewDialerWithoutResolver(dl)
+}
+
+// newTLSHandshakerStdlib indirectly calls netxlite.NewTLSHandshakerStdlib
+// thus allowing us to mock this func for testing.
+func (tx *Trace) newTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshaker {
+	if tx.NewTLSHandshakerStdlibFn != nil {
+		return tx.NewTLSHandshakerStdlibFn(dl)
+	}
+	return netxlite.NewTLSHandshakerStdlib(dl)
+}
+
+// Now implements model.Trace.Now.
+func (tx *Trace) Now() time.Time {
+	if tx.TimeNowFn != nil {
+		return tx.TimeNowFn()
+	}
+	return time.Now()
+}
+
+// Since is equivalent to Trace.Now.Sub(t0).
+func (tx *Trace) Since(t0 time.Time) time.Duration {
+	return tx.Now().Sub(t0)
 }
 
 var _ model.Trace = &Trace{}

@@ -25,7 +25,7 @@ import (
 // want to wrap the conn, you need to wrap it explicitly using WrapNetConn.
 func (tx *Trace) NewDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
 	return &dialerTrace{
-		d:  tx.dependencies.NewDialerWithoutResolver(dl),
+		d:  tx.newDialerWithoutResolver(dl),
 		tx: tx,
 	}
 }
@@ -56,10 +56,10 @@ func (tx *Trace) OnConnectDone(
 		select {
 		case tx.TCPConnect <- NewArchivalTCPConnectResult(
 			tx.Index,
-			tx.timeTracker.Sub(started, tx.ZeroTime),
+			started.Sub(tx.ZeroTime),
 			remoteAddr,
 			err,
-			tx.timeTracker.Sub(finished, tx.ZeroTime),
+			finished.Sub(tx.ZeroTime),
 		):
 		default: // buffer is full
 		}

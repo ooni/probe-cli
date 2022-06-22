@@ -6,6 +6,7 @@ import (
 	"math"
 	"net"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -20,10 +21,8 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 		underlying := &mocks.Dialer{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.dependencies = &dependencies{
-			newDialerWithoutResolver: func(dl model.DebugLogger) model.Dialer {
-				return underlying
-			},
+		trace.NewDialerWithoutResolverFn = func(dl model.DebugLogger) model.Dialer {
+			return underlying
 		}
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
 		dt := dialer.(*dialerTrace)
@@ -47,10 +46,8 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		trace.dependencies = &dependencies{
-			newDialerWithoutResolver: func(dl model.DebugLogger) model.Dialer {
-				return underlying
-			},
+		trace.NewDialerWithoutResolverFn = func(dl model.DebugLogger) model.Dialer {
+			return underlying
 		}
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
 		ctx := context.Background()
@@ -75,10 +72,8 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 				called = true
 			},
 		}
-		trace.dependencies = &dependencies{
-			newDialerWithoutResolver: func(dl model.DebugLogger) model.Dialer {
-				return underlying
-			},
+		trace.NewDialerWithoutResolverFn = func(dl model.DebugLogger) model.Dialer {
+			return underlying
 		}
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
 		dialer.CloseIdleConnections()
@@ -89,8 +84,13 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 
 	t.Run("DialContext saves into the trace", func(t *testing.T) {
 		zeroTime := time.Now()
+		td := &timeDeterministic{
+			counter:  0,
+			mu:       sync.Mutex{},
+			zeroTime: zeroTime,
+		}
 		trace := NewTrace(0, zeroTime)
-		trace.timeTracker = &timeTracker{} // deterministic time tracking
+		trace.TimeNowFn = td.Now // deterministic time tracking
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // we cancel immediately so connect is ~instantaneous

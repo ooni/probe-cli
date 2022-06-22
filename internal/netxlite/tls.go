@@ -216,11 +216,11 @@ func (h *tlsHandshakerConfigurable) Handshake(
 	}
 	remoteAddr := conn.RemoteAddr().String()
 	trace := ContextTraceOrDefault(ctx)
-	started := time.Now()
+	started := trace.Now()
 	trace.OnTLSHandshakeStart(remoteAddr, config)
 	err = tlsconn.HandshakeContext(ctx)
 	err = MaybeNewErrWrapper(ClassifyTLSHandshakeError, TLSHandshakeOperation, err)
-	finished := time.Now()
+	finished := trace.Now()
 	state := tlsMaybeConnectionState(tlsconn, err)
 	trace.OnTLSHandshakeDone(started, remoteAddr, config, state, err, finished)
 	if err != nil {
