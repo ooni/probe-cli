@@ -183,8 +183,6 @@ func TestTrace(t *testing.T) {
 				NewTLSHandshakerStdlibFn: nil,
 			}
 			thx := tx.NewTLSHandshakerStdlib(model.DiscardLogger)
-			ctx, cancel := context.WithCancel(context.Background())
-			cancel() // fail immediately
 			tcpConn := &mocks.Conn{
 				MockSetDeadline: func(t time.Time) error {
 					return nil
@@ -209,8 +207,9 @@ func TestTrace(t *testing.T) {
 			tlsConfig := &tls.Config{
 				InsecureSkipVerify: true,
 			}
+			ctx := context.Background()
 			conn, state, err := thx.Handshake(ctx, tcpConn, tlsConfig)
-			if err == nil || err.Error() != netxlite.FailureInterrupted {
+			if !errors.Is(err, mockedErr) {
 				t.Fatal("unexpected err", err)
 			}
 			if !reflect.ValueOf(state).IsZero() {
