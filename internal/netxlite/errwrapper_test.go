@@ -117,6 +117,34 @@ func TestNewErrWrapper(t *testing.T) {
 		if ew2.WrappedErr != err2 {
 			t.Fatal("invalid underlying error")
 		}
+		// Make sure we can still use errors.Is with two layers of wrapping
+		if !errors.Is(ew2, ECONNRESET) {
+			t.Fatal("we cannot use errors.Is to retrieve the real syscall error")
+		}
+	})
+}
+
+func TestMaybeNewErrWrapper(t *testing.T) {
+	// TODO(https://github.com/ooni/probe/issues/2163): we can really
+	// simplify the error wrapping situation here by just dropping
+	// NewErrWrapper and always using MaybeNewErrWrapper.
+
+	t.Run("when we pass a nil error to this function", func(t *testing.T) {
+		err := MaybeNewErrWrapper(classifySyscallError, ReadOperation, nil)
+		if err != nil {
+			t.Fatal("unexpected output", err)
+		}
+	})
+
+	t.Run("when we pass a non-nil error to this function", func(t *testing.T) {
+		err := MaybeNewErrWrapper(classifySyscallError, ReadOperation, ECONNRESET)
+		if !errors.Is(err, ECONNRESET) {
+			t.Fatal("unexpected output", err)
+		}
+		var ew *ErrWrapper
+		if !errors.As(err, &ew) {
+			t.Fatal("not an instance of ErrWrapper")
+		}
 	})
 }
 

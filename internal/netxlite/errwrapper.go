@@ -106,6 +106,10 @@ func NewErrWrapper(c classifier, op string, err error) *ErrWrapper {
 	}
 }
 
+// TODO(https://github.com/ooni/probe/issues/2163): we can really
+// simplify the error wrapping situation here by just dropping
+// NewErrWrapper and always using MaybeNewErrWrapper.
+
 // MaybeNewErrWrapper is like NewErrWrapper except that this
 // function won't panic if passed a nil error.
 func MaybeNewErrWrapper(c classifier, op string, err error) error {
