@@ -196,7 +196,7 @@ func tlsMaybeConnectionState(conn TLSConn, err error) tls.ConnectionState {
 // configure the code to use the built-in Mozilla CA if the config
 // field contains a nil RootCAs field.
 //
-// This function will also emit TLS handshake related tracing events.
+// This function will also emit TLS-handshake-related tracing events.
 func (h *tlsHandshakerConfigurable) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {

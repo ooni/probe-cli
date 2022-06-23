@@ -112,7 +112,7 @@ func TestNewTrace(t *testing.T) {
 
 func TestTrace(t *testing.T) {
 	t.Run("NewDialerWithoutResolverFn works as intended", func(t *testing.T) {
-		t.Run("with nonnil dependences and hijacking", func(t *testing.T) {
+		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
 				NewDialerWithoutResolverFn: func(dl model.DebugLogger) model.Dialer {
@@ -134,7 +134,7 @@ func TestTrace(t *testing.T) {
 			}
 		})
 
-		t.Run("with nonnil dependences and without hijacking", func(t *testing.T) {
+		t.Run("when nil", func(t *testing.T) {
 			tx := &Trace{
 				NewDialerWithoutResolverFn: nil,
 			}
@@ -152,7 +152,7 @@ func TestTrace(t *testing.T) {
 	})
 
 	t.Run("NewTLSHandshakerStdlibFn works as intended", func(t *testing.T) {
-		t.Run("with nonnil dependences and hijacking", func(t *testing.T) {
+		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
 				NewTLSHandshakerStdlibFn: func(dl model.DebugLogger) model.TLSHandshaker {
@@ -177,7 +177,7 @@ func TestTrace(t *testing.T) {
 			}
 		})
 
-		t.Run("with nonnil dependences and without hijacking", func(t *testing.T) {
+		t.Run("when nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
 				NewTLSHandshakerStdlibFn: nil,

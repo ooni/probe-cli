@@ -23,7 +23,7 @@ func ContextTraceOrDefault(ctx context.Context) model.Trace {
 	return traceOrDefault(t)
 }
 
-// WithTrace returns a context wrapped that binds to the given trace. If the
+// WithTrace returns a new context that binds to the given trace. If the
 // given trace is nil, this function will call panic.
 func WithTrace(ctx context.Context, trace model.Trace) context.Context {
 	runtimex.PanicIfTrue(trace == nil, "netxlite.WithTrace passed a nil trace")

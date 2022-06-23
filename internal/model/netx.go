@@ -295,10 +295,10 @@ type TLSHandshaker interface {
 // Trace allows to collect measurement traces. A trace is injected into
 // netx operations using context.WithValue. Netx code retrieves the trace
 // using context.Value. See docs/design/dd-003-step-by-step.md for the
-// design document explaining why we implemented the trace.
+// design document explaining why we implemented context-based tracing.
 type Trace interface {
 	// Now returns the current time. Normally, this should be the same
-	// value returned by time.Now but you we want to manipulate the time
+	// value returned by time.Now but you may want to manipulate the time
 	// returned when testing to have deterministic tests.
 	Now() time.Time
 

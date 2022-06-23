@@ -182,7 +182,7 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 }
 
 func TestArchivalSplitHostPort(t *testing.T) {
-	addr, port := archivalSplitHostPort("1.1.1.1")
+	addr, port := archivalSplitHostPort("1.1.1.1") // missing port
 	if addr != "" {
 		t.Fatal("invalid addr", addr)
 	}
