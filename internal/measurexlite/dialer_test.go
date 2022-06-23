@@ -6,7 +6,6 @@ import (
 	"math"
 	"net"
 	"strconv"
-	"sync"
 	"testing"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestNewDialerWithoutResolver(t *testing.T) {
@@ -84,11 +84,7 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 
 	t.Run("DialContext saves into the trace", func(t *testing.T) {
 		zeroTime := time.Now()
-		td := &timeDeterministic{
-			counter:  0,
-			mu:       sync.Mutex{},
-			zeroTime: zeroTime,
-		}
+		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.TimeNowFn = td.Now // deterministic time tracking
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)

@@ -13,10 +13,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/fakefill"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
@@ -47,7 +47,7 @@ func TestAPIClientTemplate(t *testing.T) {
 			HTTPClient: http.DefaultClient,
 			Logger:     model.DiscardLogger,
 		}
-		ff := &fakefill.Filler{}
+		ff := &testingx.FakeFiller{}
 		ff.Fill(tmpl)
 		ac := tmpl.Build()
 		orig := apiClient(*tmpl)
@@ -64,7 +64,7 @@ func TestAPIClientTemplate(t *testing.T) {
 			HTTPClient: http.DefaultClient,
 			Logger:     model.DiscardLogger,
 		}
-		ff := &fakefill.Filler{}
+		ff := &testingx.FakeFiller{}
 		ff.Fill(tmpl)
 		tok := ""
 		ff.Fill(&tok)
@@ -188,7 +188,7 @@ func TestAPIClient(t *testing.T) {
 
 		t.Run("sets the content-type properly", func(t *testing.T) {
 			var jsonReq fakeRequest
-			ff := &fakefill.Filler{}
+			ff := &testingx.FakeFiller{}
 			ff.Fill(&jsonReq)
 			client := newAPIClient()
 			req, err := client.newRequestWithJSONBody(

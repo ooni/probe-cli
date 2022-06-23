@@ -37,12 +37,12 @@ var _ model.TLSHandshaker = &tlsHandshakerTrace{}
 // Handshake implements model.TLSHandshaker.Handshake.
 func (thx *tlsHandshakerTrace) Handshake(
 	ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (net.Conn, tls.ConnectionState, error) {
-	return thx.thx.Handshake(netxlite.WithTrace(ctx, thx.tx), conn, tlsConfig)
+	return thx.thx.Handshake(netxlite.ContextWithTrace(ctx, thx.tx), conn, tlsConfig)
 }
 
 // OnTLSHandshakeStart implements model.Trace.OnTLSHandshakeStart.
 func (tx *Trace) OnTLSHandshakeStart(remoteAddr string, config *tls.Config) {
-	t := tx.Since(tx.ZeroTime)
+	t := tx.TimeSince(tx.ZeroTime)
 	select {
 	case tx.NetworkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "tls_handshake_start"):
 	default: // buffer is full

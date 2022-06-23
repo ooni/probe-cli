@@ -122,17 +122,17 @@ func (tx *Trace) newTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshake
 	return netxlite.NewTLSHandshakerStdlib(dl)
 }
 
-// Now implements model.Trace.Now.
-func (tx *Trace) Now() time.Time {
+// TimeNow implements model.Trace.TimeNow.
+func (tx *Trace) TimeNow() time.Time {
 	if tx.TimeNowFn != nil {
 		return tx.TimeNowFn()
 	}
 	return time.Now()
 }
 
-// Since is equivalent to Trace.Now.Sub(t0).
-func (tx *Trace) Since(t0 time.Time) time.Duration {
-	return tx.Now().Sub(t0)
+// TimeSince is equivalent to Trace.TimeNow().Sub(t0).
+func (tx *Trace) TimeSince(t0 time.Time) time.Duration {
+	return tx.TimeNow().Sub(t0)
 }
 
 var _ model.Trace = &Trace{}

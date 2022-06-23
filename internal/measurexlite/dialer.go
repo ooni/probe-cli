@@ -40,7 +40,7 @@ var _ model.Dialer = &dialerTrace{}
 
 // DialContext implements model.Dialer.DialContext.
 func (d *dialerTrace) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return d.d.DialContext(netxlite.WithTrace(ctx, d.tx), network, address)
+	return d.d.DialContext(netxlite.ContextWithTrace(ctx, d.tx), network, address)
 }
 
 // CloseIdleConnections implements model.Dialer.CloseIdleConnections.

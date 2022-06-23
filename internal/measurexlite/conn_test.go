@@ -2,7 +2,6 @@ package measurexlite
 
 import (
 	"net"
-	"sync"
 	"testing"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestMaybeClose(t *testing.T) {
@@ -67,11 +67,7 @@ func TestWrapNetConn(t *testing.T) {
 			},
 		}
 		zeroTime := time.Now()
-		td := &timeDeterministic{
-			counter:  0,
-			mu:       sync.Mutex{},
-			zeroTime: zeroTime,
-		}
+		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.TimeNowFn = td.Now // deterministic time counting
 		conn := trace.WrapNetConn(underlying)
@@ -155,11 +151,7 @@ func TestWrapNetConn(t *testing.T) {
 			},
 		}
 		zeroTime := time.Now()
-		td := &timeDeterministic{
-			counter:  0,
-			mu:       sync.Mutex{},
-			zeroTime: zeroTime,
-		}
+		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.TimeNowFn = td.Now // deterministic time tracking
 		conn := trace.WrapNetConn(underlying)

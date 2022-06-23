@@ -8,7 +8,6 @@ import (
 	"errors"
 	"net"
 	"reflect"
-	"sync"
 	"testing"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestNewTLSHandshakerStdlib(t *testing.T) {
@@ -72,11 +72,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 	t.Run("Handshake saves into the trace", func(t *testing.T) {
 		mockedErr := errors.New("mocked")
 		zeroTime := time.Now()
-		td := &timeDeterministic{
-			counter:  0,
-			mu:       sync.Mutex{},
-			zeroTime: zeroTime,
-		}
+		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.TimeNowFn = td.Now // deterministic timing
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
@@ -252,11 +248,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		}
 		defer conn.Close()
 		zeroTime := time.Now()
-		dt := &timeDeterministic{
-			counter:  0,
-			mu:       sync.Mutex{},
-			zeroTime: zeroTime,
-		}
+		dt := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.TimeNowFn = dt.Now // deterministic timing
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)

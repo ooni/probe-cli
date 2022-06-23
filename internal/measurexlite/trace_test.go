@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/fakefill"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestNewTrace(t *testing.T) {
@@ -28,7 +28,7 @@ func TestNewTrace(t *testing.T) {
 		})
 
 		t.Run("NetworkEvent has the expected buffer size", func(t *testing.T) {
-			ff := &fakefill.Filler{}
+			ff := &testingx.FakeFiller{}
 			var idx int
 		Loop:
 			for {
@@ -59,7 +59,7 @@ func TestNewTrace(t *testing.T) {
 		})
 
 		t.Run("TCPConnect has the expected buffer size", func(t *testing.T) {
-			ff := &fakefill.Filler{}
+			ff := &testingx.FakeFiller{}
 			var idx int
 		Loop:
 			for {
@@ -78,7 +78,7 @@ func TestNewTrace(t *testing.T) {
 		})
 
 		t.Run("TLSHandshake has the expected buffer size", func(t *testing.T) {
-			ff := &fakefill.Filler{}
+			ff := &testingx.FakeFiller{}
 			var idx int
 		Loop:
 			for {
@@ -228,12 +228,12 @@ func TestTrace(t *testing.T) {
 				return fixedTime
 			},
 		}
-		if !tx.Now().Equal(fixedTime) {
+		if !tx.TimeNow().Equal(fixedTime) {
 			t.Fatal("we cannot override time.Now calls")
 		}
 	})
 
-	t.Run("Since works as intended", func(t *testing.T) {
+	t.Run("TimeSince works as intended", func(t *testing.T) {
 		t0 := time.Date(2022, 01, 01, 00, 00, 00, 00, time.UTC)
 		t1 := t0.Add(10 * time.Second)
 		tx := &Trace{
@@ -241,7 +241,7 @@ func TestTrace(t *testing.T) {
 				return t1
 			},
 		}
-		if tx.Since(t0) != 10*time.Second {
+		if tx.TimeSince(t0) != 10*time.Second {
 			t.Fatal("apparently Trace.Since is broken")
 		}
 	})

@@ -206,9 +206,9 @@ func (d *dialerResolverWithTracing) DialContext(ctx context.Context, network, ad
 	trace := ContextTraceOrDefault(ctx)
 	for _, addr := range addrs {
 		target := net.JoinHostPort(addr, onlyport)
-		started := trace.Now()
+		started := trace.TimeNow()
 		conn, err := d.Dialer.DialContext(ctx, network, target)
-		finished := trace.Now()
+		finished := trace.TimeNow()
 		// TODO(bassosimone): to make the code robust to future refactoring we have
 		// moved error wrapping inside this type. This change opens up the possibility
 		// of simplifying the dialing chain by removing dialerErrWrapper. We'll be

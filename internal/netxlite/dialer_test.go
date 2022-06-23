@@ -13,6 +13,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestNewDialerWithStdlibResolver(t *testing.T) {
@@ -241,6 +242,8 @@ func TestDialerResolverWithTracing(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			// Ensure that the dialer returns a connection that is already wrapping errors,
+			// which is a new behavior since https://github.com/ooni/probe-cli/pull/815
 			errWrapperConn := conn.(*dialerErrWrapperConn)
 			if errWrapperConn.Conn != expectedConn {
 				t.Fatal("unexpected conn")
@@ -414,6 +417,70 @@ func TestDialerResolverWithTracing(t *testing.T) {
 			}
 			if conn != nil {
 				t.Fatal("expected nil conn")
+			}
+		})
+
+		t.Run("uses a context-injected custom trace", func(t *testing.T) {
+			var (
+				called       bool
+				domainOK     bool
+				networkOK    bool
+				remoteAddrOK bool
+				startTimeOK  bool
+				finishTimeOK bool
+				wrappedErr   bool
+			)
+			zeroTime := time.Now()
+			deterministicTime := testingx.NewTimeDeterministic(zeroTime)
+			tx := &mocks.Trace{
+				MockTimeNow: deterministicTime.Now,
+				MockOnConnectDone: func(started time.Time, network, domain, remoteAddr string, err error, finished time.Time) {
+					var ew *ErrWrapper
+					called = true
+					domainOK = (domain == "1.1.1.1")
+					networkOK = (network == "tcp")
+					remoteAddrOK = (remoteAddr == "1.1.1.1:853")
+					startTimeOK = (started.Sub(zeroTime) == 0)
+					finishTimeOK = (finished.Sub(zeroTime) == time.Second)
+					wrappedErr = errors.As(err, &ew)
+				},
+			}
+			ctx := ContextWithTrace(context.Background(), tx)
+			d := &dialerResolverWithTracing{
+				Dialer: &mocks.Dialer{
+					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+						return nil, io.EOF
+					},
+				},
+				Resolver: &NullResolver{},
+			}
+			conn, err := d.DialContext(ctx, "tcp", "1.1.1.1:853")
+			if !errors.Is(err, io.EOF) {
+				t.Fatal("not the error we expected")
+			}
+			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
+			if !called {
+				t.Fatal("not called")
+			}
+			if !domainOK {
+				t.Fatal("domain was not okay")
+			}
+			if !networkOK {
+				t.Fatal("network was not okay")
+			}
+			if !remoteAddrOK {
+				t.Fatal("remoteAddr was not okay")
+			}
+			if !startTimeOK {
+				t.Fatal("start time was not okay")
+			}
+			if !finishTimeOK {
+				t.Fatal("finish time was not okay")
+			}
+			if !wrappedErr {
+				t.Fatal("not wrapped")
 			}
 		})
 	})
