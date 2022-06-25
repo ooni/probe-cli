@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -21,6 +22,11 @@ type Handler struct {
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// Check whether the given URL is bogon.
+	if net.ParseIP(req.URL.Hostname()) != nil && netxlite.IsBogon(req.URL.Hostname()) {
+		w.WriteHeader(400)
+		return
+	}
 	w.Header().Add("Server", fmt.Sprintf(
 		"oohelperd/%s ooniprobe-engine/%s", version.Version, version.Version,
 	))
