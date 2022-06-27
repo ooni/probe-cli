@@ -41,8 +41,8 @@ func (thx *tlsHandshakerTrace) Handshake(
 }
 
 // OnTLSHandshakeStart implements model.Trace.OnTLSHandshakeStart.
-func (tx *Trace) OnTLSHandshakeStart(remoteAddr string, config *tls.Config) {
-	t := tx.TimeSince(tx.ZeroTime)
+func (tx *Trace) OnTLSHandshakeStart(now time.Time, remoteAddr string, config *tls.Config) {
+	t := now.Sub(tx.ZeroTime)
 	select {
 	case tx.NetworkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "tls_handshake_start"):
 	default: // buffer is full

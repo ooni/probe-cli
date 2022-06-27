@@ -329,11 +329,13 @@ type Trace interface {
 	//
 	// Arguments:
 	//
+	// - now is the moment before we start the handshake;
+	//
 	// - remoteAddr is the TCP endpoint with which we are connecting: it will
 	// consist of an IP address and a port (e.g., 8.8.8.8:443, [::1]:5421);
 	//
-	// - config is the non-nil TLS config we're using;
-	OnTLSHandshakeStart(remoteAddr string, config *tls.Config)
+	// - config is the non-nil TLS config we're using.
+	OnTLSHandshakeStart(now time.Time, remoteAddr string, config *tls.Config)
 
 	// OnTLSHandshakeDone is called when the TLS handshake terminates.
 	//

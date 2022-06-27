@@ -217,14 +217,14 @@ func (h *tlsHandshakerConfigurable) Handshake(
 	remoteAddr := conn.RemoteAddr().String()
 	trace := ContextTraceOrDefault(ctx)
 	started := trace.TimeNow()
-	trace.OnTLSHandshakeStart(remoteAddr, config)
+	trace.OnTLSHandshakeStart(started, remoteAddr, config)
 	err = tlsconn.HandshakeContext(ctx)
 	err = MaybeNewErrWrapper(ClassifyTLSHandshakeError, TLSHandshakeOperation, err)
 	finished := trace.TimeNow()
 	state := tlsMaybeConnectionState(tlsconn, err)
 	trace.OnTLSHandshakeDone(started, remoteAddr, config, state, err, finished)
 	if err != nil {
-		return nil, state, err
+		return nil, tls.ConnectionState{}, err
 	}
 	return tlsconn, state, nil
 }

@@ -42,11 +42,11 @@ func TestTrace(t *testing.T) {
 	t.Run("OnTLSHandshakeStart", func(t *testing.T) {
 		var called bool
 		tx := &Trace{
-			MockOnTLSHandshakeStart: func(remoteAddr string, config *tls.Config) {
+			MockOnTLSHandshakeStart: func(now time.Time, remoteAddr string, config *tls.Config) {
 				called = true
 			},
 		}
-		tx.OnTLSHandshakeStart("8.8.8.8:443", &tls.Config{})
+		tx.OnTLSHandshakeStart(time.Now(), "8.8.8.8:443", &tls.Config{})
 		if !called {
 			t.Fatal("not called")
 		}

@@ -56,7 +56,7 @@ func (*traceDefault) OnConnectDone(
 }
 
 // OnTLSHandshakeStart implements model.Trace.OnTLSHandshakeStart.
-func (*traceDefault) OnTLSHandshakeStart(remoteAddr string, config *tls.Config) {
+func (*traceDefault) OnTLSHandshakeStart(now time.Time, remoteAddr string, config *tls.Config) {
 	// nothing
 }
 

@@ -128,7 +128,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				NoTLSVerify:        true,
 				PeerCertificates:   []model.ArchivalMaybeBinaryData{},
 				ServerName:         "dns.cloudflare.com",
-				T:                  (2 * time.Second.Seconds()),
+				T:                  time.Second.Seconds(),
 				Tags:               []string{},
 				TLSVersion:         "",
 			}
@@ -151,7 +151,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 					NumBytes:  0,
 					Operation: "tls_handshake_start",
 					Proto:     "",
-					T:         time.Second.Seconds(),
+					T:         0,
 					Tags:      []string{},
 				}
 				got := events[0]
@@ -167,7 +167,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 					NumBytes:  0,
 					Operation: "tls_handshake_done",
 					Proto:     "",
-					T:         (2 * time.Second.Seconds()),
+					T:         time.Second.Seconds(),
 					Tags:      []string{},
 				}
 				got := events[1]
@@ -282,7 +282,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				NoTLSVerify:        false,
 				PeerCertificates:   []model.ArchivalMaybeBinaryData{},
 				ServerName:         "dns.google",
-				T:                  (2 * time.Second.Seconds()),
+				T:                  time.Second.Seconds(),
 				Tags:               []string{},
 				TLSVersion:         netxlite.TLSVersionString(connState.Version),
 			}
@@ -313,7 +313,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 					NumBytes:  0,
 					Operation: "tls_handshake_start",
 					Proto:     "",
-					T:         time.Second.Seconds(),
+					T:         0,
 					Tags:      []string{},
 				}
 				got := events[0]
@@ -329,7 +329,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 					NumBytes:  0,
 					Operation: "tls_handshake_done",
 					Proto:     "",
-					T:         (2 * time.Second.Seconds()),
+					T:         time.Second.Seconds(),
 					Tags:      []string{},
 				}
 				got := events[1]

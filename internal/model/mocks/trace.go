@@ -18,7 +18,7 @@ type Trace struct {
 	MockOnConnectDone func(
 		started time.Time, network, domain, remoteAddr string, err error, finished time.Time)
 
-	MockOnTLSHandshakeStart func(remoteAddr string, config *tls.Config)
+	MockOnTLSHandshakeStart func(now time.Time, remoteAddr string, config *tls.Config)
 
 	MockOnTLSHandshakeDone func(started time.Time, remoteAddr string, config *tls.Config,
 		state tls.ConnectionState, err error, finished time.Time)
@@ -35,8 +35,8 @@ func (t *Trace) OnConnectDone(
 	t.MockOnConnectDone(started, network, domain, remoteAddr, err, finished)
 }
 
-func (t *Trace) OnTLSHandshakeStart(remoteAddr string, config *tls.Config) {
-	t.MockOnTLSHandshakeStart(remoteAddr, config)
+func (t *Trace) OnTLSHandshakeStart(now time.Time, remoteAddr string, config *tls.Config) {
+	t.MockOnTLSHandshakeStart(now, remoteAddr, config)
 }
 
 func (t *Trace) OnTLSHandshakeDone(started time.Time, remoteAddr string, config *tls.Config,
