@@ -442,7 +442,7 @@ func TestDialerResolverWithTracing(t *testing.T) {
 					remoteAddrOK = (remoteAddr == "1.1.1.1:853")
 					startTimeOK = (started.Sub(zeroTime) == 0)
 					finishTimeOK = (finished.Sub(zeroTime) == time.Second)
-					wrappedErr = errors.As(err, &ew)
+					wrappedErr = errors.As(err, &ew) && ew.Failure == FailureEOFError
 				},
 			}
 			ctx := ContextWithTrace(context.Background(), tx)

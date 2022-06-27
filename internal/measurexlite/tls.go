@@ -93,8 +93,8 @@ func NewArchivalTLSOrQUICHandshakeResult(
 // newArchivalBinaryData is a factory that adapts binary data to the
 // model.ArchivalMaybeBinaryData format.
 func newArchivalBinaryData(data []byte) model.ArchivalMaybeBinaryData {
-	// TODO(bassosimone): we should actually extend the model's archival
-	// data format to have a pure-binary-data type for the cases in which
+	// TODO(https://github.com/ooni/probe/issues/2165): we should actually extend the
+	// model's archival data format to have a pure-binary-data type for the cases in which
 	// we know in advance we're dealing with binary data.
 	return model.ArchivalMaybeBinaryData{
 		Value: string(data),

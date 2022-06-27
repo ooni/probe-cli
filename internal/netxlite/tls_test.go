@@ -833,3 +833,35 @@ func TestClonedTLSConfigOrNewEmptyConfig(t *testing.T) {
 		}
 	})
 }
+
+func TestMaybeConnectionState(t *testing.T) {
+	t.Run("with an error", func(t *testing.T) {
+		returned := tls.ConnectionState{
+			CipherSuite: tls.TLS_AES_128_GCM_SHA256,
+		}
+		conn := &mocks.TLSConn{
+			MockConnectionState: func() tls.ConnectionState {
+				return returned
+			},
+		}
+		state := tlsMaybeConnectionState(conn, errors.New("mocked error"))
+		if !reflect.ValueOf(state).IsZero() {
+			t.Fatal("expected to see a zero connection state")
+		}
+	})
+
+	t.Run("without an error", func(t *testing.T) {
+		returned := tls.ConnectionState{
+			CipherSuite: tls.TLS_AES_128_GCM_SHA256,
+		}
+		conn := &mocks.TLSConn{
+			MockConnectionState: func() tls.ConnectionState {
+				return returned
+			},
+		}
+		state := tlsMaybeConnectionState(conn, nil)
+		if reflect.ValueOf(state).IsZero() {
+			t.Fatal("expected to see a nonzero connection state")
+		}
+	})
+}

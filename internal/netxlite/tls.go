@@ -18,9 +18,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// TODO(bassosimone): check whether there's now equivalent functionality
-// inside the standard library allowing us to map numbers to names.
-
 var (
 	tlsVersionString = map[uint16]string{
 		tls.VersionTLS10: "TLSv1",
@@ -85,6 +82,13 @@ func TLSVersionString(value uint16) string {
 // the value to a cipher suite name, we return `TLS_CIPHER_SUITE_UNKNOWN_ddd`
 // where `ddd` is the numeric value passed to this function.
 func TLSCipherSuiteString(value uint16) string {
+	// TODO(https://github.com/ooni/probe/issues/2166): the standard library has a
+	// function for mapping a cipher suite to a string, but the value returned in case of
+	// missing cipher suite is different from the one we would return
+	// here. We could consider simplifying this code anyway because
+	// in most, if not all, cases we have a valid cipher suite and we
+	// just need to make sure what the spec says we should do when
+	// passed an unknown cipher suite.
 	if str, found := tlsCipherSuiteString[value]; found {
 		return str
 	}

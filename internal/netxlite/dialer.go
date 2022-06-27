@@ -223,7 +223,6 @@ func (d *dialerResolverWithTracing) DialContext(ctx context.Context, network, ad
 		err = MaybeNewErrWrapper(ClassifyGenericError, ConnectOperation, err)
 		trace.OnConnectDone(started, network, onlyhost, target, err, finished)
 		if err == nil {
-			// TODO(bassosimone): we should test that the conn is err wapped here
 			conn = &dialerErrWrapperConn{conn}
 			return conn, nil
 		}

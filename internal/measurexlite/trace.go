@@ -25,9 +25,13 @@ import (
 // construct this data type manually with the desired buffer sizes.
 //
 // We have convenience methods for extracting events from the buffered
-// channels. Otherwise, you could read the channels directly.
+// channels. Otherwise, you could read the channels directly. (In which
+// case, remember to issue nonblocking channel reads because channels are
+// never closed and they're just written when new events occur.)
 type Trace struct {
-	// Index is the MANDATORY unique index of this trace within the current measurement.
+	// Index is the MANDATORY unique index of this trace within the
+	// current measurement. If you don't care about uniquely identifying
+	// treaces, you can use zero to indicate the "default" trace.
 	Index int64
 
 	// NetworkEvent is MANDATORY and buffers network events. If you create
@@ -79,7 +83,8 @@ const (
 //
 // Arguments:
 //
-// - index is the unique index of this trace within the current measurement;
+// - index is the unique index of this trace within the current measurement (use
+// zero if you don't care about giving this trace a unique ID);
 //
 // - zeroTime is the time when we started the current measurement.
 func NewTrace(index int64, zeroTime time.Time) *Trace {
@@ -89,8 +94,8 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 			chan *model.ArchivalNetworkEvent,
 			NetworkEventBufferSize,
 		),
-		NewDialerWithoutResolverFn: nil,
-		NewTLSHandshakerStdlibFn:   nil,
+		NewDialerWithoutResolverFn: nil, // use default
+		NewTLSHandshakerStdlibFn:   nil, // use default
 		TCPConnect: make(
 			chan *model.ArchivalTCPConnectResult,
 			TCPConnectBufferSize,
@@ -99,7 +104,7 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 			chan *model.ArchivalTLSOrQUICHandshakeResult,
 			TLSHandshakeBufferSize,
 		),
-		TimeNowFn: nil,
+		TimeNowFn: nil, // use default
 		ZeroTime:  zeroTime,
 	}
 }

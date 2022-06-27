@@ -299,7 +299,8 @@ type TLSHandshaker interface {
 type Trace interface {
 	// TimeNow returns the current time. Normally, this should be the same
 	// value returned by time.Now but you may want to manipulate the time
-	// returned when testing to have deterministic tests.
+	// returned when testing to have deterministic tests. To this end, you
+	// can use functionality exported by the ./internal/testingx pkg.
 	TimeNow() time.Time
 
 	// OnConnectDone is called when connect terminates.
