@@ -25,7 +25,6 @@ package probeservices
 
 import (
 	"errors"
-	"net/http"
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
@@ -56,7 +55,7 @@ var (
 
 // Session is how this package sees a Session.
 type Session interface {
-	DefaultHTTPClient() *http.Client
+	DefaultHTTPClient() model.HTTPClient
 	KeyValueStore() model.KeyValueStore
 	Logger() model.Logger
 	ProxyURL() *url.URL

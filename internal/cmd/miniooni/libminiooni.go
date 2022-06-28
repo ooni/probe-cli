@@ -1,11 +1,14 @@
 package main
 
+//
+// Core implementation
+//
+
 import (
 	"context"
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/url"
 	"os"
 	"path"
@@ -20,6 +23,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/oonirun"
 	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/pborman/getopt/v2"
 )
@@ -31,13 +35,13 @@ type Options struct {
 	HomeDir          string
 	Inputs           []string
 	InputFilePaths   []string
-	Limit            int64
 	MaxRuntime       int64
 	NoJSON           bool
 	NoCollector      bool
 	ProbeServicesURL string
 	Proxy            string
 	Random           bool
+	RepeatEvery      time.Duration
 	ReportFile       string
 	TorArgs          []string
 	TorBinary        string
@@ -78,10 +82,6 @@ func init() {
 		"Add test-dependent input to the test input", "INPUT",
 	)
 	getopt.FlagLong(
-		&globalOptions.Limit, "limit", 0,
-		"Limit the number of URLs tested by Web Connectivity", "N",
-	)
-	getopt.FlagLong(
 		&globalOptions.MaxRuntime, "max-runtime", 0,
 		"Maximum runtime in seconds when looping over a list of inputs (zero means infinite)", "N",
 	)
@@ -100,6 +100,10 @@ func init() {
 	)
 	getopt.FlagLong(
 		&globalOptions.Random, "random", 0, "Randomize inputs",
+	)
+	getopt.FlagLong(
+		&globalOptions.RepeatEvery, "repeat-every", 0,
+		"Repeat the measurement every INTERVAL (e.g., 30m, 1h, 2h)", "INTERVAL",
 	)
 	getopt.FlagLong(
 		&globalOptions.ReportFile, "reportfile", 'o',
@@ -170,12 +174,6 @@ func fatalOnError(err error, msg string) {
 	}
 }
 
-func warnOnError(err error, msg string) {
-	if err != nil {
-		log.WithError(err).Warn(msg)
-	}
-}
-
 func mustMakeMap(input []string) (output map[string]string) {
 	output = make(map[string]string)
 	for _, opt := range input {
@@ -233,15 +231,15 @@ Do you consent to OONI Probe data collection?
 
 OONI Probe collects evidence of internet censorship and measures
 network performance:
- 
+
 - OONI Probe will likely test objectionable sites and services;
- 
+
 - Anyone monitoring your internet activity (such as a government
 or Internet provider) may be able to tell that you are using OONI Probe;
- 
+
 - The network data you collect will be published automatically
 unless you use miniooni's -n command line flag.
- 
+
 To learn more, see https://ooni.org/about/risks/.
 
 If you're onboard, re-run the same command and add the --yes flag, to
@@ -263,15 +261,6 @@ func maybeWriteConsentFile(yes bool, filepath string) (err error) {
 	return
 }
 
-// limitRemoved is the text printed when the user uses --limit
-const limitRemoved = `USAGE CHANGE: The --limit option has been removed in favor of
-the --max-runtime option. Please, update your script to use --max-runtime
-instead of --limit. The argument to --max-runtime is the maximum number
-of seconds after which to stop running Web Connectivity.
-
-This error message will be removed after 2021-11-01.
-`
-
 // tunnelAndProxy is the text printed when the user specifies
 // both the --tunnel and the --proxy options
 const tunnelAndProxy = `USAGE ERROR: The --tunnel option and the --proxy
@@ -287,18 +276,11 @@ of miniooni, when we will allow a tunnel to use a proxy.
 // This function will panic in case of a fatal error. It is up to you that
 // integrate this function to either handle the panic of ignore it.
 func MainWithConfiguration(experimentName string, currentOptions Options) {
-	fatalIfFalse(currentOptions.Limit == 0, limitRemoved)
 	fatalIfTrue(currentOptions.Proxy != "" && currentOptions.Tunnel != "",
 		tunnelAndProxy)
 	if currentOptions.Tunnel != "" {
 		currentOptions.Proxy = fmt.Sprintf("%s:///", currentOptions.Tunnel)
 	}
-
-	ctx := context.Background()
-
-	extraOptions := mustMakeMap(currentOptions.ExtraOptions)
-	annotations := mustMakeMap(currentOptions.Annotations)
-
 	logger := &log.Logger{Level: log.InfoLevel, Handler: &logHandler{Writer: os.Stderr}}
 	if currentOptions.Verbose {
 		logger.Level = log.DebugLevel
@@ -307,6 +289,24 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		currentOptions.ReportFile = "report.jsonl"
 	}
 	log.Log = logger
+	for {
+		mainSingleIteration(logger, experimentName, currentOptions)
+		if currentOptions.RepeatEvery <= 0 {
+			break
+		}
+		log.Infof("waiting %s before repeating the measurement", currentOptions.RepeatEvery)
+		log.Info("use Ctrl-C to interrupt miniooni")
+		time.Sleep(currentOptions.RepeatEvery)
+	}
+}
+
+// mainSingleIteration runs a single iteration. There may be multiple iterations
+// when the user specifies the --repeat-every command line flag.
+func mainSingleIteration(logger model.Logger, experimentName string, currentOptions Options) {
+	extraOptions := mustMakeMap(currentOptions.ExtraOptions)
+	annotations := mustMakeMap(currentOptions.Annotations)
+
+	ctx := context.Background()
 
 	//Mon Jan 2 15:04:05 -0700 MST 2006
 	log.Infof("Current time: %s", time.Now().Format("2006-01-02 15:04:05 MST"))
@@ -388,95 +388,56 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	log.Infof("- resolver's network: %s (%s)", sess.ResolverNetworkName(),
 		sess.ResolverASNString())
 
-	builder, err := sess.NewExperimentBuilder(experimentName)
-	fatalOnError(err, "cannot create experiment builder")
+	// We handle the oonirun experiment name specially. The user must specify
+	// `miniooni -i {OONIRunURL} oonirun`` to run a OONI Run URL (v1 or v2).
+	if experimentName == "oonirun" {
+		ooniRunMain(ctx, sess, currentOptions, annotations)
+		return
+	}
 
-	inputLoader := &engine.InputLoader{
-		CheckInConfig: &model.OOAPICheckInConfig{
-			RunType:  model.RunTypeManual,
-			OnWiFi:   true, // meaning: not on 4G
-			Charging: true,
-		},
-		ExperimentName: experimentName,
-		InputPolicy:    builder.InputPolicy(),
-		StaticInputs:   currentOptions.Inputs,
-		SourceFiles:    currentOptions.InputFilePaths,
+	// Otherwise just run OONI experiments as we normally do.
+	desc := &oonirun.Experiment{
+		Annotations:    annotations,
+		ExtraOptions:   extraOptions,
+		Inputs:         currentOptions.Inputs,
+		InputFilePaths: currentOptions.InputFilePaths,
+		MaxRuntime:     currentOptions.MaxRuntime,
+		Name:           experimentName,
+		NoCollector:    currentOptions.NoCollector,
+		NoJSON:         currentOptions.NoJSON,
+		Random:         currentOptions.Random,
+		ReportFile:     currentOptions.ReportFile,
 		Session:        sess,
 	}
-	inputs, err := inputLoader.Load(context.Background())
-	fatalOnError(err, "cannot load inputs")
+	err = desc.Run(ctx)
+	fatalOnError(err, "cannot run experiment")
+}
 
-	if currentOptions.Random {
-		rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-		rnd.Shuffle(len(inputs), func(i, j int) {
-			inputs[i], inputs[j] = inputs[j], inputs[i]
-		})
+// ooniRunMain runs the experiments described by the given OONI Run URLs. This
+// function works with both v1 and v2 OONI Run URLs.
+func ooniRunMain(ctx context.Context,
+	sess *engine.Session, currentOptions Options, annotations map[string]string) {
+	fatalIfTrue(
+		len(currentOptions.Inputs) <= 0,
+		"in oonirun mode you need to specify at least one URL using `-i URL`",
+	)
+	fatalIfTrue(
+		len(currentOptions.InputFilePaths) > 0,
+		"in oonirun mode you cannot specify any `-f FILE` file",
+	)
+	for _, URL := range currentOptions.Inputs {
+		cfg := &oonirun.Config{
+			Annotations: annotations,
+			MaxRuntime:  currentOptions.MaxRuntime,
+			NoCollector: currentOptions.NoCollector,
+			NoJSON:      currentOptions.NoJSON,
+			Random:      currentOptions.Random,
+			ReportFile:  currentOptions.ReportFile,
+			Session:     sess,
+		}
+		if err := oonirun.Measure(ctx, cfg, URL); err != nil {
+			sess.Logger().Warnf("oonirun: Measure failed: %s", err.Error())
+			continue
+		}
 	}
-
-	err = builder.SetOptionsGuessType(extraOptions)
-	fatalOnError(err, "cannot parse extraOptions")
-
-	experiment := builder.NewExperiment()
-	defer func() {
-		log.Infof("experiment: recv %s, sent %s",
-			humanize.SI(experiment.KibiBytesReceived()*1024, "byte"),
-			humanize.SI(experiment.KibiBytesSent()*1024, "byte"),
-		)
-	}()
-
-	submitter, err := engine.NewSubmitter(ctx, engine.SubmitterConfig{
-		Enabled: !currentOptions.NoCollector,
-		Session: sess,
-		Logger:  log.Log,
-	})
-	fatalOnError(err, "cannot create submitter")
-
-	saver, err := engine.NewSaver(engine.SaverConfig{
-		Enabled:    !currentOptions.NoJSON,
-		Experiment: experiment,
-		FilePath:   currentOptions.ReportFile,
-		Logger:     log.Log,
-	})
-	fatalOnError(err, "cannot create saver")
-
-	inputProcessor := &engine.InputProcessor{
-		Annotations: annotations,
-		Experiment: &experimentWrapper{
-			child: engine.NewInputProcessorExperimentWrapper(experiment),
-			total: len(inputs),
-		},
-		Inputs:     inputs,
-		MaxRuntime: time.Duration(currentOptions.MaxRuntime) * time.Second,
-		Options:    currentOptions.ExtraOptions,
-		Saver:      engine.NewInputProcessorSaverWrapper(saver),
-		Submitter: submitterWrapper{
-			child: engine.NewInputProcessorSubmitterWrapper(submitter),
-		},
-	}
-	err = inputProcessor.Run(ctx)
-	fatalOnError(err, "inputProcessor.Run failed")
-}
-
-type experimentWrapper struct {
-	child engine.InputProcessorExperimentWrapper
-	total int
-}
-
-func (ew *experimentWrapper) MeasureAsync(
-	ctx context.Context, input string, idx int) (<-chan *model.Measurement, error) {
-	if input != "" {
-		log.Infof("[%d/%d] running with input: %s", idx+1, ew.total, input)
-	}
-	return ew.child.MeasureAsync(ctx, input, idx)
-}
-
-type submitterWrapper struct {
-	child engine.InputProcessorSubmitterWrapper
-}
-
-func (sw submitterWrapper) Submit(ctx context.Context, idx int, m *model.Measurement) error {
-	err := sw.child.Submit(ctx, idx, m)
-	warnOnError(err, "submitting measurement failed")
-	// policy: we do not stop the loop if measurement submission fails
-	return nil
 }
