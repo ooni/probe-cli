@@ -17,13 +17,10 @@ import (
 func (m *Measurer) MeasureTLS(ctx context.Context, addr string, targetSNI string, tlsEvents chan<- *CompleteTrace) {
 	out := &CompleteTrace{}
 	passSNI := m.config.snipass()
-	TTLMin := m.config.iterations()
-	passTrace := NewTraceEvent(addr, passSNI)
+	passTrace := m.IterativeTrace(ctx, addr, passSNI)
 	out.PassTrace = passTrace
-	targetTrace := NewTraceEvent(addr, targetSNI)
+	targetTrace := m.IterativeTrace(ctx, addr, targetSNI)
 	out.TargetTrace = targetTrace
-	m.IterativeTrace(ctx, addr, passSNI, &TTLMin, passTrace)
-	m.IterativeTrace(ctx, addr, targetSNI, &TTLMin, targetTrace)
 	select {
 	case tlsEvents <- out:
 	default:
@@ -32,13 +29,18 @@ func (m *Measurer) MeasureTLS(ctx context.Context, addr string, targetSNI string
 }
 
 // IterativeTrace calls the iterativeTrace and populates the TraceEvent with iteration results
-func (m *Measurer) IterativeTrace(ctx context.Context, addr string, sni string,
-	min_ttl *int, trace *TraceEvent) {
-	iterations := *min_ttl
+func (m *Measurer) IterativeTrace(ctx context.Context, addr string, sni string) (trace *TraceEvent) {
+	iterations := m.config.iterations()
 	out := make(chan *IterEvent, iterations)
+	trace = &TraceEvent{
+		Address:    addr,
+		SNI:        sni,
+		Iterations: []*IterEvent{},
+	}
 	m.iterativeTrace(ctx, addr, sni, iterations, out)
 	iterEvents := extractEvents(out) // align the iteration results before modeling them
 	trace.AddIterations(iterEvents)
+	return trace
 }
 
 func (m *Measurer) iterativeTrace(ctx context.Context, addr string, sni string,
@@ -57,7 +59,11 @@ func (m *Measurer) iterativeTrace(ctx context.Context, addr string, sni string,
 func iterAsync(ctx context.Context, addr string, sni string,
 	ttl int, out chan<- *IterEvent, wg *sync.WaitGroup) {
 	defer wg.Done()
-	out <- HandshakeWithTTL(ctx, addr, sni, ttl)
+	select {
+	case out <- HandshakeWithTTL(ctx, addr, sni, ttl):
+	default:
+		return
+	}
 }
 
 // This handles the conn and calls the handshake function after setting the TTL value

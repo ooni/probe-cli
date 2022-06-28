@@ -27,15 +27,6 @@ type TraceEvent struct {
 	mu sync.Mutex
 }
 
-func NewTraceEvent(addr string, sni string) (out *TraceEvent) {
-	out = &TraceEvent{
-		Address:    addr,
-		SNI:        sni,
-		Iterations: []*IterEvent{},
-	}
-	return
-}
-
 func (t *TraceEvent) AddIterations(ev []*IterEvent) {
 	t.mu.Lock()
 	t.Iterations = append(t.Iterations, ev...)

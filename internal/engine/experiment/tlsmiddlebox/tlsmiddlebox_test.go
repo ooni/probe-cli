@@ -1,9 +1,8 @@
 package tlsmiddlebox
 
-// add more tests for tlsmiddlebox
-
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -66,22 +65,83 @@ func TestConfig_sni(t *testing.T) {
 	})
 }
 
-func TestMeasurer_Run(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		m := NewExperimentMeasurer(Config{
-			SNI: "1337x.be",
-		})
+func TestMeasurer_input_failure(t *testing.T) {
+	runHelper := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
+		m := NewExperimentMeasurer(Config{})
 		ctx := context.Background()
 		meas := &model.Measurement{
-			Input: model.MeasurementTarget("https://www.example.com"),
+			Input: model.MeasurementTarget(input),
 		}
 		sess := &mockable.Session{
 			MockableLogger: model.DiscardLogger,
 		}
 		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 		err := m.Run(ctx, sess, meas, callbacks)
-		if err != nil {
+		return meas, m, err
+	}
+
+	t.Run("with empty input", func(t *testing.T) {
+		_, _, err := runHelper("")
+		if !errors.Is(err, errNoInputProvided) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with invalid URL", func(t *testing.T) {
+		_, _, err := runHelper("\t")
+		if !errors.Is(err, errInputIsNotAnURL) {
+			t.Fatal("unexpected error", err)
+		}
+	})
+
+	t.Run("with invalid scheme", func(t *testing.T) {
+		_, _, err := runHelper("http://8.8.8.8:443/")
+		if !errors.Is(err, errInvalidScheme) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 }
+
+func TestMeasurer_run(t *testing.T) {
+	m := NewExperimentMeasurer(Config{})
+	ctx := context.Background()
+	meas := &model.Measurement{
+		Input: model.MeasurementTarget("https://www.example.com"),
+	}
+	sess := &mockable.Session{
+		MockableLogger: model.DiscardLogger,
+	}
+	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
+	err := m.Run(ctx, sess, meas, callbacks)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+}
+
+func TestMeasurer_run_with_config(t *testing.T) {
+	m := NewExperimentMeasurer(Config{
+		SNIPass: "example.com",
+		SNI:     "google.com",
+	})
+	ctx := context.Background()
+	meas := &model.Measurement{
+		Input: model.MeasurementTarget("https://1.1.1.1:443"),
+	}
+	sess := &mockable.Session{
+		MockableLogger: model.DiscardLogger,
+	}
+	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
+	err := m.Run(ctx, sess, meas, callbacks)
+	tk := meas.TestKeys.(*TestKeys)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+	if tk.TLSTrace[0].PassTrace.SNI != "example.com" {
+		t.Fatal("invalid SNI recorded")
+	}
+	if tk.TLSTrace[0].TargetTrace.SNI != "google.com" {
+		t.Fatal("invalid SNI recorded")
+	}
+}
+
+// add more tests
