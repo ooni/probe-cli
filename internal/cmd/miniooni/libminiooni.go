@@ -176,8 +176,18 @@ func warnOnError(err error, msg string) {
 	}
 }
 
-func mustMakeMap(input []string) (output map[string]string) {
+func mustMakeMapString(input []string) (output map[string]string) {
 	output = make(map[string]string)
+	for _, opt := range input {
+		key, value, err := split(opt)
+		fatalOnError(err, "cannot split key-value pair")
+		output[key] = value
+	}
+	return
+}
+
+func mustMakeMapAny(input []string) (output map[string]any) {
+	output = make(map[string]any)
 	for _, opt := range input {
 		key, value, err := split(opt)
 		fatalOnError(err, "cannot split key-value pair")
@@ -233,15 +243,15 @@ Do you consent to OONI Probe data collection?
 
 OONI Probe collects evidence of internet censorship and measures
 network performance:
- 
+
 - OONI Probe will likely test objectionable sites and services;
- 
+
 - Anyone monitoring your internet activity (such as a government
 or Internet provider) may be able to tell that you are using OONI Probe;
- 
+
 - The network data you collect will be published automatically
 unless you use miniooni's -n command line flag.
- 
+
 To learn more, see https://ooni.org/about/risks/.
 
 If you're onboard, re-run the same command and add the --yes flag, to
@@ -296,8 +306,8 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 
 	ctx := context.Background()
 
-	extraOptions := mustMakeMap(currentOptions.ExtraOptions)
-	annotations := mustMakeMap(currentOptions.Annotations)
+	extraOptions := mustMakeMapAny(currentOptions.ExtraOptions)
+	annotations := mustMakeMapString(currentOptions.Annotations)
 
 	logger := &log.Logger{Level: log.InfoLevel, Handler: &logHandler{Writer: os.Stderr}}
 	if currentOptions.Verbose {
@@ -413,7 +423,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		})
 	}
 
-	err = builder.SetOptionsGuessType(extraOptions)
+	err = builder.SetOptionsAny(extraOptions)
 	fatalOnError(err, "cannot parse extraOptions")
 
 	experiment := builder.NewExperiment()
