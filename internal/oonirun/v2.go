@@ -36,7 +36,7 @@ type v2Arguments struct {
 	Inputs []string `json:"inputs"`
 
 	// Options contains the experiment options.
-	Options map[string]string `json:"options"`
+	Options map[string]any `json:"options"`
 }
 
 // ErrHTTPRequestFailed indicates that an HTTP request failed.

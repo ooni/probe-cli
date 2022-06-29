@@ -22,7 +22,7 @@ type Experiment struct {
 	Annotations map[string]string
 
 	// ExtraOptions contains OPTIONAL extra options for the experiment.
-	ExtraOptions map[string]string
+	ExtraOptions map[string]any
 
 	// Inputs contains the OPTIONAL experiment Inputs
 	Inputs []string
@@ -89,7 +89,7 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	}
 
 	// 4. configure experiment's options
-	if err := builder.SetOptionsGuessType(ed.ExtraOptions); err != nil {
+	if err := builder.SetOptionsAny(ed.ExtraOptions); err != nil {
 		return err
 	}
 
@@ -148,9 +148,9 @@ func (ed *Experiment) Run(ctx context.Context) error {
 
 // experimentOptionsToStringList convers the options to []string, which is
 // the format with which we include them into a OONI Measurement
-func experimentOptionsToStringList(options map[string]string) (out []string) {
+func experimentOptionsToStringList(options map[string]any) (out []string) {
 	for key, value := range options {
-		out = append(out, fmt.Sprintf("%s=%s", key, value))
+		out = append(out, fmt.Sprintf("%s=%v", key, value))
 	}
 	return
 }

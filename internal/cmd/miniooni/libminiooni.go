@@ -175,8 +175,18 @@ func fatalOnError(err error, msg string) {
 	}
 }
 
-func mustMakeMap(input []string) (output map[string]string) {
+func mustMakeMapString(input []string) (output map[string]string) {
 	output = make(map[string]string)
+	for _, opt := range input {
+		key, value, err := split(opt)
+		fatalOnError(err, "cannot split key-value pair")
+		output[key] = value
+	}
+	return
+}
+
+func mustMakeMapAny(input []string) (output map[string]any) {
+	output = make(map[string]any)
 	for _, opt := range input {
 		key, value, err := split(opt)
 		fatalOnError(err, "cannot split key-value pair")
@@ -304,8 +314,8 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 // mainSingleIteration runs a single iteration. There may be multiple iterations
 // when the user specifies the --repeat-every command line flag.
 func mainSingleIteration(logger model.Logger, experimentName string, currentOptions Options) {
-	extraOptions := mustMakeMap(currentOptions.ExtraOptions)
-	annotations := mustMakeMap(currentOptions.Annotations)
+	extraOptions := mustMakeMapAny(currentOptions.ExtraOptions)
+	annotations := mustMakeMapString(currentOptions.Annotations)
 
 	ctx := context.Background()
 

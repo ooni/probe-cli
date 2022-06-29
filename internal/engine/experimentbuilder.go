@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strconv"
 
 	"github.com/iancoleman/strcase"
@@ -129,28 +128,68 @@ func (b *ExperimentBuilder) SetOptionString(key, value string) error {
 	return nil
 }
 
-var intregexp = regexp.MustCompile("^[0-9]+$")
-
-// SetOptionGuessType sets an option whose type depends on the
-// option value. If the value is `"true"` or `"false"` we
-// assume the option is boolean. If the value is numeric, then we
-// set an integer option. Otherwise we set a string option.
-func (b *ExperimentBuilder) SetOptionGuessType(key, value string) error {
-	if value == "true" || value == "false" {
-		return b.SetOptionBool(key, value == "true")
+// SetOptionAny sets an option whose value is an any value.
+func (b *ExperimentBuilder) SetOptionAny(key string, value any) error {
+	field, err := fieldbyname(b.config, key)
+	if err != nil {
+		return err
 	}
-	if !intregexp.MatchString(value) {
-		return b.SetOptionString(key, value)
+	switch field.Kind() {
+	case reflect.Int64:
+		switch v := value.(type) {
+		case int64:
+			field.SetInt(int64(v))
+			return nil
+		case int32:
+			field.SetInt(int64(v))
+			return nil
+		case int16:
+			field.SetInt(int64(v))
+			return nil
+		case int8:
+			field.SetInt(int64(v))
+			return nil
+		case string:
+			number, err := strconv.ParseInt(v, 10, 64)
+			if err != nil {
+				return err
+			}
+			field.SetInt(number)
+			return nil
+		default:
+			return errors.New("cannot set integer option")
+		}
+	case reflect.Bool:
+		switch v := value.(type) {
+		case bool:
+			field.SetBool(v)
+			return nil
+		case string:
+			if v != "true" && v != "false" {
+				return errors.New("invalid boolean value")
+			}
+			field.SetBool(v == "true")
+			return nil
+		default:
+			return errors.New("cannot set boolean option")
+		}
+	case reflect.String:
+		switch v := value.(type) {
+		case string:
+			field.SetString(v)
+			return nil
+		default:
+			return errors.New("cannot set string option")
+		}
+	default:
+		return errors.New("unsupported option type")
 	}
-	number, _ := strconv.ParseInt(value, 10, 64)
-	return b.SetOptionInt(key, number)
 }
 
-// SetOptionsGuessType calls the SetOptionGuessType method for every
-// key, value pair contained by the opts input map.
-func (b *ExperimentBuilder) SetOptionsGuessType(opts map[string]string) error {
-	for k, v := range opts {
-		if err := b.SetOptionGuessType(k, v); err != nil {
+// SetOptionsAny sets options from a map[string]any.
+func (b *ExperimentBuilder) SetOptionsAny(options map[string]any) error {
+	for key, value := range options {
+		if err := b.SetOptionAny(key, value); err != nil {
 			return err
 		}
 	}
