@@ -128,7 +128,8 @@ func init() {
 		&globalOptions.Version, "version", 0, "Print version and exit",
 	)
 	getopt.FlagLong(
-		&globalOptions.Yes, "yes", 0, "I accept the risk of running OONI",
+		&globalOptions.Yes, "yes", 'y',
+		"Accept risk of running OONI, new OONI Run links or OONI Run links modified upstream",
 	)
 }
 
@@ -425,18 +426,26 @@ func ooniRunMain(ctx context.Context,
 		len(currentOptions.InputFilePaths) > 0,
 		"in oonirun mode you cannot specify any `-f FILE` file",
 	)
+	logger := sess.Logger()
 	for _, URL := range currentOptions.Inputs {
 		cfg := &oonirun.Config{
-			Annotations: annotations,
-			MaxRuntime:  currentOptions.MaxRuntime,
-			NoCollector: currentOptions.NoCollector,
-			NoJSON:      currentOptions.NoJSON,
-			Random:      currentOptions.Random,
-			ReportFile:  currentOptions.ReportFile,
-			Session:     sess,
+			AcceptChanges: currentOptions.Yes,
+			Annotations:   annotations,
+			KVStore:       sess.KeyValueStore(),
+			MaxRuntime:    currentOptions.MaxRuntime,
+			NoCollector:   currentOptions.NoCollector,
+			NoJSON:        currentOptions.NoJSON,
+			Random:        currentOptions.Random,
+			ReportFile:    currentOptions.ReportFile,
+			Session:       sess,
 		}
 		if err := oonirun.Measure(ctx, cfg, URL); err != nil {
-			sess.Logger().Warnf("oonirun: Measure failed: %s", err.Error())
+			if errors.Is(err, oonirun.ErrNeedToAcceptChanges) {
+				logger.Warnf("oonirun: to accept these changes, rerun adding `-y` to the command line")
+				logger.Warnf("oonirun: we'll show this error every time the upstream link changes")
+				panic("oonirun: need to accept changes using `-y`")
+			}
+			logger.Warnf("oonirun: Measure failed: %s", err.Error())
 			continue
 		}
 	}
