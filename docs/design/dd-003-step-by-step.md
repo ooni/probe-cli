@@ -1,16 +1,19 @@
 # Step-by-step measurements
 
-| | |
-|:-------------|:-------------|
-| Author | [@bassosimone](https://github.com/bassosimone) |
-| Last-Updated | 2022-06-13   |
-| Reviewed-by | [@hellais](https://github.com/hellais) |
-| Reviewed-by | [@DecFox](https://github.com/DecFox/) |
-| Status       | approved     |
-| Obsoletes | [dd-002-netx.md](dd-002-netx.md) |
+|              |                                                |
+|--------------|------------------------------------------------|
+| Author       | [@bassosimone](https://github.com/bassosimone) |
+| Last-Updated | 2022-06-29                                     |
+| Reviewed-by  | [@hellais](https://github.com/hellais)         |
+| Reviewed-by  | [@DecFox](https://github.com/DecFox/)          |
+| Edited-by    | [@ainghazal](https://github.com/ainghazal/)    |
+| Status       | approved                                       |
+| Obsoletes    | [dd-002-netx.md](dd-002-netx.md)               |
 
-*Abstract.* The original [netx design document](dd-002-netx.md) is now two
-years old. Since we wrote such a document, we amended the overall design
+## Abstract
+
+The original [netx design document](dd-002-netx.md) is now two
+years old. Since we wrote that document, we amended the overall design
 several times. The four major design changes were:
 
 1. saving rather than emitting
@@ -24,50 +27,56 @@ pattern [ooni/probe-engine#522](https://github.com/ooni/probe-engine/pull/522);
 4. measurex [ooni/probe-cli#528](https://github.com/ooni/probe-cli/pull/528).
 
 In this (long) design document, we will revisit the original problem proposed by
-[df-002-netx.md](df-002-netx.md), in light of what we changed and learned from the
-changes we applied. We will highlight the significant pain points of the current
-implementation, which are the following:
+[dd-002-netx.md](dd-002-netx.md), in light of all the changes and lessons
+learned since then. We will highlight the significant pain points of the
+current implementation, which are the following:
 
-1. that the measurement library API is significantly different from the Go stdlib
-API, therefore violating this original `netx` design goal: that writing a new
-experiment means using slightly different constructors that deviate from the standard
-library only to meet specific measurement goals we have;
+1. The measurement library API is significantly different from the Go stdlib
+API. This violates one of the central design goals for `netx`: that writing a new
+experiment would involve using constructors very similar to the standard
+library. Such deviations were supposed to be made only to meet our specific
+measurement goals;
 
-2. that the decorator pattern leads to complexity in creating measurement types,
+2. The decorator pattern has lead to complexity in creating measurement types,
 which in turn seems to be the reason why the previous issue exists;
 
-3. that the decorator pattern does not allow us to precisely collect all the
-data that matters for events such as TCP connect and DNS round trips using
-a custom transport, thus suggesting that we should revisit our choice of using
-decorators and revert back to some form of _constructor based injection_ to
+3. The decorator pattern does not allow us to precisely collect all the
+data that matters for certain events (such as TCP connect and DNS round trips using
+a custom transport). This suggests that we should revisit our choice of using
+decorators, and revert back to some form of _constructor based injection_ to
 inject a data type suitable for saving events.
 
-In doing that, we will also propose an incremental plan for moving the tree
+Finally, this document also proposes an incremental plan for moving the tree
 forward from [the current state](https://github.com/ooni/probe-cli/tree/1685ef75b5a6a0025a1fd671625b27ee989ef111)
-to a state where complexity is transferred from the measurement-support library to
-the implementation of each individual network experiment.
+to a state in which the complexity has been transferred from the
+measurement-support library to the implementation of each individual network
+experiment.
 
 ## Index
 
-In [netxlite: the underlying library](#netxlite-the-underlying-network-library) we
-describe the current design of the underlying network library.
+There are four main sections in this document:
 
-In [measurement tactics](#measurement-tactics) we provide an historical perspective
-on the measurement tactics, we adopted or just tried.
+[1. Netxlite: the underlying library](#1-netxlite-the-underlying-network-library)
+describes the current design of the underlying network library.
 
-The [step-by-step refactoring proposal](#step-by-step-refactoring-proposal)
-contains the main contribution of this design document: a proposal to refactor
-the existing codebase to address our current measurement-code problems.
+[2. Measurement tactics](#2-measurement-tactics) gives an historical perspective
+on different measurement tactics we adopted or tried in the past, and reflects
+on their merits and downsides.
 
-The [reviews](#reviews) section contains information about reviews.
+[3. Step-by-step refactoring proposal](#3-step-by-step-refactoring-proposal)
+contains the main contribution of this design document: a concrete proposal to
+refactor the existing codebase to address our current measurement-code
+problems.
 
-## netxlite: the underlying network library
+[4. Document reviews](#4-document-reviews) contains information about reviews of this document.
 
-This section describes `netxlite`, the underlying network library, from a
+## 1. netxlite: the underlying network library
+
+This section describes `netxlite`, the underlying network library, from an
 historical perspective. We explain our data collection needs, and what types
 from the standard library we're using as patterns.
 
-### Measurement Observations
+### 1.1. Measurement Observations
 
 Most OONI experiments need to observe and give meaning to these events:
 
@@ -121,7 +130,7 @@ defines how we archive experiment results as a set of observations.
 (Orthogonally, we may also want to improve the data format, but this is
 not under discussion now.)
 
-### Error Wrapping
+### 1.2. Error Wrapping
 
 The OONI data format also specifies [how we should represent
 errors](https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md).
@@ -140,7 +149,7 @@ DNS response messages or the syscall error returned by a Read call. By
 adding this, we would give those who analyze the data information to
 evaluate the correctness of a measurement.
 
-### Go Stdlib
+### 1.3 Go Stdlib
 
 The Go standard library provides the following structs and interfaces
 that we can use for measuring:
@@ -235,7 +244,7 @@ Apart from the stdlib and quic-go, the only other significant network code
 dependency is [miekg/dns](https://github.com/miekg/dns)
 for custom DNS resolvers (e.g., DNS-over-HTTPS).
 
-### Network Extensions
+### 1.4. Network Extensions
 
 A reasonable idea is to try to use types as close as possible to the
 standard library. By following this strategy, we can compose our code
@@ -281,12 +290,20 @@ netxlite as a dependency.
 itself with measurements unlike [the original netx](df-002-netx.md), which contained
 both basic networking wrappers and network measurement code.)
 
-## Measurement Tactics
+## 2. Measurement Tactics
 
 Each subsection presents a different tactic for collecting measurement
-observations.
+observations, while reflecting on their pros and cons.
 
-### Context-Based Tracing
+We revisit four distinct tactics:
+
+* [(1) Context-based tracing](#21-context-based-tracing), 
+* [(2) Decorator-based tracing](#22-decorator-based-tracing),
+* [(3) Step-by-step measurements](#23-step-by-step-measurements), and
+* [(4) Measurex: splitting DNSLookup and Endpoint Measurements](#24-measurex-splitting-dnslookup-and-endpoint-measurements).
+
+
+### 2.1. Context-Based Tracing
 
 This tactic is the first one we implemented. We call this approach
 "tracing" because it produces a trace of the events, and it's
@@ -304,7 +321,7 @@ the stdlib allows one to use the context to perform network tracing
 we progressively abandoned `httptrace` as our tracing needs
 become more complex than what `httptrace` could provide us with.
 
-#### How this tactic feels like
+#### How context-tracing feels like
 
 I tried to adapt how this code would look if we used it now. As
 [dd-002-netx.md](dd-002-netx.md) suggests, here I am trying to separate
@@ -346,7 +363,7 @@ As you can see, I have marked with fire emojis where we
 need to figure out what happened by reading the trace. We are going
 to discuss this issue in the next section.
 
-#### Issue #1: distance between collection and interpretation
+#### Issue #1 with context tracing: distance between collection and interpretation
 
 The nice part of this approach is that the network-interaction part of
 the experiment is \~easy. The bad part is that we must figure out
@@ -422,7 +439,7 @@ respect and make result-determining code more obvious and closer to the code
 that performs the measurement. We will eventually come to fix this issue later
 in this document. For now, let us continue to analyze this tactic.
 
-#### Issue #2: the Context is magic and implicit
+#### Issue #2 with context tracing: the Context is magic and implicit
 
 Another pain point is that we're using the Context's magic. What happens
 there feels more obscure than explicit initialization for performing
@@ -444,7 +461,7 @@ dialer := saver.WrapQUICDialer(dialer)
 conn, err := dialer.DialContext(ctx, /* ... */)
 ```
 
-In the latter case, it's evident that we're *decorating* the original
+In the later case, it's evident that we're *decorating* the original
 dialer with an extended dialer that knows how to perform network
 measurements. In the former case, it feels magic that we're setting some
 value as an opaque any inside of the context, and there's a documented
@@ -460,7 +477,7 @@ explicitly wrapping a type. I will discuss this topic when we
 analyze the next tactic because the next tactic is all about reducing
 the cognitive burden and avoiding the context.
 
-#### Issue #3: we obtain a flat trace
+#### Issue #3 with context tracing: we obtain a flat trace
 
 The most straightforward implementation of this approach yields a flat trace. This
 means that one needs to be careful to understand, say, which events are
@@ -474,7 +491,7 @@ assign numbers to distinct HTTP round trips and DNS lookups so that
 later it is possible to make sense of the trace. This was indeed the
 approach we chose initially. However, this approach puts more pressure
 on the context magic because it does not just suffice to wrap the
-context once with WithValue, but you need to additionally wrap it when
+context once with `WithValue`, but you need to additionally wrap it when
 you descend into sub-operations. (Other approaches are possible, but I
 will discuss this one because it looks conceptually cleaner to
 create a new "node" in the trace like it was a DOM.)
@@ -529,7 +546,7 @@ censorship. See our [DoT in Iran
 research](https://ooni.org/post/2020-iran-dot/) for more
 information.)
 
-### Decoration-Based Tracing
+### 2.2. Decorator-Based Tracing
 
 In [probe-engine#359](https://github.com/ooni/probe-engine/issues/359), we
 started planning refactoring of `netx` to solve the identified issues
@@ -903,7 +920,7 @@ the `CNAME` and getaddrinfo's return code very easily):
  }
 ```
 
-#### Concluding remarks
+#### Concluding remarks on decorator-based tracing
 
 Historically, the decorator-based approach helped simplify
 the codebase (probably because what we had previously was
@@ -922,29 +939,29 @@ Whatever choice we make, it should probably include some form of
 dependency injection for a trace that allows us to collect the events we
 care about more precisely and with less effort.
 
-### Step-by-Step Measurements
+### 2.3. Step-by-step measurements
 
-We had previous conversations around simplifying how we perform
-measurements (e.g., I remember a conversation with
-[Vinicius](https://github.com/fortuna), where he advocated
-for decomposing measurements in simple operations, and he
-rightfully pointed out that tracing is excellent for debugging
-but complicating assigning meaning to measurements).
+We've had many conversations about how to simplify the way we do measurements.
+For instance, [Vinicius](https://github.com/fortuna) at some point advocated 
+for decomposing measurements in simple operations. He rightfully pointed out
+that tracing is excellent for debugging, but it complicates to assign
+meaning to each measurement.
 
-We also mentioned that, in the codebase, we documented that `netx` was discouraged as an
-approach for new experiments. The first chance to try a different tactic
-was the development of the `websteps` prototype. We tried to implement
-step-by-step measurements, which, in its most radical form, calls for
-performing each relevant step in isolation, immediately saving a
-small trace and interpreting it before moving on to the next step
-(unless there's an error, in which case you typically stop).
+We had documented in the codebase that `netx` was discouraged as an approach
+for new experiments. We got the first chance to try a
+different tactic while developing the `websteps` prototype.
+
+In `websteps`, we tried to implement step-by-step measurements: in its most
+radical form, this calls for performing each relevant step in isolation,
+immediately saving a small trace and interpreting it before moving on to the
+next step (unless there's an error, in which case you typically stop).
 
 Looking back at the Go stdlib API, the main blocker to implementing
 this tactic is how to reconcile it with HTTP transports, which expects to
 dial and control their own connections. Luckily,
 [Kathrin](https://github.com/kelmenhorst)
 [implemented](https://github.com/ooni/probe-cli/pull/432) the
-following trick that solved such an issue:
+following trick that allows us to solve this issue:
 
 ```Go
 // NewSingleUseDialer returns a "single use" dialer. The first
@@ -978,8 +995,8 @@ func (s *dialerSingleUse) DialContext(ctx context.Context, network string, addr 
 With a "single-use" dialer, we  provide an HTTPTransport with a fake
 dialer that provides a previously-established
 connection to the transport itself. The following snippet shows
-code from my first naive attempt at writing code using this tactic,
-where originally identified pain points have been emphasized:
+code from my first naive attempt at writing code using this approach. The pain
+points we had originally identified have been emphasized:
 
 ```Go
 dialer := netxlite.NewDialerWithoutResolver()
@@ -1015,31 +1032,31 @@ if err != nil {
 ```
 
 Let's discuss the good parts before moving on to the bad parts. It is
-dead obvious which operation failed and why, and we know what went
-wrong and can analyze the observations immediately.
+dead obvious which operation failed and why, and **we know what went
+wrong and can analyze the observations immediately**.
 
 Additionally, if you ask someone who knows the standard library to write
 an experiment that provides information about TCP connect, TLS handshake, and
 HTTP round trip using `netxlite`, they would probably write something
 similar to the above code.
 
-#### Issue #1: no persistent connections
+#### Issue #1 with step-by-step approach: no persistent connections
 
-Without adding extra complexity, we lose the possibility of using
-persistent connections. This may not be a huge problem except for
+Without adding extra complexity, we lose the possibility to use 
+persistent connections. This may not be a huge problem, except for
 redirects. Each redirect will require us to set up a new connection,
-even though an ordinary http.Transport would probably have reused an
+even though an ordinary `http.Transport` would probably have reused an
 existing one.
 
 Because we're measuring censorship, I would argue it's OK to not reuse
-connections. Sure, the measurement could be slower, but we'd get
+connections. Sure, the measurement can be slower, but we'll also get
 more data points on TCP/IP and TLS blocking.
 
-#### Issue #2: requires manual handling of redirects
+#### Issue #2 with step-by-step approach: requires manual handling of redirects
 
 Because we cannot reuse connections easily, we cannot rely on
-&http.Client{} to perform redirections automatically for us. This is why
-websteps implements HTTP redirection manually.
+`&http.Client{}` to perform redirections automatically for us. This is why
+`websteps` implements HTTP redirection manually.
 
 While it may seem that discussing redirects is out of scope,
 historically I had been reluctant to switch to a step-by-step model
@@ -1075,7 +1092,7 @@ Because this problem of redirection is fundamental to many experiments
 (not only webconnectivity but also, e.g., whatsapp), any step-by-step
 approach library needs this functionality.
 
-#### Issue #3: DRY pressure
+#### Issue #3 with step-by-step approach: DRY pressure
 
 Before, I said that saving traces seems complicated. That is not entirely
 true. Depending on the extent to which we are willing to suffer the pain of
@@ -1195,7 +1212,7 @@ some network operation. If the API is doing too much, I
 might not have the ability to hook me into it and run the follow-up
 experiment right after the operation I needed to do.
 
-#### Concluding remarks
+#### Concluding remarks on step-by-step measurements
 
 If we have a way to collect observations,
 this approach certainly has the advantage of having some
@@ -1215,13 +1232,16 @@ probably want to split DNS and other operations to get a chance to
 test all (or many) of the available IP addresses and use tracing within DNS and
 other operations.
 
-### DNSLookup and Endpoint Measurements
+### 2.4. measurex: splitting DNSLookup and Endpoint Measurements
 
-This approach is currently implemented as measurex. A DNSLookup
-measurement should be an obvious concept, while it's probably less
-clear what's an endpoint measurement. So, let's clarify.
+This fourth and last approach of the ones we'll discuss is currently
+implemented in `measurex`.
 
-An endpoint measurement is one of the following operations:
+A **DNSLookup measurement** is perhaps an obvious concept, but an **endpoint
+measurement** is probably not obvious. So, let's first clarify the
+terminology:
+
+We define an **endpoint measurement** as one of the following operations:
 
 1. given a TCP endpoint (IP address and port), TCP connect to it;
 
@@ -1249,12 +1269,12 @@ addresses, so that pattern was already in OONI somehow (at least for the
 most important experiment measuring web censorship.)
 
 Another interesting observation about the above set of operations is
-that each of them could fail exactly once. The DNSLookup could fail or
+that each of them could fail **exactly once**. The DNSLookup could fail or
 yield addresses, and TCP connect could fail or succeed. In the TCP connect
 plus TLS handshake case, you stop there if you fail the TCP connect. And
 so on.
 
-Because of this reasoning, one could say that the measurex tactic
+Because of this reasoning, one could say that the `measurex` tactic
 is equivalent to the previous one in relatively easily identifying
 the failed operation and filling the measurement. That seems to be an argument
 for having a library containing code to simplify measurements.
@@ -1263,15 +1283,17 @@ an entirely new API*. After careful consideration, it seems preferable to
 select an API that is closer to what a typical Go programmer would
 expect.
 
-## Step-by-step refactoring proposal
+## 3. Step-by-step refactoring proposal
+
+Finally, all the discussion is in place to get to a concrete proposal.
 
 I tried to reimplement the telegram experiment using a pure step-by-step approach
 ([here's the
 gist](https://gist.github.com/bassosimone/f6e680d35805174d1f150bc15ef754af)).
-It looks fine, but one ends up writing a support library such as measurex. Yet,
+It looks fine, but one ends up writing a support library such as `measurex`. Yet,
 as noted above, the API exposed by such a measurement
 library matters, and an API familiar to Go developers seems preferable
-to the API implemented by measurex.
+to the API implemented by `measurex`.
 
 There are two key insights I derived from my telegram PoC.
 
@@ -1415,7 +1437,7 @@ the PoC is that *traces are numbered*. This is not what happens
 currently in OONI Probe, but it is *beneficial*. By numbering
 traces, we can quite easily tell which existing event belongs to which
 specific submeasurement. (If there's no need to number traces, we can
-just set a zero index to all the traces we collect, *e passa la paura*.)
+just set a zero index to all the traces we collect, *[e passa la paura](https://context.reverso.net/traduzione/italiano-inglese/passa+la+paura)*.)
 
 One minor aspect to keep in mind in this design is that we need to
 communicate to developers that the *trace* will cause the body snapshot
@@ -1423,14 +1445,14 @@ to be read as part of the round trip. This fact occurs because OONI's
 definition of a request-response transaction includes the response body
 (or a snapshot) while Go does not include a body in http.Response
 but allows for streaming the body on demand. Because reading all the
-body with netxlite.ReadAllContext without any limit bound is unsafe (as
+body with `netxlite.ReadAllContext` without any limit bound is unsafe (as
 it could consume lots of RAM, and we're not always running on systems
 with lots of RAM), the example was already limiting the response
 body length before we introduced data collection. Yet, with the introduction of
-data collection, the explicit netxlite.ReadAllContext is now reading
+data collection, the explicit `netxlite.ReadAllContext` is now reading
 from memory rather than from the network because the body snapshot has
 already been read. So, we need to ensure that developers know that
-netxlite.ReadAllContext cannot be used to measure/estimate the
+`netxlite.ReadAllContext` cannot be used to measure/estimate the
 download speed. (In such a case, one would need to either use a
 different transport or not collect any snapshot and then read
 the whole body directly from the network--so perhaps we
@@ -1453,16 +1475,16 @@ will always be some form of *limited* step-by-step, where we will always
 split DNS lookup and endpoint measurements as we already do in
 dnscheck to ensure we measure \~all IP addresses.
 
-Compared to measurex, I think step-by-step is \~better because it does
-not require anyone to learn more beyond how to use netxlite instead of
-the standard library. (BTW, we cannot really get rid of netxlite because
+Compared to `measurex`, I think step-by-step is \~better because it does
+not require anyone to learn more beyond how to use `netxlite` instead of
+the standard library. (BTW, we cannot really get rid of `netxlite` because
 we have measurement requirements that call for wrapping and extending
 the standard library or to provide enhancements beyond the stdlib
 functionality.)
 
 Regarding the way to implement tracing, from the above discussion, it is
-clear that we should move away from the wrapping approach because it
-does not allow us to correctly collect specific events. (To be fair, it
+clear that **we should move away from the wrapping approach because it
+does not allow us to correctly collect specific events**. (To be fair, it
 could allow us to do that, but it would entail
 significant wrapping efforts.) I would therefore recommend rewriting
 tracing to use the context (ugh!) but to wrap this implementation inside
@@ -1538,21 +1560,21 @@ func NewArchivalTLSOrQUICHandshakeResult(index int64, started time.Time,
 // package internal/netxlite
 
 func (thx *tlsHandshakerConfigurable) Handshake(ctx context.Context,
-	conn net.Conn, config \*tls.Config) (net.Conn, tls.ConnectionState, error) {
-	// ...
-	remoteAddr := conn.RemoteAddr().String()				// +++ (i.e., added line)
-	trace := ContextTraceOrDefault(ctx)						// +++
-	started := time.Now()									// +++
-	err := tlsconn.HandshakeContext(ctx)
-	finished := time.Now()									// +++
-	if err != nil {
-		trace.OnTLSHandshake(started, remoteAddr, config,	// +++
-			tls.ConnectionState{}, err, finished)			// +++
-		return nil, tls.ConnectionState{}, err
-	}
-	state := tlsconn.connectionState()
-	trace.OnTLSHandshake(started, remoteAddr, config,		// +++
-		state, nil, finished)								// +++
+        conn net.Conn, config \*tls.Config) (net.Conn, tls.ConnectionState, error) {
+        // ...
+        remoteAddr := conn.RemoteAddr().String()                      // +++ (i.e., added line)
+        trace := ContextTraceOrDefault(ctx)                           // +++
+        started := time.Now()                                         // +++
+        err := tlsconn.HandshakeContext(ctx)
+        finished := time.Now()                                        // +++
+        if err != nil {
+                trace.OnTLSHandshake(started, remoteAddr, config,     // +++
+                        tls.ConnectionState{}, err, finished)         // +++
+                return nil, tls.ConnectionState{}, err
+        }
+        state := tlsconn.connectionState()
+        trace.OnTLSHandshake(started, remoteAddr, config,             // +++
+                state, nil, finished)                                 // +++
 	return tlsconn, state, nil
 }
 
@@ -1563,8 +1585,8 @@ func ContextWithTrace(ctx context.Context, trace model.Trace) context.Context { 
 // package internal/model
 
 type Trace interface {
-	OnTLSHandshake(started time.Time, remoteAddr string, config *tls.Config,
-		state tls.ConnectionState, err error, finished time.Time)
+        OnTLSHandshake(started time.Time, remoteAddr string, config *tls.Config,
+                state tls.ConnectionState, err error, finished time.Time)
 
 	// ...
 }
@@ -1580,7 +1602,7 @@ can stick with the current model where we have possibly unbounded
 traces. (This is just an implementation detail that does not matter much
 regarding the overall design.)
 
-### Smooth transition
+### 3.1. Smooth transition
 
 We should do incremental refactoring. We should create a few issues
 describing these design aspects and summarize what would be the way
@@ -1600,7 +1622,7 @@ earlier with a simplified tree with less measurement-supporting
 libraries. It also seems that dash, hhfm, and hirl can be migrated quite
 easily away from netx and urlgetter.
 
-### Netxlite scope change
+### 3.2. Netxlite scope change
 
 If we move forward with this plan, we will slightly change the scope of
 netxlite to include lightweight support for collecting traces. We
@@ -1613,7 +1635,7 @@ policy for saving measurements by implementing model.Trace properly. So,
 we should also amend the documentation of netxlite to
 explicitly mention support for tracing as a new concern.
 
-### Cleanups
+### 3.3. Cleanups
 
 If we implement this step-by-step change, we no longer need a "flat" data
 format. We use the flat data format for processing the results
@@ -1629,7 +1651,7 @@ concern is with the error wrapping, which probably should be in the same
 place where we are using the context to inject a trace to ensure
 that error wrapping and tracing happen together.)
 
-## Reviews
+## 4. Document Reviews
 
 ### 2022-06-09 - Review: Arturo
 
