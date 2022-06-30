@@ -6,7 +6,7 @@
 | Last-Updated | 2022-06-29                                     |
 | Reviewed-by  | [@hellais](https://github.com/hellais)         |
 | Reviewed-by  | [@DecFox](https://github.com/DecFox/)          |
-| Edited-by    | [@ainghazal](https://github.com/ainghazal/)    |
+| Reviewed-by  | [@ainghazal](https://github.com/ainghazal/)    |
 | Status       | approved                                       |
 | Obsoletes    | [dd-002-netx.md](dd-002-netx.md)               |
 
