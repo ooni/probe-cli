@@ -1,9 +1,10 @@
-# generate verifies that `go generate ./...` is not broken
+# Verifies that `go generate ./...` is not broken
 name: generate
 on:
   push:
     branches:
       - "release/**"
+
 jobs:
   test:
     runs-on: ubuntu-20.04

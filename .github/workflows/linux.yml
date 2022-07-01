@@ -1,4 +1,4 @@
-# linux builds and publishes ooniprobe for Linux
+# Builds and publishes ooniprobe for Linux
 name: linux
 on:
   push:
@@ -10,6 +10,8 @@ on:
 jobs:
   build_and_publish_386:
     runs-on: "ubuntu-20.04"
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
     steps:
       - uses: actions/checkout@v2
         with:
@@ -33,6 +35,8 @@ jobs:
 
   build_and_publish_amd64:
     runs-on: "ubuntu-20.04"
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
     steps:
       - uses: actions/checkout@v2
         with:
@@ -55,6 +59,8 @@ jobs:
 
   build_and_publish_armv7:
     runs-on: "ubuntu-20.04"
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
     steps:
       - uses: actions/checkout@v2
         with:
@@ -79,6 +85,8 @@ jobs:
 
   build_and_publish_arm64:
     runs-on: "ubuntu-20.04"
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
     steps:
       - uses: actions/checkout@v2
         with:

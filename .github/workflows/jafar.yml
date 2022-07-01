@@ -1,9 +1,10 @@
-# jafar checks whether the jafar tool is still WAI.
+# Checks whether the jafar tool is still WAI.
 name: jafar
 on:
   push:
     branches:
       - "release/**"
+
 jobs:
   test:
     runs-on: ubuntu-20.04

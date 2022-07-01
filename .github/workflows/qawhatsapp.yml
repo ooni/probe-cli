@@ -1,9 +1,10 @@
-# qawhatsapp runs QA checks for the whatsapp experiment
+# Runs QA checks for the whatsapp experiment
 name: "qawhatsapp"
 on:
   push:
     branches:
       - "release/**"
+
 jobs:
   test:
     runs-on: ubuntu-20.04

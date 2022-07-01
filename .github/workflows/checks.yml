@@ -1,10 +1,11 @@
-# performs several code quality checks
+# Performs code quality checks
 name: checks
 on:
   pull_request:
   push:
     branches:
       - "master"
+
 jobs:
   perform_code_quality_checks:
     runs-on: "${{ matrix.os }}"

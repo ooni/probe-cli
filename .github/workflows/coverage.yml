@@ -1,4 +1,4 @@
-# runs tests and computes the code coverage
+# Runs tests and computes the code coverage
 name: coverage
 on:
   pull_request:
@@ -6,8 +6,8 @@ on:
     branches:
       - "master"
       - "release/**"
-jobs:
 
+jobs:
   measure_coverage:
     runs-on: ubuntu-20.04
     strategy:
