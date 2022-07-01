@@ -1,9 +1,10 @@
-# qafbmessenger runs QA checks for the fbmessenger experiment
+# Runs QA checks for the fbmessenger experiment
 name: "qafbmessenger"
 on:
   push:
     branches:
       - "release/**"
+
 jobs:
   test:
     runs-on: ubuntu-20.04

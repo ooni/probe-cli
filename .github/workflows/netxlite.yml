@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - "master"
+      - "release/**"
+
 jobs:
   test_netxlite_package:
     runs-on: "${{ matrix.os }}"

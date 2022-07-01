@@ -1,4 +1,4 @@
-# windows builds ooniprobe for Windows
+# Builds ooniprobe for Windows and publishes binaries.
 name: windows
 on:
   push:
@@ -37,6 +37,8 @@ jobs:
   test:
     needs: build
     runs-on: "windows-2019"
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      actions: read
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -47,6 +49,10 @@ jobs:
   publish:
     needs: test
     runs-on: "ubuntu-20.04"
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
+      actions: read
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
