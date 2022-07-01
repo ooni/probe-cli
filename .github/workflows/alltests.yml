@@ -1,9 +1,10 @@
-# alltests runs the whole test suite
+# Runs the whole test suite
 name: alltests
 on:
   push:
     branches:
       - "release/**"
+
 jobs:
   test:
     runs-on: ubuntu-20.04

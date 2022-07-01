@@ -1,4 +1,4 @@
-# ios checks whether we can build for iOS
+# Builds for iOS and publishes packages
 name: ios
 on:
   push:
@@ -10,6 +10,9 @@ on:
 jobs:
   build_and_publish:
     runs-on: macos-10.15
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
+
     steps:
       - uses: actions/setup-go@v1
         with:

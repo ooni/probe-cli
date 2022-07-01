@@ -1,4 +1,4 @@
-# android checks whether we can build for Android
+# Builds and publishes Android packages
 name: android
 on:
   push:
@@ -10,10 +10,14 @@ on:
 jobs:
   build_and_publish:
     runs-on: ubuntu-20.04
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
+
     steps:
       - uses: actions/setup-go@v1
         with:
           go-version: "1.18.3"
+
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0

@@ -1,4 +1,4 @@
-# macos builds ooniprobe for macos
+# Builds ooniprobe for macos
 name: macos
 on:
   push:
@@ -10,6 +10,8 @@ on:
 jobs:
   build_and_publish:
     runs-on: "macos-11"
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
     steps:
       - uses: actions/setup-go@v1
         with:
