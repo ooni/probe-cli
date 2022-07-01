@@ -1,9 +1,10 @@
-# qahirl runs QA checks for the hirl experiment
+# Runs QA checks for the hirl experiment
 name: "qahirl"
 on:
   push:
     branches:
       - "release/**"
+
 jobs:
   test:
     runs-on: ubuntu-20.04

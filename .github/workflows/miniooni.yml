@@ -1,4 +1,4 @@
-# miniooni checks whether we can build the research client miniooni
+# This workflow checks whether we can build the research client miniooni
 # and publishes the linux binaries as artifacts and, if we're building
 # a tag, into the current release. We don't publish artifacts for
 # Windows and macOS because they're not signed. For releases, we have
@@ -15,6 +15,8 @@ on:
 jobs:
   build_and_publish:
     runs-on: ubuntu-20.04
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
     steps:
 
       - uses: actions/setup-go@v1
@@ -39,14 +41,17 @@ jobs:
         with:
           name: miniooni-linux-386
           path: ./CLI/miniooni-linux-386
+
       - uses: actions/upload-artifact@v1
         with:
           name: miniooni-linux-amd64
           path: ./CLI/miniooni-linux-amd64
+
       - uses: actions/upload-artifact@v1
         with:
           name: miniooni-linux-armv7
           path: ./CLI/miniooni-linux-armv7
+
       - uses: actions/upload-artifact@v1
         with:
           name: miniooni-linux-arm64
