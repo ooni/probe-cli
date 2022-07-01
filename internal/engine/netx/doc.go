@@ -46,4 +46,8 @@
 //
 // See docs/design/dd-002-nets.md in the probe-cli repository for
 // the design document describing this package.
+//
+// This package is now frozen. Please, use measurexlite for new code. See
+// https://github.com/ooni/probe-cli/blob/master/docs/design/dd-003-step-by-step.md
+// for details about this.
 package netx

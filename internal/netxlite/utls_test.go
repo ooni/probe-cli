@@ -19,8 +19,7 @@ func TestNewTLSHandshakerUTLS(t *testing.T) {
 	if logger.DebugLogger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	errWrapper := logger.TLSHandshaker.(*tlsHandshakerErrWrapper)
-	configurable := errWrapper.TLSHandshaker.(*tlsHandshakerConfigurable)
+	configurable := logger.TLSHandshaker.(*tlsHandshakerConfigurable)
 	if configurable.NewConn == nil {
 		t.Fatal("expected non-nil NewConn")
 	}

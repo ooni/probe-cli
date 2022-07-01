@@ -41,7 +41,7 @@ func TestReadAllContext(t *testing.T) {
 				//
 				// Note: Returning a wrapped error to ensure we address
 				// https://github.com/ooni/probe/issues/1965
-				return len(b), newErrWrapper(classifyGenericError,
+				return len(b), NewErrWrapper(ClassifyGenericError,
 					ReadOperation, io.EOF)
 			},
 		}
@@ -171,7 +171,7 @@ func TestCopyContext(t *testing.T) {
 				//
 				// Note: Returning a wrapped error to ensure we address
 				// https://github.com/ooni/probe/issues/1965
-				return len(b), newErrWrapper(classifyGenericError,
+				return len(b), NewErrWrapper(ClassifyGenericError,
 					ReadOperation, io.EOF)
 			},
 		}

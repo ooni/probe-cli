@@ -874,7 +874,7 @@ mechanisms if the context is too bad):
 
  // lookupHost issues a lookup host query for the specified qtype (e.g., dns.A).
  func (r *ParallelResolver) lookupHost(ctx context.Context, hostname string,
- 	qtype uint16, out chan\<- \*parallelResolverResult) {
+ 	qtype uint16, out chan<- *parallelResolverResult) {
  	encoder := &DNSEncoderMiekg{}
  	query := encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
 +	started := time.Now()
@@ -1329,7 +1329,7 @@ const webDomain = "web.telegram.org"
 // This method does not return any value and writes results directly inside
 // the test keys, which have thread safe methods for that.
 func (mx *Measurer) measureWebEndpointHTTPS(ctx context.Context, wg *sync.WaitGroup,
-logger model.Logger, zeroTime time.Time, tk \*TestKeys, address string) {
+logger model.Logger, zeroTime time.Time, tk *TestKeys, address string) {
 	// 0. setup
 	const webTimeout = 7 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, webTimeout)
@@ -1344,8 +1344,8 @@ logger model.Logger, zeroTime time.Time, tk \*TestKeys, address string) {
 	// 1. establish a TCP connection with the endpoint
 
 	// dialer := nextlite.NewDialerwithoutResolver(logger)    // --- (removed line)
-	trace := measurexlite.NewTrace(index, logger, zeroTime)   // +++ (added line)
-	dialer := trace.NewDialerWithoutResolver()                // +++ (...)
+	trace := measurexlite.NewTrace(index, zeroTime)           // +++ (added line)
+	dialer := trace.NewDialerWithoutResolver(logger)          // +++ (...)
 	defer tk.addTCPConnectResults(trace.TCPConnectResults())  // +++ (...)
 
 	conn, err := dialer.DialContext(ctx, "tcp", endpoint)
@@ -1366,7 +1366,7 @@ logger model.Logger, zeroTime time.Time, tk \*TestKeys, address string) {
 	// thx := netxlite.NewTLSHandshakerStdlib(logger)              // ---
 	conn = trace.WrapConn(conn)                                    // +++
 	defer tk.addNetworkEvents(trace.NetworkEvents())               // +++
-	thx := trace.NewTLSHandshakerStdlib()                          // +++
+	thx := trace.NewTLSHandshakerStdlib(logger)                    // +++
 	defer tk.addTLSHandshakeResult(trace.TLSHandshakeResults())    // +++
 
 	config := &tls.Config{
@@ -1498,23 +1498,22 @@ type Trace struct { /* ... */ }
 
 var _ model.Trace = &Trace{}
 
-func NewTrace(index int64, logger model.Logger, zeroTime time.Time) *Trace {
+func NewTrace(index int64, zeroTime time.Time) *Trace {
 	const (
 		tlsHandshakeBuffer = 16,
 		// ...
 	)
 	return &Trace{
 		Index: index,
-		Logger: logger,
 		TLS: make(chan *model.ArchivalTLSOrQUICHandshakeResult, tlsHandshakeBuffer),
 		ZeroTime: zeroTime,
 		// ...
 	}
 }
 
-func (tx *Trace) NewTLSHandshakerStdlib() model.TLSHandshaker {
+func (tx *Trace) NewTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshaker {
 	return &tlsHandshakerTrace{
-		TLSHandshaker: netxlite.NewTLSHandshakerStdlib(tx.Logger),
+		TLSHandshaker: netxlite.NewTLSHandshakerStdlib(dl),
 		Trace: tx,
 	}
 }
@@ -1524,8 +1523,8 @@ type tlsHandshakerTrace { /* ... */ }
 var _ model.TLSHandshaker = &tlsHandshakerTrace{}
 
 func (thx *tlsHandshakerTrace) Handshake(ctx context.Context,
-	conn net.Conn, config \*tls.Config) (net.Conn, tls.ConnectionState, error) {
-	ctx = netxlite.ContextWithTrace(ctx, thx.Trace) // <- here we setup the context magic
+	conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+	ctx = netxlite.ContextWithTraceOrDefault(ctx, thx.Trace) // <- here we setup the context magic
 	return thx.TLSHandshaker.Handshake(ctx, conn, config)
 }
 
@@ -1540,7 +1539,7 @@ func (tx *Trace) OnTLSHandshake(started time.Time, remoteAddr string,
 	}
 }
 
-func (tx *Trace) TLSHandshakeResults() (out []\*model.ArchivalTLSOrQUICHandshakeResult) {
+func (tx *Trace) TLSHandshakeResults() (out []*model.ArchivalTLSOrQUICHandshakeResult) {
 	for {
 		select {
 		case ev := <-tx.TLS:
@@ -1575,7 +1574,7 @@ func (thx *tlsHandshakerConfigurable) Handshake(ctx context.Context,
         state := tlsconn.connectionState()
         trace.OnTLSHandshake(started, remoteAddr, config,             // +++
                 state, nil, finished)                                 // +++
-	return tlsconn, state, nil
+        return tlsconn, state, nil
 }
 
 func ContextTraceOrDefault(ctx context.Context) model.Trace { /* ...  */ }

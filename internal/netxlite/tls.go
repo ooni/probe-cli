@@ -18,9 +18,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// TODO(bassosimone): check whether there's now equivalent functionality
-// inside the standard library allowing us to map numbers to names.
-
 var (
 	tlsVersionString = map[uint16]string{
 		tls.VersionTLS10: "TLSv1",
@@ -85,6 +82,13 @@ func TLSVersionString(value uint16) string {
 // the value to a cipher suite name, we return `TLS_CIPHER_SUITE_UNKNOWN_ddd`
 // where `ddd` is the numeric value passed to this function.
 func TLSCipherSuiteString(value uint16) string {
+	// TODO(https://github.com/ooni/probe/issues/2166): the standard library has a
+	// function for mapping a cipher suite to a string, but the value returned in case of
+	// missing cipher suite is different from the one we would return
+	// here. We could consider simplifying this code anyway because
+	// in most, if not all, cases we have a valid cipher suite and we
+	// just need to make sure what the spec says we should do when
+	// passed an unknown cipher suite.
 	if str, found := tlsCipherSuiteString[value]; found {
 		return str
 	}
@@ -158,15 +162,15 @@ func NewTLSHandshakerStdlib(logger model.DebugLogger) model.TLSHandshaker {
 // newTLSHandshaker is the common factory for creating a new TLSHandshaker
 func newTLSHandshaker(th model.TLSHandshaker, logger model.DebugLogger) model.TLSHandshaker {
 	return &tlsHandshakerLogger{
-		TLSHandshaker: &tlsHandshakerErrWrapper{
-			TLSHandshaker: th,
-		},
-		DebugLogger: logger,
+		TLSHandshaker: th,
+		DebugLogger:   logger,
 	}
 }
 
 // tlsHandshakerConfigurable is a configurable TLS handshaker that
 // uses by default the standard library's TLS implementation.
+//
+// This type also implements error wrapping and events tracing.
 type tlsHandshakerConfigurable struct {
 	// NewConn is the OPTIONAL factory for creating a new connection. If
 	// this factory is not set, we'll use the stdlib.
@@ -183,9 +187,20 @@ var _ model.TLSHandshaker = &tlsHandshakerConfigurable{}
 // value into a private variable to enable for unit testing.
 var defaultCertPool = NewDefaultCertPool()
 
+// tlsMaybeConnectionState returns the connection state if error is nil
+// and otherwise just returns an empty state to the caller.
+func tlsMaybeConnectionState(conn TLSConn, err error) tls.ConnectionState {
+	if err != nil {
+		return tls.ConnectionState{}
+	}
+	return conn.ConnectionState()
+}
+
 // Handshake implements Handshaker.Handshake. This function will
 // configure the code to use the built-in Mozilla CA if the config
 // field contains a nil RootCAs field.
+//
+// This function will also emit TLS-handshake-related tracing events.
 func (h *tlsHandshakerConfigurable) Handshake(
 	ctx context.Context, conn net.Conn, config *tls.Config,
 ) (net.Conn, tls.ConnectionState, error) {
@@ -203,10 +218,19 @@ func (h *tlsHandshakerConfigurable) Handshake(
 	if err != nil {
 		return nil, tls.ConnectionState{}, err
 	}
-	if err := tlsconn.HandshakeContext(ctx); err != nil {
+	remoteAddr := conn.RemoteAddr().String()
+	trace := ContextTraceOrDefault(ctx)
+	started := trace.TimeNow()
+	trace.OnTLSHandshakeStart(started, remoteAddr, config)
+	err = tlsconn.HandshakeContext(ctx)
+	err = MaybeNewErrWrapper(ClassifyTLSHandshakeError, TLSHandshakeOperation, err)
+	finished := trace.TimeNow()
+	state := tlsMaybeConnectionState(tlsconn, err)
+	trace.OnTLSHandshakeDone(started, remoteAddr, config, state, err, finished)
+	if err != nil {
 		return nil, tls.ConnectionState{}, err
 	}
-	return tlsconn, tlsconn.ConnectionState(), nil
+	return tlsconn, state, nil
 }
 
 // newConn creates a new TLSConn.
@@ -350,23 +374,6 @@ func (d *tlsDialerSingleUseAdapter) DialTLSContext(ctx context.Context, network,
 
 func (d *tlsDialerSingleUseAdapter) CloseIdleConnections() {
 	d.Dialer.CloseIdleConnections()
-}
-
-// tlsHandshakerErrWrapper wraps the returned error to be an OONI error
-type tlsHandshakerErrWrapper struct {
-	TLSHandshaker model.TLSHandshaker
-}
-
-// Handshake implements TLSHandshaker.Handshake
-func (h *tlsHandshakerErrWrapper) Handshake(
-	ctx context.Context, conn net.Conn, config *tls.Config,
-) (net.Conn, tls.ConnectionState, error) {
-	tlsconn, state, err := h.TLSHandshaker.Handshake(ctx, conn, config)
-	if err != nil {
-		return nil, tls.ConnectionState{}, newErrWrapper(
-			classifyTLSHandshakeError, TLSHandshakeOperation, err)
-	}
-	return tlsconn, state, nil
 }
 
 // ErrNoTLSDialer is the type of error returned by "null" TLS dialers

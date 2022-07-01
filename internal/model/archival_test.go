@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/fakefill"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestArchivalExtSpec(t *testing.T) {
@@ -301,7 +301,7 @@ func TestHTTPBody(t *testing.T) {
 	// we make a mistake and apply the above change (which will in turn
 	// break correct JSON serialization), the this test will fail.
 	var body ArchivalHTTPBody
-	ff := &fakefill.Filler{}
+	ff := &testingx.FakeFiller{}
 	ff.Fill(&body)
 	data := ArchivalMaybeBinaryData(body)
 	if diff := cmp.Diff(body, data); diff != "" {
