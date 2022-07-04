@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -65,7 +65,7 @@ type TestKeys struct {
 
 // SinglePing contains the results of a single ping.
 type SinglePing struct {
-	Queries []*measurex.ArchivalDNSLookupEvent `json:"queries"`
+	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
 }
 
 // Measurer performs the measurement.
@@ -119,11 +119,10 @@ func (m *Measurer) Run(
 	}
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
-	mxmx := measurex.NewMeasurerWithDefaultSettings()
-	out := make(chan *measurex.DNSMeasurement)
+	out := make(chan *SinglePing)
 	domains := strings.Split(m.config.domains(), " ")
 	for _, domain := range domains {
-		go m.dnsPingLoop(ctx, mxmx, parsed.Host, domain, out)
+		go m.dnsPingLoop(ctx, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Host, domain, out)
 	}
 	// The following multiplication could overflow but we're always using small
 	// numbers so it's fine for us not to bother with checking for that.
@@ -132,54 +131,53 @@ func (m *Measurer) Run(
 	numResults := int(m.config.repetitions()) * len(domains) * 2
 	for len(tk.Pings) < numResults {
 		meas := <-out
+		queries := meas.Queries
 		// TODO(bassosimone): when we merge the improvements at
 		// https://github.com/bassosimone/websteps-illustrated it
 		// will become unnecessary to split with query type
 		// as we're doing below.
-		queries := measurex.NewArchivalDNSLookupEventList(meas.LookupHost)
-		tk.Pings = append(tk.Pings, m.onlyQueryWithType(queries, "A")...)
-		tk.Pings = append(tk.Pings, m.onlyQueryWithType(queries, "AAAA")...)
+		for _, query := range queries {
+			tk.Pings = append(tk.Pings, &SinglePing{
+				Queries: []*model.ArchivalDNSLookupResult{query},
+			})
+		}
 	}
 	return nil // return nil so we always submit the measurement
 }
 
-// onlyQueryWithType returns only the queries with the given type.
-func (m *Measurer) onlyQueryWithType(
-	in []*measurex.ArchivalDNSLookupEvent, kind string) (out []*SinglePing) {
-	for _, query := range in {
-		if query.QueryType == kind {
-			out = append(out, &SinglePing{
-				Queries: []*measurex.ArchivalDNSLookupEvent{query},
-			})
-		}
-	}
-	return
-}
-
 // dnsPingLoop sends all the ping requests and emits the results onto the out channel.
-func (m *Measurer) dnsPingLoop(ctx context.Context, mxmx *measurex.Measurer,
-	address string, domain string, out chan<- *measurex.DNSMeasurement) {
+func (m *Measurer) dnsPingLoop(ctx context.Context, zeroTime time.Time, logger model.Logger,
+	address string, domain string, out chan<- *SinglePing) {
 	ticker := time.NewTicker(m.config.delay())
 	defer ticker.Stop()
 	for i := int64(0); i < m.config.repetitions(); i++ {
-		go m.dnsPingAsync(ctx, mxmx, address, domain, out)
+		go m.dnsPingAsync(ctx, i, zeroTime, logger, address, domain, out)
 		<-ticker.C
 	}
 }
 
 // dnsPingAsync performs a DNS ping and emits the result onto the out channel.
-func (m *Measurer) dnsPingAsync(ctx context.Context, mxmx *measurex.Measurer,
-	address string, domain string, out chan<- *measurex.DNSMeasurement) {
-	out <- m.dnsRoundTrip(ctx, mxmx, address, domain)
+func (m *Measurer) dnsPingAsync(ctx context.Context, index int64, zeroTime time.Time,
+	logger model.Logger, address string, domain string, out chan<- *SinglePing) {
+	out <- m.dnsRoundTrip(ctx, index, zeroTime, logger, address, domain)
 }
 
 // dnsRoundTrip performs a round trip and returns the results to the caller.
-func (m *Measurer) dnsRoundTrip(ctx context.Context, mxmx *measurex.Measurer,
-	address string, domain string) *measurex.DNSMeasurement {
+func (m *Measurer) dnsRoundTrip(ctx context.Context, index int64, zeroTime time.Time,
+	logger model.Logger, address string, domain string) *SinglePing {
 	// TODO(bassosimone): make the timeout user-configurable
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	return mxmx.LookupHostUDP(ctx, domain, address)
+	sp := &SinglePing{
+		Queries: []*model.ArchivalDNSLookupResult{},
+	}
+	trace := measurexlite.NewTrace(index, zeroTime)
+	ol := measurexlite.NewOperationLogger(logger, "DNSPing #%d %s %s", index, address, domain)
+	resolver := trace.NewParallelResolverUDP(logger, address)
+	_, err := resolver.LookupHost(ctx, domain)
+	ol.Stop(err)
+	sp.Queries = trace.DNSLookupsFromRoundTrip()
+	return sp
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.

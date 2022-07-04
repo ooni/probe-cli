@@ -15,6 +15,9 @@ import (
 type Trace struct {
 	MockTimeNow func() time.Time
 
+	MockOnDNSRoundTripForLookupHost func(
+		started time.Time, reso model.Resolver, query model.DNSQuery, response model.DNSResponse,
+		addrs []string, err error, finished time.Time)
 	MockOnConnectDone func(
 		started time.Time, network, domain, remoteAddr string, err error, finished time.Time)
 
@@ -28,6 +31,11 @@ var _ model.Trace = &Trace{}
 
 func (t *Trace) TimeNow() time.Time {
 	return t.MockTimeNow()
+}
+
+func (t *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resolver, query model.DNSQuery,
+	response model.DNSResponse, addrs []string, err error, finished time.Time) {
+	t.MockOnDNSRoundTripForLookupHost(started, reso, query, response, addrs, err, finished)
 }
 
 func (t *Trace) OnConnectDone(
