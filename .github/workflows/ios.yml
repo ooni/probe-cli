@@ -21,6 +21,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 12.4
+
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
           echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
