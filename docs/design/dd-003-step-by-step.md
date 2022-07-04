@@ -37,7 +37,7 @@ experiment would involve using constructors very similar to the standard
 library. Such deviations were supposed to be made only to meet our specific
 measurement goals;
 
-2. The decorator pattern has lead to complexity in creating measurement types,
+2. The decorator pattern has led to complexity in creating measurement types,
 which in turn seems to be the reason why the previous issue exists;
 
 3. The decorator pattern does not allow us to precisely collect all the
@@ -256,15 +256,13 @@ We use the `netx` name to identify **net**work e**x**tensions in ooni/probe-cli.
 What is great about using stdlib-like types is that we're using code
 patterns that people already know.
 
-In this document, we're not going to discuss how netx should be
-internally implemented. What matters is that we have a way to mimic
-stdlib-like types. See
-[internal/model/netx.go](https://github.com/ooni/probe-cli/blob/v3.15.1/internal/model/netx.go)
-for details on those types.
+This document is not concerned about the internal representation of `netx`, but
+rather about how to offer an API that resembles the stdlib. See [internal/model/netx.go](https://github.com/ooni/probe-cli/blob/v3.15.1/internal/model/netx.go) for details on those types.
 
-In fact, what remains to discuss in this document is how we use these netx types to
-perform measurements. And this seems more of a software engineering
-problem than anything else.
+The analysis that follows, and the resulting proposal, tries to answer the
+question of how we can _best use these netx types_ to perform measurements
+(according to the relevant criteria). And this seems more of a software
+engineering problem than anything else.
 
 Yet, before jumping right into this topic, I think it is worth
 mentioning that netx should do the following:
@@ -282,9 +280,9 @@ stuck; see, for example, [ooni/probe#1609](https://github.com/ooni/probe/issues/
 All network connections we create in OONI (for measuring or
 communicating with support services) have these concerns. Measurement
 code has additional responsibilities, such as collecting and
-interpreting the network observations. Therefore, separation of concerns
-suggests that measurement code be implemented by other packages using
-netxlite as a dependency.
+interpreting the network observations. The "separation of concerns" principle
+suggests us that measurement code should be implemented by other packages that
+depend on netxlite.
 
 (The "lite" in `netxlite` reflects the fact that it does not concern
 itself with measurements unlike [the original netx](df-002-netx.md), which contained
@@ -326,7 +324,8 @@ become more complex than what `httptrace` could provide us with.
 I tried to adapt how this code would look if we used it now. As
 [dd-002-netx.md](dd-002-netx.md) suggests, here I am trying to separate
 data collection and interpretation, which looked like a great idea at
-the time but has now become a bottleneck.
+the time but has now become a bottleneck when writing experiments, because it
+needs a lot of extra code:
 
 ```Go
 // doWhatYouKnowBest uses stdlib-like constructs to collect data.
@@ -341,6 +340,7 @@ func doWhatYouKnowBest(ctx context.Context, URL string) (*http.Response, []byte,
 	if err != nil {
 		return nil, nil, err
 	}
+	// the whole body could be too big, so we read only a fixed size
 	r := io.LimitReader(maxBodySnapshotSize)
 	data, err := netxlite.ReadAllContext(ctx, r)
 	if err != nil {
@@ -464,11 +464,17 @@ conn, err := dialer.DialContext(ctx, /* ... */)
 In the later case, it's evident that we're *decorating* the original
 dialer with an extended dialer that knows how to perform network
 measurements. In the former case, it feels magic that we're setting some
-value as an opaque any inside of the context, and there's a documented
+value as an opaque `any` type inside of the context, and there's a documented
 promise we'll use this value.
-(In fairness, however, the second implementation could be extended with wrappers
-that makes it look like the first one, which should solve the clarity
-problem entailed by using a context *to do dependency injection*.)
+
+The point here is that this code has some serious semantics issues, in the
+sense that the reader only sees they're setting a value with a context, but
+it's unclear what that does unless you read the documentation, which is not a
+great UX.
+
+In fairness, the second implementation could be extended with wrappers,
+which would makes it look like the first one: that should solve the clarity
+problem entailed by using a context *to do dependency injection*.
 
 Debugging, in particular, feels clumsy. Suppose we are taking a code path
 that, for some reason, does not honor the value put inside the context.
@@ -594,7 +600,7 @@ needs to construct, say, a Dialer by composing netxlite's Dialer
 with a bunch of wrappers also implementing model.Dialer.
 
 It is no coincidence that the code above omits the code to compose a
-base Dialer with a saving wrapper. Since we adopted this tactic, we
+base Dialer with a saving wrapper. Since the adoption of this tactic, we
 spent some time wrestling with composing data types.
 
 #### Decorator ~madness and how to overcome it: netx.Config
@@ -628,7 +634,7 @@ wrapping, as we have seen in the measurex example above. This reckoning
 led us to design APIs such as the Config-based API in netx and
 the (again) Config-based API in urlgetter.
 
-Here's a (perhaps disgusting?) excerpt from netx in ooni/probe-cli@v3.15.1
+Here's a (perhaps bureaucratic) excerpt from netx in ooni/probe-cli@v3.15.1
 that shows how we overcome constructor complexity by declaring a flat
 `Config` structure from which to construct a `model.Resolver`:
 
@@ -696,8 +702,10 @@ This code could be made prettier ([see how it looks
 now](https://github.com/ooni/probe-cli/blob/2502a237fb5e2dd3dc4e0db23dd19eabb292f6a1/internal/engine/netx/resolver.go#L13)). But
 we are not here to compliment ourselves on our
 now-prettier code, rather we want to analyze
-what makes our code more obscure and less
-scalable than it could be.
+what makes our code more obscure and less scalable than it could be. Note that
+we mean scalable in terms of _developer time_: we feel we could move faster if
+we changed the current approach, because it needs too much effort to
+support data collection.
 
 I would argue that the central issue of this code is that it's
 declaring it will take the burden of constructing the Resolver
@@ -738,7 +746,7 @@ func ExperimentMain(ctx context.Context, URL string) {
 That is, we're still in `doWhatYouKnowBest` territory. Incidentally, this
 also means that (1) there's still distance between collection and
 interpretation, and (2) we're still producing a flat trace. We have
-basically traded the context magic with construction complexity, which
+basically traded the context magic for construction complexity, which
 we overcome by adding abstraction without changing all the other pain
 points of the original netx implementation.
 
@@ -767,8 +775,8 @@ programmer needs to learn an entirely new API for implementing OONI
 measurements (unless they want to hack at the `netx` or `netxlite` library level).
 
 Crucially, we still have the same post-processing pain we had with netx. There
-is always a "now we figured out what happened" step
-that runs over a full trace.
+is always a "now let's try to figure out what happened" step that runs over a
+full trace.
 
 Also, very importantly: debugging was hard with the original netx
 because of the context magic. Now it is hard because there are many
@@ -778,11 +786,11 @@ layers of abstraction. If you see a line like:
 dialer := netx.NewDialer(config)
 ```
 
-It's completely opaque to you what the dialer could or could not do. To
-understand, you need to read the content of the config. The matter
-becomes even more complex if that config is not just declared in the
-codebase but is actually code generated, as happens with urlgetter, which
-generates a Config for netx.
+It's completely opaque to you what the dialer could be doing. To
+understand the underlying operation, you need to read the content of the
+config. The matter becomes even more complex if that config is not just
+declared in the codebase but is actually generated code, as happens with
+urlgetter, which generates a Config for netx.
 
 #### Difficulty in collecting precise observations
 
@@ -931,7 +939,7 @@ and interpretation. Moreover, because this approach is relatively rigid,
 it is more difficult to collect precise observations than it would be
 using the context to do dependency injection.
 
-Looking backward, it has not been a bad idea to declare in `netx` docs
+In retrospective, it was a good thing to declare in `netx` docs
 that we're OK with keeping this approach, but we would like new
 experiments to, ehm, experiment with leaner techniques.
 
@@ -1175,11 +1183,24 @@ complexity in experiments than in the support library. This seems like a
 scalability argument. If all experiments extensively use the same
 support library, then this library will feel the pressure of all the
 needs of all experiments. Conversely, the pressure is much lower
-if experiments are written in
-terms of basic primitives plus a set of support
-functions. Hence, my time would be spent
-more on improving experiments than polishing and enhancing the
+if experiments are written in terms of basic primitives plus a set of support
+functions. This seems to call for applying the OCP Principle: "Open for
+extension, Closed for modification". Hence, my time would be spent more on
+improving experiments and writing new ones than polishing and enhancing the
 support library.
+
+For the purposes of illustrating the discussion, a couple of metrics seem to
+(at least visually) support this idea: a close-up of the internal dependencies
+diagram, and a histogram of the files that changed more often.
+
+| ![a graph depicting the internal dependencies to and from internal/netx](img/git-probe-cli-netx-deps.png) |
+|:---------------------------------------------------------------------------------------------------------:|
+|                               *Figure 1: dependencies around internal/netx*                               |
+
+| ![histogram of chnges in probe-cli codebase](img/git-probe-cli-change-histogram.png) |
+|:------------------------------------------------------------------------------------:|
+|          *Figure 2: histogram of the more-often changed files in probe-cli*          |
+
 
 Additionally, Arturo argues that we should strive to keep the
 implementation of experiments (including the implementation of the
@@ -1290,8 +1311,8 @@ Finally, all the discussion is in place to get to a concrete proposal.
 I tried to reimplement the telegram experiment using a pure step-by-step approach
 ([here's the
 gist](https://gist.github.com/bassosimone/f6e680d35805174d1f150bc15ef754af)).
-It looks fine, but one ends up writing a support library such as `measurex`. Yet,
-as noted above, the API exposed by such a measurement
+It looks fine, but one ends up writing a support library such as `measurex`.
+On the positive side, the API exposed by such a measurement
 library matters, and an API familiar to Go developers seems preferable
 to the API implemented by `measurex`.
 
@@ -1338,7 +1359,7 @@ logger model.Logger, zeroTime time.Time, tk *TestKeys, address string) {
 	weburl := measurexlite.NewURL("https", webDomain, "", "")
 	endpoint := net.JoinHostPort(address, "443")
 	ol := measurexlite.NewOperationLogger(logger, "GET %s @ %s", weburl.String(), endpoint)
-	index := tk.newIndex()
+	index := tk.nextAvailableIndex()
 	tk.registerSubmeasurement(index, endpoint, "web_https")
 
 	// 1. establish a TCP connection with the endpoint
