@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -46,6 +47,12 @@ func TestNewTrace(t *testing.T) {
 			}
 		})
 
+		t.Run("NewUnwrappedParallelResolverFn is nil", func(t *testing.T) {
+			if trace.NewUnwrappedParallelResolverFn != nil {
+				t.Fatal("expected nil NewUnwrappedParallelResolverFn")
+			}
+		})
+
 		t.Run("NewDialerWithoutResolverFn is nil", func(t *testing.T) {
 			if trace.NewDialerWithoutResolverFn != nil {
 				t.Fatal("expected nil NewDialerWithoutResolverFn")
@@ -55,6 +62,41 @@ func TestNewTrace(t *testing.T) {
 		t.Run("NewTLSHandshakerStdlibFn is nil", func(t *testing.T) {
 			if trace.NewTLSHandshakerStdlibFn != nil {
 				t.Fatal("expected nil NewTLSHandshakerStdlibFn")
+			}
+		})
+
+		t.Run("DNSLookup has the expected buffer size", func(t *testing.T) {
+			ff := &testingx.FakeFiller{}
+			var idxA int
+		LoopA:
+			for {
+				ev := &model.ArchivalDNSLookupResult{}
+				ff.Fill(ev)
+				select {
+				case trace.DNSLookup[dns.TypeA] <- ev:
+					idxA++
+				default:
+					break LoopA
+				}
+				if idxA != DNSLookupBufferSize {
+					t.Fatal("invalid DNSLookup A channel buffer size")
+				}
+			}
+
+			var idxAAAA int
+		LoopAAAA:
+			for {
+				ev := &model.ArchivalDNSLookupResult{}
+				ff.Fill(ev)
+				select {
+				case trace.DNSLookup[dns.TypeAAAA] <- ev:
+					idxAAAA++
+				default:
+					break LoopAAAA
+				}
+				if idxAAAA != DNSLookupBufferSize {
+					t.Fatal("invalid DNSLookup AAAA channel buffer size")
+				}
 			}
 		})
 
@@ -111,6 +153,70 @@ func TestNewTrace(t *testing.T) {
 }
 
 func TestTrace(t *testing.T) {
+	t.Run("NewUnwrappedParallelResolverFn works as intended", func(t *testing.T) {
+		t.Run("when not nil", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			tx := &Trace{
+				NewUnwrappedParallelResolverFn: func(t model.DNSTransport) model.Resolver {
+					return &mocks.Resolver{
+						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+							return []string{}, mockedErr
+						},
+					}
+				},
+			}
+			resolver := tx.newUnwrappedParallelResolver(&mocks.DNSTransport{})
+			ctx := context.Background()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if !errors.Is(err, mockedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected array of size 0")
+			}
+		})
+
+		t.Run("when nil", func(t *testing.T) {
+			tx := &Trace{
+				NewUnwrappedParallelResolverFn: nil,
+			}
+			txp := &mocks.DNSTransport{
+				MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+					response := &mocks.DNSResponse{
+						MockDecodeLookupHost: func() ([]string, error) {
+							if query.Type() != dns.TypeA {
+								return nil, nil
+							}
+							return []string{"1.1.1.1"}, nil
+						},
+					}
+					return response, nil
+				},
+				MockRequiresPadding: func() bool {
+					return false
+				},
+				MockNetwork: func() string {
+					return ""
+				},
+				MockAddress: func() string {
+					return ""
+				},
+			}
+			resolver := tx.NewUnwrappedParallelResolver(txp)
+			ctx := context.Background()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if err != nil {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 1 {
+				t.Fatal("expected array of size 1")
+			}
+			if addrs[0] != "1.1.1.1" {
+				t.Fatal("unexpected array output", addrs)
+			}
+		})
+	})
+
 	t.Run("NewDialerWithoutResolverFn works as intended", func(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
