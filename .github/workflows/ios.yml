@@ -24,7 +24,7 @@ jobs:
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 13.3.1
+          xcode-version: 12.4
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
@@ -33,7 +33,7 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - run: ./mk ./MOBILE/ios
+      - run: ./mk XCODE_VERSION=12.4 ./MOBILE/ios
 
       - run: |
           tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
