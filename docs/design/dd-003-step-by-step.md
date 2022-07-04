@@ -340,8 +340,7 @@ func doWhatYouKnowBest(ctx context.Context, URL string) (*http.Response, []byte,
 	if err != nil {
 		return nil, nil, err
 	}
-        // the whole body could be too big,
-        // so we read only a fixed size
+     // the whole body could be too big, so we read only a fixed size
 	r := io.LimitReader(maxBodySnapshotSize)
 	data, err := netxlite.ReadAllContext(ctx, r)
 	if err != nil {
