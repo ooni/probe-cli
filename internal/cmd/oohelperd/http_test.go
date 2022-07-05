@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -46,8 +47,13 @@ func TestHTTPDoWithHTTPTransportFailure(t *testing.T) {
 		MaxAcceptableBody: 1 << 24,
 		NewClient: func() model.HTTPClient {
 			return &http.Client{
-				Transport: FakeTransport{
-					Err: expected,
+				Transport: &mocks.HTTPTransport{
+					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+						return nil, expected
+					},
+					MockCloseIdleConnections: func() {
+						// nothing
+					},
 				},
 			}
 		},

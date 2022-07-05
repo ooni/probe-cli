@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"flag"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -11,19 +12,21 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 const maxAcceptableBody = 1 << 24
 
 var (
 	endpoint  = flag.String("endpoint", ":8080", "Endpoint where to listen")
-	srvcancel context.CancelFunc
-	srvctx    context.Context
-	srvwg     = new(sync.WaitGroup)
+	srvAddr   = make(chan string, 1) // with buffer
+	srvCancel context.CancelFunc
+	srvCtx    context.Context
+	srvWg     = new(sync.WaitGroup)
 )
 
 func init() {
-	srvctx, srvcancel = context.WithCancel(context.Background())
+	srvCtx, srvCancel = context.WithCancel(context.Background())
 }
 
 func newResolver() model.Resolver {
@@ -48,10 +51,7 @@ func main() {
 	debug := flag.Bool("debug", false, "Toggle debug mode")
 	flag.Parse()
 	log.SetLevel(logmap[*debug])
-	testableMain()
-}
-
-func testableMain() {
+	defer srvCancel()
 	mux := http.NewServeMux()
 	mux.Handle("/", &handler{
 		MaxAcceptableBody: maxAcceptableBody,
@@ -64,9 +64,13 @@ func testableMain() {
 		NewResolver: newResolver,
 	})
 	srv := &http.Server{Addr: *endpoint, Handler: mux}
-	srvwg.Add(1)
-	go srv.ListenAndServe()
-	<-srvctx.Done()
+	listener, err := net.Listen("tcp", *endpoint)
+	runtimex.PanicOnError(err, "net.Listen failed")
+	srvAddr <- listener.Addr().String()
+	srvWg.Add(1)
+	go srv.Serve(listener)
+	<-srvCtx.Done()
 	shutdown(srv)
-	srvwg.Done()
+	listener.Close()
+	srvWg.Done()
 }
