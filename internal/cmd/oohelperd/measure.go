@@ -1,4 +1,8 @@
-package webconnectivity
+package main
+
+//
+// Top-level measurement algorithm
+//
 
 import (
 	"context"
@@ -7,60 +11,54 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 type (
-	// CtrlRequest is the request sent to the test helper
-	CtrlRequest = webconnectivity.ControlRequest
+	// ctrlRequest is the request sent to the test helper
+	ctrlRequest = webconnectivity.ControlRequest
 
-	// CtrlResponse is the response from the test helper
-	CtrlResponse = webconnectivity.ControlResponse
+	// ctrlResponse is the response from the test helper
+	ctrlResponse = webconnectivity.ControlResponse
 )
 
-// MeasureConfig contains configuration for Measure.
-type MeasureConfig struct {
-	MaxAcceptableBody int64
-	NewClient         func() model.HTTPClient
-	NewDialer         func() model.Dialer
-	NewResolver       func() model.Resolver
-}
-
-// Measure performs the measurement described by the request and
+// measure performs the measurement described by the request and
 // returns the corresponding response or an error.
-func Measure(ctx context.Context, config MeasureConfig, creq *CtrlRequest) (*CtrlResponse, error) {
+func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResponse, error) {
 	// parse input for correctness
 	URL, err := url.Parse(creq.HTTPRequest)
 	if err != nil {
 		return nil, err
 	}
+	wg := &sync.WaitGroup{}
+
 	// dns: start
-	wg := new(sync.WaitGroup)
-	dnsch := make(chan CtrlDNSResult, 1)
+	dnsch := make(chan ctrlDNSResult, 1)
 	if net.ParseIP(URL.Hostname()) == nil {
 		wg.Add(1)
-		go DNSDo(ctx, &DNSConfig{
+		go dnsDo(ctx, &dnsConfig{
 			Domain:      URL.Hostname(),
 			NewResolver: config.NewResolver,
 			Out:         dnsch,
 			Wg:          wg,
 		})
 	}
+
 	// tcpconnect: start
-	tcpconnch := make(chan TCPResultPair, len(creq.TCPConnect))
+	tcpconnch := make(chan tcpResultPair, len(creq.TCPConnect))
 	for _, endpoint := range creq.TCPConnect {
 		wg.Add(1)
-		go TCPDo(ctx, &TCPConfig{
+		go tcpDo(ctx, &tcpConfig{
 			Endpoint:  endpoint,
 			NewDialer: config.NewDialer,
 			Out:       tcpconnch,
 			Wg:        wg,
 		})
 	}
+
 	// http: start
-	httpch := make(chan CtrlHTTPResponse, 1)
+	httpch := make(chan ctrlHTTPResponse, 1)
 	wg.Add(1)
-	go HTTPDo(ctx, &HTTPConfig{
+	go httpDo(ctx, &httpConfig{
 		Headers:           creq.HTTPRequestHeaders,
 		MaxAcceptableBody: config.MaxAcceptableBody,
 		NewClient:         config.NewClient,
@@ -68,25 +66,28 @@ func Measure(ctx context.Context, config MeasureConfig, creq *CtrlRequest) (*Ctr
 		URL:               creq.HTTPRequest,
 		Wg:                wg,
 	})
+
 	// wait for measurement steps to complete
 	wg.Wait()
+
 	// assemble response
-	cresp := new(CtrlResponse)
+	cresp := new(ctrlResponse)
 	select {
 	case cresp.DNS = <-dnsch:
 	default:
 		// we need to emit a non-nil Addrs to match exactly
 		// the behavior of the legacy TH
-		cresp.DNS = CtrlDNSResult{
+		cresp.DNS = ctrlDNSResult{
 			Failure: nil,
 			Addrs:   []string{},
 		}
 	}
 	cresp.HTTPRequest = <-httpch
-	cresp.TCPConnect = make(map[string]CtrlTCPResult)
+	cresp.TCPConnect = make(map[string]ctrlTCPResult)
 	for len(cresp.TCPConnect) < len(creq.TCPConnect) {
 		tcpconn := <-tcpconnch
 		cresp.TCPConnect[tcpconn.Endpoint] = tcpconn.Result
 	}
+
 	return cresp, nil
 }

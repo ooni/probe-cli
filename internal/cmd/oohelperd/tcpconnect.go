@@ -1,4 +1,8 @@
-package webconnectivity
+package main
+
+//
+// TCP connect measurements
+//
 
 import (
 	"context"
@@ -9,25 +13,35 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// CtrlTCPResult is the result of the TCP check performed by the test helper.
-type CtrlTCPResult = webconnectivity.ControlTCPConnectResult
+// ctrlTCPResult is the result of the TCP check performed by the test helper.
+type ctrlTCPResult = webconnectivity.ControlTCPConnectResult
 
-// TCPResultPair contains the endpoint and the corresponding result.
-type TCPResultPair struct {
+// tcpResultPair contains the endpoint and the corresponding result.
+type tcpResultPair struct {
+	// Endpoint is the endpoint we measured.
 	Endpoint string
-	Result   CtrlTCPResult
+
+	// Result contains the results.
+	Result ctrlTCPResult
 }
 
-// TCPConfig configures the TCP connect check.
-type TCPConfig struct {
-	Endpoint  string
+// tcpConfig configures the TCP connect check.
+type tcpConfig struct {
+	// Endpoint is the MANDATORY endpoint to connect to.
+	Endpoint string
+
+	// NewDialer is the MANDATORY factory for creating a new dialer.
 	NewDialer func() model.Dialer
-	Out       chan TCPResultPair
-	Wg        *sync.WaitGroup
+
+	// Out is the MANDATORY where we'll post the TCP measurement results.
+	Out chan tcpResultPair
+
+	// Wg is MANDATORY and is used to sync with the parent.
+	Wg *sync.WaitGroup
 }
 
-// TCPDo performs the TCP check.
-func TCPDo(ctx context.Context, config *TCPConfig) {
+// tcpDo performs the TCP check.
+func tcpDo(ctx context.Context, config *tcpConfig) {
 	defer config.Wg.Done()
 	dialer := config.NewDialer()
 	defer dialer.CloseIdleConnections()
@@ -35,9 +49,9 @@ func TCPDo(ctx context.Context, config *TCPConfig) {
 	if conn != nil {
 		conn.Close()
 	}
-	config.Out <- TCPResultPair{
+	config.Out <- tcpResultPair{
 		Endpoint: config.Endpoint,
-		Result: CtrlTCPResult{
+		Result: ctrlTCPResult{
 			Failure: tcpMapFailure(newfailure(err)),
 			Status:  err == nil,
 		},

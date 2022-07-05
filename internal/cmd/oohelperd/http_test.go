@@ -1,4 +1,4 @@
-package webconnectivity
+package main
 
 import (
 	"context"
@@ -15,9 +15,9 @@ import (
 func TestHTTPDoWithInvalidURL(t *testing.T) {
 	ctx := context.Background()
 	wg := new(sync.WaitGroup)
-	httpch := make(chan CtrlHTTPResponse, 1)
+	httpch := make(chan ctrlHTTPResponse, 1)
 	wg.Add(1)
-	go HTTPDo(ctx, &HTTPConfig{
+	go httpDo(ctx, &httpConfig{
 		Headers:           nil,
 		MaxAcceptableBody: 1 << 24,
 		NewClient: func() model.HTTPClient {
@@ -39,9 +39,9 @@ func TestHTTPDoWithHTTPTransportFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	wg := new(sync.WaitGroup)
-	httpch := make(chan CtrlHTTPResponse, 1)
+	httpch := make(chan ctrlHTTPResponse, 1)
 	wg.Add(1)
-	go HTTPDo(ctx, &HTTPConfig{
+	go httpDo(ctx, &httpConfig{
 		Headers:           nil,
 		MaxAcceptableBody: 1 << 24,
 		NewClient: func() model.HTTPClient {

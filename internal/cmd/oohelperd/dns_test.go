@@ -1,4 +1,4 @@
-package webconnectivity
+package main
 
 import (
 	"context"
@@ -67,7 +67,7 @@ func Test_dnsMapFailure(t *testing.T) {
 func TestDNSDo(t *testing.T) {
 	t.Run("returns non-nil addresses list on nxdomin", func(t *testing.T) {
 		ctx := context.Background()
-		config := &DNSConfig{
+		config := &dnsConfig{
 			Domain: "antani.ooni.org",
 			NewResolver: func() model.Resolver {
 				return &mocks.Resolver{
@@ -83,7 +83,7 @@ func TestDNSDo(t *testing.T) {
 			Wg:  &sync.WaitGroup{},
 		}
 		config.Wg.Add(1)
-		DNSDo(ctx, config)
+		dnsDo(ctx, config)
 		config.Wg.Wait()
 		resp := <-config.Out
 		if resp.Addrs == nil || len(resp.Addrs) != 0 {
