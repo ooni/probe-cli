@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -149,17 +151,30 @@ func TestWorkingAsIntended(t *testing.T) {
 func TestHandlerWithRequestBodyReadingError(t *testing.T) {
 	expected := errors.New("mocked error")
 	handler := handler{MaxAcceptableBody: 1 << 24}
-	rw := NewFakeResponseWriter()
+	var statusCode int
+	headers := http.Header{}
+	rw := &mocks.HTTPResponseWriter{
+		MockWriteHeader: func(code int) {
+			statusCode = code
+		},
+		MockHeader: func() http.Header {
+			return headers
+		},
+	}
 	req := &http.Request{
 		Method: "POST",
 		Header: map[string][]string{
 			"Content-Type":   {"application/json"},
 			"Content-Length": {"2048"},
 		},
-		Body: &FakeBody{Err: expected},
+		Body: io.NopCloser(&mocks.Reader{
+			MockRead: func(b []byte) (int, error) {
+				return 0, expected
+			},
+		}),
 	}
 	handler.ServeHTTP(rw, req)
-	if rw.StatusCode != 400 {
+	if statusCode != 400 {
 		t.Fatal("unexpected status code")
 	}
 }

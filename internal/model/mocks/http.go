@@ -40,3 +40,26 @@ func (txp *HTTPClient) Do(req *http.Request) (*http.Response, error) {
 func (txp *HTTPClient) CloseIdleConnections() {
 	txp.MockCloseIdleConnections()
 }
+
+// HTTPResponseWriter allows mocking http.ResponseWriter.
+type HTTPResponseWriter struct {
+	MockHeader func() http.Header
+
+	MockWrite func(b []byte) (int, error)
+
+	MockWriteHeader func(statusCode int)
+}
+
+var _ http.ResponseWriter = &HTTPResponseWriter{}
+
+func (w *HTTPResponseWriter) Header() http.Header {
+	return w.MockHeader()
+}
+
+func (w *HTTPResponseWriter) Write(b []byte) (int, error) {
+	return w.MockWrite(b)
+}
+
+func (w *HTTPResponseWriter) WriteHeader(statusCode int) {
+	w.MockWriteHeader(statusCode)
+}
