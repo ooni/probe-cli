@@ -19,10 +19,7 @@ import (
 const maxAcceptableBody = 1 << 24
 
 var (
-	dialer    model.Dialer
 	endpoint  = flag.String("endpoint", ":8080", "Endpoint where to listen")
-	httpx     *http.Client
-	resolver  model.Resolver
 	srvcancel context.CancelFunc
 	srvctx    context.Context
 	srvwg     = new(sync.WaitGroup)
@@ -30,13 +27,13 @@ var (
 
 func init() {
 	srvctx, srvcancel = context.WithCancel(context.Background())
-	dialer = netx.NewDialer(netx.Config{Logger: log.Log})
-	txp := netx.NewHTTPTransport(netx.Config{Logger: log.Log})
-	httpx = &http.Client{Transport: txp}
+}
+
+func newresolver() model.Resolver {
 	// fix: use 8.8.8.8:53/udp so we pin to a specific resolver.
-	var err error
-	resolver, err = netx.NewDNSClient(netx.Config{Logger: log.Log}, "udp://8.8.8.8:53")
+	resolver, err := netx.NewDNSClient(netx.Config{Logger: log.Log}, "udp://8.8.8.8:53")
 	runtimex.PanicOnError(err, "NewDNSClient failed")
+	return resolver
 }
 
 func shutdown(srv *http.Server) {
@@ -60,10 +57,21 @@ func testableMain() {
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/websteps", &webstepsx.THHandler{})
 	mux.Handle("/", webconnectivity.Handler{
-		Client:            httpx,
-		Dialer:            dialer,
 		MaxAcceptableBody: maxAcceptableBody,
-		Resolver:          resolver,
+		NewClient: func() model.HTTPClient {
+			txp := netx.NewHTTPTransport(netx.Config{
+				FullResolver: newresolver(),
+				Logger:       log.Log,
+			})
+			return &http.Client{Transport: txp}
+		},
+		NewDialer: func() model.Dialer {
+			return netx.NewDialer(netx.Config{
+				FullResolver: newresolver(),
+				Logger:       log.Log,
+			})
+		},
+		NewResolver: newresolver,
 	})
 	srv := &http.Server{Addr: *endpoint, Handler: mux}
 	srvwg.Add(1)
