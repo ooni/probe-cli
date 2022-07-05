@@ -20,10 +20,10 @@ type (
 
 // MeasureConfig contains configuration for Measure.
 type MeasureConfig struct {
-	Client            model.HTTPClient
-	Dialer            model.Dialer
 	MaxAcceptableBody int64
-	Resolver          model.Resolver
+	NewClient         func() model.HTTPClient
+	NewDialer         func() model.Dialer
+	NewResolver       func() model.Resolver
 }
 
 // Measure performs the measurement described by the request and
@@ -40,10 +40,10 @@ func Measure(ctx context.Context, config MeasureConfig, creq *CtrlRequest) (*Ctr
 	if net.ParseIP(URL.Hostname()) == nil {
 		wg.Add(1)
 		go DNSDo(ctx, &DNSConfig{
-			Domain:   URL.Hostname(),
-			Out:      dnsch,
-			Resolver: config.Resolver,
-			Wg:       wg,
+			Domain:      URL.Hostname(),
+			NewResolver: config.NewResolver,
+			Out:         dnsch,
+			Wg:          wg,
 		})
 	}
 	// tcpconnect: start
@@ -51,19 +51,19 @@ func Measure(ctx context.Context, config MeasureConfig, creq *CtrlRequest) (*Ctr
 	for _, endpoint := range creq.TCPConnect {
 		wg.Add(1)
 		go TCPDo(ctx, &TCPConfig{
-			Dialer:   config.Dialer,
-			Endpoint: endpoint,
-			Out:      tcpconnch,
-			Wg:       wg,
+			Endpoint:  endpoint,
+			NewDialer: config.NewDialer,
+			Out:       tcpconnch,
+			Wg:        wg,
 		})
 	}
 	// http: start
 	httpch := make(chan CtrlHTTPResponse, 1)
 	wg.Add(1)
 	go HTTPDo(ctx, &HTTPConfig{
-		Client:            config.Client,
 		Headers:           creq.HTTPRequestHeaders,
 		MaxAcceptableBody: config.MaxAcceptableBody,
+		NewClient:         config.NewClient,
 		Out:               httpch,
 		URL:               creq.HTTPRequest,
 		Wg:                wg,

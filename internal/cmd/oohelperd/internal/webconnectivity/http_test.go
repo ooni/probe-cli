@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -17,12 +18,14 @@ func TestHTTPDoWithInvalidURL(t *testing.T) {
 	httpch := make(chan CtrlHTTPResponse, 1)
 	wg.Add(1)
 	go HTTPDo(ctx, &HTTPConfig{
-		Client:            http.DefaultClient,
 		Headers:           nil,
 		MaxAcceptableBody: 1 << 24,
-		Out:               httpch,
-		URL:               "http://[::1]aaaa",
-		Wg:                wg,
+		NewClient: func() model.HTTPClient {
+			return http.DefaultClient
+		},
+		Out: httpch,
+		URL: "http://[::1]aaaa",
+		Wg:  wg,
 	})
 	// wait for measurement steps to complete
 	wg.Wait()
@@ -39,16 +42,18 @@ func TestHTTPDoWithHTTPTransportFailure(t *testing.T) {
 	httpch := make(chan CtrlHTTPResponse, 1)
 	wg.Add(1)
 	go HTTPDo(ctx, &HTTPConfig{
-		Client: &http.Client{
-			Transport: FakeTransport{
-				Err: expected,
-			},
-		},
 		Headers:           nil,
 		MaxAcceptableBody: 1 << 24,
-		Out:               httpch,
-		URL:               "http://www.x.org",
-		Wg:                wg,
+		NewClient: func() model.HTTPClient {
+			return &http.Client{
+				Transport: FakeTransport{
+					Err: expected,
+				},
+			}
+		},
+		Out: httpch,
+		URL: "http://www.x.org",
+		Wg:  wg,
 	})
 	// wait for measurement steps to complete
 	wg.Wait()

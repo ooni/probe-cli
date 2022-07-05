@@ -51,10 +51,16 @@ const requestWithoutDomainName = `{
 
 func TestWorkingAsIntended(t *testing.T) {
 	handler := Handler{
-		Client:            http.DefaultClient,
-		Dialer:            netxlite.NewDialerWithStdlibResolver(model.DiscardLogger),
 		MaxAcceptableBody: 1 << 24,
-		Resolver:          netxlite.NewUnwrappedStdlibResolver(),
+		NewClient: func() model.HTTPClient {
+			return http.DefaultClient
+		},
+		NewDialer: func() model.Dialer {
+			return netxlite.NewDialerWithStdlibResolver(model.DiscardLogger)
+		},
+		NewResolver: func() model.Resolver {
+			return netxlite.NewUnwrappedStdlibResolver()
+		},
 	}
 	srv := httptest.NewServer(handler)
 	defer srv.Close()

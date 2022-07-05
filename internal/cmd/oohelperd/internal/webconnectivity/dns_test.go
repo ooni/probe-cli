@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -68,13 +69,18 @@ func TestDNSDo(t *testing.T) {
 		ctx := context.Background()
 		config := &DNSConfig{
 			Domain: "antani.ooni.org",
-			Out:    make(chan webconnectivity.ControlDNSResult, 1),
-			Resolver: &mocks.Resolver{
-				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return nil, netxlite.ErrOODNSNoSuchHost
-				},
+			NewResolver: func() model.Resolver {
+				return &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						return nil, netxlite.ErrOODNSNoSuchHost
+					},
+					MockCloseIdleConnections: func() {
+						// nothing
+					},
+				}
 			},
-			Wg: &sync.WaitGroup{},
+			Out: make(chan webconnectivity.ControlDNSResult, 1),
+			Wg:  &sync.WaitGroup{},
 		}
 		config.Wg.Add(1)
 		DNSDo(ctx, config)

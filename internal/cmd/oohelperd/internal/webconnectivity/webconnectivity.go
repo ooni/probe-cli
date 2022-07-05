@@ -14,10 +14,10 @@ import (
 
 // Handler implements the Web Connectivity test helper HTTP API.
 type Handler struct {
-	Client            model.HTTPClient
-	Dialer            model.Dialer
 	MaxAcceptableBody int64
-	Resolver          model.Resolver
+	NewClient         func() model.HTTPClient
+	NewDialer         func() model.Dialer
+	NewResolver       func() model.Resolver
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {

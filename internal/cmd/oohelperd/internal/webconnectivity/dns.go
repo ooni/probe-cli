@@ -19,16 +19,18 @@ type CtrlDNSResult = webconnectivity.ControlDNSResult
 
 // DNSConfig configures the DNS check.
 type DNSConfig struct {
-	Domain   string
-	Out      chan CtrlDNSResult
-	Resolver model.Resolver
-	Wg       *sync.WaitGroup
+	Domain      string
+	NewResolver func() model.Resolver
+	Out         chan CtrlDNSResult
+	Wg          *sync.WaitGroup
 }
 
 // DNSDo performs the DNS check.
 func DNSDo(ctx context.Context, config *DNSConfig) {
 	defer config.Wg.Done()
-	addrs, err := config.Resolver.LookupHost(ctx, config.Domain)
+	reso := config.NewResolver()
+	defer reso.CloseIdleConnections()
+	addrs, err := reso.LookupHost(ctx, config.Domain)
 	if addrs == nil {
 		addrs = []string{} // fix: the old test helper did that
 	}
