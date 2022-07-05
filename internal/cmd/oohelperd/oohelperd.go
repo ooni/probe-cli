@@ -17,22 +17,22 @@ import (
 const maxAcceptableBody = 1 << 24
 
 var (
-	dialer     model.Dialer
-	endpoint   = flag.String("endpoint", ":8080", "Endpoint where to listen")
-	httpClient model.HTTPClient
-	resolver   model.Resolver
-	srvcancel  context.CancelFunc
-	srvctx     context.Context
-	srvwg      = new(sync.WaitGroup)
+	endpoint  = flag.String("endpoint", ":8080", "Endpoint where to listen")
+	srvcancel context.CancelFunc
+	srvctx    context.Context
+	srvwg     = new(sync.WaitGroup)
 )
 
 func init() {
 	srvctx, srvcancel = context.WithCancel(context.Background())
+}
+
+func newresolver() model.Resolver {
 	// Implementation note: pin to a specific resolver so we don't depend upon the
 	// default resolver configured by the box. Also, use an encrypted transport thus
 	// we're less vulnerable to any policy implemented by the box's provider.
-	resolver = netxlite.NewParallelDNSOverHTTPSResolver(log.Log, "https://8.8.8.8/dns-query")
-	httpClient = netxlite.NewHTTPClientWithResolver(log.Log, resolver)
+	resolver := netxlite.NewParallelDNSOverHTTPSResolver(log.Log, "https://8.8.8.8/dns-query")
+	return resolver
 }
 
 func shutdown(srv *http.Server) {
@@ -55,10 +55,14 @@ func main() {
 func testableMain() {
 	mux := http.NewServeMux()
 	mux.Handle("/", webconnectivity.Handler{
-		Client:            httpClient,
-		Dialer:            dialer,
 		MaxAcceptableBody: maxAcceptableBody,
-		Resolver:          resolver,
+		NewClient: func() model.HTTPClient {
+			return netxlite.NewHTTPClientWithResolver(log.Log, newresolver())
+		},
+		NewDialer: func() model.Dialer {
+			return netxlite.NewDialerWithResolver(log.Log, newresolver())
+		},
+		NewResolver: newresolver,
 	})
 	srv := &http.Server{Addr: *endpoint, Handler: mux}
 	srvwg.Add(1)

@@ -19,9 +19,9 @@ type CtrlHTTPResponse = webconnectivity.ControlHTTPRequestResult
 
 // HTTPConfig configures the HTTP check.
 type HTTPConfig struct {
-	Client            model.HTTPClient
 	Headers           map[string][]string
 	MaxAcceptableBody int64
+	NewClient         func() model.HTTPClient
 	Out               chan CtrlHTTPResponse
 	URL               string
 	Wg                *sync.WaitGroup
@@ -50,7 +50,9 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) {
 			}
 		}
 	}
-	resp, err := config.Client.Do(req)
+	clnt := config.NewClient()
+	defer clnt.CloseIdleConnections()
+	resp, err := clnt.Do(req)
 	if err != nil {
 		config.Out <- CtrlHTTPResponse{ // fix: emit -1 like old test helper does
 			BodyLength: -1,
