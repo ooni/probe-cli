@@ -16,9 +16,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-// TODO(bassosimone): we should refactor this package to be flat w/o the internal
-// package. We're now past the many-small-packages time.
-
 const maxAcceptableBody = 1 << 24
 
 var (
