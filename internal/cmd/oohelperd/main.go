@@ -1,4 +1,4 @@
-// Command oohelperd contains the Web Connectivity test helper.
+// Command oohelperd implements the Web Connectivity test helper.
 package main
 
 import (
@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/cmd/oohelperd/internal/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -27,7 +26,7 @@ func init() {
 	srvctx, srvcancel = context.WithCancel(context.Background())
 }
 
-func newresolver() model.Resolver {
+func newResolver() model.Resolver {
 	// Implementation note: pin to a specific resolver so we don't depend upon the
 	// default resolver configured by the box. Also, use an encrypted transport thus
 	// we're less vulnerable to any policy implemented by the box's provider.
@@ -54,15 +53,15 @@ func main() {
 
 func testableMain() {
 	mux := http.NewServeMux()
-	mux.Handle("/", webconnectivity.Handler{
+	mux.Handle("/", &handler{
 		MaxAcceptableBody: maxAcceptableBody,
 		NewClient: func() model.HTTPClient {
-			return netxlite.NewHTTPClientWithResolver(log.Log, newresolver())
+			return netxlite.NewHTTPClientWithResolver(log.Log, newResolver())
 		},
 		NewDialer: func() model.Dialer {
-			return netxlite.NewDialerWithResolver(log.Log, newresolver())
+			return netxlite.NewDialerWithResolver(log.Log, newResolver())
 		},
-		NewResolver: newresolver,
+		NewResolver: newResolver,
 	})
 	srv := &http.Server{Addr: *endpoint, Handler: mux}
 	srvwg.Add(1)

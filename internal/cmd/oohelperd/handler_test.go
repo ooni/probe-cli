@@ -1,4 +1,4 @@
-package webconnectivity
+package main
 
 import (
 	"context"
@@ -50,7 +50,7 @@ const requestWithoutDomainName = `{
 }`
 
 func TestWorkingAsIntended(t *testing.T) {
-	handler := Handler{
+	handler := &handler{
 		MaxAcceptableBody: 1 << 24,
 		NewClient: func() model.HTTPClient {
 			return http.DefaultClient
@@ -148,7 +148,7 @@ func TestWorkingAsIntended(t *testing.T) {
 
 func TestHandlerWithRequestBodyReadingError(t *testing.T) {
 	expected := errors.New("mocked error")
-	handler := Handler{MaxAcceptableBody: 1 << 24}
+	handler := handler{MaxAcceptableBody: 1 << 24}
 	rw := NewFakeResponseWriter()
 	req := &http.Request{
 		Method: "POST",
