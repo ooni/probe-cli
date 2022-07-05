@@ -13,6 +13,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
@@ -173,7 +174,8 @@ func (m *Measurer) dnsRoundTrip(ctx context.Context, index int64, zeroTime time.
 	}
 	trace := measurexlite.NewTrace(index, zeroTime)
 	ol := measurexlite.NewOperationLogger(logger, "DNSPing #%d %s %s", index, address, domain)
-	resolver := trace.NewParallelResolverUDP(logger, address)
+	dialer := netxlite.NewDialerWithStdlibResolver(logger)
+	resolver := trace.NewParallelResolverUDP(logger, dialer, address)
 	_, err := resolver.LookupHost(ctx, domain)
 	ol.Stop(err)
 	sp.Queries = trace.DNSLookupsFromRoundTrip()

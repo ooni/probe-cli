@@ -8,11 +8,12 @@ import (
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestNewUnwrappedParallelResolver(t *testing.T) {
-	t.Run("NewUnwrappedParallelResolver created an UnwrappedParallelResolver with Trace", func(t *testing.T) {
+	t.Run("NewUnwrappedParallelResolver creates an UnwrappedParallelResolver with Trace", func(t *testing.T) {
 		underlying := &mocks.Resolver{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
@@ -27,6 +28,45 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 		if resolvert.tx != trace {
 			t.Fatal("invalid trace")
 		}
+	})
+
+	t.Run("Trace-aware resolver forwards underlying functions", func(t *testing.T) {
+		var called bool
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		txp := &mocks.DNSTransport{
+			MockAddress: func() string {
+				return "dns.google"
+			},
+			MockNetwork: func() string {
+				return "udp"
+			},
+			MockCloseIdleConnections: func() {
+				called = true
+			},
+		}
+		resolver := trace.NewUnwrappedParallelResolver(txp)
+
+		t.Run("Address is correctly forwarded", func(t *testing.T) {
+			got := resolver.Address()
+			if got != "dns.google" {
+				t.Fatal("Address not called")
+			}
+		})
+
+		t.Run("Network is correctly forwarded", func(t *testing.T) {
+			got := resolver.Network()
+			if got != "udp" {
+				t.Fatal("Network not called")
+			}
+		})
+
+		t.Run("CloseIdleConnections is correctly forwarded", func(t *testing.T) {
+			resolver.CloseIdleConnections()
+			if !called {
+				t.Fatal("CloseIdleConnections not called")
+			}
+		})
 	})
 
 	t.Run("LookupHost saves into trace", func(t *testing.T) {
@@ -148,4 +188,52 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestAnswersFromAddrs(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{{
+		name: "with valid input",
+		args: []string{"1.1.1.1", "fe80::a00:20ff:feb9:4c54"},
+	}, {
+		name: "with invalid IPv4 address",
+		args: []string{"1.1.1.1.1", "fe80::a00:20ff:feb9:4c54"},
+	}, {
+		name: "with invalid IPv6 address",
+		args: []string{"1.1.1.1", "fe80::a00:20ff:feb9:::4c54"},
+	}, {
+		name: "with empty input",
+		args: []string{},
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := archivalAnswersFromAddrs(tt.args)
+			var idx int
+			for _, inp := range tt.args {
+				ip6, err := netxlite.IsIPv6(inp)
+				if err != nil {
+					continue
+				}
+				if idx >= len(got) {
+					t.Fatal("unexpected array length")
+				}
+				answer := got[idx]
+				if ip6 {
+					if answer.AnswerType != "AAAA" || answer.IPv6 != inp {
+						t.Fatal("unexpected output", answer)
+					}
+				} else {
+					if answer.AnswerType != "A" || answer.IPv4 != inp {
+						t.Fatal("unexpected output", answer)
+					}
+				}
+				idx++
+			}
+			if idx != len(got) {
+				t.Fatal("unexpected array length", len(got))
+			}
+		})
+	}
 }

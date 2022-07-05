@@ -65,11 +65,9 @@ func (r *resolverTrace) LookupNS(ctx context.Context, domain string) ([]*net.NS,
 }
 
 // NewParallelResolverUDP returns a trace-ware parallel UDP resolver
-func (tx *Trace) NewParallelResolverUDP(logger model.Logger, address string) model.Resolver {
-	// keeping the previous implementation (measurexlite) which used the system resolver
-	dialer := netxlite.NewDialerWithStdlibResolver(logger)
-	DNSTransport := netxlite.NewUnwrappedDNSOverUDPTransport(dialer, address)
-	unwrappedParallelResolver := tx.NewUnwrappedParallelResolver(DNSTransport)
+func (tx *Trace) NewParallelResolverUDP(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
+	txp := netxlite.NewUnwrappedDNSOverUDPTransport(dialer, address)
+	unwrappedParallelResolver := tx.NewUnwrappedParallelResolver(txp)
 	return netxlite.WrapResolver(logger, unwrappedParallelResolver)
 }
 
