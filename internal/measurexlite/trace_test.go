@@ -47,8 +47,8 @@ func TestNewTrace(t *testing.T) {
 			}
 		})
 
-		t.Run("NewUnwrappedParallelResolverFn is nil", func(t *testing.T) {
-			if trace.NewUnwrappedParallelResolverFn != nil {
+		t.Run("NewParallelResolverFn is nil", func(t *testing.T) {
+			if trace.NewParallelResolverFn != nil {
 				t.Fatal("expected nil NewUnwrappedParallelResolverFn")
 			}
 		})
@@ -78,9 +78,9 @@ func TestNewTrace(t *testing.T) {
 				default:
 					break LoopA
 				}
-				if idxA != DNSLookupBufferSize {
-					t.Fatal("invalid DNSLookup A channel buffer size")
-				}
+			}
+			if idxA != DNSLookupBufferSize {
+				t.Fatal("invalid DNSLookup A channel buffer size")
 			}
 
 			var idxAAAA int
@@ -94,9 +94,9 @@ func TestNewTrace(t *testing.T) {
 				default:
 					break LoopAAAA
 				}
-				if idxAAAA != DNSLookupBufferSize {
-					t.Fatal("invalid DNSLookup AAAA channel buffer size")
-				}
+			}
+			if idxAAAA != DNSLookupBufferSize {
+				t.Fatal("invalid DNSLookup AAAA channel buffer size")
 			}
 		})
 
@@ -157,7 +157,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewUnwrappedParallelResolverFn: func(t model.DNSTransport) model.Resolver {
+				NewParallelResolverFn: func() model.Resolver {
 					return &mocks.Resolver{
 						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 							return []string{}, mockedErr
@@ -165,7 +165,9 @@ func TestTrace(t *testing.T) {
 					}
 				},
 			}
-			resolver := tx.newUnwrappedParallelResolver(&mocks.DNSTransport{})
+			resolver := tx.newParallelResolver(func() model.Resolver {
+				return nil
+			})
 			ctx := context.Background()
 			addrs, err := resolver.LookupHost(ctx, "example.com")
 			if !errors.Is(err, mockedErr) {
@@ -178,31 +180,16 @@ func TestTrace(t *testing.T) {
 
 		t.Run("when nil", func(t *testing.T) {
 			tx := &Trace{
-				NewUnwrappedParallelResolverFn: nil,
+				NewParallelResolverFn: nil,
 			}
-			txp := &mocks.DNSTransport{
-				MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
-					response := &mocks.DNSResponse{
-						MockDecodeLookupHost: func() ([]string, error) {
-							if query.Type() != dns.TypeA {
-								return nil, nil
-							}
-							return []string{"1.1.1.1"}, nil
-						},
-					}
-					return response, nil
-				},
-				MockRequiresPadding: func() bool {
-					return false
-				},
-				MockNetwork: func() string {
-					return ""
-				},
-				MockAddress: func() string {
-					return ""
-				},
+			newResolver := func() model.Resolver {
+				return &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						return []string{"1.1.1.1"}, nil
+					},
+				}
 			}
-			resolver := tx.NewUnwrappedParallelResolver(txp)
+			resolver := tx.newParallelResolver(newResolver)
 			ctx := context.Background()
 			addrs, err := resolver.LookupHost(ctx, "example.com")
 			if err != nil {

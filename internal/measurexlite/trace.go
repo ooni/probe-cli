@@ -32,7 +32,7 @@ import (
 type Trace struct {
 	// Index is the MANDATORY unique index of this trace within the
 	// current measurement. If you don't care about uniquely identifying
-	// treaces, you can use zero to indicate the "default" trace.
+	// traces, you can use zero to indicate the "default" trace.
 	Index int64
 
 	// NetworkEvent is MANDATORY and buffers network events. If you create
@@ -40,8 +40,8 @@ type Trace struct {
 	NetworkEvent chan *model.ArchivalNetworkEvent
 
 	// NewParallelResolverFn is OPTIONAL and can be used to overide
-	// calls to the netxlite.NewUnwrappedParallelResolver factory.
-	NewUnwrappedParallelResolverFn func(t model.DNSTransport) model.Resolver
+	// calls to the netxlite.NewParallelResolver factory.
+	NewParallelResolverFn func() model.Resolver
 
 	// NewDialerWithoutResolverFn is OPTIONAL and can be used to override
 	// calls to the netxlite.NewDialerWithoutResolver factory.
@@ -51,8 +51,9 @@ type Trace struct {
 	// calls to the netxlite.NewTLSHandshakerStdlib factory.
 	NewTLSHandshakerStdlibFn func(dl model.DebugLogger) model.TLSHandshaker
 
-	// DNSLookup is MANDATORY and buffers DNS Lookup observations. If you create
-	// this channel manually, ensure it has some buffer.
+	// DNSLookup is MANDATORY and buffers DNSLookup results based on the query type
+	// If you create this channel manually, ensure all channels corresponding
+	// to the queries of interest have some buffer
 	DNSLookup map[uint16]chan *model.ArchivalDNSLookupResult
 
 	// TCPConnect is MANDATORY and buffers TCP connect observations. If you create
@@ -78,7 +79,7 @@ const (
 
 	// DNSLookupBufferSize is the buffer size for constructing
 	// the Trace's DNSLookup map of buffered channels.
-	DNSLookupBufferSize = 1
+	DNSLookupBufferSize = 8
 
 	// TCPConnectBufferSize is the buffer size for constructing
 	// the Trace's TCPConnect buffered channel.
@@ -110,8 +111,10 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 		NewDialerWithoutResolverFn: nil, // use default
 		NewTLSHandshakerStdlibFn:   nil, // use default
 		DNSLookup: map[uint16]chan *model.ArchivalDNSLookupResult{
-			dns.TypeA:    make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
-			dns.TypeAAAA: make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
+			dns.TypeANY:   make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
+			dns.TypeA:     make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
+			dns.TypeAAAA:  make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
+			dns.TypeCNAME: make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
 		},
 		TCPConnect: make(
 			chan *model.ArchivalTCPConnectResult,
@@ -135,13 +138,13 @@ func (tx *Trace) newDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
 	return netxlite.NewDialerWithoutResolver(dl)
 }
 
-// newUnwrappedParallelResolver indirectly calls netxlite.NewUnwrappedParallerResolver
+// newParallelResolver indirectly calls the passed netxlite.NewParallerResolver
 // thus allowing us to mock this function for testing
-func (tx *Trace) newUnwrappedParallelResolver(t model.DNSTransport) model.Resolver {
-	if tx.NewUnwrappedParallelResolverFn != nil {
-		return tx.NewUnwrappedParallelResolverFn(t)
+func (tx *Trace) newParallelResolver(newResolver func() model.Resolver) model.Resolver {
+	if tx.NewParallelResolverFn != nil {
+		return tx.NewParallelResolverFn()
 	}
-	return netxlite.NewUnwrappedParallelResolver(t)
+	return newResolver()
 }
 
 // newTLSHandshakerStdlib indirectly calls netxlite.NewTLSHandshakerStdlib

@@ -17,10 +17,12 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 		underlying := &mocks.Resolver{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NewUnwrappedParallelResolverFn = func(t model.DNSTransport) model.Resolver {
+		trace.NewParallelResolverFn = func() model.Resolver {
 			return underlying
 		}
-		resolver := trace.NewUnwrappedParallelResolver(&mocks.DNSTransport{})
+		resolver := trace.newParallelResolverTrace(func() model.Resolver {
+			return nil
+		})
 		resolvert := resolver.(*resolverTrace)
 		if resolvert.r != underlying {
 			t.Fatal("invalid parallel resolver")
@@ -34,18 +36,20 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 		var called bool
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		txp := &mocks.DNSTransport{
-			MockAddress: func() string {
-				return "dns.google"
-			},
-			MockNetwork: func() string {
-				return "udp"
-			},
-			MockCloseIdleConnections: func() {
-				called = true
-			},
+		newMockResolver := func() model.Resolver {
+			return &mocks.Resolver{
+				MockAddress: func() string {
+					return "dns.google"
+				},
+				MockNetwork: func() string {
+					return "udp"
+				},
+				MockCloseIdleConnections: func() {
+					called = true
+				},
+			}
 		}
-		resolver := trace.NewUnwrappedParallelResolver(txp)
+		resolver := trace.newParallelResolver(newMockResolver)
 
 		t.Run("Address is correctly forwarded", func(t *testing.T) {
 			got := resolver.Address()
@@ -96,7 +100,10 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 				return "dns.google"
 			},
 		}
-		resolver := trace.NewUnwrappedParallelResolver(txp)
+		newResolver := func() model.Resolver {
+			return netxlite.NewUnwrappedParallelResolver(txp)
+		}
+		resolver := trace.newParallelResolverTrace(newResolver)
 		ctx := context.Background()
 		addrs, err := resolver.LookupHost(ctx, "example.com")
 		if err != nil {
@@ -171,7 +178,10 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 				return "dns.google"
 			},
 		}
-		resolver := trace.NewUnwrappedParallelResolver(txp)
+		newResolver := func() model.Resolver {
+			return netxlite.NewUnwrappedParallelResolver(txp)
+		}
+		resolver := trace.newParallelResolverTrace(newResolver)
 		ctx := context.Background()
 		addrs, err := resolver.LookupHost(ctx, "example.com")
 		if err != nil {

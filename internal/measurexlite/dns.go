@@ -19,9 +19,9 @@ import (
 
 // NewUnwrappedParallelResolver is equivalent to netxlite.NewUnwrappedParallelResolver
 // except that it returns a model.Resolver that uses this trace.
-func (tx *Trace) NewUnwrappedParallelResolver(t model.DNSTransport) model.Resolver {
+func (tx *Trace) newParallelResolverTrace(newResolver func() model.Resolver) model.Resolver {
 	return &resolverTrace{
-		r:  tx.newUnwrappedParallelResolver(t),
+		r:  tx.newParallelResolver(newResolver),
 		tx: tx,
 	}
 }
@@ -64,11 +64,18 @@ func (r *resolverTrace) LookupNS(ctx context.Context, domain string) ([]*net.NS,
 	return r.r.LookupNS(netxlite.ContextWithTrace(ctx, r.tx), domain)
 }
 
-// NewParallelResolverUDP returns a trace-ware parallel UDP resolver
+// NewParallelUDPResolver returns a trace-ware parallel UDP resolver
 func (tx *Trace) NewParallelResolverUDP(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
-	txp := netxlite.NewUnwrappedDNSOverUDPTransport(dialer, address)
-	unwrappedParallelResolver := tx.NewUnwrappedParallelResolver(txp)
-	return netxlite.WrapResolver(logger, unwrappedParallelResolver)
+	return tx.newParallelResolverTrace(func() model.Resolver {
+		return netxlite.NewParallelUDPResolver(logger, dialer, address)
+	})
+}
+
+// NewParallelDNSOverHTTPSResolver returns a trace-aware parallel DoH resolver
+func (tx *Trace) NewParallelDNSOverHTTPSResolver(logger model.Logger, URL string) model.Resolver {
+	return tx.newParallelResolverTrace(func() model.Resolver {
+		return netxlite.NewParallelDNSOverHTTPSResolver(logger, URL)
+	})
 }
 
 // OnDNSRoundTripForLookupHost implements model.Trace.OnDNSRoundTripForLookupHost
@@ -138,7 +145,7 @@ func archivalAnswersFromAddrs(addrs []string) (out []model.ArchivalDNSAnswer) {
 	return
 }
 
-// DNSLookupsFromRoundTrip drains the network events buffered inside DNSLookup channel
+// DNSLookupsFromRoundTrip drains the network events buffered inside A and AAAA query channels
 func (tx *Trace) DNSLookupsFromRoundTrip() (out []*model.ArchivalDNSLookupResult) {
 	for {
 		select {
