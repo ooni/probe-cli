@@ -102,69 +102,119 @@ func TestExperimentBuilderSetOption(t *testing.T) {
 	})
 }
 
-func TestExperimentBuilderSetOptionGuessType(t *testing.T) {
-	type fiction struct {
-		String string
-		Truth  bool
-		Value  int64
-	}
-	b := &ExperimentBuilder{config: &fiction{}}
-	t.Run("we correctly guess a boolean", func(t *testing.T) {
-		if err := b.SetOptionGuessType("Truth", "true"); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionGuessType("Truth", "false"); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionGuessType("Truth", "1234"); err == nil {
-			t.Fatal("expected an error here")
-		}
-		if err := b.SetOptionGuessType("Truth", "yoloyolo"); err == nil {
+type fakeExperimentConfig struct {
+	Map    map[string]string
+	String string
+	Truth  bool
+	Value  int64
+}
+
+func TestExperimentBuilderSetOptionAny(t *testing.T) {
+	b := &ExperimentBuilder{config: &fakeExperimentConfig{}}
+
+	t.Run("for missing field", func(t *testing.T) {
+		if err := b.SetOptionAny("Antani", true); err == nil {
 			t.Fatal("expected an error here")
 		}
 	})
-	t.Run("we correctly guess an integer", func(t *testing.T) {
-		if err := b.SetOptionGuessType("Value", "true"); err == nil {
-			t.Fatal("expected an error here")
-		}
-		if err := b.SetOptionGuessType("Value", "false"); err == nil {
-			t.Fatal("expected an error here")
-		}
-		if err := b.SetOptionGuessType("Value", "1234"); err != nil {
+
+	t.Run("for boolean", func(t *testing.T) {
+		if err := b.SetOptionAny("Truth", "true"); err != nil {
 			t.Fatal(err)
 		}
-		if err := b.SetOptionGuessType("Value", "yoloyolo"); err == nil {
+		if err := b.SetOptionAny("Truth", "false"); err != nil {
+			t.Fatal(err)
+		}
+		if err := b.SetOptionAny("Truth", false); err != nil {
+			t.Fatal(err)
+		}
+		if err := b.SetOptionAny("Truth", "1234"); err == nil {
+			t.Fatal("expected an error here")
+		}
+		if err := b.SetOptionAny("Truth", "yoloyolo"); err == nil {
+			t.Fatal("expected an error here")
+		}
+		if err := b.SetOptionAny("Truth", map[string]string{}); err == nil {
 			t.Fatal("expected an error here")
 		}
 	})
-	t.Run("we correctly guess a string", func(t *testing.T) {
-		if err := b.SetOptionGuessType("String", "true"); err == nil {
+
+	t.Run("for integer", func(t *testing.T) {
+		if err := b.SetOptionAny("Value", "true"); err == nil {
 			t.Fatal("expected an error here")
 		}
-		if err := b.SetOptionGuessType("String", "false"); err == nil {
+		if err := b.SetOptionAny("Value", "false"); err == nil {
 			t.Fatal("expected an error here")
 		}
-		if err := b.SetOptionGuessType("String", "1234"); err == nil {
+		if err := b.SetOptionAny("Value", 1234); err != nil {
+			t.Fatal(err)
+		}
+		if err := b.SetOptionAny("Value", int64(1234)); err != nil {
+			t.Fatal(err)
+		}
+		if err := b.SetOptionAny("Value", int32(1234)); err != nil {
+			t.Fatal(err)
+		}
+		if err := b.SetOptionAny("Value", int16(1234)); err != nil {
+			t.Fatal(err)
+		}
+		if err := b.SetOptionAny("Value", int8(123)); err != nil {
+			t.Fatal(err)
+		}
+		if err := b.SetOptionAny("Value", "1234"); err != nil {
+			t.Fatal(err)
+		}
+		if err := b.SetOptionAny("Value", "yoloyolo"); err == nil {
 			t.Fatal("expected an error here")
 		}
-		if err := b.SetOptionGuessType("String", "yoloyolo"); err != nil {
+		if err := b.SetOptionAny("Value", map[string]string{}); err == nil {
+			t.Fatal("expected an error here")
+		}
+	})
+
+	t.Run("for string", func(t *testing.T) {
+		if err := b.SetOptionAny("String", "true"); err != nil {
+			t.Fatal(err)
+		}
+		if err := b.SetOptionAny("String", "false"); err != nil {
+			t.Fatal(err)
+		}
+		if err := b.SetOptionAny("String", "1234"); err != nil {
+			t.Fatal(err)
+		}
+		if err := b.SetOptionAny("String", map[string]string{}); err == nil {
+			t.Fatal("expected an error here")
+		}
+		if err := b.SetOptionAny("String", "yoloyolo"); err != nil {
 			t.Fatal(err)
 		}
 	})
+
+	t.Run("for any other type", func(t *testing.T) {
+		if err := b.SetOptionAny("Map", true); err == nil {
+			t.Fatal("expected an error here")
+		}
+	})
+}
+
+func TestSetOptionsGuessType(t *testing.T) {
+	b := &ExperimentBuilder{config: &fakeExperimentConfig{}}
+
 	t.Run("we correctly handle an empty map", func(t *testing.T) {
-		if err := b.SetOptionsGuessType(nil); err != nil {
+		if err := b.SetOptionsAny(nil); err != nil {
 			t.Fatal(err)
 		}
 	})
+
 	t.Run("we correctly handle a map containing options", func(t *testing.T) {
-		f := &fiction{}
+		f := &fakeExperimentConfig{}
 		privateb := &ExperimentBuilder{config: f}
-		opts := map[string]string{
+		opts := map[string]any{
 			"String": "yoloyolo",
 			"Value":  "174",
 			"Truth":  "true",
 		}
-		if err := privateb.SetOptionsGuessType(opts); err != nil {
+		if err := privateb.SetOptionsAny(opts); err != nil {
 			t.Fatal(err)
 		}
 		if f.String != "yoloyolo" {
@@ -177,13 +227,14 @@ func TestExperimentBuilderSetOptionGuessType(t *testing.T) {
 			t.Fatal("cannot set bool value")
 		}
 	})
+
 	t.Run("we handle mistakes in a map containing options", func(t *testing.T) {
-		opts := map[string]string{
+		opts := map[string]any{
 			"String": "yoloyolo",
 			"Value":  "antani;",
 			"Truth":  "true",
 		}
-		if err := b.SetOptionsGuessType(opts); err == nil {
+		if err := b.SetOptionsAny(opts); err == nil {
 			t.Fatal("expected an error here")
 		}
 	})

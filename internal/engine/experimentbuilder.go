@@ -149,6 +149,9 @@ func (b *ExperimentBuilder) SetOptionAny(key string, value any) error {
 		case int8:
 			field.SetInt(int64(v))
 			return nil
+		case int:
+			field.SetInt(int64(v))
+			return nil
 		case string:
 			number, err := strconv.ParseInt(v, 10, 64)
 			if err != nil {

@@ -129,7 +129,7 @@ func init() {
 	)
 	getopt.FlagLong(
 		&globalOptions.Yes, "yes", 'y',
-		"Accept risk of running OONI, new OONI Run links or OONI Run links modified upstream",
+		"Assume yes as the answer to all questions",
 	)
 }
 
@@ -400,7 +400,7 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 		sess.ResolverASNString())
 
 	// We handle the oonirun experiment name specially. The user must specify
-	// `miniooni -i {OONIRunURL} oonirun`` to run a OONI Run URL (v1 or v2).
+	// `miniooni -i {OONIRunURL} oonirun` to run a OONI Run URL (v1 or v2).
 	if experimentName == "oonirun" {
 		ooniRunMain(ctx, sess, currentOptions, annotations)
 		return
