@@ -75,7 +75,7 @@ func (ed *Experiment) Run(ctx context.Context) error {
 		SourceFiles:    ed.InputFilePaths,
 		Session:        ed.Session,
 	}
-	inputs, err := inputLoader.Load(context.Background())
+	inputs, err := inputLoader.Load(ctx)
 	if err != nil {
 		return err
 	}

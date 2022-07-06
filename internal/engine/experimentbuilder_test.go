@@ -178,13 +178,6 @@ func TestExperimentBuilderSetOptionAny(t *testing.T) {
 		ExpectErr:     ErrCannotSetBoolOption,
 		ExpectConfig:  &fakeExperimentConfig{},
 	}, {
-		TestCaseName:  "[bool] for value we don't know how to convert to bool",
-		InitialConfig: &fakeExperimentConfig{},
-		FieldName:     "Truth",
-		FieldValue:    make(chan any),
-		ExpectErr:     ErrCannotSetBoolOption,
-		ExpectConfig:  &fakeExperimentConfig{},
-	}, {
 		TestCaseName:  "[int] for int",
 		InitialConfig: &fakeExperimentConfig{},
 		FieldName:     "Value",
@@ -253,7 +246,7 @@ func TestExperimentBuilderSetOptionAny(t *testing.T) {
 		ExpectErr:     ErrCannotSetIntegerOption,
 		ExpectConfig:  &fakeExperimentConfig{},
 	}, {
-		TestCaseName:  "[string] for type that looks like bool but is not",
+		TestCaseName:  "[string] for serialized bool value while setting a string value",
 		InitialConfig: &fakeExperimentConfig{},
 		FieldName:     "String",
 		FieldValue:    "true",
@@ -262,7 +255,7 @@ func TestExperimentBuilderSetOptionAny(t *testing.T) {
 			String: "true",
 		},
 	}, {
-		TestCaseName:  "[string] for type that looks like number but is not",
+		TestCaseName:  "[string] for serialized int value while setting a string value",
 		InitialConfig: &fakeExperimentConfig{},
 		FieldName:     "String",
 		FieldValue:    "155",
