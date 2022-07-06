@@ -15,9 +15,9 @@ import (
 type Trace struct {
 	MockTimeNow func() time.Time
 
-	MockOnDNSRoundTripForLookupHost func(
-		started time.Time, reso model.Resolver, query model.DNSQuery, response model.DNSResponse,
-		addrs []string, err error, finished time.Time)
+	MockOnDNSRoundTripForLookupHost func(started time.Time, reso model.Resolver, query model.DNSQuery,
+		response model.DNSResponse, addrs []string, err error, finished time.Time)
+
 	MockOnConnectDone func(
 		started time.Time, network, domain, remoteAddr string, err error, finished time.Time)
 
