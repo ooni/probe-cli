@@ -64,7 +64,7 @@ func NewUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Res
 //
 // - wrappers is the optional list of wrappers to wrap the underlying
 // transport.  Any nil wrapper will be silently ignored.
-func NewSerialResolverUDP(logger model.DebugLogger, dialer model.Dialer,
+func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer,
 	address string, wrappers ...model.DNSTransportWrapper) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedSerialResolver(
 		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address), wrappers...),
@@ -84,7 +84,7 @@ func NewSerialResolverUDP(logger model.DebugLogger, dialer model.Dialer,
 //
 // - wrappers is the optional list of wrappers to wrap the underlying
 // transport.  Any nil wrapper will be silently ignored.
-func NewParallelResolverUDP(logger model.DebugLogger, dialer model.Dialer,
+func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer,
 	address string, wrappers ...model.DNSTransportWrapper) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedParallelResolver(
 		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address), wrappers...),
