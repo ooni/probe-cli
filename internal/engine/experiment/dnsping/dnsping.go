@@ -59,11 +59,6 @@ type TestKeys struct {
 	Pings []*SinglePing `json:"pings"`
 }
 
-// TODO(bassosimone): save more data once the dnsping improvements at
-// github.com/bassosimone/websteps-illustrated contains have been merged
-// into this repository. When this happens, we'll able to save raw
-// queries and network events of each individual query.
-
 // SinglePing contains the results of a single ping.
 type SinglePing struct {
 	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
@@ -129,19 +124,10 @@ func (m *Measurer) Run(
 	// numbers so it's fine for us not to bother with checking for that.
 	//
 	// We emit two results (A and AAAA) for each domain and repetition.
-	numResults := int(m.config.repetitions()) * len(domains) * 2
+	numResults := int(m.config.repetitions()) * len(domains)
 	for len(tk.Pings) < numResults {
 		meas := <-out
-		queries := meas.Queries
-		// TODO(bassosimone): when we merge the improvements at
-		// https://github.com/bassosimone/websteps-illustrated it
-		// will become unnecessary to split with query type
-		// as we're doing below.
-		for _, query := range queries {
-			tk.Pings = append(tk.Pings, &SinglePing{
-				Queries: []*model.ArchivalDNSLookupResult{query},
-			})
-		}
+		tk.Pings = append(tk.Pings, meas)
 	}
 	return nil // return nil so we always submit the measurement
 }
