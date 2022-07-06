@@ -17,7 +17,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
-// NewUnwrappedParallelResolver is equivalent to netxlite.NewUnwrappedParallelResolver
+// newParallelResolverTrace is equivalent to netxlite.NewParallelResolver
 // except that it returns a model.Resolver that uses this trace.
 func (tx *Trace) newParallelResolverTrace(newResolver func() model.Resolver) model.Resolver {
 	return &resolverTrace{
