@@ -1,10 +1,18 @@
 package engine
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/example"
+	"github.com/google/go-cmp/cmp"
 )
+
+type fakeExperimentConfig struct {
+	Chan   chan any `ooni:"we cannot set this"`
+	String string   `ooni:"a string"`
+	Truth  bool     `ooni:"something that no-one knows"`
+	Value  int64    `ooni:"a number"`
+}
 
 func TestExperimentBuilderOptions(t *testing.T) {
 	t.Run("when config is not a pointer", func(t *testing.T) {
@@ -12,192 +20,297 @@ func TestExperimentBuilderOptions(t *testing.T) {
 			config: 17,
 		}
 		options, err := b.Options()
-		if err == nil {
+		if !errors.Is(err, ErrConfigIsNotAStructPointer) {
 			t.Fatal("expected an error here")
 		}
 		if options != nil {
 			t.Fatal("expected nil here")
 		}
 	})
+
 	t.Run("when config is not a struct", func(t *testing.T) {
 		number := 17
 		b := &ExperimentBuilder{
 			config: &number,
 		}
 		options, err := b.Options()
-		if err == nil {
+		if !errors.Is(err, ErrConfigIsNotAStructPointer) {
 			t.Fatal("expected an error here")
 		}
 		if options != nil {
 			t.Fatal("expected nil here")
 		}
 	})
-}
 
-func TestExperimentBuilderSetOption(t *testing.T) {
-	t.Run("when config is not a pointer", func(t *testing.T) {
+	t.Run("when config is a pointer to struct", func(t *testing.T) {
+		config := &fakeExperimentConfig{}
 		b := &ExperimentBuilder{
-			config: 17,
+			config: config,
 		}
-		if err := b.SetOptionBool("antani", false); err == nil {
-			t.Fatal("expected an error here")
-		}
-	})
-	t.Run("when config is not a struct", func(t *testing.T) {
-		number := 17
-		b := &ExperimentBuilder{
-			config: &number,
-		}
-		if err := b.SetOptionBool("antani", false); err == nil {
-			t.Fatal("expected an error here")
-		}
-	})
-	t.Run("when field is not valid", func(t *testing.T) {
-		b := &ExperimentBuilder{
-			config: &ExperimentBuilder{},
-		}
-		if err := b.SetOptionBool("antani", false); err == nil {
-			t.Fatal("expected an error here")
-		}
-	})
-	t.Run("when field is not bool", func(t *testing.T) {
-		b := &ExperimentBuilder{
-			config: new(example.Config),
-		}
-		if err := b.SetOptionBool("Message", false); err == nil {
-			t.Fatal("expected an error here")
-		}
-	})
-	t.Run("when field is not string", func(t *testing.T) {
-		b := &ExperimentBuilder{
-			config: new(example.Config),
-		}
-		if err := b.SetOptionString("ReturnError", "xx"); err == nil {
-			t.Fatal("expected an error here")
-		}
-	})
-	t.Run("when field is not int", func(t *testing.T) {
-		b := &ExperimentBuilder{
-			config: new(example.Config),
-		}
-		if err := b.SetOptionInt("ReturnError", 17); err == nil {
-			t.Fatal("expected an error here")
-		}
-	})
-	t.Run("when int field does not exist", func(t *testing.T) {
-		b := &ExperimentBuilder{
-			config: new(example.Config),
-		}
-		if err := b.SetOptionInt("antani", 17); err == nil {
-			t.Fatal("expected an error here")
-		}
-	})
-	t.Run("when string field does not exist", func(t *testing.T) {
-		b := &ExperimentBuilder{
-			config: new(example.Config),
-		}
-		if err := b.SetOptionString("antani", "xx"); err == nil {
-			t.Fatal("expected an error here")
-		}
-	})
-}
-
-type fakeExperimentConfig struct {
-	Map    map[string]string
-	String string
-	Truth  bool
-	Value  int64
-}
-
-func TestExperimentBuilderSetOptionAny(t *testing.T) {
-	b := &ExperimentBuilder{config: &fakeExperimentConfig{}}
-
-	t.Run("for missing field", func(t *testing.T) {
-		if err := b.SetOptionAny("Antani", true); err == nil {
-			t.Fatal("expected an error here")
-		}
-	})
-
-	t.Run("for boolean", func(t *testing.T) {
-		if err := b.SetOptionAny("Truth", "true"); err != nil {
+		options, err := b.Options()
+		if err != nil {
 			t.Fatal(err)
 		}
-		if err := b.SetOptionAny("Truth", "false"); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionAny("Truth", false); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionAny("Truth", "1234"); err == nil {
-			t.Fatal("expected an error here")
-		}
-		if err := b.SetOptionAny("Truth", "yoloyolo"); err == nil {
-			t.Fatal("expected an error here")
-		}
-		if err := b.SetOptionAny("Truth", map[string]string{}); err == nil {
-			t.Fatal("expected an error here")
-		}
-	})
-
-	t.Run("for integer", func(t *testing.T) {
-		if err := b.SetOptionAny("Value", "true"); err == nil {
-			t.Fatal("expected an error here")
-		}
-		if err := b.SetOptionAny("Value", "false"); err == nil {
-			t.Fatal("expected an error here")
-		}
-		if err := b.SetOptionAny("Value", 1234); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionAny("Value", int64(1234)); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionAny("Value", int32(1234)); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionAny("Value", int16(1234)); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionAny("Value", int8(123)); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionAny("Value", "1234"); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionAny("Value", "yoloyolo"); err == nil {
-			t.Fatal("expected an error here")
-		}
-		if err := b.SetOptionAny("Value", map[string]string{}); err == nil {
-			t.Fatal("expected an error here")
-		}
-	})
-
-	t.Run("for string", func(t *testing.T) {
-		if err := b.SetOptionAny("String", "true"); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionAny("String", "false"); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionAny("String", "1234"); err != nil {
-			t.Fatal(err)
-		}
-		if err := b.SetOptionAny("String", map[string]string{}); err == nil {
-			t.Fatal("expected an error here")
-		}
-		if err := b.SetOptionAny("String", "yoloyolo"); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("for any other type", func(t *testing.T) {
-		if err := b.SetOptionAny("Map", true); err == nil {
-			t.Fatal("expected an error here")
+		for name, value := range options {
+			switch name {
+			case "Chan":
+				if value.Doc != "we cannot set this" {
+					t.Fatal("invalid doc")
+				}
+				if value.Type != "chan interface {}" {
+					t.Fatal("invalid type", value.Type)
+				}
+			case "String":
+				if value.Doc != "a string" {
+					t.Fatal("invalid doc")
+				}
+				if value.Type != "string" {
+					t.Fatal("invalid type", value.Type)
+				}
+			case "Truth":
+				if value.Doc != "something that no-one knows" {
+					t.Fatal("invalid doc")
+				}
+				if value.Type != "bool" {
+					t.Fatal("invalid type", value.Type)
+				}
+			case "Value":
+				if value.Doc != "a number" {
+					t.Fatal("invalid doc")
+				}
+				if value.Type != "int64" {
+					t.Fatal("invalid type", value.Type)
+				}
+			default:
+				t.Fatal("unknown name", name)
+			}
 		}
 	})
 }
 
-func TestSetOptionsGuessType(t *testing.T) {
+func TestExperimentBuilderSetOptionAny(t *testing.T) {
+	var inputs = []struct {
+		TestCaseName  string
+		InitialConfig any
+		FieldName     string
+		FieldValue    any
+		ExpectErr     error
+		ExpectConfig  any
+	}{{
+		TestCaseName:  "config is not a pointer",
+		InitialConfig: fakeExperimentConfig{},
+		FieldName:     "Antani",
+		FieldValue:    true,
+		ExpectErr:     ErrConfigIsNotAStructPointer,
+		ExpectConfig:  fakeExperimentConfig{},
+	}, {
+		TestCaseName: "config is not a pointer to struct",
+		InitialConfig: func() *int {
+			v := 17
+			return &v
+		}(),
+		FieldName:  "Antani",
+		FieldValue: true,
+		ExpectErr:  ErrConfigIsNotAStructPointer,
+		ExpectConfig: func() *int {
+			v := 17
+			return &v
+		}(),
+	}, {
+		TestCaseName:  "for missing field",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Antani",
+		FieldValue:    true,
+		ExpectErr:     ErrNoSuchField,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[bool] for true value represented as string",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Truth",
+		FieldValue:    "true",
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			Truth: true,
+		},
+	}, {
+		TestCaseName: "[bool] for false value represented as string",
+		InitialConfig: &fakeExperimentConfig{
+			Truth: true,
+		},
+		FieldName:  "Truth",
+		FieldValue: "false",
+		ExpectErr:  nil,
+		ExpectConfig: &fakeExperimentConfig{
+			Truth: false, // must have been flipped
+		},
+	}, {
+		TestCaseName:  "[bool] for true value",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Truth",
+		FieldValue:    true,
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			Truth: true,
+		},
+	}, {
+		TestCaseName: "[bool] for false value",
+		InitialConfig: &fakeExperimentConfig{
+			Truth: true,
+		},
+		FieldName:  "Truth",
+		FieldValue: false,
+		ExpectErr:  nil,
+		ExpectConfig: &fakeExperimentConfig{
+			Truth: false, // must have been flipped
+		},
+	}, {
+		TestCaseName:  "[bool] for invalid string representation of bool",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Truth",
+		FieldValue:    "xxx",
+		ExpectErr:     ErrInvalidStringRepresentationOfBool,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[bool] for value we don't know how to convert to bool",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Truth",
+		FieldValue:    make(chan any),
+		ExpectErr:     ErrCannotSetBoolOption,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[bool] for value we don't know how to convert to bool",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Truth",
+		FieldValue:    make(chan any),
+		ExpectErr:     ErrCannotSetBoolOption,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[int] for int",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    17,
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			Value: 17,
+		},
+	}, {
+		TestCaseName:  "[int] for int64",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    int64(17),
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			Value: 17,
+		},
+	}, {
+		TestCaseName:  "[int] for int32",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    int32(17),
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			Value: 17,
+		},
+	}, {
+		TestCaseName:  "[int] for int16",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    int16(17),
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			Value: 17,
+		},
+	}, {
+		TestCaseName:  "[int] for int8",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    int8(17),
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			Value: 17,
+		},
+	}, {
+		TestCaseName:  "[int] for string representation of int",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    "17",
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			Value: 17,
+		},
+	}, {
+		TestCaseName:  "[int] for invalid string representation of int",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    "xx",
+		ExpectErr:     ErrCannotSetIntegerOption,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[int] for type we don't know how to convert to int",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Value",
+		FieldValue:    make(chan any),
+		ExpectErr:     ErrCannotSetIntegerOption,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "[string] for type that looks like bool but is not",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "String",
+		FieldValue:    "true",
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			String: "true",
+		},
+	}, {
+		TestCaseName:  "[string] for type that looks like number but is not",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "String",
+		FieldValue:    "155",
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			String: "155",
+		},
+	}, {
+		TestCaseName:  "[string] for any other string",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "String",
+		FieldValue:    "xxx",
+		ExpectErr:     nil,
+		ExpectConfig: &fakeExperimentConfig{
+			String: "xxx",
+		},
+	}, {
+		TestCaseName:  "[string] for type we don't know how to convert to string",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "String",
+		FieldValue:    make(chan any),
+		ExpectErr:     ErrCannotSetStringOption,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}, {
+		TestCaseName:  "for a field that we don't know how to set",
+		InitialConfig: &fakeExperimentConfig{},
+		FieldName:     "Chan",
+		FieldValue:    make(chan any),
+		ExpectErr:     ErrUnsupportedOptionType,
+		ExpectConfig:  &fakeExperimentConfig{},
+	}}
+
+	for _, input := range inputs {
+		t.Run(input.TestCaseName, func(t *testing.T) {
+			ec := input.InitialConfig
+			b := &ExperimentBuilder{config: ec}
+			err := b.SetOptionAny(input.FieldName, input.FieldValue)
+			if !errors.Is(err, input.ExpectErr) {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(input.ExpectConfig, ec); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
+
+func TestSetOptionsAny(t *testing.T) {
 	b := &ExperimentBuilder{config: &fakeExperimentConfig{}}
 
 	t.Run("we correctly handle an empty map", func(t *testing.T) {
@@ -228,14 +341,14 @@ func TestSetOptionsGuessType(t *testing.T) {
 		}
 	})
 
-	t.Run("we handle mistakes in a map containing options", func(t *testing.T) {
+	t.Run("we handle mistakes in a map containing string options", func(t *testing.T) {
 		opts := map[string]any{
 			"String": "yoloyolo",
-			"Value":  "antani;",
+			"Value":  "xx",
 			"Truth":  "true",
 		}
-		if err := b.SetOptionsAny(opts); err == nil {
-			t.Fatal("expected an error here")
+		if err := b.SetOptionsAny(opts); !errors.Is(err, ErrCannotSetIntegerOption) {
+			t.Fatal("unexpected err", err)
 		}
 	})
 }

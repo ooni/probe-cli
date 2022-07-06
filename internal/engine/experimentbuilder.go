@@ -62,22 +62,50 @@ func (b *ExperimentBuilder) InputPolicy() InputPolicy {
 	return b.inputPolicy
 }
 
-// OptionInfo contains info about an option
+// OptionInfo contains info about an option.
 type OptionInfo struct {
-	Doc  string
+	// Doc contains the documentation.
+	Doc string
+
+	// Type contains the type.
 	Type string
 }
+
+var (
+	// ErrConfigIsNotAStructPointer indicates we expected a pointer to struct.
+	ErrConfigIsNotAStructPointer = errors.New("config is not a struct pointer")
+
+	// ErrNoSuchField indicates there's no field with the given name.
+	ErrNoSuchField = errors.New("no such field")
+
+	// ErrCannotSetIntegerOption means SetOptionAny could set an integer option.
+	ErrCannotSetIntegerOption = errors.New("cannot set integer option")
+
+	// ErrInvalidStringRepresentationOfBool indicates the string you passed
+	// to SetOptionaAny is not a valid string representation of a bool.
+	ErrInvalidStringRepresentationOfBool = errors.New("invalid string representation of bool")
+
+	// ErrCannotSetBoolOption means SetOptionAny could set a bool option.
+	ErrCannotSetBoolOption = errors.New("cannot set bool option")
+
+	// ErrCannotSetStringOption means SetOptionAny could set a string option.
+	ErrCannotSetStringOption = errors.New("cannot set string option")
+
+	// ErrUnsupportedOptionType means we don't support the type passed to
+	// the SetOptionAny method as an opaque any type.
+	ErrUnsupportedOptionType = errors.New("unsupported option type")
+)
 
 // Options returns info about all options
 func (b *ExperimentBuilder) Options() (map[string]OptionInfo, error) {
 	result := make(map[string]OptionInfo)
 	ptrinfo := reflect.ValueOf(b.config)
 	if ptrinfo.Kind() != reflect.Ptr {
-		return nil, errors.New("config is not a pointer")
+		return nil, ErrConfigIsNotAStructPointer
 	}
 	structinfo := ptrinfo.Elem().Type()
 	if structinfo.Kind() != reflect.Struct {
-		return nil, errors.New("config is not a struct")
+		return nil, ErrConfigIsNotAStructPointer
 	}
 	for i := 0; i < structinfo.NumField(); i++ {
 		field := structinfo.Field(i)
@@ -89,48 +117,12 @@ func (b *ExperimentBuilder) Options() (map[string]OptionInfo, error) {
 	return result, nil
 }
 
-// SetOptionBool sets a bool option
-func (b *ExperimentBuilder) SetOptionBool(key string, value bool) error {
-	field, err := fieldbyname(b.config, key)
-	if err != nil {
-		return err
-	}
-	if field.Kind() != reflect.Bool {
-		return errors.New("field is not a bool")
-	}
-	field.SetBool(value)
-	return nil
-}
-
-// SetOptionInt sets an int option
-func (b *ExperimentBuilder) SetOptionInt(key string, value int64) error {
-	field, err := fieldbyname(b.config, key)
-	if err != nil {
-		return err
-	}
-	if field.Kind() != reflect.Int64 {
-		return errors.New("field is not an int64")
-	}
-	field.SetInt(value)
-	return nil
-}
-
-// SetOptionString sets a string option
-func (b *ExperimentBuilder) SetOptionString(key, value string) error {
-	field, err := fieldbyname(b.config, key)
-	if err != nil {
-		return err
-	}
-	if field.Kind() != reflect.String {
-		return errors.New("field is not a string")
-	}
-	field.SetString(value)
-	return nil
-}
-
-// SetOptionAny sets an option whose value is an any value.
+// SetOptionAny sets an option whose value is an any value. We will use reasonable
+// heuristics to convert the any value to the proper type of the field whose name is
+// contained by the key variable. If we cannot convert the provided any value to
+// the proper type, then this function returns an error.
 func (b *ExperimentBuilder) SetOptionAny(key string, value any) error {
-	field, err := fieldbyname(b.config, key)
+	field, err := b.fieldbyname(b.config, key)
 	if err != nil {
 		return err
 	}
@@ -138,7 +130,7 @@ func (b *ExperimentBuilder) SetOptionAny(key string, value any) error {
 	case reflect.Int64:
 		switch v := value.(type) {
 		case int64:
-			field.SetInt(int64(v))
+			field.SetInt(v)
 			return nil
 		case int32:
 			field.SetInt(int64(v))
@@ -155,12 +147,12 @@ func (b *ExperimentBuilder) SetOptionAny(key string, value any) error {
 		case string:
 			number, err := strconv.ParseInt(v, 10, 64)
 			if err != nil {
-				return err
+				return fmt.Errorf("%w: %s", ErrCannotSetIntegerOption, err.Error())
 			}
 			field.SetInt(number)
 			return nil
 		default:
-			return errors.New("cannot set integer option")
+			return fmt.Errorf("%w from a value of type %T", ErrCannotSetIntegerOption, value)
 		}
 	case reflect.Bool:
 		switch v := value.(type) {
@@ -169,12 +161,12 @@ func (b *ExperimentBuilder) SetOptionAny(key string, value any) error {
 			return nil
 		case string:
 			if v != "true" && v != "false" {
-				return errors.New("invalid boolean value")
+				return fmt.Errorf("%w: %s", ErrInvalidStringRepresentationOfBool, v)
 			}
 			field.SetBool(v == "true")
 			return nil
 		default:
-			return errors.New("cannot set boolean option")
+			return fmt.Errorf("%w from a value of type %T", ErrCannotSetBoolOption, value)
 		}
 	case reflect.String:
 		switch v := value.(type) {
@@ -182,14 +174,15 @@ func (b *ExperimentBuilder) SetOptionAny(key string, value any) error {
 			field.SetString(v)
 			return nil
 		default:
-			return errors.New("cannot set string option")
+			return fmt.Errorf("%w from a value of type %T", ErrCannotSetStringOption, value)
 		}
 	default:
-		return errors.New("unsupported option type")
+		return fmt.Errorf("%w: %T", ErrUnsupportedOptionType, value)
 	}
 }
 
-// SetOptionsAny sets options from a map[string]any.
+// SetOptionsAny sets options from a map[string]any. See the documentation of
+// the SetOptionAny function for more information.
 func (b *ExperimentBuilder) SetOptionsAny(options map[string]any) error {
 	for key, value := range options {
 		if err := b.SetOptionAny(key, value); err != nil {
@@ -204,19 +197,19 @@ func (b *ExperimentBuilder) SetCallbacks(callbacks model.ExperimentCallbacks) {
 	b.callbacks = callbacks
 }
 
-func fieldbyname(v interface{}, key string) (reflect.Value, error) {
+func (b *ExperimentBuilder) fieldbyname(v interface{}, key string) (reflect.Value, error) {
 	// See https://stackoverflow.com/a/6396678/4354461
 	ptrinfo := reflect.ValueOf(v)
 	if ptrinfo.Kind() != reflect.Ptr {
-		return reflect.Value{}, errors.New("value is not a pointer")
+		return reflect.Value{}, fmt.Errorf("%w but a %T", ErrConfigIsNotAStructPointer, v)
 	}
 	structinfo := ptrinfo.Elem()
 	if structinfo.Kind() != reflect.Struct {
-		return reflect.Value{}, errors.New("value is not a pointer to struct")
+		return reflect.Value{}, fmt.Errorf("%w but a %T", ErrConfigIsNotAStructPointer, v)
 	}
 	field := structinfo.FieldByName(key)
 	if !field.IsValid() || !field.CanSet() {
-		return reflect.Value{}, errors.New("no such field")
+		return reflect.Value{}, fmt.Errorf("%w: %s", ErrNoSuchField, key)
 	}
 	return field, nil
 }
