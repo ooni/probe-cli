@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -52,16 +54,6 @@ func (c Config) domains() string {
 		return c.Domains
 	}
 	return "edge-chat.instagram.com example.com"
-}
-
-// TestKeys contains the experiment results.
-type TestKeys struct {
-	Pings []*SinglePing `json:"pings"`
-}
-
-// SinglePing contains the results of a single ping.
-type SinglePing struct {
-	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
 }
 
 // Measurer performs the measurement.
@@ -113,59 +105,58 @@ func (m *Measurer) Run(
 	if parsed.Port() == "" {
 		return errMissingPort
 	}
-	tk := new(TestKeys)
+	tk := NewTestKeys()
 	measurement.TestKeys = tk
-	out := make(chan *SinglePing)
 	domains := strings.Split(m.config.domains(), " ")
+	wg := new(sync.WaitGroup)
+	wg.Add(len(domains))
 	for _, domain := range domains {
-		go m.dnsPingLoop(ctx, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Host, domain, out)
+		go m.dnsPingLoop(ctx, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Host, domain, wg, tk)
 	}
-	// The following multiplication could overflow but we're always using small
-	// numbers so it's fine for us not to bother with checking for that.
-	//
-	// We emit two results (A and AAAA) for each domain and repetition.
-	numResults := int(m.config.repetitions()) * len(domains)
-	for len(tk.Pings) < numResults {
-		meas := <-out
-		tk.Pings = append(tk.Pings, meas)
-	}
+	wg.Wait()
 	return nil // return nil so we always submit the measurement
 }
 
 // dnsPingLoop sends all the ping requests and emits the results onto the out channel.
 func (m *Measurer) dnsPingLoop(ctx context.Context, zeroTime time.Time, logger model.Logger,
-	address string, domain string, out chan<- *SinglePing) {
+	address string, domain string, wg *sync.WaitGroup, tk *TestKeys) {
+	defer wg.Done()
 	ticker := time.NewTicker(m.config.delay())
 	defer ticker.Stop()
 	for i := int64(0); i < m.config.repetitions(); i++ {
-		go m.dnsPingAsync(ctx, i, zeroTime, logger, address, domain, out)
+		wg.Add(1)
+		go m.dnsRoundTrip(ctx, i, zeroTime, logger, address, domain, wg, tk)
 		<-ticker.C
 	}
 }
 
-// dnsPingAsync performs a DNS ping and emits the result onto the out channel.
-func (m *Measurer) dnsPingAsync(ctx context.Context, index int64, zeroTime time.Time,
-	logger model.Logger, address string, domain string, out chan<- *SinglePing) {
-	out <- m.dnsRoundTrip(ctx, index, zeroTime, logger, address, domain)
-}
-
 // dnsRoundTrip performs a round trip and returns the results to the caller.
 func (m *Measurer) dnsRoundTrip(ctx context.Context, index int64, zeroTime time.Time,
-	logger model.Logger, address string, domain string) *SinglePing {
+	logger model.Logger, address string, domain string, wg *sync.WaitGroup, tk *TestKeys) {
 	// TODO(bassosimone): make the timeout user-configurable
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	sp := &SinglePing{
-		Queries: []*model.ArchivalDNSLookupResult{},
-	}
+
+	defer wg.Done()
+	pings := []*SinglePing{}
 	trace := measurexlite.NewTrace(index, zeroTime)
 	ol := measurexlite.NewOperationLogger(logger, "DNSPing #%d %s %s", index, address, domain)
 	dialer := netxlite.NewDialerWithStdlibResolver(logger)
-	resolver := trace.NewParallelResolverUDP(logger, dialer, address)
+	resolver := trace.NewParallelUDPResolver(logger, dialer, address)
 	_, err := resolver.LookupHost(ctx, domain)
 	ol.Stop(err)
-	sp.Queries = trace.DNSLookupsFromRoundTrip()
-	return sp
+	// Add the dns.TypeA ping
+	pings = append(pings, m.makePingFromLookup(<-trace.DNSLookup[dns.TypeA]))
+	// Add the dns.TypeAAAA ping
+	pings = append(pings, m.makePingFromLookup(<-trace.DNSLookup[dns.TypeAAAA]))
+	tk.addPings(pings)
+}
+
+// makePingfromLookup returns a SinglePing from the result of a single query
+func (m *Measurer) makePingFromLookup(lookup *model.ArchivalDNSLookupResult) (pings *SinglePing) {
+	return &SinglePing{
+		Query: lookup,
+	}
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.

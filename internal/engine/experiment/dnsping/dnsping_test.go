@@ -104,7 +104,7 @@ func TestMeasurer_run(t *testing.T) {
 			t.Fatal(err)
 		}
 		tk := meas.TestKeys.(*TestKeys)
-		if len(tk.Pings) != expectedPings { // account for A & AAAA pings
+		if len(tk.Pings) != expectedPings*2 { // account for A & AAAA pings
 			t.Fatal("unexpected number of pings")
 		}
 		ask, err := m.GetSummaryKeys(meas)
