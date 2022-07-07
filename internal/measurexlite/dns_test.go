@@ -119,30 +119,45 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 			t.Fatal("unexpected array output", addrs)
 		}
 
-		t.Run("DNSLookup Events", func(t *testing.T) {
-			events := trace.DNSLookupsFromRoundTrip()
-			if len(events) != 2 {
+		t.Run("DNSLookups QueryType A", func(t *testing.T) {
+			events := trace.DNSLookupsFromRoundTrip(dns.TypeA)
+			if len(events) != 1 {
 				t.Fatal("expected to see single DNSLookup event")
 			}
-			for i, ev := range events {
-				if ev.Failure != nil {
-					t.Fatal("unexpected err", *(ev.Failure))
-				}
-				if ev.ResolverAddress != "dns.google" {
-					t.Fatal("unexpected address field")
-				}
-				answer := ev.Answers[0]
-				// checking order of results
-				if i == 0 {
-					if answer.AnswerType != "A" || answer.IPv4 != "1.1.1.1" {
-						t.Fatal("unexpected DNS answer", answer)
-					}
-				}
-				if i == 1 {
-					if answer.AnswerType != "AAAA" || answer.IPv6 != "fe80::a00:20ff:feb9:4c54" {
-						t.Fatal("unexpected DNS answer", answer)
-					}
-				}
+			lookup := events[0]
+			answers := lookup.Answers
+			if lookup.Failure != nil {
+				t.Fatal("unexpected err", *(lookup.Failure))
+			}
+			if lookup.ResolverAddress != "dns.google" {
+				t.Fatal("unexpected address field")
+			}
+			if len(answers) != 1 {
+				t.Fatal("expected 1 DNS answer, got", len(answers))
+			}
+			if answers[0].AnswerType != "A" || answers[0].IPv4 != "1.1.1.1" {
+				t.Fatal("unexpected DNS answer", answers)
+			}
+		})
+
+		t.Run("DNSLookups QueryType AAAA", func(t *testing.T) {
+			events := trace.DNSLookupsFromRoundTrip(dns.TypeAAAA)
+			if len(events) != 1 {
+				t.Fatal("expected to see single DNSLookup event")
+			}
+			lookup := events[0]
+			answers := lookup.Answers
+			if lookup.Failure != nil {
+				t.Fatal("unexpected err", *(lookup.Failure))
+			}
+			if lookup.ResolverAddress != "dns.google" {
+				t.Fatal("unexpected address field")
+			}
+			if len(answers) != 1 {
+				t.Fatal("expected 1 DNS answer, got", len(answers))
+			}
+			if answers[0].AnswerType != "AAAA" || answers[0].IPv6 != "fe80::a00:20ff:feb9:4c54" {
+				t.Fatal("unexpected DNS answer", answers)
 			}
 		})
 	})
@@ -191,8 +206,14 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 			t.Fatal("unexpected array output", addrs)
 		}
 
-		t.Run("DNSLookup events", func(t *testing.T) {
-			events := trace.DNSLookupsFromRoundTrip()
+		t.Run("DNSLookups QueryType A", func(t *testing.T) {
+			events := trace.DNSLookupsFromRoundTrip(dns.TypeA)
+			if len(events) != 0 {
+				t.Fatal("expected to see no DNSLookup")
+			}
+		})
+		t.Run("DNSLookups QueryType AAAA", func(t *testing.T) {
+			events := trace.DNSLookupsFromRoundTrip(dns.TypeAAAA)
 			if len(events) != 0 {
 				t.Fatal("expected to see no DNSLookup")
 			}
@@ -246,4 +267,27 @@ func TestAnswersFromAddrs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDNSLookupsFromRoundTrips(t *testing.T) {
+	zeroTime := time.Now()
+	trace := NewTrace(0, zeroTime)
+	checkPanic := func(query uint16, f func(uint16) []*model.ArchivalDNSLookupResult) {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Fatal("unexpected panic encoutered")
+			}
+		}()
+		f(query)
+	}
+	t.Run("DNSLookup is nil", func(t *testing.T) {
+		trace.DNSLookup = nil
+		checkPanic(dns.TypeA, trace.DNSLookupsFromRoundTrip)
+	})
+	t.Run("Query has nil channel", func(t *testing.T) {
+		trace.DNSLookup = map[uint16]chan *model.ArchivalDNSLookupResult{
+			dns.TypeA: nil,
+		}
+		checkPanic(dns.TypeA, trace.DNSLookupsFromRoundTrip)
+	})
 }

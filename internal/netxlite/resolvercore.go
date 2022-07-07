@@ -49,7 +49,7 @@ func NewUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Res
 	}
 }
 
-// NewSerialResolverUDP creates a new Resolver using DNS-over-UDP
+// NewSerialUDPResolver creates a new Resolver using DNS-over-UDP
 // that performs serial A/AAAA lookups during LookupHost.
 //
 // Deprecated: use NewParallelResolverUDP.
@@ -71,7 +71,7 @@ func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer,
 	))
 }
 
-// NewParallelResolverUDP creates a new Resolver using DNS-over-UDP
+// NewParallelUDPResolver creates a new Resolver using DNS-over-UDP
 // that performs parallel A/AAAA lookups during LookupHost.
 //
 // Arguments:

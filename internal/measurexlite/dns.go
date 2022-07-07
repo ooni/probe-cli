@@ -65,7 +65,7 @@ func (r *resolverTrace) LookupNS(ctx context.Context, domain string) ([]*net.NS,
 }
 
 // NewParallelUDPResolver returns a trace-ware parallel UDP resolver
-func (tx *Trace) NewParallelResolverUDP(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
+func (tx *Trace) NewParallelUDPResolver(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
 	return tx.newParallelResolverTrace(func() model.Resolver {
 		return netxlite.NewParallelUDPResolver(logger, dialer, address)
 	})
@@ -145,19 +145,19 @@ func archivalAnswersFromAddrs(addrs []string) (out []model.ArchivalDNSAnswer) {
 	return
 }
 
-// DNSLookupsFromRoundTrip drains the network events buffered inside A and AAAA query channels
-func (tx *Trace) DNSLookupsFromRoundTrip() (out []*model.ArchivalDNSLookupResult) {
+// DNSLookupsFromRoundTrip drains the network events buffered inside the corresponding query channel
+func (tx *Trace) DNSLookupsFromRoundTrip(query uint16) (out []*model.ArchivalDNSLookupResult) {
+	// Prevent panic and return in case of a nil map
+	if tx.DNSLookup[query] == nil {
+		log.Printf("BUG: Requested query type %s has no valid channel to buffer results", dns.TypeToString[query])
+		return
+	}
 	for {
 		select {
-		case ev := <-tx.DNSLookup[dns.TypeA]:
+		case ev := <-tx.DNSLookup[query]:
 			out = append(out, ev)
 		default:
-			select {
-			case ev := <-tx.DNSLookup[dns.TypeAAAA]:
-				out = append(out, ev)
-			default:
-				return
-			}
+			return
 		}
 	}
 }

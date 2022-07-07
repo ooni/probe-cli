@@ -310,13 +310,14 @@ type Trace interface {
 	//
 	// - started is when we called transport.RoundTrip
 	//
-	// - reso is the parent resolver for the trace
+	// - reso is the parent resolver for the trace;
 	//
-	// - query is the DNS query we use for the RoundTrip
+	// - query is the non-nil DNS query we use for the RoundTrip
 	//
-	// - response is the DNS response we obtain after the RoundTrip
+	// - response is a valid DNS response, obtained after the RoundTrip;
 	//
-	// - addrs is the array of addresses obtained after the RoundTrip
+	// - addrs is the list of addresses obtained after the RoundTrip, which
+	// is empty if the RoundTrip faled
 	//
 	// - err is the result of DNSLookup; either an error or nil
 	//
