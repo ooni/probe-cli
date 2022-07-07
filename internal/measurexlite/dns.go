@@ -81,6 +81,10 @@ func (tx *Trace) NewParallelDNSOverHTTPSResolver(logger model.Logger, URL string
 // OnDNSRoundTripForLookupHost implements model.Trace.OnDNSRoundTripForLookupHost
 func (tx *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resolver, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Time) {
+	if tx.DNSLookup[query.Type()] == nil {
+		log.Printf("BUG: Requested query type %s has no valid channel to buffer results", dns.TypeToString[query.Type()])
+		return
+	}
 	select {
 	case tx.DNSLookup[query.Type()] <- NewArchivalDNSLookupResultFromRoundTrip(
 		tx.Index,
