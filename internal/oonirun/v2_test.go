@@ -206,6 +206,9 @@ func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 	if err := r.Run(ctx); err != nil {
 		t.Fatal(err)
 	}
+	if v2CountEmptyNettestNames.Load() != 1 {
+		t.Fatal("expected to see 1 instance of empty nettest names")
+	}
 }
 
 func TestV2MeasureDescriptor(t *testing.T) {

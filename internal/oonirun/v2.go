@@ -13,10 +13,17 @@ import (
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+)
+
+var (
+	// v2CountEmptyNettestNames counts the number of cases in which we have been
+	// given an empty nettest name, which is useful for testing.
+	v2CountEmptyNettestNames = &atomicx.Int64{}
 )
 
 // v2Descriptor describes a single nettest to run.
@@ -158,6 +165,7 @@ func v2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *v2Descri
 	for _, nettest := range desc.Nettests {
 		if nettest.TestName == "" {
 			logger.Warn("oonirun: nettest name cannot be empty")
+			v2CountEmptyNettestNames.Add(1)
 			continue
 		}
 		exp := &Experiment{
