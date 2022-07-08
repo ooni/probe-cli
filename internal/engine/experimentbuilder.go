@@ -78,7 +78,7 @@ var (
 	// ErrNoSuchField indicates there's no field with the given name.
 	ErrNoSuchField = errors.New("no such field")
 
-	// ErrCannotSetIntegerOption means SetOptionAny could set an integer option.
+	// ErrCannotSetIntegerOption means SetOptionAny couldn't set an integer option.
 	ErrCannotSetIntegerOption = errors.New("cannot set integer option")
 
 	// ErrInvalidStringRepresentationOfBool indicates the string you passed
