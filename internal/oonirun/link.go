@@ -1,7 +1,7 @@
 package oonirun
 
 //
-// OONI Run v1 and v2 entry points
+// OONI Run v1 and v2 links
 //
 
 import (
@@ -11,9 +11,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// Config contains config for OONI Run. You MUST fill all the fields that
-// are marked as MANDATORY, or the Config would cause crashes.
-type Config struct {
+// LinkConfig contains config for an OONI Run link. You MUST fill all the fields that
+// are marked as MANDATORY, or the LinkConfig would cause crashes.
+type LinkConfig struct {
 	// AcceptChanges is OPTIONAL and tells this library that the user is
 	// okay with running a new or modified OONI Run link without previously
 	// reviewing what it contains or what has changed.
@@ -46,16 +46,45 @@ type Config struct {
 	Session Session
 }
 
-// Measure performs the measurement indicated by the given OONI Run link.
-func Measure(ctx context.Context, config *Config, URL string) error {
+// LinkRunner knows how to run an OONI Run v1 or v2 link.
+type LinkRunner interface {
+	Run(ctx context.Context) error
+}
+
+// linkRunner implements LinkRunner.
+type linkRunner struct {
+	config *LinkConfig
+	f      func(ctx context.Context, config *LinkConfig, URL string) error
+	url    string
+}
+
+// Run implements LinkRunner.Rune.
+func (lr *linkRunner) Run(ctx context.Context) error {
+	return lr.f(ctx, lr.config, lr.url)
+}
+
+// NewLinkRunner creates a suitable link runner for the current config
+// and the given URL, which is one of the following:
+//
+// 1. OONI Run v1 link with https scheme (e.g., https://run.ooni.io/nettest?...)
+//
+// 2. OONI Run v1 link with ooni scheme (e.g., ooni://nettest?...)
+//
+// 3. arbitrary URL of the OONI Run v2 descriptor.
+func (c *LinkConfig) NewLinkRunner(URL string) LinkRunner {
 	// TODO(bassosimone): add support for v2 deeplinks.
-	config.Session.Logger().Infof("oonirun: loading measurement list from %s", URL)
+	out := &linkRunner{
+		config: c,
+		f:      nil,
+		url:    URL,
+	}
 	switch {
 	case strings.HasPrefix(URL, "https://run.ooni.io/nettest"):
-		return v1Measure(ctx, config, URL)
+		out.f = v1Measure
 	case strings.HasPrefix(URL, "ooni://nettest"):
-		return v1Measure(ctx, config, URL)
+		out.f = v1Measure
 	default:
-		return v2MeasureHTTPS(ctx, config, URL)
+		out.f = v2MeasureHTTPS
 	}
+	return out
 }

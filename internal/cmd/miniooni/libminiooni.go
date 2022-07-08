@@ -425,19 +425,20 @@ func ooniRunMain(ctx context.Context,
 		"in oonirun mode you cannot specify any `-f FILE` file",
 	)
 	logger := sess.Logger()
+	cfg := &oonirun.LinkConfig{
+		AcceptChanges: currentOptions.Yes,
+		Annotations:   annotations,
+		KVStore:       sess.KeyValueStore(),
+		MaxRuntime:    currentOptions.MaxRuntime,
+		NoCollector:   currentOptions.NoCollector,
+		NoJSON:        currentOptions.NoJSON,
+		Random:        currentOptions.Random,
+		ReportFile:    currentOptions.ReportFile,
+		Session:       sess,
+	}
 	for _, URL := range currentOptions.Inputs {
-		cfg := &oonirun.Config{
-			AcceptChanges: currentOptions.Yes,
-			Annotations:   annotations,
-			KVStore:       sess.KeyValueStore(),
-			MaxRuntime:    currentOptions.MaxRuntime,
-			NoCollector:   currentOptions.NoCollector,
-			NoJSON:        currentOptions.NoJSON,
-			Random:        currentOptions.Random,
-			ReportFile:    currentOptions.ReportFile,
-			Session:       sess,
-		}
-		if err := oonirun.Measure(ctx, cfg, URL); err != nil {
+		r := cfg.NewLinkRunner(URL)
+		if err := r.Run(ctx); err != nil {
 			if errors.Is(err, oonirun.ErrNeedToAcceptChanges) {
 				logger.Warnf("oonirun: to accept these changes, rerun adding `-y` to the command line")
 				logger.Warnf("oonirun: we'll show this error every time the upstream link changes")

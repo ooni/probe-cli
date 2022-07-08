@@ -32,7 +32,8 @@ type v1Arguments struct {
 }
 
 // v1Measure performs a measurement using a v1 OONI Run URL.
-func v1Measure(ctx context.Context, config *Config, URL string) error {
+func v1Measure(ctx context.Context, config *LinkConfig, URL string) error {
+	config.Session.Logger().Infof("oonirun/v1: running %s", URL)
 	pu, err := url.Parse(URL)
 	if err != nil {
 		return err

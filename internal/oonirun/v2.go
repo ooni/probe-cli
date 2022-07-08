@@ -153,7 +153,7 @@ func (cache *v2DescriptorCache) Update(
 
 // v2MeasureDescriptor performs the measurement or measurements
 // described by the given list of v2Descriptor.
-func v2MeasureDescriptor(ctx context.Context, config *Config, desc *v2Descriptor) error {
+func v2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *v2Descriptor) error {
 	logger := config.Session.Logger()
 	for _, nettest := range desc.Nettests {
 		if nettest.TestName == "" {
@@ -209,7 +209,8 @@ func v2DescriptorDiff(oldValue, newValue *v2Descriptor, URL string) string {
 //
 // In such a case, the caller SHOULD print additional information
 // explaining how to accept changes and then SHOULD exit 1 or similar.
-func v2MeasureHTTPS(ctx context.Context, config *Config, URL string) error {
+func v2MeasureHTTPS(ctx context.Context, config *LinkConfig, URL string) error {
+	config.Session.Logger().Infof("oonirun/v2: running %s", URL)
 	cache, err := v2DescriptorCacheLoad(config.KVStore)
 	if err != nil {
 		return err
