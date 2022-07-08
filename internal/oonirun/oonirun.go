@@ -1,8 +1,7 @@
-// Package oonirun implements OONI Run v1 and v2.
 package oonirun
 
 //
-// Top-level entry point
+// OONI Run v1 and v2 entry points
 //
 
 import (
@@ -68,6 +67,7 @@ type Session interface {
 
 // Measure performs the measurement indicated by the given OONI Run link.
 func Measure(ctx context.Context, config *Config, URL string) error {
+	// TODO(bassosimone): add support for v2 deeplinks.
 	config.Session.Logger().Infof("oonirun: loading measurement list from %s", URL)
 	switch {
 	case strings.HasPrefix(URL, "https://run.ooni.io/nettest"):
