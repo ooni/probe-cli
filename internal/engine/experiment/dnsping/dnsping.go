@@ -20,7 +20,7 @@ import (
 
 const (
 	testName    = "dnsping"
-	testVersion = "0.1.0"
+	testVersion = "0.2.0"
 )
 
 // Config contains the experiment configuration.
