@@ -117,6 +117,64 @@ func (b *ExperimentBuilder) Options() (map[string]OptionInfo, error) {
 	return result, nil
 }
 
+// setOptionBool sets a bool option.
+func (b *ExperimentBuilder) setOptionBool(field reflect.Value, value any) error {
+	switch v := value.(type) {
+	case bool:
+		field.SetBool(v)
+		return nil
+	case string:
+		if v != "true" && v != "false" {
+			return fmt.Errorf("%w: %s", ErrInvalidStringRepresentationOfBool, v)
+		}
+		field.SetBool(v == "true")
+		return nil
+	default:
+		return fmt.Errorf("%w from a value of type %T", ErrCannotSetBoolOption, value)
+	}
+}
+
+// setOptionInt sets an int option
+func (b *ExperimentBuilder) setOptionInt(field reflect.Value, value any) error {
+	switch v := value.(type) {
+	case int64:
+		field.SetInt(v)
+		return nil
+	case int32:
+		field.SetInt(int64(v))
+		return nil
+	case int16:
+		field.SetInt(int64(v))
+		return nil
+	case int8:
+		field.SetInt(int64(v))
+		return nil
+	case int:
+		field.SetInt(int64(v))
+		return nil
+	case string:
+		number, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return fmt.Errorf("%w: %s", ErrCannotSetIntegerOption, err.Error())
+		}
+		field.SetInt(number)
+		return nil
+	default:
+		return fmt.Errorf("%w from a value of type %T", ErrCannotSetIntegerOption, value)
+	}
+}
+
+// setOptionString sets a string option
+func (b *ExperimentBuilder) setOptionString(field reflect.Value, value any) error {
+	switch v := value.(type) {
+	case string:
+		field.SetString(v)
+		return nil
+	default:
+		return fmt.Errorf("%w from a value of type %T", ErrCannotSetStringOption, value)
+	}
+}
+
 // SetOptionAny sets an option whose value is an any value. We will use reasonable
 // heuristics to convert the any value to the proper type of the field whose name is
 // contained by the key variable. If we cannot convert the provided any value to
@@ -128,54 +186,11 @@ func (b *ExperimentBuilder) SetOptionAny(key string, value any) error {
 	}
 	switch field.Kind() {
 	case reflect.Int64:
-		switch v := value.(type) {
-		case int64:
-			field.SetInt(v)
-			return nil
-		case int32:
-			field.SetInt(int64(v))
-			return nil
-		case int16:
-			field.SetInt(int64(v))
-			return nil
-		case int8:
-			field.SetInt(int64(v))
-			return nil
-		case int:
-			field.SetInt(int64(v))
-			return nil
-		case string:
-			number, err := strconv.ParseInt(v, 10, 64)
-			if err != nil {
-				return fmt.Errorf("%w: %s", ErrCannotSetIntegerOption, err.Error())
-			}
-			field.SetInt(number)
-			return nil
-		default:
-			return fmt.Errorf("%w from a value of type %T", ErrCannotSetIntegerOption, value)
-		}
+		return b.setOptionInt(field, value)
 	case reflect.Bool:
-		switch v := value.(type) {
-		case bool:
-			field.SetBool(v)
-			return nil
-		case string:
-			if v != "true" && v != "false" {
-				return fmt.Errorf("%w: %s", ErrInvalidStringRepresentationOfBool, v)
-			}
-			field.SetBool(v == "true")
-			return nil
-		default:
-			return fmt.Errorf("%w from a value of type %T", ErrCannotSetBoolOption, value)
-		}
+		return b.setOptionBool(field, value)
 	case reflect.String:
-		switch v := value.(type) {
-		case string:
-			field.SetString(v)
-			return nil
-		default:
-			return fmt.Errorf("%w from a value of type %T", ErrCannotSetStringOption, value)
-		}
+		return b.setOptionString(field, value)
 	default:
 		return fmt.Errorf("%w: %T", ErrUnsupportedOptionType, value)
 	}

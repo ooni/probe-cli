@@ -303,7 +303,7 @@ func TestExperimentBuilderSetOptionAny(t *testing.T) {
 	}
 }
 
-func TestSetOptionsAny(t *testing.T) {
+func TestExperimentBuilderSetOptionsAny(t *testing.T) {
 	b := &ExperimentBuilder{config: &fakeExperimentConfig{}}
 
 	t.Run("we correctly handle an empty map", func(t *testing.T) {
