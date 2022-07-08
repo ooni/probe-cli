@@ -93,6 +93,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				}
 			},
 			MockWrite: func(b []byte) (int, error) {
+				<-ctx.Done()
 				return 0, mockedErr
 			},
 			MockClose: func() error {
@@ -202,6 +203,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				}
 			},
 			MockWrite: func(b []byte) (int, error) {
+				<-ctx.Done()
 				return 0, mockedErr
 			},
 			MockClose: func() error {
