@@ -369,7 +369,14 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	log.Infof("- resolver's network: %s (%s)", sess.ResolverNetworkName(),
 		sess.ResolverASNString())
 
-	// Run OONI experiments as we normally do.
+	// We handle the oonirun experiment name specially. The user must specify
+	// `miniooni -i {OONIRunURL} oonirun` to run a OONI Run URL (v1 or v2).
+	if experimentName == "oonirun" {
+		ooniRunMain(ctx, sess, currentOptions, annotations)
+		return
+	}
+
+	// Otherwise just run OONI experiments as we normally do.
 	desc := &oonirun.Experiment{
 		Annotations:    annotations,
 		ExtraOptions:   extraOptions,
@@ -385,4 +392,37 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	}
 	err = desc.Run(ctx)
 	runtimex.PanicOnError(err, "cannot run experiment")
+}
+
+// ooniRunMain runs the experiments described by the given OONI Run URLs. This
+// function works with both v1 and v2 OONI Run URLs.
+func ooniRunMain(ctx context.Context,
+	sess *engine.Session, currentOptions Options, annotations map[string]string) {
+	runtimex.PanicIfTrue(
+		len(currentOptions.Inputs) <= 0,
+		"in oonirun mode you need to specify at least one URL using `-i URL`",
+	)
+	runtimex.PanicIfTrue(
+		len(currentOptions.InputFilePaths) > 0,
+		"in oonirun mode you cannot specify any `-f FILE` file",
+	)
+	logger := sess.Logger()
+	cfg := &oonirun.LinkConfig{
+		AcceptChanges: currentOptions.Yes,
+		Annotations:   annotations,
+		KVStore:       sess.KeyValueStore(),
+		MaxRuntime:    currentOptions.MaxRuntime,
+		NoCollector:   currentOptions.NoCollector,
+		NoJSON:        currentOptions.NoJSON,
+		Random:        currentOptions.Random,
+		ReportFile:    currentOptions.ReportFile,
+		Session:       sess,
+	}
+	for _, URL := range currentOptions.Inputs {
+		r := oonirun.NewLinkRunner(cfg, URL)
+		if err := r.Run(ctx); err != nil {
+			logger.Warnf("oonirun: running link failed: %s", err.Error())
+			continue
+		}
+	}
 }
