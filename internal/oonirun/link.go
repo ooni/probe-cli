@@ -84,9 +84,7 @@ func NewLinkRunner(c *LinkConfig, URL string) LinkRunner {
 	case strings.HasPrefix(URL, "ooni://nettest"):
 		out.f = v1Measure
 	default:
-		// TODO(bassosimone): this panic will go away when we merge
-		// the next patch which will implement v2.
-		panic("unsupported OONI Run link")
+		out.f = v2MeasureHTTPS
 	}
 	return out
 }
