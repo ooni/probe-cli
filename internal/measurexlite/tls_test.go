@@ -76,8 +76,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		trace := NewTrace(0, zeroTime)
 		trace.TimeNowFn = td.Now // deterministic timing
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel() // we cancel immediately so connect is ~instantaneous
+		ctx := context.Background()
 		tcpConn := &mocks.Conn{
 			MockSetDeadline: func(t time.Time) error {
 				return nil
@@ -104,7 +103,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 			ServerName:         "dns.cloudflare.com",
 		}
 		conn, state, err := thx.Handshake(ctx, tcpConn, tlsConfig)
-		if err == nil || err.Error() != netxlite.FailureInterrupted {
+		if !errors.Is(err, mockedErr) {
 			t.Fatal("unexpected err", err)
 		}
 		if !reflect.ValueOf(state).IsZero() {
@@ -119,7 +118,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 			if len(events) != 1 {
 				t.Fatal("expected to see single TLSHandshake event")
 			}
-			expectedFailure := netxlite.FailureInterrupted
+			expectedFailure := "unknown_failure: mocked"
 			expect := &model.ArchivalTLSOrQUICHandshakeResult{
 				Address:            "1.1.1.1:443",
 				CipherSuite:        "",
@@ -185,8 +184,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		trace.NetworkEvent = make(chan *model.ArchivalNetworkEvent)             // no buffer
 		trace.TLSHandshake = make(chan *model.ArchivalTLSOrQUICHandshakeResult) // no buffer
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel() // we cancel immediately so connect is ~instantaneous
+		ctx := context.Background()
 		tcpConn := &mocks.Conn{
 			MockSetDeadline: func(t time.Time) error {
 				return nil
@@ -213,7 +211,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 			ServerName:         "dns.cloudflare.com",
 		}
 		conn, state, err := thx.Handshake(ctx, tcpConn, tlsConfig)
-		if err == nil || err.Error() != netxlite.FailureInterrupted {
+		if !errors.Is(err, mockedErr) {
 			t.Fatal("unexpected err", err)
 		}
 		if !reflect.ValueOf(state).IsZero() {
