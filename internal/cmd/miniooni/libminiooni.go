@@ -195,6 +195,16 @@ func mustMakeMapAny(input []string) (output map[string]any) {
 	return
 }
 
+func mustMakeMapAny(input []string) (output map[string]any) {
+	output = make(map[string]any)
+	for _, opt := range input {
+		key, value, err := split(opt)
+		fatalOnError(err, "cannot split key-value pair")
+		output[key] = value
+	}
+	return
+}
+
 func mustParseURL(URL string) *url.URL {
 	rv, err := url.Parse(URL)
 	fatalOnError(err, "cannot parse URL")
@@ -292,6 +302,12 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	if currentOptions.Tunnel != "" {
 		currentOptions.Proxy = fmt.Sprintf("%s:///", currentOptions.Tunnel)
 	}
+
+	ctx := context.Background()
+
+	extraOptions := mustMakeMapAny(currentOptions.ExtraOptions)
+	annotations := mustMakeMapString(currentOptions.Annotations)
+
 	logger := &log.Logger{Level: log.InfoLevel, Handler: &logHandler{Writer: os.Stderr}}
 	if currentOptions.Verbose {
 		logger.Level = log.DebugLevel
