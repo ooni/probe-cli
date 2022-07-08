@@ -9,15 +9,18 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
 	testName    = "dnsping"
-	testVersion = "0.1.0"
+	testVersion = "0.2.0"
 )
 
 // Config contains the experiment configuration.
@@ -51,21 +54,6 @@ func (c Config) domains() string {
 		return c.Domains
 	}
 	return "edge-chat.instagram.com example.com"
-}
-
-// TestKeys contains the experiment results.
-type TestKeys struct {
-	Pings []*SinglePing `json:"pings"`
-}
-
-// TODO(bassosimone): save more data once the dnsping improvements at
-// github.com/bassosimone/websteps-illustrated contains have been merged
-// into this repository. When this happens, we'll able to save raw
-// queries and network events of each individual query.
-
-// SinglePing contains the results of a single ping.
-type SinglePing struct {
-	Queries []*measurex.ArchivalDNSLookupEvent `json:"queries"`
 }
 
 // Measurer performs the measurement.
@@ -117,69 +105,61 @@ func (m *Measurer) Run(
 	if parsed.Port() == "" {
 		return errMissingPort
 	}
-	tk := new(TestKeys)
+	tk := NewTestKeys()
 	measurement.TestKeys = tk
-	mxmx := measurex.NewMeasurerWithDefaultSettings()
-	out := make(chan *measurex.DNSMeasurement)
 	domains := strings.Split(m.config.domains(), " ")
+	wg := new(sync.WaitGroup)
+	wg.Add(len(domains))
 	for _, domain := range domains {
-		go m.dnsPingLoop(ctx, mxmx, parsed.Host, domain, out)
+		go m.dnsPingLoop(ctx, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Host, domain, wg, tk)
 	}
-	// The following multiplication could overflow but we're always using small
-	// numbers so it's fine for us not to bother with checking for that.
-	//
-	// We emit two results (A and AAAA) for each domain and repetition.
-	numResults := int(m.config.repetitions()) * len(domains) * 2
-	for len(tk.Pings) < numResults {
-		meas := <-out
-		// TODO(bassosimone): when we merge the improvements at
-		// https://github.com/bassosimone/websteps-illustrated it
-		// will become unnecessary to split with query type
-		// as we're doing below.
-		queries := measurex.NewArchivalDNSLookupEventList(meas.LookupHost)
-		tk.Pings = append(tk.Pings, m.onlyQueryWithType(queries, "A")...)
-		tk.Pings = append(tk.Pings, m.onlyQueryWithType(queries, "AAAA")...)
-	}
+	wg.Wait()
 	return nil // return nil so we always submit the measurement
 }
 
-// onlyQueryWithType returns only the queries with the given type.
-func (m *Measurer) onlyQueryWithType(
-	in []*measurex.ArchivalDNSLookupEvent, kind string) (out []*SinglePing) {
-	for _, query := range in {
-		if query.QueryType == kind {
-			out = append(out, &SinglePing{
-				Queries: []*measurex.ArchivalDNSLookupEvent{query},
-			})
-		}
-	}
-	return
-}
-
 // dnsPingLoop sends all the ping requests and emits the results onto the out channel.
-func (m *Measurer) dnsPingLoop(ctx context.Context, mxmx *measurex.Measurer,
-	address string, domain string, out chan<- *measurex.DNSMeasurement) {
+func (m *Measurer) dnsPingLoop(ctx context.Context, zeroTime time.Time, logger model.Logger,
+	address string, domain string, wg *sync.WaitGroup, tk *TestKeys) {
+	defer wg.Done()
 	ticker := time.NewTicker(m.config.delay())
 	defer ticker.Stop()
 	for i := int64(0); i < m.config.repetitions(); i++ {
-		go m.dnsPingAsync(ctx, mxmx, address, domain, out)
+		wg.Add(1)
+		go m.dnsRoundTrip(ctx, i, zeroTime, logger, address, domain, wg, tk)
 		<-ticker.C
 	}
 }
 
-// dnsPingAsync performs a DNS ping and emits the result onto the out channel.
-func (m *Measurer) dnsPingAsync(ctx context.Context, mxmx *measurex.Measurer,
-	address string, domain string, out chan<- *measurex.DNSMeasurement) {
-	out <- m.dnsRoundTrip(ctx, mxmx, address, domain)
-}
-
 // dnsRoundTrip performs a round trip and returns the results to the caller.
-func (m *Measurer) dnsRoundTrip(ctx context.Context, mxmx *measurex.Measurer,
-	address string, domain string) *measurex.DNSMeasurement {
+func (m *Measurer) dnsRoundTrip(ctx context.Context, index int64, zeroTime time.Time,
+	logger model.Logger, address string, domain string, wg *sync.WaitGroup, tk *TestKeys) {
 	// TODO(bassosimone): make the timeout user-configurable
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	return mxmx.LookupHostUDP(ctx, domain, address)
+	defer wg.Done()
+	pings := []*SinglePing{}
+	trace := measurexlite.NewTrace(index, zeroTime)
+	ol := measurexlite.NewOperationLogger(logger, "DNSPing #%d %s %s", index, address, domain)
+	// TODO(bassosimone, DecFox): what should we do if the user passes us a resolver with a
+	// domain name in terms of saving its results? Shall we save also the system resolver's lookups?
+	// Shall we, otherwise, pre-resolve the domain name to IP addresses once and for all? In such
+	// a case, shall we use all the available IP addresses or just some of them?
+	dialer := netxlite.NewDialerWithStdlibResolver(logger)
+	resolver := trace.NewParallelUDPResolver(logger, dialer, address)
+	_, err := resolver.LookupHost(ctx, domain)
+	ol.Stop(err)
+	// Add the dns.TypeA ping
+	pings = append(pings, m.makePingFromLookup(<-trace.DNSLookup[dns.TypeA]))
+	// Add the dns.TypeAAAA ping
+	pings = append(pings, m.makePingFromLookup(<-trace.DNSLookup[dns.TypeAAAA]))
+	tk.addPings(pings)
+}
+
+// makePingfromLookup returns a SinglePing from the result of a single query
+func (m *Measurer) makePingFromLookup(lookup *model.ArchivalDNSLookupResult) (pings *SinglePing) {
+	return &SinglePing{
+		Query: lookup,
+	}
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.

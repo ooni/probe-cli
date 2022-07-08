@@ -7,6 +7,7 @@ package measurexlite
 import (
 	"time"
 
+	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -31,12 +32,16 @@ import (
 type Trace struct {
 	// Index is the MANDATORY unique index of this trace within the
 	// current measurement. If you don't care about uniquely identifying
-	// treaces, you can use zero to indicate the "default" trace.
+	// traces, you can use zero to indicate the "default" trace.
 	Index int64
 
 	// NetworkEvent is MANDATORY and buffers network events. If you create
 	// this channel manually, ensure it has some buffer.
 	NetworkEvent chan *model.ArchivalNetworkEvent
+
+	// NewParallelResolverFn is OPTIONAL and can be used to overide
+	// calls to the netxlite.NewParallelResolver factory.
+	NewParallelResolverFn func() model.Resolver
 
 	// NewDialerWithoutResolverFn is OPTIONAL and can be used to override
 	// calls to the netxlite.NewDialerWithoutResolver factory.
@@ -45,6 +50,14 @@ type Trace struct {
 	// NewTLSHandshakerStdlibFn is OPTIONAL and can be used to overide
 	// calls to the netxlite.NewTLSHandshakerStdlib factory.
 	NewTLSHandshakerStdlibFn func(dl model.DebugLogger) model.TLSHandshaker
+
+	// DNSLookup is MANDATORY and buffers DNSLookup results based on the
+	// query type. When we create this map using NewTrace, we will create
+	// an entry for each dns.Type in DNSQueryTypes. If you create this channel
+	// manually, you probably want to to the same (and most likely you also
+	// want to create buffered channels). Note that the code will print a
+	// warning and otherwise ignore all the query types not included in this map.
+	DNSLookup map[uint16]chan *model.ArchivalDNSLookupResult
 
 	// TCPConnect is MANDATORY and buffers TCP connect observations. If you create
 	// this channel manually, ensure it has some buffer.
@@ -67,6 +80,10 @@ const (
 	// the Trace's NetworkEvent buffered channel.
 	NetworkEventBufferSize = 64
 
+	// DNSLookupBufferSize is the buffer size for constructing
+	// the Trace's DNSLookup map of buffered channels.
+	DNSLookupBufferSize = 8
+
 	// TCPConnectBufferSize is the buffer size for constructing
 	// the Trace's TCPConnect buffered channel.
 	TCPConnectBufferSize = 8
@@ -75,6 +92,25 @@ const (
 	// the Trace's TLSHandshake buffered channel.
 	TLSHandshakeBufferSize = 8
 )
+
+// DNSQueryTypes contains the list of DNS query types for which
+// NewTrace create entries in Trace.DNSLookup.
+var DNSQueryTypes = []uint16{
+	dns.TypeANY,
+	dns.TypeA,
+	dns.TypeAAAA,
+	dns.TypeCNAME,
+	dns.TypeNS,
+}
+
+// newDefaultDNSLookupMap is a convenience factory for creating Trace.DNSLookup
+func newDefaultDNSLookupMap() map[uint16]chan *model.ArchivalDNSLookupResult {
+	out := make(map[uint16]chan *model.ArchivalDNSLookupResult)
+	for _, qtype := range DNSQueryTypes {
+		out[qtype] = make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize)
+	}
+	return out
+}
 
 // NewTrace creates a new instance of Trace using default settings.
 //
@@ -96,6 +132,7 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 		),
 		NewDialerWithoutResolverFn: nil, // use default
 		NewTLSHandshakerStdlibFn:   nil, // use default
+		DNSLookup:                  newDefaultDNSLookupMap(),
 		TCPConnect: make(
 			chan *model.ArchivalTCPConnectResult,
 			TCPConnectBufferSize,
@@ -110,12 +147,21 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 }
 
 // newDialerWithoutResolver indirectly calls netxlite.NewDialerWithoutResolver
-// thus allows us to mock this func for testing.
+// thus allowing us to mock this func for testing.
 func (tx *Trace) newDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
 	if tx.NewDialerWithoutResolverFn != nil {
 		return tx.NewDialerWithoutResolverFn(dl)
 	}
 	return netxlite.NewDialerWithoutResolver(dl)
+}
+
+// newParallelResolver indirectly calls the passed netxlite.NewParallerResolver
+// thus allowing us to mock this function for testing
+func (tx *Trace) newParallelResolver(newResolver func() model.Resolver) model.Resolver {
+	if tx.NewParallelResolverFn != nil {
+		return tx.NewParallelResolverFn()
+	}
+	return newResolver()
 }
 
 // newTLSHandshakerStdlib indirectly calls netxlite.NewTLSHandshakerStdlib

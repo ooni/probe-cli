@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"testing"
 	"time"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func TestTrace(t *testing.T) {
@@ -16,6 +18,28 @@ func TestTrace(t *testing.T) {
 		}
 		if !tx.TimeNow().Equal(now) {
 			t.Fatal("not working as intended")
+		}
+	})
+
+	t.Run("OnDNSRoundTripForLookupHost", func(t *testing.T) {
+		var called bool
+		tx := &Trace{
+			MockOnDNSRoundTripForLookupHost: func(started time.Time, reso model.Resolver, query model.DNSQuery,
+				response model.DNSResponse, addrs []string, err error, finished time.Time) {
+				called = true
+			},
+		}
+		tx.OnDNSRoundTripForLookupHost(
+			time.Now(),
+			&Resolver{},
+			&DNSQuery{},
+			&DNSResponse{},
+			[]string{},
+			nil,
+			time.Now(),
+		)
+		if !called {
+			t.Fatal("not called")
 		}
 	})
 

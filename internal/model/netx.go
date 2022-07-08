@@ -303,6 +303,28 @@ type Trace interface {
 	// can use functionality exported by the ./internal/testingx pkg.
 	TimeNow() time.Time
 
+	// OnDNSRoundTripForLookupHost is used with a DNSTransport and called
+	// when the RoundTrip terminates.
+	//
+	// Arguments:
+	//
+	// - started is when we called transport.RoundTrip
+	//
+	// - reso is the parent resolver for the trace;
+	//
+	// - query is the non-nil DNS query we use for the RoundTrip
+	//
+	// - response is a valid DNS response, obtained after the RoundTrip;
+	//
+	// - addrs is the list of addresses obtained after the RoundTrip, which
+	// is empty if the RoundTrip failed
+	//
+	// - err is the result of DNSLookup; either an error or nil
+	//
+	// - finished is the time right after the RoundTrip
+	OnDNSRoundTripForLookupHost(started time.Time, reso Resolver, query DNSQuery,
+		response DNSResponse, addrs []string, err error, finished time.Time)
+
 	// OnConnectDone is called when connect terminates.
 	//
 	// Arguments:

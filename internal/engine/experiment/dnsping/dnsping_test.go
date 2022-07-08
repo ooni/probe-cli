@@ -50,7 +50,7 @@ func TestMeasurer_run(t *testing.T) {
 		if m.ExperimentName() != "dnsping" {
 			t.Fatal("invalid experiment name")
 		}
-		if m.ExperimentVersion() != "0.1.0" {
+		if m.ExperimentVersion() != "0.2.0" {
 			t.Fatal("invalid experiment version")
 		}
 		ctx := context.Background()

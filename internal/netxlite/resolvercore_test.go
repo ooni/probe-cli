@@ -33,9 +33,9 @@ func TestNewResolverSystem(t *testing.T) {
 	typecheckForSystemResolver(t, resolver, model.DiscardLogger)
 }
 
-func TestNewSerialResolverUDP(t *testing.T) {
+func TestNewSerialUDPResolver(t *testing.T) {
 	d := NewDialerWithoutResolver(log.Log)
-	resolver := NewSerialResolverUDP(log.Log, d, "1.1.1.1:53")
+	resolver := NewSerialUDPResolver(log.Log, d, "1.1.1.1:53")
 	idna := resolver.(*resolverIDNA)
 	logger := idna.Resolver.(*resolverLogger)
 	if logger.Logger != log.Log {
@@ -51,9 +51,9 @@ func TestNewSerialResolverUDP(t *testing.T) {
 	}
 }
 
-func TestNewParallelResolverUDP(t *testing.T) {
+func TestNewParallelUDPResolver(t *testing.T) {
 	d := NewDialerWithoutResolver(log.Log)
-	resolver := NewParallelResolverUDP(log.Log, d, "1.1.1.1:53")
+	resolver := NewParallelUDPResolver(log.Log, d, "1.1.1.1:53")
 	idna := resolver.(*resolverIDNA)
 	logger := idna.Resolver.(*resolverLogger)
 	if logger.Logger != log.Log {

@@ -46,6 +46,12 @@ func TestNewTrace(t *testing.T) {
 			}
 		})
 
+		t.Run("NewParallelResolverFn is nil", func(t *testing.T) {
+			if trace.NewParallelResolverFn != nil {
+				t.Fatal("expected nil NewUnwrappedParallelResolverFn")
+			}
+		})
+
 		t.Run("NewDialerWithoutResolverFn is nil", func(t *testing.T) {
 			if trace.NewDialerWithoutResolverFn != nil {
 				t.Fatal("expected nil NewDialerWithoutResolverFn")
@@ -55,6 +61,27 @@ func TestNewTrace(t *testing.T) {
 		t.Run("NewTLSHandshakerStdlibFn is nil", func(t *testing.T) {
 			if trace.NewTLSHandshakerStdlibFn != nil {
 				t.Fatal("expected nil NewTLSHandshakerStdlibFn")
+			}
+		})
+
+		t.Run("DNSLookup has the expected buffer size", func(t *testing.T) {
+			ff := &testingx.FakeFiller{}
+			for _, qtype := range DNSQueryTypes {
+				var count int
+			Loop:
+				for {
+					ev := &model.ArchivalDNSLookupResult{}
+					ff.Fill(ev)
+					select {
+					case trace.DNSLookup[qtype] <- ev:
+						count++
+					default:
+						break Loop
+					}
+				}
+				if count != DNSLookupBufferSize {
+					t.Fatal("invalid DNSLookup A channel buffer size")
+				}
 			}
 		})
 
@@ -111,6 +138,57 @@ func TestNewTrace(t *testing.T) {
 }
 
 func TestTrace(t *testing.T) {
+	t.Run("NewParallelResolverFn works as intended", func(t *testing.T) {
+		t.Run("when not nil", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			tx := &Trace{
+				NewParallelResolverFn: func() model.Resolver {
+					return &mocks.Resolver{
+						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+							return []string{}, mockedErr
+						},
+					}
+				},
+			}
+			resolver := tx.newParallelResolver(func() model.Resolver {
+				return nil
+			})
+			ctx := context.Background()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if !errors.Is(err, mockedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected array of size 0")
+			}
+		})
+
+		t.Run("when nil", func(t *testing.T) {
+			tx := &Trace{
+				NewParallelResolverFn: nil,
+			}
+			newResolver := func() model.Resolver {
+				return &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						return []string{"1.1.1.1"}, nil
+					},
+				}
+			}
+			resolver := tx.newParallelResolver(newResolver)
+			ctx := context.Background()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if err != nil {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 1 {
+				t.Fatal("expected array of size 1")
+			}
+			if addrs[0] != "1.1.1.1" {
+				t.Fatal("unexpected array output", addrs)
+			}
+		})
+	})
+
 	t.Run("NewDialerWithoutResolverFn works as intended", func(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")

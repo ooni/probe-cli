@@ -49,6 +49,12 @@ func (*traceDefault) TimeNow() time.Time {
 	return time.Now()
 }
 
+// OnDNSRoundTripForLookupHost implements model.Trace.OnDNSRoundTripForLookupHost.
+func (*traceDefault) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resolver, query model.DNSQuery,
+	response model.DNSResponse, addrs []string, err error, finished time.Time) {
+	// nothing
+}
+
 // OnConnectDone implements model.Trace.OnConnectDone.
 func (*traceDefault) OnConnectDone(
 	started time.Time, network, domain, remoteAddr string, err error, finished time.Time) {
