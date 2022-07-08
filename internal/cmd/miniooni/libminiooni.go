@@ -31,7 +31,6 @@ type Options struct {
 	HomeDir          string
 	Inputs           []string
 	InputFilePaths   []string
-	Limit            int64
 	MaxRuntime       int64
 	NoJSON           bool
 	NoCollector      bool
@@ -76,10 +75,6 @@ func init() {
 	getopt.FlagLong(
 		&globalOptions.Inputs, "input", 'i',
 		"Add test-dependent input to the test input", "INPUT",
-	)
-	getopt.FlagLong(
-		&globalOptions.Limit, "limit", 0,
-		"Limit the number of URLs tested by Web Connectivity", "N",
 	)
 	getopt.FlagLong(
 		&globalOptions.MaxRuntime, "max-runtime", 0,
@@ -273,15 +268,6 @@ func maybeWriteConsentFile(yes bool, filepath string) (err error) {
 	return
 }
 
-// limitRemoved is the text printed when the user uses --limit
-const limitRemoved = `USAGE CHANGE: The --limit option has been removed in favor of
-the --max-runtime option. Please, update your script to use --max-runtime
-instead of --limit. The argument to --max-runtime is the maximum number
-of seconds after which to stop running Web Connectivity.
-
-This error message will be removed after 2021-11-01.
-`
-
 // tunnelAndProxy is the text printed when the user specifies
 // both the --tunnel and the --proxy options
 const tunnelAndProxy = `USAGE ERROR: The --tunnel option and the --proxy
@@ -297,7 +283,6 @@ of miniooni, when we will allow a tunnel to use a proxy.
 // This function will panic in case of a fatal error. It is up to you that
 // integrate this function to either handle the panic of ignore it.
 func MainWithConfiguration(experimentName string, currentOptions Options) {
-	fatalIfFalse(currentOptions.Limit == 0, limitRemoved)
 	fatalIfTrue(currentOptions.Proxy != "" && currentOptions.Tunnel != "",
 		tunnelAndProxy)
 	if currentOptions.Tunnel != "" {
