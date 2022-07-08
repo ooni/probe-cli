@@ -51,9 +51,12 @@ type Trace struct {
 	// calls to the netxlite.NewTLSHandshakerStdlib factory.
 	NewTLSHandshakerStdlibFn func(dl model.DebugLogger) model.TLSHandshaker
 
-	// DNSLookup is MANDATORY and buffers DNSLookup results based on the query type.
-	// If you create this channel manually, ensure all channels corresponding
-	// to the queries of interest have some buffer.
+	// DNSLookup is MANDATORY and buffers DNSLookup results based on the
+	// query type. When we create this map using NewTrace, we will create
+	// an entry for each dns.Type in DNSQueryTypes. If you create this channel
+	// manually, you probably want to to the same (and most likely you also
+	// want to create buffered channels). Note that the code will print a
+	// warning and otherwise ignore all the query types not included in this map.
 	DNSLookup map[uint16]chan *model.ArchivalDNSLookupResult
 
 	// TCPConnect is MANDATORY and buffers TCP connect observations. If you create
@@ -90,6 +93,25 @@ const (
 	TLSHandshakeBufferSize = 8
 )
 
+// DNSQueryTypes contains the list of DNS query types for which
+// NewTrace create entries in Trace.DNSLookup.
+var DNSQueryTypes = []uint16{
+	dns.TypeANY,
+	dns.TypeA,
+	dns.TypeAAAA,
+	dns.TypeCNAME,
+	dns.TypeNS,
+}
+
+// newDefaultDNSLookupMap is a convenience factory for creating Trace.DNSLookup
+func newDefaultDNSLookupMap() map[uint16]chan *model.ArchivalDNSLookupResult {
+	out := make(map[uint16]chan *model.ArchivalDNSLookupResult)
+	for _, qtype := range DNSQueryTypes {
+		out[qtype] = make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize)
+	}
+	return out
+}
+
 // NewTrace creates a new instance of Trace using default settings.
 //
 // We create buffered channels using as buffer sizes the constants that
@@ -110,13 +132,7 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 		),
 		NewDialerWithoutResolverFn: nil, // use default
 		NewTLSHandshakerStdlibFn:   nil, // use default
-		DNSLookup: map[uint16]chan *model.ArchivalDNSLookupResult{
-			dns.TypeANY:   make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
-			dns.TypeA:     make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
-			dns.TypeAAAA:  make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
-			dns.TypeCNAME: make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
-			dns.TypeNS:    make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
-		},
+		DNSLookup:                  newDefaultDNSLookupMap(),
 		TCPConnect: make(
 			chan *model.ArchivalTCPConnectResult,
 			TCPConnectBufferSize,

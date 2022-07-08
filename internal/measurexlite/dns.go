@@ -81,12 +81,14 @@ func (tx *Trace) NewParallelDNSOverHTTPSResolver(logger model.Logger, URL string
 // OnDNSRoundTripForLookupHost implements model.Trace.OnDNSRoundTripForLookupHost
 func (tx *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resolver, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Time) {
-	if tx.DNSLookup[query.Type()] == nil {
+	ch := tx.DNSLookup[query.Type()]
+	if ch == nil {
+		// Prevent blocking forever. See https://dave.cheney.net/2014/03/19/channel-axioms.
 		log.Printf("BUG: Requested query type %s has no valid channel to buffer results", dns.TypeToString[query.Type()])
 		return
 	}
 	select {
-	case tx.DNSLookup[query.Type()] <- NewArchivalDNSLookupResultFromRoundTrip(
+	case ch <- NewArchivalDNSLookupResultFromRoundTrip(
 		tx.Index,
 		started.Sub(tx.ZeroTime),
 		reso,
@@ -151,14 +153,15 @@ func archivalAnswersFromAddrs(addrs []string) (out []model.ArchivalDNSAnswer) {
 
 // DNSLookupsFromRoundTrip drains the network events buffered inside the corresponding query channel
 func (tx *Trace) DNSLookupsFromRoundTrip(query uint16) (out []*model.ArchivalDNSLookupResult) {
-	// Prevent panic and return in case of a nil map
-	if tx.DNSLookup[query] == nil {
+	ch := tx.DNSLookup[query]
+	if ch == nil {
+		// Prevent blocking forever. See https://dave.cheney.net/2014/03/19/channel-axioms.
 		log.Printf("BUG: Requested query type %s has no valid channel to buffer results", dns.TypeToString[query])
 		return
 	}
 	for {
 		select {
-		case ev := <-tx.DNSLookup[query]:
+		case ev := <-ch:
 			out = append(out, ev)
 		default:
 			return

@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -67,38 +66,22 @@ func TestNewTrace(t *testing.T) {
 
 		t.Run("DNSLookup has the expected buffer size", func(t *testing.T) {
 			ff := &testingx.FakeFiller{}
-			var idxA int
-			// TODO(bassosimone, DecFox): here we need to test all query types of interest. We should
-			// probably define them in trace.go and loop over them to create the map and run tests.
-		LoopA:
-			for {
-				ev := &model.ArchivalDNSLookupResult{}
-				ff.Fill(ev)
-				select {
-				case trace.DNSLookup[dns.TypeA] <- ev:
-					idxA++
-				default:
-					break LoopA
+			for _, qtype := range DNSQueryTypes {
+				var count int
+			Loop:
+				for {
+					ev := &model.ArchivalDNSLookupResult{}
+					ff.Fill(ev)
+					select {
+					case trace.DNSLookup[qtype] <- ev:
+						count++
+					default:
+						break Loop
+					}
 				}
-			}
-			if idxA != DNSLookupBufferSize {
-				t.Fatal("invalid DNSLookup A channel buffer size")
-			}
-
-			var idxAAAA int
-		LoopAAAA:
-			for {
-				ev := &model.ArchivalDNSLookupResult{}
-				ff.Fill(ev)
-				select {
-				case trace.DNSLookup[dns.TypeAAAA] <- ev:
-					idxAAAA++
-				default:
-					break LoopAAAA
+				if count != DNSLookupBufferSize {
+					t.Fatal("invalid DNSLookup A channel buffer size")
 				}
-			}
-			if idxAAAA != DNSLookupBufferSize {
-				t.Fatal("invalid DNSLookup AAAA channel buffer size")
 			}
 		})
 
