@@ -157,7 +157,7 @@ func TestSetCallbacks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := builder.SetOptionInt("SleepTime", 0); err != nil {
+	if err := builder.SetOptionAny("SleepTime", 0); err != nil {
 		t.Fatal(err)
 	}
 	register := &registerCallbacksCalled{}
@@ -203,7 +203,7 @@ func TestMeasurementFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := builder.SetOptionBool("ReturnError", true); err != nil {
+	if err := builder.SetOptionAny("ReturnError", true); err != nil {
 		t.Fatal(err)
 	}
 	measurement, err := builder.NewExperiment().Measure("")
@@ -279,13 +279,13 @@ func TestUseOptions(t *testing.T) {
 	if !sleepTime {
 		t.Fatal("did not find SleepTime option")
 	}
-	if err := builder.SetOptionBool("ReturnError", true); err != nil {
+	if err := builder.SetOptionAny("ReturnError", true); err != nil {
 		t.Fatal("cannot set ReturnError field")
 	}
-	if err := builder.SetOptionInt("SleepTime", 10); err != nil {
+	if err := builder.SetOptionAny("SleepTime", 10); err != nil {
 		t.Fatal("cannot set SleepTime field")
 	}
-	if err := builder.SetOptionString("Message", "antani"); err != nil {
+	if err := builder.SetOptionAny("Message", "antani"); err != nil {
 		t.Fatal("cannot set Message field")
 	}
 	config := builder.config.(*example.Config)
