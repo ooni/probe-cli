@@ -63,7 +63,7 @@ type Session interface {
 	Logger() model.Logger
 
 	// NewExperimentBuilder creates a new engine.ExperimentBuilder.
-	NewExperimentBuilder(name string) (*engine.ExperimentBuilder, error)
+	NewExperimentBuilder(name string) (engine.ExperimentBuilder, error)
 }
 
 // Measure performs the measurement indicated by the given OONI Run link.

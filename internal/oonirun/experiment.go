@@ -57,25 +57,14 @@ type Experiment struct {
 func (ed *Experiment) Run(ctx context.Context) error {
 
 	// 1. create experiment builder
-	builder, err := ed.Session.NewExperimentBuilder(ed.Name)
+	builder, err := ed.newExperimentBuilder(ed.Name)
 	if err != nil {
 		return err
 	}
 
 	// 2. create input loader and load input for this experiment
-	inputLoader := &engine.InputLoader{
-		CheckInConfig: &model.OOAPICheckInConfig{
-			RunType:  model.RunTypeManual,
-			OnWiFi:   true, // meaning: not on 4G
-			Charging: true,
-		},
-		ExperimentName: ed.Name,
-		InputPolicy:    builder.InputPolicy(),
-		StaticInputs:   ed.Inputs,
-		SourceFiles:    ed.InputFilePaths,
-		Session:        ed.Session,
-	}
-	inputs, err := inputLoader.Load(ctx)
+	inputLoader := ed.newInputLoader(builder.InputPolicy())
+	inputList, err := inputLoader.Load(ctx)
 	if err != nil {
 		return err
 	}
@@ -83,8 +72,8 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	// 3. randomize input, if needed
 	if ed.Random {
 		rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-		rnd.Shuffle(len(inputs), func(i, j int) {
-			inputs[i], inputs[j] = inputs[j], inputs[i]
+		rnd.Shuffle(len(inputList), func(i, j int) {
+			inputList[i], inputList[j] = inputList[j], inputList[i]
 		})
 	}
 
@@ -104,35 +93,40 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	}()
 
 	// 6. create the submitter
-	submitter, err := engine.NewSubmitter(ctx, engine.SubmitterConfig{
-		Enabled: !ed.NoCollector,
-		Session: ed.Session,
-		Logger:  ed.Session.Logger(),
-	})
+	submitter, err := ed.newSubmitter(ctx)
 	if err != nil {
 		return err
 	}
 
 	// 7. create the saver
-	saver, err := engine.NewSaver(engine.SaverConfig{
-		Enabled:    !ed.NoJSON,
-		Experiment: experiment,
-		FilePath:   ed.ReportFile,
-		Logger:     logger,
-	})
+	saver, err := ed.newSaver(experiment)
 	if err != nil {
 		return err
 	}
 
 	// 8. create an input processor
-	inputProcessor := &engine.InputProcessor{
+	inputProcessor := ed.newInputProcessor(experiment, inputList, saver, submitter)
+
+	// 9. process input and generate measurements
+	return inputProcessor.Run(ctx)
+}
+
+// inputProcessor processes inputs running the given experiment.
+type inputProcessor interface {
+	Run(ctx context.Context) error
+}
+
+// newInputProcessor creates a new inputProcessor instance.
+func (ed *Experiment) newInputProcessor(experiment engine.Experiment,
+	inputList []model.OOAPIURLInfo, saver engine.Saver, submitter engine.Submitter) inputProcessor {
+	return &engine.InputProcessor{
 		Annotations: ed.Annotations,
 		Experiment: &experimentWrapper{
 			child:  engine.NewInputProcessorExperimentWrapper(experiment),
 			logger: ed.Session.Logger(),
-			total:  len(inputs),
+			total:  len(inputList),
 		},
-		Inputs:     inputs,
+		Inputs:     inputList,
 		MaxRuntime: time.Duration(ed.MaxRuntime) * time.Second,
 		Options:    experimentOptionsToStringList(ed.ExtraOptions),
 		Saver:      engine.NewInputProcessorSaverWrapper(saver),
@@ -141,9 +135,51 @@ func (ed *Experiment) Run(ctx context.Context) error {
 			logger: ed.Session.Logger(),
 		},
 	}
+}
 
-	// 9. process input and generate measurements
-	return inputProcessor.Run(ctx)
+// newSaver creates a new engine.Saver instance.
+func (ed *Experiment) newSaver(experiment engine.Experiment) (engine.Saver, error) {
+	return engine.NewSaver(engine.SaverConfig{
+		Enabled:    !ed.NoJSON,
+		Experiment: experiment,
+		FilePath:   ed.ReportFile,
+		Logger:     ed.Session.Logger(),
+	})
+}
+
+// newSubmitter creates a new engine.Submitter instance.
+func (ed *Experiment) newSubmitter(ctx context.Context) (engine.Submitter, error) {
+	return engine.NewSubmitter(ctx, engine.SubmitterConfig{
+		Enabled: !ed.NoCollector,
+		Session: ed.Session,
+		Logger:  ed.Session.Logger(),
+	})
+}
+
+// newExperimentBuilder creates a new engine.ExperimentBuilder for the given experimentName.
+func (ed *Experiment) newExperimentBuilder(experimentName string) (engine.ExperimentBuilder, error) {
+	return ed.Session.NewExperimentBuilder(ed.Name)
+}
+
+// inputLoader loads inputs from local or remote sources.
+type inputLoader interface {
+	Load(ctx context.Context) ([]model.OOAPIURLInfo, error)
+}
+
+// newInputLoader creates a new inputLoader.
+func (ed *Experiment) newInputLoader(inputPolicy engine.InputPolicy) inputLoader {
+	return &engine.InputLoader{
+		CheckInConfig: &model.OOAPICheckInConfig{
+			RunType:  model.RunTypeManual,
+			OnWiFi:   true, // meaning: not on 4G
+			Charging: true,
+		},
+		ExperimentName: ed.Name,
+		InputPolicy:    inputPolicy,
+		StaticInputs:   ed.Inputs,
+		SourceFiles:    ed.InputFilePaths,
+		Session:        ed.Session,
+	}
 }
 
 // experimentOptionsToStringList convers the options to []string, which is
