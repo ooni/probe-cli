@@ -94,12 +94,27 @@ func newAPIClient() *apiClient {
 }
 
 func TestJoinURLPath(t *testing.T) {
+	t.Run("the whole path is inside basePath and there's no resource path", func(t *testing.T) {
+		ac := newAPIClient()
+		ac.BaseURL = "https://example.com/robots.txt"
+		req, err := ac.newRequest(context.Background(), "GET", "", nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if req.URL.String() != "https://example.com/robots.txt" {
+			t.Fatal("unexpected result", req.URL.String())
+		}
+	})
+
 	t.Run("empty baseURL path and slash-prefixed resource path", func(t *testing.T) {
 		ac := newAPIClient()
 		ac.BaseURL = "https://example.com"
 		req, err := ac.newRequest(context.Background(), "GET", "/foo", nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if req.URL.String() != "https://example.com/foo" {
-			t.Fatal("unexpected result", err)
+			t.Fatal("unexpected result", req.URL.String())
 		}
 	})
 
@@ -107,8 +122,11 @@ func TestJoinURLPath(t *testing.T) {
 		ac := newAPIClient()
 		ac.BaseURL = "https://example.com/"
 		req, err := ac.newRequest(context.Background(), "GET", "/foo", nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if req.URL.String() != "https://example.com/foo" {
-			t.Fatal("unexpected result", err)
+			t.Fatal("unexpected result", req.URL.String())
 		}
 	})
 
@@ -116,8 +134,11 @@ func TestJoinURLPath(t *testing.T) {
 		ac := newAPIClient()
 		ac.BaseURL = "https://example.com"
 		req, err := ac.newRequest(context.Background(), "GET", "", nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if req.URL.String() != "https://example.com/" {
-			t.Fatal("unexpected result", err)
+			t.Fatal("unexpected result", req.URL.String())
 		}
 	})
 
@@ -125,8 +146,11 @@ func TestJoinURLPath(t *testing.T) {
 		ac := newAPIClient()
 		ac.BaseURL = "http://example.com/foo"
 		req, err := ac.newRequest(context.Background(), "GET", "/bar", nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if req.URL.String() != "http://example.com/foo/bar" {
-			t.Fatal("unexpected result", err)
+			t.Fatal("unexpected result", req.URL.String())
 		}
 	})
 
@@ -134,8 +158,11 @@ func TestJoinURLPath(t *testing.T) {
 		ac := newAPIClient()
 		ac.BaseURL = "http://example.com/foo/"
 		req, err := ac.newRequest(context.Background(), "GET", "/bar", nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if req.URL.String() != "http://example.com/foo/bar" {
-			t.Fatal("unexpected result", err)
+			t.Fatal("unexpected result", req.URL.String())
 		}
 	})
 
@@ -143,8 +170,11 @@ func TestJoinURLPath(t *testing.T) {
 		ac := newAPIClient()
 		ac.BaseURL = "http://example.com/foo/"
 		req, err := ac.newRequest(context.Background(), "GET", "bar", nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if req.URL.String() != "http://example.com/foo/bar" {
-			t.Fatal("unexpected result", err)
+			t.Fatal("unexpected result", req.URL.String())
 		}
 	})
 }
