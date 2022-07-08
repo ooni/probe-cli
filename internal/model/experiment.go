@@ -1,28 +1,51 @@
 package model
 
+//
+// Definition of experiment and types used by the
+// implementation of all experiments.
+//
+
 import (
 	"context"
 )
 
-//
-// Definition of experiment and types used by the
-// implemenation of all experiments.
-//
-
 // ExperimentSession is the experiment's view of a session.
 type ExperimentSession interface {
+	// GetTestHelpersByName returns a list of test helpers with the given name.
 	GetTestHelpersByName(name string) ([]OOAPIService, bool)
+
+	// DefaultHTTPClient returns the default HTTPClient used by the session.
 	DefaultHTTPClient() HTTPClient
+
+	// FetchPsiphonConfig returns psiphon's config as a serialized JSON or an error.
 	FetchPsiphonConfig(ctx context.Context) ([]byte, error)
+
+	// FetchTorTargets returns the targets for the Tor experiment or an error.
 	FetchTorTargets(ctx context.Context, cc string) (map[string]OOAPITorTarget, error)
-	FetchURLList(ctx context.Context, config OOAPIURLListConfig) ([]OOAPIURLInfo, error)
+
+	// Logger returns the logger used by the session.
 	Logger() Logger
+
+	// ProbeCC returns the country code.
 	ProbeCC() string
+
+	// ResolverIP returns the resolver's IP.
 	ResolverIP() string
+
+	// TempDir returns the session's temporary directory.
 	TempDir() string
+
+	// TorArgs returns the arguments we should pass to tor when executing it.
 	TorArgs() []string
+
+	// TorBinary returns the path of the tor binary.
 	TorBinary() string
+
+	// TunnelDir is the directory where to store tunnel information.
 	TunnelDir() string
+
+	// UserAgent returns the user agent we should be using when we're fine
+	// with identifying ourselves as ooniprobe.
 	UserAgent() string
 }
 
