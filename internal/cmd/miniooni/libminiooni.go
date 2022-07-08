@@ -437,7 +437,7 @@ func ooniRunMain(ctx context.Context,
 		Session:       sess,
 	}
 	for _, URL := range currentOptions.Inputs {
-		r := cfg.NewLinkRunner(URL)
+		r := oonirun.NewLinkRunner(cfg, URL)
 		if err := r.Run(ctx); err != nil {
 			if errors.Is(err, oonirun.ErrNeedToAcceptChanges) {
 				logger.Warnf("oonirun: to accept these changes, rerun adding `-y` to the command line")

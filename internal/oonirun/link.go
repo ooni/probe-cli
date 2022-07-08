@@ -58,7 +58,7 @@ type linkRunner struct {
 	url    string
 }
 
-// Run implements LinkRunner.Rune.
+// Run implements LinkRunner.Run.
 func (lr *linkRunner) Run(ctx context.Context) error {
 	return lr.f(ctx, lr.config, lr.url)
 }
@@ -71,7 +71,7 @@ func (lr *linkRunner) Run(ctx context.Context) error {
 // 2. OONI Run v1 link with ooni scheme (e.g., ooni://nettest?...)
 //
 // 3. arbitrary URL of the OONI Run v2 descriptor.
-func (c *LinkConfig) NewLinkRunner(URL string) LinkRunner {
+func NewLinkRunner(c *LinkConfig, URL string) LinkRunner {
 	// TODO(bassosimone): add support for v2 deeplinks.
 	out := &linkRunner{
 		config: c,
