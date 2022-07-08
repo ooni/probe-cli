@@ -127,9 +127,9 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 //
 // Return values:
 //
-// - oldValue is the old v2Descriptor, which may be empty;
+// - oldValue is the old v2Descriptor, which may be nil;
 //
-// - newValue is the new v2Descriptor;
+// - newValue is the new v2Descriptor, which may be nil;
 //
 // - err is the error that occurred, or nil in case of success.
 func (cache *v2DescriptorCache) PullChangesWithoutSideEffects(ctx context.Context,
