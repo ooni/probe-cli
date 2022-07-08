@@ -14,7 +14,7 @@ func TestExperimentHonoursSharingDefaults(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		exp := builder.NewExperiment()
+		exp := builder.NewExperiment().(*experiment)
 		return exp.newMeasurement("")
 	}
 	type spec struct {
