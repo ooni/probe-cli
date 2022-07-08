@@ -68,6 +68,8 @@ func TestNewTrace(t *testing.T) {
 		t.Run("DNSLookup has the expected buffer size", func(t *testing.T) {
 			ff := &testingx.FakeFiller{}
 			var idxA int
+			// TODO(bassosimone, DecFox): here we need to test all query types of interest. We should
+			// probably define them in trace.go and loop over them to create the map and run tests.
 		LoopA:
 			for {
 				ev := &model.ArchivalDNSLookupResult{}
@@ -153,7 +155,7 @@ func TestNewTrace(t *testing.T) {
 }
 
 func TestTrace(t *testing.T) {
-	t.Run("NewUnwrappedParallelResolverFn works as intended", func(t *testing.T) {
+	t.Run("NewParallelResolverFn works as intended", func(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
