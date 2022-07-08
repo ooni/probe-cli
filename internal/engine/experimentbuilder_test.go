@@ -16,7 +16,7 @@ type fakeExperimentConfig struct {
 
 func TestExperimentBuilderOptions(t *testing.T) {
 	t.Run("when config is not a pointer", func(t *testing.T) {
-		b := &ExperimentBuilder{
+		b := &experimentBuilder{
 			config: 17,
 		}
 		options, err := b.Options()
@@ -30,7 +30,7 @@ func TestExperimentBuilderOptions(t *testing.T) {
 
 	t.Run("when config is not a struct", func(t *testing.T) {
 		number := 17
-		b := &ExperimentBuilder{
+		b := &experimentBuilder{
 			config: &number,
 		}
 		options, err := b.Options()
@@ -44,7 +44,7 @@ func TestExperimentBuilderOptions(t *testing.T) {
 
 	t.Run("when config is a pointer to struct", func(t *testing.T) {
 		config := &fakeExperimentConfig{}
-		b := &ExperimentBuilder{
+		b := &experimentBuilder{
 			config: config,
 		}
 		options, err := b.Options()
@@ -291,7 +291,7 @@ func TestExperimentBuilderSetOptionAny(t *testing.T) {
 	for _, input := range inputs {
 		t.Run(input.TestCaseName, func(t *testing.T) {
 			ec := input.InitialConfig
-			b := &ExperimentBuilder{config: ec}
+			b := &experimentBuilder{config: ec}
 			err := b.SetOptionAny(input.FieldName, input.FieldValue)
 			if !errors.Is(err, input.ExpectErr) {
 				t.Fatal(err)
@@ -304,7 +304,7 @@ func TestExperimentBuilderSetOptionAny(t *testing.T) {
 }
 
 func TestSetOptionsAny(t *testing.T) {
-	b := &ExperimentBuilder{config: &fakeExperimentConfig{}}
+	b := &experimentBuilder{config: &fakeExperimentConfig{}}
 
 	t.Run("we correctly handle an empty map", func(t *testing.T) {
 		if err := b.SetOptionsAny(nil); err != nil {
@@ -314,7 +314,7 @@ func TestSetOptionsAny(t *testing.T) {
 
 	t.Run("we correctly handle a map containing options", func(t *testing.T) {
 		f := &fakeExperimentConfig{}
-		privateb := &ExperimentBuilder{config: f}
+		privateb := &experimentBuilder{config: f}
 		opts := map[string]any{
 			"String": "yoloyolo",
 			"Value":  "174",

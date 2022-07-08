@@ -162,7 +162,7 @@ func TestSetCallbacks(t *testing.T) {
 	}
 	register := &registerCallbacksCalled{}
 	builder.SetCallbacks(register)
-	if _, err := builder.NewExperiment().Measure(""); err != nil {
+	if _, err := builder.NewExperiment().MeasureWithContext(context.Background(), ""); err != nil {
 		t.Fatal(err)
 	}
 	if register.onProgressCalled == false {
@@ -206,7 +206,7 @@ func TestMeasurementFailure(t *testing.T) {
 	if err := builder.SetOptionAny("ReturnError", true); err != nil {
 		t.Fatal(err)
 	}
-	measurement, err := builder.NewExperiment().Measure("")
+	measurement, err := builder.NewExperiment().MeasureWithContext(context.Background(), "")
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -288,7 +288,7 @@ func TestUseOptions(t *testing.T) {
 	if err := builder.SetOptionAny("Message", "antani"); err != nil {
 		t.Fatal("cannot set Message field")
 	}
-	config := builder.config.(*example.Config)
+	config := builder.(*experimentBuilder).config.(*example.Config)
 	if config.ReturnError != true {
 		t.Fatal("config.ReturnError was not changed")
 	}
@@ -313,15 +313,16 @@ func TestRunHHFM(t *testing.T) {
 	runexperimentflow(t, builder.NewExperiment(), "")
 }
 
-func runexperimentflow(t *testing.T, experiment *Experiment, input string) {
-	err := experiment.OpenReport()
+func runexperimentflow(t *testing.T, experiment Experiment, input string) {
+	ctx := context.Background()
+	err := experiment.OpenReportContext(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if experiment.ReportID() == "" {
 		t.Fatal("reportID should not be empty here")
 	}
-	measurement, err := experiment.Measure(input)
+	measurement, err := experiment.MeasureWithContext(ctx, input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -335,7 +336,7 @@ func runexperimentflow(t *testing.T, experiment *Experiment, input string) {
 	if data == nil {
 		t.Fatal("data is nil")
 	}
-	err = experiment.SubmitAndUpdateMeasurement(measurement)
+	err = experiment.SubmitAndUpdateMeasurementContext(ctx, measurement)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -364,14 +365,14 @@ func TestSaveMeasurementErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	exp := builder.NewExperiment()
+	exp := builder.NewExperiment().(*experiment)
 	dirname, err := ioutil.TempDir("", "ooniprobe-engine-save-measurement")
 	if err != nil {
 		t.Fatal(err)
 	}
 	filename := filepath.Join(dirname, "report.jsonl")
 	m := new(model.Measurement)
-	err = exp.SaveMeasurementEx(
+	err = exp.saveMeasurement(
 		m, filename, func(v interface{}) ([]byte, error) {
 			return nil, errors.New("mocked error")
 		}, os.OpenFile, func(fp *os.File, b []byte) (int, error) {
@@ -381,7 +382,7 @@ func TestSaveMeasurementErrors(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
-	err = exp.SaveMeasurementEx(
+	err = exp.saveMeasurement(
 		m, filename, json.Marshal,
 		func(name string, flag int, perm os.FileMode) (*os.File, error) {
 			return nil, errors.New("mocked error")
@@ -392,7 +393,7 @@ func TestSaveMeasurementErrors(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
-	err = exp.SaveMeasurementEx(
+	err = exp.saveMeasurement(
 		m, filename, json.Marshal, os.OpenFile,
 		func(fp *os.File, b []byte) (int, error) {
 			return 0, errors.New("mocked error")
@@ -417,10 +418,11 @@ func TestOpenReportIdempotent(t *testing.T) {
 	if exp.ReportID() != "" {
 		t.Fatal("unexpected initial report ID")
 	}
-	if err := exp.SubmitAndUpdateMeasurement(&model.Measurement{}); err == nil {
+	ctx := context.Background()
+	if err := exp.SubmitAndUpdateMeasurementContext(ctx, &model.Measurement{}); err == nil {
 		t.Fatal("we should not be able to submit before OpenReport")
 	}
-	err = exp.OpenReport()
+	err = exp.OpenReportContext(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -428,7 +430,7 @@ func TestOpenReportIdempotent(t *testing.T) {
 	if rid == "" {
 		t.Fatal("invalid report ID")
 	}
-	err = exp.OpenReport()
+	err = exp.OpenReportContext(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -453,12 +455,12 @@ func TestOpenReportFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	exp := builder.NewExperiment()
+	exp := builder.NewExperiment().(*experiment)
 	exp.session.selectedProbeService = &model.OOAPIService{
 		Address: server.URL,
 		Type:    "https",
 	}
-	err = exp.OpenReport()
+	err = exp.OpenReportContext(context.Background())
 	if !strings.HasPrefix(err.Error(), "httpx: request failed") {
 		t.Fatal("not the error we expected")
 	}
@@ -474,12 +476,12 @@ func TestOpenReportNewClientFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	exp := builder.NewExperiment()
+	exp := builder.NewExperiment().(*experiment)
 	exp.session.selectedProbeService = &model.OOAPIService{
 		Address: "antani:///",
 		Type:    "antani",
 	}
-	err = exp.OpenReport()
+	err = exp.OpenReportContext(context.Background())
 	if err.Error() != "probe services: unsupported endpoint type" {
 		t.Fatal(err)
 	}
@@ -497,7 +499,7 @@ func TestSubmitAndUpdateMeasurementWithClosedReport(t *testing.T) {
 	}
 	exp := builder.NewExperiment()
 	m := new(model.Measurement)
-	err = exp.SubmitAndUpdateMeasurement(m)
+	err = exp.SubmitAndUpdateMeasurementContext(context.Background(), m)
 	if err == nil {
 		t.Fatal("expected an error here")
 	}
@@ -509,7 +511,7 @@ func TestMeasureLookupLocationFailure(t *testing.T) {
 	}
 	sess := newSessionForTestingNoLookups(t)
 	defer sess.Close()
-	exp := NewExperiment(sess, new(antaniMeasurer))
+	exp := newExperiment(sess, new(antaniMeasurer))
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // so we fail immediately
 	if _, err := exp.MeasureWithContext(ctx, "xx"); err == nil {
@@ -529,8 +531,8 @@ func TestOpenReportNonHTTPS(t *testing.T) {
 			Type:    "mascetti",
 		},
 	}
-	exp := NewExperiment(sess, new(antaniMeasurer))
-	if err := exp.OpenReport(); err == nil {
+	exp := newExperiment(sess, new(antaniMeasurer))
+	if err := exp.OpenReportContext(context.Background()); err == nil {
 		t.Fatal("expected an error here")
 	}
 }
