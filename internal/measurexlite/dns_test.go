@@ -167,8 +167,8 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.DNSLookup = map[uint16]chan *model.ArchivalDNSLookupResult{
-			dns.TypeA:    make(chan *model.ArchivalDNSLookupResult),
-			dns.TypeAAAA: make(chan *model.ArchivalDNSLookupResult),
+			dns.TypeA:    make(chan *model.ArchivalDNSLookupResult), // no buffer
+			dns.TypeAAAA: make(chan *model.ArchivalDNSLookupResult), // no buffer
 		}
 		trace.TimeNowFn = td.Now
 		txp := &mocks.DNSTransport{
@@ -237,7 +237,10 @@ func TestAnswersFromAddrs(t *testing.T) {
 	}, {
 		name: "with empty input",
 		args: []string{},
-	}}
+	}, {
+		name: "with nil input",
+		args: nil,
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := archivalAnswersFromAddrs(tt.args)
