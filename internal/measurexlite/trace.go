@@ -115,7 +115,7 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 			dns.TypeA:     make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
 			dns.TypeAAAA:  make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
 			dns.TypeCNAME: make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
-			dns.TypeNS: make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
+			dns.TypeNS:    make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
 		},
 		TCPConnect: make(
 			chan *model.ArchivalTCPConnectResult,
