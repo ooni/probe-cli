@@ -136,11 +136,14 @@ func (m *Measurer) dnsRoundTrip(ctx context.Context, index int64, zeroTime time.
 	// TODO(bassosimone): make the timeout user-configurable
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-
 	defer wg.Done()
 	pings := []*SinglePing{}
 	trace := measurexlite.NewTrace(index, zeroTime)
 	ol := measurexlite.NewOperationLogger(logger, "DNSPing #%d %s %s", index, address, domain)
+	// TODO(bassosimone, DecFox): what should we do if the user passes us a resolver with a
+	// domain name in terms of saving its results? Shall we save also the system resolver's lookups?
+	// Shall we, otherwise, pre-resolve the domain name to IP addresses once and for all? In such
+	// a case, shall we use all the available IP addresses or just some of them?
 	dialer := netxlite.NewDialerWithStdlibResolver(logger)
 	resolver := trace.NewParallelUDPResolver(logger, dialer, address)
 	_, err := resolver.LookupHost(ctx, domain)
