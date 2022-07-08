@@ -337,7 +337,7 @@ func (s *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool)
 }
 
 // DefaultHTTPClient returns the session's default HTTP client.
-func (s *Session) DefaultHTTPClient() *http.Client {
+func (s *Session) DefaultHTTPClient() model.HTTPClient {
 	return &http.Client{Transport: s.httpDefaultTransport}
 }
 
