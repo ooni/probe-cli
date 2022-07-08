@@ -1,5 +1,9 @@
 package engine
 
+//
+// Experiment definition and implementation.
+//
+
 import (
 	"context"
 	"encoding/json"
@@ -23,7 +27,79 @@ func formatTimeNowUTC() string {
 }
 
 // Experiment is an experiment instance.
-type Experiment struct {
+type Experiment interface {
+	// KibiBytesReceived accounts for the KibiBytes received by the HTTP clients
+	// managed by this session so far, including experiments.
+	KibiBytesReceived() float64
+
+	// KibiBytesSent is like KibiBytesReceived but for the bytes sent.
+	KibiBytesSent() float64
+
+	// Name returns the experiment name.
+	Name() string
+
+	// GetSummaryKeys returns a data structure containing a
+	// summary of the test keys for probe-cli.
+	GetSummaryKeys(m *model.Measurement) (any, error)
+
+	// ReportID returns the open reportID, if we have opened a report
+	// successfully before, or an empty string, otherwise.
+	//
+	// Deprecated: new code should use a Submitter.
+	ReportID() string
+
+	// MeasureAsync runs an async measurement. This operation could post
+	// one or more measurements onto the returned channel. We'll close the
+	// channel when we've emitted all the measurements.
+	//
+	// Arguments:
+	//
+	// - ctx is the context for deadline/cancellation/timeout;
+	//
+	// - input is the input (typically a URL but it could also be
+	// just an endpoint or an empty string for input-less experiments
+	// such as, e.g., ndt7 and dash).
+	//
+	// Return value:
+	//
+	// - on success, channel where to post measurements (the channel
+	// will be closed when done) and nil error;
+	//
+	// - on failure, nil channel and non-nil error.
+	MeasureAsync(ctx context.Context, input string) (<-chan *model.Measurement, error)
+
+	// MeasureWithContext performs a synchronous measurement.
+	//
+	// Return value: strictly either a non-nil measurement and
+	// a nil error or a nil measurement and a non-nil error.
+	//
+	// CAVEAT: while this API is perfectly fine for experiments that
+	// return a single measurement, it will only return the first measurement
+	// when used with an asynchronous experiment. We plan on eventually
+	// migrating all experiments to run in asynchronous fashion.
+	MeasureWithContext(ctx context.Context, input string) (measurement *model.Measurement, err error)
+
+	// SaveMeasurement saves a measurement on the specified file path.
+	//
+	// Deprecated: new code should use a Saver.
+	SaveMeasurement(measurement *model.Measurement, filePath string) error
+
+	// SubmitAndUpdateMeasurementContext submits a measurement and updates the
+	// fields whose value has changed as part of the submission.
+	//
+	// Deprecated: new code should use a Submitter.
+	SubmitAndUpdateMeasurementContext(
+		ctx context.Context, measurement *model.Measurement) error
+
+	// OpenReportContext will open a report using the given context
+	// to possibly limit the lifetime of this operation.
+	//
+	// Deprecated: new code should use a Submitter.
+	OpenReportContext(ctx context.Context) error
+}
+
+// experiment implements Experiment.
+type experiment struct {
 	byteCounter   *bytecounter.Counter
 	callbacks     model.ExperimentCallbacks
 	measurer      model.ExperimentMeasurer
@@ -34,11 +110,9 @@ type Experiment struct {
 	testVersion   string
 }
 
-// NewExperiment creates a new experiment given a measurer. The preferred
-// way to create an experiment is the ExperimentBuilder. Though this function
-// allows the programmer to create a custom, external experiment.
-func NewExperiment(sess *Session, measurer model.ExperimentMeasurer) *Experiment {
-	return &Experiment{
+// newExperiment creates a new experiment given a measurer.
+func newExperiment(sess *Session, measurer model.ExperimentMeasurer) *experiment {
+	return &experiment{
 		byteCounter:   bytecounter.New(),
 		callbacks:     model.NewPrinterCallbacks(sess.Logger()),
 		measurer:      measurer,
@@ -49,64 +123,37 @@ func NewExperiment(sess *Session, measurer model.ExperimentMeasurer) *Experiment
 	}
 }
 
-// KibiBytesReceived accounts for the KibiBytes received by the HTTP clients
-// managed by this session so far, including experiments.
-func (e *Experiment) KibiBytesReceived() float64 {
+// KibiBytesReceived implements Experiment.KibiBytesReceived.
+func (e *experiment) KibiBytesReceived() float64 {
 	return e.byteCounter.KibiBytesReceived()
 }
 
-// KibiBytesSent is like KibiBytesReceived but for the bytes sent.
-func (e *Experiment) KibiBytesSent() float64 {
+// KibiBytesSent implements Experiment.KibiBytesSent.
+func (e *experiment) KibiBytesSent() float64 {
 	return e.byteCounter.KibiBytesSent()
 }
 
-// Name returns the experiment name.
-func (e *Experiment) Name() string {
+// Name implements Experiment.Name.
+func (e *experiment) Name() string {
 	return e.testName
 }
 
-// GetSummaryKeys returns a data structure containing a
-// summary of the test keys for probe-cli.
-func (e *Experiment) GetSummaryKeys(m *model.Measurement) (interface{}, error) {
+// GetSummaryKeys implements Experiment.GetSummaryKeys.
+func (e *experiment) GetSummaryKeys(m *model.Measurement) (interface{}, error) {
 	return e.measurer.GetSummaryKeys(m)
 }
 
-// OpenReport is an idempotent method to open a report. We assume that
-// you have configured the available probe services, either manually or
-// through using the session's MaybeLookupBackends method.
-func (e *Experiment) OpenReport() (err error) {
-	return e.OpenReportContext(context.Background())
-}
-
-// ReportID returns the open reportID, if we have opened a report
-// successfully before, or an empty string, otherwise.
-func (e *Experiment) ReportID() string {
+// ReportID implements Experiment.ReportID.
+func (e *experiment) ReportID() string {
 	if e.report == nil {
 		return ""
 	}
 	return e.report.ReportID()
 }
 
-// Measure performs a measurement with input. We assume that you have
-// configured the available test helpers, either manually or by calling
-// the session's MaybeLookupBackends() method.
-//
-// Return value: strictly either a non-nil measurement and
-// a nil error or a nil measurement and a non-nil error.
-//
-// CAVEAT: while this API is perfectly fine for experiments that
-// return a single measurement, it will only return the first measurement
-// when used with an asynchronous experiment. We plan on eventually
-// migrating all experiments to run in asynchronous fashion.
-//
-// Deprecated: use MeasureWithContext instead, please.
-func (e *Experiment) Measure(input string) (*model.Measurement, error) {
-	return e.MeasureWithContext(context.Background(), input)
-}
-
 // experimentAsyncWrapper makes a sync experiment behave like it was async
 type experimentAsyncWrapper struct {
-	*Experiment
+	*experiment
 }
 
 var _ model.ExperimentMeasurerAsync = &experimentAsyncWrapper{}
@@ -116,9 +163,9 @@ func (eaw *experimentAsyncWrapper) RunAsync(
 	ctx context.Context, sess model.ExperimentSession, input string,
 	callbacks model.ExperimentCallbacks) (<-chan *model.ExperimentAsyncTestKeys, error) {
 	out := make(chan *model.ExperimentAsyncTestKeys)
-	measurement := eaw.Experiment.newMeasurement(input)
+	measurement := eaw.experiment.newMeasurement(input)
 	start := time.Now()
-	err := eaw.Experiment.measurer.Run(ctx, eaw.session, measurement, eaw.callbacks)
+	err := eaw.experiment.measurer.Run(ctx, eaw.session, measurement, eaw.callbacks)
 	stop := time.Now()
 	if err != nil {
 		return nil, err
@@ -136,25 +183,8 @@ func (eaw *experimentAsyncWrapper) RunAsync(
 	return out, nil
 }
 
-// MeasureAsync runs an async measurement. This operation could post
-// one or more measurements onto the returned channel. We'll close the
-// channel when we've emitted all the measurements.
-//
-// Arguments:
-//
-// - ctx is the context for deadline/cancellation/timeout;
-//
-// - input is the input (typically a URL but it could also be
-// just an endpoint or an empty string for input-less experiments
-// such as, e.g., ndt7 and dash).
-//
-// Return value:
-//
-// - on success, channel where to post measurements (the channel
-// will be closed when done) and nil error;
-//
-// - on failure, nil channel and non-nil error.
-func (e *Experiment) MeasureAsync(
+// MeasureAsync implements Experiment.MeasureAsync.
+func (e *experiment) MeasureAsync(
 	ctx context.Context, input string) (<-chan *model.Measurement, error) {
 	err := e.session.MaybeLookupLocationContext(ctx) // this already tracks session bytes
 	if err != nil {
@@ -195,16 +225,8 @@ func (e *Experiment) MeasureAsync(
 	return out, nil
 }
 
-// MeasureWithContext is like Measure but with context.
-//
-// Return value: strictly either a non-nil measurement and
-// a nil error or a nil measurement and a non-nil error.
-//
-// CAVEAT: while this API is perfectly fine for experiments that
-// return a single measurement, it will only return the first measurement
-// when used with an asynchronous experiment. We plan on eventually
-// migrating all experiments to run in asynchronous fashion.
-func (e *Experiment) MeasureWithContext(
+// MeasureWithContext implements Experiment.MeasureWithContext.
+func (e *experiment) MeasureWithContext(
 	ctx context.Context, input string,
 ) (measurement *model.Measurement, err error) {
 	out, err := e.MeasureAsync(ctx, input)
@@ -222,8 +244,8 @@ func (e *Experiment) MeasureWithContext(
 	return
 }
 
-// SaveMeasurement saves a measurement on the specified file path.
-func (e *Experiment) SaveMeasurement(measurement *model.Measurement, filePath string) error {
+// SaveMeasurement implements Experiment.SaveMeasurement.
+func (e *experiment) SaveMeasurement(measurement *model.Measurement, filePath string) error {
 	return e.saveMeasurement(
 		measurement, filePath, json.Marshal, os.OpenFile,
 		func(fp *os.File, b []byte) (int, error) {
@@ -232,15 +254,8 @@ func (e *Experiment) SaveMeasurement(measurement *model.Measurement, filePath st
 	)
 }
 
-// SubmitAndUpdateMeasurement submits a measurement and updates the
-// fields whose value has changed as part of the submission.
-func (e *Experiment) SubmitAndUpdateMeasurement(measurement *model.Measurement) error {
-	return e.SubmitAndUpdateMeasurementContext(context.Background(), measurement)
-}
-
-// SubmitAndUpdateMeasurementContext submits a measurement and updates the
-// fields whose value has changed as part of the submission.
-func (e *Experiment) SubmitAndUpdateMeasurementContext(
+// SubmitAndUpdateMeasurementContext implements Experiment.SubmitAndUpdateMeasurementContext.
+func (e *experiment) SubmitAndUpdateMeasurementContext(
 	ctx context.Context, measurement *model.Measurement) error {
 	if e.report == nil {
 		return errors.New("report is not open")
@@ -249,7 +264,7 @@ func (e *Experiment) SubmitAndUpdateMeasurementContext(
 }
 
 // newMeasurement creates a new measurement for this experiment with the given input.
-func (e *Experiment) newMeasurement(input string) *model.Measurement {
+func (e *experiment) newMeasurement(input string) *model.Measurement {
 	utctimenow := time.Now().UTC()
 	m := &model.Measurement{
 		DataFormatVersion:         probeservices.DefaultDataFormatVersion,
@@ -277,9 +292,8 @@ func (e *Experiment) newMeasurement(input string) *model.Measurement {
 	return m
 }
 
-// OpenReportContext will open a report using the given context
-// to possibly limit the lifetime of this operation.
-func (e *Experiment) OpenReportContext(ctx context.Context) error {
+// OpenReportContext implements Experiment.OpenReportContext.
+func (e *experiment) OpenReportContext(ctx context.Context) error {
 	if e.report != nil {
 		return nil // already open
 	}
@@ -305,7 +319,7 @@ func (e *Experiment) OpenReportContext(ctx context.Context) error {
 	return nil
 }
 
-func (e *Experiment) newReportTemplate() probeservices.ReportTemplate {
+func (e *experiment) newReportTemplate() probeservices.ReportTemplate {
 	return probeservices.ReportTemplate{
 		DataFormatVersion: probeservices.DefaultDataFormatVersion,
 		Format:            probeservices.DefaultFormat,
@@ -319,7 +333,7 @@ func (e *Experiment) newReportTemplate() probeservices.ReportTemplate {
 	}
 }
 
-func (e *Experiment) saveMeasurement(
+func (e *experiment) saveMeasurement(
 	measurement *model.Measurement, filePath string,
 	marshal func(v interface{}) ([]byte, error),
 	openFile func(name string, flag int, perm os.FileMode) (*os.File, error),

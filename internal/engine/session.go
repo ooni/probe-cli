@@ -390,7 +390,7 @@ var ErrAlreadyUsingProxy = errors.New(
 // NewExperimentBuilder returns a new experiment builder
 // for the experiment with the given name, or an error if
 // there's no such experiment with the given name
-func (s *Session) NewExperimentBuilder(name string) (*ExperimentBuilder, error) {
+func (s *Session) NewExperimentBuilder(name string) (ExperimentBuilder, error) {
 	return newExperimentBuilder(s, name)
 }
 
