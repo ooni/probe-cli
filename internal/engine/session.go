@@ -391,7 +391,11 @@ var ErrAlreadyUsingProxy = errors.New(
 // for the experiment with the given name, or an error if
 // there's no such experiment with the given name
 func (s *Session) NewExperimentBuilder(name string) (ExperimentBuilder, error) {
-	return newExperimentBuilder(s, name)
+	eb, err := newExperimentBuilder(s, name)
+	if err != nil {
+		return nil, err
+	}
+	return eb, nil
 }
 
 // NewProbeServicesClient creates a new client for talking with the
