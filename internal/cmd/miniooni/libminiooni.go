@@ -421,7 +421,7 @@ func ooniRunMain(ctx context.Context,
 	for _, URL := range currentOptions.Inputs {
 		r := oonirun.NewLinkRunner(cfg, URL)
 		if err := r.Run(ctx); err != nil {
-			logger.Warnf("oonirun: Measure failed: %s", err.Error())
+			logger.Warnf("oonirun: running link failed: %s", err.Error())
 			continue
 		}
 	}
