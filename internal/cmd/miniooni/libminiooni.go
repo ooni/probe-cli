@@ -45,6 +45,7 @@ type Options struct {
 	ProbeServicesURL string
 	Proxy            string
 	Random           bool
+	RepeatEvery      int64
 	ReportFile       string
 	TorArgs          []string
 	TorBinary        string
@@ -103,6 +104,10 @@ func init() {
 	)
 	getopt.FlagLong(
 		&globalOptions.Random, "random", 0, "Randomize inputs",
+	)
+	getopt.FlagLong(
+		&globalOptions.RepeatEvery, "repeat-every", 0,
+		"Repeat the measurement every INTERVAL number of seconds", "INTERVAL",
 	)
 	getopt.FlagLong(
 		&globalOptions.ReportFile, "reportfile", 'o',
@@ -283,7 +288,20 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		currentOptions.ReportFile = "report.jsonl"
 	}
 	log.Log = logger
+	for {
+		mainSingleIteration(logger, experimentName, currentOptions)
+		if currentOptions.RepeatEvery <= 0 {
+			break
+		}
+		log.Infof("waiting %ds before repeating the measurement", currentOptions.RepeatEvery)
+		log.Info("use Ctrl-C to interrupt miniooni")
+		time.Sleep(time.Duration(currentOptions.RepeatEvery) * time.Second)
+	}
+}
 
+// mainSingleIteration runs a single iteration. There may be multiple iterations
+// when the user specifies the --repeat-every command line flag.
+func mainSingleIteration(logger model.Logger, experimentName string, currentOptions Options) {
 	extraOptions := mustMakeMapAny(currentOptions.ExtraOptions)
 	annotations := mustMakeMapString(currentOptions.Annotations)
 
