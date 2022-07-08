@@ -337,7 +337,7 @@ func (s *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bool)
 }
 
 // DefaultHTTPClient returns the session's default HTTP client.
-func (s *Session) DefaultHTTPClient() *http.Client {
+func (s *Session) DefaultHTTPClient() model.HTTPClient {
 	return &http.Client{Transport: s.httpDefaultTransport}
 }
 
@@ -390,8 +390,12 @@ var ErrAlreadyUsingProxy = errors.New(
 // NewExperimentBuilder returns a new experiment builder
 // for the experiment with the given name, or an error if
 // there's no such experiment with the given name
-func (s *Session) NewExperimentBuilder(name string) (*ExperimentBuilder, error) {
-	return newExperimentBuilder(s, name)
+func (s *Session) NewExperimentBuilder(name string) (ExperimentBuilder, error) {
+	eb, err := newExperimentBuilder(s, name)
+	if err != nil {
+		return nil, err
+	}
+	return eb, nil
 }
 
 // NewProbeServicesClient creates a new client for talking with the

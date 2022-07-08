@@ -1,4 +1,8 @@
-package webconnectivity
+package main
+
+//
+// HTTP measurements
+//
 
 import (
 	"context"
@@ -13,26 +17,37 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
-// CtrlHTTPResponse is the result of the HTTP check performed by
+// ctrlHTTPResponse is the result of the HTTP check performed by
 // the Web Connectivity test helper.
-type CtrlHTTPResponse = webconnectivity.ControlHTTPRequestResult
+type ctrlHTTPResponse = webconnectivity.ControlHTTPRequestResult
 
-// HTTPConfig configures the HTTP check.
-type HTTPConfig struct {
-	Client            model.HTTPClient
-	Headers           map[string][]string
+// httpConfig configures the HTTP check.
+type httpConfig struct {
+	// Headers is OPTIONAL and contains the request headers we should set.
+	Headers map[string][]string
+
+	// MaxAcceptableBody is MANDATORY and specifies the maximum acceptable body size.
 	MaxAcceptableBody int64
-	Out               chan CtrlHTTPResponse
-	URL               string
-	Wg                *sync.WaitGroup
+
+	// NewClient is the MANDATORY factory to create a new client.
+	NewClient func() model.HTTPClient
+
+	// Out is the MANDATORY channel where we'll post results.
+	Out chan ctrlHTTPResponse
+
+	// URL is the MANDATORY URL to measure.
+	URL string
+
+	// Wg is MANDATORY and allows synchronizing with parent.
+	Wg *sync.WaitGroup
 }
 
-// HTTPDo performs the HTTP check.
-func HTTPDo(ctx context.Context, config *HTTPConfig) {
+// httpDo performs the HTTP check.
+func httpDo(ctx context.Context, config *httpConfig) {
 	defer config.Wg.Done()
 	req, err := http.NewRequestWithContext(ctx, "GET", config.URL, nil)
 	if err != nil {
-		config.Out <- CtrlHTTPResponse{ // fix: emit -1 like the old test helper does
+		config.Out <- ctrlHTTPResponse{ // fix: emit -1 like the old test helper does
 			BodyLength: -1,
 			Failure:    httpMapFailure(err),
 			StatusCode: -1,
@@ -50,9 +65,11 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) {
 			}
 		}
 	}
-	resp, err := config.Client.Do(req)
+	clnt := config.NewClient()
+	defer clnt.CloseIdleConnections()
+	resp, err := clnt.Do(req)
 	if err != nil {
-		config.Out <- CtrlHTTPResponse{ // fix: emit -1 like old test helper does
+		config.Out <- ctrlHTTPResponse{ // fix: emit -1 like old test helper does
 			BodyLength: -1,
 			Failure:    httpMapFailure(err),
 			StatusCode: -1,
@@ -67,7 +84,7 @@ func HTTPDo(ctx context.Context, config *HTTPConfig) {
 	}
 	reader := &io.LimitedReader{R: resp.Body, N: config.MaxAcceptableBody}
 	data, err := netxlite.ReadAllContext(ctx, reader)
-	config.Out <- CtrlHTTPResponse{
+	config.Out <- ctrlHTTPResponse{
 		BodyLength: int64(len(data)),
 		Failure:    httpMapFailure(err),
 		StatusCode: int64(resp.StatusCode),

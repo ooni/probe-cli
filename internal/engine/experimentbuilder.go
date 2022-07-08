@@ -1,10 +1,13 @@
 package engine
 
+//
+// ExperimentBuilder definition and implementation
+//
+
 import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strconv"
 
 	"github.com/iancoleman/strcase"
@@ -43,42 +46,107 @@ const (
 	InputOrStaticDefault = InputPolicy("or_static_default")
 )
 
-// ExperimentBuilder is an experiment builder.
-type ExperimentBuilder struct {
-	build         func(interface{}) *Experiment
-	callbacks     model.ExperimentCallbacks
-	config        interface{}
-	inputPolicy   InputPolicy
+// ExperimentBuilder builds an experiment.
+type ExperimentBuilder interface {
+	// Interruptible tells you whether this is an interruptible experiment. This kind
+	// of experiments (e.g. ndt7) may be interrupted mid way.
+	Interruptible() bool
+
+	// InputPolicy returns the experiment input policy.
+	InputPolicy() InputPolicy
+
+	// Options returns information about the experiment's options.
+	Options() (map[string]OptionInfo, error)
+
+	// SetOptionAny sets an option whose value is an any value. We will use reasonable
+	// heuristics to convert the any value to the proper type of the field whose name is
+	// contained by the key variable. If we cannot convert the provided any value to
+	// the proper type, then this function returns an error.
+	SetOptionAny(key string, value any) error
+
+	// SetOptionsAny sets options from a map[string]any. See the documentation of
+	// the SetOptionAny method for more information.
+	SetOptionsAny(options map[string]any) error
+
+	// SetCallbacks sets the experiment's interactive callbacks.
+	SetCallbacks(callbacks model.ExperimentCallbacks)
+
+	// NewExperiment creates the experiment instance.
+	NewExperiment() Experiment
+}
+
+// experimentBuilder implements ExperimentBuilder.
+type experimentBuilder struct {
+	// build is the constructor that build an experiment with the given config.
+	build func(config interface{}) *experiment
+
+	// callbacks contains callbacks for the new experiment.
+	callbacks model.ExperimentCallbacks
+
+	// config contains the experiment's config.
+	config interface{}
+
+	// inputPolicy contains the experiment's InputPolicy.
+	inputPolicy InputPolicy
+
+	// interruptible indicates whether the experiment is interruptible.
 	interruptible bool
 }
 
-// Interruptible tells you whether this is an interruptible experiment. This kind
-// of experiments (e.g. ndt7) may be interrupted mid way.
-func (b *ExperimentBuilder) Interruptible() bool {
+// Interruptible implements ExperimentBuilder.Interruptible.
+func (b *experimentBuilder) Interruptible() bool {
 	return b.interruptible
 }
 
-// InputPolicy returns the experiment input policy
-func (b *ExperimentBuilder) InputPolicy() InputPolicy {
+// InputPolicy implements ExperimentBuilder.InputPolicy.
+func (b *experimentBuilder) InputPolicy() InputPolicy {
 	return b.inputPolicy
 }
 
-// OptionInfo contains info about an option
+// OptionInfo contains info about an option.
 type OptionInfo struct {
-	Doc  string
+	// Doc contains the documentation.
+	Doc string
+
+	// Type contains the type.
 	Type string
 }
 
-// Options returns info about all options
-func (b *ExperimentBuilder) Options() (map[string]OptionInfo, error) {
+var (
+	// ErrConfigIsNotAStructPointer indicates we expected a pointer to struct.
+	ErrConfigIsNotAStructPointer = errors.New("config is not a struct pointer")
+
+	// ErrNoSuchField indicates there's no field with the given name.
+	ErrNoSuchField = errors.New("no such field")
+
+	// ErrCannotSetIntegerOption means SetOptionAny couldn't set an integer option.
+	ErrCannotSetIntegerOption = errors.New("cannot set integer option")
+
+	// ErrInvalidStringRepresentationOfBool indicates the string you passed
+	// to SetOptionaAny is not a valid string representation of a bool.
+	ErrInvalidStringRepresentationOfBool = errors.New("invalid string representation of bool")
+
+	// ErrCannotSetBoolOption means SetOptionAny couldn't set a bool option.
+	ErrCannotSetBoolOption = errors.New("cannot set bool option")
+
+	// ErrCannotSetStringOption means SetOptionAny couldn't set a string option.
+	ErrCannotSetStringOption = errors.New("cannot set string option")
+
+	// ErrUnsupportedOptionType means we don't support the type passed to
+	// the SetOptionAny method as an opaque any type.
+	ErrUnsupportedOptionType = errors.New("unsupported option type")
+)
+
+// Options implements ExperimentBuilder.Options.
+func (b *experimentBuilder) Options() (map[string]OptionInfo, error) {
 	result := make(map[string]OptionInfo)
 	ptrinfo := reflect.ValueOf(b.config)
 	if ptrinfo.Kind() != reflect.Ptr {
-		return nil, errors.New("config is not a pointer")
+		return nil, ErrConfigIsNotAStructPointer
 	}
 	structinfo := ptrinfo.Elem().Type()
 	if structinfo.Kind() != reflect.Struct {
-		return nil, errors.New("config is not a struct")
+		return nil, ErrConfigIsNotAStructPointer
 	}
 	for i := 0; i < structinfo.NumField(); i++ {
 		field := structinfo.Field(i)
@@ -90,97 +158,117 @@ func (b *ExperimentBuilder) Options() (map[string]OptionInfo, error) {
 	return result, nil
 }
 
-// SetOptionBool sets a bool option
-func (b *ExperimentBuilder) SetOptionBool(key string, value bool) error {
-	field, err := fieldbyname(b.config, key)
+// setOptionBool sets a bool option.
+func (b *experimentBuilder) setOptionBool(field reflect.Value, value any) error {
+	switch v := value.(type) {
+	case bool:
+		field.SetBool(v)
+		return nil
+	case string:
+		if v != "true" && v != "false" {
+			return fmt.Errorf("%w: %s", ErrInvalidStringRepresentationOfBool, v)
+		}
+		field.SetBool(v == "true")
+		return nil
+	default:
+		return fmt.Errorf("%w from a value of type %T", ErrCannotSetBoolOption, value)
+	}
+}
+
+// setOptionInt sets an int option
+func (b *experimentBuilder) setOptionInt(field reflect.Value, value any) error {
+	switch v := value.(type) {
+	case int64:
+		field.SetInt(v)
+		return nil
+	case int32:
+		field.SetInt(int64(v))
+		return nil
+	case int16:
+		field.SetInt(int64(v))
+		return nil
+	case int8:
+		field.SetInt(int64(v))
+		return nil
+	case int:
+		field.SetInt(int64(v))
+		return nil
+	case string:
+		number, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return fmt.Errorf("%w: %s", ErrCannotSetIntegerOption, err.Error())
+		}
+		field.SetInt(number)
+		return nil
+	default:
+		return fmt.Errorf("%w from a value of type %T", ErrCannotSetIntegerOption, value)
+	}
+}
+
+// setOptionString sets a string option
+func (b *experimentBuilder) setOptionString(field reflect.Value, value any) error {
+	switch v := value.(type) {
+	case string:
+		field.SetString(v)
+		return nil
+	default:
+		return fmt.Errorf("%w from a value of type %T", ErrCannotSetStringOption, value)
+	}
+}
+
+// SetOptionAny implements ExperimentBuilder.SetOptionAny.
+func (b *experimentBuilder) SetOptionAny(key string, value any) error {
+	field, err := b.fieldbyname(b.config, key)
 	if err != nil {
 		return err
 	}
-	if field.Kind() != reflect.Bool {
-		return errors.New("field is not a bool")
+	switch field.Kind() {
+	case reflect.Int64:
+		return b.setOptionInt(field, value)
+	case reflect.Bool:
+		return b.setOptionBool(field, value)
+	case reflect.String:
+		return b.setOptionString(field, value)
+	default:
+		return fmt.Errorf("%w: %T", ErrUnsupportedOptionType, value)
 	}
-	field.SetBool(value)
-	return nil
 }
 
-// SetOptionInt sets an int option
-func (b *ExperimentBuilder) SetOptionInt(key string, value int64) error {
-	field, err := fieldbyname(b.config, key)
-	if err != nil {
-		return err
-	}
-	if field.Kind() != reflect.Int64 {
-		return errors.New("field is not an int64")
-	}
-	field.SetInt(value)
-	return nil
-}
-
-// SetOptionString sets a string option
-func (b *ExperimentBuilder) SetOptionString(key, value string) error {
-	field, err := fieldbyname(b.config, key)
-	if err != nil {
-		return err
-	}
-	if field.Kind() != reflect.String {
-		return errors.New("field is not a string")
-	}
-	field.SetString(value)
-	return nil
-}
-
-var intregexp = regexp.MustCompile("^[0-9]+$")
-
-// SetOptionGuessType sets an option whose type depends on the
-// option value. If the value is `"true"` or `"false"` we
-// assume the option is boolean. If the value is numeric, then we
-// set an integer option. Otherwise we set a string option.
-func (b *ExperimentBuilder) SetOptionGuessType(key, value string) error {
-	if value == "true" || value == "false" {
-		return b.SetOptionBool(key, value == "true")
-	}
-	if !intregexp.MatchString(value) {
-		return b.SetOptionString(key, value)
-	}
-	number, _ := strconv.ParseInt(value, 10, 64)
-	return b.SetOptionInt(key, number)
-}
-
-// SetOptionsGuessType calls the SetOptionGuessType method for every
-// key, value pair contained by the opts input map.
-func (b *ExperimentBuilder) SetOptionsGuessType(opts map[string]string) error {
-	for k, v := range opts {
-		if err := b.SetOptionGuessType(k, v); err != nil {
+// SetOptionsAny implements ExperimentBuilder.SetOptionsAny.
+func (b *experimentBuilder) SetOptionsAny(options map[string]any) error {
+	for key, value := range options {
+		if err := b.SetOptionAny(key, value); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// SetCallbacks sets the interactive callbacks
-func (b *ExperimentBuilder) SetCallbacks(callbacks model.ExperimentCallbacks) {
+// SetCallbacks implements ExperimentBuilder.SetCallbacks.
+func (b *experimentBuilder) SetCallbacks(callbacks model.ExperimentCallbacks) {
 	b.callbacks = callbacks
 }
 
-func fieldbyname(v interface{}, key string) (reflect.Value, error) {
+// fieldbyname return v's field whose name is equal to the given key.
+func (b *experimentBuilder) fieldbyname(v interface{}, key string) (reflect.Value, error) {
 	// See https://stackoverflow.com/a/6396678/4354461
 	ptrinfo := reflect.ValueOf(v)
 	if ptrinfo.Kind() != reflect.Ptr {
-		return reflect.Value{}, errors.New("value is not a pointer")
+		return reflect.Value{}, fmt.Errorf("%w but a %T", ErrConfigIsNotAStructPointer, v)
 	}
 	structinfo := ptrinfo.Elem()
 	if structinfo.Kind() != reflect.Struct {
-		return reflect.Value{}, errors.New("value is not a pointer to struct")
+		return reflect.Value{}, fmt.Errorf("%w but a %T", ErrConfigIsNotAStructPointer, v)
 	}
 	field := structinfo.FieldByName(key)
 	if !field.IsValid() || !field.CanSet() {
-		return reflect.Value{}, errors.New("no such field")
+		return reflect.Value{}, fmt.Errorf("%w: %s", ErrNoSuchField, key)
 	}
 	return field, nil
 }
 
 // NewExperiment creates the experiment
-func (b *ExperimentBuilder) NewExperiment() *Experiment {
+func (b *experimentBuilder) NewExperiment() Experiment {
 	experiment := b.build(b.config)
 	experiment.callbacks = b.callbacks
 	return experiment
@@ -205,7 +293,8 @@ func canonicalizeExperimentName(name string) string {
 	return name
 }
 
-func newExperimentBuilder(session *Session, name string) (*ExperimentBuilder, error) {
+// newExperimentBuilder creates a new experimentBuilder instance.
+func newExperimentBuilder(session *Session, name string) (*experimentBuilder, error) {
 	factory := experimentsByName[canonicalizeExperimentName(name)]
 	if factory == nil {
 		return nil, fmt.Errorf("no such experiment: %s", name)

@@ -1,6 +1,7 @@
 package nettests
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -122,7 +123,7 @@ func (c *Controller) SetNettestIndex(i, n int) {
 //
 // This function will continue to run in most cases but will
 // immediately halt if something's wrong with the file system.
-func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) error {
+func (c *Controller) Run(builder engine.ExperimentBuilder, inputs []string) error {
 	// This will configure the controller as handler for the callbacks
 	// called by ooni/probe-engine/experiment.Experiment.
 	builder.SetCallbacks(model.ExperimentCallbacks(c))
@@ -143,7 +144,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 	log.Debug(color.RedString("status.started"))
 
 	if c.Probe.Config().Sharing.UploadResults {
-		if err := exp.OpenReport(); err != nil {
+		if err := exp.OpenReportContext(context.Background()); err != nil {
 			log.Debugf(
 				"%s: %s", color.RedString("failure.report_create"), err.Error(),
 			)
@@ -197,7 +198,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 		if input != "" {
 			c.OnProgress(0, fmt.Sprintf("processing input: %s", input))
 		}
-		measurement, err := exp.Measure(input)
+		measurement, err := exp.MeasureWithContext(context.Background(), input)
 		if err != nil {
 			log.WithError(err).Debug(color.RedString("failure.measurement"))
 			if err := c.msmts[idx64].Failed(c.Probe.DB(), err.Error()); err != nil {
@@ -218,7 +219,7 @@ func (c *Controller) Run(builder *engine.ExperimentBuilder, inputs []string) err
 			// Implementation note: SubmitMeasurement will fail here if we did fail
 			// to open the report but we still want to continue. There will be a
 			// bit of a spew in the logs, perhaps, but stopping seems less efficient.
-			if err := exp.SubmitAndUpdateMeasurement(measurement); err != nil {
+			if err := exp.SubmitAndUpdateMeasurementContext(context.Background(), measurement); err != nil {
 				log.Debug(color.RedString("failure.measurement_submission"))
 				if err := c.msmts[idx64].UploadFailed(c.Probe.DB(), err.Error()); err != nil {
 					return errors.Wrap(err, "failed to mark upload as failed")
