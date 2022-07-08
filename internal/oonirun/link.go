@@ -58,7 +58,7 @@ type linkRunner struct {
 	url    string
 }
 
-// Run implements LinkRunner.Rune.
+// Run implements LinkRunner.Run.
 func (lr *linkRunner) Run(ctx context.Context) error {
 	return lr.f(ctx, lr.config, lr.url)
 }
