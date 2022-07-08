@@ -216,10 +216,7 @@ func (b *experimentBuilder) setOptionString(field reflect.Value, value any) erro
 	}
 }
 
-// SetOptionAny sets an option whose value is an any value. We will use reasonable
-// heuristics to convert the any value to the proper type of the field whose name is
-// contained by the key variable. If we cannot convert the provided any value to
-// the proper type, then this function returns an error.
+// SetOptionAny implements ExperimentBuilder.SetOptionAny.
 func (b *experimentBuilder) SetOptionAny(key string, value any) error {
 	field, err := b.fieldbyname(b.config, key)
 	if err != nil {
