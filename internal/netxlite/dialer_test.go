@@ -13,6 +13,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestNewDialerWithStdlibResolver(t *testing.T) {
@@ -22,7 +23,7 @@ func TestNewDialerWithStdlibResolver(t *testing.T) {
 		t.Fatal("invalid logger")
 	}
 	// typecheck the resolver
-	reso := logger.Dialer.(*dialerResolver)
+	reso := logger.Dialer.(*dialerResolverWithTracing)
 	typecheckForSystemResolver(t, reso.Resolver, model.DiscardLogger)
 	// typecheck the dialer
 	logger = reso.Dialer.(*dialerLogger)
@@ -64,7 +65,7 @@ func TestNewDialer(t *testing.T) {
 		if logger.DebugLogger != log.Log {
 			t.Fatal("invalid logger")
 		}
-		reso := logger.Dialer.(*dialerResolver)
+		reso := logger.Dialer.(*dialerResolverWithTracing)
 		if _, okay := reso.Resolver.(*NullResolver); !okay {
 			t.Fatal("invalid Resolver type")
 		}
@@ -136,10 +137,10 @@ func TestDialerSystem(t *testing.T) {
 	})
 }
 
-func TestDialerResolver(t *testing.T) {
+func TestDialerResolverWithTracing(t *testing.T) {
 	t.Run("DialContext", func(t *testing.T) {
 		t.Run("fails without a port", func(t *testing.T) {
-			d := &dialerResolver{
+			d := &dialerResolverWithTracing{
 				Dialer:   &DialerSystem{},
 				Resolver: NewUnwrappedStdlibResolver(),
 			}
@@ -154,7 +155,7 @@ func TestDialerResolver(t *testing.T) {
 		})
 
 		t.Run("handles dialing error correctly for single IP address", func(t *testing.T) {
-			d := &dialerResolver{
+			d := &dialerResolverWithTracing{
 				Dialer: &mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 						return nil, io.EOF
@@ -166,13 +167,26 @@ func TestDialerResolver(t *testing.T) {
 			if !errors.Is(err, io.EOF) {
 				t.Fatal("not the error we expected")
 			}
+			var errWrapper *ErrWrapper
+			if !errors.As(err, &errWrapper) {
+				t.Fatal("the error has not been wrapped")
+			}
+			if errWrapper.Failure != FailureEOFError {
+				t.Fatal("invalid wrapped error's failure")
+			}
+			if errWrapper.Operation != ConnectOperation {
+				t.Fatal("invalid wrapped error's operation")
+			}
+			if !errors.Is(errWrapper.WrappedErr, io.EOF) {
+				t.Fatal("invalid wrapped error's underlying error")
+			}
 			if conn != nil {
 				t.Fatal("expected nil conn")
 			}
 		})
 
 		t.Run("handles dialing error correctly for many IP addresses", func(t *testing.T) {
-			d := &dialerResolver{
+			d := &dialerResolverWithTracing{
 				Dialer: &mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 						return nil, io.EOF
@@ -188,6 +202,19 @@ func TestDialerResolver(t *testing.T) {
 			if !errors.Is(err, io.EOF) {
 				t.Fatal("not the error we expected")
 			}
+			var errWrapper *ErrWrapper
+			if !errors.As(err, &errWrapper) {
+				t.Fatal("the error has not been wrapped")
+			}
+			if errWrapper.Failure != FailureEOFError {
+				t.Fatal("invalid wrapped error's failure")
+			}
+			if errWrapper.Operation != ConnectOperation {
+				t.Fatal("invalid wrapped error's operation")
+			}
+			if !errors.Is(errWrapper.WrappedErr, io.EOF) {
+				t.Fatal("invalid wrapped error's underlying error")
+			}
 			if conn != nil {
 				t.Fatal("expected nil conn")
 			}
@@ -199,7 +226,7 @@ func TestDialerResolver(t *testing.T) {
 					return nil
 				},
 			}
-			d := &dialerResolver{
+			d := &dialerResolverWithTracing{
 				Dialer: &mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 						return expectedConn, nil
@@ -215,7 +242,10 @@ func TestDialerResolver(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if conn != expectedConn {
+			// Ensure that the dialer returns a connection that is already wrapping errors,
+			// which is a new behavior since https://github.com/ooni/probe-cli/pull/815
+			errWrapperConn := conn.(*dialerErrWrapperConn)
+			if errWrapperConn.Conn != expectedConn {
 				t.Fatal("unexpected conn")
 			}
 			conn.Close()
@@ -225,7 +255,7 @@ func TestDialerResolver(t *testing.T) {
 			// This test is fundamental to the following
 			// TODO(https://github.com/ooni/probe/issues/1779)
 			mu := &sync.Mutex{}
-			d := &dialerResolver{
+			d := &dialerResolverWithTracing{
 				Dialer: &mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 						// It should not happen to have parallel dials with
@@ -257,7 +287,7 @@ func TestDialerResolver(t *testing.T) {
 			// TODO(https://github.com/ooni/probe/issues/1779)
 			mu := &sync.Mutex{}
 			var attempts []string
-			d := &dialerResolver{
+			d := &dialerResolverWithTracing{
 				Dialer: &mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 						// It should not happen to have parallel dials with
@@ -298,14 +328,14 @@ func TestDialerResolver(t *testing.T) {
 			mu := &sync.Mutex{}
 			errorsList := []error{
 				errors.New("a mocked error"),
-				newErrWrapper(
-					classifyGenericError,
+				NewErrWrapper(
+					ClassifyGenericError,
 					CloseOperation,
 					io.EOF,
 				),
 			}
 			var errorIdx int
-			d := &dialerResolver{
+			d := &dialerResolverWithTracing{
 				Dialer: &mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 						// It should not happen to have parallel dials with
@@ -337,17 +367,18 @@ func TestDialerResolver(t *testing.T) {
 		t.Run("though ignores the unknown failures", func(t *testing.T) {
 			// This test is fundamental to the following
 			// TODO(https://github.com/ooni/probe/issues/1779)
+			expectedErr := errors.New("a mocked error")
 			mu := &sync.Mutex{}
 			errorsList := []error{
-				errors.New("a mocked error"),
-				newErrWrapper(
-					classifyGenericError,
+				expectedErr,
+				NewErrWrapper(
+					ClassifyGenericError,
 					CloseOperation,
-					errors.New("antani"),
+					errors.New("antani"), // this is an unknown failure and we should not return it
 				),
 			}
 			var errorIdx int
-			d := &dialerResolver{
+			d := &dialerResolverWithTracing{
 				Dialer: &mocks.Dialer{
 					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
 						// It should not happen to have parallel dials with
@@ -368,18 +399,95 @@ func TestDialerResolver(t *testing.T) {
 				},
 			}
 			conn, err := d.DialContext(context.Background(), "tcp", "dot.dns:853")
-			if err == nil || err.Error() != "a mocked error" {
+			if !errors.Is(err, expectedErr) {
 				t.Fatal("unexpected err", err)
+			}
+			var errWrapper *ErrWrapper
+			if !errors.As(err, &errWrapper) {
+				t.Fatal("error has not been wrapped")
+			}
+			if errWrapper.Failure != "unknown_failure: a mocked error" {
+				t.Fatal("unexpected wrapped error's failure")
+			}
+			if errWrapper.Operation != ConnectOperation {
+				t.Fatal("unexpected wrapped error's operation")
+			}
+			if !errors.Is(errWrapper.WrappedErr, expectedErr) {
+				t.Fatal("unexpected wrapped error's underlying error")
 			}
 			if conn != nil {
 				t.Fatal("expected nil conn")
+			}
+		})
+
+		t.Run("uses a context-injected custom trace", func(t *testing.T) {
+			var (
+				called       bool
+				domainOK     bool
+				networkOK    bool
+				remoteAddrOK bool
+				startTimeOK  bool
+				finishTimeOK bool
+				wrappedErr   bool
+			)
+			zeroTime := time.Now()
+			deterministicTime := testingx.NewTimeDeterministic(zeroTime)
+			tx := &mocks.Trace{
+				MockTimeNow: deterministicTime.Now,
+				MockOnConnectDone: func(started time.Time, network, domain, remoteAddr string, err error, finished time.Time) {
+					var ew *ErrWrapper
+					called = true
+					domainOK = (domain == "1.1.1.1")
+					networkOK = (network == "tcp")
+					remoteAddrOK = (remoteAddr == "1.1.1.1:853")
+					startTimeOK = (started.Sub(zeroTime) == 0)
+					finishTimeOK = (finished.Sub(zeroTime) == time.Second)
+					wrappedErr = errors.As(err, &ew) && ew.Failure == FailureEOFError
+				},
+			}
+			ctx := ContextWithTrace(context.Background(), tx)
+			d := &dialerResolverWithTracing{
+				Dialer: &mocks.Dialer{
+					MockDialContext: func(ctx context.Context, network string, address string) (net.Conn, error) {
+						return nil, io.EOF
+					},
+				},
+				Resolver: &NullResolver{},
+			}
+			conn, err := d.DialContext(ctx, "tcp", "1.1.1.1:853")
+			if !errors.Is(err, io.EOF) {
+				t.Fatal("not the error we expected")
+			}
+			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
+			if !called {
+				t.Fatal("not called")
+			}
+			if !domainOK {
+				t.Fatal("domain was not okay")
+			}
+			if !networkOK {
+				t.Fatal("network was not okay")
+			}
+			if !remoteAddrOK {
+				t.Fatal("remoteAddr was not okay")
+			}
+			if !startTimeOK {
+				t.Fatal("start time was not okay")
+			}
+			if !finishTimeOK {
+				t.Fatal("finish time was not okay")
+			}
+			if !wrappedErr {
+				t.Fatal("not wrapped")
 			}
 		})
 	})
 
 	t.Run("lookupHost", func(t *testing.T) {
 		t.Run("handles addresses correctly", func(t *testing.T) {
-			dialer := &dialerResolver{
+			dialer := &dialerResolverWithTracing{
 				Dialer:   &DialerSystem{},
 				Resolver: &NullResolver{},
 			}
@@ -393,7 +501,7 @@ func TestDialerResolver(t *testing.T) {
 		})
 
 		t.Run("fails correctly on lookup error", func(t *testing.T) {
-			dialer := &dialerResolver{
+			dialer := &dialerResolverWithTracing{
 				Dialer:   &DialerSystem{},
 				Resolver: &NullResolver{},
 			}
@@ -413,7 +521,7 @@ func TestDialerResolver(t *testing.T) {
 			calledDialer   bool
 			calledResolver bool
 		)
-		d := &dialerResolver{
+		d := &dialerResolverWithTracing{
 			Dialer: &mocks.Dialer{
 				MockCloseIdleConnections: func() {
 					calledDialer = true

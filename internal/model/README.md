@@ -1,4 +1,4 @@
-# Package github.com/ooni/probe-engine/model
+# Package github.com/ooni/probe-cli/internal/model
 
 Shared data structures and interfaces. We include in this
 package the most fundamental types. Use `go doc` to get

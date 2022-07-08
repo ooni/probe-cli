@@ -71,7 +71,7 @@ func (e *ErrWrapper) MarshalJSON() ([]byte, error) {
 // https://github.com/ooni/spec/blob/master/data-formats/df-007-errors.md.
 type classifier func(err error) string
 
-// newErrWrapper creates a new ErrWrapper using the given
+// NewErrWrapper creates a new ErrWrapper using the given
 // classifier, operation name, and underlying error.
 //
 // This function panics if classifier is nil, or operation
@@ -81,7 +81,7 @@ type classifier func(err error) string
 // error wrapper will use the same classification string and
 // will determine whether to keep the major operation as documented
 // in the ErrWrapper.Operation documentation.
-func newErrWrapper(c classifier, op string, err error) *ErrWrapper {
+func NewErrWrapper(c classifier, op string, err error) *ErrWrapper {
 	var wrapper *ErrWrapper
 	if errors.As(err, &wrapper) {
 		return &ErrWrapper{
@@ -106,6 +106,19 @@ func newErrWrapper(c classifier, op string, err error) *ErrWrapper {
 	}
 }
 
+// TODO(https://github.com/ooni/probe/issues/2163): we can really
+// simplify the error wrapping situation here by just dropping
+// NewErrWrapper and always using MaybeNewErrWrapper.
+
+// MaybeNewErrWrapper is like NewErrWrapper except that this
+// function won't panic if passed a nil error.
+func MaybeNewErrWrapper(c classifier, op string, err error) error {
+	if err != nil {
+		return NewErrWrapper(c, op, err)
+	}
+	return nil
+}
+
 // NewTopLevelGenericErrWrapper wraps an error occurring at top
 // level using a generic classifier as classifier. This is the
 // function you should call when you suspect a given error hasn't
@@ -115,7 +128,7 @@ func newErrWrapper(c classifier, op string, err error) *ErrWrapper {
 // error wrapper will use the same classification string and
 // failed operation of the original error.
 func NewTopLevelGenericErrWrapper(err error) *ErrWrapper {
-	return newErrWrapper(classifyGenericError, TopLevelOperation, err)
+	return NewErrWrapper(ClassifyGenericError, TopLevelOperation, err)
 }
 
 func classifyOperation(ew *ErrWrapper, operation string) string {

@@ -387,7 +387,7 @@ var _ model.Resolver = &resolverErrWrapper{}
 func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	if err != nil {
-		return nil, newErrWrapper(classifyResolverError, ResolveOperation, err)
+		return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, err)
 	}
 	return addrs, nil
 }
@@ -396,7 +396,7 @@ func (r *resolverErrWrapper) LookupHTTPS(
 	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	out, err := r.Resolver.LookupHTTPS(ctx, domain)
 	if err != nil {
-		return nil, newErrWrapper(classifyResolverError, ResolveOperation, err)
+		return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, err)
 	}
 	return out, nil
 }
@@ -417,7 +417,7 @@ func (r *resolverErrWrapper) LookupNS(
 	ctx context.Context, domain string) ([]*net.NS, error) {
 	out, err := r.Resolver.LookupNS(ctx, domain)
 	if err != nil {
-		return nil, newErrWrapper(classifyResolverError, ResolveOperation, err)
+		return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, err)
 	}
 	return out, nil
 }

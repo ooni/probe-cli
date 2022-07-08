@@ -16,7 +16,10 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestVersionString(t *testing.T) {
@@ -123,8 +126,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 	if logger.DebugLogger != log.Log {
 		t.Fatal("invalid logger")
 	}
-	errWrapper := logger.TLSHandshaker.(*tlsHandshakerErrWrapper)
-	configurable := errWrapper.TLSHandshaker.(*tlsHandshakerConfigurable)
+	configurable := logger.TLSHandshaker.(*tlsHandshakerConfigurable)
 	if configurable.NewConn != nil {
 		t.Fatal("expected nil NewConn")
 	}
@@ -132,7 +134,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 
 func TestTLSHandshakerConfigurable(t *testing.T) {
 	t.Run("Handshake", func(t *testing.T) {
-		t.Run("with error", func(t *testing.T) {
+		t.Run("with handshake I/O error", func(t *testing.T) {
 			var times []time.Time
 			h := &tlsHandshakerConfigurable{}
 			tcpConn := &mocks.Conn{
@@ -143,13 +145,36 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 					times = append(times, t)
 					return nil
 				},
+				MockRemoteAddr: func() net.Addr {
+					return &mocks.Addr{
+						MockString: func() string {
+							return "1.1.1.1:443"
+						},
+						MockNetwork: func() string {
+							return "tcp"
+						},
+					}
+				},
 			}
 			ctx := context.Background()
-			conn, _, err := h.Handshake(ctx, tcpConn, &tls.Config{
+			conn, state, err := h.Handshake(ctx, tcpConn, &tls.Config{
 				ServerName: "x.org",
 			})
-			if err != io.EOF {
+			if !errors.Is(err, io.EOF) {
 				t.Fatal("not the error that we expected")
+			}
+			var errWrapper *ErrWrapper
+			if !errors.As(err, &errWrapper) {
+				t.Fatal("the error has not been wrapped")
+			}
+			if errWrapper.Failure != FailureEOFError {
+				t.Fatal("invalid wrapped error's failure")
+			}
+			if errWrapper.Operation != TLSHandshakeOperation {
+				t.Fatal("invalid wrapped error's operation")
+			}
+			if !errors.Is(errWrapper.WrappedErr, io.EOF) {
+				t.Fatal("invalid wrapped error's underlying error")
 			}
 			if conn != nil {
 				t.Fatal("expected nil con here")
@@ -162,6 +187,9 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 			}
 			if !times[1].IsZero() {
 				t.Fatal("did not clear timeout on exit")
+			}
+			if !reflect.ValueOf(state).IsZero() {
+				t.Fatal("the returned connection state is not a zero value")
 			}
 		})
 
@@ -217,6 +245,16 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 				MockSetDeadline: func(t time.Time) error {
 					return nil
 				},
+				MockRemoteAddr: func() net.Addr {
+					return &mocks.Addr{
+						MockString: func() string {
+							return "1.1.1.1:443"
+						},
+						MockNetwork: func() string {
+							return "tcp"
+						},
+					}
+				},
 			}
 			tlsConn, connState, err := handshaker.Handshake(ctx, conn, config)
 			if !errors.Is(err, expected) {
@@ -236,7 +274,7 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 			}
 		})
 
-		t.Run("we cannot create a new conn", func(t *testing.T) {
+		t.Run("h.newConn fails", func(t *testing.T) {
 			expected := errors.New("mocked error")
 			handshaker := &tlsHandshakerConfigurable{
 				NewConn: func(conn net.Conn, config *tls.Config) (TLSConn, error) {
@@ -259,6 +297,222 @@ func TestTLSHandshakerConfigurable(t *testing.T) {
 			}
 			if tlsConn != nil {
 				t.Fatal("expected nil tlsConn here")
+			}
+		})
+
+		t.Run("uses a context-injected custom trace (success case)", func(t *testing.T) {
+			var (
+				expectedSNI                 = "dns.google"
+				goodStartStartTime          bool
+				goodStartInsecureSkipVerify bool
+				goodDoneInsecureSkipVerify  bool
+				goodStartServerName         bool
+				goodDoneServerName          bool
+				goodDoneStartTime           bool
+				goodDoneDoneTime            bool
+				goodStartRemoteAddr         bool
+				goodDoneRemoteAddr          bool
+				goodDoneError               bool
+				goodConnectionState         bool
+				startCalled                 bool
+				doneCalled                  bool
+			)
+			server := filtering.NewTLSServer(filtering.TLSActionBlockText)
+			defer server.Close()
+			zeroTime := time.Now()
+			deterministicTime := testingx.NewTimeDeterministic(zeroTime)
+			tx := &mocks.Trace{
+				MockTimeNow: deterministicTime.Now,
+				MockOnTLSHandshakeStart: func(now time.Time, remoteAddr string, config *tls.Config) {
+					startCalled = true
+					goodStartInsecureSkipVerify = (config.InsecureSkipVerify == true)
+					goodStartServerName = (config.ServerName == expectedSNI)
+					goodStartStartTime = (now.Sub(zeroTime) == 0)
+					goodStartRemoteAddr = (remoteAddr == server.Endpoint())
+				},
+				MockOnTLSHandshakeDone: func(started time.Time, remoteAddr string, config *tls.Config, state tls.ConnectionState, err error, finished time.Time) {
+					doneCalled = true
+					goodDoneInsecureSkipVerify = (config.InsecureSkipVerify == true)
+					goodDoneServerName = (config.ServerName == expectedSNI)
+					goodDoneStartTime = (started.Sub(zeroTime) == 0)
+					goodDoneDoneTime = (finished.Sub(zeroTime) == time.Second)
+					goodDoneRemoteAddr = (remoteAddr == server.Endpoint())
+					goodDoneError = (err == nil)
+					goodConnectionState = (!reflect.ValueOf(state).IsZero())
+				},
+			}
+			ctx := ContextWithTrace(context.Background(), tx)
+			tcpConn, err := net.Dial("tcp", server.Endpoint())
+			if err != nil {
+				t.Fatal(err)
+			}
+			thx := NewTLSHandshakerStdlib(model.DiscardLogger)
+			tlsConfig := &tls.Config{
+				InsecureSkipVerify: true,
+				ServerName:         expectedSNI,
+			}
+			tlsConn, connState, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tlsConn.Close()
+			if reflect.ValueOf(connState).IsZero() {
+				t.Fatal("expected nonzero connState")
+			}
+			if !startCalled {
+				t.Fatal("start not called")
+			}
+			if !doneCalled {
+				t.Fatal("done not called")
+			}
+			if !goodStartInsecureSkipVerify {
+				t.Fatal("invalid start-event's InsecureSkipVerify")
+			}
+			if !goodDoneInsecureSkipVerify {
+				t.Fatal("invalid done-event's InsecureSkipVerify")
+			}
+			if !goodStartServerName {
+				t.Fatal("invalid start-event's ServerName")
+			}
+			if !goodDoneServerName {
+				t.Fatal("invalid done-event's ServerName")
+			}
+			if !goodStartStartTime {
+				t.Fatal("invalid start-event's start time")
+			}
+			if !goodDoneStartTime {
+				t.Fatal("invalid done-event's start time")
+			}
+			if !goodDoneDoneTime {
+				t.Fatal("invalid done-event's done time")
+			}
+			if !goodStartRemoteAddr {
+				t.Fatal("invalid start-event's remoteAddr")
+			}
+			if !goodDoneRemoteAddr {
+				t.Fatal("invalid done-event's remoteAddr")
+			}
+			if !goodDoneError {
+				t.Fatal("invalid done-event's error")
+			}
+			if !goodConnectionState {
+				t.Fatal("invalid done-event's connState")
+			}
+		})
+
+		t.Run("uses a context-injected custom trace (failure case)", func(t *testing.T) {
+			var (
+				expectedEndpoint            = "8.8.8.8:443"
+				expectedSNI                 = "dns.google"
+				goodStartStartTime          bool
+				goodStartInsecureSkipVerify bool
+				goodDoneInsecureSkipVerify  bool
+				goodStartServerName         bool
+				goodDoneServerName          bool
+				goodDoneStartTime           bool
+				goodDoneDoneTime            bool
+				goodStartRemoteAddr         bool
+				goodDoneRemoteAddr          bool
+				goodDoneError               bool
+				goodConnectionState         bool
+				startCalled                 bool
+				doneCalled                  bool
+			)
+			zeroTime := time.Now()
+			deterministicTime := testingx.NewTimeDeterministic(zeroTime)
+			tx := &mocks.Trace{
+				MockTimeNow: deterministicTime.Now,
+				MockOnTLSHandshakeStart: func(now time.Time, remoteAddr string, config *tls.Config) {
+					startCalled = true
+					goodStartInsecureSkipVerify = (config.InsecureSkipVerify == true)
+					goodStartServerName = (config.ServerName == expectedSNI)
+					goodStartStartTime = (now.Sub(zeroTime) == 0)
+					goodStartRemoteAddr = (remoteAddr == expectedEndpoint)
+				},
+				MockOnTLSHandshakeDone: func(started time.Time, remoteAddr string, config *tls.Config, state tls.ConnectionState, err error, finished time.Time) {
+					doneCalled = true
+					goodDoneInsecureSkipVerify = (config.InsecureSkipVerify == true)
+					goodDoneServerName = (config.ServerName == expectedSNI)
+					goodDoneStartTime = (started.Sub(zeroTime) == 0)
+					goodDoneDoneTime = (finished.Sub(zeroTime) == time.Second)
+					goodDoneRemoteAddr = (remoteAddr == expectedEndpoint)
+					var ew *ErrWrapper
+					goodDoneError = (errors.As(err, &ew) && ew.Error() == FailureEOFError)
+					goodConnectionState = (reflect.ValueOf(state).IsZero())
+				},
+			}
+			ctx := ContextWithTrace(context.Background(), tx)
+			tcpConn := &mocks.Conn{
+				MockSetDeadline: func(t time.Time) error {
+					return nil
+				},
+				MockWrite: func(b []byte) (int, error) {
+					return 0, io.EOF
+				},
+				MockRemoteAddr: func() net.Addr {
+					return &mocks.Addr{
+						MockString: func() string {
+							return expectedEndpoint
+						},
+						MockNetwork: func() string {
+							return "tcp"
+						},
+					}
+				},
+			}
+			thx := NewTLSHandshakerStdlib(model.DiscardLogger)
+			tlsConfig := &tls.Config{
+				InsecureSkipVerify: true,
+				ServerName:         expectedSNI,
+			}
+			tlsConn, connState, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+			if !errors.Is(err, io.EOF) {
+				t.Fatal("unexpected err", err)
+			}
+			if tlsConn != nil {
+				t.Fatal("expected nil tlsConn")
+			}
+			if !reflect.ValueOf(connState).IsZero() {
+				t.Fatal("expected zero connState")
+			}
+			if !startCalled {
+				t.Fatal("start not called")
+			}
+			if !doneCalled {
+				t.Fatal("done not called")
+			}
+			if !goodStartInsecureSkipVerify {
+				t.Fatal("invalid start-event's InsecureSkipVerify")
+			}
+			if !goodDoneInsecureSkipVerify {
+				t.Fatal("invalid done-event's InsecureSkipVerify")
+			}
+			if !goodStartServerName {
+				t.Fatal("invalid start-event's ServerName")
+			}
+			if !goodDoneServerName {
+				t.Fatal("invalid done-event's ServerName")
+			}
+			if !goodStartStartTime {
+				t.Fatal("invalid start-event's start time")
+			}
+			if !goodDoneStartTime {
+				t.Fatal("invalid done-event's start time")
+			}
+			if !goodDoneDoneTime {
+				t.Fatal("invalid done-event's done time")
+			}
+			if !goodStartRemoteAddr {
+				t.Fatal("invalid start-event's remoteAddr")
+			}
+			if !goodDoneRemoteAddr {
+				t.Fatal("invalid done-event's remoteAddr")
+			}
+			if !goodDoneError {
+				t.Fatal("invalid done-event's error")
+			}
+			if !goodConnectionState {
+				t.Fatal("invalid done-event's connState")
 			}
 		})
 	})
@@ -413,6 +667,15 @@ func TestTLSDialer(t *testing.T) {
 						return nil
 					}, MockSetDeadline: func(t time.Time) error {
 						return nil
+					}, MockRemoteAddr: func() net.Addr {
+						return &mocks.Addr{
+							MockNetwork: func() string {
+								return "1.1.1.1:443"
+							},
+							MockString: func() string {
+								return "tcp"
+							},
+						}
 					}}, nil
 				}},
 				TLSHandshaker: &tlsHandshakerConfigurable{},
@@ -532,54 +795,6 @@ func TestNewSingleUseTLSDialer(t *testing.T) {
 	}
 }
 
-func TestTLSHandshakerErrWrapper(t *testing.T) {
-	t.Run("Handshake", func(t *testing.T) {
-		t.Run("on success", func(t *testing.T) {
-			expectedConn := &mocks.TLSConn{}
-			expectedState := tls.ConnectionState{
-				Version: tls.VersionTLS12,
-			}
-			th := &tlsHandshakerErrWrapper{
-				TLSHandshaker: &mocks.TLSHandshaker{
-					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-						return expectedConn, expectedState, nil
-					},
-				},
-			}
-			ctx := context.Background()
-			conn, state, err := th.Handshake(ctx, &mocks.Conn{}, &tls.Config{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if expectedState.Version != state.Version {
-				t.Fatal("unexpected state")
-			}
-			if expectedConn != conn {
-				t.Fatal("unexpected conn")
-			}
-		})
-
-		t.Run("on failure", func(t *testing.T) {
-			expectedErr := io.EOF
-			th := &tlsHandshakerErrWrapper{
-				TLSHandshaker: &mocks.TLSHandshaker{
-					MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
-						return nil, tls.ConnectionState{}, expectedErr
-					},
-				},
-			}
-			ctx := context.Background()
-			conn, _, err := th.Handshake(ctx, &mocks.Conn{}, &tls.Config{})
-			if err == nil || err.Error() != FailureEOFError {
-				t.Fatal("unexpected err", err)
-			}
-			if conn != nil {
-				t.Fatal("unexpected conn")
-			}
-		})
-	})
-}
-
 func TestNewNullTLSDialer(t *testing.T) {
 	dialer := NewNullTLSDialer()
 	conn, err := dialer.DialTLSContext(context.Background(), "", "")
@@ -615,6 +830,38 @@ func TestClonedTLSConfigOrNewEmptyConfig(t *testing.T) {
 		}
 		if !reflect.DeepEqual(input, output) {
 			t.Fatal("apparently the two objects have different values")
+		}
+	})
+}
+
+func TestMaybeConnectionState(t *testing.T) {
+	t.Run("with an error", func(t *testing.T) {
+		returned := tls.ConnectionState{
+			CipherSuite: tls.TLS_AES_128_GCM_SHA256,
+		}
+		conn := &mocks.TLSConn{
+			MockConnectionState: func() tls.ConnectionState {
+				return returned
+			},
+		}
+		state := tlsMaybeConnectionState(conn, errors.New("mocked error"))
+		if !reflect.ValueOf(state).IsZero() {
+			t.Fatal("expected to see a zero connection state")
+		}
+	})
+
+	t.Run("without an error", func(t *testing.T) {
+		returned := tls.ConnectionState{
+			CipherSuite: tls.TLS_AES_128_GCM_SHA256,
+		}
+		conn := &mocks.TLSConn{
+			MockConnectionState: func() tls.ConnectionState {
+				return returned
+			},
+		}
+		state := tlsMaybeConnectionState(conn, nil)
+		if reflect.ValueOf(state).IsZero() {
+			t.Fatal("expected to see a nonzero connection state")
 		}
 	})
 }

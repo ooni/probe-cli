@@ -1,4 +1,4 @@
-# debianrepo ensures we can install on debian with the official build instructions
+# Ensures we can install on debian with the official build instructions
 name: debianrepo
 on:
   push:

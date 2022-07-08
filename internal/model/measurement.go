@@ -57,7 +57,7 @@ type Measurement struct {
 
 	// MeasurementStartTimeSaved is the moment in time when we
 	// started the measurement. This is not included into the JSON
-	// and is only used within probe-engine as a "zero" time.
+	// and is only used within the ./internal pkg as a "zero" time.
 	MeasurementStartTimeSaved time.Time `json:"-"`
 
 	// Options contains command line options

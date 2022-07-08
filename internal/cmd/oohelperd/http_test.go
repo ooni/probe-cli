@@ -1,4 +1,4 @@
-package webconnectivity
+package main
 
 import (
 	"context"
@@ -8,21 +8,25 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestHTTPDoWithInvalidURL(t *testing.T) {
 	ctx := context.Background()
 	wg := new(sync.WaitGroup)
-	httpch := make(chan CtrlHTTPResponse, 1)
+	httpch := make(chan ctrlHTTPResponse, 1)
 	wg.Add(1)
-	go HTTPDo(ctx, &HTTPConfig{
-		Client:            http.DefaultClient,
+	go httpDo(ctx, &httpConfig{
 		Headers:           nil,
 		MaxAcceptableBody: 1 << 24,
-		Out:               httpch,
-		URL:               "http://[::1]aaaa",
-		Wg:                wg,
+		NewClient: func() model.HTTPClient {
+			return http.DefaultClient
+		},
+		Out: httpch,
+		URL: "http://[::1]aaaa",
+		Wg:  wg,
 	})
 	// wait for measurement steps to complete
 	wg.Wait()
@@ -36,19 +40,26 @@ func TestHTTPDoWithHTTPTransportFailure(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	wg := new(sync.WaitGroup)
-	httpch := make(chan CtrlHTTPResponse, 1)
+	httpch := make(chan ctrlHTTPResponse, 1)
 	wg.Add(1)
-	go HTTPDo(ctx, &HTTPConfig{
-		Client: &http.Client{
-			Transport: FakeTransport{
-				Err: expected,
-			},
-		},
+	go httpDo(ctx, &httpConfig{
 		Headers:           nil,
 		MaxAcceptableBody: 1 << 24,
-		Out:               httpch,
-		URL:               "http://www.x.org",
-		Wg:                wg,
+		NewClient: func() model.HTTPClient {
+			return &http.Client{
+				Transport: &mocks.HTTPTransport{
+					MockRoundTrip: func(req *http.Request) (*http.Response, error) {
+						return nil, expected
+					},
+					MockCloseIdleConnections: func() {
+						// nothing
+					},
+				},
+			}
+		},
+		Out: httpch,
+		URL: "http://www.x.org",
+		Wg:  wg,
 	})
 	// wait for measurement steps to complete
 	wg.Wait()

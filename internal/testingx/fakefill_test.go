@@ -1,4 +1,4 @@
-package fakefill
+package testingx
 
 import (
 	"testing"
@@ -16,7 +16,7 @@ type exampleStructure struct {
 
 func TestFakeFillWorksWithCustomTime(t *testing.T) {
 	var req *exampleStructure
-	ff := &Filler{
+	ff := &FakeFiller{
 		Now: func() time.Time {
 			return time.Date(1992, time.January, 24, 17, 53, 0, 0, time.UTC)
 		},
@@ -29,7 +29,7 @@ func TestFakeFillWorksWithCustomTime(t *testing.T) {
 
 func TestFakeFillAllocatesIntoAPointerToPointer(t *testing.T) {
 	var req *exampleStructure
-	ff := &Filler{}
+	ff := &FakeFiller{}
 	ff.Fill(&req)
 	if req == nil {
 		t.Fatal("we expected non nil here")
@@ -38,7 +38,7 @@ func TestFakeFillAllocatesIntoAPointerToPointer(t *testing.T) {
 
 func TestFakeFillAllocatesIntoAMapLikeWithStringKeys(t *testing.T) {
 	var resp map[string]*exampleStructure
-	ff := &Filler{}
+	ff := &FakeFiller{}
 	ff.Fill(&resp)
 	if resp == nil {
 		t.Fatal("we expected non nil here")
@@ -62,7 +62,7 @@ func TestFakeFillAllocatesIntoAMapLikeWithNonStringKeys(t *testing.T) {
 			}
 		}()
 		var resp map[int64]*exampleStructure
-		ff := &Filler{}
+		ff := &FakeFiller{}
 		ff.Fill(&resp)
 		if resp != nil {
 			t.Fatal("we expected nil here")
@@ -75,7 +75,7 @@ func TestFakeFillAllocatesIntoAMapLikeWithNonStringKeys(t *testing.T) {
 
 func TestFakeFillAllocatesIntoASlice(t *testing.T) {
 	var resp *[]*exampleStructure
-	ff := &Filler{}
+	ff := &FakeFiller{}
 	ff.Fill(&resp)
 	if resp == nil {
 		t.Fatal("we expected non nil here")

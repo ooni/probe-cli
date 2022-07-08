@@ -34,13 +34,13 @@ func TestQuirkReduceErrors(t *testing.T) {
 
 	t.Run("multiple errors with meaningful ones", func(t *testing.T) {
 		err1 := errors.New("mocked error #1")
-		err2 := newErrWrapper(
-			classifyGenericError,
+		err2 := NewErrWrapper(
+			ClassifyGenericError,
 			CloseOperation,
 			errors.New("antani"),
 		)
-		err3 := newErrWrapper(
-			classifyGenericError,
+		err3 := NewErrWrapper(
+			ClassifyGenericError,
 			CloseOperation,
 			ECONNREFUSED,
 		)

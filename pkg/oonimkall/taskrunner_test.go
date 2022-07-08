@@ -469,6 +469,39 @@ func TestTaskRunnerRun(t *testing.T) {
 		assertReducedEventsLike(t, expect, reduced)
 	})
 
+	t.Run("with measurement failure and annotations", func(t *testing.T) {
+		// See https://github.com/ooni/probe/issues/2173. We want to be sure that
+		// we are not crashing when the measurement fails and there are annotations,
+		// which is what was happening in the above referenced issue.
+		runner, emitter := newRunnerForTesting()
+		fake := fakeSuccessfulRun()
+		fake.MockableInputPolicy = func() engine.InputPolicy {
+			return engine.InputNone
+		}
+		fake.MockableMeasureWithContext = func(ctx context.Context, input string) (measurement *model.Measurement, err error) {
+			return nil, errors.New("preconditions error")
+		}
+		runner.sessionBuilder = fake
+		runner.settings.Annotations = map[string]string{
+			"architecture": "arm64",
+		}
+		events := runAndCollect(runner, emitter)
+		reduced := reduceEventsKeysIgnoreLog(events)
+		expect := []eventKeyCount{
+			{Key: eventTypeStatusQueued, Count: 1},
+			{Key: eventTypeStatusStarted, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 3},
+			{Key: eventTypeStatusGeoIPLookup, Count: 1},
+			{Key: eventTypeStatusResolverLookup, Count: 1},
+			{Key: eventTypeStatusProgress, Count: 1},
+			{Key: eventTypeStatusReportCreate, Count: 1},
+			{Key: eventTypeStatusMeasurementStart, Count: 1},
+			{Key: eventTypeFailureMeasurement, Count: 1},
+			{Key: eventTypeStatusEnd, Count: 1},
+		}
+		assertReducedEventsLike(t, expect, reduced)
+	})
+
 	t.Run("with success and InputStrictlyRequired", func(t *testing.T) {
 		runner, emitter := newRunnerForTesting()
 		runner.settings.Inputs = []string{"a", "b", "c", "d"}

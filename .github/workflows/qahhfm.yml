@@ -1,9 +1,10 @@
-# qahhfm runs QA checks for the hhfm experiment
+# Runs QA checks for the hhfm experiment
 name: "qahhfm"
 on:
   push:
     branches:
       - "release/**"
+
 jobs:
   test:
     runs-on: ubuntu-20.04

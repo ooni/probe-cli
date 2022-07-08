@@ -125,7 +125,7 @@ func WrapDialer(logger model.DebugLogger, resolver model.Resolver,
 		outDialer = wrapper.WrapDialer(outDialer) // extend with user-supplied constructors
 	}
 	return &dialerLogger{
-		Dialer: &dialerResolver{
+		Dialer: &dialerResolverWithTracing{
 			Dialer: &dialerLogger{
 				Dialer:          outDialer,
 				DebugLogger:     logger,
@@ -171,15 +171,24 @@ func (d *DialerSystem) CloseIdleConnections() {
 	// nothing to do here
 }
 
-// dialerResolver combines dialing with domain name resolution.
-type dialerResolver struct {
+// dialerResolverWithTracing combines dialing with domain name resolution and
+// implements hooks to trace TCP (or UDP) connect operations.
+type dialerResolverWithTracing struct {
 	Dialer   model.Dialer
 	Resolver model.Resolver
 }
 
-var _ model.Dialer = &dialerResolver{}
+var _ model.Dialer = &dialerResolverWithTracing{}
 
-func (d *dialerResolver) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+// DialContext implements model.Dialer.DialContext. Specifically this
+// method performs the following operations:
+//
+// 1. resolve the domain inside the address using a resolver;
+//
+// 2. cycle through the available IP addresses and try to dial each of them;
+//
+// 3. trace the TCP (or UDP) connect and allow wrapping the returned conn.
+func (d *dialerResolverWithTracing) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	// QUIRK: this routine and the related routines in quirks.go cannot
 	// be changed easily until we use events tracing to measure.
 	//
@@ -194,10 +203,27 @@ func (d *dialerResolver) DialContext(ctx context.Context, network, address strin
 	}
 	addrs = quirkSortIPAddrs(addrs)
 	var errorslist []error
+	trace := ContextTraceOrDefault(ctx)
 	for _, addr := range addrs {
 		target := net.JoinHostPort(addr, onlyport)
+		started := trace.TimeNow()
 		conn, err := d.Dialer.DialContext(ctx, network, target)
+		finished := trace.TimeNow()
+		// TODO(bassosimone): to make the code robust to future refactoring we have
+		// moved error wrapping inside this type. This change opens up the possibility
+		// of simplifying the dialing chain by removing dialerErrWrapper. We'll be
+		// able to implement this refactoring once netx is gone. We cannot complete
+		// this refactoring _before_ because WrapDialer inserts extra wrappers
+		// provided by netx in the dialers chain _before_ this dialer and the dialers
+		// that netx insert assume that they wrap a dialer with error wrapping.
+		//
+		// Because error wrapping should be idempotent, it should not be a problem
+		// to have two error wrapping dialers in the chain except that, of course, it
+		// would be less efficient than just having a single wrapper.
+		err = MaybeNewErrWrapper(ClassifyGenericError, ConnectOperation, err)
+		trace.OnConnectDone(started, network, onlyhost, target, err, finished)
 		if err == nil {
+			conn = &dialerErrWrapperConn{conn}
 			return conn, nil
 		}
 		errorslist = append(errorslist, err)
@@ -206,14 +232,14 @@ func (d *dialerResolver) DialContext(ctx context.Context, network, address strin
 }
 
 // lookupHost ensures we correctly handle IP addresses.
-func (d *dialerResolver) lookupHost(ctx context.Context, hostname string) ([]string, error) {
+func (d *dialerResolverWithTracing) lookupHost(ctx context.Context, hostname string) ([]string, error) {
 	if net.ParseIP(hostname) != nil {
 		return []string{hostname}, nil
 	}
 	return d.Resolver.LookupHost(ctx, hostname)
 }
 
-func (d *dialerResolver) CloseIdleConnections() {
+func (d *dialerResolverWithTracing) CloseIdleConnections() {
 	d.Dialer.CloseIdleConnections()
 	d.Resolver.CloseIdleConnections()
 }
@@ -303,7 +329,7 @@ var _ model.Dialer = &dialerErrWrapper{}
 func (d *dialerErrWrapper) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
-		return nil, newErrWrapper(classifyGenericError, ConnectOperation, err)
+		return nil, NewErrWrapper(ClassifyGenericError, ConnectOperation, err)
 	}
 	return &dialerErrWrapperConn{Conn: conn}, nil
 }
@@ -322,7 +348,7 @@ var _ net.Conn = &dialerErrWrapperConn{}
 func (c *dialerErrWrapperConn) Read(b []byte) (int, error) {
 	count, err := c.Conn.Read(b)
 	if err != nil {
-		return 0, newErrWrapper(classifyGenericError, ReadOperation, err)
+		return 0, NewErrWrapper(ClassifyGenericError, ReadOperation, err)
 	}
 	return count, nil
 }
@@ -330,7 +356,7 @@ func (c *dialerErrWrapperConn) Read(b []byte) (int, error) {
 func (c *dialerErrWrapperConn) Write(b []byte) (int, error) {
 	count, err := c.Conn.Write(b)
 	if err != nil {
-		return 0, newErrWrapper(classifyGenericError, WriteOperation, err)
+		return 0, NewErrWrapper(ClassifyGenericError, WriteOperation, err)
 	}
 	return count, nil
 }
@@ -338,7 +364,7 @@ func (c *dialerErrWrapperConn) Write(b []byte) (int, error) {
 func (c *dialerErrWrapperConn) Close() error {
 	err := c.Conn.Close()
 	if err != nil {
-		return newErrWrapper(classifyGenericError, CloseOperation, err)
+		return NewErrWrapper(ClassifyGenericError, CloseOperation, err)
 	}
 	return nil
 }

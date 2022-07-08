@@ -1,12 +1,12 @@
-# runs gosec security scanner
+# Runs the gosec security scanner
 name: gosec
 on:
   push:
     branches:
       - "master"
       - "release/**"
-jobs:
 
+jobs:
   gosec:
     runs-on: ubuntu-20.04
     env:
@@ -18,8 +18,9 @@ jobs:
     steps:
     - name: Checkout Source
       uses: actions/checkout@v2
+
     - name: Run Gosec security scanner
-      continue-on-error: true
+      continue-on-error: true # TODO(https://github.com/ooni/probe/issues/2180)
       uses: securego/gosec@master
       with:
         args: ./...
