@@ -426,7 +426,7 @@ func ooniRunMain(ctx context.Context,
 				logger.Warnf("oonirun: we'll show this error every time the upstream link changes")
 				panic("oonirun: need to accept changes using `-y`")
 			}
-			logger.Warnf("oonirun: Measure failed: %s", err.Error())
+			logger.Warnf("oonirun: running link failed: %s", err.Error())
 			continue
 		}
 	}
