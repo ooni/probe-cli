@@ -130,7 +130,7 @@ func (ed *Experiment) newInputProcessor(experiment engine.Experiment,
 		MaxRuntime: time.Duration(ed.MaxRuntime) * time.Second,
 		Options:    experimentOptionsToStringList(ed.ExtraOptions),
 		Saver:      engine.NewInputProcessorSaverWrapper(saver),
-		Submitter: &exprimentSubmitterWrapper{
+		Submitter: &experimentSubmitterWrapper{
 			child:  engine.NewInputProcessorSubmitterWrapper(submitter),
 			logger: ed.Session.Logger(),
 		},
@@ -211,9 +211,9 @@ func (ew *experimentWrapper) MeasureAsync(
 	return ew.child.MeasureAsync(ctx, input, idx)
 }
 
-// exprimentSubmitterWrapper implements a submission policy where we don't
+// experimentSubmitterWrapper implements a submission policy where we don't
 // fail if we cannot submit a measurement
-type exprimentSubmitterWrapper struct {
+type experimentSubmitterWrapper struct {
 	// child is the child submitter wrapper
 	child engine.InputProcessorSubmitterWrapper
 
@@ -221,7 +221,7 @@ type exprimentSubmitterWrapper struct {
 	logger model.Logger
 }
 
-func (sw *exprimentSubmitterWrapper) Submit(ctx context.Context, idx int, m *model.Measurement) error {
+func (sw *experimentSubmitterWrapper) Submit(ctx context.Context, idx int, m *model.Measurement) error {
 	if err := sw.child.Submit(ctx, idx, m); err != nil {
 		sw.logger.Warnf("submitting measurement failed: %s", err.Error())
 	}
