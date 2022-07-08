@@ -85,10 +85,10 @@ var (
 	// to SetOptionaAny is not a valid string representation of a bool.
 	ErrInvalidStringRepresentationOfBool = errors.New("invalid string representation of bool")
 
-	// ErrCannotSetBoolOption means SetOptionAny could set a bool option.
+	// ErrCannotSetBoolOption means SetOptionAny couldn't set a bool option.
 	ErrCannotSetBoolOption = errors.New("cannot set bool option")
 
-	// ErrCannotSetStringOption means SetOptionAny could set a string option.
+	// ErrCannotSetStringOption means SetOptionAny couldn't set a string option.
 	ErrCannotSetStringOption = errors.New("cannot set string option")
 
 	// ErrUnsupportedOptionType means we don't support the type passed to
