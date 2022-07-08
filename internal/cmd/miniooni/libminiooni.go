@@ -3,6 +3,9 @@ package main
 //
 // Core implementation
 //
+// TODO(bassosimone): we should eventually merge this file and main.go. We still
+// have this file becaused we used to have ./internal/libminiooni.
+//
 
 import (
 	"context"
@@ -24,6 +27,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/oonirun"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/pborman/getopt/v2"
 )
@@ -133,16 +137,6 @@ func init() {
 	)
 }
 
-func fatalIfFalse(cond bool, msg string) {
-	if !cond {
-		panic(msg)
-	}
-}
-
-func fatalIfTrue(cond bool, msg string) {
-	fatalIfFalse(!cond, msg)
-}
-
 // Main is the main function of miniooni. This function parses the command line
 // options and uses a global state. Use MainWithConfiguration if you want to avoid
 // using any global state and relying on command line options.
@@ -155,8 +149,8 @@ func Main() {
 		fmt.Printf("%s\n", version.Version)
 		os.Exit(0)
 	}
-	fatalIfFalse(len(getopt.Args()) == 1, "Missing experiment name")
-	fatalOnError(engine.CheckEmbeddedPsiphonConfig(), "Invalid embedded psiphon config")
+	runtimex.PanicIfFalse(len(getopt.Args()) == 1, "Missing experiment name")
+	runtimex.PanicOnError(engine.CheckEmbeddedPsiphonConfig(), "Invalid embedded psiphon config")
 	MainWithConfiguration(getopt.Arg(0), globalOptions)
 }
 
@@ -168,18 +162,11 @@ func split(s string) (string, string, error) {
 	return v[0], v[1], nil
 }
 
-func fatalOnError(err error, msg string) {
-	if err != nil {
-		log.WithError(err).Warn(msg)
-		panic(msg)
-	}
-}
-
 func mustMakeMapString(input []string) (output map[string]string) {
 	output = make(map[string]string)
 	for _, opt := range input {
 		key, value, err := split(opt)
-		fatalOnError(err, "cannot split key-value pair")
+		runtimex.PanicOnError(err, "cannot split key-value pair")
 		output[key] = value
 	}
 	return
@@ -189,7 +176,7 @@ func mustMakeMapAny(input []string) (output map[string]any) {
 	output = make(map[string]any)
 	for _, opt := range input {
 		key, value, err := split(opt)
-		fatalOnError(err, "cannot split key-value pair")
+		runtimex.PanicOnError(err, "cannot split key-value pair")
 		output[key] = value
 	}
 	return
@@ -197,7 +184,7 @@ func mustMakeMapAny(input []string) (output map[string]any) {
 
 func mustParseURL(URL string) *url.URL {
 	rv, err := url.Parse(URL)
-	fatalOnError(err, "cannot parse URL")
+	runtimex.PanicOnError(err, "cannot parse URL")
 	return rv
 }
 
@@ -287,7 +274,7 @@ of miniooni, when we will allow a tunnel to use a proxy.
 // This function will panic in case of a fatal error. It is up to you that
 // integrate this function to either handle the panic of ignore it.
 func MainWithConfiguration(experimentName string, currentOptions Options) {
-	fatalIfTrue(currentOptions.Proxy != "" && currentOptions.Tunnel != "",
+	runtimex.PanicIfTrue(currentOptions.Proxy != "" && currentOptions.Tunnel != "",
 		tunnelAndProxy)
 	if currentOptions.Tunnel != "" {
 		currentOptions.Proxy = fmt.Sprintf("%s:///", currentOptions.Tunnel)
@@ -324,10 +311,10 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 	log.Infof("Current time: %s", time.Now().Format("2006-01-02 15:04:05 MST"))
 
 	homeDir := gethomedir(currentOptions.HomeDir)
-	fatalIfFalse(homeDir != "", "home directory is empty")
+	runtimex.PanicIfFalse(homeDir != "", "home directory is empty")
 	miniooniDir := path.Join(homeDir, ".miniooni")
 	err := os.MkdirAll(miniooniDir, 0700)
-	fatalOnError(err, "cannot create $HOME/.miniooni directory")
+	runtimex.PanicOnError(err, "cannot create $HOME/.miniooni directory")
 
 	// We cleanup the assets files used by versions of ooniprobe
 	// older than v3.9.0, where we started embedding the assets
@@ -341,9 +328,9 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 	log.Debugf("miniooni state directory: %s", miniooniDir)
 
 	consentFile := path.Join(miniooniDir, "informed")
-	fatalOnError(maybeWriteConsentFile(currentOptions.Yes, consentFile),
+	runtimex.PanicOnError(maybeWriteConsentFile(currentOptions.Yes, consentFile),
 		"cannot write informed consent file")
-	fatalIfFalse(canOpen(consentFile), riskOfRunningOONI)
+	runtimex.PanicIfFalse(canOpen(consentFile), riskOfRunningOONI)
 	log.Info("miniooni home directory: $HOME/.miniooni")
 
 	var proxyURL *url.URL
@@ -353,11 +340,11 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 
 	kvstore2dir := filepath.Join(miniooniDir, "kvstore2")
 	kvstore, err := kvstore.NewFS(kvstore2dir)
-	fatalOnError(err, "cannot create kvstore2 directory")
+	runtimex.PanicOnError(err, "cannot create kvstore2 directory")
 
 	tunnelDir := filepath.Join(miniooniDir, "tunnel")
 	err = os.MkdirAll(tunnelDir, 0700)
-	fatalOnError(err, "cannot create tunnelDir")
+	runtimex.PanicOnError(err, "cannot create tunnelDir")
 
 	config := engine.SessionConfig{
 		KVStore:         kvstore,
@@ -377,7 +364,7 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 	}
 
 	sess, err := engine.NewSession(ctx, config)
-	fatalOnError(err, "cannot create measurement session")
+	runtimex.PanicOnError(err, "cannot create measurement session")
 	defer func() {
 		sess.Close()
 		log.Infof("whole session: recv %s, sent %s",
@@ -389,10 +376,10 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 
 	log.Info("Looking up OONI backends; please be patient...")
 	err = sess.MaybeLookupBackends()
-	fatalOnError(err, "cannot lookup OONI backends")
+	runtimex.PanicOnError(err, "cannot lookup OONI backends")
 	log.Info("Looking up your location; please be patient...")
 	err = sess.MaybeLookupLocation()
-	fatalOnError(err, "cannot lookup your location")
+	runtimex.PanicOnError(err, "cannot lookup your location")
 	log.Debugf("- IP: %s", sess.ProbeIP())
 	log.Infof("- country: %s", sess.ProbeCC())
 	log.Infof("- network: %s (%s)", sess.ProbeNetworkName(), sess.ProbeASNString())
@@ -422,18 +409,18 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 		Session:        sess,
 	}
 	err = desc.Run(ctx)
-	fatalOnError(err, "cannot run experiment")
+	runtimex.PanicOnError(err, "cannot run experiment")
 }
 
 // ooniRunMain runs the experiments described by the given OONI Run URLs. This
 // function works with both v1 and v2 OONI Run URLs.
 func ooniRunMain(ctx context.Context,
 	sess *engine.Session, currentOptions Options, annotations map[string]string) {
-	fatalIfTrue(
+	runtimex.PanicIfTrue(
 		len(currentOptions.Inputs) <= 0,
 		"in oonirun mode you need to specify at least one URL using `-i URL`",
 	)
-	fatalIfTrue(
+	runtimex.PanicIfTrue(
 		len(currentOptions.InputFilePaths) > 0,
 		"in oonirun mode you cannot specify any `-f FILE` file",
 	)

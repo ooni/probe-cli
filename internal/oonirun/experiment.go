@@ -51,19 +51,6 @@ type Experiment struct {
 
 	// Session is the MANDATORY session.
 	Session Session
-
-	// testableNewExperimentBuilder is an OPTIONAL hook to make newExperimentBuilder testable.
-	testableNewExperimentBuilder func(experimentName string) (engine.ExperimentBuilder, error)
-
-	// testableNewSubmitter is an OPTIONAL hook to make newSubmitter testable.
-	testableNewSubmitter func(ctx context.Context) (engine.Submitter, error)
-
-	// testableNewSaver is an OPTIONAL hook to make newSaver testable.
-	testableNewSaver func(experiment engine.Experiment) (engine.Saver, error)
-
-	// testableNewInputProcessor is an OPTIONAL hook to make newInputProcessor testable.
-	testableNewInputProcessor func(experiment engine.Experiment, inputList []model.OOAPIURLInfo,
-		saver engine.Saver, submitter engine.Submitter) inputProcessor
 }
 
 // Run runs the given experiment.
@@ -132,9 +119,6 @@ type inputProcessor interface {
 // newInputProcessor creates a new inputProcessor instance.
 func (ed *Experiment) newInputProcessor(experiment engine.Experiment,
 	inputList []model.OOAPIURLInfo, saver engine.Saver, submitter engine.Submitter) inputProcessor {
-	if ed.testableNewInputProcessor != nil {
-		return ed.testableNewInputProcessor(experiment, inputList, saver, submitter)
-	}
 	return &engine.InputProcessor{
 		Annotations: ed.Annotations,
 		Experiment: &experimentWrapper{
@@ -146,7 +130,7 @@ func (ed *Experiment) newInputProcessor(experiment engine.Experiment,
 		MaxRuntime: time.Duration(ed.MaxRuntime) * time.Second,
 		Options:    experimentOptionsToStringList(ed.ExtraOptions),
 		Saver:      engine.NewInputProcessorSaverWrapper(saver),
-		Submitter: &exprimentSubmitterWrapper{
+		Submitter: &experimentSubmitterWrapper{
 			child:  engine.NewInputProcessorSubmitterWrapper(submitter),
 			logger: ed.Session.Logger(),
 		},
@@ -155,9 +139,6 @@ func (ed *Experiment) newInputProcessor(experiment engine.Experiment,
 
 // newSaver creates a new engine.Saver instance.
 func (ed *Experiment) newSaver(experiment engine.Experiment) (engine.Saver, error) {
-	if ed.testableNewSaver != nil {
-		return ed.testableNewSaver(experiment)
-	}
 	return engine.NewSaver(engine.SaverConfig{
 		Enabled:    !ed.NoJSON,
 		Experiment: experiment,
@@ -168,9 +149,6 @@ func (ed *Experiment) newSaver(experiment engine.Experiment) (engine.Saver, erro
 
 // newSubmitter creates a new engine.Submitter instance.
 func (ed *Experiment) newSubmitter(ctx context.Context) (engine.Submitter, error) {
-	if ed.testableNewSubmitter != nil {
-		return ed.testableNewSubmitter(ctx)
-	}
 	return engine.NewSubmitter(ctx, engine.SubmitterConfig{
 		Enabled: !ed.NoCollector,
 		Session: ed.Session,
@@ -180,9 +158,6 @@ func (ed *Experiment) newSubmitter(ctx context.Context) (engine.Submitter, error
 
 // newExperimentBuilder creates a new engine.ExperimentBuilder for the given experimentName.
 func (ed *Experiment) newExperimentBuilder(experimentName string) (engine.ExperimentBuilder, error) {
-	if ed.testableNewExperimentBuilder != nil {
-		return ed.testableNewExperimentBuilder(experimentName)
-	}
 	return ed.Session.NewExperimentBuilder(ed.Name)
 }
 
@@ -236,9 +211,9 @@ func (ew *experimentWrapper) MeasureAsync(
 	return ew.child.MeasureAsync(ctx, input, idx)
 }
 
-// exprimentSubmitterWrapper implements a submission policy where we don't
+// experimentSubmitterWrapper implements a submission policy where we don't
 // fail if we cannot submit a measurement
-type exprimentSubmitterWrapper struct {
+type experimentSubmitterWrapper struct {
 	// child is the child submitter wrapper
 	child engine.InputProcessorSubmitterWrapper
 
@@ -246,7 +221,7 @@ type exprimentSubmitterWrapper struct {
 	logger model.Logger
 }
 
-func (sw *exprimentSubmitterWrapper) Submit(ctx context.Context, idx int, m *model.Measurement) error {
+func (sw *experimentSubmitterWrapper) Submit(ctx context.Context, idx int, m *model.Measurement) error {
 	if err := sw.child.Submit(ctx, idx, m); err != nil {
 		sw.logger.Warnf("submitting measurement failed: %s", err.Error())
 	}

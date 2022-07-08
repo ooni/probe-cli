@@ -8,7 +8,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -45,24 +44,6 @@ type Config struct {
 
 	// Session is the MANDATORY Session to use.
 	Session Session
-}
-
-// Session is the definition of Session used by this package.
-type Session interface {
-	// A Session is also an InputLoaderSession.
-	engine.InputLoaderSession
-
-	// A Session is also a SubmitterSession.
-	engine.SubmitterSession
-
-	// DefaultHTTPClient returns the session's default HTTPClient.
-	DefaultHTTPClient() model.HTTPClient
-
-	// Logger returns the logger used by this Session.
-	Logger() model.Logger
-
-	// NewExperimentBuilder creates a new engine.ExperimentBuilder.
-	NewExperimentBuilder(name string) (engine.ExperimentBuilder, error)
 }
 
 // Measure performs the measurement indicated by the given OONI Run link.
