@@ -157,7 +157,7 @@ func v2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *v2Descri
 	logger := config.Session.Logger()
 	for _, nettest := range desc.Nettests {
 		if nettest.TestName == "" {
-			logger.Warn("nettest name cannot be empty")
+			logger.Warn("oonirun: nettest name cannot be empty")
 			continue
 		}
 		exp := &Experiment{
