@@ -421,7 +421,12 @@ func ooniRunMain(ctx context.Context,
 	for _, URL := range currentOptions.Inputs {
 		r := oonirun.NewLinkRunner(cfg, URL)
 		if err := r.Run(ctx); err != nil {
-			logger.Warnf("oonirun: running link failed: %s", err.Error())
+			if errors.Is(err, oonirun.ErrNeedToAcceptChanges) {
+				logger.Warnf("oonirun: to accept these changes, rerun adding `-y` to the command line")
+				logger.Warnf("oonirun: we'll show this error every time the upstream link changes")
+				panic("oonirun: need to accept changes using `-y`")
+			}
+			logger.Warnf("oonirun: Measure failed: %s", err.Error())
 			continue
 		}
 	}
