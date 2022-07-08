@@ -9,16 +9,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/httpx"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+)
+
+var (
+	// v2CountEmptyNettestNames counts the number of cases in which we have been
+	// given an empty nettest name, which is useful for testing.
+	v2CountEmptyNettestNames = &atomicx.Int64{}
 )
 
 // v2Descriptor describes a single nettest to run.
@@ -51,29 +56,22 @@ type v2Nettest struct {
 // ErrHTTPRequestFailed indicates that an HTTP request failed.
 var ErrHTTPRequestFailed = errors.New("oonirun: HTTP request failed")
 
-// getV2DescriptorFromHTTPSURL GETs a lv2Descriptor instance from
+// getV2DescriptorFromHTTPSURL GETs a v2Descriptor instance from
 // a static URL (e.g., from a GitHub repo or from a Gist).
-func getV2DescriptorFromHTTPSURL(
-	ctx context.Context, client model.HTTPClient, URL string) (*v2Descriptor, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", URL, nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return nil, ErrHTTPRequestFailed
-	}
-	reader := io.LimitReader(resp.Body, 1<<22)
-	data, err := netxlite.ReadAllContext(ctx, reader)
-	if err != nil {
-		return nil, err
+func getV2DescriptorFromHTTPSURL(ctx context.Context, client model.HTTPClient,
+	logger model.Logger, URL string) (*v2Descriptor, error) {
+	template := httpx.APIClientTemplate{
+		Accept:        "",
+		Authorization: "",
+		BaseURL:       URL,
+		HTTPClient:    client,
+		Host:          "",
+		LogBody:       true,
+		Logger:        logger,
+		UserAgent:     model.HTTPHeaderUserAgent,
 	}
 	var desc v2Descriptor
-	if err := json.Unmarshal(data, &desc); err != nil {
+	if err := template.Build().GetJSON(ctx, "", &desc); err != nil {
 		return nil, err
 	}
 	return &desc, nil
@@ -127,37 +125,47 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 //
 // Return values:
 //
-// - oldValue is the old v2Descriptor, which may be empty;
+// - oldValue is the old v2Descriptor, which may be nil;
 //
-// - newValue is the new v2Descriptor;
+// - newValue is the new v2Descriptor, which may be nil;
 //
 // - err is the error that occurred, or nil in case of success.
-func (cache *v2DescriptorCache) PullChangesWithoutSideEffects(ctx context.Context,
-	client model.HTTPClient, URL string) (oldValue, newValue *v2Descriptor, err error) {
+func (cache *v2DescriptorCache) PullChangesWithoutSideEffects(
+	ctx context.Context, client model.HTTPClient, logger model.Logger,
+	URL string) (oldValue, newValue *v2Descriptor, err error) {
 	oldValue = cache.Entries[URL]
-	newValue, err = getV2DescriptorFromHTTPSURL(ctx, client, URL)
+	newValue, err = getV2DescriptorFromHTTPSURL(ctx, client, logger, URL)
 	return
 }
 
 // Update updates the given cache entry and writes back onto the disk.
+//
+// Note: this method modifies cache and is not safe for concurrent usage.
 func (cache *v2DescriptorCache) Update(
 	fsstore model.KeyValueStore, URL string, entry *v2Descriptor) error {
-	// Note: NOT SAFE for concurrent use (default for methods)
 	cache.Entries[URL] = entry
 	data, err := json.Marshal(cache)
-	if err != nil {
-		return err
-	}
+	runtimex.PanicOnError(err, "json.Marshal failed")
 	return fsstore.Set(v2DescriptorCacheKey, data)
 }
+
+// ErrNilDescriptor indicates that we have been passed a descriptor that is nil.
+var ErrNilDescriptor = errors.New("oonirun: descriptor is nil")
 
 // v2MeasureDescriptor performs the measurement or measurements
 // described by the given list of v2Descriptor.
 func v2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *v2Descriptor) error {
+	if desc == nil {
+		// Note: we have a test checking that we can handle a nil
+		// descriptor, yet adding also this extra safety net feels
+		// more robust in terms of the implementation.
+		return ErrNilDescriptor
+	}
 	logger := config.Session.Logger()
 	for _, nettest := range desc.Nettests {
 		if nettest.TestName == "" {
-			logger.Warn("nettest name cannot be empty")
+			logger.Warn("oonirun: nettest name cannot be empty")
+			v2CountEmptyNettestNames.Add(1)
 			continue
 		}
 		exp := &Experiment{
@@ -210,19 +218,19 @@ func v2DescriptorDiff(oldValue, newValue *v2Descriptor, URL string) string {
 // In such a case, the caller SHOULD print additional information
 // explaining how to accept changes and then SHOULD exit 1 or similar.
 func v2MeasureHTTPS(ctx context.Context, config *LinkConfig, URL string) error {
-	config.Session.Logger().Infof("oonirun/v2: running %s", URL)
+	logger := config.Session.Logger()
+	logger.Infof("oonirun/v2: running %s", URL)
 	cache, err := v2DescriptorCacheLoad(config.KVStore)
 	if err != nil {
 		return err
 	}
 	clnt := config.Session.DefaultHTTPClient()
-	oldValue, newValue, err := cache.PullChangesWithoutSideEffects(ctx, clnt, URL)
+	oldValue, newValue, err := cache.PullChangesWithoutSideEffects(ctx, clnt, logger, URL)
 	if err != nil {
 		return err
 	}
 	diff := v2DescriptorDiff(oldValue, newValue, URL)
 	if !config.AcceptChanges && diff != "" {
-		logger := config.Session.Logger()
 		logger.Warnf("oonirun: %s changed as follows:\n\n%s", URL, diff)
 		logger.Warnf("oonirun: we are not going to run this link until you accept changes")
 		return ErrNeedToAcceptChanges
@@ -232,5 +240,5 @@ func v2MeasureHTTPS(ctx context.Context, config *LinkConfig, URL string) error {
 			return err
 		}
 	}
-	return v2MeasureDescriptor(ctx, config, newValue)
+	return v2MeasureDescriptor(ctx, config, newValue) // handles nil newValue gracefully
 }

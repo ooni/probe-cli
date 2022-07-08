@@ -45,7 +45,7 @@ type Options struct {
 	ProbeServicesURL string
 	Proxy            string
 	Random           bool
-	RepeatEvery      time.Duration
+	RepeatEvery      int64
 	ReportFile       string
 	TorArgs          []string
 	TorBinary        string
@@ -107,7 +107,7 @@ func init() {
 	)
 	getopt.FlagLong(
 		&globalOptions.RepeatEvery, "repeat-every", 0,
-		"Repeat the measurement every INTERVAL (e.g., 30m, 1h, 2h)", "INTERVAL",
+		"Repeat the measurement every INTERVAL number of seconds", "INTERVAL",
 	)
 	getopt.FlagLong(
 		&globalOptions.ReportFile, "reportfile", 'o',
@@ -293,9 +293,9 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 		if currentOptions.RepeatEvery <= 0 {
 			break
 		}
-		log.Infof("waiting %s before repeating the measurement", currentOptions.RepeatEvery)
+		log.Infof("waiting %ds before repeating the measurement", currentOptions.RepeatEvery)
 		log.Info("use Ctrl-C to interrupt miniooni")
-		time.Sleep(currentOptions.RepeatEvery)
+		time.Sleep(time.Duration(currentOptions.RepeatEvery) * time.Second)
 	}
 }
 
@@ -444,7 +444,7 @@ func ooniRunMain(ctx context.Context,
 				logger.Warnf("oonirun: we'll show this error every time the upstream link changes")
 				panic("oonirun: need to accept changes using `-y`")
 			}
-			logger.Warnf("oonirun: Measure failed: %s", err.Error())
+			logger.Warnf("oonirun: running link failed: %s", err.Error())
 			continue
 		}
 	}

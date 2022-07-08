@@ -148,21 +148,19 @@ func (c *apiClient) newRequestWithJSONBody(
 	return request, nil
 }
 
-// joinURLPath appends the path of resource URL to the baseURL taking
-// care of multiple forward slashes gracefully.
-func (c *apiClient) joinURLPath(origPath string, newPath string) string {
-
-	// If the BaseURL path doesn't end with a slash, added one
-	if !strings.HasSuffix(origPath, "/") {
-		origPath += "/"
+// joinURLPath appends resourcePath to the urlPath.
+func (c *apiClient) joinURLPath(urlPath, resourcePath string) string {
+	if resourcePath == "" {
+		if urlPath == "" {
+			return "/"
+		}
+		return urlPath
 	}
-
-	// If the resourceURL path has a leading slash, it is removed
-	if strings.HasPrefix(newPath, "/") {
-		newPath = newPath[1:]
+	if !strings.HasSuffix(urlPath, "/") {
+		urlPath += "/"
 	}
-
-	return origPath + newPath
+	resourcePath = strings.TrimPrefix(resourcePath, "/")
+	return urlPath + resourcePath
 }
 
 // newRequest creates a new request.
