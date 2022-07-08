@@ -1,11 +1,17 @@
 package main
 
+//
+// Core implementation
+//
+// TODO(bassosimone): we should eventually merge this file and main.go. We still
+// have this file becaused we used to have ./internal/libminiooni.
+//
+
 import (
 	"context"
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/url"
 	"os"
 	"path"
@@ -20,6 +26,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/oonirun"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/pborman/getopt/v2"
 )
@@ -119,18 +127,9 @@ func init() {
 		&globalOptions.Version, "version", 0, "Print version and exit",
 	)
 	getopt.FlagLong(
-		&globalOptions.Yes, "yes", 0, "I accept the risk of running OONI",
+		&globalOptions.Yes, "yes", 'y',
+		"Assume yes as the answer to all questions",
 	)
-}
-
-func fatalIfFalse(cond bool, msg string) {
-	if !cond {
-		panic(msg)
-	}
-}
-
-func fatalIfTrue(cond bool, msg string) {
-	fatalIfFalse(!cond, msg)
 }
 
 // Main is the main function of miniooni. This function parses the command line
@@ -145,8 +144,8 @@ func Main() {
 		fmt.Printf("%s\n", version.Version)
 		os.Exit(0)
 	}
-	fatalIfFalse(len(getopt.Args()) == 1, "Missing experiment name")
-	fatalOnError(engine.CheckEmbeddedPsiphonConfig(), "Invalid embedded psiphon config")
+	runtimex.PanicIfFalse(len(getopt.Args()) == 1, "Missing experiment name")
+	runtimex.PanicOnError(engine.CheckEmbeddedPsiphonConfig(), "Invalid embedded psiphon config")
 	MainWithConfiguration(getopt.Arg(0), globalOptions)
 }
 
@@ -158,24 +157,11 @@ func split(s string) (string, string, error) {
 	return v[0], v[1], nil
 }
 
-func fatalOnError(err error, msg string) {
-	if err != nil {
-		log.WithError(err).Warn(msg)
-		panic(msg)
-	}
-}
-
-func warnOnError(err error, msg string) {
-	if err != nil {
-		log.WithError(err).Warn(msg)
-	}
-}
-
 func mustMakeMapString(input []string) (output map[string]string) {
 	output = make(map[string]string)
 	for _, opt := range input {
 		key, value, err := split(opt)
-		fatalOnError(err, "cannot split key-value pair")
+		runtimex.PanicOnError(err, "cannot split key-value pair")
 		output[key] = value
 	}
 	return
@@ -185,7 +171,7 @@ func mustMakeMapAny(input []string) (output map[string]any) {
 	output = make(map[string]any)
 	for _, opt := range input {
 		key, value, err := split(opt)
-		fatalOnError(err, "cannot split key-value pair")
+		runtimex.PanicOnError(err, "cannot split key-value pair")
 		output[key] = value
 	}
 	return
@@ -193,7 +179,7 @@ func mustMakeMapAny(input []string) (output map[string]any) {
 
 func mustParseURL(URL string) *url.URL {
 	rv, err := url.Parse(URL)
-	fatalOnError(err, "cannot parse URL")
+	runtimex.PanicOnError(err, "cannot parse URL")
 	return rv
 }
 
@@ -283,16 +269,11 @@ of miniooni, when we will allow a tunnel to use a proxy.
 // This function will panic in case of a fatal error. It is up to you that
 // integrate this function to either handle the panic of ignore it.
 func MainWithConfiguration(experimentName string, currentOptions Options) {
-	fatalIfTrue(currentOptions.Proxy != "" && currentOptions.Tunnel != "",
+	runtimex.PanicIfTrue(currentOptions.Proxy != "" && currentOptions.Tunnel != "",
 		tunnelAndProxy)
 	if currentOptions.Tunnel != "" {
 		currentOptions.Proxy = fmt.Sprintf("%s:///", currentOptions.Tunnel)
 	}
-
-	ctx := context.Background()
-
-	extraOptions := mustMakeMapAny(currentOptions.ExtraOptions)
-	annotations := mustMakeMapString(currentOptions.Annotations)
 
 	logger := &log.Logger{Level: log.InfoLevel, Handler: &logHandler{Writer: os.Stderr}}
 	if currentOptions.Verbose {
@@ -303,14 +284,19 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	}
 	log.Log = logger
 
+	extraOptions := mustMakeMapAny(currentOptions.ExtraOptions)
+	annotations := mustMakeMapString(currentOptions.Annotations)
+
+	ctx := context.Background()
+
 	//Mon Jan 2 15:04:05 -0700 MST 2006
 	log.Infof("Current time: %s", time.Now().Format("2006-01-02 15:04:05 MST"))
 
 	homeDir := gethomedir(currentOptions.HomeDir)
-	fatalIfFalse(homeDir != "", "home directory is empty")
+	runtimex.PanicIfFalse(homeDir != "", "home directory is empty")
 	miniooniDir := path.Join(homeDir, ".miniooni")
 	err := os.MkdirAll(miniooniDir, 0700)
-	fatalOnError(err, "cannot create $HOME/.miniooni directory")
+	runtimex.PanicOnError(err, "cannot create $HOME/.miniooni directory")
 
 	// We cleanup the assets files used by versions of ooniprobe
 	// older than v3.9.0, where we started embedding the assets
@@ -324,9 +310,9 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	log.Debugf("miniooni state directory: %s", miniooniDir)
 
 	consentFile := path.Join(miniooniDir, "informed")
-	fatalOnError(maybeWriteConsentFile(currentOptions.Yes, consentFile),
+	runtimex.PanicOnError(maybeWriteConsentFile(currentOptions.Yes, consentFile),
 		"cannot write informed consent file")
-	fatalIfFalse(canOpen(consentFile), riskOfRunningOONI)
+	runtimex.PanicIfFalse(canOpen(consentFile), riskOfRunningOONI)
 	log.Info("miniooni home directory: $HOME/.miniooni")
 
 	var proxyURL *url.URL
@@ -336,11 +322,11 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 
 	kvstore2dir := filepath.Join(miniooniDir, "kvstore2")
 	kvstore, err := kvstore.NewFS(kvstore2dir)
-	fatalOnError(err, "cannot create kvstore2 directory")
+	runtimex.PanicOnError(err, "cannot create kvstore2 directory")
 
 	tunnelDir := filepath.Join(miniooniDir, "tunnel")
 	err = os.MkdirAll(tunnelDir, 0700)
-	fatalOnError(err, "cannot create tunnelDir")
+	runtimex.PanicOnError(err, "cannot create tunnelDir")
 
 	config := engine.SessionConfig{
 		KVStore:         kvstore,
@@ -360,7 +346,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	}
 
 	sess, err := engine.NewSession(ctx, config)
-	fatalOnError(err, "cannot create measurement session")
+	runtimex.PanicOnError(err, "cannot create measurement session")
 	defer func() {
 		sess.Close()
 		log.Infof("whole session: recv %s, sent %s",
@@ -372,10 +358,10 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 
 	log.Info("Looking up OONI backends; please be patient...")
 	err = sess.MaybeLookupBackends()
-	fatalOnError(err, "cannot lookup OONI backends")
+	runtimex.PanicOnError(err, "cannot lookup OONI backends")
 	log.Info("Looking up your location; please be patient...")
 	err = sess.MaybeLookupLocation()
-	fatalOnError(err, "cannot lookup your location")
+	runtimex.PanicOnError(err, "cannot lookup your location")
 	log.Debugf("- IP: %s", sess.ProbeIP())
 	log.Infof("- country: %s", sess.ProbeCC())
 	log.Infof("- network: %s (%s)", sess.ProbeNetworkName(), sess.ProbeASNString())
@@ -383,95 +369,20 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 	log.Infof("- resolver's network: %s (%s)", sess.ResolverNetworkName(),
 		sess.ResolverASNString())
 
-	builder, err := sess.NewExperimentBuilder(experimentName)
-	fatalOnError(err, "cannot create experiment builder")
-
-	inputLoader := &engine.InputLoader{
-		CheckInConfig: &model.OOAPICheckInConfig{
-			RunType:  model.RunTypeManual,
-			OnWiFi:   true, // meaning: not on 4G
-			Charging: true,
-		},
-		ExperimentName: experimentName,
-		InputPolicy:    builder.InputPolicy(),
-		StaticInputs:   currentOptions.Inputs,
-		SourceFiles:    currentOptions.InputFilePaths,
+	// Run OONI experiments as we normally do.
+	desc := &oonirun.Experiment{
+		Annotations:    annotations,
+		ExtraOptions:   extraOptions,
+		Inputs:         currentOptions.Inputs,
+		InputFilePaths: currentOptions.InputFilePaths,
+		MaxRuntime:     currentOptions.MaxRuntime,
+		Name:           experimentName,
+		NoCollector:    currentOptions.NoCollector,
+		NoJSON:         currentOptions.NoJSON,
+		Random:         currentOptions.Random,
+		ReportFile:     currentOptions.ReportFile,
 		Session:        sess,
 	}
-	inputs, err := inputLoader.Load(context.Background())
-	fatalOnError(err, "cannot load inputs")
-
-	if currentOptions.Random {
-		rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-		rnd.Shuffle(len(inputs), func(i, j int) {
-			inputs[i], inputs[j] = inputs[j], inputs[i]
-		})
-	}
-
-	err = builder.SetOptionsAny(extraOptions)
-	fatalOnError(err, "cannot parse extraOptions")
-
-	experiment := builder.NewExperiment()
-	defer func() {
-		log.Infof("experiment: recv %s, sent %s",
-			humanize.SI(experiment.KibiBytesReceived()*1024, "byte"),
-			humanize.SI(experiment.KibiBytesSent()*1024, "byte"),
-		)
-	}()
-
-	submitter, err := engine.NewSubmitter(ctx, engine.SubmitterConfig{
-		Enabled: !currentOptions.NoCollector,
-		Session: sess,
-		Logger:  log.Log,
-	})
-	fatalOnError(err, "cannot create submitter")
-
-	saver, err := engine.NewSaver(engine.SaverConfig{
-		Enabled:    !currentOptions.NoJSON,
-		Experiment: experiment,
-		FilePath:   currentOptions.ReportFile,
-		Logger:     log.Log,
-	})
-	fatalOnError(err, "cannot create saver")
-
-	inputProcessor := &engine.InputProcessor{
-		Annotations: annotations,
-		Experiment: &experimentWrapper{
-			child: engine.NewInputProcessorExperimentWrapper(experiment),
-			total: len(inputs),
-		},
-		Inputs:     inputs,
-		MaxRuntime: time.Duration(currentOptions.MaxRuntime) * time.Second,
-		Options:    currentOptions.ExtraOptions,
-		Saver:      engine.NewInputProcessorSaverWrapper(saver),
-		Submitter: submitterWrapper{
-			child: engine.NewInputProcessorSubmitterWrapper(submitter),
-		},
-	}
-	err = inputProcessor.Run(ctx)
-	fatalOnError(err, "inputProcessor.Run failed")
-}
-
-type experimentWrapper struct {
-	child engine.InputProcessorExperimentWrapper
-	total int
-}
-
-func (ew *experimentWrapper) MeasureAsync(
-	ctx context.Context, input string, idx int) (<-chan *model.Measurement, error) {
-	if input != "" {
-		log.Infof("[%d/%d] running with input: %s", idx+1, ew.total, input)
-	}
-	return ew.child.MeasureAsync(ctx, input, idx)
-}
-
-type submitterWrapper struct {
-	child engine.InputProcessorSubmitterWrapper
-}
-
-func (sw submitterWrapper) Submit(ctx context.Context, idx int, m *model.Measurement) error {
-	err := sw.child.Submit(ctx, idx, m)
-	warnOnError(err, "submitting measurement failed")
-	// policy: we do not stop the loop if measurement submission fails
-	return nil
+	err = desc.Run(ctx)
+	runtimex.PanicOnError(err, "cannot run experiment")
 }
