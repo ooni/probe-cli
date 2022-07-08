@@ -51,9 +51,9 @@ type Trace struct {
 	// calls to the netxlite.NewTLSHandshakerStdlib factory.
 	NewTLSHandshakerStdlibFn func(dl model.DebugLogger) model.TLSHandshaker
 
-	// DNSLookup is MANDATORY and buffers DNSLookup results based on the query type
+	// DNSLookup is MANDATORY and buffers DNSLookup results based on the query type.
 	// If you create this channel manually, ensure all channels corresponding
-	// to the queries of interest have some buffer
+	// to the queries of interest have some buffer.
 	DNSLookup map[uint16]chan *model.ArchivalDNSLookupResult
 
 	// TCPConnect is MANDATORY and buffers TCP connect observations. If you create
@@ -115,6 +115,7 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 			dns.TypeA:     make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
 			dns.TypeAAAA:  make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
 			dns.TypeCNAME: make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
+			dns.TypeNS: make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize),
 		},
 		TCPConnect: make(
 			chan *model.ArchivalTCPConnectResult,
