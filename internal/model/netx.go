@@ -304,7 +304,7 @@ type Trace interface {
 	TimeNow() time.Time
 
 	// OnDNSRoundTripForLookupHost is used with a DNSTransport and called
-	// when the RoundTrip terminates
+	// when the RoundTrip terminates.
 	//
 	// Arguments:
 	//
@@ -317,11 +317,11 @@ type Trace interface {
 	// - response is a valid DNS response, obtained after the RoundTrip;
 	//
 	// - addrs is the list of addresses obtained after the RoundTrip, which
-	// is empty if the RoundTrip faled
+	// is empty if the RoundTrip failed
 	//
 	// - err is the result of DNSLookup; either an error or nil
 	//
-	// - finished is right after the RoundTrip
+	// - finished is the time right after the RoundTrip
 	OnDNSRoundTripForLookupHost(started time.Time, reso Resolver, query DNSQuery,
 		response DNSResponse, addrs []string, err error, finished time.Time)
 
