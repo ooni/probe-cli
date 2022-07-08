@@ -3,7 +3,6 @@ package mockable
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
@@ -14,7 +13,7 @@ import (
 // Session allows to mock sessions.
 type Session struct {
 	MockableTestHelpers              map[string][]model.OOAPIService
-	MockableHTTPClient               *http.Client
+	MockableHTTPClient               model.HTTPClient
 	MockableLogger                   model.Logger
 	MockableMaybeResolverIP          string
 	MockableProbeASNString           string
@@ -45,7 +44,7 @@ func (sess *Session) GetTestHelpersByName(name string) ([]model.OOAPIService, bo
 }
 
 // DefaultHTTPClient implements ExperimentSession.DefaultHTTPClient
-func (sess *Session) DefaultHTTPClient() *http.Client {
+func (sess *Session) DefaultHTTPClient() model.HTTPClient {
 	return sess.MockableHTTPClient
 }
 
