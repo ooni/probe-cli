@@ -28,8 +28,7 @@ func formatTimeNowUTC() string {
 
 // Experiment is an experiment instance.
 type Experiment interface {
-	// KibiBytesReceived accounts for the KibiBytes received by the HTTP clients
-	// managed by this session so far, including experiments.
+	// KibiBytesReceived accounts for the KibiBytes received by the experiment.
 	KibiBytesReceived() float64
 
 	// KibiBytesSent is like KibiBytesReceived but for the bytes sent.
@@ -39,10 +38,10 @@ type Experiment interface {
 	Name() string
 
 	// GetSummaryKeys returns a data structure containing a
-	// summary of the test keys for probe-cli.
+	// summary of the test keys for ooniprobe.
 	GetSummaryKeys(m *model.Measurement) (any, error)
 
-	// ReportID returns the open reportID, if we have opened a report
+	// ReportID returns the open report's ID, if we have opened a report
 	// successfully before, or an empty string, otherwise.
 	//
 	// Deprecated: new code should use a Submitter.
@@ -75,8 +74,7 @@ type Experiment interface {
 	//
 	// CAVEAT: while this API is perfectly fine for experiments that
 	// return a single measurement, it will only return the first measurement
-	// when used with an asynchronous experiment. We plan on eventually
-	// migrating all experiments to run in asynchronous fashion.
+	// when used with an asynchronous experiment.
 	MeasureWithContext(ctx context.Context, input string) (measurement *model.Measurement, err error)
 
 	// SaveMeasurement saves a measurement on the specified file path.

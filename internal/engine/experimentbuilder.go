@@ -65,7 +65,7 @@ type ExperimentBuilder interface {
 	SetOptionAny(key string, value any) error
 
 	// SetOptionsAny sets options from a map[string]any. See the documentation of
-	// the SetOptionAny function for more information.
+	// the SetOptionAny method for more information.
 	SetOptionsAny(options map[string]any) error
 
 	// SetCallbacks sets the experiment's interactive callbacks.
@@ -249,7 +249,7 @@ func (b *experimentBuilder) SetCallbacks(callbacks model.ExperimentCallbacks) {
 	b.callbacks = callbacks
 }
 
-// fieldbyname return v's filed whose name is equal to the given key.
+// fieldbyname return v's field whose name is equal to the given key.
 func (b *experimentBuilder) fieldbyname(v interface{}, key string) (reflect.Value, error) {
 	// See https://stackoverflow.com/a/6396678/4354461
 	ptrinfo := reflect.ValueOf(v)
