@@ -23,29 +23,38 @@ import (
 
 // v2Descriptor describes a single nettest to run.
 type v2Descriptor struct {
-	// NettestArguments contains the arguments for the nettest.
-	NettestArguments v2Arguments `json:"ta"`
+	// Name is the name of this descriptor.
+	Name string `json:"name"`
 
-	// NettestName is the name of the nettest to run.
-	NettestName string `json:"tn"`
+	// Description contains a long description.
+	Description string `json:"description"`
+
+	// Author contains the author's name.
+	Author string `json:"author"`
+
+	// Nettests contains the list of nettests to run.
+	Nettests []v2Nettest `json:"nettests"`
 }
 
-// v2Arguments contains arguments for a given nettest.
-type v2Arguments struct {
+// v2Nettest specifies how a nettest should run.
+type v2Nettest struct {
 	// Inputs contains inputs for the experiment.
 	Inputs []string `json:"inputs"`
 
 	// Options contains the experiment options.
 	Options map[string]any `json:"options"`
+
+	// TestName contains the nettest name.
+	TestName string `json:"test_name"`
 }
 
 // ErrHTTPRequestFailed indicates that an HTTP request failed.
 var ErrHTTPRequestFailed = errors.New("oonirun: HTTP request failed")
 
-// getV2DescriptorsFromHTTPSURL GETs a list of v2Descriptor from
+// getV2DescriptorFromHTTPSURL GETs a lv2Descriptor instance from
 // a static URL (e.g., from a GitHub repo or from a Gist).
-func getV2DescriptorsFromHTTPSURL(
-	ctx context.Context, client model.HTTPClient, URL string) ([]v2Descriptor, error) {
+func getV2DescriptorFromHTTPSURL(
+	ctx context.Context, client model.HTTPClient, URL string) (*v2Descriptor, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", URL, nil)
 	if err != nil {
 		return nil, err
@@ -63,21 +72,21 @@ func getV2DescriptorsFromHTTPSURL(
 	if err != nil {
 		return nil, err
 	}
-	var descs []v2Descriptor
-	if err := json.Unmarshal(data, &descs); err != nil {
+	var desc v2Descriptor
+	if err := json.Unmarshal(data, &desc); err != nil {
 		return nil, err
 	}
-	return descs, nil
+	return &desc, nil
 }
 
 // v2DescriptorCache contains all the known v2Descriptor entries.
 type v2DescriptorCache struct {
 	// Entries contains all the cached descriptors.
-	Entries map[string][]v2Descriptor
+	Entries map[string]*v2Descriptor
 }
 
 // v2DescriptorCacheKey is the name of the kvstore2 entry keeping
-// information about already known v2Descripor instances.
+// information about already known v2Descriptor instances.
 const v2DescriptorCacheKey = "oonirun-v2.state"
 
 // v2DescriptorCacheLoad loads the v2DescriptorCache.
@@ -86,7 +95,7 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 	if err != nil {
 		if errors.Is(err, kvstore.ErrNoSuchKey) {
 			cache := &v2DescriptorCache{
-				Entries: make(map[string][]v2Descriptor),
+				Entries: make(map[string]*v2Descriptor),
 			}
 			return cache, nil
 		}
@@ -97,7 +106,7 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 		return nil, err
 	}
 	if cache.Entries == nil {
-		cache.Entries = make(map[string][]v2Descriptor)
+		cache.Entries = make(map[string]*v2Descriptor)
 	}
 	return &cache, nil
 }
@@ -124,15 +133,15 @@ func v2DescriptorCacheLoad(fsstore model.KeyValueStore) (*v2DescriptorCache, err
 //
 // - err is the error that occurred, or nil in case of success.
 func (cache *v2DescriptorCache) PullChangesWithoutSideEffects(ctx context.Context,
-	client model.HTTPClient, URL string) (oldValue, newValue []v2Descriptor, err error) {
+	client model.HTTPClient, URL string) (oldValue, newValue *v2Descriptor, err error) {
 	oldValue = cache.Entries[URL]
-	newValue, err = getV2DescriptorsFromHTTPSURL(ctx, client, URL)
+	newValue, err = getV2DescriptorFromHTTPSURL(ctx, client, URL)
 	return
 }
 
 // Update updates the given cache entry and writes back onto the disk.
 func (cache *v2DescriptorCache) Update(
-	fsstore model.KeyValueStore, URL string, entry []v2Descriptor) error {
+	fsstore model.KeyValueStore, URL string, entry *v2Descriptor) error {
 	// Note: NOT SAFE for concurrent use (default for methods)
 	cache.Entries[URL] = entry
 	data, err := json.Marshal(cache)
@@ -142,22 +151,22 @@ func (cache *v2DescriptorCache) Update(
 	return fsstore.Set(v2DescriptorCacheKey, data)
 }
 
-// v2MeasureDescriptors performs the measurement or measurements
+// v2MeasureDescriptor performs the measurement or measurements
 // described by the given list of v2Descriptor.
-func v2MeasureDescriptors(ctx context.Context, config *Config, descs []v2Descriptor) error {
+func v2MeasureDescriptor(ctx context.Context, config *Config, desc *v2Descriptor) error {
 	logger := config.Session.Logger()
-	for _, desc := range descs {
-		if desc.NettestName == "" {
+	for _, nettest := range desc.Nettests {
+		if nettest.TestName == "" {
 			logger.Warn("nettest name cannot be empty")
 			continue
 		}
 		exp := &Experiment{
 			Annotations:    config.Annotations,
-			ExtraOptions:   desc.NettestArguments.Options,
-			Inputs:         desc.NettestArguments.Inputs,
+			ExtraOptions:   nettest.Options,
+			Inputs:         nettest.Inputs,
 			InputFilePaths: nil,
 			MaxRuntime:     config.MaxRuntime,
-			Name:           desc.NettestName,
+			Name:           nettest.TestName,
 			NoCollector:    config.NoCollector,
 			NoJSON:         config.NoJSON,
 			Random:         config.Random,
@@ -178,7 +187,7 @@ func v2MeasureDescriptors(ctx context.Context, config *Config, descs []v2Descrip
 var ErrNeedToAcceptChanges = errors.New("oonirun: need to accept changes")
 
 // v2DescriptorDiff shows what changed between the old and the new descriptors.
-func v2DescriptorDiff(oldValue, newValue []v2Descriptor, URL string) string {
+func v2DescriptorDiff(oldValue, newValue *v2Descriptor, URL string) string {
 	oldData, err := json.MarshalIndent(oldValue, "", "  ")
 	runtimex.PanicOnError(err, "json.MarshalIndent failed unexpectedly")
 	newData, err := json.MarshalIndent(newValue, "", "  ")
@@ -222,5 +231,5 @@ func v2MeasureHTTPS(ctx context.Context, config *Config, URL string) error {
 			return err
 		}
 	}
-	return v2MeasureDescriptors(ctx, config, newValue)
+	return v2MeasureDescriptor(ctx, config, newValue)
 }
