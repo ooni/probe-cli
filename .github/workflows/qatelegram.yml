@@ -1,9 +1,10 @@
-# qatelegram runs QA checks for the telegram experiment
+# Runs QA checks for the telegram experiment
 name: "qatelegram"
 on:
   push:
     branches:
       - "release/**"
+
 jobs:
   test:
     runs-on: ubuntu-20.04

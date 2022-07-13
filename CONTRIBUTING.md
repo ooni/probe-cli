@@ -20,6 +20,7 @@ We use golang as our primary language for the development of OONI Probe CLI and 
 - [Effective Go](https://go.dev/doc/effective_go)
 - [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
 - [Concurrency](https://go.dev/blog/pipelines) and [Data races](https://go.dev/ref/mem)
+- [Channels Axioms](https://dave.cheney.net/2014/03/19/channel-axioms)
 
 ## Opening issues
 

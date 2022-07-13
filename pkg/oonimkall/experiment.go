@@ -67,7 +67,7 @@ type experimentBuilder interface {
 
 // experimentBuilderWrapper wraps *ExperimentBuilder
 type experimentBuilderWrapper struct {
-	eb *engine.ExperimentBuilder
+	eb engine.ExperimentBuilder
 }
 
 // newExperiment implements experimentBuilder.newExperiment

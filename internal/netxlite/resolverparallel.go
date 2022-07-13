@@ -98,9 +98,13 @@ type parallelResolverResult struct {
 func (r *ParallelResolver) lookupHost(ctx context.Context, hostname string,
 	qtype uint16, out chan<- *parallelResolverResult) {
 	encoder := &DNSEncoderMiekg{}
+	trace := ContextTraceOrDefault(ctx)
 	query := encoder.Encode(hostname, qtype, r.Txp.RequiresPadding())
+	started := trace.TimeNow()
 	response, err := r.Txp.RoundTrip(ctx, query)
+	finished := trace.TimeNow()
 	if err != nil {
+		trace.OnDNSRoundTripForLookupHost(started, r, query, response, []string{}, err, finished)
 		out <- &parallelResolverResult{
 			addrs: []string{},
 			err:   err,
@@ -108,6 +112,7 @@ func (r *ParallelResolver) lookupHost(ctx context.Context, hostname string,
 		return
 	}
 	addrs, err := response.DecodeLookupHost()
+	trace.OnDNSRoundTripForLookupHost(started, r, query, response, addrs, err, finished)
 	out <- &parallelResolverResult{
 		addrs: addrs,
 		err:   err,

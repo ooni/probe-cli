@@ -49,7 +49,7 @@ func NewUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Res
 	}
 }
 
-// NewSerialResolverUDP creates a new Resolver using DNS-over-UDP
+// NewSerialUDPResolver creates a new Resolver using DNS-over-UDP
 // that performs serial A/AAAA lookups during LookupHost.
 //
 // Deprecated: use NewParallelResolverUDP.
@@ -64,14 +64,14 @@ func NewUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Res
 //
 // - wrappers is the optional list of wrappers to wrap the underlying
 // transport.  Any nil wrapper will be silently ignored.
-func NewSerialResolverUDP(logger model.DebugLogger, dialer model.Dialer,
+func NewSerialUDPResolver(logger model.DebugLogger, dialer model.Dialer,
 	address string, wrappers ...model.DNSTransportWrapper) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedSerialResolver(
 		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address), wrappers...),
 	))
 }
 
-// NewParallelResolverUDP creates a new Resolver using DNS-over-UDP
+// NewParallelUDPResolver creates a new Resolver using DNS-over-UDP
 // that performs parallel A/AAAA lookups during LookupHost.
 //
 // Arguments:
@@ -84,7 +84,7 @@ func NewSerialResolverUDP(logger model.DebugLogger, dialer model.Dialer,
 //
 // - wrappers is the optional list of wrappers to wrap the underlying
 // transport.  Any nil wrapper will be silently ignored.
-func NewParallelResolverUDP(logger model.DebugLogger, dialer model.Dialer,
+func NewParallelUDPResolver(logger model.DebugLogger, dialer model.Dialer,
 	address string, wrappers ...model.DNSTransportWrapper) model.Resolver {
 	return WrapResolver(logger, NewUnwrappedParallelResolver(
 		WrapDNSTransport(NewUnwrappedDNSOverUDPTransport(dialer, address), wrappers...),
@@ -387,7 +387,7 @@ var _ model.Resolver = &resolverErrWrapper{}
 func (r *resolverErrWrapper) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
 	if err != nil {
-		return nil, newErrWrapper(classifyResolverError, ResolveOperation, err)
+		return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, err)
 	}
 	return addrs, nil
 }
@@ -396,7 +396,7 @@ func (r *resolverErrWrapper) LookupHTTPS(
 	ctx context.Context, domain string) (*model.HTTPSSvc, error) {
 	out, err := r.Resolver.LookupHTTPS(ctx, domain)
 	if err != nil {
-		return nil, newErrWrapper(classifyResolverError, ResolveOperation, err)
+		return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, err)
 	}
 	return out, nil
 }
@@ -417,7 +417,7 @@ func (r *resolverErrWrapper) LookupNS(
 	ctx context.Context, domain string) ([]*net.NS, error) {
 	out, err := r.Resolver.LookupNS(ctx, domain)
 	if err != nil {
-		return nil, newErrWrapper(classifyResolverError, ResolveOperation, err)
+		return nil, NewErrWrapper(ClassifyResolverError, ResolveOperation, err)
 	}
 	return out, nil
 }

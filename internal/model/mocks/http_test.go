@@ -81,3 +81,49 @@ func TestHTTPClient(t *testing.T) {
 		}
 	})
 }
+
+func TestHTTPResponseWriter(t *testing.T) {
+	t.Run("Header", func(t *testing.T) {
+		expect := http.Header{}
+		w := &HTTPResponseWriter{
+			MockHeader: func() http.Header {
+				return expect
+			},
+		}
+		got := w.Header()
+		got.Set("Content-Type", "text/plain")
+		if expect.Get("Content-Type") != "text/plain" {
+			t.Fatal("we didn't get the expected header value")
+		}
+	})
+
+	t.Run("Write", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		w := &HTTPResponseWriter{
+			MockWrite: func(b []byte) (int, error) {
+				return 0, expected
+			},
+		}
+		buffer := make([]byte, 16)
+		count, err := w.Write(buffer)
+		if count != 0 {
+			t.Fatal("invalid count")
+		}
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err", err)
+		}
+	})
+
+	t.Run("WriteHeader", func(t *testing.T) {
+		var called bool
+		w := &HTTPResponseWriter{
+			MockWriteHeader: func(statusCode int) {
+				called = true
+			},
+		}
+		w.WriteHeader(200)
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+}

@@ -15,8 +15,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/scrubber"
 )
 
-// classifyGenericError is maps an error occurred during an operation
-// to an OONI failure string. This specific classifier is the most
+// ClassifyGenericError maps an error occurred during an operation to
+// an OONI failure string. This specific classifier is the most
 // generic one. You usually use it when mapping I/O errors. You should
 // check whether there is a specific classifier for more specific
 // operations (e.g., DNS resolution, TLS handshake).
@@ -38,7 +38,7 @@ import (
 // If everything else fails, this classifier returns a string
 // like "unknown_failure: XXX" where XXX has been scrubbed
 // so to remove any network endpoints from the original error string.
-func classifyGenericError(err error) string {
+func ClassifyGenericError(err error) string {
 	// The list returned here matches the values used by MK unless
 	// explicitly noted otherwise with a comment.
 
@@ -139,7 +139,7 @@ const (
 	quicTLSUnrecognizedName = 112
 )
 
-// classifyQUICHandshakeError maps errors during a QUIC
+// ClassifyQUICHandshakeError maps errors during a QUIC
 // handshake to OONI failure strings.
 //
 // If the input error is an *ErrWrapper we don't perform
@@ -147,7 +147,7 @@ const (
 //
 // If this classifier fails, it calls ClassifyGenericError
 // and returns to the caller its return value.
-func classifyQUICHandshakeError(err error) string {
+func ClassifyQUICHandshakeError(err error) string {
 
 	// Robustness: handle the case where we're passed a wrapped error.
 	var errwrapper *ErrWrapper
@@ -207,7 +207,7 @@ func classifyQUICHandshakeError(err error) string {
 			}
 		}
 	}
-	return classifyGenericError(err)
+	return ClassifyGenericError(err)
 }
 
 // quicIsCertificateError tells us whether a specific TLS alert error
@@ -277,7 +277,7 @@ var (
 // anything as explained in getaddrinfo_linux.go.
 var ErrAndroidDNSCacheNoData = errors.New(FailureAndroidDNSCacheNoData)
 
-// classifyResolverError maps DNS resolution errors to
+// ClassifyResolverError maps DNS resolution errors to
 // OONI failure strings.
 //
 // If the input error is an *ErrWrapper we don't perform
@@ -285,7 +285,7 @@ var ErrAndroidDNSCacheNoData = errors.New(FailureAndroidDNSCacheNoData)
 //
 // If this classifier fails, it calls ClassifyGenericError and
 // returns to the caller its return value.
-func classifyResolverError(err error) string {
+func ClassifyResolverError(err error) string {
 
 	// Robustness: handle the case where we're passed a wrapped error.
 	var errwrapper *ErrWrapper
@@ -310,10 +310,10 @@ func classifyResolverError(err error) string {
 	if errors.Is(err, ErrAndroidDNSCacheNoData) {
 		return FailureAndroidDNSCacheNoData
 	}
-	return classifyGenericError(err)
+	return ClassifyGenericError(err)
 }
 
-// classifyTLSHandshakeError maps an error occurred during the TLS
+// ClassifyTLSHandshakeError maps an error occurred during the TLS
 // handshake to an OONI failure string.
 //
 // If the input error is an *ErrWrapper we don't perform
@@ -321,7 +321,7 @@ func classifyResolverError(err error) string {
 //
 // If this classifier fails, it calls ClassifyGenericError and
 // returns to the caller its return value.
-func classifyTLSHandshakeError(err error) string {
+func ClassifyTLSHandshakeError(err error) string {
 
 	// Robustness: handle the case where we're passed a wrapped error.
 	var errwrapper *ErrWrapper
@@ -345,5 +345,5 @@ func classifyTLSHandshakeError(err error) string {
 		// Test case: https://expired.badssl.com/
 		return FailureSSLInvalidCertificate
 	}
-	return classifyGenericError(err)
+	return ClassifyGenericError(err)
 }

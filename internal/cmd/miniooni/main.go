@@ -2,6 +2,10 @@
 // with a CLI interface similar to MK and OONI Probe v2.x.
 package main
 
+//
+// Main function
+//
+
 import (
 	"fmt"
 	"os"

@@ -31,7 +31,7 @@ func TestNewHTTPTransportWithLoggerResolverAndOptionalProxyURL(t *testing.T) {
 		dialer := txpCc.Dialer
 		dialerWithReadTimeout := dialer.(*httpDialerWithReadTimeout)
 		dialerLog := dialerWithReadTimeout.Dialer.(*dialerLogger)
-		dialerReso := dialerLog.Dialer.(*dialerResolver)
+		dialerReso := dialerLog.Dialer.(*dialerResolverWithTracing)
 		if dialerReso.Resolver != resolver {
 			t.Fatal("invalid resolver")
 		}
@@ -52,7 +52,7 @@ func TestNewHTTPTransportWithLoggerResolverAndOptionalProxyURL(t *testing.T) {
 		dialerWithReadTimeout := dialer.(*httpDialerWithReadTimeout)
 		dialerProxy := dialerWithReadTimeout.Dialer.(*proxyDialer)
 		dialerLog := dialerProxy.Dialer.(*dialerLogger)
-		dialerReso := dialerLog.Dialer.(*dialerResolver)
+		dialerReso := dialerLog.Dialer.(*dialerResolverWithTracing)
 		if dialerReso.Resolver != resolver {
 			t.Fatal("invalid resolver")
 		}
@@ -269,7 +269,7 @@ func TestNewHTTPTransport(t *testing.T) {
 	t.Run("works as intended with failing dialer", func(t *testing.T) {
 		called := &atomicx.Int64{}
 		expected := errors.New("mocked error")
-		d := &dialerResolver{
+		d := &dialerResolverWithTracing{
 			Dialer: &mocks.Dialer{
 				MockDialContext: func(ctx context.Context,
 					network, address string) (net.Conn, error) {
@@ -612,7 +612,7 @@ func TestNewHTTPClientWithResolver(t *testing.T) {
 	txpCc := txpEwrap.HTTPTransport.(*httpTransportConnectionsCloser)
 	dialer := txpCc.Dialer.(*httpDialerWithReadTimeout)
 	dialerLogger := dialer.Dialer.(*dialerLogger)
-	dialerReso := dialerLogger.Dialer.(*dialerResolver)
+	dialerReso := dialerLogger.Dialer.(*dialerResolverWithTracing)
 	if dialerReso.Resolver != reso {
 		t.Fatal("invalid resolver")
 	}

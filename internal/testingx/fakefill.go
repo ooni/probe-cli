@@ -1,11 +1,4 @@
-// Package fakefill contains code to fill structs for testing.
-//
-// This package is quite limited in scope and we can fill only the
-// structures you typically send over as JSONs.
-//
-// As part of future work, we aim to investigate whether we can
-// replace this implementation with https://go.dev/blog/fuzz-beta.
-package fakefill
+package testingx
 
 import (
 	"math/rand"
@@ -14,7 +7,7 @@ import (
 	"time"
 )
 
-// Filler fills specific data structures with random data. The only
+// FakeFiller fills specific data structures with random data. The only
 // exception to this behaviour is time.Time, which is instead filled
 // with the current time plus a small random number of seconds.
 //
@@ -25,7 +18,13 @@ import (
 // Caveat: this kind of fillter does not support filling interfaces
 // and channels and other complex types. The current behavior when this
 // kind of data types is encountered is to just ignore them.
-type Filler struct {
+//
+// This struct is quite limited in scope and we can fill only the
+// structures you typically send over as JSONs.
+//
+// As part of future work, we aim to investigate whether we can
+// replace this implementation with https://go.dev/blog/fuzz-beta.
+type FakeFiller struct {
 	// mu provides mutual exclusion
 	mu sync.Mutex
 
@@ -37,7 +36,7 @@ type Filler struct {
 	rnd *rand.Rand
 }
 
-func (ff *Filler) getRandLocked() *rand.Rand {
+func (ff *FakeFiller) getRandLocked() *rand.Rand {
 	if ff.rnd == nil {
 		now := time.Now
 		if ff.Now != nil {
@@ -48,7 +47,7 @@ func (ff *Filler) getRandLocked() *rand.Rand {
 	return ff.rnd
 }
 
-func (ff *Filler) getRandomString() string {
+func (ff *FakeFiller) getRandomString() string {
 	defer ff.mu.Unlock()
 	ff.mu.Lock()
 	rnd := ff.getRandLocked()
@@ -62,28 +61,28 @@ func (ff *Filler) getRandomString() string {
 	return string(b)
 }
 
-func (ff *Filler) getRandomInt64() int64 {
+func (ff *FakeFiller) getRandomInt64() int64 {
 	defer ff.mu.Unlock()
 	ff.mu.Lock()
 	rnd := ff.getRandLocked()
 	return rnd.Int63()
 }
 
-func (ff *Filler) getRandomBool() bool {
+func (ff *FakeFiller) getRandomBool() bool {
 	defer ff.mu.Unlock()
 	ff.mu.Lock()
 	rnd := ff.getRandLocked()
 	return rnd.Float64() >= 0.5
 }
 
-func (ff *Filler) getRandomSmallPositiveInt() int {
+func (ff *FakeFiller) getRandomSmallPositiveInt() int {
 	defer ff.mu.Unlock()
 	ff.mu.Lock()
 	rnd := ff.getRandLocked()
 	return int(rnd.Int63n(8)) + 1 // safe cast
 }
 
-func (ff *Filler) doFill(v reflect.Value) {
+func (ff *FakeFiller) doFill(v reflect.Value) {
 	for v.Type().Kind() == reflect.Ptr {
 		if v.IsNil() {
 			// if the pointer is nil, allocate an element
@@ -134,6 +133,6 @@ func (ff *Filler) doFill(v reflect.Value) {
 }
 
 // Fill fills the input structure or pointer with random data.
-func (ff *Filler) Fill(in interface{}) {
+func (ff *FakeFiller) Fill(in interface{}) {
 	ff.doFill(reflect.ValueOf(in))
 }

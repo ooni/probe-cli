@@ -40,14 +40,16 @@ func TestMeasurer_run(t *testing.T) {
 		if m.ExperimentName() != "tcpping" {
 			t.Fatal("invalid experiment name")
 		}
-		if m.ExperimentVersion() != "0.1.0" {
+		if m.ExperimentVersion() != "0.2.0" {
 			t.Fatal("invalid experiment version")
 		}
 		ctx := context.Background()
 		meas := &model.Measurement{
 			Input: model.MeasurementTarget(input),
 		}
-		sess := &mockable.Session{}
+		sess := &mockable.Session{
+			MockableLogger: model.DiscardLogger,
+		}
 		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 		err := m.Run(ctx, sess, meas, callbacks)
 		return meas, m, err

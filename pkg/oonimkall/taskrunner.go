@@ -291,7 +291,6 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 			// submit measurement and stop at beginning of next iteration
 			break
 		}
-		m.AddAnnotations(r.settings.Annotations)
 		if err != nil {
 			r.emitter.Emit(eventTypeFailureMeasurement, eventMeasurementGeneric{
 				Failure: err.Error(),
@@ -304,6 +303,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 			// now the only valid strategy here is to continue.
 			continue
 		}
+		m.AddAnnotations(r.settings.Annotations)
 		data, err := json.Marshal(m)
 		runtimex.PanicOnError(err, "measurement.MarshalJSON failed")
 		r.emitter.Emit(eventTypeMeasurement, eventMeasurementGeneric{

@@ -1,4 +1,8 @@
-package webconnectivity
+package main
+
+//
+// DNS measurements
+//
 
 import (
 	"context"
@@ -13,27 +17,36 @@ import (
 // newfailure is a convenience shortcut to save typing
 var newfailure = tracex.NewFailure
 
-// CtrlDNSResult is the result of the DNS check performed by
+// ctrlDNSResult is the result of the DNS check performed by
 // the Web Connectivity test helper.
-type CtrlDNSResult = webconnectivity.ControlDNSResult
+type ctrlDNSResult = webconnectivity.ControlDNSResult
 
-// DNSConfig configures the DNS check.
-type DNSConfig struct {
-	Domain   string
-	Out      chan CtrlDNSResult
-	Resolver model.Resolver
-	Wg       *sync.WaitGroup
+// dnsConfig configures the DNS check.
+type dnsConfig struct {
+	// Domain is the MANDATORY domain to resolve.
+	Domain string
+
+	// NewResolver is the MANDATORY factory to create a new resolver.
+	NewResolver func() model.Resolver
+
+	// Out is the channel where we publish the results.
+	Out chan ctrlDNSResult
+
+	// Wg allows to synchronize with the parent.
+	Wg *sync.WaitGroup
 }
 
-// DNSDo performs the DNS check.
-func DNSDo(ctx context.Context, config *DNSConfig) {
+// dnsDo performs the DNS check.
+func dnsDo(ctx context.Context, config *dnsConfig) {
 	defer config.Wg.Done()
-	addrs, err := config.Resolver.LookupHost(ctx, config.Domain)
+	reso := config.NewResolver()
+	defer reso.CloseIdleConnections()
+	addrs, err := reso.LookupHost(ctx, config.Domain)
 	if addrs == nil {
 		addrs = []string{} // fix: the old test helper did that
 	}
 	failure := dnsMapFailure(newfailure(err))
-	config.Out <- CtrlDNSResult{Failure: failure, Addrs: addrs}
+	config.Out <- ctrlDNSResult{Failure: failure, Addrs: addrs}
 }
 
 // dnsMapFailure attempts to map netxlite failures to the strings

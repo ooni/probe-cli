@@ -34,6 +34,10 @@
 //
 // We want to have reasonable watchdog timeouts for each operation.
 //
+// We also want lightweight support for tracing network events. To this end, we
+// use context.WithValue and context.Value to inject, and retrieve, a model.Trace
+// implementation OPTIONALLY configured by the user.
+//
 // See also the design document at docs/design/dd-003-step-by-step.md,
 // which provides an overview of netxlite's main concerns.
 //

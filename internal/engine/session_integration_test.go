@@ -26,7 +26,11 @@ func TestSessionByteCounter(t *testing.T) {
 	}
 	s := newSessionForTesting(t)
 	client := s.DefaultHTTPClient()
-	resp, err := client.Get("https://www.google.com")
+	req, err := http.NewRequest("GET", "https://www.google.com", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}

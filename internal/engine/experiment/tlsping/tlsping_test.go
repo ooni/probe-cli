@@ -39,7 +39,7 @@ func TestMeasurer_run(t *testing.T) {
 	const expectedPings = 4
 
 	// runHelper is an helper function to run this set of tests.
-	runHelper := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
+	runHelper := func(ctx context.Context, input string) (*model.Measurement, model.ExperimentMeasurer, error) {
 		m := NewExperimentMeasurer(Config{
 			ALPN:        "http/1.1",
 			Delay:       1, // millisecond
@@ -48,10 +48,9 @@ func TestMeasurer_run(t *testing.T) {
 		if m.ExperimentName() != "tlsping" {
 			t.Fatal("invalid experiment name")
 		}
-		if m.ExperimentVersion() != "0.1.0" {
+		if m.ExperimentVersion() != "0.2.0" {
 			t.Fatal("invalid experiment version")
 		}
-		ctx := context.Background()
 		meas := &model.Measurement{
 			Input: model.MeasurementTarget(input),
 		}
@@ -64,34 +63,34 @@ func TestMeasurer_run(t *testing.T) {
 	}
 
 	t.Run("with empty input", func(t *testing.T) {
-		_, _, err := runHelper("")
+		_, _, err := runHelper(context.Background(), "")
 		if !errors.Is(err, errNoInputProvided) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid URL", func(t *testing.T) {
-		_, _, err := runHelper("\t")
+		_, _, err := runHelper(context.Background(), "\t")
 		if !errors.Is(err, errInputIsNotAnURL) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with invalid scheme", func(t *testing.T) {
-		_, _, err := runHelper("https://8.8.8.8:443/")
+		_, _, err := runHelper(context.Background(), "https://8.8.8.8:443/")
 		if !errors.Is(err, errInvalidScheme) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
 	t.Run("with missing port", func(t *testing.T) {
-		_, _, err := runHelper("tlshandshake://8.8.8.8")
+		_, _, err := runHelper(context.Background(), "tlshandshake://8.8.8.8")
 		if !errors.Is(err, errMissingPort) {
 			t.Fatal("unexpected error", err)
 		}
 	})
 
-	t.Run("with local listener", func(t *testing.T) {
+	t.Run("with local listener and successful outcome", func(t *testing.T) {
 		srvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(200)
 		}))
@@ -101,7 +100,37 @@ func TestMeasurer_run(t *testing.T) {
 			t.Fatal(err)
 		}
 		URL.Scheme = "tlshandshake"
-		meas, m, err := runHelper(URL.String())
+		meas, m, err := runHelper(context.Background(), URL.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		tk := meas.TestKeys.(*TestKeys)
+		if len(tk.Pings) != expectedPings {
+			t.Fatal("unexpected number of pings")
+		}
+		ask, err := m.GetSummaryKeys(meas)
+		if err != nil {
+			t.Fatal("cannot obtain summary")
+		}
+		summary := ask.(SummaryKeys)
+		if summary.IsAnomaly {
+			t.Fatal("expected no anomaly")
+		}
+	})
+
+	t.Run("with local listener and connect issues", func(t *testing.T) {
+		srvr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(200)
+		}))
+		defer srvr.Close()
+		URL, err := url.Parse(srvr.URL)
+		if err != nil {
+			t.Fatal(err)
+		}
+		URL.Scheme = "tlshandshake"
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // so we cannot dial any connection
+		meas, m, err := runHelper(ctx, URL.String())
 		if err != nil {
 			t.Fatal(err)
 		}

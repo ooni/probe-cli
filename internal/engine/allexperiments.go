@@ -1,5 +1,9 @@
 package engine
 
+//
+// List of all implemented experiments
+//
+
 import (
 	"time"
 
@@ -32,11 +36,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/whatsapp"
 )
 
-var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
-	"dash": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, dash.NewExperimentMeasurer(
+var experimentsByName = map[string]func(*Session) *experimentBuilder{
+	"dash": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, dash.NewExperimentMeasurer(
 					*config.(*dash.Config),
 				))
 			},
@@ -46,10 +50,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"dnscheck": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, dnscheck.NewExperimentMeasurer(
+	"dnscheck": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, dnscheck.NewExperimentMeasurer(
 					*config.(*dnscheck.Config),
 				))
 			},
@@ -58,10 +62,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"dnsping": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, dnsping.NewExperimentMeasurer(
+	"dnsping": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, dnsping.NewExperimentMeasurer(
 					*config.(*dnsping.Config),
 				))
 			},
@@ -70,10 +74,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"example": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, example.NewExperimentMeasurer(
+	"example": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, example.NewExperimentMeasurer(
 					*config.(*example.Config), "example",
 				))
 			},
@@ -86,10 +90,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"facebook_messenger": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, fbmessenger.NewExperimentMeasurer(
+	"facebook_messenger": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, fbmessenger.NewExperimentMeasurer(
 					*config.(*fbmessenger.Config),
 				))
 			},
@@ -98,10 +102,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"http_header_field_manipulation": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, hhfm.NewExperimentMeasurer(
+	"http_header_field_manipulation": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, hhfm.NewExperimentMeasurer(
 					*config.(*hhfm.Config),
 				))
 			},
@@ -110,10 +114,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"http_host_header": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, httphostheader.NewExperimentMeasurer(
+	"http_host_header": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, httphostheader.NewExperimentMeasurer(
 					*config.(*httphostheader.Config),
 				))
 			},
@@ -122,10 +126,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"http_invalid_request_line": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, hirl.NewExperimentMeasurer(
+	"http_invalid_request_line": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, hirl.NewExperimentMeasurer(
 					*config.(*hirl.Config),
 				))
 			},
@@ -134,10 +138,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"ndt": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, ndt7.NewExperimentMeasurer(
+	"ndt": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, ndt7.NewExperimentMeasurer(
 					*config.(*ndt7.Config),
 				))
 			},
@@ -147,10 +151,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"psiphon": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, psiphon.NewExperimentMeasurer(
+	"psiphon": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, psiphon.NewExperimentMeasurer(
 					*config.(*psiphon.Config),
 				))
 			},
@@ -159,10 +163,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"quicping": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, quicping.NewExperimentMeasurer(
+	"quicping": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, quicping.NewExperimentMeasurer(
 					*config.(*quicping.Config),
 				))
 			},
@@ -171,10 +175,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"riseupvpn": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, riseupvpn.NewExperimentMeasurer(
+	"riseupvpn": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, riseupvpn.NewExperimentMeasurer(
 					*config.(*riseupvpn.Config),
 				))
 			},
@@ -183,10 +187,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"run": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, run.NewExperimentMeasurer(
+	"run": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, run.NewExperimentMeasurer(
 					*config.(*run.Config),
 				))
 			},
@@ -195,10 +199,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"simplequicping": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, simplequicping.NewExperimentMeasurer(
+	"simplequicping": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, simplequicping.NewExperimentMeasurer(
 					*config.(*simplequicping.Config),
 				))
 			},
@@ -207,10 +211,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"signal": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, signal.NewExperimentMeasurer(
+	"signal": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, signal.NewExperimentMeasurer(
 					*config.(*signal.Config),
 				))
 			},
@@ -219,10 +223,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"sni_blocking": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, sniblocking.NewExperimentMeasurer(
+	"sni_blocking": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, sniblocking.NewExperimentMeasurer(
 					*config.(*sniblocking.Config),
 				))
 			},
@@ -231,10 +235,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"stunreachability": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, stunreachability.NewExperimentMeasurer(
+	"stunreachability": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, stunreachability.NewExperimentMeasurer(
 					*config.(*stunreachability.Config),
 				))
 			},
@@ -243,10 +247,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"tcpping": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, tcpping.NewExperimentMeasurer(
+	"tcpping": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, tcpping.NewExperimentMeasurer(
 					*config.(*tcpping.Config),
 				))
 			},
@@ -255,10 +259,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"tlsping": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, tlsping.NewExperimentMeasurer(
+	"tlsping": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, tlsping.NewExperimentMeasurer(
 					*config.(*tlsping.Config),
 				))
 			},
@@ -267,10 +271,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"telegram": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, telegram.NewExperimentMeasurer(
+	"telegram": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, telegram.NewExperimentMeasurer(
 					*config.(*telegram.Config),
 				))
 			},
@@ -279,10 +283,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"tlstool": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, tlstool.NewExperimentMeasurer(
+	"tlstool": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, tlstool.NewExperimentMeasurer(
 					*config.(*tlstool.Config),
 				))
 			},
@@ -291,10 +295,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"tor": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, tor.NewExperimentMeasurer(
+	"tor": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, tor.NewExperimentMeasurer(
 					*config.(*tor.Config),
 				))
 			},
@@ -303,10 +307,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"torsf": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, torsf.NewExperimentMeasurer(
+	"torsf": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, torsf.NewExperimentMeasurer(
 					*config.(*torsf.Config),
 				))
 			},
@@ -315,10 +319,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"urlgetter": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, urlgetter.NewExperimentMeasurer(
+	"urlgetter": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, urlgetter.NewExperimentMeasurer(
 					*config.(*urlgetter.Config),
 				))
 			},
@@ -327,10 +331,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"vanilla_tor": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, vanillator.NewExperimentMeasurer(
+	"vanilla_tor": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, vanillator.NewExperimentMeasurer(
 					*config.(*vanillator.Config),
 				))
 			},
@@ -339,10 +343,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"web_connectivity": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, webconnectivity.NewExperimentMeasurer(
+	"web_connectivity": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, webconnectivity.NewExperimentMeasurer(
 					*config.(*webconnectivity.Config),
 				))
 			},
@@ -351,10 +355,10 @@ var experimentsByName = map[string]func(*Session) *ExperimentBuilder{
 		}
 	},
 
-	"whatsapp": func(session *Session) *ExperimentBuilder {
-		return &ExperimentBuilder{
-			build: func(config interface{}) *Experiment {
-				return NewExperiment(session, whatsapp.NewExperimentMeasurer(
+	"whatsapp": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, whatsapp.NewExperimentMeasurer(
 					*config.(*whatsapp.Config),
 				))
 			},
