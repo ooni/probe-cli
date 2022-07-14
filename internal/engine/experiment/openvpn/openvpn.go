@@ -9,6 +9,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"runtime/debug"
 	"strings"
@@ -42,9 +43,13 @@ type Config struct {
 	ConfigFile string `ooni:"Configuration file for the OpenVPN experiment"`
 }
 
-type Ping struct {
-	RTT float32 `json:"rtt"`
-	TTL uint8   `json:"ttl"`
+type PingStats struct {
+	MinRtt      float64 `json:"min_rtt"`
+	MaxRtt      float64 `json:"max_rtt"`
+	AvgRtt      float64 `json:"avg_rtt"`
+	StdRtt      float64 `json:"std_rtt"`
+	PacketsRecv int     `json:"pkt_rcv"`
+	PacketsSent int     `json:"pkt_snt"`
 }
 
 // TestKeys contains the experiment's result.
@@ -61,8 +66,14 @@ type TestKeys struct {
 	// MiniVPNVersion contains the version of the minivpn library used.
 	MiniVPNVersion string `json:"minivpn_version"`
 
-	// Pings is an array of ping stats.
-	Pings []Ping `json:"pings"`
+	// PingStats holds values for the aggregated stats of a ping.
+	PingStats *PingStats `json:"ping_stats"`
+
+	// Proto is the protocol used in the experiment.
+	Proto string `json:"proto"`
+
+	// Remote is the remote used in the experiment.
+	Remote string `json:"remote"`
 
 	// ...
 
@@ -80,6 +91,9 @@ type TestKeys struct {
 type Measurer struct {
 	// config contains the experiment settings.
 	config Config
+
+	// vpnOptions is a minivpn.vpn.Options object with the parsed OpenVPN config options.
+	vpnOptions *vpn.Options
 
 	// rawDialer is the raw OpenVPN dialer
 	rawDialer *vpn.RawDialer
@@ -120,7 +134,7 @@ func (m *Measurer) Run(
 		return err
 	}
 	m.registerExtensions(measurement)
-	//start := time.Now()
+
 	const maxRuntime = 600 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, maxRuntime)
 	defer cancel()
@@ -142,6 +156,17 @@ func (m *Measurer) Run(
 	}
 }
 
+func protoToString(val int) string {
+	switch val {
+	case vpn.UDPMode:
+		return "udp"
+	case vpn.TCPMode:
+		return "tcp"
+	default:
+		return "unknown"
+	}
+}
+
 // setup prepares for running the openvpn experiment. Returns a minivpn dialer on success.
 // Returns an error on failure.
 func (m *Measurer) setup(ctx context.Context, config string, logger model.Logger) (*vpn.RawDialer, error) {
@@ -150,6 +175,7 @@ func (m *Measurer) setup(ctx context.Context, config string, logger model.Logger
 	if err != nil {
 		return nil, err
 	}
+	m.vpnOptions = o
 	raw := vpn.NewRawDialer(o)
 	return raw, nil
 }
@@ -160,6 +186,8 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	tk := &TestKeys{
 		BootstrapTime: 0,
 		Failure:       nil,
+		Proto:         protoToString(m.vpnOptions.Proto),
+		Remote:        net.JoinHostPort(m.vpnOptions.Remote, m.vpnOptions.Port),
 	}
 	sess.Logger().Info("openvpn: bootstrapping openvpn connection")
 	defer func() {
@@ -175,6 +203,8 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	tk.BootstrapTime = time.Now().Sub(s).Seconds()
 	tk.MiniVPNVersion = getMiniVPNVersion()
 
+	// TODO move this to Run() ---------------------
+
 	// ping
 	pinger := ping.New(pingTarget, conn)
 	pinger.Count = pingCount
@@ -185,12 +215,23 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	}
 	st := pinger.Statistics()
 	log.Println("stats", st)
+	pingStats := &PingStats{
+		MinRtt:      st.MinRtt.Seconds(),
+		MaxRtt:      st.MaxRtt.Seconds(),
+		AvgRtt:      st.AvgRtt.Seconds(),
+		StdRtt:      st.StdDevRtt.Seconds(),
+		PacketsRecv: st.PacketsRecv,
+		PacketsSent: st.PacketsSent,
+	}
+	log.Println("MINRTT", st.MinRtt.Seconds)
+	tk.PingStats = pingStats
 
 	// TODO(ainghazal): add ping metrics
 	// tk.Pings = append(tk.Pings, Ping{st[i].RTT(), st[i].TTL()})
 	tk.PingTarget = pingTarget
 
 	// urlgrab
+	// TODO reuse the conn
 	d := vpn.NewTunDialer(m.rawDialer)
 	client := http.Client{
 		Transport: &http.Transport{
