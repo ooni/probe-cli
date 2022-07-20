@@ -64,6 +64,20 @@ func (r *resolverTrace) LookupNS(ctx context.Context, domain string) ([]*net.NS,
 	return r.r.LookupNS(netxlite.ContextWithTrace(ctx, r.tx), domain)
 }
 
+// NewTrustedRecursiveResolver2 returns a trace-aware TRR2 resolver
+func (tx *Trace) NewTrustedRecursiveResolver2(logger model.Logger, address string) model.Resolver {
+	return tx.newParallelResolverTrace(func() model.Resolver {
+		return NewTrustedRecursiveResolver2(logger, address)
+	})
+}
+
+// NewStdlibResolver returns a trace-aware stdlib resolver
+func (tx *Trace) NewStdlibResolver(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
+	return tx.newParallelResolverTrace(func() model.Resolver {
+		return netxlite.NewStdlibResolver(logger)
+	})
+}
+
 // NewParallelUDPResolver returns a trace-ware parallel UDP resolver
 func (tx *Trace) NewParallelUDPResolver(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
 	return tx.newParallelResolverTrace(func() model.Resolver {
