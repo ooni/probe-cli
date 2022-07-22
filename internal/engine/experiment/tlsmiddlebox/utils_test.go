@@ -1,4 +1,4 @@
-package internal
+package tlsmiddlebox
 
 import (
 	"testing"
@@ -38,7 +38,7 @@ func TestPrepareAddrs(t *testing.T) {
 		want: []string{"1.1.1.1:80", "[2001:4860:4860::8844]:80"},
 	}}
 	for _, tt := range tests {
-		out := PrepareAddrs(tt.args.addrs, tt.args.port)
+		out := prepareAddrs(tt.args.addrs, tt.args.port)
 		if diff := cmp.Diff(out, tt.want); diff != "" {
 			t.Fatal(diff)
 		}
