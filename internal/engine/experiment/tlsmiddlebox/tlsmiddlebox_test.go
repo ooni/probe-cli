@@ -10,6 +10,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
+// TODO(DecFox): Add more experiment-specific tests
+
 func TestMeasurerExperimentNameVersion(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	if measurer.ExperimentName() != "tlsmiddlebox" {
@@ -20,9 +22,9 @@ func TestMeasurerExperimentNameVersion(t *testing.T) {
 	}
 }
 
-func TestConfig_iterations(t *testing.T) {
+func TestConfig_maxttl(t *testing.T) {
 	c := Config{}
-	if c.iterations() != 20 {
+	if c.maxttl() != 20 {
 		t.Fatal("invalid default number of repetitions")
 	}
 }
@@ -43,7 +45,7 @@ func TestConfig_resolver(t *testing.T) {
 
 func TestConfig_snipass(t *testing.T) {
 	c := Config{}
-	if c.snipass() != "google.com" {
+	if c.snicontrol() != "example.com" {
 		t.Fatal("invalid pass SNI")
 	}
 }
@@ -106,7 +108,7 @@ func TestMeasurer_run(t *testing.T) {
 	m := NewExperimentMeasurer(Config{})
 	ctx := context.Background()
 	meas := &model.Measurement{
-		Input: model.MeasurementTarget("https://www.example.com"),
+		Input: model.MeasurementTarget("https://www.google.com"),
 	}
 	sess := &mockable.Session{
 		MockableLogger: model.DiscardLogger,
@@ -120,28 +122,19 @@ func TestMeasurer_run(t *testing.T) {
 
 func TestMeasurer_run_with_config(t *testing.T) {
 	m := NewExperimentMeasurer(Config{
-		SNIPass: "example.com",
-		SNI:     "google.com",
+		SNIControl: "google.com",
+		SNI:        "1337x.be",
 	})
 	ctx := context.Background()
 	meas := &model.Measurement{
-		Input: model.MeasurementTarget("https://1.1.1.1:443"),
+		Input: model.MeasurementTarget("https://example.com"),
 	}
 	sess := &mockable.Session{
 		MockableLogger: model.DiscardLogger,
 	}
 	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 	err := m.Run(ctx, sess, meas, callbacks)
-	tk := meas.TestKeys.(*TestKeys)
 	if err != nil {
 		t.Fatal("unexpected error", err)
 	}
-	if tk.TLSTrace[0].PassTrace.SNI != "example.com" {
-		t.Fatal("invalid SNI recorded")
-	}
-	if tk.TLSTrace[0].TargetTrace.SNI != "google.com" {
-		t.Fatal("invalid SNI recorded")
-	}
 }
-
-// add more tests
