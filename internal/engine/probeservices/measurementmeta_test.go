@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -54,7 +53,6 @@ func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
 		t.Fatal("unexpected input value")
 	}
 	if mmeta.MeasurementStartTime.String() != "2020-12-09 04:22:25 +0000 UTC" {
-		fmt.Println(mmeta.MeasurementStartTime.String())
 		t.Fatal("unexpected measurement start time value")
 	}
 	if mmeta.ProbeASN != 30722 {
