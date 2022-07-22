@@ -26,6 +26,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/stunreachability"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tcpping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/telegram"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlsmiddlebox"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlsping"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlstool"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tor"
@@ -255,6 +256,18 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &tcpping.Config{},
+			inputPolicy: InputStrictlyRequired,
+		}
+	},
+
+	"tlsmiddlebox": func(session *Session) *experimentBuilder {
+		return &experimentBuilder{
+			build: func(config interface{}) *experiment {
+				return newExperiment(session, tlsmiddlebox.NewExperimentMeasurer(
+					*config.(*tlsmiddlebox.Config),
+				))
+			},
+			config:      &tlsmiddlebox.Config{},
 			inputPolicy: InputStrictlyRequired,
 		}
 	},
