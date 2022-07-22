@@ -8,7 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlsmiddlebox/internal"
+	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -23,13 +24,13 @@ type Config struct {
 	ResolverURL string `ooni:"URL for DoH resolver"`
 
 	// SNIPass is the SNI value we don't expect to be blocked
-	SNIPass string `ooni:"the SNI value to cal"`
+	SNIControl string `ooni:"the SNI value to cal"`
 
 	// Delay is the delay between each iteration (in milliseconds).
 	Delay int64 `ooni:"delay between consecutive iterations"`
 
 	// Iterations is the default number of interations we trace
-	Iterations int `ooni:"iterations is the number of iterations"`
+	MaxTTL int64 `ooni:"iterations is the number of iterations"`
 
 	// SNI is the SNI value to use.
 	SNI string `ooni:"the SNI value to use"`
@@ -42,11 +43,11 @@ func (c Config) resolverURL() string {
 	return "https://mozilla.cloudflare-dns.com/dns-query"
 }
 
-func (c Config) snipass() string {
-	if c.SNIPass != "" {
-		return c.SNIPass
+func (c Config) snicontrol() string {
+	if c.SNIControl != "" {
+		return c.SNIControl
 	}
-	return "google.com"
+	return "example.com"
 }
 
 func (c Config) delay() time.Duration {
@@ -56,9 +57,9 @@ func (c Config) delay() time.Duration {
 	return 100 * time.Millisecond
 }
 
-func (c Config) iterations() int {
-	if c.Iterations > 0 {
-		return c.Iterations
+func (c Config) maxttl() int64 {
+	if c.MaxTTL > 0 {
+		return c.MaxTTL
 	}
 	return 20
 }
@@ -68,13 +69,6 @@ func (c Config) sni(address string) string {
 		return c.SNI
 	}
 	return address
-}
-
-// TestKeys contains the experiment results.
-type TestKeys struct {
-	DNSLookUp  *model.ArchivalDNSLookupResult    `json:"dns_lookup"`
-	TCPConnect []*model.ArchivalTCPConnectResult `json:"tcp_connect"`
-	TLSTrace   []*CompleteTrace                  `json:"tls_trace"`
 }
 
 // Measurer performs the measurement.
@@ -121,47 +115,70 @@ func (m *Measurer) Run(
 	if scheme != "tlshandshake" && scheme != "https" {
 		return errInvalidScheme
 	}
-	tk := new(TestKeys)
+	tk := NewTestKeys()
 	measurement.TestKeys = tk
 	sni := m.config.sni(parsed.Host)
-	// 1. perform a DNSLookUp
-	outDNS, addrs, err := m.DNSLookup(ctx, parsed.Hostname(), nil)
-	tk.DNSLookUp = outDNS
+	wg := new(sync.WaitGroup)
+	// 1. perform a DNSLookup
+	addrs, err := m.DNSLookup(ctx, 0, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Hostname(), tk)
 	if err != nil {
 		return err
 	}
 	// 2. measure addresses
-	m.MeasureAddrs(ctx, addrs, parsed.Port(), sni, tk)
+	addrs = prepareAddrs(addrs, parsed.Port())
+	for i, addr := range addrs {
+		wg.Add(1)
+		go m.TraceAddress(ctx, int64(i), measurement.MeasurementStartTimeSaved, sess.Logger(), addr, sni, tk, wg)
+	}
+	wg.Wait()
 	return nil
 }
 
-// MeasureAddrs measures the array of addresses obtained from DNSLookUp
-func (m *Measurer) MeasureAddrs(ctx context.Context, addrs []string, port string,
-	sni string, tk *TestKeys) {
-	tcpEvents := make(chan *model.ArchivalTCPConnectResult, len(addrs))
-	tlsEvents := make(chan *CompleteTrace, 2*len(addrs))
-	wg := new(sync.WaitGroup)
-	addrs = internal.PrepareAddrs(addrs, port)
-	for _, addr := range addrs {
-		wg.Add(1)
-		go m.MeasureSingleAddr(ctx, addr, sni, tcpEvents, tlsEvents, wg)
-	}
-	wg.Wait()
-	tk.TCPConnect = GetTCPEvents(tcpEvents)
-	tk.TLSTrace = GetTLSEvents(tlsEvents)
+// DNSLookup performs a DNS Lookup for the passed domain
+func (m *Measurer) DNSLookup(ctx context.Context, index int64, zeroTime time.Time,
+	logger model.Logger, domain string, tk *TestKeys) ([]string, error) {
+	url := m.config.resolverURL()
+	trace := measurexlite.NewTrace(index, zeroTime)
+	ol := measurexlite.NewOperationLogger(logger, "DNSLookup #%d, %s, %s", index, url, domain)
+	// TODO(DecFox): We are currently using the DoH resolver, we will
+	// switch to the TRR2 resolver once we have it in measurexlite
+	// Issue: https://github.com/ooni/probe/issues/2185
+	resolver := trace.NewParallelDNSOverHTTPSResolver(logger, url)
+	addrs, err := resolver.LookupHost(ctx, domain)
+	ol.Stop(err)
+	tk.addQueries(trace.DNSLookupsFromRoundTrip(dns.TypeA))
+	tk.addQueries(trace.DNSLookupsFromRoundTrip(dns.TypeAAAA))
+	return addrs, err
 }
 
-// MeasureSingleAddr measures a single address
-func (m *Measurer) MeasureSingleAddr(ctx context.Context, addr string,
-	sni string, tcpEvents chan<- *model.ArchivalTCPConnectResult,
-	tlsEvents chan<- *CompleteTrace, wg *sync.WaitGroup) error {
+// TraceAddress measures a single address
+func (m *Measurer) TraceAddress(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
+	address string, sni string, tk *TestKeys, wg *sync.WaitGroup) error {
 	defer wg.Done()
-	err := m.MeasureTCP(ctx, addr, tcpEvents)
+	trace := &CompleteTrace{
+		Address: address,
+	}
+	tk.addTrace([]*CompleteTrace{trace})
+	err := m.TCPConnect(ctx, index, zeroTime, logger, address, tk)
 	if err != nil {
 		return err
 	}
-	m.MeasureTLS(ctx, addr, sni, tlsEvents)
+	m.TLSTrace(ctx, index, zeroTime, logger, address, sni, trace)
 	return nil
+}
+
+// TCPConnect performs a TCP connect to filter working addresses
+func (m *Measurer) TCPConnect(ctx context.Context, index int64, zeroTime time.Time,
+	logger model.Logger, address string, tk *TestKeys) error {
+	trace := measurexlite.NewTrace(index, zeroTime)
+	dialer := trace.NewDialerWithoutResolver(logger)
+	ol := measurexlite.NewOperationLogger(logger, "TCPConnect #%d %s", index, address)
+	conn, err := dialer.DialContext(ctx, "tcp", address)
+	ol.Stop(err)
+	measurexlite.MaybeClose(conn)
+	tcpEvents := trace.TCPConnects()
+	tk.addTCPConnect(tcpEvents)
+	return err
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
@@ -174,6 +191,7 @@ type SummaryKeys struct {
 }
 
 // GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
+// TODO(DecFox): Add anamoly logic to generate summary keys for the experiment
 func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
 	return SummaryKeys{IsAnomaly: false}, nil
 }
