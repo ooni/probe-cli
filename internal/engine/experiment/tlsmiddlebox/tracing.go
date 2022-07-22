@@ -1,165 +1,112 @@
 package tlsmiddlebox
 
+//
+// Iterative network tracing
+//
+
 import (
 	"context"
 	"crypto/tls"
-	"net"
 	"sort"
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/tlsmiddlebox/internal"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// MeasureTLS outputs a TraceEvent with the iterative trace for the passSNI and the targetSNI
-func (m *Measurer) MeasureTLS(ctx context.Context, addr string, targetSNI string, tlsEvents chan<- *CompleteTrace) {
-	out := &CompleteTrace{}
-	passSNI := m.config.snipass()
-	passTrace := m.IterativeTrace(ctx, addr, passSNI)
-	out.PassTrace = passTrace
-	targetTrace := m.IterativeTrace(ctx, addr, targetSNI)
-	out.TargetTrace = targetTrace
-	select {
-	case tlsEvents <- out:
-	default:
-		return
-	}
+// MeasureTLS performs tracing using control and target SNI
+func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
+	address string, targetSNI string, trace *CompleteTrace) {
+	// perform an iterative trace with the control SNI
+	trace.ControlTrace = m.IterativeTrace(ctx, index, zeroTime, logger, address, m.config.snicontrol())
+	// perform an iterative trace with the target SNI
+	trace.TargetTrace = m.IterativeTrace(ctx, index, zeroTime, logger, address, targetSNI)
 }
 
-// IterativeTrace calls the iterativeTrace and populates the TraceEvent with iteration results
-func (m *Measurer) IterativeTrace(ctx context.Context, addr string, sni string) (trace *TraceEvent) {
-	iterations := m.config.iterations()
-	out := make(chan *IterEvent, iterations)
-	trace = &TraceEvent{
-		Address:    addr,
+// IterativeTrace creates a Trace and calls iterativeTrace
+func (m *Measurer) IterativeTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
+	address string, sni string) (tr *Trace) {
+	tr = &Trace{
 		SNI:        sni,
-		Iterations: []*IterEvent{},
+		Iterations: []*Iteration{},
 	}
-	m.iterativeTrace(ctx, addr, sni, iterations, out)
-	iterEvents := extractEvents(out) // align the iteration results before modeling them
-	trace.AddIterations(iterEvents)
-	return trace
+	maxTTL := m.config.maxttl()
+	m.iterativeTrace(ctx, index, zeroTime, logger, address, sni, maxTTL, tr)
+	tr.Iterations = alignIterations(tr.Iterations)
+	return
 }
 
-func (m *Measurer) iterativeTrace(ctx context.Context, addr string, sni string,
-	iterations int, out chan<- *IterEvent) {
+// iterativeTrace performs iterative tracing with increasing TTL values
+func (m *Measurer) iterativeTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
+	address string, sni string, maxTTL int64, trace *Trace) {
 	ticker := time.NewTicker(m.config.delay())
 	wg := new(sync.WaitGroup)
-	for i := 1; i <= iterations; i++ {
+	for i := int64(1); i <= maxTTL; i++ {
 		wg.Add(1)
-		go iterAsync(ctx, addr, sni, i, out, wg)
+		go m.handshakeWithTTL(ctx, index, zeroTime, logger, address, sni, int(i), trace, wg)
 		<-ticker.C
 	}
 	wg.Wait()
 }
 
-// Single Iteration for network tracing
-func iterAsync(ctx context.Context, addr string, sni string,
-	ttl int, out chan<- *IterEvent, wg *sync.WaitGroup) {
+// HandshakeWithTTL performs the TLS Handshake using the passed ttl value
+func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
+	address string, sni string, ttl int, tr *Trace, wg *sync.WaitGroup) {
 	defer wg.Done()
-	select {
-	case out <- HandshakeWithTTL(ctx, addr, sni, ttl):
-	default:
-		return
-	}
-}
-
-// This handles the conn and calls the handshake function after setting the TTL value
-func HandshakeWithTTL(ctx context.Context, addr string, sni string, ttl int) (out *IterEvent) {
-	logger := model.ValidLoggerOrDefault(nil)
-	out = &IterEvent{
-		TTL:     ttl,
-		Failure: nil,
-	}
-	// we use the net.Dialer instead of netxlite.Dialer
-	var d net.Dialer
-	conn, err := d.DialContext(ctx, "tcp", addr)
+	trace := measurexlite.NewTrace(index, zeroTime)
+	// TODO(DecFox): Do we need a trace for this TCP connect?
+	d := NewDialerTTLWrapper()
+	ol := measurexlite.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
+	conn, err := d.DialContext(ctx, "tcp", address)
 	if err != nil {
-		errStr := err.Error()
-		out.Failure = &errStr
+		iteration := newIterationFromHandshake(ttl, err, nil)
+		tr.addIterations(iteration)
+		ol.Stop(err)
 		return
 	}
 	defer conn.Close()
-	err = internal.SetConnTTL(conn, ttl)
+	err = setTTL(conn, ttl)
 	if err != nil {
-		errStr := err.Error()
-		out.Failure = &errStr
+		iteration := newIterationFromHandshake(ttl, err, nil)
+		tr.addIterations(iteration)
+		ol.Stop(err)
 		return
 	}
-	performHandshake(ctx, conn, sni, logger, out)
-	internal.ResetConnTTL(conn) // reset the TTL to make sure the conn closes successfully
-	return
+	thx := trace.NewTLSHandshakerStdlib(logger)
+	thx.Handshake(ctx, conn, genTLSConfig(sni))
+	ol.Stop(err)
+	// reset the TTL value to ensure that conn closes successfully
+	// Note: we do not check for errors here
+	setTTL(conn, 64)
+	// we can pass a nil error here since the failure is already populated in the trace
+	iteration := newIterationFromHandshake(ttl, nil, <-trace.TLSHandshake)
+	tr.addIterations(iteration)
 }
 
-// perform a TLS Handshake given a net.Conn and populate the IterEvent
-func performHandshake(ctx context.Context, conn net.Conn, sni string,
-	logger model.Logger, in *IterEvent) {
-	h := netxlite.NewTLSHandshakerStdlib(logger)
-	start := time.Now()
-	_, _, err := h.Handshake(ctx, conn, genTLSConfig(sni))
-	elapsed := time.Since(start)
-	in.Duration = elapsed.Milliseconds()
-	// using the stdlib to record errors
-	if err != nil {
-		errStr := err.Error()
-		in.Failure = &errStr
-	}
-}
-
-// generate the tls.Config from a given SNI
-func genTLSConfig(SNI string) *tls.Config {
+// genTLSConfig generates tls.Config from a given SNI
+func genTLSConfig(sni string) *tls.Config {
 	return &tls.Config{
 		RootCAs:            netxlite.NewDefaultCertPool(),
-		ServerName:         SNI,
+		ServerName:         sni,
 		NextProtos:         []string{"h2", "http/1.1"},
 		InsecureSkipVerify: true,
 	}
 }
 
-// extractEvents takes in a channel and outputs an aligned array
-func extractEvents(traceEvents <-chan *IterEvent) (out []*IterEvent) {
-	tmpEvents := GetTraceEvents(traceEvents)
-	out = alignIterEvents(tmpEvents)
-	return
-}
-
 // alignIterEvents sorts the iterEvents according to increasing TTL
-// and also stops when we receive a success or a connection_reset
-func alignIterEvents(in []*IterEvent) (out []*IterEvent) {
-	out = []*IterEvent{}
+// and stops when we receive a nil or connection_reset
+func alignIterations(in []*Iteration) (out []*Iteration) {
+	out = []*Iteration{}
 	sort.Slice(in, func(i int, j int) bool {
 		return in[i].TTL < in[j].TTL
 	})
-	for _, ev := range in {
-		out = append(out, ev)
-		if ev.Failure == nil || *ev.Failure == "connection_reset" {
+	for _, iter := range in {
+		out = append(out, iter)
+		if iter.Handshake.Failure == nil || *iter.Handshake.Failure == netxlite.FailureConnectionReset {
 			break
 		}
 	}
-	return
-}
-
-// GetTraceEvents extracts the contents of an IterEvent buffered channel to an array
-func GetTraceEvents(traceEvents <-chan *IterEvent) (out []*IterEvent) {
-	for {
-		select {
-		case ev := <-traceEvents:
-			out = append(out, ev)
-		default:
-			return
-		}
-	}
-}
-
-func GetTLSEvents(tcpEvents <-chan *CompleteTrace) (out []*CompleteTrace) {
-	for {
-		select {
-		case ev := <-tcpEvents:
-			out = append(out, ev)
-		default:
-			return
-		}
-	}
+	return out
 }
