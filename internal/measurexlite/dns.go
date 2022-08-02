@@ -65,9 +65,9 @@ func (r *resolverTrace) LookupNS(ctx context.Context, domain string) ([]*net.NS,
 }
 
 // NewTrustedRecursiveResolver2 returns a trace-aware TRR2 resolver
-func (tx *Trace) NewTrustedRecursiveResolver2(logger model.Logger, address string) model.Resolver {
+func (tx *Trace) NewTrustedRecursiveResolver2(logger model.Logger, address string, timeout int) model.Resolver {
 	return tx.newParallelResolverTrace(func() model.Resolver {
-		return NewTrustedRecursiveResolver2(logger, address)
+		return NewTrustedRecursiveResolver2(logger, address, timeout)
 	})
 }
 
