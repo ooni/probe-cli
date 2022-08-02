@@ -52,7 +52,7 @@ func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
 	if mmeta.Input == nil || *mmeta.Input != config.Input {
 		t.Fatal("unexpected input value")
 	}
-	if mmeta.MeasurementStartTime.String() != "2020-12-09 04:22:25 +0000 UTC" {
+	if mmeta.MeasurementStartTime.String() != "2020-12-09 05:22:25 +0000 UTC" {
 		t.Fatal("unexpected measurement start time value")
 	}
 	if mmeta.ProbeASN != 30722 {
@@ -72,7 +72,7 @@ func TestGetMeasurementMetaWorkingAsIntended(t *testing.T) {
 	if mmeta.TestName != "urlgetter" {
 		t.Fatal("unexpected test name value")
 	}
-	if mmeta.TestStartTime.String() != "2020-12-09 04:22:25 +0000 UTC" {
+	if mmeta.TestStartTime.String() != "2020-12-09 05:22:25 +0000 UTC" {
 		t.Fatal("unexpected test start time value")
 	}
 	// TODO(bassosimone): we could better this check
