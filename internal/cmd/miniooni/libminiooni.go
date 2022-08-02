@@ -42,6 +42,7 @@ type Options struct {
 	MaxRuntime       int64
 	NoJSON           bool
 	NoCollector      bool
+	Parallelism      int
 	ProbeServicesURL string
 	Proxy            string
 	Random           bool
@@ -98,6 +99,9 @@ func init() {
 	getopt.FlagLong(
 		&globalOptions.ProbeServicesURL, "probe-services", 0,
 		"Set the URL of the probe-services instance you want to use", "URL",
+	)
+	getopt.FlagLong(
+		&globalOptions.Parallelism, "parallelism", 1, "Parallelism for performing measurements", "NUMBER",
 	)
 	getopt.FlagLong(
 		&globalOptions.Proxy, "proxy", 0, "Set the proxy URL", "URL",
@@ -404,6 +408,7 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 		Name:           experimentName,
 		NoCollector:    currentOptions.NoCollector,
 		NoJSON:         currentOptions.NoJSON,
+		Parallelism:    currentOptions.Parallelism,
 		Random:         currentOptions.Random,
 		ReportFile:     currentOptions.ReportFile,
 		Session:        sess,

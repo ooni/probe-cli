@@ -42,6 +42,10 @@ type Experiment struct {
 	// NoJSON OPTIONALLY indicates we don't want to save measurements to a JSON file.
 	NoJSON bool
 
+	// Parallellism OPTIONALLY indicates the number of goroutines to use
+	// to perform measurements. A zero or negative value implies one goroutine.
+	Parallelism int
+
 	// Random OPTIONALLY indicates we should randomize inputs.
 	Random bool
 
@@ -121,19 +125,14 @@ func (ed *Experiment) newInputProcessor(experiment engine.Experiment,
 	inputList []model.OOAPIURLInfo, saver engine.Saver, submitter engine.Submitter) inputProcessor {
 	return &engine.InputProcessor{
 		Annotations: ed.Annotations,
-		Experiment: &experimentWrapper{
-			child:  engine.NewInputProcessorExperimentWrapper(experiment),
-			logger: ed.Session.Logger(),
-			total:  len(inputList),
-		},
-		Inputs:     inputList,
-		MaxRuntime: time.Duration(ed.MaxRuntime) * time.Second,
-		Options:    experimentOptionsToStringList(ed.ExtraOptions),
-		Saver:      engine.NewInputProcessorSaverWrapper(saver),
-		Submitter: &experimentSubmitterWrapper{
-			child:  engine.NewInputProcessorSubmitterWrapper(submitter),
-			logger: ed.Session.Logger(),
-		},
+		Experiment:  experiment,
+		Inputs:      inputList,
+		Logger:      ed.Session.Logger(),
+		MaxRuntime:  time.Duration(ed.MaxRuntime) * time.Second,
+		Options:     experimentOptionsToStringList(ed.ExtraOptions),
+		Parallelism: ed.Parallelism,
+		Saver:       saver,
+		Submitter:   submitter,
 	}
 }
 
@@ -189,42 +188,4 @@ func experimentOptionsToStringList(options map[string]any) (out []string) {
 		out = append(out, fmt.Sprintf("%s=%v", key, value))
 	}
 	return
-}
-
-// experimentWrapper wraps an experiment and logs progress
-type experimentWrapper struct {
-	// child is the child experiment wrapper
-	child engine.InputProcessorExperimentWrapper
-
-	// logger is the logger to use
-	logger model.Logger
-
-	// total is the total number of inputs
-	total int
-}
-
-func (ew *experimentWrapper) MeasureAsync(
-	ctx context.Context, input string, idx int) (<-chan *model.Measurement, error) {
-	if input != "" {
-		ew.logger.Infof("[%d/%d] running with input: %s", idx+1, ew.total, input)
-	}
-	return ew.child.MeasureAsync(ctx, input, idx)
-}
-
-// experimentSubmitterWrapper implements a submission policy where we don't
-// fail if we cannot submit a measurement
-type experimentSubmitterWrapper struct {
-	// child is the child submitter wrapper
-	child engine.InputProcessorSubmitterWrapper
-
-	// logger is the logger to use
-	logger model.Logger
-}
-
-func (sw *experimentSubmitterWrapper) Submit(ctx context.Context, idx int, m *model.Measurement) error {
-	if err := sw.child.Submit(ctx, idx, m); err != nil {
-		sw.logger.Warnf("submitting measurement failed: %s", err.Error())
-	}
-	// policy: we do not stop the loop if measurement submission fails
-	return nil
 }

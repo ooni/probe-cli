@@ -177,6 +177,7 @@ func v2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *v2Descri
 			Name:           nettest.TestName,
 			NoCollector:    config.NoCollector,
 			NoJSON:         config.NoJSON,
+			Parallelism:    1, // TODO(bassosimone): support this use case
 			Random:         config.Random,
 			ReportFile:     config.ReportFile,
 			Session:        config.Session,
