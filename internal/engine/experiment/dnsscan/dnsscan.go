@@ -58,9 +58,6 @@ var (
 	// errNoInputProvided indicates you didn't provide any input
 	errNoInputProvided = errors.New("not input provided")
 
-	// errInputFormatInvalid means that the input format is not valid
-	errInputFormatInvalid = errors.New("input is not a domain or URL")
-
 	// errNoInputProvided indicates that the chosen DNS resolver is not currently supported
 	errResolverNotSupported = errors.New("resolver not supported")
 
@@ -104,19 +101,14 @@ func (m *Measurer) Run(
 	if resolverIP == nil {
 		return fmt.Errorf("%w: invalid IP address", errInvalidResolver)
 	}
-	resolverAddress := fmt.Sprintf("%s:%s", resolverIP, parsedResolver.Port())
-	// is an IPv6 address
-	if resolverIP.To4() == nil {
-		resolverAddress = fmt.Sprintf("[%s]:%s", resolverIP, parsedResolver.Port())
-	}
-	m.dnsRoundTrip(ctx, measurement.MeasurementStartTimeSaved, sess.Logger(), resolverAddress, domain, tk)
+	m.dnsRoundTrip(ctx, measurement.MeasurementStartTimeSaved, sess.Logger(), parsedResolver.Host, domain, tk)
 	return nil // return nil so we always submit the measurement
 }
 
 // dnsRoundTrip performs a round trip and returns the results to the caller.
 func (m *Measurer) dnsRoundTrip(ctx context.Context, zeroTime time.Time,
 	logger model.Logger, address string, domain string, tk *TestKeys) {
-	fmt.Printf("Measuing %s %s", domain, address)
+	logger.Infof("Measuring %s with %s", domain, address)
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	trace := measurexlite.NewTrace(0, zeroTime)
