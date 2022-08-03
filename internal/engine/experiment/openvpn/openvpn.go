@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"runtime/debug"
@@ -34,7 +33,7 @@ const (
 	// pingTarget is the target IP we used for pings.
 	pingTarget = "8.8.8.8"
 
-	// urlGrabURL is the URI we fetch to check web connectivity and external IP.
+	// urlGrabURL is the URI we fetch to check web connectivity and egress IP.
 	urlGrabURI = "https://api.ipify.org/?format=json"
 )
 
@@ -43,6 +42,8 @@ type Config struct {
 	ConfigFile string `ooni:"Configuration file for the OpenVPN experiment"`
 }
 
+// PingStats holds the results for a pinger run.
+// TODO add the raw values for TTL and Rtt
 type PingStats struct {
 	MinRtt      float64 `json:"min_rtt"`
 	MaxRtt      float64 `json:"max_rtt"`
@@ -214,7 +215,6 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 		return
 	}
 	st := pinger.Statistics()
-	log.Println("stats", st)
 	pingStats := &PingStats{
 		MinRtt:      st.MinRtt.Seconds(),
 		MaxRtt:      st.MaxRtt.Seconds(),
@@ -223,11 +223,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 		PacketsRecv: st.PacketsRecv,
 		PacketsSent: st.PacketsSent,
 	}
-	log.Println("MINRTT", st.MinRtt.Seconds)
 	tk.PingStats = pingStats
-
-	// TODO(ainghazal): add ping metrics
-	// tk.Pings = append(tk.Pings, Ping{st[i].RTT(), st[i].TTL()})
 	tk.PingTarget = pingTarget
 
 	// urlgrab
