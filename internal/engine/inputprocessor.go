@@ -98,8 +98,9 @@ func (ip *InputProcessor) run(ctx context.Context) {
 	wg.Wait()
 	// termination protocol for saver and submitter
 	submitter.Stop()
-	saver.Stop()
 	submitter.Wait()
+
+	saver.Stop()
 	saver.Wait()
 }
 
