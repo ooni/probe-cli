@@ -13,7 +13,8 @@ import (
 func TestSubmitterNotEnabled(t *testing.T) {
 	ctx := context.Background()
 	submitter, err := NewSubmitter(ctx, SubmitterConfig{
-		Enabled: false,
+		Callbacks: model.NewPrinterCallbacks(model.DiscardLogger),
+		Enabled:   false,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -56,8 +57,9 @@ func TestNewSubmitterFails(t *testing.T) {
 	expected := errors.New("mocked error")
 	ctx := context.Background()
 	submitter, err := NewSubmitter(ctx, SubmitterConfig{
-		Enabled: true,
-		Session: FakeSubmitterSession{Error: expected},
+		Callbacks: model.NewPrinterCallbacks(model.DiscardLogger),
+		Enabled:   true,
+		Session:   FakeSubmitterSession{Error: expected},
 	})
 	if !errors.Is(err, expected) {
 		t.Fatalf("not the error we expected: %+v", err)
@@ -75,9 +77,10 @@ func TestNewSubmitterWithFailedSubmission(t *testing.T) {
 		Error: expected,
 	}
 	submitter, err := NewSubmitter(ctx, SubmitterConfig{
-		Enabled: true,
-		Logger:  log.Log,
-		Session: FakeSubmitterSession{Submitter: fakeSubmitter},
+		Callbacks: model.NewPrinterCallbacks(model.DiscardLogger),
+		Enabled:   true,
+		Logger:    log.Log,
+		Session:   FakeSubmitterSession{Submitter: fakeSubmitter},
 	})
 	if err != nil {
 		t.Fatal(err)

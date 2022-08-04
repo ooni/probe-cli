@@ -13,7 +13,7 @@ import (
 type Submitter interface {
 	// Submit submits the measurement and updates its
 	// report ID field in case of success.
-	Submit(ctx context.Context, m *model.Measurement) error
+	Submit(ctx context.Context, idx int, m *model.Measurement) error
 }
 
 // SubmitterSession is the Submitter's view of the Session.
@@ -24,6 +24,9 @@ type SubmitterSession interface {
 
 // SubmitterConfig contains settings for NewSubmitter.
 type SubmitterConfig struct {
+	// Callbacks contains experiment callbacks.
+	Callbacks model.ExperimentCallbacks
+
 	// Enabled is true if measurement submission is enabled.
 	Enabled bool
 
@@ -39,29 +42,43 @@ type SubmitterConfig struct {
 // instance migh just be a stub implementation.
 func NewSubmitter(ctx context.Context, config SubmitterConfig) (Submitter, error) {
 	if !config.Enabled {
-		return stubSubmitter{}, nil
+		subm := &stubSubmitter{
+			cbs: config.Callbacks,
+		}
+		return subm, nil
 	}
 	subm, err := config.Session.NewSubmitter(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return realSubmitter{subm: subm, logger: config.Logger}, nil
+	subm = &realSubmitter{
+		cbs:    config.Callbacks,
+		subm:   subm,
+		logger: config.Logger,
+	}
+	return subm, nil
 }
 
-type stubSubmitter struct{}
+type stubSubmitter struct {
+	cbs model.ExperimentCallbacks
+}
 
-func (stubSubmitter) Submit(ctx context.Context, m *model.Measurement) error {
+func (ss *stubSubmitter) Submit(ctx context.Context, idx int, m *model.Measurement) error {
+	ss.cbs.OnMeasurementSubmission(idx, m, model.ErrSubmissionDisabled)
 	return nil
 }
 
-var _ Submitter = stubSubmitter{}
+var _ Submitter = &stubSubmitter{}
 
 type realSubmitter struct {
-	subm   Submitter
+	cbs    model.ExperimentCallbacks
 	logger model.Logger
+	subm   Submitter
 }
 
-func (rs realSubmitter) Submit(ctx context.Context, m *model.Measurement) error {
+func (rs *realSubmitter) Submit(ctx context.Context, idx int, m *model.Measurement) error {
 	rs.logger.Info("submitting measurement to OONI collector; please be patient...")
-	return rs.subm.Submit(ctx, m)
+	err := rs.subm.Submit(ctx, idx, m)
+	rs.cbs.OnMeasurementSubmission(idx, m, err)
+	return err
 }

@@ -199,7 +199,7 @@ func NewSubmitter(opener ReportOpener, logger model.Logger) *Submitter {
 
 // Submit submits the current measurement to the OONI backend created using
 // the ReportOpener passed to the constructor.
-func (sub *Submitter) Submit(ctx context.Context, m *model.Measurement) error {
+func (sub *Submitter) Submit(ctx context.Context, idx int, m *model.Measurement) error {
 	var err error
 	sub.mu.Lock()
 	defer sub.mu.Unlock()

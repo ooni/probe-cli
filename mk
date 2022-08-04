@@ -340,6 +340,54 @@ OONIMKALL_V := $(shell date -u +%Y.%m.%d-%H%M%S)
 OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
 
 #help:
+#help: * `./mk ./LIBRARY/include/ooni/engine.h`: copies engine.h inside ./LIBRARY
+.PHONY: ./LIBRARY/include/ooni/engine.h
+./LIBRARY/include/ooni/engine.h:
+	cp ./pkg/ooniengine/engine.h ./LIBRARY/include/ooni
+
+#help:
+#help: * `./mk ./LIBRARY/darwin/arm64/libooniengine.dylib`: builds the OONI engine library for darwin/arm64
+.PHONY: ./LIBRARY/darwin/arm64/libooniengine.dylib
+./LIBRARY/darwin/arm64/libooniengine.dylib: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/darwin/amd64/libooniengine.dylib`: builds the OONI engine library for darwin/amd64
+.PHONY: ./LIBRARY/darwin/amd64/libooniengine.dylib
+./LIBRARY/darwin/amd64/libooniengine.dylib: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/windows/amd64/libooniengine.dll`: builds the OONI engine library for windows/amd64
+.PHONY: ./LIBRARY/windows/amd64/libooniengine.dll
+./LIBRARY/windows/amd64/libooniengine.dll: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc go build -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/windows/386/libooniengine.dll`: builds the OONI engine library for windows/386
+.PHONY: ./LIBRARY/windows/386/libooniengine.dll
+./LIBRARY/windows/386/libooniengine.dll: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc go build -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk __engineabi`: regenerates the engine ABI for both Go and Dart
+.PHONY: __engineabi
+__engineabi: search/for/go
+	go run ./pkg/ooniengine/internal/generator
+
+#help:
+#help: * `./mk ./LIBRARY/ooniengine-dart.tar.gz`: generates an archive containing dart sources
+.PHONY: ./LIBRARY/ooniengine-dart.tar.gz
+./LIBRARY/ooniengine-dart.tar.gz:
+	(cd ./dart/ooniengine/lib && tar -cvzf ../../../$@ *dart)
+
+#help:
+#help: * `./mk ooniengine-tool.exe`: builds the ooniengine-tool (implemented in Dart)
+.PHONY: ooniengine-tool.exe
+ooniengine-tool.exe:
+	dart compile exe -o ooniengine-tool.exe ./dart/ooniengine/bin/main.dart
+
+#help:
 #help: The following commands check for the availability of dependencies:
 # TODO(bassosimone): make checks more robust?
 

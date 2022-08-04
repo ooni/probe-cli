@@ -58,3 +58,11 @@ type ConnectsNoCallbacks struct{}
 
 // OnProgress implements ExperimentCallbacks.OnProgress
 func (ConnectsNoCallbacks) OnProgress(percentage float64, message string) {}
+
+// OnData implements ExperimentCallbacks.OnData
+func (ConnectsNoCallbacks) OnData(kibiBytesSent, kibiBytesReceived float64) {}
+
+// OnMeasurementSubmission implements ExperimentCallbacks
+func (ConnectsNoCallbacks) OnMeasurementSubmission(idx int, m *model.Measurement, err error) {
+	// nothing
+}

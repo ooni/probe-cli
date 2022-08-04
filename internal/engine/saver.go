@@ -8,7 +8,7 @@ import (
 
 // Saver saves a measurement on some persistent storage.
 type Saver interface {
-	SaveMeasurement(m *model.Measurement) error
+	SaveMeasurement(idx int, m *model.Measurement) error
 }
 
 // SaverConfig is the configuration for creating a new Saver.
@@ -49,7 +49,7 @@ func NewSaver(config SaverConfig) (Saver, error) {
 
 type fakeSaver struct{}
 
-func (fs fakeSaver) SaveMeasurement(m *model.Measurement) error {
+func (fs fakeSaver) SaveMeasurement(idx int, m *model.Measurement) error {
 	return nil
 }
 
@@ -61,7 +61,7 @@ type realSaver struct {
 	Logger     model.Logger
 }
 
-func (rs realSaver) SaveMeasurement(m *model.Measurement) error {
+func (rs realSaver) SaveMeasurement(idx int, m *model.Measurement) error {
 	rs.Logger.Info("saving measurement to disk")
 	return rs.Experiment.SaveMeasurement(m, rs.FilePath)
 }

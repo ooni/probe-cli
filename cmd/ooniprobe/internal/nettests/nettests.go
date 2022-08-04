@@ -297,3 +297,13 @@ func (c *Controller) OnProgress(perc float64, msg string) {
 	key := fmt.Sprintf("%T", c.nt)
 	output.Progress(key, perc, eta, msg)
 }
+
+// OnData implements model.ExperimentCallbacks.OnData.
+func (c *Controller) OnData(kibiBytesSent, kibiBytesReceived float64) {
+	// nothing
+}
+
+// OnMeasurementSubmission implements ExperimentCallbacks
+func (c *Controller) OnMeasurementSubmission(idx int, m *model.Measurement, err error) {
+	// nothing
+}

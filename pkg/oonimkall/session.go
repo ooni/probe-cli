@@ -46,10 +46,7 @@ type Logger interface {
 }
 
 // ExperimentCallbacks contains experiment callbacks.
-type ExperimentCallbacks interface {
-	// OnProgress provides information about an experiment progress.
-	OnProgress(percentage float64, message string)
-}
+type ExperimentCallbacks = model.ExperimentCallbacks
 
 // SessionConfig contains configuration for a Session. You should
 // fill all the mandatory fields and could also optionally fill some of

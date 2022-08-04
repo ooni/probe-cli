@@ -7,6 +7,9 @@ package model
 
 import (
 	"context"
+	"errors"
+
+	"github.com/ooni/probe-cli/v3/internal/humanize"
 )
 
 // ExperimentSession is the experiment's view of a session.
@@ -96,16 +99,49 @@ type ExperimentMeasurerAsync interface {
 		callbacks ExperimentCallbacks) (<-chan *ExperimentAsyncTestKeys, error)
 }
 
-// ExperimentCallbacks contains experiment event-handling callbacks
+// ExperimentCallbacks contains callbacks invoked when experiment events occur.
 type ExperimentCallbacks interface {
 	// OnProgress provides information about an experiment progress.
+	//
+	// Arguments:
+	//
+	// - percentage is a number between 0 and 1 indicating the current progress
+	//
+	// - message is a string message associated with the progress
 	OnProgress(percentage float64, message string)
+
+	// OnData provides information about the data usage.
+	//
+	// Arguments:
+	//
+	// - kibiBytesSent is the number of KiB sent by the experiment
+	//
+	// - kibiBytesReceived is the number of KiB received by the experiment
+	OnData(kibiBytesSent, kibiBytesReceived float64)
+
+	// OnMeasurementSubmission provides information about measurement submission.
+	//
+	// Arguments:
+	//
+	// - idx is the index of this measurement
+	//
+	// - m is the measurement
+	//
+	// - err is the submission error
+	//
+	// When submission is disabled the err value is ErrSubmissionDisabled.
+	OnMeasurementSubmission(idx int, m *Measurement, err error)
 }
+
+// ErrSubmissionDisabled indicates that the user has disabled measurements submission.
+var ErrSubmissionDisabled = errors.New("submission_disabled_error")
 
 // PrinterCallbacks is the default event handler
 type PrinterCallbacks struct {
 	Logger
 }
+
+var _ ExperimentCallbacks = PrinterCallbacks{}
 
 // NewPrinterCallbacks returns a new default callback handler
 func NewPrinterCallbacks(logger Logger) PrinterCallbacks {
@@ -115,6 +151,20 @@ func NewPrinterCallbacks(logger Logger) PrinterCallbacks {
 // OnProgress provides information about an experiment progress.
 func (d PrinterCallbacks) OnProgress(percentage float64, message string) {
 	d.Logger.Infof("[%5.1f%%] %s", percentage*100, message)
+}
+
+// OnData implements ExperimentCallbacks.OnData.
+func (d PrinterCallbacks) OnData(kibiBytesSent, kibiBytesReceived float64) {
+	d.Infof(
+		"experiment: recv %s, sent %s",
+		humanize.SI(kibiBytesReceived*1024, "byte"),
+		humanize.SI(kibiBytesSent*1024, "byte"),
+	)
+}
+
+// OnMeasurementSubmission implements ExperimentCallbacks
+func (PrinterCallbacks) OnMeasurementSubmission(idx int, m *Measurement, err error) {
+	// nothing
 }
 
 // ExperimentMeasurer is the interface that allows to run a
