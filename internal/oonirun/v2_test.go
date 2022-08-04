@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -19,11 +20,11 @@ import (
 
 func TestOONIRunV2LinkCommonCase(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		descriptor := &v2Descriptor{
+		descriptor := &V2Descriptor{
 			Name:        "",
 			Description: "",
 			Author:      "",
-			Nettests: []v2Nettest{{
+			Nettests: []V2Nettest{{
 				Inputs: []string{},
 				Options: map[string]any{
 					"SleepTime": int64(10 * time.Millisecond),
@@ -42,6 +43,7 @@ func TestOONIRunV2LinkCommonCase(t *testing.T) {
 		Annotations: map[string]string{
 			"platform": "linux",
 		},
+		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 		KVStore:     &kvstore.Memory{},
 		MaxRuntime:  0,
 		NoCollector: true,
@@ -58,11 +60,11 @@ func TestOONIRunV2LinkCommonCase(t *testing.T) {
 
 func TestOONIRunV2LinkCannotUpdateCache(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		descriptor := &v2Descriptor{
+		descriptor := &V2Descriptor{
 			Name:        "",
 			Description: "",
 			Author:      "",
-			Nettests: []v2Nettest{{
+			Nettests: []V2Nettest{{
 				Inputs: []string{},
 				Options: map[string]any{
 					"SleepTime": int64(10 * time.Millisecond),
@@ -82,6 +84,7 @@ func TestOONIRunV2LinkCannotUpdateCache(t *testing.T) {
 		Annotations: map[string]string{
 			"platform": "linux",
 		},
+		Callbacks: model.NewPrinterCallbacks(model.DiscardLogger),
 		KVStore: &mocks.KeyValueStore{
 			MockGet: func(key string) ([]byte, error) {
 				return []byte("{}"), nil
@@ -106,11 +109,11 @@ func TestOONIRunV2LinkCannotUpdateCache(t *testing.T) {
 
 func TestOONIRunV2LinkWithoutAcceptChanges(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		descriptor := &v2Descriptor{
+		descriptor := &V2Descriptor{
 			Name:        "",
 			Description: "",
 			Author:      "",
-			Nettests: []v2Nettest{{
+			Nettests: []V2Nettest{{
 				Inputs: []string{},
 				Options: map[string]any{
 					"SleepTime": int64(10 * time.Millisecond),
@@ -129,6 +132,7 @@ func TestOONIRunV2LinkWithoutAcceptChanges(t *testing.T) {
 		Annotations: map[string]string{
 			"platform": "linux",
 		},
+		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 		KVStore:     &kvstore.Memory{},
 		MaxRuntime:  0,
 		NoCollector: true,
@@ -155,6 +159,7 @@ func TestOONIRunV2LinkNilDescriptor(t *testing.T) {
 		Annotations: map[string]string{
 			"platform": "linux",
 		},
+		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 		KVStore:     &kvstore.Memory{},
 		MaxRuntime:  0,
 		NoCollector: true,
@@ -171,11 +176,11 @@ func TestOONIRunV2LinkNilDescriptor(t *testing.T) {
 
 func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		descriptor := &v2Descriptor{
+		descriptor := &V2Descriptor{
 			Name:        "",
 			Description: "",
 			Author:      "",
-			Nettests: []v2Nettest{{
+			Nettests: []V2Nettest{{
 				Inputs: []string{},
 				Options: map[string]any{
 					"SleepTime": int64(10 * time.Millisecond),
@@ -194,6 +199,7 @@ func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 		Annotations: map[string]string{
 			"platform": "linux",
 		},
+		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 		KVStore:     &kvstore.Memory{},
 		MaxRuntime:  0,
 		NoCollector: true,
@@ -215,7 +221,7 @@ func TestV2MeasureDescriptor(t *testing.T) {
 	t.Run("with nil descriptor", func(t *testing.T) {
 		ctx := context.Background()
 		config := &LinkConfig{}
-		err := v2MeasureDescriptor(ctx, config, nil)
+		err := V2MeasureDescriptor(ctx, config, nil)
 		if !errors.Is(err, ErrNilDescriptor) {
 			t.Fatal("unexpected err", err)
 		}
@@ -229,6 +235,7 @@ func TestV2MeasureHTTPS(t *testing.T) {
 		config := &LinkConfig{
 			AcceptChanges: false,
 			Annotations:   map[string]string{},
+			Callbacks:     model.NewPrinterCallbacks(model.DiscardLogger),
 			KVStore: &mocks.KeyValueStore{
 				MockGet: func(key string) (value []byte, err error) {
 					return nil, expected
@@ -253,6 +260,7 @@ func TestV2MeasureHTTPS(t *testing.T) {
 		config := &LinkConfig{
 			AcceptChanges: false,
 			Annotations:   map[string]string{},
+			Callbacks:     model.NewPrinterCallbacks(model.DiscardLogger),
 			KVStore:       &kvstore.Memory{},
 			MaxRuntime:    0,
 			NoCollector:   false,

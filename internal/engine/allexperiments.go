@@ -376,3 +376,26 @@ func AllExperiments() []string {
 	}
 	return names
 }
+
+// ExperimentInfo contains info about an experiment.
+type ExperimentInfo struct {
+	// Name is the experiment name.
+	Name string
+
+	// InputPolicy is the input policy.
+	InputPolicy InputPolicy
+}
+
+// AllExperimentsInfo returns info about all experiments.
+func AllExperimentsInfo() (out []ExperimentInfo) {
+	// TODO(bassosimone): refactor the way in which we keep a database
+	// of all the existing experiments to make them easier to walk.
+	for name, value := range experimentsByName {
+		builder := value(&Session{})
+		out = append(out, ExperimentInfo{
+			Name:        name,
+			InputPolicy: builder.inputPolicy,
+		})
+	}
+	return
+}

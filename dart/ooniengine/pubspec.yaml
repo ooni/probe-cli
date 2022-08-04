@@ -1,0 +1,22 @@
+name: ooniengine
+description: dart binding for OONI Engine
+version: 0.1.0
+homepage: https://github.com/ooni/probe-cli
+documentation: https://github.com/ooni/probe-cli
+publish_to: none
+
+environment:
+  sdk: '>=2.17.0 <3.0.0'
+
+dependencies:
+  protobuf: ^2.1.0
+
+dev_dependencies:
+  ffigen: ^6.0.1
+
+ffigen:
+  output: 'lib/bindings.dart'
+  name: 'OONIEngineFFI'
+  headers:
+    entry-points:
+      - '../../pkg/ooniengine/engine.h'

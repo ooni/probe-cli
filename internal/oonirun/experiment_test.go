@@ -41,6 +41,7 @@ func TestExperimentRunWithExample(t *testing.T) {
 		Annotations: map[string]string{
 			"platform": "linux",
 		},
+		Callbacks: model.NewPrinterCallbacks(model.DiscardLogger),
 		ExtraOptions: map[string]any{
 			"SleepTime": int64(10 * time.Millisecond),
 		},

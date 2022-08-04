@@ -74,7 +74,8 @@ func v1Measure(ctx context.Context, config *LinkConfig, URL string) error {
 	}
 	// TODO(bassosimone): reject mv < 1.2.0
 	exp := &Experiment{
-		Annotations:    config.Annotations,
+		Annotations:    nil, // no way to specify with v2 URLs
+		Callbacks:      config.Callbacks,
 		ExtraOptions:   nil, // no way to specify with v1 URLs
 		Inputs:         inputs,
 		InputFilePaths: nil,

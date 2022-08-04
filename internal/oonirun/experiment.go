@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
-	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -20,6 +19,9 @@ import (
 type Experiment struct {
 	// Annotations contains OPTIONAL Annotations for the experiment.
 	Annotations map[string]string
+
+	// Callbacks contains MANDATORY experiment callbacks.
+	Callbacks model.ExperimentCallbacks
 
 	// ExtraOptions contains OPTIONAL extra options for the experiment.
 	ExtraOptions map[string]any
@@ -84,11 +86,10 @@ func (ed *Experiment) Run(ctx context.Context) error {
 
 	// 5. construct the experiment instance
 	experiment := builder.NewExperiment()
-	logger := ed.Session.Logger()
 	defer func() {
-		logger.Infof("experiment: recv %s, sent %s",
-			humanize.SI(experiment.KibiBytesReceived()*1024, "byte"),
-			humanize.SI(experiment.KibiBytesSent()*1024, "byte"),
+		ed.Callbacks.OnData(
+			experiment.KibiBytesSent(),
+			experiment.KibiBytesReceived(),
 		)
 	}()
 
@@ -121,6 +122,7 @@ func (ed *Experiment) newInputProcessor(experiment engine.Experiment,
 	inputList []model.OOAPIURLInfo, saver engine.Saver, submitter engine.Submitter) inputProcessor {
 	return &engine.InputProcessor{
 		Annotations: ed.Annotations,
+		Callbacks:   ed.Callbacks,
 		Experiment: &experimentWrapper{
 			child:  engine.NewInputProcessorExperimentWrapper(experiment),
 			logger: ed.Session.Logger(),
@@ -129,11 +131,8 @@ func (ed *Experiment) newInputProcessor(experiment engine.Experiment,
 		Inputs:     inputList,
 		MaxRuntime: time.Duration(ed.MaxRuntime) * time.Second,
 		Options:    experimentOptionsToStringList(ed.ExtraOptions),
-		Saver:      engine.NewInputProcessorSaverWrapper(saver),
-		Submitter: &experimentSubmitterWrapper{
-			child:  engine.NewInputProcessorSubmitterWrapper(submitter),
-			logger: ed.Session.Logger(),
-		},
+		Saver:      saver,
+		Submitter:  submitter,
 	}
 }
 
@@ -150,14 +149,17 @@ func (ed *Experiment) newSaver(experiment engine.Experiment) (engine.Saver, erro
 // newSubmitter creates a new engine.Submitter instance.
 func (ed *Experiment) newSubmitter(ctx context.Context) (engine.Submitter, error) {
 	return engine.NewSubmitter(ctx, engine.SubmitterConfig{
-		Enabled: !ed.NoCollector,
-		Session: ed.Session,
-		Logger:  ed.Session.Logger(),
+		Callbacks: ed.Callbacks,
+		Enabled:   !ed.NoCollector,
+		Session:   ed.Session,
+		Logger:    ed.Session.Logger(),
 	})
 }
 
 // newExperimentBuilder creates a new engine.ExperimentBuilder for the given experimentName.
 func (ed *Experiment) newExperimentBuilder(experimentName string) (engine.ExperimentBuilder, error) {
+	// TODO(bassosimone): we need to be able to set the callbacks here
+	// otherwise we're missing OnProgress events for some experiments
 	return ed.Session.NewExperimentBuilder(ed.Name)
 }
 
@@ -209,22 +211,4 @@ func (ew *experimentWrapper) MeasureAsync(
 		ew.logger.Infof("[%d/%d] running with input: %s", idx+1, ew.total, input)
 	}
 	return ew.child.MeasureAsync(ctx, input, idx)
-}
-
-// experimentSubmitterWrapper implements a submission policy where we don't
-// fail if we cannot submit a measurement
-type experimentSubmitterWrapper struct {
-	// child is the child submitter wrapper
-	child engine.InputProcessorSubmitterWrapper
-
-	// logger is the logger to use
-	logger model.Logger
-}
-
-func (sw *experimentSubmitterWrapper) Submit(ctx context.Context, idx int, m *model.Measurement) error {
-	if err := sw.child.Submit(ctx, idx, m); err != nil {
-		sw.logger.Warnf("submitting measurement failed: %s", err.Error())
-	}
-	// policy: we do not stop the loop if measurement submission fails
-	return nil
 }

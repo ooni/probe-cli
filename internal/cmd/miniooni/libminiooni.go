@@ -397,6 +397,7 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 	// Otherwise just run OONI experiments as we normally do.
 	desc := &oonirun.Experiment{
 		Annotations:    annotations,
+		Callbacks:      model.NewPrinterCallbacks(logger),
 		ExtraOptions:   extraOptions,
 		Inputs:         currentOptions.Inputs,
 		InputFilePaths: currentOptions.InputFilePaths,
@@ -428,6 +429,7 @@ func ooniRunMain(ctx context.Context,
 	cfg := &oonirun.LinkConfig{
 		AcceptChanges: currentOptions.Yes,
 		Annotations:   annotations,
+		Callbacks:     model.NewPrinterCallbacks(logger),
 		KVStore:       sess.KeyValueStore(),
 		MaxRuntime:    currentOptions.MaxRuntime,
 		NoCollector:   currentOptions.NoCollector,

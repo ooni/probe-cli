@@ -19,8 +19,8 @@ type LinkConfig struct {
 	// reviewing what it contains or what has changed.
 	AcceptChanges bool
 
-	// Annotations contains OPTIONAL Annotations for the experiment.
-	Annotations map[string]string
+	// Callbacks contains MANDATORY experiment callbacks.
+	Callbacks model.ExperimentCallbacks
 
 	// KVStore is the MANDATORY key-value store to use to keep track of
 	// OONI Run links and know when they are new or modified.
