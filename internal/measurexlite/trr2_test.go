@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/google/go-cmp/cmp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
@@ -46,23 +45,39 @@ func TestNewTrustedRecursiveResolver(t *testing.T) {
 		}
 	})
 
+	t.Run("network gives correct output", func(t *testing.T) {
+		expected := "trr2"
+		resolver := NewTrustedRecursiveResolver2(&mocks.Logger{}, "", 0).(*TrustedRecursiveResolver2)
+		if resolver.Network() != expected {
+			t.Fatal("network gives unexpected output")
+		}
+	})
+
+	t.Run("NewParallelDNSOverHTTPSResolverFn is nil", func(t *testing.T) {
+		resolver := NewTrustedRecursiveResolver2(&mocks.Logger{}, "", 0).(*TrustedRecursiveResolver2)
+		if resolver.NewParallelDNSOverHTTPSResolverFn != nil {
+			t.Fatal("expected nil NewParallelDNSOverHTTPSResolverFn")
+		}
+	})
+
+	t.Run("NewParallelDNSOverHTTPSResolverFn works as intended", func(t *testing.T) {
+		underlying := &mocks.Resolver{}
+		resolver := &TrustedRecursiveResolver2{
+			NewParallelDNSOverHTTPSResolverFn: func() model.Resolver {
+				return underlying
+			},
+		}
+		got := resolver.newParallelDNSOverHTTPSResolver(log.Log, "")
+		if got != underlying {
+			t.Fatal("unexpected parallel DoH resolver")
+		}
+	})
+
 	t.Run("with DoH resolver", func(t *testing.T) {
-		newResolver := func(model.Logger, string) model.Resolver {
+		newResolver := func() model.Resolver {
 			return &mocks.Resolver{
 				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return []string{"1.1.1.1"}, nil
-				},
-				MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
-					return &model.HTTPSSvc{
-						IPv4: []string{"1.1.1.1"},
-					}, nil
-				},
-				MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
-					return []*net.NS{
-						{
-							Host: "1.1.1.1",
-						},
-					}, nil
 				},
 			}
 		}
@@ -79,60 +94,13 @@ func TestNewTrustedRecursiveResolver(t *testing.T) {
 				t.Fatal("got unexpected addresses")
 			}
 		})
-
-		t.Run("LookupHTTPS", func(t *testing.T) {
-			ctx := context.Background()
-			want := &model.HTTPSSvc{
-				IPv4: []string{"1.1.1.1"},
-			}
-			got, err := resolver.LookupHTTPS(ctx, "example.com")
-			if err != nil {
-				t.Fatal("unexpected error", err)
-			}
-			if diff := cmp.Diff(got, want); diff != "" {
-				t.Fatal(diff)
-			}
-		})
-
-		t.Run("LookupNS", func(t *testing.T) {
-			ctx := context.Background()
-			want := &net.NS{
-				Host: "1.1.1.1",
-			}
-			got, err := resolver.LookupNS(ctx, "example.com")
-			if err != nil {
-				t.Fatal("unexpected error", err)
-			}
-			if len(got) != 1 {
-				t.Fatal("got unexpected addresses")
-			}
-			if diff := cmp.Diff(got[0], want); diff != "" {
-				t.Fatal(diff)
-			}
-		})
 	})
 
 	t.Run("DoH resolver times out", func(t *testing.T) {
-		var called bool
 		newResolver := func(model.DebugLogger, string) model.Resolver {
 			return &mocks.Resolver{
 				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return []string{"1.1.1.1"}, nil
-				},
-				MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
-					return &model.HTTPSSvc{
-						IPv4: []string{"1.1.1.1"},
-					}, nil
-				},
-				MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
-					return []*net.NS{
-						{
-							Host: "1.1.1.1",
-						},
-					}, nil
-				},
-				MockCloseIdleConnections: func() {
-					called = true
 				},
 			}
 		}
@@ -150,73 +118,19 @@ func TestNewTrustedRecursiveResolver(t *testing.T) {
 				t.Fatal("got unexpected addresses")
 			}
 		})
-
-		t.Run("LookupHTTPS", func(t *testing.T) {
-			ctx := context.Background()
-			want := &model.HTTPSSvc{
-				IPv4: []string{"1.1.1.1"},
-			}
-			got, err := resolver.LookupHTTPS(ctx, "example.com")
-			if err != nil {
-				t.Fatal("unexpected error", err)
-			}
-			if diff := cmp.Diff(got, want); diff != "" {
-				t.Fatal(diff)
-			}
-		})
-
-		t.Run("LookupNS", func(t *testing.T) {
-			ctx := context.Background()
-			want := &net.NS{
-				Host: "1.1.1.1",
-			}
-			got, err := resolver.LookupNS(ctx, "example.com")
-			if err != nil {
-				t.Fatal("unexpected error", err)
-			}
-			if len(got) != 1 {
-				t.Fatal("got unexpected addresses")
-			}
-			if diff := cmp.Diff(got[0], want); diff != "" {
-				t.Fatal(diff)
-			}
-		})
-
-		t.Run("CloseIdleConnections", func(t *testing.T) {
-			resolver.CloseIdleConnections()
-			if called != true {
-				t.Fatal("unexpected error while closing connection")
-			}
-		})
 	})
 
 	t.Run("with system resolver", func(t *testing.T) {
 		mockedErr := errors.New("mocked")
-		var called bool
 		newResolver := func(model.DebugLogger, string) model.Resolver {
 			return &mocks.Resolver{
 				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return []string{"1.1.1.1"}, nil
 				},
-				MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
-					return &model.HTTPSSvc{
-						IPv4: []string{"1.1.1.1"},
-					}, nil
-				},
-				MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
-					return []*net.NS{
-						{
-							Host: "1.1.1.1",
-						},
-					}, nil
-				},
-				MockCloseIdleConnections: func() {
-					called = true
-				},
 			}
 		}
 		// the DoH resolver must return an error to use the fallback system resolver
-		newDoHResolver := func(model.Logger, string) model.Resolver {
+		newDoHResolver := func() model.Resolver {
 			return &mocks.Resolver{
 				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return []string{}, mockedErr
@@ -244,42 +158,5 @@ func TestNewTrustedRecursiveResolver(t *testing.T) {
 			}
 		})
 
-		t.Run("LookupHTTPS", func(t *testing.T) {
-			ctx := context.Background()
-			want := &model.HTTPSSvc{
-				IPv4: []string{"1.1.1.1"},
-			}
-			got, err := resolver.LookupHTTPS(ctx, "example.com")
-			if err != nil {
-				t.Fatal("unexpected error", err)
-			}
-			if diff := cmp.Diff(got, want); diff != "" {
-				t.Fatal(diff)
-			}
-		})
-
-		t.Run("LookupNS", func(t *testing.T) {
-			ctx := context.Background()
-			want := &net.NS{
-				Host: "1.1.1.1",
-			}
-			got, err := resolver.LookupNS(ctx, "example.com")
-			if err != nil {
-				t.Fatal("unexpected error", err)
-			}
-			if len(got) != 1 {
-				t.Fatal("got unexpected addresses")
-			}
-			if diff := cmp.Diff(got[0], want); diff != "" {
-				t.Fatal(diff)
-			}
-		})
-
-		t.Run("CloseIdleConnections", func(t *testing.T) {
-			resolver.CloseIdleConnections()
-			if called != true {
-				t.Fatal("unexpected error while closing connection")
-			}
-		})
 	})
 }
