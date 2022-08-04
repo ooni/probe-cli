@@ -43,6 +43,10 @@ type Trace struct {
 	// calls to the netxlite.NewParallelResolver factory.
 	NewParallelResolverFn func() model.Resolver
 
+	// NewSimpleResolverFn is OPTIONAL and can be used to override
+	// calls to the netxlite.NewParallelResolver factory
+	NewSimpleResolverFn func() model.SimpleResolver
+
 	// NewDialerWithoutResolverFn is OPTIONAL and can be used to override
 	// calls to the netxlite.NewDialerWithoutResolver factory.
 	NewDialerWithoutResolverFn func(dl model.DebugLogger) model.Dialer
@@ -160,6 +164,15 @@ func (tx *Trace) newDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
 func (tx *Trace) newParallelResolver(newResolver func() model.Resolver) model.Resolver {
 	if tx.NewParallelResolverFn != nil {
 		return tx.NewParallelResolverFn()
+	}
+	return newResolver()
+}
+
+// newSimpleResolver indirectly calls the passed simple resolver
+// thus allowing us to mock this function for testing
+func (tx *Trace) newSimpleResolver(newResolver func() model.SimpleResolver) model.SimpleResolver {
+	if tx.NewSimpleResolverFn != nil {
+		return tx.NewSimpleResolverFn()
 	}
 	return newResolver()
 }

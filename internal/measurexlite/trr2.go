@@ -6,7 +6,6 @@ package measurexlite
 
 import (
 	"context"
-	"net"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -17,7 +16,7 @@ import (
 // When the URL is empty, we use a reliable resolver URL as the default resolver
 // When the timeout is 0, we use Firefox's default request timeout value
 // TODO(DecFox): Maybe we can be more liberal with the default timeout value
-func NewTrustedRecursiveResolver2(logger model.Logger, URL string, timeout int) model.Resolver {
+func NewTrustedRecursiveResolver2(logger model.Logger, URL string, timeout int) model.SimpleResolver {
 	const mozillaURL = "https://mozilla.cloudflare-dns.com/dns-query"
 	if URL == "" {
 		URL = mozillaURL
@@ -35,6 +34,9 @@ func NewTrustedRecursiveResolver2(logger model.Logger, URL string, timeout int) 
 }
 
 // TrustedRecursiveResolver2 emulates Firefox's TRR2 mode.
+// TODO(DecFox): Since TraustedRecursiveResolver2 is a model.SimpleResolver,
+// and we only make use of Lookuphost, the ResolverSystem and DoH factory
+// fields could also be replaced with a simple resolver
 type TrustedRecursiveResolver2 struct {
 	// Logger is MANDATORY and is passed to the ParallelDNSOverHTTPSResolver
 	Logger model.Logger
@@ -44,7 +46,7 @@ type TrustedRecursiveResolver2 struct {
 
 	// NewParallelDNSOverHTTPSResolverFn is OPTIONAL and can be used to overide
 	// calls to the netxlite.NewParallelDNSOverHTTPSResolver factory
-	NewParallelDNSOverHTTPSResolverFn func(model.Logger, string) model.Resolver
+	NewParallelDNSOverHTTPSResolverFn func() model.Resolver
 
 	// ResolverSystem is MANDATORY and is used as a fallback if the DoH resolver fails
 	ResolverSystem model.Resolver
@@ -53,24 +55,14 @@ type TrustedRecursiveResolver2 struct {
 	Timeout time.Duration
 }
 
-var _ model.Resolver = &TrustedRecursiveResolver2{}
-
-// Address implements model.Resolver.Address
-func (trr *TrustedRecursiveResolver2) Address() string {
-	return trr.URL
-}
+var _ model.SimpleResolver = &TrustedRecursiveResolver2{}
 
 // Network implements model.Resolver.Network
 func (trr *TrustedRecursiveResolver2) Network() string {
 	return "trr2"
 }
 
-// CloseIdleConnections implements model.Resolver.CloseIdleConnections
-func (trr TrustedRecursiveResolver2) CloseIdleConnections() {
-	trr.ResolverSystem.CloseIdleConnections()
-}
-
-// LookupHost implements model.Resolver.LookupHost
+// LookupHost implements model.SimpleResolver.LookupHost
 func (trr *TrustedRecursiveResolver2) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	reso := trr.newParallelDNSOverHTTPSResolver(trr.Logger, trr.URL)
 	c, cancel := context.WithTimeout(ctx, trr.Timeout)
@@ -82,34 +74,10 @@ func (trr *TrustedRecursiveResolver2) LookupHost(ctx context.Context, hostname s
 	return addrs, err
 }
 
-// LookupHTTPS implements model.Resolver.LookupHTTPS
-func (trr *TrustedRecursiveResolver2) LookupHTTPS(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
-	reso := trr.newParallelDNSOverHTTPSResolver(trr.Logger, trr.URL)
-	c, cancel := context.WithTimeout(ctx, trr.Timeout)
-	defer cancel()
-	out, err := reso.LookupHTTPS(c, domain)
-	if err != nil {
-		out, err = trr.ResolverSystem.LookupHTTPS(ctx, domain)
-	}
-	return out, err
-}
-
-// LookupNS implements model.Resolver.LookupNS
-func (trr *TrustedRecursiveResolver2) LookupNS(ctx context.Context, domain string) ([]*net.NS, error) {
-	reso := trr.newParallelDNSOverHTTPSResolver(trr.Logger, trr.URL)
-	c, cancel := context.WithTimeout(ctx, trr.Timeout)
-	defer cancel()
-	out, err := reso.LookupNS(c, domain)
-	if err != nil {
-		out, err = trr.ResolverSystem.LookupNS(ctx, domain)
-	}
-	return out, err
-}
-
 // newParallelDNSOverHTTPSResolver is a factory that returns a parallel DoH resolver
-func (trr *TrustedRecursiveResolver2) newParallelDNSOverHTTPSResolver(logger model.Logger, URL string) model.Resolver {
+func (trr *TrustedRecursiveResolver2) newParallelDNSOverHTTPSResolver(logger model.Logger, URL string) model.SimpleResolver {
 	if trr.NewParallelDNSOverHTTPSResolverFn != nil {
-		return trr.NewParallelDNSOverHTTPSResolverFn(logger, URL)
+		return trr.NewParallelDNSOverHTTPSResolverFn()
 	}
 	return netxlite.NewParallelDNSOverHTTPSResolver(logger, URL)
 }

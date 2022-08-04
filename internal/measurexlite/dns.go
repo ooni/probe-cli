@@ -64,13 +64,6 @@ func (r *resolverTrace) LookupNS(ctx context.Context, domain string) ([]*net.NS,
 	return r.r.LookupNS(netxlite.ContextWithTrace(ctx, r.tx), domain)
 }
 
-// NewTrustedRecursiveResolver2 returns a trace-aware TRR2 resolver
-func (tx *Trace) NewTrustedRecursiveResolver2(logger model.Logger, address string, timeout int) model.Resolver {
-	return tx.newParallelResolverTrace(func() model.Resolver {
-		return NewTrustedRecursiveResolver2(logger, address, timeout)
-	})
-}
-
 // NewStdlibResolver returns a trace-aware stdlib resolver
 func (tx *Trace) NewStdlibResolver(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
 	return tx.newParallelResolverTrace(func() model.Resolver {
@@ -89,6 +82,41 @@ func (tx *Trace) NewParallelUDPResolver(logger model.Logger, dialer model.Dialer
 func (tx *Trace) NewParallelDNSOverHTTPSResolver(logger model.Logger, URL string) model.Resolver {
 	return tx.newParallelResolverTrace(func() model.Resolver {
 		return netxlite.NewParallelDNSOverHTTPSResolver(logger, URL)
+	})
+}
+
+// newSimpleResolverTrace is equivalent to returning a simple resolver
+// except that it returns a model.SimpleResolver that uses this trace.
+func (tx *Trace) newSimpleResolverTrace(newResolver func() model.SimpleResolver) model.SimpleResolver {
+	return &simpleResolverTrace{
+		r:  tx.newSimpleResolver(newResolver),
+		tx: tx,
+	}
+}
+
+// simpleResolverTrace is a trace-aware simple resolver
+type simpleResolverTrace struct {
+	r  model.SimpleResolver
+	tx *Trace
+}
+
+var _ model.SimpleResolver = &simpleResolverTrace{}
+
+// Network implements model.SimpleResolver.Network
+func (r *simpleResolverTrace) Network() string {
+	return r.r.Network()
+}
+
+// LookupHost implements model.SimpleResolver.LookupHost
+func (r *simpleResolverTrace) LookupHost(ctx context.Context, hostname string) ([]string, error) {
+	return r.r.LookupHost(netxlite.ContextWithTrace(ctx, r.tx), hostname)
+}
+
+// NewTrustedRecursiveResolver2 returns a trace-aware TRR2 resolver
+func (tx *Trace) NewTrustedRecursiveResolver2(logger model.Logger, address string,
+	timeout int) model.SimpleResolver {
+	return tx.newSimpleResolverTrace(func() model.SimpleResolver {
+		return NewTrustedRecursiveResolver2(logger, address, timeout)
 	})
 }
 
