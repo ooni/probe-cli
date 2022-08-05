@@ -742,3 +742,100 @@ bool printMessage($pb.GeneratedMessage? msg) {
   // We don't print unknown messages.
   return false;
 }
+
+/// Converts Dart ABI to the equivalent GOOS string.
+///
+/// This function is useful to build the name of the dynamic library
+/// implementing the OONI engine for the current system.
+String operatingSystem() {
+  switch (Abi.current()) {
+    case Abi.androidArm:
+    case Abi.androidArm64:
+    case Abi.androidIA32:
+    case Abi.androidX64:
+      return "android";
+
+    case Abi.iosArm:
+    case Abi.iosArm64:
+    case Abi.iosX64:
+      return "ios";
+
+    case Abi.linuxArm:
+    case Abi.linuxArm64:
+    case Abi.linuxIA32:
+    case Abi.linuxX64:
+    case Abi.linuxRiscv32:
+    case Abi.linuxRiscv64:
+      return "linux";
+
+    case Abi.macosArm64:
+    case Abi.macosX64:
+      return "darwin";
+
+    case Abi.windowsArm64:
+    case Abi.windowsIA32:
+    case Abi.windowsX64:
+      return "windows";
+
+    case Abi.fuchsiaArm64:
+    case Abi.fuchsiaX64:
+    default:
+      return "unknown";
+  }
+}
+
+/// Converts Dart ABI to the equivalent GOARCH string.
+///
+/// This function is useful to build the name of the dynamic library
+/// implementing the OONI engine for the current system.
+String architecture() {
+  switch (Abi.current()) {
+    case Abi.androidArm:
+    case Abi.iosArm:
+    case Abi.linuxArm:
+      return "arm";
+
+    case Abi.androidArm64:
+    case Abi.fuchsiaArm64:
+    case Abi.iosArm64:
+    case Abi.linuxArm64:
+    case Abi.macosArm64:
+    case Abi.windowsArm64:
+      return "arm64";
+
+    case Abi.androidX64:
+    case Abi.fuchsiaX64:
+    case Abi.iosX64:
+    case Abi.macosX64:
+    case Abi.windowsX64:
+      return "amd64";
+
+    case Abi.androidIA32:
+    case Abi.linuxIA32:
+    case Abi.windowsIA32:
+      return "386";
+
+    case Abi.linuxX64:
+    case Abi.linuxRiscv32:
+    case Abi.linuxRiscv64:
+    default:
+      return "unknown";
+  }
+}
+
+/// Returns the correct library extension for this platform.
+String libraryExtension() {
+  final goos = operatingSystem();
+  switch (goos) {
+    case "android":
+    case "linux":
+      return "so";
+    case "windows":
+      return "dll";
+    case "darwin":
+      return "dylib";
+    case "ios":
+    default:
+      throw EngineException("no known library extension for ${goos}");
+  }
+}

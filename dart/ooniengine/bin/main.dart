@@ -52,8 +52,10 @@ class SessionDirectories {
 
 /// Creates a new instance of the OONI Engine and runs it inside an Isolate.
 Engine newEngine() {
-  // TODO(bassosimone): make this depend on the OS/ARCH
-  return Engine("./LIBRARY/darwin/arm64/libooniengine.dylib");
+  final goos = operatingSystem();
+  final goarch = architecture();
+  final ext = libraryExtension();
+  return Engine("./LIBRARY/${goos}/${goarch}/libooniengine.${ext}");
 }
 
 /// Name of this software
