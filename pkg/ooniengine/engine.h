@@ -9,79 +9,116 @@
 /// C API for using the OONI engine.
 ///
 
-/// OONIEvent is an event emitted by the OONI engine.
-struct OONIEvent {
-	/// Name of the event.
-	char *Name;
+#include <stdbool.h>
+#include <stdint.h>
 
-	/// Base pointer to the array containing protobuf v3 data.
-	void *Base;
+/// OONIMessage is a message sent to or received from the OONI engine.
+struct OONIMessage {
+	/// Key identifies the message type and allows a protobuf v3
+	/// parser to unserialize to the correct value.
+	char *Key;
 
-	/// The length of the array pointed by Base.
-	int Len;
+	/// Base is the base pointer of the byte array containing
+	/// protobuf v3 serialized data.
+	uint8_t *Base;
+
+	/// Size is the size of the byte array.
+	uint32_t Size;
 };
+
+/// OONITask is an asynchronous thread of execution managed by the OONI
+/// engine that performs a background operation and emits meaningful
+/// events such as, for example, the results of measurements.
+typedef uintptr_t OONITask;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/// Starts a new task inside the OONI engine using protobuf v3.
+/// OONICall calls an OONI engine function and returns the result.
 ///
-/// Note that this function copies both the name string and the base
-/// byte array meaning that it's inefficient with large messages. However,
-/// OONI does not need to exchange very large messages.
+/// @param req An OONIMessage structure, owned by the caller, that
+/// describes which API to call and with which arguments. The engine
+/// will use the message Key to determine which function to call. The
+/// engine will reply immediately. It's safe to free [req] once this
+/// function has returned a result to the caller.
 ///
-/// @param name The name of the task to start.
-///
-/// @param base Base of the buffer containing protobuf-serialized data.
-///
-/// @param len Length of the buffer pointed by base.
-///
-/// @return A negative value on failure. In such a case, the OONI engine
-/// will print a diagnostic message on the standard error.
-///
-/// @return A zero-or-positive unique task identifier on success. In such a
-/// case, you own the task and must call OONITaskFree when done using it.
-int OONITaskStart(char *name, void *base, int len);
+/// @return A NULL pointer on failure, non-NULL otherwise. If the return
+/// value is non-NULL, the caller takes ownership of the OONIMessage
+/// pointer and MUST free it using OONIMessageFree when done using it.
+struct OONIMessage *OONICall(struct OONIMessage *req);
 
-/// Blocks waiting for [taskID] to emit an event or for [timeout] to expire.
+/// OONITaskStart starts a new OONITask using the given [cfg].
 ///
-/// The returned memory is allocated using this library's allocator and
-/// should only be freed using the OONIEventFree function call.
+/// @param cfg An OONIMessage structure, owned by the caller, that
+/// contains the configuration for the task to start. The engine will
+/// use the message Key to determine which task to start. The engine
+/// will copy the contents of [cfg], therefore it's safe to free
+/// [cfg] once this function has returned.
 ///
-/// @param taskID Unique task identifier returned by OONITaskStart.
-///
-/// @param timeout Maximum number of milliseconds to wait for the next event
-/// to become available. Use a negative value to wait for the next event without
-/// any timeout (not recommended in general).
-///
-/// @return A NULL value if the task does not exist, the timeout expires,
-/// or an internal error occurs. Otherwise, the call succeded and you
-/// are given ownership of an OONIEvent containing the next task-emitted event.
-struct OONIEvent *OONITaskWaitForNextEvent(int taskID, int timeout);
+/// @return Zero on failure, nonzero on success. If the return value
+/// is nonzero, a task is running. In such a case, the caller is
+/// responsible to eventually dispose of the task using OONITaskFree.
+OONITask OONITaskStart(struct OONIMessage *cfg);
 
-/// Frees an [event] previously returned by OONITaskWaitForNextEvent.
-void OONIEventFree(struct OONIEvent *event);
-
-/// Returns whether the task identified by [taskID] is done. A taks is done
-/// when it has finished running and its events queue has been drained.
+/// OONITaskWaitForNextEvent awaits on the [task] event queue until
+/// a new event is available or the given [timeout] expires.
 ///
-/// @param taskID Unique task identifier returned by OONITaskStart.
+/// @param task Task handle returned by OONITaskStart.
 ///
-/// @return Zero if the task exists and either is still running or has some
-/// unread events inside its events queue, nonzero otherwise.
-int OONITaskIsDone(int taskID);
-
-/// Notifies the task identified by [taskID] to stop ASAP.
+/// @param timeout Timeout in milliseconds. If the timeout is zero
+/// or negative, this function would potentially block forever.
 ///
-/// @param taskID Unique task identifier returned by OONITaskStart.
-void OONITaskInterrupt(int taskID);
+/// @return A NULL pointer on failure, non-NULL otherwise. If the return
+/// value is non-NULL, the caller takes ownership of the OONIMessage
+/// pointer and MUST free it using OONIMessageFree when done using it.
+///
+/// This function will return NULL:
+///
+/// 1. when the timeout expires;
+///
+/// 2. if [task] is done;
+///
+/// 3. if [task] is zero or does not refer to a valid task;
+///
+/// 4. if we cannot protobuf serialize the message;
+///
+/// 5. possibly because of other unknown internal errors.
+///
+/// In short, you cannot reliably determine whether a task is done by
+/// checking whether this function has returned NULL.
+struct OONIMessage *OONITaskWaitForNextEvent(OONITask task, int32_t timeout);
 
-/// Frees the memory associated with [taskID]. If the task is still running, this
+/// OONIMessageFree frees a [msg] returned by OONITaskWaitForNextEvent. You MUST
+/// NOT free these messages yourself by calling `free` because the OONI engine MAY
+/// be using a different allocator. In the same vein, you MUST NOT use this
+/// function to free OONIMessages allocated by the app.
+///
+/// @param msg OONIMessage previousely returned by OONITaskWaitForNextEvent. If
+/// msg is a NULL pointer, this function will just ignore it.
+void OONIMessageFree(struct OONIMessage *msg);
+
+/// OONITaskIsDone returns whether the task identified by [taskID] is done. A taks is
+/// done when it has finished running _and_ its events queue has been drained.
+///
+/// @param task Task handle returned by OONITaskStart.
+///
+/// @return Nonzero if the task exists and either is still running or has some
+/// unread events inside its events queue, zero otherwise.
+uint8_t OONITaskIsDone(OONITask task);
+
+/// OONITaskInterrupt tells [task] to stop ASAP.
+///
+/// @param task Task handle returned by OONITaskStart. If task is zero
+/// or does not refer to a valid task, this function will just do nothing.
+void OONITaskInterrupt(OONITask task);
+
+/// OONITaskFree free the memory associated with [task]. If the task is still running, this
 /// function will also interrupt it and drain its events queue.
 ///
-/// @param taskID Unique task identifier returned by OONITaskStart.
-void OONITaskFree(int taskID);
+/// @param task Task handle returned by OONITaskStart. If task is zero
+/// or does not refer to a valid task, this function will just do nothing.
+void OONITaskFree(OONITask task);
 
 #ifdef __cplusplus
 }

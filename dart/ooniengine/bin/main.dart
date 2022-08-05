@@ -141,20 +141,16 @@ class GeoIPCommand extends Command {
 }
 
 /// Queries the OONI engine to get all the available experiments.
-Future<List<ExperimentMetaInfoEvent>> allExperiments() async {
-  final cfg = ExperimentMetaInfoConfig();
+Future<ExperimentMetaInfoResponse> allExperiments() async {
   Engine? engine;
-  Task? task;
-  List<ExperimentMetaInfoEvent> res;
+  ExperimentMetaInfoResponse resp;
   try {
     engine = newEngine();
-    task = await engine.startExperimentMetaInfoTask(cfg);
-    res = await task.collect<ExperimentMetaInfoEvent>(silent: true);
+    resp = await engine.callExperimentMetaInfo();
   } finally {
-    task?.free();
     engine?.shutdown();
   }
-  return res;
+  return resp;
 }
 
 /// Returns the maxRuntime value to configure.
@@ -189,7 +185,7 @@ class RunxSubcommand extends Command {
   /// The experiment description
   final String description;
 
-  RunxSubcommand(ExperimentMetaInfoEvent exp)
+  RunxSubcommand(ExperimentMetaInfoEntry exp)
       : name = exp.name,
         description = "runs the ${exp.name} experiment" {
     argParser.addMultiOption(
@@ -282,7 +278,7 @@ class RunxSubcommand extends Command {
       engine = newEngine();
       task = await engine.startNettestTask(cfg);
       subscription = freeOnSIGINT(task);
-      await task.foreachEvent((ev) => printEvent(ev));
+      await task.foreachEvent((ev) => printMessage(ev));
     } finally {
       subscription?.cancel();
       task?.free();
@@ -299,8 +295,8 @@ class RunxCommand extends Command {
   /// The command's description
   final description = "RUNs a single eXperiment.";
 
-  RunxCommand(List<ExperimentMetaInfoEvent> exps) {
-    for (final exp in exps) {
+  RunxCommand(ExperimentMetaInfoResponse exps) {
+    for (final exp in exps.entry) {
       addSubcommand(RunxSubcommand(exp));
     }
   }
@@ -401,7 +397,7 @@ class WebsitesSubcommand extends Command {
       engine = newEngine();
       task = await engine.startOONIRunV2MeasureDescriptorTask(cfg);
       subscription = freeOnSIGINT(task);
-      await task.foreachEvent((ev) => printEvent(ev));
+      await task.foreachEvent((ev) => printMessage(ev));
     } finally {
       subscription?.cancel();
       task?.free();
@@ -495,7 +491,7 @@ class IMSubcommand extends Command {
       engine = newEngine();
       task = await engine.startOONIRunV2MeasureDescriptorTask(cfg);
       subscription = freeOnSIGINT(task);
-      await task.foreachEvent((ev) => printEvent(ev));
+      await task.foreachEvent((ev) => printMessage(ev));
     } finally {
       subscription?.cancel();
       task?.free();

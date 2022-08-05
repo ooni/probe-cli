@@ -77,24 +77,34 @@ const GeoIPEvent$json = const {
 
 /// Descriptor for `GeoIPEvent`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List geoIPEventDescriptor = $convert.base64Decode('CgpHZW9JUEV2ZW50EhgKB2ZhaWx1cmUYASABKAlSB2ZhaWx1cmUSGQoIcHJvYmVfaXAYAiABKAlSB3Byb2JlSXASGwoJcHJvYmVfYXNuGAMgASgJUghwcm9iZUFzbhIZCghwcm9iZV9jYxgEIAEoCVIHcHJvYmVDYxIsChJwcm9iZV9uZXR3b3JrX25hbWUYBSABKAlSEHByb2JlTmV0d29ya05hbWUSHwoLcmVzb2x2ZXJfaXAYBiABKAlSCnJlc29sdmVySXASIQoMcmVzb2x2ZXJfYXNuGAcgASgJUgtyZXNvbHZlckFzbhIyChVyZXNvbHZlcl9uZXR3b3JrX25hbWUYCCABKAlSE3Jlc29sdmVyTmV0d29ya05hbWU=');
-@$core.Deprecated('Use experimentMetaInfoConfigDescriptor instead')
-const ExperimentMetaInfoConfig$json = const {
-  '1': 'ExperimentMetaInfoConfig',
+@$core.Deprecated('Use experimentMetaInfoRequestDescriptor instead')
+const ExperimentMetaInfoRequest$json = const {
+  '1': 'ExperimentMetaInfoRequest',
 };
 
-/// Descriptor for `ExperimentMetaInfoConfig`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List experimentMetaInfoConfigDescriptor = $convert.base64Decode('ChhFeHBlcmltZW50TWV0YUluZm9Db25maWc=');
-@$core.Deprecated('Use experimentMetaInfoEventDescriptor instead')
-const ExperimentMetaInfoEvent$json = const {
-  '1': 'ExperimentMetaInfoEvent',
+/// Descriptor for `ExperimentMetaInfoRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List experimentMetaInfoRequestDescriptor = $convert.base64Decode('ChlFeHBlcmltZW50TWV0YUluZm9SZXF1ZXN0');
+@$core.Deprecated('Use experimentMetaInfoEntryDescriptor instead')
+const ExperimentMetaInfoEntry$json = const {
+  '1': 'ExperimentMetaInfoEntry',
   '2': const [
     const {'1': 'name', '3': 1, '4': 1, '5': 9, '10': 'name'},
     const {'1': 'uses_input', '3': 2, '4': 1, '5': 8, '10': 'usesInput'},
   ],
 };
 
-/// Descriptor for `ExperimentMetaInfoEvent`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List experimentMetaInfoEventDescriptor = $convert.base64Decode('ChdFeHBlcmltZW50TWV0YUluZm9FdmVudBISCgRuYW1lGAEgASgJUgRuYW1lEh0KCnVzZXNfaW5wdXQYAiABKAhSCXVzZXNJbnB1dA==');
+/// Descriptor for `ExperimentMetaInfoEntry`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List experimentMetaInfoEntryDescriptor = $convert.base64Decode('ChdFeHBlcmltZW50TWV0YUluZm9FbnRyeRISCgRuYW1lGAEgASgJUgRuYW1lEh0KCnVzZXNfaW5wdXQYAiABKAhSCXVzZXNJbnB1dA==');
+@$core.Deprecated('Use experimentMetaInfoResponseDescriptor instead')
+const ExperimentMetaInfoResponse$json = const {
+  '1': 'ExperimentMetaInfoResponse',
+  '2': const [
+    const {'1': 'entry', '3': 1, '4': 3, '5': 11, '6': '.abi.ExperimentMetaInfoEntry', '10': 'entry'},
+  ],
+};
+
+/// Descriptor for `ExperimentMetaInfoResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List experimentMetaInfoResponseDescriptor = $convert.base64Decode('ChpFeHBlcmltZW50TWV0YUluZm9SZXNwb25zZRIyCgVlbnRyeRgBIAMoCzIcLmFiaS5FeHBlcmltZW50TWV0YUluZm9FbnRyeVIFZW50cnk=');
 @$core.Deprecated('Use nettestConfigDescriptor instead')
 const NettestConfig$json = const {
   '1': 'NettestConfig',

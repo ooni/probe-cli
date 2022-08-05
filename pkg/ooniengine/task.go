@@ -18,7 +18,7 @@ func startTask(name string, args []byte) taskAPI {
 	tp := &taskState{
 		cancel:  cancel,
 		done:    &atomicx.Int64{},
-		events:  make(chan *taskEvent, taskEventsBuffer),
+		events:  make(chan *goMessage, taskEventsBuffer),
 		stopped: make(chan any),
 	}
 	go tp.main(ctx, name, args)
@@ -34,7 +34,7 @@ type taskState struct {
 	done *atomicx.Int64
 
 	// events is the channel where we emit task events.
-	events chan *taskEvent
+	events chan *goMessage
 
 	// stopped indicates that the task is done.
 	stopped chan any
@@ -43,7 +43,7 @@ type taskState struct {
 var _ taskAPI = &taskState{}
 
 // waitForNextEvent implements taskAPI.waitForNextEvent.
-func (tp *taskState) waitForNextEvent(timeout time.Duration) *taskEvent {
+func (tp *taskState) waitForNextEvent(timeout time.Duration) *goMessage {
 	// Implementation note: we don't need to log any of these nil-returning conditions
 	// as they are not exceptional, rather they're part of normal usage.
 	ctx, cancel := contextForWaitForNextEvent(timeout)

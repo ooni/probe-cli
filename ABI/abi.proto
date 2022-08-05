@@ -55,13 +55,18 @@ message GeoIPEvent {
 	string resolver_network_name = 8;
 }
 
-// Settings for the ExperimentMetaInfo task.
-message ExperimentMetaInfoConfig {}
+// Settings for the ExperimentMetaInfo call.
+message ExperimentMetaInfoRequest {}
 
-// Contains information about an experiment.
-message ExperimentMetaInfoEvent {
+// Information about an experiment.
+message ExperimentMetaInfoEntry {
 	string name = 1;
 	bool uses_input = 2;
+}
+
+// Result of the ExperimentMetaInfo call.
+message ExperimentMetaInfoResponse {
+	repeated ExperimentMetaInfoEntry entry = 1;
 }
 
 // Configuration for running a nettest.

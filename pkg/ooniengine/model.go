@@ -41,14 +41,12 @@ type taskRunner interface {
 	main(ctx context.Context, emitter taskMaybeEmitter, args []byte)
 }
 
-// taskEvent is an event emitted by a task. The application does not see this
-// event directly, rather it sees a C structure derived from this one.
-type taskEvent struct {
-	// name is the event name. Event names are part of the ABI.
-	name string
+// goMessage the internal representation of OONIMessage.
+type goMessage struct {
+	// key is the event key.
+	key string
 
-	// value is the value of the event. The structure of the JSON
-	// associated to each event is also part of the ABI.
+	// value is the value of the event.
 	value protoreflect.ProtoMessage
 }
 
@@ -56,7 +54,7 @@ type taskEvent struct {
 // to enable easier testing of the code that manages the tasks lifecycle.
 type taskAPI interface {
 	// waitForNextEvent implements OONITaskWaitForNextEvent.
-	waitForNextEvent(timeout time.Duration) *taskEvent
+	waitForNextEvent(timeout time.Duration) *goMessage
 
 	// isDone implements OONITaskIsDone.
 	isDone() bool

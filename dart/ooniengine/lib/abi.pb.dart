@@ -436,44 +436,44 @@ class GeoIPEvent extends $pb.GeneratedMessage {
   void clearResolverNetworkName() => clearField(8);
 }
 
-class ExperimentMetaInfoConfig extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ExperimentMetaInfoConfig', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'abi'), createEmptyInstance: create)
+class ExperimentMetaInfoRequest extends $pb.GeneratedMessage {
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ExperimentMetaInfoRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'abi'), createEmptyInstance: create)
     ..hasRequiredFields = false
   ;
 
-  ExperimentMetaInfoConfig._() : super();
-  factory ExperimentMetaInfoConfig() => create();
-  factory ExperimentMetaInfoConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ExperimentMetaInfoConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  ExperimentMetaInfoRequest._() : super();
+  factory ExperimentMetaInfoRequest() => create();
+  factory ExperimentMetaInfoRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ExperimentMetaInfoRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  ExperimentMetaInfoConfig clone() => ExperimentMetaInfoConfig()..mergeFromMessage(this);
+  ExperimentMetaInfoRequest clone() => ExperimentMetaInfoRequest()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  ExperimentMetaInfoConfig copyWith(void Function(ExperimentMetaInfoConfig) updates) => super.copyWith((message) => updates(message as ExperimentMetaInfoConfig)) as ExperimentMetaInfoConfig; // ignore: deprecated_member_use
+  ExperimentMetaInfoRequest copyWith(void Function(ExperimentMetaInfoRequest) updates) => super.copyWith((message) => updates(message as ExperimentMetaInfoRequest)) as ExperimentMetaInfoRequest; // ignore: deprecated_member_use
   $pb.BuilderInfo get info_ => _i;
   @$core.pragma('dart2js:noInline')
-  static ExperimentMetaInfoConfig create() => ExperimentMetaInfoConfig._();
-  ExperimentMetaInfoConfig createEmptyInstance() => create();
-  static $pb.PbList<ExperimentMetaInfoConfig> createRepeated() => $pb.PbList<ExperimentMetaInfoConfig>();
+  static ExperimentMetaInfoRequest create() => ExperimentMetaInfoRequest._();
+  ExperimentMetaInfoRequest createEmptyInstance() => create();
+  static $pb.PbList<ExperimentMetaInfoRequest> createRepeated() => $pb.PbList<ExperimentMetaInfoRequest>();
   @$core.pragma('dart2js:noInline')
-  static ExperimentMetaInfoConfig getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ExperimentMetaInfoConfig>(create);
-  static ExperimentMetaInfoConfig? _defaultInstance;
+  static ExperimentMetaInfoRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ExperimentMetaInfoRequest>(create);
+  static ExperimentMetaInfoRequest? _defaultInstance;
 }
 
-class ExperimentMetaInfoEvent extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ExperimentMetaInfoEvent', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'abi'), createEmptyInstance: create)
+class ExperimentMetaInfoEntry extends $pb.GeneratedMessage {
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ExperimentMetaInfoEntry', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'abi'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'name')
     ..aOB(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'usesInput')
     ..hasRequiredFields = false
   ;
 
-  ExperimentMetaInfoEvent._() : super();
-  factory ExperimentMetaInfoEvent({
+  ExperimentMetaInfoEntry._() : super();
+  factory ExperimentMetaInfoEntry({
     $core.String? name,
     $core.bool? usesInput,
   }) {
@@ -486,26 +486,26 @@ class ExperimentMetaInfoEvent extends $pb.GeneratedMessage {
     }
     return _result;
   }
-  factory ExperimentMetaInfoEvent.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ExperimentMetaInfoEvent.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  factory ExperimentMetaInfoEntry.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ExperimentMetaInfoEntry.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  ExperimentMetaInfoEvent clone() => ExperimentMetaInfoEvent()..mergeFromMessage(this);
+  ExperimentMetaInfoEntry clone() => ExperimentMetaInfoEntry()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  ExperimentMetaInfoEvent copyWith(void Function(ExperimentMetaInfoEvent) updates) => super.copyWith((message) => updates(message as ExperimentMetaInfoEvent)) as ExperimentMetaInfoEvent; // ignore: deprecated_member_use
+  ExperimentMetaInfoEntry copyWith(void Function(ExperimentMetaInfoEntry) updates) => super.copyWith((message) => updates(message as ExperimentMetaInfoEntry)) as ExperimentMetaInfoEntry; // ignore: deprecated_member_use
   $pb.BuilderInfo get info_ => _i;
   @$core.pragma('dart2js:noInline')
-  static ExperimentMetaInfoEvent create() => ExperimentMetaInfoEvent._();
-  ExperimentMetaInfoEvent createEmptyInstance() => create();
-  static $pb.PbList<ExperimentMetaInfoEvent> createRepeated() => $pb.PbList<ExperimentMetaInfoEvent>();
+  static ExperimentMetaInfoEntry create() => ExperimentMetaInfoEntry._();
+  ExperimentMetaInfoEntry createEmptyInstance() => create();
+  static $pb.PbList<ExperimentMetaInfoEntry> createRepeated() => $pb.PbList<ExperimentMetaInfoEntry>();
   @$core.pragma('dart2js:noInline')
-  static ExperimentMetaInfoEvent getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ExperimentMetaInfoEvent>(create);
-  static ExperimentMetaInfoEvent? _defaultInstance;
+  static ExperimentMetaInfoEntry getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ExperimentMetaInfoEntry>(create);
+  static ExperimentMetaInfoEntry? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.String get name => $_getSZ(0);
@@ -524,6 +524,47 @@ class ExperimentMetaInfoEvent extends $pb.GeneratedMessage {
   $core.bool hasUsesInput() => $_has(1);
   @$pb.TagNumber(2)
   void clearUsesInput() => clearField(2);
+}
+
+class ExperimentMetaInfoResponse extends $pb.GeneratedMessage {
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ExperimentMetaInfoResponse', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'abi'), createEmptyInstance: create)
+    ..pc<ExperimentMetaInfoEntry>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'entry', $pb.PbFieldType.PM, subBuilder: ExperimentMetaInfoEntry.create)
+    ..hasRequiredFields = false
+  ;
+
+  ExperimentMetaInfoResponse._() : super();
+  factory ExperimentMetaInfoResponse({
+    $core.Iterable<ExperimentMetaInfoEntry>? entry,
+  }) {
+    final _result = create();
+    if (entry != null) {
+      _result.entry.addAll(entry);
+    }
+    return _result;
+  }
+  factory ExperimentMetaInfoResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ExperimentMetaInfoResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  ExperimentMetaInfoResponse clone() => ExperimentMetaInfoResponse()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  ExperimentMetaInfoResponse copyWith(void Function(ExperimentMetaInfoResponse) updates) => super.copyWith((message) => updates(message as ExperimentMetaInfoResponse)) as ExperimentMetaInfoResponse; // ignore: deprecated_member_use
+  $pb.BuilderInfo get info_ => _i;
+  @$core.pragma('dart2js:noInline')
+  static ExperimentMetaInfoResponse create() => ExperimentMetaInfoResponse._();
+  ExperimentMetaInfoResponse createEmptyInstance() => create();
+  static $pb.PbList<ExperimentMetaInfoResponse> createRepeated() => $pb.PbList<ExperimentMetaInfoResponse>();
+  @$core.pragma('dart2js:noInline')
+  static ExperimentMetaInfoResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ExperimentMetaInfoResponse>(create);
+  static ExperimentMetaInfoResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.List<ExperimentMetaInfoEntry> get entry => $_getList(0);
 }
 
 class NettestConfig extends $pb.GeneratedMessage {

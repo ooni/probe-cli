@@ -9,15 +9,15 @@ import "google.golang.org/protobuf/reflect/protoreflect"
 // taskEmitter implements taskMaybeEmitter.
 type taskChanEmitter struct {
 	// out is the channel where we emit events.
-	out chan *taskEvent
+	out chan *goMessage
 }
 
 var _ taskMaybeEmitter = &taskChanEmitter{}
 
 // maybeEmitEvent implements taskMaybeEmitter.maybeEmitEvent.
 func (e *taskChanEmitter) maybeEmitEvent(name string, value protoreflect.ProtoMessage) {
-	ev := &taskEvent{
-		name:  name,
+	ev := &goMessage{
+		key:   name,
 		value: value,
 	}
 	select {
