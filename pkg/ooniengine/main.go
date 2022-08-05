@@ -54,8 +54,10 @@ func serialize(msg *goMessage) (out *C.struct_OONIMessage) {
 		log.Printf("serialieMessage: cannot serialize message: %s", err.Error())
 		return nil
 	}
-	if len(data) > C.UINT32_MAX {
-		log.Printf("serialieMessage: serialized buffer too large for C.uint32")
+	// Implementation note: we cannot use UINT32_MAX here because int is
+	// int32_t on 32 bit platforms, so UINT32_MAX is too large.
+	if len(data) > C.INT32_MAX {
+		log.Printf("serialieMessage: serialized buffer too large for C.int32")
 		return nil
 	}
 	out = (*C.struct_OONIMessage)(C.malloc(C.sizeof_struct_OONIMessage))

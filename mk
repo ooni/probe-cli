@@ -370,6 +370,30 @@ OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
 	GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc go build -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
 
 #help:
+#help: * `./mk ./LIBRARY/android/arm64/libooniengine.so`: builds the OONI engine library for android/arm64
+.PHONY: ./LIBRARY/android/arm64/libooniengine.so
+./LIBRARY/android/arm64/libooniengine.so: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	PATH="$$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin:$$PATH" GOOS=android GOARCH=arm64 CGO_ENABLED=1 CC=aarch64-linux-android21-clang go build -x -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/android/arm/libooniengine.so`: builds the OONI engine library for android/arm
+.PHONY: ./LIBRARY/android/arm/libooniengine.so
+./LIBRARY/android/arm/libooniengine.so: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	PATH="$$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin:$$PATH" GOOS=android GOARCH=arm CGO_ENABLED=1 CC=armv7a-linux-androideabi21-clang go build -x -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/android/386/libooniengine.so`: builds the OONI engine library for android/386
+.PHONY: ./LIBRARY/android/386/libooniengine.so
+./LIBRARY/android/386/libooniengine.so: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	PATH="$$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin:$$PATH" GOOS=android GOARCH=386 CGO_ENABLED=1 CC=i686-linux-android21-clang go build -x -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/android/amd64/libooniengine.so`: builds the OONI engine library for android/amd64
+.PHONY: ./LIBRARY/android/amd64/libooniengine.so
+./LIBRARY/android/amd64/libooniengine.so: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	PATH="$$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin:$$PATH" GOOS=android GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-linux-android21-clang go build -x -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
 #help: * `./mk __engineabi`: regenerates the engine ABI for both Go and Dart
 .PHONY: __engineabi
 __engineabi: search/for/go
