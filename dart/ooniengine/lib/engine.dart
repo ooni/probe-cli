@@ -22,7 +22,8 @@ class LLEngine {
 
   /// Converts [name] and [msg] to a Pointer<[OONIMessage]>.
   ///
-  /// Returns nullptr in case of failure.
+  /// Returns nullptr in case of failure. You OWN the pointer returned
+  /// on success and you must _freeNativeMessage it when done.
   Pointer<OONIMessage> _toNativeMessage(String name, $pb.GeneratedMessage msg) {
     Pointer<Uint8> nbase = nullptr;
     Pointer<Char> nname = nullptr;
@@ -43,8 +44,10 @@ class LLEngine {
       nargs = malloc<OONIMessage>(); // 🤓 needs free
       nargs.ref.Key = nname;
       nargs.ref.Base = nbase;
-      if (len < 0 || len > UINT32_MAX) {
-        throw Exception("len's value is < 0 or > UINT32_MAX");
+      // Implementation note: on 32 bit systems int is int32_t so
+      // we cannot compare against an UINT32_MAX value.
+      if (len < 0 || len > INT32_MAX) {
+        throw Exception("len's value is < 0 or > INT32_MAX");
       }
       nargs.ref.Size = len;
     } catch (exc) {
@@ -110,14 +113,14 @@ class LLEngine {
     }
     // struct OONIMessage *OONITaskWaitForNextEvent(uintptr_t, int32_t);
     final ev = _engine.OONITaskWaitForNextEvent(taskHandle, timeout);
-    return _ownAndConverFromNative(ev); // 🤓 takes ownership
+    return _ownAndConvertFromNative(ev); // 🤓 takes ownership
   }
 
   /// Takes in input a native Pointer<[OONIMessage]> and parses it.
   ///
-  /// This function TAKES OWNERSHIP of its argument and frees it when
-  /// it is done processing it.
-  $pb.GeneratedMessage? _ownAndConverFromNative(Pointer<OONIMessage> msg) {
+  /// As its name implies, this function TAKES OWNERSHIP of its argument
+  /// and frees it when it is done processing it.
+  $pb.GeneratedMessage? _ownAndConvertFromNative(Pointer<OONIMessage> msg) {
     $pb.GeneratedMessage? out = null;
     try {
       if (msg != nullptr && msg.ref.Size >= 1) {
@@ -168,7 +171,7 @@ class LLEngine {
       if (req != nullptr) {
         // struct OONIMessage *OONICall(struct OONIMessage *req);
         libResp = _engine.OONICall(req);
-        resp = _ownAndConverFromNative(libResp); // 🤓 transfer ownership
+        resp = _ownAndConvertFromNative(libResp); // 🤓 takes ownership
       }
     } finally {
       _freeNativeMessage(req); // 🤓 we free
