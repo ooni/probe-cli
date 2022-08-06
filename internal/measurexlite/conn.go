@@ -69,6 +69,80 @@ func (c *connTrace) Write(b []byte) (int, error) {
 	return count, err
 }
 
+// MaybeUDPLikeClose is a convenience function for closing a conn only when such a conn isn't nil.
+func MaybeCloseUDPLikeConn(conn model.UDPLikeConn) (err error) {
+	if conn != nil {
+		err = conn.Close()
+	}
+	return
+}
+
+// WrapUDPLikeConn returns a wrapped conn that saves network events into this trace.
+func (tx *Trace) WrapUDPLikeConn(conn model.UDPLikeConn) model.UDPLikeConn {
+	return &udpLikeConnTrace{
+		UDPLikeConn: conn,
+		tx:          tx,
+	}
+}
+
+// udpLikeConnTrace is a trace-aware model.UDPLikeConn.
+type udpLikeConnTrace struct {
+	// Implementation note: it seems safe to use embedding here because net.Conn
+	// is an interface from the standard library that we don't control
+	model.UDPLikeConn
+	tx *Trace
+}
+
+// Read implements model.UDPLikeConn.ReadFrom and saves network events.
+func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
+	started := c.tx.TimeSince(c.tx.ZeroTime)
+	count, addr, err := c.UDPLikeConn.ReadFrom(b)
+	finished := c.tx.TimeSince(c.tx.ZeroTime)
+	address := addrStringIfNotNil(addr)
+	select {
+	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
+		c.tx.Index, started, "read_from", "udp", address, count, err, finished):
+	default: // buffer is full
+	}
+	return count, addr, err
+}
+
+// Write implements model.UDPLikeConn.WriteTo and saves network events.
+func (c *udpLikeConnTrace) WriteTo(b []byte, addr net.Addr) (int, error) {
+	started := c.tx.TimeSince(c.tx.ZeroTime)
+	count, err := c.UDPLikeConn.WriteTo(b, addr)
+	finished := c.tx.TimeSince(c.tx.ZeroTime)
+	address := addr.String()
+	select {
+	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
+		c.tx.Index, started, "write_to", "udp", address, count, err, finished):
+	default: // buffer is full
+	}
+	return count, err
+}
+
+// Close implements model.UDPLikeConn.Close and saves network events
+func (c *udpLikeConnTrace) Close() error {
+	started := c.tx.TimeSince(c.tx.ZeroTime)
+	err := c.UDPLikeConn.Close()
+	finished := c.tx.TimeSince(c.tx.ZeroTime)
+	select {
+	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
+		c.tx.Index, started, "close", "udp", "", 0, err, finished):
+	default: // buffer is full
+	}
+	return err
+}
+
+// addrStringIfNotNil returns the string of the given addr
+// unless the addr is nil, in which case it returns an empty string.
+func addrStringIfNotNil(addr net.Addr) (out string) {
+	if addr != nil {
+		out = addr.String()
+	}
+	return
+}
+
 // NewArchivalNetworkEvent creates a new model.ArchivalNetworkEvent.
 func NewArchivalNetworkEvent(index int64, started time.Duration, operation string, network string,
 	address string, count int, err error, finished time.Duration) *model.ArchivalNetworkEvent {
