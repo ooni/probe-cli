@@ -382,6 +382,41 @@ type Trace interface {
 	// string returned by Error is an OONI error.
 	OnTLSHandshakeDone(started time.Time, remoteAddr string, config *tls.Config,
 		state tls.ConnectionState, err error, finished time.Time)
+
+	// OnQUICHandshakeStart()
+	//
+	// Arguments:
+	//
+	// - now is the moment before we start the handshake;
+	//
+	// - remoteAddr is the QUIC endpoint with which we are connecting: it will
+	// consist of an IP address and a port (e.g., 8.8.8.8:443, [::1]:5421);
+	//
+	// - config is the non-nil QUIC config we're using.
+	OnQUICHandshakeStart(now time.Time, remoteAddr string, quicConfig *quic.Config)
+
+	// OnQUICHandshakeDone()
+	//
+	// Arguments:
+	//
+	// - started is when we started the handshake;
+	//
+	// - remoteAddr is the QUIC endpoint with which we are connecting: it will
+	// consist of an IP address and a port (e.g., 8.8.8.8:443, [::1]:5421);
+	//
+	// - qconn is the QUIC connection we receive after the handshake: either
+	// a valid quic.EarlyConnection or nil
+	//
+	// - config is the non-nil TLS config we are using
+	//
+	// - err is the result of the handshake: either an error or nil;
+	//
+	// - finished is right after the handshake.
+	//
+	// The error passed to this function will always be wrapped such that the
+	// string returned by Error is an OONI error.
+	OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
+		config *tls.Config, err error, finished time.Time)
 }
 
 // UDPLikeConn is a net.PacketConn with some extra functions

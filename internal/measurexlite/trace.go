@@ -51,6 +51,10 @@ type Trace struct {
 	// calls to the netxlite.NewTLSHandshakerStdlib factory.
 	NewTLSHandshakerStdlibFn func(dl model.DebugLogger) model.TLSHandshaker
 
+	// NewDialerWithoutResolverFn is OPTIONAL and can be used to overide
+	// calls to the netxlite.NewQUICDialerWithoutResolver factory
+	NewQUICDialerWithoutResolverFn func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer
+
 	// DNSLookup is MANDATORY and buffers DNSLookup results based on the
 	// query type. When we create this map using NewTrace, we will create
 	// an entry for each dns.Type in DNSQueryTypes. If you create this channel
@@ -66,6 +70,10 @@ type Trace struct {
 	// TLSHandshake is MANDATORY and buffers TLS handshake observations. If you create
 	// this channel manually, ensure it has some buffer.
 	TLSHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
+
+	// QUICHandshake is MANDATORY and buffers QUIC handshake observations. If you create
+	// this channel manually, ensure it has some buffer
+	QUICHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
 	// TimeNowFn is OPTIONAL and can be used to override calls to time.Now
 	// to produce deterministic timing when testing.
@@ -91,6 +99,10 @@ const (
 	// TLSHandshakeBufferSize is the buffer for construcing
 	// the Trace's TLSHandshake buffered channel.
 	TLSHandshakeBufferSize = 8
+
+	// QUICHandshakeBufferSize is the buffer for constructing
+	// the Trace's QUICHandshake buffered channel
+	QUICHandshakeBufferSize = 8
 )
 
 // DNSQueryTypes contains the list of DNS query types for which
@@ -141,6 +153,10 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 			chan *model.ArchivalTLSOrQUICHandshakeResult,
 			TLSHandshakeBufferSize,
 		),
+		QUICHandshake: make(
+			chan *model.ArchivalTLSOrQUICHandshakeResult,
+			QUICHandshakeBufferSize,
+		),
 		TimeNowFn: nil, // use default
 		ZeroTime:  zeroTime,
 	}
@@ -171,6 +187,15 @@ func (tx *Trace) newTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshake
 		return tx.NewTLSHandshakerStdlibFn(dl)
 	}
 	return netxlite.NewTLSHandshakerStdlib(dl)
+}
+
+// newWUICDialerWithoutResolver indirectly calls netxlite.NewQUICDialerWithoutResolver
+// thus allowing us to mock this func for testing.
+func (tx *Trace) newQUICDialerWithoutResolver(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+	if tx.NewQUICDialerWithoutResolverFn != nil {
+		return tx.NewQUICDialerWithoutResolverFn(listener, dl)
+	}
+	return netxlite.NewQUICDialerWithoutResolver(listener, dl)
 }
 
 // TimeNow implements model.Trace.TimeNow.
