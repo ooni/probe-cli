@@ -128,7 +128,7 @@ func TestSetTTL(t *testing.T) {
 		t.Fatal("expected non-nil conn")
 	}
 	// test TTL set
-	err = setTTL(conn, 1)
+	err = setConnTTL(conn, 1)
 	if err != nil {
 		t.Fatal("unexpected error in setting TTL", err)
 	}
@@ -141,7 +141,7 @@ func TestSetTTL(t *testing.T) {
 	if r != 0 {
 		t.Fatal("unexpected output of size", r)
 	}
-	setTTL(conn, 64) // reset TTL to ensure conn closes successfully
+	setConnTTL(conn, 64) // reset TTL to ensure conn closes successfully
 	conn.Close()
 	_, err = conn.Read(buf[:])
 	if err == nil || err.Error() != netxlite.FailureConnectionAlreadyClosed {

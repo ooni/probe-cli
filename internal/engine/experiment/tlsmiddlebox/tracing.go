@@ -61,27 +61,46 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	ol := measurexlite.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
 	conn, err := d.DialContext(ctx, "tcp", address)
 	if err != nil {
-		iteration := newIterationFromHandshake(ttl, err, nil)
+		iteration := newIterationFromHandshake(ttl, err, nil, nil)
 		tr.addIterations(iteration)
 		ol.Stop(err)
 		return
 	}
 	defer conn.Close()
-	err = setTTL(conn, ttl)
+	err = setConnTTL(conn, ttl)
 	if err != nil {
-		iteration := newIterationFromHandshake(ttl, err, nil)
+		iteration := newIterationFromHandshake(ttl, err, nil, nil)
 		tr.addIterations(iteration)
 		ol.Stop(err)
 		return
 	}
+	ctx, cancel := context.WithCancel(ctx)
+	var soErr error
+	st := make(chan *tls.ConnectionState)
+	// start a go routine which listens for ICMP time exceeded or connection reset
+	go func() {
+		for {
+			select {
+			case <-st:
+				return
+			default:
+				soErrno := getSoErr(conn)
+				failure := netxlite.ClassifyGenericError(soErrno)
+				if failure == netxlite.FailureHostUnreachable || failure == netxlite.FailureConnectionReset {
+					soErr = soErrno
+					cancel()
+				}
+			}
+		}
+	}()
 	thx := trace.NewTLSHandshakerStdlib(logger)
-	thx.Handshake(ctx, conn, genTLSConfig(sni))
+	_, state, err := thx.Handshake(ctx, conn, genTLSConfig(sni))
+	st <- &state
 	ol.Stop(err)
 	// reset the TTL value to ensure that conn closes successfully
 	// Note: we do not check for errors here
-	setTTL(conn, 64)
-	// we can pass a nil error here since the failure is already populated in the trace
-	iteration := newIterationFromHandshake(ttl, nil, <-trace.TLSHandshake)
+	setConnTTL(conn, 64)
+	iteration := newIterationFromHandshake(ttl, nil, soErr, <-trace.TLSHandshake)
 	tr.addIterations(iteration)
 }
 
