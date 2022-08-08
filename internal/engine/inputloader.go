@@ -11,6 +11,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/registry"
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
 )
 
@@ -299,7 +300,7 @@ func StaticBareInputForExperiment(name string) ([]string, error) {
 	// Implementation note: we may be called from pkg/oonimkall
 	// with a non-canonical experiment name, so we need to convert
 	// the experiment name to be canonical before proceeding.
-	switch canonicalizeExperimentName(name) {
+	switch registry.CanonicalizeExperimentName(name) {
 	case "dnscheck":
 		return dnsCheckDefaultInput, nil
 	case "stunreachability":
