@@ -33,6 +33,9 @@ type MainTask struct {
 	// Logger is the logger to use.
 	Logger model.Logger
 
+	// TestKeys contains the TestKeys.
+	TestKeys TestKeys
+
 	// TODO: add fields.
 	//
 	// Please, keep in mind that, with multiple tasks you should
@@ -48,11 +51,14 @@ type MainTask struct {
 //
 // - logger is the logger to use;
 //
+// - tk contains the TestKeys were to write results.
+//
 // TODO: add the required parameters.
-func NewMainTask(idGenerator *TaskIDGenerator, logger model.Logger) *MainTask {
+func NewMainTask(idGenerator *TaskIDGenerator, logger model.Logger, tk TestKeys) *MainTask {
 	return &MainTask{
 		IDGenerator: idGenerator,
 		Logger:      logger,
+		TestKeys:    tk,
 		// TODO: fill fields.
 	}
 }

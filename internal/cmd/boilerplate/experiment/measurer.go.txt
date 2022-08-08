@@ -104,7 +104,7 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	// defer the rest of the work to the main task
 	const parallelism = 10 // TODO: adjust depending on your needs
 	idGenerator := NewTaskIDGenerator()
-	main := NewMainTask(idGenerator, sess.Logger())
+	main := NewMainTask(idGenerator, sess.Logger(), tk)
 	ts := NewTaskSchedulerWaiter(sess.Logger(), parallelism)
 	ts.Start(ctx, main)
 	ts.Wait()
@@ -129,6 +129,7 @@ func (m *Measurer) run(ctx context.Context, sess model.ExperimentSession,
 
 {{ if eq .InputPolicy "InputOptional" }}
 func (m *Measurer) optionalInput() model.MeasurementTarget {
+	// TODO: implement
 	panic("not implemented")
 }
 {{ end }}
