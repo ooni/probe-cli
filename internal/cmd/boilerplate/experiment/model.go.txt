@@ -32,8 +32,8 @@ type testKeys struct {
 	mu sync.Mutex
 
 	// fundamentalFailure indicates that some fundamental error occurred
-	// in a background task and, as such, you don't want to submit the
-	// measuremnt to the OONI collector.
+	// in a background task. As such, you don't want to submit this
+	// measurement to the OONI collector.
 	fundamentalFailure error
 
 	// TODO: add here fields produced by this experiment. They should

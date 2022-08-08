@@ -74,7 +74,7 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 	printf("* `./miniooni -n [options] %s` to test your new experiment;\n", info.Name)
 	printf("\n")
 	printf("* `go run ./internal/cmd/boilerplate new-task` to add tasks\n")
-	printf("  to you new experiment (e.g., a TLS handshake).\n")
+	printf("  to your new experiment (e.g., a TLS handshake).\n")
 	printf("\n")
 }
 

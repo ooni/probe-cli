@@ -51,7 +51,7 @@ type MainTask struct {
 //
 // - logger is the logger to use;
 //
-// - tk contains the TestKeys were to write results.
+// - tk contains the TestKeys where to write results.
 //
 // TODO: add the required parameters.
 func NewMainTask(idGenerator *TaskIDGenerator, logger model.Logger, tk TestKeys) *MainTask {
