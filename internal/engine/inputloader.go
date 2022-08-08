@@ -86,7 +86,7 @@ type InputLoader struct {
 	// current experiment. We will not load any input if
 	// the policy says we should not. You MUST fill in
 	// this field.
-	InputPolicy InputPolicy
+	InputPolicy model.InputPolicy
 
 	// Logger is the optional logger that the InputLoader
 	// should be using. If not set, we will use the default
@@ -112,13 +112,13 @@ type InputLoader struct {
 // return a list of URLs because this is the only input we support.
 func (il *InputLoader) Load(ctx context.Context) ([]model.OOAPIURLInfo, error) {
 	switch il.InputPolicy {
-	case InputOptional:
+	case model.InputOptional:
 		return il.loadOptional()
-	case InputOrQueryBackend:
+	case model.InputOrQueryBackend:
 		return il.loadOrQueryBackend(ctx)
-	case InputStrictlyRequired:
+	case model.InputStrictlyRequired:
 		return il.loadStrictlyRequired(ctx)
-	case InputOrStaticDefault:
+	case model.InputOrStaticDefault:
 		return il.loadOrStaticDefault(ctx)
 	default:
 		return il.loadNone()

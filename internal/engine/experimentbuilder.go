@@ -14,67 +14,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// InputPolicy describes the experiment policy with respect to input. That is
-// whether it requires input, optionally accepts input, does not want input.
-type InputPolicy string
-
-const (
-	// InputOrQueryBackend indicates that the experiment requires
-	// external input to run and that this kind of input is URLs
-	// from the citizenlab/test-lists repository. If this input
-	// not provided to the experiment, then the code that runs the
-	// experiment is supposed to fetch from URLs from OONI's backends.
-	InputOrQueryBackend = InputPolicy("or_query_backend")
-
-	// InputStrictlyRequired indicates that the experiment
-	// requires input and we currently don't have an API for
-	// fetching such input. Therefore, either the user specifies
-	// input or the experiment will fail for the lack of input.
-	InputStrictlyRequired = InputPolicy("strictly_required")
-
-	// InputOptional indicates that the experiment handles input,
-	// if any; otherwise it fetchs input/uses a default.
-	InputOptional = InputPolicy("optional")
-
-	// InputNone indicates that the experiment does not want any
-	// input and ignores the input if provided with it.
-	InputNone = InputPolicy("none")
-
-	// We gather input from StaticInput and SourceFiles. If there is
-	// input, we return it. Otherwise, we return an internal static
-	// list of inputs to be used with this experiment.
-	InputOrStaticDefault = InputPolicy("or_static_default")
-)
-
-// ExperimentBuilder builds an experiment.
-type ExperimentBuilder interface {
-	// Interruptible tells you whether this is an interruptible experiment. This kind
-	// of experiments (e.g. ndt7) may be interrupted mid way.
-	Interruptible() bool
-
-	// InputPolicy returns the experiment input policy.
-	InputPolicy() InputPolicy
-
-	// Options returns information about the experiment's options.
-	Options() (map[string]OptionInfo, error)
-
-	// SetOptionAny sets an option whose value is an any value. We will use reasonable
-	// heuristics to convert the any value to the proper type of the field whose name is
-	// contained by the key variable. If we cannot convert the provided any value to
-	// the proper type, then this function returns an error.
-	SetOptionAny(key string, value any) error
-
-	// SetOptionsAny sets options from a map[string]any. See the documentation of
-	// the SetOptionAny method for more information.
-	SetOptionsAny(options map[string]any) error
-
-	// SetCallbacks sets the experiment's interactive callbacks.
-	SetCallbacks(callbacks model.ExperimentCallbacks)
-
-	// NewExperiment creates the experiment instance.
-	NewExperiment() model.Experiment
-}
-
 // experimentBuilder implements ExperimentBuilder.
 type experimentBuilder struct {
 	// build is the constructor that build an experiment with the given config.
@@ -87,7 +26,7 @@ type experimentBuilder struct {
 	config interface{}
 
 	// inputPolicy contains the experiment's InputPolicy.
-	inputPolicy InputPolicy
+	inputPolicy model.InputPolicy
 
 	// interruptible indicates whether the experiment is interruptible.
 	interruptible bool
@@ -99,17 +38,8 @@ func (b *experimentBuilder) Interruptible() bool {
 }
 
 // InputPolicy implements ExperimentBuilder.InputPolicy.
-func (b *experimentBuilder) InputPolicy() InputPolicy {
+func (b *experimentBuilder) InputPolicy() model.InputPolicy {
 	return b.inputPolicy
-}
-
-// OptionInfo contains info about an option.
-type OptionInfo struct {
-	// Doc contains the documentation.
-	Doc string
-
-	// Type contains the type.
-	Type string
 }
 
 var (
@@ -138,8 +68,8 @@ var (
 )
 
 // Options implements ExperimentBuilder.Options.
-func (b *experimentBuilder) Options() (map[string]OptionInfo, error) {
-	result := make(map[string]OptionInfo)
+func (b *experimentBuilder) Options() (map[string]model.ExperimentOptionInfo, error) {
+	result := make(map[string]model.ExperimentOptionInfo)
 	ptrinfo := reflect.ValueOf(b.config)
 	if ptrinfo.Kind() != reflect.Ptr {
 		return nil, ErrConfigIsNotAStructPointer
@@ -150,7 +80,7 @@ func (b *experimentBuilder) Options() (map[string]OptionInfo, error) {
 	}
 	for i := 0; i < structinfo.NumField(); i++ {
 		field := structinfo.Field(i)
-		result[field.Name] = OptionInfo{
+		result[field.Name] = model.ExperimentOptionInfo{
 			Doc:  field.Tag.Get("ooni"),
 			Type: field.Type.String(),
 		}

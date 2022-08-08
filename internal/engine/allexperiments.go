@@ -34,6 +34,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/vanillator"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/whatsapp"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 var experimentsByName = map[string]func(*Session) *experimentBuilder{
@@ -46,7 +47,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 			},
 			config:        &dash.Config{},
 			interruptible: true,
-			inputPolicy:   InputNone,
+			inputPolicy:   model.InputNone,
 		}
 	},
 
@@ -58,7 +59,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &dnscheck.Config{},
-			inputPolicy: InputOrStaticDefault,
+			inputPolicy: model.InputOrStaticDefault,
 		}
 	},
 
@@ -70,7 +71,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &dnsping.Config{},
-			inputPolicy: InputOrStaticDefault,
+			inputPolicy: model.InputOrStaticDefault,
 		}
 	},
 
@@ -86,7 +87,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				SleepTime: int64(time.Second),
 			},
 			interruptible: true,
-			inputPolicy:   InputNone,
+			inputPolicy:   model.InputNone,
 		}
 	},
 
@@ -98,7 +99,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &fbmessenger.Config{},
-			inputPolicy: InputNone,
+			inputPolicy: model.InputNone,
 		}
 	},
 
@@ -110,7 +111,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &hhfm.Config{},
-			inputPolicy: InputNone,
+			inputPolicy: model.InputNone,
 		}
 	},
 
@@ -122,7 +123,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &httphostheader.Config{},
-			inputPolicy: InputOrQueryBackend,
+			inputPolicy: model.InputOrQueryBackend,
 		}
 	},
 
@@ -134,7 +135,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &hirl.Config{},
-			inputPolicy: InputNone,
+			inputPolicy: model.InputNone,
 		}
 	},
 
@@ -147,7 +148,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 			},
 			config:        &ndt7.Config{},
 			interruptible: true,
-			inputPolicy:   InputNone,
+			inputPolicy:   model.InputNone,
 		}
 	},
 
@@ -159,7 +160,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &psiphon.Config{},
-			inputPolicy: InputOptional,
+			inputPolicy: model.InputOptional,
 		}
 	},
 
@@ -171,7 +172,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &quicping.Config{},
-			inputPolicy: InputStrictlyRequired,
+			inputPolicy: model.InputStrictlyRequired,
 		}
 	},
 
@@ -183,7 +184,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &riseupvpn.Config{},
-			inputPolicy: InputNone,
+			inputPolicy: model.InputNone,
 		}
 	},
 
@@ -195,7 +196,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &run.Config{},
-			inputPolicy: InputStrictlyRequired,
+			inputPolicy: model.InputStrictlyRequired,
 		}
 	},
 
@@ -207,7 +208,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &simplequicping.Config{},
-			inputPolicy: InputStrictlyRequired,
+			inputPolicy: model.InputStrictlyRequired,
 		}
 	},
 
@@ -219,7 +220,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &signal.Config{},
-			inputPolicy: InputNone,
+			inputPolicy: model.InputNone,
 		}
 	},
 
@@ -231,7 +232,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &sniblocking.Config{},
-			inputPolicy: InputOrQueryBackend,
+			inputPolicy: model.InputOrQueryBackend,
 		}
 	},
 
@@ -243,7 +244,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &stunreachability.Config{},
-			inputPolicy: InputOrStaticDefault,
+			inputPolicy: model.InputOrStaticDefault,
 		}
 	},
 
@@ -255,7 +256,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &tcpping.Config{},
-			inputPolicy: InputStrictlyRequired,
+			inputPolicy: model.InputStrictlyRequired,
 		}
 	},
 
@@ -267,7 +268,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &tlsping.Config{},
-			inputPolicy: InputStrictlyRequired,
+			inputPolicy: model.InputStrictlyRequired,
 		}
 	},
 
@@ -279,7 +280,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &telegram.Config{},
-			inputPolicy: InputNone,
+			inputPolicy: model.InputNone,
 		}
 	},
 
@@ -291,7 +292,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &tlstool.Config{},
-			inputPolicy: InputOrQueryBackend,
+			inputPolicy: model.InputOrQueryBackend,
 		}
 	},
 
@@ -303,7 +304,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &tor.Config{},
-			inputPolicy: InputNone,
+			inputPolicy: model.InputNone,
 		}
 	},
 
@@ -315,7 +316,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &torsf.Config{},
-			inputPolicy: InputNone,
+			inputPolicy: model.InputNone,
 		}
 	},
 
@@ -327,7 +328,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &urlgetter.Config{},
-			inputPolicy: InputStrictlyRequired,
+			inputPolicy: model.InputStrictlyRequired,
 		}
 	},
 
@@ -339,7 +340,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &vanillator.Config{},
-			inputPolicy: InputNone,
+			inputPolicy: model.InputNone,
 		}
 	},
 
@@ -351,7 +352,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &webconnectivity.Config{},
-			inputPolicy: InputOrQueryBackend,
+			inputPolicy: model.InputOrQueryBackend,
 		}
 	},
 
@@ -363,7 +364,7 @@ var experimentsByName = map[string]func(*Session) *experimentBuilder{
 				))
 			},
 			config:      &whatsapp.Config{},
-			inputPolicy: InputNone,
+			inputPolicy: model.InputNone,
 		}
 	},
 }

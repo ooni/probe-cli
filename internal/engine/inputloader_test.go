@@ -19,7 +19,7 @@ import (
 func TestInputLoaderInputNoneWithStaticInputs(t *testing.T) {
 	il := &InputLoader{
 		StaticInputs: []string{"https://www.google.com/"},
-		InputPolicy:  InputNone,
+		InputPolicy:  model.InputNone,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -37,7 +37,7 @@ func TestInputLoaderInputNoneWithFilesInputs(t *testing.T) {
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
 		},
-		InputPolicy: InputNone,
+		InputPolicy: model.InputNone,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -56,7 +56,7 @@ func TestInputLoaderInputNoneWithBothInputs(t *testing.T) {
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
 		},
-		InputPolicy: InputNone,
+		InputPolicy: model.InputNone,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -70,7 +70,7 @@ func TestInputLoaderInputNoneWithBothInputs(t *testing.T) {
 
 func TestInputLoaderInputNoneWithNoInput(t *testing.T) {
 	il := &InputLoader{
-		InputPolicy: InputNone,
+		InputPolicy: model.InputNone,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -84,7 +84,7 @@ func TestInputLoaderInputNoneWithNoInput(t *testing.T) {
 
 func TestInputLoaderInputOptionalWithNoInput(t *testing.T) {
 	il := &InputLoader{
-		InputPolicy: InputOptional,
+		InputPolicy: model.InputOptional,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -103,7 +103,7 @@ func TestInputLoaderInputOptionalWithInput(t *testing.T) {
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
 		},
-		InputPolicy: InputOptional,
+		InputPolicy: model.InputOptional,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -133,7 +133,7 @@ func TestInputLoaderInputOptionalNonexistentFile(t *testing.T) {
 			"/nonexistent",
 			"testdata/inputloader2.txt",
 		},
-		InputPolicy: InputOptional,
+		InputPolicy: model.InputOptional,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -152,7 +152,7 @@ func TestInputLoaderInputStrictlyRequiredWithInput(t *testing.T) {
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
 		},
-		InputPolicy: InputStrictlyRequired,
+		InputPolicy: model.InputStrictlyRequired,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -176,7 +176,7 @@ func TestInputLoaderInputStrictlyRequiredWithInput(t *testing.T) {
 
 func TestInputLoaderInputStrictlyRequiredWithoutInput(t *testing.T) {
 	il := &InputLoader{
-		InputPolicy: InputStrictlyRequired,
+		InputPolicy: model.InputStrictlyRequired,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -190,7 +190,7 @@ func TestInputLoaderInputStrictlyRequiredWithoutInput(t *testing.T) {
 
 func TestInputLoaderInputStrictlyRequiredWithEmptyFile(t *testing.T) {
 	il := &InputLoader{
-		InputPolicy: InputStrictlyRequired,
+		InputPolicy: model.InputStrictlyRequired,
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
 			"testdata/inputloader3.txt", // we want it before inputloader2.txt
@@ -215,7 +215,7 @@ func TestInputLoaderInputOrStaticDefaultWithInput(t *testing.T) {
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
 		},
-		InputPolicy: InputOrStaticDefault,
+		InputPolicy: model.InputOrStaticDefault,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -240,7 +240,7 @@ func TestInputLoaderInputOrStaticDefaultWithInput(t *testing.T) {
 func TestInputLoaderInputOrStaticDefaultWithEmptyFile(t *testing.T) {
 	il := &InputLoader{
 		ExperimentName: "dnscheck",
-		InputPolicy:    InputOrStaticDefault,
+		InputPolicy:    model.InputOrStaticDefault,
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
 			"testdata/inputloader3.txt", // we want it before inputloader2.txt
@@ -260,7 +260,7 @@ func TestInputLoaderInputOrStaticDefaultWithEmptyFile(t *testing.T) {
 func TestInputLoaderInputOrStaticDefaultWithoutInputDNSCheck(t *testing.T) {
 	il := &InputLoader{
 		ExperimentName: "dnscheck",
-		InputPolicy:    InputOrStaticDefault,
+		InputPolicy:    model.InputOrStaticDefault,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -287,7 +287,7 @@ func TestInputLoaderInputOrStaticDefaultWithoutInputDNSCheck(t *testing.T) {
 func TestInputLoaderInputOrStaticDefaultWithoutInputStunReachability(t *testing.T) {
 	il := &InputLoader{
 		ExperimentName: "stunreachability",
-		InputPolicy:    InputOrStaticDefault,
+		InputPolicy:    model.InputOrStaticDefault,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -323,7 +323,7 @@ func TestStaticBareInputForExperimentWorksWithNonCanonicalNames(t *testing.T) {
 func TestInputLoaderInputOrStaticDefaultWithoutInputOtherName(t *testing.T) {
 	il := &InputLoader{
 		ExperimentName: "xx",
-		InputPolicy:    InputOrStaticDefault,
+		InputPolicy:    model.InputOrStaticDefault,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -342,7 +342,7 @@ func TestInputLoaderInputOrQueryBackendWithInput(t *testing.T) {
 			"testdata/inputloader1.txt",
 			"testdata/inputloader2.txt",
 		},
-		InputPolicy: InputOrQueryBackend,
+		InputPolicy: model.InputOrQueryBackend,
 	}
 	ctx := context.Background()
 	out, err := il.Load(ctx)
@@ -377,7 +377,7 @@ func TestInputLoaderInputOrQueryBackendWithNoInputAndCancelledContext(t *testing
 	}
 	defer sess.Close()
 	il := &InputLoader{
-		InputPolicy: InputOrQueryBackend,
+		InputPolicy: model.InputOrQueryBackend,
 		Session:     sess,
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -393,7 +393,7 @@ func TestInputLoaderInputOrQueryBackendWithNoInputAndCancelledContext(t *testing
 
 func TestInputLoaderInputOrQueryBackendWithEmptyFile(t *testing.T) {
 	il := &InputLoader{
-		InputPolicy: InputOrQueryBackend,
+		InputPolicy: model.InputOrQueryBackend,
 		SourceFiles: []string{
 			"testdata/inputloader1.txt",
 			"testdata/inputloader3.txt", // we want it before inputloader2.txt

@@ -157,7 +157,7 @@ func (ed *Experiment) newSubmitter(ctx context.Context) (engine.Submitter, error
 }
 
 // newExperimentBuilder creates a new engine.ExperimentBuilder for the given experimentName.
-func (ed *Experiment) newExperimentBuilder(experimentName string) (engine.ExperimentBuilder, error) {
+func (ed *Experiment) newExperimentBuilder(experimentName string) (model.ExperimentBuilder, error) {
 	return ed.Session.NewExperimentBuilder(ed.Name)
 }
 
@@ -167,7 +167,7 @@ type inputLoader interface {
 }
 
 // newInputLoader creates a new inputLoader.
-func (ed *Experiment) newInputLoader(inputPolicy engine.InputPolicy) inputLoader {
+func (ed *Experiment) newInputLoader(inputPolicy model.InputPolicy) inputLoader {
 	return &engine.InputLoader{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			RunType:  model.RunTypeManual,

@@ -227,7 +227,7 @@ type taskExperimentBuilder interface {
 	SetCallbacks(callbacks model.ExperimentCallbacks)
 
 	// InputPolicy returns the experiment's input policy.
-	InputPolicy() engine.InputPolicy
+	InputPolicy() model.InputPolicy
 
 	// NewExperiment creates the new experiment.
 	NewExperimentInstance() taskExperiment
