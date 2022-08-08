@@ -36,8 +36,8 @@ func (ig *TaskIDGenerator) Next() int64 {
 
 // TaskScheduler schedules new tasks.
 type TaskScheduler interface {
-	// Schedule scheduless a task for executing ASAP.
-	Schedule(ctx context.Context, task Task)
+	// Start schedules a task for executing ASAP.
+	Start(ctx context.Context, task Task)
 }
 
 // TaskSchedulerWaiter schedules new tasks and waits for them.
@@ -65,7 +65,7 @@ type taskScheduler struct {
 // argument controls the parallelism. A zero or negative argument implies
 // only a single task at a time could run. The [logger] argument is the
 // logger we should use to print information about tasks completion. You
-// should use model.DiscardLogger to disable this functionality.
+// should use the [model.DiscardLogger] singleton to disable this functionality.
 func NewTaskSchedulerWaiter(logger model.Logger, maxTasks int) TaskSchedulerWaiter {
 	if maxTasks < 1 {
 		maxTasks = 1 // as documented
@@ -87,8 +87,8 @@ type Task interface {
 	Run(ctx context.Context, sched TaskScheduler) error
 }
 
-// Schedule implements TaskScheduler.
-func (ts *taskScheduler) Schedule(ctx context.Context, task Task) {
+// Start implements TaskScheduler.
+func (ts *taskScheduler) Start(ctx context.Context, task Task) {
 	wrapper := &taskWrapper{
 		logger: ts.logger,
 		sema:   ts.sema,
@@ -119,7 +119,7 @@ type taskWrapper struct {
   wg *sync.WaitGroup
 }
 
-// Run runs the task which in turn runs the task's job.
+// Runs the task.
 func (tw *taskWrapper) run(ctx context.Context, sched TaskScheduler) {
   // Ensure we don't have too many concurrent tasks.
   tw.sema <- true

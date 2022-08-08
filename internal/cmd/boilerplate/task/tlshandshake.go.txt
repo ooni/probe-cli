@@ -70,10 +70,15 @@ var _ Task = &{{ .StructName }}Task{}
 
 // Run implements Task
 func (t *{{ .StructName }}Task) Run(ctx context.Context, sched TaskScheduler) error {
+	// 1. configure timeout for this task
 	const defaultTimeout = 15 * time.Second // TODO: you may want to change this default
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
+
+	// 2. create a trace
 	trace := measurexlite.NewTrace(t.IDGenerator.Next(), t.ZeroTime)
+
+	// 3. perform the TCP connect
 	dialer := trace.NewDialerWithoutResolver(t.Logger)
 	conn, err := dialer.DialContext(ctx, "tcp", t.Address)
 	_ = <-trace.TCPConnect // TODO: use this result
@@ -82,6 +87,8 @@ func (t *{{ .StructName }}Task) Run(ctx context.Context, sched TaskScheduler) er
 		return err
 	}
 	defer conn.Close()
+
+	// 4. TLS handshake
 	conn = trace.WrapNetConn(conn)
 	thx := trace.NewTLSHandshakerStdlib(t.Logger)
 	config := &tls.Config{
@@ -92,6 +99,8 @@ func (t *{{ .StructName }}Task) Run(ctx context.Context, sched TaskScheduler) er
 	_, _, err = thx.Handshake(ctx, conn, config)
 	_ = <-trace.TLSHandshake  // TODO: use this result
 	_ = trace.NetworkEvents() // TODO: use this result
+
+	// 5. we're done!
 	return err
 }
 

@@ -55,10 +55,15 @@ var _ Task = &{{ .StructName }}Task{}
 
 // Run implements Task
 func (t *{{ .StructName }}Task) Run(ctx context.Context, sched TaskScheduler) error {
+	// 1. configure timeout for this task
 	const defaultTimeout = 10 * time.Second // TODO: you may want to change this default
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
+
+	// 2. create a trace
 	trace := measurexlite.NewTrace(t.IDGenerator.Next(), t.ZeroTime)
+
+	// 3. perform the TCP connect
 	dialer := trace.NewDialerWithoutResolver(t.Logger)
 	conn, err := dialer.DialContext(ctx, "tcp", t.Address)
 	_ = <-trace.TCPConnect // TODO: use this result
@@ -68,6 +73,8 @@ func (t *{{ .StructName }}Task) Run(ctx context.Context, sched TaskScheduler) er
 	}
 	conn.Close()
 	// TODO: write something into the test keys
+
+	// 4. we're done!
 	return nil
 }
 

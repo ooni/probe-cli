@@ -59,6 +59,10 @@ func NewMainTask(idGenerator *TaskIDGenerator, logger model.Logger) *MainTask {
 
 // Run implements Task
 func (t *MainTask) Run(ctx context.Context, sched TaskScheduler) error {
+	// TODO: here you should start child tasks.
+	//
+	// You can use `boilerplate new-task` to automatically generate code for
+	// predefined tasks (e.g., HTTP GET, TLS handshake).
 	t.Logger.Infof("Hello, world")
 	return nil
 }

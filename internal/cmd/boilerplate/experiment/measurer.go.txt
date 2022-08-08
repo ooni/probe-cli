@@ -106,9 +106,12 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	idGenerator := NewTaskIDGenerator()
 	main := NewMainTask(idGenerator, sess.Logger())
 	ts := NewTaskSchedulerWaiter(sess.Logger(), parallelism)
-	ts.Schedule(ctx, main)
+	ts.Start(ctx, main)
 	ts.Wait()
-	return nil
+
+	// return whether there was a fundamental failure, which would prevent
+	// the measurement from being submitted to the OONI collector.
+	return tk.FundamentalFailure()
 {{ end }}
 }
 

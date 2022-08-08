@@ -15,34 +15,61 @@ type Config struct {
 
 {{ if eq .Parallel true }}
 
+// TestKeys is the interface with which you access the real test keys.
+type TestKeys interface {
+	// SetFundamentalFailure sets testKeys.fundamentalFailure.
+	SetFundamentalFailure(err error)
+
+	// FundamentalFailure gets testKeys.fundamentalFailure.
+	FundamentalFailure() error
+
+	// TODO: define thread-safe accessors for the real test keys.
+}
+
 // testKeys contains the experiment test keys.
 type testKeys struct {
 	// mu provides mutual exclusion for accessing the test keys
 	mu sync.Mutex
 
-	// TODO: add here fields produced by this experiment
+	// fundamentalFailure indicates that some fundamental error occurred
+	// in a background task and, as such, you don't want to submit the
+	// measuremnt to the OONI collector.
+	fundamentalFailure error
+
+	// TODO: add here fields produced by this experiment. They should
+	// be public such that we can JSON serialize them.
 	//
 	// For example:
 	//
-	// Failure *string
+	// // Blocked indicates that the resource is censored.
+	// Blocked bool `json:"blocked"
 }
 
-// TestKeys is the interface with which you access the real test keys.
-type TestKeys interface {
-	// TODO: define thread-safe accessors for the real test keys.
-	//
-	// For example:
-	//
-	// SetFailure(failure *string)
+var _ TestKeys = &testKeys{}
+
+// SetFundamentalFailure implements TestKeys.
+func (tk *testKeys) SetFundamentalFailure(err error) {
+	tk.mu.Lock()
+	tk.fundamentalFailure = err
+	tk.mu.Unlock()
 }
 
-// TODO: implement thread-safe accessors for the real test keys.
+// FundamentalFailure implements TestKeys.
+func (tk *testKeys) FundamentalFailure() error {
+	tk.mu.Lock()
+	err := tk.fundamentalFailure
+	tk.mu.Unlock()
+	return err
+}
+
+// TODO: implement thread-safe setters for the real test keys. This allows
+// tasks to write directly into the TestKeys.
 //
 // For example:
 //
-// func (tk *testKeys) SetFailure(failure *string) {
+// func (tk *testKeys) SetBlocked(blocked bool) {
 //   tk.mu.Lock()
-//   tk.Failure = failure
+//   tk.Blocked = blocked
 //   tk.mu.Unlock()
 // }
 

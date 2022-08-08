@@ -55,9 +55,15 @@ var _ Task = &{{ .StructName }}Task{}
 
 // Run implements Task
 func (t *{{ .StructName }}Task) Run(ctx context.Context, sched TaskScheduler) error {
+	// 1. configure timeout for this task
 	const defaultTimeout = 4 * time.Second // TODO: you may want to change this default
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
+
+	// 2. construct a system resolver.
+	//
+	// TODO(bassosimone): we need to implement trace support for the system
+	// resolver such that it's possible to use a trace here.
 	reso := netxlite.NewStdlibResolver(t.Logger)
 	addresses, err := reso.LookupHost(ctx, t.Domain)
 	if err != nil {
@@ -65,9 +71,13 @@ func (t *{{ .StructName }}Task) Run(ctx context.Context, sched TaskScheduler) er
 		return err
 	}
 	// TODO: write something into the test keys
+
+	// 3. (typically) fan out a number of child async tasks to use the IP addrs
 	for range addresses {
-		// TODO: fan out a number of async child tasks for each IP address
+		// TODO: implement
 	}
+
+	// 4. we're done!
 	return nil
 }
 

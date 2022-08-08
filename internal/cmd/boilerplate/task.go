@@ -74,6 +74,9 @@ func getTaskDescription() string {
 	return docs
 }
 
+//go:embed "task/httpget.go.txt"
+var httpGetTemplate string
+
 //go:embed "task/systemresolver.go.txt"
 var systemResolverTemplate string
 
@@ -85,6 +88,7 @@ var tlsHandshakeTemplate string
 
 // The list of known tasks
 var knownTasks = map[string]string{
+	"http-get":        httpGetTemplate,
 	"system-resolver": systemResolverTemplate,
 	"tcp-connect":     tcpConnectTemplate,
 	"tls-handshake":   tlsHandshakeTemplate,
