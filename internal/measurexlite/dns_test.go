@@ -2,9 +2,11 @@ package measurexlite
 
 import (
 	"context"
+	"net"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
@@ -44,6 +46,19 @@ func TestNewParallelResolver(t *testing.T) {
 				MockNetwork: func() string {
 					return "udp"
 				},
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return []string{"1.1.1.1"}, nil
+				},
+				MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+					return &model.HTTPSSvc{
+						IPv4: []string{"1.1.1.1"},
+					}, nil
+				},
+				MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
+					return []*net.NS{{
+						Host: "1.1.1.1",
+					}}, nil
+				},
 				MockCloseIdleConnections: func() {
 					called = true
 				},
@@ -62,6 +77,46 @@ func TestNewParallelResolver(t *testing.T) {
 			got := resolver.Network()
 			if got != "udp" {
 				t.Fatal("Network not called")
+			}
+		})
+
+		t.Run("LookupHost is correctly forwarded", func(t *testing.T) {
+			want := []string{"1.1.1.1"}
+			ctx := context.Background()
+			got, err := resolver.LookupHost(ctx, "example.com")
+			if err != nil {
+				t.Fatal("expected nil error")
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("LookupHTTPS is correctly forwarded", func(t *testing.T) {
+			want := &model.HTTPSSvc{
+				IPv4: []string{"1.1.1.1"},
+			}
+			ctx := context.Background()
+			got, err := resolver.LookupHTTPS(ctx, "example.com")
+			if err != nil {
+				t.Fatal("expected nil error")
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("LookupHost is correctly forwarded", func(t *testing.T) {
+			want := []*net.NS{{
+				Host: "1.1.1.1",
+			}}
+			ctx := context.Background()
+			got, err := resolver.LookupNS(ctx, "example.com")
+			if err != nil {
+				t.Fatal("expected nil error")
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 
@@ -253,6 +308,9 @@ func TestNewSimpleResolver(t *testing.T) {
 				MockNetwork: func() string {
 					return "udp"
 				},
+				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+					return []string{"1.1.1.1"}, nil
+				},
 			}
 		}
 		resolver := trace.newSimpleResolver(newMockResolver)
@@ -261,6 +319,18 @@ func TestNewSimpleResolver(t *testing.T) {
 			got := resolver.Network()
 			if got != "udp" {
 				t.Fatal("Network not called")
+			}
+		})
+
+		t.Run("LookupHost is correctly forwarded", func(t *testing.T) {
+			want := []string{"1.1.1.1"}
+			ctx := context.Background()
+			got, err := resolver.LookupHost(ctx, "example.com")
+			if err != nil {
+				t.Fatal("expected nil error")
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	})

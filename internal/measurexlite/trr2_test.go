@@ -3,7 +3,6 @@ package measurexlite
 import (
 	"context"
 	"errors"
-	"net"
 	"testing"
 	"time"
 
@@ -61,16 +60,27 @@ func TestNewTrustedRecursiveResolver(t *testing.T) {
 	})
 
 	t.Run("NewParallelDNSOverHTTPSResolverFn works as intended", func(t *testing.T) {
-		underlying := &mocks.Resolver{}
-		resolver := &TrustedRecursiveResolver2{
-			NewParallelDNSOverHTTPSResolverFn: func() model.Resolver {
-				return underlying
-			},
-		}
-		got := resolver.newParallelDNSOverHTTPSResolver(log.Log, "")
-		if got != underlying {
-			t.Fatal("unexpected parallel DoH resolver")
-		}
+		t.Run("when not nil", func(t *testing.T) {
+			underlying := &mocks.Resolver{}
+			resolver := &TrustedRecursiveResolver2{
+				NewParallelDNSOverHTTPSResolverFn: func() model.Resolver {
+					return underlying
+				},
+			}
+			got := resolver.newParallelDNSOverHTTPSResolver(log.Log, "")
+			if got != underlying {
+				t.Fatal("unexpected parallel DoH resolver")
+			}
+
+		})
+
+		t.Run("when nil", func(t *testing.T) {
+			resolver := &TrustedRecursiveResolver2{}
+			got := resolver.newParallelDNSOverHTTPSResolver(model.DiscardLogger, "dns.google.com")
+			if got.Network() != "doh" {
+				t.Fatal("unexpected resolver network")
+			}
+		})
 	})
 
 	t.Run("with DoH resolver", func(t *testing.T) {
@@ -135,12 +145,6 @@ func TestNewTrustedRecursiveResolver(t *testing.T) {
 				MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 					return []string{}, mockedErr
 				},
-				MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
-					return nil, mockedErr
-				},
-				MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
-					return nil, mockedErr
-				},
 			}
 		}
 		resolver := NewTrustedRecursiveResolver2(&mocks.Logger{}, "", 0).(*TrustedRecursiveResolver2)
@@ -157,6 +161,5 @@ func TestNewTrustedRecursiveResolver(t *testing.T) {
 				t.Fatal("got unexpected addresses")
 			}
 		})
-
 	})
 }

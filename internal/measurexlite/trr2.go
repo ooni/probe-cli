@@ -51,7 +51,7 @@ type TrustedRecursiveResolver2 struct {
 	// ResolverSystem is MANDATORY and is used as a fallback if the DoH resolver fails
 	ResolverSystem model.Resolver
 
-	// Timeout is OPTIONAL and a configurable timeout for the DoH resolver
+	// Timeout is MANDATORY and a configurable timeout for the DoH resolver
 	Timeout time.Duration
 }
 

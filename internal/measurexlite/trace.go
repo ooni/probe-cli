@@ -44,7 +44,7 @@ type Trace struct {
 	NewParallelResolverFn func() model.Resolver
 
 	// NewSimpleResolverFn is OPTIONAL and can be used to override
-	// calls to the netxlite.NewParallelResolver factory
+	// calls to the model.SimpleResolver factory functions.
 	NewSimpleResolverFn func() model.SimpleResolver
 
 	// NewDialerWithoutResolverFn is OPTIONAL and can be used to override
