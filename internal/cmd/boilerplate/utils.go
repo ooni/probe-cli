@@ -7,9 +7,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"text/template"
 
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"golang.org/x/sys/execabs"
 )
 
 // Permissions with which we create new directories
@@ -49,5 +51,14 @@ func writeTemplate(fullpath string, tmpl *template.Template, info any) {
 func mkdirP(fulldir string) {
 	printf("🐚 mkdir -p %s\n", fulldir)
 	err := os.MkdirAll(fulldir, newDirPermissions)
-	runtimex.PanicOnError(err, "o}s.MkdirAll failed")
+	runtimex.PanicOnError(err, "os.MkdirAll failed")
+}
+
+// Formats a package using go fmt.
+func gofmt(packagepath string) {
+	cmd := execabs.Command("go", "fmt", "."+string(filepath.Separator)+packagepath)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	printf("🐚 %s\n", cmd.String())
+	err := cmd.Run()
+	runtimex.PanicOnError(err, "cmd.Run failed")
 }

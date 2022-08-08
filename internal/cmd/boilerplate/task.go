@@ -124,4 +124,5 @@ func generateTaskGo(experiment string, info *TaskInfo) {
 		"Description": info.Description,
 	}
 	writeTemplate(fullpath, tmpl, mapping)
+	gofmt(fullpath)
 }

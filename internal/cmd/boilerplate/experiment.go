@@ -61,6 +61,9 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 		generateMainTaskGo(info)
 	}
 	generateRegistryEntryGo(info)
+
+	pkg := filepath.Join("internal", "experiment", info.Name, "/...")
+	gofmt(pkg)
 }
 
 // Obtains the experiment info
