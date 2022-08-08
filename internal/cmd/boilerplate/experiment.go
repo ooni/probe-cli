@@ -64,6 +64,17 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 
 	pkg := filepath.Join("internal", "experiment", info.Name, "/...")
 	gofmt(pkg)
+
+	printf("\n")
+	printf("🏁 All done! Now you can run:\n")
+	printf("\n")
+	printf("* `go build -v ./internal/cmd/miniooni` to build `miniooni`;\n")
+	printf("\n")
+	printf("* `./miniooni -n [options] %s` to test your new experiment;\n", info.Name)
+	printf("\n")
+	printf("* `go run ./internal/cmd/boilerplate new-task` to add tasks\n")
+	printf("  to you new experiment (e.g., a TLS handshake).\n")
+	printf("\n")
 }
 
 // Obtains the experiment info

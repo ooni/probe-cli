@@ -95,6 +95,7 @@ func (ts *taskScheduler) Schedule(ctx context.Context, task Task) {
 		task:   task,
 		wg:     ts.wg,
 	}
+	ts.wg.Add(1)
 	go wrapper.run(ctx, ts)
 }
 
