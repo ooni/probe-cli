@@ -1,0 +1,138 @@
+package {{ .Name }}
+
+//
+// Measurer for {{ .Name }}
+//
+
+import (
+	"context"
+	{{ if ne .InputPolicy "InputOptional" }}
+	"errors"
+	{{ end }}
+	{{ if ne .Timeout 0 }}
+	"time"
+	{{ end }}
+
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
+
+// Measurer implements {{ .Name }}.
+type Measurer struct{
+	// Config contains the experiment's config.
+	Config *Config
+}
+
+// NewExperimentMeasurer creates a new model.ExperimentMeasurer for {{ .Name }}.
+func NewExperimentMeasurer(config *Config) model.ExperimentMeasurer {
+	return &Measurer{
+		Config: config,
+	}
+}
+
+// ExperimentName implements ExperimentMeasurer.ExperimentName.
+func (m *Measurer) ExperimentName() string {
+	return "{{ .Name }}"
+}
+
+// ExperimentVersion implements ExperimentMeasurer.ExperimentVersion.
+func (m *Measurer) ExperimentVersion() string {
+	return "{{ .Version }}"
+}
+
+// Run implements ExperimentMeasurer.Run.
+func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
+	measurement *model.Measurement, callbacks model.ExperimentCallbacks) error {
+	// Reminder: When this function returns an error, the measurement result
+	// WILL NOT be submitted to the OONI backend. You SHOULD only return an error
+	// for fundamental errors (e.g., the input is invalid or missing).
+
+	{{ if eq .InputPolicy "InputNone" }}
+	// honour {{ .InputPolicy }}
+	if measurement.Input != "" {
+		sess.Logger().Warn("BUG: {{ .Name }} got input but has {{ .InputPolicy }}!")
+		return errors.New("{{ .Name }}: this experiment does not take any input")
+	}
+
+	{{ else if eq .InputPolicy "InputOptional" }}
+	// honour {{ .InputPolicy }}
+	input := measurement.Input
+	if input == "" {
+		input = m.optionalInput()
+	}
+
+	{{ else if eq .InputPolicy "InputOrQueryBackend" }}
+	// honour {{ .InputPolicy }}
+	input := measurement.Input
+	if input == "" {
+		sess.Logger().Warn("BUG: {{ .Name }} got no input but has {{ .InputPolicy }}!")
+		return errors.New("{{ .Name }}: no input provided")
+	}
+
+	{{ else if eq .InputPolicy "InputOrStaticDefault" }}
+	// honour {{ .InputPolicy }}
+	input := measurement.Input
+	if input == "" {
+		sess.Logger().Warn("BUG: {{ .Name }} got no input but has {{ .InputPolicy }}!")
+		return errors.New("{{ .Name }}: no input provided")
+	}
+
+	{{ else if eq .InputPolicy "InputStrictlyRequired" }}
+	// honour {{ .InputPolicy }}
+	input := measurement.Input
+	if input == "" {
+		return errors.New("{{ .Name }}: no input provided")
+	}
+
+	{{ else }}
+	THIS SHOULD NOT HAPPEN! SOMETHING'S WRONG WITH THE AUTO-GENERATOR!
+	{{ end }}
+
+	// initialize the experiment's test keys
+	tk := NewTestKeys()
+	measurement.TestKeys = tk
+
+	{{ if ne .Timeout 0 }}
+	// ensure there's an overall timeout
+	ctx, cancel := context.WithTimeout(ctx, {{.Timeout}} * time.Second)
+	defer cancel()
+	{{ end }}
+
+{{ if eq .Parallel false }}
+	// defer the rest of the work to run()
+	return m.run(ctx, sess, measurement, callbacks)
+{{ else }}
+	// defer the rest of the work to the main task
+	const parallelism = 10 // TODO: adjust depending on your needs
+	idGenerator := NewTaskIDGenerator()
+	main := NewMainTask(idGenerator, sess.Logger())
+	ts := NewTaskSchedulerWaiter(sess.Logger(), parallelism)
+	ts.Schedule(ctx, main)
+	ts.Wait()
+	return nil
+{{ end }}
+}
+
+{{ if eq .Parallel false }}
+
+// run implements Run.
+func (m *Measurer) run(ctx context.Context, sess model.ExperimentSession,
+	measurement *model.Measurement, callbacks model.ExperimentCallbacks) error {
+	// TODO: implement
+	sess.Logger().Infof("Hello, world")
+	return nil
+}
+
+{{ end }}
+
+{{ if eq .InputPolicy "InputOptional" }}
+func (m *Measurer) optionalInput() model.MeasurementTarget {
+	panic("not implemented")
+}
+{{ end }}
+
+// GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
+func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (any, error) {
+	sk := SummaryKeys{isAnomaly: false}
+	// TODO: implement
+	return sk, nil
+}

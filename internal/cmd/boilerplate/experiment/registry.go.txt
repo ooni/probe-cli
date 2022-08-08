@@ -1,0 +1,23 @@
+package registry
+
+//
+// Registers the `{{ .Name }}' experiment.
+//
+
+import (
+	"github.com/ooni/probe-cli/v3/internal/experiment/{{ .Name }}"
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
+
+func init() {
+	allexperiments["{{ .Name }}"] = &Factory{
+		build: func(config any) model.ExperimentMeasurer {
+			return {{ .Name }}.NewExperimentMeasurer(
+				config.(*{{ .Name }}.Config),
+			)
+		},
+		config:        &{{ .Name }}.Config{},
+		interruptible: {{ .Interruptible }},
+		inputPolicy:   model.{{ .InputPolicy }},
+	}
+}

@@ -1,0 +1,75 @@
+package {{ .Name }}
+
+//
+// Data model for {{ .Name }}
+//
+
+{{ if eq .Parallel true }}
+import "sync"
+{{ end }}
+
+// Config contains configuration for the {{ .Name }} experiment.
+type Config struct {
+	// TODO: add fields here if you need any config
+}
+
+{{ if eq .Parallel true }}
+
+// testKeys contains the experiment test keys.
+type testKeys struct {
+	// mu provides mutual exclusion for accessing the test keys
+	mu sync.Mutex
+
+	// TODO: add here fields produced by this experiment
+	//
+	// For example:
+	//
+	// Failure *string
+}
+
+// TestKeys is the interface with which you access the real test keys.
+type TestKeys interface {
+	// TODO: define thread-safe accessors for the real test keys.
+	//
+	// For example:
+	//
+	// SetFailure(failure *string)
+}
+
+// TODO: implement thread-safe accessors for the real test keys.
+//
+// For example:
+//
+// func (tk *testKeys) SetFailure(failure *string) {
+//   tk.mu.Lock()
+//   tk.Failure = failure
+//   tk.mu.Unlock()
+// }
+
+// NewTestKeys creates a new instance of TestKeys.
+func NewTestKeys() TestKeys {
+	return &testKeys{}
+}
+
+{{ else }}
+
+// TestKeys contains the results produced by the experiment.
+type TestKeys struct{
+	// TODO: add here fields produced by this experiment
+}
+
+// NewTestKeys creates a new instance of TestKeys.
+func NewTestKeys() *TestKeys {
+	return &TestKeys{}
+}
+
+{{ end }}
+
+// Summary contains the summary results.
+//
+// Note that this structure is part of the ABI contract with ooniprobe
+// therefore we should be careful when changing it.
+type SummaryKeys struct {
+	isAnomaly bool
+	// TODO: add here additional summary fields.
+}
