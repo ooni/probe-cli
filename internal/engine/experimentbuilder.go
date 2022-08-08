@@ -72,7 +72,7 @@ type ExperimentBuilder interface {
 	SetCallbacks(callbacks model.ExperimentCallbacks)
 
 	// NewExperiment creates the experiment instance.
-	NewExperiment() Experiment
+	NewExperiment() model.Experiment
 }
 
 // experimentBuilder implements ExperimentBuilder.
@@ -268,7 +268,7 @@ func (b *experimentBuilder) fieldbyname(v interface{}, key string) (reflect.Valu
 }
 
 // NewExperiment creates the experiment
-func (b *experimentBuilder) NewExperiment() Experiment {
+func (b *experimentBuilder) NewExperiment() model.Experiment {
 	experiment := b.build(b.config)
 	experiment.callbacks = b.callbacks
 	return experiment

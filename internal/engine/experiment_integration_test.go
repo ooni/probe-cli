@@ -313,7 +313,7 @@ func TestRunHHFM(t *testing.T) {
 	runexperimentflow(t, builder.NewExperiment(), "")
 }
 
-func runexperimentflow(t *testing.T, experiment Experiment, input string) {
+func runexperimentflow(t *testing.T, experiment model.Experiment, input string) {
 	ctx := context.Background()
 	err := experiment.OpenReportContext(ctx)
 	if err != nil {

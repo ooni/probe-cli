@@ -117,7 +117,7 @@ type inputProcessor interface {
 }
 
 // newInputProcessor creates a new inputProcessor instance.
-func (ed *Experiment) newInputProcessor(experiment engine.Experiment,
+func (ed *Experiment) newInputProcessor(experiment model.Experiment,
 	inputList []model.OOAPIURLInfo, saver engine.Saver, submitter engine.Submitter) inputProcessor {
 	return &engine.InputProcessor{
 		Annotations: ed.Annotations,
@@ -138,7 +138,7 @@ func (ed *Experiment) newInputProcessor(experiment engine.Experiment,
 }
 
 // newSaver creates a new engine.Saver instance.
-func (ed *Experiment) newSaver(experiment engine.Experiment) (engine.Saver, error) {
+func (ed *Experiment) newSaver(experiment model.Experiment) (engine.Saver, error) {
 	return engine.NewSaver(engine.SaverConfig{
 		Enabled:    !ed.NoJSON,
 		Experiment: experiment,

@@ -141,3 +141,73 @@ type ExperimentMeasurer interface {
 	// GetSummaryKeys returns summary keys expected by ooni/probe-cli.
 	GetSummaryKeys(*Measurement) (interface{}, error)
 }
+
+// Experiment is an experiment instance.
+type Experiment interface {
+	// KibiBytesReceived accounts for the KibiBytes received by the experiment.
+	KibiBytesReceived() float64
+
+	// KibiBytesSent is like KibiBytesReceived but for the bytes sent.
+	KibiBytesSent() float64
+
+	// Name returns the experiment name.
+	Name() string
+
+	// GetSummaryKeys returns a data structure containing a
+	// summary of the test keys for ooniprobe.
+	GetSummaryKeys(m *Measurement) (any, error)
+
+	// ReportID returns the open report's ID, if we have opened a report
+	// successfully before, or an empty string, otherwise.
+	//
+	// Deprecated: new code should use a Submitter.
+	ReportID() string
+
+	// MeasureAsync runs an async measurement. This operation could post
+	// one or more measurements onto the returned channel. We'll close the
+	// channel when we've emitted all the measurements.
+	//
+	// Arguments:
+	//
+	// - ctx is the context for deadline/cancellation/timeout;
+	//
+	// - input is the input (typically a URL but it could also be
+	// just an endpoint or an empty string for input-less experiments
+	// such as, e.g., ndt7 and dash).
+	//
+	// Return value:
+	//
+	// - on success, channel where to post measurements (the channel
+	// will be closed when done) and nil error;
+	//
+	// - on failure, nil channel and non-nil error.
+	MeasureAsync(ctx context.Context, input string) (<-chan *Measurement, error)
+
+	// MeasureWithContext performs a synchronous measurement.
+	//
+	// Return value: strictly either a non-nil measurement and
+	// a nil error or a nil measurement and a non-nil error.
+	//
+	// CAVEAT: while this API is perfectly fine for experiments that
+	// return a single measurement, it will only return the first measurement
+	// when used with an asynchronous experiment.
+	MeasureWithContext(ctx context.Context, input string) (measurement *Measurement, err error)
+
+	// SaveMeasurement saves a measurement on the specified file path.
+	//
+	// Deprecated: new code should use a Saver.
+	SaveMeasurement(measurement *Measurement, filePath string) error
+
+	// SubmitAndUpdateMeasurementContext submits a measurement and updates the
+	// fields whose value has changed as part of the submission.
+	//
+	// Deprecated: new code should use a Submitter.
+	SubmitAndUpdateMeasurementContext(
+		ctx context.Context, measurement *Measurement) error
+
+	// OpenReportContext will open a report using the given context
+	// to possibly limit the lifetime of this operation.
+	//
+	// Deprecated: new code should use a Submitter.
+	OpenReportContext(ctx context.Context) error
+}

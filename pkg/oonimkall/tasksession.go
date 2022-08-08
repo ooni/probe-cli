@@ -72,7 +72,7 @@ func (b *taskExperimentBuilderEngine) NewExperimentInstance() taskExperiment {
 
 // taskExperimentEngine wraps ./internal/engine's Experiment.
 type taskExperimentEngine struct {
-	engine.Experiment
+	model.Experiment
 }
 
 var _ taskExperiment = &taskExperimentEngine{}
