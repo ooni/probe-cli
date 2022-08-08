@@ -50,7 +50,8 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 	print("\n")
 
 	info := getExperimentInfo()
-	info.Interruptible = info.InputPolicy == "InputNone"
+	// TODO(bassosimone): which is the condition for interruptible? It seems
+	// to me only performance experiments are interruptible?!
 
 	makeExperimentDirectory(info)
 	generateDocGo(info)
