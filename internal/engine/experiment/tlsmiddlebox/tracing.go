@@ -7,6 +7,7 @@ package tlsmiddlebox
 import (
 	"context"
 	"crypto/tls"
+	"net"
 	"sort"
 	"sync"
 	"time"
@@ -74,33 +75,14 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 		ol.Stop(err)
 		return
 	}
-	ctx, cancel := context.WithCancel(ctx)
-	var soErr error
-	st := make(chan *tls.ConnectionState)
-	// start a go routine which listens for ICMP time exceeded or connection reset
-	go func() {
-		for {
-			select {
-			case <-st:
-				return
-			default:
-				soErrno := getSoErr(conn)
-				failure := netxlite.ClassifyGenericError(soErrno)
-				if failure == netxlite.FailureHostUnreachable || failure == netxlite.FailureConnectionReset {
-					soErr = soErrno
-					cancel()
-				}
-			}
-		}
-	}()
 	thx := trace.NewTLSHandshakerStdlib(logger)
-	_, state, err := thx.Handshake(ctx, conn, genTLSConfig(sni))
-	st <- &state
+	_, _, err = thx.Handshake(ctx, conn, genTLSConfig(sni))
 	ol.Stop(err)
+	icmpErr := getICMPErr(conn)
 	// reset the TTL value to ensure that conn closes successfully
 	// Note: we do not check for errors here
 	setConnTTL(conn, 64)
-	iteration := newIterationFromHandshake(ttl, nil, soErr, <-trace.TLSHandshake)
+	iteration := newIterationFromHandshake(ttl, nil, icmpErr, <-trace.TLSHandshake)
 	tr.addIterations(iteration)
 }
 
@@ -112,6 +94,16 @@ func genTLSConfig(sni string) *tls.Config {
 		NextProtos:         []string{"h2", "http/1.1"},
 		InsecureSkipVerify: true,
 	}
+}
+
+// getICMPErr fetches the error from the SO_ERROR value after the handshake
+func getICMPErr(conn net.Conn) error {
+	soErrno := getSoErr(conn)
+	failure := netxlite.ClassifyGenericError(soErrno)
+	if failure == netxlite.FailureHostUnreachable {
+		return soErrno
+	}
+	return nil
 }
 
 // alignIterEvents sorts the iterEvents according to increasing TTL
