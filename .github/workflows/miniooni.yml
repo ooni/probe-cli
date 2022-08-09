@@ -6,11 +6,6 @@
 name: miniooni
 on:
   push:
-    #branches:
-    #  - "master"
-    #  - "release/**"
-    tags:
-      - "v*"
 
 jobs:
   build_and_publish:
