@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+__version=$(date -u +%Y.%m.%d-%H%M%S)
+__release=$(git describe --tags || echo '0.0.0-dev')
+cat ./MOBILE/ios/template.podspec | sed -e "s/@VERSION@/$__version/g" \
+	-e "s/@RELEASE@/$__release/g" >./MOBILE/ios/oonimkall.podspec

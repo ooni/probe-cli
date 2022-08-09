@@ -211,7 +211,7 @@ show-config:
 #help: * `./mk ./MOBILE/android/oonimkall.pom`: the POM
 .PHONY:   ./MOBILE/android/oonimkall.pom
 ./MOBILE/android/oonimkall.pom:
-	cat ./MOBILE/android/template.pom | sed -e "s/@VERSION@/$(OONIMKALL_V)/g" > ./MOBILE/android/oonimkall.pom
+	./MOBILE/android/createpom
 
 #help:
 #help: * `./mk ./MOBILE/android/oonimkall.aar`: the AAR
@@ -232,8 +232,7 @@ show-config:
 #help: * `./mk ./MOBILE/ios/oonimkall.xcframework.zip`: zip the xcframework
 .PHONY:   ./MOBILE/ios/oonimkall.xcframework.zip
 ./MOBILE/ios/oonimkall.xcframework.zip: search/for/zip ./MOBILE/ios/oonimkall.xcframework
-	cd ./MOBILE/ios && rm -rf oonimkall.xcframework.zip
-	cd ./MOBILE/ios && zip -yr oonimkall.xcframework.zip oonimkall.xcframework
+	./MOBILE/ios/zipframework
 
 #help:
 #help: * `./mk ./MOBILE/ios/xcframework`: the xcframework
@@ -245,11 +244,7 @@ show-config:
 #help: * `./mk ./MOBILE/ios/oonimkall.podspec`: the podspec
 .PHONY:   ./MOBILE/ios/oonimkall.podspec
 ./MOBILE/ios/oonimkall.podspec: ./MOBILE/ios/template.podspec
-	cat $< | sed -e "s/@VERSION@/$(OONIMKALL_V)/g" -e "s/@RELEASE@/$(OONIMKALL_R)/g" > $@
-
-# important: OONIMKALL_V and OONIMKALL_R MUST be expanded just once so we use `:=`
-OONIMKALL_V := $(shell date -u +%Y.%m.%d-%H%M%S)
-OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
+	./MOBILE/ios/createpodspec
 
 .PHONY: search/for/docker
 search/for/docker:
