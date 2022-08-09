@@ -1,0 +1,19 @@
+name: run-tests
+description: Common code for running tests
+
+inputs:
+  packages:
+    description: Packages to test
+    required: false
+    default: "./..."
+
+  golang_extra_options:
+    description: Extra options to pass to go test
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: go test -race -tags shaping ${{ inputs.golang_extra_options }} ${{ inputs.packages }}

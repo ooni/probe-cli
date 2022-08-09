@@ -6,9 +6,9 @@
 name: miniooni
 on:
   push:
-    branches:
-      - "master"
-      - "release/**"
+    #branches:
+    #  - "master"
+    #  - "release/**"
     tags:
       - "v*"
 
@@ -34,28 +34,42 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - run: ./mk ./CLI/miniooni
-      - run: ./E2E/miniooni.bash ./CLI/miniooni-linux-amd64
+      # Just to make sure this is working as intended
+      # but maybe we also need to make gharun run another
+      # github actions rather than just commands?
 
-      - uses: actions/upload-artifact@v1
+      - run: ./.github/actions/build-windows
         with:
-          name: miniooni-linux-386
-          path: ./CLI/miniooni-linux-386
+          goarch: 386
+          package: ./internal/cmd/miniooni
 
-      - uses: actions/upload-artifact@v1
+      - run: ./.github/actions/build-windows
         with:
-          name: miniooni-linux-amd64
-          path: ./CLI/miniooni-linux-amd64
+          goarch: amd64
+          package: ./internal/cmd/miniooni
 
-      - uses: actions/upload-artifact@v1
-        with:
-          name: miniooni-linux-armv7
-          path: ./CLI/miniooni-linux-armv7
+#     - run: ./mk ./CLI/miniooni
+#     - run: ./E2E/miniooni.bash ./CLI/miniooni-linux-amd64
 
-      - uses: actions/upload-artifact@v1
-        with:
-          name: miniooni-linux-arm64
-          path: ./CLI/miniooni-linux-arm64
+#     - uses: actions/upload-artifact@v1
+#       with:
+#         name: miniooni-linux-386
+#         path: ./CLI/miniooni-linux-386
+
+#     - uses: actions/upload-artifact@v1
+#       with:
+#         name: miniooni-linux-amd64
+#         path: ./CLI/miniooni-linux-amd64
+
+#     - uses: actions/upload-artifact@v1
+#       with:
+#         name: miniooni-linux-armv7
+#         path: ./CLI/miniooni-linux-armv7
+
+#     - uses: actions/upload-artifact@v1
+#       with:
+#         name: miniooni-linux-arm64
+#         path: ./CLI/miniooni-linux-arm64
 
       - run: |
           tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')

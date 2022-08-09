@@ -1,0 +1,30 @@
+name: build-darwin
+description: Builds ooniprobe, miniooni, or some other product for Linux using musl.
+
+inputs:
+  dockerarch:
+    description: Docker target architecture
+    required: true
+
+  package:
+    description: Package to compile to generate the build
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        arch=${{ inputs.dockerarch }}
+        goversion=1.18.3
+        image=golang:$goversion-alpine
+        set -x
+        docker pull --platform linux/$arch $image
+        docker run --platform linux/$arch \
+                   -e DOCKERARCH=$arch \
+                   -v $(pwd):/ooni \
+                   -w /ooni \
+                   $image \
+                   ./.github/actions/build-linux/entrypoint.sh \
+                   ${{ inputs.package }}

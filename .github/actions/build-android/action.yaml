@@ -1,0 +1,64 @@
+name: build-android
+description: Builds for Android without using Go mobile.
+
+inputs:
+  android_ndk_root:
+    description: Directory containing the Android NDK to use
+    required: true
+
+  goarch:
+    description: Golang target architecture
+    required: true
+
+  package:
+    description: Package to compile to generate the build
+    required: true
+
+  golang_extra_options:
+    description: Extra options to pass to the golang compiler
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        GOOS=android
+        GOARCH=${{ inputs.goarch }}
+        OONI_PRODUCT_NAME=$(basename ${{ inputs.package }})
+        OONI_ENGINE=./internal/engine
+        OONI_CONFIG_KEY=$OONI_ENGINE/psiphon-config.key
+        OONI_CONFIG_JSON_AGE=$OONI_ENGINE/psiphon-config.json.age
+        if [[ -f $OONI_CONFIG_KEY && -f $OONI_CONFIG_JSON_AGE ]]; then
+          OONI_PSIPHON_TAGS=ooni_psiphon_tags
+        else
+          OONI_PSIPHON_TAGS=""
+        fi
+        if [[ $(go version | awk '{print $3}') != go1.18.3 ]]; then
+          echo "FATAL: we need to build using go1.18.3" 1>&2
+          exit 1
+        fi
+        ndkroot=${{ inputs.android_ndk_root }}
+        if [[ $GOARCH == "arm64" ]]; then
+          CC=$(find $ndkroot -type f -name aarch64-linux-android21-clang)
+        elif [[ $GOARCH == "arm" ]]; then
+          CC=$(find $ndkroot -type f -name armv7a-linux-androideabi21-clang)
+        elif [[ $GOARCH == "386" ]]; then
+          CC=$(find $ndkroot -type f -name i686-linux-android21-clang)
+        elif [[ $GOARCH == "amd64" ]]; then
+          CC=$(find $ndkroot -type f -name x86_64-linux-android21-clang)
+        else
+          echo "FATAL: unsupported GOARCH: $GOARCH" 1>&2
+          exit 1
+        fi
+        set -x
+        export CC=$CC
+        export CGO_ENABLED=1
+        export GOOS=$GOOS
+        export GOARCH=$GOARCH
+        go build -tags=$OONI_PSIPHON_TAGS -ldflags="-s -w" \
+                 -o ./CLI/$OONI_PRODUCT_NAME-$GOOS-$GOARCH \
+                 ${{ inputs.golang_extra_options }} \
+                 ${{ inputs.package }}

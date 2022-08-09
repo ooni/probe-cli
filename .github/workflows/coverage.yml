@@ -20,7 +20,9 @@ jobs:
           go-version: "${{ matrix.go }}"
           cache-key-suffix: "-coverage-${{ matrix.go }}"
       - uses: actions/checkout@v2
-      - run: go test -short -race -tags shaping -coverprofile=probe-cli.cov ./...
+      - uses: ./.github/actions/run-tests
+        with:
+          golang_extra_options: -short -coverprofile=probe-cli.cov
       - uses: shogo82148/actions-goveralls@v1
         with:
           path-to-profile: probe-cli.cov

@@ -1,0 +1,49 @@
+name: build-gomobile
+description: Builds oonimkall for iOS/Android using gomobile
+
+inputs:
+  target:
+    description: The system to build to
+    required: true
+
+  golang_extra_options:
+    description: Extra options to pass to the golang compiler
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        OONI_ENGINE=./internal/engine
+        OONI_CONFIG_KEY=$OONI_ENGINE/psiphon-config.key
+        OONI_CONFIG_JSON_AGE=$OONI_ENGINE/psiphon-config.json.age
+        if [[ -f $OONI_CONFIG_KEY && -f $OONI_CONFIG_JSON_AGE ]]; then
+          OONI_PSIPHON_TAGS=ooni_psiphon_tags
+        else
+          OONI_PSIPHON_TAGS=""
+        fi
+        if [[ $(go version | awk '{print $3}') != go1.18.3 ]]; then
+          echo "FATAL: we need to build using go1.18.3" 1>&2
+          exit 1
+        fi
+        set -x
+        go install golang.org/x/mobile/cmd/gomobile@latest
+        $(go env GOPATH)/bin/gomobile init
+        # Adding gomobile to go.mod as documented by golang.org/wiki/Mobile
+        go get -d golang.org/x/mobile/cmd/gomobile
+        target=${{ inputs.target }}
+        if [[ $target == "android" ]]; then
+          ext="aar"
+        elif [[ $target == "ios" ]]; then
+          ext="xcframework"
+        else
+          echo "FATAL: unsupported target: $target" 1>&2
+          exit 1
+        fi
+        $(go env GOPATH)/bin/gomobile bind -target $target \
+          -o ./MOBILE/$target/oonimkall.$ext -tags="$OONI_PSIPHON_TAGS" \
+          -ldflags '-s -w' ${{ inputs.golang_extra_options }} \
+          ./pkg/oonimkall
