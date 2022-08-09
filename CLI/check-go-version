@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -euo pipefail
+
+EXPECTED_GOLANG_VERSION=go$(cat GOVERSION)
+
+printf "checking for go... "
+if ! command -v go; then
+	echo "not found"
+	exit 1
+fi
+
+printf "checking for go version... "
+GOLANG_VERSION=$(go version | awk '{print $3}')
+echo $GOLANG_VERSION
+if [[ $GOLANG_VERSION != $EXPECTED_GOLANG_VERSION ]]; then
+	echo "FATAL: go version must be $EXPECTED_GOLANG_VERSION instead of $GOLANG_VERSION"
+	exit 1
+fi

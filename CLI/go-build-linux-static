@@ -23,7 +23,7 @@ if [[ $# -ne 2 ]]; then
 	exit 1
 fi
 
-GOLANG_DOCKER_IMAGE=golang:1.18.3-alpine
+GOLANG_DOCKER_IMAGE=golang:$(cat GOVERSION)-alpine
 GOOS=linux
 OONIARCH=$1
 PACKAGE=$2

@@ -63,10 +63,6 @@ $(GIT_CLONE_DIR):
 GOLANG_EXTRA_FLAGS =
 
 #help:
-#help: * GOLANG_VERSION_NUMBER : the expected version number for golang.
-GOLANG_VERSION_NUMBER = 1.18.3
-
-#help:
 #help: * MINGW_W64_VERSION     : the expected mingw-w64 version.
 MINGW_W64_VERSION = 12.1.0
 
@@ -104,21 +100,10 @@ show-config:
 	@echo "ANDROID_NDK_VERSION=$(ANDROID_NDK_VERSION)"
 	@echo "GIT_CLONE_DIR=$(GIT_CLONE_DIR)"
 	@echo "GOLANG_EXTRA_FLAGS=$(GOLANG_EXTRA_FLAGS)"
-	@echo "GOLANG_VERSION_NUMBER=$(GOLANG_VERSION_NUMBER)"
 	@echo "MINGW_W64_VERSION=$(MINGW_W64_VERSION)"
 	@echo "OONI_PSIPHON_TAGS=$(OONI_PSIPHON_TAGS)"
 	@echo "OONI_ANDROID_HOME=$(OONI_ANDROID_HOME)"
 	@echo "XCODE_VERSION=$(XCODE_VERSION)"
-
-# GOLANG_VERSION_STRING is the expected version string. If we
-# run a golang binary that does not emit this version string
-# when running `go version`, we stop the build.
-GOLANG_VERSION_STRING = go$(GOLANG_VERSION_NUMBER)
-
-# GOLANG_DOCKER_IMAGE is the golang docker image we use for
-# building for Linux systems. It is an Alpine based container
-# so that we can easily build static binaries.
-GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 
 # Cross-compiling miniooni from any system with Go installed is
 # very easy, because it does not use any C code.
@@ -294,11 +279,6 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 ./MOBILE/android/oonimkall.pom:
 	cat ./MOBILE/android/template.pom | sed -e "s/@VERSION@/$(OONIMKALL_V)/g" > ./MOBILE/android/oonimkall.pom
 
-# GOMOBILE is the full path location to the gomobile binary. We want to
-# execute this command every time, because its output may depend on context,
-# for this reason WE ARE NOT using `:=`.
-GOMOBILE = $(shell go env GOPATH)/bin/gomobile
-
 #help:
 #help: * `./mk ./MOBILE/android/oonimkall.aar`: the AAR
 .PHONY:   ./MOBILE/android/oonimkall.aar
@@ -369,19 +349,9 @@ search/for/git:
 	@printf "checking for git... "
 	@command -v git || { echo "not found"; exit 1; }
 
-#help:
-#help: * `./mk search/for/go`: checks for go
 .PHONY: search/for/go
 search/for/go:
-	@printf "checking for go... "
-	@command -v go || { echo "not found"; exit 1; }
-	@printf "checking for go version... "
-	@echo $(__GOVERSION_REAL)
-	@[ "$(GOLANG_VERSION_STRING)" = "$(__GOVERSION_REAL)" ] || { echo "fatal: go version must be $(GOLANG_VERSION_STRING) instead of $(__GOVERSION_REAL)"; exit 1; }
-
-# __GOVERSION_REAL is the go version reported by the go binary (we
-# SHOULD NOT cache this value so we ARE NOT using `:=`)
-__GOVERSION_REAL = $(shell go version | awk '{print $$3}')
+	./CLI/check-go-version
 
 #help:
 #help: * `./mk search/for/java`: checks for java
