@@ -26,7 +26,7 @@ type {{ .StructName }}Task struct {
 	Address string
 
 	// IDGenerator is the TaskIDgenerator to use.
-	IDGenerator TaskIDGenerator
+	IDGenerator *TaskIDGenerator
 
 	// Logger is the logger to use.
 	Logger model.Logger
@@ -59,7 +59,7 @@ type {{ .StructName }}Task struct {
 //
 // - zeroTime is the zero time of the measurement.
 func New{{ .StructName }}Task(
-	address string, alpn []string, sni string, idGenerator TaskIDGenerator,
+	address string, alpn []string, sni string, idGenerator *TaskIDGenerator,
 	logger model.Logger, tk TestKeys, zeroTime time.Time) *{{ .StructName }}Task {
 	return &{{ .StructName }}Task{
 		Address:     address,

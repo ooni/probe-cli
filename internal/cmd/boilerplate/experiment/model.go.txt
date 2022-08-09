@@ -29,7 +29,7 @@ type TestKeys interface {
 // testKeys contains the experiment test keys.
 type testKeys struct {
 	// mu provides mutual exclusion for accessing the test keys
-	mu sync.Mutex
+	mu *sync.Mutex
 
 	// fundamentalFailure indicates that some fundamental error occurred
 	// in a background task. As such, you don't want to submit this

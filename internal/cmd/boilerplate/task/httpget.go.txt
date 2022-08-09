@@ -27,13 +27,16 @@ type {{ .StructName }}Task struct {
 	Address string
 
 	// IDGenerator is the TaskIDgenerator to use.
-	IDGenerator TaskIDGenerator
+	IDGenerator *TaskIDGenerator
 
 	// Logger is the logger to use.
 	Logger model.Logger
 
 	// TestKeys contains the TestKeys.
 	TestKeys TestKeys
+
+	// URLPath is the URL's path.
+	URLPath string
 
 	// ZeroTime is the measurement's zero time.
 	ZeroTime time.Time
@@ -51,14 +54,17 @@ type {{ .StructName }}Task struct {
 //
 // - tk contains the TestKeys;
 //
+// - urlPath is the URL path to use;
+//
 // - zeroTime is the zero time of the measurement.
-func New{{ .StructName }}Task(address string, idGenerator TaskIDGenerator,
-	logger model.Logger, tk TestKeys, zeroTime time.Time) *{{ .StructName }}Task {
+func New{{ .StructName }}Task(address string, idGenerator *TaskIDGenerator,
+	logger model.Logger, tk TestKeys, urlPath string, zeroTime time.Time) *{{ .StructName }}Task {
 	return &{{ .StructName }}Task{
 		Address:     address,
 		IDGenerator: idGenerator,
 		Logger:      logger,
 		TestKeys:    tk,
+		URLPath:     urlPath,
 		ZeroTime:    zeroTime,
 	}
 }

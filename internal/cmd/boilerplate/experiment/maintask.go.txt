@@ -36,6 +36,9 @@ type MainTask struct {
 	// TestKeys contains the TestKeys.
 	TestKeys TestKeys
 
+	// ZeroTime is the zero time of the measurement.
+	ZeroTime time.Time
+
 	// TODO: add fields.
 	//
 	// Please, keep in mind that, with multiple tasks you should
@@ -51,15 +54,19 @@ type MainTask struct {
 //
 // - logger is the logger to use;
 //
-// - tk contains the TestKeys where to write results.
+// - tk contains the TestKeys where to write results;
+//
+// - zeroTime is the measurement's zero time.
 //
 // TODO: add the required parameters.
-func NewMainTask(idGenerator *TaskIDGenerator, logger model.Logger, tk TestKeys) *MainTask {
+func NewMainTask(
+	idGenerator *TaskIDGenerator, logger model.Logger, tk TestKeys, zeroTime time.Time) *MainTask {
 	return &MainTask{
 		IDGenerator: idGenerator,
 		Logger:      logger,
 		TestKeys:    tk,
-		// TODO: fill fields.
+		ZeroTime:    zeroTime,
+		// TODO: fill newly-added fields.
 	}
 }
 

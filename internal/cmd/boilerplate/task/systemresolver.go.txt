@@ -21,7 +21,7 @@ type {{ .StructName }}Task struct {
 	Domain string
 
 	// IDGenerator is the TaskIDgenerator to use.
-	IDGenerator TaskIDGenerator
+	IDGenerator *TaskIDGenerator
 
 	// Logger is the logger to use.
 	Logger model.Logger
@@ -46,7 +46,7 @@ type {{ .StructName }}Task struct {
 // - tk contains the TestKeys;
 //
 // - zeroTime is the zero time of the measurement.
-func New{{ .StructName }}Task(domain string, idGenerator TaskIDGenerator,
+func New{{ .StructName }}Task(domain string, idGenerator *TaskIDGenerator,
 	logger model.Logger, tk TestKeys, zeroTime time.Time) *{{ .StructName }}Task {
 	return &{{ .StructName }}Task{
 		Domain:      domain,
