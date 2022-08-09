@@ -68,7 +68,7 @@ GOLANG_VERSION_NUMBER = 1.18.3
 
 #help:
 #help: * MINGW_W64_VERSION     : the expected mingw-w64 version.
-MINGW_W64_VERSION = 10.3.1
+MINGW_W64_VERSION = 12.1.0
 
 #help:
 #help: * OONI_PSIPHON_TAGS     : build tags for `go build -tags ...` that cause
@@ -91,7 +91,7 @@ OONI_ANDROID_HOME = $(HOME)/.ooniprobe-build/sdk/android
 
 #help:
 #help: * XCODE_VERSION         : the version of Xcode we expect.
-XCODE_VERSION = 13.3.1
+XCODE_VERSION = 13.4.1
 
 #quickhelp:
 #quickhelp: The `./mk show-config` command shows the current value of the
@@ -133,6 +133,7 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 	./CLI/miniooni-darwin-arm64 \
 	./CLI/miniooni-linux-386 \
 	./CLI/miniooni-linux-amd64 \
+	./CLI/miniooni-linux-armv6 \
 	./CLI/miniooni-linux-armv7 \
 	./CLI/miniooni-linux-arm64 \
 	./CLI/miniooni-windows-386.exe \
@@ -146,13 +147,13 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help: * `./mk ./CLI/miniooni-darwin-amd64`: darwin/amd64
 .PHONY:   ./CLI/miniooni-darwin-amd64
 ./CLI/miniooni-darwin-amd64: search/for/go maybe/copypsiphon
-	GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	./CLI/go-build-cross darwin amd64 ./internal/cmd/miniooni
 
 #help:
 #help: * `./mk ./CLI/miniooni-darwin-arm64`: darwin/arm64
 .PHONY:   ./CLI/miniooni-darwin-arm64
 ./CLI/miniooni-darwin-arm64: search/for/go maybe/copypsiphon
-	GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	./CLI/go-build-cross darwin arm64 ./internal/cmd/miniooni
 
 # When building for Linux we use `-tags netgo` and `-extldflags -static` to produce
 # a statically linked binary that completely bypasses libc.
@@ -160,38 +161,43 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help: * `./mk ./CLI/miniooni-linux-386`: linux/386
 .PHONY:   ./CLI/miniooni-linux-386
 ./CLI/miniooni-linux-386: search/for/go maybe/copypsiphon
-	GOOS=linux GOARCH=386 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	./CLI/go-build-cross linux 386 ./internal/cmd/miniooni
 
 #help:
 #help: * `./mk ./CLI/miniooni-linux-amd64`: linux/amd64
 .PHONY:   ./CLI/miniooni-linux-amd64
 ./CLI/miniooni-linux-amd64: search/for/go maybe/copypsiphon
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	./CLI/go-build-cross linux amd64 ./internal/cmd/miniooni
 
-# When building for GOARCH=arm, we always force GOARM=7 (i.e., armhf/armv7).
+#help:
+#help: * `./mk ./CLI/miniooni-linux-armv6`: linux/armv6
+.PHONY:   ./CLI/miniooni-linux-armv6
+./CLI/miniooni-linux-armv6: search/for/go maybe/copypsiphon
+	./CLI/go-build-cross linux armv6 ./internal/cmd/miniooni
+
 #help:
 #help: * `./mk ./CLI/miniooni-linux-armv7`: linux/armv7
 .PHONY:   ./CLI/miniooni-linux-armv7
 ./CLI/miniooni-linux-armv7: search/for/go maybe/copypsiphon
-	GOOS=linux GOARCH=arm CGO_ENABLED=0 GOARM=7 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	./CLI/go-build-cross linux armv7 ./internal/cmd/miniooni
 
 #help:
 #help: * `./mk ./CLI/miniooni-linux-arm64`: linux/arm64
 .PHONY:   ./CLI/miniooni-linux-arm64
 ./CLI/miniooni-linux-arm64: search/for/go maybe/copypsiphon
-	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -tags="netgo,$(OONI_PSIPHON_TAGS)" -ldflags="-s -w -extldflags -static" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	./CLI/go-build-cross linux arm64 ./internal/cmd/miniooni
 
 #help:
 #help: * `./mk ./CLI/miniooni-windows-386.exe`: windows/386
 .PHONY:   ./CLI/miniooni-windows-386.exe
 ./CLI/miniooni-windows-386.exe: search/for/go maybe/copypsiphon
-	GOOS=windows GOARCH=386 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	./CLI/go-build-cross windows 386 ./internal/cmd/miniooni
 
 #help:
 #help: * `./mk ./CLI/miniooni-windows-amd64.exe`: windows/amd64
 .PHONY:   ./CLI/miniooni-windows-amd64.exe
 ./CLI/miniooni-windows-amd64.exe: search/for/go maybe/copypsiphon
-	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./internal/cmd/miniooni
+	./CLI/go-build-cross windows amd64 ./internal/cmd/miniooni
 
 #help:
 #help: The `./mk ./CLI/ooniprobe-darwin` command builds the ooniprobe official
@@ -207,13 +213,13 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help: * `./mk ./CLI/ooniprobe-darwin-amd64`: darwin/amd64
 .PHONY:     ./CLI/ooniprobe-darwin-amd64
 ./CLI/ooniprobe-darwin-amd64: search/for/go maybe/copypsiphon
-	GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
+	./CLI/go-build-darwin amd64 ./cmd/ooniprobe
 
 #help:
 #help: * `./mk ./CLI/ooniprobe-darwin-arm64`: darwin/arm64
 .PHONY:     ./CLI/ooniprobe-darwin-arm64
 ./CLI/ooniprobe-darwin-arm64: search/for/go maybe/copypsiphon
-	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
+	./CLI/go-build-darwin arm64 ./cmd/ooniprobe
 
 #help:
 #help: The `./mk ./CLI/ooniprobe-linux` command builds the ooniprobe official command
@@ -233,29 +239,25 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help: * `./mk ./CLI/ooniprobe-linux-386`: linux/386
 .PHONY:     ./CLI/ooniprobe-linux-386
 ./CLI/ooniprobe-linux-386: search/for/docker maybe/copypsiphon
-	docker pull --platform linux/386 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/386 -e GOPATH=/gopath -e GOARCH=386 -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	./CLI/go-build-linux-static 386 ./cmd/ooniprobe
 
 #help:
 #help: * `./mk ./CLI/ooniprobe-linux-amd64`: linux/amd64
 .PHONY:     ./CLI/ooniprobe-linux-amd64
 ./CLI/ooniprobe-linux-amd64: search/for/docker maybe/copypsiphon
-	docker pull --platform linux/amd64 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/amd64 -e GOPATH=/gopath -e GOARCH=amd64 -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	./CLI/go-build-linux-static amd64 ./cmd/ooniprobe
 
 #help:
 #help: * `./mk ./CLI/ooniprobe-linux-armv7`: linux/arm
 .PHONY:     ./CLI/ooniprobe-linux-armv7
 ./CLI/ooniprobe-linux-armv7: search/for/docker maybe/copypsiphon
-	docker pull --platform linux/arm/v7 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/arm/v7 -e GOPATH=/gopath -e GOARCH=arm -e GOARM=7 -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	./CLI/go-build-linux-static armv7 ./cmd/ooniprobe
 
 #help:
 #help: * `./mk ./CLI/ooniprobe-linux-arm64`: linux/arm64
 .PHONY:     ./CLI/ooniprobe-linux-arm64
 ./CLI/ooniprobe-linux-arm64: search/for/docker maybe/copypsiphon
-	docker pull --platform linux/arm64 $(GOLANG_DOCKER_IMAGE)
-	docker run --platform linux/arm64 -e GOPATH=/gopath -e GOARCH=arm64 -v $(shell pwd):/ooni -w /ooni $(GOLANG_DOCKER_IMAGE) ./CLI/build-linux -tags=netgo,$(OONI_PSIPHON_TAGS) $(GOLANG_EXTRA_FLAGS)
+	./CLI/go-build-linux-static arm64 ./cmd/ooniprobe
 
 #help:
 #help: The `./mk ./CLI/ooniprobe-windows` command builds the ooniprobe official
@@ -271,13 +273,13 @@ GOLANG_DOCKER_IMAGE = golang:$(GOLANG_VERSION_NUMBER)-alpine
 #help: * `./mk ./CLI/ooniprobe-windows-386.exe`: windows/386
 .PHONY:     ./CLI/ooniprobe-windows-386.exe
 ./CLI/ooniprobe-windows-386.exe: search/for/go search/for/mingw-w64 maybe/copypsiphon
-	GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
+	./CLI/go-build-windows 386 ./cmd/ooniprobe
 
 #help:
 #help: * `./mk ./CLI/ooniprobe-windows-amd64.exe`: windows/amd64
 .PHONY:     ./CLI/ooniprobe-windows-amd64.exe
 ./CLI/ooniprobe-windows-amd64.exe: search/for/go search/for/mingw-w64 maybe/copypsiphon
-	GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc go build -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./cmd/ooniprobe
+	./CLI/go-build-windows amd64 ./cmd/ooniprobe
 
 #help:
 #help: The `./mk ./MOBILE/android` command builds the oonimkall library for Android.
@@ -303,9 +305,7 @@ GOMOBILE = $(shell go env GOPATH)/bin/gomobile
 ./MOBILE/android/oonimkall.aar: android/sdk maybe/copypsiphon
 	@echo "Android build disabled - TODO(https://github.com/ooni/probe/issues/2122)"
 	@exit 1
-	go get -u golang.org/x/mobile/cmd/gomobile
-	$(GOMOBILE) init
-	PATH=$(shell go env GOPATH)/bin:$$PATH ANDROID_HOME=$(OONI_ANDROID_HOME) ANDROID_NDK_HOME=$(OONI_ANDROID_HOME)/ndk/$(ANDROID_NDK_VERSION) $(GOMOBILE) bind -x -target android -o ./MOBILE/android/oonimkall.aar -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
+	./MOBILE/gomobile android ./pkg/oonimkall
 
 #help:
 #help: The `./mk ./MOBILE/ios` command builds the oonimkall library for iOS.
@@ -325,9 +325,7 @@ GOMOBILE = $(shell go env GOPATH)/bin/gomobile
 #help: * `./mk ./MOBILE/ios/xcframework`: the xcframework
 .PHONY:     ./MOBILE/ios/oonimkall.xcframework
 ./MOBILE/ios/oonimkall.xcframework: search/for/go search/for/xcode maybe/copypsiphon
-	go get -u golang.org/x/mobile/cmd/gomobile
-	$(GOMOBILE) init
-	PATH=$(shell go env GOPATH)/bin:$$PATH $(GOMOBILE) bind -target ios -o $@ -tags="$(OONI_PSIPHON_TAGS)" -ldflags '-s -w' $(GOLANG_EXTRA_FLAGS) ./pkg/oonimkall
+	./MOBILE/gomobile ios ./pkg/oonimkall
 
 #help:
 #help: * `./mk ./MOBILE/ios/oonimkall.podspec`: the podspec

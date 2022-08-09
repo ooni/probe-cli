@@ -1,0 +1,55 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [[ $# -ne 2 ]]; then
+	echo "" 1>&2
+	echo "Compiler for a Go PACKAGE producing windows/GOARCH binaries." 1>&2
+	echo "" 1>&2
+	echo "usage: $0 GOARCH PACKAGE" 1>&2
+	echo "" 1>&2
+	echo "GOARCH must be one of: 386, amd64." 1>&2
+	echo "" 1>&2
+	echo "Features:" 1>&2
+	echo "" 1>&2
+	echo "* automatically sets -tags=ooni_psiphon_config when possible;" 1>&2
+	echo "" 1>&2
+	echo "* if GOLANG_EXTRA_FLAGS is set, pass it to the Go compiler." 1>&2
+	echo "" 1>&2
+	echo "Example:" 1>&2
+	echo "" 1>&2
+	echo "  ./CLI/go-build-windows amd64 ./internal/cmd/miniooni" 1>&2
+	echo "" 1>&2
+	exit 1
+fi
+
+GOOS=windows
+GOARCH=$1
+PACKAGE=$2
+
+if [[ -f ./internal/engine/psiphon-config.json.age &&
+	-f ./internal/engine/psiphon-config.key ]]; then
+	OONI_PSIPHON_TAGS=ooni_psiphon_config
+else
+	OONI_PSIPHON_TAGS=""
+fi
+
+PRODUCT=$(basename $PACKAGE)
+
+if [[ $GOARCH == "amd64" ]]; then
+	CC=x86_64-w64-mingw32-gcc
+elif [[ $GOARCH == "386" ]]; then
+	CC=i686-w64-mingw32-gcc
+else
+	echo "FATAL: unsupported GOARCH: $GOARCH" 1>&2
+	exit 1
+fi
+
+set -x
+export CC=$CC
+export CGO_ENABLED=1
+export GOOS=$GOOS
+export GOARCH=$GOARCH
+go build -tags=$OONI_PSIPHON_TAGS -ldflags="-s -w" \
+	-o ./CLI/$PRODUCT-$GOOS-$GOARCH ${GOLANG_EXTRA_FLAGS:-} \
+	$PACKAGE

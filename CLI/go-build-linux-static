@@ -1,0 +1,62 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [[ $# -ne 2 ]]; then
+	echo "" 1>&2
+	echo "Compiler for a Go PACKAGE producing static linux/OONIARCH binaries." 1>&2
+	echo "" 1>&2
+	echo "usage: $0 OONIARCH PACKAGE" 1>&2
+	echo "" 1>&2
+	echo "OONIARCH must be one of: 386, amd64, arm64, armv6, armv7." 1>&2
+	echo "" 1>&2
+	echo "Features:" 1>&2
+	echo "" 1>&2
+	echo "* automatically sets -tags=ooni_psiphon_config when possible;" 1>&2
+	echo "" 1>&2
+	echo "* if GOLANG_EXTRA_FLAGS is set, pass it to the Go compiler." 1>&2
+	echo "" 1>&2
+	echo "Example:" 1>&2
+	echo "" 1>&2
+	echo "  ./CLI/go-build-linux-static arm64 ./internal/cmd/miniooni" 1>&2
+	echo "" 1>&2
+	exit 1
+fi
+
+GOLANG_DOCKER_IMAGE=golang:1.18.3-alpine
+GOOS=linux
+OONIARCH=$1
+PACKAGE=$2
+
+if [[ $OONIARCH == armv7 ]]; then
+	GOARCH=arm
+	GOARM=7
+	DOCKER_ARCH=arm/v7
+elif [[ $OONIARCH == armv6 ]]; then
+	GOARCH=arm
+	GOARM=6
+	DOCKER_ARCH=arm/v6
+else
+	GOARCH=$OONIARCH
+	GOARM=
+	DOCKER_ARCH=$OONIARCH
+fi
+
+if [[ -f ./internal/engine/psiphon-config.json.age &&
+	-f ./internal/engine/psiphon-config.key ]]; then
+	OONI_PSIPHON_TAGS=ooni_psiphon_config
+else
+	OONI_PSIPHON_TAGS=""
+fi
+
+PRODUCT=$(basename $PACKAGE)
+
+set -x
+
+docker pull --platform linux/$DOCKER_ARCH $GOLANG_DOCKER_IMAGE
+
+docker run --platform linux/$DOCKER_ARCH -e PRODUCT=$PRODUCT \
+	-e GOARM=$GOARM -e GOOS=$GOOS -e GOARCH=$GOARCH \
+	-e PACKAGE=$PACKAGE -e OONI_PSIPHON_TAGS=$OONI_PSIPHON_TAGS \
+	-e OONIARCH=$OONIARCH -e GOLANG_EXTRA_FLAGS="${GOLANG_EXTRA_FLAGS:-}" \
+	-v $(pwd):/ooni -w /ooni $GOLANG_DOCKER_IMAGE ./CLI/go-build-alpine

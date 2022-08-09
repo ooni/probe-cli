@@ -1,0 +1,59 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [[ $# -ne 3 ]]; then
+	echo "" 1>&2
+	echo "Cross-compiler for a Go PACKAGE producing GOOS/OONIARCH binaries." 1>&2
+	echo "" 1>&2
+	echo "usage: $0 GOOS OONIARCH PACKAGE" 1>&2
+	echo "" 1>&2
+	echo "GOOS must be one of: android, darwin, linux, windows." 1>&2
+	echo "" 1>&2
+	echo "OONIARCH must be one of: 386, amd64, arm64, armv6, armv7." 1>&2
+	echo "" 1>&2
+	echo "Features:" 1>&2
+	echo "" 1>&2
+	echo "* automatically sets -tags=ooni_psiphon_config when possible;" 1>&2
+	echo "" 1>&2
+	echo "* if GOLANG_EXTRA_FLAGS is set, pass it to the Go compiler." 1>&2
+	echo "" 1>&2
+	echo "Example:" 1>&2
+	echo "" 1>&2
+	echo "  ./CLI/go-build-cross linux armv7 ./internal/cmd/miniooni" 1>&2
+	echo "" 1>&2
+	exit 1
+fi
+
+GOOS=$1
+OONIARCH=$2
+PACKAGE=$3
+
+if [[ $OONIARCH == armv7 ]]; then
+	GOARCH=arm
+	GOARM=7
+elif [[ $OONIARCH == armv6 ]]; then
+	GOARCH=arm
+	GOARM=6
+else
+	GOARCH=$OONIARCH
+	GOARM=
+fi
+
+if [[ -f ./internal/engine/psiphon-config.json.age &&
+	-f ./internal/engine/psiphon-config.key ]]; then
+	OONI_PSIPHON_TAGS=ooni_psiphon_config
+else
+	OONI_PSIPHON_TAGS=""
+fi
+
+PRODUCT=$(basename $PACKAGE)
+
+set -x
+export CGO_ENABLED=0
+export GOOS=$GOOS
+export GOARCH=$GOARCH
+export GOARM=$GOARM
+go build -tags=$OONI_PSIPHON_TAGS -ldflags="-s -w" \
+	-o ./CLI/$PRODUCT-$GOOS-$OONIARCH ${GOLANG_EXTRA_FLAGS:-} \
+	$PACKAGE
