@@ -28,25 +28,6 @@ help:
 #help: on the command line as a key-value pairs (see usage above).
 
 #help:
-#help: * ANDROID_CLI_SHA256    : the SHA256 of the Android CLI tools file. We always
-#help:                           download the Linux version, which seems to work
-#help:                           also on macOS (thank you, Java! :pray:).
-ANDROID_CLI_SHA256 = 5e7bf2dd563d34917d32f3c5920a85562a795c93
-
-#help:
-#help: * ANDROID_CLI_VERSION   : the version of the Android CLI tools.
-ANDROID_CLI_VERSION = 8512546
-
-#help:
-#help: * ANDROID_INSTALL_EXTRA : contains the android tools we install in addition
-#help:                           to the NDK in order to build oonimkall.aar.
-ANDROID_INSTALL_EXTRA = 'build-tools;32.0.0' 'platforms;android-31'
-
-#help:
-#help: * ANDROID_NDK_VERSION   : Android NDK version.
-ANDROID_NDK_VERSION = 23.1.7779620
-
-#help:
 #help: * GIT_CLONE_DIR         : directory where to clone repositories, by default
 #help:                           set to `$HOME/.ooniprobe-build/src`.
 GIT_CLONE_DIR = $(HOME)/.ooniprobe-build/src
@@ -54,13 +35,6 @@ GIT_CLONE_DIR = $(HOME)/.ooniprobe-build/src
 # $(GIT_CLONE_DIR) is an internal target that creates $(GIT_CLONE_DIR).
 $(GIT_CLONE_DIR):
 	mkdir -p $(GIT_CLONE_DIR)
-
-#help:
-#help: * GOLANG_EXTRA_FLAGS    : extra flags passed to `go build ...`, empty by
-#help:                           default. Useful to pass flags to `go`, e.g.:
-#help:
-#help:                               ./mk GOLANG_EXTRA_FLAGS="-x -v" ./CLI/miniooni
-GOLANG_EXTRA_FLAGS =
 
 #help:
 #help: * OONI_PSIPHON_TAGS     : build tags for `go build -tags ...` that cause
@@ -73,30 +47,14 @@ GOLANG_EXTRA_FLAGS =
 #help:                               ./mk OONI_PSIPHON_TAGS="" ./CLI/miniooni
 OONI_PSIPHON_TAGS = ooni_psiphon_config
 
-#help:
-#help: * OONI_ANDROID_HOME     : directory where the Android SDK is downloaded
-#help:                           and installed. You can point this to an existing
-#help:                           copy of the SDK as long as (1) you have the
-#help:                           right version of the command line tools, and
-#help:                           (2) it's okay for us to install packages.
-OONI_ANDROID_HOME = $(HOME)/.ooniprobe-build/sdk/android
-
 #quickhelp:
 #quickhelp: The `./mk show-config` command shows the current value of the
 #quickhelp: variables controlling the build.
 .PHONY: show-config
 show-config:
-	@echo "ANDROID_CLI_VERSION=$(ANDROID_CLI_VERSION)"
-	@echo "ANDROID_CLI_SHA256=$(ANDROID_CLI_SHA256)"
-	@echo "ANDROID_INSTALL_EXTRA=$(ANDROID_INSTALL_EXTRA)"
-	@echo "ANDROID_NDK_VERSION=$(ANDROID_NDK_VERSION)"
 	@echo "GIT_CLONE_DIR=$(GIT_CLONE_DIR)"
-	@echo "GOLANG_EXTRA_FLAGS=$(GOLANG_EXTRA_FLAGS)"
 	@echo "OONI_PSIPHON_TAGS=$(OONI_PSIPHON_TAGS)"
-	@echo "OONI_ANDROID_HOME=$(OONI_ANDROID_HOME)"
 
-# Cross-compiling miniooni from any system with Go installed is
-# very easy, because it does not use any C code.
 #help:
 #help: The `./mk ./CLI/miniooni` command builds the miniooni experimental
 #help: command line client for all the supported GOOS/GOARCH.
@@ -114,10 +72,6 @@ show-config:
 	./CLI/miniooni-windows-386.exe \
 	./CLI/miniooni-windows-amd64.exe
 
-# All the miniooni targets build with CGO_ENABLED=0 such that the build
-# succeeds when the GOOS/GOARCH is such that we aren't crosscompiling
-# (e.g., targeting darwin/amd64 on darwin/amd64) _and_ there's no C compiler
-# installed on the system. We can afford that since miniooni is pure Go.
 #help:
 #help: * `./mk ./CLI/miniooni-darwin-amd64`: darwin/amd64
 .PHONY:   ./CLI/miniooni-darwin-amd64
@@ -180,8 +134,6 @@ show-config:
 .PHONY: ./CLI/ooniprobe-darwin
 ./CLI/ooniprobe-darwin: ./CLI/ooniprobe-darwin-amd64 ./CLI/ooniprobe-darwin-arm64
 
-# We force CGO_ENABLED=1 because in principle we may be cross compiling. In
-# reality it's hard to see a macOS/darwin build not made on macOS.
 #help:
 #help: * `./mk ./CLI/ooniprobe-darwin-amd64`: darwin/amd64
 .PHONY:     ./CLI/ooniprobe-darwin-amd64
@@ -305,33 +257,11 @@ show-config:
 OONIMKALL_V := $(shell date -u +%Y.%m.%d-%H%M%S)
 OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
 
-#help:
-#help: The following commands check for the availability of dependencies:
-# TODO(bassosimone): make checks more robust?
-
-#help:
-#help: * `./mk search/for/bash`: checks for bash
-.PHONY: search/for/bash
-search/for/bash:
-	@printf "checking for bash... "
-	@command -v bash || { echo "not found"; exit 1; }
-
-#help:
-#help: * `./mk search/for/curl`: checks for curl
-.PHONY: search/for/curl
-search/for/curl:
-	@printf "checking for curl... "
-	@command -v curl || { echo "not found"; exit 1; }
-
-#help:
-#help: * `./mk search/for/docker`: checks for docker
 .PHONY: search/for/docker
 search/for/docker:
 	@printf "checking for docker... "
 	@command -v docker || { echo "not found"; exit 1; }
 
-#help:
-#help: * `./mk search/for/git`: checks for git
 .PHONY: search/for/git
 search/for/git:
 	@printf "checking for git... "
@@ -341,8 +271,6 @@ search/for/git:
 search/for/go:
 	./CLI/check-go-version
 
-#help:
-#help: * `./mk search/for/java`: checks for java
 .PHONY: search/for/java
 search/for/java:
 	@printf "checking for java... "
@@ -352,26 +280,10 @@ search/for/java:
 search/for/mingw-w64:
 	./CLI/check-mingw-w64-version
 
-#help:
-#help: * `./mk search/for/shasum`: checks for shasum
-.PHONY: search/for/shasum
-search/for/shasum:
-	@printf "checking for shasum... "
-	@command -v shasum || { echo "not found"; exit 1; }
-
 .PHONY: search/for/xcode
 search/for/xcode:
 	./MOBILE/ios/check-xcode-version
 
-#help:
-#help: * `./mk search/for/unzip`: checks for unzip
-.PHONY: search/for/unzip
-search/for/unzip:
-	@printf "checking for unzip... "
-	@command -v unzip || { echo "not found"; exit 1; }
-
-#help:
-#help: * `./mk search/for/zip`: checks for zip
 .PHONY: search/for/zip
 search/for/zip:
 	@printf "checking for zip... "
@@ -415,33 +327,6 @@ $(OONIPRIVATE): search/for/git $(GIT_CLONE_DIR)
 	rm -rf $(OONIPRIVATE)
 	git clone $(OONIPRIVATE_REPO) $(OONIPRIVATE)
 
-#help:
-#help: The `./mk android/sdk` command ensures we are using the
-#help: correct version of the Android sdk.
 .PHONY: android/sdk
 android/sdk: search/for/java
-	rm -rf $(OONI_ANDROID_HOME)
-	$(MAKE) -f mk android/sdk/download
-	test -f $(__ANDROID_SDKMANAGER) || { echo "please run './mk android/sdk/download'"; exit 1; }
-	echo "Yes" | $(__ANDROID_SDKMANAGER) --install $(ANDROID_INSTALL_EXTRA) 'ndk;$(ANDROID_NDK_VERSION)'
-
-# __ANDROID_SKDMANAGER is the path to android's sdkmanager tool
-__ANDROID_SDKMANAGER = $(OONI_ANDROID_HOME)/cmdline-tools/$(ANDROID_CLI_VERSION)/bin/sdkmanager
-
-# See https://stackoverflow.com/a/61176718 to understand why
-# we need to reorganize the directories like this:
-#help:
-#help: The `./mk android/sdk/download` unconditionally downloads the
-#help: Android SDK at `$(OONI_ANDROID_HOME)`.
-android/sdk/download: search/for/curl search/for/java search/for/shasum search/for/unzip
-	curl -fsSLO https://dl.google.com/android/repository/$(__ANDROID_CLITOOLS_FILE)
-	echo "$(ANDROID_CLI_SHA256)  $(__ANDROID_CLITOOLS_FILE)" > __SHA256
-	shasum --check __SHA256
-	rm -f __SHA256
-	unzip $(__ANDROID_CLITOOLS_FILE)
-	rm $(__ANDROID_CLITOOLS_FILE)
-	mkdir -p $(OONI_ANDROID_HOME)/cmdline-tools
-	mv cmdline-tools $(OONI_ANDROID_HOME)/cmdline-tools/$(ANDROID_CLI_VERSION)
-
-# __ANDROID_CLITOOLS_FILE is the file name of the android cli tools zip
-__ANDROID_CLITOOLS_FILE = commandlinetools-linux-$(ANDROID_CLI_VERSION)_latest.zip
+	./MOBILE/android/ensure
