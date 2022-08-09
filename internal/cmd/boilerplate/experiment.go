@@ -7,7 +7,6 @@ package main
 import (
 	_ "embed"
 	"path/filepath"
-	"strconv"
 	"text/template"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -32,13 +31,7 @@ type ExperimentInfo struct {
 	// Experiment input policy
 	InputPolicy string
 
-	// Overall experiment timeout
-	Timeout int64
-
-	// Whether we'll run parallel tasks.
-	Parallel bool
-
-	// Whether this experimenti is interuptible.
+	// Whether this experimenti is interruptible.
 	Interruptible bool
 }
 
@@ -56,11 +49,9 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 	makeExperimentDirectory(info)
 	generateDocGo(info)
 	generateMeasurerGo(info)
-	generateModelGo(info)
-	if info.Parallel {
-		generateTasksGo(info)
-		generateMainTaskGo(info)
-	}
+	generateModelsGo(info)
+	generateTasksGo(info)
+	generateMainTaskGo(info)
 	generateRegistryEntryGo(info)
 
 	pkg := filepath.Join("internal", "experiment", info.Name, "/...")
@@ -85,8 +76,6 @@ func getExperimentInfo() *ExperimentInfo {
 		Version:       getExperimentVersion(),
 		SpecURL:       getExperimentSpecURL(),
 		InputPolicy:   getExperimentInputPolicy(),
-		Timeout:       getExperimentTimeout(),
-		Parallel:      getExperimentParallel(),
 		Interruptible: false,
 	}
 }
@@ -142,33 +131,6 @@ func getExperimentInputPolicy() string {
 	return inputPolicy
 }
 
-// Obtains the experiment timeout.
-func getExperimentTimeout() int64 {
-	prompt := &survey.Input{
-		Message: "Experiment's _overall_ timeout in seconds (just hit enter for no timeout):",
-	}
-	var value string
-	err := survey.AskOne(prompt, &value)
-	runtimex.PanicOnError(err, "survey.AskOne failed")
-	if value == "" {
-		return 0
-	}
-	timeout, err := strconv.ParseInt(value, 10, 64)
-	runtimex.PanicOnError(err, "strconv.ParseInt failed")
-	return timeout
-}
-
-// Obtains the experiment parallel setting.
-func getExperimentParallel() bool {
-	var parallel bool
-	prompt := &survey.Confirm{
-		Message: "Do you want to generate code for running tasks in parallel?",
-	}
-	err := survey.AskOne(prompt, &parallel)
-	runtimex.PanicOnError(err, "survey.AskOne failed")
-	return parallel
-}
-
 // Creates a directory for the new experiment.
 func makeExperimentDirectory(info *ExperimentInfo) {
 	fulldir := filepath.Join("internal", "experiment", info.Name)
@@ -195,14 +157,32 @@ func generateMeasurerGo(info *ExperimentInfo) {
 	writeTemplate(fullpath, tmpl, info)
 }
 
-//go:embed "experiment/model.go.txt"
-var experimentModelGoTemplate string
+//go:embed "experiment/config.go.txt"
+var experimentConfigGoTemplate string
+
+//go:embed "experiment/summary.go.txt"
+var experimentSummaryGoTemplate string
+
+//go:embed "experiment/testkeys.go.txt"
+var experimentTestkeysGoTemplate string
 
 // Generates the model.go file
-func generateModelGo(info *ExperimentInfo) {
-	fullpath := filepath.Join("internal", "experiment", info.Name, "model.go")
-	tmpl := template.Must(template.New("model.go").Parse(experimentModelGoTemplate))
-	writeTemplate(fullpath, tmpl, info)
+func generateModelsGo(info *ExperimentInfo) {
+	{
+		fullpath := filepath.Join("internal", "experiment", info.Name, "config.go")
+		tmpl := template.Must(template.New("config.go").Parse(experimentConfigGoTemplate))
+		writeTemplate(fullpath, tmpl, info)
+	}
+	{
+		fullpath := filepath.Join("internal", "experiment", info.Name, "summary.go")
+		tmpl := template.Must(template.New("model.go").Parse(experimentSummaryGoTemplate))
+		writeTemplate(fullpath, tmpl, info)
+	}
+	{
+		fullpath := filepath.Join("internal", "experiment", info.Name, "testkeys.go")
+		tmpl := template.Must(template.New("model.go").Parse(experimentTestkeysGoTemplate))
+		writeTemplate(fullpath, tmpl, info)
+	}
 }
 
 //go:embed "experiment/tasks.go.txt"

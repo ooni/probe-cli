@@ -87,5 +87,5 @@ func (t *{{ .StructName }}Task) Run(ctx context.Context, sched TaskScheduler) er
 
 // Repr implements Task
 func (t *{{ .StructName }}Task) Repr() string {
-	return fmt.Sprintf("{{ .StructName}}Task: %+v", t)
+	return fmt.Sprintf("{{ .StructName}}Task: %+v", t) // TODO: make this prettier
 }

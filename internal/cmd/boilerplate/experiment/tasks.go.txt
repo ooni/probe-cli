@@ -121,7 +121,7 @@ type taskWrapper struct {
 
 // Runs the task.
 func (tw *taskWrapper) run(ctx context.Context, sched TaskScheduler) {
-  // Ensure we don't have too many concurrent tasks.
+  // Ensure we do not have too many concurrent tasks.
   tw.sema <- true
   defer func() { <-tw.sema }()
 
