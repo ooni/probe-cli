@@ -44,6 +44,10 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 
 	info := getExperimentInfo()
 
+	printf("\n")
+	printf("Thank you! Now I'm going to generate boilerplate code for the new experiment!\n")
+	printf("\n")
+
 	makeExperimentDirectory(info)
 	generateDocGo(info)
 	generateMeasurerGo(info)
@@ -56,7 +60,7 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 	gofmt(pkg)
 
 	printf("\n")
-	printf("🏁 All done! Now you can run:\n")
+	printf("🏁 All done! Now you can try:\n")
 	printf("\n")
 	printf("* `go build -v ./internal/cmd/miniooni` to build `miniooni`;\n")
 	printf("\n")
@@ -80,6 +84,10 @@ func getExperimentInfo() *ExperimentInfo {
 
 // Obtains the experiment name
 func getExperimentName() string {
+	printf("Each OONI experiment has a name, which should match [a-z]+. The experiment\n")
+	printf("name determines the Go package name and the name with which you're calling the\n")
+	printf("experiment by name from the command line.\n")
+	print("\n")
 	prompt := &survey.Input{
 		Message: "Experiment's name:",
 	}
@@ -91,6 +99,9 @@ func getExperimentName() string {
 
 // Obtains the experiment version
 func getExperimentVersion() string {
+	print("\n")
+	printf("Each OONI experiment has a <major>.<minor>.<patch> version number.\n")
+	print("\n")
 	prompt := &survey.Input{
 		Message: "Experiment's version:",
 	}
@@ -102,6 +113,12 @@ func getExperimentVersion() string {
 
 // Obtains the experiment spec URL
 func getExperimentSpecURL() string {
+	print("\n")
+	printf("Any OONI experiment should be associated with a public specification URL\n")
+	printf("describing the experiment design and implementation.\n")
+	print("\n")
+	printf("Typically, specs live at https://github.com/ooni/spec/tree/master/nettests.\n")
+	print("\n")
 	prompt := &survey.Input{
 		Message: "Experiment's spec URL:",
 	}
@@ -113,11 +130,24 @@ func getExperimentSpecURL() string {
 
 // Obtains the experiment input policy.
 func getExperimentInputPolicy() string {
+	print("\n")
+	printf("Each OONI experiment has a specific policy regarding input, which is one of:\n")
+	print("\n")
+	printf("* InputOrQueryBackend: the user can specify input using --input or --input-file, but, if\n")
+	printf("  input is missing, the experiment will query the OONI backend to obtain input.\n")
+	print("\n")
+	printf("* InputOrStaticDefault: the user can specify input using --input or --input-file, but, if\n")
+	printf("  input is missing, the experiment will a static list bundled with the probe.\n")
+	print("\n")
+	printf("* InputStrictlyRequired: the user can specify input using --input or --input-file, and, if\n")
+	printf("  input is missing, the experiment will emit an error and refuse to run.\n")
+	print("\n")
+	printf("* InputStrictlyRequired: the user cannot specify any input.\n")
+	print("\n")
 	var inputPolicy string
 	prompt := &survey.Select{
 		Message: "Choose an experiment input policy:",
 		Options: []string{
-			"InputOptional",
 			"InputOrQueryBackend",
 			"InputOrStaticDefault",
 			"InputStrictlyRequired",
@@ -131,6 +161,14 @@ func getExperimentInputPolicy() string {
 
 // Returns whether we can interrupt experiments midway.
 func getExperimentInterruptible() bool {
+	print("\n")
+	printf("Most OONI experiments runs short measurements. For such experiments, we do not\n")
+	printf("want the engine to be able to interrupt a measurement. Rather, we have well defined\n")
+	printf("interruption points between measuring an input and measuring the next one.\n")
+	print("\n")
+	printf("Though, network performance experiments and, generally, all the experiments whose\n")
+	printf("measurements could last for dozens of seconds, are interruptible.\n")
+	print("\n")
 	var interruptible bool
 	prompt := &survey.Confirm{
 		Message: "Should the engine be able to abruptly interrupt a measurement?",
