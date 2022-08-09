@@ -34,12 +34,12 @@ jobs:
       # but maybe we also need to make gharun run another
       # github actions rather than just commands?
 
-      - run: ./.github/actions/build-windows
+      - uses: ./.github/actions/build-windows
         with:
           goarch: 386
           package: ./internal/cmd/miniooni
 
-      - run: ./.github/actions/build-windows
+      - uses: ./.github/actions/build-windows
         with:
           goarch: amd64
           package: ./internal/cmd/miniooni
