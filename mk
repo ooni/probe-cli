@@ -14,7 +14,7 @@ usage:
 #quickhelp: The `./mk list-targets` command lists all available targets.
 .PHONY: list-targets
 list-targets:
-	@cat mk | grep '^\.PHONY:' | sed -e 's/^\.PHONY://'
+	@cat mk | grep '^\.PHONY:' | sed -e 's/^\.PHONY://' | grep -v '^ search' | grep -v '^ maybe'
 
 #quickhelp:
 #quickhelp: The `./mk help` command provides detailed usage instructions. We
@@ -216,7 +216,7 @@ show-config:
 #help:
 #help: * `./mk ./MOBILE/android/oonimkall.aar`: the AAR
 .PHONY:   ./MOBILE/android/oonimkall.aar
-./MOBILE/android/oonimkall.aar: android/sdk maybe/copypsiphon
+./MOBILE/android/oonimkall.aar: search/for/android/sdk maybe/copypsiphon
 	@echo "Android build disabled - TODO(https://github.com/ooni/probe/issues/2122)"
 	@exit 1
 	./MOBILE/gomobile android ./pkg/oonimkall
@@ -303,6 +303,6 @@ maybe/copypsiphon: search/for/git
 		fi; \
 	fi
 
-.PHONY: android/sdk
-android/sdk: search/for/java
+.PHONY: search/for/android/sdk
+search/for/android/sdk: search/for/java
 	./MOBILE/android/ensure
