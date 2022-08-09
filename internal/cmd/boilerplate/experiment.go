@@ -43,8 +43,6 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 	print("\n")
 
 	info := getExperimentInfo()
-	// TODO(bassosimone): which is the condition for interruptible? It seems
-	// to me only performance experiments are interruptible?!
 
 	makeExperimentDirectory(info)
 	generateDocGo(info)
@@ -76,7 +74,7 @@ func getExperimentInfo() *ExperimentInfo {
 		Version:       getExperimentVersion(),
 		SpecURL:       getExperimentSpecURL(),
 		InputPolicy:   getExperimentInputPolicy(),
-		Interruptible: false,
+		Interruptible: getExperimentInterruptible(),
 	}
 }
 
@@ -129,6 +127,17 @@ func getExperimentInputPolicy() string {
 	err := survey.AskOne(prompt, &inputPolicy)
 	runtimex.PanicOnError(err, "survey.AskOne failed")
 	return inputPolicy
+}
+
+// Returns whether we can interrupt experiments midway.
+func getExperimentInterruptible() bool {
+	var interruptible bool
+	prompt := &survey.Confirm{
+		Message: "Should the engine be able to abruptly interrupt a measurement?",
+	}
+	err := survey.AskOne(prompt, &interruptible)
+	runtimex.PanicOnError(err, "survey.AskOne failed")
+	return interruptible
 }
 
 // Creates a directory for the new experiment.
