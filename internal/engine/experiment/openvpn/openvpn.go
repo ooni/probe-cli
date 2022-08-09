@@ -5,13 +5,19 @@
 package openvpn
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"net/url"
+	"os"
 	"runtime/debug"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/ooni/minivpn/extras/ping"
@@ -39,18 +45,24 @@ const (
 
 // Config contains the experiment config.
 type Config struct {
-	ConfigFile string `ooni:"Configuration file for the OpenVPN experiment"`
+	Key      string `ooni:"key to connect to the OpenVPN endpoint"`
+	Cert     string `ooni:"cert to connect to the OpenVPN endpoint"`
+	Ca       string `ooni:"ca to connect to the OpenVPN endpoint"`
+	Cipher   string `ooni:"cipher to use"`
+	Auth     string `ooni:"auth to use"`
+	Compress string `ooni:"compression to use"`
 }
 
 // PingStats holds the results for a pinger run.
-// TODO add the raw values for TTL and Rtt
 type PingStats struct {
-	MinRtt      float64 `json:"min_rtt"`
-	MaxRtt      float64 `json:"max_rtt"`
-	AvgRtt      float64 `json:"avg_rtt"`
-	StdRtt      float64 `json:"std_rtt"`
-	PacketsRecv int     `json:"pkt_rcv"`
-	PacketsSent int     `json:"pkt_snt"`
+	MinRtt      float64   `json:"min_rtt"`
+	MaxRtt      float64   `json:"max_rtt"`
+	AvgRtt      float64   `json:"avg_rtt"`
+	StdRtt      float64   `json:"std_rtt"`
+	Rtts        []float64 `json:"rtts"`
+	TTLs        []int     `json:"ttls"`
+	PacketsRecv int       `json:"pkt_rcv"`
+	PacketsSent int       `json:"pkt_snt"`
 }
 
 // TestKeys contains the experiment's result.
@@ -115,6 +127,85 @@ func (m *Measurer) registerExtensions(measurement *model.Measurement) {
 	// currently none
 }
 
+// TODO(ainghazal): should share with wireguard -> move to model.
+type VPNExperiment struct {
+	// Provider is the entity to which the endpoints belong. We might want
+	// to keep a list of known providers (for which we have experiments).
+	// If the provider is not known to OONI probe, it should be marked as
+	// "unknown".
+	Provider string
+	// Hostname is the Hostname for the VPN Endpoint
+	Hostname string
+	// Port is the Port for the VPN Endpoint
+	Port string
+	// Protocol is the VPN protocol: openvpn, wg
+	Protocol string
+	// Transport is the underlying protocol: udp, tcp
+	Transport string
+	// Obfuscation is any obfuscation used for the tunnel: none, obfs4, ...
+	Obfuscation string
+	// Config is a pointer to a VPNExperimentConfig
+	Config *VPNExperimentConfig
+}
+
+type VPNExperimentConfig struct {
+	Cipher   string
+	Auth     string
+	Compress string
+	Ca       string
+	Cert     string
+	Key      string
+}
+
+// Validate returns true if all the fields for a VPNValidate have valid values.
+// TODO(ainghazal): implement
+func (e *VPNExperiment) Validate() bool {
+	return true
+}
+
+var BadOONIRunInput = errors.New("bad oonirun input")
+
+func vpnExperimentFromURI(uri string) (*VPNExperiment, error) {
+	ve := &VPNExperiment{}
+	u, err := url.Parse(uri)
+	if err != nil {
+		return ve, fmt.Errorf("%w: %s", BadOONIRunInput, err)
+	}
+	if u.Scheme != "openvpn" {
+		return ve, fmt.Errorf("%w: %s", BadOONIRunInput, "expected openvpn:// uri")
+	}
+	ve.Protocol = u.Scheme
+	ve.Provider = u.User.String()
+	if ve.Provider == "" {
+		ve.Provider = "unknown"
+	}
+	ve.Hostname = u.Hostname()
+	ve.Port = u.Port()
+	params := u.Query()
+	ve.Obfuscation = params.Get("obfs")
+	ve.Transport = getTransportFromPath(u.Path)
+	return ve, nil
+}
+
+func getTransportFromPath(path string) string {
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 {
+		return ""
+	}
+	return strings.TrimSpace(parts[1])
+}
+
+// DELETE????
+/*
+ func vpnConfigFromOptions(opts []string) *VPNExperimentConfig {
+ 	for _, opt := range opts {
+ 		fmt.Println("option >>> ", opt)
+ 	}
+ 	c := &VPNExperimentConfig{}
+ 	return c
+ }
+*/
+
 // Run runs the experiment with the specified context, session,
 // measurement, and experiment calbacks. This method should only
 // return an error in case the experiment could not run (e.g.,
@@ -126,14 +217,20 @@ func (m *Measurer) Run(
 	ctx context.Context, sess model.ExperimentSession,
 	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
 ) error {
-	config := string(measurement.Input)
-	dialer, err := m.setup(ctx, config, sess.Logger())
+	experiment, err := vpnExperimentFromURI(string(measurement.Input))
+
+	// XXX config is already parsed here :)
+	//experiment.Config = vpnConfigFromOptions(measurement.Options)
+	experiment.Config = &VPNExperimentConfig{}
+
+	dialer, err := m.setup(ctx, experiment, sess.Logger())
 	if err != nil {
 		// we cannot setup the experiment
 		// TODO this includes if we don't have the correct certificates etc.
 		// This means that we need to get the cert material ahead of time.
 		return err
 	}
+
 	m.registerExtensions(measurement)
 
 	const maxRuntime = 600 * time.Second
@@ -168,15 +265,78 @@ func protoToString(val int) string {
 	}
 }
 
+var vpnConfigTemplate = `remote {{ .Hostname }} {{ .Port }}
+proto {{ .Transport }}
+cipher {{ .Config.Cipher }}
+auth {{ .Config.Auth }}
+<ca>
+{{ .Config.Ca }}</ca>
+<cert>
+{{ .Config.Cert }}</cert>
+<key>
+{{ .Config.Key }}</key>`
+
+var ErrBadBase64Blob = errors.New("wrong base64 encoding")
+
+func extractBase64Blob(val string) (string, error) {
+	s := strings.TrimPrefix(val, "base64:")
+	if len(s) == len(val) {
+		return "", fmt.Errorf("%w: %s", ErrBadBase64Blob, "missing prefix")
+	}
+	dec, err := base64.URLEncoding.DecodeString(strings.TrimSpace(s))
+	if err != nil {
+		return "", fmt.Errorf("%w: %s", ErrBadBase64Blob, err)
+	}
+	if len(dec) == 0 {
+		return "", nil
+	}
+	return string(dec), nil
+}
+
 // setup prepares for running the openvpn experiment. Returns a minivpn dialer on success.
 // Returns an error on failure.
-func (m *Measurer) setup(ctx context.Context, config string, logger model.Logger) (*vpn.RawDialer, error) {
-	// TODO - pass context to dialer
-	o, err := vpn.ParseConfigFile(config)
+func (m *Measurer) setup(ctx context.Context, exp *VPNExperiment, logger model.Logger) (*vpn.RawDialer, error) {
+	exp.Config.Auth = m.config.Auth
+	exp.Config.Cipher = m.config.Cipher
+	exp.Config.Compress = m.config.Compress
+
+	// TODO capture errors into test failures
+	ca, _ := extractBase64Blob(m.config.Ca)
+	cert, _ := extractBase64Blob(m.config.Cert)
+	key, _ := extractBase64Blob(m.config.Key)
+
+	exp.Config.Ca = ca
+	exp.Config.Cert = cert
+	exp.Config.Key = key
+
+	tmp, err := os.CreateTemp("", "vpn-")
 	if err != nil {
 		return nil, err
 	}
+
+	t := template.New("openvpnConfig")
+	t, err = t.Parse(vpnConfigTemplate)
+	if err != nil {
+		return nil, err
+	}
+	buf := &bytes.Buffer{}
+	err = t.Execute(buf, exp)
+
+	if err != nil {
+		return nil, err
+	}
+
+	tmp.Write(buf.Bytes())
+	o, err := vpn.ParseConfigFile(tmp.Name())
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Infof("Using Config File: %s", tmp.Name())
+	// TODO defer delete of the file after DEBUG
+
 	m.vpnOptions = o
+	// TODO - pass context to dialer
 	raw := vpn.NewRawDialer(o)
 	return raw, nil
 }
@@ -220,6 +380,8 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 		MaxRtt:      st.MaxRtt.Seconds(),
 		AvgRtt:      st.AvgRtt.Seconds(),
 		StdRtt:      st.StdDevRtt.Seconds(),
+		Rtts:        st.Rtts,
+		TTLs:        st.TTLs,
 		PacketsRecv: st.PacketsRecv,
 		PacketsSent: st.PacketsSent,
 	}
@@ -227,7 +389,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	tk.PingTarget = pingTarget
 
 	// urlgrab
-	// TODO reuse the conn
+	// TODO reuse the conn???
 	d := vpn.NewTunDialer(m.rawDialer)
 	client := http.Client{
 		Transport: &http.Transport{
@@ -252,15 +414,6 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 // baseTunnelDir returns the base directory to use for tunnelling
 func (m *Measurer) baseTunnelDir(sess model.ExperimentSession) string {
 	return sess.TunnelDir()
-}
-
-// startListener either calls f or mockStartListener depending
-// on whether mockStartListener is nil or not.
-func (m *Measurer) startListener(f func() error) error {
-	//if m.mockStartListener != nil {
-	//	return m.mockStartListener()
-	//}
-	return f()
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
