@@ -32,10 +32,6 @@ help:
 #help:                           set to `$HOME/.ooniprobe-build/src`.
 GIT_CLONE_DIR = $(HOME)/.ooniprobe-build/src
 
-# $(GIT_CLONE_DIR) is an internal target that creates $(GIT_CLONE_DIR).
-$(GIT_CLONE_DIR):
-	mkdir -p $(GIT_CLONE_DIR)
-
 #help:
 #help: * OONI_PSIPHON_TAGS     : build tags for `go build -tags ...` that cause
 #help:                           the build to embed a psiphon configuration file
@@ -158,8 +154,6 @@ show-config:
 	./CLI/ooniprobe-linux-armv7 \
 	./CLI/ooniprobe-linux-arm64
 
-# Linux builds use Alpine and Docker so we are sure that we are statically
-# linking to musl libc, thus making our binaries extremely portable.
 #help:
 #help: * `./mk ./CLI/ooniprobe-linux-386`: linux/386
 .PHONY:     ./CLI/ooniprobe-linux-386
@@ -304,28 +298,15 @@ search/for/zip:
 #
 # Cloning the private repository, instead, is the way in which
 # local builds get access to the psiphon config files.
+#
 .PHONY: maybe/copypsiphon
 maybe/copypsiphon: search/for/git
 	@if test "$(OONI_PSIPHON_TAGS)" = "ooni_psiphon_config"; then \
 		if test ! -f ./internal/engine/psiphon-config.json.age -a \
 		        ! -f ./internal/engine/psiphon-config.key; then \
-			echo "copying psiphon configuration file into ./internal/engine"; \
-			$(MAKE) -f mk $(OONIPRIVATE) || exit 1; \
-			cp $(OONIPRIVATE)/psiphon-config.key ./internal/engine || exit 1; \
-			cp $(OONIPRIVATE)/psiphon-config.json.age ./internal/engine || exit 1; \
+			./script/copy-psiphon-files.bash $(GIT_CLONE_DIR) || exit 1; \
 		fi; \
 	fi
-
-# OONIPRIVATE is the directory where we clone the private repository.
-OONIPRIVATE = $(GIT_CLONE_DIR)/github.com/ooni/probe-private
-
-# OONIPRIVATE_REPO is the private repository URL.
-OONIPRIVATE_REPO = git@github.com:ooni/probe-private
-
-# $(OONIPRIVATE) clones the private repository in $(GIT_CLONE_DIR)
-$(OONIPRIVATE): search/for/git $(GIT_CLONE_DIR)
-	rm -rf $(OONIPRIVATE)
-	git clone $(OONIPRIVATE_REPO) $(OONIPRIVATE)
 
 .PHONY: android/sdk
 android/sdk: search/for/java
