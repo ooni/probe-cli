@@ -19,13 +19,17 @@ jobs:
       contents: write
     steps:
 
-      - uses: actions/setup-go@v1
-        with:
-          go-version: "1.18.3"
-
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo ::set-output name=version::$(cat GOVERSION)
+
+      - uses: actions/setup-go@v1
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
