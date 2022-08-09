@@ -21,7 +21,7 @@ exitcode=0
 printf "checking for x86_64-w64-mingw32-gcc version... "
 __version_amd64=$(x86_64-w64-mingw32-gcc --version | sed -n 1p | awk '{print $3}')
 echo $__version_amd64
-[ "$EXPECTED_MINGW_W64_VERSION" = "$__version_amd64" ] || {
+[[ "$EXPECTED_MINGW_W64_VERSION" == "$__version_amd64" ]] || {
 	echo "fatal: x86_64-w64-mingw32-gcc version must be $EXPECTED_MINGW_W64_VERSION instead of $__version_amd64"
 	exitcode=1
 }
@@ -29,7 +29,7 @@ echo $__version_amd64
 printf "checking for i686-w64-mingw32-gcc version... "
 __version_386=$(i686-w64-mingw32-gcc --version | sed -n 1p | awk '{print $3}')
 echo $__version_386
-[ "$EXPECTED_MINGW_W64_VERSION" = "$__version_386" ] || {
+[[ "$EXPECTED_MINGW_W64_VERSION" == "$__version_386" ]] || {
 	echo "fatal: i686-w64-mingw32-gcc version must be $EXPECTED_MINGW_W64_VERSION instead of $__version_386"
 	exitcode=1
 }

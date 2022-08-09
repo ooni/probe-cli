@@ -81,10 +81,6 @@ OONI_PSIPHON_TAGS = ooni_psiphon_config
 #help:                           (2) it's okay for us to install packages.
 OONI_ANDROID_HOME = $(HOME)/.ooniprobe-build/sdk/android
 
-#help:
-#help: * XCODE_VERSION         : the version of Xcode we expect.
-XCODE_VERSION = 13.4.1
-
 #quickhelp:
 #quickhelp: The `./mk show-config` command shows the current value of the
 #quickhelp: variables controlling the build.
@@ -98,7 +94,6 @@ show-config:
 	@echo "GOLANG_EXTRA_FLAGS=$(GOLANG_EXTRA_FLAGS)"
 	@echo "OONI_PSIPHON_TAGS=$(OONI_PSIPHON_TAGS)"
 	@echo "OONI_ANDROID_HOME=$(OONI_ANDROID_HOME)"
-	@echo "XCODE_VERSION=$(XCODE_VERSION)"
 
 # Cross-compiling miniooni from any system with Go installed is
 # very easy, because it does not use any C code.
@@ -364,18 +359,9 @@ search/for/shasum:
 	@printf "checking for shasum... "
 	@command -v shasum || { echo "not found"; exit 1; }
 
-#help:
-#help: * `./mk search/for/xcode`: checks for Xcode
 .PHONY: search/for/xcode
 search/for/xcode:
-	@printf "checking for xcodebuild... "
-	@command -v xcodebuild || { echo "not found"; exit 1; }
-	@printf "checking for Xcode version... "
-	@echo $(__XCODEVERSION_REAL)
-	@[ "$(XCODE_VERSION)" = "$(__XCODEVERSION_REAL)" ] || { echo "fatal: Xcode version must be $(XCODE_VERSION) instead of $(__XCODEVERSION_REAL)"; exit 1; }
-
-# __XCODEVERSION_REAL is the version of Xcode obtained using xcodebuild
-__XCODEVERSION_REAL = `xcodebuild -version | grep ^Xcode | awk '{print $$2}'`
+	./MOBILE/ios/check-xcode-version
 
 #help:
 #help: * `./mk search/for/unzip`: checks for unzip
