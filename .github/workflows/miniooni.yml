@@ -6,6 +6,7 @@
 name: miniooni
 on:
   push:
+  pull_request:
 
 jobs:
   build_and_publish:
