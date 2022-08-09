@@ -63,10 +63,6 @@ $(GIT_CLONE_DIR):
 GOLANG_EXTRA_FLAGS =
 
 #help:
-#help: * MINGW_W64_VERSION     : the expected mingw-w64 version.
-MINGW_W64_VERSION = 12.1.0
-
-#help:
 #help: * OONI_PSIPHON_TAGS     : build tags for `go build -tags ...` that cause
 #help:                           the build to embed a psiphon configuration file
 #help:                           into the generated binaries. This build tag
@@ -100,7 +96,6 @@ show-config:
 	@echo "ANDROID_NDK_VERSION=$(ANDROID_NDK_VERSION)"
 	@echo "GIT_CLONE_DIR=$(GIT_CLONE_DIR)"
 	@echo "GOLANG_EXTRA_FLAGS=$(GOLANG_EXTRA_FLAGS)"
-	@echo "MINGW_W64_VERSION=$(MINGW_W64_VERSION)"
 	@echo "OONI_PSIPHON_TAGS=$(OONI_PSIPHON_TAGS)"
 	@echo "OONI_ANDROID_HOME=$(OONI_ANDROID_HOME)"
 	@echo "XCODE_VERSION=$(XCODE_VERSION)"
@@ -140,8 +135,6 @@ show-config:
 ./CLI/miniooni-darwin-arm64: search/for/go maybe/copypsiphon
 	./CLI/go-build-cross darwin arm64 ./internal/cmd/miniooni
 
-# When building for Linux we use `-tags netgo` and `-extldflags -static` to produce
-# a statically linked binary that completely bypasses libc.
 #help:
 #help: * `./mk ./CLI/miniooni-linux-386`: linux/386
 .PHONY:   ./CLI/miniooni-linux-386
@@ -360,25 +353,9 @@ search/for/java:
 	@printf "checking for java... "
 	@command -v java || { echo "not found"; exit 1; }
 
-#help:
-#help: * `./mk search/for/mingw-w64`: checks for mingw-w64
 .PHONY: search/for/mingw-w64
 search/for/mingw-w64:
-	@printf "checking for x86_64-w64-mingw32-gcc... "
-	@command -v x86_64-w64-mingw32-gcc || { echo "not found"; exit 1; }
-	@printf "checking for x86_64-w64-mingw32-gcc version... "
-	@echo $(__MINGW32_AMD64_VERSION)
-	@[ "$(MINGW_W64_VERSION)" = "$(__MINGW32_AMD64_VERSION)" ] || { echo "fatal: x86_64-w64-mingw32-gcc version must be $(MINGW_W64_VERSION) instead of $(__MINGW32_AMD64_VERSION)"; exit 1; }
-	@printf "checking for i686-w64-mingw32-gcc... "
-	@command -v i686-w64-mingw32-gcc || { echo "not found"; exit 1; }
-	@printf "checking for i686-w64-mingw32-gcc version... "
-	@echo $(__MINGW32_386_VERSION)
-	@[ "$(MINGW_W64_VERSION)" = "$(__MINGW32_386_VERSION)" ] || { echo "fatal: i686-w64-mingw32-gcc version must be $(MINGW_W64_VERSION) instead of $(__MINGW32_386_VERSION)"; exit 1; }
-
-# __MINGW32_AMD64_VERSION and __MINGW32_386_VERSION are the versions
-# reported by the amd64 and 386 mingw binaries.
-__MINGW32_AMD64_VERSION = $(shell x86_64-w64-mingw32-gcc --version | sed -n 1p | awk '{print $$3}')
-__MINGW32_386_VERSION = $(shell i686-w64-mingw32-gcc --version | sed -n 1p | awk '{print $$3}')
+	./CLI/check-mingw-w64-version
 
 #help:
 #help: * `./mk search/for/shasum`: checks for shasum
