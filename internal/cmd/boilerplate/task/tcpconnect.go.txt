@@ -73,16 +73,27 @@ func (t *{{ .StructName }}Task) Run(ctx context.Context, sched TaskScheduler) er
 	// 3. perform the TCP connect
 	dialer := trace.NewDialerWithoutResolver(t.Logger)
 	conn, err := dialer.DialContext(ctx, "tcp", t.Address)
-	_ = <-trace.TCPConnect // TODO: use this result
+	t.onTCPConnectResult(err, <-trace.TCPConnect)
 	if err != nil {
-		// TODO: write something into the test keys
 		return err
 	}
-	conn.Close()
-	// TODO: write something into the test keys
+	defer conn.Close()
 
 	// 4. we're done!
 	return nil
+}
+
+// Called when the result of the TCP connect becomes available.
+//
+// Arguments:
+//
+// - err is the possibly nil error;
+//
+// - tcpTrace contains the never-nil archival results.
+func (t *{{ .StructName }}Task) onTCPConnectResult(
+	err error, tcpTrace *model.ArchivalTCPConnectResult) {
+	// TODO: implement this method. Typically here you want to
+	// save into the test keys using thread safe code.
 }
 
 // Repr implements Task

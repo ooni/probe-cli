@@ -21,6 +21,7 @@ package {{ .Name }}
 import (
 	"context"
 	"fmt"
+	{{ if ne .InputPolicy "InputNone" }}"net/url"{{ end }}
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -39,6 +40,11 @@ type MainTask struct {
 
 	// ZeroTime is the zero time of the measurement.
 	ZeroTime time.Time
+
+	{{ if ne .InputPolicy "InputNone" }}
+	// Input contains the parsed experiment input.
+	Input *url.URL
+	{{ end }}
 
 	// TODO: add fields.
 	//
@@ -59,16 +65,21 @@ type MainTask struct {
 //
 // - tk contains the TestKeys where to write results;
 //
-// - zeroTime is the measurement's zero time.
+// - zeroTime is the measurement's zero time;{{ if ne .InputPolicy "InputNone" }}
+//
+// - input contains the experiment's input;{{ end }}
 //
 // TODO: add the required parameters and document them.
-func NewMainTask(
-	idGenerator *TaskIDGenerator, logger model.Logger, tk TestKeys, zeroTime time.Time) *MainTask {
+func NewMainTask(idGenerator *TaskIDGenerator, logger model.Logger,
+	tk TestKeys, zeroTime time.Time, {{ if ne .InputPolicy "InputNone" }}input *url.URL{{ end }}) *MainTask {
 	return &MainTask{
 		IDGenerator: idGenerator,
 		Logger:      logger,
 		TestKeys:    tk,
 		ZeroTime:    zeroTime,
+		{{ if ne .InputPolicy "InputNone" }}
+		Input:       input,
+		{{ end }}
 		// TODO: fill newly-added fields.
 	}
 }

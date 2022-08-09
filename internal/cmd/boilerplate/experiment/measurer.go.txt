@@ -54,8 +54,7 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	{{ if eq .InputPolicy "InputNone" }}
 	// honour {{ .InputPolicy }}
 	if measurement.Input != "" {
-		sess.Logger().Warn("BUG: {{ .Name }} got input but has {{ .InputPolicy }}!")
-		return errors.New("{{ .Name }}: this experiment does not take any input")
+		return errors.New("this experiment does not take any input")
 	}
 
 	{{ else if eq .InputPolicy "InputOptional" }}
@@ -65,31 +64,25 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 		input = m.defaultInput()
 	}
 
-	{{ else if eq .InputPolicy "InputOrQueryBackend" }}
-	// honour {{ .InputPolicy }}
-	input := measurement.Input
-	if input == "" {
-		sess.Logger().Warn("BUG: {{ .Name }} got no input but has {{ .InputPolicy }}!")
-		return errors.New("{{ .Name }}: no input provided")
-	}
-
-	{{ else if eq .InputPolicy "InputOrStaticDefault" }}
-	// honour {{ .InputPolicy }}
-	input := measurement.Input
-	if input == "" {
-		sess.Logger().Warn("BUG: {{ .Name }} got no input but has {{ .InputPolicy }}!")
-		return errors.New("{{ .Name }}: no input provided")
-	}
-
-	{{ else if eq .InputPolicy "InputStrictlyRequired" }}
-	// honour {{ .InputPolicy }}
-	input := measurement.Input
-	if input == "" {
-		return errors.New("{{ .Name }}: no input provided")
-	}
-
 	{{ else }}
-	THIS SHOULD NOT HAPPEN! SOMETHING'S WRONG WITH THE AUTO-GENERATOR!
+	// honour {{ .InputPolicy }}
+	input := measurement.Input
+	if input == "" {
+		return errors.New("no input provided")
+	}
+	{{ end }}
+
+	{{ if ne .InputPolicy "InputNone" }}
+	// convert the input string to a URL
+	inputParser := &InputParser{
+		AcceptedSchemes: []string{"http", "https"}, // TODO: you may want to change this
+		AllowEndpoints:  false,                     // TODO: you may want to change this
+		DefaultScheme:   "",                        // TODO: you may want to change this
+	}
+	URL, err := inputParser.Parse(string(measurement.Input))
+	if err != nil {
+		return err
+	}
 	{{ end }}
 
 	// initialize the experiment's test keys
@@ -99,12 +92,7 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	// defer the rest of the work to the main task
 	idGenerator := NewTaskIDGenerator()
 	startTime := measurement.MeasurementStartTimeSaved
-	main := NewMainTask(
-		idGenerator,
-		sess.Logger(),
-		tk,
-		startTime,
-	)
+	main := NewMainTask(idGenerator, sess.Logger(), tk, startTime, {{ if ne .InputPolicy "InputNone" }}URL{{end}})
 	const parallelism = 10 // TODO: adjust depending on your needs
 	ts := NewTaskSchedulerWaiter(sess.Logger(), parallelism)
 	ts.Start(ctx, main)

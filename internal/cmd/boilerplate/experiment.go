@@ -31,7 +31,7 @@ type ExperimentInfo struct {
 	// Experiment input policy
 	InputPolicy string
 
-	// Whether this experimenti is interruptible.
+	// Whether this experiment is interruptible.
 	Interruptible bool
 }
 
@@ -55,6 +55,9 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 	generateTasksGo(info)
 	generateMainTaskGo(info)
 	generateRegistryEntryGo(info)
+	if info.InputPolicy != "InputNone" {
+		generateInputParserGo(info)
+	}
 
 	pkg := filepath.Join("internal", "experiment", info.Name, "/...")
 	gofmt(pkg)
@@ -64,7 +67,7 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 	printf("\n")
 	printf("* `go build -v ./internal/cmd/miniooni` to build `miniooni`;\n")
 	printf("\n")
-	printf("* `./miniooni -n [options] %s` to test your new experiment;\n", info.Name)
+	printf("* `./miniooni -n %s` to test your new experiment;\n", info.Name)
 	printf("\n")
 	printf("* `go run ./internal/cmd/boilerplate new-task` to add tasks\n")
 	printf("  to your new experiment (e.g., a TLS handshake).\n")
@@ -259,5 +262,15 @@ var experimentRegistryEntryGoTemplate string
 func generateRegistryEntryGo(info *ExperimentInfo) {
 	fullpath := filepath.Join("internal", "registry", info.Name+".go")
 	tmpl := template.Must(template.New("registryentry.go").Parse(experimentRegistryEntryGoTemplate))
+	writeTemplate(fullpath, tmpl, info)
+}
+
+//go:embed "experiment/inputparser.go.txt"
+var experimentInputParserGoTemplate string
+
+// Generates the experiment's entry inside ./internal/registry
+func generateInputParserGo(info *ExperimentInfo) {
+	fullpath := filepath.Join("internal", "experiment", info.Name, "inputparser.go")
+	tmpl := template.Must(template.New("inputparser.go").Parse(experimentInputParserGoTemplate))
 	writeTemplate(fullpath, tmpl, info)
 }
