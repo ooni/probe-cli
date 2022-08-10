@@ -13,7 +13,7 @@ import "C"
 import (
 	"errors"
 	"log"
-	"sync"
+	"runtime/cgo"
 	"time"
 	"unsafe"
 
@@ -83,17 +83,6 @@ func OONICall(req *C.struct_OONIMessage) (resp *C.struct_OONIMessage) {
 	}
 }
 
-var (
-	// tasksMu provides mutual exclusion.
-	tasksMu sync.Mutex
-
-	// tasksMap keeps alive all the running tasks.
-	tasksMap = map[uintptr]taskAPI{}
-
-	// nextTaskHandle is the next task handle.
-	nextTaskHandle uintptr
-)
-
 const (
 	// invalidTaskHandle represents the invalid task handle.
 	invalidTaskHandle = 0
@@ -111,27 +100,12 @@ func OONITaskStart(cfg *C.struct_OONIMessage) C.OONITask {
 		log.Print("OONITaskStart: startTask returned NULL")
 		return invalidTaskHandle
 	}
-	defer tasksMu.Unlock()
-	tasksMu.Lock()
-	nextTaskHandle++
-	handle := nextTaskHandle
-	if handle == invalidTaskHandle {
-		log.Printf("OONITaskStart: ran out of handle space")
-		return invalidTaskHandle
-	}
-	tasksMap[handle] = tp
-	return C.OONITask(handle)
+	return C.OONITask(cgo.NewHandle(tp))
 }
 
 //export OONITaskWaitForNextEvent
 func OONITaskWaitForNextEvent(task C.OONITask, timeout C.int32_t) *C.struct_OONIMessage {
-	tasksMu.Lock()
-	tp := tasksMap[uintptr(task)]
-	tasksMu.Unlock()
-	if tp == nil {
-		log.Printf("OONITaskWaitForNextEvent: no such task: %d", task)
-		return nil
-	}
+	tp := cgo.Handle(task).Value().(taskAPI)
 	ev := tp.waitForNextEvent(time.Duration(timeout) * time.Millisecond)
 	return serialize(ev)
 }
@@ -147,13 +121,8 @@ func OONIMessageFree(event *C.struct_OONIMessage) {
 
 //export OONITaskIsDone
 func OONITaskIsDone(task C.OONITask) (out C.uint8_t) {
-	tasksMu.Lock()
-	tp := tasksMap[uintptr(task)]
-	tasksMu.Unlock()
-	if tp == nil || tp.isDone() {
-		if tp == nil {
-			log.Printf("OONITaskWaitForNextEvent: no such task: %d", task)
-		}
+	tp := cgo.Handle(task).Value().(taskAPI)
+	if tp.isDone() {
 		out++ // set to true
 	}
 	return
@@ -161,32 +130,15 @@ func OONITaskIsDone(task C.OONITask) (out C.uint8_t) {
 
 //export OONITaskInterrupt
 func OONITaskInterrupt(task C.OONITask) {
-	tasksMu.Lock()
-	tp := tasksMap[uintptr(task)]
-	tasksMu.Unlock()
-	if tp == nil {
-		// No need to print a warning message here. We want logging
-		// idempotence because may may end up killing a task more
-		// than once for robustness and we don't want our robustness
-		// aims to spew suspicious messages at our users.
-		return
-	}
+	tp := cgo.Handle(task).Value().(taskAPI)
 	tp.interrupt()
 }
 
 //export OONITaskFree
 func OONITaskFree(task C.OONITask) {
-	tasksMu.Lock()
-	tp := tasksMap[uintptr(task)]
-	delete(tasksMap, uintptr(task)) // this forgets the ID->task binding
-	tasksMu.Unlock()
-	if tp == nil {
-		// No need to print a warning message here. We want logging
-		// idempotence because may may end up killing a task more
-		// than once for robustness and we don't want our robustness
-		// aims to spew suspicious messages at our users.
-		return
-	}
+	handle := cgo.Handle(task)
+	tp := handle.Value().(taskAPI)
+	handle.Delete()
 	tp.free()
 }
 
