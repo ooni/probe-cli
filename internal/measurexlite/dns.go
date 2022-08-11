@@ -17,11 +17,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
-// newParallelResolverTrace is equivalent to netxlite.NewParallelResolver
-// except that it returns a model.Resolver that uses this trace.
-func (tx *Trace) newParallelResolverTrace(newResolver func() model.Resolver) model.Resolver {
+// wrapResolver resolver wraps the passed resolver to save data into the trace
+func (tx *Trace) wrapResolver(resolver model.Resolver) model.Resolver {
 	return &resolverTrace{
-		r:  tx.newParallelResolver(newResolver),
+		r:  resolver,
 		tx: tx,
 	}
 }
@@ -66,29 +65,20 @@ func (r *resolverTrace) LookupNS(ctx context.Context, domain string) ([]*net.NS,
 
 // NewParallelUDPResolver returns a trace-ware parallel UDP resolver
 func (tx *Trace) NewParallelUDPResolver(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
-	return tx.newParallelResolverTrace(func() model.Resolver {
-		return netxlite.NewParallelUDPResolver(logger, dialer, address)
-	})
+	return tx.wrapResolver(tx.newParallelUDPResolver(logger, dialer, address))
 }
 
 // NewParallelDNSOverHTTPSResolver returns a trace-aware parallel DoH resolver
 func (tx *Trace) NewParallelDNSOverHTTPSResolver(logger model.Logger, URL string) model.Resolver {
-	return tx.newParallelResolverTrace(func() model.Resolver {
-		return netxlite.NewParallelDNSOverHTTPSResolver(logger, URL)
-	})
+	return tx.wrapResolver(tx.newParallelDNSOverHTTPSResolver(logger, URL))
 }
 
 // OnDNSRoundTripForLookupHost implements model.Trace.OnDNSRoundTripForLookupHost
 func (tx *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resolver, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Time) {
-	ch := tx.DNSLookup[query.Type()]
-	if ch == nil {
-		// Prevent blocking forever. See https://dave.cheney.net/2014/03/19/channel-axioms.
-		log.Printf("BUG: Requested query type %s has no valid channel to buffer results", dns.TypeToString[query.Type()])
-		return
-	}
+	t := finished.Sub(tx.ZeroTime)
 	select {
-	case ch <- NewArchivalDNSLookupResultFromRoundTrip(
+	case tx.DNSLookup <- NewArchivalDNSLookupResultFromRoundTrip(
 		tx.Index,
 		started.Sub(tx.ZeroTime),
 		reso,
@@ -96,7 +86,7 @@ func (tx *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resol
 		response,
 		addrs,
 		err,
-		finished.Sub(tx.ZeroTime),
+		t,
 	):
 	default:
 	}
@@ -151,17 +141,11 @@ func archivalAnswersFromAddrs(addrs []string) (out []model.ArchivalDNSAnswer) {
 	return
 }
 
-// DNSLookupsFromRoundTrip drains the network events buffered inside the corresponding query channel
-func (tx *Trace) DNSLookupsFromRoundTrip(query uint16) (out []*model.ArchivalDNSLookupResult) {
-	ch := tx.DNSLookup[query]
-	if ch == nil {
-		// Prevent blocking forever. See https://dave.cheney.net/2014/03/19/channel-axioms.
-		log.Printf("BUG: Requested query type %s has no valid channel to buffer results", dns.TypeToString[query])
-		return
-	}
+// DNSLookupsFromRoundTrip drains the network events buffered inside the DNSLookup channel
+func (tx *Trace) DNSLookupsFromRoundTrip() (out []*model.ArchivalDNSLookupResult) {
 	for {
 		select {
-		case ev := <-ch:
+		case ev := <-tx.DNSLookup:
 			out = append(out, ev)
 		default:
 			return

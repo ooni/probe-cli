@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -148,18 +147,16 @@ func (m *Measurer) dnsRoundTrip(ctx context.Context, index int64, zeroTime time.
 	resolver := trace.NewParallelUDPResolver(logger, dialer, address)
 	_, err := resolver.LookupHost(ctx, domain)
 	ol.Stop(err)
-	// Add the dns.TypeA ping
-	pings = append(pings, m.makePingFromLookup(<-trace.DNSLookup[dns.TypeA]))
-	// Add the dns.TypeAAAA ping
-	pings = append(pings, m.makePingFromLookup(<-trace.DNSLookup[dns.TypeAAAA]))
-	tk.addPings(pings)
-}
-
-// makePingfromLookup returns a SinglePing from the result of a single query
-func (m *Measurer) makePingFromLookup(lookup *model.ArchivalDNSLookupResult) (pings *SinglePing) {
-	return &SinglePing{
-		Query: lookup,
+	for _, lookup := range trace.DNSLookupsFromRoundTrip() {
+		// make sure we only include the query types we care about (in principle, there
+		// should be no other query, so we're doing this just for robustness).
+		if lookup.QueryType == "A" || lookup.QueryType == "AAAA" {
+			pings = append(pings, &SinglePing{
+				Query: lookup,
+			})
+		}
 	}
+	tk.addPings(pings)
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
