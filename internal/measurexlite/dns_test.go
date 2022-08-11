@@ -13,7 +13,7 @@ import (
 )
 
 func TestNewUnwrappedParallelResolver(t *testing.T) {
-	t.Run("WrapResolver creates an wrapped resolver with Trace", func(t *testing.T) {
+	t.Run("WrapResolver creates a wrapped resolver with Trace", func(t *testing.T) {
 		underlying := &mocks.Resolver{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
