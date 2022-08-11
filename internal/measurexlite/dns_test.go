@@ -98,7 +98,7 @@ func TestNewResolver(t *testing.T) {
 			}
 		})
 
-		t.Run("LookupHost is correctly forwarded", func(t *testing.T) {
+		t.Run("LookupNS is correctly forwarded", func(t *testing.T) {
 			want := []*net.NS{{
 				Host: "1.1.1.1",
 			}}
@@ -282,7 +282,6 @@ func TestNewWrappedResolvers(t *testing.T) {
 		if resolver.Network() != "system" {
 			t.Fatal("unexpected resolver network")
 		}
-
 	})
 }
 
