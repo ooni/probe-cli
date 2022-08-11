@@ -37,10 +37,24 @@ func (c *NewTaskCommand) Run(*cobra.Command, []string) {
 	printf("to include it into an existing OONI experiment!\n")
 	print("\n")
 
-	experimentName := getExperimentName()
+	experimentName := getExperimentPackageName()
 	info := getTaskInfo()
 
 	generateTaskGo(experimentName, info)
+}
+
+// Obtains the experiment's package name
+func getExperimentPackageName() string {
+	printf("Please, enter the name of the Go package under ./internal/experiment` for\n")
+	printf("which you want to autogenerate a new task.\n")
+	print("\n")
+	prompt := &survey.Input{
+		Message: "Experiment's package name:",
+	}
+	var experiment string
+	err := survey.AskOne(prompt, &experiment)
+	runtimex.PanicOnError(err, "survey.AskOne failed")
+	return experiment
 }
 
 // Obtains information about the task to generate.
@@ -122,7 +136,7 @@ func generateTaskGo(experiment string, info *TaskInfo) {
 	fullpath := filepath.Join("internal", "experiment", experiment, name)
 	tmpl := template.Must(template.New("T1").Parse(knownTasks[info.Template]))
 	mapping := map[string]string{
-		"Experiment":  experiment,
+		"Package":     experiment,
 		"StructName":  info.StructName,
 		"Template":    info.Template,
 		"Description": info.Description,

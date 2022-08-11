@@ -1,4 +1,4 @@
-package {{ .Name }}
+package {{ .Package }}
 
 //
 // Routines for parsing the experiment's input.

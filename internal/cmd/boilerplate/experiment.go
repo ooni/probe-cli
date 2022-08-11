@@ -7,6 +7,7 @@ package main
 import (
 	_ "embed"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -35,6 +36,11 @@ type ExperimentInfo struct {
 	Interruptible bool
 }
 
+// Package returns the package name.
+func (info *ExperimentInfo) Package() string {
+	return strings.ReplaceAll(strings.ToLower(info.Name), "_", "")
+}
+
 // Called by the CLI parser
 func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 	printf("\n")
@@ -59,7 +65,7 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 		generateInputParserGo(info)
 	}
 
-	pkg := filepath.Join("internal", "experiment", info.Name, "/...")
+	pkg := filepath.Join("internal", "experiment", info.Package(), "/...")
 	gofmt(pkg)
 
 	printf("\n")
@@ -67,7 +73,7 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 	printf("\n")
 	printf("* `go build -v ./internal/cmd/miniooni` to build `miniooni`;\n")
 	printf("\n")
-	printf("* `./miniooni -n %s` to test your new experiment;\n", info.Name)
+	printf("* `./miniooni -n %s` to test your new experiment;\n", info.Package())
 	printf("\n")
 	printf("* `go run ./internal/cmd/boilerplate new-task` to add tasks\n")
 	printf("  to your new experiment (e.g., a TLS handshake).\n")
@@ -183,7 +189,7 @@ func getExperimentInterruptible() bool {
 
 // Creates a directory for the new experiment.
 func makeExperimentDirectory(info *ExperimentInfo) {
-	fulldir := filepath.Join("internal", "experiment", info.Name)
+	fulldir := filepath.Join("internal", "experiment", info.Package())
 	mkdirP(fulldir)
 }
 
@@ -192,7 +198,7 @@ var experimentDocGoTemplate string
 
 // Generates the doc.go file
 func generateDocGo(info *ExperimentInfo) {
-	fullpath := filepath.Join("internal", "experiment", info.Name, "doc.go")
+	fullpath := filepath.Join("internal", "experiment", info.Package(), "doc.go")
 	tmpl := template.Must(template.New("doc.go").Parse(experimentDocGoTemplate))
 	writeTemplate(fullpath, tmpl, info)
 }
@@ -202,7 +208,7 @@ var experimentMeasurerGoTemplate string
 
 // Generates the measurer.go file
 func generateMeasurerGo(info *ExperimentInfo) {
-	fullpath := filepath.Join("internal", "experiment", info.Name, "measurer.go")
+	fullpath := filepath.Join("internal", "experiment", info.Package(), "measurer.go")
 	tmpl := template.Must(template.New("measurer.go").Parse(experimentMeasurerGoTemplate))
 	writeTemplate(fullpath, tmpl, info)
 }
@@ -219,17 +225,17 @@ var experimentTestkeysGoTemplate string
 // Generates the model.go file
 func generateModelsGo(info *ExperimentInfo) {
 	{
-		fullpath := filepath.Join("internal", "experiment", info.Name, "config.go")
+		fullpath := filepath.Join("internal", "experiment", info.Package(), "config.go")
 		tmpl := template.Must(template.New("config.go").Parse(experimentConfigGoTemplate))
 		writeTemplate(fullpath, tmpl, info)
 	}
 	{
-		fullpath := filepath.Join("internal", "experiment", info.Name, "summary.go")
+		fullpath := filepath.Join("internal", "experiment", info.Package(), "summary.go")
 		tmpl := template.Must(template.New("model.go").Parse(experimentSummaryGoTemplate))
 		writeTemplate(fullpath, tmpl, info)
 	}
 	{
-		fullpath := filepath.Join("internal", "experiment", info.Name, "testkeys.go")
+		fullpath := filepath.Join("internal", "experiment", info.Package(), "testkeys.go")
 		tmpl := template.Must(template.New("model.go").Parse(experimentTestkeysGoTemplate))
 		writeTemplate(fullpath, tmpl, info)
 	}
@@ -240,7 +246,7 @@ var experimentTasksGoTemplate string
 
 // Generates the tasks.go file
 func generateTasksGo(info *ExperimentInfo) {
-	fullpath := filepath.Join("internal", "experiment", info.Name, "tasks.go")
+	fullpath := filepath.Join("internal", "experiment", info.Package(), "tasks.go")
 	tmpl := template.Must(template.New("tasks.go").Parse(experimentTasksGoTemplate))
 	writeTemplate(fullpath, tmpl, info)
 }
@@ -250,7 +256,7 @@ var experimentMainTaskGoTemplate string
 
 // Generates the maintask.go file
 func generateMainTaskGo(info *ExperimentInfo) {
-	fullpath := filepath.Join("internal", "experiment", info.Name, "maintask.go")
+	fullpath := filepath.Join("internal", "experiment", info.Package(), "maintask.go")
 	tmpl := template.Must(template.New("maintask.go").Parse(experimentMainTaskGoTemplate))
 	writeTemplate(fullpath, tmpl, info)
 }
@@ -260,7 +266,7 @@ var experimentRegistryEntryGoTemplate string
 
 // Generates the experiment's entry inside ./internal/registry
 func generateRegistryEntryGo(info *ExperimentInfo) {
-	fullpath := filepath.Join("internal", "registry", info.Name+".go")
+	fullpath := filepath.Join("internal", "registry", info.Package()+".go")
 	tmpl := template.Must(template.New("registryentry.go").Parse(experimentRegistryEntryGoTemplate))
 	writeTemplate(fullpath, tmpl, info)
 }
@@ -270,7 +276,7 @@ var experimentInputParserGoTemplate string
 
 // Generates the experiment's entry inside ./internal/registry
 func generateInputParserGo(info *ExperimentInfo) {
-	fullpath := filepath.Join("internal", "experiment", info.Name, "inputparser.go")
+	fullpath := filepath.Join("internal", "experiment", info.Package(), "inputparser.go")
 	tmpl := template.Must(template.New("inputparser.go").Parse(experimentInputParserGoTemplate))
 	writeTemplate(fullpath, tmpl, info)
 }

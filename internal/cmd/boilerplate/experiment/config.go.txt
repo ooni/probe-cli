@@ -1,10 +1,10 @@
-package {{ .Name }}
+package {{ .Package }}
 
 //
-// Config for {{ .Name }} and associated functions.
+// Config for {{ .Package }} and associated functions.
 //
 
-// Config contains {{ .Name }} experiment configuration.
+// Config contains {{ .Package }} experiment configuration.
 type Config struct {
 	// TODO: add fields here if you need any config
 }

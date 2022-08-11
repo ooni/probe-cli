@@ -1,4 +1,4 @@
-// Package {{ .Name }} implements the {{ .Name }} experiment.
+// Package {{ .Package }} implements the {{ .Name }} experiment.
 //
 // See {{ .SpecURL }}.
-package {{ .Name }}
+package {{ .Package }}

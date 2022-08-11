@@ -5,18 +5,18 @@ package registry
 //
 
 import (
-	"github.com/ooni/probe-cli/v3/internal/experiment/{{ .Name }}"
+	"github.com/ooni/probe-cli/v3/internal/experiment/{{ .Package }}"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func init() {
 	allexperiments["{{ .Name }}"] = &Factory{
 		build: func(config any) model.ExperimentMeasurer {
-			return {{ .Name }}.NewExperimentMeasurer(
-				config.(*{{ .Name }}.Config),
+			return {{ .Package }}.NewExperimentMeasurer(
+				config.(*{{ .Package }}.Config),
 			)
 		},
-		config:        &{{ .Name }}.Config{},
+		config:        &{{ .Package }}.Config{},
 		interruptible: {{ .Interruptible }},
 		inputPolicy:   model.{{ .InputPolicy }},
 	}

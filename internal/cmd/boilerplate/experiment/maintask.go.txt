@@ -1,4 +1,4 @@
-package {{ .Name }}
+package {{ .Package }}
 
 //
 // The main task of the {{ .Name }} experiment.
@@ -96,5 +96,5 @@ func (t *MainTask) Run(ctx context.Context, sched TaskScheduler) error {
 
 // Repr implements Task
 func (t *MainTask) Repr() string {
-	return fmt.Sprintf("{{ .Name }}Task: %+v", t) // TODO: make this prettier
+	return fmt.Sprintf("{{ .Package }}Task: %+v", t) // TODO: make this prettier
 }
