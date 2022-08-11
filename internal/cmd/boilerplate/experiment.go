@@ -93,7 +93,7 @@ func getExperimentInfo() *ExperimentInfo {
 
 // Obtains the experiment name
 func getExperimentName() string {
-	printf("Each OONI experiment has a name, which should match [a-z]+. The experiment\n")
+	printf("Each OONI experiment has a name, which should match [a-z_]+. The experiment\n")
 	printf("name determines the Go package name and the name with which you're calling the\n")
 	printf("experiment by name from the command line.\n")
 	print("\n")

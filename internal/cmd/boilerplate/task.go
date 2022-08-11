@@ -45,8 +45,7 @@ func (c *NewTaskCommand) Run(*cobra.Command, []string) {
 
 // Obtains the experiment's package name
 func getExperimentPackageName() string {
-	printf("Please, enter the name of the Go package under ./internal/experiment` for\n")
-	printf("which you want to autogenerate a new task.\n")
+	printf("Each experiment is a Go package under ./internal/experiment`.\n")
 	print("\n")
 	prompt := &survey.Input{
 		Message: "Experiment's package name:",
