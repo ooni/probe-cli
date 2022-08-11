@@ -345,6 +345,7 @@ func TestParallelResolver(t *testing.T) {
 		if err != nil {
 			t.Fatal("unexpected error", err)
 		}
+		// Note: the implementation always puts IPv4 addrs before IPv6 addrs
 		if diff := cmp.Diff(want, addrs); diff != "" {
 			t.Fatal("unexpected addresses")
 		}
@@ -354,7 +355,7 @@ func TestParallelResolver(t *testing.T) {
 				t.Fatal("onLookupACalled not called")
 			}
 			if !goodQueryTypeA {
-				t.Fatal("unexpected query type in system resolver")
+				t.Fatal("unexpected query type in parallel resolver")
 			}
 			if !goodLookupAddrsA {
 				t.Fatal("unexpected addresses in LookupHost")
@@ -372,7 +373,7 @@ func TestParallelResolver(t *testing.T) {
 				t.Fatal("onLookupAAAACalled not called")
 			}
 			if !goodQueryTypeAAAA {
-				t.Fatal("unexpected query type in system resolver")
+				t.Fatal("unexpected query type in parallel resolver")
 			}
 			if !goodLookupAddrsAAAA {
 				t.Fatal("unexpected addresses in LookupHost")
@@ -427,6 +428,7 @@ func TestParallelResolver(t *testing.T) {
 					goodLookupAddrsA = (len(addrs) == 0)
 					goodLookupErrorA = errors.Is(expected, err)
 					goodLookupResolverA = (reso.Network() == "mocked")
+					return
 				}
 				if query.Type() == dns.TypeAAAA {
 					onLookupAAAACalled = true
@@ -434,6 +436,7 @@ func TestParallelResolver(t *testing.T) {
 					goodLookupAddrsAAAA = (len(addrs) == 0)
 					goodLookupErrorAAAA = errors.Is(expected, err)
 					goodLookupResolverAAAA = (reso.Network() == "mocked")
+					return
 				}
 			},
 		}
@@ -451,7 +454,7 @@ func TestParallelResolver(t *testing.T) {
 				t.Fatal("onLookupACalled not called")
 			}
 			if !goodQueryTypeA {
-				t.Fatal("unexpected query type in system resolver")
+				t.Fatal("unexpected query type in parallel resolver")
 			}
 			if !goodLookupAddrsA {
 				t.Fatal("unexpected addresses in LookupHost")
@@ -469,7 +472,7 @@ func TestParallelResolver(t *testing.T) {
 				t.Fatal("onLookupAAAACalled not called")
 			}
 			if !goodQueryTypeAAAA {
-				t.Fatal("unexpected query type in system resolver")
+				t.Fatal("unexpected query type in parallel resolver")
 			}
 			if !goodLookupAddrsAAAA {
 				t.Fatal("unexpected addresses in LookupHost")
