@@ -12,7 +12,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
-func TestNewUnwrappedParallelResolver(t *testing.T) {
+func TestNewResolver(t *testing.T) {
 	t.Run("WrapResolver creates a wrapped resolver with Trace", func(t *testing.T) {
 		underlying := &mocks.Resolver{}
 		zeroTime := time.Now()
