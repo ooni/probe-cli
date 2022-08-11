@@ -52,6 +52,12 @@ func TestNewTrace(t *testing.T) {
 			}
 		})
 
+		t.Run("NewSimpleResolverFn is nil", func(t *testing.T) {
+			if trace.NewSimpleResolverFn != nil {
+				t.Fatal("expected nil NewSimpleResolverFn")
+			}
+		})
+
 		t.Run("NewDialerWithoutResolverFn is nil", func(t *testing.T) {
 			if trace.NewDialerWithoutResolverFn != nil {
 				t.Fatal("expected nil NewDialerWithoutResolverFn")
@@ -175,6 +181,57 @@ func TestTrace(t *testing.T) {
 				}
 			}
 			resolver := tx.newParallelResolver(newResolver)
+			ctx := context.Background()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if err != nil {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 1 {
+				t.Fatal("expected array of size 1")
+			}
+			if addrs[0] != "1.1.1.1" {
+				t.Fatal("unexpected array output", addrs)
+			}
+		})
+	})
+
+	t.Run("NewSimpleResolverFn works as intended", func(t *testing.T) {
+		t.Run("when not nil", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			tx := &Trace{
+				NewSimpleResolverFn: func() model.SimpleResolver {
+					return &mocks.Resolver{
+						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+							return []string{}, mockedErr
+						},
+					}
+				},
+			}
+			resolver := tx.newSimpleResolver(func() model.SimpleResolver {
+				return nil
+			})
+			ctx := context.Background()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if !errors.Is(err, mockedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected array of size 0")
+			}
+		})
+
+		t.Run("when nil", func(t *testing.T) {
+			tx := &Trace{
+				NewSimpleResolverFn: nil,
+			}
+			newResolver := func() model.SimpleResolver {
+				return &mocks.Resolver{
+					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+						return []string{"1.1.1.1"}, nil
+					},
+				}
+			}
+			resolver := tx.newSimpleResolver(newResolver)
 			ctx := context.Background()
 			addrs, err := resolver.LookupHost(ctx, "example.com")
 			if err != nil {
