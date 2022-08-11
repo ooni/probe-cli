@@ -38,6 +38,10 @@ type Trace struct {
 	// this channel manually, ensure it has some buffer.
 	NetworkEvent chan *model.ArchivalNetworkEvent
 
+	// NewStdlibResolverFn is OPTIONAL and can be used to overide
+	// calls to the netxlite.NewStdlibResolver factory.
+	NewStdlibResolverFn func(logger model.Logger) model.Resolver
+
 	// NewParallelUDPResolverFn is OPTIONAL and can be used to overide
 	// calls to the netxlite.NewParallelUDPResolver factory.
 	NewParallelUDPResolverFn func(logger model.Logger, dialer model.Dialer, address string) model.Resolver
@@ -127,6 +131,15 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 		TimeNowFn: nil, // use default
 		ZeroTime:  zeroTime,
 	}
+}
+
+// newStdlibResolver indirectly calls the passed netxlite.NewStdlibResolver
+// thus allowing us to mock this function for testing
+func (tx *Trace) newStdlibResolver(logger model.Logger) model.Resolver {
+	if tx.NewStdlibResolverFn != nil {
+		return tx.NewStdlibResolverFn(logger)
+	}
+	return netxlite.NewStdlibResolver(logger)
 }
 
 // newParallelUDPResolver indirectly calls the passed netxlite.NewParallerUDPResolver

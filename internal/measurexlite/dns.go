@@ -63,6 +63,11 @@ func (r *resolverTrace) LookupNS(ctx context.Context, domain string) ([]*net.NS,
 	return r.r.LookupNS(netxlite.ContextWithTrace(ctx, r.tx), domain)
 }
 
+// NewStdlibResolver returns a trace-ware system resolver
+func (tx *Trace) NewStdlibResolver(logger model.Logger) model.Resolver {
+	return tx.wrapResolver(tx.newStdlibResolver(logger))
+}
+
 // NewParallelUDPResolver returns a trace-ware parallel UDP resolver
 func (tx *Trace) NewParallelUDPResolver(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
 	return tx.wrapResolver(tx.newParallelUDPResolver(logger, dialer, address))

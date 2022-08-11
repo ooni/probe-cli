@@ -46,6 +46,12 @@ func TestNewTrace(t *testing.T) {
 			}
 		})
 
+		t.Run("NewStdlibResolverFn is nil", func(t *testing.T) {
+			if trace.NewStdlibResolverFn != nil {
+				t.Fatal("expected nil NewStdlibResolverFn")
+			}
+		})
+
 		t.Run("NewParallelUDPResolverFn is nil", func(t *testing.T) {
 			if trace.NewParallelUDPResolverFn != nil {
 				t.Fatal("expected nil NewParallelUDPResolverFn")
@@ -142,6 +148,46 @@ func TestNewTrace(t *testing.T) {
 }
 
 func TestTrace(t *testing.T) {
+	t.Run("NewStdlibResolverFn works as intended", func(t *testing.T) {
+		t.Run("when not nil", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			tx := &Trace{
+				NewStdlibResolverFn: func(logger model.Logger) model.Resolver {
+					return &mocks.Resolver{
+						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+							return []string{}, mockedErr
+						},
+					}
+				},
+			}
+			resolver := tx.newStdlibResolver(model.DiscardLogger)
+			ctx := context.Background()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if !errors.Is(err, mockedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected array of size 0")
+			}
+		})
+
+		t.Run("when nil", func(t *testing.T) {
+			tx := &Trace{
+				NewParallelUDPResolverFn: nil,
+			}
+			resolver := tx.newStdlibResolver(model.DiscardLogger)
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if err == nil || err.Error() != netxlite.FailureInterrupted {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected array of size 0")
+			}
+		})
+	})
+
 	t.Run("NewParallelUDPResolverFn works as intended", func(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
@@ -196,7 +242,7 @@ func TestTrace(t *testing.T) {
 					}
 				},
 			}
-			resolver := tx.newParallelDNSOverHTTPSResolver(model.DiscardLogger, "dns.google.com")
+			resolver := tx.newParallelDNSOverHTTPSResolver(model.DiscardLogger, "https://dns.google.com")
 			ctx := context.Background()
 			addrs, err := resolver.LookupHost(ctx, "example.com")
 			if !errors.Is(err, mockedErr) {

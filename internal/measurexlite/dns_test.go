@@ -2,9 +2,11 @@ package measurexlite
 
 import (
 	"context"
+	"net"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
@@ -12,7 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
-func TestNewUnwrappedParallelResolver(t *testing.T) {
+func TestNewResolver(t *testing.T) {
 	t.Run("WrapResolver creates a wrapped resolver with Trace", func(t *testing.T) {
 		underlying := &mocks.Resolver{}
 		zeroTime := time.Now()
@@ -37,6 +39,19 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 			MockNetwork: func() string {
 				return "udp"
 			},
+			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				return []string{"1.1.1.1"}, nil
+			},
+			MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+				return &model.HTTPSSvc{
+					IPv4: []string{"1.1.1.1"},
+				}, nil
+			},
+			MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
+				return []*net.NS{{
+					Host: "1.1.1.1",
+				}}, nil
+			},
 			MockCloseIdleConnections: func() {
 				called = true
 			},
@@ -54,6 +69,46 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 			got := resolver.Network()
 			if got != "udp" {
 				t.Fatal("Network not called")
+			}
+		})
+
+		t.Run("LookupHost is correctly forwarded", func(t *testing.T) {
+			want := []string{"1.1.1.1"}
+			ctx := context.Background()
+			got, err := resolver.LookupHost(ctx, "example.com")
+			if err != nil {
+				t.Fatal("expected nil error")
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("LookupHTTPS is correctly forwarded", func(t *testing.T) {
+			want := &model.HTTPSSvc{
+				IPv4: []string{"1.1.1.1"},
+			}
+			ctx := context.Background()
+			got, err := resolver.LookupHTTPS(ctx, "example.com")
+			if err != nil {
+				t.Fatal("expected nil error")
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("LookupNS is correctly forwarded", func(t *testing.T) {
+			want := []*net.NS{{
+				Host: "1.1.1.1",
+			}}
+			ctx := context.Background()
+			got, err := resolver.LookupNS(ctx, "example.com")
+			if err != nil {
+				t.Fatal("expected nil error")
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 
@@ -185,6 +240,48 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 				t.Fatal("expected to see no DNSLookup events")
 			}
 		})
+	})
+}
+
+func TestNewWrappedResolvers(t *testing.T) {
+	t.Run("NewParallelDNSOverHTTPSResolver works as intended", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		resolver := trace.NewParallelDNSOverHTTPSResolver(model.DiscardLogger, "https://dns.google.com")
+		resolvert := resolver.(*resolverTrace)
+		if resolvert.tx != trace {
+			t.Fatal("invalid trace")
+		}
+		if resolver.Network() != "doh" {
+			t.Fatal("unexpected resolver network")
+		}
+	})
+
+	t.Run("NewParallelUDPResolver works as intended", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		dialer := netxlite.NewDialerWithStdlibResolver(model.DiscardLogger)
+		resolver := trace.NewParallelUDPResolver(model.DiscardLogger, dialer, "1.1.1.1:53")
+		resolvert := resolver.(*resolverTrace)
+		if resolvert.tx != trace {
+			t.Fatal("invalid trace")
+		}
+		if resolver.Network() != "udp" {
+			t.Fatal("unexpected resolver network")
+		}
+	})
+
+	t.Run("NewStdlibResolver works as intended", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		resolver := trace.NewStdlibResolver(model.DiscardLogger)
+		resolvert := resolver.(*resolverTrace)
+		if resolvert.tx != trace {
+			t.Fatal("invalid trace")
+		}
+		if resolver.Network() != "system" {
+			t.Fatal("unexpected resolver network")
+		}
 	})
 }
 
