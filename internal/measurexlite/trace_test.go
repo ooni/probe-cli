@@ -242,7 +242,7 @@ func TestTrace(t *testing.T) {
 					}
 				},
 			}
-			resolver := tx.newParallelDNSOverHTTPSResolver(model.DiscardLogger, "dns.google.com")
+			resolver := tx.newParallelDNSOverHTTPSResolver(model.DiscardLogger, "https://dns.google.com")
 			ctx := context.Background()
 			addrs, err := resolver.LookupHost(ctx, "example.com")
 			if !errors.Is(err, mockedErr) {
