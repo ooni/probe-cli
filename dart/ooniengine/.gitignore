@@ -1,4 +1,5 @@
 /.dart_tool/
+/.packages
 /state
 /tunnel
 /tmp
