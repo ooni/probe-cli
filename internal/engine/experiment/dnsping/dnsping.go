@@ -148,6 +148,7 @@ func (m *Measurer) dnsRoundTrip(ctx context.Context, index int64, zeroTime time.
 	_, err := resolver.LookupHost(ctx, domain)
 	ol.Stop(err)
 	for _, lookup := range trace.DNSLookupsFromRoundTrip() {
+		// we check the QueryType to ensure that we do not record the system resolver's lookups
 		if lookup.QueryType == "A" || lookup.QueryType == "AAAA" {
 			pings = append(pings, &SinglePing{
 				Query: lookup,
