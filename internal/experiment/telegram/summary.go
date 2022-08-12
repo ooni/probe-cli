@@ -1,7 +1,7 @@
 package telegram
 
 //
-// Experiment summary result returned to ooniprobe.
+// Summary
 //
 
 import "github.com/ooni/probe-cli/v3/internal/model"
@@ -17,7 +17,7 @@ type SummaryKeys struct {
 
 // GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
 func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (any, error) {
+	// TODO: fill all the SummaryKeys
 	sk := SummaryKeys{isAnomaly: false}
-	// TODO: implement
 	return sk, nil
 }

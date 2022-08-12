@@ -1,7 +1,7 @@
 package telegram
 
 //
-// Config for telegram and associated functions.
+// Config
 //
 
 // Config contains telegram experiment configuration.

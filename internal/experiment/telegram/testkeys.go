@@ -11,10 +11,7 @@ import "sync"
 
 // TestKeys contains the results produced by telegram.
 type TestKeys struct {
-	// TODO: add here fields produced by this experiment. They should
-	// be public such that we can JSON serialize them.
-	//
-	// Ideally, try to keep the field names alphabetically sorted.
+	// TODO: add here public fields produced by this experiment.
 	//
 	// For example:
 	//
