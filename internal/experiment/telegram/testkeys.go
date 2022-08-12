@@ -18,8 +18,14 @@ type TestKeys struct {
 	// NetworkEvents contains network events.
 	NetworkEvents []*model.ArchivalNetworkEvent `json:"network_events"`
 
+	// Requests contains HTTP results.
+	Requests []*model.ArchivalHTTPRequestResult `json:"requests"`
+
 	// TCPConnect contains TCP connect results.
 	TCPConnect []*model.ArchivalTCPConnectResult `json:"tcp_connect"`
+
+	// TLSHandshakes contains TLS handshakes results.
+	TLSHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"tls_handshakes"`
 
 	// fundamentalFailure indicates that some fundamental error occurred
 	// in a background task. A fundamental error is something like a programmer
@@ -39,10 +45,24 @@ func (tk *TestKeys) AppendNetworkEvents(v ...*model.ArchivalNetworkEvent) {
 	tk.mu.Unlock()
 }
 
+// AppendRequests appends to Requests.
+func (tk *TestKeys) AppendRequests(v ...*model.ArchivalHTTPRequestResult) {
+	tk.mu.Lock()
+	tk.Requests = append(tk.Requests, v...)
+	tk.mu.Unlock()
+}
+
 // AppendTCPConnectResults appends to TCPConnect.
 func (tk *TestKeys) AppendTCPConnectResults(v ...*model.ArchivalTCPConnectResult) {
 	tk.mu.Lock()
 	tk.TCPConnect = append(tk.TCPConnect, v...)
+	tk.mu.Unlock()
+}
+
+// AppendTLSHandshakes appends to TLSHandshakes.
+func (tk *TestKeys) AppendTLSHandshakes(v ...*model.ArchivalTLSOrQUICHandshakeResult) {
+	tk.mu.Lock()
+	tk.TLSHandshakes = append(tk.TLSHandshakes, v...)
 	tk.mu.Unlock()
 }
 

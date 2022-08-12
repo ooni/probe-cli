@@ -81,19 +81,19 @@ func (t *WebHTTPS) Run(parentCtx context.Context, index int64) {
 	ol := measurexlite.NewOperationLogger(t.Logger, "WebHTTPS#%d: %s", index, t.Address)
 
 	// perform the TCP connect
-	const tcpTimeout = 10 * time.Second // TODO: consider changing
+	const tcpTimeout = 10 * time.Second
 	tcpCtx, tcpCancel := context.WithTimeout(parentCtx, tcpTimeout)
 	defer tcpCancel()
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
-	_ = <-trace.TCPConnect // TODO: save
+	t.TestKeys.AppendTCPConnectResults(<-trace.TCPConnect)
 	if err != nil {
 		ol.Stop(err)
 		return
 	}
 	tcpConn = trace.WrapNetConn(tcpConn)
 	defer func() {
-		_ = trace.NetworkEvents() // TODO: save
+		t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...)
 		tcpConn.Close()
 	}()
 
@@ -110,11 +110,11 @@ func (t *WebHTTPS) Run(parentCtx context.Context, index int64) {
 		RootCAs:    netxlite.NewDefaultCertPool(),
 		ServerName: tlsSNI,
 	}
-	const tlsTimeout = 10 * time.Second // TODO: consider changing
+	const tlsTimeout = 10 * time.Second
 	tlsCtx, tlsCancel := context.WithTimeout(parentCtx, tlsTimeout)
 	defer tlsCancel()
 	tlsConn, _, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
-	_ = <-trace.TLSHandshake // TODO: save
+	t.TestKeys.AppendTLSHandshakes(<-trace.TLSHandshake)
 	if err != nil {
 		ol.Stop(err)
 		return
@@ -130,7 +130,7 @@ func (t *WebHTTPS) Run(parentCtx context.Context, index int64) {
 	)
 
 	// create HTTP request
-	const httpTimeout = 10 * time.Second // TODO: consider changing
+	const httpTimeout = 10 * time.Second
 	httpCtx, httpCancel := context.WithTimeout(parentCtx, httpTimeout)
 	defer httpCancel()
 	httpReq, err := t.newHTTPRequest(httpCtx)
@@ -215,15 +215,17 @@ func (t *WebHTTPS) newHTTPRequest(ctx context.Context) (*http.Request, error) {
 // httpTransaction runs the HTTP transaction and saves the results.
 func (t *WebHTTPS) httpTransaction(ctx context.Context, txp model.HTTPTransport,
 	req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
-	const maxbody = 1 << 22 // TODO: you may want to change this default
+	const maxbody = 1 << 22
 	resp, err := txp.RoundTrip(req)
 	if err != nil {
-		_ = trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, []byte{}, err) // TODO: save
+		ev := trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, []byte{}, err)
+		t.TestKeys.AppendRequests(ev)
 		return resp, []byte{}, err
 	}
 	defer resp.Body.Close()
 	reader := io.LimitReader(resp.Body, maxbody)
 	body, err := netxlite.ReadAllContext(ctx, reader)
-	_ = trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err) // TODO: save
+	ev := trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err) // TODO: save
+	t.TestKeys.AppendRequests(ev)
 	return resp, body, err
 }

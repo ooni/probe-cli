@@ -9,7 +9,6 @@ package telegram
 
 import (
 	"context"
-
 	"io"
 	"net"
 	"net/http"
@@ -75,7 +74,7 @@ func (t *Datacenter) Run(parentCtx context.Context, index int64) {
 	ol := measurexlite.NewOperationLogger(t.Logger, "Datacenter#%d: %s", index, t.Address)
 
 	// perform the TCP connect
-	const tcpTimeout = 10 * time.Second // TODO: consider changing
+	const tcpTimeout = 10 * time.Second
 	tcpCtx, tcpCancel := context.WithTimeout(parentCtx, tcpTimeout)
 	defer tcpCancel()
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
@@ -99,7 +98,7 @@ func (t *Datacenter) Run(parentCtx context.Context, index int64) {
 	)
 
 	// create HTTP request
-	const httpTimeout = 10 * time.Second // TODO: consider changing
+	const httpTimeout = 10 * time.Second
 	httpCtx, httpCancel := context.WithTimeout(parentCtx, httpTimeout)
 	defer httpCancel()
 	httpReq, err := t.newHTTPRequest(httpCtx)
@@ -164,15 +163,17 @@ func (t *Datacenter) newHTTPRequest(ctx context.Context) (*http.Request, error) 
 // httpTransaction runs the HTTP transaction and saves the results.
 func (t *Datacenter) httpTransaction(ctx context.Context, txp model.HTTPTransport,
 	req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
-	const maxbody = 1 << 22 // TODO: you may want to change this default
+	const maxbody = 1 << 22
 	resp, err := txp.RoundTrip(req)
 	if err != nil {
-		_ = trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, []byte{}, err) // TODO: save
+		ev := trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, []byte{}, err)
+		t.TestKeys.AppendRequests(ev)
 		return resp, []byte{}, err
 	}
 	defer resp.Body.Close()
 	reader := io.LimitReader(resp.Body, maxbody)
 	body, err := netxlite.ReadAllContext(ctx, reader)
-	_ = trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err) // TODO: save
+	ev := trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err)
+	t.TestKeys.AppendRequests(ev)
 	return resp, body, err
 }
