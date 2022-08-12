@@ -80,14 +80,14 @@ func (t *Datacenter) Run(parentCtx context.Context, index int64) {
 	defer tcpCancel()
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
-	_ = <-trace.TCPConnect // TODO: save
+	t.TestKeys.AppendTCPConnectResults(<-trace.TCPConnect)
 	if err != nil {
 		ol.Stop(err)
 		return
 	}
 	tcpConn = trace.WrapNetConn(tcpConn)
 	defer func() {
-		_ = trace.NetworkEvents() // TODO: save
+		t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...)
 		tcpConn.Close()
 	}()
 
