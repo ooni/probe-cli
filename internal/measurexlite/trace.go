@@ -7,7 +7,6 @@ package measurexlite
 import (
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -39,9 +38,17 @@ type Trace struct {
 	// this channel manually, ensure it has some buffer.
 	NetworkEvent chan *model.ArchivalNetworkEvent
 
-	// NewParallelResolverFn is OPTIONAL and can be used to overide
-	// calls to the netxlite.NewParallelResolver factory.
-	NewParallelResolverFn func() model.Resolver
+	// NewStdlibResolverFn is OPTIONAL and can be used to overide
+	// calls to the netxlite.NewStdlibResolver factory.
+	NewStdlibResolverFn func(logger model.Logger) model.Resolver
+
+	// NewParallelUDPResolverFn is OPTIONAL and can be used to overide
+	// calls to the netxlite.NewParallelUDPResolver factory.
+	NewParallelUDPResolverFn func(logger model.Logger, dialer model.Dialer, address string) model.Resolver
+
+	// NewParallelDNSOverHTTPSResolverFn is OPTIONAL and can be used to overide
+	// calls to the netxlite.NewParallelDNSOverHTTPSUDPResolver factory.
+	NewParallelDNSOverHTTPSResolverFn func(logger model.Logger, URL string) model.Resolver
 
 	// NewDialerWithoutResolverFn is OPTIONAL and can be used to override
 	// calls to the netxlite.NewDialerWithoutResolver factory.
@@ -55,13 +62,9 @@ type Trace struct {
 	// calls to the netxlite.NewQUICDialerWithoutResolver factory
 	NewQUICDialerWithoutResolverFn func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer
 
-	// DNSLookup is MANDATORY and buffers DNSLookup results based on the
-	// query type. When we create this map using NewTrace, we will create
-	// an entry for each dns.Type in DNSQueryTypes. If you create this channel
-	// manually, you probably want to to the same (and most likely you also
-	// want to create buffered channels). Note that the code will print a
-	// warning and otherwise ignore all the query types not included in this map.
-	DNSLookup map[uint16]chan *model.ArchivalDNSLookupResult
+	// DNSLookup is MANDATORY and buffers DNS Lookup observations. If you create
+	// this channel manually, ensure it has some buffer.
+	DNSLookup chan *model.ArchivalDNSLookupResult
 
 	// TCPConnect is MANDATORY and buffers TCP connect observations. If you create
 	// this channel manually, ensure it has some buffer.
@@ -105,25 +108,6 @@ const (
 	QUICHandshakeBufferSize = 8
 )
 
-// DNSQueryTypes contains the list of DNS query types for which
-// NewTrace create entries in Trace.DNSLookup.
-var DNSQueryTypes = []uint16{
-	dns.TypeANY,
-	dns.TypeA,
-	dns.TypeAAAA,
-	dns.TypeCNAME,
-	dns.TypeNS,
-}
-
-// newDefaultDNSLookupMap is a convenience factory for creating Trace.DNSLookup
-func newDefaultDNSLookupMap() map[uint16]chan *model.ArchivalDNSLookupResult {
-	out := make(map[uint16]chan *model.ArchivalDNSLookupResult)
-	for _, qtype := range DNSQueryTypes {
-		out[qtype] = make(chan *model.ArchivalDNSLookupResult, DNSLookupBufferSize)
-	}
-	return out
-}
-
 // NewTrace creates a new instance of Trace using default settings.
 //
 // We create buffered channels using as buffer sizes the constants that
@@ -144,7 +128,10 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 		),
 		NewDialerWithoutResolverFn: nil, // use default
 		NewTLSHandshakerStdlibFn:   nil, // use default
-		DNSLookup:                  newDefaultDNSLookupMap(),
+		DNSLookup: make(
+			chan *model.ArchivalDNSLookupResult,
+			DNSLookupBufferSize,
+		),
 		TCPConnect: make(
 			chan *model.ArchivalTCPConnectResult,
 			TCPConnectBufferSize,
@@ -162,6 +149,33 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 	}
 }
 
+// newStdlibResolver indirectly calls the passed netxlite.NewStdlibResolver
+// thus allowing us to mock this function for testing
+func (tx *Trace) newStdlibResolver(logger model.Logger) model.Resolver {
+	if tx.NewStdlibResolverFn != nil {
+		return tx.NewStdlibResolverFn(logger)
+	}
+	return netxlite.NewStdlibResolver(logger)
+}
+
+// newParallelUDPResolver indirectly calls the passed netxlite.NewParallerUDPResolver
+// thus allowing us to mock this function for testing
+func (tx *Trace) newParallelUDPResolver(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
+	if tx.NewParallelUDPResolverFn != nil {
+		return tx.NewParallelUDPResolverFn(logger, dialer, address)
+	}
+	return netxlite.NewParallelUDPResolver(logger, dialer, address)
+}
+
+// newParallelDNSOverHTTPSResolver indirectly calls the passed netxlite.NewParallerDNSOverHTTPSResolver
+// thus allowing us to mock this function for testing
+func (tx *Trace) newParallelDNSOverHTTPSResolver(logger model.Logger, URL string) model.Resolver {
+	if tx.NewParallelDNSOverHTTPSResolverFn != nil {
+		return tx.NewParallelDNSOverHTTPSResolverFn(logger, URL)
+	}
+	return netxlite.NewParallelDNSOverHTTPSResolver(logger, URL)
+}
+
 // newDialerWithoutResolver indirectly calls netxlite.NewDialerWithoutResolver
 // thus allowing us to mock this func for testing.
 func (tx *Trace) newDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
@@ -169,15 +183,6 @@ func (tx *Trace) newDialerWithoutResolver(dl model.DebugLogger) model.Dialer {
 		return tx.NewDialerWithoutResolverFn(dl)
 	}
 	return netxlite.NewDialerWithoutResolver(dl)
-}
-
-// newParallelResolver indirectly calls the passed netxlite.NewParallerResolver
-// thus allowing us to mock this function for testing
-func (tx *Trace) newParallelResolver(newResolver func() model.Resolver) model.Resolver {
-	if tx.NewParallelResolverFn != nil {
-		return tx.NewParallelResolverFn()
-	}
-	return newResolver()
 }
 
 // newTLSHandshakerStdlib indirectly calls netxlite.NewTLSHandshakerStdlib
