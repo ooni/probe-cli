@@ -51,7 +51,7 @@ type quicDialerTrace struct {
 
 var _ model.QUICDialer = &quicDialerTrace{}
 
-// DialConotext implements model.QUICDialer.DialContext.
+// DialContext implements model.QUICDialer.DialContext.
 func (qdx *quicDialerTrace) DialContext(ctx context.Context, network string,
 	address string, tlsConfig *tls.Config, quicConfig *quic.Config) (
 	quic.EarlyConnection, error) {
