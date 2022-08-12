@@ -1,7 +1,8 @@
 package registry
 
 //
-// Registers the `{{ .Name }}' experiment.
+// Registers the `{{ .Name }}' experiment implemented by
+// the `./internal/experiment/{{ .Package }}' package.
 //
 
 import (
