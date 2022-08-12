@@ -102,7 +102,7 @@ func (t *SystemDNS) startWebHTTPTask(ctx context.Context, addr string) {
 
 // startWebHTTPSTask starts a WebHTTPSTask for this addr.
 func (t *SystemDNS) startWebHTTPSTask(ctx context.Context, addr string) {
-	task := &WebHTTPSTask{
+	task := &WebHTTPS{
 		Address:     net.JoinHostPort(addr, "443"),
 		IDGenerator: t.IDGenerator,
 		Logger:      t.Logger,
