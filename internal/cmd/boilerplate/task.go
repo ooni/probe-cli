@@ -7,6 +7,7 @@ package main
 import (
 	_ "embed"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -85,24 +86,19 @@ func getTaskDescription() string {
 	return docs
 }
 
-//go:embed "task/httpget.go.txt"
-var httpGetTemplate string
+//go:embed "task/endpoint.go.txt"
+var endpointTemplate string
 
 //go:embed "task/systemresolver.go.txt"
 var systemResolverTemplate string
 
-//go:embed "task/tcpconnect.go.txt"
-var tcpConnectTemplate string
-
-//go:embed "task/tlshandshake.go.txt"
-var tlsHandshakeTemplate string
-
 // The list of known tasks
 var knownTasks = map[string]string{
-	"http-get":        httpGetTemplate,
+	"http":            endpointTemplate,
+	"https":           endpointTemplate,
 	"system-resolver": systemResolverTemplate,
-	"tcp-connect":     tcpConnectTemplate,
-	"tls-handshake":   tlsHandshakeTemplate,
+	"tcp":             endpointTemplate,
+	"tls":             endpointTemplate,
 }
 
 // Names of known tasks
@@ -113,6 +109,7 @@ func init() {
 	for name := range knownTasks {
 		knownTaskNames = append(knownTaskNames, name)
 	}
+	sort.Strings(knownTaskNames)
 }
 
 // Returns the task template to use.

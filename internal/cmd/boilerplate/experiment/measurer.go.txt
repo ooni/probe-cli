@@ -11,10 +11,11 @@ package {{ .Package }}
 
 import (
 	"context"
-	{{ if ne .InputPolicy "InputOptional" }}
 	"errors"
-	{{ end }}
+	"sync"
 
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -89,14 +90,23 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	tk := NewTestKeys()
 	measurement.TestKeys = tk
 
-	// defer the rest of the work to the main task
-	idGenerator := NewTaskIDGenerator()
-	startTime := measurement.MeasurementStartTimeSaved
-	main := NewMainTask(idGenerator, sess.Logger(), tk, startTime, {{ if ne .InputPolicy "InputNone" }}URL{{end}})
-	const parallelism = 10 // TODO: adjust depending on your needs
-	ts := NewTaskSchedulerWaiter(sess.Logger(), parallelism)
-	ts.Start(ctx, main)
-	ts.Wait()
+	// create variables required to run parallel tasks
+	idGenerator := &atomicx.Int64{}
+	wg := &sync.WaitGroup{}
+
+	// start background tasks
+	// TODO: replace this code with code for running your background tasks
+	{{ if ne .InputPolicy "InputNone" }}_ = URL{{ end }}
+	wg.Add(1)
+	go func(logger model.Logger, idx int64) {
+		defer wg.Done()
+		ol := measurexlite.NewOperationLogger(logger, "{{ .Package }}#%d", idx)
+		tk.SetFundamentalFailure(errors.New("experiment not implemented"))
+		ol.Stop(nil)
+	}(sess.Logger(), idGenerator.Add(1))
+
+	// wait for background tasks to join
+	wg.Wait()
 
 	// return whether there was a fundamental failure, which would prevent
 	// the measurement from being submitted to the OONI collector.

@@ -58,8 +58,6 @@ func (c *NewExperimentCommand) Run(*cobra.Command, []string) {
 	generateDocGo(info)
 	generateMeasurerGo(info)
 	generateModelsGo(info)
-	generateTasksGo(info)
-	generateMainTaskGo(info)
 	generateRegistryEntryGo(info)
 	if info.InputPolicy != "InputNone" {
 		generateInputParserGo(info)
@@ -197,26 +195,6 @@ func generateModelsGo(info *ExperimentInfo) {
 		tmpl := template.Must(template.New("model.go").Parse(experimentTestkeysGoTemplate))
 		writeTemplate(fullpath, tmpl, info)
 	}
-}
-
-//go:embed "experiment/tasks.go.txt"
-var experimentTasksGoTemplate string
-
-// Generates the tasks.go file
-func generateTasksGo(info *ExperimentInfo) {
-	fullpath := filepath.Join("internal", "experiment", info.Package(), "tasks.go")
-	tmpl := template.Must(template.New("tasks.go").Parse(experimentTasksGoTemplate))
-	writeTemplate(fullpath, tmpl, info)
-}
-
-//go:embed "experiment/maintask.go.txt"
-var experimentMainTaskGoTemplate string
-
-// Generates the maintask.go file
-func generateMainTaskGo(info *ExperimentInfo) {
-	fullpath := filepath.Join("internal", "experiment", info.Package(), "maintask.go")
-	tmpl := template.Must(template.New("maintask.go").Parse(experimentMainTaskGoTemplate))
-	writeTemplate(fullpath, tmpl, info)
 }
 
 //go:embed "experiment/registry.go.txt"
