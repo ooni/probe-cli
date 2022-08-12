@@ -1,5 +1,9 @@
 package measurexlite
 
+//
+// QUIC tracing
+//
+
 import (
 	"context"
 	"crypto/tls"
