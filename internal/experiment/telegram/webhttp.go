@@ -166,8 +166,8 @@ func (t *WebHTTP) httpTransaction(ctx context.Context, txp model.HTTPTransport,
 	req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
 	const maxbody = 1 << 22 // TODO: you may want to change this default
 	resp, err := txp.RoundTrip(req)
-	_ = trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, []byte{}, err) // TODO: save
 	if err != nil {
+		_ = trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, []byte{}, err) // TODO: save
 		return resp, []byte{}, err
 	}
 	defer resp.Body.Close()
