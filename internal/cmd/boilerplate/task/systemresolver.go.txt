@@ -57,16 +57,19 @@ func (t *{{ .StructName }}Task) run(ctx context.Context, index int64) {
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
+	// create trace
+	trace := measurexlite.NewTrace(index, t.ZeroTime)
+
 	// start the operation logger
 	ol := measurexlite.NewOperationLogger(t.Logger, "{{ .StructName }}#%d", index) // TODO: edit
 
 	// construct a system resolver.
-	reso := measurexlite.NewStdlibResolver(t.Logger)
+	reso := trace.NewStdlibResolver(t.Logger)
 	addrs, err := reso.LookupHost(ctx, t.Domain)
-	_ = reso.DNSLookupsFromRoundTrip() // TODO: save
+	_ = trace.DNSLookupsFromRoundTrip() // TODO: save
 	if err != nil {
 		ol.Stop(err)
-		return err
+		return
 	}
 
 	// emit successful log message
