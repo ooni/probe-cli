@@ -68,7 +68,7 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	systemDNSTask.Start(ctx)
 	for _, addr := range dataCenterAddrs {
 		for _, port := range dataCenterPorts {
-			dcTask := &DatacenterTask{
+			dcTask := &Datacenter{
 				Address:     net.JoinHostPort(addr, port),
 				IDGenerator: idGenerator,
 				Logger:      sess.Logger(),
