@@ -1,7 +1,7 @@
 package telegram
 
 //
-// Datacenter: Measures a Telegram data center (DC).
+// DatacenterTask
 //
 
 import (
@@ -63,24 +63,24 @@ func (t *DatacenterTask) Start(ctx context.Context) {
 }
 
 // run runs this task in the background.
-func (t *DatacenterTask) run(ctx context.Context, index int64) {
+func (t *DatacenterTask) run(parentCtx context.Context, index int64) {
 	// synchronize with wait group
 	defer t.WaitGroup.Done()
 
 	// configure a timeout
 	const defaultTimeout = 15 * time.Second // TODO: change this default
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	opCtx, cancel := context.WithTimeout(parentCtx, defaultTimeout)
 	defer cancel()
 
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(t.Logger, "Datacenter#%d", index) // TODO: edit
+	ol := measurexlite.NewOperationLogger(t.Logger, "Datacenter#%d: %s", index, t.Address)
 
 	// perform the TCP connect
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
-	tcpConn, err := tcpDialer.DialContext(ctx, "tcp", t.Address)
+	tcpConn, err := tcpDialer.DialContext(opCtx, "tcp", t.Address)
 	_ = <-trace.TCPConnect // TODO: save
 	if err != nil {
 		ol.Stop(err)
@@ -100,7 +100,7 @@ func (t *DatacenterTask) run(ctx context.Context, index int64) {
 	)
 
 	// create HTTP request
-	httpReq, err := t.newHTTPRequest(ctx)
+	httpReq, err := t.newHTTPRequest(opCtx)
 	if err != nil {
 		t.TestKeys.SetFundamentalFailure(err)
 		ol.Stop(err)
@@ -108,7 +108,7 @@ func (t *DatacenterTask) run(ctx context.Context, index int64) {
 	}
 
 	// perform HTTP round trip
-	httpResp, httpRespBody, err := t.httpTransaction(ctx, httpTransport, httpReq, trace)
+	httpResp, httpRespBody, err := t.httpTransaction(opCtx, httpTransport, httpReq, trace)
 	if err != nil {
 		ol.Stop(err)
 		return
@@ -148,7 +148,7 @@ func (t *DatacenterTask) newHTTPRequest(ctx context.Context) (*http.Request, err
 		Path:     t.URLPath,
 		RawQuery: t.URLRawQuery,
 	}
-	httpReq, err := http.NewRequestWithContext(ctx, "GET", httpURL.String(), nil)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", httpURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -174,3 +174,9 @@ func (t *DatacenterTask) httpTransaction(ctx context.Context, txp model.HTTPTran
 	_ = trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err) // TODO: save
 	return resp, body, err
 }
+
+//
+// User section
+//
+// We suggest adding your custom methods and functions here.
+//

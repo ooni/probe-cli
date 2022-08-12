@@ -12,10 +12,10 @@ package telegram
 import (
 	"context"
 	"errors"
+	"net"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
-	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -66,15 +66,30 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	wg := &sync.WaitGroup{}
 
 	// start background tasks
-	// TODO: replace this code with code for running your background tasks
-
-	wg.Add(1)
-	go func(logger model.Logger, idx int64) {
-		defer wg.Done()
-		ol := measurexlite.NewOperationLogger(logger, "telegram#%d", idx)
-		tk.SetFundamentalFailure(errors.New("experiment not implemented"))
-		ol.Stop(nil)
-	}(sess.Logger(), idGenerator.Add(1))
+	systemDNSTask := &SystemDNSTask{
+		IDGenerator: idGenerator,
+		Logger:      sess.Logger(),
+		TestKeys:    tk,
+		ZeroTime:    measurement.MeasurementStartTimeSaved,
+		WaitGroup:   wg,
+	}
+	systemDNSTask.Start(ctx)
+	for _, addr := range dataCenterAddrs {
+		for _, port := range dataCenterPorts {
+			dcTask := &DatacenterTask{
+				Address:     net.JoinHostPort(addr, port),
+				IDGenerator: idGenerator,
+				Logger:      sess.Logger(),
+				TestKeys:    tk,
+				ZeroTime:    measurement.MeasurementStartTimeSaved,
+				WaitGroup:   wg,
+				HostHeader:  "",
+				URLPath:     "",
+				URLRawQuery: "",
+			}
+			dcTask.Start(ctx)
+		}
+	}
 
 	// wait for background tasks to join
 	wg.Wait()
@@ -83,3 +98,16 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	// the measurement from being submitted to the OONI collector.
 	return tk.FundamentalFailure()
 }
+
+// dataCenterAddrs contains the data center addrs.
+var dataCenterAddrs = []string{
+	"149.154.175.50",
+	"149.154.167.51",
+	"149.154.175.100",
+	"149.154.167.91",
+	"149.154.171.5",
+	"95.161.76.100",
+}
+
+// dataCenterPorts contains the data center ports.
+var dataCenterPorts = []string{"80", "443"}

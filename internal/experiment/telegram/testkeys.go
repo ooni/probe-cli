@@ -56,7 +56,9 @@ func (tk *TestKeys) FundamentalFailure() error {
 
 // NewTestKeys creates a new instance of TestKeys.
 func NewTestKeys() *TestKeys {
+	// TODO: here you should initialize all the fields
 	return &TestKeys{
-		// TODO: here you should initialize all the fields
+		fundamentalFailure: nil,
+		mu:                 &sync.Mutex{},
 	}
 }

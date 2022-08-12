@@ -1,7 +1,7 @@
 package telegram
 
 //
-// WebHTTPS: Measures Telegram Web using HTTPS.
+// WebHTTPSTask
 //
 
 import (
@@ -69,24 +69,24 @@ func (t *WebHTTPSTask) Start(ctx context.Context) {
 }
 
 // run runs this task in the background.
-func (t *WebHTTPSTask) run(ctx context.Context, index int64) {
+func (t *WebHTTPSTask) run(parentCtx context.Context, index int64) {
 	// synchronize with wait group
 	defer t.WaitGroup.Done()
 
 	// configure a timeout
 	const defaultTimeout = 15 * time.Second // TODO: change this default
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	opCtx, cancel := context.WithTimeout(parentCtx, defaultTimeout)
 	defer cancel()
 
 	// create trace
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(t.Logger, "WebHTTPS#%d", index) // TODO: edit
+	ol := measurexlite.NewOperationLogger(t.Logger, "WebHTTPS#%d: %s", index, t.Address)
 
 	// perform the TCP connect
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
-	tcpConn, err := tcpDialer.DialContext(ctx, "tcp", t.Address)
+	tcpConn, err := tcpDialer.DialContext(opCtx, "tcp", t.Address)
 	_ = <-trace.TCPConnect // TODO: save
 	if err != nil {
 		ol.Stop(err)
@@ -111,7 +111,7 @@ func (t *WebHTTPSTask) run(ctx context.Context, index int64) {
 		RootCAs:    netxlite.NewDefaultCertPool(),
 		ServerName: tlsSNI,
 	}
-	tlsConn, _, err := tlsHandshaker.Handshake(ctx, tcpConn, tlsConfig)
+	tlsConn, _, err := tlsHandshaker.Handshake(opCtx, tcpConn, tlsConfig)
 	_ = <-trace.TLSHandshake // TODO: save
 	if err != nil {
 		ol.Stop(err)
@@ -128,7 +128,7 @@ func (t *WebHTTPSTask) run(ctx context.Context, index int64) {
 	)
 
 	// create HTTP request
-	httpReq, err := t.newHTTPRequest(ctx)
+	httpReq, err := t.newHTTPRequest(opCtx)
 	if err != nil {
 		t.TestKeys.SetFundamentalFailure(err)
 		ol.Stop(err)
@@ -136,7 +136,7 @@ func (t *WebHTTPSTask) run(ctx context.Context, index int64) {
 	}
 
 	// perform HTTP round trip
-	httpResp, httpRespBody, err := t.httpTransaction(ctx, httpTransport, httpReq, trace)
+	httpResp, httpRespBody, err := t.httpTransaction(opCtx, httpTransport, httpReq, trace)
 	if err != nil {
 		ol.Stop(err)
 		return
@@ -222,3 +222,9 @@ func (t *WebHTTPSTask) httpTransaction(ctx context.Context, txp model.HTTPTransp
 	_ = trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err) // TODO: save
 	return resp, body, err
 }
+
+//
+// User section
+//
+// We suggest adding your custom methods and functions here.
+//
