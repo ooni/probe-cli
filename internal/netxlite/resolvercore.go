@@ -130,11 +130,17 @@ var _ model.Resolver = &resolverSystem{}
 func (r *resolverSystem) LookupHost(ctx context.Context, hostname string) ([]string, error) {
 	encoder := &DNSEncoderMiekg{}
 	query := encoder.Encode(hostname, dns.TypeANY, false)
+	trace := ContextTraceOrDefault(ctx)
+	start := trace.TimeNow()
 	resp, err := r.t.RoundTrip(ctx, query)
+	end := trace.TimeNow()
 	if err != nil {
-		return nil, err
+		trace.OnDNSRoundTripForLookupHost(start, r, query, resp, []string{}, err, end)
+		return []string{}, err
 	}
-	return resp.DecodeLookupHost()
+	addrs, err := resp.DecodeLookupHost()
+	trace.OnDNSRoundTripForLookupHost(start, r, query, resp, addrs, err, end)
+	return addrs, err
 }
 
 func (r *resolverSystem) Network() string {
