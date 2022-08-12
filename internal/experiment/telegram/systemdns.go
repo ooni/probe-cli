@@ -86,7 +86,7 @@ const webTelegramOrg = "web.telegram.org"
 
 // startWebHTTPTask starts a WebHTTPTask for this addr.
 func (t *SystemDNS) startWebHTTPTask(ctx context.Context, addr string) {
-	task := &WebHTTPTask{
+	task := &WebHTTP{
 		Address:     net.JoinHostPort(addr, "80"),
 		IDGenerator: t.IDGenerator,
 		Logger:      t.Logger,
