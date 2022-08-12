@@ -45,8 +45,6 @@ func (c *NewTaskCommand) Run(*cobra.Command, []string) {
 
 // Obtains the experiment's package name
 func getExperimentPackageName() string {
-	printf("Each experiment is a Go package under ./internal/experiment`.\n")
-	print("\n")
 	prompt := &survey.Input{
 		Message: "Experiment's package name:",
 	}
@@ -68,7 +66,7 @@ func getTaskInfo() *TaskInfo {
 // Returns the name of the task struct.
 func getTaskStructName() string {
 	prompt := &survey.Input{
-		Message: "Task struct name (e.g., 'Datacenter'):",
+		Message: "Task struct name:",
 	}
 	var name string
 	err := survey.AskOne(prompt, &name)
@@ -131,7 +129,7 @@ func getTaskTemplate() string {
 
 // Generates code for the new task.
 func generateTaskGo(experiment string, info *TaskInfo) {
-	name := "task" + strings.ToLower(info.StructName) + ".go"
+	name := strings.ToLower(info.StructName) + ".go"
 	fullpath := filepath.Join("internal", "experiment", experiment, name)
 	tmpl := template.Must(template.New("T1").Parse(knownTasks[info.Template]))
 	mapping := map[string]string{

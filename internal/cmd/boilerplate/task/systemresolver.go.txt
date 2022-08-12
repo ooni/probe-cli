@@ -27,7 +27,7 @@ type {{ .StructName }}Task struct {
 	Logger model.Logger
 
 	// TestKeys contains the TestKeys.
-	TestKeys TestKeys
+	TestKeys *TestKeys
 
 	// ZeroTime is the measurement's zero time.
 	ZeroTime time.Time
@@ -47,7 +47,7 @@ type {{ .StructName }}Task struct {
 //
 // - zeroTime is the zero time of the measurement.
 func New{{ .StructName }}Task(domain string, idGenerator *TaskIDGenerator,
-	logger model.Logger, tk TestKeys, zeroTime time.Time) *{{ .StructName }}Task {
+	logger model.Logger, tk *TestKeys, zeroTime time.Time) *{{ .StructName }}Task {
 	return &{{ .StructName }}Task{
 		Domain:      domain,
 		IDGenerator: idGenerator,

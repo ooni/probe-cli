@@ -32,7 +32,7 @@ type {{ .StructName }}Task struct {
 	Logger model.Logger
 
 	// TestKeys contains the TestKeys.
-	TestKeys TestKeys
+	TestKeys *TestKeys
 
 	// SNI is the SNI to use.
 	SNI string
@@ -58,9 +58,8 @@ type {{ .StructName }}Task struct {
 // - tk contains the TestKeys;
 //
 // - zeroTime is the zero time of the measurement.
-func New{{ .StructName }}Task(
-	address string, alpn []string, sni string, idGenerator *TaskIDGenerator,
-	logger model.Logger, tk TestKeys, zeroTime time.Time) *{{ .StructName }}Task {
+func New{{ .StructName }}Task(address string, alpn []string, sni string, idGenerator *TaskIDGenerator,
+	logger model.Logger, tk *TestKeys, zeroTime time.Time) *{{ .StructName }}Task {
 	return &{{ .StructName }}Task{
 		Address:     address,
 		ALPN:        alpn,
@@ -87,27 +86,58 @@ func (t *{{ .StructName }}Task) Run(ctx context.Context, sched TaskScheduler) er
 	// 3. perform the TCP connect
 	dialer := trace.NewDialerWithoutResolver(t.Logger)
 	conn, err := dialer.DialContext(ctx, "tcp", t.Address)
-	_ = <-trace.TCPConnect // TODO: use this result
+	t.onTCPConnectResult(err, <-trace.TCPConnect)
 	if err != nil {
-		// TODO: write something into the test keys
 		return err
 	}
+	conn = trace.WrapNetConn(conn)
 	defer conn.Close()
 
 	// 4. TLS handshake
-	conn = trace.WrapNetConn(conn)
 	thx := trace.NewTLSHandshakerStdlib(t.Logger)
 	config := &tls.Config{
 		NextProtos: t.ALPN,
 		RootCAs:    netxlite.NewDefaultCertPool(),
 		ServerName: t.SNI,
 	}
-	_, _, err = thx.Handshake(ctx, conn, config)
-	_ = <-trace.TLSHandshake  // TODO: use this result
-	_ = trace.NetworkEvents() // TODO: use this result
+	tlsConn, _, err := thx.Handshake(ctx, conn, config)
+	t.onTLSHandshakeResult(err, <-trace.TLSHandshake, trace.NetworkEvents())
+	if err != nil {
+		return err
+	}
+	tlsConn.Close()
 
 	// 5. we're done!
-	return err
+	return nil
+}
+
+// Called when the result of the TCP connect becomes available.
+//
+// Arguments:
+//
+// - err is the possibly nil error;
+//
+// - tcpTrace contains the never-nil archival results.
+func (t *{{ .StructName }}Task) onTCPConnectResult(
+	err error, tcpTrace *model.ArchivalTCPConnectResult) {
+	// TODO: implement this method. Typically here you want to
+	// save into the test keys using thread safe code.
+}
+
+// Called when the result of the TLS handshake becomes available.
+//
+// Arguments:
+//
+// - err is the possibly-nil error;
+//
+// - tlsTrace contains the never-nil archival results;
+//
+// - netEvents contains the possibly empty network events.
+func (t *{{ .StructName }}Task) onTLSHandshakeResult(
+	err error, tlsTrace *model.ArchivalTLSOrQUICHandshakeResult,
+	netEvents []*model.ArchivalNetworkEvent) {
+	// TODO: implement this method. Typically here you want to
+	// save into the test keys using thread safe code.
 }
 
 // Repr implements Task

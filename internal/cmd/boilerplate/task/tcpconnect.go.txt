@@ -27,7 +27,7 @@ type {{ .StructName }}Task struct {
 	Logger model.Logger
 
 	// TestKeys contains the TestKeys.
-	TestKeys TestKeys
+	TestKeys *TestKeys
 
 	// ZeroTime is the measurement's zero time.
 	ZeroTime time.Time
@@ -48,7 +48,7 @@ type {{ .StructName }}Task struct {
 // - zeroTime is the zero time of the measurement.
 func New{{ .StructName }}Task(
 	address string, idGenerator *TaskIDGenerator, logger model.Logger,
-	tk TestKeys, zeroTime time.Time) *{{ .StructName }}Task {
+	tk *TestKeys, zeroTime time.Time) *{{ .StructName }}Task {
 	return &{{ .StructName }}Task{
 		Address:     address,
 		IDGenerator: idGenerator,
@@ -87,7 +87,7 @@ func (t *{{ .StructName }}Task) Run(ctx context.Context, sched TaskScheduler) er
 //
 // Arguments:
 //
-// - err is the possibly nil error;
+// - err is the possibly-nil error;
 //
 // - tcpTrace contains the never-nil archival results.
 func (t *{{ .StructName }}Task) onTCPConnectResult(

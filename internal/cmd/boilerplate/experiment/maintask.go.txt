@@ -36,7 +36,7 @@ type MainTask struct {
 	Logger model.Logger
 
 	// TestKeys contains the TestKeys.
-	TestKeys TestKeys
+	TestKeys *TestKeys
 
 	// ZeroTime is the zero time of the measurement.
 	ZeroTime time.Time
@@ -71,7 +71,7 @@ type MainTask struct {
 //
 // TODO: add the required parameters and document them.
 func NewMainTask(idGenerator *TaskIDGenerator, logger model.Logger,
-	tk TestKeys, zeroTime time.Time, {{ if ne .InputPolicy "InputNone" }}input *url.URL{{ end }}) *MainTask {
+	tk *TestKeys, zeroTime time.Time, {{ if ne .InputPolicy "InputNone" }}input *url.URL{{ end }}) *MainTask {
 	return &MainTask{
 		IDGenerator: idGenerator,
 		Logger:      logger,

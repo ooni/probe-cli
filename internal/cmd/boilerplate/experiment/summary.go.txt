@@ -11,8 +11,8 @@ import "github.com/ooni/probe-cli/v3/internal/model"
 // Note that this structure is part of the ABI contract with ooniprobe
 // therefore we should be careful when changing it.
 type SummaryKeys struct {
-	isAnomaly bool
 	// TODO: add here additional summary fields.
+	isAnomaly bool
 }
 
 // GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
