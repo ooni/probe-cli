@@ -45,7 +45,8 @@ func (tx *Trace) NewArchivalHTTPRequestResult(
 			Headers:         map[string]model.ArchivalMaybeBinaryData{},
 			Locations:       []string{},
 		},
-		T: tx.TimeSince(tx.ZeroTime).Seconds(),
+		T:             tx.TimeSince(tx.ZeroTime).Seconds(),
+		TransactionID: tx.Index,
 	}
 	if resp != nil {
 		if body != nil {

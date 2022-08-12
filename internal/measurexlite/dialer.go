@@ -82,7 +82,8 @@ func NewArchivalTCPConnectResult(index int64, started time.Duration, address str
 			Failure: tracex.NewFailure(err),
 			Success: err == nil,
 		},
-		T: finished.Seconds(),
+		T:             finished.Seconds(),
+		TransactionID: index,
 	}
 }
 

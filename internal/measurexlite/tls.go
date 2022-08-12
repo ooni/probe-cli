@@ -87,6 +87,7 @@ func NewArchivalTLSOrQUICHandshakeResult(
 		T:                  finished.Seconds(),
 		Tags:               []string{},
 		TLSVersion:         netxlite.TLSVersionString(state.Version),
+		TransactionID:      index,
 	}
 }
 

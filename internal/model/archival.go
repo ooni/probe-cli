@@ -121,6 +121,7 @@ type ArchivalDNSLookupResult struct {
 	ResolverPort     *string             `json:"resolver_port"`
 	ResolverAddress  string              `json:"resolver_address"`
 	T                float64             `json:"t"`
+	TransactionID    int64               `json:"transaction_id"`
 }
 
 // ArchivalDNSAnswer is a DNS answer.
@@ -142,10 +143,11 @@ type ArchivalDNSAnswer struct {
 //
 // See https://github.com/ooni/spec/blob/master/data-formats/df-005-tcpconnect.md.
 type ArchivalTCPConnectResult struct {
-	IP     string                   `json:"ip"`
-	Port   int                      `json:"port"`
-	Status ArchivalTCPConnectStatus `json:"status"`
-	T      float64                  `json:"t"`
+	IP            string                   `json:"ip"`
+	Port          int                      `json:"port"`
+	Status        ArchivalTCPConnectStatus `json:"status"`
+	T             float64                  `json:"t"`
+	TransactionID int64                    `json:"transaction_id"`
 }
 
 // ArchivalTCPConnectStatus is the status of ArchivalTCPConnectResult.
@@ -173,6 +175,7 @@ type ArchivalTLSOrQUICHandshakeResult struct {
 	T                  float64                   `json:"t"`
 	Tags               []string                  `json:"tags"`
 	TLSVersion         string                    `json:"tls_version"`
+	TransactionID      int64                     `json:"transaction_id"`
 }
 
 //
@@ -183,10 +186,11 @@ type ArchivalTLSOrQUICHandshakeResult struct {
 //
 // See https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md.
 type ArchivalHTTPRequestResult struct {
-	Failure  *string              `json:"failure"`
-	Request  ArchivalHTTPRequest  `json:"request"`
-	Response ArchivalHTTPResponse `json:"response"`
-	T        float64              `json:"t"`
+	Failure       *string              `json:"failure"`
+	Request       ArchivalHTTPRequest  `json:"request"`
+	Response      ArchivalHTTPResponse `json:"response"`
+	T             float64              `json:"t"`
+	TransactionID int64                `json:"transaction_id"`
 }
 
 // ArchivalHTTPRequest contains an HTTP request.
@@ -302,11 +306,12 @@ type ArchivalHTTPTor struct {
 //
 // See https://github.com/ooni/spec/blob/master/data-formats/df-008-netevents.md.
 type ArchivalNetworkEvent struct {
-	Address   string   `json:"address,omitempty"`
-	Failure   *string  `json:"failure"`
-	NumBytes  int64    `json:"num_bytes,omitempty"`
-	Operation string   `json:"operation"`
-	Proto     string   `json:"proto,omitempty"`
-	T         float64  `json:"t"`
-	Tags      []string `json:"tags,omitempty"`
+	Address       string   `json:"address,omitempty"`
+	Failure       *string  `json:"failure"`
+	NumBytes      int64    `json:"num_bytes,omitempty"`
+	Operation     string   `json:"operation"`
+	Proto         string   `json:"proto,omitempty"`
+	T             float64  `json:"t"`
+	TransactionID int64    `json:"transaction_id"`
+	Tags          []string `json:"tags,omitempty"`
 }
