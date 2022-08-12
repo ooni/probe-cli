@@ -68,7 +68,7 @@ func (t *SystemDNSTask) run(parentCtx context.Context, index int64) {
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(t.Logger, "SystemDNS#%d", index) // TODO: edit
+	ol := measurexlite.NewOperationLogger(t.Logger, "SystemDNS#%d: %s", index, webTelegramOrg)
 
 	// runs the lookup
 	reso := trace.NewStdlibResolver(t.Logger)
