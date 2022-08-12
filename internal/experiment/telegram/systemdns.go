@@ -65,7 +65,7 @@ func (t *SystemDNS) Run(parentCtx context.Context, index int64) {
 	// runs the lookup
 	reso := trace.NewStdlibResolver(t.Logger)
 	addrs, err := reso.LookupHost(lookupCtx, webTelegramOrg)
-	_ = trace.DNSLookupsFromRoundTrip() // TODO: save
+	t.TestKeys.AppendQueries(trace.DNSLookupsFromRoundTrip()...)
 	if err != nil {
 		ol.Stop(err)
 		return

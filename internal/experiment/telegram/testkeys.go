@@ -18,6 +18,9 @@ type TestKeys struct {
 	// NetworkEvents contains network events.
 	NetworkEvents []*model.ArchivalNetworkEvent `json:"network_events"`
 
+	// Queries contains DNS lookup results.
+	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
+
 	// Requests contains HTTP results.
 	Requests []*model.ArchivalHTTPRequestResult `json:"requests"`
 
@@ -42,6 +45,13 @@ type TestKeys struct {
 func (tk *TestKeys) AppendNetworkEvents(v ...*model.ArchivalNetworkEvent) {
 	tk.mu.Lock()
 	tk.NetworkEvents = append(tk.NetworkEvents, v...)
+	tk.mu.Unlock()
+}
+
+// AppendQueries appends to Queries.
+func (tk *TestKeys) AppendQueries(v ...*model.ArchivalDNSLookupResult) {
+	tk.mu.Lock()
+	tk.Queries = append(tk.Queries, v...)
 	tk.mu.Unlock()
 }
 
