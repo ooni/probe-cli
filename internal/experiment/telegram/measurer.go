@@ -58,7 +58,7 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	wg := &sync.WaitGroup{}
 
 	// start background tasks
-	systemDNSTask := &SystemDNSTask{
+	systemDNSTask := &SystemDNS{
 		IDGenerator: idGenerator,
 		Logger:      sess.Logger(),
 		TestKeys:    tk,
