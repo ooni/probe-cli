@@ -45,6 +45,9 @@ type InputProcessor struct {
 	// Annotations contains the measurement annotations
 	Annotations map[string]string
 
+	// Callbacks contains MANDATORY experiment callbacks.
+	Callbacks model.ExperimentCallbacks
+
 	// Experiment is the code that will run the experiment.
 	Experiment InputProcessorExperimentWrapper
 
@@ -62,52 +65,11 @@ type InputProcessor struct {
 
 	// Saver is the code that will save measurement results
 	// on persistent storage (e.g. the file system).
-	Saver InputProcessorSaverWrapper
+	Saver Saver
 
 	// Submitter is the code that will submit measurements
 	// to the OONI collector.
-	Submitter InputProcessorSubmitterWrapper
-}
-
-// InputProcessorSaverWrapper is InputProcessor's
-// wrapper for a Saver implementation.
-type InputProcessorSaverWrapper interface {
-	SaveMeasurement(idx int, m *model.Measurement) error
-}
-
-type inputProcessorSaverWrapper struct {
-	saver Saver
-}
-
-// NewInputProcessorSaverWrapper wraps a Saver for InputProcessor.
-func NewInputProcessorSaverWrapper(saver Saver) InputProcessorSaverWrapper {
-	return inputProcessorSaverWrapper{saver: saver}
-}
-
-func (ipsw inputProcessorSaverWrapper) SaveMeasurement(
-	idx int, m *model.Measurement) error {
-	return ipsw.saver.SaveMeasurement(m)
-}
-
-// InputProcessorSubmitterWrapper is InputProcessor's
-// wrapper for a Submitter implementation.
-type InputProcessorSubmitterWrapper interface {
-	Submit(ctx context.Context, idx int, m *model.Measurement) error
-}
-
-type inputProcessorSubmitterWrapper struct {
-	submitter Submitter
-}
-
-// NewInputProcessorSubmitterWrapper wraps a Submitter
-// for the InputProcessor.
-func NewInputProcessorSubmitterWrapper(submitter Submitter) InputProcessorSubmitterWrapper {
-	return inputProcessorSubmitterWrapper{submitter: submitter}
-}
-
-func (ipsw inputProcessorSubmitterWrapper) Submit(
-	ctx context.Context, idx int, m *model.Measurement) error {
-	return ipsw.submitter.Submit(ctx, m)
+	Submitter Submitter
 }
 
 // Run processes all the input subject to the duration of the
@@ -157,13 +119,13 @@ func (ip *InputProcessor) run(ctx context.Context) (int, error) {
 			meas.Options = ip.Options
 			err = ip.Submitter.Submit(ctx, idx, meas)
 			if err != nil {
-				return 0, err
+				continue
 			}
 			// Note: must be after submission because submission modifies
 			// the measurement to include the report ID.
 			err = ip.Saver.SaveMeasurement(idx, meas)
 			if err != nil {
-				return 0, err
+				continue
 			}
 		}
 	}

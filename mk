@@ -91,7 +91,7 @@ OONI_ANDROID_HOME = $(HOME)/.ooniprobe-build/sdk/android
 
 #help:
 #help: * XCODE_VERSION         : the version of Xcode we expect.
-XCODE_VERSION = 13.3.1
+XCODE_VERSION = 13.4.1
 
 #quickhelp:
 #quickhelp: The `./mk show-config` command shows the current value of the
@@ -338,6 +338,158 @@ GOMOBILE = $(shell go env GOPATH)/bin/gomobile
 # important: OONIMKALL_V and OONIMKALL_R MUST be expanded just once so we use `:=`
 OONIMKALL_V := $(shell date -u +%Y.%m.%d-%H%M%S)
 OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
+
+#help:
+#help: * `./mk ./LIBRARY/include/ooni/engine.h`: copies engine.h inside ./LIBRARY
+.PHONY: ./LIBRARY/include/ooni/engine.h
+./LIBRARY/include/ooni/engine.h:
+	cp ./pkg/ooniengine/engine.h ./LIBRARY/include/ooni
+
+#help:
+#help: * `./mk ./LIBRARY/darwin/arm64/libooniengine.dylib`: builds the OONI engine library for darwin/arm64
+.PHONY: ./LIBRARY/darwin/arm64/libooniengine.dylib
+./LIBRARY/darwin/arm64/libooniengine.dylib: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/darwin/amd64/libooniengine.dylib`: builds the OONI engine library for darwin/amd64
+.PHONY: ./LIBRARY/darwin/amd64/libooniengine.dylib
+./LIBRARY/darwin/amd64/libooniengine.dylib: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/windows/amd64/libooniengine.dll`: builds the OONI engine library for windows/amd64
+.PHONY: ./LIBRARY/windows/amd64/libooniengine.dll
+./LIBRARY/windows/amd64/libooniengine.dll: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc go build -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/windows/386/libooniengine.dll`: builds the OONI engine library for windows/386
+.PHONY: ./LIBRARY/windows/386/libooniengine.dll
+./LIBRARY/windows/386/libooniengine.dll: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc go build -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/android/arm64/libooniengine.so`: builds the OONI engine library for android/arm64
+.PHONY: ./LIBRARY/android/arm64/libooniengine.so
+./LIBRARY/android/arm64/libooniengine.so: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	PATH="$$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin:$$PATH" GOOS=android GOARCH=arm64 CGO_ENABLED=1 CC=aarch64-linux-android21-clang go build -x -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/android/arm/libooniengine.so`: builds the OONI engine library for android/arm
+.PHONY: ./LIBRARY/android/arm/libooniengine.so
+./LIBRARY/android/arm/libooniengine.so: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	PATH="$$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin:$$PATH" GOOS=android GOARCH=arm CGO_ENABLED=1 CC=armv7a-linux-androideabi21-clang go build -x -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/android/386/libooniengine.so`: builds the OONI engine library for android/386
+.PHONY: ./LIBRARY/android/386/libooniengine.so
+./LIBRARY/android/386/libooniengine.so: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	PATH="$$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin:$$PATH" GOOS=android GOARCH=386 CGO_ENABLED=1 CC=i686-linux-android21-clang go build -x -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/android/amd64/libooniengine.so`: builds the OONI engine library for android/amd64
+.PHONY: ./LIBRARY/android/amd64/libooniengine.so
+./LIBRARY/android/amd64/libooniengine.so: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	PATH="$$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin:$$PATH" GOOS=android GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-linux-android21-clang go build -x -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/ios/arm64/libooniengine.a`: builds the OONI engine library for ios/arm64
+.PHONY: ./LIBRARY/ios/arm64/libooniengine.a
+./LIBRARY/ios/arm64/libooniengine.a: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=ios GOARCH=arm64 CGO_ENABLED=1 DARWIN_SDK=iphoneos \
+	CC=$(shell xcrun --sdk iphoneos --find clang) \
+	CXX=$(shell xcrun --sdk iphoneos --find clang++) \
+	CGO_CFLAGS="-isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -fembed-bitcode -arch arm64 -miphoneos-version-min=13.0" \
+	CGO_CXXFLAGS="-isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -fembed-bitcode -arch arm64 -miphoneos-version-min=13.0" \
+	CGO_LDFLAGS="-isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -fembed-bitcode -arch arm64 -miphoneos-version-min=13.0" \
+	go build -buildmode=c-archive -tags="$(OONI_PSIPHON_TAGS),ios" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/ios/arm64/libooniengine_simulator.a`: builds the OONI engine library for ios/arm64 simulator
+.PHONY: ./LIBRARY/ios/arm64/libooniengine_simulator.a
+./LIBRARY/ios/arm64/libooniengine_simulator.a: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=ios GOARCH=arm64 CGO_ENABLED=1 DARWIN_SDK=iphoneos \
+	CC=$(shell xcrun --sdk iphonesimulator --find clang) \
+	CXX=$(shell xcrun --sdk iphonesimulator --find clang++) \
+	CGO_CFLAGS="-isysroot $(shell xcrun --sdk iphonesimulator --show-sdk-path) -fembed-bitcode -arch arm64 -mios-simulator-version-min=13.0" \
+	CGO_CXXFLAGS="-isysroot $(shell xcrun --sdk iphonesimulator --show-sdk-path) -fembed-bitcode -arch arm64 -mios-simulator-version-min=13.0" \
+	CGO_LDFLAGS="-isysroot $(shell xcrun --sdk iphonesimulator --show-sdk-path) -fembed-bitcode -arch arm64 -mios-simulator-version-min=13.0" \
+	go build -buildmode=c-archive -tags="$(OONI_PSIPHON_TAGS),ios" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/ios/amd64/libooniengine_simulator.a`: builds the OONI engine library for ios/amd64 simulator
+.PHONY: ./LIBRARY/ios/amd64/libooniengine_simulator.a
+./LIBRARY/ios/amd64/libooniengine_simulator.a: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=ios GOARCH=amd64 CGO_ENABLED=1 DARWIN_SDK=iphoneos \
+	CC=$(shell xcrun --sdk iphonesimulator --find clang) \
+	CXX=$(shell xcrun --sdk iphonesimulator --find clang++) \
+	CGO_CFLAGS="-isysroot $(shell xcrun --sdk iphonesimulator --show-sdk-path) -fembed-bitcode -arch x86_64 -mios-simulator-version-min=13.0" \
+	CGO_CXXFLAGS="-isysroot $(shell xcrun --sdk iphonesimulator --show-sdk-path) -fembed-bitcode -arch x86_64 -mios-simulator-version-min=13.0" \
+	CGO_LDFLAGS="-isysroot $(shell xcrun --sdk iphonesimulator --show-sdk-path) -fembed-bitcode -arch x86_64 -mios-simulator-version-min=13.0" \
+	go build -buildmode=c-archive -tags="$(OONI_PSIPHON_TAGS),ios" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+
+XCFRAMEWORK = ./LIBRARY/ios/OONIEngine.xcframework
+IPHONEOS_FRAMEWORK = ./LIBRARY/ios/iphoneos/OONIEngine.framework
+IPHONESIMULATOR_FRAMEWORK = ./LIBRARY/ios/iphonesimulator/OONIEngine.framework
+
+#help:
+#help: * `./mk ./LIBRARY/ios/OONIEngine.xcframework`: builds the OONI engine iOS framework.
+.PHONY: ./LIBRARY/ios/OONIEngine.xcframework
+./LIBRARY/ios/OONIEngine.xcframework: ./LIBRARY/ios/arm64/libooniengine.a ./LIBRARY/ios/arm64/libooniengine_simulator.a ./LIBRARY/ios/amd64/libooniengine_simulator.a
+	rm -rf $(IPHONEOS_FRAMEWORK)
+	mkdir -p $(IPHONEOS_FRAMEWORK)/Versions/A/Headers
+	ln -s A $(IPHONEOS_FRAMEWORK)/Versions/Current
+	ln -s Versions/Current/Headers $(IPHONEOS_FRAMEWORK)/Headers
+	ln -s Versions/Current/OONIEngine $(IPHONEOS_FRAMEWORK)/OONIEngine
+	xcrun lipo ./LIBRARY/ios/arm64/libooniengine.a -create -o $(IPHONEOS_FRAMEWORK)/Versions/A/OONIEngine
+	cp ./LIBRARY/include/ooni/engine.h $(IPHONEOS_FRAMEWORK)/Versions/A/Headers/engine.h
+	mkdir -p $(IPHONEOS_FRAMEWORK)/Versions/A/Resources
+	ln -s Versions/Current/Resources $(IPHONEOS_FRAMEWORK)/Resources
+	mkdir -p $(IPHONEOS_FRAMEWORK)/Resources
+	mkdir -p $(IPHONEOS_FRAMEWORK)/Versions/A/Modules
+	ln -s Versions/Current/Modules $(IPHONEOS_FRAMEWORK)/Modules
+
+	rm -rf $(IPHONESIMULATOR_FRAMEWORK)
+	mkdir -p $(IPHONESIMULATOR_FRAMEWORK)/Versions/A/Headers
+	ln -s A $(IPHONESIMULATOR_FRAMEWORK)/Versions/Current
+	ln -s Versions/Current/Headers $(IPHONESIMULATOR_FRAMEWORK)/Headers
+	ln -s Versions/Current/OONIEngine $(IPHONESIMULATOR_FRAMEWORK)/OONIEngine
+	xcrun lipo ./LIBRARY/ios/arm64/libooniengine_simulator.a -create -o $(IPHONESIMULATOR_FRAMEWORK)/Versions/A/OONIEngine
+	cp ./LIBRARY/include/ooni/engine.h $(IPHONESIMULATOR_FRAMEWORK)/Versions/A/Headers/engine.h
+	mkdir -p $(IPHONESIMULATOR_FRAMEWORK)/Versions/A/Resources
+	ln -s Versions/Current/Resources $(IPHONESIMULATOR_FRAMEWORK)/Resources
+	mkdir -p $(IPHONESIMULATOR_FRAMEWORK)/Resources
+	mkdir -p $(IPHONESIMULATOR_FRAMEWORK)/Versions/A/Modules
+	ln -s Versions/Current/Modules $(IPHONESIMULATOR_FRAMEWORK)/Modules
+	xcrun lipo ./LIBRARY/ios/amd64/libooniengine_simulator.a \
+		$(IPHONESIMULATOR_FRAMEWORK)/Versions/A/OONIEngine \
+		-create -output $(IPHONESIMULATOR_FRAMEWORK)/Versions/A/OONIEngine
+
+	rm -rf $(XCFRAMEWORK)
+	xcodebuild -create-xcframework -framework $(IPHONEOS_FRAMEWORK) \
+		-framework $(IPHONESIMULATOR_FRAMEWORK) -output $(XCFRAMEWORK)
+
+#help:
+#help: * `./mk __engineabi`: regenerates the engine ABI for both Go and Dart
+.PHONY: __engineabi
+__engineabi: search/for/go
+	protoc -I ABI --go_out . ./ABI/abi.proto
+	protoc -IABI --dart_out dart/ooniengine/lib/ ABI/abi.proto
+	(cd dart/ooniengine && dart run ffigen)
+
+#help:
+#help: * `./mk ./LIBRARY/ooniengine-dart.tar.gz`: generates an archive containing dart sources
+.PHONY: ./LIBRARY/ooniengine-dart.tar.gz
+./LIBRARY/ooniengine-dart.tar.gz:
+	(cd ./dart/ooniengine/lib && tar -cvzf ../../../$@ *dart)
+
+#help:
+#help: * `./mk ooniengine-tool.exe`: builds the ooniengine-tool (implemented in Dart)
+.PHONY: ooniengine-tool.exe
+ooniengine-tool.exe:
+	dart compile exe -o ooniengine-tool.exe ./dart/ooniengine/bin/main.dart
 
 #help:
 #help: The following commands check for the availability of dependencies:

@@ -41,6 +41,7 @@ func (fipe *FakeInputProcessorExperiment) MeasureAsync(
 func TestInputProcessorMeasurementFailed(t *testing.T) {
 	expected := errors.New("mocked error")
 	ip := &InputProcessor{
+		Callbacks: model.NewPrinterCallbacks(model.DiscardLogger),
 		Experiment: NewInputProcessorExperimentWrapper(
 			&FakeInputProcessorExperiment{Err: expected},
 		),
@@ -72,6 +73,7 @@ func TestInputProcessorSubmissionFailed(t *testing.T) {
 		Annotations: map[string]string{
 			"foo": "bar",
 		},
+		Callbacks:  model.NewPrinterCallbacks(model.DiscardLogger),
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
 		Inputs: []model.OOAPIURLInfo{{
 			URL: "https://www.kernel.org/",
@@ -119,6 +121,7 @@ func (fips *FakeInputProcessorSaver) SaveMeasurement(m *model.Measurement) error
 func TestInputProcessorSaveOnDiskFailed(t *testing.T) {
 	expected := errors.New("mocked error")
 	ip := &InputProcessor{
+		Callbacks: model.NewPrinterCallbacks(model.DiscardLogger),
 		Experiment: NewInputProcessorExperimentWrapper(
 			&FakeInputProcessorExperiment{},
 		),
@@ -144,6 +147,7 @@ func TestInputProcessorGood(t *testing.T) {
 	saver := &FakeInputProcessorSaver{Err: nil}
 	submitter := &FakeInputProcessorSubmitter{Err: nil}
 	ip := &InputProcessor{
+		Callbacks:  model.NewPrinterCallbacks(model.DiscardLogger),
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
 		Inputs: []model.OOAPIURLInfo{{
 			URL: "https://www.kernel.org/",
@@ -186,6 +190,7 @@ func TestInputProcessorMaxRuntime(t *testing.T) {
 	saver := &FakeInputProcessorSaver{Err: nil}
 	submitter := &FakeInputProcessorSubmitter{Err: nil}
 	ip := &InputProcessor{
+		Callbacks:  model.NewPrinterCallbacks(model.DiscardLogger),
 		Experiment: NewInputProcessorExperimentWrapper(fipe),
 		Inputs: []model.OOAPIURLInfo{{
 			URL: "https://www.kernel.org/",

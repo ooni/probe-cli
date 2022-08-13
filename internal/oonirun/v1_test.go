@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 // TODO(bassosimone): it would be cool to write unit tests. However, to do that
@@ -17,6 +18,7 @@ func TestOONIRunV1Link(t *testing.T) {
 		Annotations: map[string]string{
 			"platform": "linux",
 		},
+		Callbacks:   model.NewPrinterCallbacks(model.DiscardLogger),
 		KVStore:     &kvstore.Memory{},
 		MaxRuntime:  0,
 		NoCollector: true,

@@ -98,6 +98,15 @@ func (cb *runnerCallbacks) OnProgress(percentage float64, message string) {
 	})
 }
 
+func (cb *runnerCallbacks) OnData(kibiBytesSent, kibiBytesReceived float64) {
+	// nothing
+}
+
+// OnMeasurementSubmission implements ExperimentCallbacks
+func (cb *runnerCallbacks) OnMeasurementSubmission(idx int, m *model.Measurement, err error) {
+	// nothing
+}
+
 // Run runs the runner until completion. The context argument controls
 // when to stop when processing multiple inputs, as well as when to stop
 // experiments explicitly marked as interruptible.

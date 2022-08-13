@@ -9,12 +9,15 @@
 .DS_Store
 /jafar
 /*.jsonl
+/libooniengine.*
+/libooniengine.h
 /miniooni
 /miniooni.exe
 /oohelper
 /oohelperd
 /oohelperd.exe
 /oohelper.exe
+/ooniengine-tool.exe
 /ooniprobe
 /ooniprobe_checksums.txt
 /ooniprobe_checksums.txt.asc

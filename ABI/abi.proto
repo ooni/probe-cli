@@ -1,0 +1,136 @@
+// OONI Engine binary ABI.
+
+syntax = "proto3";
+
+package abi;
+
+option go_package = "pkg/ooniengine/abi";
+
+// Enumerates all possible log levels.
+enum LogLevel {
+	// The DEBUG log level.
+	DEBUG = 0;
+
+	// The INFO log level.
+	INFO = 1;
+
+	// The WARNING log level.
+	WARNING = 2;
+}
+
+// A log message emitted by the engine.
+message LogEvent {
+	LogLevel level = 1;
+	string message = 2;
+}
+
+// Contains settings for creating a session.
+message SessionConfig {
+	LogLevel log_level = 1;
+	string probe_services_url = 2;
+	string proxy_url = 3;
+	string software_name = 4;
+	string software_version = 5;
+	string state_dir = 6;
+	string temp_dir = 7;
+	repeated string tor_args = 8;
+	string tor_binary = 9;
+	string tunnel_dir = 10;
+}
+
+// Contains config for starting the GeoIP task.
+message GeoIPConfig {
+	SessionConfig session = 1;
+}
+
+// Event emitted when the GeoIP lookup has completed.
+message GeoIPEvent {
+	string failure = 1;
+	string probe_ip = 2;
+	string probe_asn = 3;
+	string probe_cc = 4;
+	string probe_network_name = 5;
+	string resolver_ip = 6;
+	string resolver_asn = 7;
+	string resolver_network_name = 8;
+}
+
+// Settings for the ExperimentMetaInfo call.
+message ExperimentMetaInfoRequest {}
+
+// Information about an experiment.
+message ExperimentMetaInfoEntry {
+	string name = 1;
+	bool uses_input = 2;
+}
+
+// Result of the ExperimentMetaInfo call.
+message ExperimentMetaInfoResponse {
+	repeated ExperimentMetaInfoEntry entry = 1;
+}
+
+// Configuration for running a nettest.
+message NettestConfig {
+	map<string, string> annotations = 1;
+	string extra_options = 2;
+	repeated string inputs = 3;
+	repeated string input_file_paths = 4;
+	int64 max_runtime = 5;
+	string name = 6;
+	bool no_collector = 7;
+	bool no_json = 8;
+	bool random = 9;
+	string report_file = 10;
+	SessionConfig session = 11;
+}
+
+// ProgressEvent represents an experiment making progress.
+message ProgressEvent {
+	double percentage = 1;
+	string message = 2;
+}
+
+// DataUsageEvent represents the data consumed by an experiment.
+message DataUsageEvent {
+	double kibi_bytes_sent = 1;
+	double kibi_bytes_received = 2;
+}
+
+// SubmitEvent is the result of submitting a measurement.
+message SubmitEvent {
+	bool not_submitted = 1;
+	string failure = 2;
+	int64 index = 3;
+	string input = 4;
+	string report_id = 5;
+	string measurement = 6;
+}
+
+// Description of nettest according to OONI Run v2.
+message OONIRunV2DescriptorNettest {
+	map<string, string> annotations = 1;
+	repeated string inputs = 2;
+	string options = 3;
+	string test_name = 4;
+}
+
+// OONI Run v2 descriptor.
+message OONIRunV2Descriptor {
+	string name = 1;
+	string description = 2;
+	string author = 3;
+	repeated OONIRunV2DescriptorNettest nettests = 4;
+}
+
+message OONIRunV2MeasureDescriptorConfig {
+	int64 max_runtime = 1;
+	bool no_collector = 2;
+	bool no_json = 3;
+	bool random = 4;
+	string report_file = 5;
+	SessionConfig session = 6;
+
+	// Implementation note: it seems descriptor is a ~reserved
+	// field name in protobuf v3, so let's not use it
+	OONIRunV2Descriptor v2_descriptor = 7;
+}
