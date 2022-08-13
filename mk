@@ -394,6 +394,24 @@ OONIMKALL_R := $(shell git describe --tags || echo '0.0.0-dev')
 	PATH="$$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin:$$PATH" GOOS=android GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-linux-android21-clang go build -x -buildmode=c-shared -tags="$(OONI_PSIPHON_TAGS)" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
 
 #help:
+#help: * `./mk ./LIBRARY/ios/arm64/libooniengine.a`: builds the OONI engine library for ios/arm64
+.PHONY: ./LIBRARY/ios/arm64/libooniengine.a
+./LIBRARY/ios/arm64/libooniengine.a: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=ios GOARCH=arm64 CGO_ENABLED=1 CC=$(shell xcrun --sdk iphoneos --find clang) \
+	CGO_CFLAGS="-isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -fembed-bitcode -arch arm64" \
+	CGO_LDFLAGS="-isysroot $(shell xcrun --sdk iphoneos --show-sdk-path) -fembed-bitcode -arch arm64" \
+	go build -buildmode=c-archive -tags="$(OONI_PSIPHON_TAGS),ios" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
+#help: * `./mk ./LIBRARY/ios/amd64/libooniengine.a`: builds the OONI engine library for ios/amd64
+.PHONY: ./LIBRARY/ios/amd64/libooniengine.a
+./LIBRARY/ios/amd64/libooniengine.a: search/for/go maybe/copypsiphon ./LIBRARY/include/ooni/engine.h
+	GOOS=ios GOARCH=amd64 CGO_ENABLED=1 CC=$(shell xcrun --sdk iphonesimulator --find clang) \
+	CGO_CFLAGS="-isysroot $(shell xcrun --sdk iphonesimulator --show-sdk-path) -fembed-bitcode -arch x86_64" \
+	CGO_LDFLAGS="-isysroot $(shell xcrun --sdk iphonesimulator --show-sdk-path) -fembed-bitcode -arch x86_64" \
+	go build -buildmode=c-archive -tags="$(OONI_PSIPHON_TAGS),ios" -ldflags="-s -w" $(GOLANG_EXTRA_FLAGS) -o $@ ./pkg/ooniengine
+
+#help:
 #help: * `./mk __engineabi`: regenerates the engine ABI for both Go and Dart
 .PHONY: __engineabi
 __engineabi: search/for/go
