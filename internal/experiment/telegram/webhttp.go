@@ -161,6 +161,7 @@ func (t *WebHTTP) newHTTPRequest(ctx context.Context) (*http.Request, error) {
 	httpReq.Header.Set("Accept", model.HTTPHeaderAccept)
 	httpReq.Header.Set("Accept-Language", model.HTTPHeaderAcceptLanguage)
 	httpReq.Header.Set("User-Agent", model.HTTPHeaderUserAgent)
+	httpReq.Host = t.HostHeader
 	return httpReq, nil
 }
 
