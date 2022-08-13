@@ -86,6 +86,12 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	// wait for background tasks to join
 	wg.Wait()
 
+	// If the context passed to us has been cancelled, we cannot
+	// trust this experiment's results to be okay.
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	// perform any deferred computation on the test keys
 	tk.finalize()
 
