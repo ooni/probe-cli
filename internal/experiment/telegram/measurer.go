@@ -86,6 +86,9 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	// wait for background tasks to join
 	wg.Wait()
 
+	// perform any deferred computation on the test keys
+	tk.finalize()
+
 	// return whether there was a fundamental failure, which would prevent
 	// the measurement from being submitted to the OONI collector.
 	return tk.fundamentalFailure

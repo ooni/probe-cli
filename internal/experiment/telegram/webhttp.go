@@ -83,6 +83,7 @@ func (t *WebHTTP) Run(parentCtx context.Context, index int64) {
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
 	t.TestKeys.AppendTCPConnectResults(<-trace.TCPConnect)
 	if err != nil {
+		t.TestKeys.AppendWebFailure(err)
 		ol.Stop(err)
 		return
 	}
@@ -105,6 +106,7 @@ func (t *WebHTTP) Run(parentCtx context.Context, index int64) {
 	defer httpCancel()
 	httpReq, err := t.newHTTPRequest(httpCtx)
 	if err != nil {
+		t.TestKeys.AppendWebFailure(err)
 		t.TestKeys.SetFundamentalFailure(err)
 		ol.Stop(err)
 		return
@@ -113,12 +115,14 @@ func (t *WebHTTP) Run(parentCtx context.Context, index int64) {
 	// perform HTTP transaction
 	httpResp, httpRespBody, err := t.httpTransaction(httpCtx, httpTransport, httpReq, trace)
 	if err != nil {
+		t.TestKeys.AppendWebFailure(err)
 		ol.Stop(err)
 		return
 	}
 
 	// parse HTTP results
 	if err := t.parseResults(httpResp, httpRespBody); err != nil {
+		t.TestKeys.AppendWebFailure(err)
 		ol.Stop(err)
 		return
 	}

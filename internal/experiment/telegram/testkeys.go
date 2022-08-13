@@ -8,7 +8,9 @@ package telegram
 //
 
 import (
+	"errors"
 	"sync"
+	"syscall"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -41,6 +43,16 @@ type TestKeys struct {
 	// least an HTTP request returns back a response, we
 	// consider Telegram [DCs] to not be blocked."
 	TelegramHTTPBlocking bool `json:"telegram_http_blocking"`
+
+	// TelegramWebStatus is either "blocked" or "ok" and indicates
+	// whether we're able to access the web.telegram.org site.
+	TelegramWebStatus string `json:"telegram_web_status"`
+
+	// TelegramWebFailure is the failure when accessing web.telegram.org
+	TelegramWebFailure *string `json:"telegram_web_failure"`
+
+	// webFailures contains the failures occurred when measuring web.telegram.org
+	webFailures []error
 
 	// fundamentalFailure indicates that some fundamental error occurred
 	// in a background task. A fundamental error is something like a programmer
@@ -102,6 +114,13 @@ func (tk *TestKeys) SetTelegramHTTPBlocking(value bool) {
 	tk.mu.Unlock()
 }
 
+// AppendWebFailure appends to the webFailures list.
+func (tk *TestKeys) AppendWebFailure(err error) {
+	tk.mu.Lock()
+	tk.webFailures = append(tk.webFailures, err)
+	tk.mu.Unlock()
+}
+
 // SetFundamentalFailure sets the value of fundamentalFailure.
 func (tk *TestKeys) SetFundamentalFailure(err error) {
 	tk.mu.Lock()
@@ -119,6 +138,9 @@ func NewTestKeys() *TestKeys {
 		TLSHandshakes:        []*model.ArchivalTLSOrQUICHandshakeResult{},
 		TelegramTCPBlocking:  false,
 		TelegramHTTPBlocking: false,
+		TelegramWebStatus:    "",
+		TelegramWebFailure:   nil,
+		webFailures:          []error{},
 		fundamentalFailure:   nil,
 		mu:                   &sync.Mutex{},
 	}
@@ -131,5 +153,34 @@ func NewTestKeys() *TestKeys {
 	// consider Telegram [DCs] to not be blocked."
 	tk.TelegramHTTPBlocking = true
 
+	// We start saying web.telegram.org is blocked and flip to okay
+	// only when we notice that it's accessible.
+	tk.TelegramWebStatus = "blocked"
+
+	// We start by saying that the experiment did not actually
+	// run until completion, and then flip later if needed.
+	didNotRun := "telegram_did_not_run_error"
+	tk.TelegramWebFailure = &didNotRun
+
 	return tk
+}
+
+// finalize performs any delayed computation on the test keys. This function
+// must be called from the measurer after all the tasks have completed.
+func (tk *TestKeys) finalize() {
+	var filtered []error
+	for _, err := range tk.webFailures {
+		if errors.Is(err, syscall.EHOSTUNREACH) || errors.Is(err, syscall.ENETUNREACH) {
+			continue // skip IPv6 errors when there's no working IPv6 support
+		}
+		filtered = append(filtered, err)
+	}
+	if len(filtered) <= 0 {
+		tk.TelegramWebStatus = "ok"
+		tk.TelegramWebFailure = nil
+		return
+	}
+	tk.TelegramWebStatus = "blocked"
+	first := filtered[0].Error()
+	tk.TelegramWebFailure = &first
 }
