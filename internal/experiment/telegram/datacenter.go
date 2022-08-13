@@ -90,6 +90,10 @@ func (t *Datacenter) Run(parentCtx context.Context, index int64) {
 		tcpConn.Close()
 	}()
 
+	// "If all TCP connections on ports 80 and 443 to Telegram’s access
+	// point IPs fail we consider Telegram to be blocked."
+	t.TestKeys.SetTelegramTCPBlocking(false)
+
 	// create HTTP transport
 	httpTransport := netxlite.NewHTTPTransport(
 		t.Logger,
@@ -114,6 +118,10 @@ func (t *Datacenter) Run(parentCtx context.Context, index int64) {
 		ol.Stop(err)
 		return
 	}
+
+	// "If at least an HTTP request returns back a response, we
+	// consider Telegram [DCs] to not be blocked."
+	t.TestKeys.SetTelegramHTTPBlocking(false)
 
 	// TODO: insert here additional code if needed
 	_ = httpResp

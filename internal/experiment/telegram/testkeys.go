@@ -30,6 +30,18 @@ type TestKeys struct {
 	// TLSHandshakes contains TLS handshakes results.
 	TLSHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"tls_handshakes"`
 
+	// TelegramTCPBlocking indicates whether we believe DCs
+	// to be blocked at the TCP/IP layer. From the spec: "If all
+	// TCP connections on ports 80 and 443 to Telegram’s access
+	// point IPs fail we consider Telegram to be blocked."
+	TelegramTCPBlocking bool `json:"telegram_tcp_blocking"`
+
+	// TelegramHTTPBlocking indicates whether we believe DCs
+	// to be blocked at the TCP/IP layer. From the spec: "If at
+	// least an HTTP request returns back a response, we
+	// consider Telegram [DCs] to not be blocked."
+	TelegramHTTPBlocking bool `json:"telegram_http_blocking"`
+
 	// fundamentalFailure indicates that some fundamental error occurred
 	// in a background task. A fundamental error is something like a programmer
 	// such as a failure to parse a URL that was hardcoded in the codebase. When
@@ -76,26 +88,48 @@ func (tk *TestKeys) AppendTLSHandshakes(v ...*model.ArchivalTLSOrQUICHandshakeRe
 	tk.mu.Unlock()
 }
 
-// SetFundamentalFailure implements TestKeys.
+// SetTelegramTCPBlocking sets the value of TelegramTCPBlocking.
+func (tk *TestKeys) SetTelegramTCPBlocking(value bool) {
+	tk.mu.Lock()
+	tk.TelegramTCPBlocking = value
+	tk.mu.Unlock()
+}
+
+// SetTelegramHTTPBlocking sets the value of TelegramHTTPBlocking.
+func (tk *TestKeys) SetTelegramHTTPBlocking(value bool) {
+	tk.mu.Lock()
+	tk.TelegramHTTPBlocking = value
+	tk.mu.Unlock()
+}
+
+// SetFundamentalFailure sets the value of fundamentalFailure.
 func (tk *TestKeys) SetFundamentalFailure(err error) {
 	tk.mu.Lock()
 	tk.fundamentalFailure = err
 	tk.mu.Unlock()
 }
 
-// FundamentalFailure implements TestKeys.
-func (tk *TestKeys) FundamentalFailure() error {
-	tk.mu.Lock()
-	err := tk.fundamentalFailure
-	tk.mu.Unlock()
-	return err
-}
-
 // NewTestKeys creates a new instance of TestKeys.
 func NewTestKeys() *TestKeys {
-	// TODO: here you should initialize all the fields
-	return &TestKeys{
-		fundamentalFailure: nil,
-		mu:                 &sync.Mutex{},
+	tk := &TestKeys{
+		NetworkEvents:        []*model.ArchivalNetworkEvent{},
+		Queries:              []*model.ArchivalDNSLookupResult{},
+		Requests:             []*model.ArchivalHTTPRequestResult{},
+		TCPConnect:           []*model.ArchivalTCPConnectResult{},
+		TLSHandshakes:        []*model.ArchivalTLSOrQUICHandshakeResult{},
+		TelegramTCPBlocking:  false,
+		TelegramHTTPBlocking: false,
+		fundamentalFailure:   nil,
+		mu:                   &sync.Mutex{},
 	}
+
+	// "If all TCP connections on ports 80 and 443 to Telegram’s access
+	// point IPs fail we consider Telegram to be blocked."
+	tk.TelegramTCPBlocking = true
+
+	// "If at least an HTTP request returns back a response, we
+	// consider Telegram [DCs] to not be blocked."
+	tk.TelegramHTTPBlocking = true
+
+	return tk
 }

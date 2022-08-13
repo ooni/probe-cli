@@ -88,7 +88,7 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 
 	// return whether there was a fundamental failure, which would prevent
 	// the measurement from being submitted to the OONI collector.
-	return tk.FundamentalFailure()
+	return tk.fundamentalFailure
 }
 
 // dataCenterAddrs contains the data center addrs.
