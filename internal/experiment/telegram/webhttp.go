@@ -9,7 +9,9 @@ package telegram
 
 import (
 	"context"
+	"errors"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -115,9 +117,11 @@ func (t *WebHTTP) Run(parentCtx context.Context, index int64) {
 		return
 	}
 
-	// TODO: insert here additional code if needed
-	_ = httpResp
-	_ = httpRespBody
+	// parse HTTP results
+	if err := t.parseResults(httpResp, httpRespBody); err != nil {
+		ol.Stop(err)
+		return
+	}
 
 	// completed successfully
 	ol.Stop(nil)
@@ -176,4 +180,20 @@ func (t *WebHTTP) httpTransaction(ctx context.Context, txp model.HTTPTransport,
 	ev := trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err)
 	t.TestKeys.AppendRequests(ev)
 	return resp, body, err
+}
+
+// parseResults parses the results of this sub-measurement.
+func (t *WebHTTP) parseResults(resp *http.Response, respBody []byte) error {
+	if resp.StatusCode != 301 && resp.StatusCode != 308 {
+		log.Printf("status code: %+v", resp.StatusCode)
+		return errors.New("http_request_failed")
+	}
+	location, err := resp.Location()
+	if err != nil {
+		return errors.New("telegram_missing_redirect_error")
+	}
+	if location.Scheme != "https" || location.Host != webTelegramOrg {
+		return errors.New("telegram_invalid_redirect_error")
+	}
+	return nil
 }

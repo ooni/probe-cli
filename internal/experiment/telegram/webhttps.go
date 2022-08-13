@@ -8,9 +8,12 @@ package telegram
 //
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -147,9 +150,11 @@ func (t *WebHTTPS) Run(parentCtx context.Context, index int64) {
 		return
 	}
 
-	// TODO: insert here additional code if needed
-	_ = httpResp
-	_ = httpRespBody
+	// parse HTTP results
+	if err := t.parseResults(httpResp, httpRespBody); err != nil {
+		ol.Stop(err)
+		return
+	}
 
 	// completed successfully
 	ol.Stop(nil)
@@ -225,7 +230,20 @@ func (t *WebHTTPS) httpTransaction(ctx context.Context, txp model.HTTPTransport,
 	defer resp.Body.Close()
 	reader := io.LimitReader(resp.Body, maxbody)
 	body, err := netxlite.ReadAllContext(ctx, reader)
-	ev := trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err) // TODO: save
+	ev := trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err)
 	t.TestKeys.AppendRequests(ev)
 	return resp, body, err
+}
+
+// parseResults parses the results of this sub-measurement.
+func (t *WebHTTPS) parseResults(resp *http.Response, respBody []byte) error {
+	if resp.StatusCode != 200 {
+		log.Printf("status code: %+v", resp.StatusCode)
+		return errors.New("http_request_failed")
+	}
+	title := []byte(`<title>Telegram Web</title>`)
+	if !bytes.Contains(respBody, title) {
+		return errors.New("telegram_missing_title_error")
+	}
+	return nil
 }
