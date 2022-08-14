@@ -218,16 +218,17 @@ func (t *DNSResolvers) startCleartextFlows(ctx context.Context, addresses []stri
 	}
 	for _, addr := range addresses {
 		task := &CleartextFlow{
-			Address:     net.JoinHostPort(addr, port),
-			IDGenerator: t.IDGenerator,
-			Logger:      t.Logger,
-			Sema:        sema,
-			TestKeys:    t.TestKeys,
-			ZeroTime:    t.ZeroTime,
-			WaitGroup:   t.WaitGroup,
-			HostHeader:  t.URL.Host,
-			URLPath:     t.URL.Path,
-			URLRawQuery: t.URL.RawQuery,
+			Address:         net.JoinHostPort(addr, port),
+			FollowRedirects: t.URL.Scheme == "http",
+			IDGenerator:     t.IDGenerator,
+			Logger:          t.Logger,
+			Sema:            sema,
+			TestKeys:        t.TestKeys,
+			ZeroTime:        t.ZeroTime,
+			WaitGroup:       t.WaitGroup,
+			HostHeader:      t.URL.Host,
+			URLPath:         t.URL.Path,
+			URLRawQuery:     t.URL.RawQuery,
 		}
 		task.Start(ctx)
 	}
@@ -253,18 +254,19 @@ func (t *DNSResolvers) startSecureFlows(ctx context.Context, addresses []string)
 	}
 	for _, addr := range addresses {
 		task := &SecureFlow{
-			Address:     net.JoinHostPort(addr, port),
-			IDGenerator: t.IDGenerator,
-			Logger:      t.Logger,
-			Sema:        sema,
-			TestKeys:    t.TestKeys,
-			ZeroTime:    t.ZeroTime,
-			WaitGroup:   t.WaitGroup,
-			ALPN:        []string{"h2", "http/1.1"},
-			SNI:         t.URL.Hostname(),
-			HostHeader:  t.URL.Host,
-			URLPath:     t.URL.Path,
-			URLRawQuery: t.URL.RawQuery,
+			Address:         net.JoinHostPort(addr, port),
+			FollowRedirects: t.URL.Scheme == "https",
+			IDGenerator:     t.IDGenerator,
+			Logger:          t.Logger,
+			Sema:            sema,
+			TestKeys:        t.TestKeys,
+			ZeroTime:        t.ZeroTime,
+			WaitGroup:       t.WaitGroup,
+			ALPN:            []string{"h2", "http/1.1"},
+			SNI:             t.URL.Hostname(),
+			HostHeader:      t.URL.Host,
+			URLPath:         t.URL.Path,
+			URLRawQuery:     t.URL.RawQuery,
 		}
 		task.Start(ctx)
 	}

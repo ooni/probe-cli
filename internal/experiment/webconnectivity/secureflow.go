@@ -31,6 +31,10 @@ type SecureFlow struct {
 	// Address is the MANDATORY address to connect to.
 	Address string
 
+	// FollowRedirects is OPTIONAL and instructs this flow
+	// to follow HTTP redirects (if any).
+	FollowRedirects bool
+
 	// IDGenerator is the MANDATORY atomic int64 to generate task IDs.
 	IDGenerator *atomicx.Int64
 
@@ -159,12 +163,16 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 		return
 	}
 
+	// completed successfully
+	ol.Stop(nil)
+
+	if t.FollowRedirects {
+		// TODO
+	}
+
 	// TODO: insert here additional code if needed
 	_ = httpResp
 	_ = httpRespBody
-
-	// completed successfully
-	ol.Stop(nil)
 }
 
 // alpn returns the user-configured ALPN or a reasonable default
