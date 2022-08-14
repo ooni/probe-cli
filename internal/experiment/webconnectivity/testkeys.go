@@ -87,6 +87,11 @@ func (tk *TestKeys) SetFundamentalFailure(err error) {
 func NewTestKeys() *TestKeys {
 	// TODO: here you should initialize all the fields
 	return &TestKeys{
+		NetworkEvents:      []*model.ArchivalNetworkEvent{},
+		Queries:            []*model.ArchivalDNSLookupResult{},
+		Requests:           []*model.ArchivalHTTPRequestResult{},
+		TCPConnect:         []*model.ArchivalTCPConnectResult{},
+		TLSHandshakes:      []*model.ArchivalTLSOrQUICHandshakeResult{},
 		fundamentalFailure: nil,
 		mu:                 &sync.Mutex{},
 	}
@@ -95,5 +100,6 @@ func NewTestKeys() *TestKeys {
 // finalize performs any delayed computation on the test keys. This function
 // must be called from the measurer after all the tasks have completed.
 func (tk *TestKeys) finalize() {
-	// TODO: implement
+	// TODO(bassosimone): set final webconnectivity flags
+	// TODO(bassosimone): sort requests correctly
 }

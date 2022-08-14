@@ -163,16 +163,14 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 		return
 	}
 
-	// completed successfully
-	ol.Stop(nil)
-
-	if t.FollowRedirects {
-		// TODO
-	}
+	// if enabled, follow possible redirects
+	t.maybeFollowRedirects(parentCtx, httpResp)
 
 	// TODO: insert here additional code if needed
-	_ = httpResp
 	_ = httpRespBody
+
+	// completed successfully
+	ol.Stop(nil)
 }
 
 // alpn returns the user-configured ALPN or a reasonable default
@@ -249,4 +247,28 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, txp model.HTTPTranspor
 	ev := trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err)
 	t.TestKeys.AppendRequests(ev)
 	return resp, body, err
+}
+
+// maybeFollowRedirects follows redirects if configured and needed
+func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Response) {
+	if t.FollowRedirects {
+		switch resp.StatusCode {
+		case 301, 302, 307, 308:
+			location, err := resp.Location()
+			if err != nil {
+				return
+			}
+			redirects := &Redirects{
+				IDGenerator: t.IDGenerator,
+				Location:    location,
+				Logger:      t.Logger,
+				TestKeys:    t.TestKeys,
+				ZeroTime:    t.ZeroTime,
+				WaitGroup:   t.WaitGroup,
+			}
+			redirects.Start(ctx)
+		default:
+			// nothing
+		}
+	}
 }
