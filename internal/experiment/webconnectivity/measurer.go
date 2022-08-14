@@ -72,9 +72,18 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	wg := &sync.WaitGroup{}
 
 	// start background tasks
-	// TODO: write code to start background tasks
-	_ = URL
-	_ = idGenerator
+	resos := &DNSResolvers{
+		Domain:          URL.Host,
+		IDGenerator:     idGenerator,
+		Logger:          sess.Logger(),
+		TestKeys:        tk,
+		URL:             URL,
+		ZeroTime:        measurement.MeasurementStartTimeSaved,
+		WaitGroup:       wg,
+		DNSOverHTTPSURL: "",
+		UDPAddress:      "",
+	}
+	resos.Start(ctx)
 
 	// wait for background tasks to join
 	wg.Wait()

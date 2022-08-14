@@ -7,16 +7,16 @@ package webconnectivity
 // containing the results produced by OONI experiments.
 //
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
 
 // TestKeys contains the results produced by web_connectivity.
 type TestKeys struct {
-	// TODO: add here public fields produced by this experiment.
-	//
-	// For example:
-	//
-	// // Blocked indicates that the resource is censored.
-	// Blocked bool `json:"blocked"`
+	// Queries contains DNS queries.
+	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
 
 	// fundamentalFailure indicates that some fundamental error occurred
 	// in a background task. A fundamental error is something like a programmer
@@ -29,8 +29,12 @@ type TestKeys struct {
 	mu *sync.Mutex
 }
 
-// TODO: implement more thread-safe setters for the real test keys. This allows
-// tasks to write directly into the TestKeys.
+// AppendQueries appends to Queries.
+func (tk *TestKeys) AppendQueries(v ...*model.ArchivalDNSLookupResult) {
+	tk.mu.Lock()
+	tk.Queries = append(tk.Queries, v...)
+	tk.mu.Unlock()
+}
 
 // SetFundamentalFailure sets the value of fundamentalFailure.
 func (tk *TestKeys) SetFundamentalFailure(err error) {
