@@ -36,6 +36,10 @@ type CleartextFlow struct {
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger
 
+	// Sema is the MANDATORY semaphore to allow just a single
+	// connection to perform the HTTP transaction.
+	Sema chan any
+
 	// TestKeys is MANDATORY and contains the TestKeys.
 	TestKeys *TestKeys
 
@@ -89,6 +93,14 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 		t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...)
 		tcpConn.Close()
 	}()
+
+	// Only allow a single flow to _use_ the connection
+	select {
+	case <-t.Sema:
+	default:
+		ol.Stop(nil)
+		return
+	}
 
 	// create HTTP transport
 	httpTransport := netxlite.NewHTTPTransport(

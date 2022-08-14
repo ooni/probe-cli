@@ -107,13 +107,10 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 	}
 
 	// TODO(bassosimone): remove bogons
-	// TODO(bassosimone): what to do if there is an explicit port?!
 
 	// fan out a number of child async tasks to use the IP addrs
-	for _, addr := range sorted {
-		t.startTCPTask(parentCtx, addr)
-		t.startTCPTLSTask(parentCtx, addr)
-	}
+	t.startCleartextFlows(parentCtx, sorted)
+	t.startSecureFlows(parentCtx, sorted)
 }
 
 // lookupHostSystem performs a DNS lookup using the system resolver.
@@ -206,32 +203,69 @@ func (t *DNSResolvers) dnsOverHTTPSURL() string {
 	return "https://mozilla.cloudflare-dns.com/dns-query"
 }
 
-// startTCPTask starts a TCP measurement task for the given IP address.
-func (t *DNSResolvers) startTCPTask(ctx context.Context, address string) {
-	task := &CleartextFlow{
-		Address:     net.JoinHostPort(address, "80"),
-		IDGenerator: t.IDGenerator,
-		Logger:      t.Logger,
-		TestKeys:    t.TestKeys,
-		ZeroTime:    t.ZeroTime,
-		WaitGroup:   t.WaitGroup,
+// startCleartextFlows starts a TCP measurement flow for each IP addr.
+func (t *DNSResolvers) startCleartextFlows(ctx context.Context, addresses []string) {
+	if t.URL.Scheme != "http" {
+		// Do not bother with measuring HTTP when the user
+		// has asked us to measure an HTTPS URL.
+		return
 	}
-	task.Start(ctx)
+	sema := make(chan any, 1)
+	sema <- true // allow a single flow to fetch the HTTP body
+	port := "80"
+	if urlPort := t.URL.Port(); urlPort != "" {
+		port = urlPort
+	}
+	for _, addr := range addresses {
+		task := &CleartextFlow{
+			Address:     net.JoinHostPort(addr, port),
+			IDGenerator: t.IDGenerator,
+			Logger:      t.Logger,
+			Sema:        sema,
+			TestKeys:    t.TestKeys,
+			ZeroTime:    t.ZeroTime,
+			WaitGroup:   t.WaitGroup,
+			HostHeader:  t.URL.Host,
+			URLPath:     t.URL.Path,
+			URLRawQuery: t.URL.RawQuery,
+		}
+		task.Start(ctx)
+	}
 }
 
-// startTCPTLSTask starts a TCP+TLS measurement task for the given IP address.
-func (t *DNSResolvers) startTCPTLSTask(ctx context.Context, address string) {
-	task := &SecureFlow{
-		Address:     net.JoinHostPort(address, "443"),
-		IDGenerator: t.IDGenerator,
-		Logger:      t.Logger,
-		TestKeys:    t.TestKeys,
-		ZeroTime:    t.ZeroTime,
-		WaitGroup:   t.WaitGroup,
-		ALPN: []string{
-			"h2", "http/1.1",
-		},
-		SNI: t.URL.Hostname(),
+// startSecureFlows starts a TCP+TLS measurement flow for each IP addr.
+func (t *DNSResolvers) startSecureFlows(ctx context.Context, addresses []string) {
+	sema := make(chan any, 1)
+	if t.URL.Scheme == "https" {
+		// Allows just a single worker to fetch the response body but do that
+		// only if the test-lists URL uses "https" as the scheme. Otherwise, just
+		// validate IPs by performing a TLS handshake.
+		sema <- true
 	}
-	task.Start(ctx)
+	port := "443"
+	if urlPort := t.URL.Port(); urlPort != "" {
+		if t.URL.Scheme != "https" {
+			// If the URL is like http://example.com:8080/, we don't know
+			// which would be the correct port where to use HTTPS.
+			return
+		}
+		port = urlPort
+	}
+	for _, addr := range addresses {
+		task := &SecureFlow{
+			Address:     net.JoinHostPort(addr, port),
+			IDGenerator: t.IDGenerator,
+			Logger:      t.Logger,
+			Sema:        sema,
+			TestKeys:    t.TestKeys,
+			ZeroTime:    t.ZeroTime,
+			WaitGroup:   t.WaitGroup,
+			ALPN:        []string{"h2", "http/1.1"},
+			SNI:         t.URL.Hostname(),
+			HostHeader:  t.URL.Host,
+			URLPath:     t.URL.Path,
+			URLRawQuery: t.URL.RawQuery,
+		}
+		task.Start(ctx)
+	}
 }
