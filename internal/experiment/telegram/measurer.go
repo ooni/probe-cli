@@ -58,12 +58,15 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	wg := &sync.WaitGroup{}
 
 	// start background tasks
-	systemDNSTask := &SystemDNS{
-		IDGenerator: idGenerator,
-		Logger:      sess.Logger(),
-		TestKeys:    tk,
-		ZeroTime:    measurement.MeasurementStartTimeSaved,
-		WaitGroup:   wg,
+	systemDNSTask := &DNSResolvers{
+		Domain:          webTelegramOrg,
+		IDGenerator:     idGenerator,
+		Logger:          sess.Logger(),
+		TestKeys:        tk,
+		ZeroTime:        measurement.MeasurementStartTimeSaved,
+		WaitGroup:       wg,
+		DNSOverHTTPSURL: "",
+		UDPAddress:      "",
 	}
 	systemDNSTask.Start(ctx)
 	for _, addr := range dataCenterAddrs {

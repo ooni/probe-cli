@@ -34,6 +34,11 @@ type Trace struct {
 	// traces, you can use zero to indicate the "default" trace.
 	Index int64
 
+	// TODO(bassosimone): make all these channels private and always
+	// use ~safe accessor functions to get the data. This protects
+	// against a case such as DoH where you're not doing actual step
+	// by step and would like to know what has happened.
+
 	// NetworkEvent is MANDATORY and buffers network events. If you create
 	// this channel manually, ensure it has some buffer.
 	NetworkEvent chan *model.ArchivalNetworkEvent

@@ -89,6 +89,9 @@ func getTaskDescription() string {
 //go:embed "task/endpoint.go.txt"
 var endpointTemplate string
 
+//go:embed "task/multiresolver.go.txt"
+var multiResolverTemplate string
+
 //go:embed "task/systemresolver.go.txt"
 var systemResolverTemplate string
 
@@ -96,6 +99,7 @@ var systemResolverTemplate string
 var knownTasks = map[string]string{
 	"http":            endpointTemplate,
 	"https":           endpointTemplate,
+	"multi-resolver":  multiResolverTemplate,
 	"system-resolver": systemResolverTemplate,
 	"tcp":             endpointTemplate,
 	"tls":             endpointTemplate,
