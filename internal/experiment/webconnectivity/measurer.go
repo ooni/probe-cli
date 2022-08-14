@@ -73,7 +73,7 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 
 	// start background tasks
 	resos := &DNSResolvers{
-		Domain:          URL.Host,
+		Domain:          URL.Hostname(),
 		IDGenerator:     idGenerator,
 		Logger:          sess.Logger(),
 		TestKeys:        tk,

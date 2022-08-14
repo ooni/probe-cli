@@ -9,6 +9,7 @@ package webconnectivity
 
 import (
 	"context"
+	"net"
 	"net/url"
 	"sync"
 	"time"
@@ -105,9 +106,13 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 		}
 	}
 
-	// (typically) fan out a number of child async tasks to use the IP addrs
-	for range sorted {
-		// TODO: implement
+	// TODO(bassosimone): remove bogons
+	// TODO(bassosimone): what to do if there is an explicit port?!
+
+	// fan out a number of child async tasks to use the IP addrs
+	for _, addr := range sorted {
+		t.startTCPTask(parentCtx, addr)
+		t.startTCPTLSTask(parentCtx, addr)
 	}
 }
 
@@ -199,4 +204,34 @@ func (t *DNSResolvers) dnsOverHTTPSURL() string {
 		return t.DNSOverHTTPSURL
 	}
 	return "https://mozilla.cloudflare-dns.com/dns-query"
+}
+
+// startTCPTask starts a TCP measurement task for the given IP address.
+func (t *DNSResolvers) startTCPTask(ctx context.Context, address string) {
+	task := &TCPConnectivity{
+		Address:     net.JoinHostPort(address, "80"),
+		IDGenerator: t.IDGenerator,
+		Logger:      t.Logger,
+		TestKeys:    t.TestKeys,
+		ZeroTime:    t.ZeroTime,
+		WaitGroup:   t.WaitGroup,
+	}
+	task.Start(ctx)
+}
+
+// startTCPTLSTask starts a TCP+TLS measurement task for the given IP address.
+func (t *DNSResolvers) startTCPTLSTask(ctx context.Context, address string) {
+	task := &TLSConnectivity{
+		Address:     net.JoinHostPort(address, "443"),
+		IDGenerator: t.IDGenerator,
+		Logger:      t.Logger,
+		TestKeys:    t.TestKeys,
+		ZeroTime:    t.ZeroTime,
+		WaitGroup:   t.WaitGroup,
+		ALPN: []string{
+			"h2", "http/1.1",
+		},
+		SNI: t.URL.Hostname(),
+	}
+	task.Start(ctx)
 }

@@ -15,8 +15,17 @@ import (
 
 // TestKeys contains the results produced by web_connectivity.
 type TestKeys struct {
+	// NetworkEvents contains network events.
+	NetworkEvents []*model.ArchivalNetworkEvent `json:"network_events"`
+
 	// Queries contains DNS queries.
 	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
+
+	// TCPConnect contains TCP connect results.
+	TCPConnect []*model.ArchivalTCPConnectResult `json:"tcp_connect"`
+
+	// TLSHandshakes contains TLS handshakes results.
+	TLSHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"tls_handshakes"`
 
 	// fundamentalFailure indicates that some fundamental error occurred
 	// in a background task. A fundamental error is something like a programmer
@@ -29,10 +38,31 @@ type TestKeys struct {
 	mu *sync.Mutex
 }
 
+// AppendNetworkEvents appends to NetworkEvents.
+func (tk *TestKeys) AppendNetworkEvents(v ...*model.ArchivalNetworkEvent) {
+	tk.mu.Lock()
+	tk.NetworkEvents = append(tk.NetworkEvents, v...)
+	tk.mu.Unlock()
+}
+
 // AppendQueries appends to Queries.
 func (tk *TestKeys) AppendQueries(v ...*model.ArchivalDNSLookupResult) {
 	tk.mu.Lock()
 	tk.Queries = append(tk.Queries, v...)
+	tk.mu.Unlock()
+}
+
+// AppendTCPConnectResults appends to TCPConnect.
+func (tk *TestKeys) AppendTCPConnectResults(v ...*model.ArchivalTCPConnectResult) {
+	tk.mu.Lock()
+	tk.TCPConnect = append(tk.TCPConnect, v...)
+	tk.mu.Unlock()
+}
+
+// AppendTLSHandshakes appends to TLSHandshakes.
+func (tk *TestKeys) AppendTLSHandshakes(v ...*model.ArchivalTLSOrQUICHandshakeResult) {
+	tk.mu.Lock()
+	tk.TLSHandshakes = append(tk.TLSHandshakes, v...)
 	tk.mu.Unlock()
 }
 
