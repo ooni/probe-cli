@@ -208,7 +208,7 @@ func (t *DNSResolvers) dnsOverHTTPSURL() string {
 
 // startTCPTask starts a TCP measurement task for the given IP address.
 func (t *DNSResolvers) startTCPTask(ctx context.Context, address string) {
-	task := &TCPConnectivity{
+	task := &CleartextFlow{
 		Address:     net.JoinHostPort(address, "80"),
 		IDGenerator: t.IDGenerator,
 		Logger:      t.Logger,
@@ -221,7 +221,7 @@ func (t *DNSResolvers) startTCPTask(ctx context.Context, address string) {
 
 // startTCPTLSTask starts a TCP+TLS measurement task for the given IP address.
 func (t *DNSResolvers) startTCPTLSTask(ctx context.Context, address string) {
-	task := &TLSConnectivity{
+	task := &SecureFlow{
 		Address:     net.JoinHostPort(address, "443"),
 		IDGenerator: t.IDGenerator,
 		Logger:      t.Logger,
