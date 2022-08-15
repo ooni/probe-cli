@@ -16,7 +16,7 @@ import (
 // analysisHTTPDiff computes the HTTP diff between the final request-response
 // observed by the probe and the TH's result. The caller is responsible of passing
 // us a valid probe observation and a valid TH observation.
-func (tk *TestKeys) analysisHTTPDiff(
+func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 	probe *model.ArchivalHTTPRequestResult, th *webconnectivity.ControlHTTPRequestResult) {
 
 	// if we're dealing with an HTTPS request, don't perform any comparison
@@ -39,22 +39,20 @@ func (tk *TestKeys) analysisHTTPDiff(
 
 	if tk.StatusCodeMatch != nil && *tk.StatusCodeMatch {
 		if tk.BodyLengthMatch != nil && *tk.BodyLengthMatch {
-			tk.Accessible = &accessibleTrue
+			logger.Infof("HTTP: statusCodeMatch && bodyLengthMatch")
 			return
 		}
 		if tk.HeadersMatch != nil && *tk.HeadersMatch {
-			tk.Accessible = &accessibleTrue
+			logger.Infof("HTTP: statusCodeMatch && headersMatch")
 			return
 		}
 		if tk.TitleMatch != nil && *tk.TitleMatch {
-			tk.Accessible = &accessibleTrue
+			logger.Infof("HTTP: statusCodeMatch && titleMatch")
 			return
 		}
 	}
 
 	tk.BlockingFlags |= analysisBlockingHTTPDiff
-	accessibleFalse := false
-	tk.Accessible = &accessibleFalse
 }
 
 // httpDiffBodyLengthChecks compares the bodies lengths.

@@ -4,10 +4,13 @@ package webconnectivity
 // HTTP core analysis
 //
 
-import "github.com/ooni/probe-cli/v3/internal/netxlite"
+import (
+	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
+)
 
 // analysisHTTPToplevel is the toplevel analysis function for HTTP results.
-func (tk *TestKeys) analysisHTTPToplevel() {
+func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 	// don't perform any analysis if the TH failed
 	if tk.Control == nil {
 		return
@@ -21,14 +24,14 @@ func (tk *TestKeys) analysisHTTPToplevel() {
 
 	// determine whether we had any TLS handshake issue and, in such a case,
 	// declare that we had a case of TLS failure.
-	if tk.hasWellKnownTLSHandshakeIssues() {
+	if tk.hasWellKnownTLSHandshakeIssues(logger) {
 		tk.BlockingFlags |= analysisBlockingTLSFailure
 		return
 	}
 
 	// determine whether we had well known cleartext HTTP round trip issues
 	// and, in such a case, declare we had an "http-failure".
-	if tk.hasWellKnownHTTPRoundTripIssues() {
+	if tk.hasWellKnownHTTPRoundTripIssues(logger) {
 		tk.BlockingFlags |= analysisBlockingHTTPFailure
 		return
 	}
@@ -47,12 +50,12 @@ func (tk *TestKeys) analysisHTTPToplevel() {
 	}
 
 	// fallback to the original HTTP diff algorithm.
-	tk.analysisHTTPDiff(finalRequest, &ctrl)
+	tk.analysisHTTPDiff(logger, finalRequest, &ctrl)
 }
 
 // hasWellKnownTLSHandshakeIssues returns true in case we observed
 // a set of well-known issues during the TLS handshake.
-func (tk *TestKeys) hasWellKnownTLSHandshakeIssues() bool {
+func (tk *TestKeys) hasWellKnownTLSHandshakeIssues(logger model.Logger) bool {
 	for _, thx := range tk.TLSHandshakes {
 		fail := thx.Failure
 		if fail == nil {
@@ -65,6 +68,10 @@ func (tk *TestKeys) hasWellKnownTLSHandshakeIssues() bool {
 			netxlite.FailureSSLInvalidHostname,
 			netxlite.FailureSSLInvalidCertificate,
 			netxlite.FailureSSLUnknownAuthority:
+			logger.Warnf(
+				"TLS: endpoint %s fails with %s (see #%d)",
+				thx.Address, *fail, thx.TransactionID,
+			)
 			return true
 		default:
 			// check next handshake
@@ -75,7 +82,7 @@ func (tk *TestKeys) hasWellKnownTLSHandshakeIssues() bool {
 
 // hasWellKnownHTTPRoundTripIssues checks whether any HTTP round
 // trip failed in a well-known suspicious way
-func (tk *TestKeys) hasWellKnownHTTPRoundTripIssues() bool {
+func (tk *TestKeys) hasWellKnownHTTPRoundTripIssues(logger model.Logger) bool {
 	for _, rtx := range tk.Requests {
 		fail := rtx.Failure
 		if fail == nil {
@@ -88,6 +95,10 @@ func (tk *TestKeys) hasWellKnownHTTPRoundTripIssues() bool {
 		case netxlite.FailureConnectionReset,
 			netxlite.FailureGenericTimeoutError,
 			netxlite.FailureEOFError:
+			logger.Warnf(
+				"TLS: endpoint %s fails with %s (see #%d)",
+				"N/A", *fail, rtx.TransactionID, // TODO(bassosimone): implement
+			)
 			return true
 		default:
 			// check next round trip

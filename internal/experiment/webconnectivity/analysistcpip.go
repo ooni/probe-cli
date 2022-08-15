@@ -8,11 +8,12 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // analysisTCPIPToplevel is the toplevel analysis function for TCP/IP results.
-func (tk *TestKeys) analysisTCPIPToplevel() {
+func (tk *TestKeys) analysisTCPIPToplevel(logger model.Logger) {
 	// if we don't have a control result, do nothing.
 	if tk.Control == nil || len(tk.Control.TCPConnect) <= 0 {
 		return
@@ -55,6 +56,7 @@ func (tk *TestKeys) analysisTCPIPToplevel() {
 			entry.Status.Blocked = &isfalse
 			continue
 		}
+		logger.Warnf("TCP/IP: endpoint %s is blocked (see #%d)", epnt, entry.TransactionID)
 		entry.Status.Blocked = &istrue
 		tk.BlockingFlags |= analysisBlockingTCPIP
 	}
