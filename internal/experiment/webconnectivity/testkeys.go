@@ -190,6 +190,6 @@ func NewTestKeys() *TestKeys {
 
 // finalize performs any delayed computation on the test keys. This function
 // must be called from the measurer after all the tasks have completed.
-func (tk *TestKeys) finalize() {
-	tk.analysisToplevel()
+func (tk *TestKeys) finalize(logger model.Logger) {
+	tk.analysisToplevel(logger)
 }

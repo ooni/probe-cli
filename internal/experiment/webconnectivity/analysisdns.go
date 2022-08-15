@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -26,13 +27,14 @@ const (
 )
 
 // analysisDNSToplevel is the toplevel analysis function for DNS results.
-func (tk *TestKeys) analysisDNSToplevel() {
+func (tk *TestKeys) analysisDNSToplevel(logger model.Logger) {
 	tk.analysisDNSExperimentFailure()
-	tk.analysisDNSBogon()
-	tk.analysisDNSUnexpectedFailure()
-	tk.analysisDNSUnexpectedAddrs()
+	tk.analysisDNSBogon(logger)
+	tk.analysisDNSUnexpectedFailure(logger)
+	tk.analysisDNSUnexpectedAddrs(logger)
 	tk.DNSConsistency = "consistent"
 	if tk.DNSFlags != 0 {
+		logger.Warnf("DNSConsistency: inconsistent")
 		tk.DNSConsistency = "inconsistent"
 		tk.BlockingFlags |= analysisBlockingDNS
 	}
@@ -55,17 +57,19 @@ func (tk *TestKeys) analysisDNSExperimentFailure() {
 }
 
 // analysisDNSBogon computes the AnalysisDNSBogon flag.
-func (tk *TestKeys) analysisDNSBogon() {
+func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 	for _, query := range tk.Queries {
 		for _, answer := range query.Answers {
 			switch answer.AnswerType {
 			case "A":
 				if net.ParseIP(answer.IPv4) != nil && netxlite.IsBogon(answer.IPv4) {
+					logger.Warnf("BOGON: %s in #%d", answer.IPv4, query.TransactionID)
 					tk.DNSFlags |= AnalysisDNSBogon
 					return
 				}
 			case "AAAA":
 				if net.ParseIP(answer.IPv6) != nil && netxlite.IsBogon(answer.IPv6) {
+					logger.Warnf("BOGON: %s in #%d", answer.IPv6, query.TransactionID)
 					tk.DNSFlags |= AnalysisDNSBogon
 					return
 				}
@@ -77,7 +81,7 @@ func (tk *TestKeys) analysisDNSBogon() {
 }
 
 // analysisDNSUnexpectedFailure computes the AnalysisDNSUnexpectedFailure flags.
-func (tk *TestKeys) analysisDNSUnexpectedFailure() {
+func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 	// make sure we have control before proceeding futher
 	if tk.Control == nil || tk.controlRequest == nil {
 		return
@@ -137,13 +141,14 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure() {
 			// whether the TH did actually see any IPv6 address?
 			continue
 		}
+		logger.Warnf("DNS: unexpected failure %s in #%d", *query.Failure, query.TransactionID)
 		tk.DNSFlags |= AnalysisDNSUnexpectedFailure
 		return
 	}
 }
 
 // analysisDNSUnexpectedAddrs computes the AnalysisDNSUnexpectedAddrs flags.
-func (tk *TestKeys) analysisDNSUnexpectedAddrs() {
+func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 	// if the list of addresses for which we could not perform a TLS handshake is
 	// empty, there's no need to compare with the TH, since we can use the results
 	// of the TLS handshake alone to say that all addresses were correct.
@@ -151,6 +156,7 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs() {
 	if len(addrsWithoutTLSHandshake) <= 0 {
 		return
 	}
+	logger.Warnf("DNS: addrs without TLS handshake: %+v", addrsWithoutTLSHandshake)
 
 	// make sure we have control before proceeding futher
 	if tk.Control == nil || tk.controlRequest == nil {
@@ -201,6 +207,7 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs() {
 	// if the probe has not collected any addr for the same domain, it's
 	// definitely suspicious and counts as a difference
 	if len(probeAddrs) <= 0 {
+		logger.Warnf("DNS: no IP address resolved by the probe")
 		tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
 		return
 	}
@@ -220,6 +227,7 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs() {
 	}
 
 	// otherwise, conclude we have unexpected probe addrs
+	logger.Warnf("DNS: differentAddrs: %+v, differentASNs: %+v", differentAddrs, differentASNS)
 	tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
 }
 

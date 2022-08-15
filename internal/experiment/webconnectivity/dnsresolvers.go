@@ -243,6 +243,9 @@ func (t *DNSResolvers) lookupHostDNSOverHTTPS(parentCtx context.Context, out cha
 	addrs, err := reso.LookupHost(lookupCtx, t.Domain)
 	reso.CloseIdleConnections()
 	t.TestKeys.AppendQueries(trace.DNSLookupsFromRoundTrip()...)
+	t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...)
+	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
+	t.TestKeys.AppendTLSHandshakes(trace.TLSHandshakes()...)
 	ol.Stop(err)
 	out <- addrs // must send something -even nil- to the parent
 }

@@ -1,5 +1,7 @@
 package webconnectivity
 
+import "github.com/ooni/probe-cli/v3/internal/model"
+
 //
 // Core analysis
 //
@@ -23,8 +25,8 @@ const (
 
 // analysisToplevel is the toplevel function that analyses the results
 // of the experiment once all network tasks have completed.
-func (tk *TestKeys) analysisToplevel() {
-	tk.analysisDNSToplevel()
+func (tk *TestKeys) analysisToplevel(logger model.Logger) {
+	tk.analysisDNSToplevel(logger)
 	tk.analysisTCPIPToplevel()
 	tk.analysisHTTPToplevel()
 	if (tk.BlockingFlags & analysisBlockingDNS) != 0 {
