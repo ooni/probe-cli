@@ -20,8 +20,11 @@ type TestKeys struct {
 	// NetworkEvents contains network events.
 	NetworkEvents []*model.ArchivalNetworkEvent `json:"network_events"`
 
-	// DoH contains observations collected by DoH resolvers.
+	// DoH contains ancillary observations collected by DoH resolvers.
 	DoH *TestKeysDoH `json:"doh"`
+
+	// Do53 contains ancillary observations collected by Do53 resolvers.
+	Do53 *TestKeysDo53 `json:"do53"`
 
 	// Queries contains DNS queries.
 	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
@@ -99,7 +102,7 @@ type TestKeys struct {
 	mu *sync.Mutex
 }
 
-// TestKeysDoH contains results collected using DoH.
+// TestKeysDoH contains ancillary observations collected using DoH.
 //
 // They are on a separate hierarchy to simplify processing.
 type TestKeysDoH struct {
@@ -117,6 +120,17 @@ type TestKeysDoH struct {
 
 	// TLSHandshakes contains TLS handshakes results.
 	TLSHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"tls_handshakes"`
+}
+
+// TestKeysDo53 contains ancillary observations collected using Do53.
+//
+// They are on a separate hierarchy to simplify processing.
+type TestKeysDo53 struct {
+	// NetworkEvents contains network events.
+	NetworkEvents []*model.ArchivalNetworkEvent `json:"network_events"`
+
+	// Queries contains DNS queries.
+	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
 }
 
 // AppendNetworkEvents appends to NetworkEvents.
@@ -192,6 +206,14 @@ func (tk *TestKeys) WithTestKeysDoH(f func(*TestKeysDoH)) {
 	tk.mu.Unlock()
 }
 
+// WithTestKeysDo53 calls the given function with the mutex locked passing to
+// it as argument the pointer to the Do53 field.
+func (tk *TestKeys) WithTestKeysDo53(f func(*TestKeysDo53)) {
+	tk.mu.Lock()
+	f(tk.Do53)
+	tk.mu.Unlock()
+}
+
 // NewTestKeys creates a new instance of TestKeys.
 func NewTestKeys() *TestKeys {
 	// TODO: here you should initialize all the fields
@@ -203,6 +225,10 @@ func NewTestKeys() *TestKeys {
 			Requests:      []*model.ArchivalHTTPRequestResult{},
 			TCPConnect:    []*model.ArchivalTCPConnectResult{},
 			TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{},
+		},
+		Do53: &TestKeysDo53{
+			NetworkEvents: []*model.ArchivalNetworkEvent{},
+			Queries:       []*model.ArchivalDNSLookupResult{},
 		},
 		Queries:              []*model.ArchivalDNSLookupResult{},
 		Requests:             []*model.ArchivalHTTPRequestResult{},
