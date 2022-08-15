@@ -9,6 +9,7 @@ package webconnectivity
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -96,7 +97,9 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(t.Logger, "CleartextFlow#%d", index) // TODO: edit
+	ol := measurexlite.NewOperationLogger(
+		t.Logger, "[#%d] GET http://%s using %s", index, t.HostHeader, t.Address,
+	)
 
 	// perform the TCP connect
 	const tcpTimeout = 10 * time.Second
@@ -119,7 +122,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 	select {
 	case <-t.Sema:
 	default:
-		ol.Stop(nil)
+		ol.Stop(errors.New("stop after TCP connect")) // just to emit the right message
 		return
 	}
 
@@ -239,6 +242,7 @@ func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Res
 		if err != nil {
 			return
 		}
+		t.Logger.Infof("redirect to: %s", location.String())
 		resolvers := &DNSResolvers{
 			CookieJar:       t.CookieJar,
 			DNSCache:        t.DNSCache,

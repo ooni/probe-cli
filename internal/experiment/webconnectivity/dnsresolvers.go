@@ -9,6 +9,7 @@ package webconnectivity
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -168,13 +169,19 @@ func (t *DNSResolvers) lookupHostSystem(parentCtx context.Context, out chan<- []
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(t.Logger, "DNSResolvers+System#%d: %s", index, t.Domain)
+	ol := measurexlite.NewOperationLogger(
+		t.Logger, "[#%d] lookup %s using system", index, t.Domain,
+	)
 
 	// runs the lookup
 	reso := trace.NewStdlibResolver(t.Logger)
 	addrs, err := reso.LookupHost(lookupCtx, t.Domain)
 	t.TestKeys.AppendQueries(trace.DNSLookupsFromRoundTrip()...)
-	ol.Stop(err)
+	if err != nil {
+		ol.Stop(err)
+		return
+	}
+	ol.Stop(fmt.Errorf("%+v", addrs)) // just to emit the correct message
 	out <- addrs
 }
 
@@ -192,14 +199,21 @@ func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, out chan<- []str
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(t.Logger, "DNSResolvers+UDP#%d: %s", index, t.Domain)
+	udpAddress := t.udpAddress()
+	ol := measurexlite.NewOperationLogger(
+		t.Logger, "[#%d] lookup %s using %s", index, t.Domain, udpAddress,
+	)
 
 	// runs the lookup
 	dialer := netxlite.NewDialerWithoutResolver(t.Logger)
-	reso := trace.NewParallelUDPResolver(t.Logger, dialer, t.udpAddress())
+	reso := trace.NewParallelUDPResolver(t.Logger, dialer, udpAddress)
 	addrs, err := reso.LookupHost(lookupCtx, t.Domain)
 	t.TestKeys.AppendQueries(trace.DNSLookupsFromRoundTrip()...)
-	ol.Stop(err)
+	if err != nil {
+		ol.Stop(err)
+		return
+	}
+	ol.Stop(fmt.Errorf("%+v", addrs)) // just to emit the correct message
 	out <- addrs
 }
 
@@ -225,14 +239,21 @@ func (t *DNSResolvers) lookupHostDNSOverHTTPS(parentCtx context.Context, out cha
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(t.Logger, "DNSResolvers+DNSOverHTTPS#%d: %s", index, t.Domain)
+	URL := t.dnsOverHTTPSURL()
+	ol := measurexlite.NewOperationLogger(
+		t.Logger, "[#%d] lookup %s using %s", index, t.Domain, URL,
+	)
 
 	// runs the lookup
-	reso := trace.NewParallelDNSOverHTTPSResolver(t.Logger, t.dnsOverHTTPSURL())
+	reso := trace.NewParallelDNSOverHTTPSResolver(t.Logger, URL)
 	addrs, err := reso.LookupHost(lookupCtx, t.Domain)
 	reso.CloseIdleConnections()
 	t.TestKeys.AppendQueries(trace.DNSLookupsFromRoundTrip()...)
-	ol.Stop(err)
+	if err != nil {
+		ol.Stop(err)
+		return
+	}
+	ol.Stop(fmt.Errorf("%+v", addrs)) // just to emit the correct message
 	out <- addrs
 }
 

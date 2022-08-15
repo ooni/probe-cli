@@ -10,6 +10,7 @@ package webconnectivity
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -103,7 +104,9 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	ol := measurexlite.NewOperationLogger(t.Logger, "SecureFlow#%d", index) // TODO: edit
+	ol := measurexlite.NewOperationLogger(
+		t.Logger, "[#%d] GET https://%s using %s", index, t.HostHeader, t.Address,
+	)
 
 	// perform the TCP connect
 	const tcpTimeout = 10 * time.Second
@@ -150,7 +153,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 	select {
 	case <-t.Sema:
 	default:
-		ol.Stop(nil)
+		ol.Stop(errors.New("stop after TLS handshake")) // just to emit the correct message
 		return
 	}
 
@@ -291,6 +294,7 @@ func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Respon
 		if err != nil {
 			return
 		}
+		t.Logger.Infof("redirect to: %s", location.String())
 		resolvers := &DNSResolvers{
 			CookieJar:       t.CookieJar,
 			DNSCache:        t.DNSCache,
