@@ -9,6 +9,11 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+// TODO(bassosimone): this code needs refining before we can merge it inside
+// master. For one, we already have systemv4 info. Additionally, it would
+// be neat to avoid additional AAAA queries. Furthermore, we should also see
+// to implement support for IPv6 only clients as well.
+
 // DNSWhoamiService is a service that performs DNS whoami lookups.
 type DNSWhoamiService struct {
 	// mu provides mutual exclusion
