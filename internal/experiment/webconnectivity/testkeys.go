@@ -125,5 +125,5 @@ func NewTestKeys() *TestKeys {
 // finalize performs any delayed computation on the test keys. This function
 // must be called from the measurer after all the tasks have completed.
 func (tk *TestKeys) finalize() {
-	// TODO(bassosimone): set final webconnectivity flags
+	tk.analysisToplevel()
 }
