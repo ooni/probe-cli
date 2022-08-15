@@ -74,6 +74,7 @@ func (c *Control) Run(ctx context.Context) {
 		},
 		TCPConnect: endpoints,
 	}
+	c.TestKeys.SetControlRequest(creq)
 
 	// create logger for this operation
 	ol := measurexlite.NewOperationLogger(c.Logger, "control for %s", creq.HTTPRequest)

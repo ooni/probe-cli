@@ -12,6 +12,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 // TestKeys contains the results produced by web_connectivity.
@@ -34,8 +35,25 @@ type TestKeys struct {
 	// Control contains the TH's response.
 	Control *webconnectivity.ControlResponse `json:"control"`
 
-	// controlFailure is the error associated with accessing the control backend
-	controlFailure error
+	// ControlFailure contains the failure of the control experiment.
+	ControlFailure *string `json:"control_failure"`
+
+	// DNSFlags contains DNS analysis flags.
+	DNSFlags int64 `json:"x_dns_flags"`
+
+	// DNSExperimentFailure indicates whether there was a failure in any
+	// of the DNS experiments we performed.
+	DNSExperimentFailure *string `json:"dns_experiment_failure"`
+
+	// DNSConsistency indicates whether there is consistency between
+	// the TH's DNS results and the probe's DNS results.
+	DNSConsistency string `json:"dns_consistency"`
+
+	// BlockingFlags contains blocking flags.
+	BlockingFlags int64 `json:"x_blocking_flags"`
+
+	// controlRequest is the control request we sent.
+	controlRequest *webconnectivity.ControlRequest
 
 	// fundamentalFailure indicates that some fundamental error occurred
 	// in a background task. A fundamental error is something like a programmer
@@ -85,6 +103,13 @@ func (tk *TestKeys) AppendTLSHandshakes(v ...*model.ArchivalTLSOrQUICHandshakeRe
 	tk.mu.Unlock()
 }
 
+// SetControlRequest sets the value of controlRequest.
+func (tk *TestKeys) SetControlRequest(v *webconnectivity.ControlRequest) {
+	tk.mu.Lock()
+	tk.controlRequest = v
+	tk.mu.Unlock()
+}
+
 // SetControl sets the value of Control.
 func (tk *TestKeys) SetControl(v *webconnectivity.ControlResponse) {
 	tk.mu.Lock()
@@ -95,7 +120,7 @@ func (tk *TestKeys) SetControl(v *webconnectivity.ControlResponse) {
 // SetControlFailure sets the value of controlFailure.
 func (tk *TestKeys) SetControlFailure(err error) {
 	tk.mu.Lock()
-	tk.controlFailure = err
+	tk.ControlFailure = tracex.NewFailure(err)
 	tk.mu.Unlock()
 }
 
@@ -110,15 +135,20 @@ func (tk *TestKeys) SetFundamentalFailure(err error) {
 func NewTestKeys() *TestKeys {
 	// TODO: here you should initialize all the fields
 	return &TestKeys{
-		NetworkEvents:      []*model.ArchivalNetworkEvent{},
-		Queries:            []*model.ArchivalDNSLookupResult{},
-		Requests:           []*model.ArchivalHTTPRequestResult{},
-		TCPConnect:         []*model.ArchivalTCPConnectResult{},
-		TLSHandshakes:      []*model.ArchivalTLSOrQUICHandshakeResult{},
-		Control:            &webconnectivity.ControlResponse{},
-		controlFailure:     nil,
-		fundamentalFailure: nil,
-		mu:                 &sync.Mutex{},
+		NetworkEvents:        []*model.ArchivalNetworkEvent{},
+		Queries:              []*model.ArchivalDNSLookupResult{},
+		Requests:             []*model.ArchivalHTTPRequestResult{},
+		TCPConnect:           []*model.ArchivalTCPConnectResult{},
+		TLSHandshakes:        []*model.ArchivalTLSOrQUICHandshakeResult{},
+		Control:              nil,
+		ControlFailure:       nil,
+		DNSFlags:             0,
+		DNSExperimentFailure: nil,
+		DNSConsistency:       "",
+		BlockingFlags:        0,
+		controlRequest:       nil,
+		fundamentalFailure:   nil,
+		mu:                   &sync.Mutex{},
 	}
 }
 
