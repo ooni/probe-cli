@@ -68,10 +68,10 @@ func (c *Control) Start(ctx context.Context) {
 }
 
 // Run runs this task until completion.
-func (c *Control) Run(ctx context.Context) {
+func (c *Control) Run(parentCtx context.Context) {
 	// create a subcontext attached to a maximum timeout
 	const timeout = 30 * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	opCtx, cancel := context.WithTimeout(parentCtx, timeout)
 	defer cancel()
 
 	// create control request
@@ -108,7 +108,7 @@ func (c *Control) Run(ctx context.Context) {
 
 	// issue the control request and wait for the response
 	var cresp webconnectivity.ControlResponse
-	err := clnt.PostJSON(ctx, "/", creq, &cresp)
+	err := clnt.PostJSON(opCtx, "/", creq, &cresp)
 	if err != nil {
 		// make sure error is wrapped
 		err = netxlite.NewTopLevelGenericErrWrapper(err)
@@ -119,7 +119,7 @@ func (c *Control) Run(ctx context.Context) {
 
 	// if the TH returned us addresses we did not previously were
 	// aware of, make sure we also measure them
-	c.maybeStartExtraMeasurements(ctx, cresp.DNS.Addrs)
+	c.maybeStartExtraMeasurements(parentCtx, cresp.DNS.Addrs)
 
 	// on success, save the control response
 	c.TestKeys.SetControl(&cresp)
