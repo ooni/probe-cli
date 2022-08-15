@@ -9,6 +9,7 @@ package webconnectivity
 
 import (
 	"context"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -53,10 +54,6 @@ type DNSResolvers struct {
 
 	// CookieJar contains the OPTIONAL cookie jar, used for redirects.
 	CookieJar http.CookieJar
-
-	// DNSOverHTTPSURL is the optional DoH URL to use. If this field is not
-	// set, we use a default one (e.g., `https://mozilla.cloudflare-dns.com/dns-query`).
-	DNSOverHTTPSURL string
 
 	// Referer contains the OPTIONAL referer, used for redirects.
 	Referer string
@@ -268,8 +265,68 @@ func (t *DNSResolvers) udpAddress() string {
 	return "8.8.4.4:53"
 }
 
+// OpportunisticDNSOverHTTPS allows to perform opportunistic DNS-over-HTTPS
+// measurements as part of Web Connectivity.
+type OpportunisticDNSOverHTTPS struct {
+	// interval is the next interval after which to measure.
+	interval time.Duration
+
+	// mu provides mutual exclusion
+	mu *sync.Mutex
+
+	// rnd is the random number generator to use.
+	rnd *rand.Rand
+
+	// t is when we last run an opportunistic measurement.
+	t time.Time
+
+	// urls contains the urls of known DoH services.
+	urls []string
+}
+
+// MaybeNextURL returns the next URL to measure, if any. Our aim is to perform
+// some opportunistic DoH measurements as part of Web Connectivity.
+func (o *OpportunisticDNSOverHTTPS) MaybeNextURL() (string, bool) {
+	now := time.Now()
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.t.IsZero() || now.Sub(o.t) > o.interval {
+		o.rnd.Shuffle(len(o.urls), func(i, j int) {
+			o.urls[i], o.urls[j] = o.urls[j], o.urls[i]
+		})
+		o.t = now
+		o.interval = time.Duration(20+o.rnd.Uint32()%20) * time.Second
+		return o.urls[0], true
+	}
+	return "", false
+}
+
+// OpportunisticDNSOverHTTPSSingleton is the singleton used to keep
+// track of opportunistic DNS-over-HTTPS measurements.
+var OpportunisticDNSOverHTTPSSingleton = &OpportunisticDNSOverHTTPS{
+	interval: 0,
+	mu:       &sync.Mutex{},
+	rnd:      rand.New(rand.NewSource(time.Now().UnixNano())),
+	t:        time.Time{},
+	urls: []string{
+		"https://mozilla.cloudflare-dns.com/dns-query",
+		"https://dns.nextdns.io/dns-query",
+		"https://dns.google/dns-query",
+		"https://dns.quad9.net/dns-query",
+	},
+}
+
 // lookupHostDNSOverHTTPS performs a DNS lookup using a DoH resolver.
 func (t *DNSResolvers) lookupHostDNSOverHTTPS(parentCtx context.Context, out chan<- []string) {
+	// obtain an opportunistic DoH URL
+	URL, good := OpportunisticDNSOverHTTPSSingleton.MaybeNextURL()
+	if !good {
+		// no need to perform opportunistic DoH at this time but we still
+		// need to fake out a lookup to please our caller
+		out <- []string{}
+		return
+	}
+
 	// create context with attached a timeout
 	const timeout = 4 * time.Second
 	lookupCtx, lookpCancel := context.WithTimeout(parentCtx, timeout)
@@ -282,7 +339,6 @@ func (t *DNSResolvers) lookupHostDNSOverHTTPS(parentCtx context.Context, out cha
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	URL := t.dnsOverHTTPSURL()
 	ol := measurexlite.NewOperationLogger(
 		t.Logger, "[#%d] lookup %s using %s", index, t.Domain, URL,
 	)
@@ -320,14 +376,6 @@ func (t *DNSResolvers) dohSplitQueries(
 	return
 }
 
-// Returns the DOH resolver URL we should be using by default.
-func (t *DNSResolvers) dnsOverHTTPSURL() string {
-	if t.DNSOverHTTPSURL != "" {
-		return t.DNSOverHTTPSURL
-	}
-	return "https://mozilla.cloudflare-dns.com/dns-query"
-}
-
 // startCleartextFlows starts a TCP measurement flow for each IP addr.
 func (t *DNSResolvers) startCleartextFlows(ctx context.Context, addresses []string) {
 	sema := make(chan any, 1)
@@ -357,7 +405,6 @@ func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-c
 			ZeroTime:        t.ZeroTime,
 			WaitGroup:       t.WaitGroup,
 			CookieJar:       t.CookieJar,
-			DNSOverHTTPSURL: t.DNSOverHTTPSURL,
 			FollowRedirects: t.URL.Scheme == "http",
 			HostHeader:      t.URL.Host,
 			Referer:         t.Referer,
@@ -404,7 +451,6 @@ func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan
 			WaitGroup:       t.WaitGroup,
 			ALPN:            []string{"h2", "http/1.1"},
 			CookieJar:       t.CookieJar,
-			DNSOverHTTPSURL: t.DNSOverHTTPSURL,
 			FollowRedirects: t.URL.Scheme == "https",
 			SNI:             t.URL.Hostname(),
 			HostHeader:      t.URL.Host,

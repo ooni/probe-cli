@@ -101,20 +101,19 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 
 	// start background tasks
 	resos := &DNSResolvers{
-		DNSCache:        NewDNSCache(),
-		Domain:          URL.Hostname(),
-		IDGenerator:     idGenerator,
-		Logger:          sess.Logger(),
-		TestKeys:        tk,
-		URL:             URL,
-		ZeroTime:        measurement.MeasurementStartTimeSaved,
-		WaitGroup:       wg,
-		CookieJar:       jar,
-		DNSOverHTTPSURL: "",
-		Referer:         "",
-		Session:         sess,
-		THAddr:          thAddr,
-		UDPAddress:      "",
+		DNSCache:    NewDNSCache(),
+		Domain:      URL.Hostname(),
+		IDGenerator: idGenerator,
+		Logger:      sess.Logger(),
+		TestKeys:    tk,
+		URL:         URL,
+		ZeroTime:    measurement.MeasurementStartTimeSaved,
+		WaitGroup:   wg,
+		CookieJar:   jar,
+		Referer:     "",
+		Session:     sess,
+		THAddr:      thAddr,
+		UDPAddress:  "",
 	}
 	resos.Start(ctx)
 

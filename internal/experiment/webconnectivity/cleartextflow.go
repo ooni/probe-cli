@@ -56,10 +56,6 @@ type CleartextFlow struct {
 	// CookieJar contains the OPTIONAL cookie jar, used for redirects.
 	CookieJar http.CookieJar
 
-	// DNSOverHTTPSURL is the optional DoH URL to use. If this field is not
-	// set, we use a default one (e.g., `https://mozilla.cloudflare-dns.com/dns-query`).
-	DNSOverHTTPSURL string
-
 	// FollowRedirects is OPTIONAL and instructs this flow
 	// to follow HTTP redirects (if any).
 	FollowRedirects bool
@@ -244,20 +240,19 @@ func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Res
 		}
 		t.Logger.Infof("redirect to: %s", location.String())
 		resolvers := &DNSResolvers{
-			CookieJar:       t.CookieJar,
-			DNSCache:        t.DNSCache,
-			Domain:          location.Hostname(),
-			IDGenerator:     t.IDGenerator,
-			Logger:          t.Logger,
-			TestKeys:        t.TestKeys,
-			URL:             location,
-			ZeroTime:        t.ZeroTime,
-			WaitGroup:       t.WaitGroup,
-			DNSOverHTTPSURL: t.DNSOverHTTPSURL,
-			Referer:         resp.Request.URL.String(),
-			Session:         nil, // no need to issue another control request
-			THAddr:          "",  // ditto
-			UDPAddress:      t.UDPAddress,
+			CookieJar:   t.CookieJar,
+			DNSCache:    t.DNSCache,
+			Domain:      location.Hostname(),
+			IDGenerator: t.IDGenerator,
+			Logger:      t.Logger,
+			TestKeys:    t.TestKeys,
+			URL:         location,
+			ZeroTime:    t.ZeroTime,
+			WaitGroup:   t.WaitGroup,
+			Referer:     resp.Request.URL.String(),
+			Session:     nil, // no need to issue another control request
+			THAddr:      "",  // ditto
+			UDPAddress:  t.UDPAddress,
 		}
 		resolvers.Start(ctx)
 	default:
