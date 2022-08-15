@@ -14,11 +14,30 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+// EndpointMeasurementsStarter is used by Control to start extra
+// measurements using new IP addrs discovered by the TH
+type EndpointMeasurementsStarter interface {
+	// startCleartextFlowsWithSema starts a TCP measurement flow for each IP addr. The [sema]
+	// argument allows to control how many flows are allowed to perform HTTP measurements. Every
+	// flow will attempt to read from [sema] and won't perform HTTP measurements if a
+	// nonblocking read fails. Hence, you must create a [sema] channel with buffer equal
+	// to N and N elements inside it to allow N flows to perform HTTP measuremenets.
+	startCleartextFlowsWithSema(ctx context.Context, sema <-chan any, addresses []string)
+
+	// startSecureFlowsWithSema starts a TCP+TLS measurement flow for each IP addr. See
+	// the docs of startCleartextFlowsWithSema for more info on the [sema] arg.
+	startSecureFlowsWithSema(ctx context.Context, sema <-chan any, addresses []string)
+}
+
 // Control issues a control request and saves the results
 // inside of the experiment's TestKeys.
 type Control struct {
 	// Addresses contains the MANDATORY addresses we've looked up.
 	Addresses []string
+
+	// ExtraMeasurementsStarter is MANDATORY and allows this struct to
+	// start additional measurements using new TH-discovered addrs.
+	ExtraMeasurementsStarter EndpointMeasurementsStarter
 
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger
@@ -98,7 +117,48 @@ func (c *Control) Run(ctx context.Context) {
 		return
 	}
 
+	// if the TH returned us addresses we did not previously were
+	// aware of, make sure we also measure them
+	c.maybeStartExtraMeasurements(ctx, cresp.DNS.Addrs)
+
 	// on success, save the control response
 	c.TestKeys.SetControl(&cresp)
 	ol.Stop(nil)
+}
+
+// This function determines whether we should start new
+// background measurements for previously unknown IP addrs.
+func (c *Control) maybeStartExtraMeasurements(ctx context.Context, thAddrs []string) {
+	// determine which addrs are TH only
+	const (
+		inProbe = 1 << iota
+		inTH
+	)
+	mapping := make(map[string]int)
+	for _, addr := range c.Addresses {
+		mapping[addr] |= inProbe
+	}
+	for _, addr := range thAddrs {
+		mapping[addr] |= inTH
+	}
+
+	// obtain the TH only addresses
+	var thOnly []string
+	for addr, flags := range mapping {
+		if (flags & inProbe) != 0 {
+			continue // we already measured this
+		}
+		thOnly = append(thOnly, addr)
+	}
+
+	// Start extra measurements for TH only addresses. Because we already
+	// measured HTTP using IP addrs discovered by the resolvers, we're not
+	// going to do that again now. I am not sure this is the right policy
+	// but I think we can just try it and then change if needed...
+	//
+	// Also, let's remember that reading from a nil chan blocks forever, so
+	// we're basically forcing the goroutines to avoid HTTP.
+	var nohttp chan any = nil
+	c.ExtraMeasurementsStarter.startCleartextFlowsWithSema(ctx, nohttp, thOnly)
+	c.ExtraMeasurementsStarter.startSecureFlowsWithSema(ctx, nohttp, thOnly)
 }

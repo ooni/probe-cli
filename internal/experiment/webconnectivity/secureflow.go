@@ -43,7 +43,7 @@ type SecureFlow struct {
 
 	// Sema is the MANDATORY semaphore to allow just a single
 	// connection to perform the HTTP transaction.
-	Sema chan any
+	Sema <-chan any
 
 	// TestKeys is MANDATORY and contains the TestKeys.
 	TestKeys *TestKeys

@@ -330,13 +330,18 @@ func (t *DNSResolvers) dnsOverHTTPSURL() string {
 
 // startCleartextFlows starts a TCP measurement flow for each IP addr.
 func (t *DNSResolvers) startCleartextFlows(ctx context.Context, addresses []string) {
+	sema := make(chan any, 1)
+	sema <- true // allow a single flow to fetch the HTTP body
+	t.startCleartextFlowsWithSema(ctx, sema, addresses)
+}
+
+// startCleartextFlowsWithSema implements EndpointMeasurementsStarter.
+func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-chan any, addresses []string) {
 	if t.URL.Scheme != "http" {
 		// Do not bother with measuring HTTP when the user
 		// has asked us to measure an HTTPS URL.
 		return
 	}
-	sema := make(chan any, 1)
-	sema <- true // allow a single flow to fetch the HTTP body
 	port := "80"
 	if urlPort := t.URL.Port(); urlPort != "" {
 		port = urlPort
@@ -373,6 +378,11 @@ func (t *DNSResolvers) startSecureFlows(ctx context.Context, addresses []string)
 		// validate IPs by performing a TLS handshake.
 		sema <- true
 	}
+	t.startSecureFlowsWithSema(ctx, sema, addresses)
+}
+
+// startSecureFlowsWithSema implements EndpointMeasurementsStarter.
+func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan any, addresses []string) {
 	port := "443"
 	if urlPort := t.URL.Port(); urlPort != "" {
 		if t.URL.Scheme != "https" {
@@ -411,13 +421,14 @@ func (t *DNSResolvers) startSecureFlows(ctx context.Context, addresses []string)
 func (t *DNSResolvers) maybeStartControlFlow(ctx context.Context, addresses []string) {
 	if t.Session != nil && t.THAddr != "" {
 		ctrl := &Control{
-			Addresses: addresses,
-			Logger:    t.Logger,
-			TestKeys:  t.TestKeys,
-			Session:   t.Session,
-			THAddr:    t.THAddr,
-			URL:       t.URL,
-			WaitGroup: t.WaitGroup,
+			Addresses:                addresses,
+			ExtraMeasurementsStarter: t,
+			Logger:                   t.Logger,
+			TestKeys:                 t.TestKeys,
+			Session:                  t.Session,
+			THAddr:                   t.THAddr,
+			URL:                      t.URL,
+			WaitGroup:                t.WaitGroup,
 		}
 		ctrl.Start(ctx)
 	}
