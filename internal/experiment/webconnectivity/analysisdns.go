@@ -149,15 +149,6 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 
 // analysisDNSUnexpectedAddrs computes the AnalysisDNSUnexpectedAddrs flags.
 func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
-	// if the list of addresses for which we could not perform a TLS handshake is
-	// empty, there's no need to compare with the TH, since we can use the results
-	// of the TLS handshake alone to say that all addresses were correct.
-	addrsWithoutTLSHandshake := tk.findAddrsWithoutTLSHandshake()
-	if len(addrsWithoutTLSHandshake) <= 0 {
-		return
-	}
-	logger.Warnf("DNS: addrs without TLS handshake: %+v", addrsWithoutTLSHandshake)
-
 	// make sure we have control before proceeding futher
 	if tk.Control == nil || tk.controlRequest == nil {
 		return
@@ -226,8 +217,16 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 		return
 	}
 
+	withoutHandshake := tk.findAddrsWithoutTLSHandshake(differentAddrs)
+	if len(withoutHandshake) <= 0 {
+		return
+	}
+
 	// otherwise, conclude we have unexpected probe addrs
-	logger.Warnf("DNS: differentAddrs: %+v, differentASNs: %+v", differentAddrs, differentASNS)
+	logger.Warnf(
+		"DNS: differentAddrs: %+v; differentASNs: %+v; withoutHandshake: %+v",
+		differentAddrs, differentASNS, withoutHandshake,
+	)
 	tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
 }
 
@@ -279,22 +278,34 @@ func (tk *TestKeys) analysisDNSDiffASN(probeAddrs, thAddrs []string) (asns []uin
 
 // findAddrsWithoutTLSHandshake computes the list of probe discovered addresses
 // for which we couldn't successfully perform a TLS handshake.
-func (tk *TestKeys) findAddrsWithoutTLSHandshake() (output []string) {
+func (tk *TestKeys) findAddrsWithoutTLSHandshake(into []string) (output []string) {
 	const (
 		resolved = 1 << iota
 		handshakeOK
 	)
 	mapping := make(map[string]int)
 
+	// fill the input map with the addresses we're interested to analyze
+	for _, addr := range into {
+		mapping[addr] = 0
+	}
+
 	// gather all the addrs resolved by the probe
 	for _, query := range tk.Queries {
 		for _, answer := range query.Answers {
+			var addr string
 			switch answer.AnswerType {
 			case "A":
-				mapping[answer.IPv4] |= resolved
+				addr = answer.IPv4
 			case "AAAA":
-				mapping[answer.IPv6] |= resolved
+				addr = answer.IPv6
+			default:
+				continue
 			}
+			if _, found := mapping[addr]; !found {
+				continue // we're not interested into this addr
+			}
+			mapping[addr] |= resolved
 		}
 	}
 
@@ -307,12 +318,18 @@ func (tk *TestKeys) findAddrsWithoutTLSHandshake() (output []string) {
 		if thx.Failure != nil {
 			continue // this handshake failed
 		}
+		if _, found := mapping[addr]; !found {
+			continue // we're not interested into this addr
+		}
 		mapping[addr] |= handshakeOK
 	}
 
 	// compute the list of addresses without the handshakeOK flag
 	for addr, flags := range mapping {
-		if flags&handshakeOK == 0 {
+		if flags == 0 {
+			continue // this looks like a bug
+		}
+		if (flags & handshakeOK) == 0 {
 			output = append(output, addr)
 		}
 	}
