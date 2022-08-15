@@ -52,6 +52,36 @@ type TestKeys struct {
 	// BlockingFlags contains blocking flags.
 	BlockingFlags int64 `json:"x_blocking_flags"`
 
+	// BodyLength match tells us whether the body length matches.
+	BodyLengthMatch *bool `json:"body_length_match"`
+
+	// HeadersMatch tells us whether the headers match.
+	HeadersMatch *bool `json:"headers_match"`
+
+	// StatusCodeMatch tells us whether the status code matches.
+	StatusCodeMatch *bool `json:"status_code_match"`
+
+	// TitleMatch tells us whether the title matches.
+	TitleMatch *bool `json:"title_match"`
+
+	// Blocking indicates the reason for blocking. This is notoriously a bad
+	// type because it can be one of the following values:
+	//
+	// - "tcp_ip"
+	// - "dns"
+	// - "http-diff"
+	// - "http-failure"
+	// - false
+	// - null
+	//
+	// In addition to being a bad type, this field has the issue that it
+	// reduces the reason for blocking to an enum, whereas it's a set of flags,
+	// hence we introduced the x_blocking_flags field.
+	Blocking any `json:"blocking"`
+
+	// Accessible indicates whether the resource is accessible.
+	Accessible *bool `json:"accessible"`
+
 	// controlRequest is the control request we sent.
 	controlRequest *webconnectivity.ControlRequest
 
@@ -146,6 +176,12 @@ func NewTestKeys() *TestKeys {
 		DNSExperimentFailure: nil,
 		DNSConsistency:       "",
 		BlockingFlags:        0,
+		BodyLengthMatch:      nil,
+		HeadersMatch:         nil,
+		StatusCodeMatch:      nil,
+		TitleMatch:           nil,
+		Blocking:             nil,
+		Accessible:           nil,
 		controlRequest:       nil,
 		fundamentalFailure:   nil,
 		mu:                   &sync.Mutex{},

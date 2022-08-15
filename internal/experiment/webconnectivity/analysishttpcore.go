@@ -1,5 +1,9 @@
 package webconnectivity
 
+//
+// HTTP core analysis
+//
+
 import "github.com/ooni/probe-cli/v3/internal/netxlite"
 
 // analysisHTTPToplevel is the toplevel analysis function for HTTP results.
@@ -35,9 +39,15 @@ func (tk *TestKeys) analysisHTTPToplevel() {
 		return
 	}
 
-	// fallback to the original HTTP diff algorithm. The first entry in the
+	// if the request has failed in any other way, we don't know. The first entry in the
 	// tk.Requests array is the last entry that was measured.
-	tk.analysisHTTPDiff(tk.Requests[0], &ctrl)
+	finalRequest := tk.Requests[0]
+	if finalRequest.Failure != nil {
+		return
+	}
+
+	// fallback to the original HTTP diff algorithm.
+	tk.analysisHTTPDiff(finalRequest, &ctrl)
 }
 
 // hasWellKnownTLSHandshakeIssues returns true in case we observed
