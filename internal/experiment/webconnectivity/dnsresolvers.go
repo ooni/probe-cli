@@ -9,13 +9,13 @@ package webconnectivity
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -149,6 +149,8 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 		t.DNSCache.Set(t.Domain, addresses)
 	}
 
+	log.Infof("using: %+v", addresses)
+
 	// fan out a number of child async tasks to use the IP addrs
 	t.startCleartextFlows(parentCtx, addresses)
 	t.startSecureFlows(parentCtx, addresses)
@@ -177,12 +179,8 @@ func (t *DNSResolvers) lookupHostSystem(parentCtx context.Context, out chan<- []
 	reso := trace.NewStdlibResolver(t.Logger)
 	addrs, err := reso.LookupHost(lookupCtx, t.Domain)
 	t.TestKeys.AppendQueries(trace.DNSLookupsFromRoundTrip()...)
-	if err != nil {
-		ol.Stop(err)
-		return
-	}
-	ol.Stop(fmt.Errorf("%+v", addrs)) // just to emit the correct message
-	out <- addrs
+	ol.Stop(err)
+	out <- addrs // must send something -even nil- to the parent
 }
 
 // lookupHostUDP performs a DNS lookup using an UDP resolver.
@@ -209,12 +207,8 @@ func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, out chan<- []str
 	reso := trace.NewParallelUDPResolver(t.Logger, dialer, udpAddress)
 	addrs, err := reso.LookupHost(lookupCtx, t.Domain)
 	t.TestKeys.AppendQueries(trace.DNSLookupsFromRoundTrip()...)
-	if err != nil {
-		ol.Stop(err)
-		return
-	}
-	ol.Stop(fmt.Errorf("%+v", addrs)) // just to emit the correct message
-	out <- addrs
+	ol.Stop(err)
+	out <- addrs // must send something -even nil- to the parent
 }
 
 // Returns the UDP resolver we should be using by default.
@@ -249,12 +243,8 @@ func (t *DNSResolvers) lookupHostDNSOverHTTPS(parentCtx context.Context, out cha
 	addrs, err := reso.LookupHost(lookupCtx, t.Domain)
 	reso.CloseIdleConnections()
 	t.TestKeys.AppendQueries(trace.DNSLookupsFromRoundTrip()...)
-	if err != nil {
-		ol.Stop(err)
-		return
-	}
-	ol.Stop(fmt.Errorf("%+v", addrs)) // just to emit the correct message
-	out <- addrs
+	ol.Stop(err)
+	out <- addrs // must send something -even nil- to the parent
 }
 
 // Returns the DOH resolver URL we should be using by default.
