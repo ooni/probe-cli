@@ -20,6 +20,9 @@ type TestKeys struct {
 	// NetworkEvents contains network events.
 	NetworkEvents []*model.ArchivalNetworkEvent `json:"network_events"`
 
+	// DoH contains observations collected by DoH resolvers.
+	DoH *TestKeysDoH `json:"doh"`
+
 	// Queries contains DNS queries.
 	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
 
@@ -96,6 +99,26 @@ type TestKeys struct {
 	mu *sync.Mutex
 }
 
+// TestKeysDoH contains results collected using DoH.
+//
+// They are on a separate hierarchy to simplify processing.
+type TestKeysDoH struct {
+	// NetworkEvents contains network events.
+	NetworkEvents []*model.ArchivalNetworkEvent `json:"network_events"`
+
+	// Queries contains DNS queries.
+	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
+
+	// Requests contains HTTP results.
+	Requests []*model.ArchivalHTTPRequestResult `json:"requests"`
+
+	// TCPConnect contains TCP connect results.
+	TCPConnect []*model.ArchivalTCPConnectResult `json:"tcp_connect"`
+
+	// TLSHandshakes contains TLS handshakes results.
+	TLSHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"tls_handshakes"`
+}
+
 // AppendNetworkEvents appends to NetworkEvents.
 func (tk *TestKeys) AppendNetworkEvents(v ...*model.ArchivalNetworkEvent) {
 	tk.mu.Lock()
@@ -161,11 +184,26 @@ func (tk *TestKeys) SetFundamentalFailure(err error) {
 	tk.mu.Unlock()
 }
 
+// WithTestKeysDoH calls the given function with the mutex locked passing to
+// it as argument the pointer to the DoH field.
+func (tk *TestKeys) WithTestKeysDoH(f func(*TestKeysDoH)) {
+	tk.mu.Lock()
+	f(tk.DoH)
+	tk.mu.Unlock()
+}
+
 // NewTestKeys creates a new instance of TestKeys.
 func NewTestKeys() *TestKeys {
 	// TODO: here you should initialize all the fields
 	return &TestKeys{
-		NetworkEvents:        []*model.ArchivalNetworkEvent{},
+		NetworkEvents: []*model.ArchivalNetworkEvent{},
+		DoH: &TestKeysDoH{
+			NetworkEvents: []*model.ArchivalNetworkEvent{},
+			Queries:       []*model.ArchivalDNSLookupResult{},
+			Requests:      []*model.ArchivalHTTPRequestResult{},
+			TCPConnect:    []*model.ArchivalTCPConnectResult{},
+			TLSHandshakes: []*model.ArchivalTLSOrQUICHandshakeResult{},
+		},
 		Queries:              []*model.ArchivalDNSLookupResult{},
 		Requests:             []*model.ArchivalHTTPRequestResult{},
 		TCPConnect:           []*model.ArchivalTCPConnectResult{},
