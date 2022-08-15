@@ -1,5 +1,9 @@
 package webconnectivity
 
+//
+// DNS analysis
+//
+
 import (
 	"net"
 	"net/url"

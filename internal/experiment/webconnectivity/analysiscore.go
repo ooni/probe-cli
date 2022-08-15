@@ -1,5 +1,9 @@
 package webconnectivity
 
+//
+// Core analysis
+//
+
 const (
 	// analysisBlockingDNS indicates there's blocking at the DNS level.
 	analysisBlockingDNS = 1 << iota
@@ -15,4 +19,5 @@ const (
 // of the experiment once all network tasks have completed.
 func (tk *TestKeys) analysisToplevel() {
 	tk.analysisDNSToplevel()
+	tk.analysisTCPIPToplevel()
 }
