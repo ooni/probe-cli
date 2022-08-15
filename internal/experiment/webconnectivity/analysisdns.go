@@ -43,6 +43,11 @@ func (tk *TestKeys) analysisDNSToplevel() {
 func (tk *TestKeys) analysisDNSExperimentFailure() {
 	for _, query := range tk.Queries {
 		if fail := query.Failure; fail != nil {
+			if query.QueryType == "AAAA" && *query.Failure == netxlite.FailureDNSNoAnswer {
+				// maybe this heuristic could be further improved by checking
+				// whether the TH did actually see any IPv6 address?
+				continue
+			}
 			tk.DNSExperimentFailure = fail
 			return
 		}
@@ -125,6 +130,11 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure() {
 		if query.Failure == nil {
 			// we expect to see a failure if we don't see
 			// answers, so this seems a bug
+			continue
+		}
+		if query.QueryType == "AAAA" && *query.Failure == netxlite.FailureDNSNoAnswer {
+			// maybe this heuristic could be further improved by checking
+			// whether the TH did actually see any IPv6 address?
 			continue
 		}
 		tk.DNSFlags |= AnalysisDNSUnexpectedFailure
