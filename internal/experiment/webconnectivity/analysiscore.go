@@ -11,8 +11,14 @@ const (
 	// analysisBlockingTCPIP indicates there's blocking at the TCP/IP level.
 	analysisBlockingTCPIP
 
-	// analysisBlockingHTTP indicates there's blocking at the HTTP level.
-	analysisBlockingHTTP
+	// analysisBlockingTLSFailure indicates there were TLS issues.
+	analysisBlockingTLSFailure
+
+	// analysisBlockingHTTPFailure indicates there was an HTTP failure.
+	analysisBlockingHTTPFailure
+
+	// analysisBlockingHTTPDiff indicates there's an HTTP diff.
+	analysisBlockingHTTPDiff
 )
 
 // analysisToplevel is the toplevel function that analyses the results
@@ -20,4 +26,5 @@ const (
 func (tk *TestKeys) analysisToplevel() {
 	tk.analysisDNSToplevel()
 	tk.analysisTCPIPToplevel()
+	tk.analysisHTTPToplevel()
 }
