@@ -90,16 +90,30 @@ func (t *DNSResolvers) run(parentCtx context.Context) []string {
 	systemOut := make(chan []string)
 	udpOut := make(chan []string)
 	httpsOut := make(chan []string)
+	whoamiSystemV4Out := make(chan []DNSWhoamiInfoEntry)
+	whoamiUDPv4Out := make(chan []DNSWhoamiInfoEntry)
+
+	udpAddress := t.udpAddress()
 
 	// start asynchronous lookups
 	go t.lookupHostSystem(parentCtx, systemOut)
-	go t.lookupHostUDP(parentCtx, udpOut)
+	go t.lookupHostUDP(parentCtx, udpAddress, udpOut)
 	go t.lookupHostDNSOverHTTPS(parentCtx, httpsOut)
+	go t.whoamiSystemV4(parentCtx, whoamiSystemV4Out)
+	go t.whoamiUDPv4(parentCtx, udpAddress, whoamiUDPv4Out)
 
 	// collect resulting IP addresses (which may be nil/empty lists)
 	systemAddrs := <-systemOut
 	udpAddrs := <-udpOut
 	httpsAddrs := <-httpsOut
+
+	// collect whoami results (which also may be nil/empty)
+	whoamiSystemV4 := <-whoamiSystemV4Out
+	whoamiUDPv4 := <-whoamiUDPv4Out
+	t.TestKeys.WithDNSWhoami(func(di *DNSWhoamiInfo) {
+		di.SystemV4 = whoamiSystemV4
+		di.UDPv4[udpAddress] = whoamiUDPv4
+	})
 
 	// merge the resolved IP addresses
 	merged := map[string]bool{}
@@ -157,6 +171,20 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 	t.maybeStartControlFlow(parentCtx, addresses)
 }
 
+// whoamiSystemV4 performs a DNS whoami lookup for the system resolver.
+func (t *DNSResolvers) whoamiSystemV4(parentCtx context.Context, out chan<- []DNSWhoamiInfoEntry) {
+	value, _ := DNSWhoamiSingleton.SystemV4(parentCtx)
+	t.Logger.Infof("DNS whoami for system resolver: %+v", value)
+	out <- value
+}
+
+// whoamiUDPv4 performs a DNS whoami lookup for the given UDP resolver.
+func (t *DNSResolvers) whoamiUDPv4(parentCtx context.Context, udpAddress string, out chan<- []DNSWhoamiInfoEntry) {
+	value, _ := DNSWhoamiSingleton.UDPv4(parentCtx, udpAddress)
+	t.Logger.Infof("DNS whoami for %s/udp resolver: %+v", udpAddress, value)
+	out <- value
+}
+
 // lookupHostSystem performs a DNS lookup using the system resolver.
 func (t *DNSResolvers) lookupHostSystem(parentCtx context.Context, out chan<- []string) {
 	// create context with attached a timeout
@@ -184,7 +212,7 @@ func (t *DNSResolvers) lookupHostSystem(parentCtx context.Context, out chan<- []
 }
 
 // lookupHostUDP performs a DNS lookup using an UDP resolver.
-func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, out chan<- []string) {
+func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, udpAddress string, out chan<- []string) {
 	// create context with attached a timeout
 	const timeout = 4 * time.Second
 	lookupCtx, lookpCancel := context.WithTimeout(parentCtx, timeout)
@@ -197,7 +225,6 @@ func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, out chan<- []str
 	trace := measurexlite.NewTrace(index, t.ZeroTime)
 
 	// start the operation logger
-	udpAddress := t.udpAddress()
 	ol := measurexlite.NewOperationLogger(
 		t.Logger, "[#%d] lookup %s using %s", index, t.Domain, udpAddress,
 	)

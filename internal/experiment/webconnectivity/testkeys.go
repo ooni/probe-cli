@@ -20,6 +20,10 @@ type TestKeys struct {
 	// NetworkEvents contains network events.
 	NetworkEvents []*model.ArchivalNetworkEvent `json:"network_events"`
 
+	// DNSWhoami contains results of using the DNS whoami functionality for the
+	// possibly cleartext resolvers that we're using.
+	DNSWoami *DNSWhoamiInfo `json:"dns_whoami"`
+
 	// DoH contains ancillary observations collected by DoH resolvers.
 	DoH *TestKeysDoH `json:"doh"`
 
@@ -100,6 +104,21 @@ type TestKeys struct {
 
 	// mu provides mutual exclusion for accessing the test keys.
 	mu *sync.Mutex
+}
+
+// DNSWhoamiInfoEntry contains an entry for DNSWhoamiInfo.
+type DNSWhoamiInfoEntry struct {
+	// Address is the IP address
+	Address string `json:"address"`
+}
+
+// DNSWhoamiInfo contains info about DNS whoami.
+type DNSWhoamiInfo struct {
+	// SystemV4 contains results related to the system resolver using IPv4.
+	SystemV4 []DNSWhoamiInfoEntry `json:"system_v4"`
+
+	// UDPv4 contains results related to an UDP resolver using IPv4.
+	UDPv4 map[string][]DNSWhoamiInfoEntry `json:"udp_v4"`
 }
 
 // TestKeysDoH contains ancillary observations collected using DoH.
@@ -214,11 +233,23 @@ func (tk *TestKeys) WithTestKeysDo53(f func(*TestKeysDo53)) {
 	tk.mu.Unlock()
 }
 
+// WithDNSWhoami calls the given function with the mutex locked passing to
+// it as argument the pointer to the DNSWhoami field.
+func (tk *TestKeys) WithDNSWhoami(fun func(*DNSWhoamiInfo)) {
+	tk.mu.Lock()
+	fun(tk.DNSWoami)
+	tk.mu.Unlock()
+}
+
 // NewTestKeys creates a new instance of TestKeys.
 func NewTestKeys() *TestKeys {
 	// TODO: here you should initialize all the fields
 	return &TestKeys{
 		NetworkEvents: []*model.ArchivalNetworkEvent{},
+		DNSWoami: &DNSWhoamiInfo{
+			SystemV4: []DNSWhoamiInfoEntry{},
+			UDPv4:    map[string][]DNSWhoamiInfoEntry{},
+		},
 		DoH: &TestKeysDoH{
 			NetworkEvents: []*model.ArchivalNetworkEvent{},
 			Queries:       []*model.ArchivalDNSLookupResult{},
