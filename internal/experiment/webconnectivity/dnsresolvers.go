@@ -60,6 +60,15 @@ type DNSResolvers struct {
 	// Referer contains the OPTIONAL referer, used for redirects.
 	Referer string
 
+	// Session is the OPTIONAL session. If the session is set, we will use
+	// it to start the task that issues the control request. This request must
+	// only be sent during the first iteration. It would be pointless to
+	// issue such a request for subsequent redirects.
+	Session model.ExperimentSession
+
+	// THAddr is the OPTIONAL test helper address.
+	THAddr string
+
 	// UDPAddress is the OPTIONAL address of the UDP resolver to use. If this
 	// field is not set we use a default one (e.g., `8.8.8.8:53`).
 	UDPAddress string
@@ -142,6 +151,7 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 	// fan out a number of child async tasks to use the IP addrs
 	t.startCleartextFlows(parentCtx, addresses)
 	t.startSecureFlows(parentCtx, addresses)
+	t.maybeStartControlFlow(parentCtx, addresses)
 }
 
 // lookupHostSystem performs a DNS lookup using the system resolver.
@@ -310,5 +320,21 @@ func (t *DNSResolvers) startSecureFlows(ctx context.Context, addresses []string)
 			URLRawQuery:     t.URL.RawQuery,
 		}
 		task.Start(ctx)
+	}
+}
+
+// maybeStartControlFlow starts the control flow, when .Session is set.
+func (t *DNSResolvers) maybeStartControlFlow(ctx context.Context, addresses []string) {
+	if t.Session != nil && t.THAddr != "" {
+		ctrl := &Control{
+			Addresses: addresses,
+			Logger:    t.Logger,
+			TestKeys:  t.TestKeys,
+			Session:   t.Session,
+			THAddr:    t.THAddr,
+			URL:       t.URL,
+			WaitGroup: t.WaitGroup,
+		}
+		ctrl.Start(ctx)
 	}
 }

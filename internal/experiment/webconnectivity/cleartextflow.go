@@ -251,6 +251,8 @@ func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Res
 			WaitGroup:       t.WaitGroup,
 			DNSOverHTTPSURL: t.DNSOverHTTPSURL,
 			Referer:         resp.Request.URL.String(),
+			Session:         nil, // no need to issue another control request
+			THAddr:          "",  // ditto
 			UDPAddress:      t.UDPAddress,
 		}
 		resolvers.Start(ctx)

@@ -10,6 +10,7 @@ package webconnectivity
 import (
 	"sync"
 
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -29,6 +30,12 @@ type TestKeys struct {
 
 	// TLSHandshakes contains TLS handshakes results.
 	TLSHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"tls_handshakes"`
+
+	// Control contains the TH's response.
+	Control *webconnectivity.ControlResponse `json:"control"`
+
+	// controlFailure is the error associated with accessing the control backend
+	controlFailure error
 
 	// fundamentalFailure indicates that some fundamental error occurred
 	// in a background task. A fundamental error is something like a programmer
@@ -78,6 +85,20 @@ func (tk *TestKeys) AppendTLSHandshakes(v ...*model.ArchivalTLSOrQUICHandshakeRe
 	tk.mu.Unlock()
 }
 
+// SetControl sets the value of Control.
+func (tk *TestKeys) SetControl(v *webconnectivity.ControlResponse) {
+	tk.mu.Lock()
+	tk.Control = v
+	tk.mu.Unlock()
+}
+
+// SetControlFailure sets the value of controlFailure.
+func (tk *TestKeys) SetControlFailure(err error) {
+	tk.mu.Lock()
+	tk.controlFailure = err
+	tk.mu.Unlock()
+}
+
 // SetFundamentalFailure sets the value of fundamentalFailure.
 func (tk *TestKeys) SetFundamentalFailure(err error) {
 	tk.mu.Lock()
@@ -94,6 +115,8 @@ func NewTestKeys() *TestKeys {
 		Requests:           []*model.ArchivalHTTPRequestResult{},
 		TCPConnect:         []*model.ArchivalTCPConnectResult{},
 		TLSHandshakes:      []*model.ArchivalTLSOrQUICHandshakeResult{},
+		Control:            &webconnectivity.ControlResponse{},
+		controlFailure:     nil,
 		fundamentalFailure: nil,
 		mu:                 &sync.Mutex{},
 	}
@@ -103,5 +126,4 @@ func NewTestKeys() *TestKeys {
 // must be called from the measurer after all the tasks have completed.
 func (tk *TestKeys) finalize() {
 	// TODO(bassosimone): set final webconnectivity flags
-	// TODO(bassosimone): sort requests correctly
 }

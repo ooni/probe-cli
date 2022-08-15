@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"golang.org/x/net/publicsuffix"
 )
@@ -81,6 +82,23 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 		return err
 	}
 
+	// obtain the test helper's address
+	testhelpers, _ := sess.GetTestHelpersByName("web-connectivity")
+	var thAddr string
+	for _, th := range testhelpers {
+		if th.Type == "https" {
+			thAddr = th.Address
+			measurement.TestHelpers = map[string]any{
+				"backend": &th,
+			}
+			break
+		}
+	}
+	if thAddr == "" {
+		sess.Logger().Warnf("continuing without a valid TH address")
+		tk.SetControlFailure(webconnectivity.ErrNoAvailableTestHelpers)
+	}
+
 	// start background tasks
 	resos := &DNSResolvers{
 		DNSCache:        NewDNSCache(),
@@ -94,6 +112,8 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 		CookieJar:       jar,
 		DNSOverHTTPSURL: "",
 		Referer:         "",
+		Session:         sess,
+		THAddr:          thAddr,
 		UDPAddress:      "",
 	}
 	resos.Start(ctx)
