@@ -58,7 +58,9 @@ func (tk *TestKeys) AppendQueries(v ...*model.ArchivalDNSLookupResult) {
 // AppendRequests appends to Requests.
 func (tk *TestKeys) AppendRequests(v ...*model.ArchivalHTTPRequestResult) {
 	tk.mu.Lock()
-	tk.Requests = append(tk.Requests, v...)
+	// Implementation note: append at the front since the most recent
+	// request must be at the beginning of the list.
+	tk.Requests = append(v, tk.Requests...)
 	tk.mu.Unlock()
 }
 

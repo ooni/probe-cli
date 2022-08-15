@@ -31,9 +31,8 @@ type SecureFlow struct {
 	// Address is the MANDATORY address to connect to.
 	Address string
 
-	// FollowRedirects is OPTIONAL and instructs this flow
-	// to follow HTTP redirects (if any).
-	FollowRedirects bool
+	// DNSCache is the MANDATORY DNS cache.
+	DNSCache *DNSCache
 
 	// IDGenerator is the MANDATORY atomic int64 to generate task IDs.
 	IDGenerator *atomicx.Int64
@@ -57,11 +56,29 @@ type SecureFlow struct {
 	// ALPN is the OPTIONAL ALPN to use.
 	ALPN []string
 
+	// CookieJar contains the OPTIONAL cookie jar, used for redirects.
+	CookieJar http.CookieJar
+
+	// DNSOverHTTPSURL is the optional DoH URL to use. If this field is not
+	// set, we use a default one (e.g., `https://mozilla.cloudflare-dns.com/dns-query`).
+	DNSOverHTTPSURL string
+
+	// FollowRedirects is OPTIONAL and instructs this flow
+	// to follow HTTP redirects (if any).
+	FollowRedirects bool
+
 	// SNI is the OPTIONAL SNI to use.
 	SNI string
 
 	// HostHeader is the OPTIONAL host header to use.
 	HostHeader string
+
+	// Referer contains the OPTIONAL referer, used for redirects.
+	Referer string
+
+	// UDPAddress is the OPTIONAL address of the UDP resolver to use. If this
+	// field is not set we use a default one (e.g., `8.8.8.8:53`).
+	UDPAddress string
 
 	// URLPath is the OPTIONAL URL path.
 	URLPath string
@@ -200,10 +217,15 @@ func (t *SecureFlow) urlHost(scheme string) (string, error) {
 		t.Logger.Warnf("BUG: net.SplitHostPort failed for %s: %s", t.Address, err.Error())
 		return "", err
 	}
-	if port == "443" && scheme == "https" {
-		return addr, nil
+	urlHost := t.HostHeader
+	if urlHost == "" {
+		urlHost = addr
 	}
-	return t.Address, nil // there was no need to parse after all 😬
+	if port == "443" && scheme == "https" {
+		return urlHost, nil
+	}
+	urlHost = net.JoinHostPort(urlHost, port)
+	return urlHost, nil
 }
 
 // newHTTPRequest creates a new HTTP request.
@@ -226,8 +248,14 @@ func (t *SecureFlow) newHTTPRequest(ctx context.Context) (*http.Request, error) 
 	httpReq.Header.Set("Host", t.HostHeader)
 	httpReq.Header.Set("Accept", model.HTTPHeaderAccept)
 	httpReq.Header.Set("Accept-Language", model.HTTPHeaderAcceptLanguage)
+	httpReq.Header.Set("Referer", t.Referer)
 	httpReq.Header.Set("User-Agent", model.HTTPHeaderUserAgent)
 	httpReq.Host = t.HostHeader
+	if t.CookieJar != nil {
+		for _, cookie := range t.CookieJar.Cookies(httpURL) {
+			httpReq.AddCookie(cookie)
+		}
+	}
 	return httpReq, nil
 }
 
@@ -242,6 +270,9 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, txp model.HTTPTranspor
 		return nil, []byte{}, err
 	}
 	defer resp.Body.Close()
+	if cookies := resp.Cookies(); t.CookieJar != nil && len(cookies) > 0 {
+		t.CookieJar.SetCookies(req.URL, cookies)
+	}
 	reader := io.LimitReader(resp.Body, maxbody)
 	body, err := netxlite.ReadAllContext(ctx, reader)
 	ev := trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err)
@@ -251,24 +282,31 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, txp model.HTTPTranspor
 
 // maybeFollowRedirects follows redirects if configured and needed
 func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Response) {
-	if t.FollowRedirects {
-		switch resp.StatusCode {
-		case 301, 302, 307, 308:
-			location, err := resp.Location()
-			if err != nil {
-				return
-			}
-			redirects := &Redirects{
-				IDGenerator: t.IDGenerator,
-				Location:    location,
-				Logger:      t.Logger,
-				TestKeys:    t.TestKeys,
-				ZeroTime:    t.ZeroTime,
-				WaitGroup:   t.WaitGroup,
-			}
-			redirects.Start(ctx)
-		default:
-			// nothing
+	if !t.FollowRedirects {
+		return
+	}
+	switch resp.StatusCode {
+	case 301, 302, 307, 308:
+		location, err := resp.Location()
+		if err != nil {
+			return
 		}
+		resolvers := &DNSResolvers{
+			CookieJar:       t.CookieJar,
+			DNSCache:        t.DNSCache,
+			Domain:          location.Hostname(),
+			IDGenerator:     t.IDGenerator,
+			Logger:          t.Logger,
+			TestKeys:        t.TestKeys,
+			URL:             location,
+			ZeroTime:        t.ZeroTime,
+			WaitGroup:       t.WaitGroup,
+			DNSOverHTTPSURL: t.DNSOverHTTPSURL,
+			Referer:         resp.Request.URL.String(),
+			UDPAddress:      t.UDPAddress,
+		}
+		resolvers.Start(ctx)
+	default:
+		// nothing
 	}
 }

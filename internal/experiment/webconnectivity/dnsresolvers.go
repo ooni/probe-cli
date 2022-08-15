@@ -10,6 +10,7 @@ package webconnectivity
 import (
 	"context"
 	"net"
+	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -25,6 +26,9 @@ import (
 // The zero value of this structure IS NOT valid and you MUST initialize
 // all the fields marked as MANDATORY before using this structure.
 type DNSResolvers struct {
+	// DNSCache is the MANDATORY DNS cache.
+	DNSCache *DNSCache
+
 	// Domain is the MANDATORY domain to resolve.
 	Domain string
 
@@ -46,9 +50,15 @@ type DNSResolvers struct {
 	// WaitGroup is the MANDATORY wait group this task belongs to.
 	WaitGroup *sync.WaitGroup
 
+	// CookieJar contains the OPTIONAL cookie jar, used for redirects.
+	CookieJar http.CookieJar
+
 	// DNSOverHTTPSURL is the optional DoH URL to use. If this field is not
 	// set, we use a default one (e.g., `https://mozilla.cloudflare-dns.com/dns-query`).
 	DNSOverHTTPSURL string
+
+	// Referer contains the OPTIONAL referer, used for redirects.
+	Referer string
 
 	// UDPAddress is the OPTIONAL address of the UDP resolver to use. If this
 	// field is not set we use a default one (e.g., `8.8.8.8:53`).
@@ -64,8 +74,8 @@ func (t *DNSResolvers) Start(ctx context.Context) {
 	}()
 }
 
-// Run runs this task in the current goroutine.
-func (t *DNSResolvers) Run(parentCtx context.Context) {
+// run performs a DNS lookup and returns the looked up addrs
+func (t *DNSResolvers) run(parentCtx context.Context) []string {
 	// create output channels for the lookup
 	systemOut := make(chan []string)
 	udpOut := make(chan []string)
@@ -108,9 +118,30 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 
 	// TODO(bassosimone): remove bogons
 
+	return sorted
+}
+
+// Run runs this task in the current goroutine.
+func (t *DNSResolvers) Run(parentCtx context.Context) {
+	var (
+		addresses []string
+		found     bool
+	)
+
+	// first attempt to use the dns cache
+	addresses, found = t.DNSCache.Get(t.Domain)
+
+	if !found {
+		// fall back to performing a real dns lookup
+		addresses = t.run(parentCtx)
+
+		// insert the addresses we just looked us into the cache
+		t.DNSCache.Set(t.Domain, addresses)
+	}
+
 	// fan out a number of child async tasks to use the IP addrs
-	t.startCleartextFlows(parentCtx, sorted)
-	t.startSecureFlows(parentCtx, sorted)
+	t.startCleartextFlows(parentCtx, addresses)
+	t.startSecureFlows(parentCtx, addresses)
 }
 
 // lookupHostSystem performs a DNS lookup using the system resolver.
@@ -219,14 +250,19 @@ func (t *DNSResolvers) startCleartextFlows(ctx context.Context, addresses []stri
 	for _, addr := range addresses {
 		task := &CleartextFlow{
 			Address:         net.JoinHostPort(addr, port),
-			FollowRedirects: t.URL.Scheme == "http",
+			DNSCache:        t.DNSCache,
 			IDGenerator:     t.IDGenerator,
 			Logger:          t.Logger,
 			Sema:            sema,
 			TestKeys:        t.TestKeys,
 			ZeroTime:        t.ZeroTime,
 			WaitGroup:       t.WaitGroup,
+			CookieJar:       t.CookieJar,
+			DNSOverHTTPSURL: t.DNSOverHTTPSURL,
+			FollowRedirects: t.URL.Scheme == "http",
 			HostHeader:      t.URL.Host,
+			Referer:         t.Referer,
+			UDPAddress:      t.UDPAddress,
 			URLPath:         t.URL.Path,
 			URLRawQuery:     t.URL.RawQuery,
 		}
@@ -255,7 +291,7 @@ func (t *DNSResolvers) startSecureFlows(ctx context.Context, addresses []string)
 	for _, addr := range addresses {
 		task := &SecureFlow{
 			Address:         net.JoinHostPort(addr, port),
-			FollowRedirects: t.URL.Scheme == "https",
+			DNSCache:        t.DNSCache,
 			IDGenerator:     t.IDGenerator,
 			Logger:          t.Logger,
 			Sema:            sema,
@@ -263,8 +299,13 @@ func (t *DNSResolvers) startSecureFlows(ctx context.Context, addresses []string)
 			ZeroTime:        t.ZeroTime,
 			WaitGroup:       t.WaitGroup,
 			ALPN:            []string{"h2", "http/1.1"},
+			CookieJar:       t.CookieJar,
+			DNSOverHTTPSURL: t.DNSOverHTTPSURL,
+			FollowRedirects: t.URL.Scheme == "https",
 			SNI:             t.URL.Hostname(),
 			HostHeader:      t.URL.Host,
+			Referer:         t.Referer,
+			UDPAddress:      t.UDPAddress,
 			URLPath:         t.URL.Path,
 			URLRawQuery:     t.URL.RawQuery,
 		}

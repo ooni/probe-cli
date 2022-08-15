@@ -7,10 +7,12 @@ package webconnectivity
 import (
 	"context"
 	"errors"
+	"net/http/cookiejar"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"golang.org/x/net/publicsuffix"
 )
 
 // Measurer for the web_connectivity experiment.
@@ -71,8 +73,17 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	idGenerator := &atomicx.Int64{}
 	wg := &sync.WaitGroup{}
 
+	// create cookiejar
+	jar, err := cookiejar.New(&cookiejar.Options{
+		PublicSuffixList: publicsuffix.List,
+	})
+	if err != nil {
+		return err
+	}
+
 	// start background tasks
 	resos := &DNSResolvers{
+		DNSCache:        NewDNSCache(),
 		Domain:          URL.Hostname(),
 		IDGenerator:     idGenerator,
 		Logger:          sess.Logger(),
@@ -80,7 +91,9 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 		URL:             URL,
 		ZeroTime:        measurement.MeasurementStartTimeSaved,
 		WaitGroup:       wg,
+		CookieJar:       jar,
 		DNSOverHTTPSURL: "",
+		Referer:         "",
 		UDPAddress:      "",
 	}
 	resos.Start(ctx)
