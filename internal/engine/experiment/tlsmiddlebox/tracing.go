@@ -7,7 +7,6 @@ package tlsmiddlebox
 import (
 	"context"
 	"crypto/tls"
-	"net"
 	"sort"
 	"sync"
 	"time"
@@ -15,7 +14,16 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	utls "gitlab.com/yawning/utls.git"
 )
+
+// ClientIDs to map configurable inputs to uTLS fingerprints
+var ClientIDs = map[int]*utls.ClientHelloID{
+	1: &utls.HelloGolang,
+	2: &utls.HelloChrome_Auto,
+	3: &utls.HelloFirefox_Auto,
+	4: &utls.HelloIOS_Auto,
+}
 
 // MeasureTLS performs tracing using control and target SNI
 func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
@@ -76,13 +84,17 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 		return
 	}
 	thx := trace.NewTLSHandshakerStdlib(logger)
+	// initialise a uTLS Handshaker if the ClientID is non-zero
+	clientId := m.config.clientid()
+	if clientId > 0 {
+		thx = trace.NewTLSHandshakerUTLS(logger, ClientIDs[clientId])
+	}
 	_, _, err = thx.Handshake(ctx, conn, genTLSConfig(sni))
 	ol.Stop(err)
-	icmpErr := getICMPErr(conn)
 	// reset the TTL value to ensure that conn closes successfully
 	// Note: we do not check for errors here
 	setConnTTL(conn, 64)
-	iteration := newIterationFromHandshake(ttl, nil, icmpErr, <-trace.TLSHandshake)
+	iteration := newIterationFromHandshake(ttl, nil, nil, <-trace.TLSHandshake)
 	tr.addIterations(iteration)
 }
 
@@ -94,16 +106,6 @@ func genTLSConfig(sni string) *tls.Config {
 		NextProtos:         []string{"h2", "http/1.1"},
 		InsecureSkipVerify: true,
 	}
-}
-
-// getICMPErr fetches the error from the SO_ERROR value after the handshake
-func getICMPErr(conn net.Conn) error {
-	soErrno := getSoErr(conn)
-	failure := netxlite.ClassifyGenericError(soErrno)
-	if failure == netxlite.FailureHostUnreachable {
-		return soErrno
-	}
-	return nil
 }
 
 // alignIterEvents sorts the iterEvents according to increasing TTL

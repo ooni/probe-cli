@@ -45,7 +45,7 @@ func TestHandshakeWithTTL(t *testing.T) {
 		if iter.TTL != 1 {
 			t.Fatal("unexpected TTL value")
 		}
-		if iter.Handshake.Failure == nil || *iter.Handshake.Failure != netxlite.FailureHostUnreachable {
+		if iter.Handshake.Failure == nil || *iter.Handshake.Failure != netxlite.FailureGenericTimeoutError {
 			t.Fatal("unexpected error", *iter.Handshake.Failure)
 		}
 	})

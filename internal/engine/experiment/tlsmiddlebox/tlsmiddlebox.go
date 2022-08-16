@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -34,6 +33,9 @@ type Config struct {
 
 	// SNI is the SNI value to use.
 	SNI string `ooni:"the SNI value to use"`
+
+	// ClientId is the client fingerprint to use
+	ClientId int `ooni:"the ClientHello fingerprint to use"`
 }
 
 func (c Config) resolverURL() string {
@@ -69,6 +71,13 @@ func (c Config) sni(address string) string {
 		return c.SNI
 	}
 	return address
+}
+
+func (c Config) clientid() int {
+	if c.ClientId > 0 {
+		return c.ClientId
+	}
+	return 0
 }
 
 // Measurer performs the measurement.
@@ -146,8 +155,7 @@ func (m *Measurer) DNSLookup(ctx context.Context, index int64, zeroTime time.Tim
 	resolver := trace.NewParallelDNSOverHTTPSResolver(logger, url)
 	addrs, err := resolver.LookupHost(ctx, domain)
 	ol.Stop(err)
-	tk.addQueries(trace.DNSLookupsFromRoundTrip(dns.TypeA))
-	tk.addQueries(trace.DNSLookupsFromRoundTrip(dns.TypeAAAA))
+	tk.addQueries(trace.DNSLookupsFromRoundTrip())
 	return addrs, err
 }
 

@@ -67,6 +67,13 @@ func TestConfig_sni(t *testing.T) {
 	})
 }
 
+func TestConfig_clientid(t *testing.T) {
+	c := Config{}
+	if c.clientid() != 0 {
+		t.Fatal("invalid default ClientHello ID")
+	}
+}
+
 func TestMeasurer_input_failure(t *testing.T) {
 	runHelper := func(input string) (*model.Measurement, model.ExperimentMeasurer, error) {
 		m := NewExperimentMeasurer(Config{})
