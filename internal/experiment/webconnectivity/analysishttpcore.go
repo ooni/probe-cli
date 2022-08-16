@@ -5,6 +5,8 @@ package webconnectivity
 //
 
 import (
+	"net/url"
+
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -27,8 +29,8 @@ import (
 // In websteps fashion, we don't stop at the first failure, rather we
 // process all the available data and evaluate all possible errors.
 func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
-	// don't perform any analysis if the TH failed
-	if tk.Control == nil {
+	// don't perform any analysis without TH data
+	if tk.Control == nil || tk.ControlRequest == nil {
 		return
 	}
 	ctrl := tk.Control.HTTPRequest
@@ -38,15 +40,19 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 		return
 	}
 
+	// determine whether the original URL was HTTPS
+	origURL, err := url.Parse(tk.ControlRequest.HTTPRequest)
+	if err != nil {
+		return // this seeems like a bug?
+	}
+	isHTTPS := origURL.Scheme == "https"
+
 	// determine whether we had any TLS handshake issue and, in such a case,
 	// declare that we had a case of "http-failure" through TLS.
 	//
 	// Note that this would eventually count as an "http-failure" for .Blocking
 	// because Web Connectivity did not have a concept of TLS based blocking.
-	//
-	// This check works ~reliably as long as we ensure to put DoH TLS
-	// handshakes outside of the main .TLSHandshakes field.
-	if tk.hasWellKnownTLSHandshakeIssues(logger) {
+	if tk.hasWellKnownTLSHandshakeIssues(isHTTPS, logger) {
 		tk.XBlockingFlags |= analysisFlagTLSBlocking
 		// continue processing
 	}
@@ -77,28 +83,35 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 
 // hasWellKnownTLSHandshakeIssues returns true in case we observed
 // a set of well-known issues during the TLS handshake.
-func (tk *TestKeys) hasWellKnownTLSHandshakeIssues(logger model.Logger) (result bool) {
+func (tk *TestKeys) hasWellKnownTLSHandshakeIssues(isHTTPS bool, logger model.Logger) (result bool) {
 	// TODO(bassosimone): we should return TLS information in the TH
-	// such that we can perform a TCP-like check
-	for _, thx := range tk.TLSHandshakes {
-		fail := thx.Failure
-		if fail == nil {
-			continue // this handshake succeded, so skip it
-		}
-		switch *fail {
-		case netxlite.FailureConnectionReset,
-			netxlite.FailureGenericTimeoutError,
-			netxlite.FailureEOFError,
-			netxlite.FailureSSLInvalidHostname,
-			netxlite.FailureSSLInvalidCertificate,
-			netxlite.FailureSSLUnknownAuthority:
-			logger.Warnf(
-				"TLS: endpoint %s fails with %s (see #%d)",
-				thx.Address, *fail, thx.TransactionID,
-			)
-			result = true // flip the result but continue looping so we print them all
-		default:
-			// check next handshake
+	// such that we can perform a TCP-like check. For now, instead, we
+	// only perform comparison when the initial URL was HTTPS. Given
+	// that we unconditionally check for HTTPS even when the URL is HTTP,
+	// we cannot blindly treat all TLS errors as blocking. A website
+	// may just not have HTTPS. While in the obvious cases we will see
+	// certificate errors, in some cases it may actually timeout.
+	if isHTTPS {
+		for _, thx := range tk.TLSHandshakes {
+			fail := thx.Failure
+			if fail == nil {
+				continue // this handshake succeded, so skip it
+			}
+			switch *fail {
+			case netxlite.FailureConnectionReset,
+				netxlite.FailureGenericTimeoutError,
+				netxlite.FailureEOFError,
+				netxlite.FailureSSLInvalidHostname,
+				netxlite.FailureSSLInvalidCertificate,
+				netxlite.FailureSSLUnknownAuthority:
+				logger.Warnf(
+					"TLS: endpoint %s fails with %s (see #%d)",
+					thx.Address, *fail, thx.TransactionID,
+				)
+				result = true // flip the result but continue looping so we print them all
+			default:
+				// check next handshake
+			}
 		}
 	}
 	return

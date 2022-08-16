@@ -43,11 +43,6 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 	tk.httpDiffHeadersMatch(probe, th)
 	tk.httpDiffTitleMatch(probe, th)
 
-	logger.Infof("HTTP: bodyLengthMatch: %v", tk.BodyLengthMatch)
-	logger.Infof("HTTP: headersMatch: %v", tk.HeadersMatch)
-	logger.Infof("HTTP: statusCodeMatch: %v", tk.StatusCodeMatch)
-	logger.Infof("HTTP: titleMatch: %v", tk.TitleMatch)
-
 	if tk.StatusCodeMatch != nil && *tk.StatusCodeMatch {
 		if tk.BodyLengthMatch != nil && *tk.BodyLengthMatch {
 			logger.Infof(

@@ -33,6 +33,11 @@ func (tk *TestKeys) analysisTCPIPToplevel(logger model.Logger) {
 		isfalse = false
 	)
 
+	// TODO(bassosimone): the TH should measure also some of the IP addrs it discovered
+	// and the probe did not discover to improve the analysis. Otherwise, the probe
+	// is fooled by the TH also failing for countries that return random IP addresses
+	// that are actually not working. Yet, ooni/data would definitely see this.
+
 	// walk the list of probe results and compare with TH results
 	for _, entry := range tk.TCPConnect {
 		// skip successful entries

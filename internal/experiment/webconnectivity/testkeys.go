@@ -42,6 +42,9 @@ type TestKeys struct {
 	// TLSHandshakes contains TLS handshakes results.
 	TLSHandshakes []*model.ArchivalTLSOrQUICHandshakeResult `json:"tls_handshakes"`
 
+	// ControlRequest is the control request we sent.
+	ControlRequest *webconnectivity.ControlRequest `json:"x_control_request"`
+
 	// Control contains the TH's response.
 	Control *webconnectivity.ControlResponse `json:"control"`
 
@@ -92,9 +95,6 @@ type TestKeys struct {
 	// Accessible indicates whether the resource is accessible. Possible
 	// values for this field are: nil, true, and false.
 	Accessible any `json:"accessible"`
-
-	// controlRequest is the control request we sent.
-	controlRequest *webconnectivity.ControlRequest
 
 	// fundamentalFailure indicates that some fundamental error occurred
 	// in a background task. A fundamental error is something like a programmer
@@ -194,7 +194,7 @@ func (tk *TestKeys) AppendTLSHandshakes(v ...*model.ArchivalTLSOrQUICHandshakeRe
 // SetControlRequest sets the value of controlRequest.
 func (tk *TestKeys) SetControlRequest(v *webconnectivity.ControlRequest) {
 	tk.mu.Lock()
-	tk.controlRequest = v
+	tk.ControlRequest = v
 	tk.mu.Unlock()
 }
 
@@ -278,14 +278,14 @@ func NewTestKeys() *TestKeys {
 		TitleMatch:           nil,
 		Blocking:             nil,
 		Accessible:           nil,
-		controlRequest:       nil,
+		ControlRequest:       nil,
 		fundamentalFailure:   nil,
 		mu:                   &sync.Mutex{},
 	}
 }
 
-// finalize performs any delayed computation on the test keys. This function
+// Finalize performs any delayed computation on the test keys. This function
 // must be called from the measurer after all the tasks have completed.
-func (tk *TestKeys) finalize(logger model.Logger) {
+func (tk *TestKeys) Finalize(logger model.Logger) {
 	tk.analysisToplevel(logger)
 }

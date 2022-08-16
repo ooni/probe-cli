@@ -56,11 +56,11 @@ func (tk *TestKeys) analysisDNSToplevel(logger model.Logger) {
 	tk.analysisDNSUnexpectedFailure(logger)
 	tk.analysisDNSUnexpectedAddrs(logger)
 	if tk.XDNSFlags != 0 {
-		logger.Warnf("DNSConsistency: inconsistent")
+		logger.Warn("DNSConsistency: inconsistent")
 		tk.DNSConsistency = "inconsistent"
 		tk.XBlockingFlags |= analysisFlagDNSBlocking
 	} else {
-		logger.Warnf("DNSConsistency: consistent")
+		logger.Info("DNSConsistency: consistent")
 		tk.DNSConsistency = "consistent"
 	}
 }
@@ -88,13 +88,13 @@ func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 			switch answer.AnswerType {
 			case "A":
 				if net.ParseIP(answer.IPv4) != nil && netxlite.IsBogon(answer.IPv4) {
-					logger.Warnf("BOGON: %s in #%d", answer.IPv4, query.TransactionID)
+					logger.Warnf("DNS: BOGON %s in #%d", answer.IPv4, query.TransactionID)
 					tk.XDNSFlags |= AnalysisDNSBogon
 					// continue processing so we print all the bogons we have
 				}
 			case "AAAA":
 				if net.ParseIP(answer.IPv6) != nil && netxlite.IsBogon(answer.IPv6) {
-					logger.Warnf("BOGON: %s in #%d", answer.IPv6, query.TransactionID)
+					logger.Warnf("DNS: BOGON %s in #%d", answer.IPv6, query.TransactionID)
 					tk.XDNSFlags |= AnalysisDNSBogon
 					// continue processing so we print all the bogons we have
 				}
@@ -109,12 +109,12 @@ func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 // a failure is unexpected when the TH could resolve a domain and the probe couldn't.
 func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 	// make sure we have control before proceeding futher
-	if tk.Control == nil || tk.controlRequest == nil {
+	if tk.Control == nil || tk.ControlRequest == nil {
 		return
 	}
 
 	// obtain thRequest and thResponse as shortcuts
-	thRequest := tk.controlRequest
+	thRequest := tk.ControlRequest
 	thResponse := tk.Control
 
 	// obtain the domain that the TH has queried for
@@ -177,12 +177,12 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 // TLS based heuristic for determining whether an IP address was legit.
 func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 	// make sure we have control before proceeding futher
-	if tk.Control == nil || tk.controlRequest == nil {
+	if tk.Control == nil || tk.ControlRequest == nil {
 		return
 	}
 
 	// obtain thRequest and thResponse as shortcuts
-	thRequest := tk.controlRequest
+	thRequest := tk.ControlRequest
 	thResponse := tk.Control
 
 	// obtain the domain that the TH has queried for

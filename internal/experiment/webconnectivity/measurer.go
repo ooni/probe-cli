@@ -127,7 +127,7 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	}
 
 	// perform any deferred computation on the test keys
-	tk.finalize(sess.Logger())
+	tk.Finalize(sess.Logger())
 
 	// return whether there was a fundamental failure, which would prevent
 	// the measurement from being submitted to the OONI collector.
