@@ -4,7 +4,7 @@ import "sync"
 
 // DNSCache wraps a model.Resolver to provide DNS caching.
 //
-// The zero value is invalid. Please, use NewDNSCache.
+// The zero value is invalid; please, use NewDNSCache to construct.
 type DNSCache struct {
 	// mu provides mutual exclusion.
 	mu *sync.Mutex

@@ -44,7 +44,7 @@ func (ip *InputParser) Parse(input string) (*url.URL, error) {
 	return nil, errors.New("cannot parse input")
 }
 
-// Conditionally allows endpooints when ip.AllowEndpoints is true.
+// Conditionally allows endpoints when ip.AllowEndpoints is true.
 func (ip *InputParser) maybeAllowEndpoints(URL *url.URL, err error) (*url.URL, error) {
 	runtimex.PanicIfNil(err, "expected to be called with a non-nil error")
 	if ip.AllowEndpoints && URL.Scheme != "" && URL.Opaque != "" && URL.User == nil &&

@@ -11,13 +11,19 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // analysisHTTPDiff computes the HTTP diff between the final request-response
 // observed by the probe and the TH's result. The caller is responsible of passing
-// us a valid probe observation and a valid TH observation.
+// us a valid probe observation and a valid TH observation with nil failure.
 func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 	probe *model.ArchivalHTTPRequestResult, th *webconnectivity.ControlHTTPRequestResult) {
+	// make sure the caller respected the contract
+	runtimex.PanicIfTrue(
+		probe.Failure != nil || th.Failure != nil,
+		"the caller should have passed us successful HTTP observations",
+	)
 
 	// if we're dealing with an HTTPS request, don't perform any comparison
 	// under the assumption that we're good if we're using TLS
@@ -25,9 +31,9 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 	if err != nil {
 		return // looks like a bug
 	}
-	accessibleTrue := true
 	if URL.Scheme == "https" {
-		tk.Accessible = &accessibleTrue
+		logger.Infof("HTTP: HTTPS && no error => #%d is successful", probe.TransactionID)
+		tk.XBlockingFlags |= analysisFlagSuccess
 		return
 	}
 
@@ -37,22 +43,40 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 	tk.httpDiffHeadersMatch(probe, th)
 	tk.httpDiffTitleMatch(probe, th)
 
+	logger.Infof("HTTP: bodyLengthMatch: %v", tk.BodyLengthMatch)
+	logger.Infof("HTTP: headersMatch: %v", tk.HeadersMatch)
+	logger.Infof("HTTP: statusCodeMatch: %v", tk.StatusCodeMatch)
+	logger.Infof("HTTP: titleMatch: %v", tk.TitleMatch)
+
 	if tk.StatusCodeMatch != nil && *tk.StatusCodeMatch {
 		if tk.BodyLengthMatch != nil && *tk.BodyLengthMatch {
-			logger.Infof("HTTP: statusCodeMatch && bodyLengthMatch")
+			logger.Infof(
+				"HTTP: statusCodeMatch && bodyLengthMatch => #%d is successful",
+				probe.TransactionID,
+			)
+			tk.XBlockingFlags |= analysisFlagSuccess
 			return
 		}
 		if tk.HeadersMatch != nil && *tk.HeadersMatch {
-			logger.Infof("HTTP: statusCodeMatch && headersMatch")
+			logger.Infof(
+				"HTTP: statusCodeMatch && headersMatch => #%d is successful",
+				probe.TransactionID,
+			)
+			tk.XBlockingFlags |= analysisFlagSuccess
 			return
 		}
 		if tk.TitleMatch != nil && *tk.TitleMatch {
-			logger.Infof("HTTP: statusCodeMatch && titleMatch")
+			logger.Infof(
+				"HTTP: statusCodeMatch && titleMatch => #%d is successful",
+				probe.TransactionID,
+			)
+			tk.XBlockingFlags |= analysisFlagSuccess
 			return
 		}
 	}
 
-	tk.BlockingFlags |= analysisBlockingHTTPDiff
+	tk.XBlockingFlags |= analysisFlagHTTPDiff
+	logger.Warnf("HTTP: it seems #%d is a case of httpDiff", probe.TransactionID)
 }
 
 // httpDiffBodyLengthChecks compares the bodies lengths.

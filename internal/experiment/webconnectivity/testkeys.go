@@ -48,8 +48,8 @@ type TestKeys struct {
 	// ControlFailure contains the failure of the control experiment.
 	ControlFailure *string `json:"control_failure"`
 
-	// DNSFlags contains DNS analysis flags.
-	DNSFlags int64 `json:"x_dns_flags"`
+	// XDNSFlags contains DNS analysis flags.
+	XDNSFlags int64 `json:"x_dns_flags"`
 
 	// DNSExperimentFailure indicates whether there was a failure in any
 	// of the DNS experiments we performed.
@@ -59,8 +59,8 @@ type TestKeys struct {
 	// the TH's DNS results and the probe's DNS results.
 	DNSConsistency string `json:"dns_consistency"`
 
-	// BlockingFlags contains blocking flags.
-	BlockingFlags int64 `json:"x_blocking_flags"`
+	// XBlockingFlags contains blocking flags.
+	XBlockingFlags int64 `json:"x_blocking_flags"`
 
 	// BodyLength match tells us whether the body length matches.
 	BodyLengthMatch *bool `json:"body_length_match"`
@@ -84,13 +84,14 @@ type TestKeys struct {
 	// - false
 	// - null
 	//
-	// In addition to being a bad type, this field has the issue that it
+	// In addition to having a ~bad type, this field has the issue that it
 	// reduces the reason for blocking to an enum, whereas it's a set of flags,
 	// hence we introduced the x_blocking_flags field.
 	Blocking any `json:"blocking"`
 
-	// Accessible indicates whether the resource is accessible.
-	Accessible *bool `json:"accessible"`
+	// Accessible indicates whether the resource is accessible. Possible
+	// values for this field are: nil, true, and false.
+	Accessible any `json:"accessible"`
 
 	// controlRequest is the control request we sent.
 	controlRequest *webconnectivity.ControlRequest
@@ -121,7 +122,8 @@ type DNSWhoamiInfo struct {
 	UDPv4 map[string][]DNSWhoamiInfoEntry `json:"udp_v4"`
 }
 
-// TestKeysDoH contains ancillary observations collected using DoH.
+// TestKeysDoH contains ancillary observations collected using DoH (e.g., the
+// DNS lookups, TCP connects, TLS handshakes caused by given DoH lookups).
 //
 // They are on a separate hierarchy to simplify processing.
 type TestKeysDoH struct {
@@ -243,7 +245,6 @@ func (tk *TestKeys) WithDNSWhoami(fun func(*DNSWhoamiInfo)) {
 
 // NewTestKeys creates a new instance of TestKeys.
 func NewTestKeys() *TestKeys {
-	// TODO: here you should initialize all the fields
 	return &TestKeys{
 		NetworkEvents: []*model.ArchivalNetworkEvent{},
 		DNSWoami: &DNSWhoamiInfo{
@@ -267,10 +268,10 @@ func NewTestKeys() *TestKeys {
 		TLSHandshakes:        []*model.ArchivalTLSOrQUICHandshakeResult{},
 		Control:              nil,
 		ControlFailure:       nil,
-		DNSFlags:             0,
+		XDNSFlags:            0,
 		DNSExperimentFailure: nil,
 		DNSConsistency:       "",
-		BlockingFlags:        0,
+		XBlockingFlags:       0,
 		BodyLengthMatch:      nil,
 		HeadersMatch:         nil,
 		StatusCodeMatch:      nil,

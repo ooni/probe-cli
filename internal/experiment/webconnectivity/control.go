@@ -15,13 +15,14 @@ import (
 )
 
 // EndpointMeasurementsStarter is used by Control to start extra
-// measurements using new IP addrs discovered by the TH
+// measurements using new IP addrs discovered by the TH.
 type EndpointMeasurementsStarter interface {
 	// startCleartextFlowsWithSema starts a TCP measurement flow for each IP addr. The [sema]
 	// argument allows to control how many flows are allowed to perform HTTP measurements. Every
 	// flow will attempt to read from [sema] and won't perform HTTP measurements if a
 	// nonblocking read fails. Hence, you must create a [sema] channel with buffer equal
-	// to N and N elements inside it to allow N flows to perform HTTP measuremenets.
+	// to N and N elements inside it to allow N flows to perform HTTP measurements. Passing
+	// a nil [sema] causes no flow to attempt HTTP measurements.
 	startCleartextFlowsWithSema(ctx context.Context, sema <-chan any, addresses []string)
 
 	// startSecureFlowsWithSema starts a TCP+TLS measurement flow for each IP addr. See
@@ -31,6 +32,9 @@ type EndpointMeasurementsStarter interface {
 
 // Control issues a control request and saves the results
 // inside of the experiment's TestKeys.
+//
+// The zero value of this structure IS NOT valid and you MUST initialize
+// all the fields marked as MANDATORY before using this structure.
 type Control struct {
 	// Addresses contains the MANDATORY addresses we've looked up.
 	Addresses []string
@@ -77,10 +81,11 @@ func (c *Control) Run(parentCtx context.Context) {
 	// create control request
 	var endpoints []string
 	for _, address := range c.Addresses {
-		if port := c.URL.Port(); port != "" {
+		if port := c.URL.Port(); port != "" { // handle the case of a custom port
 			endpoints = append(endpoints, net.JoinHostPort(address, port))
 			continue
 		}
+		// otherwise, always attempt to measure both 443 and 80 endpoints
 		endpoints = append(endpoints, net.JoinHostPort(address, "443"))
 		endpoints = append(endpoints, net.JoinHostPort(address, "80"))
 	}
@@ -95,16 +100,24 @@ func (c *Control) Run(parentCtx context.Context) {
 	}
 	c.TestKeys.SetControlRequest(creq)
 
+	// TODO(bassosimone): the current TH will not perform TLS measurements for
+	// 443 endpoints. However, we should modify the TH to do that, such that we're
+	// able to be more confident about TLS measurements results.
+
 	// create logger for this operation
 	ol := measurexlite.NewOperationLogger(c.Logger, "control for %s", creq.HTTPRequest)
 
 	// create an API client
 	clnt := (&httpx.APIClientTemplate{
-		BaseURL:    c.THAddr,
-		HTTPClient: c.Session.DefaultHTTPClient(),
-		Logger:     c.Logger,
-		UserAgent:  c.Session.UserAgent(),
-	}).WithBodyLogging().Build()
+		Accept:        "",
+		Authorization: "",
+		BaseURL:       c.THAddr,
+		HTTPClient:    c.Session.DefaultHTTPClient(),
+		Host:          "", // use the one inside the URL
+		LogBody:       true,
+		Logger:        c.Logger,
+		UserAgent:     c.Session.UserAgent(),
+	}).Build()
 
 	// issue the control request and wait for the response
 	var cresp webconnectivity.ControlResponse
@@ -129,7 +142,7 @@ func (c *Control) Run(parentCtx context.Context) {
 // This function determines whether we should start new
 // background measurements for previously unknown IP addrs.
 func (c *Control) maybeStartExtraMeasurements(ctx context.Context, thAddrs []string) {
-	// determine which addrs are TH only
+	// classify addeesses by who discovered them
 	const (
 		inProbe = 1 << iota
 		inTH
@@ -142,22 +155,22 @@ func (c *Control) maybeStartExtraMeasurements(ctx context.Context, thAddrs []str
 		mapping[addr] |= inTH
 	}
 
-	// obtain the TH only addresses
+	// obtain the TH-only addresses
 	var thOnly []string
 	for addr, flags := range mapping {
 		if (flags & inProbe) != 0 {
-			continue // we already measured this
+			continue // discovered by the probe => already tested
 		}
 		thOnly = append(thOnly, addr)
 	}
 
-	// Start extra measurements for TH only addresses. Because we already
-	// measured HTTP using IP addrs discovered by the resolvers, we're not
+	// Start extra measurements for TH-only addresses. Because we already
+	// measured HTTP(S) using IP addrs discovered by the resolvers, we are not
 	// going to do that again now. I am not sure this is the right policy
 	// but I think we can just try it and then change if needed...
 	//
 	// Also, let's remember that reading from a nil chan blocks forever, so
-	// we're basically forcing the goroutines to avoid HTTP.
+	// we're basically forcing the goroutines to avoid HTTP(S).
 	var nohttp chan any = nil
 	c.ExtraMeasurementsStarter.startCleartextFlowsWithSema(ctx, nohttp, thOnly)
 	c.ExtraMeasurementsStarter.startSecureFlowsWithSema(ctx, nohttp, thOnly)

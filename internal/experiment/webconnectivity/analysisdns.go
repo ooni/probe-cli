@@ -27,21 +27,45 @@ const (
 )
 
 // analysisDNSToplevel is the toplevel analysis function for DNS results.
+//
+// The goals of this function are the following:
+//
+// 1. Set the legacy .DNSExperimentFailure field to the failure value of the
+// first DNS query that failed among the ones we actually tried. Because we
+// have multiple queries, unfortunately we are forced to pick one error among
+// possibly many to assign to this field. This is why I consider it legacy.
+//
+// 2. Compute the XDNSFlags value.
+//
+// From the XDNSFlags value, we determine, in turn DNSConsistency and
+// XBlockingFlags according to the following decision table:
+//
+//     +-----------+----------------+---------------------+
+//     | XDNSFlags | DNSConsistency | XBlockingFlags      |
+//     +-----------+----------------+---------------------+
+//     | 0         | "consistent"   | no change           |
+//     +-----------+----------------+---------------------+
+//     | nonzero   | "inconsistent" | set FlagDNSBlocking |
+//     +-----------+----------------+---------------------+
+//
+// We explain how XDNSFlags is determined in the documentation of
+// the functions that this function calls to do its job.
 func (tk *TestKeys) analysisDNSToplevel(logger model.Logger) {
 	tk.analysisDNSExperimentFailure()
 	tk.analysisDNSBogon(logger)
 	tk.analysisDNSUnexpectedFailure(logger)
 	tk.analysisDNSUnexpectedAddrs(logger)
-	tk.DNSConsistency = "consistent"
-	if tk.DNSFlags != 0 {
+	if tk.XDNSFlags != 0 {
 		logger.Warnf("DNSConsistency: inconsistent")
 		tk.DNSConsistency = "inconsistent"
-		tk.BlockingFlags |= analysisBlockingDNS
+		tk.XBlockingFlags |= analysisFlagDNSBlocking
+	} else {
+		logger.Warnf("DNSConsistency: consistent")
+		tk.DNSConsistency = "consistent"
 	}
 }
 
-// analysisDNSExperimentFailure indicates whether there was any DNS
-// experiment failure by inspecting all the queries.
+// analysisDNSExperimentFailure sets the legacy DNSExperimentFailure field.
 func (tk *TestKeys) analysisDNSExperimentFailure() {
 	for _, query := range tk.Queries {
 		if fail := query.Failure; fail != nil {
@@ -56,7 +80,8 @@ func (tk *TestKeys) analysisDNSExperimentFailure() {
 	}
 }
 
-// analysisDNSBogon computes the AnalysisDNSBogon flag.
+// analysisDNSBogon computes the AnalysisDNSBogon flag. We set this flag if
+// we dectect any bogon in the .Queries field of the TestKeys.
 func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 	for _, query := range tk.Queries {
 		for _, answer := range query.Answers {
@@ -64,14 +89,14 @@ func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 			case "A":
 				if net.ParseIP(answer.IPv4) != nil && netxlite.IsBogon(answer.IPv4) {
 					logger.Warnf("BOGON: %s in #%d", answer.IPv4, query.TransactionID)
-					tk.DNSFlags |= AnalysisDNSBogon
-					return
+					tk.XDNSFlags |= AnalysisDNSBogon
+					// continue processing so we print all the bogons we have
 				}
 			case "AAAA":
 				if net.ParseIP(answer.IPv6) != nil && netxlite.IsBogon(answer.IPv6) {
 					logger.Warnf("BOGON: %s in #%d", answer.IPv6, query.TransactionID)
-					tk.DNSFlags |= AnalysisDNSBogon
-					return
+					tk.XDNSFlags |= AnalysisDNSBogon
+					// continue processing so we print all the bogons we have
 				}
 			default:
 				// nothing
@@ -80,19 +105,20 @@ func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 	}
 }
 
-// analysisDNSUnexpectedFailure computes the AnalysisDNSUnexpectedFailure flags.
+// analysisDNSUnexpectedFailure computes the AnalysisDNSUnexpectedFailure flags. We say
+// a failure is unexpected when the TH could resolve a domain and the probe couldn't.
 func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 	// make sure we have control before proceeding futher
 	if tk.Control == nil || tk.controlRequest == nil {
 		return
 	}
 
-	// obtain request and response as shortcuts
-	request := tk.controlRequest
-	response := tk.Control
+	// obtain thRequest and thResponse as shortcuts
+	thRequest := tk.controlRequest
+	thResponse := tk.Control
 
 	// obtain the domain that the TH has queried for
-	URL, err := url.Parse(request.HTTPRequest)
+	URL, err := url.Parse(thRequest.HTTPRequest)
 	if err != nil {
 		return // this looks like a bug
 	}
@@ -103,19 +129,18 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 		return
 	}
 
-	// we mostly care of whether the control's DNS got back
-	// any IP address because this is a sign that we had
-	// unexpected DNS issues locally.
-	hasAddrs := len(response.DNS.Addrs) > 0
+	// if the control didn't lookup any IP addresses our job here is done
+	// because we can't say whether we have unexpected failures
+	hasAddrs := len(thResponse.DNS.Addrs) > 0
 	if !hasAddrs {
 		return
 	}
 
-	// therefore, any local query _for the same domain_ queried
+	// with TH-resolved addrs, any local query _for the same domain_ queried
 	// by the probe that contains an error is suspicious
 	for _, query := range tk.Queries {
 		if domain != query.Hostname {
-			continue
+			continue // not the domain queried by the test helper
 		}
 		hasAddrs := false
 	Loop:
@@ -133,7 +158,7 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 		}
 		if query.Failure == nil {
 			// we expect to see a failure if we don't see
-			// answers, so this seems a bug
+			// answers, so this seems a bug?
 			continue
 		}
 		if query.QueryType == "AAAA" && *query.Failure == netxlite.FailureDNSNoAnswer {
@@ -142,24 +167,26 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 			continue
 		}
 		logger.Warnf("DNS: unexpected failure %s in #%d", *query.Failure, query.TransactionID)
-		tk.DNSFlags |= AnalysisDNSUnexpectedFailure
-		return
+		tk.XDNSFlags |= AnalysisDNSUnexpectedFailure
+		// continue processing so we print all the unexpected failures
 	}
 }
 
-// analysisDNSUnexpectedAddrs computes the AnalysisDNSUnexpectedAddrs flags.
+// analysisDNSUnexpectedAddrs computes the AnalysisDNSUnexpectedAddrs flags. This
+// algorithm builds upon the original DNSDiff algorithm by introducing an additional
+// TLS based heuristic for determining whether an IP address was legit.
 func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 	// make sure we have control before proceeding futher
 	if tk.Control == nil || tk.controlRequest == nil {
 		return
 	}
 
-	// obtain request and response as shortcuts
-	request := tk.controlRequest
-	response := tk.Control
+	// obtain thRequest and thResponse as shortcuts
+	thRequest := tk.controlRequest
+	thResponse := tk.Control
 
 	// obtain the domain that the TH has queried for
-	URL, err := url.Parse(request.HTTPRequest)
+	URL, err := url.Parse(thRequest.HTTPRequest)
 	if err != nil {
 		return // this looks like a bug
 	}
@@ -170,10 +197,9 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 		return
 	}
 
-	// we mostly care of whether the control's DNS got back
-	// any IP address because this is a sign that we had
-	// unexpected DNS issues locally.
-	thAddrs := response.DNS.Addrs
+	// if the control didn't resolve any IP address, then we basically
+	// cannot run this algorithm at all
+	thAddrs := thResponse.DNS.Addrs
 	if len(thAddrs) <= 0 {
 		return
 	}
@@ -183,7 +209,7 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 	var probeAddrs []string
 	for _, query := range tk.Queries {
 		if domain != query.Hostname {
-			continue
+			continue // not the domain the TH queried for
 		}
 		for _, answer := range query.Answers {
 			switch answer.AnswerType {
@@ -199,7 +225,7 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 	// definitely suspicious and counts as a difference
 	if len(probeAddrs) <= 0 {
 		logger.Warnf("DNS: no IP address resolved by the probe")
-		tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
+		tk.XDNSFlags |= AnalysisDNSUnexpectedAddrs
 		return
 	}
 
@@ -210,24 +236,26 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 		return
 	}
 
-	// if the different addrs have the same ASN of addrs resolved by
-	// the TH, then we say everything is still fine.
-	differentASNS := tk.analysisDNSDiffASN(differentAddrs, thAddrs)
-	if len(differentASNS) <= 0 {
+	// now, let's exclude the differentAddrs for which we successfully
+	// completed a TLS handshake: those should be good addrs
+	withoutHandshake := tk.findAddrsWithoutTLSHandshake(domain, differentAddrs)
+	if len(withoutHandshake) <= 0 {
 		return
 	}
 
-	withoutHandshake := tk.findAddrsWithoutTLSHandshake(differentAddrs)
-	if len(withoutHandshake) <= 0 {
+	// as a last resort, accept the addresses without an handshake whose
+	// ASN overlaps with ASNs resolved by the TH
+	differentASNs := tk.analysisDNSDiffASN(withoutHandshake, thAddrs)
+	if len(differentASNs) <= 0 {
 		return
 	}
 
 	// otherwise, conclude we have unexpected probe addrs
 	logger.Warnf(
-		"DNS: differentAddrs: %+v; differentASNs: %+v; withoutHandshake: %+v",
-		differentAddrs, differentASNS, withoutHandshake,
+		"DNSDiff: differentAddrs: %+v; withoutHandshake: %+v; differentASNs: %+v",
+		differentAddrs, withoutHandshake, differentASNs,
 	)
-	tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
+	tk.XDNSFlags |= AnalysisDNSUnexpectedAddrs
 }
 
 // analysisDNSDiffAddrs returns all the IP addresses that are
@@ -245,7 +273,7 @@ func (tk *TestKeys) analysisDNSDiffAddrs(probeAddrs, thAddrs []string) (diff []s
 		mapping[addr] = inTH
 	}
 	for addr, where := range mapping {
-		if where&inTH == 0 {
+		if (where & inTH) == 0 {
 			diff = append(diff, addr)
 		}
 	}
@@ -269,16 +297,16 @@ func (tk *TestKeys) analysisDNSDiffASN(probeAddrs, thAddrs []string) (asns []uin
 		mapping[asn] |= inTH // including the zero ASN that means unknown
 	}
 	for asn, where := range mapping {
-		if where&inTH == 0 {
+		if (where & inTH) == 0 {
 			asns = append(asns, asn)
 		}
 	}
 	return
 }
 
-// findAddrsWithoutTLSHandshake computes the list of probe discovered addresses
-// for which we couldn't successfully perform a TLS handshake.
-func (tk *TestKeys) findAddrsWithoutTLSHandshake(into []string) (output []string) {
+// findAddrsWithoutTLSHandshake computes the list of probe discovered [addresses]
+// for which we couldn't successfully perform a TLS handshake for the given [domain].
+func (tk *TestKeys) findAddrsWithoutTLSHandshake(domain string, addresses []string) (output []string) {
 	const (
 		resolved = 1 << iota
 		handshakeOK
@@ -286,11 +314,11 @@ func (tk *TestKeys) findAddrsWithoutTLSHandshake(into []string) (output []string
 	mapping := make(map[string]int)
 
 	// fill the input map with the addresses we're interested to analyze
-	for _, addr := range into {
+	for _, addr := range addresses {
 		mapping[addr] = 0
 	}
 
-	// gather all the addrs resolved by the probe
+	// flag the subset of addresses resolved by the probe
 	for _, query := range tk.Queries {
 		for _, answer := range query.Answers {
 			var addr string
@@ -309,7 +337,7 @@ func (tk *TestKeys) findAddrsWithoutTLSHandshake(into []string) (output []string
 		}
 	}
 
-	// gather all the addrs with successful handshake
+	// flag the subset of addrs with successful handshake for the right SNI
 	for _, thx := range tk.TLSHandshakes {
 		addr, _, err := net.SplitHostPort(thx.Address)
 		if err != nil {
@@ -321,6 +349,9 @@ func (tk *TestKeys) findAddrsWithoutTLSHandshake(into []string) (output []string
 		if _, found := mapping[addr]; !found {
 			continue // we're not interested into this addr
 		}
+		if thx.ServerName != domain {
+			continue // the SNI is different, so...
+		}
 		mapping[addr] |= handshakeOK
 	}
 
@@ -329,7 +360,7 @@ func (tk *TestKeys) findAddrsWithoutTLSHandshake(into []string) (output []string
 		if flags == 0 {
 			continue // this looks like a bug
 		}
-		if (flags & handshakeOK) == 0 {
+		if (flags & (resolved | handshakeOK)) == resolved {
 			output = append(output, addr)
 		}
 	}

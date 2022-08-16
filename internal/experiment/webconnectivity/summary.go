@@ -17,7 +17,7 @@ type SummaryKeys struct {
 
 // GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
 func (m *Measurer) GetSummaryKeys(measurement *model.Measurement) (any, error) {
-	// TODO: fill all the SummaryKeys
+	// TODO(bassosimone): fill all the SummaryKeys
 	sk := SummaryKeys{isAnomaly: false}
 	return sk, nil
 }

@@ -68,6 +68,9 @@ func (svc *DNSWhoamiService) UDPv4(ctx context.Context, address string) ([]DNSWh
 	return value, len(value) > 0
 }
 
+// TODO(bassosimone): consider factoring this code and keeping state
+// on disk rather than on memory.
+
 // DNSWhoamiSingleton is the DNSWhoamiService singleton.
 var DNSWhoamiSingleton = &DNSWhoamiService{
 	mu:       &sync.Mutex{},

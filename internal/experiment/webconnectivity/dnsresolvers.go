@@ -61,7 +61,8 @@ type DNSResolvers struct {
 	// Session is the OPTIONAL session. If the session is set, we will use
 	// it to start the task that issues the control request. This request must
 	// only be sent during the first iteration. It would be pointless to
-	// issue such a request for subsequent redirects.
+	// issue such a request for subsequent redirects, because the TH will
+	// always follow the redirect chain caused by the provided URL.
 	Session model.ExperimentSession
 
 	// THAddr is the OPTIONAL test helper address.
@@ -89,6 +90,10 @@ func (t *DNSResolvers) run(parentCtx context.Context) []string {
 	httpsOut := make(chan []string)
 	whoamiSystemV4Out := make(chan []DNSWhoamiInfoEntry)
 	whoamiUDPv4Out := make(chan []DNSWhoamiInfoEntry)
+
+	// TODO(bassosimone): add opportunistic support for detecting
+	// whether DNS queries are answered regardless of dest addr by
+	// sending a few queries to root DNS servers
 
 	udpAddress := t.udpAddress()
 
@@ -149,7 +154,7 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 		found     bool
 	)
 
-	// first attempt to use the dns cache
+	// attempt to use the dns cache
 	addresses, found = t.DNSCache.Get(t.Domain)
 
 	if !found {
@@ -160,7 +165,7 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 		t.DNSCache.Set(t.Domain, addresses)
 	}
 
-	log.Infof("using: %+v", addresses)
+	log.Infof("using resolved addrs: %+v", addresses)
 
 	// fan out a number of child async tasks to use the IP addrs
 	t.startCleartextFlows(parentCtx, addresses)
@@ -168,21 +173,24 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 	t.maybeStartControlFlow(parentCtx, addresses)
 }
 
-// whoamiSystemV4 performs a DNS whoami lookup for the system resolver.
+// whoamiSystemV4 performs a DNS whoami lookup for the system resolver. This function must
+// always emit an ouput on the [out] channel to synchronize with the caller func.
 func (t *DNSResolvers) whoamiSystemV4(parentCtx context.Context, out chan<- []DNSWhoamiInfoEntry) {
 	value, _ := DNSWhoamiSingleton.SystemV4(parentCtx)
 	t.Logger.Infof("DNS whoami for system resolver: %+v", value)
 	out <- value
 }
 
-// whoamiUDPv4 performs a DNS whoami lookup for the given UDP resolver.
+// whoamiUDPv4 performs a DNS whoami lookup for the given UDP resolver. This function must
+// always emit an ouput on the [out] channel to synchronize with the caller func.
 func (t *DNSResolvers) whoamiUDPv4(parentCtx context.Context, udpAddress string, out chan<- []DNSWhoamiInfoEntry) {
 	value, _ := DNSWhoamiSingleton.UDPv4(parentCtx, udpAddress)
 	t.Logger.Infof("DNS whoami for %s/udp resolver: %+v", udpAddress, value)
 	out <- value
 }
 
-// lookupHostSystem performs a DNS lookup using the system resolver.
+// lookupHostSystem performs a DNS lookup using the system resolver. This function must
+// always emit an ouput on the [out] channel to synchronize with the caller func.
 func (t *DNSResolvers) lookupHostSystem(parentCtx context.Context, out chan<- []string) {
 	// create context with attached a timeout
 	const timeout = 4 * time.Second
@@ -208,7 +216,8 @@ func (t *DNSResolvers) lookupHostSystem(parentCtx context.Context, out chan<- []
 	out <- addrs // must send something -even nil- to the parent
 }
 
-// lookupHostUDP performs a DNS lookup using an UDP resolver.
+// lookupHostUDP performs a DNS lookup using an UDP resolver. This function must always
+// emit an ouput on the [out] channel to synchronize with the caller func.
 func (t *DNSResolvers) lookupHostUDP(parentCtx context.Context, udpAddress string, out chan<- []string) {
 	// create context with attached a timeout
 	const timeout = 4 * time.Second
@@ -257,6 +266,8 @@ func (t *DNSResolvers) do53SplitQueries(
 	return
 }
 
+// TODO(bassosimone): maybe cycle through a bunch of well known addresses
+
 // Returns the UDP resolver we should be using by default.
 func (t *DNSResolvers) udpAddress() string {
 	if t.UDPAddress != "" {
@@ -285,7 +296,7 @@ type OpportunisticDNSOverHTTPS struct {
 }
 
 // MaybeNextURL returns the next URL to measure, if any. Our aim is to perform
-// some opportunistic DoH measurements as part of Web Connectivity.
+// periodic, opportunistic DoH measurements as part of Web Connectivity.
 func (o *OpportunisticDNSOverHTTPS) MaybeNextURL() (string, bool) {
 	now := time.Now()
 	o.mu.Lock()
@@ -301,8 +312,14 @@ func (o *OpportunisticDNSOverHTTPS) MaybeNextURL() (string, bool) {
 	return "", false
 }
 
+// TODO(bassosimone): consider whether factoring out this code
+// and storing the state on disk instead of using memory
+
+// TODO(bassosimone): consider unifying somehow this code and
+// the systemresolver code (or maybe just the list of resolvers)
+
 // OpportunisticDNSOverHTTPSSingleton is the singleton used to keep
-// track of opportunistic DNS-over-HTTPS measurements.
+// track of the opportunistic DNS-over-HTTPS measurements state.
 var OpportunisticDNSOverHTTPSSingleton = &OpportunisticDNSOverHTTPS{
 	interval: 0,
 	mu:       &sync.Mutex{},
@@ -316,7 +333,8 @@ var OpportunisticDNSOverHTTPSSingleton = &OpportunisticDNSOverHTTPS{
 	},
 }
 
-// lookupHostDNSOverHTTPS performs a DNS lookup using a DoH resolver.
+// lookupHostDNSOverHTTPS performs a DNS lookup using a DoH resolver. This function must
+// always emit an ouput on the [out] channel to synchronize with the caller func.
 func (t *DNSResolvers) lookupHostDNSOverHTTPS(parentCtx context.Context, out chan<- []string) {
 	// obtain an opportunistic DoH URL
 	URL, good := OpportunisticDNSOverHTTPSSingleton.MaybeNextURL()
@@ -350,7 +368,7 @@ func (t *DNSResolvers) lookupHostDNSOverHTTPS(parentCtx context.Context, out cha
 
 	// save results making sure we properly split DoH queries from other queries
 	doh, other := t.dohSplitQueries(trace.DNSLookupsFromRoundTrip())
-	t.TestKeys.Queries = append(t.TestKeys.Queries, doh...)
+	t.TestKeys.AppendQueries(doh...)
 	t.TestKeys.WithTestKeysDoH(func(tkdh *TestKeysDoH) {
 		tkdh.Queries = append(tkdh.Queries, other...)
 		tkdh.NetworkEvents = append(tkdh.NetworkEvents, trace.NetworkEvents()...)
@@ -463,12 +481,12 @@ func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan
 	}
 }
 
-// maybeStartControlFlow starts the control flow, when .Session is set.
+// maybeStartControlFlow starts the control flow iff .Session and .THAddr are set.
 func (t *DNSResolvers) maybeStartControlFlow(ctx context.Context, addresses []string) {
 	if t.Session != nil && t.THAddr != "" {
 		ctrl := &Control{
 			Addresses:                addresses,
-			ExtraMeasurementsStarter: t,
+			ExtraMeasurementsStarter: t, // allows starting follow-up measurement flows
 			Logger:                   t.Logger,
 			TestKeys:                 t.TestKeys,
 			Session:                  t.Session,

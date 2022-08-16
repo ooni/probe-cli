@@ -13,6 +13,16 @@ import (
 )
 
 // analysisTCPIPToplevel is the toplevel analysis function for TCP/IP results.
+//
+// This algorithm has two objectives:
+//
+// 1. walk the list of TCP connect attempts and mark each of them as
+// Status.Blocked = true | false | null depending on what the TH observed
+// for the same set of IP addresses (it's ugly to modify a data struct
+// in place, but this algorithm is defined by the spec);
+//
+// 2. assign the analysisFlagTCPIPBlocking flag to XBlockingFlags if
+// we see any TCP endpoint for which Status.Blocked is true.
 func (tk *TestKeys) analysisTCPIPToplevel(logger model.Logger) {
 	// if we don't have a control result, do nothing.
 	if tk.Control == nil || len(tk.Control.TCPConnect) <= 0 {
@@ -31,6 +41,7 @@ func (tk *TestKeys) analysisTCPIPToplevel(logger model.Logger) {
 			entry.Status.Blocked = &isfalse
 			continue // did not fail
 		}
+
 		// make sure we exclude the IPv6 failures caused by lack of
 		// proper IPv6 support by the probe
 		ipv6, err := netxlite.IsIPv6(entry.IP)
@@ -45,19 +56,22 @@ func (tk *TestKeys) analysisTCPIPToplevel(logger model.Logger) {
 				continue
 			}
 		}
+
 		// obtain the corresponding endpoint
 		epnt := net.JoinHostPort(entry.IP, fmt.Sprintf("%d", entry.Port))
 		ctrl, found := tk.Control.TCPConnect[epnt]
 		if !found {
-			continue // only the probe tested this, so hard to say anything
+			continue // only the probe tested this, so hard to say anything...
 		}
 		if ctrl.Failure != nil {
-			// if the TH failed as well, don't set any blocking flag
-			entry.Status.Blocked = &isfalse
+			// If the TH failed as well, don't set XBlockingFlags and
+			// also don't bother with setting .Status.Blocked thus leaving
+			// it null. Performing precise error mapping should be a job
+			// for the pipeline rather than for the probe.
 			continue
 		}
 		logger.Warnf("TCP/IP: endpoint %s is blocked (see #%d)", epnt, entry.TransactionID)
 		entry.Status.Blocked = &istrue
-		tk.BlockingFlags |= analysisBlockingTCPIP
+		tk.XBlockingFlags |= analysisFlagTCPIPBlocking
 	}
 }

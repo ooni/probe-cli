@@ -9,7 +9,6 @@ package webconnectivity
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -114,11 +113,11 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 		tcpConn.Close()
 	}()
 
-	// Only allow a single flow to _use_ the connection
+	// Only allow N flows to _use_ the connection
 	select {
 	case <-t.Sema:
 	default:
-		ol.Stop(errors.New("stop after TCP connect")) // just to emit the right message
+		ol.Stop(nil)
 		return
 	}
 
@@ -135,7 +134,13 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 	defer httpCancel()
 	httpReq, err := t.newHTTPRequest(httpCtx)
 	if err != nil {
-		t.TestKeys.SetFundamentalFailure(err)
+		if t.Referer == "" {
+			// when the referer is empty, the failing URL comes from our backend
+			// or from the user, so it's a fundamental failure. After that, we
+			// are dealing with websites provided URLs, so we should not flag a
+			// fundamental failure, because we want to see the measurement submitted.
+			t.TestKeys.SetFundamentalFailure(err)
+		}
 		ol.Stop(err)
 		return
 	}
@@ -209,7 +214,7 @@ func (t *CleartextFlow) newHTTPRequest(ctx context.Context) (*http.Request, erro
 // httpTransaction runs the HTTP transaction and saves the results.
 func (t *CleartextFlow) httpTransaction(ctx context.Context, txp model.HTTPTransport,
 	req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
-	const maxbody = 1 << 22 // TODO: you may want to change this default
+	const maxbody = 1 << 19
 	resp, err := txp.RoundTrip(req)
 	if err != nil {
 		ev := trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, []byte{}, err)
@@ -230,13 +235,13 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, txp model.HTTPTrans
 // maybeFollowRedirects follows redirects if configured and needed
 func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Response) {
 	if !t.FollowRedirects {
-		return
+		return // not configured
 	}
 	switch resp.StatusCode {
 	case 301, 302, 307, 308:
 		location, err := resp.Location()
 		if err != nil {
-			return
+			return // broken response from server
 		}
 		t.Logger.Infof("redirect to: %s", location.String())
 		resolvers := &DNSResolvers{
@@ -256,6 +261,6 @@ func (t *CleartextFlow) maybeFollowRedirects(ctx context.Context, resp *http.Res
 		}
 		resolvers.Start(ctx)
 	default:
-		// nothing
+		// no redirect to follow
 	}
 }
