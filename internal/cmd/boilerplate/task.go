@@ -92,17 +92,13 @@ var endpointTemplate string
 //go:embed "task/multiresolver.go.txt"
 var multiResolverTemplate string
 
-//go:embed "task/systemresolver.go.txt"
-var systemResolverTemplate string
-
 // The list of known tasks
 var knownTasks = map[string]string{
-	"http":            endpointTemplate,
-	"https":           endpointTemplate,
-	"multi-resolver":  multiResolverTemplate,
-	"system-resolver": systemResolverTemplate,
-	"tcp":             endpointTemplate,
-	"tls":             endpointTemplate,
+	"http":           endpointTemplate,
+	"https":          endpointTemplate,
+	"multi-resolver": multiResolverTemplate,
+	"tcp":            endpointTemplate,
+	"tls":            endpointTemplate,
 }
 
 // Names of known tasks
