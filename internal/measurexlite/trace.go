@@ -9,6 +9,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 // Trace implements model.Trace.
@@ -57,6 +58,10 @@ type Trace struct {
 	// NewTLSHandshakerStdlibFn is OPTIONAL and can be used to overide
 	// calls to the netxlite.NewTLSHandshakerStdlib factory.
 	NewTLSHandshakerStdlibFn func(dl model.DebugLogger) model.TLSHandshaker
+
+	// NewTLSHandshakerUTLSFn is OPTIONAL and can be used to overide
+	// calls to the netxlite.NewTLSHandshakerUTLS factory.
+	NewTLSHandshakerUTLSFn func(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker
 
 	// DNSLookup is MANDATORY and buffers DNS Lookup observations. If you create
 	// this channel manually, ensure it has some buffer.
@@ -176,6 +181,15 @@ func (tx *Trace) newTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshake
 		return tx.NewTLSHandshakerStdlibFn(dl)
 	}
 	return netxlite.NewTLSHandshakerStdlib(dl)
+}
+
+// newTLSHandshakerUTLS indirectly calls netxlite.NewTLSHandshakerUTLS
+// thus allowing us to mock this func for testing.
+func (tx *Trace) newTLSHandshakerUTLS(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
+	if tx.NewTLSHandshakerUTLSFn != nil {
+		return tx.NewTLSHandshakerUTLSFn(dl, id)
+	}
+	return netxlite.NewTLSHandshakerUTLS(dl, id)
 }
 
 // TimeNow implements model.Trace.TimeNow.

@@ -13,6 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/testingx"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 func TestNewTrace(t *testing.T) {
@@ -73,6 +74,12 @@ func TestNewTrace(t *testing.T) {
 		t.Run("NewTLSHandshakerStdlibFn is nil", func(t *testing.T) {
 			if trace.NewTLSHandshakerStdlibFn != nil {
 				t.Fatal("expected nil NewTLSHandshakerStdlibFn")
+			}
+		})
+
+		t.Run("newTLShandshakerUTLSFn is nil", func(t *testing.T) {
+			if trace.NewTLSHandshakerUTLSFn != nil {
+				t.Fatal("expected nil NewTLSHandshakerUTLSfn")
 			}
 		})
 
@@ -342,6 +349,76 @@ func TestTrace(t *testing.T) {
 				NewTLSHandshakerStdlibFn: nil,
 			}
 			thx := tx.NewTLSHandshakerStdlib(model.DiscardLogger)
+			tcpConn := &mocks.Conn{
+				MockSetDeadline: func(t time.Time) error {
+					return nil
+				},
+				MockRemoteAddr: func() net.Addr {
+					return &mocks.Addr{
+						MockNetwork: func() string {
+							return "tcp"
+						},
+						MockString: func() string {
+							return "1.1.1.1:443"
+						},
+					}
+				},
+				MockWrite: func(b []byte) (int, error) {
+					return 0, mockedErr
+				},
+				MockClose: func() error {
+					return nil
+				},
+			}
+			tlsConfig := &tls.Config{
+				InsecureSkipVerify: true,
+			}
+			ctx := context.Background()
+			conn, state, err := thx.Handshake(ctx, tcpConn, tlsConfig)
+			if !errors.Is(err, mockedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if !reflect.ValueOf(state).IsZero() {
+				t.Fatal("state is not a zero value")
+			}
+			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
+		})
+	})
+
+	t.Run("NewTLSHandshakerUTLSFn works as intended", func(t *testing.T) {
+		t.Run("when not nil", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			tx := &Trace{
+				NewTLSHandshakerUTLSFn: func(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
+					return &mocks.TLSHandshaker{
+						MockHandshake: func(ctx context.Context, conn net.Conn, config *tls.Config) (net.Conn, tls.ConnectionState, error) {
+							return nil, tls.ConnectionState{}, mockedErr
+						},
+					}
+				},
+			}
+			thx := tx.NewTLSHandshakerUTLS(model.DiscardLogger, &utls.HelloGolang)
+			ctx := context.Background()
+			conn, state, err := thx.Handshake(ctx, &mocks.Conn{}, &tls.Config{})
+			if !errors.Is(err, mockedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if !reflect.ValueOf(state).IsZero() {
+				t.Fatal("state is not a zero value")
+			}
+			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
+		})
+
+		t.Run("when nil", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			tx := &Trace{
+				NewTLSHandshakerStdlibFn: nil,
+			}
+			thx := tx.newTLSHandshakerUTLS(model.DiscardLogger, &utls.HelloGolang)
 			tcpConn := &mocks.Conn{
 				MockSetDeadline: func(t time.Time) error {
 					return nil
