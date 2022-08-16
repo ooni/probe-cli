@@ -2,9 +2,11 @@ package measurexlite
 
 import (
 	"context"
+	"net"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
@@ -12,18 +14,12 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
-func TestNewUnwrappedParallelResolver(t *testing.T) {
-	t.Run("NewUnwrappedParallelResolver creates an UnwrappedParallelResolver with Trace", func(t *testing.T) {
+func TestNewResolver(t *testing.T) {
+	t.Run("WrapResolver creates a wrapped resolver with Trace", func(t *testing.T) {
 		underlying := &mocks.Resolver{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NewParallelResolverFn = func() model.Resolver {
-			return underlying
-		}
-		resolver := trace.newParallelResolverTrace(func() model.Resolver {
-			return nil
-		})
-		resolvert := resolver.(*resolverTrace)
+		resolvert := trace.wrapResolver(underlying).(*resolverTrace)
 		if resolvert.r != underlying {
 			t.Fatal("invalid parallel resolver")
 		}
@@ -36,20 +32,31 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 		var called bool
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		newMockResolver := func() model.Resolver {
-			return &mocks.Resolver{
-				MockAddress: func() string {
-					return "dns.google"
-				},
-				MockNetwork: func() string {
-					return "udp"
-				},
-				MockCloseIdleConnections: func() {
-					called = true
-				},
-			}
+		mockResolver := &mocks.Resolver{
+			MockAddress: func() string {
+				return "dns.google"
+			},
+			MockNetwork: func() string {
+				return "udp"
+			},
+			MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				return []string{"1.1.1.1"}, nil
+			},
+			MockLookupHTTPS: func(ctx context.Context, domain string) (*model.HTTPSSvc, error) {
+				return &model.HTTPSSvc{
+					IPv4: []string{"1.1.1.1"},
+				}, nil
+			},
+			MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
+				return []*net.NS{{
+					Host: "1.1.1.1",
+				}}, nil
+			},
+			MockCloseIdleConnections: func() {
+				called = true
+			},
 		}
-		resolver := trace.newParallelResolver(newMockResolver)
+		resolver := trace.wrapResolver(mockResolver)
 
 		t.Run("Address is correctly forwarded", func(t *testing.T) {
 			got := resolver.Address()
@@ -62,6 +69,46 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 			got := resolver.Network()
 			if got != "udp" {
 				t.Fatal("Network not called")
+			}
+		})
+
+		t.Run("LookupHost is correctly forwarded", func(t *testing.T) {
+			want := []string{"1.1.1.1"}
+			ctx := context.Background()
+			got, err := resolver.LookupHost(ctx, "example.com")
+			if err != nil {
+				t.Fatal("expected nil error")
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("LookupHTTPS is correctly forwarded", func(t *testing.T) {
+			want := &model.HTTPSSvc{
+				IPv4: []string{"1.1.1.1"},
+			}
+			ctx := context.Background()
+			got, err := resolver.LookupHTTPS(ctx, "example.com")
+			if err != nil {
+				t.Fatal("expected nil error")
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("LookupNS is correctly forwarded", func(t *testing.T) {
+			want := []*net.NS{{
+				Host: "1.1.1.1",
+			}}
+			ctx := context.Background()
+			got, err := resolver.LookupNS(ctx, "example.com")
+			if err != nil {
+				t.Fatal("expected nil error")
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 
@@ -94,16 +141,14 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 				return true
 			},
 			MockNetwork: func() string {
-				return ""
+				return "mocked"
 			},
 			MockAddress: func() string {
 				return "dns.google"
 			},
 		}
-		newResolver := func() model.Resolver {
-			return netxlite.NewUnwrappedParallelResolver(txp)
-		}
-		resolver := trace.newParallelResolverTrace(newResolver)
+		r := netxlite.NewUnwrappedParallelResolver(txp)
+		resolver := trace.wrapResolver(r)
 		ctx := context.Background()
 		addrs, err := resolver.LookupHost(ctx, "example.com")
 		if err != nil {
@@ -119,45 +164,27 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 			t.Fatal("unexpected array output", addrs)
 		}
 
-		t.Run("DNSLookups QueryType A", func(t *testing.T) {
-			events := trace.DNSLookupsFromRoundTrip(dns.TypeA)
-			if len(events) != 1 {
-				t.Fatal("expected to see single DNSLookup event")
+		t.Run("DNSLookup events", func(t *testing.T) {
+			events := trace.DNSLookupsFromRoundTrip()
+			if len(events) != 2 {
+				t.Fatal("unexpected DNS events")
 			}
-			lookup := events[0]
-			answers := lookup.Answers
-			if lookup.Failure != nil {
-				t.Fatal("unexpected err", *(lookup.Failure))
-			}
-			if lookup.ResolverAddress != "dns.google" {
-				t.Fatal("unexpected address field")
-			}
-			if len(answers) != 1 {
-				t.Fatal("expected 1 DNS answer, got", len(answers))
-			}
-			if answers[0].AnswerType != "A" || answers[0].IPv4 != "1.1.1.1" {
-				t.Fatal("unexpected DNS answer", answers)
-			}
-		})
-
-		t.Run("DNSLookups QueryType AAAA", func(t *testing.T) {
-			events := trace.DNSLookupsFromRoundTrip(dns.TypeAAAA)
-			if len(events) != 1 {
-				t.Fatal("expected to see single DNSLookup event")
-			}
-			lookup := events[0]
-			answers := lookup.Answers
-			if lookup.Failure != nil {
-				t.Fatal("unexpected err", *(lookup.Failure))
-			}
-			if lookup.ResolverAddress != "dns.google" {
-				t.Fatal("unexpected address field")
-			}
-			if len(answers) != 1 {
-				t.Fatal("expected 1 DNS answer, got", len(answers))
-			}
-			if answers[0].AnswerType != "AAAA" || answers[0].IPv6 != "fe80::a00:20ff:feb9:4c54" {
-				t.Fatal("unexpected DNS answer", answers)
+			for _, ev := range events {
+				if ev.ResolverAddress != "dns.google" {
+					t.Fatal("unexpected resolver address")
+				}
+				if ev.Engine != "mocked" {
+					t.Fatal("unexpected engine")
+				}
+				if len(ev.Answers) != 1 {
+					t.Fatal("expected single answer in DNSLookup event")
+				}
+				if ev.QueryType == "A" && ev.Answers[0].IPv4 != "1.1.1.1" {
+					t.Fatal("unexpected A query result")
+				}
+				if ev.QueryType == "AAAA" && ev.Answers[0].IPv6 != "fe80::a00:20ff:feb9:4c54" {
+					t.Fatal("unexpected AAAA query result")
+				}
 			}
 		})
 	})
@@ -166,10 +193,7 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 		zeroTime := time.Now()
 		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
-		trace.DNSLookup = map[uint16]chan *model.ArchivalDNSLookupResult{
-			dns.TypeA:    make(chan *model.ArchivalDNSLookupResult), // no buffer
-			dns.TypeAAAA: make(chan *model.ArchivalDNSLookupResult), // no buffer
-		}
+		trace.DNSLookup = make(chan *model.ArchivalDNSLookupResult) // no buffer
 		trace.TimeNowFn = td.Now
 		txp := &mocks.DNSTransport{
 			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
@@ -193,10 +217,8 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 				return "dns.google"
 			},
 		}
-		newResolver := func() model.Resolver {
-			return netxlite.NewUnwrappedParallelResolver(txp)
-		}
-		resolver := trace.newParallelResolverTrace(newResolver)
+		r := netxlite.NewUnwrappedParallelResolver(txp)
+		resolver := trace.wrapResolver(r)
 		ctx := context.Background()
 		addrs, err := resolver.LookupHost(ctx, "example.com")
 		if err != nil {
@@ -205,19 +227,61 @@ func TestNewUnwrappedParallelResolver(t *testing.T) {
 		if len(addrs) != 2 {
 			t.Fatal("unexpected array output", addrs)
 		}
+		if addrs[0] != "1.1.1.1" && addrs[1] != "1.1.1.1" {
+			t.Fatal("unexpected array output", addrs)
+		}
+		if addrs[0] != "fe80::a00:20ff:feb9:4c54" && addrs[1] != "fe80::a00:20ff:feb9:4c54" {
+			t.Fatal("unexpected array output", addrs)
+		}
 
-		t.Run("DNSLookups QueryType A", func(t *testing.T) {
-			events := trace.DNSLookupsFromRoundTrip(dns.TypeA)
+		t.Run("DNSLookup Events", func(t *testing.T) {
+			events := trace.DNSLookupsFromRoundTrip()
 			if len(events) != 0 {
-				t.Fatal("expected to see no DNSLookup")
+				t.Fatal("expected to see no DNSLookup events")
 			}
 		})
-		t.Run("DNSLookups QueryType AAAA", func(t *testing.T) {
-			events := trace.DNSLookupsFromRoundTrip(dns.TypeAAAA)
-			if len(events) != 0 {
-				t.Fatal("expected to see no DNSLookup")
-			}
-		})
+	})
+}
+
+func TestNewWrappedResolvers(t *testing.T) {
+	t.Run("NewParallelDNSOverHTTPSResolver works as intended", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		resolver := trace.NewParallelDNSOverHTTPSResolver(model.DiscardLogger, "https://dns.google.com")
+		resolvert := resolver.(*resolverTrace)
+		if resolvert.tx != trace {
+			t.Fatal("invalid trace")
+		}
+		if resolver.Network() != "doh" {
+			t.Fatal("unexpected resolver network")
+		}
+	})
+
+	t.Run("NewParallelUDPResolver works as intended", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		dialer := netxlite.NewDialerWithStdlibResolver(model.DiscardLogger)
+		resolver := trace.NewParallelUDPResolver(model.DiscardLogger, dialer, "1.1.1.1:53")
+		resolvert := resolver.(*resolverTrace)
+		if resolvert.tx != trace {
+			t.Fatal("invalid trace")
+		}
+		if resolver.Network() != "udp" {
+			t.Fatal("unexpected resolver network")
+		}
+	})
+
+	t.Run("NewStdlibResolver works as intended", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		resolver := trace.NewStdlibResolver(model.DiscardLogger)
+		resolvert := resolver.(*resolverTrace)
+		if resolvert.tx != trace {
+			t.Fatal("invalid trace")
+		}
+		if resolver.Network() != "system" {
+			t.Fatal("unexpected resolver network")
+		}
 	})
 }
 
@@ -270,27 +334,4 @@ func TestAnswersFromAddrs(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestDNSLookupsFromRoundTrips(t *testing.T) {
-	zeroTime := time.Now()
-	trace := NewTrace(0, zeroTime)
-	checkPanic := func(query uint16, f func(uint16) []*model.ArchivalDNSLookupResult) {
-		defer func() {
-			if r := recover(); r != nil {
-				t.Fatal("unexpected panic encoutered")
-			}
-		}()
-		f(query)
-	}
-	t.Run("DNSLookup is nil", func(t *testing.T) {
-		trace.DNSLookup = nil
-		checkPanic(dns.TypeA, trace.DNSLookupsFromRoundTrip)
-	})
-	t.Run("Query has nil channel", func(t *testing.T) {
-		trace.DNSLookup = map[uint16]chan *model.ArchivalDNSLookupResult{
-			dns.TypeA: nil,
-		}
-		checkPanic(dns.TypeA, trace.DNSLookupsFromRoundTrip)
-	})
 }

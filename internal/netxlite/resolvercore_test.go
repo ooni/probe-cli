@@ -7,12 +7,14 @@ import (
 	"net"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func typecheckForSystemResolver(t *testing.T, resolver model.Resolver, logger model.DebugLogger) {
@@ -200,6 +202,130 @@ func TestResolverSystem(t *testing.T) {
 		}
 		if len(ns) != 0 {
 			t.Fatal("expected no results")
+		}
+	})
+
+	t.Run("uses a context-injected custom trace (success case)", func(t *testing.T) {
+		var (
+			onLookupCalled     bool
+			goodQueryType      bool
+			goodLookupAddrs    bool
+			goodLookupError    bool
+			goodLookupResolver bool
+		)
+		expected := []string{"1.1.1.1"}
+		r := &resolverSystem{
+			t: &mocks.DNSTransport{
+				MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+					if query.Type() != dns.TypeANY {
+						return nil, errors.New("unexpected query type")
+					}
+					return &mocks.DNSResponse{
+						MockDecodeLookupHost: func() ([]string, error) {
+							return expected, nil
+						},
+					}, nil
+				},
+				MockNetwork: func() string {
+					return "mocked"
+				},
+			},
+		}
+		zeroTime := time.Now()
+		deteterministicTime := testingx.NewTimeDeterministic(zeroTime)
+		tx := &mocks.Trace{
+			MockTimeNow: deteterministicTime.Now,
+			MockOnDNSRoundTripForLookupHost: func(started time.Time, reso model.Resolver, query model.DNSQuery,
+				response model.DNSResponse, addrs []string, err error, finished time.Time) {
+				onLookupCalled = true
+				goodQueryType = (query.Type() == dns.TypeANY)
+				goodLookupAddrs = (cmp.Diff(addrs, expected) == "")
+				goodLookupError = (err == nil)
+				goodLookupResolver = (reso.Network() == "mocked")
+			},
+		}
+		ctx := ContextWithTrace(context.Background(), tx)
+		addrs, err := r.LookupHost(ctx, "example.com")
+		if err != nil {
+			t.Fatal("unexpected error", err)
+		}
+		if diff := cmp.Diff(expected, addrs); diff != "" {
+			t.Fatal("unexpected addresses")
+		}
+		if !onLookupCalled {
+			t.Fatal("onLookupCalled not called")
+		}
+		if !goodQueryType {
+			t.Fatal("unexpected query type in system resolver")
+		}
+		if !goodLookupAddrs {
+			t.Fatal("unexpected addresses in LookupHost")
+		}
+		if !goodLookupError {
+			t.Fatal("unexpected error in trace")
+		}
+		if !goodLookupResolver {
+			t.Fatal("unexpected resolver network encountered")
+		}
+	})
+
+	t.Run("uses a context-injected custom trace (failure case)", func(t *testing.T) {
+		var (
+			onLookupCalled     bool
+			goodQueryType      bool
+			goodLookupAddrs    bool
+			goodLookupError    bool
+			goodLookupResolver bool
+		)
+		expected := errors.New("mocked")
+		r := &resolverSystem{
+			t: &mocks.DNSTransport{
+				MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
+					if query.Type() != dns.TypeANY {
+						return nil, errors.New("unexpected query type")
+					}
+					return nil, expected
+				},
+				MockNetwork: func() string {
+					return "mocked"
+				},
+			},
+		}
+		zeroTime := time.Now()
+		deteterministicTime := testingx.NewTimeDeterministic(zeroTime)
+		tx := &mocks.Trace{
+			MockTimeNow: deteterministicTime.Now,
+			MockOnDNSRoundTripForLookupHost: func(started time.Time, reso model.Resolver, query model.DNSQuery,
+				response model.DNSResponse, addrs []string, err error, finished time.Time) {
+				onLookupCalled = true
+				goodQueryType = (query.Type() == dns.TypeANY)
+				goodLookupAddrs = (len(addrs) == 0)
+				goodLookupError = errors.Is(err, expected)
+				goodLookupResolver = (reso.Network() == "mocked")
+			},
+		}
+		ctx := ContextWithTrace(context.Background(), tx)
+		addrs, err := r.LookupHost(ctx, "example.com")
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected error", err)
+		}
+		if len(addrs) != 0 {
+			t.Fatal("unexpected addresses")
+		}
+		if !onLookupCalled {
+			t.Fatal("onLookupCalled not called")
+		}
+		if !goodQueryType {
+			t.Fatal("unexpected query type in system resolver")
+		}
+		if !goodLookupAddrs {
+			t.Fatal("unexpected addresses in LookupHost")
+		}
+		if !goodLookupError {
+			t.Fatal("unexpected error in trace")
+		}
+		if !goodLookupResolver {
+			t.Fatal("unexpected resolver network encountered")
 		}
 	})
 }
