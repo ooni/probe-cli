@@ -98,7 +98,7 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 		tk.Blocking = "dns"
 		tk.Accessible = false
 		logger.Warnf(
-			"ANOMALY: flags=%d accessible=%+v, blocking=%%+v",
+			"ANOMALY: flags=%d accessible=%+v, blocking=%+v",
 			tk.XBlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
@@ -106,14 +106,14 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 		tk.Blocking = "tcp_ip"
 		tk.Accessible = false
 		logger.Warnf(
-			"ANOMALY: flags=%d accessible=%+v, blocking=%%+v",
+			"ANOMALY: flags=%d accessible=%+v, blocking=%+v",
 			tk.XBlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
 	case (tk.XBlockingFlags & (analysisFlagTLSBlocking | analysisFlagHTTPBlocking)) != 0:
 		tk.Blocking = "http-failure"
 		tk.Accessible = false
-		logger.Warnf("ANOMALY: flags=%d accessible=%+v, blocking=%%+v",
+		logger.Warnf("ANOMALY: flags=%d accessible=%+v, blocking=%+v",
 			tk.XBlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
@@ -121,7 +121,7 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 		tk.Blocking = "http-diff"
 		tk.Accessible = false
 		logger.Warnf(
-			"ANOMALY: flags=%d accessible=%+v, blocking=%%+v",
+			"ANOMALY: flags=%d accessible=%+v, blocking=%+v",
 			tk.XBlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
@@ -129,7 +129,7 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 		tk.Blocking = false
 		tk.Accessible = true
 		logger.Infof(
-			"SUCCESS: flags=%d accessible=%+v, blocking=%%+v",
+			"SUCCESS: flags=%d accessible=%+v, blocking=%+v",
 			tk.XBlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
