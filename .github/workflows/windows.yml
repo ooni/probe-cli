@@ -31,7 +31,7 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - run: ./mk MINGW_W64_VERSION="9.3-win32" ./CLI/ooniprobe-windows
+      - run: ./mk EXPECTED_MINGW_W64_VERSION="9.3-win32" ./CLI/ooniprobe-windows
 
       - uses: actions/upload-artifact@v2
         with:
