@@ -51,8 +51,11 @@ Please, make sure you add the `ooni/probe-cli` label.
 
 ## Build instructions
 
-Be sure you have the golang version mentioned inside the [GOVERSION](GOVERSION)
-file and a C compiler (Mingw-w64 for Windows).
+Be sure you have:
+
+1. the golang version mentioned inside the [GOVERSION](GOVERSION) file;
+
+2. a C compiler (Mingw-w64 for Windows).
 
 ### ooniprobe
 
@@ -105,5 +108,5 @@ Create an issue according to [the routine release template](
 https://github.com/ooni/probe/blob/master/.github/ISSUE_TEMPLATE/routine-sprint-releases.md)
 and perform any item inside the check-list.
 
-We build releases using [Makefile](Makefile), which requires GNU make. Try
-the `make help|less` command for detailed usage.
+We build releases using [Makefile](Makefile), which requires GNU make. The
+`make help|less` provides detailed usage.
