@@ -120,6 +120,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 			}
 			expectedFailure := "unknown_failure: mocked"
 			expect := &model.ArchivalTLSOrQUICHandshakeResult{
+				Network:            "tls",
 				Address:            "1.1.1.1:443",
 				CipherSuite:        "",
 				Failure:            &expectedFailure,
@@ -273,6 +274,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				t.Fatal("expected to see a single TLSHandshake event")
 			}
 			expected := &model.ArchivalTLSOrQUICHandshakeResult{
+				Network:            "tls",
 				Address:            conn.RemoteAddr().String(),
 				CipherSuite:        netxlite.TLSCipherSuiteString(connState.CipherSuite),
 				Failure:            nil,
