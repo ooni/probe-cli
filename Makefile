@@ -215,8 +215,6 @@ show-config:
 #help: * `make ./MOBILE/android/oonimkall.aar`: the AAR
 .PHONY:   ./MOBILE/android/oonimkall.aar
 ./MOBILE/android/oonimkall.aar: search/for/android/sdk maybe/copypsiphon
-	@echo "Android build disabled - TODO(https://github.com/ooni/probe/issues/2122)"
-	@exit 1
 	./MOBILE/gomobile android ./pkg/oonimkall
 
 #help:
