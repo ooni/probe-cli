@@ -121,7 +121,7 @@ func (tx *Trace) TCPConnects() (out []*model.ArchivalTCPConnectResult) {
 }
 
 // FirstTCPConnect drains the network events buffered inside the TCPConnect channel
-// and returns the first TCPConnect
+// and returns the first TCPConnect.
 func (tx *Trace) FirstTCPConnect() *model.ArchivalTCPConnectResult {
 	ev := tx.TCPConnects()
 	if len(ev) < 1 {
