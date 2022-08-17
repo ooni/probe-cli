@@ -40,7 +40,7 @@ func TestWrapNetConn(t *testing.T) {
 		underlying := &mocks.Conn{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		conn := trace.WrapNetConn(underlying)
+		conn := trace.MaybeWrapNetConn(underlying)
 		ct := conn.(*connTrace)
 		if ct.Conn != underlying {
 			t.Fatal("invalid underlying")
@@ -70,7 +70,7 @@ func TestWrapNetConn(t *testing.T) {
 		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.TimeNowFn = td.Now // deterministic time counting
-		conn := trace.WrapNetConn(underlying)
+		conn := trace.MaybeWrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
 		count, err := conn.Read(buffer)
@@ -118,7 +118,7 @@ func TestWrapNetConn(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
 		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
-		conn := trace.WrapNetConn(underlying)
+		conn := trace.MaybeWrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
 		count, err := conn.Read(buffer)
@@ -154,7 +154,7 @@ func TestWrapNetConn(t *testing.T) {
 		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.TimeNowFn = td.Now // deterministic time tracking
-		conn := trace.WrapNetConn(underlying)
+		conn := trace.MaybeWrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
 		count, err := conn.Write(buffer)
@@ -202,7 +202,7 @@ func TestWrapNetConn(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
 		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
-		conn := trace.WrapNetConn(underlying)
+		conn := trace.MaybeWrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
 		count, err := conn.Write(buffer)
@@ -224,7 +224,7 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		underlying := &mocks.UDPLikeConn{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		conn := trace.WrapUDPLikeConn(underlying)
+		conn := trace.MaybeWrapUDPLikeConn(underlying)
 		ct := conn.(*udpLikeConnTrace)
 		if ct.UDPLikeConn != underlying {
 			t.Fatal("invalid underlying")
@@ -248,7 +248,7 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.TimeNowFn = td.Now // deterministic time counting
-		conn := trace.WrapUDPLikeConn(underlying)
+		conn := trace.MaybeWrapUDPLikeConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
 		count, addr, err := conn.ReadFrom(buffer)
@@ -293,7 +293,7 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
 		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
-		conn := trace.WrapUDPLikeConn(underlying)
+		conn := trace.MaybeWrapUDPLikeConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
 		count, addr, err := conn.ReadFrom(buffer)
@@ -322,7 +322,7 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.TimeNowFn = td.Now // deterministic time tracking
-		conn := trace.WrapUDPLikeConn(underlying)
+		conn := trace.MaybeWrapUDPLikeConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
 		addr := &mocks.Addr{
@@ -365,7 +365,7 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
 		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
-		conn := trace.WrapUDPLikeConn(underlying)
+		conn := trace.MaybeWrapUDPLikeConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
 		addr := &mocks.Addr{

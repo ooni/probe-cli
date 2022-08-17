@@ -224,7 +224,7 @@ func (d *dialerResolverWithTracing) DialContext(ctx context.Context, network, ad
 		trace.OnConnectDone(started, network, onlyhost, target, err, finished)
 		if err == nil {
 			conn = &dialerErrWrapperConn{conn}
-			return conn, nil
+			return trace.MaybeWrapNetConn(conn), nil
 		}
 		errorslist = append(errorslist, err)
 	}
