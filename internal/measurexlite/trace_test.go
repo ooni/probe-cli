@@ -6,9 +6,11 @@ import (
 	"errors"
 	"net"
 	"reflect"
+	"syscall"
 	"testing"
 	"time"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -46,9 +48,21 @@ func TestNewTrace(t *testing.T) {
 			}
 		})
 
-		t.Run("NewParallelResolverFn is nil", func(t *testing.T) {
-			if trace.NewParallelResolverFn != nil {
-				t.Fatal("expected nil NewUnwrappedParallelResolverFn")
+		t.Run("NewStdlibResolverFn is nil", func(t *testing.T) {
+			if trace.NewStdlibResolverFn != nil {
+				t.Fatal("expected nil NewStdlibResolverFn")
+			}
+		})
+
+		t.Run("NewParallelUDPResolverFn is nil", func(t *testing.T) {
+			if trace.NewParallelUDPResolverFn != nil {
+				t.Fatal("expected nil NewParallelUDPResolverFn")
+			}
+		})
+
+		t.Run("NewParallelDNSOverHTTPSResolverFn is nil", func(t *testing.T) {
+			if trace.NewParallelDNSOverHTTPSResolverFn != nil {
+				t.Fatal("expected nil NewParallelDNSOverHTTPSResolverFn")
 			}
 		})
 
@@ -64,24 +78,28 @@ func TestNewTrace(t *testing.T) {
 			}
 		})
 
+		t.Run("NewQUICDialerWithoutResolverFn is nil", func(t *testing.T) {
+			if trace.NewQUICDialerWithoutResolverFn != nil {
+				t.Fatal("expected nil NewQUICDialerQithoutResolverFn")
+			}
+		})
+
 		t.Run("DNSLookup has the expected buffer size", func(t *testing.T) {
 			ff := &testingx.FakeFiller{}
-			for _, qtype := range DNSQueryTypes {
-				var count int
-			Loop:
-				for {
-					ev := &model.ArchivalDNSLookupResult{}
-					ff.Fill(ev)
-					select {
-					case trace.DNSLookup[qtype] <- ev:
-						count++
-					default:
-						break Loop
-					}
+			var idx int
+		Loop:
+			for {
+				ev := &model.ArchivalDNSLookupResult{}
+				ff.Fill(ev)
+				select {
+				case trace.DNSLookup <- ev:
+					idx++
+				default:
+					break Loop
 				}
-				if count != DNSLookupBufferSize {
-					t.Fatal("invalid DNSLookup A channel buffer size")
-				}
+			}
+			if idx != DNSLookupBufferSize {
+				t.Fatal("invalid DNSLookup channel buffer size")
 			}
 		})
 
@@ -123,6 +141,25 @@ func TestNewTrace(t *testing.T) {
 			}
 		})
 
+		t.Run("QUICHandshake has the expected buffer size", func(t *testing.T) {
+			ff := &testingx.FakeFiller{}
+			var idx int
+		Loop:
+			for {
+				ev := &model.ArchivalTLSOrQUICHandshakeResult{}
+				ff.Fill(ev)
+				select {
+				case trace.QUICHandshake <- ev:
+					idx++
+				default:
+					break Loop
+				}
+			}
+			if idx != QUICHandshakeBufferSize {
+				t.Fatal("invalid QUICHandshake channel buffer size")
+			}
+		})
+
 		t.Run("TimeNowFn is nil", func(t *testing.T) {
 			if trace.TimeNowFn != nil {
 				t.Fatal("expected nil TimeNowFn")
@@ -138,11 +175,11 @@ func TestNewTrace(t *testing.T) {
 }
 
 func TestTrace(t *testing.T) {
-	t.Run("NewParallelResolverFn works as intended", func(t *testing.T) {
+	t.Run("NewStdlibResolverFn works as intended", func(t *testing.T) {
 		t.Run("when not nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewParallelResolverFn: func() model.Resolver {
+				NewStdlibResolverFn: func(logger model.Logger) model.Resolver {
 					return &mocks.Resolver{
 						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 							return []string{}, mockedErr
@@ -150,9 +187,7 @@ func TestTrace(t *testing.T) {
 					}
 				},
 			}
-			resolver := tx.newParallelResolver(func() model.Resolver {
-				return nil
-			})
+			resolver := tx.newStdlibResolver(model.DiscardLogger)
 			ctx := context.Background()
 			addrs, err := resolver.LookupHost(ctx, "example.com")
 			if !errors.Is(err, mockedErr) {
@@ -165,26 +200,99 @@ func TestTrace(t *testing.T) {
 
 		t.Run("when nil", func(t *testing.T) {
 			tx := &Trace{
-				NewParallelResolverFn: nil,
+				NewParallelUDPResolverFn: nil,
 			}
-			newResolver := func() model.Resolver {
-				return &mocks.Resolver{
-					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-						return []string{"1.1.1.1"}, nil
-					},
-				}
-			}
-			resolver := tx.newParallelResolver(newResolver)
-			ctx := context.Background()
+			resolver := tx.newStdlibResolver(model.DiscardLogger)
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
 			addrs, err := resolver.LookupHost(ctx, "example.com")
-			if err != nil {
+			if err == nil || err.Error() != netxlite.FailureInterrupted {
 				t.Fatal("unexpected err", err)
 			}
-			if len(addrs) != 1 {
-				t.Fatal("expected array of size 1")
+			if len(addrs) != 0 {
+				t.Fatal("expected array of size 0")
 			}
-			if addrs[0] != "1.1.1.1" {
-				t.Fatal("unexpected array output", addrs)
+		})
+	})
+
+	t.Run("NewParallelUDPResolverFn works as intended", func(t *testing.T) {
+		t.Run("when not nil", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			tx := &Trace{
+				NewParallelUDPResolverFn: func(logger model.Logger, dialer model.Dialer, address string) model.Resolver {
+					return &mocks.Resolver{
+						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+							return []string{}, mockedErr
+						},
+					}
+				},
+			}
+			dialer := &mocks.Dialer{}
+			resolver := tx.newParallelUDPResolver(model.DiscardLogger, dialer, "1.1.1.1:53")
+			ctx := context.Background()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if !errors.Is(err, mockedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected array of size 0")
+			}
+		})
+
+		t.Run("when nil", func(t *testing.T) {
+			tx := &Trace{
+				NewParallelUDPResolverFn: nil,
+			}
+			dialer := netxlite.NewDialerWithoutResolver(model.DiscardLogger)
+			resolver := tx.newParallelUDPResolver(model.DiscardLogger, dialer, "1.1.1.1:53")
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if err == nil || err.Error() != netxlite.FailureInterrupted {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected array of size 0")
+			}
+		})
+	})
+
+	t.Run("NewParallelDNSOverHTTPSResolverFn works as intended", func(t *testing.T) {
+		t.Run("when not nil", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			tx := &Trace{
+				NewParallelDNSOverHTTPSResolverFn: func(logger model.Logger, URL string) model.Resolver {
+					return &mocks.Resolver{
+						MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+							return []string{}, mockedErr
+						},
+					}
+				},
+			}
+			resolver := tx.newParallelDNSOverHTTPSResolver(model.DiscardLogger, "https://dns.google.com")
+			ctx := context.Background()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if !errors.Is(err, mockedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected array of size 0")
+			}
+		})
+
+		t.Run("when nil", func(t *testing.T) {
+			tx := &Trace{
+				NewParallelDNSOverHTTPSResolverFn: nil,
+			}
+			resolver := tx.newParallelDNSOverHTTPSResolver(model.DiscardLogger, "https://dns.google.com")
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			addrs, err := resolver.LookupHost(ctx, "example.com")
+			if err == nil || err.Error() != netxlite.FailureInterrupted {
+				t.Fatal("unexpected err", err)
+			}
+			if len(addrs) != 0 {
+				t.Fatal("expected array of size 0")
 			}
 		})
 	})
@@ -294,6 +402,73 @@ func TestTrace(t *testing.T) {
 				t.Fatal("state is not a zero value")
 			}
 			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
+		})
+	})
+
+	t.Run("NewQUICDialerWithoutResolverFn works as intended", func(t *testing.T) {
+		t.Run("when not nil", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			tx := &Trace{
+				NewQUICDialerWithoutResolverFn: func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+					return &mocks.QUICDialer{
+						MockDialContext: func(ctx context.Context, network, address string,
+							tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+							return nil, mockedErr
+						},
+					}
+				},
+			}
+			qdx := tx.newQUICDialerWithoutResolver(&mocks.QUICListener{}, model.DiscardLogger)
+			ctx := context.Background()
+			qconn, err := qdx.DialContext(ctx, "udp", "1.1.1.1:443", &tls.Config{}, &quic.Config{})
+			if !errors.Is(err, mockedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if qconn != nil {
+				t.Fatal("expected nil conn")
+			}
+		})
+
+		t.Run("when nil", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			tx := &Trace{
+				NewQUICDialerWithoutResolverFn: nil, // explicit
+			}
+			pconn := &mocks.UDPLikeConn{
+				MockLocalAddr: func() net.Addr {
+					return &net.UDPAddr{
+						Port: 0,
+					}
+				},
+				MockRemoteAddr: func() net.Addr {
+					return &net.UDPAddr{
+						Port: 0,
+					}
+				},
+				MockSyscallConn: func() (syscall.RawConn, error) {
+					return nil, mockedErr
+				},
+				MockClose: func() error {
+					return nil
+				},
+			}
+			listener := &mocks.QUICListener{
+				MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+					return pconn, nil
+				},
+			}
+			tlsConfig := &tls.Config{
+				InsecureSkipVerify: true,
+			}
+			dialer := tx.newQUICDialerWithoutResolver(listener, model.DiscardLogger)
+			ctx := context.Background()
+			qconn, err := dialer.DialContext(ctx, "udp", "1.1.1.1:443", tlsConfig, &quic.Config{})
+			if !errors.Is(err, mockedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if qconn != nil {
 				t.Fatal("expected nil conn")
 			}
 		})

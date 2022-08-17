@@ -22,7 +22,7 @@ func (n WebConnectivity) lookupURLs(ctl *Controller, categories []string) ([]str
 			},
 		},
 		ExperimentName: "web_connectivity",
-		InputPolicy:    engine.InputOrQueryBackend,
+		InputPolicy:    model.InputOrQueryBackend,
 		Session:        ctl.Session,
 		SourceFiles:    ctl.InputFiles,
 		StaticInputs:   ctl.Inputs,

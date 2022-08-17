@@ -29,5 +29,5 @@ type Session interface {
 	Logger() model.Logger
 
 	// NewExperimentBuilder creates a new engine.ExperimentBuilder.
-	NewExperimentBuilder(name string) (engine.ExperimentBuilder, error)
+	NewExperimentBuilder(name string) (model.ExperimentBuilder, error)
 }
