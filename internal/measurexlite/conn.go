@@ -21,7 +21,7 @@ func MaybeClose(conn net.Conn) (err error) {
 	return
 }
 
-// MaybeWrapNetConn returns a wrapped conn that saves network events into this trace.
+// MaybeWrapNetConn implements model.Trace.MaybeWrapNetConn.
 func (tx *Trace) MaybeWrapNetConn(conn net.Conn) net.Conn {
 	return &connTrace{
 		Conn: conn,
@@ -77,7 +77,7 @@ func MaybeCloseUDPLikeConn(conn model.UDPLikeConn) (err error) {
 	return
 }
 
-// MaybeWrapUDPLikeConn returns a wrapped conn that saves network events into this trace.
+// MaybeWrapUDPLikeConn implements model.Trace.MaybeWrapUDPLikeConn.
 func (tx *Trace) MaybeWrapUDPLikeConn(conn model.UDPLikeConn) model.UDPLikeConn {
 	return &udpLikeConnTrace{
 		UDPLikeConn: conn,
