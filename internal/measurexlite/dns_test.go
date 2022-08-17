@@ -193,7 +193,7 @@ func TestNewResolver(t *testing.T) {
 		zeroTime := time.Now()
 		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
-		trace.DNSLookup = make(chan *model.ArchivalDNSLookupResult) // no buffer
+		trace.dnsLookup = make(chan *model.ArchivalDNSLookupResult) // no buffer
 		trace.TimeNowFn = td.Now
 		txp := &mocks.DNSTransport{
 			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {

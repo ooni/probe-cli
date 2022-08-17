@@ -182,8 +182,8 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		mockedErr := errors.New("mocked")
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NetworkEvent = make(chan *model.ArchivalNetworkEvent)             // no buffer
-		trace.TLSHandshake = make(chan *model.ArchivalTLSOrQUICHandshakeResult) // no buffer
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent)             // no buffer
+		trace.tlsHandshake = make(chan *model.ArchivalTLSOrQUICHandshakeResult) // no buffer
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
 		ctx := context.Background()
 		tcpConn := &mocks.Conn{

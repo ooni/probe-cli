@@ -117,7 +117,7 @@ func TestWrapNetConn(t *testing.T) {
 		}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NetworkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
 		conn := trace.WrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
@@ -201,7 +201,7 @@ func TestWrapNetConn(t *testing.T) {
 		}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NetworkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
 		conn := trace.WrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
@@ -292,7 +292,7 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NetworkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
 		conn := trace.WrapUDPLikeConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
@@ -364,7 +364,7 @@ func TestWrapUDPLikeConn(t *testing.T) {
 		}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NetworkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
 		conn := trace.WrapUDPLikeConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)

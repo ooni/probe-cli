@@ -259,8 +259,8 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		mockedErr := errors.New("mocked")
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NetworkEvent = make(chan *model.ArchivalNetworkEvent)              // no buffer
-		trace.QUICHandshake = make(chan *model.ArchivalTLSOrQUICHandshakeResult) // no buffer
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent)              // no buffer
+		trace.quicHandshake = make(chan *model.ArchivalTLSOrQUICHandshakeResult) // no buffer
 		pconn := &mocks.UDPLikeConn{
 			MockLocalAddr: func() net.Addr {
 				return &net.UDPAddr{

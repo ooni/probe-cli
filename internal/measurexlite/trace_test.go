@@ -37,7 +37,7 @@ func TestNewTrace(t *testing.T) {
 				ev := &model.ArchivalNetworkEvent{}
 				ff.Fill(ev)
 				select {
-				case trace.NetworkEvent <- ev:
+				case trace.networkEvent <- ev:
 					idx++
 				default:
 					break Loop
@@ -92,7 +92,7 @@ func TestNewTrace(t *testing.T) {
 				ev := &model.ArchivalDNSLookupResult{}
 				ff.Fill(ev)
 				select {
-				case trace.DNSLookup <- ev:
+				case trace.dnsLookup <- ev:
 					idx++
 				default:
 					break Loop
@@ -111,7 +111,7 @@ func TestNewTrace(t *testing.T) {
 				ev := &model.ArchivalTCPConnectResult{}
 				ff.Fill(ev)
 				select {
-				case trace.TCPConnect <- ev:
+				case trace.tcpConnect <- ev:
 					idx++
 				default:
 					break Loop
@@ -130,7 +130,7 @@ func TestNewTrace(t *testing.T) {
 				ev := &model.ArchivalTLSOrQUICHandshakeResult{}
 				ff.Fill(ev)
 				select {
-				case trace.TLSHandshake <- ev:
+				case trace.tlsHandshake <- ev:
 					idx++
 				default:
 					break Loop
@@ -149,7 +149,7 @@ func TestNewTrace(t *testing.T) {
 				ev := &model.ArchivalTLSOrQUICHandshakeResult{}
 				ff.Fill(ev)
 				select {
-				case trace.QUICHandshake <- ev:
+				case trace.quicHandshake <- ev:
 					idx++
 				default:
 					break Loop

@@ -121,7 +121,7 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 	t.Run("DialContext discards events when buffer is full", func(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.TCPConnect = make(chan *model.ArchivalTCPConnectResult) // no buffer
+		trace.tcpConnect = make(chan *model.ArchivalTCPConnectResult) // no buffer
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // we cancel immediately so connect is ~instantaneous

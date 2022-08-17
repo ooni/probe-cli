@@ -36,7 +36,7 @@ type Trace struct {
 
 	// NetworkEvent is MANDATORY and buffers network events. If you create
 	// this channel manually, ensure it has some buffer.
-	NetworkEvent chan *model.ArchivalNetworkEvent
+	networkEvent chan *model.ArchivalNetworkEvent
 
 	// NewStdlibResolverFn is OPTIONAL and can be used to overide
 	// calls to the netxlite.NewStdlibResolver factory.
@@ -64,19 +64,19 @@ type Trace struct {
 
 	// DNSLookup is MANDATORY and buffers DNS Lookup observations. If you create
 	// this channel manually, ensure it has some buffer.
-	DNSLookup chan *model.ArchivalDNSLookupResult
+	dnsLookup chan *model.ArchivalDNSLookupResult
 
 	// TCPConnect is MANDATORY and buffers TCP connect observations. If you create
 	// this channel manually, ensure it has some buffer.
-	TCPConnect chan *model.ArchivalTCPConnectResult
+	tcpConnect chan *model.ArchivalTCPConnectResult
 
 	// TLSHandshake is MANDATORY and buffers TLS handshake observations. If you create
 	// this channel manually, ensure it has some buffer.
-	TLSHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
+	tlsHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
 	// QUICHandshake is MANDATORY and buffers QUIC handshake observations. If you create
 	// this channel manually, ensure it has some buffer.
-	QUICHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
+	quicHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
 	// TimeNowFn is OPTIONAL and can be used to override calls to time.Now
 	// to produce deterministic timing when testing.
@@ -122,25 +122,25 @@ const (
 func NewTrace(index int64, zeroTime time.Time) *Trace {
 	return &Trace{
 		Index: index,
-		NetworkEvent: make(
+		networkEvent: make(
 			chan *model.ArchivalNetworkEvent,
 			NetworkEventBufferSize,
 		),
 		NewDialerWithoutResolverFn: nil, // use default
 		NewTLSHandshakerStdlibFn:   nil, // use default
-		DNSLookup: make(
+		dnsLookup: make(
 			chan *model.ArchivalDNSLookupResult,
 			DNSLookupBufferSize,
 		),
-		TCPConnect: make(
+		tcpConnect: make(
 			chan *model.ArchivalTCPConnectResult,
 			TCPConnectBufferSize,
 		),
-		TLSHandshake: make(
+		tlsHandshake: make(
 			chan *model.ArchivalTLSOrQUICHandshakeResult,
 			TLSHandshakeBufferSize,
 		),
-		QUICHandshake: make(
+		quicHandshake: make(
 			chan *model.ArchivalTLSOrQUICHandshakeResult,
 			QUICHandshakeBufferSize,
 		),
