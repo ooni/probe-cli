@@ -11,6 +11,7 @@ import (
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/fsx"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/registry"
 	"github.com/ooni/probe-cli/v3/internal/stuninput"
 )
 
@@ -86,7 +87,7 @@ type InputLoader struct {
 	// current experiment. We will not load any input if
 	// the policy says we should not. You MUST fill in
 	// this field.
-	InputPolicy InputPolicy
+	InputPolicy model.InputPolicy
 
 	// Logger is the optional logger that the InputLoader
 	// should be using. If not set, we will use the default
@@ -112,13 +113,13 @@ type InputLoader struct {
 // return a list of URLs because this is the only input we support.
 func (il *InputLoader) Load(ctx context.Context) ([]model.OOAPIURLInfo, error) {
 	switch il.InputPolicy {
-	case InputOptional:
+	case model.InputOptional:
 		return il.loadOptional()
-	case InputOrQueryBackend:
+	case model.InputOrQueryBackend:
 		return il.loadOrQueryBackend(ctx)
-	case InputStrictlyRequired:
+	case model.InputStrictlyRequired:
 		return il.loadStrictlyRequired(ctx)
-	case InputOrStaticDefault:
+	case model.InputOrStaticDefault:
 		return il.loadOrStaticDefault(ctx)
 	default:
 		return il.loadNone()
@@ -299,7 +300,7 @@ func StaticBareInputForExperiment(name string) ([]string, error) {
 	// Implementation note: we may be called from pkg/oonimkall
 	// with a non-canonical experiment name, so we need to convert
 	// the experiment name to be canonical before proceeding.
-	switch canonicalizeExperimentName(name) {
+	switch registry.CanonicalizeExperimentName(name) {
 	case "dnscheck":
 		return dnsCheckDefaultInput, nil
 	case "stunreachability":

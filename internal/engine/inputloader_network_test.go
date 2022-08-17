@@ -30,7 +30,7 @@ func TestInputLoaderInputOrQueryBackendWithNoInput(t *testing.T) {
 	}
 	defer sess.Close()
 	il := &engine.InputLoader{
-		InputPolicy: engine.InputOrQueryBackend,
+		InputPolicy: model.InputOrQueryBackend,
 		Session:     sess,
 	}
 	ctx := context.Background()

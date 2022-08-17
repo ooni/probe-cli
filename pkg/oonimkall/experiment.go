@@ -3,7 +3,6 @@ package oonimkall
 import (
 	"context"
 
-	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -67,7 +66,7 @@ type experimentBuilder interface {
 
 // experimentBuilderWrapper wraps *ExperimentBuilder
 type experimentBuilderWrapper struct {
-	eb engine.ExperimentBuilder
+	eb model.ExperimentBuilder
 }
 
 // newExperiment implements experimentBuilder.newExperiment

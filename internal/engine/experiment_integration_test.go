@@ -12,7 +12,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/example"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -142,7 +141,7 @@ func TestNeedsInput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if builder.InputPolicy() != InputOrQueryBackend {
+	if builder.InputPolicy() != model.InputOrQueryBackend {
 		t.Fatal("web_connectivity certainly needs input")
 	}
 }
@@ -218,88 +217,6 @@ func TestMeasurementFailure(t *testing.T) {
 	}
 }
 
-func TestUseOptions(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip test in short mode")
-	}
-	sess := newSessionForTesting(t)
-	defer sess.Close()
-	builder, err := sess.NewExperimentBuilder("example")
-	if err != nil {
-		t.Fatal(err)
-	}
-	options, err := builder.Options()
-	if err != nil {
-		t.Fatal(err)
-	}
-	var (
-		returnError bool
-		message     bool
-		sleepTime   bool
-		other       int64
-	)
-	for name, option := range options {
-		if name == "ReturnError" {
-			returnError = true
-			if option.Type != "bool" {
-				t.Fatal("ReturnError is not a bool")
-			}
-			if option.Doc != "Toogle to return a mocked error" {
-				t.Fatal("ReturnError doc is wrong")
-			}
-		} else if name == "Message" {
-			message = true
-			if option.Type != "string" {
-				t.Fatal("Message is not a string")
-			}
-			if option.Doc != "Message to emit at test completion" {
-				t.Fatal("Message doc is wrong")
-			}
-		} else if name == "SleepTime" {
-			sleepTime = true
-			if option.Type != "int64" {
-				t.Fatal("SleepTime is not an int64")
-			}
-			if option.Doc != "Amount of time to sleep for" {
-				t.Fatal("SleepTime doc is wrong")
-			}
-		} else {
-			other++
-		}
-	}
-	if other != 0 {
-		t.Fatal("found unexpected option")
-	}
-	if !returnError {
-		t.Fatal("did not find ReturnError option")
-	}
-	if !message {
-		t.Fatal("did not find Message option")
-	}
-	if !sleepTime {
-		t.Fatal("did not find SleepTime option")
-	}
-	if err := builder.SetOptionAny("ReturnError", true); err != nil {
-		t.Fatal("cannot set ReturnError field")
-	}
-	if err := builder.SetOptionAny("SleepTime", 10); err != nil {
-		t.Fatal("cannot set SleepTime field")
-	}
-	if err := builder.SetOptionAny("Message", "antani"); err != nil {
-		t.Fatal("cannot set Message field")
-	}
-	config := builder.(*experimentBuilder).config.(*example.Config)
-	if config.ReturnError != true {
-		t.Fatal("config.ReturnError was not changed")
-	}
-	if config.SleepTime != 10 {
-		t.Fatal("config.SleepTime was not changed")
-	}
-	if config.Message != "antani" {
-		t.Fatal("config.Message was not changed")
-	}
-}
-
 func TestRunHHFM(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
@@ -313,7 +230,7 @@ func TestRunHHFM(t *testing.T) {
 	runexperimentflow(t, builder.NewExperiment(), "")
 }
 
-func runexperimentflow(t *testing.T, experiment Experiment, input string) {
+func runexperimentflow(t *testing.T, experiment model.Experiment, input string) {
 	ctx := context.Background()
 	err := experiment.OpenReportContext(ctx)
 	if err != nil {
