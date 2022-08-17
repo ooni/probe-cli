@@ -22,6 +22,7 @@ jobs:
       - name: Get GOVERSION content
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
+        shell: bash
 
       - uses: magnetikonline/action-golang-cache@v2
         with:
