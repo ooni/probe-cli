@@ -42,9 +42,9 @@ const (
 
 // Config contains the experiment config.
 type Config struct {
-	Key      string `ooni:"key to connect to the OpenVPN endpoint"`
-	Cert     string `ooni:"cert to connect to the OpenVPN endpoint"`
-	Ca       string `ooni:"ca to connect to the OpenVPN endpoint"`
+	SafeKey  string `ooni:"key to connect to the OpenVPN endpoint"`
+	SafeCert string `ooni:"cert to connect to the OpenVPN endpoint"`
+	SafeCa   string `ooni:"ca to connect to the OpenVPN endpoint"`
 	Cipher   string `ooni:"cipher to use"`
 	Auth     string `ooni:"auth to use"`
 	Compress string `ooni:"compression to use"`
@@ -178,9 +178,9 @@ func (m *Measurer) setup(ctx context.Context, exp *VPNExperiment, logger model.L
 	exp.Config.Compress = m.config.Compress
 
 	// TODO(ainghazal): capture cert validation errors into test failures ---
-	ca, _ := extractBase64Blob(m.config.Ca)
-	cert, _ := extractBase64Blob(m.config.Cert)
-	key, _ := extractBase64Blob(m.config.Key)
+	ca, _ := extractBase64Blob(m.config.SafeCa)
+	cert, _ := extractBase64Blob(m.config.SafeCert)
+	key, _ := extractBase64Blob(m.config.SafeKey)
 
 	exp.Config.Ca = ca
 	exp.Config.Cert = cert
