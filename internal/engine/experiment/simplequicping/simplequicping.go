@@ -173,14 +173,14 @@ func (m *Measurer) quicHandshake(ctx context.Context, index int64,
 	trace := measurexlite.NewTrace(index, zeroTime)
 	ol := measurexlite.NewOperationLogger(logger, "SimpleQUICPing #%d %s %s %v", index, address, sni, alpn)
 	quicListener := netxlite.NewQUICListener()
-	listener := trace.NewQUICListenerTrace(quicListener)
+	listener := trace.WrapQUICListener(quicListener)
 	dialer := trace.NewQUICDialerWithoutResolver(listener, logger)
-	tlsConfg := &tls.Config{
+	tlsConfig := &tls.Config{
 		NextProtos: alpn,
 		RootCAs:    netxlite.NewDefaultCertPool(),
 		ServerName: sni,
 	}
-	_, err := dialer.DialContext(ctx, "udp", address, tlsConfg, &quic.Config{})
+	_, err := dialer.DialContext(ctx, "udp", address, tlsConfig, &quic.Config{})
 	ol.Stop(err)
 	sp.QUICHandshake = <-trace.QUICHandshake
 	sp.NetworkEvents = append(sp.NetworkEvents, trace.NetworkEvents()...)

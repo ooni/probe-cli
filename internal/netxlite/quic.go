@@ -140,6 +140,7 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context, network string,
 	qconn, err := d.dialEarlyContext(
 		ctx, pconn, udpAddr, address, tlsConfig, quicConfig)
 	finished := trace.TimeNow()
+	err = MaybeNewErrWrapper(ClassifyQUICHandshakeError, QUICHandshakeOperation, err)
 	trace.OnQUICHandshakeDone(started, address, qconn, tlsConfig, err, finished)
 	if err != nil {
 		pconn.Close() // we own it on failure

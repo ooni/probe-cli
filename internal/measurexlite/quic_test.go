@@ -22,7 +22,7 @@ func TestNewQUICListener(t *testing.T) {
 		underlying := &mocks.QUICListener{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		listenert := trace.NewQUICListenerTrace(underlying).(*quicListenerTrace)
+		listenert := trace.WrapQUICListener(underlying).(*quicListenerTrace)
 		if listenert.QUICListener != underlying {
 			t.Fatal("invalid quic dialer")
 		}
@@ -41,7 +41,7 @@ func TestNewQUICListener(t *testing.T) {
 					return nil, mockedErr
 				},
 			}
-			listener := trace.NewQUICListenerTrace(mockListener)
+			listener := trace.WrapQUICListener(mockListener)
 			pconn, err := listener.Listen(&net.UDPAddr{})
 			if !errors.Is(err, mockedErr) {
 				t.Fatal("unexpected err", err)
@@ -60,7 +60,7 @@ func TestNewQUICListener(t *testing.T) {
 					return mockConn, nil
 				},
 			}
-			listener := trace.NewQUICListenerTrace(mockListener)
+			listener := trace.WrapQUICListener(mockListener)
 			pconn, err := listener.Listen(&net.UDPAddr{})
 			if err != nil {
 				t.Fatal("unexpected err", err)

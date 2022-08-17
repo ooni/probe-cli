@@ -101,7 +101,7 @@ func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
 	address := addrStringIfNotNil(addr)
 	select {
 	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
-		c.tx.Index, started, "read_from", "udp", address, count, err, finished):
+		c.tx.Index, started, netxlite.ReadFromOperation, "udp", address, count, err, finished):
 	default: // buffer is full
 	}
 	return count, addr, err
@@ -110,28 +110,15 @@ func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
 // Write implements model.UDPLikeConn.WriteTo and saves network events.
 func (c *udpLikeConnTrace) WriteTo(b []byte, addr net.Addr) (int, error) {
 	started := c.tx.TimeSince(c.tx.ZeroTime)
+	address := addr.String()
 	count, err := c.UDPLikeConn.WriteTo(b, addr)
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
-	address := addr.String()
 	select {
 	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
-		c.tx.Index, started, "write_to", "udp", address, count, err, finished):
+		c.tx.Index, started, netxlite.WriteToOperation, "udp", address, count, err, finished):
 	default: // buffer is full
 	}
 	return count, err
-}
-
-// Close implements model.UDPLikeConn.Close and saves network events
-func (c *udpLikeConnTrace) Close() error {
-	started := c.tx.TimeSince(c.tx.ZeroTime)
-	err := c.UDPLikeConn.Close()
-	finished := c.tx.TimeSince(c.tx.ZeroTime)
-	select {
-	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
-		c.tx.Index, started, "close", "udp", "", 0, err, finished):
-	default: // buffer is full
-	}
-	return err
 }
 
 // addrStringIfNotNil returns the string of the given addr

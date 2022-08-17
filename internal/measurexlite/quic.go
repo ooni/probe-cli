@@ -15,8 +15,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-// NewQUICListenerTrace returns a model.QUICListener that uses this trace
-func (tx *Trace) NewQUICListenerTrace(listener model.QUICListener) model.QUICListener {
+// WrapQUICListener returns a wrapped model.QUICListener that uses this trace.
+func (tx *Trace) WrapQUICListener(listener model.QUICListener) model.QUICListener {
 	return &quicListenerTrace{
 		QUICListener: listener,
 		tx:           tx,
