@@ -46,7 +46,10 @@ type v2Nettest struct {
 	// Inputs contains inputs for the experiment.
 	Inputs []string `json:"inputs"`
 
-	// Options contains the experiment options.
+	// Options contains the experiment options. Any option name starting with
+	// `Safe` will be available for the experiment run, but omitted from
+	// the serialized Measurement that the experiment builder will submit
+	// to the OONI backend.
 	Options map[string]any `json:"options"`
 
 	// TestName contains the nettest name.
