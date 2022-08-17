@@ -316,6 +316,7 @@ type Trace interface {
 	//
 	// - conn is the non-nil underlying UDPLikeConn to be wrapped
 	MaybeWrapUDPLikeConn(conn UDPLikeConn) UDPLikeConn
+
 	// OnDNSRoundTripForLookupHost is used with a DNSTransport and called
 	// when the RoundTrip terminates.
 	//
