@@ -22,7 +22,7 @@ jobs:
         env:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
-      - run: ./mk ./CLI/ooniprobe-linux-386
+      - run: make ./CLI/ooniprobe-linux-386
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-386
       - run: |
           tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
@@ -47,7 +47,7 @@ jobs:
         env:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
-      - run: ./mk ./CLI/ooniprobe-linux-amd64
+      - run: make ./CLI/ooniprobe-linux-amd64
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-amd64
       - run: |
           tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
@@ -73,7 +73,7 @@ jobs:
         env:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
-      - run: ./mk ./CLI/ooniprobe-linux-armv7
+      - run: make ./CLI/ooniprobe-linux-armv7
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-armv7
       - run: |
           tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
@@ -99,7 +99,7 @@ jobs:
         env:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
-      - run: ./mk ./CLI/ooniprobe-linux-arm64
+      - run: make ./CLI/ooniprobe-linux-arm64
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-arm64
       - run: |
           tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
