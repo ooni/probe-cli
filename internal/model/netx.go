@@ -383,7 +383,7 @@ type Trace interface {
 	OnTLSHandshakeDone(started time.Time, remoteAddr string, config *tls.Config,
 		state tls.ConnectionState, err error, finished time.Time)
 
-	// OnQUICHandshakeStart()
+	// OnQUICHandshakeStart is called before the QUIC handshake.
 	//
 	// Arguments:
 	//
@@ -392,10 +392,10 @@ type Trace interface {
 	// - remoteAddr is the QUIC endpoint with which we are connecting: it will
 	// consist of an IP address and a port (e.g., 8.8.8.8:443, [::1]:5421);
 	//
-	// - config is the non-nil QUIC config we're using.
+	// - config is the possibly-nil QUIC config we're using.
 	OnQUICHandshakeStart(now time.Time, remoteAddr string, quicConfig *quic.Config)
 
-	// OnQUICHandshakeDone()
+	// OnQUICHandshakeDone is called after the QUIC handshake.
 	//
 	// Arguments:
 	//
@@ -405,9 +405,9 @@ type Trace interface {
 	// consist of an IP address and a port (e.g., 8.8.8.8:443, [::1]:5421);
 	//
 	// - qconn is the QUIC connection we receive after the handshake: either
-	// a valid quic.EarlyConnection or nil
+	// a valid quic.EarlyConnection or nil;
 	//
-	// - config is the non-nil TLS config we are using
+	// - config is the non-nil TLS config we are using;
 	//
 	// - err is the result of the handshake: either an error or nil;
 	//

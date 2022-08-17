@@ -385,7 +385,6 @@ func TestWrapUDPLikeConn(t *testing.T) {
 			t.Fatal("expected no network events")
 		}
 	})
-
 }
 
 func TestNewAnnotationArchivalNetworkEvent(t *testing.T) {

@@ -434,7 +434,7 @@ func TestTrace(t *testing.T) {
 		t.Run("when nil", func(t *testing.T) {
 			mockedErr := errors.New("mocked")
 			tx := &Trace{
-				NewQUICDialerWithoutResolverFn: nil,
+				NewQUICDialerWithoutResolverFn: nil, // explicit
 			}
 			pconn := &mocks.UDPLikeConn{
 				MockLocalAddr: func() net.Addr {

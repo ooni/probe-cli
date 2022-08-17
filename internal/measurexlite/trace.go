@@ -58,8 +58,8 @@ type Trace struct {
 	// calls to the netxlite.NewTLSHandshakerStdlib factory.
 	NewTLSHandshakerStdlibFn func(dl model.DebugLogger) model.TLSHandshaker
 
-	// NewDialerWithoutResolverFn is OPTIONAL and can be used to overide
-	// calls to the netxlite.NewQUICDialerWithoutResolver factory
+	// NewDialerWithoutResolverFn is OPTIONAL and can be used to override
+	// calls to the netxlite.NewQUICDialerWithoutResolver factory.
 	NewQUICDialerWithoutResolverFn func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer
 
 	// DNSLookup is MANDATORY and buffers DNS Lookup observations. If you create
@@ -75,7 +75,7 @@ type Trace struct {
 	TLSHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
 	// QUICHandshake is MANDATORY and buffers QUIC handshake observations. If you create
-	// this channel manually, ensure it has some buffer
+	// this channel manually, ensure it has some buffer.
 	QUICHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
 	// TimeNowFn is OPTIONAL and can be used to override calls to time.Now
@@ -104,7 +104,7 @@ const (
 	TLSHandshakeBufferSize = 8
 
 	// QUICHandshakeBufferSize is the buffer for constructing
-	// the Trace's QUICHandshake buffered channel
+	// the Trace's QUICHandshake buffered channel.
 	QUICHandshakeBufferSize = 8
 )
 

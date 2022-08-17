@@ -250,7 +250,6 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				if diff := cmp.Diff(expect, got); diff != "" {
 					t.Fatal(diff)
 				}
-
 			})
 		})
 

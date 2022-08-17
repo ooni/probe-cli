@@ -87,8 +87,8 @@ func (tx *Trace) WrapUDPLikeConn(conn model.UDPLikeConn) model.UDPLikeConn {
 
 // udpLikeConnTrace is a trace-aware model.UDPLikeConn.
 type udpLikeConnTrace struct {
-	// Implementation note: it seems safe to use embedding here because net.Conn
-	// is an interface from the standard library that we don't control
+	// Implementation note: it seems ~safe to use embedding here because model.UDPLikeConn
+	// contains fields deriving from how lucas-clemente/quic-go uses the standard library
 	model.UDPLikeConn
 	tx *Trace
 }
