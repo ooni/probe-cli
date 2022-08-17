@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"time"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -69,5 +70,14 @@ func (*traceDefault) OnTLSHandshakeStart(now time.Time, remoteAddr string, confi
 // OnTLSHandshakeDone implements model.Trace.OnTLSHandshakeDone.
 func (*traceDefault) OnTLSHandshakeDone(started time.Time, remoteAddr string, config *tls.Config,
 	state tls.ConnectionState, err error, finished time.Time) {
+	// nothing
+}
+
+func (*traceDefault) OnQUICHandshakeStart(now time.Time, remoteAddr string, config *quic.Config) {
+	// nothing
+}
+
+func (*traceDefault) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
+	config *tls.Config, err error, finished time.Time) {
 	// nothing
 }
