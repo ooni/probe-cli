@@ -6,6 +6,7 @@ package mocks
 
 import (
 	"crypto/tls"
+	"net"
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
@@ -15,6 +16,10 @@ import (
 // Trace allows mocking model.Trace.
 type Trace struct {
 	MockTimeNow func() time.Time
+
+	MockMaybeWrapNetConn func(conn net.Conn) net.Conn
+
+	MockMaybeWrapUDPLikeConn func(conn model.UDPLikeConn) model.UDPLikeConn
 
 	MockOnDNSRoundTripForLookupHost func(started time.Time, reso model.Resolver, query model.DNSQuery,
 		response model.DNSResponse, addrs []string, err error, finished time.Time)
@@ -37,6 +42,14 @@ var _ model.Trace = &Trace{}
 
 func (t *Trace) TimeNow() time.Time {
 	return t.MockTimeNow()
+}
+
+func (t *Trace) MaybeWrapNetConn(conn net.Conn) net.Conn {
+	return t.MockMaybeWrapNetConn(conn)
+}
+
+func (t *Trace) MaybeWrapUDPLikeConn(conn model.UDPLikeConn) model.UDPLikeConn {
+	return t.MockMaybeWrapUDPLikeConn(conn)
 }
 
 func (t *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resolver, query model.DNSQuery,

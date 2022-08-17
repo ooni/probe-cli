@@ -303,6 +303,21 @@ type Trace interface {
 	// can use functionality exported by the ./internal/testingx pkg.
 	TimeNow() time.Time
 
+	// MaybeWrapNetConn possibly wraps a net.Conn with the caller trace. If there's no
+	// desire to wrap the net.Conn, this function just returns the original net.Conn.
+	//
+	// Arguments:
+	//
+	// - conn is the non-nil underlying net.Conn to be wrapped
+	MaybeWrapNetConn(conn net.Conn) net.Conn
+
+	// MaybeWrapUDPLikeConn is like MaybeWrapNetConn but for UDPLikeConn.
+	//
+	// Arguments:
+	//
+	// - conn is the non-nil underlying UDPLikeConn to be wrapped
+	MaybeWrapUDPLikeConn(conn UDPLikeConn) UDPLikeConn
+
 	// OnDNSRoundTripForLookupHost is used with a DNSTransport and called
 	// when the RoundTrip terminates.
 	//

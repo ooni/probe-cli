@@ -182,7 +182,6 @@ func (m *Measurer) tlsConnectAndHandshake(ctx context.Context, index int64,
 		return sp
 	}
 	defer conn.Close()
-	conn = trace.WrapNetConn(conn)
 	thx := trace.NewTLSHandshakerStdlib(logger)
 	config := &tls.Config{
 		NextProtos: alpn,

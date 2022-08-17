@@ -7,36 +7,12 @@ package measurexlite
 import (
 	"context"
 	"crypto/tls"
-	"net"
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
-
-// WrapQUICListener returns a wrapped model.QUICListener that uses this trace.
-func (tx *Trace) WrapQUICListener(listener model.QUICListener) model.QUICListener {
-	return &quicListenerTrace{
-		QUICListener: listener,
-		tx:           tx,
-	}
-}
-
-// quicListenerTrace is a trace-aware QUIC listener.
-type quicListenerTrace struct {
-	model.QUICListener
-	tx *Trace
-}
-
-// Listen implements model.QUICListener.Listen
-func (ql *quicListenerTrace) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	pconn, err := ql.QUICListener.Listen(addr)
-	if err != nil {
-		return nil, err
-	}
-	return ql.tx.WrapUDPLikeConn(pconn), nil
-}
 
 // NewQUICDialerWithoutResolver is equivalent to netxlite.NewQUICDialerWithoutResolver
 // except that it returns a model.QUICDialer that uses this trace.

@@ -17,65 +17,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
-func TestNewQUICListener(t *testing.T) {
-	t.Run("NewQUICListenerTrace creates a wrapped listener", func(t *testing.T) {
-		underlying := &mocks.QUICListener{}
-		zeroTime := time.Now()
-		trace := NewTrace(0, zeroTime)
-		listenert := trace.WrapQUICListener(underlying).(*quicListenerTrace)
-		if listenert.QUICListener != underlying {
-			t.Fatal("invalid quic dialer")
-		}
-		if listenert.tx != trace {
-			t.Fatal("invalid trace")
-		}
-	})
-
-	t.Run("Listen works as intended", func(t *testing.T) {
-		t.Run("with error", func(t *testing.T) {
-			zeroTime := time.Now()
-			trace := NewTrace(0, zeroTime)
-			mockedErr := errors.New("mocked")
-			mockListener := &mocks.QUICListener{
-				MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-					return nil, mockedErr
-				},
-			}
-			listener := trace.WrapQUICListener(mockListener)
-			pconn, err := listener.Listen(&net.UDPAddr{})
-			if !errors.Is(err, mockedErr) {
-				t.Fatal("unexpected err", err)
-			}
-			if pconn != nil {
-				t.Fatal("expected nil conn")
-			}
-		})
-
-		t.Run("without error", func(t *testing.T) {
-			zeroTime := time.Now()
-			trace := NewTrace(0, zeroTime)
-			mockConn := &mocks.UDPLikeConn{}
-			mockListener := &mocks.QUICListener{
-				MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-					return mockConn, nil
-				},
-			}
-			listener := trace.WrapQUICListener(mockListener)
-			pconn, err := listener.Listen(&net.UDPAddr{})
-			if err != nil {
-				t.Fatal("unexpected err", err)
-			}
-			conn := pconn.(*udpLikeConnTrace)
-			if conn.UDPLikeConn != mockConn {
-				t.Fatal("invalid conn")
-			}
-			if conn.tx != trace {
-				t.Fatal("invalid trace")
-			}
-		})
-	})
-}
-
 func TestNewQUICDialerWithoutResolver(t *testing.T) {
 	t.Run("NewQUICDialerWithoutResolver creates a wrapped dialer", func(t *testing.T) {
 		underlying := &mocks.QUICDialer{}

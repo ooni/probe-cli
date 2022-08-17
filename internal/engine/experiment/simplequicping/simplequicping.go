@@ -172,8 +172,7 @@ func (m *Measurer) quicHandshake(ctx context.Context, index int64,
 	alpn := strings.Split(m.config.alpn(), " ")
 	trace := measurexlite.NewTrace(index, zeroTime)
 	ol := measurexlite.NewOperationLogger(logger, "SimpleQUICPing #%d %s %s %v", index, address, sni, alpn)
-	quicListener := netxlite.NewQUICListener()
-	listener := trace.WrapQUICListener(quicListener)
+	listener := netxlite.NewQUICListener()
 	dialer := trace.NewQUICDialerWithoutResolver(listener, logger)
 	tlsConfig := &tls.Config{
 		NextProtos: alpn,

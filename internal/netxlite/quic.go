@@ -135,6 +135,7 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context, network string,
 	}
 	tlsConfig = d.maybeApplyTLSDefaults(tlsConfig, udpAddr.Port)
 	trace := ContextTraceOrDefault(ctx)
+	pconn = trace.MaybeWrapUDPLikeConn(pconn)
 	started := trace.TimeNow()
 	trace.OnQUICHandshakeStart(started, address, quicConfig)
 	qconn, err := d.dialEarlyContext(

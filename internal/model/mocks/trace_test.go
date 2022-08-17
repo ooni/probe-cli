@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"crypto/tls"
+	"net"
 	"testing"
 	"time"
 
@@ -18,6 +19,32 @@ func TestTrace(t *testing.T) {
 			},
 		}
 		if !tx.TimeNow().Equal(now) {
+			t.Fatal("not working as intended")
+		}
+	})
+
+	t.Run("MaybeWrapNetConn", func(t *testing.T) {
+		expect := &Conn{}
+		tx := &Trace{
+			MockMaybeWrapNetConn: func(conn net.Conn) net.Conn {
+				return expect
+			},
+		}
+		got := tx.MaybeWrapNetConn(&Conn{})
+		if got != expect {
+			t.Fatal("not working as intended")
+		}
+	})
+
+	t.Run("MaybeWrapUDPLikeConn", func(t *testing.T) {
+		expect := &UDPLikeConn{}
+		tx := &Trace{
+			MockMaybeWrapUDPLikeConn: func(conn model.UDPLikeConn) model.UDPLikeConn {
+				return expect
+			},
+		}
+		got := tx.MaybeWrapUDPLikeConn(&UDPLikeConn{})
+		if got != expect {
 			t.Fatal("not working as intended")
 		}
 	})
