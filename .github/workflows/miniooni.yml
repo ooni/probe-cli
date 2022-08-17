@@ -38,7 +38,7 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - run: ./mk ./CLI/miniooni
+      - run: make ./CLI/miniooni
       - run: ./E2E/miniooni.bash ./CLI/miniooni-linux-amd64
 
       - uses: actions/upload-artifact@v1
