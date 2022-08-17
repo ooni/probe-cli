@@ -214,7 +214,7 @@ show-config:
 #help:
 #help: * `make ./MOBILE/android/oonimkall.aar`: the AAR
 .PHONY:   ./MOBILE/android/oonimkall.aar
-./MOBILE/android/oonimkall.aar: search/for/android/sdk maybe/copypsiphon
+./MOBILE/android/oonimkall.aar: search/for/go search/for/android/sdk maybe/copypsiphon
 	./MOBILE/gomobile android ./pkg/oonimkall
 
 #help:

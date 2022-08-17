@@ -6,26 +6,7 @@ __install_extra="build-tools;32.0.0 platforms;android-31"
 
 __ndk_version="23.1.7779620"
 
-GOOS=$(go env GOOS)
-case $GOOS in
-linux)
-	__sdk_dir=$HOME/Android/Sdk
-	;;
-darwin)
-	__sdk_dir=$HOME/Library/Android/sdk
-	;;
-*)
-	echo "FATAL: unsupported operating system" 1>&2
-	exit 1
-	;;
-esac
-
-ANDROID_HOME=${ANDROID_HOME:-$__sdk_dir}
-if [[ ! -d $ANDROID_HOME ]]; then
-	echo "FATAL: expected to find android SDK at $ANDROID_HOME, but found nothing" 1>&2
-	echo "HINT: run ./MOBILE/android/setup to (re)install the SDK" 1>&2
-	exit 1
-fi
+ANDROID_HOME=$(./MOBILE/android/home)
 
 __sdkmanager=$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager
 if [[ ! -x $__sdkmanager ]]; then
