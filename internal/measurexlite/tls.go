@@ -57,6 +57,7 @@ func (tx *Trace) OnTLSHandshakeDone(started time.Time, remoteAddr string, config
 	case tx.TLSHandshake <- NewArchivalTLSOrQUICHandshakeResult(
 		tx.Index,
 		started.Sub(tx.ZeroTime),
+		"tls",
 		remoteAddr,
 		config,
 		state,
@@ -74,9 +75,10 @@ func (tx *Trace) OnTLSHandshakeDone(started time.Time, remoteAddr string, config
 // NewArchivalTLSOrQUICHandshakeResult generates a model.ArchivalTLSOrQUICHandshakeResult
 // from the available information right after the TLS handshake returns.
 func NewArchivalTLSOrQUICHandshakeResult(
-	index int64, started time.Duration, address string, config *tls.Config,
+	index int64, started time.Duration, network string, address string, config *tls.Config,
 	state tls.ConnectionState, err error, finished time.Duration) *model.ArchivalTLSOrQUICHandshakeResult {
 	return &model.ArchivalTLSOrQUICHandshakeResult{
+		Network:            network,
 		Address:            address,
 		CipherSuite:        netxlite.TLSCipherSuiteString(state.CipherSuite),
 		Failure:            tracex.NewFailure(err),

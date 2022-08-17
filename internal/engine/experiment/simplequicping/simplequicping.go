@@ -13,14 +13,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/measurex"
+	"github.com/lucas-clemente/quic-go"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 const (
 	testName    = "simplequicping"
-	testVersion = "0.1.0"
+	testVersion = "0.2.0"
 )
 
 // Config contains the experiment configuration.
@@ -77,8 +78,8 @@ type TestKeys struct {
 
 // SinglePing contains the results of a single ping.
 type SinglePing struct {
-	NetworkEvents  []*measurex.ArchivalNetworkEvent          `json:"network_events"`
-	QUICHandshakes []*measurex.ArchivalQUICTLSHandshakeEvent `json:"quic_handshakes"`
+	NetworkEvents []*model.ArchivalNetworkEvent           `json:"network_events"`
+	QUICHandshake *model.ArchivalTLSOrQUICHandshakeResult `json:"quic_handshake"`
 }
 
 // Measurer performs the measurement.
@@ -132,47 +133,58 @@ func (m *Measurer) Run(
 	}
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
-	out := make(chan *measurex.EndpointMeasurement)
-	mxmx := measurex.NewMeasurerWithDefaultSettings()
-	go m.simpleQUICPingLoop(ctx, mxmx, parsed.Host, out)
+	out := make(chan *SinglePing)
+	go m.simpleQUICPingLoop(ctx, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Host, out)
 	for len(tk.Pings) < int(m.config.repetitions()) {
-		meas := <-out
-		tk.Pings = append(tk.Pings, &SinglePing{
-			NetworkEvents:  measurex.NewArchivalNetworkEventList(meas.ReadWrite),
-			QUICHandshakes: measurex.NewArchivalQUICTLSHandshakeEventList(meas.QUICHandshake),
-		})
+		tk.Pings = append(tk.Pings, <-out)
 	}
 	return nil // return nil so we always submit the measurement
 }
 
 // simpleQUICPingLoop sends all the ping requests and emits the results onto the out channel.
-func (m *Measurer) simpleQUICPingLoop(ctx context.Context, mxmx *measurex.Measurer,
-	address string, out chan<- *measurex.EndpointMeasurement) {
+func (m *Measurer) simpleQUICPingLoop(ctx context.Context, zeroTime time.Time,
+	logger model.Logger, address string, out chan<- *SinglePing) {
 	ticker := time.NewTicker(m.config.delay())
 	defer ticker.Stop()
 	for i := int64(0); i < m.config.repetitions(); i++ {
-		go m.simpleQUICPingAsync(ctx, mxmx, address, out)
+		go m.simpleQUICPingAsync(ctx, i, zeroTime, logger, address, out)
 		<-ticker.C
 	}
 }
 
 // simpleQUICPingAsync performs a QUIC ping and emits the result onto the out channel.
-func (m *Measurer) simpleQUICPingAsync(ctx context.Context, mxmx *measurex.Measurer,
-	address string, out chan<- *measurex.EndpointMeasurement) {
-	out <- m.quicHandshake(ctx, mxmx, address)
+func (m *Measurer) simpleQUICPingAsync(ctx context.Context, index int64,
+	zeroTime time.Time, logger model.Logger, address string, out chan<- *SinglePing) {
+	out <- m.quicHandshake(ctx, index, zeroTime, logger, address)
 }
 
 // quicHandshake performs a QUIC handshake and returns the results of these operations to the caller.
-func (m *Measurer) quicHandshake(ctx context.Context, mxmx *measurex.Measurer,
-	address string) *measurex.EndpointMeasurement {
+func (m *Measurer) quicHandshake(ctx context.Context, index int64,
+	zeroTime time.Time, logger model.Logger, address string) *SinglePing {
 	// TODO(bassosimone): make the timeout user-configurable
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	return mxmx.QUICHandshake(ctx, address, &tls.Config{
-		NextProtos: strings.Split(m.config.alpn(), " "),
+	sp := &SinglePing{
+		NetworkEvents: []*model.ArchivalNetworkEvent{},
+		QUICHandshake: nil,
+	}
+	sni := m.config.sni(address)
+	alpn := strings.Split(m.config.alpn(), " ")
+	trace := measurexlite.NewTrace(index, zeroTime)
+	ol := measurexlite.NewOperationLogger(logger, "SimpleQUICPing #%d %s %s %v", index, address, sni, alpn)
+	quicListener := netxlite.NewQUICListener()
+	listener := trace.WrapQUICListener(quicListener)
+	dialer := trace.NewQUICDialerWithoutResolver(listener, logger)
+	tlsConfig := &tls.Config{
+		NextProtos: alpn,
 		RootCAs:    netxlite.NewDefaultCertPool(),
-		ServerName: m.config.sni(address),
-	})
+		ServerName: sni,
+	}
+	_, err := dialer.DialContext(ctx, "udp", address, tlsConfig, &quic.Config{})
+	ol.Stop(err)
+	sp.QUICHandshake = <-trace.QUICHandshake
+	sp.NetworkEvents = append(sp.NetworkEvents, trace.NetworkEvents()...)
+	return sp
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.

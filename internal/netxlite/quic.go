@@ -134,8 +134,14 @@ func (d *quicDialerQUICGo) DialContext(ctx context.Context, network string,
 		return nil, err
 	}
 	tlsConfig = d.maybeApplyTLSDefaults(tlsConfig, udpAddr.Port)
+	trace := ContextTraceOrDefault(ctx)
+	started := trace.TimeNow()
+	trace.OnQUICHandshakeStart(started, address, quicConfig)
 	qconn, err := d.dialEarlyContext(
 		ctx, pconn, udpAddr, address, tlsConfig, quicConfig)
+	finished := trace.TimeNow()
+	err = MaybeNewErrWrapper(ClassifyQUICHandshakeError, QUICHandshakeOperation, err)
+	trace.OnQUICHandshakeDone(started, address, qconn, tlsConfig, err, finished)
 	if err != nil {
 		pconn.Close() // we own it on failure
 		return nil, err

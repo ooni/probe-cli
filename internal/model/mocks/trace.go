@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"time"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -25,6 +26,11 @@ type Trace struct {
 
 	MockOnTLSHandshakeDone func(started time.Time, remoteAddr string, config *tls.Config,
 		state tls.ConnectionState, err error, finished time.Time)
+
+	MockOnQUICHandshakeStart func(now time.Time, remoteAddrs string, config *quic.Config)
+
+	MockOnQUICHandshakeDone func(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
+		config *tls.Config, err error, finished time.Time)
 }
 
 var _ model.Trace = &Trace{}
@@ -50,4 +56,13 @@ func (t *Trace) OnTLSHandshakeStart(now time.Time, remoteAddr string, config *tl
 func (t *Trace) OnTLSHandshakeDone(started time.Time, remoteAddr string, config *tls.Config,
 	state tls.ConnectionState, err error, finished time.Time) {
 	t.MockOnTLSHandshakeDone(started, remoteAddr, config, state, err, finished)
+}
+
+func (t *Trace) OnQUICHandshakeStart(now time.Time, remoteAddr string, config *quic.Config) {
+	t.MockOnQUICHandshakeStart(now, remoteAddr, config)
+}
+
+func (t *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
+	config *tls.Config, err error, finished time.Time) {
+	t.MockOnQUICHandshakeDone(started, remoteAddr, qconn, config, err, finished)
 }

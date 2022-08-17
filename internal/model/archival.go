@@ -165,6 +165,7 @@ type ArchivalTCPConnectStatus struct {
 //
 // See https://github.com/ooni/spec/blob/master/data-formats/df-006-tlshandshake.md
 type ArchivalTLSOrQUICHandshakeResult struct {
+	Network            string                    `json:"network"`
 	Address            string                    `json:"address"`
 	CipherSuite        string                    `json:"cipher_suite"`
 	Failure            *string                   `json:"failure"`
