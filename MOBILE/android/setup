@@ -2,25 +2,24 @@
 
 set -euo pipefail
 
-GOOS=$(go env GOOS)
-case $GOOS in
-linux)
-	__sdk_dir=$HOME/Android/Sdk
-	;;
-darwin)
-	__sdk_dir=$HOME/Library/Android/sdk
-	;;
-*)
-	echo "FATAL: unsupported operating system" 1>&2
-	exit 1
-	;;
-esac
+force=0
+if [[ $# -eq 1 && $1 == "--force" ]]; then
+	force=1
+fi
 
-ANDROID_HOME=${ANDROID_HOME:-$__sdk_dir}
+ANDROID_HOME=$(./MOBILE/android/home --no-check)
 
 __clitools_version=8512546
 __clitools_file=commandlinetools-linux-${__clitools_version}_latest.zip
 __clitools_sha256=2ccbda4302db862a28ada25aa7425d99dce9462046003c1714b059b5c47970d8
+
+cmdlinetools=$ANDROID_HOME/cmdline-tools
+cmdlinetoolslatest=$cmdlinetools/latest
+
+if [[ $force == 0 && -d $cmdlinetoolslatest ]]; then
+	echo "$0: already installed... run '$0 --force' to reinstall" 1>&2
+	exit 0
+fi
 
 printf "checking for curl... "
 command -v curl || {
@@ -39,14 +38,14 @@ command -v unzip || {
 }
 
 set -x
-rm -rf $ANDROID_HOME/cmdline-tools/latest
+rm -rf $cmdlinetoolslatest
 curl -fsSLO https://dl.google.com/android/repository/$__clitools_file
 echo "$__clitools_sha256  $__clitools_file" >__SHA256
 shasum --check __SHA256
 rm -f __SHA256
 unzip $__clitools_file
 rm $__clitools_file
-mkdir -p $ANDROID_HOME/cmdline-tools
+mkdir -p $cmdlinetools
 # See https://stackoverflow.com/a/61176718 to understand why
 # we need to reorganize the directories like this:
-mv cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+mv cmdline-tools $cmdlinetoolslatest
