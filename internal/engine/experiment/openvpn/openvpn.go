@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -31,7 +32,9 @@ const (
 	testVersion = "0.0.1"
 
 	// pingCount tells how many icmp echo requests to send.
-	pingCount = 10
+	// pingCount = 10
+	// FIXME ------------------ restore to 10 for production
+	pingCount = 3
 
 	// pingTarget is the target IP we used for pings.
 	pingTarget = "8.8.8.8"
@@ -145,6 +148,7 @@ func (m *Measurer) Run(
 		// This means that we need to get the cert material ahead of time.
 		return err
 	}
+	m.rawDialer = dialer
 
 	m.registerExtensions(measurement)
 
@@ -155,7 +159,6 @@ func (m *Measurer) Run(
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
-	m.rawDialer = dialer
 	go m.bootstrap(ctx, sess, tkch)
 
 	for {
@@ -218,6 +221,8 @@ func (m *Measurer) setup(ctx context.Context, exp *VPNExperiment, logger model.L
 	return raw, nil
 }
 
+var ErrURLGrab = errors.New("urlgrab")
+
 // bootstrap runs the bootstrap.
 func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	out chan<- *TestKeys) {
@@ -244,13 +249,14 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	// TODO move this to Run() ---------------------
 
 	// ping
-	pinger := ping.New(pingTarget, conn)
+	pinger := ping.NewFromSharedConnection(pingTarget, conn)
 	pinger.Count = pingCount
 	err = pinger.Run(ctx)
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
 		return
 	}
+
 	st := pinger.Statistics()
 	pingStats := &PingStats{
 		MinRtt:      st.MinRtt.Seconds(),
@@ -266,8 +272,10 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	tk.PingTarget = pingTarget
 
 	// urlgrab
-	// TODO reuse the conn???
+
+	m.rawDialer.ReuseClient(conn)
 	d := vpn.NewTunDialer(m.rawDialer)
+
 	client := http.Client{
 		Transport: &http.Transport{
 			DialContext: d.DialContext,
@@ -275,22 +283,19 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	}
 	resp, err := client.Get(urlGrabURI)
 	if err != nil {
-		// Note: tracex.NewFailure scrubs IP addresses
-		tk.Failure = tracex.NewFailure(err)
+		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
+		tk.Failure = tracex.NewFailure(fmt.Errorf("%w: %s", ErrURLGrab, err))
 		return
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		tk.Failure = tracex.NewFailure(err)
+		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
+		tk.Failure = tracex.NewFailure(fmt.Errorf("%w: %s", ErrURLGrab, err))
 		return
 	}
 	tk.Response = string(body)
+	sess.Logger().Info("openvpn: all tests ok")
 	tk.Success = true
-}
-
-// baseTunnelDir returns the base directory to use for tunnelling
-func (m *Measurer) baseTunnelDir(sess model.ExperimentSession) string {
-	return sess.TunnelDir()
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
