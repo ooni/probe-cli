@@ -6,16 +6,6 @@ package main
 // Main function
 //
 
-import (
-	"fmt"
-	"os"
-)
-
 func main() {
-	defer func() {
-		if s := recover(); s != nil {
-			fmt.Fprintf(os.Stderr, "FATAL: %s\n", s)
-		}
-	}()
 	Main()
 }
