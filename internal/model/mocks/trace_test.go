@@ -30,7 +30,7 @@ func TestTrace(t *testing.T) {
 				return expect
 			},
 		}
-		got := tx.MockMaybeWrapNetConn(&Conn{})
+		got := tx.MaybeWrapNetConn(&Conn{})
 		if got != expect {
 			t.Fatal("not working as intended")
 		}
