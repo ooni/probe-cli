@@ -1,8 +1,7 @@
 package registry
 
 //
-// Registers the `telegram' experiment implemented by
-// the `./internal/experiment/telegram' package.
+// Registers the `telegram' experiment.
 //
 
 import (

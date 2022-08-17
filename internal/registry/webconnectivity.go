@@ -1,8 +1,7 @@
 package registry
 
 //
-// Registers the `web_connectivity' experiment implemented by
-// the `./internal/experiment/webconnectivity' package.
+// Registers the `web_connectivity' experiment.
 //
 
 import (
