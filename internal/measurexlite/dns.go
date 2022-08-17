@@ -83,7 +83,7 @@ func (tx *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resol
 	response model.DNSResponse, addrs []string, err error, finished time.Time) {
 	t := finished.Sub(tx.ZeroTime)
 	select {
-	case tx.DNSLookup <- NewArchivalDNSLookupResultFromRoundTrip(
+	case tx.dnsLookup <- NewArchivalDNSLookupResultFromRoundTrip(
 		tx.Index,
 		started.Sub(tx.ZeroTime),
 		reso,
@@ -150,10 +150,20 @@ func archivalAnswersFromAddrs(addrs []string) (out []model.ArchivalDNSAnswer) {
 func (tx *Trace) DNSLookupsFromRoundTrip() (out []*model.ArchivalDNSLookupResult) {
 	for {
 		select {
-		case ev := <-tx.DNSLookup:
+		case ev := <-tx.dnsLookup:
 			out = append(out, ev)
 		default:
 			return
 		}
 	}
+}
+
+// FirstDNSLookupOrNil drains the network events buffered inside the DNSLookup channel
+// and returns the first DNSLookup, if any. Otherwise, it returns nil.
+func (tx *Trace) FirstDNSLookup() *model.ArchivalDNSLookupResult {
+	ev := tx.DNSLookupsFromRoundTrip()
+	if len(ev) < 1 {
+		return nil
+	}
+	return ev[0]
 }

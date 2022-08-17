@@ -182,7 +182,7 @@ func (m *Measurer) quicHandshake(ctx context.Context, index int64,
 	}
 	_, err := dialer.DialContext(ctx, "udp", address, tlsConfig, &quic.Config{})
 	ol.Stop(err)
-	sp.QUICHandshake = <-trace.QUICHandshake
+	sp.QUICHandshake = trace.FirstQUICHandshakeOrNil() // record the first handshake from the buffer
 	sp.NetworkEvents = append(sp.NetworkEvents, trace.NetworkEvents()...)
 	return sp
 }

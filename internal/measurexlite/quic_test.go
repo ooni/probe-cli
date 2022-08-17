@@ -259,8 +259,8 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		mockedErr := errors.New("mocked")
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NetworkEvent = make(chan *model.ArchivalNetworkEvent)              // no buffer
-		trace.QUICHandshake = make(chan *model.ArchivalTLSOrQUICHandshakeResult) // no buffer
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent)              // no buffer
+		trace.quicHandshake = make(chan *model.ArchivalTLSOrQUICHandshakeResult) // no buffer
 		pconn := &mocks.UDPLikeConn{
 			MockLocalAddr: func() net.Addr {
 				return &net.UDPAddr{
@@ -311,5 +311,56 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				t.Fatal("expected to see no network events")
 			}
 		})
+	})
+}
+
+func TestFirstQUICHandshake(t *testing.T) {
+	t.Run("returns nil when buffer is empty", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		got := trace.FirstQUICHandshakeOrNil()
+		if got != nil {
+			t.Fatal("expected nil event")
+		}
+	})
+
+	t.Run("return first non-nil QUICHandshake", func(t *testing.T) {
+		filler := func(tx *Trace, events []*model.ArchivalTLSOrQUICHandshakeResult) {
+			for _, ev := range events {
+				tx.quicHandshake <- ev
+			}
+		}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		expect := []*model.ArchivalTLSOrQUICHandshakeResult{{
+			Network:            "quic",
+			Address:            "1.1.1.1:443",
+			CipherSuite:        "",
+			Failure:            nil,
+			NegotiatedProtocol: "",
+			NoTLSVerify:        true,
+			PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+			ServerName:         "dns.cloudflare.com",
+			T:                  time.Second.Seconds(),
+			Tags:               []string{},
+			TLSVersion:         "",
+		}, {
+			Network:            "quic",
+			Address:            "8.8.8.8:443",
+			CipherSuite:        "",
+			Failure:            nil,
+			NegotiatedProtocol: "",
+			NoTLSVerify:        true,
+			PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+			ServerName:         "dns.google.com",
+			T:                  time.Second.Seconds(),
+			Tags:               []string{},
+			TLSVersion:         "",
+		}}
+		filler(trace, expect)
+		got := trace.FirstQUICHandshakeOrNil()
+		if diff := cmp.Diff(got, expect[0]); diff != "" {
+			t.Fatal(diff)
+		}
 	})
 }

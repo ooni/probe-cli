@@ -44,7 +44,7 @@ func (thx *tlsHandshakerTrace) Handshake(
 func (tx *Trace) OnTLSHandshakeStart(now time.Time, remoteAddr string, config *tls.Config) {
 	t := now.Sub(tx.ZeroTime)
 	select {
-	case tx.NetworkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "tls_handshake_start"):
+	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "tls_handshake_start"):
 	default: // buffer is full
 	}
 }
@@ -54,7 +54,7 @@ func (tx *Trace) OnTLSHandshakeDone(started time.Time, remoteAddr string, config
 	state tls.ConnectionState, err error, finished time.Time) {
 	t := finished.Sub(tx.ZeroTime)
 	select {
-	case tx.TLSHandshake <- NewArchivalTLSOrQUICHandshakeResult(
+	case tx.tlsHandshake <- NewArchivalTLSOrQUICHandshakeResult(
 		tx.Index,
 		started.Sub(tx.ZeroTime),
 		"tls",
@@ -67,7 +67,7 @@ func (tx *Trace) OnTLSHandshakeDone(started time.Time, remoteAddr string, config
 	default: // buffer is full
 	}
 	select {
-	case tx.NetworkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "tls_handshake_done"):
+	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "tls_handshake_done"):
 	default: // buffer is full
 	}
 }
@@ -137,10 +137,20 @@ func TLSPeerCerts(
 func (tx *Trace) TLSHandshakes() (out []*model.ArchivalTLSOrQUICHandshakeResult) {
 	for {
 		select {
-		case ev := <-tx.TLSHandshake:
+		case ev := <-tx.tlsHandshake:
 			out = append(out, ev)
 		default:
 			return // done
 		}
 	}
+}
+
+// FirstTLSHandshakeOrNil drains the network events buffered inside the TLSHandshake channel
+// and returns the first TLSHandshake, if any. Otherwise, it returns nil.
+func (tx *Trace) FirstTLSHandshakeOrNil() *model.ArchivalTLSOrQUICHandshakeResult {
+	ev := tx.TLSHandshakes()
+	if len(ev) < 1 {
+		return nil
+	}
+	return ev[0]
 }

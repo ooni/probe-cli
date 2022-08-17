@@ -34,9 +34,9 @@ type Trace struct {
 	// traces, you can use zero to indicate the "default" trace.
 	Index int64
 
-	// NetworkEvent is MANDATORY and buffers network events. If you create
+	// networkEvent is MANDATORY and buffers network events. If you create
 	// this channel manually, ensure it has some buffer.
-	NetworkEvent chan *model.ArchivalNetworkEvent
+	networkEvent chan *model.ArchivalNetworkEvent
 
 	// NewStdlibResolverFn is OPTIONAL and can be used to overide
 	// calls to the netxlite.NewStdlibResolver factory.
@@ -62,21 +62,21 @@ type Trace struct {
 	// calls to the netxlite.NewQUICDialerWithoutResolver factory.
 	NewQUICDialerWithoutResolverFn func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer
 
-	// DNSLookup is MANDATORY and buffers DNS Lookup observations. If you create
+	// dnsLookup is MANDATORY and buffers DNS Lookup observations. If you create
 	// this channel manually, ensure it has some buffer.
-	DNSLookup chan *model.ArchivalDNSLookupResult
+	dnsLookup chan *model.ArchivalDNSLookupResult
 
-	// TCPConnect is MANDATORY and buffers TCP connect observations. If you create
+	// tcpConnect is MANDATORY and buffers TCP connect observations. If you create
 	// this channel manually, ensure it has some buffer.
-	TCPConnect chan *model.ArchivalTCPConnectResult
+	tcpConnect chan *model.ArchivalTCPConnectResult
 
-	// TLSHandshake is MANDATORY and buffers TLS handshake observations. If you create
+	// tlsHandshake is MANDATORY and buffers TLS handshake observations. If you create
 	// this channel manually, ensure it has some buffer.
-	TLSHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
+	tlsHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
-	// QUICHandshake is MANDATORY and buffers QUIC handshake observations. If you create
+	// quicHandshake is MANDATORY and buffers QUIC handshake observations. If you create
 	// this channel manually, ensure it has some buffer.
-	QUICHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
+	quicHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
 	// TimeNowFn is OPTIONAL and can be used to override calls to time.Now
 	// to produce deterministic timing when testing.
@@ -122,25 +122,25 @@ const (
 func NewTrace(index int64, zeroTime time.Time) *Trace {
 	return &Trace{
 		Index: index,
-		NetworkEvent: make(
+		networkEvent: make(
 			chan *model.ArchivalNetworkEvent,
 			NetworkEventBufferSize,
 		),
 		NewDialerWithoutResolverFn: nil, // use default
 		NewTLSHandshakerStdlibFn:   nil, // use default
-		DNSLookup: make(
+		dnsLookup: make(
 			chan *model.ArchivalDNSLookupResult,
 			DNSLookupBufferSize,
 		),
-		TCPConnect: make(
+		tcpConnect: make(
 			chan *model.ArchivalTCPConnectResult,
 			TCPConnectBufferSize,
 		),
-		TLSHandshake: make(
+		tlsHandshake: make(
 			chan *model.ArchivalTLSOrQUICHandshakeResult,
 			TLSHandshakeBufferSize,
 		),
-		QUICHandshake: make(
+		quicHandshake: make(
 			chan *model.ArchivalTLSOrQUICHandshakeResult,
 			QUICHandshakeBufferSize,
 		),

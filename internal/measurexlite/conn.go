@@ -47,7 +47,7 @@ func (c *connTrace) Read(b []byte) (int, error) {
 	count, err := c.Conn.Read(b)
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	select {
-	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
+	case c.tx.networkEvent <- NewArchivalNetworkEvent(
 		c.tx.Index, started, netxlite.ReadOperation, network, addr, count, err, finished):
 	default: // buffer is full
 	}
@@ -62,7 +62,7 @@ func (c *connTrace) Write(b []byte) (int, error) {
 	count, err := c.Conn.Write(b)
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	select {
-	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
+	case c.tx.networkEvent <- NewArchivalNetworkEvent(
 		c.tx.Index, started, netxlite.WriteOperation, network, addr, count, err, finished):
 	default: // buffer is full
 	}
@@ -100,7 +100,7 @@ func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	address := addrStringIfNotNil(addr)
 	select {
-	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
+	case c.tx.networkEvent <- NewArchivalNetworkEvent(
 		c.tx.Index, started, netxlite.ReadFromOperation, "udp", address, count, err, finished):
 	default: // buffer is full
 	}
@@ -114,7 +114,7 @@ func (c *udpLikeConnTrace) WriteTo(b []byte, addr net.Addr) (int, error) {
 	count, err := c.UDPLikeConn.WriteTo(b, addr)
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	select {
-	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
+	case c.tx.networkEvent <- NewArchivalNetworkEvent(
 		c.tx.Index, started, netxlite.WriteToOperation, "udp", address, count, err, finished):
 	default: // buffer is full
 	}
@@ -155,10 +155,20 @@ func NewAnnotationArchivalNetworkEvent(
 func (tx *Trace) NetworkEvents() (out []*model.ArchivalNetworkEvent) {
 	for {
 		select {
-		case ev := <-tx.NetworkEvent:
+		case ev := <-tx.networkEvent:
 			out = append(out, ev)
 		default:
 			return // done
 		}
 	}
+}
+
+// FirstNetworkEventOrNil drains the network events buffered inside the NetworkEvents channel
+// and returns the first NetworkEvent, if any. Otherwise, it returns nil.
+func (tx *Trace) FirstNetworkEventOrNil() *model.ArchivalNetworkEvent {
+	ev := tx.NetworkEvents()
+	if len(ev) < 1 {
+		return nil
+	}
+	return ev[0]
 }

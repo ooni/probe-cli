@@ -193,7 +193,7 @@ func TestNewResolver(t *testing.T) {
 		zeroTime := time.Now()
 		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
-		trace.DNSLookup = make(chan *model.ArchivalDNSLookupResult) // no buffer
+		trace.dnsLookup = make(chan *model.ArchivalDNSLookupResult) // no buffer
 		trace.TimeNowFn = td.Now
 		txp := &mocks.DNSTransport{
 			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
@@ -281,6 +281,43 @@ func TestNewWrappedResolvers(t *testing.T) {
 		}
 		if resolver.Network() != "system" {
 			t.Fatal("unexpected resolver network")
+		}
+	})
+}
+
+func TestFirstDNSLookup(t *testing.T) {
+	t.Run("returns nil when buffer is empty", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		got := trace.FirstDNSLookup()
+		if got != nil {
+			t.Fatal("expected nil event")
+		}
+	})
+
+	t.Run("return first non-nil DNSLookup", func(t *testing.T) {
+		filler := func(tx *Trace, events []*model.ArchivalDNSLookupResult) {
+			for _, ev := range events {
+				tx.dnsLookup <- ev
+			}
+		}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		expect := []*model.ArchivalDNSLookupResult{{
+			Engine:    "doh",
+			Failure:   nil,
+			Hostname:  "example.com",
+			QueryType: "A",
+		}, {
+			Engine:    "doh",
+			Failure:   nil,
+			Hostname:  "example.com",
+			QueryType: "AAAA",
+		}}
+		filler(trace, expect)
+		got := trace.FirstDNSLookup()
+		if diff := cmp.Diff(got, expect[0]); diff != "" {
+			t.Fatal(diff)
 		}
 	})
 }
