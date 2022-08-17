@@ -141,7 +141,7 @@ func (m *Measurer) tcpConnect(ctx context.Context, index int64,
 	ol.Stop(err)
 	measurexlite.MaybeClose(conn)
 	sp := &SinglePing{
-		TCPConnect: trace.TCPConnects()[0], // record the first connect from the buffer
+		TCPConnect: trace.FirstTCPConnect(), // record the first connect from the buffer
 	}
 	return sp
 }

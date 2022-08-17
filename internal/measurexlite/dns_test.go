@@ -285,6 +285,43 @@ func TestNewWrappedResolvers(t *testing.T) {
 	})
 }
 
+func TestFirstDNSLookup(t *testing.T) {
+	t.Run("returns nil when buffer is empty", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		got := trace.FirstDNSLookup()
+		if got != nil {
+			t.Fatal("expected nil event")
+		}
+	})
+
+	t.Run("return first non-nil DNSLookup", func(t *testing.T) {
+		filler := func(tx *Trace, events []*model.ArchivalDNSLookupResult) {
+			for _, ev := range events {
+				tx.dnsLookup <- ev
+			}
+		}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		expect := []*model.ArchivalDNSLookupResult{{
+			Engine:    "doh",
+			Failure:   nil,
+			Hostname:  "example.com",
+			QueryType: "A",
+		}, {
+			Engine:    "doh",
+			Failure:   nil,
+			Hostname:  "example.com",
+			QueryType: "AAAA",
+		}}
+		filler(trace, expect)
+		got := trace.FirstDNSLookup()
+		if diff := cmp.Diff(got, expect[0]); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+}
+
 func TestAnswersFromAddrs(t *testing.T) {
 	tests := []struct {
 		name string

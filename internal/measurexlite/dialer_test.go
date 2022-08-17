@@ -177,6 +177,49 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 	})
 }
 
+func TestFirstTCPConnect(t *testing.T) {
+	t.Run("returns nil when buffer is empty", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		got := trace.FirstTCPConnect()
+		if got != nil {
+			t.Fatal("expected nil event")
+		}
+	})
+
+	t.Run("return first non-nil TCPConnect", func(t *testing.T) {
+		filler := func(tx *Trace, events []*model.ArchivalTCPConnectResult) {
+			for _, ev := range events {
+				tx.tcpConnect <- ev
+			}
+		}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		expect := []*model.ArchivalTCPConnectResult{{
+			IP:   "1.1.1.1",
+			Port: 443,
+			Status: model.ArchivalTCPConnectStatus{
+				Blocked: nil,
+				Failure: nil,
+				Success: true,
+			},
+		}, {
+			IP:   "0.0.0.0",
+			Port: 443,
+			Status: model.ArchivalTCPConnectStatus{
+				Blocked: nil,
+				Failure: nil,
+				Success: true,
+			},
+		}}
+		filler(trace, expect)
+		got := trace.FirstTCPConnect()
+		if diff := cmp.Diff(got, expect[0]); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+}
+
 func TestArchivalSplitHostPort(t *testing.T) {
 	addr, port := archivalSplitHostPort("1.1.1.1") // missing port
 	if addr != "" {

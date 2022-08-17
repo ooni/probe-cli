@@ -313,3 +313,54 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		})
 	})
 }
+
+func TestFirstQUICHandshake(t *testing.T) {
+	t.Run("returns nil when buffer is empty", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		got := trace.FirstQUICHandshake()
+		if got != nil {
+			t.Fatal("expected nil event")
+		}
+	})
+
+	t.Run("return first non-nil QUICHandshake", func(t *testing.T) {
+		filler := func(tx *Trace, events []*model.ArchivalTLSOrQUICHandshakeResult) {
+			for _, ev := range events {
+				tx.quicHandshake <- ev
+			}
+		}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		expect := []*model.ArchivalTLSOrQUICHandshakeResult{{
+			Network:            "quic",
+			Address:            "1.1.1.1:443",
+			CipherSuite:        "",
+			Failure:            nil,
+			NegotiatedProtocol: "",
+			NoTLSVerify:        true,
+			PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+			ServerName:         "dns.cloudflare.com",
+			T:                  time.Second.Seconds(),
+			Tags:               []string{},
+			TLSVersion:         "",
+		}, {
+			Network:            "quic",
+			Address:            "8.8.8.8:443",
+			CipherSuite:        "",
+			Failure:            nil,
+			NegotiatedProtocol: "",
+			NoTLSVerify:        true,
+			PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+			ServerName:         "dns.google.com",
+			T:                  time.Second.Seconds(),
+			Tags:               []string{},
+			TLSVersion:         "",
+		}}
+		filler(trace, expect)
+		got := trace.FirstQUICHandshake()
+		if diff := cmp.Diff(got, expect[0]); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+}

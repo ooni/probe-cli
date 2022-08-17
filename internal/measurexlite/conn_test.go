@@ -387,6 +387,49 @@ func TestWrapUDPLikeConn(t *testing.T) {
 	})
 }
 
+func TestFirstNetworkEvent(t *testing.T) {
+	t.Run("returns nil when buffer is empty", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		got := trace.FirstNetworkEvent()
+		if got != nil {
+			t.Fatal("expected nil event")
+		}
+	})
+
+	t.Run("return first non-nil network event", func(t *testing.T) {
+		filler := func(tx *Trace, events []*model.ArchivalNetworkEvent) {
+			for _, ev := range events {
+				tx.networkEvent <- ev
+			}
+		}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		expect := []*model.ArchivalNetworkEvent{{
+			Address:   "1.1.1.1:443",
+			Failure:   nil,
+			NumBytes:  0,
+			Operation: "read_from",
+			Proto:     "udp",
+			T:         1.0,
+			Tags:      []string{},
+		}, {
+			Address:   "1.1.1.1:443",
+			Failure:   nil,
+			NumBytes:  0,
+			Operation: "write_to",
+			Proto:     "udp",
+			T:         1.0,
+			Tags:      []string{},
+		}}
+		filler(trace, expect)
+		got := trace.FirstNetworkEvent()
+		if diff := cmp.Diff(got, expect[0]); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+}
+
 func TestNewAnnotationArchivalNetworkEvent(t *testing.T) {
 	var (
 		index     int64 = 3

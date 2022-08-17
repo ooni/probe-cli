@@ -157,3 +157,13 @@ func (tx *Trace) DNSLookupsFromRoundTrip() (out []*model.ArchivalDNSLookupResult
 		}
 	}
 }
+
+// FirstDNSLookup drains the network events buffered inside the DNSLookup channel
+// and returns the first DNSLookup
+func (tx *Trace) FirstDNSLookup() *model.ArchivalDNSLookupResult {
+	ev := tx.DNSLookupsFromRoundTrip()
+	if len(ev) < 1 {
+		return nil
+	}
+	return ev[0]
+}

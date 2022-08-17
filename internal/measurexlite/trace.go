@@ -34,7 +34,7 @@ type Trace struct {
 	// traces, you can use zero to indicate the "default" trace.
 	Index int64
 
-	// NetworkEvent is MANDATORY and buffers network events. If you create
+	// networkEvent is MANDATORY and buffers network events. If you create
 	// this channel manually, ensure it has some buffer.
 	networkEvent chan *model.ArchivalNetworkEvent
 
@@ -62,19 +62,19 @@ type Trace struct {
 	// calls to the netxlite.NewQUICDialerWithoutResolver factory.
 	NewQUICDialerWithoutResolverFn func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer
 
-	// DNSLookup is MANDATORY and buffers DNS Lookup observations. If you create
+	// dnsLookup is MANDATORY and buffers DNS Lookup observations. If you create
 	// this channel manually, ensure it has some buffer.
 	dnsLookup chan *model.ArchivalDNSLookupResult
 
-	// TCPConnect is MANDATORY and buffers TCP connect observations. If you create
+	// tcpConnect is MANDATORY and buffers TCP connect observations. If you create
 	// this channel manually, ensure it has some buffer.
 	tcpConnect chan *model.ArchivalTCPConnectResult
 
-	// TLSHandshake is MANDATORY and buffers TLS handshake observations. If you create
+	// tlsHandshake is MANDATORY and buffers TLS handshake observations. If you create
 	// this channel manually, ensure it has some buffer.
 	tlsHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
-	// QUICHandshake is MANDATORY and buffers QUIC handshake observations. If you create
+	// quicHandshake is MANDATORY and buffers QUIC handshake observations. If you create
 	// this channel manually, ensure it has some buffer.
 	quicHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
