@@ -16,7 +16,7 @@ func init() {
 				config.(webconnectivity.Config),
 			)
 		},
-		config:        &webconnectivity.Config{},
+		config:        webconnectivity.Config{},
 		interruptible: false,
 		inputPolicy:   model.InputOrQueryBackend,
 	}
