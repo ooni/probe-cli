@@ -318,7 +318,7 @@ func TestFirstQUICHandshake(t *testing.T) {
 	t.Run("returns nil when buffer is empty", func(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		got := trace.FirstQUICHandshake()
+		got := trace.FirstQUICHandshakeOrNil()
 		if got != nil {
 			t.Fatal("expected nil event")
 		}
@@ -358,7 +358,7 @@ func TestFirstQUICHandshake(t *testing.T) {
 			TLSVersion:         "",
 		}}
 		filler(trace, expect)
-		got := trace.FirstQUICHandshake()
+		got := trace.FirstQUICHandshakeOrNil()
 		if diff := cmp.Diff(got, expect[0]); diff != "" {
 			t.Fatal(diff)
 		}

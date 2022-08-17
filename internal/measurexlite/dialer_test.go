@@ -181,7 +181,7 @@ func TestFirstTCPConnect(t *testing.T) {
 	t.Run("returns nil when buffer is empty", func(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		got := trace.FirstTCPConnect()
+		got := trace.FirstTCPConnectOrNil()
 		if got != nil {
 			t.Fatal("expected nil event")
 		}
@@ -213,7 +213,7 @@ func TestFirstTCPConnect(t *testing.T) {
 			},
 		}}
 		filler(trace, expect)
-		got := trace.FirstTCPConnect()
+		got := trace.FirstTCPConnectOrNil()
 		if diff := cmp.Diff(got, expect[0]); diff != "" {
 			t.Fatal(diff)
 		}

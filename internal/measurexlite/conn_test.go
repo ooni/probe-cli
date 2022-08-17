@@ -391,7 +391,7 @@ func TestFirstNetworkEvent(t *testing.T) {
 	t.Run("returns nil when buffer is empty", func(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		got := trace.FirstNetworkEvent()
+		got := trace.FirstNetworkEventOrNil()
 		if got != nil {
 			t.Fatal("expected nil event")
 		}
@@ -423,7 +423,7 @@ func TestFirstNetworkEvent(t *testing.T) {
 			Tags:      []string{},
 		}}
 		filler(trace, expect)
-		got := trace.FirstNetworkEvent()
+		got := trace.FirstNetworkEventOrNil()
 		if diff := cmp.Diff(got, expect[0]); diff != "" {
 			t.Fatal(diff)
 		}

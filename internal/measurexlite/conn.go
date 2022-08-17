@@ -163,9 +163,9 @@ func (tx *Trace) NetworkEvents() (out []*model.ArchivalNetworkEvent) {
 	}
 }
 
-// FirstNetworkEvent drains the network events buffered inside the NetworkEvents channel
-// and returns the first NetworkEvent.
-func (tx *Trace) FirstNetworkEvent() *model.ArchivalNetworkEvent {
+// FirstNetworkEventOrNil drains the network events buffered inside the NetworkEvents channel
+// and returns the first NetworkEvent, if any. Otherwise, it returns nil.
+func (tx *Trace) FirstNetworkEventOrNil() *model.ArchivalNetworkEvent {
 	ev := tx.NetworkEvents()
 	if len(ev) < 1 {
 		return nil

@@ -145,9 +145,9 @@ func (tx *Trace) TLSHandshakes() (out []*model.ArchivalTLSOrQUICHandshakeResult)
 	}
 }
 
-// FirstTLSHandshake drains the network events buffered inside the TLSHandshake channel
-// and returns the first TLSHandshake.
-func (tx *Trace) FirstTLSHandshake() *model.ArchivalTLSOrQUICHandshakeResult {
+// FirstTLSHandshakeOrNil drains the network events buffered inside the TLSHandshake channel
+// and returns the first TLSHandshake, if any. Otherwise, it returns nil.
+func (tx *Trace) FirstTLSHandshakeOrNil() *model.ArchivalTLSOrQUICHandshakeResult {
 	ev := tx.TLSHandshakes()
 	if len(ev) < 1 {
 		return nil

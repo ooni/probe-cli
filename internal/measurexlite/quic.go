@@ -115,9 +115,9 @@ func (tx *Trace) QUICHandshakes() (out []*model.ArchivalTLSOrQUICHandshakeResult
 	}
 }
 
-// FirstQUICHandshake drains the network events buffered inside the QUICHandshake channel
-// and returns the first QUICHandshake.
-func (tx *Trace) FirstQUICHandshake() *model.ArchivalTLSOrQUICHandshakeResult {
+// FirstQUICHandshakeOrNil drains the network events buffered inside the QUICHandshake channel
+// and returns the first QUICHandshake, if any. Otherwise, it returns nil.
+func (tx *Trace) FirstQUICHandshakeOrNil() *model.ArchivalTLSOrQUICHandshakeResult {
 	ev := tx.QUICHandshakes()
 	if len(ev) < 1 {
 		return nil
