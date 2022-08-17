@@ -33,8 +33,8 @@ const (
 
 	// pingCount tells how many icmp echo requests to send.
 	// pingCount = 10
-	// FIXME ------------------ restore to 10 for production
-	pingCount = 3
+	// TODO settle on standard.
+	pingCount = 5
 
 	// pingTarget is the target IP we used for pings.
 	pingTarget = "8.8.8.8"
@@ -75,6 +75,8 @@ type TestKeys struct {
 	Failure *string `json:"failure"`
 
 	// VPNLogs contains the bootstrap logs.
+
+	// TODO pass the logger to the client??
 	VPNLogs []string `json:"vpn_logs"`
 
 	// MiniVPNVersion contains the version of the minivpn library used.
@@ -111,6 +113,9 @@ type Measurer struct {
 
 	// rawDialer is the raw OpenVPN dialer
 	rawDialer *vpn.RawDialer
+
+	// conn is the vpn Client  net.Conn
+	conn net.Conn
 }
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
@@ -126,6 +131,21 @@ func (m *Measurer) ExperimentVersion() string {
 // registerExtensions registers the extensions used by this experiment.
 func (m *Measurer) registerExtensions(measurement *model.Measurement) {
 	// currently none
+}
+
+func parseStats(pinger *ping.Pinger) *PingStats {
+	st := pinger.Statistics()
+	pingStats := &PingStats{
+		MinRtt:      st.MinRtt.Seconds(),
+		MaxRtt:      st.MaxRtt.Seconds(),
+		AvgRtt:      st.AvgRtt.Seconds(),
+		StdRtt:      st.StdDevRtt.Seconds(),
+		Rtts:        st.Rtts,
+		TTLs:        st.TTLs,
+		PacketsRecv: st.PacketsRecv,
+		PacketsSent: st.PacketsSent,
+	}
+	return pingStats
 }
 
 // Run runs the experiment with the specified context, session,
@@ -155,21 +175,65 @@ func (m *Measurer) Run(
 	const maxRuntime = 600 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, maxRuntime)
 	defer cancel()
+
 	tkch := make(chan *TestKeys)
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(2 * time.Second) // this is copied from some other experiment to allow a progress display; reuse.
 	defer ticker.Stop()
 
 	go m.bootstrap(ctx, sess, tkch)
 
-	for {
-		select {
-		case tk := <-tkch:
-			measurement.TestKeys = tk
-			callbacks.OnProgress(1.0, testName+" bootstrap done")
-			return nil
-		}
-		// TODO: progress
+	select {
+	case tk := <-tkch:
+		measurement.TestKeys = tk
+		break
 	}
+	tk := measurement.TestKeys.(*TestKeys)
+
+	//
+	// All ready now. Now we can begin the experiment itself.
+	//
+	// 1. ping
+	//
+
+	pinger := ping.NewFromSharedConnection(pingTarget, m.conn)
+	pinger.Count = pingCount
+	tk.PingTarget = pingTarget
+
+	err = pinger.Run(ctx)
+	if err != nil {
+		tk.Failure = tracex.NewFailure(err)
+		return err
+	}
+
+	tk.PingStats = parseStats(pinger)
+
+	//
+	// 2. urlgrab
+	//
+
+	d := vpn.NewTunDialer(m.rawDialer)
+
+	client := http.Client{
+		Transport: &http.Transport{
+			DialContext: d.DialContext,
+		},
+	}
+	resp, err := client.Get(urlGrabURI)
+	if err != nil {
+		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
+		tk.Failure = tracex.NewFailure(fmt.Errorf("%w: %s", ErrURLGrab, err))
+		return err
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
+		tk.Failure = tracex.NewFailure(fmt.Errorf("%w: %s", ErrURLGrab, err))
+		return err
+	}
+	tk.Response = string(body)
+	sess.Logger().Info("openvpn: all tests ok")
+	tk.Success = true
+	return nil
 }
 
 // setup prepares for running the openvpn experiment. Returns a minivpn dialer on success.
@@ -227,10 +291,11 @@ var ErrURLGrab = errors.New("urlgrab")
 func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	out chan<- *TestKeys) {
 	tk := &TestKeys{
-		BootstrapTime: 0,
-		Failure:       nil,
-		Proto:         protoToString(m.vpnOptions.Proto),
-		Remote:        net.JoinHostPort(m.vpnOptions.Remote, m.vpnOptions.Port),
+		BootstrapTime:  0,
+		Failure:        nil,
+		Proto:          protoToString(m.vpnOptions.Proto),
+		Remote:         net.JoinHostPort(m.vpnOptions.Remote, m.vpnOptions.Port),
+		MiniVPNVersion: getMiniVPNVersion(),
 	}
 	sess.Logger().Info("openvpn: bootstrapping openvpn connection")
 	defer func() {
@@ -242,60 +307,11 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
 	}
-
-	tk.BootstrapTime = time.Now().Sub(s).Seconds()
-	tk.MiniVPNVersion = getMiniVPNVersion()
-
-	// TODO move this to Run() ---------------------
-
-	// ping
-	pinger := ping.NewFromSharedConnection(pingTarget, conn)
-	pinger.Count = pingCount
-	err = pinger.Run(ctx)
-	if err != nil {
-		tk.Failure = tracex.NewFailure(err)
-		return
-	}
-
-	st := pinger.Statistics()
-	pingStats := &PingStats{
-		MinRtt:      st.MinRtt.Seconds(),
-		MaxRtt:      st.MaxRtt.Seconds(),
-		AvgRtt:      st.AvgRtt.Seconds(),
-		StdRtt:      st.StdDevRtt.Seconds(),
-		Rtts:        st.Rtts,
-		TTLs:        st.TTLs,
-		PacketsRecv: st.PacketsRecv,
-		PacketsSent: st.PacketsSent,
-	}
-	tk.PingStats = pingStats
-	tk.PingTarget = pingTarget
-
-	// urlgrab
-
+	m.conn = conn
 	m.rawDialer.ReuseClient(conn)
-	d := vpn.NewTunDialer(m.rawDialer)
+	tk.BootstrapTime = time.Now().Sub(s).Seconds()
 
-	client := http.Client{
-		Transport: &http.Transport{
-			DialContext: d.DialContext,
-		},
-	}
-	resp, err := client.Get(urlGrabURI)
-	if err != nil {
-		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
-		tk.Failure = tracex.NewFailure(fmt.Errorf("%w: %s", ErrURLGrab, err))
-		return
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
-		tk.Failure = tracex.NewFailure(fmt.Errorf("%w: %s", ErrURLGrab, err))
-		return
-	}
-	tk.Response = string(body)
-	sess.Logger().Info("openvpn: all tests ok")
-	tk.Success = true
+	sess.Logger().Info("openvpn: bootstrapping done")
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
