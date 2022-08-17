@@ -134,14 +134,13 @@ func addrStringIfNotNil(addr net.Addr) (out string) {
 func NewArchivalNetworkEvent(index int64, started time.Duration, operation string, network string,
 	address string, count int, err error, finished time.Duration) *model.ArchivalNetworkEvent {
 	return &model.ArchivalNetworkEvent{
-		Address:       address,
-		Failure:       tracex.NewFailure(err),
-		NumBytes:      int64(count),
-		Operation:     operation,
-		Proto:         network,
-		T:             finished.Seconds(),
-		TransactionID: index,
-		Tags:          []string{},
+		Address:   address,
+		Failure:   tracex.NewFailure(err),
+		NumBytes:  int64(count),
+		Operation: operation,
+		Proto:     network,
+		T:         finished.Seconds(),
+		Tags:      []string{},
 	}
 }
 
