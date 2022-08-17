@@ -303,14 +303,15 @@ type Trace interface {
 	// can use functionality exported by the ./internal/testingx pkg.
 	TimeNow() time.Time
 
-	// MaybeWrapNetConn wraps a net.Conn with the caller trace
+	// MaybeWrapNetConn possibly wraps a net.Conn with the caller trace. If there's no
+	// desire to wrap the net.Conn, this function just returns the original net.Conn.
 	//
 	// Arguments:
 	//
 	// - conn is the non-nil underlying net.Conn to be wrapped
 	MaybeWrapNetConn(conn net.Conn) net.Conn
 
-	// MaybeWrapUDPLikeConn wraps a UDPLikeConn with the caller trace
+	// MaybeWrapUDPLikeConn is like MaybeWrapNetConn but for UDPLikeConn.
 	//
 	// Arguments:
 	//
