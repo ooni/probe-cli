@@ -36,7 +36,13 @@ func NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) mode
 
 // utlsConn implements TLSConn and uses a utls UConn as its underlying connection
 type utlsConn struct {
+	// The underlying uTLS conn
 	*utls.UConn
+
+	// The underlying net.Conn used to implement .NetConn
+	cc net.Conn
+
+	// A hook to write better unit tests
 	testableHandshake func() error
 }
 
@@ -85,7 +91,12 @@ func newConnUTLSWithHelloID(conn net.Conn, config *tls.Config, cid *utls.ClientH
 		ServerName:                  config.ServerName,
 	}
 	tlsConn := utls.UClient(conn, uConfig, *cid)
-	return &utlsConn{UConn: tlsConn}, nil
+	uconn := &utlsConn{
+		UConn:             tlsConn,
+		cc:                conn,
+		testableHandshake: nil,
+	}
+	return uconn, nil
 }
 
 // ErrUTLSHandshakePanic indicates that there was panic handshaking
@@ -93,6 +104,7 @@ func newConnUTLSWithHelloID(conn net.Conn, config *tls.Config, cid *utls.ClientH
 // See https://github.com/ooni/probe/issues/1770 for more information.
 var ErrUTLSHandshakePanic = errors.New("utls: handshake panic")
 
+// HandshakeContext implements oohttp.TLSConn
 func (c *utlsConn) HandshakeContext(ctx context.Context) (err error) {
 	errch := make(chan error, 1)
 	go func() {
@@ -119,6 +131,7 @@ func (c *utlsConn) handshakefn() func() error {
 	return c.UConn.Handshake
 }
 
+// ConnectionState implements oohttp.TLSConn
 func (c *utlsConn) ConnectionState() tls.ConnectionState {
 	uState := c.Conn.ConnectionState()
 	return tls.ConnectionState{
@@ -135,4 +148,9 @@ func (c *utlsConn) ConnectionState() tls.ConnectionState {
 		OCSPResponse:                uState.OCSPResponse,
 		TLSUnique:                   uState.TLSUnique,
 	}
+}
+
+// NetConn implements oohttp.TLSConn
+func (c *utlsConn) NetConn() net.Conn {
+	return c.cc
 }

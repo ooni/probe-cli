@@ -7,12 +7,14 @@ package netxlite
 import (
 	"context"
 	"errors"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
 
 	oohttp "github.com/ooni/oohttp"
+	oohttptrace "github.com/ooni/oohttp/httptrace"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -231,9 +233,73 @@ func (txp *httpTransportStdlib) Network() string {
 // This is a low level factory. Consider not using it directly.
 func WrapHTTPTransport(logger model.DebugLogger, txp model.HTTPTransport) model.HTTPTransport {
 	return &httpTransportLogger{
-		HTTPTransport: &httpTransportErrWrapper{txp},
-		Logger:        logger,
+		HTTPTransport: &httpTransportErrWrapper{
+			&httpTransportTracer{txp},
+		},
+		Logger: logger,
 	}
+}
+
+// httpTransportTracer provides support for implementing HTTP tracing.
+type httpTransportTracer struct {
+	// child is the underlying transport
+	child model.HTTPTransport
+}
+
+var _ model.HTTPTransport = &httpTransportTracer{}
+
+// CloseIdleConnections implements model.HTTPTransport
+func (tt *httpTransportTracer) CloseIdleConnections() {
+	tt.child.CloseIdleConnections()
+}
+
+// Network implements model.HTTPTransport
+func (tt *httpTransportTracer) Network() string {
+	return tt.child.Network()
+}
+
+// httpConnRequestBinding contains the binding between a request
+// and the connection being used to perform such a request.
+type httpConnRequestBinding struct {
+	// The ALPN value (if any)
+	alpn string
+
+	// The connection's local address
+	localAddress string
+
+	// The connection's remote address
+	remoteAddress string
+}
+
+// RoundTrip implements model.HTTPTransport
+func (tt *httpTransportTracer) RoundTrip(req *http.Request) (*http.Response, error) {
+	bindingch := make(chan *httpConnRequestBinding, 2)
+	trace := &oohttptrace.ClientTrace{
+		GotConn: func(gci oohttptrace.GotConnInfo) {
+			binding := &httpConnRequestBinding{
+				alpn:          "",
+				localAddress:  gci.Conn.LocalAddr().String(),
+				remoteAddress: gci.Conn.RemoteAddr().String(),
+			}
+			if tconn, good := gci.Conn.(TLSConn); good {
+				binding.alpn = tconn.ConnectionState().NegotiatedProtocol
+			}
+			bindingch <- binding
+		},
+	}
+	ctx := req.Context()
+	ctx = oohttptrace.WithClientTraceWithoutComposition(ctx, trace)
+	req = req.WithContext(ctx)
+	resp, err := tt.child.RoundTrip(req)
+	select {
+	case binding := <-bindingch:
+		// TODO(bassosimone): replace this logging message with proper routing
+		// of the information related to this HTTP round trip
+		log.Printf("*** CONNECTION BINDING: %+v %+v", binding, req.URL)
+	default:
+		// nothing
+	}
+	return resp, err
 }
 
 // httpDialerWithReadTimeout enforces a read timeout for all HTTP

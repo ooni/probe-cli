@@ -28,6 +28,9 @@ type TLSConn struct {
 
 	// MockHandshakeContext allows to mock the HandshakeContext method.
 	MockHandshakeContext func(ctx context.Context) error
+
+	// MockNetConn allows to mock the NetConn method
+	MockNetConn func() net.Conn
 }
 
 // ConnectionState calls MockConnectionState.
@@ -38,6 +41,11 @@ func (c *TLSConn) ConnectionState() tls.ConnectionState {
 // HandshakeContext calls MockHandshakeContext.
 func (c *TLSConn) HandshakeContext(ctx context.Context) error {
 	return c.MockHandshakeContext(ctx)
+}
+
+// NetConn calls MockNetConn.
+func (c *TLSConn) NetConn() net.Conn {
+	return c.MockNetConn()
 }
 
 // TLSDialer allows to mock netxlite.TLSDialer.

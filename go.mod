@@ -25,7 +25,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.6.6
 	github.com/ooni/go-libtor v1.1.5
-	github.com/ooni/oohttp v0.0.0-20220602055714-3d81a8b41c3a
+	github.com/ooni/oohttp v0.2.1-0.20220818134039-01e4ffcde985
 	github.com/ooni/probe-assets v0.10.0
 	github.com/ooni/psiphon/tunnel-core v0.0.0-20220519122549-9c044eb6bd83
 	github.com/oschwald/geoip2-golang v1.7.0
@@ -38,8 +38,8 @@ require (
 	gitlab.com/yawning/obfs4.git v0.0.0-20220204003609-77af0cba934d
 	gitlab.com/yawning/utls.git v0.0.12-1
 	golang.org/x/crypto v0.0.0-20220518034528-6f7dac969898
-	golang.org/x/net v0.0.0-20220531201128-c960675eff93
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
+	golang.org/x/net v0.0.0-20220812174116-3211cb980234
+	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10
 )
 
 require (
