@@ -36,8 +36,14 @@ func NewTLSHandshakerUTLS(logger model.DebugLogger, id *utls.ClientHelloID) mode
 
 // utlsConn implements TLSConn and uses a utls UConn as its underlying connection
 type utlsConn struct {
+	// We include the real UConn
 	*utls.UConn
+
+	// This field helps with writing tests
 	testableHandshake func() error
+
+	// Required by NetConn
+	nc net.Conn
 }
 
 // Ensures that a utlsConn implements the TLSConn interface.
@@ -85,7 +91,12 @@ func newConnUTLSWithHelloID(conn net.Conn, config *tls.Config, cid *utls.ClientH
 		ServerName:                  config.ServerName,
 	}
 	tlsConn := utls.UClient(conn, uConfig, *cid)
-	return &utlsConn{UConn: tlsConn}, nil
+	oconn := &utlsConn{
+		UConn:             tlsConn,
+		testableHandshake: nil,
+		nc:                conn,
+	}
+	return oconn, nil
 }
 
 // ErrUTLSHandshakePanic indicates that there was panic handshaking
@@ -135,4 +146,8 @@ func (c *utlsConn) ConnectionState() tls.ConnectionState {
 		OCSPResponse:                uState.OCSPResponse,
 		TLSUnique:                   uState.TLSUnique,
 	}
+}
+
+func (c *utlsConn) NetConn() net.Conn {
+	return c.nc
 }

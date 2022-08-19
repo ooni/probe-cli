@@ -42,7 +42,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		trace := NewTrace(0, zeroTime)
 		var hasCorrectTrace bool
 		underlying := &mocks.QUICDialer{
-			MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config,
+			MockDialContext: func(ctx context.Context, address string, tlsConfig *tls.Config,
 				quicConfig *quic.Config) (quic.EarlyConnection, error) {
 				gotTrace := netxlite.ContextTraceOrDefault(ctx)
 				hasCorrectTrace = (gotTrace == trace)
@@ -55,7 +55,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		listener := &mocks.QUICListener{}
 		dialer := trace.NewQUICDialerWithoutResolver(listener, model.DiscardLogger)
 		ctx := context.Background()
-		conn, err := dialer.DialContext(ctx, "udp", "1.1.1.1:443", &tls.Config{}, &quic.Config{})
+		conn, err := dialer.DialContext(ctx, "1.1.1.1:443", &tls.Config{}, &quic.Config{})
 		if !errors.Is(err, expectedErr) {
 			t.Fatal("unexpected err", err)
 		}
@@ -122,7 +122,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 			ServerName:         "dns.cloudflare.com",
 		}
 		ctx := context.Background()
-		qconn, err := dialer.DialContext(ctx, "udp", "1.1.1.1:443", tlsConfig, &quic.Config{})
+		qconn, err := dialer.DialContext(ctx, "1.1.1.1:443", tlsConfig, &quic.Config{})
 		if !errors.Is(err, mockedErr) {
 			t.Fatal("unexpected err", err)
 		}
@@ -231,7 +231,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 			ServerName:         "dns.cloudflare.com",
 		}
 		ctx := context.Background()
-		qconn, err := dialer.DialContext(ctx, "udp", "1.1.1.1:443", tlsConfig, &quic.Config{})
+		qconn, err := dialer.DialContext(ctx, "1.1.1.1:443", tlsConfig, &quic.Config{})
 		if !errors.Is(err, mockedErr) {
 			t.Fatal("unexpected err", err)
 		}

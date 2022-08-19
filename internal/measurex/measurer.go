@@ -423,7 +423,7 @@ func (mx *Measurer) QUICHandshakeWithDB(ctx context.Context, db WritableDB,
 	defer cancel()
 	qd := mx.NewQUICDialerWithoutResolver(db, mx.Logger)
 	defer qd.CloseIdleConnections()
-	qconn, err := qd.DialContext(ctx, "udp", address, config, &quic.Config{})
+	qconn, err := qd.DialContext(ctx, address, config, &quic.Config{})
 	ol.Stop(err)
 	return qconn, err
 }
