@@ -40,7 +40,7 @@ func (s *Saver) WrapQUICDialer(qd model.QUICDialer) model.QUICDialer {
 }
 
 // DialContext implements QUICDialer.DialContext
-func (h *QUICDialerSaver) DialContext(ctx context.Context, network string,
+func (h *QUICDialerSaver) DialContext(ctx context.Context,
 	host string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
 	start := time.Now()
 	// TODO(bassosimone): in the future we probably want to also save
@@ -48,12 +48,12 @@ func (h *QUICDialerSaver) DialContext(ctx context.Context, network string,
 	h.Saver.Write(&EventQUICHandshakeStart{&EventValue{
 		Address:       host,
 		NoTLSVerify:   tlsCfg.InsecureSkipVerify,
-		Proto:         network,
+		Proto:         "udp",
 		TLSNextProtos: tlsCfg.NextProtos,
 		TLSServerName: tlsCfg.ServerName,
 		Time:          start,
 	}})
-	sess, err := h.QUICDialer.DialContext(ctx, network, host, tlsCfg, cfg)
+	sess, err := h.QUICDialer.DialContext(ctx, host, tlsCfg, cfg)
 	stop := time.Now()
 	if err != nil {
 		// TODO(bassosimone): here we should save the peer certs
@@ -62,7 +62,7 @@ func (h *QUICDialerSaver) DialContext(ctx context.Context, network string,
 			Duration:      stop.Sub(start),
 			Err:           NewFailureStr(err),
 			NoTLSVerify:   tlsCfg.InsecureSkipVerify,
-			Proto:         network,
+			Proto:         "udp",
 			TLSNextProtos: tlsCfg.NextProtos,
 			TLSPeerCerts:  [][]byte{},
 			TLSServerName: tlsCfg.ServerName,
@@ -75,7 +75,7 @@ func (h *QUICDialerSaver) DialContext(ctx context.Context, network string,
 		Address:            host,
 		Duration:           stop.Sub(start),
 		NoTLSVerify:        tlsCfg.InsecureSkipVerify,
-		Proto:              network,
+		Proto:              "udp",
 		TLSCipherSuite:     netxlite.TLSCipherSuiteString(state.CipherSuite),
 		TLSNegotiatedProto: state.NegotiatedProtocol,
 		TLSNextProtos:      tlsCfg.NextProtos,

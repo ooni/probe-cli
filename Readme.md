@@ -99,7 +99,7 @@ Please, see [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Updating dependencies
 
 ```bash
-go get -u -v -d ./... && go mod tidy
+go get -t -u -v ./... && go mod tidy
 ```
 
 ## Releasing

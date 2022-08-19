@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	utls "gitlab.com/yawning/utls.git"
 )
 
@@ -91,6 +92,18 @@ func TestUTLSConn(t *testing.T) {
 			}
 			wg.Wait()
 		})
+	})
+
+	t.Run("NetConn", func(t *testing.T) {
+		factory := newConnUTLS(&utls.HelloChrome_70)
+		conn := &mocks.Conn{}
+		tconn, err := factory(conn, &tls.Config{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if tconn.NetConn() != conn {
+			t.Fatal("NetConn is not WAI")
+		}
 	})
 }
 

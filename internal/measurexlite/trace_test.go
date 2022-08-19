@@ -413,7 +413,7 @@ func TestTrace(t *testing.T) {
 			tx := &Trace{
 				NewQUICDialerWithoutResolverFn: func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
 					return &mocks.QUICDialer{
-						MockDialContext: func(ctx context.Context, network, address string,
+						MockDialContext: func(ctx context.Context, address string,
 							tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 							return nil, mockedErr
 						},
@@ -422,7 +422,7 @@ func TestTrace(t *testing.T) {
 			}
 			qdx := tx.newQUICDialerWithoutResolver(&mocks.QUICListener{}, model.DiscardLogger)
 			ctx := context.Background()
-			qconn, err := qdx.DialContext(ctx, "udp", "1.1.1.1:443", &tls.Config{}, &quic.Config{})
+			qconn, err := qdx.DialContext(ctx, "1.1.1.1:443", &tls.Config{}, &quic.Config{})
 			if !errors.Is(err, mockedErr) {
 				t.Fatal("unexpected err", err)
 			}
@@ -464,7 +464,7 @@ func TestTrace(t *testing.T) {
 			}
 			dialer := tx.newQUICDialerWithoutResolver(listener, model.DiscardLogger)
 			ctx := context.Background()
-			qconn, err := dialer.DialContext(ctx, "udp", "1.1.1.1:443", tlsConfig, &quic.Config{})
+			qconn, err := dialer.DialContext(ctx, "1.1.1.1:443", tlsConfig, &quic.Config{})
 			if !errors.Is(err, mockedErr) {
 				t.Fatal("unexpected err", err)
 			}

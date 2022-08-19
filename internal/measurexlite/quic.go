@@ -32,10 +32,10 @@ type quicDialerTrace struct {
 var _ model.QUICDialer = &quicDialerTrace{}
 
 // DialContext implements model.QUICDialer.DialContext.
-func (qdx *quicDialerTrace) DialContext(ctx context.Context, network string,
+func (qdx *quicDialerTrace) DialContext(ctx context.Context,
 	address string, tlsConfig *tls.Config, quicConfig *quic.Config) (
 	quic.EarlyConnection, error) {
-	return qdx.qd.DialContext(netxlite.ContextWithTrace(ctx, qdx.tx), network, address, tlsConfig, quicConfig)
+	return qdx.qd.DialContext(netxlite.ContextWithTrace(ctx, qdx.tx), address, tlsConfig, quicConfig)
 }
 
 // CloseIdleConnections implements model.QUICDialer.CloseIdleConnections.
