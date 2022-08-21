@@ -408,7 +408,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
 			zeroTime := time.Now()
 			deterministicTime := testingx.NewTimeDeterministic(zeroTime)
-			respChannel := make(chan *model.DNSResponse)
+			respChannel := make(chan *model.DNSResponse, 8)
 			mu := new(sync.Mutex)
 			tx := &mocks.Trace{
 				MockTimeNow: deterministicTime.Now,
@@ -423,12 +423,8 @@ func TestDNSOverUDPTransport(t *testing.T) {
 					goodLookupAddrs = (len(addrs) == 0)
 					goodError = errors.Is(err, ErrOODNSNoSuchHost)
 					mu.Unlock()
-					select {
-					case respChannel <- &response:
-						return nil
-					default:
-						return errors.New("full buffer")
-					}
+					respChannel <- &response
+					return errors.New("mocked") // return error to stop background routine to record responses
 				},
 				MockOnConnectDone: func(started time.Time, network, domain, remoteAddr string, err error,
 					finished time.Time) {
