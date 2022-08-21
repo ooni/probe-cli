@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -314,17 +315,20 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			deterministicTime := testingx.NewTimeDeterministic(zeroTime)
 			expectedAddrs := []string{"8.8.8.8"}
 			respChannel := make(chan *model.DNSResponse, 8)
+			mu := new(sync.Mutex)
 			tx := &mocks.Trace{
 				MockTimeNow: deterministicTime.Now,
 				MockOnDelayedDNSResponse: func(started time.Time, txp model.DNSTransport,
 					query model.DNSQuery, response model.DNSResponse, addrs []string, err error,
 					finished time.Time) error {
+					mu.Lock()
 					delayedDNSResponseCalled = true
 					goodQueryType = (query.Type() == dns.TypeA)
 					goodTransportNetwork = (txp.Network() == "udp")
 					goodTransportAddress = (txp.Address() == expectedAddress)
 					goodLookupAddrs = (cmp.Diff(expectedAddrs, addrs) == "")
 					goodError = (err == nil)
+					mu.Unlock()
 					select {
 					case respChannel <- &response:
 						return nil
@@ -350,6 +354,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			mu.Lock()
 			if diff := cmp.Diff(addrs, []string{"127.0.0.1"}); diff != "" {
 				t.Fatal(diff)
 			}
@@ -371,6 +376,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			if !goodError {
 				t.Fatal("unexpected error encountered")
 			}
+			mu.Unlock()
 		})
 
 		t.Run("uses a context-injected custom trace (failure case)", func(t *testing.T) {
@@ -402,18 +408,21 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
 			zeroTime := time.Now()
 			deterministicTime := testingx.NewTimeDeterministic(zeroTime)
-			respChannel := make(chan *model.DNSResponse, 8)
+			respChannel := make(chan *model.DNSResponse)
+			mu := new(sync.Mutex)
 			tx := &mocks.Trace{
 				MockTimeNow: deterministicTime.Now,
 				MockOnDelayedDNSResponse: func(started time.Time, txp model.DNSTransport,
 					query model.DNSQuery, response model.DNSResponse, addrs []string, err error,
 					finished time.Time) error {
+					mu.Lock()
 					delayedDNSResponseCalled = true
 					goodQueryType = (query.Type() == dns.TypeA)
 					goodTransportNetwork = (txp.Network() == "udp")
 					goodTransportAddress = (txp.Address() == expectedAddress)
 					goodLookupAddrs = (len(addrs) == 0)
 					goodError = errors.Is(err, ErrOODNSNoSuchHost)
+					mu.Unlock()
 					select {
 					case respChannel <- &response:
 						return nil
@@ -439,6 +448,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			mu.Lock()
 			if diff := cmp.Diff(addrs, []string{"127.0.0.1"}); diff != "" {
 				t.Fatal(diff)
 			}
@@ -460,6 +470,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			if !goodError {
 				t.Fatal("unexpected error encountered")
 			}
+			mu.Unlock()
 		})
 	})
 
