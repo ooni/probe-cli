@@ -14,6 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
+	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
 func TestDNSOverUDPTransport(t *testing.T) {
@@ -281,70 +282,16 @@ func TestDNSOverUDPTransport(t *testing.T) {
 		})
 	})
 
-	t.Run("AsyncRoundTrip", func(t *testing.T) {
-		t.Run("calling Next with cancelled context", func(t *testing.T) {
-			srvr := &filtering.DNSServer{
-				OnQuery: func(domain string) filtering.DNSAction {
-					return filtering.DNSActionCache
-				},
-				Cache: map[string][]string{
-					"dns.google.": {"8.8.8.8"},
-				},
-			}
-			listener, err := srvr.Start("127.0.0.1:0")
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer listener.Close()
-			dialer := NewDialerWithoutResolver(model.DiscardLogger)
-			txp := NewUnwrappedDNSOverUDPTransport(dialer, listener.LocalAddr().String())
-			encoder := &DNSEncoderMiekg{}
-			query := encoder.Encode("dns.google.", dns.TypeA, false)
-			ctx := context.Background()
-			rch, err := txp.AsyncRoundTrip(ctx, query, 1)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer rch.Close()
-			ctx, cancel := context.WithCancel(ctx)
-			cancel() // fail immediately
-			resp, err := rch.Next(ctx)
-			if !errors.Is(err, context.Canceled) {
-				t.Fatal("unexpected err", err)
-			}
-			if resp != nil {
-				t.Fatal("unexpected resp")
-			}
-		})
-
-		t.Run("no-one is reading the channel", func(t *testing.T) {
-			srvr := &filtering.DNSServer{
-				OnQuery: func(domain string) filtering.DNSAction {
-					return filtering.DNSActionLocalHostPlusCache // i.e., two responses
-				},
-				Cache: map[string][]string{
-					"dns.google.": {"8.8.8.8"},
-				},
-			}
-			listener, err := srvr.Start("127.0.0.1:0")
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer listener.Close()
-			dialer := NewDialerWithoutResolver(model.DiscardLogger)
-			txp := NewUnwrappedDNSOverUDPTransport(dialer, listener.LocalAddr().String())
-			encoder := &DNSEncoderMiekg{}
-			query := encoder.Encode("dns.google.", dns.TypeA, false)
-			ctx := context.Background()
-			rch, err := txp.AsyncRoundTrip(ctx, query, 1) // but just one place
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer rch.Close()
-			<-rch.Joined // should see no-one is reading and stop
-		})
-
-		t.Run("typical usage to obtain late responses", func(t *testing.T) {
+	t.Run("recording delayed DNS responses", func(t *testing.T) {
+		t.Run("uses a context-injected custom trace (success case)", func(t *testing.T) {
+			var (
+				delayedDNSResponseCalled bool
+				goodQueryType            bool
+				goodTransportNetwork     bool
+				goodTransportAddress     bool
+				goodLookupAddrs          bool
+				goodError                bool
+			)
 			srvr := &filtering.DNSServer{
 				OnQuery: func(domain string) filtering.DNSAction {
 					return filtering.DNSActionLocalHostPlusCache
@@ -359,52 +306,88 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			}
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
-			txp := NewUnwrappedDNSOverUDPTransport(dialer, listener.LocalAddr().String())
+			expectedAddress := listener.LocalAddr().String()
+			txp := NewUnwrappedDNSOverUDPTransport(dialer, expectedAddress)
 			encoder := &DNSEncoderMiekg{}
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
-			rch, err := txp.AsyncRoundTrip(context.Background(), query, 1)
+			zeroTime := time.Now()
+			deterministicTime := testingx.NewTimeDeterministic(zeroTime)
+			expectedAddrs := []string{"8.8.8.8"}
+			respChannel := make(chan *model.DNSResponse, 8)
+			tx := &mocks.Trace{
+				MockTimeNow: deterministicTime.Now,
+				MockOnDelayedDNSResponse: func(started time.Time, txp model.DNSTransport,
+					query model.DNSQuery, response model.DNSResponse, addrs []string, err error,
+					finished time.Time) error {
+					delayedDNSResponseCalled = true
+					goodQueryType = (query.Type() == dns.TypeA)
+					goodTransportNetwork = (txp.Network() == "udp")
+					goodTransportAddress = (txp.Address() == expectedAddress)
+					goodLookupAddrs = (cmp.Diff(expectedAddrs, addrs) == "")
+					goodError = (err == nil)
+					select {
+					case respChannel <- &response:
+						return nil
+					default:
+						return errors.New("full buffer")
+					}
+				},
+				MockOnConnectDone: func(started time.Time, network, domain, remoteAddr string, err error,
+					finished time.Time) {
+					// do nothing
+				},
+				MockMaybeWrapNetConn: func(conn net.Conn) net.Conn {
+					return conn
+				},
+			}
+			ctx := ContextWithTrace(context.Background(), tx)
+			rch, err := txp.RoundTrip(ctx, query)
+			<-respChannel // wait for the delayed response
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer rch.Close()
-			resp, err := rch.Next(context.Background())
-			if err != nil {
-				t.Fatal(err)
-			}
-			addrs, err := resp.DecodeLookupHost()
+			addrs, err := rch.DecodeLookupHost()
 			if err != nil {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(addrs, []string{"127.0.0.1"}); diff != "" {
 				t.Fatal(diff)
 			}
-			// One would not normally busy loop but it's fine to do that in the context
-			// of this test because we know we're going to receive a second reply. In
-			// a real network experiment here we'll do other activities, e.g., contacting
-			// the test helper or fetching a webpage.
-			var additional []model.DNSResponse
-			for {
-				additional = rch.TryNextResponses()
-				if len(additional) > 0 {
-					if len(additional) != 1 {
-						t.Fatal("expected exactly one additional response")
-					}
-					break
-				}
+			if !delayedDNSResponseCalled {
+				t.Fatal("delayedDNSResponse not called")
 			}
-			addrs, err = additional[0].DecodeLookupHost()
-			if err != nil {
-				t.Fatal(err)
+			if !goodQueryType {
+				t.Fatal("unexpected query type")
 			}
-			if diff := cmp.Diff(addrs, []string{"8.8.8.8"}); diff != "" {
-				t.Fatal(diff)
+			if !goodTransportNetwork {
+				t.Fatal("unexpected DNS transport network")
+			}
+			if !goodTransportAddress {
+				t.Fatal("unexpected DNS Transport address")
+			}
+			if !goodLookupAddrs {
+				t.Fatal("unexpected delayed DNSLookup address")
+			}
+			if !goodError {
+				t.Fatal("unexpected error encountered")
 			}
 		})
 
-		t.Run("correct behavior when read times out", func(t *testing.T) {
+		t.Run("uses a context-injected custom trace (failure case)", func(t *testing.T) {
+			var (
+				delayedDNSResponseCalled bool
+				goodQueryType            bool
+				goodTransportNetwork     bool
+				goodTransportAddress     bool
+				goodLookupAddrs          bool
+				goodError                bool
+			)
 			srvr := &filtering.DNSServer{
 				OnQuery: func(domain string) filtering.DNSAction {
-					return filtering.DNSActionTimeout
+					return filtering.DNSActionLocalHostPlusCache
+				},
+				Cache: map[string][]string{
+					"dns.google.com": {"8.8.8.8"},
 				},
 			}
 			listener, err := srvr.Start("127.0.0.1:0")
@@ -413,21 +396,69 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			}
 			defer listener.Close()
 			dialer := NewDialerWithoutResolver(model.DiscardLogger)
-			txp := NewUnwrappedDNSOverUDPTransport(dialer, listener.LocalAddr().String())
-			txp.IOTimeout = 30 * time.Millisecond // short timeout to have a fast test
+			expectedAddress := listener.LocalAddr().String()
+			txp := NewUnwrappedDNSOverUDPTransport(dialer, expectedAddress)
 			encoder := &DNSEncoderMiekg{}
 			query := encoder.Encode("dns.google.", dns.TypeA, false)
-			rch, err := txp.AsyncRoundTrip(context.Background(), query, 1)
+			zeroTime := time.Now()
+			deterministicTime := testingx.NewTimeDeterministic(zeroTime)
+			respChannel := make(chan *model.DNSResponse, 8)
+			tx := &mocks.Trace{
+				MockTimeNow: deterministicTime.Now,
+				MockOnDelayedDNSResponse: func(started time.Time, txp model.DNSTransport,
+					query model.DNSQuery, response model.DNSResponse, addrs []string, err error,
+					finished time.Time) error {
+					delayedDNSResponseCalled = true
+					goodQueryType = (query.Type() == dns.TypeA)
+					goodTransportNetwork = (txp.Network() == "udp")
+					goodTransportAddress = (txp.Address() == expectedAddress)
+					goodLookupAddrs = (len(addrs) == 0)
+					goodError = errors.Is(err, ErrOODNSNoSuchHost)
+					select {
+					case respChannel <- &response:
+						return nil
+					default:
+						return errors.New("full buffer")
+					}
+				},
+				MockOnConnectDone: func(started time.Time, network, domain, remoteAddr string, err error,
+					finished time.Time) {
+					// do nothing
+				},
+				MockMaybeWrapNetConn: func(conn net.Conn) net.Conn {
+					return conn
+				},
+			}
+			ctx := ContextWithTrace(context.Background(), tx)
+			rch, err := txp.RoundTrip(ctx, query)
+			<-respChannel // wait for the delayed response
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer rch.Close()
-			result := <-rch.Response
-			if result.Err == nil || result.Err.Error() != "generic_timeout_error" {
-				t.Fatal("unexpected error", result.Err)
+			addrs, err := rch.DecodeLookupHost()
+			if err != nil {
+				t.Fatal(err)
 			}
-			if result.Operation != ReadOperation {
-				t.Fatal("unexpected failed operation", result.Operation)
+			if diff := cmp.Diff(addrs, []string{"127.0.0.1"}); diff != "" {
+				t.Fatal(diff)
+			}
+			if !delayedDNSResponseCalled {
+				t.Fatal("delayedDNSResponse not called")
+			}
+			if !goodQueryType {
+				t.Fatal("unexpected query type")
+			}
+			if !goodTransportNetwork {
+				t.Fatal("unexpected DNS transport network")
+			}
+			if !goodTransportAddress {
+				t.Fatal("unexpected DNS Transport address")
+			}
+			if !goodLookupAddrs {
+				t.Fatal("unexpected delayed DNSLookup address")
+			}
+			if !goodError {
+				t.Fatal("unexpected error encountered")
 			}
 		})
 	})

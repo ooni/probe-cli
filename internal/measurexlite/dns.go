@@ -6,6 +6,7 @@ package measurexlite
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net"
 	"time"
@@ -166,4 +167,54 @@ func (tx *Trace) FirstDNSLookup() *model.ArchivalDNSLookupResult {
 		return nil
 	}
 	return ev[0]
+}
+
+// OnDelayedDNSResponse implements model.Trace.OnDelayedDNSResponse
+func (tx *Trace) OnDelayedDNSResponse(started time.Time, txp model.DNSTransport, query model.DNSQuery,
+	response model.DNSResponse, addrs []string, err error, finished time.Time) error {
+	t := finished.Sub(tx.ZeroTime)
+	select {
+	case tx.delayedDNSResponse <- NewArchivalDNSDelayedResult(
+		tx.Index,
+		started.Sub(tx.ZeroTime),
+		txp,
+		query,
+		response,
+		addrs,
+		err,
+		t,
+	):
+		return nil
+	default:
+		return errors.New("buffer full")
+	}
+}
+
+// NewArchivalDNSDelayedResult generates a model.ArchivalDNSLookupResultFromRoundTrip
+// from the available information right after reading the delayed response.
+func NewArchivalDNSDelayedResult(index int64, started time.Duration, txp model.DNSTransport, query model.DNSQuery,
+	response model.DNSResponse, addrs []string, err error, finished time.Duration) *model.ArchivalDNSLookupResult {
+	return &model.ArchivalDNSLookupResult{
+		Answers:          archivalAnswersFromAddrs(addrs),
+		Engine:           txp.Network(),
+		Failure:          tracex.NewFailure(err),
+		Hostname:         query.Domain(),
+		QueryType:        dns.TypeToString[query.Type()],
+		ResolverHostname: nil,
+		ResolverAddress:  txp.Address(),
+		T:                finished.Seconds(),
+	}
+}
+
+// DelayedDNSResponse drains the network events buffered inside the delayedDNSResponse channel
+// Note: The passed context MUST have a timeout to ensure that the we return after some time
+func (tx *Trace) DelayedDNSResponse(ctx context.Context) (out []*model.ArchivalDNSLookupResult) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case ev := <-tx.delayedDNSResponse:
+			out = append(out, ev)
+		}
+	}
 }

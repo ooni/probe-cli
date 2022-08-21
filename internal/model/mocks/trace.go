@@ -24,6 +24,9 @@ type Trace struct {
 	MockOnDNSRoundTripForLookupHost func(started time.Time, reso model.Resolver, query model.DNSQuery,
 		response model.DNSResponse, addrs []string, err error, finished time.Time)
 
+	MockOnDelayedDNSResponse func(started time.Time, txp model.DNSTransport, query model.DNSQuery,
+		response model.DNSResponse, addrs []string, err error, finished time.Time) error
+
 	MockOnConnectDone func(
 		started time.Time, network, domain, remoteAddr string, err error, finished time.Time)
 
@@ -55,6 +58,11 @@ func (t *Trace) MaybeWrapUDPLikeConn(conn model.UDPLikeConn) model.UDPLikeConn {
 func (t *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resolver, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Time) {
 	t.MockOnDNSRoundTripForLookupHost(started, reso, query, response, addrs, err, finished)
+}
+
+func (t *Trace) OnDelayedDNSResponse(started time.Time, txp model.DNSTransport, query model.DNSQuery,
+	response model.DNSResponse, addrs []string, err error, finished time.Time) error {
+	return t.MockOnDelayedDNSResponse(started, txp, query, response, addrs, err, finished)
 }
 
 func (t *Trace) OnConnectDone(

@@ -71,6 +71,30 @@ func TestTrace(t *testing.T) {
 		}
 	})
 
+	t.Run("OnDelayedDNSResponse", func(t *testing.T) {
+		var called bool
+		tx := &Trace{
+			MockOnDelayedDNSResponse: func(started time.Time, txp model.DNSTransport,
+				query model.DNSQuery, response model.DNSResponse,
+				addrs []string, err error, finished time.Time) error {
+				called = true
+				return nil
+			},
+		}
+		tx.OnDelayedDNSResponse(
+			time.Now(),
+			&DNSTransport{},
+			&DNSQuery{},
+			&DNSResponse{},
+			[]string{},
+			nil,
+			time.Now(),
+		)
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+
 	t.Run("OnConnectDone", func(t *testing.T) {
 		var called bool
 		tx := &Trace{

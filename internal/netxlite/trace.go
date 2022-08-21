@@ -67,6 +67,12 @@ func (*traceDefault) OnDNSRoundTripForLookupHost(started time.Time, reso model.R
 	// nothing
 }
 
+// OnDelayedDNSResponse implements model.Trace.OnDelayedDNSResponse.
+func (*traceDefault) OnDelayedDNSResponse(started time.Time, txp model.DNSTransport,
+	query model.DNSQuery, response model.DNSResponse, addrs []string, err error, finished time.Time) error {
+	return nil
+}
+
 // OnConnectDone implements model.Trace.OnConnectDone.
 func (*traceDefault) OnConnectDone(
 	started time.Time, network, domain, remoteAddr string, err error, finished time.Time) {
