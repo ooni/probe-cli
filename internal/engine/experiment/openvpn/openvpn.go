@@ -29,7 +29,7 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.1"
+	testVersion = "0.0.2"
 
 	// pingCount tells how many icmp echo requests to send.
 	// pingCount = 10

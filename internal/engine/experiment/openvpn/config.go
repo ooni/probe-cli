@@ -62,9 +62,9 @@ func vpnExperimentFromURI(uri string) (*VPNExperiment, error) {
 	hostParts := strings.Split(u.Hostname(), ".")
 	switch len(hostParts) {
 	case 2:
-		provider = hostParts[0]
-		if hostParts[1] != openvpn {
-			return nil, fmt.Errorf("%w: unknown proto (%s)", BadOONIRunInput, hostParts[1])
+		provider = hostParts[1]
+		if hostParts[0] != openvpn {
+			return nil, fmt.Errorf("%w: unknown proto (%s)", BadOONIRunInput, hostParts[0])
 		}
 	case 1:
 		if hostParts[0] != openvpn {
