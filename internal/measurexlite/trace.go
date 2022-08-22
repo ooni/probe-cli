@@ -34,8 +34,7 @@ type Trace struct {
 	// traces, you can use zero to indicate the "default" trace.
 	Index int64
 
-	// networkEvent is MANDATORY and buffers network events. If you create
-	// this channel manually, ensure it has some buffer.
+	// networkEvent is MANDATORY and buffers network events.
 	networkEvent chan *model.ArchivalNetworkEvent
 
 	// NewStdlibResolverFn is OPTIONAL and can be used to overide
@@ -62,20 +61,19 @@ type Trace struct {
 	// calls to the netxlite.NewQUICDialerWithoutResolver factory.
 	NewQUICDialerWithoutResolverFn func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer
 
-	// dnsLookup is MANDATORY and buffers DNS Lookup observations. If you create
-	// this channel manually, ensure it has some buffer.
+	// dnsLookup is MANDATORY and buffers DNS Lookup observations.
 	dnsLookup chan *model.ArchivalDNSLookupResult
 
-	// tcpConnect is MANDATORY and buffers TCP connect observations. If you create
-	// this channel manually, ensure it has some buffer.
+	// delayedDNSResponse is MANDATORY and buffers delayed DNS responses.
+	delayedDNSResponse chan *model.ArchivalDNSLookupResult
+
+	// tcpConnect is MANDATORY and buffers TCP connect observations.
 	tcpConnect chan *model.ArchivalTCPConnectResult
 
-	// tlsHandshake is MANDATORY and buffers TLS handshake observations. If you create
-	// this channel manually, ensure it has some buffer.
+	// tlsHandshake is MANDATORY and buffers TLS handshake observations.
 	tlsHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
-	// quicHandshake is MANDATORY and buffers QUIC handshake observations. If you create
-	// this channel manually, ensure it has some buffer.
+	// quicHandshake is MANDATORY and buffers QUIC handshake observations.
 	quicHandshake chan *model.ArchivalTLSOrQUICHandshakeResult
 
 	// TimeNowFn is OPTIONAL and can be used to override calls to time.Now
@@ -88,23 +86,27 @@ type Trace struct {
 
 const (
 	// NetworkEventBufferSize is the buffer size for constructing
-	// the Trace's NetworkEvent buffered channel.
+	// the Trace's networkEvent buffered channel.
 	NetworkEventBufferSize = 64
 
 	// DNSLookupBufferSize is the buffer size for constructing
-	// the Trace's DNSLookup map of buffered channels.
+	// the Trace's dnsLookup buffered channel.
 	DNSLookupBufferSize = 8
 
+	// DNSResponseBufferSize is the buffer size for constructing
+	// the Trace's dnsDelayedResponse buffered channel.
+	DelayedDNSResponseBufferSize = 8
+
 	// TCPConnectBufferSize is the buffer size for constructing
-	// the Trace's TCPConnect buffered channel.
+	// the Trace's tcpConnect buffered channel.
 	TCPConnectBufferSize = 8
 
 	// TLSHandshakeBufferSize is the buffer for construcing
-	// the Trace's TLSHandshake buffered channel.
+	// the Trace's tlsHandshake buffered channel.
 	TLSHandshakeBufferSize = 8
 
 	// QUICHandshakeBufferSize is the buffer for constructing
-	// the Trace's QUICHandshake buffered channel.
+	// the Trace's quicHandshake buffered channel.
 	QUICHandshakeBufferSize = 8
 )
 
@@ -131,6 +133,10 @@ func NewTrace(index int64, zeroTime time.Time) *Trace {
 		dnsLookup: make(
 			chan *model.ArchivalDNSLookupResult,
 			DNSLookupBufferSize,
+		),
+		delayedDNSResponse: make(
+			chan *model.ArchivalDNSLookupResult,
+			DelayedDNSResponseBufferSize,
 		),
 		tcpConnect: make(
 			chan *model.ArchivalTCPConnectResult,

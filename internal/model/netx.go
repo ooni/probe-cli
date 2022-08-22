@@ -340,6 +340,29 @@ type Trace interface {
 	OnDNSRoundTripForLookupHost(started time.Time, reso Resolver, query DNSQuery,
 		response DNSResponse, addrs []string, err error, finished time.Time)
 
+	// OnDelayedDNSResponse is used with a DNSOverUDPTransport and called
+	// when we get delayed, unexpected DNS responses.
+	//
+	// Arguments:
+	//
+	// - started is when we started reading the delayed response;
+	//
+	// - txp is the DNS transport used with the resolver;
+	//
+	// - query is the non-nil DNS query we use for the RoundTrip;
+	//
+	// - response is the non-nil valid DNS response, obtained after some delay;
+	//
+	// - addrs is the list of addresses obtained after decoding the delayed response,
+	// which is empty if the response did not contain any addresses, which we
+	// extract by calling the DecodeLookupHost method.
+	//
+	// - err is the result of DecodeLookupHost: either an error or nil;
+	//
+	// - finished is when we have read the delayed response.
+	OnDelayedDNSResponse(started time.Time, txp DNSTransport, query DNSQuery,
+		resp DNSResponse, addrs []string, err error, finsihed time.Time) error
+
 	// OnConnectDone is called when connect terminates.
 	//
 	// Arguments:

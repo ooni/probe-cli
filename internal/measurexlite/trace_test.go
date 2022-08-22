@@ -84,7 +84,7 @@ func TestNewTrace(t *testing.T) {
 			}
 		})
 
-		t.Run("DNSLookup has the expected buffer size", func(t *testing.T) {
+		t.Run("dnsLookup has the expected buffer size", func(t *testing.T) {
 			ff := &testingx.FakeFiller{}
 			var idx int
 		Loop:
@@ -99,11 +99,30 @@ func TestNewTrace(t *testing.T) {
 				}
 			}
 			if idx != DNSLookupBufferSize {
-				t.Fatal("invalid DNSLookup channel buffer size")
+				t.Fatal("invalid dnsLookup channel buffer size")
 			}
 		})
 
-		t.Run("TCPConnect has the expected buffer size", func(t *testing.T) {
+		t.Run("delayedDNSResponse has the expected buffer size", func(t *testing.T) {
+			ff := &testingx.FakeFiller{}
+			var idx int
+		Loop:
+			for {
+				ev := &model.ArchivalDNSLookupResult{}
+				ff.Fill(ev)
+				select {
+				case trace.delayedDNSResponse <- ev:
+					idx++
+				default:
+					break Loop
+				}
+			}
+			if idx != DelayedDNSResponseBufferSize {
+				t.Fatal("invalid delayedDNSResponse channel buffer size")
+			}
+		})
+
+		t.Run("tcpConnect has the expected buffer size", func(t *testing.T) {
 			ff := &testingx.FakeFiller{}
 			var idx int
 		Loop:
@@ -118,11 +137,11 @@ func TestNewTrace(t *testing.T) {
 				}
 			}
 			if idx != TCPConnectBufferSize {
-				t.Fatal("invalid TCPConnect channel buffer size")
+				t.Fatal("invalid tcpConnect channel buffer size")
 			}
 		})
 
-		t.Run("TLSHandshake has the expected buffer size", func(t *testing.T) {
+		t.Run("tlsHandshake has the expected buffer size", func(t *testing.T) {
 			ff := &testingx.FakeFiller{}
 			var idx int
 		Loop:
@@ -137,11 +156,11 @@ func TestNewTrace(t *testing.T) {
 				}
 			}
 			if idx != TLSHandshakeBufferSize {
-				t.Fatal("invalid TLSHandshake channel buffer size")
+				t.Fatal("invalid tlsHandshake channel buffer size")
 			}
 		})
 
-		t.Run("QUICHandshake has the expected buffer size", func(t *testing.T) {
+		t.Run("quicHandshake has the expected buffer size", func(t *testing.T) {
 			ff := &testingx.FakeFiller{}
 			var idx int
 		Loop:
@@ -156,7 +175,7 @@ func TestNewTrace(t *testing.T) {
 				}
 			}
 			if idx != QUICHandshakeBufferSize {
-				t.Fatal("invalid QUICHandshake channel buffer size")
+				t.Fatal("invalid quicHandshake channel buffer size")
 			}
 		})
 

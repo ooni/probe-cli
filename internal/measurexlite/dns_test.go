@@ -2,6 +2,7 @@ package measurexlite
 
 import (
 	"context"
+	"errors"
 	"net"
 	"testing"
 	"time"
@@ -319,6 +320,158 @@ func TestFirstDNSLookup(t *testing.T) {
 		if diff := cmp.Diff(got, expect[0]); diff != "" {
 			t.Fatal(diff)
 		}
+	})
+}
+
+func TestDelayedDNSResponseWithTimeout(t *testing.T) {
+	t.Run("OnDelayedDNSResponse saves into the trace", func(t *testing.T) {
+		t.Run("when buffer is not full", func(t *testing.T) {
+			zeroTime := time.Now()
+			td := testingx.NewTimeDeterministic(zeroTime)
+			trace := NewTrace(0, zeroTime)
+			trace.TimeNowFn = td.Now
+			txp := &mocks.DNSTransport{
+				MockNetwork: func() string {
+					return "udp"
+				},
+				MockAddress: func() string {
+					return "1.1.1.1"
+				},
+			}
+			started := trace.TimeNow()
+			query := &mocks.DNSQuery{
+				MockType: func() uint16 {
+					return dns.TypeA
+				},
+				MockDomain: func() string {
+					return "dns.google.com"
+				},
+			}
+			addrs := []string{"1.1.1.1"}
+			finished := trace.TimeNow()
+			// 1. fill the trace
+			err := trace.OnDelayedDNSResponse(started, txp, query, &mocks.DNSResponse{},
+				addrs, nil, finished)
+			// 2. read the trace
+			got := trace.DelayedDNSResponseWithTimeout(context.Background(), time.Second)
+			if err != nil {
+				t.Fatal("unexpected error", err)
+			}
+			if len(got) != 1 {
+				t.Fatal("unexpected output from trace")
+			}
+		})
+
+		t.Run("when buffer is full", func(t *testing.T) {
+			zeroTime := time.Now()
+			td := testingx.NewTimeDeterministic(zeroTime)
+			trace := NewTrace(0, zeroTime)
+			trace.TimeNowFn = td.Now
+			trace.delayedDNSResponse = make(chan *model.ArchivalDNSLookupResult) // no buffer
+			txp := &mocks.DNSTransport{
+				MockNetwork: func() string {
+					return "udp"
+				},
+				MockAddress: func() string {
+					return "1.1.1.1"
+				},
+			}
+			started := trace.TimeNow()
+			query := &mocks.DNSQuery{
+				MockType: func() uint16 {
+					return dns.TypeA
+				},
+				MockDomain: func() string {
+					return "dns.google.com"
+				},
+			}
+			addrs := []string{"1.1.1.1"}
+			finished := trace.TimeNow()
+			// 1. attempt to write into the trace
+			err := trace.OnDelayedDNSResponse(started, txp, query, &mocks.DNSResponse{},
+				addrs, nil, finished)
+			if !errors.Is(err, ErrDelayedDNSResponseBufferFull) {
+				t.Fatal("unexpected error", err)
+			}
+			// 2. confirm we didn't write anything
+			got := trace.DelayedDNSResponseWithTimeout(context.Background(), time.Second)
+			if len(got) != 0 {
+				t.Fatal("unexpected output from trace")
+			}
+		})
+	})
+
+	t.Run("DelayedDNSResponseWithTimeout drains the trace", func(t *testing.T) {
+		t.Run("context is already cancelled and we still drain the trace", func(t *testing.T) {
+			zeroTime := time.Now()
+			td := testingx.NewTimeDeterministic(zeroTime)
+			trace := NewTrace(0, zeroTime)
+			trace.TimeNowFn = td.Now
+			txp := &mocks.DNSTransport{
+				MockNetwork: func() string {
+					return "udp"
+				},
+				MockAddress: func() string {
+					return "1.1.1.1"
+				},
+			}
+			started := trace.TimeNow()
+			query := &mocks.DNSQuery{
+				MockType: func() uint16 {
+					return dns.TypeA
+				},
+				MockDomain: func() string {
+					return "dns.google.com"
+				},
+			}
+			addrs := []string{"1.1.1.1"}
+			finished := trace.TimeNow()
+			events := 4
+			for i := 0; i < events; i++ {
+				// fill the trace
+				trace.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(trace.Index, started.Sub(trace.ZeroTime),
+					txp, query, &mocks.DNSResponse{}, addrs, nil, finished.Sub(trace.ZeroTime))
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel() // we ensure that the context cancels before draining all the events
+			// drain the trace
+			got := trace.DelayedDNSResponseWithTimeout(ctx, 10*time.Second)
+			if len(got) != 4 {
+				t.Fatal("unexpected output from trace", len(got))
+			}
+		})
+
+		t.Run("normal case where the context times out after we start draining", func(t *testing.T) {
+			zeroTime := time.Now()
+			td := testingx.NewTimeDeterministic(zeroTime)
+			trace := NewTrace(0, zeroTime)
+			trace.TimeNowFn = td.Now
+			txp := &mocks.DNSTransport{
+				MockNetwork: func() string {
+					return "udp"
+				},
+				MockAddress: func() string {
+					return "1.1.1.1"
+				},
+			}
+			started := trace.TimeNow()
+			query := &mocks.DNSQuery{
+				MockType: func() uint16 {
+					return dns.TypeA
+				},
+				MockDomain: func() string {
+					return "dns.google.com"
+				},
+			}
+			addrs := []string{"1.1.1.1"}
+			finished := trace.TimeNow()
+			trace.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(trace.Index, started.Sub(trace.ZeroTime),
+				txp, query, &mocks.DNSResponse{}, addrs, nil, finished.Sub(trace.ZeroTime))
+			got := trace.DelayedDNSResponseWithTimeout(context.Background(), time.Second)
+			if len(got) != 1 {
+				t.Fatal("unexpected output from trace")
+			}
+		})
 	})
 }
 

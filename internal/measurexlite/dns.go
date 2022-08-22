@@ -6,6 +6,7 @@ package measurexlite
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net"
 	"time"
@@ -97,9 +98,20 @@ func (tx *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resol
 	}
 }
 
+// DNSNetworkAddresser is the type of something we just used to perform a DNS
+// round trip (e.g., model.DNSTransport, model.Resolver) that allows us to get
+// the network and the address of the underlying resolver/transport.
+type DNSNetworkAddresser interface {
+	// Address is like model.DNSTransport.Address
+	Address() string
+
+	// Network is like model.DNSTransport.Network
+	Network() string
+}
+
 // NewArchivalDNSLookupResultFromRoundTrip generates a model.ArchivalDNSLookupResultFromRoundTrip
 // from the available information right after the DNS RoundTrip
-func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration, reso model.Resolver, query model.DNSQuery,
+func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration, reso DNSNetworkAddresser, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Duration) *model.ArchivalDNSLookupResult {
 	return &model.ArchivalDNSLookupResult{
 		Answers:          archivalAnswersFromAddrs(addrs),
@@ -166,4 +178,54 @@ func (tx *Trace) FirstDNSLookup() *model.ArchivalDNSLookupResult {
 		return nil
 	}
 	return ev[0]
+}
+
+// ErrDelayedDNSResponseBufferFull indicates that the delayedDNSResponse buffer is full.
+var ErrDelayedDNSResponseBufferFull = errors.New("buffer full")
+
+// OnDelayedDNSResponse implements model.Trace.OnDelayedDNSResponse
+func (tx *Trace) OnDelayedDNSResponse(started time.Time, txp model.DNSTransport, query model.DNSQuery,
+	response model.DNSResponse, addrs []string, err error, finished time.Time) error {
+	t := finished.Sub(tx.ZeroTime)
+	select {
+	case tx.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(
+		tx.Index,
+		started.Sub(tx.ZeroTime),
+		txp,
+		query,
+		response,
+		addrs,
+		err,
+		t,
+	):
+		return nil
+	default:
+		return ErrDelayedDNSResponseBufferFull
+	}
+}
+
+// DelayedDNSResponseWithTimeout drains the network events buffered inside
+// the delayedDNSResponse channel. We construct a child context based on [ctx]
+// and the given [timeout] and we stop reading when original [ctx] has been
+// cancelled or the given [timeout] expires, whatever happens first. Once the
+// timeout expired, we drain the chan as much as possible before returning.
+func (tx *Trace) DelayedDNSResponseWithTimeout(ctx context.Context,
+	timeout time.Duration) (out []*model.ArchivalDNSLookupResult) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			for { // once the context is done enter in channel draining mode
+				select {
+				case ev := <-tx.delayedDNSResponse:
+					out = append(out, ev)
+				default:
+					return
+				}
+			}
+		case ev := <-tx.delayedDNSResponse:
+			out = append(out, ev)
+		}
+	}
 }
