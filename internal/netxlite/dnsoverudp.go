@@ -99,8 +99,8 @@ func (t *DNSOverUDPTransport) RoundTrip(
 		conn.Close() // we still own the conn
 		return nil, err
 	}
-	// start a routine to listen for any delayed DNS response and
-	// TRANSFER conn's OWNERSHIP to the goroutine.
+	// start a goroutine to listen for any delayed DNS response and
+	// TRANSFER the conn's OWNERSHIP to such a goroutine.
 	go t.ownConnAndSendRecvLoop(ctx, conn, query, myaddr, joinedch)
 	return resp, nil
 }
@@ -154,10 +154,9 @@ func (t *DNSOverUDPTransport) ownConnAndSendRecvLoop(ctx context.Context, conn n
 			return
 		}
 		addrs, err := resp.DecodeLookupHost()
-		err = trace.OnDelayedDNSResponse(started, t, query, resp, addrs, err, finished)
-		if err != nil {
+		if err := trace.OnDelayedDNSResponse(started, t, query, resp, addrs, err, finished); err != nil {
 			// This error typically indicates that the buffer on which we're
-			// writing is now full, so there's no point to persist.
+			// writing is now full, so there's no point in persisting.
 			return
 		}
 	}

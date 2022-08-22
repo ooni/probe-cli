@@ -393,7 +393,8 @@ func TestDNSOverUDPTransport(t *testing.T) {
 					return filtering.DNSActionLocalHostPlusCache
 				},
 				Cache: map[string][]string{
-					"dns.google.com": {"8.8.8.8"},
+					// Note: the cache here is nonexistent so we should
+					// get a "no such host" error from the server.
 				},
 			}
 			listener, err := srvr.Start("127.0.0.1:0")
