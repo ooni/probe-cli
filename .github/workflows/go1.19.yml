@@ -20,7 +20,7 @@ jobs:
       - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "go1.19"
-          cache-key-suffix: "-coverage-${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-coverage-go1.19"
 
       - run: go build -v ./...
 
