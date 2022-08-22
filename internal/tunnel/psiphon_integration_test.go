@@ -1,4 +1,10 @@
+//go:build !go1.19
+
 package tunnel_test
+
+//
+// Psiphon not working with go1.19: TODO(https://github.com/ooni/probe/issues/2222)
+//
 
 import (
 	"context"

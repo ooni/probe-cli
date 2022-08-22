@@ -92,6 +92,24 @@ func TestUTLSConn(t *testing.T) {
 			wg.Wait()
 		})
 	})
+
+	// TODO(https://github.com/ooni/probe/issues/2222): we cannot enable
+	// this test until we use oocrypto >= v0.2 which uses go1.19. In turn,
+	// we cannot use go1.19 as our main version until we upgrade psiphon
+	// such that it builds using go1.19, which is the issue in #2222.
+	/*
+		t.Run("NetConn", func(t *testing.T) {
+			factory := newConnUTLS(&utls.HelloChrome_70)
+			conn := &mocks.Conn{}
+			tconn, err := factory(conn, &tls.Config{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tconn.NetConn() != conn {
+				t.Fatal("NetConn is not WAI")
+			}
+		})
+	*/
 }
 
 func Test_newConnUTLSWithHelloID(t *testing.T) {

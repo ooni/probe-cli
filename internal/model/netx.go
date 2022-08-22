@@ -204,7 +204,7 @@ type QUICDialer interface {
 	// - set NextProtos to []string{"h3"}.
 	//
 	// Typically, you want to pass `&quic.Config{}` as quicConfig.
-	DialContext(ctx context.Context, network, address string,
+	DialContext(ctx context.Context, address string,
 		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error)
 
 	// CloseIdleConnections closes idle connections, if any.

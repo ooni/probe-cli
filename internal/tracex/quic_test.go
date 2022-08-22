@@ -91,7 +91,7 @@ func TestQUICDialerSaver(t *testing.T) {
 				},
 			}
 			dialer := saver.WrapQUICDialer(&mocks.QUICDialer{
-				MockDialContext: func(ctx context.Context, network, address string,
+				MockDialContext: func(ctx context.Context, address string,
 					tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					return returnedConn, nil
 				},
@@ -103,7 +103,7 @@ func TestQUICDialerSaver(t *testing.T) {
 				ServerName:         "dns.google",
 			}
 			quicConfig := &quic.Config{}
-			conn, err := dialer.DialContext(ctx, "udp", "8.8.8.8:443", tlsConfig, quicConfig)
+			conn, err := dialer.DialContext(ctx, "8.8.8.8:443", tlsConfig, quicConfig)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -131,7 +131,7 @@ func TestQUICDialerSaver(t *testing.T) {
 			expected := errors.New("mocked error")
 			saver := &Saver{}
 			dialer := saver.WrapQUICDialer(&mocks.QUICDialer{
-				MockDialContext: func(ctx context.Context, network, address string,
+				MockDialContext: func(ctx context.Context, address string,
 					tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 					return nil, expected
 				},
@@ -143,7 +143,7 @@ func TestQUICDialerSaver(t *testing.T) {
 				ServerName:         "dns.google",
 			}
 			quicConfig := &quic.Config{}
-			conn, err := dialer.DialContext(ctx, "udp", "8.8.8.8:443", tlsConfig, quicConfig)
+			conn, err := dialer.DialContext(ctx, "8.8.8.8:443", tlsConfig, quicConfig)
 			if !errors.Is(err, expected) {
 				t.Fatal("unexpected err", err)
 			}

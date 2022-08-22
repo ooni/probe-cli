@@ -57,6 +57,11 @@ Be sure you have:
 
 2. a C compiler (Mingw-w64 for Windows).
 
+### Caveats
+
+As of 2022-08-22, building with go1.19 will not include [Psiphon](https://psiphon.ca/) as
+a dependency. Fixing this issue is TODO(https://github.com/ooni/probe/issues/2222).
+
 ### ooniprobe
 
 Ooniprobe is the official CLI client. Compile using:
@@ -99,7 +104,7 @@ Please, see [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Updating dependencies
 
 ```bash
-go get -u -v -d ./... && go mod tidy
+go get -t -u -v ./... && go mod tidy
 ```
 
 ## Releasing

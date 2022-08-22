@@ -1,4 +1,10 @@
+//go:build !go1.19
+
 package tunnel
+
+//
+// Psiphon not working with go1.19: TODO(https://github.com/ooni/probe/issues/2222)
+//
 
 import (
 	"context"
@@ -82,13 +88,17 @@ func TestPsiphonStartFailure(t *testing.T) {
 	sess := &MockableSession{
 		Result: []byte(`{}`),
 	}
+	oldStartPsiphon := mockableStartPsiphon
+	defer func() {
+		mockableStartPsiphon = oldStartPsiphon
+	}()
+	mockableStartPsiphon = func(ctx context.Context, config []byte,
+		workdir string) (*clientlib.PsiphonTunnel, error) {
+		return nil, expected
+	}
 	tunnel, _, err := psiphonStart(context.Background(), &Config{
 		Session:   sess,
 		TunnelDir: "testdata",
-		testStartPsiphon: func(ctx context.Context, config []byte,
-			workdir string) (*clientlib.PsiphonTunnel, error) {
-			return nil, expected
-		},
 	})
 	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")

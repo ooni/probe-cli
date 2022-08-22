@@ -105,7 +105,7 @@ type quicDialerDB struct {
 	logger model.Logger
 }
 
-func (qh *quicDialerDB) DialContext(ctx context.Context, network, address string,
+func (qh *quicDialerDB) DialContext(ctx context.Context, address string,
 	tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
 	started := time.Since(qh.begin).Seconds()
 	var state tls.ConnectionState
@@ -116,7 +116,7 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, network, address string
 	}
 	dialer := netxlite.NewQUICDialerWithoutResolver(listener, qh.logger)
 	defer dialer.CloseIdleConnections()
-	sess, err := dialer.DialContext(ctx, network, address, tlsConfig, quicConfig)
+	sess, err := dialer.DialContext(ctx, address, tlsConfig, quicConfig)
 	if err == nil {
 		<-sess.HandshakeComplete().Done() // robustness (the dialer already does that)
 		state = sess.ConnectionState().TLS.ConnectionState
