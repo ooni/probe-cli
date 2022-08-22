@@ -25,7 +25,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.6.6
 	github.com/ooni/go-libtor v1.1.5
-	github.com/ooni/oocrypto v0.1.0
+	github.com/ooni/oocrypto v0.1.1
 	github.com/ooni/oohttp v0.2.1
 	github.com/ooni/probe-assets v0.11.0
 	github.com/ooni/psiphon/tunnel-core v0.0.0-20220819091114-7dccc0b6b6cd
