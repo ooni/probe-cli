@@ -2,6 +2,7 @@ package measurexlite
 
 import (
 	"context"
+	"errors"
 	"net"
 	"testing"
 	"time"
@@ -322,8 +323,8 @@ func TestFirstDNSLookup(t *testing.T) {
 	})
 }
 
-func TestDelayedDNSResponse(t *testing.T) {
-	t.Run("OnDelayedDNSResponse saves into the trace", func(t *testing.T) {
+func TestDelayedDNSResponseWithTimeout(t *testing.T) {
+	t.Run("OnDelayedDNSResponseWithTimeout saves into the trace", func(t *testing.T) {
 		t.Run("when buffer is not full", func(t *testing.T) {
 			zeroTime := time.Now()
 			td := testingx.NewTimeDeterministic(zeroTime)
@@ -352,7 +353,7 @@ func TestDelayedDNSResponse(t *testing.T) {
 				addrs, nil, finished)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			got := trace.DelayedDNSResponse(ctx)
+			got := trace.DelayedDNSResponseWithTimeout(ctx)
 			if err != nil {
 				t.Fatal("unexpected error", err)
 			}
@@ -390,8 +391,8 @@ func TestDelayedDNSResponse(t *testing.T) {
 				addrs, nil, finished)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			got := trace.DelayedDNSResponse(ctx)
-			if err.Error() != "buffer full" {
+			got := trace.DelayedDNSResponseWithTimeout(ctx)
+			if !errors.Is(err, ErrDelayedDNSResponseBufferFull) {
 				t.Fatal("unexpected error", err)
 			}
 			if len(got) != 0 {
@@ -400,7 +401,7 @@ func TestDelayedDNSResponse(t *testing.T) {
 		})
 	})
 
-	t.Run("DelayedDNSResponse drains the trace", func(t *testing.T) {
+	t.Run("DelayedDNSResponseWithTimeout drains the trace", func(t *testing.T) {
 		t.Run("context times out", func(t *testing.T) {
 			zeroTime := time.Now()
 			td := testingx.NewTimeDeterministic(zeroTime)
@@ -427,13 +428,13 @@ func TestDelayedDNSResponse(t *testing.T) {
 			finished := trace.TimeNow()
 			events := 4
 			for i := 0; i < events; i++ {
-				trace.delayedDNSResponse <- NewArchivalDNSDelayedResult(trace.Index, started.Sub(trace.ZeroTime),
+				trace.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(trace.Index, started.Sub(trace.ZeroTime),
 					txp, query, &mocks.DNSResponse{}, addrs, nil, finished.Sub(trace.ZeroTime))
 			}
 			// we ensure that the context cancels before draining all the events
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
-			got := trace.DelayedDNSResponse(ctx)
+			got := trace.DelayedDNSResponseWithTimeout(ctx)
 			if len(got) >= 4 {
 				t.Fatal("unexpected output from trace")
 			}
@@ -463,11 +464,11 @@ func TestDelayedDNSResponse(t *testing.T) {
 			}
 			addrs := []string{"1.1.1.1"}
 			finished := trace.TimeNow()
-			trace.delayedDNSResponse <- NewArchivalDNSDelayedResult(trace.Index, started.Sub(trace.ZeroTime),
+			trace.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(trace.Index, started.Sub(trace.ZeroTime),
 				txp, query, &mocks.DNSResponse{}, addrs, nil, finished.Sub(trace.ZeroTime))
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			got := trace.DelayedDNSResponse(ctx)
+			got := trace.DelayedDNSResponseWithTimeout(ctx)
 			if len(got) != 1 {
 				t.Fatal("unexpected output from trace")
 			}

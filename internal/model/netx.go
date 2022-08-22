@@ -341,7 +341,7 @@ type Trace interface {
 		response DNSResponse, addrs []string, err error, finished time.Time)
 
 	// OnDelayedDNSResponse is used with a DNSOverUDPTransport and called
-	// when we want to read delayed DNS responses
+	// when we get delayed, unexpected DNS responses.
 	//
 	// Arguments:
 	//
@@ -351,14 +351,15 @@ type Trace interface {
 	//
 	// - query is the non-nil DNS query we use for the RoundTrip;
 	//
-	// - response is a valid DNS response, obtained after some delay;
+	// - response is the non-nil valid DNS response, obtained after some delay;
 	//
 	// - addrs is the list of addresses obtained after decoding the delayed response,
-	// which is empty if the RoundTrip failed;
+	// which is empty if the response did not contain any addresses, which we
+	// extract by calling the DecodeLookupHost method.
 	//
-	// - err is the result of DNSLookup; either an error or nil
+	// - err is the result of DecodeLookupHost: either an error or nil;
 	//
-	// - finished is when we have read the delayed response
+	// - finished is when we have read the delayed response.
 	OnDelayedDNSResponse(started time.Time, txp DNSTransport, query DNSQuery,
 		resp DNSResponse, addrs []string, err error, finsihed time.Time) error
 

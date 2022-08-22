@@ -45,10 +45,6 @@ type DNSOverUDPTransport struct {
 
 	// Endpoint is the MANDATORY server's endpoint (e.g., 1.1.1.1:53)
 	Endpoint string
-
-	// IOTimeout is the MANDATORY I/O timeout after which any
-	// conn created to perform round trips times out.
-	IOTimeout time.Duration
 }
 
 // NewUnwrappedDNSOverUDPTransport creates a DNSOverUDPTransport instance
@@ -67,10 +63,9 @@ type DNSOverUDPTransport struct {
 // have less control over which IP address is being used.
 func NewUnwrappedDNSOverUDPTransport(dialer model.Dialer, address string) *DNSOverUDPTransport {
 	return &DNSOverUDPTransport{
-		Decoder:   &DNSDecoderMiekg{},
-		Dialer:    dialer,
-		Endpoint:  address,
-		IOTimeout: 10 * time.Second,
+		Decoder:  &DNSDecoderMiekg{},
+		Dialer:   dialer,
+		Endpoint: address,
 	}
 }
 
@@ -78,10 +73,7 @@ func NewUnwrappedDNSOverUDPTransport(dialer model.Dialer, address string) *DNSOv
 func (t *DNSOverUDPTransport) RoundTrip(
 	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
 	// QUIRK: the original code had a five seconds timeout, which is
-	// consistent with the Bionic implementation. Let's enforce such a
-	// timeout using the context in the outer operation because we
-	// need to run for more seconds in the background to catch as many
-	// duplicate replies as possible.
+	// consistent with the Bionic implementation.
 	//
 	// See https://labs.ripe.net/Members/baptiste_jonglez_1/persistent-dns-connections-for-reliability-and-performance
 	const opTimeout = 5 * time.Second
@@ -95,18 +87,21 @@ func (t *DNSOverUDPTransport) RoundTrip(
 	if err != nil {
 		return nil, err
 	}
-	conn.SetDeadline(time.Now().Add(t.IOTimeout))
+	conn.SetDeadline(time.Now().Add(opTimeout))
 	joinedch := make(chan bool)
 	myaddr := conn.LocalAddr().String()
 	if _, err := conn.Write(rawQuery); err != nil {
+		conn.Close() // we still own the conn
 		return nil, err
 	}
 	resp, err := t.recv(query, conn)
 	if err != nil {
-		return resp, err
+		conn.Close() // we still own the conn
+		return nil, err
 	}
-	// start a routine to listen for any delayed DNS response
-	go t.sendRecvLoop(ctx, conn, query, myaddr, joinedch)
+	// start a routine to listen for any delayed DNS response and
+	// TRANSFER conn's OWNERSHIP to the goroutine.
+	go t.ownConnAndSendRecvLoop(ctx, conn, query, myaddr, joinedch)
 	return resp, nil
 }
 
@@ -134,22 +129,35 @@ func (t *DNSOverUDPTransport) CloseIdleConnections() {
 
 var _ model.DNSTransport = &DNSOverUDPTransport{}
 
-// sendRecvLoop listens for delayed DNS responses after we have returned the first response
-func (t *DNSOverUDPTransport) sendRecvLoop(ctx context.Context, conn net.Conn,
+// ownConnAndSendRecvLoop listens for delayed DNS responses after we have returned the
+// first response. As the name implies, this function TAKES OWNERSHIP of the [conn].
+func (t *DNSOverUDPTransport) ownConnAndSendRecvLoop(ctx context.Context, conn net.Conn,
 	query model.DNSQuery, myaddr string, eofch chan<- bool) {
 	defer close(eofch) // synchronize with the caller
+	defer conn.Close() // we own the conn
 	trace := ContextTraceOrDefault(ctx)
 	for {
 		started := trace.TimeNow()
 		resp, err := t.recv(query, conn)
 		finished := trace.TimeNow()
 		if err != nil {
-			trace.OnDelayedDNSResponse(started, t, query, resp, []string{}, err, finished)
+			// We are going to consider all errors as fatal for now until we
+			// hear of specific errs that it might have sense to ignore.
+			//
+			// Note that erroring out here includes the expiration of the conn's
+			// I/O deadline, which we set above precisely because we want
+			// the total runtime of this goroutine to be bounded.
+			//
+			// Also, we ARE NOT going to report any failure here as a delayed
+			// DNS response because we only care about duplicate messages, since
+			// this seems how censorship is implemented in, e.g., China.
 			return
 		}
 		addrs, err := resp.DecodeLookupHost()
 		err = trace.OnDelayedDNSResponse(started, t, query, resp, addrs, err, finished)
 		if err != nil {
+			// This error typically indicates that the buffer on which we're
+			// writing is now full, so there's no point to persist.
 			return
 		}
 	}
