@@ -16,8 +16,8 @@ import (
 
 // dnsOverGetaddrinfoTransport is a DNSTransport using getaddrinfo.
 type dnsOverGetaddrinfoTransport struct {
-	testableTimeout    time.Duration
-	testableLookupHost func(ctx context.Context, domain string) ([]string, error)
+	testableTimeout   time.Duration
+	testableLookupANY func(ctx context.Context, domain string) ([]string, string, error)
 }
 
 var _ model.DNSTransport = &dnsOverGetaddrinfoTransport{}
@@ -27,7 +27,7 @@ func (txp *dnsOverGetaddrinfoTransport) RoundTrip(
 	if query.Type() != dns.TypeANY {
 		return nil, ErrNoDNSTransport
 	}
-	addrs, err := txp.lookup(ctx, query.Domain())
+	addrs, _, err := txp.lookup(ctx, query.Domain())
 	if err != nil {
 		return nil, err
 	}
@@ -43,30 +43,38 @@ type dnsOverGetaddrinfoResponse struct {
 	query model.DNSQuery
 }
 
+type dnsOverGetaddrinfoAddrsAndCNAME struct {
+	addrs []string
+	cname string
+}
+
 func (txp *dnsOverGetaddrinfoTransport) lookup(
-	ctx context.Context, hostname string) ([]string, error) {
+	ctx context.Context, hostname string) ([]string, string, error) {
 	// This code forces adding a shorter timeout to the domain name
 	// resolutions when using the system resolver. We have seen cases
 	// in which such a timeout becomes too large. One such case is
 	// described in https://github.com/ooni/probe/issues/1726.
-	addrsch, errch := make(chan []string, 1), make(chan error, 1)
+	addrsch, errch := make(chan *dnsOverGetaddrinfoAddrsAndCNAME, 1), make(chan error, 1)
 	ctx, cancel := context.WithTimeout(ctx, txp.timeout())
 	defer cancel()
 	go func() {
-		addrs, err := txp.lookupfn()(ctx, hostname)
+		addrs, cname, err := txp.lookupfn()(ctx, hostname)
 		if err != nil {
 			errch <- err
 			return
 		}
-		addrsch <- addrs
+		addrsch <- &dnsOverGetaddrinfoAddrsAndCNAME{
+			addrs: addrs,
+			cname: cname,
+		}
 	}()
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
-	case addrs := <-addrsch:
-		return addrs, nil
+		return nil, "", ctx.Err()
+	case p := <-addrsch:
+		return p.addrs, p.cname, nil
 	case err := <-errch:
-		return nil, err
+		return nil, "", err
 	}
 }
 
@@ -77,11 +85,11 @@ func (txp *dnsOverGetaddrinfoTransport) timeout() time.Duration {
 	return 15 * time.Second
 }
 
-func (txp *dnsOverGetaddrinfoTransport) lookupfn() func(ctx context.Context, domain string) ([]string, error) {
-	if txp.testableLookupHost != nil {
-		return txp.testableLookupHost
+func (txp *dnsOverGetaddrinfoTransport) lookupfn() func(ctx context.Context, domain string) ([]string, string, error) {
+	if txp.testableLookupANY != nil {
+		return txp.testableLookupANY
 	}
-	return getaddrinfoLookupHost
+	return getaddrinfoLookupANY
 }
 
 func (txp *dnsOverGetaddrinfoTransport) RequiresPadding() bool {

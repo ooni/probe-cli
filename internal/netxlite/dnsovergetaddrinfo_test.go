@@ -55,8 +55,8 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		t.Run("with invalid query type", func(t *testing.T) {
 			txp := &dnsOverGetaddrinfoTransport{
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return []string{"8.8.8.8"}, nil
+				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+					return []string{"8.8.8.8"}, "dns.google", nil
 				},
 			}
 			encoder := &DNSEncoderMiekg{}
@@ -73,8 +73,8 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 
 		t.Run("with success", func(t *testing.T) {
 			txp := &dnsOverGetaddrinfoTransport{
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return []string{"8.8.8.8"}, nil
+				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+					return []string{"8.8.8.8"}, "dns.google", nil
 				},
 			}
 			encoder := &DNSEncoderMiekg{}
@@ -122,10 +122,10 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 			done := make(chan interface{})
 			txp := &dnsOverGetaddrinfoTransport{
 				testableTimeout: 1 * time.Microsecond,
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
 					defer wg.Done()
 					<-done
-					return []string{"8.8.8.8"}, nil
+					return []string{"8.8.8.8"}, "dns.google", nil
 				},
 			}
 			encoder := &DNSEncoderMiekg{}
@@ -148,10 +148,10 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 			done := make(chan interface{})
 			txp := &dnsOverGetaddrinfoTransport{
 				testableTimeout: 1 * time.Microsecond,
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
 					defer wg.Done()
 					<-done
-					return nil, errors.New("no such host")
+					return nil, "", errors.New("no such host")
 				},
 			}
 			encoder := &DNSEncoderMiekg{}
@@ -170,8 +170,8 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 
 		t.Run("with NXDOMAIN", func(t *testing.T) {
 			txp := &dnsOverGetaddrinfoTransport{
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return nil, ErrOODNSNoSuchHost
+				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+					return nil, "", ErrOODNSNoSuchHost
 				},
 			}
 			encoder := &DNSEncoderMiekg{}
