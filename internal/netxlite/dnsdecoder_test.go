@@ -44,7 +44,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				queryID     = 17
 				unrelatedID = 14
 			)
-			reply := dnsGenLookupHostReplySuccess(dnsGenQuery(dns.TypeA, queryID))
+			reply := dnsGenLookupHostReplySuccess(dnsGenQuery(dns.TypeA, queryID), nil)
 			resp, err := d.DecodeResponse(reply, &mocks.DNSQuery{
 				MockID: func() uint16 {
 					return unrelatedID
@@ -62,7 +62,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 			d := &DNSDecoderMiekg{}
 			queryID := dns.Id()
 			rawQuery := dnsGenQuery(dns.TypeA, queryID)
-			rawResponse := dnsGenLookupHostReplySuccess(rawQuery)
+			rawResponse := dnsGenLookupHostReplySuccess(rawQuery, nil)
 			query := &mocks.DNSQuery{
 				MockID: func() uint16 {
 					return queryID
@@ -81,7 +81,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 			d := &DNSDecoderMiekg{}
 			queryID := dns.Id()
 			rawQuery := dnsGenQuery(dns.TypeA, queryID)
-			rawResponse := dnsGenLookupHostReplySuccess(rawQuery)
+			rawResponse := dnsGenLookupHostReplySuccess(rawQuery, nil)
 			query := &mocks.DNSQuery{
 				MockID: func() uint16 {
 					return queryID
@@ -323,7 +323,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 			})
 		})
 
-		t.Run("dnsResponse.LookupHost", func(t *testing.T) {
+		t.Run("dnsResponse.DecodeLookupHost", func(t *testing.T) {
 			t.Run("with failure", func(t *testing.T) {
 				// Ensure that we're not trying to decode if rcode != 0
 				d := &DNSDecoderMiekg{}
@@ -352,7 +352,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				d := &DNSDecoderMiekg{}
 				queryID := dns.Id()
 				rawQuery := dnsGenQuery(dns.TypeA, queryID)
-				rawResponse := dnsGenLookupHostReplySuccess(rawQuery)
+				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, nil)
 				query := &mocks.DNSQuery{
 					MockID: func() uint16 {
 						return queryID
@@ -375,7 +375,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				d := &DNSDecoderMiekg{}
 				queryID := dns.Id()
 				rawQuery := dnsGenQuery(dns.TypeA, queryID)
-				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, "1.1.1.1", "8.8.8.8")
+				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, nil, "1.1.1.1", "8.8.8.8")
 				query := &mocks.DNSQuery{
 					MockID: func() uint16 {
 						return queryID
@@ -407,7 +407,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				d := &DNSDecoderMiekg{}
 				queryID := dns.Id()
 				rawQuery := dnsGenQuery(dns.TypeAAAA, queryID)
-				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, "::1", "fe80::1")
+				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, nil, "::1", "fe80::1")
 				query := &mocks.DNSQuery{
 					MockID: func() uint16 {
 						return queryID
@@ -439,7 +439,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				d := &DNSDecoderMiekg{}
 				queryID := dns.Id()
 				rawQuery := dnsGenQuery(dns.TypeAAAA, queryID)
-				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, "1.1.1.1", "8.8.8.8")
+				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, nil, "1.1.1.1", "8.8.8.8")
 				query := &mocks.DNSQuery{
 					MockID: func() uint16 {
 						return queryID
@@ -465,7 +465,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				d := &DNSDecoderMiekg{}
 				queryID := dns.Id()
 				rawQuery := dnsGenQuery(dns.TypeA, queryID)
-				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, "::1", "fe80::1")
+				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, nil, "::1", "fe80::1")
 				query := &mocks.DNSQuery{
 					MockID: func() uint16 {
 						return queryID
@@ -484,6 +484,82 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				}
 				if len(addrs) > 0 {
 					t.Fatal("expected no addrs here")
+				}
+			})
+		})
+
+		t.Run("dnsResponse.DecodeCNAME", func(t *testing.T) {
+			t.Run("with failure", func(t *testing.T) {
+				// Ensure that we're not trying to decode if rcode != 0
+				d := &DNSDecoderMiekg{}
+				queryID := dns.Id()
+				rawQuery := dnsGenQuery(dns.TypeA, queryID)
+				rawResponse := dnsGenReplyWithError(rawQuery, dns.RcodeRefused)
+				query := &mocks.DNSQuery{
+					MockID: func() uint16 {
+						return queryID
+					},
+				}
+				resp, err := d.DecodeResponse(rawResponse, query)
+				if err != nil {
+					t.Fatal(err)
+				}
+				cname, err := resp.DecodeCNAME()
+				if !errors.Is(err, ErrOODNSRefused) {
+					t.Fatal("unexpected err", err)
+				}
+				if cname != "" {
+					t.Fatal("expected empty cname result")
+				}
+			})
+
+			t.Run("with empty answer", func(t *testing.T) {
+				d := &DNSDecoderMiekg{}
+				queryID := dns.Id()
+				rawQuery := dnsGenQuery(dns.TypeA, queryID)
+				var expectedCNAME *dnsCNAME = nil // explicity not set
+				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, expectedCNAME, "8.8.8.8")
+				query := &mocks.DNSQuery{
+					MockID: func() uint16 {
+						return queryID
+					},
+				}
+				resp, err := d.DecodeResponse(rawResponse, query)
+				if err != nil {
+					t.Fatal(err)
+				}
+				cname, err := resp.DecodeCNAME()
+				if !errors.Is(err, ErrOODNSNoAnswer) {
+					t.Fatal("unexpected err", err)
+				}
+				if cname != "" {
+					t.Fatal("expected empty cname result")
+				}
+			})
+
+			t.Run("with full answer", func(t *testing.T) {
+				expectedCNAME := &dnsCNAME{
+					CNAME: "dns.google.",
+				}
+				d := &DNSDecoderMiekg{}
+				queryID := dns.Id()
+				rawQuery := dnsGenQuery(dns.TypeA, queryID)
+				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, expectedCNAME, "8.8.8.8")
+				query := &mocks.DNSQuery{
+					MockID: func() uint16 {
+						return queryID
+					},
+				}
+				resp, err := d.DecodeResponse(rawResponse, query)
+				if err != nil {
+					t.Fatal(err)
+				}
+				cname, err := resp.DecodeCNAME()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if cname != expectedCNAME.CNAME {
+					t.Fatal("unexpected cname", cname)
 				}
 			})
 		})
@@ -522,9 +598,14 @@ func dnsGenReplyWithError(rawQuery []byte, code int) []byte {
 	return data
 }
 
+// dnsCNAME is the DNS cname to include into a response.
+type dnsCNAME struct {
+	CNAME string
+}
+
 // dnsGenLookupHostReplySuccess generates a successful DNS reply containing the given ips...
 // in the answers where each answer's type depends on the IP's type (A/AAAA).
-func dnsGenLookupHostReplySuccess(rawQuery []byte, ips ...string) []byte {
+func dnsGenLookupHostReplySuccess(rawQuery []byte, cname *dnsCNAME, ips ...string) []byte {
 	query := new(dns.Msg)
 	err := query.Unpack(rawQuery)
 	runtimex.PanicOnError(err, "query.Unpack failed")
@@ -561,6 +642,17 @@ func dnsGenLookupHostReplySuccess(rawQuery []byte, ips ...string) []byte {
 				AAAA: net.ParseIP(ip),
 			})
 		}
+	}
+	if cname != nil {
+		reply.Answer = append(reply.Answer, &dns.CNAME{
+			Hdr: dns.RR_Header{
+				Name:   question.Name,
+				Rrtype: dns.TypeCNAME,
+				Class:  dns.ClassINET,
+				Ttl:    0,
+			},
+			Target: cname.CNAME,
+		})
 	}
 	data, err := reply.Pack()
 	runtimex.PanicOnError(err, "reply.Pack failed")

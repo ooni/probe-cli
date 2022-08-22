@@ -102,4 +102,20 @@ func TestDNSResponse(t *testing.T) {
 			t.Fatal("unexpected out")
 		}
 	})
+
+	t.Run("DecodeCNAME", func(t *testing.T) {
+		expected := errors.New("mocked error")
+		r := &DNSResponse{
+			MockDecodeCNAME: func() (string, error) {
+				return "", expected
+			},
+		}
+		out, err := r.DecodeCNAME()
+		if !errors.Is(err, expected) {
+			t.Fatal("unexpected err", err)
+		}
+		if out != "" {
+			t.Fatal("unexpected out")
+		}
+	})
 }

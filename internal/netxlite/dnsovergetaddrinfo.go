@@ -27,12 +27,13 @@ func (txp *dnsOverGetaddrinfoTransport) RoundTrip(
 	if query.Type() != dns.TypeANY {
 		return nil, ErrNoDNSTransport
 	}
-	addrs, _, err := txp.lookup(ctx, query.Domain())
+	addrs, cname, err := txp.lookup(ctx, query.Domain())
 	if err != nil {
 		return nil, err
 	}
 	resp := &dnsOverGetaddrinfoResponse{
 		addrs: addrs,
+		cname: cname,
 		query: query,
 	}
 	return resp, nil
@@ -40,6 +41,7 @@ func (txp *dnsOverGetaddrinfoTransport) RoundTrip(
 
 type dnsOverGetaddrinfoResponse struct {
 	addrs []string
+	cname string
 	query model.DNSQuery
 }
 
@@ -130,4 +132,8 @@ func (r *dnsOverGetaddrinfoResponse) DecodeLookupHost() ([]string, error) {
 
 func (r *dnsOverGetaddrinfoResponse) DecodeNS() ([]*net.NS, error) {
 	return nil, ErrNoDNSTransport
+}
+
+func (r *dnsOverGetaddrinfoResponse) DecodeCNAME() (string, error) {
+	return r.cname, nil
 }

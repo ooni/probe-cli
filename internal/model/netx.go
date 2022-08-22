@@ -36,6 +36,9 @@ type DNSResponse interface {
 
 	// DecodeNS returns all the NS entries in this response.
 	DecodeNS() ([]*net.NS, error)
+
+	// DecodeCNAME returns the first CNAME entry in this response.
+	DecodeCNAME() (string, error)
 }
 
 // The DNSDecoder decodes DNS responses.
