@@ -351,9 +351,7 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			finished := trace.TimeNow()
 			err := trace.OnDelayedDNSResponse(started, txp, query, &mocks.DNSResponse{},
 				addrs, nil, finished)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			got := trace.DelayedDNSResponseWithTimeout(ctx)
+			got := trace.DelayedDNSResponseWithTimeout(context.Background(), time.Second)
 			if err != nil {
 				t.Fatal("unexpected error", err)
 			}
@@ -389,9 +387,7 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			finished := trace.TimeNow()
 			err := trace.OnDelayedDNSResponse(started, txp, query, &mocks.DNSResponse{},
 				addrs, nil, finished)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			got := trace.DelayedDNSResponseWithTimeout(ctx)
+			got := trace.DelayedDNSResponseWithTimeout(context.Background(), time.Second)
 			if !errors.Is(err, ErrDelayedDNSResponseBufferFull) {
 				t.Fatal("unexpected error", err)
 			}
@@ -434,7 +430,7 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			// we ensure that the context cancels before draining all the events
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
-			got := trace.DelayedDNSResponseWithTimeout(ctx)
+			got := trace.DelayedDNSResponseWithTimeout(ctx, 10*time.Second)
 			if len(got) >= 4 {
 				t.Fatal("unexpected output from trace")
 			}
@@ -466,9 +462,7 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			finished := trace.TimeNow()
 			trace.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(trace.Index, started.Sub(trace.ZeroTime),
 				txp, query, &mocks.DNSResponse{}, addrs, nil, finished.Sub(trace.ZeroTime))
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			got := trace.DelayedDNSResponseWithTimeout(ctx)
+			got := trace.DelayedDNSResponseWithTimeout(context.Background(), time.Second)
 			if len(got) != 1 {
 				t.Fatal("unexpected output from trace")
 			}

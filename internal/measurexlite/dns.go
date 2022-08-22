@@ -205,13 +205,25 @@ func (tx *Trace) OnDelayedDNSResponse(started time.Time, txp model.DNSTransport,
 }
 
 // DelayedDNSResponseWithTimeout drains the network events buffered inside
-// the delayedDNSResponse channel until [ctx]'s timeout expires. Passing to
-// this function a [ctx] without a timeout causes this func to hang.
-func (tx *Trace) DelayedDNSResponseWithTimeout(ctx context.Context) (out []*model.ArchivalDNSLookupResult) {
+// the delayedDNSResponse channel. We construct a child context based on [ctx]
+// and the given [timeout] and we stop reading when original [ctx] has been
+// cancelled or the given [timeout] expires, whatever happens first. Once the
+// timeout expired, we drain the chan as much as possible before returning.
+func (tx *Trace) DelayedDNSResponseWithTimeout(ctx context.Context,
+	timeout time.Duration) (out []*model.ArchivalDNSLookupResult) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			for { // once the context is done enter in channel draining mode
+				select {
+				case ev := <-tx.delayedDNSResponse:
+					out = append(out, ev)
+				default:
+					return
+				}
+			}
 		case ev := <-tx.delayedDNSResponse:
 			out = append(out, ev)
 		}
