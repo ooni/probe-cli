@@ -201,7 +201,7 @@ func TestWithCancelledContext(t *testing.T) {
 func TestListenFails(t *testing.T) {
 	expected := errors.New("expected")
 	measurer := NewExperimentMeasurer(Config{
-		networkLib: &FailStdLib{err: expected, readErr: nil, writeErr: nil},
+		netListenUDP: (&FailStdLib{err: expected, readErr: nil, writeErr: nil}).ListenUDP,
 	})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("google.com")
@@ -222,8 +222,8 @@ func TestWriteFails(t *testing.T) {
 	}
 	expected := errors.New("expected")
 	measurer := NewExperimentMeasurer(Config{
-		networkLib:  &FailStdLib{err: nil, readErr: nil, writeErr: expected},
-		Repetitions: 1,
+		netListenUDP: (&FailStdLib{err: nil, readErr: nil, writeErr: expected}).ListenUDP,
+		Repetitions:  1,
 	})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("google.com")
@@ -253,8 +253,8 @@ func TestReadFails(t *testing.T) {
 	}
 	expected := errors.New("expected")
 	measurer := NewExperimentMeasurer(Config{
-		networkLib:  &FailStdLib{err: nil, readErr: expected, writeErr: nil},
-		Repetitions: 1,
+		netListenUDP: (&FailStdLib{err: nil, readErr: expected, writeErr: nil}).ListenUDP,
+		Repetitions:  1,
 	})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("google.com")

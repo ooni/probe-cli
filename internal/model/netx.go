@@ -484,18 +484,3 @@ type UDPLikeConn interface {
 	// which is also instrumental to setting the read buffer.
 	SyscallConn() (syscall.RawConn, error)
 }
-
-// UnderlyingNetworkLibrary defines the basic functionality from
-// which the network extensions depend. By changing the default
-// implementation of this interface, we can implement a wide array
-// of tests, including self censorship tests.
-type UnderlyingNetworkLibrary interface {
-	// ListenUDP creates a new model.UDPLikeConn conn.
-	ListenUDP(network string, laddr *net.UDPAddr) (UDPLikeConn, error)
-
-	// DefaultResolver returns the default resolver.
-	DefaultResolver() SimpleResolver
-
-	// NewSimpleDialer returns a new SimpleDialer.
-	NewSimpleDialer(timeout time.Duration) SimpleDialer
-}

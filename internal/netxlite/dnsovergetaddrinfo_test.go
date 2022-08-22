@@ -21,7 +21,7 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 
 	t.Run("Network", func(t *testing.T) {
 		txp := &dnsOverGetaddrinfoTransport{}
-		if txp.Network() != TProxy.DefaultResolver().Network() {
+		if txp.Network() != getaddrinfoResolverNetwork() {
 			t.Fatal("unexpected Network")
 		}
 	})

@@ -160,7 +160,7 @@ func (d *DialerSystem) newUnderlyingDialer() model.SimpleDialer {
 	if t <= 0 {
 		t = dialerDefaultTimeout
 	}
-	return TProxy.NewSimpleDialer(t)
+	return &net.Dialer{Timeout: t}
 }
 
 func (d *DialerSystem) DialContext(ctx context.Context, network, address string) (net.Conn, error) {

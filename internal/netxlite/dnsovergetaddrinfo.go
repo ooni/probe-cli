@@ -81,7 +81,7 @@ func (txp *dnsOverGetaddrinfoTransport) lookupfn() func(ctx context.Context, dom
 	if txp.testableLookupHost != nil {
 		return txp.testableLookupHost
 	}
-	return TProxy.DefaultResolver().LookupHost
+	return getaddrinfoLookupHost
 }
 
 func (txp *dnsOverGetaddrinfoTransport) RequiresPadding() bool {
@@ -89,7 +89,7 @@ func (txp *dnsOverGetaddrinfoTransport) RequiresPadding() bool {
 }
 
 func (txp *dnsOverGetaddrinfoTransport) Network() string {
-	return TProxy.DefaultResolver().Network()
+	return getaddrinfoResolverNetwork()
 }
 
 func (txp *dnsOverGetaddrinfoTransport) Address() string {
