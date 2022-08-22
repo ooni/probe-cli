@@ -15,76 +15,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
-// FailStdLib is a failing model.UnderlyingNetworkLibrary.
-type FailStdLib struct {
-	conn     model.UDPLikeConn
-	err      error
-	writeErr error
-	readErr  error
-}
-
-// ListenUDP implements model.UnderlyingNetworkLibrary.ListenUDP.
-func (f *FailStdLib) ListenUDP(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
-	conn, _ := net.ListenUDP(network, laddr)
-	f.conn = model.UDPLikeConn(conn)
-	if f.err != nil {
-		return nil, f.err
-	}
-	if f.writeErr != nil {
-		return &mocks.UDPLikeConn{
-			MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
-				return 0, f.writeErr
-			},
-			MockReadFrom: func(p []byte) (int, net.Addr, error) {
-				return f.conn.ReadFrom(p)
-			},
-			MockSetDeadline: func(t time.Time) error {
-				return f.conn.SetDeadline(t)
-			},
-			MockClose: func() error {
-				return f.conn.Close()
-			},
-		}, nil
-	}
-	if f.readErr != nil {
-		return &mocks.UDPLikeConn{
-			MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
-				return f.conn.WriteTo(p, addr)
-			},
-			MockReadFrom: func(p []byte) (int, net.Addr, error) {
-				return 0, nil, f.readErr
-			},
-			MockSetDeadline: func(t time.Time) error {
-				return f.conn.SetDeadline(t)
-			},
-			MockClose: func() error {
-				return f.conn.Close()
-			},
-		}, nil
-	}
-	return &mocks.UDPLikeConn{}, nil
-}
-
-// DefaultResolver implements model.UnderlyingNetworkLibrary.DefaultResolver.
-func (f *FailStdLib) DefaultResolver() model.SimpleResolver {
-	return f
-}
-
-// LookupHost implements model.SimpleResolver.LookupHost.
-func (f *FailStdLib) LookupHost(ctx context.Context, domain string) ([]string, error) {
-	return nil, f.err
-}
-
-// Network implements model.SimpleResolver.Network.
-func (f *FailStdLib) Network() string {
-	return "fail_stdlib"
-}
-
-// NewSimpleDialer implements UnderlyingNetworkLibrary.NewSimpleDialer.
-func (f *FailStdLib) NewSimpleDialer(timeout time.Duration) model.SimpleDialer {
-	return nil
-}
-
 func TestNewExperimentMeasurer(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	if measurer.ExperimentName() != "quicping" {
@@ -201,7 +131,9 @@ func TestWithCancelledContext(t *testing.T) {
 func TestListenFails(t *testing.T) {
 	expected := errors.New("expected")
 	measurer := NewExperimentMeasurer(Config{
-		networkLib: &FailStdLib{err: expected, readErr: nil, writeErr: nil},
+		netListenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
+			return nil, expected
+		},
 	})
 	measurement := new(model.Measurement)
 	measurement.Input = model.MeasurementTarget("google.com")
@@ -221,8 +153,30 @@ func TestWriteFails(t *testing.T) {
 		t.Skip("skip test in short mode")
 	}
 	expected := errors.New("expected")
+	setDeadlineCalled := false
+	closeCalled := false
+	pconn := &mocks.UDPLikeConn{
+		MockReadFrom: func(p []byte) (int, net.Addr, error) {
+			source := make([]byte, len(p))
+			copy(p, source)
+			return len(p), &mocks.Addr{}, nil
+		},
+		MockSetDeadline: func(t time.Time) error {
+			setDeadlineCalled = true
+			return nil
+		},
+		MockClose: func() error {
+			closeCalled = true
+			return nil
+		},
+		MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+			return 0, expected
+		},
+	}
 	measurer := NewExperimentMeasurer(Config{
-		networkLib:  &FailStdLib{err: nil, readErr: nil, writeErr: expected},
+		netListenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
+			return pconn, nil
+		},
 		Repetitions: 1,
 	})
 	measurement := new(model.Measurement)
@@ -245,15 +199,41 @@ func TestWriteFails(t *testing.T) {
 			t.Fatal("ping: unexpected error type", i, *ping.Failure)
 		}
 	}
+	if !setDeadlineCalled {
+		t.Fatal("did not call set deadline")
+	}
+	if !closeCalled {
+		t.Fatal("did not call close")
+	}
 }
 
 func TestReadFails(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip test in short mode")
 	}
+	setDeadlineCalled := false
+	closeCalled := false
 	expected := errors.New("expected")
+	pconn := &mocks.UDPLikeConn{
+		MockReadFrom: func(p []byte) (int, net.Addr, error) {
+			return 0, nil, expected
+		},
+		MockSetDeadline: func(t time.Time) error {
+			setDeadlineCalled = true
+			return nil
+		},
+		MockClose: func() error {
+			closeCalled = true
+			return nil
+		},
+		MockWriteTo: func(p []byte, addr net.Addr) (int, error) {
+			return len(p), nil
+		},
+	}
 	measurer := NewExperimentMeasurer(Config{
-		networkLib:  &FailStdLib{err: nil, readErr: expected, writeErr: nil},
+		netListenUDP: func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
+			return pconn, nil
+		},
 		Repetitions: 1,
 	})
 	measurement := new(model.Measurement)
@@ -272,6 +252,12 @@ func TestReadFails(t *testing.T) {
 		if ping.Failure == nil {
 			t.Fatal("expected an error here, ping", i)
 		}
+	}
+	if !setDeadlineCalled {
+		t.Fatal("did not call set deadline")
+	}
+	if !closeCalled {
+		t.Fatal("did not call close")
 	}
 }
 
@@ -303,7 +289,7 @@ func TestNoResponse(t *testing.T) {
 }
 
 func TestDissect(t *testing.T) {
-	//                             destID--srcID: 040b9649d3fd4c038ab6c073966f3921--44d064031288e97646451f
+	// destID--srcID: 040b9649d3fd4c038ab6c073966f3921--44d064031288e97646451f
 	versionNegotiationResponse, _ := hex.DecodeString("eb0000000010040b9649d3fd4c038ab6c073966f39210b44d064031288e97646451f00000001ff00001dff00001cff00001b")
 	measurer := NewExperimentMeasurer(Config{})
 	destID := "040b9649d3fd4c038ab6c073966f3921"
