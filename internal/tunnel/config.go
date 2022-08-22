@@ -10,7 +10,6 @@ import (
 	"github.com/cretz/bine/control"
 	"github.com/cretz/bine/tor"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/psiphon/tunnel-core/ClientLibrary/clientlib"
 	"golang.org/x/sys/execabs"
 )
 
@@ -59,10 +58,6 @@ type Config struct {
 
 	// testSocks5New allows us to mock socks5.New in testing code.
 	testSocks5New func(conf *socks5.Config) (*socks5.Server, error)
-
-	// testStartPsiphon allows us to mock psiphon's clientlib.StartTunnel.
-	testStartPsiphon func(ctx context.Context, config []byte,
-		workdir string) (*clientlib.PsiphonTunnel, error)
 
 	// testTorStart allows us to mock tor.Start.
 	testTorStart func(ctx context.Context, conf *tor.StartConf) (*tor.Tor, error)
@@ -117,16 +112,6 @@ func (c *Config) socks5New(conf *socks5.Config) (*socks5.Server, error) {
 		return c.testSocks5New(conf)
 	}
 	return socks5.New(conf)
-}
-
-// startPsiphon calls either testStartPsiphon or psiphon's clientlib.StartTunnel.
-func (c *Config) startPsiphon(ctx context.Context, config []byte,
-	workdir string) (*clientlib.PsiphonTunnel, error) {
-	if c.testStartPsiphon != nil {
-		return c.testStartPsiphon(ctx, config, workdir)
-	}
-	return clientlib.StartTunnel(ctx, config, "", clientlib.Parameters{
-		DataRootDirectory: &workdir}, nil, nil)
 }
 
 // ooniTorBinaryEnv is the name of the environment variable
