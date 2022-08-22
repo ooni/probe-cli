@@ -59,8 +59,8 @@ Be sure you have:
 
 ### Caveats
 
-As of 2022-08-22, building with go1.19 will omit including [Psiphon](https://psiphon.ca/)
-from the build. Fixing this issue is TODO(https://github.com/ooni/probe/issues/2222).
+As of 2022-08-22, building with go1.19 will not include [Psiphon](https://psiphon.ca/) as
+a dependency. Fixing this issue is TODO(https://github.com/ooni/probe/issues/2222).
 
 ### ooniprobe
 
