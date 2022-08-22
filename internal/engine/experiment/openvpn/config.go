@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ooni/minivpn/vpn"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 var (
@@ -26,29 +27,8 @@ auth {{ .Config.Auth }}
 <key>
 {{ .Config.Key }}</key>`
 
-// TODO(ainghazal): should share with wireguard -> move to model.
-type VPNExperiment struct {
-	// Provider is the entity to which the endpoints belong. We might want
-	// to keep a list of known providers (for which we have experiments).
-	// If the provider is not known to OONI probe, it should be marked as
-	// "unknown".
-	Provider string
-	// Hostname is the Hostname for the VPN Endpoint
-	Hostname string
-	// Port is the Port for the VPN Endpoint
-	Port string
-	// Protocol is the VPN protocol: openvpn, wg
-	Protocol string
-	// Transport is the underlying protocol: udp, tcp
-	Transport string
-	// Obfuscation is any obfuscation used for the tunnel: none, obfs4, ...
-	Obfuscation string
-	// Config is a pointer to a VPNExperimentConfig
-	Config *VPNExperimentConfig
-}
-
-func vpnExperimentFromURI(uri string) (*VPNExperiment, error) {
-	ve := &VPNExperiment{}
+func vpnExperimentFromURI(uri string) (*model.VPNExperiment, error) {
+	ve := &model.VPNExperiment{}
 	u, err := url.Parse(uri)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", BadOONIRunInput, err)
@@ -105,19 +85,12 @@ func vpnExperimentFromURI(uri string) (*VPNExperiment, error) {
 }
 
 // Validate returns true if all the fields for a VPNValidate have valid values.
-// TODO(ainghazal): implement
-func (e *VPNExperiment) Validate() bool {
-	return true
-}
-
-type VPNExperimentConfig struct {
-	Cipher   string
-	Auth     string
-	Compress string
-	Ca       string
-	Cert     string
-	Key      string
-}
+// TODO(ainghazal): do when VPNExperiment is turned into an interface.
+/*
+ func (e *model.VPNExperiment) Validate() bool {
+ 	return true
+ }
+*/
 
 func extractBase64Blob(val string) (string, error) {
 	s := strings.TrimPrefix(val, "base64:")

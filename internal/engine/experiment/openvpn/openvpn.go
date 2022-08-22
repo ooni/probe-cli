@@ -54,7 +54,7 @@ type Config struct {
 }
 
 // PingStats holds the results for a pinger run.
-// TODO move the aggregates to summaryKeys?
+// TODO(ainghazal): move the aggregates to summaryKeys?
 type PingStats struct {
 	MinRtt      float64   `json:"min_rtt"`
 	MaxRtt      float64   `json:"max_rtt"`
@@ -68,6 +68,32 @@ type PingStats struct {
 
 // TestKeys contains the experiment's result.
 type TestKeys struct {
+	//
+	// Keys that will serve as primary keys.
+	//
+
+	// Provider is the entity that controls the endpoints.
+	Provider string `json:"provider"`
+
+	// Proto is the protocol used in the experiment (openvpn in this case).
+	Proto string `json:"vpn_protocol"`
+
+	// Transport is the transport protocol (tcp, udp).
+	Transport string `json:"transport"`
+
+	// Remote is the remote used in the experiment (ip:addr).
+	Remote string `json:"remote"`
+
+	// Obfuscation is the kind of obfuscation used, if any.
+	Obfuscation string `json:"obfuscation"`
+
+	//
+	// Other keys
+	//
+
+	// PingStats holds values for the aggregated stats of a ping.
+	PingStats *PingStats `json:"ping_stats"`
+
 	// BootstrapTime contains the bootstrap time on success.
 	BootstrapTime float64 `json:"bootstrap_time"`
 
@@ -81,17 +107,6 @@ type TestKeys struct {
 
 	// MiniVPNVersion contains the version of the minivpn library used.
 	MiniVPNVersion string `json:"minivpn_version"`
-
-	// PingStats holds values for the aggregated stats of a ping.
-	PingStats *PingStats `json:"ping_stats"`
-
-	// Proto is the protocol used in the experiment.
-	Proto string `json:"proto"`
-
-	// Remote is the remote used in the experiment.
-	Remote string `json:"remote"`
-
-	// ...
 
 	// PingTarget is the target we used for ping
 	PingTarget string `json:"ping_target"`
@@ -160,8 +175,8 @@ func (m *Measurer) Run(
 	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
 ) error {
 	experiment, err := vpnExperimentFromURI(string(measurement.Input))
-
 	dialer, err := m.setup(ctx, experiment, sess.Logger())
+
 	if err != nil {
 		// we cannot setup the experiment
 		// TODO this includes if we don't have the correct certificates etc.
@@ -180,7 +195,7 @@ func (m *Measurer) Run(
 	ticker := time.NewTicker(2 * time.Second) // this is copied from some other experiment to allow a progress display; reuse.
 	defer ticker.Stop()
 
-	go m.bootstrap(ctx, sess, tkch)
+	go m.bootstrap(ctx, sess, experiment, tkch)
 
 	select {
 	case tk := <-tkch:
@@ -238,8 +253,8 @@ func (m *Measurer) Run(
 
 // setup prepares for running the openvpn experiment. Returns a minivpn dialer on success.
 // Returns an error on failure.
-func (m *Measurer) setup(ctx context.Context, exp *VPNExperiment, logger model.Logger) (*vpn.RawDialer, error) {
-	exp.Config = &VPNExperimentConfig{}
+func (m *Measurer) setup(ctx context.Context, exp *model.VPNExperiment, logger model.Logger) (*vpn.RawDialer, error) {
+	exp.Config = &model.VPNConfig{}
 	exp.Config.Auth = m.config.Auth
 	exp.Config.Cipher = m.config.Cipher
 	exp.Config.Compress = m.config.Compress
@@ -289,13 +304,17 @@ var ErrURLGrab = errors.New("urlgrab")
 
 // bootstrap runs the bootstrap.
 func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
+	experiment *model.VPNExperiment,
 	out chan<- *TestKeys) {
 	tk := &TestKeys{
+		Provider:       experiment.Provider,
+		Proto:          testName,
+		Transport:      protoToString(m.vpnOptions.Proto),
+		Remote:         net.JoinHostPort(m.vpnOptions.Remote, m.vpnOptions.Port),
+		Obfuscation:    experiment.Obfuscation,
+		MiniVPNVersion: getMiniVPNVersion(),
 		BootstrapTime:  0,
 		Failure:        nil,
-		Proto:          protoToString(m.vpnOptions.Proto),
-		Remote:         net.JoinHostPort(m.vpnOptions.Remote, m.vpnOptions.Port),
-		MiniVPNVersion: getMiniVPNVersion(),
 	}
 	sess.Logger().Info("openvpn: bootstrapping openvpn connection")
 	defer func() {
