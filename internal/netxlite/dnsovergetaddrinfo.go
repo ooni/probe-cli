@@ -33,6 +33,7 @@ func (txp *dnsOverGetaddrinfoTransport) RoundTrip(
 	}
 	resp := &dnsOverGetaddrinfoResponse{
 		addrs: addrs,
+		cname: "", // TODO: implement this functionality
 		query: query,
 	}
 	return resp, nil
@@ -40,6 +41,7 @@ func (txp *dnsOverGetaddrinfoTransport) RoundTrip(
 
 type dnsOverGetaddrinfoResponse struct {
 	addrs []string
+	cname string
 	query model.DNSQuery
 }
 
@@ -122,4 +124,8 @@ func (r *dnsOverGetaddrinfoResponse) DecodeLookupHost() ([]string, error) {
 
 func (r *dnsOverGetaddrinfoResponse) DecodeNS() ([]*net.NS, error) {
 	return nil, ErrNoDNSTransport
+}
+
+func (r *dnsOverGetaddrinfoResponse) DecodeCNAME() (string, error) {
+	return r.cname, nil
 }

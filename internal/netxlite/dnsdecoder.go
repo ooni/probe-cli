@@ -166,5 +166,19 @@ func (r *dnsResponse) DecodeNS() ([]*net.NS, error) {
 	return out, nil
 }
 
+// DecodeCNAME implements model.DNSResponse.DecodeCNAME.
+func (r *dnsResponse) DecodeCNAME() (string, error) {
+	if err := r.rcodeToError(); err != nil {
+		return "", err
+	}
+	for _, answer := range r.msg.Answer {
+		switch avalue := answer.(type) {
+		case *dns.CNAME:
+			return avalue.Target, nil
+		}
+	}
+	return "", ErrOODNSNoAnswer
+}
+
 var _ model.DNSDecoder = &DNSDecoderMiekg{}
 var _ model.DNSResponse = &dnsResponse{}
