@@ -119,10 +119,19 @@ func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration,
 		Failure:          tracex.NewFailure(err),
 		Hostname:         query.Domain(),
 		QueryType:        dns.TypeToString[query.Type()],
+		RawResponse:      maybeRawResponse(response),
 		ResolverHostname: nil,
 		ResolverAddress:  reso.Address(),
 		T:                finished.Seconds(),
 	}
+}
+
+// maybeRawResponse returns either the raw response (when available) or nil.
+func maybeRawResponse(resp model.DNSResponse) (out []byte) {
+	if resp != nil {
+		out = resp.Bytes()
+	}
+	return
 }
 
 // archivalAnswersFromAddrs generates model.ArchivalDNSAnswer from an array of addresses

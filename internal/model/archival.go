@@ -117,6 +117,7 @@ type ArchivalDNSLookupResult struct {
 	Failure          *string             `json:"failure"`
 	Hostname         string              `json:"hostname"`
 	QueryType        string              `json:"query_type"`
+	RawResponse      []byte              `json:"raw_response"`
 	ResolverHostname *string             `json:"resolver_hostname"`
 	ResolverPort     *string             `json:"resolver_port"`
 	ResolverAddress  string              `json:"resolver_address"`
