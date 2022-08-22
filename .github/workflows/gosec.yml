@@ -19,7 +19,7 @@ jobs:
       id: goversion
       run: echo ::set-output name=version::$(cat GOVERSION)
 
-    - uses: actions/setup-go@v1
+    - uses: actions/setup-go@v3
       with:
         go-version: "${{ steps.goversion.outputs.version }}"
 
