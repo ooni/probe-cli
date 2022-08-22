@@ -398,7 +398,7 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 	})
 
 	t.Run("DelayedDNSResponseWithTimeout drains the trace", func(t *testing.T) {
-		t.Run("context times out", func(t *testing.T) {
+		t.Run("context times out and we still drain the trace", func(t *testing.T) {
 			zeroTime := time.Now()
 			td := testingx.NewTimeDeterministic(zeroTime)
 			trace := NewTrace(0, zeroTime)
@@ -431,8 +431,8 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
 			got := trace.DelayedDNSResponseWithTimeout(ctx, 10*time.Second)
-			if len(got) >= 4 {
-				t.Fatal("unexpected output from trace")
+			if len(got) != 4 {
+				t.Fatal("unexpected output from trace", len(got))
 			}
 		})
 
