@@ -18,6 +18,7 @@ import (
 )
 
 // ClientIDs to map configurable inputs to uTLS fingerprints
+// We use a non-zero index to map to each ClientID
 var ClientIDs = map[int]*utls.ClientHelloID{
 	1: &utls.HelloGolang,
 	2: &utls.HelloChrome_Auto,
@@ -70,7 +71,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	ol := measurexlite.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
 	conn, err := d.DialContext(ctx, "tcp", address)
 	if err != nil {
-		iteration := newIterationFromHandshake(ttl, err, nil, nil)
+		iteration := newIterationFromHandshake(ttl, err, nil)
 		tr.addIterations(iteration)
 		ol.Stop(err)
 		return
@@ -78,7 +79,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	defer conn.Close()
 	err = setConnTTL(conn, ttl)
 	if err != nil {
-		iteration := newIterationFromHandshake(ttl, err, nil, nil)
+		iteration := newIterationFromHandshake(ttl, err, nil)
 		tr.addIterations(iteration)
 		ol.Stop(err)
 		return
@@ -94,7 +95,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	// reset the TTL value to ensure that conn closes successfully
 	// Note: we do not check for errors here
 	setConnTTL(conn, 64)
-	iteration := newIterationFromHandshake(ttl, nil, nil, <-trace.TLSHandshake)
+	iteration := newIterationFromHandshake(ttl, nil, trace.FirstTLSHandshakeOrNil())
 	tr.addIterations(iteration)
 }
 

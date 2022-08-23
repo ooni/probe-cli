@@ -32,7 +32,7 @@ type Iteration struct {
 }
 
 // NewIterationFromHandshake returns a new iteration from a model.ArchivalTLSOrQUICHandshakeResult
-func newIterationFromHandshake(ttl int, err error, soErr error, handshake *model.ArchivalTLSOrQUICHandshakeResult) *Iteration {
+func newIterationFromHandshake(ttl int, err error, handshake *model.ArchivalTLSOrQUICHandshakeResult) *Iteration {
 	if err != nil {
 		return &Iteration{
 			TTL: ttl,
@@ -40,9 +40,6 @@ func newIterationFromHandshake(ttl int, err error, soErr error, handshake *model
 				Failure: tracex.NewFailure(err),
 			},
 		}
-	}
-	if soErr != nil {
-		handshake.Failure = tracex.NewFailure(soErr)
 	}
 	return &Iteration{
 		TTL:       ttl,

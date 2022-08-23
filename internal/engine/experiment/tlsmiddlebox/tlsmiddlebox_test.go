@@ -10,8 +10,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// TODO(DecFox): Add more experiment-specific tests
-
 func TestMeasurerExperimentNameVersion(t *testing.T) {
 	measurer := NewExperimentMeasurer(Config{})
 	if measurer.ExperimentName() != "tlsmiddlebox" {
@@ -111,6 +109,9 @@ func TestMeasurer_input_failure(t *testing.T) {
 	})
 }
 
+// TODO(DecFox): The tests here are mainly on-network. We want to keep less of these and
+// replace with more "local" tests using filtering. This ensures speed and confidence in
+// while testing
 func TestMeasurer_run(t *testing.T) {
 	m := NewExperimentMeasurer(Config{})
 	ctx := context.Background()
