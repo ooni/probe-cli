@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-func TestGetaddrinfoLookupHost(t *testing.T) {
-	addrs, err := getaddrinfoLookupHost(context.Background(), "127.0.0.1")
+func TestGetaddrinfoLookupANY(t *testing.T) {
+	addrs, _, err := getaddrinfoLookupANY(context.Background(), "127.0.0.1")
 	if err != nil {
 		t.Fatal(err)
 	}

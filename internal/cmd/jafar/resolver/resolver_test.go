@@ -110,7 +110,7 @@ func checkrequest(
 
 func checksuccess(t *testing.T, reply *dns.Msg) {
 	if reply.Rcode != dns.RcodeSuccess {
-		t.Fatal("unexpected rcode")
+		t.Fatal("unexpected rcode", reply.Rcode)
 	}
 	if len(reply.Answer) < 1 {
 		t.Fatal("too few answers")
