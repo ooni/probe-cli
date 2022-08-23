@@ -114,7 +114,7 @@ type DNSNetworkAddresser interface {
 func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration, reso DNSNetworkAddresser, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Duration) *model.ArchivalDNSLookupResult {
 	return &model.ArchivalDNSLookupResult{
-		Answers:          archivalAnswersFromAddrs(addrs),
+		Answers:          newArchivalDNSAnswers(addrs, response),
 		Engine:           reso.Network(),
 		Failure:          tracex.NewFailure(err),
 		Hostname:         query.Domain(),
@@ -125,8 +125,8 @@ func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration,
 	}
 }
 
-// archivalAnswersFromAddrs generates model.ArchivalDNSAnswer from an array of addresses
-func archivalAnswersFromAddrs(addrs []string) (out []model.ArchivalDNSAnswer) {
+// newArchivalDNSAnswers generates []model.ArchivalDNSAnswer from [addrs] and [resp].
+func newArchivalDNSAnswers(addrs []string, resp model.DNSResponse) (out []model.ArchivalDNSAnswer) {
 	for _, addr := range addrs {
 		ipv6, err := netxlite.IsIPv6(addr)
 		if err != nil {
@@ -142,6 +142,7 @@ func archivalAnswersFromAddrs(addrs []string) (out []model.ArchivalDNSAnswer) {
 				AnswerType: "A",
 				Hostname:   "",
 				IPv4:       addr,
+				IPv6:       "",
 				TTL:        nil,
 			})
 		case true:
@@ -150,7 +151,22 @@ func archivalAnswersFromAddrs(addrs []string) (out []model.ArchivalDNSAnswer) {
 				ASOrgName:  org,
 				AnswerType: "AAAA",
 				Hostname:   "",
+				IPv4:       "",
 				IPv6:       addr,
+				TTL:        nil,
+			})
+		}
+	}
+	if resp != nil {
+		cname, err := resp.DecodeCNAME()
+		if err == nil && cname != "" {
+			out = append(out, model.ArchivalDNSAnswer{
+				ASN:        0,
+				ASOrgName:  "",
+				AnswerType: "CNAME",
+				Hostname:   cname,
+				IPv4:       "",
+				IPv6:       "",
 				TTL:        nil,
 			})
 		}
