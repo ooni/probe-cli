@@ -38,7 +38,7 @@ func TestErrorToGetaddrinfoRetval(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ErrorToGetaddrinfoRetval(tt.args.err); got != tt.want {
+			if got := ErrorToGetaddrinfoRetvalOrZero(tt.args.err); got != tt.want {
 				t.Errorf("ErrorToGetaddrinfoRetval() = %v, want %v", got, tt.want)
 			}
 		})
