@@ -17,7 +17,7 @@ const timeout time.Duration = 15 * time.Second
 
 func NewDialerTTLWrapper() model.Dialer {
 	return &dialerTTLWrapper{
-		Dialer: netxlite.TProxy.NewSimpleDialer(timeout),
+		Dialer: &net.Dialer{Timeout: timeout},
 	}
 }
 
