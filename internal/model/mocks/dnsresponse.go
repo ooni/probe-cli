@@ -18,6 +18,7 @@ type DNSResponse struct {
 	MockDecodeHTTPS      func() (*model.HTTPSSvc, error)
 	MockDecodeLookupHost func() ([]string, error)
 	MockDecodeNS         func() ([]*net.NS, error)
+	MockDecodeCNAME      func() (string, error)
 }
 
 var _ model.DNSResponse = &DNSResponse{}
@@ -44,4 +45,8 @@ func (r *DNSResponse) DecodeLookupHost() ([]string, error) {
 
 func (r *DNSResponse) DecodeNS() ([]*net.NS, error) {
 	return r.MockDecodeNS()
+}
+
+func (r *DNSResponse) DecodeCNAME() (string, error) {
+	return r.MockDecodeCNAME()
 }
