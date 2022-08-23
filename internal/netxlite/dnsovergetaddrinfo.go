@@ -91,7 +91,7 @@ func (txp *dnsOverGetaddrinfoTransport) lookupfn() func(ctx context.Context, dom
 	if txp.testableLookupANY != nil {
 		return txp.testableLookupANY
 	}
-	return getaddrinfoLookupANY
+	return getaddrinfoLookupHost
 }
 
 func (txp *dnsOverGetaddrinfoTransport) RequiresPadding() bool {

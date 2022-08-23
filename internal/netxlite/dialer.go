@@ -143,7 +143,7 @@ func NewDialerWithoutResolver(dl model.DebugLogger, w ...model.DialerWrapper) mo
 	return NewDialerWithResolver(dl, &NullResolver{}, w...)
 }
 
-// DialerSystem is a model.Dialer that uses TProxy.NewSimplerDialer
+// DialerSystem is a model.Dialer that uses the stdlib's net.Dialer
 // to construct the new SimpleDialer used for dialing. This dialer has
 // a fixed timeout for each connect operation equal to 15 seconds.
 type DialerSystem struct {
