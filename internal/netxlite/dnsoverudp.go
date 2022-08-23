@@ -22,10 +22,10 @@ import (
 // endpoint for several seconds when you query for blocked domains. We could also
 // have used an unconnected UDP socket here, but:
 //
-// 1. connected sockets are great because they get some ICMP errors to be
+// 1. connected UDP sockets are great because they get some ICMP errors to be
 // translated into socket errors (among them, host_unreachable);
 //
-// 2. connected sockets ignore responses from illegitimate IP addresses but
+// 2. connected UDP sockets ignore responses from illegitimate IP addresses but
 // most if not all DNS resolvers also do that, therefore this does not seem to
 // be a realistic censorship vector. At the same time, connected sockets
 // provide us for free with the feature that we don't need to bother with checking
@@ -34,8 +34,8 @@ import (
 // Being able to observe some ICMP errors is good because it could possibly
 // make this code suitable to implement parasitic traceroute.
 //
-// This transport is capable of collecting additional responses after the first
-// response. To see these responses, use the AsyncRoundTrip method.
+// This transport by default listens for additional responses after the first
+// one and makes them available using the context-configured trace.
 type DNSOverUDPTransport struct {
 	// Decoder is the MANDATORY DNSDecoder to use.
 	Decoder model.DNSDecoder
@@ -45,6 +45,11 @@ type DNSOverUDPTransport struct {
 
 	// Endpoint is the MANDATORY server's endpoint (e.g., 1.1.1.1:53)
 	Endpoint string
+
+	// lateResponses is posted in nonblocking mode each time this
+	// transport detects there was a late response for a query that had
+	// already been answered. Use this channel for testing.
+	lateResponses chan any
 }
 
 // NewUnwrappedDNSOverUDPTransport creates a DNSOverUDPTransport instance
@@ -63,20 +68,23 @@ type DNSOverUDPTransport struct {
 // have less control over which IP address is being used.
 func NewUnwrappedDNSOverUDPTransport(dialer model.Dialer, address string) *DNSOverUDPTransport {
 	return &DNSOverUDPTransport{
-		Decoder:  &DNSDecoderMiekg{},
-		Dialer:   dialer,
-		Endpoint: address,
+		Decoder:       &DNSDecoderMiekg{},
+		Dialer:        dialer,
+		Endpoint:      address,
+		lateResponses: nil, // not interested by default
 	}
 }
 
 // RoundTrip sends a query and receives a response.
 func (t *DNSOverUDPTransport) RoundTrip(
 	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
-	// QUIRK: the original code had a five seconds timeout, which is
-	// consistent with the Bionic implementation.
+	// QUIRK: the original DNS-over-UDP code had a five seconds timeout, which is
+	// consistent with the Bionic implementation. Let's try to preserve such a
+	// behavior by combining dialing and I/O timeout together.
 	//
 	// See https://labs.ripe.net/Members/baptiste_jonglez_1/persistent-dns-connections-for-reliability-and-performance
 	const opTimeout = 5 * time.Second
+	deadline := time.Now().Add(opTimeout)
 	ctx, cancel := context.WithTimeout(ctx, opTimeout)
 	defer cancel()
 	rawQuery, err := query.Bytes()
@@ -87,7 +95,7 @@ func (t *DNSOverUDPTransport) RoundTrip(
 	if err != nil {
 		return nil, err
 	}
-	conn.SetDeadline(time.Now().Add(opTimeout))
+	conn.SetDeadline(deadline) // time to dial (usually ~zero) already factored in
 	joinedch := make(chan bool)
 	myaddr := conn.LocalAddr().String()
 	if _, err := conn.Write(rawQuery); err != nil {
@@ -152,6 +160,13 @@ func (t *DNSOverUDPTransport) ownConnAndSendRecvLoop(ctx context.Context, conn n
 			// DNS response because we only care about duplicate messages, since
 			// this seems how censorship is implemented in, e.g., China.
 			return
+		}
+		// if there's testing code waiting to be unblocked because we
+		// received a delayed response, unblock it
+		select {
+		case t.lateResponses <- true:
+		default:
+			// there's no one waiting and it does not matter
 		}
 		addrs, err := resp.DecodeLookupHost()
 		if err := trace.OnDelayedDNSResponse(started, t, query, resp, addrs, err, finished); err != nil {

@@ -517,7 +517,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				d := &DNSDecoderMiekg{}
 				queryID := dns.Id()
 				rawQuery := dnsGenQuery(dns.TypeA, queryID)
-				var expectedCNAME *dnsCNAME = nil // explicity not set
+				var expectedCNAME *dnsCNAMEAnswer = nil // explicity not set
 				rawResponse := dnsGenLookupHostReplySuccess(rawQuery, expectedCNAME, "8.8.8.8")
 				query := &mocks.DNSQuery{
 					MockID: func() uint16 {
@@ -538,7 +538,7 @@ func TestDNSDecoderMiekg(t *testing.T) {
 			})
 
 			t.Run("with full answer", func(t *testing.T) {
-				expectedCNAME := &dnsCNAME{
+				expectedCNAME := &dnsCNAMEAnswer{
 					CNAME: "dns.google.",
 				}
 				d := &DNSDecoderMiekg{}
@@ -598,14 +598,18 @@ func dnsGenReplyWithError(rawQuery []byte, code int) []byte {
 	return data
 }
 
-// dnsCNAME is the DNS cname to include into a response.
-type dnsCNAME struct {
+// ImplementationNote: dnsCNAMEAnswer could have been a string but then
+// dnsGenLookupHostReplySuccess invocations would have been confusing to read,
+// because they would not have had a boundary between CNAME and addrs.
+
+// dnsCNAMEAnswer is the DNS cname answer to include into a response.
+type dnsCNAMEAnswer struct {
 	CNAME string
 }
 
 // dnsGenLookupHostReplySuccess generates a successful DNS reply containing the given ips...
 // in the answers where each answer's type depends on the IP's type (A/AAAA).
-func dnsGenLookupHostReplySuccess(rawQuery []byte, cname *dnsCNAME, ips ...string) []byte {
+func dnsGenLookupHostReplySuccess(rawQuery []byte, cname *dnsCNAMEAnswer, ips ...string) []byte {
 	query := new(dns.Msg)
 	err := query.Unpack(rawQuery)
 	runtimex.PanicOnError(err, "query.Unpack failed")
