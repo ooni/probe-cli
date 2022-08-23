@@ -59,7 +59,7 @@ func (sess *taskSessionEngine) NewExperimentBuilderByName(
 // taskExperimentBuilderEngine wraps ./internal/engine's
 // ExperimentBuilder type.
 type taskExperimentBuilderEngine struct {
-	engine.ExperimentBuilder
+	model.ExperimentBuilder
 }
 
 var _ taskExperimentBuilder = &taskExperimentBuilderEngine{}
@@ -72,7 +72,7 @@ func (b *taskExperimentBuilderEngine) NewExperimentInstance() taskExperiment {
 
 // taskExperimentEngine wraps ./internal/engine's Experiment.
 type taskExperimentEngine struct {
-	engine.Experiment
+	model.Experiment
 }
 
 var _ taskExperiment = &taskExperimentEngine{}

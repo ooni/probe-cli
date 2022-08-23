@@ -7,8 +7,10 @@ package netxlite
 import (
 	"context"
 	"crypto/tls"
+	"net"
 	"time"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -49,10 +51,26 @@ func (*traceDefault) TimeNow() time.Time {
 	return time.Now()
 }
 
+// MaybeWrapNetConn implements model.Trace.MaybeWrapNetConn
+func (*traceDefault) MaybeWrapNetConn(conn net.Conn) net.Conn {
+	return conn
+}
+
+// MaybeWrapUDPLikeConn implements model.Trace.MaybeWrapUDPLikeConn
+func (*traceDefault) MaybeWrapUDPLikeConn(conn model.UDPLikeConn) model.UDPLikeConn {
+	return conn
+}
+
 // OnDNSRoundTripForLookupHost implements model.Trace.OnDNSRoundTripForLookupHost.
 func (*traceDefault) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resolver, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Time) {
 	// nothing
+}
+
+// OnDelayedDNSResponse implements model.Trace.OnDelayedDNSResponse.
+func (*traceDefault) OnDelayedDNSResponse(started time.Time, txp model.DNSTransport,
+	query model.DNSQuery, response model.DNSResponse, addrs []string, err error, finished time.Time) error {
+	return nil
 }
 
 // OnConnectDone implements model.Trace.OnConnectDone.
@@ -69,5 +87,14 @@ func (*traceDefault) OnTLSHandshakeStart(now time.Time, remoteAddr string, confi
 // OnTLSHandshakeDone implements model.Trace.OnTLSHandshakeDone.
 func (*traceDefault) OnTLSHandshakeDone(started time.Time, remoteAddr string, config *tls.Config,
 	state tls.ConnectionState, err error, finished time.Time) {
+	// nothing
+}
+
+func (*traceDefault) OnQUICHandshakeStart(now time.Time, remoteAddr string, config *quic.Config) {
+	// nothing
+}
+
+func (*traceDefault) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
+	config *tls.Config, err error, finished time.Time) {
 	// nothing
 }

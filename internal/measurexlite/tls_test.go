@@ -120,6 +120,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 			}
 			expectedFailure := "unknown_failure: mocked"
 			expect := &model.ArchivalTLSOrQUICHandshakeResult{
+				Network:            "tls",
 				Address:            "1.1.1.1:443",
 				CipherSuite:        "",
 				Failure:            &expectedFailure,
@@ -181,8 +182,8 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 		mockedErr := errors.New("mocked")
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NetworkEvent = make(chan *model.ArchivalNetworkEvent)             // no buffer
-		trace.TLSHandshake = make(chan *model.ArchivalTLSOrQUICHandshakeResult) // no buffer
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent)             // no buffer
+		trace.tlsHandshake = make(chan *model.ArchivalTLSOrQUICHandshakeResult) // no buffer
 		thx := trace.NewTLSHandshakerStdlib(model.DiscardLogger)
 		ctx := context.Background()
 		tcpConn := &mocks.Conn{
@@ -273,6 +274,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				t.Fatal("expected to see a single TLSHandshake event")
 			}
 			expected := &model.ArchivalTLSOrQUICHandshakeResult{
+				Network:            "tls",
 				Address:            conn.RemoteAddr().String(),
 				CipherSuite:        netxlite.TLSCipherSuiteString(connState.CipherSuite),
 				Failure:            nil,
@@ -336,6 +338,57 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				}
 			})
 		})
+	})
+}
+
+func TestFirstTLSHandshake(t *testing.T) {
+	t.Run("returns nil when buffer is empty", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		got := trace.FirstTLSHandshakeOrNil()
+		if got != nil {
+			t.Fatal("expected nil event")
+		}
+	})
+
+	t.Run("return first non-nil TLSHandshake", func(t *testing.T) {
+		filler := func(tx *Trace, events []*model.ArchivalTLSOrQUICHandshakeResult) {
+			for _, ev := range events {
+				tx.tlsHandshake <- ev
+			}
+		}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		expect := []*model.ArchivalTLSOrQUICHandshakeResult{{
+			Network:            "tls",
+			Address:            "1.1.1.1:443",
+			CipherSuite:        "",
+			Failure:            nil,
+			NegotiatedProtocol: "",
+			NoTLSVerify:        true,
+			PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+			ServerName:         "dns.cloudflare.com",
+			T:                  time.Second.Seconds(),
+			Tags:               []string{},
+			TLSVersion:         "",
+		}, {
+			Network:            "tls",
+			Address:            "8.8.8.8:443",
+			CipherSuite:        "",
+			Failure:            nil,
+			NegotiatedProtocol: "",
+			NoTLSVerify:        true,
+			PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+			ServerName:         "dns.google.com",
+			T:                  time.Second.Seconds(),
+			Tags:               []string{},
+			TLSVersion:         "",
+		}}
+		filler(trace, expect)
+		got := trace.FirstTLSHandshakeOrNil()
+		if diff := cmp.Diff(got, expect[0]); diff != "" {
+			t.Fatal(diff)
+		}
 	})
 }
 

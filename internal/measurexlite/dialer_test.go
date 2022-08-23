@@ -121,7 +121,7 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 	t.Run("DialContext discards events when buffer is full", func(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.TCPConnect = make(chan *model.ArchivalTCPConnectResult) // no buffer
+		trace.tcpConnect = make(chan *model.ArchivalTCPConnectResult) // no buffer
 		dialer := trace.NewDialerWithoutResolver(model.DiscardLogger)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // we cancel immediately so connect is ~instantaneous
@@ -173,6 +173,49 @@ func TestNewDialerWithoutResolver(t *testing.T) {
 		events := trace.TCPConnects()
 		if len(events) != 0 {
 			t.Fatal("expected to see no TCPConnect events")
+		}
+	})
+}
+
+func TestFirstTCPConnect(t *testing.T) {
+	t.Run("returns nil when buffer is empty", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		got := trace.FirstTCPConnectOrNil()
+		if got != nil {
+			t.Fatal("expected nil event")
+		}
+	})
+
+	t.Run("return first non-nil TCPConnect", func(t *testing.T) {
+		filler := func(tx *Trace, events []*model.ArchivalTCPConnectResult) {
+			for _, ev := range events {
+				tx.tcpConnect <- ev
+			}
+		}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		expect := []*model.ArchivalTCPConnectResult{{
+			IP:   "1.1.1.1",
+			Port: 443,
+			Status: model.ArchivalTCPConnectStatus{
+				Blocked: nil,
+				Failure: nil,
+				Success: true,
+			},
+		}, {
+			IP:   "0.0.0.0",
+			Port: 443,
+			Status: model.ArchivalTCPConnectStatus{
+				Blocked: nil,
+				Failure: nil,
+				Success: true,
+			},
+		}}
+		filler(trace, expect)
+		got := trace.FirstTCPConnectOrNil()
+		if diff := cmp.Diff(got, expect[0]); diff != "" {
+			t.Fatal(diff)
 		}
 	})
 }

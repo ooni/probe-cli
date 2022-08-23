@@ -2,9 +2,11 @@ package mocks
 
 import (
 	"crypto/tls"
+	"net"
 	"testing"
 	"time"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
@@ -21,6 +23,32 @@ func TestTrace(t *testing.T) {
 		}
 	})
 
+	t.Run("MaybeWrapNetConn", func(t *testing.T) {
+		expect := &Conn{}
+		tx := &Trace{
+			MockMaybeWrapNetConn: func(conn net.Conn) net.Conn {
+				return expect
+			},
+		}
+		got := tx.MaybeWrapNetConn(&Conn{})
+		if got != expect {
+			t.Fatal("not working as intended")
+		}
+	})
+
+	t.Run("MaybeWrapUDPLikeConn", func(t *testing.T) {
+		expect := &UDPLikeConn{}
+		tx := &Trace{
+			MockMaybeWrapUDPLikeConn: func(conn model.UDPLikeConn) model.UDPLikeConn {
+				return expect
+			},
+		}
+		got := tx.MaybeWrapUDPLikeConn(&UDPLikeConn{})
+		if got != expect {
+			t.Fatal("not working as intended")
+		}
+	})
+
 	t.Run("OnDNSRoundTripForLookupHost", func(t *testing.T) {
 		var called bool
 		tx := &Trace{
@@ -32,6 +60,30 @@ func TestTrace(t *testing.T) {
 		tx.OnDNSRoundTripForLookupHost(
 			time.Now(),
 			&Resolver{},
+			&DNSQuery{},
+			&DNSResponse{},
+			[]string{},
+			nil,
+			time.Now(),
+		)
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+
+	t.Run("OnDelayedDNSResponse", func(t *testing.T) {
+		var called bool
+		tx := &Trace{
+			MockOnDelayedDNSResponse: func(started time.Time, txp model.DNSTransport,
+				query model.DNSQuery, response model.DNSResponse,
+				addrs []string, err error, finished time.Time) error {
+				called = true
+				return nil
+			},
+		}
+		tx.OnDelayedDNSResponse(
+			time.Now(),
+			&DNSTransport{},
 			&DNSQuery{},
 			&DNSResponse{},
 			[]string{},
@@ -88,6 +140,39 @@ func TestTrace(t *testing.T) {
 			"8.8.8.8:443",
 			&tls.Config{},
 			tls.ConnectionState{},
+			nil,
+			time.Now(),
+		)
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+
+	t.Run("OnQUICHandshakeStart", func(t *testing.T) {
+		var called bool
+		tx := &Trace{
+			MockOnQUICHandshakeStart: func(now time.Time, remoteAddrs string, config *quic.Config) {
+				called = true
+			},
+		}
+		tx.OnQUICHandshakeStart(time.Now(), "1.1.1.1:443", &quic.Config{})
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+
+	t.Run("OnQUICHandshakeDone", func(t *testing.T) {
+		var called bool
+		tx := &Trace{
+			MockOnQUICHandshakeDone: func(started time.Time, remoteAddr string, qconn quic.EarlyConnection, config *tls.Config, err error, finished time.Time) {
+				called = true
+			},
+		}
+		tx.OnQUICHandshakeDone(
+			time.Now(),
+			"1.1.1.1:443",
+			nil,
+			&tls.Config{},
 			nil,
 			time.Now(),
 		)

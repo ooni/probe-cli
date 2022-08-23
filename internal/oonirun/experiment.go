@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
@@ -117,7 +118,7 @@ type inputProcessor interface {
 }
 
 // newInputProcessor creates a new inputProcessor instance.
-func (ed *Experiment) newInputProcessor(experiment engine.Experiment,
+func (ed *Experiment) newInputProcessor(experiment model.Experiment,
 	inputList []model.OOAPIURLInfo, saver engine.Saver, submitter engine.Submitter) inputProcessor {
 	return &engine.InputProcessor{
 		Annotations: ed.Annotations,
@@ -138,7 +139,7 @@ func (ed *Experiment) newInputProcessor(experiment engine.Experiment,
 }
 
 // newSaver creates a new engine.Saver instance.
-func (ed *Experiment) newSaver(experiment engine.Experiment) (engine.Saver, error) {
+func (ed *Experiment) newSaver(experiment model.Experiment) (engine.Saver, error) {
 	return engine.NewSaver(engine.SaverConfig{
 		Enabled:    !ed.NoJSON,
 		Experiment: experiment,
@@ -157,7 +158,7 @@ func (ed *Experiment) newSubmitter(ctx context.Context) (engine.Submitter, error
 }
 
 // newExperimentBuilder creates a new engine.ExperimentBuilder for the given experimentName.
-func (ed *Experiment) newExperimentBuilder(experimentName string) (engine.ExperimentBuilder, error) {
+func (ed *Experiment) newExperimentBuilder(experimentName string) (model.ExperimentBuilder, error) {
 	return ed.Session.NewExperimentBuilder(ed.Name)
 }
 
@@ -167,7 +168,7 @@ type inputLoader interface {
 }
 
 // newInputLoader creates a new inputLoader.
-func (ed *Experiment) newInputLoader(inputPolicy engine.InputPolicy) inputLoader {
+func (ed *Experiment) newInputLoader(inputPolicy model.InputPolicy) inputLoader {
 	return &engine.InputLoader{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			RunType:  model.RunTypeManual,
@@ -183,9 +184,16 @@ func (ed *Experiment) newInputLoader(inputPolicy engine.InputPolicy) inputLoader
 }
 
 // experimentOptionsToStringList convers the options to []string, which is
-// the format with which we include them into a OONI Measurement
+// the format with which we include them into a OONI Measurement. The resulting
+// []string will skip any option that is named with a `Safe` prefix (case
+// sensitive).
 func experimentOptionsToStringList(options map[string]any) (out []string) {
+	// the prefix to skip inclusion in the string list
+	safeOptionPrefix := "Safe"
 	for key, value := range options {
+		if strings.HasPrefix(key, safeOptionPrefix) {
+			continue
+		}
 		out = append(out, fmt.Sprintf("%s=%v", key, value))
 	}
 	return

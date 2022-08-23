@@ -8,7 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/miekg/dns"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestDNSOverGetaddrinfo(t *testing.T) {
@@ -21,7 +23,7 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 
 	t.Run("Network", func(t *testing.T) {
 		txp := &dnsOverGetaddrinfoTransport{}
-		if txp.Network() != TProxy.DefaultResolver().Network() {
+		if txp.Network() != getaddrinfoResolverNetwork() {
 			t.Fatal("unexpected Network")
 		}
 	})
@@ -55,8 +57,8 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 	t.Run("RoundTrip", func(t *testing.T) {
 		t.Run("with invalid query type", func(t *testing.T) {
 			txp := &dnsOverGetaddrinfoTransport{
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return []string{"8.8.8.8"}, nil
+				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+					return []string{"8.8.8.8"}, "dns.google", nil
 				},
 			}
 			encoder := &DNSEncoderMiekg{}
@@ -73,8 +75,8 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 
 		t.Run("with success", func(t *testing.T) {
 			txp := &dnsOverGetaddrinfoTransport{
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return []string{"8.8.8.8"}, nil
+				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+					return []string{"8.8.8.8"}, "dns.google", nil
 				},
 			}
 			encoder := &DNSEncoderMiekg{}
@@ -122,10 +124,10 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 			done := make(chan interface{})
 			txp := &dnsOverGetaddrinfoTransport{
 				testableTimeout: 1 * time.Microsecond,
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
 					defer wg.Done()
 					<-done
-					return []string{"8.8.8.8"}, nil
+					return []string{"8.8.8.8"}, "dns.google", nil
 				},
 			}
 			encoder := &DNSEncoderMiekg{}
@@ -148,10 +150,10 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 			done := make(chan interface{})
 			txp := &dnsOverGetaddrinfoTransport{
 				testableTimeout: 1 * time.Microsecond,
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
+				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
 					defer wg.Done()
 					<-done
-					return nil, errors.New("no such host")
+					return nil, "", errors.New("no such host")
 				},
 			}
 			encoder := &DNSEncoderMiekg{}
@@ -170,8 +172,8 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 
 		t.Run("with NXDOMAIN", func(t *testing.T) {
 			txp := &dnsOverGetaddrinfoTransport{
-				testableLookupHost: func(ctx context.Context, domain string) ([]string, error) {
-					return nil, ErrOODNSNoSuchHost
+				testableLookupANY: func(ctx context.Context, domain string) ([]string, string, error) {
+					return nil, "", ErrOODNSNoSuchHost
 				},
 			}
 			encoder := &DNSEncoderMiekg{}
@@ -183,6 +185,160 @@ func TestDNSOverGetaddrinfo(t *testing.T) {
 			}
 			if resp != nil {
 				t.Fatal("invalid resp")
+			}
+		})
+	})
+}
+
+func TestDNSOverGetaddrinfoResponse(t *testing.T) {
+	t.Run("Query works as intended", func(t *testing.T) {
+		t.Run("when query is not nil", func(t *testing.T) {
+			resp := &dnsOverGetaddrinfoResponse{
+				addrs: []string{},
+				cname: "",
+				query: &mocks.DNSQuery{},
+			}
+			out := resp.Query()
+			if out != resp.query {
+				t.Fatal("unexpected query")
+			}
+		})
+
+		t.Run("when query is nil", func(t *testing.T) {
+			resp := &dnsOverGetaddrinfoResponse{
+				addrs: []string{},
+				cname: "",
+				query: nil, // oops
+			}
+			panicked := false
+			func() {
+				defer func() {
+					if recover() != nil {
+						panicked = true
+					}
+				}()
+				_ = resp.Query()
+			}()
+			if !panicked {
+				t.Fatal("did not panic")
+			}
+		})
+	})
+
+	t.Run("Bytes works as intended", func(t *testing.T) {
+		resp := &dnsOverGetaddrinfoResponse{
+			addrs: []string{},
+			cname: "",
+			query: nil,
+		}
+		if len(resp.Bytes()) > 0 {
+			t.Fatal("unexpected bytes")
+		}
+	})
+
+	t.Run("Rcode works as intended", func(t *testing.T) {
+		resp := &dnsOverGetaddrinfoResponse{
+			addrs: []string{},
+			cname: "",
+			query: nil,
+		}
+		if resp.Rcode() != 0 {
+			t.Fatal("unexpected rcode")
+		}
+	})
+
+	t.Run("DecodeHTTPS works as intended", func(t *testing.T) {
+		resp := &dnsOverGetaddrinfoResponse{
+			addrs: []string{},
+			cname: "",
+			query: nil,
+		}
+		out, err := resp.DecodeHTTPS()
+		if !errors.Is(err, ErrNoDNSTransport) {
+			t.Fatal("unexpected err")
+		}
+		if out != nil {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("DecodeLookupHost works as intended", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			resp := &dnsOverGetaddrinfoResponse{
+				addrs: []string{
+					"1.1.1.1", "1.0.0.1",
+				},
+				cname: "",
+				query: nil,
+			}
+			out, err := resp.DecodeLookupHost()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(resp.addrs, out); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			resp := &dnsOverGetaddrinfoResponse{
+				addrs: []string{},
+				cname: "",
+				query: nil,
+			}
+			out, err := resp.DecodeLookupHost()
+			if !errors.Is(err, ErrOODNSNoAnswer) {
+				t.Fatal("unexpected err")
+			}
+			if len(out) > 0 {
+				t.Fatal("unexpected addrs")
+			}
+		})
+	})
+
+	t.Run("DecodeNS works as intended", func(t *testing.T) {
+		resp := &dnsOverGetaddrinfoResponse{
+			addrs: []string{},
+			cname: "",
+			query: nil,
+		}
+		out, err := resp.DecodeNS()
+		if !errors.Is(err, ErrNoDNSTransport) {
+			t.Fatal("unexpected err")
+		}
+		if len(out) != 0 {
+			t.Fatal("unexpected result")
+		}
+	})
+
+	t.Run("DecodeCNAME works as intended", func(t *testing.T) {
+		t.Run("on success", func(t *testing.T) {
+			resp := &dnsOverGetaddrinfoResponse{
+				addrs: []string{},
+				cname: "antani",
+				query: nil,
+			}
+			out, err := resp.DecodeCNAME()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if out != resp.cname {
+				t.Fatal("unexpected cname")
+			}
+		})
+
+		t.Run("on failure", func(t *testing.T) {
+			resp := &dnsOverGetaddrinfoResponse{
+				addrs: []string{},
+				cname: "",
+				query: nil,
+			}
+			out, err := resp.DecodeCNAME()
+			if !errors.Is(err, ErrOODNSNoAnswer) {
+				t.Fatal("unexpected err")
+			}
+			if out != "" {
+				t.Fatal("unexpected cname")
 			}
 		})
 	})

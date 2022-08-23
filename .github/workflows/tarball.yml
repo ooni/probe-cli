@@ -16,15 +16,21 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Set up Go
-        uses: actions/setup-go@v2
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo ::set-output name=version::$(cat GOVERSION)
+
+      - uses: actions/setup-go@v3
         with:
-          go-version: "1.18.3"
+          go-version: "${{ steps.goversion.outputs.version }}"
+
       - name: Generate release tarball
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           go mod vendor
           tar czf ooni-probe-cli-${VERSION}.tar.gz --transform "s,^,ooni-probe-cli-${VERSION}/," *
+
       - name: Upload release tarball
         run: |
           gh release create -p $GITHUB_REF_NAME --target $GITHUB_SHA || true

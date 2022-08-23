@@ -115,11 +115,15 @@ type ArchivalDNSLookupResult struct {
 	Answers          []ArchivalDNSAnswer `json:"answers"`
 	Engine           string              `json:"engine"`
 	Failure          *string             `json:"failure"`
+	GetaddrinfoError int64               `json:"getaddrinfo_error,omitempty"`
 	Hostname         string              `json:"hostname"`
 	QueryType        string              `json:"query_type"`
+	RawResponse      []byte              `json:"raw_response,omitempty"`
+	Rcode            int64               `json:"rcode,omitempty"`
 	ResolverHostname *string             `json:"resolver_hostname"`
 	ResolverPort     *string             `json:"resolver_port"`
 	ResolverAddress  string              `json:"resolver_address"`
+	T0               float64             `json:"t0"`
 	T                float64             `json:"t"`
 }
 
@@ -163,6 +167,7 @@ type ArchivalTCPConnectStatus struct {
 //
 // See https://github.com/ooni/spec/blob/master/data-formats/df-006-tlshandshake.md
 type ArchivalTLSOrQUICHandshakeResult struct {
+	Network            string                    `json:"network"`
 	Address            string                    `json:"address"`
 	CipherSuite        string                    `json:"cipher_suite"`
 	Failure            *string                   `json:"failure"`

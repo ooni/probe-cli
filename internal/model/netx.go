@@ -36,6 +36,9 @@ type DNSResponse interface {
 
 	// DecodeNS returns all the NS entries in this response.
 	DecodeNS() ([]*net.NS, error)
+
+	// DecodeCNAME returns the first CNAME entry in this response.
+	DecodeCNAME() (string, error)
 }
 
 // The DNSDecoder decodes DNS responses.
@@ -204,16 +207,15 @@ type QUICDialer interface {
 	// - set NextProtos to []string{"h3"}.
 	//
 	// Typically, you want to pass `&quic.Config{}` as quicConfig.
-	DialContext(ctx context.Context, network, address string,
+	DialContext(ctx context.Context, address string,
 		tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error)
 
 	// CloseIdleConnections closes idle connections, if any.
 	CloseIdleConnections()
 }
 
-// SimpleResolver is a simplified resolver that only allows to perform
-// an ordinary lookup operation and to know the resolver's name.
-type SimpleResolver interface {
+// Resolver performs domain name resolutions.
+type Resolver interface {
 	// LookupHost behaves like net.Resolver.LookupHost.
 	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
 
@@ -239,12 +241,6 @@ type SimpleResolver interface {
 	// for an explanation of why it would not be proper to call "netgo" the
 	// resolver we get by default from the standard library.
 	Network() string
-}
-
-// Resolver performs domain name resolutions.
-type Resolver interface {
-	// A Resolver is also a SimpleResolver.
-	SimpleResolver
 
 	// Address returns the resolver address (e.g., 8.8.8.8:53).
 	Address() string
@@ -303,6 +299,21 @@ type Trace interface {
 	// can use functionality exported by the ./internal/testingx pkg.
 	TimeNow() time.Time
 
+	// MaybeWrapNetConn possibly wraps a net.Conn with the caller trace. If there's no
+	// desire to wrap the net.Conn, this function just returns the original net.Conn.
+	//
+	// Arguments:
+	//
+	// - conn is the non-nil underlying net.Conn to be wrapped
+	MaybeWrapNetConn(conn net.Conn) net.Conn
+
+	// MaybeWrapUDPLikeConn is like MaybeWrapNetConn but for UDPLikeConn.
+	//
+	// Arguments:
+	//
+	// - conn is the non-nil underlying UDPLikeConn to be wrapped
+	MaybeWrapUDPLikeConn(conn UDPLikeConn) UDPLikeConn
+
 	// OnDNSRoundTripForLookupHost is used with a DNSTransport and called
 	// when the RoundTrip terminates.
 	//
@@ -324,6 +335,29 @@ type Trace interface {
 	// - finished is the time right after the RoundTrip
 	OnDNSRoundTripForLookupHost(started time.Time, reso Resolver, query DNSQuery,
 		response DNSResponse, addrs []string, err error, finished time.Time)
+
+	// OnDelayedDNSResponse is used with a DNSOverUDPTransport and called
+	// when we get delayed, unexpected DNS responses.
+	//
+	// Arguments:
+	//
+	// - started is when we started reading the delayed response;
+	//
+	// - txp is the DNS transport used with the resolver;
+	//
+	// - query is the non-nil DNS query we use for the RoundTrip;
+	//
+	// - response is the non-nil valid DNS response, obtained after some delay;
+	//
+	// - addrs is the list of addresses obtained after decoding the delayed response,
+	// which is empty if the response did not contain any addresses, which we
+	// extract by calling the DecodeLookupHost method.
+	//
+	// - err is the result of DecodeLookupHost: either an error or nil;
+	//
+	// - finished is when we have read the delayed response.
+	OnDelayedDNSResponse(started time.Time, txp DNSTransport, query DNSQuery,
+		resp DNSResponse, addrs []string, err error, finsihed time.Time) error
 
 	// OnConnectDone is called when connect terminates.
 	//
@@ -382,6 +416,41 @@ type Trace interface {
 	// string returned by Error is an OONI error.
 	OnTLSHandshakeDone(started time.Time, remoteAddr string, config *tls.Config,
 		state tls.ConnectionState, err error, finished time.Time)
+
+	// OnQUICHandshakeStart is called before the QUIC handshake.
+	//
+	// Arguments:
+	//
+	// - now is the moment before we start the handshake;
+	//
+	// - remoteAddr is the QUIC endpoint with which we are connecting: it will
+	// consist of an IP address and a port (e.g., 8.8.8.8:443, [::1]:5421);
+	//
+	// - config is the possibly-nil QUIC config we're using.
+	OnQUICHandshakeStart(now time.Time, remoteAddr string, quicConfig *quic.Config)
+
+	// OnQUICHandshakeDone is called after the QUIC handshake.
+	//
+	// Arguments:
+	//
+	// - started is when we started the handshake;
+	//
+	// - remoteAddr is the QUIC endpoint with which we are connecting: it will
+	// consist of an IP address and a port (e.g., 8.8.8.8:443, [::1]:5421);
+	//
+	// - qconn is the QUIC connection we receive after the handshake: either
+	// a valid quic.EarlyConnection or nil;
+	//
+	// - config is the non-nil TLS config we are using;
+	//
+	// - err is the result of the handshake: either an error or nil;
+	//
+	// - finished is right after the handshake.
+	//
+	// The error passed to this function will always be wrapped such that the
+	// string returned by Error is an OONI error.
+	OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn quic.EarlyConnection,
+		config *tls.Config, err error, finished time.Time)
 }
 
 // UDPLikeConn is a net.PacketConn with some extra functions
@@ -410,19 +479,4 @@ type UDPLikeConn interface {
 	// SyscallConn returns a conn suitable for calling syscalls,
 	// which is also instrumental to setting the read buffer.
 	SyscallConn() (syscall.RawConn, error)
-}
-
-// UnderlyingNetworkLibrary defines the basic functionality from
-// which the network extensions depend. By changing the default
-// implementation of this interface, we can implement a wide array
-// of tests, including self censorship tests.
-type UnderlyingNetworkLibrary interface {
-	// ListenUDP creates a new model.UDPLikeConn conn.
-	ListenUDP(network string, laddr *net.UDPAddr) (UDPLikeConn, error)
-
-	// DefaultResolver returns the default resolver.
-	DefaultResolver() SimpleResolver
-
-	// NewSimpleDialer returns a new SimpleDialer.
-	NewSimpleDialer(timeout time.Duration) SimpleDialer
 }

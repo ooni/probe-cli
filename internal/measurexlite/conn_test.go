@@ -40,7 +40,7 @@ func TestWrapNetConn(t *testing.T) {
 		underlying := &mocks.Conn{}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		conn := trace.WrapNetConn(underlying)
+		conn := trace.MaybeWrapNetConn(underlying)
 		ct := conn.(*connTrace)
 		if ct.Conn != underlying {
 			t.Fatal("invalid underlying")
@@ -70,7 +70,7 @@ func TestWrapNetConn(t *testing.T) {
 		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.TimeNowFn = td.Now // deterministic time counting
-		conn := trace.WrapNetConn(underlying)
+		conn := trace.MaybeWrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
 		count, err := conn.Read(buffer)
@@ -117,8 +117,8 @@ func TestWrapNetConn(t *testing.T) {
 		}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NetworkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
-		conn := trace.WrapNetConn(underlying)
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
+		conn := trace.MaybeWrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
 		count, err := conn.Read(buffer)
@@ -154,7 +154,7 @@ func TestWrapNetConn(t *testing.T) {
 		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.TimeNowFn = td.Now // deterministic time tracking
-		conn := trace.WrapNetConn(underlying)
+		conn := trace.MaybeWrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
 		count, err := conn.Write(buffer)
@@ -201,8 +201,8 @@ func TestWrapNetConn(t *testing.T) {
 		}
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NetworkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
-		conn := trace.WrapNetConn(underlying)
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
+		conn := trace.MaybeWrapNetConn(underlying)
 		const bufsiz = 128
 		buffer := make([]byte, bufsiz)
 		count, err := conn.Write(buffer)
@@ -215,6 +215,217 @@ func TestWrapNetConn(t *testing.T) {
 		events := trace.NetworkEvents()
 		if len(events) != 0 {
 			t.Fatal("expected no network events")
+		}
+	})
+}
+
+func TestWrapUDPLikeConn(t *testing.T) {
+	t.Run("WrapUDPLikeConn wraps the conn", func(t *testing.T) {
+		underlying := &mocks.UDPLikeConn{}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		conn := trace.MaybeWrapUDPLikeConn(underlying)
+		ct := conn.(*udpLikeConnTrace)
+		if ct.UDPLikeConn != underlying {
+			t.Fatal("invalid underlying")
+		}
+		if ct.tx != trace {
+			t.Fatal("invalid trace")
+		}
+	})
+
+	t.Run("ReadFrom saves a trace", func(t *testing.T) {
+		underlying := &mocks.UDPLikeConn{
+			MockReadFrom: func(b []byte) (int, net.Addr, error) {
+				return len(b), &mocks.Addr{
+					MockString: func() string {
+						return "1.1.1.1:443"
+					},
+				}, nil
+			},
+		}
+		zeroTime := time.Now()
+		td := testingx.NewTimeDeterministic(zeroTime)
+		trace := NewTrace(0, zeroTime)
+		trace.TimeNowFn = td.Now // deterministic time counting
+		conn := trace.MaybeWrapUDPLikeConn(underlying)
+		const bufsiz = 128
+		buffer := make([]byte, bufsiz)
+		count, addr, err := conn.ReadFrom(buffer)
+		if count != bufsiz {
+			t.Fatal("invalid count")
+		}
+		if addr.String() != "1.1.1.1:443" {
+			t.Fatal("invalid address")
+		}
+		if err != nil {
+			t.Fatal("invalid err")
+		}
+		events := trace.NetworkEvents()
+		if len(events) != 1 {
+			t.Fatal("did not save network events")
+		}
+		expect := &model.ArchivalNetworkEvent{
+			Address:   "1.1.1.1:443",
+			Failure:   nil,
+			NumBytes:  bufsiz,
+			Operation: "read_from",
+			Proto:     "udp",
+			T:         1.0,
+			Tags:      []string{},
+		}
+		got := events[0]
+		if diff := cmp.Diff(expect, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("ReadFrom discards the event when the buffer is full", func(t *testing.T) {
+		underlying := &mocks.UDPLikeConn{
+			MockReadFrom: func(b []byte) (int, net.Addr, error) {
+				return len(b), &mocks.Addr{
+					MockString: func() string {
+						return "1.1.1.1:443"
+					},
+				}, nil
+			},
+		}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
+		conn := trace.MaybeWrapUDPLikeConn(underlying)
+		const bufsiz = 128
+		buffer := make([]byte, bufsiz)
+		count, addr, err := conn.ReadFrom(buffer)
+		if count != bufsiz {
+			t.Fatal("invalid count")
+		}
+		if addr.String() != "1.1.1.1:443" {
+			t.Fatal("invalid address")
+		}
+		if err != nil {
+			t.Fatal("invalid err")
+		}
+		events := trace.NetworkEvents()
+		if len(events) != 0 {
+			t.Fatal("expected no network events")
+		}
+	})
+
+	t.Run("WriteTo saves a trace", func(t *testing.T) {
+		underlying := &mocks.UDPLikeConn{
+			MockWriteTo: func(b []byte, addr net.Addr) (int, error) {
+				return len(b), nil
+			},
+		}
+		zeroTime := time.Now()
+		td := testingx.NewTimeDeterministic(zeroTime)
+		trace := NewTrace(0, zeroTime)
+		trace.TimeNowFn = td.Now // deterministic time tracking
+		conn := trace.MaybeWrapUDPLikeConn(underlying)
+		const bufsiz = 128
+		buffer := make([]byte, bufsiz)
+		addr := &mocks.Addr{
+			MockString: func() string {
+				return "1.1.1.1:443"
+			},
+		}
+		count, err := conn.WriteTo(buffer, addr)
+		if count != bufsiz {
+			t.Fatal("invalid count")
+		}
+		if err != nil {
+			t.Fatal("invalid err")
+		}
+		events := trace.NetworkEvents()
+		if len(events) != 1 {
+			t.Fatal("did not save network events")
+		}
+		expect := &model.ArchivalNetworkEvent{
+			Address:   "1.1.1.1:443",
+			Failure:   nil,
+			NumBytes:  bufsiz,
+			Operation: "write_to",
+			Proto:     "udp",
+			T:         1.0,
+			Tags:      []string{},
+		}
+		got := events[0]
+		if diff := cmp.Diff(expect, got); diff != "" {
+			t.Fatal(diff)
+		}
+	})
+
+	t.Run("Write discards the event when the buffer is full", func(t *testing.T) {
+		underlying := &mocks.UDPLikeConn{
+			MockWriteTo: func(b []byte, addr net.Addr) (int, error) {
+				return len(b), nil
+			},
+		}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // no buffer
+		conn := trace.MaybeWrapUDPLikeConn(underlying)
+		const bufsiz = 128
+		buffer := make([]byte, bufsiz)
+		addr := &mocks.Addr{
+			MockString: func() string {
+				return "1.1.1.1:443"
+			},
+		}
+		count, err := conn.WriteTo(buffer, addr)
+		if count != bufsiz {
+			t.Fatal("invalid count")
+		}
+		if err != nil {
+			t.Fatal("invalid err")
+		}
+		events := trace.NetworkEvents()
+		if len(events) != 0 {
+			t.Fatal("expected no network events")
+		}
+	})
+}
+
+func TestFirstNetworkEvent(t *testing.T) {
+	t.Run("returns nil when buffer is empty", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		got := trace.FirstNetworkEventOrNil()
+		if got != nil {
+			t.Fatal("expected nil event")
+		}
+	})
+
+	t.Run("return first non-nil network event", func(t *testing.T) {
+		filler := func(tx *Trace, events []*model.ArchivalNetworkEvent) {
+			for _, ev := range events {
+				tx.networkEvent <- ev
+			}
+		}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		expect := []*model.ArchivalNetworkEvent{{
+			Address:   "1.1.1.1:443",
+			Failure:   nil,
+			NumBytes:  0,
+			Operation: "read_from",
+			Proto:     "udp",
+			T:         1.0,
+			Tags:      []string{},
+		}, {
+			Address:   "1.1.1.1:443",
+			Failure:   nil,
+			NumBytes:  0,
+			Operation: "write_to",
+			Proto:     "udp",
+			T:         1.0,
+			Tags:      []string{},
+		}}
+		filler(trace, expect)
+		got := trace.FirstNetworkEventOrNil()
+		if diff := cmp.Diff(got, expect[0]); diff != "" {
+			t.Fatal(diff)
 		}
 	})
 }

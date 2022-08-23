@@ -176,13 +176,12 @@ func (m *Measurer) tlsConnectAndHandshake(ctx context.Context, index int64,
 	sni := m.config.sni(address)
 	ol := measurexlite.NewOperationLogger(logger, "TLSPing #%d %s %s %v", index, address, sni, alpn)
 	conn, err := dialer.DialContext(ctx, "tcp", address)
-	sp.TCPConnect = <-trace.TCPConnect
+	sp.TCPConnect = trace.FirstTCPConnectOrNil() // record the first connect from the buffer
 	if err != nil {
 		ol.Stop(err)
 		return sp
 	}
 	defer conn.Close()
-	conn = trace.WrapNetConn(conn)
 	thx := trace.NewTLSHandshakerStdlib(logger)
 	config := &tls.Config{
 		NextProtos: alpn,
@@ -191,7 +190,7 @@ func (m *Measurer) tlsConnectAndHandshake(ctx context.Context, index int64,
 	}
 	_, _, err = thx.Handshake(ctx, conn, config)
 	ol.Stop(err)
-	sp.TLSHandshake = <-trace.TLSHandshake
+	sp.TLSHandshake = trace.FirstTLSHandshakeOrNil() // record the first handshake from the buffer
 	sp.NetworkEvents = trace.NetworkEvents()
 	return sp
 }

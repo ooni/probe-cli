@@ -16,7 +16,7 @@ func (n STUNReachability) lookupURLs(ctl *Controller) ([]string, error) {
 			// not needed because we have default static input in the engine
 		},
 		ExperimentName: "stunreachability",
-		InputPolicy:    engine.InputOrStaticDefault,
+		InputPolicy:    model.InputOrStaticDefault,
 		Session:        ctl.Session,
 		SourceFiles:    ctl.InputFiles,
 		StaticInputs:   ctl.Inputs,

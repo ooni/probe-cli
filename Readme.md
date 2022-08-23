@@ -14,7 +14,7 @@ This repository contains core OONI tools written in Go:
 
 - the mobile library ([pkg/oonimkall](pkg/oonimkall));
 
-- and all the related support packages (inside [internal](internal)).
+- the OONI Probe engine (inside [internal](internal)).
 
 Every top-level directory in this repository contains an explanatory README file. You
 may also notice that some internal packages live under [internal/engine](internal/engine)
@@ -51,52 +51,33 @@ Please, make sure you add the `ooni/probe-cli` label.
 
 ## Build instructions
 
+Be sure you have:
+
+1. the golang version mentioned inside the [GOVERSION](GOVERSION) file;
+
+2. a C compiler (Mingw-w64 for Windows).
+
+### Caveats
+
+As of 2022-08-22, building with go1.19 will not include [Psiphon](https://psiphon.ca/) as
+a dependency. Fixing this issue is TODO(https://github.com/ooni/probe/issues/2222).
+
 ### ooniprobe
 
-Be sure you have golang 1.18.3 and a C compiler (Mingw-w64 for Windows). You
-can build using:
+Ooniprobe is the official CLI client. Compile using:
 
 ```bash
-go build -v ./cmd/ooniprobe
+go build -v -ldflags "-s -w" ./cmd/ooniprobe
 ```
 
 This will generate a binary called `ooniprobe` in the current directory.
-
-### Android bindings
-
-Make sure you have GNU make installed, then run:
-
-```bash
-./mk ./MOBILE/android
-```
-
-to build bindings for Android. (Add `OONI_PSIPHON_TAGS=""` if you
-cannot clone private repositories in the https://github.com/ooni namespace.)
-
-The generated bindings are (manually) pushed to the Maven Central package
-repository. The instructions explaining how to integrate these bindings
-are published along with the release notes.
-
-### iOS bindings
-
-Make sure you have GNU make installed, then run:
-
-```bash
-./mk ./MOBILE/ios
-```
-
-to build bindings for iOS. (Add `OONI_PSIPHON_TAGS=""` if you
-cannot clone private repositories in the https://github.com/ooni namespace.)
-
-The generated bindings are (manually) added to GitHub releases. The instructions
-explaining how to integrate these bindings are published along with the release notes.
 
 ### miniooni
 
 Miniooni is the experimental OONI client used for research. Compile using:
 
 ```bash
-go build -v ./internal/cmd/miniooni
+go build -v -ldflags "-s -w" ./internal/cmd/miniooni
 ```
 
 This will generate a binary called `miniooni` in the current directory.
@@ -106,7 +87,7 @@ This will generate a binary called `miniooni` in the current directory.
 Oohelperd is the test helper server. Compile using:
 
 ```bash
-go build -v ./internal/cmd/oohelperd
+go build -v -ldflags "-s -w" ./internal/cmd/oohelperd
 ```
 
 This will generate a binary called `oohelperd` in the current directory.
@@ -123,7 +104,7 @@ Please, see [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Updating dependencies
 
 ```bash
-go get -u -v -d ./... && go mod tidy
+go get -t -u -v ./... && go mod tidy
 ```
 
 ## Releasing
@@ -132,5 +113,5 @@ Create an issue according to [the routine release template](
 https://github.com/ooni/probe/blob/master/.github/ISSUE_TEMPLATE/routine-sprint-releases.md)
 and perform any item inside the check-list.
 
-We build releases using `./mk`, which requires GNU make. Try
-the `./mk help|less` command for detailed usage.
+We build releases using [Makefile](Makefile), which requires GNU make. The
+`make help|less` provides detailed usage.

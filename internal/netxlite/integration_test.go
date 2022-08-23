@@ -435,7 +435,7 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 			NextProtos: []string{"h3"},
 			RootCAs:    netxlite.NewDefaultCertPool(),
 		}
-		sess, err := d.DialContext(ctx, "udp", quictesting.Endpoint("443"), config, &quic.Config{})
+		sess, err := d.DialContext(ctx, quictesting.Endpoint("443"), config, &quic.Config{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -456,7 +456,7 @@ func TestMeasureWithQUICDialer(t *testing.T) {
 			RootCAs:    netxlite.NewDefaultCertPool(),
 		}
 		// Here we assume <target-address>:1 is filtered
-		sess, err := d.DialContext(ctx, "udp", quictesting.Endpoint("1"), config, &quic.Config{})
+		sess, err := d.DialContext(ctx, quictesting.Endpoint("1"), config, &quic.Config{})
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
 			t.Fatal("not the error we expected", err)
 		}

@@ -6,9 +6,11 @@ import (
 	"errors"
 	"net"
 	"reflect"
+	"syscall"
 	"testing"
 	"time"
 
+	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -36,7 +38,7 @@ func TestNewTrace(t *testing.T) {
 				ev := &model.ArchivalNetworkEvent{}
 				ff.Fill(ev)
 				select {
-				case trace.NetworkEvent <- ev:
+				case trace.networkEvent <- ev:
 					idx++
 				default:
 					break Loop
@@ -83,7 +85,13 @@ func TestNewTrace(t *testing.T) {
 			}
 		})
 
-		t.Run("DNSLookup has the expected buffer size", func(t *testing.T) {
+		t.Run("NewQUICDialerWithoutResolverFn is nil", func(t *testing.T) {
+			if trace.NewQUICDialerWithoutResolverFn != nil {
+				t.Fatal("expected nil NewQUICDialerQithoutResolverFn")
+			}
+		})
+
+		t.Run("dnsLookup has the expected buffer size", func(t *testing.T) {
 			ff := &testingx.FakeFiller{}
 			var idx int
 		Loop:
@@ -91,18 +99,37 @@ func TestNewTrace(t *testing.T) {
 				ev := &model.ArchivalDNSLookupResult{}
 				ff.Fill(ev)
 				select {
-				case trace.DNSLookup <- ev:
+				case trace.dnsLookup <- ev:
 					idx++
 				default:
 					break Loop
 				}
 			}
 			if idx != DNSLookupBufferSize {
-				t.Fatal("invalid DNSLookup channel buffer size")
+				t.Fatal("invalid dnsLookup channel buffer size")
 			}
 		})
 
-		t.Run("TCPConnect has the expected buffer size", func(t *testing.T) {
+		t.Run("delayedDNSResponse has the expected buffer size", func(t *testing.T) {
+			ff := &testingx.FakeFiller{}
+			var idx int
+		Loop:
+			for {
+				ev := &model.ArchivalDNSLookupResult{}
+				ff.Fill(ev)
+				select {
+				case trace.delayedDNSResponse <- ev:
+					idx++
+				default:
+					break Loop
+				}
+			}
+			if idx != DelayedDNSResponseBufferSize {
+				t.Fatal("invalid delayedDNSResponse channel buffer size")
+			}
+		})
+
+		t.Run("tcpConnect has the expected buffer size", func(t *testing.T) {
 			ff := &testingx.FakeFiller{}
 			var idx int
 		Loop:
@@ -110,18 +137,18 @@ func TestNewTrace(t *testing.T) {
 				ev := &model.ArchivalTCPConnectResult{}
 				ff.Fill(ev)
 				select {
-				case trace.TCPConnect <- ev:
+				case trace.tcpConnect <- ev:
 					idx++
 				default:
 					break Loop
 				}
 			}
 			if idx != TCPConnectBufferSize {
-				t.Fatal("invalid TCPConnect channel buffer size")
+				t.Fatal("invalid tcpConnect channel buffer size")
 			}
 		})
 
-		t.Run("TLSHandshake has the expected buffer size", func(t *testing.T) {
+		t.Run("tlsHandshake has the expected buffer size", func(t *testing.T) {
 			ff := &testingx.FakeFiller{}
 			var idx int
 		Loop:
@@ -129,14 +156,33 @@ func TestNewTrace(t *testing.T) {
 				ev := &model.ArchivalTLSOrQUICHandshakeResult{}
 				ff.Fill(ev)
 				select {
-				case trace.TLSHandshake <- ev:
+				case trace.tlsHandshake <- ev:
 					idx++
 				default:
 					break Loop
 				}
 			}
 			if idx != TLSHandshakeBufferSize {
-				t.Fatal("invalid TLSHandshake channel buffer size")
+				t.Fatal("invalid tlsHandshake channel buffer size")
+			}
+		})
+
+		t.Run("quicHandshake has the expected buffer size", func(t *testing.T) {
+			ff := &testingx.FakeFiller{}
+			var idx int
+		Loop:
+			for {
+				ev := &model.ArchivalTLSOrQUICHandshakeResult{}
+				ff.Fill(ev)
+				select {
+				case trace.quicHandshake <- ev:
+					idx++
+				default:
+					break Loop
+				}
+			}
+			if idx != QUICHandshakeBufferSize {
+				t.Fatal("invalid quicHandshake channel buffer size")
 			}
 		})
 
@@ -452,6 +498,73 @@ func TestTrace(t *testing.T) {
 				t.Fatal("state is not a zero value")
 			}
 			if conn != nil {
+				t.Fatal("expected nil conn")
+			}
+		})
+	})
+
+	t.Run("NewQUICDialerWithoutResolverFn works as intended", func(t *testing.T) {
+		t.Run("when not nil", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			tx := &Trace{
+				NewQUICDialerWithoutResolverFn: func(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
+					return &mocks.QUICDialer{
+						MockDialContext: func(ctx context.Context, address string,
+							tlsConfig *tls.Config, quicConfig *quic.Config) (quic.EarlyConnection, error) {
+							return nil, mockedErr
+						},
+					}
+				},
+			}
+			qdx := tx.newQUICDialerWithoutResolver(&mocks.QUICListener{}, model.DiscardLogger)
+			ctx := context.Background()
+			qconn, err := qdx.DialContext(ctx, "1.1.1.1:443", &tls.Config{}, &quic.Config{})
+			if !errors.Is(err, mockedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if qconn != nil {
+				t.Fatal("expected nil conn")
+			}
+		})
+
+		t.Run("when nil", func(t *testing.T) {
+			mockedErr := errors.New("mocked")
+			tx := &Trace{
+				NewQUICDialerWithoutResolverFn: nil, // explicit
+			}
+			pconn := &mocks.UDPLikeConn{
+				MockLocalAddr: func() net.Addr {
+					return &net.UDPAddr{
+						Port: 0,
+					}
+				},
+				MockRemoteAddr: func() net.Addr {
+					return &net.UDPAddr{
+						Port: 0,
+					}
+				},
+				MockSyscallConn: func() (syscall.RawConn, error) {
+					return nil, mockedErr
+				},
+				MockClose: func() error {
+					return nil
+				},
+			}
+			listener := &mocks.QUICListener{
+				MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
+					return pconn, nil
+				},
+			}
+			tlsConfig := &tls.Config{
+				InsecureSkipVerify: true,
+			}
+			dialer := tx.newQUICDialerWithoutResolver(listener, model.DiscardLogger)
+			ctx := context.Background()
+			qconn, err := dialer.DialContext(ctx, "1.1.1.1:443", tlsConfig, &quic.Config{})
+			if !errors.Is(err, mockedErr) {
+				t.Fatal("unexpected err", err)
+			}
+			if qconn != nil {
 				t.Fatal("expected nil conn")
 			}
 		})

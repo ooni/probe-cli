@@ -87,7 +87,7 @@ type MockableTaskRunnerDependencies struct {
 	// taskExperimentBuilder:
 
 	MockableSetCallbacks          func(callbacks model.ExperimentCallbacks)
-	MockableInputPolicy           func() engine.InputPolicy
+	MockableInputPolicy           func() model.InputPolicy
 	MockableNewExperimentInstance func() taskExperiment
 	MockableInterruptible         func() bool
 
@@ -169,7 +169,7 @@ func (dep *MockableTaskRunnerDependencies) SetCallbacks(callbacks model.Experime
 	dep.MockableSetCallbacks(callbacks)
 }
 
-func (dep *MockableTaskRunnerDependencies) InputPolicy() engine.InputPolicy {
+func (dep *MockableTaskRunnerDependencies) InputPolicy() model.InputPolicy {
 	return dep.MockableInputPolicy()
 }
 

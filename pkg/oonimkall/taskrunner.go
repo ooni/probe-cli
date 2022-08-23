@@ -184,12 +184,12 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 	// In fact, our current app assumes that it's its
 	// responsibility to load the inputs, not oonimkall's.
 	switch builder.InputPolicy() {
-	case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
+	case model.InputOrQueryBackend, model.InputStrictlyRequired:
 		if len(r.settings.Inputs) <= 0 {
 			r.emitter.EmitFailureStartup("no input provided")
 			return
 		}
-	case engine.InputOrStaticDefault:
+	case model.InputOrStaticDefault:
 		if len(r.settings.Inputs) <= 0 {
 			inputs, err := engine.StaticBareInputForExperiment(r.settings.Name)
 			if err != nil {
@@ -198,7 +198,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 			}
 			r.settings.Inputs = inputs
 		}
-	case engine.InputOptional:
+	case model.InputOptional:
 		if len(r.settings.Inputs) <= 0 {
 			r.settings.Inputs = append(r.settings.Inputs, "")
 		}
@@ -240,7 +240,7 @@ func (r *runnerForTask) Run(rootCtx context.Context) {
 		// this policy in the future, but for now this covers in a
 		// reasonable way web connectivity, so we should be ok.
 		switch builder.InputPolicy() {
-		case engine.InputOrQueryBackend, engine.InputStrictlyRequired:
+		case model.InputOrQueryBackend, model.InputStrictlyRequired:
 			var (
 				cancelMeas   context.CancelFunc
 				cancelSubmit context.CancelFunc

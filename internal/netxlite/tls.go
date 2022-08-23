@@ -13,6 +13,7 @@ import (
 	"net"
 	"time"
 
+	ootls "github.com/ooni/oocrypto/tls"
 	oohttp "github.com/ooni/oohttp"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -238,14 +239,7 @@ func (h *tlsHandshakerConfigurable) newConn(conn net.Conn, config *tls.Config) (
 	if h.NewConn != nil {
 		return h.NewConn(conn, config)
 	}
-	// This used to be the place where we created a TLSConn using
-	// github.com/ooni/oocrypto's TLS. However, it seems this strategy
-	// does not correctly pick up the CPU capabilities. So, we have
-	// now disabled oocrypto until we investigate, to avoid making the
-	// development branch worse than it could in terms of TLS fingerprint.
-	//
-	// TODO(https://github.com/ooni/probe/issues/2122)
-	return tls.Client(conn, config), nil
+	return ootls.NewClientConnStdlib(conn, config)
 }
 
 // tlsHandshakerLogger is a TLSHandshaker with logging.

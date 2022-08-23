@@ -14,14 +14,20 @@ jobs:
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
-        go: [ "1.18.3" ]
         os: [ "ubuntu-20.04", "windows-2019", "macos-10.15" ]
     steps:
+
+      - uses: actions/checkout@v2
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo ::set-output name=version::$(cat GOVERSION)
+        shell: bash
+
       - uses: magnetikonline/action-golang-cache@v2
         with:
-          go-version: "${{ matrix.go }}"
-          cache-key-suffix: "-coverage-${{ matrix.go }}"
-      - uses: actions/checkout@v2
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-coverage-${{ steps.goversion.outputs.version }}"
 
       # The first test compiles and links against libc and uses getaddrinfo
       - run: go test -race ./internal/netxlite/...
