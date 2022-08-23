@@ -138,6 +138,12 @@ func TestNewResolver(t *testing.T) {
 					MockDecodeCNAME: func() (string, error) {
 						return "dns.google.", nil
 					},
+					MockRcode: func() int {
+						return 0
+					},
+					MockBytes: func() []byte {
+						return []byte{}
+					},
 				}
 				return response, nil
 			},
@@ -213,6 +219,12 @@ func TestNewResolver(t *testing.T) {
 					},
 					MockDecodeCNAME: func() (string, error) {
 						return "dns.google.", nil
+					},
+					MockRcode: func() int {
+						return 0
+					},
+					MockBytes: func() []byte {
+						return []byte{}
 					},
 				}
 				return response, nil
@@ -363,6 +375,12 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 				MockDecodeCNAME: func() (string, error) {
 					return "", netxlite.ErrOODNSNoAnswer
 				},
+				MockRcode: func() int {
+					return 0
+				},
+				MockBytes: func() []byte {
+					return []byte{}
+				},
 			}
 			err := trace.OnDelayedDNSResponse(started, txp, query, dnsResponse, addrs, nil, finished)
 			// 2. read the trace
@@ -404,6 +422,12 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			dnsResponse := &mocks.DNSResponse{
 				MockDecodeCNAME: func() (string, error) {
 					return "", netxlite.ErrOODNSNoAnswer
+				},
+				MockRcode: func() int {
+					return 0
+				},
+				MockBytes: func() []byte {
+					return []byte{}
 				},
 			}
 			err := trace.OnDelayedDNSResponse(started, txp, query, dnsResponse, addrs, nil, finished)
@@ -448,6 +472,12 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 				MockDecodeCNAME: func() (string, error) {
 					return "", netxlite.ErrOODNSNoAnswer
 				},
+				MockRcode: func() int {
+					return 0
+				},
+				MockBytes: func() []byte {
+					return []byte{}
+				},
 			}
 			for i := 0; i < events; i++ {
 				// fill the trace
@@ -490,6 +520,12 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			dnsResponse := &mocks.DNSResponse{
 				MockDecodeCNAME: func() (string, error) {
 					return "", netxlite.ErrOODNSNoAnswer
+				},
+				MockRcode: func() int {
+					return 0
+				},
+				MockBytes: func() []byte {
+					return []byte{}
 				},
 			}
 			trace.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(trace.Index, started.Sub(trace.ZeroTime),
