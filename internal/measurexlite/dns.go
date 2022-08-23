@@ -127,6 +127,12 @@ func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration,
 
 // newArchivalDNSAnswers generates []model.ArchivalDNSAnswer from [addrs] and [resp].
 func newArchivalDNSAnswers(addrs []string, resp model.DNSResponse) (out []model.ArchivalDNSAnswer) {
+	// Design note: in principle we might want to extract everything from the
+	// response but, when we're called by netxlite, netxlite has already extracted
+	// the addresses to return them to the caller, so I think it's fine to keep
+	// this extraction code as such rather than suppressing passing the addrs from
+	// netxlite. Also, a wrong IP address is a bug because netxlite should not
+	// return invalid IP addresses from its resolvers, so we want to know about that.
 	for _, addr := range addrs {
 		ipv6, err := netxlite.IsIPv6(addr)
 		if err != nil {
@@ -158,8 +164,7 @@ func newArchivalDNSAnswers(addrs []string, resp model.DNSResponse) (out []model.
 		}
 	}
 	if resp != nil {
-		cname, err := resp.DecodeCNAME()
-		if err == nil && cname != "" {
+		if cname, err := resp.DecodeCNAME(); err == nil && cname != "" {
 			out = append(out, model.ArchivalDNSAnswer{
 				ASN:        0,
 				ASOrgName:  "",
