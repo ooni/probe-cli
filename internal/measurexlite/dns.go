@@ -133,6 +133,8 @@ func newArchivalDNSAnswers(addrs []string, resp model.DNSResponse) (out []model.
 	// this extraction code as such rather than suppressing passing the addrs from
 	// netxlite. Also, a wrong IP address is a bug because netxlite should not
 	// return invalid IP addresses from its resolvers, so we want to know about that.
+
+	// Include IP addresses extracted by netxlite
 	for _, addr := range addrs {
 		ipv6, err := netxlite.IsIPv6(addr)
 		if err != nil {
@@ -163,7 +165,11 @@ func newArchivalDNSAnswers(addrs []string, resp model.DNSResponse) (out []model.
 			})
 		}
 	}
+
+	// Include additional answer types when a response is available
 	if resp != nil {
+
+		// Include CNAME if available
 		if cname, err := resp.DecodeCNAME(); err == nil && cname != "" {
 			out = append(out, model.ArchivalDNSAnswer{
 				ASN:        0,
@@ -175,6 +181,9 @@ func newArchivalDNSAnswers(addrs []string, resp model.DNSResponse) (out []model.
 				TTL:        nil,
 			})
 		}
+
+		// TODO(bassosimone): what other fields generally present inside A/AAAA replies
+		// would it be useful to extract here? Perhaps, the SoA field?
 	}
 	return
 }
