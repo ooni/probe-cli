@@ -114,7 +114,7 @@ type DNSNetworkAddresser interface {
 func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration, reso DNSNetworkAddresser, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Duration) *model.ArchivalDNSLookupResult {
 	return &model.ArchivalDNSLookupResult{
-		Answers:          archivalAnswersFromAddrs(addrs),
+		Answers:          newArchivalDNSAnswers(addrs, response),
 		Engine:           reso.Network(),
 		Failure:          tracex.NewFailure(err),
 		Hostname:         query.Domain(),
@@ -125,8 +125,16 @@ func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration,
 	}
 }
 
-// archivalAnswersFromAddrs generates model.ArchivalDNSAnswer from an array of addresses
-func archivalAnswersFromAddrs(addrs []string) (out []model.ArchivalDNSAnswer) {
+// newArchivalDNSAnswers generates []model.ArchivalDNSAnswer from [addrs] and [resp].
+func newArchivalDNSAnswers(addrs []string, resp model.DNSResponse) (out []model.ArchivalDNSAnswer) {
+	// Design note: in principle we might want to extract everything from the
+	// response but, when we're called by netxlite, netxlite has already extracted
+	// the addresses to return them to the caller, so I think it's fine to keep
+	// this extraction code as such rather than suppressing passing the addrs from
+	// netxlite. Also, a wrong IP address is a bug because netxlite should not
+	// return invalid IP addresses from its resolvers, so we want to know about that.
+
+	// Include IP addresses extracted by netxlite
 	for _, addr := range addrs {
 		ipv6, err := netxlite.IsIPv6(addr)
 		if err != nil {
@@ -142,6 +150,7 @@ func archivalAnswersFromAddrs(addrs []string) (out []model.ArchivalDNSAnswer) {
 				AnswerType: "A",
 				Hostname:   "",
 				IPv4:       addr,
+				IPv6:       "",
 				TTL:        nil,
 			})
 		case true:
@@ -150,10 +159,31 @@ func archivalAnswersFromAddrs(addrs []string) (out []model.ArchivalDNSAnswer) {
 				ASOrgName:  org,
 				AnswerType: "AAAA",
 				Hostname:   "",
+				IPv4:       "",
 				IPv6:       addr,
 				TTL:        nil,
 			})
 		}
+	}
+
+	// Include additional answer types when a response is available
+	if resp != nil {
+
+		// Include CNAME if available
+		if cname, err := resp.DecodeCNAME(); err == nil && cname != "" {
+			out = append(out, model.ArchivalDNSAnswer{
+				ASN:        0,
+				ASOrgName:  "",
+				AnswerType: "CNAME",
+				Hostname:   cname,
+				IPv4:       "",
+				IPv6:       "",
+				TTL:        nil,
+			})
+		}
+
+		// TODO(bassosimone): what other fields generally present inside A/AAAA replies
+		// would it be useful to extract here? Perhaps, the SoA field?
 	}
 	return
 }
