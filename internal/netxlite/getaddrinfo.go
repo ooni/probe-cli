@@ -29,7 +29,7 @@ func (err *ErrGetaddrinfo) Unwrap() error {
 	return err.Underlying
 }
 
-// ErrorToGetaddrinfoRetval converts an arbitrary error to
+// ErrorToGetaddrinfoRetvalOrZero converts an arbitrary error to
 // the return value of getaddrinfo. If err is nil or is not
 // an instance of ErrGetaddrinfo, we just return zero.
 func ErrorToGetaddrinfoRetvalOrZero(err error) int64 {
