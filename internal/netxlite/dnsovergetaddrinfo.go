@@ -12,6 +12,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
 // dnsOverGetaddrinfoTransport is a DNSTransport using getaddrinfo.
@@ -103,6 +104,7 @@ func (txp *dnsOverGetaddrinfoTransport) CloseIdleConnections() {
 }
 
 func (r *dnsOverGetaddrinfoResponse) Query() model.DNSQuery {
+	runtimex.PanicIfNil(r.query, "dnsOverGetaddrinfoResponse with nil query")
 	return r.query
 }
 
@@ -119,6 +121,9 @@ func (r *dnsOverGetaddrinfoResponse) DecodeHTTPS() (*model.HTTPSSvc, error) {
 }
 
 func (r *dnsOverGetaddrinfoResponse) DecodeLookupHost() ([]string, error) {
+	if len(r.addrs) <= 0 {
+		return nil, ErrOODNSNoAnswer
+	}
 	return r.addrs, nil
 }
 
@@ -127,5 +132,8 @@ func (r *dnsOverGetaddrinfoResponse) DecodeNS() ([]*net.NS, error) {
 }
 
 func (r *dnsOverGetaddrinfoResponse) DecodeCNAME() (string, error) {
+	if r.cname == "" {
+		return "", ErrOODNSNoAnswer
+	}
 	return r.cname, nil
 }

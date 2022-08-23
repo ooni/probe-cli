@@ -284,6 +284,38 @@ func TestDNSOverUDPTransport(t *testing.T) {
 	})
 
 	t.Run("recording delayed DNS responses", func(t *testing.T) {
+		t.Run("without any context-injected traces", func(t *testing.T) {
+			srvr := &filtering.DNSServer{
+				OnQuery: func(domain string) filtering.DNSAction {
+					return filtering.DNSActionLocalHostPlusCache
+				},
+				Cache: map[string][]string{
+					"dns.google.": {"8.8.8.8"},
+				},
+			}
+			listener, err := srvr.Start("127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer listener.Close()
+			dialer := NewDialerWithoutResolver(model.DiscardLogger)
+			expectedAddress := listener.LocalAddr().String()
+			txp := NewUnwrappedDNSOverUDPTransport(dialer, expectedAddress)
+			txp.lateResponses = make(chan any, 1) // with buffer to avoid deadlocks
+			encoder := &DNSEncoderMiekg{}
+			query := encoder.Encode("dns.google.", dns.TypeA, false)
+			rch, err := txp.RoundTrip(context.Background(), query)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := rch.DecodeLookupHost(); err != nil {
+				t.Fatal(err)
+			}
+			// Now wait for the delayed response to arrive. We don't care much
+			// about observing it here, rather we want to know it happened.
+			<-txp.lateResponses
+		})
+
 		t.Run("uses a context-injected custom trace (success case)", func(t *testing.T) {
 			var (
 				delayedDNSResponseCalled bool
@@ -354,6 +386,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer mu.Unlock()
 			mu.Lock()
 			if diff := cmp.Diff(addrs, []string{"127.0.0.1"}); diff != "" {
 				t.Fatal(diff)
@@ -376,7 +409,6 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			if !goodError {
 				t.Fatal("unexpected error encountered")
 			}
-			mu.Unlock()
 		})
 
 		t.Run("uses a context-injected custom trace (failure case)", func(t *testing.T) {
@@ -445,6 +477,7 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer mu.Unlock()
 			mu.Lock()
 			if diff := cmp.Diff(addrs, []string{"127.0.0.1"}); diff != "" {
 				t.Fatal(diff)
@@ -467,7 +500,6 @@ func TestDNSOverUDPTransport(t *testing.T) {
 			if !goodError {
 				t.Fatal("unexpected error encountered")
 			}
-			mu.Unlock()
 		})
 	})
 
