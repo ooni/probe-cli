@@ -17,7 +17,10 @@ import (
 
 // dnsOverGetaddrinfoTransport is a DNSTransport using getaddrinfo.
 type dnsOverGetaddrinfoTransport struct {
-	testableTimeout   time.Duration
+	// (OPTIONAL) allows to run tests with a short timeout
+	testableTimeout time.Duration
+
+	// (OPTIONAL) allows to mock the underlying getaddrinfo call
 	testableLookupANY func(ctx context.Context, domain string) ([]string, string, error)
 }
 
@@ -34,7 +37,7 @@ func (txp *dnsOverGetaddrinfoTransport) RoundTrip(
 	}
 	resp := &dnsOverGetaddrinfoResponse{
 		addrs: addrs,
-		cname: "", // TODO: implement this functionality
+		cname: cname,
 		query: query,
 	}
 	return resp, nil
@@ -46,8 +49,12 @@ type dnsOverGetaddrinfoResponse struct {
 	query model.DNSQuery
 }
 
+// Used to move addrs and cname out of the worker goroutine
 type dnsOverGetaddrinfoAddrsAndCNAME struct {
+	// List of resolved addresses (it's a bug if this is empty)
 	addrs []string
+
+	// Resolved CNAME or empty string
 	cname string
 }
 
@@ -57,7 +64,7 @@ func (txp *dnsOverGetaddrinfoTransport) lookup(
 	// resolutions when using the system resolver. We have seen cases
 	// in which such a timeout becomes too large. One such case is
 	// described in https://github.com/ooni/probe/issues/1726.
-	addrsch, errch := make(chan *dnsOverGetaddrinfoAddrsAndCNAME, 1), make(chan error, 1)
+	outch, errch := make(chan *dnsOverGetaddrinfoAddrsAndCNAME, 1), make(chan error, 1)
 	ctx, cancel := context.WithTimeout(ctx, txp.timeout())
 	defer cancel()
 	go func() {
@@ -66,7 +73,7 @@ func (txp *dnsOverGetaddrinfoTransport) lookup(
 			errch <- err
 			return
 		}
-		addrsch <- &dnsOverGetaddrinfoAddrsAndCNAME{
+		outch <- &dnsOverGetaddrinfoAddrsAndCNAME{
 			addrs: addrs,
 			cname: cname,
 		}
@@ -74,7 +81,7 @@ func (txp *dnsOverGetaddrinfoTransport) lookup(
 	select {
 	case <-ctx.Done():
 		return nil, "", ctx.Err()
-	case p := <-addrsch:
+	case p := <-outch:
 		return p.addrs, p.cname, nil
 	case err := <-errch:
 		return nil, "", err
@@ -92,7 +99,7 @@ func (txp *dnsOverGetaddrinfoTransport) lookupfn() func(ctx context.Context, dom
 	if txp.testableLookupANY != nil {
 		return txp.testableLookupANY
 	}
-	return getaddrinfoLookupHost
+	return getaddrinfoLookupANY
 }
 
 func (txp *dnsOverGetaddrinfoTransport) RequiresPadding() bool {
