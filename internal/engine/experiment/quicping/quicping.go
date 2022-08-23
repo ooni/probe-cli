@@ -18,7 +18,6 @@ import (
 	_ "crypto/sha256"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
@@ -44,8 +43,8 @@ type Config struct {
 	// Port is the port to test.
 	Port int64 `ooni:"port is the port to test"`
 
-	// networkLibrary is the underlying network library. Can be used for testing.
-	networkLib model.UnderlyingNetworkLibrary
+	// netListenUDP allows mocking the real net.ListenUDP call
+	netListenUDP func(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error)
 }
 
 func (c *Config) repetitions() int64 {
@@ -62,11 +61,11 @@ func (c *Config) port() string {
 	return "443"
 }
 
-func (c *Config) networkLibrary() model.UnderlyingNetworkLibrary {
-	if c.networkLib != nil {
-		return c.networkLib
+func (c *Config) doListenUDP(network string, laddr *net.UDPAddr) (model.UDPLikeConn, error) {
+	if c.netListenUDP != nil {
+		return c.netListenUDP(network, laddr)
 	}
-	return &netxlite.TProxyStdlib{}
+	return net.ListenUDP(network, laddr)
 }
 
 // TestKeys contains the experiment results.
@@ -246,7 +245,7 @@ func (m *Measurer) Run(
 	measurement.TestKeys = tk
 
 	// create UDP socket
-	pconn, err := m.config.networkLibrary().ListenUDP("udp", &net.UDPAddr{})
+	pconn, err := m.config.doListenUDP("udp", &net.UDPAddr{})
 	if err != nil {
 		return err
 	}
