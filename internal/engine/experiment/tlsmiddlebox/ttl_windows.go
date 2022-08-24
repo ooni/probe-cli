@@ -13,7 +13,7 @@ func (c *dialerTTLWrapperConn) SetTTL(ttl int) error {
 	conn := c.Conn
 	tcpConn, ok := conn.(*net.TCPConn)
 	if !ok {
-		return errors.New("underlying conn is not of type net.TCPConn")
+		return ErrInvalidConnWrapper
 	}
 	rawConn, err := tcpConn.SyscallConn()
 	if err != nil {

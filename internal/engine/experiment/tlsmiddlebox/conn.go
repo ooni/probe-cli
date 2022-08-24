@@ -7,11 +7,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+var ErrInvalidConnWrapper = errors.New("invalid conn wrapper")
+
 // setConnTTL calls SetTTL to set the TTL for a dialerTTLWrapperConn
 func setConnTTL(conn net.Conn, ttl int) error {
 	ttlWrapper, ok := conn.(*dialerTTLWrapperConn)
 	if !ok {
-		return errors.New("invalid TTL wrapper for conn")
+		return ErrInvalidConnWrapper
 	}
 	return ttlWrapper.SetTTL(ttl)
 }
