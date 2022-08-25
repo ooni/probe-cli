@@ -1,0 +1,8 @@
+[submodule "probe-android"]
+	path = probe-android
+	url = git@github.com:ooni/probe-android.git
+	branch = evaluation/flutter
+[submodule "probe-ios"]
+	path = probe-ios
+	url = git@github.com:ooni/probe-ios.git
+	branch = evaluation/flutter
