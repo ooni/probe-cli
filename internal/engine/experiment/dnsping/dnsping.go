@@ -153,13 +153,13 @@ func (m *Measurer) dnsRoundTrip(ctx context.Context, index int64, zeroTime time.
 		// should be no other query, so we're doing this just for robustness).
 		if lookup.QueryType == "A" || lookup.QueryType == "AAAA" {
 			sp := &SinglePing{
-				Query:           lookup,
-				DelayedResponse: []*model.ArchivalDNSLookupResult{},
+				Query:            lookup,
+				DelayedResponses: []*model.ArchivalDNSLookupResult{},
 			}
 			// record the delayed responses of the corresponding query
 			for _, resp := range delayedResp {
 				if resp.QueryType == lookup.QueryType {
-					sp.DelayedResponse = append(sp.DelayedResponse, resp)
+					sp.DelayedResponses = append(sp.DelayedResponses, resp)
 				}
 			}
 			pings = append(pings, sp)
