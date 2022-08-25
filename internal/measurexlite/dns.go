@@ -127,6 +127,7 @@ func NewArchivalDNSLookupResultFromRoundTrip(index int64, started time.Duration,
 		ResolverAddress:  reso.Address(),
 		T0:               started.Seconds(),
 		T:                finished.Seconds(),
+		TransactionID:    index,
 	}
 }
 
