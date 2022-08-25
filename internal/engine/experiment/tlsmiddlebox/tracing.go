@@ -7,6 +7,7 @@ package tlsmiddlebox
 import (
 	"context"
 	"crypto/tls"
+	"net"
 	"sort"
 	"sync"
 	"time"
@@ -24,36 +25,6 @@ var ClientIDs = map[int]*utls.ClientHelloID{
 	2: &utls.HelloChrome_Auto,
 	3: &utls.HelloFirefox_Auto,
 	4: &utls.HelloIOS_Auto,
-}
-
-// DNSLookup performs a DNS Lookup for the passed domain
-func (m *Measurer) DNSLookup(ctx context.Context, index int64, zeroTime time.Time,
-	logger model.Logger, domain string, tk *TestKeys) ([]string, error) {
-	url := m.config.resolverURL()
-	trace := measurexlite.NewTrace(index, zeroTime)
-	ol := measurexlite.NewOperationLogger(logger, "DNSLookup #%d, %s, %s", index, url, domain)
-	// TODO(DecFox): We are currently using the DoH resolver, we will
-	// switch to the TRR2 resolver once we have it in measurexlite
-	// Issue: https://github.com/ooni/probe/issues/2185
-	resolver := trace.NewParallelDNSOverHTTPSResolver(logger, url)
-	addrs, err := resolver.LookupHost(ctx, domain)
-	ol.Stop(err)
-	tk.addQueries(trace.DNSLookupsFromRoundTrip())
-	return addrs, err
-}
-
-// TCPConnect performs a TCP connect to filter working addresses
-func (m *Measurer) TCPConnect(ctx context.Context, index int64, zeroTime time.Time,
-	logger model.Logger, address string, tk *TestKeys) error {
-	trace := measurexlite.NewTrace(index, zeroTime)
-	dialer := trace.NewDialerWithoutResolver(logger)
-	ol := measurexlite.NewOperationLogger(logger, "TCPConnect #%d %s", index, address)
-	conn, err := dialer.DialContext(ctx, "tcp", address)
-	ol.Stop(err)
-	measurexlite.MaybeClose(conn)
-	tcpEvents := trace.TCPConnects()
-	tk.addTCPConnect(tcpEvents)
-	return err
 }
 
 // MeasureTLS performs tracing using control and target SNI
@@ -101,7 +72,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	ol := measurexlite.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
 	conn, err := d.DialContext(ctx, "tcp", address)
 	if err != nil {
-		iteration := newIterationFromHandshake(ttl, err, nil)
+		iteration := newIterationFromHandshake(ttl, err, nil, nil)
 		tr.addIterations(iteration)
 		ol.Stop(err)
 		return
@@ -109,7 +80,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	defer conn.Close()
 	err = setConnTTL(conn, ttl)
 	if err != nil {
-		iteration := newIterationFromHandshake(ttl, err, nil)
+		iteration := newIterationFromHandshake(ttl, err, nil, nil)
 		tr.addIterations(iteration)
 		ol.Stop(err)
 		return
@@ -122,11 +93,26 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	}
 	_, _, err = thx.Handshake(ctx, conn, genTLSConfig(sni))
 	ol.Stop(err)
+	soErr := extractSoError(conn)
 	// reset the TTL value to ensure that conn closes successfully
 	// Note: we do not check for errors here
 	setConnTTL(conn, 64)
-	iteration := newIterationFromHandshake(ttl, nil, trace.FirstTLSHandshakeOrNil())
+	iteration := newIterationFromHandshake(ttl, nil, soErr, trace.FirstTLSHandshakeOrNil())
 	tr.addIterations(iteration)
+}
+
+// extractSoError fetches the SO_ERROR value and returns a non-nil error if
+// it qualifies as a valid ICMP soft error
+func extractSoError(conn net.Conn) error {
+	soErrno, err := getSoErr(conn)
+	if err != nil {
+		return nil
+	}
+	icmpErr := netxlite.MaybeNewErrWrapper(netxlite.ClassifyGenericError, netxlite.TLSHandshakeOperation, soErrno)
+	if icmpErr.Error() != netxlite.FailureHostUnreachable {
+		return nil
+	}
+	return icmpErr
 }
 
 // genTLSConfig generates tls.Config from a given SNI

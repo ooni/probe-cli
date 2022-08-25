@@ -12,7 +12,7 @@ func (c *dialerTTLWrapperConn) SetTTL(ttl int) error {
 	conn := c.Conn
 	tcpConn, ok := conn.(*net.TCPConn)
 	if !ok {
-		return ErrInvalidConnWrapper
+		return errInvalidConnWrapper
 	}
 	rawConn, err := tcpConn.SyscallConn()
 	if err != nil {
@@ -29,11 +29,11 @@ func (c *dialerTTLWrapperConn) GetSoErr() (errno int, err error) {
 	conn := c.Conn
 	tcpConn, ok := conn.(*net.TCPConn)
 	if !ok {
-		return 0, ErrInvalidConnWrapper
+		return 0, errInvalidConnWrapper
 	}
 	rawConn, err := tcpConn.SyscallConn()
 	if err != nil {
-		return 0, ErrInvalidConnWrapper
+		return 0, errInvalidConnWrapper
 	}
 	rawErr := rawConn.Control(func(fd uintptr) {
 		errno, err = syscall.GetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_ERROR)

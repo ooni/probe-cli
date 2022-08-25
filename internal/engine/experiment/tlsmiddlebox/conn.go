@@ -3,19 +3,33 @@ package tlsmiddlebox
 import (
 	"errors"
 	"net"
+	"syscall"
 
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
-var ErrInvalidConnWrapper = errors.New("invalid conn wrapper")
+var errInvalidConnWrapper = errors.New("invalid conn wrapper")
 
 // setConnTTL calls SetTTL to set the TTL for a dialerTTLWrapperConn
 func setConnTTL(conn net.Conn, ttl int) error {
 	ttlWrapper, ok := conn.(*dialerTTLWrapperConn)
 	if !ok {
-		return ErrInvalidConnWrapper
+		return errInvalidConnWrapper
 	}
 	return ttlWrapper.SetTTL(ttl)
+}
+
+// getSoErr calls GetSoErr to fetch the SO_ERROR value
+func getSoErr(conn net.Conn) (soErr error, err error) {
+	ttlWrapper, ok := conn.(*dialerTTLWrapperConn)
+	if !ok {
+		return nil, errInvalidConnWrapper
+	}
+	errno, err := ttlWrapper.GetSoErr()
+	if err != nil {
+		return nil, err
+	}
+	return syscall.Errno(errno), nil
 }
 
 // dialerTTLWrapperConn wraps errors as well as allows us to set the TTL
