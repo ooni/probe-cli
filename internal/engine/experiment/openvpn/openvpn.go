@@ -33,8 +33,7 @@ const (
 
 	// pingCount tells how many icmp echo requests to send.
 	// pingCount = 10
-	// TODO settle on standard.
-	pingCount = 5
+	pingCount = 5 // TODO settle on a standard
 
 	// pingTarget is the target IP we used for pings.
 	pingTarget = "8.8.8.8"
@@ -96,6 +95,9 @@ type TestKeys struct {
 
 	// BootstrapTime contains the bootstrap time on success.
 	BootstrapTime float64 `json:"bootstrap_time"`
+
+	// Stage captures a uint16 event measuring the progress of the VPN connection.
+	Stage uint16 `json:"stage"`
 
 	// Failure contains the failure string or nil.
 	Failure *string `json:"failure"`
@@ -330,6 +332,24 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	}()
 
 	s := time.Now()
+
+	// ---------------------------------------------------
+	// TODO use step-by-step to get a trace for the dialer
+	// trace := measurexlite.NewTrace(index, zeroTime)
+	// ---------------------------------------------------
+
+	vpnEventChan := make(chan uint16, 100)
+	m.rawDialer.EventListener = vpnEventChan
+
+	go func() {
+		for {
+			select {
+			case stage := <-vpnEventChan:
+				tk.Stage = stage
+			}
+		}
+	}()
+
 	conn, err := m.rawDialer.DialContext(ctx)
 	tk.BootstrapTime = time.Now().Sub(s).Seconds()
 	if err != nil {
