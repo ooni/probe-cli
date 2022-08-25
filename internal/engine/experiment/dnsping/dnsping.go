@@ -147,13 +147,22 @@ func (m *Measurer) dnsRoundTrip(ctx context.Context, index int64, zeroTime time.
 	resolver := trace.NewParallelUDPResolver(logger, dialer, address)
 	_, err := resolver.LookupHost(ctx, domain)
 	ol.Stop(err)
+	delayedResp := trace.DelayedDNSResponseWithTimeout(ctx, 250*time.Millisecond)
 	for _, lookup := range trace.DNSLookupsFromRoundTrip() {
 		// make sure we only include the query types we care about (in principle, there
 		// should be no other query, so we're doing this just for robustness).
 		if lookup.QueryType == "A" || lookup.QueryType == "AAAA" {
-			pings = append(pings, &SinglePing{
-				Query: lookup,
-			})
+			sp := &SinglePing{
+				Query:           lookup,
+				DelayedResponse: []*model.ArchivalDNSLookupResult{},
+			}
+			// record the delayed responses of the corresponding query
+			for _, resp := range delayedResp {
+				if resp.QueryType == lookup.QueryType {
+					sp.DelayedResponse = append(sp.DelayedResponse, resp)
+				}
+			}
+			pings = append(pings, sp)
 		}
 	}
 	tk.addPings(pings)
