@@ -17,65 +17,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/testingx"
 )
 
-func TestNewQUICListener(t *testing.T) {
-	t.Run("NewQUICListenerTrace creates a wrapped listener", func(t *testing.T) {
-		underlying := &mocks.QUICListener{}
-		zeroTime := time.Now()
-		trace := NewTrace(0, zeroTime)
-		listenert := trace.WrapQUICListener(underlying).(*quicListenerTrace)
-		if listenert.QUICListener != underlying {
-			t.Fatal("invalid quic dialer")
-		}
-		if listenert.tx != trace {
-			t.Fatal("invalid trace")
-		}
-	})
-
-	t.Run("Listen works as intended", func(t *testing.T) {
-		t.Run("with error", func(t *testing.T) {
-			zeroTime := time.Now()
-			trace := NewTrace(0, zeroTime)
-			mockedErr := errors.New("mocked")
-			mockListener := &mocks.QUICListener{
-				MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-					return nil, mockedErr
-				},
-			}
-			listener := trace.WrapQUICListener(mockListener)
-			pconn, err := listener.Listen(&net.UDPAddr{})
-			if !errors.Is(err, mockedErr) {
-				t.Fatal("unexpected err", err)
-			}
-			if pconn != nil {
-				t.Fatal("expected nil conn")
-			}
-		})
-
-		t.Run("without error", func(t *testing.T) {
-			zeroTime := time.Now()
-			trace := NewTrace(0, zeroTime)
-			mockConn := &mocks.UDPLikeConn{}
-			mockListener := &mocks.QUICListener{
-				MockListen: func(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-					return mockConn, nil
-				},
-			}
-			listener := trace.WrapQUICListener(mockListener)
-			pconn, err := listener.Listen(&net.UDPAddr{})
-			if err != nil {
-				t.Fatal("unexpected err", err)
-			}
-			conn := pconn.(*udpLikeConnTrace)
-			if conn.UDPLikeConn != mockConn {
-				t.Fatal("invalid conn")
-			}
-			if conn.tx != trace {
-				t.Fatal("invalid trace")
-			}
-		})
-	})
-}
-
 func TestNewQUICDialerWithoutResolver(t *testing.T) {
 	t.Run("NewQUICDialerWithoutResolver creates a wrapped dialer", func(t *testing.T) {
 		underlying := &mocks.QUICDialer{}
@@ -101,7 +42,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		trace := NewTrace(0, zeroTime)
 		var hasCorrectTrace bool
 		underlying := &mocks.QUICDialer{
-			MockDialContext: func(ctx context.Context, network, address string, tlsConfig *tls.Config,
+			MockDialContext: func(ctx context.Context, address string, tlsConfig *tls.Config,
 				quicConfig *quic.Config) (quic.EarlyConnection, error) {
 				gotTrace := netxlite.ContextTraceOrDefault(ctx)
 				hasCorrectTrace = (gotTrace == trace)
@@ -114,7 +55,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		listener := &mocks.QUICListener{}
 		dialer := trace.NewQUICDialerWithoutResolver(listener, model.DiscardLogger)
 		ctx := context.Background()
-		conn, err := dialer.DialContext(ctx, "udp", "1.1.1.1:443", &tls.Config{}, &quic.Config{})
+		conn, err := dialer.DialContext(ctx, "1.1.1.1:443", &tls.Config{}, &quic.Config{})
 		if !errors.Is(err, expectedErr) {
 			t.Fatal("unexpected err", err)
 		}
@@ -181,7 +122,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 			ServerName:         "dns.cloudflare.com",
 		}
 		ctx := context.Background()
-		qconn, err := dialer.DialContext(ctx, "udp", "1.1.1.1:443", tlsConfig, &quic.Config{})
+		qconn, err := dialer.DialContext(ctx, "1.1.1.1:443", tlsConfig, &quic.Config{})
 		if !errors.Is(err, mockedErr) {
 			t.Fatal("unexpected err", err)
 		}
@@ -259,8 +200,8 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 		mockedErr := errors.New("mocked")
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
-		trace.NetworkEvent = make(chan *model.ArchivalNetworkEvent)              // no buffer
-		trace.QUICHandshake = make(chan *model.ArchivalTLSOrQUICHandshakeResult) // no buffer
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent)              // no buffer
+		trace.quicHandshake = make(chan *model.ArchivalTLSOrQUICHandshakeResult) // no buffer
 		pconn := &mocks.UDPLikeConn{
 			MockLocalAddr: func() net.Addr {
 				return &net.UDPAddr{
@@ -290,7 +231,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 			ServerName:         "dns.cloudflare.com",
 		}
 		ctx := context.Background()
-		qconn, err := dialer.DialContext(ctx, "udp", "1.1.1.1:443", tlsConfig, &quic.Config{})
+		qconn, err := dialer.DialContext(ctx, "1.1.1.1:443", tlsConfig, &quic.Config{})
 		if !errors.Is(err, mockedErr) {
 			t.Fatal("unexpected err", err)
 		}
@@ -311,5 +252,56 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 				t.Fatal("expected to see no network events")
 			}
 		})
+	})
+}
+
+func TestFirstQUICHandshake(t *testing.T) {
+	t.Run("returns nil when buffer is empty", func(t *testing.T) {
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		got := trace.FirstQUICHandshakeOrNil()
+		if got != nil {
+			t.Fatal("expected nil event")
+		}
+	})
+
+	t.Run("return first non-nil QUICHandshake", func(t *testing.T) {
+		filler := func(tx *Trace, events []*model.ArchivalTLSOrQUICHandshakeResult) {
+			for _, ev := range events {
+				tx.quicHandshake <- ev
+			}
+		}
+		zeroTime := time.Now()
+		trace := NewTrace(0, zeroTime)
+		expect := []*model.ArchivalTLSOrQUICHandshakeResult{{
+			Network:            "quic",
+			Address:            "1.1.1.1:443",
+			CipherSuite:        "",
+			Failure:            nil,
+			NegotiatedProtocol: "",
+			NoTLSVerify:        true,
+			PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+			ServerName:         "dns.cloudflare.com",
+			T:                  time.Second.Seconds(),
+			Tags:               []string{},
+			TLSVersion:         "",
+		}, {
+			Network:            "quic",
+			Address:            "8.8.8.8:443",
+			CipherSuite:        "",
+			Failure:            nil,
+			NegotiatedProtocol: "",
+			NoTLSVerify:        true,
+			PeerCertificates:   []model.ArchivalMaybeBinaryData{},
+			ServerName:         "dns.google.com",
+			T:                  time.Second.Seconds(),
+			Tags:               []string{},
+			TLSVersion:         "",
+		}}
+		filler(trace, expect)
+		got := trace.FirstQUICHandshakeOrNil()
+		if diff := cmp.Diff(got, expect[0]); diff != "" {
+			t.Fatal(diff)
+		}
 	})
 }

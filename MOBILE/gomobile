@@ -1,0 +1,61 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [[ $# -ne 2 ]]; then
+	echo "" 1>&2
+	echo "Calls gomobile for either Android or iOS to build PACKAGE." 1>&2
+	echo "" 1>&2
+	echo "usage: $0 TARGET PACKAGE" 1>&2
+	echo "" 1>&2
+	echo "TARGET must be one of: android, ios." 1>&2
+	echo "" 1>&2
+	echo "Features:" 1>&2
+	echo "" 1>&2
+	echo "* automatically sets -tags=ooni_psiphon_config when possible;" 1>&2
+	echo "" 1>&2
+	echo "* if GOLANG_EXTRA_FLAGS is set, pass it to the Go compiler." 1>&2
+	echo "" 1>&2
+	echo "Example:" 1>&2
+	echo "" 1>&2
+	echo "  ./MOBILE/gomobile android ./pkg/oonimkall" 1>&2
+	echo "" 1>&2
+	exit 1
+fi
+
+TARGET=$1
+PACKAGE=$2
+
+if [[ $TARGET == "android" ]]; then
+	EXT="aar"
+elif [[ $TARGET == "ios" ]]; then
+	EXT="xcframework"
+else
+	echo "FATAL: unsupported target: $TARGET" 1>&2
+	exit 1
+fi
+
+if [[ -f ./internal/engine/psiphon-config.json.age &&
+	-f ./internal/engine/psiphon-config.key ]]; then
+	OONI_PSIPHON_TAGS=ooni_psiphon_config
+else
+	OONI_PSIPHON_TAGS=""
+fi
+
+PRODUCT=$(basename $PACKAGE)
+
+function cleanup() {
+	# Undoes the effects of go-getting golang.org/x/mobile/cmd/gomobile
+	go mod tidy
+}
+trap cleanup EXIT
+
+set -x
+go install golang.org/x/mobile/cmd/gomobile@latest
+$(go env GOPATH)/bin/gomobile init
+# Adding gomobile to go.mod as documented by golang.org/wiki/Mobile
+go get -d golang.org/x/mobile/cmd/gomobile
+
+$(go env GOPATH)/bin/gomobile bind -target $TARGET \
+	-o ./MOBILE/$TARGET/$PRODUCT.$EXT -tags="$OONI_PSIPHON_TAGS" \
+	-ldflags '-s -w' ${GOLANG_EXTRA_FLAGS:-} $PACKAGE

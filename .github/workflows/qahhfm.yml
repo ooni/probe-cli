@@ -9,8 +9,14 @@ jobs:
   test:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/setup-go@v1
-        with:
-          go-version: "1.18.3"
       - uses: actions/checkout@v2
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo ::set-output name=version::$(cat GOVERSION)
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+
       - run: ./QA/rundocker.bash "hhfm"

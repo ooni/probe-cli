@@ -3,6 +3,8 @@ package tunnel_test
 import (
 	"context"
 	"errors"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/tunnel"
@@ -23,6 +25,9 @@ func TestStartNoTunnel(t *testing.T) {
 }
 
 func TestStartPsiphonWithCancelledContext(t *testing.T) {
+	if strings.HasPrefix(runtime.Version(), "go1.19") {
+		t.Skip("TODO(https://github.com/ooni/probe/issues/2222)")
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // fail immediately
 	tun, _, err := tunnel.Start(ctx, &tunnel.Config{

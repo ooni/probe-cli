@@ -6,6 +6,7 @@ package mocks
 
 import (
 	"crypto/tls"
+	"net"
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
@@ -16,8 +17,15 @@ import (
 type Trace struct {
 	MockTimeNow func() time.Time
 
+	MockMaybeWrapNetConn func(conn net.Conn) net.Conn
+
+	MockMaybeWrapUDPLikeConn func(conn model.UDPLikeConn) model.UDPLikeConn
+
 	MockOnDNSRoundTripForLookupHost func(started time.Time, reso model.Resolver, query model.DNSQuery,
 		response model.DNSResponse, addrs []string, err error, finished time.Time)
+
+	MockOnDelayedDNSResponse func(started time.Time, txp model.DNSTransport, query model.DNSQuery,
+		response model.DNSResponse, addrs []string, err error, finished time.Time) error
 
 	MockOnConnectDone func(
 		started time.Time, network, domain, remoteAddr string, err error, finished time.Time)
@@ -39,9 +47,22 @@ func (t *Trace) TimeNow() time.Time {
 	return t.MockTimeNow()
 }
 
+func (t *Trace) MaybeWrapNetConn(conn net.Conn) net.Conn {
+	return t.MockMaybeWrapNetConn(conn)
+}
+
+func (t *Trace) MaybeWrapUDPLikeConn(conn model.UDPLikeConn) model.UDPLikeConn {
+	return t.MockMaybeWrapUDPLikeConn(conn)
+}
+
 func (t *Trace) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resolver, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Time) {
 	t.MockOnDNSRoundTripForLookupHost(started, reso, query, response, addrs, err, finished)
+}
+
+func (t *Trace) OnDelayedDNSResponse(started time.Time, txp model.DNSTransport, query model.DNSQuery,
+	response model.DNSResponse, addrs []string, err error, finished time.Time) error {
+	return t.MockOnDelayedDNSResponse(started, txp, query, response, addrs, err, finished)
 }
 
 func (t *Trace) OnConnectDone(

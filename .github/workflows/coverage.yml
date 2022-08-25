@@ -10,17 +10,21 @@ on:
 jobs:
   measure_coverage:
     runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        go:
-          - "1.18.3"
+
     steps:
+      - uses: actions/checkout@v2
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo ::set-output name=version::$(cat GOVERSION)
+
       - uses: magnetikonline/action-golang-cache@v2
         with:
-          go-version: "${{ matrix.go }}"
-          cache-key-suffix: "-coverage-${{ matrix.go }}"
-      - uses: actions/checkout@v2
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-coverage-${{ steps.goversion.outputs.version }}"
+
       - run: go test -short -race -tags shaping -coverprofile=probe-cli.cov ./...
+
       - uses: shogo82148/actions-goveralls@v1
         with:
           path-to-profile: probe-cli.cov

@@ -54,7 +54,7 @@ func (tx *Trace) OnConnectDone(
 	switch network {
 	case "tcp", "tcp4", "tcp6":
 		select {
-		case tx.TCPConnect <- NewArchivalTCPConnectResult(
+		case tx.tcpConnect <- NewArchivalTCPConnectResult(
 			tx.Index,
 			started.Sub(tx.ZeroTime),
 			remoteAddr,
@@ -113,10 +113,20 @@ func archivalPortToString(sport string) int {
 func (tx *Trace) TCPConnects() (out []*model.ArchivalTCPConnectResult) {
 	for {
 		select {
-		case ev := <-tx.TCPConnect:
+		case ev := <-tx.tcpConnect:
 			out = append(out, ev)
 		default:
 			return // done
 		}
 	}
+}
+
+// FirstTCPConnectOrNil drains the network events buffered inside the TCPConnect channel
+// and returns the first TCPConnect, if any. Otherwise, it returns nil.
+func (tx *Trace) FirstTCPConnectOrNil() *model.ArchivalTCPConnectResult {
+	ev := tx.TCPConnects()
+	if len(ev) < 1 {
+		return nil
+	}
+	return ev[0]
 }

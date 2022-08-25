@@ -7,6 +7,7 @@ package netxlite
 import (
 	"context"
 	"crypto/tls"
+	"net"
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
@@ -50,10 +51,26 @@ func (*traceDefault) TimeNow() time.Time {
 	return time.Now()
 }
 
+// MaybeWrapNetConn implements model.Trace.MaybeWrapNetConn
+func (*traceDefault) MaybeWrapNetConn(conn net.Conn) net.Conn {
+	return conn
+}
+
+// MaybeWrapUDPLikeConn implements model.Trace.MaybeWrapUDPLikeConn
+func (*traceDefault) MaybeWrapUDPLikeConn(conn model.UDPLikeConn) model.UDPLikeConn {
+	return conn
+}
+
 // OnDNSRoundTripForLookupHost implements model.Trace.OnDNSRoundTripForLookupHost.
 func (*traceDefault) OnDNSRoundTripForLookupHost(started time.Time, reso model.Resolver, query model.DNSQuery,
 	response model.DNSResponse, addrs []string, err error, finished time.Time) {
 	// nothing
+}
+
+// OnDelayedDNSResponse implements model.Trace.OnDelayedDNSResponse.
+func (*traceDefault) OnDelayedDNSResponse(started time.Time, txp model.DNSTransport,
+	query model.DNSQuery, response model.DNSResponse, addrs []string, err error, finished time.Time) error {
+	return nil
 }
 
 // OnConnectDone implements model.Trace.OnConnectDone.

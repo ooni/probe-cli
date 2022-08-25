@@ -7,36 +7,12 @@ package measurexlite
 import (
 	"context"
 	"crypto/tls"
-	"net"
 	"time"
 
 	"github.com/lucas-clemente/quic-go"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
-
-// WrapQUICListener returns a wrapped model.QUICListener that uses this trace.
-func (tx *Trace) WrapQUICListener(listener model.QUICListener) model.QUICListener {
-	return &quicListenerTrace{
-		QUICListener: listener,
-		tx:           tx,
-	}
-}
-
-// quicListenerTrace is a trace-aware QUIC listener.
-type quicListenerTrace struct {
-	model.QUICListener
-	tx *Trace
-}
-
-// Listen implements model.QUICListener.Listen
-func (ql *quicListenerTrace) Listen(addr *net.UDPAddr) (model.UDPLikeConn, error) {
-	pconn, err := ql.QUICListener.Listen(addr)
-	if err != nil {
-		return nil, err
-	}
-	return ql.tx.WrapUDPLikeConn(pconn), nil
-}
 
 // NewQUICDialerWithoutResolver is equivalent to netxlite.NewQUICDialerWithoutResolver
 // except that it returns a model.QUICDialer that uses this trace.
@@ -56,10 +32,10 @@ type quicDialerTrace struct {
 var _ model.QUICDialer = &quicDialerTrace{}
 
 // DialContext implements model.QUICDialer.DialContext.
-func (qdx *quicDialerTrace) DialContext(ctx context.Context, network string,
+func (qdx *quicDialerTrace) DialContext(ctx context.Context,
 	address string, tlsConfig *tls.Config, quicConfig *quic.Config) (
 	quic.EarlyConnection, error) {
-	return qdx.qd.DialContext(netxlite.ContextWithTrace(ctx, qdx.tx), network, address, tlsConfig, quicConfig)
+	return qdx.qd.DialContext(netxlite.ContextWithTrace(ctx, qdx.tx), address, tlsConfig, quicConfig)
 }
 
 // CloseIdleConnections implements model.QUICDialer.CloseIdleConnections.
@@ -71,7 +47,7 @@ func (qdx *quicDialerTrace) CloseIdleConnections() {
 func (tx *Trace) OnQUICHandshakeStart(now time.Time, remoteAddr string, config *quic.Config) {
 	t := now.Sub(tx.ZeroTime)
 	select {
-	case tx.NetworkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "quic_handshake_start"):
+	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "quic_handshake_start"):
 	default:
 	}
 }
@@ -85,7 +61,7 @@ func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn
 		state = qconn.ConnectionState().TLS.ConnectionState
 	}
 	select {
-	case tx.QUICHandshake <- NewArchivalTLSOrQUICHandshakeResult(
+	case tx.quicHandshake <- NewArchivalTLSOrQUICHandshakeResult(
 		tx.Index,
 		started.Sub(tx.ZeroTime),
 		"quic",
@@ -98,7 +74,7 @@ func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn
 	default: // buffer is full
 	}
 	select {
-	case tx.NetworkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "quic_handshake_done"):
+	case tx.networkEvent <- NewAnnotationArchivalNetworkEvent(tx.Index, t, "quic_handshake_done"):
 	default: // buffer is full
 	}
 }
@@ -107,10 +83,20 @@ func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn
 func (tx *Trace) QUICHandshakes() (out []*model.ArchivalTLSOrQUICHandshakeResult) {
 	for {
 		select {
-		case ev := <-tx.QUICHandshake:
+		case ev := <-tx.quicHandshake:
 			out = append(out, ev)
 		default:
 			return // done
 		}
 	}
+}
+
+// FirstQUICHandshakeOrNil drains the network events buffered inside the QUICHandshake channel
+// and returns the first QUICHandshake, if any. Otherwise, it returns nil.
+func (tx *Trace) FirstQUICHandshakeOrNil() *model.ArchivalTLSOrQUICHandshakeResult {
+	ev := tx.QUICHandshakes()
+	if len(ev) < 1 {
+		return nil
+	}
+	return ev[0]
 }

@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"crypto/tls"
+	"net"
 	"testing"
 	"time"
 
@@ -22,6 +23,32 @@ func TestTrace(t *testing.T) {
 		}
 	})
 
+	t.Run("MaybeWrapNetConn", func(t *testing.T) {
+		expect := &Conn{}
+		tx := &Trace{
+			MockMaybeWrapNetConn: func(conn net.Conn) net.Conn {
+				return expect
+			},
+		}
+		got := tx.MaybeWrapNetConn(&Conn{})
+		if got != expect {
+			t.Fatal("not working as intended")
+		}
+	})
+
+	t.Run("MaybeWrapUDPLikeConn", func(t *testing.T) {
+		expect := &UDPLikeConn{}
+		tx := &Trace{
+			MockMaybeWrapUDPLikeConn: func(conn model.UDPLikeConn) model.UDPLikeConn {
+				return expect
+			},
+		}
+		got := tx.MaybeWrapUDPLikeConn(&UDPLikeConn{})
+		if got != expect {
+			t.Fatal("not working as intended")
+		}
+	})
+
 	t.Run("OnDNSRoundTripForLookupHost", func(t *testing.T) {
 		var called bool
 		tx := &Trace{
@@ -33,6 +60,30 @@ func TestTrace(t *testing.T) {
 		tx.OnDNSRoundTripForLookupHost(
 			time.Now(),
 			&Resolver{},
+			&DNSQuery{},
+			&DNSResponse{},
+			[]string{},
+			nil,
+			time.Now(),
+		)
+		if !called {
+			t.Fatal("not called")
+		}
+	})
+
+	t.Run("OnDelayedDNSResponse", func(t *testing.T) {
+		var called bool
+		tx := &Trace{
+			MockOnDelayedDNSResponse: func(started time.Time, txp model.DNSTransport,
+				query model.DNSQuery, response model.DNSResponse,
+				addrs []string, err error, finished time.Time) error {
+				called = true
+				return nil
+			},
+		}
+		tx.OnDelayedDNSResponse(
+			time.Now(),
+			&DNSTransport{},
 			&DNSQuery{},
 			&DNSResponse{},
 			[]string{},

@@ -21,8 +21,8 @@ func MaybeClose(conn net.Conn) (err error) {
 	return
 }
 
-// WrapNetConn returns a wrapped conn that saves network events into this trace.
-func (tx *Trace) WrapNetConn(conn net.Conn) net.Conn {
+// MaybeWrapNetConn implements model.Trace.MaybeWrapNetConn.
+func (tx *Trace) MaybeWrapNetConn(conn net.Conn) net.Conn {
 	return &connTrace{
 		Conn: conn,
 		tx:   tx,
@@ -47,7 +47,7 @@ func (c *connTrace) Read(b []byte) (int, error) {
 	count, err := c.Conn.Read(b)
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	select {
-	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
+	case c.tx.networkEvent <- NewArchivalNetworkEvent(
 		c.tx.Index, started, netxlite.ReadOperation, network, addr, count, err, finished):
 	default: // buffer is full
 	}
@@ -62,7 +62,7 @@ func (c *connTrace) Write(b []byte) (int, error) {
 	count, err := c.Conn.Write(b)
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	select {
-	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
+	case c.tx.networkEvent <- NewArchivalNetworkEvent(
 		c.tx.Index, started, netxlite.WriteOperation, network, addr, count, err, finished):
 	default: // buffer is full
 	}
@@ -77,8 +77,8 @@ func MaybeCloseUDPLikeConn(conn model.UDPLikeConn) (err error) {
 	return
 }
 
-// WrapUDPLikeConn returns a wrapped conn that saves network events into this trace.
-func (tx *Trace) WrapUDPLikeConn(conn model.UDPLikeConn) model.UDPLikeConn {
+// MaybeWrapUDPLikeConn implements model.Trace.MaybeWrapUDPLikeConn.
+func (tx *Trace) MaybeWrapUDPLikeConn(conn model.UDPLikeConn) model.UDPLikeConn {
 	return &udpLikeConnTrace{
 		UDPLikeConn: conn,
 		tx:          tx,
@@ -100,7 +100,7 @@ func (c *udpLikeConnTrace) ReadFrom(b []byte) (int, net.Addr, error) {
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	address := addrStringIfNotNil(addr)
 	select {
-	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
+	case c.tx.networkEvent <- NewArchivalNetworkEvent(
 		c.tx.Index, started, netxlite.ReadFromOperation, "udp", address, count, err, finished):
 	default: // buffer is full
 	}
@@ -114,7 +114,7 @@ func (c *udpLikeConnTrace) WriteTo(b []byte, addr net.Addr) (int, error) {
 	count, err := c.UDPLikeConn.WriteTo(b, addr)
 	finished := c.tx.TimeSince(c.tx.ZeroTime)
 	select {
-	case c.tx.NetworkEvent <- NewArchivalNetworkEvent(
+	case c.tx.networkEvent <- NewArchivalNetworkEvent(
 		c.tx.Index, started, netxlite.WriteToOperation, "udp", address, count, err, finished):
 	default: // buffer is full
 	}
@@ -156,10 +156,20 @@ func NewAnnotationArchivalNetworkEvent(
 func (tx *Trace) NetworkEvents() (out []*model.ArchivalNetworkEvent) {
 	for {
 		select {
-		case ev := <-tx.NetworkEvent:
+		case ev := <-tx.networkEvent:
 			out = append(out, ev)
 		default:
 			return // done
 		}
 	}
+}
+
+// FirstNetworkEventOrNil drains the network events buffered inside the NetworkEvents channel
+// and returns the first NetworkEvent, if any. Otherwise, it returns nil.
+func (tx *Trace) FirstNetworkEventOrNil() *model.ArchivalNetworkEvent {
+	ev := tx.NetworkEvents()
+	if len(ev) < 1 {
+		return nil
+	}
+	return ev[0]
 }

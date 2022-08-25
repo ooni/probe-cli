@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+__version=$(date -u +%Y.%m.%d-%H%M%S)
+cat ./MOBILE/android/template.pom | sed -e "s/@VERSION@/$__version/g" > ./MOBILE/android/oonimkall.pom

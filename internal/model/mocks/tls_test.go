@@ -60,6 +60,18 @@ func TestTLSConn(t *testing.T) {
 			t.Fatal("not the error we expected", err)
 		}
 	})
+
+	t.Run("NetConn", func(t *testing.T) {
+		conn := &Conn{}
+		c := &TLSConn{
+			MockNetConn: func() net.Conn {
+				return conn
+			},
+		}
+		if o := c.NetConn(); o != conn {
+			t.Fatal("unexpected result")
+		}
+	})
 }
 
 func TestTLSDialer(t *testing.T) {

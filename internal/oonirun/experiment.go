@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine"
@@ -183,9 +184,16 @@ func (ed *Experiment) newInputLoader(inputPolicy model.InputPolicy) inputLoader 
 }
 
 // experimentOptionsToStringList convers the options to []string, which is
-// the format with which we include them into a OONI Measurement
+// the format with which we include them into a OONI Measurement. The resulting
+// []string will skip any option that is named with a `Safe` prefix (case
+// sensitive).
 func experimentOptionsToStringList(options map[string]any) (out []string) {
+	// the prefix to skip inclusion in the string list
+	safeOptionPrefix := "Safe"
 	for key, value := range options {
+		if strings.HasPrefix(key, safeOptionPrefix) {
+			continue
+		}
 		out = append(out, fmt.Sprintf("%s=%v", key, value))
 	}
 	return
