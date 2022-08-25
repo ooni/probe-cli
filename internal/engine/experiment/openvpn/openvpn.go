@@ -29,7 +29,7 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.2"
+	testVersion = "0.0.3"
 
 	// pingCount tells how many icmp echo requests to send.
 	// pingCount = 10
@@ -175,6 +175,9 @@ func (m *Measurer) Run(
 	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
 ) error {
 	experiment, err := vpnExperimentFromURI(string(measurement.Input))
+	if err != nil {
+		return err
+	}
 	dialer, err := m.setup(ctx, experiment, sess.Logger())
 
 	if err != nil {
@@ -204,6 +207,11 @@ func (m *Measurer) Run(
 	}
 	tk := measurement.TestKeys.(*TestKeys)
 
+	if tk.Failure != nil {
+		// bootstrap error
+		return nil
+	}
+
 	//
 	// All ready now. Now we can begin the experiment itself.
 	//
@@ -217,7 +225,7 @@ func (m *Measurer) Run(
 	err = pinger.Run(ctx)
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
-		return err
+		return nil
 	}
 
 	tk.PingStats = parseStats(pinger)
@@ -237,13 +245,13 @@ func (m *Measurer) Run(
 	if err != nil {
 		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
 		tk.Failure = tracex.NewFailure(fmt.Errorf("%w: %s", ErrURLGrab, err))
-		return err
+		return nil
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
 		tk.Failure = tracex.NewFailure(fmt.Errorf("%w: %s", ErrURLGrab, err))
-		return err
+		return nil
 	}
 	tk.Response = string(body)
 	sess.Logger().Info("openvpn: all tests ok")
@@ -323,13 +331,15 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 
 	s := time.Now()
 	conn, err := m.rawDialer.DialContext(ctx)
+	tk.BootstrapTime = time.Now().Sub(s).Seconds()
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
+		sess.Logger().Info("openvpn: bootstrapping failed")
+		return
 	}
 	m.conn = conn
 	m.rawDialer.ReuseClient(conn)
 	tk.BootstrapTime = time.Now().Sub(s).Seconds()
-
 	sess.Logger().Info("openvpn: bootstrapping done")
 }
 
