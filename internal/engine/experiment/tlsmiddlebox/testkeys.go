@@ -8,9 +8,9 @@ import (
 
 // TestKeys contains the experiment results
 type TestKeys struct {
-	Queries    []*model.ArchivalDNSLookupResult  `json:"queries"`
-	TCPConnect []*model.ArchivalTCPConnectResult `json:"tcp_connect"`
-	Trace      []*CompleteTrace                  `json:"trace"`
+	Queries        []*model.ArchivalDNSLookupResult  `json:"queries"`
+	TCPConnect     []*model.ArchivalTCPConnectResult `json:"tcp_connect"`
+	IterativeTrace []*CompleteTrace                  `json:"iterative_trace"`
 
 	mu sync.Mutex
 }
@@ -18,9 +18,9 @@ type TestKeys struct {
 // NewTestKeys creates new tlsmiddlebox TestKeys
 func NewTestKeys() *TestKeys {
 	return &TestKeys{
-		Queries:    []*model.ArchivalDNSLookupResult{},
-		TCPConnect: []*model.ArchivalTCPConnectResult{},
-		Trace:      []*CompleteTrace{},
+		Queries:        []*model.ArchivalDNSLookupResult{},
+		TCPConnect:     []*model.ArchivalTCPConnectResult{},
+		IterativeTrace: []*CompleteTrace{},
 	}
 }
 
@@ -41,6 +41,6 @@ func (tk *TestKeys) addTCPConnect(ev []*model.ArchivalTCPConnectResult) {
 // addTrace adds []*CompleteTrace to the test keys Trace
 func (tk *TestKeys) addTrace(ev []*CompleteTrace) {
 	tk.mu.Lock()
-	tk.Trace = append(tk.Trace, ev...)
+	tk.IterativeTrace = append(tk.IterativeTrace, ev...)
 	tk.mu.Unlock()
 }

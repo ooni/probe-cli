@@ -26,6 +26,36 @@ var ClientIDs = map[int]*utls.ClientHelloID{
 	4: &utls.HelloIOS_Auto,
 }
 
+// DNSLookup performs a DNS Lookup for the passed domain
+func (m *Measurer) DNSLookup(ctx context.Context, index int64, zeroTime time.Time,
+	logger model.Logger, domain string, tk *TestKeys) ([]string, error) {
+	url := m.config.resolverURL()
+	trace := measurexlite.NewTrace(index, zeroTime)
+	ol := measurexlite.NewOperationLogger(logger, "DNSLookup #%d, %s, %s", index, url, domain)
+	// TODO(DecFox): We are currently using the DoH resolver, we will
+	// switch to the TRR2 resolver once we have it in measurexlite
+	// Issue: https://github.com/ooni/probe/issues/2185
+	resolver := trace.NewParallelDNSOverHTTPSResolver(logger, url)
+	addrs, err := resolver.LookupHost(ctx, domain)
+	ol.Stop(err)
+	tk.addQueries(trace.DNSLookupsFromRoundTrip())
+	return addrs, err
+}
+
+// TCPConnect performs a TCP connect to filter working addresses
+func (m *Measurer) TCPConnect(ctx context.Context, index int64, zeroTime time.Time,
+	logger model.Logger, address string, tk *TestKeys) error {
+	trace := measurexlite.NewTrace(index, zeroTime)
+	dialer := trace.NewDialerWithoutResolver(logger)
+	ol := measurexlite.NewOperationLogger(logger, "TCPConnect #%d %s", index, address)
+	conn, err := dialer.DialContext(ctx, "tcp", address)
+	ol.Stop(err)
+	measurexlite.MaybeClose(conn)
+	tcpEvents := trace.TCPConnects()
+	tk.addTCPConnect(tcpEvents)
+	return err
+}
+
 // MeasureTLS performs tracing using control and target SNI
 func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
 	address string, targetSNI string, trace *CompleteTrace) {
@@ -37,8 +67,8 @@ func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time
 
 // IterativeTrace creates a Trace and calls iterativeTrace
 func (m *Measurer) IterativeTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, sni string) (tr *Trace) {
-	tr = &Trace{
+	address string, sni string) (tr *IterativeTrace) {
+	tr = &IterativeTrace{
 		SNI:        sni,
 		Iterations: []*Iteration{},
 	}
@@ -50,7 +80,7 @@ func (m *Measurer) IterativeTrace(ctx context.Context, index int64, zeroTime tim
 
 // iterativeTrace performs iterative tracing with increasing TTL values
 func (m *Measurer) iterativeTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, sni string, maxTTL int64, trace *Trace) {
+	address string, sni string, maxTTL int64, trace *IterativeTrace) {
 	ticker := time.NewTicker(m.config.delay())
 	wg := new(sync.WaitGroup)
 	for i := int64(1); i <= maxTTL; i++ {
@@ -63,7 +93,7 @@ func (m *Measurer) iterativeTrace(ctx context.Context, index int64, zeroTime tim
 
 // HandshakeWithTTL performs the TLS Handshake using the passed ttl value
 func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
-	address string, sni string, ttl int, tr *Trace, wg *sync.WaitGroup) {
+	address string, sni string, ttl int, tr *IterativeTrace, wg *sync.WaitGroup) {
 	defer wg.Done()
 	trace := measurexlite.NewTrace(index, zeroTime)
 	// TODO(DecFox): Do we need a trace for this TCP connect?

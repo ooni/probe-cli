@@ -12,13 +12,13 @@ import (
 // CompleteTrace records the result of the network trace
 // using a control SNI and a target SNI
 type CompleteTrace struct {
-	Address      string `json:"address"`
-	ControlTrace *Trace `json:"control_trace"`
-	TargetTrace  *Trace `json:"target_trace"`
+	Address      string          `json:"address"`
+	ControlTrace *IterativeTrace `json:"control_trace"`
+	TargetTrace  *IterativeTrace `json:"target_trace"`
 }
 
 // Trace is an iterative trace for the corresponding servername and address
-type Trace struct {
+type IterativeTrace struct {
 	SNI        string       `json:"server_name"`
 	Iterations []*Iteration `json:"iterations"`
 
@@ -48,7 +48,7 @@ func newIterationFromHandshake(ttl int, err error, handshake *model.ArchivalTLSO
 }
 
 // addIterations adds iterations to the trace
-func (t *Trace) addIterations(ev *Iteration) {
+func (t *IterativeTrace) addIterations(ev *Iteration) {
 	t.mu.Lock()
 	t.Iterations = append(t.Iterations, ev)
 	t.mu.Unlock()

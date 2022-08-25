@@ -25,6 +25,7 @@ type dialerTTLWrapperConn struct {
 
 var _ net.Conn = &dialerTTLWrapperConn{}
 
+// Read implements net.Conn.Read
 func (c *dialerTTLWrapperConn) Read(b []byte) (int, error) {
 	count, err := c.Conn.Read(b)
 	if err != nil {
@@ -33,6 +34,7 @@ func (c *dialerTTLWrapperConn) Read(b []byte) (int, error) {
 	return count, nil
 }
 
+// Write implements net.Conn.Write
 func (c *dialerTTLWrapperConn) Write(b []byte) (int, error) {
 	count, err := c.Conn.Write(b)
 	if err != nil {
@@ -41,6 +43,7 @@ func (c *dialerTTLWrapperConn) Write(b []byte) (int, error) {
 	return count, nil
 }
 
+// Close implements net.Conn.Close
 func (c *dialerTTLWrapperConn) Close() error {
 	err := c.Conn.Close()
 	if err != nil {

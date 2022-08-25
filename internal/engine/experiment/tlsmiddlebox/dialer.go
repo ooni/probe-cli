@@ -28,6 +28,7 @@ type dialerTTLWrapper struct {
 
 var _ model.Dialer = &dialerTTLWrapper{}
 
+// DialContext implements model.Dialer.DialContext
 func (d *dialerTTLWrapper) DialContext(ctx context.Context, network string, address string) (net.Conn, error) {
 	conn, err := d.Dialer.DialContext(ctx, network, address)
 	if err != nil {
@@ -38,6 +39,7 @@ func (d *dialerTTLWrapper) DialContext(ctx context.Context, network string, addr
 	}, nil
 }
 
+// CloseIdleConnections implements model.Dialer.CloseIdleConnections
 func (d *dialerTTLWrapper) CloseIdleConnections() {
 	// nothing to do here
 }

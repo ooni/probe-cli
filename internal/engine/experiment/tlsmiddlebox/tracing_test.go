@@ -32,7 +32,7 @@ func TestIterativeTrace(t *testing.T) {
 func TestHandshakeWithTTL(t *testing.T) {
 	t.Run("on success", func(t *testing.T) {
 		m := NewExperimentMeasurer(Config{})
-		tr := &Trace{}
+		tr := &IterativeTrace{}
 		zeroTime := time.Now()
 		ctx := context.Background()
 		wg := new(sync.WaitGroup)
@@ -52,7 +52,7 @@ func TestHandshakeWithTTL(t *testing.T) {
 
 	t.Run("on connect failure", func(t *testing.T) {
 		m := NewExperimentMeasurer(Config{})
-		tr := &Trace{}
+		tr := &IterativeTrace{}
 		zeroTime := time.Now()
 		ctx := context.Background()
 		wg := new(sync.WaitGroup)
