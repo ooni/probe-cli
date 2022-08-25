@@ -139,6 +139,7 @@ func NewArchivalNetworkEvent(index int64, started time.Duration, operation strin
 		NumBytes:      int64(count),
 		Operation:     operation,
 		Proto:         network,
+		T0:            started.Seconds(),
 		T:             finished.Seconds(),
 		TransactionID: index,
 		Tags:          []string{},

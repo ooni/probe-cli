@@ -437,13 +437,15 @@ func TestNewAnnotationArchivalNetworkEvent(t *testing.T) {
 		operation       = "tls_handshake_start"
 	)
 	expect := &model.ArchivalNetworkEvent{
-		Address:   "",
-		Failure:   nil,
-		NumBytes:  0,
-		Operation: operation,
-		Proto:     "",
-		T:         duration.Seconds(),
-		Tags:      []string{},
+		Address:       "",
+		Failure:       nil,
+		NumBytes:      0,
+		Operation:     operation,
+		Proto:         "",
+		T0:            duration.Seconds(),
+		T:             duration.Seconds(),
+		TransactionID: index,
+		Tags:          []string{},
 	}
 	got := NewAnnotationArchivalNetworkEvent(
 		index, duration, operation,

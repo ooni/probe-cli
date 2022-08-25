@@ -86,6 +86,7 @@ func NewArchivalTLSOrQUICHandshakeResult(
 		NoTLSVerify:        config.InsecureSkipVerify,
 		PeerCertificates:   TLSPeerCerts(state, err),
 		ServerName:         config.ServerName,
+		T0:                 started.Seconds(),
 		T:                  finished.Seconds(),
 		Tags:               []string{},
 		TLSVersion:         netxlite.TLSVersionString(state.Version),

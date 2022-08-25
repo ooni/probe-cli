@@ -167,6 +167,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 					NumBytes:  0,
 					Operation: "tls_handshake_done",
 					Proto:     "",
+					T0:        time.Second.Seconds(),
 					T:         time.Second.Seconds(),
 					Tags:      []string{},
 				}
@@ -329,6 +330,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 					NumBytes:  0,
 					Operation: "tls_handshake_done",
 					Proto:     "",
+					T0:        time.Second.Seconds(),
 					T:         time.Second.Seconds(),
 					Tags:      []string{},
 				}

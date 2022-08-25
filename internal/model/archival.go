@@ -150,6 +150,7 @@ type ArchivalTCPConnectResult struct {
 	IP            string                   `json:"ip"`
 	Port          int                      `json:"port"`
 	Status        ArchivalTCPConnectStatus `json:"status"`
+	T0            float64                  `json:"t0"`
 	T             float64                  `json:"t"`
 	TransactionID int64                    `json:"transaction_id"`
 }
@@ -177,6 +178,7 @@ type ArchivalTLSOrQUICHandshakeResult struct {
 	NoTLSVerify        bool                      `json:"no_tls_verify"`
 	PeerCertificates   []ArchivalMaybeBinaryData `json:"peer_certificates"`
 	ServerName         string                    `json:"server_name"`
+	T0                 float64                   `json:"t0"`
 	T                  float64                   `json:"t"`
 	Tags               []string                  `json:"tags"`
 	TLSVersion         string                    `json:"tls_version"`
@@ -194,6 +196,7 @@ type ArchivalHTTPRequestResult struct {
 	Failure       *string              `json:"failure"`
 	Request       ArchivalHTTPRequest  `json:"request"`
 	Response      ArchivalHTTPResponse `json:"response"`
+	T0            float64              `json:"t0"`
 	T             float64              `json:"t"`
 	TransactionID int64                `json:"transaction_id"`
 }
@@ -316,6 +319,7 @@ type ArchivalNetworkEvent struct {
 	NumBytes      int64    `json:"num_bytes,omitempty"`
 	Operation     string   `json:"operation"`
 	Proto         string   `json:"proto,omitempty"`
+	T0            float64  `json:"t0"`
 	T             float64  `json:"t"`
 	TransactionID int64    `json:"transaction_id"`
 	Tags          []string `json:"tags,omitempty"`
