@@ -54,14 +54,19 @@ type {{ .StructName }} struct {
 	{{ if or (eq .Template "tls") (eq .Template "https") }}
 	// ALPN is the OPTIONAL ALPN to use.
 	ALPN []string
-
-	// SNI is the OPTIONAL SNI to use.
-	SNI string
 	{{ end }}
+
+	// CookieJar contains the OPTIONAL cookie jar, used for redirects.
+	CookieJar http.CookieJar
 
 	{{ if or (eq .Template "http") (eq .Template "https") }}
 	// HostHeader is the OPTIONAL host header to use.
 	HostHeader string
+
+	{{ if or (eq .Template "tls") (eq .Template "https") }}
+	// SNI is the OPTIONAL SNI to use.
+	SNI string
+	{{ end }}
 
 	// URLPath is the OPTIONAL URL path.
 	URLPath string
@@ -101,7 +106,6 @@ func (t *{{ .StructName }}) Run(parentCtx context.Context, index int64) {
 		ol.Stop(err)
 		return
 	}
-	tcpConn = trace.WrapNetConn(tcpConn)
 	defer func() {
 		_ = trace.NetworkEvents() // TODO: save
 		tcpConn.Close()
@@ -125,13 +129,16 @@ func (t *{{ .StructName }}) Run(parentCtx context.Context, index int64) {
 	const tlsTimeout = 10 * time.Second // TODO: consider changing
 	tlsCtx, tlsCancel := context.WithTimeout(parentCtx, tlsTimeout)
 	defer tlsCancel()
-	tlsConn, _, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
+	tlsConn, tlsConnState, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
 	_ = <-trace.TLSHandshake // TODO: save
 	if err != nil {
 		ol.Stop(err)
 		return
 	}
 	defer tlsConn.Close()
+	alpn := tlsConnState.NegotiatedProtocol
+	{{ else }}
+	alpn := "" // no ALPN because we're not using TLS
 	{{ end }}
 
 	{{ if eq .Template "http" }}
@@ -164,7 +171,15 @@ func (t *{{ .StructName }}) Run(parentCtx context.Context, index int64) {
 	}
 
 	// perform HTTP transaction
-	httpResp, httpRespBody, err := t.httpTransaction(httpCtx, httpTransport, httpReq, trace)
+	httpResp, httpRespBody, err := t.httpTransaction(
+		httpCtx,
+		"tcp",
+		t.Address,
+		alpn,
+		httpTransport,
+		httpReq,
+		trace,
+	)
 	if err != nil {
 		ol.Stop(err)
 		return
@@ -252,22 +267,45 @@ func (t *{{ .StructName }}) newHTTPRequest(ctx context.Context) (*http.Request, 
 	httpReq.Header.Set("Accept-Language", model.HTTPHeaderAcceptLanguage)
 	httpReq.Header.Set("User-Agent", model.HTTPHeaderUserAgent)
 	httpReq.Host = t.HostHeader
+	if t.CookieJar != nil {
+		for _, cookie := range t.CookieJar.Cookies(httpURL) {
+			httpReq.AddCookie(cookie)
+		}
+	}
 	return httpReq, nil
 }
 
 // httpTransaction runs the HTTP transaction and saves the results.
-func (t *{{ .StructName }}) httpTransaction(ctx context.Context, txp model.HTTPTransport,
-	req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
+func (t *{{ .StructName }}) httpTransaction(ctx context.Context, network, address, alpn string,
+	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
 	const maxbody = 1 << 19 // TODO: you may want to change this default
+	started := trace.TimeSince(trace.ZeroTime)
 	resp, err := txp.RoundTrip(req)
-	if err != nil {
-		_ = trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, []byte{}, err) // TODO: save
-		return nil, []byte{}, err
+	var body []byte
+	if err == nil {
+		defer resp.Body.Close()
+		if cookies := resp.Cookies(); t.CookieJar != nil && len(cookies) > 0 {
+			t.CookieJar.SetCookies(req.URL, cookies)
+		}
+		reader := io.LimitReader(resp.Body, maxbody)
+		body, err = netxlite.ReadAllContext(ctx, reader)
 	}
-	defer resp.Body.Close()
-	reader := io.LimitReader(resp.Body, maxbody)
-	body, err := netxlite.ReadAllContext(ctx, reader)
-	_ = trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err) // TODO: save
+	finished := trace.TimeSince(trace.ZeroTime)
+	ev := measurexlite.NewArchivalHTTPRequestResult(
+		trace.Index,
+		started,
+		network,
+		address,
+		alpn,
+		txp.Network(),
+		req,
+		resp,
+		maxbody,
+		body,
+		err,
+		finished,
+	)
+	_ = ev // TODO: save
 	return resp, body, err
 }
 {{ end }}

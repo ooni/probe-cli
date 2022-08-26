@@ -101,16 +101,17 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 	defer tcpCancel()
 	tcpDialer := trace.NewDialerWithoutResolver(t.Logger)
 	tcpConn, err := tcpDialer.DialContext(tcpCtx, "tcp", t.Address)
-	t.TestKeys.AppendTCPConnectResults(<-trace.TCPConnect)
+	t.TestKeys.AppendTCPConnectResults(trace.TCPConnects()...)
 	if err != nil {
 		ol.Stop(err)
 		return
 	}
-	tcpConn = trace.WrapNetConn(tcpConn)
 	defer func() {
 		t.TestKeys.AppendNetworkEvents(trace.NetworkEvents()...)
 		tcpConn.Close()
 	}()
+
+	alpn := "" // no ALPN because we're not using TLS
 
 	// Only allow N flows to _use_ the connection
 	select {
@@ -145,7 +146,15 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 	}
 
 	// perform HTTP transaction
-	httpResp, httpRespBody, err := t.httpTransaction(httpCtx, httpTransport, httpReq, trace)
+	httpResp, httpRespBody, err := t.httpTransaction(
+		httpCtx,
+		"tcp",
+		t.Address,
+		alpn,
+		httpTransport,
+		httpReq,
+		trace,
+	)
 	if err != nil {
 		ol.Stop(err)
 		return
@@ -211,22 +220,35 @@ func (t *CleartextFlow) newHTTPRequest(ctx context.Context) (*http.Request, erro
 }
 
 // httpTransaction runs the HTTP transaction and saves the results.
-func (t *CleartextFlow) httpTransaction(ctx context.Context, txp model.HTTPTransport,
-	req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
+func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, alpn string,
+	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
 	const maxbody = 1 << 19
+	started := trace.TimeSince(trace.ZeroTime)
 	resp, err := txp.RoundTrip(req)
-	if err != nil {
-		ev := trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, []byte{}, err)
-		t.TestKeys.AppendRequests(ev)
-		return nil, []byte{}, err
+	var body []byte
+	if err == nil {
+		defer resp.Body.Close()
+		if cookies := resp.Cookies(); t.CookieJar != nil && len(cookies) > 0 {
+			t.CookieJar.SetCookies(req.URL, cookies)
+		}
+		reader := io.LimitReader(resp.Body, maxbody)
+		body, err = netxlite.ReadAllContext(ctx, reader)
 	}
-	defer resp.Body.Close()
-	if cookies := resp.Cookies(); t.CookieJar != nil && len(cookies) > 0 {
-		t.CookieJar.SetCookies(req.URL, cookies)
-	}
-	reader := io.LimitReader(resp.Body, maxbody)
-	body, err := netxlite.ReadAllContext(ctx, reader)
-	ev := trace.NewArchivalHTTPRequestResult(txp, req, resp, maxbody, body, err)
+	finished := trace.TimeSince(trace.ZeroTime)
+	ev := measurexlite.NewArchivalHTTPRequestResult(
+		trace.Index,
+		started,
+		network,
+		address,
+		alpn,
+		txp.Network(),
+		req,
+		resp,
+		maxbody,
+		body,
+		err,
+		finished,
+	)
 	t.TestKeys.AppendRequests(ev)
 	return resp, body, err
 }
