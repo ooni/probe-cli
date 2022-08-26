@@ -193,6 +193,9 @@ type ArchivalTLSOrQUICHandshakeResult struct {
 //
 // See https://github.com/ooni/spec/blob/master/data-formats/df-001-httpt.md.
 type ArchivalHTTPRequestResult struct {
+	Network       string               `json:"network,omitempty"`
+	Address       string               `json:"address,omitempty"`
+	ALPN          string               `json:"alpn,omitempty"`
 	Failure       *string              `json:"failure"`
 	Request       ArchivalHTTPRequest  `json:"request"`
 	Response      ArchivalHTTPResponse `json:"response"`
