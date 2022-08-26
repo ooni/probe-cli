@@ -22,13 +22,17 @@ type TestKeys struct {
 
 	// DNSWhoami contains results of using the DNS whoami functionality for the
 	// possibly cleartext resolvers that we're using.
-	DNSWoami *DNSWhoamiInfo `json:"dns_whoami"`
+	DNSWoami *DNSWhoamiInfo `json:"x_dns_whoami"`
 
 	// DoH contains ancillary observations collected by DoH resolvers.
-	DoH *TestKeysDoH `json:"doh"`
+	DoH *TestKeysDoH `json:"x_doh"`
 
 	// Do53 contains ancillary observations collected by Do53 resolvers.
-	Do53 *TestKeysDo53 `json:"do53"`
+	Do53 *TestKeysDo53 `json:"x_do53"`
+
+	// DNSLateReplies contains late replies we didn't expect to receive from
+	// a resolver (which may raise eyebrows if they're different).
+	DNSLateReplies []*model.ArchivalDNSLookupResult `json:"x_dns_late_replies"`
 
 	// Queries contains DNS queries.
 	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
@@ -51,8 +55,8 @@ type TestKeys struct {
 	// ControlFailure contains the failure of the control experiment.
 	ControlFailure *string `json:"control_failure"`
 
-	// XDNSFlags contains DNS analysis flags.
-	XDNSFlags int64 `json:"x_dns_flags"`
+	// DNSFlags contains DNS analysis flags.
+	DNSFlags int64 `json:"x_dns_flags"`
 
 	// DNSExperimentFailure indicates whether there was a failure in any
 	// of the DNS experiments we performed.
@@ -62,8 +66,8 @@ type TestKeys struct {
 	// the TH's DNS results and the probe's DNS results.
 	DNSConsistency string `json:"dns_consistency"`
 
-	// XBlockingFlags contains blocking flags.
-	XBlockingFlags int64 `json:"x_blocking_flags"`
+	// BlockingFlags contains blocking flags.
+	BlockingFlags int64 `json:"x_blocking_flags"`
 
 	// BodyLength match tells us whether the body length matches.
 	BodyLengthMatch *bool `json:"body_length_match"`
@@ -158,6 +162,13 @@ type TestKeysDo53 struct {
 func (tk *TestKeys) AppendNetworkEvents(v ...*model.ArchivalNetworkEvent) {
 	tk.mu.Lock()
 	tk.NetworkEvents = append(tk.NetworkEvents, v...)
+	tk.mu.Unlock()
+}
+
+// AppendDNSLateReplies appends to DNSLateReplies.
+func (tk *TestKeys) AppendDNSLateReplies(v ...*model.ArchivalDNSLookupResult) {
+	tk.mu.Lock()
+	tk.DNSLateReplies = append(tk.DNSLateReplies, v...)
 	tk.mu.Unlock()
 }
 
@@ -268,10 +279,10 @@ func NewTestKeys() *TestKeys {
 		TLSHandshakes:        []*model.ArchivalTLSOrQUICHandshakeResult{},
 		Control:              nil,
 		ControlFailure:       nil,
-		XDNSFlags:            0,
+		DNSFlags:             0,
 		DNSExperimentFailure: nil,
 		DNSConsistency:       "",
-		XBlockingFlags:       0,
+		BlockingFlags:        0,
 		BodyLengthMatch:      nil,
 		HeadersMatch:         nil,
 		StatusCodeMatch:      nil,

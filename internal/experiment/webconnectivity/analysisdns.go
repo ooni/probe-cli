@@ -55,10 +55,10 @@ func (tk *TestKeys) analysisDNSToplevel(logger model.Logger) {
 	tk.analysisDNSBogon(logger)
 	tk.analysisDNSUnexpectedFailure(logger)
 	tk.analysisDNSUnexpectedAddrs(logger)
-	if tk.XDNSFlags != 0 {
+	if tk.DNSFlags != 0 {
 		logger.Warn("DNSConsistency: inconsistent")
 		tk.DNSConsistency = "inconsistent"
-		tk.XBlockingFlags |= analysisFlagDNSBlocking
+		tk.BlockingFlags |= analysisFlagDNSBlocking
 	} else {
 		logger.Info("DNSConsistency: consistent")
 		tk.DNSConsistency = "consistent"
@@ -89,13 +89,13 @@ func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 			case "A":
 				if net.ParseIP(answer.IPv4) != nil && netxlite.IsBogon(answer.IPv4) {
 					logger.Warnf("DNS: BOGON %s in #%d", answer.IPv4, query.TransactionID)
-					tk.XDNSFlags |= AnalysisDNSBogon
+					tk.DNSFlags |= AnalysisDNSBogon
 					// continue processing so we print all the bogons we have
 				}
 			case "AAAA":
 				if net.ParseIP(answer.IPv6) != nil && netxlite.IsBogon(answer.IPv6) {
 					logger.Warnf("DNS: BOGON %s in #%d", answer.IPv6, query.TransactionID)
-					tk.XDNSFlags |= AnalysisDNSBogon
+					tk.DNSFlags |= AnalysisDNSBogon
 					// continue processing so we print all the bogons we have
 				}
 			default:
@@ -167,7 +167,7 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 			continue
 		}
 		logger.Warnf("DNS: unexpected failure %s in #%d", *query.Failure, query.TransactionID)
-		tk.XDNSFlags |= AnalysisDNSUnexpectedFailure
+		tk.DNSFlags |= AnalysisDNSUnexpectedFailure
 		// continue processing so we print all the unexpected failures
 	}
 }
@@ -225,7 +225,7 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 	// definitely suspicious and counts as a difference
 	if len(probeAddrs) <= 0 {
 		logger.Warnf("DNS: no IP address resolved by the probe")
-		tk.XDNSFlags |= AnalysisDNSUnexpectedAddrs
+		tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
 		return
 	}
 
@@ -255,7 +255,7 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 		"DNSDiff: differentAddrs: %+v; withoutHandshake: %+v; differentASNs: %+v",
 		differentAddrs, withoutHandshake, differentASNs,
 	)
-	tk.XDNSFlags |= AnalysisDNSUnexpectedAddrs
+	tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
 }
 
 // analysisDNSDiffAddrs returns all the IP addresses that are

@@ -30,7 +30,7 @@ type EndpointMeasurementsStarter interface {
 	startSecureFlowsWithSema(ctx context.Context, sema <-chan any, addresses []string)
 }
 
-// Control issues a control request and saves the results
+// Control issues a Control request and saves the results
 // inside of the experiment's TestKeys.
 //
 // The zero value of this structure IS NOT valid and you MUST initialize

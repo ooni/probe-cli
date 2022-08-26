@@ -53,14 +53,14 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 	// Note that this would eventually count as an "http-failure" for .Blocking
 	// because Web Connectivity did not have a concept of TLS based blocking.
 	if tk.hasWellKnownTLSHandshakeIssues(isHTTPS, logger) {
-		tk.XBlockingFlags |= analysisFlagTLSBlocking
+		tk.BlockingFlags |= analysisFlagTLSBlocking
 		// continue processing
 	}
 
 	// determine whether we had well known cleartext HTTP round trip issues
 	// and, in such a case, declare we had an "http-failure".
 	if tk.hasWellKnownHTTPRoundTripIssues(logger) {
-		tk.XBlockingFlags |= analysisFlagHTTPBlocking
+		tk.BlockingFlags |= analysisFlagHTTPBlocking
 		// continue processing
 	}
 

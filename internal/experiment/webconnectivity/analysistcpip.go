@@ -77,6 +77,6 @@ func (tk *TestKeys) analysisTCPIPToplevel(logger model.Logger) {
 		}
 		logger.Warnf("TCP/IP: endpoint %s is blocked (see #%d)", epnt, entry.TransactionID)
 		entry.Status.Blocked = &istrue
-		tk.XBlockingFlags |= analysisFlagTCPIPBlocking
+		tk.BlockingFlags |= analysisFlagTCPIPBlocking
 	}
 }

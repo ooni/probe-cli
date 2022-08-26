@@ -94,43 +94,43 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 
 	// now, let's determine .Accessible and .Blocking
 	switch {
-	case (tk.XBlockingFlags & analysisFlagDNSBlocking) != 0:
+	case (tk.BlockingFlags & analysisFlagDNSBlocking) != 0:
 		tk.Blocking = "dns"
 		tk.Accessible = false
 		logger.Warnf(
 			"ANOMALY: flags=%d accessible=%+v, blocking=%+v",
-			tk.XBlockingFlags, tk.Accessible, tk.Blocking,
+			tk.BlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
-	case (tk.XBlockingFlags & analysisFlagTCPIPBlocking) != 0:
+	case (tk.BlockingFlags & analysisFlagTCPIPBlocking) != 0:
 		tk.Blocking = "tcp_ip"
 		tk.Accessible = false
 		logger.Warnf(
 			"ANOMALY: flags=%d accessible=%+v, blocking=%+v",
-			tk.XBlockingFlags, tk.Accessible, tk.Blocking,
+			tk.BlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
-	case (tk.XBlockingFlags & (analysisFlagTLSBlocking | analysisFlagHTTPBlocking)) != 0:
+	case (tk.BlockingFlags & (analysisFlagTLSBlocking | analysisFlagHTTPBlocking)) != 0:
 		tk.Blocking = "http-failure"
 		tk.Accessible = false
 		logger.Warnf("ANOMALY: flags=%d accessible=%+v, blocking=%+v",
-			tk.XBlockingFlags, tk.Accessible, tk.Blocking,
+			tk.BlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
-	case (tk.XBlockingFlags & analysisFlagHTTPDiff) != 0:
+	case (tk.BlockingFlags & analysisFlagHTTPDiff) != 0:
 		tk.Blocking = "http-diff"
 		tk.Accessible = false
 		logger.Warnf(
 			"ANOMALY: flags=%d accessible=%+v, blocking=%+v",
-			tk.XBlockingFlags, tk.Accessible, tk.Blocking,
+			tk.BlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
-	case tk.XBlockingFlags == analysisFlagSuccess:
+	case tk.BlockingFlags == analysisFlagSuccess:
 		tk.Blocking = false
 		tk.Accessible = true
 		logger.Infof(
 			"SUCCESS: flags=%d accessible=%+v, blocking=%+v",
-			tk.XBlockingFlags, tk.Accessible, tk.Blocking,
+			tk.BlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
 	default:
@@ -138,7 +138,7 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 		tk.Accessible = nil
 		logger.Warnf(
 			"UNKNOWN: flags=%d, accessible=%+v, blocking=%+v",
-			tk.XBlockingFlags, tk.Accessible, tk.Blocking,
+			tk.BlockingFlags, tk.Accessible, tk.Blocking,
 		)
 	}
 }

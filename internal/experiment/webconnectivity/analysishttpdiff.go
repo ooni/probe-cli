@@ -33,7 +33,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 	}
 	if URL.Scheme == "https" {
 		logger.Infof("HTTP: HTTPS && no error => #%d is successful", probe.TransactionID)
-		tk.XBlockingFlags |= analysisFlagSuccess
+		tk.BlockingFlags |= analysisFlagSuccess
 		return
 	}
 
@@ -49,7 +49,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 				"HTTP: statusCodeMatch && bodyLengthMatch => #%d is successful",
 				probe.TransactionID,
 			)
-			tk.XBlockingFlags |= analysisFlagSuccess
+			tk.BlockingFlags |= analysisFlagSuccess
 			return
 		}
 		if tk.HeadersMatch != nil && *tk.HeadersMatch {
@@ -57,7 +57,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 				"HTTP: statusCodeMatch && headersMatch => #%d is successful",
 				probe.TransactionID,
 			)
-			tk.XBlockingFlags |= analysisFlagSuccess
+			tk.BlockingFlags |= analysisFlagSuccess
 			return
 		}
 		if tk.TitleMatch != nil && *tk.TitleMatch {
@@ -65,12 +65,12 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 				"HTTP: statusCodeMatch && titleMatch => #%d is successful",
 				probe.TransactionID,
 			)
-			tk.XBlockingFlags |= analysisFlagSuccess
+			tk.BlockingFlags |= analysisFlagSuccess
 			return
 		}
 	}
 
-	tk.XBlockingFlags |= analysisFlagHTTPDiff
+	tk.BlockingFlags |= analysisFlagHTTPDiff
 	logger.Warnf("HTTP: it seems #%d is a case of httpDiff", probe.TransactionID)
 }
 
