@@ -209,6 +209,12 @@ func (m *Measurer) Run(
 	}
 	tk := measurement.TestKeys.(*TestKeys)
 
+	defer func() {
+		if m.conn != nil {
+			m.conn.Close()
+		}
+	}()
+
 	if tk.Failure != nil {
 		// bootstrap error
 		return nil
