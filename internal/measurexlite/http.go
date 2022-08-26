@@ -173,7 +173,10 @@ func newHTTPHeaderList(header http.Header) (out []model.ArchivalHTTPHeader) {
 	for key := range header {
 		keys = append(keys, key)
 	}
-	sort.Strings(keys) // ensure the output is consistent, which helps with testing
+	// ensure the output is consistent, which helps with testing
+	// for an example of why we need to sort headers, see
+	// https://github.com/ooni/probe-engine/pull/751/checks?check_run_id=853562310
+	sort.Strings(keys)
 	for _, key := range keys {
 		for _, value := range header[key] {
 			out = append(out, model.ArchivalHTTPHeader{
