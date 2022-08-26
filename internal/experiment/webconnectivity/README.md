@@ -14,12 +14,12 @@ behind writing this new implementation.
 ## Implementation overview
 
 The experiment measures a single URL at a time. The OONI Engine invokes the
-`Measurer.Run` method inside the [measurer.go](measurer.go) file.
+`Run` method inside the [measurer.go](measurer.go) file.
 
 This code starts a number of background tasks, waits for them to complete, and
-finally calls `TestKeys.finalize` to finalize the contet of the JSON measurement.
+finally calls `TestKeys.finalize` to finalize the content of the JSON measurement.
 
-The first task that is started is deals with DNS and lives in the
+The first task that is started deals with DNS and lives in the
 [dnsresolvers.go](dnsresolvers.go) file. This task is responsible for
 resolving the domain inside the URL into `0..N` IP addresses.
 
@@ -46,14 +46,15 @@ respectively.
 2. if it's `https://...`, then we only start encrypted tasks.
 
 Cleartext tasks are implemented by [cleartextflow.go](cleartextflow.go) while
-encrypted tasks live in [secureflow.go](secureflow.go).
+the encrypted tasks live in [secureflow.go](secureflow.go).
 
 A cleartext task does the following:
 
 1. TCP connect;
 
 2. additionally, the first task to establish a connection also performs
-a GET request to fetch a webpage.
+a GET request to fetch a webpage (we cannot GET for all connections, because
+that would be `websteps` and would require a different data format).
 
 An encrypted task does the following:
 
@@ -62,9 +63,11 @@ An encrypted task does the following:
 2. TLS handshake;
 
 3. additionally, the first task to handshake also performs
-a GET request to fetch a webpage _iff_ the input URL was `https://...`
+a GET request to fetch a webpage _iff_ the input URL was `https://...` (we cannot GET
+for all connections, because that would be `websteps` and would require a
+different data format).
 
-If fetching the webpage returns a redirection, we start a new DNS task passing it
+If fetching the webpage returns a redirect, we start a new DNS task passing it
 the redirect URL as the new URL to measure. We do not call the test helper again
 when this happens, though. The Web Connectivity test helper already follows the whole
 redirect chain, so we would need to change the test helper to get information on
@@ -72,12 +75,14 @@ each flow. When this will happen, this experiment will probably not be Web Conne
 anymore, but rather some form of [websteps](https://github.com/bassosimone/websteps-illustrated/).
 
 Additionally, when the test helper terminates, we run TCP connect and TLS handshake
-(when applicable) for new IP addresses discovered usiong the test helper that were
-previously unknown to the probe, thus collecting extra information.
+(when applicable) for new IP addresses discovered using the test helper that were
+previously unknown to the probe, thus collecting extra information. This logic lives
+inside the [control.go](control.go) file.
 
 As previously mentioned, when all tasks complete, we call `TestKeys.finalize`.
 
-In turn, this function analyzes the collected data:
+In turn, this function analyzes the collected data by calling code implemented
+inside the following files:
 
 - [analysiscore.go](analysiscore.go) contains the core analysis algorithm;
 
@@ -90,17 +95,15 @@ analysis, where we mainly determine TLS blocking;
 
 - [analysistcpip.go](analysistcpip.go) checks for TCP/IP blocking.
 
-## Data model
-
-All the test keys that are not part of the original Web Connectivity have
-the `x_` prefix to indicate that they are experimental and may change.
+We emit the `blocking` and `accessible` keys we emitted before as well as new
+keys, prefixed by `x_` to indicate that they're experimental.
 
 ## Limitations and next steps
 
-We need to extent the Web Connectivity test helper to return us information
+We need to extend the Web Connectivity test helper to return us information
 about TLS handshakes with IP addresses discovered by the probe. This information
 would allow us to make more precise TLS blocking statements.
 
 Further changes are probably possible. Departing too radically from the Web
-Connectivity model, will lead us to have a Websteps implementation (but then
-the data model would probably be different).
+Connectivity model, though, will lead us to have a `websteps` implementation (but
+then the data model would most likely be different).
