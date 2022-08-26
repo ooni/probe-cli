@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -29,7 +28,7 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.3"
+	testVersion = "0.0.5"
 
 	// pingCount tells how many icmp echo requests to send.
 	// pingCount = 10
@@ -42,6 +41,11 @@ const (
 	urlGrabURI = "https://api.ipify.org/?format=json"
 )
 
+var (
+	bootstrapError = "bootstrap-error"
+	urlgrabError   = "urlgrab-error"
+)
+
 // Config contains the experiment config.
 type Config struct {
 	SafeKey  string `ooni:"key to connect to the OpenVPN endpoint"`
@@ -52,17 +56,31 @@ type Config struct {
 	Compress string `ooni:"compression to use"`
 }
 
-// PingStats holds the results for a pinger run.
-// TODO(ainghazal): move the aggregates to summaryKeys?
-type PingStats struct {
-	MinRtt      float64   `json:"min_rtt"`
-	MaxRtt      float64   `json:"max_rtt"`
-	AvgRtt      float64   `json:"avg_rtt"`
-	StdRtt      float64   `json:"std_rtt"`
-	Rtts        []float64 `json:"rtts"`
-	TTLs        []int     `json:"ttls"`
-	PacketsRecv int       `json:"pkt_rcv"`
-	PacketsSent int       `json:"pkt_snt"`
+// PingResult holds the results for a pinger run.
+type PingResult struct {
+	Target      string  `json:"target"`
+	PacketsRecv int     `json:"pkt_rcv"`
+	PacketsSent int     `json:"pkt_snt"`
+	Rtts        []int64 `json:"rtts"`
+	TTLs        []int   `json:"ttls"`
+	MinRtt      int64   `json:"min_rtt"`
+	MaxRtt      int64   `json:"max_rtt"`
+	AvgRtt      int64   `json:"avg_rtt"`
+	StdRtt      int64   `json:"std_rtt"`
+	// FIXME unsure about this, but I think I want to know if
+	// the measurements timed out for each ping, or it's another kind of
+	// error (ie, instrumental, uncovered cases etc).
+	Error *string `json:"error"`
+}
+
+// URLURLGrabResult holds the results for a urlgrab run.
+// TODO we should store more things here:
+// fetch time
+// response code
+// (this serves another purpose: check for geofencing etc...)
+type URLGrabResult struct {
+	URI      string  `json:"uri"`
+	Response *string `json:"response"`
 }
 
 // TestKeys contains the experiment's result.
@@ -90,9 +108,6 @@ type TestKeys struct {
 	// Other keys
 	//
 
-	// PingStats holds values for the aggregated stats of a ping.
-	PingStats *PingStats `json:"ping_stats"`
-
 	// BootstrapTime contains the bootstrap time on success.
 	BootstrapTime float64 `json:"bootstrap_time"`
 
@@ -102,19 +117,19 @@ type TestKeys struct {
 	// Failure contains the failure string or nil.
 	Failure *string `json:"failure"`
 
-	// VPNLogs contains the bootstrap logs.
+	// Error is one of `null`, `"bootstrap-error"`, `"timeout-reached"`,
+	// and `"unknown-error"`.
+	// FIXME  make sure all are covered.
+	Error *string `json:"error"`
 
-	// TODO pass the logger to the client??
-	VPNLogs []string `json:"vpn_logs"`
+	// Pings holds an array for aggregated stats of each ping.
+	Pings []*PingResult `json:"pings"`
+
+	// URLGrab holds an array for urlgrab results.
+	URLGrab []*URLGrabResult `json:"urlgrab"`
 
 	// MiniVPNVersion contains the version of the minivpn library used.
 	MiniVPNVersion string `json:"minivpn_version"`
-
-	// PingTarget is the target we used for ping
-	PingTarget string `json:"ping_target"`
-
-	// just to capture something for now..
-	Response string `json:"ip_query"`
 
 	// Success is true when we reached the end of the test without errors.
 	Success bool `json:"success"`
@@ -148,21 +163,6 @@ func (m *Measurer) ExperimentVersion() string {
 // registerExtensions registers the extensions used by this experiment.
 func (m *Measurer) registerExtensions(measurement *model.Measurement) {
 	// currently none
-}
-
-func parseStats(pinger *ping.Pinger) *PingStats {
-	st := pinger.Statistics()
-	pingStats := &PingStats{
-		MinRtt:      st.MinRtt.Seconds(),
-		MaxRtt:      st.MaxRtt.Seconds(),
-		AvgRtt:      st.AvgRtt.Seconds(),
-		StdRtt:      st.StdDevRtt.Seconds(),
-		Rtts:        st.Rtts,
-		TTLs:        st.TTLs,
-		PacketsRecv: st.PacketsRecv,
-		PacketsSent: st.PacketsSent,
-	}
-	return pingStats
 }
 
 // Run runs the experiment with the specified context, session,
@@ -217,20 +217,31 @@ func (m *Measurer) Run(
 	//
 	// All ready now. Now we can begin the experiment itself.
 	//
-	// 1. ping
+	// 1. ping external target
 	//
+
+	tk.Pings = []*PingResult{}
 
 	pinger := ping.NewFromSharedConnection(pingTarget, m.conn)
 	pinger.Count = pingCount
-	tk.PingTarget = pingTarget
 
 	err = pinger.Run(ctx)
+	tk.Pings = append(tk.Pings, parseStats(pinger, pingTarget))
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
 		return nil
 	}
 
-	tk.PingStats = parseStats(pinger)
+	vpnGW := m.conn.RemoteAddr().String()
+	pinger = ping.NewFromSharedConnection(vpnGW, m.conn)
+	pinger.Count = pingCount
+
+	err = pinger.Run(ctx)
+	tk.Pings = append(tk.Pings, parseStats(pinger, vpnGW))
+	if err != nil {
+		tk.Failure = tracex.NewFailure(err)
+		return nil
+	}
 
 	//
 	// 2. urlgrab
@@ -243,19 +254,33 @@ func (m *Measurer) Run(
 			DialContext: d.DialContext,
 		},
 	}
+
+	urlgrabResult := &URLGrabResult{
+		URI:      urlGrabURI,
+		Response: nil,
+	}
+
 	resp, err := client.Get(urlGrabURI)
 	if err != nil {
 		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
-		tk.Failure = tracex.NewFailure(fmt.Errorf("%w: %s", ErrURLGrab, err))
+		tk.Failure = tracex.NewFailure(err)
+		tk.Error = &urlgrabError
+		tk.URLGrab = append(tk.URLGrab, urlgrabResult)
 		return nil
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
-		tk.Failure = tracex.NewFailure(fmt.Errorf("%w: %s", ErrURLGrab, err))
+		tk.Failure = tracex.NewFailure(err)
+		tk.Error = &urlgrabError
+		tk.URLGrab = append(tk.URLGrab, urlgrabResult)
 		return nil
 	}
-	tk.Response = string(body)
+
+	rb := string(body)
+	urlgrabResult.Response = &rb
+
+	tk.URLGrab = append(tk.URLGrab, urlgrabResult)
 	sess.Logger().Info("openvpn: all tests ok")
 	tk.Success = true
 	return nil
@@ -310,8 +335,6 @@ func (m *Measurer) setup(ctx context.Context, exp *model.VPNExperiment, logger m
 	return raw, nil
 }
 
-var ErrURLGrab = errors.New("urlgrab")
-
 // bootstrap runs the bootstrap.
 func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	experiment *model.VPNExperiment,
@@ -322,9 +345,11 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 		Transport:      protoToString(m.vpnOptions.Proto),
 		Remote:         net.JoinHostPort(m.vpnOptions.Remote, m.vpnOptions.Port),
 		Obfuscation:    experiment.Obfuscation,
+		URLGrab:        []*URLGrabResult{},
 		MiniVPNVersion: getMiniVPNVersion(),
 		BootstrapTime:  0,
 		Failure:        nil,
+		Error:          nil,
 	}
 	sess.Logger().Info("openvpn: bootstrapping openvpn connection")
 	defer func() {
@@ -354,6 +379,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	tk.BootstrapTime = time.Now().Sub(s).Seconds()
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
+		tk.Error = &bootstrapError
 		sess.Logger().Info("openvpn: bootstrapping failed")
 		return
 	}
@@ -408,4 +434,22 @@ func getMiniVPNVersion() string {
 		}
 	}
 	return ""
+}
+
+// parseStats accepts a pointer to a Pinger struct and a target string, and returns
+// an pointer to a PingResult with all the fields filled.
+func parseStats(pinger *ping.Pinger, target string) *PingResult {
+	st := pinger.Statistics()
+	pingStats := &PingResult{
+		Target:      target,
+		PacketsRecv: st.PacketsRecv,
+		PacketsSent: st.PacketsSent,
+		Rtts:        st.Rtts,
+		TTLs:        st.TTLs,
+		MinRtt:      st.MinRtt.Milliseconds(),
+		MaxRtt:      st.MaxRtt.Milliseconds(),
+		AvgRtt:      st.AvgRtt.Milliseconds(),
+		StdRtt:      st.StdDevRtt.Milliseconds(),
+	}
+	return pingStats
 }
