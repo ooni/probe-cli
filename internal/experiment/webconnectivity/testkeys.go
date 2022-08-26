@@ -30,6 +30,10 @@ type TestKeys struct {
 	// Do53 contains ancillary observations collected by Do53 resolvers.
 	Do53 *TestKeysDo53 `json:"x_do53"`
 
+	// DNSLateReplies contains late replies we didn't expect to receive from
+	// a resolver (which may raise eyebrows if they're different).
+	DNSLateReplies []*model.ArchivalDNSLookupResult `json:"x_dns_late_replies"`
+
 	// Queries contains DNS queries.
 	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
 
@@ -158,6 +162,13 @@ type TestKeysDo53 struct {
 func (tk *TestKeys) AppendNetworkEvents(v ...*model.ArchivalNetworkEvent) {
 	tk.mu.Lock()
 	tk.NetworkEvents = append(tk.NetworkEvents, v...)
+	tk.mu.Unlock()
+}
+
+// AppendDNSLateReplies appends to DNSLateReplies.
+func (tk *TestKeys) AppendDNSLateReplies(v ...*model.ArchivalDNSLookupResult) {
+	tk.mu.Lock()
+	tk.DNSLateReplies = append(tk.DNSLateReplies, v...)
 	tk.mu.Unlock()
 }
 
