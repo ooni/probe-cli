@@ -28,7 +28,7 @@ import (
 // been used to implement the getaddrinfo resolver.
 //
 // This is the CGO_ENABLED=1 implementation of this function, which
-// always returns the string "getaddrinfo", because in this scenario
+// always returns the string [StdlibResolverGetaddrinfo], because in this scenario
 // we are actually calling the getaddrinfo libc function.
 //
 // See https://github.com/ooni/spec/pull/257 for more information on how

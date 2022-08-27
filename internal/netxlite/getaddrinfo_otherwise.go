@@ -11,7 +11,7 @@ import (
 // been used to implement the getaddrinfo resolver.
 //
 // This is the CGO_ENABLED=0 implementation of this function, which
-// always returns the string "golang_net_resolver", because in this scenario
+// always returns the string [StdlibResolverGolangNetResolver], because in this scenario
 // we are actually using whatever resolver is used under the hood by the stdlib.
 //
 // See https://github.com/ooni/probe/issues/2029#issuecomment-1140805266

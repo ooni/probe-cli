@@ -347,7 +347,7 @@ func TestResolverLogger(t *testing.T) {
 						return expected, nil
 					},
 					MockNetwork: func() string {
-						return "getaddrinfo"
+						return StdlibResolverGetaddrinfo
 					},
 					MockAddress: func() string {
 						return ""
@@ -381,7 +381,7 @@ func TestResolverLogger(t *testing.T) {
 						return nil, expected
 					},
 					MockNetwork: func() string {
-						return "getaddrinfo"
+						return StdlibResolverGetaddrinfo
 					},
 					MockAddress: func() string {
 						return ""
@@ -420,7 +420,7 @@ func TestResolverLogger(t *testing.T) {
 						return expected, nil
 					},
 					MockNetwork: func() string {
-						return "getaddrinfo"
+						return StdlibResolverGetaddrinfo
 					},
 					MockAddress: func() string {
 						return ""
@@ -454,7 +454,7 @@ func TestResolverLogger(t *testing.T) {
 						return nil, expected
 					},
 					MockNetwork: func() string {
-						return "getaddrinfo"
+						return StdlibResolverGetaddrinfo
 					},
 					MockAddress: func() string {
 						return ""
@@ -509,7 +509,7 @@ func TestResolverLogger(t *testing.T) {
 						return expected, nil
 					},
 					MockNetwork: func() string {
-						return "getaddrinfo"
+						return StdlibResolverGetaddrinfo
 					},
 					MockAddress: func() string {
 						return ""
@@ -543,7 +543,7 @@ func TestResolverLogger(t *testing.T) {
 						return nil, expected
 					},
 					MockNetwork: func() string {
-						return "getaddrinfo"
+						return StdlibResolverGetaddrinfo
 					},
 					MockAddress: func() string {
 						return ""

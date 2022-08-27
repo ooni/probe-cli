@@ -60,10 +60,10 @@ func (r *ResolverSaver) LookupHost(ctx context.Context, hostname string) ([]stri
 	return addrs, err
 }
 
-// ResolverNetworkAdaptNames makes sure we map the "golang_net_resolver" and
-// "getaddrinfo" resolver names to "system". You MUST call this function when
-// your resolver splits the "stdlib" resolver results into two fake AAAA and
-// A queries rather than faking a single ANY query.
+// ResolverNetworkAdaptNames makes sure we map the [netxlite.StdlibResolverGolangNetResolver] and
+// [netxlite.StdlibResolverGetaddrinfo] resolver names to [netxlite.StdlibResolverSystem]. You MUST
+// call this function when your resolver splits the "stdlib" resolver results into two fake AAAA
+// and A queries rather than faking a single ANY query.
 //
 // See https://github.com/ooni/spec/pull/257 for more information.
 func ResolverNetworkAdaptNames(input string) string {
