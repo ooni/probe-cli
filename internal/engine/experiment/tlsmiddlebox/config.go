@@ -1,6 +1,13 @@
 package tlsmiddlebox
 
-import "time"
+//
+// Config for the tlsmiddlebox experiment
+//
+
+import (
+	"net/url"
+	"time"
+)
 
 // Config contains the experiment configuration.
 type Config struct {
@@ -16,8 +23,8 @@ type Config struct {
 	// Iterations is the default number of interations we trace
 	MaxTTL int64 `ooni:"iterations is the number of iterations"`
 
-	// SNI is the SNI value to use.
-	SNI string `ooni:"the SNI value to use"`
+	// TestHelper iis the testhelper host for iterative tracing
+	TestHelper string `ooni:"the SNI value to use"`
 
 	// ClientId is the client fingerprint to use
 	ClientId int `ooni:"the ClientHello fingerprint to use"`
@@ -51,11 +58,17 @@ func (c Config) maxttl() int64 {
 	return 20
 }
 
-func (c Config) sni(address string) string {
-	if c.SNI != "" {
-		return c.SNI
+// TODO(DecFox): We want to replace this with a generic input parser
+// Issue: https://github.com/ooni/probe/issues/2239
+func (c Config) testhelper(address string) (URL *url.URL, err error) {
+	if c.TestHelper != "" {
+		return url.Parse(c.TestHelper)
 	}
-	return address
+	URL = &url.URL{
+		Host:   address,
+		Scheme: "tlshandshake",
+	}
+	return
 }
 
 func (c Config) clientid() int {

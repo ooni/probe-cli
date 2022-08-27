@@ -1,5 +1,9 @@
 package tlsmiddlebox
 
+//
+// Wrapped TTL conn
+//
+
 import (
 	"errors"
 	"net"

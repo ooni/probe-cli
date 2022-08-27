@@ -2,6 +2,10 @@
 
 package tlsmiddlebox
 
+//
+// syscall utilities for dialerTTLWrapperConn
+//
+
 import (
 	"net"
 	"syscall"

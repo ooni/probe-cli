@@ -2,7 +2,9 @@ package tlsmiddlebox
 
 import (
 	"context"
+	"errors"
 	"io"
+	"syscall"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
@@ -121,30 +123,69 @@ func TestDialerTTLWrapperConn(t *testing.T) {
 }
 
 func TestSetTTL(t *testing.T) {
-	d := NewDialerTTLWrapper()
-	ctx := context.Background()
-	conn, err := d.DialContext(ctx, "tcp", "1.1.1.1:80")
-	if err != nil {
-		t.Fatal("expected non-nil conn")
-	}
-	// test TTL set
-	err = setConnTTL(conn, 1)
-	if err != nil {
-		t.Fatal("unexpected error in setting TTL", err)
-	}
-	var buf [512]byte
-	_, err = conn.Write([]byte("1111"))
-	if err != nil {
-		t.Fatal("error writing", err)
-	}
-	r, _ := conn.Read(buf[:])
-	if r != 0 {
-		t.Fatal("unexpected output of size", r)
-	}
-	setConnTTL(conn, 64) // reset TTL to ensure conn closes successfully
-	conn.Close()
-	_, err = conn.Read(buf[:])
-	if err == nil || err.Error() != netxlite.FailureConnectionAlreadyClosed {
-		t.Fatal("failed to reset TTL")
-	}
+	t.Run("success case", func(t *testing.T) {
+		d := NewDialerTTLWrapper()
+		ctx := context.Background()
+		conn, err := d.DialContext(ctx, "tcp", "1.1.1.1:80")
+		if err != nil {
+			t.Fatal("expected non-nil conn")
+		}
+		// test TTL set
+		err = setConnTTL(conn, 1)
+		if err != nil {
+			t.Fatal("unexpected error in setting TTL", err)
+		}
+		var buf [512]byte
+		_, err = conn.Write([]byte("1111"))
+		if err != nil {
+			t.Fatal("error writing", err)
+		}
+		r, _ := conn.Read(buf[:])
+		if r != 0 {
+			t.Fatal("unexpected output of size", r)
+		}
+		setConnTTL(conn, 64) // reset TTL to ensure conn closes successfully
+		conn.Close()
+		_, err = conn.Read(buf[:])
+		if err == nil || err.Error() != netxlite.FailureConnectionAlreadyClosed {
+			t.Fatal("failed to reset TTL")
+		}
+	})
+
+	t.Run("failure case", func(t *testing.T) {
+		conn := &mocks.Conn{}
+		err := setConnTTL(conn, 1)
+		if !errors.Is(err, errInvalidConnWrapper) {
+			t.Fatal("unexpected error")
+		}
+	})
+}
+
+func TestGetSoErr(t *testing.T) {
+	t.Run("success case", func(t *testing.T) {
+		d := NewDialerTTLWrapper()
+		ctx := context.Background()
+		conn, err := d.DialContext(ctx, "tcp", "1.1.1.1:80")
+		if err != nil {
+			t.Fatal(err)
+		}
+		errno, err := getSoErr(conn)
+		if err != nil {
+			t.Fatal("unexpected error", err)
+		}
+		if !errors.Is(errno, syscall.Errno(0)) {
+			t.Fatal("unexpected errno")
+		}
+	})
+
+	t.Run("failure case", func(t *testing.T) {
+		conn := &mocks.Conn{}
+		errno, err := getSoErr(conn)
+		if !errors.Is(err, errInvalidConnWrapper) {
+			t.Fatal("unexpected error")
+		}
+		if errno != nil {
+			t.Fatal("expected nil errorno")
+		}
+	})
 }

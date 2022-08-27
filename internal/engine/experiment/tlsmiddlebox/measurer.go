@@ -7,7 +7,6 @@ package tlsmiddlebox
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"sync"
 	"time"
@@ -42,8 +41,14 @@ var (
 	// errInputIsNotAnURL indicates that input is not an URL
 	errInputIsNotAnURL = errors.New("input is not an URL")
 
-	// errInvalidScheme indicates that the scheme is invalid
-	errInvalidScheme = errors.New("scheme must be tlshandshake or https")
+	// errInvalidInputScheme indicates that the input scheme is invalid
+	errInvalidInputScheme = errors.New("input scheme must be tlstrace")
+
+	// errInvalidTestHelper indicates that the testhelper is invalid
+	errInvalidTestHelper = errors.New("invalid testhelper")
+
+	// errInvalidTHScheme indicates that the TH scheme is invalid
+	errInvalidTHScheme = errors.New("th scheme must be tlshandshake")
 )
 
 // // Run implements ExperimentMeasurer.Run.
@@ -58,26 +63,31 @@ func (m *Measurer) Run(
 	}
 	parsed, err := url.Parse(string(measurement.Input))
 	if err != nil {
-		return fmt.Errorf("%w: %s", errInputIsNotAnURL, err.Error())
+		return errInputIsNotAnURL
 	}
-	scheme := parsed.Scheme
-	if scheme != "tlshandshake" && scheme != "https" {
-		return errInvalidScheme
+	if parsed.Scheme != "tlstrace" {
+		return errInvalidInputScheme
+	}
+	th, err := m.config.testhelper(parsed.Host)
+	if err != nil {
+		return errInvalidTestHelper
+	}
+	if th.Scheme != "tlshandshake" {
+		return errInvalidTHScheme
 	}
 	tk := NewTestKeys()
 	measurement.TestKeys = tk
-	sni := m.config.sni(parsed.Host)
 	wg := new(sync.WaitGroup)
 	// 1. perform a DNSLookup
-	addrs, err := m.DNSLookup(ctx, 0, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Hostname(), tk)
+	addrs, err := m.DNSLookup(ctx, 0, measurement.MeasurementStartTimeSaved, sess.Logger(), th.Hostname(), tk)
 	if err != nil {
 		return err
 	}
 	// 2. measure addresses
-	addrs = prepareAddrs(addrs, parsed.Port())
+	addrs = prepareAddrs(addrs, th.Port())
 	for i, addr := range addrs {
 		wg.Add(1)
-		go m.TraceAddress(ctx, int64(i), measurement.MeasurementStartTimeSaved, sess.Logger(), addr, sni, tk, wg)
+		go m.TraceAddress(ctx, int64(i), measurement.MeasurementStartTimeSaved, sess.Logger(), addr, parsed.Hostname(), tk, wg)
 	}
 	wg.Wait()
 	return nil

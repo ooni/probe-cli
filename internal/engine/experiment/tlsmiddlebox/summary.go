@@ -12,7 +12,7 @@ type SummaryKeys struct {
 }
 
 // GetSummaryKeys implements model.ExperimentMeasurer.GetSummaryKeys.
-// TODO(DecFox): Add anamoly logic to generate summary keys for the experiment
+// TODO(DecFox): Add anomaly logic to generate summary keys for the experiment
 func (m Measurer) GetSummaryKeys(measurement *model.Measurement) (interface{}, error) {
 	return SummaryKeys{IsAnomaly: false}, nil
 }

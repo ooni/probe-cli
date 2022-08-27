@@ -33,19 +33,44 @@ func TestConfig_snipass(t *testing.T) {
 	}
 }
 
-func TestConfig_sni(t *testing.T) {
+func TestConfig_testhelper(t *testing.T) {
 	t.Run("without config", func(t *testing.T) {
 		c := Config{}
-		if c.sni("example.com") != "example.com" {
-			t.Fatal("invalid sni")
+		th, err := c.testhelper("example.com")
+		if err != nil {
+			t.Fatal("unexpected error")
+		}
+		if th.Scheme != "tlshandshake" {
+			t.Fatal("unexpected scheme")
+		}
+		if th.Host != "example.com" {
+			t.Fatal("unexpected host")
 		}
 	})
+
 	t.Run("with config", func(t *testing.T) {
 		c := Config{
-			SNI: "google.com",
+			TestHelper: "tlshandshake://example.com:80",
 		}
-		if c.sni("example.com") != "google.com" {
-			t.Fatal("invalid sni")
+		th, err := c.testhelper("google.com")
+		if err != nil {
+			t.Fatal("unexpected error")
+		}
+		if th.Scheme != "tlshandshake" {
+			t.Fatal("unexpected scheme")
+		}
+		if th.Host != "example.com:80" {
+			t.Fatal("unexpected host")
+		}
+	})
+
+	t.Run("failure case", func(t *testing.T) {
+		c := Config{
+			TestHelper: "\t",
+		}
+		th, _ := c.testhelper("google.com")
+		if th != nil {
+			t.Fatal("expected nil url")
 		}
 	})
 }

@@ -103,6 +103,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 
 // extractSoError fetches the SO_ERROR value and returns a non-nil error if
 // it qualifies as a valid ICMP soft error
+// Note: The passed conn must be of type dialerTTLWrapperConn
 func extractSoError(conn net.Conn) error {
 	soErrno, err := getSoErr(conn)
 	if err != nil {

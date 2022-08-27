@@ -2,6 +2,10 @@
 
 package tlsmiddlebox
 
+//
+// syscall utilities for dialerTTLWrapperConn
+//
+
 // #cgo LDFLAGS: -lws2_32
 // #include <winsock2.h>
 import "C"
@@ -10,6 +14,7 @@ import (
 	"errors"
 	"net"
 	"syscall"
+	"unsafe"
 )
 
 // SetTTL sets the IP TTL field for the underlying net.TCPConn
