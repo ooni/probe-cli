@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -44,6 +45,9 @@ type httpConfig struct {
 
 // httpDo performs the HTTP check.
 func httpDo(ctx context.Context, config *httpConfig) {
+	const timeout = 15 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	defer config.Wg.Done()
 	req, err := http.NewRequestWithContext(ctx, "GET", config.URL, nil)
 	if err != nil {
