@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -38,6 +39,9 @@ type dnsConfig struct {
 
 // dnsDo performs the DNS check.
 func dnsDo(ctx context.Context, config *dnsConfig) {
+	const timeout = 4 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	defer config.Wg.Done()
 	reso := config.NewResolver()
 	defer reso.CloseIdleConnections()
