@@ -89,9 +89,14 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	// continue assembling the response
 	cresp.HTTPRequest = <-httpch
 	cresp.TCPConnect = make(map[string]ctrlTCPResult)
-	for len(cresp.TCPConnect) < len(creq.TCPConnect) {
-		tcpconn := <-tcpconnch
-		cresp.TCPConnect[tcpconn.Endpoint] = tcpconn.Result
+Loop:
+	for {
+		select {
+		case tcpconn := <-tcpconnch:
+			cresp.TCPConnect[tcpconn.Endpoint] = tcpconn.Result
+		default:
+			break Loop
+		}
 	}
 
 	return cresp, nil
