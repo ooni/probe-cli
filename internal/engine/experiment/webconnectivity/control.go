@@ -55,6 +55,7 @@ type ControlResponse struct {
 	TLSHandshake map[string]ControlTLSHandshakeResult `json:"tls_handshake"`
 	HTTPRequest  ControlHTTPRequestResult             `json:"http_request"`
 	DNS          ControlDNSResult                     `json:"dns"`
+	GeoIP        map[string]int64                     `json:"geoip"`
 }
 
 // Control performs the control request and returns the response.

@@ -60,7 +60,12 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	}
 
 	// figure out all the endpoints to measure
-	endpoints := computeEndpoints(URL, creq, cresp.DNS.Addrs)
+	endpoints, mapping := computeEndpoints(URL, creq, cresp.DNS.Addrs)
+
+	// geoip: start over all addresses
+	wg.Add(1)
+	geoipch := make(chan map[string]int64, 1)
+	go geoipDo(mapping, geoipch)
 
 	// tcpconnect: start over all the endpoints
 	tcpconnch := make(chan *tcpResultPair, len(endpoints))
@@ -107,6 +112,7 @@ Loop:
 			break Loop
 		}
 	}
+	cresp.GeoIP = <-geoipch
 
 	return cresp, nil
 }
@@ -117,24 +123,34 @@ type endpointInfo struct {
 	tls  bool
 }
 
+const (
+	// Address was discovered by the probe
+	foundByProbe = 1 << iota
+
+	// Address was discovered by the TH
+	foundByTH
+)
+
 // Computes all the endpoints that we need to measure including both the
-// endpoints discovered by the probe and the ones discovered by us
-func computeEndpoints(URL *url.URL, creq *ctrlRequest, addrs []string) (out []endpointInfo) {
+// endpoints discovered by the probe and the ones discovered by us. It also
+// returns a mapping counting characterizing who discovered which addr.
+func computeEndpoints(
+	URL *url.URL, creq *ctrlRequest, addrs []string) (out []endpointInfo, mapping map[string]int) {
 	ports := []string{"80", "443"}
 	if URL.Port() != "" {
 		ports = []string{URL.Port()} // when there's a custom port just use that
 	}
-	mapping := make(map[string]int)
+	mapping = make(map[string]int)
 	for _, epnt := range creq.TCPConnect {
 		addr, _, err := net.SplitHostPort(epnt)
 		if err != nil {
 			continue
 		}
-		mapping[addr]++
+		mapping[addr] |= foundByProbe
 	}
 	for _, addr := range addrs {
 		if net.ParseIP(addr) != nil {
-			mapping[addr]++
+			mapping[addr] |= foundByTH
 		}
 	}
 	for addr := range mapping {
