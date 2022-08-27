@@ -43,6 +43,22 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		})
 	}
 
+	// wait for DNS measurements to complete
+	wg.Wait()
+
+	// start assembling the response
+	cresp := new(ctrlResponse)
+	select {
+	case cresp.DNS = <-dnsch:
+	default:
+		// we need to emit a non-nil Addrs to match exactly
+		// the behavior of the legacy TH
+		cresp.DNS = ctrlDNSResult{
+			Failure: nil,
+			Addrs:   []string{},
+		}
+	}
+
 	// tcpconnect: start
 	tcpconnch := make(chan tcpResultPair, len(creq.TCPConnect))
 	for _, endpoint := range creq.TCPConnect {
@@ -67,21 +83,10 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		Wg:                wg,
 	})
 
-	// wait for measurement steps to complete
+	// wait for endpoint measurements to complete
 	wg.Wait()
 
-	// assemble response
-	cresp := new(ctrlResponse)
-	select {
-	case cresp.DNS = <-dnsch:
-	default:
-		// we need to emit a non-nil Addrs to match exactly
-		// the behavior of the legacy TH
-		cresp.DNS = ctrlDNSResult{
-			Failure: nil,
-			Addrs:   []string{},
-		}
-	}
+	// continue assembling the response
 	cresp.HTTPRequest = <-httpch
 	cresp.TCPConnect = make(map[string]ctrlTCPResult)
 	for len(cresp.TCPConnect) < len(creq.TCPConnect) {
