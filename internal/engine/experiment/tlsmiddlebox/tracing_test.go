@@ -16,21 +16,57 @@ import (
 )
 
 func TestIterativeTrace(t *testing.T) {
-	zeroTime := time.Now()
-	m := NewExperimentMeasurer(Config{})
-	ctx := context.Background()
-	trace := m.IterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, "1.1.1.1:443", "example.com")
-	if trace.SNI != "example.com" {
-		t.Fatal("unexpected servername")
-	}
-	if len(trace.Iterations) <= 0 {
-		t.Fatal("no iterations recorded")
-	}
-	for i, ev := range trace.Iterations {
-		if ev.TTL != i+1 {
-			t.Fatal("unexpected TTL value")
+	t.Run("on success", func(t *testing.T) {
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(200)
+		}))
+		defer server.Close()
+		URL, err := url.Parse(server.URL)
+		if err != nil {
+			t.Fatal(err)
 		}
-	}
+		m := NewExperimentMeasurer(Config{})
+		zeroTime := time.Now()
+		ctx := context.Background()
+		trace := m.IterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com")
+		if trace.SNI != "example.com" {
+			t.Fatal("unexpected servername")
+		}
+		if len(trace.Iterations) != 1 {
+			t.Fatal("unexpected number of iterations")
+		}
+		for i, ev := range trace.Iterations {
+			if ev.TTL != i+1 {
+				t.Fatal("unexpected TTL value")
+			}
+		}
+	})
+
+	t.Run("failure case", func(t *testing.T) {
+		server := filtering.NewTLSServer(filtering.TLSActionTimeout)
+		defer server.Close()
+		th := "tlshandshake://" + server.Endpoint()
+		URL, err := url.Parse(th)
+		if err != nil {
+			t.Fatal(err)
+		}
+		URL.Scheme = "tlshandshake"
+		m := NewExperimentMeasurer(Config{})
+		zeroTime := time.Now()
+		ctx := context.Background()
+		trace := m.IterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com")
+		if trace.SNI != "example.com" {
+			t.Fatal("unexpected servername")
+		}
+		if len(trace.Iterations) != 20 {
+			t.Fatal("unexpected number of iterations")
+		}
+		for i, ev := range trace.Iterations {
+			if ev.TTL != i+1 {
+				t.Fatal("unexpected TTL value")
+			}
+		}
+	})
 }
 
 func TestHandshakeWithTTL(t *testing.T) {
@@ -43,7 +79,6 @@ func TestHandshakeWithTTL(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		URL.Scheme = "tlshandshake"
 		m := NewExperimentMeasurer(Config{})
 		tr := &IterativeTrace{}
 		zeroTime := time.Now()
@@ -66,7 +101,7 @@ func TestHandshakeWithTTL(t *testing.T) {
 		}
 	})
 
-	t.Run("on success", func(t *testing.T) {
+	t.Run("on failure", func(t *testing.T) {
 		server := filtering.NewTLSServer(filtering.TLSActionReset)
 		defer server.Close()
 		th := "tlshandshake://" + server.Endpoint()
