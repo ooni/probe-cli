@@ -36,9 +36,9 @@ func TestCreateAll(t *testing.T) {
 			index := strings.Index(name, "@")
 			if index >= 0 {
 				name = name[:index]
-			}
-			if good := (exp.Name() == name); good {
-				continue
+				if good := (exp.Name() == name); good {
+					continue
+				}
 			}
 			t.Fatal("unexpected experiment name", exp.Name(), name)
 		}
