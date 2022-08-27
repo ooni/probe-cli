@@ -65,7 +65,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	// geoip: start over all addresses
 	wg.Add(1)
 	geoipch := make(chan map[string]int64, 1)
-	go geoipDo(mapping, geoipch)
+	go geoipDo(wg, mapping, geoipch)
 
 	// tcpconnect: start over all the endpoints
 	tcpconnch := make(chan *tcpResultPair, len(endpoints))
@@ -100,6 +100,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	// continue assembling the response
 	cresp.HTTPRequest = <-httpch
 	cresp.TCPConnect = make(map[string]ctrlTCPResult)
+	cresp.TLSHandshake = make(map[string]webconnectivity.ControlTLSHandshakeResult)
 Loop:
 	for {
 		select {
