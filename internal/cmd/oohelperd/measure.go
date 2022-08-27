@@ -59,9 +59,12 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		}
 	}
 
-	// tcpconnect: start
-	tcpconnch := make(chan tcpResultPair, len(creq.TCPConnect))
-	for _, endpoint := range creq.TCPConnect {
+	// figure out all the endpoints to measure
+	endpoints := computeEndpoints(URL, creq, cresp.DNS.Addrs)
+
+	// tcpconnect: start over all the endpoints
+	tcpconnch := make(chan tcpResultPair, len(endpoints))
+	for _, endpoint := range endpoints {
 		wg.Add(1)
 		go tcpDo(ctx, &tcpConfig{
 			Endpoint:  endpoint,
@@ -100,4 +103,33 @@ Loop:
 	}
 
 	return cresp, nil
+}
+
+// Computes all the endpoints that we need to measure including both the
+// endpoints discovered by the probe and the ones discovered by us
+func computeEndpoints(URL *url.URL, creq *ctrlRequest, addrs []string) (out []string) {
+	ports := []string{"80", "443"}
+	if URL.Port() != "" {
+		ports = []string{URL.Port()} // when there's a custom port just use that
+	}
+	mapping := make(map[string]int)
+	for _, epnt := range creq.TCPConnect {
+		addr, _, err := net.SplitHostPort(epnt)
+		if err != nil {
+			continue
+		}
+		mapping[addr]++
+	}
+	for _, addr := range addrs {
+		if net.ParseIP(addr) != nil {
+			mapping[addr]++
+		}
+	}
+	for addr := range mapping {
+		for _, port := range ports {
+			epnt := net.JoinHostPort(addr, port)
+			out = append(out, epnt)
+		}
+	}
+	return
 }
