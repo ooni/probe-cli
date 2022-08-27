@@ -2,6 +2,23 @@ package netxlite
 
 import "errors"
 
+// Name of the resolver we use when we link with libc and use getaddrinfo directly.
+//
+// See https://github.com/ooni/spec/pull/257 for more info.
+const StdlibResolverGetaddrinfo = "getaddrinfo"
+
+// Name of the resolver we use when we don't link with libc and use net.Resolver.
+//
+// See https://github.com/ooni/spec/pull/257 for more info.
+const StdlibResolverGolangNetResolver = "golang_net_resolver"
+
+// Legacy name of the resolver we use when we're don't know whether we're using
+// getaddrinfo, but we're using net.Resolver, and we're splitting the answer
+// in two A and AAAA queries. Eventually will become deprecated.
+//
+// See https://github.com/ooni/spec/pull/257 for more info.
+const StdlibResolverSystem = "system"
+
 // ErrGetaddrinfo represents a getaddrinfo failure.
 type ErrGetaddrinfo struct {
 	// Err is the error proper.

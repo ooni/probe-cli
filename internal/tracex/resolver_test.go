@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/miekg/dns"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -75,7 +76,7 @@ func TestResolverSaver(t *testing.T) {
 			reso := saver.WrapResolver(newFakeResolverWithResult(expected))
 			addrs, err := reso.LookupHost(context.Background(), "www.google.com")
 			if err != nil {
-				t.Fatal("expected nil error here")
+				t.Fatal(err)
 			}
 			if !reflect.DeepEqual(addrs, expected) {
 				t.Fatal("not the result we expected")
@@ -112,19 +113,56 @@ func TestResolverSaver(t *testing.T) {
 				t.Fatal("the saved time is wrong")
 			}
 		})
+
+		t.Run("with stdlib resolver there's correct .Network remapping", func(t *testing.T) {
+			saver := &Saver{}
+			reso := saver.WrapResolver(netxlite.NewStdlibResolver(model.DiscardLogger))
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel() // immediately fail the operation
+			_, _ = reso.LookupHost(ctx, "www.google.com")
+			// basically, we just want to ensure that the engine name is converted
+			ev := saver.Read()
+			if len(ev) != 2 {
+				t.Fatal("expected number of events")
+			}
+			if ev[0].Value().Proto != netxlite.StdlibResolverSystem {
+				t.Fatal("unexpected Proto")
+			}
+			if ev[1].Value().Proto != netxlite.StdlibResolverSystem {
+				t.Fatal("unexpected Proto")
+			}
+		})
 	})
 
 	t.Run("Network", func(t *testing.T) {
-		saver := &Saver{}
-		child := &mocks.Resolver{
-			MockNetwork: func() string {
-				return "x"
-			},
-		}
-		reso := saver.WrapResolver(child)
-		if reso.Network() != "x" {
-			t.Fatal("unexpected result")
-		}
+		t.Run("when using a custom resolver", func(t *testing.T) {
+			saver := &Saver{}
+			child := &mocks.Resolver{
+				MockNetwork: func() string {
+					return "x"
+				},
+			}
+			reso := saver.WrapResolver(child)
+			if reso.Network() != "x" {
+				t.Fatal("unexpected result")
+			}
+		})
+
+		t.Run("when using the stdlib resolver", func(t *testing.T) {
+			child := netxlite.NewStdlibResolver(model.DiscardLogger)
+			switch network := child.Network(); network {
+			case netxlite.StdlibResolverGetaddrinfo,
+				netxlite.StdlibResolverGolangNetResolver:
+				// ok
+			default:
+				t.Fatal("unexpected child resolver network", network)
+			}
+			saver := &Saver{}
+			reso := saver.WrapResolver(child)
+			if network := reso.Network(); network != netxlite.StdlibResolverSystem {
+				t.Fatal("unexpected wrapped resolver network", network)
+			}
+		})
 	})
 
 	t.Run("Address", func(t *testing.T) {
@@ -326,19 +364,70 @@ func TestDNSTransportSaver(t *testing.T) {
 				t.Fatal("the saved time is wrong")
 			}
 		})
+
+		t.Run("with getaddrinfo transport there's correct .Network remapping", func(t *testing.T) {
+			saver := &Saver{}
+			reso := saver.WrapDNSTransport(netxlite.NewDNSOverGetaddrinfoTransport())
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel() // immediately fail the operation
+			query := &mocks.DNSQuery{
+				MockBytes: func() ([]byte, error) {
+					return []byte{}, nil
+				},
+				MockType: func() uint16 {
+					return dns.TypeANY
+				},
+				MockID: func() uint16 {
+					return 1453
+				},
+				MockDomain: func() string {
+					return "dns.google"
+				},
+			}
+			_, _ = reso.RoundTrip(ctx, query)
+			// basically, we just want to ensure that the engine name is converted
+			ev := saver.Read()
+			if len(ev) != 2 {
+				t.Fatal("expected number of events")
+			}
+			if ev[0].Value().Proto != netxlite.StdlibResolverSystem {
+				t.Fatal("unexpected Proto")
+			}
+			if ev[1].Value().Proto != netxlite.StdlibResolverSystem {
+				t.Fatal("unexpected Proto")
+			}
+		})
 	})
 
 	t.Run("Network", func(t *testing.T) {
-		saver := &Saver{}
-		child := &mocks.DNSTransport{
-			MockNetwork: func() string {
-				return "x"
-			},
-		}
-		txp := saver.WrapDNSTransport(child)
-		if txp.Network() != "x" {
-			t.Fatal("unexpected result")
-		}
+		t.Run("with custom child transport", func(t *testing.T) {
+			saver := &Saver{}
+			child := &mocks.DNSTransport{
+				MockNetwork: func() string {
+					return "x"
+				},
+			}
+			txp := saver.WrapDNSTransport(child)
+			if txp.Network() != "x" {
+				t.Fatal("unexpected result")
+			}
+		})
+
+		t.Run("when using the stdlib resolver", func(t *testing.T) {
+			child := netxlite.NewDNSOverGetaddrinfoTransport()
+			switch network := child.Network(); network {
+			case netxlite.StdlibResolverGetaddrinfo,
+				netxlite.StdlibResolverGolangNetResolver:
+				// ok
+			default:
+				t.Fatal("unexpected child resolver network", network)
+			}
+			saver := &Saver{}
+			reso := saver.WrapDNSTransport(child)
+			if network := reso.Network(); network != netxlite.StdlibResolverSystem {
+				t.Fatal("unexpected wrapped resolver network", network)
+			}
+		})
 	})
 
 	t.Run("Address", func(t *testing.T) {
@@ -427,5 +516,47 @@ func newFakeResolverWithResult(r []string) model.Resolver {
 		MockLookupNS: func(ctx context.Context, domain string) ([]*net.NS, error) {
 			return nil, errors.New("not implemented")
 		},
+	}
+}
+
+func TestResolverNetworkAdaptNames(t *testing.T) {
+	type args struct {
+		input string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{{
+		name: "with StdlibResolverGetaddrinfo",
+		args: args{
+			input: netxlite.StdlibResolverGetaddrinfo,
+		},
+		want: netxlite.StdlibResolverSystem,
+	}, {
+		name: "with StdlibResolverGolangNetResolver",
+		args: args{
+			input: netxlite.StdlibResolverGolangNetResolver,
+		},
+		want: netxlite.StdlibResolverSystem,
+	}, {
+		name: "with StdlibResolverSystem",
+		args: args{
+			input: netxlite.StdlibResolverSystem,
+		},
+		want: netxlite.StdlibResolverSystem,
+	}, {
+		name: "with any other name",
+		args: args{
+			input: "doh",
+		},
+		want: "doh",
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ResolverNetworkAdaptNames(tt.args.input); got != tt.want {
+				t.Errorf("ResolverNetworkAdaptNames() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

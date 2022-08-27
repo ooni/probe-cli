@@ -11,13 +11,16 @@ import (
 // been used to implement the getaddrinfo resolver.
 //
 // This is the CGO_ENABLED=0 implementation of this function, which
-// always returns the string "go", because in this scenario we are actually
-// using whatever resolver is used under the hood by the stdlib.
+// always returns the string "golang_net_resolver", because in this scenario
+// we are actually using whatever resolver is used under the hood by the stdlib.
 //
 // See https://github.com/ooni/probe/issues/2029#issuecomment-1140805266
-// for an explanation of why calling this resolver "netgo" is wrong.
+// for an explanation of why calling this resolver "netgo" was wrong.
+//
+// See https://github.com/ooni/spec/pull/257 for additional documentation
+// regarding using "golang_net_resolver" instead of "go".
 func getaddrinfoResolverNetwork() string {
-	return "go"
+	return StdlibResolverGolangNetResolver
 }
 
 // getaddrinfoLookupANY attempts to perform an ANY lookup using getaddrinfo.

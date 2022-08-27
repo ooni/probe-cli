@@ -20,11 +20,11 @@ import (
 
 // ErrNoDNSTransport is the error returned when you attempt to perform
 // a DNS operation that requires a custom DNSTransport (e.g., DNSOverHTTPSTransport)
-// but you are using the "system" resolver instead.
+// but you are using the "stdlib" resolver instead.
 var ErrNoDNSTransport = errors.New("operation requires a DNS transport")
 
 // NewStdlibResolver creates a new Resolver by combining WrapResolver
-// with an internal "system" resolver type. The list of optional wrappers
+// with an internal "stdlib" resolver type. The list of optional wrappers
 // allow to wrap the underlying getaddrinfo transport. Any nil wrapper
 // will be silently ignored by the code that performs the wrapping.
 func NewStdlibResolver(logger model.DebugLogger, wrappers ...model.DNSTransportWrapper) model.Resolver {
@@ -45,7 +45,7 @@ func NewParallelDNSOverHTTPSResolver(logger model.DebugLogger, URL string) model
 // implies, this function returns an unwrapped resolver.
 func NewUnwrappedStdlibResolver(wrappers ...model.DNSTransportWrapper) model.Resolver {
 	return &resolverSystem{
-		t: WrapDNSTransport(&dnsOverGetaddrinfoTransport{}, wrappers...),
+		t: WrapDNSTransport(NewDNSOverGetaddrinfoTransport(), wrappers...),
 	}
 }
 

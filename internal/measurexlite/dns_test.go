@@ -301,8 +301,12 @@ func TestNewWrappedResolvers(t *testing.T) {
 		if resolvert.tx != trace {
 			t.Fatal("invalid trace")
 		}
-		if resolver.Network() != "system" {
-			t.Fatal("unexpected resolver network")
+		switch network := resolver.Network(); network {
+		case netxlite.StdlibResolverGetaddrinfo,
+			netxlite.StdlibResolverGolangNetResolver:
+		// ok
+		default:
+			t.Fatal("unexpected resolver network", network)
 		}
 	})
 }
