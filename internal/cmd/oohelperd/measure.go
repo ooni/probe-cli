@@ -63,14 +63,17 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	endpoints := computeEndpoints(URL, creq, cresp.DNS.Addrs)
 
 	// tcpconnect: start over all the endpoints
-	tcpconnch := make(chan tcpResultPair, len(endpoints))
+	tcpconnch := make(chan *tcpResultPair, len(endpoints))
 	for _, endpoint := range endpoints {
 		wg.Add(1)
 		go tcpDo(ctx, &tcpConfig{
-			Endpoint:  endpoint,
-			NewDialer: config.NewDialer,
-			Out:       tcpconnch,
-			Wg:        wg,
+			EnableTLS:        endpoint.tls,
+			Endpoint:         endpoint.epnt,
+			NewDialer:        config.NewDialer,
+			NewTSLHandshaker: config.NewTLSHandshaker,
+			Out:              tcpconnch,
+			URLHostname:      URL.Hostname(),
+			Wg:               wg,
 		})
 	}
 
@@ -96,7 +99,10 @@ Loop:
 	for {
 		select {
 		case tcpconn := <-tcpconnch:
-			cresp.TCPConnect[tcpconn.Endpoint] = tcpconn.Result
+			cresp.TCPConnect[tcpconn.Endpoint] = tcpconn.TCP
+			if tcpconn.TLS != nil {
+				cresp.TLSHandshake[tcpconn.Endpoint] = *tcpconn.TLS
+			}
 		default:
 			break Loop
 		}
@@ -105,9 +111,15 @@ Loop:
 	return cresp, nil
 }
 
+// endpointInfo contains info about an endpoint to measure
+type endpointInfo struct {
+	epnt string
+	tls  bool
+}
+
 // Computes all the endpoints that we need to measure including both the
 // endpoints discovered by the probe and the ones discovered by us
-func computeEndpoints(URL *url.URL, creq *ctrlRequest, addrs []string) (out []string) {
+func computeEndpoints(URL *url.URL, creq *ctrlRequest, addrs []string) (out []endpointInfo) {
 	ports := []string{"80", "443"}
 	if URL.Port() != "" {
 		ports = []string{URL.Port()} // when there's a custom port just use that
@@ -128,7 +140,10 @@ func computeEndpoints(URL *url.URL, creq *ctrlRequest, addrs []string) (out []st
 	for addr := range mapping {
 		for _, port := range ports {
 			epnt := net.JoinHostPort(addr, port)
-			out = append(out, epnt)
+			out = append(out, endpointInfo{
+				epnt: epnt,
+				tls:  port == "443",
+			})
 		}
 	}
 	return

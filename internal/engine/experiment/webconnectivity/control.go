@@ -23,6 +23,14 @@ type ControlTCPConnectResult struct {
 	Failure *string `json:"failure"`
 }
 
+// ControlTLSHandshakeResult is the result of the TLS handshake
+// attempt performed by the control vantage point.
+type ControlTLSHandshakeResult struct {
+	ServerName string  `json:"server_name"`
+	Status     bool    `json:"status"`
+	Failure    *string `json:"failure"`
+}
+
 // ControlHTTPRequestResult is the result of the HTTP request
 // performed by the control vantage point.
 type ControlHTTPRequestResult struct {
@@ -43,9 +51,10 @@ type ControlDNSResult struct {
 
 // ControlResponse is the response from the control service.
 type ControlResponse struct {
-	TCPConnect  map[string]ControlTCPConnectResult `json:"tcp_connect"`
-	HTTPRequest ControlHTTPRequestResult           `json:"http_request"`
-	DNS         ControlDNSResult                   `json:"dns"`
+	TCPConnect   map[string]ControlTCPConnectResult   `json:"tcp_connect"`
+	TLSHandshake map[string]ControlTLSHandshakeResult `json:"tls_handshake"`
+	HTTPRequest  ControlHTTPRequestResult             `json:"http_request"`
+	DNS          ControlDNSResult                     `json:"dns"`
 }
 
 // Control performs the control request and returns the response.
