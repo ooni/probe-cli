@@ -47,7 +47,7 @@
 //
 // 1. establishing a TCP connection;
 //
-// 2. performing a domain name resolution with the "system" resolver
+// 2. performing a domain name resolution with the "stdlib" resolver
 // (i.e., getaddrinfo on Unix) or custom DNS transports (e.g., DoT, DoH);
 //
 // 3. performing the TLS handshake;
