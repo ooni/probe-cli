@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -42,6 +43,9 @@ type tcpConfig struct {
 
 // tcpDo performs the TCP check.
 func tcpDo(ctx context.Context, config *tcpConfig) {
+	const timeout = 10 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	defer config.Wg.Done()
 	dialer := config.NewDialer()
 	defer dialer.CloseIdleConnections()
