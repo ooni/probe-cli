@@ -1,21 +1,23 @@
 package netxlite
 
-import (
-	"context"
-	"errors"
-)
+import "errors"
 
-// getaddrinfoLookupHost performs a DNS lookup and returns the
-// results. If we were compiled with CGO_ENABLED=0, then this
-// function calls net.DefaultResolver.LookupHost. Otherwise,
-// we call getaddrinfo. In such a case, if getaddrinfo returns a nonzero
-// return value, we'll return as error an instance of the
-// ErrGetaddrinfo error. This error will contain the specific
-// code returned by getaddrinfo in its .Code field.
-func getaddrinfoLookupHost(ctx context.Context, domain string) ([]string, error) {
-	addrs, _, err := getaddrinfoLookupANY(ctx, domain)
-	return addrs, err
-}
+// Name of the resolver we use when we link with libc and use getaddrinfo directly.
+//
+// See https://github.com/ooni/spec/pull/257 for more info.
+const StdlibResolverGetaddrinfo = "getaddrinfo"
+
+// Name of the resolver we use when we don't link with libc and use net.Resolver.
+//
+// See https://github.com/ooni/spec/pull/257 for more info.
+const StdlibResolverGolangNetResolver = "golang_net_resolver"
+
+// Legacy name of the resolver we use when we're don't know whether we're using
+// getaddrinfo, but we're using net.Resolver, and we're splitting the answer
+// in two A and AAAA queries. Eventually will become deprecated.
+//
+// See https://github.com/ooni/spec/pull/257 for more info.
+const StdlibResolverSystem = "system"
 
 // ErrGetaddrinfo represents a getaddrinfo failure.
 type ErrGetaddrinfo struct {
@@ -44,10 +46,10 @@ func (err *ErrGetaddrinfo) Unwrap() error {
 	return err.Underlying
 }
 
-// ErrorToGetaddrinfoRetval converts an arbitrary error to
+// ErrorToGetaddrinfoRetvalOrZero converts an arbitrary error to
 // the return value of getaddrinfo. If err is nil or is not
 // an instance of ErrGetaddrinfo, we just return zero.
-func ErrorToGetaddrinfoRetval(err error) int64 {
+func ErrorToGetaddrinfoRetvalOrZero(err error) int64 {
 	var aierr *ErrGetaddrinfo
 	if err != nil && errors.As(err, &aierr) {
 		return aierr.Code

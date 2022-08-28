@@ -43,15 +43,46 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		})
 	}
 
-	// tcpconnect: start
-	tcpconnch := make(chan tcpResultPair, len(creq.TCPConnect))
-	for _, endpoint := range creq.TCPConnect {
+	// wait for DNS measurements to complete
+	wg.Wait()
+
+	// start assembling the response
+	cresp := &ctrlResponse{
+		TCPConnect:   map[string]webconnectivity.ControlTCPConnectResult{},
+		TLSHandshake: map[string]webconnectivity.ControlTLSHandshakeResult{},
+		HTTPRequest:  webconnectivity.ControlHTTPRequestResult{},
+		DNS:          webconnectivity.ControlDNSResult{},
+		IPInfo:       map[string]*webconnectivity.ControlIPInfo{},
+	}
+	select {
+	case cresp.DNS = <-dnsch:
+	default:
+		// we need to emit a non-nil Addrs to match exactly
+		// the behavior of the legacy TH
+		cresp.DNS = ctrlDNSResult{
+			Failure: nil,
+			Addrs:   []string{},
+			ASNs:    []int64{}, // unused by the TH and not serialized
+		}
+	}
+
+	// obtain IP info and figure out the endpoints measurement plan
+	cresp.IPInfo = newIPInfo(creq, cresp.DNS.Addrs)
+	endpoints := ipInfoToEndpoints(URL, cresp.IPInfo)
+
+	// tcpconnect: start over all the endpoints
+	tcpconnch := make(chan *tcpResultPair, len(endpoints))
+	for _, endpoint := range endpoints {
 		wg.Add(1)
 		go tcpDo(ctx, &tcpConfig{
-			Endpoint:  endpoint,
-			NewDialer: config.NewDialer,
-			Out:       tcpconnch,
-			Wg:        wg,
+			Address:          endpoint.Addr,
+			EnableTLS:        endpoint.TLS,
+			Endpoint:         endpoint.Epnt,
+			NewDialer:        config.NewDialer,
+			NewTSLHandshaker: config.NewTLSHandshaker,
+			URLHostname:      URL.Hostname(),
+			Out:              tcpconnch,
+			Wg:               wg,
 		})
 	}
 
@@ -67,26 +98,25 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		Wg:                wg,
 	})
 
-	// wait for measurement steps to complete
+	// wait for endpoint measurements to complete
 	wg.Wait()
 
-	// assemble response
-	cresp := new(ctrlResponse)
-	select {
-	case cresp.DNS = <-dnsch:
-	default:
-		// we need to emit a non-nil Addrs to match exactly
-		// the behavior of the legacy TH
-		cresp.DNS = ctrlDNSResult{
-			Failure: nil,
-			Addrs:   []string{},
-		}
-	}
+	// continue assembling the response
 	cresp.HTTPRequest = <-httpch
-	cresp.TCPConnect = make(map[string]ctrlTCPResult)
-	for len(cresp.TCPConnect) < len(creq.TCPConnect) {
-		tcpconn := <-tcpconnch
-		cresp.TCPConnect[tcpconn.Endpoint] = tcpconn.Result
+Loop:
+	for {
+		select {
+		case tcpconn := <-tcpconnch:
+			cresp.TCPConnect[tcpconn.Endpoint] = tcpconn.TCP
+			if tcpconn.TLS != nil {
+				cresp.TLSHandshake[tcpconn.Endpoint] = *tcpconn.TLS
+				if info := cresp.IPInfo[tcpconn.Address]; info != nil && tcpconn.TLS.Failure == nil {
+					info.Flags |= webconnectivity.ControlIPInfoFlagValidForDomain
+				}
+			}
+		default:
+			break Loop
+		}
 	}
 
 	return cresp, nil

@@ -29,7 +29,18 @@ func TestCreateAll(t *testing.T) {
 		exp := builder.NewExperiment()
 		good := (exp.Name() == name)
 		if !good {
-			t.Fatal("unexpected experiment name")
+			// We have introduced the concept of versioned experiments in
+			// https://github.com/ooni/probe-cli/pull/882. This works like
+			// in brew: we append @vX.Y to the experiment name. So, here
+			// we're stripping the version specification and retry.
+			index := strings.Index(name, "@")
+			if index >= 0 {
+				name = name[:index]
+				if good := (exp.Name() == name); good {
+					continue
+				}
+			}
+			t.Fatal("unexpected experiment name", exp.Name(), name)
 		}
 	}
 }

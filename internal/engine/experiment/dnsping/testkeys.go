@@ -16,7 +16,8 @@ type TestKeys struct {
 
 // SinglePing contains the results of a single ping.
 type SinglePing struct {
-	Query *model.ArchivalDNSLookupResult `json:"query"`
+	Query            *model.ArchivalDNSLookupResult   `json:"query"`
+	DelayedResponses []*model.ArchivalDNSLookupResult `json:"delayed_responses"`
 }
 
 // NewTestKeys creates new dnsping TestKeys

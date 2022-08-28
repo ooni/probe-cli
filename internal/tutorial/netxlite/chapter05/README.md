@@ -1,10 +1,13 @@
 
-# Chapter I: Using the "system" DNS resolver
+# Chapter I: Using the "stdlib" DNS resolver
 
 In this chapter we will write together a `main.go` file that
-uses the "system" DNS resolver to lookup domain names.
+uses the "stdlib" DNS resolver to lookup domain names.
 
-The "system" resolver is the one used by `getaddrinfo` on Unix.
+The "stdlib" resolver is `getaddrinfo` on Unix. If we're compiled with
+`CGO_ENABLED=1`, we use the `getaddrinfo` stdlib call directly. Otherwise,
+we use the `net.Resolver` resolver, which may or may not use
+`getaddrinfo` (or equivalent stdlib calls) under the hood.
 
 (This file is auto-generated from the corresponding source file,
 so make sure you don't edit it manually.)
@@ -114,4 +117,4 @@ should cause a timeout error, because the timeout is ridicolously small.
 
 ## Conclusions
 
-We have seen how to use the "system" DNS resolver.
+We have seen how to use the "stdlib" DNS resolver.

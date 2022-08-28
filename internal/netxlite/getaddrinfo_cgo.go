@@ -28,10 +28,13 @@ import (
 // been used to implement the getaddrinfo resolver.
 //
 // This is the CGO_ENABLED=1 implementation of this function, which
-// always returns the string "system", because in this scenario
+// always returns the string [StdlibResolverGetaddrinfo], because in this scenario
 // we are actually calling the getaddrinfo libc function.
+//
+// See https://github.com/ooni/spec/pull/257 for more information on how
+// we evolved our naming of the "stdlib" resolver over time.
 func getaddrinfoResolverNetwork() string {
-	return "system"
+	return StdlibResolverGetaddrinfo
 }
 
 // getaddrinfoLookupANY attempts to perform an ANY lookup using getaddrinfo.
@@ -48,7 +51,10 @@ func getaddrinfoResolverNetwork() string {
 // the error that occurred. On error, the list of addresses is empty. The
 // CNAME may be empty on success, if there's no CNAME, but may also be
 // non-empty on failure, if the lookup result included a CNAME answer but
-// did not include any A or AAAA answers.
+// did not include any A or AAAA answers. If getaddrinfo returns a nonzero
+// return value, we'll return as error an instance of the
+// ErrGetaddrinfo error. This error will contain the specific
+// code returned by getaddrinfo in its .Code field.
 func getaddrinfoLookupANY(ctx context.Context, domain string) ([]string, string, error) {
 	return getaddrinfoStateSingleton.LookupANY(ctx, domain)
 }

@@ -36,6 +36,9 @@ type DNSResponse interface {
 
 	// DecodeNS returns all the NS entries in this response.
 	DecodeNS() ([]*net.NS, error)
+
+	// DecodeCNAME returns the first CNAME entry in this response.
+	DecodeCNAME() (string, error)
 }
 
 // The DNSDecoder decodes DNS responses.
@@ -211,9 +214,8 @@ type QUICDialer interface {
 	CloseIdleConnections()
 }
 
-// SimpleResolver is a simplified resolver that only allows to perform
-// an ordinary lookup operation and to know the resolver's name.
-type SimpleResolver interface {
+// Resolver performs domain name resolutions.
+type Resolver interface {
 	// LookupHost behaves like net.Resolver.LookupHost.
 	LookupHost(ctx context.Context, hostname string) (addrs []string, err error)
 
@@ -239,12 +241,6 @@ type SimpleResolver interface {
 	// for an explanation of why it would not be proper to call "netgo" the
 	// resolver we get by default from the standard library.
 	Network() string
-}
-
-// Resolver performs domain name resolutions.
-type Resolver interface {
-	// A Resolver is also a SimpleResolver.
-	SimpleResolver
 
 	// Address returns the resolver address (e.g., 8.8.8.8:53).
 	Address() string
@@ -483,19 +479,4 @@ type UDPLikeConn interface {
 	// SyscallConn returns a conn suitable for calling syscalls,
 	// which is also instrumental to setting the read buffer.
 	SyscallConn() (syscall.RawConn, error)
-}
-
-// UnderlyingNetworkLibrary defines the basic functionality from
-// which the network extensions depend. By changing the default
-// implementation of this interface, we can implement a wide array
-// of tests, including self censorship tests.
-type UnderlyingNetworkLibrary interface {
-	// ListenUDP creates a new model.UDPLikeConn conn.
-	ListenUDP(network string, laddr *net.UDPAddr) (UDPLikeConn, error)
-
-	// DefaultResolver returns the default resolver.
-	DefaultResolver() SimpleResolver
-
-	// NewSimpleDialer returns a new SimpleDialer.
-	NewSimpleDialer(timeout time.Duration) SimpleDialer
 }

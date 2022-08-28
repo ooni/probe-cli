@@ -10,12 +10,16 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
+
+// TODO(bassosimone): we should refactor the TH to use step-by-step such that we
+// can use an existing connection for the HTTP-measuring task
 
 // ctrlHTTPResponse is the result of the HTTP check performed by
 // the Web Connectivity test helper.
@@ -44,14 +48,19 @@ type httpConfig struct {
 
 // httpDo performs the HTTP check.
 func httpDo(ctx context.Context, config *httpConfig) {
+	const timeout = 15 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	defer config.Wg.Done()
 	req, err := http.NewRequestWithContext(ctx, "GET", config.URL, nil)
 	if err != nil {
-		config.Out <- ctrlHTTPResponse{ // fix: emit -1 like the old test helper does
+		// fix: emit -1 like the old test helper does
+		config.Out <- ctrlHTTPResponse{
 			BodyLength: -1,
 			Failure:    httpMapFailure(err),
-			StatusCode: -1,
+			Title:      "",
 			Headers:    map[string]string{},
+			StatusCode: -1,
 		}
 		return
 	}
@@ -69,11 +78,13 @@ func httpDo(ctx context.Context, config *httpConfig) {
 	defer clnt.CloseIdleConnections()
 	resp, err := clnt.Do(req)
 	if err != nil {
-		config.Out <- ctrlHTTPResponse{ // fix: emit -1 like old test helper does
+		// fix: emit -1 like the old test helper does
+		config.Out <- ctrlHTTPResponse{
 			BodyLength: -1,
 			Failure:    httpMapFailure(err),
-			StatusCode: -1,
+			Title:      "",
 			Headers:    map[string]string{},
+			StatusCode: -1,
 		}
 		return
 	}

@@ -25,7 +25,7 @@ Index:
 
 - [chapter04](chapter04) shows how to establish QUIC sessions;
 
-- [chapter05](chapter05) is about the "system" DNS resolver;
+- [chapter05](chapter05) is about the "stdlib" DNS resolver;
 
 - [chapter06](chapter06) discusses custom DNS-over-UDP resolvers;
 

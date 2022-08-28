@@ -135,6 +135,15 @@ func TestNewResolver(t *testing.T) {
 						}
 						return []string{"1.1.1.1"}, nil
 					},
+					MockDecodeCNAME: func() (string, error) {
+						return "dns.google.", nil
+					},
+					MockRcode: func() int {
+						return 0
+					},
+					MockBytes: func() []byte {
+						return []byte{}
+					},
 				}
 				return response, nil
 			},
@@ -177,7 +186,7 @@ func TestNewResolver(t *testing.T) {
 				if ev.Engine != "mocked" {
 					t.Fatal("unexpected engine")
 				}
-				if len(ev.Answers) != 1 {
+				if len(ev.Answers) != 2 {
 					t.Fatal("expected single answer in DNSLookup event")
 				}
 				if ev.QueryType == "A" && ev.Answers[0].IPv4 != "1.1.1.1" {
@@ -185,6 +194,9 @@ func TestNewResolver(t *testing.T) {
 				}
 				if ev.QueryType == "AAAA" && ev.Answers[0].IPv6 != "fe80::a00:20ff:feb9:4c54" {
 					t.Fatal("unexpected AAAA query result")
+				}
+				if ev.Answers[1].AnswerType != "CNAME " && ev.Answers[1].Hostname != "dns.google." {
+					t.Fatal("unexpected second answer (expected CNAME)", ev.Answers[1])
 				}
 			}
 		})
@@ -204,6 +216,15 @@ func TestNewResolver(t *testing.T) {
 							return []string{"fe80::a00:20ff:feb9:4c54"}, nil
 						}
 						return []string{"1.1.1.1"}, nil
+					},
+					MockDecodeCNAME: func() (string, error) {
+						return "dns.google.", nil
+					},
+					MockRcode: func() int {
+						return 0
+					},
+					MockBytes: func() []byte {
+						return []byte{}
 					},
 				}
 				return response, nil
@@ -280,8 +301,12 @@ func TestNewWrappedResolvers(t *testing.T) {
 		if resolvert.tx != trace {
 			t.Fatal("invalid trace")
 		}
-		if resolver.Network() != "system" {
-			t.Fatal("unexpected resolver network")
+		switch network := resolver.Network(); network {
+		case netxlite.StdlibResolverGetaddrinfo,
+			netxlite.StdlibResolverGolangNetResolver:
+		// ok
+		default:
+			t.Fatal("unexpected resolver network", network)
 		}
 	})
 }
@@ -350,8 +375,18 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			addrs := []string{"1.1.1.1"}
 			finished := trace.TimeNow()
 			// 1. fill the trace
-			err := trace.OnDelayedDNSResponse(started, txp, query, &mocks.DNSResponse{},
-				addrs, nil, finished)
+			dnsResponse := &mocks.DNSResponse{
+				MockDecodeCNAME: func() (string, error) {
+					return "", netxlite.ErrOODNSNoAnswer
+				},
+				MockRcode: func() int {
+					return 0
+				},
+				MockBytes: func() []byte {
+					return []byte{}
+				},
+			}
+			err := trace.OnDelayedDNSResponse(started, txp, query, dnsResponse, addrs, nil, finished)
 			// 2. read the trace
 			got := trace.DelayedDNSResponseWithTimeout(context.Background(), time.Second)
 			if err != nil {
@@ -388,8 +423,18 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			addrs := []string{"1.1.1.1"}
 			finished := trace.TimeNow()
 			// 1. attempt to write into the trace
-			err := trace.OnDelayedDNSResponse(started, txp, query, &mocks.DNSResponse{},
-				addrs, nil, finished)
+			dnsResponse := &mocks.DNSResponse{
+				MockDecodeCNAME: func() (string, error) {
+					return "", netxlite.ErrOODNSNoAnswer
+				},
+				MockRcode: func() int {
+					return 0
+				},
+				MockBytes: func() []byte {
+					return []byte{}
+				},
+			}
+			err := trace.OnDelayedDNSResponse(started, txp, query, dnsResponse, addrs, nil, finished)
 			if !errors.Is(err, ErrDelayedDNSResponseBufferFull) {
 				t.Fatal("unexpected error", err)
 			}
@@ -427,10 +472,21 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			addrs := []string{"1.1.1.1"}
 			finished := trace.TimeNow()
 			events := 4
+			dnsResponse := &mocks.DNSResponse{
+				MockDecodeCNAME: func() (string, error) {
+					return "", netxlite.ErrOODNSNoAnswer
+				},
+				MockRcode: func() int {
+					return 0
+				},
+				MockBytes: func() []byte {
+					return []byte{}
+				},
+			}
 			for i := 0; i < events; i++ {
 				// fill the trace
 				trace.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(trace.Index, started.Sub(trace.ZeroTime),
-					txp, query, &mocks.DNSResponse{}, addrs, nil, finished.Sub(trace.ZeroTime))
+					txp, query, dnsResponse, addrs, nil, finished.Sub(trace.ZeroTime))
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel() // we ensure that the context cancels before draining all the events
@@ -465,8 +521,19 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 			}
 			addrs := []string{"1.1.1.1"}
 			finished := trace.TimeNow()
+			dnsResponse := &mocks.DNSResponse{
+				MockDecodeCNAME: func() (string, error) {
+					return "", netxlite.ErrOODNSNoAnswer
+				},
+				MockRcode: func() int {
+					return 0
+				},
+				MockBytes: func() []byte {
+					return []byte{}
+				},
+			}
 			trace.delayedDNSResponse <- NewArchivalDNSLookupResultFromRoundTrip(trace.Index, started.Sub(trace.ZeroTime),
-				txp, query, &mocks.DNSResponse{}, addrs, nil, finished.Sub(trace.ZeroTime))
+				txp, query, dnsResponse, addrs, nil, finished.Sub(trace.ZeroTime))
 			got := trace.DelayedDNSResponseWithTimeout(context.Background(), time.Second)
 			if len(got) != 1 {
 				t.Fatal("unexpected output from trace")
@@ -475,52 +542,156 @@ func TestDelayedDNSResponseWithTimeout(t *testing.T) {
 	})
 }
 
-func TestAnswersFromAddrs(t *testing.T) {
+func TestNewArchivalDNSAnswers(t *testing.T) {
 	tests := []struct {
-		name string
-		args []string
+		name     string
+		addrs    []string
+		resp     model.DNSResponse
+		expected []model.ArchivalDNSAnswer
 	}{{
 		name: "with valid input",
-		args: []string{"1.1.1.1", "fe80::a00:20ff:feb9:4c54"},
+		addrs: []string{
+			"8.8.4.4",
+			"2001:4860:4860::8844",
+		},
+		resp: nil,
+		expected: []model.ArchivalDNSAnswer{{
+			ASN:        15169,
+			ASOrgName:  "Google LLC",
+			AnswerType: "A",
+			Hostname:   "",
+			IPv4:       "8.8.4.4",
+			IPv6:       "",
+			TTL:        nil,
+		}, {
+			ASN:        15169,
+			ASOrgName:  "Google LLC",
+			AnswerType: "AAAA",
+			Hostname:   "",
+			IPv4:       "",
+			IPv6:       "2001:4860:4860::8844",
+			TTL:        nil,
+		}},
 	}, {
 		name: "with invalid IPv4 address",
-		args: []string{"1.1.1.1.1", "fe80::a00:20ff:feb9:4c54"},
+		addrs: []string{
+			"1.1.1.1.1", // invalid because it has five dots
+			"2001:4860:4860::8844",
+		},
+		resp: nil,
+		expected: []model.ArchivalDNSAnswer{{
+			ASN:        15169,
+			ASOrgName:  "Google LLC",
+			AnswerType: "AAAA",
+			Hostname:   "",
+			IPv4:       "",
+			IPv6:       "2001:4860:4860::8844",
+			TTL:        nil,
+		}},
 	}, {
 		name: "with invalid IPv6 address",
-		args: []string{"1.1.1.1", "fe80::a00:20ff:feb9:::4c54"},
+		addrs: []string{
+			"8.8.4.4",
+			"fe80::a00:20ff:feb9:::4c54", // invalid because it has :::
+		},
+		resp: nil,
+		expected: []model.ArchivalDNSAnswer{{
+			ASN:        15169,
+			ASOrgName:  "Google LLC",
+			AnswerType: "A",
+			Hostname:   "",
+			IPv4:       "8.8.4.4",
+			IPv6:       "",
+			TTL:        nil,
+		}},
 	}, {
-		name: "with empty input",
-		args: []string{},
+		name:     "with empty input",
+		addrs:    []string{},
+		resp:     nil,
+		expected: nil,
 	}, {
-		name: "with nil input",
-		args: nil,
+		name:     "with nil input",
+		addrs:    nil,
+		resp:     nil,
+		expected: nil,
+	}, {
+		name: "with valid IPv4 address and CNAME",
+		addrs: []string{
+			"8.8.8.8",
+		},
+		resp: &mocks.DNSResponse{
+			MockDecodeCNAME: func() (string, error) {
+				return "dns.google.", nil
+			},
+		},
+		expected: []model.ArchivalDNSAnswer{{
+			ASN:        15169,
+			ASOrgName:  "Google LLC",
+			AnswerType: "A",
+			Hostname:   "",
+			IPv4:       "8.8.8.8",
+			IPv6:       "",
+			TTL:        nil,
+		}, {
+			ASN:        0,
+			ASOrgName:  "",
+			AnswerType: "CNAME",
+			Hostname:   "dns.google.",
+			IPv4:       "",
+			IPv6:       "",
+			TTL:        nil,
+		}},
+	}, {
+		name: "with valid IPv6 address and CNAME",
+		addrs: []string{
+			"2001:4860:4860::8844",
+		},
+		resp: &mocks.DNSResponse{
+			MockDecodeCNAME: func() (string, error) {
+				return "dns.google.", nil
+			},
+		},
+		expected: []model.ArchivalDNSAnswer{{
+			ASN:        15169,
+			ASOrgName:  "Google LLC",
+			AnswerType: "AAAA",
+			Hostname:   "",
+			IPv4:       "",
+			IPv6:       "2001:4860:4860::8844",
+			TTL:        nil,
+		}, {
+			ASN:        0,
+			ASOrgName:  "",
+			AnswerType: "CNAME",
+			Hostname:   "dns.google.",
+			IPv4:       "",
+			IPv6:       "",
+			TTL:        nil,
+		}},
+	}, {
+		name:  "with DecodeCNAME error",
+		addrs: []string{},
+		resp: &mocks.DNSResponse{
+			MockDecodeCNAME: func() (string, error) {
+				return "", errors.New("mocked errorr")
+			},
+		},
+		expected: nil,
+	}, {
+		name:  "with DecodeCNAME success and no CNAME",
+		addrs: []string{},
+		resp: &mocks.DNSResponse{
+			MockDecodeCNAME: func() (string, error) {
+				return "", nil
+			},
+		},
+		expected: nil,
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := archivalAnswersFromAddrs(tt.args)
-			var idx int
-			for _, inp := range tt.args {
-				ip6, err := netxlite.IsIPv6(inp)
-				if err != nil {
-					continue
-				}
-				if idx >= len(got) {
-					t.Fatal("unexpected array length")
-				}
-				answer := got[idx]
-				if ip6 {
-					if answer.AnswerType != "AAAA" || answer.IPv6 != inp {
-						t.Fatal("unexpected output", answer)
-					}
-				} else {
-					if answer.AnswerType != "A" || answer.IPv4 != inp {
-						t.Fatal("unexpected output", answer)
-					}
-				}
-				idx++
-			}
-			if idx != len(got) {
-				t.Fatal("unexpected array length", len(got))
+			got := newArchivalDNSAnswers(tt.addrs, tt.resp)
+			if diff := cmp.Diff(tt.expected, got); diff != "" {
+				t.Fatal(diff)
 			}
 		})
 	}
