@@ -78,8 +78,8 @@ const (
 // THResponse is the response from the control service.
 type THResponse struct {
 	TCPConnect   map[string]THTCPConnectResult   `json:"tcp_connect"`
-	TLSHandshake map[string]THTLSHandshakeResult `json:"tls_handshake"`
+	TLSHandshake map[string]THTLSHandshakeResult `json:"tls_handshake,omitempty"`
 	HTTPRequest  THHTTPRequestResult             `json:"http_request"`
 	DNS          THDNSResult                     `json:"dns"`
-	IPInfo       map[string]*THIPInfo            `json:"ip_info"`
+	IPInfo       map[string]*THIPInfo            `json:"ip_info,omitempty"`
 }

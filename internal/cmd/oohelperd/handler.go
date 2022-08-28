@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -45,29 +46,40 @@ var _ http.Handler = &handler{}
 
 // ServeHTTP implements http.Handler.ServeHTTP.
 func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	metricRequestsInflight.Inc()
+	defer metricRequestsInflight.Dec()
+	metricRequestsTotal.Inc()
 	w.Header().Add("Server", fmt.Sprintf(
 		"oohelperd/%s ooniprobe-engine/%s", version.Version, version.Version,
 	))
 	if req.Method != "POST" {
+		metricRequestsByStatusCode.WithLabelValues("400").Inc()
 		w.WriteHeader(400)
 		return
 	}
 	reader := &io.LimitedReader{R: req.Body, N: h.MaxAcceptableBody}
 	data, err := netxlite.ReadAllContext(req.Context(), reader)
 	if err != nil {
+		metricRequestsByStatusCode.WithLabelValues("400").Inc()
 		w.WriteHeader(400)
 		return
 	}
 	var creq ctrlRequest
 	if err := json.Unmarshal(data, &creq); err != nil {
+		metricRequestsByStatusCode.WithLabelValues("400").Inc()
 		w.WriteHeader(400)
 		return
 	}
+	started := time.Now()
 	cresp, err := measure(req.Context(), h, &creq)
+	elapsed := time.Since(started)
+	metricMeasurementTime.Observe(float64(elapsed.Seconds()))
 	if err != nil {
+		metricRequestsByStatusCode.WithLabelValues("400").Inc()
 		w.WriteHeader(400)
 		return
 	}
+	metricRequestsByStatusCode.WithLabelValues("200").Inc()
 	// We assume that the following call cannot fail because it's a
 	// clearly-serializable data structure.
 	data, err = json.Marshal(cresp)

@@ -14,12 +14,13 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const maxAcceptableBody = 1 << 24
 
 var (
-	endpoint  = flag.String("endpoint", "127.0.0.1:8080", "Endpoint where to listen")
+	endpoint  = flag.String("endpoint", "127.0.0.1:8080", "API endpoint")
 	srvAddr   = make(chan string, 1) // with buffer
 	srvCancel context.CancelFunc
 	srvCtx    context.Context
@@ -49,6 +50,7 @@ func main() {
 		true:  log.DebugLevel,
 		false: log.InfoLevel,
 	}
+	prometheus := flag.String("prometheus", "127.0.0.1:9091", "Prometheus endpoint")
 	debug := flag.Bool("debug", false, "Toggle debug mode")
 	flag.Parse()
 	log.SetLevel(logmap[*debug])
@@ -75,8 +77,13 @@ func main() {
 	srvAddr <- listener.Addr().String()
 	srvWg.Add(1)
 	go srv.Serve(listener)
+	promMux := http.NewServeMux()
+	promMux.Handle("/metrics", promhttp.Handler())
+	promSrv := &http.Server{Addr: *prometheus, Handler: promMux}
+	go promSrv.ListenAndServe()
 	<-srvCtx.Done()
 	shutdown(srv)
+	shutdown(promSrv)
 	listener.Close()
 	srvWg.Done()
 }
