@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-EXPECTED_MINGW_W64_VERSION=${EXPECTED_MINGW_W64_VERSION:-12.1.0} # Allow overriding
+EXPECTED_MINGW_W64_VERSION=${EXPECTED_MINGW_W64_VERSION:-12.2.0} # Allow overriding
 
 printf "checking for x86_64-w64-mingw32-gcc... "
 command -v x86_64-w64-mingw32-gcc || {
