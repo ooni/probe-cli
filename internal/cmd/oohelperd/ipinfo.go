@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
-	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
+	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -36,7 +36,7 @@ func newIPInfo(creq *ctrlRequest, addrs []string) map[string]*webconnectivity.Co
 		if netxlite.IsBogon(addr) { // note: we already excluded non-IP addrs above
 			flags |= webconnectivity.ControlIPInfoFlagIsBogon
 		}
-		asn, _, _ := geolocate.LookupASN(addr) // AS0 on failure
+		asn, _, _ := geoipx.LookupASN(addr) // AS0 on failure
 		ipinfo[addr] = &webconnectivity.ControlIPInfo{
 			ASN:   int64(asn),
 			Flags: flags,

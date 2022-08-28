@@ -27,13 +27,13 @@ func ubuntuIPLookup(
 		UserAgent:  userAgent,
 	}).WithBodyLogging().Build().FetchResource(ctx, "/lookup")
 	if err != nil {
-		return DefaultProbeIP, err
+		return model.DefaultProbeIP, err
 	}
 	logger.Debugf("ubuntu: body: %s", string(data))
 	var v ubuntuResponse
 	err = xml.Unmarshal(data, &v)
 	if err != nil {
-		return DefaultProbeIP, err
+		return model.DefaultProbeIP, err
 	}
 	return v.IP, nil
 }

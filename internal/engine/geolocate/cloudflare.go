@@ -23,7 +23,7 @@ func cloudflareIPLookup(
 		UserAgent:  model.HTTPHeaderUserAgent,
 	}).WithBodyLogging().Build().FetchResource(ctx, "/cdn-cgi/trace")
 	if err != nil {
-		return DefaultProbeIP, err
+		return model.DefaultProbeIP, err
 	}
 	r := regexp.MustCompile("(?:ip)=(.*)")
 	ip := strings.Trim(string(r.Find(data)), "ip=")

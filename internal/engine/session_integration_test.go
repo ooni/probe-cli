@@ -13,7 +13,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -276,31 +275,31 @@ func TestSessionLocationLookup(t *testing.T) {
 	if err := sess.MaybeLookupLocation(); err != nil {
 		t.Fatal(err)
 	}
-	if sess.ProbeASNString() == geolocate.DefaultProbeASNString {
+	if sess.ProbeASNString() == model.DefaultProbeASNString {
 		t.Fatal("unexpected ProbeASNString")
 	}
-	if sess.ProbeASN() == geolocate.DefaultProbeASN {
+	if sess.ProbeASN() == model.DefaultProbeASN {
 		t.Fatal("unexpected ProbeASN")
 	}
-	if sess.ProbeCC() == geolocate.DefaultProbeCC {
+	if sess.ProbeCC() == model.DefaultProbeCC {
 		t.Fatal("unexpected ProbeCC")
 	}
-	if sess.ProbeIP() == geolocate.DefaultProbeIP {
+	if sess.ProbeIP() == model.DefaultProbeIP {
 		t.Fatal("unexpected ProbeIP")
 	}
-	if sess.ProbeNetworkName() == geolocate.DefaultProbeNetworkName {
+	if sess.ProbeNetworkName() == model.DefaultProbeNetworkName {
 		t.Fatal("unexpected ProbeNetworkName")
 	}
-	if sess.ResolverASN() == geolocate.DefaultResolverASN {
+	if sess.ResolverASN() == model.DefaultResolverASN {
 		t.Fatal("unexpected ResolverASN")
 	}
-	if sess.ResolverASNString() == geolocate.DefaultResolverASNString {
+	if sess.ResolverASNString() == model.DefaultResolverASNString {
 		t.Fatal("unexpected ResolverASNString")
 	}
-	if sess.ResolverIP() == geolocate.DefaultResolverIP {
+	if sess.ResolverIP() == model.DefaultResolverIP {
 		t.Fatal("unexpected ResolverIP")
 	}
-	if sess.ResolverNetworkName() == geolocate.DefaultResolverNetworkName {
+	if sess.ResolverNetworkName() == model.DefaultResolverNetworkName {
 		t.Fatal("unexpected ResolverNetworkName")
 	}
 }

@@ -26,7 +26,7 @@ func TestExperimentHonoursSharingDefaults(t *testing.T) {
 		name:         "probeIP",
 		locationInfo: &geolocate.Results{ProbeIP: "8.8.8.8"},
 		expect: func(m *model.Measurement) bool {
-			return m.ProbeIP == geolocate.DefaultProbeIP
+			return m.ProbeIP == model.DefaultProbeIP
 		},
 	}, {
 		name:         "probeASN",
