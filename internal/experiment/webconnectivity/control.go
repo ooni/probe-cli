@@ -121,7 +121,7 @@ func (c *Control) Run(parentCtx context.Context) {
 
 	// issue the control request and wait for the response
 	var cresp webconnectivity.ControlResponse
-	err := clnt.PostJSON(opCtx, "/v0.5", creq, &cresp)
+	err := clnt.PostJSON(opCtx, "/", creq, &cresp)
 	if err != nil {
 		// make sure error is wrapped
 		err = netxlite.NewTopLevelGenericErrWrapper(err)
