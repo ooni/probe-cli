@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/url"
 	"sync"
@@ -24,9 +25,16 @@ type (
 // measure performs the measurement described by the request and
 // returns the corresponding response or an error.
 func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResponse, error) {
+	// create indexed logger
+	logger := &indexLogger{
+		indexstr: fmt.Sprintf("<#%d> ", config.Indexer.Add(1)),
+		logger:   config.BaseLogger,
+	}
+
 	// parse input for correctness
 	URL, err := url.Parse(creq.HTTPRequest)
 	if err != nil {
+		logger.Warnf("cannot parse URL: %s", err.Error())
 		return nil, err
 	}
 	wg := &sync.WaitGroup{}
@@ -37,6 +45,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		wg.Add(1)
 		go dnsDo(ctx, &dnsConfig{
 			Domain:      URL.Hostname(),
+			Logger:      logger,
 			NewResolver: config.NewResolver,
 			Out:         dnsch,
 			Wg:          wg,
@@ -78,6 +87,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 			Address:          endpoint.Addr,
 			EnableTLS:        endpoint.TLS,
 			Endpoint:         endpoint.Epnt,
+			Logger:           logger,
 			NewDialer:        config.NewDialer,
 			NewTSLHandshaker: config.NewTLSHandshaker,
 			URLHostname:      URL.Hostname(),
@@ -91,6 +101,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	wg.Add(1)
 	go httpDo(ctx, &httpConfig{
 		Headers:           creq.HTTPRequestHeaders,
+		Logger:            logger,
 		MaxAcceptableBody: config.MaxAcceptableBody,
 		NewClient:         config.NewClient,
 		Out:               httpch,

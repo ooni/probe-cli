@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -18,20 +19,26 @@ import (
 
 // handler implements the Web Connectivity test helper HTTP API.
 type handler struct {
+	// BaseLogger is the MANDATORY logger to use.
+	BaseLogger model.Logger
+
+	// Indexer is the MANDATORY atomic integer used to assign an index to requests.
+	Indexer *atomicx.Int64
+
 	// MaxAcceptableBody is the MANDATORY maximum acceptable response body.
 	MaxAcceptableBody int64
 
 	// NewClient is the MANDATORY factory to create a new HTTPClient.
-	NewClient func() model.HTTPClient
+	NewClient func(model.Logger) model.HTTPClient
 
 	// NewDialer is the MANDATORY factory to create a new Dialer.
-	NewDialer func() model.Dialer
+	NewDialer func(model.Logger) model.Dialer
 
 	// NewResolver is the MANDATORY factory for creating a new resolver.
-	NewResolver func() model.Resolver
+	NewResolver func(model.Logger) model.Resolver
 
 	// NewTLSHandshaker is the MANDATORY factory for creating a new TLS handshaker.
-	NewTLSHandshaker func() model.TLSHandshaker
+	NewTLSHandshaker func(model.Logger) model.TLSHandshaker
 }
 
 var _ http.Handler = &handler{}
