@@ -1,4 +1,4 @@
-// Package geoipx contains code to use MaxMind-like GeoIP libraries.
+// Package geoipx contains code to use the embedded MaxMind-like databases.
 package geoipx
 
 import (
@@ -30,6 +30,7 @@ func LookupASN(ip string) (asn uint, org string, err error) {
 	return
 }
 
+// LookupCC maps [ip] to a country code.
 func LookupCC(ip string) (cc string, err error) {
 	cc = model.DefaultProbeCC
 	db, err := geoip2.FromBytes(assets.CountryDatabaseData())
