@@ -11,7 +11,6 @@ import (
 	"net/url"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -20,10 +19,10 @@ import (
 
 type (
 	// CtrlResponse is the type of response returned by the test helper.
-	CtrlResponse = webconnectivity.ControlResponse
+	CtrlResponse = model.THResponse
 
 	// ctrlRequest is the type of the request sent to the test helper.
-	ctrlRequest = webconnectivity.ControlRequest
+	ctrlRequest = model.THRequest
 )
 
 // The following errors may be returned by this implementation.

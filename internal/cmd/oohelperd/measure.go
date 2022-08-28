@@ -10,15 +10,15 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 type (
 	// ctrlRequest is the request sent to the test helper
-	ctrlRequest = webconnectivity.ControlRequest
+	ctrlRequest = model.THRequest
 
 	// ctrlResponse is the response from the test helper
-	ctrlResponse = webconnectivity.ControlResponse
+	ctrlResponse = model.THResponse
 )
 
 // measure performs the measurement described by the request and
@@ -48,11 +48,11 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 
 	// start assembling the response
 	cresp := &ctrlResponse{
-		TCPConnect:   map[string]webconnectivity.ControlTCPConnectResult{},
-		TLSHandshake: map[string]webconnectivity.ControlTLSHandshakeResult{},
-		HTTPRequest:  webconnectivity.ControlHTTPRequestResult{},
-		DNS:          webconnectivity.ControlDNSResult{},
-		IPInfo:       map[string]*webconnectivity.ControlIPInfo{},
+		TCPConnect:   map[string]model.THTCPConnectResult{},
+		TLSHandshake: map[string]model.THTLSHandshakeResult{},
+		HTTPRequest:  model.THHTTPRequestResult{},
+		DNS:          model.THDNSResult{},
+		IPInfo:       map[string]*model.THIPInfo{},
 	}
 	select {
 	case cresp.DNS = <-dnsch:
@@ -111,7 +111,7 @@ Loop:
 			if tcpconn.TLS != nil {
 				cresp.TLSHandshake[tcpconn.Endpoint] = *tcpconn.TLS
 				if info := cresp.IPInfo[tcpconn.Address]; info != nil && tcpconn.TLS.Failure == nil {
-					info.Flags |= webconnectivity.ControlIPInfoFlagValidForDomain
+					info.Flags |= model.THIPInfoFlagValidForDomain
 				}
 			}
 		default:

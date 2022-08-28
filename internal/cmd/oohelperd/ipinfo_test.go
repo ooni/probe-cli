@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 func Test_newIPInfo(t *testing.T) {
@@ -16,22 +16,22 @@ func Test_newIPInfo(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want map[string]*webconnectivity.ControlIPInfo
+		want map[string]*model.THIPInfo
 	}{{
 		name: "with empty input",
 		args: args{
-			creq: &webconnectivity.ControlRequest{
+			creq: &model.THRequest{
 				HTTPRequest:        "",
 				HTTPRequestHeaders: map[string][]string{},
 				TCPConnect:         []string{},
 			},
 			addrs: []string{},
 		},
-		want: map[string]*webconnectivity.ControlIPInfo{},
+		want: map[string]*model.THIPInfo{},
 	}, {
 		name: "typical case with also bogons",
 		args: args{
-			creq: &webconnectivity.ControlRequest{
+			creq: &model.THRequest{
 				HTTPRequest:        "",
 				HTTPRequestHeaders: map[string][]string{},
 				TCPConnect: []string{
@@ -44,24 +44,24 @@ func Test_newIPInfo(t *testing.T) {
 				"8.8.4.4",
 			},
 		},
-		want: map[string]*webconnectivity.ControlIPInfo{
+		want: map[string]*model.THIPInfo{
 			"10.0.0.1": {
 				ASN:   0,
-				Flags: webconnectivity.ControlIPInfoFlagIsBogon | webconnectivity.ControlIPInfoFlagResolvedByProbe,
+				Flags: model.THIPInfoFlagIsBogon | model.THIPInfoFlagResolvedByProbe,
 			},
 			"8.8.8.8": {
 				ASN:   15169,
-				Flags: webconnectivity.ControlIPInfoFlagResolvedByProbe | webconnectivity.ControlIPInfoFlagResolvedByTH,
+				Flags: model.THIPInfoFlagResolvedByProbe | model.THIPInfoFlagResolvedByTH,
 			},
 			"8.8.4.4": {
 				ASN:   15169,
-				Flags: webconnectivity.ControlIPInfoFlagResolvedByTH,
+				Flags: model.THIPInfoFlagResolvedByTH,
 			},
 		},
 	}, {
 		name: "with invalid endpoint",
 		args: args{
-			creq: &webconnectivity.ControlRequest{
+			creq: &model.THRequest{
 				HTTPRequest:        "",
 				HTTPRequestHeaders: map[string][]string{},
 				TCPConnect: []string{
@@ -70,11 +70,11 @@ func Test_newIPInfo(t *testing.T) {
 			},
 			addrs: []string{},
 		},
-		want: map[string]*webconnectivity.ControlIPInfo{},
+		want: map[string]*model.THIPInfo{},
 	}, {
 		name: "with invalid IP addr",
 		args: args{
-			creq: &webconnectivity.ControlRequest{
+			creq: &model.THRequest{
 				HTTPRequest:        "",
 				HTTPRequestHeaders: map[string][]string{},
 				TCPConnect: []string{
@@ -83,7 +83,7 @@ func Test_newIPInfo(t *testing.T) {
 			},
 			addrs: []string{},
 		},
-		want: map[string]*webconnectivity.ControlIPInfo{},
+		want: map[string]*model.THIPInfo{},
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -98,7 +98,7 @@ func Test_newIPInfo(t *testing.T) {
 func Test_ipInfoToEndpoints(t *testing.T) {
 	type args struct {
 		URL    *url.URL
-		ipinfo map[string]*webconnectivity.ControlIPInfo
+		ipinfo map[string]*model.THIPInfo
 	}
 	tests := []struct {
 		name string
@@ -115,7 +115,7 @@ func Test_ipInfoToEndpoints(t *testing.T) {
 		name: "with empty map and empty URL",
 		args: args{
 			URL:    &url.URL{},
-			ipinfo: map[string]*webconnectivity.ControlIPInfo{},
+			ipinfo: map[string]*model.THIPInfo{},
 		},
 		want: []endpointInfo{},
 	}, {
@@ -124,18 +124,18 @@ func Test_ipInfoToEndpoints(t *testing.T) {
 			URL: &url.URL{
 				Scheme: "http",
 			},
-			ipinfo: map[string]*webconnectivity.ControlIPInfo{
+			ipinfo: map[string]*model.THIPInfo{
 				"10.0.0.1": {
 					ASN:   0,
-					Flags: webconnectivity.ControlIPInfoFlagIsBogon | webconnectivity.ControlIPInfoFlagResolvedByProbe,
+					Flags: model.THIPInfoFlagIsBogon | model.THIPInfoFlagResolvedByProbe,
 				},
 				"8.8.8.8": {
 					ASN:   15169,
-					Flags: webconnectivity.ControlIPInfoFlagResolvedByProbe | webconnectivity.ControlIPInfoFlagResolvedByTH,
+					Flags: model.THIPInfoFlagResolvedByProbe | model.THIPInfoFlagResolvedByTH,
 				},
 				"8.8.4.4": {
 					ASN:   15169,
-					Flags: webconnectivity.ControlIPInfoFlagResolvedByTH,
+					Flags: model.THIPInfoFlagResolvedByTH,
 				},
 			},
 		},
@@ -162,18 +162,18 @@ func Test_ipInfoToEndpoints(t *testing.T) {
 			URL: &url.URL{
 				Host: "dns.google:5432",
 			},
-			ipinfo: map[string]*webconnectivity.ControlIPInfo{
+			ipinfo: map[string]*model.THIPInfo{
 				"10.0.0.1": {
 					ASN:   0,
-					Flags: webconnectivity.ControlIPInfoFlagIsBogon | webconnectivity.ControlIPInfoFlagResolvedByProbe,
+					Flags: model.THIPInfoFlagIsBogon | model.THIPInfoFlagResolvedByProbe,
 				},
 				"8.8.8.8": {
 					ASN:   15169,
-					Flags: webconnectivity.ControlIPInfoFlagResolvedByProbe | webconnectivity.ControlIPInfoFlagResolvedByTH,
+					Flags: model.THIPInfoFlagResolvedByProbe | model.THIPInfoFlagResolvedByTH,
 				},
 				"8.8.4.4": {
 					ASN:   15169,
-					Flags: webconnectivity.ControlIPInfoFlagResolvedByTH,
+					Flags: model.THIPInfoFlagResolvedByTH,
 				},
 			},
 		},
@@ -190,18 +190,18 @@ func Test_ipInfoToEndpoints(t *testing.T) {
 		name: "with addresses and some bogons, no port, and unknown scheme",
 		args: args{
 			URL: &url.URL{},
-			ipinfo: map[string]*webconnectivity.ControlIPInfo{
+			ipinfo: map[string]*model.THIPInfo{
 				"10.0.0.1": {
 					ASN:   0,
-					Flags: webconnectivity.ControlIPInfoFlagIsBogon | webconnectivity.ControlIPInfoFlagResolvedByProbe,
+					Flags: model.THIPInfoFlagIsBogon | model.THIPInfoFlagResolvedByProbe,
 				},
 				"8.8.8.8": {
 					ASN:   15169,
-					Flags: webconnectivity.ControlIPInfoFlagResolvedByProbe | webconnectivity.ControlIPInfoFlagResolvedByTH,
+					Flags: model.THIPInfoFlagResolvedByProbe | model.THIPInfoFlagResolvedByTH,
 				},
 				"8.8.4.4": {
 					ASN:   15169,
-					Flags: webconnectivity.ControlIPInfoFlagResolvedByTH,
+					Flags: model.THIPInfoFlagResolvedByTH,
 				},
 			},
 		},
@@ -212,18 +212,18 @@ func Test_ipInfoToEndpoints(t *testing.T) {
 			URL: &url.URL{
 				Scheme: "https",
 			},
-			ipinfo: map[string]*webconnectivity.ControlIPInfo{
+			ipinfo: map[string]*model.THIPInfo{
 				"10.0.0.1": {
 					ASN:   0,
-					Flags: webconnectivity.ControlIPInfoFlagIsBogon | webconnectivity.ControlIPInfoFlagResolvedByProbe,
+					Flags: model.THIPInfoFlagIsBogon | model.THIPInfoFlagResolvedByProbe,
 				},
 				"8.8.8.8": {
 					ASN:   15169,
-					Flags: webconnectivity.ControlIPInfoFlagResolvedByProbe | webconnectivity.ControlIPInfoFlagResolvedByTH,
+					Flags: model.THIPInfoFlagResolvedByProbe | model.THIPInfoFlagResolvedByTH,
 				},
 				"8.8.4.4": {
 					ASN:   15169,
-					Flags: webconnectivity.ControlIPInfoFlagResolvedByTH,
+					Flags: model.THIPInfoFlagResolvedByTH,
 				},
 			},
 		},

@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/url"
 
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
@@ -14,7 +15,7 @@ type DNSAnalysisResult struct {
 }
 
 // DNSNameError is the error returned by the control on NXDOMAIN
-const DNSNameError = "dns_name_error"
+const DNSNameError = model.THDNSNameError
 
 var (
 	// DNSConsistent indicates that the measurement and the

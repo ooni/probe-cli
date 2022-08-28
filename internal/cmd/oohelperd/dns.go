@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -20,7 +19,7 @@ var newfailure = tracex.NewFailure
 
 // ctrlDNSResult is the result of the DNS check performed by
 // the Web Connectivity test helper.
-type ctrlDNSResult = webconnectivity.ControlDNSResult
+type ctrlDNSResult = model.THDNSResult
 
 // dnsConfig configures the DNS check.
 type dnsConfig struct {
@@ -70,7 +69,7 @@ func dnsMapFailure(failure *string) *string {
 		case netxlite.FailureDNSNXDOMAINError:
 			// We have a name for this string because dnsanalysis.go is
 			// already checking for this specific error string.
-			s := webconnectivity.DNSNameError
+			s := model.THDNSNameError
 			return &s
 		case netxlite.FailureDNSNoAnswer:
 			// In this case the legacy TH would produce an empty
