@@ -9,7 +9,7 @@ import (
 const ipAddr = "8.8.8.8"
 
 func TestLookupASN(t *testing.T) {
-	t.Run("with IP address", func(t *testing.T) {
+	t.Run("with valid IP address", func(t *testing.T) {
 		asn, org, err := LookupASN(ipAddr)
 		if err != nil {
 			t.Fatal(err)

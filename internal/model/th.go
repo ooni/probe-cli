@@ -35,7 +35,7 @@ type THHTTPRequestResult struct {
 	StatusCode int64             `json:"status_code"`
 }
 
-// TODO(bassosimone): ASNs is a private implementation details of v0.4
+// TODO(bassosimone): ASNs is a private implementation detail of v0.4
 // that is actually ~annoying because we are mixing the data model with fields used
 // by just the v0.4 client implementation. We should avoid repeating this mistake
 // when implementing v0.5 of the client and eventually remove ASNs.
