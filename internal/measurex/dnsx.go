@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 // WrapDNSXRoundTripper creates a new DNSXRoundTripper that
@@ -42,7 +43,7 @@ func (txp *dnsxRoundTripperDB) RoundTrip(
 	response, err := txp.DNSTransport.RoundTrip(ctx, query)
 	finished := time.Since(txp.begin).Seconds()
 	txp.db.InsertIntoDNSRoundTrip(&DNSRoundTripEvent{
-		Network:  txp.DNSTransport.Network(),
+		Network:  tracex.ResolverNetworkAdaptNames(txp.DNSTransport.Network()),
 		Address:  txp.DNSTransport.Address(),
 		Query:    txp.maybeQueryBytes(query),
 		Started:  started,

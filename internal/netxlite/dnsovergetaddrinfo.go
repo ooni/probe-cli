@@ -24,6 +24,11 @@ type dnsOverGetaddrinfoTransport struct {
 	testableLookupANY func(ctx context.Context, domain string) ([]string, string, error)
 }
 
+// NewDNSOverGetaddrinfoTransport creates a new dns-over-getaddrinfo transport.
+func NewDNSOverGetaddrinfoTransport() model.DNSTransport {
+	return &dnsOverGetaddrinfoTransport{}
+}
+
 var _ model.DNSTransport = &dnsOverGetaddrinfoTransport{}
 
 func (txp *dnsOverGetaddrinfoTransport) RoundTrip(

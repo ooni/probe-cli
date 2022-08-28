@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // ResolverSaver is a resolver that saves events.
@@ -42,7 +43,7 @@ func (r *ResolverSaver) LookupHost(ctx context.Context, hostname string) ([]stri
 	r.Saver.Write(&EventResolveStart{&EventValue{
 		Address:  r.Resolver.Address(),
 		Hostname: hostname,
-		Proto:    r.Resolver.Network(),
+		Proto:    r.Network(),
 		Time:     start,
 	}})
 	addrs, err := r.Resolver.LookupHost(ctx, hostname)
@@ -53,14 +54,29 @@ func (r *ResolverSaver) LookupHost(ctx context.Context, hostname string) ([]stri
 		Duration:  stop.Sub(start),
 		Err:       NewFailureStr(err),
 		Hostname:  hostname,
-		Proto:     r.Resolver.Network(),
+		Proto:     r.Network(),
 		Time:      stop,
 	}})
 	return addrs, err
 }
 
+// ResolverNetworkAdaptNames makes sure we map the [netxlite.StdlibResolverGolangNetResolver] and
+// [netxlite.StdlibResolverGetaddrinfo] resolver names to [netxlite.StdlibResolverSystem]. You MUST
+// call this function when your resolver splits the "stdlib" resolver results into two fake AAAA
+// and A queries rather than faking a single ANY query.
+//
+// See https://github.com/ooni/spec/pull/257 for more information.
+func ResolverNetworkAdaptNames(input string) string {
+	switch input {
+	case netxlite.StdlibResolverGetaddrinfo, netxlite.StdlibResolverGolangNetResolver:
+		return netxlite.StdlibResolverSystem
+	default:
+		return input
+	}
+}
+
 func (r *ResolverSaver) Network() string {
-	return r.Resolver.Network()
+	return ResolverNetworkAdaptNames(r.Resolver.Network())
 }
 
 func (r *ResolverSaver) Address() string {
@@ -112,7 +128,7 @@ func (txp *DNSTransportSaver) RoundTrip(
 	txp.Saver.Write(&EventDNSRoundTripStart{&EventValue{
 		Address:  txp.DNSTransport.Address(),
 		DNSQuery: dnsMaybeQueryBytes(query),
-		Proto:    txp.DNSTransport.Network(),
+		Proto:    txp.Network(),
 		Time:     start,
 	}})
 	response, err := txp.DNSTransport.RoundTrip(ctx, query)
@@ -123,14 +139,14 @@ func (txp *DNSTransportSaver) RoundTrip(
 		DNSResponse: dnsMaybeResponseBytes(response),
 		Duration:    stop.Sub(start),
 		Err:         NewFailureStr(err),
-		Proto:       txp.DNSTransport.Network(),
+		Proto:       txp.Network(),
 		Time:        stop,
 	}})
 	return response, err
 }
 
 func (txp *DNSTransportSaver) Network() string {
-	return txp.DNSTransport.Network()
+	return ResolverNetworkAdaptNames(txp.DNSTransport.Network())
 }
 
 func (txp *DNSTransportSaver) Address() string {

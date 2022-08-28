@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -38,6 +39,9 @@ type dnsConfig struct {
 
 // dnsDo performs the DNS check.
 func dnsDo(ctx context.Context, config *dnsConfig) {
+	const timeout = 4 * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	defer config.Wg.Done()
 	reso := config.NewResolver()
 	defer reso.CloseIdleConnections()
@@ -46,7 +50,11 @@ func dnsDo(ctx context.Context, config *dnsConfig) {
 		addrs = []string{} // fix: the old test helper did that
 	}
 	failure := dnsMapFailure(newfailure(err))
-	config.Out <- ctrlDNSResult{Failure: failure, Addrs: addrs}
+	config.Out <- ctrlDNSResult{
+		Failure: failure,
+		Addrs:   addrs,
+		ASNs:    []int64{}, // unused by the TH and not serialized
+	}
 }
 
 // dnsMapFailure attempts to map netxlite failures to the strings
