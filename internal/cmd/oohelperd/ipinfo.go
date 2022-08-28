@@ -72,13 +72,13 @@ func ipInfoToEndpoints(URL *url.URL, ipinfo map[string]*webconnectivity.ControlI
 	if port := URL.Port(); port != "" {
 		ports = []string{port} // as documented
 	} else if URL.Scheme == "https" {
-		ports = []string{"443"}
+		ports = []string{"443"} // as documented
 	} else if URL.Scheme == "http" {
-		ports = []string{"80", "443"}
+		ports = []string{"80", "443"} // as documented
 	}
 	out := []endpointInfo{}
 	for addr, info := range ipinfo {
-		if info.Flags&webconnectivity.ControlIPInfoFlagIsBogon != 0 {
+		if (info.Flags & webconnectivity.ControlIPInfoFlagIsBogon) != 0 {
 			continue // as documented
 		}
 		for _, port := range ports {
