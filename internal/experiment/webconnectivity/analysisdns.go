@@ -8,7 +8,7 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
+	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -289,11 +289,11 @@ func (tk *TestKeys) analysisDNSDiffASN(probeAddrs, thAddrs []string) (asns []uin
 	)
 	mapping := make(map[uint]int)
 	for _, addr := range probeAddrs {
-		asn, _, _ := geolocate.LookupASN(addr)
+		asn, _, _ := geoipx.LookupASN(addr)
 		mapping[asn] |= inProbe // including the zero ASN that means unknown
 	}
 	for _, addr := range thAddrs {
-		asn, _, _ := geolocate.LookupASN(addr)
+		asn, _, _ := geoipx.LookupASN(addr)
 		mapping[asn] |= inTH // including the zero ASN that means unknown
 	}
 	for asn, where := range mapping {
