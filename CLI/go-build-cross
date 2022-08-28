@@ -47,6 +47,11 @@ else
 	OONI_PSIPHON_TAGS=""
 fi
 
+EXT=
+if [[ $GOOS == "windows" ]]; then
+	EXT=.exe
+fi
+
 PRODUCT=$(basename $PACKAGE)
 
 set -x
@@ -55,5 +60,5 @@ export GOOS=$GOOS
 export GOARCH=$GOARCH
 export GOARM=$GOARM
 go build -tags=$OONI_PSIPHON_TAGS -ldflags="-s -w" \
-	-o ./CLI/$PRODUCT-$GOOS-$OONIARCH ${GOLANG_EXTRA_FLAGS:-} \
+	-o ./CLI/$PRODUCT-$GOOS-$OONIARCH$EXT ${GOLANG_EXTRA_FLAGS:-} \
 	$PACKAGE

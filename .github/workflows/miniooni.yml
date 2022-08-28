@@ -43,6 +43,16 @@ jobs:
 
       - uses: actions/upload-artifact@v1
         with:
+          name: miniooni-darwin-amd64
+          path: ./CLI/miniooni-darwin-amd64
+
+      - uses: actions/upload-artifact@v1
+        with:
+          name: miniooni-darwin-arm64
+          path: ./CLI/miniooni-darwin-arm64
+
+      - uses: actions/upload-artifact@v1
+        with:
           name: miniooni-linux-386
           path: ./CLI/miniooni-linux-386
 
@@ -50,6 +60,11 @@ jobs:
         with:
           name: miniooni-linux-amd64
           path: ./CLI/miniooni-linux-amd64
+
+      - uses: actions/upload-artifact@v1
+        with:
+          name: miniooni-linux-armv6
+          path: ./CLI/miniooni-linux-armv6
 
       - uses: actions/upload-artifact@v1
         with:
@@ -61,6 +76,16 @@ jobs:
           name: miniooni-linux-arm64
           path: ./CLI/miniooni-linux-arm64
 
+      - uses: actions/upload-artifact@v1
+        with:
+          name: miniooni-windows-386.exe
+          path: ./CLI/miniooni-windows-386.exe
+
+      - uses: actions/upload-artifact@v1
+        with:
+          name: miniooni-windows-amd64.exe
+          path: ./CLI/miniooni-windows-amd64.exe
+
       - run: |
           tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
           gh release create -p $tag --target $GITHUB_SHA || true
@@ -68,6 +93,7 @@ jobs:
                                            ./CLI/miniooni-darwin-arm64 \
                                            ./CLI/miniooni-linux-386 \
                                            ./CLI/miniooni-linux-amd64 \
+                                           ./CLI/miniooni-linux-armv6 \
                                            ./CLI/miniooni-linux-armv7 \
                                            ./CLI/miniooni-linux-arm64 \
                                            ./CLI/miniooni-windows-386.exe \
