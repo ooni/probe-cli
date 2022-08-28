@@ -18,7 +18,7 @@ import (
 const maxAcceptableBody = 1 << 24
 
 var (
-	endpoint  = flag.String("endpoint", ":8080", "Endpoint where to listen")
+	endpoint  = flag.String("endpoint", "127.0.0.1:8080", "Endpoint where to listen")
 	srvAddr   = make(chan string, 1) // with buffer
 	srvCancel context.CancelFunc
 	srvCtx    context.Context
