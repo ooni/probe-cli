@@ -51,7 +51,7 @@ const requestWithoutDomainName = `{
 	]
 }`
 
-func TestWorkingAsIntended(t *testing.T) {
+func TestHandlerWorkingAsIntended(t *testing.T) {
 	handler := &handler{
 		MaxAcceptableBody: 1 << 24,
 		NewClient: func() model.HTTPClient {

@@ -33,6 +33,11 @@ type ControlHTTPRequestResult struct {
 	StatusCode int64             `json:"status_code"`
 }
 
+// TODO(bassosimone): ASNs and FillASNs are private implementation details of v0.4
+// that are actually ~annoying because we are mixing the data model with fields used
+// by just the v0.4 client implementation. We should avoid repeating this mistake
+// when implementing v0.5 of the client.
+
 // ControlDNSResult is the result of the DNS lookup
 // performed by the control vantage point.
 type ControlDNSResult struct {
@@ -41,11 +46,35 @@ type ControlDNSResult struct {
 	ASNs    []int64  `json:"-"` // not visible from the JSON
 }
 
+// ControlIPInfo contains information about IP addresses resolved either
+// by the probe or by the TH and processed by the TH.
+type ControlIPInfo struct {
+	// ASN contains the address' AS number.
+	ASN int64 `json:"asn"`
+
+	// Flags contains flags describing this address.
+	Flags int64 `json:"flags"`
+}
+
+const (
+	// ControlIPInfoFlagResolvedByProbe indicates that the probe has
+	// resolved this IP address.
+	ControlIPInfoFlagResolvedByProbe = 1 << iota
+
+	// ControlIPInfoFlagResolvedByTH indicates that the test helper
+	// has resolved this IP address.
+	ControlIPInfoFlagResolvedByTH
+
+	// ControlIPInfoFlagIsBogon indicates that the address is a bogon
+	ControlIPInfoFlagIsBogon
+)
+
 // ControlResponse is the response from the control service.
 type ControlResponse struct {
 	TCPConnect  map[string]ControlTCPConnectResult `json:"tcp_connect"`
 	HTTPRequest ControlHTTPRequestResult           `json:"http_request"`
 	DNS         ControlDNSResult                   `json:"dns"`
+	IPInfo      map[string]*ControlIPInfo          `json:"ip_info"`
 }
 
 // Control performs the control request and returns the response.

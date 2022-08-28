@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -19,15 +20,21 @@ type ctrlTCPResult = webconnectivity.ControlTCPConnectResult
 
 // tcpResultPair contains the endpoint and the corresponding result.
 type tcpResultPair struct {
+	// Address is the IP address we measured.
+	Address string
+
 	// Endpoint is the endpoint we measured.
 	Endpoint string
 
-	// Result contains the results.
-	Result ctrlTCPResult
+	// TCP contains the TCP results.
+	TCP ctrlTCPResult
 }
 
 // tcpConfig configures the TCP connect check.
 type tcpConfig struct {
+	// Address is the MANDATORY address to measure.
+	Address string
+
 	// Endpoint is the MANDATORY endpoint to connect to.
 	Endpoint string
 
@@ -35,7 +42,7 @@ type tcpConfig struct {
 	NewDialer func() model.Dialer
 
 	// Out is the MANDATORY where we'll post the TCP measurement results.
-	Out chan tcpResultPair
+	Out chan *tcpResultPair
 
 	// Wg is MANDATORY and is used to sync with the parent.
 	Wg *sync.WaitGroup
@@ -47,19 +54,20 @@ func tcpDo(ctx context.Context, config *tcpConfig) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	defer config.Wg.Done()
+	out := &tcpResultPair{
+		Address:  config.Address,
+		Endpoint: config.Endpoint,
+		TCP:      webconnectivity.ControlTCPConnectResult{},
+	}
+	defer func() {
+		config.Out <- out
+	}()
 	dialer := config.NewDialer()
 	defer dialer.CloseIdleConnections()
 	conn, err := dialer.DialContext(ctx, "tcp", config.Endpoint)
-	if conn != nil {
-		conn.Close()
-	}
-	config.Out <- tcpResultPair{
-		Endpoint: config.Endpoint,
-		Result: ctrlTCPResult{
-			Failure: tcpMapFailure(newfailure(err)),
-			Status:  err == nil,
-		},
-	}
+	out.TCP.Failure = tcpMapFailure(newfailure(err))
+	out.TCP.Status = err == nil
+	measurexlite.MaybeClose(conn)
 }
 
 // tcpMapFailure attempts to map netxlite failures to the strings

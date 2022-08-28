@@ -14,7 +14,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
-func TestWorkAsIntended(t *testing.T) {
+func TestMainWorkingAsIntended(t *testing.T) {
 	// let the kernel pick a random free port
 	*endpoint = "127.0.0.1:0"
 

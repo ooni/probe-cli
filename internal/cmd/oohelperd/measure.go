@@ -47,7 +47,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	wg.Wait()
 
 	// start assembling the response
-	cresp := new(ctrlResponse)
+	cresp := &ctrlResponse{}
 	select {
 	case cresp.DNS = <-dnsch:
 	default:
@@ -59,12 +59,17 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		}
 	}
 
-	// tcpconnect: start
-	tcpconnch := make(chan tcpResultPair, len(creq.TCPConnect))
-	for _, endpoint := range creq.TCPConnect {
+	// obtain IP info and figure out the endpoints measurement plan
+	cresp.IPInfo = newIPInfo(creq, cresp.DNS.Addrs)
+	endpoints := ipInfoToEndpoints(URL, cresp.IPInfo)
+
+	// tcpconnect: start over all the endpoints
+	tcpconnch := make(chan *tcpResultPair, len(endpoints))
+	for _, endpoint := range endpoints {
 		wg.Add(1)
 		go tcpDo(ctx, &tcpConfig{
-			Endpoint:  endpoint,
+			Address:   endpoint.Addr,
+			Endpoint:  endpoint.Epnt,
 			NewDialer: config.NewDialer,
 			Out:       tcpconnch,
 			Wg:        wg,
@@ -93,7 +98,7 @@ Loop:
 	for {
 		select {
 		case tcpconn := <-tcpconnch:
-			cresp.TCPConnect[tcpconn.Endpoint] = tcpconn.Result
+			cresp.TCPConnect[tcpconn.Endpoint] = tcpconn.TCP
 		default:
 			break Loop
 		}
