@@ -13,32 +13,38 @@ import (
 )
 
 // NewOperationLogger creates a new logger that logs
-// about an in-progress operation.
-func NewOperationLogger(logger model.Logger, format string, v ...interface{}) *OperationLogger {
+// about an in-progress operation. If it takes too much
+// time to emit the result of the operation, the code
+// will emit an interim log message mentioning that the
+// operation is currently in progress.
+func NewOperationLogger(logger model.Logger, format string, v ...any) *OperationLogger {
 	ol := &OperationLogger{
-		sighup:  make(chan interface{}),
 		logger:  logger,
-		once:    &sync.Once{},
+		maxwait: 500 * time.Millisecond,
 		message: fmt.Sprintf(format, v...),
+		once:    &sync.Once{},
+		sighup:  make(chan any),
 		wg:      &sync.WaitGroup{},
 	}
 	ol.wg.Add(1)
-	go ol.logloop()
+	go ol.maybeEmitProgress()
 	return ol
 }
 
-// OperationLogger logs about an in-progress operation
+// OperationLogger keeps state required to log about an in-progress
+// operation as documented by [NewOperationLogger].
 type OperationLogger struct {
 	logger  model.Logger
+	maxwait time.Duration
 	message string
 	once    *sync.Once
-	sighup  chan interface{}
+	sighup  chan any
 	wg      *sync.WaitGroup
 }
 
-func (ol *OperationLogger) logloop() {
+func (ol *OperationLogger) maybeEmitProgress() {
 	defer ol.wg.Done()
-	timer := time.NewTimer(500 * time.Millisecond)
+	timer := time.NewTimer(ol.maxwait)
 	defer timer.Stop()
 	select {
 	case <-timer.C:
@@ -48,6 +54,9 @@ func (ol *OperationLogger) logloop() {
 	}
 }
 
+// Stop must be called when the operation is done. The [err] argument
+// is the result of the operation, which may be nil. This method ensures
+// that we log the final result of the now-completed operation.
 func (ol *OperationLogger) Stop(err error) {
 	ol.once.Do(func() {
 		close(ol.sighup)
