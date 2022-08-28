@@ -68,12 +68,13 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	for _, endpoint := range endpoints {
 		wg.Add(1)
 		go tcpDo(ctx, &tcpConfig{
-			EnableTLS:        endpoint.tls,
-			Endpoint:         endpoint.epnt,
+			Address:          endpoint.Addr,
+			EnableTLS:        endpoint.TLS,
+			Endpoint:         endpoint.Epnt,
 			NewDialer:        config.NewDialer,
 			NewTSLHandshaker: config.NewTLSHandshaker,
-			Out:              tcpconnch,
 			URLHostname:      URL.Hostname(),
+			Out:              tcpconnch,
 			Wg:               wg,
 		})
 	}
