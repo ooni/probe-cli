@@ -92,7 +92,7 @@ func ipInfoToEndpoints(URL *url.URL, ipinfo map[string]*webconnectivity.ControlI
 	// sort the output to make testing work deterministically since iterating
 	// a map in golang isn't guaranteed to return ordered keys
 	sort.SliceStable(out, func(i, j int) bool {
-		return strings.Compare(out[i].Epnt, out[j].Epnt) == -1
+		return strings.Compare(out[i].Epnt, out[j].Epnt) < 0
 	})
 	return out
 }
