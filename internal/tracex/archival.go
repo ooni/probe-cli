@@ -72,6 +72,9 @@ func NewTCPConnectList(begin time.Time, events []Event) (out []TCPConnectEntry) 
 	return
 }
 
+// TODO(bassosimone): can we use measurexlite.NewFailure here? Do we need to have
+// a string (as opposed to *string) representation of failures here?
+
 // NewFailure creates a failure nullable string from the given error. This function
 // is equivalent to NewFailureStr(err).ToFailure().
 func NewFailure(err error) *string {
