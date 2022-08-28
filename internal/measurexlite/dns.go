@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
+	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -163,7 +163,7 @@ func newArchivalDNSAnswers(addrs []string, resp model.DNSResponse) (out []model.
 			log.Printf("BUG: NewArchivalDNSLookupResult: invalid IP address: %s", addr)
 			continue
 		}
-		asn, org, _ := geolocate.LookupASN(addr)
+		asn, org, _ := geoipx.LookupASN(addr)
 		switch ipv6 {
 		case false:
 			out = append(out, model.ArchivalDNSAnswer{

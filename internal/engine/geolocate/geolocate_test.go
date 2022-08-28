@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 type taskProbeIPLookupper struct {
@@ -25,25 +27,25 @@ func TestLocationLookupCannotLookupProbeIP(t *testing.T) {
 	if !errors.Is(err, expected) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
-	if out.ASN != DefaultProbeASN {
+	if out.ASN != model.DefaultProbeASN {
 		t.Fatal("invalid ASN value")
 	}
-	if out.CountryCode != DefaultProbeCC {
+	if out.CountryCode != model.DefaultProbeCC {
 		t.Fatal("invalid CountryCode value")
 	}
-	if out.NetworkName != DefaultProbeNetworkName {
+	if out.NetworkName != model.DefaultProbeNetworkName {
 		t.Fatal("invalid NetworkName value")
 	}
-	if out.ProbeIP != DefaultProbeIP {
+	if out.ProbeIP != model.DefaultProbeIP {
 		t.Fatal("invalid ProbeIP value")
 	}
-	if out.ResolverASN != DefaultResolverASN {
+	if out.ResolverASN != model.DefaultResolverASN {
 		t.Fatal("invalid ResolverASN value")
 	}
-	if out.ResolverIP != DefaultResolverIP {
+	if out.ResolverIP != model.DefaultResolverIP {
 		t.Fatal("invalid ResolverIP value")
 	}
-	if out.ResolverNetworkName != DefaultResolverNetworkName {
+	if out.ResolverNetworkName != model.DefaultResolverNetworkName {
 		t.Fatal("invalid ResolverNetworkName value")
 	}
 }
@@ -69,25 +71,25 @@ func TestLocationLookupCannotLookupProbeASN(t *testing.T) {
 	if !errors.Is(err, expected) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
-	if out.ASN != DefaultProbeASN {
+	if out.ASN != model.DefaultProbeASN {
 		t.Fatal("invalid ASN value")
 	}
-	if out.CountryCode != DefaultProbeCC {
+	if out.CountryCode != model.DefaultProbeCC {
 		t.Fatal("invalid CountryCode value")
 	}
-	if out.NetworkName != DefaultProbeNetworkName {
+	if out.NetworkName != model.DefaultProbeNetworkName {
 		t.Fatal("invalid NetworkName value")
 	}
 	if out.ProbeIP != "1.2.3.4" {
 		t.Fatal("invalid ProbeIP value")
 	}
-	if out.ResolverASN != DefaultResolverASN {
+	if out.ResolverASN != model.DefaultResolverASN {
 		t.Fatal("invalid ResolverASN value")
 	}
-	if out.ResolverIP != DefaultResolverIP {
+	if out.ResolverIP != model.DefaultResolverIP {
 		t.Fatal("invalid ResolverIP value")
 	}
-	if out.ResolverNetworkName != DefaultResolverNetworkName {
+	if out.ResolverNetworkName != model.DefaultResolverNetworkName {
 		t.Fatal("invalid ResolverNetworkName value")
 	}
 }
@@ -116,7 +118,7 @@ func TestLocationLookupCannotLookupProbeCC(t *testing.T) {
 	if out.ASN != 1234 {
 		t.Fatal("invalid ASN value")
 	}
-	if out.CountryCode != DefaultProbeCC {
+	if out.CountryCode != model.DefaultProbeCC {
 		t.Fatal("invalid CountryCode value")
 	}
 	if out.NetworkName != "1234.com" {
@@ -125,13 +127,13 @@ func TestLocationLookupCannotLookupProbeCC(t *testing.T) {
 	if out.ProbeIP != "1.2.3.4" {
 		t.Fatal("invalid ProbeIP value")
 	}
-	if out.ResolverASN != DefaultResolverASN {
+	if out.ResolverASN != model.DefaultResolverASN {
 		t.Fatal("invalid ResolverASN value")
 	}
-	if out.ResolverIP != DefaultResolverIP {
+	if out.ResolverIP != model.DefaultResolverIP {
 		t.Fatal("invalid ResolverIP value")
 	}
-	if out.ResolverNetworkName != DefaultResolverNetworkName {
+	if out.ResolverNetworkName != model.DefaultResolverNetworkName {
 		t.Fatal("invalid ResolverNetworkName value")
 	}
 }
@@ -173,13 +175,13 @@ func TestLocationLookupCannotLookupResolverIP(t *testing.T) {
 	if out.didResolverLookup != true {
 		t.Fatal("invalid DidResolverLookup value")
 	}
-	if out.ResolverASN != DefaultResolverASN {
+	if out.ResolverASN != model.DefaultResolverASN {
 		t.Fatal("invalid ResolverASN value")
 	}
-	if out.ResolverIP != DefaultResolverIP {
+	if out.ResolverIP != model.DefaultResolverIP {
 		t.Fatal("invalid ResolverIP value")
 	}
-	if out.ResolverNetworkName != DefaultResolverNetworkName {
+	if out.ResolverNetworkName != model.DefaultResolverNetworkName {
 		t.Fatal("invalid ResolverNetworkName value")
 	}
 }
@@ -213,13 +215,13 @@ func TestLocationLookupCannotLookupResolverNetworkName(t *testing.T) {
 	if out.didResolverLookup != true {
 		t.Fatal("invalid DidResolverLookup value")
 	}
-	if out.ResolverASN != DefaultResolverASN {
+	if out.ResolverASN != model.DefaultResolverASN {
 		t.Fatalf("invalid ResolverASN value: %+v", out.ResolverASN)
 	}
 	if out.ResolverIP != "4.3.2.1" {
 		t.Fatalf("invalid ResolverIP value: %+v", out.ResolverIP)
 	}
-	if out.ResolverNetworkName != DefaultResolverNetworkName {
+	if out.ResolverNetworkName != model.DefaultResolverNetworkName {
 		t.Fatal("invalid ResolverNetworkName value")
 	}
 }

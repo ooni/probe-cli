@@ -91,10 +91,10 @@ func (c ipLookupClient) doWithCustomFunc(
 	defer clnt.CloseIdleConnections()
 	ip, err := fn(ctx, clnt, c.Logger, c.UserAgent)
 	if err != nil {
-		return DefaultProbeIP, err
+		return model.DefaultProbeIP, err
 	}
 	if net.ParseIP(ip) == nil {
-		return DefaultProbeIP, fmt.Errorf("%w: %s", ErrInvalidIPAddress, ip)
+		return model.DefaultProbeIP, fmt.Errorf("%w: %s", ErrInvalidIPAddress, ip)
 	}
 	c.Logger.Debugf("iplookup: IP: %s", ip)
 	return ip, nil
@@ -110,5 +110,5 @@ func (c ipLookupClient) LookupProbeIP(ctx context.Context) (string, error) {
 		}
 		union.Add(err)
 	}
-	return DefaultProbeIP, union
+	return model.DefaultProbeIP, union
 }

@@ -37,7 +37,7 @@ func stunIPLookup(ctx context.Context, config stunConfig) (string, error) {
 		}
 		clnt, err := dial("udp", config.Endpoint)
 		if err != nil {
-			return DefaultProbeIP, err
+			return model.DefaultProbeIP, err
 		}
 		defer clnt.Close()
 		message := stun.MustBuild(stun.TransactionID, stun.BindingRequest)
@@ -55,20 +55,20 @@ func stunIPLookup(ctx context.Context, config stunConfig) (string, error) {
 			ipch <- xorAddr.IP.String()
 		})
 		if err != nil {
-			return DefaultProbeIP, err
+			return model.DefaultProbeIP, err
 		}
 		select {
 		case err := <-errch:
-			return DefaultProbeIP, err
+			return model.DefaultProbeIP, err
 		case ip := <-ipch:
 			return ip, nil
 		case <-ctx.Done():
-			return DefaultProbeIP, ctx.Err()
+			return model.DefaultProbeIP, ctx.Err()
 		}
 	}()
 	if err != nil {
 		config.Logger.Debugf("STUNIPLookup: failure using %s: %+v", config.Endpoint, err)
-		return DefaultProbeIP, err
+		return model.DefaultProbeIP, err
 	}
 	return ip, nil
 }

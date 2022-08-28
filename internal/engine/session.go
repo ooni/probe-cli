@@ -466,7 +466,7 @@ func (s *Session) ProbeASNString() string {
 func (s *Session) ProbeASN() uint {
 	defer s.mu.Unlock()
 	s.mu.Lock()
-	asn := geolocate.DefaultProbeASN
+	asn := model.DefaultProbeASN
 	if s.location != nil {
 		asn = s.location.ASN
 	}
@@ -477,7 +477,7 @@ func (s *Session) ProbeASN() uint {
 func (s *Session) ProbeCC() string {
 	defer s.mu.Unlock()
 	s.mu.Lock()
-	cc := geolocate.DefaultProbeCC
+	cc := model.DefaultProbeCC
 	if s.location != nil {
 		cc = s.location.CountryCode
 	}
@@ -488,7 +488,7 @@ func (s *Session) ProbeCC() string {
 func (s *Session) ProbeNetworkName() string {
 	defer s.mu.Unlock()
 	s.mu.Lock()
-	nn := geolocate.DefaultProbeNetworkName
+	nn := model.DefaultProbeNetworkName
 	if s.location != nil {
 		nn = s.location.NetworkName
 	}
@@ -499,7 +499,7 @@ func (s *Session) ProbeNetworkName() string {
 func (s *Session) ProbeIP() string {
 	defer s.mu.Unlock()
 	s.mu.Lock()
-	ip := geolocate.DefaultProbeIP
+	ip := model.DefaultProbeIP
 	if s.location != nil {
 		ip = s.location.ProbeIP
 	}
@@ -520,7 +520,7 @@ func (s *Session) ResolverASNString() string {
 func (s *Session) ResolverASN() uint {
 	defer s.mu.Unlock()
 	s.mu.Lock()
-	asn := geolocate.DefaultResolverASN
+	asn := model.DefaultResolverASN
 	if s.location != nil {
 		asn = s.location.ResolverASN
 	}
@@ -531,7 +531,7 @@ func (s *Session) ResolverASN() uint {
 func (s *Session) ResolverIP() string {
 	defer s.mu.Unlock()
 	s.mu.Lock()
-	ip := geolocate.DefaultResolverIP
+	ip := model.DefaultResolverIP
 	if s.location != nil {
 		ip = s.location.ResolverIP
 	}
@@ -542,7 +542,7 @@ func (s *Session) ResolverIP() string {
 func (s *Session) ResolverNetworkName() string {
 	defer s.mu.Unlock()
 	s.mu.Lock()
-	nn := geolocate.DefaultResolverNetworkName
+	nn := model.DefaultResolverNetworkName
 	if s.location != nil {
 		nn = s.location.ResolverNetworkName
 	}
