@@ -1,11 +1,12 @@
 package main
 
 //
-// TCP connect measurements
+// TCP connect (and optionally TLS handshake) measurements
 //
 
 import (
 	"context"
+	"crypto/tls"
 	"sync"
 	"time"
 
@@ -18,6 +19,9 @@ import (
 // ctrlTCPResult is the result of the TCP check performed by the test helper.
 type ctrlTCPResult = webconnectivity.ControlTCPConnectResult
 
+// ctrlTLSResult is the result of the TLS check performed by the test helper.
+type ctrlTLSResult = webconnectivity.ControlTLSHandshakeResult
+
 // tcpResultPair contains the endpoint and the corresponding result.
 type tcpResultPair struct {
 	// Address is the IP address we measured.
@@ -28,6 +32,9 @@ type tcpResultPair struct {
 
 	// TCP contains the TCP results.
 	TCP ctrlTCPResult
+
+	// TLS contains the TLS results
+	TLS *ctrlTLSResult
 }
 
 // tcpConfig configures the TCP connect check.
@@ -35,14 +42,23 @@ type tcpConfig struct {
 	// Address is the MANDATORY address to measure.
 	Address string
 
+	// EnableTLS OPTIONALLY enables TLS.
+	EnableTLS bool
+
 	// Endpoint is the MANDATORY endpoint to connect to.
 	Endpoint string
 
 	// NewDialer is the MANDATORY factory for creating a new dialer.
 	NewDialer func() model.Dialer
 
+	// NewTSLHandshaker is the MANDATORY factory for creating a new handshaker.
+	NewTSLHandshaker func() model.TLSHandshaker
+
 	// Out is the MANDATORY where we'll post the TCP measurement results.
 	Out chan *tcpResultPair
+
+	// URLHostname is the MANDATORY URL.Hostname() to use.
+	URLHostname string
 
 	// Wg is MANDATORY and is used to sync with the parent.
 	Wg *sync.WaitGroup
@@ -50,7 +66,7 @@ type tcpConfig struct {
 
 // tcpDo performs the TCP check.
 func tcpDo(ctx context.Context, config *tcpConfig) {
-	const timeout = 10 * time.Second
+	const timeout = 15 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	defer config.Wg.Done()
@@ -58,6 +74,7 @@ func tcpDo(ctx context.Context, config *tcpConfig) {
 		Address:  config.Address,
 		Endpoint: config.Endpoint,
 		TCP:      webconnectivity.ControlTCPConnectResult{},
+		TLS:      nil, // means: not measured
 	}
 	defer func() {
 		config.Out <- out
@@ -67,7 +84,23 @@ func tcpDo(ctx context.Context, config *tcpConfig) {
 	conn, err := dialer.DialContext(ctx, "tcp", config.Endpoint)
 	out.TCP.Failure = tcpMapFailure(newfailure(err))
 	out.TCP.Status = err == nil
-	measurexlite.MaybeClose(conn)
+	defer measurexlite.MaybeClose(conn)
+	if err != nil || !config.EnableTLS {
+		return
+	}
+	tlsConfig := &tls.Config{
+		NextProtos: []string{"h2", "http/1.1"},
+		RootCAs:    netxlite.NewDefaultCertPool(),
+		ServerName: config.URLHostname,
+	}
+	thx := config.NewTSLHandshaker()
+	tlsConn, _, err := thx.Handshake(ctx, conn, tlsConfig)
+	out.TLS = &ctrlTLSResult{
+		ServerName: config.URLHostname,
+		Status:     err == nil,
+		Failure:    newfailure(err),
+	}
+	measurexlite.MaybeClose(tlsConn)
 }
 
 // tcpMapFailure attempts to map netxlite failures to the strings

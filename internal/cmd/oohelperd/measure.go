@@ -47,7 +47,13 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	wg.Wait()
 
 	// start assembling the response
-	cresp := &ctrlResponse{}
+	cresp := &ctrlResponse{
+		TCPConnect:   map[string]webconnectivity.ControlTCPConnectResult{},
+		TLSHandshake: map[string]webconnectivity.ControlTLSHandshakeResult{},
+		HTTPRequest:  webconnectivity.ControlHTTPRequestResult{},
+		DNS:          webconnectivity.ControlDNSResult{},
+		IPInfo:       map[string]*webconnectivity.ControlIPInfo{},
+	}
 	select {
 	case cresp.DNS = <-dnsch:
 	default:
@@ -56,6 +62,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		cresp.DNS = ctrlDNSResult{
 			Failure: nil,
 			Addrs:   []string{},
+			ASNs:    []int64{}, // unused by the TH and not serialized
 		}
 	}
 
@@ -68,11 +75,14 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	for _, endpoint := range endpoints {
 		wg.Add(1)
 		go tcpDo(ctx, &tcpConfig{
-			Address:   endpoint.Addr,
-			Endpoint:  endpoint.Epnt,
-			NewDialer: config.NewDialer,
-			Out:       tcpconnch,
-			Wg:        wg,
+			Address:          endpoint.Addr,
+			EnableTLS:        endpoint.TLS,
+			Endpoint:         endpoint.Epnt,
+			NewDialer:        config.NewDialer,
+			NewTSLHandshaker: config.NewTLSHandshaker,
+			URLHostname:      URL.Hostname(),
+			Out:              tcpconnch,
+			Wg:               wg,
 		})
 	}
 
@@ -93,12 +103,17 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 
 	// continue assembling the response
 	cresp.HTTPRequest = <-httpch
-	cresp.TCPConnect = make(map[string]ctrlTCPResult)
 Loop:
 	for {
 		select {
 		case tcpconn := <-tcpconnch:
 			cresp.TCPConnect[tcpconn.Endpoint] = tcpconn.TCP
+			if tcpconn.TLS != nil {
+				cresp.TLSHandshake[tcpconn.Endpoint] = *tcpconn.TLS
+				if info := cresp.IPInfo[tcpconn.Address]; info != nil && tcpconn.TLS.Failure == nil {
+					info.Flags |= webconnectivity.ControlIPInfoFlagValidForDomain
+				}
+			}
 		default:
 			break Loop
 		}

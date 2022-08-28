@@ -52,6 +52,9 @@ type endpointInfo struct {
 
 	// Epnt is the endpoint to measure
 	Epnt string
+
+	// TLS indicates whether we should try using TLS
+	TLS bool
 }
 
 // ipInfoToEndpoints takes in input the [ipinfo] returned by newIPInfo
@@ -86,6 +89,7 @@ func ipInfoToEndpoints(URL *url.URL, ipinfo map[string]*webconnectivity.ControlI
 			out = append(out, endpointInfo{
 				Addr: addr,
 				Epnt: epnt,
+				TLS:  port == "443",
 			})
 		}
 	}

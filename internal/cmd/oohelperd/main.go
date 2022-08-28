@@ -62,6 +62,9 @@ func main() {
 			return netxlite.NewDialerWithResolver(log.Log, newResolver())
 		},
 		NewResolver: newResolver,
+		NewTLSHandshaker: func() model.TLSHandshaker {
+			return netxlite.NewTLSHandshakerStdlib(log.Log)
+		},
 	})
 	srv := &http.Server{Addr: *endpoint, Handler: mux}
 	listener, err := net.Listen("tcp", *endpoint)

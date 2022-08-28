@@ -50,7 +50,11 @@ func dnsDo(ctx context.Context, config *dnsConfig) {
 		addrs = []string{} // fix: the old test helper did that
 	}
 	failure := dnsMapFailure(newfailure(err))
-	config.Out <- ctrlDNSResult{Failure: failure, Addrs: addrs}
+	config.Out <- ctrlDNSResult{
+		Failure: failure,
+		Addrs:   addrs,
+		ASNs:    []int64{}, // unused by the TH and not serialized
+	}
 }
 
 // dnsMapFailure attempts to map netxlite failures to the strings

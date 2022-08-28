@@ -9,6 +9,9 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
+// TODO(bassosimone): these struct definitions should be moved outside the
+// specific implementation of Web Connectivity v0.4.
+
 // ControlRequest is the request that we send to the control
 type ControlRequest struct {
 	HTTPRequest        string              `json:"http_request"`
@@ -21,6 +24,14 @@ type ControlRequest struct {
 type ControlTCPConnectResult struct {
 	Status  bool    `json:"status"`
 	Failure *string `json:"failure"`
+}
+
+// ControlTLSHandshakeResult is the result of the TLS handshake
+// attempt performed by the control vantage point.
+type ControlTLSHandshakeResult struct {
+	ServerName string  `json:"server_name"`
+	Status     bool    `json:"status"`
+	Failure    *string `json:"failure"`
 }
 
 // ControlHTTPRequestResult is the result of the HTTP request
@@ -67,14 +78,19 @@ const (
 
 	// ControlIPInfoFlagIsBogon indicates that the address is a bogon
 	ControlIPInfoFlagIsBogon
+
+	// ControlIPInfoFlagValidForDomain indicates that an IP address
+	// is valid for the domain because it works with TLS
+	ControlIPInfoFlagValidForDomain
 )
 
 // ControlResponse is the response from the control service.
 type ControlResponse struct {
-	TCPConnect  map[string]ControlTCPConnectResult `json:"tcp_connect"`
-	HTTPRequest ControlHTTPRequestResult           `json:"http_request"`
-	DNS         ControlDNSResult                   `json:"dns"`
-	IPInfo      map[string]*ControlIPInfo          `json:"ip_info"`
+	TCPConnect   map[string]ControlTCPConnectResult   `json:"tcp_connect"`
+	TLSHandshake map[string]ControlTLSHandshakeResult `json:"tls_handshake"`
+	HTTPRequest  ControlHTTPRequestResult             `json:"http_request"`
+	DNS          ControlDNSResult                     `json:"dns"`
+	IPInfo       map[string]*ControlIPInfo            `json:"ip_info"`
 }
 
 // Control performs the control request and returns the response.
