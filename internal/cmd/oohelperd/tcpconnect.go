@@ -24,6 +24,9 @@ type ctrlTLSResult = webconnectivity.ControlTLSHandshakeResult
 
 // tcpResultPair contains the endpoint and the corresponding result.
 type tcpResultPair struct {
+	// Address is the IP address we measured.
+	Address string
+
 	// Endpoint is the endpoint we measured.
 	Endpoint string
 
@@ -36,6 +39,9 @@ type tcpResultPair struct {
 
 // tcpConfig configures the TCP connect check.
 type tcpConfig struct {
+	// Address is the MANDATORY address to measure.
+	Address string
+
 	// EnableTLS OPTIONALLY enables TLS.
 	EnableTLS bool
 
@@ -65,6 +71,7 @@ func tcpDo(ctx context.Context, config *tcpConfig) {
 	defer cancel()
 	defer config.Wg.Done()
 	out := &tcpResultPair{
+		Address:  config.Address,
 		Endpoint: config.Endpoint,
 		TCP:      webconnectivity.ControlTCPConnectResult{},
 		TLS:      nil, // means: not measured

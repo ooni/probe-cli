@@ -104,6 +104,9 @@ Loop:
 			cresp.TCPConnect[tcpconn.Endpoint] = tcpconn.TCP
 			if tcpconn.TLS != nil {
 				cresp.TLSHandshake[tcpconn.Endpoint] = *tcpconn.TLS
+				if info := cresp.IPInfo[tcpconn.Address]; info != nil && tcpconn.TLS.Failure == nil {
+					info.Flags |= webconnectivity.ControlIPInfoFlagValidForDomain
+				}
 			}
 		default:
 			break Loop

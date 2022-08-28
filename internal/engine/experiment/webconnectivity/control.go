@@ -78,6 +78,10 @@ const (
 
 	// ControlIPInfoFlagIsBogon indicates that the address is a bogon
 	ControlIPInfoFlagIsBogon
+
+	// ControlIPInfoFlagValidForDomain indicates that an IP address
+	// is valid for the domain because it works with TLS
+	ControlIPInfoFlagValidForDomain
 )
 
 // ControlResponse is the response from the control service.
@@ -86,7 +90,7 @@ type ControlResponse struct {
 	TLSHandshake map[string]ControlTLSHandshakeResult `json:"tls_handshake"`
 	HTTPRequest  ControlHTTPRequestResult             `json:"http_request"`
 	DNS          ControlDNSResult                     `json:"dns"`
-	IPInfo       map[string]ControlIPInfo             `json:"ip_info"`
+	IPInfo       map[string]*ControlIPInfo            `json:"ip_info"`
 }
 
 // Control performs the control request and returns the response.
