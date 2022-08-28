@@ -46,7 +46,7 @@ func TestInputParser(t *testing.T) {
 			AllowEndpoints:  true,
 			DefaultScheme:   "tlshandshake",
 		}
-		parsed, err := inputParser.Parse("")
+		parsed, err := inputParser.Parse("\t")
 		if !errors.Is(err, ErrInvalidInput) {
 			t.Fatal("unexpected error")
 		}
@@ -69,6 +69,24 @@ func TestInputParser(t *testing.T) {
 			t.Fatal("unexpected url scheme")
 		}
 		if parsed.Host != "www.example.com:80" {
+			t.Fatal("unexpected url host")
+		}
+	})
+
+	t.Run("forwards endpoints to maybeAllowEndpoints on error", func(t *testing.T) {
+		inputParser := &InputParser{
+			AcceptedSchemes: []string{"https"},
+			AllowEndpoints:  true,
+			DefaultScheme:   "tlshandshake",
+		}
+		parsed, err := inputParser.Parse("example.com:80")
+		if err != nil {
+			t.Fatal("unexpected error")
+		}
+		if parsed.Scheme != "tlshandshake" {
+			t.Fatal("unexpected url scheme")
+		}
+		if parsed.Host != "example.com:80" {
 			t.Fatal("unexpected url host")
 		}
 	})

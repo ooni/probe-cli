@@ -40,10 +40,7 @@ func (ip *InputParser) Parse(input string) (*url.URL, error) {
 		return nil, ErrInvalidConfiguration
 	}
 	URL, err := url.ParseRequestURI(input)
-	if err != nil {
-		return nil, ErrInvalidInput
-	}
-	if URL.Host == "" {
+	if err != nil || URL.Host == "" {
 		return ip.maybeAllowEndpoints(URL)
 	}
 	for _, scheme := range ip.AcceptedSchemes {
@@ -59,7 +56,7 @@ func (ip *InputParser) maybeAllowEndpoints(URL *url.URL) (*url.URL, error) {
 	if !ip.AllowEndpoints {
 		return nil, ErrInvalidConfiguration
 	}
-	if URL.Scheme != "" && URL.Opaque != "" && URL.User == nil &&
+	if URL != nil && URL.Scheme != "" && URL.Opaque != "" && URL.User == nil &&
 		URL.Host == "" && URL.Path == "" && URL.RawPath == "" &&
 		URL.RawQuery == "" && URL.Fragment == "" && URL.RawFragment == "" {
 		// See https://go.dev/play/p/Rk5pS_zGY5U
