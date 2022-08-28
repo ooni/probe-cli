@@ -34,7 +34,7 @@ type ControlHTTPRequestResult struct {
 }
 
 // TODO(bassosimone): ASNs and FillASNs are private implementation details of v0.4
-// that are actually ~annoying because we are mixing the data model with fields seen
+// that are actually ~annoying because we are mixing the data model with fields used
 // by just the v0.4 client implementation. We should avoid repeating this mistake
 // when implementing v0.5 of the client.
 
