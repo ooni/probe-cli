@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -53,17 +54,19 @@ const requestWithoutDomainName = `{
 
 func TestHandlerWorkingAsIntended(t *testing.T) {
 	handler := &handler{
+		BaseLogger:        model.DiscardLogger,
+		Indexer:           &atomicx.Int64{},
 		MaxAcceptableBody: 1 << 24,
-		NewClient: func() model.HTTPClient {
+		NewClient: func(model.Logger) model.HTTPClient {
 			return http.DefaultClient
 		},
-		NewDialer: func() model.Dialer {
+		NewDialer: func(model.Logger) model.Dialer {
 			return netxlite.NewDialerWithStdlibResolver(model.DiscardLogger)
 		},
-		NewResolver: func() model.Resolver {
+		NewResolver: func(model.Logger) model.Resolver {
 			return netxlite.NewUnwrappedStdlibResolver()
 		},
-		NewTLSHandshaker: func() model.TLSHandshaker {
+		NewTLSHandshaker: func(model.Logger) model.TLSHandshaker {
 			return netxlite.NewTLSHandshakerStdlib(model.DiscardLogger)
 		},
 	}

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -26,8 +27,11 @@ type dnsConfig struct {
 	// Domain is the MANDATORY domain to resolve.
 	Domain string
 
+	// Logger is the MANDATORY logger to use.
+	Logger model.Logger
+
 	// NewResolver is the MANDATORY factory to create a new resolver.
-	NewResolver func() model.Resolver
+	NewResolver func(model.Logger) model.Resolver
 
 	// Out is the channel where we publish the results.
 	Out chan ctrlDNSResult
@@ -42,9 +46,11 @@ func dnsDo(ctx context.Context, config *dnsConfig) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	defer config.Wg.Done()
-	reso := config.NewResolver()
+	reso := config.NewResolver(config.Logger)
 	defer reso.CloseIdleConnections()
+	ol := measurexlite.NewOperationLogger(config.Logger, "DNSLookup %s", config.Domain)
 	addrs, err := reso.LookupHost(ctx, config.Domain)
+	ol.Stop(err)
 	if addrs == nil {
 		addrs = []string{} // fix: the old test helper did that
 	}

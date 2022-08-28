@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -29,11 +30,11 @@ func init() {
 	srvCtx, srvCancel = context.WithCancel(context.Background())
 }
 
-func newResolver() model.Resolver {
+func newResolver(logger model.Logger) model.Resolver {
 	// Implementation note: pin to a specific resolver so we don't depend upon the
 	// default resolver configured by the box. Also, use an encrypted transport thus
 	// we're less vulnerable to any policy implemented by the box's provider.
-	resolver := netxlite.NewParallelDNSOverHTTPSResolver(log.Log, "https://8.8.8.8/dns-query")
+	resolver := netxlite.NewParallelDNSOverHTTPSResolver(logger, "https://dns.google/dns-query")
 	return resolver
 }
 
@@ -54,16 +55,18 @@ func main() {
 	defer srvCancel()
 	mux := http.NewServeMux()
 	mux.Handle("/", &handler{
+		BaseLogger:        log.Log,
+		Indexer:           &atomicx.Int64{},
 		MaxAcceptableBody: maxAcceptableBody,
-		NewClient: func() model.HTTPClient {
-			return netxlite.NewHTTPClientWithResolver(log.Log, newResolver())
+		NewClient: func(logger model.Logger) model.HTTPClient {
+			return netxlite.NewHTTPClientWithResolver(logger, newResolver(logger))
 		},
-		NewDialer: func() model.Dialer {
-			return netxlite.NewDialerWithResolver(log.Log, newResolver())
+		NewDialer: func(logger model.Logger) model.Dialer {
+			return netxlite.NewDialerWithResolver(logger, newResolver(logger))
 		},
 		NewResolver: newResolver,
-		NewTLSHandshaker: func() model.TLSHandshaker {
-			return netxlite.NewTLSHandshakerStdlib(log.Log)
+		NewTLSHandshaker: func(logger model.Logger) model.TLSHandshaker {
+			return netxlite.NewTLSHandshakerStdlib(logger)
 		},
 	})
 	srv := &http.Server{Addr: *endpoint, Handler: mux}

@@ -47,11 +47,14 @@ type tcpConfig struct {
 	// Endpoint is the MANDATORY endpoint to connect to.
 	Endpoint string
 
+	// Logger is the MANDATORY logger to use.
+	Logger model.Logger
+
 	// NewDialer is the MANDATORY factory for creating a new dialer.
-	NewDialer func() model.Dialer
+	NewDialer func(model.Logger) model.Dialer
 
 	// NewTSLHandshaker is the MANDATORY factory for creating a new handshaker.
-	NewTSLHandshaker func() model.TLSHandshaker
+	NewTSLHandshaker func(model.Logger) model.TLSHandshaker
 
 	// Out is the MANDATORY where we'll post the TCP measurement results.
 	Out chan *tcpResultPair
@@ -78,13 +81,21 @@ func tcpDo(ctx context.Context, config *tcpConfig) {
 	defer func() {
 		config.Out <- out
 	}()
-	dialer := config.NewDialer()
+	ol := measurexlite.NewOperationLogger(
+		config.Logger,
+		"TCPConnect %s EnableTLS=%v SNI=%s",
+		config.Endpoint,
+		config.EnableTLS,
+		config.URLHostname,
+	)
+	dialer := config.NewDialer(config.Logger)
 	defer dialer.CloseIdleConnections()
 	conn, err := dialer.DialContext(ctx, "tcp", config.Endpoint)
 	out.TCP.Failure = tcpMapFailure(newfailure(err))
 	out.TCP.Status = err == nil
 	defer measurexlite.MaybeClose(conn)
 	if err != nil || !config.EnableTLS {
+		ol.Stop(err)
 		return
 	}
 	tlsConfig := &tls.Config{
@@ -92,8 +103,9 @@ func tcpDo(ctx context.Context, config *tcpConfig) {
 		RootCAs:    netxlite.NewDefaultCertPool(),
 		ServerName: config.URLHostname,
 	}
-	thx := config.NewTSLHandshaker()
+	thx := config.NewTSLHandshaker(config.Logger)
 	tlsConn, _, err := thx.Handshake(ctx, conn, tlsConfig)
+	ol.Stop(err)
 	out.TLS = &ctrlTLSResult{
 		ServerName: config.URLHostname,
 		Status:     err == nil,

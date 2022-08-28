@@ -68,7 +68,8 @@ func TestDNSDo(t *testing.T) {
 		ctx := context.Background()
 		config := &dnsConfig{
 			Domain: "antani.ooni.org",
-			NewResolver: func() model.Resolver {
+			Logger: model.DiscardLogger,
+			NewResolver: func(model.Logger) model.Resolver {
 				return &mocks.Resolver{
 					MockLookupHost: func(ctx context.Context, domain string) ([]string, error) {
 						return nil, netxlite.ErrOODNSNoSuchHost

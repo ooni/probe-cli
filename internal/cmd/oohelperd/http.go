@@ -30,11 +30,14 @@ type httpConfig struct {
 	// Headers is OPTIONAL and contains the request headers we should set.
 	Headers map[string][]string
 
+	// Logger is the MANDATORY logger to use.
+	Logger model.Logger
+
 	// MaxAcceptableBody is MANDATORY and specifies the maximum acceptable body size.
 	MaxAcceptableBody int64
 
 	// NewClient is the MANDATORY factory to create a new client.
-	NewClient func() model.HTTPClient
+	NewClient func(model.Logger) model.HTTPClient
 
 	// Out is the MANDATORY channel where we'll post results.
 	Out chan ctrlHTTPResponse
@@ -48,6 +51,7 @@ type httpConfig struct {
 
 // httpDo performs the HTTP check.
 func httpDo(ctx context.Context, config *httpConfig) {
+	ol := measurexlite.NewOperationLogger(config.Logger, "GET %s", config.URL)
 	const timeout = 15 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -62,6 +66,7 @@ func httpDo(ctx context.Context, config *httpConfig) {
 			Headers:    map[string]string{},
 			StatusCode: -1,
 		}
+		ol.Stop(err)
 		return
 	}
 	// The original test helper failed with extra headers while here
@@ -74,7 +79,7 @@ func httpDo(ctx context.Context, config *httpConfig) {
 			}
 		}
 	}
-	clnt := config.NewClient()
+	clnt := config.NewClient(config.Logger)
 	defer clnt.CloseIdleConnections()
 	resp, err := clnt.Do(req)
 	if err != nil {
@@ -86,6 +91,7 @@ func httpDo(ctx context.Context, config *httpConfig) {
 			Headers:    map[string]string{},
 			StatusCode: -1,
 		}
+		ol.Stop(err)
 		return
 	}
 	defer resp.Body.Close()
@@ -95,6 +101,7 @@ func httpDo(ctx context.Context, config *httpConfig) {
 	}
 	reader := &io.LimitedReader{R: resp.Body, N: config.MaxAcceptableBody}
 	data, err := netxlite.ReadAllContext(ctx, reader)
+	ol.Stop(err)
 	config.Out <- ctrlHTTPResponse{
 		BodyLength: int64(len(data)),
 		Failure:    httpMapFailure(err),
