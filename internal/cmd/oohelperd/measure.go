@@ -47,7 +47,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	wg.Wait()
 
 	// start assembling the response
-	cresp := new(ctrlResponse)
+	cresp := &ctrlResponse{}
 	select {
 	case cresp.DNS = <-dnsch:
 	default:
@@ -59,13 +59,9 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		}
 	}
 
-	// figure out all the endpoints to measure
-	endpoints, mapping := computeEndpoints(URL, creq, cresp.DNS.Addrs)
-
-	// geoip: start over all addresses
-	wg.Add(1)
-	geoipch := make(chan map[string]int64, 1)
-	go geoipDo(wg, mapping, geoipch)
+	// obtain IP info and figure out the endpoints measurement plan
+	cresp.IPInfo = newIPInfo(creq, cresp.DNS.Addrs)
+	endpoints := ipInfoToEndpoints(URL, cresp.IPInfo)
 
 	// tcpconnect: start over all the endpoints
 	tcpconnch := make(chan *tcpResultPair, len(endpoints))
@@ -113,55 +109,6 @@ Loop:
 			break Loop
 		}
 	}
-	cresp.GeoIP = <-geoipch
 
 	return cresp, nil
-}
-
-// endpointInfo contains info about an endpoint to measure
-type endpointInfo struct {
-	epnt string
-	tls  bool
-}
-
-const (
-	// Address was discovered by the probe
-	foundByProbe = 1 << iota
-
-	// Address was discovered by the TH
-	foundByTH
-)
-
-// Computes all the endpoints that we need to measure including both the
-// endpoints discovered by the probe and the ones discovered by us. It also
-// returns a mapping counting characterizing who discovered which addr.
-func computeEndpoints(
-	URL *url.URL, creq *ctrlRequest, addrs []string) (out []endpointInfo, mapping map[string]int) {
-	ports := []string{"80", "443"}
-	if URL.Port() != "" {
-		ports = []string{URL.Port()} // when there's a custom port just use that
-	}
-	mapping = make(map[string]int)
-	for _, epnt := range creq.TCPConnect {
-		addr, _, err := net.SplitHostPort(epnt)
-		if err != nil {
-			continue
-		}
-		mapping[addr] |= foundByProbe
-	}
-	for _, addr := range addrs {
-		if net.ParseIP(addr) != nil {
-			mapping[addr] |= foundByTH
-		}
-	}
-	for addr := range mapping {
-		for _, port := range ports {
-			epnt := net.JoinHostPort(addr, port)
-			out = append(out, endpointInfo{
-				epnt: epnt,
-				tls:  port == "443",
-			})
-		}
-	}
-	return
 }
