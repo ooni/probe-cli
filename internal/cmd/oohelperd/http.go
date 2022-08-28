@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -100,7 +100,7 @@ func httpDo(ctx context.Context, config *httpConfig) {
 		Failure:    httpMapFailure(err),
 		StatusCode: int64(resp.StatusCode),
 		Headers:    headers,
-		Title:      webconnectivity.GetTitle(string(data)),
+		Title:      measurexlite.WebGetTitle(string(data)),
 	}
 }
 
