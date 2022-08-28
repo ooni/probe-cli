@@ -23,7 +23,7 @@ import (
 
 // ctrlHTTPResponse is the result of the HTTP check performed by
 // the Web Connectivity test helper.
-type ctrlHTTPResponse = webconnectivity.ControlHTTPRequestResult
+type ctrlHTTPResponse = model.THHTTPRequestResult
 
 // httpConfig configures the HTTP check.
 type httpConfig struct {

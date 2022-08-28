@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
@@ -28,7 +27,7 @@ func Test_dnsMapFailure(t *testing.T) {
 	}, {
 		name:    "nxdomain",
 		failure: stringPointerForString(netxlite.FailureDNSNXDOMAINError),
-		want:    stringPointerForString(webconnectivity.DNSNameError),
+		want:    stringPointerForString(model.THDNSNameError),
 	}, {
 		name:    "no answer",
 		failure: stringPointerForString(netxlite.FailureDNSNoAnswer),
@@ -79,7 +78,7 @@ func TestDNSDo(t *testing.T) {
 					},
 				}
 			},
-			Out: make(chan webconnectivity.ControlDNSResult, 1),
+			Out: make(chan model.THDNSResult, 1),
 			Wg:  &sync.WaitGroup{},
 		}
 		config.Wg.Add(1)
