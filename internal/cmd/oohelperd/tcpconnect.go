@@ -10,17 +10,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 // ctrlTCPResult is the result of the TCP check performed by the test helper.
-type ctrlTCPResult = webconnectivity.ControlTCPConnectResult
+type ctrlTCPResult = model.THTCPConnectResult
 
 // ctrlTLSResult is the result of the TLS check performed by the test helper.
-type ctrlTLSResult = webconnectivity.ControlTLSHandshakeResult
+type ctrlTLSResult = model.THTLSHandshakeResult
 
 // tcpResultPair contains the endpoint and the corresponding result.
 type tcpResultPair struct {
@@ -73,7 +72,7 @@ func tcpDo(ctx context.Context, config *tcpConfig) {
 	out := &tcpResultPair{
 		Address:  config.Address,
 		Endpoint: config.Endpoint,
-		TCP:      webconnectivity.ControlTCPConnectResult{},
+		TCP:      model.THTCPConnectResult{},
 		TLS:      nil, // means: not measured
 	}
 	defer func() {
