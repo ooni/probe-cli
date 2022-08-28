@@ -13,6 +13,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
 // WrapResolver creates a new Resolver that saves events into the WritableDB.
@@ -105,7 +106,7 @@ func (r *resolverDB) LookupHost(ctx context.Context, domain string) ([]string, e
 func (r *resolverDB) saveLookupResults(domain string, started, finished float64,
 	err error, addrs []string, qtype string) {
 	ev := &DNSLookupEvent{
-		Network:   r.Resolver.Network(),
+		Network:   tracex.ResolverNetworkAdaptNames(r.Resolver.Network()),
 		Address:   r.Resolver.Address(),
 		Failure:   NewFailure(err),
 		Domain:    domain,
@@ -158,7 +159,7 @@ func (r *resolverDB) LookupHTTPS(ctx context.Context, domain string) (*model.HTT
 	https, err := r.Resolver.LookupHTTPS(ctx, domain)
 	finished := time.Since(r.begin).Seconds()
 	ev := &DNSLookupEvent{
-		Network:   r.Resolver.Network(),
+		Network:   tracex.ResolverNetworkAdaptNames(r.Resolver.Network()),
 		Address:   r.Resolver.Address(),
 		Domain:    domain,
 		QueryType: "HTTPS",

@@ -51,7 +51,7 @@ const requestWithoutDomainName = `{
 	]
 }`
 
-func TestWorkingAsIntended(t *testing.T) {
+func TestHandlerWorkingAsIntended(t *testing.T) {
 	handler := &handler{
 		MaxAcceptableBody: 1 << 24,
 		NewClient: func() model.HTTPClient {
@@ -62,6 +62,9 @@ func TestWorkingAsIntended(t *testing.T) {
 		},
 		NewResolver: func() model.Resolver {
 			return netxlite.NewUnwrappedStdlibResolver()
+		},
+		NewTLSHandshaker: func() model.TLSHandshaker {
+			return netxlite.NewTLSHandshakerStdlib(model.DiscardLogger)
 		},
 	}
 	srv := httptest.NewServer(handler)
@@ -76,25 +79,37 @@ func TestWorkingAsIntended(t *testing.T) {
 		parseBody       bool
 	}
 	expectations := []expectationSpec{{
-		name:           "check for invalid method",
-		reqMethod:      "GET",
-		respStatusCode: 400,
+		name:            "check for invalid method",
+		reqMethod:       "GET",
+		reqContentType:  "",
+		reqBody:         "",
+		respStatusCode:  400,
+		respContentType: "",
+		parseBody:       false,
 	}, {
-		name:           "check for invalid content-type",
-		reqMethod:      "POST",
-		respStatusCode: 400,
+		name:            "check for invalid content-type",
+		reqMethod:       "POST",
+		reqContentType:  "",
+		reqBody:         "",
+		respStatusCode:  400,
+		respContentType: "",
+		parseBody:       false,
 	}, {
-		name:           "check for invalid request body",
-		reqMethod:      "POST",
-		reqContentType: "application/json",
-		reqBody:        "{",
-		respStatusCode: 400,
+		name:            "check for invalid request body",
+		reqMethod:       "POST",
+		reqContentType:  "application/json",
+		reqBody:         "{",
+		respStatusCode:  400,
+		respContentType: "",
+		parseBody:       false,
 	}, {
-		name:           "with measurement failure",
-		reqMethod:      "POST",
-		reqContentType: "application/json",
-		reqBody:        `{"http_request": "http://[::1]aaaa"}`,
-		respStatusCode: 400,
+		name:            "with measurement failure",
+		reqMethod:       "POST",
+		reqContentType:  "application/json",
+		reqBody:         `{"http_request": "http://[::1]aaaa"}`,
+		respStatusCode:  400,
+		respContentType: "",
+		parseBody:       false,
 	}, {
 		name:            "with reasonably good request",
 		reqMethod:       "POST",
