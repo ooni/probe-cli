@@ -72,7 +72,7 @@ func TestNewOperationLogger(t *testing.T) {
 		}
 		const maxwait = 100 * time.Microsecond
 		ol := newOperationLogger(maxwait, logger, "antani%d", 0)
-		time.Sleep(4 * ol.maxwait)
+		ol.wg.Wait() // wait for the message to be emitted
 		ol.Stop(nil)
 		if len(lines) != 2 {
 			t.Fatal("unexpected number of lines")
@@ -100,7 +100,7 @@ func TestNewOperationLogger(t *testing.T) {
 		}
 		const maxwait = 100 * time.Microsecond
 		ol := newOperationLogger(maxwait, logger, "antani%d", 0)
-		time.Sleep(4 * ol.maxwait)
+		ol.wg.Wait() // wait for the message to be emitted
 		ol.Stop(io.EOF)
 		if len(lines) != 2 {
 			t.Fatal("unexpected number of lines")
