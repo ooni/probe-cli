@@ -29,9 +29,6 @@ type handler struct {
 
 	// NewResolver is the MANDATORY factory for creating a new resolver.
 	NewResolver func() model.Resolver
-
-	// NewTLSHandshaker is the MANDATORY factory for creating a new TLS handshaker.
-	NewTLSHandshaker func() model.TLSHandshaker
 }
 
 var _ http.Handler = &handler{}

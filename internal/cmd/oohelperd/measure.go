@@ -68,13 +68,11 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	for _, endpoint := range endpoints {
 		wg.Add(1)
 		go tcpDo(ctx, &tcpConfig{
-			EnableTLS:        endpoint.tls,
-			Endpoint:         endpoint.epnt,
-			NewDialer:        config.NewDialer,
-			NewTSLHandshaker: config.NewTLSHandshaker,
-			Out:              tcpconnch,
-			URLHostname:      URL.Hostname(),
-			Wg:               wg,
+			Address:   endpoint.Addr,
+			Endpoint:  endpoint.Epnt,
+			NewDialer: config.NewDialer,
+			Out:       tcpconnch,
+			Wg:        wg,
 		})
 	}
 
@@ -96,18 +94,11 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	// continue assembling the response
 	cresp.HTTPRequest = <-httpch
 	cresp.TCPConnect = make(map[string]ctrlTCPResult)
-	cresp.TLSHandshake = make(map[string]webconnectivity.ControlTLSHandshakeResult)
 Loop:
 	for {
 		select {
 		case tcpconn := <-tcpconnch:
 			cresp.TCPConnect[tcpconn.Endpoint] = tcpconn.TCP
-			if tcpconn.TLS != nil {
-				cresp.TLSHandshake[tcpconn.Endpoint] = *tcpconn.TLS
-				if info := cresp.IPInfo[tcpconn.Address]; info != nil && tcpconn.TLS.Failure == nil {
-					info.Flags |= webconnectivity.ControlIPInfoFlagValidForDomain
-				}
-			}
 		default:
 			break Loop
 		}
