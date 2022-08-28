@@ -61,7 +61,25 @@ func main() {
 		Indexer:           &atomicx.Int64{},
 		MaxAcceptableBody: maxAcceptableBody,
 		NewClient: func(logger model.Logger) model.HTTPClient {
-			return netxlite.NewHTTPClientWithResolver(logger, newResolver(logger))
+			// If the DoH resolver we're using insists that a given domain maps to
+			// bogons, make sure we're going to fail the HTTP measurement.
+			//
+			// The TCP measurements scheduler in ipinfo.go will also refuse to
+			// schedule TCP measurements for bogons.
+			//
+			// While this seems theoretical, as of 2022-08-28, I see:
+			//
+			//     % host polito.it
+			//     polito.it has address 192.168.59.6
+			//     polito.it has address 192.168.40.1
+			//     polito.it mail is handled by 10 mx.polito.it.
+			//
+			// So, it's better to consider this as a possible corner case.
+			reso := netxlite.MaybeWrapWithBogonResolver(
+				true, // enabled
+				newResolver(logger),
+			)
+			return netxlite.NewHTTPClientWithResolver(logger, reso)
 		},
 		NewDialer: func(logger model.Logger) model.Dialer {
 			return netxlite.NewDialerWithResolver(logger, newResolver(logger))
