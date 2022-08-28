@@ -142,15 +142,19 @@ func Test_ipInfoToEndpoints(t *testing.T) {
 		want: []endpointInfo{{
 			Addr: "8.8.4.4",
 			Epnt: "8.8.4.4:443",
+			TLS:  true,
 		}, {
 			Addr: "8.8.4.4",
 			Epnt: "8.8.4.4:80",
+			TLS:  false,
 		}, {
 			Addr: "8.8.8.8",
 			Epnt: "8.8.8.8:443",
+			TLS:  true,
 		}, {
 			Addr: "8.8.8.8",
 			Epnt: "8.8.8.8:80",
+			TLS:  false,
 		}},
 	}, {
 		name: "with bogons and explicit port",
@@ -176,9 +180,11 @@ func Test_ipInfoToEndpoints(t *testing.T) {
 		want: []endpointInfo{{
 			Addr: "8.8.4.4",
 			Epnt: "8.8.4.4:5432",
+			TLS:  false,
 		}, {
 			Addr: "8.8.8.8",
 			Epnt: "8.8.8.8:5432",
+			TLS:  false,
 		}},
 	}, {
 		name: "with addresses and some bogons, no port, and unknown scheme",
@@ -224,9 +230,11 @@ func Test_ipInfoToEndpoints(t *testing.T) {
 		want: []endpointInfo{{
 			Addr: "8.8.4.4",
 			Epnt: "8.8.4.4:443",
+			TLS:  true,
 		}, {
 			Addr: "8.8.8.8",
 			Epnt: "8.8.8.8:443",
+			TLS:  true,
 		}},
 	}}
 	for _, tt := range tests {

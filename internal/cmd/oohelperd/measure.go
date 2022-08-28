@@ -47,7 +47,13 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	wg.Wait()
 
 	// start assembling the response
-	cresp := &ctrlResponse{}
+	cresp := &ctrlResponse{
+		TCPConnect:   map[string]webconnectivity.ControlTCPConnectResult{},
+		TLSHandshake: map[string]webconnectivity.ControlTLSHandshakeResult{},
+		HTTPRequest:  webconnectivity.ControlHTTPRequestResult{},
+		DNS:          webconnectivity.ControlDNSResult{},
+		IPInfo:       map[string]*webconnectivity.ControlIPInfo{},
+	}
 	select {
 	case cresp.DNS = <-dnsch:
 	default:
@@ -56,6 +62,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		cresp.DNS = ctrlDNSResult{
 			Failure: nil,
 			Addrs:   []string{},
+			ASNs:    []int64{}, // unused by the TH and not serialized
 		}
 	}
 
@@ -96,8 +103,6 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 
 	// continue assembling the response
 	cresp.HTTPRequest = <-httpch
-	cresp.TCPConnect = make(map[string]ctrlTCPResult)
-	cresp.TLSHandshake = make(map[string]webconnectivity.ControlTLSHandshakeResult)
 Loop:
 	for {
 		select {
