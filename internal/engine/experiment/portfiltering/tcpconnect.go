@@ -14,8 +14,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// tcpPingLoop sends all the ping requests and emits the results onto the out channel.
-func (m *Measurer) tcpPingLoop(ctx context.Context, zeroTime time.Time,
+// tcpPingLoop sends the TCP Connect requests to all ports and emits the results onto the out channel
+func (m *Measurer) tcpConnectLoop(ctx context.Context, zeroTime time.Time,
 	logger model.Logger, address string, out chan<- *model.ArchivalTCPConnectResult) {
 	ticker := time.NewTicker(m.config.delay())
 	defer ticker.Stop()
@@ -26,13 +26,13 @@ func (m *Measurer) tcpPingLoop(ctx context.Context, zeroTime time.Time,
 	// randomized sequential order?
 	for i, port := range Ports {
 		addr := net.JoinHostPort(address, port)
-		m.tcpPingAsync(ctx, int64(i), zeroTime, logger, addr, out)
+		m.tcpConnectAsync(ctx, int64(i), zeroTime, logger, addr, out)
 		<-ticker.C
 	}
 }
 
-// tcpPingAsync performs a TCP ping and emits the result onto the out channel.
-func (m *Measurer) tcpPingAsync(ctx context.Context, index int64,
+// tcpPingAsync performs a TCP Connect and emits the result onto the out channel.
+func (m *Measurer) tcpConnectAsync(ctx context.Context, index int64,
 	zeroTime time.Time, logger model.Logger, address string, out chan<- *model.ArchivalTCPConnectResult) {
 	out <- m.tcpConnect(ctx, index, zeroTime, logger, address)
 }

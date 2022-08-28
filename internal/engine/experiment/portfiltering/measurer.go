@@ -54,7 +54,7 @@ func (m *Measurer) Run(
 	tk := new(TestKeys)
 	measurement.TestKeys = tk
 	out := make(chan *model.ArchivalTCPConnectResult)
-	go m.tcpPingLoop(ctx, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Host, out)
+	go m.tcpConnectLoop(ctx, measurement.MeasurementStartTimeSaved, sess.Logger(), parsed.Host, out)
 	for len(tk.TCPConnect) < len(Ports) {
 		tk.TCPConnect = append(tk.TCPConnect, <-out)
 	}
