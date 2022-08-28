@@ -78,13 +78,13 @@ jobs:
 
       - uses: actions/upload-artifact@v1
         with:
-          name: miniooni-windows-386
-          path: ./CLI/miniooni-windows-386
+          name: miniooni-windows-386.exe
+          path: ./CLI/miniooni-windows-386.exe
 
       - uses: actions/upload-artifact@v1
         with:
-          name: miniooni-windows-amd64
-          path: ./CLI/miniooni-windows-amd64
+          name: miniooni-windows-amd64.exe
+          path: ./CLI/miniooni-windows-amd64.exe
 
       - run: |
           tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
