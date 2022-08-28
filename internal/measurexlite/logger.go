@@ -18,9 +18,13 @@ import (
 // will emit an interim log message mentioning that the
 // operation is currently in progress.
 func NewOperationLogger(logger model.Logger, format string, v ...any) *OperationLogger {
+	return newOperationLogger(500*time.Millisecond, logger, format, v...)
+}
+
+func newOperationLogger(maxwait time.Duration, logger model.Logger, format string, v ...any) *OperationLogger {
 	ol := &OperationLogger{
 		logger:  logger,
-		maxwait: 500 * time.Millisecond,
+		maxwait: maxwait,
 		message: fmt.Sprintf(format, v...),
 		once:    &sync.Once{},
 		sighup:  make(chan any),

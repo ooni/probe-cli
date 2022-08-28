@@ -70,8 +70,8 @@ func TestNewOperationLogger(t *testing.T) {
 				mu.Unlock()
 			},
 		}
-		ol := NewOperationLogger(logger, "antani%d", 0)
-		ol.maxwait = 100 * time.Microsecond
+		const maxwait = 100 * time.Microsecond
+		ol := newOperationLogger(maxwait, logger, "antani%d", 0)
 		time.Sleep(4 * ol.maxwait)
 		ol.Stop(nil)
 		if len(lines) != 2 {
@@ -98,8 +98,8 @@ func TestNewOperationLogger(t *testing.T) {
 				mu.Unlock()
 			},
 		}
-		ol := NewOperationLogger(logger, "antani%d", 0)
-		ol.maxwait = 100 * time.Microsecond
+		const maxwait = 100 * time.Microsecond
+		ol := newOperationLogger(maxwait, logger, "antani%d", 0)
 		time.Sleep(4 * ol.maxwait)
 		ol.Stop(io.EOF)
 		if len(lines) != 2 {
