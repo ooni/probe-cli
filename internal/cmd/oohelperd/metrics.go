@@ -24,7 +24,7 @@ var (
 		Help: "The number or requests currently inflight",
 	})
 
-	// metricWCTaskDurationSeconds summarizes the time to perform a measurement.
+	// metricWCTaskDurationSeconds summarizes the duration of the web connectivity measurement task.
 	metricWCTaskDurationSeconds = promauto.NewSummary(prometheus.SummaryOpts{
 		Name: "oohelperd_wctask_duration_seconds",
 		Help: "Summarizes the time to perform a test-helper measurement (in seconds)",
