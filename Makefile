@@ -149,6 +149,7 @@ show-config:
 ./CLI/ooniprobe-linux: \
 	./CLI/ooniprobe-linux-386 \
 	./CLI/ooniprobe-linux-amd64 \
+	./CLI/ooniprobe-linux-armv6 \
 	./CLI/ooniprobe-linux-armv7 \
 	./CLI/ooniprobe-linux-arm64
 
@@ -163,6 +164,12 @@ show-config:
 .PHONY:     ./CLI/ooniprobe-linux-amd64
 ./CLI/ooniprobe-linux-amd64: search/for/docker maybe/copypsiphon
 	./CLI/go-build-linux-static amd64 ./cmd/ooniprobe
+
+#help:
+#help: * `make ./CLI/ooniprobe-linux-armv6`: linux/arm
+.PHONY:     ./CLI/ooniprobe-linux-armv6
+./CLI/ooniprobe-linux-armv6: search/for/docker maybe/copypsiphon
+	./CLI/go-build-linux-static armv6 ./cmd/ooniprobe
 
 #help:
 #help: * `make ./CLI/ooniprobe-linux-armv7`: linux/arm
