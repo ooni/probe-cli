@@ -5,6 +5,7 @@ on:
     branches:
       - "release/**"
       - "fullbuild"
+      - "androidbuild"
     tags:
       - "v*"
 
@@ -33,6 +34,8 @@ jobs:
         env:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
+
+      - run: ./MOBILE/android/ensure
 
       - run: make ./MOBILE/android
 
