@@ -7,9 +7,11 @@ package tlsmiddlebox
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"net"
 	"sort"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
@@ -106,13 +108,10 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 // Note: The passed conn must be of type dialerTTLWrapperConn
 func extractSoError(conn net.Conn) error {
 	soErrno, err := getSoErr(conn)
-	if err != nil {
+	if err != nil || errors.Is(soErrno, syscall.Errno(0)) {
 		return nil
 	}
 	icmpErr := netxlite.MaybeNewErrWrapper(netxlite.ClassifyGenericError, netxlite.TLSHandshakeOperation, soErrno)
-	if icmpErr.Error() != netxlite.FailureHostUnreachable {
-		return nil
-	}
 	return icmpErr
 }
 
