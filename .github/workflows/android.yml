@@ -5,6 +5,7 @@ on:
     branches:
       - "release/**"
       - "fullbuild"
+      - "androidbuild"
     tags:
       - "v*"
 
