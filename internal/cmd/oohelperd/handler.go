@@ -74,7 +74,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	elapsed := time.Since(started)
 	metricWCTaskDurationSeconds.Observe(float64(elapsed.Seconds()))
 	if err != nil {
-		metricRequestsCount.WithLabelValues("400", "measurement_failed").Inc()
+		metricRequestsCount.WithLabelValues("400", "wctask_failed").Inc()
 		w.WriteHeader(400)
 		return
 	}
