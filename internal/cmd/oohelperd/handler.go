@@ -53,33 +53,35 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		"oohelperd/%s ooniprobe-engine/%s", version.Version, version.Version,
 	))
 	if req.Method != "POST" {
-		metricRequestsByStatusCode.WithLabelValues("400").Inc()
+		metricRequestsByStatusCode.WithLabelValues("400", "bad_request_method").Inc()
 		w.WriteHeader(400)
 		return
 	}
 	reader := &io.LimitedReader{R: req.Body, N: h.MaxAcceptableBody}
 	data, err := netxlite.ReadAllContext(req.Context(), reader)
 	if err != nil {
-		metricRequestsByStatusCode.WithLabelValues("400").Inc()
+		metricRequestsByStatusCode.WithLabelValues("400", "request_body_too_large").Inc()
 		w.WriteHeader(400)
 		return
 	}
 	var creq ctrlRequest
 	if err := json.Unmarshal(data, &creq); err != nil {
-		metricRequestsByStatusCode.WithLabelValues("400").Inc()
+		metricRequestsByStatusCode.WithLabelValues("400", "cannot_unmarshal_request_body").Inc()
 		w.WriteHeader(400)
 		return
 	}
+	metricMeasurementCount.Inc()
 	started := time.Now()
 	cresp, err := measure(req.Context(), h, &creq)
 	elapsed := time.Since(started)
 	metricMeasurementTime.Observe(float64(elapsed.Seconds()))
 	if err != nil {
-		metricRequestsByStatusCode.WithLabelValues("400").Inc()
+		metricMeasurementFailed.Inc()
+		metricRequestsByStatusCode.WithLabelValues("400", "measurement_failed").Inc()
 		w.WriteHeader(400)
 		return
 	}
-	metricRequestsByStatusCode.WithLabelValues("200").Inc()
+	metricRequestsByStatusCode.WithLabelValues("200", "ok").Inc()
 	// We assume that the following call cannot fail because it's a
 	// clearly-serializable data structure.
 	data, err = json.Marshal(cresp)

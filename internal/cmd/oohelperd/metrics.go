@@ -21,7 +21,7 @@ var (
 	metricRequestsByStatusCode = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "oohelperd_requests_by_status_code",
 		Help: "Total number of processed requests by status code",
-	}, []string{"code"})
+	}, []string{"code", "reason"})
 
 	// metricRequestsInflight counts the number of requests currently inflight.
 	metricRequestsInflight = promauto.NewGauge(prometheus.GaugeOpts{
@@ -41,5 +41,17 @@ var (
 			0.9:  0.010, // 0.899 <= φ <= 0.901
 			0.99: 0.001, // 0.989 <= φ <= 0.991
 		},
+	})
+
+	// metricMeasurementCount counts the number of calls to measure.
+	metricMeasurementCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "oohelperd_measurement_count",
+		Help: "The total number of test-helper measurements performed",
+	})
+
+	// metricMeasurementFailed counts the number of times that measure failed.
+	metricMeasurementFailed = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "oohelperd_measurement_failed",
+		Help: "The number of test-helper measurements that failed",
 	})
 )
