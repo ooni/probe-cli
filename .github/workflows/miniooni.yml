@@ -9,6 +9,7 @@ on:
     branches:
       - "master"
       - "release/**"
+      - "fullbuild"
     tags:
       - "v*"
 

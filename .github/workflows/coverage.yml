@@ -6,6 +6,7 @@ on:
     branches:
       - "master"
       - "release/**"
+      - "fullbuild"
 
 jobs:
   measure_coverage:
