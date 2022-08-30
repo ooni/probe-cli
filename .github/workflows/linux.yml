@@ -28,7 +28,13 @@ jobs:
 
       - name: Get HOME value
         id: homedir
-        run: echo ::set-output name=home::$HOME
+        run: |
+          echo ::set-output name=home::$HOME
+
+      - run: |
+          echo $HOME
+
+      - run: exit 1
 
       - uses: actions/cache@v3
         with:
