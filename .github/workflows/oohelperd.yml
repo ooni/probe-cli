@@ -20,9 +20,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-oohelperd-${{ steps.goversion.outputs.version }}"
 
       - name: build oohelperd binary
         run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./CLI/oohelperd-linux-amd64 -v -tags netgo -ldflags="-s -w -extldflags -static" ./internal/cmd/oohelperd

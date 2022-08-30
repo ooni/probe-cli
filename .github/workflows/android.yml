@@ -25,9 +25,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-oonimkall-${{ steps.goversion.outputs.version }}"
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
@@ -59,9 +60,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-cli-386-${{ steps.goversion.outputs.version }}"
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
@@ -92,9 +94,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-cli-amd64-${{ steps.goversion.outputs.version }}"
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
@@ -125,9 +128,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-cli-arm-${{ steps.goversion.outputs.version }}"
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
@@ -158,9 +162,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-cli-arm64-${{ steps.goversion.outputs.version }}"
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key

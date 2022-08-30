@@ -20,9 +20,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
 
       - run: sudo apt install mingw-w64
       - run: |
