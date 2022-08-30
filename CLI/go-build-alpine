@@ -1,15 +1,11 @@
 #!/bin/sh
 set -euxo pipefail
-apk update
-apk upgrade
-apk add --no-progress gcc git linux-headers musl-dev
-# We need to force git to look into this repository owned by the
-# user outside docker rather than by the user running docker
-git config --global --add safe.directory $(pwd)
 # Some of the following exports are redundant but are however
 # useful because they provide explicit logging
 export CGO_ENABLED=1
 export GOARM=$GOARM
+export GOCACHE=$GOCACHE
+export GOMODCACHE=$GOMODCACHE
 export GOOS=$GOOS
 export GOARCH=$GOARCH
 for PACKAGE in $@; do

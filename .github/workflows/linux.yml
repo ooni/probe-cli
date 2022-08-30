@@ -5,6 +5,7 @@ on:
     branches:
       - "release/**"
       - "fullbuild"
+      - "linuxbuild"
     tags:
       - "v*"
 
@@ -17,14 +18,23 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
           echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
         env:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
+
+      - uses: actions/cache@v3
+        with:
+          path: GOCACHE
+          key: linux-build-cache-386
+
       - run: make CLI/linux-static-386
+
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-386
+
       - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-386 ./CLI/miniooni-linux-386
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -38,14 +48,23 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
           echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
         env:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
+
+      - uses: actions/cache@v3
+        with:
+          path: GOCACHE
+          key: linux-build-cache-amd64
+
       - run: make CLI/linux-static-amd64
+
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-amd64
+
       - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-amd64 ./CLI/miniooni-linux-amd64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,16 +77,27 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
       - run: sudo apt-get update -q
+
       - run: sudo apt-get install -y qemu-user-static
+
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
           echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
         env:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
+
+      - uses: actions/cache@v3
+        with:
+          path: GOCACHE
+          key: linux-build-cache-armv6
+
       - run: make CLI/linux-static-armv6
+
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-armv6
+
       - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-armv6 ./CLI/miniooni-linux-armv6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -80,16 +110,27 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
       - run: sudo apt-get update -q
+
       - run: sudo apt-get install -y qemu-user-static
+
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
           echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
         env:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
+
+      - uses: actions/cache@v3
+        with:
+          path: GOCACHE
+          key: linux-build-cache-armv7
+
       - run: make CLI/linux-static-armv7
+
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-armv7
+
       - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-armv7 ./CLI/miniooni-linux-armv7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -102,16 +143,27 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
       - run: sudo apt-get update -q
+
       - run: sudo apt-get install -y qemu-user-static
+
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
           echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
         env:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
+
+      - uses: actions/cache@v3
+        with:
+          path: GOCACHE
+          key: linux-build-cache-arm64
+
       - run: make CLI/linux-static-arm64
+
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-arm64
+
       - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-arm64 ./CLI/miniooni-linux-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
