@@ -26,19 +26,26 @@ help:
 #help: on the command line as a key-value pairs (see usage above).
 
 #help:
-#help: * GIT_CLONE_DIR         : directory where to clone repositories, by default
-#help:                           set to `$HOME/.ooniprobe-build/src`.
+#help: * GIT_CLONE_DIR           : directory where to clone repositories, by default
+#help:                             set to `$HOME/.ooniprobe-build/src`.
 GIT_CLONE_DIR = $(HOME)/.ooniprobe-build/src
 
 #help:
-#help: * OONI_PSIPHON_TAGS     : build tags for `go build -tags ...` that cause
-#help:                           the build to embed a psiphon configuration file
-#help:                           into the generated binaries. This build tag
-#help:                           implies cloning the git@github.com:ooni/probe-private
-#help:                           repository. If you do not have the permission to
-#help:                           clone it, just clear this variable, e.g.:
+#help: * OONI_GO_DOCKER_GOCACHE  : base directory to put GOMODCACHE and GOCACHE
+#help:                             when building using Docker. By default this
+#help:                             is set to `$HOME/.ooniprobe-build/cache`
 #help:
-#help:                               make OONI_PSIPHON_TAGS="" CLI/miniooni
+OONI_GO_DOCKER_GOCACHE = $(HOME)/.ooniprobe-build/cache
+
+#help:
+#help: * OONI_PSIPHON_TAGS       : build tags for `go build -tags ...` that cause
+#help:                             the build to embed a psiphon configuration file
+#help:                             into the generated binaries. This build tag
+#help:                             implies cloning the git@github.com:ooni/probe-private
+#help:                             repository. If you do not have the permission to
+#help:                             clone it, just clear this variable, e.g.:
+#help:
+#help:                                 make OONI_PSIPHON_TAGS="" CLI/miniooni
 OONI_PSIPHON_TAGS = ooni_psiphon_config
 
 #quickhelp:
@@ -92,35 +99,35 @@ CLI/darwin: search/for/go maybe/copypsiphon
 #help: ooniprobe and miniooni binaries for linux/386.
 .PHONY: CLI/linux-static-386
 CLI/linux-static-386: search/for/docker maybe/copypsiphon
-	./CLI/go-build-linux-static 386 ./cmd/ooniprobe ./internal/cmd/miniooni
+	./CLI/go-build-linux-static $(OONI_GO_DOCKER_GOCACHE) 386 ./cmd/ooniprobe ./internal/cmd/miniooni
 
 #help:
 #help: The `make CLI/linux-static-amd64` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/amd64.
 .PHONY: CLI/linux-static-amd64
 CLI/linux-static-amd64: search/for/docker maybe/copypsiphon
-	./CLI/go-build-linux-static amd64 ./cmd/ooniprobe ./internal/cmd/miniooni
+	./CLI/go-build-linux-static $(OONI_GO_DOCKER_GOCACHE) amd64 ./cmd/ooniprobe ./internal/cmd/miniooni
 
 #help:
 #help: The `make CLI/linux-static-armv6` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm/v6.
 .PHONY: CLI/linux-static-armv6
 CLI/linux-static-armv6: search/for/docker maybe/copypsiphon
-	./CLI/go-build-linux-static armv6 ./cmd/ooniprobe ./internal/cmd/miniooni
+	./CLI/go-build-linux-static $(OONI_GO_DOCKER_GOCACHE) armv6 ./cmd/ooniprobe ./internal/cmd/miniooni
 
 #help:
 #help: The `make CLI/linux-static-armv7` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm/v7.
 .PHONY: CLI/linux-static-armv7
 CLI/linux-static-armv7: search/for/docker maybe/copypsiphon
-	./CLI/go-build-linux-static armv7 ./cmd/ooniprobe ./internal/cmd/miniooni
+	./CLI/go-build-linux-static $(OONI_GO_DOCKER_GOCACHE) armv7 ./cmd/ooniprobe ./internal/cmd/miniooni
 
 #help:
 #help: The `make CLI/linux-static-arm64` command builds and statically links the
 #help: ooniprobe and miniooni binaries for linux/arm64.
 .PHONY: CLI/linux-static-arm64
 CLI/linux-static-arm64: search/for/docker maybe/copypsiphon
-	./CLI/go-build-linux-static arm64 ./cmd/ooniprobe ./internal/cmd/miniooni
+	./CLI/go-build-linux-static $(OONI_GO_DOCKER_GOCACHE) arm64 ./cmd/ooniprobe ./internal/cmd/miniooni
 
 #help:
 #help: The `make CLI/windows` command builds the ooniprobe and miniooni

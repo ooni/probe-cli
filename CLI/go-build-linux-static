@@ -2,11 +2,14 @@
 
 set -euo pipefail
 
-if [[ $# -lt 2 ]]; then
+if [[ $# -lt 3 ]]; then
 	echo "" 1>&2
-	echo "Compiler for a Go PACKAGE producing static linux/OONIARCH binaries." 1>&2
+	echo "Docker-based compiler for a Go PACKAGE producing static linux/OONIARCH binaries." 1>&2
 	echo "" 1>&2
-	echo "usage: $0 OONIARCH PACKAGE..." 1>&2
+	echo "usage: $0 OOGOCACHEDIR OONIARCH PACKAGE..." 1>&2
+	echo "" 1>&2
+	echo "OOGOCACHEDIR is the directory under which to put GOCACHE and GOMODCACHE for" 1>&2
+	echo "this build, which will be mounted and passed to Docker." 1>&2
 	echo "" 1>&2
 	echo "OONIARCH must be one of: 386, amd64, arm64, armv6, armv7." 1>&2
 	echo "" 1>&2
@@ -25,6 +28,8 @@ fi
 
 GOLANG_DOCKER_IMAGE=golang:$(cat GOVERSION)-alpine
 GOOS=linux
+OOGOCACHEDIR=$1
+shift
 OONIARCH=$1
 shift
 
@@ -49,11 +54,17 @@ else
 	OONI_PSIPHON_TAGS=""
 fi
 
+GOCACHE=$OOGOCACHEDIR/oonibuild/v0/$OONIARCH/buildcache
+GOMODCACHE=$OOGOCACHEDIR/oonibuild/v0/$OONIARCH/modcache
+
 set -x
 
+mkdir -p $OOGOCACHEDIR
 docker pull --platform linux/$DOCKER_ARCH $GOLANG_DOCKER_IMAGE
 
 docker run --platform linux/$DOCKER_ARCH \
+	-e GOCACHE=/__gocache -e GOMODCACHE=/__gomodcache \
+	-v "$GOCACHE:/__gocache" -v "$GOMODCACHE:/__gomodcache" \
 	-e GOARM=$GOARM -e GOOS=$GOOS -e GOARCH=$GOARCH \
 	-e OONI_PSIPHON_TAGS=$OONI_PSIPHON_TAGS \
 	-e OONIARCH=$OONIARCH -e GOLANG_EXTRA_FLAGS="${GOLANG_EXTRA_FLAGS:-}" \

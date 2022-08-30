@@ -10,6 +10,8 @@ git config --global --add safe.directory $(pwd)
 # useful because they provide explicit logging
 export CGO_ENABLED=1
 export GOARM=$GOARM
+export GOCACHE=$GOCACHE
+export GOMODCACHE=$GOMODCACHE
 export GOOS=$GOOS
 export GOARCH=$GOARCH
 for PACKAGE in $@; do
