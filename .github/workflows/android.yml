@@ -1,4 +1,4 @@
-# Builds and publishes Android packages
+# Builds and publishes Android packages and binaries
 name: android
 on:
   push:
@@ -35,8 +35,8 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - run: make ./MOBILE/android
-      - run: make ./CLI/android
+      - run: make MOBILE/android
+      - run: make CLI/android
 
       - run: |
           tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
