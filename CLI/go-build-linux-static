@@ -58,7 +58,7 @@ GOCACHE=$OOGOCACHEDIR/oonibuild/v1/$OONIARCH/buildcache
 GOMODCACHE=$OOGOCACHEDIR/oonibuild/v1/$OONIARCH/modcache
 
 cat > CLI/Dockerfile << EOF
-FROM $GOLANG_DOCKER_IMAGE
+FROM --platform=linux/$DOCKER_ARCH $GOLANG_DOCKER_IMAGE
 RUN apk update
 RUN apk upgrade
 RUN apk add --no-progress gcc git linux-headers musl-dev
@@ -72,7 +72,7 @@ DOCKER_USER_OPTS="--user $(id -u):$(id -g)"
 
 set -x
 
-mkdir -p $OOGOCACHEDIR
+mkdir -p $GOCACHE $GOMODCACHE
 
 docker pull --platform linux/$DOCKER_ARCH $GOLANG_DOCKER_IMAGE
 
