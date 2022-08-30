@@ -28,11 +28,8 @@ jobs:
           go-version: "${{ steps.goversion.outputs.version }}"
           cache-key-suffix: "-tarball-${{ steps.goversion.outputs.version }}"
 
-      - name: Generate release tarball
-        run: |
-          VERSION=${GITHUB_REF_NAME#v}
-          go mod vendor
-          tar czf ooni-probe-cli-${VERSION}.tar.gz --transform "s,^,ooni-probe-cli-${VERSION}/," *
+      - name: Generate the release tarball
+        run: ./script/maketarball.bash
 
       - name: Upload release tarball
         run: ./script/ghpublish.bash ooni-probe-cli-*.tar.gz
