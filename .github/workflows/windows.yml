@@ -95,7 +95,7 @@ jobs:
       - run: |
           ./script/ghpublish.bash ooniprobe-windows-386.exe \
                                   ooniprobe-windows-amd64.exe \
-                                  miniooni-windows-386.exe
+                                  miniooni-windows-386.exe \
                                   miniooni-windows-amd64.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
