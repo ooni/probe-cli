@@ -23,19 +23,15 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-tarball-${{ steps.goversion.outputs.version }}"
 
-      - name: Generate release tarball
-        run: |
-          VERSION=${GITHUB_REF_NAME#v}
-          go mod vendor
-          tar czf ooni-probe-cli-${VERSION}.tar.gz --transform "s,^,ooni-probe-cli-${VERSION}/," *
+      - name: Generate the release tarball
+        run: ./script/maketarball.bash
 
       - name: Upload release tarball
-        run: |
-          gh release create -p $GITHUB_REF_NAME --target $GITHUB_SHA || true
-          gh release upload $GITHUB_REF_NAME --clobber ooni-probe-cli-*.tar.gz
+        run: ./script/ghpublish.bash ooni-probe-cli-*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -25,9 +25,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-oonimkall-${{ steps.goversion.outputs.version }}"
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
@@ -39,12 +40,9 @@ jobs:
       - run: make MOBILE/android
 
       - run: |
-          tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
-          gh release create -p $tag --target $GITHUB_SHA || true
-          gh release upload $tag --clobber ./MOBILE/android/oonimkall.aar \
-                                           ./MOBILE/android/oonimkall-sources.jar \
-                                           ./MOBILE/android/oonimkall.pom
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+          ./script/ghpublish.bash ./MOBILE/android/oonimkall.aar \
+                                  ./MOBILE/android/oonimkall-sources.jar \
+                                  ./MOBILE/android/oonimkall.pom
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -62,9 +60,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-cli-386-${{ steps.goversion.outputs.version }}"
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
@@ -76,11 +75,8 @@ jobs:
       - run: make CLI/android-386
 
       - run: |
-          tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
-          gh release create -p $tag --target $GITHUB_SHA || true
-          gh release upload $tag --clobber ./CLI/miniooni-android-386 \
-                                           ./CLI/ooniprobe-android-386
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+          ./script/ghpublish.bash ./CLI/miniooni-android-386 \
+                                  ./CLI/ooniprobe-android-386
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -98,9 +94,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-cli-amd64-${{ steps.goversion.outputs.version }}"
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
@@ -112,11 +109,8 @@ jobs:
       - run: make CLI/android-amd64
 
       - run: |
-          tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
-          gh release create -p $tag --target $GITHUB_SHA || true
-          gh release upload $tag --clobber ./CLI/miniooni-android-amd64 \
-                                           ./CLI/ooniprobe-android-amd64
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+          ./script/ghpublish.bash ./CLI/miniooni-android-amd64 \
+                                  ./CLI/ooniprobe-android-amd64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -134,9 +128,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-cli-arm-${{ steps.goversion.outputs.version }}"
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
@@ -148,11 +143,8 @@ jobs:
       - run: make CLI/android-arm
 
       - run: |
-          tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
-          gh release create -p $tag --target $GITHUB_SHA || true
-          gh release upload $tag --clobber ./CLI/miniooni-android-arm \
-                                           ./CLI/ooniprobe-android-arm
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+          ./script/ghpublish.bash ./CLI/miniooni-android-arm \
+                                  ./CLI/ooniprobe-android-arm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -170,9 +162,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-cli-arm64-${{ steps.goversion.outputs.version }}"
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
@@ -184,10 +177,7 @@ jobs:
       - run: make CLI/android-arm64
 
       - run: |
-          tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
-          gh release create -p $tag --target $GITHUB_SHA || true
-          gh release upload $tag --clobber ./CLI/miniooni-android-arm64 \
-                                           ./CLI/ooniprobe-android-arm64
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+          ./script/ghpublish.bash ./CLI/miniooni-android-arm64 \
+                                  ./CLI/ooniprobe-android-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -20,9 +20,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-windows-${{ steps.goversion.outputs.version }}"
 
       - run: sudo apt install mingw-w64
       - run: |
@@ -93,12 +94,9 @@ jobs:
           name: miniooni-windows-386.exe
 
       - run: |
-          tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
-          gh release create -p $tag --target $GITHUB_SHA || true
-          gh release upload $tag --clobber ooniprobe-windows-386.exe \
-                                           ooniprobe-windows-amd64.exe \
-                                           miniooni-windows-386.exe
-                                           miniooni-windows-amd64.exe
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+          ./script/ghpublish.bash ooniprobe-windows-386.exe \
+                                  ooniprobe-windows-amd64.exe \
+                                  miniooni-windows-386.exe \
+                                  miniooni-windows-amd64.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
