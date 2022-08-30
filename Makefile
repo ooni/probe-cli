@@ -50,16 +50,30 @@ show-config:
 	@echo "OONI_PSIPHON_TAGS=$(OONI_PSIPHON_TAGS)"
 
 #help:
-#help: The `make CLI/android` command builds miniooni and ooniprobe for
-#help: all the supported Android architectures.
-.PHONY: CLI/android
-CLI/android: search/for/go search/for/android/sdk maybe/copypsiphon
+#help: The `make CLI/android-386` command builds miniooni and ooniprobe for android/386.
+.PHONY: CLI/android-386
+CLI/android-386: search/for/go search/for/android/sdk maybe/copypsiphon
 	./CLI/go-build-android 386 ./internal/cmd/miniooni
 	./CLI/go-build-android 386 ./cmd/ooniprobe
+
+#help:
+#help: The `make CLI/android-amd64` command builds miniooni and ooniprobe for android/amd64.
+.PHONY: CLI/android-amd64
+CLI/android-amd64: search/for/go search/for/android/sdk maybe/copypsiphon
 	./CLI/go-build-android amd64 ./internal/cmd/miniooni
 	./CLI/go-build-android amd64 ./cmd/ooniprobe
+
+#help:
+#help: The `make CLI/android-arm` command builds miniooni and ooniprobe for android/arm.
+.PHONY: CLI/android-arm
+CLI/android-arm: search/for/go search/for/android/sdk maybe/copypsiphon
 	./CLI/go-build-android arm ./internal/cmd/miniooni
 	./CLI/go-build-android arm ./cmd/ooniprobe
+
+#help:
+#help: The `make CLI/android-arm64` command builds miniooni and ooniprobe for android/arm64.
+.PHONY: CLI/android-arm64
+CLI/android-arm64: search/for/go search/for/android/sdk maybe/copypsiphon
 	./CLI/go-build-android arm64 ./internal/cmd/miniooni
 	./CLI/go-build-android arm64 ./cmd/ooniprobe
 
