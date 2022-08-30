@@ -82,7 +82,7 @@ jobs:
 
       - uses: actions/download-artifact@v2
         with:
-          name: minioooni-windows-amd64.exe
+          name: miniooni-windows-amd64.exe
 
       - uses: actions/download-artifact@v2
         with:

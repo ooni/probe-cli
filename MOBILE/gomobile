@@ -42,6 +42,8 @@ else
 	OONI_PSIPHON_TAGS=""
 fi
 
+ANDROID_HOME=""
+ANDROID_NDK_HOME=""
 MAYBE_ANDROID_API=""
 if [[ $TARGET == "android" ]]; then
 	ANDROID_HOME=$(./MOBILE/android/home)

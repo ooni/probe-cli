@@ -128,7 +128,7 @@ MOBILE/android: search/for/go search/for/android/sdk maybe/copypsiphon
 #help:
 #help: The `make MOBILE/ios` command builds the oonimkall library for iOS.
 .PHONY: MOBILE/ios
-MOBILE/ios: search/for/go search/for/xcode maybe/copypsiphon
+MOBILE/ios: search/for/go search/for/zip search/for/xcode maybe/copypsiphon
 	./MOBILE/gomobile ios ./pkg/oonimkall
 	./MOBILE/ios/zipframework
 	./MOBILE/ios/createpodspec
