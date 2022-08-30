@@ -50,6 +50,20 @@ show-config:
 	@echo "OONI_PSIPHON_TAGS=$(OONI_PSIPHON_TAGS)"
 
 #help:
+#help: The `make ./CLI/android` command builds miniooni and ooniprobe for
+#help: all the supported Android architectures.
+.PHONY: ./CLI/android
+./CLI/android: search/for/go search/for/android/sdk maybe/copypsiphon
+	./CLI/go-build-android 386 ./internal/cmd/miniooni
+	./CLI/go-build-android 386 ./cmd/ooniprobe
+	./CLI/go-build-android amd64 ./internal/cmd/miniooni
+	./CLI/go-build-android amd64 ./cmd/ooniprobe
+	./CLI/go-build-android arm ./internal/cmd/miniooni
+	./CLI/go-build-android arm ./cmd/ooniprobe
+	./CLI/go-build-android arm64 ./internal/cmd/miniooni
+	./CLI/go-build-android arm64 ./cmd/ooniprobe
+
+#help:
 #help: The `make ./CLI/miniooni` command builds the miniooni experimental
 #help: command line client for all the supported GOOS/GOARCH.
 #help:
