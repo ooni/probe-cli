@@ -28,12 +28,12 @@ jobs:
 
       - uses: actions/cache@v3
         with:
-          path: ~/.ooniprobe-build/cache # how to get $HOME here?
+          path: ~/.ooniprobe-build/cache
           key: linux-build-cache-386
 
       - run: make CLI/linux-static-386
 
-      - run: ls -lha /home/runner/.ooniprobe-build/cache
+      - run: ls -lha ~/.ooniprobe-build/cache
 
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-386
 
