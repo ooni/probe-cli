@@ -1,0 +1,77 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [[ $# -ne 2 ]]; then
+	echo "" 1>&2
+	echo "Compiler for a Go PACKAGE producing android/ANDROIDARCH binaries." 1>&2
+	echo "" 1>&2
+	echo "usage: $0 ANDROIDARCH PACKAGE" 1>&2
+	echo "" 1>&2
+	echo "ANDROIDARCH must be one of: 386, amd64, arm, arm64." 1>&2
+	echo "" 1>&2
+	echo "Features:" 1>&2
+	echo "" 1>&2
+	echo "* automatically sets -tags=ooni_psiphon_config when possible;" 1>&2
+	echo "" 1>&2
+	echo "* if GOLANG_EXTRA_FLAGS is set, pass it to the Go compiler." 1>&2
+	echo "" 1>&2
+	echo "Example:" 1>&2
+	echo "" 1>&2
+	echo "  ./CLI/go-build-android arm ./internal/cmd/miniooni" 1>&2
+	echo "" 1>&2
+	exit 1
+fi
+
+GOOS=android
+ANDROIDARCH=$1
+PACKAGE=$2
+
+if [[ -f ./internal/engine/psiphon-config.json.age &&
+	-f ./internal/engine/psiphon-config.key ]]; then
+	OONI_PSIPHON_TAGS=ooni_psiphon_config
+else
+	OONI_PSIPHON_TAGS=""
+fi
+
+PRODUCT=$(basename $PACKAGE)
+
+ANDROID_HOME=$(./MOBILE/android/home)
+NDK_VERSION=$(cat NDKVERSION)
+ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION
+
+if [[ $ANDROIDARCH == arm ]]; then
+	GOARCH=arm
+	GOARM=7
+	CC=$(find $ANDROID_NDK_HOME -type f -name armv7a-linux-androideabi21-clang)
+	CXX=$(find $ANDROID_NDK_HOME -type f -name armv7a-linux-androideabi21-clang++)
+elif [[ $ANDROIDARCH == arm64 ]]; then
+	GOARCH=$ANDROIDARCH
+	GOARM=
+	CC=$(find $ANDROID_NDK_HOME -type f -name aarch64-linux-android21-clang)
+	CXX=$(find $ANDROID_NDK_HOME -type f -name aarch64-linux-android21-clang++)
+elif [[ $ANDROIDARCH == 386 ]]; then
+	GOARCH=$ANDROIDARCH
+	GOARM=
+	CC=$(find $ANDROID_NDK_HOME -type f -name i686-linux-android21-clang)
+	CXX=$(find $ANDROID_NDK_HOME -type f -name i686-linux-android21-clang++)
+elif [[ $ANDROIDARCH == amd64 ]]; then
+	GOARCH=$ANDROIDARCH
+	GOARM=
+	CC=$(find $ANDROID_NDK_HOME -type f -name x86_64-linux-android21-clang)
+	CXX=$(find $ANDROID_NDK_HOME -type f -name x86_64-linux-android21-clang++)
+else
+	echo "FATAL: invalid ANDROIDARCH: $ANDROIDARCH" 1>&2
+	exit 1
+fi
+
+set -x
+export CC=$CC
+export CXX=$CXX
+export CGO_ENABLED=1
+export GOOS=$GOOS
+export GOARCH=$GOARCH
+export GOARM=$GOARM
+go build -tags=$OONI_PSIPHON_TAGS -ldflags="-s -w" \
+	-o ./CLI/$PRODUCT-$GOOS-$ANDROIDARCH ${GOLANG_EXTRA_FLAGS:-} \
+	$PACKAGE
