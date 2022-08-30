@@ -26,9 +26,13 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
+      - name: Get HOME value
+        id: homedir
+        run: echo ::set-output name=home::$HOME
+
       - uses: actions/cache@v3
         with:
-          path: ${{ env.HOME }}/.ooniprobe-build/cache
+          path: ${{ steps.homedir.home }}/.ooniprobe-build/cache
           key: linux-build-cache-386
 
       - run: make CLI/linux-static-386
@@ -45,6 +49,7 @@ jobs:
     permissions: # See https://github.com/ooni/probe/issues/2154
       contents: write
     steps:
+      - run: exit 1
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -74,6 +79,7 @@ jobs:
     permissions: # See https://github.com/ooni/probe/issues/2154
       contents: write
     steps:
+      - run: exit 1
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -107,6 +113,7 @@ jobs:
     permissions: # See https://github.com/ooni/probe/issues/2154
       contents: write
     steps:
+      - run: exit 1
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -140,6 +147,7 @@ jobs:
     permissions: # See https://github.com/ooni/probe/issues/2154
       contents: write
     steps:
+      - run: exit 1
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
