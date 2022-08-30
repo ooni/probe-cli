@@ -26,19 +26,9 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - name: Get HOME value
-        id: homedir
-        run: |
-          echo ::set-output name=home::$HOME
-
-      - run: |
-          echo $HOME
-
-      - run: exit 1
-
       - uses: actions/cache@v3
         with:
-          path: ${{ steps.homedir.home }}/.ooniprobe-build/cache
+          path: /home/runner/.ooniprobe-build/cache # how to get $HOME here?
           key: linux-build-cache-386
 
       - run: make CLI/linux-static-386
