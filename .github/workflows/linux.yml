@@ -28,12 +28,10 @@ jobs:
 
       - uses: actions/cache@v3
         with:
-          path: ~/.ooniprobe-build/cache
+          path: GOCACHE
           key: linux-build-cache-386
 
       - run: make CLI/linux-static-386
-
-      - run: ls -lha ~/.ooniprobe-build/cache
 
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-386
 
@@ -60,7 +58,7 @@ jobs:
 
       - uses: actions/cache@v3
         with:
-          path: /home/runner/.ooniprobe-build/cache # how to get $HOME here?
+          path: GOCACHE
           key: linux-build-cache-amd64
 
       - run: make CLI/linux-static-amd64
