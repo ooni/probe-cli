@@ -45,7 +45,6 @@ jobs:
     permissions: # See https://github.com/ooni/probe/issues/2154
       contents: write
     steps:
-      - run: exit 1
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -59,7 +58,7 @@ jobs:
 
       - uses: actions/cache@v3
         with:
-          path: ${{ env.HOME }}/.ooniprobe-build/cache
+          path: /home/runner/.ooniprobe-build/cache # how to get $HOME here?
           key: linux-build-cache-amd64
 
       - run: make CLI/linux-static-amd64
