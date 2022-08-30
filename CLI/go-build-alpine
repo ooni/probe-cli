@@ -1,6 +1,8 @@
 #!/bin/sh
 set -euxo pipefail
-git config --global --add safe.directory $(pwd)
+# We need to force git, used by go to generate build info. Without the
+# following setting, we see git complaining about dubious ownership.
+#git config --global --add safe.directory $(pwd)
 # Some of the following exports are redundant but are however
 # useful because they provide explicit logging
 export CGO_ENABLED=1
