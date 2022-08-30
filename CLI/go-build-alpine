@@ -12,6 +12,9 @@ export CGO_ENABLED=1
 export GOARM=$GOARM
 export GOOS=$GOOS
 export GOARCH=$GOARCH
-go build -o ./CLI/$PRODUCT-$GOOS-$OONIARCH \
-	-ldflags='-s -w -extldflags "-static"' \
-	$GOLANG_EXTRA_FLAGS $PACKAGE
+for PACKAGE in $@; do
+	PRODUCT=$(basename $PACKAGE)
+	go build -o ./CLI/$PRODUCT-$GOOS-$OONIARCH \
+		-ldflags='-s -w -extldflags "-static"' \
+		$GOLANG_EXTRA_FLAGS $PACKAGE
+done

@@ -34,7 +34,7 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - run: make EXPECTED_XCODE_VERSION=12.4 ./MOBILE/ios
+      - run: make EXPECTED_XCODE_VERSION=12.4 MOBILE/ios
 
       - run: |
           tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
