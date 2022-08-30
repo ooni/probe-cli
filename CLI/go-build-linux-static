@@ -77,7 +77,7 @@ mkdir -p $OOGOCACHEDIR
 docker pull --platform linux/$DOCKER_ARCH $GOLANG_DOCKER_IMAGE
 
 if ! docker inspect --type=image $TAGGED_IMAGE 1>/dev/null 2>/dev/null; then
-	docker build -t $TAGGED_IMAGE CLI
+	docker build --platform linux/$DOCKER_ARCH -t $TAGGED_IMAGE CLI
 fi
 
 docker run --platform linux/$DOCKER_ARCH $DOCKER_USER_OPTS \

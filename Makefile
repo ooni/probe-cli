@@ -35,7 +35,7 @@ GIT_CLONE_DIR = $(HOME)/.ooniprobe-build/src
 #help:                             when building using Docker. By default this
 #help:                             is set to `$HOME/.ooniprobe-build/cache`
 #help:
-OONI_GO_DOCKER_GOCACHE = $(HOME)/.ooniprobe-build/cache
+OONI_GO_DOCKER_GOCACHE = $$(pwd)/GOCACHE
 
 #help:
 #help: * OONI_PSIPHON_TAGS       : build tags for `go build -tags ...` that cause
