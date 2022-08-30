@@ -33,6 +33,8 @@ jobs:
 
       - run: make CLI/linux-static-386
 
+      - run: ls -lha /home/runner/.ooniprobe-build/cache
+
       - run: ./E2E/ooniprobe.sh ./CLI/ooniprobe-linux-386
 
       - run: ./script/ghpublish.bash ./CLI/ooniprobe-linux-386 ./CLI/miniooni-linux-386
