@@ -10,17 +10,15 @@
 The official spec for OONI Run v2 is under review as [ooni/spec#249](
 https://github.com/ooni/spec/pull/249). We want to start experimenting
 with OONI Run v2 before such a spec has been finalized.
-
 This document, in particular, describes a "mini" OONI Run v2 where
 `miniooni` users can run arbitrary OONI Run v2 "descriptors" (see below
 for a definition).
-
 When [ooni/spec#249](https://github.com/ooni/spec/pull/249) is merged,
 it will automatically supersede this document. The main idea of this
 document is just to explain the subset of OONI Run v2 implemented inside
 the `miniooni` research tool _until_ we have a complete spec.
 
-## Problem statement
+## Overview
 
 OONI Run v1 links do not support passing options to experiments and
 often times are longer than the maximum message size on, for example,
@@ -71,8 +69,7 @@ inside of the experiment's options, which you can see with `./miniooni <experime
 
 - `"test_name"` is the `<experiment>` string you would use in `./miniooni <experiment>`.
 
-(For historical reasons, we use the terms "experiment", "test", and "nettest"
-interchangeably to refer to the network tests run by OONI.)
+(For historical reasons, "experiment", "test", and "nettest" are synonymous.)
 
 ## Functionality
 
@@ -91,13 +88,11 @@ options and inputs.
 
 The OONI engine stores the content of each descriptor inside a cache on disk
 inside the `$OONI_HOME` of `miniooni` (generally `$HOME/.miniooni/`).
-
 Conceptually, this cache is a map from the descriptor URL to the latest known content
 of the descriptor. (The actual implementation _may_ differ.)
 
 On the first run, or when the descriptor has changed, `miniooni` refuses to run,
 shows what changed, and asks the user for confirmation.
-
 There's also a mechanism to bypass asking for confirmation that explicitly requires a
 user to add `-y` or `--yes` to the command line to automatically answer "yes" to
 all questions. (This is useful when, for example, you're running your own descriptors.)
