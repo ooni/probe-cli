@@ -43,9 +43,7 @@ type Options struct {
 	Yes              bool
 }
 
-// main is the main function of miniooni. This function parses the command line
-// options and uses a global state. Use MainWithConfiguration if you want to avoid
-// using any global state and relying on command line options.
+// main is the main function of miniooni.
 func main() {
 	var globalOptions Options
 	rootCmd := &cobra.Command{
