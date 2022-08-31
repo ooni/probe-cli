@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -20,15 +20,18 @@ var newfailure = tracex.NewFailure
 
 // ctrlDNSResult is the result of the DNS check performed by
 // the Web Connectivity test helper.
-type ctrlDNSResult = webconnectivity.ControlDNSResult
+type ctrlDNSResult = model.THDNSResult
 
 // dnsConfig configures the DNS check.
 type dnsConfig struct {
 	// Domain is the MANDATORY domain to resolve.
 	Domain string
 
+	// Logger is the MANDATORY logger to use.
+	Logger model.Logger
+
 	// NewResolver is the MANDATORY factory to create a new resolver.
-	NewResolver func() model.Resolver
+	NewResolver func(model.Logger) model.Resolver
 
 	// Out is the channel where we publish the results.
 	Out chan ctrlDNSResult
@@ -43,9 +46,11 @@ func dnsDo(ctx context.Context, config *dnsConfig) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	defer config.Wg.Done()
-	reso := config.NewResolver()
+	reso := config.NewResolver(config.Logger)
 	defer reso.CloseIdleConnections()
+	ol := measurexlite.NewOperationLogger(config.Logger, "DNSLookup %s", config.Domain)
 	addrs, err := reso.LookupHost(ctx, config.Domain)
+	ol.Stop(err)
 	if addrs == nil {
 		addrs = []string{} // fix: the old test helper did that
 	}
@@ -70,7 +75,7 @@ func dnsMapFailure(failure *string) *string {
 		case netxlite.FailureDNSNXDOMAINError:
 			// We have a name for this string because dnsanalysis.go is
 			// already checking for this specific error string.
-			s := webconnectivity.DNSNameError
+			s := model.THDNSNameError
 			return &s
 		case netxlite.FailureDNSNoAnswer:
 			// In this case the legacy TH would produce an empty

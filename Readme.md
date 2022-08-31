@@ -113,5 +113,5 @@ Create an issue according to [the routine release template](
 https://github.com/ooni/probe/blob/master/.github/ISSUE_TEMPLATE/routine-sprint-releases.md)
 and perform any item inside the check-list.
 
-We build releases using [Makefile](Makefile), which requires GNU make. The
-`make help|less` provides detailed usage.
+We build releases using [Makefile](Makefile), which requires GNU make. Run
+`make help` for detailed usage.

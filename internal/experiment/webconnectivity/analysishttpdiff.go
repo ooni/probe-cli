@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
@@ -208,7 +209,7 @@ func (tk *TestKeys) httpDiffTitleMatch(
 	}
 	control := ctrl.Title
 	measurementBody := response.Body.Value
-	measurement := webconnectivity.GetTitle(measurementBody)
+	measurement := measurexlite.WebGetTitle(measurementBody)
 	if control == "" || measurement == "" {
 		return
 	}

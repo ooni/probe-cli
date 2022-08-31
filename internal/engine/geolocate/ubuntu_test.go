@@ -27,7 +27,7 @@ func TestUbuntuParseError(t *testing.T) {
 	if err == nil || !strings.HasPrefix(err.Error(), "XML syntax error") {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
-	if ip != DefaultProbeIP {
+	if ip != model.DefaultProbeIP {
 		t.Fatalf("not the expected IP address: %s", ip)
 	}
 }

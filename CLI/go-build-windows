@@ -51,5 +51,5 @@ export CGO_ENABLED=1
 export GOOS=$GOOS
 export GOARCH=$GOARCH
 go build -tags=$OONI_PSIPHON_TAGS -ldflags="-s -w" \
-	-o ./CLI/$PRODUCT-$GOOS-$GOARCH ${GOLANG_EXTRA_FLAGS:-} \
+	-o ./CLI/$PRODUCT-$GOOS-$GOARCH.exe ${GOLANG_EXTRA_FLAGS:-} \
 	$PACKAGE

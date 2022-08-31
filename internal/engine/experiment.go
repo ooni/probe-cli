@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/bytecounter"
-	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
 	"github.com/ooni/probe-cli/v3/internal/engine/probeservices"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/version"
@@ -199,7 +198,7 @@ func (e *experiment) newMeasurement(input string) *model.Measurement {
 		Input:                     model.MeasurementTarget(input),
 		MeasurementStartTime:      utctimenow.Format(dateFormat),
 		MeasurementStartTimeSaved: utctimenow,
-		ProbeIP:                   geolocate.DefaultProbeIP,
+		ProbeIP:                   model.DefaultProbeIP,
 		ProbeASN:                  e.session.ProbeASNString(),
 		ProbeCC:                   e.session.ProbeCC(),
 		ProbeNetworkName:          e.session.ProbeNetworkName(),

@@ -20,8 +20,9 @@ func TestHTTPDoWithInvalidURL(t *testing.T) {
 	wg.Add(1)
 	go httpDo(ctx, &httpConfig{
 		Headers:           nil,
+		Logger:            model.DiscardLogger,
 		MaxAcceptableBody: 1 << 24,
-		NewClient: func() model.HTTPClient {
+		NewClient: func(model.Logger) model.HTTPClient {
 			return http.DefaultClient
 		},
 		Out: httpch,
@@ -44,8 +45,9 @@ func TestHTTPDoWithHTTPTransportFailure(t *testing.T) {
 	wg.Add(1)
 	go httpDo(ctx, &httpConfig{
 		Headers:           nil,
+		Logger:            model.DiscardLogger,
 		MaxAcceptableBody: 1 << 24,
-		NewClient: func() model.HTTPClient {
+		NewClient: func(model.Logger) model.HTTPClient {
 			return &http.Client{
 				Transport: &mocks.HTTPTransport{
 					MockRoundTrip: func(req *http.Request) (*http.Response, error) {

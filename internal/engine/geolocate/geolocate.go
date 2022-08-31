@@ -10,37 +10,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/version"
 )
 
-const (
-	// DefaultProbeASN is the default probe ASN as a number.
-	DefaultProbeASN uint = 0
-
-	// DefaultProbeCC is the default probe CC.
-	DefaultProbeCC = "ZZ"
-
-	// DefaultProbeIP is the default probe IP.
-	DefaultProbeIP = model.DefaultProbeIP
-
-	// DefaultProbeNetworkName is the default probe network name.
-	DefaultProbeNetworkName = ""
-
-	// DefaultResolverASN is the default resolver ASN.
-	DefaultResolverASN uint = 0
-
-	// DefaultResolverIP is the default resolver IP.
-	DefaultResolverIP = "127.0.0.2"
-
-	// DefaultResolverNetworkName is the default resolver network name.
-	DefaultResolverNetworkName = ""
-)
-
-var (
-	// DefaultProbeASNString is the default probe ASN as a string.
-	DefaultProbeASNString = fmt.Sprintf("AS%d", DefaultProbeASN)
-
-	// DefaultResolverASNString is the default resolver ASN as a string.
-	DefaultResolverASNString = fmt.Sprintf("AS%d", DefaultResolverASN)
-)
-
 // Results contains geolocate results.
 type Results struct {
 	// ASN is the autonomous system number.
@@ -139,13 +108,13 @@ type Task struct {
 func (op Task) Run(ctx context.Context) (*Results, error) {
 	var err error
 	out := &Results{
-		ASN:                 DefaultProbeASN,
-		CountryCode:         DefaultProbeCC,
-		NetworkName:         DefaultProbeNetworkName,
-		ProbeIP:             DefaultProbeIP,
-		ResolverASN:         DefaultResolverASN,
-		ResolverIP:          DefaultResolverIP,
-		ResolverNetworkName: DefaultResolverNetworkName,
+		ASN:                 model.DefaultProbeASN,
+		CountryCode:         model.DefaultProbeCC,
+		NetworkName:         model.DefaultProbeNetworkName,
+		ProbeIP:             model.DefaultProbeIP,
+		ResolverASN:         model.DefaultResolverASN,
+		ResolverIP:          model.DefaultResolverIP,
+		ResolverNetworkName: model.DefaultResolverNetworkName,
 	}
 	ip, err := op.probeIPLookupper.LookupProbeIP(ctx)
 	if err != nil {

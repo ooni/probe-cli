@@ -1,12 +1,6 @@
 package measurex
 
-// NewFailure creates a serializable failure from an error. We
-// cannot round trip an error using JSON, so we serialize to this
-// intermediate format that is a sort of Optional<string>.
-func NewFailure(err error) *string {
-	if err == nil {
-		return nil
-	}
-	s := err.Error()
-	return &s
-}
+import "github.com/ooni/probe-cli/v3/internal/measurexlite"
+
+// NewFailure is an alias for  measurexlite.NewFailure
+var NewFailure = measurexlite.NewFailure

@@ -36,7 +36,7 @@ func TestIPLookupAllFailed(t *testing.T) {
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("expected an error here")
 	}
-	if ip != DefaultProbeIP {
+	if ip != model.DefaultProbeIP {
 		t.Fatal("expected the default IP here")
 	}
 }
@@ -51,7 +51,7 @@ func TestIPLookupInvalidIP(t *testing.T) {
 	if !errors.Is(err, ErrInvalidIPAddress) {
 		t.Fatal("expected an error here")
 	}
-	if ip != DefaultProbeIP {
+	if ip != model.DefaultProbeIP {
 		t.Fatal("expected the default IP here")
 	}
 }
