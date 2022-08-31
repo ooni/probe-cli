@@ -208,6 +208,8 @@ func CanonicalizeExperimentName(name string) string {
 		name = "dnscheck"
 	case "stun_reachability":
 		name = "stunreachability"
+	case "web_connectivity@v_0_5":
+		name = "web_connectivity@v0.5"
 	default:
 	}
 	return name
