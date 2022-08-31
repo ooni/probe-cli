@@ -16,3 +16,10 @@ var Ports = []string{
 	":587", // tcp
 	":993", // tcp
 }
+
+// Ports for testing the testhelper
+// Note: we must only use unprivileged ports here to ensure tests run successfully
+var TestPorts = []string{
+	":8080", //tcp
+	":5050", //tcp
+}

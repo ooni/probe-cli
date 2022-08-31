@@ -13,9 +13,11 @@ import (
 )
 
 var (
-	srvCtx    context.Context
-	srvCancel context.CancelFunc
-	srvWg     = new(sync.WaitGroup)
+	srvCtx      context.Context
+	srvCancel   context.CancelFunc
+	srvWg       = new(sync.WaitGroup)
+	srvTestChan = make(chan string, len(TestPorts)) // buffered channel for testing
+	srvTest     bool
 )
 
 func init() {
@@ -42,10 +44,12 @@ func listenTCP(ctx context.Context, port string) {
 		runtimex.PanicOnError(err, "net.Listen failed")
 	}
 	go shutdown(ctx, listener)
+	srvTestChan <- port // send to channel to imply server will start listening on port
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			runtimex.PanicOnError(err, "listener.Accept failed")
+			log.Infof("listener unable to accept connections on port%s", port)
+			return
 		}
 		go handleConnetion(ctx, conn)
 	}
@@ -60,12 +64,16 @@ func main() {
 	flag.Parse()
 	log.SetLevel(logmap[*debug])
 	defer srvCancel()
-	for _, port := range Ports {
+	ports := Ports
+	if srvTest {
+		ports = TestPorts
+	}
+	for _, port := range ports {
 		srvWg.Add(1)
 		ctx, cancel := context.WithCancel(srvCtx)
 		defer cancel()
 		go listenTCP(ctx, port)
 	}
 	<-srvCtx.Done()
-	srvWg.Wait()
+	srvWg.Wait() // wait for listeners on all ports to close
 }
