@@ -299,7 +299,7 @@ type Saver interface {
 	SaveMeasurement(m *Measurement) error
 }
 
-// ExperimentInputProcessor processes inputs running the given experiment.
+// ExperimentInputProcessor processes inputs for an experiment.
 type ExperimentInputProcessor interface {
 	Run(ctx context.Context) error
 }
