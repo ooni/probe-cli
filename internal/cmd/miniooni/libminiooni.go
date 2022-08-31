@@ -62,7 +62,7 @@ func main() {
 		"annotation",
 		"A",
 		[]string{},
-		"add KEY=VALUE annotation to the report",
+		"add KEY=VALUE annotation to the report (can be repeated multiple times)",
 	)
 
 	flags.StringVar(
@@ -99,14 +99,14 @@ func main() {
 		&globalOptions.Proxy,
 		"proxy",
 		"",
-		"set proxy URL to communicate with the OONI backend",
+		"set proxy URL to communicate with the OONI backend (mutually exclusive with --tunnel)",
 	)
 
 	flags.Int64Var(
 		&globalOptions.RepeatEvery,
 		"repeat-every",
 		0,
-		"wait the given number of seconds and then measure again",
+		"wait the given number of seconds and then repeat the same measurement",
 	)
 
 	flags.StringVarP(
@@ -114,7 +114,7 @@ func main() {
 		"reportfile",
 		"o",
 		"",
-		"set the output report file path (default report.jsonl)",
+		"set the output report file path (default: \"report.jsonl\")",
 	)
 
 	flags.StringSliceVar(
@@ -179,7 +179,7 @@ func main() {
 				"input-file",
 				"f",
 				[]string{},
-				"path to input file to supply test dependent input.",
+				"path to file to supply test dependent input (may be specified multiple times)",
 			)
 
 			flags.StringSliceVarP(
@@ -187,21 +187,21 @@ func main() {
 				"input",
 				"i",
 				[]string{},
-				"add test-dependent input",
+				"add test-dependent input (may be specified multiple times)",
 			)
 
 			flags.Int64Var(
 				&globalOptions.MaxRuntime,
 				"max-runtime",
 				0,
-				"maximum runtime in seconds (zero means infinite)",
+				"maximum runtime in seconds for the experiment (zero means infinite)",
 			)
 
 			flags.BoolVar(
 				&globalOptions.Random,
 				"random",
 				false,
-				"randomize inputs",
+				"randomize the inputs list",
 			)
 
 		default:
