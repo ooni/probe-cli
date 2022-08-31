@@ -208,6 +208,8 @@ func CanonicalizeExperimentName(name string) string {
 		name = "dnscheck"
 	case "stun_reachability":
 		name = "stunreachability"
+	case "web_connectivity@v_0_5":
+		name = "web_connectivity@v0.5"
 	default:
 	}
 	return name
@@ -216,7 +218,7 @@ func CanonicalizeExperimentName(name string) string {
 // NewFactory creates a new Factory instance.
 func NewFactory(name string) (*Factory, error) {
 	name = CanonicalizeExperimentName(name)
-	factory := allexperiments[name]
+	factory := AllExperiments[name]
 	if factory == nil {
 		return nil, fmt.Errorf("no such experiment: %s", name)
 	}

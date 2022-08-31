@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["web_connectivity"] = &Factory{
+	AllExperiments["web_connectivity"] = &Factory{
 		build: func(config any) model.ExperimentMeasurer {
 			return webconnectivity.NewExperimentMeasurer(
 				config.(webconnectivity.Config),

@@ -12,9 +12,7 @@ import (
 )
 
 func init() {
-	// Note: the name inserted into the table is the canonicalized experiment
-	// name though we advertise using `web_connectivity@v0.5`.
-	allexperiments["web_connectivity@v_0_5"] = &Factory{
+	AllExperiments["web_connectivity@v0.5"] = &Factory{
 		build: func(config any) model.ExperimentMeasurer {
 			return webconnectivity.NewExperimentMeasurer(
 				config.(*webconnectivity.Config),

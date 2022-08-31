@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["stunreachability"] = &Factory{
+	AllExperiments["stunreachability"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return stunreachability.NewExperimentMeasurer(
 				*config.(*stunreachability.Config),

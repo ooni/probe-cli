@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["tlstool"] = &Factory{
+	AllExperiments["tlstool"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return tlstool.NewExperimentMeasurer(
 				*config.(*tlstool.Config),

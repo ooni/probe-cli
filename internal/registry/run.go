@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["run"] = &Factory{
+	AllExperiments["run"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return run.NewExperimentMeasurer(
 				*config.(*run.Config),

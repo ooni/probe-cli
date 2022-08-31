@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["dnsping"] = &Factory{
+	AllExperiments["dnsping"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return dnsping.NewExperimentMeasurer(
 				*config.(*dnsping.Config),
