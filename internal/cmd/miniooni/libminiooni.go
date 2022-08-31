@@ -156,13 +156,49 @@ func main() {
 
 	rootCmd.MarkFlagsMutuallyExclusive("proxy", "tunnel")
 
+	registerAllExperiments(rootCmd, &globalOptions)
+	registerOONIRun(rootCmd, &globalOptions)
+
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+// TODO(bassosimone): the current implementation is basically a cobra application
+// where we hammered the previous miniooni code to make it work. We should
+// obviously strive for more correctness. For example, it's a bit disgusting
+// that MainWithConfiguration is invoked for both oonirun and random experiments.
+
+// registerOONIRun registers the oonirun subcommand
+func registerOONIRun(rootCmd *cobra.Command, globalOptions *Options) {
+	subCmd := &cobra.Command{
+		Use:   "oonirun",
+		Short: "Runs a given OONI Run v2 link",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			MainWithConfiguration(cmd.Use, globalOptions)
+		},
+	}
+	rootCmd.AddCommand(subCmd)
+	flags := subCmd.Flags()
+	flags.StringSliceVarP(
+		&globalOptions.Inputs,
+		"input",
+		"i",
+		[]string{},
+		"URL of the OONI Run v2 descriptor to run (may be specified multiple times)",
+	)
+}
+
+// registerAllExperiments registers a subcommand for each experiment
+func registerAllExperiments(rootCmd *cobra.Command, globalOptions *Options) {
 	for name, factory := range registry.AllExperiments {
 		subCmd := &cobra.Command{
 			Use:   name,
 			Short: fmt.Sprintf("Runs the %s experiment", name),
 			Args:  cobra.NoArgs,
 			Run: func(cmd *cobra.Command, args []string) {
-				MainWithConfiguration(cmd.Use, &globalOptions)
+				MainWithConfiguration(cmd.Use, globalOptions)
 			},
 		}
 		rootCmd.AddCommand(subCmd)
@@ -217,10 +253,6 @@ func main() {
 				doc,
 			)
 		}
-	}
-
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
 	}
 }
 
