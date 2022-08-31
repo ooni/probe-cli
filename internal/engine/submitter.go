@@ -9,12 +9,8 @@ import (
 // TODO(bassosimone): maybe keep track of which measurements
 // could not be submitted by a specific submitter?
 
-// Submitter submits a measurement to the OONI collector.
-type Submitter interface {
-	// Submit submits the measurement and updates its
-	// report ID field in case of success.
-	Submit(ctx context.Context, m *model.Measurement) error
-}
+// Submitter is an alias for model.Submitter
+type Submitter = model.Submitter
 
 // SubmitterSession is the Submitter's view of the Session.
 type SubmitterSession interface {

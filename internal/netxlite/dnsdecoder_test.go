@@ -613,9 +613,9 @@ func dnsGenLookupHostReplySuccess(rawQuery []byte, cname *dnsCNAMEAnswer, ips ..
 	query := new(dns.Msg)
 	err := query.Unpack(rawQuery)
 	runtimex.PanicOnError(err, "query.Unpack failed")
-	runtimex.PanicIfFalse(len(query.Question) == 1, "more than one question")
+	runtimex.Assert(len(query.Question) == 1, "more than one question")
 	question := query.Question[0]
-	runtimex.PanicIfFalse(
+	runtimex.Assert(
 		question.Qtype == dns.TypeA || question.Qtype == dns.TypeAAAA,
 		"invalid query type (expected A or AAAA)",
 	)
@@ -669,9 +669,9 @@ func dnsGenHTTPSReplySuccess(rawQuery []byte, alpns, ipv4s, ipv6s []string) []by
 	query := new(dns.Msg)
 	err := query.Unpack(rawQuery)
 	runtimex.PanicOnError(err, "query.Unpack failed")
-	runtimex.PanicIfFalse(len(query.Question) == 1, "expected just a single question")
+	runtimex.Assert(len(query.Question) == 1, "expected just a single question")
 	question := query.Question[0]
-	runtimex.PanicIfFalse(question.Qtype == dns.TypeHTTPS, "expected HTTPS query")
+	runtimex.Assert(question.Qtype == dns.TypeHTTPS, "expected HTTPS query")
 	reply := new(dns.Msg)
 	reply.Compress = true
 	reply.MsgHdr.RecursionAvailable = true
@@ -716,9 +716,9 @@ func dnsGenNSReplySuccess(rawQuery []byte, names ...string) []byte {
 	query := new(dns.Msg)
 	err := query.Unpack(rawQuery)
 	runtimex.PanicOnError(err, "query.Unpack failed")
-	runtimex.PanicIfFalse(len(query.Question) == 1, "more than one question")
+	runtimex.Assert(len(query.Question) == 1, "more than one question")
 	question := query.Question[0]
-	runtimex.PanicIfFalse(question.Qtype == dns.TypeNS, "expected NS query")
+	runtimex.Assert(question.Qtype == dns.TypeNS, "expected NS query")
 	reply := new(dns.Msg)
 	reply.Compress = true
 	reply.MsgHdr.RecursionAvailable = true

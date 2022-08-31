@@ -33,7 +33,7 @@ func NewFailureStr(err error) FailureStr {
 	if !errors.As(err, &errWrapper) {
 		err := netxlite.NewTopLevelGenericErrWrapper(err)
 		couldConvert := errors.As(err, &errWrapper)
-		runtimex.PanicIfFalse(couldConvert, "we should have an ErrWrapper here")
+		runtimex.Assert(couldConvert, "we should have an ErrWrapper here")
 	}
 	s := errWrapper.Failure
 	if s == "" {

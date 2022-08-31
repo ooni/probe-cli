@@ -11,6 +11,8 @@ import (
 )
 
 // Session allows to mock sessions.
+//
+// Deprecated: use ./internal/model/mocks.Session instead.
 type Session struct {
 	MockableTestHelpers              map[string][]model.OOAPIService
 	MockableHTTPClient               model.HTTPClient

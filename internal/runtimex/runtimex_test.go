@@ -28,17 +28,17 @@ func TestPanicOnError(t *testing.T) {
 	})
 }
 
-func TestPanicIfFalse(t *testing.T) {
+func TestAssert(t *testing.T) {
 	badfunc := func(in bool, message string) (out error) {
 		defer func() {
 			out = errors.New(recover().(string))
 		}()
-		runtimex.PanicIfFalse(in, message)
+		runtimex.Assert(in, message)
 		return
 	}
 
 	t.Run("assertion is true", func(t *testing.T) {
-		runtimex.PanicIfFalse(true, "this assertion should not fail")
+		runtimex.Assert(true, "this assertion should not fail")
 	})
 
 	t.Run("assertion is false", func(t *testing.T) {
