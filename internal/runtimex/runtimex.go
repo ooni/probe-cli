@@ -11,8 +11,8 @@ func PanicOnError(err error, message string) {
 	}
 }
 
-// PanicIfFalse calls panic if assertion is false.
-func PanicIfFalse(assertion bool, message string) {
+// Assert calls panic if assertion is false.
+func Assert(assertion bool, message string) {
 	if !assertion {
 		panic(message)
 	}
@@ -20,7 +20,7 @@ func PanicIfFalse(assertion bool, message string) {
 
 // PanicIfTrue calls panic if assertion is true.
 func PanicIfTrue(assertion bool, message string) {
-	PanicIfFalse(!assertion, message)
+	Assert(!assertion, message)
 }
 
 // PanicIfNil calls panic if the given interface is nil.

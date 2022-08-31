@@ -10,12 +10,10 @@ import (
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
+	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
-
-// TODO(bassosimone): it would be cool to write unit tests. However, to do that
-// we need to ~redesign the engine package for unit-testability.
 
 func TestOONIRunV2LinkCommonCase(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +46,7 @@ func TestOONIRunV2LinkCommonCase(t *testing.T) {
 		NoJSON:      true,
 		Random:      false,
 		ReportFile:  "",
-		Session:     newSession(ctx, t),
+		Session:     newMinimalFakeSession(),
 	}
 	r := NewLinkRunner(config, server.URL)
 	if err := r.Run(ctx); err != nil {
@@ -95,7 +93,7 @@ func TestOONIRunV2LinkCannotUpdateCache(t *testing.T) {
 		NoJSON:      true,
 		Random:      false,
 		ReportFile:  "",
-		Session:     newSession(ctx, t),
+		Session:     newMinimalFakeSession(),
 	}
 	r := NewLinkRunner(config, server.URL)
 	err := r.Run(ctx)
@@ -135,7 +133,7 @@ func TestOONIRunV2LinkWithoutAcceptChanges(t *testing.T) {
 		NoJSON:      true,
 		Random:      false,
 		ReportFile:  "",
-		Session:     newSession(ctx, t),
+		Session:     newMinimalFakeSession(),
 	}
 	r := NewLinkRunner(config, server.URL)
 	err := r.Run(ctx)
@@ -161,7 +159,7 @@ func TestOONIRunV2LinkNilDescriptor(t *testing.T) {
 		NoJSON:      true,
 		Random:      false,
 		ReportFile:  "",
-		Session:     newSession(ctx, t),
+		Session:     newMinimalFakeSession(),
 	}
 	r := NewLinkRunner(config, server.URL)
 	if err := r.Run(ctx); err != nil {
@@ -170,6 +168,7 @@ func TestOONIRunV2LinkNilDescriptor(t *testing.T) {
 }
 
 func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
+	emptyTestNamesPrev := v2CountEmptyNettestNames.Load()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		descriptor := &v2Descriptor{
 			Name:        "",
@@ -200,14 +199,14 @@ func TestOONIRunV2LinkEmptyTestName(t *testing.T) {
 		NoJSON:      true,
 		Random:      false,
 		ReportFile:  "",
-		Session:     newSession(ctx, t),
+		Session:     newMinimalFakeSession(),
 	}
 	r := NewLinkRunner(config, server.URL)
 	if err := r.Run(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if v2CountEmptyNettestNames.Load() != 1 {
-		t.Fatal("expected to see 1 instance of empty nettest names")
+	if v2CountEmptyNettestNames.Load() != emptyTestNamesPrev+1 {
+		t.Fatal("expected to see 1 more instance of empty nettest names")
 	}
 }
 
@@ -218,6 +217,74 @@ func TestV2MeasureDescriptor(t *testing.T) {
 		err := v2MeasureDescriptor(ctx, config, nil)
 		if !errors.Is(err, ErrNilDescriptor) {
 			t.Fatal("unexpected err", err)
+		}
+	})
+
+	t.Run("with failing experiment", func(t *testing.T) {
+		previousFailedExperiments := v2CountFailedExperiments.Load()
+		expected := errors.New("mocked error")
+		ctx := context.Background()
+		sess := newMinimalFakeSession()
+		sess.MockNewSubmitter = func(ctx context.Context) (model.Submitter, error) {
+			subm := &mocks.Submitter{
+				MockSubmit: func(ctx context.Context, m *model.Measurement) error {
+					return errors.New("should not be called")
+				},
+			}
+			return subm, nil
+		}
+		sess.MockNewExperimentBuilder = func(name string) (model.ExperimentBuilder, error) {
+			eb := &mocks.ExperimentBuilder{
+				MockInputPolicy: func() model.InputPolicy {
+					return model.InputNone
+				},
+				MockSetOptionsAny: func(options map[string]any) error {
+					return nil
+				},
+				MockNewExperiment: func() model.Experiment {
+					exp := &mocks.Experiment{
+						MockMeasureAsync: func(ctx context.Context, input string) (<-chan *model.Measurement, error) {
+							return nil, expected
+						},
+						MockKibiBytesReceived: func() float64 {
+							return 1.1
+						},
+						MockKibiBytesSent: func() float64 {
+							return 0.1
+						},
+					}
+					return exp
+				},
+			}
+			return eb, nil
+		}
+		config := &LinkConfig{
+			AcceptChanges: false,
+			Annotations:   map[string]string{},
+			KVStore:       nil,
+			MaxRuntime:    0,
+			NoCollector:   false,
+			NoJSON:        false,
+			Random:        false,
+			ReportFile:    "",
+			Session:       sess,
+		}
+		descr := &v2Descriptor{
+			Name:        "",
+			Description: "",
+			Author:      "",
+			Nettests: []v2Nettest{{
+				Inputs:   []string{},
+				Options:  map[string]any{},
+				TestName: "example",
+			}},
+		}
+		err := v2MeasureDescriptor(ctx, config, descr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if v2CountFailedExperiments.Load() != previousFailedExperiments+1 {
+			t.Fatal("expected to see a failed experiment")
 		}
 	})
 }
@@ -239,7 +306,7 @@ func TestV2MeasureHTTPS(t *testing.T) {
 			NoJSON:      false,
 			Random:      false,
 			ReportFile:  "",
-			Session:     newSession(ctx, t),
+			Session:     newMinimalFakeSession(),
 		}
 		err := v2MeasureHTTPS(ctx, config, "")
 		if !errors.Is(err, expected) {
@@ -259,7 +326,7 @@ func TestV2MeasureHTTPS(t *testing.T) {
 			NoJSON:        false,
 			Random:        false,
 			ReportFile:    "",
-			Session:       newSession(ctx, t),
+			Session:       newMinimalFakeSession(),
 		}
 		err := v2MeasureHTTPS(ctx, config, "https://example.com") // should not use URL
 		if !errors.Is(err, context.Canceled) {

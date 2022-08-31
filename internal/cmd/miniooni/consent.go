@@ -17,7 +17,7 @@ func acquireUserConsent(miniooniDir string, currentOptions *Options) {
 	consentFile := path.Join(miniooniDir, "informed")
 	err := maybeWriteConsentFile(currentOptions.Yes, consentFile)
 	runtimex.PanicOnError(err, "cannot write informed consent file")
-	runtimex.PanicIfFalse(
+	runtimex.Assert(
 		regularFileExists(consentFile),
 		riskOfRunningOONI,
 	)

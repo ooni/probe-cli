@@ -308,7 +308,7 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 	log.Infof("Current time: %s", time.Now().Format("2006-01-02 15:04:05 MST"))
 
 	homeDir := gethomedir(currentOptions.HomeDir)
-	runtimex.PanicIfFalse(homeDir != "", "home directory is empty")
+	runtimex.Assert(homeDir != "", "home directory is empty")
 	miniooniDir := path.Join(homeDir, ".miniooni")
 	err := os.MkdirAll(miniooniDir, 0700)
 	runtimex.PanicOnError(err, "cannot create $HOME/.miniooni directory")

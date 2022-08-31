@@ -24,6 +24,10 @@ var (
 	// v2CountEmptyNettestNames counts the number of cases in which we have been
 	// given an empty nettest name, which is useful for testing.
 	v2CountEmptyNettestNames = &atomicx.Int64{}
+
+	// v2CountFailedExperiments countes the number of failed experiments
+	// and is useful when testing this package
+	v2CountFailedExperiments = &atomicx.Int64{}
 )
 
 // v2Descriptor describes a single nettest to run.
@@ -172,20 +176,26 @@ func v2MeasureDescriptor(ctx context.Context, config *LinkConfig, desc *v2Descri
 			continue
 		}
 		exp := &Experiment{
-			Annotations:    config.Annotations,
-			ExtraOptions:   nettest.Options,
-			Inputs:         nettest.Inputs,
-			InputFilePaths: nil,
-			MaxRuntime:     config.MaxRuntime,
-			Name:           nettest.TestName,
-			NoCollector:    config.NoCollector,
-			NoJSON:         config.NoJSON,
-			Random:         config.Random,
-			ReportFile:     config.ReportFile,
-			Session:        config.Session,
+			Annotations:            config.Annotations,
+			ExtraOptions:           nettest.Options,
+			Inputs:                 nettest.Inputs,
+			InputFilePaths:         nil,
+			MaxRuntime:             config.MaxRuntime,
+			Name:                   nettest.TestName,
+			NoCollector:            config.NoCollector,
+			NoJSON:                 config.NoJSON,
+			Random:                 config.Random,
+			ReportFile:             config.ReportFile,
+			Session:                config.Session,
+			newExperimentBuilderFn: nil,
+			newInputLoaderFn:       nil,
+			newSubmitterFn:         nil,
+			newSaverFn:             nil,
+			newInputProcessorFn:    nil,
 		}
 		if err := exp.Run(ctx); err != nil {
 			logger.Warnf("cannot run experiment: %s", err.Error())
+			v2CountFailedExperiments.Add(1)
 			continue
 		}
 	}
