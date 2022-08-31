@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -287,6 +288,17 @@ func MainWithConfiguration(experimentName string, currentOptions *Options) {
 // mainSingleIteration runs a single iteration. There may be multiple iterations
 // when the user specifies the --repeat-every command line flag.
 func mainSingleIteration(logger model.Logger, experimentName string, currentOptions *Options) {
+
+	// We allow the inner code to fail but we stop propagating the panic here
+	// such that --repeat-every works as intended anyway
+	if currentOptions.RepeatEvery > 0 {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Warnf("recovered from panic: %+v\n%s\n", r, debug.Stack())
+			}
+		}()
+	}
+
 	extraOptions := mustMakeMapStringAny(currentOptions.ExtraOptions)
 	annotations := mustMakeMapStringString(currentOptions.Annotations)
 
