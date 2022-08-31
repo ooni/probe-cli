@@ -16,7 +16,10 @@ import (
 
 func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 	shuffledInputsPrev := experimentShuffledInputs.Load()
+	var calledSetOptionsAny int
 	var failedToSubmit int
+	var calledKibiBytesReceived int
+	var calledKibiBytesSent int
 	ctx := context.Background()
 	desc := &Experiment{
 		Annotations: map[string]string{
@@ -42,6 +45,7 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 						return model.InputOptional
 					},
 					MockSetOptionsAny: func(options map[string]any) error {
+						calledSetOptionsAny++
 						return nil
 					},
 					MockNewExperiment: func() model.Experiment {
@@ -58,9 +62,11 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 								return out, nil
 							},
 							MockKibiBytesReceived: func() float64 {
+								calledKibiBytesReceived++
 								return 1.453
 							},
 							MockKibiBytesSent: func() float64 {
+								calledKibiBytesSent++
 								return 1.648
 							},
 						}
@@ -95,6 +101,15 @@ func TestExperimentRunWithFailureToSubmitAndShuffle(t *testing.T) {
 	}
 	if experimentShuffledInputs.Load() != shuffledInputsPrev+1 {
 		t.Fatal("did not shuffle inputs")
+	}
+	if calledSetOptionsAny < 1 {
+		t.Fatal("should have called SetOptionsAny")
+	}
+	if calledKibiBytesReceived < 1 {
+		t.Fatal("did not call KibiBytesReceived")
+	}
+	if calledKibiBytesSent < 1 {
+		t.Fatal("did not call KibiBytesSent")
 	}
 }
 

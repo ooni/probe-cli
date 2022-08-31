@@ -228,7 +228,7 @@ func TestV2MeasureDescriptor(t *testing.T) {
 		sess.MockNewSubmitter = func(ctx context.Context) (model.Submitter, error) {
 			subm := &mocks.Submitter{
 				MockSubmit: func(ctx context.Context, m *model.Measurement) error {
-					return errors.New("should not be called")
+					panic("should not be called")
 				},
 			}
 			return subm, nil
