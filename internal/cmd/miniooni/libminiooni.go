@@ -1,32 +1,19 @@
+// Command miniooni is a simple binary for research and QA purposes
+// with a CLI interface similar to MK and OONI Probe v2.x.
 package main
-
-//
-// Core implementation
-//
-// TODO(bassosimone): we should eventually merge this file and main.go. We still
-// have this file becaused we used to have ./internal/libminiooni.
-//
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
-	"net/url"
 	"os"
 	"path"
-	"path/filepath"
-	"runtime"
-	"strings"
 	"time"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
-	"github.com/ooni/probe-cli/v3/internal/kvstore"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
-	"github.com/ooni/probe-cli/v3/internal/oonirun"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
 	"github.com/pborman/getopt/v2"
@@ -55,15 +42,7 @@ type Options struct {
 	Yes              bool
 }
 
-const (
-	softwareName    = "miniooni"
-	softwareVersion = version.Version
-)
-
-var (
-	globalOptions Options
-	startTime     = time.Now()
-)
+var globalOptions Options
 
 func init() {
 	getopt.FlagLong(
@@ -137,13 +116,13 @@ func init() {
 	)
 }
 
-// Main is the main function of miniooni. This function parses the command line
+// main is the main function of miniooni. This function parses the command line
 // options and uses a global state. Use MainWithConfiguration if you want to avoid
 // using any global state and relying on command line options.
 //
 // This function will panic in case of a fatal error. It is up to you that
 // integrate this function to either handle the panic of ignore it.
-func Main() {
+func main() {
 	getopt.Parse()
 	if globalOptions.Version {
 		fmt.Printf("%s\n", version.Version)
@@ -152,111 +131,6 @@ func Main() {
 	runtimex.PanicIfFalse(len(getopt.Args()) == 1, "Missing experiment name")
 	runtimex.PanicOnError(engine.CheckEmbeddedPsiphonConfig(), "Invalid embedded psiphon config")
 	MainWithConfiguration(getopt.Arg(0), globalOptions)
-}
-
-func split(s string) (string, string, error) {
-	v := strings.SplitN(s, "=", 2)
-	if len(v) != 2 {
-		return "", "", errors.New("invalid key-value pair")
-	}
-	return v[0], v[1], nil
-}
-
-func mustMakeMapString(input []string) (output map[string]string) {
-	output = make(map[string]string)
-	for _, opt := range input {
-		key, value, err := split(opt)
-		runtimex.PanicOnError(err, "cannot split key-value pair")
-		output[key] = value
-	}
-	return
-}
-
-func mustMakeMapAny(input []string) (output map[string]any) {
-	output = make(map[string]any)
-	for _, opt := range input {
-		key, value, err := split(opt)
-		runtimex.PanicOnError(err, "cannot split key-value pair")
-		output[key] = value
-	}
-	return
-}
-
-func mustParseURL(URL string) *url.URL {
-	rv, err := url.Parse(URL)
-	runtimex.PanicOnError(err, "cannot parse URL")
-	return rv
-}
-
-type logHandler struct {
-	io.Writer
-}
-
-func (h *logHandler) HandleLog(e *log.Entry) (err error) {
-	s := fmt.Sprintf("[%14.6f] <%s> %s", time.Since(startTime).Seconds(), e.Level, e.Message)
-	if len(e.Fields) > 0 {
-		s += fmt.Sprintf(": %+v", e.Fields)
-	}
-	s += "\n"
-	_, err = h.Writer.Write([]byte(s))
-	return
-}
-
-// See https://gist.github.com/miguelmota/f30a04a6d64bd52d7ab59ea8d95e54da
-func gethomedir(optionsHome string) string {
-	if optionsHome != "" {
-		return optionsHome
-	}
-	if runtime.GOOS == "windows" {
-		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
-		if home == "" {
-			home = os.Getenv("USERPROFILE")
-		}
-		return home
-	}
-	if runtime.GOOS == "linux" {
-		home := os.Getenv("XDG_CONFIG_HOME")
-		if home != "" {
-			return home
-		}
-		// fallthrough
-	}
-	return os.Getenv("HOME")
-}
-
-const riskOfRunningOONI = `
-Do you consent to OONI Probe data collection?
-
-OONI Probe collects evidence of internet censorship and measures
-network performance:
-
-- OONI Probe will likely test objectionable sites and services;
-
-- Anyone monitoring your internet activity (such as a government
-or Internet provider) may be able to tell that you are using OONI Probe;
-
-- The network data you collect will be published automatically
-unless you use miniooni's -n command line flag.
-
-To learn more, see https://ooni.org/about/risks/.
-
-If you're onboard, re-run the same command and add the --yes flag, to
-indicate that you understand the risks. This will create an empty file
-named 'consent' in $HOME/.miniooni, meaning that we know you opted in
-and we will not ask you this question again.
-
-`
-
-func canOpen(filepath string) bool {
-	stat, err := os.Stat(filepath)
-	return err == nil && stat.Mode().IsRegular()
-}
-
-func maybeWriteConsentFile(yes bool, filepath string) (err error) {
-	if yes {
-		err = os.WriteFile(filepath, []byte("\n"), 0644)
-	}
-	return
 }
 
 // tunnelAndProxy is the text printed when the user specifies
@@ -302,8 +176,8 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 // mainSingleIteration runs a single iteration. There may be multiple iterations
 // when the user specifies the --repeat-every command line flag.
 func mainSingleIteration(logger model.Logger, experimentName string, currentOptions Options) {
-	extraOptions := mustMakeMapAny(currentOptions.ExtraOptions)
-	annotations := mustMakeMapString(currentOptions.Annotations)
+	extraOptions := mustMakeMapStringAny(currentOptions.ExtraOptions)
+	annotations := mustMakeMapStringString(currentOptions.Annotations)
 
 	ctx := context.Background()
 
@@ -326,45 +200,11 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 	_, _ = assetsdir.Cleanup(assetsDir)
 
 	log.Debugf("miniooni state directory: %s", miniooniDir)
-
-	consentFile := path.Join(miniooniDir, "informed")
-	runtimex.PanicOnError(maybeWriteConsentFile(currentOptions.Yes, consentFile),
-		"cannot write informed consent file")
-	runtimex.PanicIfFalse(canOpen(consentFile), riskOfRunningOONI)
 	log.Info("miniooni home directory: $HOME/.miniooni")
 
-	var proxyURL *url.URL
-	if currentOptions.Proxy != "" {
-		proxyURL = mustParseURL(currentOptions.Proxy)
-	}
+	acquireUserConsent(miniooniDir, currentOptions)
 
-	kvstore2dir := filepath.Join(miniooniDir, "kvstore2")
-	kvstore, err := kvstore.NewFS(kvstore2dir)
-	runtimex.PanicOnError(err, "cannot create kvstore2 directory")
-
-	tunnelDir := filepath.Join(miniooniDir, "tunnel")
-	err = os.MkdirAll(tunnelDir, 0700)
-	runtimex.PanicOnError(err, "cannot create tunnelDir")
-
-	config := engine.SessionConfig{
-		KVStore:         kvstore,
-		Logger:          logger,
-		ProxyURL:        proxyURL,
-		SoftwareName:    softwareName,
-		SoftwareVersion: softwareVersion,
-		TorArgs:         currentOptions.TorArgs,
-		TorBinary:       currentOptions.TorBinary,
-		TunnelDir:       tunnelDir,
-	}
-	if currentOptions.ProbeServicesURL != "" {
-		config.AvailableProbeServices = []model.OOAPIService{{
-			Address: currentOptions.ProbeServicesURL,
-			Type:    "https",
-		}}
-	}
-
-	sess, err := engine.NewSession(ctx, config)
-	runtimex.PanicOnError(err, "cannot create measurement session")
+	sess := newSessionOrPanic(ctx, currentOptions, miniooniDir, logger)
 	defer func() {
 		sess.Close()
 		log.Infof("whole session: recv %s, sent %s",
@@ -372,20 +212,8 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 			humanize.SI(sess.KibiBytesSent()*1024, "byte"),
 		)
 	}()
-	log.Debugf("miniooni temporary directory: %s", sess.TempDir())
-
-	log.Info("Looking up OONI backends; please be patient...")
-	err = sess.MaybeLookupBackends()
-	runtimex.PanicOnError(err, "cannot lookup OONI backends")
-	log.Info("Looking up your location; please be patient...")
-	err = sess.MaybeLookupLocation()
-	runtimex.PanicOnError(err, "cannot lookup your location")
-	log.Debugf("- IP: %s", sess.ProbeIP())
-	log.Infof("- country: %s", sess.ProbeCC())
-	log.Infof("- network: %s (%s)", sess.ProbeNetworkName(), sess.ProbeASNString())
-	log.Infof("- resolver's IP: %s", sess.ResolverIP())
-	log.Infof("- resolver's network: %s (%s)", sess.ResolverNetworkName(),
-		sess.ResolverASNString())
+	lookupBackendsOrPanic(ctx, sess)
+	lookupLocationOrPanic(ctx, sess)
 
 	// We handle the oonirun experiment name specially. The user must specify
 	// `miniooni -i {OONIRunURL} oonirun` to run a OONI Run URL (v1 or v2).
@@ -395,57 +223,5 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 	}
 
 	// Otherwise just run OONI experiments as we normally do.
-	desc := &oonirun.Experiment{
-		Annotations:    annotations,
-		ExtraOptions:   extraOptions,
-		Inputs:         currentOptions.Inputs,
-		InputFilePaths: currentOptions.InputFilePaths,
-		MaxRuntime:     currentOptions.MaxRuntime,
-		Name:           experimentName,
-		NoCollector:    currentOptions.NoCollector,
-		NoJSON:         currentOptions.NoJSON,
-		Random:         currentOptions.Random,
-		ReportFile:     currentOptions.ReportFile,
-		Session:        sess,
-	}
-	err = desc.Run(ctx)
-	runtimex.PanicOnError(err, "cannot run experiment")
-}
-
-// ooniRunMain runs the experiments described by the given OONI Run URLs. This
-// function works with both v1 and v2 OONI Run URLs.
-func ooniRunMain(ctx context.Context,
-	sess *engine.Session, currentOptions Options, annotations map[string]string) {
-	runtimex.PanicIfTrue(
-		len(currentOptions.Inputs) <= 0,
-		"in oonirun mode you need to specify at least one URL using `-i URL`",
-	)
-	runtimex.PanicIfTrue(
-		len(currentOptions.InputFilePaths) > 0,
-		"in oonirun mode you cannot specify any `-f FILE` file",
-	)
-	logger := sess.Logger()
-	cfg := &oonirun.LinkConfig{
-		AcceptChanges: currentOptions.Yes,
-		Annotations:   annotations,
-		KVStore:       sess.KeyValueStore(),
-		MaxRuntime:    currentOptions.MaxRuntime,
-		NoCollector:   currentOptions.NoCollector,
-		NoJSON:        currentOptions.NoJSON,
-		Random:        currentOptions.Random,
-		ReportFile:    currentOptions.ReportFile,
-		Session:       sess,
-	}
-	for _, URL := range currentOptions.Inputs {
-		r := oonirun.NewLinkRunner(cfg, URL)
-		if err := r.Run(ctx); err != nil {
-			if errors.Is(err, oonirun.ErrNeedToAcceptChanges) {
-				logger.Warnf("oonirun: to accept these changes, rerun adding `-y` to the command line")
-				logger.Warnf("oonirun: we'll show this error every time the upstream link changes")
-				panic("oonirun: need to accept changes using `-y`")
-			}
-			logger.Warnf("oonirun: running link failed: %s", err.Error())
-			continue
-		}
-	}
+	runx(ctx, sess, experimentName, annotations, extraOptions, currentOptions)
 }
