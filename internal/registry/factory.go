@@ -216,7 +216,7 @@ func CanonicalizeExperimentName(name string) string {
 // NewFactory creates a new Factory instance.
 func NewFactory(name string) (*Factory, error) {
 	name = CanonicalizeExperimentName(name)
-	factory := allexperiments[name]
+	factory := AllExperiments[name]
 	if factory == nil {
 		return nil, fmt.Errorf("no such experiment: %s", name)
 	}

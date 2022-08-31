@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["http_invalid_request_line"] = &Factory{
+	AllExperiments["http_invalid_request_line"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return hirl.NewExperimentMeasurer(
 				*config.(*hirl.Config),

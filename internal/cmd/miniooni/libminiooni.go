@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/apex/log"
@@ -14,9 +15,10 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/registry"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 	"github.com/ooni/probe-cli/v3/internal/version"
-	"github.com/pborman/getopt/v2"
+	"github.com/spf13/cobra"
 )
 
 // Options contains the options you can set from the CLI.
@@ -38,118 +40,197 @@ type Options struct {
 	TorBinary        string
 	Tunnel           string
 	Verbose          bool
-	Version          bool
 	Yes              bool
-}
-
-var globalOptions Options
-
-func init() {
-	getopt.FlagLong(
-		&globalOptions.Annotations, "annotation", 'A', "Add annotaton", "KEY=VALUE",
-	)
-	getopt.FlagLong(
-		&globalOptions.ExtraOptions, "option", 'O',
-		"Pass an option to the experiment", "KEY=VALUE",
-	)
-	getopt.FlagLong(
-		&globalOptions.InputFilePaths, "input-file", 'f',
-		"Path to input file to supply test-dependent input. File must contain one input per line.", "PATH",
-	)
-	getopt.FlagLong(
-		&globalOptions.HomeDir, "home", 0,
-		"Force specific home directory", "PATH",
-	)
-	getopt.FlagLong(
-		&globalOptions.Inputs, "input", 'i',
-		"Add test-dependent input to the test input", "INPUT",
-	)
-	getopt.FlagLong(
-		&globalOptions.MaxRuntime, "max-runtime", 0,
-		"Maximum runtime in seconds when looping over a list of inputs (zero means infinite)", "N",
-	)
-	getopt.FlagLong(
-		&globalOptions.NoJSON, "no-json", 'N', "Disable writing to disk",
-	)
-	getopt.FlagLong(
-		&globalOptions.NoCollector, "no-collector", 'n', "Don't use a collector",
-	)
-	getopt.FlagLong(
-		&globalOptions.ProbeServicesURL, "probe-services", 0,
-		"Set the URL of the probe-services instance you want to use", "URL",
-	)
-	getopt.FlagLong(
-		&globalOptions.Proxy, "proxy", 0, "Set the proxy URL", "URL",
-	)
-	getopt.FlagLong(
-		&globalOptions.Random, "random", 0, "Randomize inputs",
-	)
-	getopt.FlagLong(
-		&globalOptions.RepeatEvery, "repeat-every", 0,
-		"Repeat the measurement every INTERVAL number of seconds", "INTERVAL",
-	)
-	getopt.FlagLong(
-		&globalOptions.ReportFile, "reportfile", 'o',
-		"Set the report file path", "PATH",
-	)
-	getopt.FlagLong(
-		&globalOptions.TorArgs, "tor-args", 0,
-		"Extra args for tor binary (may be specified multiple times)",
-	)
-	getopt.FlagLong(
-		&globalOptions.TorBinary, "tor-binary", 0,
-		"Specify path to a specific tor binary",
-	)
-	getopt.FlagLong(
-		&globalOptions.Tunnel, "tunnel", 0,
-		"Name of the tunnel to use (one of `tor`, `psiphon`)",
-	)
-	getopt.FlagLong(
-		&globalOptions.Verbose, "verbose", 'v', "Increase verbosity",
-	)
-	getopt.FlagLong(
-		&globalOptions.Version, "version", 0, "Print version and exit",
-	)
-	getopt.FlagLong(
-		&globalOptions.Yes, "yes", 'y',
-		"Assume yes as the answer to all questions",
-	)
 }
 
 // main is the main function of miniooni. This function parses the command line
 // options and uses a global state. Use MainWithConfiguration if you want to avoid
 // using any global state and relying on command line options.
-//
-// This function will panic in case of a fatal error. It is up to you that
-// integrate this function to either handle the panic of ignore it.
 func main() {
-	getopt.Parse()
-	if globalOptions.Version {
-		fmt.Printf("%s\n", version.Version)
-		os.Exit(0)
+	var globalOptions Options
+	rootCmd := &cobra.Command{
+		Use:     "miniooni",
+		Short:   "miniooni is OONI's research client",
+		Args:    cobra.NoArgs,
+		Version: version.Version,
 	}
-	runtimex.PanicIfFalse(len(getopt.Args()) == 1, "Missing experiment name")
-	runtimex.PanicOnError(engine.CheckEmbeddedPsiphonConfig(), "Invalid embedded psiphon config")
-	MainWithConfiguration(getopt.Arg(0), globalOptions)
-}
+	rootCmd.SetVersionTemplate("{{ .Version }}\n")
+	flags := rootCmd.PersistentFlags()
 
-// tunnelAndProxy is the text printed when the user specifies
-// both the --tunnel and the --proxy options
-const tunnelAndProxy = `USAGE ERROR: The --tunnel option and the --proxy
-option cannot be specified at the same time. The --tunnel option is actually
-just syntactic sugar for --proxy. Setting --tunnel=psiphon is currently the
-equivalent of setting --proxy=psiphon:///. This MAY change in a future version
-of miniooni, when we will allow a tunnel to use a proxy.
-`
+	flags.StringSliceVarP(
+		&globalOptions.Annotations,
+		"annotation",
+		"A",
+		[]string{},
+		"add KEY=VALUE annotation to the report",
+	)
+
+	flags.StringVar(
+		&globalOptions.HomeDir,
+		"home",
+		"",
+		"force specific home directory",
+	)
+
+	flags.BoolVarP(
+		&globalOptions.NoJSON,
+		"no-json",
+		"N",
+		false,
+		"disable writing to disk",
+	)
+
+	flags.BoolVarP(
+		&globalOptions.NoCollector,
+		"no-collector",
+		"n",
+		false,
+		"do not submit measurements to the OONI collector",
+	)
+
+	flags.StringVar(
+		&globalOptions.ProbeServicesURL,
+		"probe-services",
+		"",
+		"URL of the OONI backend instance you want to use",
+	)
+
+	flags.StringVar(
+		&globalOptions.Proxy,
+		"proxy",
+		"",
+		"set proxy URL to communicate with the OONI backend",
+	)
+
+	flags.Int64Var(
+		&globalOptions.RepeatEvery,
+		"repeat-every",
+		0,
+		"wait the given number of seconds and then measure again",
+	)
+
+	flags.StringVarP(
+		&globalOptions.ReportFile,
+		"reportfile",
+		"o",
+		"",
+		"set the output report file path (default report.jsonl)",
+	)
+
+	flags.StringSliceVar(
+		&globalOptions.TorArgs,
+		"tor-args",
+		[]string{},
+		"extra arguments for the tor binary (may be specified multiple times)",
+	)
+
+	flags.StringVar(
+		&globalOptions.TorBinary,
+		"tor-binary",
+		"",
+		"execute a specific tor binary",
+	)
+
+	flags.StringVar(
+		&globalOptions.Tunnel,
+		"tunnel",
+		"",
+		"tunnel to use to communicate with the OONI backend (one of: tor, psiphon)",
+	)
+
+	flags.BoolVarP(
+		&globalOptions.Verbose,
+		"verbose",
+		"v",
+		false,
+		"increase verbosity level",
+	)
+
+	flags.BoolVarP(
+		&globalOptions.Yes,
+		"yes",
+		"y",
+		false,
+		"assume yes as the answer to all questions",
+	)
+
+	rootCmd.MarkFlagsMutuallyExclusive("proxy", "tunnel")
+
+	for name, factory := range registry.AllExperiments {
+		subCmd := &cobra.Command{
+			Use:   name,
+			Short: fmt.Sprintf("Runs the %s experiment", name),
+			Args:  cobra.NoArgs,
+			Run: func(cmd *cobra.Command, args []string) {
+				MainWithConfiguration(cmd.Use, &globalOptions)
+			},
+		}
+		rootCmd.AddCommand(subCmd)
+		flags := subCmd.Flags()
+
+		switch factory.InputPolicy() {
+		case model.InputOrQueryBackend,
+			model.InputStrictlyRequired,
+			model.InputOptional,
+			model.InputOrStaticDefault:
+
+			flags.StringSliceVarP(
+				&globalOptions.InputFilePaths,
+				"input-file",
+				"f",
+				[]string{},
+				"path to input file to supply test dependent input.",
+			)
+
+			flags.StringSliceVarP(
+				&globalOptions.Inputs,
+				"input",
+				"i",
+				[]string{},
+				"add test-dependent input",
+			)
+
+			flags.Int64Var(
+				&globalOptions.MaxRuntime,
+				"max-runtime",
+				0,
+				"maximum runtime in seconds (zero means infinite)",
+			)
+
+			flags.BoolVar(
+				&globalOptions.Random,
+				"random",
+				false,
+				"randomize inputs",
+			)
+
+		default:
+			// nothing
+		}
+
+		if doc := documentationForOptions(name, factory); doc != "" {
+			flags.StringSliceVarP(
+				&globalOptions.ExtraOptions,
+				"option",
+				"O",
+				[]string{},
+				doc,
+			)
+		}
+	}
+
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
 
 // MainWithConfiguration is the miniooni main with a specific configuration
 // represented by the experiment name and the current options.
 //
 // This function will panic in case of a fatal error. It is up to you that
 // integrate this function to either handle the panic of ignore it.
-func MainWithConfiguration(experimentName string, currentOptions Options) {
-	runtimex.PanicIfTrue(currentOptions.Proxy != "" && currentOptions.Tunnel != "",
-		tunnelAndProxy)
+func MainWithConfiguration(experimentName string, currentOptions *Options) {
+	runtimex.PanicOnError(engine.CheckEmbeddedPsiphonConfig(), "Invalid embedded psiphon config")
 	if currentOptions.Tunnel != "" {
 		currentOptions.Proxy = fmt.Sprintf("%s:///", currentOptions.Tunnel)
 	}
@@ -175,7 +256,7 @@ func MainWithConfiguration(experimentName string, currentOptions Options) {
 
 // mainSingleIteration runs a single iteration. There may be multiple iterations
 // when the user specifies the --repeat-every command line flag.
-func mainSingleIteration(logger model.Logger, experimentName string, currentOptions Options) {
+func mainSingleIteration(logger model.Logger, experimentName string, currentOptions *Options) {
 	extraOptions := mustMakeMapStringAny(currentOptions.ExtraOptions)
 	annotations := mustMakeMapStringString(currentOptions.Annotations)
 
@@ -224,4 +305,22 @@ func mainSingleIteration(logger model.Logger, experimentName string, currentOpti
 
 	// Otherwise just run OONI experiments as we normally do.
 	runx(ctx, sess, experimentName, annotations, extraOptions, currentOptions)
+}
+
+func documentationForOptions(name string, factory *registry.Factory) string {
+	var sb strings.Builder
+	options, err := factory.Options()
+	if err != nil || len(options) < 1 {
+		return ""
+	}
+	fmt.Fprint(&sb, "Pass KEY=VALUE options to the experiment. Available options:\n")
+	for name, info := range options {
+		if info.Doc == "" {
+			continue
+		}
+		fmt.Fprintf(&sb, "\n")
+		fmt.Fprintf(&sb, "  -O, --option %s=<%s>\n", name, info.Type)
+		fmt.Fprintf(&sb, "      %s\n", info.Doc)
+	}
+	return sb.String()
 }

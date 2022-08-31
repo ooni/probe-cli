@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["whatsapp"] = &Factory{
+	AllExperiments["whatsapp"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return whatsapp.NewExperimentMeasurer(
 				*config.(*whatsapp.Config),

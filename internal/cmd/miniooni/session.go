@@ -20,7 +20,7 @@ const (
 )
 
 // newSessionOrPanic creates and starts a new session or panics on failure
-func newSessionOrPanic(ctx context.Context, currentOptions Options,
+func newSessionOrPanic(ctx context.Context, currentOptions *Options,
 	miniooniDir string, logger model.Logger) *engine.Session {
 	var proxyURL *url.URL
 	if currentOptions.Proxy != "" {

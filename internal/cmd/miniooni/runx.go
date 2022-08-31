@@ -13,7 +13,7 @@ import (
 
 // runx runs the given experiment by name
 func runx(ctx context.Context, sess oonirun.Session, experimentName string,
-	annotations map[string]string, extraOptions map[string]any, currentOptions Options) {
+	annotations map[string]string, extraOptions map[string]any, currentOptions *Options) {
 	desc := &oonirun.Experiment{
 		Annotations:    annotations,
 		ExtraOptions:   extraOptions,

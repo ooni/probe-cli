@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["facebook_messenger"] = &Factory{
+	AllExperiments["facebook_messenger"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return fbmessenger.NewExperimentMeasurer(
 				*config.(*fbmessenger.Config),

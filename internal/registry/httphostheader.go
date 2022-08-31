@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["http_host_header"] = &Factory{
+	AllExperiments["http_host_header"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return httphostheader.NewExperimentMeasurer(
 				*config.(*httphostheader.Config),
