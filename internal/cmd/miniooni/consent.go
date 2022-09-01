@@ -13,11 +13,14 @@ import (
 
 // acquireUserConsent ensures the user is okay with using miniooni. This function
 // panics if we do not have acquired the user consent.
-func acquireUserConsent(miniooniDir string, currentOptions Options) {
+func acquireUserConsent(miniooniDir string, currentOptions *Options) {
 	consentFile := path.Join(miniooniDir, "informed")
 	err := maybeWriteConsentFile(currentOptions.Yes, consentFile)
 	runtimex.PanicOnError(err, "cannot write informed consent file")
-	runtimex.PanicIfFalse(regularFileExists(consentFile), riskOfRunningOONI)
+	runtimex.Assert(
+		regularFileExists(consentFile),
+		riskOfRunningOONI,
+	)
 }
 
 // maybeWriteConsentFile writes the consent file iff the yes argument is true
@@ -30,6 +33,7 @@ func maybeWriteConsentFile(yes bool, filepath string) (err error) {
 
 // riskOfRunningOONI is miniooni's informed consent text.
 const riskOfRunningOONI = `
+
 Do you consent to OONI Probe data collection?
 
 OONI Probe collects evidence of internet censorship and measures

@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["vanilla_tor"] = &Factory{
+	AllExperiments["vanilla_tor"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return vanillator.NewExperimentMeasurer(
 				*config.(*vanillator.Config),

@@ -281,3 +281,25 @@ type ExperimentOptionInfo struct {
 	// Type contains the type.
 	Type string
 }
+
+// ExperimentInputLoader loads inputs from local or remote sources.
+type ExperimentInputLoader interface {
+	Load(ctx context.Context) ([]OOAPIURLInfo, error)
+}
+
+// Submitter submits a measurement to the OONI collector.
+type Submitter interface {
+	// Submit submits the measurement and updates its
+	// report ID field in case of success.
+	Submit(ctx context.Context, m *Measurement) error
+}
+
+// Saver saves a measurement on some persistent storage.
+type Saver interface {
+	SaveMeasurement(m *Measurement) error
+}
+
+// ExperimentInputProcessor processes inputs for an experiment.
+type ExperimentInputProcessor interface {
+	Run(ctx context.Context) error
+}

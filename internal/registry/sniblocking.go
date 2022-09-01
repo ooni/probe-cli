@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["sni_blocking"] = &Factory{
+	AllExperiments["sni_blocking"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return sniblocking.NewExperimentMeasurer(
 				*config.(*sniblocking.Config),

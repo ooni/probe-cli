@@ -104,7 +104,7 @@ func NewDefaultCertPool() *x509.CertPool {
 	// Assumption: AppendCertsFromPEM cannot fail because we
 	// have a test in certify_test.go that guarantees that
 	ok := pool.AppendCertsFromPEM([]byte(pemcerts))
-	runtimex.PanicIfFalse(ok, "pool.AppendCertsFromPEM failed")
+	runtimex.Assert(ok, "pool.AppendCertsFromPEM failed")
 	return pool
 }
 

@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 )
 
@@ -50,7 +51,7 @@ func v1Measure(ctx context.Context, config *LinkConfig, URL string) error {
 		if pu.Host != "nettest" {
 			return ErrInvalidV1URLHost
 		}
-		if pu.Path != "" {
+		if pu.Path != "" && pu.Path != "/" {
 			return ErrInvalidV1URLPath
 		}
 	default:
@@ -58,33 +59,50 @@ func v1Measure(ctx context.Context, config *LinkConfig, URL string) error {
 	}
 	name := pu.Query().Get("tn")
 	if name == "" {
-		return ErrInvalidV1URLQueryArgument
+		return fmt.Errorf("%w: empty test name", ErrInvalidV1URLQueryArgument)
 	}
 	var inputs []string
-	if ra := pu.Query().Get("ta"); ra != "" {
-		pa, err := url.QueryUnescape(ra)
+	if ta := pu.Query().Get("ta"); ta != "" {
+		inputs, err = v1ParseArguments(ta)
 		if err != nil {
 			return err
 		}
-		var arguments v1Arguments
-		if err := json.Unmarshal([]byte(pa), &arguments); err != nil {
-			return err
-		}
-		inputs = arguments.URLs
 	}
-	// TODO(bassosimone): reject mv < 1.2.0
+	if mv := pu.Query().Get("mv"); mv != "1.2.0" {
+		return fmt.Errorf("%w: unknown minimum version", ErrInvalidV1URLQueryArgument)
+	}
 	exp := &Experiment{
-		Annotations:    config.Annotations,
-		ExtraOptions:   nil, // no way to specify with v1 URLs
-		Inputs:         inputs,
-		InputFilePaths: nil,
-		MaxRuntime:     config.MaxRuntime,
-		Name:           name,
-		NoCollector:    config.NoCollector,
-		NoJSON:         config.NoJSON,
-		Random:         config.Random,
-		ReportFile:     config.ReportFile,
-		Session:        config.Session,
+		Annotations:            config.Annotations,
+		ExtraOptions:           nil, // no way to specify with v1 URLs
+		Inputs:                 inputs,
+		InputFilePaths:         nil,
+		MaxRuntime:             config.MaxRuntime,
+		Name:                   name,
+		NoCollector:            config.NoCollector,
+		NoJSON:                 config.NoJSON,
+		Random:                 config.Random,
+		ReportFile:             config.ReportFile,
+		Session:                config.Session,
+		newExperimentBuilderFn: nil,
+		newInputLoaderFn:       nil,
+		newSubmitterFn:         nil,
+		newSaverFn:             nil,
+		newInputProcessorFn:    nil,
 	}
 	return exp.Run(ctx)
+}
+
+// v1ParseArguments parses the `ta` field of the query string.
+func v1ParseArguments(ta string) ([]string, error) {
+	var inputs []string
+	pa, err := url.QueryUnescape(ta)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", ErrInvalidV1URLQueryArgument, err.Error())
+	}
+	var arguments v1Arguments
+	if err := json.Unmarshal([]byte(pa), &arguments); err != nil {
+		return nil, fmt.Errorf("%w: %s", ErrInvalidV1URLQueryArgument, err.Error())
+	}
+	inputs = arguments.URLs
+	return inputs, nil
 }

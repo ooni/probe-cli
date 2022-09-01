@@ -16,7 +16,7 @@ import (
 // ooniRunMain runs the experiments described by the given OONI Run URLs. This
 // function works with both v1 and v2 OONI Run URLs.
 func ooniRunMain(ctx context.Context,
-	sess *engine.Session, currentOptions Options, annotations map[string]string) {
+	sess *engine.Session, currentOptions *Options, annotations map[string]string) {
 	runtimex.PanicIfTrue(
 		len(currentOptions.Inputs) <= 0,
 		"in oonirun mode you need to specify at least one URL using `-i URL`",
