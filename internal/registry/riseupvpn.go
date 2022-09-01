@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["riseupvpn"] = &Factory{
+	AllExperiments["riseupvpn"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return riseupvpn.NewExperimentMeasurer(
 				*config.(*riseupvpn.Config),

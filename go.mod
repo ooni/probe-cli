@@ -44,11 +44,17 @@ require (
 )
 
 require (
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+)
+
+require (
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/armon/go-proxyproto v0.0.0-20210323213023-7e956b284f0a // indirect
+	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bifurcation/mint v0.0.0-20180306135233-198357931e61 // indirect
 	github.com/ccding/go-stun v0.1.5-0.20220419042218-44e89cab7805 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -78,6 +84,7 @@ require (
 	github.com/marten-seemann/qtls-go1-19 v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-sqlite3 v1.14.15 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mroth/weightedrand v0.4.1 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
@@ -99,10 +106,15 @@ require (
 	github.com/pion/turn/v2 v2.0.8 // indirect
 	github.com/pion/udp v0.1.1 // indirect
 	github.com/pion/webrtc/v3 v3.1.43 // indirect
+	github.com/prometheus/client_golang v1.13.0
+	github.com/prometheus/client_model v0.2.0 // indirect
+	github.com/prometheus/common v0.37.0 // indirect
+	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/refraction-networking/gotapdance v1.3.1 // indirect
 	github.com/refraction-networking/utls v1.0.0 // indirect
 	github.com/sergeyfrolov/bsbuffer v0.0.0-20180903213811-94e85abb8507 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/spf13/cobra v1.5.0
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/templexxx/cpu v0.0.9 // indirect
 	github.com/templexxx/xorsimd v0.4.1 // indirect

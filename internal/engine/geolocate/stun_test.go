@@ -23,7 +23,7 @@ func TestSTUNIPLookupCanceledContext(t *testing.T) {
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
-	if ip != DefaultProbeIP {
+	if ip != model.DefaultProbeIP {
 		t.Fatalf("not the IP address we expected: %+v", ip)
 	}
 }
@@ -41,7 +41,7 @@ func TestSTUNIPLookupDialFailure(t *testing.T) {
 	if !errors.Is(err, expected) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
-	if ip != DefaultProbeIP {
+	if ip != model.DefaultProbeIP {
 		t.Fatalf("not the IP address we expected: %+v", ip)
 	}
 }
@@ -79,7 +79,7 @@ func TestSTUNIPLookupStartReturnsError(t *testing.T) {
 	if !errors.Is(err, expected) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
-	if ip != DefaultProbeIP {
+	if ip != model.DefaultProbeIP {
 		t.Fatalf("not the IP address we expected: %+v", ip)
 	}
 }
@@ -99,7 +99,7 @@ func TestSTUNIPLookupStunEventContainsError(t *testing.T) {
 	if !errors.Is(err, expected) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
-	if ip != DefaultProbeIP {
+	if ip != model.DefaultProbeIP {
 		t.Fatalf("not the IP address we expected: %+v", ip)
 	}
 }
@@ -118,7 +118,7 @@ func TestSTUNIPLookupCannotDecodeMessage(t *testing.T) {
 	if !errors.Is(err, stun.ErrAttributeNotFound) {
 		t.Fatalf("not the error we expected: %+v", err)
 	}
-	if ip != DefaultProbeIP {
+	if ip != model.DefaultProbeIP {
 		t.Fatalf("not the IP address we expected: %+v", ip)
 	}
 }

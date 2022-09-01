@@ -1,14 +1,16 @@
 #!/bin/sh
 set -euxo pipefail
-apk update
-apk upgrade
-apk add --no-progress gcc git linux-headers musl-dev
-# some of the following exports are redundant but are however
+# Some of the following exports are redundant but are however
 # useful because they provide explicit logging
 export CGO_ENABLED=1
 export GOARM=$GOARM
+export GOCACHE=$GOCACHE
+export GOMODCACHE=$GOMODCACHE
 export GOOS=$GOOS
 export GOARCH=$GOARCH
-go build -o ./CLI/$PRODUCT-$GOOS-$OONIARCH \
-	-ldflags='-s -w -extldflags "-static"' \
-	$GOLANG_EXTRA_FLAGS $PACKAGE
+for PACKAGE in $@; do
+	PRODUCT=$(basename $PACKAGE)
+	go build -o ./CLI/$PRODUCT-$GOOS-$OONIARCH \
+		-ldflags='-s -w -extldflags "-static"' \
+		$GOLANG_EXTRA_FLAGS $PACKAGE
+done

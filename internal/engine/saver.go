@@ -6,10 +6,8 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
-// Saver saves a measurement on some persistent storage.
-type Saver interface {
-	SaveMeasurement(m *model.Measurement) error
-}
+// Saver is an alias for model.Saver.
+type Saver = model.Saver
 
 // SaverConfig is the configuration for creating a new Saver.
 type SaverConfig struct {

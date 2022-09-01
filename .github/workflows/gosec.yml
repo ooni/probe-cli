@@ -5,6 +5,7 @@ on:
     branches:
       - "master"
       - "release/**"
+      - "fullbuild"
 
 jobs:
   gosec:
@@ -19,9 +20,10 @@ jobs:
       id: goversion
       run: echo ::set-output name=version::$(cat GOVERSION)
 
-    - uses: actions/setup-go@v3
+    - uses: magnetikonline/action-golang-cache@v2
       with:
         go-version: "${{ steps.goversion.outputs.version }}"
+        cache-key-suffix: "-gosec-${{ steps.goversion.outputs.version }}"
 
     - name: Run Gosec security scanner
       continue-on-error: true # TODO(https://github.com/ooni/probe/issues/2180)

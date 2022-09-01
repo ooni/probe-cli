@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["torsf"] = &Factory{
+	AllExperiments["torsf"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return torsf.NewExperimentMeasurer(
 				*config.(*torsf.Config),

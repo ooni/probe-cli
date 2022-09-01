@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["http_header_field_manipulation"] = &Factory{
+	AllExperiments["http_header_field_manipulation"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return hhfm.NewExperimentMeasurer(
 				*config.(*hhfm.Config),

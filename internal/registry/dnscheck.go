@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["dnscheck"] = &Factory{
+	AllExperiments["dnscheck"] = &Factory{
 		build: func(config interface{}) model.ExperimentMeasurer {
 			return dnscheck.NewExperimentMeasurer(
 				*config.(*dnscheck.Config),

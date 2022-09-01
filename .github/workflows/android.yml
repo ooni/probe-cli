@@ -1,14 +1,17 @@
-# Builds and publishes Android packages
+# Builds and publishes Android packages and binaries
 name: android
 on:
   push:
     branches:
       - "release/**"
+      - "fullbuild"
+      - "androidbuild"
     tags:
       - "v*"
 
 jobs:
-  build_and_publish:
+
+  build_and_publish_mobile:
     runs-on: ubuntu-20.04
     permissions: # See https://github.com/ooni/probe/issues/2154
       contents: write
@@ -22,9 +25,10 @@ jobs:
         id: goversion
         run: echo ::set-output name=version::$(cat GOVERSION)
 
-      - uses: actions/setup-go@v3
+      - uses: magnetikonline/action-golang-cache@v2
         with:
           go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-oonimkall-${{ steps.goversion.outputs.version }}"
 
       - run: |
           echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
@@ -33,14 +37,147 @@ jobs:
           PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
           PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
 
-      - run: make ./MOBILE/android
+      - run: make MOBILE/android
 
       - run: |
-          tag=$(echo $GITHUB_REF | sed 's|refs/tags/||g')
-          gh release create -p $tag --target $GITHUB_SHA || true
-          gh release upload $tag --clobber ./MOBILE/android/oonimkall.aar \
-                                           ./MOBILE/android/oonimkall-sources.jar \
-                                           ./MOBILE/android/oonimkall.pom
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+          ./script/ghpublish.bash ./MOBILE/android/oonimkall.aar \
+                                  ./MOBILE/android/oonimkall-sources.jar \
+                                  ./MOBILE/android/oonimkall.pom
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_and_publish_cli_386:
+    runs-on: ubuntu-20.04
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo ::set-output name=version::$(cat GOVERSION)
+
+      - uses: magnetikonline/action-golang-cache@v2
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-cli-386-${{ steps.goversion.outputs.version }}"
+
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
+
+      - run: make CLI/android-386
+
+      - run: |
+          ./script/ghpublish.bash ./CLI/miniooni-android-386 \
+                                  ./CLI/ooniprobe-android-386
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_and_publish_cli_amd64:
+    runs-on: ubuntu-20.04
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo ::set-output name=version::$(cat GOVERSION)
+
+      - uses: magnetikonline/action-golang-cache@v2
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-cli-amd64-${{ steps.goversion.outputs.version }}"
+
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
+
+      - run: make CLI/android-amd64
+
+      - run: |
+          ./script/ghpublish.bash ./CLI/miniooni-android-amd64 \
+                                  ./CLI/ooniprobe-android-amd64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_and_publish_cli_arm:
+    runs-on: ubuntu-20.04
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo ::set-output name=version::$(cat GOVERSION)
+
+      - uses: magnetikonline/action-golang-cache@v2
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-cli-arm-${{ steps.goversion.outputs.version }}"
+
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
+
+      - run: make CLI/android-arm
+
+      - run: |
+          ./script/ghpublish.bash ./CLI/miniooni-android-arm \
+                                  ./CLI/ooniprobe-android-arm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_and_publish_cli_arm64:
+    runs-on: ubuntu-20.04
+    permissions: # See https://github.com/ooni/probe/issues/2154
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get GOVERSION content
+        id: goversion
+        run: echo ::set-output name=version::$(cat GOVERSION)
+
+      - uses: magnetikonline/action-golang-cache@v2
+        with:
+          go-version: "${{ steps.goversion.outputs.version }}"
+          cache-key-suffix: "-android-cli-arm64-${{ steps.goversion.outputs.version }}"
+
+      - run: |
+          echo -n $PSIPHON_CONFIG_KEY > ./internal/engine/psiphon-config.key
+          echo $PSIPHON_CONFIG_JSON_AGE_BASE64 | base64 -d > ./internal/engine/psiphon-config.json.age
+        env:
+          PSIPHON_CONFIG_KEY: ${{ secrets.PSIPHON_CONFIG_KEY }}
+          PSIPHON_CONFIG_JSON_AGE_BASE64: ${{ secrets.PSIPHON_CONFIG_JSON_AGE_BASE64 }}
+
+      - run: make CLI/android-arm64
+
+      - run: |
+          ./script/ghpublish.bash ./CLI/miniooni-android-arm64 \
+                                  ./CLI/ooniprobe-android-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

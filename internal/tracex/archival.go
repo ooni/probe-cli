@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/geolocate"
+	"github.com/ooni/probe-cli/v3/internal/geoipx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
@@ -71,6 +71,9 @@ func NewTCPConnectList(begin time.Time, events []Event) (out []TCPConnectEntry) 
 	}
 	return
 }
+
+// TODO(bassosimone): can we use measurexlite.NewFailure here? Do we need to have
+// a string (as opposed to *string) representation of failures here?
 
 // NewFailure creates a failure nullable string from the given error. This function
 // is equivalent to NewFailureStr(err).ToFailure().
@@ -201,7 +204,7 @@ func (qtype dnsQueryType) makeAnswerEntry(addr string) DNSAnswerEntry {
 	answer := DNSAnswerEntry{AnswerType: string(qtype)}
 	// Figuring out the ASN and the org here is not just a service to whoever
 	// is reading a JSON: Web Connectivity also depends on it!
-	asn, org, _ := geolocate.LookupASN(addr)
+	asn, org, _ := geoipx.LookupASN(addr)
 	answer.ASN = int64(asn)
 	answer.ASOrgName = org
 	switch qtype {

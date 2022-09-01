@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["telegram"] = &Factory{
+	AllExperiments["telegram"] = &Factory{
 		build: func(config any) model.ExperimentMeasurer {
 			return telegram.NewExperimentMeasurer(
 				config.(telegram.Config),

@@ -11,10 +11,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ooni/probe-cli/v3/internal/atomicx"
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
+
+// experimentShuffledInputs counts how many times we shuffled inputs
+var experimentShuffledInputs = &atomicx.Int64{}
 
 // Experiment describes an experiment to run. You MUST fill all the fields that
 // are marked as MANDATORY, otherwise Experiment.Run will cause panics.
@@ -52,6 +56,22 @@ type Experiment struct {
 
 	// Session is the MANDATORY session.
 	Session Session
+
+	// newExperimentBuilderFn is OPTIONAL and used for testing.
+	newExperimentBuilderFn func(experimentName string) (model.ExperimentBuilder, error)
+
+	// newInputLoaderFn is OPTIONAL and used for testing.
+	newInputLoaderFn func(inputPolicy model.InputPolicy) inputLoader
+
+	// newSubmitterFn is OPTIONAL and used for testing.
+	newSubmitterFn func(ctx context.Context) (engine.Submitter, error)
+
+	// newSaverFn is OPTIONAL and used for testing.
+	newSaverFn func(experiment model.Experiment) (engine.Saver, error)
+
+	// newInputProcessorFn is OPTIONAL and used for testing.
+	newInputProcessorFn func(experiment model.Experiment, inputList []model.OOAPIURLInfo,
+		saver engine.Saver, submitter engine.Submitter) inputProcessor
 }
 
 // Run runs the given experiment.
@@ -76,6 +96,7 @@ func (ed *Experiment) Run(ctx context.Context) error {
 		rnd.Shuffle(len(inputList), func(i, j int) {
 			inputList[i], inputList[j] = inputList[j], inputList[i]
 		})
+		experimentShuffledInputs.Add(1)
 	}
 
 	// 4. configure experiment's options
@@ -112,14 +133,15 @@ func (ed *Experiment) Run(ctx context.Context) error {
 	return inputProcessor.Run(ctx)
 }
 
-// inputProcessor processes inputs running the given experiment.
-type inputProcessor interface {
-	Run(ctx context.Context) error
-}
+// inputProcessor is an alias for model.ExperimentInputProcessor
+type inputProcessor = model.ExperimentInputProcessor
 
 // newInputProcessor creates a new inputProcessor instance.
 func (ed *Experiment) newInputProcessor(experiment model.Experiment,
 	inputList []model.OOAPIURLInfo, saver engine.Saver, submitter engine.Submitter) inputProcessor {
+	if ed.newInputProcessorFn != nil {
+		return ed.newInputProcessorFn(experiment, inputList, saver, submitter)
+	}
 	return &engine.InputProcessor{
 		Annotations: ed.Annotations,
 		Experiment: &experimentWrapper{
@@ -140,6 +162,9 @@ func (ed *Experiment) newInputProcessor(experiment model.Experiment,
 
 // newSaver creates a new engine.Saver instance.
 func (ed *Experiment) newSaver(experiment model.Experiment) (engine.Saver, error) {
+	if ed.newSaverFn != nil {
+		return ed.newSaverFn(experiment)
+	}
 	return engine.NewSaver(engine.SaverConfig{
 		Enabled:    !ed.NoJSON,
 		Experiment: experiment,
@@ -150,6 +175,9 @@ func (ed *Experiment) newSaver(experiment model.Experiment) (engine.Saver, error
 
 // newSubmitter creates a new engine.Submitter instance.
 func (ed *Experiment) newSubmitter(ctx context.Context) (engine.Submitter, error) {
+	if ed.newSubmitterFn != nil {
+		return ed.newSubmitterFn(ctx)
+	}
 	return engine.NewSubmitter(ctx, engine.SubmitterConfig{
 		Enabled: !ed.NoCollector,
 		Session: ed.Session,
@@ -159,16 +187,20 @@ func (ed *Experiment) newSubmitter(ctx context.Context) (engine.Submitter, error
 
 // newExperimentBuilder creates a new engine.ExperimentBuilder for the given experimentName.
 func (ed *Experiment) newExperimentBuilder(experimentName string) (model.ExperimentBuilder, error) {
+	if ed.newExperimentBuilderFn != nil {
+		return ed.newExperimentBuilderFn(experimentName)
+	}
 	return ed.Session.NewExperimentBuilder(ed.Name)
 }
 
-// inputLoader loads inputs from local or remote sources.
-type inputLoader interface {
-	Load(ctx context.Context) ([]model.OOAPIURLInfo, error)
-}
+// inputLoader is an alias for model.ExperimentInputLoader
+type inputLoader = model.ExperimentInputLoader
 
 // newInputLoader creates a new inputLoader.
 func (ed *Experiment) newInputLoader(inputPolicy model.InputPolicy) inputLoader {
+	if ed.newInputLoaderFn != nil {
+		return ed.newInputLoaderFn(inputPolicy)
+	}
 	return &engine.InputLoader{
 		CheckInConfig: &model.OOAPICheckInConfig{
 			RunType:  model.RunTypeManual,

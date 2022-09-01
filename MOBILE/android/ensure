@@ -4,7 +4,7 @@ set -euo pipefail
 
 __install_extra="build-tools;32.0.0 platforms;android-31"
 
-__ndk_version="23.1.7779620"
+__ndk_version=$(cat ./NDKVERSION)
 
 ANDROID_HOME=$(./MOBILE/android/home)
 
