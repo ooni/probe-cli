@@ -15,19 +15,19 @@ type Config struct {
 	ResolverURL string `ooni:"URL for DoH resolver"`
 
 	// SNIPass is the SNI value we don't expect to be blocked
-	SNIControl string `ooni:"the SNI value to cal"`
+	SNIControl string `ooni:"control SNI value for testhelper"`
 
 	// Delay is the delay between each iteration (in milliseconds).
 	Delay int64 `ooni:"delay between consecutive iterations"`
 
-	// Iterations is the default number of interations we trace
-	MaxTTL int64 `ooni:"iterations is the number of iterations"`
+	// MaxTTL is the default number of interations we trace
+	MaxTTL int64 `ooni:"maximum TTL value to iterate upto"`
 
-	// TestHelper iis the testhelper host for iterative tracing
-	TestHelper string `ooni:"the SNI value to use"`
+	// TestHelper is the testhelper host for iterative tracing
+	TestHelper string `ooni:"testhelper URL to use for tracing"`
 
 	// ClientId is the client fingerprint to use
-	ClientId int `ooni:"the ClientHello fingerprint to use"`
+	ClientId int `ooni:"ClientHello fingerprint to use"`
 }
 
 func (c Config) resolverURL() string {
