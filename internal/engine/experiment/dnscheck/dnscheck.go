@@ -211,7 +211,7 @@ func (m *Measurer) Run(
 				HTTP3Enabled:     m.Config.HTTP3Enabled,
 				RejectDNSBogons:  true, // bogons are errors in this context
 				ResolverURL:      makeResolverURL(URL, addr),
-				Timeout:          45 * time.Second,
+				Timeout:          15 * time.Second,
 			},
 			Target: fmt.Sprintf("dnslookup://%s", domain), // urlgetter wants a URL
 		})
@@ -234,7 +234,7 @@ func (m *Measurer) Run(
 }
 
 func (m *Measurer) lookupHost(ctx context.Context, hostname string, r model.Resolver) ([]string, error) {
-	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	return r.LookupHost(ctx, hostname)
 }
