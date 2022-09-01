@@ -42,7 +42,7 @@ func newIterationFromHandshake(ttl int, err error, soErr error, handshake *model
 		}
 	}
 	if soErr != nil {
-		handshake.ICMPFailure = tracex.NewFailure(soErr)
+		handshake.SoError = tracex.NewFailure(soErr)
 	}
 	return &Iteration{
 		TTL:       ttl,

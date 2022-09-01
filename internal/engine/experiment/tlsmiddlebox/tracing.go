@@ -111,8 +111,8 @@ func extractSoError(conn net.Conn) error {
 	if err != nil || errors.Is(soErrno, syscall.Errno(0)) {
 		return nil
 	}
-	icmpErr := netxlite.MaybeNewErrWrapper(netxlite.ClassifyGenericError, netxlite.TLSHandshakeOperation, soErrno)
-	return icmpErr
+	soErr := netxlite.MaybeNewErrWrapper(netxlite.ClassifyGenericError, netxlite.TLSHandshakeOperation, soErrno)
+	return soErr
 }
 
 // genTLSConfig generates tls.Config from a given SNI
