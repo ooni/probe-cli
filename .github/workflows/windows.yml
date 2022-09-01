@@ -7,6 +7,8 @@ on:
       - "fullbuild"
     tags:
       - "v*"
+  schedule:
+    - cron: "17 1 * * *"
 
 jobs:
   build:
