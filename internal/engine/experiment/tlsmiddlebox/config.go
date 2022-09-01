@@ -58,9 +58,9 @@ func (c Config) maxttl() int64 {
 	return 20
 }
 
-// TODO(DecFox): We want to replace this with a generic input parser
-// Issue: https://github.com/ooni/probe/issues/2239
 func (c Config) testhelper(address string) (URL *url.URL, err error) {
+	// TODO(DecFox): We want to replace this with a generic input parser
+	// Issue: https://github.com/ooni/probe/issues/2239
 	if c.TestHelper != "" {
 		return url.Parse(c.TestHelper)
 	}

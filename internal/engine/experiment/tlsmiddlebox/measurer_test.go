@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 )
 
@@ -32,8 +32,10 @@ func TestMeasurer_input_failure(t *testing.T) {
 		meas := &model.Measurement{
 			Input: model.MeasurementTarget(input),
 		}
-		sess := &mockable.Session{
-			MockableLogger: model.DiscardLogger,
+		sess := &mocks.Session{
+			MockLogger: func() model.Logger {
+				return model.DiscardLogger
+			},
 		}
 		callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 		err := m.Run(ctx, sess, meas, callbacks)

@@ -1,5 +1,4 @@
 // Package tlsmiddlebox implements the tlsmiddlebox experiment
 //
-// TODO(DecFox): Update the tlsmiddlebox spec here
-// Spec:
+// Spec: https://github.com/ooni/spec/blob/master/nettests/ts-037-tlsmiddlebox.md.
 package tlsmiddlebox

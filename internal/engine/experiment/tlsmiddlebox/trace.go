@@ -7,8 +7,6 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
 
-// TODO(DecFox): Synchronise types with the proposed experiment spec
-
 // CompleteTrace records the result of the network trace
 // using a control SNI and a target SNI
 type CompleteTrace struct {
