@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	allexperiments["portfiltering"] = &Factory{
+	AllExperiments["portfiltering"] = &Factory{
 		build: func(config any) model.ExperimentMeasurer {
 			return portfiltering.NewExperimentMeasurer(
 				config.(portfiltering.Config),
