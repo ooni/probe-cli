@@ -86,7 +86,7 @@ func TestOOClientDoWithEmptyServerURL(t *testing.T) {
 
 func TestOOClientDoWithInvalidTargetURL(t *testing.T) {
 	ctx := context.Background()
-	config := internal.OOConfig{TargetURL: "\t", ServerURL: "https://wcth.ooni.io"}
+	config := internal.OOConfig{TargetURL: "\t", ServerURL: "https://0.th.ooni.org"}
 	clnt := internal.OOClient{}
 	cresp, err := clnt.Do(ctx, config)
 	if !errors.Is(err, internal.ErrInvalidURL) {
@@ -104,7 +104,7 @@ func TestOOClientDoWithResolverFailure(t *testing.T) {
 	ctx := context.Background()
 	config := internal.OOConfig{
 		TargetURL: "http://www.example.com",
-		ServerURL: "https://wcth.ooni.io",
+		ServerURL: "https://0.th.ooni.org",
 	}
 	clnt := internal.OOClient{
 		HTTPClient: http.DefaultClient,
@@ -114,10 +114,12 @@ func TestOOClientDoWithResolverFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cresp.TCPConnect) > 0 {
-		// The current implementation of the test helper (the legacy codebase)
-		// only follows the IP addresses returned by the client.
-		t.Fatal("expected empty TCPConnect here")
+	if len(cresp.TCPConnect) <= 0 {
+		// The legacy implementation of the test helper (the legacy codebase)
+		// only follows the IP addresses returned by the client. However, since
+		// https://github.com/ooni/probe-cli/pull/890, the TH is following the
+		// IP addresses from the probe as well as its own addresses.
+		t.Fatal("expected non-empty TCPConnect here")
 	}
 	if cresp.HTTPRequest.StatusCode != 200 {
 		t.Fatal("expected 200 status code here")
@@ -131,7 +133,7 @@ func TestOOClientDoWithUnsupportedExplicitPort(t *testing.T) {
 	ctx := context.Background()
 	config := internal.OOConfig{
 		TargetURL: "http://www.example.com:8080",
-		ServerURL: "https://wcth.ooni.io",
+		ServerURL: "https://0.th.ooni.org",
 	}
 	clnt := internal.OOClient{
 		Resolver: internal.NewFakeResolverWithResult([]string{"1.1.1.1"}),
@@ -168,7 +170,7 @@ func TestOOClientDoWithRoundTripError(t *testing.T) {
 	ctx := context.Background()
 	config := internal.OOConfig{
 		TargetURL: "http://www.example.com",
-		ServerURL: "https://wcth.ooni.io",
+		ServerURL: "https://0.th.ooni.org",
 	}
 	clnt := internal.OOClient{
 		Resolver: internal.NewFakeResolverWithResult([]string{"1.1.1.1"}),
@@ -189,7 +191,7 @@ func TestOOClientDoWithInvalidStatusCode(t *testing.T) {
 	ctx := context.Background()
 	config := internal.OOConfig{
 		TargetURL: "http://www.example.com",
-		ServerURL: "https://wcth.ooni.io",
+		ServerURL: "https://0.th.ooni.org",
 	}
 	clnt := internal.OOClient{
 		Resolver: internal.NewFakeResolverWithResult([]string{"1.1.1.1"}),
@@ -214,7 +216,7 @@ func TestOOClientDoWithBodyReadError(t *testing.T) {
 	ctx := context.Background()
 	config := internal.OOConfig{
 		TargetURL: "http://www.example.com",
-		ServerURL: "https://wcth.ooni.io",
+		ServerURL: "https://0.th.ooni.org",
 	}
 	clnt := internal.OOClient{
 		Resolver: internal.NewFakeResolverWithResult([]string{"1.1.1.1"}),
@@ -240,7 +242,7 @@ func TestOOClientDoWithInvalidJSON(t *testing.T) {
 	ctx := context.Background()
 	config := internal.OOConfig{
 		TargetURL: "http://www.example.com",
-		ServerURL: "https://wcth.ooni.io",
+		ServerURL: "https://0.th.ooni.org",
 	}
 	clnt := internal.OOClient{
 		Resolver: internal.NewFakeResolverWithResult([]string{"1.1.1.1"}),
@@ -290,7 +292,7 @@ func TestOOClientDoWithParseableJSON(t *testing.T) {
 	ctx := context.Background()
 	config := internal.OOConfig{
 		TargetURL: "http://www.example.com",
-		ServerURL: "https://wcth.ooni.io",
+		ServerURL: "https://0.th.ooni.org",
 	}
 	clnt := internal.OOClient{
 		Resolver: internal.NewFakeResolverWithResult([]string{"1.1.1.1"}),

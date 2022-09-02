@@ -29,7 +29,7 @@ func newclient() probeservices.Client {
 	ua := fmt.Sprintf("apitool/%s ooniprobe-engine/%s", version.Version, version.Version)
 	return probeservices.Client{
 		APIClientTemplate: httpx.APIClientTemplate{
-			BaseURL:    "https://ams-pg.ooni.org/",
+			BaseURL:    "https://api.ooni.io/",
 			HTTPClient: &http.Client{Transport: txp},
 			Logger:     log.Log,
 			UserAgent:  ua,
