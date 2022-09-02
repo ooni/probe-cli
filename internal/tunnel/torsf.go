@@ -1,5 +1,9 @@
 package tunnel
 
+//
+// torsf: Tor+snowflake tunnel
+//
+
 import (
 	"context"
 	"net/url"
@@ -9,6 +13,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/ptx"
 )
 
+// torsfStart starts the torsf (tor+snowflake) tunnel
 func torsfStart(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) {
 	config.logger().Infof("tunnel: starting snowflake with %s rendezvous method", config.snowflakeRendezvousMethod())
 
@@ -42,6 +47,7 @@ func torsfStart(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) 
 		return nil, debugInfo, err
 	}
 
+	// 4. wrap the result to avoid leaking resources
 	torsfTunnel := &torsfTunnel{
 		torTunnel:  torTunnel,
 		sfListener: ptl,
