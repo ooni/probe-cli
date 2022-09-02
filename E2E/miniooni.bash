@@ -6,7 +6,7 @@
 #
 set -e
 backends=()
-backends+=( "https://ps1.ooni.io" )
+backends+=( "https://api.ooni.io" )
 backends+=( "https://dvp6h0xblpcqp.cloudfront.net" )
 backends+=( "https://ams-pg-test.ooni.org" )
 miniooni="${1:-./miniooni}"
