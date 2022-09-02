@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/internal/sessionresolver"
+	"github.com/ooni/probe-cli/v3/internal/engine/sessionresolver"
 	"github.com/ooni/probe-cli/v3/internal/kvstore"
 )
 

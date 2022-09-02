@@ -29,22 +29,6 @@ func TestNewDNSClientUnsupportedScheme(t *testing.T) {
 	}
 }
 
-func TestNewDNSClientPowerdnsDoH(t *testing.T) {
-	dnsclient, err := NewDNSClient(
-		Config{}, "doh://powerdns")
-	if err != nil {
-		t.Fatal(err)
-	}
-	r, ok := dnsclient.(*netxlite.SerialResolver)
-	if !ok {
-		t.Fatal("not the resolver we expected")
-	}
-	if _, ok := r.Transport().(*netxlite.DNSOverHTTPSTransport); !ok {
-		t.Fatal("not the transport we expected")
-	}
-	dnsclient.CloseIdleConnections()
-}
-
 func TestNewDNSClientGoogleDoH(t *testing.T) {
 	dnsclient, err := NewDNSClient(
 		Config{}, "doh://google")

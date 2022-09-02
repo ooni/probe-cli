@@ -36,8 +36,6 @@ var allmakers = []*resolvermaker{{
 }, {
 	url: "https://dns.quad9.net/dns-query",
 }, {
-	url: "https://doh.powerdns.org/",
-}, {
 	url: systemResolverURL,
 }, {
 	url: "https://mozilla.cloudflare-dns.com/dns-query",
