@@ -28,6 +28,10 @@ type Config struct {
 	// of obtaining a valid psiphon configuration.
 	Session Session
 
+	// SnowflakeRendezvous is the OPTIONAL rendezvous
+	// method for snowflake
+	SnowflakeRendezvous string
+
 	// TunnelDir is the MANDATORY directory in which the tunnel SHOULD
 	// store its state, if any. If this field is empty, the
 	// Start function fails with ErrEmptyTunnelDir.
@@ -72,6 +76,14 @@ type Config struct {
 	// testTorGetInfo allows us to fake a failure when
 	// getting info from the tor control port.
 	testTorGetInfo func(ctrl *control.Conn, keys ...string) ([]*control.KeyVal, error)
+}
+
+// snowflakeRendezvousMethod returns the rendezvous method that snowflake should use
+func (c *Config) snowflakeRendezvousMethod() string {
+	if c.SnowflakeRendezvous != "" {
+		return c.SnowflakeRendezvous
+	}
+	return "domain_fronting"
 }
 
 // logger returns the logger to use.

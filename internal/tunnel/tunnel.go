@@ -124,6 +124,8 @@ func Start(ctx context.Context, config *Config) (Tunnel, DebugInfo, error) {
 		return fakeStart(ctx, config)
 	case "psiphon":
 		return psiphonStart(ctx, config)
+	case "torsf":
+		return torsfStart(ctx, config)
 	case "tor":
 		return torStart(ctx, config)
 	default:
