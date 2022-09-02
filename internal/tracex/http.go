@@ -62,10 +62,6 @@ type HTTPTransportSaver struct {
 // body snapshot that we collect along with the HTTP round trip.
 func (txp *HTTPTransportSaver) RoundTrip(req *http.Request) (*http.Response, error) {
 
-	// TODO(bassosimone): we're currently using the started time for
-	// the transaction done event, which contrasts with what we do for
-	// every other event. What does the spec say?
-
 	started := time.Now()
 	txp.Saver.Write(&EventHTTPTransactionStart{&EventValue{
 		HTTPRequestHeaders: httpCloneRequestHeaders(req),
@@ -79,9 +75,12 @@ func (txp *HTTPTransportSaver) RoundTrip(req *http.Request) (*http.Response, err
 		HTTPMethod:         req.Method,
 		HTTPURL:            req.URL.String(),
 		Transport:          txp.HTTPTransport.Network(),
-		Time:               started,
+		Time:               time.Time{}, // see below
 	}
-	defer txp.Saver.Write(&EventHTTPTransactionDone{ev})
+	defer func() {
+		ev.Time = time.Now() // https://github.com/ooni/probe/issues/2137
+		txp.Saver.Write(&EventHTTPTransactionDone{ev})
+	}()
 
 	resp, err := txp.HTTPTransport.RoundTrip(req)
 
