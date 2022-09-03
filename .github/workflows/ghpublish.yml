@@ -1,5 +1,5 @@
 # Verifies that `./script/ghpublish.bash` is WAI
-name: generate
+name: ghpublish
 on:
   push:
     branches:
@@ -8,7 +8,7 @@ on:
       - "ghpublishbuild"
 
 jobs:
-  test:
+  test_ghpublish_bash:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
