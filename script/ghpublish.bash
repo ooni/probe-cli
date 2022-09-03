@@ -26,8 +26,8 @@ gh=${gh:-gh}
 
 set -x
 
-# 3. create the release as a pre-release unless it already exists
+# 4. create the release as a pre-release unless it already exists
 $gh release create $prerelease $__tag --target $GITHUB_SHA || true
 
-# 4. publish all the assets passed as arguments to the target release
+# 5. publish all the assets passed as arguments to the target release
 $gh release upload $__tag --clobber "$@"
