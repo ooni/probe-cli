@@ -25,4 +25,3 @@ set -x
 # 4. generate the actual tarball
 go mod vendor
 tar -czf ooni-probe-cli-${__version}.tar.gz --transform "s,^,ooni-probe-cli-${__version}/," *
-
