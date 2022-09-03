@@ -10,7 +10,7 @@ if [[ $__ref == "" ]]; then
 	exit 1
 fi
 
-# 2. determine whether use a release tag name or just "rolling"
+# 2. determine whether to use a release tag name or just "rolling"
 if [[ $__ref =~ ^refs/tags/v ]]; then
 	__version=${__ref#refs/tags/v}
 else
