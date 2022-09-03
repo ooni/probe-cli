@@ -16,10 +16,18 @@ else
 	__tag=rolling
 fi
 
+# 3. determine whether this is a pre-release
+prerelease="-p"
+if [[ $__tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+	prerelease=""
+fi
+
+gh=${gh:-gh}
+
 set -x
 
-# 3. create the release as a pre-release unless it already exists
-gh release create -p $__tag --target $GITHUB_SHA || true
+# 4. create the release unless it already exists
+$gh release create $prerelease $__tag --target $GITHUB_SHA || true
 
-# 4. publish all the assets passed as arguments to the target release
-gh release upload $__tag --clobber "$@"
+# 5. publish all the assets passed as arguments to the target release
+$gh release upload $__tag --clobber "$@"
