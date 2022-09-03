@@ -18,8 +18,8 @@ fi
 
 set -x
 
-# 3. create the release as a pre-release unless it already exists
-gh release create -p $__tag --target $GITHUB_SHA || true
+# 3. create the release as a draft pre-release unless it already exists
+gh release create --generate-notes -d -p $__tag --target $GITHUB_SHA || true
 
 # 4. publish all the assets passed as arguments to the target release
 gh release upload $__tag --clobber "$@"
