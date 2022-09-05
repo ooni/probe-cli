@@ -17,6 +17,7 @@ func TestNewHandlerWithDefaultSettings(t *testing.T) {
 	if lh.Emoji {
 		t.Fatal("expected false")
 	}
+	// Note: Go does not allow us to check whether lh.Now == time.Now
 	if lh.StartTime.IsZero() {
 		t.Fatal("expected non-zero time")
 	}
@@ -25,6 +26,7 @@ func TestNewHandlerWithDefaultSettings(t *testing.T) {
 	}
 }
 
+// creates a new handler with deterministic time to help with testing
 func newHandlerForTesting() *Handler {
 	lh := NewHandlerWithDefaultSettings()
 	dtime := testingx.NewTimeDeterministic(time.Now())

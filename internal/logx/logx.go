@@ -12,13 +12,13 @@ import (
 
 // Handler implements github.com/apex/log.Handler.
 type Handler struct {
-	// Emoji is OPTIONAL indicates whether to enable emojis.
+	// Emoji is OPTIONAL and indicates whether to enable emojis.
 	Emoji bool
 
 	// Now is the MANDATORY function to compute the current time.
 	Now func() time.Time
 
-	// StartTime MANDATORY and indicates when we started logging.
+	// StartTime is MANDATORY and indicates when we started logging.
 	StartTime time.Time
 
 	// Writer is MANDATORY and is the underlying writer.

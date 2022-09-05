@@ -7,7 +7,7 @@ type Writer struct {
 	MockWrite func(b []byte) (int, error)
 }
 
-// MockableWriter implements an io.Writer.
+// Writer implements an io.Writer.
 var _ io.Writer = &Writer{}
 
 // Write implements io.Writer.Write.
