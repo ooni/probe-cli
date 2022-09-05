@@ -8,11 +8,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/ooni/probe-cli/v3/internal/model"
 )
-
-// DiscardLogger is a logger that discards all its input
-var DiscardLogger = model.DiscardLogger
 
 // Handler implements github.com/apex/log.Handler.
 type Handler struct {
