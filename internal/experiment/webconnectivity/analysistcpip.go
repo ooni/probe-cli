@@ -33,11 +33,6 @@ func (tk *TestKeys) analysisTCPIPToplevel(logger model.Logger) {
 		isfalse = false
 	)
 
-	// TODO(bassosimone): the TH should measure also some of the IP addrs it discovered
-	// and the probe did not discover to improve the analysis. Otherwise, the probe
-	// is fooled by the TH also failing for countries that return random IP addresses
-	// that are actually not working. Yet, ooni/data would definitely see this.
-
 	// walk the list of probe results and compare with TH results
 	for _, entry := range tk.TCPConnect {
 		// skip successful entries
@@ -75,7 +70,12 @@ func (tk *TestKeys) analysisTCPIPToplevel(logger model.Logger) {
 			// for the pipeline rather than for the probe.
 			continue
 		}
-		logger.Warnf("TCP/IP: endpoint %s is blocked (see #%d)", epnt, entry.TransactionID)
+		logger.Warnf(
+			"TCP/IP: endpoint %s is blocked (see #%d): %s",
+			epnt,
+			entry.TransactionID,
+			*failure,
+		)
 		entry.Status.Blocked = &istrue
 		tk.BlockingFlags |= analysisFlagTCPIPBlocking
 	}

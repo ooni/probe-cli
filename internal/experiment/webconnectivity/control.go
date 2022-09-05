@@ -100,12 +100,13 @@ func (c *Control) Run(parentCtx context.Context) {
 	}
 	c.TestKeys.SetControlRequest(creq)
 
-	// TODO(bassosimone): the current TH will not perform TLS measurements for
-	// 443 endpoints. However, we should modify the TH to do that, such that we're
-	// able to be more confident about TLS measurements results.
-
 	// create logger for this operation
-	ol := measurexlite.NewOperationLogger(c.Logger, "control for %s", creq.HTTPRequest)
+	ol := measurexlite.NewOperationLogger(
+		c.Logger,
+		"control for %s using %s",
+		creq.HTTPRequest,
+		c.THAddr,
+	)
 
 	// create an API client
 	clnt := (&httpx.APIClientTemplate{
