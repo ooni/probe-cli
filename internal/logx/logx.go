@@ -45,7 +45,7 @@ func (h *Handler) HandleLog(e *log.Entry) (err error) {
 		case log.DebugLevel:
 			level = "🧐"
 		case log.InfoLevel:
-			level = "🗒️"
+			level = "🗒️ "
 		case log.WarnLevel:
 			level = "🔥"
 		default:

@@ -82,7 +82,7 @@ func (t *DNSResolvers) Start(ctx context.Context) {
 }
 
 // run performs a DNS lookup and returns the looked up addrs
-func (t *DNSResolvers) run(parentCtx context.Context) []string {
+func (t *DNSResolvers) run(parentCtx context.Context) []DNSEntry {
 	// create output channels for the lookup
 	systemOut := make(chan []string)
 	udpOut := make(chan []string)
@@ -117,39 +117,42 @@ func (t *DNSResolvers) run(parentCtx context.Context) []string {
 	})
 
 	// merge the resolved IP addresses
-	merged := map[string]bool{}
+	merged := map[string]*DNSEntry{}
 	for _, addr := range systemAddrs {
-		merged[addr] = true
+		if _, found := merged[addr]; !found {
+			merged[addr] = &DNSEntry{}
+		}
+		merged[addr].Addr = addr
+		merged[addr].Flags |= DNSAddrFlagSystemResolver
 	}
 	for _, addr := range udpAddrs {
-		merged[addr] = true
+		if _, found := merged[addr]; !found {
+			merged[addr] = &DNSEntry{}
+		}
+		merged[addr].Addr = addr
+		merged[addr].Flags |= DNSAddrFlagUDP
 	}
 	for _, addr := range httpsAddrs {
-		merged[addr] = true
-	}
-
-	// rearrange addresses to have IPv4 first
-	sorted := []string{}
-	for addr := range merged {
-		if v6, err := netxlite.IsIPv6(addr); err == nil && !v6 {
-			sorted = append(sorted, addr)
+		if _, found := merged[addr]; !found {
+			merged[addr] = &DNSEntry{}
 		}
+		merged[addr].Addr = addr
+		merged[addr].Flags |= DNSAddrFlagHTTPS
 	}
-	for addr := range merged {
-		if v6, err := netxlite.IsIPv6(addr); err == nil && v6 {
-			sorted = append(sorted, addr)
-		}
+	// implementation note: we don't remove bogons because accessing
+	// them can lead us to discover block pages
+	var entries []DNSEntry
+	for _, entry := range merged {
+		entries = append(entries, *entry)
 	}
 
-	// TODO(bassosimone): remove bogons
-
-	return sorted
+	return entries
 }
 
 // Run runs this task in the current goroutine.
 func (t *DNSResolvers) Run(parentCtx context.Context) {
 	var (
-		addresses []string
+		addresses []DNSEntry
 		found     bool
 	)
 
@@ -162,9 +165,11 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 
 		// insert the addresses we just looked us into the cache
 		t.DNSCache.Set(t.Domain, addresses)
-	}
 
-	log.Infof("using resolved addrs: %+v", addresses)
+		log.Infof("using resolved addrs: %+v", addresses)
+	} else {
+		log.Infof("using previously-cached addrs: %+v", addresses)
+	}
 
 	// fan out a number of child async tasks to use the IP addrs
 	t.startCleartextFlows(parentCtx, addresses)
@@ -409,14 +414,14 @@ func (t *DNSResolvers) dohSplitQueries(
 }
 
 // startCleartextFlows starts a TCP measurement flow for each IP addr.
-func (t *DNSResolvers) startCleartextFlows(ctx context.Context, addresses []string) {
+func (t *DNSResolvers) startCleartextFlows(ctx context.Context, addresses []DNSEntry) {
 	sema := make(chan any, 1)
 	sema <- true // allow a single flow to fetch the HTTP body
 	t.startCleartextFlowsWithSema(ctx, sema, addresses)
 }
 
 // startCleartextFlowsWithSema implements EndpointMeasurementsStarter.
-func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-chan any, addresses []string) {
+func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-chan any, addresses []DNSEntry) {
 	if t.URL.Scheme != "http" {
 		// Do not bother with measuring HTTP when the user
 		// has asked us to measure an HTTPS URL.
@@ -427,12 +432,16 @@ func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-c
 		port = urlPort
 	}
 	for _, addr := range addresses {
+		maybeNilSema := sema
+		if (addr.Flags & DNSAddrFlagSystemResolver) == 0 {
+			maybeNilSema = nil // see https://github.com/ooni/probe/issues/2258
+		}
 		task := &CleartextFlow{
-			Address:         net.JoinHostPort(addr, port),
+			Address:         net.JoinHostPort(addr.Addr, port),
 			DNSCache:        t.DNSCache,
 			IDGenerator:     t.IDGenerator,
 			Logger:          t.Logger,
-			Sema:            sema,
+			Sema:            maybeNilSema,
 			TestKeys:        t.TestKeys,
 			ZeroTime:        t.ZeroTime,
 			WaitGroup:       t.WaitGroup,
@@ -449,7 +458,7 @@ func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-c
 }
 
 // startSecureFlows starts a TCP+TLS measurement flow for each IP addr.
-func (t *DNSResolvers) startSecureFlows(ctx context.Context, addresses []string) {
+func (t *DNSResolvers) startSecureFlows(ctx context.Context, addresses []DNSEntry) {
 	sema := make(chan any, 1)
 	if t.URL.Scheme == "https" {
 		// Allows just a single worker to fetch the response body but do that
@@ -461,7 +470,7 @@ func (t *DNSResolvers) startSecureFlows(ctx context.Context, addresses []string)
 }
 
 // startSecureFlowsWithSema implements EndpointMeasurementsStarter.
-func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan any, addresses []string) {
+func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan any, addresses []DNSEntry) {
 	port := "443"
 	if urlPort := t.URL.Port(); urlPort != "" {
 		if t.URL.Scheme != "https" {
@@ -472,12 +481,16 @@ func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan
 		port = urlPort
 	}
 	for _, addr := range addresses {
+		maybeNilSema := sema
+		if (addr.Flags & DNSAddrFlagSystemResolver) == 0 {
+			maybeNilSema = nil // see https://github.com/ooni/probe/issues/2258
+		}
 		task := &SecureFlow{
-			Address:         net.JoinHostPort(addr, port),
+			Address:         net.JoinHostPort(addr.Addr, port),
 			DNSCache:        t.DNSCache,
 			IDGenerator:     t.IDGenerator,
 			Logger:          t.Logger,
-			Sema:            sema,
+			Sema:            maybeNilSema,
 			TestKeys:        t.TestKeys,
 			ZeroTime:        t.ZeroTime,
 			WaitGroup:       t.WaitGroup,
@@ -496,10 +509,16 @@ func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan
 }
 
 // maybeStartControlFlow starts the control flow iff .Session and .THAddr are set.
-func (t *DNSResolvers) maybeStartControlFlow(ctx context.Context, addresses []string) {
+func (t *DNSResolvers) maybeStartControlFlow(ctx context.Context, addresses []DNSEntry) {
+	// note: for subsequent requests we don't set .Session and .THAddr hence
+	// we are not going to query the test helper more than once
 	if t.Session != nil && t.THAddr != "" {
+		var addrs []string
+		for _, addr := range addresses {
+			addrs = append(addrs, addr.Addr)
+		}
 		ctrl := &Control{
-			Addresses:                addresses,
+			Addresses:                addrs,
 			ExtraMeasurementsStarter: t, // allows starting follow-up measurement flows
 			Logger:                   t.Logger,
 			TestKeys:                 t.TestKeys,
