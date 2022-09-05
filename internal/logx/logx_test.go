@@ -74,7 +74,7 @@ func TestLogHandlerHandleLog(t *testing.T) {
 		Name:           "info level with emoji",
 		Emoji:          true,
 		Level:          log.InfoLevel,
-		ExpectSeverity: "🗒️",
+		ExpectSeverity: "  ",
 	}, {
 		Name:           "warn level with emoji",
 		Emoji:          true,
