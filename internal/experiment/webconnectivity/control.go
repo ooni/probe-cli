@@ -101,7 +101,12 @@ func (c *Control) Run(parentCtx context.Context) {
 	c.TestKeys.SetControlRequest(creq)
 
 	// create logger for this operation
-	ol := measurexlite.NewOperationLogger(c.Logger, "control for %s", creq.HTTPRequest)
+	ol := measurexlite.NewOperationLogger(
+		c.Logger,
+		"control for %s using %s",
+		creq.HTTPRequest,
+		c.THAddr,
+	)
 
 	// create an API client
 	clnt := (&httpx.APIClientTemplate{
