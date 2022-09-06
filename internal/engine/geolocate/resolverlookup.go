@@ -3,7 +3,8 @@ package geolocate
 import (
 	"context"
 	"errors"
-	"net"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
 )
 
 var (
@@ -16,7 +17,9 @@ type dnsResolver interface {
 	LookupHost(ctx context.Context, host string) (addrs []string, err error)
 }
 
-type resolverLookupClient struct{}
+type resolverLookupClient struct {
+	Resolver model.Resolver
+}
 
 func (rlc resolverLookupClient) do(ctx context.Context, r dnsResolver) (string, error) {
 	var ips []string
@@ -31,5 +34,5 @@ func (rlc resolverLookupClient) do(ctx context.Context, r dnsResolver) (string, 
 }
 
 func (rlc resolverLookupClient) LookupResolverIP(ctx context.Context) (ip string, err error) {
-	return rlc.do(ctx, &net.Resolver{})
+	return rlc.do(ctx, rlc.Resolver)
 }

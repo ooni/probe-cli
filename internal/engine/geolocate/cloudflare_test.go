@@ -8,6 +8,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 func TestIPLookupWorksUsingcloudlflare(t *testing.T) {
@@ -16,6 +17,7 @@ func TestIPLookupWorksUsingcloudlflare(t *testing.T) {
 		http.DefaultClient,
 		log.Log,
 		model.HTTPHeaderUserAgent,
+		netxlite.NewStdlibResolver(model.DiscardLogger),
 	)
 	if err != nil {
 		t.Fatal(err)

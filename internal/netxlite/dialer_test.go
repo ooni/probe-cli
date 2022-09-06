@@ -84,7 +84,7 @@ func TestDialerSystem(t *testing.T) {
 	t.Run("has a default timeout", func(t *testing.T) {
 		d := &DialerSystem{}
 		ud := d.newUnderlyingDialer()
-		if ud.(*net.Dialer).Timeout != dialerDefaultTimeout {
+		if ud.Timeout != dialerDefaultTimeout {
 			t.Fatal("unexpected default timeout")
 		}
 	})
@@ -93,7 +93,7 @@ func TestDialerSystem(t *testing.T) {
 		const smaller = 1 * time.Second
 		d := &DialerSystem{timeout: smaller}
 		ud := d.newUnderlyingDialer()
-		if ud.(*net.Dialer).Timeout != smaller {
+		if ud.Timeout != smaller {
 			t.Fatal("unexpected timeout")
 		}
 	})

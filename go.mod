@@ -35,18 +35,23 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rogpeppe/go-internal v1.9.0
 	github.com/rubenv/sql-migrate v1.2.0
+	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/upper/db/v4 v4.6.0
 	gitlab.com/yawning/obfs4.git v0.0.0-20220904064028-336a71d6e4cf
 	gitlab.com/yawning/utls.git v0.0.12-1
-	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
+	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be
 	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c
-	golang.org/x/sys v0.0.0-20220829200755-d48e67d00261
+	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec
 )
 
 require (
+	github.com/google/btree v1.0.1 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
+	golang.zx2c4.com/wintun v0.0.0-20211104114900-415007cec224 // indirect
+	gvisor.dev/gvisor v0.0.0-20220817001344-846276b3dbc5 // indirect
 )
 
 require (
@@ -130,6 +135,8 @@ require (
 	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.12 // indirect
+	golang.zx2c4.com/wireguard v0.0.0-20220920152132-bb719d3a6e2c
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 )

@@ -41,6 +41,18 @@
 // See also the design document at docs/design/dd-003-step-by-step.md,
 // which provides an overview of netxlite's main concerns.
 //
+// To implement integration testing, we support hijacking the core network
+// primitives used by this package, that is:
+//
+// 1. connecting a new TCP/UDP connection;
+//
+// 2. creating listening UDP sockets;
+//
+// 3. resolving domain names with getaddrinfo.
+//
+// By overriding the TProxyXXX variables, you can control these operations and
+// route traffic to, e.g., a wireguard peer where you implement censorship.
+//
 // Operations
 //
 // This package implements the following operations:

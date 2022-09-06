@@ -90,7 +90,9 @@ func NewTask(config Config) *Task {
 		probeIPLookupper:     ipLookupClient(config),
 		probeASNLookupper:    mmdbLookupper{},
 		resolverASNLookupper: mmdbLookupper{},
-		resolverIPLookupper:  resolverLookupClient{},
+		resolverIPLookupper: resolverLookupClient{
+			Resolver: config.Resolver,
+		},
 	}
 }
 

@@ -27,6 +27,7 @@ var (
 type lookupFunc func(
 	ctx context.Context, client *http.Client,
 	logger model.Logger, userAgent string,
+	resolver model.Resolver,
 ) (string, error)
 
 type method struct {
@@ -89,7 +90,7 @@ func (c ipLookupClient) doWithCustomFunc(
 	txp := netxlite.NewHTTPTransportWithResolver(c.Logger, c.Resolver)
 	clnt := &http.Client{Transport: txp}
 	defer clnt.CloseIdleConnections()
-	ip, err := fn(ctx, clnt, c.Logger, c.UserAgent)
+	ip, err := fn(ctx, clnt, c.Logger, c.UserAgent, c.Resolver)
 	if err != nil {
 		return model.DefaultProbeIP, err
 	}
