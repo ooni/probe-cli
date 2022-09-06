@@ -50,8 +50,8 @@ func serve(conn net.Conn) {
 	// create state for the DNAT
 	dnat := &dnatState{
 		mu:  sync.Mutex{},
-		tcp: map[uint16]*dnatRecord{},
-		udp: map[uint16]*dnatRecord{},
+		tcp: map[string]*dnatRecord{},
+		udp: map[string]*dnatRecord{},
 	}
 
 	// start DNS server running on the user-mode net stack

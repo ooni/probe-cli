@@ -7,9 +7,7 @@ package main
 import (
 	"context"
 	"io"
-	"math"
 	"net"
-	"strconv"
 	"sync"
 	"time"
 
@@ -33,25 +31,22 @@ func tcpProxyLoop(dnat *dnatState, listener net.Listener, localPort string) {
 func tcpProxyServe(dnat *dnatState, conn net.Conn, localPort string) {
 	defer conn.Close() // we own the conn
 
-	// step 1: obtain the peer's port
-	remoteAddr := conn.RemoteAddr()
-	_, port, err := net.SplitHostPort(remoteAddr.String())
+	// step 1: obtain the four tuple
+	srcIP, srcPort, dstIP, dstPort, err := fourTuple(conn)
 	if err != nil {
-		log.Warnf("tcpProxyServe: net.SplitHostPort: %s", err.Error())
+		log.Warnf("tcpProxyServe: fourTuple: %s", err.Error())
 		return
-	}
-	uport, err := strconv.Atoi(port)
-	if err != nil {
-		log.Warnf("tcpProxyServe: strconv.Atoi: %s", err.Error())
-		return
-	}
-	if uport < 0 || uport >= math.MaxUint16 {
-		log.Warn("tcpProxyServe: port out of bounds")
-		return
+
 	}
 
 	// 2. use DNAT to get the real destination addr
-	rec, err := dnat.getRecord(uint8(layers.IPProtocolTCP), uint16(uport))
+	rec, err := dnat.getRecord(
+		uint8(layers.IPProtocolTCP),
+		srcIP,
+		srcPort,
+		dstIP,
+		dstPort,
+	)
 	if err != nil {
 		log.Warnf("tcpProxyServe: dnat.getRecord: %s", err.Error())
 		return
