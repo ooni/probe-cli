@@ -6,9 +6,6 @@ package netxlite
 
 import (
 	"context"
-	"errors"
-	"io"
-	"math"
 	"net"
 	"time"
 
@@ -67,9 +64,6 @@ func newDNSOverTCPOrTLSTransport(
 	}
 }
 
-// errQueryTooLarge indicates the query is too large for the transport.
-var errQueryTooLarge = errors.New("oodns: query too large for this transport")
-
 // RoundTrip sends a query and receives a reply.
 func (t *DNSOverTCPTransport) RoundTrip(
 	ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
@@ -79,9 +73,6 @@ func (t *DNSOverTCPTransport) RoundTrip(
 	if err != nil {
 		return nil, err
 	}
-	if len(rawQuery) > math.MaxUint16 {
-		return nil, errQueryTooLarge
-	}
 	conn, err := t.dial(ctx, "tcp", t.address)
 	if err != nil {
 		return nil, err
@@ -90,20 +81,12 @@ func (t *DNSOverTCPTransport) RoundTrip(
 	const iotimeout = 10 * time.Second
 	conn.SetDeadline(time.Now().Add(iotimeout))
 	// Write request
-	buf := []byte{byte(len(rawQuery) >> 8)}
-	buf = append(buf, byte(len(rawQuery)))
-	buf = append(buf, rawQuery...)
-	if _, err = conn.Write(buf); err != nil {
+	if err := SendSimpleFrame(conn, rawQuery); err != nil {
 		return nil, err
 	}
 	// Read response
-	header := make([]byte, 2)
-	if _, err = io.ReadFull(conn, header); err != nil {
-		return nil, err
-	}
-	length := int(header[0])<<8 | int(header[1])
-	rawResponse := make([]byte, length)
-	if _, err = io.ReadFull(conn, rawResponse); err != nil {
+	rawResponse, err := RecvSimpleFrame(conn)
+	if err != nil {
 		return nil, err
 	}
 	return t.decoder.DecodeResponse(rawResponse, query)

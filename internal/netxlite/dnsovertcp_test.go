@@ -44,7 +44,7 @@ func TestDNSOverTCPTransport(t *testing.T) {
 				},
 			}
 			resp, err := txp.RoundTrip(context.Background(), query)
-			if !errors.Is(err, errQueryTooLarge) {
+			if !errors.Is(err, ErrSimpleFrameSize) {
 				t.Fatal("unexpected err", err)
 			}
 			if resp != nil {
