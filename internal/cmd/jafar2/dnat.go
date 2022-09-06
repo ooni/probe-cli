@@ -54,6 +54,9 @@ type dnatState struct {
 	// mu provides mutual exclusion
 	mu sync.Mutex
 
+	// origDstIP maps to the original destination IP
+	origDstIP map[string]net.IP
+
 	// tcp contains the state for tcp
 	tcp map[string]*dnatRecord
 

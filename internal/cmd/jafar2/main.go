@@ -97,5 +97,5 @@ func serve(conn net.Conn) {
 	go returnpathRouter(dnat, devTUN, conn)
 
 	// run the forward path router in sync fashion
-	forwardpathRouter(dnat, conn, devTUN)
+	forwardPathRouter(dnat, conn, devTUN)
 }
