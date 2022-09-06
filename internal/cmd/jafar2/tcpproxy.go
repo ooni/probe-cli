@@ -25,7 +25,7 @@ func tcpProxyLoop(dnat *dnatState, listener net.Listener, localPort string) {
 			log.Warnf("tcpProxyLoop: Accept: %s", err.Error())
 			return
 		}
-		tcpProxyServe(dnat, conn, localPort)
+		go tcpProxyServe(dnat, conn, localPort)
 	}
 }
 

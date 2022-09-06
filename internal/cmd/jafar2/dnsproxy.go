@@ -8,7 +8,6 @@ import (
 	"net"
 
 	"github.com/apex/log"
-	"github.com/miekg/dns"
 )
 
 // dnsProxyLoop is the main loop of the DNS proxy.
@@ -21,23 +20,30 @@ func dnsProxyLoop(pconn net.PacketConn) {
 			return
 		}
 		queryPayload := buffer[:count]
-		query := &dns.Msg{}
-		if err := query.Unpack(queryPayload); err != nil {
-			log.Warnf("dnsProxyLoop: query.Unpack failed: %s", err.Error())
-			continue
-		}
-		// TODO(bassosimone): here we should do a bit more than reply NXDOMAIN
-		response := &dns.Msg{}
-		response.SetReply(query)
-		response.Rcode = dns.RcodeNameError
-		responsePayload, err := response.Pack()
-		if err != nil {
-			log.Warnf("dnsProxyLoop: response.Pack failed: %s", err.Error())
-			continue
-		}
-		if _, err = pconn.WriteTo(responsePayload, source); err != nil {
-			log.Warnf("dnsProxyLoop: pconn.WriteTo failed: %s", err.Error())
-			continue
-		}
+		go dnsProxyServe(queryPayload, pconn, source)
+	}
+}
+
+func dnsProxyServe(queryPayload []byte, clientConn net.PacketConn, source net.Addr) {
+	serverConn, err := net.Dial("udp", "8.8.8.8:53")
+	if err != nil {
+		log.Warnf("dnsProxyServe: net.Dial: %s", err.Error())
+		return
+	}
+	defer serverConn.Close()
+	if _, err := serverConn.Write(queryPayload); err != nil {
+		log.Warnf("dnsProxyServe: Write: %s", err.Error())
+		return
+	}
+	buffer := make([]byte, 4096)
+	count, err := serverConn.Read(buffer)
+	if err != nil {
+		log.Warnf("dnsProxyServe: Read: %s", err.Error())
+		return
+	}
+	responsePayload := buffer[:count]
+	if _, err := clientConn.WriteTo(responsePayload, source); err != nil {
+		log.Warnf("dnsProxyServe: WriteTo %s", err.Error())
+		return
 	}
 }
