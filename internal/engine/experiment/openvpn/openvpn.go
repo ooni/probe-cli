@@ -10,6 +10,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -30,7 +31,7 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.6"
+	testVersion = "0.0.9"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
@@ -77,10 +78,10 @@ type PingResult struct {
 	Sequence    []PingReply `json:"sequence"`
 	PacketsRecv int         `json:"pkt_rcv"`
 	PacketsSent int         `json:"pkt_snt"`
-	MinRtt      int64       `json:"min_rtt"`
-	MaxRtt      int64       `json:"max_rtt"`
-	AvgRtt      int64       `json:"avg_rtt"`
-	StdRtt      int64       `json:"std_rtt"`
+	MinRtt      float64     `json:"min_rtt"`
+	MaxRtt      float64     `json:"max_rtt"`
+	AvgRtt      float64     `json:"avg_rtt"`
+	StdRtt      float64     `json:"std_rtt"`
 	// FIXME unsure about this, but I think I want to know if
 	// the measurements timed out for each ping, or it's another kind of
 	// error (ie, instrumental, uncovered cases etc).
@@ -321,7 +322,7 @@ func (m *Measurer) Run(
 
 	rb := string(body)
 	urlgrabResult.Response = &rb
-	urlgrabResult.FetchTime = float64(time.Now().Sub(fetchStart).Microseconds() / 1000.0)
+	urlgrabResult.FetchTime = toMs(time.Now().Sub(fetchStart))
 
 	tk.URLGrab = append(tk.URLGrab, urlgrabResult)
 	sess.Logger().Info("openvpn: all tests ok")
@@ -484,7 +485,7 @@ func parseStats(pinger *ping.Pinger, target string) *PingResult {
 	for _, r := range st.Replies {
 		replies = append(replies, PingReply{
 			Seq: r.Seq,
-			Rtt: r.Rtt,
+			Rtt: toMs(r.Rtt),
 			TTL: r.TTL,
 		})
 	}
@@ -493,10 +494,16 @@ func parseStats(pinger *ping.Pinger, target string) *PingResult {
 		PacketsRecv: st.PacketsRecv,
 		PacketsSent: st.PacketsSent,
 		Sequence:    replies,
-		MinRtt:      st.MinRtt.Milliseconds(),
-		MaxRtt:      st.MaxRtt.Milliseconds(),
-		AvgRtt:      st.AvgRtt.Milliseconds(),
-		StdRtt:      st.StdDevRtt.Milliseconds(),
+		MinRtt:      toMs(st.MinRtt),
+		MaxRtt:      toMs(st.MaxRtt),
+		AvgRtt:      toMs(st.AvgRtt),
+		StdRtt:      toMs(st.StdDevRtt),
 	}
 	return pingStats
+}
+
+// toMs converts time.Duration to a float64 number representing milliseconds
+// with fixed precision (3 decimal places).
+func toMs(t time.Duration) float64 {
+	return math.Round(t.Seconds()*1e6) / 1e3
 }
