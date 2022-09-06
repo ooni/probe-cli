@@ -37,7 +37,7 @@ type hijacker struct {
 // newNetstackNet constructs a new instance of netstack.Net.
 func newNetstackNet(tproxy string) *netstack.Net {
 	// the following code has been adapted from ooni/minivpn
-	localSocket, err := net.Dial("udp", tproxy)
+	localSocket, err := net.Dial("tcp", tproxy)
 	runtimex.PanicOnError(err, "net.ListenUDP failed")
 	const conservativeMTU = 1250
 	tun, net, err := netstack.CreateNetTUN(
@@ -66,21 +66,21 @@ func hijackerRoutingLoop(localSocket net.Conn, tun tun.Device) {
 				log.Errorf("hijack: tun read error: %v", err)
 				break
 			}
-			if _, err = localSocket.Write(buf[:count]); err != nil {
+			frame := buf[:count]
+			if err := netxlite.WriteSimpleFrame(localSocket, frame); err != nil {
 				log.Errorf("hijack: localSocket write error: %v", err)
 				break
 			}
 		}
 	}()
 	go func() {
-		buf := make([]byte, 4096)
 		for {
-			count, err := localSocket.Read(buf)
+			frame, err := netxlite.ReadSimpleFrame(localSocket)
 			if err != nil {
 				log.Errorf("hijack: localSocket read error: %v", err)
 				break
 			}
-			if _, err = tun.Write(buf[:count], zeroOffset); err != nil {
+			if _, err = tun.Write(frame, zeroOffset); err != nil {
 				log.Errorf("hijack: tun write error: %v", err)
 				break
 			}
