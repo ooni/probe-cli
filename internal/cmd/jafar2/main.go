@@ -14,6 +14,7 @@ import (
 func main() {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{})
 	runtimex.PanicOnError(err, "net.ListenTCP")
+	log.Infof("listening at %s", listener.Addr().String())
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -62,6 +63,7 @@ func serve(conn net.Conn) {
 		log.Warnf("userNet.ListenUDP: %s", err.Error())
 		return
 	}
+	defer dnsConn.Close()
 	go dnsProxyLoop(dnsConn)
 
 	// TODO(bassosimone): start more censoring servers...

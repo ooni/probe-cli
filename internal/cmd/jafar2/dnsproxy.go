@@ -17,13 +17,13 @@ func dnsProxyLoop(pconn net.PacketConn) {
 	for {
 		count, source, err := pconn.ReadFrom(buffer)
 		if err != nil {
-			log.Warnf("jafar-proxy: dnsProxyLoop: pconn.ReadFrom failed: %s", err.Error())
-			continue
+			log.Warnf("dnsProxyLoop: pconn.ReadFrom failed: %s", err.Error())
+			return
 		}
 		queryPayload := buffer[:count]
 		query := &dns.Msg{}
 		if err := query.Unpack(queryPayload); err != nil {
-			log.Warnf("jafar-proxy: dnsProxyLoop: query.Unpack failed: %s", err.Error())
+			log.Warnf("dnsProxyLoop: query.Unpack failed: %s", err.Error())
 			continue
 		}
 		// TODO(bassosimone): here we should do a bit more than reply NXDOMAIN
@@ -32,11 +32,11 @@ func dnsProxyLoop(pconn net.PacketConn) {
 		response.Rcode = dns.RcodeNameError
 		responsePayload, err := response.Pack()
 		if err != nil {
-			log.Warnf("jafar-proxy: dnsProxyLoop: response.Pack failed: %s", err.Error())
+			log.Warnf("dnsProxyLoop: response.Pack failed: %s", err.Error())
 			continue
 		}
 		if _, err = pconn.WriteTo(responsePayload, source); err != nil {
-			log.Warnf("jafar-proxy: dnsProxyLoop: pconn.WriteTo failed: %s", err.Error())
+			log.Warnf("dnsProxyLoop: pconn.WriteTo failed: %s", err.Error())
 			continue
 		}
 	}

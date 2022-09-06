@@ -5,7 +5,6 @@ package main
 //
 
 import (
-	"errors"
 	"net"
 
 	"github.com/apex/log"
@@ -21,11 +20,8 @@ func forwardpathRouter(dnat *dnatState, conn net.Conn, devTUN tun.Device) {
 		// step 1: read tunneled frame from miniooni from the conn device
 		frame, err := netxlite.ReadSimpleFrame(conn)
 		if err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				return // as documented
-			}
 			log.Warnf("forwardpath: ReadSimpleFrame: %s", err.Error())
-			continue
+			return
 		}
 
 		// step 2: parse packet as an IPv4 packet

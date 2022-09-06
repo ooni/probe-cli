@@ -24,7 +24,7 @@ func returnpathRouter(dnat *dnatState, devTUN tun.Device, conn net.Conn) {
 		count, err := devTUN.Read(buffer, zeroOffset)
 		if err != nil {
 			log.Warnf("returnpath: Read: %s", err.Error())
-			continue
+			return
 		}
 
 		// step 2: parse packet as an IPv4 packet
