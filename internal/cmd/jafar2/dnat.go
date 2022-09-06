@@ -15,8 +15,11 @@ type dnatState struct {
 	// mu provides mutual exclusion
 	mu sync.Mutex
 
-	// state contains the actual state
-	state map[uint16]*dnatRecord
+	// tcp contains the state for tcp
+	tcp map[uint16]*dnatRecord
+
+	// udp contains the state for udp
+	udp map[uint16]*dnatRecord
 }
 
 // dnatRecord is a DNAT record.
@@ -26,11 +29,16 @@ type dnatRecord struct {
 }
 
 // upsertRecord creates or updates state.
-func (ds *dnatState) upsertRecord(
-	protocol uint8, srcIP net.IP, srcPort uint16, dstIP net.IP, dstPort uint16) {
+func (ds *dnatState) upsertRecord(protocol uint8, srcPort uint16, dstIP net.IP) {
 	ds.mu.Lock()
-	ds.state[uint16(srcPort)] = &dnatRecord{
+	rec := &dnatRecord{
 		origDstIP: dstIP,
+	}
+	switch protocol {
+	case uint8(layers.IPProtocolTCP):
+		ds.tcp[uint16(srcPort)] = rec
+	case uint8(layers.IPProtocolUDP):
+		ds.udp[uint16(srcPort)] = rec
 	}
 	ds.mu.Unlock()
 }
@@ -39,27 +47,26 @@ func (ds *dnatState) upsertRecord(
 var errDNATNoSuchRecord = errors.New("dnat: no such record")
 
 // getRecord obtains the record for a given five tuple.
-func (ds *dnatState) getRecord(protocol uint8, srcIP net.IP, srcPort uint16,
-	dstIP net.IP, dstPort uint16) (*dnatRecord, error) {
+func (ds *dnatState) getRecord(protocol uint8, dstPort uint16) (*dnatRecord, error) {
 	defer ds.mu.Unlock()
 	ds.mu.Lock()
-	record := ds.state[uint16(dstPort)] // we're on the return path so use the dstPort
-	if record == nil {
+	var rec *dnatRecord
+	switch protocol {
+	case uint8(layers.IPProtocolTCP):
+		rec = ds.tcp[uint16(dstPort)]
+	case uint8(layers.IPProtocolUDP):
+		rec = ds.udp[uint16(dstPort)]
+	}
+	if rec == nil {
 		return nil, errDNATNoSuchRecord
 	}
-	return record, nil
+	return rec, nil
 }
 
 // rewriteForwardUDPv4 attempts to rewrite an UDPv4 packet on the forward path
 func (ds *dnatState) rewriteForwardUDPv4(ipv4 *layers.IPv4, udp *layers.UDP) []byte {
 	// step 1: upsert into the NAT table
-	ds.upsertRecord(
-		uint8(ipv4.Protocol),
-		ipv4.SrcIP,
-		uint16(udp.SrcPort),
-		ipv4.DstIP,
-		uint16(udp.DstPort),
-	)
+	ds.upsertRecord(uint8(ipv4.Protocol), uint16(udp.SrcPort), ipv4.DstIP)
 
 	// step 2: rewrite the destination IP address
 	ipv4.DstIP = net.IPv4(10, 17, 17, 1)
@@ -80,13 +87,7 @@ func (ds *dnatState) rewriteForwardUDPv4(ipv4 *layers.IPv4, udp *layers.UDP) []b
 // rewriteReturnUDPv4 attempts to rewrite an UDPv4 packet on the return path
 func (ds *dnatState) rewriteReturnUDPv4(ipv4 *layers.IPv4, udp *layers.UDP) ([]byte, error) {
 	// step 1: access the NAT table
-	rec, err := ds.getRecord(
-		uint8(ipv4.Protocol),
-		ipv4.SrcIP,
-		uint16(udp.SrcPort),
-		ipv4.DstIP,
-		uint16(udp.DstPort),
-	)
+	rec, err := ds.getRecord(uint8(ipv4.Protocol), uint16(udp.DstPort))
 	if err != nil {
 		return nil, err
 	}
@@ -110,13 +111,7 @@ func (ds *dnatState) rewriteReturnUDPv4(ipv4 *layers.IPv4, udp *layers.UDP) ([]b
 // rewriteForwardTCPv4 attempts to rewrite an TCPv4 packet on the forward path
 func (ds *dnatState) rewriteForwardTCPv4(ipv4 *layers.IPv4, tcp *layers.TCP) []byte {
 	// step 1: upsert into the NAT table
-	ds.upsertRecord(
-		uint8(ipv4.Protocol),
-		ipv4.SrcIP,
-		uint16(tcp.SrcPort),
-		ipv4.DstIP,
-		uint16(tcp.DstPort),
-	)
+	ds.upsertRecord(uint8(ipv4.Protocol), uint16(tcp.SrcPort), ipv4.DstIP)
 
 	// step 2: rewrite the destination IP address
 	ipv4.DstIP = net.IPv4(10, 17, 17, 1)
@@ -137,13 +132,7 @@ func (ds *dnatState) rewriteForwardTCPv4(ipv4 *layers.IPv4, tcp *layers.TCP) []b
 // rewriteReturnTCPv4 attempts to rewrite an TCPPv4 packet on the return path
 func (ds *dnatState) rewriteReturnTCPv4(ipv4 *layers.IPv4, tcp *layers.TCP) ([]byte, error) {
 	// step 1: access the NAT table
-	rec, err := ds.getRecord(
-		uint8(ipv4.Protocol),
-		ipv4.SrcIP,
-		uint16(tcp.SrcPort),
-		ipv4.DstIP,
-		uint16(tcp.DstPort),
-	)
+	rec, err := ds.getRecord(uint8(ipv4.Protocol), uint16(tcp.DstPort))
 	if err != nil {
 		return nil, err
 	}

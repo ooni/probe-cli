@@ -49,8 +49,9 @@ func serve(conn net.Conn) {
 
 	// create state for the DNAT
 	dnat := &dnatState{
-		state: map[uint16]*dnatRecord{},
-		mu:    sync.Mutex{},
+		mu:  sync.Mutex{},
+		tcp: map[uint16]*dnatRecord{},
+		udp: map[uint16]*dnatRecord{},
 	}
 
 	// start DNS server running on the user-mode net stack
@@ -66,7 +67,31 @@ func serve(conn net.Conn) {
 	defer dnsConn.Close()
 	go dnsProxyLoop(dnsConn)
 
-	// TODO(bassosimone): start more censoring servers...
+	// start HTTP listener running on the user-mode net stack
+	httpListener, err := userNet.ListenTCP(&net.TCPAddr{
+		IP:   net.IPv4(10, 17, 17, 1),
+		Port: 80,
+		Zone: "",
+	})
+	if err != nil {
+		log.Warnf("userNet.ListenTCP: %s", err.Error())
+		return
+	}
+	defer httpListener.Close()
+	go tcpProxyLoop(dnat, httpListener, "80")
+
+	// start HTTPS listener running on the user-mode net stack
+	httpsListener, err := userNet.ListenTCP(&net.TCPAddr{
+		IP:   net.IPv4(10, 17, 17, 1),
+		Port: 443,
+		Zone: "",
+	})
+	if err != nil {
+		log.Warnf("userNet.ListenTCP: %s", err.Error())
+		return
+	}
+	defer httpsListener.Close()
+	go tcpProxyLoop(dnat, httpsListener, "443")
 
 	// start router handling the return path
 	go returnpathRouter(dnat, devTUN, conn)
