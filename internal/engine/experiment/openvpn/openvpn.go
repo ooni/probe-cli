@@ -9,11 +9,13 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -28,14 +30,20 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.5"
+	testVersion = "0.0.6"
 
 	// pingCount tells how many icmp echo requests to send.
-	// pingCount = 10
-	pingCount = 5 // TODO settle on a standard
+	pingCount = 10
 
-	// pingTarget is the target IP we used for pings.
+	// pingExtraWaitSeconds tells how many grace seconds to wait after
+	// last ping in train.
+	pingExtraWaitSeconds = 2
+
+	// pingTarget is the target IP we used for pings (high-availability, replicated clusters).
 	pingTarget = "8.8.8.8"
+
+	// pingTargetFaraway is a target IP for a mirror with known geolocation.
+	pingTargetFaraway = "163.7.134.112"
 
 	// urlGrabURL is the URI we fetch to check web connectivity and egress IP.
 	urlGrabURI = "https://api.ipify.org/?format=json"
@@ -56,17 +64,23 @@ type Config struct {
 	Compress string `ooni:"compression to use"`
 }
 
+// PingReply is a single response in the ping sequence.
+type PingReply struct {
+	Seq int     `json:"seq"`
+	TTL int     `json:"ttl"`
+	Rtt float64 `json:"rtt"`
+}
+
 // PingResult holds the results for a pinger run.
 type PingResult struct {
-	Target      string  `json:"target"`
-	PacketsRecv int     `json:"pkt_rcv"`
-	PacketsSent int     `json:"pkt_snt"`
-	Rtts        []int64 `json:"rtts"`
-	TTLs        []int   `json:"ttls"`
-	MinRtt      int64   `json:"min_rtt"`
-	MaxRtt      int64   `json:"max_rtt"`
-	AvgRtt      int64   `json:"avg_rtt"`
-	StdRtt      int64   `json:"std_rtt"`
+	Target      string      `json:"target"`
+	Sequence    []PingReply `json:"sequence"`
+	PacketsRecv int         `json:"pkt_rcv"`
+	PacketsSent int         `json:"pkt_snt"`
+	MinRtt      int64       `json:"min_rtt"`
+	MaxRtt      int64       `json:"max_rtt"`
+	AvgRtt      int64       `json:"avg_rtt"`
+	StdRtt      int64       `json:"std_rtt"`
 	// FIXME unsure about this, but I think I want to know if
 	// the measurements timed out for each ping, or it's another kind of
 	// error (ie, instrumental, uncovered cases etc).
@@ -79,8 +93,10 @@ type PingResult struct {
 // response code
 // (this serves another purpose: check for geofencing etc...)
 type URLGrabResult struct {
-	URI      string  `json:"uri"`
-	Response *string `json:"response"`
+	URI        string  `json:"uri"`
+	Response   *string `json:"response"`
+	FetchTime  float64 `json:"fetch_time_ms"`
+	StatusCode int     `json:"status"`
 }
 
 // TestKeys contains the experiment's result.
@@ -119,7 +135,7 @@ type TestKeys struct {
 
 	// Error is one of `null`, `"bootstrap-error"`, `"timeout-reached"`,
 	// and `"unknown-error"`.
-	// FIXME  make sure all are covered.
+	// TODO(ainghazal): make sure all are covered.
 	Error *string `json:"error"`
 
 	// Pings holds an array for aggregated stats of each ping.
@@ -143,11 +159,8 @@ type Measurer struct {
 	// vpnOptions is a minivpn.vpn.Options object with the parsed OpenVPN config options.
 	vpnOptions *vpn.Options
 
-	// rawDialer is the raw OpenVPN dialer
-	rawDialer *vpn.RawDialer
-
-	// conn is the vpn Client  net.Conn
-	conn net.Conn
+	// tunnel is the vpn.Client
+	tunnel *vpn.Client
 }
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
@@ -165,6 +178,36 @@ func (m *Measurer) registerExtensions(measurement *model.Measurement) {
 	// currently none
 }
 
+// pingTimeout returns the timeout set on each pinger train.
+func pingTimeout() time.Duration {
+	return time.Second * (pingCount + pingExtraWaitSeconds)
+}
+
+func doSinglePing(wg *sync.WaitGroup, conn net.Conn, target string, tk *TestKeys) {
+	defer wg.Done()
+
+	pinger := ping.NewFromSharedConnection(target, conn)
+	pinger.Count = pingCount
+	pinger.Timeout = pingTimeout()
+
+	conn.SetReadDeadline(time.Now().Add(time.Second * 60))
+	err := pinger.Run(context.Background())
+
+	log.Println("ping done!")
+
+	tk.Pings = append(tk.Pings, parseStats(pinger, target))
+	if err != nil {
+		tk.Failure = tracex.NewFailure(err)
+	}
+}
+
+func sendBlockingPing(wg *sync.WaitGroup, conn net.Conn, target string, tk *TestKeys) {
+	wg.Add(1)
+	go doSinglePing(wg, conn, target, tk)
+	wg.Wait()
+	log.Printf("ping train sent to %s ----", target)
+}
+
 // Run runs the experiment with the specified context, session,
 // measurement, and experiment calbacks. This method should only
 // return an error in case the experiment could not run (e.g.,
@@ -180,16 +223,14 @@ func (m *Measurer) Run(
 	if err != nil {
 		return err
 	}
-	dialer, err := m.setup(ctx, experiment, sess.Logger())
-
+	tunnel, err := m.setup(experiment, sess.Logger())
 	if err != nil {
 		// we cannot setup the experiment
 		// TODO this includes if we don't have the correct certificates etc.
 		// This means that we need to get the cert material ahead of time.
 		return err
 	}
-	m.rawDialer = dialer
-
+	m.tunnel = tunnel
 	m.registerExtensions(measurement)
 
 	const maxRuntime = 600 * time.Second
@@ -209,51 +250,44 @@ func (m *Measurer) Run(
 	}
 	tk := measurement.TestKeys.(*TestKeys)
 
-	defer func() {
-		if m.conn != nil {
-			m.conn.Close()
-		}
-	}()
+	/*
+	 defer func() {
+	 	if m.tunnel != nil {
+	 		m.tunnel.Close()
+	 	}
+	 }()
+	*/
 
 	if tk.Failure != nil {
 		// bootstrap error
 		return nil
 	}
 
+	remoteVPNGateway := m.tunnel.RemoteAddr().String()
+
 	//
 	// All ready now. Now we can begin the experiment itself.
 	//
-	// 1. ping external target
+	// 1. ping external target, gateway and a third location.
 	//
 
+	wg := new(sync.WaitGroup)
 	tk.Pings = []*PingResult{}
-
-	pinger := ping.NewFromSharedConnection(pingTarget, m.conn)
-	pinger.Count = pingCount
-
-	err = pinger.Run(ctx)
-	tk.Pings = append(tk.Pings, parseStats(pinger, pingTarget))
-	if err != nil {
-		tk.Failure = tracex.NewFailure(err)
-		return nil
-	}
-
-	vpnGW := m.conn.RemoteAddr().String()
-	pinger = ping.NewFromSharedConnection(vpnGW, m.conn)
-	pinger.Count = pingCount
-
-	err = pinger.Run(ctx)
-	tk.Pings = append(tk.Pings, parseStats(pinger, vpnGW))
-	if err != nil {
-		tk.Failure = tracex.NewFailure(err)
-		return nil
-	}
+	sendBlockingPing(wg, m.tunnel, pingTarget, tk)
+	sendBlockingPing(wg, m.tunnel, remoteVPNGateway, tk)
+	sendBlockingPing(wg, m.tunnel, pingTargetFaraway, tk)
 
 	//
 	// 2. urlgrab
 	//
 
-	d := vpn.NewTunDialer(m.rawDialer)
+	// TODO(ainghazal): it's cleaner to pass a closure to DialContext in
+	// the client transport. I just need to reset the read timeoutb before
+	// reusing the conn.
+	log.Println("stage: urlgrab")
+
+	m.tunnel.SetReadDeadline(time.Now().Add(time.Second * 60))
+	d := vpn.NewTunDialer(m.tunnel)
 
 	client := http.Client{
 		Transport: &http.Transport{
@@ -266,6 +300,7 @@ func (m *Measurer) Run(
 		Response: nil,
 	}
 
+	fetchStart := time.Now()
 	resp, err := client.Get(urlGrabURI)
 	if err != nil {
 		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
@@ -274,6 +309,7 @@ func (m *Measurer) Run(
 		tk.URLGrab = append(tk.URLGrab, urlgrabResult)
 		return nil
 	}
+	urlgrabResult.StatusCode = resp.StatusCode
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
@@ -285,6 +321,7 @@ func (m *Measurer) Run(
 
 	rb := string(body)
 	urlgrabResult.Response = &rb
+	urlgrabResult.FetchTime = float64(time.Now().Sub(fetchStart).Microseconds() / 1000.0)
 
 	tk.URLGrab = append(tk.URLGrab, urlgrabResult)
 	sess.Logger().Info("openvpn: all tests ok")
@@ -294,7 +331,7 @@ func (m *Measurer) Run(
 
 // setup prepares for running the openvpn experiment. Returns a minivpn dialer on success.
 // Returns an error on failure.
-func (m *Measurer) setup(ctx context.Context, exp *model.VPNExperiment, logger model.Logger) (*vpn.RawDialer, error) {
+func (m *Measurer) setup(exp *model.VPNExperiment, logger model.Logger) (*vpn.Client, error) {
 	exp.Config = &model.VPNConfig{}
 	exp.Config.Auth = m.config.Auth
 	exp.Config.Cipher = m.config.Cipher
@@ -327,7 +364,7 @@ func (m *Measurer) setup(ctx context.Context, exp *model.VPNExperiment, logger m
 	}
 
 	tmp.Write(buf.Bytes())
-	o, err := vpn.ParseConfigFile(tmp.Name())
+	opt, err := vpn.NewOptionsFromFilePath(tmp.Name())
 	if err != nil {
 		return nil, err
 	}
@@ -335,10 +372,9 @@ func (m *Measurer) setup(ctx context.Context, exp *model.VPNExperiment, logger m
 	logger.Infof("Using Config File: %s", tmp.Name())
 	// TODO(ainghazal): defer delete of the file after DEBUG
 
-	m.vpnOptions = o
-	// TODO(ainghazal): pass context to dialer
-	raw := vpn.NewRawDialer(o)
-	return raw, nil
+	m.vpnOptions = opt
+	tunnel := vpn.NewClientFromOptions(opt)
+	return tunnel, nil
 }
 
 // bootstrap runs the bootstrap.
@@ -370,7 +406,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	// ---------------------------------------------------
 
 	vpnEventChan := make(chan uint16, 100)
-	m.rawDialer.EventListener = vpnEventChan
+	m.tunnel.EventListener = vpnEventChan
 
 	go func() {
 		for {
@@ -381,7 +417,7 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 		}
 	}()
 
-	conn, err := m.rawDialer.DialContext(ctx)
+	err := m.tunnel.Start(ctx)
 	tk.BootstrapTime = time.Now().Sub(s).Seconds()
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
@@ -389,8 +425,6 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 		sess.Logger().Info("openvpn: bootstrapping failed")
 		return
 	}
-	m.conn = conn
-	m.rawDialer.ReuseClient(conn)
 	tk.BootstrapTime = time.Now().Sub(s).Seconds()
 	sess.Logger().Info("openvpn: bootstrapping done")
 }
@@ -446,12 +480,19 @@ func getMiniVPNVersion() string {
 // an pointer to a PingResult with all the fields filled.
 func parseStats(pinger *ping.Pinger, target string) *PingResult {
 	st := pinger.Statistics()
+	replies := []PingReply{}
+	for _, r := range st.Replies {
+		replies = append(replies, PingReply{
+			Seq: r.Seq,
+			Rtt: r.Rtt,
+			TTL: r.TTL,
+		})
+	}
 	pingStats := &PingResult{
 		Target:      target,
 		PacketsRecv: st.PacketsRecv,
 		PacketsSent: st.PacketsSent,
-		Rtts:        st.Rtts,
-		TTLs:        st.TTLs,
+		Sequence:    replies,
 		MinRtt:      st.MinRtt.Milliseconds(),
 		MaxRtt:      st.MaxRtt.Milliseconds(),
 		AvgRtt:      st.AvgRtt.Milliseconds(),
