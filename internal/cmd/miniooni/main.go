@@ -39,6 +39,7 @@ type Options struct {
 	Random           bool
 	RepeatEvery      int64
 	ReportFile       string
+	TProxy           string
 	TorArgs          []string
 	TorBinary        string
 	Tunnel           string
@@ -123,6 +124,13 @@ func main() {
 		"o",
 		"",
 		"set the output report file path (default: \"report.jsonl\")",
+	)
+
+	flags.StringVar(
+		&globalOptions.TProxy,
+		"transparent-proxy",
+		"",
+		"UDP address to transparently proxy all probe traffic to",
 	)
 
 	flags.StringSliceVar(
@@ -285,6 +293,8 @@ func MainWithConfiguration(experimentName string, currentOptions *Options) {
 		currentOptions.ReportFile = "report.jsonl"
 	}
 	log.Log = logger
+
+	maybeHijackNetworkOperations(currentOptions.TProxy) // must be after log.Log assignment
 	for {
 		mainSingleIteration(logger, experimentName, currentOptions)
 		if currentOptions.RepeatEvery <= 0 {
