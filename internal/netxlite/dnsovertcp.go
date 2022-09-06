@@ -81,11 +81,11 @@ func (t *DNSOverTCPTransport) RoundTrip(
 	const iotimeout = 10 * time.Second
 	conn.SetDeadline(time.Now().Add(iotimeout))
 	// Write request
-	if err := SendSimpleFrame(conn, rawQuery); err != nil {
+	if err := WriteSimpleFrame(conn, rawQuery); err != nil {
 		return nil, err
 	}
 	// Read response
-	rawResponse, err := RecvSimpleFrame(conn)
+	rawResponse, err := ReadSimpleFrame(conn)
 	if err != nil {
 		return nil, err
 	}

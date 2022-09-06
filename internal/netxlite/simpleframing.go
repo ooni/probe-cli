@@ -13,7 +13,7 @@ const MaxSimpleFrameSize = math.MaxUint16
 var ErrSimpleFrameSize = errors.New("netxlite: frame larger than 2^16")
 
 // SendSimpleFrame sends a simple frame over the given io.Writer.
-func SendSimpleFrame(conn io.Writer, frame []byte) error {
+func WriteSimpleFrame(conn io.Writer, frame []byte) error {
 	if len(frame) > MaxSimpleFrameSize {
 		return ErrSimpleFrameSize
 	}
@@ -25,7 +25,7 @@ func SendSimpleFrame(conn io.Writer, frame []byte) error {
 }
 
 // RecvSimpleFrame receives a simple frame from the given io.Reader.
-func RecvSimpleFrame(conn io.Reader) ([]byte, error) {
+func ReadSimpleFrame(conn io.Reader) ([]byte, error) {
 	header := make([]byte, 2)
 	if _, err := io.ReadFull(conn, header); err != nil {
 		return nil, err
