@@ -9,6 +9,7 @@ import (
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
+	utls "gitlab.com/yawning/utls.git"
 )
 
 // Trace implements model.Trace.
@@ -56,6 +57,10 @@ type Trace struct {
 	// NewTLSHandshakerStdlibFn is OPTIONAL and can be used to overide
 	// calls to the netxlite.NewTLSHandshakerStdlib factory.
 	NewTLSHandshakerStdlibFn func(dl model.DebugLogger) model.TLSHandshaker
+
+	// NewTLSHandshakerUTLSFn is OPTIONAL and can be used to overide
+	// calls to the netxlite.NewTLSHandshakerUTLS factory.
+	NewTLSHandshakerUTLSFn func(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker
 
 	// NewDialerWithoutResolverFn is OPTIONAL and can be used to override
 	// calls to the netxlite.NewQUICDialerWithoutResolver factory.
@@ -200,7 +205,16 @@ func (tx *Trace) newTLSHandshakerStdlib(dl model.DebugLogger) model.TLSHandshake
 	return netxlite.NewTLSHandshakerStdlib(dl)
 }
 
-// newWUICDialerWithoutResolver indirectly calls netxlite.NewQUICDialerWithoutResolver
+// newTLSHandshakerUTLS indirectly calls netxlite.NewTLSHandshakerUTLS
+// thus allowing us to mock this func for testing.
+func (tx *Trace) newTLSHandshakerUTLS(dl model.DebugLogger, id *utls.ClientHelloID) model.TLSHandshaker {
+	if tx.NewTLSHandshakerUTLSFn != nil {
+		return tx.NewTLSHandshakerUTLSFn(dl, id)
+	}
+	return netxlite.NewTLSHandshakerUTLS(dl, id)
+}
+
+// newQUICDialerWithoutResolver indirectly calls netxlite.NewQUICDialerWithoutResolver
 // thus allowing us to mock this func for testing.
 func (tx *Trace) newQUICDialerWithoutResolver(listener model.QUICListener, dl model.DebugLogger) model.QUICDialer {
 	if tx.NewQUICDialerWithoutResolverFn != nil {
