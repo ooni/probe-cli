@@ -1,12 +1,16 @@
 package main
 
 //
-// Return path router
+// Return path (client<-proxies)
+//
+// By reading this file top-down you get a sense of the travel
+// performed by packets from proxies to client.
 //
 
 import (
-	"fmt"
+	"context"
 	"net"
+	"sync"
 
 	"github.com/apex/log"
 	"github.com/google/gopacket"
@@ -16,160 +20,130 @@ import (
 	"golang.zx2c4.com/wireguard/tun"
 )
 
-// returnPathTCPRouter is the return path router.
+// tcpDeviceReader reads and processes packets sent by the proxies.
 //
 // Arguments:
 //
-// - dnatState keeps the DNAT state;
+// - ctx is the context binding the lifetime of this goroutine;
 //
-// - miniooniConn is the connection with the miniooni client;
+// - wg is the wait group used by the parent;
 //
-// - devTCP is the device where to write TCP segments.
-func returnPathTCPRouter(dnat *dnatState, miniooniConn net.Conn, devTCP tun.Device) {
-	const zeroOffset = 0
-	buffer := make([]byte, 4096)
+// - tcpState is the TCP state for implementing DNAT;
+//
+// - packetsForClient is the queue where to append packets for the client;
+//
+// - tcpDev is the virtual device connected to TCP servers.
+//
+// This function runs in a goroutine that keeps running until [ctx] is
+// not done and [clientConn] does not emit errors.
+func tcpDeviceReader(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	tcpState *tcpState,
+	tcpDev tun.Device,
+	packetsForClient chan<- []byte,
+) {
+	// notify termination
+	defer wg.Done()
 
-	for {
-		// step 1: read tunneled packet on [devTCP] sent by proxies
-		count, err := devTCP.Read(buffer, zeroOffset)
+	buffer := make([]byte, 4096)
+	for ctx.Err() == nil {
+
+		// read the new incoming raw packet
+		const zeroOffset = 0
+		count, err := tcpDev.Read(buffer, zeroOffset)
 		if err != nil {
-			log.Warnf("returnpath: Read: %s", err.Error())
+			log.Warnf("tcpDeviceReader: tcpDev.Read: %s", err.Error())
 			return
 		}
+		rawPacket := buffer[:count]
 
-		// step 2: parse packet as an IPv4 packet
-		payload := buffer[:count]
-		pkt := gopacket.NewPacket(payload, layers.LayerTypeIPv4, gopacket.Default)
-		players := pkt.Layers()
+		// check whether packet is IPv4 and otherwise discard it
+		packet := gopacket.NewPacket(rawPacket, layers.LayerTypeIPv4, gopacket.Default)
+		players := packet.Layers()
 		if len(players) < 2 {
-			log.Warnf("returnpath: drop packet: too few layers: %+v", payload)
+			log.Warnf("tcpDeviceReader: drop packet: too few layers: %+v", rawPacket)
 			continue
 		}
 		ipv4, good := players[0].(*layers.IPv4)
 		if !good {
-			log.Warnf("returnpath: drop packet: not IPv4: %+v", payload)
+			log.Warnf("tcpDeviceReader: drop packet: not IPv4: %+v", rawPacket)
 			continue
 		}
 
-		// step 3: dispatch to TCP and otherwise drop
-		tcp, good := players[1].(*layers.TCP)
-		if good {
-			returnpathRouteTCPv4(dnat, miniooniConn, ipv4, tcp)
+		// process incoming TCP packets
+		if tcp, good := players[1].(*layers.TCP); good {
+			tcpDevReaderTCPv4(ctx, tcpState, packetsForClient, ipv4, tcp)
 			continue
 		}
-		log.Warnf("returnpath: drop packet: neither UDP nor TCP: %+v", payload)
+
+		// discard all the other incoming packets
+		log.Warnf("tcpDeviceReader: drop packet: neither UDP nor TCP: %+v", rawPacket)
 	}
 }
 
-// returnpathTCPRouter is the return path router.
-//
-// Arguments:
-//
-// - dnatState keeps the DNAT state;
-//
-// - miniooniConn is the connection with the miniooni client;
-//
-// - devUDP is the device from which to read UDP packets.
-func returnPathUDPRouter(dnat *dnatState, miniooniConn net.Conn, devUDP net.PacketConn) {
-	buffer := make([]byte, 4096)
-	dstIP, dstPort, err := twoTuple(devUDP.LocalAddr())
-	runtimex.PanicOnError(err, "twoTuple")
+// tcpDevReaderTCPv4 processes a TCPv4 datagram from the proxies.
+func tcpDevReaderTCPv4(
+	ctx context.Context,
+	state *tcpState,
+	packetsForClient chan<- []byte,
+	ipv4 *layers.IPv4,
+	tcp *layers.TCP,
+) {
+	// Undo the effects of DNAT
+	var srcIP net.IP
+	state.mu.Lock()
+	srcIP = state.m[uint16(tcp.DstPort)]
+	state.mu.Unlock()
+	if srcIP == nil {
+		log.Warnf("tcpDevReaderTCPv4: missing DNAT entry for %d", tcp.DstPort)
+		return
+	}
+	ipv4.SrcIP = srcIP
+
+	// serialize to bytes
+	pktbuf := gopacket.NewSerializeBuffer()
+	opts := gopacket.SerializeOptions{
+		FixLengths:       true,
+		ComputeChecksums: true,
+	}
+	tcp.SetNetworkLayerForChecksum(ipv4)
+	err := gopacket.SerializeLayers(pktbuf, opts, ipv4, tcp, gopacket.Payload(tcp.Payload))
+	runtimex.PanicOnError(err, "gopacket.SerializeLayers failed")
+	rawPacket := pktbuf.Bytes()
+
+	// forward packet to the client queue
+	select {
+	case packetsForClient <- rawPacket:
+	case <-ctx.Done():
+	}
+}
+
+// clientConnWriter reads the queue of packets sent to the client
+// and emits each of them in sequence. This function runs in a goroutine
+// that keeps running until [ctx] is not done and [clientConn] is OK.
+func clientConnWriter(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	clientConn net.Conn,
+	rawPackets <-chan []byte,
+) {
+	// notify termination
+	defer wg.Done()
+
 	for {
+		select {
 
-		// read payload from remote server
-		count, source, err := devUDP.ReadFrom(buffer)
-		if err != nil {
-			log.Warnf("returnpathUDPRouter: ReadFrom: %s", err.Error())
+		// We have a ready to send raw packet
+		case rawPacket := <-rawPackets:
+			if err := netxlite.WriteSimpleFrame(clientConn, rawPacket); err != nil {
+				log.Warnf("clientConnWriter: netxlite.WriteSimpleFrame: %s", err.Error())
+				return
+			}
+
+		// We were asked to terminate
+		case <-ctx.Done():
 			return
 		}
-		payload := buffer[:count]
-
-		// obtain the port from which the server contacted us
-		_, srcPort, err := twoTuple(source)
-		runtimex.PanicOnError(err, "twoTuple")
-
-		// obtain the original source address
-		var srcIP net.IP
-		keyDNAT := fmt.Sprintf("udp_%s_%s")
-		dnat.mu.Lock()
-		srcIP = dnat.origDstIP[keyDNAT]
-		dnat.mu.Unlock()
-
-		rec, err := dnat.getRecord(
-			uint8(layers.IPProtocolUDP), // UDP
-			srcIP,
-			srcPort,
-			dstIP,
-			dstPort,
-		)
-		if err != nil {
-			log.Warnf("returnpathUDPRouter: dnat.getRecord: %s", err.Error())
-			continue
-		}
-		udp := &layers.UDP{
-			BaseLayer: layers.BaseLayer{},
-			SrcPort:   layers.UDPPort(srcPort),
-			DstPort:   layers.UDPPort(dstPort),
-			Length:    0,
-			Checksum:  0,
-		}
-		ipv4 := &layers.IPv4{
-			BaseLayer:  layers.BaseLayer{},
-			Version:    4,
-			IHL:        0,
-			TOS:        0,
-			Length:     0,
-			Id:         0, // TODO(bassosimone)
-			Flags:      0,
-			FragOffset: 0,
-			TTL:        14,
-			Protocol:   layers.IPProtocolUDP,
-			Checksum:   0,
-			SrcIP:      rec.origDstIP,
-			DstIP:      net.IPv4(10, 17, 17, 1),
-			Options:    []layers.IPv4Option{},
-			Padding:    []byte{},
-		}
-		// step 3: serialize the modified packet
-		packetBuffer := gopacket.NewSerializeBuffer()
-		opts := gopacket.SerializeOptions{
-			FixLengths:       true,
-			ComputeChecksums: true,
-		}
-		udp.SetNetworkLayerForChecksum(ipv4) // see https://github.com/google/gopacket/issues/290
-		err = gopacket.SerializeLayers(packetBuffer, opts, ipv4, udp, gopacket.Payload(payload))
-		runtimex.PanicOnError(err, "gopacket.SerializeLayers failed")
-
-		// step 4: send packet to miniooni
-		rawPacket := packetBuffer.Bytes()
-		if err := netxlite.WriteSimpleFrame(miniooniConn, rawPacket); err != nil {
-			log.Warnf("returnpathUDPRouter: netxlite.WriteSimpleFrame: %s", err.Error())
-			return
-		}
-	}
-}
-
-// returnpathRouteUDPv4 routes an IPv4 packet containing an UDP datagram.
-func returnpathRouteUDPv4(dnat *dnatState, conn net.Conn, ipv4 *layers.IPv4, udp *layers.UDP) {
-	frame, err := dnat.rewriteReturnUDPv4(ipv4, udp)
-	if err != nil {
-		log.Warnf("returnPathRouteUDPv4: natRewriteReturnUDPv4: %s", err.Error())
-		return
-	}
-	if err := netxlite.WriteSimpleFrame(conn, frame); err != nil {
-		log.Warnf("returnPathRouteUDPv4: Write: %s", err.Error())
-	}
-}
-
-// returnpathRouteTCPv4 routes an IPv4 packet containing a TCP segment.
-func returnpathRouteTCPv4(dnat *dnatState, conn net.Conn, ipv4 *layers.IPv4, tcp *layers.TCP) {
-	// TODO(bassosimone): we should refactor this algorithm to be more explicit
-	frame, err := dnat.rewriteReturnTCPv4(ipv4, tcp)
-	if err != nil {
-		log.Warnf("returnPathRouteTCPv4: natRewriteReturnTCPv4: %s", err.Error())
-		return
-	}
-	if err := netxlite.WriteSimpleFrame(conn, frame); err != nil {
-		log.Warnf("returnPathRouteTCPv4: Write: %s", err.Error())
 	}
 }

@@ -20,6 +20,7 @@ func ipv4Forwarder(
 	for {
 		select {
 		case rawPacket := <-rawch:
+
 			packet := gopacket.NewPacket(rawPacket, layers.LayerTypeIPv4, gopacket.Default)
 			players := packet.Layers()
 			if len(players) < 2 {
@@ -60,6 +61,7 @@ func ipv4Forwarder(
 				continue
 			}
 			log.Warnf("forwardpath: drop packet: neither UDP nor TCP: %+v", rawPacket)
+
 		case <-ctx.Done():
 			return
 		}

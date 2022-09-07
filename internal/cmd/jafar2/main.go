@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net"
 	"net/netip"
 	"sync"
@@ -25,9 +26,41 @@ func main() {
 	}
 }
 
-// serve serves requests from a given miniooni client.
+// serve serves requests from a given miniooni client [conn].
 func serve(conn net.Conn) {
-	defer conn.Close() // we own the conn
+	// make sure we close the conn we own
+	defer conn.Close()
+
+	// create context for this request
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// read raw packets in the forward path (miniooni->internet)
+	connIn := make(chan []byte)
+	go miniooniConnReader(ctx, conn, connIn)
+
+	// write raw packets in the return path (internet->miniooni)
+	connOut := make(chan []byte)
+	go miniooniConnWriter(ctx, connOut, conn)
+
+	// process incoming raw packets according to protocol in the forward path
+	ipv4InUDP := make(chan *udpDatagram)
+	ipv4InTCP := make(chan *tcpSegment)
+	go ipv4Forwarder(ctx, connIn, ipv4InTCP, ipv4InUDP)
+
+	// create forwarding state for TCP
+	tcpState := &tcpState{
+		m:  map[uint16]net.IP{},
+		mu: sync.Mutex{},
+	}
+
+	// apply DNAT rules in the forward path and DNAT to userspace TCP
+	tcpDevIn := make(chan []byte)
+	go tcpSegmentForwarder(ctx, tcpState, ipv4InTCP, tcpDevIn)
+
+	// special processing rule for DNS-over-UDP
+	dnsOverUDPIn := make(chan *udpDatagram)
+	go udpDNSHandler(ctx, dnsOverUDPIn, connOut)
 
 	// create usermode network stack for serving requests
 	const conservativeMTU = 1250
@@ -47,25 +80,10 @@ func serve(conn net.Conn) {
 	}
 	defer devTUN.Close()
 
-	// create state for the DNAT
-	dnat := &dnatState{
-		mu:  sync.Mutex{},
-		tcp: map[string]*dnatRecord{},
-		udp: map[string]*dnatRecord{},
-	}
-
-	// start DNS server running on the user-mode net stack
-	dnsConn, err := userNet.ListenUDP(&net.UDPAddr{
-		IP:   net.IPv4(10, 17, 17, 1),
-		Port: 53,
-		Zone: "",
-	})
-	if err != nil {
-		log.Warnf("userNet.ListenUDP: %s", err.Error())
-		return
-	}
-	defer dnsConn.Close()
-	go dnsProxyLoop(dnsConn)
+	// process incoming raw packets according to protocol in the backward path
+	ipv4OutUDP := make(chan *udpDatagram)
+	ipv4OutTCP := make(chan *tcpSegment)
+	go ipv4Forwarder(ctx)
 
 	// start HTTP listener running on the user-mode net stack
 	httpListener, err := userNet.ListenTCP(&net.TCPAddr{

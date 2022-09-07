@@ -1,12 +1,16 @@
 package main
 
 //
-// Forward path router
+// Forward path (client->proxies)
+//
+// By reading this file top-down you get a sense of the travel
+// performed by packets from client to proxies.
 //
 
 import (
+	"context"
 	"net"
-	"time"
+	"sync"
 
 	"github.com/apex/log"
 	"github.com/google/gopacket"
@@ -16,131 +20,117 @@ import (
 	"golang.zx2c4.com/wireguard/tun"
 )
 
-// forwardPathRouter is the forward path router.
+// clientConnReader reads and processes packets sent by the client.
 //
 // Arguments:
 //
-// - dnatState keeps the DNAT state;
+// - ctx is the context binding the lifetime of this goroutine;
 //
-// - miniooniConn is the connection with the miniooni client;
+// - wg is the wait group used by the parent;
 //
-// - devTCP is the device where to write TCP segments;
+// - clientConn is the TCP conn with the client (usually miniooni);
 //
-// - devUDP is the packet conn to use to send UDP datagrams.
-func forwardPathRouter(
-	dnat *dnatState,
-	miniooniConn net.Conn,
-	devTCP tun.Device,
-	devUDP net.PacketConn,
+// - tcpState is the TCP state for implementing DNAT;
+//
+// - packetsForClient is the queue where to append packets for the client;
+//
+// - tcpDev is the virtual device connected to TCP servers.
+//
+// This function runs in a goroutine that keeps running until [ctx] is
+// not done and [clientConn] does not emit errors.
+func clientConnReader(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	clientConn net.Conn,
+	tcpState *tcpState,
+	packetsForClient chan<- []byte,
+	tcpDev tun.Device,
 ) {
-	for {
-		// step 1: read tunneled frame from miniooni from the conn device
-		frame, err := netxlite.ReadSimpleFrame(miniooniConn)
+	// notify termination
+	defer wg.Done()
+
+	for ctx.Err() == nil {
+		// read raw frame from the client
+		rawPacket, err := netxlite.ReadSimpleFrame(clientConn)
 		if err != nil {
-			log.Warnf("forwardpath: ReadSimpleFrame: %s", err.Error())
+			log.Warnf("clientConnReader: netxlite.ReadSimpleFrame: %s", err.Error())
 			return
 		}
 
-		// step 2: parse packet as an IPv4 packet
-		pkt := gopacket.NewPacket(frame, layers.LayerTypeIPv4, gopacket.Default)
-		players := pkt.Layers()
+		// check whether packet is IPv4 and otherwise discard it
+		packet := gopacket.NewPacket(rawPacket, layers.LayerTypeIPv4, gopacket.Default)
+		players := packet.Layers()
 		if len(players) < 2 {
-			log.Warnf("fwdPath: drop packet: too few layers: %+v", frame)
+			log.Warnf("clientConnReader: drop packet: too few layers: %+v", rawPacket)
 			continue
 		}
 		ipv4, good := players[0].(*layers.IPv4)
 		if !good {
-			log.Warnf("forwardpath: drop packet: not IPv4: %+v", frame)
+			log.Warnf("clientConnReader: drop packet: not IPv4: %+v", rawPacket)
 			continue
 		}
 
-		// step 3: dispatch to UDP or TCP and otherwise drop
-		udp, good := players[1].(*layers.UDP)
-		if good {
-			forwardPathRouteUDPv4(dnat, devUDP, ipv4, udp)
+		// process incoming UDP packets
+		if udp, good := players[1].(*layers.UDP); good {
+			clientConnReaderUDPv4(ctx, rawPacket, ipv4, udp, packetsForClient)
 			continue
 		}
-		tcp, good := players[1].(*layers.TCP)
-		if good {
-			forwardPathRouteTCPv4(dnat, devTCP, ipv4, tcp)
+
+		// process incoming TCP packets
+		if tcp, good := players[1].(*layers.TCP); good {
+			clientConnReaderTCPv4(tcpState, tcpDev, ipv4, tcp)
 			continue
 		}
-		log.Warnf("forwardpath: drop packet: neither UDP nor TCP: %+v", frame)
+
+		// discard all the other incoming packets
+		log.Warnf("clientConnReader: drop packet: neither UDP nor TCP: %+v", rawPacket)
 	}
 }
 
-// forwardPathRouteUDPv4 routes an IPv4 packet containing an UDP datagram.
-func forwardPathRouteUDPv4(
-	dnat *dnatState,
-	miniooniConn net.Conn,
-	devUDP net.PacketConn,
+// clientConnReaderUDPv4 processes an UDPv4 datagram from the client.
+func clientConnReaderUDPv4(
+	ctx context.Context,
+	rawPacket []byte,
 	ipv4 *layers.IPv4,
 	udp *layers.UDP,
+	packetsForClient chan<- []byte,
 ) {
-	// assemble the destination address from available data
-	destAddr := &net.UDPAddr{
-		IP:   ipv4.DstIP,
-		Port: int(udp.DstPort),
-		Zone: "",
+	switch udp.DstPort {
+	case 53:
+		dnsOverUDPv4(ctx, rawPacket, ipv4, udp, packetsForClient)
+	default:
+		log.Warnf("clientConnReaderUDPv4: drop packet: %+v", rawPacket)
 	}
+}
 
-	// create socket for sending this datagram
-	pconn, err := net.Dial("udp", destAddr.String())
-	runtimex.PanicOnError(err, "net.ListenUDP")
-	defer pconn.Close()
+// clientConnReaderTCPv4 processes a TCPv4 datagram from the client.
+func clientConnReaderTCPv4(
+	state *tcpState,
+	tcpDev tun.Device,
+	ipv4 *layers.IPv4,
+	tcp *layers.TCP,
+) {
+	// DNAT to the TCP proxyies attached to tcpDev
+	state.mu.Lock()
+	state.m[uint16(tcp.SrcPort)] = ipv4.DstIP
+	state.mu.Unlock()
+	ipv4.DstIP = net.IPv4(10, 17, 17, 1)
 
-	// set reasonable timeout for this UDP socket
-	const timeout = 4 * time.Second
-	pconn.SetDeadline(time.Now().Add(timeout))
-
-	// send payload to the server
-	if _, err := pconn.Write(udp.Payload); err != nil {
-		log.Warnf("forwardpathRouteUDPv4: Write: %s", err.Error())
-		return
-	}
-
-	// receive response
-	buffer := make([]byte, 4096)
-	count, err := pconn.Read(buffer)
-	if err != nil {
-		log.Warnf("forwardpathRouteUDPv4: Read: %s", err.Error())
-		return
-	}
-	payload := buffer[:count]
-
-	// prepare for reflecting the original datagram back
-	ipv4.SrcIP, ipv4.DstIP = ipv4.DstIP, ipv4.SrcIP
-	udp.SrcPort, udp.DstPort = udp.DstPort, udp.SrcPort
-
-	// serialize to packet buffer
-	packetBuffer := gopacket.NewSerializeBuffer()
+	// serialize to bytes
+	pktbuf := gopacket.NewSerializeBuffer()
 	opts := gopacket.SerializeOptions{
 		FixLengths:       true,
 		ComputeChecksums: true,
 	}
-	udp.SetNetworkLayerForChecksum(ipv4) // see https://github.com/google/gopacket/issues/290
-	err = gopacket.SerializeLayers(packetBuffer, opts, ipv4, udp, gopacket.Payload(payload))
+	tcp.SetNetworkLayerForChecksum(ipv4)
+	err := gopacket.SerializeLayers(pktbuf, opts, ipv4, tcp, gopacket.Payload(tcp.Payload))
 	runtimex.PanicOnError(err, "gopacket.SerializeLayers failed")
+	rawPacket := pktbuf.Bytes()
 
-	// send packet back to miniooni
-	rawPacket := packetBuffer.Bytes()
-	if err := netxlite.WriteSimpleFrame(miniooniConn, rawPacket); err != nil {
-		log.Warnf("returnpathUDPRouter: netxlite.WriteSimpleFrame: %s", err.Error())
-		return
-	}
-}
-
-// forwardPathRouteTCPv4 routes an IPv4 packet containing a TCP segment.
-//
-// The strategy for TCP consists of registering an entry inside the DNAT table,
-// rewriting the destination address, and then sending over to [devTCP]. This kind
-// of send passes the bytes to an application-level instance of TCP, which will
-// reassemble the data and then send upstream to the real server.
-func forwardPathRouteTCPv4(dnat *dnatState, devTCP tun.Device, ipv4 *layers.IPv4, tcp *layers.TCP) {
-	// TODO(bassosimone): we should refactor this algorithm to be more explicit
-	packet := dnat.rewriteForwardTCPv4(ipv4, tcp)
+	// forward packet to the TCP proxies services
 	const zeroOffset = 0
-	if _, err := devTCP.Write(packet, zeroOffset); err != nil {
-		log.Warnf("forwardpathRouteTCPv4: Write: %s", err.Error())
+	if _, err := tcpDev.Write(rawPacket, zeroOffset); err != nil {
+		log.Warnf("clientConnReaderTCPv4: dev.Write: %s", err.Error())
+		return
 	}
 }
