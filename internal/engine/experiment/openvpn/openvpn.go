@@ -22,6 +22,7 @@ import (
 
 	"github.com/ooni/minivpn/extras/ping"
 	"github.com/ooni/minivpn/vpn"
+	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
 )
@@ -31,7 +32,7 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.9"
+	testVersion = "0.0.10"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
@@ -82,10 +83,7 @@ type PingResult struct {
 	MaxRtt      float64     `json:"max_rtt"`
 	AvgRtt      float64     `json:"avg_rtt"`
 	StdRtt      float64     `json:"std_rtt"`
-	// FIXME unsure about this, but I think I want to know if
-	// the measurements timed out for each ping, or it's another kind of
-	// error (ie, instrumental, uncovered cases etc).
-	Error *string `json:"error"`
+	Error       *string     `json:"error"`
 }
 
 // URLURLGrabResult holds the results for a urlgrab run.
@@ -98,6 +96,42 @@ type URLGrabResult struct {
 	Response   *string `json:"response"`
 	FetchTime  float64 `json:"fetch_time_ms"`
 	StatusCode int     `json:"status"`
+}
+
+// Stage captures a uint16 event measuring the progress of the VPN connection.
+type Stage struct {
+	ID    uint16  `json:"idx"`
+	Stage string  `json:"st"`
+	Time  float64 `json:"t"`
+}
+
+func newStage(st uint16, t time.Duration) Stage {
+	var s string
+	switch st {
+	case vpn.EventReady:
+		s = "ready"
+	case vpn.EventDialDone:
+		s = "dial_done"
+	case vpn.EventReset:
+		s = "reset"
+	case vpn.EventTLSConn:
+		s = "tls_conn"
+	case vpn.EventTLSHandshake:
+		s = "tls_handshake"
+	case vpn.EventTLSHandshakeDone:
+		s = "tls_handshake_done"
+	case vpn.EventDataInitDone:
+		s = "data_init"
+	case vpn.EventHandshakeDone:
+		s = "handshake_done"
+	default:
+		s = "unknown"
+	}
+	return Stage{
+		ID:    st,
+		Stage: s,
+		Time:  toMs(t),
+	}
 }
 
 // TestKeys contains the experiment's result.
@@ -128,8 +162,11 @@ type TestKeys struct {
 	// BootstrapTime contains the bootstrap time on success.
 	BootstrapTime float64 `json:"bootstrap_time"`
 
-	// Stage captures a uint16 event measuring the progress of the VPN connection.
-	Stage uint16 `json:"stage"`
+	// Stages is a sequence of stages with their corresponding timestamp.
+	Stages []Stage `json:"stages"`
+
+	// Dial connect traces a TCP connection for the vpn dialer (null for UDP transport).
+	DialConnect *model.ArchivalTCPConnectResult `json:"tcp_connect"`
 
 	// Failure contains the failure string or nil.
 	Failure *string `json:"failure"`
@@ -186,20 +223,17 @@ func pingTimeout() time.Duration {
 
 func doSinglePing(wg *sync.WaitGroup, conn net.Conn, target string, tk *TestKeys) {
 	defer wg.Done()
-
 	pinger := ping.NewFromSharedConnection(target, conn)
 	pinger.Count = pingCount
 	pinger.Timeout = pingTimeout()
 
-	conn.SetReadDeadline(time.Now().Add(time.Second * 60))
 	err := pinger.Run(context.Background())
-
-	log.Println("ping done!")
-
-	tk.Pings = append(tk.Pings, parseStats(pinger, target))
+	pingResult := parseStats(pinger, target)
 	if err != nil {
-		tk.Failure = tracex.NewFailure(err)
+		e := err.Error()
+		pingResult.Error = &e
 	}
+	tk.Pings = append(tk.Pings, pingResult)
 }
 
 func sendBlockingPing(wg *sync.WaitGroup, conn net.Conn, target string, tk *TestKeys) {
@@ -239,9 +273,6 @@ func (m *Measurer) Run(
 	defer cancel()
 
 	tkch := make(chan *TestKeys)
-	ticker := time.NewTicker(2 * time.Second) // this is copied from some other experiment to allow a progress display; reuse.
-	defer ticker.Stop()
-
 	go m.bootstrap(ctx, sess, experiment, tkch)
 
 	select {
@@ -251,13 +282,11 @@ func (m *Measurer) Run(
 	}
 	tk := measurement.TestKeys.(*TestKeys)
 
-	/*
-	 defer func() {
-	 	if m.tunnel != nil {
-	 		m.tunnel.Close()
-	 	}
-	 }()
-	*/
+	defer func() {
+		if m.tunnel != nil {
+			m.tunnel.Close()
+		}
+	}()
 
 	if tk.Failure != nil {
 		// bootstrap error
@@ -283,7 +312,7 @@ func (m *Measurer) Run(
 	//
 
 	// TODO(ainghazal): it's cleaner to pass a closure to DialContext in
-	// the client transport. I just need to reset the read timeoutb before
+	// the client transport. I "just" need to reset the read timeout before
 	// reusing the conn.
 	log.Println("stage: urlgrab")
 
@@ -393,41 +422,63 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 		BootstrapTime:  0,
 		Failure:        nil,
 		Error:          nil,
+		Stages:         []Stage{},
 	}
 	sess.Logger().Info("openvpn: bootstrapping openvpn connection")
 	defer func() {
 		out <- tk
 	}()
 
-	s := time.Now()
-
-	// ---------------------------------------------------
-	// TODO use step-by-step to get a trace for the dialer
-	// trace := measurexlite.NewTrace(index, zeroTime)
-	// ---------------------------------------------------
-
 	vpnEventChan := make(chan uint16, 100)
 	m.tunnel.EventListener = vpnEventChan
+
+	zeroTime := time.Now()
 
 	go func() {
 		for {
 			select {
 			case stage := <-vpnEventChan:
-				tk.Stage = stage
+				st := newStage(stage, time.Now().Sub(zeroTime))
+				tk.Stages = append(tk.Stages, st)
 			}
 		}
 	}()
 
+	index := int64(1)
+	trace := measurexlite.NewTrace(index, zeroTime)
+
+	if tk.Transport == "tcp" {
+		m.traceDialTCP(ctx, sess, trace, index, tk)
+	} else {
+		m.dialUDP(ctx, sess, trace, index, tk)
+	}
+
+	tk.BootstrapTime = time.Now().Sub(zeroTime).Seconds()
+	sess.Logger().Info("openvpn: bootstrapping done")
+}
+
+func (m *Measurer) traceDialTCP(ctx context.Context, sess model.ExperimentSession, trace *measurexlite.Trace, index int64, tk *TestKeys) {
+	ol := measurexlite.NewOperationLogger(sess.Logger(), "OpenVPN Dial #%d %s", index, tk.Remote)
+	dialer := trace.NewDialerWithoutResolver(sess.Logger())
+	m.tunnel.Dialer = dialer
 	err := m.tunnel.Start(ctx)
-	tk.BootstrapTime = time.Now().Sub(s).Seconds()
+	tk.DialConnect = <-trace.TCPConnect
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
 		tk.Error = &bootstrapError
 		sess.Logger().Info("openvpn: bootstrapping failed")
 		return
 	}
-	tk.BootstrapTime = time.Now().Sub(s).Seconds()
-	sess.Logger().Info("openvpn: bootstrapping done")
+	ol.Stop(err)
+}
+
+func (m *Measurer) dialUDP(ctx context.Context, sess model.ExperimentSession, trace *measurexlite.Trace, index int64, tk *TestKeys) {
+	err := m.tunnel.Start(ctx)
+	if err != nil {
+		tk.Failure = tracex.NewFailure(err)
+		tk.Error = &bootstrapError
+		sess.Logger().Info("openvpn: bootstrapping failed")
+	}
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
