@@ -17,54 +17,39 @@ func main() {
 	runtimex.PanicOnError(err, "net.ListenTCP")
 	log.Infof("listening at %s", listener.Addr().String())
 	for {
-		conn, err := listener.Accept()
+		clientConn, err := listener.Accept()
 		if err != nil {
-			log.Warnf("Accept: %s", err.Error())
+			log.Warnf("main: Accept: %s", err.Error())
 			continue
 		}
-		serve(conn)
+		go serve(clientConn)
 	}
 }
 
 // serve serves requests from a given miniooni client [conn].
-func serve(conn net.Conn) {
+func serve(clientConn net.Conn) {
 	// make sure we close the conn we own
-	defer conn.Close()
+	defer clientConn.Close()
 
 	// create context for this request
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// read raw packets in the forward path (miniooni->internet)
-	connIn := make(chan []byte)
-	go miniooniConnReader(ctx, conn, connIn)
-
-	// write raw packets in the return path (internet->miniooni)
-	connOut := make(chan []byte)
-	go miniooniConnWriter(ctx, connOut, conn)
-
-	// process incoming raw packets according to protocol in the forward path
-	ipv4InUDP := make(chan *udpDatagram)
-	ipv4InTCP := make(chan *tcpSegment)
-	go ipv4Forwarder(ctx, connIn, ipv4InTCP, ipv4InUDP)
+	// know when all background services terminated
+	wg := &sync.WaitGroup{}
 
 	// create forwarding state for TCP
 	tcpState := &tcpState{
-		m:  map[uint16]net.IP{},
-		mu: sync.Mutex{},
+		dnat: map[uint16]net.IP{},
+		mu:   sync.Mutex{},
 	}
 
-	// apply DNAT rules in the forward path and DNAT to userspace TCP
-	tcpDevIn := make(chan []byte)
-	go tcpSegmentForwarder(ctx, tcpState, ipv4InTCP, tcpDevIn)
-
-	// special processing rule for DNS-over-UDP
-	dnsOverUDPIn := make(chan *udpDatagram)
-	go udpDNSHandler(ctx, dnsOverUDPIn, connOut)
+	// make queue for packets in the return path
+	packetsForClient := make(chan []byte, 128)
 
 	// create usermode network stack for serving requests
 	const conservativeMTU = 1250
-	devTUN, userNet, err := netstack.CreateNetTUN(
+	tcpDev, userNet, err := netstack.CreateNetTUN(
 		[]netip.Addr{
 			netip.Addr(netip.MustParseAddr("10.17.17.1")),
 		},
@@ -75,15 +60,40 @@ func serve(conn net.Conn) {
 		conservativeMTU,
 	)
 	if err != nil {
-		log.Warnf("netstack.CreateNetTun: %s", err.Error())
+		log.Warnf("serve: netstack.CreateNetTun: %s", err.Error())
 		return
 	}
-	defer devTUN.Close()
+	defer tcpDev.Close()
 
-	// process incoming raw packets according to protocol in the backward path
-	ipv4OutUDP := make(chan *udpDatagram)
-	ipv4OutTCP := make(chan *tcpSegment)
-	go ipv4Forwarder(ctx)
+	// process packets in the forward path (miniooni->proxies)
+	wg.Add(1)
+	go clientConnReader(
+		ctx,
+		wg,
+		clientConn,
+		tcpState,
+		packetsForClient,
+		tcpDev,
+	)
+
+	// process packets in the return path (miniooni<-proxies)
+	wg.Add(1)
+	go tcpDeviceReader(
+		ctx,
+		wg,
+		tcpState,
+		tcpDev,
+		packetsForClient,
+	)
+
+	// actually forward packets to clients
+	wg.Add(1)
+	go clientConnWriter(
+		ctx,
+		wg,
+		packetsForClient,
+		clientConn,
+	)
 
 	// start HTTP listener running on the user-mode net stack
 	httpListener, err := userNet.ListenTCP(&net.TCPAddr{
@@ -92,11 +102,18 @@ func serve(conn net.Conn) {
 		Zone: "",
 	})
 	if err != nil {
-		log.Warnf("userNet.ListenTCP: %s", err.Error())
+		log.Warnf("serve: userNet.ListenTCP: %s", err.Error())
 		return
 	}
 	defer httpListener.Close()
-	go tcpProxyLoop(dnat, httpListener, "80")
+	wg.Add(1)
+	go tcpProxyLoop(
+		ctx,
+		wg,
+		tcpState,
+		httpListener,
+		"80",
+	)
 
 	// start HTTPS listener running on the user-mode net stack
 	httpsListener, err := userNet.ListenTCP(&net.TCPAddr{
@@ -105,15 +122,19 @@ func serve(conn net.Conn) {
 		Zone: "",
 	})
 	if err != nil {
-		log.Warnf("userNet.ListenTCP: %s", err.Error())
+		log.Warnf("serve: userNet.ListenTCP: %s", err.Error())
 		return
 	}
 	defer httpsListener.Close()
-	go tcpProxyLoop(dnat, httpsListener, "443")
+	wg.Add(1)
+	go tcpProxyLoop(
+		ctx,
+		wg,
+		tcpState,
+		httpsListener,
+		"443",
+	)
 
-	// start router handling the return path
-	go returnpathRouter(dnat, devTUN, conn)
-
-	// run the forward path router in sync fashion
-	forwardPathRouter(dnat, conn, devTUN)
+	// block until goroutines terminate
+	wg.Wait()
 }

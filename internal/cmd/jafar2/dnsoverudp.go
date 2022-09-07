@@ -60,7 +60,7 @@ func dnsOverUDPv4Worker(
 	query *dns.Msg,
 ) {
 	// send the query to an upstream server
-	resp, err := dns.Exchange(query, "8.8.8.8:53")
+	resp, err := dns.ExchangeContext(ctx, query, "8.8.8.8:53")
 	if err != nil {
 		log.Warnf("dnsOverUDPv4Worker: dns.Exchange: %s", err.Error())
 		return
@@ -72,7 +72,7 @@ func dnsOverUDPv4Worker(
 	}
 
 	// assemble a response for the client
-	ipv4.SrcIP, ipv4.DstIP = ipv4.SrcIP, ipv4.DstIP
+	ipv4.SrcIP, ipv4.DstIP = ipv4.DstIP, ipv4.SrcIP
 	udp.SrcPort, udp.DstPort = udp.DstPort, udp.SrcPort
 	pktbuf := gopacket.NewSerializeBuffer()
 	opts := gopacket.SerializeOptions{

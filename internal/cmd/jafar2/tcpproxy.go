@@ -100,7 +100,7 @@ func tcpProxyServe(
 	// obtain the real destination address using DNAT
 	var destAddr net.IP
 	tcpState.mu.Lock()
-	destAddr = tcpState.m[uint16(clientPort)]
+	destAddr = tcpState.dnat[uint16(clientPort)]
 	tcpState.mu.Unlock()
 	if destAddr == nil {
 		log.Warnf("tcpProxyServe: missing DNAT entry for %d", clientPort)

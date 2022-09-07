@@ -93,7 +93,7 @@ func tcpDevReaderTCPv4(
 	// Undo the effects of DNAT
 	var srcIP net.IP
 	state.mu.Lock()
-	srcIP = state.m[uint16(tcp.DstPort)]
+	srcIP = state.dnat[uint16(tcp.DstPort)]
 	state.mu.Unlock()
 	if srcIP == nil {
 		log.Warnf("tcpDevReaderTCPv4: missing DNAT entry for %d", tcp.DstPort)
@@ -125,8 +125,8 @@ func tcpDevReaderTCPv4(
 func clientConnWriter(
 	ctx context.Context,
 	wg *sync.WaitGroup,
-	clientConn net.Conn,
 	rawPackets <-chan []byte,
+	clientConn net.Conn,
 ) {
 	// notify termination
 	defer wg.Done()

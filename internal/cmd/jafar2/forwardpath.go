@@ -112,7 +112,7 @@ func clientConnReaderTCPv4(
 ) {
 	// DNAT to the TCP proxyies attached to tcpDev
 	state.mu.Lock()
-	state.m[uint16(tcp.SrcPort)] = ipv4.DstIP
+	state.dnat[uint16(tcp.SrcPort)] = ipv4.DstIP
 	state.mu.Unlock()
 	ipv4.DstIP = net.IPv4(10, 17, 17, 1)
 
