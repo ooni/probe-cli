@@ -5,7 +5,7 @@ on:
     branches:
       - "release/**"
       - "fullbuild"
-      - "qubuild"
+      - "qabuild"
 
 jobs:
   test_fbmessenger:
