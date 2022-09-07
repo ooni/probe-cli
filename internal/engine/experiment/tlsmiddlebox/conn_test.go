@@ -142,7 +142,7 @@ func TestSetTTL(t *testing.T) {
 		}
 		r, _ := conn.Read(buf[:])
 		if r != 0 {
-			t.Fatal("unexpected output of size", r)
+			t.Fatal("unexpected output size", r)
 		}
 		setConnTTL(conn, 64) // reset TTL to ensure conn closes successfully
 		conn.Close()
