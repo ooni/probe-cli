@@ -8,6 +8,9 @@ git config --global --add safe.directory /jafar
 # that all DNS lookups return `dns_nxdomain_error`
 export CGO_ENABLED=0
 
+# TODO(bassosimone): because this script runs as root, it's not
+# possible to save the caching directories in github actions but
+# doing that would making re-executing these scripts faster.
 export GOPATH=/jafar/QA/GOPATH
 export GOCACHE=/jafar/QA/GOCACHE
 
