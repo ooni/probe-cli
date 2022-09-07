@@ -922,8 +922,9 @@ gitlab.com/yawning/bsaes.git v0.0.0-20190805113838-0a714cd429ec/go.mod h1:BZ1RAo
 gitlab.com/yawning/edwards25519-extra.git v0.0.0-20211229043746-2f91fcc9fbdb/go.mod h1:gvdJuZuO/tPZyhEV8K3Hmoxv/DWud5L4qEQxfYjEUTo=
 gitlab.com/yawning/edwards25519-extra.git v0.0.0-20220726154925-def713fd18e4 h1:LeXiZggivkDGgmkl7+r+m/2xj3rd+K/30/0obRKayAU=
 gitlab.com/yawning/edwards25519-extra.git v0.0.0-20220726154925-def713fd18e4/go.mod h1:gvdJuZuO/tPZyhEV8K3Hmoxv/DWud5L4qEQxfYjEUTo=
-gitlab.com/yawning/obfs4.git v0.0.0-20220204003609-77af0cba934d h1:tJ8F7ABaQ3p3wjxwXiWSktVDgjZEXkvaRawd2rIq5ws=
 gitlab.com/yawning/obfs4.git v0.0.0-20220204003609-77af0cba934d/go.mod h1:9GcM8QNU9/wXtEEH2q8bVOnPI7FtIF6VVLzZ1l6Hgf8=
+gitlab.com/yawning/obfs4.git v0.0.0-20220904064028-336a71d6e4cf h1:k9czJST0Jvc6fnz4Jp1sxRmA4dSuiWFq+DVpxLZP5yM=
+gitlab.com/yawning/obfs4.git v0.0.0-20220904064028-336a71d6e4cf/go.mod h1:9GcM8QNU9/wXtEEH2q8bVOnPI7FtIF6VVLzZ1l6Hgf8=
 gitlab.com/yawning/utls.git v0.0.12-1 h1:RL6O0MP2YI0KghuEU/uGN6+8b4183eqNWoYgx7CXD0U=
 gitlab.com/yawning/utls.git v0.0.12-1/go.mod h1:3ONKiSFR9Im/c3t5RKmMJTVdmZN496FNyk3mjrY1dyo=
 gitlab.torproject.org/tpo/anti-censorship/geoip v0.0.0-20210928150955-7ce4b3d98d01/go.mod h1:K3LOI4H8fa6j+7E10ViHeGEQV10304FG4j94ypmKLjY=

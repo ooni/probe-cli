@@ -36,7 +36,7 @@ require (
 	github.com/rogpeppe/go-internal v1.8.1
 	github.com/rubenv/sql-migrate v1.1.2
 	github.com/upper/db/v4 v4.5.4
-	gitlab.com/yawning/obfs4.git v0.0.0-20220204003609-77af0cba934d
+	gitlab.com/yawning/obfs4.git v0.0.0-20220904064028-336a71d6e4cf
 	gitlab.com/yawning/utls.git v0.0.12-1
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
 	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c
