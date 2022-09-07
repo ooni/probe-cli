@@ -7,6 +7,7 @@
 /DEBIAN_INSTALLED_PACKAGE.txt
 /debops-ci
 .DS_Store
+/ghpublish.out.txt
 /jafar
 /*.jsonl
 /miniooni

@@ -66,6 +66,10 @@ type TestKeys struct {
 	// the TH's DNS results and the probe's DNS results.
 	DNSConsistency string `json:"dns_consistency"`
 
+	// HTTPExperimentFailure indicates whether there was a failure in
+	// the final HTTP request that we recorded.
+	HTTPExperimentFailure *string `json:"http_experiment_failure"`
+
 	// BlockingFlags contains blocking flags.
 	BlockingFlags int64 `json:"x_blocking_flags"`
 

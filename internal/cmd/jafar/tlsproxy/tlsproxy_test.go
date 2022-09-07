@@ -21,7 +21,7 @@ func TestPass(t *testing.T) {
 func TestBlock(t *testing.T) {
 	listener := newproxy(t, "ooni.io")
 	checkdialtls(t, listener.Addr().String(), false, &tls.Config{
-		ServerName: "mia-ps.ooni.io",
+		ServerName: "api.ooni.io",
 	})
 	killproxy(t, listener)
 }

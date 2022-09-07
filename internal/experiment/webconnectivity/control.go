@@ -23,11 +23,11 @@ type EndpointMeasurementsStarter interface {
 	// nonblocking read fails. Hence, you must create a [sema] channel with buffer equal
 	// to N and N elements inside it to allow N flows to perform HTTP measurements. Passing
 	// a nil [sema] causes no flow to attempt HTTP measurements.
-	startCleartextFlowsWithSema(ctx context.Context, sema <-chan any, addresses []string)
+	startCleartextFlowsWithSema(ctx context.Context, sema <-chan any, addresses []DNSEntry)
 
 	// startSecureFlowsWithSema starts a TCP+TLS measurement flow for each IP addr. See
 	// the docs of startCleartextFlowsWithSema for more info on the [sema] arg.
-	startSecureFlowsWithSema(ctx context.Context, sema <-chan any, addresses []string)
+	startSecureFlowsWithSema(ctx context.Context, sema <-chan any, addresses []DNSEntry)
 }
 
 // Control issues a Control request and saves the results
@@ -100,12 +100,13 @@ func (c *Control) Run(parentCtx context.Context) {
 	}
 	c.TestKeys.SetControlRequest(creq)
 
-	// TODO(bassosimone): the current TH will not perform TLS measurements for
-	// 443 endpoints. However, we should modify the TH to do that, such that we're
-	// able to be more confident about TLS measurements results.
-
 	// create logger for this operation
-	ol := measurexlite.NewOperationLogger(c.Logger, "control for %s", creq.HTTPRequest)
+	ol := measurexlite.NewOperationLogger(
+		c.Logger,
+		"control for %s using %s",
+		creq.HTTPRequest,
+		c.THAddr,
+	)
 
 	// create an API client
 	clnt := (&httpx.APIClientTemplate{
@@ -156,12 +157,22 @@ func (c *Control) maybeStartExtraMeasurements(ctx context.Context, thAddrs []str
 	}
 
 	// obtain the TH-only addresses
-	var thOnly []string
+	var thOnlyAddrs []string
 	for addr, flags := range mapping {
 		if (flags & inProbe) != 0 {
 			continue // discovered by the probe => already tested
 		}
-		thOnly = append(thOnly, addr)
+		thOnlyAddrs = append(thOnlyAddrs, addr)
+	}
+
+	c.Logger.Infof("measuring additional addrs from TH: %+v", thOnlyAddrs)
+
+	var thOnly []DNSEntry
+	for _, addr := range thOnlyAddrs {
+		thOnly = append(thOnly, DNSEntry{
+			Addr:  addr,
+			Flags: 0, // neither system, nor udp, nor doh
+		})
 	}
 
 	// Start extra measurements for TH-only addresses. Because we already

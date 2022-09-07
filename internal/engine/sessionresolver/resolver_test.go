@@ -133,7 +133,7 @@ func TestLittleLLookupHostWithSuccess(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	ri := &resolverinfo{URL: "dot://dns-nonexistent.ooni.org", Score: 0.1}
+	ri := &resolverinfo{URL: "dot://www.ooni.nonexistent", Score: 0.1}
 	addrs, err := reso.lookupHost(ctx, ri, "dns.google")
 	if err != nil {
 		t.Fatal(err)
@@ -159,7 +159,7 @@ func TestLittleLLookupHostWithFailure(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	ri := &resolverinfo{URL: "dot://dns-nonexistent.ooni.org", Score: 0.95}
+	ri := &resolverinfo{URL: "dot://www.ooni.nonexistent", Score: 0.95}
 	addrs, err := reso.lookupHost(ctx, ri, "dns.google")
 	if !errors.Is(err, errMocked) {
 		t.Fatal("not the error we expected", err)

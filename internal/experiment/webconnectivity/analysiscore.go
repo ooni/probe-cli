@@ -90,6 +90,7 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 	// these functions compute the value of XBlockingFlags
 	tk.analysisDNSToplevel(logger)
 	tk.analysisTCPIPToplevel(logger)
+	tk.analysisTLSToplevel(logger)
 	tk.analysisHTTPToplevel(logger)
 
 	// now, let's determine .Accessible and .Blocking

@@ -10,7 +10,7 @@ if [[ $__ref == "" ]]; then
 	exit 1
 fi
 
-# 2. determine whether to publish to a release or to rolling
+# 2. determine whether to use a release tag name or just "rolling"
 if [[ $__ref =~ ^refs/tags/v ]]; then
 	__version=${__ref#refs/tags/v}
 else
@@ -25,4 +25,3 @@ set -x
 # 4. generate the actual tarball
 go mod vendor
 tar -czf ooni-probe-cli-${__version}.tar.gz --transform "s,^,ooni-probe-cli-${__version}/," *
-

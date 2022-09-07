@@ -10,10 +10,7 @@ import (
 // Default returns the default probe services
 func Default() []model.OOAPIService {
 	return []model.OOAPIService{{
-		Address: "https://ps1.ooni.io",
-		Type:    "https",
-	}, {
-		Address: "https://ps2.ooni.io",
+		Address: "https://api.ooni.io",
 		Type:    "https",
 	}, {
 		Front:   "dkyhjv0wpi2dk.cloudfront.net",

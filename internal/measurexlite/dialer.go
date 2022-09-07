@@ -53,6 +53,8 @@ func (tx *Trace) OnConnectDone(
 	started time.Time, network, domain, remoteAddr string, err error, finished time.Time) {
 	switch network {
 	case "tcp", "tcp4", "tcp6":
+
+		// insert into the tcpConnect buffer
 		select {
 		case tx.tcpConnect <- NewArchivalTCPConnectResult(
 			tx.Index,
@@ -63,6 +65,23 @@ func (tx *Trace) OnConnectDone(
 		):
 		default: // buffer is full
 		}
+
+		// insert into the networkEvent buffer
+		// see https://github.com/ooni/probe/issues/2254
+		select {
+		case tx.networkEvent <- NewArchivalNetworkEvent(
+			tx.Index,
+			started.Sub(tx.ZeroTime),
+			netxlite.ConnectOperation,
+			"tcp",
+			remoteAddr,
+			0,
+			err,
+			finished.Sub(tx.ZeroTime),
+		):
+		default: // buffer is full
+		}
+
 	default:
 		// ignore UDP connect attempts because they cannot fail
 		// in interesting ways that make sense for censorship

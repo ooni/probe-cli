@@ -67,7 +67,7 @@ func TestDNSDo(t *testing.T) {
 	t.Run("returns non-nil addresses list on nxdomin", func(t *testing.T) {
 		ctx := context.Background()
 		config := &dnsConfig{
-			Domain: "antani.ooni.org",
+			Domain: "www.ooni.nonexistent",
 			Logger: model.DiscardLogger,
 			NewResolver: func(model.Logger) model.Resolver {
 				return &mocks.Resolver{

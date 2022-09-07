@@ -57,7 +57,7 @@ func TestMeasureWithSystemResolver(t *testing.T) {
 		r := netxlite.NewStdlibResolver(log.Log)
 		defer r.CloseIdleConnections()
 		ctx := context.Background()
-		addrs, err := r.LookupHost(ctx, "antani.ooni.org")
+		addrs, err := r.LookupHost(ctx, "www.ooni.nonexistent")
 		if err == nil || err.Error() != netxlite.FailureDNSNXDOMAINError {
 			t.Fatal("not the error we expected", err)
 		}
@@ -75,7 +75,7 @@ func TestMeasureWithSystemResolver(t *testing.T) {
 		// Implementation note: Windows' resolver has caching so back to back tests
 		// will fail unless we query for something that could bypass the cache itself
 		// e.g. a domain containing a few random letters
-		addrs, err := r.LookupHost(ctx, randx.Letters(7)+".ooni.org")
+		addrs, err := r.LookupHost(ctx, randx.Letters(7)+".ooni.nonexistent")
 		if err == nil || err.Error() != netxlite.FailureGenericTimeoutError {
 			t.Fatal("not the error we expected", err)
 		}
