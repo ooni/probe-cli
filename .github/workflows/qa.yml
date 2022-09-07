@@ -1,4 +1,4 @@
-# Runs quality assurance checks for the all experiments
+# Runs quality assurance checks
 name: "qa"
 on:
   push:
