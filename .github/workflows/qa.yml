@@ -1,14 +1,16 @@
-# Runs QA checks for the webconnectivity experiment
-name: "qawebconnectivity"
+# Runs quality assurance checks
+name: "qa"
 on:
   push:
     branches:
       - "release/**"
       - "fullbuild"
+      - "qabuild"
 
 jobs:
-  test:
+  test_webconnectivity:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - run: ./QA/rundocker.bash "webconnectivity"
+
