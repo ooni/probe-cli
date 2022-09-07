@@ -81,7 +81,7 @@ func tcpProxyServe(
 
 	// obtain the port used by the client which is the same port used by
 	// the userspace TCP client running inside, e.g., miniooni
-	clientAddr := uconn.LocalAddr().String()
+	clientAddr := uconn.RemoteAddr().String()
 	_, clientPortStr, err := net.SplitHostPort(clientAddr)
 	if err != nil {
 		log.Warnf("tcpProxyServe: net.SplitHostPort: %s", err.Error())
