@@ -103,7 +103,7 @@ func (m *Measurer) TraceAddress(ctx context.Context, index int64, zeroTime time.
 	tk.addTrace([]*CompleteTrace{trace})
 	err := m.TCPConnect(ctx, index, zeroTime, logger, address, tk)
 	if err != nil {
-		return err
+		return err // skip tracing if we cannot connect with default TTL
 	}
 	m.TLSTrace(ctx, index, zeroTime, logger, address, sni, trace)
 	return nil
