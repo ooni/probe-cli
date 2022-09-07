@@ -8,38 +8,9 @@ on:
       - "qabuild"
 
 jobs:
-  test_fbmessenger:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - run: ./QA/rundocker.bash "fbmessenger"
-
-  test_hhfm:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - run: ./QA/rundocker.bash "hhfm"
-
-  test_hirl:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - run: ./QA/rundocker.bash "hirl"
-
-  test_telegram:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - run: ./QA/rundocker.bash "telegram"
-
   test_webconnectivity:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - run: ./QA/rundocker.bash "webconnectivity"
 
-  test_whatsapp:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - run: ./QA/rundocker.bash "whatsapp"
