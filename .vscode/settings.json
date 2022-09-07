@@ -2,7 +2,8 @@
     "python.formatting.provider": "black",
     "gopls": {
         "build.directoryFilters": [
-            "-GOCACHE"
+            "-GOCACHE",
+            "-GOPATH"
         ]
     }
 }
