@@ -108,20 +108,45 @@ func (hj *hijacker) listenUDP(network string, addr *net.UDPAddr) (model.UDPLikeC
 	return pwrap, nil
 }
 
-// hijackerUDPConn adapts to model.UDPLikeConn
+// hijackerUDPConn adapts net.PacketConn to model.UDPLikeConn.
+//
+// The lucas-clemente/quic-go library is happier if we implement a
+// model.UDPLikeConn and our codebase currently tries to make it
+// happy very explicitly. This struct and hijackerRawConn are our
+// attempts at making quic-go happy also with hijacking. We're still
+// getting warnings about impossibility to increase buffer sizes,
+// but, at least, we're able to I/O QUIC packets.
 type hijackerUDPConn struct {
 	net.PacketConn
 }
 
 // SetReadBuffer allows setting the read buffer.
 func (c *hijackerUDPConn) SetReadBuffer(bytes int) error {
-	return syscall.ENOSYS
+	return nil
 }
 
 // SyscallConn returns a conn suitable for calling syscalls,
 // which is also instrumental to setting the read buffer.
 func (c *hijackerUDPConn) SyscallConn() (syscall.RawConn, error) {
-	return nil, syscall.ENOSYS
+	return &hijackerRawConn{}, nil
+}
+
+// hijackerRawConn implements syscall.RawConn
+type hijackerRawConn struct{}
+
+// Control implements syscall.RawConn
+func (*hijackerRawConn) Control(f func(fd uintptr)) error {
+	return nil
+}
+
+// Read implements syscall.RawConn
+func (*hijackerRawConn) Read(f func(fd uintptr) (done bool)) error {
+	return nil
+}
+
+// Write implements syscall.RawConn
+func (*hijackerRawConn) Write(f func(fd uintptr) (done bool)) error {
+	return nil
 }
 
 // getaddrinfoLookupANY replaces netxlite.TProxyGetaddrinfoANY
