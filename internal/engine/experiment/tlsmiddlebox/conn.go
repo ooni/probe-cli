@@ -60,12 +60,3 @@ func (c *dialerTTLWrapperConn) Write(b []byte) (int, error) {
 	}
 	return count, nil
 }
-
-// Close implements net.Conn.Close
-func (c *dialerTTLWrapperConn) Close() error {
-	err := c.Conn.Close()
-	if err != nil {
-		return netxlite.NewErrWrapper(netxlite.ClassifyGenericError, netxlite.CloseOperation, err)
-	}
-	return nil
-}

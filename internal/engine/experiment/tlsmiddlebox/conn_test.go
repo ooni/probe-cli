@@ -89,37 +89,6 @@ func TestDialerTTLWrapperConn(t *testing.T) {
 			}
 		})
 	})
-
-	t.Run("Close", func(t *testing.T) {
-		t.Run("on success", func(t *testing.T) {
-			conn := &dialerTTLWrapperConn{
-				Conn: &mocks.Conn{
-					MockClose: func() error {
-						return nil
-					},
-				},
-			}
-			err := conn.Close()
-			if err != nil {
-				t.Fatal(err)
-			}
-		})
-
-		t.Run("on failure", func(t *testing.T) {
-			expectedErr := io.EOF
-			conn := &dialerTTLWrapperConn{
-				Conn: &mocks.Conn{
-					MockClose: func() error {
-						return expectedErr
-					},
-				},
-			}
-			err := conn.Close()
-			if err == nil || err.Error() != netxlite.FailureEOFError {
-				t.Fatal("unexpected err", err)
-			}
-		})
-	})
 }
 
 func TestSetTTL(t *testing.T) {
