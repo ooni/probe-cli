@@ -39,7 +39,7 @@ func (tk *TestKeys) addTCPConnect(ev []*model.ArchivalTCPConnectResult) {
 }
 
 // addTrace adds []*CompleteTrace to the test keys Trace
-func (tk *TestKeys) addTrace(ev []*CompleteTrace) {
+func (tk *TestKeys) addTrace(ev ...*CompleteTrace) {
 	tk.mu.Lock()
 	tk.IterativeTrace = append(tk.IterativeTrace, ev...)
 	tk.mu.Unlock()

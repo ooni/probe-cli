@@ -39,9 +39,7 @@ func newIterationFromHandshake(ttl int, err error, soErr error, handshake *model
 			},
 		}
 	}
-	if soErr != nil {
-		handshake.SoError = tracex.NewFailure(soErr)
-	}
+	handshake.SoError = tracex.NewFailure(soErr)
 	return &Iteration{
 		TTL:       ttl,
 		Handshake: handshake,
@@ -49,8 +47,8 @@ func newIterationFromHandshake(ttl int, err error, soErr error, handshake *model
 }
 
 // addIterations adds iterations to the trace
-func (t *IterativeTrace) addIterations(ev *Iteration) {
+func (t *IterativeTrace) addIterations(ev ...*Iteration) {
 	t.mu.Lock()
-	t.Iterations = append(t.Iterations, ev)
+	t.Iterations = append(t.Iterations, ev...)
 	t.mu.Unlock()
 }

@@ -124,6 +124,9 @@ func TestDialerTTLWrapperConn(t *testing.T) {
 
 func TestSetTTL(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("skip test in short mode")
+		}
 		d := NewDialerTTLWrapper()
 		ctx := context.Background()
 		conn, err := d.DialContext(ctx, "tcp", "1.1.1.1:80")

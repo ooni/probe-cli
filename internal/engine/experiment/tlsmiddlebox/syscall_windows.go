@@ -27,10 +27,14 @@ func (c *dialerTTLWrapperConn) SetTTL(ttl int) error {
 	if err != nil {
 		return err
 	}
-	err = rawConn.Control(func(fd uintptr) {
-		syscall.SetsockoptInt(syscall.Handle(fd), syscall.IPPROTO_IP, syscall.IP_TTL, ttl)
+	rawErr := rawConn.Control(func(fd uintptr) {
+		err = syscall.SetsockoptInt(syscall.Handle(fd), syscall.IPPROTO_IP, syscall.IP_TTL, ttl)
 	})
-	return err
+	// The syscall err is given a higher priority and returned early if non-nil
+	if err != nil {
+		return err
+	}
+	return rawErr
 }
 
 // GetSoErr fetches the SO_ERROR value at look for soft ICMP errors in TCP

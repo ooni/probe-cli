@@ -29,30 +29,30 @@ var ClientIDs = map[int]*utls.ClientHelloID{
 	4: &utls.HelloIOS_Auto,
 }
 
-// MeasureTLS performs tracing using control and target SNI
+// TLSTrace performs tracing using control and target SNI
 func (m *Measurer) TLSTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
 	address string, targetSNI string, trace *CompleteTrace) {
 	// perform an iterative trace with the control SNI
-	trace.ControlTrace = m.IterativeTrace(ctx, index, zeroTime, logger, address, m.config.snicontrol())
+	trace.ControlTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, m.config.snicontrol())
 	// perform an iterative trace with the target SNI
-	trace.TargetTrace = m.IterativeTrace(ctx, index, zeroTime, logger, address, targetSNI)
+	trace.TargetTrace = m.startIterativeTrace(ctx, index, zeroTime, logger, address, targetSNI)
 }
 
-// IterativeTrace creates a Trace and calls iterativeTrace
-func (m *Measurer) IterativeTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
+// startIterativeTrace creates a Trace and calls iterativeTrace
+func (m *Measurer) startIterativeTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
 	address string, sni string) (tr *IterativeTrace) {
 	tr = &IterativeTrace{
 		SNI:        sni,
 		Iterations: []*Iteration{},
 	}
 	maxTTL := m.config.maxttl()
-	m.iterativeTrace(ctx, index, zeroTime, logger, address, sni, maxTTL, tr)
+	m.traceWithIncreasingTTLs(ctx, index, zeroTime, logger, address, sni, maxTTL, tr)
 	tr.Iterations = alignIterations(tr.Iterations)
 	return
 }
 
-// iterativeTrace performs iterative tracing with increasing TTL values
-func (m *Measurer) iterativeTrace(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
+// traceWithIncreasingTTLs performs iterative tracing with increasing TTL values
+func (m *Measurer) traceWithIncreasingTTLs(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
 	address string, sni string, maxTTL int64, trace *IterativeTrace) {
 	ticker := time.NewTicker(m.config.delay())
 	wg := new(sync.WaitGroup)
@@ -64,12 +64,13 @@ func (m *Measurer) iterativeTrace(ctx context.Context, index int64, zeroTime tim
 	wg.Wait()
 }
 
-// HandshakeWithTTL performs the TLS Handshake using the passed ttl value
+// handshakeWithTTL performs the TLS Handshake using the passed ttl value
 func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime time.Time, logger model.Logger,
 	address string, sni string, ttl int, tr *IterativeTrace, wg *sync.WaitGroup) {
 	defer wg.Done()
 	trace := measurexlite.NewTrace(index, zeroTime)
-	// TODO(DecFox): Do we need a trace for this TCP connect?
+	// 1. Connect to the target IP
+	// TODO(DecFox, bassosimone): Do we need a trace for this TCP connect?
 	d := NewDialerTTLWrapper()
 	ol := measurexlite.NewOperationLogger(logger, "Handshake Trace #%d TTL %d %s %s", index, ttl, address, sni)
 	conn, err := d.DialContext(ctx, "tcp", address)
@@ -80,6 +81,7 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 		return
 	}
 	defer conn.Close()
+	// 2. Set the TTL to the passed value
 	err = setConnTTL(conn, ttl)
 	if err != nil {
 		iteration := newIterationFromHandshake(ttl, err, nil, nil)
@@ -87,8 +89,9 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 		ol.Stop(err)
 		return
 	}
+	// 3. Perform the handshake and extract the SO_ERROR value (if any)
+	// Note: we switch to a uTLS Handshaker if the configured ClientID is non-zero
 	thx := trace.NewTLSHandshakerStdlib(logger)
-	// initialise a uTLS Handshaker if the ClientID is non-zero
 	clientId := m.config.clientid()
 	if clientId > 0 {
 		thx = trace.NewTLSHandshakerUTLS(logger, ClientIDs[clientId])
@@ -96,9 +99,9 @@ func (m *Measurer) handshakeWithTTL(ctx context.Context, index int64, zeroTime t
 	_, _, err = thx.Handshake(ctx, conn, genTLSConfig(sni))
 	ol.Stop(err)
 	soErr := extractSoError(conn)
-	// reset the TTL value to ensure that conn closes successfully
-	// Note: we do not check for errors here
-	setConnTTL(conn, 64)
+	// 4. reset the TTL value to ensure that conn closes successfully
+	// Note: Do not check for errors here
+	_ = setConnTTL(conn, 64)
 	iteration := newIterationFromHandshake(ttl, nil, soErr, trace.FirstTLSHandshakeOrNil())
 	tr.addIterations(iteration)
 }

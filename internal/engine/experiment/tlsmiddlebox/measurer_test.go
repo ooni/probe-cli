@@ -78,6 +78,9 @@ func TestMeasurer_input_failure(t *testing.T) {
 	})
 
 	t.Run("with local listener and successful outcome", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("skip test in short mode")
+		}
 		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(200)
 		}))
@@ -132,6 +135,9 @@ func TestMeasurer_input_failure(t *testing.T) {
 	})
 
 	t.Run("with local listener and timeout", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("skip test in short mode")
+		}
 		server := filtering.NewTLSServer(filtering.TLSActionTimeout)
 		defer server.Close()
 		th := "tlshandshake://" + server.Endpoint()
@@ -184,6 +190,9 @@ func TestMeasurer_input_failure(t *testing.T) {
 	})
 
 	t.Run("with local listener and connect issues", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("skip test in short mode")
+		}
 		server := filtering.NewTLSServer(filtering.TLSActionReset)
 		defer server.Close()
 		th := "tlshandshake://" + server.Endpoint()

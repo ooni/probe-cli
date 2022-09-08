@@ -17,6 +17,9 @@ import (
 
 func TestIterativeTrace(t *testing.T) {
 	t.Run("on success", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("skip test in short mode")
+		}
 		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(200)
 		}))
@@ -28,7 +31,7 @@ func TestIterativeTrace(t *testing.T) {
 		m := NewExperimentMeasurer(Config{})
 		zeroTime := time.Now()
 		ctx := context.Background()
-		trace := m.IterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com")
+		trace := m.startIterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com")
 		if trace.SNI != "example.com" {
 			t.Fatal("unexpected servername")
 		}
@@ -43,6 +46,9 @@ func TestIterativeTrace(t *testing.T) {
 	})
 
 	t.Run("failure case", func(t *testing.T) {
+		if testing.Short() {
+			t.Skip("skip test in short mode")
+		}
 		server := filtering.NewTLSServer(filtering.TLSActionTimeout)
 		defer server.Close()
 		th := "tlshandshake://" + server.Endpoint()
@@ -54,7 +60,7 @@ func TestIterativeTrace(t *testing.T) {
 		m := NewExperimentMeasurer(Config{})
 		zeroTime := time.Now()
 		ctx := context.Background()
-		trace := m.IterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com")
+		trace := m.startIterativeTrace(ctx, 0, zeroTime, model.DiscardLogger, URL.Host, "example.com")
 		if trace.SNI != "example.com" {
 			t.Fatal("unexpected servername")
 		}

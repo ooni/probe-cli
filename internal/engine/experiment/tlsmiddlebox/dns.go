@@ -18,7 +18,7 @@ func (m *Measurer) DNSLookup(ctx context.Context, index int64, zeroTime time.Tim
 	url := m.config.resolverURL()
 	trace := measurexlite.NewTrace(index, zeroTime)
 	ol := measurexlite.NewOperationLogger(logger, "DNSLookup #%d, %s, %s", index, url, domain)
-	// TODO(DecFox): We are currently using the DoH resolver, we will
+	// TODO(DecFox, bassosimone): We are currently using the DoH resolver, we will
 	// switch to the TRR2 resolver once we have it in measurexlite
 	// Issue: https://github.com/ooni/probe/issues/2185
 	resolver := trace.NewParallelDNSOverHTTPSResolver(logger, url)

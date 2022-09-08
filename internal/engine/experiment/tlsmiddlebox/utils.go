@@ -8,6 +8,8 @@ import (
 	"net"
 )
 
+// prepareAddrs prepares the resolved IP addresses by
+// adding the configured port as a prefix
 func prepareAddrs(addrs []string, port string) (out []string) {
 	if port == "" {
 		port = "443"
