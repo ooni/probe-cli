@@ -15,7 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/netxlite/filtering"
 )
 
-func TestIterativeTrace(t *testing.T) {
+func TestStartIterativeTrace(t *testing.T) {
 	t.Run("on success", func(t *testing.T) {
 		if testing.Short() {
 			t.Skip("skip test in short mode")
