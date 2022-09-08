@@ -19,13 +19,13 @@ const (
 	// NetworkTCP identifies endpoints using TCP.
 	NetworkTCP = EndpointNetwork("tcp")
 
-	// NetworkQUIC identifies endpoints using QUIC.
-	NetworkQUIC = EndpointNetwork("quic")
+	// NetworkUDP identifies endpoints using UDP.
+	NetworkUDP = EndpointNetwork("udp")
 )
 
 // Endpoint is an endpoint for a domain.
 type Endpoint struct {
-	// Network is the network (e.g., "tcp", "quic")
+	// Network is the network (e.g., "tcp", "udp")
 	Network EndpointNetwork
 
 	// Address is the endpoint address (e.g., "8.8.8.8:443")
@@ -42,7 +42,7 @@ type HTTPEndpoint struct {
 	// Domain is the endpoint domain (e.g., "dns.google").
 	Domain string
 
-	// Network is the network (e.g., "tcp" or "quic").
+	// Network is the network (e.g., "tcp" or "udp").
 	Network EndpointNetwork
 
 	// Address is the endpoint address (e.g., "8.8.8.8:443").

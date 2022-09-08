@@ -155,7 +155,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			network:   "udp",
 			address:   "8.8.8.8:443",
 			alpn:      "h3",
-			transport: "quic",
+			transport: "udp",
 			req: &http.Request{
 				Method: "GET",
 				URL: &url.URL{
@@ -205,7 +205,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				},
 				Method:    "GET",
 				Tor:       model.ArchivalHTTPTor{},
-				Transport: "quic",
+				Transport: "udp",
 				URL:       "https://dns.google/",
 			},
 			Response: model.ArchivalHTTPResponse{
@@ -243,7 +243,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 			network:   "udp",
 			address:   "8.8.8.8:443",
 			alpn:      "h3",
-			transport: "quic",
+			transport: "udp",
 			req: &http.Request{
 				Method: "GET",
 				URL: &url.URL{
@@ -301,7 +301,7 @@ func TestNewArchivalHTTPRequestResult(t *testing.T) {
 				},
 				Method:    "GET",
 				Tor:       model.ArchivalHTTPTor{},
-				Transport: "quic",
+				Transport: "udp",
 				URL:       "https://dns.google/",
 			},
 			Response: model.ArchivalHTTPResponse{
