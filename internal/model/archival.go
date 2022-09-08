@@ -123,9 +123,9 @@ type ArchivalDNSLookupResult struct {
 	ResolverHostname *string             `json:"resolver_hostname"`
 	ResolverPort     *string             `json:"resolver_port"`
 	ResolverAddress  string              `json:"resolver_address"`
-	T0               float64             `json:"t0"`
+	T0               float64             `json:"t0,omitempty"`
 	T                float64             `json:"t"`
-	TransactionID    int64               `json:"transaction_id"`
+	TransactionID    int64               `json:"transaction_id,omitempty"`
 }
 
 // ArchivalDNSAnswer is a DNS answer.
@@ -150,9 +150,9 @@ type ArchivalTCPConnectResult struct {
 	IP            string                   `json:"ip"`
 	Port          int                      `json:"port"`
 	Status        ArchivalTCPConnectStatus `json:"status"`
-	T0            float64                  `json:"t0"`
+	T0            float64                  `json:"t0,omitempty"`
 	T             float64                  `json:"t"`
-	TransactionID int64                    `json:"transaction_id"`
+	TransactionID int64                    `json:"transaction_id,omitempty"`
 }
 
 // ArchivalTCPConnectStatus is the status of ArchivalTCPConnectResult.
@@ -178,11 +178,11 @@ type ArchivalTLSOrQUICHandshakeResult struct {
 	NoTLSVerify        bool                      `json:"no_tls_verify"`
 	PeerCertificates   []ArchivalMaybeBinaryData `json:"peer_certificates"`
 	ServerName         string                    `json:"server_name"`
-	T0                 float64                   `json:"t0"`
+	T0                 float64                   `json:"t0,omitempty"`
 	T                  float64                   `json:"t"`
 	Tags               []string                  `json:"tags"`
 	TLSVersion         string                    `json:"tls_version"`
-	TransactionID      int64                     `json:"transaction_id"`
+	TransactionID      int64                     `json:"transaction_id,omitempty"`
 }
 
 //
@@ -199,9 +199,9 @@ type ArchivalHTTPRequestResult struct {
 	Failure       *string              `json:"failure"`
 	Request       ArchivalHTTPRequest  `json:"request"`
 	Response      ArchivalHTTPResponse `json:"response"`
-	T0            float64              `json:"t0"`
+	T0            float64              `json:"t0,omitempty"`
 	T             float64              `json:"t"`
-	TransactionID int64                `json:"transaction_id"`
+	TransactionID int64                `json:"transaction_id,omitempty"`
 }
 
 // ArchivalHTTPRequest contains an HTTP request.
@@ -322,8 +322,8 @@ type ArchivalNetworkEvent struct {
 	NumBytes      int64    `json:"num_bytes,omitempty"`
 	Operation     string   `json:"operation"`
 	Proto         string   `json:"proto,omitempty"`
-	T0            float64  `json:"t0"`
+	T0            float64  `json:"t0,omitempty"`
 	T             float64  `json:"t"`
-	TransactionID int64    `json:"transaction_id"`
+	TransactionID int64    `json:"transaction_id,omitempty"`
 	Tags          []string `json:"tags,omitempty"`
 }
