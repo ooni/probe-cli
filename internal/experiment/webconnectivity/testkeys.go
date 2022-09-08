@@ -17,6 +17,18 @@ import (
 
 // TestKeys contains the results produced by web_connectivity.
 type TestKeys struct {
+	// Agent is the HTTP agent we use.
+	Agent string `json:"agent"`
+
+	// ClientResolver is the IPv4 of the resolver used by getaddrinfo.
+	ClientResolver string `json:"client_resolver"`
+
+	// Retries is a legacy field always set to nil by web_connectivity@v0.4.x
+	Retries *int64 `json:"retries"`
+
+	// SOCKSProxy is a legacy field always set to nil by web_connectivity@v0.4.x
+	SOCKSProxy *string `json:"socksproxy"`
+
 	// NetworkEvents contains network events.
 	NetworkEvents []*model.ArchivalNetworkEvent `json:"network_events"`
 
@@ -258,10 +270,21 @@ func (tk *TestKeys) WithDNSWhoami(fun func(*DNSWhoamiInfo)) {
 	tk.mu.Unlock()
 }
 
+// SetClientResolver sets the ClientResolver field.
+func (tk *TestKeys) SetClientResolver(value string) {
+	tk.mu.Lock()
+	tk.ClientResolver = value
+	tk.mu.Unlock()
+}
+
 // NewTestKeys creates a new instance of TestKeys.
 func NewTestKeys() *TestKeys {
 	return &TestKeys{
-		NetworkEvents: []*model.ArchivalNetworkEvent{},
+		Agent:          "redirect",
+		ClientResolver: "",
+		Retries:        nil,
+		SOCKSProxy:     nil,
+		NetworkEvents:  []*model.ArchivalNetworkEvent{},
 		DNSWoami: &DNSWhoamiInfo{
 			SystemV4: []DNSWhoamiInfoEntry{},
 			UDPv4:    map[string][]DNSWhoamiInfoEntry{},
@@ -277,25 +300,27 @@ func NewTestKeys() *TestKeys {
 			NetworkEvents: []*model.ArchivalNetworkEvent{},
 			Queries:       []*model.ArchivalDNSLookupResult{},
 		},
-		Queries:              []*model.ArchivalDNSLookupResult{},
-		Requests:             []*model.ArchivalHTTPRequestResult{},
-		TCPConnect:           []*model.ArchivalTCPConnectResult{},
-		TLSHandshakes:        []*model.ArchivalTLSOrQUICHandshakeResult{},
-		Control:              nil,
-		ControlFailure:       nil,
-		DNSFlags:             0,
-		DNSExperimentFailure: nil,
-		DNSConsistency:       "",
-		BlockingFlags:        0,
-		BodyLengthMatch:      nil,
-		HeadersMatch:         nil,
-		StatusCodeMatch:      nil,
-		TitleMatch:           nil,
-		Blocking:             nil,
-		Accessible:           nil,
-		ControlRequest:       nil,
-		fundamentalFailure:   nil,
-		mu:                   &sync.Mutex{},
+		DNSLateReplies:        []*model.ArchivalDNSLookupResult{},
+		Queries:               []*model.ArchivalDNSLookupResult{},
+		Requests:              []*model.ArchivalHTTPRequestResult{},
+		TCPConnect:            []*model.ArchivalTCPConnectResult{},
+		TLSHandshakes:         []*model.ArchivalTLSOrQUICHandshakeResult{},
+		Control:               nil,
+		ControlFailure:        nil,
+		DNSFlags:              0,
+		DNSExperimentFailure:  nil,
+		DNSConsistency:        "",
+		HTTPExperimentFailure: nil,
+		BlockingFlags:         0,
+		BodyLengthMatch:       nil,
+		HeadersMatch:          nil,
+		StatusCodeMatch:       nil,
+		TitleMatch:            nil,
+		Blocking:              nil,
+		Accessible:            nil,
+		ControlRequest:        nil,
+		fundamentalFailure:    nil,
+		mu:                    &sync.Mutex{},
 	}
 }
 
