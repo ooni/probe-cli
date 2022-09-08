@@ -8,6 +8,7 @@ package webconnectivity
 //
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/ooni/probe-cli/v3/internal/engine/experiment/webconnectivity"
@@ -328,4 +329,9 @@ func NewTestKeys() *TestKeys {
 // must be called from the measurer after all the tasks have completed.
 func (tk *TestKeys) Finalize(logger model.Logger) {
 	tk.analysisToplevel(logger)
+	// Note: sort.SliceStable is WAI when the input slice is nil
+	// as demonstrated by https://go.dev/play/p/znA4MyGFVHC
+	sort.SliceStable(tk.NetworkEvents, func(i, j int) bool {
+		return tk.NetworkEvents[i].T < tk.NetworkEvents[j].T
+	})
 }
