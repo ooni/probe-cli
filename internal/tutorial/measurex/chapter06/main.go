@@ -98,7 +98,7 @@ func main() {
 	// In fact, in the above definition we recognize fields
 	// we have already discussed, such as:
 	//
-	// - `Network`, describing whether to use "tcp" or "quic";
+	// - `Network`, describing whether to use "tcp" or "udp";
 	//
 	// - `Address`, which is the endpoint address.
 	//

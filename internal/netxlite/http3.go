@@ -29,7 +29,7 @@ var _ model.HTTPTransport = &http3Transport{}
 
 // Network implements HTTPTransport.Network.
 func (txp *http3Transport) Network() string {
-	return "quic"
+	return "udp"
 }
 
 // RoundTrip implements HTTPTransport.RoundTrip.

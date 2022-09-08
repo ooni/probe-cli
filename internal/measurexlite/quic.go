@@ -64,7 +64,7 @@ func (tx *Trace) OnQUICHandshakeDone(started time.Time, remoteAddr string, qconn
 	case tx.quicHandshake <- NewArchivalTLSOrQUICHandshakeResult(
 		tx.Index,
 		started.Sub(tx.ZeroTime),
-		"quic",
+		"udp",
 		remoteAddr,
 		config,
 		state,
