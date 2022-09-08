@@ -99,6 +99,8 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 		tk.SetControlFailure(webconnectivity.ErrNoAvailableTestHelpers)
 	}
 
+	registerExtensions(measurement)
+
 	// start background tasks
 	resos := &DNSResolvers{
 		DNSCache:    NewDNSCache(),
@@ -132,4 +134,15 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	// return whether there was a fundamental failure, which would prevent
 	// the measurement from being submitted to the OONI collector.
 	return tk.fundamentalFailure
+}
+
+// registerExtensions registers the extensions used by this
+// experiment into the given measurement.
+func registerExtensions(m *model.Measurement) {
+	model.ArchivalExtHTTP.AddTo(m)
+	model.ArchivalExtDNS.AddTo(m)
+	model.ArchivalExtNetevents.AddTo(m)
+	model.ArchivalExtTCPConnect.AddTo(m)
+	model.ArchivalExtTLSHandshake.AddTo(m)
+	model.ArchivalExtTunnel.AddTo(m)
 }
