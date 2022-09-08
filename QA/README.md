@@ -8,7 +8,7 @@ ensure that OONI implementations behave. These scripts work with miniooni.
 Run test in a suitable Docker container using:
 
 ```bash
-./QA/rundocker.sh $nettest
+./QA/rundocker.bash $nettest
 ```
 
 Note that this will run a `--privileged` docker container.
