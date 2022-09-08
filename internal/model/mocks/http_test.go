@@ -10,7 +10,7 @@ import (
 
 func TestHTTPTransport(t *testing.T) {
 	t.Run("Network", func(t *testing.T) {
-		expected := "quic"
+		expected := "udp"
 		txp := &HTTPTransport{
 			MockNetwork: func() string {
 				return expected

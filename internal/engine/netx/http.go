@@ -55,7 +55,7 @@ var allTransportsInfo = map[bool]httpTransportInfo{
 	},
 	true: {
 		Factory:       newHTTP3Transport,
-		TransportName: "quic",
+		TransportName: "udp",
 	},
 }
 

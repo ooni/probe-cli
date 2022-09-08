@@ -137,7 +137,7 @@ func TestNewQUICDialerWithoutResolver(t *testing.T) {
 			}
 			expectedFailure := "unknown_failure: mocked"
 			expect := &model.ArchivalTLSOrQUICHandshakeResult{
-				Network:            "quic",
+				Network:            "udp",
 				Address:            "1.1.1.1:443",
 				CipherSuite:        "",
 				Failure:            &expectedFailure,
@@ -275,7 +275,7 @@ func TestFirstQUICHandshake(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
 		expect := []*model.ArchivalTLSOrQUICHandshakeResult{{
-			Network:            "quic",
+			Network:            "udp",
 			Address:            "1.1.1.1:443",
 			CipherSuite:        "",
 			Failure:            nil,
@@ -287,7 +287,7 @@ func TestFirstQUICHandshake(t *testing.T) {
 			Tags:               []string{},
 			TLSVersion:         "",
 		}, {
-			Network:            "quic",
+			Network:            "udp",
 			Address:            "8.8.8.8:443",
 			CipherSuite:        "",
 			Failure:            nil,

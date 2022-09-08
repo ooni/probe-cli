@@ -394,7 +394,7 @@ func (mx *Measurer) QUICHandshake(ctx context.Context, address string,
 		qconn.CloseWithError(0, "")
 	}
 	return &EndpointMeasurement{
-		Network:     NetworkQUIC,
+		Network:     NetworkUDP,
 		Address:     address,
 		Measurement: measurement,
 	}
@@ -502,7 +502,7 @@ func (mx *Measurer) httpEndpointGetMeasurement(ctx context.Context, epnt *HTTPEn
 func (mx *Measurer) HTTPEndpointGetWithDB(ctx context.Context, epnt *HTTPEndpoint,
 	db WritableDB, jar http.CookieJar) (err error) {
 	switch epnt.Network {
-	case NetworkQUIC:
+	case NetworkUDP:
 		_, err = mx.httpEndpointGetQUIC(ctx, db, epnt, jar)
 	case NetworkTCP:
 		_, err = mx.httpEndpointGetTCP(ctx, db, epnt, jar)
@@ -517,7 +517,7 @@ func (mx *Measurer) HTTPEndpointGetWithDB(ctx context.Context, epnt *HTTPEndpoin
 func (mx *Measurer) httpEndpointGetWithDB(ctx context.Context, epnt *HTTPEndpoint,
 	db WritableDB, jar http.CookieJar) (resp *http.Response, err error) {
 	switch epnt.Network {
-	case NetworkQUIC:
+	case NetworkUDP:
 		resp, err = mx.httpEndpointGetQUIC(ctx, db, epnt, jar)
 	case NetworkTCP:
 		resp, err = mx.httpEndpointGetTCP(ctx, db, epnt, jar)
@@ -971,7 +971,7 @@ func (mx *Measurer) doQUICFollowUp(ctx context.Context, parallelism int,
 	for _, epnt := range epnts {
 		quicEpnts = append(quicEpnts, &HTTPEndpoint{
 			Domain:  epnt.Domain,
-			Network: NetworkQUIC,
+			Network: NetworkUDP,
 			Address: epnt.Address,
 			SNI:     epnt.SNI,
 			ALPN:    []string{"h3"},

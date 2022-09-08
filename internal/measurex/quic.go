@@ -47,7 +47,7 @@ func (c *udpLikeConnDB) WriteTo(p []byte, addr net.Addr) (int, error) {
 	finished := time.Since(c.begin).Seconds()
 	c.db.InsertIntoReadWrite(&NetworkEvent{
 		Operation:  "write_to",
-		Network:    "quic",
+		Network:    "udp",
 		RemoteAddr: addr.String(),
 		Started:    started,
 		Finished:   finished,
@@ -63,7 +63,7 @@ func (c *udpLikeConnDB) ReadFrom(b []byte) (int, net.Addr, error) {
 	finished := time.Since(c.begin).Seconds()
 	c.db.InsertIntoReadWrite(&NetworkEvent{
 		Operation:  "read_from",
-		Network:    "quic",
+		Network:    "udp",
 		RemoteAddr: addrStringIfNotNil(addr),
 		Started:    started,
 		Finished:   finished,
@@ -79,7 +79,7 @@ func (c *udpLikeConnDB) Close() error {
 	finished := time.Since(c.begin).Seconds()
 	c.db.InsertIntoClose(&NetworkEvent{
 		Operation:  "close",
-		Network:    "quic",
+		Network:    "udp",
 		RemoteAddr: "",
 		Started:    started,
 		Finished:   finished,
@@ -123,7 +123,7 @@ func (qh *quicDialerDB) DialContext(ctx context.Context, address string,
 	}
 	finished := time.Since(qh.begin).Seconds()
 	qh.db.InsertIntoQUICHandshake(&QUICTLSHandshakeEvent{
-		Network:         "quic",
+		Network:         "udp",
 		RemoteAddr:      address,
 		SNI:             tlsConfig.ServerName,
 		ALPN:            tlsConfig.NextProtos,

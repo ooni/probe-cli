@@ -39,7 +39,7 @@ func TestHTTP3Transport(t *testing.T) {
 
 	t.Run("Network", func(t *testing.T) {
 		txp := &http3Transport{}
-		if txp.Network() != "quic" {
+		if txp.Network() != "udp" {
 			t.Fatal("unexpected .Network return value")
 		}
 	})
