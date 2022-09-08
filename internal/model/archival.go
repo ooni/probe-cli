@@ -174,6 +174,7 @@ type ArchivalTLSOrQUICHandshakeResult struct {
 	Address            string                    `json:"address"`
 	CipherSuite        string                    `json:"cipher_suite"`
 	Failure            *string                   `json:"failure"`
+	SoError            *string                   `json:"so_error,omitempty"`
 	NegotiatedProtocol string                    `json:"negotiated_protocol"`
 	NoTLSVerify        bool                      `json:"no_tls_verify"`
 	PeerCertificates   []ArchivalMaybeBinaryData `json:"peer_certificates"`
