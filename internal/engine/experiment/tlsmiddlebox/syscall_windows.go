@@ -1,4 +1,4 @@
-// go:build cgo && windows
+// go:build windows
 
 package tlsmiddlebox
 
@@ -6,14 +6,9 @@ package tlsmiddlebox
 // syscall utilities for dialerTTLWrapperConn
 //
 
-// #cgo LDFLAGS: -lws2_32
-// #include <winsock2.h>
-import "C"
-
 import (
 	"net"
 	"syscall"
-	"unsafe"
 )
 
 // SetTTL sets the IP TTL field for the underlying net.TCPConn
@@ -39,7 +34,7 @@ func (c *dialerTTLWrapperConn) SetTTL(ttl int) error {
 
 // GetSoErr fetches the SO_ERROR value at look for soft ICMP errors in TCP
 func (c *dialerTTLWrapperConn) GetSoErr() (int, error) {
-	var cErrno C.int
+	var cErrno int
 	conn := c.Conn
 	tcpConn, ok := conn.(*net.TCPConn)
 	if !ok {
@@ -50,11 +45,10 @@ func (c *dialerTTLWrapperConn) GetSoErr() (int, error) {
 		return 0, errInvalidConnWrapper
 	}
 	rawErr := rawConn.Control(func(fd uintptr) {
-		szInt := C.sizeof_int
-		C.getsockopt((C.SOCKET)(fd), (C.int)(C.SOL_SOCKET), (C.int)(C.SO_ERROR), (*C.char)(unsafe.Pointer(&cErrno)), (*C.int)(unsafe.Pointer(&szInt)))
+		cErrno = getErrFromSockOpt(fd)
 	})
 	if rawErr != nil {
 		return 0, rawErr
 	}
-	return int(cErrno), nil
+	return cErrno, nil
 }
