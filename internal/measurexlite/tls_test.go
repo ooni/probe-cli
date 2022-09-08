@@ -120,7 +120,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 			}
 			expectedFailure := "unknown_failure: mocked"
 			expect := &model.ArchivalTLSOrQUICHandshakeResult{
-				Network:            "tls",
+				Network:            "tcp",
 				Address:            "1.1.1.1:443",
 				CipherSuite:        "",
 				Failure:            &expectedFailure,
@@ -275,7 +275,7 @@ func TestNewTLSHandshakerStdlib(t *testing.T) {
 				t.Fatal("expected to see a single TLSHandshake event")
 			}
 			expected := &model.ArchivalTLSOrQUICHandshakeResult{
-				Network:            "tls",
+				Network:            "tcp",
 				Address:            conn.RemoteAddr().String(),
 				CipherSuite:        netxlite.TLSCipherSuiteString(connState.CipherSuite),
 				Failure:            nil,
@@ -362,7 +362,7 @@ func TestFirstTLSHandshake(t *testing.T) {
 		zeroTime := time.Now()
 		trace := NewTrace(0, zeroTime)
 		expect := []*model.ArchivalTLSOrQUICHandshakeResult{{
-			Network:            "tls",
+			Network:            "tcp",
 			Address:            "1.1.1.1:443",
 			CipherSuite:        "",
 			Failure:            nil,
@@ -374,7 +374,7 @@ func TestFirstTLSHandshake(t *testing.T) {
 			Tags:               []string{},
 			TLSVersion:         "",
 		}, {
-			Network:            "tls",
+			Network:            "tcp",
 			Address:            "8.8.8.8:443",
 			CipherSuite:        "",
 			Failure:            nil,
