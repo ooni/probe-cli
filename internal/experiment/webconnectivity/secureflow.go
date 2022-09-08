@@ -276,6 +276,9 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
 	const maxbody = 1 << 19
 	started := trace.TimeSince(trace.ZeroTime)
+	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
+		trace.Index, started, "http_transaction_start",
+	))
 	resp, err := txp.RoundTrip(req)
 	var body []byte
 	if err == nil {
@@ -287,6 +290,9 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 		body, err = netxlite.ReadAllContext(ctx, reader)
 	}
 	finished := trace.TimeSince(trace.ZeroTime)
+	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
+		trace.Index, finished, "http_transaction_done",
+	))
 	ev := measurexlite.NewArchivalHTTPRequestResult(
 		trace.Index,
 		started,
