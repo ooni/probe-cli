@@ -177,7 +177,7 @@ func TestNewResolver(t *testing.T) {
 		t.Run("DNSLookup events", func(t *testing.T) {
 			events := trace.DNSLookupsFromRoundTrip()
 			if len(events) != 2 {
-				t.Fatal("unexpected DNS events")
+				t.Fatal("unexpected DNS events length")
 			}
 			for _, ev := range events {
 				if ev.ResolverAddress != "dns.google" {
@@ -200,6 +200,23 @@ func TestNewResolver(t *testing.T) {
 				}
 			}
 		})
+
+		t.Run("Network events", func(t *testing.T) {
+			events := trace.NetworkEvents()
+			if len(events) != 2 {
+				t.Fatal("unexpected network events length")
+			}
+			foundNames := map[string]int{}
+			for _, ev := range events {
+				foundNames[ev.Operation]++
+			}
+			if foundNames["resolve_start"] != 1 {
+				t.Fatal("missing resolve_start")
+			}
+			if foundNames["resolve_done"] != 1 {
+				t.Fatal("missing resolve_done")
+			}
+		})
 	})
 
 	t.Run("LookupHost discards events when buffers are full", func(t *testing.T) {
@@ -207,6 +224,7 @@ func TestNewResolver(t *testing.T) {
 		td := testingx.NewTimeDeterministic(zeroTime)
 		trace := NewTrace(0, zeroTime)
 		trace.dnsLookup = make(chan *model.ArchivalDNSLookupResult) // no buffer
+		trace.networkEvent = make(chan *model.ArchivalNetworkEvent) // ditto
 		trace.TimeNowFn = td.Now
 		txp := &mocks.DNSTransport{
 			MockRoundTrip: func(ctx context.Context, query model.DNSQuery) (model.DNSResponse, error) {
@@ -260,6 +278,13 @@ func TestNewResolver(t *testing.T) {
 			events := trace.DNSLookupsFromRoundTrip()
 			if len(events) != 0 {
 				t.Fatal("expected to see no DNSLookup events")
+			}
+		})
+
+		t.Run("Network events", func(t *testing.T) {
+			events := trace.NetworkEvents()
+			if len(events) != 0 {
+				t.Fatal("unexpected to see no network events")
 			}
 		})
 	})
