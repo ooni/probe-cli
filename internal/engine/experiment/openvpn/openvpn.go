@@ -1,5 +1,6 @@
 // Package openvpn contains the openvpn experiment. This experiment
-// measures the bootstrapping of an OpenVPN connection against a given remote.
+// measures the bootstrapping of an OpenVPN connection against a given remote,
+// a series of ICMP pings, and a series of url page fetches through the tunnel.
 //
 // See https://github.com/ooni/spec/blob/master/nettests/ts-032-openvpn.md
 package openvpn
@@ -8,11 +9,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io"
 	"log"
 	"math"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/ooni/minivpn/extras/ping"
 	"github.com/ooni/minivpn/vpn"
+	"github.com/ooni/probe-cli/v3/internal/measurex"
 	"github.com/ooni/probe-cli/v3/internal/measurexlite"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/tracex"
@@ -32,7 +34,7 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.10"
+	testVersion = "0.0.11"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
@@ -44,16 +46,18 @@ const (
 	// pingTarget is the target IP we used for pings (high-availability, replicated clusters).
 	pingTarget = "8.8.8.8"
 
-	// pingTargetFaraway is a target IP for a mirror with known geolocation.
-	pingTargetFaraway = "163.7.134.112"
+	// pingTargetNZ is a target IP for a mirror with known geolocation.
+	pingTargetNZ = "163.7.134.112"
 
 	// urlGrabURL is the URI we fetch to check web connectivity and egress IP.
 	urlGrabURI = "https://api.ipify.org/?format=json"
+
+	// googleURI is self-explanatory.
+	googleURI = "https://www.google.com/"
 )
 
 var (
 	bootstrapError = "bootstrap-error"
-	urlgrabError   = "urlgrab-error"
 )
 
 // Config contains the experiment config.
@@ -86,23 +90,11 @@ type PingResult struct {
 	Error       *string     `json:"error"`
 }
 
-// URLURLGrabResult holds the results for a urlgrab run.
-// TODO we should store more things here:
-// fetch time
-// response code
-// (this serves another purpose: check for geofencing etc...)
-type URLGrabResult struct {
-	URI        string  `json:"uri"`
-	Response   *string `json:"response"`
-	FetchTime  float64 `json:"fetch_time_ms"`
-	StatusCode int     `json:"status"`
-}
-
 // Stage captures a uint16 event measuring the progress of the VPN connection.
 type Stage struct {
-	ID    uint16  `json:"idx"`
-	Stage string  `json:"st"`
-	Time  float64 `json:"t"`
+	OpID      uint16  `json:"op_id"`
+	Operation string  `json:"operation"`
+	Time      float64 `json:"t"`
 }
 
 func newStage(st uint16, t time.Duration) Stage {
@@ -123,14 +115,14 @@ func newStage(st uint16, t time.Duration) Stage {
 	case vpn.EventDataInitDone:
 		s = "data_init"
 	case vpn.EventHandshakeDone:
-		s = "handshake_done"
+		s = "vpn_handshake_done"
 	default:
 		s = "unknown"
 	}
 	return Stage{
-		ID:    st,
-		Stage: s,
-		Time:  toMs(t),
+		OpID:      st,
+		Operation: s,
+		Time:      toMs(t),
 	}
 }
 
@@ -179,11 +171,15 @@ type TestKeys struct {
 	// Pings holds an array for aggregated stats of each ping.
 	Pings []*PingResult `json:"pings"`
 
-	// URLGrab holds an array for urlgrab results.
-	URLGrab []*URLGrabResult `json:"urlgrab"`
+	// Requests archive an arbitrary number of http requests done through the tunnel.
+	Requests []*measurex.ArchivalHTTPRoundTripEvent `json:"requests"`
 
 	// MiniVPNVersion contains the version of the minivpn library used.
 	MiniVPNVersion string `json:"minivpn_version"`
+
+	// TODO(ainghazal): implement
+	// Obfs4Version contains the version of the obfs4 library used.
+	Obfs4Version string `json:"obfs4_version"`
 
 	// Success is true when we reached the end of the test without errors.
 	Success bool `json:"success"`
@@ -262,7 +258,8 @@ func (m *Measurer) Run(
 	if err != nil {
 		// we cannot setup the experiment
 		// TODO this includes if we don't have the correct certificates etc.
-		// This means that we need to get the cert material ahead of time.
+		// This means that we need to get the cert material ahead of
+		// time, we probably should log something more specific.
 		return err
 	}
 	m.tunnel = tunnel
@@ -282,11 +279,16 @@ func (m *Measurer) Run(
 	}
 	tk := measurement.TestKeys.(*TestKeys)
 
-	defer func() {
-		if m.tunnel != nil {
-			m.tunnel.Close()
-		}
-	}()
+	/*
+		// TODO(ainghazal): this is the right thing, but I think I need to add the ability
+		// to cleanly shut down the device in the tunnel first - otherwise there's an extra error
+		// on the logs (I think because the goroutines keep trying to copy data).
+		 defer func() {
+		 	if m.tunnel != nil {
+		 		m.tunnel.Close()
+		 	}
+		 }()
+	*/
 
 	if tk.Failure != nil {
 		// bootstrap error
@@ -298,65 +300,73 @@ func (m *Measurer) Run(
 	//
 	// All ready now. Now we can begin the experiment itself.
 	//
+
+	//
 	// 1. ping external target, gateway and a third location.
 	//
 
 	wg := new(sync.WaitGroup)
 	tk.Pings = []*PingResult{}
+
+	// TODO(ainghazal): for the sake of reducing experimental bias, we
+	// should randomize the order of the following function calls. But that
+	// is going to make parsing the data a bit harder, unless we convene on
+	// a given idx.
 	sendBlockingPing(wg, m.tunnel, pingTarget, tk)
 	sendBlockingPing(wg, m.tunnel, remoteVPNGateway, tk)
-	sendBlockingPing(wg, m.tunnel, pingTargetFaraway, tk)
+	sendBlockingPing(wg, m.tunnel, pingTargetNZ, tk)
 
 	//
 	// 2. urlgrab
 	//
 
-	// TODO(ainghazal): it's cleaner to pass a closure to DialContext in
-	// the client transport. I "just" need to reset the read timeout before
-	// reusing the conn.
-	log.Println("stage: urlgrab")
+	sess.Logger().Infof("openvpn: urlgrab stage")
 
-	m.tunnel.SetReadDeadline(time.Now().Add(time.Second * 60))
-	d := vpn.NewTunDialer(m.tunnel)
+	vpnDialer := vpn.NewTunDialer(m.tunnel)
 
-	client := http.Client{
-		Transport: &http.Transport{
-			DialContext: d.DialContext,
-		},
+	db := &measurex.MeasurementDB{}
+	mx := measurex.NewMeasurerWithDefaultSettings()
+	txp := measurex.WrapHTTPTransport(
+		time.Now(),
+		db,
+		&txpTCP{&http.Transport{DialContext: vpnDialer.DialContext}},
+		100) // this should be enough to get the html lang attribute
+	clnt := &http.Client{
+		Transport: txp,
+		Jar:       measurex.NewCookieJar(),
 	}
 
-	urlgrabResult := &URLGrabResult{
-		URI:      urlGrabURI,
-		Response: nil,
+	targetURLs := []string{urlGrabURI, googleURI}
+
+	for _, uri := range targetURLs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			u, _ := url.Parse(uri)
+
+			m.tunnel.SetReadDeadline(time.Now().Add(time.Second * 60))
+			resp, _ := mx.HTTPClientGET(ctx, clnt, u)
+			if resp != nil {
+				resp.Body.Close()
+			}
+		}()
+		wg.Wait()
 	}
 
-	fetchStart := time.Now()
-	resp, err := client.Get(urlGrabURI)
-	if err != nil {
-		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
-		tk.Failure = tracex.NewFailure(err)
-		tk.Error = &urlgrabError
-		tk.URLGrab = append(tk.URLGrab, urlgrabResult)
-		return nil
-	}
-	urlgrabResult.StatusCode = resp.StatusCode
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		sess.Logger().Warnf("openvpn: failed urlgrab: %s", err)
-		tk.Failure = tracex.NewFailure(err)
-		tk.Error = &urlgrabError
-		tk.URLGrab = append(tk.URLGrab, urlgrabResult)
-		return nil
-	}
+	tk.Requests = append(tk.Requests, measurex.NewArchivalHTTPRoundTripEventList(db.AsMeasurement().HTTPRoundTrip)...)
 
-	rb := string(body)
-	urlgrabResult.Response = &rb
-	urlgrabResult.FetchTime = toMs(time.Now().Sub(fetchStart))
-
-	tk.URLGrab = append(tk.URLGrab, urlgrabResult)
 	sess.Logger().Info("openvpn: all tests ok")
 	tk.Success = true
 	return nil
+}
+
+// txpTCP implements model.HTTPTransport
+type txpTCP struct {
+	*http.Transport
+}
+
+func (t *txpTCP) Network() string {
+	return "tcp"
 }
 
 // setup prepares for running the openvpn experiment. Returns a minivpn dialer on success.
@@ -417,12 +427,12 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 		Transport:      protoToString(m.vpnOptions.Proto),
 		Remote:         net.JoinHostPort(m.vpnOptions.Remote, m.vpnOptions.Port),
 		Obfuscation:    experiment.Obfuscation,
-		URLGrab:        []*URLGrabResult{},
 		MiniVPNVersion: getMiniVPNVersion(),
 		BootstrapTime:  0,
 		Failure:        nil,
 		Error:          nil,
 		Stages:         []Stage{},
+		Requests:       []*measurex.ArchivalHTTPRoundTripEvent{},
 	}
 	sess.Logger().Info("openvpn: bootstrapping openvpn connection")
 	defer func() {
