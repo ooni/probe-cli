@@ -27,7 +27,7 @@ require (
 	github.com/ooni/go-libtor v1.1.6
 	github.com/ooni/oocrypto v0.1.2
 	github.com/ooni/oohttp v0.2.2
-	github.com/ooni/probe-assets v0.12.0
+	github.com/ooni/probe-assets v0.13.0
 	github.com/ooni/psiphon/tunnel-core v0.0.0-20220819091114-7dccc0b6b6cd
 	github.com/oschwald/geoip2-golang v1.8.0
 	github.com/pborman/getopt/v2 v2.1.0
