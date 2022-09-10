@@ -28,6 +28,11 @@ const (
 
 // analysisDNSToplevel is the toplevel analysis function for DNS results.
 //
+// Note: this function DOES NOT consider failed DNS-over-HTTPS (DoH) submeasurements
+// and ONLY considers the IP addrs they have resolved. Failing to contact a DoH service
+// provides info about such a DoH service rather than on the measured URL. See the
+// https://github.com/ooni/probe/issues/2274 issue for more info.
+//
 // The goals of this function are the following:
 //
 // 1. Set the legacy .DNSExperimentFailure field to the failure value of the
@@ -74,6 +79,13 @@ func (tk *TestKeys) analysisDNSExperimentFailure() {
 				// whether the TH did actually see any IPv6 address?
 				continue
 			}
+			if query.Engine == "doh" {
+				// we SHOULD NOT flag DoH failures _because_ they pertain to the
+				// DoH service rather than to the input URL
+				//
+				// See https://github.com/ooni/probe/issues/2274
+				continue
+			}
 			tk.DNSExperimentFailure = fail
 			return
 		}
@@ -84,6 +96,12 @@ func (tk *TestKeys) analysisDNSExperimentFailure() {
 // we dectect any bogon in the .Queries field of the TestKeys.
 func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 	for _, query := range tk.Queries {
+		// Implementation note: any bogon IP address resolved by a DoH service
+		// is STILL suspicious since it should not happen. TODO(bassosimone): an
+		// even better algorithm could possibly check whether also the TH has
+		// observed bogon IP addrs and avoid flagging in such a case.
+		//
+		// See https://github.com/ooni/probe/issues/2274
 		for _, answer := range query.Answers {
 			switch answer.AnswerType {
 			case "A":
@@ -141,6 +159,13 @@ func (tk *TestKeys) analysisDNSUnexpectedFailure(logger model.Logger) {
 	for _, query := range tk.Queries {
 		if domain != query.Hostname {
 			continue // not the domain queried by the test helper
+		}
+		if query.Engine == "doh" {
+			// As mentioned above, a DoH failure is not information about
+			// the URL we're measuring but about the DoH service being blocked.
+			//
+			// See https://github.com/ooni/probe/issues/2274
+			continue
 		}
 		hasAddrs := false
 	Loop:
@@ -211,6 +236,12 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 		if domain != query.Hostname {
 			continue // not the domain the TH queried for
 		}
+		// Implementation note: in the case in which DoH returned answers, here
+		// it still feels okay to consider them. We should avoid flagging DoH
+		// failures as measurement failures but if DoH returns us some unexpected
+		// even-non-bogon addr, it seems worth flagging for now.
+		//
+		// See https://github.com/ooni/probe/issues/2274
 		for _, answer := range query.Answers {
 			switch answer.AnswerType {
 			case "A":
