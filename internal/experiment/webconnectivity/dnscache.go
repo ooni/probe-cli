@@ -20,6 +20,9 @@ const (
 
 	// DNSAddrFlagHTTPS means we discovered this addr using the DNS-over-HTTPS resolver.
 	DNSAddrFlagHTTPS
+
+	// DNSAddrFlagMeasureHTTP means we want to measure HTTP for this addr.
+	DNSAddrFlagMeasureHTTP
 )
 
 // DNSCache wraps a model.Resolver to provide DNS caching.

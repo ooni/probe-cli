@@ -37,7 +37,7 @@ type EndpointMeasurementsStarter interface {
 // all the fields marked as MANDATORY before using this structure.
 type Control struct {
 	// Addresses contains the MANDATORY addresses we've looked up.
-	Addresses []string
+	Addresses []DNSEntry
 
 	// ExtraMeasurementsStarter is MANDATORY and allows this struct to
 	// start additional measurements using new TH-discovered addrs.
@@ -82,12 +82,12 @@ func (c *Control) Run(parentCtx context.Context) {
 	var endpoints []string
 	for _, address := range c.Addresses {
 		if port := c.URL.Port(); port != "" { // handle the case of a custom port
-			endpoints = append(endpoints, net.JoinHostPort(address, port))
+			endpoints = append(endpoints, net.JoinHostPort(address.Addr, port))
 			continue
 		}
 		// otherwise, always attempt to measure both 443 and 80 endpoints
-		endpoints = append(endpoints, net.JoinHostPort(address, "443"))
-		endpoints = append(endpoints, net.JoinHostPort(address, "80"))
+		endpoints = append(endpoints, net.JoinHostPort(address.Addr, "443"))
+		endpoints = append(endpoints, net.JoinHostPort(address.Addr, "80"))
 	}
 	creq := &webconnectivity.ControlRequest{
 		HTTPRequest: c.URL.String(),
@@ -150,7 +150,7 @@ func (c *Control) maybeStartExtraMeasurements(ctx context.Context, thAddrs []str
 	)
 	mapping := make(map[string]int)
 	for _, addr := range c.Addresses {
-		mapping[addr] |= inProbe
+		mapping[addr.Addr] |= inProbe
 	}
 	for _, addr := range thAddrs {
 		mapping[addr] |= inTH
@@ -175,14 +175,24 @@ func (c *Control) maybeStartExtraMeasurements(ctx context.Context, thAddrs []str
 		})
 	}
 
-	// Start extra measurements for TH-only addresses. Because we already
-	// measured HTTP(S) using IP addrs discovered by the resolvers, we are not
-	// going to do that again now. I am not sure this is the right policy
-	// but I think we can just try it and then change if needed...
+	// Start extra measurements for TH-only addresses. To determine whether
+	// we need to perform HTTP(S) measurements, we check whether dnsresolver.go
+	// has already scheduled measurements for HTTP by checking flags. If that
+	// is the case, we use a nil channel, which blocks forever and causes no
+	// measurer to attempt using HTTP(S) with the addresses.
 	//
-	// Also, let's remember that reading from a nil chan blocks forever, so
-	// we're basically forcing the goroutines to avoid HTTP(S).
-	var nohttp chan any = nil
-	c.ExtraMeasurementsStarter.startCleartextFlowsWithSema(ctx, nohttp, thOnly)
-	c.ExtraMeasurementsStarter.startSecureFlowsWithSema(ctx, nohttp, thOnly)
+	// See https://github.com/ooni/probe/issues/2276
+	var maybeHTTPCh chan any = nil
+	var found bool
+	for _, entry := range c.Addresses {
+		if (entry.Flags & DNSAddrFlagMeasureHTTP) != 0 {
+			found = true
+			break
+		}
+	}
+	if !found {
+		maybeHTTPCh = make(chan any, 1) // a single measurer can go ahead
+	}
+	c.ExtraMeasurementsStarter.startCleartextFlowsWithSema(ctx, maybeHTTPCh, thOnly)
+	c.ExtraMeasurementsStarter.startSecureFlowsWithSema(ctx, maybeHTTPCh, thOnly)
 }

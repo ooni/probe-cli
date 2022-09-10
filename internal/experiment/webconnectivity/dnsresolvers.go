@@ -116,29 +116,53 @@ func (t *DNSResolvers) run(parentCtx context.Context) []DNSEntry {
 		di.UDPv4[udpAddress] = whoamiUDPv4
 	})
 
-	// merge the resolved IP addresses
+	return dnsMergeAddrs(systemAddrs, udpAddrs, httpsAddrs)
+}
+
+// dnsMergeAddrs merges the resolved IP addresses and determines for which of them
+// we should also perform HTTP(S) measurements. For backward compatibility with
+// v0.4.x, we give priority to the system resolver. Otherwise, we give priority to
+// the UDP resolver. If also that fails, we use the DoH resolver.
+//
+// See https://github.com/ooni/probe/issues/2276
+func dnsMergeAddrs(systemAddrs, udpAddrs, httpsAddrs []string) []DNSEntry {
 	merged := map[string]*DNSEntry{}
+
+	var schedSystem bool
+	var schedUDP bool
+
 	for _, addr := range systemAddrs {
 		if _, found := merged[addr]; !found {
 			merged[addr] = &DNSEntry{}
 		}
 		merged[addr].Addr = addr
-		merged[addr].Flags |= DNSAddrFlagSystemResolver
+		merged[addr].Flags |= DNSAddrFlagSystemResolver | DNSAddrFlagMeasureHTTP
+		schedSystem = true
 	}
+
 	for _, addr := range udpAddrs {
 		if _, found := merged[addr]; !found {
 			merged[addr] = &DNSEntry{}
 		}
 		merged[addr].Addr = addr
 		merged[addr].Flags |= DNSAddrFlagUDP
+		if !schedSystem {
+			merged[addr].Flags |= DNSAddrFlagMeasureHTTP
+			schedUDP = true
+		}
 	}
+
 	for _, addr := range httpsAddrs {
 		if _, found := merged[addr]; !found {
 			merged[addr] = &DNSEntry{}
 		}
 		merged[addr].Addr = addr
 		merged[addr].Flags |= DNSAddrFlagHTTPS
+		if !schedSystem && !schedUDP {
+			merged[addr].Flags |= DNSAddrFlagMeasureHTTP
+		}
 	}
+
 	// implementation note: we don't remove bogons because accessing
 	// them can lead us to discover block pages
 	var entries []DNSEntry
@@ -433,8 +457,8 @@ func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-c
 	}
 	for _, addr := range addresses {
 		maybeNilSema := sema
-		if (addr.Flags & DNSAddrFlagSystemResolver) == 0 {
-			maybeNilSema = nil // see https://github.com/ooni/probe/issues/2258
+		if (addr.Flags & DNSAddrFlagMeasureHTTP) == 0 {
+			maybeNilSema = nil
 		}
 		task := &CleartextFlow{
 			Address:         net.JoinHostPort(addr.Addr, port),
@@ -482,8 +506,8 @@ func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan
 	}
 	for _, addr := range addresses {
 		maybeNilSema := sema
-		if (addr.Flags & DNSAddrFlagSystemResolver) == 0 {
-			maybeNilSema = nil // see https://github.com/ooni/probe/issues/2258
+		if (addr.Flags & DNSAddrFlagMeasureHTTP) == 0 {
+			maybeNilSema = nil
 		}
 		task := &SecureFlow{
 			Address:         net.JoinHostPort(addr.Addr, port),
@@ -513,12 +537,8 @@ func (t *DNSResolvers) maybeStartControlFlow(ctx context.Context, addresses []DN
 	// note: for subsequent requests we don't set .Session and .THAddr hence
 	// we are not going to query the test helper more than once
 	if t.Session != nil && t.THAddr != "" {
-		var addrs []string
-		for _, addr := range addresses {
-			addrs = append(addrs, addr.Addr)
-		}
 		ctrl := &Control{
-			Addresses:                addrs,
+			Addresses:                addresses,
 			ExtraMeasurementsStarter: t, // allows starting follow-up measurement flows
 			Logger:                   t.Logger,
 			TestKeys:                 t.TestKeys,
