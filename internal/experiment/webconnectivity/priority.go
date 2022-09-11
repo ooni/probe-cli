@@ -23,6 +23,8 @@ package webconnectivity
 // https://github.com/ooni/probe/issues/2258 issue obsolete,
 // since now we're considering all resolvers.
 //
+// See https://github.com/ooni/probe/issues/2276.
+//
 
 import (
 	"context"
@@ -147,6 +149,8 @@ func (ps *prioritySelector) permissionToFetch(address string) bool {
 // selector grants permission to the highest priority request that
 // arrives within a reasonable time frame. This functio runs in a
 // background goroutine that runs as long as [ctx] is not done.
+//
+// This function implements https://github.com/ooni/probe/issues/2276.
 func (ps *prioritySelector) selector(ctx context.Context, wg *sync.WaitGroup) {
 	// synchronize with the parent
 	defer wg.Done()
@@ -222,6 +226,7 @@ func (ps *prioritySelector) findHighestPriority(reqs []*priorityRequest) *priori
 
 // isHighestPriority returns whether this request is highest priority
 func (ps *prioritySelector) isHighestPriority(r *priorityRequest) bool {
+	// See https://github.com/ooni/probe/issues/2276
 	flags := ps.m[r.addr]
 	if ps.nsystem > 0 {
 		if (flags & DNSAddrFlagSystemResolver) != 0 {
