@@ -171,10 +171,13 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 		log.Infof("using previously-cached addrs: %+v", addresses)
 	}
 
+	// create priority selector
+	ps := newPrioritySelector(addresses)
+
 	// fan out a number of child async tasks to use the IP addrs
-	t.startCleartextFlows(parentCtx, addresses)
-	t.startSecureFlows(parentCtx, addresses)
-	t.maybeStartControlFlow(parentCtx, addresses)
+	t.startCleartextFlows(parentCtx, ps, addresses)
+	t.startSecureFlows(parentCtx, ps, addresses)
+	t.maybeStartControlFlow(parentCtx, ps, addresses)
 }
 
 // whoamiSystemV4 performs a DNS whoami lookup for the system resolver. This function must
@@ -414,14 +417,11 @@ func (t *DNSResolvers) dohSplitQueries(
 }
 
 // startCleartextFlows starts a TCP measurement flow for each IP addr.
-func (t *DNSResolvers) startCleartextFlows(ctx context.Context, addresses []DNSEntry) {
-	sema := make(chan any, 1)
-	sema <- true // allow a single flow to fetch the HTTP body
-	t.startCleartextFlowsWithSema(ctx, sema, addresses)
-}
-
-// startCleartextFlowsWithSema implements EndpointMeasurementsStarter.
-func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-chan any, addresses []DNSEntry) {
+func (t *DNSResolvers) startCleartextFlows(
+	ctx context.Context,
+	ps *prioritySelector,
+	addresses []DNSEntry,
+) {
 	if t.URL.Scheme != "http" {
 		// Do not bother with measuring HTTP when the user
 		// has asked us to measure an HTTPS URL.
@@ -432,22 +432,18 @@ func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-c
 		port = urlPort
 	}
 	for _, addr := range addresses {
-		maybeNilSema := sema
-		if (addr.Flags & DNSAddrFlagSystemResolver) == 0 {
-			maybeNilSema = nil // see https://github.com/ooni/probe/issues/2258
-		}
 		task := &CleartextFlow{
 			Address:         net.JoinHostPort(addr.Addr, port),
 			DNSCache:        t.DNSCache,
 			IDGenerator:     t.IDGenerator,
 			Logger:          t.Logger,
-			Sema:            maybeNilSema,
 			TestKeys:        t.TestKeys,
 			ZeroTime:        t.ZeroTime,
 			WaitGroup:       t.WaitGroup,
 			CookieJar:       t.CookieJar,
 			FollowRedirects: t.URL.Scheme == "http",
 			HostHeader:      t.URL.Host,
+			PrioSelector:    ps,
 			Referer:         t.Referer,
 			UDPAddress:      t.UDPAddress,
 			URLPath:         t.URL.Path,
@@ -458,19 +454,15 @@ func (t *DNSResolvers) startCleartextFlowsWithSema(ctx context.Context, sema <-c
 }
 
 // startSecureFlows starts a TCP+TLS measurement flow for each IP addr.
-func (t *DNSResolvers) startSecureFlows(ctx context.Context, addresses []DNSEntry) {
-	sema := make(chan any, 1)
-	if t.URL.Scheme == "https" {
-		// Allows just a single worker to fetch the response body but do that
-		// only if the test-lists URL uses "https" as the scheme. Otherwise, just
-		// validate IPs by performing a TLS handshake.
-		sema <- true
+func (t *DNSResolvers) startSecureFlows(
+	ctx context.Context,
+	ps *prioritySelector,
+	addresses []DNSEntry,
+) {
+	if t.URL.Scheme != "https" {
+		// When the scheme is not HTTPS we fetch using HTTP
+		ps = nil
 	}
-	t.startSecureFlowsWithSema(ctx, sema, addresses)
-}
-
-// startSecureFlowsWithSema implements EndpointMeasurementsStarter.
-func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan any, addresses []DNSEntry) {
 	port := "443"
 	if urlPort := t.URL.Port(); urlPort != "" {
 		if t.URL.Scheme != "https" {
@@ -481,16 +473,11 @@ func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan
 		port = urlPort
 	}
 	for _, addr := range addresses {
-		maybeNilSema := sema
-		if (addr.Flags & DNSAddrFlagSystemResolver) == 0 {
-			maybeNilSema = nil // see https://github.com/ooni/probe/issues/2258
-		}
 		task := &SecureFlow{
 			Address:         net.JoinHostPort(addr.Addr, port),
 			DNSCache:        t.DNSCache,
 			IDGenerator:     t.IDGenerator,
 			Logger:          t.Logger,
-			Sema:            maybeNilSema,
 			TestKeys:        t.TestKeys,
 			ZeroTime:        t.ZeroTime,
 			WaitGroup:       t.WaitGroup,
@@ -499,6 +486,7 @@ func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan
 			FollowRedirects: t.URL.Scheme == "https",
 			SNI:             t.URL.Hostname(),
 			HostHeader:      t.URL.Host,
+			PrioSelector:    ps,
 			Referer:         t.Referer,
 			UDPAddress:      t.UDPAddress,
 			URLPath:         t.URL.Path,
@@ -509,7 +497,11 @@ func (t *DNSResolvers) startSecureFlowsWithSema(ctx context.Context, sema <-chan
 }
 
 // maybeStartControlFlow starts the control flow iff .Session and .THAddr are set.
-func (t *DNSResolvers) maybeStartControlFlow(ctx context.Context, addresses []DNSEntry) {
+func (t *DNSResolvers) maybeStartControlFlow(
+	ctx context.Context,
+	ps *prioritySelector,
+	addresses []DNSEntry,
+) {
 	// note: for subsequent requests we don't set .Session and .THAddr hence
 	// we are not going to query the test helper more than once
 	if t.Session != nil && t.THAddr != "" {
@@ -521,6 +513,7 @@ func (t *DNSResolvers) maybeStartControlFlow(ctx context.Context, addresses []DN
 			Addresses:                addrs,
 			ExtraMeasurementsStarter: t, // allows starting follow-up measurement flows
 			Logger:                   t.Logger,
+			PrioSelector:             ps,
 			TestKeys:                 t.TestKeys,
 			Session:                  t.Session,
 			THAddr:                   t.THAddr,
