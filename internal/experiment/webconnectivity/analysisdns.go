@@ -339,8 +339,9 @@ func (tk *TestKeys) analysisDNSDiffASN(probeAddrs, thAddrs []string) (asns []uin
 // for which we couldn't successfully perform a TLS handshake for the given [domain].
 func (tk *TestKeys) findAddrsWithoutTLSHandshake(domain string, addresses []string) (output []string) {
 	const (
-		resolved = 1 << iota
+		resolvedByProbe = 1 << iota
 		handshakeOK
+		hasObviousIPv6Issues
 	)
 	mapping := make(map[string]int)
 
@@ -364,7 +365,30 @@ func (tk *TestKeys) findAddrsWithoutTLSHandshake(domain string, addresses []stri
 			if _, found := mapping[addr]; !found {
 				continue // we're not interested into this addr
 			}
-			mapping[addr] |= resolved
+			mapping[addr] |= resolvedByProbe
+		}
+	}
+
+	// flag the subset of addrs with obvious IPv6 issues
+	//
+	// see https://github.com/ooni/probe/issues/2284 for more
+	// info on why we need to flag them
+	for _, connect := range tk.TCPConnect {
+		failure := connect.Status.Failure
+		if failure == nil {
+			continue // if we can connect, we don't have IPv6 issues
+		}
+		ipv6, err := netxlite.IsIPv6(connect.IP)
+		if err != nil {
+			continue // looks like a bug
+		}
+		if !ipv6 {
+			continue // not IPv6
+		}
+		hasIssues := (*failure == netxlite.FailureNetworkUnreachable ||
+			*failure == netxlite.FailureHostUnreachable)
+		if hasIssues {
+			mapping[connect.IP] |= hasObviousIPv6Issues
 		}
 	}
 
@@ -387,11 +411,15 @@ func (tk *TestKeys) findAddrsWithoutTLSHandshake(domain string, addresses []stri
 	}
 
 	// compute the list of addresses without the handshakeOK flag
+	// excluding though the ones with obvious IPv6 issues
 	for addr, flags := range mapping {
 		if flags == 0 {
 			continue // this looks like a bug
 		}
-		if (flags & (resolved | handshakeOK)) == resolved {
+		if (flags & hasObviousIPv6Issues) != 0 {
+			continue // see https://github.com/ooni/probe/issues/2284
+		}
+		if (flags & (resolvedByProbe | handshakeOK)) == resolvedByProbe {
 			output = append(output, addr)
 		}
 	}
