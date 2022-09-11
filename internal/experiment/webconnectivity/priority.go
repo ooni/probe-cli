@@ -109,12 +109,11 @@ func newPrioritySelector(
 
 // log formats and emits a ConnPriorityLogEntry
 func (ps *prioritySelector) log(format string, v ...any) {
-	format = "prioritySelector: " + format
 	ps.tk.AppendConnPriorityLogEntry(&ConnPriorityLogEntry{
 		Msg: fmt.Sprintf(format, v...),
 		T:   time.Since(ps.zeroTime).Seconds(),
 	})
-	ps.logger.Infof(format, v...)
+	ps.logger.Infof("prioritySelector: "+format, v...)
 }
 
 // permissionToFetch returns whether this ready-to-use connection
