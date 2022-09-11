@@ -147,8 +147,8 @@ func (ps *prioritySelector) permissionToFetch(address string) bool {
 }
 
 // selector grants permission to the highest priority request that
-// arrives within a reasonable time frame. This functio runs in a
-// background goroutine that runs as long as [ctx] is not done.
+// arrives within a reasonable time frame. This function runs into the
+// background goroutine and terminates when [ctx] is done.
 //
 // This function implements https://github.com/ooni/probe/issues/2276.
 func (ps *prioritySelector) selector(ctx context.Context, wg *sync.WaitGroup) {

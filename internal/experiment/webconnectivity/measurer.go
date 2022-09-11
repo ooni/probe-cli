@@ -46,6 +46,11 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	// WILL NOT be submitted to the OONI backend. You SHOULD only return an error
 	// for fundamental errors (e.g., the input is invalid or missing).
 
+	// make sure we have a cancellable context such that we can stop any
+	// goroutine running in the background (e.g., priority.go's ones)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	// honour InputOrQueryBackend
 	input := measurement.Input
 	if input == "" {
