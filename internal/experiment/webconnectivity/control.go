@@ -17,17 +17,12 @@ import (
 // EndpointMeasurementsStarter is used by Control to start extra
 // measurements using new IP addrs discovered by the TH.
 type EndpointMeasurementsStarter interface {
-	// startCleartextFlowsWithSema starts a TCP measurement flow for each IP addr. The [sema]
-	// argument allows to control how many flows are allowed to perform HTTP measurements. Every
-	// flow will attempt to read from [sema] and won't perform HTTP measurements if a
-	// nonblocking read fails. Hence, you must create a [sema] channel with buffer equal
-	// to N and N elements inside it to allow N flows to perform HTTP measurements. Passing
-	// a nil [sema] causes no flow to attempt HTTP measurements.
-	startCleartextFlowsWithSema(ctx context.Context, sema <-chan any, addresses []DNSEntry)
+	// startCleartextFlows starts a TCP measurement flow for each IP addr. The [ps]
+	// argument determines whether this flow will be allowed to fetch the webpage.
+	startCleartextFlows(ctx context.Context, ps *prioritySelector, addresses []DNSEntry)
 
-	// startSecureFlowsWithSema starts a TCP+TLS measurement flow for each IP addr. See
-	// the docs of startCleartextFlowsWithSema for more info on the [sema] arg.
-	startSecureFlowsWithSema(ctx context.Context, sema <-chan any, addresses []DNSEntry)
+	// startSecureFlows is like startCleartextFlows but for HTTPS.
+	startSecureFlows(ctx context.Context, ps *prioritySelector, addresses []DNSEntry)
 }
 
 // Control issues a Control request and saves the results
@@ -45,6 +40,10 @@ type Control struct {
 
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger
+
+	// PrioSelector is the OPTIONAL priority selector to use to determine
+	// whether we will be allowed to fetch the webpage.
+	PrioSelector *prioritySelector
 
 	// TestKeys is MANDATORY and contains the TestKeys.
 	TestKeys *TestKeys
@@ -131,13 +130,13 @@ func (c *Control) Run(parentCtx context.Context) {
 		return
 	}
 
-	// if the TH returned us addresses we did not previously were
-	// aware of, make sure we also measure them
-	c.maybeStartExtraMeasurements(parentCtx, cresp.DNS.Addrs)
-
 	// on success, save the control response
 	c.TestKeys.SetControl(&cresp)
 	ol.Stop(nil)
+
+	// if the TH returned us addresses we did not previously were
+	// aware of, make sure we also measure them
+	c.maybeStartExtraMeasurements(parentCtx, cresp.DNS.Addrs)
 }
 
 // This function determines whether we should start new
@@ -175,14 +174,7 @@ func (c *Control) maybeStartExtraMeasurements(ctx context.Context, thAddrs []str
 		})
 	}
 
-	// Start extra measurements for TH-only addresses. Because we already
-	// measured HTTP(S) using IP addrs discovered by the resolvers, we are not
-	// going to do that again now. I am not sure this is the right policy
-	// but I think we can just try it and then change if needed...
-	//
-	// Also, let's remember that reading from a nil chan blocks forever, so
-	// we're basically forcing the goroutines to avoid HTTP(S).
-	var nohttp chan any = nil
-	c.ExtraMeasurementsStarter.startCleartextFlowsWithSema(ctx, nohttp, thOnly)
-	c.ExtraMeasurementsStarter.startSecureFlowsWithSema(ctx, nohttp, thOnly)
+	// Start extra measurements for TH-only addresses.
+	c.ExtraMeasurementsStarter.startCleartextFlows(ctx, c.PrioSelector, thOnly)
+	c.ExtraMeasurementsStarter.startSecureFlows(ctx, c.PrioSelector, thOnly)
 }
