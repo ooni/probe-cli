@@ -62,6 +62,7 @@ type prioritySelector struct {
 }
 
 // priorityRequest is a request to get priority for fetching the webpage
+// over other concurrent connections that are doing the same.
 type priorityRequest struct {
 	// addr is the address we're using
 	addr string
