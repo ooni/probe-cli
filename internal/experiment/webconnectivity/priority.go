@@ -28,6 +28,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -77,6 +78,7 @@ func newPrioritySelector(
 	zeroTime time.Time,
 	tk *TestKeys,
 	logger model.Logger,
+	wg *sync.WaitGroup,
 	addrs []DNSEntry,
 ) *prioritySelector {
 	ps := &prioritySelector{
@@ -103,7 +105,8 @@ func newPrioritySelector(
 			ps.nhttps++
 		}
 	}
-	go ps.selector(ctx)
+	wg.Add(1)
+	go ps.selector(ctx, wg)
 	return ps
 }
 
@@ -143,7 +146,10 @@ func (ps *prioritySelector) permissionToFetch(address string) bool {
 
 // selector grants permission to the highest priority request that
 // arrives within a reasonable time frame.
-func (ps *prioritySelector) selector(ctx context.Context) {
+func (ps *prioritySelector) selector(ctx context.Context, wg *sync.WaitGroup) {
+	// synchronize with the parent
+	defer wg.Done()
+
 	// do not await for more than timeout seconds for permission requests
 	const timeout = 5 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -220,6 +226,7 @@ func (ps *prioritySelector) isHighestPriority(r *priorityRequest) bool {
 			return true
 		}
 	} else {
+		// Happens when we only have addresses from the TH
 		return true
 	}
 	return false
