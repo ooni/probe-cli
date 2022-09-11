@@ -120,10 +120,7 @@ func (ps *prioritySelector) log(format string, v ...any) {
 // is permitted to perform a round trip and fetch the webpage.
 func (ps *prioritySelector) permissionToFetch(address string) bool {
 	ipAddr, _, err := net.SplitHostPort(address)
-	if err != nil {
-		ps.log("conn %s: denied permission: %s", address, err.Error())
-		return false
-	}
+	runtimex.PanicOnError(err, "net.SplitHostPort failed")
 	r := &priorityRequest{
 		addr: ipAddr,
 		resp: make(chan bool, 1), // buffer to simplify selector() implementation
