@@ -163,7 +163,7 @@ func (ps *prioritySelector) selector(ctx context.Context) {
 		return
 	}
 
-	// collect additional requests for up to extraTime, thus allowing
+	// collect additional requests for up to extraTime, thus giving
 	// a possibly higher priority connection time to establish
 	const extraTime = 500 * time.Millisecond
 	expired := time.NewTimer(extraTime)
