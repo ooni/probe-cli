@@ -137,7 +137,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 	tlsConn, tlsConnState, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
 	t.TestKeys.AppendTLSHandshakes(trace.TLSHandshakes()...)
 	if err != nil {
-		ol.Stop(err)
+		ol.Stop(nil)
 		return
 	}
 	defer tlsConn.Close()
@@ -146,7 +146,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 
 	// Determine whether we're allowed to fetch the webpage
 	if t.PrioSelector == nil || !t.PrioSelector.permissionToFetch(t.Address) {
-		ol.Stop(nil)
+		ol.Stop("stop after TLS handshake")
 		return
 	}
 

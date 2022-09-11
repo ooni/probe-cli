@@ -115,7 +115,7 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 
 	// Determine whether we're allowed to fetch the webpage
 	if t.PrioSelector == nil || !t.PrioSelector.permissionToFetch(t.Address) {
-		ol.Stop(nil)
+		ol.Stop("stop after TCP connect")
 		return
 	}
 

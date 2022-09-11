@@ -172,7 +172,7 @@ func (t *DNSResolvers) Run(parentCtx context.Context) {
 	}
 
 	// create priority selector
-	ps := newPrioritySelector(addresses)
+	ps := newPrioritySelector(parentCtx, t.ZeroTime, t.TestKeys, t.Logger, addresses)
 
 	// fan out a number of child async tasks to use the IP addrs
 	t.startCleartextFlows(parentCtx, ps, addresses)
