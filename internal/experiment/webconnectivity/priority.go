@@ -1,5 +1,29 @@
 package webconnectivity
 
+//
+// Determine which connection(s) are allowed to fetch the webpage
+// by giving higher priority to the system resolver, then to the
+// UDP resolver, then to the DoH resolver, then to the TH.
+//
+// This sorting reflects the likelyhood that we will se a blockpage
+// because the system resolver is the most likely to be blocked
+// (e.g., in Italy). The UDP resolver is also blocked in countries
+// with more censorship (e.g., in China). The DoH resolver and
+// the TH have more or less the same priority here, but we needed
+// to choose one of them to have higher priority.
+//
+// Note that this functionality is where Web Connectivity LTE
+// diverges from websteps, which will instead fetch all the available
+// webpages. To adhere to the Web Connectivity model, we need to
+// have a single fetch per redirect. However, by allowing all the
+// resolvers plus the TH to provide us with addresses, we increase
+// our chances of detecting more kinds of censorship.
+//
+// Also note that this implementation basically makes the
+// https://github.com/ooni/probe/issues/2258 issue obsolete,
+// since now we're considering all resolvers.
+//
+
 import (
 	"context"
 	"fmt"
