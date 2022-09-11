@@ -137,7 +137,7 @@ func (t *SecureFlow) Run(parentCtx context.Context, index int64) {
 	tlsConn, tlsConnState, err := tlsHandshaker.Handshake(tlsCtx, tcpConn, tlsConfig)
 	t.TestKeys.AppendTLSHandshakes(trace.TLSHandshakes()...)
 	if err != nil {
-		ol.Stop(nil)
+		ol.Stop(err)
 		return
 	}
 	defer tlsConn.Close()
