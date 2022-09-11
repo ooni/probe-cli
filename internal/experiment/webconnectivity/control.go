@@ -130,13 +130,13 @@ func (c *Control) Run(parentCtx context.Context) {
 		return
 	}
 
-	// if the TH returned us addresses we did not previously were
-	// aware of, make sure we also measure them
-	c.maybeStartExtraMeasurements(parentCtx, cresp.DNS.Addrs)
-
 	// on success, save the control response
 	c.TestKeys.SetControl(&cresp)
 	ol.Stop(nil)
+
+	// if the TH returned us addresses we did not previously were
+	// aware of, make sure we also measure them
+	c.maybeStartExtraMeasurements(parentCtx, cresp.DNS.Addrs)
 }
 
 // This function determines whether we should start new

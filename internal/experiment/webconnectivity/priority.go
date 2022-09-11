@@ -145,15 +145,25 @@ func (ps *prioritySelector) permissionToFetch(address string) bool {
 }
 
 // selector grants permission to the highest priority request that
-// arrives within a reasonable time frame.
+// arrives within a reasonable time frame. This functio runs in a
+// background goroutine that runs as long as [ctx] is not done.
 func (ps *prioritySelector) selector(ctx context.Context, wg *sync.WaitGroup) {
 	// synchronize with the parent
 	defer wg.Done()
 
-	// do not await for more than timeout seconds for permission requests
-	const timeout = 5 * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+	// Implementation note: setting an arbitrary timeout here would
+	// be ~an issue because we want this goroutine to be available in
+	// case the only connections from which we could fetch a webpage
+	// are the ones using TH addresses. However, we know the TH could
+	// require a long time to complete due to timeouts caused by IP
+	// addresses provided by the probe.
+	//
+	// See https://explorer.ooni.org/measurement/20220911T105037Z_webconnectivity_IT_30722_n1_ruzuQ219SmIO9SrT?input=http%3A%2F%2Festrenosli.org%2F
+	// for a measurement where a too-short timeout prevented us from
+	// attempting to fetch a webpage from TH-resolved addrs.
+	//
+	// See https://explorer.ooni.org/measurement/20220911T194527Z_webconnectivity_IT_30722_n1_jufRZGay0Db9Ge4v?input=http%3A%2F%2Festrenosli.org%2F
+	// for a measurement where this issue was fixed.
 
 	// await the first priority request
 	var first *priorityRequest
