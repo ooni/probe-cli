@@ -176,6 +176,8 @@ Loop:
 			break Loop
 		case r := <-ps.ch:
 			requests = append(requests, r)
+		case <-ctx.Done():
+			return
 		}
 	}
 
