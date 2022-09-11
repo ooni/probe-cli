@@ -65,6 +65,10 @@ type TestKeys struct {
 	// Control contains the TH's response.
 	Control *webconnectivity.ControlResponse `json:"control"`
 
+	// ConnPriorityLog explains why Web Connectivity chose to use a given
+	// ready-to-use HTTP(S) connection among many.
+	ConnPriorityLog []*ConnPriorityLogEntry `json:"x_conn_priority_log"`
+
 	// ControlFailure contains the failure of the control experiment.
 	ControlFailure *string `json:"control_failure"`
 
@@ -126,6 +130,15 @@ type TestKeys struct {
 
 	// mu provides mutual exclusion for accessing the test keys.
 	mu *sync.Mutex
+}
+
+// ConnPriorityLogEntry is an entry in the TestKeys.ConnPriorityLog slice.
+type ConnPriorityLogEntry struct {
+	// Msg is the specific log entry
+	Msg string `json:"msg"`
+
+	// T is when this entry was generated
+	T float64 `json:"t"`
 }
 
 // DNSWhoamiInfoEntry contains an entry for DNSWhoamiInfo.
@@ -278,6 +291,13 @@ func (tk *TestKeys) SetClientResolver(value string) {
 	tk.mu.Unlock()
 }
 
+// AppendConnPriorityLogEntry appends an entry to ConnPriorityLog.
+func (tk *TestKeys) AppendConnPriorityLogEntry(entry *ConnPriorityLogEntry) {
+	tk.mu.Lock()
+	tk.ConnPriorityLog = append(tk.ConnPriorityLog, entry)
+	tk.mu.Unlock()
+}
+
 // NewTestKeys creates a new instance of TestKeys.
 func NewTestKeys() *TestKeys {
 	return &TestKeys{
@@ -307,6 +327,7 @@ func NewTestKeys() *TestKeys {
 		TCPConnect:            []*model.ArchivalTCPConnectResult{},
 		TLSHandshakes:         []*model.ArchivalTLSOrQUICHandshakeResult{},
 		Control:               nil,
+		ConnPriorityLog:       []*ConnPriorityLogEntry{},
 		ControlFailure:        nil,
 		DNSFlags:              0,
 		DNSExperimentFailure:  nil,
