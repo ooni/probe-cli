@@ -143,6 +143,8 @@ func TestScrubMeasurementWeAreScrubbing(t *testing.T) {
 	if bytes.Count(data, []byte(config.ProbeIP)) != 0 {
 		t.Fatal("ProbeIP not fully redacted")
 	}
+	// Note: ooniprobe requires the test keys to keep their original
+	// type otherwise the summary extraction process fails
 	testkeys, good := m.TestKeys.(*fakeTestKeys)
 	if !good {
 		t.Fatal("the underlying type of the test keys changed")
@@ -184,7 +186,7 @@ func TestScrubMeasurementCannotUnmarshalTestKeys(t *testing.T) {
 	}
 }
 
-func TestScrubInvalidIP(t *testing.T) {
+func TestScrubMeasurementInvalidIP(t *testing.T) {
 	m := &Measurement{
 		ProbeASN: "AS1234",
 		ProbeCC:  "IT",
