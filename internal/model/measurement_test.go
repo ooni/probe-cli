@@ -109,7 +109,7 @@ func TestScrubMeasurementWeAreScrubbing(t *testing.T) {
 		ResolverASN:         "AS12345",
 	}
 	m := makeMeasurement(config)
-	if err := ScrubMeasurement(&m, config.ProbeIP); err != nil {
+	if err := ScrubMeasurement(m, config.ProbeIP); err != nil {
 		t.Fatal(err)
 	}
 	if m.Input != Scrubbed {
