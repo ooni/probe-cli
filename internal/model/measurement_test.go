@@ -66,8 +66,8 @@ type makeMeasurementConfig struct {
 	ResolverASN         string
 }
 
-func makeMeasurement(config makeMeasurementConfig) Measurement {
-	return Measurement{
+func makeMeasurement(config makeMeasurementConfig) *Measurement {
+	return &Measurement{
 		DataFormatVersion:    "0.3.0",
 		ID:                   "bdd20d7a-bba5-40dd-a111-9863d7908572",
 		MeasurementStartTime: "2018-11-01 15:33:20",
@@ -106,7 +106,7 @@ func TestScrubWeAreScrubbing(t *testing.T) {
 		ResolverASN:         "AS12345",
 	}
 	m := makeMeasurement(config)
-	if err := m.Scrub(config.ProbeIP); err != nil {
+	if err := ScrubMeasurement(config.ProbeIP, &m); err != nil {
 		t.Fatal(err)
 	}
 	if m.ProbeASN != config.ProbeASN {
@@ -135,7 +135,7 @@ func TestScrubWeAreScrubbing(t *testing.T) {
 		t.Fatal(err)
 	}
 	if bytes.Count(data, []byte(config.ProbeIP)) != 0 {
-		t.Fatal("ProbeIP not fully redacted")
+		t.Fatalf("ProbeIP not fully redacted: %s", string(data))
 	}
 }
 
@@ -151,7 +151,7 @@ func TestScrubNoScrubbingRequired(t *testing.T) {
 	}
 	m := makeMeasurement(config)
 	m.TestKeys.(*fakeTestKeys).Body = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-	if err := m.Scrub(config.ProbeIP); err != nil {
+	if err := ScrubMeasurement(config.ProbeIP, &m); err != nil {
 		t.Fatal(err)
 	}
 	if m.ProbeASN != config.ProbeASN {
@@ -180,7 +180,7 @@ func TestScrubNoScrubbingRequired(t *testing.T) {
 		t.Fatal(err)
 	}
 	if bytes.Count(data, []byte(Scrubbed)) > 0 {
-		t.Fatal("We should not see any scrubbing")
+		t.Fatalf("We should not see any scrubbing: %s", string(data))
 	}
 }
 
@@ -189,23 +189,8 @@ func TestScrubInvalidIP(t *testing.T) {
 		ProbeASN: "AS1234",
 		ProbeCC:  "IT",
 	}
-	err := m.Scrub("") // invalid IP
+	err := ScrubMeasurement("", &m) // invalid IP
 	if !errors.Is(err, ErrInvalidProbeIP) {
-		t.Fatal("not the error we expected")
-	}
-}
-
-func TestScrubMarshalError(t *testing.T) {
-	expected := errors.New("mocked error")
-	m := &Measurement{
-		ProbeASN: "AS1234",
-		ProbeCC:  "IT",
-	}
-	err := m.MaybeRewriteTestKeys(
-		"8.8.8.8", func(v interface{}) ([]byte, error) {
-			return nil, expected
-		})
-	if !errors.Is(err, expected) {
 		t.Fatal("not the error we expected")
 	}
 }

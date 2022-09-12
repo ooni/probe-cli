@@ -139,7 +139,7 @@ func (e *experiment) MeasureAsync(
 			measurement.MeasurementRuntime = tk.MeasurementRuntime
 			measurement.TestHelpers = tk.TestHelpers
 			measurement.TestKeys = tk.TestKeys
-			if err := measurement.Scrub(e.session.ProbeIP()); err != nil {
+			if err := model.ScrubMeasurement(e.session.ProbeIP(), &measurement); err != nil {
 				// If we fail to scrub the measurement then we are not going to
 				// submit it. Most likely causes of error here are unlikely,
 				// e.g., the TestKeys being not serializable.
