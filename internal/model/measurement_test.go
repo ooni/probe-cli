@@ -95,7 +95,7 @@ func makeMeasurement(config makeMeasurementConfig) *Measurement {
 	}
 }
 
-func TestScrubWeAreScrubbing(t *testing.T) {
+func TestScrubMeasurementWeAreScrubbing(t *testing.T) {
 	config := makeMeasurementConfig{
 		ProbeIP:             "130.192.91.211",
 		ProbeASN:            "AS137",
@@ -115,7 +115,7 @@ func TestScrubWeAreScrubbing(t *testing.T) {
 	if m.ProbeCC != config.ProbeCC {
 		t.Fatal("ProbeCC has been scrubbed")
 	}
-	if m.ProbeIP == config.ProbeIP {
+	if m.ProbeIP != DefaultProbeIP {
 		t.Fatal("ProbeIP HAS NOT been scrubbed")
 	}
 	if m.ProbeNetworkName != config.ProbeNetworkName {
@@ -136,51 +136,6 @@ func TestScrubWeAreScrubbing(t *testing.T) {
 	}
 	if bytes.Count(data, []byte(config.ProbeIP)) != 0 {
 		t.Fatalf("ProbeIP not fully redacted: %s", string(data))
-	}
-}
-
-func TestScrubNoScrubbingRequired(t *testing.T) {
-	config := makeMeasurementConfig{
-		ProbeIP:             "130.192.91.211",
-		ProbeASN:            "AS137",
-		ProbeCC:             "IT",
-		ProbeNetworkName:    "Vodafone Italia S.p.A.",
-		ResolverIP:          "8.8.8.8",
-		ResolverNetworkName: "Google LLC",
-		ResolverASN:         "AS12345",
-	}
-	m := makeMeasurement(config)
-	m.TestKeys.(*fakeTestKeys).Body = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-	if err := ScrubMeasurement(config.ProbeIP, &m); err != nil {
-		t.Fatal(err)
-	}
-	if m.ProbeASN != config.ProbeASN {
-		t.Fatal("ProbeASN has been scrubbed")
-	}
-	if m.ProbeCC != config.ProbeCC {
-		t.Fatal("ProbeCC has been scrubbed")
-	}
-	if m.ProbeIP == config.ProbeIP {
-		t.Fatal("ProbeIP HAS NOT been scrubbed")
-	}
-	if m.ProbeNetworkName != config.ProbeNetworkName {
-		t.Fatal("ProbeNetworkName has been scrubbed")
-	}
-	if m.ResolverIP != config.ResolverIP {
-		t.Fatal("ResolverIP has been scrubbed")
-	}
-	if m.ResolverNetworkName != config.ResolverNetworkName {
-		t.Fatal("ResolverNetworkName has been scrubbed")
-	}
-	if m.ResolverASN != config.ResolverASN {
-		t.Fatal("ResolverASN has been scrubbed")
-	}
-	data, err := json.Marshal(m)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if bytes.Count(data, []byte(Scrubbed)) > 0 {
-		t.Fatalf("We should not see any scrubbing: %s", string(data))
 	}
 }
 
