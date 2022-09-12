@@ -51,8 +51,6 @@ def webconnectivity_https_ok_with_control_failure(ooni_exe, outfile):
     """Successful HTTPS measurement but control failure."""
     args = [
         "-iptables-reset-keyword",
-        "wcth.ooni.io",
-        "-iptables-reset-keyword",
         "th.ooni.org",
     ]
     tk = execute_jafar_and_return_validated_test_keys(
@@ -83,8 +81,6 @@ def webconnectivity_https_ok_with_control_failure(ooni_exe, outfile):
 def webconnectivity_http_ok_with_control_failure(ooni_exe, outfile):
     """Successful HTTP measurement but control failure."""
     args = [
-        "-iptables-reset-keyword",
-        "wcth.ooni.io",
         "-iptables-reset-keyword",
         "th.ooni.org",
     ]
@@ -194,8 +190,6 @@ def webconnectivity_control_unreachable_and_using_http(ooni_exe, outfile):
     plaintext HTTP protocol rather than HTTPS"""
     args = []
     args.append("-iptables-reset-keyword")
-    args.append("wcth.ooni.io")
-    args.append("-iptables-reset-keyword")
     args.append("th.ooni.org")
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
@@ -224,7 +218,7 @@ def webconnectivity_nonexistent_domain(ooni_exe, outfile):
     tk = execute_jafar_and_return_validated_test_keys(
         ooni_exe,
         outfile,
-        "-i http://antani.ooni.io web_connectivity",
+        "-i http://www.ooni.nonexistent web_connectivity",
         "webconnectivity_nonexistent_domain",
         args,
     )

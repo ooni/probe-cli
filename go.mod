@@ -24,27 +24,28 @@ require (
 	github.com/miekg/dns v1.1.50
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/montanaflynn/stats v0.6.6
-	github.com/ooni/go-libtor v1.1.5
-	github.com/ooni/oocrypto v0.1.1
-	github.com/ooni/oohttp v0.2.1
-	github.com/ooni/probe-assets v0.11.0
+	github.com/ooni/go-libtor v1.1.6
+	github.com/ooni/oocrypto v0.1.2
+	github.com/ooni/oohttp v0.2.2
+	github.com/ooni/probe-assets v0.13.0
 	github.com/ooni/psiphon/tunnel-core v0.0.0-20220819091114-7dccc0b6b6cd
 	github.com/oschwald/geoip2-golang v1.8.0
 	github.com/pborman/getopt/v2 v2.1.0
 	github.com/pion/stun v0.3.5
 	github.com/pkg/errors v0.9.1
-	github.com/rogpeppe/go-internal v1.8.1
-	github.com/rubenv/sql-migrate v1.1.2
-	github.com/upper/db/v4 v4.5.4
-	gitlab.com/yawning/obfs4.git v0.0.0-20220204003609-77af0cba934d
+	github.com/rogpeppe/go-internal v1.9.0
+	github.com/rubenv/sql-migrate v1.2.0
+	github.com/upper/db/v4 v4.6.0
+	gitlab.com/yawning/obfs4.git v0.0.0-20220904064028-336a71d6e4cf
 	gitlab.com/yawning/utls.git v0.0.12-1
-	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8
-	golang.org/x/net v0.0.0-20220812174116-3211cb980234
-	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6
+	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
+	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c
+	golang.org/x/sys v0.0.0-20220829200755-d48e67d00261
 )
 
 require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/segmentio/fasthash v1.0.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 )
 

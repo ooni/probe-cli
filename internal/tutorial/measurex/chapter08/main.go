@@ -87,7 +87,7 @@ func main() {
 	//
 	// The `AllHTTPEndpointsForURL` function will recognize that
 	// we also have HTTPS lookups and, if the "h3" ALPN is
-	// present, will _also_ build HTTP/3 endpoints using "quic"
+	// present, will _also_ build HTTP/3 endpoints using "udp"
 	// as the `HTTPEndpoint.Network`.
 	//
 	// ```Go

@@ -23,7 +23,7 @@ import (
 
 const (
 	testName      = "dnscheck"
-	testVersion   = "0.9.0"
+	testVersion   = "0.9.2"
 	defaultDomain = "example.org"
 )
 
@@ -88,6 +88,7 @@ type TestKeys struct {
 	HTTPHost         string                        `json:"x_http_host,omitempty"`
 	TLSServerName    string                        `json:"x_tls_server_name,omitempty"`
 	TLSVersion       string                        `json:"x_tls_version,omitempty"`
+	Residual         bool                          `json:"x_residual"`
 	Bootstrap        *urlgetter.TestKeys           `json:"bootstrap"`
 	BootstrapFailure *string                       `json:"bootstrap_failure"`
 	Lookups          map[string]urlgetter.TestKeys `json:"lookups"`
@@ -141,6 +142,7 @@ func (m *Measurer) Run(
 	tk.HTTPHost = m.Config.HTTPHost
 	tk.TLSServerName = m.Config.TLSServerName
 	tk.TLSVersion = m.Config.TLSVersion
+	tk.Residual = m.Endpoints != nil
 
 	// 3. parse the input URL describing the resolver to use
 	input := string(measurement.Input)
@@ -211,7 +213,7 @@ func (m *Measurer) Run(
 				HTTP3Enabled:     m.Config.HTTP3Enabled,
 				RejectDNSBogons:  true, // bogons are errors in this context
 				ResolverURL:      makeResolverURL(URL, addr),
-				Timeout:          45 * time.Second,
+				Timeout:          15 * time.Second,
 			},
 			Target: fmt.Sprintf("dnslookup://%s", domain), // urlgetter wants a URL
 		})
@@ -234,7 +236,7 @@ func (m *Measurer) Run(
 }
 
 func (m *Measurer) lookupHost(ctx context.Context, hostname string, r model.Resolver) ([]string, error) {
-	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	return r.LookupHost(ctx, hostname)
 }
@@ -309,7 +311,10 @@ func makeResolverURL(URL *url.URL, addr string) string {
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
 func NewExperimentMeasurer(config Config) model.ExperimentMeasurer {
-	return &Measurer{Config: config}
+	return &Measurer{
+		Config:    config,
+		Endpoints: nil, // disabled by default
+	}
 }
 
 // SummaryKeys contains summary keys for this experiment.

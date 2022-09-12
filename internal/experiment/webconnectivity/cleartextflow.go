@@ -38,10 +38,6 @@ type CleartextFlow struct {
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger
 
-	// Sema is the MANDATORY semaphore to allow just a single
-	// connection to perform the HTTP transaction.
-	Sema <-chan any
-
 	// TestKeys is MANDATORY and contains the TestKeys.
 	TestKeys *TestKeys
 
@@ -60,6 +56,10 @@ type CleartextFlow struct {
 
 	// HostHeader is the OPTIONAL host header to use.
 	HostHeader string
+
+	// PrioSelector is the OPTIONAL priority selector to use to determine
+	// whether this flow is allowed to fetch the webpage.
+	PrioSelector *prioritySelector
 
 	// Referer contains the OPTIONAL referer, used for redirects.
 	Referer string
@@ -113,11 +113,9 @@ func (t *CleartextFlow) Run(parentCtx context.Context, index int64) {
 
 	alpn := "" // no ALPN because we're not using TLS
 
-	// Only allow N flows to _use_ the connection
-	select {
-	case <-t.Sema:
-	default:
-		ol.Stop(nil)
+	// Determine whether we're allowed to fetch the webpage
+	if t.PrioSelector == nil || !t.PrioSelector.permissionToFetch(t.Address) {
+		ol.Stop("stop after TCP connect")
 		return
 	}
 
@@ -224,6 +222,9 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 	txp model.HTTPTransport, req *http.Request, trace *measurexlite.Trace) (*http.Response, []byte, error) {
 	const maxbody = 1 << 19
 	started := trace.TimeSince(trace.ZeroTime)
+	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
+		trace.Index, started, "http_transaction_start",
+	))
 	resp, err := txp.RoundTrip(req)
 	var body []byte
 	if err == nil {
@@ -235,6 +236,9 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 		body, err = netxlite.ReadAllContext(ctx, reader)
 	}
 	finished := trace.TimeSince(trace.ZeroTime)
+	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
+		trace.Index, finished, "http_transaction_done",
+	))
 	ev := measurexlite.NewArchivalHTTPRequestResult(
 		trace.Index,
 		started,

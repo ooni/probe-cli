@@ -15,6 +15,7 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/engine"
 	"github.com/ooni/probe-cli/v3/internal/humanize"
 	"github.com/ooni/probe-cli/v3/internal/legacy/assetsdir"
+	"github.com/ooni/probe-cli/v3/internal/logx"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/registry"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -25,6 +26,7 @@ import (
 // Options contains the options you can set from the CLI.
 type Options struct {
 	Annotations      []string
+	Emoji            bool
 	ExtraOptions     []string
 	HomeDir          string
 	Inputs           []string
@@ -62,6 +64,13 @@ func main() {
 		"A",
 		[]string{},
 		"add KEY=VALUE annotation to the report (can be repeated multiple times)",
+	)
+
+	flags.BoolVar(
+		&globalOptions.Emoji,
+		"emoji",
+		false,
+		"whether to use emojis when logging",
 	)
 
 	flags.StringVar(
@@ -266,7 +275,9 @@ func MainWithConfiguration(experimentName string, currentOptions *Options) {
 		currentOptions.Proxy = fmt.Sprintf("%s:///", currentOptions.Tunnel)
 	}
 
-	logger := &log.Logger{Level: log.InfoLevel, Handler: &logHandler{Writer: os.Stderr}}
+	logHandler := logx.NewHandlerWithDefaultSettings()
+	logHandler.Emoji = currentOptions.Emoji
+	logger := &log.Logger{Level: log.InfoLevel, Handler: logHandler}
 	if currentOptions.Verbose {
 		logger.Level = log.DebugLevel
 	}

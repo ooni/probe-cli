@@ -18,11 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - run: go install golang.org/dl/go1.19@latest
+      - run: go install golang.org/dl/go1.19.1@latest
 
-      - run: $(go env GOPATH)/bin/go1.19 download
+      - run: $(go env GOPATH)/bin/go1.19.1 download
 
-      - run: $(go env GOPATH)/bin/go1.19 build -v ./...
+      - run: $(go env GOPATH)/bin/go1.19.1 build -v ./...
 
-      - run: $(go env GOPATH)/bin/go1.19 test -short -race -tags shaping ./...
+      - run: $(go env GOPATH)/bin/go1.19.1 test -short -race -tags shaping ./...
 

@@ -36,7 +36,7 @@ func (m *Measurer) ExperimentName() string {
 
 // ExperimentVersion implements model.ExperimentMeasurer.
 func (m *Measurer) ExperimentVersion() string {
-	return "0.5.2"
+	return "0.5.10"
 }
 
 // Run implements model.ExperimentMeasurer.
@@ -45,6 +45,11 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	// Reminder: when this function returns an error, the measurement result
 	// WILL NOT be submitted to the OONI backend. You SHOULD only return an error
 	// for fundamental errors (e.g., the input is invalid or missing).
+
+	// make sure we have a cancellable context such that we can stop any
+	// goroutine running in the background (e.g., priority.go's ones)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	// honour InputOrQueryBackend
 	input := measurement.Input
@@ -99,6 +104,8 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 		tk.SetControlFailure(webconnectivity.ErrNoAvailableTestHelpers)
 	}
 
+	registerExtensions(measurement)
+
 	// start background tasks
 	resos := &DNSResolvers{
 		DNSCache:    NewDNSCache(),
@@ -132,4 +139,15 @@ func (m *Measurer) Run(ctx context.Context, sess model.ExperimentSession,
 	// return whether there was a fundamental failure, which would prevent
 	// the measurement from being submitted to the OONI collector.
 	return tk.fundamentalFailure
+}
+
+// registerExtensions registers the extensions used by this
+// experiment into the given measurement.
+func registerExtensions(m *model.Measurement) {
+	model.ArchivalExtHTTP.AddTo(m)
+	model.ArchivalExtDNS.AddTo(m)
+	model.ArchivalExtNetevents.AddTo(m)
+	model.ArchivalExtTCPConnect.AddTo(m)
+	model.ArchivalExtTLSHandshake.AddTo(m)
+	model.ArchivalExtTunnel.AddTo(m)
 }

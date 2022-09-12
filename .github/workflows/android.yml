@@ -8,6 +8,8 @@ on:
       - "androidbuild"
     tags:
       - "v*"
+  schedule:
+    - cron: "17 1 * * *"
 
 jobs:
 

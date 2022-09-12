@@ -89,12 +89,12 @@ Produces this JSON:
 ```JavaScript
 {
   // In chapter02 these two fields were similar but
-  // the network was "tcp" as opposed to "quic"
-  "network": "quic",
+  // the network was "tcp" as opposed to "udp"
+  "network": "udp",
   "address": "8.8.4.4:443",
 
   // This block contains I/O operations. Note that
-  // the protocol is "quic" and that the syscalls
+  // the protocol is "udp" and that the syscalls
   // are "read_from" and "write_to" because QUIC does
   // not bind/connect sockets. (The real syscalls
   // are actually `recvfrom` and `sendto` but here
@@ -106,7 +106,7 @@ Produces this JSON:
       "failure": null,
       "num_bytes": 1252,
       "operation": "write_to",
-      "proto": "quic",
+      "proto": "udp",
       "t": 0.027184208,
       "started": 0.027127208,
       "oddity": ""
@@ -116,7 +116,7 @@ Produces this JSON:
       "failure": null,
       "num_bytes": 1252,
       "operation": "read_from",
-      "proto": "quic",
+      "proto": "udp",
       "t": 0.053116458,
       "started": 0.025626583,
       "oddity": ""
@@ -126,7 +126,7 @@ Produces this JSON:
       "failure": null,
       "num_bytes": 1252,
       "operation": "write_to",
-      "proto": "quic",
+      "proto": "udp",
       "t": 0.054538792,
       "started": 0.054517542,
       "oddity": ""
@@ -136,7 +136,7 @@ Produces this JSON:
       "failure": null,
       "num_bytes": 1252,
       "operation": "read_from",
-      "proto": "quic",
+      "proto": "udp",
       "t": 0.069144958,
       "started": 0.053194208,
       "oddity": ""
@@ -146,7 +146,7 @@ Produces this JSON:
       "failure": null,
       "num_bytes": 1252,
       "operation": "read_from",
-      "proto": "quic",
+      "proto": "udp",
       "t": 0.069183458,
       "started": 0.069173292,
       "oddity": ""
@@ -156,7 +156,7 @@ Produces this JSON:
       "failure": null,
       "num_bytes": 1252,
       "operation": "read_from",
-      "proto": "quic",
+      "proto": "udp",
       "t": 0.06920225,
       "started": 0.069197875,
       "oddity": ""
@@ -166,7 +166,7 @@ Produces this JSON:
       "failure": null,
       "num_bytes": 1216,
       "operation": "read_from",
-      "proto": "quic",
+      "proto": "udp",
       "t": 0.069210958,
       "started": 0.069206875,
       "oddity": ""
@@ -176,7 +176,7 @@ Produces this JSON:
       "failure": null,
       "num_bytes": 65,
       "operation": "read_from",
-      "proto": "quic",
+      "proto": "udp",
       "t": 0.069220667,
       "started": 0.069217375,
       "oddity": ""
@@ -186,7 +186,7 @@ Produces this JSON:
       "failure": null,
       "num_bytes": 44,
       "operation": "write_to",
-      "proto": "quic",
+      "proto": "udp",
       "t": 0.069433417,
       "started": 0.069417625,
       "oddity": ""
@@ -196,7 +196,7 @@ Produces this JSON:
       "failure": null,
       "num_bytes": 44,
       "operation": "write_to",
-      "proto": "quic",
+      "proto": "udp",
       "t": 0.069677625,
       "started": 0.069647458,
       "oddity": ""
@@ -206,7 +206,7 @@ Produces this JSON:
       "failure": null,
       "num_bytes": 83,
       "operation": "write_to",
-      "proto": "quic",
+      "proto": "udp",
       "t": 0.073461917,
       "started": 0.073432875,
       "oddity": ""
@@ -216,7 +216,7 @@ Produces this JSON:
       "failure": null,
       "num_bytes": 33,
       "operation": "write_to",
-      "proto": "quic",
+      "proto": "udp",
       "t": 0.073559417,
       "started": 0.073542542,
       "oddity": ""
@@ -253,7 +253,7 @@ Produces this JSON:
       ],
       "no_tls_verify": false,
       "oddity": "",
-      "proto": "quic",
+      "proto": "udp",
       "started": 0.025061583
     }
   ]
