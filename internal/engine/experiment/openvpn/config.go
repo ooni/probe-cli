@@ -20,12 +20,18 @@ var vpnConfigTemplate = `remote {{ .Hostname }} {{ .Port }}
 proto {{ .Transport }}
 cipher {{ .Config.Cipher }}
 auth {{ .Config.Auth }}
+{{ if .Config.LocalCreds }}
+auth-user-pass /tmp/ooni-vpn-creds{{ end }}
+{{ if eq .Config.Compress "comp-lzo-no"}}
+comp-lzo no{{ end }}
 <ca>
 {{ .Config.Ca }}</ca>
+{{ if ne .Config.Cert "" }}
 <cert>
-{{ .Config.Cert }}</cert>
+{{ .Config.Cert }}</cert>{{ end }}
+{{ if ne .Config.Key "" }}
 <key>
-{{ .Config.Key }}</key>`
+{{ .Config.Key }}</key>{{ end }}`
 
 func vpnExperimentFromURI(uri string) (*model.VPNExperiment, error) {
 	ve := &model.VPNExperiment{}

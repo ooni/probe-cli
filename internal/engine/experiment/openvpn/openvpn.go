@@ -9,12 +9,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"log"
 	"math"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -58,16 +60,18 @@ const (
 
 var (
 	bootstrapError = "bootstrap-error"
+	localCredsFile = "ooni-vpn-creds"
 )
 
 // Config contains the experiment config.
 type Config struct {
-	SafeKey  string `ooni:"key to connect to the OpenVPN endpoint"`
-	SafeCert string `ooni:"cert to connect to the OpenVPN endpoint"`
-	SafeCa   string `ooni:"ca to connect to the OpenVPN endpoint"`
-	Cipher   string `ooni:"cipher to use"`
-	Auth     string `ooni:"auth to use"`
-	Compress string `ooni:"compression to use"`
+	SafeKey        string `ooni:"key to connect to the OpenVPN endpoint"`
+	SafeCert       string `ooni:"cert to connect to the OpenVPN endpoint"`
+	SafeCa         string `ooni:"ca to connect to the OpenVPN endpoint"`
+	Cipher         string `ooni:"cipher to use"`
+	Auth           string `ooni:"auth to use"`
+	Compress       string `ooni:"compression to use"`
+	SafeLocalCreds bool   `ooni:"whether to use local credentials for the given provider"`
 }
 
 // PingReply is a single response in the ping sequence.
@@ -195,6 +199,9 @@ type Measurer struct {
 
 	// tunnel is the vpn.Client
 	tunnel *vpn.Client
+
+	// tmpConfigFile is the temporary file passwd to openvpn
+	tmpConfigFile string
 }
 
 // ExperimentName implements model.ExperimentMeasurer.ExperimentName.
@@ -250,6 +257,16 @@ func (m *Measurer) Run(
 	ctx context.Context, sess model.ExperimentSession,
 	measurement *model.Measurement, callbacks model.ExperimentCallbacks,
 ) error {
+	defer func() {
+		err := os.Remove(filepath.Join(os.TempDir(), localCredsFile))
+		if err != nil {
+			sess.Logger().Infof(err.Error())
+		}
+		err = os.Remove(m.tmpConfigFile)
+		if err != nil {
+			sess.Logger().Infof(err.Error())
+		}
+	}()
 	experiment, err := vpnExperimentFromURI(string(measurement.Input))
 	if err != nil {
 		return err
@@ -385,14 +402,31 @@ func (m *Measurer) setup(exp *model.VPNExperiment, logger model.Logger) (*vpn.Cl
 	exp.Config.Ca = ca
 	exp.Config.Cert = cert
 	exp.Config.Key = key
+	exp.Config.LocalCreds = m.config.SafeLocalCreds
 
-	tmp, err := os.CreateTemp("", "vpn-")
-	if err != nil {
-		return nil, err
+	if exp.Config.LocalCreds {
+		// TODO create temp file and pass it as localCreds (string)
+		tmpCreds, err := os.Create(filepath.Join(os.TempDir(), localCredsFile))
+		defer tmpCreds.Close()
+		if err != nil {
+			return nil, err
+		}
+		logger.Infof("Copying credentials for %v", strings.ToLower(exp.Provider))
+		credsPth := filepath.Join(os.Getenv("HOME"), ".ooni", "vpn", exp.Provider+".txt")
+		creds, err := os.Open(credsPth)
+		if err != nil {
+			return nil, err
+		}
+		defer creds.Close()
+		_, err = io.Copy(tmpCreds, creds)
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	t := template.New("openvpnConfig")
-	t, err = t.Parse(vpnConfigTemplate)
+	t, err := t.Parse(vpnConfigTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -403,14 +437,17 @@ func (m *Measurer) setup(exp *model.VPNExperiment, logger model.Logger) (*vpn.Cl
 		return nil, err
 	}
 
+	tmp, err := os.CreateTemp("", "vpn-")
+	if err != nil {
+		return nil, err
+	}
+	m.tmpConfigFile = tmp.Name()
 	tmp.Write(buf.Bytes())
 	opt, err := vpn.NewOptionsFromFilePath(tmp.Name())
 	if err != nil {
 		return nil, err
 	}
-
 	logger.Infof("Using Config File: %s", tmp.Name())
-	// TODO(ainghazal): defer delete of the file after DEBUG
 
 	m.vpnOptions = opt
 	tunnel := vpn.NewClientFromOptions(opt)
