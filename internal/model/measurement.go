@@ -200,7 +200,7 @@ var scrubJSONUnmarshalTopLevelKeys = json.Unmarshal
 // of [m] by rewriting these keys in place.
 func scrubTopLevelKeys(m *Measurement, currentIP string) error {
 	data, err := json.Marshal(m)
-	runtimex.PanicOnError(err, "json.Marshal(m.TestKeys) failed") // m must serialize
+	runtimex.PanicOnError(err, "json.Marshal(m) failed") // m must serialize
 	data = bytes.ReplaceAll(data, []byte(currentIP), []byte(Scrubbed))
 	return scrubJSONUnmarshalTopLevelKeys(data, &m)
 }

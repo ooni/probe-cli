@@ -84,7 +84,7 @@ func makeMeasurement(config makeMeasurementConfig) *Measurement {
 		SoftwareName:         "probe-engine",
 		SoftwareVersion:      "0.1.0",
 		TestKeys: &fakeTestKeys{
-			ClientResolver: "91.80.37.104",
+			ClientResolver: config.ResolverIP,
 			Body: fmt.Sprintf(`
 				<HTML><HEAD><TITLE>Your IP is %s</TITLE></HEAD>
 				<BODY><P>Hey you, I see your IP and it's %s!</P></BODY>
@@ -143,8 +143,12 @@ func TestScrubMeasurementWeAreScrubbing(t *testing.T) {
 	if bytes.Count(data, []byte(config.ProbeIP)) != 0 {
 		t.Fatal("ProbeIP not fully redacted")
 	}
-	if _, good := m.TestKeys.(*fakeTestKeys); !good {
+	testkeys, good := m.TestKeys.(*fakeTestKeys)
+	if !good {
 		t.Fatal("the underlying type of the test keys changed")
+	}
+	if testkeys.ClientResolver != config.ResolverIP {
+		t.Fatal("it seems the test keys did not round trip")
 	}
 }
 
