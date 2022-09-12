@@ -174,15 +174,15 @@ var ErrInvalidProbeIP = errors.New("model: invalid probe IP")
 const Scrubbed = `[scrubbed]`
 
 // ScrubMeasurement scrubs a measurement by rewriting its fields in place
-func ScrubMeasurement(probeIP string, m **Measurement) error {
-	if net.ParseIP(probeIP) == nil {
+func ScrubMeasurement(currentIP string, m **Measurement) error {
+	if net.ParseIP(currentIP) == nil {
 		return ErrInvalidProbeIP
 	}
 	runtimex.Assert(m != nil, "expected non-nil m pointer")
 	(*m).ProbeIP = DefaultProbeIP // we want `127.0.0.1` rather than `[scrubbed]` here
 	data, err := json.Marshal(*m)
 	runtimex.PanicOnError(err, "json.Marshal failed")
-	data = bytes.ReplaceAll(data, []byte(probeIP), []byte(Scrubbed))
+	data = bytes.ReplaceAll(data, []byte(currentIP), []byte(Scrubbed))
 	*m = nil
 	return json.Unmarshal(data, m)
 }
