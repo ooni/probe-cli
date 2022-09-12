@@ -1,6 +1,11 @@
 package webconnectivity
 
-import "github.com/ooni/probe-cli/v3/internal/model"
+import (
+	"fmt"
+	"net"
+
+	"github.com/ooni/probe-cli/v3/internal/model"
+)
 
 //
 // Core analysis
@@ -83,6 +88,9 @@ const (
 //     +--------------------------------------+----------------+-------------+
 //
 // It's a very simple rule, that should preserve previous semantics.
+//
+// As an improvement over Web Connectivity v0.4, we also attempt to identify
+// special subcases of a null, null result to provide the user with more information.
 func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 	// Since we run after all tasks have completed (or so we assume) we're
 	// not going to use any form of locking here.
@@ -144,6 +152,15 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 			)
 			return
 		}
+		if tk.analysisFlagNullNullDetectAllConnectFailed(logger) {
+			tk.Blocking = false
+			tk.Accessible = false
+			logger.Infof(
+				"ALL_CONNECTS_FAILED: flags=%d, accessible=%+v, blocking=%+v",
+				tk.BlockingFlags, tk.Accessible, tk.Blocking,
+			)
+			return
+		}
 		tk.Blocking = nil
 		tk.Accessible = nil
 		logger.Warnf(
@@ -157,7 +174,51 @@ const (
 	// analysisFlagNullNullNoAddrs indicates neither the probe nor the TH were
 	// able to get any IP addresses from any resolver.
 	analysisFlagNullNullNoAddrs = 1 << iota
+
+	// analysisFlagNullNullAllConnectFailed indicates that all the connect
+	// attempts failed both in the probe and in the test helper.
+	analysisFlagNullNullAllConnectFailed
 )
+
+// analysisNullMullDetectAllConnectFailed attempts to detect whether we are in
+// the .Blocking = nil, .Accessible = nil case because all the TCP connect
+// attempts by either the probe or the TH have failed.
+//
+// See https://explorer.ooni.org/measurement/20220911T105037Z_webconnectivity_IT_30722_n1_ruzuQ219SmIO9SrT?input=https://doh.centraleu.pi-dns.com/dns-query?dns=q80BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQAB
+// for an example measurement with this behavior.
+func (tk *TestKeys) analysisFlagNullNullDetectAllConnectFailed(logger model.Logger) bool {
+	if tk.Control == nil {
+		// we need control data to say we're in this case
+		return false
+	}
+
+	for _, entry := range tk.TCPConnect {
+		if entry.Status.Failure == nil {
+			// we need all connect attempts to fail
+			return false
+		}
+		epnt := net.JoinHostPort(entry.IP, fmt.Sprintf("%d", entry.Port))
+		thEntry, found := tk.Control.TCPConnect[epnt]
+		if !found {
+			// we need exactly the same attempts to have failed
+			return false
+		}
+		if thEntry.Failure == nil {
+			// we need all TH attempts to fail
+			return false
+		}
+	}
+
+	// only if we have had some addresses to connect
+	if len(tk.TCPConnect) > 0 && len(tk.Control.TCPConnect) > 0 {
+		logger.Info("All TCP connect attempts failed for both probe and TH")
+		tk.NullNullFlags |= analysisFlagNullNullAllConnectFailed
+		return true
+	}
+
+	// safety net in case we're passed empty lists/maps
+	return false
+}
 
 // analysisNullNullDetectNoAddrs attempts to see whether we
 // ended up into the .Blocking = nil, .Accessible = nil case because
