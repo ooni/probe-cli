@@ -90,6 +90,11 @@ type TestKeys struct {
 	// BlockingFlags contains blocking flags.
 	BlockingFlags int64 `json:"x_blocking_flags"`
 
+	// NullNullFlags explains why we determined that a measurement is not
+	// failed by detecting specific conditions that would have otherwise
+	// caused .Accessible = nil and .Blocking = nil
+	NullNullFlags int64 `json:"x_null_null_flags"`
+
 	// BodyLength match tells us whether the body length matches.
 	BodyLengthMatch *bool `json:"body_length_match"`
 
@@ -334,6 +339,7 @@ func NewTestKeys() *TestKeys {
 		DNSConsistency:        "",
 		HTTPExperimentFailure: nil,
 		BlockingFlags:         0,
+		NullNullFlags:         0,
 		BodyLengthMatch:       nil,
 		HeadersMatch:          nil,
 		StatusCodeMatch:       nil,

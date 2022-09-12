@@ -67,7 +67,7 @@ const (
 // values of .Blocking and .Accessible:
 //
 //     +--------------------------------------+----------------+-------------+
-//     | XBlockingFlags                       | .Blocking      | .Accessible |
+//     | .BlockingFlags                       | .Blocking      | .Accessible |
 //     +--------------------------------------+----------------+-------------+
 //     | (& DNSBlocking) != 0                 | "dns"          | false       |
 //     +--------------------------------------+----------------+-------------+
@@ -135,6 +135,15 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 		)
 
 	default:
+		if tk.analysisNullNullDetectNoAddrs(logger) {
+			tk.Blocking = false
+			tk.Accessible = false
+			logger.Infof(
+				"NO_AVAILABLE_ADDRS: flags=%d, accessible=%+v, blocking=%+v",
+				tk.BlockingFlags, tk.Accessible, tk.Blocking,
+			)
+			return
+		}
 		tk.Blocking = nil
 		tk.Accessible = nil
 		logger.Warnf(
@@ -142,4 +151,56 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 			tk.BlockingFlags, tk.Accessible, tk.Blocking,
 		)
 	}
+}
+
+const (
+	// analysisFlagNullNullNoAddrs indicates neither the probe nor the TH were
+	// able to get any IP addresses from any resolver.
+	analysisFlagNullNullNoAddrs = 1 << iota
+)
+
+// analysisNullNullDetectNoAddrs attempts to see whether we
+// ended up into the .Blocking = nil, .Accessible = nil case because
+// the domain is expired and all queries returned no addresses.
+//
+// See https://github.com/ooni/probe/issues/2290 for further
+// documentation about the issue we're solving here.
+//
+// It would be tempting to check specifically for NXDOMAIN here, but we
+// know it is problematic do that. In fact, on Android the getaddrinfo
+// resolver always returns EAI_NODATA on error, regardless of the actual
+// error that may have occurred in the Android DNS backend.
+//
+// See https://github.com/ooni/probe/issues/2029 for more information
+// on Android's getaddrinfo behavior.
+func (tk *TestKeys) analysisNullNullDetectNoAddrs(logger model.Logger) bool {
+	if tk.Control == nil {
+		// we need control data to say we're in this case
+		return false
+	}
+	for _, query := range tk.Queries {
+		if len(query.Answers) > 0 {
+			// when a query has answers, we're not in the NoAddresses case
+			return false
+		}
+	}
+	if len(tk.TCPConnect) > 0 {
+		// if we attempted TCP connect, we're not in the NoAddresses case
+		return false
+	}
+	if len(tk.TLSHandshakes) > 0 {
+		// if we attempted TLS handshakes, we're not in the NoAddresses case
+		return false
+	}
+	if len(tk.Control.DNS.Addrs) > 0 {
+		// when the TH resolved addresses, we're not in the NoAddresses case
+		return false
+	}
+	if len(tk.Control.TCPConnect) > 0 {
+		// when the TH used addresses, we're not in the NoAddresses case
+		return false
+	}
+	logger.Infof("Neither the probe nor the TH resolved any addresses")
+	tk.NullNullFlags |= analysisFlagNullNullNoAddrs
+	return true
 }
