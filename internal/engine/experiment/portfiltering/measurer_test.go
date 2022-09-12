@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ooni/probe-cli/v3/internal/engine/mockable"
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/model/mocks"
 )
 
 func TestMeasurerExperimentNameVersion(t *testing.T) {
@@ -21,8 +21,10 @@ func TestMeasurerExperimentNameVersion(t *testing.T) {
 func TestMeasurer_run(t *testing.T) {
 	m := NewExperimentMeasurer(Config{})
 	meas := &model.Measurement{}
-	sess := &mockable.Session{
-		MockableLogger: model.DiscardLogger,
+	sess := &mocks.Session{
+		MockLogger: func() model.Logger {
+			return model.DiscardLogger
+		},
 	}
 	callbacks := model.NewPrinterCallbacks(model.DiscardLogger)
 	ctx := context.Background()

@@ -26,7 +26,7 @@ func (m *Measurer) tcpConnectLoop(ctx context.Context, zeroTime time.Time,
 	// randomized sequential order?
 	for i, port := range Ports {
 		addr := net.JoinHostPort(address, port)
-		m.tcpConnectAsync(ctx, int64(i), zeroTime, logger, addr, out)
+		go m.tcpConnectAsync(ctx, int64(i), zeroTime, logger, addr, out)
 		<-ticker.C
 	}
 }
