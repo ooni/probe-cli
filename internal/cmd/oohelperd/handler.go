@@ -23,6 +23,12 @@ type handler struct {
 	// BaseLogger is the MANDATORY logger to use.
 	BaseLogger model.Logger
 
+	// DNSCache is the MANDATORY cache for DNS.
+	DNSCache model.KeyValueStore
+
+	// HTTPCache is the MANDATORY cache for HTTP.
+	HTTPCache model.KeyValueStore
+
 	// Indexer is the MANDATORY atomic integer used to assign an index to requests.
 	Indexer *atomicx.Int64
 
@@ -40,6 +46,9 @@ type handler struct {
 
 	// NewTLSHandshaker is the MANDATORY factory for creating a new TLS handshaker.
 	NewTLSHandshaker func(model.Logger) model.TLSHandshaker
+
+	// TCPCache is the MANDATORY cache for TCP.
+	TCPCache model.KeyValueStore
 }
 
 var _ http.Handler = &handler{}

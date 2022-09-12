@@ -44,6 +44,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	if net.ParseIP(URL.Hostname()) == nil {
 		wg.Add(1)
 		go dnsDo(ctx, &dnsConfig{
+			Cache:       config.DNSCache,
 			Domain:      URL.Hostname(),
 			Logger:      logger,
 			NewResolver: config.NewResolver,
@@ -85,6 +86,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 		wg.Add(1)
 		go tcpDo(ctx, &tcpConfig{
 			Address:          endpoint.Addr,
+			Cache:            config.TCPCache,
 			EnableTLS:        endpoint.TLS,
 			Endpoint:         endpoint.Epnt,
 			Logger:           logger,
@@ -100,6 +102,7 @@ func measure(ctx context.Context, config *handler, creq *ctrlRequest) (*ctrlResp
 	httpch := make(chan ctrlHTTPResponse, 1)
 	wg.Add(1)
 	go httpDo(ctx, &httpConfig{
+		Cache:             config.HTTPCache,
 		Headers:           creq.HTTPRequestHeaders,
 		Logger:            logger,
 		MaxAcceptableBody: config.MaxAcceptableBody,

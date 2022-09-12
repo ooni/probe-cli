@@ -6,11 +6,13 @@ import (
 	"flag"
 	"net"
 	"net/http"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/apex/log"
 	"github.com/ooni/probe-cli/v3/internal/atomicx"
+	"github.com/ooni/probe-cli/v3/internal/fscache"
 	"github.com/ooni/probe-cli/v3/internal/model"
 	"github.com/ooni/probe-cli/v3/internal/netxlite"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
@@ -50,14 +52,36 @@ func main() {
 		true:  log.DebugLevel,
 		false: log.InfoLevel,
 	}
+	datadir := flag.String("datadir", "/var/lib/oohelperd", "Directory where to store data")
 	prometheus := flag.String("prometheus", "127.0.0.1:9091", "Prometheus endpoint")
 	debug := flag.Bool("debug", false, "Toggle debug mode")
+
 	flag.Parse()
 	log.SetLevel(logmap[*debug])
 	defer srvCancel()
+
+	dnscache := fscache.New(filepath.Join(*datadir, "cache", "dns"))
+	endpointcache := fscache.New(filepath.Join(*datadir, "cache", "endpoint"))
+	httpcache := fscache.New(filepath.Join(*datadir, "cache", "http"))
+	go func() {
+		ticker := time.NewTimer(15 * time.Minute)
+		for {
+			select {
+			case <-srvCtx.Done():
+				return
+			case <-ticker.C:
+				dnscache.Trim()
+				endpointcache.Trim()
+				httpcache.Trim()
+			}
+		}
+	}()
+
 	mux := http.NewServeMux()
 	mux.Handle("/", &handler{
 		BaseLogger:        log.Log,
+		DNSCache:          dnscache,
+		HTTPCache:         httpcache,
 		Indexer:           &atomicx.Int64{},
 		MaxAcceptableBody: maxAcceptableBody,
 		NewClient: func(logger model.Logger) model.HTTPClient {
@@ -88,18 +112,23 @@ func main() {
 		NewTLSHandshaker: func(logger model.Logger) model.TLSHandshaker {
 			return netxlite.NewTLSHandshakerStdlib(logger)
 		},
+		TCPCache: endpointcache,
 	})
+
 	srv := &http.Server{Addr: *endpoint, Handler: mux}
 	listener, err := net.Listen("tcp", *endpoint)
 	runtimex.PanicOnError(err, "net.Listen failed")
 	srvAddr <- listener.Addr().String()
 	srvWg.Add(1)
 	go srv.Serve(listener)
+
 	promMux := http.NewServeMux()
 	promMux.Handle("/metrics", promhttp.Handler())
 	promSrv := &http.Server{Addr: *prometheus, Handler: promMux}
 	go promSrv.ListenAndServe()
+
 	<-srvCtx.Done()
+
 	shutdown(srv)
 	shutdown(promSrv)
 	listener.Close()
