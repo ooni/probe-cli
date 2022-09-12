@@ -57,6 +57,7 @@ func TestAddAnnotations(t *testing.T) {
 }
 
 type makeMeasurementConfig struct {
+	Input               string
 	ProbeIP             string
 	ProbeASN            string
 	ProbeNetworkName    string
@@ -70,6 +71,7 @@ func makeMeasurement(config makeMeasurementConfig) *Measurement {
 	return &Measurement{
 		DataFormatVersion:    "0.3.0",
 		ID:                   "bdd20d7a-bba5-40dd-a111-9863d7908572",
+		Input:                MeasurementTarget(config.Input),
 		MeasurementStartTime: "2018-11-01 15:33:20",
 		ProbeIP:              config.ProbeIP,
 		ProbeASN:             config.ProbeASN,
@@ -97,6 +99,7 @@ func makeMeasurement(config makeMeasurementConfig) *Measurement {
 
 func TestScrubMeasurementWeAreScrubbing(t *testing.T) {
 	config := makeMeasurementConfig{
+		Input:               "130.192.91.211",
 		ProbeIP:             "130.192.91.211",
 		ProbeASN:            "AS137",
 		ProbeCC:             "IT",
@@ -106,8 +109,11 @@ func TestScrubMeasurementWeAreScrubbing(t *testing.T) {
 		ResolverASN:         "AS12345",
 	}
 	m := makeMeasurement(config)
-	if err := ScrubMeasurement(config.ProbeIP, &m); err != nil {
+	if err := ScrubMeasurement(&m, config.ProbeIP); err != nil {
 		t.Fatal(err)
+	}
+	if m.Input != Scrubbed {
+		t.Fatal("Input HAS NOT been scrubbed")
 	}
 	if m.ProbeASN != config.ProbeASN {
 		t.Fatal("ProbeASN has been scrubbed")
@@ -135,7 +141,42 @@ func TestScrubMeasurementWeAreScrubbing(t *testing.T) {
 		t.Fatal(err)
 	}
 	if bytes.Count(data, []byte(config.ProbeIP)) != 0 {
-		t.Fatalf("ProbeIP not fully redacted: %s", string(data))
+		t.Fatal("ProbeIP not fully redacted")
+	}
+	if _, good := m.TestKeys.(*fakeTestKeys); !good {
+		t.Fatal("the underlying type of the test keys changed")
+	}
+}
+
+func TestScrubMeasurementCannotUnmarshalTopLevelKeys(t *testing.T) {
+	saved := scrubJSONUnmarshalTopLevelKeys
+	expected := errors.New("mocked err")
+	scrubJSONUnmarshalTopLevelKeys = func(data []byte, v any) error {
+		return expected
+	}
+	defer func() {
+		scrubJSONUnmarshalTopLevelKeys = saved
+	}()
+	m := &Measurement{}
+	err := ScrubMeasurement(m, "10.0.0.1")
+	if !errors.Is(err, expected) {
+		t.Fatal("unexpected error", err)
+	}
+}
+
+func TestScrubMeasurementCannotUnmarshalTestKeys(t *testing.T) {
+	saved := scrubJSONUnmarshalTestKeys
+	expected := errors.New("mocked err")
+	scrubJSONUnmarshalTestKeys = func(data []byte, v any) error {
+		return expected
+	}
+	defer func() {
+		scrubJSONUnmarshalTestKeys = saved
+	}()
+	m := &Measurement{}
+	err := ScrubMeasurement(m, "10.0.0.1")
+	if !errors.Is(err, expected) {
+		t.Fatal("unexpected error", err)
 	}
 }
 
@@ -144,7 +185,7 @@ func TestScrubInvalidIP(t *testing.T) {
 		ProbeASN: "AS1234",
 		ProbeCC:  "IT",
 	}
-	err := ScrubMeasurement("", &m) // invalid IP
+	err := ScrubMeasurement(m, "") // invalid IP
 	if !errors.Is(err, ErrInvalidProbeIP) {
 		t.Fatal("not the error we expected")
 	}

@@ -173,16 +173,46 @@ var ErrInvalidProbeIP = errors.New("model: invalid probe IP")
 // Scrubbed is the string that replaces IP addresses.
 const Scrubbed = `[scrubbed]`
 
-// ScrubMeasurement scrubs a measurement by rewriting its fields in place
-func ScrubMeasurement(currentIP string, m **Measurement) error {
+// ScrubMeasurement removes [currentIP] from [m] by rewriting
+// it in place while preserving the underlying types
+func ScrubMeasurement(m *Measurement, currentIP string) error {
 	if net.ParseIP(currentIP) == nil {
 		return ErrInvalidProbeIP
 	}
-	runtimex.Assert(m != nil, "expected non-nil m pointer")
-	(*m).ProbeIP = DefaultProbeIP // we want `127.0.0.1` rather than `[scrubbed]` here
-	data, err := json.Marshal(*m)
-	runtimex.PanicOnError(err, "json.Marshal failed")
+	m.ProbeIP = DefaultProbeIP
+	m.AddAnnotation("_probe_engine_sanitize_test_keys", "true")
+	if err := scrubTestKeys(m, currentIP); err != nil {
+		return err
+	}
+	testKeys := m.TestKeys
+	m.TestKeys = nil
+	if err := scrubTopLevelKeys(m, currentIP); err != nil {
+		return err
+	}
+	m.TestKeys = testKeys
+	return nil
+}
+
+// scrubJSONUnmarshalTopLevelKeys allows to mock json.Unmarshal
+var scrubJSONUnmarshalTopLevelKeys = json.Unmarshal
+
+// scrubTopLevelKeys removes [currentIP] from the top-level keys
+// of [m] by rewriting these keys in place.
+func scrubTopLevelKeys(m *Measurement, currentIP string) error {
+	data, err := json.Marshal(m)
+	runtimex.PanicOnError(err, "json.Marshal(m.TestKeys) failed") // m must serialize
 	data = bytes.ReplaceAll(data, []byte(currentIP), []byte(Scrubbed))
-	*m = nil
-	return json.Unmarshal(data, m)
+	return scrubJSONUnmarshalTopLevelKeys(data, &m)
+}
+
+// scrubJSONUnmarshalTestKeys allows to mock json.Unmarshal
+var scrubJSONUnmarshalTestKeys = json.Unmarshal
+
+// scrubTestKeys removes [currentIP] from the TestKeys by rewriting
+// them in place while preserving their original type
+func scrubTestKeys(m *Measurement, currentIP string) error {
+	data, err := json.Marshal(m.TestKeys)
+	runtimex.PanicOnError(err, "json.Marshal(m.TestKeys) failed") // m.TestKeys must serialize
+	data = bytes.ReplaceAll(data, []byte(currentIP), []byte(Scrubbed))
+	return scrubJSONUnmarshalTestKeys(data, &m.TestKeys)
 }
