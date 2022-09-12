@@ -164,7 +164,7 @@ func (c *Control) maybeStartExtraMeasurements(ctx context.Context, thAddrs []str
 		thOnlyAddrs = append(thOnlyAddrs, addr)
 	}
 
-	c.Logger.Infof("measuring additional addrs from TH: %+v", thOnlyAddrs)
+	c.Logger.Infof("additional addrs discovered by the TH: %+v", thOnlyAddrs)
 
 	var thOnly []DNSEntry
 	for _, addr := range thOnlyAddrs {
