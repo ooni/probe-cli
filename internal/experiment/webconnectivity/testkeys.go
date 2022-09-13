@@ -72,7 +72,7 @@ type TestKeys struct {
 	// ControlFailure contains the failure of the control experiment.
 	ControlFailure *string `json:"control_failure"`
 
-	// DNSFlags cdescribes specific DNS anomalies we observed.
+	// DNSFlags describes specific DNS anomalies we observed.
 	DNSFlags int64 `json:"x_dns_flags"`
 
 	// DNSExperimentFailure indicates whether there was a failure in any
