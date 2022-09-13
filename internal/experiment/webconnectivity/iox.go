@@ -44,7 +44,6 @@ func StreamAllContext(ctx context.Context, reader io.Reader) ([]byte, error) {
 				case <-ctx.Done():
 					return
 				}
-				// fallthrough to check error
 			}
 			if err != nil {
 				select {
@@ -57,7 +56,7 @@ func StreamAllContext(ctx context.Context, reader io.Reader) ([]byte, error) {
 		}
 	}()
 
-	resultbuf := []byte{}
+	resultbuf := make([]byte, 0, 1<<17)
 	for {
 		select {
 		case data := <-datach:
