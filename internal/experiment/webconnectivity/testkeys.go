@@ -72,7 +72,7 @@ type TestKeys struct {
 	// ControlFailure contains the failure of the control experiment.
 	ControlFailure *string `json:"control_failure"`
 
-	// DNSFlags contains DNS analysis flags.
+	// DNSFlags describes specific DNS anomalies we observed.
 	DNSFlags int64 `json:"x_dns_flags"`
 
 	// DNSExperimentFailure indicates whether there was a failure in any
@@ -87,13 +87,11 @@ type TestKeys struct {
 	// the final HTTP request that we recorded.
 	HTTPExperimentFailure *string `json:"http_experiment_failure"`
 
-	// BlockingFlags contains blocking flags.
+	// BlockingFlags explains why we think that the website is blocked.
 	BlockingFlags int64 `json:"x_blocking_flags"`
 
-	// NullNullFlags explains why we determined that a measurement is not
-	// failed by detecting specific conditions that would have otherwise
-	// caused .Accessible = nil and .Blocking = nil
-	NullNullFlags int64 `json:"x_null_null_flags"`
+	// WebsiteDownFlags explains why we determined that the website is down.
+	WebsiteDownFlags int64 `json:"x_website_down_flags"`
 
 	// BodyLength match tells us whether the body length matches.
 	BodyLengthMatch *bool `json:"body_length_match"`
@@ -339,7 +337,7 @@ func NewTestKeys() *TestKeys {
 		DNSConsistency:        "",
 		HTTPExperimentFailure: nil,
 		BlockingFlags:         0,
-		NullNullFlags:         0,
+		WebsiteDownFlags:      0,
 		BodyLengthMatch:       nil,
 		HeadersMatch:          nil,
 		StatusCodeMatch:       nil,
