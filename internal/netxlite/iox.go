@@ -10,7 +10,7 @@ import (
 	"io"
 )
 
-// TODO(bassosimone): integrate StreamAllContext from
+// TODO(bassosimone): consider integrating StreamAllContext from
 // internal/experiment/webconnectivity/iox.go
 
 // ReadAllContext is like io.ReadAll but reads r in a
