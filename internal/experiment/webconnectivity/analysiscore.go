@@ -143,7 +143,7 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 		)
 
 	default:
-		if tk.analysisNullNullDetectNoAddrs(logger) {
+		if tk.analysisWebsiteDownDetectNoAddrs(logger) {
 			tk.Blocking = false
 			tk.Accessible = false
 			logger.Infof(
@@ -152,7 +152,7 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 			)
 			return
 		}
-		if tk.analysisFlagNullNullDetectAllConnectFailed(logger) {
+		if tk.analysisWebsiteDownDetectAllConnectsFailed(logger) {
 			tk.Blocking = false
 			tk.Accessible = false
 			logger.Infof(
@@ -171,22 +171,22 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 }
 
 const (
-	// analysisFlagNullNullNoAddrs indicates neither the probe nor the TH were
+	// analysisFlagWebsiteDownNoAddrs indicates neither the probe nor the TH were
 	// able to get any IP addresses from any resolver.
-	analysisFlagNullNullNoAddrs = 1 << iota
+	analysisFlagWebsiteDownNoAddrs = 1 << iota
 
-	// analysisFlagNullNullAllConnectFailed indicates that all the connect
+	// analysisFlagWebsiteDownAllConnectsFailed indicates that all the connect
 	// attempts failed both in the probe and in the test helper.
-	analysisFlagNullNullAllConnectFailed
+	analysisFlagWebsiteDownAllConnectsFailed
 )
 
-// analysisNullMullDetectAllConnectFailed attempts to detect whether we are in
+// analysisWebsiteDownDetectAllConnectsFailed attempts to detect whether we are in
 // the .Blocking = nil, .Accessible = nil case because all the TCP connect
 // attempts by either the probe or the TH have failed.
 //
 // See https://explorer.ooni.org/measurement/20220911T105037Z_webconnectivity_IT_30722_n1_ruzuQ219SmIO9SrT?input=https://doh.centraleu.pi-dns.com/dns-query?dns=q80BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQAB
 // for an example measurement with this behavior.
-func (tk *TestKeys) analysisFlagNullNullDetectAllConnectFailed(logger model.Logger) bool {
+func (tk *TestKeys) analysisWebsiteDownDetectAllConnectsFailed(logger model.Logger) bool {
 	if tk.Control == nil {
 		// we need control data to say we're in this case
 		return false
@@ -212,7 +212,7 @@ func (tk *TestKeys) analysisFlagNullNullDetectAllConnectFailed(logger model.Logg
 	// only if we have had some addresses to connect
 	if len(tk.TCPConnect) > 0 && len(tk.Control.TCPConnect) > 0 {
 		logger.Info("All TCP connect attempts failed for both probe and TH")
-		tk.NullNullFlags |= analysisFlagNullNullAllConnectFailed
+		tk.WebsiteDownFlags |= analysisFlagWebsiteDownAllConnectsFailed
 		return true
 	}
 
@@ -220,7 +220,7 @@ func (tk *TestKeys) analysisFlagNullNullDetectAllConnectFailed(logger model.Logg
 	return false
 }
 
-// analysisNullNullDetectNoAddrs attempts to see whether we
+// analysisWebsiteDownDetectNoAddrs attempts to see whether we
 // ended up into the .Blocking = nil, .Accessible = nil case because
 // the domain is expired and all queries returned no addresses.
 //
@@ -234,7 +234,7 @@ func (tk *TestKeys) analysisFlagNullNullDetectAllConnectFailed(logger model.Logg
 //
 // See https://github.com/ooni/probe/issues/2029 for more information
 // on Android's getaddrinfo behavior.
-func (tk *TestKeys) analysisNullNullDetectNoAddrs(logger model.Logger) bool {
+func (tk *TestKeys) analysisWebsiteDownDetectNoAddrs(logger model.Logger) bool {
 	if tk.Control == nil {
 		// we need control data to say we're in this case
 		return false
@@ -262,6 +262,6 @@ func (tk *TestKeys) analysisNullNullDetectNoAddrs(logger model.Logger) bool {
 		return false
 	}
 	logger.Infof("Neither the probe nor the TH resolved any addresses")
-	tk.NullNullFlags |= analysisFlagNullNullNoAddrs
+	tk.WebsiteDownFlags |= analysisFlagWebsiteDownNoAddrs
 	return true
 }
