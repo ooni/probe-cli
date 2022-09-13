@@ -147,7 +147,7 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 			tk.Blocking = false
 			tk.Accessible = false
 			logger.Infof(
-				"NO_AVAILABLE_ADDRS: flags=%d, accessible=%+v, blocking=%+v",
+				"WEBSITE_DOWN_DNS: flags=%d, accessible=%+v, blocking=%+v",
 				tk.BlockingFlags, tk.Accessible, tk.Blocking,
 			)
 			return
@@ -156,7 +156,7 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 			tk.Blocking = false
 			tk.Accessible = false
 			logger.Infof(
-				"ALL_CONNECTS_FAILED: flags=%d, accessible=%+v, blocking=%+v",
+				"WEBSITE_DOWN_TCP: flags=%d, accessible=%+v, blocking=%+v",
 				tk.BlockingFlags, tk.Accessible, tk.Blocking,
 			)
 			return
@@ -186,6 +186,8 @@ const (
 //
 // See https://explorer.ooni.org/measurement/20220911T105037Z_webconnectivity_IT_30722_n1_ruzuQ219SmIO9SrT?input=https://doh.centraleu.pi-dns.com/dns-query?dns=q80BAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQAB
 // for an example measurement with this behavior.
+//
+// See https://github.com/ooni/probe/issues/2299 for the reference issue.
 func (tk *TestKeys) analysisWebsiteDownDetectAllConnectsFailed(logger model.Logger) bool {
 	if tk.Control == nil {
 		// we need control data to say we're in this case
@@ -211,7 +213,7 @@ func (tk *TestKeys) analysisWebsiteDownDetectAllConnectsFailed(logger model.Logg
 
 	// only if we have had some addresses to connect
 	if len(tk.TCPConnect) > 0 && len(tk.Control.TCPConnect) > 0 {
-		logger.Info("All TCP connect attempts failed for both probe and TH")
+		logger.Info("website likely down: all TCP connect attempts failed for both probe and TH")
 		tk.WebsiteDownFlags |= analysisFlagWebsiteDownAllConnectsFailed
 		return true
 	}
@@ -261,7 +263,7 @@ func (tk *TestKeys) analysisWebsiteDownDetectNoAddrs(logger model.Logger) bool {
 		// when the TH used addresses, we're not in the NoAddresses case
 		return false
 	}
-	logger.Infof("Neither the probe nor the TH resolved any addresses")
+	logger.Infof("website likely down: all DNS lookups failed for both probe and TH")
 	tk.WebsiteDownFlags |= analysisFlagWebsiteDownNoAddrs
 	return true
 }
