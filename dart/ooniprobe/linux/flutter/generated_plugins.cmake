@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   probe_shared
+  tray_manager
   url_launcher_linux
 )
 
