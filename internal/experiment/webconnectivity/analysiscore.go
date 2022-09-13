@@ -230,7 +230,7 @@ func (tk *TestKeys) analysisWebsiteDownDetectTLSMisconfigured(logger model.Logge
 		}
 	}
 
-	// only if we have had some TLS handshakes to connect
+	// only if we have had some TLS handshakes for both probe and TH
 	if len(tk.TLSHandshakes) > 0 && len(tk.Control.TLSHandshake) > 0 {
 		logger.Info("website likely down: all TLS handshake attempts failed for both probe and TH")
 		tk.WebsiteDownFlags |= analysisFlagWebsiteDownTLSMisconfigured
