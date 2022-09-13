@@ -161,6 +161,15 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 			)
 			return
 		}
+		if tk.analysisWebsiteDownDetectTLSMisconfigured(logger) {
+			tk.Blocking = false
+			tk.Accessible = false
+			logger.Infof(
+				"WEBSITE_DOWN_TLS: flags=%d, accessible=%+v, blocking=%+v",
+				tk.BlockingFlags, tk.Accessible, tk.Blocking,
+			)
+			return
+		}
 		tk.Blocking = nil
 		tk.Accessible = nil
 		logger.Warnf(
@@ -178,7 +187,59 @@ const (
 	// analysisFlagWebsiteDownAllConnectsFailed indicates that all the connect
 	// attempts failed both in the probe and in the test helper.
 	analysisFlagWebsiteDownAllConnectsFailed
+
+	// analysisFlagWebsiteDownTLSMisconfigured indicates that all the TLS handshake
+	// attempts failed both in the probe and in the test helper.
+	analysisFlagWebsiteDownTLSMisconfigured
 )
+
+// analysisWebsiteDownDetectTLSMisconfigured runs when .Blocking = nil and
+// .Accessible = nil to check whether by chance we had TLS issues both on the
+// probe side and on the TH side. This problem of detecting misconfiguration
+// of the server's TLS stack is discussed at https://github.com/ooni/probe/issues/2300.
+func (tk *TestKeys) analysisWebsiteDownDetectTLSMisconfigured(logger model.Logger) bool {
+	if tk.Control == nil || tk.Control.TLSHandshake == nil {
+		// we need TLS control data to say we are in this case
+		return false
+	}
+
+	for _, entry := range tk.TLSHandshakes {
+		if entry.Failure == nil {
+			// we need all attempts to fail to flag this state
+			return false
+		}
+		thEntry, found := tk.Control.TLSHandshake[entry.Address]
+		if !found {
+			// we need to have seen exactly the same attempts
+			return false
+		}
+		if thEntry.Failure == nil {
+			// we need all TH attempts to fail
+			return false
+		}
+		if *entry.Failure != *thEntry.Failure {
+			// we need to see the same failure to be sure, which it's
+			// possible to do for TLS because we have the same definition
+			// of failure rather than being constrained by the legacy
+			// implementation of the test helper and Twisted names
+			//
+			// TODO(bassosimone): this is the obvious algorithm but maybe
+			// it's a bit too strict and there is a more lax version of
+			// the same algorithm that it's still acceptable?
+			return false
+		}
+	}
+
+	// only if we have had some TLS handshakes to connect
+	if len(tk.TLSHandshakes) > 0 && len(tk.Control.TLSHandshake) > 0 {
+		logger.Info("website likely down: all TLS handshake attempts failed for both probe and TH")
+		tk.WebsiteDownFlags |= analysisFlagWebsiteDownTLSMisconfigured
+		return true
+	}
+
+	// safety net in case we've got wrong input
+	return false
+}
 
 // analysisWebsiteDownDetectAllConnectsFailed attempts to detect whether we are in
 // the .Blocking = nil, .Accessible = nil case because all the TCP connect
@@ -202,7 +263,7 @@ func (tk *TestKeys) analysisWebsiteDownDetectAllConnectsFailed(logger model.Logg
 		epnt := net.JoinHostPort(entry.IP, fmt.Sprintf("%d", entry.Port))
 		thEntry, found := tk.Control.TCPConnect[epnt]
 		if !found {
-			// we need exactly the same attempts to have failed
+			// we need to have seen exactly the same attempts
 			return false
 		}
 		if thEntry.Failure == nil {
