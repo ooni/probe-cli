@@ -233,7 +233,7 @@ func (t *CleartextFlow) httpTransaction(ctx context.Context, network, address, a
 			t.CookieJar.SetCookies(req.URL, cookies)
 		}
 		reader := io.LimitReader(resp.Body, maxbody)
-		body, err = netxlite.ReadAllContext(ctx, reader)
+		body, err = StreamAllContext(ctx, reader)
 	}
 	finished := trace.TimeSince(trace.ZeroTime)
 	t.TestKeys.AppendNetworkEvents(measurexlite.NewAnnotationArchivalNetworkEvent(
