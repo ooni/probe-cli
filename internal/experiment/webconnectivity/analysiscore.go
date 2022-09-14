@@ -234,7 +234,7 @@ const (
 	// seen no error with local DNS resolutions but, at the same time, the
 	// control failed with NXDOMAIN. When this happens, we probably have
 	// DNS interception locally, so all cleartext queries return the same
-	// bogus answers based on rule applied on a now-expired domain.
+	// bogus answers based on a rule applied on a now-expired domain.
 	analysisFlagNullNullNXDOMAINWithCensorship
 )
 
@@ -246,7 +246,7 @@ const (
 // See https://github.com/ooni/probe/issues/2308.
 func (tk *TestKeys) analysisNullNullDetectTHDNSNXDOMAIN(logger model.Logger) bool {
 	if tk.Control == nil {
-		// we need the control info for this algorithm
+		// we need the control info to continue
 		return false
 	}
 
