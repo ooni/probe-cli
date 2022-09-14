@@ -1,5 +1,4 @@
 // Package portfiltering implements the portfiltering experiment
 //
-// TODO(DecFox): Update the portfiltering spec here
-// Spec:
+// Spec: https://github.com/ooni/spec/blob/master/nettests/ts-038-port-filtering.md.
 package portfiltering
