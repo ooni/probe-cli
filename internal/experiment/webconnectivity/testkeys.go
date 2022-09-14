@@ -90,8 +90,9 @@ type TestKeys struct {
 	// BlockingFlags explains why we think that the website is blocked.
 	BlockingFlags int64 `json:"x_blocking_flags"`
 
-	// WebsiteDownFlags explains why we determined that the website is down.
-	WebsiteDownFlags int64 `json:"x_website_down_flags"`
+	// NullNullFlags describes what the algorithm to avoid emitting
+	// blocking = null, accessible = null measurements did
+	NullNullFlags int64 `json:"x_null_null_flags"`
 
 	// BodyLength match tells us whether the body length matches.
 	BodyLengthMatch *bool `json:"body_length_match"`
@@ -337,7 +338,7 @@ func NewTestKeys() *TestKeys {
 		DNSConsistency:        "",
 		HTTPExperimentFailure: nil,
 		BlockingFlags:         0,
-		WebsiteDownFlags:      0,
+		NullNullFlags:         0,
 		BodyLengthMatch:       nil,
 		HeadersMatch:          nil,
 		StatusCodeMatch:       nil,
