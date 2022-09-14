@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
+	"github.com/ooni/probe-cli/v3/internal/netxlite"
 )
 
 //
@@ -150,7 +151,18 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 		// bunch of cases where we can still explain what happened by applying specific
 		// algorithms to detect edge cases.
 		//
-		// The relative order of these algorithsm matters.
+		// The relative order of these algorithsm matters: swapping them without
+		// careful consideration may produce unexpected results.
+
+		if tk.analysisNullNullDetectTHDNSNXDOMAIN(logger) {
+			tk.Blocking = "dns"
+			tk.Accessible = false
+			logger.Warnf(
+				"RESIDUAL_DNS_BLOCKING: flags=%d, accessible=%+v, blocking=%+v",
+				tk.BlockingFlags, tk.Accessible, tk.Blocking,
+			)
+			return
+		}
 
 		if tk.analysisNullNullDetectNoAddrs(logger) {
 			tk.Blocking = false
@@ -217,7 +229,67 @@ const (
 	// analysisFlagNullNullSuccessfulHTTPS indicates that we had no TH data
 	// but all the HTTP requests used always HTTPS and never failed.
 	analysisFlagNullNullSuccessfulHTTPS
+
+	// analysisFlagNullNullNXDOMAINWithCensorship indicates that we have
+	// seen no error with local DNS resolutions but, at the same time, the
+	// control failed with NXDOMAIN. When this happens, we probably have
+	// DNS interception locally, so all cleartext queries return the same
+	// bogus answers based on a rule applied on a now-expired domain.
+	analysisFlagNullNullNXDOMAINWithCensorship
 )
+
+// analysisNullNullDetectTHDNSNXDOMAIN runs when .Blocking = nil and
+// .Accessible = nil to flag cases in which the probe resolved addresses
+// but the TH thinks the address is actually NXDOMAIN. When this
+// happens, we're going to give priority to the TH's DoH observation.
+//
+// See https://github.com/ooni/probe/issues/2308.
+func (tk *TestKeys) analysisNullNullDetectTHDNSNXDOMAIN(logger model.Logger) bool {
+	if tk.Control == nil {
+		// we need the control info to continue
+		return false
+	}
+
+	// we need some cleartext successes
+	var cleartextSuccesses int
+	for _, query := range tk.Queries {
+		if query.Engine == "doh" {
+			// we skip DoH entries because they are encrypted and
+			// cannot be manipulated by censors
+			continue
+		}
+		if query.Failure != nil {
+			// we should stop the algorithm in case we've got any
+			// hard failure, but `dns_no_answer` is acceptable because
+			// actually it might be there's only A censorship and the
+			// AAAA query instead returns `dns_no_answer`.
+			//
+			// See https://explorer.ooni.org/measurement/20220914T073558Z_webconnectivity_IT_30722_n1_wroXRsBGYx0x9h0q?input=http%3A%2F%2Fitsat.info
+			// for a case where this was happening and fooled us
+			// causing us to conclude that the website was just down.
+			if *query.Failure == netxlite.FailureDNSNoAnswer {
+				continue
+			}
+			return false
+		}
+		cleartextSuccesses++
+	}
+	if cleartextSuccesses <= 0 {
+		return false
+	}
+
+	// if the TH failed with its own string representing the NXDOMAIN
+	// error, then we've detected our corner case
+	failure := tk.Control.DNS.Failure
+	if failure != nil && *failure == model.THDNSNameError {
+		logger.Info("DNS censorship: local DNS success with remote NXDOMAIN")
+		tk.NullNullFlags |= analysisFlagNullNullNXDOMAINWithCensorship
+		return true
+	}
+
+	// otherwise it's something else
+	return false
+}
 
 // analysisNullNullDetectSuccessfulHTTPS runs when .Blocking = nil and
 // .Accessible = nil to flag successul HTTPS measurements chains that
