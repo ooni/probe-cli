@@ -3,6 +3,7 @@ package webconnectivity
 import (
 	"fmt"
 	"net"
+	"net/url"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
 )
@@ -138,12 +139,20 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 		tk.Blocking = false
 		tk.Accessible = true
 		logger.Infof(
-			"SUCCESS: flags=%d accessible=%+v, blocking=%+v",
+			"ACCESSIBLE: flags=%d accessible=%+v, blocking=%+v",
 			tk.BlockingFlags, tk.Accessible, tk.Blocking,
 		)
 
 	default:
-		if tk.analysisWebsiteDownDetectNoAddrs(logger) {
+		// NullNull remediation
+		//
+		// If we arrive here, the measurement has failed. However, there are a
+		// bunch of cases where we can still explain what happen by applying specific
+		// algorithms to detect edge cases.
+		//
+		// The relative order of these algorithsm matters.
+
+		if tk.analysisNullNullDetectNoAddrs(logger) {
 			tk.Blocking = false
 			tk.Accessible = false
 			logger.Infof(
@@ -152,7 +161,8 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 			)
 			return
 		}
-		if tk.analysisWebsiteDownDetectAllConnectsFailed(logger) {
+
+		if tk.analysisNullNullDetectAllConnectsFailed(logger) {
 			tk.Blocking = false
 			tk.Accessible = false
 			logger.Infof(
@@ -161,7 +171,8 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 			)
 			return
 		}
-		if tk.analysisWebsiteDownDetectTLSMisconfigured(logger) {
+
+		if tk.analysisNullNullDetectTLSMisconfigured(logger) {
 			tk.Blocking = false
 			tk.Accessible = false
 			logger.Infof(
@@ -170,6 +181,17 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 			)
 			return
 		}
+
+		if tk.analysisNullNullDetectSuccessfulHTTPS(logger) {
+			tk.Blocking = false
+			tk.Accessible = true
+			logger.Infof(
+				"ACCESSIBLE_HTTPS: flags=%d, accessible=%+v, blocking=%+v",
+				tk.BlockingFlags, tk.Accessible, tk.Blocking,
+			)
+			return
+		}
+
 		tk.Blocking = nil
 		tk.Accessible = nil
 		logger.Warnf(
@@ -180,24 +202,83 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 }
 
 const (
-	// analysisFlagWebsiteDownNoAddrs indicates neither the probe nor the TH were
+	// analysisFlagNullNullNoAddrs indicates neither the probe nor the TH were
 	// able to get any IP addresses from any resolver.
-	analysisFlagWebsiteDownNoAddrs = 1 << iota
+	analysisFlagNullNullNoAddrs = 1 << iota
 
-	// analysisFlagWebsiteDownAllConnectsFailed indicates that all the connect
+	// analysisFlagNullNullAllConnectsFailed indicates that all the connect
 	// attempts failed both in the probe and in the test helper.
-	analysisFlagWebsiteDownAllConnectsFailed
+	analysisFlagNullNullAllConnectsFailed
 
-	// analysisFlagWebsiteDownTLSMisconfigured indicates that all the TLS handshake
+	// analysisFlagNullNullTLSMisconfigured indicates that all the TLS handshake
 	// attempts failed both in the probe and in the test helper.
-	analysisFlagWebsiteDownTLSMisconfigured
+	analysisFlagNullNullTLSMisconfigured
+
+	// analysisFlagNullNullSuccessfulHTTPS indicates that we had no TH data
+	// but all the HTTP requests used always HTTPS and never failed.
+	analysisFlagNullNullSuccessfulHTTPS
 )
 
-// analysisWebsiteDownDetectTLSMisconfigured runs when .Blocking = nil and
+// analysisNullNullDetectSuccessfulHTTPS runs when .Blocking = nil and
+// .Accessible = nil to flag successul HTTPS measurements chains that
+// occurred regardless of whatever else could have gone wrong.
+//
+// We need all requests to be HTTPS because an HTTP request in the
+// chain breaks the ~reasonable assumption that our custom CA bundle
+// is enough to protect against MITM. Of course, when we use this
+// algorithm, we're not super well position to flag server-side blocking.
+//
+// Version 0.4 of the probe implemented a similar algorithm, which
+// however run before other checks. Version, 0.5 on the contrary, runs
+// this algorithm if any other heuristics failed.
+//
+// See https://github.com/ooni/probe/issues/2307 for more info.
+func (tk *TestKeys) analysisNullNullDetectSuccessfulHTTPS(logger model.Logger) bool {
+
+	// the chain is sorted from most recent to oldest but it does
+	// not matter much since we need to walk all of it.
+	//
+	// CAVEAT: this code assumes we have a single request chain
+	// inside the .Requests field, which seems fine because it's
+	// what Web Connectivity should be doing.
+	for _, req := range tk.Requests {
+		URL, err := url.Parse(req.Request.URL)
+		if err != nil {
+			// this looks like a bug
+			return false
+		}
+		if URL.Scheme != "https" {
+			// the whole chain must be HTTPS
+			return false
+		}
+		if req.Failure != nil {
+			// they must all succeed
+			return false
+		}
+		switch req.Response.Code {
+		case 200, 301, 302, 307, 308:
+		default:
+			// the response must be successful or redirect
+			return false
+		}
+	}
+
+	// only if we have at least one request
+	if len(tk.Requests) > 0 {
+		logger.Info("website likely accessible: seen successful chain of HTTPS transactions")
+		tk.NullNullFlags |= analysisFlagNullNullSuccessfulHTTPS
+		return true
+	}
+
+	// safety net otherwise
+	return false
+}
+
+// analysisNullNullDetectTLSMisconfigured runs when .Blocking = nil and
 // .Accessible = nil to check whether by chance we had TLS issues both on the
 // probe side and on the TH side. This problem of detecting misconfiguration
 // of the server's TLS stack is discussed at https://github.com/ooni/probe/issues/2300.
-func (tk *TestKeys) analysisWebsiteDownDetectTLSMisconfigured(logger model.Logger) bool {
+func (tk *TestKeys) analysisNullNullDetectTLSMisconfigured(logger model.Logger) bool {
 	if tk.Control == nil || tk.Control.TLSHandshake == nil {
 		// we need TLS control data to say we are in this case
 		return false
@@ -233,7 +314,7 @@ func (tk *TestKeys) analysisWebsiteDownDetectTLSMisconfigured(logger model.Logge
 	// only if we have had some TLS handshakes for both probe and TH
 	if len(tk.TLSHandshakes) > 0 && len(tk.Control.TLSHandshake) > 0 {
 		logger.Info("website likely down: all TLS handshake attempts failed for both probe and TH")
-		tk.WebsiteDownFlags |= analysisFlagWebsiteDownTLSMisconfigured
+		tk.NullNullFlags |= analysisFlagNullNullTLSMisconfigured
 		return true
 	}
 
@@ -241,7 +322,7 @@ func (tk *TestKeys) analysisWebsiteDownDetectTLSMisconfigured(logger model.Logge
 	return false
 }
 
-// analysisWebsiteDownDetectAllConnectsFailed attempts to detect whether we are in
+// analysisNullNullDetectAllConnectsFailed attempts to detect whether we are in
 // the .Blocking = nil, .Accessible = nil case because all the TCP connect
 // attempts by either the probe or the TH have failed.
 //
@@ -249,7 +330,7 @@ func (tk *TestKeys) analysisWebsiteDownDetectTLSMisconfigured(logger model.Logge
 // for an example measurement with this behavior.
 //
 // See https://github.com/ooni/probe/issues/2299 for the reference issue.
-func (tk *TestKeys) analysisWebsiteDownDetectAllConnectsFailed(logger model.Logger) bool {
+func (tk *TestKeys) analysisNullNullDetectAllConnectsFailed(logger model.Logger) bool {
 	if tk.Control == nil {
 		// we need control data to say we're in this case
 		return false
@@ -275,7 +356,7 @@ func (tk *TestKeys) analysisWebsiteDownDetectAllConnectsFailed(logger model.Logg
 	// only if we have had some addresses to connect
 	if len(tk.TCPConnect) > 0 && len(tk.Control.TCPConnect) > 0 {
 		logger.Info("website likely down: all TCP connect attempts failed for both probe and TH")
-		tk.WebsiteDownFlags |= analysisFlagWebsiteDownAllConnectsFailed
+		tk.NullNullFlags |= analysisFlagNullNullAllConnectsFailed
 		return true
 	}
 
@@ -283,7 +364,7 @@ func (tk *TestKeys) analysisWebsiteDownDetectAllConnectsFailed(logger model.Logg
 	return false
 }
 
-// analysisWebsiteDownDetectNoAddrs attempts to see whether we
+// analysisNullNullDetectNoAddrs attempts to see whether we
 // ended up into the .Blocking = nil, .Accessible = nil case because
 // the domain is expired and all queries returned no addresses.
 //
@@ -297,7 +378,7 @@ func (tk *TestKeys) analysisWebsiteDownDetectAllConnectsFailed(logger model.Logg
 //
 // See https://github.com/ooni/probe/issues/2029 for more information
 // on Android's getaddrinfo behavior.
-func (tk *TestKeys) analysisWebsiteDownDetectNoAddrs(logger model.Logger) bool {
+func (tk *TestKeys) analysisNullNullDetectNoAddrs(logger model.Logger) bool {
 	if tk.Control == nil {
 		// we need control data to say we're in this case
 		return false
@@ -325,6 +406,6 @@ func (tk *TestKeys) analysisWebsiteDownDetectNoAddrs(logger model.Logger) bool {
 		return false
 	}
 	logger.Infof("website likely down: all DNS lookups failed for both probe and TH")
-	tk.WebsiteDownFlags |= analysisFlagWebsiteDownNoAddrs
+	tk.NullNullFlags |= analysisFlagNullNullNoAddrs
 	return true
 }
