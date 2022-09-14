@@ -33,7 +33,7 @@ func (m *Measurer) ExperimentVersion() string {
 }
 
 var (
-	// errInputIsNotAnURL indicates that input is not an URL
+	// errInvalidTestHelper indicates that the given test helper is not an URL
 	errInvalidTestHelper = errors.New("testhelper is not an URL")
 )
 
