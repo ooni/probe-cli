@@ -147,7 +147,7 @@ func (tk *TestKeys) analysisToplevel(logger model.Logger) {
 		// NullNull remediation
 		//
 		// If we arrive here, the measurement has failed. However, there are a
-		// bunch of cases where we can still explain what happen by applying specific
+		// bunch of cases where we can still explain what happened by applying specific
 		// algorithms to detect edge cases.
 		//
 		// The relative order of these algorithsm matters.
@@ -226,10 +226,10 @@ const (
 // We need all requests to be HTTPS because an HTTP request in the
 // chain breaks the ~reasonable assumption that our custom CA bundle
 // is enough to protect against MITM. Of course, when we use this
-// algorithm, we're not super well position to flag server-side blocking.
+// algorithm, we're not well positioned to flag server-side blocking.
 //
 // Version 0.4 of the probe implemented a similar algorithm, which
-// however run before other checks. Version, 0.5 on the contrary, runs
+// however ran before other checks. Version, 0.5 on the contrary, runs
 // this algorithm if any other heuristics failed.
 //
 // See https://github.com/ooni/probe/issues/2307 for more info.
