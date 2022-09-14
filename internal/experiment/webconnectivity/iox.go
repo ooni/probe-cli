@@ -19,7 +19,7 @@ import (
 // as [ctx] is done or when [reader] is closed, if applicable.
 //
 // This function transforms an errors.Is(err, io.EOF) to a nil error
-// such as the standard library's io.ReadAll does.
+// such as the standard library's ReadAll does.
 //
 // This function might return a non-zero-length buffer along with
 // an non-nil error in the case in which we could only read a portion
