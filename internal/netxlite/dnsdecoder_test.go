@@ -12,13 +12,21 @@ import (
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
+func dnsDecoderErrorIsWrapped(err error) bool {
+	var errwrapper *ErrWrapper
+	return errors.As(err, &errwrapper)
+}
+
 func TestDNSDecoderMiekg(t *testing.T) {
 	t.Run("DecodeResponse", func(t *testing.T) {
 		t.Run("UnpackError", func(t *testing.T) {
 			d := &DNSDecoderMiekg{}
 			resp, err := d.DecodeResponse(nil, &mocks.DNSQuery{})
-			if err == nil || err.Error() != "dns: overflow unpacking uint16" {
+			if err == nil || err.Error() != "unknown_failure: dns: overflow unpacking uint16" {
 				t.Fatal("unexpected error", err)
+			}
+			if !dnsDecoderErrorIsWrapped(err) {
+				t.Fatal("unwrapped error", err)
 			}
 			if resp != nil {
 				t.Fatal("expected nil resp here")
@@ -32,6 +40,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 			resp, err := d.DecodeResponse(rawQuery, &mocks.DNSQuery{})
 			if !errors.Is(err, ErrDNSIsQuery) {
 				t.Fatal("unexpected err", err)
+			}
+			if !dnsDecoderErrorIsWrapped(err) {
+				t.Fatal("unwrapped error", err)
 			}
 			if resp != nil {
 				t.Fatal("expected nil resp here")
@@ -52,6 +63,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 			})
 			if !errors.Is(err, ErrDNSReplyWithWrongQueryID) {
 				t.Fatal("unexpected error", err)
+			}
+			if !dnsDecoderErrorIsWrapped(err) {
+				t.Fatal("unwrapped error", err)
 			}
 			if resp != nil {
 				t.Fatal("expected nil resp here")
@@ -163,6 +177,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 					if !errors.Is(err, io.err) {
 						t.Fatal("unexpected err", err)
 					}
+					if err != nil && !dnsDecoderErrorIsWrapped(err) {
+						t.Fatal("unwrapped error", err)
+					}
 				})
 			}
 		})
@@ -187,6 +204,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				if !errors.Is(err, ErrOODNSRefused) {
 					t.Fatal("unexpected err", err)
 				}
+				if !dnsDecoderErrorIsWrapped(err) {
+					t.Fatal("unwrapped error", err)
+				}
 				if https != nil {
 					t.Fatal("expected nil https result")
 				}
@@ -209,6 +229,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				https, err := resp.DecodeHTTPS()
 				if !errors.Is(err, ErrOODNSNoAnswer) {
 					t.Fatal("unexpected err", err)
+				}
+				if !dnsDecoderErrorIsWrapped(err) {
+					t.Fatal("unwrapped error", err)
 				}
 				if https != nil {
 					t.Fatal("expected nil https results")
@@ -268,6 +291,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				if !errors.Is(err, ErrOODNSRefused) {
 					t.Fatal("unexpected err", err)
 				}
+				if !dnsDecoderErrorIsWrapped(err) {
+					t.Fatal("unwrapped error", err)
+				}
 				if len(ns) > 0 {
 					t.Fatal("expected empty ns result")
 				}
@@ -290,6 +316,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				ns, err := resp.DecodeNS()
 				if !errors.Is(err, ErrOODNSNoAnswer) {
 					t.Fatal("unexpected err", err)
+				}
+				if !dnsDecoderErrorIsWrapped(err) {
+					t.Fatal("unwrapped error", err)
 				}
 				if len(ns) > 0 {
 					t.Fatal("expected empty ns results")
@@ -343,6 +372,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				if !errors.Is(err, ErrOODNSRefused) {
 					t.Fatal("unexpected err", err)
 				}
+				if !dnsDecoderErrorIsWrapped(err) {
+					t.Fatal("unwrapped error", err)
+				}
 				if len(addrs) > 0 {
 					t.Fatal("expected empty addrs result")
 				}
@@ -365,6 +397,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				addrs, err := resp.DecodeLookupHost()
 				if !errors.Is(err, ErrOODNSNoAnswer) {
 					t.Fatal("unexpected err", err)
+				}
+				if !dnsDecoderErrorIsWrapped(err) {
+					t.Fatal("unwrapped error", err)
 				}
 				if len(addrs) > 0 {
 					t.Fatal("expected empty ns results")
@@ -456,6 +491,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				if !errors.Is(err, ErrOODNSNoAnswer) {
 					t.Fatal("not the error we expected", err)
 				}
+				if !dnsDecoderErrorIsWrapped(err) {
+					t.Fatal("unwrapped error", err)
+				}
 				if len(addrs) > 0 {
 					t.Fatal("expected no addrs here")
 				}
@@ -481,6 +519,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				addrs, err := resp.DecodeLookupHost()
 				if !errors.Is(err, ErrOODNSNoAnswer) {
 					t.Fatal("not the error we expected", err)
+				}
+				if !dnsDecoderErrorIsWrapped(err) {
+					t.Fatal("unwrapped error", err)
 				}
 				if len(addrs) > 0 {
 					t.Fatal("expected no addrs here")
@@ -531,6 +572,9 @@ func TestDNSDecoderMiekg(t *testing.T) {
 				cname, err := resp.DecodeCNAME()
 				if !errors.Is(err, ErrOODNSNoAnswer) {
 					t.Fatal("unexpected err", err)
+				}
+				if !dnsDecoderErrorIsWrapped(err) {
+					t.Fatal("unwrapped error", err)
 				}
 				if cname != "" {
 					t.Fatal("expected empty cname result")

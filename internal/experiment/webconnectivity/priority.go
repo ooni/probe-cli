@@ -30,7 +30,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -80,7 +79,6 @@ func newPrioritySelector(
 	zeroTime time.Time,
 	tk *TestKeys,
 	logger model.Logger,
-	wg *sync.WaitGroup,
 	addrs []DNSEntry,
 ) *prioritySelector {
 	ps := &prioritySelector{
@@ -107,8 +105,7 @@ func newPrioritySelector(
 			ps.nhttps++
 		}
 	}
-	wg.Add(1)
-	go ps.selector(ctx, wg)
+	go ps.selector(ctx)
 	return ps
 }
 
@@ -151,10 +148,7 @@ func (ps *prioritySelector) permissionToFetch(address string) bool {
 // background goroutine and terminates when [ctx] is done.
 //
 // This function implements https://github.com/ooni/probe/issues/2276.
-func (ps *prioritySelector) selector(ctx context.Context, wg *sync.WaitGroup) {
-	// synchronize with the parent
-	defer wg.Done()
-
+func (ps *prioritySelector) selector(ctx context.Context) {
 	// Implementation note: setting an arbitrary timeout here would
 	// be ~an issue because we want this goroutine to be available in
 	// case the only connections from which we could fetch a webpage

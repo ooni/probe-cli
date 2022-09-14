@@ -10,6 +10,9 @@ import (
 	"io"
 )
 
+// TODO(bassosimone): consider integrating StreamAllContext from
+// internal/experiment/webconnectivity/iox.go
+
 // ReadAllContext is like io.ReadAll but reads r in a
 // background goroutine. This function will return
 // earlier if the context is cancelled. In which case
