@@ -1,7 +1,7 @@
 package main
 
 //
-// List of ports we want to test for filtering
+// List of ports we want to use for running integration tests
 //
 
 // Ports for testing the testhelper
