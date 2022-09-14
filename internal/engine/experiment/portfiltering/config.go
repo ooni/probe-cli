@@ -9,7 +9,7 @@ import "time"
 // Config contains the experiment configuration.
 type Config struct {
 	// Delay is the delay between each repetition (in milliseconds).
-	Delay int64 `ooni:"number of milliseconds to wait before knocking each port"`
+	Delay int64 `ooni:"number of milliseconds to wait before testing each port"`
 }
 
 func (c *Config) delay() time.Duration {
