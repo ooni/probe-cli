@@ -180,7 +180,6 @@ func ScrubMeasurement(m *Measurement, currentIP string) error {
 		return ErrInvalidProbeIP
 	}
 	m.ProbeIP = DefaultProbeIP
-	m.AddAnnotation("_probe_engine_sanitize_test_keys", "true")
 	if err := scrubTestKeys(m, currentIP); err != nil {
 		return err
 	}
