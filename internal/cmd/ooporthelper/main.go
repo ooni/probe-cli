@@ -42,9 +42,7 @@ func listenTCP(ctx context.Context, port string) {
 	defer srvWg.Done()
 	address := net.JoinHostPort("127.0.0.1", port)
 	listener, err := net.Listen("tcp", address)
-	if err != nil {
-		runtimex.PanicOnError(err, "net.Listen failed")
-	}
+	runtimex.PanicOnError(err, "net.Listen failed")
 	go shutdown(ctx, listener)
 	srvTestChan <- port // send to channel to imply server will start listening on port
 	for {
