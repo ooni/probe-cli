@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"net"
 	"testing"
 
 	"github.com/ooni/probe-cli/v3/internal/model"
@@ -15,7 +15,7 @@ func TestMainWorkingAsIntended(t *testing.T) {
 	dialer := netxlite.NewDialerWithoutResolver(model.DiscardLogger)
 	for _, port := range TestPorts {
 		<-srvTestChan
-		addr := fmt.Sprintf("127.0.0.1%s", port)
+		addr := net.JoinHostPort("127.0.0.1", port)
 		ctx := context.Background()
 		conn, err := dialer.DialContext(ctx, "tcp", addr)
 		if err != nil {

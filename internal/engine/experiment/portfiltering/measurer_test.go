@@ -18,6 +18,7 @@ func TestMeasurerExperimentNameVersion(t *testing.T) {
 	}
 }
 
+// TODO(DecFox): Skip this test with -short in a future iteration.
 func TestMeasurer_run(t *testing.T) {
 	m := NewExperimentMeasurer(Config{})
 	meas := &model.Measurement{}

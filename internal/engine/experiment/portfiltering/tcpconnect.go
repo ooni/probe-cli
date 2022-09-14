@@ -22,8 +22,6 @@ func (m *Measurer) tcpConnectLoop(ctx context.Context, zeroTime time.Time,
 	rand.Shuffle(len(Ports), func(i, j int) {
 		Ports[i], Ports[j] = Ports[j], Ports[i]
 	})
-	// TODO(DecFox): Do we want to scan ports in parallel (using go routines) or in a
-	// randomized sequential order?
 	for i, port := range Ports {
 		addr := net.JoinHostPort(address, port)
 		go m.tcpConnectAsync(ctx, int64(i), zeroTime, logger, addr, out)

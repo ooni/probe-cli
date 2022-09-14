@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/ooni/probe-cli/v3/internal/engine/experiment/portfiltering"
 	"github.com/ooni/probe-cli/v3/internal/runtimex"
 )
 
@@ -39,7 +40,8 @@ func handleConnetion(ctx context.Context, conn net.Conn) {
 
 func listenTCP(ctx context.Context, port string) {
 	defer srvWg.Done()
-	listener, err := net.Listen("tcp", port)
+	address := net.JoinHostPort("127.0.0.1", port)
+	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		runtimex.PanicOnError(err, "net.Listen failed")
 	}
@@ -64,7 +66,7 @@ func main() {
 	flag.Parse()
 	log.SetLevel(logmap[*debug])
 	defer srvCancel()
-	ports := Ports
+	ports := portfiltering.Ports
 	if srvTest {
 		ports = TestPorts
 	}
