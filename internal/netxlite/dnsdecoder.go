@@ -23,17 +23,22 @@ var (
 	ErrDNSIsQuery = errors.New("ooresolver: expected response but received query")
 )
 
+// dnsDecoderWrapError ensures we wrap the returned errors
+func dnsDecoderWrapError(err error) error {
+	return MaybeNewErrWrapper(ClassifyResolverError, ResolveOperation, err)
+}
+
 // DecodeResponse implements model.DNSDecoder.DecodeResponse.
 func (d *DNSDecoderMiekg) DecodeResponse(data []byte, query model.DNSQuery) (model.DNSResponse, error) {
 	reply := &dns.Msg{}
 	if err := reply.Unpack(data); err != nil {
-		return nil, err
+		return nil, dnsDecoderWrapError(err)
 	}
 	if !reply.Response {
-		return nil, ErrDNSIsQuery
+		return nil, dnsDecoderWrapError(ErrDNSIsQuery)
 	}
 	if reply.Id != query.ID() {
-		return nil, ErrDNSReplyWithWrongQueryID
+		return nil, dnsDecoderWrapError(ErrDNSReplyWithWrongQueryID)
 	}
 	resp := &dnsResponse{
 		bytes: data,
@@ -77,20 +82,20 @@ func (r *dnsResponse) rcodeToError() error {
 	case dns.RcodeSuccess:
 		return nil
 	case dns.RcodeNameError:
-		return ErrOODNSNoSuchHost
+		return dnsDecoderWrapError(ErrOODNSNoSuchHost)
 	case dns.RcodeRefused:
-		return ErrOODNSRefused
+		return dnsDecoderWrapError(ErrOODNSRefused)
 	case dns.RcodeServerFailure:
-		return ErrOODNSServfail
+		return dnsDecoderWrapError(ErrOODNSServfail)
 	default:
-		return ErrOODNSMisbehaving
+		return dnsDecoderWrapError(ErrOODNSMisbehaving)
 	}
 }
 
 // DecodeHTTPS implements model.DNSResponse.DecodeHTTPS.
 func (r *dnsResponse) DecodeHTTPS() (*model.HTTPSSvc, error) {
 	if err := r.rcodeToError(); err != nil {
-		return nil, err
+		return nil, err // error already wrapped
 	}
 	out := &model.HTTPSSvc{
 		ALPN: []string{}, // ensure it's not nil
@@ -117,7 +122,7 @@ func (r *dnsResponse) DecodeHTTPS() (*model.HTTPSSvc, error) {
 		}
 	}
 	if len(out.IPv4) <= 0 && len(out.IPv6) <= 0 {
-		return nil, ErrOODNSNoAnswer
+		return nil, dnsDecoderWrapError(ErrOODNSNoAnswer)
 	}
 	return out, nil
 }
@@ -125,7 +130,7 @@ func (r *dnsResponse) DecodeHTTPS() (*model.HTTPSSvc, error) {
 // DecodeLookupHost implements model.DNSResponse.DecodeLookupHost.
 func (r *dnsResponse) DecodeLookupHost() ([]string, error) {
 	if err := r.rcodeToError(); err != nil {
-		return nil, err
+		return nil, err // error already wrapped
 	}
 	var addrs []string
 	for _, answer := range r.msg.Answer {
@@ -143,7 +148,7 @@ func (r *dnsResponse) DecodeLookupHost() ([]string, error) {
 		}
 	}
 	if len(addrs) <= 0 {
-		return nil, ErrOODNSNoAnswer
+		return nil, dnsDecoderWrapError(ErrOODNSNoAnswer)
 	}
 	return addrs, nil
 }
@@ -151,7 +156,7 @@ func (r *dnsResponse) DecodeLookupHost() ([]string, error) {
 // DecodeNS implements model.DNSResponse.DecodeNS.
 func (r *dnsResponse) DecodeNS() ([]*net.NS, error) {
 	if err := r.rcodeToError(); err != nil {
-		return nil, err
+		return nil, err // error already wrapped
 	}
 	out := []*net.NS{}
 	for _, answer := range r.msg.Answer {
@@ -161,7 +166,7 @@ func (r *dnsResponse) DecodeNS() ([]*net.NS, error) {
 		}
 	}
 	if len(out) < 1 {
-		return nil, ErrOODNSNoAnswer
+		return nil, dnsDecoderWrapError(ErrOODNSNoAnswer)
 	}
 	return out, nil
 }
@@ -169,7 +174,7 @@ func (r *dnsResponse) DecodeNS() ([]*net.NS, error) {
 // DecodeCNAME implements model.DNSResponse.DecodeCNAME.
 func (r *dnsResponse) DecodeCNAME() (string, error) {
 	if err := r.rcodeToError(); err != nil {
-		return "", err
+		return "", err // error already wrapped
 	}
 	for _, answer := range r.msg.Answer {
 		switch avalue := answer.(type) {
@@ -177,7 +182,7 @@ func (r *dnsResponse) DecodeCNAME() (string, error) {
 			return avalue.Target, nil
 		}
 	}
-	return "", ErrOODNSNoAnswer
+	return "", dnsDecoderWrapError(ErrOODNSNoAnswer)
 }
 
 var _ model.DNSDecoder = &DNSDecoderMiekg{}
