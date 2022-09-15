@@ -117,7 +117,7 @@ func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 			case "A":
 				if net.ParseIP(answer.IPv4) != nil && netxlite.IsBogon(answer.IPv4) {
 					logger.Warnf(
-						"DNS: got A BOGON answer %s for domain %s (see #%d)",
+						"DNS: got BOGON answer %s for domain %s (see #%d)",
 						answer.IPv4,
 						query.Hostname,
 						query.TransactionID,
@@ -128,7 +128,7 @@ func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 			case "AAAA":
 				if net.ParseIP(answer.IPv6) != nil && netxlite.IsBogon(answer.IPv6) {
 					logger.Warnf(
-						"DNS: got AAAA BOGON answer %s for %s (see #%d)",
+						"DNS: got BOGON answer %s for domain %s (see #%d)",
 						answer.IPv6,
 						query.Hostname,
 						query.TransactionID,
