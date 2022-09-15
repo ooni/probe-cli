@@ -58,6 +58,7 @@ const (
 func (tk *TestKeys) analysisDNSToplevel(logger model.Logger) {
 	tk.analysisDNSExperimentFailure()
 	tk.analysisDNSBogon(logger)
+	tk.analysisDNSDuplicateResponses(logger)
 	tk.analysisDNSUnexpectedFailure(logger)
 	tk.analysisDNSUnexpectedAddrs(logger)
 	if tk.DNSFlags != 0 {
@@ -67,6 +68,15 @@ func (tk *TestKeys) analysisDNSToplevel(logger model.Logger) {
 	} else {
 		logger.Info("DNSConsistency: consistent")
 		tk.DNSConsistency = "consistent"
+	}
+}
+
+// analysisDNSDuplicateResponses checks whether we received duplicate
+// replies for DNS-over-UDP queries, which is very unexpected.
+func (tk *TestKeys) analysisDNSDuplicateResponses(logger model.Logger) {
+	if length := len(tk.DNSDuplicateResponses); length > 0 {
+		// TODO(bassosimone): write algorithm to analyze this
+		logger.Warnf("DNS: got %d unexpected late/duplicate DNS responses", length)
 	}
 }
 
@@ -106,13 +116,23 @@ func (tk *TestKeys) analysisDNSBogon(logger model.Logger) {
 			switch answer.AnswerType {
 			case "A":
 				if net.ParseIP(answer.IPv4) != nil && netxlite.IsBogon(answer.IPv4) {
-					logger.Warnf("DNS: BOGON %s in #%d", answer.IPv4, query.TransactionID)
+					logger.Warnf(
+						"DNS: got A BOGON answer %s for domain %s (see #%d)",
+						answer.IPv4,
+						query.Hostname,
+						query.TransactionID,
+					)
 					tk.DNSFlags |= AnalysisDNSBogon
 					// continue processing so we print all the bogons we have
 				}
 			case "AAAA":
 				if net.ParseIP(answer.IPv6) != nil && netxlite.IsBogon(answer.IPv6) {
-					logger.Warnf("DNS: BOGON %s in #%d", answer.IPv6, query.TransactionID)
+					logger.Warnf(
+						"DNS: got AAAA BOGON answer %s for %s (see #%d)",
+						answer.IPv6,
+						query.Hostname,
+						query.TransactionID,
+					)
 					tk.DNSFlags |= AnalysisDNSBogon
 					// continue processing so we print all the bogons we have
 				}
@@ -255,7 +275,7 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 	// if the probe has not collected any addr for the same domain, it's
 	// definitely suspicious and counts as a difference
 	if len(probeAddrs) <= 0 {
-		logger.Warnf("DNS: no IP address resolved by the probe")
+		logger.Warnf("DNS: the probe did not resolve any IP address")
 		tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
 		return
 	}
@@ -266,6 +286,9 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 	if len(differentAddrs) <= 0 {
 		return
 	}
+	for _, addr := range differentAddrs {
+		logger.Infof("DNS: address %s: not resolved by TH", addr)
+	}
 
 	// now, let's exclude the differentAddrs for which we successfully
 	// completed a TLS handshake: those should be good addrs
@@ -273,19 +296,24 @@ func (tk *TestKeys) analysisDNSUnexpectedAddrs(logger model.Logger) {
 	if len(withoutHandshake) <= 0 {
 		return
 	}
+	for _, addr := range withoutHandshake {
+		logger.Infof("DNS: address %s: cannot confirm using TLS handshake", addr)
+	}
 
 	// as a last resort, accept the addresses without an handshake whose
 	// ASN overlaps with ASNs resolved by the TH
-	differentASNs := tk.analysisDNSDiffASN(withoutHandshake, thAddrs)
+	differentASNs := tk.analysisDNSDiffASN(logger, withoutHandshake, thAddrs)
 	if len(differentASNs) <= 0 {
 		return
 	}
 
 	// otherwise, conclude we have unexpected probe addrs
-	logger.Warnf(
-		"DNSDiff: differentAddrs: %+v; withoutHandshake: %+v; differentASNs: %+v",
-		differentAddrs, withoutHandshake, differentASNs,
-	)
+	for addr, asn := range differentASNs {
+		logger.Warnf(
+			"DNS: address %s has unexpected AS%d and we cannot use TLS to confirm it",
+			addr, asn,
+		)
+	}
 	tk.DNSFlags |= AnalysisDNSUnexpectedAddrs
 }
 
@@ -298,6 +326,10 @@ func (tk *TestKeys) analysisDNSDiffAddrs(probeAddrs, thAddrs []string) (diff []s
 	)
 	mapping := make(map[string]int)
 	for _, addr := range probeAddrs {
+		if net.ParseIP(addr) != nil && netxlite.IsBogon(addr) {
+			// we can exclude bogons from the analysis because we already analyzed them
+			continue
+		}
 		mapping[addr] |= inProbe
 	}
 	for _, addr := range thAddrs {
@@ -313,23 +345,44 @@ func (tk *TestKeys) analysisDNSDiffAddrs(probeAddrs, thAddrs []string) (diff []s
 
 // analysisDNSDiffASN returns whether there are IP addresses in the probe's
 // list with different ASNs from the ones in the TH's list.
-func (tk *TestKeys) analysisDNSDiffASN(probeAddrs, thAddrs []string) (asns []uint) {
+func (tk *TestKeys) analysisDNSDiffASN(
+	logger model.Logger,
+	probeAddrs,
+	thAddrs []string,
+) (result map[string]uint) {
 	const (
 		inProbe = 1 << iota
 		inTH
 	)
-	mapping := make(map[uint]int)
+	logger.Debugf("DNS: probeAddrs %+v, thAddrs %+v", probeAddrs, thAddrs)
+	uniqueAddrs := make(map[string]uint)
+	asnToFlags := make(map[uint]int)
 	for _, addr := range probeAddrs {
 		asn, _, _ := geoipx.LookupASN(addr)
-		mapping[asn] |= inProbe // including the zero ASN that means unknown
+		asnToFlags[asn] |= inProbe // including the zero ASN that means unknown
+		uniqueAddrs[addr] = asn
 	}
 	for _, addr := range thAddrs {
 		asn, _, _ := geoipx.LookupASN(addr)
-		mapping[asn] |= inTH // including the zero ASN that means unknown
+		asnToFlags[asn] |= inTH // including the zero ASN that means unknown
+		uniqueAddrs[addr] = asn
 	}
-	for asn, where := range mapping {
+	for addr, asn := range uniqueAddrs {
+		logger.Infof("DNS: addr %s has AS%d", addr, asn)
+	}
+	probeOnlyASNs := make(map[uint]bool)
+	for asn, where := range asnToFlags {
 		if (where & inTH) == 0 {
-			asns = append(asns, asn)
+			probeOnlyASNs[asn] = true
+		}
+	}
+	for asn := range probeOnlyASNs {
+		logger.Infof("DNS: AS%d: only seen by probe", asn)
+	}
+	result = make(map[string]uint)
+	for addr, asn := range uniqueAddrs {
+		if probeOnlyASNs[asn] {
+			result[addr] = asn
 		}
 	}
 	return

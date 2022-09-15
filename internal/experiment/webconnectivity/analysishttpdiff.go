@@ -53,6 +53,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 			tk.BlockingFlags |= analysisFlagSuccess
 			return
 		}
+		logger.Info("HTTP: body length: MISMATCH")
 		if tk.HeadersMatch != nil && *tk.HeadersMatch {
 			logger.Infof(
 				"HTTP: statusCodeMatch && headersMatch => #%d is successful",
@@ -61,6 +62,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 			tk.BlockingFlags |= analysisFlagSuccess
 			return
 		}
+		logger.Info("HTTP: headers: MISMATCH")
 		if tk.TitleMatch != nil && *tk.TitleMatch {
 			logger.Infof(
 				"HTTP: statusCodeMatch && titleMatch => #%d is successful",
@@ -69,6 +71,9 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 			tk.BlockingFlags |= analysisFlagSuccess
 			return
 		}
+		logger.Info("HTTP: title: MISMATCH")
+	} else {
+		logger.Infof("HTTP: status code: MISMATCH")
 	}
 
 	tk.BlockingFlags |= analysisFlagHTTPDiff

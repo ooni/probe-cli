@@ -268,9 +268,6 @@ func (t *DNSResolvers) waitForLateReplies(parentCtx context.Context, trace *meas
 	defer t.WaitGroup.Done()
 	const lateTimeout = 500 * time.Millisecond
 	events := trace.DelayedDNSResponseWithTimeout(parentCtx, lateTimeout)
-	if length := len(events); length > 0 {
-		t.Logger.Warnf("got %d late DNS replies", length)
-	}
 	t.TestKeys.AppendDNSLateReplies(events...)
 }
 
