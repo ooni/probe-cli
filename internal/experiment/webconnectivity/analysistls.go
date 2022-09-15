@@ -40,10 +40,10 @@ func (tk *TestKeys) analysisTLSToplevel(logger model.Logger) {
 			continue
 		}
 		logger.Warnf(
-			"TLS: endpoint %s is blocked (see #%d): %s",
+			"TLS: unexpected failure %s for %s (see #%d)",
+			*failure,
 			epnt,
 			entry.TransactionID,
-			*failure,
 		)
 		tk.BlockingFlags |= analysisFlagTLSBlocking
 	}
