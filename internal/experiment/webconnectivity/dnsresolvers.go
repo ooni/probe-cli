@@ -39,6 +39,9 @@ type DNSResolvers struct {
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger
 
+	// NumRedirects it the MANDATORY counter of the number of redirects.
+	NumRedirects *NumRedirects
+
 	// TestKeys is MANDATORY and contains the TestKeys.
 	TestKeys *TestKeys
 
@@ -434,6 +437,7 @@ func (t *DNSResolvers) startCleartextFlows(
 			DNSCache:        t.DNSCache,
 			IDGenerator:     t.IDGenerator,
 			Logger:          t.Logger,
+			NumRedirects:    t.NumRedirects,
 			TestKeys:        t.TestKeys,
 			ZeroTime:        t.ZeroTime,
 			WaitGroup:       t.WaitGroup,
@@ -475,6 +479,7 @@ func (t *DNSResolvers) startSecureFlows(
 			DNSCache:        t.DNSCache,
 			IDGenerator:     t.IDGenerator,
 			Logger:          t.Logger,
+			NumRedirects:    t.NumRedirects,
 			TestKeys:        t.TestKeys,
 			ZeroTime:        t.ZeroTime,
 			WaitGroup:       t.WaitGroup,
