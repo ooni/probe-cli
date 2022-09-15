@@ -94,7 +94,7 @@ which of them to give the permission to actually fetch the webpage. This logic
 lives inside the [priority.go](priority.go) file.
 
 When all tasks complete, either because we reach a final state or because we have
-followed too many redirects, we use code inside `analysiscore.go` to compute the
+followed too many redirects, we use code inside [analysiscore.go](analysiscore.go) to compute the
 top-level test keys. We emit the `blocking` and `accessible` keys we emitted before
 as well as new keys, prefixed by `x_` to indicate that they're experimental.
 
