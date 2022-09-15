@@ -62,7 +62,7 @@ func (tk *TestKeys) analysisHTTPDiff(logger model.Logger,
 			tk.BlockingFlags |= analysisFlagSuccess
 			return
 		}
-		logger.Info("HTTP: headers: MISMATCH")
+		logger.Info("HTTP: uncommon headers: MISMATCH")
 		if tk.TitleMatch != nil && *tk.TitleMatch {
 			logger.Infof(
 				"HTTP: statusCodeMatch && titleMatch => #%d is successful",
