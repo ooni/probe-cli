@@ -39,6 +39,9 @@ type SecureFlow struct {
 	// Logger is the MANDATORY logger to use.
 	Logger model.Logger
 
+	// NumRedirects it the MANDATORY counter of the number of redirects.
+	NumRedirects *NumRedirects
+
 	// TestKeys is MANDATORY and contains the TestKeys.
 	TestKeys *TestKeys
 
@@ -311,8 +314,8 @@ func (t *SecureFlow) httpTransaction(ctx context.Context, network, address, alpn
 
 // maybeFollowRedirects follows redirects if configured and needed
 func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Response) {
-	if !t.FollowRedirects {
-		return // not configured
+	if !t.FollowRedirects || !t.NumRedirects.CanFollowOneMoreRedirect() {
+		return // not configured or too many redirects
 	}
 	switch resp.StatusCode {
 	case 301, 302, 307, 308:
@@ -322,19 +325,20 @@ func (t *SecureFlow) maybeFollowRedirects(ctx context.Context, resp *http.Respon
 		}
 		t.Logger.Infof("redirect to: %s", location.String())
 		resolvers := &DNSResolvers{
-			CookieJar:   t.CookieJar,
-			DNSCache:    t.DNSCache,
-			Domain:      location.Hostname(),
-			IDGenerator: t.IDGenerator,
-			Logger:      t.Logger,
-			TestKeys:    t.TestKeys,
-			URL:         location,
-			ZeroTime:    t.ZeroTime,
-			WaitGroup:   t.WaitGroup,
-			Referer:     resp.Request.URL.String(),
-			Session:     nil, // no need to issue another control request
-			THAddr:      "",  // ditto
-			UDPAddress:  t.UDPAddress,
+			CookieJar:    t.CookieJar,
+			DNSCache:     t.DNSCache,
+			Domain:       location.Hostname(),
+			IDGenerator:  t.IDGenerator,
+			Logger:       t.Logger,
+			NumRedirects: t.NumRedirects,
+			TestKeys:     t.TestKeys,
+			URL:          location,
+			ZeroTime:     t.ZeroTime,
+			WaitGroup:    t.WaitGroup,
+			Referer:      resp.Request.URL.String(),
+			Session:      nil, // no need to issue another control request
+			THAddr:       "",  // ditto
+			UDPAddress:   t.UDPAddress,
 		}
 		resolvers.Start(ctx)
 	default:
