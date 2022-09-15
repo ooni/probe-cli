@@ -53,10 +53,10 @@ func (tk *TestKeys) analysisHTTPToplevel(logger model.Logger) {
 			netxlite.FailureEOFError:
 			tk.BlockingFlags |= analysisFlagHTTPBlocking
 			logger.Warnf(
-				"HTTP: endpoint %s is blocked (see #%d): %s",
+				"HTTP: unexpected failure %s for %s (see #%d)",
+				*failure,
 				finalRequest.Address,
 				finalRequest.TransactionID,
-				*failure,
 			)
 		default:
 			// leave this case for ooni/pipeline

@@ -43,9 +43,9 @@ type TestKeys struct {
 	// Do53 contains ancillary observations collected by Do53 resolvers.
 	Do53 *TestKeysDo53 `json:"x_do53"`
 
-	// DNSLateReplies contains late replies we didn't expect to receive from
+	// DNSDuplicateResponses contains late/duplicate responses we didn't expect to receive from
 	// a resolver (which may raise eyebrows if they're different).
-	DNSLateReplies []*model.ArchivalDNSLookupResult `json:"x_dns_late_replies"`
+	DNSDuplicateResponses []*model.ArchivalDNSLookupResult `json:"x_dns_duplicate_responses"`
 
 	// Queries contains DNS queries.
 	Queries []*model.ArchivalDNSLookupResult `json:"queries"`
@@ -202,7 +202,7 @@ func (tk *TestKeys) AppendNetworkEvents(v ...*model.ArchivalNetworkEvent) {
 // AppendDNSLateReplies appends to DNSLateReplies.
 func (tk *TestKeys) AppendDNSLateReplies(v ...*model.ArchivalDNSLookupResult) {
 	tk.mu.Lock()
-	tk.DNSLateReplies = append(tk.DNSLateReplies, v...)
+	tk.DNSDuplicateResponses = append(tk.DNSDuplicateResponses, v...)
 	tk.mu.Unlock()
 }
 
@@ -325,7 +325,7 @@ func NewTestKeys() *TestKeys {
 			NetworkEvents: []*model.ArchivalNetworkEvent{},
 			Queries:       []*model.ArchivalDNSLookupResult{},
 		},
-		DNSLateReplies:        []*model.ArchivalDNSLookupResult{},
+		DNSDuplicateResponses: []*model.ArchivalDNSLookupResult{},
 		Queries:               []*model.ArchivalDNSLookupResult{},
 		Requests:              []*model.ArchivalHTTPRequestResult{},
 		TCPConnect:            []*model.ArchivalTCPConnectResult{},
