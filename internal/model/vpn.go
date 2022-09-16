@@ -27,11 +27,13 @@ type VPNExperiment struct {
 }
 
 type VPNConfig struct {
-	Cipher     string
-	Auth       string
-	Compress   string
-	Ca         string
-	Cert       string
-	Key        string
-	LocalCreds bool
+	Cipher      string
+	Auth        string
+	Compress    string
+	Ca          string
+	Cert        string
+	Key         string
+	Obfuscation string
+	ProxyURI    string
+	LocalCreds  bool
 }

@@ -16,7 +16,7 @@ var (
 	BadOONIRunInput  = errors.New("bad oonirun input")
 )
 
-var vpnConfigTemplate = `remote {{ .Hostname }} {{ .Port }}
+var vpnConfigTemplate = `{{ if eq .Config.Obfuscation "obfs4" }}proxy-obfs4 {{ .Config.ProxyURI }}{{ else }}remote {{ .Hostname }} {{ .Port }}{{ end }}
 proto {{ .Transport }}
 cipher {{ .Config.Cipher }}
 auth {{ .Config.Auth }}

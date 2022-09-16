@@ -36,7 +36,7 @@ const (
 	testName = "openvpn"
 
 	// testVersion is the openvpn experiment version.
-	testVersion = "0.0.11"
+	testVersion = "0.0.12"
 
 	// pingCount tells how many icmp echo requests to send.
 	pingCount = 10
@@ -68,10 +68,12 @@ type Config struct {
 	SafeKey        string `ooni:"key to connect to the OpenVPN endpoint"`
 	SafeCert       string `ooni:"cert to connect to the OpenVPN endpoint"`
 	SafeCa         string `ooni:"ca to connect to the OpenVPN endpoint"`
+	SafeLocalCreds bool   `ooni:"whether to use local credentials for the given provider"`
+	Obfuscation    string `ooni:"obfuscation type for the tunnel"`
+	SafeProxyURI   string `ooni:"obfuscating proxy to be used"` // empty if Obfuscation is "none"
 	Cipher         string `ooni:"cipher to use"`
 	Auth           string `ooni:"auth to use"`
 	Compress       string `ooni:"compression to use"`
-	SafeLocalCreds bool   `ooni:"whether to use local credentials for the given provider"`
 }
 
 // PingReply is a single response in the ping sequence.
@@ -329,6 +331,11 @@ func (m *Measurer) Run(
 	// should randomize the order of the following function calls. But that
 	// is going to make parsing the data a bit harder, unless we convene on
 	// a given idx.
+	// TODO(ainghazal): another option pointed out by sbasso is to use a
+	// different gvisor socket and then do n pings concurrently. this
+	// probably will help with the situation in which packets arrive too
+	// late and then they're not arriving from the expected src addr.
+
 	sendBlockingPing(wg, m.tunnel, pingTarget, tk)
 	sendBlockingPing(wg, m.tunnel, remoteVPNGateway, tk)
 	sendBlockingPing(wg, m.tunnel, pingTargetNZ, tk)
@@ -393,6 +400,10 @@ func (m *Measurer) setup(exp *model.VPNExperiment, logger model.Logger) (*vpn.Cl
 	exp.Config.Auth = m.config.Auth
 	exp.Config.Cipher = m.config.Cipher
 	exp.Config.Compress = m.config.Compress
+	exp.Config.Obfuscation = m.config.Obfuscation
+
+	// we don't want to store the certificates used to test the obfs4 bridge
+	exp.Config.ProxyURI = m.config.SafeProxyURI
 
 	// TODO(ainghazal): capture cert validation errors into test failures ---
 	ca, _ := extractBase64Blob(m.config.SafeCa)
@@ -451,6 +462,7 @@ func (m *Measurer) setup(exp *model.VPNExperiment, logger model.Logger) (*vpn.Cl
 
 	m.vpnOptions = opt
 	tunnel := vpn.NewClientFromOptions(opt)
+
 	return tunnel, nil
 }
 
@@ -458,12 +470,24 @@ func (m *Measurer) setup(exp *model.VPNExperiment, logger model.Logger) (*vpn.Cl
 func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	experiment *model.VPNExperiment,
 	out chan<- *TestKeys) {
+
+	obfuscation := experiment.Config.Obfuscation
+	var remote string
+
+	switch obfuscation {
+	case "obfs4":
+		u, _ := url.Parse(experiment.Config.ProxyURI)
+		remote = u.Host
+	default:
+		remote = net.JoinHostPort(m.vpnOptions.Remote, m.vpnOptions.Port)
+	}
+
 	tk := &TestKeys{
 		Provider:       experiment.Provider,
 		Proto:          testName,
 		Transport:      protoToString(m.vpnOptions.Proto),
-		Remote:         net.JoinHostPort(m.vpnOptions.Remote, m.vpnOptions.Port),
-		Obfuscation:    experiment.Obfuscation,
+		Remote:         remote,
+		Obfuscation:    experiment.Config.Obfuscation,
 		MiniVPNVersion: getMiniVPNVersion(),
 		BootstrapTime:  0,
 		Failure:        nil,
@@ -501,7 +525,6 @@ func (m *Measurer) bootstrap(ctx context.Context, sess model.ExperimentSession,
 	}
 
 	tk.BootstrapTime = time.Now().Sub(zeroTime).Seconds()
-	sess.Logger().Info("openvpn: bootstrapping done")
 }
 
 func (m *Measurer) traceDialTCP(ctx context.Context, sess model.ExperimentSession, trace *measurexlite.Trace, index int64, tk *TestKeys) {
@@ -510,13 +533,14 @@ func (m *Measurer) traceDialTCP(ctx context.Context, sess model.ExperimentSessio
 	m.tunnel.Dialer = dialer
 	err := m.tunnel.Start(ctx)
 	tk.DialConnect = <-trace.TCPConnect
+	ol.Stop(err)
 	if err != nil {
 		tk.Failure = tracex.NewFailure(err)
 		tk.Error = &bootstrapError
 		sess.Logger().Info("openvpn: bootstrapping failed")
 		return
 	}
-	ol.Stop(err)
+	sess.Logger().Info("openvpn: bootstrapping done")
 }
 
 func (m *Measurer) dialUDP(ctx context.Context, sess model.ExperimentSession, trace *measurexlite.Trace, index int64, tk *TestKeys) {
@@ -525,7 +549,9 @@ func (m *Measurer) dialUDP(ctx context.Context, sess model.ExperimentSession, tr
 		tk.Failure = tracex.NewFailure(err)
 		tk.Error = &bootstrapError
 		sess.Logger().Info("openvpn: bootstrapping failed")
+		return
 	}
+	sess.Logger().Info("openvpn: bootstrapping done")
 }
 
 // NewExperimentMeasurer creates a new ExperimentMeasurer.
