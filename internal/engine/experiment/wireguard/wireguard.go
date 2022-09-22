@@ -9,6 +9,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -37,11 +39,12 @@ var (
 )
 
 type options struct {
-	ip       string
-	pubKey   string
-	privKey  string
-	endpoint string
-	ns       string
+	ip           string
+	pubKey       string
+	privKey      string
+	presharedKey string
+	endpoint     string
+	ns           string
 }
 
 func getOptionsFromFile(f string) (*options, error) {
@@ -54,8 +57,8 @@ func getOptionsFromFile(f string) (*options, error) {
 		if strings.HasPrefix(l, "#") {
 			continue
 		}
-		p := strings.Split(l, "=")
-		if len(p) != 2 {
+		p := strings.Split(l, " ")
+		if len(p) < 2 {
 			return nil, fmt.Errorf("wrong line (%d): more than one =", i)
 		}
 		k, v := p[0], p[1]
@@ -63,9 +66,20 @@ func getOptionsFromFile(f string) (*options, error) {
 		case "ip":
 			o.ip = v
 		case "public_key":
-			o.pubKey = v
+			pub, _ := base64.StdEncoding.DecodeString(v)
+			pubHex := hex.EncodeToString(pub)
+			fmt.Printf("public key: %s\n", pubHex)
+			o.pubKey = pubHex
 		case "private_key":
-			o.privKey = v
+			priv, _ := base64.StdEncoding.DecodeString(v)
+			privHex := hex.EncodeToString(priv)
+			fmt.Printf("private key: %s\n", privHex)
+			o.privKey = privHex
+		case "preshared_key":
+			psk, _ := base64.StdEncoding.DecodeString(v)
+			pskHex := hex.EncodeToString(psk)
+			fmt.Printf("preshared key: %s\n", pskHex)
+			o.presharedKey = pskHex
 		case "endpoint":
 			o.endpoint = v
 		default:
@@ -281,6 +295,7 @@ func doWireguardBootstrap(o *options) (*netstack.Net, error) {
 	dev := device.NewDevice(tun, conn.NewDefaultBind(), device.NewLogger(device.LogLevelVerbose, ""))
 	dev.IpcSet(`private_key=` + o.privKey + `
 public_key=` + o.pubKey + `
+preshared_key=` + o.presharedKey + `
 endpoint=` + o.endpoint + `
 allowed_ip=0.0.0.0/0
 `)
